@@ -1243,6 +1243,18 @@ class FortuneConversationService
             //
             //   ด่านนี้คืน null ทันทีเมื่อไม่ใช่เคสของตัวเอง (โหมดไม่ใช่ daily / ไม่มีธง /
             //   มีบิลค้าง / กำลังทำนาย) — ค่าใช้จ่ายกับข้อความทั่วไปจึงเกือบเป็นศูนย์
+            // 🚨 (2026-08-21) นับ rapid-fire ตรงนี้ ห้ามรอไปนับที่ :1491
+            //   ด่านดวงรายวันด้านล่าง return ออกไปเลยเมื่อรับงาน ⇒ ตัวนับที่อยู่ใต้มัน
+            //   ไม่เคยเห็นสายนี้เลยแม้แต่ครั้งเดียว
+            //   เคสจริง 2026-08-21 PSID 26463023433375768 ("สุวรรณ") กดปุ่ม DAILY_BDAY_1
+            //   10+ ครั้งใน 2 นาที ห่างกัน 8-9 วินาที → ส่งออก 20+ ข้อความ
+            //   แต่ fortune:rapid: ยังเป็น 0 ตลอด เพราะทุกครั้ง return ที่ด่านดวงรายวัน
+            //
+            //   ⚠️ นับ "ครั้งเดียวต่อข้อความ" — ส่งค่าที่ได้ไปใช้ที่ด่านบังคับใช้ด้านล่าง
+            //      ห้ามปล่อยให้ :1491 เรียก countRapidFire() ซ้ำ ไม่งั้นเกณฑ์เหลือครึ่งเดียว
+            //      = ลูกค้าปกติโดนปิดปากที่ 10 ข้อความแทนที่จะเป็น 20
+            $rapidCount = $this->countRapidFire($facebookUserId);
+
             $dailyReply = $this->maybeHandleDailyHoroscopeReply($facebookUserId, $messageText, $userProfile);
             if ($dailyReply !== null) {
                 return $dailyReply;
@@ -1488,7 +1500,7 @@ class FortuneConversationService
 
             // 🎯 Phase N — นับ rapid-fire: เกินเกณฑ์ → เข้า silent mode พร้อม warning 1 ครั้ง
             //   🛡️ (2026-05-05) Paid customer → threshold 2x (ลูกค้าใจร้อนหลังจ่าย ปกติ)
-            $rapidCount = $this->countRapidFire($facebookUserId);
+            //   ⚠️ (2026-08-21) $rapidCount ถูกนับไปแล้วก่อนด่านดวงรายวัน — ห้ามนับซ้ำที่นี่
             $rapidThreshold = $hasPaidActiveReading
                 ? self::RAPID_FIRE_THRESHOLD * 2
                 : self::RAPID_FIRE_THRESHOLD;

@@ -1096,6 +1096,51 @@ class LineFortuneWebhookController extends Controller
             'data' => $data,
         ]);
 
+        // 🚫 (2026-08-21) ด่านแบน — parity กับฝั่ง FB (rule_spam_guard_parity_fb_line)
+        //   เดิมด่านแบนของ LINE เรียกที่สายข้อความจุดเดียว (:202) เส้นปุ่มไม่เคยผ่าน
+        //   ⇒ คนที่ถูกแบนยังกดปุ่ม Rich Menu / Flex สั่งบอททำงานได้ครบ
+        //   ⚠️ เช็ค "จ่ายเงินแล้ว" ก่อนเสมอ — ห้ามขวางเส้นจ่ายแล้วรอคำทำนาย
+        try {
+            if (! $this->conversationService?->hasPaidActiveReading($userId)) {
+                $postbackBan = $this->banService->getActiveBan('line', $userId);
+
+                if ($postbackBan !== null) {
+                    Log::info('🚫 LINE postback: ผู้ใช้ถูกแบนอยู่ — ไม่ประมวลผลปุ่ม', [
+                        'user_id' => $userId,
+                        'data' => mb_substr($data, 0, 50),
+                        'ban_id' => $postbackBan->id,
+                    ]);
+
+                    if ($this->banService->shouldNotify($postbackBan)) {
+                        try {
+                            $banMessage = $this->banService->buildBanReplyMessage($postbackBan);
+                            // ใช้ replyToken ก่อนเสมอ — ฟรี ไม่กินโควตา push
+                            if ($replyToken) {
+                                $this->lineService->replyMessage($replyToken, [
+                                    ['type' => 'text', 'text' => $banMessage],
+                                ]);
+                            } else {
+                                $this->lineService->sendMessage($userId, $banMessage);
+                            }
+                            $this->banService->recordNotification($postbackBan);
+                        } catch (\Throwable $notifyErr) {
+                            Log::debug('LINE postback: แจ้งสถานะแบนไม่สำเร็จ (non-blocking)', [
+                                'error' => $notifyErr->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    return;
+                }
+            }
+        } catch (\Throwable $banErr) {
+            // ด่านเสริมพัง ต้องไม่ทำให้ปุ่มตายทั้งระบบ
+            Log::warning('LINE postback: ด่านแบนล้ม (ปล่อยผ่าน)', [
+                'user_id' => $userId,
+                'error' => $banErr->getMessage(),
+            ]);
+        }
+
         // Parse postback data
         parse_str($data, $params);
         $action = $params['action'] ?? '';

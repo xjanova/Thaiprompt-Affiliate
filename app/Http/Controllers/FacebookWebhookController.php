@@ -3885,6 +3885,11 @@ class FacebookWebhookController extends Controller
             'payload' => $payload,
         ]);
 
+        // 🚫 (2026-08-21) ด่านแบนของเส้นปุ่ม — ดู buttonBlockedByBan()
+        if ($this->buttonBlockedByBan($senderId, $payload)) {
+            return;
+        }
+
         // 🔀 (2026-07-26) โหมด transfer — ปุ่มที่ "เริ่มดูดวง" ทุกตัวต้องวิ่งเข้า
         //    ทางข้อความจุดเดียว เพื่อให้ตัวดักหน้า (TransferModeTrait) ทำงาน
         //    รวมปุ่มเก่าที่ค้างอยู่ในประวัติแชทของลูกค้าด้วย
@@ -5467,8 +5472,74 @@ class FacebookWebhookController extends Controller
     /**
      * จัดการ Quick Reply payload
      */
+    /**
+     * 🚫 (2026-08-21) ด่านแบนสำหรับ "เส้นปุ่ม" — postback / quick reply / ป้ายปุ่มที่หล่นมาเป็นข้อความ
+     *
+     * เดิมด่านแบนถูกเรียกที่ processMessage() จุดเดียว ซึ่งเส้นปุ่มไม่เคยวิ่งผ่าน
+     * ⇒ **คนที่ถูกแบนยังกดปุ่มสั่งบอททำงานได้ครบทุกใบ** รวมปุ่มสร้างบิลและปุ่มพาไปหน้าจ่ายเงิน
+     * (เจอตอนตรวจระบบกันสแปม 2026-08-21 — ระบบระงับรั่วทางปุ่มมาตลอด)
+     *
+     * ⚠️ ลำดับสำคัญ: เช็ค "จ่ายเงินแล้ว" ก่อนเสมอ ห้ามขวางเส้นจ่ายแล้วรอคำทำนาย
+     *    (เหตุผลเดียวกับที่ด่านแบนทางข้อความจงใจวางไว้หลัง pendingDelivery)
+     *
+     * เรียกได้หลายรอบต่อ 1 การกด (postback → handleQuickReply) — ปลอดภัยเพราะ
+     * getActiveBan() มีแคชในตัว และ shouldNotify() มีคูลดาวน์ 1 ชม. จึงไม่ส่งข้อความซ้ำ
+     *
+     * @return bool true = ถูกแบน ให้ caller return ทันที
+     */
+    protected function buttonBlockedByBan(string $senderId, string $payload = ''): bool
+    {
+        try {
+            if ($this->conversationService?->hasPaidActiveReading($senderId)) {
+                return false;
+            }
+
+            $activeBan = $this->banService->getActiveBan('facebook', $senderId);
+
+            if ($activeBan === null) {
+                return false;
+            }
+
+            Log::info('🚫 FB: ผู้ใช้ถูกแบนอยู่ — ไม่ประมวลผลปุ่ม', [
+                'user_id' => $senderId,
+                'payload' => $payload,
+                'ban_id' => $activeBan->id,
+            ]);
+
+            if ($this->banService->shouldNotify($activeBan)) {
+                try {
+                    $this->facebookService->sendMessage(
+                        $senderId,
+                        $this->banService->buildBanReplyMessage($activeBan)
+                    );
+                    $this->banService->recordNotification($activeBan);
+                } catch (\Throwable $notifyErr) {
+                    Log::debug('FB: แจ้งสถานะแบนทางปุ่มไม่สำเร็จ (non-blocking)', [
+                        'error' => $notifyErr->getMessage(),
+                    ]);
+                }
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            // ด่านเสริมพัง ต้องไม่ทำให้ปุ่มตายทั้งระบบ
+            Log::warning('FB: ด่านแบนเส้นปุ่มล้ม (ปล่อยผ่าน)', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     protected function handleQuickReply(string $senderId, string $payload): void
     {
+        // 🚫 (2026-08-21) ครอบ quick reply + ป้ายปุ่มที่หล่นมาเป็นข้อความ
+        //   (สองทางนี้ return ที่ processMessage ก่อนถึงด่านแบนเดิมที่บรรทัด ~2620)
+        if ($this->buttonBlockedByBan($senderId, $payload)) {
+            return;
+        }
+
         // 🔀 (2026-07-26) โหมด transfer — quick reply ที่เริ่มดูดวงต้องเข้าตัวดักหน้า
         //    (ปุ่มพวกนี้ไม่ผ่าน processPostback เพราะเป็น quick_reply ของข้อความ)
         if ($this->transferShouldRoute($senderId, $payload)) {
