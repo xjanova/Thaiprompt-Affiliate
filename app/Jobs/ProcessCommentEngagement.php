@@ -105,7 +105,20 @@ class ProcessCommentEngagement implements ShouldQueue
             }
 
             $facebookService = new FacebookWebhookService($settings);
-            $aiService = new FortuneAIService($settings);
+
+            // 💸 (2026-08-22) เอา `new FortuneAIService($settings)` ตรงนี้ออก
+            //
+            //    constructor ของมันเรียก acquireKeyAnyProvider(null) = **จองคีย์จาก pool ทันที**
+            //    ตอนไม่ระบุ purpose pool จะเลือกคีย์ priority สูงสุด ซึ่งบน prod คือ
+            //    OpenAI key#37 (gpt-5.6-luna, purpose=prediction) = คีย์เสียเงินตัวแพง
+            //
+            //    ตั้งแต่ย้าย AI ไปใช้ makeFreeGeminiService() ตัวนี้ไม่ถูกเรียกใช้อีกเลย
+            //    แต่ยังจองคีย์ทุกงาน (~250 ครั้ง/ชม.) → กิน in-flight slot ของคีย์ที่ลูกค้า
+            //    จ่ายเงินรอคำทำนายอยู่ ทั้งที่ไม่ได้ยิง API สักครั้ง
+            //
+            //    ⚠️ บทเรียน: `new FortuneAIService(...)` ไม่ใช่ของฟรี — มันจองทรัพยากรตั้งแต่ new
+            //       สร้างทิ้งไว้เฉยๆ ไม่ใช่ no-op
+            //    AI สำหรับตอบคอมเมนต์สร้างทีหลังเฉพาะตอนต้องใช้จริง (ดู makeFreeGeminiService)
 
             // ✅ validate required data (กัน missing keys → PHP warning/Error)
             $userId = $this->data['facebook_user_id'] ?? null;
