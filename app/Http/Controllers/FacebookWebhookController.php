@@ -1241,31 +1241,54 @@ class FacebookWebhookController extends Controller
         //    ผลคือคนคอมเมนต์ธรรมดาถูกนับเป็น "ตอบคำถามเรา" แล้วข้ามด่าน 24 ชม.
         //    (ยืนยันบน prod: ดึงคอมเมนต์ 4 อันที่ถูกนับ ทุกอันไม่มี `parent` เลย)
         //
-        //    ตัวแยกที่ถูกคือ **parent_id ต้องไม่ใช่ post_id** — และเป็น pre-filter ฟรี
-        //    ตัดคอมเมนต์ระดับบน (ซึ่งเป็นส่วนใหญ่) ออกก่อนโดยไม่ต้องยิง Graph เลย
-        if (empty($postId) || (string) $parentId === (string) $postId) {
+        //    ⚡ ตัวนี้เป็นแค่ **ทางลัดประหยัด Graph call** ไม่ใช่ด่านชี้ขาด
+        //       เพราะยังไม่เคยพิสูจน์ว่า parent_id กับ post_id เป็นรูปแบบเดียวกันเป๊ะ
+        //       ถ้ารูปแบบตรง → ตัดคอมเมนต์ระดับบน (ส่วนใหญ่) ออกฟรีตรงนี้เลย
+        //       ถ้าไม่ตรง → หลุดไปให้ด่านชี้ขาดข้างล่างตัดสิน ผลลัพธ์ยังถูกอยู่ดี
+        if (! empty($postId) && (string) $parentId === (string) $postId) {
             return false;
         }
 
-        // 🏬 ผูกคีย์กับสาขา — คำตอบคือ "คอมเมนต์แม่เป็นของเพจ **นี้** ไหม"
-        //    คำถามเดียวกันบนคนละสาขาได้คำตอบคนละอย่าง คีย์จึงต้องแยก
-        //    (แบบแผนเดียวกับ reactCommentBreakerKey ด้านบน)
+        $commentId = $comment['comment_id'] ?? null;
+
+        if (empty($commentId)) {
+            return false;
+        }
+
+        // 🔍 ด่านชี้ขาด — ถาม Graph ที่ "ตัวคอมเมนต์เอง" ว่ามีแม่ไหม และแม่เป็นของใคร
+        //
+        //    ทำไมไม่ยิงไปที่ `{parent_id}` ตรงๆ: เพราะต้องเดารูปแบบของ parent_id
+        //    ว่าตรงกับ post_id เป๊ะหรือเปล่า ซึ่ง**ยังไม่เคยพิสูจน์** — ถ้าเดาผิด
+        //    ด่านข้างบนไม่ทำงาน แล้วเราจะไปถามเจ้าของโพส (= เพจเราเอง) ได้ true อีกรอบ
+        //
+        //    ถามที่ตัวคอมเมนต์แทน คำตอบไม่ขึ้นกับรูปแบบ id เลย:
+        //      - คอมเมนต์ระดับบน → **ไม่มีคีย์ `parent` เลย**
+        //      - ตอบกลับ         → มี `parent.from.id` ให้เทียบตรงๆ
+        //    (ยืนยันกับของจริงบน prod แล้ว 4 ตัวอย่าง)
+        //
+        //    🏬 ผูกคีย์แคชกับสาขา — คำถามคือ "แม่เป็นของเพจ **นี้** ไหม"
+        //       คำถามเดียวกันบนคนละสาขาได้คำตอบคนละอย่าง
         $scope = FortunePageContext::currentId() ?? 'default';
 
         return Cache::remember(
-            'fcr:parent_is_ours:'.$scope.':'.md5((string) $parentId),
+            'fcr:is_reply_to_us:'.$scope.':'.md5((string) $commentId),
             21600,
-            function () use ($parentId, $pageId, $token) {
+            function () use ($commentId, $pageId, $token) {
                 try {
                     $res = \Illuminate\Support\Facades\Http::timeout(8)
-                        ->get("https://graph.facebook.com/v22.0/{$parentId}", [
+                        ->get("https://graph.facebook.com/v22.0/{$commentId}", [
                             'access_token' => $token,
-                            'fields' => 'from',
+                            'fields' => 'parent{from}',
                         ]);
 
-                    // ตัดสินไม่ได้ = ถือว่าไม่ใช่ของเรา (ปลอดภัยกว่าเผลอข้ามด่านกันสแปม)
-                    return $res->successful() && ($res->json('from.id') === $pageId);
+                    if (! $res->successful()) {
+                        return false;
+                    }
+
+                    // ไม่มี parent = คอมเมนต์ระดับบน ไม่ใช่การตอบกลับใคร
+                    return $res->json('parent.from.id') === $pageId;
                 } catch (\Throwable $e) {
+                    // ตัดสินไม่ได้ = ถือว่าไม่ใช่ (ปลอดภัยกว่าเผลอข้ามด่านกันสแปม)
                     Log::debug('เช็คคอมเมนต์แม่ไม่สำเร็จ (ไม่บล็อก): '.$e->getMessage());
 
                     return false;
