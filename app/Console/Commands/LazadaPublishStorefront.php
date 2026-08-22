@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\VendorStore;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -57,9 +58,28 @@ class LazadaPublishStorefront extends Command
 
         // --fresh: ล้างสินค้า Lazada เดิมในร้านก่อนคัดใหม่
         // ⚠️ ต้อง forceDelete (Product ใช้ SoftDeletes) ไม่งั้น row เก่าค้าง → re-create ชน unique slug/sku
+        //
+        // 🚨 (2026-08-23) กันข้อมูลออเดอร์ลูกค้าหาย
+        //   `order_items.product_id` เป็น FK `constrained('products')->onDelete('cascade')`
+        //   ⇒ forceDelete สินค้า = **ลบรายการในออเดอร์ที่ลูกค้าสั่งไปแล้วทิ้งด้วย**
+        //     ประวัติการสั่งซื้อจะกลายเป็นออเดอร์เปล่า กู้ไม่ได้ ไม่มี soft delete มารองรับ
+        //   ⇒ ถ้ามีสินค้าชิ้นไหนเคยถูกสั่ง ให้หยุดทันที ให้คนตัดสินใจเอง
         if ($this->option('fresh')) {
-            $del = Product::where('store_id', $store->id)->where('external_platform', 'lazada')->forceDelete();
-            $this->warn("🧹 ล้างสินค้า Lazada เดิม {$del} ชิ้น");
+            $targets = Product::where('store_id', $store->id)->where('external_platform', 'lazada');
+            $targetIds = (clone $targets)->pluck('id');
+
+            $orderedCount = $targetIds->isEmpty() ? 0 : DB::table('order_items')->whereIn('product_id', $targetIds)->count();
+
+            if ($orderedCount > 0) {
+                $this->error("⛔ ยกเลิก --fresh: มีสินค้าที่ลูกค้าเคยสั่งไปแล้ว {$orderedCount} รายการในออเดอร์");
+                $this->error('   ลบตอนนี้ = รายการในออเดอร์ลูกค้าหายตาม FK cascade กู้ไม่ได้');
+                $this->line('   ทางออก: รันโดยไม่ใส่ --fresh (คำสั่งนี้อัปเดตของเดิมอยู่แล้ว)');
+
+                return self::FAILURE;
+            }
+
+            $del = $targets->forceDelete();
+            $this->warn("🧹 ล้างสินค้า Lazada เดิม {$del} ชิ้น (ตรวจแล้วไม่มีชิ้นไหนอยู่ในออเดอร์)");
         }
 
         $created = 0;

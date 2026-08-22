@@ -298,7 +298,28 @@ class LazadaMuImport extends Command
                     'sync_status' => 'synced',
                     'is_active' => true,
                     'last_synced_at' => now(),
+
+                    // 🚨 (2026-08-23) ต้องเขียน mu_group ที่นี่ ไม่งั้นของที่นำเข้าใหม่ "มองไม่เห็น"
+                    //   บอทเลือกของผ่าน `MarketplaceProduct::scopeMu()` ซึ่งกรอง `mu_group IS NOT NULL`
+                    //   ก่อนหน้านี้ payload นี้เขียนแค่ `category` (= ชื่อกลุ่ม) แต่ไม่เขียน `mu_group`
+                    //   ⇒ ของใหม่ทุกชิ้นได้ mu_group = NULL ⇒ **นำเข้ามาเท่าไหร่บอทก็ไม่เสนอสักชิ้น**
+                    //   ⇒ ท่อนำเข้าอัตโนมัติทั้งท่อจะไร้ความหมาย และไม่มี error ให้เห็นเลย
+                    //   (ของ 105 ชิ้นแรกใช้ได้เพราะถูกติดป้ายย้อนหลังด้วย lazada:mu-backfill-groups)
+                    //
+                    //   ⚠️ ห้ามใช้คอลัมน์ `source='mu_curated'` แทน — พร็อดมี 900 แถวป้ายนั้น
+                    //     แต่เป็นของสายมูจริงแค่ 105 (ที่เหลือเป็นแฟ้ม A4 / สายชาร์จ / เวเฟอร์)
+                    'mu_group' => $group,
+
+                    // รายการนี้มาจากไฟล์ที่คนคัดมาเอง (dry-run ตีกลับของไม่ใช่สายมู 13 ชิ้นตอนนำเข้ารอบแรก)
+                    // ⇒ ถือว่าผ่านสายตาคนแล้ว ไม่ต้องเข้าคิวอนุมัติซ้ำ
+                    'approval_status' => MarketplaceProduct::APPROVAL_APPROVED,
                 ];
+
+                // เก็บ raw ของเดิมไว้ด้วย — ฟีดแต่ละรอบส่งฟิลด์ไม่เท่ากัน
+                // เขียนทับทั้งก้อนจะทำให้ข้อมูลที่เคยได้ (rating/reviews/soldCount) หายทุกครั้งที่ sync
+                if ($mpExisting = MarketplaceProduct::where('platform_id', $platformId)->where('external_product_id', $pid)->first()) {
+                    $mpPayload['attributes'] = array_merge((array) $mpExisting->attributes, (array) $it['raw']);
+                }
                 if ($affUrl) {
                     $mpPayload['affiliate_url'] = $affUrl;
                     $mpPayload['can_get_link'] = true;
