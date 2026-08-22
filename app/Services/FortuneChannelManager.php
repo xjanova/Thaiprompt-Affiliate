@@ -960,6 +960,12 @@ class FortuneChannelManager
                     ? $fbService->sendQuickReplies($userId, $message, $result['quick_replies'], $extra)
                     : $fbService->sendMessage($userId, $message, $extra),
 
+                // 🌍 (2026-08-23) ยืนยันสลับไปจ่ายบัตร — ปุ่มจำเป็น เพราะการกดนี้ "ปิดบิลไทยทิ้ง"
+                'foreign_card_confirm' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [
+                    ['content_type' => 'text', 'title' => '✅ ยืนยัน จ่ายบัตร', 'payload' => 'CARD_CONFIRM_YES'],
+                    ['content_type' => 'text', 'title' => '↩️ ใช้ QR ไทยต่อ', 'payload' => 'CARD_CONFIRM_NO'],
+                ], $extra),
+
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + ข้อความทำนาย + Quick Reply [39][99][ไม่สนใจ]
                 'free_card_drawn' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // 1. ส่งภาพไพ่ก่อน (ถ้ามี)
@@ -2717,6 +2723,12 @@ class FortuneChannelManager
 
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
                 })(),
+
+                // 🌍 (2026-08-23) ยืนยันสลับไปจ่ายบัตร (LINE) — ปุ่มจำเป็น การกดนี้ปิดบิลไทยทิ้ง
+                'foreign_card_confirm' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ ยืนยัน จ่ายบัตร', 'text' => 'CARD_CONFIRM_YES'],
+                    ['label' => '↩️ ใช้ QR ไทยต่อ', 'text' => 'CARD_CONFIRM_NO'],
+                ]),
 
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + คำทำนาย + Quick Reply [39][99][ไม่สนใจ]
                 'free_card_drawn' => (function () use ($lineService, $userId, $message, $replyToken, $result) {

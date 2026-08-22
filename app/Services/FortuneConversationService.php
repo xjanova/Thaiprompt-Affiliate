@@ -7990,6 +7990,9 @@ class FortuneConversationService
         $prevStatus = $reading->conversation_status;
 
         $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+
+        // ⚠️ ลำดับสำคัญ: สร้าง session **ก่อน** ปิดบิลไทยเสมอ
+        //    ถ้าปิดบิลไทยก่อนแล้ว Stripe ล่ม = ลูกค้าเหลือ 0 ช่องทาง (ทั้งที่จ่ายได้อยู่แล้ว)
         $result = $service->createCheckoutSession($reading, 'foreign');
 
         if (! ($result['success'] ?? false)) {
@@ -8010,15 +8013,37 @@ class FortuneConversationService
             ];
         }
 
-        $reading->update([
-            'conversation_status' => FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
-        ]);
-
         $amounts = $result['amounts'];
         $totalThb = $amounts['total'];
         $baseThb = $amounts['base'];
         $feeThb = $amounts['fee'];
         $expiryMinutes = max(30, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
+
+        // 🇹🇭 ปิดบิลไทยทันทีที่ลิงก์บัตรพร้อม — เจ้าของสั่ง "ปิดบิลไทย แล้วเปิดบิล Stripe"
+        //    เหลือรางเดียว = เงินเข้าปุ๊บรู้ทันทีว่าใช่บิลนี้ ไม่ต้องเดาว่ามาทางไหน
+        //    และกันเคสจ่ายซ้ำ 2 ทาง (โอน QR + รูดบัตร) ที่ต้องมานั่งคืนเงินทีหลัง
+        $cancelledThaiAmount = null;
+        $oldUpa = $reading->uniquePaymentAmount;
+        if ($oldUpa && $oldUpa->status === 'reserved') {
+            $cancelledThaiAmount = number_format((float) $oldUpa->unique_amount, 2);
+            $oldUpa->cancel();
+            $reading->setConversationState('thai_qr_closed_for_card', true);
+
+            Log::info('Fortune: ปิดบิล QR ไทย เพื่อสลับไปเลนบัตร', [
+                'reading_id' => $reading->id,
+                'bill' => $reading->bill_reference,
+                'cancelled_thai_amount' => $cancelledThaiAmount,
+                'card_total' => $totalThb,
+            ]);
+        }
+
+        // 💰 เก็บยอดบัตรไว้ใน state เท่านั้น — **ห้ามเขียนทับ amount_paid**
+        //    FortuneCommissionService ใช้ amount_paid เป็นฐานคิดค่าแนะนำ (บรรทัด ~55)
+        //    ถ้าเปลี่ยนเป็นยอดบัตร = จ่ายค่าคอมบนค่าธรรมเนียมบัตรที่เป็นต้นทุนผ่านทาง ไม่ใช่รายได้
+        $reading->setConversationState('stripe_card_total', $totalThb);
+        $reading->update([
+            'conversation_status' => FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
+        ]);
 
         Log::info('Fortune: Stripe foreign-fallback link ส่งให้ลูกค้าแล้ว', [
             'reading_id' => $reading->id,
@@ -8027,12 +8052,18 @@ class FortuneConversationService
             'total_thb' => $totalThb,
         ]);
 
+        $closedLine = $cancelledThaiAmount
+            ? "🇹🇭 บิล QR ไทย {$cancelledThaiAmount} บาท — *ยกเลิกแล้ว* (ไม่ต้องโอนนะคะ)\n\n"
+            : '';
+
         $message = $prefixMessage
             ."💳 ชำระด้วยบัตรเครดิต/เดบิต — จ่ายได้จากทุกประเทศค่ะ\n\n"
+            .$closedLine
             ."✅ Visa, Mastercard, AmEx, JCB\n"
             ."✅ Apple Pay, Google Pay\n"
             ."🔒 ปลอดภัยด้วย Stripe SSL + 3D Secure\n\n"
-            ."💰 ยอดรวม: {$totalThb} บาท ({$baseThb} + ค่าบริการ {$feeThb})\n"
+            ."💰 ยอดที่ต้องชำระ: *{$totalThb} บาท*\n"
+            ."   ({$baseThb} + ค่าบริการต่างประเทศ {$feeThb} บาท)\n"
             ."⏰ ลิงก์มีอายุ {$expiryMinutes} นาที\n\n"
             ."👇 กดลิงก์ด้านล่างเพื่อชำระเงิน:\n"
             .$result['url'];
@@ -8075,9 +8106,51 @@ class FortuneConversationService
         }
 
         // คืนสถานะเดิมของบิลตามชนิดแพ็กเกจ
+        //   ⚠️ ยังไม่ update ตรงนี้ — ต้องมียอด QR ที่จ่ายได้จริงก่อน
+        //      ถ้าคืนสถานะเป็น "รอชำระ" ทั้งที่ยังไม่มียอด = บิลผีที่ลูกค้าจ่ายไม่ได้
         $restoreStatus = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
             ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
             : FortuneReading::STATUS_PENDING_PAYMENT;
+
+        // 🇹🇭 ตอนสลับไปบัตร เราปิดบิลไทยทิ้งไปแล้ว → กลับมาต้องจองยอดใหม่
+        //    ห้ามปล่อยให้ลูกค้าสแกน QR ใบเดิม: UPA ถูก cancel แล้ว ตัวจับ SMS จะหาบิลไม่เจอ
+        //    = เงินเข้าแต่ไม่มีอะไรรับ (เคสที่แพงที่สุดของระบบนี้)
+        $upa = $reading->uniquePaymentAmount;
+        $needNewAmount = ! $upa
+            || $upa->status !== 'reserved'
+            || $upa->expires_at <= now();
+
+        if ($needNewAmount) {
+            $newUpa = $reading->reissueThaiQrAmount();
+
+            if (! $newUpa) {
+                // จองยอดใหม่ไม่ได้ → คงเลนบัตรไว้ ดีกว่าปล่อยบิลตายเงียบ
+                $reading->update(['conversation_status' => FortuneReading::STATUS_PENDING_STRIPE_PAYMENT]);
+
+                Log::error('Fortune: จองยอด QR ไทยใหม่ไม่สำเร็จ — คงเลนบัตรไว้', [
+                    'reading_id' => $reading->id,
+                    'bill' => $reading->bill_reference,
+                ]);
+
+                return [
+                    'action' => 'stripe_foreign_fallback_failed',
+                    'message' => "⚠️ ขออภัยค่ะ ระบบออกยอด QR ใหม่ไม่สำเร็จ\n\n"
+                        ."ใช้ลิงก์บัตรที่แม่หมอส่งให้ก่อนหน้าได้เลย\n"
+                        .'หรือพิมพ์ "คุยกับแม่หมอ" เพื่อให้แอดมินช่วยค่ะ 🙏',
+                    'reading' => $reading->fresh(),
+                ];
+            }
+
+            $reading->setConversationState('thai_qr_closed_for_card', false);
+            $reading->refresh();
+            $upa = $newUpa;
+
+            Log::info('Fortune: กลับเลนไทย → จองยอด QR ใหม่ให้บิลเดิม', [
+                'reading_id' => $reading->id,
+                'bill' => $reading->bill_reference,
+                'new_amount' => $newUpa->unique_amount,
+            ]);
+        }
 
         $reading->update(['conversation_status' => $restoreStatus]);
 
@@ -8090,21 +8163,174 @@ class FortuneConversationService
         $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
         $info = $this->presentPaymentInfo($userId);
 
-        // เติมยอดทศนิยมของบิลเดิม — ตัวจับ SMS ใช้ยอดนี้ ต้องโอนตรงเป๊ะ
-        $upa = $reading->uniquePaymentAmount;
-        if ($upa && $upa->status === 'reserved' && $upa->expires_at > now()) {
-            $exact = number_format((float) $upa->unique_amount, 2);
-            $info['message'] = "↩️ กลับมาที่ QR ไทยแล้วค่ะ\n\n"
-                ."💰 ยอดที่ต้องโอน: *{$exact} บาท* (ตรงเป๊ะทุกทศนิยมนะคะ)\n"
-                ."📋 บิล: {$reading->bill_reference}\n\n"
-                .$info['message'];
-        } else {
-            $info['message'] = "↩️ กลับมาที่ QR ไทยแล้วค่ะ\n\n".$info['message'];
-        }
+        // ยอดทศนิยมต้องตรงเป๊ะ — ตัวจับ SMS ใช้เศษสตางค์เป็นตัวชี้บิล
+        $exact = number_format((float) $upa->unique_amount, 2);
+        $info['message'] = "↩️ กลับมาที่ QR ไทยแล้วค่ะ (ยกเลิกลิงก์บัตรให้แล้ว)\n\n"
+            ."💰 ยอดที่ต้องโอน: *{$exact} บาท* (ตรงเป๊ะทุกทศนิยมนะคะ)\n"
+            ."📋 บิล: {$reading->bill_reference}\n\n"
+            .$info['message'];
 
         $info['reading'] = $reading->fresh();
 
         return $info;
+    }
+
+    /**
+     * 🌍 (2026-08-23) นาทีที่คำถาม "ยืนยันจ่ายบัตรไหม" ยังนับว่าใช้ได้
+     *
+     * เกินนี้ถือว่าลูกค้าเดินไปเรื่องอื่นแล้ว — ห้ามเอาคำว่า "ใช่" ของบทสนทนาอื่น
+     * มาตีความว่ายืนยันปิดบิลไทย
+     */
+    protected const FOREIGN_CARD_CONFIRM_TTL_MINUTES = 20;
+
+    /**
+     * 🌍 (2026-08-23) ถามยืนยันก่อนสลับไปจ่ายบัตร
+     *
+     * เจ้าของสั่ง: "ถ้าจะจ่ายต่างประเทศให้ยืนยัน แล้วปิดบิลไทย แล้วเปิดบิล Stripe
+     *              เพื่อจะได้เช็คได้ทันทีที่ผ่าน"
+     *
+     * ทำไมต้องยืนยัน — การสลับเลนไม่ใช่การ "เพิ่มทางเลือก" แต่เป็นการ **ปิดบิลไทยทิ้ง**
+     * + คิดค่าบริการต่างประเทศเพิ่ม ลูกค้าต้องรู้ตัวเลขทั้งสองฝั่งก่อนตัดสินใจ
+     */
+    protected function askForeignCardConfirm(FortuneReading $reading): array
+    {
+        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+        $amounts = $service->calculateAmounts($reading, 'foreign');
+
+        $reading->setConversationState('awaiting_card_confirm', true);
+        $reading->setConversationState('awaiting_card_confirm_at', now()->toIso8601String());
+
+        $upa = $reading->uniquePaymentAmount;
+        $thaiLine = ($upa && $upa->status === 'reserved')
+            ? '🇹🇭 บิล QR ไทย '.number_format((float) $upa->unique_amount, 2)." บาท → *จะถูกยกเลิก*\n"
+            : '';
+
+        Log::info('Fortune: ถามยืนยันสลับไปเลนบัตรต่างประเทศ', [
+            'reading_id' => $reading->id,
+            'bill' => $reading->bill_reference,
+            'card_total' => $amounts['total'],
+        ]);
+
+        $message = "💳 *ยืนยันเปลี่ยนไปชำระด้วยบัตรนะคะ?*\n\n"
+            .$thaiLine
+            ."💳 ยอดบัตร: *{$amounts['total']} บาท*\n"
+            ."   ({$amounts['base']} + ค่าบริการต่างประเทศ {$amounts['fee']} บาท)\n\n"
+            ."ℹ️ ค่าบริการนี้คือส่วนที่ผู้ให้บริการบัตรต่างประเทศหักไปค่ะ แม่หมอไม่ได้บวกเพิ่มเอง 🙏\n\n"
+            .'กด *"ยืนยัน จ่ายบัตร"* แล้วแม่หมอจะส่งลิงก์ให้ทันทีค่ะ ✨';
+
+        return [
+            'action' => 'foreign_card_confirm',
+            'message' => $message,
+            'reading' => $reading->fresh(),
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['label' => '✅ ยืนยัน จ่ายบัตร', 'text' => 'CARD_CONFIRM_YES', 'payload' => 'CARD_CONFIRM_YES'],
+                ['label' => '↩️ ใช้ QR ไทยต่อ', 'text' => 'CARD_CONFIRM_NO', 'payload' => 'CARD_CONFIRM_NO'],
+            ],
+        ];
+    }
+
+    /**
+     * 🌍 (2026-08-23) ลบธง "รอยืนยันจ่ายบัตร"
+     */
+    protected function clearForeignCardConfirm(FortuneReading $reading): void
+    {
+        $reading->setConversationState('awaiting_card_confirm', false);
+        $reading->setConversationState('awaiting_card_confirm_at', null);
+    }
+
+    /**
+     * 🌍 (2026-08-23) ตอบกลับของด่านยืนยันจ่ายบัตร
+     *
+     * @return array|null null = ไม่ได้อยู่ในโหมดยืนยัน (หรือหมดอายุ) → ให้ handler ปกติทำงานต่อ
+     */
+    protected function handleForeignCardConfirmReply(FortuneReading $reading, string $messageText): ?array
+    {
+        if (! $reading->getConversationState('awaiting_card_confirm', false)) {
+            return null;
+        }
+
+        // หมดอายุ → ล้างธงแล้วปล่อยผ่าน (กันคำว่า "ใช่" ของบทสนทนาอื่นมาปิดบิลไทย)
+        $askedAt = $reading->getConversationState('awaiting_card_confirm_at');
+        if ($askedAt) {
+            try {
+                if (\Carbon\Carbon::parse($askedAt)->lt(now()->subMinutes(self::FOREIGN_CARD_CONFIRM_TTL_MINUTES))) {
+                    $this->clearForeignCardConfirm($reading);
+
+                    return null;
+                }
+            } catch (\Throwable $e) {
+                $this->clearForeignCardConfirm($reading);
+
+                return null;
+            }
+        }
+
+        $clean = mb_strtolower(trim($messageText));
+
+        // ⚠️ เช็คฝั่งปฏิเสธ **ก่อน** เสมอ — "ไม่ยืนยัน" มีคำว่า "ยืนยัน" อยู่ข้างใน
+        $noContains = ['card_confirm_no', 'ไม่ยืนยัน', 'ไม่เอา', 'ไม่จ่ายบัตร', 'ไม่ใช้บัตร',
+            'ใช้ qr', 'qr ไทย', 'พร้อมเพย์', 'โอนเอง', 'ยกเลิก'];
+        $noExact = ['ไม่', 'no', 'cancel', 'ไม่ค่ะ', 'ไม่ครับ'];
+
+        foreach ($noContains as $k) {
+            if (str_contains($clean, $k)) {
+                return $this->declineForeignCardConfirm($reading);
+            }
+        }
+        if (in_array($clean, $noExact, true)) {
+            return $this->declineForeignCardConfirm($reading);
+        }
+
+        $yesContains = ['card_confirm_yes', 'ยืนยัน', 'ตกลง', 'โอเค', 'จ่ายบัตร', 'เอาบัตร',
+            'ใช้บัตร', 'รูดบัตร', 'confirm'];
+        $yesExact = ['ใช่', 'yes', 'ok', 'y', 'ได้', 'ได้ค่ะ', 'ได้ครับ'];
+
+        foreach ($yesContains as $k) {
+            if (str_contains($clean, $k)) {
+                $this->clearForeignCardConfirm($reading);
+
+                return $this->startStripeForeignFallback($reading->fresh());
+            }
+        }
+        if (in_array($clean, $yesExact, true)) {
+            $this->clearForeignCardConfirm($reading);
+
+            return $this->startStripeForeignFallback($reading->fresh());
+        }
+
+        // ตอบไม่ตรงคำถาม → ล้างธงแล้วปล่อยให้ flow ปกติจัดการ
+        //   (ห้ามวนถามซ้ำ — ลูกค้าอาจกำลังถามเรื่องอื่นอยู่)
+        $this->clearForeignCardConfirm($reading);
+
+        return null;
+    }
+
+    /**
+     * 🌍 (2026-08-23) ลูกค้าปฏิเสธการสลับไปบัตร → ยืนบิลไทยเดิมไว้
+     */
+    protected function declineForeignCardConfirm(FortuneReading $reading): array
+    {
+        $this->clearForeignCardConfirm($reading);
+
+        Log::info('Fortune: ลูกค้าไม่ยืนยันจ่ายบัตร — คงบิล QR ไทยเดิม', [
+            'reading_id' => $reading->id,
+            'bill' => $reading->bill_reference,
+        ]);
+
+        $upa = $reading->uniquePaymentAmount;
+        $amountLine = ($upa && $upa->status === 'reserved')
+            ? '💰 ยอดที่ต้องโอน: *'.number_format((float) $upa->unique_amount, 2)." บาท* (ตรงเป๊ะทุกทศนิยมนะคะ)\n"
+            : '';
+
+        return [
+            'action' => 'foreign_card_declined',
+            'message' => "ได้ค่ะ ใช้ QR ไทยใบเดิมต่อได้เลยนะคะ 🙏\n\n"
+                .$amountLine
+                ."📋 บิล: {$reading->bill_reference}\n\n"
+                .'พอโอนเรียบร้อยแล้วพิมพ์ *"เช็คสถานะ"* แม่หมอจะตามให้ค่ะ ✨',
+            'reading' => $reading,
+        ];
     }
 
     /**
@@ -8766,14 +8992,20 @@ class FortuneConversationService
             return $lineInfo;
         }
 
+        // 🌍 (2026-08-23) ตอบด่านยืนยันจ่ายบัตร (ถ้าถามค้างไว้) — ต้องมาก่อนตัวจับ keyword
+        if ($cardConfirm = $this->handleForeignCardConfirmReply($reading, $messageText)) {
+            return $cardConfirm;
+        }
+
         // 🌍 (2026-08-23) ลูกค้าต่างประเทศขอจ่ายบัตร ระหว่างบิล Deep ค้างอยู่
         //   ต้องอยู่ **ก่อน** maybePresentPaymentInfo — ไม่งั้นโดนกล่อง "เลขบัญชี/QR" กลืนไปก่อน
+        //   → ถามยืนยันก่อนเสมอ (สลับเลน = ปิดบิลไทยทิ้ง + คิดค่าบริการเพิ่ม)
         if ($this->looksLikeCardPaymentRequest($messageText)
             && $this->isStripeForeignFallbackAvailable()) {
-            // 🛡️ จ่าย QR ไปแล้วระหว่างพิมพ์ → ห้ามเปิดลิงก์บัตรซ้ำ
+            // 🛡️ จ่าย QR ไปแล้วระหว่างพิมพ์ → ห้ามเปิดเลนบัตรซ้ำ
             $reading->refresh();
             if (! $reading->is_paid) {
-                return $this->startStripeForeignFallback($reading);
+                return $this->askForeignCardConfirm($reading);
             }
         }
 
@@ -17614,8 +17846,8 @@ class FortuneConversationService
                 $message .= "\n\n━━━━━━━━━━━━━━━\n"
                     ."💳 *หรือจ่ายด้วยบัตรเครดิต/เดบิตก็ได้ค่ะ* — ใช้ได้ทุกประเทศ\n"
                     ."   ✦ Visa / Mastercard / AmEx / JCB / Apple Pay / Google Pay\n"
-                    ."   ✦ ยอด {$cardAmounts['total']} บาท ({$cardAmounts['base']} + ค่าบริการ {$cardAmounts['fee']})\n"
-                    .'   ✦ พิมพ์ *"จ่ายบัตร"* แม่หมอจะส่งลิงก์ให้ทันที ✨';
+                    ."   ✦ ยอด *{$cardAmounts['total']} บาท* = {$cardAmounts['base']} + ค่าบริการต่างประเทศ {$cardAmounts['fee']} บาท\n"
+                    .'   ✦ พิมพ์ *"จ่ายบัตร"* แม่หมอจะสรุปยอดให้ยืนยันก่อนค่ะ ✨';
 
                 Log::info('Fortune: intl nudge → เสนอเลนบัตรต่างประเทศ (มีบิลค้าง)', [
                     'reading_id' => $reading->id,
@@ -18335,8 +18567,9 @@ class FortuneConversationService
                             FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                         ], true);
 
+                    //   บิลค้างอยู่ → ถามยืนยันก่อน (สลับเลน = ปิดบิลไทยทิ้ง + ค่าบริการเพิ่ม)
                     $stripeResult = $hasOpenBill
-                        ? $this->startStripeForeignFallback($reading)
+                        ? $this->askForeignCardConfirm($reading)
                         : $this->startStripePaymentFlow($reading, 'foreign');
                     if (! empty($cleanMessage) && ! empty($stripeResult['message'])) {
                         $stripeResult['message'] = $cleanMessage."\n\n".$stripeResult['message'];

@@ -1073,19 +1073,27 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticPendingPayment(FortuneReading $reading, string $messageText): array
     {
+        // 🌍 (2026-08-23) ตอบด่านยืนยันจ่ายบัตร (ถ้าถามค้างไว้) — ต้องมาก่อนตัวจับ keyword
+        if (method_exists($this, 'handleForeignCardConfirmReply')) {
+            if ($cardConfirm = $this->handleForeignCardConfirmReply($reading, $messageText)) {
+                return $cardConfirm;
+            }
+        }
+
         // 🌍 (2026-08-23) ลูกค้าต่างประเทศขอจ่ายบัตร ระหว่างบิล Celtic ค้างอยู่
         //   ต้องอยู่ **ก่อน** maybePresentPaymentInfo — ไม่งั้นโดนกล่อง "เลขบัญชี/QR" กลืนไปก่อน
         //   เคสที่มา: บิล FTU-260822-U7900 — เมนูเลือกวิธีจ่ายทำงานก่อนสร้างบิลเท่านั้น
         //   พอบิลเกิดแล้วไม่มีทางกลับเข้าเลนบัตรเลย
+        //   → ถามยืนยันก่อนเสมอ (สลับเลน = ปิดบิลไทยทิ้ง + คิดค่าบริการเพิ่ม)
         if (method_exists($this, 'looksLikeCardPaymentRequest')
             && method_exists($this, 'isStripeForeignFallbackAvailable')
-            && method_exists($this, 'startStripeForeignFallback')
+            && method_exists($this, 'askForeignCardConfirm')
             && $this->looksLikeCardPaymentRequest($messageText)
             && $this->isStripeForeignFallbackAvailable()) {
-            // 🛡️ จ่าย QR ไปแล้วระหว่างพิมพ์ → ห้ามเปิดลิงก์บัตรซ้ำ
+            // 🛡️ จ่าย QR ไปแล้วระหว่างพิมพ์ → ห้ามเปิดเลนบัตรซ้ำ
             $reading->refresh();
             if (! $reading->is_paid) {
-                return $this->startStripeForeignFallback($reading);
+                return $this->askForeignCardConfirm($reading);
             }
         }
 
@@ -2947,9 +2955,9 @@ trait CelticCrossConversationTrait
             $suggestionBox = $this->buildCelticSuggestionBox($celticNextQuestions);
             $suggestionButtons = $this->buildCelticSuggestionButtons($celticNextQuestions);
             // เก็บคำถามเต็มไว้ map ตอนลูกค้ากดเลข (TTL ยาวกว่า qa window เผื่อกดช้า)
-            cache()->put("celtic:suggq:{$reading->id}", $celticNextQuestions, now()->addMinutes(20));
+            $this->storeCelticSuggestions($reading, $celticNextQuestions);
         } else {
-            cache()->forget("celtic:suggq:{$reading->id}");
+            $this->forgetCelticSuggestions($reading);
         }
 
         return [
@@ -2999,6 +3007,79 @@ trait CelticCrossConversationTrait
      *
      * @param  array<int,string>  $questions  1-2 คำถาม
      */
+    /**
+     * 🛟 (2026-08-23) เก็บคำถามแนะนำไว้ 2 ที่ — Cache (เร็ว) + conversation_state (ทน deploy)
+     *
+     * เคสจริง บิล FTU-260822-U7900: ลูกค้าจ่าย 99฿ แล้วกดปุ่มเลข "1" เวลา 00:15:06 และ 00:16:59
+     * ทั้งสองครั้งบอทตอบกลับเป็น "อยากให้ทำนายเรื่องไหนต่อดีคะ?" แทนคำทำนาย
+     * ต้นเหตุ: deploy รอบ 00:14:40–00:17:52 รัน `cache:clear` 3 หน
+     * ซึ่งเป็น **flushdb ทั้ง redis DB ไม่ใช่ลบตาม prefix** → คีย์ celtic:suggq หายเกลี้ยง
+     * → resolveCelticSuggestionPick() คืน null → เลข "1" กลายเป็นข้อความสั้นธรรมดา
+     *
+     * ลูกค้าต้องพิมพ์คำถามเองยาวๆ ถึงได้คำทำนาย = เสียเวลาไป 2 นาทีจากหน้าต่าง 15 นาทีที่จ่ายเงินมา
+     *
+     * ⚠️ อย่าเก็บของที่ "ลูกค้าจ่ายเงินแล้ว" ไว้บน Cache อย่างเดียวเด็ดขาด — deploy กินได้ตลอด
+     */
+    protected function storeCelticSuggestions(FortuneReading $reading, array $questions): void
+    {
+        $clean = array_values($questions);
+
+        cache()->put("celtic:suggq:{$reading->id}", $clean, now()->addMinutes(20));
+        $reading->setConversationState('celtic_suggq', $clean);
+        $reading->setConversationState('celtic_suggq_at', now()->toIso8601String());
+    }
+
+    /**
+     * 🛟 (2026-08-23) ล้างคำถามแนะนำทั้ง 2 ที่
+     */
+    protected function forgetCelticSuggestions(FortuneReading $reading): void
+    {
+        cache()->forget("celtic:suggq:{$reading->id}");
+        $reading->setConversationState('celtic_suggq', null);
+        $reading->setConversationState('celtic_suggq_at', null);
+    }
+
+    /**
+     * 🛟 (2026-08-23) อ่านคำถามแนะนำ — Cache ก่อน ถ้าหายค่อยกู้จาก DB
+     *
+     * @return array<int,string>|null null = ไม่มี suggestion ค้างจริงๆ (หรือหมดอายุ)
+     */
+    protected function loadCelticSuggestions(FortuneReading $reading): ?array
+    {
+        $stored = cache()->get("celtic:suggq:{$reading->id}");
+        if (is_array($stored) && $stored !== []) {
+            return $stored;
+        }
+
+        // Cache หาย (deploy/flushdb) → กู้จาก conversation_state ที่อยู่ใน DB
+        $fromDb = $reading->getConversationState('celtic_suggq');
+        if (! is_array($fromDb) || $fromDb === []) {
+            return null;
+        }
+
+        // เคารพ TTL เดิม 20 นาที — กันเลข "1" ของบทสนทนาเมื่อวานมาตอบคำถามวันนี้
+        $at = $reading->getConversationState('celtic_suggq_at');
+        if ($at) {
+            try {
+                if (\Carbon\Carbon::parse($at)->lt(now()->subMinutes(20))) {
+                    return null;
+                }
+            } catch (\Throwable $e) {
+                return null;
+            }
+        }
+
+        \Illuminate\Support\Facades\Log::info('Celtic: กู้คำถามแนะนำจาก DB (cache หาย — น่าจะโดน deploy ล้าง)', [
+            'reading_id' => $reading->id,
+            'count' => count($fromDb),
+        ]);
+
+        // อุ่น cache กลับ ให้รอบถัดไป hit ตามปกติ
+        cache()->put("celtic:suggq:{$reading->id}", $fromDb, now()->addMinutes(20));
+
+        return $fromDb;
+    }
+
     protected function buildCelticSuggestionBox(array $questions): string
     {
         $box = "🔮 อยากให้แม่หมอทำนาย *เรื่องไหนต่อ* ดีคะ — กดเลขเลือกได้เลย\n\n";
@@ -3056,7 +3137,8 @@ trait CelticCrossConversationTrait
             return null; // ไม่ใช่การกดเลขแนะนำ
         }
 
-        $stored = cache()->get("celtic:suggq:{$reading->id}");
+        // 🛟 (2026-08-23) อ่านผ่าน loader ที่มี DB fallback — Cache อย่างเดียวโดน deploy ล้างได้
+        $stored = $this->loadCelticSuggestions($reading);
         if (! is_array($stored)) {
             return null; // ไม่มี suggestion ค้าง (หมดอายุ/ไม่เคยเสนอ) → ปล่อยเป็นข้อความปกติ
         }
@@ -3081,7 +3163,8 @@ trait CelticCrossConversationTrait
             return null;
         }
 
-        $stored = cache()->get("celtic:suggq:{$reading->id}");
+        // 🛟 (2026-08-23) อ่านผ่าน loader ที่มี DB fallback — Cache อย่างเดียวโดน deploy ล้างได้
+        $stored = $this->loadCelticSuggestions($reading);
         if (! is_array($stored) || count($stored) < 2) {
             return null; // ไม่มีคำถามแนะนำ ≥ 2 ให้เลือก → ปล่อยให้ re-invite guard จัดการ
         }
@@ -3441,6 +3524,11 @@ trait CelticCrossConversationTrait
             'celtic_summary_image_url' => $composeUrl,
             // ⭐ (2026-06-17) payload ชวนรีวิว (null = ไม่ส่ง) — ChannelManager ส่ง bubble ถัดจากข้อความปิด
             'review_invite' => $reviewInvite,
+            // 🛒 (2026-08-23) linger = "อวยพรหลอก" Pro Session ยังเหลือเวลา ลูกค้าคุยต่อได้
+            //   ⇒ ยังไม่ใช่จุดจบจริง ห้ามเสนอขายของทับ (เหตุผลเดียวกับที่ไม่ชวนรีวิวตอน linger)
+            //   ต้องส่งออกมาเป็นธงแยก ไม่ใช่ให้ ChannelManager เดาจาก review_invite===null
+            //   เพราะรีวิวเป็น null ได้จากอีกหลายเหตุ (ไม่เข้าเงื่อนไข/ยังไม่จ่าย/เคยชวนแล้ว)
+            'is_lingering' => $isLingering,
             // 🗺️ (2026-06-08) แผนที่ดาวชะตา ส่งคู่ภาพไพ่ตอนสรุป (null ถ้าไม่มีวันเกิด)
             'chart_image_url' => $this->buildCelticBirthChartUrl($reading),
             'has_grand_finale' => ! empty($grandFinale),

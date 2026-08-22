@@ -580,12 +580,33 @@ class FortuneStripeService
                     ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
                     : FortuneReading::STATUS_PENDING_PAYMENT;
 
+                // 🇹🇭 (2026-08-23) ตอนสลับมาเลนบัตร เราปิดบิลไทยทิ้งไปแล้ว
+                //    ลิงก์บัตรหมดอายุ = ลูกค้าเหลือ 0 ช่องทาง ทั้งที่บิลยังไม่ถึงกำหนดตาย (3 ชม.)
+                //    → จองยอด QR ไทยใหม่ให้ ไม่งั้นบิลกลายเป็นซาก: สถานะบอก "รอชำระ" แต่จ่ายไม่ได้
+                $upa = $reading->uniquePaymentAmount;
+                $needNewAmount = ! $upa
+                    || $upa->status !== 'reserved'
+                    || $upa->expires_at <= now();
+
+                $reissued = null;
+                if ($needNewAmount) {
+                    try {
+                        $reissued = $reading->reissueThaiQrAmount();
+                    } catch (\Throwable $e) {
+                        Log::warning('FortuneStripeService: จองยอด QR ไทยใหม่ล้มเหลวตอน session expired', [
+                            'reading_id' => $reading->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
                 $reading->update(['conversation_status' => $restoreStatus]);
 
                 Log::info('FortuneStripeService: session expired → คืนสถานะบิลเดิม (เลนต่างประเทศ)', [
                     'reading_id' => $reading->id,
                     'bill' => $reading->bill_reference,
                     'restore_status' => $restoreStatus,
+                    'thai_amount_reissued' => $reissued?->unique_amount,
                 ]);
             } else {
                 $reading->update([

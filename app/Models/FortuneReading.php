@@ -2590,6 +2590,50 @@ class FortuneReading extends Model
     /**
      * ตั้งค่า unique payment amount และเปลี่ยนสถานะเป็นรอชำระ
      */
+    /**
+     * 🌍 (2026-08-23) จองยอด QR ไทยใหม่ให้บิลเดิม — ใช้ตอนกลับจากเลนบัตรต่างประเทศ
+     *
+     * ที่มา: เจ้าของสั่งว่าสลับไปจ่ายบัตรต้อง "ปิดบิลไทย" ก่อน จะได้เหลือรางเดียว
+     * ตรวจง่ายตอนเงินเข้า → UPA เดิมโดน cancel ไปแล้ว ถ้าลูกค้าเปลี่ยนใจกลับมา
+     * ต้องจองยอดใหม่ ไม่งั้นสแกน QR เดิมแล้วเงินเข้าโดยไม่มีบิลรับ
+     *
+     * ⚠️ ห้ามใช้ setPendingPayment() แทน — ตัวนั้น force reading_type='deep'
+     *    + conversation_status=pending_payment ⇒ บิล Celtic 99 จะกลายเป็น Deep 39
+     *
+     * @return UniquePaymentAmount|null null = จองไม่สำเร็จ (caller ต้องจัดการต่อ)
+     */
+    public function reissueThaiQrAmount(): ?UniquePaymentAmount
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        $basePrice = $this->reading_type === self::READING_TYPE_CELTIC_CROSS
+            ? (float) ($settings->celtic_cross_price ?? 99)
+            : (float) ($settings->deep_reading_price ?? 39);
+
+        if ($basePrice <= 0) {
+            return null;
+        }
+
+        $newUpa = UniquePaymentAmount::generate(
+            $basePrice,
+            $this->id,
+            'fortune_reading',
+            self::billTimeoutMinutes()
+        );
+
+        if (! $newUpa) {
+            return null;
+        }
+
+        // อัพเดทเฉพาะ 2 ฟิลด์ที่ผูกกับยอด — ไม่แตะ reading_type / conversation_status
+        $this->update([
+            'unique_payment_amount_id' => $newUpa->id,
+            'amount_paid' => $newUpa->unique_amount,
+        ]);
+
+        return $newUpa;
+    }
+
     public function setPendingPayment(UniquePaymentAmount $uniqueAmount): void
     {
         $updateData = [

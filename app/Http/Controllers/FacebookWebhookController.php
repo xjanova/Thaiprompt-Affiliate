@@ -5824,6 +5824,11 @@ class FacebookWebhookController extends Controller
             'PAY_METHOD_STRIPE' => $this->processConversationalMessage($senderId, 'บัตร'),
             'STRIPE_OPEN_CHECKOUT' => $this->processConversationalMessage($senderId, 'STRIPE_OPEN_CHECKOUT'),
             'STRIPE_RESUME' => $this->processConversationalMessage($senderId, 'STRIPE_RESUME'),
+            // 🌍 (2026-08-23) เลนบัตรต่างประเทศ — แปลง payload เป็น keyword ชัดเจน
+            //   ไม่พึ่ง default pass-through ที่ส่ง payload ดิบเข้า flow (เปราะกับการแก้ชื่อ payload)
+            'PAY_METHOD_STRIPE_FOREIGN' => $this->processConversationalMessage($senderId, 'จ่ายบัตร'),
+            'CARD_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'ยืนยัน จ่ายบัตร'),
+            'CARD_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ใช้ qr ไทยต่อ'),
 
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
