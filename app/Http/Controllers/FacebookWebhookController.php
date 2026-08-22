@@ -1198,10 +1198,7 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * ประมวลผลคอมเมนต์
-     */
-    /**
-     * คอมเมนต์นี้เป็น "ลูกค้าตอบกลับคอมเมนต์ของเรา" หรือเปล่า
+     * มีคนมาตอบใน "เธรดที่บอทคุยอยู่" หรือเปล่า
      *
      * ทำไมต้องรู้:
      * ตั้งแต่เปลี่ยนคำตอบให้ลงท้ายด้วยคำถาม ("เกิดวันอะไรคะ") จะมีคนตอบกลับ
@@ -1209,24 +1206,19 @@ class FacebookWebhookController extends Controller
      * แต่ด่าน `hasEngagedRecently(24h)` จะตัดทิ้งเพราะเพิ่ง engage เขาไปเมื่อกี้
      * ⇒ ถามแล้วเงียบใส่ = แย่กว่าไม่ถามเลย
      *
-     * ⚠️ `parent_id` บอกแค่ว่า "เป็นการตอบกลับ" ไม่ได้บอกว่าตอบกลับใคร
-     *    ต้องถาม Graph ว่าคอมเมนต์แม่เป็นของเพจเราไหม ไม่งั้นจะไปยุ่งกับ
-     *    บทสนทนาระหว่างลูกค้าด้วยกันเอง
-     *
-     * แคชผลต่อ parent_id 6 ชม. — คอมเมนต์แม่ตัวเดียวมีคนตอบได้หลายคน
-     * ยิง Graph ซ้ำทุกคนเปลืองเปล่า
+     * ชื่อเมธอดคงไว้ตามเดิมเพื่อไม่ให้ caller ต้องแก้ แต่ความหมายที่ถูกคือ
+     * "คอมเมนต์นี้อยู่ในเธรดที่บอทเคยตอบไว้" ไม่ใช่ "ตอบกลับบอทโดยตรง"
+     * (เหตุผลอยู่ในตัวเมธอด — Facebook มีคอมเมนต์แค่ 2 ชั้น)
      *
      * @param  array  $comment  payload จาก webhook (`$change['value']`)
-     * @return bool true = ลูกค้ากำลังตอบคอมเมนต์ของเพจเรา
+     * @return bool true = มีคนตอบในเธรดที่บอทคุยอยู่
      */
     protected function isReplyToOurComment(array $comment): bool
     {
         $parentId = $comment['parent_id'] ?? null;
         $postId = $comment['post_id'] ?? null;
-        $pageId = $this->settings->facebook_page_id ?? null;
-        $token = $this->settings->facebook_page_token ?? null;
 
-        if (empty($parentId) || empty($pageId) || empty($token)) {
+        if (empty($parentId)) {
             return false;
         }
 
@@ -1241,60 +1233,35 @@ class FacebookWebhookController extends Controller
         //    ผลคือคนคอมเมนต์ธรรมดาถูกนับเป็น "ตอบคำถามเรา" แล้วข้ามด่าน 24 ชม.
         //    (ยืนยันบน prod: ดึงคอมเมนต์ 4 อันที่ถูกนับ ทุกอันไม่มี `parent` เลย)
         //
-        //    ⚡ ตัวนี้เป็นแค่ **ทางลัดประหยัด Graph call** ไม่ใช่ด่านชี้ขาด
+        //    ⚡ ตัวนี้เป็นแค่ **ทางลัดตัดงานฐานข้อมูล** ไม่ใช่ด่านชี้ขาด
         //       เพราะยังไม่เคยพิสูจน์ว่า parent_id กับ post_id เป็นรูปแบบเดียวกันเป๊ะ
-        //       ถ้ารูปแบบตรง → ตัดคอมเมนต์ระดับบน (ส่วนใหญ่) ออกฟรีตรงนี้เลย
+        //       ถ้ารูปแบบตรง → ตัดคอมเมนต์ระดับบน (ส่วนใหญ่) ออกก่อนโดยไม่ต้องแตะ DB
         //       ถ้าไม่ตรง → หลุดไปให้ด่านชี้ขาดข้างล่างตัดสิน ผลลัพธ์ยังถูกอยู่ดี
+        //       (id ของโพสไม่มีทางไปตรงกับ facebook_comment_id ในตาราง engagement)
         if (! empty($postId) && (string) $parentId === (string) $postId) {
             return false;
         }
 
-        $commentId = $comment['comment_id'] ?? null;
-
-        if (empty($commentId)) {
-            return false;
-        }
-
-        // 🔍 ด่านชี้ขาด — ถาม Graph ที่ "ตัวคอมเมนต์เอง" ว่ามีแม่ไหม และแม่เป็นของใคร
+        // 🧵 ด่านชี้ขาด — "คอมเมนต์แม่ตัวนี้ คือตัวที่บอทเคยเข้าไปตอบไว้หรือเปล่า"
         //
-        //    ทำไมไม่ยิงไปที่ `{parent_id}` ตรงๆ: เพราะต้องเดารูปแบบของ parent_id
-        //    ว่าตรงกับ post_id เป๊ะหรือเปล่า ซึ่ง**ยังไม่เคยพิสูจน์** — ถ้าเดาผิด
-        //    ด่านข้างบนไม่ทำงาน แล้วเราจะไปถามเจ้าของโพส (= เพจเราเอง) ได้ true อีกรอบ
+        //    ⚠️ ห้ามเช็คว่า `parent.from.id === pageId` — ฟังดูตรงไปตรงมาแต่**ไม่มีวันเป็นจริง**
         //
-        //    ถามที่ตัวคอมเมนต์แทน คำตอบไม่ขึ้นกับรูปแบบ id เลย:
-        //      - คอมเมนต์ระดับบน → **ไม่มีคีย์ `parent` เลย**
-        //      - ตอบกลับ         → มี `parent.from.id` ให้เทียบตรงๆ
-        //    (ยืนยันกับของจริงบน prod แล้ว 4 ตัวอย่าง)
+        //    เหตุผล: คอมเมนต์บน Facebook มีแค่ **2 ชั้น** (บนสุด + ลูก)
+        //    บอทตอบลูกค้าด้วย POST /{comment}/comments ⇒ คำตอบบอทเป็น "ลูก" เสมอ
+        //    ไม่เคยเป็นคอมเมนต์บนสุด
+        //    พอลูกค้ากดตอบกลับที่คำตอบของบอท FB ไม่ได้สร้างชั้นที่ 3
+        //    แต่วางเป็นลูกของ **คอมเมนต์บนสุด** ซึ่งเป็นของลูกค้าเอง
+        //    ⇒ parent.from = ลูกค้า ไม่ใช่เพจเรา ตลอดกาล
         //
-        //    🏬 ผูกคีย์แคชกับสาขา — คำถามคือ "แม่เป็นของเพจ **นี้** ไหม"
-        //       คำถามเดียวกันบนคนละสาขาได้คำตอบคนละอย่าง
-        $scope = FortunePageContext::currentId() ?? 'default';
-
-        return Cache::remember(
-            'fcr:is_reply_to_us:'.$scope.':'.md5((string) $commentId),
-            21600,
-            function () use ($commentId, $pageId, $token) {
-                try {
-                    $res = \Illuminate\Support\Facades\Http::timeout(8)
-                        ->get("https://graph.facebook.com/v22.0/{$commentId}", [
-                            'access_token' => $token,
-                            'fields' => 'parent{from}',
-                        ]);
-
-                    if (! $res->successful()) {
-                        return false;
-                    }
-
-                    // ไม่มี parent = คอมเมนต์ระดับบน ไม่ใช่การตอบกลับใคร
-                    return $res->json('parent.from.id') === $pageId;
-                } catch (\Throwable $e) {
-                    // ตัดสินไม่ได้ = ถือว่าไม่ใช่ (ปลอดภัยกว่าเผลอข้ามด่านกันสแปม)
-                    Log::debug('เช็คคอมเมนต์แม่ไม่สำเร็จ (ไม่บล็อก): '.$e->getMessage());
-
-                    return false;
-                }
-            }
-        );
+        //    (ยืนยันกับของจริงบน prod: ดึงลูกของ 6 เธรดที่บอทตอบไป
+        //     ทุกเธรดมีลูกแค่ตัวเดียวคือคำตอบของบอท และไม่มีใครเป็นลูกของบอทเลย)
+        //
+        //    ตัวแยกที่ถูกจึงเป็น "เธรดนี้บอทอยู่ด้วยไหม" ซึ่งเรารู้อยู่แล้วในฐานข้อมูล
+        //    `fortune_comment_engagements.facebook_comment_id` = คอมเมนต์ที่บอทเข้าไปตอบ
+        //    ⇒ ถ้า parent_id ตรงกับแถวใดแถวหนึ่ง = มีคนมาตอบในเธรดที่บอทคุยอยู่
+        //
+        //    ข้อดี: ไม่ต้องยิง Graph เลยสักครั้ง เร็วกว่าและไม่มีโควตาให้กังวล
+        return FortuneCommentEngagement::where('facebook_comment_id', $parentId)->exists();
     }
 
     protected function processComment(array $comment): void
