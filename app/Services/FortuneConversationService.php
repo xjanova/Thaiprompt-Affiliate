@@ -7947,7 +7947,197 @@ class FortuneConversationService
 
         $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
 
-        return $service->isEnabled();
+        // 🌍 (2026-08-23) ตั้งใจใช้ isMenuEnabled() ไม่ใช่ isEnabled()
+        //    isEnabled() ตอนนี้รวมเลนต่างประเทศด้วย — ถ้าเอามาขับ getActivePaymentMode()
+        //    ลูกค้าไทยทุกคนจะโดนเมนู 2 ปุ่มเพิ่มขึ้นมาโดยไม่ตั้งใจ
+        return $service->isMenuEnabled();
+    }
+
+    /**
+     * 🌍 (2026-08-23) เลนบัตรสำหรับลูกค้าต่างประเทศพร้อมใช้ไหม
+     *
+     * ต่างจาก isStripePaymentAvailable():
+     *   - ตัวนั้น = เมนูเลือกวิธีจ่าย (โผล่กับลูกค้าทุกคนก่อนสร้างบิล)
+     *   - ตัวนี้ = เลนสำรอง โผล่เฉพาะตอนลูกค้าบอกเองว่าอยู่ต่างประเทศ/ไม่มีพร้อมเพย์/ขอจ่ายบัตร
+     */
+    protected function isStripeForeignFallbackAvailable(): bool
+    {
+        if (! $this->settings) {
+            return false;
+        }
+
+        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+
+        return $service->isForeignFallbackEnabled();
+    }
+
+    /**
+     * 🌍 (2026-08-23) เปิดลิงก์จ่ายบัตรให้บิล "ที่สร้างไว้แล้ว" (เลนต่างประเทศ)
+     *
+     * ต่างจาก startStripePaymentFlow() ตรงที่ **ห้ามสร้างบิลใหม่เด็ดขาด**:
+     *   startStripePaymentFlow() ตอนสร้าง session ไม่สำเร็จจะ fallback ไป createPaymentBill()
+     *   ซึ่งกับบิล Celtic ที่ค้างอยู่แล้ว = ได้บิล Deep 39 ใบใหม่ทับของเดิม (ราคาผิด + บิลซ้อน)
+     *
+     * ที่นี่: สร้าง session ไม่ได้ → คงบิลเดิม + สถานะเดิมไว้ครบ แล้วบอกลูกค้าให้ใช้ QR ต่อ
+     *
+     * ⚠️ UPA (ยอดทศนิยม QR ไทย) **ไม่แตะ** — ปล่อย reserved ไว้ตามเดิม
+     *    ลูกค้าที่เปลี่ยนใจกลับไปสแกน QR ยังจ่ายได้ และฝั่ง Stripe มี first-write-wins guard
+     *    กันตัดซ้ำอยู่แล้ว (ดู FortuneStripeService::onSessionCompleted)
+     */
+    protected function startStripeForeignFallback(FortuneReading $reading, string $prefixMessage = ''): array
+    {
+        // สถานะเดิมของบิล — ไว้คืนกลับถ้าลูกค้าเปลี่ยนใจไปใช้ QR
+        $prevStatus = $reading->conversation_status;
+
+        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+        $result = $service->createCheckoutSession($reading, 'foreign');
+
+        if (! ($result['success'] ?? false)) {
+            Log::warning('Fortune: Stripe foreign-fallback creation failed — คงบิลเดิมไว้', [
+                'reading_id' => $reading->id,
+                'bill' => $reading->bill_reference,
+                'prev_status' => $prevStatus,
+                'error' => $result['error'] ?? 'unknown',
+            ]);
+
+            return [
+                'action' => 'stripe_foreign_fallback_failed',
+                'message' => $prefixMessage
+                    ."⚠️ ระบบบัตรเครดิตขัดข้องชั่วคราวค่ะ\n\n"
+                    ."บิลเดิมยังใช้ได้อยู่ — สแกน QR ที่แม่หมอส่งให้ได้เลย\n"
+                    .'หรือลองพิมพ์ "จ่ายบัตร" อีกครั้งใน 2-3 นาที 🙏',
+                'reading' => $reading,
+            ];
+        }
+
+        $reading->update([
+            'conversation_status' => FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
+        ]);
+
+        $amounts = $result['amounts'];
+        $totalThb = $amounts['total'];
+        $baseThb = $amounts['base'];
+        $feeThb = $amounts['fee'];
+        $expiryMinutes = max(30, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
+
+        Log::info('Fortune: Stripe foreign-fallback link ส่งให้ลูกค้าแล้ว', [
+            'reading_id' => $reading->id,
+            'bill' => $reading->bill_reference,
+            'prev_status' => $prevStatus,
+            'total_thb' => $totalThb,
+        ]);
+
+        $message = $prefixMessage
+            ."💳 ชำระด้วยบัตรเครดิต/เดบิต — จ่ายได้จากทุกประเทศค่ะ\n\n"
+            ."✅ Visa, Mastercard, AmEx, JCB\n"
+            ."✅ Apple Pay, Google Pay\n"
+            ."🔒 ปลอดภัยด้วย Stripe SSL + 3D Secure\n\n"
+            ."💰 ยอดรวม: {$totalThb} บาท ({$baseThb} + ค่าบริการ {$feeThb})\n"
+            ."⏰ ลิงก์มีอายุ {$expiryMinutes} นาที\n\n"
+            ."👇 กดลิงก์ด้านล่างเพื่อชำระเงิน:\n"
+            .$result['url'];
+
+        // 🔘 ปุ่มไม่ต้องส่งมาเอง — arm 'pending_stripe_payment' ใน FortuneChannelManager
+        //    ฮาร์ดโค้ดปุ่มของตัวเองอยู่แล้ว (💳 จ่ายต่อ / ↩️ ใช้ QR Thai) และ **ไม่อ่าน**
+        //    $result['quick_replies'] เลย — ใส่มาก็เป็นโค้ดตายที่ทำให้เข้าใจผิดว่าต่อสายแล้ว
+        //    ปุ่ม "↩️ ใช้ QR Thai" ส่ง PAY_METHOD_QR_THAI → ตกด่าน returnFromStripeForeignFallback()
+        return [
+            'action' => 'pending_stripe_payment',
+            'message' => $message,
+            'reading' => $reading->fresh(),
+            'stripe_checkout_url' => $result['url'],
+        ];
+    }
+
+    /**
+     * 🌍 (2026-08-23) ลูกค้าเปลี่ยนใจกลับไปจ่าย QR ไทย หลังเข้าเลนบัตรต่างประเทศ
+     *
+     * ⚠️ ห้ามส่งกลับไป askPaymentMethod()/handlePaymentMethodSelection() เด็ดขาด
+     *    เลนต่างประเทศใช้ตอน "เมนูปิด" (enable_stripe_payment=false) → mode = sms_only
+     *    สองตัวนั้นจะไหลไป createPaymentBill() = ออกบิลใบใหม่ทับของเดิม
+     *    (บิล Celtic 99 กลายเป็น Deep 39 + UPA ซ้อน 2 ใบ)
+     *
+     * ที่ถูกคือ: expire session บัตร แล้วคืนสถานะบิลเดิม + ส่งช่องทาง QR เดิมให้ใหม่
+     */
+    protected function returnFromStripeForeignFallback(FortuneReading $reading): array
+    {
+        // ปิดลิงก์บัตรก่อน — กันลูกค้าจ่ายทั้งบัตรและ QR
+        if ($reading->stripe_session_id && ! $reading->is_paid) {
+            try {
+                $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+                $service->expireSession($reading->stripe_session_id);
+            } catch (\Throwable $e) {
+                Log::debug('Fortune: expire Stripe session ตอนกลับไป QR ล้มเหลว (ไม่บล็อก)', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // คืนสถานะเดิมของบิลตามชนิดแพ็กเกจ
+        $restoreStatus = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
+            : FortuneReading::STATUS_PENDING_PAYMENT;
+
+        $reading->update(['conversation_status' => $restoreStatus]);
+
+        Log::info('Fortune: กลับจากเลนบัตรต่างประเทศ → คืนสถานะบิลเดิม', [
+            'reading_id' => $reading->id,
+            'bill' => $reading->bill_reference,
+            'restore_status' => $restoreStatus,
+        ]);
+
+        $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
+        $info = $this->presentPaymentInfo($userId);
+
+        // เติมยอดทศนิยมของบิลเดิม — ตัวจับ SMS ใช้ยอดนี้ ต้องโอนตรงเป๊ะ
+        $upa = $reading->uniquePaymentAmount;
+        if ($upa && $upa->status === 'reserved' && $upa->expires_at > now()) {
+            $exact = number_format((float) $upa->unique_amount, 2);
+            $info['message'] = "↩️ กลับมาที่ QR ไทยแล้วค่ะ\n\n"
+                ."💰 ยอดที่ต้องโอน: *{$exact} บาท* (ตรงเป๊ะทุกทศนิยมนะคะ)\n"
+                ."📋 บิล: {$reading->bill_reference}\n\n"
+                .$info['message'];
+        } else {
+            $info['message'] = "↩️ กลับมาที่ QR ไทยแล้วค่ะ\n\n".$info['message'];
+        }
+
+        $info['reading'] = $reading->fresh();
+
+        return $info;
+    }
+
+    /**
+     * 🌍 (2026-08-23) ลูกค้าขอ "จ่ายบัตร" ระหว่างบิลค้างอยู่หรือเปล่า
+     *
+     * ใช้ในสถานะ pending_payment / celtic_pending_payment เท่านั้น —
+     * บิลสร้างแล้ว เมนูเลือกวิธีจ่ายผ่านไปแล้ว ต้องมีทางกลับเข้าเลนบัตร
+     *
+     * ⚠️ ห้ามใส่คำกว้างอย่าง "จ่าย"/"โอน" — ลูกค้าไทยพิมพ์ว่า "จ่ายแล้ว" ทั้งวัน
+     *    จะกลายเป็นดึงคนไทยเข้าเลนบัตร +15 บาทโดยไม่ตั้งใจ
+     */
+    protected function looksLikeCardPaymentRequest(string $messageText): bool
+    {
+        $text = mb_strtolower(trim($messageText));
+        if ($text === '' || mb_strlen($text) > 120) {
+            return false;
+        }
+
+        $kw = [
+            'จ่ายบัตร', 'จ่ายด้วยบัตร', 'ชำระด้วยบัตร', 'บัตรเครดิต', 'บัตรเดบิต',
+            'ขอจ่ายบัตร', 'ใช้บัตร', 'รูดบัตร', 'จ่ายผ่านบัตร', 'ชำระผ่านบัตร',
+            'pay_method_stripe', 'stripe',
+            'credit card', 'debit card', 'pay by card', 'pay with card',
+            'ບັດເຄຼດິດ', 'ຈ່າຍບັດ',
+        ];
+
+        foreach ($kw as $k) {
+            if (str_contains($text, mb_strtolower($k))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -8407,6 +8597,11 @@ class FortuneConversationService
         if (str_contains($clean, 'ยกเลิก') || str_contains($clean, 'cancel')
             || str_contains($clean, 'qr') || str_contains($clean, 'pay_method_qr_thai')
             || str_contains($clean, 'ไทย')) {
+            // 🌍 (2026-08-23) เข้ามาทางเลนต่างประเทศ (เมนูปิด) → คืนบิลเดิม ห้ามเข้าเมนู
+            if (! $this->isStripePaymentAvailable() && ! empty($reading->bill_reference)) {
+                return $this->returnFromStripeForeignFallback($reading);
+            }
+
             if ($mode === 'stripe_only') {
                 // Stripe-only mode — ไม่มี QR ให้กลับ → reminder ลิงก์ Stripe
                 Log::info('Fortune: customer ขอ QR แต่ Stripe-only mode — reminder Stripe link', [
@@ -8431,6 +8626,13 @@ class FortuneConversationService
             Log::warning('Fortune: PENDING_STRIPE_PAYMENT แต่ไม่มี session_id — revert ให้เลือกใหม่', [
                 'reading_id' => $reading->id,
             ]);
+
+            // 🌍 (2026-08-23) เลนต่างประเทศ (เมนูปิด) → คืนบิลเดิม
+            //    askPaymentMethod() ตอน mode=sms_only จะไหลไป createPaymentBill = บิลใหม่ทับของเดิม
+            if (! $this->isStripePaymentAvailable() && ! empty($reading->bill_reference)) {
+                return $this->returnFromStripeForeignFallback($reading);
+            }
+
             $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD]);
 
             return $this->askPaymentMethod($reading, "🔮 ระบบเตรียมไม่ทัน กรุณาเลือกวิธีชำระอีกครั้งค่ะ\n\n");
@@ -8562,6 +8764,17 @@ class FortuneConversationService
         // 💚 (2026-05-16) ลูกค้ารอจ่ายแต่ถามหา LINE → ตอบ URL ทันที ไม่ปิดบิล
         if ($lineInfo = $this->maybePresentLineAddFriend($messageText)) {
             return $lineInfo;
+        }
+
+        // 🌍 (2026-08-23) ลูกค้าต่างประเทศขอจ่ายบัตร ระหว่างบิล Deep ค้างอยู่
+        //   ต้องอยู่ **ก่อน** maybePresentPaymentInfo — ไม่งั้นโดนกล่อง "เลขบัญชี/QR" กลืนไปก่อน
+        if ($this->looksLikeCardPaymentRequest($messageText)
+            && $this->isStripeForeignFallbackAvailable()) {
+            // 🛡️ จ่าย QR ไปแล้วระหว่างพิมพ์ → ห้ามเปิดลิงก์บัตรซ้ำ
+            $reading->refresh();
+            if (! $reading->is_paid) {
+                return $this->startStripeForeignFallback($reading);
+            }
         }
 
         // 💳 (2026-05-14) ลูกค้ารอจ่ายแต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
@@ -17382,6 +17595,50 @@ class FortuneConversationService
             'text_preview' => mb_substr($messageText, 0, 60),
         ]);
 
+        // 🌍 (2026-08-23) เลนบัตรต่างประเทศ — ที่มา: บิล FTU-260822-U7900
+        //   เดิมกล่องนี้ตอบแค่ "ใช้พร้อมเพย์ข้ามประเทศสิ" แล้ว return ทันที (บรรทัด ~5601)
+        //   ลูกค้าที่ธนาคารตัวเองไม่รองรับ cross-border QR จึงตันตรงนี้ 100%
+        //   ทั้งที่ Stripe สร้างไว้ครบและคีย์ live ใช้ได้ — แค่ไม่เคยมีเส้นทางพามาถึง
+        if ($this->isStripeForeignFallbackAvailable()) {
+            $hasOpenBill = $reading
+                && ! $reading->is_paid
+                && in_array($reading->conversation_status, [
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                ], true);
+
+            if ($hasOpenBill) {
+                $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+                $cardAmounts = $service->calculateAmounts($reading, 'foreign');
+
+                $message .= "\n\n━━━━━━━━━━━━━━━\n"
+                    ."💳 *หรือจ่ายด้วยบัตรเครดิต/เดบิตก็ได้ค่ะ* — ใช้ได้ทุกประเทศ\n"
+                    ."   ✦ Visa / Mastercard / AmEx / JCB / Apple Pay / Google Pay\n"
+                    ."   ✦ ยอด {$cardAmounts['total']} บาท ({$cardAmounts['base']} + ค่าบริการ {$cardAmounts['fee']})\n"
+                    .'   ✦ พิมพ์ *"จ่ายบัตร"* แม่หมอจะส่งลิงก์ให้ทันที ✨';
+
+                Log::info('Fortune: intl nudge → เสนอเลนบัตรต่างประเทศ (มีบิลค้าง)', [
+                    'reading_id' => $reading->id,
+                    'bill' => $reading->bill_reference,
+                    'card_total' => $cardAmounts['total'],
+                ]);
+
+                return [
+                    'action' => 'international_payment_info',
+                    'message' => $message,
+                    'reading' => $reading,
+                    'show_quick_replies' => true,
+                    'quick_replies' => [
+                        ['label' => '💳 จ่ายบัตร', 'text' => 'จ่ายบัตร', 'payload' => 'PAY_METHOD_STRIPE_FOREIGN'],
+                    ],
+                ];
+            }
+
+            // ยังไม่มีบิล — บอกไว้ก่อนว่ามีทางเลือกบัตร (ตัวจับคำอยู่ที่ handler ตอนบิลค้าง)
+            $message .= "\n\n💳 ถ้าโอนไม่ได้จริงๆ แม่หมอรับ *บัตรเครดิต/เดบิต* ได้ค่ะ — "
+                .'พอบิลมาถึงแล้วพิมพ์ *"จ่ายบัตร"* ได้เลย ✨';
+        }
+
         return [
             'action' => 'international_payment_info',
             'message' => $message,
@@ -18054,7 +18311,9 @@ class FortuneConversationService
                 Cache::forget($cacheKey);
 
                 // ตรวจสอบว่า Stripe เปิดอยู่ไหม
-                $stripeEnabled = (bool) ($this->settings->enable_stripe_payment ?? false);
+                //   🌍 (2026-08-23) เช็คผ่านเลนต่างประเทศ ไม่ใช่ enable_stripe_payment ดิบๆ
+                //      เดิมอ่านสวิตช์เมนูตรงๆ → เปิดเลนต่างประเทศแล้วยังตอบ "ยังไม่เปิดใช้งาน" อยู่ดี
+                $stripeEnabled = $this->isStripeForeignFallbackAvailable();
                 if (! $stripeEnabled) {
                     return [
                         'action' => 'cancel_dialog_continue',
@@ -18066,8 +18325,19 @@ class FortuneConversationService
                 // เรียก Stripe flow — สร้าง Checkout Session + ส่งลิงก์
                 //   ⚠️ (2026-05-22) USE_STRIPE trigger หลักๆ มาจากกรณี "ลูกค้าต่างประเทศ" — default tier=foreign
                 //                    (Thai customer สามารถใช้ บัตรในไทย ตอน askPaymentMethod ปกติได้อยู่แล้ว)
+                //   🌍 (2026-08-23) บิลออกแล้ว (pending/celtic_pending) → ใช้เลน fallback ที่ห้ามสร้างบิลใหม่
+                //      startStripePaymentFlow() ตอนพลาดจะ createPaymentBill() = บิลซ้อน
                 try {
-                    $stripeResult = $this->startStripePaymentFlow($reading, 'foreign');
+                    $hasOpenBill = ! $reading->is_paid
+                        && ! empty($reading->bill_reference)
+                        && in_array($reading->conversation_status, [
+                            FortuneReading::STATUS_PENDING_PAYMENT,
+                            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                        ], true);
+
+                    $stripeResult = $hasOpenBill
+                        ? $this->startStripeForeignFallback($reading)
+                        : $this->startStripePaymentFlow($reading, 'foreign');
                     if (! empty($cleanMessage) && ! empty($stripeResult['message'])) {
                         $stripeResult['message'] = $cleanMessage."\n\n".$stripeResult['message'];
                     }
@@ -18145,7 +18415,9 @@ class FortuneConversationService
         $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
         $bill = $reading->bill_reference ?? '-';
         $reasonsText = empty($pastReasons) ? '(เพิ่งเริ่มสนทนา)' : implode("\n", $pastReasons);
-        $stripeEnabled = (bool) ($this->settings->enable_stripe_payment ?? false);
+        // 🌍 (2026-08-23) ต้องตรงกับด่านที่ handle tag USE_STRIPE ด้านล่าง
+        //   ถ้าตัวนี้ false แต่ด่านนั้น true → prompt ไม่มี [USE_STRIPE] ให้เลือก = AI ไม่มีวันยิง tag นี้
+        $stripeEnabled = $this->isStripeForeignFallbackAvailable();
 
         // 💰 (2026-07-30 FTU-260730-M8468) ยอดค่าครูจริงของบิลนี้ — ต้องฉีดเข้า prompt เสมอ
         //   เคสจริง: prompt เดิมมีแต่ชื่อ+เลขบิล ไม่มียอด → ลูกค้าถามราคาระหว่าง cancel dialogue

@@ -64,9 +64,13 @@ class FortuneStripeTest extends Command
             $mode = 'none (admin misconfig — fallback SMS)';
         }
 
+        // 🌍 (2026-08-23) เลนบัตรต่างประเทศ — แยกจากเมนู
+        $foreignLane = (bool) ($settings->enable_stripe_foreign_fallback ?? false);
+
         $this->table(['Field', 'Value'], [
             ['Payment Mode', $mode],
-            ['enable_stripe_payment', $enable ? '✅ ON' : '⛔ OFF'],
+            ['enable_stripe_payment (เมนูให้ทุกคน)', $enable ? '✅ ON' : '⛔ OFF'],
+            ['enable_stripe_foreign_fallback (เลนต่างประเทศ)', $foreignLane ? '✅ ON' : '⛔ OFF'],
             ['enable_sms_payment', $enableSms ? '✅ ON' : '⛔ OFF'],
             ['stripe_secret_key', $this->maskKey($sk, 'sk_')],
             ['stripe_publishable_key', $this->maskKey($pk, 'pk_')],
@@ -289,10 +293,18 @@ class FortuneStripeTest extends Command
         $this->info('═══════════════════════════════════════');
         $this->info('✅ Test complete');
 
-        if (! $enable) {
+        // 🌍 (2026-08-23) แยกคำเตือน 2 เลน — ปิดทั้งคู่ = Stripe ตายสนิท
+        if (! $enable && ! $foreignLane) {
             $this->newLine();
-            $this->warn('⚠️  enable_stripe_payment = OFF — keys ใช้ได้แต่ AI ยังไม่ offer Stripe');
-            $this->info('💡 เปิดที่ /admin/fortune/settings → toggle "enable_stripe_payment"');
+            $this->warn('⚠️  ปิดทั้ง 2 เลน — keys ใช้ได้แต่ไม่มีเส้นทางไหนพาลูกค้าไป Stripe เลย');
+            $this->info('💡 ลูกค้าต่างประเทศจ่ายไม่ได้ → เปิด "enable_stripe_foreign_fallback"');
+            $this->info('   (เลนสำรอง ไม่กระทบ funnel ไทย — ลูกค้าไทยยังเจอ QR ตรงๆ เหมือนเดิม)');
+            $this->info('💡 อยากให้ทุกคนเลือกเองก่อนสร้างบิล → เปิด "enable_stripe_payment"');
+            $this->info('   ตั้งค่าที่ /admin/fortune/settings → section "วิธีรับชำระเงิน"');
+        } elseif (! $enable && $foreignLane) {
+            $this->newLine();
+            $this->info('🌍 เลนต่างประเทศเปิดอยู่ — ลูกค้าไทยเจอ QR ตรงๆ เหมือนเดิม (ไม่มีเมนูเพิ่ม)');
+            $this->info('   ลิงก์บัตรจะออกเมื่อลูกค้าบอกว่าอยู่ต่างประเทศ / ไม่มีพร้อมเพย์ / พิมพ์ "จ่ายบัตร"');
         }
 
         return self::SUCCESS;

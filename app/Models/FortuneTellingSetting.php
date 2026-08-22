@@ -386,6 +386,8 @@ class FortuneTellingSetting extends Model
         'sensitive_ai_pool_key_id',
         // 💳 (2026-05-09) Stripe Checkout — บัตรต่างประเทศ
         'enable_stripe_payment',
+        // 🌍 (2026-08-23) เลนบัตรเฉพาะลูกค้าต่างประเทศ — ไม่โผล่เมนูให้ลูกค้าไทย
+        'enable_stripe_foreign_fallback',
         // 💳 (2026-05-22) SMS/QR ไทย toggle — เปิดได้ทั้ง 3 โหมด
         'enable_sms_payment',
         'stripe_service_fee',
@@ -651,6 +653,8 @@ class FortuneTellingSetting extends Model
         'google_tts_speaking_rate' => 'decimal:2',
         // 💳 (2026-05-09) Stripe Checkout
         'enable_stripe_payment' => 'boolean',
+        // 🌍 (2026-08-23) เลนบัตรเฉพาะลูกค้าต่างประเทศ
+        'enable_stripe_foreign_fallback' => 'boolean',
         // 💳 (2026-05-22) SMS/QR Thai toggle
         'enable_sms_payment' => 'boolean',
         'stripe_service_fee' => 'decimal:2',
@@ -914,6 +918,8 @@ class FortuneTellingSetting extends Model
         'review_invite_enabled' => false,
         // 💳 (2026-05-09) Stripe Checkout — ค่าเริ่มต้น (admin เปิด + ใส่ key ก่อนใช้)
         'enable_stripe_payment' => false,
+        // 🌍 (2026-08-23) เลนบัตรต่างประเทศ — default ปิด (admin เปิดเอง)
+        'enable_stripe_foreign_fallback' => false,
         'stripe_service_fee' => 15.00,
         'stripe_session_expiry_minutes' => 30,
         'stripe_test_mode' => true,

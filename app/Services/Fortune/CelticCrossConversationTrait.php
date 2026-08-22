@@ -1073,6 +1073,22 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticPendingPayment(FortuneReading $reading, string $messageText): array
     {
+        // 🌍 (2026-08-23) ลูกค้าต่างประเทศขอจ่ายบัตร ระหว่างบิล Celtic ค้างอยู่
+        //   ต้องอยู่ **ก่อน** maybePresentPaymentInfo — ไม่งั้นโดนกล่อง "เลขบัญชี/QR" กลืนไปก่อน
+        //   เคสที่มา: บิล FTU-260822-U7900 — เมนูเลือกวิธีจ่ายทำงานก่อนสร้างบิลเท่านั้น
+        //   พอบิลเกิดแล้วไม่มีทางกลับเข้าเลนบัตรเลย
+        if (method_exists($this, 'looksLikeCardPaymentRequest')
+            && method_exists($this, 'isStripeForeignFallbackAvailable')
+            && method_exists($this, 'startStripeForeignFallback')
+            && $this->looksLikeCardPaymentRequest($messageText)
+            && $this->isStripeForeignFallbackAvailable()) {
+            // 🛡️ จ่าย QR ไปแล้วระหว่างพิมพ์ → ห้ามเปิดลิงก์บัตรซ้ำ
+            $reading->refresh();
+            if (! $reading->is_paid) {
+                return $this->startStripeForeignFallback($reading);
+            }
+        }
+
         // 💳 (2026-05-14) ลูกค้ารอจ่าย Celtic แต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
         if (method_exists($this, 'maybePresentPaymentInfo')) {
             if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {

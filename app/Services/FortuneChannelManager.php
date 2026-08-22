@@ -952,6 +952,14 @@ class FortuneChannelManager
                     return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
+                // 🌍 (2026-08-23) ลูกค้าต่างประเทศถามเรื่องโอน — แนบปุ่ม "จ่ายบัตร" ถ้าเลนบัตรเปิด
+                //   ⚠️ ก่อนหน้านี้ตกไป default => sendMessage() = quick_replies ถูกทิ้งเงียบ
+                //   ปุ่มสำคัญมากกับเคสนี้: ลูกค้าต่างชาติหลายคน **พิมพ์ไทยไม่ได้**
+                //   บอกให้ "พิมพ์ว่า จ่ายบัตร" เฉยๆ = ทางตันสำหรับคนที่ไม่มีคีย์บอร์ดไทย
+                'international_payment_info' => ! empty($result['quick_replies'])
+                    ? $fbService->sendQuickReplies($userId, $message, $result['quick_replies'], $extra)
+                    : $fbService->sendMessage($userId, $message, $extra),
+
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + ข้อความทำนาย + Quick Reply [39][99][ไม่สนใจ]
                 'free_card_drawn' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // 1. ส่งภาพไพ่ก่อน (ถ้ามี)
@@ -2690,6 +2698,24 @@ class FortuneChannelManager
                     }
 
                     return $lineService->sendMessage($userId, $message);
+                })(),
+
+                // 🌍 (2026-08-23) ลูกค้าต่างประเทศถามเรื่องโอน (LINE) — แนบปุ่ม "จ่ายบัตร"
+                //   ปุ่มจำเป็นจริง: ลูกค้าต่างชาติหลายคนพิมพ์ไทยไม่ได้ ถ้าไม่มีปุ่มก็ตัน
+                'international_payment_info' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $lineQr = [];
+                    foreach (($result['quick_replies'] ?? []) as $b) {
+                        $lineQr[] = [
+                            'label' => mb_substr($b['label'] ?? ($b['title'] ?? ''), 0, 20),
+                            'text' => $b['text'] ?? ($b['label'] ?? ($b['title'] ?? '')),
+                        ];
+                    }
+
+                    if (empty($lineQr)) {
+                        return $lineService->sendMessage($userId, $message);
+                    }
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
                 })(),
 
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + คำทำนาย + Quick Reply [39][99][ไม่สนใจ]

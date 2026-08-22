@@ -5,16 +5,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Models\Order;
 use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Models\VendorStore;
-use App\Models\FortuneTellingSetting;
 use App\Services\FcmNotificationService;
 use App\Services\FortuneChannelManager;
-use App\Services\FortuneConversationService;
 use App\Services\Payment\PaymentService;
 use App\Services\SmsPaymentService;
 use Illuminate\Http\JsonResponse;
@@ -418,7 +417,7 @@ class SmsPaymentController extends Controller
             $platformId = $reading->platform_user_id ?? $reading->facebook_user_id;
             if (! empty($platformId)) {
                 $platformLabel = strtoupper($reading->platform ?? 'FB');
-                $customerName = $platformLabel . '-' . substr($platformId, -6);
+                $customerName = $platformLabel.'-'.substr($platformId, -6);
             }
         }
         if (empty($customerName)) {
@@ -771,7 +770,7 @@ class SmsPaymentController extends Controller
             Log::info('FCM Register (via registerDevice): ได้รับ FCM token', [
                 'device_id' => $incomingDeviceId ?? $device->device_id,
                 'token_length' => strlen($fcmToken),
-                'token_prefix' => substr($fcmToken, 0, 20) . '...',
+                'token_prefix' => substr($fcmToken, 0, 20).'...',
                 'ip' => $request->ip(),
             ]);
         }
@@ -825,7 +824,7 @@ class SmsPaymentController extends Controller
         Log::info('FCM Register: ได้รับ FCM token จากแอพ', [
             'device_id' => $device->device_id,
             'token_length' => strlen($fcmToken),
-            'token_prefix' => substr($fcmToken, 0, 20) . '...',
+            'token_prefix' => substr($fcmToken, 0, 20).'...',
             'ip' => $request->ip(),
         ]);
 
@@ -1273,14 +1272,14 @@ class SmsPaymentController extends Controller
                         $name = $model->facebook_user_name ?? 'คุณ';
                         $thankMsg = \App\Services\FortuneLocaleService::lo(
                             "✅ *ระบบรับการชำระเงินแล้วค่ะ คุณ{$name}* 🙏\n\n"
-                                . "📋 บิล: {$model->bill_reference}\n"
-                                . "💰 ยอด: ฿" . number_format($model->amount_paid, 2) . "\n\n"
-                                . "ขอบคุณที่ไว้วางใจแม่หมอจันทรานะคะ ✨\n"
-                                . "หวังว่าคำทำนายจะเป็นประโยชน์กับเจ้าชะตา 🙏",
+                                ."📋 บิล: {$model->bill_reference}\n"
+                                .'💰 ยอด: ฿'.number_format($model->amount_paid, 2)."\n\n"
+                                ."ขอบคุณที่ไว้วางใจแม่หมอจันทรานะคะ ✨\n"
+                                .'หวังว่าคำทำนายจะเป็นประโยชน์กับเจ้าชะตา 🙏',
                             "✅ *ລະບົບຮັບການຊຳລະເງິນແລ້ວເດີ ເຈົ້າ{$name}* 🙏\n\n"
-                                . "📋 ບິນ: {$model->bill_reference}\n"
-                                . "💰 ຍອດ: ฿" . number_format($model->amount_paid, 2) . "\n\n"
-                                . "ຂອບໃຈທີ່ໄວ້ວາງໃຈແມ່ໝໍຈັນທະຣາເດີ ✨"
+                                ."📋 ບິນ: {$model->bill_reference}\n"
+                                .'💰 ຍອດ: ฿'.number_format($model->amount_paid, 2)."\n\n"
+                                .'ຂອບໃຈທີ່ໄວ້ວາງໃຈແມ່ໝໍຈັນທະຣາເດີ ✨'
                         );
 
                         $settings = FortuneTellingSetting::getSettings();
@@ -1977,6 +1976,8 @@ class SmsPaymentController extends Controller
                 ->whereIn('conversation_status', [
                     FortuneReading::STATUS_PENDING_PAYMENT,
                     FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                    // 🌍 (2026-08-23) เลนบัตรต่างประเทศ — บิลยังรอชำระอยู่ แอดมินต้องเห็นในแอพ
+                    FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
                     FortuneReading::STATUS_PAID,
                     // 🔮 Celtic statuses (post-payment) — sync ให้ SMS app เห็นการเปลี่ยน status
                     FortuneReading::STATUS_CELTIC_PICKING,
@@ -2301,6 +2302,10 @@ class SmsPaymentController extends Controller
                     ->where('is_paid', false)
                     ->whereIn('conversation_status', [
                         FortuneReading::STATUS_PENDING_PAYMENT,
+                        // 🔮 (2026-08-23) Celtic 99 ตกหล่นมาตลอด — grace path หาบิล 99 ไม่เจอ
+                        FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                        // 🌍 (2026-08-23) เลนบัตรต่างประเทศ — ยอด QR ยังจองอยู่ ลูกค้ากลับมาสแกนได้
+                        FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
                         FortuneReading::STATUS_COMPLETED,
                     ])
                     ->first();
@@ -2708,7 +2713,7 @@ class SmsPaymentController extends Controller
                 ->whereNull('matched_transaction_id')
                 ->where(function ($q) use ($txn_created) {
                     $q->where('sms_timestamp', '>=', $txn_created)
-                      ->orWhere('created_at', '>=', $txn_created);
+                        ->orWhere('created_at', '>=', $txn_created);
                 })
                 ->orderBy('sms_timestamp', 'asc')
                 ->first();
@@ -2936,7 +2941,7 @@ class SmsPaymentController extends Controller
                 ->where(function ($q) use ($reading_created) {
                     // 🔒 SMS ต้องมาหลัง bill ถูกสร้าง
                     $q->where('sms_timestamp', '>=', $reading_created)
-                      ->orWhere('created_at', '>=', $reading_created);
+                        ->orWhere('created_at', '>=', $reading_created);
                 })
                 ->orderBy('sms_timestamp', 'asc')
                 ->first();
@@ -3277,6 +3282,7 @@ class SmsPaymentController extends Controller
         $payload = array_map(function ($c) {
             /** @var FortuneReading $r */
             $r = $c['reading'];
+
             return [
                 'bill_reference' => $r->bill_reference,
                 'reading_id' => $r->id,

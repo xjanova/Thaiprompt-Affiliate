@@ -48,22 +48,63 @@ class FortuneStripeService
     }
 
     /**
-     * เปิดใช้งาน Stripe หรือเปล่า
+     * 🔑 มีคีย์ครบพอจะยิง Stripe API ไหม (ไม่สนสวิตช์)
+     *
+     * ต้องมี secret key + webhook secret — publishable key ไม่จำเป็น (ใช้ Checkout hosted)
      */
-    public function isEnabled(): bool
+    protected function hasKeys(): bool
     {
         if (! $this->settings) {
             return false;
         }
-        if (! $this->settings->enable_stripe_payment) {
-            return false;
-        }
-        // ต้องมี secret key + webhook secret
-        if (empty($this->settings->stripe_secret_key) || empty($this->settings->stripe_webhook_secret)) {
+
+        return ! empty($this->settings->stripe_secret_key)
+            && ! empty($this->settings->stripe_webhook_secret);
+    }
+
+    /**
+     * 💳 เลน "เมนูเลือกวิธีจ่าย" เปิดอยู่ไหม (สวิตช์ enable_stripe_payment)
+     *
+     * เปิด = ลูกค้า **ทุกคน** รวมคนไทยจะเจอเมนู 2 ปุ่ม (QR ไทย / บัตร) ก่อนสร้างบิล
+     * ตัวนี้เท่านั้นที่ขับ getActivePaymentMode() — อย่าเอาเลนต่างประเทศมาปน
+     */
+    public function isMenuEnabled(): bool
+    {
+        return $this->hasKeys() && (bool) ($this->settings->enable_stripe_payment ?? false);
+    }
+
+    /**
+     * 🌍 (2026-08-23) เลน "บัตรสำหรับลูกค้าต่างประเทศ" เปิดอยู่ไหม
+     *
+     * เปิด = ยื่นบัตรให้เฉพาะตอนลูกค้าบอกเองว่าอยู่ต่างประเทศ / ไม่มีพร้อมเพย์ / ขอจ่ายบัตร
+     * funnel ไทยไม่กระทบ (ไม่มีเมนูเพิ่ม ไม่มีสเตปเพิ่ม)
+     *
+     * เปิด enable_stripe_payment ก็ถือว่าเลนนี้เปิดด้วย (superset — เมนูเปิดแล้วบัตรย่อมใช้ได้)
+     */
+    public function isForeignFallbackEnabled(): bool
+    {
+        if (! $this->hasKeys()) {
             return false;
         }
 
-        return true;
+        return (bool) ($this->settings->enable_stripe_foreign_fallback ?? false)
+            || (bool) ($this->settings->enable_stripe_payment ?? false);
+    }
+
+    /**
+     * เปิดใช้งาน Stripe หรือเปล่า — "เลนไหนก็ได้"
+     *
+     * ⚠️ (2026-08-23) ความหมายเปลี่ยน: เดิมผูกกับ enable_stripe_payment ตัวเดียว
+     *    ตอนนี้ = มีคีย์ + เปิดอย่างน้อย 1 เลน
+     *
+     * ตัวนี้คือด่านของ **ทุก API call** (createCheckoutSession / retrieveSession /
+     * expireSession / refundPayment / pollPendingSessions) — ต้องกว้างที่สุด
+     * ไม่งั้นเปิดเลนต่างประเทศแล้วลูกค้าจ่ายได้ แต่ poller กู้บิลตอน webhook ตกไม่ได้
+     * = จ่ายเงินแล้วไม่ได้คำทำนาย
+     */
+    public function isEnabled(): bool
+    {
+        return $this->isMenuEnabled() || $this->isForeignFallbackEnabled();
     }
 
     /**
@@ -187,9 +228,9 @@ class FortuneStripeService
                 'metadata[bill_reference]' => $reading->bill_reference ?? '',
                 'metadata[customer_region]' => $resolvedTier,
                 'expires_at' => $expiresAt,
-                'success_url' => route('fortune.stripe.success', ['reading' => $reading->id]) . '?session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => route('fortune.stripe.success', ['reading' => $reading->id]).'?session_id={CHECKOUT_SESSION_ID}',
                 // 🐛 (audit-2 fix #3) ส่ง session_id ใน cancel_url ด้วย — controller ใช้ verify ก่อน revert state
-                'cancel_url' => route('fortune.stripe.cancel', ['reading' => $reading->id]) . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('fortune.stripe.cancel', ['reading' => $reading->id]).'?session_id={CHECKOUT_SESSION_ID}',
                 'locale' => 'auto', // Stripe ตรวจ browser locale อัตโนมัติ (รองรับลาว/EN/TH)
                 // 💳 (2026-05-22) บังคับเก็บ billing address — ใช้ audit ว่าลูกค้าอยู่ประเทศไหนจริง
                 //                  (จะส่งกลับใน webhook customer_details.address.country)
@@ -291,6 +332,7 @@ class FortuneStripeService
         $secret = $this->settings->stripe_webhook_secret ?? null;
         if (empty($secret)) {
             Log::warning('FortuneStripeService: webhook_secret ไม่ได้ตั้งค่า — reject');
+
             return false;
         }
 
@@ -321,6 +363,7 @@ class FortuneStripeService
             Log::warning('FortuneStripeService: webhook timestamp เก่าเกินไป', [
                 'diff_seconds' => abs(time() - (int) $timestamp),
             ]);
+
             return false;
         }
 
@@ -358,9 +401,9 @@ class FortuneStripeService
             case 'checkout.session.completed':
                 return $this->onSessionCompleted($object);
 
-            // 🐛 (audit-2 fix #2) Async payments (bank transfer ที่ Stripe รองรับ)
-            //    ส่ง completed (unpaid) → รอจริง → async_payment_succeeded (paid)
-            //    ใช้ handler เดียวกับ session.completed — แต่ payment_status='paid' แล้ว
+                // 🐛 (audit-2 fix #2) Async payments (bank transfer ที่ Stripe รองรับ)
+                //    ส่ง completed (unpaid) → รอจริง → async_payment_succeeded (paid)
+                //    ใช้ handler เดียวกับ session.completed — แต่ payment_status='paid' แล้ว
             case 'checkout.session.async_payment_succeeded':
                 return $this->onSessionCompleted($object);
 
@@ -526,9 +569,29 @@ class FortuneStripeService
 
         // ถ้ายัง pending → mark expired (caller อาจเลือก revert ไป awaiting_payment_method)
         if ($reading->conversation_status === FortuneReading::STATUS_PENDING_STRIPE_PAYMENT) {
-            $reading->update([
-                'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
-            ]);
+            // 🌍 (2026-08-23) บิลออกไปแล้ว (เลนบัตรต่างประเทศ) → คืนสถานะรอชำระเดิม
+            //   ห้ามโยนไป awaiting_payment_method: เมนูเลือกวิธีจ่ายเปิดเฉพาะตอน
+            //   enable_stripe_payment=true — ถ้าเมนูปิดอยู่ ลูกค้าจะค้างในสถานะที่ไม่มี handler จริง
+            //   และยอด QR ที่ยังจองอยู่ก็จะกลายเป็นบิลกำพร้า (SMS เข้าแต่ไม่มีอะไรรับ)
+            $hasOpenBill = ! empty($reading->bill_reference) && ! $this->isMenuEnabled();
+
+            if ($hasOpenBill) {
+                $restoreStatus = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                    ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
+                    : FortuneReading::STATUS_PENDING_PAYMENT;
+
+                $reading->update(['conversation_status' => $restoreStatus]);
+
+                Log::info('FortuneStripeService: session expired → คืนสถานะบิลเดิม (เลนต่างประเทศ)', [
+                    'reading_id' => $reading->id,
+                    'bill' => $reading->bill_reference,
+                    'restore_status' => $restoreStatus,
+                ]);
+            } else {
+                $reading->update([
+                    'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+                ]);
+            }
         }
 
         Log::info('FortuneStripeService: Stripe session expired', [
@@ -706,6 +769,7 @@ class FortuneStripeService
 
             if ($response->failed()) {
                 $error = $response->json();
+
                 return [
                     'success' => false,
                     'error' => $error['error']['message'] ?? 'Stripe refund failed',

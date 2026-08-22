@@ -424,6 +424,8 @@ class FortuneSettingsController extends Controller
             'voice_summary_intro_message' => 'nullable|string|max:500',
             // 💳 (2026-05-09) Stripe payment settings
             'enable_stripe_payment' => 'boolean',
+            // 🌍 (2026-08-23) เลนบัตรเฉพาะลูกค้าต่างประเทศ (ไม่โผล่เมนูให้ลูกค้าไทย)
+            'enable_stripe_foreign_fallback' => 'boolean',
             // 💳 (2026-05-22) SMS-checker / QR Thai toggle — เปิด/ปิด ได้แยกจาก Stripe
             'enable_sms_payment' => 'boolean',
             'stripe_service_fee' => 'nullable|integer|min:0|max:1000',
@@ -507,6 +509,8 @@ class FortuneSettingsController extends Controller
             'voice_summary_enabled',
             // 💳 (2026-05-09) Stripe payment
             'enable_stripe_payment',
+            // 🌍 (2026-08-23) เลนบัตรเฉพาะลูกค้าต่างประเทศ
+            'enable_stripe_foreign_fallback',
             // 💳 (2026-05-22) SMS-checker / QR Thai toggle
             'enable_sms_payment',
             'stripe_test_mode',

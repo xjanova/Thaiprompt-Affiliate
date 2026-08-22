@@ -4553,6 +4553,29 @@ Format 2 — JSON array:
                 </div>
             </div>
 
+            {{-- 🌍 (2026-08-23) เลนบัตรเฉพาะลูกค้าต่างประเทศ — แยกจากเมนูด้านบน --}}
+            <div class="border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        🌍 เลนสำรอง — บัตรสำหรับลูกค้าต่างประเทศ
+                    </h4>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="enable_stripe_foreign_fallback" value="1"
+                               {{ old('enable_stripe_foreign_fallback', $settings->enable_stripe_foreign_fallback ?? false) ? 'checked' : '' }}
+                               class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-amber-600"></div>
+                    </label>
+                </div>
+                <p class="text-xs text-gray-700 dark:text-gray-300">
+                    <strong>ไม่กระทบ funnel ไทย</strong> — ลูกค้าไทยยังเจอ QR ตรงๆ เหมือนเดิม ไม่มีเมนูเพิ่ม
+                    ลิงก์บัตรจะโผล่<strong>เฉพาะตอนลูกค้าบอกเองว่าอยู่ต่างประเทศ / ไม่มีพร้อมเพย์ / พิมพ์ว่า "จ่ายบัตร"</strong>
+                    ใช้ได้แม้บิลออกไปแล้ว (ยอด = ราคาแพ็กเกจ + ค่าบริการ)
+                </p>
+                <p class="text-xs text-amber-800 dark:text-amber-300 mt-2">
+                    ⚠️ ต้องกรอก Stripe secret key + webhook secret ด้านล่างให้ครบก่อน สวิตช์นี้ถึงจะมีผล
+                </p>
+            </div>
+
             {{-- Mode preview --}}
             <div :class="modeColor" class="border rounded-lg p-3 text-sm font-medium" x-text="modeLabel"></div>
         </div>

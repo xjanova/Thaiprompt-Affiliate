@@ -2183,10 +2183,16 @@ class FortuneReading extends Model
 
         // 🔮 รองรับทั้ง Deep 39฿ (STATUS_PENDING_PAYMENT) และ Celtic Cross 99฿ (STATUS_CELTIC_PENDING_PAYMENT)
         // ทั้งสองระบบใช้ UniquePaymentAmount type='fortune_reading' เหมือนกัน — branch ตาม reading_type ใน caller
+        //
+        // 🌍 (2026-08-23) ต้องมี STATUS_PENDING_STRIPE_PAYMENT ด้วย
+        //   เลนบัตรต่างประเทศเปลี่ยนสถานะบิลเป็น pending_stripe_payment แต่ **ยอด QR ไทยยังจองอยู่**
+        //   ลูกค้าขอลิงก์บัตร → เปลี่ยนใจ → สแกน QR ใบเดิม → SMS เข้า
+        //   ถ้าไม่มีสถานะนี้ในลิสต์ = หาบิลไม่เจอ = เงินเข้าแต่บิลไม่ถูกตัด ลูกค้าไม่ได้คำทำนาย
         return self::where('unique_payment_amount_id', $uniquePayment->id)
             ->whereIn('conversation_status', [
                 self::STATUS_PENDING_PAYMENT,
                 self::STATUS_CELTIC_PENDING_PAYMENT,
+                self::STATUS_PENDING_STRIPE_PAYMENT,
             ])
             ->first();
     }
