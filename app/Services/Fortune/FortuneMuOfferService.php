@@ -240,20 +240,93 @@ class FortuneMuOfferService
             $ctx = MuPickContext::proactive($platform, $platformUserId);
         }
 
-        if (! empty($options['topicText'])) {
-            $ctx = $ctx->withTopic((string) $options['topicText']);
+        // ผู้เรียกไม่ส่งบริบทมา → ดึงจาก reading ให้เอง
+        // (ทุกจุดยิงมี reading อยู่แล้ว — ไม่ควรบังคับให้ทุก call site แกะเองแล้วเขียนซ้ำ 5 ที่)
+        $topic = (string) ($options['topicText'] ?? '');
+        if ($topic === '' && $reading !== null) {
+            $topic = self::topicTextOf($reading);
         }
+        if ($topic !== '') {
+            $ctx = $ctx->withTopic($topic);
+        }
+
         if (! empty($options['cardsText'])) {
             $ctx = $ctx->withCards((string) $options['cardsText']);
         }
-        if (! empty($options['birthYear'])) {
-            $ctx = $ctx->withBirthYear((int) $options['birthYear']);
+
+        $birthYear = isset($options['birthYear']) ? (int) $options['birthYear'] : null;
+        if (! $birthYear && $reading !== null) {
+            $birthYear = self::birthYearOf($reading);
         }
+        if ($birthYear) {
+            $ctx = $ctx->withBirthYear($birthYear);
+        }
+
         if (! empty($options['group'])) {
             $ctx = $ctx->withGroup((string) $options['group']);
         }
 
         return $ctx;
+    }
+
+    /**
+     * รวมคำถามที่ลูกค้าเคยพิมพ์ในการดูดวงใบนี้ เป็นสตริงเดียว
+     *
+     * ⚠️ คอลัมน์ชื่อ `questions` (พหูพจน์) และ cast เป็น array —
+     *    เขียน `$reading->question` จะได้ null เงียบๆ ไม่มี error ให้เห็น
+     *    (attribute ที่ไม่มีคอลัมน์จริง อ่านได้ null เหมือนคอลัมน์ว่าง)
+     *
+     * รูปร่างข้างในไม่คงที่ (บางแถวเป็นลิสต์สตริง บางแถวเป็นลิสต์ออบเจ็กต์)
+     * ⇒ ต้องแบนแบบทนทุกรูปร่าง ไม่ใช่ implode ตรงๆ (จะได้คำว่า "Array")
+     */
+    public static function topicTextOf(FortuneReading $reading): string
+    {
+        $raw = $reading->questions;
+
+        if (is_string($raw)) {
+            return mb_substr($raw, 0, 500);
+        }
+        if (! is_array($raw)) {
+            return '';
+        }
+
+        $parts = [];
+        array_walk_recursive($raw, function ($v) use (&$parts) {
+            if (is_string($v) && trim($v) !== '') {
+                $parts[] = trim($v);
+            }
+        });
+
+        return mb_substr(implode(' ', $parts), 0, 500);
+    }
+
+    /**
+     * ปีเกิด (ค.ศ.) ของลูกค้าจากการดูดวงใบนี้ — ใช้เลือกเครื่องรางประจำปีนักษัตร
+     *
+     * `fortune_readings.birth_date` เก็บเป็นวันที่ ค.ศ. อยู่แล้ว (ผ่าน ThaiBirthYear
+     * ตอนแปลง พ.ศ. → ค.ศ. ตั้งแต่ตอนรับข้อมูล) จึงอ่าน year ตรงๆ ได้
+     *
+     * 🚫 ไม่มีคอลัมน์ไพ่ให้อ่าน — `tarot_reading_cards` เป็นของเก่า (25 แถว หยุดตั้งแต่ เม.ย. 2026)
+     *    ไพ่ของเส้น Celtic ปัจจุบันอยู่ใน conversation_state ⇒ ผู้เรียกที่มีไพ่อยู่ในมือ
+     *    ส่ง `cardsText` เข้ามาเองได้ แต่ระบบไม่ไปขุดให้
+     */
+    public static function birthYearOf(FortuneReading $reading): ?int
+    {
+        try {
+            $birth = $reading->birth_date;
+            if (empty($birth)) {
+                return null;
+            }
+
+            $year = $birth instanceof \DateTimeInterface
+                ? (int) $birth->format('Y')
+                : (int) \Illuminate\Support\Carbon::parse((string) $birth)->year;
+
+            // กันปีเพี้ยน (พ.ศ. หลุดมา / ค่าขยะ) — ปีนักษัตรผิดแย่กว่าไม่รู้ปีเกิด
+            return ($year >= 1900 && $year <= (int) now()->year) ? $year : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

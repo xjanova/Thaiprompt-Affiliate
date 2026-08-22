@@ -1371,6 +1371,9 @@ class FortuneChannelManager
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — ส่ง bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
 
+                    // 🛒 (2026-08-23) ของเสริมดวงต่อท้ายบทสรุป — ต้องอยู่หลัง $sent เสมอ
+                    $this->offerProductsAfterReading('facebook', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_CELTIC_END);
+
                     return $sent;
                 })(),
 
@@ -1378,6 +1381,10 @@ class FortuneChannelManager
                 'deep_pro_session_timeout' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     $sent = $fbService->sendMessage($userId, $message, $extra);
                     $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
+
+                    // 🛒 (2026-08-23) Deep 39 จบจริงตรงนี้ (ไม่ใช่ตอนส่งคำทำนาย) —
+                    //   ตอนส่งคำทำนายเสร็จ ลูกค้ายังมีสิทธิ์ถามต่อ 7 นาที ยิงตอนนั้น = แทรกกลางบทสนทนาที่จ่ายเงินแล้ว
+                    $this->offerProductsAfterReading('facebook', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DEEP_END);
 
                     return $sent;
                 })(),
@@ -1424,12 +1431,25 @@ class FortuneChannelManager
                 // 🌙 (2026-07-31) โหมด daily — ส่งดวงรายวันที่ลูกค้าขอ
                 //   quick_replies ว่าง → FacebookWebhookService fallback เป็น sendMessage
                 //   พร้อม no_default_qr ให้เอง = ไม่มีปุ่มแพคเกจลอยมาเกาะดวงฟรี
-                'daily_horoscope_sent' => $fbService->sendQuickReplies(
-                    $userId,
-                    $message,
-                    $result['quick_replies'] ?? [],
-                    $extra
-                ),
+                'daily_horoscope_sent' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $sent = $fbService->sendQuickReplies(
+                        $userId,
+                        $message,
+                        $result['quick_replies'] ?? [],
+                        $extra
+                    );
+
+                    // 🛒 (2026-08-23) ของเสริมดวงต่อท้ายดวงฟรีรายวัน — คนกลุ่มนี้ยังไม่เคยจ่ายก็ได้เหมือนกัน
+                    //   ⚠️ ส่งเป็น "กล่องใหม่ต่อท้าย" ห้ามยัดเข้าไปในกล่องดวงฟรี
+                    //     กล่องนั้นมีรูปทรงตายตัว 5 ชิ้น (คำทำนาย + ลิงก์โพสเพจ + อวยพร + หางคำชวน + ปุ่ม VIP)
+                    //     ที่ต้องครบทุกครั้ง — แตะข้างในเมื่อไหร่ ชิ้นใดชิ้นหนึ่งหายเงียบทันที
+                    //   ⚠️ และห้ามไปแตะ quick_replies เดิม — ที่นั่นตั้งใจไม่มีปุ่มแพคเกจเกาะดวงฟรี
+                    if ($sent) {
+                        $this->offerProductsAfterReading('facebook', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DAILY_FREE);
+                    }
+
+                    return $sent;
+                })(),
 
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra),
             };
@@ -3129,6 +3149,9 @@ class FortuneChannelManager
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — push bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteLine($lineService, $userId, $result);
 
+                    // 🛒 (2026-08-23) ของเสริมดวงต่อท้ายบทสรุป
+                    $this->offerProductsAfterReading('line', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_CELTIC_END);
+
                     return $sent;
                 })(),
 
@@ -3157,6 +3180,9 @@ class FortuneChannelManager
 
                     $sent = $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
                     $this->sendReviewInviteLine($lineService, $userId, $result);
+
+                    // 🛒 (2026-08-23) Deep 39 จบจริงตรงนี้ — ดูเหตุผลที่ arm เดียวกันฝั่ง Facebook
+                    $this->offerProductsAfterReading('line', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DEEP_END);
 
                     return $sent;
                 })(),
@@ -3327,11 +3353,16 @@ class FortuneChannelManager
                     $lineQr = FortuneConversationService::dailyQuickRepliesForLine($result['quick_replies'] ?? []);
 
                     // LINE API ห้าม quickReply.items ว่าง
-                    if (empty($lineQr)) {
-                        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    $sent = empty($lineQr)
+                        ? $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken)
+                        : $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
+
+                    // 🛒 (2026-08-23) ของเสริมดวงต่อท้ายดวงฟรีรายวัน (กล่องใหม่ ไม่แตะกล่องเดิม)
+                    if ($sent) {
+                        $this->offerProductsAfterReading('line', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DAILY_FREE);
                     }
 
-                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
+                    return $sent;
                 })(),
 
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
@@ -5367,6 +5398,48 @@ class FortuneChannelManager
         } catch (\Throwable $e) {
             Log::warning('Review invite LINE send fail (non-blocking)', [
                 'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🛒 (2026-08-23) เสนอสินค้าเสริมดวงต่อท้าย "หลังคำทำนายถึงมือลูกค้าแล้ว"
+     *
+     * เรียกจากจุดจบของบริการ 4 จุด (Celtic 99 / Deep 39 × FB / LINE)
+     * วางไว้ตำแหน่งเดียวกับกล่องชวนรีวิว = ตำแหน่งที่พิสูจน์แล้วว่า "บทสรุปส่งไปแล้วจริง"
+     *
+     * 🚨 ห้ามย้ายไปเรียกใน `endCelticSession()` เด็ดขาด
+     *    เมธอดนั้นแค่ **คืน payload** — ข้อความยังไม่ถูกส่ง ChannelManager ส่งทีหลัง
+     *    ⇒ เรียกที่นั่น = การ์ดขายของถึงลูกค้า **ก่อน** คำทำนาย
+     *      (กฎเหล็กของระบบ: ห้ามแทรกอะไรก่อนคำทำนายถึงมือลูกค้า)
+     *
+     * non-blocking ทุกกรณี — ขายของพังห้ามทำให้คำทำนายพัง
+     *
+     * @param  array<string,mixed>  $result  payload จาก conversation service
+     * @param  string  $trigger  FortuneProductOffer::TRIGGER_*
+     */
+    protected function offerProductsAfterReading(string $platform, string $userId, array $result, string $trigger): void
+    {
+        // 🛡️ linger = Pro Session ยังเหลือเวลา ลูกค้ายังคุยต่อได้ = ยังไม่ใช่จุดจบจริง
+        if (! empty($result['is_lingering'])) {
+            return;
+        }
+
+        try {
+            $reading = $result['reading'] ?? null;
+
+            app(\App\Services\Fortune\FortuneMuOfferService::class)->offer(
+                $platform,
+                $userId,
+                $trigger,
+                $reading instanceof \App\Models\FortuneReading ? $reading : null
+            );
+        } catch (\Throwable $e) {
+            Log::warning('MuOffer: เสนอสินค้าท้ายคำทำนายล้มเหลว (ไม่กระทบคำทำนาย)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'trigger' => $trigger,
                 'error' => $e->getMessage(),
             ]);
         }

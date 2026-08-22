@@ -346,14 +346,8 @@ class FortuneFlowNudge extends Command
                 $userId,
                 \App\Models\FortuneProductOffer::TRIGGER_PITCH_DECLINED,
                 $reading,
-                [
-                    // หัวข้อที่ลูกค้าคุยไว้ก่อนหาย — ใช้เลือกกลุ่มของให้ตรงเรื่อง
-                    //
-                    // ⚠️ คอลัมน์ชื่อ `questions` (พหูพจน์) และ cast เป็น array —
-                    //    เขียน `$reading->question` จะได้ null เงียบๆ ไม่มี error ให้เห็น
-                    //    (คอลัมน์ที่ไม่มีจริง อ่านผ่าน attribute ได้ null เหมือนคอลัมน์ว่าง)
-                    'topicText' => $this->topicTextOf($reading),
-                ]
+                // ไม่ต้องส่งบริบทเอง — service แกะหัวข้อ/ปีเกิดจาก reading ให้แล้ว
+                // (แกะเองทุก call site = เขียนซ้ำ 6 ที่ แล้วเพี้ยนกันทีละจุด)
             );
         } catch (\Throwable $e) {
             Log::warning('FortuneFlowNudge: เสนอสินค้าตอน exit ล้มเหลว (ไม่กระทบการปิด reading)', [
@@ -361,34 +355,6 @@ class FortuneFlowNudge extends Command
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-
-    /**
-     * รวมคำถามที่ลูกค้าเคยพิมพ์ไว้เป็นสตริงเดียว — ใช้เดาว่าควรเสนอของกลุ่มไหน
-     *
-     * `fortune_readings.questions` cast เป็น array และรูปร่างข้างในไม่คงที่
-     * (บางแถวเป็นลิสต์สตริง บางแถวเป็นลิสต์ออบเจ็กต์ที่มีคีย์ question/text)
-     * ⇒ ต้องแบนแบบทนทุกรูปร่าง ไม่ใช่ implode ตรงๆ (จะได้ "Array" หรือ error)
-     */
-    private function topicTextOf(FortuneReading $reading): string
-    {
-        $raw = $reading->questions;
-
-        if (is_string($raw)) {
-            return mb_substr($raw, 0, 500);
-        }
-        if (! is_array($raw)) {
-            return '';
-        }
-
-        $parts = [];
-        array_walk_recursive($raw, function ($v) use (&$parts) {
-            if (is_string($v) && trim($v) !== '') {
-                $parts[] = trim($v);
-            }
-        });
-
-        return mb_substr(implode(' ', $parts), 0, 500);
     }
 
     /**

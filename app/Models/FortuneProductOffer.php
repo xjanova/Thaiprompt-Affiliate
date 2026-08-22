@@ -61,6 +61,9 @@ class FortuneProductOffer extends Model
     /** เสนอดูดวงแล้วลูกค้าไม่เอา/เงียบหาย — ทิ้งของไว้ให้ */
     public const TRIGGER_PITCH_DECLINED = 'pitch_declined';
 
+    /** รับดวงฟรีรายวันไป — คนกลุ่มนี้ยังไม่เคยจ่ายก็ได้ของเสนอเหมือนกัน */
+    public const TRIGGER_DAILY_FREE = 'daily_free';
+
     /** ลูกค้าถามหาของเอง (ไม่นับเพดานรายวัน) */
     public const TRIGGER_CUSTOMER_ASK = 'customer_ask';
 
@@ -76,6 +79,7 @@ class FortuneProductOffer extends Model
         self::TRIGGER_DEEP_END,
         self::TRIGGER_CHAT_END,
         self::TRIGGER_PITCH_DECLINED,
+        self::TRIGGER_DAILY_FREE,
     ];
 
     /** ตัวเลือกราคาต่ำ */
