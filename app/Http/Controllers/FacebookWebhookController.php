@@ -1229,8 +1229,13 @@ class FacebookWebhookController extends Controller
             return false;
         }
 
+        // 🏬 ผูกคีย์กับสาขา — คำตอบคือ "คอมเมนต์แม่เป็นของเพจ **นี้** ไหม"
+        //    คำถามเดียวกันบนคนละสาขาได้คำตอบคนละอย่าง คีย์จึงต้องแยก
+        //    (แบบแผนเดียวกับ reactCommentBreakerKey ด้านบน)
+        $scope = FortunePageContext::currentId() ?? 'default';
+
         return Cache::remember(
-            'fcr:parent_is_ours:'.md5((string) $parentId),
+            'fcr:parent_is_ours:'.$scope.':'.md5((string) $parentId),
             21600,
             function () use ($parentId, $pageId, $token) {
                 try {
@@ -1865,7 +1870,11 @@ class FacebookWebhookController extends Controller
             $isReplyToUs = $this->isReplyToOurComment($comment);
 
             if ($isReplyToUs) {
-                $bypassKey = 'fcr:reply_bypass:'.md5($fromId);
+                // 🏬 ผูกกับสาขา — ลูกค้าคนเดียวคุยได้หลายเพจ
+                //    ถ้าใช้คีย์รวม สาขาแรกที่เจอจะกินสิทธิ์ อีกสาขาเงียบใส่ลูกค้าทั้งวัน
+                $bypassKey = 'fcr:reply_bypass:'
+                    .(FortunePageContext::currentId() ?? 'default')
+                    .':'.md5($fromId);
 
                 if (Cache::has($bypassKey)) {
                     $isReplyToUs = false;   // ใช้สิทธิ์ข้ามไปแล้ววันนี้
