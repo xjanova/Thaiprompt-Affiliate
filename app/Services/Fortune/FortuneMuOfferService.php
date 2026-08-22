@@ -88,7 +88,7 @@ class FortuneMuOfferService
                 return false;
             }
 
-            $ctx = $this->buildContext($platform, $platformUserId, $trigger, $options);
+            $ctx = $this->buildContext($platform, $platformUserId, $trigger, $reading, $options);
             $picked = $this->picker->pick($ctx);
 
             if (empty($picked['items'])) {
@@ -225,10 +225,22 @@ class FortuneMuOfferService
     /**
      * ประกอบบริบทให้ picker
      *
+     * ⚠️ ต้องรับ `$reading` เข้ามาเป็นพารามิเตอร์ — ห้ามพึ่งตัวแปรจากขอบเขตอื่น
+     *    (2026-08-23) เคยลืมใส่พารามิเตอร์นี้แล้วอ้าง `$reading` ลอยๆ ในเมธอด
+     *    ⇒ `Undefined variable $reading` ทุกครั้งที่เรียก แต่ถูก try/catch ชั้นนอกกลืนไว้
+     *      ⇒ ลูกค้าไม่พัง แต่ **ไม่มีใครได้การ์ดเลยสักคน** และไม่มีอะไรดังขึ้นเลย
+     *      เห็นได้จาก log อย่างเดียว — บทเรียน: ฟีเจอร์ที่ห่อ try/catch ทั้งก้อน
+     *      ต้องดู log จริงหลัง deploy เสมอ ไม่ใช่ดูแค่ว่า "ไม่มี error ให้ลูกค้าเห็น"
+     *
      * @param  array<string,mixed>  $options
      */
-    private function buildContext(string $platform, string $platformUserId, string $trigger, array $options): MuPickContext
-    {
+    private function buildContext(
+        string $platform,
+        string $platformUserId,
+        string $trigger,
+        ?FortuneReading $reading,
+        array $options
+    ): MuPickContext {
         if ($trigger === FortuneProductOffer::TRIGGER_CUSTOMER_ASK) {
             $ctx = MuPickContext::customerAsk(
                 $platform,
