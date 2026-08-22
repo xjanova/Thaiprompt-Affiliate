@@ -1200,6 +1200,57 @@ class FacebookWebhookController extends Controller
     /**
      * ประมวลผลคอมเมนต์
      */
+    /**
+     * คอมเมนต์นี้เป็น "ลูกค้าตอบกลับคอมเมนต์ของเรา" หรือเปล่า
+     *
+     * ทำไมต้องรู้:
+     * ตั้งแต่เปลี่ยนคำตอบให้ลงท้ายด้วยคำถาม ("เกิดวันอะไรคะ") จะมีคนตอบกลับ
+     * คนกลุ่มนี้คือ **คนที่สนใจที่สุด** — ตอบคำถามเราแปลว่าอยากคุยต่อ
+     * แต่ด่าน `hasEngagedRecently(24h)` จะตัดทิ้งเพราะเพิ่ง engage เขาไปเมื่อกี้
+     * ⇒ ถามแล้วเงียบใส่ = แย่กว่าไม่ถามเลย
+     *
+     * ⚠️ `parent_id` บอกแค่ว่า "เป็นการตอบกลับ" ไม่ได้บอกว่าตอบกลับใคร
+     *    ต้องถาม Graph ว่าคอมเมนต์แม่เป็นของเพจเราไหม ไม่งั้นจะไปยุ่งกับ
+     *    บทสนทนาระหว่างลูกค้าด้วยกันเอง
+     *
+     * แคชผลต่อ parent_id 6 ชม. — คอมเมนต์แม่ตัวเดียวมีคนตอบได้หลายคน
+     * ยิง Graph ซ้ำทุกคนเปลืองเปล่า
+     *
+     * @param  array  $comment  payload จาก webhook (`$change['value']`)
+     * @return bool true = ลูกค้ากำลังตอบคอมเมนต์ของเพจเรา
+     */
+    protected function isReplyToOurComment(array $comment): bool
+    {
+        $parentId = $comment['parent_id'] ?? null;
+        $pageId = $this->settings->facebook_page_id ?? null;
+        $token = $this->settings->facebook_page_token ?? null;
+
+        if (empty($parentId) || empty($pageId) || empty($token)) {
+            return false;
+        }
+
+        return Cache::remember(
+            'fcr:parent_is_ours:'.md5((string) $parentId),
+            21600,
+            function () use ($parentId, $pageId, $token) {
+                try {
+                    $res = \Illuminate\Support\Facades\Http::timeout(8)
+                        ->get("https://graph.facebook.com/v22.0/{$parentId}", [
+                            'access_token' => $token,
+                            'fields' => 'from',
+                        ]);
+
+                    // ตัดสินไม่ได้ = ถือว่าไม่ใช่ของเรา (ปลอดภัยกว่าเผลอข้ามด่านกันสแปม)
+                    return $res->successful() && ($res->json('from.id') === $pageId);
+                } catch (\Throwable $e) {
+                    Log::debug('เช็คคอมเมนต์แม่ไม่สำเร็จ (ไม่บล็อก): '.$e->getMessage());
+
+                    return false;
+                }
+            }
+        );
+    }
+
     protected function processComment(array $comment): void
     {
         $message = $comment['message'] ?? '';
@@ -1807,10 +1858,31 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 💬 (2026-08-22) ลูกค้าตอบคำถามที่บอทถามไว้ = คนที่สนใจที่สุด ห้ามเงียบใส่
+            //    ให้ข้ามด่าน 24 ชม. ได้ **คนละ 1 ครั้งต่อวัน** เท่านั้น
+            //    จำกัดไว้เพราะด่านนี้คือเกราะกันเรายิง DM ใส่คนเดิมรัวๆ
+            //    ถ้าปล่อยข้ามไม่จำกัด คนที่ตอบ 10 คอมเมนต์จะโดน DM 10 ครั้ง = สแปม
+            $isReplyToUs = $this->isReplyToOurComment($comment);
+
+            if ($isReplyToUs) {
+                $bypassKey = 'fcr:reply_bypass:'.md5($fromId);
+
+                if (Cache::has($bypassKey)) {
+                    $isReplyToUs = false;   // ใช้สิทธิ์ข้ามไปแล้ววันนี้
+                } else {
+                    Cache::put($bypassKey, 1, 86400);
+                    Log::info('💬 Comment Engagement: ลูกค้าตอบคำถามเรา → ข้ามด่าน 24 ชม.', [
+                        'user_id' => $fromId,
+                        'comment_id' => $commentId,
+                    ]);
+                }
+            }
+
             // 📆 (2026-05-21) 24h rolling cooldown (reverted จาก 3-day — คนเงียบเลย)
             //    เคย DM (comment OR reaction) ใน 24 ชม. ล่าสุด → ข้าม
-            if (FortuneCommentEngagement::hasEngagedRecently($fromId, 24)
-                || FortunePostReaction::hasDmSuccessRecently($fromId, 24)) {
+            if (! $isReplyToUs
+                && (FortuneCommentEngagement::hasEngagedRecently($fromId, 24)
+                    || FortunePostReaction::hasDmSuccessRecently($fromId, 24))) {
                 Log::info('Comment Engagement: user ได้ DM ใน 24 ชม. ล่าสุดแล้ว ข้าม', [
                     'user_id' => $fromId,
                     'comment_id' => $commentId,
@@ -1871,6 +1943,8 @@ class FacebookWebhookController extends Controller
                         'facebook_comment_id' => $commentId,
                         'comment_text' => $message,
                         'user_name' => $fromName,
+                        // 💬 ลูกค้าตอบคำถามเรา → job จะตอบด้วยชุดที่พาเข้าแชท
+                        'is_reply_to_us' => $isReplyToUs,
                     ]);
                 }
             }

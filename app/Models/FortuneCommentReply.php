@@ -40,6 +40,14 @@ class FortuneCommentReply extends Model
     public const CATEGORY_EMOJI = 'emoji';
 
     /**
+     * ลูกค้าตอบคำถามที่บอทถามไว้ใต้คอมเมนต์ = สนใจจริง
+     *
+     * ชุดนี้มีหน้าที่เดียว: พาเข้า Messenger เพื่อคุยต่อ
+     * เพราะคำตอบละเอียดทำในคอมเมนต์สาธารณะไม่ได้ (ยาวเกิน + เป็นเรื่องส่วนตัว)
+     */
+    public const CATEGORY_REPLY_TO_BOT = 'reply_to_bot';
+
+    /**
      * จำนวนชุดล่าสุดที่ "ห้ามหยิบซ้ำ" ต่อ 1 ลูกค้า
      *
      * กันไม่ให้คนเดิมเห็นข้อความเดิมสองครั้งติด — เป็นสัญญาณสแปมที่ FB จับได้ง่ายที่สุด
@@ -165,7 +173,27 @@ class FortuneCommentReply extends Model
         // ชื่อว่าง → ตัดคำนำหน้า "คุณ " ที่ห้อยอยู่ทิ้งด้วย ไม่งั้นได้ "ขอบคุณค่ะ คุณ  🙏"
         $rendered = str_replace('{name}', trim($name), $message);
 
+        // 🔗 ลิงก์เข้าแชทของ "เพจที่กำลังทำงานอยู่" — ห้ามฝัง id ตายตัว
+        //    ระบบมีหลายสาขา (fortune_pages) ถ้า hardcode ไว้ สาขาอื่นจะส่งลูกค้าไปผิดเพจ
+        if (str_contains($rendered, '{page_link}')) {
+            $rendered = str_replace('{page_link}', self::messengerLink(), $rendered);
+        }
+
         return trim(preg_replace('/\s+/u', ' ', $rendered));
+    }
+
+    /**
+     * ลิงก์เข้า Messenger ของเพจที่ context ชี้อยู่ตอนนี้
+     *
+     * ใช้ m.me เพราะเป็นโดเมนของ Meta เอง — ไม่โดนลดการมองเห็นแบบลิงก์ออกนอกแพลตฟอร์ม
+     *
+     * @return string เช่น "m.me/107173337600346" — คืนค่าว่างถ้าหา page id ไม่เจอ
+     */
+    protected static function messengerLink(): string
+    {
+        $pageId = FortuneTellingSetting::getSettings()->facebook_page_id ?? null;
+
+        return $pageId ? 'm.me/'.$pageId : '';
     }
 
     /**

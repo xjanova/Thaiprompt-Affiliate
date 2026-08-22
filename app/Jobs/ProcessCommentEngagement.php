@@ -968,6 +968,13 @@ class ProcessCommentEngagement implements ShouldQueue
      */
     protected function resolveReplyCategory(string $matchedCategory): string
     {
+        // 💬 (2026-08-22) ลูกค้าตอบคำถามที่เราถามไว้ = สนใจจริง มาก่อนทุกเงื่อนไข
+        //    ตอบละเอียดในคอมเมนต์สาธารณะไม่ได้ (ยาวเกิน + เป็นเรื่องส่วนตัวเขา)
+        //    ⇒ ชุดนี้มีหน้าที่เดียวคือพาเข้าแชท ส่วนเนื้อดวงจริงส่งทาง Private Reply
+        if (! empty($this->data['is_reply_to_us'])) {
+            return \App\Models\FortuneCommentReply::CATEGORY_REPLY_TO_BOT;
+        }
+
         $userId = $this->data['facebook_user_id'] ?? null;
 
         $credit = $userId
