@@ -88,4 +88,65 @@ class FortuneDailyColdDayNameTest extends TestCase
         $this->assertSame(0, $this->invokeHidden('detectThaiDayName', 'อาทิตย์'));
         $this->assertNull($this->invokeHidden('detectThaiDayName', 'สวัสดี'));
     }
+
+    /**
+     * 🇹🇭 (2026-08-22) คำลงท้ายสะกดเพี้ยน ต้องยังอ่านออก
+     *
+     * เคสจริง Phensri Paopluk (PSID 27674940652154887, 17:22 น.) พิมพ์ "วันศุกร์ค้ะ"
+     * แล้วไม่ได้ดวงรายวัน — "ค้ะ" ใช้ไม้โท แต่ลิสต์คำลงท้ายมีแค่ "ค่ะ" ไม้เอก
+     * วันเดียวกันเจออีก 2 คนตกด้วยเหตุตระกูลเดียวกัน
+     *
+     * @test
+     */
+    public function คำลงท้ายสะกดเพี้ยนต้องยังอ่านออก(): void
+    {
+        // เคสจริงจาก prod 2026-08-22
+        $this->assertSame(5, $this->invokeHidden('resolveBirthDayNameIndex', 'วันศุกร์ค้ะ'), 'ไม้โทแทนไม้เอก');
+        $this->assertSame(5, $this->invokeHidden('resolveBirthDayNameIndex', 'วันศุกร์ฅรับ'), 'ฅ U+0E05 แทน ค U+0E04');
+
+        // ตระกูลเดียวกันที่ต้องรอดไปด้วย (มิติวรรณยุกต์ + อักษรสับ)
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธค๊ะ'));
+        $this->assertSame(0, $this->invokeHidden('resolveBirthDayNameIndex', 'อาทิตย์ค๊ะ'));
+        $this->assertSame(5, $this->invokeHidden('resolveBirthDayNameIndex', 'ศุกร์คร้บ'), 'ตก ั');
+        $this->assertSame(1, $this->invokeHidden('resolveBirthDayNameIndex', 'จันทร์ค้าบ'));
+        $this->assertSame(6, $this->invokeHidden('resolveBirthDayNameIndex', 'เสาร์ครับผม'));
+        $this->assertSame(4, $this->invokeHidden('resolveBirthDayNameIndex', 'พฤหัสบดีเจ้าค่ะ'));
+
+        // looksLikeStandaloneDayName ต้องเห็นตรงกัน (ใช้ลิสต์ร่วมกันแล้ว)
+        $this->assertTrue($this->invokeHidden('looksLikeStandaloneDayName', 'วันศุกร์ค้ะ'));
+        $this->assertTrue($this->invokeHidden('looksLikeStandaloneDayName', 'วันศุกร์ฅรับ'));
+    }
+
+    /**
+     * 🛡️ (2026-08-22) เปิดกว้างที่คำลงท้ายแล้ว ด่านที่เหลือต้องไม่อ่อนลงสักด่าน
+     *
+     * ตัวปอกคำลงท้ายแตะแค่ "หาง" — เศษที่เหลือยังต้องเป็นชื่อวันเต็มคำเหมือนเดิม
+     * ถ้าข้อไหนแดง แปลว่ามีคนเปลี่ยนไปเทียบแบบ substring/fuzzy = ต้องรีบถอย
+     *
+     * @test
+     */
+    public function ขยายคำลงท้ายแล้วต้องไม่กินเคสห้ามติด(): void
+    {
+        // 💰 ขอซื้อ/ยกเลิก — ต้องตกเพื่อให้ด่าน escape ทำงาน (ไม่งั้นกินยอดขาย 39/99)
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'จันทร์ ขอดูดวงค่ะ'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'พุธ ยกเลิกค่ะ'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'จันทร์ ไม่เอาแล้ว'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'ศุกร์ จ่ายแล้วค่ะ'));
+
+        // 🏷️ "จันทรา" = ชื่อแม่หมอเอง — เคสห้ามติดอันดับ 1
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'แม่หมอจันทราพยากรณ์'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'จันทราค่ะ'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'อาทิตยา'));
+
+        // 🌌 ดาว/สถานที่/บทสวด
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'ดาวพุธ'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'จันทบุรี'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'จันทร์เจ้าขา'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'เสาไฟหน้าบ้าน'));
+
+        // 🗓️ ประโยคที่มีชื่อวันปนแต่เจตนาอื่น
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'วันพุธนี้จะไปหาหมอค่ะ'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'เสาร์ไปงานแต่ง'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'พุธ อังคาร'), 'สองวัน = กำกวม');
+    }
 }
