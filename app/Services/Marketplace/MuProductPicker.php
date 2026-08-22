@@ -288,8 +288,8 @@ class MuProductPicker
         $lowHalf = $sorted->slice(0, max(1, $half));
         $highHalf = $sorted->slice($half);
 
-        $low = $this->bestEarner($lowHalf);
-        $high = $this->bestEarner($highHalf);
+        $low = $this->weightedPick($lowHalf);
+        $high = $this->weightedPick($highHalf);
 
         // ราคาเท่ากันหรือกลับด้าน = ไม่ได้ให้ "ทางเลือก" จริง → ส่งชิ้นเดียวพอ
         if ($low === null || $high === null || $low->id === $high->id
@@ -308,13 +308,50 @@ class MuProductPicker
     }
 
     /**
-     * ในกองนี้ ชิ้นไหนทำเงินให้เราได้มากที่สุด (คิดเป็นบาท ไม่ใช่เปอร์เซ็นต์)
+     * สุ่มเลือก 1 ชิ้นจากกอง โดยถ่วงน้ำหนักด้วย "ค่าคอมเป็นบาท"
+     *
+     * 🚨 (2026-08-23) เดิมเป็น `bestEarner()` = หยิบตัวค่าคอมสูงสุดแบบตายตัว
+     *    ผลจริงบนพร็อด: ลูกค้า 12 คนแรกได้สินค้า **ชุดเดียวกันเป๊ะทั้งหมด**
+     *    ใช้ไปแค่ 2 ชิ้นจากพูล 20 — อีก 18 ชิ้นไม่เคยถูกส่งเลยสักครั้ง
+     *    (ตัวกันส่งซ้ำเป็นแบบ "รายคน 30 วัน" ⇒ คนใหม่ทุกคนเจอตัวเดิมเสมอ)
+     *    ⇒ ดูเป็นหุ่นยนต์ · ของ 1,859฿ ชิ้นเดียวไปหาทุกคนรวมถึงคนที่ไม่มีกำลังซื้อ
+     *
+     *    ถ่วงน้ำหนักแทน: ของค่าคอมสูงยังโผล่บ่อยกว่า แต่ทั้งพูลมีโอกาสได้ออก
      *
      * @param  Collection<int,MarketplaceProduct>  $items
      */
-    private function bestEarner(Collection $items): ?MarketplaceProduct
+    private function weightedPick(Collection $items): ?MarketplaceProduct
     {
-        return $items->sortByDesc(fn (MarketplaceProduct $p) => $this->expectedEarning($p))->first();
+        $items = $items->values();
+
+        if ($items->isEmpty()) {
+            return null;
+        }
+        if ($items->count() === 1) {
+            return $items->first();
+        }
+
+        // ขั้นต่ำ 1.0 — ของที่คำนวณค่าคอมได้ 0 ต้องยังมีโอกาสออก ไม่ใช่ถูกตัดขาด
+        $weights = $items->map(fn (MarketplaceProduct $p) => max(1.0, $this->expectedEarning($p)))->all();
+        $total = array_sum($weights);
+
+        if ($total <= 0) {
+            return $items->first();
+        }
+
+        // คูณ 100 แล้วใช้จำนวนเต็ม — mt_rand รับ int เท่านั้น และค่าคอมมีทศนิยม
+        $roll = mt_rand(1, max(1, (int) round($total * 100))) / 100;
+
+        $acc = 0.0;
+        foreach ($weights as $i => $w) {
+            $acc += $w;
+            if ($roll <= $acc) {
+                return $items[$i];
+            }
+        }
+
+        // ตกขอบจากปัดเศษ — คืนตัวสุดท้าย (ห้ามคืน null ทั้งที่กองไม่ว่าง)
+        return $items->last();
     }
 
     /**
