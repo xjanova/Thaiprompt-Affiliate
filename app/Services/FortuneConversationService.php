@@ -7986,6 +7986,30 @@ class FortuneConversationService
      */
     protected function startStripeForeignFallback(FortuneReading $reading, string $prefixMessage = ''): array
     {
+        // 🛡️ (2026-08-23) จ่ายเข้ามาแล้วระหว่างที่ถามยืนยันค้างอยู่ → ห้ามเปิดเลนบัตรเด็ดขาด
+        //    ช่องโหว่จริง: ถามยืนยัน → ลูกค้าสแกน QR ที่ค้างในแอปธนาคารส่งเงินเข้ามา
+        //    → SMS ตัดบิลเรียบร้อย → ลูกค้าเพิ่งมากดปุ่ม "ยืนยัน จ่ายบัตร"
+        //    ถ้าไม่กันตรงนี้: บิลที่จ่ายแล้วจะถูกดันกลับเป็น pending_stripe_payment
+        //    พร้อมลิงก์บัตรที่จ่ายได้จริง = ลูกค้าจ่ายซ้ำ + สาย Celtic ที่กำลังจะส่งคำทำนายหยุดกลางคัน
+        $reading->refresh();
+        if ($reading->is_paid) {
+            $this->clearForeignCardConfirm($reading);
+
+            Log::info('Fortune: ยกเลิกการเปิดเลนบัตร — บิลถูกตัดไปแล้วระหว่างรอยืนยัน', [
+                'reading_id' => $reading->id,
+                'bill' => $reading->bill_reference,
+                'status' => $reading->conversation_status,
+            ]);
+
+            return [
+                'action' => 'stripe_foreign_already_paid',
+                'message' => $prefixMessage
+                    ."✅ ระบบได้รับเงินของเจ้าชะตาเรียบร้อยแล้วค่ะ — ไม่ต้องจ่ายบัตรซ้ำนะคะ 🙏\n\n"
+                    .'แม่หมอกำลังเปิดไพ่ให้ รอสักครู่ค่ะ ✨',
+                'reading' => $reading,
+            ];
+        }
+
         // สถานะเดิมของบิล — ไว้คืนกลับถ้าลูกค้าเปลี่ยนใจไปใช้ QR
         $prevStatus = $reading->conversation_status;
 
@@ -8037,9 +8061,11 @@ class FortuneConversationService
             ]);
         }
 
-        // 💰 เก็บยอดบัตรไว้ใน state เท่านั้น — **ห้ามเขียนทับ amount_paid**
-        //    FortuneCommissionService ใช้ amount_paid เป็นฐานคิดค่าแนะนำ (บรรทัด ~55)
-        //    ถ้าเปลี่ยนเป็นยอดบัตร = จ่ายค่าคอมบนค่าธรรมเนียมบัตรที่เป็นต้นทุนผ่านทาง ไม่ใช่รายได้
+        // 💰 หมายเหตุสำคัญ: `amount_paid` ถูกเขียนทับเป็นยอดบัตร (เช่น 114) ไปแล้ว
+        //    ตั้งแต่ใน FortuneStripeService::createCheckoutSession() — ไม่ใช่ที่นี่
+        //    ⇒ FortuneCommissionService จึงต้อง clamp ฐานค่าแนะนำกลับเป็นราคาแพ็กเกจ
+        //      (ดูคอมเมนต์ยาวใน FortuneCommissionService::distributeCommissions)
+        //      ไม่งั้นจ่ายค่าคอมบนค่าธรรมเนียมบัตร
         $reading->setConversationState('stripe_card_total', $totalThb);
         $reading->update([
             'conversation_status' => FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
@@ -8251,26 +8277,48 @@ class FortuneConversationService
         }
 
         // หมดอายุ → ล้างธงแล้วปล่อยผ่าน (กันคำว่า "ใช่" ของบทสนทนาอื่นมาปิดบิลไทย)
+        //   ⚠️ fail-CLOSED: ไม่มี timestamp / อ่านไม่ออก = ถือว่าหมดอายุ
+        //      ธงนี้สั่ง "ยกเลิกบิลไทยที่ยังจ่ายได้อยู่" — ของแบบนี้ห้ามเปิดค้างแบบไม่มีกำหนด
         $askedAt = $reading->getConversationState('awaiting_card_confirm_at');
-        if ($askedAt) {
-            try {
-                if (\Carbon\Carbon::parse($askedAt)->lt(now()->subMinutes(self::FOREIGN_CARD_CONFIRM_TTL_MINUTES))) {
-                    $this->clearForeignCardConfirm($reading);
+        if (empty($askedAt)) {
+            $this->clearForeignCardConfirm($reading);
 
-                    return null;
-                }
-            } catch (\Throwable $e) {
+            return null;
+        }
+
+        try {
+            if (\Carbon\Carbon::parse($askedAt)->lt(now()->subMinutes(self::FOREIGN_CARD_CONFIRM_TTL_MINUTES))) {
                 $this->clearForeignCardConfirm($reading);
 
                 return null;
             }
+        } catch (\Throwable $e) {
+            $this->clearForeignCardConfirm($reading);
+
+            return null;
         }
 
         $clean = mb_strtolower(trim($messageText));
 
-        // ⚠️ เช็คฝั่งปฏิเสธ **ก่อน** เสมอ — "ไม่ยืนยัน" มีคำว่า "ยืนยัน" อยู่ข้างใน
+        // 🛑 (2026-08-23) ด่านแรกสุด: ประโยค "จ่ายทางไทยไม่ได้" = เหตุผลที่เขาต้องใช้บัตร
+        //    ต้องตีความเป็น **ยืนยัน** ไม่ใช่ปฏิเสธ
+        //    กับดักจริง: "ไม่มีพร้อมเพย์" มีคำว่า "พร้อมเพย์" อยู่ข้างใน — ถ้าปล่อยให้ตกลิสต์ปฏิเสธ
+        //    ลูกค้าที่บอกเหตุผลตรงๆ ว่าทำไมต้องจ่ายบัตร จะถูกเด้งกลับไป QR ไทยที่เขาใช้ไม่ได้
+        $cannotPayThai = ['ไม่มีพร้อมเพย์', 'ไม่มี พร้อมเพย์', 'ไม่มี promptpay', 'no promptpay',
+            'พร้อมเพย์ไม่ได้', 'โอนไม่ได้', 'จ่ายไม่ได้', 'สแกนไม่ได้', 'ใช้ไม่ได้',
+            'ไม่มีบัญชีไทย', 'ไม่มีธนาคารไทย'];
+        foreach ($cannotPayThai as $k) {
+            if (str_contains($clean, $k)) {
+                $this->clearForeignCardConfirm($reading);
+
+                return $this->startStripeForeignFallback($reading->fresh());
+            }
+        }
+
+        // ⚠️ เช็คฝั่งปฏิเสธ **ก่อน** ฝั่งยืนยัน — "ไม่ยืนยัน" มีคำว่า "ยืนยัน" อยู่ข้างใน
+        //    ⛔ ห้ามใส่ 'พร้อมเพย์' เดี่ยวๆ ที่นี่ — กินประโยค "ไม่มีพร้อมเพย์" ด้านบน
         $noContains = ['card_confirm_no', 'ไม่ยืนยัน', 'ไม่เอา', 'ไม่จ่ายบัตร', 'ไม่ใช้บัตร',
-            'ใช้ qr', 'qr ไทย', 'พร้อมเพย์', 'โอนเอง', 'ยกเลิก'];
+            'ใช้ qr', 'qr ไทย', 'ใช้พร้อมเพย์', 'ขอพร้อมเพย์', 'โอนเอง', 'ยกเลิก'];
         $noExact = ['ไม่', 'no', 'cancel', 'ไม่ค่ะ', 'ไม่ครับ'];
 
         foreach ($noContains as $k) {

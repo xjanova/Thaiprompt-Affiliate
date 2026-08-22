@@ -31,9 +31,9 @@ class FortuneCommissionService
      * 2. หา sponsor (Level 1) → คำนวณ + จ่าย
      * 3. หา grandparent (Level 2) → คำนวณ + จ่าย (ถ้าเปิด)
      *
-     * @param FortuneReading $reading บิลดูดวงที่ชำระเงินแล้ว
-     * @param MlmMember $mlmMember สมาชิก MLM ของคนดูดวง
-     * @param FortuneTellingSetting $settings การตั้งค่าดูดวง
+     * @param  FortuneReading  $reading  บิลดูดวงที่ชำระเงินแล้ว
+     * @param  MlmMember  $mlmMember  สมาชิก MLM ของคนดูดวง
+     * @param  FortuneTellingSetting  $settings  การตั้งค่าดูดวง
      */
     public function distributeCommissions(
         FortuneReading $reading,
@@ -53,6 +53,43 @@ class FortuneCommissionService
 
         // ใช้ amount_paid จริง, fallback ไปที่ deep_reading_price (กรณี amount_paid ยังไม่อัพเดท)
         $readingPrice = (float) ($reading->amount_paid ?? 0);
+
+        // 💳 (2026-08-23) เพดานฐานคิดค่าแนะนำ = ราคาแพ็กเกจ ห้ามเกิน
+        //
+        //   จ่ายด้วยบัตร (Stripe) → createCheckoutSession เขียน
+        //   amount_paid = ราคาแพ็กเกจ + ค่าธรรมเนียมต่างประเทศ (Celtic = 99 + 15 = 114)
+        //   ค่าธรรมเนียมก้อนนี้ Stripe หักไป = **ต้นทุนผ่านทาง ไม่ใช่รายได้ของร้าน**
+        //   ถ้าไม่ตัดออก = จ่ายค่าแนะนำบนเงินที่ร้านไม่เคยได้รับ
+        //
+        //   ⚠️ ห้ามใช้วิธี "ลบ service_fee ออกตรงๆ" — ข้อมูลจริงบน prod พิสูจน์แล้วว่าพัง:
+        //      บิล FTU-260524-P7572 มี amount_paid=99.27 (ยอด QR ไทย) แต่ service_fee=15
+        //      ลบตรงๆ จะเหลือ 84.27 = **จ่ายค่าแนะนำขาด** ทั้งที่ร้านได้เงินเต็ม
+        //
+        //   วิธีที่ถูกคือ clamp: ยอด QR ไทยบวกสตางค์สุ่มได้สูงสุด +0.99 (suffix 01-99)
+        //   ดังนั้นอะไรที่เกิน "ราคาแพ็กเกจ + 0.99" = รวมค่าธรรมเนียมบัตรมาแน่นอน
+        //   → บิลไทยทุกใบไม่ถูกแตะเลย (99.65 ≤ 99.99) บิลบัตรเท่านั้นที่ถูกตัดกลับเป็น 99
+        //   เงื่อนไข service_fee > 0 คือกุญแจกันพลาด — prod ยืนยันแล้วว่า service_fee > 0
+        //   มีเฉพาะบิลที่จ่ายผ่าน Stripe เท่านั้น (บิล QR ไทยเป็น 0/null ทุกใบ)
+        //   ถ้าตัดเงื่อนไขนี้ทิ้ง จะไปโดนบิลเก่ายุคราคา 49฿ กับบิลที่ลูกค้าโอนเผื่อเป็นเลขกลม (100)
+        //   ซึ่งร้านได้เงินเต็มจริง ไม่ควรถูกลดฐานค่าแนะนำ
+        $packagePrice = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? (float) ($settings->celtic_cross_price ?? 0)
+            : (float) ($settings->deep_reading_price ?? 0);
+
+        $serviceFee = (float) ($reading->service_fee ?? 0);
+
+        if ($serviceFee > 0 && $packagePrice > 0 && $readingPrice > $packagePrice + 0.99) {
+            Log::info('FortuneCommission: ตัดค่าธรรมเนียมบัตรออกจากฐานค่าแนะนำ', [
+                'reading_id' => $reading->id,
+                'amount_paid' => $reading->amount_paid,
+                'service_fee' => $reading->service_fee,
+                'package_price' => $packagePrice,
+                'commission_base' => $packagePrice,
+            ]);
+
+            $readingPrice = $packagePrice;
+        }
+
         if ($readingPrice <= 0) {
             $readingPrice = (float) ($settings->deep_reading_price ?? 0);
         }
@@ -335,7 +372,7 @@ class FortuneCommissionService
      * 4. return ข้อความ หรือ null ถ้าไม่มี
      *
      * @param  int  $userId  ผู้รับคอมมิชชั่น (recipient)
-     * @return string|null  ข้อความสรุปรายได้ หรือ null ถ้าไม่มี
+     * @return string|null ข้อความสรุปรายได้ หรือ null ถ้าไม่มี
      */
     public function buildPendingChatNotification(int $userId): ?string
     {
@@ -381,10 +418,10 @@ class FortuneCommissionService
                 $breakdown[] = "ชั้นหลาน {$l2Count} ราย";
             }
             if (! empty($breakdown)) {
-                $lines[] = '🌳 ' . implode(' • ', $breakdown);
+                $lines[] = '🌳 '.implode(' • ', $breakdown);
             }
 
-            $lines[] = '💎 ยอดในกระเป๋าปัจจุบัน: ' . number_format($balance, 2) . ' บาท';
+            $lines[] = '💎 ยอดในกระเป๋าปัจจุบัน: '.number_format($balance, 2).' บาท';
 
             // 💼 ลิงก์เข้ากระเป๋า — login ผ่าน Facebook OAuth (signed redirect → wallet)
             // ลูกค้ากดได้เลย: FB OAuth login → auto match → redirect ไปหน้า wallet
@@ -435,7 +472,7 @@ class FortuneCommissionService
      * - User กลางถูกลบ / ไม่มี MlmMember
      * (เงินยังคงอยู่ในบัญชีบริษัทแต่ไม่มี record — เหมือนเดิม)
      *
-     * @param string $reason เหตุผล fallback (no_referrer/sponsor_inactive/no_grandparent/etc.)
+     * @param  string  $reason  เหตุผล fallback (no_referrer/sponsor_inactive/no_grandparent/etc.)
      */
     protected function payToCentralWallet(
         FortuneReading $reading,
@@ -543,13 +580,11 @@ class FortuneCommissionService
     /**
      * สร้าง commission โดยตรง (ข้าม active check) — ใช้สำหรับ retroactive fix เท่านั้น
      *
-     * @param FortuneReading $reading
-     * @param MlmMember $recipient ผู้รับคอมมิชชั่น
-     * @param MlmMember $fromMember สมาชิกที่จ่ายดูดวง
-     * @param int $level 1 หรือ 2
-     * @param float $amount จำนวนเงิน
-     * @param float $readingPrice ราคา reading
-     * @param FortuneTellingSetting $settings
+     * @param  MlmMember  $recipient  ผู้รับคอมมิชชั่น
+     * @param  MlmMember  $fromMember  สมาชิกที่จ่ายดูดวง
+     * @param  int  $level  1 หรือ 2
+     * @param  float  $amount  จำนวนเงิน
+     * @param  float  $readingPrice  ราคา reading
      */
     public function forceCreateCommission(
         FortuneReading $reading,
