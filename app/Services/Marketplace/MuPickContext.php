@@ -25,6 +25,17 @@ class MuPickContext
     /** ค่าคอมขั้นต่ำตอนลูกค้าถามเอง (default 0 = ไม่บังคับ) */
     private const SETTING_ASK_MIN_COMMISSION = 'lazada_mu_ask_min_commission';
 
+    /**
+     * ค่าคอมขั้นต่ำ "ขั้นผ่อน" — ใช้เมื่อกลุ่มที่บริบทชี้ไม่มีของพอที่เกณฑ์ปกติ
+     *
+     * 🚨 ทำไมต้องมี (วัดจากพร็อด 2026-08-23):
+     *    ที่เกณฑ์ ≥9% กลุ่ม pichong = 0 ชิ้น · pyramid = 0 ชิ้น
+     *    ⇒ ลูกค้าคุยเรื่องปีชง แล้วได้ปี่เซี้ยะมั่ว เพราะพูลของแก้ชงว่างเปล่า
+     *    ที่เกณฑ์ ≥5% ทั้ง 5 กลุ่มมีของครบ (pichong 10 · pyramid 7)
+     *    สำหรับบอทดูดวง **ความตรงเรื่องคือตัวสินค้า** — ของแก้ชงจริง 6% ชนะปี่เซี้ยะมั่ว 9%
+     */
+    private const SETTING_RELAXED_MIN_COMMISSION = 'lazada_mu_relaxed_min_commission';
+
     public function __construct(
         public readonly string $platform,
         public readonly string $platformUserId,
@@ -110,6 +121,31 @@ class MuPickContext
             minPrice: (float) MarketplaceSetting::get(self::SETTING_MIN_PRICE, 25),
             maxPrice: $budget !== null && $budget > 0 ? $budget : 0.0,
             searchQuery: $query,
+        );
+    }
+
+    /**
+     * คืนสำเนาที่ใช้ "เกณฑ์ค่าคอมขั้นผ่อน" — เรียกโดย MuProductPicker ตอนพูลของกลุ่มไม่พอ
+     *
+     * ค่าเริ่มต้น 5% (จุดที่ทั้ง 5 กลุ่มมีของครบ) และ **ไม่มีวันเข้มกว่าเกณฑ์ปกติ**
+     * — ถ้า owner ตั้งเกณฑ์ปกติไว้ต่ำกว่าขั้นผ่อนอยู่แล้ว บันไดขั้นนี้จะไม่ทำอะไร
+     */
+    public function relaxed(): self
+    {
+        $floor = (float) MarketplaceSetting::get(self::SETTING_RELAXED_MIN_COMMISSION, 5);
+
+        return new self(
+            platform: $this->platform,
+            platformUserId: $this->platformUserId,
+            requireMu: $this->requireMu,
+            minCommission: min($floor, $this->minCommission),
+            minPrice: $this->minPrice,
+            maxPrice: $this->maxPrice,
+            forcedGroup: $this->forcedGroup,
+            topicText: $this->topicText,
+            cardsText: $this->cardsText,
+            birthYear: $this->birthYear,
+            searchQuery: $this->searchQuery,
         );
     }
 

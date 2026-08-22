@@ -35,6 +35,9 @@ class MuProductPicker
     /** ดึงผู้เข้ารอบมากี่ชิ้นก่อนคัดเหลือ 2 */
     private const CANDIDATE_LIMIT = 60;
 
+    /** พูลต้องมีอย่างน้อยกี่ชิ้นถึงจะเสนอเป็น "คู่" ให้ลูกค้าเลือกได้ */
+    private const MIN_POOL_FOR_PAIR = 2;
+
     /**
      * ข้อความแตะกี่กลุ่มพร้อมกันถึงถือว่า "ครอบจักรวาล" แล้วทิ้งสัญญาณหัวข้อ
      *
@@ -95,14 +98,30 @@ class MuProductPicker
         // ลองกลุ่มที่บริบทชี้ก่อน — ไม่พอค่อยเปิดกว้างเป็นสายมูทุกกลุ่ม
         $pool = $this->candidates($ctx, $group);
 
-        // ขยายเฉพาะเส้น "บอทเสนอเอง" — เส้นลูกค้าถามเองไม่ได้กรองด้วยกลุ่มอยู่แล้ว
-        // (ยิงซ้ำจะได้ผลเดิมเป๊ะ = เสีย query ฟรีทุกครั้งที่พูลบาง)
-        if ($ctx->requireMu && $pool->count() < 2 && $group !== null) {
-            $wider = $this->candidates($ctx, null);
-            if ($wider->count() > $pool->count()) {
-                $pool = $wider;
-                $reason .= ' → ขยายทุกกลุ่ม';
-                $group = null;
+        // 🪜 (2026-08-23) บันไดผ่อนเกณฑ์ — "ความตรงเรื่อง" สำคัญกว่า "เปอร์เซ็นต์ค่าคอม"
+        //
+        //   ราก (วัดจากพร็อด 2026-08-23): ที่เกณฑ์ ≥9% กลุ่ม **pichong = 0 ชิ้น · pyramid = 0 ชิ้น**
+        //   ⇒ ลูกค้าพูดเรื่องปีชง → resolveGroup คืน 'pichong' ถูกต้อง → พูลว่าง
+        //     → ขยายทุกกลุ่ม → ได้ปี่เซี้ยะมั่วที่ไม่เกี่ยวกับชงเลย
+        //   ⇒ การแก้ตัวจับคำว่า "ชง" ก่อนหน้านี้ ไม่มีผลใดๆ เพราะปลายทางไม่มีของ
+        //     (บั๊กลูกโซ่: ตัวจับถูก แต่พูลว่าง = อาการเหมือนตัวจับพัง)
+        //
+        //   ลำดับที่ถูกต้องสำหรับบอทดูดวง — ของแก้ชงจริงที่ 6% ดีกว่าปี่เซี้ยะมั่วที่ 9%:
+        //     1. กลุ่มที่บริบทชี้ + เกณฑ์ปกติ
+        //     2. กลุ่มเดิม + เกณฑ์ผ่อน      ← รักษาความตรงเรื่องไว้ก่อน
+        //     3. ทุกกลุ่ม + เกณฑ์ปกติ
+        //     4. ทุกกลุ่ม + เกณฑ์ผ่อน
+        if ($ctx->requireMu && $pool->count() < self::MIN_POOL_FOR_PAIR) {
+            foreach ($this->fallbackLadder($ctx, $group) as [$tryCtx, $tryGroup, $note]) {
+                $alt = $this->candidates($tryCtx, $tryGroup);
+                if ($alt->count() > $pool->count()) {
+                    $pool = $alt;
+                    $group = $tryGroup;
+                    $reason .= ' → '.$note;
+                }
+                if ($pool->count() >= self::MIN_POOL_FOR_PAIR) {
+                    break;
+                }
             }
         }
 
@@ -115,6 +134,34 @@ class MuProductPicker
             'group' => $group,
             'reason' => $reason,
         ];
+    }
+
+    /**
+     * ขั้นบันไดที่จะลองไล่ลง เมื่อพูลของกลุ่มที่บริบทชี้ไม่พอ
+     *
+     * @return array<int,array{0:MuPickContext,1:?string,2:string}>
+     */
+    private function fallbackLadder(MuPickContext $ctx, ?string $group): array
+    {
+        $relaxed = $ctx->relaxed();
+        $ladder = [];
+
+        // ขั้น 2 — กลุ่มเดิม เกณฑ์ผ่อน (มีความหมายเฉพาะตอนเกณฑ์ผ่อนต่ำกว่าจริง)
+        if ($group !== null && $relaxed->minCommission < $ctx->minCommission) {
+            $ladder[] = [$relaxed, $group, 'ผ่อนค่าคอมในกลุ่มเดิม'];
+        }
+
+        // ขั้น 3 — ทุกกลุ่ม เกณฑ์ปกติ
+        if ($group !== null) {
+            $ladder[] = [$ctx, null, 'ขยายทุกกลุ่ม'];
+        }
+
+        // ขั้น 4 — ทุกกลุ่ม เกณฑ์ผ่อน
+        if ($relaxed->minCommission < $ctx->minCommission) {
+            $ladder[] = [$relaxed, null, 'ขยายทุกกลุ่ม + ผ่อนค่าคอม'];
+        }
+
+        return $ladder;
     }
 
     /**
