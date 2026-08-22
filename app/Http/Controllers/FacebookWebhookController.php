@@ -1222,10 +1222,28 @@ class FacebookWebhookController extends Controller
     protected function isReplyToOurComment(array $comment): bool
     {
         $parentId = $comment['parent_id'] ?? null;
+        $postId = $comment['post_id'] ?? null;
         $pageId = $this->settings->facebook_page_id ?? null;
         $token = $this->settings->facebook_page_token ?? null;
 
         if (empty($parentId) || empty($pageId) || empty($token)) {
+            return false;
+        }
+
+        // 🚨 (2026-08-22) กับดักที่ทำให้ด่านกันสแปมถูกข้ามทั้งเพจ
+        //
+        //    Facebook ใส่ `parent_id` มา **ทุกคอมเมนต์** ไม่ใช่เฉพาะการตอบกลับ:
+        //      - คอมเมนต์ระดับบน  → parent_id = id ของ "โพส"
+        //      - ตอบกลับคอมเมนต์  → parent_id = id ของ "คอมเมนต์แม่"
+        //
+        //    เดิมเช็คแค่ว่า "มี parent_id ไหม" แล้วถาม Graph ว่าใครเป็นเจ้าของ
+        //    → คอมเมนต์ระดับบนไปถามเจ้าของ "โพส" ซึ่งก็คือเพจเราเอง → true ทุกอัน
+        //    ผลคือคนคอมเมนต์ธรรมดาถูกนับเป็น "ตอบคำถามเรา" แล้วข้ามด่าน 24 ชม.
+        //    (ยืนยันบน prod: ดึงคอมเมนต์ 4 อันที่ถูกนับ ทุกอันไม่มี `parent` เลย)
+        //
+        //    ตัวแยกที่ถูกคือ **parent_id ต้องไม่ใช่ post_id** — และเป็น pre-filter ฟรี
+        //    ตัดคอมเมนต์ระดับบน (ซึ่งเป็นส่วนใหญ่) ออกก่อนโดยไม่ต้องยิง Graph เลย
+        if (empty($postId) || (string) $parentId === (string) $postId) {
             return false;
         }
 
