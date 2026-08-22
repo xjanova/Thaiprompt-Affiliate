@@ -190,6 +190,12 @@ class FortuneFlowNudge extends Command
                     'platform' => $platform,
                     'silence_sec' => $silenceSec,
                 ]);
+
+                // 🛒 (2026-08-22) เสนอดูดวงแล้วลูกค้าไม่เอา/เงียบหาย → ทิ้งของเสริมดวงไว้ให้ก่อนปิด
+                //    จุดนี้เดิม "ปิดเงียบ" ไปเปล่าๆ — เป็นโอกาสสุดท้ายก่อนลูกค้าหายไปเฉยๆ
+                //    ⚠️ ต้องอยู่ "หลัง" อัปเดตสถานะเป็น COMPLETED — ถ้าส่งก่อนแล้วส่งพัง
+                //       reading จะค้างสถานะเดิม แล้ว cron รอบหน้าหยิบมาส่งซ้ำทุกนาที
+                $this->offerProductsOnExit($reading, $platform, $userId);
             }
             $this->line("  #{$reading->id} [{$step}] EXIT (silent {$silenceSec}s)");
             $stats['exit']++;
@@ -308,6 +314,81 @@ class FortuneFlowNudge extends Command
         }
 
         $stats['skip']++;
+    }
+
+    /**
+     * 🛒 ทิ้งของเสริมดวงไว้ให้ ตอนลูกค้าเงียบหายจากขั้นเสนอขายดูดวง
+     *
+     * เจตนา (owner 2026-08-22): "เสนอดูดวงแล้วลูกค้าไม่ดู หรือเลื่อนไปก่อน
+     * ก็เสนอสินค้าเสริมดวงทิ้งเอาไว้"
+     *
+     * ⚠️ ด่านความปลอดภัยของช่องทาง — ต้องเช็คเองที่นี่
+     *   ด่านตรวจ platform/userId เพี้ยน (line แต่ id เป็นตัวเลข) อยู่ **ใต้** จุด EXIT
+     *   ⇒ โค้ดตรงนี้ยังไม่ผ่านด่านนั้น ถ้ายิงเลยจะได้ LINE API 400 "invalid to"
+     *     กับ reading ที่ข้อมูลเพี้ยน (เคส reading 10179)
+     *
+     * ⚠️ ห้ามให้ล้มแล้วกระทบการปิด reading — ห่อ try/catch คืนเงียบๆ
+     */
+    private function offerProductsOnExit(FortuneReading $reading, string $platform, string $userId): void
+    {
+        if ($userId === '') {
+            return;
+        }
+
+        // ข้อมูล platform เพี้ยน → ห้ามยิง (เหตุผลเดียวกับด่าน nudge ด้านล่าง)
+        if ($platform === 'line' && ! preg_match('/^U[0-9a-f]{32}$/i', $userId)) {
+            return;
+        }
+
+        try {
+            app(\App\Services\Fortune\FortuneMuOfferService::class)->offer(
+                $platform,
+                $userId,
+                \App\Models\FortuneProductOffer::TRIGGER_PITCH_DECLINED,
+                $reading,
+                [
+                    // หัวข้อที่ลูกค้าคุยไว้ก่อนหาย — ใช้เลือกกลุ่มของให้ตรงเรื่อง
+                    //
+                    // ⚠️ คอลัมน์ชื่อ `questions` (พหูพจน์) และ cast เป็น array —
+                    //    เขียน `$reading->question` จะได้ null เงียบๆ ไม่มี error ให้เห็น
+                    //    (คอลัมน์ที่ไม่มีจริง อ่านผ่าน attribute ได้ null เหมือนคอลัมน์ว่าง)
+                    'topicText' => $this->topicTextOf($reading),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('FortuneFlowNudge: เสนอสินค้าตอน exit ล้มเหลว (ไม่กระทบการปิด reading)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * รวมคำถามที่ลูกค้าเคยพิมพ์ไว้เป็นสตริงเดียว — ใช้เดาว่าควรเสนอของกลุ่มไหน
+     *
+     * `fortune_readings.questions` cast เป็น array และรูปร่างข้างในไม่คงที่
+     * (บางแถวเป็นลิสต์สตริง บางแถวเป็นลิสต์ออบเจ็กต์ที่มีคีย์ question/text)
+     * ⇒ ต้องแบนแบบทนทุกรูปร่าง ไม่ใช่ implode ตรงๆ (จะได้ "Array" หรือ error)
+     */
+    private function topicTextOf(FortuneReading $reading): string
+    {
+        $raw = $reading->questions;
+
+        if (is_string($raw)) {
+            return mb_substr($raw, 0, 500);
+        }
+        if (! is_array($raw)) {
+            return '';
+        }
+
+        $parts = [];
+        array_walk_recursive($raw, function ($v) use (&$parts) {
+            if (is_string($v) && trim($v) !== '') {
+                $parts[] = trim($v);
+            }
+        });
+
+        return mb_substr(implode(' ', $parts), 0, 500);
     }
 
     /**

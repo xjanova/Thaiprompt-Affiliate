@@ -111,6 +111,8 @@ class DatabaseSeeder extends Seeder
             ShippingRateSeeder::class,          // 🚚 อัตราค่าจัดส่งตามน้ำหนัก (ในประเทศ + ต่างประเทศ)
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
             MuCategorySeeder::class,            // 🔮 หมวดสายมู (ปี่เซี้ยะ/พีระมิด/แก้ปีชง/นักษัตร/เครื่องราง) — ใช้กับ lazada:mu-import
+            LazadaCategoryMapSeeder::class,     // 🗂️ แผนที่แปลงหมวด Lazada → หมวดหน้าร้าน (ต้องมาหลัง ProductCategorySeeder)
+            LazadaMuKeywordSeeder::class,       // 🔮 คีย์เวิร์ดไล่เก็บของสายมูจาก Lazada (ต้องมาหลัง MuCategorySeeder)
             ProductSeeder::class,               // สินค้าตัวอย่าง
             OfficialShopProductsSeeder::class,  // 🆕 สินค้าของระบบ (Official Shop) - seller_id = null, คอมมิชชั่นสูง 25-40%
             // WalletTopupPackagesSeeder::class,   // ❌ ยกเลิก - ระบบเติมเงินไม่ใช้สินค้าแล้ว ใช้ PaymentTransaction โดยตรง

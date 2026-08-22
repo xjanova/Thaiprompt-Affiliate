@@ -64,6 +64,13 @@ class MarketplaceProduct extends Model
         'published_at',
         'is_active',
         'last_synced_at',
+        // 🔮 (2026-08-22) กำกับของสายมู + ด่านอนุมัติ — ดู migration add_mu_columns_*
+        //    `source` เชื่อไม่ได้แล้ว (mu_curated 900 แถว แต่ไฟล์คัดสรรมี 105) ⇒ ใช้ mu_group แทน
+        'mu_group',
+        'mu_keyword_id',
+        'approval_status',
+        'mu_verified_at',
+        'rejected_reason',
     ];
 
     protected $casts = [
@@ -90,7 +97,17 @@ class MarketplaceProduct extends Model
         'tags' => 'array',
         'published_at' => 'datetime',
         'last_synced_at' => 'datetime',
+        'mu_verified_at' => 'datetime',
     ];
+
+    /** ผ่านการตรวจแล้ว — ส่งให้ลูกค้า/ขึ้นหน้าร้านได้ */
+    public const APPROVAL_APPROVED = 'approved';
+
+    /** รอคนตรวจ — ส่งลิงก์ให้ลูกค้าได้ แต่ยังไม่ขึ้นหน้าร้าน */
+    public const APPROVAL_PENDING = 'pending';
+
+    /** ตีกลับ — ห้ามใช้ทุกกรณี */
+    public const APPROVAL_REJECTED = 'rejected';
 
     /**
      * Get the account that owns this product
@@ -258,6 +275,45 @@ class MarketplaceProduct extends Model
     public function scopeByPlatform($query, $platformId)
     {
         return $query->where('platform_id', $platformId);
+    }
+
+    /**
+     * 🔮 Scope เฉพาะของสายมูจริง
+     *
+     * 🚨 ห้ามใช้ `where('source', 'mu_curated')` แทนเด็ดขาด —
+     *    พร็อดมี 900 แถวที่ป้ายนั้น แต่ไฟล์คัดสรรมีแค่ 105 id
+     *    ⇒ อีก 795 แถวเป็นแฟ้ม A4 / สายชาร์จ / เวเฟอร์ ที่ค่าคอมสูงกว่าของสายมูจริงเสียอีก
+     *    ⇒ ลูกค้าถามของแก้ปีชง แล้วแม่หมอส่งสายชาร์จไปให้
+     *
+     * @param  string|null  $group  ระบุกลุ่ม (pixiu/pichong/…) หรือ null = สายมูทุกกลุ่ม
+     */
+    public function scopeMu($query, ?string $group = null)
+    {
+        $query->whereNotNull('mu_group');
+
+        return $group !== null ? $query->where('mu_group', $group) : $query;
+    }
+
+    /**
+     * Scope เฉพาะของที่ผ่านการตรวจแล้ว
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('approval_status', self::APPROVAL_APPROVED);
+    }
+
+    /**
+     * Scope ของที่พร้อมส่งให้ลูกค้าในแชท — ต้องมีครบ 3 อย่าง
+     *   ลิงก์ค่าคอม (ไม่งั้นส่งไปก็ไม่ได้เงิน) · รูป (ลูกค้าต้องเห็นของ) · ของยังมีขาย
+     */
+    public function scopeSendableInChat($query)
+    {
+        return $query->where('is_active', true)
+            ->where('is_available', true)
+            ->whereNotNull('affiliate_url')
+            ->where('affiliate_url', '!=', '')
+            ->whereNotNull('main_image_url')
+            ->where('main_image_url', '!=', '');
     }
 
     /**

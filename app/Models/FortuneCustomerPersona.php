@@ -71,6 +71,10 @@ class FortuneCustomerPersona extends Model
         // 🆕 (2026-05-29 Gap3) Free-chat daily counter — ย้ายจาก Cache → DB (deploy-proof)
         'freechat_count',
         'freechat_count_date',
+        // 🛒 (2026-08-22) ห้ามเสนอสินค้ากับคนนี้ — แยกจาก chat_silenced_until
+        //    ตัวนั้น = ห้ามคุยด้วย · ตัวนี้ = คุยได้ปกติ แต่ห้ามขายของ
+        'product_offer_muted_until',
+        'product_offer_mute_reason',
     ];
 
     protected $casts = [
@@ -90,6 +94,7 @@ class FortuneCustomerPersona extends Model
         'time_waster_score' => 'integer',
         'last_pitch_at' => 'datetime',
         'chat_silenced_until' => 'datetime',
+        'product_offer_muted_until' => 'datetime',
         // 🚫 (2026-05-29 Fix C) Escalation casts
         'silence_count' => 'integer',
         'admin_abuse_alerted_at' => 'datetime',
