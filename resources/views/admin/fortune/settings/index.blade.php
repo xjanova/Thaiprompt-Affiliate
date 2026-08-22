@@ -2057,8 +2057,15 @@ Format 2 — JSON array:
 
             <div x-show="commentEngagementEnabled" x-transition>
                 {{-- 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ
-                     Default: false — รอ Facebook App Review อนุมัติ pages_manage_engagement scope
-                     ก่อน flip ON: ทดสอบว่า replyToComment สำเร็จ (ไม่ใช่ 403) ก่อน --}}
+                     Default: false — เดิมปิดเพราะ Page Token ยังไม่มี pages_manage_engagement (403 + เผา AI quota)
+
+                     ✅ (2026-08-22) เงื่อนไขที่ทำให้ต้องปิดหมดไปแล้ว:
+                        - App Review ผ่าน · token ออกใหม่ 2026-07-28 มี pages_manage_engagement ครบ
+                        - ทดสอบยิงจริงบน prod แล้ว: POST /{post}/comments + /{comment}/comments = 200,
+                          is_hidden=false, เห็นในลิสต์คอมเมนต์จริง (ทั้งโพสรูปและ Reel)
+                        - เรื่องเผา quota แก้แล้วด้วยคลังสำเร็จรูป 100 ชุด + จำกัด AI ที่คีย์ Gemini ฟรีเท่านั้น
+
+                     ⚠️ เงื่อนไขหมดไป ≠ สวิตช์เปิดเอง — ต้องมีคนมากดเปิด (เคยลืมมาแล้ว 3 รอบ) --}}
                 <div class="mb-4 p-4 rounded-lg border-2"
                      :class="enablePublicCommentReply
                         ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700'
@@ -2080,16 +2087,17 @@ Format 2 — JSON array:
                         </label>
                     </div>
                     <div x-show="!enablePublicCommentReply" class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                        <p>🔒 <strong>ปิดอยู่ (แนะนำ)</strong> — บอทส่งเฉพาะ DM ไม่ตอบในโพสต์สาธารณะ</p>
-                        <p>• <strong>ประหยัด AI quota</strong> — ไม่เรียก AI สำหรับ comment_reply (~400 tokens/ครั้ง)</p>
-                        <p>• <strong>ไม่ขึ้น 403 error</strong> — ระบบไม่พยายามโพสต์ในคอมเม้นต์ (Page Token ขาด <code>pages_manage_engagement</code> scope)</p>
-                        <p>• DM ผ่าน Page Messaging ใช้ scope แยก ทำงานปกติ</p>
+                        <p>🔒 <strong>ปิดอยู่</strong> — บอทส่งเฉพาะ DM ไม่ตอบในโพสต์สาธารณะ</p>
+                        <p>• คอมเมนต์ลูกค้าจะไม่มีใครตอบเลย (เห็นเงียบทั้งโพสต์)</p>
+                        <p>• DM ผ่าน Page Messaging ใช้ scope แยก จึงยังทำงานปกติ</p>
                     </div>
                     <div x-show="enablePublicCommentReply" class="text-xs text-amber-800 dark:text-amber-200 space-y-1">
-                        <p>⚠️ <strong>เปิดอยู่</strong> — บอทจะตอบทั้งในคอมเม้นต์สาธารณะ + ส่ง DM</p>
-                        <p>• ⚠️ <strong>ต้องการ <code>pages_manage_engagement</code> scope</strong> — ต้องผ่าน Facebook App Review</p>
-                        <p>• ถ้ายังไม่ได้รับอนุมัติ → AI gen ทุก comment เปล่าๆ (เผา quota)</p>
-                        <p>• เช็คได้จาก log: ถ้าเห็น <code>"Page Access Token ขาด pages_manage_engagement scope"</code> → ปิด toggle นี้</p>
+                        <p>✅ <strong>เปิดอยู่</strong> — บอทตอบในคอมเม้นต์สาธารณะ + ส่ง DM</p>
+                        <p>• <strong>คอมเมนต์สั้นทั่วไป</strong> → ตอบด้วยคลังสำเร็จรูป 100 ชุด (ไม่เสียค่า AI เลย)</p>
+                        <p>• <strong>คนที่ยังไม่เคยคุยกับเรา</strong> → ได้ชุดที่ชวนกดไลก์/ติดตาม รับดวงฟรีรายวัน</p>
+                        <p>• <strong>คนที่โต้ตอบแล้ว</strong> → ได้ชุดอวยพร/ขอบคุณ ไม่ชวนซ้ำ</p>
+                        <p>• <strong>คำถาม หรือคอมเมนต์ยาวมีบริบท</strong> → ให้ AI เจนคำตอบ (<strong>Gemini คีย์ฟรีเท่านั้น</strong> ไม่มีคีย์ฟรีว่างจะตกไปใช้ชุดสำเร็จรูปแทน)</p>
+                        <p>• แก้ข้อความในคลังได้เองที่ตาราง <code>fortune_comment_replies</code> ไม่ต้อง deploy</p>
                     </div>
                 </div>
 

@@ -204,6 +204,7 @@ class DatabaseSeeder extends Seeder
             //     ทั้งคู่ idempotent (upsert) รันซ้ำได้ปลอดภัย
             AppConfigSeeder::class,                 // ⚙️ remote config ของแอป Flutter (กัน fallback cache-only)
             FeatureFlagSeeder::class,               // 🚩 feature flags — ทุกตัว default OFF
+            FortuneCommentReplySeeder::class,       // 💬 คลังคำตอบคอมเมนต์ 100 ชุด (invite/blessing/thanks/emoji)
         ]);
 
         $this->command->info('');

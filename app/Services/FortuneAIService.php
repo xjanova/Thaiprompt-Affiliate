@@ -188,6 +188,34 @@ class FortuneAIService
     }
 
     /**
+     * provider ที่ instance นี้ใช้อยู่จริง
+     *
+     * ⚠️ ต้องเช็คเสมอถ้า caller "บังคับ provider" มา — constructor มี fallback
+     *    acquireKeyAnyProvider() ที่หยิบ provider อื่นให้เงียบๆ เมื่อ provider ที่ขอไม่มีคีย์ว่าง
+     *    (ดู __construct) ⇒ ขอ gemini ไม่ได้แปลว่าได้ gemini
+     *
+     * @return string
+     */
+    public function getProvider(): string
+    {
+        return $this->provider;
+    }
+
+    /**
+     * purpose ของคีย์ที่ pool หยิบมาให้จริง
+     *
+     * ⚠️ ใช้แยก "คีย์ฟรี" ออกจาก "คีย์เสียเงิน" — scope 'chat' ของ AiApiKey
+     *    แมตช์ [chat, null, chat_paid] ⇒ ขอ purpose 'chat' มีสิทธิ์ได้ chat_paid กลับมา
+     *    caller ที่ต้องการฟรีเท่านั้นต้องตรวจค่านี้เอง จะเชื่อ purpose ที่ส่งเข้าไปไม่ได้
+     *
+     * @return string|null null = ไม่ได้คีย์จาก pool (ใช้ค่าจาก settings แทน)
+     */
+    public function getCurrentKeyPurpose(): ?string
+    {
+        return $this->currentKey?->purpose;
+    }
+
+    /**
      * 🚀 Provider HTTP timeouts (วินาที)
      *
      * ทำไมต้องสั้น: ลูกค้าจ่ายเงินรอคำทำนาย → ต้อง failover เร็ว

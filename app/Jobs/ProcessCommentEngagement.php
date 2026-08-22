@@ -243,22 +243,47 @@ class ProcessCommentEngagement implements ShouldQueue
                     // 2b. AI สร้าง comment_reply (context-aware) — comment ไม่ตรง pattern
                     //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
                     //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
-                    try {
-                        $engagement = $aiService->generateCommentEngagement(
-                            $commentText,
-                            $userProfile
-                        );
-                        $commentReply = $engagement['comment_reply'] ?? '';
-                    } catch (Throwable $aiError) {
-                        Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+                    //    💸 (2026-08-22) USER SPEC: "ใช้ gemini เจนฟรีเท่านั้น"
+                    //       ตอบคอมเมนต์เป็นงานปริมาณมากและไม่มีรายได้ตรง → ห้ามแตะคีย์เสียเงิน
+                    //       ไม่มีคีย์ฟรีว่าง = ปล่อยให้ตกไปใช้ชุดสำเร็จรูปข้างล่าง
+                    //       (คอมเมนต์ทั่วไปตอบด้วยชุดสำเร็จรูปยังดีกว่าเผาเงินหรือเงียบ)
+                    $geminiService = $this->makeFreeGeminiService($settings);
+
+                    if ($geminiService === null) {
+                        Log::info('Comment Engagement: ไม่มีคีย์ Gemini ฟรีว่าง → ใช้ชุดสำเร็จรูปแทน', [
                             'user_id' => $userId,
-                            'error' => $aiError->getMessage(),
                         ]);
                         $commentReply = '';
+                    } else {
+                        try {
+                            $engagement = $geminiService->generateCommentEngagement(
+                                $commentText,
+                                $userProfile
+                            );
+                            $commentReply = $engagement['comment_reply'] ?? '';
+                        } catch (Throwable $aiError) {
+                            Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+                                'user_id' => $userId,
+                                'error' => $aiError->getMessage(),
+                            ]);
+                            $commentReply = '';
+                        }
                     }
                 }
 
                 // Comment reply fallback ถ้า AI คืน empty
+                if (empty($commentReply)) {
+                    // 💬 (2026-08-22) ลองคลังสำเร็จรูปก่อน — ได้ข้อความหลากหลายกว่า template เดี่ยว
+                    //    template ตัวเดียวยิงซ้ำทุกเคสที่ AI พลาด = สัญญาณสแปมชัดเจน
+                    //    ⚠️ $isLao ของ matchCommonGratitudePattern เป็น local ของเมธอดนั้น
+                    //       ตรงนี้ต้องอ่าน locale จาก $commentLocale ที่ resolve ไว้ด้านบน
+                    $commentReply = $this->pickCannedReply(
+                        $name,
+                        $commentLocale === \App\Services\FortuneLocaleService::LOCALE_LO,
+                        'blessing'
+                    );
+                }
+
                 if (empty($commentReply)) {
                     $commentReply = str_replace(
                         ['{name}', '{comment}'],
@@ -720,6 +745,15 @@ class ProcessCommentEngagement implements ShouldQueue
             return null;
         }
 
+        // ❓ (2026-08-22) คำถามสั้นๆ ต้องไปหา AI เสมอ ห้ามตอบด้วยชุดสำเร็จรูป
+        //    USER SPEC: "ถ้าเป็นคำถามที่เราให้บอทตอบ หรือเป็นคอมเมนต์คุณภาพ ก็ควรให้เอไอเจนคำตอบ"
+        //    ปกติคำถามจะไม่ตรง blessing pattern อยู่แล้ว แต่ดักไว้ชั้นหนึ่งกันเคสหลุด
+        //    เช่น "รับพรไหมคะ" ที่บังเอิญเฉียดกับ pattern ตระกูล "รับ..."
+        //    ตอบ "สาธุค่ะ" ใส่คนที่ถามคำถาม = เสียลูกค้าและดูเป็นบอททันที
+        if ($this->isLikelyQuestion($commentText)) {
+            return null;
+        }
+
         $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
 
         // 🙏 Blessing/gratitude patterns (Thai + Lao) — v2 expanded (2026-05-23)
@@ -805,7 +839,20 @@ class ProcessCommentEngagement implements ShouldQueue
             return $this->pickCannedReply($name, $isLao, 'emoji');
         }
 
-        return null;
+        // 🧹 (2026-08-22) CATCH-ALL: สั้น + ไม่ใช่คำถาม = ตอบด้วยชุดสำเร็จรูป
+        //
+        //    เดิมต้องตรงรายการ pattern เป๊ะๆ ถึงจะได้ชุดสำเร็จรูป — วัดกับคอมเมนต์จริง 2,000 อัน
+        //    แล้วพบว่า **71.8% หลุดไป AI** เพราะภาษาลูกค้าจริงไม่เข้ากรอบ:
+        //      "รับโชคใหญ่" ("ใหญ่" ไม่อยู่ในรายการ) · "น้อมรับสาธุ" · "รับแสง" · "ฉันใม่แคร์" (พิมพ์ผิด)
+        //    ⇒ ไล่เติม pattern เป็นเกมตีตัวตุ่นที่ไม่มีวันจบ เพราะ typo/สแลง/มีมเกิดใหม่ตลอด
+        //
+        //    USER SPEC: "นอกจากคำคอมเม้นต์นั้นยาว หรือมีบริบทต้องตอบ จึงให้บอทเจน gemini ไปตอบ
+        //                ไม่ใช่ใช้บอทตอบทุกเม้นต์"
+        //    ⇒ เกณฑ์ที่ถูกคือ **ความยาว + เป็นคำถามไหม** ไม่ใช่ "ตรงรายการคำอวยพรที่เรานึกออกไหม"
+        //
+        //    ด่านที่กรองไปแล้วก่อนถึงบรรทัดนี้: ยาวเกิน 25 ตัว / เป็นคำถาม → ทั้งคู่ไป AI
+        //    ที่เหลือคือคอมเมนต์สั้นทั่วไป ตอบด้วยคำอวยพร/คำชวนได้อย่างปลอดภัย
+        return $this->pickCannedReply($name, $isLao, 'blessing');
     }
 
     /**
@@ -835,6 +882,22 @@ class ProcessCommentEngagement implements ShouldQueue
      */
     protected function pickCannedReply(string $name, bool $isLao, string $category): string
     {
+        // 💬 (2026-08-22) สายไทยใช้คลังในฐานข้อมูล (100 ชุด) — แอดมินแก้เองได้ ไม่ต้อง deploy
+        //    สายลาวคงชุดฝังโค้ดไว้ตามเดิม (เลนลาวปิดตายแล้ว ห้ามเพิ่มของใหม่)
+        if (! $isLao) {
+            $fromPool = \App\Models\FortuneCommentReply::pickRendered(
+                $this->resolveReplyCategory($category),
+                $name,
+                $this->data['facebook_user_id'] ?? null,
+            );
+
+            if ($fromPool !== null) {
+                return $fromPool;
+            }
+
+            // คลังยังไม่พร้อม (deploy ขึ้นก่อน migrate) → ตกลงมาใช้ชุดฝังโค้ดข้างล่าง
+        }
+
         if ($category === 'blessing') {
             $replies = $isLao ? [
                 'ສາທຸເດີ {name} 🙏 ຂໍໃຫ້ດວງດີຕະຫຼອດອາທິດນີ້',
@@ -872,5 +935,130 @@ class ProcessCommentEngagement implements ShouldQueue
         $reply = $replies[array_rand($replies)];
 
         return str_replace('{name}', $name, $reply);
+    }
+
+    /**
+     * เลือกหมวดคำตอบตามสถานะความสัมพันธ์กับลูกค้า
+     *
+     * USER SPEC (2026-08-22):
+     *   "ถ้าคนนั้นไม่เคยมีประวัติทักเพจ ไม่เคยคุยกับเราผ่านแมสเซนเจอร์เลย ก็ชวนไปเรื่อยๆ
+     *    จนกว่าจะมีการโต้ตอบ · กับ DM เราไปแล้วก็ไม่ต้องชวนอีก ให้ใช้คำตอบคอมเมนต์แบบอื่น"
+     *
+     * ⚠️ ตัวชี้ขาดคือ hasEngagedWithUs() (ลูกค้าตอบ) ไม่ใช่ hasPriorDmInteraction() (เราส่ง)
+     *    ใช้ผิดตัว = คนที่โดนเรายิง DM ฝ่ายเดียว 10,320 คนจะไม่ได้รับคำชวนอีกเลย
+     *
+     * @param  string  $matchedCategory  หมวดที่ pattern matcher จับได้ ('blessing' | 'emoji')
+     * @return string หมวดจริงที่จะใช้หยิบข้อความ
+     */
+    protected function resolveReplyCategory(string $matchedCategory): string
+    {
+        $userId = $this->data['facebook_user_id'] ?? null;
+
+        $credit = $userId
+            ? \App\Models\FortuneUserCredit::findByUser($userId, 'facebook')
+            : null;
+
+        // ยังไม่เคยโต้ตอบ (รวมกรณีไม่มีแถวเลย = คนใหม่แกะกล่อง) → ชวนกดไลก์/ติดตาม
+        if ($credit === null || ! $credit->hasEngagedWithUs()) {
+            return \App\Models\FortuneCommentReply::CATEGORY_INVITE;
+        }
+
+        // คุยกับเราแล้ว → ห้ามชวนซ้ำ
+        //   คอมเมนต์อีโมจิล้วน → ชุดสั้น
+        //   คอมเมนต์ทั่วไป → สลับ อวยพร/ขอบคุณ กันโทนซ้ำ
+        if ($matchedCategory === 'emoji') {
+            return \App\Models\FortuneCommentReply::CATEGORY_EMOJI;
+        }
+
+        return random_int(1, 100) <= 70
+            ? \App\Models\FortuneCommentReply::CATEGORY_BLESSING
+            : \App\Models\FortuneCommentReply::CATEGORY_THANKS;
+    }
+
+    /**
+     * สร้าง AI service ที่ผูกกับคีย์ Gemini "ฟรี" เท่านั้น
+     *
+     * USER SPEC (2026-08-22): "ให้บอทตอบคอมเมนต์อัตโนมัติ โดยใช้ gemini เจนฟรีเท่านั้น"
+     *
+     * 🚨 กับดัก 2 ชั้นที่ต้องตรวจเอง — เชื่อพารามิเตอร์ที่ส่งเข้าไปไม่ได้:
+     *
+     *   1. scope 'chat' ของ AiApiKey แมตช์ [chat, null, chat_paid]
+     *      ⇒ ขอ purpose 'chat' แล้วได้คีย์ chat_paid กลับมาได้ (prod มีคีย์ id 36 purpose=chat_paid)
+     *
+     *   2. constructor ของ FortuneAIService มี fallback acquireKeyAnyProvider()
+     *      ⇒ ถ้า gemini ไม่มีคีย์ว่าง มันจะหยิบ openai/groq มาให้เงียบๆ
+     *
+     *   ทั้งสองข้อจบลงที่ "ตอบคอมเมนต์ด้วยเงิน" โดยไม่มีอะไรฟ้อง — ต้องกันด้วยการตรวจของจริง
+     *   (บทเรียนเดียวกับตอนคีย์ TTS หลุดไปตอบลูกค้า: ดูของที่ได้จริง ไม่ใช่ของที่ขอ)
+     *
+     * ⚠️ ห้ามใช้ overrideForPlayground() ยัดคีย์ใส่ instance ที่ acquire มาแล้ว —
+     *    __destruct() ปล่อยคีย์ด้วย $this->provider ตัวใหม่ แต่ id ของคีย์เก่า
+     *    = ปล่อยผิด provider ทำให้ตัวนับ in-flight ของ pool เพี้ยนถาวร
+     *
+     * @param  FortuneTellingSetting  $settings  ตั้งค่าระบบดูดวง
+     * @return FortuneAIService|null null = ไม่มีคีย์ฟรีว่าง (caller ต้องใช้ชุดสำเร็จรูปแทน)
+     */
+    protected function makeFreeGeminiService(FortuneTellingSetting $settings): ?FortuneAIService
+    {
+        try {
+            $service = new FortuneAIService($settings, 'chat', 'gemini');
+
+            // ตรวจของที่ได้จริง ไม่ใช่ของที่ขอ
+            if ($service->getProvider() !== 'gemini') {
+                return null;   // หลุด scope → __destruct คืนคีย์ให้เอง (ถูก provider)
+            }
+
+            if ($service->getCurrentKeyPurpose() !== 'chat') {
+                // chat_paid หรือ null (ไม่รู้ว่าฟรีไหม) → ไม่เอาทั้งคู่
+                return null;
+            }
+
+            return $service;
+        } catch (Throwable $e) {
+            Log::warning('Comment Engagement: สร้าง Gemini service ไม่ได้', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * คอมเมนต์นี้เป็นคำถามหรือเปล่า
+     *
+     * คำถาม = ต้องให้ AI ตอบ ห้ามยิงชุดสำเร็จรูปใส่
+     *
+     * ⚠️ ต้องเช็คบนข้อความดิบ ไม่ใช่ normalized — normalizeForPatternMatch() ตัด "?" ทิ้ง
+     *    (อยู่ใน charlist ของ preg_replace) ถ้าเช็คทีหลังจะไม่เจอเครื่องหมายคำถามเลย
+     *
+     * ⚠️ ห้ามใช้ trim() แบบใส่ charlist หลายไบต์กับข้อความไทย — คำลงท้าย น/ธ/ผ/ฝ/เ จะพัง
+     *    ตรงนี้ใช้ str_contains ล้วน ไม่แตะขอบสตริง
+     *
+     * @param  string  $text  ข้อความคอมเมนต์ดิบ
+     * @return bool
+     */
+    protected function isLikelyQuestion(string $text): bool
+    {
+        // เครื่องหมายคำถาม (ทั้งอังกฤษและตัวเต็มความกว้าง)
+        if (str_contains($text, '?') || str_contains($text, '？')) {
+            return true;
+        }
+
+        // คำบ่งชี้คำถามภาษาไทย
+        //   ไม่ใส่ "มั้ย/ไหม" เดี่ยวๆ ไว้ในตระกูล blessing pattern อยู่แล้ว จึงปลอดภัย
+        $questionWords = [
+            'ไหม', 'มั้ย', 'หรือเปล่า', 'รึเปล่า', 'ป่าว',
+            'อะไร', 'ทำไม', 'ยังไง', 'อย่างไร', 'เมื่อไหร่', 'เมื่อไร',
+            'ที่ไหน', 'ใคร', 'เท่าไหร่', 'เท่าไร', 'กี่',
+            'ช่วยดู', 'ขอถาม', 'สอบถาม', 'ดูให้หน่อย', 'ทำนายให้',
+        ];
+
+        foreach ($questionWords as $word) {
+            if (str_contains($text, $word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
