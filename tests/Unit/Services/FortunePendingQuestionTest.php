@@ -172,12 +172,19 @@ class FortunePendingQuestionTest extends TestCase
     public function test_pending_stops_holding_clock_after_grace_cap(): void
     {
         $reading = $this->reading();
+        $base = Carbon::getTestNow()->copy();
         $this->invokeTrait('rememberPendingProSessionQuestion', $reading, 'ศัตรู', 'deep');
 
-        Carbon::setTestNow(Carbon::create(2026, 8, 21, 19, 52, 0)); // 9 นาที — ยังไม่เกินเพดาน 10
+        // ⚠️ (2026-08-22) ผูกกับ constant ห้าม hardcode นาที — ค่านี้ถูกปรับ 10 → 15 มาแล้วรอบหนึ่ง
+        //   (เคส FTU-260822-P2391) เทสต์ที่ตรึงเลขไว้จะแดงทุกครั้งที่จูนค่า ทั้งที่พฤติกรรมยังถูก
+        $cap = FortuneConversationService::PRO_SESSION_PENDING_GRACE_MINUTES;
+
+        // ก่อนถึงเพดาน — ยังต้องยืดเวลาให้ตอบ
+        Carbon::setTestNow($base->copy()->addMinutes($cap - 1));
         $this->assertTrue($this->invokeTrait('hasPendingProSessionQuestion', $reading, null, null));
 
-        Carbon::setTestNow(Carbon::create(2026, 8, 21, 19, 54, 1)); // 11 นาที — เกินเพดาน
+        // พ้นเพดานแม้แต่วินาทีเดียว — ต้องเลิกยืด (กัน session อมตะ)
+        Carbon::setTestNow($base->copy()->addMinutes($cap)->addSeconds(1));
         $this->assertFalse($this->invokeTrait('hasPendingProSessionQuestion', $reading, null, null));
     }
 

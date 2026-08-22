@@ -50,7 +50,22 @@ class ProcessCommentEngagement implements ShouldQueue
     public function __construct(array $data)
     {
         $this->data = $data;
-        $this->onQueue('tpix-default'); // ใช้ queue ที่มี worker อยู่แล้ว
+
+        // 🚦 (2026-08-22) เลนช้า — ห้ามอยู่คิวเดียวกับงานของลูกค้าที่จ่ายเงินแล้ว
+        //
+        //   ต้นตอ FTU-260822-P2391: job ตัวนี้อยู่ `tpix-default` ร่วมกับ
+        //   ProcessBufferedProSessionMessageJob / ProcessBufferedCelticMessageJob แบบ FIFO
+        //   ตัวละ 7-11 วินาที (ดึงโปรไฟล์ + AI + ตอบคอมเมนต์ + DM) ไหลเข้า ~7 ตัว/นาที
+        //   = อัตราเข้าเท่าอัตราออกพอดี → backlog ค้าง ~100 ไม่มีวันลด
+        //   → คำถามลูกค้าที่จ่าย 39฿ ต้องต่อแถวหลังคอมเมนต์ฟรี 100 ตัว = รอ ~14 นาที
+        //     แต่ Pro Session window มีแค่ 7 นาที ⇒ ปิดบิลก่อน job ได้รัน = ตอบ 0 ข้อ
+        //
+        //   worker รัน `--queue=tpix-default,default,tpix-low` — Laravel ไล่ตามลำดับที่ระบุ
+        //   ⇒ tpix-low ได้รันเฉพาะตอนคิวจ่ายเงินว่าง = คอมเมนต์ท่วมแค่ไหนก็ไม่บล็อกคนจ่ายเงิน
+        //
+        //   ⚠️ เปลี่ยนชื่อคิวตรงนี้ ต้องแก้ $QUEUES ใน /home/admin/bin/fortune-worker-supervisor.sh
+        //      บนเซิร์ฟเวอร์ด้วย ไม่งั้นงานจะตกคิวที่ไม่มี worker อ่าน = เงียบสนิท
+        $this->onQueue('tpix-low');
     }
 
     /**
@@ -1058,7 +1073,6 @@ class ProcessCommentEngagement implements ShouldQueue
      *    ตรงนี้ใช้ str_contains ล้วน ไม่แตะขอบสตริง
      *
      * @param  string  $text  ข้อความคอมเมนต์ดิบ
-     * @return bool
      */
     protected function isLikelyQuestion(string $text): bool
     {

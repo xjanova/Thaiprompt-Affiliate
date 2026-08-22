@@ -58,8 +58,26 @@ trait ProSessionTrait
      * ต้นตอ FTU-260821-K9664: ลูกค้าถาม 3 ข้อ → bot เงียบ (deploy กิน buffer) →
      *   **นาฬิกา 7 นาทีเดินต่อทั้งที่ยังไม่ได้ตอบ** → หมดเวลาโดยไม่ได้คำตอบสักคำ
      * → ถ้ายังมีคำถามค้างที่ยังไม่ตอบ ห้ามให้ session หมดเวลา (แต่ต้องมีเพดาน กัน session อมตะ)
+     *
+     * ⚠️ (2026-08-22) ค่านี้ต้อง **เท่ากับ** หน้าต่างมองย้อนของ FortuneProSessionAnswerRecover
+     *   (`updated_at >= now()-15 นาที`) — เกราะสองชั้นนี้ต้องหมดอายุพร้อมกัน
+     *
+     *   เดิม 10 vs 15 = มีช่องว่าง 5 นาทีที่ cron ยังไล่ re-dispatch อยู่ (เห็น pending_count=1)
+     *   แต่ has...() เลิกนับคำถามนั้นแล้ว → isInProSession() ตัดสินว่าหมดเวลา แล้วปิดบิลทิ้ง
+     *   เคสจริง FTU-260822-P2391: คำถามค้าง 21:23:15 · เกราะหลุด 21:33:15 · cron ยังยิงถึง 21:35:02
+     *   · บิลถูกปิด 21:36:03 — ตัวปิดชนะตัวที่พยายามตอบ
+     *
+     *   ห้ามตั้งเกินหน้าต่างของ cron ด้วย — จะกลายเป็น session ที่ค้างเปิดโดยไม่มีใคร retry
      */
-    public const PRO_SESSION_PENDING_GRACE_MINUTES = 10;
+    public const PRO_SESSION_PENDING_GRACE_MINUTES = 15;
+
+    /**
+     * 🛟 (2026-08-22) คำถามค้างเก่าสุดกี่นาทีที่ยังยอม "ตอบย้อนหลัง" หลัง session ปิดไปแล้ว
+     *
+     * ใช้โดย ProcessBufferedProSessionMessageJob — กว้างกว่า grace ข้างบนเผื่อคิวตัน
+     * แต่ยังแคบพอที่จะไม่ไปตอบคำถามของเมื่อคืน
+     */
+    public const PRO_SESSION_LATE_ANSWER_MAX_MINUTES = 30;
 
     /**
      * เปิด Pro Session บน reading
@@ -1320,6 +1338,71 @@ trait ProSessionTrait
         });
 
         return is_string($result) ? $result : '';
+    }
+
+    /**
+     * 🛟 (2026-08-22) อ่านคำถามค้าง "แบบไม่หยิบออก" — คู่กับ take...() ข้างบน
+     *
+     * ทำไมต้องมี: `isInProSession()` **ไม่ใช่ read-only** — หมดเวลาเมื่อไหร่มันเรียก
+     *   `clearProSessionFlags()` ซึ่งเรียก `clearPendingProSessionQuestion()` ต่อในคอลเดียวกัน
+     *   ⇒ พอ job เช็ค session แล้วได้ false คำถามค้างก็ถูกล้างไปเรียบร้อยแล้ว
+     *      บรรทัดถัดไปจะไม่เหลืออะไรให้กู้เลย (ต้นตอ FTU-260822-P2391)
+     *
+     * ⚠️ ต้อง peek **ก่อน** เช็ค session และห้าม take ตรงนั้น —
+     *    ถ้า take ก่อน ธงจะหายไป → isInProSession() มองไม่เห็นคำถามค้าง → ตัดสินว่าหมดเวลาทันที
+     *    (นี่คือเหตุผลที่ลำดับเดิมเช็ค session ก่อนหยิบ — ลำดับถูก แต่ขาดสำเนากันไว้)
+     *
+     * @param  string  $scope  'deep' | 'celtic'
+     * @return array{text: string, at: string|null} text='' = ไม่มีคำถามค้าง
+     */
+    public function peekPendingProSessionQuestionPublic(FortuneReading $reading, string $scope = 'deep'): array
+    {
+        [$qKey, $atKey] = $this->pendingQuestionStateKeys($scope);
+
+        $pending = $reading->getConversationState($qKey, []);
+        if (! is_array($pending) || $pending === []) {
+            return ['text' => '', 'at' => null];
+        }
+
+        $texts = array_filter(array_map(fn ($t) => trim((string) $t), $pending), fn ($t) => $t !== '');
+
+        return [
+            'text' => implode("\n", $texts),
+            'at' => $reading->getConversationState($atKey),
+        ];
+    }
+
+    /**
+     * 🛟 (2026-08-22) จอง "สิทธิ์ตอบย้อนหลัง" แบบ atomic — ผู้ชนะรายเดียวเท่านั้นที่ได้ตอบ
+     *
+     * จำเป็นเพราะทางตอบย้อนหลังเกิดขึ้น **หลัง** pending_q ถูกล้างไปแล้ว = ไม่มี token
+     * ให้แย่งกันเหมือนทางปกติอีก ถ้าไม่กันตรงนี้ job ที่ค้างคิวจะตอบซ้ำกันทุกตัว
+     *   เคสจริง FTU-260822-P2391: หลังคิวคลาย มี job รันไล่กัน **4 ตัว** ภายใน 3 นาที
+     *   ⇒ ลูกค้าจะได้คำตอบเดียวกัน 4 กล่องรวด
+     *
+     * @param  string  $scope  'deep' | 'celtic'
+     * @return bool true = คุณคือผู้ชนะ ตอบได้ / false = มีคนตอบไปแล้ว เงียบไว้
+     */
+    public function claimLateProSessionAnswerPublic(FortuneReading $reading, string $scope = 'deep'): bool
+    {
+        $stateKey = $scope === 'celtic' ? 'celtic_late_answered_at' : 'pro_session_late_answered_at';
+
+        $lock = \Illuminate\Support\Facades\Cache::lock('fortune-prosession-late:'.$scope.':'.$reading->id, 30);
+
+        // non-blocking — ไม่ได้ lock แปลว่ามี job อื่นกำลังจองอยู่พอดี
+        $result = $lock->get(function () use ($reading, $stateKey) {
+            $reading->refresh();
+
+            if (! empty($reading->getConversationState($stateKey))) {
+                return false; // ตอบย้อนหลังไปแล้วรอบหนึ่ง
+            }
+
+            $reading->setConversationState($stateKey, now()->toIso8601String());
+
+            return true;
+        });
+
+        return $result === true;
     }
 
     /**

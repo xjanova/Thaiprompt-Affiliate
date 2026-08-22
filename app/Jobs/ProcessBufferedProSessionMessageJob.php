@@ -74,14 +74,60 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
             return;
         }
 
+        // 🛟 (2026-08-22) peek สำเนาคำถามค้างไว้ "ก่อน" เช็ค session — ห้าม take
+        //   isInProSession() ไม่ใช่ read-only: หมดเวลาเมื่อไหร่มันเรียก clearProSessionFlags()
+        //   ซึ่งล้าง pending_q ทิ้งในคอลเดียวกัน ⇒ บรรทัดถัดไปจะไม่เหลืออะไรให้กู้เลย
+        //   (แต่จะ take ก่อนก็ไม่ได้ — ธงต้องอยู่ให้ isInProSession ยืดเวลาให้เมื่อยังมีคำถามค้าง)
+        $peeked = $service->peekPendingProSessionQuestionPublic($reading, 'deep');
+
         // ⚠️ ต้องเช็ค session "ก่อน" หยิบคำถามออก — isInProSession ยืดเวลาให้เมื่อยังมีคำถามค้าง
         //   ถ้าหยิบก่อน ธงค้างจะหายไป → session ถูกตัดสินว่าหมดเวลา → ไม่ตอบคำถามที่เพิ่งหยิบมา
-        if (! $service->isInProSessionPublic($reading)) {
-            Log::info('ProcessBufferedProSessionMessageJob: session ปิดแล้ว → ข้าม', [
-                'reading_id' => $this->readingId,
-            ]);
+        $isLateAnswer = false;
 
-            return;
+        if (! $service->isInProSessionPublic($reading)) {
+            // ✅ (2026-08-22) บิลที่จ่ายเงินแล้ว + มีคำถามที่ไม่เคยได้คำตอบ = ต้องตอบ แม้ session ปิดไปแล้ว
+            //
+            //   ลูกค้าจ่ายเงินซื้อ "คำตอบ" ไม่ได้ซื้อ "สิทธิ์ถามภายในเวลา" —
+            //   ระบบตอบไม่ทันเป็นความผิดฝั่งเรา ไม่ใช่ของเขา (rule: paid bills always resume)
+            //
+            //   ต้นตอ FTU-260822-P2391: job ติดคิวหลัง ProcessCommentEngagement ~100 ตัว นาน 12 นาที
+            //   พอได้รันจริง cron ก็เพิ่งปิดบิลไปเสี้ยววินาทีก่อนหน้า → เดิม return ตรงนี้
+            //   ⇒ ลูกค้าจ่าย 39฿ ถาม 1 ข้อ ได้คำตอบ 0 ข้อ แถมโดนข้อความ "หมดเวลาทำนายแล้วค่ะ"
+            //   fail-closed ทุกด่าน — ไม่ใช่บิลจ่ายเงิน / ไม่มีคำถามค้าง / ไม่รู้อายุ = เงียบไว้ดีกว่า
+            //   (ห้ามเดาอายุ — ตอบคำถามของเมื่อคืนตอนตี 2 แย่กว่าไม่ตอบ)
+            $lateText = $peeked['text'];
+            $ageMin = $this->pendingAgeMinutes($peeked['at']);
+
+            if (! $reading->is_paid
+                || $lateText === ''
+                || $ageMin === null
+                || $ageMin > FortuneConversationService::PRO_SESSION_LATE_ANSWER_MAX_MINUTES) {
+                Log::info('ProcessBufferedProSessionMessageJob: session ปิดแล้ว → ข้าม', [
+                    'reading_id' => $this->readingId,
+                    'is_paid' => (bool) $reading->is_paid,
+                    'pending_age_min' => $ageMin,
+                ]);
+
+                return;
+            }
+
+            // 🔒 ผู้ชนะรายเดียวเท่านั้น — ทางนี้เกิดหลัง pending_q ถูกล้างแล้ว = ไม่มี token ให้แย่งกัน
+            //    ถ้าไม่กัน job ที่ค้างคิวจะตอบซ้ำกันทุกตัว (เคสจริงมี 4 ตัวรันไล่กันใน 3 นาที)
+            if (! $service->claimLateProSessionAnswerPublic($reading, 'deep')) {
+                Log::info('ProcessBufferedProSessionMessageJob: มี job อื่นตอบย้อนหลังไปแล้ว → ข้าม', [
+                    'reading_id' => $this->readingId,
+                ]);
+
+                return;
+            }
+
+            $isLateAnswer = true;
+
+            Log::warning('ProcessBufferedProSessionMessageJob: ⏰ session ปิดแล้วแต่คำถามที่จ่ายเงินยังไม่ได้ตอบ → ตอบย้อนหลัง', [
+                'reading_id' => $this->readingId,
+                'pending_age_min' => $ageMin,
+                'preview' => mb_substr($lateText, 0, 120),
+            ]);
         }
 
         $combined = '';
@@ -117,6 +163,15 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
             }
         }
 
+        // 🛟 (2026-08-22) ทางตอบย้อนหลัง — pending_q ถูก clearProSessionFlags() ล้างไปแล้วตอนเช็ค session
+        //   ⇒ take...() ข้างบนคืนค่าว่างแน่นอน ต้องตกมาใช้สำเนาที่ peek ไว้ก่อนหน้า
+        //   ปลอดภัยเรื่องตอบซ้ำ เพราะสิทธิ์ถูกจองไปแล้วด้วย claimLateProSessionAnswerPublic()
+        if ($combined === '' && $isLateAnswer && $peeked['text'] !== '') {
+            $combined = $peeked['text'];
+            $source = 'late_peek';
+            $count = substr_count($combined, "\n") + 1;
+        }
+
         if ($combined === '') {
             return; // job อื่น flush/หยิบไปแล้ว
         }
@@ -142,6 +197,16 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
                 return;
             }
 
+            // ⏰ (2026-08-22) ตอบย้อนหลัง — ลูกค้าเพิ่งได้ข้อความ "หมดเวลาทำนายแล้วค่ะ" ไปหมาดๆ
+            //   ถ้าโผล่คำตอบเฉยๆ ต่อท้ายจะงงว่าตกลงหมดเวลาหรือไม่หมด → ต้องมีบรรทัดขอโทษนำ
+            //   (อยู่ในบทบาทแม่หมอตามธรรมเนียมไฟล์นี้ — ห้ามพูดถึงคิว/ระบบ/AI ขัดข้อง)
+            if ($isLateAnswer) {
+                $payload['message'] = "🌙 ขออภัยที่แม่หมอตอบช้าไปหน่อยนะคะ 🙏\n"
+                    ."คำถามของเจ้าชะตาไม่ได้หายไปไหน — แม่หมอตอบให้แล้วค่ะ ✨\n\n"
+                    ."──────────────────────\n\n"
+                    .$payload['message'];
+            }
+
             app(FortuneChannelManager::class)->sendResponse($this->platform, $this->userId, $payload);
         } catch (\Throwable $e) {
             Log::error('ProcessBufferedProSessionMessageJob: exception', [
@@ -161,6 +226,30 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
                     'error' => $sendErr->getMessage(),
                 ]);
             }
+        }
+    }
+
+    /**
+     * 🛟 (2026-08-22) อายุของคำถามค้าง (นาที) — ใช้ตัดสินว่ายังควรตอบย้อนหลังไหม
+     *
+     * @param  mixed  $at  ISO timestamp จาก pro_session_pending_q_at
+     * @return int|null null = ไม่มี timestamp / parse ไม่ได้ ⇒ ห้ามตอบย้อนหลัง (fail-closed)
+     *                  เพราะไม่รู้อายุ = ไม่รู้ว่าเป็นคำถามเมื่อครู่หรือของเมื่อคืน
+     *
+     * ⚠️ รับ mixed ไม่ใช่ ?string — ค่ามาจาก conversation_state (คอลัมน์ JSON) จะเป็นอะไรก็ได้
+     *    ถ้าประกาศ ?string แล้วเจอ array จะโยน TypeError **นอก** try ของ handle() = job ตายทั้งตัว
+     */
+    private function pendingAgeMinutes($at): ?int
+    {
+        if (! is_string($at) || $at === '') {
+            return null;
+        }
+
+        try {
+            // 🩹 Carbon 3 — absolute=true เสมอ (กัน now() < $at → ค่าลบ → ผ่านด่านอายุฟรี)
+            return (int) \Carbon\Carbon::parse($at)->diffInMinutes(now(), true);
+        } catch (\Throwable $e) {
+            return null;
         }
     }
 }

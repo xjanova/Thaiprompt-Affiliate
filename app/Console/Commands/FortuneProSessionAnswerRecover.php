@@ -6,6 +6,7 @@ use App\Jobs\ProcessBufferedProSessionMessageJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\MessageBuffer;
+use App\Services\FortuneConversationService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -33,8 +34,15 @@ use Illuminate\Support\Facades\Log;
  *
  * ⚠️ grace ต้อง "นานกว่าที่ job ปกติจะ flush" — ไม่งั้นจะไปแย่ง job เดิมที่ยัง debounce อยู่ตามปกติ
  *
- * Schedule: ทุกนาที (routes/console.php) — ต้องจับให้ทันภายใน PRO_SESSION_PENDING_GRACE_MINUTES (10 นาที)
+ * Schedule: ทุกนาที (routes/console.php) — ต้องจับให้ทันภายใน PRO_SESSION_PENDING_GRACE_MINUTES (15 นาที)
  *   เพราะพ้นเพดานนั้นคำถามค้างจะเลิกยืดเวลา session แล้วโดนกวาดทิ้ง
+ *
+ * ⚠️ (2026-08-22) หน้าต่างมองย้อนข้างล่าง (15 นาที) ต้อง **เท่ากับ** PRO_SESSION_PENDING_GRACE_MINUTES เสมอ
+ *   ไม่เท่ากันเมื่อไหร่ = มีช่วงที่ cron ยังไล่ตอบอยู่แต่เกราะหยุดนาฬิกาหลุดไปแล้ว → บิลถูกปิดทับ
+ *   (เคสจริง FTU-260822-P2391 — 10 vs 15 ทำให้ลูกค้าจ่าย 39฿ ได้คำตอบ 0 ข้อ)
+ *
+ * ⚠️ ตาข่ายนี้กู้ได้เฉพาะงานที่ "หาย" ไม่ใช่งานที่ "รอ" — re-dispatch คือการไปต่อท้ายคิวเดิม
+ *   ถ้าคิวตัน ยิ่ง dispatch ยิ่งต่อแถว ไม่ได้ช่วยอะไร (ต้องไปแก้ที่การแยกเลนคิวแทน)
  *
  * Usage:
  *   php artisan fortune:pro-session-answer-recover
@@ -67,12 +75,15 @@ class FortuneProSessionAnswerRecover extends Command
         $skipped = 0;
 
         // ผู้สมัคร: บิลที่จ่ายแล้วใน 24 ชม. และเพิ่งขยับ (settle block เขียน conversation_state → updated_at เด้ง)
-        //   🛟 (2026-08-21) มองย้อน 15 นาที — ต้องคลุม PRO_SESSION_PENDING_GRACE_MINUTES (10) + เผื่อ
-        //   worker ล่มยาว. เดิม 10 นาทีผูกกับ buffer TTL ซึ่งตอนนี้ไม่ใช่แหล่งความจริงแล้ว
+        //   🛟 (2026-08-21) เดิม 10 นาทีผูกกับ buffer TTL ซึ่งตอนนี้ไม่ใช่แหล่งความจริงแล้ว
+        //   🔒 (2026-08-22) ผูกกับ PRO_SESSION_PENDING_GRACE_MINUTES ตรงๆ — ห้าม hardcode แยกกันอีก
+        //      เกราะสองชั้น (cron ไล่ตอบ / has...() หยุดนาฬิกา) ต้องหมดอายุพร้อมกันเป๊ะ
+        $lookbackMin = FortuneConversationService::PRO_SESSION_PENDING_GRACE_MINUTES;
+
         $candidates = FortuneReading::query()
             ->where('is_paid', true)
             ->where('paid_at', '>=', now()->subMinutes(1440))
-            ->where('updated_at', '>=', now()->subMinutes(15))
+            ->where('updated_at', '>=', now()->subMinutes($lookbackMin))
             ->orderBy('updated_at', 'asc')
             ->limit($limit)
             ->get();
