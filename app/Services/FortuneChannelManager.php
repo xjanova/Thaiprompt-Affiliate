@@ -789,6 +789,58 @@ class FortuneChannelManager
                     $celticOnlyIntro = (bool) ($result['celtic_only_intro'] ?? false);
                     $buttons = [];
 
+                    // 🚨 ธงกัน "ต้อนรับ 2 รอบ" — ถ้าข้อความนำออกไปแล้วแต่การ์ดล้ม
+                    //    ห้ามส่ง $message ยาวตามไปอีก (ลูกค้าเห็นคำต้อนรับซ้ำ + เมนูเต็ม = สับสนกว่าเดิม)
+                    $introSent = false;
+
+                    // 🎴 (2026-08-23) การ์ดแพคเกจแบบมีรูป (generic template) — ทรงเดียวกับการ์ดเสนอสินค้า
+                    //   รูปหัวการ์ดมีชื่อแพคเกจ + ราคา + กติกา 3 ข้อ พิมพ์ติดอยู่ในรูปแล้ว
+                    //   ⚠️ เฉพาะ tier_choice ครั้งแรกเท่านั้น — invalid/chitchat เป็นข้อความ AI ตอบสด
+                    //   ⚠️ offer_free = true → ข้ามการ์ด (ชุดการ์ดไม่มีใบ "ทำนายฟรี" ปุ่มฟรีจะหาย)
+                    //   การ์ดส่งไม่สำเร็จ → ตกไป text + quick reply แบบเดิมด้านล่าง (ลูกค้าไม่ค้างแน่นอน)
+                    $tierMeta = $result['tier_meta'] ?? null;
+                    if (($result['action'] ?? '') === 'tier_choice' && is_array($tierMeta) && ! $offerFree) {
+                        try {
+                            $cardBuilder = app(\App\Services\Fortune\FortunePackageCardBuilder::class);
+                            $template = $cardBuilder->facebookTemplate([
+                                'deep_enabled' => $deepEnabled,
+                                'celtic_enabled' => $celticEnabled,
+                                'black_magic_enabled' => (bool) ($result['black_magic_enabled'] ?? false),
+                                'celtic_only_intro' => $celticOnlyIntro,
+                                'deep_price' => $result['deep_price'] ?? null,
+                                'celtic_price' => $result['celtic_price'] ?? null,
+                                'deep_window' => $tierMeta['deep_window'] ?? 7,
+                                'qa_window' => $tierMeta['qa_window'] ?? 15,
+                                'q_limit_text' => $tierMeta['q_limit_text'] ?? 'ไม่จำกัด',
+                            ]);
+
+                            // 🚪 ข้อความนำต้องส่งก่อนการ์ด — generic template ไม่มีที่ให้ใส่ข้อความ
+                            //    และเป็นที่เดียวที่บอกทางออก "ไว้คราวหน้า" ให้ลูกค้าที่ไม่อยากดู
+                            if ($template !== null && $fbService->sendMessage($userId, $cardBuilder->intro($celticOnlyIntro), $extra)) {
+                                $introSent = true;
+
+                                if ($fbService->sendButtonTemplate($userId, $template, $extra)) {
+                                    return true;
+                                }
+                            }
+                            \Log::warning('FB tier_choice: การ์ดแพคเกจล้มเหลว — fallback text menu', [
+                                'user_id' => $userId,
+                                'intro_sent' => $introSent,
+                            ]);
+                        } catch (\Throwable $e) {
+                            // ⚠️ ต้องเป็น \Throwable ไม่ใช่ \Exception — TypeError ไม่ใช่ Exception
+                            \Log::warning('FB tier_choice: การ์ดแพคเกจ exception — fallback text menu', [
+                                'user_id' => $userId,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // ข้อความนำออกไปแล้ว → เหลือแค่พาไปกดปุ่ม ไม่ต้องเล่าแพคเกจซ้ำทั้งชุด
+                    $menuText = $introSent
+                        ? FortuneLocaleService::lo('เลือกแพคเกจที่ถูกใจ กดปุ่มด้านล่างได้เลยค่ะ 👇', 'ເລືອກແພັກເກດ ກົດປຸ່ມດ້ານລຸ່ມໄດ້ເລີຍ 👇')
+                        : $message;
+
                     // 🆕 (2026-05-27) Celtic-only intro — ปุ่ม "เริ่มเลย / ไว้คราวหน้า" (ไม่ใช่ "เลือกแพคเกจ")
                     //   user feedback: "ลูกค้าพิมพ์ดูดวง→สร้างบิลเลย ลูกค้ายังไม่รู้ว่าต้องจ่ายเงิน"
                     //   ปุ่มควรชัด: เริ่ม=ยินยอม / ไว้คราวหน้า=ปฏิเสธ
@@ -807,7 +859,7 @@ class FortuneChannelManager
                             'title' => FortuneLocaleService::lo('🙏 ไว้คราวหน้า', '🙏 ໄວ້ຄາວໜ້າ'),
                             'payload' => 'CANCEL_FORTUNE'];
 
-                        return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                        return $fbService->sendQuickReplies($userId, $menuText, $buttons, $extra);
                     }
 
                     // 🎁 (2026-05-03) ปุ่ม "ทำนายฟรี" — เฉพาะ first-timer + feature เปิด (offer_free flag)
@@ -845,7 +897,7 @@ class FortuneChannelManager
                     //       ระบบฟรีย้ายไป tryAutoFreeCardForFirstReply แบบเงียบแล้ว
                     //       ดู CelticCrossConversationTrait:170-173 → เมนูนี้จึงมีไม่เกิน 3 ปุ่มเสมอ)
 
-                    return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                    return $fbService->sendQuickReplies($userId, $menuText, $buttons, $extra);
                 })(),
 
                 // 🗑️ (2026-07-07) PDPA ลบข้อมูล — กล่องยืนยัน (คำเตือน + ปุ่มยืนยัน/ยกเลิก) / ผลลัพธ์ (text ล้วน)
@@ -2591,7 +2643,23 @@ class FortuneChannelManager
                     $tierMeta = $result['tier_meta'] ?? null;
                     if (($result['action'] ?? '') === 'tier_choice' && is_array($tierMeta)) {
                         try {
-                            $tierFlex = $lineService->buildTierChoiceFlexMessage(
+                            // 🎴 (2026-08-23) การ์ดแพคเกจแบบมีรูป hero — ทรงเดียวกับการ์ดเสนอสินค้า
+                            //   คุณไสยได้บับเบิลของตัวเอง (เดิมเป็นแค่ปุ่มรองในบับเบิล Celtic จึงถูกมองข้าม)
+                            //   ⚠️ offer_free = true → ข้ามการ์ด (ชุดการ์ดไม่มีใบ "ทำนายฟรี" ปุ่มฟรีจะหาย)
+                            //   คืน null (ราคาไม่ตรงรูป / รูปใช้ไม่ได้) → ตกไป Flex ตัวหนังสือล้วนตัวเดิม
+                            $tierFlex = $offerFree ? null : app(\App\Services\Fortune\FortunePackageCardBuilder::class)->lineFlex([
+                                'deep_enabled' => $deepEnabled,
+                                'celtic_enabled' => $celticEnabled,
+                                'black_magic_enabled' => (bool) ($result['black_magic_enabled'] ?? false),
+                                'celtic_only_intro' => $celticOnlyIntro,
+                                'deep_price' => $result['deep_price'] ?? null,
+                                'celtic_price' => $result['celtic_price'] ?? null,
+                                'deep_window' => $tierMeta['deep_window'] ?? 7,
+                                'qa_window' => $tierMeta['qa_window'] ?? 15,
+                                'q_limit_text' => $tierMeta['q_limit_text'] ?? 'ไม่จำกัด',
+                            ]);
+
+                            $tierFlex ??= $lineService->buildTierChoiceFlexMessage(
                                 $tierMeta,
                                 (string) ($result['deep_price'] ?? '39'),
                                 (string) ($result['celtic_price'] ?? '99'),
