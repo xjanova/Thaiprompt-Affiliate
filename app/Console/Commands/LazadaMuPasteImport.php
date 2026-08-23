@@ -281,8 +281,16 @@ class LazadaMuPasteImport extends Command
                 // 🚨 ต้องเขียน mu_group ไม่งั้น scopeMu() มองไม่เห็น = บอทไม่มีวันเสนอ
                 'mu_group' => $group,
                 'mu_keyword_id' => $keywordId,
-                // เสนอในแชทได้ทันที (offerable) แต่ยังไม่ขึ้นหน้าร้านจนกว่าคนจะอนุมัติ
-                'approval_status' => MarketplaceProduct::APPROVAL_PENDING,
+
+                // 🚦 (2026-08-23 owner) สถานะอนุมัติขึ้นกับว่าเป็นของสายมูหรือไม่
+                //   สายมู   → pending  = เสนอในแชทได้ทันที (offerable) แต่ **ไม่ขึ้นหน้าร้าน**
+                //                        จนกว่าเจ้าของจะอนุมัติเอง ("เราจะใช้ในการนำส่งทางแชทเป็นหลัก
+                //                        ส่วนบนเว็บฉันจะอนุมัติเอง")
+                //   หมวดอื่น → approved = ขึ้นหน้าร้านอัตโนมัติ
+                //   ⚠️ ทั้งสองแบบเสนอในแชทได้เหมือนกัน เพราะ scopeOfferable() กันแค่ rejected
+                'approval_status' => $group !== null
+                    ? MarketplaceProduct::APPROVAL_PENDING
+                    : MarketplaceProduct::APPROVAL_APPROVED,
             ];
 
             if ($existing) {
