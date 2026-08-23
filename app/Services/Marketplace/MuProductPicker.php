@@ -43,6 +43,28 @@ class MuProductPicker
     private const SETTING_INCLUDE_GENERAL = 'fortune_mu_offer_include_general';
 
     /**
+     * ตัวลดความแรงของการถ่วงน้ำหนักค่าคอมในใบที่ 3 (0 = สุ่มเท่ากันหมด, 1 = ถ่วงเต็มแบบเดิม)
+     *
+     * 📊 วัดจากพูลจริงบน prod 687 ชิ้น (2026-08-23) — ตัวถ่วงเต็มทำให้ของแพงกินโอกาสไปหมด
+     *
+     *   ช่วงราคา     สัดส่วนชิ้นจริง   โอกาสถูกเลือก (เต็ม)   โอกาสถูกเลือก (0.5)
+     *   ฿25-100        23.0%              3.8%                  10.2%
+     *   ฿101-300       34.2%             19.5%                  28.0%
+     *   ฿701-990       10.9%             30.0%                  19.8%
+     *
+     * ⇒ ของ 11% ที่แพงที่สุดกินโอกาสไป 30% ส่วนของถูกครึ่งพูลแทบไม่ได้ออกเลย
+     *   = อาการ "บอทวนของไม่กี่อย่าง" เดิม ย้ายมาเกิดซ้ำในพูลของทั่วไป
+     *   และคนที่เพิ่งจ่าย 99 ได้ใบที่ 3 เป็นของ ฿543 โดยเฉลี่ย แพงกว่าใบสายมูทั้งสองใบ
+     *
+     * 0.5 (รากที่สอง) ลดการกระจุกลงครึ่งหนึ่ง แต่ยังเอียงไปทางของที่ได้ค่าคอมดี
+     * ค่าคอมเฉลี่ยต่อการ์ดลดจาก ฿59.7 → ฿43.2 (ยังสูงกว่าสุ่มเท่ากันที่ ฿27.1 อยู่ 60%)
+     */
+    private const SETTING_GENERAL_WEIGHT_EXPONENT = 'fortune_mu_offer_general_weight_exponent';
+
+    /** ค่าตั้งต้นของตัวลดข้างบน */
+    private const DEFAULT_GENERAL_WEIGHT_EXPONENT = 0.5;
+
+    /**
      * ข้อความแตะกี่กลุ่มพร้อมกันถึงถือว่า "ครอบจักรวาล" แล้วทิ้งสัญญาณหัวข้อ
      *
      * 1-2 กลุ่ม = ลูกค้าพูดถึงเรื่องนั้นจริง ("เรื่องเงินกับความรัก") เชื่อได้
@@ -179,7 +201,35 @@ class MuProductPicker
         $usedIds = array_map(fn ($i) => $i['product']->id, $already);
         $pool = $pool->reject(fn (MarketplaceProduct $p) => in_array($p->id, $usedIds, true));
 
-        return $pool->isEmpty() ? null : $this->weightedPick($pool);
+        if ($pool->isEmpty()) {
+            return null;
+        }
+
+        // ⚖️ ใบนี้ไม่มีการแบ่งครึ่งราคาต่ำ/สูงแบบใบ 1-2 คุมไว้
+        //    ⇒ ถ้าถ่วงค่าคอมเต็มแรง ของแพงสุดของพูลจะออกแทบทุกครั้ง (ดูตัวเลขที่ const)
+        //    จึงลดความแรงของการถ่วงเฉพาะใบนี้ ไม่ไปแตะใบ 1-2 ที่เจ้าของพอใจอยู่แล้ว
+        $exponent = MarketplaceSetting::get(
+            self::SETTING_GENERAL_WEIGHT_EXPONENT,
+            self::DEFAULT_GENERAL_WEIGHT_EXPONENT
+        );
+
+        return $this->weightedPick($pool, $this->normalizeExponent($exponent));
+    }
+
+    /**
+     * บีบค่า exponent ให้อยู่ในช่วง 0-1 เสมอ
+     *
+     * ⚠️ ค่านี้มาจากตาราง settings ที่แก้ด้วยมือได้ — ใส่ 5 มาแล้วของแพงจะกินหมดยิ่งกว่าเดิม
+     *    ใส่ค่าติดลบแล้ว pow() จะกลับด้าน (ของถูกชนะขาด) ทั้งสองทางคือพังเงียบ
+     *    ใส่ค่าที่ไม่ใช่ตัวเลข (ช่องว่าง/ข้อความ) ต้องกลับไปใช้ค่าตั้งต้น ไม่ใช่กลายเป็น 0
+     */
+    private function normalizeExponent(mixed $raw): float
+    {
+        if (! is_numeric($raw)) {
+            return self::DEFAULT_GENERAL_WEIGHT_EXPONENT;
+        }
+
+        return max(0.0, min(1.0, (float) $raw));
     }
 
     /**
@@ -430,7 +480,10 @@ class MuProductPicker
      *
      * @param  Collection<int,MarketplaceProduct>  $items
      */
-    private function weightedPick(Collection $items): ?MarketplaceProduct
+    /**
+     * @param  float  $exponent  ความแรงของการถ่วงน้ำหนักค่าคอม (1 = เต็ม, 0.5 = รากที่สอง, 0 = สุ่มเท่ากัน)
+     */
+    private function weightedPick(Collection $items, float $exponent = 1.0): ?MarketplaceProduct
     {
         $items = $items->values();
 
@@ -442,7 +495,10 @@ class MuProductPicker
         }
 
         // ขั้นต่ำ 1.0 — ของที่คำนวณค่าคอมได้ 0 ต้องยังมีโอกาสออก ไม่ใช่ถูกตัดขาด
-        $weights = $items->map(fn (MarketplaceProduct $p) => max(1.0, $this->expectedEarning($p)))->all();
+        // pow(1.0, x) = 1.0 เสมอ ⇒ พื้นขั้นต่ำไม่เพี้ยนไม่ว่า exponent เป็นเท่าไหร่
+        $weights = $items
+            ->map(fn (MarketplaceProduct $p) => pow(max(1.0, $this->expectedEarning($p)), $exponent))
+            ->all();
         $total = array_sum($weights);
 
         if ($total <= 0) {
