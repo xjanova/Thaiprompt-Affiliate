@@ -150,6 +150,32 @@ class MuPickContext
     }
 
     /**
+     * คืนสำเนาที่ **เลิกบังคับว่าต้องเป็นของสายมู** — ทางออกสุดท้ายของบันไดใน MuProductPicker
+     *
+     * ของสายมูในคลังมี ~90 ชิ้น ส่วนของหมวดทั่วไปมีหลายพัน
+     * ถ้าไม่มีขั้นนี้ บอทจะวนอยู่ในของสายมูชุดเดิมตลอดกาล ต่อให้นำเข้าของใหม่เท่าไหร่ก็ตาม
+     *
+     * ⚠️ ใช้เป็นขั้นสุดท้ายเท่านั้น — ของที่ตรงเรื่องต้องชนะของทั่วไปเสมอ
+     */
+    public function withoutMuRequirement(): self
+    {
+        return new self(
+            platform: $this->platform,
+            platformUserId: $this->platformUserId,
+            requireMu: false,
+            minCommission: $this->minCommission,
+            minPrice: $this->minPrice,
+            maxPrice: $this->maxPrice,
+            // ล้างกลุ่มที่บังคับไว้ด้วย — ไม่งั้น candidates() จะไปกรอง mu_group ต่อ
+            forcedGroup: null,
+            topicText: $this->topicText,
+            cardsText: $this->cardsText,
+            birthYear: $this->birthYear,
+            searchQuery: $this->searchQuery,
+        );
+    }
+
+    /**
      * คืนสำเนาที่ใส่หัวข้อที่ลูกค้าคุย
      */
     public function withTopic(string $topicText): self
