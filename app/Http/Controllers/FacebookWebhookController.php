@@ -997,8 +997,11 @@ class FacebookWebhookController extends Controller
             // 🔒 (2026-05-21) 24h rolling cooldown (reverted จาก 3-day — คนเงียบเลย)
             //    DB query — ถ้า user คนนี้ได้รับ DM (reaction OR comment) ใน 24 ชม.
             //    ที่ผ่านมา → ข้าม. ใช้ now()->subHours(24) (rolling)
+            //    🚨 (2026-08-23) ต้องใช้ hasDmRecently ไม่ใช่ hasEngagedRecently
+            //       หลังแยกนับ DM/คอมเมนต์ มีแถวที่ "ตอบคอมเมนต์อย่างเดียว ไม่ได้ DM" แล้ว
+            //       ถ้ายังนับทุกแถว = คนที่แค่ได้คำตอบใต้คอมเมนต์จะถูกตัดสิทธิ์ DM ทั้งที่ยังไม่เคยได้
             $hasRecentReactionDm = FortunePostReaction::hasDmSuccessRecently($userId, 24);
-            $hasRecentCommentDm = FortuneCommentEngagement::hasEngagedRecently($userId, 24);
+            $hasRecentCommentDm = FortuneCommentEngagement::hasDmRecently($userId, 24);
 
             if ($hasRecentReactionDm || $hasRecentCommentDm) {
                 Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ใน 24 ชม. ล่าสุดแล้ว', [
@@ -1897,15 +1900,39 @@ class FacebookWebhookController extends Controller
 
             // 📆 (2026-05-21) 24h rolling cooldown (reverted จาก 3-day — คนเงียบเลย)
             //    เคย DM (comment OR reaction) ใน 24 ชม. ล่าสุด → ข้าม
-            if (! $isReplyToUs
-                && (FortuneCommentEngagement::hasEngagedRecently($fromId, 24)
-                    || FortunePostReaction::hasDmSuccessRecently($fromId, 24))) {
-                Log::info('Comment Engagement: user ได้ DM ใน 24 ชม. ล่าสุดแล้ว ข้าม', [
+            //    🚨 (2026-08-23) เจ้าของสั่ง "ต้องแยกนับ dm กับ คอมเม้นต์ เพราะเราปิดการขายผ่าน dm"
+            //    เดิม: ด่านเดียวคุมทั้ง DM และการตอบคอมเมนต์ ⇒ คนเดิมเม้นต์คลิปที่ 2 ในวันเดียวกัน
+            //          เงียบสนิททั้งคู่ (ไม่ตอบคอมเมนต์ ไม่ DM) — เพจดูตายทั้งที่มีคนคุยอยู่
+            //    ใหม่: แยกเป็น 2 สิทธิ์อิสระ
+            //      • DM  = ช่องปิดการขาย → คุม 24 ชม. เหมือนเดิม (กันสแปม inbox / โดนแบน)
+            //              ⚠️ นับเฉพาะแถวที่ "ส่ง DM จริง" (hasDmRecently) ไม่ใช่ทุกแถว
+            //                 ไม่งั้นการตอบคอมเมนต์จะไปกินโควตา DM = ที่เจ้าของสั่งห้าม
+            //      • ตอบคอมเมนต์ = สาธารณะ ไม่ใช่ inbox ⇒ ตอบได้ทุกคอมเมนต์
+            //              คุมแค่เพดานกันดูเป็นบอท (MAX_PUBLIC_REPLIES_PER_DAY)
+            $allowDm = $isReplyToUs || ! (
+                FortuneCommentEngagement::hasDmRecently($fromId, 24)
+                || FortunePostReaction::hasDmSuccessRecently($fromId, 24)
+            );
+
+            $allowPublicReply = $this->settings->isPublicCommentReplyEnabled()
+                && FortuneCommentEngagement::publicReplyCountRecent($fromId, 24)
+                    < FortuneCommentEngagement::MAX_PUBLIC_REPLIES_PER_DAY;
+
+            // ไม่เหลือสิทธิ์ทั้งคู่ = ไม่มีอะไรให้ทำ
+            if (! $allowDm && ! $allowPublicReply) {
+                Log::info('Comment Engagement: หมดสิทธิ์ทั้ง DM และตอบคอมเมนต์ ข้าม', [
                     'user_id' => $fromId,
                     'comment_id' => $commentId,
                 ]);
 
                 return;
+            }
+
+            if (! $allowDm) {
+                Log::info('Comment Engagement: DM ติด cooldown 24 ชม. → ตอบคอมเมนต์อย่างเดียว', [
+                    'user_id' => $fromId,
+                    'comment_id' => $commentId,
+                ]);
             }
 
             // 🔥 Warm lead detection — ถ้า user เคยกด reaction ในโพสต์ใด
@@ -1927,7 +1954,9 @@ class FacebookWebhookController extends Controller
 
             // 💰 Money-keyword route: ถ้าคอมเม้นต์เกี่ยวกับการเงิน/เงิน/หนี้ ฯลฯ
             // → ชวนเข้าร่วม affiliate (ได้ค่าชวน 10 บาท/คน) + 2 ปุ่ม อยาก/ไม่อยาก
-            if ($this->isMoneyRelatedComment($message)) {
+            //    ⚠️ เส้นนี้เป็น DM ล้วน — DM ติด cooldown เมื่อไหร่ต้องข้าม ไม่งั้นสิทธิ์
+            //       "ตอบคอมเมนต์อย่างเดียว" จะกลายเป็นช่องยิง DM ชวน affiliate ทะลุ cooldown
+            if ($allowDm && $this->isMoneyRelatedComment($message)) {
                 Log::info('💰 Comment Engagement: detected money keyword → affiliate pitch', [
                     'user_id' => $fromId,
                     'comment_snippet' => mb_substr($message, 0, 60),
@@ -1942,7 +1971,7 @@ class FacebookWebhookController extends Controller
 
             if ($mode === 'template') {
                 // โหมดเทมเพลต: ส่งเลยไม่ต้องรอ AI
-                $this->sendTemplateEngagement($comment);
+                $this->sendTemplateEngagement($comment, $allowDm, $allowPublicReply);
             } else {
                 // โหมด AI: dispatch job ให้ AI สร้างข้อความ
                 // ⚠️ ถ้า queue driver = sync → dispatch จะ block webhook ยาวเกิน 20s
@@ -1952,7 +1981,7 @@ class FacebookWebhookController extends Controller
                     Log::info('🗨️ queue=sync → AI engagement ส่งเป็น template fallback', [
                         'user_id' => $fromId,
                     ]);
-                    $this->sendTemplateEngagement($comment);
+                    $this->sendTemplateEngagement($comment, $allowDm, $allowPublicReply);
                 } else {
                     ProcessCommentEngagement::dispatch([
                         'facebook_user_id' => $fromId,
@@ -1962,6 +1991,9 @@ class FacebookWebhookController extends Controller
                         'user_name' => $fromName,
                         // 💬 ลูกค้าตอบคำถามเรา → job จะตอบด้วยชุดที่พาเข้าแชท
                         'is_reply_to_us' => $isReplyToUs,
+                        // 🚨 (2026-08-23) สิทธิ์แยกกัน — job ต้องเคารพ ห้ามตัดสินใจเอง
+                        'allow_dm' => $allowDm,
+                        'allow_public_reply' => $allowPublicReply,
                     ]);
                 }
             }
@@ -1981,8 +2013,11 @@ class FacebookWebhookController extends Controller
 
     /**
      * ส่ง engagement แบบเทมเพลต (ไม่ใช้ AI)
+     *
+     * @param  bool  $allowDm  ยังมีสิทธิ์ DM ไหม (false = ตอบคอมเมนต์อย่างเดียว)
+     * @param  bool  $allowPublicReply  ยังมีสิทธิ์ตอบคอมเมนต์สาธารณะไหม
      */
-    protected function sendTemplateEngagement(array $comment): void
+    protected function sendTemplateEngagement(array $comment, bool $allowDm = true, bool $allowPublicReply = true): void
     {
         $fromId = $comment['from']['id'];
         $commentId = $comment['comment_id'];
@@ -2043,13 +2078,23 @@ class FacebookWebhookController extends Controller
         $pendingHoroscope = $this->sendDailyHoroscopeBox($greetingService, $fromId, $name);
 
         // 1. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
-        try {
-            $this->facebookService->replyToComment($commentId, $commentReply);
-        } catch (\Throwable $e) {
-            Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
-                'comment_id' => $commentId,
-                'error' => $e->getMessage(),
-            ]);
+        // 🔁 (2026-08-23) กันตอบซ้ำใต้โพสต์ — เหตุผลเดียวกับใน ProcessCommentEngagement
+        //    (DM ล้ม = ไม่บันทึกแถวเพื่อให้ retry ได้ แต่คอมเมนต์ส่งไปแล้ว)
+        $replyOnceKey = 'fcr:replied:'.$commentId;
+        $alreadyRepliedBefore = Cache::has($replyOnceKey);
+
+        $publicReplySent = false;
+        if ($allowPublicReply && ! $alreadyRepliedBefore) {
+            try {
+                $this->facebookService->replyToComment($commentId, $commentReply);
+                $publicReplySent = true;
+                Cache::put($replyOnceKey, 1, 86400);
+            } catch (\Throwable $e) {
+                Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
+                    'comment_id' => $commentId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         // 1.5 👍 กด "ถูกใจ" comment ของลูกค้าอัตโนมัติ
@@ -2059,6 +2104,31 @@ class FacebookWebhookController extends Controller
             $this->facebookService->reactToComment($commentId, 'LIKE');
         } catch (\Throwable $e) {
             // non-blocking
+        }
+
+        // 1.9 ✂️ (2026-08-23) DM ติด cooldown → จบแค่ตอบคอมเมนต์
+        //     ต้องบันทึกแถวไว้ด้วย (comment_reply มีค่า / dm_message ว่าง) ไม่งั้น
+        //     เพดานตอบสาธารณะจะนับไม่ขึ้น = ตอบคนเดิมได้ไม่จำกัด
+        if (! $allowDm) {
+            if ($publicReplySent || $alreadyRepliedBefore) {
+                FortuneCommentEngagement::create([
+                    'facebook_user_id' => $fromId,
+                    'facebook_post_id' => $postId,
+                    'facebook_comment_id' => $commentId,
+                    'comment_text' => $commentText,
+                    'comment_reply' => $commentReply,
+                    'dm_message' => null,
+                    'engaged_at' => now(),
+                ]);
+            }
+
+            Log::info('🗨️ Template engagement: ตอบคอมเมนต์อย่างเดียว (DM ติด cooldown)', [
+                'user_id' => $fromId,
+                'comment_id' => $commentId,
+                'public_reply_sent' => $publicReplySent,
+            ]);
+
+            return;
         }
 
         // 2. ส่ง inbox + Quick Replies
@@ -2151,7 +2221,8 @@ class FacebookWebhookController extends Controller
             'facebook_post_id' => $postId,
             'facebook_comment_id' => $commentId,
             'comment_text' => $commentText,
-            'comment_reply' => $commentReply,
+            // บันทึกเฉพาะที่ส่งจริง — ตัวนับเพดานตอบสาธารณะอ่านคอลัมน์นี้
+            'comment_reply' => ($publicReplySent || $alreadyRepliedBefore) ? $commentReply : null,
             'dm_message' => $dmMessage,
             'user_profile' => $userProfile,
             'engaged_at' => now(),

@@ -45,6 +45,14 @@ class FortuneCommentEngagement extends Model
     ];
 
     /**
+     * เพดานการตอบคอมเมนต์สาธารณะ ต่อ 1 คน ต่อ 24 ชม.
+     *
+     * ไม่เกี่ยวกับโควตา DM — คนเดิมเม้นต์หลายคลิปต้องได้คำตอบทุกคลิป (เจ้าของสั่ง)
+     * แต่ต้องมีเพดานไว้ ไม่งั้นคนที่ไล่เม้นต์ 30 คลิปรวดจะได้ตอบครบ 30 = ดูเป็นบอทชัด
+     */
+    public const MAX_PUBLIC_REPLIES_PER_DAY = 5;
+
+    /**
      * ตรวจสอบว่า user นี้เคยถูก engage ในโพสต์นี้แล้วหรือไม่
      *
      * @deprecated ใช้ hasEngagedComment() แทน — เจ้าของต้องการทักทุกคอมเม้นต์
@@ -90,11 +98,52 @@ class FortuneCommentEngagement extends Model
      *
      * @param  int  $hours  จำนวนชั่วโมง (default 24)
      */
+    /**
+     * @deprecated 2026-08-23 — กำกวมหลังแยกนับ DM/คอมเมนต์
+     *             ใช้ hasDmRecently() ถ้าจะถามเรื่อง DM (เกือบทุกที่ต้องการอันนี้)
+     *             เพราะตอนนี้มีแถวที่ "ตอบคอมเมนต์อย่างเดียว ไม่ได้ DM" แล้ว
+     *             ถ้ายังใช้ตัวนี้ตัดสินใจเรื่อง DM = ตอบคอมเมนต์ไปกินสิทธิ์ DM
+     */
     public static function hasEngagedRecently(string $userId, int $hours = 24): bool
     {
         return self::where('facebook_user_id', $userId)
             ->where('engaged_at', '>=', now()->subHours($hours))
             ->exists();
+    }
+
+    /**
+     * 💰 เคยได้ "DM" จากสายคอมเมนต์ ใน N ชม.ล่าสุดไหม
+     *
+     * นับเฉพาะแถวที่ส่ง DM จริง (dm_message ไม่ว่าง) — แถวที่ตอบคอมเมนต์อย่างเดียวไม่นับ
+     *
+     * 🚨 เจ้าของสั่ง (2026-08-23): "ต้องแยกนับ dm กับ คอมเม้นต์ เพราะเราปิดการขายผ่าน dm
+     *    dm ต้องส่ง แม้คอมเม้นจะตอบไปแล้ว" ⇒ ห้ามให้การตอบคอมเมนต์มากินโควตา DM
+     *
+     * @param  int  $hours  จำนวนชั่วโมง (default 24)
+     */
+    public static function hasDmRecently(string $userId, int $hours = 24): bool
+    {
+        return self::where('facebook_user_id', $userId)
+            ->where('engaged_at', '>=', now()->subHours($hours))
+            ->whereNotNull('dm_message')
+            ->where('dm_message', '!=', '')
+            ->exists();
+    }
+
+    /**
+     * 💬 ตอบคอมเมนต์สาธารณะให้คนนี้ไปกี่ครั้งแล้วใน N ชม.ล่าสุด
+     *
+     * ใช้คุมไม่ให้คนเดิมได้คำตอบรัวเกินไปจนดูเป็นบอท (คนละตัวกับโควตา DM)
+     *
+     * @param  int  $hours  จำนวนชั่วโมง (default 24)
+     */
+    public static function publicReplyCountRecent(string $userId, int $hours = 24): int
+    {
+        return self::where('facebook_user_id', $userId)
+            ->where('engaged_at', '>=', now()->subHours($hours))
+            ->whereNotNull('comment_reply')
+            ->where('comment_reply', '!=', '')
+            ->count();
     }
 
     /**

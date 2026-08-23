@@ -162,10 +162,21 @@ class ProcessCommentEngagement implements ShouldQueue
             }
 
             // 📆 (2026-05-21) 24h rolling cooldown — reverted จาก 3-day (คนเงียบเลย)
-            //    เคย DM (comment OR reaction) ใน 24 ชม. ล่าสุด → ข้าม
-            if (FortuneCommentEngagement::hasEngagedRecently($userId, 24)
-                || FortunePostReaction::hasDmSuccessRecently($userId, 24)) {
-                Log::info('Comment engagement skip — user ได้ DM ใน 24 ชม. ล่าสุดแล้ว', [
+            // 🚨 (2026-08-23) แยกนับ DM ออกจากการตอบคอมเมนต์ (เจ้าของสั่ง — ปิดการขายผ่าน DM)
+            //    controller ตัดสินมาแล้วส่งมาใน payload ; ตรงนี้คำนวณซ้ำเป็นด่านสอง
+            //    เพราะ job อาจถูก retry ทีหลัง สถานะอาจเปลี่ยนไปแล้ว
+            //    ⚠️ ต้องใช้ hasDmRecently (นับเฉพาะแถวที่ส่ง DM จริง) ไม่ใช่ hasEngagedRecently
+            //       ไม่งั้นแถว "ตอบคอมเมนต์อย่างเดียว" จะไปกินโควตา DM = ที่เจ้าของสั่งห้าม
+            $allowDm = ($this->data['allow_dm'] ?? true)
+                && ! (FortuneCommentEngagement::hasDmRecently($userId, 24)
+                    || FortunePostReaction::hasDmSuccessRecently($userId, 24));
+
+            $allowPublicReply = ($this->data['allow_public_reply'] ?? true)
+                && FortuneCommentEngagement::publicReplyCountRecent($userId, 24)
+                    < FortuneCommentEngagement::MAX_PUBLIC_REPLIES_PER_DAY;
+
+            if (! $allowDm && ! $allowPublicReply) {
+                Log::info('Comment engagement skip — หมดสิทธิ์ทั้ง DM และตอบคอมเมนต์', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
@@ -251,7 +262,9 @@ class ProcessCommentEngagement implements ShouldQueue
             //    เมื่อ false (default): skip pattern match + AI gen + replyToComment + reactToComment
             //                          ส่ง DM อย่างเดียว (Page Messaging — scope แยก ไม่กระทบ)
             //    เมื่อ true: ทำงานครบ — สำหรับเมื่อ App Review approved pages_manage_engagement แล้ว
-            $publicReplyEnabled = $settings->isPublicCommentReplyEnabled();
+            //    🚨 (2026-08-23) รวมสิทธิ์รายคนเข้าด้วย — สวิตช์เปิดแต่คนนี้เต็มเพดานวันนี้แล้ว
+            //       ก็ต้องไม่ตอบ (และต้องไม่เผา AI call เปล่า ๆ ด้วย)
+            $publicReplyEnabled = $settings->isPublicCommentReplyEnabled() && $allowPublicReply;
             $commentReply = '';
 
             if ($publicReplyEnabled) {
@@ -413,9 +426,19 @@ class ProcessCommentEngagement implements ShouldQueue
 
             // 3. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
             //    🚫 (2026-05-24) Skip ทั้งหมดถ้า public reply ปิดอยู่ (กัน FB API call เปล่า)
-            if ($publicReplyEnabled && ! empty($commentReply)) {
+            //    🔁 (2026-08-23) กันตอบซ้ำใต้โพสต์ตอน job retry
+            //       DM ล้มทุก stage = จงใจไม่บันทึกแถว เพื่อให้ retry ยิง DM ใหม่ได้
+            //       แต่คอมเมนต์สาธารณะส่งออกไปแล้ว ⇒ ไม่กัน = คำตอบโผล่ซ้ำ 2 อันใต้คอมเมนต์เดียว
+            //       (DM ล้มไม่ใช่เคสหายาก — FB privacy block/551 เกิดประจำ)
+            $replyOnceKey = 'fcr:replied:'.$commentId;
+            $alreadyRepliedBefore = Cache::has($replyOnceKey);
+
+            $publicReplySent = false;
+            if ($publicReplyEnabled && ! empty($commentReply) && ! $alreadyRepliedBefore) {
                 try {
                     $facebookService->replyToComment($commentId, $commentReply);
+                    $publicReplySent = true;
+                    Cache::put($replyOnceKey, 1, 86400);
                 } catch (Throwable $e) {
                     Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
                         'comment_id' => $commentId,
@@ -431,6 +454,36 @@ class ProcessCommentEngagement implements ShouldQueue
                     // non-blocking
                     Log::debug('reactToComment LIKE ล้ม (non-blocking): '.$e->getMessage());
                 }
+            }
+
+            // 3.9 ✂️ (2026-08-23) DM ติด cooldown → จบแค่ตอบคอมเมนต์ ไม่ยิง DM
+            //     เจ้าของสั่งแยกนับ: คอมเมนต์ตอบได้เรื่อย ๆ แต่ DM คุม 24 ชม. เหมือนเดิม
+            //     ⚠️ ต้องบันทึกแถวไว้ (comment_reply มีค่า / dm_message ว่าง) 2 เหตุผล
+            //        1. ตัวนับเพดานตอบสาธารณะอ่านคอลัมน์นี้ ไม่บันทึก = ตอบคนเดิมได้ไม่จำกัด
+            //        2. hasEngagedComment กันตอบคอมเมนต์เดิมซ้ำตอน job retry
+            //     ⚠️ dm_message ต้องเป็น null เท่านั้น — hasDmRecently นับจากคอลัมน์นี้
+            //        ถ้าเผลอใส่ค่า = คนนี้จะโดนตัดสิทธิ์ DM ทั้งที่ยังไม่เคยได้ DM เลย
+            if (! $allowDm) {
+                if ($publicReplySent || $alreadyRepliedBefore) {
+                    FortuneCommentEngagement::create([
+                        'facebook_user_id' => $userId,
+                        'facebook_post_id' => $postId,
+                        'facebook_comment_id' => $commentId,
+                        'comment_text' => $commentText,
+                        'comment_reply' => $commentReply,
+                        'dm_message' => null,
+                        'user_profile' => $userProfile,
+                        'engaged_at' => now(),
+                    ]);
+                }
+
+                Log::info('🗨️ Comment Engagement: ตอบคอมเมนต์อย่างเดียว (DM ติด cooldown 24 ชม.)', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                    'public_reply_sent' => $publicReplySent,
+                ]);
+
+                return;
             }
 
             // 4. ส่ง inbox พร้อม Quick Replies
@@ -703,7 +756,8 @@ class ProcessCommentEngagement implements ShouldQueue
                 'facebook_post_id' => $postId,
                 'facebook_comment_id' => $commentId,
                 'comment_text' => $commentText,
-                'comment_reply' => $commentReply,
+                // บันทึกเฉพาะที่ส่งจริง — ตัวนับเพดานตอบสาธารณะอ่านคอลัมน์นี้
+                'comment_reply' => ($publicReplySent || $alreadyRepliedBefore) ? $commentReply : null,
                 'dm_message' => $dmMessage,
                 'user_profile' => $userProfile,
                 'engaged_at' => now(),
