@@ -19367,6 +19367,19 @@ PROMPT;
                 'celtic_price' => $celticPrice,
                 'celtic_enabled' => $celticEnabled,
                 'free_enabled' => $freeEnabled,
+
+                // 🎴 (2026-08-23) meta สำหรับการ์ดแพคเกจแบบมีรูป — ทรงเดียวกับ tier_meta ของ presentTierChoice
+                //   FortunePackageCardBuilder เอาไปเทียบกับค่าที่ "พิมพ์ติดอยู่ในรูป" (BAKED_*)
+                //   ไม่ตรง = คืน null แล้ว ChannelManager ตกกลับมาใช้ $msg ข้อความเดิม ลูกค้าไม่ค้าง
+                //   ⚠️ q_limit_text ต้องใช้ถ้อยคำชุดเดียวกับ CelticCrossConversationTrait ('ไม่จำกัด' / 'N คำถาม')
+                //      ไม่ใช่ถ้อยคำในกล่องข้อความข้างบน ('ถามได้ไม่อั้น') ไม่งั้นเทียบไม่ตรงแล้วการ์ดหายทั้งชุด
+                'black_magic_enabled' => $celticEnabled
+                    && (bool) ($this->settings->enable_celtic_black_magic_mode ?? true),
+                'deep_window' => (int) ($this->settings->deep_reading_qa_window_minutes ?? 7),
+                'qa_window' => (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15),
+                'q_limit_text' => ((int) ($this->settings->celtic_cross_max_questions ?? 5)) <= 0
+                    ? 'ไม่จำกัด'
+                    : ((int) $this->settings->celtic_cross_max_questions).' คำถาม',
             ],
         ];
     }

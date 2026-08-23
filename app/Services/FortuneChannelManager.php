@@ -955,6 +955,52 @@ class FortuneChannelManager
                     $celticEnabled = (bool) ($pricing['celtic_enabled'] ?? false);
                     $freeEnabled = (bool) ($pricing['free_enabled'] ?? false);
 
+                    // 🎴 (2026-08-23) ลูกค้าถามราคา → ตอบด้วย "การ์ดแพคเกจมีรูป" ชุดเดียวกับ tier_choice
+                    //   เดิมจุดนี้ตอบเป็นกล่องข้อความล้วน ทั้งที่การ์ดพร้อมใช้อยู่แล้ว
+                    //   = ลูกค้าเห็นหน้าตาคนละแบบกัน แล้วแต่ว่าเดินเข้ามาทางไหน
+                    //   ⚠️ freeEnabled → ข้ามการ์ด (ชุดการ์ดไม่มีใบ "ทำนายฟรี" ส่งการ์ดแล้วปุ่มฟรีหายเลย)
+                    //   ⚠️ ราคาไม่ตรงรูป/การ์ดล้ม → ตกกลับกล่องข้อความ + quick reply เดิมด้านล่าง
+                    $cardSent = false;
+                    $introSent = false;
+                    if (! $freeEnabled && ($deepEnabled || $celticEnabled)) {
+                        try {
+                            $celticOnlyIntro = ! $deepEnabled && $celticEnabled;
+                            $cardBuilder = app(\App\Services\Fortune\FortunePackageCardBuilder::class);
+                            $template = $cardBuilder->facebookTemplate([
+                                'deep_enabled' => $deepEnabled,
+                                'celtic_enabled' => $celticEnabled,
+                                'black_magic_enabled' => (bool) ($pricing['black_magic_enabled'] ?? false),
+                                'celtic_only_intro' => $celticOnlyIntro,
+                                'deep_price' => $pricing['deep_price'] ?? null,
+                                'celtic_price' => $pricing['celtic_price'] ?? null,
+                                'deep_window' => $pricing['deep_window'] ?? 7,
+                                'qa_window' => $pricing['qa_window'] ?? 15,
+                                'q_limit_text' => $pricing['q_limit_text'] ?? 'ไม่จำกัด',
+                            ]);
+
+                            // 🚪 ข้อความนำต้องมาก่อนการ์ด — generic template ไม่มีที่ให้ใส่ข้อความ
+                            //    ประกอบ template ให้เสร็จก่อนค่อยส่ง intro จะได้ไม่ส่ง intro ทิ้งเปล่า
+                            if ($template !== null
+                                && $fbService->sendMessage($userId, $cardBuilder->intro($celticOnlyIntro), $extra)) {
+                                $introSent = true;
+                                $cardSent = (bool) $fbService->sendButtonTemplate($userId, $template, $extra);
+                            }
+
+                            if (! $cardSent) {
+                                \Illuminate\Support\Facades\Log::warning('FB pricing_menu: การ์ดแพคเกจล้มเหลว — fallback กล่องข้อความ', [
+                                    'user_id' => $userId,
+                                    'template_null' => $template === null,
+                                    'intro_sent' => $introSent,
+                                ]);
+                            }
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('FB pricing_menu: การ์ดแพคเกจ exception — fallback กล่องข้อความ', [
+                                'user_id' => $userId,
+                                'err' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
                     $buttons = [];
                     if ($freeEnabled) {
                         $buttons[] = ['content_type' => 'text',
@@ -973,7 +1019,18 @@ class FortuneChannelManager
                             'payload' => 'TIER_CELTIC_99'];
                     }
 
-                    $sent = $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                    if ($cardSent) {
+                        $sent = true;
+                    } else {
+                        // 🚨 intro ออกไปแล้วแต่การ์ดล้ม — ห้ามส่ง $message ยาวตามไปอีก
+                        //    (ลูกค้าจะเห็นคำต้อนรับซ้ำ + เมนูเต็ม = สับสนกว่าไม่มีการ์ด)
+                        $sent = $fbService->sendQuickReplies(
+                            $userId,
+                            $introSent ? '👇 กดปุ่มด้านล่างเพื่อเริ่มเลยค่ะ ✨' : $message,
+                            $buttons,
+                            $extra
+                        );
+                    }
 
                     // 🙏 (2026-05-14) AI follow-up — แม่หมออธิบาย "ค่าครู" แบบสนทนา ปรับ tone ตาม persona
                     // Delay 4s ให้กล่องราคาขึ้นก่อน — graceful degradation ถ้า queue ไม่รัน
@@ -2755,6 +2812,52 @@ class FortuneChannelManager
                     $celticEnabled = (bool) ($pricing['celtic_enabled'] ?? false);
                     $freeEnabled = (bool) ($pricing['free_enabled'] ?? false);
 
+                    // 🎴 (2026-08-23) ลูกค้าถามราคา → ตอบด้วยการ์ดแพคเกจมีรูป ชุดเดียวกับ tier_choice
+                    //   ให้หน้าตาเหมือนกันทุกทางเข้า ไม่ใช่ถามราคาได้ข้อความ กดปุ่มได้การ์ด
+                    //   ⚠️ freeEnabled → ข้ามการ์ด (ชุดการ์ดไม่มีใบ "ทำนายฟรี" ปุ่มฟรีจะหาย)
+                    //   ⚠️ lineFlex() คืน null เมื่อราคาไม่ตรงรูป → ตกกลับกล่องข้อความเดิมด้านล่าง
+                    $cardSent = false;
+                    if (! $freeEnabled && ($deepEnabled || $celticEnabled)) {
+                        try {
+                            $celticOnlyIntro = ! $deepEnabled && $celticEnabled;
+                            $cardBuilder = app(\App\Services\Fortune\FortunePackageCardBuilder::class);
+                            $flex = $cardBuilder->lineFlex([
+                                'deep_enabled' => $deepEnabled,
+                                'celtic_enabled' => $celticEnabled,
+                                'black_magic_enabled' => (bool) ($pricing['black_magic_enabled'] ?? false),
+                                'celtic_only_intro' => $celticOnlyIntro,
+                                'deep_price' => $pricing['deep_price'] ?? null,
+                                'celtic_price' => $pricing['celtic_price'] ?? null,
+                                'deep_window' => $pricing['deep_window'] ?? 7,
+                                'qa_window' => $pricing['qa_window'] ?? 15,
+                                'q_limit_text' => $pricing['q_limit_text'] ?? 'ไม่จำกัด',
+                            ]);
+
+                            if ($flex !== null) {
+                                $cardSent = (bool) $lineService->sendMessagesWithReplyFallback($userId, [
+                                    $lineService->buildTextObject($cardBuilder->intro($celticOnlyIntro)),
+                                    $lineService->buildFlexObject(
+                                        $flex,
+                                        '💎 อัตราค่าครูของแม่หมอจันทรา',
+                                        [['label' => '🙏 ไว้คราวหน้า', 'text' => 'ไว้คราวหน้า']]
+                                    ),
+                                ], $replyToken);
+                            }
+
+                            if (! $cardSent) {
+                                \Illuminate\Support\Facades\Log::warning('LINE pricing_menu: การ์ดแพคเกจล้มเหลว — fallback กล่องข้อความ', [
+                                    'user_id' => $userId,
+                                    'flex_null' => $flex === null,
+                                ]);
+                            }
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('LINE pricing_menu: การ์ดแพคเกจ exception — fallback กล่องข้อความ', [
+                                'user_id' => $userId,
+                                'err' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+
                     $quickReplies = [];
                     if ($freeEnabled) {
                         $quickReplies[] = ['label' => '🎁 ทำนายฟรี', 'text' => 'ทำนายฟรี'];
@@ -2767,7 +2870,9 @@ class FortuneChannelManager
                         $quickReplies[] = ['label' => '👑 VIP 99 บาท', 'text' => '99'];
                     }
 
-                    $sent = $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
+                    $sent = $cardSent
+                        ? true
+                        : $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
 
                     // 🙏 (2026-05-14) AI follow-up — แม่หมออธิบาย "ค่าครู" แบบสนทนา ปรับ tone ตาม persona
                     try {
