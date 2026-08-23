@@ -4,6 +4,7 @@ namespace App\Services\Marketplace;
 
 use App\Models\FortuneProductOffer;
 use App\Models\MarketplaceProduct;
+use App\Models\MarketplaceSetting;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -37,6 +38,9 @@ class MuProductPicker
 
     /** พูลต้องมีอย่างน้อยกี่ชิ้นถึงจะเสนอเป็น "คู่" ให้ลูกค้าเลือกได้ */
     private const MIN_POOL_FOR_PAIR = 2;
+
+    /** เปิด/ปิดใบที่ 3 (ของทั่วไปนอกสายมู) */
+    private const SETTING_INCLUDE_GENERAL = 'fortune_mu_offer_include_general';
 
     /**
      * ข้อความแตะกี่กลุ่มพร้อมกันถึงถือว่า "ครอบจักรวาล" แล้วทิ้งสัญญาณหัวข้อ
@@ -129,11 +133,53 @@ class MuProductPicker
             return ['items' => [], 'group' => $group, 'reason' => $reason.' (ไม่มีของที่ผ่านเกณฑ์)'];
         }
 
+        $items = $this->splitLowHigh($pool);
+
+        // 🆕 (2026-08-23) ใบที่ 3 — ของทั่วไปนอกสายมู
+        //   ของสายมูมี ~90 ชิ้น ของทั่วไปมี 738 ชิ้นในช่วงราคาเดียวกัน
+        //   ถ้าเสนอแต่สายมู ลูกค้าเห็นของวนซ้ำไม่กี่อย่าง (เจ้าของแจ้งเอง)
+        //   ⚠️ ไม่ไปแตะใบ 1-2 — สองใบแรกยังเป็นของสายมูที่ตรงกับดวงเหมือนเดิม
+        //     ใบนี้ **ต่อท้าย** เพื่อเพิ่มความหลากหลาย ไม่ใช่แทนที่
+        if ($ctx->requireMu) {
+            $extra = $this->pickGeneral($ctx, $items);
+            if ($extra !== null) {
+                $items[] = ['product' => $extra, 'slot' => FortuneProductOffer::SLOT_EXTRA];
+            }
+        }
+
         return [
-            'items' => $this->splitLowHigh($pool),
+            'items' => $items,
             'group' => $group,
             'reason' => $reason,
         ];
+    }
+
+    /**
+     * เลือกของทั่วไป 1 ชิ้น (ไม่ใช่สายมู) มาเป็นใบที่ 3
+     *
+     * ใช้เกณฑ์ผ่อน + ไม่บังคับสายมู แล้วสุ่มถ่วงน้ำหนักเหมือนใบอื่น
+     * ปิดได้ที่ setting `fortune_mu_offer_include_general`
+     *
+     * @param  array<int,array{product:MarketplaceProduct,slot:string}>  $already  ใบที่เลือกไปแล้ว (กันซ้ำ)
+     */
+    private function pickGeneral(MuPickContext $ctx, array $already): ?MarketplaceProduct
+    {
+        if (! filter_var(MarketplaceSetting::get(self::SETTING_INCLUDE_GENERAL, true), FILTER_VALIDATE_BOOLEAN)) {
+            return null;
+        }
+
+        $pool = $this->candidates($ctx->relaxed()->withoutMuRequirement(), null)
+            // ตัดของสายมูออก — ใบ 1-2 ครอบไว้แล้ว ใบนี้มีไว้เพิ่มความหลากหลาย
+            ->filter(fn (MarketplaceProduct $p) => $p->mu_group === null);
+
+        if ($pool->isEmpty()) {
+            return null;
+        }
+
+        $usedIds = array_map(fn ($i) => $i['product']->id, $already);
+        $pool = $pool->reject(fn (MarketplaceProduct $p) => in_array($p->id, $usedIds, true));
+
+        return $pool->isEmpty() ? null : $this->weightedPick($pool);
     }
 
     /**

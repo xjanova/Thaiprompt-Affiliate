@@ -318,6 +318,11 @@ class MuOfferCardBuilder
      */
     private function slotLabel(string $slot): string
     {
-        return $slot === 'high' ? 'รุ่นพรีเมียม' : 'เริ่มต้นประหยัด';
+        return match ($slot) {
+            'high' => 'รุ่นพรีเมียม',
+            // ใบที่ 3 = ของทั่วไปนอกสายมู ป้ายต้องไม่บอกเป็นนัยว่าเป็นเครื่องราง
+            'extra' => 'แม่หมอคัดมาให้',
+            default => 'เริ่มต้นประหยัด',
+        };
     }
 }

@@ -98,6 +98,14 @@ class FortuneProductOffer extends Model
     public const SLOT_HIGH = 'high';
 
     /**
+     * ใบที่ 3 — ของทั่วไป (ไม่ใช่สายมู) เลือกตามพฤติกรรมลูกค้า
+     *
+     * ของสายมูในคลังมี ~90 ชิ้น ส่วนของทั่วไปมี 738 ชิ้นในช่วงราคาเดียวกัน
+     * ถ้าเสนอแต่สายมู ลูกค้าจะเห็นของวนซ้ำไม่กี่อย่าง
+     */
+    public const SLOT_EXTRA = 'extra';
+
+    /**
      * สินค้าที่เสนอไป
      */
     public function product(): BelongsTo
