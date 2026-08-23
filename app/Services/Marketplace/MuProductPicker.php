@@ -231,8 +231,12 @@ class MuProductPicker
     private function candidates(MuPickContext $ctx, ?string $group): Collection
     {
         try {
+            // 🛒 offerable() ไม่ใช่ approved() — owner สั่ง 2026-08-23:
+            //    "ใช้สินค้าทุกอย่างที่นำเข้า แม้ยังไม่ได้อนุมัติเข้า thaiprompt"
+            //    ด่านอนุมัติคุมแค่การขึ้นหน้าร้าน ไม่คุมลิงก์ที่ส่งในแชท
+            //    (ถ้าใช้ approved() ของใหม่จากท่อนำเข้าจะติดคิวคนอนุมัติก่อนเสมอ = ท่อเดินแต่บอทไม่มีของเพิ่ม)
             $q = MarketplaceProduct::query()
-                ->approved()
+                ->offerable()
                 ->sendableInChat();
 
             // ของสายมูเท่านั้น (บอทเสนอเอง) หรือของอะไรก็ได้ (ลูกค้าถามเอง)

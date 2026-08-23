@@ -8,6 +8,7 @@ use App\Models\FortuneReading;
 use App\Models\MarketplaceProduct;
 use App\Models\MarketplaceSetting;
 use App\Services\FacebookWebhookService;
+use App\Services\FortuneBanService;
 use App\Services\LineFortuneService;
 use App\Services\Marketplace\MuOfferCardBuilder;
 use App\Services\Marketplace\MuPickContext;
@@ -132,6 +133,25 @@ class FortuneMuOfferService
         }
 
         if ($this->isMuted($platform, $platformUserId)) {
+            return false;
+        }
+
+        // ⛔ (2026-08-23) คนที่ถูกแบนอยู่ ห้ามได้การ์ดขายของ
+        //   ด่านนี้อยู่ในแผนตั้งแต่แรกแต่ตกหล่นไป — สำคัญมากกับเส้น "ส่งรูป/ลิงก์"
+        //   เพราะคนยิงลิงก์สแปมคือกลุ่มที่โดนแบนบ่อยที่สุด (เคสอุดม ศรีโปฎก ยิงลิงก์ 13 ครั้ง)
+        //   ยิงการ์ดกลับไป = ตอบโต้บัญชีสแปมโดยอัตโนมัติ ซึ่งเป็นสัญญาณแย่ต่อเพจ
+        try {
+            if (app(FortuneBanService::class)->isBanned($platform, $platformUserId)) {
+                return false;
+            }
+        } catch (\Throwable $e) {
+            // เช็คแบนไม่ได้ = ไม่เสี่ยง ปล่อยผ่านไม่ได้ ⇒ ถือว่าห้ามส่ง (fail-closed)
+            Log::warning('MuOffer: เช็คสถานะแบนไม่ได้ — ไม่ส่งไว้ก่อน', [
+                'platform' => $platform,
+                'user_id' => $platformUserId,
+                'error' => $e->getMessage(),
+            ]);
+
             return false;
         }
 

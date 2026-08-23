@@ -124,8 +124,8 @@ class LazadaMuBackfillGroups extends Command
         $minCommission = (float) \App\Models\MarketplaceSetting::get('lazada_mu_min_commission', 9);
 
         $total = MarketplaceProduct::query()->mu()->count();
-        $sendable = MarketplaceProduct::query()->mu()->approved()->sendableInChat()->count();
-        $passing = MarketplaceProduct::query()->mu()->approved()->sendableInChat()
+        $sendable = MarketplaceProduct::query()->mu()->offerable()->sendableInChat()->count();
+        $passing = MarketplaceProduct::query()->mu()->offerable()->sendableInChat()
             ->where('commission_rate', '>=', $minCommission)->count();
 
         $this->newLine();

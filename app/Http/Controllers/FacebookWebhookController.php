@@ -3013,6 +3013,9 @@ class FacebookWebhookController extends Controller
                 //   แต่บอทไม่ตอบ = พลาดลูกค้า). สติกเกอร์ไม่ใช่สลิป → ข้าม slip-capture/vision ทั้งหมด
                 if ($hasSticker) {
                     $this->sendGestureEngagementNudge($senderId, 'sticker');
+                    // 🛒 ทักทายมี throttle 6 ชม. — การ์ดสินค้ามีเพดานของตัวเอง (วันละครั้ง)
+                    //    จึงเรียกแยกกัน ไม่ผูกกับผลของการทักทาย
+                    $this->offerProductsOnGesture($senderId, 'sticker');
 
                     return;
                 }
@@ -3073,6 +3076,11 @@ class FacebookWebhookController extends Controller
                         Log::debug('FB: capturePendingSlip ล้มเหลว (non-blocking)', ['error' => $capErr->getMessage()]);
                     }
                 }
+
+                // 🛒 (2026-08-23) รูปในแชทปกติ (ไม่ใช่สลิป ไม่มีดูดวงค้าง) → เสนอของแทนความเงียบ
+                //    ⚠️ ต้องอยู่ "หลัง" capturePendingSlipFromImage — รูปสลิปที่ยังจับบิลไม่ได้
+                //      ต้องถูกเก็บไว้ก่อนเสมอ คนกำลังจะจ่ายเงิน ไม่ใช่มาช้อป
+                $this->offerProductsOnGesture($senderId, 'image');
 
                 Log::debug('FB: silent ignore attachment (no active fortune flow, vision skipped)', [
                     'sender_id' => $senderId,
@@ -3162,12 +3170,20 @@ class FacebookWebhookController extends Controller
             //   เจ้าของรายงาน: ลูกค้าตอบด้วยอีโมจิ/ไอคอน (💕😍🙏👍) แต่บอทเงียบ = พลาดลูกค้า
             //   ลิงก์/junk ยังเงียบเหมือนเดิม (กัน spam)
             $hasLink = (bool) preg_match('#https?://|www\.|\b\S+\.(com|net|org|co|io|ai|app|in|me|tv)\b#iu', $messageText);
-            if (! $hasLink && $this->sendGestureEngagementNudge($senderId, 'emoji')) {
+            if (! $hasLink) {
+                $this->sendGestureEngagementNudge($senderId, 'emoji');
+            }
+
+            // 🛒 (2026-08-23) เสนอของเสริมดวงแทนความเงียบ — ครอบทั้งอีโมจิล้วนและลิงก์ล้วน
+            //    ⚠️ คนยิงลิงก์สแปมที่ถูกแบนแล้วจะไม่ได้การ์ด — ด่านแบนอยู่ใน FortuneMuOfferService
+            //      (ถ้าจะกันเพิ่ม ให้แก้ที่ service ที่เดียว ห้ามเติมเงื่อนไขซ้ำตรงนี้)
+            if ($this->offerProductsOnGesture($senderId, $hasLink ? 'link' : 'emoji')) {
                 return;
             }
 
             Log::debug('FB: silent ignore non-fortune noise (link/emoji-only, no active flow)', [
                 'sender_id' => $senderId,
+                'has_link' => $hasLink,
                 'preview' => mb_substr($messageText, 0, 60),
             ]);
 
@@ -3634,6 +3650,42 @@ class FacebookWebhookController extends Controller
      * @param  string  $gestureType  'sticker' | 'emoji' (ไว้ log)
      * @return bool true ถ้าส่งทักทาย, false ถ้าโดน throttle (ให้ caller เงียบตามเดิม)
      */
+    /**
+     * 🛒 (2026-08-23) ลูกค้าส่งสติกเกอร์/ยกนิ้ว/รูป/ลิงก์ มาในแชทปกติ → เสนอของเสริมดวงแทนความเงียบ
+     *
+     * เจตนา (owner): "ใครส่งยกนิ้ว หรือรูป ให้บอทส่งของไปขายเลย — สำหรับแชทปกติ"
+     *
+     * ทำไมจุดนี้เหมาะ: ทั้ง 3 เส้น (สติกเกอร์ / รูปที่ไม่ใช่สลิป / ข้อความที่เป็นลิงก์-อีโมจิล้วน)
+     * ตอนนี้จบด้วย `return` เงียบๆ ตามกฎ silent rule 2026-05-01 = ทางตันที่ลูกค้าไม่ได้อะไรเลย
+     * เอาการ์ดไปแทนความเงียบจึงไม่ได้แย่งพื้นที่ของอะไรเดิม
+     *
+     * ด่านทั้งหมด (เพดานวันละครั้ง · คนสั่งเงียบ · **คนถูกแบน**) อยู่ใน FortuneMuOfferService
+     * ⇒ คนยิงลิงก์สแปมที่โดนแบนแล้วจะไม่ได้การ์ด (ด่านแบนสำคัญมากกับเส้นนี้)
+     *
+     * @param  string  $gestureType  sticker | emoji | image | link — ไว้ดูสถิติว่าเส้นไหนได้ผล
+     * @return bool true = ส่งการ์ดถึงลูกค้าแล้ว
+     */
+    protected function offerProductsOnGesture(string $senderId, string $gestureType): bool
+    {
+        try {
+            return app(\App\Services\Fortune\FortuneMuOfferService::class)->offer(
+                'facebook',
+                $senderId,
+                \App\Models\FortuneProductOffer::TRIGGER_GESTURE,
+                null,
+                ['gestureType' => $gestureType]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('FB: เสนอสินค้าจาก gesture ล้มเหลว (non-blocking)', [
+                'sender_id' => $senderId,
+                'gesture_type' => $gestureType,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     protected function sendGestureEngagementNudge(string $senderId, string $gestureType): bool
     {
         // ทักไปแล้วใน 6 ชม. → เงียบ กันสแปม

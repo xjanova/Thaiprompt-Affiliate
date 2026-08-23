@@ -64,6 +64,14 @@ class FortuneProductOffer extends Model
     /** รับดวงฟรีรายวันไป — คนกลุ่มนี้ยังไม่เคยจ่ายก็ได้ของเสนอเหมือนกัน */
     public const TRIGGER_DAILY_FREE = 'daily_free';
 
+    /**
+     * ส่งสติกเกอร์ / ยกนิ้ว / รูป / ลิงก์ มาในแชทปกติ โดยไม่มีดูดวงค้าง
+     *
+     * จุดนี้เดิม **เงียบสนิท** (กฎ silent rule 2026-05-01) = ทางตันที่ลูกค้าไม่ได้อะไรเลย
+     * เอาการ์ดสินค้าไปแทนความเงียบ ดีกว่าปล่อยให้เขาคิดว่าบอทตาย
+     */
+    public const TRIGGER_GESTURE = 'gesture';
+
     /** ลูกค้าถามหาของเอง (ไม่นับเพดานรายวัน) */
     public const TRIGGER_CUSTOMER_ASK = 'customer_ask';
 
@@ -80,6 +88,7 @@ class FortuneProductOffer extends Model
         self::TRIGGER_CHAT_END,
         self::TRIGGER_PITCH_DECLINED,
         self::TRIGGER_DAILY_FREE,
+        self::TRIGGER_GESTURE,
     ];
 
     /** ตัวเลือกราคาต่ำ */
