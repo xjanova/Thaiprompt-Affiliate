@@ -40,8 +40,14 @@ class FortunePackageCardBuilder
     /** "คุยถามต่อได้ 7 นาที" ที่พิมพ์อยู่บนรูป 39 */
     private const BAKED_DEEP_WINDOW = 7;
 
-    /** "ถามได้ 5 คำถาม ใน 15 นาที" ที่พิมพ์อยู่บนรูป 99 */
-    private const BAKED_CELTIC_Q_LIMIT = '5 คำถาม';
+    /**
+     * "ถามไม่จำกัด ใน 15 นาที" ที่พิมพ์อยู่บนรูป 99
+     *
+     * ⚠️ ต้องตรงกับที่ presentTierChoice ปั้น: celtic_cross_max_questions = 0 → "ไม่จำกัด"
+     *    ถ้าตั้งเป็นตัวเลข (เช่น 5) จะได้ "5 คำถาม" ⇒ ไม่ตรงรูป ⇒ การ์ดหาย ต้องสร้างรูปใหม่
+     *    (prod 2026-08-23 = 0 = ไม่จำกัด — เคยพลาดพิมพ์ "5 คำถาม" ลงรูปแล้วการ์ดไม่ขึ้นทั้งชุด)
+     */
+    private const BAKED_CELTIC_Q_LIMIT = 'ไม่จำกัด';
 
     private const BAKED_CELTIC_WINDOW = 15;
 
@@ -316,6 +322,12 @@ class FortunePackageCardBuilder
             return null;
         }
 
+        // "ถามได้ ไม่จำกัด" อ่านแล้วสะดุด — พอเป็นไม่จำกัดต้องตัด "ได้" ออก
+        // (ให้ตรงกับถ้อยคำที่พิมพ์อยู่บนรูปเป๊ะ ๆ ด้วย)
+        $askLine = $qLimitText === 'ไม่จำกัด'
+            ? "ถามไม่จำกัด ใน {$qaWindow} นาที"
+            : "ถามได้ {$qLimitText} ใน {$qaWindow} นาที";
+
         $packages = [];
 
         // 🔹 ดูพื้นดวง 39
@@ -338,9 +350,9 @@ class FortunePackageCardBuilder
             $packages[] = [
                 'image' => self::IMAGE_CELTIC,
                 'fb_title' => "👑 ไพ่เต็มสำรับ Celtic Cross — ค่าครู {$celticPrice} บาท",
-                'fb_subtitle' => "เปิดไพ่โบราณ 10 ใบ ฟันธงทีละใบ · ถามได้ {$qLimitText} ใน {$qaWindow} นาที",
+                'fb_subtitle' => "เปิดไพ่โบราณ 10 ใบ ฟันธงทีละใบ · {$askLine}",
                 'line_title' => "👑 ไพ่เต็มสำรับ Celtic Cross · ฿{$celticPrice}",
-                'line_subtitle' => "เปิดไพ่โบราณ 10 ใบ ฟันธงทีละใบ\nถามได้ {$qLimitText} ใน {$qaWindow} นาที ตอบสดไม่มีรอ",
+                'line_subtitle' => "เปิดไพ่โบราณ 10 ใบ ฟันธงทีละใบ\n{$askLine} ตอบสดไม่มีรอ",
                 'button_label' => $celticOnlyIntro
                     ? "✨ เริ่มเลย {$celticPrice} บาท"
                     : "ดู vip ส่วนตัว {$celticPrice}บาท",
