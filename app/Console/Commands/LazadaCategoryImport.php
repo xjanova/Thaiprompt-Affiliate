@@ -81,27 +81,27 @@ class LazadaCategoryImport extends Command
             ?? MarketplacePlatform::where('name', 'like', '%lazada%')->value('id');
 
         $linkBudget = $this->option('no-link') ? 0 : max(0, (int) $this->option('link-budget'));
-        $totals = ['created' => 0, 'updated' => 0, 'rejected' => 0, 'linked' => 0];
+        $totals = ['accepted' => 0, 'created' => 0, 'updated' => 0, 'rejected' => 0, 'linked' => 0];
 
         foreach ($categories as $lazadaCat => $ourCategoryId) {
             $r = $this->importCategory($svc, $account, $platformId, (string) $lazadaCat, $ourCategoryId, $perCat, $linkBudget, $dry);
 
             $linkBudget -= $r['linked'];
-            foreach (['created', 'updated', 'rejected', 'linked'] as $k) {
+            foreach (['accepted', 'created', 'updated', 'rejected', 'linked'] as $k) {
                 $totals[$k] += $r[$k];
             }
 
-            $this->line(sprintf(
-                '  หมวด %-10s ใหม่ %3d · อัปเดต %3d · ตีกลับ %3d · ลิงก์ %3d',
-                $lazadaCat, $r['created'], $r['updated'], $r['rejected'], $r['linked']
-            ));
+            $this->line($dry
+                ? sprintf('  หมวด %-10s จะนำเข้า %3d · ตีกลับ %3d', $lazadaCat, $r['accepted'], $r['rejected'])
+                : sprintf('  หมวด %-10s ใหม่ %3d · อัปเดต %3d · ตีกลับ %3d · ลิงก์ %3d',
+                    $lazadaCat, $r['created'], $r['updated'], $r['rejected'], $r['linked']));
         }
 
         $this->newLine();
-        $this->info(sprintf(
-            '✅ รวม: ใหม่ %d · อัปเดต %d · ตีกลับ %d · ได้ลิงก์ %d',
-            $totals['created'], $totals['updated'], $totals['rejected'], $totals['linked']
-        ));
+        $this->info($dry
+            ? sprintf('✅ dry-run: จะนำเข้า %d ชิ้น · ตีกลับ %d ชิ้น (ยังไม่เขียนฐาน)', $totals['accepted'], $totals['rejected'])
+            : sprintf('✅ รวม: ใหม่ %d · อัปเดต %d · ตีกลับ %d · ได้ลิงก์ %d',
+                $totals['created'], $totals['updated'], $totals['rejected'], $totals['linked']));
 
         if ($linkBudget <= 0 && ! $this->option('no-link')) {
             $this->warn('⚠️ ใช้โควตาลิงก์หมดแล้ว — ของที่เหลือยังไม่มีลิงก์ค่าคอม');
@@ -154,7 +154,7 @@ class LazadaCategoryImport extends Command
         $minCom = (float) $this->option('min-commission');
         $maxPrice = (float) $this->option('max-price');
 
-        $r = ['created' => 0, 'updated' => 0, 'rejected' => 0, 'linked' => 0];
+        $r = ['accepted' => 0, 'created' => 0, 'updated' => 0, 'rejected' => 0, 'linked' => 0];
         $accepted = 0;
         $seenIds = [];
 
@@ -196,6 +196,7 @@ class LazadaCategoryImport extends Command
                 }
 
                 $accepted++;
+                $r['accepted']++;
 
                 if ($dry) {
                     continue;
