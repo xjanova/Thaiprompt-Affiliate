@@ -39,6 +39,17 @@ class FortuneMuOfferService
     /** บอทเสนอเองได้กี่ครั้งต่อคนต่อวัน (owner สั่ง: วันละครั้ง) */
     private const SETTING_DAILY_CAP = 'fortune_mu_offer_daily_cap';
 
+    /**
+     * โควตาแยกของ "ท้ายบิลที่จ่ายเงินแล้ว" (celtic_end / deep_end)
+     *
+     * คนละกระเป๋ากับ SETTING_DAILY_CAP โดยตั้งใจ — ดูเหตุผลที่ FortuneProductOffer::PAID_END_TRIGGERS
+     *
+     * ⚠️ 0 = ไม่จำกัด (ความหมายเดียวกับ SETTING_DAILY_CAP ห้ามให้ต่างกัน)
+     *    ถ้าจะ "ปิด" การเสนอท้ายบิล ให้ถอด celtic_end,deep_end ออกจาก SETTING_TRIGGERS
+     *    ซึ่งเป็นสวิตช์ปิดของจริงอยู่แล้ว — อย่าสร้างทางปิดที่สองที่ความหมายกลับด้านกัน
+     */
+    private const SETTING_PAID_END_DAILY_CAP = 'fortune_mu_offer_paid_end_daily_cap';
+
     /** ลูกค้าแสดงความรำคาญ → เงียบกี่วัน */
     private const SETTING_MUTE_DAYS = 'fortune_mu_offer_mute_days';
 
@@ -156,9 +167,31 @@ class FortuneMuOfferService
         }
 
         // เพดานรายวันนับเฉพาะ "บอทเสนอเอง" — ลูกค้าถามเองต้องได้คำตอบเสมอ
-        if (in_array($trigger, FortuneProductOffer::PROACTIVE_TRIGGERS, true)) {
+        //
+        // 💰 (2026-08-23) แยกเป็น 2 กระเป๋า: ท้ายบิลที่จ่ายเงินแล้ว vs ที่เหลือ
+        //    เดิมรวมกระเป๋าเดียว ⇒ การ์ดจากดวงฟรีตอนเช้ากินโควตา แล้วคนที่จ่าย 99
+        //    ดูจบตอนบ่ายไม่ได้การ์ดเลย (เคส Zurich Mock: ฟรี 13:20 → จ่าย 15:05 → ดูจบ 15:35 เงียบ)
+        //    นาทีที่ลูกค้าเพิ่งจ่ายและพอใจ = นาทีที่ขายของได้ดีที่สุด ห้ามให้ของฟรีมาแย่งคิว
+        if (in_array($trigger, FortuneProductOffer::PAID_END_TRIGGERS, true)) {
+            $cap = max(0, (int) MarketplaceSetting::get(self::SETTING_PAID_END_DAILY_CAP, 1));
+            $used = FortuneProductOffer::proactiveCountToday(
+                $platform,
+                $platformUserId,
+                FortuneProductOffer::PAID_END_TRIGGERS
+            );
+
+            if ($cap > 0 && $used >= $cap) {
+                return false;
+            }
+        } elseif (in_array($trigger, FortuneProductOffer::PROACTIVE_TRIGGERS, true)) {
             $cap = max(0, (int) MarketplaceSetting::get(self::SETTING_DAILY_CAP, 1));
-            if ($cap > 0 && FortuneProductOffer::proactiveCountToday($platform, $platformUserId) >= $cap) {
+            $used = FortuneProductOffer::proactiveCountToday(
+                $platform,
+                $platformUserId,
+                FortuneProductOffer::unpaidProactiveTriggers()
+            );
+
+            if ($cap > 0 && $used >= $cap) {
                 return false;
             }
         }

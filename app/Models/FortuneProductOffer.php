@@ -91,6 +91,24 @@ class FortuneProductOffer extends Model
         self::TRIGGER_GESTURE,
     ];
 
+    /**
+     * จุดที่ยิง "หลังลูกค้าจ่ายเงินแล้วดูดวงจบ" — มีโควตารายวันเป็นของตัวเอง
+     *
+     * 🧾 ทำไมต้องแยก (เคสจริง Zurich Mock 2026-08-23):
+     *    รับดวงฟรีตอน 13:20 → ได้การ์ดสินค้าไป 1 รอบ → โควตารายวัน (cap=1) หมด
+     *    บ่ายจ่าย 99 บาท ดูจบ 15:35 → `celtic_end` โดนเพดานตีตก ไม่ได้การ์ดเลย
+     *    ⇒ ของฟรีตอนเช้าไปกินสิทธิ์ของ "นาทีที่ลูกค้าอยากซื้อที่สุด" ซึ่งกลับหัวกับที่ควรเป็น
+     *
+     * ⚠️ ต้องเป็นสับเซ็ตของ PROACTIVE_TRIGGERS เสมอ — ทั้งสองลิสต์ใช้นับคนละกระเป๋า
+     *    ถ้าเพิ่มจุดยิงใหม่ที่แปลว่า "จ่ายเงินแล้วดูจบ" ต้องใส่ทั้งสองที่
+     *
+     * @var array<int,string>
+     */
+    public const PAID_END_TRIGGERS = [
+        self::TRIGGER_CELTIC_END,
+        self::TRIGGER_DEEP_END,
+    ];
+
     /** ตัวเลือกราคาต่ำ */
     public const SLOT_LOW = 'low';
 
@@ -132,16 +150,28 @@ class FortuneProductOffer extends Model
     /**
      * วันนี้บอท "เสนอเอง" ให้ลูกค้าคนนี้ไปแล้วกี่ครั้ง (นับเป็นครั้ง ไม่ใช่จำนวนชิ้น)
      *
-     * นับแบบ "รอบการเสนอ" — เสนอ 1 ครั้งได้ 2 ชิ้น = 2 แถว แต่ต้องนับเป็น 1
+     * นับแบบ "รอบการเสนอ" — เสนอ 1 ครั้งได้ 2-3 ชิ้น = 2-3 แถว แต่ต้องนับเป็น 1
      * ⇒ นับจำนวน sent_at ที่ไม่ซ้ำกัน
+     *
+     * @param  array<int,string>|null  $triggers  จำกัดเฉพาะจุดยิงกลุ่มนี้ (null = ทุกจุดที่บอทเสนอเอง)
      */
-    public static function proactiveCountToday(string $platform, string $platformUserId): int
+    public static function proactiveCountToday(string $platform, string $platformUserId, ?array $triggers = null): int
     {
         return static::forUser($platform, $platformUserId)
-            ->whereIn('trigger', self::PROACTIVE_TRIGGERS)
+            ->whereIn('trigger', $triggers ?? self::PROACTIVE_TRIGGERS)
             ->where('sent_at', '>=', now()->startOfDay())
             ->distinct('sent_at')
             ->count('sent_at');
+    }
+
+    /**
+     * จุดยิงที่บอทเสนอเอง "แต่ไม่ใช่ท้ายบิลที่จ่ายเงินแล้ว" — ใช้เป็นกระเป๋าโควตาปกติ
+     *
+     * @return array<int,string>
+     */
+    public static function unpaidProactiveTriggers(): array
+    {
+        return array_values(array_diff(self::PROACTIVE_TRIGGERS, self::PAID_END_TRIGGERS));
     }
 
     /**
