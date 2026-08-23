@@ -190,7 +190,7 @@ class MuProductPicker
             return null;
         }
 
-        $pool = $this->candidates($ctx->relaxed()->withoutMuRequirement(), null)
+        $pool = $this->candidates($ctx->relaxed()->withoutMuRequirement(), null, randomSample: true)
             // ตัดของสายมูออก — ใบ 1-2 ครอบไว้แล้ว ใบนี้มีไว้เพิ่มความหลากหลาย
             ->filter(fn (MarketplaceProduct $p) => $p->mu_group === null);
 
@@ -337,7 +337,10 @@ class MuProductPicker
      *
      * @return Collection<int,MarketplaceProduct>
      */
-    private function candidates(MuPickContext $ctx, ?string $group): Collection
+    /**
+     * @param  bool  $randomSample  true = สุ่มตัวอย่างจากพูลทั้งหมด แทนการเอาเฉพาะหัวตารางค่าคอม
+     */
+    private function candidates(MuPickContext $ctx, ?string $group, bool $randomSample = false): Collection
     {
         try {
             // 🛒 offerable() ไม่ใช่ approved() — owner สั่ง 2026-08-23:
@@ -379,6 +382,21 @@ class MuProductPicker
             // คำค้นจากลูกค้า (เฉพาะเส้น customer_ask)
             if ($ctx->searchQuery !== null && $ctx->searchQuery !== '') {
                 $this->applyKeywordFilter($q, $ctx->searchQuery);
+            }
+
+            // 🎲 (2026-08-23) สุ่มตัวอย่าง — ใช้กับใบที่ 3 ที่มีหน้าที่ "เพิ่มความหลากหลาย"
+            //
+            // 🚨 ทำไมต้องมี: เรียงค่าคอม DESC + limit 60 = **ตัดพูลทิ้งก่อน weightedPick จะได้เห็น**
+            //    ของทั่วไปที่ผ่านเกณฑ์มี 558 ชิ้น แต่มีแค่ 60 ชิ้นหัวตารางที่มีสิทธิ์ถูกเลือกตลอดกาล
+            //    วัดจริงบน prod: สุ่ม 8 รอบ ได้ ฿402-986 ทั้ง 8 รอบ ทั้งที่ 58% ของพูลราคาต่ำกว่า ฿300
+            //    ⇒ ต่อให้ลดความแรงการถ่วงน้ำหนักแล้ว ก็ไม่ช่วย เพราะของถูกไม่เคยผ่านเข้ามาถึงตัวสุ่มเลย
+            //    = อาการ "บอทวนของไม่กี่อย่าง" ตัวจริง
+            //
+            // ⚠️ ห้ามเปิดให้ใบ 1-2 (สายมู) — สองใบนั้นต้อง "ตรงเรื่องกับดวง" มาก่อนความหลากหลาย
+            //    และพูลรายกลุ่มยังไม่ถึง 60 ชิ้น จึงยังไม่โดนตัด (pixiu 48 · charm 25 · zodiac 16)
+            //    📌 วันไหนกลุ่มไหนโตเกิน 60 ชิ้น จะเจอกับดักเดียวกันทันที ให้กลับมาคิดใหม่ตรงนี้
+            if ($randomSample) {
+                return $q->inRandomOrder()->limit(self::CANDIDATE_LIMIT)->get();
             }
 
             // เรียงตาม "ค่าคอมเป็นบาท" ให้ของที่ทำเงินได้จริงเข้ารอบก่อน
