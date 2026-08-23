@@ -1491,13 +1491,13 @@ class FortuneChannelManager
                         $extra
                     );
 
-                    // 🛒 (2026-08-23) ของเสริมดวงต่อท้ายดวงฟรีรายวัน — คนกลุ่มนี้ยังไม่เคยจ่ายก็ได้เหมือนกัน
+                    // 🛒 (2026-08-23) ของเสริมดวงหลังดวงฟรีรายวัน — คนกลุ่มนี้ยังไม่เคยจ่ายก็ได้เหมือนกัน
                     //   ⚠️ ส่งเป็น "กล่องใหม่ต่อท้าย" ห้ามยัดเข้าไปในกล่องดวงฟรี
                     //     กล่องนั้นมีรูปทรงตายตัว 5 ชิ้น (คำทำนาย + ลิงก์โพสเพจ + อวยพร + หางคำชวน + ปุ่ม VIP)
                     //     ที่ต้องครบทุกครั้ง — แตะข้างในเมื่อไหร่ ชิ้นใดชิ้นหนึ่งหายเงียบทันที
                     //   ⚠️ และห้ามไปแตะ quick_replies เดิม — ที่นั่นตั้งใจไม่มีปุ่มแพคเกจเกาะดวงฟรี
                     if ($sent) {
-                        $this->offerProductsAfterReading('facebook', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DAILY_FREE);
+                        $this->offerProductsLater('facebook', $userId, $result);
                     }
 
                     return $sent;
@@ -3425,9 +3425,9 @@ class FortuneChannelManager
                         ? $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken)
                         : $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
 
-                    // 🛒 (2026-08-23) ของเสริมดวงต่อท้ายดวงฟรีรายวัน (กล่องใหม่ ไม่แตะกล่องเดิม)
+                    // 🛒 (2026-08-23) ของเสริมดวงหลังดวงฟรีรายวัน (กล่องใหม่ ไม่แตะกล่องเดิม · หน่วง 1 ชม.)
                     if ($sent) {
-                        $this->offerProductsAfterReading('line', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DAILY_FREE);
+                        $this->offerProductsLater('line', $userId, $result);
                     }
 
                     return $sent;
@@ -5487,6 +5487,55 @@ class FortuneChannelManager
      * @param  array<string,mixed>  $result  payload จาก conversation service
      * @param  string  $trigger  FortuneProductOffer::TRIGGER_*
      */
+    /**
+     * 🕐 (2026-08-23) เสนอสินค้า "ทีหลัง" ไม่ใช่ต่อท้ายทันที — ใช้กับสายดวงฟรีรายวัน
+     *
+     * เจตนา (owner): "การส่งสินค้าให้กับคนที่รับดวงรายวันไป ให้ส่งห่างกัน 1 ชม."
+     * เดิมการ์ดตามติดกล่องดวงฟรีทันที = ลูกค้าอ่านดวงยังไม่ทันจบก็เจอของขายจ่อ
+     *
+     * ระยะห่างตั้งได้ที่ `fortune_mu_offer_daily_free_delay_minutes` (default 60)
+     * ตั้ง 0 = ส่งทันทีแบบเดิม
+     *
+     * งานหน่วงอยู่บน redis DB 0 (queue) ส่วน `cache:clear` ตอน deploy ล้าง DB 1 (cache)
+     * ⇒ deploy ระหว่างที่งานรออยู่ ไม่ทำให้การ์ดหาย
+     *
+     * @param  array<string,mixed>  $result  payload จาก conversation service
+     */
+    protected function offerProductsLater(string $platform, string $userId, array $result): void
+    {
+        if (! empty($result['is_lingering'])) {
+            return;
+        }
+
+        try {
+            $minutes = max(0, (int) \App\Models\MarketplaceSetting::get('fortune_mu_offer_daily_free_delay_minutes', 60));
+            $reading = $result['reading'] ?? null;
+            $readingId = $reading instanceof \App\Models\FortuneReading ? $reading->id : null;
+
+            // ⚠️ ตั้ง delay บนตัว job ให้เสร็จ "ก่อน" dispatch
+            //    ถ้าใช้ `Job::dispatch(...)->delay(...)` จะได้ PendingDispatch ซึ่งยิงงานจริงตอน
+            //    __destruct — มีข้อยกเว้นแทรกกลางทางเมื่อไหร่ งานจะหลุดออกไปแบบไม่มี delay
+            $job = (new \App\Jobs\SendMuOfferJob(
+                $platform,
+                $userId,
+                \App\Models\FortuneProductOffer::TRIGGER_DAILY_FREE,
+                $readingId
+            ));
+
+            if ($minutes > 0) {
+                $job->delay(now()->addMinutes($minutes));
+            }
+
+            dispatch($job);
+        } catch (\Throwable $e) {
+            Log::warning('MuOffer: ตั้งงานเสนอสินค้าแบบหน่วงเวลาไม่สำเร็จ (ไม่กระทบดวงฟรี)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     protected function offerProductsAfterReading(string $platform, string $userId, array $result, string $trigger): void
     {
         // 🛡️ linger = Pro Session ยังเหลือเวลา ลูกค้ายังคุยต่อได้ = ยังไม่ใช่จุดจบจริง
