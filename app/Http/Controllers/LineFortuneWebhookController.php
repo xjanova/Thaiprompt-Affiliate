@@ -189,7 +189,9 @@ class LineFortuneWebhookController extends Controller
         // ⚠️ เฉพาะข้อความ text เท่านั้น — รูป/สติกเกอร์ต้องเก็บ replyToken ไว้ให้ flow ของมันเอง
         //    (สลิปโอนเงินคือเคสสำคัญ: ถ้าเผา token ตรงนี้ ลูกค้าส่งสลิปแล้วเงียบ = ขวางทางจ่ายเงิน)
         if ($replyToken && $messageType === 'text') {
-            $flushed = $this->flushParkedCelticAnswers($userId, $replyToken);
+            // คำทำนาย Deep ที่จ่ายเงินแล้วสำคัญกว่า — สะสางก่อน แล้วค่อยถึงคำตอบ Celtic รายข้อ
+            $flushed = $this->flushParkedDeepReading($userId, $replyToken)
+                || $this->flushParkedCelticAnswers($userId, $replyToken);
 
             if ($flushed) {
                 // replyToken ใช้ได้ครั้งเดียว — ใช้ไปกับของที่ลูกค้าจ่ายเงินแล้ว (สำคัญกว่า ack)
@@ -2896,6 +2898,99 @@ class LineFortuneWebhookController extends Controller
         ]);
 
         return false;
+    }
+
+    /**
+     * 📦 (2026-08-26) ส่งคำทำนาย Deep ที่จ่ายเงินแล้วแต่ push ไม่ออก คืนผ่าน reply (ฟรี)
+     *
+     * 🔴 เคสจริงที่ทำให้ต้องมีเมธอดนี้ (บิล FTU-260826-G5544, 39฿):
+     *    ลูกค้าพิมพ์ "พร้อม" หลายรอบ ระบบเข้า `view_reading_deep` ทุกรอบจริง
+     *    แต่ log ฟ้อง `has_reply_token: false` ทุกครั้ง — เพราะเส้นส่งคำทำนายวิ่งผ่าน
+     *    job/debounce (ไม่ใช่จังหวะ webhook) ⇒ ไม่มี replyToken ⇒ ตกไป push ⇒ 429 ⇒ ตายวนลูป
+     *
+     * เมธอดนี้ดักที่ "จังหวะ webhook" ซึ่งเป็นที่เดียวที่ replyToken ยังสด แล้วยิงตรงเลย
+     * ไม่ผ่าน job — ตัดปัญหา token หายระหว่างทาง
+     *
+     * @return bool true = ใช้ replyToken ไปแล้ว
+     */
+    protected function flushParkedDeepReading(string $userId, string $replyToken): bool
+    {
+        try {
+            $reading = FortuneReading::query()
+                ->where('platform', 'line')
+                ->where('platform_user_id', $userId)
+                ->where('is_paid', true)
+                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                ->whereNotNull('deep_response')
+                ->where('deep_response', '!=', '')
+                ->where('created_at', '>=', now()->subDays(3))
+                ->latest()
+                ->first();
+
+            if (! $reading) {
+                return false;
+            }
+
+            // ส่งไปแล้ว → ไม่ต้องส่งซ้ำ (กันลูกค้าเห็นคำทำนายเบิ้ล)
+            if ($reading->getConversationState('reading_sent_directly', false)) {
+                return false;
+            }
+
+            // 🔒 เส้น push กำลังถือ lock ส่งอยู่ → อย่าชิงส่งซ้อน (เหตุผลเดียวกับ deliverInFlight เดิม)
+            if (\Illuminate\Support\Facades\Cache::has("fortune:deep_deliver:{$reading->id}")) {
+                return false;
+            }
+
+            $name = $reading->facebook_user_name ?: 'คุณ';
+            $header = "🌟 คำทำนายเชิงลึกของ{$name}\n"
+                .'📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n"
+                .'📅 '.$reading->created_at->format('d/m/Y H:i')."\n"
+                .'═══════════════════════';
+
+            // LINE: 1 reply = 5 objects, กล่องละ ≤5000 ตัวอักษร → header + เนื้อหา ≤4 ก้อน
+            $chunks = $this->lineService->splitTextForFlexPublic((string) $reading->deep_response, 4500);
+            $messages = [['type' => 'text', 'text' => $header]];
+
+            foreach (array_slice($chunks, 0, 4) as $chunk) {
+                $messages[] = ['type' => 'text', 'text' => $chunk];
+            }
+
+            $ok = $this->lineService->replyMessage($replyToken, $messages);
+
+            if (! $ok) {
+                Log::warning('LINE parked deep: reply ล้มเหลว — คงค้างไว้ให้รอบหน้า', [
+                    'user_id' => $userId,
+                    'reading_id' => $reading->id,
+                ]);
+
+                return false;
+            }
+
+            // ✅ mark หลังส่งสำเร็จจริงเท่านั้น
+            $reading->setConversationState('reading_sent_directly', true);
+            $reading->setConversationState('reading_notification_sent', true);
+            $reading->setConversationState('delivered_by_reply_message', true);
+            $reading->setConversationState('reading_ready_sent', true);
+            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+
+            Log::info('📦 LINE parked deep: ส่งคำทำนายที่ push ไม่ออก คืนลูกค้าผ่าน reply สำเร็จ (ฟรี)', [
+                'user_id' => $userId,
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'chunks' => count($messages),
+                'response_len' => mb_strlen((string) $reading->deep_response),
+            ]);
+
+            return true;
+
+        } catch (\Throwable $e) {
+            Log::error('LINE parked deep: exception (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
