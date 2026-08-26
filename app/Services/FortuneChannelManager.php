@@ -1477,6 +1477,10 @@ class FortuneChannelManager
                         $this->autoDispatchSummaryVoice($result['reading'] ?? null, $userId);
                     }
 
+                    // 📦 (2026-08-26) parity กับ LINE — บันทึกว่า Grand Finale ถึงลูกค้าจริงหรือไม่
+                    //   📌 [[rule_spam_guard_parity_fb_line]] แก้ฝั่งเดียว = อีกฝั่งเป็นระเบิดเวลา
+                    $this->markCelticSummaryDelivery($result['reading'] ?? null, (bool) $sent);
+
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — ส่ง bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
 
@@ -2235,6 +2239,44 @@ class FortuneChannelManager
             }
         } catch (\Throwable $e) {
             \Log::debug('SystemVoice FB attach fail (non-blocking)', ['key' => $clipKey, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 📦 (2026-08-26) บันทึกว่าบทสรุป Grand Finale ส่งถึงลูกค้าจริงหรือไม่
+     *
+     * ทำไมต้องมี: `fortune:celtic-redeliver` มี safety net ว่า
+     * "reading completed แล้ว → ไม่ต้อง re-deliver คำตอบรายข้อ เพราะบทสรุปรวมให้หมดแล้ว"
+     * ซึ่งถูกต้อง **เฉพาะตอนบทสรุปส่งออกจริง** — ถ้าบทสรุป push ไม่ออก (โควต้าหมด/LINE ล่ม)
+     * safety net จะ stamp คำตอบทุกข้อเป็น delivered ทั้งที่ลูกค้าไม่ได้รับอะไรเลย
+     * (เคสจริง 2026-08-25 reading 11594: คำถาม 6 ข้อถูก stamp พร้อมกันตอน push ได้ 429)
+     *
+     * @param  \App\Models\FortuneReading|null  $reading
+     * @param  bool  $delivered  ผลการส่งจริงจาก channel
+     */
+    protected function markCelticSummaryDelivery($reading, bool $delivered): void
+    {
+        try {
+            if (! $reading) {
+                return;
+            }
+
+            $reading->setConversationState('celtic_summary_delivered', $delivered);
+
+            if ($delivered) {
+                $reading->setConversationState('celtic_summary_delivered_at', now()->toIso8601String());
+
+                return;
+            }
+
+            \Log::critical('Celtic Grand Finale ส่งไม่ออก — ลูกค้าจ่ายเงินแล้วยังไม่ได้บทสรุป', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference ?? null,
+                'platform' => $reading->platform ?? null,
+            ]);
+        } catch (\Throwable $e) {
+            // non-blocking — ห้ามทำให้ flow ส่งสรุปล้มเพราะบันทึกสถานะไม่ได้
+            \Log::debug('markCelticSummaryDelivery fail (non-blocking)', ['error' => $e->getMessage()]);
         }
     }
 
@@ -3318,6 +3360,12 @@ class FortuneChannelManager
                         $sent = $batchOk && $sent;
                         $firstChunk = false;
                     }
+
+                    // 📦 (2026-08-26) บันทึกว่า Grand Finale ถึงลูกค้าจริงหรือไม่
+                    //   fortune:celtic-redeliver ใช้ค่านี้ตัดสินว่าจะ mark คำตอบรายข้อเป็น delivered ได้ไหม
+                    //   เดิมมันเหมาว่า "reading completed = สรุปถึงแล้ว" → ตอนโควต้าหมด สรุป push ไม่ออก
+                    //   แต่คำตอบทุกข้อถูก stamp delivered ทิ้ง = ของหายแบบไม่มีร่องรอย (เคสจริง reading 11594)
+                    $this->markCelticSummaryDelivery($result['reading'] ?? null, $sent);
 
                     // ⭐ (2026-06-17) ชวนรีวิวเพจ FB — push bubble ปุ่มถัดจากข้อความสรุป VIP (ถ้าเข้าเงื่อนไข)
                     $this->sendReviewInviteLine($lineService, $userId, $result);
@@ -5563,6 +5611,12 @@ class FortuneChannelManager
             return;
         }
 
+        // 💸 (2026-08-26) กล่องชวนรีวิว = push ที่ไม่วิกฤต — โควต้าใกล้หมดให้ข้าม
+        //   เก็บโควต้าที่เหลือไว้ส่งคำทำนายของลูกค้าที่จ่ายเงินแล้ว
+        if (! $lineService->canSpendNonCriticalPush()) {
+            return;
+        }
+
         try {
             $lineService->sendRichMessage($userId, [
                 'alt_text' => '⭐ ฝากรีวิวให้แม่หมอด้วยนะคะ',
@@ -5645,6 +5699,12 @@ class FortuneChannelManager
     {
         // 🛡️ linger = Pro Session ยังเหลือเวลา ลูกค้ายังคุยต่อได้ = ยังไม่ใช่จุดจบจริง
         if (! empty($result['is_lingering'])) {
+            return;
+        }
+
+        // 💸 (2026-08-26) การ์ดขายของ = push ที่ไม่วิกฤต — โควต้า LINE ใกล้หมดให้ข้าม
+        //   เก็บโควต้าที่เหลือไว้ส่งคำทำนายของลูกค้าที่จ่ายเงินแล้ว (FB ไม่มีลิมิตแบบนี้)
+        if ($platform === 'line' && ! app(LineFortuneService::class)->canSpendNonCriticalPush()) {
             return;
         }
 

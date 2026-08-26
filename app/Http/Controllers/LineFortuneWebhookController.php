@@ -175,6 +175,29 @@ class LineFortuneWebhookController extends Controller
         //   เคสจริง LINE Celtic 2026-05-21: ลูกค้าพิมพ์ "พร้อม" 5 ครั้ง → silenced 1 ชม. (จาก FortuneCelticKick.php:95 comment)
         $isVipPaid = app(\App\Services\FortuneConversationService::class)->hasPaidActiveReading($userId);
 
+        // ========================================
+        // 📦 (2026-08-26) PARKED DELIVERY — ของที่ push ไม่ออก ส่งคืนด้วย reply (ฟรี)
+        //
+        // เหตุการณ์ 2026-08-25: โควต้า push รายเดือนหมด (300/300) → คำตอบ Celtic ที่ลูกค้า
+        // จ่าย 99฿ push ไม่ออก หายเงียบ · reply ยังฟรีและใช้ได้ → ใช้จังหวะที่ลูกค้าทักมา
+        // (มี replyToken สด) สะสางของค้างก่อน
+        //
+        // 🚨 ต้องอยู่ "ก่อน" spam guard / ban guard — เหตุผลเดียวกับฝั่ง FB (pendingDelivery)
+        //    ลูกค้าจ่ายเงินแล้วถูกแบน/ถูกมองว่าสแปมกลางทาง ของที่ซื้อต้องไม่ค้าง
+        //    📌 [[feedback_never_interrupt_payment_to_prediction_flow]]
+        // ========================================
+        // ⚠️ เฉพาะข้อความ text เท่านั้น — รูป/สติกเกอร์ต้องเก็บ replyToken ไว้ให้ flow ของมันเอง
+        //    (สลิปโอนเงินคือเคสสำคัญ: ถ้าเผา token ตรงนี้ ลูกค้าส่งสลิปแล้วเงียบ = ขวางทางจ่ายเงิน)
+        if ($replyToken && $messageType === 'text') {
+            $flushed = $this->flushParkedCelticAnswers($userId, $replyToken);
+
+            if ($flushed) {
+                // replyToken ใช้ได้ครั้งเดียว — ใช้ไปกับของที่ลูกค้าจ่ายเงินแล้ว (สำคัญกว่า ack)
+                // ที่เหลือของเทิร์นนี้ต้องไม่เอา token ที่ถูกเผาแล้วไปยิงซ้ำ (จะได้ 400 แล้ว fallback push เปล่า)
+                $replyToken = null;
+            }
+        }
+
         // 🚫 (2026-04-28) Spam guard — silence คนป่วน (parity กับ FB)
         // กัน: video/sticker/audio ซ้ำๆ, ข้อความมี URL, ข้อความซ้ำ
         // ⚠️ (2026-05-24) Skip ถ้าเป็น VIP paid customer
@@ -565,7 +588,12 @@ class LineFortuneWebhookController extends Controller
 
         try {
             // ✅ Gatekeeper: เช็คทราฟฟิคภาพรวมทั้งระบบก่อน (ทุก user รวมกัน)
-            if (LineGatekeeperService::isSystemThrottled()) {
+            // 🚫 (2026-08-26) ด่านนี้ต้องกันเฉพาะ "rate limit ชั่วคราว" เท่านั้น
+            //    โควต้า push รายเดือนหมด → ห้ามเข้าด่านนี้เด็ดขาด เพราะจะทิ้งคำถามลูกค้าทั้งเดือน
+            //    ทั้งที่ reply ฟรีและตอบได้ปกติ (เหตุการณ์จริง 2026-08-25: quota 300/300)
+            //    markQuotaExhausted() จงใจไม่ตั้ง backoff อยู่แล้ว — เช็คซ้ำตรงนี้เป็นตาข่ายชั้นสอง
+            if (LineGatekeeperService::isSystemThrottled()
+                && ! LineGatekeeperService::isQuotaExhausted()) {
                 Log::warning('LINE Webhook: System throttled — ส่งข้อความเตือน', [
                     'user_id' => $userId,
                     'stats' => LineGatekeeperService::getStats(),
@@ -2868,5 +2896,98 @@ class LineFortuneWebhookController extends Controller
         ]);
 
         return false;
+    }
+
+    /**
+     * 📦 (2026-08-26) ส่งคำตอบ Celtic ที่ค้างอยู่คืนลูกค้าผ่าน reply (ฟรี ไม่กิน push quota)
+     *
+     * ใช้ตอนที่ลูกค้าทักเข้ามา — เป็นจังหวะเดียวที่มี replyToken สด
+     * ของค้าง = คำถามที่ AI ตอบแล้ว (`answered_at`) แต่ push ไม่ออก (`delivered_at` = null)
+     * ซึ่งเกิดจากโควต้า push รายเดือนหมด หรือ LINE API ล่มชั่วคราว
+     *
+     * ⚠️ mark delivered เฉพาะตอน reply สำเร็จจริงเท่านั้น — ห้าม mark ล่วงหน้า
+     *    (บทเรียน FortuneCelticRedeliver: mark ทิ้งไว้แล้วของหายกลายเป็น "ส่งแล้ว")
+     *
+     * @param  string  $userId  LINE userId
+     * @param  string  $replyToken  reply token สดจาก webhook
+     * @return bool true = ใช้ replyToken ไปแล้ว (caller ต้องเลิกใช้ token นี้)
+     */
+    protected function flushParkedCelticAnswers(string $userId, string $replyToken): bool
+    {
+        try {
+            // หา reading ของลูกค้าคนนี้ที่จ่ายเงินแล้ว + มีคำตอบค้างส่ง
+            //   จำกัด 3 วันล่าสุด — ของเก่ากว่านั้นส่งไปลูกค้าก็งงแล้ว (cron/แอดมินจัดการแทน)
+            $readingIds = FortuneReading::query()
+                ->where('platform', 'line')
+                ->where('platform_user_id', $userId)
+                ->where('is_paid', true)
+                ->where('created_at', '>=', now()->subDays(3))
+                ->pluck('id');
+
+            if ($readingIds->isEmpty()) {
+                return false;
+            }
+
+            $pending = \App\Models\FortuneCelticQuestion::query()
+                ->whereIn('fortune_reading_id', $readingIds)
+                ->undelivered()
+                ->orderBy('fortune_reading_id')
+                ->orderBy('sequence')
+                ->limit(4)   // เหลือ 1 slot ให้หมายเหตุ (LINE reply ได้สูงสุด 5 objects/call)
+                ->get();
+
+            if ($pending->isEmpty()) {
+                return false;
+            }
+
+            $messages = [];
+            foreach ($pending as $q) {
+                $messages[] = [
+                    'type' => 'text',
+                    'text' => mb_substr(trim((string) $q->response), 0, 4900),
+                ];
+            }
+
+            // โควต้าหมด = ที่เหลือของเทิร์นนี้ตอบไม่ได้ → บอกลูกค้าว่าข้อความถึงแล้ว จะได้ไม่คิดว่าโดนเท
+            if (LineGatekeeperService::isQuotaExhausted()) {
+                $messages[] = [
+                    'type' => 'text',
+                    'text' => "💬 ข้อความของเธอถึงแม่หมอแล้วนะคะ ✨\n\nแม่หมอกำลังดูให้อยู่ค่ะ — ทักมาอีกครั้งได้เลย เดี๋ยวแม่หมอส่งคำตอบให้ทันทีค่ะ 🙏",
+                ];
+            }
+
+            $ok = $this->lineService->replyMessage($replyToken, $messages);
+
+            if (! $ok) {
+                Log::warning('LINE parked delivery: reply ล้มเหลว — คงสถานะค้างไว้ให้รอบหน้า', [
+                    'user_id' => $userId,
+                    'pending_count' => $pending->count(),
+                ]);
+
+                return false;
+            }
+
+            foreach ($pending as $q) {
+                $q->markDelivered();
+            }
+
+            Log::info('📦 LINE parked delivery: ส่งคำตอบค้างคืนลูกค้าผ่าน reply สำเร็จ (ฟรี)', [
+                'user_id' => $userId,
+                'delivered_question_ids' => $pending->pluck('id')->all(),
+                'reading_ids' => $pending->pluck('fortune_reading_id')->unique()->values()->all(),
+                'quota_exhausted' => LineGatekeeperService::isQuotaExhausted(),
+            ]);
+
+            return true;
+
+        } catch (\Throwable $e) {
+            // ห้ามให้ตรงนี้ล้มทั้ง webhook — ของค้างยังอยู่ รอบหน้าค่อยลองใหม่
+            Log::error('LINE parked delivery: exception (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }

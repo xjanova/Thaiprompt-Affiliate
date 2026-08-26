@@ -31,18 +31,31 @@ class LineGatekeeperService
 
     // ✅ Retry config สำหรับ LINE push
     const MAX_RETRIES = 3;
+
     const BASE_BACKOFF_MS = 500;  // 500ms, 1s, 2s
 
     // ✅ Cache keys
     const KEY_LINE_PUSH_MINUTE = 'gatekeeper:line_push:minute';
+
     const KEY_LINE_PUSH_SECOND = 'gatekeeper:line_push:second';
+
     const KEY_LINE_BACKOFF_UNTIL = 'gatekeeper:line:backoff_until';
+
+    // 🚫 (2026-08-26) โควต้า push รายเดือนหมด — คนละเรื่องกับ rate limit ชั่วคราว
+    //   LINE ตอบ 429 เหมือนกันทั้งสองกรณี แต่ "โควต้าหมด" จะไม่หายจนกว่าจะขึ้นเดือนใหม่
+    //   ⚠️ ห้ามเอาธงนี้ไปผูกกับ backoff/isSystemThrottled — reply ยังฟรีและใช้ได้ปกติ
+    //      (พิสูจน์ 2026-08-25: push 429 47 ครั้ง แต่ reply error แค่ 1 ครั้งและเป็น invalid token)
+    const KEY_LINE_QUOTA_EXHAUSTED = 'gatekeeper:line:quota_exhausted';
 
     // ✅ Backward compatibility constants
     const LINE_PUSH_MAX_PER_MINUTE = 40;
+
     const LINE_PUSH_MAX_PER_SECOND = 5;
+
     const AI_MAX_PER_MINUTE = 25;
+
     const KEY_AI_MINUTE = 'gatekeeper:ai:minute';
+
     const KEY_THROTTLED_UNTIL = 'gatekeeper:throttled_until';
 
     /**
@@ -137,10 +150,74 @@ class LineGatekeeperService
     }
 
     /**
+     * บันทึกว่าโควต้า push รายเดือนหมดแล้ว (429 + body บอก monthly limit)
+     *
+     * ⚠️ จงใจ "ไม่" ตั้ง backoff — เพราะ backoff ไปทำให้ isSystemThrottled() เป็น true
+     * แล้ว webhook ขาเข้าจะทิ้งคำถามลูกค้าทั้งที่ตอบผ่าน reply ได้ฟรี (เหตุการณ์ 2026-08-25/26)
+     *
+     * @param  string|null  $rawBody  body ที่ LINE ตอบมา (เก็บไว้ debug)
+     */
+    public static function markQuotaExhausted(?string $rawBody = null): void
+    {
+        $ttl = self::secondsUntilQuotaReset();
+
+        // ถ้าเคยตั้งไว้แล้ว ไม่ต้อง log ซ้ำทุก push (กัน log ท่วม)
+        $alreadyMarked = Cache::has(self::KEY_LINE_QUOTA_EXHAUSTED);
+
+        Cache::put(self::KEY_LINE_QUOTA_EXHAUSTED, [
+            'at' => now()->toIso8601String(),
+            'body' => $rawBody ? mb_substr($rawBody, 0, 200) : null,
+        ], $ttl);
+
+        if (! $alreadyMarked) {
+            Log::critical('Gatekeeper: LINE push quota รายเดือนหมด — สลับไปพึ่ง reply อย่างเดียว', [
+                'reset_in_seconds' => $ttl,
+                'reset_in_hours' => round($ttl / 3600, 1),
+                'body' => $rawBody ? mb_substr($rawBody, 0, 200) : null,
+            ]);
+        }
+    }
+
+    /**
+     * โควต้า push รายเดือนหมดอยู่หรือไม่
+     *
+     * ใช้ตัดสินว่า "ควรเสีย API call ไปกับ push ไหม" — ไม่ใช่ตัวปิดกั้นทางขาเข้า
+     */
+    public static function isQuotaExhausted(): bool
+    {
+        return Cache::has(self::KEY_LINE_QUOTA_EXHAUSTED);
+    }
+
+    /**
+     * ล้างธงโควต้าหมด (เรียกเมื่อ push สำเร็จ = ขึ้นเดือนใหม่ หรืออัปแพลนแล้ว)
+     */
+    public static function clearQuotaExhausted(): void
+    {
+        if (Cache::has(self::KEY_LINE_QUOTA_EXHAUSTED)) {
+            Cache::forget(self::KEY_LINE_QUOTA_EXHAUSTED);
+            Log::info('Gatekeeper: LINE push quota กลับมาใช้ได้แล้ว — ล้างธงโควต้าหมด');
+        }
+    }
+
+    /**
+     * จำนวนวินาทีจนถึงตอนที่โควต้า LINE รีเซ็ต (ต้นเดือนถัดไป)
+     *
+     * บวกกันชน 1 ชม. เผื่อ timezone ฝั่ง LINE ไม่ตรงกับเซิร์ฟเวอร์
+     */
+    public static function secondsUntilQuotaReset(): int
+    {
+        // Carbon 3 คืน float (มีเครื่องหมาย) — cast เป็น int ก่อนเทียบเสมอ
+        $seconds = (int) abs(now()->diffInSeconds(now()->addMonthNoOverflow()->startOfMonth())) + 3600;
+
+        // กันค่าเพี้ยน (ต่ำสุด 5 นาที, สูงสุด 32 วัน)
+        return (int) max(300, min($seconds, 32 * 24 * 3600));
+    }
+
+    /**
      * คำนวณเวลารอก่อน retry (milliseconds)
      *
      * @param  int  $attempt  ครั้งที่ retry (1-based)
-     * @return int  milliseconds ที่ต้องรอ
+     * @return int milliseconds ที่ต้องรอ
      */
     public static function getRetryDelayMs(int $attempt): int
     {
@@ -195,7 +272,11 @@ class LineGatekeeperService
      *
      * V2: ใช้ backoff จาก LINE 429 จริง แทนการเดา
      *
-     * @return bool true = ระบบกำลังอยู่ใน backoff period
+     * ⚠️ (2026-08-26) สะท้อนเฉพาะ "rate limit ชั่วคราว" เท่านั้น
+     * โควต้ารายเดือนหมด **ไม่** ทำให้ค่านี้เป็น true — เพราะ reply ยังฟรีและตอบลูกค้าได้
+     * ถ้าเอาโควต้าหมดมาผูกตรงนี้ webhook จะทิ้งคำถามลูกค้าทั้งเดือน (ดู markQuotaExhausted)
+     *
+     * @return bool true = ระบบกำลังอยู่ใน backoff period จาก rate limit จริง
      */
     public static function isSystemThrottled(): bool
     {
@@ -224,6 +305,9 @@ class LineGatekeeperService
             'line_backoff_remaining_seconds' => $backoffRemaining,
             'ai_per_bot' => $aiStats,
             'is_throttled' => self::isSystemThrottled(),
+            // 🚫 (2026-08-26) แยกให้เห็นชัดว่า "โควต้าหมด" ≠ "ถูก throttle"
+            'quota_exhausted' => self::isQuotaExhausted(),
+            'quota_reset_in_seconds' => self::isQuotaExhausted() ? self::secondsUntilQuotaReset() : 0,
             'limits' => [
                 'max_retries' => self::MAX_RETRIES,
                 'base_backoff_ms' => self::BASE_BACKOFF_MS,

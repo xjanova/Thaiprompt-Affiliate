@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\MessagingPlatformInterface;
 use App\Models\FortuneTellingSetting;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +26,15 @@ class LineFortuneService implements MessagingPlatformInterface
      * LINE Messaging API Endpoint
      */
     protected const API_ENDPOINT = 'https://api.line.me/v2/bot';
+
+    /**
+     * 💰 (2026-08-26) โควต้า push ที่กันไว้ให้ "ลูกค้าที่จ่ายเงินแล้ว" เท่านั้น
+     *
+     * เหลือน้อยกว่านี้ → ข้าม push ที่ไม่วิกฤต (ชวนรีวิว / ขายของ / broadcast)
+     * ⚠️ ห้ามใช้ env() ตรงนี้ — prod รัน config:cache แล้ว env() คืน null
+     *    (ดู incident_deploy_breaks_queue_worker: .env.production poison config cache)
+     */
+    public const PUSH_RESERVE_FOR_PAID = 50;
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
@@ -91,6 +101,130 @@ class LineFortuneService implements MessagingPlatformInterface
      *
      * @return array{quota: int, used: int, remaining: int, percentage: float, error: string|null}
      */
+    /**
+     * 429 ก้อนนี้คือ "โควต้ารายเดือนหมด" หรือ "rate limit ชั่วคราว"?
+     *
+     * LINE ใช้ status 429 ทั้งสองกรณี แต่ผลต่างกันคนละโลก:
+     * - โควต้าหมด → จะ 429 ไปจนขึ้นเดือนใหม่ (retry ไม่ช่วย ต้องพึ่ง reply แทน)
+     * - rate limit → รอไม่กี่วินาทีก็ยิงได้
+     *
+     * ตัวแยกที่เชื่อถือได้ (เก็บจากเหตุการณ์จริง 2026-08-25):
+     * - โควต้าหมด: body มี "monthly limit" + header `x-ratelimit-*` **ว่างเปล่า** + ไม่มี retry-after
+     * - rate limit จริง: มี `x-ratelimit-remaining` / `x-ratelimit-reset` เป็นตัวเลข
+     *
+     * @param  string  $body  response body จาก LINE
+     * @param  array<string, mixed>  $headers  header ที่สนใจ (ratelimit + retry-after)
+     */
+    protected function isMonthlyQuotaError(string $body, array $headers = []): bool
+    {
+        // ทางตรง: LINE บอกมาเองใน body → เชื่อได้ทันที
+        if (stripos($body, 'monthly limit') !== false
+            || stripos($body, 'monthly message limit') !== false) {
+            return true;
+        }
+
+        // มีข้อมูล rate limit ครบ = rate limit ชั่วคราวแน่นอน
+        $hasRateLimitInfo = ($headers['x-ratelimit-remaining'] ?? '') !== ''
+            || ($headers['x-ratelimit-reset'] ?? '') !== ''
+            || (int) ($headers['retry-after'] ?? 0) > 0;
+
+        if ($hasRateLimitInfo) {
+            return false;
+        }
+
+        // 🛡️ คลุมเครือ: 429 ที่ไม่มีข้อมูลอะไรเลย
+        //   ⚠️ ห้ามเดาว่า "โควต้าหมด" — เดาผิดครั้งเดียว = ปิด push ทั้งเดือน
+        //   ต้องถาม LINE ให้ชัดก่อนเสมอ (ยิง 2 call เฉพาะตอนเจอ 429 คลุมเครือ — ไม่ใช่ทุก push)
+        $q = $this->getMessageQuota();
+
+        if (! empty($q['error'])) {
+            // ยืนยันไม่ได้ → ถือว่าเป็น rate limit (ปลอดภัยกว่า: retry ได้ ไม่ปิดยาว)
+            return false;
+        }
+
+        return $q['quota'] > 0 && $q['remaining'] <= 0;
+    }
+
+    /**
+     * 🔄 (2026-08-26) โควต้ากลับมาแล้วหรือยัง — ตาข่ายกันธง "โควต้าหมด" ค้างผิด
+     *
+     * เคสที่ต้องกู้: จัดประเภท 429 ผิด / เจ้าของอัปแพลนกลางเดือน / LINE รีเซ็ตเร็วกว่าที่คำนวณ
+     * ถ้าไม่มีตัวนี้ ความผิดพลาดครั้งเดียวจะทำให้บอทไม่ push ยาวถึงสิ้นเดือน
+     *
+     * เช็คซ้ำแค่ทุก 30 นาที — ไม่งั้นทุก push จะยิง quota API เปล่า
+     */
+    protected function hasQuotaRecovered(): bool
+    {
+        if (Cache::has('line:quota_recheck_lock')) {
+            return false;
+        }
+
+        Cache::put('line:quota_recheck_lock', 1, 1800);
+
+        $q = $this->getMessageQuota();
+
+        if (! empty($q['error'])) {
+            return false;
+        }
+
+        return (int) $q['remaining'] > 0;
+    }
+
+    /**
+     * โควต้า push คงเหลือ (cache 10 นาที — กันยิง LINE API ทุกครั้งที่จะ push)
+     *
+     * @return int|null จำนวนที่เหลือ / null = ดึงไม่ได้ (ห้ามตีความว่า 0)
+     */
+    public function getRemainingQuotaCached(): ?int
+    {
+        return Cache::remember('line:quota_remaining', 600, function () {
+            $q = $this->getMessageQuota();
+
+            if (! empty($q['error'])) {
+                return null;
+            }
+
+            return (int) $q['remaining'];
+        });
+    }
+
+    /**
+     * ควรใช้โควต้า push ไปกับข้อความ "ไม่วิกฤต" หรือไม่ (ชวนรีวิว / เสนอของ / ดวงรายวัน)
+     *
+     * กันเคส 2026-08-25: โควต้าเดือนละ 300 ถูก push การตลาด/แจ้งเตือนกินจนหมด
+     * แล้วลูกค้าที่จ่าย 99฿ ไม่มีโควต้าเหลือให้ส่งคำทำนาย
+     *
+     * นโยบาย: กันโควต้าท้ายเดือนไว้ให้ "ของที่ลูกค้าจ่ายเงินแล้ว" เท่านั้น
+     * - โควต้าหมด → ไม่ส่ง
+     * - เหลือน้อยกว่ากันชน → ไม่ส่ง
+     * - ดึงโควต้าไม่ได้ → **ส่ง** (fail-open — ห้ามให้ระบบเงียบเพราะเช็คโควต้าไม่ได้)
+     */
+    public function canSpendNonCriticalPush(): bool
+    {
+        if (LineGatekeeperService::isQuotaExhausted()) {
+            return false;
+        }
+
+        $remaining = $this->getRemainingQuotaCached();
+
+        if ($remaining === null) {
+            return true;
+        }
+
+        $reserve = self::PUSH_RESERVE_FOR_PAID;
+
+        if ($remaining > $reserve) {
+            return true;
+        }
+
+        Log::warning('LINE: ข้าม push ที่ไม่วิกฤต — กันโควต้าไว้ให้ลูกค้าที่จ่ายเงิน', [
+            'remaining' => $remaining,
+            'reserve' => $reserve,
+        ]);
+
+        return false;
+    }
+
     public function getMessageQuota(): array
     {
         $result = [
@@ -4184,6 +4318,21 @@ class LineFortuneService implements MessagingPlatformInterface
             return false;
         }
 
+        // 🚫 (2026-08-26) โควต้ารายเดือนหมด → retry 2 ครั้งก็ 429 ทั้งคู่ ไม่ต้องเสียเวลา
+        if (LineGatekeeperService::isQuotaExhausted()) {
+            if ($this->hasQuotaRecovered()) {
+                LineGatekeeperService::clearQuotaExhausted();
+                Cache::forget('line:quota_remaining');
+            } else {
+                Log::warning('LINE pushMessagePriority: ข้าม — โควต้า push รายเดือนหมด (รอส่งผ่าน reply แทน)', [
+                    'to' => $to,
+                    'msg_count' => count($messages),
+                ]);
+
+                return false;
+            }
+        }
+
         // ✅ Priority push: retry แค่ 2 ครั้ง ด้วย delay สั้น (ไม่ block นาน)
         $maxRetries = 2;
 
@@ -4206,18 +4355,42 @@ class LineFortuneService implements MessagingPlatformInterface
 
                 if ($response->successful()) {
                     LineGatekeeperService::clearLineBackoff();
+                    LineGatekeeperService::clearQuotaExhausted();
 
                     return true;
                 }
 
                 $status = $response->status();
 
-                if ($status === 429 && $attempt < $maxRetries) {
-                    Log::warning("LINE pushMessagePriority: 429 → retry (attempt {$attempt})", [
-                        'to' => $to,
+                if ($status === 429) {
+                    // 🔀 (2026-08-26) โควต้าหมด → retry ไม่มีทางผ่าน ออกทันทีแล้วให้ caller ไป park
+                    $body = $response->body();
+                    $isQuota = $this->isMonthlyQuotaError($body, [
+                        'x-ratelimit-remaining' => $response->header('x-ratelimit-remaining'),
+                        'x-ratelimit-reset' => $response->header('x-ratelimit-reset'),
+                        'retry-after' => (int) $response->header('retry-after', 0),
                     ]);
 
-                    continue;
+                    if ($isQuota) {
+                        LineGatekeeperService::markQuotaExhausted($body);
+                        Cache::forget('line:quota_remaining');
+
+                        Log::warning('LINE pushMessagePriority: 429 โควต้ารายเดือนหมด — เลิก retry', [
+                            'to' => $to,
+                            'body' => mb_substr($body, 0, 300),
+                        ]);
+
+                        return false;
+                    }
+
+                    if ($attempt < $maxRetries) {
+                        Log::warning("LINE pushMessagePriority: 429 rate limit → retry (attempt {$attempt})", [
+                            'to' => $to,
+                            'body' => mb_substr($body, 0, 200),
+                        ]);
+
+                        continue;
+                    }
                 }
 
                 Log::error('LINE pushMessagePriority: ส่งไม่สำเร็จ', [
@@ -4263,6 +4436,24 @@ class LineFortuneService implements MessagingPlatformInterface
             return false;
         }
 
+        // 🚫 (2026-08-26) โควต้ารายเดือนหมดอยู่ → ยิงไปก็ได้ 429 แน่นอน
+        //   ตัดตั้งแต่ต้นเพื่อไม่ให้ลูกค้ารอ HTTP timeout เปล่าๆ ทุกข้อความ
+        //   caller ที่ได้ false ต้อง park ของไว้ส่งผ่าน reply รอบหน้า (ห้ามทิ้งเงียบ)
+        if (LineGatekeeperService::isQuotaExhausted()) {
+            // 🔄 กันธงค้างผิด — ถ้าโควต้ากลับมาแล้วให้ปลดล็อกแล้วส่งต่อตามปกติ
+            if ($this->hasQuotaRecovered()) {
+                LineGatekeeperService::clearQuotaExhausted();
+                Cache::forget('line:quota_remaining');
+            } else {
+                Log::warning('LINE pushMessage: ข้าม — โควต้า push รายเดือนหมด (รอส่งผ่าน reply แทน)', [
+                    'to' => $to,
+                    'msg_count' => count($messages),
+                ]);
+
+                return false;
+            }
+        }
+
         // ✅ V2: ส่งทันที ไม่ block ไม่ retry (เพื่อไม่ให้ webhook ช้า)
         // ถ้าโดน 429 → return false → fortune:check-pending จะ retry ทีหลัง
         LineGatekeeperService::recordLinePush();
@@ -4278,6 +4469,7 @@ class LineFortuneService implements MessagingPlatformInterface
 
             if ($response->successful()) {
                 LineGatekeeperService::clearLineBackoff();
+                LineGatekeeperService::clearQuotaExhausted();
 
                 return true;
             }
@@ -4286,11 +4478,31 @@ class LineFortuneService implements MessagingPlatformInterface
 
             if ($status === 429) {
                 $retryAfter = (int) $response->header('retry-after', 0);
-                LineGatekeeperService::recordLineRateLimit($retryAfter ?: null, 1);
+                $body = $response->body();
+                $rlHeaders = [
+                    'x-ratelimit-remaining' => $response->header('x-ratelimit-remaining'),
+                    'x-ratelimit-reset' => $response->header('x-ratelimit-reset'),
+                    'retry-after' => $retryAfter,
+                ];
 
-                Log::warning('LINE pushMessage: HTTP 429 rate limited', [
+                // 🔀 (2026-08-26) แยก "โควต้ารายเดือนหมด" ออกจาก "rate limit ชั่วคราว"
+                //   เดิมเหมาเป็น rate limit → ตั้ง backoff → isSystemThrottled() → webhook
+                //   ทิ้งคำถามลูกค้าทั้งที่ reply ฟรี (ดู LineGatekeeperService::markQuotaExhausted)
+                $isQuota = $this->isMonthlyQuotaError($body, $rlHeaders);
+
+                if ($isQuota) {
+                    LineGatekeeperService::markQuotaExhausted($body);
+                    Cache::forget('line:quota_remaining');
+                } else {
+                    LineGatekeeperService::recordLineRateLimit($retryAfter ?: null, 1);
+                }
+
+                Log::warning('LINE pushMessage: HTTP 429 — '.($isQuota ? 'โควต้ารายเดือนหมด' : 'rate limit ชั่วคราว'), [
                     'to' => $to,
+                    'quota_exhausted' => $isQuota,
                     'retry_after' => $retryAfter,
+                    // 🔎 body คือตัวแยกที่แน่นอนที่สุด — เดิมไม่ log ทำให้ debug ตาบอด
+                    'body' => mb_substr($body, 0, 300),
                     'headers' => [
                         'x-line-request-id' => $response->header('x-line-request-id'),
                         'x-ratelimit-remaining' => $response->header('x-ratelimit-remaining'),

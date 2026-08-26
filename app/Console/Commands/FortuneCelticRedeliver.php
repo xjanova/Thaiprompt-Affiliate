@@ -99,11 +99,28 @@ class FortuneCelticRedeliver extends Command
             //   ลูกค้าจะเห็นคำตอบเก่าโผล่ "หลังสรุป" (เคสจริง reading 4191 สมร: ครอบครัวซ้ำ)
             //   mark delivered กัน cron วนจับทุกนาทีจน maxAttempts (terminal state — ไม่ต้องส่งแล้ว)
             //   หมายเหตุ: endCelticSession ก็ mark ให้แล้ว — นี่คือ safety net เผื่อ legacy/race
+            // 🐛 (2026-08-26) safety net นี้ถูกต้อง "เฉพาะตอนบทสรุปส่งออกจริง"
+            //   ถ้า Grand Finale push ไม่ออก (โควต้าหมด/LINE ล่ม) แล้วยัง mark delivered
+            //   = ลูกค้าจ่าย 99฿ ไม่ได้อะไรเลย แต่ DB บอกว่า "ส่งแล้ว" → ของหายแบบไร้ร่องรอย
+            //   (เคสจริง reading 11594: คำถาม 6 ข้อถูก stamp พร้อมกันตอน push ได้ 429)
+            //   ⚠️ default = true เพื่อความเข้ากันได้ย้อนหลัง — reading เก่าก่อนมีธงนี้
+            //      ไม่มี state เก็บไว้ ต้องคงพฤติกรรมเดิม (ไม่งั้นจะ re-deliver ย้อนหลังทั้งกอง)
             if ($reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
-                $q->markDelivered();
-                $skipped++;
+                $summaryDelivered = (bool) $reading->getConversationState('celtic_summary_delivered', true);
 
-                continue;
+                if ($summaryDelivered) {
+                    $q->markDelivered();
+                    $skipped++;
+
+                    continue;
+                }
+
+                $this->warn("  Q#{$q->id} (reading {$reading->id}) — completed แต่บทสรุปยังส่งไม่ออก → ส่งคำตอบรายข้อแทน");
+                Log::warning('FortuneCelticRedeliver: completed แต่ celtic_summary_delivered=false → re-deliver รายข้อ', [
+                    'question_id' => $q->id,
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference ?? null,
+                ]);
             }
 
             // resolve platform + userId (pattern เดียวกับทั้งระบบ — platform field ก่อน แล้ว ID pattern)
@@ -131,6 +148,17 @@ class FortuneCelticRedeliver extends Command
 
             if ($isDry) {
                 $this->line('    [DRY] '.mb_substr((string) $q->response, 0, 80).'...');
+
+                continue;
+            }
+
+            // 🚫 (2026-08-26) LINE โควต้า push รายเดือนหมด → ยิงไปก็ไม่ออก
+            //   ข้ามโดย "ไม่นับ attempt" — เก็บโควต้า retry ไว้ใช้ตอน push กลับมาได้จริง
+            //   ของยังค้างอยู่ เดี๋ยว parked delivery ส่งคืนผ่าน reply ตอนลูกค้าทักมา (ฟรี)
+            //   📌 LineFortuneWebhookController::flushParkedCelticAnswers()
+            if ($platform === 'line' && \App\Services\LineGatekeeperService::isQuotaExhausted()) {
+                $this->warn("  Q#{$q->id} ข้าม — โควต้า LINE หมด (รอส่งผ่าน reply ตอนลูกค้าทัก)");
+                $skipped++;
 
                 continue;
             }

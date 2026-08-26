@@ -234,6 +234,78 @@ class FortuneHoroscopePublishService
     }
 
     /**
+     * 💣 (2026-08-26) กันไม่ให้ broadcast กลืนโควต้า push ทั้งเดือน
+     *
+     * broadcast คิดเงินแบบ "จำนวนผู้ติดตาม × จำนวน message object" ไม่ใช่ 1 ครั้ง
+     * (เพจ 500 คน + รูป 1 + ข้อความ 1 = 1,000 ข้อความ = เกินโควต้า 300 ทันที)
+     *
+     * นโยบาย: ต้องมีโควต้าเหลือ "มากกว่า" ที่ broadcast จะกิน + กันชนให้ลูกค้าที่จ่ายเงิน
+     * ดึงโควต้าไม่ได้ → ปล่อยผ่าน (fail-open — ห้ามให้คอนเทนต์ตายเพราะเช็คไม่ได้)
+     *
+     * @param  string  $token  channel access token ของแคมเปญ (อาจคนละ OA กับบอทดูดวง)
+     * @param  int  $objectCount  จำนวน message object ที่จะยิง
+     *
+     * @throws Exception เมื่อโควต้าไม่พอ — publish จะถูกบันทึกเป็น failed พร้อมเหตุผล
+     */
+    protected function assertLineBroadcastAffordable(string $token, int $objectCount): void
+    {
+        try {
+            $quotaRes = Http::withToken($token)->timeout(10)
+                ->get('https://api.line.me/v2/bot/message/quota');
+            $usedRes = Http::withToken($token)->timeout(10)
+                ->get('https://api.line.me/v2/bot/message/quota/consumption');
+            $followersRes = Http::withToken($token)->timeout(10)
+                ->get('https://api.line.me/v2/bot/insight/followers', ['date' => now()->subDay()->format('Ymd')]);
+
+            if (! $quotaRes->successful() || ! $usedRes->successful()) {
+                return; // fail-open
+            }
+
+            $quotaData = $quotaRes->json();
+
+            // type=none = ไม่จำกัด → ยิงได้เลย
+            if (($quotaData['type'] ?? null) === 'none') {
+                return;
+            }
+
+            $limit = (int) ($quotaData['value'] ?? 0);
+            $used = (int) ($usedRes->json('totalUsage') ?? 0);
+            $remaining = max(0, $limit - $used);
+
+            // ประมาณผู้ติดตาม — ดึงไม่ได้ให้ถือว่า 1 (fail-open) แต่ยังกันเคสโควต้าหมดสนิท
+            $followers = (int) ($followersRes->successful()
+                ? ($followersRes->json('followers') ?? 0)
+                : 0);
+            $estimatedCost = max(1, $followers) * max(1, $objectCount);
+
+            // ⚠️ ห้ามใช้ env() — prod รัน config:cache แล้ว env() คืน null
+            $reserve = \App\Services\LineFortuneService::PUSH_RESERVE_FOR_PAID;
+
+            if ($remaining < ($estimatedCost + $reserve)) {
+                $msg = sprintf(
+                    'โควต้า LINE ไม่พอสำหรับ broadcast — เหลือ %d, ต้องใช้ประมาณ %d (ผู้ติดตาม %d × %d กล่อง) + กันไว้ให้ลูกค้าที่จ่ายเงิน %d',
+                    $remaining, $estimatedCost, $followers, $objectCount, $reserve
+                );
+
+                Log::warning('FortuneHoroscope: ยกเลิก LINE broadcast — โควต้าไม่พอ', [
+                    'remaining' => $remaining,
+                    'estimated_cost' => $estimatedCost,
+                    'followers' => $followers,
+                    'objects' => $objectCount,
+                    'reserve' => $reserve,
+                ]);
+
+                throw new Exception($msg);
+            }
+        } catch (Exception $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            // เช็คโควต้าพังเอง → ปล่อยผ่าน (fail-open)
+            Log::debug('FortuneHoroscope: เช็คโควต้า LINE ไม่สำเร็จ ปล่อยผ่าน', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * โพสลง LINE OA (broadcast)
      *
      * ใช้ Messaging API broadcast ตาม pattern จาก BotPlatformService
@@ -264,6 +336,13 @@ class FortuneHoroscopePublishService
             'type' => 'text',
             'text' => $text,
         ];
+
+        // 💣 (2026-08-26) broadcast คิดโควต้า "ต่อผู้ติดตาม × จำนวน message object"
+        //   ไม่ใช่ 1 ครั้งอย่างที่ incrementLineUsage() นับ — เปิดสวิตช์นี้ทั้งที่ผู้ติดตามเยอะ
+        //   = โควต้าทั้งเดือนหายในโพสเดียว แล้วลูกค้าที่จ่ายเงินจะไม่มีโควต้าเหลือรับคำทำนาย
+        //   (เหตุการณ์ 2026-08-25: โควต้า 300/300 หมด → Celtic 99฿ ส่งไม่ออก)
+        //   ⇒ เช็คโควต้าจริงจาก LINE ก่อนยิงเสมอ
+        $this->assertLineBroadcastAffordable($channelAccessToken, count($messages));
 
         $endpoint = 'https://api.line.me/v2/bot/message/broadcast';
         $response = Http::timeout(60)
