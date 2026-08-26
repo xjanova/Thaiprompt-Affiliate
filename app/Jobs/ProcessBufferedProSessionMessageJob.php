@@ -207,7 +207,9 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
                     .$payload['message'];
             }
 
-            app(FortuneChannelManager::class)->sendResponse($this->platform, $this->userId, $payload);
+            // 🎟️ (2026-08-26) ยืม replyToken ที่เทิร์น silent_skip ฝากไว้ → ตอบฟรี ไม่กินโควต้า push
+            //   นี่คือเส้นที่ลูกค้า FTU-260826-G5544 ถามเรื่องลูกแมวแล้วคำตอบ push ไม่ออก (โควต้าหมด 300/300)
+            app(FortuneChannelManager::class)->sendResponse($this->platform, $this->userId, $payload, $this->borrowedReplyExtra());
         } catch (\Throwable $e) {
             Log::error('ProcessBufferedProSessionMessageJob: exception', [
                 'reading_id' => $this->readingId,
@@ -220,13 +222,33 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
                     'action' => 'pro_session_ai_fail',
                     'message' => "🌙 ขอเวลาแม่หมอตั้งจิตสักครู่นะคะ 🙏\n"
                         .'พลังงานปั่นป่วนเล็กน้อย — ลองส่งคำถามอีกครั้งได้ไหมคะ ✨',
-                ]);
+                ], $this->borrowedReplyExtra());
             } catch (\Throwable $sendErr) {
                 Log::debug('ProcessBufferedProSessionMessageJob: ส่งข้อความ fallback ไม่สำเร็จ', [
                     'error' => $sendErr->getMessage(),
                 ]);
             }
         }
+    }
+
+    /**
+     * 🎟️ (2026-08-26) หยิบ replyToken ที่เทิร์น webhook ฝากไว้ (ถ้ายังสด)
+     *
+     * LINE คิดเงิน push แต่ **reply ฟรี** — job นี้เดิมไม่มี token เลยต้อง push ทุกคำตอบ
+     * แพลนที่ใช้อยู่มีแค่ 300 push/เดือน ⇒ คำตอบ pro session กินโควต้าจนหมดแล้วเงียบ
+     * (เคสจริง 2026-08-26: ลูกค้าถามเรื่องลูกแมวหาย 3 เทิร์น คำตอบ push ไม่ออกทั้งหมด)
+     *
+     * @return array<string,string> ว่าง = ไม่มี token → caller ตกไป push ตามเดิม (ไม่มี regression)
+     */
+    protected function borrowedReplyExtra(): array
+    {
+        if ($this->platform !== 'line') {
+            return [];
+        }
+
+        $token = \App\Services\Fortune\ReplyTokenVault::take($this->platform, $this->userId);
+
+        return $token ? ['reply_token' => $token] : [];
     }
 
     /**

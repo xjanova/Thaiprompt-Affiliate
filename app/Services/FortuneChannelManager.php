@@ -430,6 +430,14 @@ class FortuneChannelManager
         //   เดิมตกไป default → ส่ง "ระบบกำลังดำเนินการ 🙏" ตรงข้ามกับชื่อ action (ต้องเงียบ)
         //   เคส Siripon Schröter + 82 ลูกค้า: flag pro_session ค้าง → guard ยิงทุกครั้ง → ลูกค้าเห็นแต่ "กำลังดำเนินการ"
         if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_skip_in_prediction', 'silent_warning', 'slip_flood_silent', 'slip_flood_banned', 'abuse_auto_banned'], true)) {
+            // 🎟️ (2026-08-26) เทิร์นนี้เงียบ = replyToken ไม่ถูกใช้ → ฝากไว้ให้ job ที่กำลังจะตอบยืมไปใช้ฟรี
+            //   เคสหลักคือ `silent_skip` ของ settle-buffer (ลูกค้าถาม → นิ่งรอ → job ตอบทีเดียว)
+            //   ซึ่งเดิม job ไม่มี token เลยตกไป push ทุกครั้ง = ตัวกินโควต้า 300/เดือนตัวจริง
+            //   วัดจากของจริง: debounce 10s + AI p95 22.2s ≈ 33s ยังอยู่ในหน้าต่าง reply 60s สบายๆ
+            if ($platform === 'line' && ! empty($extra['reply_token'])) {
+                \App\Services\Fortune\ReplyTokenVault::remember($platform, $userId, $extra['reply_token']);
+            }
+
             // silent_warning อาจมี message ที่ต้องส่ง 1 ครั้ง — แยก case
             //
             // 🐛 (2026-08-21) เดิมเช็ค `instanceof FacebookWebhookService`

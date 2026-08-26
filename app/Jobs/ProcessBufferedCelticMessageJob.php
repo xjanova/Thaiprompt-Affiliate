@@ -176,7 +176,9 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
                 ->finalizeCelticAnswerPublic($reading->fresh(), $result);
 
             $channelManager = app(FortuneChannelManager::class);
-            $channelManager->sendResponse($this->platform, $this->userId, $payload);
+            // 🎟️ (2026-08-26) ยืม replyToken ที่เทิร์น silent_skip ฝากไว้ → ตอบฟรี ไม่กินโควต้า push
+            //   หมดอายุ/ไม่มี → $extra ว่าง → ตกไป push ตามเดิม (ไม่มี regression)
+            $channelManager->sendResponse($this->platform, $this->userId, $payload, $this->borrowedReplyExtra());
         } catch (\Throwable $e) {
             Log::error('ProcessBufferedCelticMessageJob: exception', [
                 'reading_id' => $this->readingId,
@@ -191,6 +193,25 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
     }
 
     /**
+     * 🎟️ (2026-08-26) หยิบ replyToken ที่เทิร์น webhook ฝากไว้ (ถ้ายังสด)
+     *
+     * LINE คิดเงิน push แต่ reply ฟรี — job นี้เดิมไม่มี token เลยต้อง push ทุกคำตอบ
+     * ซึ่งเป็นตัวกินโควต้าหลักของ Celtic 99฿ (~19-20 push/เซสชัน)
+     *
+     * @return array<string,string> ว่าง = ไม่มี token → caller ตกไป push ตามเดิม
+     */
+    protected function borrowedReplyExtra(): array
+    {
+        if ($this->platform !== 'line') {
+            return [];
+        }
+
+        $token = \App\Services\Fortune\ReplyTokenVault::take($this->platform, $this->userId);
+
+        return $token ? ['reply_token' => $token] : [];
+    }
+
+    /**
      * ส่งข้อความ error ผ่าน channel manager
      */
     protected function sendErrorReply(string $message): void
@@ -200,7 +221,7 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             $channelManager->sendResponse($this->platform, $this->userId, [
                 'action' => 'celtic_ai_failed',
                 'message' => '⚠️ '.$message,
-            ]);
+            ], $this->borrowedReplyExtra());
         } catch (\Throwable $e) {
             Log::debug('ProcessBufferedCelticMessageJob: sendErrorReply fail', [
                 'error' => $e->getMessage(),
