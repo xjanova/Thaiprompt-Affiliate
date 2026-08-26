@@ -14,35 +14,71 @@
     $tpSideTitle = $type === 'seller' ? 'เมนูร้านค้า' : ($type === 'user' ? 'เมนูของฉัน' : 'เมนูหลังบ้าน');
 
     $curRoute = request()->route() ? request()->route()->getName() : null;
-    $curUrl   = rtrim(url()->current(), '/');
+    $curPath  = rtrim(parse_url(url()->current(), PHP_URL_PATH) ?? '', '/');
 
     /**
-     * เมนูนี้ "active" ไหม — รองรับหน้าย่อย (sub-page) ด้วย URL-prefix
-     * เช่น อยู่ /admin/fortune/users/facebook/123 → เมนู /admin/fortune/users ติด active ด้วย
+     * ให้ "คะแนนความตรง" ของเมนูกับหน้าปัจจุบัน — 0 = ไม่ตรง, ยิ่งเจาะจงยิ่งสูง
+     *
+     * ⚠️ ห้ามคืนค่าเป็น bool แบบเดิม — กฎ "URL เป็น prefix = active" ทำให้เมนูติดพร้อมกันหลายอัน
+     *    (เมนูแอดมินมี 113 คู่ที่ URL ซ้อนกัน เช่น /admin/fortune/commissions
+     *     กับ /admin/fortune/commissions/manage) แล้วตัวเลื่อนหน้าจอก็จะเลื่อนไปผิดแถว
+     *    คะแนนทำให้ "ตัวที่เจาะจงที่สุดชนะ" เหลือ active ตัวเดียวเสมอ
+     *
+     * @param  array  $it  เมนู 1 รายการ
+     * @return int คะแนน (0 = ไม่ใช่หน้านี้)
      */
-    $itemActive = function (array $it) use ($curRoute, $curUrl) {
+    $matchScore = function (array $it) use ($curRoute, $curPath) {
+        // ลิงก์ออกนอกเว็บ (เว็บจันทรา ฯลฯ) ไม่มีวันเป็นหน้าปัจจุบัน
+        if (! empty($it['external'])) return 0;
+
+        $best = 0;
+
+        // 1) เทียบชื่อ route — แม่นที่สุด และรองรับหน้าย่อย เช่น admin.fortune.users.show
         $r = $it['route'] ?? null;
+        if ($r && $curRoute) {
+            $base = preg_replace('/\.(index|show|edit|create)$/', '', $r);
+            if ($curRoute === $r) {
+                $best = 300000;
+            } elseif ($base !== '' && str_starts_with($curRoute, $base . '.')) {
+                $best = max($best, 200000 + strlen($base));
+            }
+        }
+
+        // 2) เทียบ path ของ URL — ตัดโฮสต์/คิวรีทิ้งก่อน (config บางรายการเก็บ url แบบ relative)
         $u = $it['url'] ?? null;
-        if ($r && $curRoute === $r) return true;
         if ($u && $u !== '#') {
-            $iu = rtrim($u, '/');
-            if ($iu !== '' && $iu === $curUrl) return true;
-            // หน้าปัจจุบันอยู่ "ใต้" URL ของเมนูนี้ (sub-page) → active
-            if ($iu !== '' && str_starts_with($curUrl . '/', $iu . '/')) return true;
+            $iu = rtrim(parse_url($u, PHP_URL_PATH) ?? '', '/');
+            if ($iu !== '' && $curPath !== '') {
+                if ($iu === $curPath) {
+                    $best = max($best, 100000 + strlen($iu));
+                } elseif (str_starts_with($curPath . '/', $iu . '/')) {
+                    // หน้าปัจจุบันอยู่ "ใต้" เมนูนี้ — prefix ที่ยาวกว่า = เจาะจงกว่า = ชนะ
+                    $best = max($best, strlen($iu));
+                }
+            }
         }
-        return false;
-    };
-    $groupActive = function (array $g) use ($itemActive) {
-        if ($itemActive($g)) return true;
-        foreach (($g['submenu'] ?? []) as $s) {
-            if (is_array($s) && $itemActive($s)) return true;
-        }
-        return false;
+
+        return $best;
     };
 
+    // หา "ผู้ชนะ" เพียงตัวเดียวทั้ง sidebar → ใช้ทั้งไฮไลต์ active, เปิด accordion และเลื่อนหน้าจอ
+    $bestScore     = 0;
     $activeGroupId = null;
-    foreach ($menus as $g) {
-        if ($groupActive($g)) { $activeGroupId = $g['id'] ?? null; break; }
+    $activeKey     = null;
+    foreach ($menus as $gi => $g) {
+        if (($s = $matchScore($g)) > $bestScore) {
+            $bestScore = $s;
+            $activeGroupId = $g['id'] ?? \Illuminate\Support\Str::slug($g['label'] ?? 'g');
+            $activeKey = "g{$gi}";
+        }
+        foreach (($g['submenu'] ?? []) as $si => $sub) {
+            if (! is_array($sub)) continue;
+            if (($s = $matchScore($sub)) > $bestScore) {
+                $bestScore = $s;
+                $activeGroupId = $g['id'] ?? \Illuminate\Support\Str::slug($g['label'] ?? 'g');
+                $activeKey = "g{$gi}s{$si}";
+            }
+        }
     }
 @endphp
 
@@ -59,7 +95,7 @@
 
     {{-- รายการเมนู (เลื่อนได้) --}}
     <div x-data="{ openId: @js($activeGroupId), pinActive(u) { if (!u) return false; const c = location.origin + location.pathname; const x = String(u).replace(/\/+$/, ''); return c === x || c.startsWith(x + '/'); } }"
-         x-init="const tpScroll = () => { const a = $el.querySelector('[data-tpactive]'); if (!a) return; const cr = $el.getBoundingClientRect(), ar = a.getBoundingClientRect(); $el.scrollTop += (ar.top - cr.top) - $el.clientHeight / 2 + ar.height / 2; }; $nextTick(tpScroll); setTimeout(tpScroll, 400); setTimeout(tpScroll, 900)"
+         x-init="const tpScroll = () => { const a = $el.querySelector('[data-tpactive]'); if (!a) return; const ar = a.getBoundingClientRect(); if (!ar.height) return; const cr = $el.getBoundingClientRect(); $el.scrollTop += (ar.top - cr.top) - $el.clientHeight / 2 + ar.height / 2; }; $nextTick(tpScroll); [320, 700, 1200].forEach(t => setTimeout(tpScroll, t))"
          style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
 
         {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
@@ -98,7 +134,7 @@
             <hr class="tp-divider" style="margin:6px 4px 2px;">
         </div>
 
-        @foreach($menus as $group)
+        @foreach($menus as $gi => $group)
             @php
                 $gid     = $group['id'] ?? \Illuminate\Support\Str::slug($group['label'] ?? 'g');
                 $gicon   = $group['icon'] ?? '•';
@@ -109,7 +145,9 @@
                 $hasSubs = is_array($subs) && count($subs) > 0;
                 $gurl    = $group['url'] ?? null;
                 $gExternal = ! empty($group['external']);
-                $gActive = $groupActive($group);
+                // กลุ่มที่มีเมนูย่อย → ไฮไลต์เมื่อ "ผู้ชนะ" อยู่ในกลุ่มนี้ / เมนูเดี่ยว → ต้องเป็นผู้ชนะเอง
+                $gIsWinner = ($activeKey === "g{$gi}");
+                $gActive   = $hasSubs ? ($gid === $activeGroupId) : $gIsWinner;
             @endphp
 
             <div>
@@ -117,7 +155,7 @@
                     {{-- กลุ่มที่มีเมนูย่อย → accordion --}}
                     <button type="button"
                             @click="openId = openId === '{{ $gid }}' ? '' : '{{ $gid }}'"
-                            class="tp-card"
+                            class="tp-card" @if($gIsWinner) data-tpactive @endif
                             style="cursor:pointer; width:100%; text-align:left; display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:15px; {{ $gActive ? 'box-shadow:var(--inset);' : 'box-shadow:var(--raise);' }}">
                         <span class="tp-tile" style="width:33px; height:33px; border-radius:11px; font-size:15px;">
                             @if(str_contains($gicon,'fa-'))<i class="{{ $gicon }}"></i>@else{!! $gicon !!}@endif
@@ -131,16 +169,16 @@
                     </button>
 
                     <div x-show="openId === '{{ $gid }}'" x-cloak
-                         style="position:relative; margin:4px 0 6px 22px; padding-left:16px; display:flex; flex-direction:column; gap:3px; overflow:hidden; animation:tpSub .26s cubic-bezier(.2,.8,.3,1) both;">
+                         style="position:relative; margin:4px 0 6px 22px; padding-left:16px; display:flex; flex-direction:column; gap:3px; overflow:hidden; animation:tpSub .26s cubic-bezier(.2,.8,.3,1) backwards;">
                         {{-- เส้น RGB วิ่ง --}}
                         <span style="position:absolute; left:0; top:5px; bottom:5px; width:3px; border-radius:3px; background:linear-gradient(180deg,#ff5a5a,#ffb24d,#ffe24d,#5ad65a,#4dd2ff,#7a8cff,#c44dff,#ff5a5a); background-size:100% 220%; box-shadow:0 0 7px rgba(120,140,255,.4); animation:tpHue 5s linear infinite, tpFlow 2.6s linear infinite;"></span>
 
-                        @foreach($subs as $sub)
+                        @foreach($subs as $si => $sub)
                             @php
                                 if (!is_array($sub)) continue;
                                 $slabel = $sub['label'] ?? '';
                                 $surl   = $sub['url'] ?? null;
-                                $sActive = $itemActive($sub);
+                                $sActive = ($activeKey === "g{$gi}s{$si}");
                                 $isDivider = ($slabel === '---' || $slabel === '');
                                 $isHeader  = !$isDivider && empty($surl);
                                 $sPinData  = ['label' => $slabel, 'url' => $surl, 'icon' => $gicon];
