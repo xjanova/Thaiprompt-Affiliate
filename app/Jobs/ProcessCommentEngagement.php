@@ -601,7 +601,65 @@ class ProcessCommentEngagement implements ShouldQueue
             $stage2TextSent = false;          // FALLBACK: text+QR (เมื่อ atomic fail/banner ปิด)
             $stage3ImageOnlySent = false;     // LAST RESORT: image only
 
-            if ($useInviteText) {
+            // 🃏 (2026-08-26) STAGE 0 — การ์ด 2 ใบ [🎁 รับดวงฟรี] [👑 VIP มีค่าครู]
+            //
+            //   เจ้าของสั่ง: "ให้ยิง 2 การ์ด เป็น dm คือ การ์ดชวนรับดวงฟรี และการ์ด ดูแบบ vip
+            //   มีค่าครู แล้วค่อยไปแยกเป็นสามใบอีกทีถ้าลูกค้าเลือก"
+            //
+            //   ทำไมต้องเป็นการ์ด: กล่องเดียวได้ทั้ง **รูป + ตัวหนังสือ + ปุ่ม**
+            //   ซึ่งเป็นทางเดียวที่แก้อาการ "ส่งแต่รูป คำ DM หายไปไหน" (2026-08-11) ได้จริง
+            //   — FB ให้ 1 message = text XOR attachment และ Private Reply ใช้ได้ครั้งเดียว/คอมเมนต์
+            //   ข้อความชวนที่หมุนมาถูกย่อลง title(80) + subtitle(80) ของการ์ดใบแรก
+            //
+            //   🚨 ปุ่ม VIP อยู่ใน DM เย็น ๆ = สวนคำสั่งเดิม 2026-08-07 ("ห้ามติดปุ่มขายไปกับ DM")
+            //      เจ้าของสั่งใหม่ทับเมื่อ 2026-08-26 จึงทำตาม แต่ **default ปิด** ให้เทียบยอดก่อน
+            //
+            //   ⚠️ ล้ม/ปิด = ตกกลับเส้นข้อความเดิมทั้งดุ้น (slot ของ comment_id ยังไม่ถูกใช้)
+            //
+            //   🚫 2 เคสที่ **ห้ามส่งการ์ด** เพราะการ์ดเก็บตัวหนังสือได้แค่ 160 ตัว:
+            //     1. $horoscopeMerged — ดวงรายวันฉบับย่อถูกรวมเข้า $dmMessage แล้ว (แยกกล่องไม่ผ่าน)
+            //        ⇒ ย่อลงการ์ด = ลูกค้าเสียสิทธิ์ฟรีของวันนี้ไปโดยได้เนื้อไม่ครบ
+            //        และ releaseDailyHoroscopeBoxSlot() ที่คืนสิทธิ์ก็อยู่ในสาย $useInviteText ที่ถูกข้าม
+            //     2. $hasPersonalTeaser — เรารู้วันเกิดเขาแล้ว $dmMessage เป็นคำชวนเฉพาะตัว
+            //        ("ดวงวันอังคารของคุณพร้อมแล้ว") คู่กับปุ่ม DAILY_SHOW_MINE
+            //        ⇒ การ์ดทางเข้าเป็นของ "คนที่เรายังไม่รู้จัก" ยัดให้คนกลุ่มนี้ = ถอยหลัง
+            $entryCardSent = false;
+
+            if (! empty($settings->entry_cards_on_dm) && ! $horoscopeMerged && ! $hasPersonalTeaser) {
+                try {
+                    $entryCard = app(\App\Services\Fortune\FortuneEntryCardBuilder::class)->facebookEntry([
+                        'invite_text' => $dmMessage,
+                        'deep_price' => $settings->deep_reading_price ?? null,
+                    ]);
+
+                    if ($entryCard !== null) {
+                        // 🔕 ปุ่มขายอยู่บนการ์ดแล้ว → quick reply เหลือไว้ให้ "ทางปฏิเสธ" อย่างเดียว
+                        //    ห้ามตัดทิ้ง — DM ชวนที่ไม่มีทางออกให้ลูกค้า = สัญญาณสแปมเต็ม ๆ
+                        $entryCardSent = $facebookService->sendPrivateReplyTemplate(
+                            $commentId,
+                            $entryCard,
+                            \App\Models\FortuneInviteMessage::optOutQuickReplies()
+                        );
+                    }
+                } catch (Throwable $cardErr) {
+                    Log::warning('🃏 Comment Engagement: การ์ดทางเข้าล้ม → ใช้เส้นข้อความเดิม: '.$cardErr->getMessage(), [
+                        'user_id' => $userId,
+                        'comment_id' => $commentId,
+                    ]);
+                }
+            }
+
+            if ($entryCardSent) {
+                // 📊 ข้อความชวนถูกใช้จริง (ไปอยู่บนการ์ด) — ต้องนับ ไม่งั้นสถิติการหมุนเพี้ยน
+                if ($inviteMessage) {
+                    $inviteMessage->recordSend();
+                }
+
+                Log::info('🃏 Comment Engagement: ส่งการ์ดทางเข้า 2 ใบสำเร็จ', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                ]);
+            } elseif ($useInviteText) {
                 // 💬 (2026-06-06) ได้รูปสัปดาห์นี้แล้ว → ส่งข้อความชวน + QR ผ่าน Private Reply (ไม่มีรูป)
                 //    text+QR atomic ใน 1 call — ไม่มี race, CTA (ปุ่มดูดวง) ครบ
                 // 🔘 แนบ 3 ปุ่ม: ดูดวงเลย / พัก 7 วัน / ไม่ต้องส่งอีก
@@ -699,7 +757,14 @@ class ProcessCommentEngagement implements ShouldQueue
             } // end else (text-first path — เมื่อยังไม่ได้รูปสัปดาห์นี้)
 
             // map สำหรับ engagement record logic
-            $dmSent = $stage1AtomicSent || $stage2TextSent;          // ลูกค้าได้ CTA (QR) แบบใดแบบหนึ่ง
+            //
+            // 🚨 $entryCardSent ต้องอยู่ใน $dmSent — ไม่งั้นไม่สร้าง engagement record
+            //    แล้ว job จะ retry ยิง DM ซ้ำใส่ลูกค้าคนเดิม
+            $dmSent = $entryCardSent || $stage1AtomicSent || $stage2TextSent; // ลูกค้าได้ CTA (ปุ่ม) แบบใดแบบหนึ่ง
+            //
+            // ⚠️ การ์ดทางเข้า **ไม่นับ** เป็น banner — คนละเรื่องกัน
+            //    banner = รูปโปรโมทที่หมุนสัปดาห์ละใบ (markImageSent สลับเป็นข้อความรอบหน้า)
+            //    การ์ดทางเข้า = เมนู ส่งทุกครั้ง · นับรวมแล้วจะไปล็อก rotation ของ banner ผิด
             $bannerSent = $stage1AtomicSent || $stage3ImageOnlySent; // ลูกค้าได้ภาพ banner แบบใดแบบหนึ่ง
 
             // 💬 (2026-06-06) มาร์คว่าได้รูปสัปดาห์นี้แล้ว — เฉพาะเมื่อส่งรูปสำเร็จจริง
@@ -766,6 +831,11 @@ class ProcessCommentEngagement implements ShouldQueue
             // 🌙 (2026-07-31) โหมด daily — ถามวันเกิดไปแล้ว ตั้งธงรอคำตอบ
             //   ตั้งเฉพาะเมื่อ DM ถึงลูกค้าจริง (Stage ใดก็ได้) — ตั้งทั้งที่ส่งไม่ถึง
             //   จะทำให้ข้อความถัดไปที่ลูกค้าพิมพ์ถูกตีเป็นคำตอบวันเกิดทั้งที่ไม่เคยเห็นคำถาม
+            //
+            // 🃏 (2026-08-26) **จงใจไม่นับ $entryCardSent ตรงนี้** — อย่า "แก้" ให้
+            //    การ์ดทางเข้าไม่ได้ถามวันเกิด มันยื่นปุ่มให้กด (วันเกิดถูกถามในสเต็ปถัดไป
+            //    ที่ handleDailyFreeStart ซึ่ง markDailyPending ให้เองอยู่แล้ว)
+            //    ตั้งธงตรงนี้ = ข้อความถัดไปของลูกค้าถูกตีเป็นวันเกิดทั้งที่ไม่เคยถูกถาม
             if ($isDailyMode && ($stage1AtomicSent || $stage2TextSent || $stage3ImageOnlySent)) {
                 try {
                     app(\App\Services\FortuneConversationService::class)

@@ -454,9 +454,28 @@ class FortuneInviteMessage extends Model
 
         return array_merge($buttons, [
             ['content_type' => 'text', 'title' => '🔮 ดูดวงเลย', 'payload' => 'INVITE_READ_NOW'],
+        ], static::optOutQuickReplies());
+    }
+
+    /**
+     * 🔕 ปุ่ม "ขอเลิกรับ DM" — ทางออกของลูกค้า
+     *
+     * 🚨 **DM ชวนทุกเส้นต้องมีปุ่มชุดนี้เสมอ** ไม่ว่าจะส่งเป็นข้อความหรือการ์ด
+     *    ยิงคำชวนซ้ำ ๆ โดยไม่มีทางให้ปฏิเสธ = สัญญาณสแปมตรงตัว ซึ่งเป็นสิ่งที่
+     *    ทำให้เพจเสี่ยงโดนลด reach / โดนแบน (ดูเหตุการณ์ 2026-08-09)
+     *
+     * แยกออกมาเป็นเมธอดของตัวเองเพราะสายการ์ด (FortuneEntryCardBuilder) เอา
+     * ปุ่มขายไปไว้บนการ์ดแล้ว เหลือแค่ปุ่มปฏิเสธที่ต้องแนบเป็น quick reply
+     * — ก็อปไปเขียนซ้ำเมื่อไหร่ มันจะดริฟต์กันทันที
+     *
+     * @return array<int, array{content_type: string, title: string, payload: string}>
+     */
+    public static function optOutQuickReplies(): array
+    {
+        return [
             ['content_type' => 'text', 'title' => '🔕 พัก 7 วัน', 'payload' => 'INVITE_SNOOZE_7D'],
             ['content_type' => 'text', 'title' => '🚫 ไม่ต้องส่งอีก', 'payload' => 'INVITE_OPTOUT'],
-        ]);
+        ];
     }
 
     /**

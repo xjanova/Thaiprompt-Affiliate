@@ -250,6 +250,9 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction',
         'banner_send_on_comment',
         'banner_send_on_welcome',
+        // 🃏 การ์ดทางเข้า (2026-08-26) — DM ตอบคอมเมนต์เป็นการ์ด 2 ใบ / เลือกวันเกิดเป็นการ์ด 7 ใบ
+        'entry_cards_on_dm',
+        'birth_day_cards_enabled',
         // 📜 Consent Gate — กติกาก่อนจองคิว (2026-06-06)
         'fortune_consent_enabled',
         'fortune_consent_pick_strategy',
@@ -571,6 +574,9 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction' => 'boolean',
         'banner_send_on_comment' => 'boolean',
         'banner_send_on_welcome' => 'boolean',
+        // 🃏 การ์ดทางเข้า (2026-08-26)
+        'entry_cards_on_dm' => 'boolean',
+        'birth_day_cards_enabled' => 'boolean',
         // 📜 Consent Gate (2026-06-06)
         'fortune_consent_enabled' => 'boolean',
         'fortune_consent_cancel_enabled' => 'boolean',
@@ -789,6 +795,11 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction' => true,
         'banner_send_on_comment' => true,
         'banner_send_on_welcome' => true,
+        // 🃏 การ์ดทางเข้า (2026-08-26) — **default ปิดทั้งคู่**
+        //   เส้นนี้คือ funnel หลักของเพจ เคยเปลี่ยน Stage 1 แล้วยอดจ่ายจริงเป็น 0 ทั้งวัน
+        //   (2026-08-10) ⇒ ต้องเปิดเองแล้วเทียบยอด ไม่ใช่เปิดให้อัตโนมัติตอน deploy
+        'entry_cards_on_dm' => false,
+        'birth_day_cards_enabled' => false,
         // 📜 Consent Gate — กติกาก่อนจองคิว (default เปิด)
         'fortune_consent_enabled' => true,
         'fortune_consent_pick_strategy' => 'random',

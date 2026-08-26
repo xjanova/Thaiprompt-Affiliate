@@ -955,6 +955,97 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🃏 (2026-08-26) ส่ง "การ์ด" (generic template) ตอบคอมเมนต์ผ่าน Private Reply
+     *
+     * ทำไมต้องมีเมธอดนี้แยก:
+     *   `sendButtonTemplate()` ฮาร์ดโค้ด `recipient: ['id' => $recipientId]`
+     *   ⇒ ยิงได้เฉพาะคนที่อยู่ในกรอบ 24 ชม. ซึ่งบน prod คือ **2%** ของคนที่คอมเมนต์
+     *   (วัดจริง 2026-08-09: 197 จาก 9,693 คน)
+     *   เมธอดนี้ยิงด้วย `recipient: ['comment_id' => ...]` แทน = ข้ามกรอบ 24 ชม. ได้
+     *   (ใช้ได้ 7 วันหลังคอมเมนต์ · **ครั้งเดียวต่อ 1 คอมเมนต์**)
+     *
+     * พิสูจน์แล้วว่าเส้นนี้รับ attachment ได้จริง — `sendPrivateReplyImageWithQuickReplies()`
+     * ยิง `attachment.type=image` ทางเดียวกันนี้อยู่บน prod ทุกวัน · template เป็นโครงเดียวกัน
+     *
+     * ⚠️ `$templatePayload` ต้องห่อ `['attachment' => [...]]` มาแล้ว (builder ห่อให้)
+     * ⚠️ ไม่มี fallback ไป `/private_replies` เพราะ endpoint นั้นรับแต่ข้อความล้วน
+     *    ⇒ ล้มเมื่อไหร่ คืน false ให้ caller ตกกลับไปเส้นข้อความเดิมทันที (slot ยังไม่ถูกใช้)
+     *
+     * @param  string  $commentId  Comment ID ที่จะตอบ
+     * @param  array  $templatePayload  payload จาก FortuneEntryCardBuilder (ห่อ attachment แล้ว)
+     * @param  array  $quickReplies  ปุ่มลัดระดับ message (แนบคู่กับการ์ดได้ ต่างจาก text)
+     */
+    public function sendPrivateReplyTemplate(string $commentId, array $templatePayload, array $quickReplies = []): bool
+    {
+        // 🪦 comment ตายแล้ว → ไม่ยิงซ้ำ
+        if ($this->isDeadComment($commentId)) {
+            return false;
+        }
+
+        // 🔒 ไม่ห่อ attachment มา = ยิงไปก็โดนปฏิเสธ — จับตรงนี้ให้เห็นชัด ดีกว่าไปงงที่ error ของ FB
+        if (! isset($templatePayload['attachment'])) {
+            Log::warning('Private Reply template: payload ไม่ได้ห่อ attachment — ไม่ยิง', [
+                'comment_id' => $commentId,
+                'keys' => array_keys($templatePayload),
+            ]);
+
+            return false;
+        }
+
+        try {
+            $message = $templatePayload;
+
+            if (! empty($quickReplies)) {
+                $message['quick_replies'] = array_map(function ($qr) {
+                    return [
+                        'content_type' => $qr['content_type'] ?? 'text',
+                        'title' => mb_substr((string) ($qr['title'] ?? ''), 0, 20),
+                        'payload' => (string) ($qr['payload'] ?? $qr['title'] ?? ''),
+                    ];
+                }, array_slice($quickReplies, 0, 13));
+            }
+
+            $response = Http::timeout(30)->post($this->graphUrl('/me/messages'), [
+                'recipient' => ['comment_id' => $commentId],
+                'message' => $message,
+                'access_token' => $this->pageAccessToken,
+            ]);
+
+            if ($response->successful()) {
+                Log::info('✅ Private Reply การ์ดสำเร็จ (generic template)', [
+                    'comment_id' => $commentId,
+                    'card_count' => count($templatePayload['attachment']['payload']['elements'] ?? []),
+                ]);
+
+                return true;
+            }
+
+            $err = $response->json()['error'] ?? [];
+
+            Log::info('Private Reply การ์ดล้ม → caller ตกกลับเส้นข้อความ', [
+                'comment_id' => $commentId,
+                'http_status' => $response->status(),
+                'error_code' => $err['code'] ?? null,
+                'error_subcode' => $err['error_subcode'] ?? null,
+                'error_message' => $err['message'] ?? $response->body(),
+            ]);
+
+            // 🪦 comment ตายถาวร → จำไว้ เส้นข้อความที่จะตามมาจะได้ไม่เสีย call เปล่า
+            if ($this->isDeadCommentError($err['code'] ?? 0, $err['error_subcode'] ?? 0)) {
+                $this->markDeadComment($commentId, $err['code'] ?? 0, $err['error_subcode'] ?? 0, 'sendPrivateReplyTemplate');
+            }
+
+            return false;
+        } catch (Exception $e) {
+            Log::warning('Private Reply template exception: '.$e->getMessage(), [
+                'comment_id' => $commentId,
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * 🎙️ (2026-05-08) ส่ง audio attachment ไป Facebook Messenger
      *
      * FB Audio Attachment API:

@@ -886,10 +886,55 @@ class FacebookWebhookController extends Controller
                 // 🎁 (2026-08-07) ปุ่ม "รับดวงฟรีประจำวัน" ใช้ทางนี้เป็นทางหลัก จึงส่งถ้อยคำ
                 //    ของตัวเองเข้ามา — คนกดปุ่มฟรีคือคนที่เรายังไม่เคยถาม ห้ามพูดว่า "อีกครั้ง"
                 $this->conversationService?->markDailyPending('facebook', $senderId);
+
+                $askText = $askBirthdayMessage
+                    ?? '🌙 ขอทราบวันเกิดอีกครั้งได้ไหมคะ เดี๋ยวแม่หมอเปิดดวงวันนี้ให้ฟรีเลย';
+
+                // 🃏 (2026-08-26) การ์ด 7 วันเกิดมีรูป — เจ้าของสั่ง "ถ้ากด ก็แยกเป็นการ์ดวันทั้ง 7"
+                //
+                //   รูปเจนไว้แล้วตั้งแต่ 2026-08-23 แต่ต่อเข้า**หน้าเว็บอย่างเดียว**
+                //   (_birth-day-card.blade.php) ⇒ ในแชทยังเป็นปุ่มข้อความล้วนมาตลอด
+                //   ไฟล์ที่ใช้ในแชทเป็น .jpg (แปลงจาก .webp ที่ LINE ไม่รองรับ)
+                //
+                //   ✅ มาถึงตรงนี้ได้ = ลูกค้าเพิ่งกดปุ่ม ⇒ หน้าต่าง 24 ชม. เปิดแล้ว
+                //      ยิงได้ 2 กล่อง (คำถาม → การ์ด) ต่างจาก DM ตอบคอมเมนต์ที่ได้กล่องเดียว
+                if (! empty($this->settings?->birth_day_cards_enabled)) {
+                    try {
+                        $dayCards = app(\App\Services\Fortune\FortuneEntryCardBuilder::class)->facebookDays();
+
+                        if ($dayCards !== null) {
+                            // กล่องที่ 1 = คำถาม (ไม่แนบปุ่ม — ปุ่มวันเกิดอยู่บนการ์ดในกล่องถัดไป)
+                            $askSent = (bool) $this->facebookService?->sendMessage($senderId, $askText);
+
+                            if ((bool) $this->facebookService?->sendButtonTemplate($senderId, $dayCards)) {
+                                return;
+                            }
+
+                            // 🚨 การ์ดล้มทั้งที่คำถามออกไปแล้ว → ห้ามส่งคำถามซ้ำ (ถามซ้ำ 2 รอบ = แย่กว่าไม่มีการ์ด)
+                            //    ยื่นแค่ปุ่มพร้อมบรรทัดสั้น ท่าเดียวกับ $introSent ของการ์ดแพคเกจ
+                            if ($askSent) {
+                                $this->facebookService?->sendQuickReplies(
+                                    $senderId,
+                                    'เลือกวันเกิดของเจ้าชะตาด้านล่างได้เลยค่ะ 👇',
+                                    FortuneConversationService::dailyBirthdayQuickReplies(),
+                                    ['messaging_type' => 'RESPONSE']
+                                );
+
+                                return;
+                            }
+                        }
+                    } catch (\Throwable $cardErr) {
+                        // การ์ดพังต้องไม่ทำให้ลูกค้าไม่ได้ถูกถามวันเกิด — ตกไปปุ่มเดิมด้านล่าง
+                        Log::warning('🃏 Daily: การ์ด 7 วันเกิดล้ม → ใช้ปุ่มข้อความเดิม', [
+                            'user_id' => $senderId,
+                            'error' => $cardErr->getMessage(),
+                        ]);
+                    }
+                }
+
                 $this->facebookService?->sendQuickReplies(
                     $senderId,
-                    $askBirthdayMessage
-                        ?? '🌙 ขอทราบวันเกิดอีกครั้งได้ไหมคะ เดี๋ยวแม่หมอเปิดดวงวันนี้ให้ฟรีเลย',
+                    $askText,
                     FortuneConversationService::dailyBirthdayQuickReplies(),
                     ['messaging_type' => 'RESPONSE']
                 );
