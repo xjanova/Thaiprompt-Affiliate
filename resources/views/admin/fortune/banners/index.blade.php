@@ -147,6 +147,109 @@
         </form>
     </div>
 
+    {{-- ───── 🃏 รูปและคำบนการ์ดทางเข้า ───── --}}
+    <div class="tp-card" style="padding:22px;">
+        <div class="tp-section-h" style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">
+            <i class="fas fa-id-card" style="color:var(--accent1);"></i>
+            <span>รูปและคำบนการ์ด</span>
+            <span class="tp-pill tp-pill-gold" style="margin-left:4px;">{{ count($entryCards) }} ใบ</span>
+        </div>
+
+        <p class="tp-muted" style="font-size:12px;line-height:1.75;margin-bottom:18px;">
+            เปลี่ยนรูป/คำได้ทีละใบ · <strong>เว้นช่องคำว่างไว้ = ใช้ค่าเดิมของระบบ</strong>
+            <br>
+            เพดานของ Facebook: หัวข้อ 80 ตัว · คำบรรยาย 80 ตัว · ป้ายปุ่ม 20 ตัว (เกินระบบตัดให้เอง)
+            <br>
+            <span style="color:var(--accent2);">
+                🖼️ รูปที่อัปใหม่จะถูกย่อเป็นสี่เหลี่ยมจัตุรัส 1024px และเก็บนอก git — ไม่หายตอน deploy
+            </span>
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+            @foreach($entryCards as $card)
+                <div class="tp-inset" style="padding:14px;border-radius:14px;">
+                    <form action="{{ route('admin.fortune.banners.cards.save', $card['key']) }}"
+                          method="POST" enctype="multipart/form-data">
+                        @csrf
+
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                            <span style="font-weight:600;color:var(--ink);font-size:13.5px;">{{ $card['label'] }}</span>
+                            @if($card['is_custom_image'])
+                                <span class="tp-pill tp-pill-gold" style="font-size:10.5px;">เปลี่ยนรูปแล้ว</span>
+                            @endif
+                        </div>
+
+                        {{-- รูปที่ใช้จริงตอนนี้ --}}
+                        @if($card['current_image'])
+                            <img src="{{ $card['current_image'] }}"
+                                 alt="{{ $card['label'] }}"
+                                 loading="lazy"
+                                 style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:11px;display:block;margin-bottom:10px;background:rgba(0,0,0,.25);">
+                        @else
+                            <div style="width:100%;aspect-ratio:1/1;border-radius:11px;margin-bottom:10px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25);">
+                                <span class="tp-muted" style="font-size:12px;">⚠️ ไม่มีรูป — การ์ดจะไม่ถูกส่ง</span>
+                            </div>
+                        @endif
+
+                        <input type="file" name="image" accept="image/png,image/jpeg"
+                               style="width:100%;font-size:11.5px;color:var(--ink2);margin-bottom:10px;">
+
+                        {{-- โหมดคำ — มีเฉพาะใบที่ค่าเดิมมาจากคลังข้อความ DM --}}
+                        @if($card['key'] === 'entry-free')
+                            <div class="tp-well tp-input" style="padding:0;margin-bottom:8px;">
+                                <select name="text_mode"
+                                        style="width:100%;background:transparent;border:0;outline:0;padding:9px 12px;color:var(--ink);font-size:12.5px;cursor:pointer;">
+                                    <option value="invite" @selected(($card['override']->text_mode ?? 'invite') === 'invite')>
+                                        💬 ใช้คำ DM ที่หมุนอยู่ (ย่อลงการ์ดอัตโนมัติ)
+                                    </option>
+                                    <option value="custom" @selected(($card['override']->text_mode ?? '') === 'custom')>
+                                        ✍️ ใช้คำที่พิมพ์เองด้านล่าง
+                                    </option>
+                                </select>
+                            </div>
+                        @endif
+
+                        <input type="text" name="title" maxlength="120"
+                               value="{{ $card['override']->title ?? '' }}"
+                               placeholder="หัวข้อ (เว้นว่าง = ใช้ค่าเดิม)"
+                               class="tp-well tp-input"
+                               style="width:100%;padding:9px 12px;font-size:12.5px;color:var(--ink);margin-bottom:8px;">
+
+                        <input type="text" name="subtitle" maxlength="120"
+                               value="{{ $card['override']->subtitle ?? '' }}"
+                               placeholder="คำบรรยาย (เว้นว่าง = ใช้ค่าเดิม)"
+                               class="tp-well tp-input"
+                               style="width:100%;padding:9px 12px;font-size:12.5px;color:var(--ink);margin-bottom:8px;">
+
+                        <input type="text" name="button_label" maxlength="40"
+                               value="{{ $card['override']->button_label ?? '' }}"
+                               placeholder="ป้ายปุ่ม (เว้นว่าง = ใช้ค่าเดิม)"
+                               class="tp-well tp-input"
+                               style="width:100%;padding:9px 12px;font-size:12.5px;color:var(--ink);margin-bottom:10px;">
+
+                        <div style="display:flex;gap:8px;">
+                            <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm" style="flex:1;">
+                                <i class="fas fa-floppy-disk"></i> บันทึก
+                            </button>
+                        </div>
+                    </form>
+
+                    @if($card['is_custom_image'])
+                        <form action="{{ route('admin.fortune.banners.cards.reset-image', $card['key']) }}"
+                              method="POST" style="margin-top:8px;"
+                              onsubmit="return confirm('คืนค่ารูปเดิมของ {{ $card['label'] }}? รูปที่อัปไว้จะถูกลบถาวร (คำที่พิมพ์ไว้ยังอยู่)');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="tp-btn tp-btn-sm" style="width:100%;">
+                                <i class="fas fa-rotate-left"></i> คืนค่ารูปเดิม
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    </div>
+
     {{-- ───── 🖼️ แบนเนอร์ทั้งหมด ───── --}}
     <div class="tp-card" style="padding:22px;">
         <div class="tp-section-h" style="display:flex;align-items:center;gap:9px;margin-bottom:18px;">

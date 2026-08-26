@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\FortuneEntryCard;
 use App\Services\Fortune\FortuneEntryCardBuilder;
 use Tests\TestCase;
 
@@ -182,5 +183,123 @@ class FortuneEntryCardBuilderTest extends TestCase
         ]));
 
         $this->assertStringContainsString('1099', $elements[1]['title']);
+    }
+
+    /**
+     * สร้าง override แบบไม่แตะ DB (ยังไม่ save) เพื่อทดสอบตรรกะการทับค่า
+     */
+    private function override(string $key, array $attrs): \Illuminate\Support\Collection
+    {
+        return collect([$key => new FortuneEntryCard(array_merge(['card_key' => $key], $attrs))]);
+    }
+
+    /**
+     * โหมด "ใช้คำที่พิมพ์เอง" ต้องทับคำ DM ที่หมุนอยู่
+     */
+    public function test_โหมดพิมพ์เองต้องทับคำ_dm(): void
+    {
+        $builder = (new FortuneEntryCardBuilder)->useOverrides(
+            $this->override(FortuneEntryCardBuilder::KEY_FREE, [
+                'text_mode' => FortuneEntryCard::MODE_CUSTOM,
+                'title' => 'หัวข้อที่แอดมินพิมพ์เอง',
+                'subtitle' => 'คำบรรยายที่แอดมินพิมพ์เอง',
+                'button_label' => '🎁 กดรับฟรี',
+            ])
+        );
+
+        $elements = $this->elements($builder->facebookEntry([
+            'invite_text' => 'คำ DM ที่หมุนมาจากคลัง ต้องไม่ถูกใช้',
+            'deep_price' => 39,
+        ]));
+
+        $this->assertSame('หัวข้อที่แอดมินพิมพ์เอง', $elements[0]['title']);
+        $this->assertSame('คำบรรยายที่แอดมินพิมพ์เอง', $elements[0]['subtitle']);
+        $this->assertSame('🎁 กดรับฟรี', $elements[0]['buttons'][0]['title']);
+    }
+
+    /**
+     * โหมด "ใช้คำ DM" ต้องไม่หยิบคำที่พิมพ์ค้างไว้มาใช้
+     *
+     * 🪤 เคสที่พลาดง่าย: แอดมินพิมพ์ทดลองไว้แล้วสลับโหมดกลับ — ถ้ายังหยิบมาใช้
+     *    = คำ DM ที่หมุนอยู่ตายทั้งระบบโดยไม่มีใครรู้
+     */
+    public function test_โหมดใช้คำ_dm_ต้องไม่หยิบคำที่พิมพ์ค้างไว้(): void
+    {
+        $builder = (new FortuneEntryCardBuilder)->useOverrides(
+            $this->override(FortuneEntryCardBuilder::KEY_FREE, [
+                'text_mode' => FortuneEntryCard::MODE_INVITE,
+                'title' => 'คำที่พิมพ์ค้างไว้ ห้ามใช้',
+                'subtitle' => 'คำบรรยายที่พิมพ์ค้างไว้ ห้ามใช้',
+            ])
+        );
+
+        $elements = $this->elements($builder->facebookEntry([
+            'invite_text' => "🌙 คำ DM จริงจากคลัง\nบรรทัดที่สองของคำ DM",
+            'deep_price' => 39,
+        ]));
+
+        $this->assertStringContainsString('คำ DM จริงจากคลัง', $elements[0]['title']);
+        $this->assertStringNotContainsString('ห้ามใช้', $elements[0]['title'].$elements[0]['subtitle']);
+    }
+
+    /**
+     * โหมดพิมพ์เองแต่เว้นบางช่องว่าง → ช่องที่ว่างต้องตกกลับไปใช้ค่าเดิม ไม่ใช่ปล่อยโล่ง
+     */
+    public function test_พิมพ์เองไม่ครบช่องต้องตกกลับค่าเดิม(): void
+    {
+        $builder = (new FortuneEntryCardBuilder)->useOverrides(
+            $this->override(FortuneEntryCardBuilder::KEY_FREE, [
+                'text_mode' => FortuneEntryCard::MODE_CUSTOM,
+                'title' => 'พิมพ์แค่หัวข้อ',
+                'subtitle' => '   ',   // เว้นวรรคล้วน ต้องนับเป็นว่าง
+            ])
+        );
+
+        $elements = $this->elements($builder->facebookEntry([
+            'invite_text' => "🌙 คำ DM จริง\nคำบรรยายจากคำ DM",
+            'deep_price' => 39,
+        ]));
+
+        $this->assertSame('พิมพ์แค่หัวข้อ', $elements[0]['title']);
+        $this->assertNotSame('', trim($elements[0]['subtitle']));
+        $this->assertStringContainsString('คำบรรยายจากคำ DM', $elements[0]['subtitle']);
+    }
+
+    /**
+     * คำที่แอดมินพิมพ์ยาวเกินเพดาน FB ต้องถูกตัดให้ — ช่องกรอกยอมรับได้ถึง 120 ตัว
+     */
+    public function test_คำที่พิมพ์ยาวเกินต้องถูกตัดให้พอดีเพดาน(): void
+    {
+        $builder = (new FortuneEntryCardBuilder)->useOverrides(
+            $this->override('day-0', [
+                'title' => str_repeat('ก', 120),
+                'subtitle' => str_repeat('ข', 120),
+            ])
+        );
+
+        $elements = $this->elements($builder->facebookDays());
+
+        $this->assertLessThanOrEqual(80, mb_strlen($elements[0]['title']));
+        $this->assertLessThanOrEqual(80, mb_strlen($elements[0]['subtitle']));
+        $this->assertWithinFacebookLimits($elements);
+    }
+
+    /**
+     * ทะเบียนการ์ดต้องครบ 9 ใบ และรูปเริ่มต้นต้องมีไฟล์จริงทุกใบ
+     *
+     * 🚨 ใบไหนไฟล์หาย = การ์ดชุดนั้นถูกตีตกทั้งชุดตอน runtime (เงียบ ๆ)
+     */
+    public function test_ทะเบียนการ์ดครบและรูปเริ่มต้นมีไฟล์จริงทุกใบ(): void
+    {
+        $registry = FortuneEntryCardBuilder::registry();
+
+        $this->assertCount(9, $registry);
+
+        foreach ($registry as $card) {
+            $this->assertFileExists(
+                public_path($card['default_image']),
+                'รูปเริ่มต้นหาย: '.$card['label'].' → '.$card['default_image']
+            );
+        }
     }
 }

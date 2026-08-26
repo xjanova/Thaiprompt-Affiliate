@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneBanner;
+use App\Models\FortuneEntryCard;
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\FortuneEntryCardBuilder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -32,8 +34,120 @@ class FortuneBannerController extends Controller
         return view('admin.fortune.banners.index', [
             'banners' => $banners,
             'settings' => $settings,
+            'entryCards' => $this->entryCardRows(),
             'pageTitle' => 'จัดการแบนเนอร์ DM',
         ]);
+    }
+
+    /**
+     * 🃏 รวมทะเบียนการ์ด (โค้ด) เข้ากับค่าที่แอดมินทับ (DB) ให้หน้าแอดมินไล่แสดง
+     *
+     * แถวใน DB มีเฉพาะการ์ดที่เคยถูกแก้ — ที่เหลือคืน override = null (ใช้ค่าเดิม)
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function entryCardRows(): array
+    {
+        $overrides = FortuneEntryCard::overrides();
+        $builder = app(FortuneEntryCardBuilder::class);
+
+        return array_map(function (array $card) use ($overrides, $builder) {
+            $override = $overrides->get($card['key']);
+
+            return $card + [
+                'override' => $override,
+                // รูปที่ "ใช้จริงตอนนี้" — อัปทับแล้วได้ของใหม่ ยังไม่อัปได้ของที่มากับโค้ด
+                'current_image' => $builder->resolveImageUrl($card['key'], $card['default_image']),
+                'is_custom_image' => $override?->overrideImageUrl() !== null,
+            ];
+        }, FortuneEntryCardBuilder::registry());
+    }
+
+    /**
+     * 🃏 บันทึกรูป + คำของการ์ดทางเข้า 1 ใบ
+     *
+     * 🚨 รูปที่อัปต้องลง disk `public` (storage/app/public/) **ห้ามเขียนทับ public/images/**
+     *    deploy.sh:814 `git clean -fdx -e 'storage/app/public/*'` ⇒ ของใน public/images
+     *    ที่อยู่ใน git จะถูกคืนค่าเดิมทุก deploy = รูปที่แอดมินอัปหายทุกครั้ง
+     *    (บั๊กตระกูลเดียวกับ INCIDENT 2026-06-05 ที่ทำให้รูปสลิปหาย)
+     */
+    public function saveCard(Request $request, string $card)
+    {
+        $known = collect(FortuneEntryCardBuilder::registry())->pluck('key')->all();
+
+        // ⛔ whitelist — card_key มาจาก URL ห้ามเชื่อ (กันเขียนไฟล์นอกโฟลเดอร์ที่ตั้งใจ)
+        if (! in_array($card, $known, true)) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'image' => 'nullable|image|mimes:png,jpg,jpeg|max:10240',
+            'title' => 'nullable|string|max:120',
+            'subtitle' => 'nullable|string|max:120',
+            'button_label' => 'nullable|string|max:40',
+            'text_mode' => 'nullable|in:invite,custom',
+        ]);
+
+        $row = FortuneEntryCard::firstOrNew(['card_key' => $card]);
+
+        if ($request->hasFile('image')) {
+            // การ์ดในแชทเป็นสี่เหลี่ยมจัตุรัส (image_aspect_ratio=square) — บีบเป็น 1024 เท่ากันหมด
+            $storagePath = FortuneEntryCard::UPLOAD_DIR.'/'.$card.'.jpg';
+
+            $tmpPath = tempnam(sys_get_temp_dir(), 'fcard_').'.jpg';
+            $info = $this->resizeAndSaveJpeg($request->file('image')->getRealPath(), $tmpPath, 1024, 88);
+
+            if (! $info) {
+                @unlink($tmpPath);
+
+                return redirect()->back()->with('error', '❌ ประมวลผลรูปไม่สำเร็จ กรุณาลองรูปอื่น');
+            }
+
+            Storage::disk('public')->put($storagePath, file_get_contents($tmpPath));
+            @unlink($tmpPath);
+
+            $row->image_path = $storagePath;
+
+            Log::info('Admin: เปลี่ยนรูปการ์ดทางเข้า', [
+                'card' => $card,
+                'admin' => auth()->user()?->name,
+                'size_kb' => round(($info['size'] ?? 0) / 1024),
+            ]);
+        }
+
+        $row->title = $validated['title'] ?? null;
+        $row->subtitle = $validated['subtitle'] ?? null;
+        $row->button_label = $validated['button_label'] ?? null;
+        $row->text_mode = $validated['text_mode'] ?? FortuneEntryCard::MODE_INVITE;
+        $row->save();
+
+        return redirect()->route('admin.fortune.banners.index')
+            ->with('success', '✅ บันทึกการ์ดสำเร็จ');
+    }
+
+    /**
+     * 🃏 คืนค่ารูปเดิมที่มากับโค้ด (ลบรูปที่อัปทับ) — คำที่พิมพ์ไว้ยังอยู่
+     */
+    public function resetCardImage(string $card)
+    {
+        $row = FortuneEntryCard::where('card_key', $card)->first();
+
+        if ($row && ! empty($row->image_path)) {
+            try {
+                Storage::disk('public')->delete($row->image_path);
+            } catch (\Throwable $e) {
+                Log::warning('ลบรูปการ์ดที่อัปทับไม่สำเร็จ (ล้างค่าใน DB ต่อ)', [
+                    'card' => $card,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $row->image_path = null;
+            $row->save();
+        }
+
+        return redirect()->route('admin.fortune.banners.index')
+            ->with('success', '✅ คืนค่ารูปเดิมแล้ว');
     }
 
     /**

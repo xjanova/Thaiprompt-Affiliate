@@ -3992,6 +3992,11 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{banner}/toggle', [FortuneBannerController::class, 'toggle'])->name('toggle');
         Route::post('/reorder', [FortuneBannerController::class, 'reorder'])->name('reorder');
         Route::post('/settings', [FortuneBannerController::class, 'saveSettings'])->name('settings');
+
+        // 🃏 (2026-08-26) การ์ดทางเข้า — เปลี่ยนรูป + พิมพ์คำบนการ์ดทีละใบ
+        //   {card} คือ card_key (entry-free / entry-vip / day-0..6) ตรวจกับทะเบียนในคอนโทรลเลอร์
+        Route::post('/cards/{card}', [FortuneBannerController::class, 'saveCard'])->name('cards.save');
+        Route::delete('/cards/{card}/image', [FortuneBannerController::class, 'resetCardImage'])->name('cards.reset-image');
     });
 
     // 📜 (2026-06-06) กติกาก่อนจองคิว (Consent Gate) — รูป + คำเตือน + เตือนตอนยกเลิก

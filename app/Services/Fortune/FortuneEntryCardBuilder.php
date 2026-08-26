@@ -2,6 +2,7 @@
 
 namespace App\Services\Fortune;
 
+use App\Models\FortuneEntryCard;
 use App\Services\FortuneChartService;
 use Illuminate\Support\Facades\Log;
 
@@ -60,6 +61,54 @@ class FortuneEntryCardBuilder
     /** สัตว์พาหนะประจำวันตามคติไทย — ชุดเดียวกับที่ใช้บนการ์ดหน้าเว็บ (_birth-day-card.blade.php) */
     private const DAY_MOUNTS = ['ราชสีห์', 'ม้า', 'กระบือ', 'ช้าง', 'กวาง', 'โค', 'เสือ'];
 
+    /** คีย์การ์ดสำหรับหน้าแอดมิน (ตรงกับคอลัมน์ card_key ของ fortune_entry_cards) */
+    public const KEY_FREE = 'entry-free';
+
+    public const KEY_VIP = 'entry-vip';
+
+    /** ค่าที่แอดมินทับไว้ — โหลดครั้งเดียวต่อการประกอบการ์ด 1 ชุด */
+    private ?\Illuminate\Support\Collection $overrides = null;
+
+    /**
+     * 🗂️ ทะเบียนการ์ดทั้งหมด — **แหล่งเดียว** ที่หน้าแอดมินใช้ไล่แสดงรายการ
+     *
+     * เพิ่มการ์ดใบใหม่ในโค้ด → หน้าแอดมินขึ้นเองทันที ไม่ต้องแก้ blade ตาม
+     *
+     * @return array<int, array{key: string, label: string, group: string, default_image: string}>
+     */
+    public static function registry(): array
+    {
+        $cards = [
+            ['key' => self::KEY_FREE, 'label' => '🎁 การ์ดรับดวงฟรีประจำวัน', 'group' => 'entry', 'default_image' => self::IMAGE_FREE],
+            ['key' => self::KEY_VIP, 'label' => '👑 การ์ดดู VIP ส่วนตัว', 'group' => 'entry', 'default_image' => self::IMAGE_VIP],
+        ];
+
+        foreach (self::DAY_NAMES as $index => $dayName) {
+            $cards[] = [
+                'key' => 'day-'.$index,
+                'label' => self::DAY_EMOJIS[$index].' วัน'.$dayName,
+                'group' => 'day',
+                'default_image' => sprintf(self::IMAGE_DAY_PATTERN, $index),
+            ];
+        }
+
+        return $cards;
+    }
+
+    /**
+     * URL รูปที่ใช้จริงของการ์ดใบนี้ — ใช้ทั้งตอนส่งเข้าแชทและตอนโชว์ในหน้าแอดมิน
+     *
+     * ลำดับ: รูปที่แอดมินอัปทับ (storage) → รูปที่มากับโค้ด (public/images)
+     *
+     * @return string|null null = ไม่มีรูปที่ใช้ได้เลย
+     */
+    public function resolveImageUrl(string $cardKey, string $defaultRelativePath): ?string
+    {
+        $override = $this->overrides()->get($cardKey)?->overrideImageUrl();
+
+        return $override ?? $this->imageUrl($defaultRelativePath);
+    }
+
     /**
      * 🎁👑 การ์ด 2 ใบ "ทางเข้า" สำหรับ Facebook — ฟรี / VIP
      *
@@ -71,8 +120,8 @@ class FortuneEntryCardBuilder
      */
     public function facebookEntry(array $ctx = []): ?array
     {
-        $freeImage = $this->imageUrl(self::IMAGE_FREE);
-        $vipImage = $this->imageUrl(self::IMAGE_VIP);
+        $freeImage = $this->resolveImageUrl(self::KEY_FREE, self::IMAGE_FREE);
+        $vipImage = $this->resolveImageUrl(self::KEY_VIP, self::IMAGE_VIP);
 
         // 🚨 ขาดรูปใบใดใบหนึ่ง = การ์ดชุดไม่ครบ → ตกไปข้อความเดิมทั้งชุด
         //    (โชว์ใบเดียวจาก 2 = ลูกค้าไม่เห็นอีกทางเลือกเลย ซึ่งแย่กว่าข้อความที่ครบ)
@@ -80,29 +129,42 @@ class FortuneEntryCardBuilder
             return null;
         }
 
-        [$freeTitle, $freeSubtitle] = $this->splitInviteText($ctx['invite_text'] ?? null);
+        $free = $this->overrides()->get(self::KEY_FREE);
+        $vip = $this->overrides()->get(self::KEY_VIP);
 
-        $vipTitle = $this->vipTitle($ctx['deep_price'] ?? null);
+        // 📝 คำบนการ์ดใบฟรี — แอดมินเลือกได้ว่าจะใช้ "คำ DM ที่หมุนอยู่" หรือ "คำที่พิมพ์เอง"
+        //    โหมด custom แต่พิมพ์ไม่ครบ → ช่องที่เว้นว่างยังตกกลับไปใช้คำ DM (ไม่ปล่อยการ์ดโล่ง)
+        [$inviteTitle, $inviteSubtitle] = $this->splitInviteText($ctx['invite_text'] ?? null);
+
+        $useCustom = $free?->usesCustomText() ?? false;
+
+        $freeTitle = ($useCustom ? $free?->overrideText('title') : null) ?? $inviteTitle;
+        $freeSubtitle = ($useCustom ? $free?->overrideText('subtitle') : null) ?? $inviteSubtitle;
+
+        // การ์ด VIP ไม่มีโหมด invite — ค่าเดิมเป็นข้อความคงที่ในโค้ด แอดมินพิมพ์ทับได้ตรง ๆ
+        $vipTitle = $vip?->overrideText('title') ?? $this->vipTitle($ctx['deep_price'] ?? null);
+        $vipSubtitle = $vip?->overrideText('subtitle')
+            ?? 'แม่หมอคำนวณดาวจากวันเกิด เปิดไพ่จริง แล้วคุยตอบสดกับเจ้าชะตาเอง';
 
         return $this->wrapGeneric([
             [
                 // 🔘 ป้ายปุ่มต้องมีคำว่า "ฟรี" เสมอ — เจ้าของสั่งไว้ 2026-08-07 หลังลูกค้า
                 //    เหมาว่าปุ่ม 7 วันเกิดคือแพคเกจ 39 บาทแล้วมาโวยว่าโดนหลอก
                 //    (หัวข้อ/คำบรรยายบนการ์ดหมุนตามข้อความชวน จึงพึ่งไม่ได้ว่าจะมีคำว่าฟรี)
-                'title' => $freeTitle,
-                'subtitle' => $freeSubtitle,
+                'title' => $this->clamp($freeTitle, self::FB_TITLE_MAX),
+                'subtitle' => $this->clamp($freeSubtitle, self::FB_SUBTITLE_MAX),
                 'image_url' => $freeImage,
                 'buttons' => [
-                    $this->postback('🎁 รับดวงฟรี', 'DAILY_FREE_START'),
+                    $this->postback($free?->overrideText('button_label') ?? '🎁 รับดวงฟรี', 'DAILY_FREE_START'),
                 ],
             ],
             [
-                'title' => $vipTitle,
-                'subtitle' => 'แม่หมอคำนวณดาวจากวันเกิด เปิดไพ่จริง แล้วคุยตอบสดกับเจ้าชะตาเอง',
+                'title' => $this->clamp($vipTitle, self::FB_TITLE_MAX),
+                'subtitle' => $this->clamp($vipSubtitle, self::FB_SUBTITLE_MAX),
                 'image_url' => $vipImage,
                 'buttons' => [
                     // ป้ายเดียวกับ dailyUpgradeQuickReply() เป๊ะ — 20 ตัวพอดี ห้ามเติมอีโมจิ
-                    $this->postback('ดูvipส่วนตัวมีค่าครู', 'DAILY_VIP_PACKAGES'),
+                    $this->postback($vip?->overrideText('button_label') ?? 'ดูvipส่วนตัวมีค่าครู', 'DAILY_VIP_PACKAGES'),
                 ],
             ],
         ]);
@@ -121,7 +183,9 @@ class FortuneEntryCardBuilder
         $elements = [];
 
         foreach (self::DAY_NAMES as $index => $dayName) {
-            $image = $this->imageUrl(sprintf(self::IMAGE_DAY_PATTERN, $index));
+            $cardKey = 'day-'.$index;
+            $override = $this->overrides()->get($cardKey);
+            $image = $this->resolveImageUrl($cardKey, sprintf(self::IMAGE_DAY_PATTERN, $index));
 
             if ($image === null) {
                 // 🚨 ขาดใบเดียว = คนเกิดวันนั้นไม่มีปุ่มให้กด → ตกไป quick reply ที่ครบ 7 ปุ่ม
@@ -139,11 +203,21 @@ class FortuneEntryCardBuilder
             $luckyColor = $chaochana['lucky_color'] ?? '';
 
             $elements[] = [
-                'title' => self::DAY_EMOJIS[$index].' วัน'.$dayName,
-                'subtitle' => $this->daySubtitle($mount, $element, $luckyColor),
+                // แอดมินพิมพ์ทับได้ทีละใบ — เว้นว่าง = ใช้ค่าเดิม (ชื่อวัน + ธาตุ/สีมงคล/พาหนะ)
+                'title' => $this->clamp(
+                    $override?->overrideText('title') ?? self::DAY_EMOJIS[$index].' วัน'.$dayName,
+                    self::FB_TITLE_MAX
+                ),
+                'subtitle' => $this->clamp(
+                    $override?->overrideText('subtitle') ?? $this->daySubtitle($mount, $element, $luckyColor),
+                    self::FB_SUBTITLE_MAX
+                ),
                 'image_url' => $image,
                 'buttons' => [
-                    $this->postback(self::DAY_EMOJIS[$index].' '.$dayName, 'DAILY_BDAY_'.$index),
+                    $this->postback(
+                        $override?->overrideText('button_label') ?? self::DAY_EMOJIS[$index].' '.$dayName,
+                        'DAILY_BDAY_'.$index
+                    ),
                 ],
             ];
         }
@@ -361,6 +435,31 @@ class FortuneEntryCardBuilder
         }
 
         return (int) str_replace(',', '', (string) $raw);
+    }
+
+    /**
+     * ใส่ค่าที่ทับไว้เอง แทนการอ่าน DB — ใช้ตอนพรีวิว/เทสต์
+     *
+     * @param  \Illuminate\Support\Collection<string, FortuneEntryCard>  $overrides  คีย์ด้วย card_key
+     */
+    public function useOverrides(\Illuminate\Support\Collection $overrides): static
+    {
+        $this->overrides = $overrides;
+
+        return $this;
+    }
+
+    /**
+     * ค่าที่แอดมินทับไว้ — โหลด DB ครั้งเดียวต่อการประกอบการ์ด 1 ชุด
+     *
+     * ⚠️ อ่านผ่าน FortuneEntryCard::overrides() ที่กลืน exception ให้แล้ว
+     *    (prod ที่ยังไม่ migrate ต้องได้การ์ดค่าเดิม ไม่ใช่การ์ดพังทั้งระบบ)
+     *
+     * @return \Illuminate\Support\Collection<string, FortuneEntryCard>
+     */
+    private function overrides(): \Illuminate\Support\Collection
+    {
+        return $this->overrides ??= FortuneEntryCard::overrides();
     }
 
     /**
