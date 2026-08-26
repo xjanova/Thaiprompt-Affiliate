@@ -104,10 +104,14 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
             }
 
             // ส่ง response ผ่าน channel manager
+            // 🎟️ (2026-08-26) ยืม replyToken ที่เทิร์น silent_skip ฝากไว้ → ตอบฟรี ไม่กินโควต้า push
+            //   เคสจริง FTU-260826-X6106: แชทหลัง pro session หมดเวลา → job นี้ตอบ
+            //   แต่ไม่มี token → push → โควต้าหมด → ลูกค้าไม่ได้รับอะไรเลย
             app(FortuneChannelManager::class)->sendResponse(
                 $this->platform,
                 $this->userId,
-                $result
+                $result,
+                $this->borrowedReplyExtra()
             );
         } catch (\Throwable $e) {
             Log::error('ProcessBufferedChatMessageJob: exception', [
@@ -115,5 +119,27 @@ class ProcessBufferedChatMessageJob implements ShouldQueue
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🎟️ (2026-08-26) หยิบ replyToken ที่เทิร์น webhook ฝากไว้ (ถ้ายังสด)
+     *
+     * ⏱️ ข้อจำกัดเวลาที่ต้องรู้: replyToken อายุ 60 วินาที
+     *    หน้าต่าง debounce ของแชท (`message_debounce_seconds`) เคยตั้งไว้ **60 วิ**
+     *    = เท่าอายุ token พอดี ⇒ พอ job ตื่นมา token ตายไปแล้วเสมอ
+     *    ลดเหลือ 30 วิบน prod (2026-08-26) → flush ที่ ~31s + AI ~2s = ตอบราว 33s
+     *    ⚠️ ถ้าจะขยับ debounce ขึ้นอีก ต้องไม่เกิน ~45 วิ ไม่งั้นกลับไปเสียเงินค่า push เหมือนเดิม
+     *
+     * @return array<string,string> ว่าง = ไม่มี token → caller ตกไป push ตามเดิม (ไม่มี regression)
+     */
+    protected function borrowedReplyExtra(): array
+    {
+        if ($this->platform !== 'line') {
+            return [];
+        }
+
+        $token = \App\Services\Fortune\ReplyTokenVault::take($this->platform, $this->userId);
+
+        return $token ? ['reply_token' => $token] : [];
     }
 }
