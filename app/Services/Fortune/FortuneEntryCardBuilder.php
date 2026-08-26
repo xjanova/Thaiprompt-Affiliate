@@ -386,6 +386,21 @@ class FortuneEntryCardBuilder
             $url = 'https://'.substr($url, 7);
         }
 
-        return str_starts_with($url, 'https://') ? $url : null;
+        if (! str_starts_with($url, 'https://')) {
+            return null;
+        }
+
+        // 🔄 (2026-08-26) parity กับ FortunePackageCardBuilder::cacheBust()
+        //   LINE แคชผลดึงรูปตาม URL — พลาดครั้งเดียวจำยาว ช่อง hero จะว่างตลอด
+        //   การ์ดชุดนี้เพิ่งขึ้นวันนี้ ยังไม่ทันโดน แต่ต้องกันไว้ตั้งแต่ต้น
+        //   (แก้ฝั่งเดียว = อีกฝั่งเป็นระเบิดเวลา — บทเรียนเดิมจาก spam guard FB/LINE)
+        try {
+            $sep = str_contains($url, '?') ? '&' : '?';
+            $url .= $sep.'v='.filemtime(public_path($relativePath));
+        } catch (\Throwable $e) {
+            // คำนวณไม่ได้ = ใช้ URL เดิม
+        }
+
+        return $url;
     }
 }

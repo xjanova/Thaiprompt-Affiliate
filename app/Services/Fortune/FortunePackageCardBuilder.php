@@ -428,6 +428,47 @@ class FortunePackageCardBuilder
             $url = 'https://'.substr($url, 7);
         }
 
-        return str_starts_with($url, 'https://') ? $url : null;
+        if (! str_starts_with($url, 'https://')) {
+            return null;
+        }
+
+        return self::cacheBust($url, $relativePath);
+    }
+
+    /**
+     * 🔄 (2026-08-26) ต่อท้าย ?v={mtime} — บังคับ LINE/FB ดึงรูปใหม่เมื่อไฟล์เปลี่ยน
+     *
+     * ## อาการที่แก้
+     * การ์ดแพคเกจบน LINE ขึ้นครบทุกอย่าง (ข้อความ ปุ่ม กรอบ) แต่ **ช่อง hero ว่างเปล่า**
+     * = LINE ได้ hero block ไปแล้ว จองพื้นที่ 1:1 ไว้ แต่ทาสีไม่ได้
+     *
+     * ## ทำไมไม่ใช่ปัญหาฝั่งเรา (ตรวจครบแล้ว 2026-08-26)
+     * ไฟล์ baseline JPEG · RGB 3ch · 8bit · 1024×1024 · ~250-300KB · track ใน git ·
+     * `asset()` คืน https ถูกต้อง · เบราว์เซอร์ภายนอกดึงได้ HTTP 200 decode สำเร็จ
+     *
+     * ## สาเหตุที่เหลืออยู่
+     * LINE มี image proxy ที่ **แคชผลตาม URL** — ถ้าเคยดึงพลาดสักครั้ง
+     * (หน้าต่าง deploy / เน็ตสะดุด) มันจะจำค่าล้มเหลวไว้และไม่ลองใหม่
+     * เปลี่ยน URL = บังคับให้ดึงใหม่ทั้งหมด
+     *
+     * ใช้ `filemtime` ไม่ใช่ random — URL คงที่ตราบใดที่ไฟล์ไม่เปลี่ยน
+     * (ถ้าสุ่มทุกครั้ง LINE จะดึงรูปใหม่ทุกข้อความ = ช้าและเปลืองแบนด์วิดท์)
+     */
+    private static function cacheBust(string $url, string $relativePath): string
+    {
+        try {
+            $full = public_path($relativePath);
+
+            if (! is_file($full)) {
+                return $url;
+            }
+
+            $sep = str_contains($url, '?') ? '&' : '?';
+
+            return $url.$sep.'v='.filemtime($full);
+        } catch (\Throwable $e) {
+            // คำนวณไม่ได้ = ส่ง URL เดิม ดีกว่าไม่ส่งรูปเลย
+            return $url;
+        }
     }
 }
