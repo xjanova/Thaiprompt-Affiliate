@@ -122,7 +122,14 @@ class MuProductPicker
         [$group, $reason] = $this->resolveGroup($ctx);
 
         // ลองกลุ่มที่บริบทชี้ก่อน — ไม่พอค่อยเปิดกว้างเป็นสายมูทุกกลุ่ม
-        $pool = $this->candidates($ctx, $group);
+        //
+        // 🎲 randomSample ต้องเปิดกับใบ 1-2 ด้วย ไม่ใช่แค่ใบที่ 3
+        //   เดิมเปิดเฉพาะใบที่ 3 แล้วเขียนคำเตือนไว้เองว่า "pixiu = 48 ชิ้นแล้ว พอเกิน 60 จะเจอกับดักเดียวกัน"
+        //   ตรวจ 2026-08-23 (รอบถัดมา): **pixiu = 52 ชิ้น** และพูลสายมูรวม 117 ชิ้น
+        //   ⇒ ตอนบริบทไม่ชี้กลุ่ม (group=null) พูลรวมเกิน 60 ไปแล้ว = โดนตัดอยู่ทุกวันนี้
+        //   ⇒ ของสายมูที่ค่าคอมไม่ติดท็อป 60 ไม่มีวันถูกส่งเลยแม้แต่ครั้งเดียว
+        //   (เรียงค่าคอม DESC + limit = **ตัดขาด** ไม่ใช่ถ่วงน้ำหนัก — weightedPick ไม่เคยเห็นของที่ถูกตัด)
+        $pool = $this->candidates($ctx, $group, randomSample: true);
 
         // 🪜 (2026-08-23) บันไดผ่อนเกณฑ์ — "ความตรงเรื่อง" สำคัญกว่า "เปอร์เซ็นต์ค่าคอม"
         //
@@ -139,7 +146,8 @@ class MuProductPicker
         //     4. ทุกกลุ่ม + เกณฑ์ผ่อน
         if ($ctx->requireMu && $pool->count() < self::MIN_POOL_FOR_PAIR) {
             foreach ($this->fallbackLadder($ctx, $group) as [$tryCtx, $tryGroup, $note]) {
-                $alt = $this->candidates($tryCtx, $tryGroup);
+                // สุ่มตัวอย่างเหมือนขั้นแรก — ไม่งั้นทุกขั้นของบันไดจะคืนหัวตารางค่าคอมชุดเดิมตลอด
+                $alt = $this->candidates($tryCtx, $tryGroup, randomSample: true);
                 if ($alt->count() > $pool->count()) {
                     $pool = $alt;
                     $group = $tryGroup;
