@@ -3254,6 +3254,40 @@ trait CelticCrossConversationTrait
      * @param  string  $reason  'ai_signal' | 'time_expired' | 'customer_said_done' | 'max_questions_reached' | 'idle' | 'off_topic_repick'
      * @param  string|null  $aiMessage  ถ้ามีคำตอบสุดท้ายจาก AI — รวมเข้ากับ summary
      */
+    /**
+     * 💾 (2026-08-26) เก็บบทสรุปที่จบ session ลง DB "ก่อน" ส่งออก
+     *
+     * 🔴 บั๊กเก่าที่อยู่มานาน: บทสรุปถูก generate แล้ว return ให้ ChannelManager ส่งเลย
+     *    **ไม่เคยถูกเก็บที่ไหน** — ตาราง `fortune_readings` มีแต่ `celtic_summary_image_url` (รูป)
+     *    ⇒ ส่งไม่ออกเมื่อไหร่ (โควต้า push หมด / LINE ล่ม / replyToken ตาย) = **ข้อความหายถาวร**
+     *      ลูกค้าจ่าย 99฿ แล้วไม่ได้บทสรุป กู้ไม่ได้ ต้อง generate ใหม่เสียค่า AI ซ้ำและได้คนละข้อความ
+     *      (เคสจริง 2026-08-25: 2 บิล 99฿ ตอนโควต้าหมด — ย้อนหลังพิสูจน์ไม่ได้ด้วยซ้ำว่าถึงลูกค้าไหม)
+     *
+     * เก็บแล้ว `LineFortuneWebhookController::flushParkedCelticSummary()` จะส่งคืนผ่าน reply (ฟรี)
+     * ตอนลูกค้าทักครั้งหน้า โดยดูจากธง `celtic_summary_delivered === false`
+     *
+     * ครอบทั้ง Celtic ปกติและคุณไสย (ใช้ endCelticSession ร่วมกัน) + ทั้ง FB/LINE
+     * non-blocking ทุกกรณี — เก็บไม่ได้ห้ามทำให้บทสรุปส่งไม่ออก
+     */
+    protected function stashCelticFinale(FortuneReading $reading, ?string $text, ?string $chartUrl, ?string $composeUrl): void
+    {
+        try {
+            if (trim((string) $text) === '') {
+                return;
+            }
+
+            $reading->setConversationState('celtic_finale_text', mb_substr((string) $text, 0, 20000));
+            $reading->setConversationState('celtic_finale_chart_url', $chartUrl);
+            $reading->setConversationState('celtic_finale_image_url', $composeUrl);
+            $reading->setConversationState('celtic_finale_built_at', now()->toIso8601String());
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: เก็บบทสรุปลง state ไม่สำเร็จ (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function endCelticSession(FortuneReading $reading, string $reason = 'ai_signal', ?string $aiMessage = null): array
     {
         // 🔄 reset state กลับ COMPLETED → normal loop พร้อมรับ "ดูดวง" ใหม่ได้
@@ -3299,13 +3333,18 @@ trait CelticCrossConversationTrait
                 ]);
             }
 
+            $repickChartUrl = $this->buildCelticBirthChartUrl($reading);
+
+            // 💾 (2026-08-26) เก็บก่อนส่ง — เส้นนี้ก็เป็นเนื้อหาที่ลูกค้าจ่ายเงิน ห้ามหายถ้า push ไม่ออก
+            $this->stashCelticFinale($reading, $aiMessage, $repickChartUrl, $composeUrl);
+
             return [
                 'action' => 'celtic_session_ended',
                 'message' => $aiMessage,
                 'reading' => $reading,
                 'celtic_summary_image_url' => $composeUrl,
                 // 🗺️ (2026-06-08) แผนที่ดาวชะตา ส่งคู่ภาพไพ่ตอนสรุป (null ถ้าไม่มีวันเกิด)
-                'chart_image_url' => $this->buildCelticBirthChartUrl($reading),
+                'chart_image_url' => $repickChartUrl,
             ];
         }
 
@@ -3516,6 +3555,11 @@ trait CelticCrossConversationTrait
             }
         }
 
+        $chartUrl = $this->buildCelticBirthChartUrl($reading);
+
+        // 💾 (2026-08-26) เก็บบทสรุป Grand Finale ลง DB "ก่อน" ส่ง — ดู stashCelticFinale()
+        $this->stashCelticFinale($reading, $closingMessage, $chartUrl, $composeUrl);
+
         return [
             'action' => 'celtic_session_ended',
             'message' => $closingMessage,
@@ -3530,7 +3574,7 @@ trait CelticCrossConversationTrait
             //   เพราะรีวิวเป็น null ได้จากอีกหลายเหตุ (ไม่เข้าเงื่อนไข/ยังไม่จ่าย/เคยชวนแล้ว)
             'is_lingering' => $isLingering,
             // 🗺️ (2026-06-08) แผนที่ดาวชะตา ส่งคู่ภาพไพ่ตอนสรุป (null ถ้าไม่มีวันเกิด)
-            'chart_image_url' => $this->buildCelticBirthChartUrl($reading),
+            'chart_image_url' => $chartUrl,
             'has_grand_finale' => ! empty($grandFinale),
             // 🎧 (2026-06-20) Voice = on-demand — flag บอกว่ามีบทสรุปพร้อมให้ลูกค้าขอฟังเสียง
             'voice_on_demand_ready' => $voiceOnDemandReady,

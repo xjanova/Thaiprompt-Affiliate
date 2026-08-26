@@ -189,8 +189,10 @@ class LineFortuneWebhookController extends Controller
         // ⚠️ เฉพาะข้อความ text เท่านั้น — รูป/สติกเกอร์ต้องเก็บ replyToken ไว้ให้ flow ของมันเอง
         //    (สลิปโอนเงินคือเคสสำคัญ: ถ้าเผา token ตรงนี้ ลูกค้าส่งสลิปแล้วเงียบ = ขวางทางจ่ายเงิน)
         if ($replyToken && $messageType === 'text') {
-            // คำทำนาย Deep ที่จ่ายเงินแล้วสำคัญกว่า — สะสางก่อน แล้วค่อยถึงคำตอบ Celtic รายข้อ
-            $flushed = $this->flushParkedDeepReading($userId, $replyToken)
+            // เรียงตามความสำคัญของสิ่งที่ลูกค้าจ่ายเงินซื้อ:
+            //   บทสรุป Celtic 99฿ > คำทำนาย Deep 39฿ > คำตอบ Celtic รายข้อ
+            $flushed = $this->flushParkedCelticSummary($userId, $replyToken)
+                || $this->flushParkedDeepReading($userId, $replyToken)
                 || $this->flushParkedCelticAnswers($userId, $replyToken);
 
             if ($flushed) {
@@ -2898,6 +2900,103 @@ class LineFortuneWebhookController extends Controller
         ]);
 
         return false;
+    }
+
+    /**
+     * 📦 (2026-08-26) ส่งบทสรุป Celtic 99฿ (Grand Finale) ที่ push ไม่ออก คืนผ่าน reply
+     *
+     * 🔴 บั๊กเก่าที่อยู่มานาน: บทสรุปไม่เคยถูกเก็บลง DB (มีแต่รูป `celtic_summary_image_url`)
+     *    ส่งไม่ออกเมื่อไหร่ = หายถาวร ลูกค้าจ่าย 99฿ แล้วไม่ได้ของ
+     *    ตอนนี้ `endCelticSession()` เก็บ `celtic_finale_text` ไว้ก่อนส่งแล้ว → กู้ได้
+     *
+     * เงื่อนไขเข้มโดยตั้งใจ — ส่งซ้ำเฉพาะเคสที่ "รู้แน่ว่าส่งไม่ออก":
+     *   celtic_summary_delivered === false (ตั้งโดย markCelticSummaryDelivery ตามผลส่งจริง)
+     * ⚠️ ห้ามใช้ `!== true` เด็ดขาด — reading เก่าก่อนมีธงนี้จะถูกยิงซ้ำทั้งกอง
+     *
+     * ครอบทั้ง Celtic ปกติและคุณไสย (ใช้ endCelticSession ร่วมกัน)
+     *
+     * @return bool true = ใช้ replyToken ไปแล้ว
+     */
+    protected function flushParkedCelticSummary(string $userId, string $replyToken): bool
+    {
+        try {
+            // ⚠️ ห้ามหยิบ "บิลล่าสุด" มาเช็ค — ลูกค้าอาจซื้อ Deep ต่อหลัง Celtic ที่บทสรุปหาย
+            //   แล้วบิลล่าสุดจะกลายเป็น Deep ⇒ บทสรุป Celtic ไม่มีวันถูกกู้
+            //   ค้นตรงจากธงบน JSON แทน (MySQL รองรับ path query)
+            $reading = FortuneReading::query()
+                ->where('platform', 'line')
+                ->where('platform_user_id', $userId)
+                ->where('is_paid', true)
+                ->where('created_at', '>=', now()->subDays(3))
+                ->where('conversation_state->celtic_summary_delivered', false)
+                ->latest()
+                ->first();
+
+            if (! $reading) {
+                return false;
+            }
+
+            if ($reading->getConversationState('celtic_finale_replayed', false)) {
+                return false;
+            }
+
+            $text = trim((string) $reading->getConversationState('celtic_finale_text', ''));
+
+            if ($text === '') {
+                return false;
+            }
+
+            // เนื้อหาสำคัญกว่ารูป → ใส่ข้อความก่อน แล้วค่อยเติมรูปถ้ายังไม่ครบ 5 objects
+            $messages = [];
+            foreach ($this->lineService->splitTextForFlexPublic($text, 4500) as $chunk) {
+                $messages[] = ['type' => 'text', 'text' => $chunk];
+            }
+            $messages = array_slice($messages, 0, 5);
+
+            foreach (['celtic_finale_chart_url', 'celtic_finale_image_url'] as $key) {
+                if (count($messages) >= 5) {
+                    break;
+                }
+                $url = (string) $reading->getConversationState($key, '');
+                if ($url !== '') {
+                    $messages[] = ['type' => 'image', 'originalContentUrl' => $url, 'previewImageUrl' => $url];
+                }
+            }
+
+            $ok = $this->lineService->replyMessage($replyToken, $messages);
+
+            if (! $ok) {
+                Log::warning('LINE parked celtic summary: reply ล้มเหลว — คงค้างไว้ให้รอบหน้า', [
+                    'user_id' => $userId,
+                    'reading_id' => $reading->id,
+                ]);
+
+                return false;
+            }
+
+            // ✅ mark หลังส่งสำเร็จจริงเท่านั้น
+            $reading->setConversationState('celtic_summary_delivered', true);
+            $reading->setConversationState('celtic_finale_replayed', true);
+            $reading->setConversationState('celtic_finale_replayed_at', now()->toIso8601String());
+
+            Log::info('📦 LINE parked celtic summary: ส่งบทสรุป 99฿ ที่ push ไม่ออก คืนลูกค้าผ่าน reply สำเร็จ', [
+                'user_id' => $userId,
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'objects' => count($messages),
+                'text_len' => mb_strlen($text),
+            ]);
+
+            return true;
+
+        } catch (\Throwable $e) {
+            Log::error('LINE parked celtic summary: exception (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**
