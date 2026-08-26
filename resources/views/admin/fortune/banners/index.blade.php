@@ -99,6 +99,47 @@
                 </label>
             </div>
 
+            {{-- ───── 🃏 การ์ดทางเข้า (2026-08-26) ─────
+                 อยู่ในฟอร์มเดียวกับแบนเนอร์เพราะคุมเรื่องเดียวกัน = "DM ขาออกหน้าตาแบบไหน"
+                 กดบันทึกครั้งเดียวคุมทั้งสองเรื่อง (ค่าที่ไม่ได้แตะถูก pre-fill ไว้แล้ว) --}}
+            <div class="tp-inset" style="padding:16px;border-radius:14px;margin-bottom:18px;">
+                <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">
+                    <i class="fas fa-id-card" style="color:var(--accent2);"></i>
+                    <span style="font-weight:600;color:var(--ink);">การ์ดทางเข้า (Facebook)</span>
+                </div>
+
+                <p class="tp-muted" style="font-size:12px;line-height:1.7;margin-bottom:14px;">
+                    เปลี่ยน DM จาก "ข้อความล้วน" เป็น <strong>การ์ดมีรูป + ปุ่ม</strong>
+                    — Facebook ให้ 1 ข้อความมีได้แค่ตัวหนังสือ<em>หรือ</em>รูป อย่างใดอย่างหนึ่ง
+                    และตอบคอมเมนต์ได้ครั้งเดียวต่อ 1 คอมเมนต์
+                    การ์ดจึงเป็นทางเดียวที่ยัดรูป + คำ + ปุ่ม ลงกล่องเดียวได้
+                    <br>
+                    <span style="color:var(--accent2);">⚠️ ถ้าราคา/รูปหาย ระบบจะตกกลับไปข้อความเดิมให้เองอัตโนมัติ</span>
+                </p>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+                    <label class="tp-inset-sm" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:12px;cursor:pointer;">
+                        <input type="checkbox" name="entry_cards_on_dm" value="1"
+                               @checked($settings->entry_cards_on_dm ?? false)
+                               style="width:16px;height:16px;accent-color:var(--accent1);cursor:pointer;flex-shrink:0;margin-top:2px;">
+                        <span>
+                            <span style="display:block;font-size:13px;color:var(--ink);">🃏 DM ตอบคอมเมนต์เป็นการ์ด 2 ใบ</span>
+                            <span class="tp-muted" style="font-size:11.5px;">[🎁 รับดวงฟรี] + [👑 VIP มีค่าครู] · <strong>แตะ funnel หลัก เปิดแล้วเทียบยอดด้วย</strong></span>
+                        </span>
+                    </label>
+
+                    <label class="tp-inset-sm" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:12px;cursor:pointer;">
+                        <input type="checkbox" name="birth_day_cards_enabled" value="1"
+                               @checked($settings->birth_day_cards_enabled ?? false)
+                               style="width:16px;height:16px;accent-color:var(--accent1);cursor:pointer;flex-shrink:0;margin-top:2px;">
+                        <span>
+                            <span style="display:block;font-size:13px;color:var(--ink);">📅 เลือกวันเกิดเป็นการ์ด 7 ใบ</span>
+                            <span class="tp-muted" style="font-size:11.5px;">ภาพเทพพาหนะประจำวัน แทนปุ่มข้อความ · เสี่ยงน้อยกว่า ลองตัวนี้ก่อนได้</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
             <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm">
                 <i class="fas fa-floppy-disk"></i>
                 บันทึกการตั้งค่า

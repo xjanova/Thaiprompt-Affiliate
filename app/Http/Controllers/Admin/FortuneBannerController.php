@@ -218,6 +218,9 @@ class FortuneBannerController extends Controller
             'banner_send_on_reaction' => 'nullable|boolean',
             'banner_send_on_comment' => 'nullable|boolean',
             'banner_send_on_welcome' => 'nullable|boolean',
+            // 🃏 (2026-08-26) การ์ดทางเข้า — อยู่ในฟอร์มเดียวกันเพราะคุมเรื่องเดียวกัน (หน้าตา DM ขาออก)
+            'entry_cards_on_dm' => 'nullable|boolean',
+            'birth_day_cards_enabled' => 'nullable|boolean',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
@@ -227,7 +230,13 @@ class FortuneBannerController extends Controller
             'banner_send_on_reaction' => (bool) ($validated['banner_send_on_reaction'] ?? false),
             'banner_send_on_comment' => (bool) ($validated['banner_send_on_comment'] ?? false),
             'banner_send_on_welcome' => (bool) ($validated['banner_send_on_welcome'] ?? false),
+            'entry_cards_on_dm' => (bool) ($validated['entry_cards_on_dm'] ?? false),
+            'birth_day_cards_enabled' => (bool) ($validated['birth_day_cards_enabled'] ?? false),
         ]);
+
+        // ล้าง static memo ของโปรเซสนี้ ให้หน้าที่ redirect กลับไปโชว์ค่าที่เพิ่งบันทึกทันที
+        // (ฝั่ง queue worker ไม่ต้องทำอะไร — memo มี TTL 5 วิ อยู่แล้ว จึงไม่ต้อง restart worker)
+        FortuneTellingSetting::clearSettingsCache();
 
         return redirect()->route('admin.fortune.banners.index')
             ->with('success', '✅ บันทึกการตั้งค่าสำเร็จ');
@@ -263,7 +272,7 @@ class FortuneBannerController extends Controller
     /**
      * Resize + แปลงเป็น JPEG quality 85, max width = $maxWidth, รักษาอัตราส่วน
      *
-     * @return array|null  ['width', 'height', 'size'] หรือ null ถ้าล้มเหลว
+     * @return array|null ['width', 'height', 'size'] หรือ null ถ้าล้มเหลว
      */
     protected function resizeAndSaveJpeg(string $sourcePath, string $destPath, int $maxWidth, int $quality): ?array
     {
