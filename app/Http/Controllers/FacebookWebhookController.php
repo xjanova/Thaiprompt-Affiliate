@@ -3778,16 +3778,20 @@ class FacebookWebhookController extends Controller
      * ด่านทั้งหมด (เพดานวันละครั้ง · คนสั่งเงียบ · **คนถูกแบน**) อยู่ใน FortuneMuOfferService
      * ⇒ คนยิงลิงก์สแปมที่โดนแบนแล้วจะไม่ได้การ์ด (ด่านแบนสำคัญมากกับเส้นนี้)
      *
+     * 🎚️ (2026-08-27) แต่ละท่าเป็นคนละจุดยิงแล้ว — แอดมินเปิด/ปิดแยกได้
+     *    (owner สั่ง: เสนอของเฉพาะคนส่งรูปกับส่งลิงก์) และหน่วงเวลาได้รายจุด
+     *    ⇒ ต้องเรียก `send()` ไม่ใช่ `offer()` ไม่งั้นค่าหน่วงเวลาที่ตั้งไว้จะไม่มีผล
+     *
      * @param  string  $gestureType  sticker | emoji | image | link — ไว้ดูสถิติว่าเส้นไหนได้ผล
-     * @return bool true = ส่งการ์ดถึงลูกค้าแล้ว
+     * @return bool true = ส่งการ์ดถึงลูกค้าแล้ว (เข้าคิวหน่วงเวลา = false)
      */
     protected function offerProductsOnGesture(string $senderId, string $gestureType): bool
     {
         try {
-            return app(\App\Services\Fortune\FortuneMuOfferService::class)->offer(
+            return app(\App\Services\Fortune\FortuneMuOfferService::class)->send(
                 'facebook',
                 $senderId,
-                \App\Models\FortuneProductOffer::TRIGGER_GESTURE,
+                \App\Models\FortuneProductOffer::triggerForGesture($gestureType),
                 null,
                 ['gestureType' => $gestureType]
             );

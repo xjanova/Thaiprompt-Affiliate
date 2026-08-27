@@ -13,6 +13,7 @@ use App\Services\LineFortuneService;
 use App\Services\Marketplace\MuOfferCardBuilder;
 use App\Services\Marketplace\MuPickContext;
 use App\Services\Marketplace\MuProductPicker;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -35,6 +36,22 @@ class FortuneMuOfferService
 
     /** จุดยิงที่เปิดอยู่ (คั่นด้วยจุลภาค) — ว่าง = เปิดทุกจุด */
     private const SETTING_TRIGGERS = 'fortune_mu_offer_triggers';
+
+    /**
+     * หน่วงกี่นาทีก่อนส่ง แยกรายจุดยิง — JSON `{"daily_free":60,"gesture_image":3}`
+     *
+     * 0 หรือไม่ระบุ = ส่งทันที
+     */
+    private const SETTING_DELAYS = 'fortune_mu_offer_delays';
+
+    /**
+     * คีย์เดิมของสายดวงฟรี (ก่อนมีตารางหน่วงเวลารายจุด)
+     *
+     * ⚠️ ห้ามลบ — พร็อดตั้งค่านี้ไว้แล้ว การถอดทิ้งจะทำให้ระยะห่าง 1 ชม.
+     *    ที่ owner สั่งไว้ (2026-08-23) หายเงียบๆ กลับไปส่งติดกล่องดวงฟรีทันที
+     *    ใช้เป็นค่าสำรองเฉพาะตอนตาราง JSON ไม่มีคีย์ daily_free
+     */
+    private const SETTING_DAILY_FREE_DELAY_LEGACY = 'fortune_mu_offer_daily_free_delay_minutes';
 
     /** บอทเสนอเองได้กี่ครั้งต่อคนต่อวัน (owner สั่ง: วันละครั้ง) */
     private const SETTING_DAILY_CAP = 'fortune_mu_offer_daily_cap';
@@ -88,6 +105,109 @@ class FortuneMuOfferService
      *     'cardsText' => 'The Tower, Ten of Pentacles',
      * ]);
      */
+    /**
+     * 🕐 ประตูหน้าสุด — เสนอสินค้า "ตามระยะหน่วงที่ตั้งไว้ของจุดยิงนั้น"
+     *
+     * ทุก call site ควรเรียกตัวนี้ ไม่ใช่ `offer()` ตรงๆ
+     *   - หน่วง 0 นาที → ส่งทันที (เหมือนเดิมทุกประการ)
+     *   - หน่วง > 0    → เข้าคิว `SendMuOfferJob` แล้วค่อยส่ง
+     *
+     * 🚨 ด่านที่เช็ค **ตอนนี้** มีแค่ "จุดยิงนี้เปิดอยู่ไหม" เท่านั้น
+     *    ด่านที่เหลือ (เพดานรายวัน · คนสั่งเงียบ · คนถูกแบน · โควตา LINE)
+     *    ต้องเช็คตอน job ทำงานจริง — สถานะลูกค้าเปลี่ยนได้ระหว่างที่รอ
+     *    เช่นลูกค้าพิมพ์ "รำคาญ" ในนาทีที่ 20 ของการหน่วง 60 นาที
+     *
+     * @return bool true = **ส่งถึงลูกค้าแล้วจริง** (เข้าคิวสำเร็จยังคืน false —
+     *              ผู้เรียกที่ใช้ค่านี้ตัดสินใจต่อ ต้องแปลว่า "ยังไม่ถึงมือลูกค้า")
+     */
+    public function send(
+        string $platform,
+        string $platformUserId,
+        string $trigger,
+        ?FortuneReading $reading = null,
+        array $options = []
+    ): bool {
+        try {
+            // ปิดอยู่ = ไม่ต้องเปลืองที่ในคิว
+            if (! $this->isEnabled($trigger)) {
+                return false;
+            }
+
+            $minutes = $this->delayMinutesFor($trigger);
+            if ($minutes <= 0) {
+                return $this->offer($platform, $platformUserId, $trigger, $reading, $options);
+            }
+
+            // 🚧 กันคิวบวม — ลูกค้าคนเดียวยิงรูปรัว 10 ใบ = 10 งานรอส่งพร้อมกัน
+            //    เพดานรายวันตัดตอนงานทำงานก็จริง แต่ถ้างานหลายตัวตื่นพร้อมกันคนละ worker
+            //    จะแย่งกันเช็คแล้วหลุดส่งซ้ำได้ ⇒ กันตั้งแต่ตอนเข้าคิวเลย
+            //    แยกกุญแจตามจุดยิง เพื่อไม่ให้การ์ดท้ายบิลที่จ่ายเงินแล้วโดนดวงฟรีบังคิว
+            $lockKey = "mu_offer_q:{$platform}:{$platformUserId}:{$trigger}";
+            if (! Cache::add($lockKey, 1, ($minutes * 60) + 120)) {
+                return false;
+            }
+
+            // ⚠️ ตั้ง delay บนตัว job ให้เสร็จ "ก่อน" dispatch
+            //    `Job::dispatch(...)->delay(...)` คืน PendingDispatch ซึ่งยิงจริงตอน __destruct
+            //    มีข้อยกเว้นแทรกกลางทางเมื่อไหร่ งานจะหลุดออกไปแบบไม่มี delay
+            $job = new \App\Jobs\SendMuOfferJob(
+                $platform,
+                $platformUserId,
+                $trigger,
+                $reading?->id,
+                $options
+            );
+            $job->delay(now()->addMinutes($minutes));
+
+            // \dispatch() = ฟังก์ชัน global — คลาสนี้มีเมธอด private ชื่อ dispatch() อยู่ด้วย
+            // ใส่ backslash ไว้ให้ชัดว่าเรียกคนละตัว
+            \dispatch($job);
+
+            Log::debug('MuOffer: เข้าคิวเสนอสินค้าแบบหน่วงเวลา', [
+                'platform' => $platform,
+                'trigger' => $trigger,
+                'delay_minutes' => $minutes,
+            ]);
+
+            return false;
+        } catch (\Throwable $e) {
+            Log::warning('MuOffer: ตั้งงานเสนอสินค้าไม่สำเร็จ (ไม่กระทบ flow หลัก)', [
+                'platform' => $platform,
+                'user_id' => $platformUserId,
+                'trigger' => $trigger,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * หน่วงกี่นาทีก่อนส่งการ์ดของจุดยิงนี้
+     *
+     * ลำดับที่อ่าน: ตาราง JSON รายจุด → คีย์เดิมของสายดวงฟรี → 0 (ส่งทันที)
+     *
+     * @return int นาที (0 = ส่งทันที)
+     */
+    public function delayMinutesFor(string $trigger): int
+    {
+        $map = MarketplaceSetting::get(self::SETTING_DELAYS, null);
+        if (is_string($map)) {
+            $map = json_decode($map, true);
+        }
+
+        if (is_array($map) && array_key_exists($trigger, $map)) {
+            return max(0, (int) $map[$trigger]);
+        }
+
+        // ค่าสำรองของสายดวงฟรี — ระยะห่าง 1 ชม. ที่ owner สั่งไว้ ต้องไม่หายไปตอนอัปโค้ด
+        if ($trigger === FortuneProductOffer::TRIGGER_DAILY_FREE) {
+            return max(0, (int) MarketplaceSetting::get(self::SETTING_DAILY_FREE_DELAY_LEGACY, 60));
+        }
+
+        return 0;
+    }
+
     public function offer(
         string $platform,
         string $platformUserId,
@@ -145,6 +265,21 @@ class FortuneMuOfferService
 
         if ($this->isMuted($platform, $platformUserId)) {
             return false;
+        }
+
+        // 💸 (2026-08-27) การ์ดขายของ = push ที่ไม่วิกฤต — โควตา LINE ใกล้หมดให้ข้าม
+        //   ย้ายมาจาก FortuneChannelManager::offerProductsAfterReading() เพราะเดิมกันแค่
+        //   ท้ายบิล ⇒ สายดวงฟรี (1,841 ใบ/7 วัน) กินโควตาไปโดยไม่ผ่านด่านนี้เลย
+        //   และตั้งแต่มีการหน่วงเวลา การเช็คตอน dispatch ก็เป็นข้อมูลเก่าไปแล้ว
+        //   แพลน LINE = 300 push/เดือน · โควตาหมด = 429 ปิดปาก webhook ทั้งเส้น
+        if ($platform === 'line') {
+            try {
+                if (! app(LineFortuneService::class)->canSpendNonCriticalPush()) {
+                    return false;
+                }
+            } catch (\Throwable $e) {
+                Log::debug('MuOffer: เช็คโควตา LINE ไม่ได้ — ปล่อยผ่าน', ['error' => $e->getMessage()]);
+            }
         }
 
         // ⛔ (2026-08-23) คนที่ถูกแบนอยู่ ห้ามได้การ์ดขายของ
@@ -215,7 +350,18 @@ class FortuneMuOfferService
 
         $allowed = array_filter(array_map('trim', explode(',', $raw)));
 
-        return in_array($trigger, $allowed, true);
+        if (in_array($trigger, $allowed, true)) {
+            return true;
+        }
+
+        // 🕰️ ค่าเดิมในพร็อดเก็บคำว่า `gesture` รวมทุกท่า (รูป/ลิงก์/สติกเกอร์)
+        //    ถ้าไม่แปลให้ ช่วงระหว่าง deploy กับตอนแอดมินกดบันทึกครั้งแรก
+        //    การ์ดจากเส้น "ส่งรูป/ส่งลิงก์" จะดับไปเงียบๆ ทั้งที่ไม่มีใครสั่งปิด
+        if (in_array($trigger, FortuneProductOffer::GESTURE_TRIGGERS, true)) {
+            return in_array(FortuneProductOffer::TRIGGER_GESTURE, $allowed, true);
+        }
+
+        return false;
     }
 
     /**

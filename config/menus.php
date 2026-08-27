@@ -254,6 +254,7 @@ return [
                 ['label' => '🗂️ แคตตาล็อก', 'route' => 'admin.lazada-hub.catalog.index', 'icon' => 'fas fa-layer-group'],
                 ['label' => '⬇️ นำเข้าสินค้า', 'route' => 'admin.lazada-hub.catalog.import', 'icon' => 'fas fa-cloud-download-alt'],
                 ['label' => '🤖 นำเข้าอัตโนมัติ', 'route' => 'admin.lazada-hub.auto-import.index', 'icon' => 'fas fa-robot', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-violet-500 to-purple-500'],
+                ['label' => '🛒 แม่หมอเสนอสินค้า', 'route' => 'admin.lazada-hub.mu-offer.index', 'icon' => 'fas fa-basket-shopping', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-pink-500 to-rose-500'],
                 ['label' => '📈 อนาไลติก', 'route' => 'admin.lazada-hub.analytics.index', 'icon' => 'fas fa-chart-line'],
                 ['label' => '🖱️ บันทึกการคลิก', 'route' => 'admin.lazada-hub.analytics.clicks', 'icon' => 'fas fa-hand-pointer'],
                 ['label' => '🎯 ของที่ลูกค้าอยากได้', 'route' => 'admin.lazada-hub.wishes.index', 'icon' => 'fas fa-lightbulb', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-emerald-500 to-teal-500'],

@@ -341,7 +341,7 @@ class FortuneFlowNudge extends Command
         }
 
         try {
-            app(\App\Services\Fortune\FortuneMuOfferService::class)->offer(
+            app(\App\Services\Fortune\FortuneMuOfferService::class)->send(
                 $platform,
                 $userId,
                 \App\Models\FortuneProductOffer::TRIGGER_PITCH_DECLINED,

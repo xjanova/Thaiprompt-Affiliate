@@ -69,8 +69,26 @@ class FortuneProductOffer extends Model
      *
      * จุดนี้เดิม **เงียบสนิท** (กฎ silent rule 2026-05-01) = ทางตันที่ลูกค้าไม่ได้อะไรเลย
      * เอาการ์ดสินค้าไปแทนความเงียบ ดีกว่าปล่อยให้เขาคิดว่าบอทตาย
+     *
+     * ⚠️ (2026-08-27) เลิกใช้กับของใหม่แล้ว — แตกเป็น 3 จุดย่อยข้างล่าง
+     *    ค่านี้ยังต้องอยู่เพราะประวัติเดิมในตารางเป็น 'gesture' อยู่ 586 แถว
+     *    ถ้าลบทิ้ง เพดานรายวันจะนับแถวเก่าไม่เจอ ⇒ คนที่เพิ่งได้การ์ดวันนี้ได้ซ้ำอีกรอบ
      */
     public const TRIGGER_GESTURE = 'gesture';
+
+    /**
+     * 🖼️ ลูกค้าส่ง "รูป" มาในแชทปกติ (ไม่ใช่สลิป ไม่มีดูดวงค้าง)
+     *
+     * แยกจากสติกเกอร์เพราะ owner สั่ง (2026-08-27): เสนอของเฉพาะคนส่งรูปกับส่งลิงก์
+     * — คนกลุ่มนี้ตั้งใจสื่อสารบางอย่าง ต่างจากคนกดสติกเกอร์ผ่านๆ
+     */
+    public const TRIGGER_GESTURE_IMAGE = 'gesture_image';
+
+    /** 🔗 ลูกค้าส่ง "ลิงก์" ล้วนมาในแชทปกติ */
+    public const TRIGGER_GESTURE_LINK = 'gesture_link';
+
+    /** 👍 สติกเกอร์ / ยกนิ้ว / อีโมจิล้วน */
+    public const TRIGGER_GESTURE_STICKER = 'gesture_sticker';
 
     /** ลูกค้าถามหาของเอง (ไม่นับเพดานรายวัน) */
     public const TRIGGER_CUSTOMER_ASK = 'customer_ask';
@@ -89,6 +107,24 @@ class FortuneProductOffer extends Model
         self::TRIGGER_PITCH_DECLINED,
         self::TRIGGER_DAILY_FREE,
         self::TRIGGER_GESTURE,
+        self::TRIGGER_GESTURE_IMAGE,
+        self::TRIGGER_GESTURE_LINK,
+        self::TRIGGER_GESTURE_STICKER,
+    ];
+
+    /**
+     * จุดยิงตระกูล "ลูกค้าส่งอะไรมาเฉยๆ ในแชทปกติ"
+     *
+     * ⚠️ ต้องมี `gesture` เดิมอยู่ด้วยเสมอ — เพดานรายวันนับย้อนหลังในวันเดียวกัน
+     *    วันที่ deploy จะมีทั้งแถวเก่า ('gesture') และแถวใหม่ ('gesture_image') ปนกัน
+     *
+     * @var array<int,string>
+     */
+    public const GESTURE_TRIGGERS = [
+        self::TRIGGER_GESTURE,
+        self::TRIGGER_GESTURE_IMAGE,
+        self::TRIGGER_GESTURE_LINK,
+        self::TRIGGER_GESTURE_STICKER,
     ];
 
     /**
@@ -172,6 +208,82 @@ class FortuneProductOffer extends Model
     public static function unpaidProactiveTriggers(): array
     {
         return array_values(array_diff(self::PROACTIVE_TRIGGERS, self::PAID_END_TRIGGERS));
+    }
+
+    /**
+     * จุดยิงที่แอดมินเปิด/ปิดได้จากหน้าเว็บ + คำอธิบายไทย
+     *
+     * ⚠️ ไม่มี `gesture` เดิมอยู่ในลิสต์นี้โดยตั้งใจ — มันถูกแทนที่ด้วย 3 ตัวย่อยแล้ว
+     *    ถ้าโผล่ในฟอร์ม แอดมินจะติ๊กมันแล้วเปิดสติกเกอร์กลับมาโดยไม่รู้ตัว
+     *
+     * @return array<string,array{label:string,hint:string,icon:string}>
+     */
+    public static function configurableTriggers(): array
+    {
+        return [
+            self::TRIGGER_GESTURE_IMAGE => [
+                'label' => 'ลูกค้าส่งรูป',
+                'hint' => 'ส่งรูปมาในแชทปกติ (ไม่ใช่สลิป · ไม่มีดูดวงค้าง)',
+                'icon' => 'fa-image',
+            ],
+            self::TRIGGER_GESTURE_LINK => [
+                'label' => 'ลูกค้าส่งลิงก์',
+                'hint' => 'พิมพ์มาเป็นลิงก์ล้วน ไม่มีข้อความอื่น',
+                'icon' => 'fa-link',
+            ],
+            self::TRIGGER_GESTURE_STICKER => [
+                'label' => 'สติกเกอร์ / ยกนิ้ว / อีโมจิ',
+                'hint' => 'กดสติกเกอร์หรือส่งอีโมจิล้วน',
+                'icon' => 'fa-thumbs-up',
+            ],
+            self::TRIGGER_DAILY_FREE => [
+                'label' => 'รับดวงฟรีรายวัน',
+                'hint' => 'คนที่ขอดวงฟรีประจำวันไป (กลุ่มใหญ่ที่สุด)',
+                'icon' => 'fa-sun',
+            ],
+            self::TRIGGER_CELTIC_END => [
+                'label' => 'ดูไพ่ 99 จบ',
+                'hint' => 'จ่ายเงินแล้วดูจบ — นาทีที่ลูกค้าพอใจที่สุด',
+                'icon' => 'fa-wand-magic-sparkles',
+            ],
+            self::TRIGGER_DEEP_END => [
+                'label' => 'ดูดวงเจาะลึก 39 จบ',
+                'hint' => 'จ่ายเงินแล้วดูจบ',
+                'icon' => 'fa-star',
+            ],
+            self::TRIGGER_PITCH_DECLINED => [
+                'label' => 'เสนอดูดวงแล้วไม่เอา',
+                'hint' => 'ลูกค้าไม่ดูดวง/เงียบหาย — ทิ้งของไว้ให้',
+                'icon' => 'fa-face-frown',
+            ],
+            self::TRIGGER_CHAT_END => [
+                'label' => 'จบบทสนทนาทั่วไป',
+                'hint' => 'ยังไม่ได้ต่อสายจริง — ติ๊กไว้ก็ยังไม่ยิง',
+                'icon' => 'fa-comments',
+            ],
+            self::TRIGGER_CUSTOMER_ASK => [
+                'label' => 'ลูกค้าถามหาของเอง',
+                'hint' => 'ไม่นับเพดานรายวัน — ถามเมื่อไหร่ตอบเมื่อนั้น',
+                'icon' => 'fa-cart-shopping',
+            ],
+        ];
+    }
+
+    /**
+     * แปลงชนิดสิ่งที่ลูกค้าส่งมา → จุดยิง
+     *
+     * @param  string  $gestureType  image | link | sticker | emoji
+     *
+     * @example
+     * FortuneProductOffer::triggerForGesture('image'); // 'gesture_image'
+     */
+    public static function triggerForGesture(string $gestureType): string
+    {
+        return match ($gestureType) {
+            'image' => self::TRIGGER_GESTURE_IMAGE,
+            'link' => self::TRIGGER_GESTURE_LINK,
+            default => self::TRIGGER_GESTURE_STICKER, // sticker | emoji
+        };
     }
 
     /**

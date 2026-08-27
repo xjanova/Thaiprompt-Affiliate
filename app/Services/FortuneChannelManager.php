@@ -5675,25 +5675,15 @@ class FortuneChannelManager
         }
 
         try {
-            $minutes = max(0, (int) \App\Models\MarketplaceSetting::get('fortune_mu_offer_daily_free_delay_minutes', 60));
             $reading = $result['reading'] ?? null;
-            $readingId = $reading instanceof \App\Models\FortuneReading ? $reading->id : null;
 
-            // ⚠️ ตั้ง delay บนตัว job ให้เสร็จ "ก่อน" dispatch
-            //    ถ้าใช้ `Job::dispatch(...)->delay(...)` จะได้ PendingDispatch ซึ่งยิงงานจริงตอน
-            //    __destruct — มีข้อยกเว้นแทรกกลางทางเมื่อไหร่ งานจะหลุดออกไปแบบไม่มี delay
-            $job = (new \App\Jobs\SendMuOfferJob(
+            // ระยะหน่วง + ด่านเปิด/ปิด อยู่ใน service ที่เดียว (ตั้งได้จากหน้าแอดมิน)
+            app(\App\Services\Fortune\FortuneMuOfferService::class)->send(
                 $platform,
                 $userId,
                 \App\Models\FortuneProductOffer::TRIGGER_DAILY_FREE,
-                $readingId
-            ));
-
-            if ($minutes > 0) {
-                $job->delay(now()->addMinutes($minutes));
-            }
-
-            dispatch($job);
+                $reading instanceof \App\Models\FortuneReading ? $reading : null
+            );
         } catch (\Throwable $e) {
             Log::warning('MuOffer: ตั้งงานเสนอสินค้าแบบหน่วงเวลาไม่สำเร็จ (ไม่กระทบดวงฟรี)', [
                 'platform' => $platform,
@@ -5711,15 +5701,12 @@ class FortuneChannelManager
         }
 
         // 💸 (2026-08-26) การ์ดขายของ = push ที่ไม่วิกฤต — โควต้า LINE ใกล้หมดให้ข้าม
-        //   เก็บโควต้าที่เหลือไว้ส่งคำทำนายของลูกค้าที่จ่ายเงินแล้ว (FB ไม่มีลิมิตแบบนี้)
-        if ($platform === 'line' && ! app(LineFortuneService::class)->canSpendNonCriticalPush()) {
-            return;
-        }
-
+        //   (2026-08-27) ย้ายด่านนี้เข้า FortuneMuOfferService::canOffer() แล้ว
+        //   เพื่อให้ครอบทุกจุดยิง และให้เช็คตอน "ส่งจริง" ไม่ใช่ตอนเข้าคิว
         try {
             $reading = $result['reading'] ?? null;
 
-            app(\App\Services\Fortune\FortuneMuOfferService::class)->offer(
+            app(\App\Services\Fortune\FortuneMuOfferService::class)->send(
                 $platform,
                 $userId,
                 $trigger,

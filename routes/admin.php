@@ -3539,6 +3539,12 @@ Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
     });
     Route::post('/wishes/{wish}/status', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'wishStatus'])->name('wishes.status');
 
+    // 🛒 แม่หมอเสนอสินค้า — เปิด/ปิดรายจุดยิง + หน่วงเวลาก่อนส่ง (นาที)
+    Route::prefix('mu-offer')->name('mu-offer.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\MuOfferController::class, 'index'])->name('index');
+        Route::put('/', [\App\Http\Controllers\Admin\LazadaHub\MuOfferController::class, 'update'])->name('update');
+    });
+
     // อนาไลติกสายเงิน affiliate (อ่านอย่างเดียว — ไม่แตะเงิน ไม่อนุมัติอะไร)
     // กรวยการแปลง · KPI · สาเหตุที่ยังไม่อนุมัติ · สุขภาพการ sync · บันทึกการคลิก
     Route::prefix('analytics')->name('analytics.')->group(function () {
