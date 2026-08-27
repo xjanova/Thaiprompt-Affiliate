@@ -5,6 +5,7 @@ namespace App\Services\Fortune;
 use App\Models\FortuneReading;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * 🌙 โหมด DM ดูดวงรายวัน — ด่านขาเข้า "ลูกค้าตอบวันเกิดกลับมา"
@@ -33,6 +34,29 @@ trait DailyHoroscopeModeTrait
 
     /** ชื่อวันในสัปดาห์ index 0=อาทิตย์ … 6=เสาร์ (ตรงกับคอลัมน์ birth_day) */
     protected const DAILY_DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+
+    /**
+     * 🇹🇭 (2026-08-27) คำนำหน้า "วัน" ที่พิมพ์ตกหล่น — เคสจริง แม่ฝน คำแจ่ม
+     * (PSID 28058628077130184, 27 ส.ค. 18:06) พิมพ์ **"วัพฤหัสบดีค่ะ"** ขาด "น" ตัวเดียว
+     * → ตัวปอกเดิมจับ 'วัน' แบบตรงตัว ปอกไม่ออก → เหลือ "วัพฤหัสบดี" → เทียบ alias ไม่ติด
+     *
+     * ⚠️ บังคับให้มีสระ ั หรือ า เสมอ (ไม่ยอมรับ "ว" เปล่า ๆ) — กันคำที่ขึ้นต้นด้วย ว
+     * ถูกแทะหัวมั่ว และเพราะไม่มีชื่อวันไหนขึ้นต้นด้วย ว การปอกเกินจะจบที่
+     * "เทียบ alias ไม่ติด" อยู่แล้ว ไม่ใช่จับผิดวัน
+     */
+    protected const DAILY_DAY_PREFIX_TYPO_RE = 'ว[ัา][นณ]?|วน';
+
+    /**
+     * 🕐 (2026-08-27) ช่วงเวลาที่คนไทยพ่วงท้ายวันเกิดเป็นปกติ — "พุธกลางคืน" / "ศุกร์ตอนเช้า"
+     *
+     * เคสจริงวันเดียวกัน: `26646988441640086` พิมพ์ "วันพุธกลางคืน" แล้วตกไป AI chat
+     * (ตระกูลเดียวกับ "พุธก่างคืนน่ะ" ที่บันทึกไว้ตั้งแต่ 2026-08-22 แต่ยังไม่เคยแก้)
+     *
+     * ✅ ปลอดภัยเพราะเป็น **closed set** จริง ๆ (ต่างจากคำลงท้ายสุภาพที่เป็น open set)
+     * และปอกแล้วยังต้องเทียบ alias เต็มคำเหมือนเดิม — "เสาร์ไปงานแต่ง" ยังตกเหมือนเดิม
+     */
+    protected const DAILY_TIME_OF_DAY_RE =
+        '(?:ตอน)?\s*(?:กลางวัน|กลางคืน|กลางดึก|เช้ามืด|เช้า|สาย|เที่ยง|บ่าย|เย็น|ค่ำ|ดึก)';
 
     /**
      * ชื่อวัน + คำสะกดที่ลูกค้าใช้จริง → index 0-6
@@ -158,12 +182,50 @@ trait DailyHoroscopeModeTrait
             $coldDayName = ! $hasPending
                 && ($namedDayIndex !== null || $this->looksLikeStandaloneDayName($messageText));
 
-            if (! $hasPending && ! $coldDayName && ! $dailyIntent) {
+            // 🎯 (2026-08-27) ประตูที่ 4 — "ขาประจำสายรายวัน" ที่เรารู้วันเกิดอยู่แล้ว
+            //
+            //   เคสจริง แม่ฝน คำแจ่ม (PSID 28058628077130184, 27 ส.ค. 18:04):
+            //     birth_day=4 นอนอยู่ใน fortune_user_credits ตั้งแต่ 15 ส.ค. (เธอกดปุ่มตอบไปแล้ว)
+            //     วันนี้ทักมาว่า **"ดูค่ะ"** → ด่านนี้ตีตกทั้งสามประตู (ไม่มีธง pending เพราะ
+            //     deploy รัน cache:clear ทิ้ง · ไม่มีชื่อวันในข้อความ · ไม่มีแกน "ดวง")
+            //     → ตกไป AI chat ที่เสนอขายทันที ทั้งที่ resolveDayIndexFromShortYes()
+            //     ห่างจากบรรทัดนี้ไป 55 บรรทัด พร้อมส่งกล่องดวงพฤหัสบดีให้อยู่แล้ว
+            //
+            //   👉 บทเรียน: ด่านนี้ถามแต่ "ข้อความพิสูจน์เจตนาได้ไหม" ไม่เคยถาม DB ว่า
+            //      "คนนี้เป็นขาประจำเลนรายวันหรือเปล่า" — ตัวแยกบริบทที่ดีที่สุดคือ
+            //      *เขามาจากไหน* ไม่ใช่ *เขาสะกดถูกไหม*
+            //
+            //   ⚠️ แคบไว้ 3 ชั้นโดยตั้งใจ:
+            //     1. อ่าน fortune_user_credits.birth_day ตรง ๆ ผ่าน dailyLaneBirthDayIndex()
+            //        **ห้ามใช้ findBirthDayIndex()** — ตัวนั้นหยิบวันเกิดจาก fortune_readings
+            //        ของสาย Deep-39 มาด้วย (นับคนที่ไม่เคยแตะเลนรายวันเลย)
+            //        วัดบน prod 2026-08-27: 3,415 แถวที่มี birth_day มาจากเลนรายวัน 100%
+            //        (daily_dm_button 2,604 + daily_dm_text 811 · ไม่มี source อื่นเลย)
+            //     2. ต้องเป็น "คำตอบรับสั้น ๆ ล้วน" (looksLikeShortYes) เท่านั้น
+            //        ห้ามเปิดด้วยชื่อวันแบบ substring เด็ดขาด ไม่งั้น "วันพุธนี้จะไปหาหมอ"
+            //        โดนกลืน — เคสห้ามติดที่ FortuneDailyColdDayNameTest ล็อกไว้
+            //     3. ด่าน 3 (บิล/จ่ายเงิน/กำลังทำนาย) และด่าน 4 (escape) ยังวิ่งครบเหมือนเดิม
+            //        ⇒ คนที่กำลังจะซื้อไม่มีทางถูกดึงมาเข้าเลนฟรี
+            $dailyRegularYes = ! $hasPending
+                && ! $coldDayName
+                && ! $dailyIntent
+                && $this->looksLikeShortYes($messageText)
+                && $this->dailyLaneBirthDayIndex($platform, $userId) !== null;
+
+            if (! $hasPending && ! $coldDayName && ! $dailyIntent && ! $dailyRegularYes) {
                 return null;
             }
 
             if ($coldDayName) {
                 Log::info('🌙 Daily: รับชื่อวันเดี่ยว ๆ ทั้งที่ไม่มีธง pending (ลูกค้าพิมพ์มาเอง)', [
+                    'user_id' => $userId,
+                    'platform' => $platform,
+                    'text' => mb_substr($messageText, 0, 40),
+                ]);
+            }
+
+            if ($dailyRegularYes) {
+                Log::info('🌙 Daily: ขาประจำเลนรายวันตอบรับสั้น ๆ — รู้วันเกิดอยู่แล้ว', [
                     'user_id' => $userId,
                     'platform' => $platform,
                     'text' => mb_substr($messageText, 0, 40),
@@ -725,6 +787,46 @@ trait DailyHoroscopeModeTrait
     }
 
     /**
+     * 🌙 (2026-08-27) วันเกิดที่ได้มาจาก **เลนรายวันเท่านั้น** — ใช้เป็นตัวแยกบริบท
+     *
+     * ต่างจาก FortuneUserCredit::findBirthDayIndex() ตรงที่ตัวนั้นลอง
+     * FortuneReading::findLatestBirthdate() ก่อน ⇒ กินวันเกิดของสาย Deep-39
+     * (คนที่ไม่เคยแตะเลนรายวันเลย) มาด้วย ซึ่งกว้างเกินไปสำหรับด่านที่ 2
+     *
+     * คอลัมน์ fortune_user_credits.birth_day เขียนจาก 2 ที่เท่านั้น คือ
+     * daily_dm_button / daily_dm_text — วัดบน prod 2026-08-27 ได้ 2,604 + 811 = 3,415 แถว
+     * ไม่มี source อื่นปน ⇒ "มีค่า" = "เคยเดินผ่านเลนรายวันมาแล้ว" แบบไม่ต้องเดา
+     *
+     * fail-safe = null ("ไม่รู้") — ปล่อยให้ flow เดิมทำงาน ดีกว่าเปิดประตูมั่ว
+     *
+     * @return int|null 0=อาทิตย์ … 6=เสาร์
+     */
+    protected function dailyLaneBirthDayIndex(string $platform, string $userId): ?int
+    {
+        try {
+            if (! Schema::hasColumn('fortune_user_credits', 'birth_day')) {
+                return null;
+            }
+
+            $day = \App\Models\FortuneUserCredit::byUser($userId, $platform)
+                ->whereNotNull('birth_day')
+                ->value('birth_day');
+
+            return \App\Models\FortuneUserCredit::normalizeBirthDayIndex($day);
+        } catch (\Throwable $e) {
+            // ⚠️ ห้ามกลืนเงียบ — บทเรียนจาก buildReturningCustomerContext ที่ query พังมา
+            //   หลายเดือนโดยไม่มีใครเห็น เพราะ catch ไม่เคยพูดอะไรออกมาเลย
+            Log::warning('🌙 Daily: อ่าน birth_day ของเลนรายวันไม่ได้ (ถือว่าไม่รู้)', [
+                'user_id' => $userId,
+                'platform' => $platform,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * ข้อความตอบรับสั้น ๆ ล้วน (ไม่มีเนื้อหาอื่น) — เทียบตรงตัวเท่านั้น
      */
     protected function looksLikeShortYes(string $text): bool
@@ -796,8 +898,15 @@ trait DailyHoroscopeModeTrait
         $t = preg_replace('/^\s*meta\s*ai\s*/iu', '', $t) ?? $t;
 
         // ปอกคำนำหน้า/คำลงท้ายที่คนไทยพิมพ์ติดมาเป็นปกติ
-        $t = preg_replace('/^(เกิดวัน|วันเกิด|เกิด|วัน)\s*/u', '', $t) ?? $t;
+        //   ⚠️ ลำดับใน alternation สำคัญ — คำเต็มต้องมาก่อนรูปสะกดตกหล่นเสมอ
+        //      ไม่งั้น "วัน" จะถูก "ว[ัา][นณ]?" กินไปแบบไม่ครบคำ
+        $t = preg_replace(
+            '/^(เกิดวัน|วันเกิด|เกิด|วัน|'.self::DAILY_DAY_PREFIX_TYPO_RE.')\s*/u',
+            '',
+            $t
+        ) ?? $t;
         $t = preg_replace('/\s*(?:'.self::DAILY_PARTICLE_RE.')+$/u', '', $t) ?? $t;
+        $t = preg_replace('/\s*'.self::DAILY_TIME_OF_DAY_RE.'$/u', '', $t) ?? $t;
         $t = trim($t);
 
         return $t !== '' && array_key_exists($t, self::DAILY_DAY_ALIASES);
@@ -938,11 +1047,21 @@ trait DailyHoroscopeModeTrait
         $peeled = $t;
         for ($i = 0; $i < 3; $i++) {
             $peeled = preg_replace('/^(ผม|ฉัน|ดิฉัน|หนู|เรา|กระผม|ข้าพเจ้า|อิฉัน|นู๋)\s*/u', '', $peeled) ?? $peeled;
-            $peeled = preg_replace('/^(เกิดวันที่|เกิดวัน|วันเกิดคือ|วันเกิดเป็น|วันเกิด|เกิด|วัน)\s*/u', '', $peeled) ?? $peeled;
+            // ⚠️ คำเต็มต้องมาก่อนรูปสะกดตกหล่นเสมอ ไม่งั้น "วัน" โดนกินไม่ครบคำ
+            $peeled = preg_replace(
+                '/^(เกิดวันที่|เกิดวัน|วันเกิดคือ|วันเกิดเป็น|วันเกิด|เกิด|วัน|'.self::DAILY_DAY_PREFIX_TYPO_RE.')\s*/u',
+                '',
+                $peeled
+            ) ?? $peeled;
         }
         for ($i = 0; $i < 3; $i++) {
             $peeled = trim(preg_replace(
                 '/\s*(?:'.self::DAILY_PARTICLE_RE.')$/u',
+                '',
+                $peeled
+            ) ?? $peeled);
+            $peeled = trim(preg_replace(
+                '/\s*'.self::DAILY_TIME_OF_DAY_RE.'$/u',
                 '',
                 $peeled
             ) ?? $peeled);

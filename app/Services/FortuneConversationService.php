@@ -21437,10 +21437,15 @@ PROMPT;
             //   ซึ่ง **ไม่มีอยู่ในตาราง fortune_readings** → SQLSTATE 42S22 → catch ด้านล่างกลืน → คืน null
             //   ผลคือลูกค้า LINE ไม่เคยได้ context "หมอจำได้ ครั้งก่อนเคยถามเรื่อง..." เลยตั้งแต่ 2026-05-14
             //   ได้ NO_HISTORY_NO_PAID_READING แทน ทั้งที่จ่ายเงินมาแล้ว — เงียบสนิทไม่มี error ให้เห็น
+            //
+            // 🐛 (2026-08-27) รอบนั้น "แก้" แค่คอมเมนต์ — บรรทัด orWhere('line_user_id') ยังอยู่
+            //   ⇒ throw ทุกครั้ง **ทุกแพลตฟอร์ม** ไม่ใช่แค่ LINE (เคสจริง แม่ฝน คำแจ่ม เป็น
+            //   facebook ก็โดน) ⇒ เมธอดนี้ตายสนิท 100% คืน null เสมอ
+            //   วัดบน prod 27 ส.ค.: 8 คนโดนใน 3.5 ชม. หลัง deploy 14:32
+            //   LINE เก็บ id ที่ `platform_user_id` ซึ่ง where ตัวแรกครอบให้อยู่แล้ว
             $latestPaid = FortuneReading::where(function ($q) use ($userId) {
                 $q->where('platform_user_id', $userId)
-                    ->orWhere('facebook_user_id', $userId)
-                    ->orWhere('line_user_id', $userId);
+                    ->orWhere('facebook_user_id', $userId);
             })
                 ->where('is_paid', true)
                 ->whereIn('reading_type', [

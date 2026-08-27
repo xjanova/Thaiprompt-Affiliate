@@ -149,4 +149,67 @@ class FortuneDailyColdDayNameTest extends TestCase
         $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'เสาร์ไปงานแต่ง'));
         $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'พุธ อังคาร'), 'สองวัน = กำกวม');
     }
+
+    /**
+     * 🇹🇭 (2026-08-27) คำนำหน้า "วัน" สะกดตกหล่น + ช่วงเวลาพ่วงท้าย ต้องยังอ่านออก
+     *
+     * เคสจริง prod 27 ส.ค. (วัดจาก laravel.log 3.5 ชม. หลัง deploy 14:32 —
+     * AI chat 25 ครั้ง มี 2 ครั้งเป็นคนขอดวงรายวันที่ตกร่อง = 8%):
+     *   · แม่ฝน คำแจ่ม (PSID 28058628077130184, 18:06) พิมพ์ "วัพฤหัสบดีค่ะ" — ขาด "น" ตัวเดียว
+     *   · PSID 26646988441640086 พิมพ์ "วันพุธกลางคืน" — ตระกูลเดียวกับ "พุธก่างคืนน่ะ"
+     *     ที่บันทึกไว้ตั้งแต่ 2026-08-22 แต่ยังไม่เคยแก้
+     *
+     * ทั้งคู่ตกไป AI chat ซึ่ง **มโนคำทำนายสั้น ๆ ตอบแทน** ⇒ ลูกค้าได้คำตอบ "อะไรสักอย่าง"
+     * ทุกครั้ง เลยไม่มีใครเห็นว่าเลนรายวันพลาด — นี่คือเหตุผลที่ต้องล็อกด้วยเทสต์
+     *
+     * @test
+     */
+    public function คำนำหน้าวันตกหล่นและช่วงเวลาพ่วงท้ายต้องยังอ่านออก(): void
+    {
+        // เคสจริงจาก prod 2026-08-27
+        $this->assertSame(4, $this->invokeHidden('resolveBirthDayNameIndex', 'วัพฤหัสบดีค่ะ'), 'ขาด น ใน "วัน"');
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'วันพุธกลางคืน'), 'ช่วงเวลาพ่วงท้าย');
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธกลางคืนน่ะ'), 'ช่วงเวลา + คำลงท้าย');
+
+        // ตระกูลเดียวกันที่ต้องรอดไปด้วย
+        $this->assertSame(5, $this->invokeHidden('resolveBirthDayNameIndex', 'ศุกร์ตอนเช้าค่ะ'));
+        $this->assertSame(1, $this->invokeHidden('resolveBirthDayNameIndex', 'วัจันทร์ค่ะ'));
+        $this->assertSame(2, $this->invokeHidden('resolveBirthDayNameIndex', 'วนอังคารค่ะ'));
+
+        // looksLikeStandaloneDayName ต้องเห็นตรงกัน (ใช้ตัวปอกชุดเดียวกัน)
+        $this->assertTrue($this->invokeHidden('looksLikeStandaloneDayName', 'วัพฤหัสบดีค่ะ'));
+        $this->assertTrue($this->invokeHidden('looksLikeStandaloneDayName', 'วันพุธกลางคืน'));
+
+        // 🛡️ เปิดกว้างที่คำนำหน้า/ช่วงเวลาแล้ว ด่านห้ามติดต้องไม่อ่อนลง
+        //    (ซ้ำกับเทสต์ด้านบนโดยตั้งใจ — ถ้าใครแก้ regex ปอกให้กว้างขึ้น ต้องแดงที่นี่ก่อน)
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'เสาร์ไปงานแต่ง'), 'ท้ายไม่ใช่ช่วงเวลา');
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'เสาไฟหน้าบ้าน'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'วันพุธนี้จะไปหาหมอค่ะ'));
+        $this->assertNull($this->invokeHidden('resolveBirthDayNameIndex', 'วาสนาดีจัง'), '"วา" ไม่ใช่คำนำหน้าวัน');
+    }
+
+    /**
+     * 🌙 (2026-08-27) ประตูที่ 4 ของด่าน 2 พึ่ง looksLikeShortYes เป็นตัวคุมความแคบ
+     *
+     * เคสจริง แม่ฝน คำแจ่ม (PSID 28058628077130184, 18:04) พิมพ์ **"ดูค่ะ"**
+     * ทั้งที่ birth_day=4 อยู่ใน DB ตั้งแต่ 15 ส.ค. → ด่าน 2 ตีตก → AI chat เสนอขาย
+     *
+     * ⚠️ ถ้าใครเผลอเติมคำที่มี "ดูดวง" ลง DAILY_SHORT_YES เทสต์นี้จะแดง —
+     *    ตั้งใจ เพราะ "ดูดวงค่ะ" ต้องไหลไป flow ขาย ไม่ใช่ได้ของฟรี
+     *
+     * @test
+     */
+    public function ตอบรับสั้นๆต้องแคบพอไม่กินคำขอดูดวงแบบเสียเงิน(): void
+    {
+        $this->assertTrue($this->invokeHidden('looksLikeShortYes', 'ดูค่ะ'), 'เคสจริง แม่ฝน คำแจ่ม');
+        $this->assertTrue($this->invokeHidden('looksLikeShortYes', 'เอาเลยค่ะ'));
+        $this->assertTrue($this->invokeHidden('looksLikeShortYes', 'ขอค่ะ'));
+        $this->assertTrue($this->invokeHidden('looksLikeShortYes', 'โอเค'));
+
+        // ❌ ห้ามติด — พวกนี้ต้องไปเข้า flow ขาย/คุยปกติ
+        $this->assertFalse($this->invokeHidden('looksLikeShortYes', 'ดูดวงค่ะ'), 'ต้องไป flow ขาย');
+        $this->assertFalse($this->invokeHidden('looksLikeShortYes', 'ราคาเท่าไหร่'));
+        $this->assertFalse($this->invokeHidden('looksLikeShortYes', 'สวัสดีค่ะ'));
+        $this->assertFalse($this->invokeHidden('looksLikeShortYes', ''));
+    }
 }
