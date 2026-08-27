@@ -20527,6 +20527,19 @@ PROMPT;
                 }
             }
 
+            // 🤐 (2026-08-27) ปุ่มหยุด — ลูกค้าบอก "อย่าส่งของมาอีก" ต้องหยุดจริง
+            //   ต้องมาก่อนตัวเสนอของเสมอ ไม่งั้นข้อความที่สั่งให้หยุดจะกลายเป็นทริกเกอร์ให้ส่งเพิ่ม
+            $this->muteProductOffersIfAnnoyed($platformForSilence, $userId, $messageText);
+
+            // 🛒 (2026-08-27) ลูกค้าถามหาของเอง → ค้นคลังส่งการ์ดพร้อมลิงก์ทันที
+            //   วางไว้ "หลัง debounce" (ต้องรวมข้อความก่อนอ่านเจตนา)
+            //   และ "ก่อนด่านตัดบทสนทนา" (คนกำลังจะซื้อ ห้ามโดนส่ง goodbye)
+            //   ดู tryCustomerAskOffer — ด่านของจริงอยู่ใน FortuneMuOfferService::canOffer()
+            $askOfferResult = $this->tryCustomerAskOffer($platformForSilence, $userId, $messageText);
+            if ($askOfferResult !== null) {
+                return $askOfferResult;
+            }
+
             // 💬 (2026-05-18) Hook C — ตรวจจับ chitchat หลังบอทเสนอขาย (rambler detection)
             //   ถ้าลูกค้าพิมพ์ chitchat (meta/greeting) ภายใน 30 นาทีหลัง pitch + ไม่มี keyword พร้อมซื้อ:
             //   - failed_count++
@@ -20667,6 +20680,20 @@ PROMPT;
                 }
                 $userProfile['_persona_context'] = trim(
                     ($userProfile['_persona_context'] ?? '')."\n\n".$lastReadingRecall
+                );
+            }
+
+            // 🛍️ (2026-08-27) ของที่เพิ่งเสนอไป — ชื่อ/ราคา/ลิงก์ ของจริงจากคลัง
+            //   ขาดบล็อกนี้ = บอทมโนราคาเอง ("ขึ้นอยู่กับคุณภาพค่ะ") ทั้งที่ราคาติดป้ายอยู่ในฐาน
+            //   ดู buildProductOfferRecallContext — ตัวนี้คือส่วนที่ทำให้คำถามต่อเนื่อง
+            //   ("ราคาเท่าไหร่" / "3,000 ได้อยู่" / "มีเก็บปลายทางมั้ย") ได้คำตอบจริงพร้อมลิงก์
+            $productRecall = $this->buildProductOfferRecallContext($platformDetected, $userId);
+            if ($productRecall !== null) {
+                if (! is_array($userProfile)) {
+                    $userProfile = ['name' => 'คุณ'];
+                }
+                $userProfile['_persona_context'] = trim(
+                    ($userProfile['_persona_context'] ?? '')."\n\n".$productRecall
                 );
             }
 
@@ -21402,6 +21429,259 @@ PROMPT;
             return $block === '' ? null : $block;
         } catch (\Throwable $e) {
             Log::warning('Fortune: buildLastReadingRecallContext ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🛒 (2026-08-27) ลูกค้าถามหาของเอง → ค้นคลังแล้วส่งการ์ดพร้อมลิงก์ให้เลย
+     *
+     * 🚨 ที่มา (เคสจริง อริยาวรรณ ธนกุลสังข์เมือง 2026-08-27 17:54–18:00):
+     *    การ์ดสินค้าของแม่หมอพิมพ์ไว้เองทุกใบว่า "อยากได้อะไรบอกมาได้เลย แม่หมอหาให้"
+     *    ลูกค้าทำตามครบทุกขั้น — ระบุของ → ถามราคา → บอกงบ 3,000 → ถามวิธีจ่าย
+     *    แต่ `customer_ask` **ไม่เคยมี call site ในโปรดักชันเลย** (มีแต่ในคำสั่งเทสต์)
+     *    ⇒ ทุกข้อความไหลไป AI แชท ตอบเป็นตัวหนังสือล้วน ไม่มีการ์ด ไม่มีลิงก์
+     *      จนคนต้องเข้ามาพิมพ์ลิงก์เองผ่าน Meta Business Suite
+     *    = เราวางกับดักให้ตัวเอง: สัญญาไว้กับลูกค้าแล้วไม่มีใครฟัง
+     *
+     * ⚠️ ตำแหน่งที่เรียกสำคัญมาก — ต้องอยู่ "หลัง debounce" และ "ก่อนด่านตัดบทสนทนา"
+     *    หลัง debounce: ลูกค้าพิมพ์ "อยากได้ปี่เซี้ยะ" + "งบ 500" คนละบรรทัด ต้องรวมก่อนอ่าน
+     *    ก่อนด่านตัดบท: คนกำลังจะซื้อของ ห้ามโดน rambler/turn-cap ส่ง "ไว้คุยกันใหม่นะ"
+     *
+     * @param  string  $platform  facebook | line
+     * @return array|null ผลลัพธ์ที่ต้อง return ออกไปทันที (การ์ดส่งแล้ว) · null = ไปต่อตามปกติ
+     */
+    protected function tryCustomerAskOffer(string $platform, string $userId, string $messageText): ?array
+    {
+        try {
+            $svc = app(\App\Services\Fortune\FortuneMuOfferService::class);
+
+            $ask = $svc->detectCustomerAsk($platform, $userId, $messageText);
+            if ($ask === null) {
+                return null;
+            }
+
+            // 🚫 ห้ามแทรกกลางบิลที่จ่ายเงินแล้ว — คำทำนายต้องถึงมือลูกค้าก่อนการขายเสมอ
+            //    (คนจ่าย 99 คุยอยู่กลาง Celtic แล้วเอ่ยถึงของ ต้องได้คุยดวงต่อ ไม่ใช่โดนยัดการ์ด
+            //     ท้ายบิลมี `celtic_end` / `deep_end` รับช่วงอยู่แล้ว)
+            if ($this->hasPaidActiveReading($userId)) {
+                Log::info('Fortune: ลูกค้าถามหาของ แต่มีบิลที่จ่ายแล้วค้างอยู่ — ข้ามการ์ด', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'query' => $ask['query'],
+                ]);
+
+                return null;
+            }
+
+            $sent = $svc->send(
+                $platform,
+                $userId,
+                \App\Models\FortuneProductOffer::TRIGGER_CUSTOMER_ASK,
+                null,
+                ['searchQuery' => $ask['query'], 'budget' => $ask['budget']]
+            );
+
+            // ไม่มีของที่ตรง / ด่านตีตก / ถูกหน่วงเข้าคิว → ปล่อยให้ AI ตอบตามปกติ
+            // (AI จะได้บล็อกสินค้าที่เคยเสนอไปติดไปด้วย จึงยังตอบเรื่องของได้)
+            if (! $sent) {
+                return null;
+            }
+
+            // ⚠️ ตั้งแต่บรรทัดนี้ไป "การ์ดถึงมือลูกค้าแล้ว" — ห้ามมีอะไรทำให้หลุดไปทาง AI อีก
+            //    ถ้างานเก็บกวาดข้างล่างพัง แล้วเด้งไป catch ก้อนนอก จะ return null
+            //    ⇒ ลูกค้าได้ทั้งการ์ด **และ** คำตอบ AI ซ้อนกัน จึงต้องห่อ try แยกไว้ต่างหาก
+            try {
+                // บันทึกลงประวัติแชทให้เทิร์นถัดไปรู้ว่า "ส่งอะไรไปแล้ว"
+                // ไม่บันทึก = ลูกค้าถามต่อว่า "อันไหนถูกกว่า" แล้ว AI ไม่รู้ว่ามีอะไรให้เทียบ
+                $this->saveConversationMessage($userId, 'user', $messageText, $platform);
+                $this->saveConversationMessage(
+                    $userId,
+                    'assistant',
+                    $this->summariseJustSentOffers($platform, $userId, $ask['query']),
+                    $platform
+                );
+
+                Log::info('Fortune: ลูกค้าถามหาของ → ส่งการ์ดสินค้าแล้ว', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'query' => $ask['query'],
+                    'budget' => $ask['budget'],
+                ]);
+            } catch (\Throwable $bookErr) {
+                Log::warning('Fortune: บันทึกประวัติหลังส่งการ์ดไม่สำเร็จ (การ์ดส่งไปแล้ว)', [
+                    'user_id' => $userId,
+                    'error' => $bookErr->getMessage(),
+                ]);
+            }
+
+            return ['action' => 'silent_skip', 'message' => '', 'reading' => null];
+        } catch (\Throwable $e) {
+            // ขายของพังห้ามทำให้แชทพัง
+            Log::warning('Fortune: tryCustomerAskOffer ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🤐 (2026-08-27) ลูกค้าบอกว่ารำคาญ/อย่าส่งของมาอีก → ตั้งธงเงียบให้จริง
+     *
+     * 🚨 กับดักตัวเดียวกันซ้ำรอบสอง: `detectAnnoyance()` กับ `mute()` ถูกเขียนไว้ครบ
+     *    พร้อมช่องตั้งค่า "เงียบกี่วัน" ในหน้าแอดมิน แต่ **ไม่เคยมีใครเรียกในโปรดักชัน**
+     *    ⇒ `isMuted()` จึงไม่มีวันเป็นจริง = ปุ่มหยุดของลูกค้าไม่เคยต่อสาย
+     *    ตราบใดที่ยังส่งการ์ดขายของ ปุ่มหยุดต้องทำงานจริงเสมอ ไม่งั้นทางเดียวที่ลูกค้าจะหยุดเราได้
+     *    คือบล็อกเพจ ซึ่งแพงกว่าการเสียยอดขายชิ้นเดียวมาก
+     *
+     * ⚠️ ตั้งธงเงียบอย่างเดียว **ห้ามแย่งตอบ** — คำอย่าง "พอแล้ว/เยอะ" ในเกณฑ์นี้
+     *    ใช้ในบทสนทนาดูดวงปกติด้วย ถ้าเด้งข้อความ "โอเคจะไม่เสนอของอีก" ออกไป
+     *    คนที่แค่พูดว่าดูดวงพอแล้ว จะงงว่าแม่หมอพูดเรื่องอะไร
+     *    ⇒ ผลข้างเคียงของการเข้าใจผิดคือ "ไม่ได้เห็นโฆษณา" ซึ่งไม่ทำร้ายใคร
+     *
+     * @param  string  $platform  facebook | line
+     */
+    protected function muteProductOffersIfAnnoyed(string $platform, string $userId, string $messageText): void
+    {
+        try {
+            $svc = app(\App\Services\Fortune\FortuneMuOfferService::class);
+
+            if (! $svc->detectAnnoyance($messageText)) {
+                return;
+            }
+
+            // สั่งเงียบอยู่แล้ว → ไม่ต้องเขียนซ้ำทุกครั้งที่พิมพ์คำเดิม
+            if ($svc->isMuted($platform, $userId)) {
+                return;
+            }
+
+            $svc->mute($platform, $userId, 'annoyed');
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: ตั้งธงเงียบไม่เสนอสินค้าไม่สำเร็จ (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * สรุปการ์ดที่เพิ่งส่งไป เป็นบรรทัดเดียวสำหรับเก็บลงประวัติแชท
+     */
+    protected function summariseJustSentOffers(string $platform, string $userId, string $query): string
+    {
+        try {
+            $rows = \App\Models\FortuneProductOffer::forUser($platform, $userId)
+                ->with('product')
+                ->where('trigger', \App\Models\FortuneProductOffer::TRIGGER_CUSTOMER_ASK)
+                ->where('sent_at', '>=', now()->subMinutes(2))
+                ->orderByDesc('id')
+                ->limit(4)
+                ->get();
+
+            $names = [];
+            foreach ($rows as $row) {
+                $name = trim((string) ($row->product->name ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $names[] = mb_substr($name, 0, 60).' ฿'.number_format((float) $row->price_at_send, 0);
+            }
+
+            if (empty($names)) {
+                return "(ส่งการ์ดสินค้าที่ค้นจาก \"{$query}\" ให้เจ้าชะตาดูแล้ว)";
+            }
+
+            return '(ส่งการ์ดสินค้าให้ดูแล้ว: '.implode(' · ', $names).')';
+        } catch (\Throwable $e) {
+            return "(ส่งการ์ดสินค้าที่ค้นจาก \"{$query}\" ให้เจ้าชะตาดูแล้ว)";
+        }
+    }
+
+    /**
+     * 🛍️ (2026-08-27) บล็อกบอก AI ว่า "ของที่เพิ่งเสนอไปคือชิ้นไหน ราคาเท่าไหร่ ลิงก์อะไร"
+     *
+     * 🚨 ทำไมขาดไม่ได้: `MarketplaceProduct` ไม่เคยถูกอ้างถึงในสายแชท AI เลยสักครั้ง
+     *    ⇒ บอทตอบเรื่องของจากความรู้ทั่วไปของโมเดล = **มโนราคาเอง**
+     *    เคสจริง 2026-08-27: ส่งจี้ปี่เซี้ยะ ฿259 ไปตอนเช้า ลูกค้าถามตอนเย็นว่า
+     *    "ราคาเท่าไหร่คะ" บอทตอบ "ขึ้นอยู่กับคุณภาพค่ะ" ทั้งที่ราคาติดป้ายอยู่ในฐานข้อมูล
+     *
+     * ⚠️ ต้องมีลิงก์จริงอยู่ในบล็อก ไม่ใช่แค่ชื่อ+ราคา — ไม่งั้นบอทจะพูดว่า
+     *    "เดี๋ยวส่งลิงก์ให้" แล้วไม่มีลิงก์ออกไป (กับดักเดิมในรูปแบบใหม่)
+     *
+     * @param  string  $platform  facebook | line
+     * @return string|null null = ยังไม่เคยเสนอของให้คนนี้ในช่วงที่กำหนด
+     */
+    protected function buildProductOfferRecallContext(string $platform, string $userId): ?string
+    {
+        try {
+            $hours = (int) \App\Models\MarketplaceSetting::get('fortune_mu_offer_shop_mode_hours', 24);
+            if ($hours <= 0) {
+                return null;
+            }
+
+            // 🤐 ลูกค้าสั่งเงียบเรื่องของแล้ว → ห้ามเอาของไปวางต่อหน้า AI อีก
+            //    ไม่งั้นบอทจะหยิบมาพูดถึงเองทั้งที่เขาบอกให้หยุดไปแล้ว
+            //    (ธงเดียวกับที่กันการ์ด — ต้องกันบล็อกใน prompt ด้วย ไม่งั้นกันได้แค่ครึ่งเดียว)
+            if (app(\App\Services\Fortune\FortuneMuOfferService::class)->isMuted($platform, $userId)) {
+                return null;
+            }
+
+            $offers = \App\Models\FortuneProductOffer::recentOffers($platform, $userId, $hours, 6);
+            if ($offers->isEmpty()) {
+                return null;
+            }
+
+            $lines = [];
+            foreach ($offers as $offer) {
+                $product = $offer->product;
+                if ($product === null) {
+                    continue;
+                }
+
+                // 🔒 ชื่อสินค้ามาจากผู้ขายบน Lazada = ข้อความที่คนนอกเขียน แล้วเรากำลังเอาไปวางใน system prompt
+                //    ยุบช่องว่าง/ขึ้นบรรทัดใหม่ให้เหลือเว้นวรรคเดียวก่อนเสมอ — ไม่งั้นชื่อของที่แอบใส่
+                //    ขึ้นบรรทัดใหม่จะ "ปลอมเป็นกติกาบรรทัดใหม่" ในบล็อกนี้ได้ (prompt injection)
+                $name = trim((string) preg_replace('/\s+/u', ' ', (string) $product->name));
+                $url = trim((string) $product->affiliate_url);
+                if ($name === '' || $url === '') {
+                    continue; // ไม่มีลิงก์ = พูดถึงไปก็สั่งไม่ได้
+                }
+
+                // ราคา ณ ตอนส่ง = ราคาที่ลูกค้าเห็นบนการ์ด ต้องยึดตัวนี้ไม่ใช่ราคาปัจจุบัน
+                $price = (float) ($offer->price_at_send ?: $product->price);
+
+                $lines[] = '• '.mb_substr($name, 0, 80)
+                    .' — ราคา '.number_format($price, 0).' บาท'
+                    ."\n  ลิงก์สั่งซื้อ: ".$url;
+            }
+
+            if (empty($lines)) {
+                return null;
+            }
+
+            $disclosure = app(\App\Services\Marketplace\MuOfferCardBuilder::class)->disclosure();
+
+            return "🛍️ ของที่แม่หมอเสนอให้เจ้าชะตาคนนี้ไปแล้ว (ภายใน {$hours} ชม. · เขาเห็นการ์ดพวกนี้แล้ว)\n"
+                .implode("\n", $lines)."\n\n"
+                ."[กติกาเรื่องของ — สำคัญ]\n"
+                ."✅ ถามราคา/รายละเอียด/เปรียบเทียบของพวกนี้ → ตอบจาก **ตัวเลขข้างบนเท่านั้น**\n"
+                ."✅ ถามว่าสั่งยังไง / อยากได้ / ขอลิงก์ → **วางลิงก์ข้างบนให้เต็มๆ ในข้อความเลย** ห้ามบอกว่า \"เดี๋ยวส่งให้\"\n"
+                .'✅ เมื่อพูดถึงลิงก์ ให้บอกด้วยว่า: '.$disclosure."\n"
+                ."❌ ห้ามเดา/มโนราคา ห้ามบอกช่วงราคาลอยๆ ว่า \"ขึ้นอยู่กับคุณภาพ\" — ราคาจริงอยู่ข้างบนแล้ว\n"
+                ."❌ ห้ามรับปากเรื่องที่เราคุมไม่ได้ (เก็บเงินปลายทาง · ค่าส่ง · กี่วันถึง · ของแท้ไหม)\n"
+                ."   ⇒ ของอยู่ที่ร้านค้าใน Lazada ให้ตอบว่าเงื่อนไขพวกนี้ดูได้ในหน้าสินค้าตามลิงก์ แล้ววางลิงก์ให้\n"
+                .'❌ ถ้าเจ้าชะตาอยากได้ของ "ชิ้นอื่น" ที่ไม่มีในรายการนี้ → บอกให้พิมพ์ชื่อของที่อยากได้มา แม่หมอจะค้นให้';
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: buildProductOfferRecallContext ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);

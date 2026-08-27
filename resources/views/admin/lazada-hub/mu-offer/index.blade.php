@@ -76,13 +76,23 @@
                     <tbody>
                     @foreach($triggers as $key => $meta)
                         @php
-                            $on = in_array($key, $enabledList, true);
+                            // จุดยิงที่ปิดรายจุดไม่ได้ (ลูกค้าถามหาของเอง) — ติ๊กค้างไว้เสมอ
+                            $locked = ! empty($meta['always_on']);
+                            $on = $locked || in_array($key, $enabledList, true);
                             $stat = $stats[$key] ?? ['cards' => 0, 'people' => 0];
                         @endphp
                         <tr style="border-top:1px solid color-mix(in srgb,var(--ink2) 14%,transparent);{{ $on ? '' : 'opacity:.55;' }}">
                             <td style="padding:10px 16px;">
-                                <input type="checkbox" name="triggers[]" value="{{ $key }}" @checked($on)
-                                       style="width:19px;height:19px;accent-color:#5aa07e;cursor:pointer;">
+                                @if($locked)
+                                    {{-- ปิดไม่ได้ — ห้ามใส่ hidden คู่: ถ้าโพสต์ค่ากลับไปด้วย
+                                         เงื่อนไข "ไม่ติ๊กอะไรเลย = ปิดสวิตช์ใหญ่" ในคอนโทรลเลอร์จะไม่มีวันเป็นจริง
+                                         ⇒ ฝั่งคอนโทรลเลอร์เติม ALWAYS_ON_TRIGGERS ให้เองหลังเช็คว่าง --}}
+                                    <input type="checkbox" checked disabled title="ปิดรายจุดไม่ได้ — ปิดได้ที่สวิตช์ใหญ่ทางเดียว"
+                                           style="width:19px;height:19px;accent-color:#5aa07e;cursor:not-allowed;opacity:.75;">
+                                @else
+                                    <input type="checkbox" name="triggers[]" value="{{ $key }}" @checked($on)
+                                           style="width:19px;height:19px;accent-color:#5aa07e;cursor:pointer;">
+                                @endif
                             </td>
                             <td style="padding:10px 12px;">
                                 <div style="font-weight:700;color:var(--ink);">
@@ -91,9 +101,15 @@
                                 <div class="tp-muted" style="font-size:.75rem;margin-top:2px;">{{ $meta['hint'] }}</div>
                             </td>
                             <td style="padding:10px 12px;text-align:center;white-space:nowrap;">
-                                <input type="number" name="delays[{{ $key }}]" value="{{ $delays[$key] ?? 0 }}"
-                                       min="0" max="1440" class="tp-input tp-num" style="width:74px;text-align:center;">
-                                <span class="tp-muted" style="font-size:.74rem;">นาที</span>
+                                @if($locked)
+                                    {{-- ลูกค้าถามเอง = ต้องตอบเดี๋ยวนั้น หน่วงไม่ได้
+                                         (input ที่ disabled ไม่โพสต์ค่า → คอนโทรลเลอร์บันทึกเป็น 0 ให้เอง) --}}
+                                    <span class="tp-muted" style="font-size:.78rem;font-weight:600;">ทันที</span>
+                                @else
+                                    <input type="number" name="delays[{{ $key }}]" value="{{ $delays[$key] ?? 0 }}"
+                                           min="0" max="1440" class="tp-input tp-num" style="width:74px;text-align:center;">
+                                    <span class="tp-muted" style="font-size:.74rem;">นาที</span>
+                                @endif
                             </td>
                             <td class="tp-num" style="padding:10px 16px;text-align:right;color:var(--ink2);font-size:.78rem;">
                                 @if($stat['cards'] > 0)
@@ -139,7 +155,18 @@
                     <input type="number" name="mute_days" value="{{ $muteDays }}" min="1" max="365" class="tp-input tp-num" style="width:100px;">
                     <div class="tp-muted" style="font-size:.7rem;margin-top:3px;">“ไม่เอา” เฉยๆ ยังส่งอยู่</div>
                 </div>
+                <div>
+                    <label class="tp-muted" style="display:block;font-size:.72rem;font-weight:600;margin-bottom:4px;">โหมดช้อปหลังเห็นการ์ด (ชม.)</label>
+                    <input type="number" name="shop_mode_hours" value="{{ $shopModeHours }}" min="0" max="168" class="tp-input tp-num" style="width:100px;">
+                    <div class="tp-muted" style="font-size:.7rem;margin-top:3px;">คนที่เพิ่งเห็นการ์ด พิมพ์ “ราคา/เอา/อันไหน” = ถามเรื่องของ · 0 = ปิด</div>
+                </div>
             </div>
+
+            <p class="tp-muted" style="font-size:.75rem;margin:14px 0 0;line-height:1.6;">
+                <i class="fas fa-circle-info" style="color:var(--accent2);"></i>
+                ในโหมดช้อป บอทจะเห็นชื่อ–ราคา–ลิงก์ของจริงที่เพิ่งเสนอไป จึงตอบราคาได้ตรงและวางลิงก์ให้เองได้
+                นอกโหมดนี้ใช้เกณฑ์เข้ม (ต้องมีคำว่าซื้อ/สั่ง/หาของ ชัดๆ) เพื่อไม่ให้บอทเด้งไปขายของกลางวงดูดวง
+            </p>
         </div>
 
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">

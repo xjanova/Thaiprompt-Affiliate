@@ -13,6 +13,7 @@ use App\Services\LineFortuneService;
 use App\Services\Marketplace\MuOfferCardBuilder;
 use App\Services\Marketplace\MuPickContext;
 use App\Services\Marketplace\MuProductPicker;
+use App\Services\Marketplace\ProductQueryParser;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -71,6 +72,14 @@ class FortuneMuOfferService
     private const SETTING_MUTE_DAYS = 'fortune_mu_offer_mute_days';
 
     /**
+     * 🛍️ เห็นการ์ดสินค้าไปแล้วกี่ชั่วโมง ยังนับว่า "อยู่ในโหมดช้อป"
+     *
+     * ⚠️ 24 ชม. ไม่ได้ตั้งมั่ว — เคสจริงคือได้การ์ดตอน 05:37 แล้วกลับมาถามตอน 17:54
+     *    (ห่าง 12 ชม.) ถ้าตั้งสั้นแบบ 30 นาที เคสที่ทำให้ต้องสร้างฟีเจอร์นี้จะยังหลุดเหมือนเดิม
+     */
+    private const SETTING_SHOP_MODE_HOURS = 'fortune_mu_offer_shop_mode_hours';
+
+    /**
      * 😤 ลูกค้ารำคาญ/ไม่อยากให้ส่งอีก → ตัดจบสุภาพ + เงียบยาว
      *
      * ⚠️ ต้องแคบมาก — คำกว้างเกินไปจะทำให้ลูกค้าที่แค่พูดคำธรรมดาโดนตัดออกจากระบบถาวร
@@ -87,6 +96,7 @@ class FortuneMuOfferService
     public function __construct(
         private MuProductPicker $picker,
         private MuOfferCardBuilder $cards,
+        private ProductQueryParser $parser,
     ) {}
 
     /**
@@ -191,6 +201,12 @@ class FortuneMuOfferService
      */
     public function delayMinutesFor(string $trigger): int
     {
+        // 🔓 ลูกค้าถามเอง = ต้องตอบเดี๋ยวนั้น หน่วงไม่ได้ไม่ว่าตารางจะเขียนไว้ว่าอะไร
+        //    (หน้าแอดมินล็อกช่องนี้ไว้แล้ว บังคับซ้ำที่นี่กันค่าเก่าใน DB หลุดมามีผล)
+        if (in_array($trigger, FortuneProductOffer::ALWAYS_ON_TRIGGERS, true)) {
+            return 0;
+        }
+
         $map = MarketplaceSetting::get(self::SETTING_DELAYS, null);
         if (is_string($map)) {
             $map = json_decode($map, true);
@@ -343,6 +359,12 @@ class FortuneMuOfferService
             return false;
         }
 
+        // 🔓 จุดยิงที่ปิดรายจุดไม่ได้ — ลูกค้าถามหาของเอง ต้องได้คำตอบเสมอ
+        //    (การ์ดทุกใบสัญญาไว้เองว่า "อยากได้อะไรบอกมา แม่หมอหาให้" — ดู ALWAYS_ON_TRIGGERS)
+        if (in_array($trigger, FortuneProductOffer::ALWAYS_ON_TRIGGERS, true)) {
+            return true;
+        }
+
         $raw = trim((string) MarketplaceSetting::get(self::SETTING_TRIGGERS, ''));
         if ($raw === '') {
             return true; // ไม่ระบุ = เปิดทุกจุด
@@ -385,6 +407,78 @@ class FortuneMuOfferService
         $message = trim($message);
 
         return $message !== '' && (bool) preg_match(self::ANNOYED_PATTERN, $message);
+    }
+
+    /**
+     * 🛍️ ลูกค้าคนนี้ "อยู่ในโหมดช้อป" ไหม — เพิ่งเห็นการ์ดสินค้าไปหมาดๆ
+     *
+     * ใช้ตัดสินว่าจะอ่านข้อความด้วยเกณฑ์เข้ม (STRICT) หรือเกณฑ์ผ่อน (RELAXED)
+     *
+     * 🚨 ทำไมต้องมี 2 เกณฑ์ (อ่าน docblock ของ ProductQueryParser ประกอบ):
+     *    นอกโหมดช้อป คำว่า "ราคา/เอา/สนใจ/แนะนำ" คือคำที่คนดูดวงพิมพ์ตลอดเวลา
+     *    ⇒ ใช้เกณฑ์ผ่อนกับทุกคน = บอทเด้งไปโหมดขายของกลางวงดูดวง พังทั้งบทสนทนา
+     *    แต่คนที่เพิ่งได้การ์ดสินค้าไป คำพวกนี้แปลว่า "ถามถึงของที่เพิ่งเห็น" จริงๆ
+     *
+     * @param  string  $platform  facebook | line
+     */
+    public function shopModeActive(string $platform, string $platformUserId): bool
+    {
+        try {
+            $hours = (int) MarketplaceSetting::get(self::SETTING_SHOP_MODE_HOURS, 24);
+            if ($hours <= 0) {
+                return false; // แอดมินตั้ง 0 = ปิดโหมดช้อป ใช้เกณฑ์เข้มกับทุกคน
+            }
+
+            $last = FortuneProductOffer::lastSentAt($platform, $platformUserId);
+
+            return $last !== null && $last->gte(now()->subHours($hours));
+        } catch (\Throwable $e) {
+            // เช็คไม่ได้ = ใช้เกณฑ์เข้มไว้ก่อน (fail-safe ฝั่งไม่ขายดีกว่าฝั่งขายมั่ว)
+            Log::debug('MuOffer: เช็คโหมดช้อปไม่ได้ — ใช้เกณฑ์เข้ม', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🔎 ข้อความนี้คือ "ลูกค้าถามหาของ" ไหม — ถ้าใช่ คืนคำค้น + งบที่แกะได้
+     *
+     * ⚠️ ตัวนี้ **ไม่ส่งอะไรทั้งนั้น** เป็นแค่ตัวอ่านเจตนา ผู้เรียกตัดสินใจเอง
+     *    ด่านของจริง (สวิตช์ · คนสั่งเงียบ · คนถูกแบน) อยู่ใน `canOffer()` เหมือนเดิม
+     *
+     * @return array{query:string,budget:?float}|null null = ไม่ใช่การถามหาของ
+     *
+     * @example
+     * $ask = $svc->detectCustomerAsk('facebook', $psid, 'อยากได้ปี่เซี้ยะ งบไม่เกิน 500');
+     * // ['query' => 'ปี่เซี้ยะ', 'budget' => 500.0]
+     */
+    public function detectCustomerAsk(string $platform, string $platformUserId, string $message): ?array
+    {
+        try {
+            $message = trim($message);
+            if ($message === '') {
+                return null;
+            }
+
+            $mode = $this->shopModeActive($platform, $platformUserId)
+                ? ProductQueryParser::MODE_RELAXED
+                : ProductQueryParser::MODE_STRICT;
+
+            [$query, $budget] = $this->parser->parse($message, $mode);
+
+            if ($query === null || $query === '') {
+                return null;
+            }
+
+            return ['query' => $query, 'budget' => $budget];
+        } catch (\Throwable $e) {
+            Log::debug('MuOffer: อ่านเจตนาถามหาของไม่ได้ (non-blocking)', [
+                'platform' => $platform,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

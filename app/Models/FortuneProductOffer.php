@@ -145,6 +145,25 @@ class FortuneProductOffer extends Model
         self::TRIGGER_DEEP_END,
     ];
 
+    /**
+     * 🔓 จุดยิงที่ "ปิดรายจุดไม่ได้" — ปิดได้ทางเดียวคือปิดสวิตช์ใหญ่
+     *
+     * 🚨 ทำไมต้องมี (เคสจริง อริยาวรรณ ธนกุลสังข์เมือง 2026-08-27):
+     *    การ์ดของแม่หมอมีข้อความติดไปทุกใบว่า "อยากได้อะไรบอกมาได้เลย แม่หมอหาให้"
+     *    = เราสัญญากับลูกค้าเองทุกครั้งที่เสนอของ
+     *    แต่ `customer_ask` ยังเป็นช่องติ๊กธรรมดา ⇒ วันที่แอดมินติ๊กแค่ 2 จุด
+     *    (`gesture_image,gesture_link`) คำสัญญานั้นก็ตายเงียบทันทีโดยไม่มีใครรู้
+     *    ลูกค้าถามหาของ → บอทตอบลอยๆ ไม่มีลิงก์ → คนต้องเข้ามาพิมพ์เอง
+     *
+     *    ⇒ "ลูกค้าถามเองต้องได้คำตอบเสมอ" ต้องบังคับที่โค้ด ไม่ใช่ฝากไว้กับช่องติ๊ก
+     *      (ด่านที่ยังทำงานปกติ: สวิตช์ใหญ่ · คนสั่งเงียบ · คนถูกแบน · โควตา LINE)
+     *
+     * @var array<int,string>
+     */
+    public const ALWAYS_ON_TRIGGERS = [
+        self::TRIGGER_CUSTOMER_ASK,
+    ];
+
     /** ตัวเลือกราคาต่ำ */
     public const SLOT_LOW = 'low';
 
@@ -216,7 +235,10 @@ class FortuneProductOffer extends Model
      * ⚠️ ไม่มี `gesture` เดิมอยู่ในลิสต์นี้โดยตั้งใจ — มันถูกแทนที่ด้วย 3 ตัวย่อยแล้ว
      *    ถ้าโผล่ในฟอร์ม แอดมินจะติ๊กมันแล้วเปิดสติกเกอร์กลับมาโดยไม่รู้ตัว
      *
-     * @return array<string,array{label:string,hint:string,icon:string}>
+     * ⚠️ `always_on` = ช่องติ๊กถูกล็อกไว้ (ดู ALWAYS_ON_TRIGGERS) — ยังต้องอยู่ในลิสต์นี้
+     *    เพราะฟอร์มใช้ลิสต์เดียวกันโชว์สถิติ "ส่งไปแล้วกี่ใบ" ถ้าถอดออกจะมองไม่เห็นผลงานของมันเลย
+     *
+     * @return array<string,array{label:string,hint:string,icon:string,always_on?:bool}>
      */
     public static function configurableTriggers(): array
     {
@@ -263,8 +285,10 @@ class FortuneProductOffer extends Model
             ],
             self::TRIGGER_CUSTOMER_ASK => [
                 'label' => 'ลูกค้าถามหาของเอง',
-                'hint' => 'ไม่นับเพดานรายวัน — ถามเมื่อไหร่ตอบเมื่อนั้น',
+                'hint' => 'ปิดรายจุดไม่ได้ — การ์ดทุกใบสัญญาไว้ว่า "อยากได้อะไรบอกมา แม่หมอหาให้" '
+                    .'(ไม่นับเพดานรายวัน · ปิดได้ที่สวิตช์ใหญ่ทางเดียว)',
                 'icon' => 'fa-cart-shopping',
+                'always_on' => true,
             ],
         ];
     }
@@ -301,5 +325,45 @@ class FortuneProductOffer extends Model
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * 🕑 เสนอของให้ลูกค้าคนนี้ครั้งล่าสุดเมื่อไหร่
+     *
+     * ใช้เป็นตัวชี้ "โหมดช้อป" — คนที่เพิ่งเห็นการ์ดสินค้าไป กำลังคุยเรื่องของอยู่
+     * ⇒ อ่านจากตารางจริง ไม่ใช่ธงบนแคช เพราะ deploy รัน `cache:clear` 3 หนต่อรอบ
+     *    (กฎ: ของลูกค้าห้ามอยู่บนแคชอย่างเดียว)
+     */
+    public static function lastSentAt(string $platform, string $platformUserId): ?\Illuminate\Support\Carbon
+    {
+        $ts = static::forUser($platform, $platformUserId)->max('sent_at');
+
+        return $ts ? \Illuminate\Support\Carbon::parse($ts) : null;
+    }
+
+    /**
+     * 🛍️ ของที่เพิ่งเสนอไปให้ลูกค้าคนนี้ (ชิ้นล่าสุดก่อน · ไม่ซ้ำชิ้น)
+     *
+     * 🚨 มีไว้ให้ AI แชท "เห็นของจริง" — ไม่มีบล็อกนี้ AI จะมโนราคาเอง
+     *    (เคสจริง: ลูกค้าถาม "ราคาเท่าไหร่คะ" หลังได้การ์ดไป 12 ชม.
+     *     AI ตอบ "ขึ้นอยู่กับคุณภาพค่ะ" ทั้งที่ของที่ส่งไปราคา 259 บาทติดป้ายอยู่)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int,static>
+     */
+    public static function recentOffers(
+        string $platform,
+        string $platformUserId,
+        int $hours = 24,
+        int $limit = 6
+    ): \Illuminate\Database\Eloquent\Collection {
+        return static::forUser($platform, $platformUserId)
+            ->with('product')
+            ->where('sent_at', '>=', now()->subHours(max(1, $hours)))
+            ->orderByDesc('sent_at')
+            ->orderByDesc('id')
+            ->limit(max(1, $limit))
+            ->get()
+            ->unique('marketplace_product_id')
+            ->values();
     }
 }

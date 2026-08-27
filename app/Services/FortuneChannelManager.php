@@ -405,6 +405,62 @@ class FortuneChannelManager
      * @param  array  $result  ผลลัพธ์จาก conversation service
      * @param  array  $extra  ข้อมูลเพิ่มเติม
      */
+    /**
+     * โฮสต์ของ "ลิงก์พันธมิตร" ที่ต้องแปะป้ายกำกับเสมอ
+     *
+     * 📌 วัดจากคลังจริง 2026-08-27: `affiliate_url` ทั้ง 1,657 แถวอยู่บน `s.lazada.co.th` ทั้งหมด
+     *    ⚠️ วันไหนนำเข้าของจากแพลตฟอร์มใหม่ (Shopee / AliExpress) **ต้องมาเติมที่นี่ด้วย**
+     *       ไม่งั้นลิงก์ใหม่จะออกไปโดยไม่มีป้ายกำกับ = ผิดกฎการเปิดเผยลิงก์พันธมิตร
+     *
+     * @var array<int,string>
+     */
+    private const AFFILIATE_LINK_HOSTS = [
+        's.lazada.co.th',
+        'c.lazada.co.th',
+        's.shopee.co.th',
+        's.click.aliexpress.com',
+    ];
+
+    /**
+     * 🏷️ ข้อความนี้มีลิงก์พันธมิตรไหม — ถ้ามีแต่ยังไม่มีป้ายกำกับ ให้แปะให้
+     *
+     * แปะแค่ครั้งเดียวต่อข้อความ (ไม่ใช่ต่อลิงก์) — ลูกค้าอ่านป้ายซ้ำ 3 รอบไม่ได้ช่วยอะไร
+     *
+     * @return string ข้อความเดิม หรือข้อความที่ต่อป้ายท้ายแล้ว
+     */
+    protected function ensureAffiliateDisclosure(string $message): string
+    {
+        try {
+            $hasLink = false;
+            foreach (self::AFFILIATE_LINK_HOSTS as $host) {
+                if (mb_stripos($message, $host) !== false) {
+                    $hasLink = true;
+                    break;
+                }
+            }
+
+            if (! $hasLink) {
+                return $message;
+            }
+
+            // บอททำตาม prompt แล้ว (พูดคำว่า "พันธมิตร" เอง) → ไม่ต้องแปะซ้ำ
+            if (mb_stripos($message, 'พันธมิตร') !== false) {
+                return $message;
+            }
+
+            $disclosure = trim(app(\App\Services\Marketplace\MuOfferCardBuilder::class)->disclosure());
+
+            return $disclosure === '' ? $message : rtrim($message)."\n\n※ ".$disclosure;
+        } catch (\Throwable $e) {
+            // แปะป้ายไม่ได้ ห้ามทำให้ข้อความไม่ถึงลูกค้า
+            Log::debug('FortuneChannelManager: แปะป้ายลิงก์พันธมิตรไม่สำเร็จ (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $message;
+        }
+    }
+
     public function sendResponse(string $platform, string $userId, array $result, array $extra = []): bool
     {
         $action = $result['action'] ?? 'unknown';
@@ -460,6 +516,16 @@ class FortuneChannelManager
             }
 
             return true;
+        }
+
+        // 🏷️ (2026-08-27) ป้ายกำกับลิงก์พันธมิตร — ปิดไม่ได้ ต้องติดไปกับลิงก์เสมอ
+        //    ตั้งแต่ AI แชทได้ลิงก์สินค้าจริงไปอยู่ใน prompt (buildProductOfferRecallContext)
+        //    บอทวางลิงก์เองในข้อความได้แล้ว — ซึ่งเดิมมีแต่การ์ดที่แปะป้ายให้อัตโนมัติ
+        //    ⚠️ prompt สั่งได้แต่การันตีไม่ได้ ⇒ ต้องมีตัวเช็คท้ายทาง
+        //       (บทเรียนเดียวกับ FacebookContentPolicy::clean — prompt ไม่พอ)
+        if ($message !== '') {
+            $message = $this->ensureAffiliateDisclosure($message);
+            $result['message'] = $message;
         }
 
         Log::info('FortuneChannelManager: sendResponse เริ่มส่ง', [

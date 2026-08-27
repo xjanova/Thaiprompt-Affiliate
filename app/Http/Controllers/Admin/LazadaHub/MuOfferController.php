@@ -44,6 +44,7 @@ class MuOfferController extends Controller
             'dailyCap' => (int) MarketplaceSetting::get('fortune_mu_offer_daily_cap', 1),
             'paidEndCap' => (int) MarketplaceSetting::get('fortune_mu_offer_paid_end_daily_cap', 1),
             'muteDays' => (int) MarketplaceSetting::get('fortune_mu_offer_mute_days', 7),
+            'shopModeHours' => (int) MarketplaceSetting::get('fortune_mu_offer_shop_mode_hours', 24),
             'stats' => $this->stats(array_keys($triggers)),
             'pool' => $this->pool(),
         ]);
@@ -65,6 +66,9 @@ class MuOfferController extends Controller
             'daily_cap' => ['required', 'integer', 'min:0', 'max:20'],
             'paid_end_cap' => ['required', 'integer', 'min:0', 'max:20'],
             'mute_days' => ['required', 'integer', 'min:1', 'max:365'],
+            // 0 = ปิดโหมดช้อป (ใช้เกณฑ์เข้มกับทุกคน) · เพดาน 168 ชม. = 7 วัน
+            // nullable ไว้เผื่อแอดมินเปิดหน้าค้างจากก่อน deploy แล้วกดบันทึก — จะได้ไม่เด้ง error
+            'shop_mode_hours' => ['nullable', 'integer', 'min:0', 'max:168'],
         ]);
 
         $picked = array_values(array_intersect($known, $data['triggers'] ?? []));
@@ -72,10 +76,17 @@ class MuOfferController extends Controller
 
         // 🚨 ว่าง = "เปิดทุกจุด" ในฝั่ง service — กลับหัวกับที่แอดมินตั้งใจ
         //    ไม่ติ๊กอะไรเลย ⇒ ปิดสวิตช์ใหญ่ให้ แล้วคงรายการเดิมไว้ไม่ให้ค่าว่างหลุดลง DB
+        //
+        // ⚠️ ต้องเช็ค "ก่อน" เติมจุดยิงที่ปิดไม่ได้ — ไม่งั้นลิสต์จะไม่มีวันว่าง
+        //    แล้วเงื่อนไขนี้จะตายเงียบ (แอดมินเอาติ๊กออกหมด แต่สวิตช์ใหญ่ยังเปิดอยู่)
         if (empty($picked)) {
             $master = false;
             $picked = $this->enabledTriggers();
         }
+
+        // 🔓 จุดยิงที่ปิดรายจุดไม่ได้ — เขียนลง DB ให้ตรงกับพฤติกรรมจริงของ service
+        //    (ฝั่ง service ยกเว้นให้อยู่แล้วใน isEnabled() ตรงนี้ทำเพื่อให้ค่าที่เก็บไม่โกหก)
+        $picked = array_values(array_unique(array_merge($picked, FortuneProductOffer::ALWAYS_ON_TRIGGERS)));
 
         // 🚨 ต้องเขียน "ทุกจุด" รวมเลข 0 ด้วย — ห้ามตัดศูนย์ทิ้งให้ตารางสั้นลง
         //    ฝั่ง service ถ้าไม่เจอคีย์ daily_free จะถอยไปอ่านคีย์เดิม (ค่าปริยาย 60 นาที)
@@ -93,6 +104,13 @@ class MuOfferController extends Controller
         MarketplaceSetting::set('fortune_mu_offer_daily_cap', (string) $data['daily_cap'], 'integer', 'บอทเสนอเองได้กี่ครั้ง/คน/วัน');
         MarketplaceSetting::set('fortune_mu_offer_paid_end_daily_cap', (string) $data['paid_end_cap'], 'integer', 'โควตาแยกของท้ายบิลที่จ่ายเงินแล้ว');
         MarketplaceSetting::set('fortune_mu_offer_mute_days', (string) $data['mute_days'], 'integer', 'ลูกค้าบอกรำคาญ → เงียบกี่วัน');
+        // ฟอร์มเก่าไม่ส่งค่ามา → คงค่าเดิมไว้ ห้ามรีเซ็ตเป็น 0 (0 = ปิดโหมดช้อป ซึ่งไม่มีใครสั่ง)
+        MarketplaceSetting::set(
+            'fortune_mu_offer_shop_mode_hours',
+            (string) ($data['shop_mode_hours'] ?? MarketplaceSetting::get('fortune_mu_offer_shop_mode_hours', 24)),
+            'integer',
+            'เห็นการ์ดแล้วกี่ชั่วโมง ยังนับว่าอยู่ในโหมดช้อป'
+        );
 
         $msg = $master
             ? 'บันทึกแล้ว — เปิดอยู่ '.count($picked).' จุด'
@@ -130,6 +148,9 @@ class MuOfferController extends Controller
                 FortuneProductOffer::TRIGGER_GESTURE_STICKER,
             ]);
         }
+
+        // จุดยิงที่ปิดรายจุดไม่ได้ — ยิงอยู่จริงเสมอ ฟอร์มต้องโชว์ว่าเปิด ไม่ใช่โชว์จางๆ ว่าปิด
+        $list = array_merge($list, FortuneProductOffer::ALWAYS_ON_TRIGGERS);
 
         return array_values(array_intersect($known, array_unique($list)));
     }
