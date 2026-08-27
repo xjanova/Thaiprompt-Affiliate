@@ -1045,8 +1045,11 @@ class FacebookWebhookController extends Controller
             //    🚨 (2026-08-23) ต้องใช้ hasDmRecently ไม่ใช่ hasEngagedRecently
             //       หลังแยกนับ DM/คอมเมนต์ มีแถวที่ "ตอบคอมเมนต์อย่างเดียว ไม่ได้ DM" แล้ว
             //       ถ้ายังนับทุกแถว = คนที่แค่ได้คำตอบใต้คอมเมนต์จะถูกตัดสิทธิ์ DM ทั้งที่ยังไม่เคยได้
+            //    🏬 (2026-08-27) โควตา DM ผูกกับเพจนี้ชัดเจน ไม่พึ่งว่า PSID แยกเพจให้เอง
             $hasRecentReactionDm = FortunePostReaction::hasDmSuccessRecently($userId, 24);
-            $hasRecentCommentDm = FortuneCommentEngagement::hasDmRecently($userId, 24);
+            $hasRecentCommentDm = FortuneCommentEngagement::hasDmRecently(
+                $userId, 24, \App\Services\Fortune\FortunePageContext::currentId()
+            );
 
             if ($hasRecentReactionDm || $hasRecentCommentDm) {
                 Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ใน 24 ชม. ล่าสุดแล้ว', [
@@ -1953,15 +1956,18 @@ class FacebookWebhookController extends Controller
             //              ⚠️ นับเฉพาะแถวที่ "ส่ง DM จริง" (hasDmRecently) ไม่ใช่ทุกแถว
             //                 ไม่งั้นการตอบคอมเมนต์จะไปกินโควตา DM = ที่เจ้าของสั่งห้าม
             //      • ตอบคอมเมนต์ = สาธารณะ ไม่ใช่ inbox ⇒ ตอบได้ทุกคอมเมนต์
-            //              คุมแค่เพดานกันดูเป็นบอท (MAX_PUBLIC_REPLIES_PER_DAY)
+            //              คุมแค่เพดานกันดูเป็นบอท (ตั้งได้ที่หลังบ้าน — ค่าเริ่มต้น 5 ครั้ง/คน/วัน)
+            //    🏬 (2026-08-27) โควตาผูกกับ "เพจนี้" ชัดเจน ไม่พึ่งว่า PSID แยกเพจให้เอง
+            $pageId = \App\Services\Fortune\FortunePageContext::currentId();
+
             $allowDm = $isReplyToUs || ! (
-                FortuneCommentEngagement::hasDmRecently($fromId, 24)
+                FortuneCommentEngagement::hasDmRecently($fromId, 24, $pageId)
                 || FortunePostReaction::hasDmSuccessRecently($fromId, 24)
             );
 
-            $allowPublicReply = $this->settings->isPublicCommentReplyEnabled()
-                && FortuneCommentEngagement::publicReplyCountRecent($fromId, 24)
-                    < FortuneCommentEngagement::MAX_PUBLIC_REPLIES_PER_DAY;
+            //    🎚️ (2026-08-27) เพดานอ่านจากหลังบ้าน + สวิตช์รายเพจ (ค่ากลางเป็นสวิตช์ครอบ)
+            $allowPublicReply = $this->commentReplyAllowedForCurrentPage()
+                && FortuneCommentEngagement::hasPublicReplyQuota($fromId, $pageId);
 
             // ไม่เหลือสิทธิ์ทั้งคู่ = ไม่มีอะไรให้ทำ
             if (! $allowDm && ! $allowPublicReply) {
@@ -3785,6 +3791,30 @@ class FacebookWebhookController extends Controller
      * @param  string  $gestureType  sticker | emoji | image | link — ไว้ดูสถิติว่าเส้นไหนได้ผล
      * @return bool true = ส่งการ์ดถึงลูกค้าแล้ว (เข้าคิวหน่วงเวลา = false)
      */
+    /**
+     * 💬 (2026-08-27) เพจที่กำลังทำงานอยู่ ตอบคอมเมนต์สาธารณะได้ไหม
+     *
+     * ค่ากลาง (`enable_public_comment_reply`) = สวิตช์ครอบ — ปิดที่นี่ = ปิดทุกเพจ
+     * สวิตช์รายเพจ (`fortune_pages.comment_reply_enabled`) เลือกได้แค่ "ตามค่ากลาง" หรือ "ปิด"
+     * ⇒ ตอนฉุกเฉินปิดที่เดียวจบ ไม่ต้องไล่ปิด 21 เพจ
+     *
+     * ไม่รู้ว่าอยู่เพจไหน (context ว่าง) → ใช้ค่ากลางอย่างเดียว ไม่ปิดเงียบ
+     */
+    protected function commentReplyAllowedForCurrentPage(): bool
+    {
+        $globalEnabled = $this->settings->isPublicCommentReplyEnabled();
+
+        try {
+            $page = \App\Services\Fortune\FortunePageContext::current();
+
+            return $page ? $page->allowsCommentReply($globalEnabled) : $globalEnabled;
+        } catch (\Throwable $e) {
+            Log::debug('FB: อ่านสวิตช์ตอบคอมเมนต์รายเพจไม่ได้ — ใช้ค่ากลาง', ['error' => $e->getMessage()]);
+
+            return $globalEnabled;
+        }
+    }
+
     protected function offerProductsOnGesture(string $senderId, string $gestureType): bool
     {
         try {

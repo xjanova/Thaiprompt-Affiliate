@@ -259,6 +259,8 @@ class FortuneSettingsController extends Controller
             'comment_engagement_mode' => 'nullable|in:ai,template',
             // 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ (ปิด default — กัน AI quota เผาเปล่าตอน pages_manage_engagement ยังไม่ approved)
             'enable_public_comment_reply' => 'boolean',
+            // 🔢 (2026-08-27) เพดานตอบคอมเมนต์/คน/24ชม. — 0 = ไม่จำกัด (ปิดใช้สวิตช์ด้านบนแทน)
+            'comment_public_reply_daily_cap' => 'nullable|integer|min:0|max:50',
             // 🖼️ (2026-05-24) Master toggle: image vision ครอบทุก provider (OpenAI + Gemini)
             //    OFF: Celtic vision read + slip auto-detect classifier ถูกปิดทั้งหมด
             'enable_image_vision' => 'boolean',
@@ -547,6 +549,14 @@ class FortuneSettingsController extends Controller
             if (array_key_exists($secretField, $validated) && blank($validated[$secretField])) {
                 unset($validated[$secretField]);
             }
+        }
+
+        // 🔢 (2026-08-27) เพดานตอบคอมเมนต์ — คอลัมน์นี้ NOT NULL (default 5)
+        //    ช่องว่างถูก ConvertEmptyStringsToNull แปลงเป็น null ก่อนถึงตรงนี้
+        //    เขียน null ลงไป = คิวรีระเบิดตอนบันทึก ⇒ เว้นว่าง = ไม่แตะค่าเดิม
+        if (array_key_exists('comment_public_reply_daily_cap', $validated)
+            && $validated['comment_public_reply_daily_cap'] === null) {
+            unset($validated['comment_public_reply_daily_cap']);
         }
 
         // จัดการ fortune_bank_account_ids (empty array → null)

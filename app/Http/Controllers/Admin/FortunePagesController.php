@@ -1099,6 +1099,9 @@ class FortunePagesController extends Controller
             'owner_user_id' => 'nullable|exists:users,id',
             'is_active' => 'nullable|boolean',
             'auto_post_enabled' => 'nullable|boolean',
+            // 💬 (2026-08-27) สวิตช์ตอบคอมเมนต์รายเพจ — 3 สถานะ (ไม่ส่งค่า/null = ตามค่ากลาง)
+            //    middleware ConvertEmptyStringsToNull แปลง '' เป็น null ให้ก่อนถึงตรงนี้แล้ว
+            'comment_reply_enabled' => 'nullable|boolean',
             'is_default' => 'nullable|boolean',
             'notes' => 'nullable|string|max:2000',
             'settings_override_json' => 'nullable|string',
@@ -1139,6 +1142,16 @@ class FortunePagesController extends Controller
             $validated['auto_post_enabled'] = $request->boolean('auto_post_enabled');
         } else {
             unset($validated['auto_post_enabled']);
+        }
+
+        // 💬 (2026-08-27) สวิตช์ตอบคอมเมนต์ — 3 สถานะ ห้ามใช้ boolean() แปลง
+        //    boolean() จะแปลง '' (ตามค่ากลาง) เป็น false = "ปิดเฉพาะเพจนี้" ซึ่งคนละความหมาย
+        //    และเหมือน auto_post_enabled: ฟอร์มย่อไม่ส่งช่องนี้มา ⇒ ห้ามเซ็ตตรงๆ
+        if ($request->has('comment_reply_enabled')) {
+            $raw = $request->input('comment_reply_enabled');
+            $validated['comment_reply_enabled'] = ($raw === '' || $raw === null) ? null : (bool) $raw;
+        } else {
+            unset($validated['comment_reply_enabled']);
         }
 
         // 🔧 เว้นว่างได้ทั้งคู่ — ระบบเติมให้เอง (เจ้าของสั่ง: ใส่แค่ไอดีเพจก็พอ)

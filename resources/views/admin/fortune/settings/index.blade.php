@@ -2099,6 +2099,27 @@ Format 2 — JSON array:
                         <p>• <strong>คำถาม หรือคอมเมนต์ยาวมีบริบท</strong> → ให้ AI เจนคำตอบ (<strong>Gemini คีย์ฟรีเท่านั้น</strong> ไม่มีคีย์ฟรีว่างจะตกไปใช้ชุดสำเร็จรูปแทน)</p>
                         <p>• แก้ข้อความในคลังได้เองที่ตาราง <code>fortune_comment_replies</code> ไม่ต้อง deploy</p>
                     </div>
+
+                    {{-- 🔢 (2026-08-27) เพดานการตอบต่อคนต่อวัน — เดิมเป็นค่าคงที่ 5 ในโค้ด
+                         เจ้าของสั่งให้ตั้งค่าได้ ⇒ ย้ายมาไว้ใน DB (ค่าเริ่มต้นคง 5 เท่าเดิม) --}}
+                    <div x-show="enablePublicCommentReply" x-transition
+                         class="mt-3 pt-3 border-t border-amber-300 dark:border-amber-700">
+                        <label class="block text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                            ตอบคนเดิมได้กี่ครั้งต่อวัน
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" name="comment_public_reply_daily_cap" min="0" max="50"
+                                   value="{{ old('comment_public_reply_daily_cap', $settings->comment_public_reply_daily_cap ?? 5) }}"
+                                   class="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-300">ครั้ง / คน / 24 ชม.</span>
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-2 space-y-1">
+                            <p>• คนเดิมเม้นต์หลายโพสต์ต้องได้คำตอบทุกโพสต์ — แต่มีเพดานกันดูเป็นบอท</p>
+                            <p>• <strong>นับแยกรายเพจ</strong> เม้นต์ที่เพจอื่นไม่กินโควตาของเพจนี้</p>
+                            <p>• <strong>0 = ไม่จำกัด</strong> (ถ้าจะปิดการตอบ ให้ใช้สวิตช์ด้านบน ไม่ใช่ใส่ 0)</p>
+                            <p>• คนละกระเป๋ากับโควตา DM ซึ่งคุมไว้ที่ 1 ครั้ง/คน/24 ชม.</p>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- 🖼️ (2026-05-24) Master Toggle: Image Vision (ครอบทุก provider)

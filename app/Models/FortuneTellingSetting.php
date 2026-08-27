@@ -111,6 +111,7 @@ class FortuneTellingSetting extends Model
         //    ถ้า Page Token ยังไม่มี pages_manage_engagement scope → ปิด toggle นี้
         //    เพื่อกัน AI quota เผาเปล่าตอนพยายาม replyToComment แล้ว fail 403
         'enable_public_comment_reply',
+        'comment_public_reply_daily_cap',
         // 💬 (2026-06-06) เปิดระบบสุ่มข้อความชวนแทนรูป เมื่อลูกค้าได้รูปในสัปดาห์นี้แล้ว
         'enable_invite_rotation',
         // 🌍 (2026-06-07) ตัวกรองกลุ่มเป้าหมายของ DM กลับ (คอมเมนต์/ไลก์) — สัญชาติ + อายุ
@@ -494,6 +495,8 @@ class FortuneTellingSetting extends Model
         'comment_engagement_enabled' => 'boolean',
         // 🚫 (2026-05-24) Sub-toggle public comment reply (default false)
         'enable_public_comment_reply' => 'boolean',
+        // 🔢 (2026-08-27) เพดานตอบคอมเมนต์/คน/วัน — ตั้งได้จากหลังบ้าน (0 = ไม่จำกัด)
+        'comment_public_reply_daily_cap' => 'integer',
         // 💬 (2026-06-06) Toggle invite-message rotation (default true)
         'enable_invite_rotation' => 'boolean',
         // 🌍 (2026-06-07) DM audience filter — สัญชาติ + อายุ
@@ -744,6 +747,7 @@ class FortuneTellingSetting extends Model
         'comment_engagement_mode' => 'ai',
         // 🚫 (2026-05-24) Default false — รอ App Review อนุมัติ pages_manage_engagement
         'enable_public_comment_reply' => false,
+        'comment_public_reply_daily_cap' => 5,
         // 💬 (2026-06-06) Default true — เปิดสุ่มข้อความชวนแทนรูปเมื่อได้รูปสัปดาห์นี้แล้ว
         'enable_invite_rotation' => true,
         // 🌍 (2026-06-07) DM audience filter — default = ส่งทุกคน/ไม่กรองอายุ (พฤติกรรมเดิม)
@@ -1921,6 +1925,23 @@ EOT;
     public function isPublicCommentReplyEnabled(): bool
     {
         return (bool) ($this->enable_public_comment_reply ?? false);
+    }
+
+    /**
+     * 🔢 (2026-08-27) ตอบคอมเมนต์สาธารณะได้กี่ครั้ง ต่อ 1 คน ต่อ 24 ชม.
+     *
+     * เดิมเป็นค่าคงที่ในโค้ด (`FortuneCommentEngagement::MAX_PUBLIC_REPLIES_PER_DAY = 5`)
+     * เจ้าของสั่งให้ตั้งค่าได้จากหลังบ้าน — ค่าเริ่มต้นคง 5 เท่าเดิม
+     *
+     * ⚠️ **0 = ไม่จำกัด** (ตามแบบเดียวกับเพดานอื่นในระบบ เช่นเพดานการ์ดสินค้า)
+     *    ห้ามตีความว่า 0 = ปิดการตอบ — ถ้าจะปิดให้ใช้สวิตช์ `enable_public_comment_reply`
+     *    การมีทางปิด 2 ทางที่ความหมายกลับด้านกัน = ที่มาของบั๊กที่หาไม่เจอ
+     *
+     * @return int จำนวนครั้ง (0 = ไม่จำกัด)
+     */
+    public function publicCommentReplyDailyCap(): int
+    {
+        return max(0, (int) ($this->comment_public_reply_daily_cap ?? 5));
     }
 
     /**

@@ -117,6 +117,29 @@
                 ไม่ติ๊ก = บอทยังตอบแชทและคอมเมนต์ตามปกติ แต่จะไม่โพสอะไรลงหน้าเพจเอง
                 — เปิดสาขาใหม่แล้วบอทแอบโพสเองคือสิ่งที่ต้องไม่เกิด จึงต้องกดยืนยันทุกสาขา
             </p>
+
+            {{-- 💬 (2026-08-27) สวิตช์ตอบคอมเมนต์รายเพจ — 3 สถานะ
+                 ค่ากลางเป็นสวิตช์ครอบ: ปิดที่ส่วนกลาง = ปิดทุกเพจ เพจแหกไม่ได้
+                 เพจจึงเลือกได้แค่ "ตามค่ากลาง" กับ "ปิดเฉพาะเพจนี้" --}}
+            @php $cre = old('comment_reply_enabled', $page->comment_reply_enabled ?? null); @endphp
+            <div style="margin-top:18px; padding-top:16px; border-top:1px solid color-mix(in srgb,var(--ink2) 16%,transparent);">
+                <label class="tp-muted" style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px;">
+                    💬 ตอบคอมเมนต์ใต้โพสต์ของเพจนี้
+                </label>
+                <select name="comment_reply_enabled" class="tp-input" style="width:auto; min-width:230px;">
+                    <option value="" {{ $cre === null ? 'selected' : '' }}>ตามค่ากลาง (แนะนำ)</option>
+                    <option value="1" {{ $cre === true || $cre === '1' ? 'selected' : '' }}>เปิด</option>
+                    <option value="0" {{ $cre === false || $cre === '0' ? 'selected' : '' }}>ปิดเฉพาะเพจนี้</option>
+                </select>
+                <p class="tp-muted" style="font-size:12px; margin:8px 0 0; line-height:1.9;">
+                    เพดาน “ตอบคนเดิมกี่ครั้งต่อวัน” ตั้งที่
+                    <a href="{{ route('admin.fortune.settings.index') }}" style="color:var(--accent2);">ตั้งค่าระบบดูดวง</a>
+                    → ระบบตอบคอมเม้นต์อัตโนมัติ &nbsp;·&nbsp; <strong>โควตานับแยกรายเพจ</strong>
+                    เม้นต์ที่เพจอื่นไม่กินโควตาของเพจนี้
+                    <br>⚠️ ปิดที่ค่ากลาง = ปิดทุกเพจเสมอ ตั้งตรงนี้เป็น “เปิด” ก็ไม่ทำงาน
+                    (ตั้งใจให้เป็นแบบนี้ — ตอนฉุกเฉินจะได้ปิดที่เดียวจบ ไม่ต้องไล่ปิดทีละเพจ)
+                </p>
+            </div>
         </div>
 
         {{-- ===== ความลับ ===== --}}

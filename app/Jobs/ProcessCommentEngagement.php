@@ -167,13 +167,18 @@ class ProcessCommentEngagement implements ShouldQueue
             //    เพราะ job อาจถูก retry ทีหลัง สถานะอาจเปลี่ยนไปแล้ว
             //    ⚠️ ต้องใช้ hasDmRecently (นับเฉพาะแถวที่ส่ง DM จริง) ไม่ใช่ hasEngagedRecently
             //       ไม่งั้นแถว "ตอบคอมเมนต์อย่างเดียว" จะไปกินโควตา DM = ที่เจ้าของสั่งห้าม
+            //    🏬 (2026-08-27) นับแยกรายเพจ — ต้องเป็นเพจเดียวกับตอนที่ controller ตัดสิน
+            //       ไม่งั้นด่านสองจะนับคนละกองกับด่านแรก แล้วผลไม่ตรงกันแบบหาสาเหตุยาก
+            //       context ถูกคืนค่าให้แล้วตอน job เริ่ม (AppServiceProvider::Queue::before
+            //       อ่าน fortune_page_id จาก payload) ⇒ ตรงนี้อ่านได้เลย ไม่ต้องส่งมาใน data
+            $pageId = \App\Services\Fortune\FortunePageContext::currentId();
+
             $allowDm = ($this->data['allow_dm'] ?? true)
-                && ! (FortuneCommentEngagement::hasDmRecently($userId, 24)
+                && ! (FortuneCommentEngagement::hasDmRecently($userId, 24, $pageId)
                     || FortunePostReaction::hasDmSuccessRecently($userId, 24));
 
             $allowPublicReply = ($this->data['allow_public_reply'] ?? true)
-                && FortuneCommentEngagement::publicReplyCountRecent($userId, 24)
-                    < FortuneCommentEngagement::MAX_PUBLIC_REPLIES_PER_DAY;
+                && FortuneCommentEngagement::hasPublicReplyQuota($userId, $pageId);
 
             if (! $allowDm && ! $allowPublicReply) {
                 Log::info('Comment engagement skip — หมดสิทธิ์ทั้ง DM และตอบคอมเมนต์', [
@@ -264,7 +269,14 @@ class ProcessCommentEngagement implements ShouldQueue
             //    เมื่อ true: ทำงานครบ — สำหรับเมื่อ App Review approved pages_manage_engagement แล้ว
             //    🚨 (2026-08-23) รวมสิทธิ์รายคนเข้าด้วย — สวิตช์เปิดแต่คนนี้เต็มเพดานวันนี้แล้ว
             //       ก็ต้องไม่ตอบ (และต้องไม่เผา AI call เปล่า ๆ ด้วย)
+            //    🏬 (2026-08-27) + สวิตช์รายเพจ — ปิดเฉพาะเพจนี้ได้โดยไม่กระทบเพจอื่น
+            //       ค่ากลางยังเป็นสวิตช์ครอบ: ปิดที่ส่วนกลาง = ปิดหมดทุกเพจเสมอ
             $publicReplyEnabled = $settings->isPublicCommentReplyEnabled() && $allowPublicReply;
+
+            if ($publicReplyEnabled) {
+                $page = \App\Services\Fortune\FortunePageContext::current();
+                $publicReplyEnabled = $page === null || $page->allowsCommentReply(true);
+            }
             $commentReply = '';
 
             if ($publicReplyEnabled) {

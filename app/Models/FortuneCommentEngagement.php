@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -51,6 +52,23 @@ class FortuneCommentEngagement extends Model
      * แต่ต้องมีเพดานไว้ ไม่งั้นคนที่ไล่เม้นต์ 30 คลิปรวดจะได้ตอบครบ 30 = ดูเป็นบอทชัด
      */
     public const MAX_PUBLIC_REPLIES_PER_DAY = 5;
+
+    /**
+     * 🏬 จำกัดคิวรีให้อยู่ในเพจเดียว
+     *
+     * 🚨 ทำไมต้องมี ทั้งที่ PSID ของเฟซบุ๊กแยกตามเพจอยู่แล้ว (2026-08-27)
+     *   วันนี้โควตาไม่ไหลข้ามเพจ — แต่เป็นเพราะ **คุณสมบัติของ PSID** ไม่ใช่เพราะโค้ดตั้งใจ
+     *   วันไหนเปลี่ยนไปเก็บ ASID (id ระดับแอป ซึ่งเหมือนกันทุกเพจ) โควตาจะรวมกันทันที
+     *   โดยไม่มีอะไรเตือน: คนเม้นต์เพจ ก. 5 ครั้ง แล้วเพจ ข. จะเงียบใส่เขาทั้งวัน
+     *   ⇒ เขียนเงื่อนไขให้ชัด ไม่พึ่งพฤติกรรมของ id ที่เราไม่ได้เป็นคนกำหนด
+     *   (กฎเดียวกับเบรกเกอร์ FB ที่เคยเป็น global แล้วเพจไร้สิทธิ์ลากเพจที่มีสิทธิ์ตายไปด้วย)
+     *
+     * `$pageId = null` = ไม่ระบุเพจ ⇒ นับรวมทุกเพจ (พฤติกรรมเดิม ใช้กับ caller เก่าที่ยังไม่ส่งมา)
+     */
+    private static function scopePage(Builder $q, ?int $pageId): Builder
+    {
+        return $pageId === null ? $q : $q->where('fortune_page_id', $pageId);
+    }
 
     /**
      * ตรวจสอบว่า user นี้เคยถูก engage ในโพสต์นี้แล้วหรือไม่
@@ -121,9 +139,9 @@ class FortuneCommentEngagement extends Model
      *
      * @param  int  $hours  จำนวนชั่วโมง (default 24)
      */
-    public static function hasDmRecently(string $userId, int $hours = 24): bool
+    public static function hasDmRecently(string $userId, int $hours = 24, ?int $pageId = null): bool
     {
-        return self::where('facebook_user_id', $userId)
+        return self::scopePage(self::where('facebook_user_id', $userId), $pageId)
             ->where('engaged_at', '>=', now()->subHours($hours))
             ->whereNotNull('dm_message')
             ->where('dm_message', '!=', '')
@@ -137,13 +155,42 @@ class FortuneCommentEngagement extends Model
      *
      * @param  int  $hours  จำนวนชั่วโมง (default 24)
      */
-    public static function publicReplyCountRecent(string $userId, int $hours = 24): int
+    public static function publicReplyCountRecent(string $userId, int $hours = 24, ?int $pageId = null): int
     {
-        return self::where('facebook_user_id', $userId)
+        return self::scopePage(self::where('facebook_user_id', $userId), $pageId)
             ->where('engaged_at', '>=', now()->subHours($hours))
             ->whereNotNull('comment_reply')
             ->where('comment_reply', '!=', '')
             ->count();
+    }
+
+    /**
+     * 💬 คนนี้ยังเหลือสิทธิ์ให้ตอบคอมเมนต์อยู่ไหม (เพจนี้)
+     *
+     * รวมการอ่านเพดานจากหลังบ้าน + การนับ ไว้ที่เดียว — เดิมกระจายอยู่ 2 จุด
+     * (`FacebookWebhookController` กับ `ProcessCommentEngagement`) แล้วต้องแก้ให้ตรงกันทุกครั้ง
+     *
+     * @param  int|null  $pageId  จำกัดเฉพาะเพจนี้ (null = นับรวมทุกเพจ)
+     *
+     * @example
+     * if (! FortuneCommentEngagement::hasPublicReplyQuota($psid, $pageId)) { return; }
+     */
+    public static function hasPublicReplyQuota(string $userId, ?int $pageId = null, int $hours = 24): bool
+    {
+        // getSettings() = ตัวที่รู้จักสาขา + memo 5 วินาที (ไม่ยิง DB ทุกคอมเมนต์)
+        // และ merge `settings_override` ของเพจให้ด้วย ⇒ เพจตั้งเพดานของตัวเองได้ถ้าต้องการ
+        try {
+            $cap = FortuneTellingSetting::getSettings()->publicCommentReplyDailyCap();
+        } catch (\Throwable) {
+            $cap = self::MAX_PUBLIC_REPLIES_PER_DAY;
+        }
+
+        // 0 = ไม่จำกัด (ห้ามตีความว่าปิด — การปิดใช้สวิตช์ enable_public_comment_reply)
+        if ($cap <= 0) {
+            return true;
+        }
+
+        return self::publicReplyCountRecent($userId, $hours, $pageId) < $cap;
     }
 
     /**

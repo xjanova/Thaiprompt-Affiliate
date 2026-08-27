@@ -46,6 +46,7 @@ class FortunePage extends Model
         'owner_user_id',
         'is_active',
         'auto_post_enabled',
+        'comment_reply_enabled',
         'is_default',
         'notes',
     ];
@@ -55,6 +56,10 @@ class FortunePage extends Model
         'is_active' => 'boolean',
         // 🏬 (2026-08-15) สวิตช์ "โพสอัตโนมัติลงหน้าเพจนี้" — opt-in เท่านั้น
         'auto_post_enabled' => 'boolean',
+        // 💬 (2026-08-27) สวิตช์ตอบคอมเมนต์รายเพจ — **3 สถานะ** ไม่ใช่ 2
+        //    null = ตามค่ากลาง · true = บังคับเปิด · false = บังคับปิด
+        //    cast 'boolean' คง null ไว้เป็น null (ไม่แปลงเป็น false) — ต้องพึ่งพฤติกรรมนี้
+        'comment_reply_enabled' => 'boolean',
         'is_default' => 'boolean',
     ];
 
@@ -153,5 +158,42 @@ class FortunePage extends Model
     public function getDisplayLabelAttribute(): string
     {
         return $this->brand_name ?: $this->name;
+    }
+
+    /**
+     * 💬 เพจนี้ตอบคอมเมนต์ได้ไหม — คำตอบสุดท้ายหลังรวมกับค่ากลาง
+     *
+     * ค่ากลางเป็น "สวิตช์ครอบ": ปิดที่ส่วนกลาง = ปิดทุกเพจ ไม่มีเพจไหนแหกได้
+     * เพจเลือกได้แค่ "ตามค่ากลาง" หรือ "ปิดเฉพาะเพจนี้"
+     *
+     * 🚨 ทำไมเพจถึงเปิดสวนค่ากลางไม่ได้
+     *    ค่ากลางคือด่านความปลอดภัย (เคยต้องปิดทั้งระบบตอนเพจโดน #2022 บล็อก)
+     *    ถ้าเพจแหกได้ ตอนฉุกเฉินจะต้องไล่ปิดทีละเพจ 21 ใบ — พลาดใบเดียวก็ยังยิงอยู่
+     *
+     * @param  bool  $globalEnabled  ค่ากลางจาก fortune_telling_settings
+     *
+     * @example
+     * $page->allowsCommentReply($settings->isPublicCommentReplyEnabled());
+     */
+    public function allowsCommentReply(bool $globalEnabled): bool
+    {
+        if (! $globalEnabled) {
+            return false;
+        }
+
+        // null = ไม่ได้ตั้งค่ารายเพจ ⇒ ตามค่ากลาง (ซึ่งเปิดอยู่ถึงมาถึงบรรทัดนี้)
+        return $this->comment_reply_enabled ?? true;
+    }
+
+    /**
+     * ป้ายสถานะสวิตช์ตอบคอมเมนต์ของเพจนี้ (ไว้โชว์หลังบ้าน)
+     */
+    public function getCommentReplyStateLabelAttribute(): string
+    {
+        return match ($this->comment_reply_enabled) {
+            true => 'เปิด',
+            false => 'ปิดเฉพาะเพจนี้',
+            default => 'ตามค่ากลาง',
+        };
     }
 }
