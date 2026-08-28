@@ -36,6 +36,17 @@ class MuProductPicker
     /** ดึงผู้เข้ารอบมากี่ชิ้นก่อนคัดเหลือ 2 */
     private const CANDIDATE_LIMIT = 60;
 
+    /**
+     * เก็บผู้เข้ารอบที่คะแนนความตรง ≥ กี่ส่วนของคะแนนสูงสุด (เส้นสายซื้อของเท่านั้น)
+     *
+     * 0.4 = ยอมให้ของที่ตรงน้อยกว่าตัวท็อปพอสมควรยังอยู่ (จะได้มีตัวเลือกถูก/แพงให้เลือก)
+     * แต่ตัดของที่แมตช์แค่คำพ้องห่างๆ หรือแมตช์แค่ในคำอธิบายทิ้ง
+     */
+    private const RELEVANCE_FLOOR_RATIO = 0.4;
+
+    /** จัดอันดับแล้วเก็บไว้กี่ชิ้นก่อนแบ่งถูก/แพง */
+    private const RELEVANCE_KEEP = 20;
+
     /** พูลต้องมีอย่างน้อยกี่ชิ้นถึงจะเสนอเป็น "คู่" ให้ลูกค้าเลือกได้ */
     private const MIN_POOL_FOR_PAIR = 2;
 
@@ -129,7 +140,30 @@ class MuProductPicker
         //   ⇒ ตอนบริบทไม่ชี้กลุ่ม (group=null) พูลรวมเกิน 60 ไปแล้ว = โดนตัดอยู่ทุกวันนี้
         //   ⇒ ของสายมูที่ค่าคอมไม่ติดท็อป 60 ไม่มีวันถูกส่งเลยแม้แต่ครั้งเดียว
         //   (เรียงค่าคอม DESC + limit = **ตัดขาด** ไม่ใช่ถ่วงน้ำหนัก — weightedPick ไม่เคยเห็นของที่ถูกตัด)
-        $pool = $this->candidates($ctx, $group, randomSample: true);
+        // 🔎 (2026-08-27) ลูกค้าถามหาของเอง = ห้ามสุ่ม ห้ามเรียงตามค่าคอม — ต้องเรียงตาม "ตรงกับที่เขาถาม"
+        //
+        // 🚨 บั๊กที่เจอตอนวัดจริงบนพร็อด: `score()` มีอยู่ใน ProductQueryParser (น้อง Eve ใช้อยู่)
+        //    แต่ตัวเลือกนี้ **ไม่เคยเรียกเลย** — `applyKeywordFilter()` แค่ *กรอง* ด้วย OR ของทุกคำ
+        //    (คำลูกค้า + คำพ้อง × ทั้ง name และ brand) แล้วปล่อยให้ weightedPick เลือกตาม **ค่าคอม**
+        //    ⇒ ความตรงเรื่องไม่เคยมีน้ำหนักในการตัดสินเลยสักนิด
+        //
+        //    ผลจริงก่อนแก้:
+        //      "อยากได้สร้อยหยก"                → ไทเกอร์อาย ฿79 + ไหมทอง ฿46,000 (ไม่มีคำว่าหยกสักชิ้น)
+        //      "อยากได้สร้อยข้อมือหินมงคล ≤500" → **GPS สมาร์ทวอทช์ ฿322** (แมตช์คำว่า "ข้อมือ")
+        //    ทั้งที่ในคลังมีสร้อยหยกจริง 8 ชิ้น ฿142–990 รออยู่
+        //
+        //    ⇒ ส่งของมั่วแย่กว่าไม่ส่ง: ลูกค้าเห็นแล้วรู้ทันทีว่าบอทไม่ได้ฟัง
+        $searching = $ctx->searchQuery !== null && $ctx->searchQuery !== '';
+
+        $pool = $this->candidates($ctx, $group, randomSample: ! $searching);
+
+        if ($searching) {
+            $pool = $this->rankByRelevance($pool, (string) $ctx->searchQuery);
+
+            if ($pool->isEmpty()) {
+                return ['items' => [], 'group' => $group, 'reason' => $reason.' (ไม่มีของที่ตรงกับคำค้น)'];
+            }
+        }
 
         // 🪜 (2026-08-23) บันไดผ่อนเกณฑ์ — "ความตรงเรื่อง" สำคัญกว่า "เปอร์เซ็นต์ค่าคอม"
         //
@@ -430,6 +464,62 @@ class MuProductPicker
      *
      * @param  \Illuminate\Database\Eloquent\Builder<MarketplaceProduct>  $q
      */
+    /**
+     * 🎯 จัดอันดับผู้เข้ารอบตาม "ตรงกับคำที่ลูกค้าพิมพ์แค่ไหน" แล้วตัดของที่ไม่ตรงทิ้ง
+     *
+     * ⚠️ ใช้เกณฑ์ **สัมพัทธ์** (เทียบกับคะแนนสูงสุดในพูล) ไม่ใช่เลขตายตัว —
+     *    ภาษาไทยไม่เว้นวรรค คำค้นมักมาเป็นก้อนเดียว ("สร้อยข้อมือหินมงคล")
+     *    คะแนนดิบจึงต่ำได้ตามธรรมชาติ ถ้าตั้งเพดานตายตัวจะตัดทิ้งหมดทั้งที่ของตรงอยู่
+     *
+     * 🚫 คะแนนสูงสุด = 0 (ไม่มีชิ้นไหนมีคำของลูกค้าอยู่ในชื่อหรือยี่ห้อเลย) ⇒ คืนว่าง
+     *    ปล่อยให้ผู้เรียกไปบอกลูกค้าตรงๆ ว่าไม่มี ดีกว่ายัดของไม่เกี่ยวให้
+     *
+     * @param  Collection<int,MarketplaceProduct>  $pool
+     * @return Collection<int,MarketplaceProduct>
+     */
+    private function rankByRelevance(Collection $pool, string $query): Collection
+    {
+        if ($pool->isEmpty()) {
+            return $pool;
+        }
+
+        $primary = $this->parser->tokenize($query);
+        if ($primary->isEmpty()) {
+            return $pool;
+        }
+
+        $synonyms = $this->parser->expandSynonyms($query, $primary);
+
+        // ⚠️ เก็บคะแนนใน map แยก **ห้ามยัดเป็น attribute ของโมเดล** —
+        //    `_relevance` ไม่ใช่คอลัมน์จริง ถ้าใครเผลอ ->save() ทีหลังจะระเบิด Unknown column
+        $scores = [];
+        foreach ($pool as $p) {
+            $scores[$p->id] = $this->parser->score(
+                (string) $p->name,
+                (string) ($p->brand ?? ''),
+                (string) ($p->description ?? ''),
+                $query,
+                $primary,
+                $synonyms
+            );
+        }
+
+        $best = empty($scores) ? 0.0 : (float) max($scores);
+
+        // ไม่มีอะไรแตะชื่อ/ยี่ห้อเลย = ค้นไม่เจอจริง ไม่ใช่ "เจอแบบห่างๆ"
+        if ($best <= 0.0) {
+            return $pool->take(0);
+        }
+
+        $floor = max(1.0, $best * self::RELEVANCE_FLOOR_RATIO);
+
+        return $pool
+            ->filter(fn (MarketplaceProduct $p) => ($scores[$p->id] ?? 0.0) >= $floor)
+            ->sortByDesc(fn (MarketplaceProduct $p) => $scores[$p->id] ?? 0.0)
+            ->take(self::RELEVANCE_KEEP)
+            ->values();
+    }
+
     private function applyKeywordFilter($q, string $query): void
     {
         $primary = $this->parser->tokenize($query);
