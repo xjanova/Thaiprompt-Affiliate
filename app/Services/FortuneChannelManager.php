@@ -1391,14 +1391,27 @@ class FortuneChannelManager
                     // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
                     //   ลูกค้ายังจบเองได้ด้วยการ "พิมพ์ เลิก" (handleCelticEndConfirmation จับ เลิก/จบ/พอแล้ว)
                     //   ส่ง plain (sendQuickReplies + [] → fallback sendMessage ภายใน) — คง retry + markDelivered เดิม
-                    $qr = [];
-                    $ok = $fbService->sendQuickReplies($userId, $message, $qr, $extra);
-                    if (! $ok) {
-                        usleep(800000); // 0.8s แล้ว retry 1 ครั้ง — กัน transient FB blip
-                        $ok = $fbService->sendQuickReplies($userId, $message, $qr, $extra);
-                    }
-
+                    //
+                    // 💬 (2026-08-28) ผ่าเป็นหลายกล่อง เว้นระยะเหมือนคนพิมพ์
+                    //   กล่องคำถามแนะนำ (suggestion_box) ยกไปเป็น "กล่องปิดท้าย" ของสายบับเบิ้ล
+                    //   ⚠️ ห้ามส่งกล่องแนะนำที่นี่แบบเดิม — มันจะแซงบับเบิ้ล 2..N ไปโผล่ก่อน
+                    //   ค่าที่คืนยังเป็นผลของ "กล่องแรก" เหมือนเดิม ⇒ markDelivered/redeliver ไม่เปลี่ยน
                     $reading = $result['reading'] ?? null;
+
+                    $suggestionBox = ! empty($result['suggestion_box']) && ! empty($result['quick_replies'])
+                        ? (string) $result['suggestion_box']
+                        : null;
+
+                    $ok = $this->sendFacebookBubbles(
+                        $fbService,
+                        $userId,
+                        $message,
+                        $extra,
+                        $suggestionBox,
+                        $suggestionBox !== null ? $result['quick_replies'] : [],
+                        $reading?->id,
+                    );
+
                     if ($ok && $reading) {
                         try {
                             // 🐛 (2026-05-29) mark delivered ตรง row by sequence — เลิกเดา orderByDesc
@@ -1423,14 +1436,8 @@ class FortuneChannelManager
                     }
 
                     // 🔢 (2026-06-05) กล่องที่ 2 — คำถามแนะนำต่อยอด + ปุ่มเลข 1️⃣2️⃣ (best-effort)
-                    //   ส่งหลังคำทำนายถึงแล้ว — ถ้า fail ไม่ retry/ไม่ redeliver (เป็นแค่ตัวช่วย ไม่ใช่คำตอบ)
-                    if ($ok && ! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
-                        try {
-                            $fbService->sendQuickReplies($userId, $result['suggestion_box'], $result['quick_replies'], $extra);
-                        } catch (\Throwable $e) {
-                            \Log::debug('FB Celtic: suggestion box send fail (non-blocking)', ['error' => $e->getMessage()]);
-                        }
-                    }
+                    //   ⚠️ (2026-08-28) ย้ายไปเป็น "กล่องปิดท้าย" ที่ sendFacebookBubbles ส่งให้แล้ว
+                    //      (ทั้งเส้นบับเบิ้ลและเส้นกล่องเดียว) — ส่งซ้ำที่นี่ = ลูกค้าเห็นกล่องแนะนำ 2 หน
 
                     return $ok;
                 })(),
@@ -1563,6 +1570,24 @@ class FortuneChannelManager
 
                     return $sent;
                 })(),
+
+                // 💬 (2026-08-28) Deep 39 / Celtic 99 — คำตอบระหว่างเซสชันที่จ่ายแล้ว
+                //
+                //   เดิม action นี้ **ไม่มี arm ฝั่ง FB** → ตกไป default (sendMessage ก้อนเดียว)
+                //   ⇒ ลูกค้าได้พรืดเดียวยาว 2,000 ตัว ไม่เหมือนคนพิมพ์ตอบ
+                //
+                //   ⚠️ จงใจรับ **เฉพาะ pro_session_answer** — พี่น้องของมัน (closed /
+                //      exit_confirm / ai_fail / nudge) เป็นข้อความสถานะสั้น ๆ
+                //      ผ่าเป็นบับเบิ้ล = ประโยคเดียวถูกหั่นเป็นสองกล่อง ดูเหมือนบอทค้าง
+                'pro_session_answer' => $this->sendFacebookBubbles(
+                    $fbService,
+                    $userId,
+                    $message,
+                    $extra,
+                    null,
+                    [],
+                    ($result['reading'] ?? null)?->id,
+                ),
 
                 // 🌙 (2026-06-17) Deep 39 หมดเวลาทำนาย — ข้อความขอบคุณ + ชวนรีวิว (ถ้าเข้าเงื่อนไข)
                 'deep_pro_session_timeout' => (function () use ($fbService, $userId, $message, $result, $extra) {
@@ -3351,48 +3376,96 @@ class FortuneChannelManager
                     ]);
 
                     $textOk = false;
-                    // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
-                    //   ลูกค้าจบเองด้วยการ "พิมพ์ เลิก"
-                    // 💸 (2026-07-24) ประหยัด push: รวมคำตอบ + กล่องคำถามแนะนำ (suggestion box + ปุ่มเลข)
-                    //   เป็น push เดียว (เดิม 2 push แยก). post-AI-generate → token หมด → push (เลี่ยงไม่ได้)
-                    //   แต่รวม 2→1 ได้. ปุ่มเลข (label/text) ไม่มี "ดูดวง" → ไม่โดน stripFortuneStartQuickReplies
-                    // 🐛 (2026-07-25) คำตอบยาวเกิน 4900 → แบ่งหลายกล่อง (เดิม mb_substr ตัดทิ้งเงียบๆ)
-                    //   เคสปกติ (1,500-3,000 ตัวอักษร) = กล่องเดียวเหมือนเดิม — ไม่มี behavior change
-                    $celticMsgs = [];
-                    foreach ($lineService->splitTextForFlexPublic($message, 4500) as $chunk) {
-                        $celticMsgs[] = $lineService->buildTextObject($chunk);
-                    }
-                    if (! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
-                        $celticMsgs[] = $lineService->buildTextObject($result['suggestion_box'], $result['quick_replies']);
-                    }
-                    // ปกติ ≤5 objects = call เดียว (sendMessagesWithReplyFallback slice ที่ 5 — เกินให้แบ่ง batch)
-                    // 🐛 (2026-05-28 → 2026-07-25) retry เฉพาะ batch ที่พัง — ห้าม resend ทั้งชุด
-                    //   (เดิม retry ยิงใหม่หมด → batch ที่สำเร็จแล้วถูกส่งซ้ำ ลูกค้าเห็นคำตอบ 2 รอบ)
-                    $celticBatches = array_chunk($celticMsgs, 5);
-                    try {
-                        $textOk = true;
-                        foreach ($celticBatches as $batch) {
-                            $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
-                            if (! $batchOk) {
-                                usleep(800000); // กัน transient LINE blip
-                                $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
+
+                    // 💬 (2026-08-28) โหมดแยกกล่องบับเบิ้ล — **default ปิดฝั่ง LINE**
+                    //   เปิดเมื่อไหร่ กล่อง 2..N ต้อง push ใบละ 1 โควตา (แพลนนี้ 300/เดือน)
+                    //   ปิดอยู่ = ตกลงไปเส้นรวม push เดิมด้านล่าง ไม่มีอะไรเปลี่ยนเลย
+                    $lineBubbles = $this->bubblesFor('line', $userId, $message);
+
+                    if (count($lineBubbles) >= 2) {
+                        $firstBubble = array_shift($lineBubbles);
+
+                        $textOk = $lineService->sendMessagesWithReplyFallback(
+                            $userId,
+                            [$lineService->buildTextObject($firstBubble)],
+                            null
+                        );
+
+                        if ($textOk) {
+                            [$gapMin, $gapMax] = $this->bubbleGap();
+
+                            try {
+                                \App\Jobs\SendFortuneBubbleJob::dispatch(
+                                    'line',
+                                    $userId,
+                                    $lineBubbles,
+                                    ! empty($result['suggestion_box']) && ! empty($result['quick_replies'])
+                                        ? (string) $result['suggestion_box']
+                                        : null,
+                                    ! empty($result['suggestion_box']) ? ($result['quick_replies'] ?? []) : [],
+                                    $gapMin,
+                                    $gapMax,
+                                    $reading?->id,
+                                )->delay(now()->addSeconds(random_int($gapMin, $gapMax)));
+                            } catch (\Throwable $e) {
+                                \Log::critical('💬 Bubble LINE Celtic: ขึ้นคิวไม่ได้ — ส่งที่เหลือรวดเดียว', [
+                                    'user_id' => $userId,
+                                    'reading_id' => $reading?->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+
+                                $rest = trim(implode("\n\n", $lineBubbles));
+
+                                if ($rest !== '') {
+                                    $lineService->sendMessage($userId, $rest);
+                                }
                             }
-                            $textOk = $batchOk && $textOk;
                         }
-                        \Log::info('LINE Celtic Q&A: push (combined answer+suggestion) result', [
-                            'user_id' => $userId,
-                            'reading_id' => $reading?->id,
-                            'success' => $textOk,
-                            'objects' => count($celticMsgs),
-                            'msg_preview' => mb_substr($message, 0, 100),
-                        ]);
-                    } catch (\Throwable $e) {
-                        $textOk = false;
-                        \Log::error('LINE Celtic Q&A: push (combined) exception', [
-                            'user_id' => $userId,
-                            'reading_id' => $reading?->id,
-                            'error' => $e->getMessage(),
-                        ]);
+
+                    } else {
+                        // 🛑 (2026-06-01, user) เอาปุ่ม "เลิกทำนายและสรุปผล" ออก — คนเผลอกดก่อนจบจริง
+                        //   ลูกค้าจบเองด้วยการ "พิมพ์ เลิก"
+                        // 💸 (2026-07-24) ประหยัด push: รวมคำตอบ + กล่องคำถามแนะนำ (suggestion box + ปุ่มเลข)
+                        //   เป็น push เดียว (เดิม 2 push แยก). post-AI-generate → token หมด → push (เลี่ยงไม่ได้)
+                        //   แต่รวม 2→1 ได้. ปุ่มเลข (label/text) ไม่มี "ดูดวง" → ไม่โดน stripFortuneStartQuickReplies
+                        // 🐛 (2026-07-25) คำตอบยาวเกิน 4900 → แบ่งหลายกล่อง (เดิม mb_substr ตัดทิ้งเงียบๆ)
+                        //   เคสปกติ (1,500-3,000 ตัวอักษร) = กล่องเดียวเหมือนเดิม — ไม่มี behavior change
+                        $celticMsgs = [];
+                        foreach ($lineService->splitTextForFlexPublic($message, 4500) as $chunk) {
+                            $celticMsgs[] = $lineService->buildTextObject($chunk);
+                        }
+                        if (! empty($result['suggestion_box']) && ! empty($result['quick_replies'])) {
+                            $celticMsgs[] = $lineService->buildTextObject($result['suggestion_box'], $result['quick_replies']);
+                        }
+                        // ปกติ ≤5 objects = call เดียว (sendMessagesWithReplyFallback slice ที่ 5 — เกินให้แบ่ง batch)
+                        // 🐛 (2026-05-28 → 2026-07-25) retry เฉพาะ batch ที่พัง — ห้าม resend ทั้งชุด
+                        //   (เดิม retry ยิงใหม่หมด → batch ที่สำเร็จแล้วถูกส่งซ้ำ ลูกค้าเห็นคำตอบ 2 รอบ)
+                        $celticBatches = array_chunk($celticMsgs, 5);
+                        try {
+                            $textOk = true;
+                            foreach ($celticBatches as $batch) {
+                                $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
+                                if (! $batchOk) {
+                                    usleep(800000); // กัน transient LINE blip
+                                    $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
+                                }
+                                $textOk = $batchOk && $textOk;
+                            }
+                            \Log::info('LINE Celtic Q&A: push (combined answer+suggestion) result', [
+                                'user_id' => $userId,
+                                'reading_id' => $reading?->id,
+                                'success' => $textOk,
+                                'objects' => count($celticMsgs),
+                                'msg_preview' => mb_substr($message, 0, 100),
+                            ]);
+                        } catch (\Throwable $e) {
+                            $textOk = false;
+                            \Log::error('LINE Celtic Q&A: push (combined) exception', [
+                                'user_id' => $userId,
+                                'reading_id' => $reading?->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
 
                     // 🐛 (2026-05-28) mark delivered เมื่อส่งสำเร็จ — กัน cron re-deliver ซ้ำ
@@ -3668,7 +3741,18 @@ class FortuneChannelManager
                 //   เพราะ default จะแปะปุ่ม "🔮 ดูดวง" ที่ footer ทุกกล่องคำทำนาย → ลูกค้ากดกลางการทำนาย
                 //   = สับสน/รบกวนโฟลว์/เสี่ยงเริ่ม reading+บิลใหม่ (ตรงกับที่เจ้าของสั่ง "เอาปุ่มที่ไม่เกี่ยวกับการทำนายออก")
                 //   ข้อความพวกนี้บอกวิธีตอบในตัวอยู่แล้ว (พิมพ์คำถามต่อ / พิมพ์ "ใช่" เพื่อยุติ) ไม่ต้องมีปุ่ม
-                'pro_session_answer',
+                //
+                // 💬 (2026-08-28) เฉพาะ pro_session_answer ที่ผ่าเป็นบับเบิ้ลได้ (ถ้าสวิตช์ LINE เปิด)
+                //   พี่น้องของมันเป็นข้อความสถานะสั้น ๆ ผ่าแล้วประโยคเดียวถูกหั่นสองกล่อง = ดูเหมือนบอทค้าง
+                //   sendLineBubbles คืนเส้นเดิม (sendMessageWithReplyFallback) เมื่อปิดอยู่/ผ่าไม่ได้
+                'pro_session_answer' => $this->sendLineBubbles(
+                    $lineService,
+                    $userId,
+                    $message,
+                    $replyToken,
+                    ($result['reading'] ?? null)?->id,
+                ),
+
                 'pro_session_closed',
                 'pro_session_exit_confirm',
                 'pro_session_celtic_generating',
@@ -5781,6 +5865,244 @@ class FortuneChannelManager
      *
      * @param  array<string,mixed>  $result  payload จาก conversation service
      */
+    /**
+     * 💬 (2026-08-28) ผ่าคำทำนายเป็นกล่อง ๆ ถ้าช่องทางนี้เปิดใช้อยู่
+     *
+     * แยกสวิตช์ FB/LINE เพราะต้นทุนคนละเรื่องกันคนละโลก:
+     *   FB   — ส่งกี่กล่องก็ได้ ไม่มีโควตารายเดือน
+     *   LINE — นับโควตา **ต่อ message object** แพลนนี้ 300 push/เดือน
+     *          (26 ส.ค. หมดเกลี้ยงจนบอทเงียบทั้งช่องทาง) ⇒ default ปิด รอเจ้าของอัปแพลน
+     *
+     * @return array<int, string> [] = ไม่ต้องผ่า (ปิดอยู่ / ผ่าไม่ได้ / สั้นอยู่แล้ว)
+     */
+    protected function bubblesFor(string $platform, string $userId, string $message): array
+    {
+        $switch = $platform === 'line'
+            ? ($this->settings->fortune_chat_bubbles_line ?? false)
+            : ($this->settings->fortune_chat_bubbles_fb ?? true);
+
+        if (empty($switch)) {
+            return [];
+        }
+
+        try {
+            return app(\App\Services\Fortune\FortuneBubbleSplitter::class)->split(
+                $message,
+                (int) ($this->settings->fortune_chat_bubble_max ?? 4)
+            );
+        } catch (\Throwable $e) {
+            // ผ่าไม่ได้ = ส่งทั้งก้อนเหมือนเดิม ห้ามทำให้คำทำนายหาย
+            Log::warning('💬 Bubble: ผ่าข้อความล้มเหลว — ส่งกล่องเดียวเหมือนเดิม', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /** ระยะห่างระหว่างกล่อง (วินาที) — สุ่มในกรอบที่แอดมินตั้ง */
+    protected function bubbleGap(): array
+    {
+        $min = max(1, (int) ($this->settings->fortune_chat_bubble_gap_min ?? 5));
+        $max = max($min, (int) ($this->settings->fortune_chat_bubble_gap_max ?? 10));
+
+        return [$min, $max];
+    }
+
+    /**
+     * 💬 (2026-08-28) ส่งคำทำนายเป็น "หลายกล่อง" เว้นระยะเหมือนคนพิมพ์ — Facebook
+     *
+     * เจ้าของสั่ง: "แยกกล่องบับเบิ้ลตอบ อย่าตอบยาว ๆ ค่อย ๆ ส่งห่างกันอย่างน้อย 5-10 วินาที"
+     *
+     * 🔑 **กล่องแรกส่งแบบ sync ตรงนี้เสมอ** ไม่ยกไปคิว เพราะค่าที่คืนไปคือตัวตัดสิน
+     *    `markDelivered()` / log CRITICAL / cron redeliver ของสายที่จ่ายเงินแล้ว
+     *    ยกกล่องแรกขึ้นคิว = ผู้เรียกได้ true ทั้งที่ยังไม่มีอะไรถึงลูกค้าเลย ⇒ ตาข่ายพัง
+     *
+     * กล่อง 2..N ขึ้นคิวแบบต่อกันเป็นลูกโซ่ (ดูเหตุผลเรื่องลำดับใน SendFortuneBubbleJob)
+     *
+     * ⚠️ ปิดสวิตช์ / ผ่าได้กล่องเดียว / คิวใช้ไม่ได้ → พฤติกรรมเหมือนเดิมทุกประการ
+     *
+     * @param  string  $message  คำทำนายเต็ม
+     * @param  string|null  $tailMessage  กล่องปิดท้าย (เช่น กล่องคำถามแนะนำ) ส่งหลังบับเบิ้ลหมด
+     * @param  array<int, array<string, mixed>>  $tailQuickReplies  ปุ่มของกล่องปิดท้าย
+     * @return bool ผลของ **กล่องแรก** เท่านั้น (คงความหมายเดิมของผู้เรียก)
+     */
+    protected function sendFacebookBubbles(
+        FacebookWebhookService $fbService,
+        string $userId,
+        string $message,
+        array $extra = [],
+        ?string $tailMessage = null,
+        array $tailQuickReplies = [],
+        ?int $readingId = null,
+    ): bool {
+        $bubbles = $this->bubblesFor('facebook', $userId, $message);
+
+        // ผ่าไม่ได้/ปิดอยู่/ได้กล่องเดียว → เส้นเดิมทั้งดุ้น (รวมกล่องปิดท้าย)
+        if (count($bubbles) < 2) {
+            $ok = $fbService->sendQuickReplies($userId, $message, [], $extra);
+
+            if (! $ok) {
+                usleep(800000); // 0.8s แล้ว retry 1 ครั้ง — กัน transient FB blip (ท่าเดิมของสาย Celtic)
+                $ok = $fbService->sendQuickReplies($userId, $message, [], $extra);
+            }
+
+            if ($ok && $tailMessage !== null && trim($tailMessage) !== '') {
+                try {
+                    $fbService->sendQuickReplies($userId, $tailMessage, $tailQuickReplies, $extra);
+                } catch (\Throwable $e) {
+                    Log::debug('💬 Bubble: กล่องปิดท้ายล้ม (ไม่บล็อก)', ['error' => $e->getMessage()]);
+                }
+            }
+
+            return $ok;
+        }
+
+        $first = array_shift($bubbles);
+
+        // 🔍 (2026-08-28 จับผี) ที่นี่เรียก sendMessage ตรง ๆ **ไม่ใช่** sendQuickReplies([])
+        //   เพราะ sendQuickReplies ประกอบ options ให้ใหม่เป็นชุดตายตัว (messaging_type /
+        //   message_tag / no_default_qr / from_admin) แล้ว **ทิ้ง allow_duplicate**
+        //   ⇒ ส่งธงไปก็ไม่มีผล ตัวกันทักทายซ้ำยังกลืนกล่องกลางคำทำนายได้อยู่
+        //   (เส้นกล่องเดียวด้านบนยังใช้ sendQuickReplies เหมือนเดิมเป๊ะ — ห้ามเปลี่ยนพฤติกรรมเดิม)
+        $bubbleOptions = [
+            'messaging_type' => $extra['messaging_type'] ?? 'RESPONSE',
+            'message_tag' => $extra['message_tag'] ?? null,
+            'from_admin' => $extra['from_admin'] ?? false,
+            'no_default_qr' => true,
+            'allow_duplicate' => true,
+        ];
+
+        $ok = $fbService->sendMessage($userId, $first, $bubbleOptions);
+
+        if (! $ok) {
+            usleep(800000);
+            $ok = $fbService->sendMessage($userId, $first, $bubbleOptions);
+        }
+
+        if (! $ok) {
+            // กล่องแรกไม่ถึง = อย่าเพิ่งปล่อยกล่องที่เหลือตามไป (ลูกค้าจะได้คำทำนายท่อนกลางลอย ๆ)
+            // คืน false ให้ผู้เรียกจัดการตามเส้นเดิม (log CRITICAL + cron redeliver)
+            return false;
+        }
+
+        [$gapMin, $gapMax] = $this->bubbleGap();
+
+        try {
+            \App\Jobs\SendFortuneBubbleJob::dispatch(
+                'facebook',
+                $userId,
+                $bubbles,
+                $tailMessage,
+                $tailQuickReplies,
+                $gapMin,
+                $gapMax,
+                $readingId,
+            )->delay(now()->addSeconds(random_int($gapMin, $gapMax)));
+        } catch (\Throwable $e) {
+            // 🛟 คิวใช้ไม่ได้ → เทที่เหลือทันทีเป็นกล่องเดียว ดีกว่าลูกค้าได้คำทำนายครึ่งเดียว
+            Log::critical('💬 Bubble: ขึ้นคิวไม่ได้ — ส่งที่เหลือรวดเดียว', [
+                'user_id' => $userId,
+                'reading_id' => $readingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            try {
+                $rest = trim(implode("\n\n", $bubbles));
+
+                if ($rest !== '') {
+                    $fbService->sendMessage($userId, $rest, $bubbleOptions);
+                }
+
+                if ($tailMessage !== null && trim($tailMessage) !== '') {
+                    $fbService->sendQuickReplies($userId, $tailMessage, $tailQuickReplies, $extra);
+                }
+            } catch (\Throwable $inner) {
+                Log::critical('💬 Bubble: ตาข่ายสำรองล้มด้วย — คำทำนายไปไม่ครบ', [
+                    'user_id' => $userId,
+                    'reading_id' => $readingId,
+                    'error' => $inner->getMessage(),
+                ]);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 💬 (2026-08-28) ส่งคำทำนายเป็นหลายกล่องฝั่ง LINE
+     *
+     * 🚨 **default ปิด** (`fortune_chat_bubbles_line`) — เปิดแล้วกินโควตาแรง
+     *   กล่องแรกใช้ replyToken = **ฟรี ไม่นับโควตา**
+     *   กล่อง 2..N ไม่มี replyToken แล้ว (ใช้ได้ครั้งเดียว + หมดอายุ ~1 นาที)
+     *   ⇒ ต้อง push ซึ่งนับโควตาใบละ 1 · ผ่า 3 กล่อง = จ่ายเพิ่ม 2 ต่อ 1 คำตอบ
+     *   แพลนปัจจุบัน 300/เดือน และเคยหมดจนบอทเงียบทั้งช่องทางมาแล้ว (2026-08-26)
+     *
+     * @return bool ผลของ **กล่องแรก** เท่านั้น (คงความหมายเดิมของผู้เรียก)
+     */
+    protected function sendLineBubbles(
+        LineFortuneService $lineService,
+        string $userId,
+        string $message,
+        ?string $replyToken = null,
+        ?int $readingId = null,
+    ): bool {
+        $bubbles = $this->bubblesFor('line', $userId, $message);
+
+        if (count($bubbles) < 2) {
+            return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        }
+
+        $first = array_shift($bubbles);
+
+        // กล่องแรกยังใช้ reply token ตามเดิม → ฟรี และเร็วที่สุด
+        $ok = $lineService->sendMessageWithReplyFallback($userId, $first, $replyToken);
+
+        if (! $ok) {
+            // กล่องแรกไม่ถึง = อย่าปล่อยกล่องที่เหลือตามไป (ลูกค้าจะได้ท่อนกลางลอย ๆ)
+            return false;
+        }
+
+        [$gapMin, $gapMax] = $this->bubbleGap();
+
+        try {
+            \App\Jobs\SendFortuneBubbleJob::dispatch(
+                'line',
+                $userId,
+                $bubbles,
+                null,
+                [],
+                $gapMin,
+                $gapMax,
+                $readingId,
+            )->delay(now()->addSeconds(random_int($gapMin, $gapMax)));
+        } catch (\Throwable $e) {
+            Log::critical('💬 Bubble LINE: ขึ้นคิวไม่ได้ — ส่งที่เหลือรวดเดียว', [
+                'user_id' => $userId,
+                'reading_id' => $readingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            try {
+                $rest = trim(implode("\n\n", $bubbles));
+
+                if ($rest !== '') {
+                    $lineService->sendMessage($userId, $rest);
+                }
+            } catch (\Throwable $inner) {
+                Log::critical('💬 Bubble LINE: ตาข่ายสำรองล้มด้วย — คำทำนายไปไม่ครบ', [
+                    'user_id' => $userId,
+                    'reading_id' => $readingId,
+                    'error' => $inner->getMessage(),
+                ]);
+            }
+        }
+
+        return true;
+    }
+
     protected function offerProductsLater(string $platform, string $userId, array $result): void
     {
         if (! empty($result['is_lingering'])) {

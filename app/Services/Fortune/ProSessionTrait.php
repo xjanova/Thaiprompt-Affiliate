@@ -186,6 +186,45 @@ trait ProSessionTrait
     }
 
     /**
+     * ⏳ (2026-08-28) กล่องแจ้งเวลาใกล้หมด — โผล่ **ครั้งเดียว** ต่อ 1 เซสชัน
+     *
+     * เจ้าของสั่ง: เอากล่องรายงานเวลาออกจากทุกคำตอบ ให้โผล่ทีเดียวตอน 3 นาทีสุดท้าย
+     *
+     * ทำไมต้องมีธง: ถ้าเช็คแค่ `remainingMin <= 3` ลูกค้าที่ถามรัว ๆ ช่วงท้าย
+     * จะเจอกล่องเดิมทุกข้อความ = กลับไปเป็นแบบเดิมเป๊ะในช่วงที่กวนใจที่สุด
+     *
+     * ธงอยู่ใน conversation_state (DB) ไม่ใช่ Cache — deploy รัน cache:clear
+     * (= flushdb) 3 หนต่อรอบ เก็บบน Cache แปลว่าเตือนซ้ำได้เรื่อย ๆ
+     *
+     * @param  int  $remainingMin  นาทีคงเหลือ
+     * @return string ท่อนต่อท้ายข้อความ ('' = ไม่ต้องแจ้ง)
+     */
+    protected function buildProSessionTimeNotice(FortuneReading $reading, int $remainingMin): string
+    {
+        // ยังเหลือเวลาเยอะ / หมดเวลาแล้ว → เงียบ (หมดเวลามีข้อความปิดของตัวเองอยู่แล้ว)
+        if ($remainingMin <= 0 || $remainingMin > 3) {
+            return '';
+        }
+
+        try {
+            if (! empty($reading->getConversationState('time_notice_sent'))) {
+                return '';
+            }
+
+            $reading->setConversationState('time_notice_sent', true);
+        } catch (\Throwable $e) {
+            // อ่าน/เขียน state ไม่ได้ → ยอมแจ้งซ้ำ ดีกว่าไม่แจ้งเลยตอนใกล้หมดเวลา
+            Log::debug('ProSession: อ่านธงแจ้งเวลาไม่ได้ (ปล่อยแจ้ง)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return "\n\n──────────────────────\n"
+            ."⏳ *เหลือเวลาอีก {$remainingMin} นาที* — ถามต่อได้เลยค่ะ หรือเมื่อพอใจพิมพ์ \"ขอบคุณ\" ได้เลยนะคะ";
+    }
+
+    /**
      * นาทีคงเหลือใน Pro Session
      */
     protected function getProSessionRemainingMinutes(FortuneReading $reading): int
@@ -1058,18 +1097,20 @@ trait ProSessionTrait
             $reading->setConversationState('pro_session_history', array_slice($history, -16));
 
             // Footer แจ้งเวลาคงเหลือ
-            // 🌙 (2026-06-08) Deep 39 — โชว์ "กล่องเวลาที่เหลือ" ทุกคำตอบ (user spec) ไม่ใช่แค่ 3 นาทีท้าย
+            //
+            // 🔇 (2026-08-28, owner) "นำส่วนที่รายงานเวลา ถามแม่หมอ พิมพ์คำถามต่อไปได้เลย
+            //    นั้นออกไปเลย โผล่ทีเดียวตอนใกล้หมดเวลา 3 นาทีสุดท้าย พอ"
+            //
+            //    ของเดิม (2026-06-08) โชว์ทุกคำตอบสำหรับ deep — ทับสเปกนั้นแล้ว
+            //    เหตุผลของเจ้าของ: กล่องนับถอยหลังต่อท้ายทุกข้อความ = เร่งลูกค้ากลาย ๆ
+            //    และทำให้คำทำนายดูเหมือนใบเสร็จมากกว่าบทสนทนา
+            //
+            // ⚠️ "โผล่ทีเดียว" = ครั้งเดียวจริง ๆ ต่อ 1 เซสชัน ไม่ใช่ทุกข้อความในช่วง 3 นาทีท้าย
+            //    ธงเก็บใน conversation_state (DB) **ห้ามเก็บบน Cache** — deploy รัน cache:clear
+            //    3 หนต่อรอบ ธงจะหาย แล้วลูกค้าที่จ่ายเงินมาจะโดนเตือนซ้ำ
+            //    (rule_never_cache_only_for_paid_customer_state)
             $remainingMin = $this->getProSessionRemainingMinutes($reading);
-            $footer = '';
-            if ($type === 'deep') {
-                if ($remainingMin > 3) {
-                    $footer = "\n\n──────────────────────\n⏳ *เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที* — ถามต่อได้เลยค่ะ ✨";
-                } elseif ($remainingMin > 0) {
-                    $footer = "\n\n──────────────────────\n⏳ *เหลือเวลาอีก {$remainingMin} นาที* — เมื่อพอใจพิมพ์ \"ขอบคุณ\" ได้เลยค่ะ";
-                }
-            } elseif ($remainingMin > 0 && $remainingMin <= 3) {
-                $footer = "\n\n_(⏳ เหลือเวลาอีก {$remainingMin} นาที — เมื่อพอใจพิมพ์ \"ขอบคุณ\" ได้เลยค่ะ)_";
-            }
+            $footer = $this->buildProSessionTimeNotice($reading, $remainingMin);
 
             return [
                 'action' => 'pro_session_answer',

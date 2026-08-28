@@ -137,7 +137,84 @@
                             <span class="tp-muted" style="font-size:11.5px;">ภาพเทพพาหนะประจำวัน แทนปุ่มข้อความ · เสี่ยงน้อยกว่า ลองตัวนี้ก่อนได้</span>
                         </span>
                     </label>
+
+                    <label class="tp-inset-sm" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:12px;cursor:pointer;">
+                        <input type="checkbox" name="entry_cards_on_chat" value="1"
+                               @checked($settings->entry_cards_on_chat ?? true)
+                               style="width:16px;height:16px;accent-color:var(--accent1);cursor:pointer;flex-shrink:0;margin-top:2px;">
+                        <span>
+                            <span style="display:block;font-size:13px;color:var(--ink);">💬 ลูกค้าพิมพ์ขอดูฟรี → ตอบเป็นการ์ด 2 ใบ</span>
+                            <span class="tp-muted" style="font-size:11.5px;">พิมพ์ว่า "ดูดวงรายวัน" / "ขอดูฟรี" ก็ได้หน้าตาเดียวกับคนกดปุ่ม · <strong>ขาเข้า คนละตัวกับ DM ขาออก</strong></span>
+                        </span>
+                    </label>
                 </div>
+            </div>
+
+            {{-- ───── 💬 บับเบิ้ลคำทำนาย ───── --}}
+            <div style="margin-top:18px;">
+                <h3 style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px;">
+                    💬 ตอบคำทำนายเป็นหลายกล่อง (บับเบิ้ล)
+                </h3>
+
+                <p class="tp-muted" style="font-size:12px;line-height:1.7;margin-bottom:14px;">
+                    ผ่าคำทำนายยาว ๆ เป็นหลายกล่อง แล้วทยอยส่งห่างกันเหมือนแม่หมอกำลังพิมพ์
+                    แทนที่จะพรืดเดียวจบ — ใช้กับ <strong>คำตอบระหว่างเซสชัน 39 / 99</strong> เท่านั้น
+                    (กล่องคำทำนายฟรีรายวัน กล่องจ่ายเงิน และ QR ไม่ถูกแตะ)
+                    <br>
+                    <span style="color:var(--accent2);">⚠️ ฝั่ง LINE นับโควตา <strong>ต่อกล่อง</strong> — แพลนตอนนี้ 300 push/เดือน
+                    และเคยหมดจนบอทเงียบทั้งช่องทางมาแล้ว ⇒ เปิดเมื่อโควตาพร้อมเท่านั้น
+                    (กล่องแรกฟรี กล่องที่ 2 เป็นต้นไปกินโควตาใบละ 1)</span>
+                </p>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+                    <label class="tp-inset-sm" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:12px;cursor:pointer;">
+                        <input type="checkbox" name="fortune_chat_bubbles_fb" value="1"
+                               @checked($settings->fortune_chat_bubbles_fb ?? true)
+                               style="width:16px;height:16px;accent-color:var(--accent1);cursor:pointer;flex-shrink:0;margin-top:2px;">
+                        <span>
+                            <span style="display:block;font-size:13px;color:var(--ink);">📘 เปิดบับเบิ้ลฝั่ง Facebook</span>
+                            <span class="tp-muted" style="font-size:11.5px;">ไม่มีโควตารายเดือน · ปลอดภัยที่จะเปิด</span>
+                        </span>
+                    </label>
+
+                    <label class="tp-inset-sm" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:12px;cursor:pointer;">
+                        <input type="checkbox" name="fortune_chat_bubbles_line" value="1"
+                               @checked($settings->fortune_chat_bubbles_line ?? false)
+                               style="width:16px;height:16px;accent-color:var(--accent1);cursor:pointer;flex-shrink:0;margin-top:2px;">
+                        <span>
+                            <span style="display:block;font-size:13px;color:var(--ink);">💚 เปิดบับเบิ้ลฝั่ง LINE</span>
+                            <span class="tp-muted" style="font-size:11.5px;"><strong style="color:var(--accent2);">กินโควตา push</strong> · เปิดเมื่ออัปแพลนแล้วเท่านั้น</span>
+                        </span>
+                    </label>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px;">
+                    <label style="display:block;">
+                        <span class="tp-muted" style="display:block;font-size:11.5px;margin-bottom:4px;">ห่างกันอย่างน้อย (วินาที)</span>
+                        <input type="number" name="fortune_chat_bubble_gap_min" min="1" max="60"
+                               value="{{ $settings->fortune_chat_bubble_gap_min ?? 5 }}"
+                               class="tp-inset-sm" style="width:100%;padding:9px 12px;border-radius:10px;color:var(--ink);background:transparent;border:1px solid var(--line);">
+                    </label>
+
+                    <label style="display:block;">
+                        <span class="tp-muted" style="display:block;font-size:11.5px;margin-bottom:4px;">ห่างกันมากสุด (วินาที)</span>
+                        <input type="number" name="fortune_chat_bubble_gap_max" min="1" max="120"
+                               value="{{ $settings->fortune_chat_bubble_gap_max ?? 10 }}"
+                               class="tp-inset-sm" style="width:100%;padding:9px 12px;border-radius:10px;color:var(--ink);background:transparent;border:1px solid var(--line);">
+                    </label>
+
+                    <label style="display:block;">
+                        <span class="tp-muted" style="display:block;font-size:11.5px;margin-bottom:4px;">แบ่งได้มากสุดกี่กล่อง</span>
+                        <input type="number" name="fortune_chat_bubble_max" min="1" max="8"
+                               value="{{ $settings->fortune_chat_bubble_max ?? 4 }}"
+                               class="tp-inset-sm" style="width:100%;padding:9px 12px;border-radius:10px;color:var(--ink);background:transparent;border:1px solid var(--line);">
+                    </label>
+                </div>
+
+                <p class="tp-muted" style="font-size:11.5px;margin-top:8px;">
+                    ระบบสุ่มจังหวะระหว่างค่าต่ำสุด–สูงสุด (ห่างเท่ากันเป๊ะทุกกล่อง = ลูกค้าจับได้ว่าเป็นเครื่อง)
+                    · ตั้ง 1 กล่อง = ปิดการแบ่งโดยไม่ต้องปลดสวิตช์
+                </p>
             </div>
 
             <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm">

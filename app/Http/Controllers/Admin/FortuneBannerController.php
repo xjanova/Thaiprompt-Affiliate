@@ -337,7 +337,16 @@ class FortuneBannerController extends Controller
             'birth_day_cards_enabled' => 'nullable|boolean',
             // 🃏 (2026-08-28) ฝั่งแชท — ลูกค้าพิมพ์ขอดวงรายวัน/ขอดูฟรี แล้วได้การ์ด 2 ใบ
             'entry_cards_on_chat' => 'nullable|boolean',
+            // 💬 (2026-08-28) บับเบิ้ลคำทำนาย — แยกสวิตช์ FB/LINE + ตั้งจังหวะเองได้
+            'fortune_chat_bubbles_fb' => 'nullable|boolean',
+            'fortune_chat_bubbles_line' => 'nullable|boolean',
+            'fortune_chat_bubble_gap_min' => 'nullable|integer|min:1|max:60',
+            'fortune_chat_bubble_gap_max' => 'nullable|integer|min:1|max:120',
+            'fortune_chat_bubble_max' => 'nullable|integer|min:1|max:8',
         ]);
+
+        // 💬 จังหวะบับเบิ้ล — คำนวณ min ก่อนเพราะ max ต้องไม่ต่ำกว่ามัน
+        $gapMin = max(1, (int) ($validated['fortune_chat_bubble_gap_min'] ?? 5));
 
         $settings = FortuneTellingSetting::getSettings();
         $settings->update([
@@ -349,6 +358,12 @@ class FortuneBannerController extends Controller
             'entry_cards_on_dm' => (bool) ($validated['entry_cards_on_dm'] ?? false),
             'birth_day_cards_enabled' => (bool) ($validated['birth_day_cards_enabled'] ?? false),
             'entry_cards_on_chat' => (bool) ($validated['entry_cards_on_chat'] ?? false),
+            'fortune_chat_bubbles_fb' => (bool) ($validated['fortune_chat_bubbles_fb'] ?? false),
+            'fortune_chat_bubbles_line' => (bool) ($validated['fortune_chat_bubbles_line'] ?? false),
+            // 🔒 ตัวเลขต้องสมเหตุสมผลเสมอ — max < min = random_int() โยน exception กลางการส่งคำทำนาย
+            'fortune_chat_bubble_gap_min' => $gapMin,
+            'fortune_chat_bubble_gap_max' => max($gapMin, (int) ($validated['fortune_chat_bubble_gap_max'] ?? 10)),
+            'fortune_chat_bubble_max' => (int) ($validated['fortune_chat_bubble_max'] ?? 4),
         ]);
 
         // ล้าง static memo ของโปรเซสนี้ ให้หน้าที่ redirect กลับไปโชว์ค่าที่เพิ่งบันทึกทันที

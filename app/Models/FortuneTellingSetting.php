@@ -256,6 +256,12 @@ class FortuneTellingSetting extends Model
         'birth_day_cards_enabled',
         // 🃏 (2026-08-28) ลูกค้าพิมพ์ขอดวงรายวัน/ขอดูฟรี → ตอบเป็นการ์ด 2 ใบ (ขาเข้า คนละตัวกับ on_dm)
         'entry_cards_on_chat',
+        // 💬 (2026-08-28) ตอบคำทำนายเป็นหลายกล่อง เว้นระยะเหมือนคนพิมพ์ (FB เท่านั้น)
+        'fortune_chat_bubbles_fb',
+        'fortune_chat_bubbles_line',
+        'fortune_chat_bubble_gap_min',
+        'fortune_chat_bubble_gap_max',
+        'fortune_chat_bubble_max',
         // 📜 Consent Gate — กติกาก่อนจองคิว (2026-06-06)
         'fortune_consent_enabled',
         'fortune_consent_pick_strategy',
@@ -584,6 +590,12 @@ class FortuneTellingSetting extends Model
         'birth_day_cards_enabled' => 'boolean',
         // 🃏 การ์ดทางเข้าฝั่งแชท (2026-08-28)
         'entry_cards_on_chat' => 'boolean',
+        // 💬 บับเบิ้ลคำทำนาย (2026-08-28)
+        'fortune_chat_bubbles_fb' => 'boolean',
+        'fortune_chat_bubbles_line' => 'boolean',
+        'fortune_chat_bubble_gap_min' => 'integer',
+        'fortune_chat_bubble_gap_max' => 'integer',
+        'fortune_chat_bubble_max' => 'integer',
         // 📜 Consent Gate (2026-06-06)
         'fortune_consent_enabled' => 'boolean',
         'fortune_consent_cancel_enabled' => 'boolean',
@@ -812,6 +824,14 @@ class FortuneTellingSetting extends Model
         //   ไม่ใช่ DM เย็นที่เรายิงออกไป ⇒ ไม่แตะ funnel ขาออกที่เคยทำยอดเป็น 0
         //   เจ้าของสั่งตรง ๆ 2026-08-28: "พาไป 2 การ์ด ก่อนดีกว่า ที่มีให้ดูฟรี กับ ดู vip"
         'entry_cards_on_chat' => true,
+        // 💬 (2026-08-28) บับเบิ้ลคำทำนาย — "ห่างกันอย่างน้อย 5-10 วินาที" = ค่านี้เป๊ะตามที่สั่ง
+        //   FB เปิด (เจ้าของสั่งตรง ๆ) · LINE **ปิด** รอโควตา push พร้อมก่อน
+        //   โค้ดฝั่ง LINE ทำไว้ครบแล้ว ติ๊กเปิดในหลังบ้านได้ทันทีโดยไม่ต้อง deploy
+        'fortune_chat_bubbles_fb' => true,
+        'fortune_chat_bubbles_line' => false,
+        'fortune_chat_bubble_gap_min' => 5,
+        'fortune_chat_bubble_gap_max' => 10,
+        'fortune_chat_bubble_max' => 4,
         // 📜 Consent Gate — กติกาก่อนจองคิว (default เปิด)
         'fortune_consent_enabled' => true,
         'fortune_consent_pick_strategy' => 'random',
