@@ -3945,6 +3945,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/pages', [\App\Http\Controllers\Admin\FortunePagesController::class, 'index'])->name('pages.index');
     // 🔑 โหมดง่าย — เชื่อมบัญชีครั้งเดียว แล้วเพิ่มเพจใหม่ด้วย "ไอดีเพจ" อย่างเดียว
     Route::post('/pages/connect', [\App\Http\Controllers\Admin\FortunePagesController::class, 'connectUserToken'])->name('pages.connect');
+    // 🔗 เชื่อมเพจด้วยปุ่มเดียว — พาไปหน้าอนุญาตของ Facebook (ขากลับเข้าที่ /auth/facebook/callback)
+    Route::get('/pages/connect/facebook', [\App\Http\Controllers\Admin\FortunePagesController::class, 'connectViaOAuth'])->name('pages.connect-oauth');
     Route::post('/pages/discover', [\App\Http\Controllers\Admin\FortunePagesController::class, 'discover'])->name('pages.discover');
     Route::post('/pages/quick-add', [\App\Http\Controllers\Admin\FortunePagesController::class, 'quickAdd'])->name('pages.quick-add');
     Route::get('/pages/create', [\App\Http\Controllers\Admin\FortunePagesController::class, 'create'])->name('pages.create');

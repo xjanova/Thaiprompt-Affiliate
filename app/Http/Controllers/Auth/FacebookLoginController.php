@@ -79,6 +79,17 @@ class FacebookLoginController extends Controller
      */
     public function callback(Request $request): RedirectResponse
     {
+        // 🔗 (2026-08-28) เส้น "เชื่อมเพจด้วย Facebook" ของหลังบ้าน ใช้ redirect_uri ตัวเดียวกับที่นี่
+        //    (เป็น URI เดียวที่ whitelist ไว้ในแอป — เพิ่มตัวใหม่ต้องไปแก้ตั้งค่าบน developers.facebook.com)
+        //    แยกออกจากล็อกอินลูกค้าด้วย state ที่ขึ้นต้นด้วย pageconnect:
+        //    ⚠️ ต้องเช็คก่อน Socialite เสมอ ไม่งั้น Socialite จะกิน code ไปสร้างบัญชีลูกค้าให้แทน
+        $state = (string) $request->get('state', '');
+
+        if (str_starts_with($state, \App\Http\Controllers\Admin\FortunePagesController::OAUTH_STATE_PREFIX)) {
+            return app(\App\Http\Controllers\Admin\FortunePagesController::class)
+                ->handleOAuthCallback($request);
+        }
+
         // Load setting + apply runtime config (สำคัญ! Socialite อ่าน config ตอน driver init)
         $setting = $this->loadSetting();
         $errorOrigin = Session::get('facebook_login_origin', 'login');

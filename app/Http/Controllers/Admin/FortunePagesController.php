@@ -387,6 +387,25 @@ class FortunePagesController extends Controller
             return back()->with('error', 'ยังไม่ได้ใส่ User Access Token');
         }
 
+        $result = $this->storeUserToken($token);
+
+        return $result['ok']
+            ? back()->with('success', $result['success'])->with('error', $result['warning'])
+            : back()->with('error', $result['error']);
+    }
+
+    /**
+     * ตรวจ + เก็บ User Access Token ของเจ้าของเพจ
+     *
+     * แยกออกมาจาก connectUserToken() เพราะตอนนี้มี 2 ทางเข้า:
+     *   1. วาง token มือจาก Graph API Explorer (ของเดิม)
+     *   2. กดปุ่ม "Connect with Facebook" แล้ว OAuth เด้งกลับมาพร้อม code
+     * ทั้งสองทางต้องผ่านการตรวจ + แลกอายุยาว + เก็บชุดเดียวกัน ห้ามเขียนซ้ำ
+     *
+     * @return array{ok: bool, success?: string, warning?: ?string, error?: string, name?: string}
+     */
+    protected function storeUserToken(string $token): array
+    {
         try {
             $me = Http::timeout(15)->get($this->graph('/me'), [
                 'fields' => 'id,name',
@@ -394,7 +413,7 @@ class FortunePagesController extends Controller
             ]);
 
             if (! $me->successful()) {
-                return back()->with('error', 'Token ใช้ไม่ได้: '.($me->json('error.message') ?? 'ไม่ทราบสาเหตุ'));
+                return ['ok' => false, 'error' => 'Token ใช้ไม่ได้: '.($me->json('error.message') ?? 'ไม่ทราบสาเหตุ')];
             }
 
             // ⏳ แลกเป็นตัวยาวก่อนเก็บเสมอ — แลกไม่ได้ก็ได้ตัวเดิมคืนมา (ไม่ block การเชื่อม)
@@ -402,7 +421,6 @@ class FortunePagesController extends Controller
             $token = $exchange['token'];
 
             // 🔍 ถามอายุจริงจาก Graph — ห้ามเดาจาก expires_in ของขั้นแลก
-            //    (token ที่ยาวอยู่แล้วจะไม่มี expires_in กลับมา แต่ debug_token ตอบได้เสมอ)
             $info = $this->inspectToken($token);
 
             $payload = [
@@ -411,7 +429,6 @@ class FortunePagesController extends Controller
             ];
 
             // 🛡️ ช่วงดีพลอย โค้ดขึ้นก่อน migration ได้ — ยัดคอลัมน์ที่ยังไม่มีลงไป
-            //    update() จะพังทั้งคำสั่ง = เชื่อมบัญชีไม่ได้เลยทั้งที่ token ดี
             if ($this->hasExpiryColumns()) {
                 $payload['facebook_user_token_expires_at'] = $info['expires_at'];
                 $payload['facebook_user_token_data_access_expires_at'] = $info['data_access_expires_at'];
@@ -428,18 +445,145 @@ class FortunePagesController extends Controller
                 'data_access_expires_at' => optional($info['data_access_expires_at'])->toDateTimeString(),
             ]);
 
-            $success = '✅ เชื่อมบัญชีสำเร็จ: '.($me->json('name') ?? $me->json('id'))
-                .' · '.$this->describeLifetime($exchange, $info)
-                .' — ต่อไปเพิ่มเพจใหม่ใส่แค่ไอดีเพจได้เลย';
+            $name = $me->json('name') ?? $me->json('id');
 
-            $warning = $this->lifetimeWarning($exchange, $info);
-
-            return back()
-                ->with('success', $success)
-                ->with('error', $warning);   // null = ไม่โชว์การ์ดเตือน
+            return [
+                'ok' => true,
+                'name' => $name,
+                // ส่ง scopes ที่เพิ่งอ่านได้ออกไปด้วย — ห้ามให้ผู้เรียกไปอ่าน token ซ้ำจาก
+                // getGlobalSettings() เพราะมัน memo ไว้ อาจได้ค่าเก่าแล้วเตือนสิทธิ์ขาดผิดๆ
+                'scopes' => $info['scopes'] ?? [],
+                'success' => '✅ เชื่อมบัญชีสำเร็จ: '.$name
+                    .' · '.$this->describeLifetime($exchange, $info)
+                    .' — ต่อไปเพิ่มเพจใหม่ใส่แค่ไอดีเพจได้เลย',
+                'warning' => $this->lifetimeWarning($exchange, $info),
+            ];
         } catch (\Throwable $e) {
-            return back()->with('error', 'เชื่อมบัญชีไม่สำเร็จ: '.$e->getMessage());
+            return ['ok' => false, 'error' => 'เชื่อมบัญชีไม่สำเร็จ: '.$e->getMessage()];
         }
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // 🔗 เชื่อมเพจด้วยปุ่มเดียว (OAuth) — 2026-08-28
+    //
+    //    เดิมต้องไป Graph API Explorer → ติ๊กสิทธิ์เอง → ก็อป token มาวาง
+    //    ซึ่งพลาดง่ายมาก (ติ๊กไม่ครบ = ตรวจเจอสแปมแต่ซ่อนไม่ได้ แบบเงียบๆ)
+    //    และ **ถ่ายเป็นวิดีโอส่ง Meta ไม่ได้** เพราะไม่มีขั้นตอน "ผู้ใช้กดให้สิทธิ์" ให้เห็น
+    //
+    //    ⚠️ ใช้ redirect_uri เดิมของ Facebook Login (/auth/facebook/callback)
+    //       เพราะเป็น URI เดียวที่ whitelist ไว้แล้วในแอป — เพิ่มตัวใหม่ต้องไปแก้ตั้งค่าบน
+    //       developers.facebook.com ซึ่งลืมง่ายและทำให้ทั้งเส้นพังแบบ "URL blocked"
+    //       แยกกันด้วย state ที่ขึ้นต้นด้วย pageconnect: (ดู FacebookLoginController::callback)
+    // ════════════════════════════════════════════════════════════
+
+    /** state ที่ใช้แยกว่า callback นี้เป็นการเชื่อมเพจ ไม่ใช่ลูกค้าล็อกอิน */
+    public const OAUTH_STATE_PREFIX = 'pageconnect:';
+
+    /**
+     * พาไปหน้าอนุญาตของ Facebook พร้อมขอสิทธิ์ที่ระบบต้องใช้ครบชุด
+     */
+    public function connectViaOAuth(Request $request)
+    {
+        [$appId] = $this->appCredentials();
+
+        if ($appId === '') {
+            return back()->with('error', 'ยังไม่ได้ตั้ง App ID — ตั้งที่หน้า “ช่องทางรับข้อความ” ก่อน');
+        }
+
+        // กัน CSRF: สุ่ม nonce เก็บใน session แล้วเทียบตอนเด้งกลับ
+        $nonce = bin2hex(random_bytes(16));
+        $request->session()->put('fb_page_connect_nonce', $nonce);
+
+        // auth_type=rerequest → บังคับให้กล่องอนุญาตโผล่ทุกครั้ง
+        // ถ้าไม่ใส่ คนที่เคยกดอนุญาตแล้วจะถูกเด้งผ่านทันทีโดยไม่เห็นรายการสิทธิ์
+        $url = 'https://www.facebook.com/'.\App\Services\FacebookWebhookService::GRAPH_API_VERSION.'/dialog/oauth?'.http_build_query([
+            'client_id' => $appId,
+            'redirect_uri' => $this->oauthRedirectUri(),
+            'state' => self::OAUTH_STATE_PREFIX.$nonce,
+            'scope' => implode(',', self::REQUIRED_USER_SCOPES),
+            'response_type' => 'code',
+            'auth_type' => 'rerequest',
+        ]);
+
+        return redirect()->away($url);
+    }
+
+    /**
+     * Facebook เด้งกลับมาพร้อม code — แลกเป็น user token แล้วเก็บ
+     *
+     * เรียกจาก FacebookLoginController::callback() เมื่อเจอ state ขึ้นต้นด้วย pageconnect:
+     */
+    public function handleOAuthCallback(Request $request)
+    {
+        $to = redirect()->route('admin.fortune.pages.index');
+
+        // ❌ ผู้ใช้กดยกเลิก หรือ Facebook ส่ง error กลับมา
+        if ($request->filled('error')) {
+            return $to->with('error', 'ยกเลิกการเชื่อมเพจ: '
+                .($request->get('error_description') ?: $request->get('error')));
+        }
+
+        // 🔒 state ต้องตรงกับที่เก็บไว้ ไม่งั้นเป็นคำขอปลอม
+        $nonce = $request->session()->pull('fb_page_connect_nonce');
+        $state = (string) $request->get('state', '');
+
+        if ($nonce === null || $state !== self::OAUTH_STATE_PREFIX.$nonce) {
+            return $to->with('error', 'เชื่อมเพจไม่สำเร็จ: state ไม่ตรง (ลองกดเชื่อมใหม่อีกครั้ง)');
+        }
+
+        $code = (string) $request->get('code', '');
+
+        if ($code === '') {
+            return $to->with('error', 'เชื่อมเพจไม่สำเร็จ: Facebook ไม่ได้ส่ง code กลับมา');
+        }
+
+        [$appId, $appSecret] = $this->appCredentials();
+
+        try {
+            $res = Http::timeout(20)->get($this->graph('/oauth/access_token'), [
+                'client_id' => $appId,
+                'client_secret' => $appSecret,
+                'redirect_uri' => $this->oauthRedirectUri(),
+                'code' => $code,
+            ]);
+
+            if (! $res->successful() || empty($res->json('access_token'))) {
+                return $to->with('error', 'แลก code เป็น token ไม่สำเร็จ: '
+                    .($res->json('error.message') ?? 'HTTP '.$res->status()));
+            }
+
+            $result = $this->storeUserToken((string) $res->json('access_token'));
+        } catch (\Throwable $e) {
+            return $to->with('error', 'เชื่อมเพจไม่สำเร็จ: '.$e->getMessage());
+        }
+
+        if (! $result['ok']) {
+            return $to->with('error', $result['error']);
+        }
+
+        // 🔍 เตือนทันทีถ้าผู้ใช้ติ๊กสิทธิ์ออกในกล่องอนุญาต
+        //    (Facebook ยอมให้เอาออกได้ทีละตัว แล้วเราจะพังแบบเงียบๆ ทีหลัง)
+        $granted = $result['scopes'] ?? [];
+        $missing = $granted === []
+            ? []   // อ่าน scopes ไม่ได้ (debug_token ล้ม) — อย่าเตือนมั่ว
+            : array_values(array_diff(self::REQUIRED_USER_SCOPES, $granted));
+
+        if ($missing !== []) {
+            return $to->with('success', $result['success'])
+                ->with('error', '⚠️ ยังขาดสิทธิ์: '.implode(', ', $missing)
+                    .' — กดเชื่อมใหม่แล้วอย่าเอาสิทธิ์ออกจากรายการ');
+        }
+
+        return $to->with('success', $result['success'])->with('error', $result['warning']);
+    }
+
+    /**
+     * redirect_uri ที่ใช้ทั้งขาไปและขากลับ — ต้องเป็นสตริงเดียวกันเป๊ะ
+     * ไม่งั้น Facebook ตอบ redirect_uri_mismatch
+     */
+    protected function oauthRedirectUri(): string
+    {
+        return route('facebook.callback');
     }
 
     /**

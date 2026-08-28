@@ -1,4 +1,19 @@
 {{-- 🔑 กล่องเชื่อมบัญชีเจ้าของเพจ — ใช้ทั้งตอนยังไม่เชื่อม และตอนเปลี่ยนบัญชี --}}
+{{-- 🔗 ทางหลัก — กดปุ่มเดียวจบ ไม่ต้องไปก็อป token เอง
+     (ทางวาง token มือยังอยู่ข้างล่าง เผื่อ OAuth มีปัญหา) --}}
+<a href="{{ route('admin.fortune.pages.connect-oauth') }}" class="tp-btn tp-btn-primary"
+   style="display:inline-flex; align-items:center; gap:9px; background:#1877F2; border-color:#1877F2; color:#fff; font-weight:700; padding:12px 20px;">
+    <i class="fab fa-facebook"></i> Connect Facebook Page
+</a>
+<div style="margin-top:8px; font-size:12.5px; color:var(--ink2); line-height:1.8;">
+    กดแล้ว Facebook จะถามว่าอนุญาตให้แอปเข้าถึงเพจไหน — เลือกเพจแล้วกดอนุญาต ระบบดึงกุญแจของทุกเพจมาให้เอง<br>
+    <span style="opacity:.85;">Grants the app access to your Page, then the system retrieves and stores each Page token automatically.</span>
+</div>
+
+<details style="margin-top:16px;">
+    <summary style="cursor:pointer; font-size:12.5px; color:var(--ink2);">
+        หรือวาง User Access Token เอง (ทางสำรอง)
+    </summary>
 <form method="POST" action="{{ route('admin.fortune.pages.connect') }}"
       style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px;">
     @csrf
@@ -24,3 +39,4 @@
     (token สดจาก Explorer อายุแค่ ~1 ชม. และกุญแจของเพจที่ขอด้วยตัวสั้นก็จะอายุสั้นตามไปด้วย)<br>
     🔒 ระบบเก็บแบบเข้ารหัสและไม่แสดงค่ากลับออกมาอีก · ถ้าหมดอายุแค่มาวางใหม่
 </div>
+</details>
