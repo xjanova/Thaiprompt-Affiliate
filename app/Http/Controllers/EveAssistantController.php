@@ -165,6 +165,10 @@ class EveAssistantController extends Controller
                     providerOverride: $aiProvider,
                     modelOverride: $aiModel !== '' ? $aiModel : null,
                     apiKeyOverride: $aiKey !== '' ? $aiKey : null,
+                    // 🛡 (2026-08-28) ด่านกันเจลเบรค — ต้องส่ง "ข้อความดิบของลูกค้า" เท่านั้น
+                    //    ห้ามส่ง $userMessage เพราะมันคือพรอมต์ที่เราประกอบเอง (มีประวัติ+สรุปความจำ)
+                    //    ตรวจทั้งก้อนจะจับคำสั่งของเราเองเป็นการโจมตี = บล็อกลูกค้าทุกคน
+                    guardText: $data['message'],
                 );
             } catch (Throwable $inner) {
                 // ❗ ข้อผิดพลาด "ทุกชนิด" ของค่าที่แอดมินตั้งไว้ → ถอยไปใช้ default pool อัตโนมัติ
@@ -180,6 +184,7 @@ class EveAssistantController extends Controller
                     systemMessage: $systemPrompt,
                     userMessage: $userMessage,
                     config: $config,
+                    guardText: $data['message'],
                 );
             }
 

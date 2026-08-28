@@ -39,24 +39,24 @@ class TarotInterpretController extends Controller
     public function __invoke(Request $request, FortuneAIService $ai, FortuneKnowledgeService $kb): JsonResponse
     {
         $data = $request->validate([
-            'spread'       => 'nullable|string|max:64',
-            'spread_key'   => 'nullable|string|max:64',
-            'spread_name'  => 'nullable|string|max:128',
-            'question'     => 'nullable|string|max:2000',
-            'prompt'       => 'required|string|max:20000',
-            'cards'                       => 'required|array|min:1|max:'.self::MAX_CARDS,
-            'cards.*.position'            => 'nullable|integer|min:1|max:'.self::MAX_CARDS,
-            'cards.*.position_label'      => 'nullable|string|max:128',
-            'cards.*.position_name'       => 'nullable|string|max:128',
+            'spread' => 'nullable|string|max:64',
+            'spread_key' => 'nullable|string|max:64',
+            'spread_name' => 'nullable|string|max:128',
+            'question' => 'nullable|string|max:2000',
+            'prompt' => 'required|string|max:20000',
+            'cards' => 'required|array|min:1|max:'.self::MAX_CARDS,
+            'cards.*.position' => 'nullable|integer|min:1|max:'.self::MAX_CARDS,
+            'cards.*.position_label' => 'nullable|string|max:128',
+            'cards.*.position_name' => 'nullable|string|max:128',
             'cards.*.position_description' => 'nullable|string|max:500',
-            'cards.*.asks'                => 'nullable|string|max:500',
-            'cards.*.name_th'             => 'nullable|string|max:128',
-            'cards.*.card_name_th'        => 'nullable|string|max:128',
-            'cards.*.name_en'             => 'nullable|string|max:128',
-            'cards.*.card_name_en'        => 'nullable|string|max:128',
-            'cards.*.reversed'            => 'nullable|boolean',
-            'cards.*.is_reversed'         => 'nullable|boolean',
-            'cards.*.meaning'             => 'nullable|string|max:2000',
+            'cards.*.asks' => 'nullable|string|max:500',
+            'cards.*.name_th' => 'nullable|string|max:128',
+            'cards.*.card_name_th' => 'nullable|string|max:128',
+            'cards.*.name_en' => 'nullable|string|max:128',
+            'cards.*.card_name_en' => 'nullable|string|max:128',
+            'cards.*.reversed' => 'nullable|boolean',
+            'cards.*.is_reversed' => 'nullable|boolean',
+            'cards.*.meaning' => 'nullable|string|max:2000',
         ]);
 
         $cards = $this->normaliseCards($data['cards']);
@@ -66,7 +66,7 @@ class TarotInterpretController extends Controller
 
         $knowledge = $this->knowledgeBlock($kb, $cards, (string) ($data['question'] ?? ''));
 
-        $spreadName  = $data['spread_name'] ?? 'ไพ่ยิปซี';
+        $spreadName = $data['spread_name'] ?? 'ไพ่ยิปซี';
         $userMessage = trim($data['prompt']);
         if ($knowledge !== '') {
             $userMessage .= "\n\n".$knowledge;
@@ -79,6 +79,9 @@ class TarotInterpretController extends Controller
                 // คำทำนายเต็มใบต้องยาวกว่าแชททั่วไปมาก — 600 token ของ default
                 // จะตัดกลางประโยคแล้วลูกค้าที่จ่ายเงินได้คำทำนายค้าง
                 ['temperature' => 0.8, 'max_tokens' => 2600],
+                // 🛡 (2026-08-28) ด่านกันเจลเบรค — ตรวจเฉพาะ "คำถามที่ลูกค้าพิมพ์เอง"
+                //    ห้ามตรวจ $userMessage เพราะมันรวมบล็อกความรู้ไพ่ที่ระบบต่อท้ายเข้าไป
+                guardText: (string) ($data['question'] ?? ''),
             );
         } catch (\Throwable $e) {
             Log::warning('Juntra tarot interpret failed', ['err' => $e->getMessage()]);
@@ -95,9 +98,9 @@ class TarotInterpretController extends Controller
 
         return response()->json(['data' => [
             'interpretation' => $text,
-            'ai_provider'    => $result['provider'] ?? null,
-            'ai_model'       => $result['model'] ?? null,
-            'tokens_used'    => $result['tokens_used'] ?? null,
+            'ai_provider' => $result['provider'] ?? null,
+            'ai_model' => $result['model'] ?? null,
+            'tokens_used' => $result['tokens_used'] ?? null,
             'knowledge_used' => $knowledge !== '',
         ]]);
     }
@@ -127,12 +130,12 @@ class TarotInterpretController extends Controller
             }
 
             $cards[$pos] = [
-                'position_name'        => (string) ($c['position_name'] ?? $c['position_label'] ?? "ใบที่ {$pos}"),
+                'position_name' => (string) ($c['position_name'] ?? $c['position_label'] ?? "ใบที่ {$pos}"),
                 'position_description' => (string) ($c['position_description'] ?? $c['asks'] ?? ''),
-                'card_name_en'         => $nameEn,
-                'card_name_th'         => $nameTh !== '' ? $nameTh : $nameEn,
-                'is_reversed'          => (bool) ($c['is_reversed'] ?? $c['reversed'] ?? false),
-                'meaning'              => (string) ($c['meaning'] ?? ''),
+                'card_name_en' => $nameEn,
+                'card_name_th' => $nameTh !== '' ? $nameTh : $nameEn,
+                'is_reversed' => (bool) ($c['is_reversed'] ?? $c['reversed'] ?? false),
+                'meaning' => (string) ($c['meaning'] ?? ''),
             ];
         }
 

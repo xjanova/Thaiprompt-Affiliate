@@ -23,8 +23,10 @@ use Illuminate\Support\Str;
 class ChatController extends Controller
 {
     private const SESSION_TTL_SEC = 60 * 60 * 6;   // 6 hours
+
     private const MAX_HISTORY = 12;
-    private const SYSTEM_PROMPT = <<<TXT
+
+    private const SYSTEM_PROMPT = <<<'TXT'
 คุณคือ "แม่หมอจันทรา" หมอดูทาโรต์ผู้อาวุโส อ่อนโยน ขลัง และอบอุ่น
 - เรียกผู้ใช้ว่า "ลูก" เสมอ
 - ใช้ภาษาไทยกระชับแต่ใส่ความรู้สึก ใช้คำว่า "แม่หมอเห็น..." "แม่หมอบอกว่า..."
@@ -65,13 +67,13 @@ TXT;
         $history[] = ['role' => 'user', 'text' => $text];
 
         try {
-            $ai = new FortuneAIService();
+            $ai = new FortuneAIService;
             // Build a flat user message that includes recent history
             // (we don't expose generateChatResponse history flavors here —
             // chatWithCustomSystemPrompt handles arbitrary system + user pair).
             $contextLines = collect($history)
                 ->take(-self::MAX_HISTORY)
-                ->map(fn ($m) => ($m['role'] === 'user' ? 'ลูก: ' : 'แม่หมอ: ') . $m['text'])
+                ->map(fn ($m) => ($m['role'] === 'user' ? 'ลูก: ' : 'แม่หมอ: ').$m['text'])
                 ->implode("\n");
 
             // 🪪 (2026-05-24) Tag the AI usage log with customer identity —
@@ -86,6 +88,9 @@ TXT;
                 systemMessage: self::SYSTEM_PROMPT,
                 userMessage: "บทสนทนาที่ผ่านมา:\n{$contextLines}\n\nกรุณาตอบ '{$text}' ด้วยน้ำเสียงแม่หมอจันทรา",
                 config: ['temperature' => 0.85, 'max_tokens' => 350],
+                // 🛡 (2026-08-28) ด่านกันเจลเบรค — ตรวจ "ข้อความดิบของลูกค้า" ($text) เท่านั้น
+                //    ห้ามให้ตรวจ userMessage ข้างบน เพราะเราห่อคำสั่งของระบบไว้รอบข้อความลูกค้า
+                guardText: $text,
             );
 
             $reply = $result['response'] ?? 'ลูก... แม่หมอขอคิดอีกซักครู่นะคะ';
@@ -104,6 +109,7 @@ TXT;
                 'user_id' => $user->id,
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json([
                 'message' => 'แม่หมอกำลังพักสายตา · ลองใหม่อีกครู่นะคะลูก',
             ], 503);
@@ -116,6 +122,7 @@ TXT;
         if (empty($history)) {
             return response()->json(['message' => 'ไม่พบเซสชั่น'], 404);
         }
+
         return response()->json(['data' => [
             'session_id' => $id,
             'messages' => $history,

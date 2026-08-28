@@ -193,8 +193,6 @@ class FortuneAIService
      * ⚠️ ต้องเช็คเสมอถ้า caller "บังคับ provider" มา — constructor มี fallback
      *    acquireKeyAnyProvider() ที่หยิบ provider อื่นให้เงียบๆ เมื่อ provider ที่ขอไม่มีคีย์ว่าง
      *    (ดู __construct) ⇒ ขอ gemini ไม่ได้แปลว่าได้ gemini
-     *
-     * @return string
      */
     public function getProvider(): string
     {
@@ -1226,8 +1224,43 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
         array $config = [],
         ?string $providerOverride = null,
         ?string $modelOverride = null,
-        ?string $apiKeyOverride = null
+        ?string $apiKeyOverride = null,
+        ?string $guardText = null
     ): array {
+        // 🛡 (2026-08-28) ด่านกันเจลเบรค — ทางเข้านี้เดิม **ไม่มีด่านเลย**
+        //
+        //   `generateChatResponse()` มี `detectAdversarialInput()` กันอยู่ แต่ทางนี้ไม่มี
+        //   ⇒ น้อง Eve และเส้นจันทราพยากรณ์ (แชท/ไพ่) ยิงเข้า AI ตรงๆ โดยไม่ผ่านด่านมาตลอด
+        //   กันได้ด้วย "กฎในพรอมต์" อย่างเดียว ซึ่งเป็นความน่าจะเป็น ไม่ใช่ของตายตัว
+        //
+        //   ⚠️ ต้องรับเป็นพารามิเตอร์แยก **ห้ามตรวจ $userMessage** —
+        //      ผู้เรียกหลายจุดประกอบพรอมต์เองแล้วยัดข้อความลูกค้าไว้ข้างใน เช่น
+        //      "บทสนทนาที่ผ่านมา:… กรุณาตอบ '<ข้อความลูกค้า>' ด้วยน้ำเสียงแม่หมอ"
+        //      ตรวจทั้งก้อนจะจับคำสั่งของระบบเองเป็นการโจมตี = บล็อกลูกค้าทุกคน
+        //      (เคยเกิดจริงแล้วเป็น PROD-DOWN 2026-06-27 — ดูคอมเมนต์ที่ detectAdversarialInput)
+        //
+        //   ⇒ default `null` = ไม่ตรวจ (งานเบื้องหลังอย่าง extraction / bill reminder
+        //     ส่งข้อความที่ระบบสร้างเอง ห้ามโดนบล็อก) · ผู้เรียกที่รับข้อความจากลูกค้าจริง
+        //     ต้องส่ง **ข้อความดิบของลูกค้า** มาทางนี้เท่านั้น
+        if ($guardText !== null && trim($guardText) !== '') {
+            $attackType = self::detectAdversarialInput($guardText);
+            if ($attackType !== null) {
+                Log::warning('FortuneAIService: ตรวจพบ adversarial input (custom prompt) — block + canned reply', [
+                    'attack_type' => $attackType,
+                    'input_len' => mb_strlen($guardText),
+                    'input_preview' => mb_substr($guardText, 0, 120),
+                ]);
+
+                return [
+                    'response' => self::buildAdversarialReply($attackType),
+                    'provider' => 'guard',
+                    'model' => 'adversarial_input_blocker',
+                    'tokens_used' => 0,
+                    'adversarial_blocked' => $attackType,
+                ];
+            }
+        }
+
         // 🔑 (2026-05-14 v2 review) Accept optional override (provider/model/key)
         //   เคสที่ใช้: extraction job ที่ต้องใช้ Pool key (admin direct key ว่าง)
         //   ถ้า override ระบุ → ใช้แทน settings; ถ้าไม่ระบุ → fall back settings เดิม
