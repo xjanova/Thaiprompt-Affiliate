@@ -1619,12 +1619,59 @@ class FortuneChannelManager
                 //   quick_replies ว่าง → FacebookWebhookService fallback เป็น sendMessage
                 //   พร้อม no_default_qr ให้เอง = ไม่มีปุ่มแพคเกจลอยมาเกาะดวงฟรี
                 'daily_horoscope_sent' => (function () use ($fbService, $userId, $message, $result, $extra) {
-                    $sent = $fbService->sendQuickReplies(
-                        $userId,
-                        $message,
-                        $result['quick_replies'] ?? [],
-                        $extra
-                    );
+                    // 🃏 (2026-08-28) กล่อง "ชวนรับดวงฟรี" → ยกเป็นการ์ด 2 ใบ [🎁 ฟรี] + [👑 VIP]
+                    //
+                    //   เจ้าของสั่ง: "พาไป 2 การ์ด ก่อนดีกว่า ที่มีให้ดูฟรี กับ ดู vip"
+                    //   คนที่ **พิมพ์** ว่าอยากดูดวงรายวัน/ขอดูฟรี เคยได้ข้อความล้วน
+                    //   ส่วนคนที่ **กดปุ่ม** ได้การ์ดมีรูป — ฟีเจอร์เดียวกัน หน้าตาคนละแบบ
+                    //   แล้วแต่ประตูที่เดินเข้ามา (แพทเทิร์นเดิมเป๊ะกับการ์ดแพคเกจ 2026-08-23)
+                    //
+                    //   🚦 ธง entry_cards ตั้งมาจาก maybeOfferDailyForFreeRequest() เท่านั้น
+                    //      ⇒ กล่อง "คำทำนายฉบับเต็ม" ไม่มีธงนี้ จึงไม่มีทางถูกย่อลงการ์ด
+                    //      (กล่องนั้นรูปทรงตายตัว 5 ชิ้น ย่อเมื่อไหร่หายเงียบทันที)
+                    //
+                    //   ⚠️ ปุ่มบนการ์ดคือ DAILY_FREE_START ตัวเดียวกับที่ FB ปุ่มเดิมใช้
+                    //      ⇒ กดแล้วไหลเข้า handleDailyShowMine() → รู้วันเกิดได้ดวงเลย /
+                    //        ไม่รู้ก็ต่อไปการ์ด 7 วันเกิด — ไม่ต้องแตะ state machine
+                    //
+                    //   ⚠️ การ์ดล้ม/รูปหาย/สวิตช์ปิด → ตกกลับกล่องข้อความ + quick reply เดิมทั้งดุ้น
+                    $sent = false;
+
+                    if (! empty($result['entry_cards']) && ! empty($this->settings->entry_cards_on_chat)) {
+                        try {
+                            $entryCard = app(\App\Services\Fortune\FortuneEntryCardBuilder::class)->facebookEntry([
+                                // คำชวนที่หมุนมาแล้ว (pickDailyFreeOffer) ไปอยู่บนหัวการ์ด
+                                // ⇒ ไม่ต้องส่ง intro นำหน้า ไม่งั้นลูกค้าได้ถ้อยคำเดียวกัน 2 กล่องซ้อน
+                                'invite_text' => $message,
+                                'deep_price' => $this->settings->deep_reading_price ?? null,
+                            ]);
+
+                            if ($entryCard !== null) {
+                                $sent = (bool) $fbService->sendButtonTemplate($userId, $entryCard, $extra);
+                            }
+
+                            if (! $sent) {
+                                Log::warning('FB daily: การ์ดทางเข้า 2 ใบล้มเหลว — fallback กล่องข้อความ', [
+                                    'user_id' => $userId,
+                                    'card_null' => $entryCard === null,
+                                ]);
+                            }
+                        } catch (\Throwable $cardErr) {
+                            Log::warning('FB daily: การ์ดทางเข้า 2 ใบ exception — fallback กล่องข้อความ', [
+                                'user_id' => $userId,
+                                'err' => $cardErr->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    if (! $sent) {
+                        $sent = $fbService->sendQuickReplies(
+                            $userId,
+                            $message,
+                            $result['quick_replies'] ?? [],
+                            $extra
+                        );
+                    }
 
                     // 🛒 (2026-08-23) ของเสริมดวงหลังดวงฟรีรายวัน — คนกลุ่มนี้ยังไม่เคยจ่ายก็ได้เหมือนกัน
                     //   ⚠️ ส่งเป็น "กล่องใหม่ต่อท้าย" ห้ามยัดเข้าไปในกล่องดวงฟรี

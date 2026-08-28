@@ -254,6 +254,8 @@ class FortuneTellingSetting extends Model
         // 🃏 การ์ดทางเข้า (2026-08-26) — DM ตอบคอมเมนต์เป็นการ์ด 2 ใบ / เลือกวันเกิดเป็นการ์ด 7 ใบ
         'entry_cards_on_dm',
         'birth_day_cards_enabled',
+        // 🃏 (2026-08-28) ลูกค้าพิมพ์ขอดวงรายวัน/ขอดูฟรี → ตอบเป็นการ์ด 2 ใบ (ขาเข้า คนละตัวกับ on_dm)
+        'entry_cards_on_chat',
         // 📜 Consent Gate — กติกาก่อนจองคิว (2026-06-06)
         'fortune_consent_enabled',
         'fortune_consent_pick_strategy',
@@ -580,6 +582,8 @@ class FortuneTellingSetting extends Model
         // 🃏 การ์ดทางเข้า (2026-08-26)
         'entry_cards_on_dm' => 'boolean',
         'birth_day_cards_enabled' => 'boolean',
+        // 🃏 การ์ดทางเข้าฝั่งแชท (2026-08-28)
+        'entry_cards_on_chat' => 'boolean',
         // 📜 Consent Gate (2026-06-06)
         'fortune_consent_enabled' => 'boolean',
         'fortune_consent_cancel_enabled' => 'boolean',
@@ -804,6 +808,10 @@ class FortuneTellingSetting extends Model
         //   (2026-08-10) ⇒ ต้องเปิดเองแล้วเทียบยอด ไม่ใช่เปิดให้อัตโนมัติตอน deploy
         'entry_cards_on_dm' => false,
         'birth_day_cards_enabled' => false,
+        // 🃏 (2026-08-28) ฝั่งแชท **default เปิด** — ต่างจาก 2 ตัวบนตรงที่ "ลูกค้าทักมาเอง"
+        //   ไม่ใช่ DM เย็นที่เรายิงออกไป ⇒ ไม่แตะ funnel ขาออกที่เคยทำยอดเป็น 0
+        //   เจ้าของสั่งตรง ๆ 2026-08-28: "พาไป 2 การ์ด ก่อนดีกว่า ที่มีให้ดูฟรี กับ ดู vip"
+        'entry_cards_on_chat' => true,
         // 📜 Consent Gate — กติกาก่อนจองคิว (default เปิด)
         'fortune_consent_enabled' => true,
         'fortune_consent_pick_strategy' => 'random',

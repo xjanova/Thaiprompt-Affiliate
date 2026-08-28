@@ -649,7 +649,7 @@ class EveAssistantController extends Controller
      * — ยอมรับได้เพราะกรองเหลือเฉพาะ role=user อยู่แล้ว และดีกว่าปล่อยให้ Eve ความจำเสื่อมสนิท
      *
      * @param  array<int,array>  $clientHistory
-     * @return array{0:array<int,array{role:string,content:string,ts?:int}>,1:string}  [ประวัติ, บทสรุป]
+     * @return array{0:array<int,array{role:string,content:string,ts?:int}>,1:string} [ประวัติ, บทสรุป]
      */
     private function loadMemberMemory(?int $userId, array $clientHistory): array
     {
@@ -1203,6 +1203,18 @@ class EveAssistantController extends Controller
     private function searchCatalog(string $query, ?float $budget): array
     {
         $query = trim($query);
+
+        // 💭 (2026-08-28) "สิ่งที่คนอยากได้ในชีวิต" ≠ ของที่ขายได้ — ห้ามเอาไปค้นในคลัง
+        //
+        // 🚨 วัดจริงบนพร็อด: "อยากได้แฟน" → Eve ปอกเหลือคำค้น "แฟน" → เสนอ **สร้อยคอทองแท้ 18k**
+        //    ให้คนที่กำลังพูดเรื่องความรัก (บอทแม่หมอกันได้แล้ว เพราะมีด่านนี้อยู่)
+        //    ⇒ ใช้ตัวเดียวกันทั้งสองบอท จะได้ไม่ต้องมาไล่แก้ทีละที่อีก
+        if (\App\Services\Marketplace\ProductQueryParser::isAbstractWish($query)) {
+            Log::info('Eve: คำค้นเป็นสิ่งที่อยากได้ในชีวิต ไม่ใช่สินค้า — ไม่ค้น', ['query' => $query]);
+
+            return [];
+        }
+
         $primary = $this->tokenize($query);
         if ($primary->isEmpty()) {
             return [];

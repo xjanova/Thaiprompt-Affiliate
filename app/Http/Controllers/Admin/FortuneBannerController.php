@@ -335,6 +335,8 @@ class FortuneBannerController extends Controller
             // 🃏 (2026-08-26) การ์ดทางเข้า — อยู่ในฟอร์มเดียวกันเพราะคุมเรื่องเดียวกัน (หน้าตา DM ขาออก)
             'entry_cards_on_dm' => 'nullable|boolean',
             'birth_day_cards_enabled' => 'nullable|boolean',
+            // 🃏 (2026-08-28) ฝั่งแชท — ลูกค้าพิมพ์ขอดวงรายวัน/ขอดูฟรี แล้วได้การ์ด 2 ใบ
+            'entry_cards_on_chat' => 'nullable|boolean',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
@@ -346,6 +348,7 @@ class FortuneBannerController extends Controller
             'banner_send_on_welcome' => (bool) ($validated['banner_send_on_welcome'] ?? false),
             'entry_cards_on_dm' => (bool) ($validated['entry_cards_on_dm'] ?? false),
             'birth_day_cards_enabled' => (bool) ($validated['birth_day_cards_enabled'] ?? false),
+            'entry_cards_on_chat' => (bool) ($validated['entry_cards_on_chat'] ?? false),
         ]);
 
         // ล้าง static memo ของโปรเซสนี้ ให้หน้าที่ redirect กลับไปโชว์ค่าที่เพิ่งบันทึกทันที
