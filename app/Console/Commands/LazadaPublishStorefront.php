@@ -86,11 +86,19 @@ class LazadaPublishStorefront extends Command
         $updated = 0;
         $skipped = 0;
 
-        // ⚠️ ต้องครอบทุก source ที่ตัวนำเข้าเขียนจริง ไม่ใช่แค่ 'affiliate_feed'
-        //    lazada:mu-import เขียน 'mu_curated' และตัว scrape เขียน 'scrape'
-        //    เดิมกรองแค่ affiliate_feed → สินค้าส่วนใหญ่บนร้านจริงไม่เคยถูกอัพเดตจากคำสั่งนี้เลย
-        //    (รวมถึงคำบรรยาย/สเปกที่เพิ่งเพิ่ม ก็จะไม่ไปถึงหน้ารายละเอียด)
-        MarketplaceProduct::whereIn('source', ['affiliate_feed', 'mu_curated', 'scrape'])
+        // 🚨 (2026-08-28) เลิกกรองด้วย "รายชื่อ source" — มันตกรุ่นทุกครั้งที่มีตัวนำเข้าใหม่
+        //
+        //    ประวัติ: เดิมกรองแค่ `affiliate_feed` → พอมี `lazada:mu-import` (เขียน `mu_curated`)
+        //    ก็ต้องมาเติมมือ · แล้ววันนี้เจอซ้ำอีกรอบ — `lazada:mu-paste` เขียน **`mu_paste`**
+        //    และ `lazada:category-import` เขียน **`category_feed`** ซึ่งไม่มีในลิสต์ทั้งคู่
+        //    ⇒ วัดจริงบนพร็อด: **772 ชิ้นที่มีลิงก์ค่าคอมครบ ไม่เคยขึ้นหน้าร้านเลย**
+        //      (`mu_paste` 628 + `category_feed` 144) รวมของสายมูที่เพิ่งเติมให้ลูกค้าถามหาทั้งหมด
+        //      อาการที่เห็นคือ "น้อง Eve บอกไม่มีของ" ทั้งที่บอทแม่หมอเสนอของชิ้นนั้นได้
+        //
+        //    ⇒ เปลี่ยนไปกรองด้วย **ความหมาย** แทน: ของโหมด affiliate ที่ยังขายอยู่และมีลิงก์ค่าคอม
+        //      ตัวนำเข้าใหม่ตัวไหนตั้ง fulfillment_mode='affiliate' ก็เข้าร้านเองอัตโนมัติ ไม่ต้องมาเติมลิสต์อีก
+        //      (วัดแล้ว: 1,804 แถวที่ผ่านเกณฑ์ เป็น affiliate ทั้งหมด ไม่มีของ resell ปนเข้ามา)
+        MarketplaceProduct::where('fulfillment_mode', 'affiliate')
             ->where('is_active', true)
             ->whereNotNull('affiliate_url')
             ->when($maxPrice > 0, fn ($q) => $q->where('price', '<=', $maxPrice))
