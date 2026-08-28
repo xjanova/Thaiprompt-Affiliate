@@ -64,6 +64,17 @@ class FortuneConversationService
     protected string $currentPlatform = 'line';
 
     /**
+     * 💸 (2026-08-29) ตัวคูณเพดานยิง SlipOK สำหรับ "ลูกค้าที่จ่ายแล้ว"
+     *
+     * เดิมลูกค้าที่จ่ายแล้ว = ปลดเพดานทิ้งทั้งหมด (`return null`) → ส่งสลิปซ้ำกี่ใบก็ยิง API ทุกใบ
+     * (เคสจริง LINE U6343edd… ยิง 6 ครั้งใน 12 นาที ได้ duplicate ล้วน = เผาโควตาฟรี)
+     *
+     * ผ่อนปรนแทนการปลด: เพดานปกติ × ตัวนี้ (default 2×2 = 4 ครั้ง/หน้าต่าง)
+     * มากพอสำหรับลูกค้าจริงที่ "โอนก่อนบิล" รอบใหม่ แต่ไม่เปิดทางให้ยิงไม่จำกัด
+     */
+    public const PAID_SLIP_CAP_MULTIPLIER = 2;
+
+    /**
      * ราคาดูดวงละเอียด (บาท) — ค่า fallback สุดท้ายเมื่อ admin ไม่ได้ตั้งราคา
      *
      * 🎯 (2026-04-29) แพคเกจปัจจุบัน:
@@ -16110,9 +16121,45 @@ class FortuneConversationService
                 return null;
             }
 
-            // 🔓 ลูกค้าจ่ายแล้ว + กำลังทำนายอยู่ → ไม่ติด guard ใดๆ (rule: paid customer bypass all guards)
+            // 🔓 ลูกค้าจ่ายแล้ว + กำลังทำนายอยู่ → ผ่อนเพดาน (rule: paid customer bypass all guards)
+            //
+            // 💸 (2026-08-29, owner "เปลืองโควต้าเช็คสลิป") เดิมบรรทัดนี้ `return null` = **ปลดเพดานทิ้งทั้งหมด**
+            //   เคสจริง LINE U6343edd… 2026-08-07 14:50-15:02 → ยิง SlipOK **6 ครั้งใน 12 นาที**
+            //   (duplicate ×5 + no_qr ×1) ทั้งที่จ่ายจบไปแล้ว = เผาโควตา 6 ใบเพื่อคำตอบที่รู้อยู่แล้ว
+            //
+            //   ⚠️ ห้ามบล็อกสนิท: ลูกค้าที่จ่ายแล้วอาจ "โอนก่อนบิล" รอบใหม่ (prepay/auto-provision)
+            //      แล้วส่งสลิปมา — บล็อก = เงินเข้าแต่ไม่ได้ของ (ผิดกฎข้อสำคัญที่สุด)
+            //   → ใช้ "เพดานผ่อนปรน" แทนการปลดเพดาน: ยังยิงได้อีกหลายครั้ง แต่ไม่ใช่ไม่จำกัด
             if ($this->hasPaidActiveReading($userId)) {
-                return null;
+                $paidCap = max(2, $svc->maxChecksPerUser() * self::PAID_SLIP_CAP_MULTIPLIER);
+                if ($svc->checksUsed($platform, $userId) < $paidCap) {
+                    return null;
+                }
+
+                Log::warning('💸 SlipOK: ลูกค้าจ่ายแล้วแต่ยิงเกินเพดานผ่อนปรน → หยุดยิง (ประหยัดโควตา)', [
+                    'platform' => $platform, 'user_id' => $userId,
+                    'reading_id' => $reading?->id, 'context' => $context,
+                    'used' => $svc->checksUsed($platform, $userId), 'paid_cap' => $paidCap,
+                ]);
+
+                $this->recordSlipCheckLog([
+                    'reading_id' => $reading?->id,
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'context' => $context,
+                    'sent_to_slipok' => false,
+                    'decision' => 'rate_limited',
+                    'note' => 'จ่ายแล้ว: เกินเพดานผ่อนปรน '.$paidCap.' ครั้ง/หน้าต่าง (กันยิงซ้ำเผาโควตา)',
+                ]);
+
+                // ไม่นับ strike / ไม่แบน — เป็นลูกค้าที่จ่ายจริง แค่ตอบให้อุ่นใจแล้วหยุดยิง
+                return [
+                    'action' => 'slip_already_paid',
+                    'message' => "🙏 แม่หมอได้รับสลิปของเจ้าชะตาแล้วนะคะ ไม่ต้องส่งซ้ำค่ะ\n\n"
+                        ."✨ ถ้ายอดเข้าครบแล้ว แม่หมอจะเปิดดวงให้ทันที — รอสักครู่นะคะ\n"
+                        .'💬 ถ้ารอนานผิดปกติ พิมพ์ "คุยกับแม่หมอ" ได้เลยค่ะ 🌙',
+                    'reading' => $reading,
+                ];
             }
 
             // ยังไม่เกินเพดาน → ปล่อยผ่าน (caller ยิง SlipOK ได้ตามปกติ)
@@ -16498,6 +16545,50 @@ class FortuneConversationService
     }
 
     /**
+     * ⚠️ (2026-08-29, owner "ขึ้นเตือนหากโอนยอดป่วน เคยทำทำไมไม่เห็นมี")
+     *   คำเตือนสำหรับคน "โอนยอดป่วน" — โอนเศษเงินทีละนิดให้บิลเดินต่อโดยไม่ตั้งใจจ่ายจริง
+     *
+     *   ⚠️ ของเดิมมีแค่ `appendTrollWarningIfNeeded()` ซึ่งต่อสายไว้ที่ **ตอนสร้างบิล** 3 จุดเท่านั้น
+     *   (Deep :9475/:9556 + Celtic :1022) → คนที่โอน ฿0.55 แล้ว ฿0.35 ไม่เคยเห็นคำเตือนสักคำ
+     *   เจอแต่ข้อความสุภาพ "ได้รับยอด 0.35 แล้วค่ะ ขาดอีก..." จนถึงรอบ 3 ที่โดน HOLD เงียบๆ
+     *
+     *   หลักการ: เตือนตามความจริงที่ระบบบังคับใช้จริง ไม่ขู่เกินจริง
+     *     • ยอดจิ๋วมาก (< 20% ของค่าครู หรือ < ฿5) = สัญญาณ "ป่วน" ตั้งแต่รอบแรก
+     *     • รอบ 2 = รอบสุดท้ายก่อน HOLD → บอกผลลัพธ์ให้ชัด
+     *
+     * @param  float  $amount  ยอดที่เพิ่งโอนเข้ามารอบนี้
+     * @param  float  $target  ค่าครูเต็ม
+     * @param  int  $rounds  รอบที่เท่าไรแล้ว (นับรวมรอบนี้)
+     * @return string '' = ไม่เข้าเกณฑ์เตือน
+     */
+    protected function oddAmountWarning(float $amount, float $target, int $rounds): string
+    {
+        if ($target <= 0) {
+            return '';
+        }
+
+        // ยอดจิ๋วผิดปกติ — น้อยกว่า 20% ของค่าครู และไม่ถึง 5 บาท
+        $isTiny = $amount < max(5.0, $target * 0.2);
+
+        // รอบสุดท้ายก่อน HOLD (HOLD ที่รอบ 3 — ดู handlePartialPayment)
+        $isLastChance = $rounds >= 2;
+
+        if (! $isTiny && ! $isLastChance) {
+            return '';
+        }
+
+        if ($isLastChance) {
+            return "\n\n⚠️ *เจ้าชะตาคะ — ยอดยังไม่ครบเป็นครั้งที่ ".$rounds." แล้วนะคะ*\n"
+                ."ถ้าครั้งหน้ายังไม่ครบ แม่หมอจำเป็นต้อง *พักยอดที่รับไว้* เพื่อตรวจสอบเอง\n"
+                .'   (เงินไม่หายค่ะ แต่จะยังไม่ได้ดูดวงจนกว่าแม่หมอจะตรวจเสร็จ) 🙏';
+        }
+
+        return "\n\n⚠️ *ยอดที่โอนมาห่างจากค่าครูมากนะคะ*\n"
+            .'   แม่หมอเปิดดวงให้ได้ต่อเมื่อยอดครบ ฿'.number_format($target, 2)." เท่านั้นค่ะ\n"
+            .'   โอนไม่ครบซ้ำๆ ครบ 3 ครั้ง แม่หมอจะพักยอดไว้ตรวจสอบนะคะ 🙏';
+    }
+
+    /**
      * 💰 (2026-06-05, user) จัดการ "โอนขาด" — เครดิตยอด + บอกยอดที่ขาด + สร้างบิล top-up ผูก reading เดิม
      *   วนจนครบเป้า (เช่น 99). ครบ 3 รอบยังไม่ครบ → พักเงินไว้ให้แม่หมอ/แอดมินตรวจ (HOLD 60 นาที, ไม่แบน ไม่คืนอัตโนมัติ)
      *
@@ -16690,12 +16781,16 @@ class FortuneConversationService
                 'partial_rounds' => $rounds, 'partial_transrefs' => $refs, 'partial_hold_at' => null,
             ])->save();
 
+            // ⚠️ (2026-08-29, owner) เตือนคนโอนยอดป่วน — ของเดิมเตือนแค่ตอนสร้างบิล ไม่เคยเตือนตอนโอนขาด
+            $oddWarn = $this->oddAmountWarning($amount, $target, $rounds);
+
             if (! $topupUpa) {
                 return [
                     'action' => 'partial_topup_failed',
                     'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2).' แล้วค่ะ (รวม ฿'.number_format($newPaid, 2).")\n"
                         .'ยังขาดอีก ฿'.number_format($remaining, 2).' ให้ครบ ฿'.number_format($target, 2)."\n"
-                        .'รบกวนโอนส่วนที่ขาดแล้วส่งสลิปมาให้แม่หมอตรวจอีกครั้งนะคะ ✨',
+                        .'รบกวนโอนส่วนที่ขาดแล้วส่งสลิปมาให้แม่หมอตรวจอีกครั้งนะคะ ✨'
+                        .$oddWarn,
                     'reading' => $reading,
                 ];
             }
@@ -16732,7 +16827,8 @@ class FortuneConversationService
                     .'➖ ยัง *ขาดอีก ฿'.number_format($remaining, 2)."*\n\n"
                     .'💸 โอนยอดนี้ได้เลยค่ะ → *฿'.number_format((float) $topupUpa->unique_amount, 2)."*\n"
                     ."   (ใส่เศษสตางค์ด้วยนะคะ ระบบจะตัดบิลให้อัตโนมัติทันที)\n\n"
-                    .'✨ พอครบ แม่หมอเปิดดวงให้ทันทีเลยค่ะ 🌙',
+                    .'✨ พอครบ แม่หมอเปิดดวงให้ทันทีเลยค่ะ 🌙'
+                    .$oddWarn,
                 'reading' => $reading,
             ];
         } catch (\Throwable $e) {
