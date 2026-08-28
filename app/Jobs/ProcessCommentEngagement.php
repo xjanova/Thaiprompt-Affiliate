@@ -635,9 +635,14 @@ class ProcessCommentEngagement implements ShouldQueue
             //     2. $hasPersonalTeaser — เรารู้วันเกิดเขาแล้ว $dmMessage เป็นคำชวนเฉพาะตัว
             //        ("ดวงวันอังคารของคุณพร้อมแล้ว") คู่กับปุ่ม DAILY_SHOW_MINE
             //        ⇒ การ์ดทางเข้าเป็นของ "คนที่เรายังไม่รู้จัก" ยัดให้คนกลุ่มนี้ = ถอยหลัง
+            //     3. 🎁 (2026-08-28) แอดมินปิด "ระบบชวนรับดวงรายวันฟรี" — การ์ดใบแรกของชุดนี้
+            //        คือ [🎁 รับดวงฟรีประจำวัน] (payload DAILY_FREE_START) = คำชวนรับดวงฟรีเต็ม ๆ
+            //        และ facebookEntry() สร้างครบ 2 ใบเสมอ แยกส่งใบ VIP ใบเดียวไม่ได้
+            //        ⇒ ปิดสวิตช์ = ข้ามการ์ดทั้งชุด ตกกลับเส้นข้อความชวนดูดวง "ชุดแรก" ตามที่เจ้าของสั่ง
             $entryCardSent = false;
+            $dailyFreeEnabled = (new \App\Services\Fortune\FortuneBotMode($settings))->dailyFreeOutboundEnabled();
 
-            if (! empty($settings->entry_cards_on_dm) && ! $horoscopeMerged && ! $hasPersonalTeaser) {
+            if (! empty($settings->entry_cards_on_dm) && $dailyFreeEnabled && ! $horoscopeMerged && ! $hasPersonalTeaser) {
                 try {
                     $entryCard = app(\App\Services\Fortune\FortuneEntryCardBuilder::class)->facebookEntry([
                         'invite_text' => $dmMessage,

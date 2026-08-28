@@ -277,6 +277,8 @@ class FortuneTellingSetting extends Model
         'daily_horoscope_per_day_enabled',
         // 🌙 (2026-07-31) DM: แนบกล่องดวงรายวันนำหน้าข้อความ DM ปกติ
         'dm_daily_horoscope_enabled',
+        // 🌙 (2026-08-28) สวิตช์ระบบ "ชวนรับดวงรายวันฟรี" ฝั่ง DM ขาออก
+        'daily_free_horoscope_enabled',
         // 🌙 Mystic Content Auto-Post (2026-04-29)
         'mystic_content_enabled',
         'mystic_content_schedule',
@@ -604,6 +606,8 @@ class FortuneTellingSetting extends Model
         'daily_horoscope_per_day_enabled' => 'boolean',
         // 🌙 DM daily horoscope box toggle
         'dm_daily_horoscope_enabled' => 'boolean',
+        // 🌙 (2026-08-28) สวิตช์ระบบชวนรับดวงรายวันฟรี (DM ขาออก)
+        'daily_free_horoscope_enabled' => 'boolean',
         // 🌙 Mystic Content
         'mystic_content_enabled' => 'boolean',
         'mystic_content_schedule' => 'array',
@@ -842,6 +846,10 @@ class FortuneTellingSetting extends Model
         'daily_horoscope_per_day_enabled' => false,
         // 🌙 (2026-07-31) DM ดวงรายวัน — ปิดเป็น default (แอดมินเปิดเองเมื่อพร้อม)
         'dm_daily_horoscope_enabled' => false,
+        // 🌙 (2026-08-28) ระบบชวนรับดวงรายวันฟรี — **เปิดเป็น default**
+        //   ต่างจากสองตัวบนตรงที่นี่คือสวิตช์ของฟีเจอร์ที่วิ่งอยู่จริงบน prod แล้ว
+        //   deploy ต้องไม่เปลี่ยนพฤติกรรมเอง (ดู isDailyFreeHoroscopeEnabled)
+        'daily_free_horoscope_enabled' => true,
         // 🌙 Mystic Content — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
         'mystic_content_enabled' => false,
         'mystic_content_caption_min' => 400,
@@ -1155,6 +1163,31 @@ class FortuneTellingSetting extends Model
         static::$cachedInstance = null;
         static::$cachedPageId = null;
         static::$cachedAt = 0.0;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    // 🌙 ระบบชวนรับดวงรายวันฟรี (2026-08-28)
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * 🌙 เปิด "ระบบชวนรับดวงรายวันฟรี" อยู่ไหม
+     *
+     * ครอบเฉพาะ **ฝั่งชวน (DM ขาออก)** — ปิดแล้ว:
+     *   - DM ตอบคอมเมนต์/กดไลก์ กลับไปใช้ชุดข้อความชวนดูดวงชุดแรก (mode=all/classic)
+     *   - ไม่ยื่นการ์ด 🎁 รับดวงฟรีประจำวัน / ไม่แนบกล่องดวงรายวันไปกับ DM
+     *   - ไม่ตั้งธง "ถามวันเกิดไปแล้ว" (ไม่ได้ถาม จะตั้งธงไม่ได้)
+     *
+     * 🚨 **ไม่แตะเลนขาเข้า** — ลูกค้าพิมพ์ "ดูดวงฟรี" เองยังได้ดวงประจำวันเกิด + การ์ด 7 ใบ
+     *    ครบเหมือนเดิม (เจ้าของสั่ง 2026-08-28) ตัวที่ปิดคือ "การชวน" ไม่ใช่ "ของ"
+     *    ⇒ ห้ามเอาตัวนี้ไปใส่ใน dailyReplyAllowedFor() / maybeOfferDailyForFreeRequest()
+     *
+     * ⚠️ `?? true` จงใจ — คอลัมน์ยังไม่ถูก migrate บนเครื่องไหน ค่าที่อ่านได้คือ null
+     *    ซึ่งต้องแปลว่า "เปิดอยู่" (พฤติกรรมเดิม) ไม่ใช่ปิดฟีเจอร์ที่วิ่งอยู่ทิ้งเงียบ ๆ
+     *    (rule_missing_column_reads_as_null_not_empty)
+     */
+    public function isDailyFreeHoroscopeEnabled(): bool
+    {
+        return (bool) ($this->daily_free_horoscope_enabled ?? true);
     }
 
     // ════════════════════════════════════════════════════════════

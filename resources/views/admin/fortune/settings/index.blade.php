@@ -2310,6 +2310,44 @@ Format 2 — JSON array:
                         </p>
                     @endif
 
+                    {{-- 🎁 (2026-08-28) สวิตช์ระบบชวนรับดวงรายวันฟรี --}}
+                    @php
+                        // ยังไม่ migrate = null → ต้องอ่านเป็น "เปิด" (ตรงกับ isDailyFreeHoroscopeEnabled)
+                        $tpDailyFree = (bool) old('daily_free_horoscope_enabled', $settings->daily_free_horoscope_enabled ?? true);
+                    @endphp
+                    <div class="mt-4 rounded-xl border-2 {{ $tpDailyFree ? 'border-emerald-300 dark:border-emerald-700' : 'border-rose-300 dark:border-rose-700' }} bg-gray-50 dark:bg-gray-700/40 p-4">
+                        <label class="block text-sm font-bold text-gray-900 dark:text-white mb-1">
+                            🎁 ระบบชวนรับดวงรายวันฟรี
+                        </label>
+                        {{-- hidden 0 ต้องมาก่อน checkbox — ไม่งั้นเอาติ๊กออกแล้วค่าไม่ถูกบันทึก --}}
+                        <input type="hidden" name="daily_free_horoscope_enabled" value="0">
+                        <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer hover:border-amber-400 transition">
+                            <input type="checkbox" name="daily_free_horoscope_enabled" value="1"
+                                   {{ $tpDailyFree ? 'checked' : '' }}
+                                   class="w-5 h-5 text-amber-600 rounded focus:ring-amber-500">
+                            <span class="text-sm text-gray-900 dark:text-white">เปิดให้ DM ชวนลูกค้ารับดวงรายวันฟรี</span>
+                        </label>
+
+                        @if($tpDailyFree)
+                            <p class="mt-2 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1">
+                                ✅ เปิดอยู่ — DM ตอบคอมเมนต์/กดไลก์ จะชวนบอกวันเกิดรับดวงฟรี
+                                และยื่นการ์ด 🎁 รับดวงฟรีประจำวัน ตามปกติ
+                            </p>
+                        @else
+                            <p class="mt-2 text-xs font-medium text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded px-2 py-1">
+                                ⛔ ปิดอยู่ — DM จะใช้ <strong>ชุดข้อความชวนดูดวงชุดแรก</strong> อย่างเดียว
+                                ไม่พูดถึงดวงฟรี ไม่ยื่นการ์ดฟรี ไม่ถามวันเกิด
+                            </p>
+                        @endif
+
+                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            🚨 <strong>ปิดแล้วลูกค้ายังรับดวงฟรีเองได้</strong> — คนที่พิมพ์ "ดูดวงฟรี" / "ขอดวงรายวัน"
+                            เข้ามาเอง ยังได้ดวงประจำวันเกิด + การ์ด 7 วันเกิด ครบเหมือนเดิม
+                            <br>สวิตช์นี้ปิดแค่ <strong>"การชวน"</strong> ฝั่ง DM ที่เรายิงออกไปเท่านั้น ไม่ได้ปิดตัวบริการ
+                            <br>⚠️ ปุ่มดวงฟรีที่ส่งออกไปแล้วในแชทเก่า ยังกดใช้ได้ตามปกติ (ไม่ทำปุ่มตาย)
+                        </p>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">

@@ -198,6 +198,9 @@ class FortuneInviteMessage extends Model
         //     แบบเก่า จนกว่าจะ 6 โมง")
         //   ต้องสลับพร้อมกับปุ่มที่ FacebookWebhookController/ProcessCommentEngagement
         //   ไม่งั้นได้ข้อความชวนวันเกิด + ปุ่มแบบเก่า = สวนทางกันเอง
+        //   🎁 (2026-08-28) เส้นเดียวกันนี้ครอบสวิตช์ `daily_free_horoscope_enabled` ด้วย
+        //     — isDailyServing() คืน false เมื่อแอดมินปิดระบบชวนดวงฟรี ⇒ DM กลับไปใช้
+        //     "ชุดข้อความชวนดูดวงชุดแรก" (all/classic) ตามที่เจ้าของสั่ง โดยไม่ต้องแก้ที่นี่
         if ($mode === \App\Services\Fortune\FortuneBotMode::MODE_DAILY && ! $botMode->isDailyServing()) {
             $mode = \App\Services\Fortune\FortuneBotMode::MODE_CLASSIC;
         }

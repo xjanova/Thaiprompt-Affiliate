@@ -119,6 +119,16 @@
                 </div>
             </label>
 
+            {{-- 🎁 (2026-08-28) เตือนเมื่อสวิตช์ใหญ่ปิดอยู่ — ติ๊กช่องข้างบนแล้วไม่มีอะไรเกิดขึ้น
+                 คือบั๊กที่หาสาเหตุยากที่สุดแบบหนึ่ง ต้องบอกตรงนี้ว่าตัวคุมจริงอยู่ที่ไหน --}}
+            @unless($settings->daily_free_horoscope_enabled ?? true)
+                <div class="tp-muted" style="margin-top:12px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; font-size:12px; line-height:1.6;">
+                    ⛔ <strong style="color:var(--ink);">ระบบชวนรับดวงรายวันฟรีถูกปิดอยู่</strong> —
+                    ติ๊กช่องด้านบนไว้ก็จะยังไม่ส่งกล่องดวงรายวัน
+                    <br>เปิดคืนได้ที่ <strong style="color:var(--ink);">ตั้งค่าดูดวง → โหมดบอท → 🎁 ระบบชวนรับดวงรายวันฟรี</strong>
+                </div>
+            @endunless
+
             <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm" style="margin-top:16px;">
                 <i class="fas fa-floppy-disk"></i> บันทึกการตั้งค่า
             </button>

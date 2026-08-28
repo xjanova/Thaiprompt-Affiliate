@@ -225,6 +225,8 @@ class FortuneSettingsController extends Controller
             // 🔀 (2026-07-26) โหมด TRANSFER — ดักหน้าแชท FB พาไปดูดวงฟรีที่เว็บ/LINE
             // 🌙 (2026-07-31) เพิ่ม daily — ถ้าไม่เติมที่นี่ แอดมินกดบันทึกแล้วเด้ง validation error
             'fortune_bot_mode' => 'nullable|in:classic,transfer,daily',
+            // 🎁 (2026-08-28) สวิตช์ระบบชวนรับดวงรายวันฟรี (ปิด = DM ชวนดูดวงอย่างเดียว)
+            'daily_free_horoscope_enabled' => 'boolean',
             'transfer_box_cooldown_hours' => 'nullable|integer|min:0|max:720',
             'transfer_fallback_attempts' => 'nullable|integer|min:0|max:20',
             'transfer_fallback_days' => 'nullable|integer|min:1|max:365',
@@ -496,6 +498,9 @@ class FortuneSettingsController extends Controller
             'admin_handover_enabled', 'takeover_notify_customer',
             // 🎁 (2026-05-03) ระบบทำนายฟรี 1 ใบ
             'enable_free_card_reading',
+            // 🌙 (2026-08-28) ระบบชวนรับดวงรายวันฟรี — ต้องอยู่ในลิสต์นี้ ไม่งั้น "เอาติ๊กออก"
+            //    แล้วค่าไม่ถูกส่งมา = ไม่มีคีย์ใน $validated = ค่าเดิม (เปิด) ค้างตลอดกาล
+            'daily_free_horoscope_enabled',
             // 🌟 (2026-05-04) Group Invite + Monthly Claim
             'fortune_group_invite_enabled',
             'monthly_free_claim_enabled',

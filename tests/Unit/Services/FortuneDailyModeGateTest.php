@@ -528,4 +528,121 @@ class FortuneDailyModeGateTest extends TestCase
             'ถ้าวันหนึ่ง tier_choice ถูกถอดออกจาก ACTIVE_READING_STATUSES ให้ทบทวนคอมเมนต์ใน dailyBlockingReadingExists()'
         );
     }
+
+    // ════════════════════════════════════════════════════════════
+    // 🎁 (2026-08-28) สวิตช์ "ระบบชวนรับดวงรายวันฟรี"
+    // ════════════════════════════════════════════════════════════
+
+    /**
+     * ค่าที่อ่านไม่ได้ / ยังไม่ migrate ต้องแปลว่า "เปิด" — ไม่ใช่ปิดฟีเจอร์ที่วิ่งอยู่เงียบ ๆ
+     *
+     * ระหว่าง deploy ไฟล์โค้ดขึ้นก่อน migrate เสมอ ถ้าตีค่า null เป็นปิด
+     * DM ทั้งระบบจะเปลี่ยนพฤติกรรมเองในช่วงนั้นโดยไม่มีใครสั่ง
+     *
+     * @test
+     */
+    public function สวิตช์ดวงฟรีไม่มีคอลัมน์ต้องอ่านเป็นเปิด(): void
+    {
+        $expect = [
+            'ยังไม่ migrate (ไม่มีคีย์เลย)' => [[], true],
+            'เปิดชัดเจน' => [['daily_free_horoscope_enabled' => true], true],
+            'ปิดชัดเจน' => [['daily_free_horoscope_enabled' => false], false],
+            'ค่าจาก DB เป็น 1' => [['daily_free_horoscope_enabled' => 1], true],
+            'ค่าจาก DB เป็น 0' => [['daily_free_horoscope_enabled' => 0], false],
+        ];
+
+        foreach ($expect as $label => [$attrs, $enabled]) {
+            $settings = new FortuneTellingSetting($attrs);
+
+            $this->assertSame(
+                $enabled,
+                $settings->isDailyFreeHoroscopeEnabled(),
+                "โมเดล: {$label}"
+            );
+
+            $this->assertSame(
+                $enabled,
+                (new FortuneBotMode($settings))->dailyFreeOutboundEnabled(),
+                "FortuneBotMode: {$label}"
+            );
+        }
+    }
+
+    /**
+     * 🚨 ปิดสวิตช์ = ปิด **ฝั่งชวน** เท่านั้น ห้ามแตะด่านขาเข้า
+     *
+     * เจ้าของสั่ง 2026-08-28: "แต่ยังพิมพ์ ดูดวงฟรี ก็จะพาไปรับดวงฟรี การ์ด 7 ใบ ได้"
+     *
+     * ถ้าเผลอเอาสวิตช์ไปแปะ dailyReplyAllowedFor() ผลคือ:
+     *   - คนพิมพ์ "ดูดวงฟรี" ไหลไป startDeepReadingFlow() = **เมนูราคา**
+     *     (rule_free_request_never_hits_paywall)
+     *   - ปุ่ม 🎁 / การ์ด 7 วัน ที่ยิงออกไปแล้วในแชทเก่า กดแล้วเงียบ = ปุ่มตาย
+     *
+     * @test
+     */
+    public function ปิดสวิตช์ดวงฟรีต้องไม่ปิดด่านขาเข้า(): void
+    {
+        $off = new FortuneBotMode(new FortuneTellingSetting([
+            'fortune_bot_mode' => FortuneBotMode::MODE_DAILY,
+            'daily_free_horoscope_enabled' => false,
+        ]));
+
+        // ขาเข้า — ต้องยังเปิดครบทุกช่องทางเหมือนเดิม
+        foreach (FortuneBotMode::DAILY_PLATFORMS as $platform) {
+            $this->assertTrue(
+                $off->dailyReplyAllowedFor($platform, 'UID_1'),
+                "ปิดสวิตช์แล้วด่านขาเข้าบน {$platform} ต้องยังเปิด (ลูกค้าขอเองต้องได้ของ)"
+            );
+        }
+
+        // ⚠️ ยืนยันว่าอ่านสวิตช์ได้จริง — dailyFreeOutboundEnabled() เป็น fail-open
+        //    ถ้าเมธอดในโมเดลหาย มันจะคืน true เงียบ ๆ แล้ว assertFalse ข้างล่างจะผ่าน
+        //    ด้วยเหตุผลผิด ๆ (dailyArticlesReadyToday คืน false เพราะไม่มีบทความในเทสต์)
+        $this->assertFalse(
+            $off->dailyFreeOutboundEnabled(),
+            'อ่านสวิตช์ไม่ได้ (fail-open) — เช็คว่า FortuneTellingSetting::isDailyFreeHoroscopeEnabled() ยังอยู่'
+        );
+
+        // ขาออก — ต้องเงียบ (ตัวนี้คือสิ่งที่สวิตช์ปิด)
+        //   ⚠️ ไม่แตะ DB เลย: ด่านสวิตช์อยู่ **ก่อน** dailyArticlesReadyToday()
+        $this->assertFalse(
+            $off->isDailyServing(),
+            'ปิดสวิตช์แล้ว DM ขาออกต้องกลับไปใช้ชุดข้อความชวนดูดวงชุดแรก'
+        );
+
+        // โหมดยังเป็น daily อยู่ — สวิตช์ไม่ควรไปแก้ค่าโหมดที่แอดมินตั้งไว้
+        $this->assertTrue($off->isDaily(), 'สวิตช์ต้องไม่ไปเปลี่ยนโหมดบอทที่แอดมินตั้งไว้');
+    }
+
+    /**
+     * 🔒 ล็อกไว้ในระดับซอร์ส — ด่านขาเข้าห้ามอ้างสวิตช์นี้เด็ดขาด
+     *
+     * เทสต์ข้างบนจับได้เฉพาะตอนที่พฤติกรรมพังจริง แต่เคสนี้คือ "แก้ผิดที่แล้วดูสมเหตุสมผล"
+     * ซึ่งเป็นแบบที่หลุด review ได้ง่ายที่สุด — ล็อกที่ตัวโค้ดไปเลย
+     *
+     * @test
+     */
+    public function ด่านขาเข้าห้ามอ้างสวิตช์ดวงฟรี(): void
+    {
+        $src = (string) file_get_contents(app_path('Services/Fortune/FortuneBotMode.php'));
+
+        // ตัดเฉพาะตัว dailyReplyAllowedFor() ออกมาดู (จบที่เมธอดถัดไป)
+        $start = strpos($src, 'public function dailyReplyAllowedFor');
+        $this->assertNotFalse($start, 'หา dailyReplyAllowedFor() ไม่เจอ — เปลี่ยนชื่อแล้วต้องแก้เทสต์ตาม');
+
+        $end = strpos($src, 'public function ', $start + 20);
+        $body = substr($src, $start, $end !== false ? $end - $start : null);
+
+        $this->assertStringNotContainsString(
+            'dailyFreeOutboundEnabled',
+            $body,
+            'ด่านขาเข้าต้องไม่ขึ้นกับสวิตช์ชวนดวงฟรี — ลูกค้าที่พิมพ์ขอเองต้องได้ของเสมอ'
+        );
+
+        $this->assertStringNotContainsString(
+            'daily_free_horoscope_enabled',
+            $body,
+            'ด่านขาเข้าต้องไม่อ่านคอลัมน์สวิตช์โดยตรง'
+        );
+    }
 }
