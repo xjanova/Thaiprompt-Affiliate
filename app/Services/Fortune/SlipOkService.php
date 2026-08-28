@@ -418,8 +418,73 @@ class SlipOkService
             return $cached;
         }
 
+        // 🔎 (2026-08-29, owner "ของดีนี่ เช็คได้ก่อน ส่งไปเช็ค") ถอด QR เองก่อน — สลิปที่เคยใช้แล้ว ไม่ต้องจ่ายเครดิตถาม
+        //   hash dedup ด้านบนจับได้เฉพาะ "ไบต์เดิมเป๊ะ" — ลูกค้าส่งรูปเดิมซ้ำผ่าน FB/LINE จะโดน re-encode
+        //   ทุกครั้ง → sha เปลี่ยน → หลุดไปยิง API ใหม่ทั้งที่เป็นการโอนรายการเดิม
+        //   (เคสจริง LINE U6343edd… ยิง 6 ครั้งของ transRef เดียวกัน)
+        if (($localDup = $this->localDuplicateFromQr($bytes)) !== null) {
+            return $localDup;
+        }
+
         // 🪪 (2026-06-09) ยิงผ่าน pool + auto-failover (สลับบัญชีถ้าโควต้าหมด/key พัง)
         return $this->runVerifyWithFailover('file', ['bytes' => $bytes], $platform, $userId, $sha);
+    }
+
+    /**
+     * 🔎 (2026-08-29) ถอด QR ในสลิปเอง → ถ้าเลขอ้างอิงเคยถูกใช้แล้ว ตอบ "ซ้ำ" โดยไม่ยิง API
+     *
+     *   คุ้มเพราะเลขอ้างอิง (transRef) ฝังอยู่ในตัว QR ของสลิปอยู่แล้ว — อ่านเองได้ฟรี
+     *   คืนรูปแบบเดียวกับผลจาก SlipOK โดยใช้ error code **1012 (สลิปซ้ำ)** เพื่อให้
+     *   `evaluateForReading()` ด่าน 1 map เป็น DECISION_DUPLICATE ตามทางเดิม ไม่ต้องแตก branch ใหม่
+     *
+     * 🛡️ ใช้เฉพาะผลเชิงบวก (ถอดได้ + เลขตรงกับที่เรามีจริง) — ถอดไม่ได้/ไม่เจอ = คืน null ปล่อยไปยิงตามปกติ
+     *   ห้ามสรุปว่า "ถอดไม่ได้ = ไม่ใช่สลิป" เด็ดขาด (ดูเหตุผลใน SlipQrReader)
+     *
+     * @return array|null null = ไม่เข้าเงื่อนไข ให้ยิง SlipOK ตามปกติ
+     */
+    protected function localDuplicateFromQr(string $bytes): ?array
+    {
+        // 🔌 สวิตช์ดับ — ปิดฉุกเฉินได้ด้วย SLIPOK_LOCAL_QR_PRECHECK=false ใน .env (ไม่ต้องแก้โค้ด)
+        if (! config('smschecker.local_qr_precheck', true)) {
+            return null;
+        }
+
+        try {
+            $reader = new SlipQrReader;
+            $payload = $reader->payloadFromBytes($bytes);
+            if ($payload === null) {
+                return null;
+            }
+
+            $candidates = $reader->candidateRefs($payload);
+            if (empty($candidates)) {
+                return null;
+            }
+
+            // ตรงเป๊ะกับ trans_ref ที่เราเคยบันทึกไว้เท่านั้นถึงนับว่าซ้ำ (ไม่เดา ไม่ fuzzy)
+            $existing = SlipVerification::whereIn('trans_ref', $candidates)->first();
+            if (! $existing) {
+                return null;
+            }
+
+            Log::info('🔎 SlipOK: ถอด QR เองแล้วพบว่าเป็นสลิปที่เคยใช้แล้ว → ไม่ยิง API (ประหยัดโควตา)', [
+                'trans_ref' => $existing->trans_ref,
+                'used_by_reading_id' => $existing->fortune_reading_id,
+                'used_status' => $existing->status,
+            ]);
+
+            return $this->normalize(200, [
+                'success' => false,
+                'code' => 1012, // สลิปซ้ำ — โค้ดเดียวกับที่ SlipOK ใช้
+                'message' => 'สลิปนี้เคยถูกใช้ไปแล้ว (ตรวจจากเลขอ้างอิงใน QR)',
+                'data' => ['transRef' => $existing->trans_ref],
+            ], ['local_qr_duplicate' => true, 'trans_ref' => $existing->trans_ref]);
+        } catch (\Throwable $e) {
+            // ทุกความผิดพลาด = ปล่อยผ่านไปยิง SlipOK ตามปกติ (ห้ามบล็อกลูกค้าเพราะตัวถอด QR สะดุด)
+            Log::debug('🔎 SlipOK: ด่านถอด QR ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**

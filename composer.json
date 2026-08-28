@@ -12,6 +12,7 @@
         "guzzlehttp/guzzle": "^7.2",
         "intervention/image": "^3.11",
         "jenssegers/agent": "^2.6",
+        "khanamiryan/qrcode-detector-decoder": "^2.0",
         "laravel/framework": "^11.0",
         "laravel/passport": "^12.0",
         "laravel/reverb": "*",
