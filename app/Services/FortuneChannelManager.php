@@ -3394,6 +3394,18 @@ class FortuneChannelManager
                         if ($textOk) {
                             [$gapMin, $gapMax] = $this->bubbleGap();
 
+                            // 🛟 จดกล่องที่เหลือลง MySQL ก่อนขึ้นคิว (ตาข่ายกู้ของ cron)
+                            \App\Jobs\SendFortuneBubbleJob::rememberPending(
+                                $reading?->id,
+                                'line',
+                                $userId,
+                                $lineBubbles,
+                                ! empty($result['suggestion_box']) && ! empty($result['quick_replies'])
+                                    ? (string) $result['suggestion_box']
+                                    : null,
+                                ! empty($result['suggestion_box']) ? ($result['quick_replies'] ?? []) : [],
+                            );
+
                             try {
                                 \App\Jobs\SendFortuneBubbleJob::dispatch(
                                     'line',
@@ -3419,6 +3431,8 @@ class FortuneChannelManager
                                 if ($rest !== '') {
                                     $lineService->sendMessage($userId, $rest);
                                 }
+
+                                \App\Jobs\SendFortuneBubbleJob::clearPending($reading?->id);
                             }
                         }
 
@@ -5990,6 +6004,18 @@ class FortuneChannelManager
 
         [$gapMin, $gapMax] = $this->bubbleGap();
 
+        // 🛟 จดกล่องที่เหลือลง MySQL **ก่อน** ขึ้นคิว — ถ้า worker ตายหลังจากนี้
+        //   cron `fortune:bubble-recover` จะเห็นและเทที่เหลือให้เอง
+        //   (กล่องแรกถึงลูกค้าแล้ว + markDelivered ทำงานแล้ว ⇒ redeliver เดิมมองว่าครบ)
+        \App\Jobs\SendFortuneBubbleJob::rememberPending(
+            $readingId,
+            'facebook',
+            $userId,
+            $bubbles,
+            $tailMessage,
+            $tailQuickReplies,
+        );
+
         try {
             \App\Jobs\SendFortuneBubbleJob::dispatch(
                 'facebook',
@@ -6019,6 +6045,9 @@ class FortuneChannelManager
                 if ($tailMessage !== null && trim($tailMessage) !== '') {
                     $fbService->sendQuickReplies($userId, $tailMessage, $tailQuickReplies, $extra);
                 }
+
+                // เทออกไปหมดแล้ว → ล้างธง กัน cron กู้ส่งซ้ำ
+                \App\Jobs\SendFortuneBubbleJob::clearPending($readingId);
             } catch (\Throwable $inner) {
                 Log::critical('💬 Bubble: ตาข่ายสำรองล้มด้วย — คำทำนายไปไม่ครบ', [
                     'user_id' => $userId,
@@ -6067,6 +6096,9 @@ class FortuneChannelManager
 
         [$gapMin, $gapMax] = $this->bubbleGap();
 
+        // 🛟 จดกล่องที่เหลือลง MySQL ก่อนขึ้นคิว (เหตุผลเดียวกับฝั่ง FB)
+        \App\Jobs\SendFortuneBubbleJob::rememberPending($readingId, 'line', $userId, $bubbles);
+
         try {
             \App\Jobs\SendFortuneBubbleJob::dispatch(
                 'line',
@@ -6091,6 +6123,8 @@ class FortuneChannelManager
                 if ($rest !== '') {
                     $lineService->sendMessage($userId, $rest);
                 }
+
+                \App\Jobs\SendFortuneBubbleJob::clearPending($readingId);
             } catch (\Throwable $inner) {
                 Log::critical('💬 Bubble LINE: ตาข่ายสำรองล้มด้วย — คำทำนายไปไม่ครบ', [
                     'user_id' => $userId,

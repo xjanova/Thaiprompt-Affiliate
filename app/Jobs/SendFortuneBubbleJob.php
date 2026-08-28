@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\LineFortuneService;
@@ -67,6 +68,69 @@ class SendFortuneBubbleJob implements ShouldQueue
         public ?int $readingId = null,
     ) {}
 
+    /**
+     * 🛟 (2026-08-28) จดกล่องที่ "ยังไม่ได้ส่ง" ลง MySQL — แหล่งความจริงของตาข่ายกู้
+     *
+     * ทำไมต้องมี: กล่องแรกส่ง sync ไปแล้ว และ markDelivered() ทำงานไปแล้ว
+     * ⇒ cron redeliver เดิมมองว่า "ส่งครบแล้ว" · ถ้า worker ตายตรงนี้
+     *   ลูกค้าที่จ่ายเงินได้คำทำนายท่อนแรกท่อนเดียว **ถาวร ไม่มี error ที่ไหนเลย**
+     *
+     * ⚠️ ต้องอยู่บน conversation_state (MySQL) **ห้ามอยู่บน Cache**
+     *    deploy รัน `cache:clear` = `flushdb` ทั้ง redis DB 1 ⇒ ตาข่ายที่อ่าน Cache
+     *    จะ "กู้ของที่ถูกล้างทิ้งไม่ได้ตามนิยาม" (บทเรียนตรง ๆ จาก FTU-260821-K9664)
+     *
+     * @param  array<int, string>  $bubbles  กล่องที่ยังค้าง ([] = ส่งครบแล้ว → ล้างธง)
+     * @param  array<int, array<string, mixed>>  $tailQuickReplies
+     */
+    public static function rememberPending(
+        ?int $readingId,
+        string $platform,
+        string $userId,
+        array $bubbles,
+        ?string $tailMessage = null,
+        array $tailQuickReplies = [],
+    ): void {
+        if ($readingId === null) {
+            return;
+        }
+
+        try {
+            $reading = FortuneReading::find($readingId);
+
+            if (! $reading) {
+                return;
+            }
+
+            if ($bubbles === [] && ($tailMessage === null || trim($tailMessage) === '')) {
+                $reading->setConversationState('bubble_pending', null);
+                $reading->setConversationState('bubble_pending_at', null);
+
+                return;
+            }
+
+            $reading->setConversationState('bubble_pending', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'bubbles' => array_values($bubbles),
+                'tail' => $tailMessage,
+                'tail_qr' => $tailQuickReplies,
+            ]);
+            $reading->setConversationState('bubble_pending_at', now()->toIso8601String());
+        } catch (Throwable $e) {
+            // จดไม่ได้ = เสียตาข่าย แต่ห้ามทำให้คำทำนายไม่ถูกส่ง
+            Log::warning('💬 Bubble: จดกล่องค้างลง DB ไม่สำเร็จ (เสียตาข่ายกู้)', [
+                'reading_id' => $readingId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /** ล้างธงกล่องค้าง — เรียกเมื่อส่งครบแล้ว หรือกู้เสร็จแล้ว */
+    public static function clearPending(?int $readingId): void
+    {
+        self::rememberPending($readingId, 'facebook', '', []);
+    }
+
     public function handle(): void
     {
         if (! in_array($this->platform, ['facebook', 'line'], true)) {
@@ -102,6 +166,16 @@ class SendFortuneBubbleJob implements ShouldQueue
             ]);
         }
 
+        // 🛟 ส่งไปแล้วกล่องหนึ่ง → ย่อรายการค้างทันที ตาข่ายกู้จะได้ไม่ส่งกล่องนี้ซ้ำ
+        self::rememberPending(
+            $this->readingId,
+            $this->platform,
+            $this->userId,
+            $this->bubbles,
+            $this->tailMessage,
+            $this->tailQuickReplies,
+        );
+
         if ($this->bubbles !== []) {
             self::dispatch(
                 $this->platform,
@@ -134,6 +208,9 @@ class SendFortuneBubbleJob implements ShouldQueue
                 ]);
             }
         }
+
+        // ✅ ครบทุกกล่องแล้ว — ล้างธง ไม่งั้น cron กู้จะส่งซ้ำ
+        self::clearPending($this->readingId);
     }
 
     /**
@@ -153,6 +230,16 @@ class SendFortuneBubbleJob implements ShouldQueue
         if ($bubble !== null && trim($bubble) !== '') {
             $line->sendMessage($this->userId, $bubble);
         }
+
+        // 🛟 ส่งไปแล้วกล่องหนึ่ง → ย่อรายการค้างทันที ตาข่ายกู้จะได้ไม่ส่งกล่องนี้ซ้ำ
+        self::rememberPending(
+            $this->readingId,
+            $this->platform,
+            $this->userId,
+            $this->bubbles,
+            $this->tailMessage,
+            $this->tailQuickReplies,
+        );
 
         if ($this->bubbles !== []) {
             self::dispatch(
@@ -181,6 +268,9 @@ class SendFortuneBubbleJob implements ShouldQueue
                 ]);
             }
         }
+
+        // ✅ ครบทุกกล่องแล้ว — ล้างธง ไม่งั้น cron กู้จะส่งซ้ำ
+        self::clearPending($this->readingId);
     }
 
     /**
@@ -234,12 +324,15 @@ class SendFortuneBubbleJob implements ShouldQueue
             if ($this->tailMessage !== null && trim($this->tailMessage) !== '') {
                 $fb->sendQuickReplies($this->userId, $this->tailMessage, $this->tailQuickReplies);
             }
+            // เทที่เหลือออกไปหมดแล้ว → ล้างธง กัน cron กู้ส่งซ้ำอีกรอบ
+            self::clearPending($this->readingId);
         } catch (Throwable $inner) {
             Log::critical('💬 Bubble: ตาข่ายสุดท้ายก็ล้ม — ลูกค้าได้คำทำนายไม่ครบ', [
                 'user_id' => $this->userId,
                 'reading_id' => $this->readingId,
                 'error' => $inner->getMessage(),
             ]);
+            // ⚠️ จงใจ **ไม่ล้างธง** ตรงนี้ — ปล่อยให้ cron `fortune:bubble-recover` ตามเก็บ
         }
     }
 

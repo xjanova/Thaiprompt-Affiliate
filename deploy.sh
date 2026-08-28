@@ -1972,6 +1972,13 @@ if php artisan fortune:celtic-answer-recover; then
 else
     print_warning "  ⚠ celtic-answer-recover ล้มเหลว (ไม่บล็อก deploy — cron จะตามเก็บให้)"
 fi
+# 🛟 (2026-08-28) สายบับเบิ้ล — กล่อง 2..N ที่ค้างคิวตอน queue:restart
+#   กล่องแรกถึงลูกค้าแล้วและ markDelivered() ทำงานแล้ว ⇒ redeliver เดิมมองไม่เห็นเคสนี้
+if php artisan fortune:bubble-recover; then
+    print_success "  ✓ bubble-recover ผ่าน"
+else
+    print_warning "  ⚠ bubble-recover ล้มเหลว (ไม่บล็อก deploy — cron จะตามเก็บให้)"
+fi
 
 # Step 21: Cloudflare Cache Purge
 print_step 21 22 "☁️ Cloudflare CDN Cache Purge"

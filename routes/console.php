@@ -420,6 +420,18 @@ Schedule::command('fortune:pro-session-answer-recover --limit=50')
     ->name('fortune-pro-session-answer-recover')
     ->runInBackground();
 
+// 3b-quater) Fortune Bubble Recover — 🛟 (2026-08-28) กู้ "คำทำนายส่งไปครึ่งเดียว" ของสายบับเบิ้ล
+//     กล่องแรกส่ง sync + markDelivered() แล้ว ⇒ cron redeliver เดิมมองว่าครบ มองไม่เห็นเคสนี้เลย
+//     worker ตายตรงนั้น = ลูกค้าที่จ่ายเงินได้ท่อนแรกท่อนเดียว **ถาวร ไม่มี error ที่ไหน**
+//     อ่านธง bubble_pending บน conversation_state (MySQL — deploy ล้างไม่ได้) แล้วเทที่เหลือรวดเดียว
+//     grace = (กล่องมากสุด × ระยะห่างมากสุด) + 90s ⇒ ไม่แย่งส่งทับลูกโซ่ที่ยังวิ่งปกติ
+Schedule::command('fortune:bubble-recover --limit=50')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-bubble-recover')
+    ->runInBackground();
+
 // 3c) Fortune Pro Session Nudge — 🔔 (2026-06-30, owner) ตามให้ลูกค้าเริ่มถามคำถาม
 //     owner spec: ลูกค้ายังไม่ถามเลย → ตามทุก interval (default 10 นาที) ระหว่างสแตนบาย (default 30 นาที)
 //     ครบสแตนบายไม่ถาม → auto-finalize สรุปให้ (เดิม: ตามครั้งเดียว → เปลี่ยนเป็นตามซ้ำทุก interval)
