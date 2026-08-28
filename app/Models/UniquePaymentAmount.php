@@ -100,19 +100,23 @@ class UniquePaymentAmount extends Model
      * @param  int|null  $transactionId  ID ของ transaction ที่เกี่ยวข้อง
      * @param  string  $transactionType  ประเภท transaction
      * @param  int  $expiryMinutes  เวลาหมดอายุของ reservation (นาที)
+     * @param  int|null  $minSuffix  ทศนิยมขั้นต่ำ (1-99) — บิล top-up "โอนขาด" ต้องการยอดที่
+     *                               *ไม่ต่ำกว่าส่วนที่ขาดจริง* เช่น ขาด ฿38.10 → base 38 + suffix ≥ 10
+     *                               (null = พูลเต็ม 01-99 เหมือนเดิม — ทุก caller เดิมไม่เปลี่ยนพฤติกรรม)
      */
     public static function generate(
         float $baseAmount,
         ?int $transactionId = null,
         string $transactionType = 'order',
-        ?int $expiryMinutes = null
+        ?int $expiryMinutes = null,
+        ?int $minSuffix = null
     ): ?self {
         $expiryMinutes = $expiryMinutes ?? config('smschecker.unique_amount_expiry', 30);
         $maxPending = config('smschecker.max_pending_per_amount', 99);
 
         // ใช้ DB transaction + pessimistic lock ป้องกัน race condition
         return \Illuminate\Support\Facades\DB::transaction(function () use (
-            $baseAmount, $transactionId, $transactionType, $expiryMinutes, $maxPending
+            $baseAmount, $transactionId, $transactionType, $expiryMinutes, $maxPending, $minSuffix
         ) {
             // 🔧 (2026-05-21) Mark expired แทน DELETE — กัน orphan FK ใน fortune_readings
             //   เคสบั๊ก (Bill FTU-260521-F3826):
@@ -176,7 +180,20 @@ class UniquePaymentAmount extends Model
                 ->pluck('decimal_suffix')
                 ->toArray();
 
-            $pool = range(1, min($maxPending, 99));
+            // 💰 (2026-08-29) พื้นทศนิยม — บิล top-up "โอนขาด" ส่งค่ามา เพื่อให้ยอดที่ขอ
+            //    *ไม่ต่ำกว่าส่วนที่ขาดจริง* (ขาด ฿38.10 → base 38 ต้องได้ suffix ≥ 10 = ฿38.10-38.99)
+            //    ถ้าไม่มีพื้น ระบบจะออกยอด ฿38.03 = น้อยกว่าที่ขาด → ลูกค้าโอนตามแล้วยังไม่ครบ วนอีกรอบ
+            $suffixFloor = max(1, min(99, (int) ($minSuffix ?? 1)));
+            $suffixTop = min($maxPending, 99);
+
+            // 🛡️ พื้นสูงกว่าเพดาน (config max_pending ถูกหรี่ลง) → ไม่มี suffix ที่ใช้ได้เลย
+            //    ⚠️ ห้ามปล่อยให้ range(80, 50) ทำงาน — PHP คืนอาเรย์ "ย้อนกลับ" [80..50]
+            //    = หลุดไปใช้ทศนิยมต่ำกว่าพื้น (ออกยอดน้อยกว่าที่ขาดจริง) โดยไม่มีใครรู้
+            if ($suffixFloor > $suffixTop) {
+                return null;
+            }
+
+            $pool = range($suffixFloor, $suffixTop);
             $availableSuffixes = array_diff($pool, array_unique(array_merge($activeSuffixes, $recentUnpaidSuffixes)));
 
             // 🚨 Safety valve — ถ้ากฎ 24 ชม. กันจนไม่เหลือ suffix เลย ห้ามทำให้ "สร้างบิลไม่ได้"
@@ -187,6 +204,7 @@ class UniquePaymentAmount extends Model
 
                 \Illuminate\Support\Facades\Log::warning('⚠️ UPA: กฎกันซ้ำ 24 ชม. ทำให้ suffix หมด — ถอยไปใช้กฎเดิม', [
                     'base_amount' => $intBaseAmount,
+                    'suffix_floor' => $suffixFloor,
                     'active' => count($activeSuffixes),
                     'recent_unpaid' => count($recentUnpaidSuffixes),
                 ]);
@@ -194,6 +212,8 @@ class UniquePaymentAmount extends Model
 
             if (empty($availableSuffixes)) {
                 // suffix เต็มหมดแล้วสำหรับราคานี้
+                //   มีพื้นทศนิยม → คืน null ให้ caller ถอยเอง (ห้ามหลุดไปใช้ suffix ต่ำกว่าพื้น
+                //   = ออกยอดน้อยกว่าที่ขาดจริง แล้วไปทวงลูกค้าซ้ำรอบถัดไป)
                 return null;
             }
 

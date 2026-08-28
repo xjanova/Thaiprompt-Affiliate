@@ -6494,7 +6494,7 @@ class FortuneConversationService
         // 💳 (2026-05-16) ลูกค้าขอเลขบัญชี/QR ระหว่างกรอกวันเกิด (Pay-First flow)
         //   เคส: Pay-First — ลูกค้าจ่ายแล้ว → bot ขอวันเกิด → ลูกค้าอยากตรวจสอบบัญชี/QR
         //   ก่อนหน้านี้ parseBirthDate("ขอเลขบัญชี") fail → bot ขอวันเกิดอีกครั้ง ลูกค้างง
-        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {
+        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id, $reading)) {
             return $paymentInfo;
         }
 
@@ -7261,7 +7261,7 @@ class FortuneConversationService
             // 💳 (2026-05-16) ลูกค้าขอเลขบัญชี/QR ระหว่างกรอกคำถาม (Pay-First flow)
             //   เคส: Pay-First — ลูกค้าจ่ายแล้ว → bot ขอคำถาม → ลูกค้าอยากตรวจสอบบัญชี/QR
             //   ก่อนหน้านี้ถูกเก็บเป็น "คำถามดูดวง" ทำให้ AI สับสน
-            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {
+            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id, $reading)) {
                 return $paymentInfo;
             }
 
@@ -9080,7 +9080,7 @@ class FortuneConversationService
         }
 
         // 💳 (2026-05-14) ลูกค้ารอจ่ายแต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
-        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id)) {
+        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id, $reading)) {
             return $paymentInfo;
         }
 
@@ -9245,10 +9245,15 @@ class FortuneConversationService
         // 💬 (2026-06-12) มี AI ตอบ (ลูกค้าคุย) → ตอบบทสนทนา + ท้ายบิลสั้น 1 บรรทัด
         //   ไม่แนบรายการบัญชี + QR ซ้ำ — เจ้าของสั่ง "อย่าเอาแต่ส่งกล่องข้อความเดิมๆ"
         //   (ลูกค้าขอดู QR/บัญชีเมื่อไหร่ maybePresentPaymentInfo ด้านบนจัดให้ทันที)
+        // 💰 (2026-08-29, owner) บิลที่โอนมาแล้วบางส่วน — ทุกกล่องต้องบอก "รับแล้วเท่าไร ขาดอีกเท่าไร"
+        //   ไม่งั้นลูกค้าเห็นแต่ยอดเต็มซ้ำๆ นึกว่าเงินที่โอนไปหายไปเฉยๆ (เคส FTU-260828-E2328)
+        $partialLine = $this->partialCreditNote($reading, true);
+
         if (! empty($aiPrefix)) {
             return [
                 'action' => 'waiting_payment',
                 'message' => rtrim($aiPrefix)."\n\n"
+                    .($partialLine !== '' ? $partialLine."\n" : '')
                     ."💎 _บิล {$billRef} ฿{$payAmount} ยังรออยู่ (เหลือ {$remainLabel})_\n"
                     .'_พิมพ์ "บัญชี" ดูช่องทางโอน • "โอนแล้ว" เช็คสถานะ • "ช่วยหน่อย" ติดปัญหา_',
                 'reading' => $reading,
@@ -9271,6 +9276,7 @@ class FortuneConversationService
             return [
                 'action' => 'waiting_payment',
                 'message' => "💎 บิล {$billRef} รอค่าครู *฿{$payAmount}* (ทศนิยมต้องตรง)\n"
+                    .($partialLine !== '' ? $partialLine."\n" : '')
                     ."⏰ เหลืออีก {$remainLabel}\n\n"
                     .'_พิมพ์ "บัญชี" ดูช่องทางโอนอีกครั้ง • "โอนแล้ว" เช็คสถานะ • "ช่วยหน่อย" ติดปัญหา_',
                 'reading' => $reading,
@@ -9286,6 +9292,9 @@ class FortuneConversationService
         }
         $message .= "💎 *รอค่าครู ฿{$payAmount}* (ตรงทศนิยม!)\n";
         $message .= "🔖 บิล: {$billRef}\n";
+        if ($partialLine !== '') {
+            $message .= $partialLine."\n";
+        }
         $message .= "⏰ เหลืออีก {$remainLabel}\n\n";
 
         // แสดงบัญชีธนาคาร
@@ -13820,6 +13829,8 @@ class FortuneConversationService
                     'action' => 'payment_claim_short',
                     'message' => '🙏 แม่หมอเช็คให้แล้วนะคะ — ตอบตรงๆ ค่ะ *ยังต้องโอนเพิ่ม*'."\n\n"
                         ."🔖 บิล: {$billRef}\n"
+                        // 💰 (2026-08-29) บิลที่เคยโอนขาดมาก่อน ต้องโชว์ยอดที่รับไว้แล้วด้วย ไม่งั้นลูกค้าคิดว่าเงินหาย
+                        .$this->partialCreditNote($reading)
                         .'💰 บิลนี้ยอด *฿'.number_format($required, 2)."*\n"
                         .'📥 ที่เจ้าชะตาแจ้งว่าโอนมา ฿'.number_format($claimedAmount, 2)."\n"
                         .'➖ ยังขาดอีก *฿'.number_format($shortfall, 2)."*\n\n"
@@ -13843,6 +13854,31 @@ class FortuneConversationService
 
         // กรณี 3: ยังไม่ paid + UPA ยัง reserved + ยังไม่หมดอายุ
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
+
+        // 💰 (2026-08-29, owner) บิลที่ทยอยโอนมาไม่ครบ — ห้ามพูดว่า "ยังไม่พบยอด" เพราะเรารับเงินเขาไปแล้วจริง
+        //   ต้องตอบให้ได้ว่า "รับไปเท่าไร ขาดอีกเท่าไร ต้องโอนเลขไหน" ในกล่องเดียว
+        $creditNote = $this->partialCreditNote($reading);
+
+        if ($creditNote !== '') {
+            $message = "⏳ *ยอดยังไม่ครบค่าครูค่ะ*\n\n"
+                ."🔖 เลขที่บิล: {$billRef}\n"
+                .$creditNote
+                ."\n💸 โอนยอดนี้ได้เลยค่ะ → *฿{$payAmount}* (ใส่เศษสตางค์ด้วยนะคะ)\n"
+                ."⏰ บิลหมดอายุ: {$expiresAt} น. (เหลือ {$remainingMinutes} นาที)\n\n"
+                ."✨ พอยอดครบ แม่หมอเปิดดวงให้ทันทีเลยค่ะ\n"
+                ."📸 โอนแล้วส่งสลิปมาก็ได้นะคะ แม่หมอตรวจให้เอง\n\n"
+                ."พิมพ์ 'คุยกับแม่หมอ' หากต้องการแจ้งทีมงานโดยตรง";
+
+            // ⚠️ ใช้ action เดิม 'payment_check_pending' — เปลี่ยนแค่ "เนื้อความ" ไม่ใช่ชนิดกล่อง
+            //   action ใหม่จะตกไป default ของ match() ใน FortuneChannelManager (ไม่มีปุ่ม "เช็คอีกครั้ง"
+            //   + หลุด $skipActions ของ maybeApplyPaymentWarning ไปโดนคำเตือนซ้อน)
+            return [
+                'action' => 'payment_check_pending',
+                'message' => $message,
+                'reading' => $reading,
+            ];
+        }
+
         $message = "⏳ *ระบบยังไม่พบยอดในบัญชี*\n\n"
             ."🔖 เลขที่บิล: {$billRef}\n"
             ."💰 ยอดที่รอ: ฿{$payAmount}\n"
@@ -14514,9 +14550,14 @@ class FortuneConversationService
      */
     protected function askForSlipMessage(?FortuneReading $reading = null): array
     {
+        // 💰 (2026-08-29, owner) บิลที่โอนมาแล้วบางส่วน — ก่อนขอสลิปใบใหม่ ต้องสรุปยอดค้างให้เห็นก่อน
+        //   เคสจริง FTU-260828-E2328: ลูกค้ากด "เช็คสถานะ" แล้วได้กล่องนี้ ที่ไม่เอ่ยถึงเงินที่รับไปแล้วเลย
+        $creditNote = $reading ? $this->partialCreditNote($reading) : '';
+
         return [
             'action' => 'slipok_ask_slip',
             'message' => "🙏 ขอบคุณค่ะ — เพื่อยืนยันการโอน รบกวนเจ้าชะตา*ส่งรูปสลิปการโอน*มาให้แม่หมอตรวจหน่อยนะคะ\n\n"
+                .($creditNote !== '' ? $creditNote."\n" : '')
                 .'📸 ส่งเป็น *รูปสลิป* (ที่มี QR/เลขอ้างอิง) — ระบบจะตรวจกับธนาคารแล้วตัดบิลให้อัตโนมัติค่ะ ✨',
             'reading' => $reading,
         ];
@@ -15431,7 +15472,7 @@ class FortuneConversationService
             // 🩹 (จับผี) รีเฟรชบิล top-up ให้ตรงยอดขาดจริง — UPA รอบก่อนยอด stale (เช่นค้าง 79 ทั้งที่เหลือ 54)
             //   กัน SMS auto-match ยอดเก่าเก็บเงินเกิน + ต่ออายุบิลให้ครอบช่วงตัดสินใจไปในตัว
             try {
-                $this->createPartialTopupBill($reading, max(1, (int) ceil($celticPrice - $newPaid - 0.001)));
+                $this->createPartialTopupBill($reading, max(0.01, round($celticPrice - $newPaid, 2)));
             } catch (\Throwable $eTopup) {
                 // non-blocking — พลาดแค่ UPA stale ต่อไป (พฤติกรรมเท่าของเดิม)
             }
@@ -15580,15 +15621,14 @@ class FortuneConversationService
             $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
             $paidTotal = (float) ($reading->partial_paid_total ?? 0);
             $remain = max(0, round($celticPrice - $paidTotal, 2));
-            $shortfall = max(1, (int) ceil($remain - 0.001));
             // ออกบิล top-up ยอดที่ขาดจริง (cancel UPA เก่าที่ยอด stale ให้เอง + re-point reading)
-            $topupUpa = $this->createPartialTopupBill($reading, $shortfall);
+            $topupUpa = $this->createPartialTopupBill($reading, max(0.01, $remain));
 
             $msg = '💎 รับทราบค่ะ เจ้าชะตาเลือก *ไพ่ Celtic Cross '.number_format($celticPrice, 0)."฿* ✨\n\n"
                 .'ยอดสะสมตอนนี้ ฿'.number_format($paidTotal, 2).' — เหลืออีก *฿'.number_format($remain, 2)."*\n";
             $msg .= $topupUpa
                 ? '💸 รบกวนโอนเพิ่ม *฿'.number_format((float) $topupUpa->unique_amount, 2)."* (ใส่เศษสตางค์ด้วย ระบบจะตัดให้อัตโนมัติ)\n"
-                    .'   หรือโอน ฿'.number_format($shortfall, 2)." แล้วส่งสลิปมาให้แม่หมอตรวจก็ได้ค่ะ\n\n"
+                    .'   หรือโอน ฿'.number_format($remain, 2)." แล้วส่งสลิปมาให้แม่หมอตรวจก็ได้ค่ะ\n\n"
                 : '💸 รบกวนโอนเพิ่ม ฿'.number_format($remain, 2)." แล้วส่งสลิปมาให้แม่หมอตรวจนะคะ\n\n";
             $msg .= '✨ พอครบ แม่หมอจะเปิดไพ่ 10 ใบให้ทันทีเลยค่ะ 🌙';
 
@@ -16415,6 +16455,49 @@ class FortuneConversationService
     }
 
     /**
+     * 💰 (2026-08-29, owner "เขาเช็คสถานะก็ต้องบอกได้ว่าขาดเท่าไหร่")
+     *   บรรทัดสรุป "รับแล้วเท่าไร / ขาดอีกเท่าไร" ของบิลที่ลูกค้าทยอยโอนมาไม่ครบ
+     *
+     *   ⚠️ ทำไมต้องมี: `partial_paid_total` ถูกเก็บมาตั้งแต่ 2026-06-05 แต่ไม่เคยถูกเอามาแสดงที่ไหนเลย
+     *   (`partialRemaining()` มี 0 call site) → ลูกค้าโอนมาจริงแล้ว แต่ทุกกล่องหลังจากนั้น
+     *   (เช็คสถานะ / รอชำระ / ช่องทางโอน) ยังขึ้น "ระบบยังไม่พบยอด ฿xx" เหมือนไม่เคยได้รับอะไร
+     *   เคสจริง FTU-260828-E2328: รับไป ฿0.90 แล้ว ลูกค้ากด "เช็คสถานะ" 3 ครั้ง ไม่เคยเห็นเลขนี้สักครั้ง
+     *
+     * @param  bool  $compact  true = บรรทัดเดียว (ต่อท้ายกล่องสั้น) · false = บล็อก 2 บรรทัด
+     * @return string '' ถ้าบิลนี้ไม่มียอดสะสมค้าง (บิลปกติ — ไม่ต้องรก)
+     */
+    public function partialCreditNote(FortuneReading $reading, bool $compact = false): string
+    {
+        if ($reading->is_paid) {
+            return '';
+        }
+
+        $paid = (float) ($reading->partial_paid_total ?? 0);
+        if ($paid <= 0) {
+            return '';
+        }
+
+        // เป้าหมายเต็ม — ต้องมาจาก partial_target_total เท่านั้น (จำไว้ตอนโอนขาดครั้งแรก)
+        //   ⚠️ ห้ามถอยไปใช้ base_amount ของ UPA ปัจจุบัน: หลังออกบิล top-up แล้ว base = "ส่วนที่ขาด"
+        //   ไม่ใช่ราคาเต็ม (เช่น เป้า 99 จ่ายมา 20 → base 79) → จะโชว์ "20 จาก 79 ขาดอีก 59" = ผิด
+        //   ไม่รู้เป้าจริง = เงียบไว้ ดีกว่าพ่นตัวเลขเงินผิดใส่ลูกค้า
+        $target = (float) ($reading->partial_target_total ?? 0);
+        if ($target <= $paid) {
+            return '';
+        }
+
+        $remain = max(0, round($target - $paid, 2));
+
+        if ($compact) {
+            return '💰 _รับแล้ว ฿'.number_format($paid, 2).' / ฿'.number_format($target, 2)
+                .' — ขาดอีก ฿'.number_format($remain, 2).'_';
+        }
+
+        return '💰 *แม่หมอได้รับแล้ว ฿'.number_format($paid, 2).'* จากค่าครู ฿'.number_format($target, 2)."\n"
+            .'➖ *ยังขาดอีก ฿'.number_format($remain, 2)."*\n";
+    }
+
+    /**
      * 💰 (2026-06-05, user) จัดการ "โอนขาด" — เครดิตยอด + บอกยอดที่ขาด + สร้างบิล top-up ผูก reading เดิม
      *   วนจนครบเป้า (เช่น 99). ครบ 3 รอบยังไม่ครบ → พักเงินไว้ให้แม่หมอ/แอดมินตรวจ (HOLD 60 นาที, ไม่แบน ไม่คืนอัตโนมัติ)
      *
@@ -16598,9 +16681,9 @@ class FortuneConversationService
                 ];
             }
 
-            // ✅ ยังไม่ถึง 3 รอบ → สร้างบิล top-up (ยอดที่ขาด ปัดขึ้นเป็นจำนวนเต็ม ไม่ undershoot) ผูก reading เดิม
-            $shortfall = max(1, (int) ceil($remaining - 0.001));
-            $topupUpa = $this->createPartialTopupBill($reading, $shortfall);
+            // ✅ ยังไม่ถึง 3 รอบ → สร้างบิล top-up "ตรงยอดที่ขาดจริง" ผูก reading เดิม
+            //   (createPartialTopupBill บังคับทศนิยม ≥ เศษที่ขาด → ยอดที่ขอ ≥ $remaining เสมอ ไม่ undershoot)
+            $topupUpa = $this->createPartialTopupBill($reading, max(0.01, $remaining));
 
             $reading->forceFill([
                 'partial_paid_total' => $newPaid, 'partial_target_total' => $target,
@@ -16640,12 +16723,16 @@ class FortuneConversationService
                 ];
             }
 
+            // 💰 (2026-08-29, owner) กล่องเดียว "เลขเดียว" — ยอดที่ขอคือยอดที่ขาดจริง (บวกเศษกันชนให้ SMS จับคู่)
+            //   เดิมกล่องนี้พ่นเลข 3 ตัวที่ไม่ตรงกัน (ขาด 38.10 / โอนเพิ่ม 39.57 / หรือโอน 39.00) ลูกค้าเลือกไม่ถูก
             return [
                 'action' => 'partial_topup',
-                'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2).' แล้วค่ะ — แต่ยัง *ขาดอีก ฿'.number_format($remaining, 2).'* ให้ครบค่าครู ฿'.number_format($target, 2)."\n\n"
-                    .'💸 รบกวนโอนเพิ่ม *฿'.number_format((float) $topupUpa->unique_amount, 2)."* (ใส่เศษสตางค์ด้วย ระบบจะตัดให้อัตโนมัติ)\n"
-                    .'   หรือโอน ฿'.number_format($shortfall, 2)." แล้วส่งสลิปมาให้แม่หมอตรวจก็ได้ค่ะ\n\n"
-                    .'✨ พอครบ แม่หมอจะเปิดไพ่ให้ทันทีเลยนะคะ 🌙',
+                'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2)." แล้วค่ะ\n"
+                    .'💰 สะสมแล้ว *฿'.number_format($newPaid, 2).'* จากค่าครู ฿'.number_format($target, 2)."\n"
+                    .'➖ ยัง *ขาดอีก ฿'.number_format($remaining, 2)."*\n\n"
+                    .'💸 โอนยอดนี้ได้เลยค่ะ → *฿'.number_format((float) $topupUpa->unique_amount, 2)."*\n"
+                    ."   (ใส่เศษสตางค์ด้วยนะคะ ระบบจะตัดบิลให้อัตโนมัติทันที)\n\n"
+                    .'✨ พอครบ แม่หมอเปิดดวงให้ทันทีเลยค่ะ 🌙',
                 'reading' => $reading,
             ];
         } catch (\Throwable $e) {
@@ -16667,21 +16754,48 @@ class FortuneConversationService
      * 💰 (2026-06-05) สร้างบิล top-up (ยอดที่ขาด) ผูก reading เดิม — cancel UPA เก่า + generate UPA ใหม่
      *   ⚠️ ไม่สร้าง reading ใหม่ (กัน incident บิลถูกทับ + กฎ paid-resume) ; ไม่ใช้ setPendingPayment (มันบังคับ type=deep)
      */
-    protected function createPartialTopupBill(FortuneReading $reading, int $shortfallBase): ?\App\Models\UniquePaymentAmount
+    protected function createPartialTopupBill(FortuneReading $reading, float $shortfall): ?\App\Models\UniquePaymentAmount
     {
         try {
-            return \DB::transaction(function () use ($reading, $shortfallBase) {
+            return \DB::transaction(function () use ($reading, $shortfall) {
                 $oldUpa = $reading->uniquePaymentAmount;
 
                 // ใช้ transaction_type เดิม (Celtic + Deep = 'fortune_reading') — กัน SMS match filter หลุด ถ้าอนาคตเปลี่ยน
                 $txnType = $oldUpa?->transaction_type ?: 'fortune_reading';
 
+                // 💰 (2026-08-29, owner "ต้องบอกยอดที่ต้องโอนให้ถูกต้อง")
+                //   เดิม: ceil(ส่วนที่ขาด) → ขาด ฿38.10 กลายเป็น base 39 แล้วบวก suffix อีก = ขอ ฿39.57
+                //         ทั้งที่บรรทัดบนบอกลูกค้าเองว่า "ขาดอีก ฿38.10" → เลข 3 ตัวไม่ตรงกันในกล่องเดียว
+                //         (เครดิตสตางค์ที่ลูกค้าโอนมาโดนปัดทิ้ง + เก็บเกินได้ถึง ~2 บาท)
+                //   ใหม่: base = floor(ส่วนที่ขาด) + บังคับ suffix ≥ เศษสตางค์ที่ขาด
+                //         → ยอดที่ขอ = ฿38.10-38.99 = "ยอดเดียวที่ทั้งพูดและเก็บ" ไม่ต่ำกว่าที่ขาดจริง
+                $shortfall = max(0.01, round($shortfall, 2));
+                $base = max(1, (int) floor($shortfall));
+                $minSuffix = max(1, (int) ceil(round(($shortfall - $base) * 100, 2)));
+
                 $newUpa = \App\Models\UniquePaymentAmount::generate(
-                    (float) $shortfallBase,
+                    (float) $base,
                     $reading->id,
                     $txnType,
-                    FortuneReading::billTimeoutMinutes() // ⏰ (2026-06-12) ตาม setting (default 3 ชม.)
+                    FortuneReading::billTimeoutMinutes(), // ⏰ (2026-06-12) ตาม setting (default 3 ชม.)
+                    $minSuffix
                 );
+
+                // 🚨 พูลทศนิยมช่วง [minSuffix, 99] ของ base นี้เต็ม → ถอยขึ้นบาทถัดไป (พฤติกรรมเดิม ceil)
+                //   ยอมเก็บเกินเล็กน้อย ดีกว่าออกยอดต่ำกว่าที่ขาด (ลูกค้าโอนตามแล้วยังโดนทวงซ้ำ)
+                if (! $newUpa) {
+                    Log::warning('💰 Top-up: พูลทศนิยมเหนือพื้นเต็ม → ถอยขึ้นบาทถัดไป', [
+                        'reading_id' => $reading->id, 'shortfall' => $shortfall,
+                        'base' => $base, 'min_suffix' => $minSuffix,
+                    ]);
+
+                    $newUpa = \App\Models\UniquePaymentAmount::generate(
+                        (float) ($base + 1),
+                        $reading->id,
+                        $txnType,
+                        FortuneReading::billTimeoutMinutes()
+                    );
+                }
 
                 if (! $newUpa) {
                     return null;
@@ -16705,7 +16819,7 @@ class FortuneConversationService
             });
         } catch (\Throwable $e) {
             Log::error('💰 createPartialTopupBill ล้มเหลว', [
-                'reading_id' => $reading->id, 'shortfall' => $shortfallBase, 'error' => $e->getMessage(),
+                'reading_id' => $reading->id, 'shortfall' => $shortfall, 'error' => $e->getMessage(),
             ]);
 
             return null;
@@ -19421,8 +19535,10 @@ PROMPT;
      *   → ตั้งธงตรงนี้ = ทำให้คำสัญญาในข้อความเป็นจริง (ดู markAwaitingPaymentSlip)
      *
      * @param  string|null  $userId  platform user id (FB PSID / LINE uid) — null = ไม่ตั้งธง (พฤติกรรมเดิม)
+     * @param  FortuneReading|null  $reading  บิลที่ค้างอยู่ — มีแล้วจะระบุยอดที่ต้องโอนให้ชัด
+     *                                        แทนคำลอย ๆ ว่า "โอนตามยอดให้ตรงเป๊ะ" (owner 2026-08-29)
      */
-    public function presentPaymentInfo(?string $userId = null): array
+    public function presentPaymentInfo(?string $userId = null, ?FortuneReading $reading = null): array
     {
         $accounts = $this->settings->getFortuneBankAccounts();
         $qrUrl = $this->getPaymentQrImageUrl();
@@ -19447,6 +19563,17 @@ PROMPT;
         //   (ตั้งหลัง edge-case ด้านบน — ถ้าไม่มีบัญชี/QR ลูกค้าโอนไม่ได้อยู่แล้ว ไม่ต้องตั้งธง)
         if (! empty($userId)) {
             $this->markAwaitingPaymentSlip($userId, 'payment_info_card');
+        }
+
+        // 💰 (2026-08-29, owner "ต้องบอกยอดที่ต้องโอนให้ถูกต้อง")
+        //   กล่องนี้เคยบอกแค่ "โอนตามยอดให้ตรงเป๊ะ ๆ นะคะ" โดยไม่เคยบอกว่า "ยอดไหน"
+        //   → ลูกค้าที่ทยอยโอนไม่ครบยิ่งงง ไม่รู้ต้องโอนเท่าไรถึงจะพอ
+        $billUpa = ($reading && ! $reading->is_paid) ? $reading->uniquePaymentAmount : null;
+        if ($billUpa && $billUpa->status === 'reserved') {
+            $msg .= '💰 *ยอดที่ต้องโอน: ฿'.number_format((float) $billUpa->unique_amount, 2)."* (ตรงเป๊ะทุกทศนิยม)\n";
+            $msg .= '🔖 บิล: '.($reading->bill_reference ?: '-')."\n";
+            $msg .= $this->partialCreditNote($reading);
+            $msg .= "\n";
         }
 
         if ($showBank && $accounts->isNotEmpty()) {
@@ -19489,11 +19616,12 @@ PROMPT;
      * Return null = ไม่ใช่คำขอ → caller ทำงานต่อ
      *
      * @param  string|null  $userId  platform user id — ส่งมาด้วยเพื่อตั้งธงรอสลิป (ดู presentPaymentInfo)
+     * @param  FortuneReading|null  $reading  บิลที่ค้างอยู่ — ส่งมาด้วยเพื่อระบุ "ยอดที่ต้องโอน" ให้ชัด
      */
-    public function maybePresentPaymentInfo(string $messageText, ?string $userId = null): ?array
+    public function maybePresentPaymentInfo(string $messageText, ?string $userId = null, ?FortuneReading $reading = null): ?array
     {
         if ($this->looksLikePaymentInfoRequest($messageText)) {
-            return $this->presentPaymentInfo($userId);
+            return $this->presentPaymentInfo($userId, $reading);
         }
 
         return null;
