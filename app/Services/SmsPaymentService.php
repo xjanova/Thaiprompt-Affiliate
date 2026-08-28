@@ -86,6 +86,45 @@ class SmsPaymentService
             $matchedModel = null; // เก็บ model ที่ match ได้เพื่อส่งกลับให้แอพแสดงบิล
             $matchedModelType = null;
 
+            // 🗑️ (2026-08-29, owner "มันมาก่อกวนอีกแล้ว โอน 1 สตางค์") เศษสตางค์ = ก่อกวน ไม่ใช่การจ่ายเงิน
+            //
+            //   เคสจริง PSID 27885437957776628 คืน 2026-08-28→29: โอน 0.55 → 0.35 → 0.03 → **0.01**
+            //   ทั้งหมดค้างเป็น 'pending' ตลอดกาล เพราะจับคู่บิลไหนไม่ได้เลย → รกคิวที่แอดมินต้องไล่ดู
+            //
+            //   ✅ ปลอดภัยเพราะยอดบิลที่เล็กที่สุดที่ระบบออกได้คือ **฿1.01**
+            //      (createPartialTopupBill ใช้ base = max(1, floor(ส่วนที่ขาด)) + ทศนิยม 01-99)
+            //      ⇒ ต่ำกว่า ฿1.00 ไม่มีทางเป็นยอดของบิลจริงได้ ไม่ว่าจะเป็นบิลเต็มหรือบิลเติมส่วนต่าง
+            //
+            //   ปิดสวิตช์/ปรับเพดานได้ที่ config('smschecker.min_credit_amount')
+            $minCredit = (float) config('smschecker.min_credit_amount', 1.00);
+            if ($notification->type === 'credit' && $minCredit > 0 && (float) $notification->amount < $minCredit) {
+                // ⚠️ ตารางนี้ไม่มีคอลัมน์ notes — เหตุผลเก็บไว้ใน log อย่างเดียว (อย่าเผลอเขียนฟิลด์ที่ไม่มี)
+                $notification->forceFill(['status' => 'rejected'])->save();
+
+                Log::warning('🗑️ SMS Payment: ยอดเศษสตางค์ → ตีตกทันที ไม่เข้าคิวจับคู่', [
+                    'notification_id' => $notification->id,
+                    'amount' => $notification->amount,
+                    'min_credit' => $minCredit,
+                    'sender' => $notification->sender_or_receiver,
+                    'bank' => $notification->bank,
+                ]);
+
+                return [
+                    'success' => true,
+                    'message' => 'Amount below minimum — recorded as rejected',
+                    'data' => [
+                        'notification_id' => $notification->id,
+                        'status' => 'rejected',
+                        'matched' => false,
+                        'fortune_reading' => false,
+                        'special_amount' => false,
+                        'matched_transaction_id' => null,
+                    ],
+                    'matched_model' => null,
+                    'matched_model_type' => null,
+                ];
+            }
+
             if ($notification->type === 'credit') {
                 // ขั้นที่ 1: ตรวจสอบว่าเป็นยอดดูดวง (unique amount ที่สร้างจาก conversation)
                 $fortuneReadingHandled = $this->handleFortuneReadingPayment($notification);
