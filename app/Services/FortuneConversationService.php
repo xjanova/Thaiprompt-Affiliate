@@ -924,6 +924,28 @@ class FortuneConversationService
                 if ($shouldCheckSilence) {
                     $personaSvcGuard = app(\App\Services\Fortune\CustomerPersonaService::class);
                     if ($personaSvcGuard->isChatSilenced($silencePlatform, $facebookUserId)) {
+                        // 🛒 (2026-08-27) เงียบเรื่อง "คุยเล่นไม่จบสักที" ≠ เงียบตอนลูกค้าจะควักเงิน
+                        //
+                        //   ด่านนี้เป็นด่านแรกสุดของ processMessage ⇒ คนที่โดน cooldown
+                        //   **ไม่มีทางไปถึง tryAIChatResponse** จุดต่อสายเสนอสินค้าจึงไม่ช่วยอะไรเลย
+                        //   ⇒ คนที่คุยวนแล้วเราสั่งเงียบไว้ พิมพ์ "อยากได้ปี่เซี้ยะ" มาก็เงียบใส่
+                        //
+                        //   ⚠️ ห้ามแก้ด้วยการเติมคำสายซื้อของลง SILENCE_BYPASS_KEYWORDS —
+                        //     ค่านั้นใช้ร่วมกัน 5 จุด (debounce · Hook B · Hook C · persona service)
+                        //     เติมทีเดียวจะไปเปิดแชทฟรีให้คนที่ตั้งใจสั่งเงียบไว้ทั้งหมด
+                        //   ⇒ ยิงเส้นขายของตรงนี้เลย แล้ว **ยังคงเงียบเรื่องแชทฟรีเหมือนเดิม**
+                        //     (ไม่มีของตรง/โดนธงเงียบสินค้า → คืน null → ตกไป silent_skip ปกติ)
+                        $askResult = $this->tryCustomerAskOffer($silencePlatform, $facebookUserId, $messageText);
+                        if ($askResult !== null) {
+                            Log::info('Fortune: คนโดน cooldown ถามหาของ → ส่งการ์ดให้ (ยังเงียบเรื่องคุยเล่น)', [
+                                'platform' => $silencePlatform,
+                                'user_id' => $facebookUserId,
+                                'text_preview' => mb_substr($messageText, 0, 30),
+                            ]);
+
+                            return $askResult;
+                        }
+
                         Log::info('Fortune: rambler silence active — silent_skip', [
                             'platform' => $silencePlatform,
                             'user_id' => $facebookUserId,
@@ -20443,6 +20465,20 @@ PROMPT;
             if (! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText)) {
                 $personaSvc = app(\App\Services\Fortune\CustomerPersonaService::class);
                 if ($personaSvc->isChatSilenced($platformForSilence, $userId)) {
+                    // 🛒 (2026-08-27) เงียบแชทฟรี ≠ เงียบตอนลูกค้าจะซื้อของ — ให้เหมือนด่านแรกใน processMessage
+                    //    เส้นนี้ถึงมือได้จาก ProcessBufferedChatMessageJob ที่เรียกตรง (ไม่ผ่าน processMessage)
+                    //    กรณีลูกค้าโดนสั่งเงียบ "ระหว่างที่ข้อความรออยู่ใน buffer"
+                    $askResult = $this->tryCustomerAskOffer($platformForSilence, $userId, $messageText);
+                    if ($askResult !== null) {
+                        Log::info('Fortune: AI Chat silenced แต่ถามหาของ → ส่งการ์ดให้', [
+                            'platform' => $platformForSilence,
+                            'user_id' => $userId,
+                            'msg_preview' => mb_substr($messageText, 0, 40),
+                        ]);
+
+                        return $askResult;
+                    }
+
                     Log::info('Fortune: AI Chat silenced (rambler cooldown active)', [
                         'platform' => $platformForSilence,
                         'user_id' => $userId,
