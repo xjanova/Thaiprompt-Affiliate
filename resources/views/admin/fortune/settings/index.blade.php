@@ -118,8 +118,10 @@
                         <span class="text-lg">🗨️</span>
                         <span class="text-xs font-mono text-emerald-400">pages_read_engagement</span>
                     </div>
-                    <p class="text-sm text-gray-300 font-semibold">ตอบคอมเม้นต์</p>
-                    <p class="text-xs text-gray-500 mt-1">Auto-reply เมื่อมีคนคอมเม้นต์โพสต์</p>
+                    {{-- ⚠️ (2026-08-29) ป้ายเดิมเขียนว่า "ตอบคอมเม้นต์" เฉย ๆ ทำให้เข้าใจผิดว่า
+                         สวิตช์นี้คุมแค่การพิมพ์ตอบใต้โพส — จริง ๆ มันคุม DM ด้วย (ดูกล่องอธิบายในแท็บ engagement) --}}
+                    <p class="text-sm text-gray-300 font-semibold">ทักลูกค้าจากคอมเม้นต์/ไลก์</p>
+                    <p class="text-xs text-gray-500 mt-1">สวิตช์แม่ — คุมทั้งตอบใต้โพส <strong class="text-gray-400">และ DM</strong></p>
                     @if($settings->comment_engagement_enabled)
                         <span class="inline-block mt-2 text-xs bg-green-900/50 text-green-400 px-2 py-0.5 rounded">✅ เปิดใช้งาน</span>
                     @else
@@ -2040,7 +2042,10 @@ Format 2 — JSON array:
         <div class="tp-card p-6 mb-6" data-fortune-tab="engagement">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    🗨️ ระบบตอบคอมเม้นต์อัตโนมัติ
+                    🗨️ ระบบทักลูกค้าจากคอมเม้นต์/ไลก์
+                    <span class="ml-2 align-middle text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                        สวิตช์แม่
+                    </span>
                 </h3>
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="hidden" name="comment_engagement_enabled" value="0">
@@ -2051,9 +2056,50 @@ Format 2 — JSON array:
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-green-600"></div>
                 </label>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                เมื่อเปิดใช้งาน ระบบจะตอบคอมเม้นต์ทุกโพสต์ในเพจ + ทักแชทส่วนตัวชวนดูดวง (เฉพาะคอมเม้นต์ที่ไม่ใช่คำสั่ง "ดูดวง")
-            </p>
+
+            {{-- 🚨 (2026-08-29) เขียนอธิบายไว้ตรงนี้ เพราะชื่อสวิตช์เดิม ("ระบบตอบคอมเม้นต์อัตโนมัติ")
+                 ทำให้เข้าใจว่าคุมแค่การตอบใต้โพส → เจ้าของกดปิดเพื่อหยุดตอบคอมเมนต์
+                 แต่มันเป็นสวิตช์ครอบ 3 จุด (FacebookWebhookController:642, :1828, ProcessCommentEngagement:116)
+                 ⇒ DM ตายไปด้วยทั้งหมด 15 นาที ~270 คน ก่อนจะจับได้
+                 อย่าลบกล่องอธิบายนี้ทิ้ง — มันคือสิ่งเดียวที่กันพลาดซ้ำ --}}
+            <div class="mb-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    สวิตช์นี้คือ <span class="text-red-600 dark:text-red-400">เครื่องยนต์หลัก</span> — เปิดไว้เสมอ
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    ปิดตัวนี้ = ตายทั้ง 3 อย่างพร้อมกัน ไม่ใช่แค่การตอบใต้โพส:
+                </p>
+                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-3 ml-1">
+                    <li>① 💬 ตอบคอมเม้นต์ใต้โพสสาธารณะ</li>
+                    <li>② 📩 ทักแชทส่วนตัว (DM) คนที่มาคอมเม้นต์</li>
+                    <li>③ 📩 ทักแชทส่วนตัว (DM) คนที่กดไลก์/หัวใจโพส</li>
+                </ul>
+                <p class="text-sm text-gray-900 dark:text-white bg-amber-100 dark:bg-amber-900/30 border-l-4 border-amber-500 px-3 py-2 rounded">
+                    👉 <strong>อยากปิดแค่ "ตอบใต้โพส" แต่ให้ DM ทำงานต่อ?</strong><br>
+                    อย่าปิดสวิตช์นี้ — เปิดค้างไว้ แล้วไปปิดสวิตช์ลูกชื่อ
+                    <strong>"ตอบคอมเม้นต์สาธารณะ"</strong> ที่อยู่ข้างล่างแทน
+                </p>
+            </div>
+
+            {{-- ⛔ สวิตช์แม่ถูกปิดอยู่ — เตือนให้ชัดว่าตอนนี้อะไรหยุดไปบ้าง + ทางออกที่ถูกต้อง
+                 กล่องนี้ต้องอยู่ "นอก" x-show ของสวิตช์แม่ ไม่งั้นตอนปิดจะไม่มีอะไรโผล่ให้เห็นเลย
+                 (บั๊กเดิม: ปิดแม่แล้วสวิตช์ลูกหายไปจากจอ = มองไม่เห็นว่ามีตัวที่ควรกด) --}}
+            <div x-show="!commentEngagementEnabled" x-transition x-cloak
+                 class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border-2 border-red-400 dark:border-red-700">
+                <p class="text-sm font-bold text-red-800 dark:text-red-200 mb-2">
+                    ⛔ ตอนนี้ปิดอยู่ — บอทหยุดทักลูกค้าใหม่ทั้งหมด
+                </p>
+                <ul class="text-sm text-red-700 dark:text-red-300 space-y-1 mb-3 ml-1">
+                    <li>✕ ไม่ตอบคอมเม้นต์ใต้โพส</li>
+                    <li>✕ <strong>ไม่ DM คนที่มาคอมเม้นต์</strong></li>
+                    <li>✕ <strong>ไม่ DM คนที่กดไลก์โพส</strong></li>
+                    <li class="text-green-700 dark:text-green-400">✓ ลูกค้าที่ทักเข้ามาเอง ยังคุยกับบอทได้ปกติ (คนละระบบ)</li>
+                </ul>
+                <p class="text-sm text-red-800 dark:text-red-200">
+                    ถ้าตั้งใจจะปิดแค่การตอบใต้โพส → <strong>เปิดสวิตช์นี้กลับ</strong>
+                    แล้วปิดสวิตช์ลูก "ตอบคอมเม้นต์สาธารณะ" ที่จะโผล่ขึ้นมาแทน
+                </p>
+            </div>
 
             <div x-show="commentEngagementEnabled" x-transition>
                 {{-- 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ
@@ -2075,6 +2121,9 @@ Format 2 — JSON array:
                             <span class="text-lg" x-text="enablePublicCommentReply ? '⚠️' : '🔒'"></span>
                             <span class="font-semibold text-gray-900 dark:text-white">
                                 ตอบคอมเม้นต์สาธารณะ (Public Comment Reply)
+                                <span class="ml-1 align-middle text-xs font-bold px-2 py-0.5 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                                    ปิดตัวนี้ได้ ไม่กระทบ DM
+                                </span>
                             </span>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
@@ -2087,9 +2136,12 @@ Format 2 — JSON array:
                         </label>
                     </div>
                     <div x-show="!enablePublicCommentReply" class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                        <p>🔒 <strong>ปิดอยู่</strong> — บอทส่งเฉพาะ DM ไม่ตอบในโพสต์สาธารณะ</p>
-                        <p>• คอมเมนต์ลูกค้าจะไม่มีใครตอบเลย (เห็นเงียบทั้งโพสต์)</p>
-                        <p>• DM ผ่าน Page Messaging ใช้ scope แยก จึงยังทำงานปกติ</p>
+                        <p>🔒 <strong>ปิดอยู่</strong> — บอทไม่พิมพ์ตอบใต้โพส แต่ยังทักแชทส่วนตัวตามปกติ</p>
+                        <p>• คอมเมนต์ลูกค้าจะไม่มีใครตอบเลย (ใต้โพสเงียบ)</p>
+                        <p>• ✅ <strong>DM ยังทำงานเต็มที่</strong> — ทั้งคนคอมเม้นต์และคนกดไลก์ยังได้รับข้อความชวนดูดวง</p>
+                        <p class="text-blue-600 dark:text-blue-300">
+                            (นี่คือสวิตช์ที่ถูกต้องสำหรับ "ปิดการตอบคอมเมนต์" — ไม่ใช่สวิตช์แม่ด้านบน)
+                        </p>
                     </div>
                     <div x-show="enablePublicCommentReply" class="text-xs text-amber-800 dark:text-amber-200 space-y-1">
                         <p>✅ <strong>เปิดอยู่</strong> — บอทตอบในคอมเม้นต์สาธารณะ + ส่ง DM</p>
