@@ -294,6 +294,9 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price',
         'celtic_cross_max_questions',
         'celtic_cross_qa_window_minutes',
+        'celtic_aftercare_enabled',
+        'celtic_aftercare_total_minutes',
+        'celtic_aftercare_idle_minutes',
         'pro_session_standby_minutes',
         'pro_session_nudge_interval_minutes',
         'celtic_cross_main_prompt',
@@ -620,6 +623,9 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price' => 'decimal:2',
         'celtic_cross_max_questions' => 'integer',
         'celtic_cross_qa_window_minutes' => 'integer',
+        'celtic_aftercare_enabled' => 'boolean',
+        'celtic_aftercare_total_minutes' => 'integer',
+        'celtic_aftercare_idle_minutes' => 'integer',
         'pro_session_standby_minutes' => 'integer',
         'pro_session_nudge_interval_minutes' => 'integer',
         'celtic_cross_proactive_enabled' => 'boolean',
@@ -862,6 +868,12 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price' => 99.00,
         'celtic_cross_max_questions' => 0, // (2026-06-07) 0 = ไม่จำกัดคำถาม ภายในเวลา 15 นาที (เดิม 5 คำถาม — ยกเลิก hard cap จำนวน)
         'celtic_cross_qa_window_minutes' => 15, // (2026-05-23 v3) 15 นาที — ลดจาก 30
+        // 🤝 (2026-08-29 FTU-260829-M9469) "หลังบทสรุป" — บทสรุปยังยิงที่ qa_window เท่าเดิม
+        //   แต่แม่หมอไม่วางสายทันที ยังคุยต่อเรื่องการทำนายรอบเดิมได้จนถึงเพดานรวม
+        //   ต้นตอ: 43 จาก 77 บิล (56%) ใน 30 วัน ยังถามอยู่ตอนนาทีที่ 14+ แล้วโดนตัดบท
+        'celtic_aftercare_enabled' => true,
+        'celtic_aftercare_total_minutes' => 30, // เพดานรวมนับจากคำถามแรก (บทสรุป 15 + คุยต่ออีก 15)
+        'celtic_aftercare_idle_minutes' => 10, // เงียบเกินนี้ระหว่างคุยต่อ → กล่าวลา+อวยพร
         'pro_session_standby_minutes' => 30, // (2026-06-30) ลูกค้ายังไม่ถามเลย → สแตนบายรอ 30 นาที ก่อนสรุปเอง
         'pro_session_nudge_interval_minutes' => 10, // (2026-06-30) ตามลูกค้าให้เริ่มถามทุก 10 นาที ระหว่างสแตนบาย
         'celtic_cross_proactive_enabled' => true,
@@ -1435,6 +1447,41 @@ TXT;
     public function getCelticQaWindowMinutes(): int
     {
         return max(1, (int) ($this->celtic_cross_qa_window_minutes ?? 15));
+    }
+
+    /**
+     * 🤝 (2026-08-29) เปิดโหมด "หลังบทสรุป" ไหม — ส่งบทสรุปแล้วยังคุยต่อได้
+     *
+     * ปิดสวิตช์นี้ = กลับไปพฤติกรรมเดิม (บทสรุปแล้ววางสายทันที)
+     */
+    public function isCelticAftercareEnabled(): bool
+    {
+        return (bool) ($this->celtic_aftercare_enabled ?? true);
+    }
+
+    /**
+     * 🤝 (2026-08-29) เพดานรวมของรอบทำนาย (นาที) นับจากคำถามแรกของลูกค้า
+     *
+     * ต้องมากกว่า QA window เสมอ — ไม่งั้นไม่เหลือเวลาให้คุยต่อหลังบทสรุป
+     * (เช่น qa_window=15, total=30 → บทสรุปนาทีที่ 15 แล้วคุยต่อได้อีก 15 นาที)
+     */
+    public function getCelticAftercareTotalMinutes(): int
+    {
+        $qaWindow = $this->getCelticQaWindowMinutes();
+        $total = (int) ($this->celtic_aftercare_total_minutes ?? 30);
+
+        // เพดานต่ำกว่า/เท่ากับ QA window = ไม่มีช่วงคุยต่อ → คืน qa_window (เท่ากับปิดโหมดนี้)
+        return max($qaWindow, $total);
+    }
+
+    /**
+     * 🤝 (2026-08-29) เงียบกี่นาทีระหว่างช่วงคุยต่อ ถึงให้แม่หมอกล่าวลา
+     *
+     * ค่าจริงจากบิล: ลูกค้าเว้นช่วงกลางวง 4-5 นาทีเป็นเรื่องปกติ → default 10 นาทีถึงจะปลอดภัย
+     */
+    public function getCelticAftercareIdleMinutes(): int
+    {
+        return max(1, (int) ($this->celtic_aftercare_idle_minutes ?? 10));
     }
 
     /**

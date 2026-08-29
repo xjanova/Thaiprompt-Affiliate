@@ -363,6 +363,19 @@ Schedule::command('fortune:celtic-auto-finalize --limit=20')
     ->name('fortune-celtic-auto-finalize')
     ->runInBackground();
 
+// 3-bis) Fortune Celtic Aftercare Close — 🤝 (2026-08-29 FTU-260829-M9469) กล่าวลา+อวยพรปิดช่วงคุยต่อ
+//     บทสรุปยิงที่นาทีที่ 15 ตามเดิม แต่แม่หมอไม่วางสายทันที — ยังคุยต่อเรื่องรอบเดิมได้
+//     ตัวนี้ปิดให้เมื่อ "เงียบครบ idle (10 นาที)" หรือ "ครบเพดานรวม (30 นาที จากคำถามแรก)"
+//     (ทางที่ 3 คือลูกค้าพิมพ์ "ขอบคุณ" เอง — ดักที่ webhook ไม่ต้องรอ cron)
+//     ⏱ ทุก 2 นาที — ต้องถี่กว่า prosession-clear-stale (10 นาที) ไม่งั้นตัวกวาด flag
+//        จะล้างเซสชันทิ้งเงียบ ๆ ก่อน แล้วลูกค้าไม่ได้คำอวยพรส่งท้ายเลย
+Schedule::command('fortune:celtic-aftercare-close --limit=50')
+    ->everyTwoMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-celtic-aftercare-close')
+    ->runInBackground();
+
 // 3a) Fortune Deep Auto-Finalize — 🌙 (2026-06-08) แจ้ง "หมดเวลาทำนาย" ลูกค้า Deep 39฿
 //     window คุย 7 นาที (deep_reading_qa_window_minutes) → ทุก 3 นาทีสแกน session ที่หมดเวลา
 //     ส่ง "หมดเวลา + ขอบคุณ + อ่านคำทำนายย้อนหลังได้" — ไม่มีบทสรุปแบบ Celtic 99 (user spec)

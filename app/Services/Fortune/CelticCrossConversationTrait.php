@@ -3525,14 +3525,34 @@ trait CelticCrossConversationTrait
         //   user spec: "แม้จะมีการสรุปเหมือนจากลา แล้ว แต่ไม่ได้ลาจริง เอไอ อวาต้าแม่หมอ
         //              ก็ยังอยู่และ ถามเพิ่มว่าจะถามอะไรไหม"
         //   เกิดเมื่อ: max_questions_reached (3Q ครบ) แต่ window 30 นาทียังเหลือ
+        // 🤝 (2026-08-29 FTU-260829-M9469) time_expired ก็ต้อง linger ด้วย
+        //   เดิม linger จำกัดที่ ['max_questions_reached', 'ai_signal'] = **ตายสนิทบน prod**:
+        //     • max_questions_reached ยิงได้เฉพาะตอน celtic_cross_max_questions > 0 — prod ตั้ง 0 (ไม่จำกัด)
+        //     • ai_signal ไม่มี call site เลย (เป็นแค่ค่า default ของพารามิเตอร์ ไม่มีใครส่งเข้ามา)
+        //   ⇒ ทุกบิลจริงตกไปเส้น clearProSessionFlags = วางสายทันทีหลังบทสรุป
+        //      (บิล FTU-260829-M9469: ถาม 11 ข้อรัว ๆ แล้วโดนตัดบท — 56% ของบิลโดนแบบนี้)
+        //   ตอนนี้เปิด time_expired เข้า linger ตามสเปกเจ้าของ "ยังคุยต่อได้ในเรื่องการทำนายรอบเดียวกัน"
+        $aftercareOn = method_exists($this->settings, 'isCelticAftercareEnabled')
+            && $this->settings->isCelticAftercareEnabled();
+        $lingerReasons = $aftercareOn
+            ? ['max_questions_reached', 'ai_signal', 'time_expired']
+            : ['max_questions_reached', 'ai_signal'];
+
         if ($proSessionActive && $proSessionRemaining > 0
-            && in_array($reason, ['max_questions_reached', 'ai_signal'], true)) {
+            && in_array($reason, $lingerReasons, true)) {
+            // 🤝 ธงบอกว่า "เข้าโหมดคุยต่อหลังบทสรุปแล้ว" — cron ปิดท้ายใช้ธงนี้หาเป้า
+            //   เก็บบน conversation_state (MySQL) ไม่ใช่ Cache — deploy รัน cache:clear = flushdb
+            //   (บทเรียน FTU-260821-K9664) ของลูกค้าที่จ่ายเงินแล้วห้ามอยู่บน Cache อย่างเดียว
+            $reading->setConversationState('celtic_aftercare_started_at', now()->toIso8601String());
+            $reading->setConversationState('celtic_aftercare_last_msg_at', now()->toIso8601String());
+            $reading->setConversationState('celtic_aftercare_farewelled', false);
+
             // 🌙 (2026-05-23) เปลี่ยน "ยุติการทำนาย" → "เลิกทำนายและสรุปผล" + 2-step confirm
             $closingMessage .= "\n\n──────────────────────\n"
-                ."🌙 *แต่แม่หมอยังไม่ลานะคะ — ยังเปิดประตูพลังให้อีก {$proSessionRemaining} นาที* ✨\n\n"
-                ."💬 ถ้าเจ้าชะตามีอะไรอยากถามเพิ่มเติมจากบทสรุป — พิมพ์มาได้เลยค่ะ\n"
+                ."🌙 *แต่แม่หมอยังไม่ลานะคะ — ยังอยู่เป็นเพื่อนเจ้าชะตาอีก {$proSessionRemaining} นาที* ✨\n\n"
+                ."💬 ถ้ายังมีอะไรค้างคาใจจากบทสรุป — ถามต่อได้เลยค่ะ\n"
                 ."   แม่หมอจะอ่านพลังงานจากไพ่ทั้ง 10 ใบให้ละเอียดยิ่งขึ้น\n\n"
-                .'📜 หรือถ้าพอใจแล้วพิมพ์ *"เลิก"* แม่หมอจะสรุปผลให้ค่ะ';
+                .'🙏 หรือถ้าพอใจแล้ว พิมพ์ *"ขอบคุณ"* แม่หมอจะอวยพรส่งท้ายให้ค่ะ';
         } elseif (in_array($reason, ['customer_said_done', 'time_expired', 'idle'], true)
             && method_exists($this, 'clearProSessionFlags')) {
             // 🩹 (2026-05-09 audit fix CC2) Clear Pro Session flag เมื่อ customer ลาจริง
@@ -3559,8 +3579,10 @@ trait CelticCrossConversationTrait
         //   🛡️ ห้ามส่งตอน "linger" (อวยพรหลอก — Pro Session ยังเหลือเวลา ลูกค้าคุยต่อได้)
         //      เพราะข้อความบอก "ยังไม่ลา ยังเปิดประตูให้อีก X นาที" → ชวนรีวิวตอนนี้จะขัดกัน
         //      จะส่งตอนจบจริง (time_expired/idle/customer_said_done หรือครบไม่มีเวลา Pro เหลือ)
+        //   🤝 (2026-08-29) ใช้ $lingerReasons ตัวเดียวกับด้านบน — ถ้าลิสต์สองที่หลุดกัน
+        //      time_expired จะ linger (ยังคุยต่อ) แต่โดนชวนรีวิว/เสนอขายทับหน้าทันที = ขัดกันเอง
         $isLingering = ($proSessionActive ?? false) && ($proSessionRemaining ?? 0) > 0
-            && in_array($reason, ['max_questions_reached', 'ai_signal'], true);
+            && in_array($reason, $lingerReasons, true);
         $reviewInvite = null;
         if (! $isLingering) {
             try {
@@ -3598,6 +3620,296 @@ trait CelticCrossConversationTrait
             // 🎧 (2026-06-20) Voice = on-demand — flag บอกว่ามีบทสรุปพร้อมให้ลูกค้าขอฟังเสียง
             'voice_on_demand_ready' => $voiceOnDemandReady,
         ];
+    }
+
+    /**
+     * 🤝 (2026-08-29 FTU-260829-M9469) อยู่ในช่วง "คุยต่อหลังบทสรุป" หรือไม่
+     *
+     * เงื่อนไข: ส่งบทสรุปไปแล้ว (celtic_aftercare_started_at) + ยังไม่ได้กล่าวลา
+     * ไม่เช็คเวลาในนี้ — อายุเซสชันคุมด้วย pro_session_window_minutes (isInProSession) อยู่แล้ว
+     * ⚠️ ธงต้องอ่านจาก conversation_state (MySQL) ไม่ใช่ Cache — deploy รัน cache:clear = flushdb
+     */
+    protected function isInCelticAftercare(FortuneReading $reading): bool
+    {
+        if (method_exists($this->settings, 'isCelticAftercareEnabled')
+            && ! $this->settings->isCelticAftercareEnabled()) {
+            return false;
+        }
+
+        if (empty($reading->getConversationState('celtic_aftercare_started_at'))) {
+            return false;
+        }
+
+        return ! (bool) $reading->getConversationState('celtic_aftercare_farewelled', false);
+    }
+
+    /**
+     * 🤝 (2026-08-29) ตัวจับ "สัญญาณวางสาย" ของลูกค้า — ขอบคุณ/ลาก่อน แบบไม่มีคำถามพ่วง
+     *
+     * ทำไมไม่ใช้ looksLikeReadinessAck(): ตัวนั้นนับ "ค่ะ/โอเค/พร้อม" เป็น ack ด้วย
+     *   ซึ่งกลางวงสนทนาแปลว่า "รับทราบ ถามต่อ" ไม่ใช่ "ลาแล้ว" → วางสายก่อนเวลา = แย่กว่าเดิม
+     * ตัวนี้บังคับว่าต้องมี **คำลา/คำขอบคุณจริง** แล้วค่อยเช็คว่าไม่มีเนื้อหาตามหลัง
+     *
+     * เคสที่ต้องผ่าน (= ลา):    "ขอบคุณค่ะ" / "ขอบคุณมากๆ นะคะแม่หมอ" / "ขอบใจจ้า" / "บายค่ะ"
+     * เคสที่ต้องไม่ผ่าน (= ถามต่อ): "ขอบคุณค่ะ แล้วเรื่องงานล่ะ" / "ขอบคุณ ถามอีกข้อได้ไหม"
+     *
+     * ⚠️ regex ไทยห้ามลืม \p{M} — คลาส [^\p{L}\p{N}\s] กินสระ/วรรณยุกต์ทิ้ง (บทเรียนเดิม)
+     *    ที่นี่เลยใช้ preg_replace เฉพาะอีโมจิ + ตัดคำลงท้ายด้วย pattern ที่เขียนเป็นคำเต็ม
+     */
+    protected function looksLikeCelticFarewell(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        if ($clean === '') {
+            return false;
+        }
+
+        // ตัดอีโมจิ/ZWJ/VS16 ออกก่อน — ปุ่มและคำลาของลูกค้ามักมีอีโมจิพ่วง
+        //   (VS16 U+FE0F เป็น \p{M} — ถ้าไม่ตัดจะเหลือค้างแล้วเทียบคำไม่ตรง)
+        $clean = trim((string) preg_replace(
+            '/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2190}-\x{21FF}\x{FE0F}\x{200D}]/u',
+            '',
+            $clean
+        ));
+        if ($clean === '') {
+            return false;
+        }
+
+        // 🚫 มี marker คำถาม = ยังอยากคุยต่อ ห้ามวางสายเด็ดขาด
+        foreach ([
+            'ไหม', 'มั้ย', 'มัย', 'หรือ', 'เหรอ', 'หรอ', 'รึ', 'เมื่อไหร่', 'เมื่อไร',
+            'ทำไม', 'อะไร', 'ยังไง', 'อย่างไร', 'ที่ไหน', 'ใคร', 'กี่', 'เท่าไหร่', 'เท่าไร', '?',
+            'ขอถาม', 'อยากรู้', 'อยากถาม', 'อยากดู', 'ช่วยดู', 'ดูเรื่อง', 'ดูให้', 'ดูหน่อย', 'ทำนาย',
+        ] as $qm) {
+            if (str_contains($clean, mb_strtolower($qm))) {
+                return false;
+            }
+        }
+
+        // ต้องขึ้นต้นด้วยคำลา/คำขอบคุณจริง ๆ (ไม่ใช่แค่ "ค่ะ" ลอย ๆ)
+        //   🚫 ห้ามใส่ "สวัสดีค่ะ/สวัสดีครับ" — ภาษาไทยใช้ทั้งทักทายและลา
+        //      ลูกค้าทักกลับมาคุยต่อแล้วโดนวางสาย = บั๊กตัวเดียวกับที่กำลังแก้อยู่
+        //   🚫 ห้ามใส่คำสั้นอย่าง "พอ" ที่นี่ — ตัวเทียบเป็นแบบ prefix + ยอมให้เหลือหาง ≤2 ตัว
+        //      ⇒ "พอดี"/"พอใจ" จะกลายเป็นคำลาทันที. คำพวกนั้นอยู่ใน exact-match ที่ caller แทน
+        $farewellWords = [
+            'ขอบพระคุณ', 'ขอบคุณ', 'ขอบคุน', 'ขอบใจ',
+            'ลาก่อน', 'บายบาย', 'บ๊ายบาย', 'บาย',
+            'thank you', 'thankyou', 'thanks', 'thank', 'thx', 'goodbye', 'bye',
+        ];
+
+        $tailPattern = '/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|ครับผม|จ้า|จ้ะ|จ๊ะ|จ้าา|จ๋า|นะ|น่ะ|แล้ว|เลย|ละ|ล่ะ|ฮะ|ฮ่ะ|แม่หมอ|แม่|หมอ|ๆ)\s*$/u';
+
+        foreach ($farewellWords as $word) {
+            if (! str_starts_with($clean, mb_strtolower($word))) {
+                continue;
+            }
+
+            $rest = trim(mb_substr($clean, mb_strlen($word)));
+            // ตัด intensifier นำหน้า (มากๆ/จริงๆ/หลายๆ) + คำลงท้าย 3 รอบ (เผื่อซ้อน "นะคะแม่หมอ")
+            $rest = trim((string) preg_replace('/^(?:มากมาย|มาก|จริง|หลาย|เด้อ|งับ|ฮะ|ค้าบ|ๆ)+/u', '', $rest));
+            for ($i = 0; $i < 3; $i++) {
+                $rest = trim((string) preg_replace($tailPattern, '', $rest));
+            }
+
+            // เหลือเนื้อหาตามหลัง = ยังมีเรื่องจะคุย ("ขอบคุณค่ะ แล้วเรื่องงานล่ะ") → ไม่ใช่คำลา
+            return $rest === '' || mb_strlen($rest) <= 2;
+        }
+
+        return false;
+    }
+
+    /**
+     * 🤝 (2026-08-29) ดักข้อความระหว่างช่วงคุยต่อหลังบทสรุป
+     *
+     * @return array|null array = จัดการแล้ว (คืนให้ caller ส่งเลย), null = ไม่เกี่ยว ปล่อยไหลไป AI ตอบต่อ
+     */
+    protected function handleCelticAftercareMessage(FortuneReading $reading, string $messageText): ?array
+    {
+        // 🆕 หมายเหตุ: ทางออก "ขอเปิดรอบใหม่" ไม่ได้อยู่ที่นี่ — ดักที่ Pro Session Hard Guard
+        //   (FortuneConversationService) ก่อนเรียก handleProSession เพราะเมธอดนั้นคืนค่าเสมอ
+        //   ถ้าดักที่นี่แล้ว return null ข้อความจะไหลต่อไปโดน settle-buffer อมเข้าไปให้ AI ตอบ
+        //   = ลูกค้าเปิดบิลใหม่ไม่ได้จนกว่าจะหมดเวลา (ซ้ำรอย incident 82 ลูกค้าติดผี 2026-07-08)
+
+        // 🔚 คำสั่งจบตรง ๆ ("พอแล้ว"/"เลิก"/"จบ") — ระหว่างช่วงคุยต่อ status = COMPLETED แล้ว
+        //   ⇒ ไม่ผ่าน handleCelticAwaitingQuestion อีก ⇒ handleCelticEndConfirmation ไม่ถูกเรียก
+        //   ถ้าไม่ดักตรงนี้ ลูกค้าพิมพ์ "พอแล้ว" จะตกไปให้ AI ตอบเป็นคำถาม (ไม่ยอมวางสาย)
+        //   ใช้ matchesExactKeyword (exact บน normalized) ไม่ใช่ prefix — "พอ" สั้นเกินกว่าจะ match หลวม ๆ
+        //   ("พอดี"/"พอใจ" ต้องไม่โดนจับ)
+        if ($this->matchesExactKeyword($messageText, [
+            'พอแล้ว', 'พอแค่นี้', 'พอ', 'จบ', 'จบแล้ว', 'จบเลย', 'เลิก', 'ยุติ', 'หยุด', 'stop',
+        ])) {
+            Log::info('Celtic aftercare: ลูกค้าสั่งจบตรง ๆ → กล่าวลา+อวยพร', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 40),
+            ]);
+
+            return $this->closeCelticAftercare($reading, 'customer_farewell');
+        }
+
+        // 🙏 ลูกค้าลาเอง → กล่าวลา + อวยพร (สเปก: "เพื่อความประทับใจที่สุด")
+        if ($this->looksLikeCelticFarewell($messageText)) {
+            Log::info('Celtic aftercare: จับสัญญาณลาจากลูกค้า → กล่าวลา+อวยพร', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 40),
+            ]);
+
+            return $this->closeCelticAftercare($reading, 'customer_farewell');
+        }
+
+        // ยังคุยอยู่ → เลื่อนนาฬิกาเงียบออกไป แล้วปล่อยให้ AI ตอบตามปกติ
+        $reading->setConversationState('celtic_aftercare_last_msg_at', now()->toIso8601String());
+
+        return null;
+    }
+
+    /**
+     * 🤝 (2026-08-29) ลูกค้าขอเปิดดวงรอบใหม่ระหว่างช่วงคุยต่อหรือไม่
+     *
+     * ตั้งใจให้แคบ — จับเฉพาะคำสั่งเปิดรอบใหม่ตรง ๆ / ราคาแพคเกจ
+     * ห้ามกว้าง: "ดูให้หน่อย" กลางวงคือถามต่อในรอบเดิม ไม่ใช่ขอรอบใหม่
+     */
+    protected function looksLikeNewReadingRequestDuringAftercare(string $text): bool
+    {
+        $clean = mb_strtolower(trim($this->normalizeUserInput($text)));
+        if ($clean === '') {
+            return false;
+        }
+
+        $exact = [
+            'ดูดวง', 'ดูดวงใหม่', 'ดูใหม่', 'เปิดไพ่ใหม่', 'ทำนายใหม่', 'เริ่มใหม่',
+            'celtic', 'ดูดวงต่อ', 'ขอดูดวง', 'ดูดวงอีก', 'ดูอีกรอบ', 'อีกรอบ',
+        ];
+
+        foreach ($exact as $kw) {
+            if ($clean === $kw) {
+                return true;
+            }
+        }
+
+        // ราคาแพคเกจพิมพ์เอง (39/99) = เจตนาเปิดบิลใหม่ชัดเจน
+        $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+        $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
+        foreach ([$celticPrice, $deepPrice] as $price) {
+            if ($clean === (string) $price) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🤝 (2026-08-29) ปิดช่วงคุยต่อ — กล่าวลา + อวยพร แล้วเก็บของให้เรียบร้อย
+     *
+     * ⚠️ ห้าม generate Grand Finale ซ้ำ — ลูกค้าได้บทสรุปไปแล้วตอนนาทีที่ 15
+     *    (บิลจริงใช้ 32,376 tokens ต่อบทสรุป 1 ครั้ง — ยิงซ้ำ = จ่าย 2 เท่าให้ของที่ลูกค้ามีแล้ว)
+     *    ตรงนี้เป็นคำอวยพรสั้น ๆ ไม่ผ่าน AI = ฟรีและไม่มีทางล่ม
+     *
+     * @param  string  $reason  customer_farewell | idle | total_cap | new_reading_requested
+     * @return array|null null = ไม่ต้องส่งอะไร (เคสลูกค้าขอเปิดรอบใหม่ — ปล่อยไหลไป flow ปกติ)
+     */
+    protected function closeCelticAftercare(FortuneReading $reading, string $reason): ?array
+    {
+        // 🛡️ idempotent — กัน cron กับ webhook ปิดชนกันแล้วลูกค้าได้คำอวยพร 2 กล่อง
+        if ((bool) $reading->getConversationState('celtic_aftercare_farewelled', false)) {
+            return null;
+        }
+
+        $reading->setConversationState('celtic_aftercare_farewelled', true);
+        $reading->setConversationState('celtic_aftercare_closed_reason', $reason);
+        $reading->setConversationState('celtic_aftercare_closed_at', now()->toIso8601String());
+
+        if (method_exists($this, 'clearProSessionFlags')) {
+            $this->clearProSessionFlags($reading);
+        }
+
+        // 🔓 ปลดแคช "กำลังทำนายอยู่" ทันที — ไม่งั้นลูกค้าพิมพ์ "ดูดวง" ต่อแล้วยังโดนบล็อก
+        try {
+            $uid = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
+            if ($uid !== '' && method_exists($this, 'clearPaidActiveCache')) {
+                $this->clearPaidActiveCache($uid);
+            }
+        } catch (\Throwable $e) {
+            Log::debug('Celtic aftercare: clear paid-active cache fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::info('Celtic aftercare: ปิดช่วงคุยต่อ', [
+            'reading_id' => $reading->id,
+            'reason' => $reason,
+        ]);
+
+        // ลูกค้าขอเปิดรอบใหม่ = ไม่ต้องอวยพรขวางทาง ปล่อยเข้า flow เปิดบิลเลย
+        if ($reason === 'new_reading_requested') {
+            return null;
+        }
+
+        // 🧩 ใช้ action 'celtic_session_ended' เดิม ไม่ประดิษฐ์ action ใหม่ —
+        //   ChannelManager จัดการ review_invite / ของเสริมดวง แบบ **แยกตาม action**
+        //   action ใหม่จะตกไป default = ส่งแต่ข้อความ แล้วคำชวนรีวิวหายเงียบ
+        //   ฟิลด์รูป/เสียงที่ไม่ได้ส่งมา ฝั่งนั้น `! empty()` กันไว้หมดแล้ว → ข้ามเองปลอดภัย
+        return [
+            'action' => 'celtic_session_ended',
+            'message' => $this->buildCelticFarewellMessage($reading, $reason),
+            'reading' => $reading,
+            'end_reason' => "aftercare_{$reason}",
+            // ⭐ ตอนนี้คือ "จุดจบจริง" แล้ว → ชวนรีวิว + เสนอของเสริมดวงได้
+            //   (ตอนส่งบทสรุปนาทีที่ 15 กันไว้ด้วย is_lingering เพราะยังไม่ลา ⇒ ลูกค้าได้ครั้งเดียว ไม่ซ้ำ)
+            'is_lingering' => false,
+            'review_invite' => $this->attachAftercareReviewInvite($reading),
+            // ไม่ส่งรูปไพ่/แผนที่ดาว/เสียงซ้ำ — ลูกค้าได้ไปแล้วพร้อมบทสรุปตอนนาทีที่ 15
+        ];
+    }
+
+    /**
+     * 🤝 (2026-08-29) คำกล่าวลา + อวยพรส่งท้าย (สคริปต์ ไม่ผ่าน AI)
+     *
+     * เจ้าของสั่ง: "บอทก็กล่าวลาและอวยพร เพื่อความประทับใจที่สุด"
+     * แม่หมอเป็นหญิงเสมอ — ลงท้าย "ค่ะ/นะคะ" ห้าม "ครับ" เด็ดขาด
+     */
+    protected function buildCelticFarewellMessage(FortuneReading $reading, string $reason): string
+    {
+        $name = $reading->resolveCustomerName();
+
+        $opening = match ($reason) {
+            'idle' => "🌙 *แม่หมอเห็นว่าเจ้าชะตาพักไปแล้วนะคะ คุณ{$name}*\n\n"
+                ."แม่หมอขอเก็บไพ่ทั้งสิบใบกลับเข้าสำรับก่อนนะคะ\n\n",
+            'total_cap' => "🌙 *ครบเวลาของวงไพ่รอบนี้แล้วค่ะ คุณ{$name}*\n\n"
+                ."แม่หมออยู่เป็นเพื่อนจนสุดทางที่พลังไพ่จะพาไปได้แล้วนะคะ\n\n",
+            default => "🙏 *ขอบคุณที่ไว้วางใจแม่หมอนะคะ คุณ{$name}*\n\n",
+        };
+
+        return $opening
+            ."✨ *คำอวยพรส่งท้ายจากแม่หมอจันทรา*\n\n"
+            ."ขอให้เส้นทางข้างหน้าของเจ้าชะตาสว่างไสว\n"
+            ."สิ่งที่เพียรทำมาทั้งหมด ขอให้ออกดอกออกผลทันตาเห็น\n"
+            ."เรื่องที่หนักอยู่ ขอให้คลี่คลายลงทีละเปลาะ\n"
+            ."คนที่คิดร้ายขอให้ห่างไกล คนที่จริงใจขอให้เข้ามา\n"
+            ."เงินทองไหลมาไม่ขาดสาย สุขภาพแข็งแรง จิตใจเป็นสุข 🙏\n\n"
+            ."💫 คำทำนายเป็นเพียงแสงไฟชี้ทาง — เจ้าชะตาเป็นคนเดินเองนะคะ\n\n"
+            .str_repeat('━', 17)."\n\n"
+            .$this->closingInviteLine($reading);
+    }
+
+    /**
+     * 🤝 (2026-08-29) แนบคำชวนรีวิวตอนปิดช่วงคุยต่อ (จุดจบจริง)
+     *
+     * non-blocking: รีวิวพังห้ามกลืนคำอวยพร → fail = null
+     */
+    protected function attachAftercareReviewInvite(FortuneReading $reading): ?array
+    {
+        try {
+            return (new \App\Services\Fortune\FortuneReviewInviteService($this->settings))
+                ->attachIfEligible($reading);
+        } catch (\Throwable $e) {
+            Log::warning('Celtic aftercare: review invite attach fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

@@ -1693,7 +1693,23 @@ class FortuneConversationService
                                 || $proReading->celtic_first_answered_at !== null
                             );
 
-                        if ($deliveredToUser || $celticDelivered) {
+                        // 🤝 (2026-08-29 FTU-260829-M9469) ทางออก "ขอเปิดรอบใหม่" ระหว่างช่วงคุยต่อ
+                        //   สเปกเจ้าของ: "ถ้าเปิดบิลก่อนก็ทำได้เป็นรอบใหม่"
+                        //   ⚠️ ต้องเช็ค **ตรงนี้** ก่อน handleProSession — เพราะ handleProSession
+                        //      คืนค่าเสมอ ไม่มีทาง fall through ออกมาได้ ถ้าไปเช็คข้างใน
+                        //      คำว่า "ดูดวง" จะถูก settle-buffer อมไปให้ AI ตอบแทนการเปิดบิลใหม่
+                        //   ปิด session ทิ้งแล้วปล่อยไหลลงไป flow ปกติ (ไม่ return)
+                        if ($proReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                            && $this->isInCelticAftercare($proReading)
+                            && $this->looksLikeNewReadingRequestDuringAftercare($messageText)) {
+                            $this->closeCelticAftercare($proReading, 'new_reading_requested');
+
+                            Log::info('Celtic aftercare: ลูกค้าขอเปิดรอบใหม่ → ปล่อยออกจาก Pro Session', [
+                                'reading_id' => $proReading->id,
+                                'facebook_user_id' => $facebookUserId,
+                                'text_preview' => mb_substr($messageText, 0, 30),
+                            ]);
+                        } elseif ($deliveredToUser || $celticDelivered) {
                             return $this->handleProSession($proReading, $messageText, $userProfile);
                         }
 
@@ -12550,6 +12566,16 @@ class FortuneConversationService
                 continue;
             }
 
+            // 🤝 (2026-08-29) ยกทางให้ fortune:celtic-aftercare-close ได้กล่าวลาก่อน
+            //   ถ้าตัวนี้กวาด flag ทิ้งเงียบ ๆ ลูกค้าจะไม่ได้คำอวยพรส่งท้ายเลย (สเปกเจ้าของ)
+            //   ⚠️ ยอมรอแบบ **มีเพดาน** เท่านั้น — ถ้า cron อวยพรตายไป ตัวนี้ต้องกวาดต่อได้
+            //      ไม่งั้นธงค้างถาวร = ลูกค้าเปิดดวงใหม่ไม่ได้ (ซ้ำรอย incident 82 ลูกค้า 2026-07-08)
+            if ($this->shouldDeferToCelticAftercareClose($reading)) {
+                $keptActive++;
+
+                continue;
+            }
+
             if ($apply) {
                 $this->clearProSessionFlags($reading);
             }
@@ -12563,6 +12589,117 @@ class FortuneConversationService
             'kept_active' => $keptActive,
             'cleared_ids' => $clearedIds,
         ];
+    }
+
+    /**
+     * 🤝 (2026-08-29) reading นี้ควรปล่อยให้ cron อวยพรจัดการก่อนไหม
+     *
+     * true = อยู่ในช่วงคุยต่อ ยังไม่ได้กล่าวลา และยังไม่เลยเพดานรอ
+     * เพดานรอ = aftercare_total + 15 นาที — พ้นจากนี้ถือว่า cron อวยพรมีปัญหา ให้ตัวกวาดทำงานตามปกติ
+     */
+    protected function shouldDeferToCelticAftercareClose(FortuneReading $reading): bool
+    {
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            return false;
+        }
+
+        if (! $this->settings->isCelticAftercareEnabled()) {
+            return false;
+        }
+
+        $startedAt = $reading->getConversationState('celtic_aftercare_started_at');
+        if (empty($startedAt)) {
+            return false; // ไม่เคยเข้าโหมดคุยต่อ = ไม่มีคำอวยพรค้างให้รอ
+        }
+
+        if ((bool) $reading->getConversationState('celtic_aftercare_farewelled', false)) {
+            return false; // อวยพรไปแล้ว — กวาดได้เลย
+        }
+
+        try {
+            $graceMinutes = $this->settings->getCelticAftercareTotalMinutes() + 15;
+
+            return \Carbon\Carbon::parse($startedAt)->diffInMinutes(now(), true) < $graceMinutes;
+        } catch (\Throwable $e) {
+            return false; // parse ไม่ได้ = อย่ารอ ปล่อยกวาดตามปกติ
+        }
+    }
+
+    /**
+     * 🤝 (2026-08-29 FTU-260829-M9469) หา Celtic ที่อยู่ในช่วงคุยต่อแล้วถึงเวลาต้องกล่าวลา
+     *
+     * ปิดด้วย 2 เงื่อนไขตามสเปกเจ้าของ (ทางที่ 3 "ลูกค้าลาเอง" ดักที่ webhook แล้ว):
+     *   • เงียบเกิน celtic_aftercare_idle_minutes นับจากข้อความล่าสุด
+     *   • ครบ celtic_aftercare_total_minutes นับจาก **คำถามแรก** (celtic_first_answered_at)
+     *
+     * ⚠️ ห้ามปิดถ้ายังมีคำถามค้างไม่ได้ตอบ — บทเรียน FTU-260821-K9664
+     *    (ลูกค้าจ่ายเงินแล้วถามค้าง แล้วโดนยิง "หมดเวลา" ทับหน้าแทนคำตอบ)
+     *
+     * @return \Illuminate\Support\Collection<int, FortuneReading>
+     */
+    public function findCelticAftercareToClose(int $limit = 50, ?int $specificId = null): \Illuminate\Support\Collection
+    {
+        if (! $this->settings->isCelticAftercareEnabled()) {
+            return collect();
+        }
+
+        $query = FortuneReading::where('is_paid', true)
+            ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            ->whereRaw("JSON_EXTRACT(conversation_state, '$.celtic_aftercare_started_at') IS NOT NULL")
+            ->where(function ($q) {
+                $q->whereRaw("JSON_EXTRACT(conversation_state, '$.celtic_aftercare_farewelled') IS NULL")
+                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.celtic_aftercare_farewelled') != true");
+            });
+
+        if ($specificId) {
+            return $query->where('id', $specificId)->get(); // admin recovery — ข้าม filter เวลา
+        }
+
+        $idleMin = $this->settings->getCelticAftercareIdleMinutes();
+        $totalMin = $this->settings->getCelticAftercareTotalMinutes();
+
+        return $query->orderBy('updated_at', 'asc')
+            ->limit(max($limit * 3, 30))
+            ->get()
+            ->filter(function (FortuneReading $r) use ($idleMin, $totalMin) {
+                // 🛟 มีคำถามค้างไม่ได้ตอบ → ยังไม่ปิด ให้ตาข่ายกู้ตอบก่อน
+                if ($this->hasPendingProSessionQuestion($r)) {
+                    return false;
+                }
+
+                // เพดานรวมนับจากคำถามแรก
+                if ($r->celtic_first_answered_at
+                    && $r->celtic_first_answered_at->copy()->addMinutes($totalMin)->isPast()) {
+                    return true;
+                }
+
+                // เงียบเกิน idle — ถ้าไม่มี last_msg ให้ใช้เวลาที่เข้าโหมดคุยต่อแทน
+                $lastMsg = $r->getConversationState('celtic_aftercare_last_msg_at')
+                    ?: $r->getConversationState('celtic_aftercare_started_at');
+
+                if (empty($lastMsg)) {
+                    return false;
+                }
+
+                try {
+                    return \Carbon\Carbon::parse($lastMsg)->addMinutes($idleMin)->isPast();
+                } catch (\Throwable $e) {
+                    return false; // parse ไม่ได้ = อย่าเพิ่งปิด ปล่อยตัวกวาด stale จัดการตามเพดาน
+                }
+            })
+            ->take($limit)
+            ->values();
+    }
+
+    /**
+     * 🤝 (2026-08-29) ปิดช่วงคุยต่อ + คืนข้อความอวยพรให้ command เอาไป push
+     *
+     * @param  string  $reason  idle | total_cap
+     * @return array|null null = ปิดไปแล้ว (idempotent) — ไม่ต้องส่งอะไรซ้ำ
+     */
+    public function closeCelticAftercarePublic(FortuneReading $reading, string $reason): ?array
+    {
+        return $this->closeCelticAftercare($reading, $reason);
     }
 
     /**

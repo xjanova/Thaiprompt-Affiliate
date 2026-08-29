@@ -291,7 +291,51 @@
                                value="{{ $settings->celtic_cross_qa_window_minutes ?? 15 }}" min="5" max="1440"
                                style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
                     </div>
-                    <div style="font-size:11px; color:var(--ink2); margin-top:5px;">นับจากคำทำนายแรก — เกินเวลา session จบอัตโนมัติ (default 15 นาที — 2026-05-23 v3)</div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:5px;">นับจากคำทำนายแรก — ครบเวลาแล้ว <b>ส่งบทสรุป</b> (default 15 นาที — 2026-05-23 v3)</div>
+                </div>
+            </div>
+
+            {{-- 🤝 (2026-08-29 FTU-260829-M9469) ช่วงคุยต่อหลังบทสรุป --}}
+            <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:16px; border-left:4px solid #2e9e6b;">
+                <input type="hidden" name="celtic_aftercare_enabled" value="0">
+                <input type="checkbox" name="celtic_aftercare_enabled" value="1"
+                       {{ ($settings->celtic_aftercare_enabled ?? true) ? 'checked' : '' }}
+                       style="width:18px; height:18px; margin-top:2px; accent-color:#2e9e6b; cursor:pointer;">
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--ink); font-size:14.5px;">🤝 ส่งบทสรุปแล้วยังคุยต่อได้ (ไม่วางสายทันที)</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:4px;">
+                        เปิด — ครบ "เวลาถามต่อ" แม่หมอส่งบทสรุปตามเดิม <b>แต่ยังอยู่ในสาย</b> ให้ถามต่อเรื่องการทำนายรอบเดิมได้
+                        จนกว่าจะครบเพดานรวม / เงียบนานเกิน / ลูกค้าพิมพ์ "ขอบคุณ" (แล้วแม่หมอกล่าวลา+อวยพร).
+                        ปิด — ส่งบทสรุปแล้ววางสายทันทีแบบเดิม
+                    </div>
+                </div>
+            </label>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:14px;">
+                {{-- เพดานรวม --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">เพดานรวมทั้งรอบ (นาที)</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="number" name="celtic_aftercare_total_minutes"
+                               value="{{ $settings->celtic_aftercare_total_minutes ?? 30 }}" min="5" max="1440"
+                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                    </div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:5px;">
+                        นับจากคำถามแรก — ต้อง<b>มากกว่า</b>"เวลาถามต่อ" ถึงจะมีช่วงคุยต่อ (เช่น 15 → 30 = คุยต่อได้อีก 15 นาที)
+                    </div>
+                </div>
+
+                {{-- เงียบกี่นาทีถึงวางสาย --}}
+                <div>
+                    <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">เงียบกี่นาทีถึงกล่าวลา</label>
+                    <div class="tp-well tp-input" style="padding:0;">
+                        <input type="number" name="celtic_aftercare_idle_minutes"
+                               value="{{ $settings->celtic_aftercare_idle_minutes ?? 10 }}" min="1" max="120"
+                               style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                    </div>
+                    <div style="font-size:11px; color:var(--ink2); margin-top:5px;">
+                        ⚠️ อย่าตั้งต่ำกว่า 7 — จากบิลจริงลูกค้าเว้นช่วงกลางวง 4-5 นาทีเป็นเรื่องปกติ (จะโดนตัดบทกลางคิด)
+                    </div>
                 </div>
             </div>
         </div>

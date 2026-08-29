@@ -108,6 +108,10 @@ class FortuneCelticCrossController extends Controller
             //    ถ้าเผลอแก้เป็น >=1 เพื่อให้เซฟผ่าน = ทับ "ไม่จำกัด" กลับเป็น cap (เคส FTU-260627-U1003 ถูกตัดที่ 5Q)
             'celtic_cross_max_questions' => 'integer|min:0|max:50',
             'celtic_cross_qa_window_minutes' => 'integer|min:5|max:1440',
+            // 🤝 (2026-08-29 FTU-260829-M9469) ช่วงคุยต่อหลังบทสรุป
+            'celtic_aftercare_enabled' => 'sometimes|boolean',
+            'celtic_aftercare_total_minutes' => 'integer|min:5|max:1440',
+            'celtic_aftercare_idle_minutes' => 'integer|min:1|max:120',
             'celtic_cross_main_prompt' => 'nullable|string|max:10000',
             'celtic_cross_followup_prompt' => 'nullable|string|max:10000',
         ]);
@@ -139,6 +143,21 @@ class FortuneCelticCrossController extends Controller
             $settings->celtic_cross_max_questions = (int) $validated['celtic_cross_max_questions'];
         }
         $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 15;
+
+        // 🤝 (2026-08-29 FTU-260829-M9469) ช่วงคุยต่อหลังบทสรุป — บทสรุปยังยิงที่ qa_window เท่าเดิม
+        //   ปิดสวิตช์ = กลับพฤติกรรมเดิม (ส่งบทสรุปแล้ววางสายทันที)
+        $settings->celtic_aftercare_enabled = $request->boolean('celtic_aftercare_enabled');
+        //   ⚠️ เพดานรวมต้องมากกว่า qa_window อย่างน้อย 1 นาที ไม่งั้นไม่เหลือช่วงคุยต่อเลย
+        //      (getCelticAftercareTotalMinutes() กันชั้นสองด้วย max() แต่กันตั้งแต่ฟอร์มจะงงน้อยกว่า)
+        if (array_key_exists('celtic_aftercare_total_minutes', $validated)) {
+            $settings->celtic_aftercare_total_minutes = max(
+                (int) $settings->celtic_cross_qa_window_minutes,
+                (int) $validated['celtic_aftercare_total_minutes']
+            );
+        }
+        if (array_key_exists('celtic_aftercare_idle_minutes', $validated)) {
+            $settings->celtic_aftercare_idle_minutes = (int) $validated['celtic_aftercare_idle_minutes'];
+        }
 
         // เก็บ prompt เฉพาะถ้าส่งมา (เว้นว่าง = ใช้ default ใน CelticCrossService)
         $settings->celtic_cross_main_prompt = $validated['celtic_cross_main_prompt'] ?? null;

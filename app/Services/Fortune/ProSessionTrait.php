@@ -97,6 +97,19 @@ trait ProSessionTrait
                 : self::PRO_SESSION_DEEP_MINUTES;
         }
 
+        // 🤝 (2026-08-29 FTU-260829-M9469) Celtic 99 — ยืดอายุ "เซสชัน" ถึงเพดานรวม (30 นาที)
+        //   ⚠️ ไม่ได้เลื่อนเวลาบทสรุป — บทสรุปยิงตาม celtic_cross_qa_window_minutes (15) เหมือนเดิม
+        //      เพราะนาฬิกาบทสรุปอยู่คนละตัว: FortuneReading::canAskMoreCeltic() อ่าน qa_window ตรง ๆ
+        //   ที่ยืดคือ pro_session_window_minutes = อายุของ "แม่หมอยังอยู่ในสาย"
+        //      → พอบทสรุปยิงนาทีที่ 15 getProSessionRemainingMinutes() ยังเหลือ 15
+        //      → endCelticSession เข้าเส้น linger ได้ (เดิม remaining=0 เลยตกไป clearProSessionFlags)
+        //   ถ้าเจ้าของปิดสวิตช์ → total = qa_window พอดี = พฤติกรรมเดิมเป๊ะ
+        if ($type === 'celtic'
+            && method_exists($this->settings, 'isCelticAftercareEnabled')
+            && $this->settings->isCelticAftercareEnabled()) {
+            $window = max($window, $this->settings->getCelticAftercareTotalMinutes());
+        }
+
         $reading->setConversationState('pro_session_active', true);
         $reading->setConversationState('pro_session_type', $type);
         $reading->setConversationState('pro_session_window_minutes', $window);
@@ -1204,6 +1217,17 @@ trait ProSessionTrait
         //    ปล่อยให้ handleCelticEndConfirmation จัดการแทน (มี Quick Reply UX กันมือลั่นดีกว่า)
         //    user spec: "ปุ่มยุติทำนายเปลี่ยนเป็น เลิกทำนายและสรุปผล + ถามก่อน"
         $proType = (string) $reading->getConversationState('pro_session_type', 'deep');
+        // 🤝 (2026-08-29 FTU-260829-M9469) ช่วง "คุยต่อหลังบทสรุป" ของ Celtic 99
+        //   ⚠️ ต้องอยู่ **ก่อน** settle-buffer (3c-0) — ไม่งั้น "ขอบคุณ" จะถูกอมเข้า buffer
+        //      แล้วโผล่เป็นคำถามให้ AI ตอบอีก 10 วินาทีถัดมา แทนที่จะเป็นคำอวยพรส่งท้าย
+        //   ครอบ 3 ทางออกตามสเปกเจ้าของ: ลูกค้าลาเอง / ขอเปิดรอบใหม่ / (เงียบ+เพดานเวลา = cron)
+        if ($proType === 'celtic' && $this->isInCelticAftercare($reading)) {
+            $aftercare = $this->handleCelticAftercareMessage($reading, $messageText);
+            if ($aftercare !== null) {
+                return $aftercare;
+            }
+        }
+
         if ($proType !== 'celtic' && $this->looksLikeProSessionExitIntent($messageText)) {
             $reading->setConversationState('pro_session_pending_exit', true);
             $reading->setConversationState('pro_session_pending_exit_at', now()->toIso8601String());
