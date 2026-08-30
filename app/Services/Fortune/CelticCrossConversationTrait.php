@@ -2248,6 +2248,19 @@ trait CelticCrossConversationTrait
             ];
         }
 
+        // 🎂 (2026-08-30) ขัดกันระหว่าง "วันในสัปดาห์ที่บอก" กับ "วันที่ที่พิมพ์" → ถามให้ตรงจุด
+        //   แทนข้อความ generic ที่ไม่บอกว่าผิดตรงไหน (ลูกค้าจะพิมพ์ชุดเดิมกลับมา แล้วโดน auto-skip)
+        //   ⚠️ ไม่แตะเพดาน celtic_birthdate_attempts — ลูกค้าจ่าย 99 แล้ว ห้ามเสี่ยงให้ติดวน
+        //      ครบ 2 ครั้งยังข้ามไปดูจากไพ่เหมือนเดิมทุกประการ
+        if (($bdConflict = $this->birthDateConflict()) !== null) {
+            return [
+                'action' => 'celtic_ask_birthdate',
+                'message' => $this->buildBirthDayConflictQuestion($bdConflict)
+                    ."\n\n".'(ถ้าไม่สะดวกบอก พิมพ์ว่า *ข้าม* แม่หมอจะดูจากไพ่ให้ค่ะ)',
+                'reading' => $reading,
+            ];
+        }
+
         return [
             'action' => 'celtic_ask_birthdate',
             'message' => "🌙 แม่หมอขอ *วันเดือนปีเกิด* ของเจ้าชะตาก่อนนะคะ เพื่อดูดาวเจ้าชนะผสมกับไพ่ค่ะ\n\n"

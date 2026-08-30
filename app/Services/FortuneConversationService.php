@@ -109,6 +109,15 @@ class FortuneConversationService
     public const MAX_MESSAGE_LENGTH = 2000;
 
     /**
+     * 🎂 (2026-08-30) ถามยืนยันได้กี่รอบ เมื่อ "วันในสัปดาห์ที่ลูกค้าบอก" ขัดกับ "วันที่ที่พิมพ์"
+     *
+     * เกินโควตา = ยอมรับวันที่ตามที่พิมพ์ แล้วเดินต่อ
+     * ⚠️ ต้องมีเพดานเสมอ — ถ้าลูกค้าจำวันในสัปดาห์ผิดจริง คำถามจะวนไม่มีวันจบ
+     *    (เขาพิมพ์ชุดเดิมกลับมา → ขัดกันเหมือนเดิม → ถามอีก → ลูกค้าเลิกคุย)
+     */
+    public const BIRTHDAY_CONFLICT_MAX_ASKS = 2;
+
+    /**
      * คำถามสำเร็จรูปแยกตามหมวดหมู่
      *
      * ใช้สำหรับ Quick Reply buttons — user กดเลือกหมวดแทนพิมพ์เอง
@@ -2502,7 +2511,16 @@ class FortuneConversationService
 
                         // 🎯 Phase G — basic_done + พิมพ์วันเกิดเดี่ยวๆ → offer deep reading เลย
                         //   (extension ของ Phase C ที่เดิมทำในเฉพาะ no-active-reading)
-                        $standaloneBirthdate = $this->parseStandaloneBirthdate($messageText);
+                        // 🎂 (2026-08-30) รวมด่าน "วันในสัปดาห์ที่บอก ขัดกับวันที่ที่พิมพ์" ไว้ในตัวเดียว
+                        //   ขัดกัน → ส่งดวงของวันที่เขาบอกให้ก่อน + ถามวันที่ (ห้ามตกไป AI chat แล้วเงียบ)
+                        $standaloneBirthdate = $this->resolveStandaloneBirthdate(
+                            $messageText, $facebookUserId, $userProfile, $conflictAsk
+                        );
+
+                        if ($conflictAsk !== null) {
+                            return $conflictAsk;
+                        }
+
                         if ($standaloneBirthdate) {
                             Cache::put(
                                 "fortune:pending_birthdate:{$this->currentPlatform}:{$facebookUserId}",
@@ -2807,7 +2825,17 @@ class FortuneConversationService
                 // 🎯 Phase C — ลูกค้าพิมพ์วันเกิด standalone มาก่อน (เช่น "15/8/1990")
                 //    → บอกว่าได้วันเกิดแล้ว + offer ดูดวงเชิงลึก/ฟรี ให้เลือก
                 //    ทำก่อน DB keywords + AI Chat เพราะ intent ชัดเจน
-                $standaloneBirthdate = $this->parseStandaloneBirthdate($messageText);
+                // 🎂 (2026-08-30) วันในสัปดาห์ที่บอก ขัดกับวันที่ที่พิมพ์ → ยังไม่รับวันเกิด
+                //   ส่งดวงของ "วันที่เขาบอก" ให้ก่อน (ข้อมูลพอแล้วสำหรับดวงรายวัน) แล้วถามวันที่
+                //   ⚠️ ถ้าไม่ดักตรงนี้ จะไหลไป AI chat = ลูกค้าบอกวันเกิดแล้วไม่ได้อะไรกลับเลย
+                $standaloneBirthdate = $this->resolveStandaloneBirthdate(
+                    $messageText, $facebookUserId, $userProfile, $conflictAsk
+                );
+
+                if ($conflictAsk !== null) {
+                    return $conflictAsk;
+                }
+
                 if ($standaloneBirthdate) {
                     // เก็บวันเกิดไว้ใน cache เผื่อ user กดปุ่ม "ดูดวงเชิงลึก" → ใช้ pre-filled
                     Cache::put(
@@ -6426,6 +6454,12 @@ class FortuneConversationService
      */
     protected function parseStandaloneBirthdate(string $messageText): ?string
     {
+        // 🧹 (2026-08-30) ล้างผลตรวจ conflict ของรอบก่อน **ก่อน** ทางลัดทุกเส้นด้านล่าง
+        //   ไม่งั้นเมื่อ return null ด้วยเหตุอื่น (ข้อความยาว / มีคำหัวข้อดูดวง)
+        //   ผู้เรียกจะอ่าน conflict ค้างจากการเรียก parseBirthDate ครั้งก่อนใน request เดียวกัน
+        //   → ถามยืนยันวันเกิดที่ลูกค้าไม่ได้พิมพ์มาในข้อความนี้เลย
+        $this->lastBirthDateConflict = null;
+
         $text = trim($messageText);
 
         // ข้อความสั้นพอ (เผื่อกรณี "วันเกิด 15/8/1990 ค่ะ" = ~22 ตัวอักษร)
@@ -6561,7 +6595,54 @@ class FortuneConversationService
             ];
         }
 
-        $birthDate = $this->parseBirthDate($messageText);
+        // ✅ (2026-08-30) ลูกค้ายืนยันว่า "วันที่ที่พิมพ์มาถูกแล้ว" → รับวันที่เดิมที่ค้างไว้
+        //    ทางออกของคนที่จำวันในสัปดาห์ผิด — ไม่งั้นติดวนอยู่ที่คำถามยืนยันตลอดกาล
+        $overrideDate = null;
+
+        if ($this->looksLikeBirthDateOverrideConfirm($messageText)) {
+            $held = $reading->getConversationState('birthdate_weekday_conflict_date', null);
+
+            if (! empty($held)) {
+                $overrideDate = $held;
+                $reading->setConversationState('birthdate_weekday_conflict_date', null);
+                $reading->setConversationState('birthdate_weekday_conflict_asked', 0);
+
+                Log::info('🎂 ลูกค้ายืนยันวันที่เอง (วันในสัปดาห์ไม่ตรง) → รับวันที่ตามที่พิมพ์', [
+                    'reading_id' => $reading->id,
+                    'birth_date' => $held,
+                ]);
+            }
+        }
+
+        $birthDate = $overrideDate ?? $this->parseBirthDate($messageText);
+
+        // 🎂 (2026-08-30) วันในสัปดาห์ที่ลูกค้าบอก ขัดกับวันที่ที่พิมพ์มา → ถามให้ชัดก่อน
+        //   owner: "ถ้ามันคลุมเครือ ข้อมูลไม่พอ บอทต้องฉลาดในการถามเพิ่มสิ"
+        //   ⚠️ ไม่นับ birthdate_attempts (เหมือน yearIssue) — ลูกค้าพิมพ์รูปแบบถูก แค่ข้อมูลขัดกัน
+        //      ถ้านับ จะโดนดันเข้า step mode ทั้งที่เขาพิมพ์ถูกมาตลอด
+        if (! $birthDate && ($conflict = $this->birthDateConflict()) !== null) {
+            $asked = (int) $reading->getConversationState('birthdate_weekday_conflict_asked', 0);
+
+            if ($asked >= self::BIRTHDAY_CONFLICT_MAX_ASKS) {
+                // ถามครบโควตาแล้วยังขัดกัน → ยอมรับวันที่ ดีกว่าติดวนจนลูกค้าเลิกคุย
+                Log::info('🎂 ถามยืนยันวันในสัปดาห์ครบโควตาแล้ว → รับวันที่ตามที่ลูกค้าพิมพ์', [
+                    'reading_id' => $reading->id,
+                    'birth_date' => $conflict['parsed_date'],
+                ]);
+
+                $reading->setConversationState('birthdate_weekday_conflict_date', null);
+                $birthDate = $conflict['parsed_date'];   // ปล่อยไหลลง commit ตามเส้นเดิม
+            } else {
+                $reading->setConversationState('birthdate_weekday_conflict_asked', $asked + 1);
+                $reading->setConversationState('birthdate_weekday_conflict_date', $conflict['parsed_date']);
+
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => $this->buildBirthDayConflictQuestion($conflict),
+                    'reading' => $reading,
+                ];
+            }
+        }
 
         if (! $birthDate) {
             // 🎂 (2026-07-03) ปีเกิด "เป็นไปไม่ได้" (ปีนี้/อนาคต/เก่าเกิน 120 ปี) → ตอบชี้ที่ "ปี" ให้ชัด
@@ -6645,6 +6726,10 @@ class FortuneConversationService
         $reading->setConversationState('birthdate_partial', []);
         $reading->setConversationState('awaiting_birthdate_confirmation', false);
         $reading->setConversationState('pending_birthdate', null);
+        // 🎂 (2026-08-30) ล้างธงคำถาม "วันในสัปดาห์ไม่ตรง" — ถ้าภายหลังลูกค้าแก้วันเกิด
+        //    จะได้เริ่มนับใหม่ ไม่ใช่ติดเพดานค้างจากรอบก่อน
+        $reading->setConversationState('birthdate_weekday_conflict_asked', 0);
+        $reading->setConversationState('birthdate_weekday_conflict_date', null);
 
         // 🌙 (2026-06-08) ดูดวง 39 เวอร์ชันใหม่ — ไม่มีขั้น "รับคำถาม" แล้ว
         //   user spec: "ขั้นตอนรับคำถามไม่มี + ทำนายทันทีเมื่อเปิดไพ่เป็นพื้นดวงทั่วไป แล้วคุยต่อ 7 นาที"
@@ -22517,11 +22602,286 @@ PROMPT;
     }
 
     /**
-     * Parse วันเกิดจากข้อความ
+     * ผลตรวจ "วันในสัปดาห์ที่ลูกค้าบอก ขัดกับวันที่ที่ parse ได้" ของการเรียกล่าสุด
+     *
+     * ⚠️ อายุสั้นมาก — ถูกล้างทุกครั้งที่ parseBirthDate() ถูกเรียก
+     *    ผู้เรียกต้องอ่านด้วย birthDateConflict() **ทันที** หลัง parseBirthDate() คืน null
+     *
+     * @var array{stated_day:int, parsed_date:string, parsed_day:int, candidates:array<int>}|null
+     */
+    protected ?array $lastBirthDateConflict = null;
+
+    /**
+     * Parse วันเกิดจากข้อความ + ด่านตรวจ "วันในสัปดาห์ที่ลูกค้าบอกเอง"
+     *
+     * 🐛 (2026-08-30) เคสจริง PSID 28646125271642250: "เกิดวันอาทิตย์เดือน 4 ปีขาล 05"
+     *    ตัวปอกด้านล่างลบ "วันอาทิตย์" ทิ้ง → AI ได้แค่ "4 ขาล 05" → เดา 1962-04-05
+     *    ซึ่งเป็น **วันพฤหัสบดี** → บอทส่งดวงพฤหัสให้คนที่เพิ่งบอกว่าเกิดวันอาทิตย์
+     *
+     *    ลูกค้าไม่ได้พิมพ์วันที่มาเลย ("05" คือปี พ.ศ.2505) — AI เติมวันที่ 5 ขึ้นมาเอง
+     *
+     * 🔑 owner (2026-08-30): "ถ้ามันคลุมเครือ ข้อมูลไม่พอ บอทต้องฉลาดในการถามเพิ่มสิ"
+     *    ⇒ ขัดกัน = **ไม่รับ** (คืน null) แล้วให้ผู้เรียกถามกลับ ห้ามเงียบแล้วเชื่อตัวเลข
+     *    ผู้เรียกอ่านรายละเอียดได้จาก birthDateConflict() เพื่อประกอบคำถามที่ตอบได้ในทีเดียว
+     *
+     * ⚠️ นี่คือ **คอขวดเดียว** ของทุกเส้นที่รับวันเกิดฝั่ง DM (9 call sites)
+     *    ด่านจึงอยู่ที่นี่ที่เดียว ไม่ต้องไล่แก้ทีละเส้น
      *
      * 🎯 Phase A.3 — รับ separator เพิ่ม (/ - . space) + ตัดคำนำหน้า "เกิด/วันที่"
      */
     protected function parseBirthDate(string $text): ?string
+    {
+        $this->lastBirthDateConflict = null;
+
+        // 📌 จับชื่อวันจาก **ข้อความดิบ** ก่อนตัวปอกด้านล่างจะลบทิ้ง
+        $statedDay = \App\Support\StatedBirthDayName::stated($text);
+
+        $parsed = $this->parseBirthDateCore($text);
+
+        if ($parsed === null || $statedDay === null) {
+            return $parsed;
+        }
+
+        try {
+            $parsedDay = \Carbon\Carbon::parse($parsed)->dayOfWeek;
+        } catch (\Throwable $e) {
+            return $parsed;   // อ่านวันไม่ได้ → ปล่อยผ่านตามเดิม ดีกว่าตีตกของที่ถูก
+        }
+
+        if ($parsedDay === $statedDay) {
+            return $parsed;   // ตรงกัน = ยืนยันซึ่งกันและกัน
+        }
+
+        [$y, $m] = array_map('intval', explode('-', $parsed));
+
+        $this->lastBirthDateConflict = [
+            'stated_day' => $statedDay,
+            'parsed_date' => $parsed,
+            'parsed_day' => $parsedDay,
+            'candidates' => \App\Support\StatedBirthDayName::datesMatching($y, $m, $statedDay),
+        ];
+
+        Log::info('🎂 parseBirthDate: วันในสัปดาห์ที่ลูกค้าบอก ขัดกับวันที่ที่ parse ได้ → ไม่รับ ถามกลับ', [
+            'input' => mb_substr($text, 0, 80),
+            'stated_day' => \App\Support\StatedBirthDayName::name($statedDay),
+            'parsed_date' => $parsed,
+            'parsed_day' => \App\Support\StatedBirthDayName::name($parsedDay),
+        ]);
+
+        return null;
+    }
+
+    /**
+     * อ่านผลตรวจความขัดแย้งของ parseBirthDate() ครั้งล่าสุด
+     *
+     * @return array{stated_day:int, parsed_date:string, parsed_day:int, candidates:array<int>}|null
+     */
+    protected function birthDateConflict(): ?array
+    {
+        return $this->lastBirthDateConflict;
+    }
+
+    /**
+     * ประกอบคำถามกลับตอนวันในสัปดาห์ขัดกับวันที่ — ถามให้ลูกค้าตอบได้ในทีเดียว
+     *
+     * ⚠️ ห้ามถามลอย ๆ ว่า "พิมพ์วันเกิดใหม่" — ลูกค้าจะพิมพ์ชุดเดิมกลับมา แล้ววนไม่จบ
+     *    ต้องบอกว่า **ขัดกันตรงไหน** + ยื่น **วันที่ที่เป็นไปได้จริง** ให้เลือก
+     *    (เดือนหนึ่งมีวันอาทิตย์แค่ 4-5 วัน — ตัวเลือกสั้นพอที่จะตอบได้ทันที)
+     *
+     * @param  array{stated_day:int, parsed_date:string, parsed_day:int, candidates:array<int>}  $conflict
+     */
+    protected function buildBirthDayConflictQuestion(array $conflict): string
+    {
+        $statedName = \App\Support\StatedBirthDayName::name($conflict['stated_day']);
+        $parsedName = \App\Support\StatedBirthDayName::name($conflict['parsed_day']);
+        $formatted = $this->formatThaiDate($conflict['parsed_date']);
+
+        [$year, $month] = array_map('intval', explode('-', $conflict['parsed_date']));
+        $thaiMonth = $this->getThaiMonth($month);
+        $thaiYear = $year + 543;
+
+        $msg = "🎂 เอ๊ะ... แม่หมอขอเช็กนิดนึงนะคะ\n\n"
+            ."เจ้าชะตาบอกว่าเกิด *วัน{$statedName}* แต่วันที่ *{$formatted}* "
+            ."ตรงกับ *วัน{$parsedName}* ค่ะ 🤔\n\n";
+
+        $candidates = $conflict['candidates'] ?? [];
+
+        if (! empty($candidates)) {
+            $msg .= "📅 ใน{$thaiMonth} {$thaiYear} วัน{$statedName} คือวันที่ "
+                .implode(', ', $candidates)."\n\n"
+                ."🪄 เจ้าชะตาเกิดวันไหนคะ พิมพ์กลับมาแบบนี้ได้เลย\n"
+                ."   • {$candidates[0]} {$thaiMonth} {$thaiYear}\n\n"
+                .'💡 ถ้ามั่นใจว่าวันที่ถูกแล้ว พิมพ์ *ยืนยันวันที่* มาได้เลยค่ะ';
+        } else {
+            $msg .= "🪄 ช่วยพิมพ์ *วัน/เดือน/ปีเกิด* อีกครั้งนะคะ เช่น\n"
+                ."   • 8 {$thaiMonth} {$thaiYear}\n\n"
+                .'💡 ถ้ามั่นใจว่าวันที่ถูกแล้ว พิมพ์ *ยืนยันวันที่* มาได้เลยค่ะ';
+        }
+
+        return $msg;
+    }
+
+    /**
+     * 🎂 (2026-08-30) หาวันเกิด standalone + จัดการเคส "วันในสัปดาห์ขัดกับวันที่" ในตัวเดียว
+     *
+     * ใช้ร่วมกัน 2 จุดของ processMessage (no-active-reading + basic_done) — อย่าแยกสำเนา
+     *
+     * @param  array|null  $reply  (out) กล่องที่ต้องตอบกลับทันที · null = ให้เดินเส้นเดิมต่อ
+     * @return string|null วันเกิด Y-m-d ที่รับได้ · null = ไม่ใช่วันเกิด หรือต้องตอบ $reply ก่อน
+     */
+    protected function resolveStandaloneBirthdate(
+        string $messageText,
+        string $userId,
+        ?array $userProfile,
+        ?array &$reply
+    ): ?string {
+        $reply = null;
+        $platform = $this->currentPlatform ?? 'facebook';
+
+        // ✅ ลูกค้าพิมพ์ "ยืนยันวันที่" → ปลดล็อกวันที่ที่ค้างถามไว้ ไม่ต้อง parse ใหม่
+        if ($this->looksLikeBirthDateOverrideConfirm($messageText)) {
+            $unlocked = $this->unlockHeldBirthDateOverride($platform, $userId);
+
+            if ($unlocked !== null) {
+                Log::info('🎂 ลูกค้ายืนยันวันที่เอง (เส้นไม่มีบิล) → รับวันที่ตามที่พิมพ์', [
+                    'user_id' => $userId,
+                    'birth_date' => $unlocked,
+                ]);
+
+                return $unlocked;
+            }
+        }
+
+        $birthDate = $this->parseStandaloneBirthdate($messageText);
+
+        if ($birthDate !== null) {
+            return $birthDate;
+        }
+
+        $conflict = $this->birthDateConflict();
+
+        if ($conflict === null) {
+            return null;   // ไม่ใช่วันเกิด — เส้นเดิมจัดการต่อ
+        }
+
+        return $this->resolveBirthDayConflict($conflict, $userId, $userProfile, $reply);
+    }
+
+    /**
+     * ตัดสินใจแทนเส้นที่ "ไม่มี FortuneReading" ว่าจะถามหรือจะยอมรับวันที่
+     *
+     * ลำดับ:
+     *   1. ลูกค้าเคยยืนยัน "วันที่ถูกแล้ว" ไว้ → รับทันที ไม่ถามซ้ำ
+     *   2. ยังมีโควตาถาม → ประกอบกล่อง (ดวงของวันที่เขาบอก + คำถาม) แล้วให้ผู้เรียก return
+     *   3. หมดโควตา / ประกอบกล่องไม่ได้ → ยอมรับวันที่ตามที่พิมพ์ เดินเส้นเดิมต่อ
+     *
+     * @param  array{stated_day:int, parsed_date:string, parsed_day:int, candidates:array<int>}  $conflict
+     * @param  array|null  $reply  (out) กล่องที่ต้องตอบกลับทันที · null = ให้เดินเส้นเดิมต่อ
+     * @return string|null วันเกิดที่รับได้ (Y-m-d) หรือ null ถ้าต้องตอบ $reply ก่อน
+     */
+    protected function resolveBirthDayConflict(
+        array $conflict,
+        string $userId,
+        ?array $userProfile,
+        ?array &$reply
+    ): ?string {
+        $reply = null;
+        $platform = $this->currentPlatform ?? 'facebook';
+
+        // 1️⃣ เคยยืนยันวันที่ไว้แล้ว → เชื่อเขา ไม่ต้องถามอีก
+        if ($this->hasConfirmedBirthDateOverride($platform, $userId, $conflict['parsed_date'])) {
+            return $conflict['parsed_date'];
+        }
+
+        // 2️⃣ ยังมีโควตา → ถาม
+        if ($this->birthDayConflictAsksSoFar($platform, $userId) < self::BIRTHDAY_CONFLICT_MAX_ASKS) {
+            $reply = $this->buildBirthDayConflictReply($conflict, $userProfile, $userId);
+
+            if ($reply !== null) {
+                $this->markBirthDayConflictAsked($platform, $userId);
+                $this->rememberBirthDateOverrideCandidate($platform, $userId, $conflict['parsed_date']);
+
+                return null;
+            }
+        }
+
+        // 3️⃣ หมดโควตา → ยอมรับวันที่ ดีกว่าถามวนจนลูกค้าเลิกคุย
+        Log::info('🎂 ถามยืนยันวันในสัปดาห์ครบโควตาแล้ว (เส้นไม่มีบิล) → รับวันที่ตามที่พิมพ์', [
+            'user_id' => $userId,
+            'birth_date' => $conflict['parsed_date'],
+        ]);
+
+        return $conflict['parsed_date'];
+    }
+
+    /**
+     * จำวันที่ที่ค้างถามไว้ เผื่อลูกค้าพิมพ์ "ยืนยันวันที่" กลับมา
+     *
+     * ⚠️ TTL สั้นโดยตั้งใจ (6 ชม.) — คำยืนยันอย่าง "ถูกแล้ว" เป็นคำกว้าง
+     *    ถ้าเก็บไว้ข้ามวัน ลูกค้าพิมพ์ "ถูกแล้วค่ะ" ตอบเรื่องอื่น จะไปปลดล็อกวันเกิดเก่าโดยไม่ตั้งใจ
+     */
+    protected function rememberBirthDateOverrideCandidate(string $platform, string $userId, string $date): void
+    {
+        Cache::put("fortune:bday_conflict_date:{$platform}:{$userId}", $date, now()->addHours(6));
+    }
+
+    /**
+     * ลูกค้ายืนยันวันที่นี้ไปแล้วหรือยัง (เส้นที่ไม่มี FortuneReading)
+     *
+     * ⚠️ ตัวยืนยันถูกตั้งจาก handleStandaloneBirthDateOverride() ตอนลูกค้าพิมพ์ "ยืนยันวันที่"
+     */
+    protected function hasConfirmedBirthDateOverride(string $platform, string $userId, string $date): bool
+    {
+        return Cache::get("fortune:bday_override_ok:{$platform}:{$userId}") === $date;
+    }
+
+    /**
+     * ลูกค้าพิมพ์ "ยืนยันวันที่" ในเส้นที่ไม่มีบิล → ปลดล็อกวันที่ที่ค้างไว้
+     *
+     * @return string|null วันเกิดที่ปลดล็อกแล้ว · null = ไม่มีอะไรค้างอยู่
+     */
+    protected function unlockHeldBirthDateOverride(string $platform, string $userId): ?string
+    {
+        $held = Cache::get("fortune:bday_conflict_date:{$platform}:{$userId}");
+
+        if (empty($held) || ! is_string($held)) {
+            return null;
+        }
+
+        Cache::put("fortune:bday_override_ok:{$platform}:{$userId}", $held, now()->addDays(7));
+        Cache::forget("fortune:bday_conflict_date:{$platform}:{$userId}");
+        Cache::forget("fortune:bday_conflict_asked:{$platform}:{$userId}");
+
+        return $held;
+    }
+
+    /**
+     * ลูกค้ายืนยันว่า "วันที่ที่พิมพ์มาถูกแล้ว" (วันในสัปดาห์อาจจำผิด) ใช่ไหม
+     *
+     * เปิดทางออกให้คนที่มั่นใจในวันที่ — ไม่งั้นถ้าเขาจำวันในสัปดาห์ผิด จะติดวนตลอดกาล
+     */
+    protected function looksLikeBirthDateOverrideConfirm(string $text): bool
+    {
+        $t = trim(mb_strtolower($text));
+
+        foreach (['ยืนยันวันที่', 'ยืนยันวัน', 'วันที่ถูกแล้ว', 'ถูกแล้ว', 'ใช้วันที่นี้', 'เอาตามวันที่'] as $kw) {
+            if (mb_strpos($t, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Parse วันเกิดจากข้อความ (ตัวจริง — ไม่มีด่านวันในสัปดาห์)
+     *
+     * ⚠️ อย่าเรียกตัวนี้ตรง ๆ จากที่อื่น ใช้ parseBirthDate() เสมอ
+     *    เว้นแต่กรณีที่ลูกค้า "ยืนยันวันที่" แล้ว (looksLikeBirthDateOverrideConfirm)
+     *
+     * 🎯 Phase A.3 — รับ separator เพิ่ม (/ - . space) + ตัดคำนำหน้า "เกิด/วันที่"
+     */
+    protected function parseBirthDateCore(string $text): ?string
     {
         $text = trim($text);
 
@@ -22673,12 +23033,73 @@ PROMPT;
             }
         }
 
+        // 🚫 (2026-08-30) ปีที่ AI ให้ ต้องมี "ร่องรอย" อยู่ในข้อความจริง ห้ามเสกขึ้นมาเอง
+        //   เคสจริง 2026-08-30: "เขา 4ส.ค. เสีย9ส.ค" → AI ตอบ 2009-08-04
+        //   ลูกค้ากำลังเล่าเรื่อง "คนเสียชีวิต" ไม่ได้บอกวันเกิดตัวเอง และเลข 2009
+        //   ไม่มีอยู่ในข้อความเลยสักตัว — AI เติมให้ครบฟอร์มเฉย ๆ แล้วเราจดเป็นวันเกิด
+        //
+        //   ⚠️ ด่านนี้ "หลวมโดยตั้งใจ" — เลข 2 หลักทุกตัวถูกนับเป็นปีที่เป็นไปได้
+        //      (ยอมปล่อยของถูกผ่าน ดีกว่าตีตกวันเกิดจริงของลูกค้า)
+        //      เป้าคือกันเฉพาะปีที่ "ไม่มีที่มา" ล้วน ๆ เท่านั้น
+        if (! in_array($year, $this->plausibleYearsInText($text), true)) {
+            \Illuminate\Support\Facades\Log::info('parseBirthDate: ปีที่ AI ให้ ไม่มีร่องรอยในข้อความ → ไม่รับ', [
+                'input' => mb_substr($text, 0, 80),
+                'ai_year' => $year,
+            ]);
+
+            return null;
+        }
+
         // ด่านเดียวกับเส้น regex — AI ต้องไม่ได้สิทธิ์พิเศษ
         if (! checkdate($month, $day, $year) || ! $this->isValidBirthYear($year)) {
             return null;
         }
 
         return sprintf('%04d-%02d-%02d', $year, $month, $day);
+    }
+
+    /**
+     * ปี ค.ศ. ทั้งหมดที่ "พอจะอ้างได้" จากตัวเลขที่ปรากฏในข้อความ
+     *
+     * ใช้ตรวจงาน AI เท่านั้น — ไม่ใช่ตัว parse ปี (ตัวจริงคือ ThaiBirthYear)
+     *
+     * @return array<int>
+     */
+    protected function plausibleYearsInText(string $text): array
+    {
+        $t = str_replace(
+            ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙', '໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'],
+            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+            $text
+        );
+
+        if (! preg_match_all('/\d{1,4}/u', $t, $matches)) {
+            return [];
+        }
+
+        $years = [];
+
+        foreach ($matches[0] as $raw) {
+            $n = (int) $raw;
+
+            if ($n >= 1000) {
+                // ปีเต็ม — พ.ศ. (> 2400) หรือ ค.ศ. ตรงตัว
+                $years[] = $n > 2400 ? $n - 543 : $n;
+
+                continue;
+            }
+
+            // เลข ≤ 2 หลัก อาจเป็นปีย่อ — ใช้กฎ พ.ศ.-เป็นหลักตัวเดียวกับทั้งระบบ
+            if (mb_strlen($raw) <= 2) {
+                $normalized = \App\Support\ThaiBirthYear::normalize($n);
+
+                if ($normalized !== null) {
+                    $years[] = $normalized;
+                }
+            }
+        }
+
+        return array_values(array_unique($years));
     }
 
     /**

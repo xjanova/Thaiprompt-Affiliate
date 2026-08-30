@@ -1418,6 +1418,131 @@ trait DailyHoroscopeModeTrait
     }
 
     /**
+     * 🎂 (2026-08-30) ลูกค้าบอกวันในสัปดาห์ แต่วันที่ที่พิมพ์มาตกวันอื่น
+     *    → ส่งดวงรายวันของ **วันที่เขาบอก** ให้เลย แล้วค่อยถามวันที่ให้ชัด
+     *
+     * เคสจริง PSID 28646125271642250: "เกิดวันอาทิตย์เดือน 4 ปีขาล 05"
+     *   → ระบบเดาเป็น 5 เม.ย. 2505 ซึ่งเป็นวันพฤหัสบดี → ส่งดวงพฤหัสให้ (ผิดต่อหน้า)
+     *
+     * 🔑 ทำไมส่งดวงให้ก่อน ไม่บล็อกไว้ถาม:
+     *   ดวงรายวันใช้แค่ **index วัน** ซึ่งลูกค้ายืนยันเองมากับมือ = ข้อมูลครบแล้ว
+     *   ที่ยังไม่ครบคือ "วันที่" ซึ่งจำเป็นเฉพาะตอนดูเชิงลึก
+     *   ⇒ บล็อกไว้ถาม = ยึดของฟรีที่เขามีสิทธิ์ได้ไปเป็นตัวประกัน ทั้งที่ข้อมูลพอแล้ว
+     *
+     * ⚠️ ไม่จด birth_date เต็ม — จดแค่ birth_day (สิ่งที่ลูกค้ายืนยันเอง)
+     *    วันที่ที่ยังขัดกันอยู่ ห้ามลงฐานข้อมูลเด็ดขาด ไม่งั้นดวงเชิงลึกจะผิดทั้งก้อน
+     *
+     * ⚠️ คืนคำถาม **เสมอ** แม้อยู่นอกเลนรายวัน (ไม่มีบทความให้แถม) — เพราะสิ่งที่ห้ามเกิด
+     *    คือปล่อยวันเกิดที่ยังขัดกันไหลต่อไปเงียบ ๆ ไม่ว่าจะโหมดไหน
+     *
+     * @param  array{stated_day:int, parsed_date:string, parsed_day:int, candidates:array<int>}  $conflict
+     * @return array|null null = ประกอบกล่องไม่สำเร็จ → ให้ผู้เรียก fallback เอง
+     */
+    protected function buildBirthDayConflictReply(
+        array $conflict,
+        ?array $userProfile = null,
+        ?string $userId = null
+    ): ?array {
+        try {
+            $question = $this->buildBirthDayConflictQuestion($conflict);
+            $platform = $this->currentPlatform ?? 'facebook';
+            $dayIndex = $conflict['stated_day'];
+
+            $inDailyLane = (new FortuneBotMode($this->settings))->isDaily()
+                && in_array($platform, FortuneBotMode::DAILY_PLATFORMS, true);
+
+            if (! $inDailyLane) {
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => $question,
+                    'reading' => null,
+                ];
+            }
+
+            $name = (string) ($userProfile['first_name'] ?? $userProfile['name'] ?? 'คุณ');
+            $greeting = app(FortuneGreetingService::class);
+            $box = $greeting->buildDailyBoxForDayIndex($dayIndex, $name);
+
+            // ไม่มีบทความของวันนั้นวันนี้ → ยังต้องถาม ไม่ปล่อยให้ตกไป AI chat แล้วเงียบ
+            if ($box === null) {
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => $question,
+                    'reading' => null,
+                ];
+            }
+
+            // 💾 จดแค่ index วัน — วันเกิดเต็มยังไม่ยืนยัน ห้ามจด
+            //
+            // 🚨 ข้ามการจดทั้งหมดถ้าลูกค้า **มีวันเกิดเต็มอยู่แล้ว** —
+            //    rememberDailyBirthInfo ทับ birth_day เสมอ แต่ไม่แตะ birth_date ที่มีของเดิม
+            //    ⇒ จะได้ birth_day ที่ไม่ตรงกับ birth_date ในแถวเดียวกัน = ข้อมูลขัดกันเองถาวร
+            //    ของเดิมที่ยืนยันแล้ว มีน้ำหนักกว่าข้อความที่ยังขัดกันอยู่
+            if ($userId !== null && $userId !== '' && ! $this->hasStoredFullBirthDate($platform, $userId)) {
+                $this->rememberDailyBirthInfo($platform, $userId, $dayIndex, null);
+            }
+
+            $blessing = $greeting->pickBlessing($dayIndex.':'.now()->toDateString());
+
+            Log::info('🎂 Daily: วันในสัปดาห์ขัดกับวันที่ → ส่งดวงตามวันที่ลูกค้าบอก + ถามวันที่', [
+                'user_id' => $userId,
+                'stated_day' => $dayIndex,
+                'rejected_date' => $conflict['parsed_date'],
+            ]);
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => $box['text']
+                    .($blessing !== '' ? "\n\n".$blessing : '')
+                    ."\n\n———\n".$question,
+                'reading' => null,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('🎂 Daily: สร้างกล่องถามวันเกิดที่ขัดกันล้ม', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ลูกค้ามี "วันเกิดเต็ม" เก็บไว้แล้วหรือยัง
+     *
+     * ใช้กันไม่ให้ข้อมูลที่ยังขัดกันอยู่ ไปทับของที่ยืนยันแล้ว
+     */
+    protected function hasStoredFullBirthDate(string $platform, string $userId): bool
+    {
+        try {
+            return \App\Models\FortuneUserCredit::where('facebook_user_id', $userId)
+                ->where('platform', $platform)
+                ->whereNotNull('birth_date')
+                ->exists();
+        } catch (\Throwable $e) {
+            // อ่านไม่ได้ → ถือว่าไม่มี (พฤติกรรมเดิม) ดีกว่าเงียบไม่ตอบลูกค้า
+            return false;
+        }
+    }
+
+    /**
+     * โควตาถาม "วันในสัปดาห์ไม่ตรง" ของเส้นที่ไม่มี FortuneReading (นับบน Cache)
+     *
+     * ⚠️ ต้องมีเพดาน — ลูกค้าที่จำวันในสัปดาห์ผิดจะพิมพ์ชุดเดิมกลับมาทุกครั้ง
+     *    ถ้าไม่มีเพดาน บอทจะถามวนจนเขาเลิกคุย (= เสียลูกค้าเพราะความรอบคอบของเราเอง)
+     */
+    protected function birthDayConflictAsksSoFar(string $platform, string $userId): int
+    {
+        return (int) Cache::get("fortune:bday_conflict_asked:{$platform}:{$userId}", 0);
+    }
+
+    /** จดว่าถามไปอีกรอบแล้ว — TTL 1 วัน (พรุ่งนี้เริ่มนับใหม่ ให้โอกาสแก้) */
+    protected function markBirthDayConflictAsked(string $platform, string $userId): void
+    {
+        $key = "fortune:bday_conflict_asked:{$platform}:{$userId}";
+        Cache::put($key, $this->birthDayConflictAsksSoFar($platform, $userId) + 1, now()->addDay());
+    }
+
+    /**
      * 💎 (2026-08-04) เพิ่งได้ดวงรายวันไปวันนี้ แล้วส่ง "วันเดือนปีเกิดเต็ม" ตามที่แม่หมอขอ
      *    → ห้ามส่งดวงรายวันใบเดิมซ้ำ ให้ชวนดูเชิงลึกแทน
      *
