@@ -3134,11 +3134,20 @@ class LineFortuneWebhookController extends Controller
                 return false;
             }
 
+            // 🏷️ (2026-08-31) ติดป้ายว่าคำตอบนี้ตอบคำถามข้อไหน
+            //   เส้นนี้ทำงานตอน push ตาย ⇒ คำตอบข้อ N ถูกส่งตอนลูกค้าถามข้อ N+1 (off-by-one ถาวร)
+            //   เดิมส่ง `$q->response` เปล่าๆ ⇒ ลูกค้าอ่านคำตอบเรื่องเงิน ต่อจากคำถามเรื่องแฟน = งง
+            //   ป้ายอยู่ในข้อความเดิม **ไม่กิน object เพิ่ม** (LINE คิดเงินต่อ call ไม่ใช่ต่อกล่อง)
             $messages = [];
             foreach ($pending as $q) {
+                $asked = trim((string) $q->question);
+                $label = $asked !== ''
+                    ? '↩️ ตอบคำถาม: «'.mb_substr($asked, 0, 60).(mb_strlen($asked) > 60 ? '…' : '')."»\n\n"
+                    : '';
+
                 $messages[] = [
                     'type' => 'text',
-                    'text' => mb_substr(trim((string) $q->response), 0, 4900),
+                    'text' => mb_substr($label.trim((string) $q->response), 0, 4900),
                 ];
             }
 
@@ -3148,6 +3157,27 @@ class LineFortuneWebhookController extends Controller
                     'type' => 'text',
                     'text' => "💬 ข้อความของเธอถึงแม่หมอแล้วนะคะ ✨\n\nแม่หมอกำลังดูให้อยู่ค่ะ — ทักมาอีกครั้งได้เลย เดี๋ยวแม่หมอส่งคำตอบให้ทันทีค่ะ 🙏",
                 ];
+            } elseif (count($messages) < 5) {
+                // 🔢 (2026-08-31) กล่องคำถามแนะนำของคำตอบล่าสุด — เดิมตกหล่นในเส้นนี้ทั้งกล่อง
+                //   เพราะ flush ส่งแค่ `$q->response` ⇒ ลูกค้าฝั่ง LINE แทบไม่เคยเห็นปุ่มถามต่อเลย
+                //   (ต้องมีคอลัมน์เก็บก่อน — migration 2026_08_31_000100)
+                $lastBox = trim((string) ($pending->last()->suggestion_box ?? ''));
+                if ($lastBox !== '') {
+                    $messages[] = ['type' => 'text', 'text' => mb_substr($lastBox, 0, 4900)];
+                }
+            }
+
+            // 🔘 ปุ่มเลข 1️⃣2️⃣ ของคำตอบล่าสุด — เกาะกล่องสุดท้าย **ไม่กิน object เพิ่ม**
+            //   ⚠️ LINE โชว์ quickReply เฉพาะกล่องล่าสุดของ call อยู่แล้ว → ต้องเกาะตัวท้ายเสมอ
+            //   ⚠️ ใช้ `buildTextObject()` (public) ประกอบใหม่ — `buildQuickReplyItems()` เป็น
+            //      protected เรียกจากตรงนี้ไม่ได้ (.claude/LINE_MESSAGING_RULES.md กฎข้อ 9)
+            $lastButtons = $pending->last()->suggestion_quick_replies ?? null;
+            if (! empty($lastButtons) && is_array($lastButtons) && ! empty($messages)) {
+                $lastIdx = count($messages) - 1;
+                $messages[$lastIdx] = $this->lineService->buildTextObject(
+                    (string) ($messages[$lastIdx]['text'] ?? ''),
+                    $lastButtons
+                );
             }
 
             $ok = $this->lineService->replyMessage($replyToken, $messages);

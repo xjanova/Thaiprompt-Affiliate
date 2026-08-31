@@ -143,10 +143,18 @@ php artisan serve
 8. **[.claude/seeder-guidelines.md](.claude/seeder-guidelines.md)** - Seeder synchronization rules
 9. **[.claude/ROUTES_GUIDELINES.md](.claude/ROUTES_GUIDELINES.md)** - Route and view conventions
 10. **[.claude/MENU_RULES.md](.claude/MENU_RULES.md)** 🚨 **CRITICAL** - Menu system — **edit `config/menus.php` ONLY, NEVER edit sidebar Blade for menus**
+11. **[.claude/LINE_MESSAGING_RULES.md](.claude/LINE_MESSAGING_RULES.md)** 🚨 **CRITICAL** - ส่งข้อความหา LINE — **reply ฟรีไม่จำกัด / push มีแค่ 300 ครั้งต่อเดือน** อ่านก่อนแตะโค้ดที่ส่งข้อความทุกครั้ง
 
 ---
 
 ### 🚨 Top Mistakes to Avoid (อ่านก่อนเริ่มทุกครั้ง!)
+
+**LINE MESSAGING:**
+- ❌ ห้ามเรียก `$lineService->sendMessage()` โดยไม่ลอง reply ก่อน — มันวิ่งเข้า `pushMessage()` ตรงๆ (โควต้า 300/เดือน)
+- ❌ ห้าม push กล่อง "กำลังคิด"/ping/upsell/nudge — ใช้ `showLoadingAnimation()` (ฟรี) หรือ park แทน
+- ❌ ห้ามแยกแพลตฟอร์มด้วย `!empty($reading->facebook_user_id)` — `fortune_readings` **ไม่มีคอลัมน์ `line_user_id`** LINE ID นั่งอยู่ในคอลัมน์ชื่อ facebook ⇒ ใช้ `$reading->platform`
+- ✅ ของที่ลูกค้าจ่ายเงินแล้ว ต้อง **เก็บลง DB ก่อนส่ง** — ส่งไม่ออกครั้งเดียว = หายถาวร
+- 📖 อ่าน `.claude/LINE_MESSAGING_RULES.md` ก่อนแตะโค้ดส่งข้อความ LINE
 
 **MENU EDITING:**
 - ❌ ห้ามแก้ `resources/views/components/arrow-x/sidebar-v3.blade.php` เพื่อเพิ่ม/ลบ/ย้าย menu items

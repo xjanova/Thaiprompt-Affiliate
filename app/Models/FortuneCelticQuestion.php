@@ -36,6 +36,10 @@ class FortuneCelticQuestion extends Model
         'sequence',
         'question',
         'response',
+        // 🔢 (2026-08-31) กล่องคำถามแนะนำ + ปุ่มเลข — เก็บไว้ให้เส้นกู้ (parked delivery) ส่งคืนได้
+        //   เดิมอยู่แค่ใน $result ของ request เดียว → ส่งล้มครั้งเดียว = ปุ่มหายถาวร
+        'suggestion_box',
+        'suggestion_quick_replies',
         'ai_provider',
         'ai_model',
         'ai_tokens_used',
@@ -47,6 +51,7 @@ class FortuneCelticQuestion extends Model
 
     protected $casts = [
         'sequence' => 'integer',
+        'suggestion_quick_replies' => 'array',
         'ai_tokens_used' => 'integer',
         'ai_response_time_ms' => 'integer',
         'answered_at' => 'datetime',

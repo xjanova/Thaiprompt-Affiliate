@@ -4301,6 +4301,44 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * 📦 (2026-08-31) ประตู push สำหรับ "ของที่ลูกค้าจ่ายเงินแล้ว" — เรียกได้จากนอกคลาส
+     *
+     * ## ทำไมต้องมี
+     * `pushMessage()` / `pushMessagePriority()` เป็น `protected` — คำสั่ง cron ที่ตามส่งของค้าง
+     * (บทสรุป 99฿ / คำตอบรายข้อ) เรียกไม่ได้ ต้องมีประตูที่เปิดไว้ให้โดยเจตนา
+     *
+     * 🐛 บทเรียนจากของเดิม: `FortuneCelticRedeliver::pushAnswer()` ใช้
+     *    `method_exists($lineService,'pushMessage')` เป็นด่าน — แต่ `method_exists()`
+     *    **คืน true กับเมธอด protected ด้วย** ⇒ ผ่านด่านแล้วไปโยน Error ตอนเรียกจริง
+     *    ทุกครั้ง = ตัวตามส่งฝั่ง LINE ตายเงียบมาตลอด (ถูกกลืนโดย catch \Throwable)
+     *    ⚠️ ห้ามใช้ `method_exists()` ตรวจว่า "เรียกได้ไหม" — มันตอบแค่ "มีอยู่ไหม"
+     *
+     * ## นโยบายโควต้า (เจ้าของสั่ง 2026-08-31)
+     * push = เงินสำรองฉุกเฉิน ใช้เฉพาะ **ของสำคัญ** หลังทางฟรีหมดแล้วจริง
+     * ✅ ใช้ได้: บทสรุป Grand Finale 99฿ · คำทำนายที่จ่ายแล้ว · ยืนยันการชำระเงิน
+     * 🚫 ห้ามใช้: กล่อง "กำลังคิด"/ping · upsell/คุณไสย · pricing follow-up · nudge/ทวงบิล
+     *    (พวกนี้ต้องไปทาง reply / showLoadingAnimation / park เท่านั้น)
+     *
+     * @param  string  $to  LINE userId
+     * @param  array  $messages  LINE message objects — ตัดที่ 5 ตามลิมิตของ LINE
+     * @param  bool  $priority  true = ข้าม Gatekeeper throttle (ของที่จ่ายเงินแล้วรอไม่ได้)
+     * @return bool false = ส่งไม่ออก → caller **ต้อง park ไว้ ห้ามทิ้งเงียบ**
+     */
+    public function pushPaidDeliverable(string $to, array $messages, bool $priority = true): bool
+    {
+        if (empty($messages)) {
+            return true;
+        }
+
+        // LINE รับสูงสุด 5 objects/call
+        $messages = array_slice($messages, 0, 5);
+
+        return $priority
+            ? $this->pushMessagePriority($to, $messages)
+            : $this->pushMessage($to, $messages);
+    }
+
+    /**
      * Push message แบบ priority — ข้าม Gatekeeper throttle
      *
      * ใช้สำหรับข้อความสำคัญที่ต้องส่งถึงผู้ใช้ทันที

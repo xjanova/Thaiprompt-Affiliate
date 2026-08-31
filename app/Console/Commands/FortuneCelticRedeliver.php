@@ -227,13 +227,19 @@ class FortuneCelticRedeliver extends Command
         }
 
         if ($platform === 'line') {
-            $lineService = app(LineFortuneService::class);
-            if (method_exists($lineService, 'pushMessage')) {
-                return (bool) $lineService->pushMessage($userId, $message);
-            }
-            if (method_exists($lineService, 'sendMessage')) {
-                return (bool) $lineService->sendMessage($userId, $message);
-            }
+            // 🐛 (2026-08-31) ของเดิมพังสองชั้น — เส้นนี้ไม่เคยส่งอะไรถึงลูกค้า LINE ได้เลย
+            //   1) ด่านเป็น `method_exists($lineService,'pushMessage')` ซึ่ง **คืน true กับ
+            //      เมธอด protected ด้วย** → ผ่านด่านแล้วไปโยน Error ตอนเรียกจริงจากนอกคลาส
+            //   2) ต่อให้เรียกได้ ก็ยังส่ง `$message` (string) เข้า `pushMessage(string,array)`
+            //      → TypeError อีกดอก
+            //   ทั้งคู่ถูกกลืนโดย `catch (\Throwable)` ในลูป → นับเป็น failed เงียบๆ
+            //   ⚠️ บทเรียน: `method_exists()` ตอบแค่ "มีเมธอดนี้ไหม" ไม่ได้ตอบ "เรียกได้ไหม"
+            //   ใช้ประตู public ที่เปิดไว้ให้โดยเจตนาแทน (คำตอบรายข้อ = ของที่จ่ายเงินแล้ว)
+            return app(LineFortuneService::class)->pushPaidDeliverable(
+                $userId,
+                [['type' => 'text', 'text' => mb_substr($message, 0, 4900)]],
+                true
+            );
         }
 
         return false;

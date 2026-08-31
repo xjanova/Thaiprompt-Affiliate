@@ -131,20 +131,52 @@ trait CelticCrossConversationTrait
             ."ขอเวลา 1-2 นาที ✨\n\n"
             .'(อย่าเพิ่งพิมพ์ซ้ำนะคะ — แม่หมอกำลังตั้งสมาธิ 🙏)';
 
-        if (! empty($reading->facebook_user_id)) {
-            try {
-                $fbService = app(\App\Services\FacebookWebhookService::class);
-                $fbService->sendMessage($reading->facebook_user_id, $ackMessage);
-            } catch (\Throwable $e) {
-                \Log::debug('Celtic ack: FB send fail', ['error' => $e->getMessage()]);
+        // 🐛 (2026-08-31) เดิมเช็ค `! empty($reading->facebook_user_id)` ก่อน — แต่
+        //   `fortune_readings` **ไม่มีคอลัมน์ `line_user_id`** (ยืนยันบน prod: hasColumn = NO)
+        //   LINE userId ถูกเก็บใน `facebook_user_id` / `platform_user_id` (ชื่อคอลัมน์หลอก)
+        //   ⇒ ลูกค้า LINE ตกเข้าสาขา FB เสมอ → ยิงเข้า Facebook Send API → ล้มเหลว 2 retry
+        //   ⇒ **ลูกค้า LINE ไม่เคยเห็นกล่อง "กำลังคิด" เลยสักครั้ง** ตลอด 20-40 วิที่ AI ทำงาน
+        //   ราคาที่จ่ายจริง (reading 11901): ลูกค้าเจอความเงียบ → พิมพ์ "หนูต้องกดตรงไหนนะคะ"
+        //   → "อันนี้ต้องรอไพ่ขึ้นใช่มั้ยคะ" → กด "สับใหม่" **ทิ้งไพ่ที่เปิดไปแล้ว 4 ใบ**
+        //   สาขา `elseif ($reading->line_user_id)` เดิม = DEAD CODE (คอลัมน์ไม่มีอยู่จริง)
+        $platform = $reading->platform;
+        if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
+            $candidateId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
+            $platform = preg_match('/^U[a-f0-9]{32}$/i', $candidateId) ? 'line' : 'facebook';
+        }
+
+        try {
+            if ($platform === 'line') {
+                $userId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
+                if ($userId === '') {
+                    return;
+                }
+
+                // 💸 ฝั่ง LINE ใช้ typing dots แทนการ push กล่องข้อความ
+                //   `showLoadingAnimation()` **ฟรี ไม่กินโควต้า และไม่กิน replyToken** (คนละ endpoint)
+                //   โชว์ได้ 5-60 วิ · AI Celtic Q&A ใช้จริง 20-40 วิ ⇒ คลุมได้ทั้งช่วง
+                //   ⛔ ห้ามกลับไป push กล่องนี้ — นโยบายเจ้าของ 2026-08-31: push สงวนไว้ให้ของสำคัญ
+                //      (บทสรุป/คำทำนายที่จ่ายแล้ว) กล่อง "กำลังคิด" ไม่เข้าข่าย
+                //      📖 .claude/LINE_MESSAGING_RULES.md กฎข้อ 1
+                app(\App\Services\LineFortuneService::class)->showLoadingAnimation($userId, 60);
+
+                return;
             }
-        } elseif (! empty($reading->line_user_id)) {
-            try {
-                $lineService = app(\App\Services\LineFortuneService::class);
-                $lineService->sendMessage($reading->line_user_id, $ackMessage);
-            } catch (\Throwable $e) {
-                \Log::debug('Celtic ack: LINE send fail', ['error' => $e->getMessage()]);
+
+            $psid = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+            if ($psid === '') {
+                return;
             }
+
+            // ฝั่ง FB ไม่มีเพดานโควต้าแบบ LINE → คงกล่องข้อความเดิมไว้ (ลูกค้าคุ้นแล้ว)
+            app(\App\Services\FacebookWebhookService::class)->sendMessage($psid, $ackMessage);
+        } catch (\Throwable $e) {
+            // non-blocking — ห้ามให้กล่องแจ้ง "กำลังคิด" ทำให้ flow ทำนายล้ม
+            \Log::debug('Celtic ack: send fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -2990,6 +3022,30 @@ trait CelticCrossConversationTrait
             $this->storeCelticSuggestions($reading, $celticNextQuestions);
         } else {
             $this->forgetCelticSuggestions($reading);
+        }
+
+        // 💾 (2026-08-31) เก็บกล่องแนะนำ + ปุ่มลง DB **ก่อนส่ง** — ให้เส้นกู้ส่งคืนได้
+        //   เดิมกล่องนี้อยู่แค่ใน $result ของ request เดียว ⇒ ส่งล้มครั้งเดียว = ปุ่มหายถาวร
+        //   (เคสจริง 11901: กล่องถูกสร้าง 4 ครั้ง แต่ทุก call success:false → ลูกค้าไม่เคยเห็นปุ่มเลย)
+        //   📖 .claude/LINE_MESSAGING_RULES.md กฎข้อ 4 — ของที่จ่ายเงินแล้วห้ามอยู่แค่ในหน่วยความจำ
+        if ($sequence !== null) {
+            try {
+                $reading->celticQuestions()
+                    ->where('sequence', (int) $sequence)
+                    ->update([
+                        'suggestion_box' => $suggestionBox,
+                        'suggestion_quick_replies' => ! empty($suggestionButtons)
+                            ? json_encode($suggestionButtons, JSON_UNESCAPED_UNICODE)
+                            : null,
+                    ]);
+            } catch (\Throwable $e) {
+                // non-blocking — ห้ามทำให้คำทำนายที่ลูกค้าจ่ายเงินแล้วล้มเพราะเก็บกล่องแนะนำไม่ได้
+                \Log::debug('Celtic: เก็บกล่องคำถามแนะนำไม่สำเร็จ (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'sequence' => $sequence,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return [

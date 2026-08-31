@@ -409,6 +409,21 @@ Schedule::command('fortune:celtic-redeliver --limit=30')
     ->name('fortune-celtic-redeliver')
     ->runInBackground();
 
+// 3b-summary) Fortune Celtic SUMMARY Re-Deliver — 🛟 (2026-08-31) ตามส่ง "บทสรุป 99฿" โดยเฉพาะ
+//     🐛 ทำไมต้องแยกคำสั่ง: ตัวกู้บทสรุปของเดิมถูกวางไว้ **ข้างในลูปคำถามที่ยังไม่ส่ง**
+//        ของ fortune:celtic-redeliver (บรรทัด ~109) แต่ก่อนเข้าลูปมี `if ($candidates->isEmpty()) return 0;`
+//        ⇒ พอคำถามส่งครบทุกข้อ (ปกติมาก เพราะ parked delivery ส่งคืนฟรีตอนลูกค้าทัก)
+//        ลูปว่าง → return ก่อน → **ตัวกู้บทสรุปไม่เคยทำงาน**
+//        ตาข่ายขาดตรงเคสที่ต้องใช้ที่สุด: คำถามครบแต่บทสรุปหาย (เคสจริง reading 11901)
+//     เจ้าของ 2026-08-31: "เมื่อบทสรุปเสร็จ ควรส่งให้ลูกค้า แต่ถ้าต้อง Push ก็ให้พุชไป"
+//     ⇒ บทสรุป = ของสำคัญที่ push ถูกสงวนไว้ให้ · โควต้าหมด = ข้ามโดยไม่นับ attempt (รอ push กลับมา)
+Schedule::command('fortune:celtic-summary-redeliver --limit=20')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-celtic-summary-redeliver')
+    ->runInBackground();
+
 // 3b-bis) Fortune Celtic Answer Recover — 🛟 (2026-07-08) กู้ "ถามแล้วไม่มีคำตอบ" (คนละจุดกับ redeliver)
 //     เคส Siripon Schröter: buffered question job (tries=1) หายตอน deploy รีสตาร์ท worker → เงียบ 9 นาที
 //     A) awaiting + buffer celtic_q ค้างเกิน grace → re-dispatch job (flush-lock กัน double-answer)

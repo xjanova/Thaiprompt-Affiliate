@@ -3364,14 +3364,22 @@ class FortuneChannelManager
                 // 🛡️ (2026-05-21) Force push — replyMessage ไม่เสถียร (ลูกค้าจ่าย 99฿
                 //   ทำนายเสร็จที่ server แต่ไม่ส่งถึงลูกค้าบน LINE)
                 // 🆕 (2026-05-23) celtic_continue = alias หลัง user ยืนยัน "ขอคุยต่อ"
-                'celtic_question_answered', 'celtic_qa_prompt_resume', 'celtic_continue' => (function () use ($lineService, $userId, $message, $result) {
+                'celtic_question_answered', 'celtic_qa_prompt_resume', 'celtic_continue' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
                     $reading = $result['reading'] ?? null;
 
-                    // 🚀 (2026-05-21) No throttle — user spec 'ยอมจ่าย push เลย'
-                    \Log::info('LINE Celtic Q&A: force push delivery', [
+                    // 💸 (2026-08-31) เลิก force push — ลอง reply ก่อนเสมอ
+                    //   🐛 ของเดิม (2026-05-21) ไม่รับ `$replyToken` เข้า closure ด้วยซ้ำ แล้วยัด `null`
+                    //      ทุกจุดส่ง เหตุผลที่เขียนไว้คือ "replyMessage ไม่เสถียร" — วันนี้พิสูจน์แล้วว่าไม่จริง
+                    //      (2026-08-31: `LINE Reply Message Error` = 0 ทั้งไฟล์ล็อก · ไพ่ 10 ใบ reply ผ่านหมด ≤1 วิ)
+                    //   ราคาที่จ่าย: มีของฟรีอยู่ในมือแล้วโยนทิ้ง → ไปตายที่โควต้า → คำตอบถูก park
+                    //      → ออกตอนลูกค้าถามข้อถัดไป = **off-by-one ถาวร** (ช้า 25-177 วิ วัดจาก reading 11901)
+                    //   วัดจริง: AI Celtic Q&A ใช้ 20-40 วิ · หน้าต่าง reply 60 วิ ⇒ ทันสบายๆ
+                    //   📖 .claude/LINE_MESSAGING_RULES.md กฎข้อ 1 (บันได) + กฎข้อ 3 (ตัวเลขเวลา)
+                    \Log::info('LINE Celtic Q&A: delivery (reply-first, push fallback)', [
                         'user_id' => $userId,
                         'action' => $result['action'] ?? null,
                         'reading_id' => $reading?->id,
+                        'has_reply_token' => ! empty($replyToken),
                         'msg_len' => mb_strlen($message),
                     ]);
 
@@ -3385,10 +3393,13 @@ class FortuneChannelManager
                     if (count($lineBubbles) >= 2) {
                         $firstBubble = array_shift($lineBubbles);
 
+                        // 💸 (2026-08-31) กล่องแรกใช้ replyToken (ฟรี) — เดิมยัด null = push ทิ้งเปล่า
+                        //   กล่อง 2..N ยังต้อง push อยู่ดี (ทยอยส่งทีหลังผ่าน job) ⇒ โหมดนี้จึงยัง
+                        //   default ปิดฝั่ง LINE ตามเดิม แต่ถ้าเปิดเมื่อไหร่ อย่างน้อยกล่องแรกไม่เสียโควต้า
                         $textOk = $lineService->sendMessagesWithReplyFallback(
                             $userId,
                             [$lineService->buildTextObject($firstBubble)],
-                            null
+                            $replyToken
                         );
 
                         if ($textOk) {
@@ -3457,15 +3468,25 @@ class FortuneChannelManager
                         $celticBatches = array_chunk($celticMsgs, 5);
                         try {
                             $textOk = true;
+                            // 💸 (2026-08-31) batch แรกใช้ replyToken (ฟรี) — ที่เหลือ token หมดสิทธิ์แล้ว
+                            //   ⚠️ replyToken ใช้ได้ **ครั้งเดียว** → batch 2+ และทุก retry ต้องส่ง null
+                            //      ถ้า retry ด้วย token เดิมจะได้ 400 เสมอ = เสียเวลาเปล่า
+                            //   เจ้าของสั่ง (2026-08-31): "สงวน push ไว้เมื่อส่งไม่ออกสองถึงสามครั้ง"
+                            //      ⇒ ลองรวม 3 ครั้ง/batch (reply → push → push) ก่อนยอมแพ้
+                            //      ยอมแพ้แล้วไม่ทิ้ง — ไม่ markDelivered ⇒ parked delivery ส่งคืนฟรีรอบหน้า
+                            $tokenForBatch = $replyToken;
                             foreach ($celticBatches as $batch) {
-                                $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
-                                if (! $batchOk) {
+                                $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, $tokenForBatch);
+                                $tokenForBatch = null; // เผาไปแล้ว — batch ถัดไปห้ามใช้ซ้ำ
+
+                                for ($attempt = 2; ! $batchOk && $attempt <= 3; $attempt++) {
                                     usleep(800000); // กัน transient LINE blip
                                     $batchOk = $lineService->sendMessagesWithReplyFallback($userId, $batch, null);
                                 }
+
                                 $textOk = $batchOk && $textOk;
                             }
-                            \Log::info('LINE Celtic Q&A: push (combined answer+suggestion) result', [
+                            \Log::info('LINE Celtic Q&A: delivery (combined answer+suggestion) result', [
                                 'user_id' => $userId,
                                 'reading_id' => $reading?->id,
                                 'success' => $textOk,
