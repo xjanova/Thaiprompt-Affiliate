@@ -13,6 +13,21 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class FortuneReadingResource extends JsonResource
 {
+    /** ความยาวของ ai_response ที่ส่งตอน ?preview=1 — มากพอให้ fallback bubble
+     *  ใน Warroom อ่านรู้เรื่อง แต่เล็กพอที่จะดึงหลายสิบแถวต่อรอบได้ */
+    public const PREVIEW_CHARS = 200;
+
+    protected function previewText(?string $text): ?string
+    {
+        if ($text === null) {
+            return null;
+        }
+
+        return mb_strlen($text) > self::PREVIEW_CHARS
+            ? mb_substr($text, 0, self::PREVIEW_CHARS).'…'
+            : $text;
+    }
+
     public function toArray(Request $request): array
     {
         return [
@@ -38,7 +53,18 @@ class FortuneReadingResource extends JsonResource
             'questions' => $this->questions,
             'categories' => $this->categories,
             'reading_type' => $this->reading_type,
-            'ai_response' => $this->ai_response,
+            // ✂️ (2026-08-31) ?preview=1 — ส่งคำทำนายแค่หัวๆ สำหรับหน้าที่เอาไปทำ
+            //   preview อย่างเดียว (Warroom /chat ตัดเหลือ 80 ตัวอยู่ดี) คำทำนาย Celtic
+            //   เต็ม ๆ ยาว 2-4 พันตัวอักษร คูณ 30-100 แถว = payload หนักมากทุกรอบ poll
+            //   ตัดแล้วดึงได้เยอะขึ้นโดยไม่เปลืองแบนด์วิดท์
+            //   เป็น opt-in ล้วน ๆ — ไม่ส่ง preview มาก็ได้ข้อความเต็มเหมือนเดิม
+            //   (แอปแอดมิน Flutter และ /{reading} จึงไม่กระทบ)
+            'ai_response' => $request->boolean('preview')
+                ? $this->previewText($this->ai_response)
+                : $this->ai_response,
+            'ai_response_truncated' => $request->boolean('preview')
+                && $this->ai_response !== null
+                && mb_strlen($this->ai_response) > self::PREVIEW_CHARS,
             'reading_image_url' => $this->reading_image_url,
             // 📸 (2026-05-24) Payment slip / customer-sent image. Warroom /chat
             //    surfaces this as an image bubble so the operator can see the
