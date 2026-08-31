@@ -5339,7 +5339,8 @@ class FortuneConversationService
                 ->where('basic_response', '!=', '')
                 ->orderBy('created_at', 'desc')
                 ->take(5)
-                ->get(['questions', 'categories', 'reading_type', 'birth_date', 'created_at']);
+                // ⚠️ ต้องมี `id` ด้วย — PastCaseRecallService::resolveTopic() query ด้วย reading id
+                ->get(['id', 'questions', 'categories', 'reading_type', 'birth_date', 'created_at']);
 
             if ($previousReadings->isEmpty()) {
                 return '';
@@ -5372,18 +5373,26 @@ class FortuneConversationService
             }
 
             // คำถามล่าสุด 3 ข้อ
+            //   🏷️ (2026-08-31) ใช้ PastCaseRecallService — เดิมอ่าน `questions[0]` ตรงๆ
+            //      ซึ่งบิล Celtic 99 ไม่เคยเขียน ⇒ ลูกค้าประจำได้บริบทว่างเปล่า
+            $recall = app(\App\Services\Fortune\PastCaseRecallService::class);
             $recentQuestions = [];
             foreach ($previousReadings->take(3) as $reading) {
-                $qs = $reading->questions ?? [];
-                if (! empty($qs)) {
-                    $recentQuestions[] = mb_substr($qs[0], 0, 50);
+                $topic = $recall->resolveTopic($reading);
+                if ($topic !== '') {
+                    $recentQuestions[] = mb_substr($topic, 0, 50);
                 }
             }
             if (! empty($recentQuestions)) {
                 $context .= '- คำถามล่าสุด: '.implode(' | ', $recentQuestions)."\n";
+                // ✅ มีหัวข้อจริงในมือแล้วเท่านั้นถึงอนุญาตให้อ้างของเก่า
+                $context .= "- อ้างอิงเรื่องเก่าได้ เช่น \"หมอจันทราจำได้ว่าครั้งก่อนเจ้าชะตาถามเรื่อง...\"\n"
+                    ."  ⛔ อ้างได้เฉพาะหัวข้อที่ลิสต์ไว้ข้างบนเท่านั้น — ห้ามแต่งว่าเคยทำนายผลว่าอะไร\n";
+            } else {
+                // ⛔ (2026-08-31) เดิมสั่ง AI ว่า "ให้ทำนายต่อยอดจากครั้งก่อนได้ เช่น จากที่หมอจันทราเคยบอกไว้..."
+                //    ทั้งที่ไม่ได้ส่งเนื้อหาคำทำนายเก่าไปด้วย = สั่งให้มโนตรงๆ
+                $context .= "- ⛔ ยังไม่มีรายละเอียดคำทำนายเก่าในมือ — ห้ามอ้างว่า \"เคยบอกไว้ว่า...\" เด็ดขาด\n";
             }
-
-            $context .= "- ให้ทำนายต่อยอดจากครั้งก่อนได้ เช่น \"จากที่หมอจันทราเคยบอกไว้...\" หรือ \"หมอจันทราจำได้ว่าครั้งก่อน...\"\n";
 
             return $context;
         } catch (\Exception $e) {

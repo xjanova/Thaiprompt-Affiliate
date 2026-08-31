@@ -69,19 +69,41 @@ class CustomerPersonaService
      *                                       ควรยื่นสายด่วนใจไหม (เฉพาะตอนวิกฤตจริง); proactive job ส่ง null
      * @return string block พร้อม inject (อาจเป็น empty string ถ้าไม่มี persona ที่มีข้อมูล)
      */
-    public function buildInjectBlock(string $platform, string $userId, ?string $currentMessage = null): string
-    {
+    public function buildInjectBlock(
+        string $platform,
+        string $userId,
+        ?string $currentMessage = null,
+        bool $withPastRecall = true
+    ): string {
         // 📅 (2026-05-25) Timeline header — รู้จักลูกค้า + รู้ช่วงเวลา
         //   ห้ามทำเหมือนคนใหม่ ถ้าเคยดูดวงมาก่อน
         $timeline = $this->buildTimelineHeader($platform, $userId);
 
+        // 📜 (2026-08-31) ลูกค้าอ้างถึงเคสเก่า → ค้นคำทำนายเดิมมาให้ AI อ้างอิงจริง
+        //   เปิด **เฉพาะเทิร์นที่ลูกค้าพูดถึงของเก่า** (ไม่ใช่ทุกเทิร์น) — แชทฟรีปริมาณสูง
+        //   ห้ามให้ AI พูดว่า "ที่แม่หมอเคยบอกไว้..." โดยไม่มีเนื้อหาจริงในมือ = มโน
+        //
+        //   ⚠️ 2 พารามิเตอร์นี้สำคัญ ห้ามแก้เล่น:
+        //     explicitOnly = true  → ไม่แตะ DB / ไม่สแกน n-gram เลยถ้าไม่มีสัญญาณแรง
+        //     mode = 'chat'        → **ไม่มีไพ่เปิดอยู่** ห้ามสั่ง AI ทำนายจากไพ่ชุดใหม่
+        //                            (จะชนกับกำแพง buildLastReadingRecallContext ที่ห้ามเปิดไพ่ใหม่
+        //                             และทำให้ AI แต่งชื่อไพ่ขึ้นมาเอง)
+        //   เส้น Celtic ส่ง $withPastRecall = false เพราะ CelticCrossService::buildPastCaseBlock
+        //   ยิงเองอยู่แล้ว **พร้อม exclude บิลปัจจุบัน** — ปล่อยให้ยิงซ้ำที่นี่จะได้ 2 ผลเสีย:
+        //     1) บล็อกซ้ำ ~4.5KB ต่อเทิร์น  2) ตัวที่นี่ไม่รู้ reading id ⇒ ดูดบิลที่กำลังทำนายอยู่
+        //        กลับเข้ามาเป็น "เคสเก่า" ของตัวเอง
+        $pastRecall = $withPastRecall
+            ? app(PastCaseRecallService::class)
+                ->buildRecallBlockForUser($userId, null, $currentMessage, true, 'chat')
+            : '';
+
         $persona = $this->getCached($platform, $userId);
         if (! $persona) {
             // ลูกค้าใหม่จริงๆ (ไม่มี persona) → return timeline only (อาจมี past readings)
-            return $timeline;
+            return $timeline.$pastRecall;
         }
 
-        return $timeline.$persona->toAiContextBlock($currentMessage);
+        return $timeline.$pastRecall.$persona->toAiContextBlock($currentMessage);
     }
 
     /**
@@ -133,10 +155,15 @@ class CustomerPersonaService
             $daysAgo = (int) max(0, now()->diffInDays($last->paid_at, false) * -1);
             $daysText = $daysAgo === 0 ? 'วันนี้' : ($daysAgo === 1 ? 'เมื่อวาน' : "{$daysAgo} วันก่อน");
 
-            // หา topic จาก questions[0]
-            $questions = $last->questions ?? [];
-            $firstQ = is_array($questions) && ! empty($questions) ? (string) ($questions[0] ?? '') : '';
-            $topicSnippet = mb_substr(trim($firstQ), 0, 60);
+            // 🏷️ (2026-08-31) หา topic ผ่าน PastCaseRecallService (แหล่งเดียว)
+            //   ⚠️ เดิมอ่าน `questions[0]` ตรงๆ — แต่บิล Celtic 99 **ไม่เคยเขียนคอลัมน์นี้**
+            //      คำถามจริงอยู่ที่ `fortune_celtic_questions` ⇒ ลูกค้าประจำที่ซื้อ Celtic อย่างเดียว
+            //      จะถูกบอกกับ AI ว่า "ไม่ระบุเรื่อง" ทุกครั้ง ทั้งที่ในฐานมีประวัติครบ
+            $topicSnippet = mb_substr(
+                app(PastCaseRecallService::class)->resolveTopic($last),
+                0,
+                60
+            );
             $topicText = $topicSnippet ? "เรื่อง \"{$topicSnippet}\"" : 'ไม่ระบุเรื่อง';
 
             $header = '👤 [CUSTOMER_TIMELINE] ลูกค้าเก่า — ดูดวงแบบจ่ายเงินเป็นครั้งที่ '.($count + 1).

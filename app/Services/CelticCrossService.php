@@ -555,7 +555,9 @@ class CelticCrossService
             $uid = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
             if ($uid !== '') {
                 $personaBlock = (string) app(\App\Services\Fortune\CustomerPersonaService::class)
-                    ->buildInjectBlock($platform, $uid, $userQuestion);
+                    // withPastRecall=false → เส้นนี้เป็น "พื้นดวงเปิดตัว" คำถามเป็น boilerplate ของระบบ
+                    //   ไม่ใช่ข้อความลูกค้า ⇒ ไม่มีอะไรให้จับคู่กับเคสเก่า (เลี่ยงจ่าย token เปล่า)
+                    ->buildInjectBlock($platform, $uid, $userQuestion, false);
             }
         } catch (\Throwable $e) {
             // skip
@@ -1832,6 +1834,9 @@ class CelticCrossService
         // 👋 (2026-05-25) Check-in opener — ถ้าลูกค้าเก่า ให้เปิดด้วย "ผ่านมาเป็นไงบ้าง"
         $checkinDirective = $this->buildRepeatCheckinDirective($reading);
 
+        // 📚 (2026-08-31) ลูกค้าอ้างถึงเคสเก่า → ยกคำทำนายเดิมมาให้อ้างอิง (ข้ามดัชนี — pastReadingsContext ทำแล้ว)
+        $pastCaseBlock = $this->buildPastCaseBlock($reading, $userQuestion, false);
+
         // 🆕 (2026-05-13) User-specified template — แม่หมอจันทราพยากรณ์ Celtic 99฿
         //   user spec: 8 sections (เปิด → ภาพรวม → ความรู้สึกอีกฝ่าย → อุปสรรค → Timeline →
         //               ผลลัพธ์ → คำแนะนำ → สรุปฟันธง → ปิดท้าย)
@@ -1839,6 +1844,7 @@ class CelticCrossService
         // 🃏🃏 (2026-05-30) Card-First Mandate วางบล็อกแรกสุด — ทำนายจากหน้าไพ่ 100%
         return $this->buildCardFirstMandate()
             .$this->buildCardTalkPolicy($userQuestion)
+            .$pastCaseBlock
             .$pastReadingsContext
             .$checkinDirective
             .$preChatContext
@@ -2230,7 +2236,8 @@ class CelticCrossService
         try {
             if ($celticUserId !== '') {
                 $personaService = app(CustomerPersonaService::class);
-                $personaBlock = $personaService->buildInjectBlock($celticPlatform, $celticUserId, $userQuestion);
+                // withPastRecall=false → buildPastCaseBlock() ยิงเองพร้อม exclude บิลปัจจุบัน
+                $personaBlock = $personaService->buildInjectBlock($celticPlatform, $celticUserId, $userQuestion, false);
                 $personaModel = $personaService->getCached($celticPlatform, $celticUserId);
             }
         } catch (\Throwable $e) {
@@ -2301,7 +2308,11 @@ class CelticCrossService
                 //   Q2+ = ตอบคำถามเจาะจง (ไม่ได้อธิบายไพ่ครบ 10 ใบเหมือนพื้นดวง Q1) → ชี้เป้าได้
                 //   ❗ ไม่ inject ใน Q1 พื้นดวง เพราะที่นั่นสเปคคือ "อ้างไพ่ครบ 10 ใบ"
                 .$this->buildQuestionRoutingDirective($reading, $userQuestion)
-                .$this->buildYesNoDirective($reading, $userQuestion, $previousContext);
+                .$this->buildYesNoDirective($reading, $userQuestion, $previousContext)
+                // 📚 (2026-08-31) เคสเก่า — **ต้องมีที่ Q2+ ด้วย**
+                //   เดิม pastReadingsContext อยู่ใต้บรรทัดนี้ แต่ branch นี้ return ก่อน
+                //   ⇒ ลูกค้าถามถึงเรื่องที่เคยดูไว้กลางวง บอทไม่มีข้อมูลเลย (เคส FTU-260831-W5209)
+                .$this->buildPastCaseBlock($reading, $userQuestion);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -2345,6 +2356,9 @@ class CelticCrossService
 
         // 👋 (2026-05-25) Check-in opener สำหรับลูกค้าเก่า
         $checkinDirective = $this->buildRepeatCheckinDirective($reading);
+
+        // 📚 (2026-08-31) ลูกค้าอ้างถึงเคสเก่า → ยกคำทำนายเดิมมาให้อ้างอิง (ข้ามดัชนี — pastReadingsContext ทำแล้ว)
+        $pastCaseBlock = $this->buildPastCaseBlock($reading, $userQuestion, false);
 
         // 🎯 (2026-05-25 Patch C/D) Complaint + Multi-bullet handling — Q1 ก็เจอ
         //    Patch C: เคส lookup feedback ที่ Q1 อาจมี complaint แล้ว (ลูกค้าจ่ายเพราะ Free reading ดี → Celtic Q1 บ่น)
@@ -2462,6 +2476,7 @@ class CelticCrossService
             .$baseChartDirective
             .$this->buildCardFirstMandate()
             .$this->buildCardTalkPolicy($userQuestion)
+            .$pastCaseBlock
             .$pastReadingsContext
             .$checkinDirective
             .$preChatContext
@@ -2730,7 +2745,9 @@ class CelticCrossService
             $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
             if (! empty($userId)) {
                 $personaBlock = app(\App\Services\Fortune\CustomerPersonaService::class)
-                    ->buildInjectBlock($platform, (string) $userId, $userText);
+                    // withPastRecall=false → $systemPrompt ด้านล่างเรียก buildPastCaseBlock() เอง
+                    //   (ตัวนั้น exclude บิลปัจจุบันให้ ส่วนตัวนี้ไม่รู้ reading id)
+                    ->buildInjectBlock($platform, (string) $userId, $userText, false);
             }
         } catch (\Throwable $e) {
             // skip — ไม่ block flow
@@ -2776,6 +2793,9 @@ class CelticCrossService
         $personaPrefix = $personaBlock !== '' ? $personaBlock."\n\n" : '';
 
         $systemPrompt = $personaPrefix
+            // 📚 (2026-08-31) เส้นรูปประกอบ prompt เอง ไม่ผ่าน buildFollowupPrompt
+            //   ⇒ ต้องเรียก buildPastCaseBlock ตรงนี้ด้วย ไม่งั้นลูกค้าส่งรูปพร้อมถามถึงเคสเก่า = จำไม่ได้
+            .$this->buildPastCaseBlock($reading, $userText)
             ."คุณคือ \"{$brandName}\" — แม่หมอเซียนระบบเซลติก (ไพ่ 10 ใบเปิดไว้แล้ว)\n\n"
             ."━━━━━━━━━━━━━━━━━\n"
             ."🃏 ไพ่ Celtic Cross 10 ใบของเจ้าชะตา (ใช้อ้างอิง)\n"
@@ -4840,8 +4860,10 @@ class CelticCrossService
                 $daysAgo = (int) max(0, now()->diffInDays($p->paid_at, false) * -1);
                 $daysText = $daysAgo === 0 ? 'วันนี้' : ($daysAgo === 1 ? 'เมื่อวาน' : "{$daysAgo} วันก่อน");
 
-                $questions = $p->questions ?? [];
-                $firstQ = is_array($questions) && ! empty($questions) ? mb_substr((string) ($questions[0] ?? ''), 0, 80) : '';
+                // 🏷️ (2026-08-31) "เรื่อง" ต้องมาจาก PastCaseRecallService
+                //   ⚠️ `fortune_readings.questions` ของบิล Celtic **ว่างทุกใบ** (คำถามจริงอยู่ที่
+                //      fortune_celtic_questions) → โค้ดเดิมพิมพ์ "(ไม่ระบุเรื่อง)" ให้ AI เสมอ
+                $firstQ = app(\App\Services\Fortune\PastCaseRecallService::class)->resolveTopic($p);
                 $topicText = $firstQ !== '' ? $firstQ : '(ไม่ระบุเรื่อง)';
 
                 $type = $p->reading_type ?? 'basic';
@@ -4932,10 +4954,12 @@ class CelticCrossService
             $daysAgo = (int) max(0, now()->diffInDays($lastRecent->paid_at, false) * -1);
             $daysText = $daysAgo === 0 ? 'วันนี้' : ($daysAgo === 1 ? 'เมื่อวาน' : "{$daysAgo} วันก่อน");
 
-            $questions = $lastRecent->questions ?? [];
-            $lastTopic = is_array($questions) && ! empty($questions)
-                ? mb_substr((string) ($questions[0] ?? ''), 0, 50)
-                : '';
+            // 🏷️ (2026-08-31) เดิมอ่าน questions[0] ซึ่งว่างทุกใบใน Celtic → check-in ไม่เคยเอ่ยเรื่อง
+            $lastTopic = mb_substr(
+                app(\App\Services\Fortune\PastCaseRecallService::class)->resolveTopic($lastRecent),
+                0,
+                50
+            );
             $topicHint = $lastTopic !== '' ? " เรื่อง \"{$lastTopic}\"" : '';
 
             return "━━━━━━━━━━━━━━━━━\n"
@@ -4949,6 +4973,41 @@ class CelticCrossService
                 ."⚠️ ถ้าลูกค้าไม่ตอบ check-in (ถามคำถามใหม่เลย) → AI ทำนายปกติ ไม่ต้องบังคับ\n\n";
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::debug('Celtic: buildRepeatCheckinDirective fail (non-blocking)', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * 📚 (2026-08-31) เคสเก่าของลูกค้า — ดัชนี (เปิดตลอด) + คำทำนายเก่าฉบับเต็ม (เปิดตอนลูกค้าอ้างถึง)
+     *
+     * เกิดจากเคส FTU-260831-W5209: ลูกค้าซื้อ Celtic 99 ไป 8 ใบ เรื่องคดีความเรื่องเดียวยาว 3 เดือน
+     * ในฐานมี Q&A เก่า 23 แถว + บทสรุป 5-7 พันตัวอักษร แต่ prompt ไม่เคยอ่านข้ามบิลเลย
+     *   - `buildPastReadingsContext` ตัดเหลือ 250 ตัวอักษร + inject แค่ Q1
+     *   - Q2+ return ก่อนถึงบรรทัดนั้น → ลูกค้าถามถึงของเก่ากลางวง = บอทมืดสนิท
+     *
+     * ⚠️ ต้องเรียก **ทุกจุดที่ประกอบ prompt** (Q1 main / Q1 followup / Q2+ short)
+     *    ตกจุดเดียว = ลูกค้าถามถึงเคสเก่าในเทิร์นนั้นแล้วบอทจำไม่ได้
+     *
+     * @param  string|null  $userQuestion  คำถามลูกค้าเทิร์นนี้ — ใช้ค้นว่าเคสเก่าใบไหนตรง
+     * @param  bool  $withIndex  false = ข้ามดัชนี (ใช้ที่ Q1 ซึ่ง buildPastReadingsContext
+     *                           แจงเคสเก่าให้อยู่แล้ว — ใส่ทั้งคู่ = จ่าย token ซ้ำเปล่าๆ)
+     */
+    protected function buildPastCaseBlock(
+        FortuneReading $reading,
+        ?string $userQuestion = null,
+        bool $withIndex = true
+    ): string {
+        try {
+            $recall = app(\App\Services\Fortune\PastCaseRecallService::class);
+
+            return ($withIndex ? $recall->buildIndex($reading) : '')
+                .$recall->buildRecallBlock($reading, $userQuestion);
+        } catch (\Throwable $e) {
+            Log::debug('Celtic: buildPastCaseBlock fail (non-blocking)', [
                 'reading_id' => $reading->id ?? null,
                 'error' => $e->getMessage(),
             ]);
