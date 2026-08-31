@@ -30,11 +30,77 @@ class CelticCrossService
     //   (คุณไสย์ → sol เสมอ · คำถามยาก → sol เฉพาะเทิร์น · อื่นๆ → luna)
     //   รวมไว้ที่เดียวเพราะ Deep 39 ใช้กฎชุดเดียวกัน — แยกเขียนเมื่อไหร่เพี้ยนคนละทางแน่
 
+    /** จำนวนครั้งที่ยอมลอง insert แถวคำถามใหม่เมื่อเลข sequence ชนกัน (race 2 เส้นทาง) */
+    private const SEQUENCE_INSERT_RETRIES = 4;
+
     protected FortuneTellingSetting $settings;
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
+    }
+
+    /**
+     * 🔎 (2026-08-31) เป็น error "คีย์ซ้ำ" ของ MySQL หรือเปล่า (SQLSTATE 23000 / errno 1062)
+     *
+     * เช็คด้วยรหัสมาตรฐาน ไม่ผูกกับชื่อ index — เปลี่ยนชื่อ index ทีหลังก็ยังจับได้
+     */
+    private function isDuplicateEntryError(\Illuminate\Database\QueryException $e): bool
+    {
+        return ((string) $e->getCode() === '23000')
+            && ((int) ($e->errorInfo[1] ?? 0) === 1062);
+    }
+
+    /**
+     * 🛡️ (2026-08-31) สร้างแถวคำถามแบบทนการชนเลข sequence — **แหล่งเดียวของทุกเส้นทางลูกค้า**
+     *
+     * ทำไมต้องมี: `(fortune_reading_id, sequence)` มี unique `fcq_reading_seq_unique`
+     *   แต่เลข sequence ถูกคำนวณจาก MAX(sequence) ของ **แถวที่ตอบแล้ว** เท่านั้น
+     *   ⇒ แถวที่ AI กำลัง gen อยู่ไม่ดันเลข ⇒ 2 เส้นทางที่ยิงพร้อมกันได้เลขเดียวกัน
+     *   ⇒ ตัวหลังชน 1062 → exception หลุดถึง ProcessBufferedCelticMessageJob
+     *      → ตอบ `celtic_ai_failed` = "⚠️ เกิดข้อผิดพลาด ลองพิมพ์ใหม่อีกครั้งค่ะ" **ใส่หน้าลูกค้าที่จ่าย 99฿**
+     *
+     * เคสจริง reading 11920 (2026-08-31 22:18:05) — ระบบ gen พื้นดวงรอบกู้อยู่
+     *   ลูกค้าพิมพ์ "การเงินคับ" วินาทีเดียวกัน → insert '11920-1' ซ้ำ → ลูกค้าเห็นข้อความ error
+     *
+     * ⚠️ `askQuestionAsAdmin` (L~1383) มี retry แบบนี้อยู่ก่อนแล้ว — แต่ไม่เคยถูกยกมาใช้ที่เส้นลูกค้า
+     *
+     * @return array{0: FortuneCelticQuestion, 1: int}|null [แถวที่สร้าง, sequence จริงที่ใช้] · null = สร้างไม่สำเร็จ
+     */
+    private function createQuestionRecordSafely(FortuneReading $reading, int $sequence, string $question): ?array
+    {
+        for ($attempt = 1; $attempt <= self::SEQUENCE_INSERT_RETRIES; $attempt++) {
+            try {
+                $record = FortuneCelticQuestion::create([
+                    'fortune_reading_id' => $reading->id,
+                    'sequence' => $sequence,
+                    'question' => $question,
+                ]);
+
+                return [$record, $sequence];
+            } catch (\Illuminate\Database\QueryException $e) {
+                if (! $this->isDuplicateEntryError($e)) {
+                    throw $e; // error อื่น = ปัญหาจริง ห้ามกลืน
+                }
+
+                // เลขชน → ขยับไปเลขว่างถัดไป (นับ **ทุกแถว** ไม่ใช่เฉพาะที่ตอบแล้ว)
+                $takenMax = (int) FortuneCelticQuestion::where('fortune_reading_id', $reading->id)->max('sequence');
+                $sequence = max($takenMax + 1, $sequence + 1);
+
+                Log::warning('CelticCross: sequence ชนกัน → ขยับเลขแล้วลองใหม่', [
+                    'reading_id' => $reading->id,
+                    'attempt' => $attempt,
+                    'next_sequence' => $sequence,
+                ]);
+            }
+        }
+
+        Log::error('CelticCross: สร้างแถวคำถามไม่สำเร็จ — sequence ชนซ้ำจนครบ retry', [
+            'reading_id' => $reading->id,
+            'last_sequence' => $sequence,
+        ]);
+
+        return null;
     }
 
     /**
@@ -192,11 +258,21 @@ class CelticCrossService
         $isPredictAll = false; // 🚫 legacy flag — keep for length-check below
 
         // สร้าง record ใน fortune_celtic_questions ก่อน (เผื่อ AI fail)
-        $questionRecord = FortuneCelticQuestion::create([
-            'fortune_reading_id' => $reading->id,
-            'sequence' => $sequence,
-            'question' => $storedQuestion,
-        ]);
+        //
+        // 🛡️ (2026-08-31) กัน race ที่ทำให้ลูกค้าเห็น "⚠️ เกิดข้อผิดพลาด ลองพิมพ์ใหม่อีกครั้งค่ะ"
+        //   $sequence ด้านบนนับจาก MAX(sequence) **เฉพาะแถวที่ answered_at ไม่ null**
+        //   ⇒ แถวที่ AI กำลัง gen อยู่ (ยังไม่ answered) **ไม่ดันเลขขึ้น**
+        //   ⇒ ถ้ามี 2 เส้นทางยิงพร้อมกัน ทั้งคู่ได้เลขเดียวกัน → ตัวหลังชน unique
+        //      `fcq_reading_seq_unique` → SQLSTATE 23000 / 1062 → exception หลุดขึ้นไปถึง
+        //      ProcessBufferedCelticMessageJob → ตอบ celtic_ai_failed ใส่หน้าลูกค้าที่จ่ายเงินแล้ว
+        //   เคสจริง reading 11920 (2026-08-31 22:18:05): ระบบกำลัง gen พื้นดวงรอบกู้อยู่
+        //      ลูกค้าพิมพ์ "การเงินคับ" วินาทีเดียวกัน → insert '11920-1' ซ้ำ → ลูกค้าโดนข้อความ error
+        //   วิธีแก้: ชนแล้วขยับไปเลขว่างถัดไป (นับ **ทุกแถว** ไม่ใช่เฉพาะที่ตอบแล้ว) แล้วลองใหม่
+        $inserted = $this->createQuestionRecordSafely($reading, $sequence, $storedQuestion);
+        if (! $inserted) {
+            return ['success' => false, 'message' => 'ระบบกำลังประมวลผลคำถามก่อนหน้าอยู่ค่ะ รอสักครู่นะคะ'];
+        }
+        [$questionRecord, $sequence] = $inserted;
 
         try {
             $startTime = microtime(true);
@@ -2834,12 +2910,14 @@ class CelticCrossService
             .'• ห้ามขายแพคใหม่ / เปลี่ยนเรื่องนอกการทำนาย';
 
         // Save question record ก่อน — เก็บ image marker ใน question field
+        //   🛡️ (2026-08-31) ใช้ตัวทน race ตัวเดียวกับเส้นข้อความ — ลูกค้าส่งรูปพร้อมพิมพ์ข้อความ
+        //      ก็ชนเลข sequence ได้เหมือนกัน (เส้นนี้ยังคิดเลขจาก celtic_questions_used + 1)
         $imageMarker = '[IMAGE_ATTACHED]'.($userText !== '' ? ' '.$userText : '');
-        $questionRecord = FortuneCelticQuestion::create([
-            'fortune_reading_id' => $reading->id,
-            'sequence' => $sequence,
-            'question' => mb_substr($imageMarker, 0, 1000),
-        ]);
+        $insertedImageQ = $this->createQuestionRecordSafely($reading, $sequence, mb_substr($imageMarker, 0, 1000));
+        if (! $insertedImageQ) {
+            return ['success' => false, 'message' => 'ระบบกำลังประมวลผลคำถามก่อนหน้าอยู่ค่ะ รอสักครู่นะคะ'];
+        }
+        [$questionRecord, $sequence] = $insertedImageQ;
 
         try {
             $startTime = microtime(true);
