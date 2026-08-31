@@ -4,9 +4,11 @@ namespace App\Console\Commands;
 
 use App\Models\FortuneCelticQuestion;
 use App\Models\FortuneReading;
+use App\Services\CelticCrossService;
 use App\Services\FacebookWebhookService;
 use App\Services\LineFortuneService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -45,6 +47,14 @@ class FortuneCelticRedeliver extends Command
 
     protected $description = 'ส่งคำทำนาย Celtic ซ้ำให้ลูกค้าที่ AI ตอบแล้วแต่ push แรกไม่ถึง (delivered_at null)';
 
+    /**
+     * เพดานการปั่นคำตอบใหม่ต่อการรัน 1 รอบ
+     *
+     * AI ใช้ 20-50 วิ/ครั้ง และ cron นี้รันทุกนาที (`withoutOverlapping(5)`)
+     * ⇒ ตั้งต่ำไว้ กันรอบเดียวลากยาวจนทับรอบถัดไป
+     */
+    private const MAX_REGEN_PER_RUN = 2;
+
     public function handle(): int
     {
         $isDry = (bool) $this->option('dry');
@@ -59,9 +69,7 @@ class FortuneCelticRedeliver extends Command
         //   silent_skip เงียบ → ลูกค้างง ไม่พิมพ์ต่อ → admin ต้องเข้า panel ช่วยตอบเอง
         //   เดิม recover เป็น lazy (เช็คตอนลูกค้าพิมพ์ครั้งถัดไป) → ลูกค้าเงียบ = ไม่ recover
         //   Fix: cron นี้ (ทุกนาที) recover reading ที่ค้าง > 90s เป็น AWAITING เชิงรุก
-        if (! $isDry) {
-            $this->recoverStuckGenerating();
-        }
+        $this->recoverStuckGenerating($isDry);
 
         $candidates = FortuneCelticQuestion::query()
             ->undelivered()
@@ -256,7 +264,7 @@ class FortuneCelticRedeliver extends Command
      *
      * ขอบเขตปลอดภัย: เฉพาะ Celtic + ค้าง 90s–2hr (ไม่แตะที่ AI ยังตอบปกติ / ของเก่ามาก)
      */
-    protected function recoverStuckGenerating(): void
+    protected function recoverStuckGenerating(bool $isDry = false): void
     {
         try {
             $stuck = FortuneReading::query()
@@ -267,10 +275,15 @@ class FortuneCelticRedeliver extends Command
                 ->limit(50)
                 ->get(['id', 'bill_reference', 'updated_at']);
 
+            $regenerated = 0;
+
             foreach ($stuck as $r) {
                 $stuckSec = abs(now()->diffInSeconds($r->updated_at, false));
-                FortuneReading::where('id', $r->id)
-                    ->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+                if (! $isDry) {
+                    FortuneReading::where('id', $r->id)
+                        ->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+                }
 
                 $this->warn("  ♻️ recover stuck GENERATING: reading {$r->id} ({$r->bill_reference}) ค้าง {$stuckSec}s → AWAITING");
                 Log::warning('FortuneCelticRedeliver: recover stuck GENERATING → AWAITING', [
@@ -278,9 +291,127 @@ class FortuneCelticRedeliver extends Command
                     'bill_reference' => $r->bill_reference,
                     'stuck_seconds' => $stuckSec,
                 ]);
+
+                // 🛟 (2026-08-31) คืนสถานะอย่างเดียว "ไม่พอ" — ต้องปั่นคำตอบที่หายไปกลับมาด้วย
+                if ($regenerated < self::MAX_REGEN_PER_RUN && $this->regenerateOrphanAnswer($r->id, $isDry)) {
+                    $regenerated++;
+                }
             }
         } catch (\Throwable $e) {
             Log::warning('FortuneCelticRedeliver: recoverStuckGenerating fail', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 🛟 (2026-08-31) ปั่นคำตอบที่หายไปกลับมา — ปิดรูที่ตาข่ายทุกชั้นมองไม่เห็น
+     *
+     * ## ทำไมต้องมี (เคสจริง reading 11920 / FTU-260831-D9958)
+     * ลูกค้าจ่าย 99฿ → ให้วันเกิด → ระบบเริ่ม gen "พื้นดวง" → deploy ตัดเข้ามากลางคัน
+     * AI session ตาย คำตอบไม่เคยถูกเขียน → **เงียบ 40 นาที** ไม่มีตาข่ายชั้นไหนเก็บได้เลย:
+     *
+     * | ตาข่าย | ต้องเจอ | ทำไมพลาด |
+     * |---|---|---|
+     * | redeliver (ตัวหลักไฟล์นี้) | answered แล้ว แต่ `delivered_at` ว่าง | แถวไม่เคยถูกตอบ → มองไม่เห็น |
+     * | `celtic-answer-recover` เคส A | ธง `celtic_pending_q` | คำถามพื้นดวง**ระบบสังเคราะห์เอง** ไม่ผ่าน settle-buffer → ไม่มีธง |
+     * | `celtic-answer-recover` เคส B | `celtic_generating` ครบ **5 นาที** | `recoverStuckGenerating()` เด้ง status ที่ **90 วิ** → **เคส B ไม่มีวันยิงได้เลย** |
+     *
+     * ⇒ ผูกการกู้กับ **ความจริงที่มีเสมอ** แทน: แถวใน `fortune_celtic_questions` ที่ยังไม่มีคำตอบ
+     *   (มีทุกเส้นทาง ไม่ว่าลูกค้าพิมพ์เองหรือระบบสังเคราะห์)
+     *
+     * ## เกราะกันลูป / กันซ้ำ
+     * - ลบแถวค้างก่อน gen — ไม่งั้น cron รอบหน้าเห็นแถวเดิมแล้วปั่นซ้ำไม่รู้จบ
+     * - ธง `celtic_regen_recovered_at` — กู้อัตโนมัติได้ **ครั้งเดียวต่อบิล**
+     * - `Cache::lock` กัน cron ซ้อน · เพดาน `MAX_REGEN_PER_RUN` ต่อรอบ (AI ใช้ 20-50 วิ/ครั้ง)
+     * - กู้เฉพาะแถวที่เป็น **sequence สูงสุด** — ถ้ามีข้อใหม่กว่าที่ตอบแล้ว = ลูกค้าเดินต่อไปแล้ว ไม่ต้องย้อน
+     *
+     * ⚠️ **จงใจไม่แตะเส้นส่ง** — gen เสร็จปล่อย `delivered_at` ว่างไว้ ให้ตัว redeliver เดิม
+     *    (ที่รู้เรื่องโควตา LINE / 24hr window อยู่แล้ว) เก็บต่อในรอบถัดไป
+     *    ห้าม `markDelivered()` เอง — ไฟล์นี้เคยมีบั๊ก stamp ว่าส่งแล้วทั้งที่ push ไม่ออก
+     *
+     * @return bool true ถ้าปั่นคำตอบใหม่สำเร็จ
+     */
+    protected function regenerateOrphanAnswer(int $readingId, bool $isDry): bool
+    {
+        try {
+            $reading = FortuneReading::find($readingId);
+            if (! $reading || ! $reading->is_paid) {
+                return false;
+            }
+
+            // กู้อัตโนมัติได้ครั้งเดียวต่อบิล — กันลูปและกันคิดเงิน AI ซ้ำ
+            if (! empty($reading->getConversationState('celtic_regen_recovered_at'))) {
+                return false;
+            }
+
+            $orphan = FortuneCelticQuestion::where('fortune_reading_id', $reading->id)
+                ->whereNull('answered_at')
+                ->orderByDesc('sequence')
+                ->first();
+
+            if (! $orphan || trim((string) $orphan->question) === '') {
+                return false; // ไม่มีคำถามค้าง = ไม่มีอะไรให้กู้
+            }
+
+            // ถ้ามีข้อที่ตอบแล้ว "ใหม่กว่า" แถวค้าง = ลูกค้าเดินหน้าไปแล้ว ไม่ต้องย้อนกลับไปตอบของเก่า
+            $maxAnswered = (int) FortuneCelticQuestion::where('fortune_reading_id', $reading->id)
+                ->whereNotNull('answered_at')
+                ->max('sequence');
+            if ($maxAnswered > (int) $orphan->sequence) {
+                return false;
+            }
+
+            if (count($reading->getCelticCards()) < 10 || ! $reading->canAskMoreCeltic()) {
+                return false; // ไพ่ไม่ครบ / หมดเวลาคุย → ปล่อยให้ flow ปกติจัดการ
+            }
+
+            $question = trim((string) $orphan->question);
+            $preview = mb_substr($question, 0, 60);
+
+            if ($isDry) {
+                $this->warn("  🛟 [DRY] จะปั่นคำตอบใหม่ให้ reading {$reading->id} (seq {$orphan->sequence}): {$preview}");
+
+                return false;
+            }
+
+            $lock = Cache::lock("celtic:regen:{$reading->id}", 300);
+            if (! $lock->get()) {
+                return false; // รอบก่อนยังทำอยู่
+            }
+
+            try {
+                // ต้องลบแถวค้างก่อน gen — กัน sequence ชน และกัน cron รอบหน้าปั่นซ้ำ
+                FortuneCelticQuestion::where('id', $orphan->id)->delete();
+                $reading->setConversationState('celtic_regen_recovered_at', now()->toIso8601String());
+
+                $result = app(CelticCrossService::class)->askQuestion($reading->fresh(), $question);
+
+                $ok = ! empty($result['success']);
+                $this->warn(sprintf(
+                    '  🛟 ปั่นคำตอบใหม่ reading %d: %s (%d ตัวอักษร)',
+                    $reading->id,
+                    $ok ? 'สำเร็จ' : 'ไม่สำเร็จ',
+                    mb_strlen((string) ($result['response'] ?? ''))
+                ));
+
+                Log::warning('FortuneCelticRedeliver: ปั่นคำตอบที่หายกลับมา', [
+                    'reading_id' => $reading->id,
+                    'sequence' => $result['sequence'] ?? null,
+                    'success' => $ok,
+                    'response_len' => mb_strlen((string) ($result['response'] ?? '')),
+                    'q_preview' => $preview,
+                ]);
+
+                return $ok;
+            } finally {
+                $lock->release();
+            }
+        } catch (\Throwable $e) {
+            Log::error('FortuneCelticRedeliver: regenerateOrphanAnswer fail', [
+                'reading_id' => $readingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
         }
     }
 }

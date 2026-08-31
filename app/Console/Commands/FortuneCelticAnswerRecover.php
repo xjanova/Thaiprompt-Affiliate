@@ -127,6 +127,14 @@ class FortuneCelticAnswerRecover extends Command
         }
 
         // ── เคส B: generating ค้าง (job ตาย หลัง flush) ───────────────────────
+        //
+        // ⚠️ (2026-08-31) **เคสนี้แทบไม่มีวันยิงได้** — บันทึกไว้กันคนหลังเสียเวลาไล่
+        //   `FortuneCelticRedeliver::recoverStuckGenerating()` เด้ง generating → awaiting ที่ **90 วินาที**
+        //   และรันทุกนาทีเหมือนกัน ⇒ พอถึงเพดาน 5 นาทีของเคสนี้ status ถูกเปลี่ยนไปแล้วเสมอ
+        //   (เคสจริง reading 11920: โดนเด้งที่ 101 วิ)
+        //   ตัวที่กู้จริงตอนนี้คือ `FortuneCelticRedeliver::regenerateOrphanAnswer()` ซึ่งดีกว่าตรงที่
+        //   **ปั่นคำตอบกลับมาให้เลย** แทนที่จะขอให้ลูกค้าพิมพ์คำถามเดิมซ้ำ
+        //   เก็บบล็อกนี้ไว้เป็นตาข่ายชั้นสุดท้าย เผื่อ redeliver ตาย/ถูกปิด
         $generating = FortuneReading::query()
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
             ->where('is_paid', true)
