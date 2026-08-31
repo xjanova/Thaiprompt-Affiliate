@@ -8549,6 +8549,122 @@ class FortuneConversationService
     }
 
     /**
+     * 🌍 (2026-08-31) ลูกค้าบอกเองว่า "อยู่ต่างประเทศ / โอนจากไทยไม่ได้"
+     *
+     * เคสจริง conv 16326 (2026-08-31): ลูกค้าอยู่อเมริกา พิมพ์ "ดิฉันอาศัยอยู่อเมริกาคะ"
+     *   บอทตอบว่าจ่ายบัตรได้ แล้ว **ไม่ทำอะไรต่อ** — ปล่อยให้ลูกค้าไปงมแอปธนาคารไทย 20 นาที
+     *   ("กำลังดู app ที่โอนเงินอยู่คะ" / "โอนเงิน ตอนนี้ เขาเข้มขวด")
+     *   แล้วบอทยังเชียร์ต่อ ("ค่อยๆ ดูนะคะ") ทั้งที่โอนจากอเมริกาเข้าพร้อมเพย์ไม่ได้อยู่แล้ว
+     *
+     * ต้นตอ: looksLikeCardPaymentRequest() จับแต่คำว่า "บัตร/stripe" — ไม่จับ "ฉันอยู่อเมริกา"
+     *   เลนบัตรต่างประเทศเลยไม่เคยถูกเปิดให้คนที่ต้องใช้มันที่สุด
+     *
+     * ⚠️ กันเดาผิด 3 ชั้น (prompt เดิมเตือนไว้ว่า "ห้ามเดา ห้ามถามนำว่าอยู่ที่ไหน"):
+     *   1. เป็นคำถามดวง ("ปีนี้จะได้ไปต่างประเทศไหม") → ไม่ใช่
+     *   2. พูดถึงคนอื่น ("ลูกสาวอยู่อเมริกา") → ไม่ใช่
+     *   3. ต้องมีสรรพนามตัวเอง หรือคำที่บ่งบอกว่าพูดถึงตัวเอง
+     */
+    protected function looksLikeForeignPaymentSignal(string $messageText): bool
+    {
+        $text = mb_strtolower(trim($messageText));
+        if ($text === '' || mb_strlen($text) > 160) {
+            return false;
+        }
+
+        // ── ชั้น 1: คำถามดวง/ความฝัน ไม่ใช่การแจ้งที่อยู่ ──────────────────
+        //   "ปีนี้จะได้ไปต่างประเทศไหมคะ" = คำถามดูดวงยอดฮิต ห้ามลากเข้าเลนบัตร
+        $aspiration = [
+            'จะได้ไป', 'จะได้อยู่', 'อยากไป', 'อยากอยู่', 'จะไปได้', 'มีเกณฑ์',
+            'ได้ไปไหม', 'จะไปไหม', 'ฝันว่า', 'วางแผนจะ', 'คิดจะไป', 'เตรียมจะไป',
+        ];
+        foreach ($aspiration as $kw) {
+            if (str_contains($text, $kw)) {
+                return false;
+            }
+        }
+
+        // ── ชั้น 2: พูดถึงคนอื่น ไม่ใช่ตัวเอง ─────────────────────────────
+        $thirdParty = [
+            'ลูก', 'หลาน', 'แฟน', 'สามี', 'ภรรยา', 'เมีย', 'ผัว', 'เพื่อน',
+            'พ่อ', 'แม่', 'พี่สาว', 'พี่ชาย', 'น้องสาว', 'น้องชาย', 'ญาติ',
+            'คนรู้จัก', 'เขาอยู่', 'เค้าอยู่',
+        ];
+        foreach ($thirdParty as $kw) {
+            if (str_contains($text, $kw)) {
+                return false;
+            }
+        }
+
+        // ── ชั้น 3: สัญญาณ "โอนไทยไม่ได้" ที่ชัดในตัวเอง (ไม่ต้องมีสรรพนาม) ──
+        $hardSignals = [
+            'ไม่มีบัญชีไทย', 'ไม่มีธนาคารไทย', 'ไม่มีบัญชีธนาคารไทย',
+            'ไม่มีพร้อมเพย์', 'ไม่มีพร้อมเพ', 'ไม่มี promptpay', 'ไม่มีคิวอาร์', 'ไม่มี qr',
+            'โอนจากต่างประเทศ', 'โอนข้ามประเทศ', 'โอนเงินจากต่างประเทศ',
+            'อยู่ต่างประเทศ', 'อยู่เมืองนอก', 'อาศัยอยู่ต่างประเทศ',
+            'ธนาคารต่างประเทศ', 'บัญชีต่างประเทศ',
+        ];
+        foreach ($hardSignals as $kw) {
+            if (str_contains($text, $kw)) {
+                return true;
+            }
+        }
+
+        // ── ชั้น 4: "ฉัน + อยู่ + ชื่อประเทศ" ต้องครบทั้งคู่ ────────────────
+        $selfMarkers = ['ฉัน', 'ดิฉัน', 'ผม', 'หนู', 'นู๋', 'นู้', 'เรา', 'อิฉัน', 'ข้าพเจ้า', 'ตัวเอง', 'อาศัยอยู่'];
+        $hasSelf = false;
+        foreach ($selfMarkers as $kw) {
+            if (str_contains($text, $kw)) {
+                $hasSelf = true;
+                break;
+            }
+        }
+        if (! $hasSelf) {
+            return false;
+        }
+
+        $countries = [
+            'อเมริกา', 'usa', 'อังกฤษ', 'ออสเตรเลีย', 'ญี่ปุ่น', 'เกาหลี', 'ไต้หวัน',
+            'สิงคโปร์', 'มาเลเซีย', 'ดูไบ', 'อิสราเอล', 'เยอรมัน', 'สวีเดน', 'นอร์เวย์',
+            'ฟินแลนด์', 'เดนมาร์ก', 'ฝรั่งเศส', 'สวิส', 'แคนาดา', 'นิวซีแลนด์',
+            'ฮ่องกง', 'จีน', 'เนเธอร์แลนด์', 'เบลเยียม', 'ไอร์แลนด์', 'สเปน', 'อิตาลี',
+        ];
+        foreach ($countries as $c) {
+            if (str_contains($text, 'อยู่') && str_contains($text, $c)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🌍 (2026-08-31) ธงติดตัว "ลูกค้าอยู่ต่างประเทศ" — จำไว้ทั้งบทสนทนา
+     *
+     * เหตุผลที่ต้อง sticky: ลูกค้าบอกที่อยู่ครั้งเดียวตอนต้น แล้วอีก 40 นาทีถัดมา
+     * ค่อยพูดเรื่องโอนเงิน ("กำลังดู app ที่โอนเงินอยู่คะ") — ถ้าไม่จำ บอทก็ลืมไปแล้ว
+     * (เทียบ sticky flag ของเลนลาว [[rule_foreign_customer_lao_gate]])
+     */
+    protected const FOREIGN_CUSTOMER_TTL_HOURS = 24;
+
+    protected function markForeignCustomer(string $userId): void
+    {
+        try {
+            Cache::put("fortune:foreign_customer:{$userId}", true, now()->addHours(self::FOREIGN_CUSTOMER_TTL_HOURS));
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+    }
+
+    public function isKnownForeignCustomer(string $userId): bool
+    {
+        try {
+            return (bool) Cache::get("fortune:foreign_customer:{$userId}");
+        } catch (\Throwable $e) {
+            return false; // fail-open — เดาไม่ได้ก็คุยปกติ
+        }
+    }
+
+    /**
      * 💳 (2026-05-22) ตรวจว่า SMS-checker / QR Thai พร้อมใช้งานไหม
      *
      * เกณฑ์: admin เปิด enable_sms_payment (default true = backward compat)
@@ -9182,7 +9298,15 @@ class FortuneConversationService
         // 🌍 (2026-08-23) ลูกค้าต่างประเทศขอจ่ายบัตร ระหว่างบิล Deep ค้างอยู่
         //   ต้องอยู่ **ก่อน** maybePresentPaymentInfo — ไม่งั้นโดนกล่อง "เลขบัญชี/QR" กลืนไปก่อน
         //   → ถามยืนยันก่อนเสมอ (สลับเลน = ปิดบิลไทยทิ้ง + คิดค่าบริการเพิ่ม)
-        if ($this->looksLikeCardPaymentRequest($messageText)
+        // 🌍 (2026-08-31) + ลูกค้าบอกเองว่าอยู่ต่างประเทศ / โอนจากไทยไม่ได้
+        //   เดิมจับแต่คำว่า "บัตร" → คนที่พิมพ์ "ดิฉันอยู่อเมริกา" ไม่เคยได้เลนบัตร
+        //   ไปงมแอปธนาคารไทยแทน (conv 16326) — โอนเข้าพร้อมเพย์จากอเมริกาไม่ได้อยู่แล้ว
+        $foreignSignal = $this->looksLikeForeignPaymentSignal($messageText);
+        if ($foreignSignal) {
+            $this->markForeignCustomer($reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id));
+        }
+
+        if (($this->looksLikeCardPaymentRequest($messageText) || $foreignSignal)
             && $this->isStripeForeignFallbackAvailable()) {
             // 🛡️ จ่าย QR ไปแล้วระหว่างพิมพ์ → ห้ามเปิดเลนบัตรซ้ำ
             $reading->refresh();
@@ -12473,6 +12597,145 @@ class FortuneConversationService
     protected function clearPendingFortuneOffer(string $userId): void
     {
         Cache::forget("fortune:pending_offer:{$userId}");
+        $this->clearFortuneOfferCooldown($userId);
+    }
+
+    /**
+     * 🕊️ (2026-08-31) ระยะเว้นขั้นต่ำระหว่าง "ชวนดูดวง" 2 ครั้ง — นับเป็นเทิร์นของลูกค้า
+     *
+     * เว้น 3 = ชวนที่ TURN 5 แล้ว ชวนใหม่ได้เร็วสุด TURN 8
+     */
+    protected const OFFER_COOLDOWN_TURNS = 3;
+
+    /**
+     * 🕊️ (2026-08-31) TTL ธงจำเทิร์นที่ชวนไปล่าสุด — ยาวพอคลุมบทสนทนาเดียว
+     */
+    protected const OFFER_COOLDOWN_TTL_HOURS = 6;
+
+    /**
+     * 🕊️ (2026-08-31) เทิร์นล่าสุดที่บอทชวนดูดวงไป (null = ยังไม่เคยชวนในรอบนี้)
+     */
+    protected function lastFortuneOfferTurn(string $userId): ?int
+    {
+        try {
+            $turn = Cache::get("fortune:last_offer_turn:{$userId}");
+        } catch (\Throwable $e) {
+            return null; // cache ล่ม → fail-open (กลับไปพฤติกรรมเดิม ดีกว่าตอบลูกค้าไม่ได้เลย)
+        }
+
+        return is_numeric($turn) ? (int) $turn : null;
+    }
+
+    /**
+     * 🕊️ (2026-08-31) จำว่าชวนดูดวงไปตอนเทิร์นไหน — ใช้คุมระยะห่างครั้งถัดไป
+     */
+    protected function recordFortuneOfferTurn(string $userId, int $turn): void
+    {
+        try {
+            Cache::put(
+                "fortune:last_offer_turn:{$userId}",
+                $turn,
+                now()->addHours(self::OFFER_COOLDOWN_TTL_HOURS)
+            );
+        } catch (\Throwable $e) {
+            // non-blocking — จำไม่ได้ก็แค่เสี่ยงชวนซ้ำ ห้ามทำให้คำตอบลูกค้าหาย
+        }
+    }
+
+    /**
+     * 🕊️ (2026-08-31) ล้าง cooldown — ลูกค้ารับข้อเสนอ/เข้าสู่ flow ดูดวงแล้ว
+     */
+    public function clearFortuneOfferCooldown(string $userId): void
+    {
+        try {
+            Cache::forget("fortune:last_offer_turn:{$userId}");
+        } catch (\Throwable $e) {
+            //
+        }
+    }
+
+    /**
+     * 🕊️ (2026-08-31) ยังอยู่ในระยะห้ามชวนซ้ำหรือเปล่า
+     *
+     * เคสจริง 2026-08-31 (conv 16316 + 16326):
+     *   ลูกค้าเล่าว่าเป็นหนี้ 2-3 ปี / โดนหลอกจนหมดตัว → บอทยิง [OFFER_FORTUNE] 4 ข้อความติด
+     *   ต้นตอ: Section C "ลูกค้าเข้าตาจน" ใน appendUxFriendlyDirective() สั่งให้ bypass TURN gate
+     *   และ "ห้าม push หลายครั้ง" เป็นบรรทัด prompt ที่ **ไม่มีโค้ดบังคับ** — โมเดลเลยไม่ทำตาม
+     *   ([[rule_feature_built_but_never_wired]] — sales_pitch_count เพิ่มค่าแต่ไม่มีใครอ่าน)
+     *
+     * ด่านนี้ = ตัวบังคับจริง ไม่ใช่คำขอร้องใน prompt
+     *
+     * ⚠️ ไม่บล็อกถ้าลูกค้า **ขอเอง** — เคารพความต้องการลูกค้าเสมอ
+     *    ([[rule_listen_dont_pitch_when_declining]] คุมฝั่ง "ปฏิเสธ" ตัวนี้คุมฝั่ง "ยังไม่ได้ตอบรับ")
+     */
+    protected function isFortuneOfferOnCooldown(string $userId, int $userTurnCount, string $messageText): bool
+    {
+        $lastTurn = $this->lastFortuneOfferTurn($userId);
+        if ($lastTurn === null) {
+            return false; // ยังไม่เคยชวนในรอบนี้ → ชวนได้
+        }
+
+        if (($userTurnCount - $lastTurn) >= self::OFFER_COOLDOWN_TURNS) {
+            return false; // เว้นครบแล้ว
+        }
+
+        // ลูกค้าขอเอง / ตอบรับข้อเสนอที่ค้างอยู่ → ปล่อยผ่าน ห้ามกั๊ก
+        if ($this->looksLikeExplicitFortuneRequest($messageText)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 🕊️ (2026-08-31) ลูกค้า "ขอดูดวงเอง" หรือ "ถามวิธี/ราคา" — ไม่ใช่แค่เล่าเรื่องต่อ
+     *
+     * ใช้เป็นทางผ่านของ cooldown เท่านั้น — จับให้แคบไว้ก่อน (พลาดฝั่งไม่ชวน ดีกว่าพลาดฝั่งตื๊อ)
+     *
+     * ⚠️ มีคำปฏิเสธ ("ไม่") ปนที่ไหนก็ตาม = ไม่นับเป็นการขอ
+     *    กันกับดัก "ทำไม่เป็น" / "ไม่รู้จะทำยังไง" ที่มีคำว่า "ทำ...ยังไง" อยู่ข้างใน
+     *
+     * ⚠️ ห้ามใช้ OFFER_DECLINE_MARKERS ที่นี่ — ชุดนั้นออกแบบมาให้ exact match หลัง normalize
+     *    เอามา str_contains จะพัง: 'ยัง' ฝังอยู่ใน 'ยังไง' ⇒ "จ่ายยังไงคะ" (อยากจ่าย!) โดนกั๊ก
+     *    และ 'พอ' ฝังใน 'พอดี' ([[rule_never_byte_trim_thai_charlist]] ตระกูลเดียวกัน)
+     */
+    protected const OFFER_REQUEST_NEGATIONS = [
+        'ไม่', 'ยังไม่', 'บ่แม่น',
+        'เดี๋ยว', 'ค่อย', 'ทีหลัง', 'ไว้ก่อน', 'ไว้คราวหน้า', 'คราวหน้า', 'ขอเวลา',
+    ];
+
+    protected function looksLikeExplicitFortuneRequest(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        foreach (self::OFFER_REQUEST_NEGATIONS as $decline) {
+            if (str_contains($text, $decline)) {
+                return false;
+            }
+        }
+
+        $requestMarkers = [
+            // ขอดูตรงๆ
+            'ดูดวง', 'อยากดู', 'ขอดู', 'เปิดไพ่', 'ทำนาย', 'ดูให้', 'ช่วยดู',
+            // ถามวิธี/ขั้นตอน
+            'ทำยังไง', 'ทำไง', 'ทำแบบไหน', 'ต้องทำ', 'ขั้นตอน', 'เริ่มยังไง', 'เริ่มตรงไหน',
+            // ถามราคา/การจ่าย
+            'กี่บาท', 'เท่าไหร่', 'เท่าไร', 'ราคา', 'ค่าครู', 'จ่ายยังไง', 'โอนยังไง',
+            'จ่ายที่ไหน', 'ชำระยังไง', 'จ่ายตรงไหน',
+            // ตอบรับชัดเจน
+            'สนใจ', 'เอาเลย', 'จัดไป', 'เริ่มเลย', 'ตกลง',
+        ];
+
+        foreach ($requestMarkers as $kw) {
+            if (str_contains($text, $kw)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -21276,6 +21539,24 @@ PROMPT;
                 }
             }
 
+            // 🕊️ (2026-08-31) เพิ่งชวนดูดวงไปแล้วลูกค้ายังไม่ตอบรับ → รอบนี้ห้ามชวนซ้ำ
+            //   เคสจริง conv 16316/16326: ลูกค้าเล่าว่าเป็นหนี้/โดนหลอกจนหมดตัว
+            //   → บอทยิงข้อเสนอ 3-4 ข้อความติด แทนที่จะฟัง
+            //   ธงนี้บอก AI ให้ "ฟังอย่างเดียว" ส่วนการ strip tag ท้ายทางเป็นด่านสำรอง
+            $offerOnCooldown = $this->isFortuneOfferOnCooldown($userId, $userTurnCount, $messageText);
+            if ($offerOnCooldown) {
+                $contextParts[] = 'OFFER_COOLDOWN';
+            }
+
+            // 🌍 (2026-08-31) ลูกค้าอยู่ต่างประเทศ → บอกเลนบัตร ห้ามสอนโอนพร้อมเพย์
+            //   เคสจริง conv 16326: ลูกค้าอยู่อเมริกา บอทเชียร์ให้งมแอปธนาคารไทย 20 นาที
+            if ($this->looksLikeForeignPaymentSignal($messageText)) {
+                $this->markForeignCustomer($userId);
+            }
+            if ($this->isKnownForeignCustomer($userId)) {
+                $contextParts[] = 'FOREIGN_CUSTOMER';
+            }
+
             if ($returningContext !== null) {
                 $contextParts[] = $returningContext;
             }
@@ -21640,7 +21921,22 @@ PROMPT;
                 // 🛒 (2026-06-26) toggle กระตุ้นการขาย — ปิด = strip token แต่ไม่ติดธง (ไม่โชว์ปุ่มเสนอเริ่มดูดวง)
                 $offerFortune = (bool) ($this->settings->enable_sales_pitch ?? true);
 
+                // 🕊️ (2026-08-31) ด่านสำรอง — AI ฝืน OFFER_COOLDOWN ก็ไม่ให้ปุ่มขึ้นอยู่ดี
+                //   prompt เป็นคำขอร้อง ตรงนี้คือตัวบังคับ ([[rule_feature_built_but_never_wired]])
+                if ($offerFortune && $offerOnCooldown) {
+                    $offerFortune = false;
+                    Log::info('Fortune: กั๊กข้อเสนอดูดวง — เพิ่งชวนไปแล้วลูกค้ายังไม่ตอบรับ', [
+                        'user_id' => $userId,
+                        'turn_count' => $userTurnCount,
+                        'last_offer_turn' => $this->lastFortuneOfferTurn($userId),
+                        'msg_preview' => mb_substr($messageText, 0, 40),
+                    ]);
+                }
+
                 if ($offerFortune) {
+                    // 🕊️ (2026-08-31) จำเทิร์นที่ชวน — คุมระยะห่างครั้งถัดไป (เว้น 3 เทิร์น)
+                    $this->recordFortuneOfferTurn($userId, $userTurnCount);
+
                     // 🙋 (2026-08-09) ติดธง "เพิ่งเสนอดูดวง" — ลูกค้าตอบ "ค่ะ" กลับมา
                     //   early-gate จะแปลเป็น "เอา" แล้วยิงเมนูแพคเกจให้ทันที
                     //   เดิม: แท็กนี้แค่แปะปุ่มแล้วทิ้ง ไม่เก็บ state → คำตอบรับตกน้ำ
