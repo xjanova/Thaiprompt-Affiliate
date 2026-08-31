@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\Admin\Fortune;
 use App\Http\Controllers\Controller;
 use App\Models\FortuneCategory;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
+use App\Models\PaymentBankAccount;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +42,58 @@ class FortuneDashboardController extends Controller
                 'hero' => $this->getHeroStats($start),
                 'services_summary' => $this->getServicesSummary($start),
                 'period' => $period,
+                'generated_at' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/admin/fortune/payout-account
+     *
+     * บัญชีรับเงินที่ "บอทกำลังใช้อยู่จริง" — สำหรับ Warroom
+     *
+     * ทำไมต้องมี: Warroom hardcode เลขพร้อมเพย์ไว้ในโค้ด (หน้า /bills และช่อง
+     * แทรกข้อความในหน้า /chat) ทั้งที่ของจริงอยู่ในตาราง payment_bank_accounts
+     * ที่แอดมินติ๊กเปลี่ยนได้ตลอดจากหลังบ้าน → วันไหนเปลี่ยนบัญชี Warroom จะยัง
+     * บอกลูกค้าเป็นเลขเก่าเงียบ ๆ เงินเข้าบัญชีที่เลิกใช้แล้ว และตัวจับคู่สลิป
+     * อัตโนมัติก็จะเห็นว่า "ปลายทางไม่ใช่บัญชีเรา" แล้วตีกลับทั้งที่ลูกค้าโอนถูก
+     *
+     * เป็นบั๊กชุดเดียวกับที่เคยเกิดกับ juntraweb เมื่อ 2026-07-26 (ดู
+     * Api\Juntra\PayoutAccountController) เลยใช้ resolver ตัวเดียวกันเป๊ะ ๆ
+     * คือ FortuneTellingSetting::getFortunePromptpayAccount() ซึ่งเป็นตัวเดียว
+     * กับที่ FortuneConversationService::getPromptPayId() ใช้สร้าง QR ให้บอท
+     * → ทุกช่องทางชี้บัญชีเดียวกันเสมอ ตั้งค่าที่เดียว
+     *
+     * ส่งเลขบัญชีเต็มไม่ mask เพราะปลายทางคือ Warroom ซึ่งเป็นเครื่องมือแอดมิน
+     * ของเราเอง (Sanctum token ability=admin) แอดมินเห็นบัญชีเหล่านี้ในหลังบ้าน
+     * ได้อยู่แล้ว และต้องเอาเลขจริงไปบอกลูกค้า/สร้าง QR — ไม่ได้เพิ่มสิทธิ์อะไร
+     */
+    public function payoutAccount(): JsonResponse
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        /** @var PaymentBankAccount|null $account */
+        $account = $settings->getFortunePromptpayAccount()
+            ?? $settings->getFortunePrimaryBankAccount();
+
+        if (! $account) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ยังไม่ได้ตั้งบัญชีรับเงินในระบบแม่หมอ',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'promptpay_id' => $account->promptpay_id,
+                'promptpay_type' => $account->promptpay_type,
+                'account_name' => $account->account_name,
+                'account_number' => $account->account_number,
+                'bank_code' => $account->bank_code,
+                'bank_name' => $account->bank_name,
+                // Warroom ใช้บอกแอดมินว่าบิลนี้จับยอดอัตโนมัติได้ไหม
+                'sms_checker_enabled' => (bool) $account->sms_checker_enabled,
                 'generated_at' => now()->toIso8601String(),
             ],
         ]);

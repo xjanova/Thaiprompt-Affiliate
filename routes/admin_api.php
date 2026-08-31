@@ -191,6 +191,11 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
     Route::prefix('fortune')->name('api.admin.fortune.')->group(function () {
         Route::get('/dashboard', [FortuneDashboardController::class, 'index'])->name('dashboard');
 
+        // บัญชีรับเงินที่บอทใช้อยู่จริง — Warroom ดึงไปแสดง/สร้าง QR แทนการ
+        // hardcode เลขพร้อมเพย์ไว้ในโค้ด (ตั้งค่าที่เดียว = บอท/เว็บ/warroom ชี้บัญชีเดียวกันเสมอ)
+        Route::get('/payout-account', [FortuneDashboardController::class, 'payoutAccount'])
+            ->name('payout-account');
+
         Route::prefix('readings')->name('readings.')->group(function () {
             Route::get('/', [FortuneReadingsController::class, 'index'])->name('index');
             Route::get('/stats', [FortuneReadingsController::class, 'stats'])->name('stats');
