@@ -4,7 +4,6 @@ namespace App\Services\Fortune;
 
 use App\Models\FortuneReading;
 use App\Services\FortuneAIService;
-use App\Services\FortuneChartService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -849,31 +848,34 @@ trait ProSessionTrait
             ? mb_substr($deepResponse, 0, 1500).'...'
             : $deepResponse;
 
-        // Planet positions context
+        // 🪐 ดวงพื้นของลูกค้า
+        //
+        // ⚠️ (2026-09-01) เดิมใช้ FortuneChartService::calculatePlanetPositions($dayOfWeek)
+        //   ซึ่ง **ไม่ใช่การผูกดวง** — เป็นตารางจัดวางตายตัว (เจ้าชนะ→ภพ1 · มิตร→9/11/5 ·
+        //   ศัตรู→6/12/8 · ที่เหลือวน 2/3/4/7) รับพารามิเตอร์แค่ "วันในสัปดาห์"
+        //   ⇒ ผลลัพธ์มีแค่ 7 แบบทั้งระบบ คนเกิดวันอังคารได้ดวงเหมือนกันหมดไม่ว่าเกิดปีไหน
+        //   AI จึงไม่มีข้อเท็จจริงเฉพาะตัวให้ฟันธง → ตอบกว้างๆ เซฟๆ
+        //
+        //   ใหม่: ใช้ ThaiAstrologyService::formatPersonBlock() ตัวเดียวกับ Celtic 99
+        //   ซึ่งคำนวณดาวจริง 9 ดวงด้วย PlanetEphemeris (Keplerian JPL) + ราศี + ภพ +
+        //   เกษตร/อุจ/นิจ + พักร + ทักษา + ดาวเสวยอายุ + นักษัตร/ชง + Life Path + Personal Year
         $birthChartContext = '';
         if ($reading->birth_date) {
             try {
-                $dayOfWeek = Carbon::parse($reading->birth_date->format('Y-m-d'))->dayOfWeek;
-                $chartService = new FortuneChartService;
-                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
-                $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
-
-                $lines = [];
-                foreach ($positions as $houseNum => $planets) {
-                    if (! empty($planets)) {
-                        $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
-                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
-                        $lines[] = "ภพ{$houseNum}.{$houseName}: ".implode(',', $planetNames);
-                    }
-                }
-                if (! empty($lines)) {
-                    $birthChartContext = "\n[🪐 ตำแหน่งดาวเดิม]\n".implode(' | ', $lines)."\n";
-                    if ($chaochana) {
-                        $birthChartContext .= "ดาวเจ้าชนะ: {$chaochana['planet']} | ธาตุ: {$chaochana['element']}\n";
-                    }
+                $block = trim((new ThaiAstrologyService)
+                    ->formatPersonBlock($reading->birth_date->format('Y-m-d')));
+                if ($block !== '') {
+                    // ⚠️ ต้องบอกว่า "ตัวนี้ชนะ" — บิลที่ทำนายไปก่อน 2026-09-01 ใช้ผังดาวชุดเก่า
+                    //   ถ้าคำทำนายเดิมในสรุปด้านล่างอ้างดาวไม่ตรงกับผังนี้ AI จะได้ไม่สับสน
+                    $birthChartContext = "\n[🪐 ดวงพื้น — คำนวณจริงจากวันเกิด: ใช้ผังนี้เป็นหลัก ห้ามเดาเอง"
+                        ." และถ้าคำทำนายเดิมด้านล่างอ้างดาวไม่ตรงกับผังนี้ ให้ยึดผังนี้]\n".$block."\n";
                 }
             } catch (\Throwable $e) {
-                // ข้ามไปได้
+                // ephemeris ล้ม → ปล่อยว่าง ดีกว่าป้อนดวงผิดให้ลูกค้าที่จ่ายเงินแล้ว
+                Log::warning('ProSession: ผูกดวง Deep 39 ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -959,7 +961,9 @@ trait ProSessionTrait
 - เช็คสิทธิ์ดูดวงฟรี/เครดิต → \"พิมพ์ 'เช็คสิทธิ์' ค่ะ\"
 - ขอคุยกับคน/แอดมินจริง → \"พิมพ์ 'ขอคุยกับคน' ค่ะ แม่หมอจะส่งต่อให้ทันที\"
 - จบ session ก่อนหมดเวลา → \"พิมพ์ 'พอแค่นี้' หรือ 'ขอบคุณ' ค่ะ\"
-ℹ️ คำสั่งเหล่านี้ระบบจัดการเอง — แม่หมอ *แค่บอกให้ลูกค้าพิมพ์* แล้วระบบจะส่งให้";
+ℹ️ คำสั่งเหล่านี้ระบบจัดการเอง — แม่หมอ *แค่บอกให้ลูกค้าพิมพ์* แล้วระบบจะส่งให้
+
+".FortuneAIService::NO_HEDGE_DIRECTIVE;
     }
 
     /**
@@ -1023,7 +1027,9 @@ trait ProSessionTrait
 - เช็คสิทธิ์ดูดวงฟรี/เครดิต → \"พิมพ์ 'เช็คสิทธิ์' ค่ะ\"
 - ขอคุยกับคน/แอดมินจริง → \"พิมพ์ 'ขอคุยกับคน' ค่ะ แม่หมอจะส่งต่อให้ทันที\"
 - จบ session ก่อนหมดเวลา → \"พิมพ์ 'พอแค่นี้' หรือ 'ขอบคุณ' ค่ะ\"
-ℹ️ คำสั่งเหล่านี้ระบบจัดการเอง — แม่หมอ *แค่บอกให้ลูกค้าพิมพ์* แล้วระบบจะส่งให้";
+ℹ️ คำสั่งเหล่านี้ระบบจัดการเอง — แม่หมอ *แค่บอกให้ลูกค้าพิมพ์* แล้วระบบจะส่งให้
+
+".FortuneAIService::NO_HEDGE_DIRECTIVE;
     }
 
     /**

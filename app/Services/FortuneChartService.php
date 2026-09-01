@@ -224,8 +224,17 @@ class FortuneChartService
     }
 
     /**
-     * คำนวณตำแหน่งดาวในภพตามหลักเจ้าชนะ
+     * จัดวางดาวในภพตามหลักเจ้าชนะ (ผังสาธิต — ไม่ใช่การผูกดวงจริง)
      * ใช้วันเกิดเป็นฐาน → ดาวเจ้าชนะอยู่ภพตนุ(1) → ดาวอื่นกระจายตามลำดับ
+     *
+     * 🚨 (2026-09-01) อย่าเข้าใจผิดว่านี่คือ ephemeris — มันรับแค่ "วันในสัปดาห์"
+     *   มิตร→ภพ 9/11/5 · ศัตรู→ภพ 6/12/8 · ที่เหลือวน 2/3/4/7 แบบตายตัว
+     *   ⇒ **ผลลัพธ์มีได้แค่ 7 แบบทั้งระบบ** คนเกิดวันอังคารได้ผังเดียวกันหมดไม่ว่าเกิดปีไหน
+     *   เคยถูกใช้ป้อน AI ใน Deep 39 Pro Session แล้วทำให้คำทำนายกว้างจนต้องตอบเซฟ
+     *   → ย้ายไปใช้ App\Services\Fortune\ThaiAstrologyService::formatPersonBlock()
+     *     (คำนวณดาวจริงด้วย PlanetEphemeris) แล้ว
+     *   ⚠️ เมธอดนี้เหลือไว้ให้หน้าแอดมิน/มาร์เก็ตติ้งใช้แสดงผังเท่านั้น
+     *     **ห้ามนำกลับไปป้อน AI สำหรับคำทำนายที่ลูกค้าจ่ายเงิน**
      *
      * @param  int  $dayOfWeek  0-6
      * @return array [house_number => [planet_keys]]
@@ -361,7 +370,7 @@ class FortuneChartService
             $periodData = [
                 'label' => $period['label'],
                 'months' => $period['months'],
-                'date' => $targetDate->format('d/m/') . ($targetDate->year + 543),
+                'date' => $targetDate->format('d/m/').($targetDate->year + 543),
                 'positions' => $positions,
                 'friend_impacts' => [],
                 'enemy_impacts' => [],

@@ -163,14 +163,63 @@ class FortuneKnowledgeService
                 continue;
             }
             $nameTh = (string) ($card['card_name_th'] ?? '') ?: ($nameEn ?: '?');
-            $orientation = ! empty($card['is_reversed']) ? '(กลับหัว)' : '(ตั้งตรง)';
+            $isReversed = ! empty($card['is_reversed']);
+            $orientation = $isReversed ? '(กลับหัว)' : '(ตั้งตรง)';
             $positionName = (string) ($card['position_name'] ?? '?');
 
+            // 🎯 (2026-09-01) ส่งเฉพาะคำแปล "ด้านที่ไพ่ออกจริง" — ห้ามส่งทั้งสองด้าน
+            $content = $this->orientedContent((string) $entry['content'], $isReversed);
+            if ($content === '') {
+                continue;
+            }
+
             $lines[] = "• ตำแหน่ง {$pos} [{$positionName}] — {$nameTh} {$orientation}\n"
-                .'   '.str_replace("\n", "\n   ", trim((string) $entry['content']));
+                .'   '.str_replace("\n", "\n   ", $content);
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * 🎯 ตัดคำแปลให้เหลือเฉพาะ "ด้านที่ไพ่ออกจริง" (ตั้งตรง หรือ กลับหัว)
+     *
+     * ⚠️ ทำไมต้องมี (2026-09-01 — owner: "ตอบเซฟตลอด บอกว่าได้ แต่ขัดแย้งว่าไม่ได้ง่ายๆ"):
+     *   คลังความรู้เก็บสองด้านไว้ในสตริงเดียว —
+     *     'The Chariot' => '✨✨ ฤกษ์ออกรถ-เดินทางก้าวหน้า · กลับหัว = ⚠️ ทิศทางไม่ลงตัว-รถเสีย-ทางตัน'
+     *   เดิม dump ทั้งก้อนให้ AI ทุกใบ (~935 entries ที่พ่วงด้านตรงข้าม) → ไพ่ตั้งตรงชี้ "ได้"
+     *   แต่ AI ยังเห็น "⚠️ ทางตัน" ในบรรทัดเดียวกัน → เกลี่ยออกมาเป็น "ได้ แต่ไม่ง่าย"
+     *   = เครื่องผลิตคำตอบกั๊กโดยตรง ทั้งที่ระบบรู้อยู่แล้วว่าไพ่ออกด้านไหน
+     *
+     * 🛡️ ปลอดภัยกับข้อมูลที่แอดมินแก้เอง (DB): ไม่เจอตัวคั่น → คืนทั้งก้อนเหมือนเดิม
+     *   และถ้าครึ่งที่เลือกว่างเปล่า → fallback เป็นทั้งก้อน (ดีกว่าไพ่ใบนั้นหายไปเงียบๆ)
+     *
+     * @param  string  $content  เนื้อความจากคลัง (DB หรือ config)
+     * @param  bool  $isReversed  ไพ่ใบนี้ออกกลับหัวหรือไม่
+     * @return string ว่าง = ไม่มีเนื้อความให้ใช้
+     *
+     * @example
+     * $this->orientedContent('ดีมาก · กลับหัว = ⚠️ ติดขัด', false); // → 'ดีมาก'
+     * $this->orientedContent('ดีมาก · กลับหัว = ⚠️ ติดขัด', true);  // → '⚠️ ติดขัด'
+     */
+    protected function orientedContent(string $content, bool $isReversed): string
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return '';
+        }
+
+        // ตัวคั่นที่ใช้จริงในคลัง = ' · กลับหัว = ' — เผื่อ ':' และช่องว่างไม่ตรงสำหรับแถวที่แอดมินพิมพ์เอง
+        $parts = preg_split('/\s*·?\s*กลับหัว\s*[=:]\s*/u', $content, 2);
+
+        // ไม่เจอตัวคั่น (หรือ regex พัง) → คืนทั้งก้อนเหมือนเดิม
+        if (! is_array($parts) || count($parts) < 2) {
+            return $content;
+        }
+
+        $picked = trim((string) ($isReversed ? $parts[1] : $parts[0]));
+
+        // ครึ่งที่เลือกว่าง (เช่นเขียน 'กลับหัว = ...' โดยไม่มีด้านตั้งตรง) → ใช้ทั้งก้อนกันข้อมูลหาย
+        return $picked !== '' ? $picked : $content;
     }
 
     /**
