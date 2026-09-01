@@ -57,6 +57,19 @@ class SendPricingFollowUpJob implements ShouldQueue
             return;
         }
 
+        // 🚦 (2026-09-01) กล่องอธิบายค่าครูฝั่ง LINE = push ไม่วิกฤต (dispatch delay 4s ⇒ replyToken
+        //   ถูกใช้ไปแล้วเสมอ = push 100%) — โควตาต่ำกว่ากันชน → สละข้อความนี้ + mark dedup
+        //   ไว้เลย (upsell explainer ไม่คุ้มโควตาที่ต้องสงวนให้ของลูกค้าจ่ายแล้ว) และเช็คก่อน gen AI
+        if ($this->platform === 'line'
+            && ! app(\App\Services\LineFortuneService::class)->canSpendNonCriticalPush()) {
+            Cache::put($cacheKey, now()->timestamp, now()->addDays(7));
+            Log::info('SendPricingFollowUpJob: ข้าม LINE — กันโควตา push ไว้ให้ของลูกค้าจ่ายแล้ว', [
+                'user_id' => $this->userId,
+            ]);
+
+            return;
+        }
+
         // Load persona (optional — null OK)
         $persona = FortuneCustomerPersona::findByPlatformUser($this->platform, $this->userId);
         $personaContext = $persona ? $persona->toAiContextBlock() : '';

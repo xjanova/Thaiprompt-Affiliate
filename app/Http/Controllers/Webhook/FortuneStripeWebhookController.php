@@ -40,7 +40,7 @@ class FortuneStripeWebhookController extends Controller
         $payload = $request->getContent();
         $signature = $request->header('Stripe-Signature', '');
 
-        $service = new FortuneStripeService();
+        $service = new FortuneStripeService;
 
         // 🛡️ Verify signature
         if (! $service->verifyWebhookSignature($payload, $signature)) {
@@ -106,6 +106,7 @@ class FortuneStripeWebhookController extends Controller
         $reading = FortuneReading::find($readingId);
         if (! $reading) {
             Log::warning('FortuneStripeWebhook: reading not found for trigger', ['reading_id' => $readingId]);
+
             return;
         }
 
@@ -122,6 +123,7 @@ class FortuneStripeWebhookController extends Controller
                 'reading_id' => $readingId,
                 'status' => $reading->conversation_status,
             ]);
+
             return;
         }
 
@@ -255,9 +257,10 @@ class FortuneStripeWebhookController extends Controller
             && ! $readingModel->is_paid
             && $readingModel->conversation_status === FortuneReading::STATUS_PENDING_STRIPE_PAYMENT
         ) {
-            $readingModel->update([
-                'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
-            ]);
+            // 🐛 (2026-09-01) เดิม revert เป็น AWAITING_PAYMENT_METHOD ดื้อๆ — ลูกค้าเลนต่างประเทศ
+            //   (เมนูเลือกวิธีจ่ายปิด) จะค้างในสถานะไม่มี handler + QR ไทยถูกยกเลิกไปแล้ว
+            //   ใช้ logic กลางตัวเดียวกับ session.expired: คืนสถานะบิลเดิม + จองยอด QR ไทยใหม่ให้
+            (new FortuneStripeService)->restoreAfterCheckoutAbandoned($readingModel, 'cancel_url');
         } elseif ($readingModel && ! $sessionMatches) {
             Log::warning('FortuneStripe cancel: session_id mismatch — skip revert', [
                 'reading_id' => $reading,

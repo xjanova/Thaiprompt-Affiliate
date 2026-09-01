@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property string $facebook_user_id
  * @property string $facebook_post_id
- * @property string|null $reaction_type  like, love, wow, haha, sad, angry
- * @property string|null $verb  add, remove, edit
+ * @property string|null $reaction_type like, love, wow, haha, sad, angry
+ * @property string|null $verb add, remove, edit
  * @property string|null $user_name
  * @property bool $dm_attempted
  * @property bool $dm_success
@@ -44,6 +44,16 @@ class FortunePostReaction extends Model
         'dm_success' => 'boolean',
         'reacted_at' => 'datetime',
     ];
+
+    /**
+     * 🏬 จำกัด query ตามเพจ (สาขา) — pattern เดียวกับ FortuneCommentEngagement::scopePage
+     *
+     * `$pageId = null` = ไม่ระบุเพจ ⇒ นับรวมทุกเพจ (พฤติกรรมเดิม ใช้กับ caller เก่าที่ยังไม่ส่งมา)
+     */
+    private static function scopePage(\Illuminate\Database\Eloquent\Builder $q, ?int $pageId): \Illuminate\Database\Eloquent\Builder
+    {
+        return $pageId === null ? $q : $q->where('fortune_page_id', $pageId);
+    }
 
     /**
      * ตรวจสอบว่า user นี้เคยกด reaction ในโพสต์ใดมาก่อนหรือไม่
@@ -79,11 +89,14 @@ class FortunePostReaction extends Model
      *    เหตุผล: ลูกค้าตอบกลับน้อยลง ("คนเงียบเลย") — cooldown 3 วันยาวเกิน
      *    กลับมาใช้ 24h rolling เหมือนนโยบายเดิม
      *
+     * 🏬 (2026-09-01) นับแยกรายเพจ (pageId) — ให้สมมาตรกับ FortuneCommentEngagement::hasDmRecently
+     *    เดิมนับรวมทุกเพจ ⇒ ลูกค้าที่ได้ DM จากสาขา A แล้ว จะไม่ได้ DM จากสาขา B ทั้งวัน
+     *
      * @param  int  $hours  จำนวนชั่วโมง (default 24)
      */
-    public static function hasDmSuccessRecently(string $userId, int $hours = 24): bool
+    public static function hasDmSuccessRecently(string $userId, int $hours = 24, ?int $pageId = null): bool
     {
-        return self::where('facebook_user_id', $userId)
+        return self::scopePage(self::where('facebook_user_id', $userId), $pageId)
             ->where('dm_success', true)
             ->where('updated_at', '>=', now()->subHours($hours))
             ->exists();

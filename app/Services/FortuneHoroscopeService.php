@@ -57,7 +57,7 @@ class FortuneHoroscopeService
                 $success++;
             } catch (Exception $e) {
                 $failed++;
-                Log::error('FortuneHoroscope: สร้างเนื้อหาล้มเหลวสำหรับวัน ' . FortuneHoroscopeCampaign::THAI_DAYS[$birthDay], [
+                Log::error('FortuneHoroscope: สร้างเนื้อหาล้มเหลวสำหรับวัน '.FortuneHoroscopeCampaign::THAI_DAYS[$birthDay], [
                     'campaign_id' => $campaign->id,
                     'birth_day' => $birthDay,
                     'error' => $e->getMessage(),
@@ -66,7 +66,30 @@ class FortuneHoroscopeService
         }
 
         // อัพเดทสถานะแคมเปญ
-        $campaign->update(['last_generated_at' => now()]);
+        // 🐛 (2026-09-01) เดิม stamp last_generated_at เสมอแม้ล้มยกชุด → scopeReadyToGenerate
+        //   ตัดแคมเปญทิ้งตลอดวันที่เหลือ = วันนั้นไม่มีโพสแบบเงียบสนิท (ไม่มี retry/ยามเหมือน
+        //   เลนบทความที่มี fortune:daily-preflight คุ้มกัน)
+        //   ใหม่: ล้มยกชุด "ก่อนถึงเวลาโพส" → ไม่ stamp ให้ tick 5 นาทีถัดไปลองใหม่
+        //   (bounded ~6 ครั้งในหน้าต่าง −30 นาที) · เลยเวลาโพสแล้วยังล้ม → stamp ยอมแพ้
+        //   (กัน AI ยิงวนทั้งวันกับแคมเปญที่พังถาวร)
+        if ($success > 0) {
+            $campaign->update(['last_generated_at' => now()]);
+        } else {
+            $pastPublishTime = true;
+            try {
+                $pastPublishTime = now($campaign->timezone)->gte($campaign->getScheduleTimeCarbon());
+            } catch (\Throwable $e) {
+                // อ่านเวลาไม่ได้ → คงพฤติกรรมเดิม (stamp) กันลูป
+            }
+
+            if ($pastPublishTime) {
+                $campaign->update(['last_generated_at' => now()]);
+            } else {
+                Log::warning('FortuneHoroscope: ล้มยกชุด — ไม่ stamp last_generated_at เปิดทางให้ retry รอบถัดไป', [
+                    'campaign_id' => $campaign->id,
+                ]);
+            }
+        }
 
         if ($failed > 0 && $success === 0) {
             $campaign->markError('สร้างเนื้อหาล้มเหลวทั้งหมด');
@@ -88,10 +111,7 @@ class FortuneHoroscopeService
     /**
      * สร้างเนื้อหาสำหรับ 1 วันเกิด
      *
-     * @param  FortuneHoroscopeCampaign  $campaign
-     * @param  Carbon  $targetDate
      * @param  int  $birthDay  0-6
-     * @return FortuneHoroscopeContent
      */
     public function generateForBirthDay(
         FortuneHoroscopeCampaign $campaign,
@@ -243,7 +263,7 @@ class FortuneHoroscopeService
         $positionsText = $this->formatPlanetPositions($astrologyData['planet_positions']);
 
         // วันที่แบบไทย
-        $thaiDate = $targetDate->format('d/m/') . ($targetDate->year + 543);
+        $thaiDate = $targetDate->format('d/m/').($targetDate->year + 543);
 
         // แทนที่ placeholders
         $replacements = [
@@ -349,7 +369,7 @@ class FortuneHoroscopeService
                 fn ($key) => FortuneChartService::PLANETS[$key]['name'] ?? $key,
                 $planets
             );
-            $lines[] = "ภพ{$houseName}({$houseMeaning}): " . implode(', ', $planetNames);
+            $lines[] = "ภพ{$houseName}({$houseMeaning}): ".implode(', ', $planetNames);
         }
 
         return implode(' | ', $lines);

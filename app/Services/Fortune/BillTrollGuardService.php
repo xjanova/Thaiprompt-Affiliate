@@ -18,6 +18,12 @@ use Illuminate\Support\Facades\Log;
  * กติกา:
  *   - strike = บิลที่จบโดยไม่จ่าย (หมดเวลา auto_expired / ลูกค้ายกเลิกเอง user_cancelled)
  *   - ⛔ ไม่นับ: ยกเลิกเพื่อเปลี่ยนแพคเกจ (package_switch) — ลูกค้าดีต้องไม่โดน
+ *   - ⛔ (2026-09-01) ไม่นับ: บิลที่ถูกปิดเพราะจ่ายใบอื่นแทน (superseded_by_paid) — จุด cancel
+ *     จงใจไม่เรียก maybeBanAfterUnpaidCancel อยู่แล้ว query นับ strike ต้องไม่นับด้วย
+ *   - ⛔ (2026-09-01) ไม่นับ: บิลที่ลูกค้า*โอนเงินจริงมาแล้วบางส่วน* (partial_paid_total ≥ ฿1)
+ *     คนโอนขาดแล้วเงียบจนบิลหมดอายุ = ลูกค้าที่ติดขัด ไม่ใช่หลอกสร้างบิล — ร้านถือเงินเขาอยู่
+ *     ห้ามนับเป็น troll (เคสนี้ recentlyPaid ช่วยไม่ได้เพราะไม่มีบิล is_paid=true สักใบ)
+ *     ⚠️ ต้องมีขั้นต่ำ MIN_REAL_MONEY_EXEMPT — ไม่งั้น troll โอน ฿0.01 ก็หลุดตัวนับถาวร
  *   - หน้าต่างนับ 3 วันย้อนหลัง (เจ้าของ: "ล้างภายใน 3 วัน เพราะบางคนสร้างแต่โอนไม่เป็น")
  *   - จ่ายสำเร็จเมื่อไหร่ → ล้าง strike ทันที (นับเฉพาะบิลหลังการจ่ายล่าสุด)
  *   - strike ครบ 2 + สร้างบิลที่ 3 → แนบคำเตือนชัดเจนไปกับบิล (troll_warning_shown)
@@ -35,6 +41,16 @@ class BillTrollGuardService
      * หน้าต่างนับ strike (วัน)
      */
     public const STRIKE_WINDOW_DAYS = 3;
+
+    /**
+     * 💰 (2026-09-01 จับผี #1) ขั้นต่ำของ "เงินจริง" ที่ทำให้บิลไม่นับเป็น strike
+     *
+     * ไม่มีขั้นต่ำ = troll โอน ฿0.01 แล้วส่งสลิป → ทุกบิล exempt จากตัวนับถาวร
+     * (เคสจริง PSID 27885437957776628 โอน ฿0.55/0.35/0.03/0.01 — ฝั่ง SMS ตีตก
+     * ยอด < ฿1 ไปแล้วใน 2138517b0 แต่ฝั่งสลิปเครดิตลง partial_paid_total ได้)
+     * align กับ min_credit_amount ของ SMS checker
+     */
+    public const MIN_REAL_MONEY_EXEMPT = 1.0;
 
     /**
      * จำนวนบิลไม่ชำระที่ถือว่าก่อกวน (แบนเมื่อครบ)
@@ -92,12 +108,14 @@ class BillTrollGuardService
         $since = now()->subDays(self::STRIKE_WINDOW_DAYS);
 
         // จ่ายสำเร็จล่าสุดเมื่อไหร่ — บิลก่อนหน้านั้นไม่นับ (จ่ายแล้ว = ล้าง strike)
+        // 🕐 (2026-09-01) ใช้เวลา "จ่ายจริง" ไม่ใช่เวลาสร้างบิลใบที่จ่าย — บิลเก่าที่เพิ่งจ่ายวันนี้
+        //   ต้องล้าง strike ของบิลที่สร้างคั่นกลางด้วย (paid_at ว่าง = แถว legacy → ตกไป created_at)
         $lastPaidAt = FortuneReading::where(function ($q) use ($userId) {
             $q->where('facebook_user_id', $userId)
                 ->orWhere('platform_user_id', $userId);
         })
             ->where('is_paid', true)
-            ->max('created_at');
+            ->max(\Illuminate\Support\Facades\DB::raw('COALESCE(paid_at, created_at)'));
 
         $query = FortuneReading::where(function ($q) use ($userId) {
             $q->where('facebook_user_id', $userId)
@@ -107,10 +125,15 @@ class BillTrollGuardService
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
             ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-            // ⛔ ไม่นับยกเลิกเพื่อเปลี่ยนแพคเกจ — reason อื่น (รวม null = ปิดโดย sweep) นับหมด
+            // ⛔ ไม่นับยกเลิกเพื่อเปลี่ยนแพคเกจ/ปิดเพราะจ่ายใบอื่นแทน — reason อื่น (รวม null = ปิดโดย sweep) นับหมด
             ->where(function ($q) {
                 $q->whereNull('conversation_state->cancellation_reason')
-                    ->orWhere('conversation_state->cancellation_reason', '!=', 'package_switch');
+                    ->orWhereNotIn('conversation_state->cancellation_reason', ['package_switch', 'superseded_by_paid']);
+            })
+            // 💰 (2026-09-01) โอนเงินจริงมาแล้วบางส่วน = ลูกค้าติดขัด ไม่ใช่ troll — ไม่นับ strike
+            ->where(function ($q) {
+                $q->whereNull('partial_paid_total')
+                    ->orWhere('partial_paid_total', '<', self::MIN_REAL_MONEY_EXEMPT);
             });
 
         if ($lastPaidAt) {
@@ -144,7 +167,12 @@ class BillTrollGuardService
             ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
             ->where(function ($q) {
                 $q->whereNull('conversation_state->cancellation_reason')
-                    ->orWhere('conversation_state->cancellation_reason', '!=', 'package_switch');
+                    ->orWhereNotIn('conversation_state->cancellation_reason', ['package_switch', 'superseded_by_paid']);
+            })
+            // 💰 (2026-09-01) โอนเงินจริงมาแล้วบางส่วน = ไม่นับเป็นบิลค้าง (ดูเหตุผลที่ strikeCount)
+            ->where(function ($q) {
+                $q->whereNull('partial_paid_total')
+                    ->orWhere('partial_paid_total', '<', self::MIN_REAL_MONEY_EXEMPT);
             })
             ->count();
     }
@@ -176,7 +204,7 @@ class BillTrollGuardService
                 ->orWhere('platform_user_id', $userId);
         })
             ->where('is_paid', true)
-            ->max('created_at');
+            ->max(\Illuminate\Support\Facades\DB::raw('COALESCE(paid_at, created_at)'));
 
         $query = FortuneReading::where(function ($q) use ($userId) {
             $q->where('facebook_user_id', $userId)
@@ -185,10 +213,15 @@ class BillTrollGuardService
             ->where('created_at', '>=', now()->subDays($days))
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
-            // ⛔ ไม่นับยกเลิกเพื่อเปลี่ยนแพคเกจ — reason อื่น (รวม null = ยัง pending/ปิดโดย sweep) นับหมด
+            // ⛔ ไม่นับยกเลิกเพื่อเปลี่ยนแพคเกจ/ปิดเพราะจ่ายใบอื่นแทน — reason อื่น (รวม null = ยัง pending/ปิดโดย sweep) นับหมด
             ->where(function ($q) {
                 $q->whereNull('conversation_state->cancellation_reason')
-                    ->orWhere('conversation_state->cancellation_reason', '!=', 'package_switch');
+                    ->orWhereNotIn('conversation_state->cancellation_reason', ['package_switch', 'superseded_by_paid']);
+            })
+            // 💰 (2026-09-01) โอนเงินจริงมาแล้วบางส่วน = ไม่นับ (ดูเหตุผลที่ strikeCount)
+            ->where(function ($q) {
+                $q->whereNull('partial_paid_total')
+                    ->orWhere('partial_paid_total', '<', self::MIN_REAL_MONEY_EXEMPT);
             });
 
         if ($lastPaidAt) {
@@ -267,7 +300,20 @@ class BillTrollGuardService
         }
 
         $reason = (string) ($reading->getConversationState('cancellation_reason') ?? '');
-        if ($reason === 'package_switch') {
+        if (in_array($reason, ['package_switch', 'superseded_by_paid'], true)) {
+            return;
+        }
+
+        // 💰 (2026-09-01) บิลนี้มีเงินจริงเข้ามาแล้ว (โอนขาด/โอนก่อนบิล ≥ ฿1) = ลูกค้าติดขัด ไม่ใช่ก่อกวน
+        //   ห้ามใช้เป็นตัวจุดชนวนเช็คแบน — ร้านถือเงินเขาอยู่ แบนถาวรใส่คนจ่ายเงิน = หายนะ
+        //   (ขั้นต่ำ ฿1 กัน troll โอนสตางค์ซื้อความ immune — จับผี #1)
+        if ((float) ($reading->partial_paid_total ?? 0) >= self::MIN_REAL_MONEY_EXEMPT) {
+            Log::info('BillTrollGuard: ข้ามเช็คแบน — บิลมีเงินจริงเข้ามาแล้วบางส่วน', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'partial_paid_total' => (float) $reading->partial_paid_total,
+            ]);
+
             return;
         }
 

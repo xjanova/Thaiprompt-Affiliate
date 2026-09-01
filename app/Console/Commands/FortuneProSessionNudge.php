@@ -100,6 +100,17 @@ class FortuneProSessionNudge extends Command
                     continue;
                 }
 
+                // 🚦 (2026-09-01) nudge ฝั่ง LINE = push ไม่วิกฤต (นโยบาย 2026-08-31) — โควตาต่ำกว่า
+                //   กันชน → สละการตามรอบนี้ (mark ตามแล้ว — ลูกค้าจ่ายแล้วกลับมาพิมพ์เมื่อไหร่
+                //   session ก็เดินต่อปกติ ไม่เสียของ)
+                if ($platform === 'line'
+                    && ! app(\App\Services\LineFortuneService::class)->canSpendNonCriticalPush()) {
+                    $conversationService->markProSessionNudgeSent($reading);
+                    $this->warn("  ⚠️ #{$reading->id} ข้าม — กันโควตา LINE ไว้ให้ของลูกค้าจ่ายแล้ว");
+
+                    continue;
+                }
+
                 // 🌐 restore locale ก่อน push (queue/cron ไม่มี request context)
                 try {
                     $storedLocale = FortuneLocaleService::getStored($platform, $userId) ?? FortuneLocaleService::LOCALE_TH;

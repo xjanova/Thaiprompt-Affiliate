@@ -6,7 +6,6 @@ use App\Contracts\MessagingPlatformInterface;
 use App\Models\FortuneReading;
 use App\Models\FortuneResponseTemplate;
 use App\Models\FortuneTellingSetting;
-use App\Models\FortuneUserCredit;
 use App\Services\Fortune\FortunePageContext;
 use Carbon\Carbon;
 use Exception;
@@ -3795,101 +3794,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * @param  array  $options  ตัวเลือกเพิ่มเติม (messaging_type, from_admin)
      * @return bool สำเร็จหรือไม่
      */
-    /**
-     * 👁️ ส่งกล่องชวนติดตามเพจ + ปุ่มยืนยัน "ติดตามแล้ว"
-     *
-     * - เช็ค FortuneUserCredit::shouldPromptFollow() ก่อน → skip ถ้า:
-     *   • user ยืนยันติดตามแล้ว (clicked FOLLOW_CONFIRMED postback)
-     *   • หรือเพิ่งส่ง prompt ภายใน 7 วันที่ผ่านมา
-     * - เรียกได้จากทุกที่ที่ส่ง DM (processMessage, sendTemplateEngagement, AI job)
-     * - non-blocking — ถ้า fail ไม่กระทบ flow หลัก
-     *
-     * @param  string  $recipientId  Facebook PSID
-     * @return bool true = ส่งสำเร็จ + mark prompted, false = gated/failed
-     */
-    public function sendFollowPagePromptToUser(string $recipientId): bool
-    {
-        // 🚫 (2026-05-08) Hard-disable per user feedback "เอาออกไปก่อน ไม่ต้องปรากฎ"
-        //    follow-page prompt + group invite รบกวน UX → ลบทิ้งทั้งสอง
-        //    ถ้าจะเปิดอนาคต → comment line ต่อไป
-        return false;
-        try {
-            $credit = FortuneUserCredit::getOrCreate($recipientId, 'facebook');
-            // 🔄 (2026-05-02) เปลี่ยนจาก shouldPromptFollow() (7-day cooldown)
-            //    → shouldPromptFollowToday() (daily cooldown — ครั้งแรกของวันเท่านั้น)
-            //    user request: "ในการทักแชทครั้งแรกของวันนั้น ถ้ายังไม่ติดตาม ให้ปรากฏ"
-            if (! $credit->shouldPromptFollowToday()) {
-                return false; // ติดตามแล้ว หรือ ส่งวันนี้ไปแล้ว
-            }
-
-            $pageId = $this->settings->facebook_page_id ?? null;
-            if (empty($pageId)) {
-                return false;
-            }
-
-            // 🌟 (2026-05-05) Redesign — ลบปุ่ม "ติดตามแล้ว" postback
-            //                          + เพิ่มปุ่ม "เข้ากลุ่มแม่หมอจันทรา" + ใช้ tracking URLs
-            //   user spec: "ปุ่มติดตามแล้วให้นำออก ให้เพิ่มเข้ากลุ่ม + ลิงก์ขอเข้ากลุ่ม
-            //               + การกดปุ่มติดตามต้องเด้งให้กดติดตาม + บันทึกว่ายูสเซ่อร์กดติดตามแล้ว"
-            //
-            //   Tracking URL pattern: /fortune/track/fb-follow/{psid} → record + 302 redirect
-            //   web_url button ไม่ส่ง postback กลับ — ต้องใช้ redirect tracking แทน
-            $groupUrl = $this->settings->fortune_group_url
-                ?? 'https://www.facebook.com/groups/1539006181120751';
-
-            // 🔒 (2026-05-05 review) Signed URLs — ป้องกัน enumeration spam
-            //   ใครๆ จะเรียก /fortune/track/fb-follow/{any_psid} ตรงไม่ได้ (signed middleware reject)
-            //   URL จะมี ?signature=... + ?expires=... append อัตโนมัติ
-            $trackFollowUrl = URL::signedRoute(
-                'fortune.track.fb-follow',
-                ['psid' => $recipientId],
-                now()->addDays(30)  // ลิงก์ใช้ได้ 30 วัน — กัน user ที่เก็บ DM ไว้เปิดทีหลัง
-            );
-            $trackGroupUrl = URL::signedRoute(
-                'fortune.track.fb-group',
-                ['psid' => $recipientId],
-                now()->addDays(30)
-            );
-
-            // 🌙 (2026-05-22) Tone reset — ไม่ประกาศ "สิทธิ์พิเศษ/ของขวัญ"
-            //   บอกข้อมูลตรงๆ ว่ามีกลุ่ม + มีดวงประจำวัน ลูกค้าตัดสินใจเอง
-            $message = "🌙 ติดตามเพจหรือเข้ากลุ่มแม่หมอจันทรา\n\n"
-                ."👁️ *ติดตามเพจ* — ดูดวงประจำวันได้ตอนตี 1 - 7 โมงเช้า\n\n"
-                ."👥 *กลุ่มแม่หมอจันทรา* — สายมูทำดวงด้วยกัน:\n"
-                ."💬 ปรึกษาแม่หมอ + คุยกับสมาชิกในกลุ่ม\n"
-                ."🃏 อัพเดต tarot tip + เคล็ดโหราศาสตร์\n"
-                ."🌟 บอกบุญถึงกัน\n\n"
-                .'👇 กดเลือกได้เลยค่ะ';
-
-            $payload = [
-                'attachment' => [
-                    'type' => 'template',
-                    'payload' => [
-                        'template_type' => 'button',
-                        'text' => mb_substr($message, 0, 640),
-                        'buttons' => [
-                            ['type' => 'web_url', 'title' => '👁️ ติดตามเพจ', 'url' => $trackFollowUrl],
-                            ['type' => 'web_url', 'title' => '👥 เข้ากลุ่มแม่หมอ', 'url' => $trackGroupUrl],
-                        ],
-                    ],
-                ],
-            ];
-
-            $sent = $this->sendButtonTemplate($recipientId, $payload);
-            if ($sent) {
-                $credit->markFollowPrompted();
-            }
-
-            return (bool) $sent;
-        } catch (\Throwable $e) {
-            Log::debug('sendFollowPagePromptToUser failed (non-blocking)', [
-                'user_id' => $recipientId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return false;
-        }
-    }
+    // 🗑️ (2026-09-01) ลบ sendFollowPagePromptToUser — ถูก kill-switch (return false) ตั้งแต่
+    //   2026-05-08 ("เอาออกไปก่อน ไม่ต้องปรากฎ") โค้ด 70+ บรรทัดหลัง return เป็น unreachable
+    //   มาตลอด + ขัดกฎห้ามขอ engagement ในคำตอบบอท — call site ทั้งหมดถูกลบพร้อมกันแล้ว
+    //   (ถ้าจะฟื้นในอนาคต ดู git history commit นี้ + tracking routes fortune.track.fb-follow/fb-group)
 
     /**
      * 🌟 (2026-05-04) ส่งกล่องเชิญเข้ากลุ่ม Facebook

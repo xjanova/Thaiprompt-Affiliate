@@ -207,11 +207,14 @@ class FortuneHoroscopeCampaign extends Model
      */
     public function scopeReadyToGenerate($query)
     {
+        // 🩹 (2026-09-01) scope ถูกเรียกแบบ static — `$this->timezone` ที่นี่ได้ค่า default
+        //   จาก $attributes เสมอ ไม่ใช่ timezone ของแถวแคมเปญ (บังเอิญถูกเพราะทุกแคมเปญ
+        //   เป็น Bangkok) — อ่าน config ให้ตรงความจริง ส่วน per-row timezone เทียบไม่ได้ใน SQL เดียว
         return $query->where('status', self::STATUS_ACTIVE)
             ->where(function ($q) {
                 // ยังไม่เคยสร้างวันนี้
                 $q->whereNull('last_generated_at')
-                    ->orWhereDate('last_generated_at', '<', now($this->timezone ?? 'Asia/Bangkok')->toDateString());
+                    ->orWhereDate('last_generated_at', '<', now(config('app.timezone', 'Asia/Bangkok'))->toDateString());
             });
     }
 

@@ -332,10 +332,39 @@ PROMPT;
 
         $sent = 0;
         $failed = 0;
+        $skipped = 0;
 
         foreach ($recipients as $recipient) {
             try {
-                $platformService = $channelManager->getPlatform($recipient->platform);
+                $platform = (string) ($recipient->platform ?: 'facebook');
+                $uid = (string) $recipient->facebook_user_id;
+
+                // 🔕 (2026-09-01) เคารพ opt-out — คนกด "ไม่ต้องส่งอีก" ห้ามโดนแคมเปญ
+                //   (เลน DM อื่นทุกเลนเช็คด่านนี้อยู่แล้ว เลนแคมเปญเคยหลุด)
+                if (! \App\Models\FortuneUserCredit::canReceiveOutbound($uid, $platform)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                // 🛡️ (2026-09-01) ห้ามแทรกลูกค้าที่กำลังดูดวง/มีบิลค้างอยู่ —
+                //   กฎ never_interrupt_payment_to_prediction_flow
+                if (\App\Models\FortuneReading::hasActiveReading($platform, $uid)) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                // 🚦 (2026-09-01) แคมเปญ LINE = push ไม่วิกฤต และกินถึง 2 push/คน (รูป+ข้อความ)
+                //   เช็คกันชนโควตาต่อหัว (ผลถูกแคช ~10 นาที ⇒ พอโควตาต่ำ รายที่เหลือโดนข้ามตามกัน)
+                if ($platform === 'line'
+                    && ! app(\App\Services\LineFortuneService::class)->canSpendNonCriticalPush()) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $platformService = $channelManager->getPlatform($platform);
                 if (! $platformService) {
                     $failed++;
 
@@ -358,26 +387,22 @@ PROMPT;
                     }
 
                     if ($chartUrl) {
-                        // บันทึก chart URL ลงใน reading ล่าสุดของผู้ใช้
-                        FortuneReading::where('facebook_user_id', $recipient->facebook_user_id)
-                            ->latest()
-                            ->first()
-                            ?->update(['reading_image_url' => $chartUrl]);
-
-                        $platformService->sendImage($recipient->facebook_user_id, $chartUrl);
+                        // 🐛 (2026-09-01) เลิกเขียน chart การตลาดทับ reading_image_url ของ reading
+                        //   ล่าสุดของลูกค้า — ใบนั้นอาจเป็นบิลจ่ายเงิน = ปนเปื้อนข้อมูลคำทำนายจริง
+                        $platformService->sendImage($uid, $chartUrl);
                         usleep(500000); // 0.5 วินาที ให้ภาพส่งก่อน
                     }
                 } catch (\Exception $chartErr) {
                     // ส่ง chart ไม่ได้ ไม่ blocking → ยังส่งข้อความต่อ
                     Log::warning('Marketing campaign: ส่ง chart image ไม่สำเร็จ', [
                         'campaign_id' => $campaign->id,
-                        'user_id' => $recipient->facebook_user_id,
+                        'user_id' => $uid,
                         'error' => $chartErr->getMessage(),
                     ]);
                 }
 
                 // ส่งข้อความคำทำนาย
-                $success = $platformService->sendMessage($recipient->facebook_user_id, $message, ['from_admin' => true]);
+                $success = $platformService->sendMessage($uid, $message, ['from_admin' => true]);
                 $success ? $sent++ : $failed++;
 
                 // หน่วงเวลาเพื่อไม่ให้โดน rate limit
@@ -399,9 +424,10 @@ PROMPT;
             'name' => $campaign->name,
             'sent' => $sent,
             'failed' => $failed,
+            'skipped' => $skipped, // opt-out / active reading / LINE quota guard
         ]);
 
-        return ['sent' => $sent, 'failed' => $failed];
+        return ['sent' => $sent, 'failed' => $failed, 'skipped' => $skipped];
     }
 
     /**

@@ -176,27 +176,8 @@ class FortuneBotMode
         }
     }
 
-    /**
-     * 🌙 ลูกค้าคนนี้อยู่ในขอบเขตของโหมดดูดวงรายวันไหม
-     *
-     * ⚠️ ต้องเช็ค platform ทุกครั้ง — LINE ใช้ FortuneConversationService::processMessage
-     *    ตัวเดียวกับ Facebook ถ้าไม่กันไว้ ด่านดักวันเกิดจะไปแย่งข้อความลูกค้า LINE
-     *    ที่พิมพ์วันเกิดในบริบทอื่น (โหมดนี้ไม่มี DM ชวนฝั่ง LINE เลย)
-     *
-     * @param  string  $platform  'facebook' | 'line'
-     */
-    public function dailyAppliesTo(string $platform, ?string $platformUserId): bool
-    {
-        if (! $this->isDaily()) {
-            return false;
-        }
-
-        if ($platform !== self::INTERCEPT_PLATFORM) {
-            return false;
-        }
-
-        return ! empty($platformUserId);
-    }
+    // 🗑️ (2026-09-01) ลบ dailyAppliesTo — dead code 0 call site มานาน (brain จดไว้ว่า
+    //   "อย่าไปแก้ตาม") ตัวจริงของเลนรายวันคือ dailyReplyAllowedFor ด้านล่าง — ลบทิ้งกันหลงใช้
 
     /**
      * 🎁 (2026-08-01) ด่านขาเข้า "ตอบวันเกิดรับดวงฟรี" ครอบคนนี้ไหม — กว้างกว่า dailyAppliesTo

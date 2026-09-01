@@ -1033,6 +1033,10 @@ trait ProSessionTrait
     {
         try {
             $aiService = new FortuneAIService($this->settings);
+            // 🪪 (2026-09-01) ผูก usage log กับบิล — เดิมเลน Q&A ไม่เรียก forReading เลย
+            //   ⇒ ai_api_key_usage_logs.reading_id = NULL ทั้งเลน post_reading_deep/celtic_premium
+            //   คิดต้นทุน AI ต่อบิลขาดฝั่งคุยต่อทั้งก้อน (จุด gen หลักผูกครบแล้ว)
+            $aiService->forReading($reading);
             $type = (string) $reading->getConversationState('pro_session_type', 'deep');
             $systemPrompt = $this->buildProSessionSystemPrompt($reading, $type);
 

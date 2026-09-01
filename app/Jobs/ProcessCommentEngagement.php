@@ -175,7 +175,7 @@ class ProcessCommentEngagement implements ShouldQueue
 
             $allowDm = ($this->data['allow_dm'] ?? true)
                 && ! (FortuneCommentEngagement::hasDmRecently($userId, 24, $pageId)
-                    || FortunePostReaction::hasDmSuccessRecently($userId, 24));
+                    || FortunePostReaction::hasDmSuccessRecently($userId, 24, $pageId));
 
             $allowPublicReply = ($this->data['allow_public_reply'] ?? true)
                 && FortuneCommentEngagement::hasPublicReplyQuota($userId, $pageId);
@@ -829,9 +829,8 @@ class ProcessCommentEngagement implements ShouldQueue
                 ]);
             }
 
-            // 5.5 👁️ Follow-page prompt — gated ที่ DB (cooldown 7 วัน + skip ถ้าติดตามแล้ว)
-            //     ส่งหลัง DM main เพื่อโน้มน้าวให้กดติดตาม → รับดวงประจำวันทุกวัน
-            $facebookService->sendFollowPagePromptToUser($userId);
+            // 🗑️ (2026-09-01) ลบ call follow-page prompt — service method ถูก kill-switch
+            //   (return false ปิดตาย 2026-05-08) call นี้เป็น no-op ที่หลอกคนอ่านว่ายังทำงาน
 
             FortuneCommentEngagement::create([
                 'facebook_user_id' => $userId,

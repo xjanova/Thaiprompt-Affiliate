@@ -83,10 +83,10 @@ class FortuneCelticRecover extends Command
             //   จับทุก status — pending_payment, picking, completed (force-completed bug),
             //   awaiting_question (เคยแสดงไพ่แต่ flow หลุด)
             //   ยกเว้น: cancelled / qa_window_expired (legitimate end)
+            // 🩹 (2026-09-01) ตัด 'cancelled'/'expired' ทิ้ง — status พวกนี้ไม่มีจริงในระบบ
+            //   (บิลยกเลิก = COMPLETED + is_paid=0 + cancellation_reason) ใส่ไว้ = หลอกคนอ่าน
             $excludedStatuses = [
-                'cancelled',                    // ลูกค้ายกเลิกเอง
-                'celtic_qa_window_expired',     // หมดเวลาถาม Q
-                'expired',                      // บิลหมดอายุ
+                'celtic_qa_window_expired',     // หมดเวลาถาม Q (legitimate end)
             ];
 
             $candidates = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
@@ -115,7 +115,7 @@ class FortuneCelticRecover extends Command
                 $r->facebook_user_name ?? '-',
                 $r->conversation_status,
                 $r->is_paid ? '✓' : '✗',
-                $r->getCelticPickedCount() . '/10',
+                $r->getCelticPickedCount().'/10',
                 $r->updated_at?->diffForHumans(),
             ])->toArray()
         );
@@ -142,6 +142,7 @@ class FortuneCelticRecover extends Command
                 if (empty($userId)) {
                     $this->warn("  #{$reading->id} skip — ไม่มี user_id");
                     $failed++;
+
                     continue;
                 }
 
@@ -167,9 +168,9 @@ class FortuneCelticRecover extends Command
 
                 // Add recovery header (override ส่วนหัวเดิม)
                 $response['message'] = "🔔 *ขออภัยที่ทำให้รอนะคะ*\n"
-                    . "ระบบตรวจพบว่ายังไม่ได้ทำนายให้สมบูรณ์ — ขอกู้ข้อมูลให้ตอนนี้ค่ะ ⬇️\n\n"
-                    . "═══════════════════════\n\n"
-                    . ($response['message'] ?? '');
+                    ."ระบบตรวจพบว่ายังไม่ได้ทำนายให้สมบูรณ์ — ขอกู้ข้อมูลให้ตอนนี้ค่ะ ⬇️\n\n"
+                    ."═══════════════════════\n\n"
+                    .($response['message'] ?? '');
 
                 $sent = $channelManager->sendResponse($platform, $userId, $response, [
                     'from_admin' => true,

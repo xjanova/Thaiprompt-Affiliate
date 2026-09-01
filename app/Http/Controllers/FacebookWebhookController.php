@@ -72,6 +72,15 @@ class FacebookWebhookController extends Controller
     protected $settings;
 
     /**
+     * 🎯 (2026-09-01) ธง one-shot: event ปัจจุบันมาจากการกดปุ่ม (postback/quick reply)
+     *
+     * ใช้ส่ง `is_explicit_action` เข้า ChannelManager (parity กับ LINE ที่ส่งมาตลอด) —
+     * ตั้งที่ทางเข้า processPostback/handleQuickReply · reset ที่ processMessage และถูก
+     * "บริโภค" (reset) ตอน processConversationalMessage หยิบไปใช้ กันรั่วข้าม event ใน batch เดียว
+     */
+    protected bool $explicitActionEvent = false;
+
+    /**
      * FortuneChannelManager — ตัวกลางจัดการ routing + Rich Message response
      * ใช้ตรรกะเดียวกันกับ LINE Bot (keyword matching, state machine, AI chat)
      */
@@ -1046,7 +1055,9 @@ class FacebookWebhookController extends Controller
             //       หลังแยกนับ DM/คอมเมนต์ มีแถวที่ "ตอบคอมเมนต์อย่างเดียว ไม่ได้ DM" แล้ว
             //       ถ้ายังนับทุกแถว = คนที่แค่ได้คำตอบใต้คอมเมนต์จะถูกตัดสิทธิ์ DM ทั้งที่ยังไม่เคยได้
             //    🏬 (2026-08-27) โควตา DM ผูกกับเพจนี้ชัดเจน ไม่พึ่งว่า PSID แยกเพจให้เอง
-            $hasRecentReactionDm = FortunePostReaction::hasDmSuccessRecently($userId, 24);
+            $hasRecentReactionDm = FortunePostReaction::hasDmSuccessRecently(
+                $userId, 24, \App\Services\Fortune\FortunePageContext::currentId()
+            );
             $hasRecentCommentDm = FortuneCommentEngagement::hasDmRecently(
                 $userId, 24, \App\Services\Fortune\FortunePageContext::currentId()
             );
@@ -2250,11 +2261,8 @@ class FacebookWebhookController extends Controller
             $inviteMessage->recordSend();
         }
 
-        // 2.5 ส่งปุ่มติดตามเพจ (best-effort — เพื่อ algorithm boost)
-        // ลูกค้ากดติดตาม → FB อัลกอริธึมเห็นว่าเพจมี follower เพิ่ม + แจ้งเตือนได้ตลอด
-        if ($dmSent) {
-            $this->sendFollowPagePrompt($fromId, $commentId);
-        }
+        // 🗑️ (2026-09-01) ลบ call ปุ่มติดตามเพจ — sendFollowPagePromptToUser ถูก kill-switch
+        //   (return false ปิดตาย) มานานแล้ว call นี้เป็น no-op หลอกคนอ่านว่ายังทำงาน
 
         // 3. บันทึก engagement เฉพาะเมื่อ DM ส่งสำเร็จ
         //    ถ้าส่งไม่สำเร็จ → ไม่ dedupe ลูกค้า ให้ retry ได้ในคอมเม้นต์ถัดไป
@@ -2674,6 +2682,10 @@ class FacebookWebhookController extends Controller
      */
     protected function processMessage(array $messaging): void
     {
+        // 🎯 (2026-09-01) ข้อความพิมพ์เอง = ไม่ใช่ explicit action — reset ธง one-shot
+        //   (กัน event ก่อนหน้าใน batch เดียวกันตั้งค้างไว้)
+        $this->explicitActionEvent = false;
+
         $senderId = $messaging['sender']['id'] ?? null;
 
         if (empty($senderId)) {
@@ -2735,6 +2747,19 @@ class FacebookWebhookController extends Controller
         //    user spec (2026-05-17): "กดเลือกแพคเกจแล้ว ต้องเข้าโฟลการจ่ายเงิน อย่าขัด"
         $quickReplyPayload = $messaging['message']['quick_reply']['payload'] ?? null;
         if ($quickReplyPayload) {
+            // 📇 (2026-09-01) กด quick reply = "คุยจริง" — ต้องบันทึก contact signal ตรงนี้
+            //   (เส้นนี้ return ก่อนถึงจุด record ของทาง message ด้านล่าง → เดิมคนที่คุยด้วยปุ่มล้วน
+            //   ดูเป็น "คนเงียบ" ในตัวกรอง link-spammer; ทาง postback บันทึกอยู่แล้ว :~4150)
+            try {
+                app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
+                    'facebook', $senderId, '', [], true, false,
+                );
+            } catch (\Throwable $e) {
+                Log::debug('FB quick reply: contact signal record fail (non-blocking)', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             $this->handleQuickReply($senderId, $quickReplyPayload);
 
             return;
@@ -2765,6 +2790,17 @@ class FacebookWebhookController extends Controller
                 'payload' => $titlePayload,
                 'text_preview' => mb_substr($messaging['message']['text'] ?? '', 0, 50),
             ]);
+
+            // 📇 (2026-09-01) ป้ายปุ่มหล่นมาเป็นข้อความ = กดปุ่มจริง — บันทึก contact signal ด้วย
+            try {
+                app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
+                    'facebook', $senderId, '', [], true, false,
+                );
+            } catch (\Throwable $e) {
+                Log::debug('FB title-payload: contact signal record fail (non-blocking)', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             $this->handleQuickReply($senderId, $titlePayload);
 
@@ -2927,7 +2963,9 @@ class FacebookWebhookController extends Controller
                 $senderId,
                 $messageText,
                 $attachments,
-                ! empty($quickReplyPayload),
+                // 🩹 (2026-09-01) จุดนี้ = false เสมอ — เส้น quick reply return ไปก่อนหน้านานแล้ว
+                //   (การกดปุ่มถูกบันทึกที่สาขา quick reply/title-payload ด้านบนแทน)
+                false,
                 $hasReadingOrPaid,
             );
         } catch (\Throwable $e) {
@@ -3315,10 +3353,8 @@ class FacebookWebhookController extends Controller
         // ใช้ Conversational Flow ใหม่
         $this->processConversationalMessage($senderId, $messageText);
 
-        // 👁️ Follow-page prompt: ส่งหลัง bot ตอบ — gated ที่ DB
-        //   (2026-05-02) ปรับเป็น "ครั้งแรกของวัน" — skip ถ้าติดตามแล้ว / ส่งวันนี้ไปแล้ว
-        //   user request: "ทักแชทครั้งแรกของวันนั้น ถ้ายังไม่ติดตาม ให้ปรากฏเสมอ"
-        $this->facebookService->sendFollowPagePromptToUser($senderId);
+        // 🗑️ (2026-09-01) ลบ call follow-page prompt — service method ถูก kill-switch (return false)
+        //   ตามกฎห้ามขอ engagement ในคำตอบบอท call เดิมเป็น no-op ที่หลอกคนอ่าน
     }
 
     /**
@@ -4137,6 +4173,9 @@ class FacebookWebhookController extends Controller
 
         Cache::put('fb_last_inbound:'.$senderId, true, now()->addHours(24));
 
+        // 🎯 (2026-09-01) postback = explicit action — ติดธง one-shot ให้ ChannelManager รู้
+        $this->explicitActionEvent = true;
+
         try {
             app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
                 'facebook',
@@ -4652,19 +4691,6 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * 👁️ ส่งข้อความกระตุ้นให้กดติดตามเพจ (หลังส่ง DM comment engagement)
-     *
-     * เป็นข้อความที่ 2 หลัง DM Quick Replies — ใช้ Button Template
-     * เพื่อให้กดติดตามได้ง่าย + รับการแจ้งเตือนดวงประจำวันที่ระบบโพสรายชั่วโมง
-     */
-    protected function sendFollowPagePrompt(string $userId, ?string $commentId = null): void
-    {
-        // ใช้ service method ที่มี shouldPromptFollow gating + postback button
-        // (refactored 2026-04-28 — เดิมส่งทุกครั้ง ตอนนี้เช็ค + dedupe + ติดตามผ่าน DB)
-        $this->facebookService->sendFollowPagePromptToUser($userId);
-    }
-
-    /**
      * 💗 จัดการเมื่อลูกค้า react ข้อความ (❤️/👍/😆/😮/😢/😡)
      *
      * Throttle: 1 ครั้ง/user/60 วินาที — ป้องกันรัวสแปม
@@ -4761,9 +4787,7 @@ class FacebookWebhookController extends Controller
             //    + เนียนชวนดูดวง (ผ่าน chat_system_prompt) เมื่อบริบทเหมาะ
 
             // 🚫 (2026-05-08) Group invite ลบออกจาก get_started — user feedback "ส่งทำไม ไม่มีประโยชน์"
-            //   กล่อง group invite รบกวน UX ใหม่ที่ทักมาครั้งแรก → ลบทิ้ง
-            //   ถ้าจะใช้อนาคต — uncomment + ตั้ง fortune_group_invite_enabled=true
-            // $this->maybeInviteToGroup($senderId, 'get_started');
+            //   (2026-09-01: ลบ maybeInviteToGroup ทิ้งแล้ว — ถ้าจะฟื้น ดู sendGroupInvitePrompt ใน service)
 
         } catch (\Exception $e) {
             Log::error('Get Started Error: '.$e->getMessage(), [
@@ -4778,86 +4802,8 @@ class FacebookWebhookController extends Controller
         }
     }
 
-    /**
-     * 🌟 ชวนเข้ากลุ่ม Facebook (non-blocking)
-     *
-     * เงื่อนไขการเชิญ:
-     *   - get_started: ทุก user ที่กด GET_STARTED
-     *   - post_prediction: หลังส่งคำทำนาย (อนาคต)
-     *   - comment_dm: หลัง comment engagement DM (อนาคต)
-     *
-     * Service ภายใน gate ด้วย: toggle, group_url, 7-day cooldown
-     */
-    protected function maybeInviteToGroup(string $senderId, string $context = 'get_started'): void
-    {
-        try {
-            // ✅ เชิญเฉพาะคนที่ยังไม่เคยดูดวงเลย (ตาม spec ของ user)
-            if ($context === 'get_started') {
-                $hasReading = FortuneReading::where('facebook_user_id', $senderId)
-                    ->where('platform', 'facebook')
-                    ->exists();
-                if ($hasReading) {
-                    return; // เคยดูดวงแล้ว ไม่ต้องเชิญ
-                }
-            }
-
-            // หน่วงเล็กน้อยให้ welcome ขึ้นก่อนเป็น UX ที่ดี
-            usleep(300_000); // 0.3 วินาที
-
-            $this->facebookService->sendGroupInvitePrompt($senderId);
-        } catch (\Throwable $e) {
-            Log::debug('maybeInviteToGroup failed (non-blocking)', [
-                'sender_id' => $senderId,
-                'context' => $context,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * สร้างข้อความต้อนรับสำหรับผู้ใช้ใหม่
-     *
-     * @param  string  $userName  ชื่อผู้ใช้
-     */
-    protected function buildWelcomeMessage(string $userName): string
-    {
-        // 🎁 (2026-05-04) ลบ mention "ฟรี" ออกทั้งหมด — ฟรีให้เฉพาะตอบกลับ DM react/comment
-        //   เดิม: มีบล็อก "🆓 ดูดวงพื้นฐาน (ฟรี)" + "พิมพ์ 'เช็คสิทธิ์' เพื่อดูครั้งฟรี"
-        //   ใหม่: เน้นบริการเสียเงิน 39/99 อย่างเดียว (welcome ปกติ — ไม่ใช่ react/comment DM)
-
-        // กันซ้อน "คุณคุณ" — ถ้า fallback เป็น 'คุณ' ให้ใช้ greeting สั้น
-        $greeting = ($userName === 'คุณ' || $userName === '' || empty($userName))
-            ? '✨ *สวัสดีค่ะ!*'
-            : "✨ *สวัสดีค่ะ คุณ{$userName}!*";
-        $message = $greeting."\n\n";
-        $message .= "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n";
-        $message .= "ทางเพจพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n";
-
-        $message .= "═══════════════════════\n";
-        $message .= "📋 *บริการของเรา*\n";
-        $message .= "═══════════════════════\n\n";
-
-        // ใช้ราคาจาก settings (dynamic) — ไม่ hardcode
-        $deepPriceText = number_format($this->getDeepReadingPriceFromSettings(), 0);
-        $qCount = FortuneConversationService::REQUIRED_QUESTIONS;
-        $message .= "💎 *ดูดวงเชิงลึก ({$qCount} คำถาม {$deepPriceText} บาท)*\n";
-        $message .= "ทำนายเชิงลึกจากดาวเจ้าชนะ + ไพ่ยิปซีจริง — ไม่ยกเมฆ\n\n";
-
-        $message .= "═══════════════════════\n";
-        $message .= "💡 *วิธีเริ่มต้น*\n";
-        $message .= "═══════════════════════\n\n";
-
-        $message .= "พิมพ์อะไรก็ได้มาคุยกับทางเพจได้เลยค่ะ!\n\n";
-
-        $message .= "ตัวอย่าง:\n";
-        $message .= "• ดวงความรักปีนี้เป็นอย่างไร\n";
-        $message .= "• ปีนี้จะได้เลื่อนตำแหน่งไหม\n";
-        $message .= "• การเงินเดือนหน้าเป็นอย่างไร\n\n";
-
-        $message .= 'กดปุ่มด้านล่างหรือพิมพ์เลยค่ะ 👇';
-
-        return $message;
-    }
+    // 🗑️ (2026-09-01) ลบ dead code: maybeInviteToGroup (call เดียวถูก comment out ตั้งแต่ 2026-05-08)
+    //   และ buildWelcomeMessage (call ถูกลบตั้งแต่ 2026-05-08 เหลือแต่ body) — audit 2026-09-01
 
     /**
      * ประมวลผลข้อความแบบ Conversational ผ่าน FortuneChannelManager
@@ -4972,11 +4918,20 @@ class FacebookWebhookController extends Controller
             // ChannelManager จะเรียก conversationService->processMessage() ภายใน
             // แล้วส่ง Rich Message (Button/Generic Template) ตอบกลับอัตโนมัติ
             if ($this->channelManager) {
+                // 🎯 (2026-09-01) ส่งธง explicit action (ปุ่ม/quick reply) — parity กับ LINE
+                //   ให้ด่าน takeover ใน ChannelManager bypass ปุ่มได้ตาม spec "postback bypass เสมอ"
+                $extra = [];
+                if ($this->explicitActionEvent) {
+                    $extra['is_explicit_action'] = true;
+                    $this->explicitActionEvent = false; // one-shot — กันรั่วไป event ถัดไป
+                }
+
                 $result = $this->channelManager->processMessage(
                     FortuneChannelManager::PLATFORM_FACEBOOK,
                     $senderId,
                     $messageText,
-                    $userProfile
+                    $userProfile,
+                    $extra
                 );
 
                 // ปิด typing indicator
@@ -5874,6 +5829,11 @@ class FacebookWebhookController extends Controller
 
     protected function handleQuickReply(string $senderId, string $payload): void
     {
+        // 🎯 (2026-09-01) quick reply/ปุ่ม = explicit action — ติดธง one-shot ให้
+        //   processConversationalMessage ส่ง is_explicit_action ต่อ (parity กับ LINE :1662
+        //   ที่ส่งมาตลอด — เดิม FB ไม่เคยส่ง ทำให้ช่วง /aistop ปุ่มโดนด่าน takeover ชั้นในกลืน)
+        $this->explicitActionEvent = true;
+
         // 🚫 (2026-08-21) ครอบ quick reply + ป้ายปุ่มที่หล่นมาเป็นข้อความ
         //   (สองทางนี้ return ที่ processMessage ก่อนถึงด่านแบนเดิมที่บรรทัด ~2620)
         if ($this->buttonBlockedByBan($senderId, $payload)) {
@@ -6135,33 +6095,8 @@ class FacebookWebhookController extends Controller
         };
     }
 
-    /**
-     * ส่งข้อความครบจำนวนฟรี (พื้นฐาน)
-     */
-    protected function sendLimitMessage(array $comment): void
-    {
-        $message = $this->facebookService->getLimitExceededMessage();
-
-        if ($this->settings->respond_in_comment) {
-            $this->facebookService->replyToComment($comment['comment_id'] ?? '', $message);
-        } else {
-            $this->facebookService->sendMessage($comment['from']['id'] ?? '', $message);
-        }
-    }
-
-    /**
-     * ส่งข้อความครบจำนวนฟรี (เชิงลึก)
-     */
-    protected function sendDeepLimitMessage(array $comment): void
-    {
-        $message = $this->facebookService->getDeepLimitExceededMessage();
-
-        if ($this->settings->respond_in_comment) {
-            $this->facebookService->replyToComment($comment['comment_id'] ?? '', $message);
-        } else {
-            $this->facebookService->sendMessage($comment['from']['id'] ?? '', $message);
-        }
-    }
+    // 🗑️ (2026-09-01) ลบ dead code: sendLimitMessage / sendDeepLimitMessage —
+    //   ถูกแทนด้วย redirect ไป engagement flow นานแล้ว (0 call site) — audit 2026-09-01
 
     /**
      * จัดการเมื่อ user กดปุ่มเลือกหมวดคำถาม (Quick Reply)

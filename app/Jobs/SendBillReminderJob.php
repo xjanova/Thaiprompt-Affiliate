@@ -97,6 +97,21 @@ class SendBillReminderJob implements ShouldQueue
         $platform = $reading->platform
             ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
 
+        // 🚦 (2026-09-01) ทวงบิลฝั่ง LINE = push ไม่วิกฤต (นโยบายเจ้าของ 2026-08-31: push สงวนไว้
+        //   ให้ของลูกค้าจ่ายแล้ว) — โควตาต่ำกว่ากันชน → "สละ" การทวง stage นี้ไปเลย ไม่เลื่อน
+        //   ⚠️ ต้อง mark stage ว่าใช้แล้ว ไม่งั้น cron ทุกนาทีจะวนกลับมา gen AI ใหม่ตลอดอายุบิล
+        //   และเช็คก่อน gen AI — ไม่จ่ายค่า AI ให้ข้อความที่จะไม่ได้ส่ง
+        if ($platform === 'line'
+            && ! app(\App\Services\LineFortuneService::class)->canSpendNonCriticalPush()) {
+            $reading->setConversationState('bill_reminder_stage', $this->stage);
+            Log::info('SendBillReminderJob: ข้ามทวงบิล LINE — กันโควตา push ไว้ให้ของลูกค้าจ่ายแล้ว', [
+                'reading_id' => $reading->id,
+                'stage' => $this->stage,
+            ]);
+
+            return;
+        }
+
         // Load persona context (optional)
         $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
         $personaContext = $persona ? $persona->toAiContextBlock() : '';
@@ -232,8 +247,11 @@ class SendBillReminderJob implements ShouldQueue
     private function extractRagQueryText(FortuneReading $reading, bool $isAwaitingMethod): string
     {
         try {
-            $platform = ! empty($reading->line_user_id) ? 'line' : 'facebook';
-            $userId = $reading->facebook_user_id ?: $reading->line_user_id ?: $reading->platform_user_id;
+            // 🩹 (2026-09-01) fortune_readings ไม่มีคอลัมน์ line_user_id — ของเดิมอ่านค่าผี (null เสมอ)
+            //   ⇒ platform='facebook' ตลอด → query history ผิด platform → RAG ลูกค้า LINE จืดเป็น generic
+            $userId = $reading->facebook_user_id ?: $reading->platform_user_id;
+            $platform = $reading->platform
+                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
             if (! empty($userId)) {
                 $conv = \App\Models\LineBotConversation::where('line_user_id', $userId)
                     ->where('platform', $platform)

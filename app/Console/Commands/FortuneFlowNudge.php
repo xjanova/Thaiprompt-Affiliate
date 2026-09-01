@@ -263,6 +263,20 @@ class FortuneFlowNudge extends Command
                 return;
             }
 
+            // 🚦 (2026-09-01) nudge ฝั่ง LINE = push ไม่วิกฤต (นโยบาย 2026-08-31: push สงวนให้ของ
+            //   ลูกค้าจ่ายแล้ว) — โควตาต่ำกว่ากันชน → สละ nudge นี้ (mark ว่าใช้สิทธิ์แล้ว กันวนกลับมา)
+            if ($platform === 'line'
+                && ! app(\App\Services\LineFortuneService::class)->canSpendNonCriticalPush()) {
+                $reading->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
+                $stats['skip']++;
+                Log::info('FortuneFlowNudge: ข้าม nudge LINE — กันโควตา push ไว้ให้ของลูกค้าจ่ายแล้ว', [
+                    'reading_id' => $reading->id,
+                    'step' => $step,
+                ]);
+
+                return;
+            }
+
             try {
                 $ok = $service->sendQuickReplies($userId, $message, $buttons);
                 if ($ok) {

@@ -46,6 +46,7 @@ class FortuneExpireStuckPaid extends Command
     protected $signature = 'fortune:expire-stuck-paid
                             {--dry : Dry run — แสดงรายการ แต่ไม่ alert/push จริง}
                             {--hours=24 : threshold ที่ถือว่าเกินเยียวยา (default 24 ชม.)}
+                            {--max-age-days=30 : อายุบิลเก่าสุดที่กวาด — กัน backlog ประวัติศาสตร์ท่วมคิวแอดมิน}
                             {--limit=50 : จำนวนสูงสุดที่ process ต่อรอบ}';
 
     protected $description = 'Mark paid+incomplete readings เกิน 24 ชม. ว่า admin_review_needed + alert admin (last-resort safety net)';
@@ -58,6 +59,13 @@ class FortuneExpireStuckPaid extends Command
 
         $cutoff = now()->subHours($hours);
 
+        // 🛡️ (2026-09-01 จับผี #3) floor อายุบิล — ตาข่ายเพิ่งขยายครอบ collecting_*/picking 1-9
+        //   ถ้าไม่มี floor: รันแรกกวาดบิลค้างย้อนหลังทั้งประวัติศาสตร์ แล้ว admin_review_alerted
+        //   จะไปปลด guard "บิลจ่ายแล้วต้อง resume" (hasPaidActiveReading/isInPrediction) ของบิลเก่า
+        //   ทั้งก้อนแบบลูกค้าไม่รู้ตัว — จำกัดที่ 30 วันล่าสุดพอ (เก่ากว่านั้น = จบไปแล้วโดยพฤตินัย)
+        $maxAgeDays = max(2, (int) $this->option('max-age-days'));
+        $oldestPaidAt = now()->subDays($maxAgeDays);
+
         // ─────────────────────────────────────────────────────────────────
         // Phase 1: Deep 39฿ — paid + (PAID หรือ COMPLETED+no deep_response)
         // ─────────────────────────────────────────────────────────────────
@@ -67,6 +75,12 @@ class FortuneExpireStuckPaid extends Command
                 ->where('is_paid', true)
                 ->where(function ($q) {
                     $q->where('conversation_status', FortuneReading::STATUS_PAID)
+                        // 🕳️ (2026-09-01) ปิดรูตาข่าย: บิลจ่ายแล้วที่ค้างสถานะเก็บข้อมูล
+                        //   (collecting_birthdate/questions/tarot เช่น จ่ายแล้วไม่เคยบอกวันเกิด)
+                        //   เดิมไม่มี cron ตัวไหน alert เลย (fortune:recover-paid-no-birthdate
+                        //   ถูกปิดใน scheduler โดยเจตนา = เครื่องมือ manual) → เพิ่มเข้าตาข่าย
+                        //   last-resort นี้: alert แอดมินอย่างเดียว ไม่ auto-action
+                        ->orWhereIn('conversation_status', FortuneReading::DEEP_ACTIVE_STATUSES)
                         ->orWhere(function ($q2) {
                             $q2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
                                 ->where(function ($q3) {
@@ -77,6 +91,7 @@ class FortuneExpireStuckPaid extends Command
                 })
                 ->whereNotNull('paid_at')
                 ->where('paid_at', '<=', $cutoff)
+                ->where('paid_at', '>=', $oldestPaidAt)
                 // กัน duplicate alert: ถ้าเคย alert แล้ว → skip (รอ admin จัดการ)
                 ->where(function ($q) {
                     $q->whereNull('conversation_state')
@@ -102,13 +117,12 @@ class FortuneExpireStuckPaid extends Command
             $celticStuck = FortuneReading::query()
                 ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
                 ->where('is_paid', true)
-                ->whereNotIn('conversation_status', [
-                    FortuneReading::STATUS_COMPLETED, // ปิดปกติแล้ว ไม่ถือว่าค้าง
-                    'cancelled',
-                    'expired',
-                ])
+                // 🩹 (2026-09-01) ตัด 'cancelled'/'expired' ทิ้ง — status พวกนี้ไม่มีจริงในระบบ
+                //   (บิลยกเลิก = COMPLETED + is_paid=0) ใส่ไว้ = หลอกคนอ่านว่ามี
+                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
                 ->whereNotNull('paid_at')
                 ->where('paid_at', '<=', $cutoff)
+                ->where('paid_at', '>=', $oldestPaidAt)
                 ->where(function ($q) {
                     $q->whereNull('conversation_state')
                         ->orWhere(function ($q2) {
@@ -118,18 +132,10 @@ class FortuneExpireStuckPaid extends Command
                 })
                 ->orderBy('paid_at', 'asc')
                 ->limit($limit)
-                ->get()
-                // กรองเฉพาะ Celtic ที่ยังไม่ได้เปิดไพ่เลย (picked=0) — null-safe via method_exists
-                ->filter(function ($r) {
-                    if (! method_exists($r, 'getCelticPickedCount')) {
-                        return true; // ไม่มี method = ปลอดภัยกว่ารวมไว้
-                    }
-                    try {
-                        return $r->getCelticPickedCount() === 0;
-                    } catch (\Throwable $e) {
-                        return true; // exception = รวมไว้ admin ตรวจเอง
-                    }
-                });
+                ->get();
+            // 🕳️ (2026-09-01) เลิกกรอง picked=0 — ลูกค้าที่เปิดไพ่ค้าง 1-9 ใบแล้วหาย >24 ชม.
+            //   เดิมหลุดจากตาข่ายทุกตัว (reminder จับเฉพาะช่วง 30m-6h / finalize จับเฉพาะ AWAITING)
+            //   ตาข่าย last-resort นี้ต้องเห็น "ทุกบิล Celtic จ่ายแล้วที่ไม่ COMPLETED" — alert อย่างเดียว
         } catch (\Throwable $e) {
             $this->error('Celtic query ล้มเหลว: '.$e->getMessage());
             Log::error('Fortune Expire Stuck Paid: Celtic query failed', ['error' => $e->getMessage()]);
@@ -308,7 +314,8 @@ class FortuneExpireStuckPaid extends Command
             'reading_type' => $reading->reading_type,
             'bill_reference' => $billRef,
             'waited_hours' => $waitedHours,
-            'platform' => $platform,
+            // 🩹 (2026-09-01) เดิมอ้าง $platform ที่ไม่มีในเมธอดนี้ (undefined variable warning)
+            'platform' => $reading->platform,
         ]);
     }
 }

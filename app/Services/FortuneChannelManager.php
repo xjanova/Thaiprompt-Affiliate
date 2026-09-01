@@ -3074,17 +3074,21 @@ class FortuneChannelManager
                 })(),
 
                 // 💳 (2026-05-14) Payment info (LINE) — ส่งเลขบัญชี + QR
-                'payment_info' => (function () use ($lineService, $userId, $message, $result) {
+                //   💸 (2026-09-01) เดิม push รูป QR + push ข้อความ = 2 push ทั้งที่ตอบข้อความสด
+                //   → รวมเป็นชุดเดียว reply-first (ฟรี) + fallback push อัตโนมัติ
+                'payment_info' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $payMsgs = [];
                     $qrUrl = $result['payment_qr_url'] ?? null;
                     if ($qrUrl) {
                         try {
-                            $lineService->sendImage($userId, $qrUrl);
+                            $payMsgs[] = $lineService->imageMessageObject($qrUrl);
                         } catch (\Throwable $e) {
-                            Log::warning('LINE: ส่ง payment QR ไม่สำเร็จ', ['err' => $e->getMessage()]);
+                            Log::warning('LINE: เตรียมรูป payment QR ไม่สำเร็จ', ['err' => $e->getMessage()]);
                         }
                     }
+                    $payMsgs[] = ['type' => 'text', 'text' => mb_substr($message, 0, 4900)];
 
-                    return $lineService->sendMessage($userId, $message);
+                    return $lineService->sendMessagesWithReplyFallback($userId, $payMsgs, $replyToken);
                 })(),
 
                 // 🌍 (2026-08-23) ลูกค้าต่างประเทศถามเรื่องโอน (LINE) — แนบปุ่ม "จ่ายบัตร"
@@ -3099,7 +3103,8 @@ class FortuneChannelManager
                     }
 
                     if (empty($lineQr)) {
-                        return $lineService->sendMessage($userId, $message);
+                        // 💸 (2026-09-01) reply-first — token สดอยู่ใน closure แต่ของเดิมไม่ใช้ (push ฟรีๆ)
+                        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
                     }
 
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
@@ -3538,11 +3543,10 @@ class FortuneChannelManager
 
                 // 🆕 (2026-05-23) celtic_end_confirm — 2-step confirm dialog ก่อนจบ session (LINE)
                 //    user spec: "ถามก่อนว่าจะเลิกแล้วสรุปเลยจริงไหม เพราะบางคนมือไปกดผิด"
-                'celtic_end_confirm' => $lineService->sendMessage($userId, $message, [
-                    'quick_replies' => [
-                        ['label' => '✅ ใช่ ส่งสรุปเลย', 'text' => 'ส่งสรุปเลย'],
-                        ['label' => '↩️ ขอคุยต่ออีกหน่อย', 'text' => 'ขอคุยต่อ'],
-                    ],
+                //    💸 (2026-09-01) ตอบข้อความ "เลิก" ที่ลูกค้าเพิ่งพิมพ์ = token สด → reply ฟรี (เดิม push)
+                'celtic_end_confirm' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ ใช่ ส่งสรุปเลย', 'text' => 'ส่งสรุปเลย'],
+                    ['label' => '↩️ ขอคุยต่ออีกหน่อย', 'text' => 'ขอคุยต่อ'],
                 ]),
 
                 // 🎙️ (2026-05-08) celtic_session_ended (LINE) — ภาพ + closing
@@ -3675,24 +3679,29 @@ class FortuneChannelManager
 
                 // Celtic actions ที่เป็น text-only
                 // celtic_resume_qa → resume เข้า AWAITING_QUESTION (ลูกค้าพิมพ์คำถามเอง — ไม่ใส่ปุ่ม)
-                // 🛡️ (2026-05-21) Force push — ลูกค้าต้องได้ข้อความเสมอ
+                // 💸 (2026-09-01) เดิม "force push" ทั้งกลุ่ม (closure ไม่รับ $replyToken เลย) — เผาโควตา
+                //   1 push/ครั้งกับข้อความตอบกลับที่ลูกค้าเพิ่งพิมพ์มา (token สดอยู่ในมือ = reply ฟรี)
+                //   ทีมวัดเองแล้ว (ดู comment ที่ celtic_question_answered): LINE Reply Message Error = 0
+                //   ทั้งไฟล์ล็อก — เหตุผลเดิม "replyMessage ไม่เสถียร" ไม่จริง
+                //   → reply-first + fallback push อัตโนมัติ = "ลูกค้าต้องได้ข้อความเสมอ" เหมือนเดิม
                 'celtic_cancelled', 'celtic_completed', 'celtic_qa_window_expired',
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
                 // 🎧 (2026-06-20) On-demand voice ack/fail — text-only
                 'celtic_voice_generating', 'celtic_voice_failed',
-                'celtic_resume_qa' => (function () use ($lineService, $userId, $message, $result) {
-                    \Log::info('LINE Celtic text-only: force push', [
+                'celtic_resume_qa' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    \Log::info('LINE Celtic text-only: reply-first', [
                         'user_id' => $userId,
                         'action' => $result['action'] ?? null,
                         'msg_len' => mb_strlen($message),
+                        'has_reply_token' => ! empty($replyToken),
                     ]);
 
                     try {
-                        return $lineService->sendMessage($userId, $message);
+                        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
                     } catch (\Throwable $e) {
-                        \Log::error('LINE Celtic text-only push exception', [
+                        \Log::error('LINE Celtic text-only send exception', [
                             'user_id' => $userId,
                             'action' => $result['action'] ?? null,
                             'error' => $e->getMessage(),
@@ -4151,10 +4160,18 @@ class FortuneChannelManager
             }
         }
 
-        $lineService->sendRichMessage($userId, [
+        // 🐛 (2026-09-01) เดิมทิ้งผลลัพธ์แล้ว return true เสมอ — กล่องบิล (flex) push ล้มเหลว
+        //   caller ก็ยังเข้าใจว่าลูกค้าได้บิลแล้ว (ของหายเงียบ) → คืนผลส่งกล่องบิลจริง
+        $flexOk = (bool) $lineService->sendRichMessage($userId, [
             'alt_text' => 'ยอดโอน ฿'.number_format($amount, 2),
             'contents' => $paymentFlex,
         ]);
+
+        if (! $flexOk) {
+            Log::warning('FortuneChannelManager LINE: push กล่องบิล (flex) ล้มเหลว — แจ้ง caller ตามจริง', [
+                'user_id' => $userId,
+            ]);
+        }
 
         // 🆕 (2026-05-31) เลขบัญชีเป็นข้อความเดี่ยวๆ — กดค้างคัดลอกง่าย (เป็นมิตรกับผู้สูงอายุ)
         $copyableAccount = $result['copyable_account'] ?? null;
@@ -4166,7 +4183,7 @@ class FortuneChannelManager
             }
         }
 
-        return true;
+        return $flexOk;
     }
 
     /**

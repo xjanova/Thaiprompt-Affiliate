@@ -526,6 +526,18 @@ class FortuneStripeService
             ];
         }
 
+        // 🎇 (2026-09-01) CAS ตั้ง is_paid ตรง = confirmPayment() ที่ถูกเรียกทีหลังจะชน early-return
+        //   → side-effects หลังจ่าย (ล้างธงปิดปาก + eager persona) ไม่เคยทำงานสายบัตรเลย
+        //   ต้องยิงเองตรงนี้หลังชนะ race (idempotent + non-blocking ในตัวเมธอดอยู่แล้ว)
+        try {
+            $reading->fresh()?->firePaidSideEffects();
+        } catch (\Throwable $e) {
+            Log::warning('FortuneStripeService: firePaidSideEffects ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         Log::info('FortuneStripeService: Stripe payment confirmed', [
             'reading_id' => $reading->id,
             'session_id' => $sessionId,
@@ -567,52 +579,9 @@ class FortuneStripeService
             ];
         }
 
-        // ถ้ายัง pending → mark expired (caller อาจเลือก revert ไป awaiting_payment_method)
+        // ถ้ายัง pending → คืนสถานะด้วย logic เดียวกับหน้า cancel (แยกเป็นเมธอดกลาง 2026-09-01)
         if ($reading->conversation_status === FortuneReading::STATUS_PENDING_STRIPE_PAYMENT) {
-            // 🌍 (2026-08-23) บิลออกไปแล้ว (เลนบัตรต่างประเทศ) → คืนสถานะรอชำระเดิม
-            //   ห้ามโยนไป awaiting_payment_method: เมนูเลือกวิธีจ่ายเปิดเฉพาะตอน
-            //   enable_stripe_payment=true — ถ้าเมนูปิดอยู่ ลูกค้าจะค้างในสถานะที่ไม่มี handler จริง
-            //   และยอด QR ที่ยังจองอยู่ก็จะกลายเป็นบิลกำพร้า (SMS เข้าแต่ไม่มีอะไรรับ)
-            $hasOpenBill = ! empty($reading->bill_reference) && ! $this->isMenuEnabled();
-
-            if ($hasOpenBill) {
-                $restoreStatus = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
-                    ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
-                    : FortuneReading::STATUS_PENDING_PAYMENT;
-
-                // 🇹🇭 (2026-08-23) ตอนสลับมาเลนบัตร เราปิดบิลไทยทิ้งไปแล้ว
-                //    ลิงก์บัตรหมดอายุ = ลูกค้าเหลือ 0 ช่องทาง ทั้งที่บิลยังไม่ถึงกำหนดตาย (3 ชม.)
-                //    → จองยอด QR ไทยใหม่ให้ ไม่งั้นบิลกลายเป็นซาก: สถานะบอก "รอชำระ" แต่จ่ายไม่ได้
-                $upa = $reading->uniquePaymentAmount;
-                $needNewAmount = ! $upa
-                    || $upa->status !== 'reserved'
-                    || $upa->expires_at <= now();
-
-                $reissued = null;
-                if ($needNewAmount) {
-                    try {
-                        $reissued = $reading->reissueThaiQrAmount();
-                    } catch (\Throwable $e) {
-                        Log::warning('FortuneStripeService: จองยอด QR ไทยใหม่ล้มเหลวตอน session expired', [
-                            'reading_id' => $reading->id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
-                }
-
-                $reading->update(['conversation_status' => $restoreStatus]);
-
-                Log::info('FortuneStripeService: session expired → คืนสถานะบิลเดิม (เลนต่างประเทศ)', [
-                    'reading_id' => $reading->id,
-                    'bill' => $reading->bill_reference,
-                    'restore_status' => $restoreStatus,
-                    'thai_amount_reissued' => $reissued?->unique_amount,
-                ]);
-            } else {
-                $reading->update([
-                    'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
-                ]);
-            }
+            $this->restoreAfterCheckoutAbandoned($reading, 'session_expired');
         }
 
         Log::info('FortuneStripeService: Stripe session expired', [
@@ -625,6 +594,75 @@ class FortuneStripeService
             'reading_id' => $reading->id,
             'action' => 'expired',
         ];
+    }
+
+    /**
+     * 🚪 คืนสถานะบิลหลังลูกค้าทิ้ง Stripe checkout (กด cancel ในหน้า / session หมดอายุ)
+     *
+     * 🐛 (2026-09-01) เดิม logic นี้อยู่เฉพาะใน onSessionExpired — หน้า cancel
+     *   (FortuneStripeWebhookController::cancel) revert เป็น AWAITING_PAYMENT_METHOD ดื้อๆ
+     *   ⇒ ลูกค้าเลนต่างประเทศ (เมนูเลือกวิธีจ่ายปิด) กด cancel แล้ว **ค้าง**:
+     *   UPA ไทยถูก cancel ไปตั้งแต่เปิดเลนบัตร + สถานะไม่มี handler + webhook session.expired
+     *   ที่ตามมา restore ไม่ได้ (guard เช็ค PENDING_STRIPE_PAYMENT ซึ่งไม่จริงแล้ว)
+     *   Fix: แยกเป็นเมธอดกลาง ให้ทั้งสองทางเรียกตัวเดียวกัน — idempotent
+     *
+     * 🌍 บิลออกไปแล้ว (เลนบัตรต่างประเทศ / เมนูปิด) → คืนสถานะรอชำระเดิม + จองยอด QR ไทยใหม่
+     *   ห้ามโยนไป awaiting_payment_method: เมนูเลือกวิธีจ่ายเปิดเฉพาะตอน enable_stripe_payment=true
+     *   — ถ้าเมนูปิดอยู่ ลูกค้าจะค้างในสถานะที่ไม่มี handler จริง และยอด QR ที่ยังจองอยู่
+     *   จะกลายเป็นบิลกำพร้า (SMS เข้าแต่ไม่มีอะไรรับ)
+     */
+    public function restoreAfterCheckoutAbandoned(FortuneReading $reading, string $trigger = 'session_expired'): void
+    {
+        // 🛡️ (2026-09-01 จับผี #5) กัน TOCTOU: cancel GET ถือโมเดล stale ขณะ CAS จ่ายชนกัน
+        //   refresh ก่อนเช็ค — ไม่งั้น restore เขียน status ทับบิลที่เพิ่งจ่ายในหน้าต่าง ms
+        $reading->refresh();
+
+        if ($reading->is_paid) {
+            return; // จ่ายแล้ว — ไม่แตะ
+        }
+
+        $hasOpenBill = ! empty($reading->bill_reference) && ! $this->isMenuEnabled();
+
+        if ($hasOpenBill) {
+            $restoreStatus = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
+                : FortuneReading::STATUS_PENDING_PAYMENT;
+
+            // 🇹🇭 (2026-08-23) ตอนสลับมาเลนบัตร เราปิดบิลไทยทิ้งไปแล้ว
+            //    ลิงก์บัตรหมดอายุ/ถูกยกเลิก = ลูกค้าเหลือ 0 ช่องทาง ทั้งที่บิลยังไม่ถึงกำหนดตาย (3 ชม.)
+            //    → จองยอด QR ไทยใหม่ให้ ไม่งั้นบิลกลายเป็นซาก: สถานะบอก "รอชำระ" แต่จ่ายไม่ได้
+            $upa = $reading->uniquePaymentAmount;
+            $needNewAmount = ! $upa
+                || $upa->status !== 'reserved'
+                || $upa->expires_at <= now();
+
+            $reissued = null;
+            if ($needNewAmount) {
+                try {
+                    $reissued = $reading->reissueThaiQrAmount();
+                } catch (\Throwable $e) {
+                    Log::warning('FortuneStripeService: จองยอด QR ไทยใหม่ล้มเหลวตอนคืนสถานะบิล', [
+                        'reading_id' => $reading->id,
+                        'trigger' => $trigger,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $reading->update(['conversation_status' => $restoreStatus]);
+
+            Log::info('FortuneStripeService: คืนสถานะบิลเดิมหลังทิ้ง checkout (เลนต่างประเทศ)', [
+                'reading_id' => $reading->id,
+                'bill' => $reading->bill_reference,
+                'trigger' => $trigger,
+                'restore_status' => $restoreStatus,
+                'thai_amount_reissued' => $reissued?->unique_amount,
+            ]);
+        } else {
+            $reading->update([
+                'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            ]);
+        }
     }
 
     /**

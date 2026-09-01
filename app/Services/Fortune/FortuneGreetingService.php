@@ -472,6 +472,14 @@ class FortuneGreetingService
                 return null;   // ยังไม่รู้วันเกิด → ไปทางคำเชิญ
             }
 
+            // 🔕 (2026-09-01) รับดวงของวันนี้ไปแล้ว → ห้าม tease "พร้อมแล้ว อยากดูไหม" ซ้ำ
+            //   (rule_daily_horoscope_no_repeat_upsell — daily_dm_answered_at stamp ตอนส่งกล่องดวง)
+            //   คืน null ให้ผู้เรียกตกไปคำเชิญปกติ ซึ่งอย่างน้อยไม่ได้อ้างว่ามีของใหม่รออยู่
+            $answeredAt = FortuneUserCredit::findByUser($userId, 'facebook')?->daily_dm_answered_at;
+            if ($answeredAt && \Illuminate\Support\Carbon::parse($answeredAt)->isToday()) {
+                return null;
+            }
+
             // มีบทความของวันนี้จริงไหม — ห้ามชวนดูของที่ยังไม่มี
             // (ช่วงหลังเที่ยงคืนถึง 6 โมงจะยังไม่มี → คืน null ใช้ระบบเดิม)
             if ($this->findTodayPrediction($dayIndex) === null) {

@@ -627,8 +627,11 @@ class CelticCrossService
         // 👤 persona-lite (เบา — ไม่ใช่ directive 20 บล็อก)
         $personaBlock = '';
         try {
-            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
-            $uid = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
+            // 🧭 (2026-09-01) LINE id อยู่ในคอลัมน์ facebook_user_id (ไม่มีคอลัมน์ line_user_id จริง)
+            //   ⇒ ห้ามเดา platform จาก !empty(facebook_user_id) — ใช้คอลัมน์ platform + U-regex fallback
+            $uid = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+            $platform = $reading->platform
+                ?: (preg_match('/^U[0-9a-f]{32}$/i', $uid) ? 'line' : 'facebook');
             if ($uid !== '') {
                 $personaBlock = (string) app(\App\Services\Fortune\CustomerPersonaService::class)
                     // withPastRecall=false → เส้นนี้เป็น "พื้นดวงเปิดตัว" คำถามเป็น boilerplate ของระบบ
@@ -2307,8 +2310,10 @@ class CelticCrossService
         //    Sanitize: bracket directive `[👤 CUSTOMER_PERSONA...]` ถูก filter ใน FortuneAIService อยู่แล้ว
         $personaBlock = '';
         $personaModel = null;
-        $celticPlatform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
-        $celticUserId = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
+        // 🧭 (2026-09-01) LINE id อยู่ในคอลัมน์ facebook_user_id — ใช้คอลัมน์ platform + U-regex เท่านั้น
+        $celticUserId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+        $celticPlatform = $reading->platform
+            ?: (preg_match('/^U[0-9a-f]{32}$/i', $celticUserId) ? 'line' : 'facebook');
         try {
             if ($celticUserId !== '') {
                 $personaService = app(CustomerPersonaService::class);
@@ -2817,8 +2822,9 @@ class CelticCrossService
         // 👤 (2026-05-16) Inject persona — เช่นเดียวกับ askQuestion()
         $personaBlock = '';
         try {
-            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
-            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+            $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+            $platform = $reading->platform
+                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
             if (! empty($userId)) {
                 $personaBlock = app(\App\Services\Fortune\CustomerPersonaService::class)
                     // withPastRecall=false → $systemPrompt ด้านล่างเรียก buildPastCaseBlock() เอง
@@ -3306,12 +3312,17 @@ class CelticCrossService
     protected function bridgeToConversationLog(FortuneReading $reading, string $role, string $message): void
     {
         try {
-            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? null;
+            $userId = $reading->platform_user_id ?: $reading->facebook_user_id ?: null;
             if (! $userId) {
                 return; // ไม่มี user ID → ไม่บันทึก
             }
 
-            $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
+            // 🐛 (2026-09-01) เดิมตัดสิน platform ด้วย !empty(facebook_user_id) ซึ่ง**จริงเสมอ**
+            //   (LINE id ก็อยู่คอลัมน์นั้น — fortune_readings ไม่มี line_user_id จริง)
+            //   ⇒ Celtic ของลูกค้า LINE ถูก bridge ลง log ในนาม platform='facebook' ทุกใบ
+            //   → แชทปกติหลังจบ Celtic (อ่าน history ด้วย platform='line') มองไม่เห็นประวัติเลย
+            $platform = $reading->platform
+                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
 
             $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
                 $userId,
@@ -3495,8 +3506,9 @@ class CelticCrossService
 
         // Risk-aware skip — ดู persona flags
         try {
-            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
-            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+            $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+            $platform = $reading->platform
+                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
             if (! empty($userId)) {
                 $persona = app(CustomerPersonaService::class)->getCached($platform, (string) $userId);
                 if ($persona) {
@@ -3573,8 +3585,9 @@ class CelticCrossService
 
         // Risk-aware skip — ลูกค้าวิกฤต/อ่อนไหวมาก ไม่ควรเจอ life-coach challenge
         try {
-            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
-            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+            $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+            $platform = $reading->platform
+                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
             if (! empty($userId)) {
                 $persona = app(CustomerPersonaService::class)->getCached($platform, (string) $userId);
                 if ($persona) {
@@ -4774,9 +4787,8 @@ class CelticCrossService
     {
         try {
             $userId = $reading->facebook_user_id
-                ?? $reading->platform_user_id
-                ?? $reading->line_user_id
-                ?? null;
+                ?: $reading->platform_user_id
+                ?: null;
 
             if (empty($userId)) {
                 return '';
@@ -4903,9 +4915,11 @@ class CelticCrossService
     protected function buildPastReadingsContext(FortuneReading $reading): string
     {
         try {
-            $userId = $reading->facebook_user_id ?? null;
+            // 🧭 (2026-09-01) LINE ก็ได้ context นี้ด้วย — LINE id อยู่ในคอลัมน์ facebook_user_id อยู่แล้ว
+            //   (คอมเมนต์เก่าบอก "LINE ยังไม่ support" = เข้าใจผิดจากชื่อคอลัมน์)
+            $userId = $reading->facebook_user_id ?: $reading->platform_user_id ?: null;
             if (empty($userId)) {
-                return ''; // LINE ยังไม่ support (line_user_id ไม่มีใน fortune_readings)
+                return '';
             }
 
             $cacheKey = "fortune:past_readings_ctx:{$reading->id}";

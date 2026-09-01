@@ -4396,13 +4396,27 @@ trait CelticCrossConversationTrait
 
             // ⚠️ (fortune_reading_id, sequence) มี unique index fcq_reading_seq_unique
             //    → ต้องนับจาก MAX ของ "ทุกแถว" ไม่ใช่เฉพาะแถวที่ตอบแล้ว
+            // 🛡️ (2026-09-01) ชน unique (race กับ insert เส้นอื่น) → ขยับเลขแล้วลองซ้ำ 1 ครั้ง
+            //   — เกราะชุดเดียวกับ createQuestionRecordSafely (พี่น้องบั๊ก sequence ชน 0d3ca1838)
+            //   เดิม insert ทีเดียวแล้วโดน catch กลืน = คำถามไม่ถูกฝากเข้าบทสรุปแบบเงียบ
             $seq = max((int) $reading->celticQuestions()->max('sequence') + 1, 1);
 
-            \App\Models\FortuneCelticQuestion::create([
-                'fortune_reading_id' => $reading->id,
-                'sequence' => $seq,
-                'question' => $q,
-            ]);
+            for ($try = 0; $try < 2; $try++) {
+                try {
+                    \App\Models\FortuneCelticQuestion::create([
+                        'fortune_reading_id' => $reading->id,
+                        'sequence' => $seq,
+                        'question' => $q,
+                    ]);
+
+                    break;
+                } catch (\Illuminate\Database\QueryException $dupErr) {
+                    if ($try === 1) {
+                        throw $dupErr;
+                    }
+                    $seq = max((int) $reading->celticQuestions()->max('sequence') + 1, $seq + 1);
+                }
+            }
 
             Log::info('Celtic: ฝากคำถามที่มาหลังหมดเวลา → ให้บทสรุปตอบปิด', [
                 'reading_id' => $reading->id,

@@ -18,7 +18,10 @@ use Illuminate\Support\Facades\Log;
  * ข้อดีเทียบ V1:
  * - ไม่ block ข้อความสำคัญ (แจ้งเตือนคำทำนาย, ชำระเงิน)
  * - ใช้ข้อมูลจาก LINE จริง (429 + retry-after) แทนการเดา
- * - Retry อัตโนมัติ 3 ครั้ง ด้วย exponential backoff
+ *
+ * ⚠️ (2026-09-01) docblock เดิมอ้าง "Retry อัตโนมัติ 3 ครั้ง ด้วย exponential backoff" —
+ *    ไม่จริง: pushMessage V2 ส่งครั้งเดียวไม่ retry (จงใจ — กัน retry storm ตอน 429 quota)
+ *    เหลือ retry เฉพาะ sendRichMessagePriority (2 ครั้ง/200ms) — getRetryDelayMs ถูกลบแล้ว
  */
 class LineGatekeeperService
 {
@@ -213,17 +216,7 @@ class LineGatekeeperService
         return (int) max(300, min($seconds, 32 * 24 * 3600));
     }
 
-    /**
-     * คำนวณเวลารอก่อน retry (milliseconds)
-     *
-     * @param  int  $attempt  ครั้งที่ retry (1-based)
-     * @return int milliseconds ที่ต้องรอ
-     */
-    public static function getRetryDelayMs(int $attempt): int
-    {
-        // Exponential backoff: 500ms, 1000ms, 2000ms
-        return self::BASE_BACKOFF_MS * (int) pow(2, $attempt - 1);
-    }
+    // 🗑️ (2026-09-01) ลบ getRetryDelayMs — 0 call site (pushMessage V2 ไม่ retry โดยเจตนา)
 
     /**
      * ตรวจสอบว่าสามารถเรียก AI API ได้หรือไม่ (แยกตามบอท)

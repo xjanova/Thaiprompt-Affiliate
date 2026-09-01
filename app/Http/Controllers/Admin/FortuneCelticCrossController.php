@@ -922,7 +922,7 @@ class FortuneCelticCrossController extends Controller
     {
         // นับ readings ค้างที่ scanner จะเจอ (ตัวอย่าง 5 นาทีตามค่า default)
         $cutoff = now()->subMinutes(5);
-        $excluded = ['cancelled', 'celtic_qa_window_expired', 'expired'];
+        $excluded = ['celtic_qa_window_expired']; // 🩹 (2026-09-01) 'cancelled'/'expired' ไม่มีจริง — ตัดทิ้ง
         $stuckCount = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
             ->where('is_paid', true)
             ->whereNotIn('conversation_status', $excluded)
@@ -985,7 +985,7 @@ class FortuneCelticCrossController extends Controller
             }
         } elseif ($mode === 'auto') {
             $cutoff = now()->subMinutes($minutes);
-            $excluded = ['cancelled', 'celtic_qa_window_expired', 'expired'];
+            $excluded = ['celtic_qa_window_expired']; // 🩹 (2026-09-01) 'cancelled'/'expired' ไม่มีจริง — ตัดทิ้ง
             $candidates = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
                 ->where('is_paid', true)
                 ->whereNotIn('conversation_status', $excluded)
@@ -1098,7 +1098,7 @@ class FortuneCelticCrossController extends Controller
         }
 
         $cutoff = now()->subMinutes(5);
-        $excluded = ['cancelled', 'celtic_qa_window_expired', 'expired'];
+        $excluded = ['celtic_qa_window_expired']; // 🩹 (2026-09-01) 'cancelled'/'expired' ไม่มีจริง — ตัดทิ้ง
         $stuckCount = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
             ->where('is_paid', true)
             ->whereNotIn('conversation_status', $excluded)

@@ -170,36 +170,8 @@ class FortuneDailySoftInviteTest extends TestCase
         }
     }
 
-    /**
-     * 🔕 ธงกันชวนซ้ำ — วันนี้ชวนได้ครั้งเดียวต่อคน (ครั้งถัดไปเหลือแค่ปุ่ม)
-     *
-     * ดวงรายวันขอซ้ำได้ไม่จำกัดต่อวัน (owner: "ได้เสมอ ทุกวัน") การแปะคำชวน
-     * ทุกรอบจึงเท่ากับตื๊อ
-     *
-     * @test
-     */
-    public function ธงกันชวนซ้ำต้องผ่านครั้งแรกของวันเท่านั้น(): void
-    {
-        Cache::flush();
-
-        $first = $this->invokeHidden('markDailyInviteShownToday', 'facebook', 'psid-repeat');
-        $second = $this->invokeHidden('markDailyInviteShownToday', 'facebook', 'psid-repeat');
-
-        $this->assertTrue($first, 'ครั้งแรกของวันต้องชวนได้');
-        $this->assertFalse($second, 'ครั้งที่สองของวันเดียวกันต้องไม่ชวนซ้ำ');
-
-        // คนละคนต้องไม่โดนธงของคนอื่น
-        $this->assertTrue(
-            $this->invokeHidden('markDailyInviteShownToday', 'facebook', 'psid-other'),
-            'ธงต้องแยกตามผู้ใช้'
-        );
-
-        // คนละช่องทางก็คนละธง (LINE/FB ใช้ processMessage ตัวเดียวกัน)
-        $this->assertTrue(
-            $this->invokeHidden('markDailyInviteShownToday', 'line', 'psid-repeat'),
-            'ธงต้องแยกตามช่องทาง'
-        );
-    }
+    // 🗑️ (2026-09-01) ลบเทสต์ธงกันชวนซ้ำ — markDailyInviteShownToday ถูกลบแล้ว
+    //   (call site เดียวถูกถอดตั้งแต่ 2026-08-19 เทสต์นี้ล็อกพฤติกรรมของโค้ดตายอยู่)
 
     /**
      * ด่านเสริมต้อง fail-open — อ่าน settings/DB ไม่ได้ต้องเงียบ ไม่ใช่โยน exception

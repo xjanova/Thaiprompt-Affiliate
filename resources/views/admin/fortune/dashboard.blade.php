@@ -211,7 +211,8 @@
                         <span class="tp-tile" style="width:32px; height:32px; border-radius:10px; font-size:13px;">{{ mb_substr($r->facebook_user_name ?: '?', 0, 1) }}</span>
                         <div style="flex:1; min-width:0;">
                             <div style="font-size:12.5px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $r->facebook_user_name ?: 'ไม่ทราบชื่อ' }}</div>
-                            <div style="font-size:11px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ Str::limit($r->questions[0] ?? 'ไม่มีคำถาม', 38) }}</div>
+                            {{-- 🃏 (2026-09-01) primaryQuestion() — Celtic เก็บคำถามใน fortune_celtic_questions ไม่ใช่คอลัมน์ questions --}}
+                            <div style="font-size:11px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ Str::limit($r->primaryQuestion() ?: 'ไม่มีคำถาม', 38) }}</div>
                         </div>
                         <div style="text-align:right; flex:none;">
                             <span class="tp-pill" style="font-size:9.5px; {{ $r->reading_type === 'deep' ? 'color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2));' : 'color:var(--deep1); background:color-mix(in srgb, var(--accent1) 16%, transparent);' }}">{{ $r->reading_type === 'deep' ? 'Deep' : 'Basic' }}</span>

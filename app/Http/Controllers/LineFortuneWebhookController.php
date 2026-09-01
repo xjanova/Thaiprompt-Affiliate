@@ -596,8 +596,11 @@ class LineFortuneWebhookController extends Controller
             //    โควต้า push รายเดือนหมด → ห้ามเข้าด่านนี้เด็ดขาด เพราะจะทิ้งคำถามลูกค้าทั้งเดือน
             //    ทั้งที่ reply ฟรีและตอบได้ปกติ (เหตุการณ์จริง 2026-08-25: quota 300/300)
             //    markQuotaExhausted() จงใจไม่ตั้ง backoff อยู่แล้ว — เช็คซ้ำตรงนี้เป็นตาข่ายชั้นสอง
+            // 👑 (2026-09-01) ลูกค้าจ่ายแล้วต้องไม่โดนทิ้งข้อความช่วง backoff (สูงสุด 30 วิ) —
+            //   กฎ paid-bypass-all-guards: ด่าน throttle เป็นด่านระบบ ไม่ใช่ด่านลูกค้าคนนี้
             if (LineGatekeeperService::isSystemThrottled()
-                && ! LineGatekeeperService::isQuotaExhausted()) {
+                && ! LineGatekeeperService::isQuotaExhausted()
+                && ! $isVipPaid) {
                 Log::warning('LINE Webhook: System throttled — ส่งข้อความเตือน', [
                     'user_id' => $userId,
                     'stats' => LineGatekeeperService::getStats(),
@@ -701,8 +704,12 @@ class LineFortuneWebhookController extends Controller
             //   ใหม่: reuse $hasActiveForAffiliate ที่เช็คทั้ง 2 condition แล้ว
             //   → critical path เร็วขึ้น 500-800ms
             // 💬 (2026-06-06) งดรูป welcome ถ้าได้รูปสัปดาห์นี้แล้ว (USER SPEC) — คำตอบยังส่งผ่าน processMessage
+            // 🚦 (2026-09-01) แบนเนอร์เส้นนี้จำเป็นต้อง push (replyToken ต้องเก็บไว้ให้คำตอบจริง
+            //   ของ processMessage) = ข้อความไม่วิกฤต → ต้องผ่านกันชนโควตาก่อน
+            //   โควตาต่ำ = งดรูป (ไม่ mark ส่งแล้ว — โควตากลับมาเมื่อไหร่ค่อยได้รูปตามปกติ)
             if (! $hasActiveForAffiliate
-                && ! \App\Models\FortuneInviteMessage::shouldSuppressImage($userId, 'line')) {
+                && ! \App\Models\FortuneInviteMessage::shouldSuppressImage($userId, 'line')
+                && $this->lineService->canSpendNonCriticalPush()) {
                 $lineWelcomeImgSent = $this->bannerService->sendBannerOnce(
                     $userId,
                     fn ($url) => $this->lineService->sendImage($userId, $url),
@@ -713,6 +720,15 @@ class LineFortuneWebhookController extends Controller
                 if ($lineWelcomeImgSent) {
                     \App\Models\FortuneUserCredit::markImageSent($userId, 'line');
                 }
+            }
+
+            // ⏳ (2026-09-01) โชว์ "กำลังพิมพ์..." ระหว่าง settle-buffer + AI (ฟรี ไม่กินโควตา)
+            //   เดิมลูกค้าเจอความเงียบ ~10-40 วิ ช่วง debounce → คิดว่าบอทไม่ตอบแล้วพิมพ์ซ้ำ
+            //   indicator หายเองทันทีที่คำตอบมาถึง — best-effort ล้มได้เงียบๆ
+            try {
+                $this->lineService->showLoadingAnimation($userId, 60);
+            } catch (\Throwable $e) {
+                // non-blocking
             }
 
             // ประมวลผลข้อความผ่าน Channel Manager
@@ -875,17 +891,20 @@ class LineFortuneWebhookController extends Controller
             $bannerService = app(\App\Services\FortuneBannerService::class);
 
             // 💬 (2026-06-06) งดรูป welcome ถ้าได้รูปสัปดาห์นี้แล้ว (USER SPEC) → ปล่อยให้ greeting text แทน
+            $bannerUrl = null;
             if (\App\Models\FortuneInviteMessage::shouldSuppressImage($userId, 'line')) {
                 $sent = false;
             } else {
-                // 🐛 (2026-07-15) เดิมเรียก sendImageMessage() ซึ่งไม่มีใน LineFortuneService
-                //    (มีแต่ใน LineService คนละคลาส) → throw ทุกครั้ง → ถูก catch กลืนที่
-                //    FortuneBannerService:264 → $sent=false → รูป welcome ไม่เคยส่งสำเร็จเลย
-                //    แก้ให้เหมือน path ข้อความที่บรรทัด 635 ซึ่งเรียกถูกและใช้งานได้จริง
-                //    (ส่ง platform='line' ด้วย → ลูกค้าเก่าที่กลับมาแอดใหม่จะไม่โดนแบนเนอร์ชวนซ้ำ)
+                // 🚦 (2026-09-01) เส้น follow มี replyToken สดอยู่ในมือ — เลิก push รูป (เผาโควตา
+                //    1 หน่วย/ลูกค้าใหม่) เก็บ URL ไว้รวมใน replyMessage เดียวกับ text ด้านล่าง = ฟรี
+                //    (เดิม 2026-07-15 แก้จาก sendImageMessage ที่ไม่มีจริง มาเป็น sendImage = push)
                 $sent = $bannerService->sendBannerOnce(
                     $userId,
-                    fn ($url) => $this->lineService->sendImage($userId, $url),
+                    function ($url) use (&$bannerUrl) {
+                        $bannerUrl = $url;
+
+                        return true;
+                    },
                     'welcome',
                     24,
                     'line'
@@ -898,6 +917,16 @@ class LineFortuneWebhookController extends Controller
             // 📨 รวมข้อความ text ทั้งหมดส่งใน replyMessage ครั้งเดียว
             //    (replyToken ใช้ได้ครั้งเดียว — ห้ามเรียกซ้ำ)
             $messages = [];
+
+            // 🖼️ รูป welcome เป็น message แรกใน reply (ก่อน text) — ลำดับเดิมที่ลูกค้าเห็น
+            if ($sent && $bannerUrl && $replyToken) {
+                $messages[] = $this->lineService->imageMessageObject($bannerUrl);
+            } elseif ($sent && $bannerUrl && ! $replyToken) {
+                // edge: follow event ไม่มี replyToken (แทบไม่เกิด) → ตกกลับ push แบบเดิม + ด่านโควตา
+                if ($this->lineService->canSpendNonCriticalPush()) {
+                    $this->lineService->sendImage($userId, $bannerUrl);
+                }
+            }
 
             // ถ้า banner ปิดอยู่หรือไม่มี — ส่ง greeting สั้น ๆ แทน (ไม่มี flex card)
             if (! $sent) {
@@ -2681,12 +2710,14 @@ class LineFortuneWebhookController extends Controller
      *
      * คืน true เมื่อควร silence (ไม่ตอบ — แต่ log)
      *
-     * Strike rules (เก็บใน Cache 1 ชั่วโมง):
-     *   1. Non-text + non-image (sticker/video/audio/file) ติด ๆ + ไม่มี active reading → +1 strike
+     * Strike rules (เก็บใน Cache 1 ชั่วโมง) — ⚖️ ปรับ parity กับ FB rewrite 2026-05-02 เมื่อ 2026-09-01:
+     *   1. Non-text (video/audio/file — **สติกเกอร์ไม่นับ**) + ไม่มี active reading → +1 strike
      *   2. Text มี URL → +1 strike
-     *   3. Text เหมือนเดิมกับ turn ก่อน → +1 strike
+     *   3. Text เหมือนเดิม **ตั้งแต่ครั้งที่ 3** (ซ้ำครั้งที่ 2 = คนทวนเพราะบอทช้า ไม่นับ) → +1 strike
+     *   4. Rate flood > 10 ข้อความ/30 วิ → +1 strike
      *
-     * เมื่อ strike >= 5 ภายใน 1 ชม. → silence (return true เสมอจนกว่าจะ expire)
+     * เมื่อ strike >= 5 → silence **5 นาที** (เดิม 1 ชม. — โหดเกิน เคยกินลูกค้าใหม่ที่กำลังจะจ่าย)
+     * ตอนลงโทษล้าง strike ทิ้งด้วย — พ้นโทษแล้วเริ่มนับใหม่
      *
      * @param  string|null  $messageType  text|image|sticker|video|audio|file|location|...
      */
@@ -2791,8 +2822,14 @@ class LineFortuneWebhookController extends Controller
         $newStrikes = 0;
 
         // 🚨 Strike 1: non-text/non-image + ไม่มี active bill
-        if ($messageType && ! in_array($messageType, ['text', 'image'], true)) {
-            $hasActiveBill = \App\Models\FortuneReading::where('facebook_user_id', $userId)
+        // ⚖️ (2026-09-01) parity FB rewrite 2026-05-02: **สติกเกอร์ไม่นับ strike** — เป็นภาษาแชท
+        //   ปกติของคนไทย (FB ตัด sticker-strike ทิ้งแล้ว LINE ตกค้าง) เหลือดักเฉพาะ video/audio/file
+        //   + แก้คอลัมน์: เดิมเช็คแค่ facebook_user_id — แถวที่มีแต่ platform_user_id มองไม่เห็น
+        if ($messageType && ! in_array($messageType, ['text', 'image', 'sticker'], true)) {
+            $hasActiveBill = \App\Models\FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)
+                    ->orWhere('facebook_user_id', $userId);
+            })
                 ->whereIn('conversation_status', [
                     \App\Models\FortuneReading::STATUS_PENDING_PAYMENT,
                     \App\Models\FortuneReading::STATUS_PAID,
@@ -2848,13 +2885,30 @@ class LineFortuneWebhookController extends Controller
             'วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันพฤหัส', 'วันศุกร์', 'วันเสาร์',
         ];
         $normalizedText = trim($text);
+        // 🌙 (2026-09-01) ปอกคำลงท้ายสุภาพก่อนเทียบ whitelist — "จันทร์ค่ะ" (7 ตัว เกิน 4)
+        //   ต้องรอดเหมือน "จันทร์" (parser ฝั่งเลนรายวันปอกคำลงท้ายรับได้อยู่แล้ว ด่านนี้ต้องอดทนเท่ากัน)
+        $strippedText = trim((string) preg_replace(
+            '/(ครับผม|นะครับ|นะคะ|ครับ|ค้าบ|คับ|ค่ะ|คะ|จ้า|จ้ะ|จ๊ะ|น้า|นะ|ฮะ|ฮับ)+$/u',
+            '',
+            $normalizedText
+        ));
         $isStateInput = in_array($normalizedText, $stateExpectedInputs, true)
+            || ($strippedText !== '' && in_array($strippedText, $stateExpectedInputs, true))
             || mb_strlen($normalizedText) <= 4; // สั้นมาก = state input / เลขราคา (39, 99)
 
         if (! empty($text) && ! $isStateInput) {
             $lastText = \Illuminate\Support\Facades\Cache::get($lastTextKey);
+            $repeatKey = "fortune:spam:repeat_count:line:{$userId}";
             if ($lastText === $text) {
-                $newStrikes++;
+                // ⚖️ (2026-09-01) parity FB: ซ้ำครั้งที่ 2 ยังไม่นับ (คนทวนเพราะบอทช้า/ไม่ตอบ)
+                //   strike ตั้งแต่การซ้ำครั้งที่ 2 ขึ้นไป (= ข้อความเดียวกันโผล่ครั้งที่ 3)
+                $repeatCount = (int) \Illuminate\Support\Facades\Cache::get($repeatKey, 0) + 1;
+                \Illuminate\Support\Facades\Cache::put($repeatKey, $repeatCount, now()->addMinutes(10));
+                if ($repeatCount >= 2) {
+                    $newStrikes++;
+                }
+            } else {
+                \Illuminate\Support\Facades\Cache::forget($repeatKey);
             }
             \Illuminate\Support\Facades\Cache::put($lastTextKey, $text, now()->addMinutes(10));
         }
@@ -2882,8 +2936,13 @@ class LineFortuneWebhookController extends Controller
         \Illuminate\Support\Facades\Cache::put($strikeKey, $totalStrikes, now()->addHour());
 
         if ($totalStrikes >= $maxStrikes) {
-            \Illuminate\Support\Facades\Cache::put($silencedKey, true, now()->addHour());
-            Log::warning('🚫 LINE Fortune spam guard: silenced user for 1 hour', [
+            // ⚖️ (2026-09-01) parity FB rewrite 2026-05-02: โทษปิดปาก **5 นาที** ไม่ใช่ 1 ชม.
+            //   (เคสจริง 2026-08-18: ลูกค้าใหม่โดน 1 ชม. ตอนกำลังจะจ่าย 99฿ — FB โดนแค่ 5 นาที)
+            //   + ล้าง strike ตอนลงโทษ — ไม่งั้นพ้นโทษแล้ว strike เก่ายังค้างทั้งชั่วโมง
+            //   พลาดอีกครั้งเดียวโดนปิดปากซ้ำทันที
+            \Illuminate\Support\Facades\Cache::put($silencedKey, true, now()->addMinutes(5));
+            \Illuminate\Support\Facades\Cache::forget($strikeKey);
+            Log::warning('🚫 LINE Fortune spam guard: silenced user for 5 minutes', [
                 'user_id' => $userId,
                 'total_strikes' => $totalStrikes,
                 'message_type' => $messageType,
@@ -2925,7 +2984,11 @@ class LineFortuneWebhookController extends Controller
             //   ค้นตรงจากธงบน JSON แทน (MySQL รองรับ path query)
             $reading = FortuneReading::query()
                 ->where('platform', 'line')
-                ->where('platform_user_id', $userId)
+                // 🩹 (2026-09-01) OR facebook_user_id — pattern เดียวกับทั้งเลน (แถวที่
+                //   platform_user_id ยังไม่ถูก stamp จะมองไม่เห็นจาก flush ทั้งที่ cron เห็น)
+                ->where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+                })
                 ->where('is_paid', true)
                 ->where('created_at', '>=', now()->subDays(3))
                 ->where('conversation_state->celtic_summary_delivered', false)
@@ -3017,7 +3080,10 @@ class LineFortuneWebhookController extends Controller
         try {
             $reading = FortuneReading::query()
                 ->where('platform', 'line')
-                ->where('platform_user_id', $userId)
+                // 🩹 (2026-09-01) OR facebook_user_id — pattern เดียวกับทั้งเลน
+                ->where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+                })
                 ->where('is_paid', true)
                 ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
                 ->whereNotNull('deep_response')
@@ -3113,7 +3179,10 @@ class LineFortuneWebhookController extends Controller
             //   จำกัด 3 วันล่าสุด — ของเก่ากว่านั้นส่งไปลูกค้าก็งงแล้ว (cron/แอดมินจัดการแทน)
             $readingIds = FortuneReading::query()
                 ->where('platform', 'line')
-                ->where('platform_user_id', $userId)
+                // 🩹 (2026-09-01) OR facebook_user_id — pattern เดียวกับทั้งเลน
+                ->where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+                })
                 ->where('is_paid', true)
                 ->where('created_at', '>=', now()->subDays(3))
                 ->pluck('id');

@@ -892,19 +892,26 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
     {
+        return $this->pushMessage($recipientId, [$this->imageMessageObject($imageUrl, $previewUrl)]);
+    }
+
+    /**
+     * 🖼️ (2026-09-01) ประกอบ message object รูปแบบพร้อมใช้ — ให้ caller เอาไปรวมใน replyMessage เอง
+     *
+     * แยกออกจาก sendImage() เพื่อให้เส้นที่มี replyToken สดส่งรูป "ฟรี" ได้
+     * (รวมรูป+ข้อความใน reply เดียว) แทนการเผา push quota 1 หน่วยต่อรูป
+     */
+    public function imageMessageObject(string $imageUrl, ?string $previewUrl = null): array
+    {
         // ✅ LINE Messaging API ต้องใช้ HTTPS เท่านั้น + 🖼️ WebP ต้องแปลงเป็น JPEG ก่อน (LINE ไม่รองรับ)
         $imageUrl = $this->lineSafeImageUrl($imageUrl);
         $previewUrl = $previewUrl ? $this->lineSafeImageUrl($previewUrl) : $imageUrl;
 
-        $messages = [
-            [
-                'type' => 'image',
-                'originalContentUrl' => $imageUrl,
-                'previewImageUrl' => $previewUrl,
-            ],
+        return [
+            'type' => 'image',
+            'originalContentUrl' => $imageUrl,
+            'previewImageUrl' => $previewUrl,
         ];
-
-        return $this->pushMessage($recipientId, $messages);
     }
 
     /**
@@ -3130,47 +3137,8 @@ class LineFortuneService implements MessagingPlatformInterface
         ];
     }
 
-    /**
-     * สร้าง Flex Message วันเกิดผิดรูปแบบ (invalid_birthdate)
-     *
-     * @return array Flex Message bubble
-     */
-    public function buildInvalidBirthdateFlexMessage(): array
-    {
-        return [
-            'type' => 'bubble',
-            'styles' => ['header' => ['backgroundColor' => '#E53935']],
-            'header' => [
-                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
-                'contents' => [
-                    ['type' => 'text', 'text' => '⚠️', 'size' => 'xl', 'flex' => 0],
-                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'รูปแบบวันเกิดไม่ถูกต้อง', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold']]],
-                ],
-            ],
-            'body' => [
-                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
-                'contents' => [
-                    ['type' => 'text', 'text' => 'กรุณาพิมพ์วันเกิดใหม่', 'size' => 'md', 'color' => '#333333'],
-                    ['type' => 'separator', 'margin' => 'lg', 'color' => '#FFCDD2'],
-                    [
-                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF3E0', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
-                        'contents' => [
-                            ['type' => 'text', 'text' => '📅 ตัวอย่างที่ถูกต้อง', 'size' => 'sm', 'weight' => 'bold', 'color' => '#E65100'],
-                            ['type' => 'text', 'text' => '• 15/08/1990', 'size' => 'sm', 'color' => '#555555', 'margin' => 'md'],
-                            ['type' => 'text', 'text' => '• 15/08/2533', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
-                            ['type' => 'text', 'text' => '• 15 สิงหาคม 2533', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
-                        ],
-                    ],
-                ],
-            ],
-            'footer' => [
-                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
-                'contents' => [
-                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']],
-                ],
-            ],
-        ];
-    }
+    // 🗑️ (2026-09-01) ลบ buildInvalidBirthdateFlexMessage — 0 call site (handler เปลี่ยนไปใช้
+    //   text + quick replies ที่ sendLineInvalidBirthdateResponse นานแล้ว)
 
     /**
      * สร้าง Flex Message หมดสิทธิ์ฟรี (ai_limit)

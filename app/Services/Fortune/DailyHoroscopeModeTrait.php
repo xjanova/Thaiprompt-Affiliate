@@ -566,26 +566,8 @@ trait DailyHoroscopeModeTrait
         }
     }
 
-    /**
-     * 🔕 ประทับว่า "วันนี้ชวนดูเชิงลึกไปแล้ว" — คืน true เฉพาะครั้งแรกของวัน
-     *
-     * Cache::add เป็น atomic check-and-set ในตัว (กันข้อความที่มาพร้อมกันชวนซ้ำ)
-     * คีย์มีวันที่อยู่แล้ว TTL จึงแค่กันขยะสะสม
-     *
-     * แคชล้ม → คืน true (ชวนตามปกติ) — พฤติกรรมเดิมก่อนมีด่านนี้
-     */
-    protected function markDailyInviteShownToday(string $platform, string $userId): bool
-    {
-        try {
-            return (bool) Cache::add(
-                "fortune:daily_deep_invite_shown:{$platform}:{$userId}:".now()->toDateString(),
-                true,
-                now()->endOfDay()
-            );
-        } catch (\Throwable $e) {
-            return true;
-        }
-    }
+    // 🗑️ (2026-09-01) ลบ markDailyInviteShownToday — call site เดียวถูกถอดตั้งแต่ 2026-08-19
+    //   (ดูคอมเมนต์เหตุผลที่ ~:487) เหลือแต่ body + เทสต์ที่ล็อกพฤติกรรมของโค้ดตาย
 
     /**
      * 🌱 คำชวนดูเชิงลึกท้ายดวงรายวัน — หมุนสำนวนตามคน+วัน

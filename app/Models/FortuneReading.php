@@ -338,21 +338,21 @@ class FortuneReading extends Model
         return (bool) \Illuminate\Support\Facades\Cache::remember(
             $cacheKey,
             now()->addSeconds(30),
-            function () use ($platform, $userId) {
-                // 🩹 (2026-05-08) fortune_readings ไม่มี column 'line_user_id' —
-                //   universal field สำหรับ LINE = 'platform_user_id'
-                //   เคสจริง: ลูกค้าเลือก 39/99 → query นี้ throw SQLSTATE[42S22]
-                //   → bot ตอบ error → ดูดวงไม่ต่อ
-                $column = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
-
-                // 🔒 (2026-05-20) รวม IN_PREDICTION_STATUSES ด้วย — กัน default QR
-                //   ปรากฏระหว่าง STATUS_PAID (39฿ AI gen) ที่ ACTIVE list เดิมไม่มี
+            function () use ($userId) {
+                // 🩹 (2026-05-08) fortune_readings ไม่มี column 'line_user_id'
+                // 🩹 (2026-09-01 จับผี #6) เช็คทั้งสองคอลัมน์ — LINE uid หลายแถวอยู่แค่
+                //   facebook_user_id (platform_user_id ยังไม่ถูก stamp) เช็คคอลัมน์เดียว
+                //   = มองไม่เห็นบิล active → ด่านกันแทรก (แคมเปญ/affiliate pitch) รั่ว
+                //   (id ไม่ชนข้ามคน: PSID = ตัวเลข, LINE = U+hex32)
                 $statuses = array_unique(array_merge(
                     self::ACTIVE_READING_STATUSES,
                     self::IN_PREDICTION_STATUSES,
                 ));
 
-                return self::where($column, $userId)
+                return self::where(function ($q) use ($userId) {
+                    $q->where('facebook_user_id', $userId)
+                        ->orWhere('platform_user_id', $userId);
+                })
                     ->whereIn('conversation_status', $statuses)
                     ->exists();
             }
@@ -1742,6 +1742,15 @@ class FortuneReading extends Model
                         // 🛡️ (2026-06-07) เช็ค cancel_warning_sent ก่อนส่ง — กัน cron รันซ้อน (ทุก 5 นาที)
                         //   ส่งคำเตือน/รูปซ้ำ ก่อน status COMPLETED commit (race double-send)
                         $alreadyWarned = (bool) $reading->getConversationState('cancel_warning_sent');
+
+                        // 🚦 (2026-09-01) DM เตือนสติตอนบิลหมดอายุ ฝั่ง LINE = push ไม่วิกฤต
+                        //   โควตาต่ำกว่ากันชน → สละ (mark ว่าเตือนแล้ว กัน cron วนส่งเมื่อโควตากลับ)
+                        if ($platform === 'line' && ! $alreadyWarned
+                            && ! app(\App\Services\LineFortuneService::class)->canSpendNonCriticalPush()) {
+                            $reading->setConversationState('cancel_warning_sent', true);
+                            $alreadyWarned = true;
+                        }
+
                         if (! empty($userId) && ! $alreadyWarned) {
                             $platformService = $channelManager->getPlatform($platform);
                             if ($platformService) {
@@ -2679,15 +2688,32 @@ class FortuneReading extends Model
             && $this->partial_hold_at->lte(now()->subMinutes(self::PARTIAL_HOLD_MINUTES));
     }
 
-    /**
-     * 💰 (2026-06-05) ยอดที่ยังขาดอยู่ (เป้าหมาย - ที่รับแล้ว) — ปัด 2 ตำแหน่ง ไม่ติดลบ
-     */
-    public function partialRemaining(): float
-    {
-        $target = (float) ($this->partial_target_total ?? 0);
-        $paid = (float) ($this->partial_paid_total ?? 0);
+    // 🗑️ (2026-09-01) ลบ partialRemaining() — 0 call site ตลอดชีวิต (ตัวทำงานจริงคือ
+    //   FortuneConversationService::partialCreditNote ×5 จุด ที่คำนวณ max(0, round(target-paid, 2))
+    //   inline เอง) ทิ้ง helper ซ้ำไว้ = เสี่ยงสูตรสองที่ drift กันเมื่อฝั่งหนึ่งถูกแก้
 
-        return max(0, round($target - $paid, 2));
+    /**
+     * 🃏 (2026-09-01) คำถามหลักของบิล — สำหรับแสดงผล (admin dashboard / Juntra API)
+     *
+     * Celtic เก็บคำถามจริงใน `fortune_celtic_questions` — คอลัมน์ `questions` ว่างเสมอ
+     * (rule_celtic_questions_column_always_empty) อ่าน questions[0] ตรงๆ = ได้ค่าว่างทุกใบ
+     */
+    public function primaryQuestion(): string
+    {
+        $q = is_array($this->questions) ? trim((string) ($this->questions[0] ?? '')) : '';
+        if ($q !== '') {
+            return $q;
+        }
+
+        if ($this->reading_type === self::READING_TYPE_CELTIC_CROSS) {
+            try {
+                return trim((string) ($this->celticQuestions()->orderBy('sequence')->value('question') ?? ''));
+            } catch (\Throwable $e) {
+                return '';
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -2732,6 +2758,21 @@ class FortuneReading extends Model
                 ]);
         }
 
+        $this->firePaidSideEffects();
+    }
+
+    /**
+     * 🎇 Side-effects หลังบิลถูกยืนยันจ่าย — แยกออกมาให้ทุกเส้นจ่ายเรียกได้
+     *
+     * ⚠️ (2026-09-01) เดิมโค้ดชุดนี้ฝังอยู่ท้าย confirmPayment() อย่างเดียว โดยคอมเมนต์อ้างว่า
+     *   "ครอบทุก path เพราะรวมศูนย์ที่ confirmPayment" — ไม่จริงสำหรับ **สายบัตร Stripe**:
+     *   FortuneStripeService::onSessionCompleted ตั้ง is_paid=true ตรงด้วย CAS (กัน webhook ซ้ำ)
+     *   → confirmPayment() ที่ถูกเรียกทีหลังชน early-return `if ($this->is_paid)` → side-effects
+     *   ไม่เคยทำงานสายนั้นเลย (regression FTU-260711-T4317 เปิดกลับเฉพาะลูกค้าจ่ายบัตร)
+     *   Fix: แยกเป็นเมธอด public — สาย Stripe เรียกเองหลังชนะ CAS. ทุกอย่าง non-blocking + idempotent.
+     */
+    public function firePaidSideEffects(): void
+    {
         // 👤 (2026-05-25 Patch F) Eager Persona extraction on payment
         //   เคสจริง: ลูกค้าทักเริ่ม → จ่ายภายใน 13 นาที (R3741) → persona ไม่ทันสร้าง
         //   ผลคือ AI ทำนาย Q1 โดยไม่รู้นิสัยลูกค้า → ตอบ generic
@@ -2749,8 +2790,7 @@ class FortuneReading extends Model
 
         // 🔊 (2026-07-11) ลูกค้าจ่ายเงินแล้ว → ล้างธง "ปิดปาก" (silence) ถ้ามีค้าง
         //   กันเคส FTU-260711-T4317: จ่าย 39฿ แล้วโดน chat_silenced_until ค้าง → พอ Deep session
-        //   7 นาทีหมด paid-bypass เลิกทำงาน → บอทเงียบใส่คนจ่ายเงินแล้ว. ครอบทุก path จ่าย
-        //   (SMS match / admin force / slip) เพราะรวมศูนย์ที่ confirmPayment. Non-blocking.
+        //   7 นาทีหมด paid-bypass เลิกทำงาน → บอทเงียบใส่คนจ่ายเงินแล้ว. Non-blocking.
         try {
             $silenceUid = $this->platform_user_id ?: $this->facebook_user_id;
             $silencePlatform = $this->platform

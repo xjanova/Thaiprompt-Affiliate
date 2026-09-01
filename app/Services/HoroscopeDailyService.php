@@ -624,7 +624,9 @@ PROMPT;
         $numbers = [
             ($base * $dayFactor) % 100,
             ($base + $dayFactor * 7) % 100,
-            rand(1, 99),
+            // 🐛 (2026-09-01) ตัด rand() ทิ้ง — regen วันเดิมต้องได้เลขชุดเดิม
+            //   (กฎดวงรายวันห้ามมโน — ฝั่ง 7 วันเกิดแก้เป็น deterministic แล้ว ฝั่งราศีตกค้าง)
+            ($base * 13 + $dayFactor * 5 + now()->day) % 99 + 1,
         ];
 
         return implode(', ', array_map(fn ($n) => str_pad($n, 2, '0', STR_PAD_LEFT), $numbers));

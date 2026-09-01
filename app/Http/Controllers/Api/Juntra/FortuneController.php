@@ -259,7 +259,7 @@ class FortuneController extends Controller
             $questions = [
                 'spread' => $spread,
                 'category' => is_array($reading->categories) ? ($reading->categories[0] ?? 'general') : 'general',
-                'question' => is_array($reading->questions) ? ($reading->questions[0] ?? '') : '',
+                'question' => $reading->primaryQuestion(),
                 'cards' => $cards,
             ];
 
@@ -326,7 +326,8 @@ class FortuneController extends Controller
         ];
         if ($full) {
             $base['response'] = $r->ai_response;
-            $base['question'] = is_array($r->questions) ? ($r->questions[0] ?? '') : '';
+            // 🃏 (2026-09-01) Celtic เก็บคำถามใน fortune_celtic_questions — questions[0] ว่างเสมอ
+            $base['question'] = $r->primaryQuestion();
             $base['ai_provider'] = $r->ai_provider;
         }
 
