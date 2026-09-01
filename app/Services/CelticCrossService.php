@@ -600,29 +600,8 @@ class CelticCrossService
         $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
         $cardsText = $this->formatCardsForPrompt($cards);
 
-        // 🌟 ดาวเจ้าชนะ — replicate source-building จาก buildFollowupPrompt (parity)
-        $birthSource = $userQuestion;
-        $persistedBirth = (string) $reading->getConversationState('celtic_birthdate_text', '');
-        if ($persistedBirth !== '') {
-            $birthSource .= "\n".$persistedBirth;
-        }
-        $astro = new ThaiAstrologyService;
-        try {
-            if (empty($astro->extractBirthDatesFromText($birthSource))) {
-                $linkedDeep = $this->findLinkedDeepReading($reading);
-                if ($linkedDeep && $linkedDeep->birth_date) {
-                    $birthSource .= "\nเจ้าชะตาเกิด ".$linkedDeep->birth_date->format('d/m/Y');
-                }
-            }
-        } catch (\Throwable $e) {
-            // non-blocking
-        }
-        $birthAstroBlock = '';
-        try {
-            $birthAstroBlock = (string) $astro->buildCelticBirthAstrologyBlock($birthSource);
-        } catch (\Throwable $e) {
-            // non-blocking — ถ้าคำนวณดาวไม่ได้ ก็ทำนายจากไพ่ล้วน
-        }
+        // 🌟 ดาวเจ้าชนะ — ใช้จุดกลางร่วมกับ buildFollowupPrompt + buildGrandFinalePrompt
+        $birthAstroBlock = $this->buildBirthAstrologyBlockFor($reading, $userQuestion);
 
         // 👤 persona-lite (เบา — ไม่ใช่ directive 20 บล็อก)
         $personaBlock = '';
@@ -2280,30 +2259,8 @@ class CelticCrossService
         //   ปัญหาเดิม: source = userQuestion + previousQA (เฉพาะ TYPE:A) → วันเกิดที่ลูกค้าให้
         //   ในเทิร์น TYPE:D (record ถูกลบ) จะหายเทิร์นหน้า. แก้: persist ลง conversation_state
         //   + auto-use วันเกิดจาก Deep 39฿ เดิมถ้ามี (ไม่ต้องถามซ้ำ — "ดาวเจ้าชนะที่เคยทำไปแล้ว")
-        $astro = new ThaiAstrologyService;
-        $persistedBirth = (string) $reading->getConversationState('celtic_birthdate_text', '');
-        if ($persistedBirth !== '') {
-            $birthAstroSourceText .= "\n".$persistedBirth;
-        }
-        try {
-            // เจอวันเกิดใน userQuestion ปัจจุบัน → เก็บไว้ กันหายแม้เทิร์นนี้ถูกจัดเป็น TYPE:D
-            if (! empty($astro->extractBirthDatesFromText($userQuestion))) {
-                $reading->setConversationState(
-                    'celtic_birthdate_text',
-                    mb_substr(trim($persistedBirth."\n".$userQuestion), 0, 500)
-                );
-            }
-        } catch (\Throwable $e) {
-            // non-blocking
-        }
-        // ยังไม่มีวันเกิดในบทสนทนาเลย → ดึงจาก Deep 39฿ ที่ user เดียวกันเคยทำ (auto, ไม่ต้องถาม)
-        if (empty($astro->extractBirthDatesFromText($birthAstroSourceText))) {
-            $linkedDeep = $this->findLinkedDeepReading($reading);
-            if ($linkedDeep && $linkedDeep->birth_date) {
-                $birthAstroSourceText .= "\nเจ้าชะตาเกิด ".$linkedDeep->birth_date->format('d/m/Y');
-            }
-        }
-        $birthAstroBlock = $astro->buildCelticBirthAstrologyBlock($birthAstroSourceText);
+        //   ($userQuestion = ตัวที่ต้อง persist ถ้ามีวันเกิด — ที่เหลือคือแหล่งค้นอย่างเดียว)
+        $birthAstroBlock = $this->buildBirthAstrologyBlockFor($reading, $birthAstroSourceText, $userQuestion);
 
         // 👤 (2026-05-16) Inject persona — เพศ/อายุ/บุคลิก → ให้ AI ปรับ tone กลมกลืน
         //    Guard: ถ้า persona ไม่มีข้อมูล → return '' → ไม่ inject
@@ -5435,6 +5392,66 @@ class CelticCrossService
     }
 
     /**
+     * 🌟 ผังดวงจากวันเกิดสำหรับพรอมต์ Celtic — จุดกลางจุดเดียวของทั้งเลน 99฿
+     *
+     * รวมตรรกะที่เคยก็อปกันอยู่ 2 ที่ (generateBaseChartSectioned + buildFollowupPrompt
+     * ซึ่งคอมเมนต์เดิมเขียนไว้เองว่า "replicate ... เพื่อ parity") ให้เหลือที่เดียว
+     * — ตอนเพิ่มบทสรุปใหญ่เข้ามาเป็นที่ 3 ถ้าไม่รวมก่อนจะกลายเป็น 3 ชุดที่ค่อยๆ drift
+     *
+     * ลำดับหาวันเกิด (สำคัญ ห้ามสลับ):
+     *   1. ข้อความที่ส่งเข้ามา ($seedText — คำถามปัจจุบัน + คำถามเก่า)
+     *   2. + `celtic_birthdate_text` ที่เคยเก็บไว้ (คงข้ามเทิร์น แม้เทิร์นนั้นถูกจัดเป็น TYPE:D)
+     *   3. ยังไม่เจอ → ดึงจากบิล Deep 39฿ ที่ user เดียวกันเคยทำ (auto ไม่ต้องถามซ้ำ)
+     *
+     * @param  string  $seedText  ข้อความที่อาจมีวันเกิด
+     * @param  string|null  $persistCandidate  ถ้าเจอวันเกิดในข้อความนี้ → เก็บลง state (null = ไม่เก็บ)
+     * @return string ว่าง = ไม่พบวันเกิด หรือคำนวณไม่ได้ (ทำนายจากไพ่ล้วนต่อไป — ห้าม throw)
+     */
+    protected function buildBirthAstrologyBlockFor(
+        FortuneReading $reading,
+        string $seedText,
+        ?string $persistCandidate = null
+    ): string {
+        $astro = new ThaiAstrologyService;
+        $source = $seedText;
+
+        $persistedBirth = (string) $reading->getConversationState('celtic_birthdate_text', '');
+        if ($persistedBirth !== '') {
+            $source .= "\n".$persistedBirth;
+        }
+
+        try {
+            // เจอวันเกิดในเทิร์นนี้ → เก็บไว้ กันหายถ้าเทิร์นถูกจัดเป็น TYPE:D (record ถูกลบ)
+            if ($persistCandidate !== null && ! empty($astro->extractBirthDatesFromText($persistCandidate))) {
+                $reading->setConversationState(
+                    'celtic_birthdate_text',
+                    mb_substr(trim($persistedBirth."\n".$persistCandidate), 0, 500)
+                );
+            }
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        try {
+            if (empty($astro->extractBirthDatesFromText($source))) {
+                $linkedDeep = $this->findLinkedDeepReading($reading);
+                if ($linkedDeep && $linkedDeep->birth_date) {
+                    $source .= "\nเจ้าชะตาเกิด ".$linkedDeep->birth_date->format('d/m/Y');
+                }
+            }
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        try {
+            return (string) $astro->buildCelticBirthAstrologyBlock($source);
+        } catch (\Throwable $e) {
+            // คำนวณดาวไม่ได้ → ทำนายจากไพ่ล้วน ดีกว่าล้มทั้งบิลที่ลูกค้าจ่ายแล้ว
+            return '';
+        }
+    }
+
+    /**
      * 🌟 Build Grand Finale Prompt — บทสรุปที่ "รวบทุกคำถามมาตอบให้จบ"
      *
      * 🔄 (2026-08-07 owner directive: "ไพ่ 99 ควรรวบรวมที่ถามมาสรุปด้วย / อย่าให้มันคาใจ /
@@ -5543,20 +5560,36 @@ class CelticCrossService
             $questionChecklist = "   (ไม่มีคำถามระบุชัด — ให้สรุปภาพรวมชีวิตช่วงนี้ของเจ้าชะตาแบบฟันธงแทน)\n";
         }
 
-        // Deep 39฿ context (ถ้ามี)
+        // 🌟 (2026-09-01) ผังดวงจริง — เดิม "บทสรุปใหญ่" เป็นจุดเดียวในเลน 99฿ ที่ผังดวงไปไม่ถึง
+        //
+        //   ⚠️ ของเดิม: $deepContext ติดป้ายว่า "ดาว/ราศี/ลัคนา/ดวงดาวเจ้าชนะ" แต่สิ่งที่ยัดเข้าไป
+        //     คือ deep_response 800 ตัวแรก = *ข้อความคำทำนายเก่า* ไม่ใช่ผังดวง — ซ้ำร้ายคำทำนาย 39฿
+        //     ตัวนั้นเองก็ไม่เคยมีดวง (prompt_template ใน DB ไม่มี {birth_date_section})
+        //     ⇒ ป้ายสัญญาว่ามีโหราศาสตร์ แต่ข้างในไม่มีจริง + คนที่ซื้อ 99 อย่างเดียวไม่ได้อะไรเลย
+        //
+        //   ตอนนี้คำนวณผังจริงเองเหมือน 3 จุดแรกของเลนนี้ (พื้นดวงเปิดตัว / Q1 / Q2+)
+        $finaleAstroBlock = $this->buildBirthAstrologyBlockFor($reading, $allQuestionText);
+        $finaleAstroContext = $finaleAstroBlock !== ''
+            ? "\n━━━━━━━━━━━━━━━━━\n"
+                ."🌟 ผังดวงของเจ้าชะตา (แม่หมอคำนวณเอง — ใช้ผสมกับไพ่ในบทสรุปนี้)\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                .$finaleAstroBlock."\n"
+                ."👉 ผสมดวงกับไพ่ให้คำตอบแต่ละข้อแน่นกว่ารอบถามตอบ เช่น เชื่อมจังหวะดาว/ดาวเสวยอายุ\n"
+                ."    เข้ากับแนวโน้มที่ไพ่ตำแหน่งอนาคตชี้ → ระบุช่วงเดือนได้แม่นขึ้น\n"
+                ."    (ใช้เป็นเนื้อคำตอบ — ❌ ห้ามบรรยายองศา/ตัวเลข ❌ ห้ามอธิบายว่ามาจากไพ่ใบไหน)\n\n"
+            : '';
+
+        // คำทำนายเดิมจากบิล 39฿ (ถ้ามี) — เป็น "บริบทว่าเคยตอบอะไรไป" ไม่ใช่แหล่งข้อมูลดวง
         $deepContext = '';
         if ($deepReading) {
             $birthDate = $deepReading->birth_date?->format('d/m/Y') ?? '-';
             $deepResponse = mb_substr((string) $deepReading->deep_response, 0, 800);
             $deepContext = "\n━━━━━━━━━━━━━━━━━\n"
-                ."📅 ข้อมูลโหราศาสตร์เพิ่มเติม (จากการดูดวงพื้นฐาน 39฿ ครั้งก่อน):\n"
-                ."วันเดือนปีเกิด: {$birthDate}\n"
-                ."ดาว/ราศี/ลัคนา/ดวงดาวเจ้าชนะ จากผลทำนายเดิม:\n"
+                ."📜 คำทำนายเดิมจากบิลดูดวงพื้นฐาน 39฿ ครั้งก่อน (วันเกิด: {$birthDate}):\n"
                 .$deepResponse."\n"
                 ."━━━━━━━━━━━━━━━━━\n\n"
-                ."👉 ในบทสรุปนี้ให้นำข้อมูลโหราศาสตร์ผสมกับไพ่ Celtic — ทำให้คำตอบแต่ละข้อแน่นกว่าเดิม\n"
-                ."    เช่น เชื่อมจังหวะดาวเจ้าชนะกับแนวโน้มอนาคตอันใกล้ที่ไพ่ชี้ → ระบุเดือนได้แม่นขึ้น\n"
-                ."    (ใช้เป็นเนื้อคำตอบ — ❌ ห้ามอธิบายว่ามาจากไพ่ใบไหน/ตำแหน่งไหน)\n\n";
+                ."👉 ใช้เป็น *บริบทว่าเคยบอกอะไรไปแล้ว* — บทสรุปนี้ต้องต่อยอด ไม่กลับคำ ไม่ลอกซ้ำ\n"
+                ."    ⚠️ ข้อเท็จจริงเรื่องดาว/ราศี/ภพ ให้ยึด \"ผังดวง\" ด้านบนเท่านั้น ไม่ใช่จากข้อความนี้\n\n";
         }
 
         // ปัจจุบัน — เดือน/ฤดู (ใช้ผูกช่วงเวลา)
@@ -5643,6 +5676,7 @@ class CelticCrossService
             ."{$qaHistory}"
             ."━━━━━━━━━━━━━━━━━\n"
             .$pendingBlock
+            .$finaleAstroContext
             .$deepContext
             ."📆 บริบทช่วงเวลาปัจจุบัน: เดือน{$currentMonth} ปี {$currentYearBE} — ใช้ผูกการทำนายช่วงเวลา\n\n"
 
