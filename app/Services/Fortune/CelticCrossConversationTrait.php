@@ -2193,6 +2193,8 @@ trait CelticCrossConversationTrait
 
             $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$human);
             $reading->setConversationState('celtic_birthdate_pending', false);
+            // 🕛 (2026-09-02) ลูกค้าพิมพ์เวลาเกิดมาพร้อมวันเกิด ("29/01/2516 ตอน 6 โมงเช้า") → เก็บด้วย
+            $reading->captureStatedBirthTime($text, 'celtic_birthdate');
             // 🌟 (2026-06-08) flag คำทำนายพื้นดวงเปิดตัว — รอบแรกใช้โครงสร้างแบบ 39 (ดวงดาวเต็ม)
             //   ผสานไพ่ 10 ใบ + ยาว 1500-3000 (buildFollowupPrompt อ่าน flag นี้ + เคลียร์ทิ้งหลังใช้)
             $reading->setConversationState('celtic_base_chart', true);

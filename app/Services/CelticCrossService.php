@@ -5456,8 +5456,19 @@ class CelticCrossService
                     mb_substr(trim($persistedBirth."\n".$persistCandidate), 0, 500)
                 );
             }
+            // 🕛 (2026-09-02) ลูกค้าบอก "เวลาเกิด" ทีหลัง (ไม่มีวันเกิดในข้อความ) → ต้องเก็บด้วย
+            //    เดิมเก็บเฉพาะข้อความที่มีวันที่ → "เกิดตอน 6 โมงเช้าค่ะ" หายไปเทิร์นถัดไป
+            if ($persistCandidate !== null) {
+                $reading->captureStatedBirthTime($persistCandidate, 'celtic_qa');
+            }
         } catch (\Throwable $e) {
             // non-blocking
+        }
+
+        // 🕛 เวลาเกิดที่รู้แล้ว (ลูกค้าบอก/แอดมินกรอก) → แปะเข้า source ให้ตัวคำนวณเห็นทุกเทิร์น
+        $knownHour = $reading->birthHourFloat();
+        if ($knownHour !== null) {
+            $source .= "\nเจ้าชะตาเกิดเวลา ".FortuneReading::hourToTimeString($knownHour, false).' น.';
         }
 
         try {

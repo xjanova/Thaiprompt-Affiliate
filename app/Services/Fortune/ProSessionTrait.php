@@ -825,6 +825,14 @@ trait ProSessionTrait
         $name = $reading->resolveCustomerName();
         $remainingMin = $this->getProSessionRemainingMinutes($reading);
 
+        // 🤖 (2026-09-02) แอดมินถามแทนลูกค้าหลัง session ปิด → remaining = 0 → พรอมต์บอก AI ว่า
+        //    "ได้คุยอีก 0 นาที" แล้ว AI จะตอบว่าหมดเวลา ⇒ ตอนแอดมินถาม ให้เห็นเป็นอย่างน้อย 10 นาทีเสมอ
+        //    ธง one-shot — ล้างทันทีที่อ่าน ไม่กระทบเทิร์นของลูกค้าเอง
+        if ((bool) $reading->getConversationState('pro_session_admin_asking', false)) {
+            $reading->setConversationState('pro_session_admin_asking', false);
+            $remainingMin = max((int) ($remainingMin ?? 0), 10);
+        }
+
         $prompt = $type === 'celtic'
             ? $this->buildCelticProSessionPrompt($reading, $name, $remainingMin)
             : $this->buildDeepProSessionPrompt($reading, $name, $remainingMin);
@@ -862,8 +870,17 @@ trait ProSessionTrait
         $birthChartContext = '';
         if ($reading->birth_date) {
             try {
+                // 🕛 birthDateTimeForChart() = "Y-m-d" หรือ "Y-m-d H:i" ถ้ารู้เวลา (ลูกค้าบอก/แอดมินกรอก)
                 $block = trim((new ThaiAstrologyService)
-                    ->formatPersonBlock($reading->birth_date->format('Y-m-d')));
+                    ->formatPersonBlock((string) $reading->birthDateTimeForChart()));
+
+                // ลูกค้าเพิ่งบอกเวลาเกิดเทิร์นนี้ → ให้แม่หมอบอกสั้นๆ ว่าปรับผังแล้ว (ครั้งเดียว)
+                $justUpdated = $reading->pullBirthTimeJustUpdated();
+                if ($justUpdated !== null && $block !== '') {
+                    $block .= "\n🕛 เจ้าชะตาเพิ่งบอกเวลาเกิด {$justUpdated} น. — ผังข้างบนคำนวณใหม่ด้วยเวลานี้แล้ว"
+                        ."\n   → เปิดคำตอบด้วยประโยคสั้นๆ ว่ารับเวลาเกิดแล้วและปรับดวงให้ใหม่ (1 ประโยคพอ) แล้วตอบต่อตามปกติ";
+                }
+
                 if ($block !== '') {
                     // ⚠️ ต้องบอกว่า "ตัวนี้ชนะ" — บิลที่ทำนายไปก่อน 2026-09-01 ใช้ผังดาวชุดเก่า
                     //   ถ้าคำทำนายเดิมในสรุปด้านล่างอ้างดาวไม่ตรงกับผังนี้ AI จะได้ไม่สับสน
@@ -996,6 +1013,30 @@ trait ProSessionTrait
             }
         }
 
+        // 🌟 (2026-09-02) ผังดวงของลูกค้า — เดิม "คุยต่อหลังบทสรุป" เป็นพรอมต์เดียวของเลน 99 ที่ไม่มีดวงเลย
+        //   (พื้นดวงเปิดตัว / Q1 / Q2+ / บทสรุปใหญ่ มีครบ แต่พอมาคุยต่อ 30 นาที AI เหลือแค่ไพ่+ประวัติ)
+        //   ลูกค้าถาม "แล้วดวงเรื่องงานล่ะ" หลังบทสรุป → ไม่มีข้อเท็จจริงให้ยึด → มโน
+        $celticAstroBlock = '';
+        try {
+            $astroSource = (string) $reading->getConversationState('celtic_birthdate_text', '');
+            if ($astroSource === '' && $reading->birth_date) {
+                $astroSource = 'เจ้าชะตาเกิด '.$reading->birth_date->format('d/m/Y');
+            }
+            if ($astroSource !== '' && $reading->birthHourFloat() !== null) {
+                $astroSource .= ' เวลาเกิด '.FortuneReading::hourToTimeString($reading->birthHourFloat(), false).' น.';
+            }
+            if ($astroSource !== '') {
+                $celticAstroBlock = (new ThaiAstrologyService)->buildCelticBirthAstrologyBlock($astroSource);
+                $justUpdated = $reading->pullBirthTimeJustUpdated();
+                if ($justUpdated !== null && $celticAstroBlock !== '') {
+                    $celticAstroBlock .= "🕛 เจ้าชะตาเพิ่งบอกเวลาเกิด {$justUpdated} น. — ผังข้างบนคำนวณใหม่แล้ว "
+                        ."→ เปิดคำตอบด้วยประโยคสั้นๆ ว่ารับเวลาเกิดแล้ว (1 ประโยค) แล้วตอบต่อ\n\n";
+                }
+            }
+        } catch (\Throwable $e) {
+            // ผูกดวงไม่ได้ → ทำนายจากไพ่ล้วนเหมือนเดิม
+        }
+
         return "คุณคือ *แม่หมอจันทรา* (อวตารพิเศษ Pro AI สาย Celtic Cross) — หมอดูระดับเซียน เชี่ยวชาญไพ่ยิปซีและจิตวิทยาสูง พูดไทยเท่านั้น
 แทนตัวเองด้วย *แม่หมอ/หมอจันทรา* + ลงท้าย *ค่ะ/นะคะ* — ห้าม: ครับ/ผม | หนู/เรา | ดิฉัน
 
@@ -1004,6 +1045,7 @@ trait ProSessionTrait
 [ลูกค้า] ชื่อ: {$name}
 
 {$celticContext}
+{$celticAstroBlock}
 
 [หน้าที่ — สำคัญมาก]
 1. ✅ *ตอบจากไพ่ทั้ง 10 ใบ* + Q&A ที่ผ่านมา — ห้ามแต่งไพ่ใหม่
@@ -1037,6 +1079,11 @@ trait ProSessionTrait
      */
     protected function generateProSessionAnswer(FortuneReading $reading, string $messageText, ?array $userProfile): ?array
     {
+        // 🕛 (2026-09-02) ลูกค้าบอกเวลาเกิดกลางวง ("เกิดตอน 6 โมงเช้าค่ะ") → เก็บลง DB ก่อนสร้างพรอมต์
+        //    ผังในพรอมต์เทิร์นนี้จะคำนวณด้วยเวลาใหม่ทันที (ทั้ง Deep 39 และ Celtic คุยต่อ)
+        //    จุดนี้เป็นคอขวดเดียวของทั้งทางตรงและทาง settle-buffer → ไม่ต้องดัก 2 ที่
+        $reading->captureStatedBirthTime($messageText, 'pro_session');
+
         try {
             $aiService = new FortuneAIService($this->settings);
             // 🪪 (2026-09-01) ผูก usage log กับบิล — เดิมเลน Q&A ไม่เรียก forReading เลย
@@ -1356,6 +1403,114 @@ trait ProSessionTrait
                 .'พลังงานปั่นป่วนเล็กน้อย — ลองส่งคำถามอีกครั้งได้ไหมคะ ✨',
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🤖 (2026-09-02) แอดมินถามแทนลูกค้า — เลน Deep 39 (คู่แฝดของ CelticCrossService::askQuestionAsAdmin)
+     *
+     * owner: "แบบ 39 แอดมินควรตั้งคำถามแทนลูกค้าได้จากหลังบ้าน ได้เหมือนแบบ 99 ด้วย"
+     *
+     * Bypass: ไม่เช็ค window / exit intent / settle-buffer / โควตา — แอดมิน sovereign
+     * Side effects (เหมือนลูกค้าถามเอง): เก็บ pro_session_history · push ให้ลูกค้า · takeover log
+     * ไม่แตะสถานะ session (ไม่เปิด/ไม่ต่อเวลา) — แค่ตอบ 1 ข้อแล้วส่ง
+     *
+     * @return array{success:bool,reading_id:int,pushed:bool,response_len:int,response_preview:?string,response_full:?string,elapsed_ms:int,message:?string,platform:?string}
+     */
+    public function answerProSessionAsAdmin(FortuneReading $reading, string $question, ?int $adminId = null): array
+    {
+        $start = microtime(true);
+        $question = trim($question);
+        $result = [
+            'success' => false,
+            'reading_id' => $reading->id,
+            'pushed' => false,
+            'response_len' => 0,
+            'response_preview' => null,
+            'response_full' => null,
+            'elapsed_ms' => 0,
+            'message' => null,
+            'platform' => null,
+        ];
+
+        if ($question === '') {
+            $result['message'] = 'กรุณาพิมพ์คำถาม';
+
+            return $result;
+        }
+
+        $userId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
+        $platform = $reading->platform;
+        if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
+            $platform = preg_match('/^U[a-f0-9]{32}$/i', $userId) ? 'line' : 'facebook';
+        }
+        $result['platform'] = $platform;
+
+        // ให้พรอมต์รู้ว่าเป็นเลนไหน (deep = ค่าเริ่มต้นเมื่อไม่เคยเปิด session)
+        if (empty($reading->getConversationState('pro_session_type'))) {
+            $reading->setConversationState('pro_session_type', 'deep');
+        }
+
+        try {
+            \App\Models\FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'user_id' => $adminId,
+                'platform' => $platform,
+                'action' => 'message',
+                'reason' => 'admin_ai_assist',
+                'message' => '[ADMIN ASK AI · DEEP] '.mb_substr($question, 0, 500),
+            ]);
+        } catch (\Throwable $e) {
+            // non-critical
+        }
+
+        // ธง one-shot ให้พรอมต์ไม่บอก AI ว่า "เหลือ 0 นาที" ตอน session ปิดไปแล้ว (แอดมินถามได้ตลอด)
+        $reading->setConversationState('pro_session_admin_asking', true);
+
+        $aiResult = $this->generateProSessionAnswer($reading, $question, null);
+        $response = is_array($aiResult) ? trim((string) ($aiResult['message'] ?? '')) : '';
+        if ($response === '') {
+            $result['message'] = 'AI ไม่ตอบกลับ — ลองใหม่อีกครั้ง';
+            $result['elapsed_ms'] = (int) ((microtime(true) - $start) * 1000);
+
+            return $result;
+        }
+
+        if ($userId !== '') {
+            try {
+                $channel = new \App\Services\FortuneChannelManager($this->settings);
+                $result['pushed'] = (bool) $channel->sendResponse($platform, $userId, [
+                    'action' => 'pro_session_answer',
+                    'message' => $response,
+                    'reading' => $reading,
+                ], [
+                    'from_admin' => true,
+                    'message_tag' => 'POST_PURCHASE_UPDATE',
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Deep answerProSessionAsAdmin: push ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } else {
+            $result['message'] = 'ไม่มี user_id — ตอบแล้วแต่ push ไม่ได้';
+        }
+
+        $result['success'] = true;
+        $result['response_len'] = mb_strlen($response);
+        $result['response_preview'] = mb_substr($response, 0, 300);
+        $result['response_full'] = $response;
+        $result['elapsed_ms'] = (int) ((microtime(true) - $start) * 1000);
+
+        Log::info('Deep answerProSessionAsAdmin สำเร็จ', [
+            'reading_id' => $reading->id,
+            'admin_id' => $adminId,
+            'pushed' => $result['pushed'],
+            'response_len' => $result['response_len'],
+            'elapsed_ms' => $result['elapsed_ms'],
+        ]);
+
+        return $result;
     }
 
     /**

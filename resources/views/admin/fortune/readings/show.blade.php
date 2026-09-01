@@ -120,7 +120,14 @@
                 @if($reading->birth_date)
                     <div>
                         <div class="tp-muted" style="font-size:12px;">วันเกิด</div>
-                        <div style="font-weight:700; color:var(--ink); margin-top:2px;">{{ $reading->birth_date->format('d/m/Y') }}</div>
+                        <div style="font-weight:700; color:var(--ink); margin-top:2px;">
+                            {{ $reading->birth_date->format('d/m/Y') }}
+                            @if($reading->birth_time)
+                                <span style="font-weight:500;">🕛 {{ substr((string) $reading->birth_time, 0, 5) }} น.</span>
+                            @else
+                                <span class="tp-muted" style="font-weight:500; font-size:11px;">⏱️ ไม่ทราบเวลา (ใช้ 12:00)</span>
+                            @endif
+                        </div>
                     </div>
                 @endif
                 @if(!empty($reading->categories))
@@ -496,6 +503,63 @@
         @endif
     </div>
 
+    {{-- ===== 🤖 (2026-09-02) Admin Ask AI — เลน Deep 39 (คู่แฝดหน้า Celtic) ===== --}}
+    @if ($reading->reading_type === 'deep' && $reading->is_paid && ! empty($reading->deep_response) && ! empty($reading->birth_date))
+        @php $deepAskAiUrl = route('admin.fortune.readings.ask-ai', $reading); @endphp
+        <div x-data="adminAskAiDeep()" class="tp-card" style="padding:24px;">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                <div>
+                    <h2 class="tp-section-h" style="font-size:18px; font-weight:800; display:flex; align-items:center; gap:9px; margin:0;">
+                        🤖 Admin Ask AI
+                        <span class="tp-pill tp-pill-soft" style="font-size:11px; font-weight:500;">ดูดวง 39฿ · sync</span>
+                    </h2>
+                    <p class="tp-muted" style="font-size:13px; margin:6px 0 0;">
+                        แอดมินพิมพ์คำถามแทนลูกค้า → แม่หมอตอบจากดวงจริง + ไพ่ + คำทำนายเดิมของบิลนี้ → ส่งให้ลูกค้าทันที
+                        · ไม่ตัดเวลา/โควตาลูกค้า · ไม่เปิดหรือต่อ session
+                    </p>
+                </div>
+                <div style="text-align:right; font-size:12px; color:var(--ink2);">
+                    🕛 เวลาเกิดที่ใช้ผูกดวง: <strong>{{ $reading->birth_time ? substr((string) $reading->birth_time, 0, 5).' น.' : '12:00 น. (มาตรฐาน)' }}</strong>
+                </div>
+            </div>
+
+            <label style="display:block; font-size:12px; font-weight:700; color:var(--ink2); margin-bottom:8px;">
+                📝 คำถามที่จะส่งให้แม่หมอตอบ (สูงสุด 1000 ตัวอักษร)
+            </label>
+            <div class="tp-well tp-input" style="padding:0;">
+                <textarea x-model="question" rows="3" maxlength="1000" :disabled="running"
+                          placeholder="เช่น ปีนี้จะได้ย้ายงานไหม / ความรักช่วงนี้เป็นยังไง"
+                          style="width:100%; background:transparent; border:0; outline:0; padding:11px 13px; color:var(--ink); font-size:14px; resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex; gap:12px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+                <button type="button" class="tp-btn tp-btn-primary" @click="run()" :disabled="running || question.trim().length < 3">
+                    <template x-if="!running"><span><i class="fas fa-paper-plane"></i> ส่งให้แม่หมอตอบ + ส่งถึงลูกค้า</span></template>
+                    <template x-if="running"><span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:15px; height:15px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span> แม่หมอกำลังตอบ… <span x-text="elapsedDisplay"></span></span></template>
+                </button>
+                <span class="tp-muted" style="font-size:12px;">รอ 30-60 วินาที</span>
+            </div>
+
+            <template x-if="result">
+                <div style="margin-top:16px;">
+                    <template x-if="result.success">
+                        <div class="tp-well" style="padding:14px; border-left:4px solid #2e9e5b;">
+                            <div style="font-weight:700; color:#2e9e5b; margin-bottom:6px;">
+                                ✅ ตอบแล้ว <span x-text="result.pushed ? '· ส่งถึงลูกค้าแล้ว (' + (result.platform || '') + ')' : '· ⚠️ ส่งถึงลูกค้าไม่สำเร็จ'"></span>
+                                <span class="tp-muted" style="font-weight:500;" x-text="'· ' + (result.response_len || 0) + ' ตัวอักษร · ' + Math.round((result.elapsed_ms || 0)/1000) + 's'"></span>
+                            </div>
+                            <div style="white-space:pre-wrap; font-size:13.5px; line-height:1.6; color:var(--ink);" x-text="result.response_full"></div>
+                        </div>
+                    </template>
+                    <template x-if="!result.success">
+                        <div class="tp-well" style="padding:14px; border-left:4px solid #d64545; color:#d64545; font-weight:600;">
+                            ❌ <span x-text="result.message || 'ไม่สำเร็จ'"></span>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    @endif
+
     {{-- ════════ สถิติ ════════ --}}
     <div class="tp-card" style="padding:20px;">
         <div class="tp-section-h" style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
@@ -592,4 +656,58 @@
     })();
 </script>
 @endif
+<script>
+// 🤖 (2026-09-02) Admin Ask AI — เลน Deep 39 (โครงเดียวกับ adminAskAi ของหน้า Celtic)
+function adminAskAiDeep() {
+    return {
+        question: '',
+        running: false,
+        result: null,
+        startedAt: null,
+        elapsedDisplay: '0s',
+        timerInterval: null,
+
+        async run() {
+            if (this.running || this.question.trim().length < 3) return;
+            if (!confirm('ส่งคำถามนี้ให้แม่หมอตอบแทนลูกค้า?\n\nคำถาม: ' + this.question.substring(0, 200) +
+                         '\n\nไม่ตัดเวลา/โควตาลูกค้า\nตอบเสร็จส่งถึงลูกค้าทาง LINE/FB อัตโนมัติ\nรอ 30-60 วินาที')) {
+                return;
+            }
+
+            this.running = true;
+            this.result = null;
+            this.startedAt = Date.now();
+            this.elapsedDisplay = '0s';
+            this.timerInterval = setInterval(() => {
+                this.elapsedDisplay = Math.floor((Date.now() - this.startedAt) / 1000) + 's';
+            }, 1000);
+
+            try {
+                const res = await fetch('{{ $deepAskAiUrl ?? '' }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({ question: this.question }),
+                });
+
+                if (!res.ok) {
+                    const errBody = await res.json().catch(() => ({ message: 'HTTP ' + res.status }));
+                    this.result = { success: false, message: errBody.message || ('HTTP ' + res.status) };
+                } else {
+                    this.result = await res.json();
+                    if (this.result.success) this.question = '';
+                }
+            } catch (e) {
+                this.result = { success: false, message: 'Network error: ' + e.message };
+            } finally {
+                this.running = false;
+                if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
+            }
+        },
+    };
+}
+</script>
 @endpush

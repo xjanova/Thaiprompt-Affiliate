@@ -164,6 +164,8 @@ class FortuneReadingsController extends Controller
             'admin_note' => 'nullable|string|max:500',
             // 🌙 (2026-05-14) Admin manual edit fields
             'birth_date' => 'nullable|date',
+            // 🕛 (2026-09-02) เวลาเกิด — ว่าง = ไม่ทราบ (ผูกดวงจาก 12:00 น.)
+            'birth_time' => 'nullable|date_format:H:i',
             'questions_input' => 'nullable|string|max:5000',
             'pick_tarot_random' => 'nullable|boolean',
         ]);
@@ -177,6 +179,7 @@ class FortuneReadingsController extends Controller
             'amount_paid' => $reading->amount_paid,
             'paid_at' => $reading->paid_at?->toIso8601String(),
             'birth_date' => $reading->birth_date?->toDateString(),
+            'birth_time' => $reading->birth_time ? substr((string) $reading->birth_time, 0, 5) : null,
             'questions_count' => is_array($reading->questions) ? count($reading->questions) : 0,
             'tarot_count' => count($reading->getCollectedTarotCards()),
         ];
@@ -194,6 +197,11 @@ class FortuneReadingsController extends Controller
         $questionsInput = $validated['questions_input'] ?? null;
         $pickTarotRandom = (bool) ($validated['pick_tarot_random'] ?? false);
         unset($validated['admin_note'], $validated['questions_input'], $validated['pick_tarot_random']);
+
+        // 🕛 birth_time: "H:i" จากฟอร์ม → "H:i:00" ลงคอลัมน์ TIME · ช่องว่าง = null (ไม่ทราบ)
+        if (array_key_exists('birth_time', $validated)) {
+            $validated['birth_time'] = ! empty($validated['birth_time']) ? $validated['birth_time'].':00' : null;
+        }
 
         // 🌙 (2026-05-14) แปลง questions_input (textarea) → questions array
         //   หนึ่งคำถามต่อบรรทัด
@@ -277,6 +285,48 @@ class FortuneReadingsController extends Controller
             // ready = สร้างคำทำนายเสร็จแล้ว (ไม่ว่าจะ status เป็น completed หรือยัง)
             'ready' => ! empty($reading->deep_response),
         ]);
+    }
+
+    /**
+     * 🤖 (2026-09-02) Admin Ask AI — เลน Deep 39 (คู่แฝดของ FortuneCelticCrossController::adminAskAi)
+     *
+     * owner: "แบบ 39 แอดมินควรตั้งคำถามแทนลูกค้าได้จากหลังบ้าน ได้เหมือนแบบ 99 ด้วย"
+     *
+     * AJAX sync: แอดมินพิมพ์คำถาม → AI ตอบจากดวง+ไพ่+คำทำนายเดิมของบิลนี้ → push ให้ลูกค้า → คืน JSON
+     * ไม่ตัดเวลา/โควตาลูกค้า · ไม่เปิดหรือต่อ session · เก็บประวัติเหมือนลูกค้าถามเอง
+     */
+    public function adminAskAi(Request $request, FortuneReading $reading): \Illuminate\Http\JsonResponse
+    {
+        @set_time_limit(300);
+
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_DEEP) {
+            return response()->json(['success' => false, 'message' => 'Reading นี้ไม่ใช่ดูดวง 39฿ (deep) — Celtic ใช้หน้าของตัวเอง'], 422);
+        }
+        if (! $reading->is_paid) {
+            return response()->json(['success' => false, 'message' => 'Reading นี้ยังไม่ได้ชำระเงิน'], 422);
+        }
+        if (empty($reading->deep_response)) {
+            return response()->json(['success' => false, 'message' => 'ยังไม่มีคำทำนายเชิงลึก — กด "สร้างคำทำนาย" ก่อน'], 422);
+        }
+        if (empty($reading->birth_date)) {
+            return response()->json(['success' => false, 'message' => 'บิลนี้ยังไม่มีวันเกิด — กรอกในหน้าแก้ไขก่อน ไม่งั้นไม่มีดวงให้ตอบ'], 422);
+        }
+
+        $validated = $request->validate([
+            'question' => 'required|string|min:3|max:1000',
+        ]);
+
+        Log::info('Deep admin ask AI: เริ่ม (AJAX sync)', [
+            'reading_id' => $reading->id,
+            'admin_id' => auth()->id(),
+            'question_len' => mb_strlen($validated['question']),
+        ]);
+
+        // สร้างแบบเดียวกับทุกจุดในระบบ (Celtic admin / job) — ผูก settings ชุดปัจจุบันชัดเจน
+        $service = new \App\Services\FortuneConversationService(FortuneTellingSetting::getSettings());
+        $result = $service->answerProSessionAsAdmin($reading, $validated['question'], auth()->id());
+
+        return response()->json($result);
     }
 
     /**

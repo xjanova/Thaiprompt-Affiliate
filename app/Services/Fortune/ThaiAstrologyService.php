@@ -294,6 +294,17 @@ class ThaiAstrologyService
         // ผู้เรียกระบุเวลามาเอง (เช่น Deep 39 ที่ดึงจากข้อความลูกค้า) → ใช้ตัวนั้น
         if ($birthHour !== null) {
             $this->lastBirthHour = $birthHour;
+        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}[ T](\d{1,2}):(\d{2})/', trim($ymd), $m)) {
+            // 🕛 (2026-09-02) สตริง "Y-m-d H:i" = ผู้เรียกรู้เวลาเกิด (FortuneReading::birthDateTimeForChart)
+            //    รับทางนี้เพื่อไม่ต้องเพิ่มพารามิเตอร์ใหม่ตลอดสาย generateWithRetryAndFallback (9 ตัว)
+            $h = (int) $m[1];
+            $min = (int) $m[2];
+            if ($h <= 23 && $min <= 59) {
+                $this->lastBirthHour = $h + $min / 60.0;
+            }
+        } else {
+            // วันที่ล้วน = ไม่ทราบเวลา → ล้างค่าค้างจาก call ก่อน (instance เดิมถูกใช้ซ้ำหลายคน)
+            $this->lastBirthHour = null;
         }
 
         try {

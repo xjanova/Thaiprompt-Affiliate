@@ -3988,6 +3988,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/readings/{reading}/retry-deep', [FortuneReadingsController::class, 'retryDeepReading'])->name('readings.retry-deep');
     Route::post('/readings/{reading}/resend-deep', [FortuneReadingsController::class, 'resendDeepReading'])->name('readings.resend-deep');
     Route::post('/readings/{reading}/recover-pay-first', [FortuneReadingsController::class, 'recoverPayFirstReading'])->name('readings.recover-pay-first');
+    // 🤖 (2026-09-02) แอดมินถามแทนลูกค้า เลน Deep 39 (คู่แฝด celtic-cross.ask-ai)
+    Route::post('/readings/{reading}/ask-ai', [FortuneReadingsController::class, 'adminAskAi'])->name('readings.ask-ai');
 
     // 🖼️ แบนเนอร์ DM
     Route::prefix('banners')->name('banners.')->group(function () {

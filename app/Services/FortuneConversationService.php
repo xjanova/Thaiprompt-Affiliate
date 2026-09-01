@@ -9975,7 +9975,16 @@ class FortuneConversationService
             // ดึงข้อมูลสำหรับทำนาย
             $questions = $reading->questions ?? $reading->getCollectedQuestions();
             $userProfile = $reading->user_profile;
-            $birthDate = $reading->birth_date?->format('Y-m-d');
+
+            // 🕛 (2026-09-02) เวลาเกิด — ลำดับ: ลูกค้าพิมพ์ในคำถาม → เก็บลง DB · แล้วอ่านจาก DB (แอดมินกรอกได้)
+            //    ส่งเป็น "Y-m-d H:i" ผ่านช่อง $birthDate เดิม (ThaiAstrologyService อ่านเวลาจากสตริงเอง)
+            //    ไม่รู้เวลา = "Y-m-d" ล้วน → ผูกดวงจาก 12:00 น.
+            try {
+                $reading->captureStatedBirthTime(implode(' ', array_map('strval', (array) $questions)), 'question');
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+            $birthDate = $reading->birthDateTimeForChart();
             $name = $reading->facebook_user_name ?? 'คุณ';
             $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
 

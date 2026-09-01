@@ -537,6 +537,7 @@ class FortuneReading extends Model
         'user_profile',
         'user_posts_context',
         'birth_date',
+        'birth_time',
         'ai_provider',
         'ai_model',
         'tokens_used',
@@ -2290,6 +2291,136 @@ class FortuneReading extends Model
         $state = $this->conversation_state;
 
         return is_array($state) ? ($state[$key] ?? $default) : $default;
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // 🕛 เวลาเกิด (2026-09-02 owner directive)
+    //   "ไม่บอก = ยึด 12:00 น. · บอกทีหลัง/บอทถามทีหลัง = คำนวณใหม่ได้ · หลังบ้านบันทึกได้"
+    //   จุดกลางจุดเดียว — ทุกเลน (39 บทแรก / 39 คุยต่อ / Celtic ทุกพรอมต์ / แอดมิน) อ่าน-เขียนผ่านที่นี่
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * เวลาเกิดเป็นชั่วโมงทศนิยม (21:30 → 21.5) — null = ไม่ทราบ (ผู้เรียกใช้ 12:00 น.)
+     */
+    public function birthHourFloat(): ?float
+    {
+        $t = trim((string) ($this->birth_time ?? ''));
+        if ($t === '' || ! preg_match('/^(\d{1,2}):(\d{2})/', $t, $m)) {
+            return null;
+        }
+        $h = (int) $m[1];
+        $min = (int) $m[2];
+        if ($h > 23 || $min > 59) {
+            return null;
+        }
+
+        return $h + $min / 60.0;
+    }
+
+    /**
+     * วันเกิดสำหรับส่งเข้าตัวผูกดวง — "Y-m-d" ถ้าไม่ทราบเวลา · "Y-m-d H:i" ถ้าทราบ
+     *
+     * ThaiAstrologyService::formatPersonBlock() อ่านเวลาจากสตริงนี้ได้เอง
+     * → ผู้เรียกที่มีแค่ช่อง $birthDate เดิม (generateWithRetryAndFallback 9 พารามิเตอร์)
+     *   ไม่ต้องเพิ่มพารามิเตอร์ใหม่ทั้งสาย
+     */
+    public function birthDateTimeForChart(): ?string
+    {
+        if (empty($this->birth_date)) {
+            return null;
+        }
+        $ymd = $this->birth_date->format('Y-m-d');
+        $hour = $this->birthHourFloat();
+        if ($hour === null) {
+            return $ymd;
+        }
+
+        return $ymd.' '.self::hourToTimeString($hour, false);
+    }
+
+    /**
+     * แปลงชั่วโมงทศนิยม → "HH:MM:SS" (สำหรับคอลัมน์ TIME) หรือ "HH:MM"
+     */
+    public static function hourToTimeString(float $hour, bool $withSeconds = true): string
+    {
+        $h = (int) floor($hour);
+        $m = (int) round(($hour - $h) * 60);
+        if ($m >= 60) {
+            $m = 0;
+            $h++;
+        }
+        $h = max(0, min(23, $h));
+
+        return sprintf('%02d:%02d', $h, $m).($withSeconds ? ':00' : '');
+    }
+
+    /**
+     * 🕛 ลูกค้าบอกเวลาเกิดในข้อความไหม → เก็บลง birth_time (จุดเดียวที่เขียนคอลัมน์นี้จากบทสนทนา)
+     *
+     * ใช้ตัวดึงแบบเข้มงวด (extractStatedBirthHour) — ต้องมีคำว่า เกิด/คลอด ใกล้ตัวเลข
+     * ไม่งั้น "เงินเดือน 2.50 หมื่น" กลายเป็นเวลาเกิด 02:50 แล้วลัคนาเพี้ยนทั้งผัง
+     *
+     * ค่าใหม่ทับค่าเก่าเสมอ (ลูกค้าแก้ได้) + ตั้งธง one-shot ให้พรอมต์เทิร์นถัดไปบอกว่า "ปรับผังแล้ว"
+     * แอดมินแก้จากหลังบ้านไม่ผ่านเมธอดนี้ (update() ตรง) → ไม่ตั้งธง
+     *
+     * @param  string  $text  ข้อความลูกค้า
+     * @param  string  $source  ที่มา (log/audit): question | pro_session | celtic_birthdate | celtic_qa
+     * @return float|null ชั่วโมงที่พบ (null = ไม่ได้บอก / เหมือนเดิม)
+     */
+    public function captureStatedBirthTime(string $text, string $source = 'customer'): ?float
+    {
+        try {
+            $hour = app(\App\Services\Fortune\ThaiAstrologyService::class)->extractStatedBirthHour($text);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if ($hour === null) {
+            return null;
+        }
+
+        $new = self::hourToTimeString($hour);
+        $old = (string) ($this->birth_time ?? '');
+        if (substr($old, 0, 5) === substr($new, 0, 5)) {
+            return null; // เหมือนเดิม — ไม่ต้องเขียน ไม่ต้องแจ้ง
+        }
+
+        try {
+            $this->update(['birth_time' => $new]);
+            $this->setConversationState('birth_time_source', $source);
+            $this->setConversationState('birth_time_updated_at', now()->toIso8601String());
+            // ธง one-shot — พรอมต์เทิร์นถัดไปอ่านแล้วล้าง (บอกลูกค้าสั้นๆ ว่าปรับผังแล้ว)
+            $this->setConversationState('birth_time_just_updated', substr($new, 0, 5));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FortuneReading: บันทึกเวลาเกิดไม่สำเร็จ', [
+                'reading_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        \Illuminate\Support\Facades\Log::info('FortuneReading: ลูกค้าบอกเวลาเกิด → บันทึกแล้ว', [
+            'reading_id' => $this->id,
+            'birth_time' => substr($new, 0, 5),
+            'was' => $old !== '' ? substr($old, 0, 5) : null,
+            'source' => $source,
+        ]);
+
+        return $hour;
+    }
+
+    /**
+     * 🕛 ดึงธง "เพิ่งได้เวลาเกิดใหม่" (one-shot) — คืน "HH:MM" แล้วล้างธง / null = ไม่มี
+     */
+    public function pullBirthTimeJustUpdated(): ?string
+    {
+        $v = $this->getConversationState('birth_time_just_updated');
+        if (empty($v)) {
+            return null;
+        }
+        $this->setConversationState('birth_time_just_updated', null);
+
+        return (string) $v;
     }
 
     /**
