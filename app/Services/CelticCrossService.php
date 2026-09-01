@@ -626,6 +626,7 @@ class CelticCrossService
             ."คุณคือ \"{$brandName}\" — แม่หมอเซียนไพ่เซลติก กำลังอ่าน \"พื้นดวงเปิดตัว\" ครั้งแรกให้เจ้าชะตา (เพิ่งได้วันเกิด)\n"
             ."ผสาน \"ดวงดาว (หลักเจ้าชนะจากวันเกิด)\" + \"ไพ่ทั้ง 10 ใบ\" เป็นเรื่องเดียวกัน — ดาวยืนยัน/เสริมสิ่งที่ไพ่บอก\n\n"
             .$this->buildCardFirstMandate()
+            .$this->buildCurrentDateContext()
             .$this->buildCardTalkPolicy(null)
             .$this->buildCardNamingDirective()
             ."━━━━━━━━━━━━━━━━━\n🃏 ไพ่ 10 ใบ (Celtic Cross) ของเจ้าชะตา:\n━━━━━━━━━━━━━━━━━\n".$cardsText."\n\n"
@@ -2513,6 +2514,7 @@ class CelticCrossService
         return $personaPrefix
             .$baseChartDirective
             .$this->buildCardFirstMandate()
+            .$this->buildCurrentDateContext()
             .$this->buildCardTalkPolicy($userQuestion)
             .$pastCaseBlock
             .$pastReadingsContext
@@ -3082,6 +3084,7 @@ class CelticCrossService
         // 🃏🃏 (2026-05-30) Card-First Mandate วางบล็อกแรกสุด — แม้ Q2+ ก็ต้องอ่านหน้าไพ่ 100%
         return $personaPrefix
             .$this->buildCardFirstMandate()
+            .$this->buildCurrentDateContext()
             .$this->buildCardTalkPolicy($userQuestion)
             .$preChatContext
             .$advisorDirective
@@ -5389,6 +5392,31 @@ class CelticCrossService
         return mb_strlen($clean) > $limit
             ? mb_substr($clean, 0, $limit).'…'
             : $clean;
+    }
+
+    /**
+     * 📆 บริบทวันที่ปัจจุบัน — บล็อกเล็กที่ต้องมีในทุกพรอมต์ที่ทำนาย "ช่วงเวลา"
+     *
+     * ⚠️ ทำไม (2026-09-02 — เคส FTU-260902-Y8063):
+     *   โมเดลไม่รู้ว่าวันนี้วันที่เท่าไหร่ ถ้าไม่บอก → เดาเอา
+     *   บิลจริงวันที่ 2 กันยายน 2569 แต่พื้นดวงเปิดตัวตอบว่า
+     *   "ช่วงเมษายน–มิถุนายน 2569 จะมีงานเร่ง..." = **ทำนายย้อนอดีตไป 3 เดือน**
+     *   เดิมมีบล็อกนี้เฉพาะ buildGrandFinalePrompt — อีก 3 พรอมต์ตาบอดวันที่
+     */
+    protected function buildCurrentDateContext(): string
+    {
+        $now = now();
+        $monthTh = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        $month = $monthTh[(int) $now->format('n')];
+        $yearBE = (int) $now->format('Y') + 543;
+        $day = (int) $now->format('j');
+
+        $nextYearBE = $yearBE + 1;
+
+        return "📆 *วันนี้คือ {$day} {$month} {$yearBE}* — ใช้ผูกช่วงเวลาทุกครั้งที่ทำนาย\n"
+            ."   ❌ ห้ามชี้ช่วงเวลาที่ผ่านไปแล้วว่าเป็นอนาคต — เดือนที่มาก่อนเดือน{$month} {$yearBE} คืออดีต\n"
+            ."   ✅ นับจากวันนี้ไปข้างหน้าเสมอ เช่น \"ภายใน 2 สัปดาห์\" / \"ปลายเดือน{$month}\" / \"ต้นปี {$nextYearBE}\"\n\n";
     }
 
     /**

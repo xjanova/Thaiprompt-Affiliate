@@ -29,8 +29,22 @@ class ThaiAstrologyService
     /** จำนวนคนสูงสุดที่จะคำนวณต่อหนึ่งข้อความ (กัน prompt บวม + กัน abuse) */
     public const MAX_PEOPLE = 3;
 
+    /**
+     * 🕛 เวลาเกิดมาตรฐานเมื่อลูกค้าไม่ได้บอก (owner directive 2026-09-02)
+     *
+     * "เราไม่ได้ถามเวลาเกิดอยู่แล้ว ให้ใช้เวลามาตรฐานในการคำนวณหากจำเป็น
+     *  แต่ถ้าลูกค้าบอกเวลาเกิด ก็จะยิ่งแม่นยำ ก็นำมาคำนวณด้วย ถ้าไม่ได้บอกจะยึดเวลา 12.00 น."
+     *
+     * เที่ยงวัน = จุดกึ่งกลางของวัน → คลาดเคลื่อนสูงสุด ±12 ชม. (น้อยที่สุดเท่าที่เป็นไปได้)
+     * และเป็นมาตรฐานที่โหราศาสตร์สากลใช้กับดวงที่ไม่ทราบเวลาเกิด (noon chart)
+     */
+    public const DEFAULT_BIRTH_HOUR = 12.0;
+
     /** เวลาเกิดที่ parse ได้ล่าสุด (ชม. เป็น float รวมนาที, 0-23.99) — null = ไม่ได้ระบุ */
     protected ?float $lastBirthHour = null;
+
+    /** ราศีลัคนาที่คำนวณได้ล่าสุด — ใช้ผูกภพให้ดาวจร (null = คำนวณไม่ได้) */
+    protected ?string $lastLagna = null;
 
     /**
      * สร้างบล็อกดวงดาวสำหรับ Celtic — ตรวจจับวันเกิดในข้อความแล้วคำนวณให้ครบ
@@ -52,7 +66,9 @@ class ThaiAstrologyService
         }
 
         // parse เวลาเกิด (ถ้ามี) — เก็บไว้ใช้คำนวณลัคนา
-        $this->lastBirthHour = $this->extractBirthHourFromText($text);
+        // ⚠️ ใช้ตัวเข้มงวด — ข้อความแชทเต็มไปด้วยตัวเลข (หนี้ 2.50 แสน / เงินเดือน 12.50)
+        //    ตัวหลวมจะอ่านเป็นเวลาเกิดแล้วทำให้ลัคนา+ภพเพี้ยนทั้งผัง
+        $this->lastBirthHour = $this->extractStatedBirthHour($text);
 
         $multi = count($dates) > 1;
         $people = '';
@@ -63,7 +79,7 @@ class ThaiAstrologyService
                 ? '👤 คนที่ '.($i + 1)." (เกิด {$d['raw']})"
                 : "👤 เจ้าของวันเกิด (เกิด {$d['raw']})";
 
-            $people .= $label."\n".$this->formatPersonBlock($d['ymd'])."\n";
+            $people .= $label."\n".$this->formatPersonBlock($d['ymd'], null, $i === 0)."\n";
         }
 
         // 💞 (2026-06-03) Compatibility — ถ้ามี ≥2 คน คำนวณความเข้ากันให้เลย
@@ -84,7 +100,7 @@ class ThaiAstrologyService
             ."• 🌀 ดวงพื้น (ผูกดวง) = ดาวทั้ง 9 (☉☽♂☿♃♀♄☊☋) คำนวณจาก ephemeris ของเราเอง — ใช้ \"ตำแหน่งดาว+ภพ+เกษตร/อุจ/นิจ\" ในการอ่าน\n"
             ."   • ดาวในภพไหน = เรื่องนั้นเด่น (เช่น อังคารในปัตนิ = คู่เด็ดขาด/ขัดแย้ง · ศุกร์ในกัมมะ = งานสาย art-รัก)\n"
             ."   • ดาวอุจ = พลังแรงดี · ดาวเกษตร = บ้านตัวเอง-มั่นคง · ดาวนิจ = อ่อน-ต้องระวัง · ดาวพักร = พลังสะท้อนใน/ทบทวน\n"
-            ."   📐 ถ้าไม่มีเวลาเกิด → \"ดาวจันทร์/ลัคนาอาจคลาดเคลื่อน ขอเวลาเกิดเพื่อแม่นขึ้น\"\n"
+            ."   📐 ลัคนา+ภพ มีให้เสมอ (ไม่บอกเวลาเกิด = คำนวณจากเวลามาตรฐาน 12:00 น.) → *อ่านได้เลย ห้ามออกตัวว่าดูไม่ได้*\n"
             ."• 🔢 เลขชะตา (Life Path) = บุคลิกพื้นฐาน-ภารกิจชีวิต ใช้ยืนยัน/เสริมพื้นนิสัยจากดาวเจ้าชนะ\n"
             ."• 📆 ดวงรายปี (Personal Year) = โทนของ \"ปีนี้\" เชื่อมตรงกับคำถามอนาคต (เช่น ปี 1=เริ่มใหม่, 9=ปิดบท)\n";
 
@@ -269,8 +285,17 @@ class ThaiAstrologyService
      * @param  string  $ymd  วันเกิดรูปแบบ Y-m-d
      * @return string บล็อกข้อความ (ไม่มี directive ท้าย — directive รวมอยู่ที่ buildCelticBirthAstrologyBlock)
      */
-    public function formatPersonBlock(string $ymd): string
+    /**
+     * @param  float|null  $birthHour  เวลาเกิดเป็นชั่วโมง (13.5 = 13:30) — null = ใช้ค่าที่ parse ไว้
+     *                                 หรือเวลามาตรฐาน 12:00 น. (self::DEFAULT_BIRTH_HOUR)
+     */
+    public function formatPersonBlock(string $ymd, ?float $birthHour = null, bool $withTransit = true): string
     {
+        // ผู้เรียกระบุเวลามาเอง (เช่น Deep 39 ที่ดึงจากข้อความลูกค้า) → ใช้ตัวนั้น
+        if ($birthHour !== null) {
+            $this->lastBirthHour = $birthHour;
+        }
+
         try {
             $date = Carbon::parse($ymd);
         } catch (\Throwable $e) {
@@ -306,6 +331,12 @@ class ThaiAstrologyService
         $base .= $this->formatPersonalYearLine($date->day, $date->month);
         $base .= $this->formatElementPairingLine($zodiac, (string) $p['element']);
 
+        // 🔭 ดาวจรวันนี้ — ต้องแนบไปด้วย ไม่งั้น AI แต่ง transit เอง (เคส FTU-260902-E4391)
+        //    หลายคนในบล็อกเดียว (ดูความเข้ากัน) แนบครั้งเดียวพอ → ผู้เรียกส่ง false มา
+        if ($withTransit) {
+            $base .= $this->formatTransitBlock($this->lastLagna);
+        }
+
         return $base;
     }
 
@@ -339,7 +370,7 @@ class ThaiAstrologyService
 
         $out = '';
         if (! empty($good)) {
-            $out .= "✍️ ชื่อมงคล (อักษรควรมีในชื่อ) — ".implode(' | ', $good)."\n";
+            $out .= '✍️ ชื่อมงคล (อักษรควรมีในชื่อ) — '.implode(' | ', $good)."\n";
         }
         if (isset($letters[$kalaP])) {
             $out .= "🚫 อักษรกาลกิณี (ห้ามใช้ในชื่อ): {$letters[$kalaP]}\n";
@@ -367,34 +398,41 @@ class ThaiAstrologyService
             return '';
         }
 
-        // ลัคนา (ถ้ามีเวลาเกิด) — ใช้นาที + Local Sidereal Time จริง
-        $birthHour = $this->lastBirthHour;
-        if ($birthHour !== null) {
-            $hh = (int) floor($birthHour);
-            $mm = (int) round(($birthHour - $hh) * 60);
-            if ($mm >= 60) {
-                $mm = 0;
-                $hh++;
-            }
-            $dtForCalc = $date->copy()->setTime($hh, $mm, 0);
-            $lagna = $this->siderealLagna($dtForCalc);
-            $timeStr = sprintf('%02d:%02d', $hh, $mm);
-        } else {
-            $dtForCalc = $date->copy()->setTime(12, 0, 0);
-            $lagna = null;
-            $timeStr = '';
+        // 🕛 (2026-09-02 owner directive) ลัคนาต้องมี "เสมอ" — ไม่มีเวลาเกิดให้ยึด 12:00 น.
+        //
+        //   ⚠️ ทำไม: เราไม่ได้ถามเวลาเกิดอยู่แล้ว ⇒ เดิม $lagna = null ⇒ ไม่มีภพสักดวง
+        //     แต่ persona ยังสั่ง AI ให้อ่าน "ภพ" ⇒ AI แต่งภพขึ้นเองทุกดวง
+        //     (เคสจริง FTU-260902-E4391 มโนภพ 8 จุด: ศุกร์ภพตนุ/พุธภพศุภะ/จันทร์ภพลาภะ ฯลฯ)
+        //   ยึดเที่ยงวันเป็นมาตรฐานโหราศาสตร์ = ได้ภพจริงคำนวณได้ ตรวจสอบได้ และคลาดน้อยสุด
+        //   (เที่ยงวันคือจุดกึ่งกลางของวัน — ผิดพลาดสูงสุด ±12 ชม. แทนที่จะเป็น ±24)
+        //   ลูกค้าบอกเวลาเกิดเมื่อไหร่ → ใช้ของจริงทันที แม่นขึ้นทั้งลัคนาและดาวจันทร์
+        $hourKnown = $this->lastBirthHour !== null;
+        $birthHour = $hourKnown ? $this->lastBirthHour : self::DEFAULT_BIRTH_HOUR;
+
+        $hh = (int) floor($birthHour);
+        $mm = (int) round(($birthHour - $hh) * 60);
+        if ($mm >= 60) {
+            $mm = 0;
+            $hh++;
         }
+        $dtForCalc = $date->copy()->setTime($hh, $mm, 0);
+        $lagna = $this->siderealLagna($dtForCalc);
+        $this->lastLagna = $lagna;
+        $timeStr = sprintf('%02d:%02d', $hh, $mm);
 
         // ⭐ คำนวณตำแหน่งดาวทั้ง 9 ด้วย ephemeris ของเราเอง
-        $eph = new PlanetEphemeris();
+        $eph = new PlanetEphemeris;
         $positions = $eph->positions($dtForCalc);
 
         $out = "🌀 ดวงพื้น (ผูกดวงเต็มสูตร — คำนวณดาว 9 ดวง):\n";
 
-        if ($lagna !== null) {
-            $out .= "   ⬆️ ลัคนา: ราศี{$lagna} (จากเวลาเกิด {$timeStr} น. · LST + ละติจูดกรุงเทพ)\n";
+        if ($lagna === null) {
+            // siderealLagna คืน null ได้เมื่อ config ราศีหาย — ไม่ควรเกิด แต่กันไว้
+            $out .= "   ⬆️ ลัคนา: (คำนวณไม่ได้ — ห้ามอ้างอิงภพในคำทำนาย)\n";
+        } elseif ($hourKnown) {
+            $out .= "   ⬆️ ลัคนา: ราศี{$lagna} (จากเวลาเกิด {$timeStr} น. ที่เจ้าชะตาบอก · LST + ละติจูดกรุงเทพ)\n";
         } else {
-            $out .= "   ⬆️ ลัคนา: (ไม่ระบุเวลาเกิด — ดาวจันทร์/ลัคนาอาจคลาดเคลื่อน · ถามเวลาเกิดเพื่อแม่นขึ้น)\n";
+            $out .= "   ⬆️ ลัคนา: ราศี{$lagna} (⏱️ คำนวณจากเวลามาตรฐาน 12:00 น. — เจ้าชะตายังไม่ได้บอกเวลาเกิด)\n";
         }
 
         // ตำแหน่งดาวทั้ง 9 + ภพ (ถ้ามีลัคนา) + ดิ๊กนิตี้
@@ -418,6 +456,69 @@ class ThaiAstrologyService
 
         // 12 ภพ สำหรับให้ AI อ้างอิง
         $out .= "   🏛️ 12 ภพ: ตนุ(ตัวเอง)/กฎุมพะ(ทรัพย์)/สหัชชะ(พี่น้อง)/พันธุ(บ้าน)/ปุตตะ(บุตร-รัก)/อริ(ศัตรู-โรค)/ปัตนิ(คู่)/มรณะ(วิกฤต)/ศุภะ(โชค-บุญ)/กัมมะ(งาน)/ลาภะ(โชคลาภ)/วินาสนะ(สูญเสีย)\n";
+
+        // 🔒 กฎการใช้ผัง — ต้องมีทุกครั้ง ไม่งั้น AI เติมภพ/ดาวที่ไม่มีเอง (เคส FTU-260902-E4391)
+        $out .= "   🔒 *ใช้ได้เฉพาะดาวและภพที่ระบุข้างบนเท่านั้น* — ❌ ห้ามอ้างว่าดาวดวงใดอยู่ภพอื่นนอกรายการนี้\n";
+
+        if (! $hourKnown && $lagna !== null) {
+            $out .= "   ⏱️ ลัคนา+ภพ ข้างบนคำนวณจากเวลามาตรฐาน 12:00 น. — *อ่านได้ตามปกติ ไม่ต้องออกตัว*\n"
+                ."      แต่ถ้าเจ้าชะตาบอกเวลาเกิดจริงจะแม่นขึ้น (ลัคนาเลื่อนได้ ~1 ราศีต่อ 2 ชม.)\n"
+                ."      → ชวนถามเวลาเกิดได้ *ครั้งเดียวแบบเนียนๆ* ตอนท้าย ❌ ห้ามทวงซ้ำ ❌ ห้ามเอามาเป็นข้ออ้างไม่ฟันธง\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🔭 ดาวจร (transit) ณ วันนี้ — ตำแหน่งดาว 9 ดวงจริง + ภพที่ตกกับดวงของเจ้าชะตา
+     *
+     * ⚠️ ทำไมต้องมี (2026-09-02 — เคส FTU-260902-E4391):
+     *   persona สั่ง AI ว่า "ดูตำแหน่งดาวเคราะห์ปัจจุบัน (transit) → ดูภพที่ได้รับผล"
+     *   แต่ระบบ **ไม่เคยป้อน transit ให้เลยสักตัว** ⇒ AI แต่งเอง 8 จุด และมีจุดที่ผิด
+     *   ดาราศาสตร์ชัดๆ ("2-30 กันยายน ดาวจันทร์โคจรภพตนุ" — จันทร์อยู่ราศีละ ~2.5 วัน)
+     *   ⇒ ป้อนของจริงจาก [[PlanetEphemeris]] ไปเลย ดีกว่าห้ามพูดถึง เพราะดาวจรคือหัวใจ
+     *     ของการระบุ "ช่วงเวลา" ที่ลูกค้าจ่ายเงินมาเพื่อฟัง
+     *
+     * @param  string|null  $lagna  ราศีลัคนาของเจ้าชะตา (ได้จาก siderealLagna) — มี = คำนวณภพให้ด้วย
+     * @param  Carbon|null  $now  วันที่ต้องการ (null = วันนี้)
+     * @return string ว่าง = คำนวณไม่ได้
+     */
+    public function formatTransitBlock(?string $lagna = null, ?Carbon $now = null): string
+    {
+        try {
+            $now ??= Carbon::now('Asia/Bangkok');
+            $positions = (new PlanetEphemeris)->positions($now->copy()->setTime(12, 0, 0));
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        if (empty($positions)) {
+            return '';
+        }
+
+        $thaiMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        $today = "{$now->day} {$thaiMonths[$now->month]} ".($now->year + 543);
+
+        $out = "🔭 ดาวจรวันนี้ ({$today}) — ตำแหน่งจริง ใช้ผูก \"ช่วงเวลา\" ในคำทำนาย:\n";
+        foreach ($positions as $p) {
+            $line = "   {$p['sym']} {$p['th']} จรราศี{$p['sign']}";
+            if ($lagna !== null) {
+                $h = $this->houseNumber($lagna, $p['sign']);
+                if ($h > 0) {
+                    $line .= " · ทับภพ{$h}";
+                }
+            }
+            if (! empty($p['retro'])) {
+                $line .= ' · ⏪ พักร';
+            }
+            $out .= $line."\n";
+        }
+
+        $out .= "   🔒 *ระบุช่วงเวลาได้เฉพาะจากดาวจรชุดนี้* — ❌ ห้ามแต่งว่าดาวดวงใดจะย้ายเข้าภพไหนวันไหน\n"
+            ."   ⏳ ความเร็วดาว (ใช้ประเมินว่าเรื่องจะกินเวลาแค่ไหน — ห้ามบอกวันที่เป๊ะเกินจริง):\n"
+            ."      จันทร์ ~2 วันครึ่ง/ราศี · อาทิตย์-พุธ-ศุกร์ ~1 เดือน/ราศี · อังคาร ~6 สัปดาห์\n"
+            ."      พฤหัสบดี ~1 ปี · เสาร์ ~2 ปีครึ่ง · ราหู-เกตุ ~1 ปีครึ่ง (เดินถอยหลัง)\n";
 
         return $out;
     }
@@ -447,8 +548,8 @@ class ThaiAstrologyService
      *      โดย ε = ความเอียง 23.44°, φ = ละติจูดสถานที่
      *
      * @param  \Carbon\Carbon  $dt  วันเวลาเกิด (Thai time UTC+7)
-     * @param  float           $lat ละติจูด (default กรุงเทพ 13.75)
-     * @param  float           $lon ลองจิจูด (default กรุงเทพ 100.5)
+     * @param  float  $lat  ละติจูด (default กรุงเทพ 13.75)
+     * @param  float  $lon  ลองจิจูด (default กรุงเทพ 100.5)
      */
     public function siderealLagna(\Carbon\Carbon $dt, float $lat = 13.75, float $lon = 100.5): ?string
     {
@@ -457,7 +558,7 @@ class ThaiAstrologyService
             return null;
         }
 
-        $eph = new PlanetEphemeris();
+        $eph = new PlanetEphemeris;
         $jdUT = $eph->julianDay($dt) - 7.0 / 24.0; // Thai → UT
 
         // Greenwich Mean Sidereal Time (Meeus ch.12 eq. 12.4 — แม่นแม้วันที่ห่าง J2000)
@@ -628,7 +729,7 @@ class ThaiAstrologyService
 
         $out = '';
         if (! empty($good)) {
-            $out .= "📅 วันมงคล (ทำเรื่องสำคัญ): ".implode(' · ', $good)."\n";
+            $out .= '📅 วันมงคล (ทำเรื่องสำคัญ): '.implode(' · ', $good)."\n";
         }
         if ($kalaDay !== '') {
             $out .= "🚫 วันกาลกิณี (เลี่ยงเริ่มงานใหญ่): {$kalaDay}\n";
@@ -665,7 +766,7 @@ class ThaiAstrologyService
             return '';
         }
 
-        return "📆 ดวงรายปี ".($currentYear + 543)." (Personal Year {$py}): {$text}\n";
+        return '📆 ดวงรายปี '.($currentYear + 543)." (Personal Year {$py}): {$text}\n";
     }
 
     /**
@@ -959,6 +1060,71 @@ class ThaiAstrologyService
      *
      * @return int|null ชั่วโมง 0-23 หรือ null = ไม่พบ
      */
+    /**
+     * 🕛 ดึง "เวลาเกิด" แบบเข้มงวด — ต้องมีคำบ่งชี้การเกิดอยู่ใกล้ๆ ตัวเลขเท่านั้น
+     *
+     * ⚠️ ทำไมต้องแยกจาก extractBirthHourFromText (2026-09-02):
+     *   ตัวเดิมจับ "HH.MM" ล้วน ⇒ ประโยคอย่าง *"ปีนี้จะได้เงินเดือน 2.50 หมื่นไหม"*
+     *   ถูกอ่านเป็นเวลาเกิด 02:50 → ลัคนาเพี้ยนทั้งผัง แล้วยังติดป้ายว่า
+     *   "จากเวลาเกิดที่เจ้าชะตาบอก" = โกหกลูกค้า
+     *   ยิ่งตอนนี้ลัคนาถูกคำนวณเสมอ ความเพี้ยนจะลามไปทุกภพ ⇒ ต้องเข้มงวด
+     *
+     * วิธี: หาคำบ่งชี้ (เกิด/คลอด/ลืมตา) แล้วอ่านเวลาเฉพาะในหน้าต่างรอบคำนั้น
+     *
+     * @return float|null null = ไม่ได้บอกเวลาเกิด → ผู้เรียกใช้ DEFAULT_BIRTH_HOUR
+     */
+    public function extractStatedBirthHour(string $text): ?float
+    {
+        $t = trim($text);
+        if ($t === '') {
+            return null;
+        }
+
+        $len = mb_strlen($t);
+        $offset = 0;
+
+        // ไล่ทุกตำแหน่งที่มีคำบ่งชี้ — คนอาจพิมพ์วันเกิดหลายที่ในข้อความเดียว
+        while ($offset < $len) {
+            $hit = null;
+            foreach (['เกิด', 'คลอด', 'ลืมตา'] as $cue) {
+                $pos = mb_strpos($t, $cue, $offset);
+                if ($pos !== false && ($hit === null || $pos < $hit)) {
+                    $hit = $pos;
+                }
+            }
+            if ($hit === null) {
+                return null;
+            }
+
+            // 🚫 "เกิด" ที่ไม่ได้แปลว่าคลอด — "จะเกิดอะไรขึ้น" เป็นคำถามดวงที่พบบ่อยที่สุด
+            //    ถ้าไม่กรอง ประโยค "หนี้ 2.30 แสน จะเกิดอะไรขึ้น" จะถูกอ่านเป็นเวลาเกิด 02:30
+            $after = mb_substr($t, $hit + 4, 8);
+            $isBirthCue = true;
+            foreach (['อะไร', 'เรื่อง', 'ปัญหา', 'ขึ้น', 'ผล', 'เหตุ', 'ความ'] as $notBirth) {
+                if (mb_strpos($after, $notBirth) === 0) {
+                    $isBirthCue = false;
+                    break;
+                }
+            }
+
+            if ($isBirthCue) {
+                // หน้าต่างรอบคำบ่งชี้ — เผื่อทั้ง "เกิด 21:30" และ "21:30 น. ... เกิด"
+                //   (สระ/วรรณยุกต์ไทยนับเป็นตัวอักษรแยก → ต้องเผื่อย้อนหลังกว้างกว่าที่คิด)
+                $start = max(0, $hit - 45);
+                $window = mb_substr($t, $start, 90);
+
+                $hour = $this->extractBirthHourFromText($window);
+                if ($hour !== null) {
+                    return $hour;
+                }
+            }
+
+            $offset = $hit + 1;
+        }
+
+        return null;
+    }
+
     public function extractBirthHourFromText(string $text): ?float
     {
         $t = $this->normalizeThaiDigits($text);
