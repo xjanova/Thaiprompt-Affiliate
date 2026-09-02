@@ -2637,8 +2637,13 @@ trait CelticCrossConversationTrait
         //   🛡️ (2026-06-23 bug-hunt) ข้าม settle-buffer สำหรับ "พื้นดวงเปิดตัว" (isCelticBaseChart) —
         //     เป็นข้อความสังเคราะห์เดี่ยวจากระบบ (ไม่ใช่ลูกค้ารัวคำ) → ไม่ต้อง debounce
         //     ถ้า buffer จะทำ flag isAutoBaseChart หาย (job เรียก askQuestion ไม่มี flag) → timer เริ่มที่ Q1 ผิด
+        //   ⏳ (2026-09-02 FTU-260902-V9628) หน้าต่างปรับตามพฤติกรรม — คนถามข้อเดียวยังไวเท่าเดิม (10 วิ)
+        //     แต่คนที่ "พิมพ์กลับเร็วกว่าที่จะอ่านคำตอบจบ" = ยังเล่าไม่จบ → ขยายเป็น 50 วิ
+        //     เคสจริง: เล่าเรื่องยาวเป็นชิ้นๆ ห่างกัน 15-47 วิ → บอทตอบเต็ม 9 ครั้งใน 25 นาที
         $settleSec = (int) ($this->settings->celtic_qa_settle_seconds ?? 10);
         if ($settleSec > 0 && ! $isCelticBaseChart) {
+            $this->qaTrackRamble($reading);
+            $settleSec = $this->qaSettleWindow($reading, $settleSec);
             $dPlatform = $reading->platform;
             if (! $dPlatform || ! in_array($dPlatform, ['facebook', 'line'], true)) {
                 $cand = $reading->platform_user_id ?: $reading->facebook_user_id ?: '';
@@ -2672,9 +2677,13 @@ trait CelticCrossConversationTrait
                 \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)
                     ->delay(now()->addSeconds($settleSec + 1));
 
+                // 💬 ระหว่างนิ่งรอ ให้เห็น "จุดสามจุดกำลังพิมพ์" — owner: ห้ามเพิ่มกล่องข้อความ
+                $this->qaSendTypingHint($reading, $settleSec);
+
                 \Log::info('Celtic FIX D: settle-buffer คำถาม (นิ่งรอรัว)', [
                     'reading_id' => $reading->id,
                     'settle_sec' => $settleSec,
+                    'rambling' => $this->qaIsRambling($reading),
                     'q_preview' => mb_substr($question, 0, 40),
                 ]);
 
@@ -3049,6 +3058,9 @@ trait CelticCrossConversationTrait
                 ]);
             }
         }
+
+        // ⏳ (2026-09-02) จดความยาวคำตอบ — เทิร์นหน้าใช้ตัดสินว่าลูกค้า "อ่านทันไหม" (ดู QaSettleTrait)
+        $this->qaNoteAnswerSent($reading, (string) $finalMessage);
 
         return [
             'action' => 'celtic_question_answered',

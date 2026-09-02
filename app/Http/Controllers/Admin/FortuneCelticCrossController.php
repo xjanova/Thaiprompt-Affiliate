@@ -108,6 +108,12 @@ class FortuneCelticCrossController extends Controller
             //    ถ้าเผลอแก้เป็น >=1 เพื่อให้เซฟผ่าน = ทับ "ไม่จำกัด" กลับเป็น cap (เคส FTU-260627-U1003 ถูกตัดที่ 5Q)
             'celtic_cross_max_questions' => 'integer|min:0|max:50',
             'celtic_cross_qa_window_minutes' => 'integer|min:5|max:1440',
+            // ⏳ (2026-09-02 FTU-260902-V9628) รอลูกค้าเล่าจบก่อนรวบตอบ — 0 = ปิดการรอ
+            'celtic_qa_settle_seconds' => 'nullable|integer|min:0|max:120',
+            'pro_session_settle_seconds' => 'nullable|integer|min:0|max:120',
+            'qa_settle_ramble_seconds' => 'nullable|integer|min:0|max:300',
+            'qa_settle_max_seconds' => 'nullable|integer|min:30|max:600',
+            'qa_ramble_brief_reply' => 'sometimes|boolean',
             // 🤝 (2026-08-29 FTU-260829-M9469) ช่วงคุยต่อหลังบทสรุป
             'celtic_aftercare_enabled' => 'sometimes|boolean',
             'celtic_aftercare_total_minutes' => 'integer|min:5|max:1440',
@@ -143,6 +149,18 @@ class FortuneCelticCrossController extends Controller
             $settings->celtic_cross_max_questions = (int) $validated['celtic_cross_max_questions'];
         }
         $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 15;
+
+        // ⏳ (2026-09-02 FTU-260902-V9628) หน้าต่างรอลูกค้าพิมพ์จบ ก่อนรวบตอบทีเดียว
+        //   ⚠️ เพดานรวมต้อง ≥ หน้าต่างยาว ไม่งั้นเพดานจะตัดก่อนหน้าต่างได้ทำงาน = ขยายแล้วไม่มีผล
+        foreach (['celtic_qa_settle_seconds', 'pro_session_settle_seconds', 'qa_settle_ramble_seconds', 'qa_settle_max_seconds'] as $settleKey) {
+            if (array_key_exists($settleKey, $validated) && $validated[$settleKey] !== null) {
+                $settings->{$settleKey} = (int) $validated[$settleKey];
+            }
+        }
+        if ((int) $settings->qa_settle_max_seconds < (int) $settings->qa_settle_ramble_seconds) {
+            $settings->qa_settle_max_seconds = (int) $settings->qa_settle_ramble_seconds + 30;
+        }
+        $settings->qa_ramble_brief_reply = $request->boolean('qa_ramble_brief_reply');
 
         // 🤝 (2026-08-29 FTU-260829-M9469) ช่วงคุยต่อหลังบทสรุป — บทสรุปยังยิงที่ qa_window เท่าเดิม
         //   ปิดสวิตช์ = กลับพฤติกรรมเดิม (ส่งบทสรุปแล้ววางสายทันที)

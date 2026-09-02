@@ -294,6 +294,12 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price',
         'celtic_cross_max_questions',
         'celtic_cross_qa_window_minutes',
+        // ⏳ (2026-09-02 FTU-260902-V9628) หน้าต่างรอลูกค้าพิมพ์จบ ก่อนรวบตอบทีเดียว
+        'celtic_qa_settle_seconds',
+        'pro_session_settle_seconds',
+        'qa_settle_ramble_seconds',
+        'qa_settle_max_seconds',
+        'qa_ramble_brief_reply',
         'celtic_aftercare_enabled',
         'celtic_aftercare_total_minutes',
         'celtic_aftercare_idle_minutes',
@@ -623,6 +629,11 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price' => 'decimal:2',
         'celtic_cross_max_questions' => 'integer',
         'celtic_cross_qa_window_minutes' => 'integer',
+        'celtic_qa_settle_seconds' => 'integer',
+        'pro_session_settle_seconds' => 'integer',
+        'qa_settle_ramble_seconds' => 'integer',
+        'qa_settle_max_seconds' => 'integer',
+        'qa_ramble_brief_reply' => 'boolean',
         'celtic_aftercare_enabled' => 'boolean',
         'celtic_aftercare_total_minutes' => 'integer',
         'celtic_aftercare_idle_minutes' => 'integer',
@@ -868,6 +879,13 @@ class FortuneTellingSetting extends Model
         'celtic_cross_price' => 99.00,
         'celtic_cross_max_questions' => 0, // (2026-06-07) 0 = ไม่จำกัดคำถาม ภายในเวลา 15 นาที (เดิม 5 คำถาม — ยกเลิก hard cap จำนวน)
         'celtic_cross_qa_window_minutes' => 15, // (2026-05-23 v3) 15 นาที — ลดจาก 30
+        // ⏳ (2026-09-02 FTU-260902-V9628) รอลูกค้าพิมพ์จบก่อนรวบตอบ
+        //   ลูกค้าเล่าเรื่องยาวเป็นชิ้นๆ ห่างกัน 15-47 วิ แต่หน้าต่างเดิม 10 วิ → ตอบเต็มทุกชิ้น 9 ครั้ง
+        'celtic_qa_settle_seconds' => 10,   // ถามข้อเดียวแล้วหยุด = ยังไวเหมือนเดิม
+        'pro_session_settle_seconds' => 10,
+        'qa_settle_ramble_seconds' => 50,   // จับได้ว่ากำลังเล่ายาว → ขยายหน้าต่าง
+        'qa_settle_max_seconds' => 180,     // เพดานแข็ง พิมพ์ไม่หยุดก็ต้องตอบ
+        'qa_ramble_brief_reply' => true,    // ระหว่างเล่ายังไม่จบ ตอบสั้นรับฟังก่อน
         // 🤝 (2026-08-29 FTU-260829-M9469) "หลังบทสรุป" — บทสรุปยังยิงที่ qa_window เท่าเดิม
         //   แต่แม่หมอไม่วางสายทันที ยังคุยต่อเรื่องการทำนายรอบเดิมได้จนถึงเพดานรวม
         //   ต้นตอ: 43 จาก 77 บิล (56%) ใน 30 วัน ยังถามอยู่ตอนนาทีที่ 14+ แล้วโดนตัดบท

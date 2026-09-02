@@ -61,14 +61,18 @@ class ProcessBufferedProSessionMessageJob implements ShouldQueue
             return;
         }
 
-        $service = new FortuneConversationService(FortuneTellingSetting::getSettings());
+        $settings = FortuneTellingSetting::getSettings();
+        $service = new FortuneConversationService($settings);
 
         // ยังอยู่ในช่วง debounce ปกติ (ลูกค้าพิมพ์ต่อได้อีก) → ปล่อยให้ job ตัวหลังจัดการ
+        //   ⏳ (2026-09-02) หน้าต่างอาจถูกขยายสำหรับคนเล่ายาว → ต้องมีเพดานรวมกำกับ (ดู Celtic job)
+        $maxSec = (int) ($settings->qa_settle_max_seconds ?? 180);
         $hasCacheBuffer = ! empty($buffer->peek($scope, $this->userId));
-        if ($hasCacheBuffer && ! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds)) {
+        if ($hasCacheBuffer && ! $buffer->isSettled($scope, $this->userId, $this->windowSeconds, $maxSec)) {
             Log::debug('ProcessBufferedProSessionMessageJob: buffer ยังใหม่ → skip', [
                 'reading_id' => $this->readingId,
                 'window' => $this->windowSeconds,
+                'max' => $maxSec,
             ]);
 
             return;

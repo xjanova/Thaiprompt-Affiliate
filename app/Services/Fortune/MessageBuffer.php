@@ -59,7 +59,7 @@ class MessageBuffer
     /**
      * Peek buffer (no flush)
      *
-     * @return array  รายการ messages [{text, at}, ...]
+     * @return array รายการ messages [{text, at}, ...]
      */
     public function peek(string $scope, string $userId): array
     {
@@ -132,12 +132,12 @@ class MessageBuffer
      *
      * @param  int  $windowSeconds  ระยะเวลา debounce
      * @param  bool  $fromFirstMessage  โหมดการนับเวลา:
-     *                                   • true  = นับจาก "ข้อความแรก" (fixed window / เพดาน) —
-     *                                             เก็บได้สูงสุด windowSeconds นับจากข้อความแรกแล้ว
-     *                                             ตอบเสมอ. การพิมพ์ใหม่ "ไม่ reset" นาฬิกา → กันไม่ให้
-     *                                             รวมเลยเกินค่าที่ตั้ง (owner spec 2026-06-22 "เก็บแค่ N วิ")
-     *                                   • false = นับจาก "ข้อความล่าสุด" (silence-based debounce, legacy)
-     * @return bool  true ถ้าพร้อม flush
+     *                                  • true  = นับจาก "ข้อความแรก" (fixed window / เพดาน) —
+     *                                  เก็บได้สูงสุด windowSeconds นับจากข้อความแรกแล้ว
+     *                                  ตอบเสมอ. การพิมพ์ใหม่ "ไม่ reset" นาฬิกา → กันไม่ให้
+     *                                  รวมเลยเกินค่าที่ตั้ง (owner spec 2026-06-22 "เก็บแค่ N วิ")
+     *                                  • false = นับจาก "ข้อความล่าสุด" (silence-based debounce, legacy)
+     * @return bool true ถ้าพร้อม flush
      */
     public function isReadyToFlush(string $scope, string $userId, int $windowSeconds, bool $fromFirstMessage = false): bool
     {
@@ -156,6 +156,41 @@ class MessageBuffer
             $firstAt = $buf[0]['at'] ?? $now;
 
             return ($now - $firstAt) >= $windowSeconds;
+        }
+
+        $lastAt = end($buf)['at'] ?? 0;
+
+        return ($now - $lastAt) >= $windowSeconds;
+    }
+
+    /**
+     * ⏳ (2026-09-02 FTU-260902-V9628) พร้อมตอบหรือยัง — แบบ "รอจนเล่าจบ" + เพดานแข็ง
+     *
+     * ต่างจาก isReadyToFlush() ตรงที่รับ **เพดานรวม** มาด้วย จึงใช้หน้าต่างยาวได้อย่างปลอดภัย:
+     *   • เงียบครบ $windowSeconds นับจากข้อความล่าสุด → ตอบ (trailing debounce เหมือนเดิม)
+     *   • หรือ ครบ $maxSeconds นับจากข้อความแรกในชุด → ตอบทันทีแม้ยังพิมพ์อยู่
+     *
+     * เพดานคือตัวที่ทำให้ขยายหน้าต่างเป็น 50 วิได้โดยไม่เสี่ยง "รอไม่รู้จบ" —
+     * ลูกค้าที่พิมพ์ทุก 40 วินาทีติดกันจะได้คำตอบภายใน $maxSeconds เสมอ
+     *
+     * @param  int  $windowSeconds  เงียบกี่วินาทีถึงถือว่าพิมพ์จบ
+     * @param  int  $maxSeconds  เพดานรวมนับจากข้อความแรก (<=0 = ไม่มีเพดาน)
+     */
+    public function isSettled(string $scope, string $userId, int $windowSeconds, int $maxSeconds = 0): bool
+    {
+        $buf = $this->peek($scope, $userId);
+        if (empty($buf)) {
+            return false;
+        }
+
+        $now = microtime(true);
+
+        // เพดานแข็งก่อน — พิมพ์ไม่หยุดจริงๆ ก็ต้องได้คำตอบ
+        if ($maxSeconds > 0) {
+            $firstAt = $buf[0]['at'] ?? $now;
+            if (($now - $firstAt) >= $maxSeconds) {
+                return true;
+            }
         }
 
         $lastAt = end($buf)['at'] ?? 0;

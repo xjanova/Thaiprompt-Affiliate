@@ -26,6 +26,9 @@ use Illuminate\Support\Facades\Log;
  */
 class CelticCrossService
 {
+    // ⏳ (2026-09-02) ใช้แค่ qaBriefReplyDirective/qaIsRambling — trait อ่าน $this->settings ซึ่งคลาสนี้มีอยู่แล้ว
+    use \App\Services\Fortune\QaSettleTrait;
+
     // 🎚️ (2026-08-17) นโยบายเลือกโมเดลย้ายไปอยู่ที่ App\Services\Fortune\FortuneModelRouter
     //   (คุณไสย์ → sol เสมอ · คำถามยาก → sol เฉพาะเทิร์น · อื่นๆ → luna)
     //   รวมไว้ที่เดียวเพราะ Deep 39 ใช้กฎชุดเดียวกัน — แยกเขียนเมื่อไหร่เพี้ยนคนละทางแน่
@@ -322,6 +325,11 @@ class CelticCrossService
             //     sensitive ยังใช้ที่อื่น (Vision/Deep 39/Pro Session) — ไม่แตะ
             if ($response === null) {
                 $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
+
+                // 🤫 (2026-09-02 FTU-260902-V9628) เจ้าชะตากำลังเล่ายาว ยังไม่จบ → ตอบสั้นแบบรับฟัง
+                //   คำวิเคราะห์เต็มรอตอนเธอหยุดเล่า (หรือในบทสรุปท้ายซึ่งรวบทุกเรื่องอยู่แล้ว)
+                //   '' = ไม่เข้าเกณฑ์ → prompt เดิมไม่ถูกแตะเลย
+                $prompt .= $this->qaBriefReplyDirective($reading);
 
                 $preferredProvider = 'openai';
                 $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);

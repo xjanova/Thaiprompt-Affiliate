@@ -59,8 +59,11 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
 
         $buf = $buffer->peek($scope, $this->userId);
 
-        // เช็คว่าพร้อม flush หรือยัง (last message อยู่นาน >= window)
-        if (! empty($buf) && ! $buffer->isReadyToFlush($scope, $this->userId, $this->windowSeconds)) {
+        // เช็คว่าพร้อม flush หรือยัง (เงียบครบ window นับจากข้อความล่าสุด)
+        //   ⏳ (2026-09-02) หน้าต่างอาจถูกขยายเป็น 50 วิสำหรับคนเล่ายาว → ต้องมีเพดานรวมกำกับ
+        //     ไม่งั้นคนที่พิมพ์ทุก 40 วินาทีติดกันจะไม่ได้คำตอบเลย
+        $maxSec = (int) (FortuneTellingSetting::getSettings()->qa_settle_max_seconds ?? 180);
+        if (! empty($buf) && ! $buffer->isSettled($scope, $this->userId, $this->windowSeconds, $maxSec)) {
             Log::debug('ProcessBufferedCelticMessageJob: buffer ยังใหม่ → skip', [
                 'reading_id' => $this->readingId,
                 'user_id' => $this->userId,

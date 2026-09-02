@@ -295,6 +295,72 @@
                 </div>
             </div>
 
+            {{-- ⏳ (2026-09-02 FTU-260902-V9628) รอลูกค้าเล่าจบก่อนรวบตอบ --}}
+            <div class="tp-inset" style="padding:16px; border-radius:14px; margin-top:16px; border-left:4px solid #7c5cff;">
+                <div style="font-size:13.5px; font-weight:700; color:var(--ink); margin-bottom:4px;">⏳ รอลูกค้าพิมพ์จบก่อนตอบ</div>
+                <div style="font-size:11.5px; color:var(--ink2); margin-bottom:14px; line-height:1.6;">
+                    ลูกค้าบางคนเล่าเรื่องยาวเป็นชิ้นๆ ห่างกัน 15-47 วินาที ถ้าหน้าต่างสั้นเกินไป บอทจะตอบคำทำนายเต็มทุกชิ้น
+                    (เคสจริง <b>FTU-260902-V9628</b> ตอบ 9 ครั้งใน 25 นาที) — ระบบจะจับว่าลูกค้า
+                    <b>พิมพ์กลับเร็วกว่าที่จะอ่านคำตอบจบ</b> แล้วขยายเวลารอให้เอง
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px;">
+                    <div>
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">รอปกติ — Celtic (วินาที)</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="number" name="celtic_qa_settle_seconds"
+                                   value="{{ $settings->celtic_qa_settle_seconds ?? 10 }}" min="0" max="120"
+                                   style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                        </div>
+                        <div style="font-size:11px; color:var(--ink2); margin-top:5px;">ถามข้อเดียวแล้วหยุด (0 = ปิดการรอ ตอบทันที)</div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">รอปกติ — คุยต่อ/ดูดวง 39 (วินาที)</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="number" name="pro_session_settle_seconds"
+                                   value="{{ $settings->pro_session_settle_seconds ?? 10 }}" min="0" max="120"
+                                   style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                        </div>
+                        <div style="font-size:11px; color:var(--ink2); margin-top:5px;">ใช้กับช่วงคุยต่อหลังบทสรุป + Deep 39</div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">รอคนเล่ายาว (วินาที)</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="number" name="qa_settle_ramble_seconds"
+                                   value="{{ $settings->qa_settle_ramble_seconds ?? 50 }}" min="0" max="300"
+                                   style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                        </div>
+                        <div style="font-size:11px; color:var(--ink2); margin-top:5px;">จับได้ว่ายังเล่าไม่จบ → ขยายเป็นเท่านี้ (0 = ไม่ขยาย)</div>
+                    </div>
+
+                    <div>
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">เพดานรวม (วินาที)</label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <input type="number" name="qa_settle_max_seconds"
+                                   value="{{ $settings->qa_settle_max_seconds ?? 180 }}" min="30" max="600"
+                                   style="width:100%; background:transparent; border:none; outline:none; padding:11px 14px; color:var(--ink); font-size:14px;">
+                        </div>
+                        <div style="font-size:11px; color:var(--ink2); margin-top:5px;">พิมพ์ไม่หยุดก็ต้องตอบ — นับจากข้อความแรกในชุด</div>
+                    </div>
+                </div>
+
+                <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:14px; border-radius:12px; cursor:pointer; margin-top:14px;">
+                    <input type="hidden" name="qa_ramble_brief_reply" value="0">
+                    <input type="checkbox" name="qa_ramble_brief_reply" value="1"
+                           {{ ($settings->qa_ramble_brief_reply ?? true) ? 'checked' : '' }}
+                           style="width:19px; height:19px; margin-top:2px; accent-color:#7c5cff; cursor:pointer;">
+                    <div>
+                        <div style="font-size:13px; font-weight:600; color:var(--ink);">ตอบสั้นแบบรับฟังระหว่างที่ยังเล่าไม่จบ</div>
+                        <div style="font-size:11.5px; color:var(--ink2); margin-top:3px; line-height:1.6;">
+                            แม่หมอตอบ 2-3 บรรทัดแสดงว่าฟังอยู่ ชวนให้เล่าต่อ — <b>คำวิเคราะห์เต็มรอตอนเธอหยุดเล่า</b>
+                            หรือในบทสรุปท้าย (ซึ่งรวบทุกเรื่องให้อยู่แล้ว) · ระหว่างนิ่งรอ ลูกค้าเห็นแค่จุดสามจุดกำลังพิมพ์ ไม่มีข้อความเพิ่ม
+                        </div>
+                    </div>
+                </label>
+            </div>
+
             {{-- 🤝 (2026-08-29 FTU-260829-M9469) ช่วงคุยต่อหลังบทสรุป --}}
             <label class="tp-inset" style="display:flex; align-items:flex-start; gap:13px; padding:16px; border-radius:14px; cursor:pointer; margin-top:16px; border-left:4px solid #2e9e6b;">
                 <input type="hidden" name="celtic_aftercare_enabled" value="0">

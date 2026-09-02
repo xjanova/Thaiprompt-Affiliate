@@ -1093,6 +1093,9 @@ trait ProSessionTrait
             $type = (string) $reading->getConversationState('pro_session_type', 'deep');
             $systemPrompt = $this->buildProSessionSystemPrompt($reading, $type);
 
+            // 🤫 (2026-09-02) เจ้าชะตากำลังเล่ายาว ยังไม่จบ → ตอบสั้นแบบรับฟัง ('' = ไม่เข้าเกณฑ์)
+            $systemPrompt .= $this->qaBriefReplyDirective($reading);
+
             // Build history
             $history = $reading->getConversationState('pro_session_history', []) ?: [];
             $historyMessages = [];
@@ -1181,6 +1184,9 @@ trait ProSessionTrait
             //    (rule_never_cache_only_for_paid_customer_state)
             $remainingMin = $this->getProSessionRemainingMinutes($reading);
             $footer = $this->buildProSessionTimeNotice($reading, $remainingMin);
+
+            // ⏳ (2026-09-02) จดความยาวคำตอบ — เทิร์นหน้าใช้ตัดสินว่าลูกค้า "อ่านทันไหม" (ดู QaSettleTrait)
+            $this->qaNoteAnswerSent($reading, (string) $response);
 
             return [
                 'action' => 'pro_session_answer',
@@ -1349,8 +1355,12 @@ trait ProSessionTrait
         //     ยืนยันปิด session / exit intent / แก้วันเกิด / Celtic 3Q flow
         //     ถ้าไป buffer ที่หัวเมธอด ลูกค้าพิมพ์ "พอแค่นี้" จะค้าง 10 วิ = พัง
         //   ปิดได้ด้วย setting pro_session_settle_seconds = 0
+        //   ⏳ (2026-09-02 FTU-260902-V9628) หน้าต่างปรับตามพฤติกรรม — ดู QaSettleTrait
+        //     แก้ทั้ง 2 เส้นพร้อมกัน (Celtic + ProSession) — แก้ฝั่งเดียวอีกฝั่งเป็นระเบิดเวลา
         $settleSec = (int) ($this->settings->pro_session_settle_seconds ?? 10);
         if (! $skipSettle && $settleSec > 0) {
+            $this->qaTrackRamble($reading);
+            $settleSec = $this->qaSettleWindow($reading, $settleSec);
             $dUserId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
             $dPlatform = $reading->platform;
             if (! $dPlatform || ! in_array($dPlatform, ['facebook', 'line'], true)) {
@@ -1374,9 +1384,13 @@ trait ProSessionTrait
                 $reading->setConversationState('pro_session_nudge_sent', true);
                 $reading->setConversationState('pro_session_last_nudge_at', now()->toIso8601String());
 
+                // 💬 ระหว่างนิ่งรอ ให้เห็น "จุดสามจุดกำลังพิมพ์" — ห้ามเพิ่มกล่องข้อความ
+                $this->qaSendTypingHint($reading, $settleSec);
+
                 Log::info('Fortune ProSession: settle-buffer คำถาม (นิ่งรอรัว)', [
                     'reading_id' => $reading->id,
                     'settle_sec' => $settleSec,
+                    'rambling' => $this->qaIsRambling($reading),
                     'q_preview' => mb_substr($messageText, 0, 40),
                 ]);
 

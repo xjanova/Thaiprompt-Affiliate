@@ -40,6 +40,9 @@ class FortuneConversationService
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
     use \App\Services\Fortune\ProSessionTrait;
+
+    // ⏳ (2026-09-02) รอลูกค้าเล่าจบก่อนรวบตอบ — ต้องอยู่หลัง Celtic/ProSession (ทั้งคู่เรียกใช้)
+    use \App\Services\Fortune\QaSettleTrait;
     use \App\Services\Fortune\TransferModeTrait;
 
     /**
