@@ -87,10 +87,19 @@
                         <i class="fas fa-id-card" style="margin-right:4px;"></i>รูปบัตรประชาชน
                     @endif
                 </div>
-                <div style="border-radius:10px; overflow:hidden; box-shadow:var(--inset-sm);">
-                    <img src="{{ asset('storage/' . $kycVerification->id_card_image) }}" alt="ID Document"
-                         style="width:100%; height:auto; cursor:pointer; display:block;" onclick="openImageModal(this.src)">
-                </div>
+                @if($kycVerification->idCardImageUrl())
+                    <div style="border-radius:10px; overflow:hidden; box-shadow:var(--inset-sm);">
+                        <img src="{{ $kycVerification->idCardImageUrl() }}" alt="ID Document"
+                             style="width:100%; height:auto; cursor:pointer; display:block;" onclick="openImageModal(this.src)">
+                    </div>
+                @else
+                    {{-- ไฟล์รูปหาย — บอกลูกค้าตรงๆ ว่าต้องส่งใหม่ (ไม่โชว์พาธภายในระบบ) --}}
+                    <div style="border-radius:10px; padding:28px 16px; text-align:center; border:2px dashed color-mix(in srgb, var(--ink2) 35%, transparent);">
+                        <i class="fas fa-exclamation-triangle" style="font-size:24px; color:#d98a3a; display:block; margin-bottom:10px;"></i>
+                        <div style="font-size:13px; font-weight:600; color:var(--ink);">ไม่พบไฟล์รูปภาพ</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:4px;">กรุณาส่งเอกสารใหม่อีกครั้ง</div>
+                    </div>
+                @endif
             </div>
 
             <div>
@@ -101,10 +110,19 @@
                         <i class="fas fa-user-circle" style="margin-right:4px;"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
                     @endif
                 </div>
-                <div style="border-radius:10px; overflow:hidden; box-shadow:var(--inset-sm);">
-                    <img src="{{ asset('storage/' . $kycVerification->selfie_image) }}" alt="Selfie with ID"
-                         style="width:100%; height:auto; cursor:pointer; display:block;" onclick="openImageModal(this.src)">
-                </div>
+                @if($kycVerification->selfieImageUrl())
+                    <div style="border-radius:10px; overflow:hidden; box-shadow:var(--inset-sm);">
+                        <img src="{{ $kycVerification->selfieImageUrl() }}" alt="Selfie with ID"
+                             style="width:100%; height:auto; cursor:pointer; display:block;" onclick="openImageModal(this.src)">
+                    </div>
+                @else
+                    {{-- ไฟล์รูปหาย — บอกลูกค้าตรงๆ ว่าต้องส่งใหม่ (ไม่โชว์พาธภายในระบบ) --}}
+                    <div style="border-radius:10px; padding:28px 16px; text-align:center; border:2px dashed color-mix(in srgb, var(--ink2) 35%, transparent);">
+                        <i class="fas fa-exclamation-triangle" style="font-size:24px; color:#d98a3a; display:block; margin-bottom:10px;"></i>
+                        <div style="font-size:13px; font-weight:600; color:var(--ink);">ไม่พบไฟล์รูปภาพ</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:4px;">กรุณาส่งเอกสารใหม่อีกครั้ง</div>
+                    </div>
+                @endif
             </div>
         </div>
 

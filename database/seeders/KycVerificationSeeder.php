@@ -6,6 +6,7 @@ use App\Models\KycVerification;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class KycVerificationSeeder extends Seeder
 {
@@ -56,8 +57,8 @@ class KycVerificationSeeder extends Seeder
         if ($users->count() >= 1) {
             KycVerification::create([
                 'user_id' => $users[0]->id,
-                'id_card_image' => 'kyc/idcard_'.$users[0]->id.'.jpg',
-                'selfie_image' => 'kyc/selfie_'.$users[0]->id.'.jpg',
+                'id_card_image' => $this->makePlaceholderImage($users[0]->id, 'idcard'),
+                'selfie_image' => $this->makePlaceholderImage($users[0]->id, 'selfie'),
                 'status' => 'pending',
                 'submitted_at' => Carbon::now()->subDays(2),
                 'reviewed_by' => null,
@@ -77,8 +78,8 @@ class KycVerificationSeeder extends Seeder
         if ($users->count() >= 2) {
             KycVerification::create([
                 'user_id' => $users[1]->id,
-                'id_card_image' => 'kyc/idcard_'.$users[1]->id.'.jpg',
-                'selfie_image' => 'kyc/selfie_'.$users[1]->id.'.jpg',
+                'id_card_image' => $this->makePlaceholderImage($users[1]->id, 'idcard'),
+                'selfie_image' => $this->makePlaceholderImage($users[1]->id, 'selfie'),
                 'status' => 'approved',
                 'submitted_at' => Carbon::now()->subDays(5),
                 'reviewed_by' => $admin?->id,
@@ -98,8 +99,8 @@ class KycVerificationSeeder extends Seeder
         if ($users->count() >= 3) {
             KycVerification::create([
                 'user_id' => $users[2]->id,
-                'id_card_image' => 'kyc/idcard_'.$users[2]->id.'.jpg',
-                'selfie_image' => 'kyc/selfie_'.$users[2]->id.'_rejected.jpg', // ไฟล์ที่ถูกปฏิเสธ
+                'id_card_image' => $this->makePlaceholderImage($users[2]->id, 'idcard'),
+                'selfie_image' => $this->makePlaceholderImage($users[2]->id, 'selfie_rejected'),
                 'status' => 'rejected',
                 'submitted_at' => Carbon::now()->subDays(7),
                 'reviewed_by' => $admin?->id,
@@ -127,6 +128,57 @@ class KycVerificationSeeder extends Seeder
         $this->command->info('   1. ไปที่ /admin/kyc-verification/');
         $this->command->info('   2. ตรวจสอบสถานะต่างๆ');
         $this->command->info('   3. ลองอนุมัติ/ปฏิเสธ record ที่ pending');
+    }
+
+    /**
+     * สร้าง "ไฟล์รูปตัวอย่างจริง" ลง public disk แล้วคืนพาธที่เก็บในฐานข้อมูล
+     *
+     * ⚠️ ทำไมต้องสร้างไฟล์จริง:
+     * ของเดิม seeder ใส่พาธมั่วๆ ('kyc/idcard_23.jpg') โดยไม่เคยสร้างไฟล์เลย
+     * พอ seeder ตัวนี้ไปรันบน production แถวเดโมก็ค้างอยู่ในหน้าแอดมิน
+     * แอดมินเปิดดูแล้วเจอไอคอนรูปแตก นึกว่าระบบ KYC พัง ทั้งที่เป็นข้อมูลตัวอย่าง
+     *
+     * @param  int  $userId  User ID เจ้าของรูป
+     * @param  string  $type  ประเภทรูป เช่น 'idcard', 'selfie', 'selfie_rejected'
+     * @return string พาธ relative กับ storage/app/public (เก็บลงคอลัมน์ *_image)
+     */
+    private function makePlaceholderImage(int $userId, string $type): string
+    {
+        $path = 'kyc/demo/'.$type.'_'.$userId.'.png';
+
+        // มีไฟล์อยู่แล้วก็ใช้ซ้ำ (idempotent — รัน seeder หลายรอบได้)
+        if (Storage::disk('public')->exists($path)) {
+            return $path;
+        }
+
+        // ไม่มี GD ก็ยังต้องคืนพาธ (หน้าเว็บจะขึ้นกล่อง "ไม่พบไฟล์" ซึ่งบอกสาเหตุชัดอยู่แล้ว)
+        if (! function_exists('imagecreatetruecolor')) {
+            $this->command->warn('⚠️  ไม่มี GD extension — ข้ามการสร้างรูปตัวอย่าง');
+
+            return $path;
+        }
+
+        $image = imagecreatetruecolor(640, 480);
+        $background = imagecolorallocate($image, 226, 232, 240);   // เทาอ่อน
+        $textColor = imagecolorallocate($image, 71, 85, 105);      // เทาเข้ม
+        $borderColor = imagecolorallocate($image, 148, 163, 184);  // เทากลาง
+
+        imagefill($image, 0, 0, $background);
+        imagerectangle($image, 8, 8, 631, 471, $borderColor);
+
+        // ใช้ฟอนต์ builtin ของ GD ซึ่งวาดได้เฉพาะ ASCII จึงเขียนป้ายเป็นอังกฤษ
+        imagestring($image, 5, 210, 200, 'DEMO PLACEHOLDER', $textColor);
+        imagestring($image, 4, 210, 230, strtoupper(str_replace('_', ' ', $type)).' - USER '.$userId, $textColor);
+        imagestring($image, 3, 210, 260, 'NOT A REAL DOCUMENT', $textColor);
+
+        ob_start();
+        imagepng($image);
+        $contents = ob_get_clean();
+        imagedestroy($image);
+
+        Storage::disk('public')->put($path, $contents);
+
+        return $path;
     }
 
     /**
