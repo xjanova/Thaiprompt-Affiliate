@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\KbArticle;
+use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\TicketAssignmentRule;
 use App\Models\TicketCannedResponse;
@@ -17,6 +18,36 @@ use Illuminate\Http\Request;
 
 class TicketController extends Controller
 {
+    /**
+     * คำนำหน้า key ในตาราง settings — กันชนกับกลุ่มอื่นที่ใช้ตารางเดียวกัน
+     */
+    private const TICKET_SETTING_PREFIX = 'tickets.';
+
+    /**
+     * สคีมาการตั้งค่าระบบ Ticket: key => [ชนิด, ค่าเริ่มต้น]
+     *
+     * เก็บไว้ที่เดียวเพื่อให้ settings() (อ่าน) กับ updateSettings() (เขียน)
+     * ใช้รายการเดียวกันเสมอ — เพิ่มฟิลด์ใหม่แก้ที่นี่จุดเดียว
+     */
+    private const TICKET_SETTINGS = [
+        'default_priority' => ['string', 'medium'],
+        'auto_assign_enabled' => ['boolean', true],
+        'sla_enabled' => ['boolean', true],
+        'allow_user_reopen' => ['boolean', true],
+        'notify_admin_new_ticket' => ['boolean', true],
+        'notify_user_reply' => ['boolean', true],
+        'notify_user_status_change' => ['boolean', true],
+        'notify_sla_breach' => ['boolean', true],
+        'max_file_size' => ['integer', 10],
+        'allowed_extensions' => ['string', 'jpg,jpeg,png,gif,pdf,doc,docx,txt,zip'],
+        'scan_uploads' => ['boolean', false],
+        'suggest_kb_articles' => ['boolean', true],
+        'public_kb_access' => ['boolean', true],
+        'business_hours_start' => ['string', '09:00'],
+        'business_hours_end' => ['string', '18:00'],
+        'working_days' => ['json', [1, 2, 3, 4, 5]],
+    ];
+
     protected $ticketService;
 
     public function __construct(TicketService $ticketService)
@@ -784,19 +815,54 @@ class TicketController extends Controller
      */
     public function settings()
     {
-        // For now, just return a view
-        // Settings can be stored in a settings table or config
-        return view('admin.tickets.settings');
+        // อ่านค่าจริงจากตาราง settings (กลุ่ม tickets) — ถ้ายังไม่เคยบันทึกจะได้ค่า default
+        $settings = [];
+        foreach (self::TICKET_SETTINGS as $key => [$type, $default]) {
+            $settings[$key] = Setting::get(self::TICKET_SETTING_PREFIX.$key, $default);
+        }
+
+        // working_days เก็บเป็น json — กันกรณีค่าเก่าเพี้ยนให้กลับไปใช้ default
+        if (! is_array($settings['working_days'])) {
+            $settings['working_days'] = self::TICKET_SETTINGS['working_days'][1];
+        }
+        $settings['working_days'] = array_map('intval', $settings['working_days']);
+
+        return view('admin.tickets.settings', compact('settings'));
     }
 
     /**
      * Update settings
+     *
+     * ⚠️ ของเดิมเมธอดนี้ "ว่างเปล่า" แต่ redirect พร้อมข้อความ
+     *    "อัปเดตการตั้งค่าเรียบร้อยแล้ว" — แอดมินกดบันทึกแล้วเห็นว่าสำเร็จ
+     *    แต่ไม่มีอะไรถูกเก็บเลย พอ refresh ค่าก็กลับไปเป็นค่า hardcode ในหน้า
      */
     public function updateSettings(Request $request)
     {
+        $validated = $request->validate([
+            'default_priority' => 'required|in:low,medium,high,critical',
+            'max_file_size' => 'required|integer|min:1|max:100',
+            'allowed_extensions' => 'required|string|max:500',
+            'business_hours_start' => 'required|date_format:H:i',
+            'business_hours_end' => 'required|date_format:H:i|after:business_hours_start',
+            'working_days' => 'nullable|array',
+            'working_days.*' => 'integer|min:1|max:7',
+        ], [
+            'business_hours_end.after' => 'เวลาปิดทำการต้องหลังเวลาเปิดทำการ',
+        ]);
+
         try {
-            // Implement settings update logic here
-            // Can use a settings table or config
+            foreach (self::TICKET_SETTINGS as $key => [$type, $default]) {
+                $value = match ($type) {
+                    // checkbox ที่ไม่ติ๊กจะไม่ถูกส่งมาเลย → ต้องอ่านเป็น false ไม่ใช่ค่าเดิม
+                    'boolean' => $request->boolean($key) ? '1' : '0',
+                    'json' => json_encode(array_values(array_map('intval', $validated['working_days'] ?? []))),
+                    'integer' => (string) ($validated[$key] ?? $default),
+                    default => (string) ($validated[$key] ?? $default),
+                };
+
+                Setting::set(self::TICKET_SETTING_PREFIX.$key, $value, $type, 'tickets');
+            }
 
             return redirect()->route('admin.tickets.settings')
                 ->with('success', 'อัปเดตการตั้งค่าเรียบร้อยแล้ว');

@@ -1,253 +1,168 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'Knowledge Base Articles')
+@section('title', 'ฐานความรู้')
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-7xl">
-    <!-- Modern Gradient Header -->
-    <div class="bg-gradient-to-br from-teal-600 via-cyan-600 to-blue-600 rounded-2xl shadow-2xl p-8 text-white mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-3xl font-bold mb-2 flex items-center">
-                    <i class="fas fa-book mr-3"></i>
-                    Knowledge Base Articles
-                </h2>
-                <p class="text-teal-100 text-lg">
-                    จัดการบทความคู่มือและเอกสารช่วยเหลือ
-                </p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{{ route('admin.tickets.index') }}"
-                   class="inline-flex items-center px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    กลับหน้าหลัก
-                </a>
-                <a href="{{ route('admin.tickets.kb-articles.create') }}"
-                   class="inline-flex items-center px-6 py-3 glass-fusion text-teal-600 hover:bg-teal-50 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create Article
-                </a>
-            </div>
+{{-- 📚 ฐานความรู้ (ธีม V4 นวลทองคำ) — คง route toggle/edit/destroy เดิม 100% --}}
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ศูนย์ช่วยเหลือ · ฐานความรู้</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ฐานความรู้ 📚</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">บทความช่วยเหลือที่ผู้ใช้ค้นหาได้เอง ลดจำนวน Ticket</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:9px;">
+            <a href="{{ route('admin.tickets.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับหน้าหลัก</a>
+            <a href="{{ route('admin.tickets.kb-articles.create') }}" class="tp-btn tp-btn-sm tp-btn-primary">
+                <i class="fas fa-plus"></i> เขียนบทความ
+            </a>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <!-- Total Articles Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-teal-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Articles</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->total() }}</p>
-                </div>
-                <div class="bg-teal-100 dark:bg-teal-900/30 p-4 rounded-xl">
-                    <i class="fas fa-file-alt text-2xl text-teal-600 dark:text-teal-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Public Articles Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Public Articles</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->where('is_public', true)->count() }}</p>
-                </div>
-                <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-xl">
-                    <i class="fas fa-globe text-2xl text-green-600 dark:text-green-400"></i>
+    {{-- ===== KPI ===== --}}
+    @php
+        $kpis = [
+            [$articles->total(),                             'บทความทั้งหมด', 'fa-file-lines', null],
+            [$articles->where('is_public', true)->count(),   'สาธารณะ (หน้านี้)', 'fa-globe',  '#5aa07e'],
+            [$articles->sum('view_count'),                   'ยอดเข้าชม',     'fa-eye',        '#5689b8'],
+            [$articles->sum('helpful_count'),                'โหวตว่ามีประโยชน์', 'fa-thumbs-up', '#e0a52e'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        @foreach($kpis as [$value, $label, $icon, $color])
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;{{ $color ? ' background:'.$color.';' : '' }}">
+                        <i class="fas {{ $icon }}"></i>
+                    </div>
+                    <div>
+                        <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($value) }}</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $label }}</div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Total Views Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Views</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->sum('view_count') }}</p>
-                </div>
-                <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-xl">
-                    <i class="fas fa-eye text-2xl text-blue-600 dark:text-blue-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Helpful Votes Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-yellow-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Helpful Votes</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->sum('helpful_count') }}</p>
-                </div>
-                <div class="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-xl">
-                    <i class="fas fa-thumbs-up text-2xl text-yellow-600 dark:text-yellow-400"></i>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <!-- Articles Table -->
-    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
+    {{-- ===== ตาราง ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Title
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Category
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Author
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Views
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Helpful
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Visibility
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Last Updated
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Actions
-                        </th>
+                        @foreach(['หัวข้อ','หมวดหมู่','ผู้เขียน','เข้าชม','มีประโยชน์','การมองเห็น','แก้ไขล่าสุด'] as $th)
+                            <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">{{ $th }}</th>
+                        @endforeach
+                        <th style="padding:14px 16px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($articles as $article)
-                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-                        <td class="px-6 py-4">
-                            <div>
-                                <div class="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                                    {{ Str::limit($article->title, 50) }}
-                                </div>
-                                @if($article->tags && count($article->tags) > 0)
-                                    <div class="flex flex-wrap gap-1 mt-2">
-                                        @foreach(array_slice($article->tags, 0, 3) as $tag)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300">
-                                                <i class="fas fa-tag mr-1 text-xs"></i>
-                                                {{ $tag }}
-                                            </span>
+                        @php $tags = is_array($article->tags) ? $article->tags : []; @endphp
+                        <tr style="box-shadow:var(--inset-sm); transition:background .15s;"
+                            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+                            {{-- หัวข้อ + แท็ก --}}
+                            <td style="padding:14px 16px;">
+                                <div style="font-size:13.5px; font-weight:700; color:var(--ink);">{{ Str::limit($article->title, 50) }}</div>
+                                @if(count($tags) > 0)
+                                    <div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;">
+                                        @foreach(array_slice($tags, 0, 3) as $tag)
+                                            <span class="tp-pill tp-pill-soft"><i class="fas fa-tag"></i> {{ $tag }}</span>
                                         @endforeach
-                                        @if(count($article->tags) > 3)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 dark:bg-gray-700 dark:text-gray-400">
-                                                +{{ count($article->tags) - 3 }}
-                                            </span>
+                                        @if(count($tags) > 3)
+                                            <span class="tp-pill tp-pill-soft">+{{ count($tags) - 3 }}</span>
                                         @endif
                                     </div>
                                 @endif
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
-                                <i class="fas fa-folder mr-1"></i>
-                                {{ $article->category->name ?? 'Uncategorized' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-8 w-8">
-                                    <div class="h-8 w-8 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center text-white font-semibold">
-                                        {{ substr($article->author->name ?? 'N', 0, 1) }}
-                                    </div>
-                                </div>
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                        {{ $article->author->name ?? 'N/A' }}
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center text-sm">
-                                <i class="fas fa-eye text-blue-500 mr-2"></i>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ number_format($article->view_count) }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($article->helpful_count > 0)
-                                <div class="flex items-center">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                                        <i class="fas fa-thumbs-up mr-1"></i>
-                                        {{ $article->helpful_count }}
+                            </td>
+                            {{-- หมวดหมู่ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <span class="tp-pill tp-pill-soft"><i class="fas fa-folder"></i> {{ $article->category->name ?? 'ไม่มีหมวดหมู่' }}</span>
+                            </td>
+                            {{-- ผู้เขียน --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <div style="display:flex; align-items:center; gap:9px;">
+                                    <span class="tp-tile" style="width:28px; height:28px; border-radius:50%; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#4fa3a3;">
+                                        {{ mb_strtoupper(mb_substr($article->author?->name ?: '?', 0, 1)) }}
                                     </span>
+                                    <span style="font-size:13px; color:var(--ink);">{{ $article->author?->name ?: '—' }}</span>
                                 </div>
-                            @else
-                                <span class="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">—</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <form action="{{ route('admin.tickets.kb-articles.toggle', $article->id) }}"
-                                  method="POST"
-                                  class="inline-block">
-                                @csrf
-                                @if($article->is_public)
-                                    <button type="submit"
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-all">
-                                        <i class="fas fa-globe mr-1"></i>
-                                        Public
-                                    </button>
+                            </td>
+                            {{-- เข้าชม --}}
+                            <td style="padding:14px 16px; white-space:nowrap; font-size:13.5px; font-weight:700; color:var(--ink);">
+                                <i class="fas fa-eye" style="color:var(--ink2); margin-right:5px;"></i>{{ number_format($article->view_count) }}
+                            </td>
+                            {{-- มีประโยชน์ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                @if($article->helpful_count > 0)
+                                    <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;">
+                                        <i class="fas fa-thumbs-up"></i> {{ number_format($article->helpful_count) }}
+                                    </span>
                                 @else
-                                    <button type="submit"
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-all">
-                                        <i class="fas fa-lock mr-1"></i>
-                                        Private
-                                    </button>
+                                    <span style="color:var(--ink2); font-size:12px;">—</span>
                                 @endif
-                            </form>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                            <div class="flex items-center">
-                                <i class="fas fa-calendar mr-2 text-gray-400"></i>
-                                {{ $article->updated_at->format('d M Y') }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex items-center space-x-2">
-                                <a href="{{ route('admin.tickets.kb-articles.edit', $article->id) }}"
-                                   class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-600">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="{{ route('admin.tickets.kb-articles.destroy', $article->id) }}"
-                                      method="POST"
-                                      onsubmit="return confirm('Are you sure you want to delete this article?')"
-                                      class="inline-block">
+                            </td>
+                            {{-- การมองเห็น (ปุ่ม toggle) --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <form action="{{ route('admin.tickets.kb-articles.toggle', $article->id) }}" method="POST" style="display:inline;">
                                     @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    @if($article->is_public)
+                                        <button type="submit" class="tp-pill" title="กดเพื่อเปลี่ยนเป็นส่วนตัว"
+                                                style="background:rgba(90,160,126,.18); color:#3f7a5c; border:none; cursor:pointer; font:inherit;">
+                                            <i class="fas fa-globe"></i> สาธารณะ
+                                        </button>
+                                    @else
+                                        <button type="submit" class="tp-pill" title="กดเพื่อเปลี่ยนเป็นสาธารณะ"
+                                                style="background:color-mix(in srgb, var(--ink2) 18%, transparent); color:var(--ink2); border:none; cursor:pointer; font:inherit;">
+                                            <i class="fas fa-lock"></i> ส่วนตัว
+                                        </button>
+                                    @endif
                                 </form>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                            {{-- แก้ไขล่าสุด --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <div style="font-size:13px; color:var(--ink);">{{ $article->updated_at->format('d/m/Y') }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);">{{ $article->updated_at->format('H:i') }}</div>
+                            </td>
+                            {{-- จัดการ --}}
+                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:7px;">
+                                    <a href="{{ route('admin.tickets.kb-articles.edit', $article->id) }}" class="tp-btn tp-btn-sm" title="แก้ไข">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    <form action="{{ route('admin.tickets.kb-articles.destroy', $article->id) }}" method="POST" style="display:inline;"
+                                          onsubmit="return confirm('ลบบทความ &quot;{{ Str::limit($article->title, 40) }}&quot; ใช่หรือไม่?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="tp-btn tp-btn-sm" title="ลบ" style="color:#d9534f;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <div class="flex flex-col items-center justify-center">
-                                <i class="fas fa-book text-6xl text-gray-300 dark:text-gray-600 dark:text-gray-400 mb-4"></i>
-                                <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-lg font-medium">No articles yet</p>
-                                <p class="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm mt-2">Create your first knowledge base article</p>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="8" style="padding:0;">
+                                <div style="text-align:center; color:var(--ink2); padding:44px 0;">
+                                    <i class="fas fa-book" style="font-size:34px; display:block; margin-bottom:10px; opacity:.5;"></i>
+                                    <div style="font-size:14px; font-weight:600;">ยังไม่มีบทความ</div>
+                                    <div style="font-size:12px; margin-top:4px;">เขียนบทความแรกเพื่อช่วยให้ผู้ใช้แก้ปัญหาได้เอง</div>
+                                </div>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination -->
-        @if($articles->hasPages())
-            <div class="px-6 py-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                {{ $articles->links() }}
-            </div>
-        @endif
     </div>
+
+    {{-- ===== Pagination ===== --}}
+    @if($articles->hasPages())
+        <div>{{ $articles->appends(request()->query())->links() }}</div>
+    @endif
+
 </div>
 @endsection

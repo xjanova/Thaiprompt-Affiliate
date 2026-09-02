@@ -1,325 +1,211 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'Ticket Analytics')
+@section('title', 'Analytics ระบบ Ticket')
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-7xl">
-    <!-- Modern Gradient Header -->
-    <div class="bg-gradient-to-br from-blue-600 via-cyan-600 to-sky-600 rounded-2xl shadow-2xl p-8 text-white mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-3xl font-bold mb-2 flex items-center">
-                    <i class="fas fa-chart-line mr-3"></i>
-                    Ticket Analytics
-                </h2>
-                <p class="text-blue-100 text-lg">
-                    วิเคราะห์และติดตามประสิทธิภาพของระบบ Ticket
-                </p>
-            </div>
-            <div>
-                <a href="{{ route('admin.tickets.index') }}"
-                   class="inline-flex items-center px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    กลับหน้าหลัก
-                </a>
+{{--
+    📊 Analytics ระบบ Ticket (ธีม V4 นวลทองคำ)
+    กราฟใช้แถบ CSS ล้วน ไม่พึ่ง Chart.js — คงตัวกรองช่วงวันที่และข้อมูลเดิม 100%
+--}}
+@php
+    $totalTickets = (int) ($analytics['total_tickets'] ?? 0);
+    $divisor = $totalTickets > 0 ? $totalTickets : 1;
+
+    $statusColors = [
+        'open' => '#5689b8', 'in_progress' => '#e0a52e', 'waiting_customer' => '#b79ae8',
+        'resolved' => '#5aa07e', 'closed' => '#9a8f7c',
+    ];
+    $statusLabels = [
+        'open' => 'เปิด', 'in_progress' => 'กำลังดำเนินการ', 'waiting_customer' => 'รอลูกค้า',
+        'resolved' => 'แก้ไขแล้ว', 'closed' => 'ปิด',
+    ];
+    $priorityColors = ['critical' => '#d9534f', 'high' => '#d6824a', 'medium' => '#e0a52e', 'low' => '#5689b8'];
+    $priorityLabels = ['critical' => 'วิกฤต', 'high' => 'สูง', 'medium' => 'ปานกลาง', 'low' => 'ต่ำ'];
+
+    $slaCompliance = (float) ($analytics['sla_compliance'] ?? 100);
+    $topAgents = $analytics['top_agents'] ?? [];
+    $maxResolved = ($topAgents[0]->resolved_count ?? 0) ?: 1;
+@endphp
+
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ศูนย์ช่วยเหลือ · Analytics</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">Analytics ระบบ Ticket 📊</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">
+                ช่วง {{ $dateFrom->format('d/m/Y') }} – {{ $dateTo->format('d/m/Y') }}
             </div>
         </div>
+        <a href="{{ route('admin.tickets.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับหน้าหลัก</a>
     </div>
 
-    <!-- Date Range Filter -->
-    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-        <form method="GET" action="{{ route('admin.tickets.analytics') }}" class="flex flex-wrap items-end gap-4">
-            <div class="flex-1 min-w-[200px]">
-                <label for="date_from" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                    <i class="fas fa-calendar mr-1"></i>
-                    From Date
-                </label>
-                <input type="date" name="date_from" id="date_from"
-                       value="{{ request('date_from', $dateFrom->format('Y-m-d')) }}"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-            </div>
-            <div class="flex-1 min-w-[200px]">
-                <label for="date_to" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                    <i class="fas fa-calendar mr-1"></i>
-                    To Date
-                </label>
-                <input type="date" name="date_to" id="date_to"
-                       value="{{ request('date_to', $dateTo->format('Y-m-d')) }}"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+    {{-- ===== ตัวกรองช่วงวันที่ ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-calendar-days"></i> ช่วงเวลา</div>
+        <form method="GET" action="{{ route('admin.tickets.analytics') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
+            <div>
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">วันที่เริ่มต้น</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="date" name="date_from" value="{{ request('date_from', $dateFrom->format('Y-m-d')) }}"
+                           style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                </div>
             </div>
             <div>
-                <button type="submit"
-                        class="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg">
-                    <i class="fas fa-filter mr-2"></i>
-                    Apply Filter
-                </button>
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">วันที่สิ้นสุด</label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="date" name="date_to" value="{{ request('date_to', $dateTo->format('Y-m-d')) }}"
+                           style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                </div>
+            </div>
+            <div style="grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:10px; padding-top:4px;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> ดูข้อมูล</button>
+                <a href="{{ route('admin.tickets.analytics') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> รีเซ็ต</a>
             </div>
         </form>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Total Tickets Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Tickets</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['total_tickets'] ?? 0) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">In selected period</p>
-                </div>
-                <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-xl">
-                    <i class="fas fa-ticket-alt text-2xl text-blue-600 dark:text-blue-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Avg Response Time Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Avg Response Time</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['avg_response_time'] ?? 0) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Minutes</p>
-                </div>
-                <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-xl">
-                    <i class="fas fa-hourglass-start text-2xl text-green-600 dark:text-green-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Avg Resolution Time Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-cyan-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Avg Resolution Time</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['avg_resolution_time'] ?? 0) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Minutes</p>
-                </div>
-                <div class="bg-cyan-100 dark:bg-cyan-900/30 p-4 rounded-xl">
-                    <i class="fas fa-hourglass-end text-2xl text-cyan-600 dark:text-cyan-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- SLA Compliance Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-amber-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">SLA Compliance</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['sla_compliance'] ?? 100) }}%</p>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-2 mt-2">
-                        <div class="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full" style="width: {{ $analytics['sla_compliance'] ?? 100 }}%"></div>
+    {{-- ===== KPI ===== --}}
+    @php
+        $kpis = [
+            [number_format($totalTickets),                                  'Ticket ทั้งหมด',      'fa-layer-group',  null],
+            [number_format($analytics['avg_response_time'] ?? 0).' นาที',   'เวลาตอบกลับเฉลี่ย',   'fa-hourglass-start', '#5689b8'],
+            [number_format($analytics['avg_resolution_time'] ?? 0).' นาที', 'เวลาปิดงานเฉลี่ย',    'fa-hourglass-end',   '#5aa07e'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;">
+        @foreach($kpis as [$value, $label, $icon, $color])
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;{{ $color ? ' background:'.$color.';' : '' }}">
+                        <i class="fas {{ $icon }}"></i>
+                    </div>
+                    <div>
+                        <div class="tp-num" style="font-size:24px; font-weight:800; line-height:1.1;">{{ $value }}</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $label }}</div>
                     </div>
                 </div>
-                <div class="bg-amber-100 dark:bg-amber-900/30 p-4 rounded-xl">
-                    <i class="fas fa-chart-line text-2xl text-amber-600 dark:text-amber-400"></i>
+            </div>
+        @endforeach
+
+        {{-- SLA พร้อมแถบสัดส่วน --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#e0a52e;">
+                    <i class="fas fa-shield-halved"></i>
                 </div>
+                <div>
+                    <div class="tp-num" style="font-size:24px; font-weight:800; line-height:1.1;">{{ number_format($slaCompliance) }}%</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ทำได้ตาม SLA</div>
+                </div>
+            </div>
+            <div class="tp-well" style="height:7px; border-radius:99px; overflow:hidden; padding:0;">
+                <div style="height:100%; width:{{ max(0, min(100, $slaCompliance)) }}%; background:#e0a52e; border-radius:99px;"></div>
             </div>
         </div>
     </div>
 
-    <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <!-- Tickets by Status -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
-            <div class="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-4">
-                <h3 class="text-xl font-bold text-white flex items-center">
-                    <i class="fas fa-tasks mr-2"></i>
-                    Tickets by Status
-                </h3>
-            </div>
-            <div class="p-6">
-                @if(isset($analytics['tickets_by_status']) && $analytics['tickets_by_status']->isNotEmpty())
-                    <div class="space-y-3">
-                        @foreach($analytics['tickets_by_status'] as $status => $count)
-                            @php
-                                $statusColors = [
-                                    'open' => 'bg-blue-500',
-                                    'in_progress' => 'bg-yellow-500',
-                                    'waiting_customer' => 'bg-purple-500',
-                                    'resolved' => 'bg-green-500',
-                                    'closed' => 'bg-gray-500'
-                                ];
-                                $color = $statusColors[$status] ?? 'bg-gray-500';
-                                $total = $analytics['total_tickets'] > 0 ? $analytics['total_tickets'] : 1;
-                                $percentage = round(($count / $total) * 100, 1);
-                            @endphp
-                            <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl hover:shadow-md transition-all">
-                                <div class="flex items-center flex-1">
-                                    <div class="w-3 h-3 {{ $color }} rounded-full mr-3"></div>
-                                    <span class="font-semibold text-gray-900 dark:text-white capitalize">{{ str_replace('_', ' ', $status) }}</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="text-right">
-                                        <div class="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $count }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $percentage }}%</div>
-                                    </div>
-                                    <div class="w-24 bg-gray-200 dark:bg-gray-700 dark:bg-gray-600 rounded-full h-2">
-                                        <div class="{{ $color }} h-2 rounded-full" style="width: {{ $percentage }}%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-chart-bar text-6xl mb-4"></i>
-                        <p class="text-lg">No data available</p>
-                    </div>
-                @endif
-            </div>
-        </div>
+    {{-- ===== สัดส่วนตามสถานะ / ความสำคัญ ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px;">
 
-        <!-- Tickets by Priority -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
-            <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
-                <h3 class="text-xl font-bold text-white flex items-center">
-                    <i class="fas fa-flag mr-2"></i>
-                    Tickets by Priority
-                </h3>
-            </div>
-            <div class="p-6">
-                @if(isset($analytics['tickets_by_priority']) && $analytics['tickets_by_priority']->isNotEmpty())
-                    <div class="space-y-3">
-                        @foreach($analytics['tickets_by_priority'] as $priority => $count)
-                            @php
-                                $priorityColors = [
-                                    'critical' => 'bg-red-500',
-                                    'high' => 'bg-orange-500',
-                                    'medium' => 'bg-yellow-500',
-                                    'low' => 'bg-blue-500'
-                                ];
-                                $color = $priorityColors[$priority] ?? 'bg-gray-500';
-                                $total = $analytics['total_tickets'] > 0 ? $analytics['total_tickets'] : 1;
-                                $percentage = round(($count / $total) * 100, 1);
-                            @endphp
-                            <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl hover:shadow-md transition-all">
-                                <div class="flex items-center flex-1">
-                                    <div class="w-3 h-3 {{ $color }} rounded-full mr-3"></div>
-                                    <span class="font-semibold text-gray-900 dark:text-white capitalize">{{ $priority }}</span>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="text-right">
-                                        <div class="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $count }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $percentage }}%</div>
-                                    </div>
-                                    <div class="w-24 bg-gray-200 dark:bg-gray-700 dark:bg-gray-600 rounded-full h-2">
-                                        <div class="{{ $color }} h-2 rounded-full" style="width: {{ $percentage }}%"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-chart-pie text-6xl mb-4"></i>
-                        <p class="text-lg">No data available</p>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    <!-- Top Performing Agents -->
-    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
-        <div class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4">
-            <h3 class="text-xl font-bold text-white flex items-center">
-                <i class="fas fa-trophy mr-2"></i>
-                Top Performing Agents
-            </h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Rank
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Agent
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Resolved Tickets
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Performance
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($analytics['top_agents'] ?? [] as $index => $agent)
-                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    @if($index == 0)
-                                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 text-white font-bold shadow-lg">
-                                            <i class="fas fa-crown"></i>
-                                        </span>
-                                    @elseif($index == 1)
-                                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 text-white font-bold shadow-lg">
-                                            #2
-                                        </span>
-                                    @elseif($index == 2)
-                                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-white font-bold shadow-lg">
-                                            #3
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white font-bold">
-                                            #{{ $index + 1 }}
-                                        </span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10">
-                                        <div class="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-600 flex items-center justify-center text-white font-semibold">
-                                            {{ substr($agent->assignedTo->name ?? 'N/A', 0, 1) }}
-                                        </div>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                            {{ $agent->assignedTo->name ?? 'N/A' }}
-                                        </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                            {{ $agent->assignedTo->email ?? '' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                                    <i class="fas fa-check-circle mr-2"></i>
-                                    {{ $agent->resolved_count }}
+        {{-- ตามสถานะ --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-chart-pie"></i> แยกตามสถานะ</div>
+            @if(!empty($analytics['tickets_by_status']) && $analytics['tickets_by_status']->isNotEmpty())
+                <div style="display:flex; flex-direction:column; gap:13px;">
+                    @foreach($analytics['tickets_by_status'] as $status => $count)
+                        @php
+                            $color = $statusColors[$status] ?? '#9a8f7c';
+                            $pct = round(($count / $divisor) * 100);
+                        @endphp
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px;">
+                                <span style="font-size:13px; font-weight:600; color:var(--ink);">{{ $statusLabels[$status] ?? $status }}</span>
+                                <span style="font-size:12.5px; color:var(--ink2);">
+                                    <strong style="color:var(--ink);">{{ number_format($count) }}</strong> ({{ $pct }}%)
                                 </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @php
-                                    $maxResolved = $analytics['top_agents'][0]->resolved_count ?? 1;
-                                    $performance = round(($agent->resolved_count / $maxResolved) * 100);
-                                @endphp
-                                <div class="flex items-center">
-                                    <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-2 mr-3" style="min-width: 100px;">
-                                        <div class="bg-gradient-to-r from-purple-500 to-pink-600 h-2 rounded-full" style="width: {{ $performance }}%"></div>
-                                    </div>
-                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $performance }}%</span>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 dark:text-gray-400">
-                                    <i class="fas fa-users text-6xl mb-4"></i>
-                                    <p class="text-lg font-medium">No agent data available</p>
-                                    <p class="text-sm mt-2">Agent performance will appear here once tickets are resolved</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                            </div>
+                            <div class="tp-well" style="height:8px; border-radius:99px; overflow:hidden; padding:0;">
+                                <div style="height:100%; width:{{ $pct }}%; background:{{ $color }}; border-radius:99px;"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div style="text-align:center; color:var(--ink2); padding:28px 0; font-size:13px;">ไม่มีข้อมูลในช่วงนี้</div>
+            @endif
+        </div>
+
+        {{-- ตามความสำคัญ --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-flag"></i> แยกตามความสำคัญ</div>
+            @if(!empty($analytics['tickets_by_priority']) && $analytics['tickets_by_priority']->isNotEmpty())
+                <div style="display:flex; flex-direction:column; gap:13px;">
+                    @foreach($analytics['tickets_by_priority'] as $priority => $count)
+                        @php
+                            $color = $priorityColors[$priority] ?? '#9a8f7c';
+                            $pct = round(($count / $divisor) * 100);
+                        @endphp
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px;">
+                                <span style="font-size:13px; font-weight:600; color:var(--ink);">{{ $priorityLabels[$priority] ?? $priority }}</span>
+                                <span style="font-size:12.5px; color:var(--ink2);">
+                                    <strong style="color:var(--ink);">{{ number_format($count) }}</strong> ({{ $pct }}%)
+                                </span>
+                            </div>
+                            <div class="tp-well" style="height:8px; border-radius:99px; overflow:hidden; padding:0;">
+                                <div style="height:100%; width:{{ $pct }}%; background:{{ $color }}; border-radius:99px;"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div style="text-align:center; color:var(--ink2); padding:28px 0; font-size:13px;">ไม่มีข้อมูลในช่วงนี้</div>
+            @endif
         </div>
     </div>
+
+    {{-- ===== เจ้าหน้าที่ที่ปิดงานมากที่สุด ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-trophy"></i> เจ้าหน้าที่ที่ปิดงานมากที่สุด</div>
+
+        @forelse($topAgents as $index => $agent)
+            @php $performance = round(($agent->resolved_count / $maxResolved) * 100); @endphp
+            <div style="display:flex; align-items:center; gap:13px; padding:12px 0;{{ $index > 0 ? ' box-shadow:var(--inset-sm);' : '' }}">
+                {{-- อันดับ --}}
+                <span class="tp-tile" style="width:34px; height:34px; border-radius:50%; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;{{ $index === 0 ? '' : ' background:#9a8f7c;' }}">
+                    {{ $index + 1 }}
+                </span>
+
+                {{-- ชื่อ --}}
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13.5px; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ $agent->assignedTo->name ?? '—' }}
+                    </div>
+                    <div style="font-size:11.5px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ $agent->assignedTo->email ?? '' }}
+                    </div>
+                    <div class="tp-well" style="height:6px; border-radius:99px; overflow:hidden; padding:0; margin-top:7px;">
+                        <div style="height:100%; width:{{ $performance }}%; background:#b79ae8; border-radius:99px;"></div>
+                    </div>
+                </div>
+
+                {{-- ตัวเลข --}}
+                <div style="text-align:right; white-space:nowrap;">
+                    <div class="tp-num" style="font-size:19px; font-weight:800; color:var(--ink);">{{ number_format($agent->resolved_count) }}</div>
+                    <div style="font-size:11.5px; color:var(--ink2);">{{ $performance }}%</div>
+                </div>
+            </div>
+        @empty
+            <div style="text-align:center; color:var(--ink2); padding:36px 0;">
+                <i class="fas fa-trophy" style="font-size:30px; display:block; margin-bottom:10px; opacity:.5;"></i>
+                <div style="font-size:14px; font-weight:600;">ยังไม่มีข้อมูล</div>
+                <div style="font-size:12px; margin-top:4px;">สถิติเจ้าหน้าที่จะแสดงเมื่อมี Ticket ถูกปิดงาน</div>
+            </div>
+        @endforelse
+    </div>
+
 </div>
 @endsection
