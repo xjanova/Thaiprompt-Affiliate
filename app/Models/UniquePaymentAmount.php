@@ -217,9 +217,25 @@ class UniquePaymentAmount extends Model
                 return null;
             }
 
-            // สุ่มเลือก suffix ที่ยังว่าง (ใช้ cryptographic random)
             $availableValues = array_values($availableSuffixes);
-            $suffix = $availableValues[random_int(0, count($availableValues) - 1)];
+
+            // 🎯 (2026-09-02, บิล FTU-260902-E0187) บิล top-up "โอนขาด" → เอาทศนิยมที่ "ขาดจริง" ก่อนเสมอ
+            //
+            //   เคสจริง: ขาด ฿32.38 → พื้น suffix=38 แต่ random_int สุ่มได้ 52 → ระบบรอ ฿32.52
+            //   ขณะที่กล่องข้อความบอกลูกค้าเองว่า "ขาดอีก ฿32.38" → ลูกค้าโอน 32.38 ตามที่อ่าน
+            //   → findMatch หา 32.52 ไม่เจอ → SMS matched:false → เงินตกร่องเงียบ ลูกค้าถูกทวงซ้ำ
+            //   (66.62 + 32.38 = 99.00 พอดีเป๊ะ — ลูกค้าพูดถูก "มันเกิน99นะคะ" แต่บอทไม่รู้)
+            //
+            //   สุ่มมีประโยชน์แค่ตอน "กระจายบิลราคาเดียวกัน" — บิลโอนขาดไม่ต้องการความสุ่ม
+            //   ต้องการ "เลขเดียวกับที่พูด" ([[rule_partial_payment_ask_must_equal_stated_shortfall]])
+            //   ⚠️ ใช้เฉพาะเมื่อ caller ส่ง $minSuffix มา — บิลปกติ ($minSuffix = null → floor 1)
+            //      ต้องสุ่มเหมือนเดิม ไม่งั้นทุกบิลจะได้ .01 เหมือนกันหมด
+            if ($minSuffix !== null && in_array($suffixFloor, $availableValues, true)) {
+                $suffix = $suffixFloor;
+            } else {
+                // สุ่มเลือก suffix ที่ยังว่าง (ใช้ cryptographic random)
+                $suffix = $availableValues[random_int(0, count($availableValues) - 1)];
+            }
             $uniqueAmount = $intBaseAmount + ($suffix / 100);
 
             return static::create([

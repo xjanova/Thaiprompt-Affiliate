@@ -147,6 +147,43 @@ class SmsPaymentService
                     }
                 }
 
+                // 🎯 ขั้นที่ 2.5 (2026-09-02, บิล FTU-260902-E0187) บิล "โอนขาด" — ลูกค้าโอนตาม
+                //    "เลขที่บอทพูด" ไม่ใช่เลขที่ QR จอง → ยอดไม่ตรง UPA → ตกร่องเงียบ
+                //    วางไว้ "หลัง" ทั้ง fortune-UPA และ ecommerce match — เป็นด่านกู้ ไม่ใช่ด่านหลัก
+                //    (ห้ามวางก่อน ไม่งั้นยอดของอีคอมเมิร์ซอาจโดนบิลดูดวงดูดไปก่อน)
+                if (! $fortuneReadingHandled && ! $matched) {
+                    $partialOwner = $this->findPartialTopupOwner($notification);
+
+                    if ($partialOwner !== null) {
+                        $creditBefore = (float) ($partialOwner->partial_paid_total ?? 0);
+                        $fortuneReadingHandled = $this->handleFortuneReadingPayment($notification, $partialOwner);
+
+                        if ($fortuneReadingHandled) {
+                            // 📒 ยอดสะสมต้องสะท้อนเงินที่รับมาจริงทั้งก้อน (รายงานรายได้อ่านจากฟิลด์นี้)
+                            //   compare-and-swap: ถ้ามี notification ฝาแฝดชิงบวกไปแล้ว ค่าจะไม่ตรง
+                            //   → update 0 แถว = ไม่บวกซ้ำ (handleFortuneReadingPayment กันด้าน
+                            //     side-effect ไว้ด้วย Cache lock แล้ว แต่บรรทัดนี้อยู่นอก lock)
+                            try {
+                                FortuneReading::where('id', $partialOwner->id)
+                                    ->where('partial_paid_total', $creditBefore)
+                                    ->update([
+                                        'partial_paid_total' => round($creditBefore + (float) $notification->amount, 2),
+                                    ]);
+                            } catch (\Throwable $e) {
+                                Log::warning('💰 Partial recovery: อัปเดต partial_paid_total ไม่สำเร็จ (บิลตัดไปแล้ว)', [
+                                    'reading_id' => $partialOwner->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                            }
+
+                            if ($notification->matched_transaction_id) {
+                                $matchedModel = FortuneReading::find($notification->matched_transaction_id);
+                                $matchedModelType = 'fortune_reading';
+                            }
+                        }
+                    }
+                }
+
                 if (! $fortuneReadingHandled && ! $matched) {
                     // ขั้นที่ 3: ตรวจจับยอดพิเศษ (เช่น 29.99 = ดูดวง)
                     // สร้าง FortuneReading อัตโนมัติเป็น "บิลลอย" ถ้า match ไม่ได้กับ unique amount
@@ -564,7 +601,12 @@ class SmsPaymentService
      *
      * smschecker app หน้าที่: รับ FCM push → แสดงเป็น "บิลค้างต้องตรวจสอบ" ใน admin queue
      */
-    protected function flagOrphanFortunePayment(SmsPaymentNotification $notification): void
+    /**
+     * @param  string|null  $reasonOverride  (2026-09-02) ระบุเหตุผลเอง = **ข้ามด่านช่วงราคา**
+     *                                       ด่านเดิมรับเฉพาะ [deep_price, deep_price+1) → ยอดบิลโอนขาด (เช่น ฿32.38) ตกร่อง
+     *                                       แบบ "ไม่มี log ไม่มี push" เลย เพราะไม่อยู่ในช่วงราคาเต็ม
+     */
+    protected function flagOrphanFortunePayment(SmsPaymentNotification $notification, ?string $reasonOverride = null): void
     {
         $amount = (float) $notification->amount;
 
@@ -586,7 +628,7 @@ class SmsPaymentService
         // Range check: amount ต้องอยู่ในช่วง [price, price + 1]
         // เช่น price=39 → match 39.00 ถึง 39.99 (รองรับ unique decimal suffix)
         // กัน edge: ถ้า admin ตั้งราคา 40 → match 40.00 ถึง 40.99
-        if ($amount < $fortunePrice || $amount >= ($fortunePrice + 1.0)) {
+        if ($reasonOverride === null && ($amount < $fortunePrice || $amount >= ($fortunePrice + 1.0))) {
             return; // ยอดไม่อยู่ในช่วง fortune — ไม่ใช่ orphan ของระบบนี้
         }
 
@@ -596,7 +638,7 @@ class SmsPaymentService
         //                  → กัน exception bubble up ทำให้ payment flow พัง
         $rawDataMerged = array_merge((array) ($notification->raw_data ?? []), [
             'orphan_fortune_payment' => true,
-            'orphan_reason' => 'amount_in_fortune_range_but_no_matching_bill',
+            'orphan_reason' => $reasonOverride ?: 'amount_in_fortune_range_but_no_matching_bill',
             'expected_price_range' => [$fortunePrice, $fortunePrice + 0.99],
             'flagged_at' => now()->toIso8601String(),
         ]);
@@ -653,7 +695,97 @@ class SmsPaymentService
      *
      * @return bool มีการจัดการหรือไม่
      */
-    protected function handleFortuneReadingPayment(SmsPaymentNotification $notification): bool
+    /**
+     * 🎯 (2026-09-02, บิล FTU-260902-E0187) หา "เจ้าของเงิน" ของยอดที่จับคู่ UPA ไม่ได้
+     *     — เฉพาะกรณีบิลโอนขาด ที่ลูกค้าโอนตาม "ยอดที่ขาด" ซึ่งบอทพิมพ์บอกไปเอง
+     *
+     * เคสจริง: ค่าครู ฿99 → ลูกค้าโอน ฿66.62 (กดเลขผิด) → บอทเครดิตไว้ + ออกบิล top-up
+     *   กล่องบอก "ขาดอีก ฿32.38" แต่ QR จองไว้ ฿32.52 → ลูกค้าโอน 32.38 ตามที่อ่าน
+     *   → findByUniqueAmount(32.38) ไม่เจอ → SMS matched:false → เงินเงียบ ลูกค้าโดนทวงซ้ำ
+     *   → ลูกค้าพิมพ์ "ครบแล้วนี่คะ ทำไมโอนเพิ่มอีก" / "มันเกิน99นะคะ" (66.62+32.38 = 99.00 พอดี)
+     *   → จบด้วยแอดมินต้องกด force approve เอง
+     *
+     * ⚖️ กฎที่ทำให้ "ไม่งงว่ายอดของใคร" — แคบที่สุดเท่าที่จะแคบได้:
+     *   1. ยอด SMS ต้อง **เท่ากับส่วนที่ขาดเป๊ะ** (target − paid, ±0.005) = เลขที่เราพิมพ์บอกเขาเอง
+     *      ไม่ใช่ ">= ส่วนที่ขาด" — ไม่งั้นยอดใหญ่ๆ ของระบบอื่นจะเข้าเกณฑ์ได้
+     *   2. บิลต้องเป็นบิลโอนขาดจริง (partial_paid_total > 0) ยังไม่จ่าย ยังไม่ HOLD
+     *   3. บิลต้องเกิด **ก่อน** เงินเข้า และยังอยู่ในอายุบิล + grace
+     *   4. เจอ "ใบเดียว" เท่านั้นถึงตัด — ≥2 ใบ = กำกวม ปล่อยให้แอดมินตัดสิน (log CRITICAL)
+     *
+     * @return FortuneReading|null null = ไม่เข้าเกณฑ์ / กำกวม (ห้ามเดา)
+     */
+    protected function findPartialTopupOwner(SmsPaymentNotification $notification): ?FortuneReading
+    {
+        $amount = round((float) $notification->amount, 2);
+        if ($amount <= 0) {
+            return null;
+        }
+
+        $smsAt = $notification->sms_timestamp ?? $notification->created_at;
+        if (! $smsAt instanceof \Carbon\Carbon) {
+            $smsAt = \Carbon\Carbon::parse($smsAt);
+        }
+
+        // อายุบิล + grace 60 นาที (โอนช้ากว่าบิลหมดอายุนิดหน่อยยังต้องกู้ได้)
+        $windowStart = $smsAt->copy()->subMinutes(FortuneReading::billTimeoutMinutes() + 60);
+
+        $candidates = FortuneReading::query()
+            ->where('is_paid', false)
+            ->where('partial_paid_total', '>', 0)
+            ->whereNotNull('partial_target_total')
+            ->whereNull('partial_hold_at') // HOLD = พักรอแม่หมอตรวจ ห้ามระบบตัดเอง
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
+            ])
+            ->where('created_at', '<=', $smsAt)   // บิลต้องมีอยู่ก่อนเงินเข้า
+            ->where('updated_at', '>=', $windowStart)
+            ->get()
+            ->filter(function (FortuneReading $r) use ($amount) {
+                $remaining = round((float) $r->partial_target_total - (float) $r->partial_paid_total, 2);
+
+                return $remaining > 0 && abs($remaining - $amount) < 0.005;
+            })
+            ->values();
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        if ($candidates->count() > 1) {
+            // กำกวมจริง — ห้ามเดาว่าเป็นเงินของใคร ปล่อยเข้าคิว orphan/admin
+            Log::critical('🚨 SMS Payment: ยอดตรง "ส่วนที่ขาด" ของบิลโอนขาดหลายใบ — ไม่เดา ให้แอดมินตัดสิน', [
+                'notification_id' => $notification->id,
+                'amount' => $amount,
+                'reading_ids' => $candidates->pluck('id')->all(),
+                'bill_references' => $candidates->pluck('bill_reference')->all(),
+            ]);
+
+            $this->flagOrphanFortunePayment($notification, 'ambiguous_partial_topup_shortfall');
+
+            return null;
+        }
+
+        $reading = $candidates->first();
+
+        Log::warning('🎯 SMS Payment: กู้เงินบิลโอนขาด — ลูกค้าโอนตาม "ยอดที่ขาด" ไม่ใช่ยอด QR', [
+            'notification_id' => $notification->id,
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'amount' => $amount,
+            'already_paid' => (float) $reading->partial_paid_total,
+            'target' => (float) $reading->partial_target_total,
+            'qr_amount' => (float) ($reading->uniquePaymentAmount?->unique_amount ?? 0),
+        ]);
+
+        return $reading;
+    }
+
+    /**
+     * @param  FortuneReading|null  $preResolved  บิลที่ด่านกู้หามาให้แล้ว (ข้ามการค้นด้วย unique amount)
+     */
+    protected function handleFortuneReadingPayment(SmsPaymentNotification $notification, ?FortuneReading $preResolved = null): bool
     {
         // 🔒 GUARD #1 (2026-04-28): SMS notification นี้ถูก match ไปบิลอื่นแล้ว → ห้าม reuse
         // กฎทอง: 1 SMS ใช้ได้กับ 1 บิล เท่านั้น
@@ -674,7 +806,8 @@ class SmsPaymentService
 
         // ขั้นที่ 1: ค้นหา FortuneReading ที่รอชำระเงินด้วย unique amount ที่ยังไม่หมดอายุ
         // ⭐ ส่ง smsTimestamp เพื่อกัน bill ใหม่ที่ยอดตรงแต่สร้างหลัง SMS
-        $reading = FortuneReading::findByUniqueAmount($amount, $smsTimestamp);
+        //   (2026-09-02) $preResolved = ด่านกู้บิลโอนขาดหาไว้ให้แล้ว → ใช้เลย ไม่ต้องค้นซ้ำ
+        $reading = $preResolved ?: FortuneReading::findByUniqueAmount($amount, $smsTimestamp);
 
         // ขั้นที่ 2: Grace period — ค้นหา unique amount ที่เพิ่งหมดอายุ (ภายใน 30 นาที)
         // กรณีลูกค้าโอนช้ากว่าเวลาที่กำหนด แต่ยังอยู่ใน grace period

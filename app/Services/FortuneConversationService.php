@@ -17038,6 +17038,20 @@ class FortuneConversationService
 
         $remain = max(0, round($target - $paid, 2));
 
+        // 🎯 (2026-09-02, บิล FTU-260902-E0187) โชว์ "ยอดที่ระบบรออยู่จริง" ไม่ใช่ผลลบดิบ
+        //   กล่องนี้ไปโผล่ 5-6 จุด (เช็คสถานะ / waiting_payment / ขอสลิป / ช่องทางโอน) —
+        //   ถ้าพ่น target-paid (32.38) ขณะที่ QR/ตัวจับคู่รอ unique_amount (32.52) ลูกค้าจะโอนตาม
+        //   เลขในกล่องนี้ แล้ว SMS จับคู่ไม่ได้ = เงินตกร่อง (เคสจริงวันนี้ ต้องให้แอดมิน force)
+        //   ⚠️ ใช้ยอด UPA ต่อเมื่อพิสูจน์ได้ว่ามันคือ "บิล top-up ของส่วนที่ขาดนี้" คือ
+        //      อยู่ในช่วง [remain, remain+1) — ไม่งั้นถอยไปใช้ผลลบเหมือนเดิม (บิลเต็มใบเก่า/UPA ถูก cancel)
+        //   ⚠️ ต้องเป็น UPA ที่ยัง "รับเงินได้" เท่านั้น — cancelled (HOLD) / used (จ่ายจบ) ห้ามเอามาโชว์
+        //      (expired ยังนับ เพราะ findFortuneReadingByExpiredAmount ยังกู้ให้ใน grace)
+        $upa = $reading->uniquePaymentAmount;
+        $live = in_array($upa?->status, ['reserved', 'expired'], true) ? (float) $upa->unique_amount : 0.0;
+        if ($remain > 0 && $live >= $remain && $live < $remain + 1.0) {
+            $remain = $live;
+        }
+
         if ($compact) {
             return '💰 _รับแล้ว ฿'.number_format($paid, 2).' / ฿'.number_format($target, 2)
                 .' — ขาดอีก ฿'.number_format($remain, 2).'_';
@@ -17323,13 +17337,20 @@ class FortuneConversationService
 
             // 💰 (2026-08-29, owner) กล่องเดียว "เลขเดียว" — ยอดที่ขอคือยอดที่ขาดจริง (บวกเศษกันชนให้ SMS จับคู่)
             //   เดิมกล่องนี้พ่นเลข 3 ตัวที่ไม่ตรงกัน (ขาด 38.10 / โอนเพิ่ม 39.57 / หรือโอน 39.00) ลูกค้าเลือกไม่ถูก
+            //
+            // 🎯 (2026-09-02, บิล FTU-260902-E0187) รอบนี้เหลือ "เลขเดียวจริงๆ"
+            //   รอบที่แล้วยังเหลือ 2 เลข: "ขาดอีก ฿32.38" (บรรทัดบน) กับ "โอนยอดนี้ ฿32.52" (บรรทัดล่าง)
+            //   ลูกค้าอ่านบรรทัดบนแล้วโอน 32.38 → SMS จับคู่ไม่ได้ → เงินตกร่อง → ต้องให้แอดมิน force
+            //   ⚠️ ห้ามพิมพ์ $remaining คู่กับ unique_amount ในกล่องเดียวกันอีก — ยอดที่ "พูด" ต้อง =
+            //      ยอดที่ "เก็บ" เสมอ ([[rule_partial_payment_ask_must_equal_stated_shortfall]])
+            $payable = (float) $topupUpa->unique_amount;
+
             return [
                 'action' => 'partial_topup',
                 'message' => '🙏 ได้รับยอด ฿'.number_format($amount, 2)." แล้วค่ะ\n"
-                    .'💰 สะสมแล้ว *฿'.number_format($newPaid, 2).'* จากค่าครู ฿'.number_format($target, 2)."\n"
-                    .'➖ ยัง *ขาดอีก ฿'.number_format($remaining, 2)."*\n\n"
-                    .'💸 โอนยอดนี้ได้เลยค่ะ → *฿'.number_format((float) $topupUpa->unique_amount, 2)."*\n"
-                    ."   (ใส่เศษสตางค์ด้วยนะคะ ระบบจะตัดบิลให้อัตโนมัติทันที)\n\n"
+                    .'💰 สะสมแล้ว *฿'.number_format($newPaid, 2).'* จากค่าครู ฿'.number_format($target, 2)."\n\n"
+                    .'➖ ขาดอีก *฿'.number_format($payable, 2)."* — โอนยอดนี้ได้เลยค่ะ\n"
+                    ."   (ใส่เศษสตางค์ให้ตรงนะคะ ระบบจะตัดบิลให้อัตโนมัติทันที)\n\n"
                     .'✨ พอครบ แม่หมอเปิดดวงให้ทันทีเลยค่ะ 🌙'
                     .$oddWarn,
                 'reading' => $reading,
