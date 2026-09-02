@@ -3,7 +3,7 @@
     แสดงรายการบริการในหมวดหมู่ที่เลือก พร้อมฟิลเตอร์และการเรียงลำดับ
     ธีม: Arrow X V3 - Glassmorphism
 --}}
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $category->name . ' - บริการ')
 

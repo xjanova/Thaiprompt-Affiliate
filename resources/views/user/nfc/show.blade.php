@@ -1,9 +1,11 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'รายละเอียดการ์ด NFC - ' . ($card->card_name ?? 'การ์ด NFC'))
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
+{{-- ⚠️ ต้องมี x-data ที่ root ไม่งั้น Alpine ไม่ wire subtree นี้เลย
+     ปุ่มเปิดโมดัลทั้ง 3 ตัว (เติมเงิน/วงเงิน/เติมอัตโนมัติ) จะกดไม่ติด --}}
+<div x-data="nfcCardDetail()" class="space-y-6 pb-20 lg:pb-6">
     <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
         <div class="absolute inset-0 opacity-10">
             <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
@@ -55,7 +57,7 @@
                 </div>
 
                 {{-- Card Status --}}
-                <div class="mt-6 p-4 rounded-xl bg-white dark:bg-gray-800 shadow-lg">
+                <div class="tp-card mt-6 p-4 rounded-xl">
                     <div class="flex items-center justify-between mb-4">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">สถานะการ์ด</span>
                         <form action="{{ $card->isEnabled() ? route('user.nfc.disable', $card) : route('user.nfc.enable', $card) }}" method="POST">
@@ -129,26 +131,26 @@
 
             {{-- Statistics --}}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg">
+                <div class="tp-card rounded-xl p-4">
                     <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ธุรกรรมทั้งหมด</p>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $statistics['total_transactions'] ?? 0 }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg">
+                <div class="tp-card rounded-xl p-4">
                     <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ยอดใช้จ่ายรวม</p>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">฿{{ number_format($statistics['total_spent'] ?? 0, 0) }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg">
+                <div class="tp-card rounded-xl p-4">
                     <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">เติมเงินรวม</p>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">฿{{ number_format($statistics['total_topped_up'] ?? 0, 0) }}</p>
                 </div>
-                <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg">
+                <div class="tp-card rounded-xl p-4">
                     <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ธุรกรรมสำเร็จ</p>
                     <p class="text-2xl font-bold text-green-600">{{ $statistics['completed_transactions'] ?? 0 }}</p>
                 </div>
             </div>
 
             {{-- Spending Limits --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+            <div class="tp-card rounded-2xl p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                         <i class="fas fa-chart-line text-blue-500 mr-2"></i>
@@ -217,7 +219,7 @@
             </div>
 
             {{-- Auto Top-up Settings --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
+            <div class="tp-card rounded-2xl p-6">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                         <i class="fas fa-sync-alt text-green-500 mr-2"></i>
@@ -260,7 +262,7 @@
          x-cloak
          @click.self="showTopUpModal = false"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div class="tp-card rounded-2xl max-w-md w-full p-6">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">เติมเงินจาก Wallet</h3>
 
             <form action="{{ route('user.nfc.topup', $card) }}" method="POST">
@@ -297,7 +299,7 @@
          x-cloak
          @click.self="showLimitsModal = false"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div class="tp-card rounded-2xl max-w-md w-full p-6">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">แก้ไขวงเงิน</h3>
 
             <form action="{{ route('user.nfc.limits.update', $card) }}" method="POST">
@@ -339,7 +341,7 @@
          x-cloak
          @click.self="showAutoTopupModal = false"
          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div class="tp-card rounded-2xl max-w-md w-full p-6">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">ตั้งค่า Auto Top-up</h3>
 
             <form action="{{ route('user.nfc.auto-topup.configure', $card) }}" method="POST">

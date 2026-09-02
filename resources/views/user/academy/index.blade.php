@@ -3,7 +3,7 @@
     ใช้ V3 Design System: Tailwind CSS + Alpine.js
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ศูนย์การเรียนรู้')
 
@@ -69,7 +69,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @foreach($featuredArticles as $article)
             <a href="{{ route('user.academy.article', $article->slug) }}"
-               class="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+               class="tp-card group relative overflow-hidden rounded-2xl hover:shadow-xl transition-all hover:-translate-y-1">
                 <div class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition"></div>
                 <div class="p-6">
                     <div class="flex items-center gap-2 mb-3">
@@ -108,7 +108,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @forelse($categories as $category)
             <a href="{{ route('user.academy.category', $category['slug']) }}"
-               class="group relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+               class="tp-card group relative overflow-hidden rounded-2xl hover:shadow-xl transition-all hover:-translate-y-1">
                 <div class="p-6">
                     <div class="flex items-start gap-4">
                         <div class="w-14 h-14 bg-gradient-to-br from-{{ $category['color'] ?? 'blue' }}-400 to-{{ $category['color'] ?? 'blue' }}-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
@@ -163,7 +163,7 @@
             <i class="fas fa-fire text-orange-500"></i>
             บทเรียนยอดนิยม
         </h2>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+        <div class="tp-card rounded-2xl overflow-hidden">
             <div class="divide-y divide-gray-100 dark:divide-gray-700">
                 @foreach($popularArticles as $index => $article)
                 <a href="{{ route('user.academy.article', $article['slug']) }}"

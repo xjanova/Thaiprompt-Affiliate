@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'คู่มือสร้างเหรียญของคุณเอง - TPIX')
 
@@ -48,22 +48,22 @@
 
         {{-- Quick Stats --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-700">
                 <div class="text-3xl mb-2">⏱️</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-white">5 นาที</div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">เวลาสร้างโดยเฉลี่ย</div>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-700">
                 <div class="text-3xl mb-2">📝</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-white">4 ขั้นตอน</div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">ง่าย ๆ ไม่ซับซ้อน</div>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-700">
                 <div class="text-3xl mb-2">💰</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-white">100 TPIX</div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">ค่าสร้างเริ่มต้น</div>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 text-center shadow-lg border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-2xl p-6 text-center border border-gray-200 dark:border-gray-700">
                 <div class="text-3xl mb-2">🚀</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-white">0 โค้ด</div>
                 <div class="text-sm text-gray-600 dark:text-gray-400">ไม่ต้องเขียนโค้ดเอง</div>
@@ -72,7 +72,7 @@
 
         {{-- Navigation Tabs --}}
         <div class="mb-8">
-            <div class="flex flex-wrap gap-2 p-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg">
+            <div class="tp-card flex flex-wrap gap-2 p-2 rounded-2xl">
                 <button @click="activeTab = 'overview'"
                         :class="activeTab === 'overview' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
                         class="flex-1 px-6 py-3 rounded-xl font-semibold transition-all">
@@ -99,7 +99,7 @@
         {{-- Tab: Overview --}}
         <div x-show="activeTab === 'overview'" x-transition class="space-y-8">
             {{-- What is Token --}}
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl p-8 border border-gray-200 dark:border-gray-700">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
                     <span class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white">🤔</span>
                     Token คืออะไร?
@@ -159,7 +159,7 @@
             </div>
 
             {{-- Process Overview --}}
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl p-8 border border-gray-200 dark:border-gray-700">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
                     <span class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-white">🛤️</span>
                     ขั้นตอนการสร้าง Token
@@ -195,7 +195,7 @@
         {{-- Tab: Steps --}}
         <div x-show="activeTab === 'steps'" x-transition id="steps" class="space-y-6">
             {{-- Step 1 --}}
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="p-6 bg-gradient-to-r from-blue-500 to-cyan-500">
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-3xl text-white">
@@ -268,7 +268,7 @@
             </div>
 
             {{-- Step 2 --}}
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="p-6 bg-gradient-to-r from-purple-500 to-pink-500">
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-3xl text-white">
@@ -338,7 +338,7 @@
             </div>
 
             {{-- Step 3 --}}
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="p-6 bg-gradient-to-r from-yellow-500 to-orange-500">
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-3xl text-white">
@@ -408,7 +408,7 @@
             </div>
 
             {{-- Step 4 --}}
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="p-6 bg-gradient-to-r from-green-500 to-emerald-500">
                     <div class="flex items-center gap-4">
                         <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center text-3xl text-white">
@@ -480,7 +480,7 @@
 
         {{-- Tab: Features --}}
         <div x-show="activeTab === 'features'" x-transition class="space-y-8">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl p-8 border border-gray-200 dark:border-gray-700">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">⚙️ คุณสมบัติ Token ที่เลือกได้</h2>
 
                 <div class="overflow-x-auto">
@@ -548,7 +548,7 @@
 
         {{-- Tab: FAQ --}}
         <div x-show="activeTab === 'faq'" x-transition class="space-y-4">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div class="tp-card rounded-3xl p-8 border border-gray-200 dark:border-gray-700">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">❓ คำถามที่พบบ่อย</h2>
 
                 <div class="space-y-4" x-data="{ openFaq: null }">

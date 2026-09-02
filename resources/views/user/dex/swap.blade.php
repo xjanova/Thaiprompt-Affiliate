@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'แลกเปลี่ยน Token - TPIX DEX')
 
@@ -55,7 +55,7 @@
                                    placeholder="0.0"
                                    step="0.00000001">
                             <button type="button"
-                                    class="group flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-md transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
+                                    class="tp-card group flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
                                     onclick="selectToken('from')">
                                 <span id="fromToken" class="flex items-center gap-2">
                                     <i class="fas fa-coins text-purple-600 dark:text-purple-400 text-xl"></i>
@@ -75,7 +75,7 @@
                     <div class="flex justify-center -my-2 relative z-10">
                         <button type="button"
                                 id="swapDirection"
-                                class="group w-12 h-12 bg-white dark:bg-gray-800 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-600 rounded-full border-4 border-gray-100 dark:border-gray-900 shadow-lg transition-all duration-300 flex items-center justify-center hover:scale-[1.02]">
+                                class="tp-card group w-12 h-12 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-600 rounded-full border-4 border-gray-100 dark:border-gray-900 transition-all duration-300 flex items-center justify-center hover:scale-[1.02]">
                             <i class="fas fa-arrow-down text-gray-600 dark:text-gray-400 group-hover:text-white text-lg transition-colors"></i>
                         </button>
                     </div>
@@ -95,7 +95,7 @@
                                    placeholder="0.0"
                                    readonly>
                             <button type="button"
-                                    class="group flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-md transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
+                                    class="tp-card group flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
                                     onclick="selectToken('to')">
                                 <span id="toToken" class="flex items-center gap-2">
                                     <i class="fas fa-coins text-green-600 dark:text-green-400 text-xl"></i>
@@ -161,7 +161,7 @@
 
     {{-- Recent Swaps Sidebar --}}
     <div class="lg:col-span-1">
-        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-24">
+        <div class="tp-card rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-24">
             {{-- Header --}}
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -183,7 +183,7 @@
 
 {{-- Token Select Modal --}}
 <div id="tokenSelectModal" class="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden transform transition-all">
+    <div class="tp-card rounded-3xl max-w-md w-full max-h-[80vh] overflow-hidden transform transition-all">
         <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">เลือก Token</h3>

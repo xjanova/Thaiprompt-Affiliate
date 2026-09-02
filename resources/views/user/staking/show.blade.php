@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'รายละเอียด Staking Pool - TPIX')
 
@@ -91,7 +91,7 @@
 
             <!-- Lock Periods -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white dark:bg-gray-800 border-0 py-3">
+                <div class="tp-card card-header border-0 py-3">
                     <h6 class="mb-0 fw-bold">
                         <i class="fas fa-calendar-alt text-primary me-2"></i>
                         ระยะเวลาการล็อก และ APY
@@ -106,7 +106,7 @@
 
             <!-- Pool Description -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white dark:bg-gray-800 border-0 py-3">
+                <div class="tp-card card-header border-0 py-3">
                     <h6 class="mb-0 fw-bold">
                         <i class="fas fa-info-circle text-primary me-2"></i>
                         เกี่ยวกับ Pool นี้
@@ -147,7 +147,7 @@
 
             <!-- Recent Stakes -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white dark:bg-gray-800 border-0 py-3">
+                <div class="tp-card card-header border-0 py-3">
                     <h6 class="mb-0 fw-bold">
                         <i class="fas fa-history text-primary me-2"></i>
                         ธุรกรรมล่าสุด
@@ -246,7 +246,7 @@
 
             <!-- Rewards Calculator -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white dark:bg-gray-800 border-0 py-3">
+                <div class="tp-card card-header border-0 py-3">
                     <h6 class="mb-0 fw-bold">
                         <i class="fas fa-calculator text-primary me-2"></i>
                         คำนวณรางวัล
@@ -283,7 +283,7 @@
 
             <!-- Pool Stats -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white dark:bg-gray-800 border-0 py-3">
+                <div class="tp-card card-header border-0 py-3">
                     <h6 class="mb-0 fw-bold">
                         <i class="fas fa-chart-bar text-primary me-2"></i>
                         สถิติ Pool

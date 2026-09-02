@@ -12,7 +12,7 @@
     - Responsive design
     - Dark mode support
 --}}
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $pageTitle ?? 'ค้นหาบริการ')
 
@@ -70,7 +70,7 @@
                             <div x-show="showSuggestions && suggestions.length > 0"
                                  x-cloak
                                  @click.away="showSuggestions = false"
-                                 class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
+                                 class="tp-card absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden z-50 border border-gray-200 dark:border-gray-700">
                                 <template x-for="suggestion in suggestions" :key="suggestion.id">
                                     <a :href="suggestion.url"
                                        class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -274,7 +274,7 @@
                     <div x-show="showPriceFilter"
                          x-cloak
                          @click.away="showPriceFilter = false"
-                         class="absolute top-full left-0 mt-2 w-64 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50">
+                         class="tp-card absolute top-full left-0 mt-2 w-64 p-4 rounded-xl border border-gray-200 dark:border-gray-700 z-50">
                         <div class="space-y-3">
                             <div>
                                 <label class="text-xs font-medium text-gray-600 dark:text-gray-400">ราคาต่ำสุด</label>

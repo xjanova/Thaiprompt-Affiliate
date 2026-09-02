@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $plan->display_name)
 
@@ -55,7 +55,7 @@
     </div>
 
     <!-- Investment Form -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8" x-data="investmentForm()">
+    <div class="tp-card rounded-2xl p-8" x-data="investmentForm()">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">💰 ลงทุนเลย</h2>
 
         @if(!$canInvest)
@@ -135,7 +135,7 @@
 
     <!-- Features & Benefits -->
     @if($plan->features)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">✨ คุณสมบัติและสิทธิประโยชน์</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,7 +151,7 @@
 
     <!-- Terms & Conditions -->
     @if($plan->terms_conditions)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">📋 เงื่อนไขและข้อตกลง</h2>
 
         <div class="space-y-3">

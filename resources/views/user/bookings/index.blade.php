@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.user-v4')
 
 @section('title', 'การจองของฉัน')
 
@@ -228,7 +228,7 @@
                  x-transition:enter="ease-out duration-300"
                  x-transition:enter-start="opacity-0 scale-95"
                  x-transition:enter-end="opacity-100 scale-100"
-                 class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-xl">
+                 class="tp-card relative rounded-2xl p-6 max-w-md w-full">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
                     <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
                     ยืนยันการยกเลิก

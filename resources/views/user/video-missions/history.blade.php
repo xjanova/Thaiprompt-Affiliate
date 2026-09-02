@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ประวัติการทำภารกิจ')
 

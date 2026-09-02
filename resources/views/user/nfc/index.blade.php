@@ -1,9 +1,11 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'การ์ด NFC Tap-to-Pay')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
+{{-- ⚠️ ต้องมี x-data ที่ root ไม่งั้น Alpine ไม่ wire subtree นี้เลย
+     ปุ่มเติมเงิน + โมดัล (@click/x-show/x-model) จะกดไม่ติดทั้งหมด --}}
+<div x-data="nfcDashboard()" class="space-y-6 pb-20 lg:pb-6">
     <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 dark:from-blue-800 dark:via-cyan-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
         <div class="absolute inset-0 opacity-10">
             <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
@@ -64,7 +66,7 @@
     {{-- Cards List --}}
     <div class="space-y-6">
         @forelse($cards as $card)
-            <div class="group relative overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 dark:border-gray-700">
+            <div class="tp-card group relative overflow-hidden rounded-2xl hover:shadow-2xl transition-all duration-300 border border-gray-200 dark:border-gray-700">
                 {{-- Card Header - Glassmorphism Effect --}}
                 <div class="relative p-6 bg-gradient-to-r {{ $card->isEnabled() ? 'from-blue-500/10 to-purple-500/10' : 'from-gray-500/10 to-gray-600/10' }} backdrop-blur-sm">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -272,7 +274,7 @@
         <div @click="showTopUpModal = false" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
 
         {{-- Modal Content --}}
-        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+        <div class="tp-card relative rounded-2xl max-w-md w-full p-6"
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">

@@ -3,7 +3,7 @@
     ใช้ V3 Design System: Tailwind CSS + Alpine.js
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $category->name . ' - ศูนย์การเรียนรู้')
 
@@ -88,7 +88,7 @@
             <div class="relative group">
                 @if($isLocked)
                 {{-- Locked Article --}}
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 opacity-60">
+                <div class="tp-card rounded-2xl p-6 opacity-60">
                     <div class="absolute inset-0 bg-gray-900/50 dark:bg-gray-900/70 rounded-2xl flex items-center justify-center z-10">
                         <div class="text-center">
                             <div class="w-12 h-12 bg-gray-800 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -110,7 +110,7 @@
                 @else
                 {{-- Accessible Article --}}
                 <a href="{{ route('user.academy.article', $article->slug) }}"
-                   class="block bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
+                   class="tp-card block rounded-2xl hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
                     <div class="p-6">
                         <div class="flex items-center gap-2 mb-3">
                             <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-medium rounded-full">

@@ -2,7 +2,7 @@
     หน้ารายละเอียดสินค้า Coin Shop
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $pageTitle ?? $product->display_name)
 
@@ -210,7 +210,7 @@
                                        x-model="quantity"
                                        min="1"
                                        :max="maxQty"
-                                       class="w-16 h-10 text-center border-y border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                       class="tp-card w-16 h-10 text-center border-y border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white">
                                 <button type="button"
                                         @click="quantity = Math.min(maxQty, quantity + 1)"
                                         class="w-10 h-10 flex items-center justify-center bg-gray-200 dark:bg-gray-600 rounded-r-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition">
@@ -278,7 +278,7 @@
     @if($userPurchases->count() > 0)
     <div class="mt-12">
         <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">ประวัติการซื้อของคุณ</h2>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="tp-card rounded-xl overflow-hidden">
             <table class="w-full">
                 <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>

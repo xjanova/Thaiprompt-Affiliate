@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'Liquidity Pools - TPIX DEX')
 
@@ -27,7 +27,7 @@
                 </p>
 
                 {{-- CTA Button --}}
-                <a href="{{ route('user.dex.add-liquidity') }}" class="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-blue-600 font-bold rounded-xl hover:bg-gray-100 dark:bg-gray-700 transition-transform hover:scale-[1.02] transition-all duration-200 shadow-2xl hover:shadow-white/20">
+                <a href="{{ route('user.dex.add-liquidity') }}" class="tp-card inline-flex items-center px-8 py-4 text-blue-600 font-bold rounded-xl hover:bg-gray-100 dark:bg-gray-700 transition-transform hover:scale-[1.02] transition-all duration-200 hover:shadow-white/20">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
@@ -47,7 +47,7 @@
     {{-- Stats Cards พร้อม Animation --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" x-data="{ loaded: false }" x-init="setTimeout(() => loaded = true, 100)">
         {{-- Total TVL --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
+        <div class="tp-card rounded-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden group"
              x-show="loaded"
              x-transition:enter="transform transition ease-out duration-500"
              x-transition:enter-start="opacity-0 translate-y-8"
@@ -70,7 +70,7 @@
         </div>
 
         {{-- Volume 24h --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
+        <div class="tp-card rounded-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden group"
              x-show="loaded"
              x-transition:enter="transform transition ease-out duration-500"
              x-transition:enter-start="opacity-0 translate-y-8"
@@ -93,7 +93,7 @@
         </div>
 
         {{-- Active Pools --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
+        <div class="tp-card rounded-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden group"
              x-show="loaded"
              x-transition:enter="transform transition ease-out duration-500"
              x-transition:enter-start="opacity-0 translate-y-8"
@@ -116,7 +116,7 @@
         </div>
 
         {{-- Fees Collected --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
+        <div class="tp-card rounded-2xl hover:shadow-2xl transition-all duration-300 overflow-hidden group"
              x-show="loaded"
              x-transition:enter="transform transition ease-out duration-500"
              x-transition:enter-start="opacity-0 translate-y-8"
@@ -140,7 +140,7 @@
     </div>
 
     {{-- Filters & Search --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+    <div class="tp-card rounded-2xl p-6 mb-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             {{-- Search Input --}}
             <div class="md:col-span-1">
@@ -174,7 +174,7 @@
                     <div class="relative">
                         <input type="checkbox" id="myPoolsOnly" class="sr-only peer">
                         <div class="w-14 h-8 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500 transition-all duration-300"></div>
-                        <div class="absolute left-1 top-1 bg-white dark:bg-gray-800 w-6 h-6 rounded-full transition-all duration-300 peer-checked:translate-x-6 shadow-md"></div>
+                        <div class="tp-card absolute left-1 top-1 w-6 h-6 rounded-full transition-all duration-300 peer-checked:translate-x-6"></div>
                     </div>
                     <span class="ml-3 text-gray-700 dark:text-gray-300 font-medium">Pool ของฉันเท่านั้น</span>
                 </label>
@@ -183,7 +183,7 @@
     </div>
 
     {{-- Pools List --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-8">
+    <div class="tp-card rounded-2xl overflow-hidden mb-8">
         {{-- Header --}}
         <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -222,7 +222,7 @@
     </div>
 
     {{-- My Positions --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+    <div class="tp-card rounded-2xl overflow-hidden">
         {{-- Header --}}
         <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -274,7 +274,7 @@
 
     {{-- Modal --}}
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full mx-auto"
+        <div class="tp-card relative rounded-2xl max-w-4xl w-full mx-auto"
              @click.away="showModal = false"
              x-show="showModal"
              x-transition:enter="ease-out duration-300"

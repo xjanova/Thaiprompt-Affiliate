@@ -2,7 +2,7 @@
     หน้ารายละเอียดบริการและฟอร์มจอง
     ธีม: Arrow X V3 - Glassmorphism
 --}}
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $service->name)
 

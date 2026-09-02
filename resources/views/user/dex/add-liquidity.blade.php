@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'เพิ่ม Liquidity - TPIX DEX')
 
@@ -22,7 +22,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {{-- Main Form --}}
         <div class="lg:col-span-2">
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="tp-card rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {{-- Card Header --}}
                 <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">เลือกคู่ Token</h2>
@@ -45,7 +45,7 @@
                                    placeholder="0.0"
                                    step="0.00000001">
                             <button type="button"
-                                    class="group flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-md transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
+                                    class="tp-card group flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
                                     onclick="openTokenModal('a')">
                                 <span id="tokenA" class="flex items-center gap-2">
                                     <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +67,7 @@
 
                     {{-- Plus Icon --}}
                     <div class="flex justify-center -my-2 relative z-10">
-                        <div class="w-12 h-12 bg-white dark:bg-gray-800 rounded-full border-4 border-gray-100 dark:border-gray-900 shadow-lg flex items-center justify-center">
+                        <div class="tp-card w-12 h-12 rounded-full border-4 border-gray-100 dark:border-gray-900 flex items-center justify-center">
                             <svg class="w-6 h-6 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
@@ -89,7 +89,7 @@
                                    placeholder="0.0"
                                    step="0.00000001">
                             <button type="button"
-                                    class="group flex items-center gap-3 px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl shadow-md transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
+                                    class="tp-card group flex items-center gap-3 px-6 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-all duration-200 border-2 border-gray-200 dark:border-gray-600"
                                     onclick="openTokenModal('b')">
                                 <span id="tokenB" class="flex items-center gap-2">
                                     <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,7 +219,7 @@
             </div>
 
             {{-- Educational Section --}}
-            <div class="mt-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div class="tp-card mt-6 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <svg class="w-6 h-6 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M12 14l9-5-9-5-9 5 9 5z"/>
@@ -260,7 +260,7 @@
         {{-- Sidebar --}}
         <div class="lg:col-span-1 space-y-6">
             {{-- My LP Positions Summary --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <svg class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
@@ -288,7 +288,7 @@
             </div>
 
             {{-- Top Pools --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
                 <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center">
                     <svg class="w-5 h-5 mr-2 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"/>
@@ -326,7 +326,7 @@
 
     {{-- Modal --}}
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full mx-auto"
+        <div class="tp-card relative rounded-2xl max-w-md w-full mx-auto"
              @click.away="showModal = false"
              x-show="showModal"
              x-transition:enter="ease-out duration-300"

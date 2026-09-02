@@ -3,7 +3,7 @@
     ใช้ V3 Design System: Tailwind CSS + Alpine.js
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $article->title . ' - ศูนย์การเรียนรู้')
 
@@ -27,7 +27,7 @@
         {{-- Main Content --}}
         <div class="lg:col-span-3">
             {{-- Article Header --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 mb-6">
+            <div class="tp-card rounded-2xl p-6 md:p-8 mb-6">
                 <div class="flex flex-wrap items-center gap-2 mb-4">
                     <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-sm font-medium rounded-full">
                         {{ $article->category->name }}
@@ -64,7 +64,7 @@
             </div>
 
             {{-- Article Content --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 mb-6">
+            <div class="tp-card rounded-2xl p-6 md:p-8 mb-6">
                 <div class="prose prose-lg dark:prose-invert max-w-none
                             prose-headings:text-gray-900 dark:prose-headings:text-white
                             prose-p:text-gray-700 dark:prose-p:text-gray-300
@@ -129,7 +129,7 @@
         <div class="lg:col-span-1 space-y-6">
             {{-- Related Articles --}}
             @if($relatedArticles->count() > 0)
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <div class="tp-card rounded-2xl p-6">
                 <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <i class="fas fa-book text-purple-500"></i>
                     บทเรียนที่เกี่ยวข้อง
@@ -149,7 +149,7 @@
             @endif
 
             {{-- Quick Actions --}}
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+            <div class="tp-card rounded-2xl p-6">
                 <h3 class="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <i class="fas fa-bolt text-yellow-500"></i>
                     ลิงก์ด่วน

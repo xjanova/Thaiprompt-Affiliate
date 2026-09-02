@@ -3,7 +3,7 @@
     ใช้ V3 Design System: Tailwind CSS + Alpine.js
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ความก้าวหน้าของฉัน - ศูนย์การเรียนรู้')
 
@@ -70,7 +70,7 @@
             <div class="space-y-4">
                 @foreach($inProgressArticles as $progress)
                 <a href="{{ route('user.academy.article', $progress->article->slug) }}"
-                   class="block bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
+                   class="tp-card block rounded-2xl hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
                     <div class="p-5">
                         <div class="flex items-center gap-2 mb-2">
                             <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-medium rounded-full">
@@ -96,7 +96,7 @@
                 @endforeach
             </div>
             @else
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+            <div class="tp-card rounded-2xl p-8 text-center">
                 <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-book-open text-3xl text-gray-400"></i>
                 </div>
@@ -120,7 +120,7 @@
             <div class="space-y-4">
                 @foreach($completedArticles as $progress)
                 <a href="{{ route('user.academy.article', $progress->article->slug) }}"
-                   class="block bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
+                   class="tp-card block rounded-2xl hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden">
                     <div class="p-5">
                         <div class="flex items-center gap-2 mb-2">
                             <span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 text-xs font-medium rounded-full">
@@ -144,7 +144,7 @@
                 @endforeach
             </div>
             @else
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+            <div class="tp-card rounded-2xl p-8 text-center">
                 <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="fas fa-trophy text-3xl text-gray-400"></i>
                 </div>

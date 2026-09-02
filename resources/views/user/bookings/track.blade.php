@@ -3,7 +3,7 @@
     แสดงตำแหน่งทั้งผู้ให้บริการและผู้ใช้บน Google Maps พร้อม real-time updates
     รองรับการใช้งานผ่าน Web Browser บนมือถือโดยไม่ต้องลงแอพ
 --}}
-@extends('layouts.app')
+@extends('layouts.user-v4')
 
 @section('title', 'ติดตามการจอง #' . $booking->booking_number)
 
@@ -136,7 +136,7 @@
     {{-- Bottom Panel (Fixed) --}}
     <div class="fixed bottom-0 left-0 right-0 z-40">
         {{-- Pull Handle --}}
-        <div class="flex justify-center py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 rounded-t-2xl cursor-pointer"
+        <div class="tp-card flex justify-center py-2 border-t border-gray-200 dark:border-gray-700 rounded-t-2xl cursor-pointer"
              @click="panelExpanded = !panelExpanded">
             <div class="w-12 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
         </div>
@@ -286,28 +286,28 @@
     <div class="fixed right-4 bottom-64 md:bottom-52 z-50 flex flex-col gap-3">
         {{-- Refresh --}}
         <button @click="refreshLocation()"
-                class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                class="tp-card p-4 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 :class="{ 'animate-spin': loading }">
             <i class="fas fa-sync-alt text-purple-600 dark:text-purple-400"></i>
         </button>
 
         {{-- Center on Provider --}}
         <button @click="centerOnProvider()"
-                class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                class="tp-card p-4 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="ตำแหน่งผู้ให้บริการ">
             <i class="fas fa-motorcycle text-purple-600 dark:text-purple-400"></i>
         </button>
 
         {{-- Center on Me --}}
         <button @click="centerOnMe()"
-                class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                class="tp-card p-4 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="ตำแหน่งของฉัน">
             <i class="fas fa-user text-blue-600 dark:text-blue-400"></i>
         </button>
 
         {{-- Show Both --}}
         <button @click="fitAllMarkers()"
-                class="p-4 bg-white dark:bg-gray-800 rounded-full shadow-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                class="tp-card p-4 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 title="แสดงทั้งหมด">
             <i class="fas fa-expand text-gray-600 dark:text-gray-400"></i>
         </button>

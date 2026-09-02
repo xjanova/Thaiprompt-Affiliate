@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'รายละเอียด ' . $token->name . ' - TPIX')
 
@@ -92,15 +92,15 @@
             <div class="lg:col-span-2 space-y-6">
                 {{-- Stats Cards --}}
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition duration-200">
+                    <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition duration-200">
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Market Cap</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">฿{{ number_format($token->market_cap_tpix ?? 0, 0) }}</p>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition duration-200">
+                    <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition duration-200">
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Volume 24h</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">฿{{ number_format($token->volume_24h_tpix ?? 0, 0) }}</p>
                     </div>
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition duration-200">
+                    <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-xl transition duration-200">
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Holders</p>
                         <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($token->holders_count ?? 0) }}</p>
                     </div>
@@ -108,7 +108,7 @@
 
                 {{-- Description --}}
                 @if($token->description)
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -131,7 +131,7 @@
                 @endif
 
                 {{-- Token Details Table --}}
-                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+                <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-b border-gray-200 dark:border-gray-700">
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +176,7 @@
                 </div>
 
                 {{-- Token Features --}}
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -220,7 +220,7 @@
                 </div>
 
                 {{-- Recent Transactions --}}
-                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
+                <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-b border-gray-200 dark:border-gray-700">
                         <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,7 +240,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">เวลา</th>
                                 </tr>
                             </thead>
-                            <tbody id="recentTransactions" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            <tbody id="recentTransactions" class="tp-card divide-y divide-gray-200 dark:divide-gray-700">
                                 <tr>
                                     <td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                         <svg class="animate-spin h-8 w-8 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24">
@@ -270,7 +270,7 @@
                 </div>
 
                 {{-- Quick Actions --}}
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -304,7 +304,7 @@
 
                 {{-- Links --}}
                 @if($token->website || $token->whitepaper_url || $token->contract_address)
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg">
+                <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
@@ -349,7 +349,7 @@
 
     {{-- Modals (Simple placeholders - implement based on your needs) --}}
     <div x-show="showBuyModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div @click.away="showBuyModal = false" class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
+        <div @click.away="showBuyModal = false" class="tp-card rounded-2xl p-6 max-w-md w-full">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">ซื้อ {{ $token->symbol }}</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-4">คุณสมบัตินี้กำลังพัฒนา...</p>
             <button @click="showBuyModal = false" class="w-full py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
@@ -359,7 +359,7 @@
     </div>
 
     <div x-show="showSellModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div @click.away="showSellModal = false" class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
+        <div @click.away="showSellModal = false" class="tp-card rounded-2xl p-6 max-w-md w-full">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">ขาย {{ $token->symbol }}</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-4">คุณสมบัตินี้กำลังพัฒนา...</p>
             <button @click="showSellModal = false" class="w-full py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
@@ -369,7 +369,7 @@
     </div>
 
     <div x-show="showTransferModal" style="display: none;" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div @click.away="showTransferModal = false" class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full">
+        <div @click.away="showTransferModal = false" class="tp-card rounded-2xl p-6 max-w-md w-full">
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">โอนย้าย {{ $token->symbol }}</h3>
             <p class="text-gray-600 dark:text-gray-400 mb-4">คุณสมบัตินี้กำลังพัฒนา...</p>
             <button @click="showTransferModal = false" class="w-full py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">

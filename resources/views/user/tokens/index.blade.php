@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ตลาด TPIX Token')
 
@@ -31,7 +31,7 @@
                     <form method="GET" class="relative">
                         <div class="relative group">
                             <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-200"></div>
-                            <div class="relative flex items-center bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+                            <div class="tp-card relative flex items-center rounded-2xl overflow-hidden">
                                 <input
                                     type="text"
                                     name="search"
@@ -61,7 +61,7 @@
                         สร้าง Token ของคุณ
                     </a>
                     <a href="{{ route('user.tokens.my-tokens') }}"
-                       class="group relative inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition duration-200 border border-gray-200 dark:border-gray-700">
+                       class="tp-card group relative inline-flex items-center gap-2 px-6 py-3 text-gray-700 dark:text-gray-200 font-semibold rounded-xl hover:shadow-xl hover:scale-[1.02] transition duration-200 border border-gray-200 dark:border-gray-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
                         </svg>
@@ -106,7 +106,7 @@
             </h2>
             <div class="relative" x-data="{ open: false }">
                 <button @click="open = !open"
-                        class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md hover:shadow-lg transition duration-200 text-gray-700 dark:text-gray-300">
+                        class="tp-card flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl hover:shadow-lg transition duration-200 text-gray-700 dark:text-gray-300">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
                     </svg>
@@ -116,7 +116,7 @@
                     </svg>
                 </button>
                 <div x-show="open" @click.away="open = false"
-                     class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-10 overflow-hidden"
+                     class="tp-card absolute right-0 mt-2 w-48 rounded-xl border border-gray-200 dark:border-gray-700 z-10 overflow-hidden"
                      style="display: none;">
                     <a @click="sortTokens('market_cap'); open = false"
                        class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer text-gray-700 dark:text-gray-300 transition">
@@ -154,7 +154,7 @@
                     <div class="absolute -inset-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-2xl blur opacity-30 group-hover:opacity-60 transition duration-300"></div>
 
                     {{-- Card Content --}}
-                    <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 hover:shadow-2xl transition duration-300">
+                    <div class="tp-card relative rounded-2xl p-6 hover:shadow-2xl transition duration-300">
                         {{-- Featured Badge --}}
                         <div class="absolute -top-3 -right-3 px-4 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full shadow-lg">
                             แนะนำ
@@ -216,7 +216,7 @@
         {{-- All Tokens Grid --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
             @forelse($tokens as $token)
-            <div class="group relative bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-2xl  transition duration-300">
+            <div class="tp-card group relative rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-2xl transition duration-300">
                 {{-- Token Header --}}
                 <div class="flex items-center gap-3 mb-4">
                     @if($token->logo)
@@ -271,7 +271,7 @@
             </div>
             @empty
             <div class="col-span-full">
-                <div class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+                <div class="tp-card rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
                     <svg class="w-20 h-20 text-gray-300 dark:text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                     </svg>

@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'การลงทุน ROI')
 
@@ -55,19 +55,19 @@
 
     <!-- Quick Actions -->
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <a href="{{ route('user.investments.plans') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
+        <a href="{{ route('user.investments.plans') }}" class="tp-card rounded-xl hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">💎</div>
             <p class="text-gray-800 dark:text-white font-semibold">แผนการลงทุน</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Investment Plans</p>
         </a>
 
-        <a href="{{ route('user.wallet.index') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
+        <a href="{{ route('user.wallet.index') }}" class="tp-card rounded-xl hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">💳</div>
             <p class="text-gray-800 dark:text-white font-semibold">กระเป๋าเงิน</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Wallet</p>
         </a>
 
-        <a href="#roi-distributions" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
+        <a href="#roi-distributions" class="tp-card rounded-xl hover:shadow-xl p-6 text-center transition transition-transform hover:scale-[1.02]">
             <div class="text-4xl mb-3">📊</div>
             <p class="text-gray-800 dark:text-white font-semibold">ประวัติ ROI</p>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ROI History</p>
@@ -75,7 +75,7 @@
     </div>
 
     <!-- Active Positions -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white">📍 ตำแหน่งการลงทุน</h2>
             <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
@@ -164,7 +164,7 @@
     </div>
 
     <!-- Recent ROI Distributions -->
-    <div id="roi-distributions" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div id="roi-distributions" class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">💰 ROI ล่าสุด</h2>
 
         @if($recentDistributions->count() > 0)

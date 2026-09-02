@@ -2,7 +2,7 @@
     หน้าแก้ไขรีวิวบริการ
     ผู้ใช้สามารถแก้ไขคะแนนและความคิดเห็นได้
 --}}
-@extends('layouts.app')
+@extends('layouts.user-v4')
 
 @section('title', $pageTitle ?? 'แก้ไขรีวิว')
 

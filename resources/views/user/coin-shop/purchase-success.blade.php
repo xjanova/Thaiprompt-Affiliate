@@ -2,7 +2,7 @@
     หน้าซื้อสินค้าสำเร็จ
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ซื้อสินค้าสำเร็จ')
 
@@ -41,7 +41,7 @@
         </div>
 
         {{-- Order Details --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+        <div class="tp-card rounded-2xl overflow-hidden">
             {{-- Header --}}
             <div class="p-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
                 <div class="flex items-center justify-between">
@@ -90,7 +90,7 @@
             <div class="p-6 bg-yellow-50 dark:bg-yellow-900/30 border-b border-yellow-200 dark:border-yellow-800">
                 <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">รหัสใช้งาน</h4>
                 <div class="flex items-center gap-3">
-                    <code class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-dashed border-yellow-400 rounded-lg text-center text-2xl font-mono font-bold text-gray-900 dark:text-white tracking-wider">
+                    <code class="tp-card flex-1 px-4 py-3 border-2 border-dashed border-yellow-400 rounded-lg text-center text-2xl font-mono font-bold text-gray-900 dark:text-white tracking-wider">
                         {{ $purchase->redemption_code }}
                     </code>
                     <button type="button"

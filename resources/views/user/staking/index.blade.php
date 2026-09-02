@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'Investment Staking - TPIX')
 
@@ -74,7 +74,7 @@
 {{-- User Balance Cards --}}
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     {{-- THB Balance --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+    <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
                 <i class="fas fa-wallet text-2xl text-white"></i>
@@ -89,7 +89,7 @@
     </div>
 
     {{-- Coin Balance --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+    <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shadow-lg">
                 <i class="fas fa-coins text-2xl text-white"></i>
@@ -104,7 +104,7 @@
     </div>
 
     {{-- Active Positions --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+    <div class="tp-card rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
                 <i class="fas fa-layer-group text-2xl text-white"></i>
@@ -150,7 +150,7 @@
     {{-- Sidebar: My Positions --}}
     <div class="lg:col-span-1 space-y-6">
         {{-- My Active Positions --}}
-        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="tp-card rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <i class="fas fa-chart-pie text-indigo-600 dark:text-indigo-400"></i>
@@ -200,7 +200,7 @@
 <div id="investModal" class="fixed inset-0 z-50 hidden" x-data="investmentModal()">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeModal()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" @click.stop>
+        <div class="tp-card rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto" @click.stop>
             {{-- Modal Header --}}
             <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
                 <div class="flex items-center justify-between">
@@ -495,7 +495,7 @@ function renderPlanCard(plan) {
     };
 
     return `
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow">
+        <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-shadow">
             <div class="p-6">
                 <div class="flex items-start justify-between mb-4">
                     <div>

@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ประวัติการใช้งาน - ' . ($card->card_name ?? 'การ์ด NFC'))
 
@@ -31,7 +31,7 @@
     </div>
 
     {{-- Transactions List --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+    <div class="tp-card rounded-2xl overflow-hidden">
         @if($transactions->count() > 0)
             <div class="overflow-x-auto">
                 <table class="w-full">

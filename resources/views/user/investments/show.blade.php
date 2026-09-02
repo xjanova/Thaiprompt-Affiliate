@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'รายละเอียดการลงทุน')
 
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Progress Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">📊 ความคืบหน้า</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -143,7 +143,7 @@
 
     <!-- Withdrawal Section -->
     @if($withdrawalInfo)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">💸 ข้อมูลการถอนเงิน</h2>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -189,7 +189,7 @@
     @endif
 
     <!-- ROI Distribution History -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">💰 ประวัติการจ่าย ROI</h2>
 
         @if($position->roiDistributions->count() > 0)
@@ -242,7 +242,7 @@
     </div>
 
     <!-- Plan Details -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">📋 รายละเอียดแผน</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

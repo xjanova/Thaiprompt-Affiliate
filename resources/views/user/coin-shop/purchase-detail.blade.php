@@ -2,7 +2,7 @@
     หน้ารายละเอียดคำสั่งซื้อ
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $pageTitle ?? 'รายละเอียดคำสั่งซื้อ')
 
@@ -52,7 +52,7 @@
         </div>
 
         {{-- Product Info --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
+        <div class="tp-card rounded-2xl overflow-hidden mb-6">
             <div class="p-6">
                 <h3 class="font-semibold text-gray-900 dark:text-white mb-4">ข้อมูลสินค้า</h3>
                 <div class="flex items-start gap-4">
@@ -86,7 +86,7 @@
             <div class="p-6">
                 <h3 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-3">รหัสใช้งาน</h3>
                 <div class="flex items-center gap-3">
-                    <code class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-dashed border-yellow-400 rounded-lg text-center text-2xl font-mono font-bold text-gray-900 dark:text-white tracking-wider">
+                    <code class="tp-card flex-1 px-4 py-3 border-2 border-dashed border-yellow-400 rounded-lg text-center text-2xl font-mono font-bold text-gray-900 dark:text-white tracking-wider">
                         {{ $purchase->redemption_code }}
                     </code>
                     <button type="button"
@@ -135,7 +135,7 @@
 
         {{-- Tracking Info (for physical products) --}}
         @if($purchase->product_type === 'physical')
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
+        <div class="tp-card rounded-2xl overflow-hidden mb-6">
             <div class="p-6">
                 <h3 class="font-semibold text-gray-900 dark:text-white mb-4">ข้อมูลจัดส่ง</h3>
                 @if($purchase->tracking_number)
@@ -165,7 +165,7 @@
         @endif
 
         {{-- Order Summary --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
+        <div class="tp-card rounded-2xl overflow-hidden mb-6">
             <div class="p-6">
                 <h3 class="font-semibold text-gray-900 dark:text-white mb-4">สรุปคำสั่งซื้อ</h3>
                 <div class="space-y-3">
@@ -192,7 +192,7 @@
         </div>
 
         {{-- Timeline --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+        <div class="tp-card rounded-2xl overflow-hidden">
             <div class="p-6">
                 <h3 class="font-semibold text-gray-900 dark:text-white mb-4">ไทม์ไลน์</h3>
                 <div class="space-y-4">

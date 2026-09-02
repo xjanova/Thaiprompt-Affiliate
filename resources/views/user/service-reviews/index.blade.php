@@ -2,7 +2,7 @@
     หน้ารีวิวบริการของผู้ใช้
     แสดงรายการรีวิวทั้งหมดที่ผู้ใช้ได้ทำไว้
 --}}
-@extends('layouts.app')
+@extends('layouts.user-v4')
 
 @section('title', $pageTitle ?? 'รีวิวบริการของฉัน')
 

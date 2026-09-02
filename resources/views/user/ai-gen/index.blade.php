@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'AI Gen - สร้างสรรค์ผลงานด้วย AI')
 
@@ -105,7 +105,7 @@
             class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             <template x-for="gen in generations" :key="gen.id">
                 <div @click="viewGeneration(gen)"
-                    class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 cursor-pointer hover:-translate-y-1">
+                    class="tp-card group relative rounded-xl overflow-hidden hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 cursor-pointer hover:-translate-y-1">
                     {{-- รูปภาพ --}}
                     <div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
                         <template x-if="gen.file_url || gen.thumbnail_url">
@@ -165,7 +165,7 @@
 
         {{-- สถานะว่าง --}}
         <div x-show="!loadingCreations && generations.length === 0"
-            class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+            class="tp-card text-center py-16 rounded-2xl border border-gray-100 dark:border-gray-700">
             <div class="inline-flex items-center justify-center w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
                 <i class="fas fa-wand-magic-sparkles text-3xl text-purple-500"></i>
             </div>
@@ -203,7 +203,7 @@
             class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             <template x-for="gen in exploreItems" :key="gen.id">
                 <div @click="viewGeneration(gen)"
-                    class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 cursor-pointer hover:-translate-y-1">
+                    class="tp-card group relative rounded-xl overflow-hidden hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 cursor-pointer hover:-translate-y-1">
                     <div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
                         <img :src="gen.thumbnail_url || gen.file_url" :alt="gen.prompt"
                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -219,7 +219,7 @@
         </div>
 
         <div x-show="!loadingExplore && exploreItems.length === 0"
-            class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+            class="tp-card text-center py-16 rounded-2xl border border-gray-100 dark:border-gray-700">
             <div class="inline-flex items-center justify-center w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
                 <i class="fas fa-compass text-3xl text-purple-500"></i>
             </div>
@@ -239,7 +239,7 @@
             class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <template x-for="pkg in packages" :key="pkg.id">
                 <div :class="pkg.is_popular ? 'ring-2 ring-purple-500 dark:ring-purple-400' : ''"
-                    class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:-translate-y-1">
+                    class="tp-card relative rounded-2xl hover:shadow-xl border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:-translate-y-1">
                     {{-- แบดจ์ยอดนิยม --}}
                     <template x-if="pkg.is_popular">
                         <div class="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -288,7 +288,7 @@
         </div>
 
         <div x-show="!loadingPackages && packages.length === 0"
-            class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+            class="tp-card text-center py-16 rounded-2xl border border-gray-100 dark:border-gray-700">
             <div class="inline-flex items-center justify-center w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
                 <i class="fas fa-box-open text-3xl text-purple-500"></i>
             </div>
@@ -315,7 +315,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showCreateModal = false"></div>
 
         {{-- เนื้อหา Modal --}}
-        <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
+        <div class="tp-card relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 dark:border-gray-700"
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 scale-95 translate-y-4"
             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
@@ -505,7 +505,7 @@
         x-transition:leave-end="opacity-0">
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showViewModal = false"></div>
 
-        <div class="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
+        <div class="tp-card relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-gray-200 dark:border-gray-700"
             x-transition:enter="transition ease-out duration-300"
             x-transition:enter-start="opacity-0 scale-95"
             x-transition:enter-end="opacity-100 scale-100"

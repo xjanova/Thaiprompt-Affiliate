@@ -4,7 +4,7 @@
     @author Video Reward System
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $pageTitle ?? 'ร้านค้า Coins')
 
@@ -116,7 +116,7 @@
     @endif
 
     {{-- Filters & Sort --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mb-6">
+    <div class="tp-card rounded-xl p-4 mb-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {{-- Search --}}
             <form action="{{ route('user.coin-shop.index') }}" method="GET" class="flex-1 max-w-md">
@@ -218,7 +218,7 @@
     {{-- Quick Links --}}
     <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
         <a href="{{ route('user.coin-shop.my-purchases') }}"
-           class="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition group">
+           class="tp-card flex items-center gap-4 p-4 rounded-xl hover:shadow-xl transition group">
             <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
                 <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -236,7 +236,7 @@
         </a>
 
         <a href="{{ route('user.video-missions.index') }}"
-           class="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition group">
+           class="tp-card flex items-center gap-4 p-4 rounded-xl hover:shadow-xl transition group">
             <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
                 <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>

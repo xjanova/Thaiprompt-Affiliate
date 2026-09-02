@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ตำแหน่ง Liquidity ของฉัน - TPIX DEX')
 
@@ -22,7 +22,7 @@
     {{-- Summary Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {{-- Total Liquidity --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
             <div class="flex justify-between items-start mb-4">
                 <p class="text-sm text-gray-600 dark:text-gray-400">มูลค่าสภาพคล่องทั้งหมด</p>
                 <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
@@ -36,7 +36,7 @@
         </div>
 
         {{-- Total Earnings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
             <div class="flex justify-between items-start mb-4">
                 <p class="text-sm text-gray-600 dark:text-gray-400">รายได้รวม (24ชม.)</p>
                 <div class="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900 flex items-center justify-center">
@@ -50,7 +50,7 @@
         </div>
 
         {{-- Total Pools --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
             <div class="flex justify-between items-start mb-4">
                 <p class="text-sm text-gray-600 dark:text-gray-400">จำนวน Pools</p>
                 <div class="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center">
@@ -64,7 +64,7 @@
         </div>
 
         {{-- Average ROI --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
             <div class="flex justify-between items-start mb-4">
                 <p class="text-sm text-gray-600 dark:text-gray-400">ROI เฉลี่ย</p>
                 <div class="w-10 h-10 rounded-xl bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
@@ -79,7 +79,7 @@
     </div>
 
     {{-- Filters & Search --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+    <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div class="md:col-span-2">
                 <input type="text"
@@ -255,7 +255,7 @@ function displayPositions(positions) {
             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
 
         return `
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div class="tp-card rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
                 {{-- Header --}}
                 <div class="flex justify-between items-start mb-6">
                     <div class="flex items-center">

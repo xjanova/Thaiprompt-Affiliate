@@ -3,7 +3,7 @@
     ใช้ V3 Design System: Tailwind CSS + Alpine.js
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'บทเรียนถูกล็อค - ศูนย์การเรียนรู้')
 
@@ -26,7 +26,7 @@
     </nav>
 
     {{-- Locked Content --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="tp-card rounded-2xl overflow-hidden">
         {{-- Header --}}
         <div class="bg-gradient-to-r from-gray-600 to-gray-800 p-8 text-center">
             <div class="w-24 h-24 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">

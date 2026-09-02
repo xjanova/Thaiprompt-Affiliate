@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ประวัติการลงทุน')
 
@@ -34,7 +34,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">🔍 ตัวกรอง</h3>
         <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -75,7 +75,7 @@
     </div>
 
     <!-- Investment History Table -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="tp-card rounded-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 dark:border-slate-700">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">
                 📊 รายการลงทุน ({{ $positions->total() }} รายการ)
@@ -95,7 +95,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">การกระทำ</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                    <tbody class="tp-card divide-y divide-gray-200 dark:divide-slate-700">
                         @foreach($positions as $position)
                         <tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                             <td class="px-6 py-4">

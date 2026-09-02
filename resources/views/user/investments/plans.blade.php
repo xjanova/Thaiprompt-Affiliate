@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'แผนการลงทุน')
 
@@ -32,7 +32,7 @@
     @if($plans->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($plans as $plan)
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-transform hover:scale-[1.02] transition {{ $plan->is_featured ? 'ring-2 ring-purple-500' : '' }}">
+            <div class="tp-card rounded-2xl overflow-hidden transition-transform hover:scale-[1.02] transition {{ $plan->is_featured ? 'ring-2 ring-purple-500' : '' }}">
                 @if($plan->is_featured)
                     <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 text-sm font-semibold">
                         ⭐ แนะนำ
@@ -126,14 +126,14 @@
             @endforeach
         </div>
     @else
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center">
+        <div class="tp-card rounded-2xl p-12 text-center">
             <div class="text-6xl mb-4">📊</div>
             <p class="text-gray-500 dark:text-gray-400 text-lg">ยังไม่มีแผนการลงทุนที่เปิดให้บริการ</p>
         </div>
     @endif
 
     <!-- ROI Calculator -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="tp-card rounded-2xl p-6">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">🧮 คำนวณ ROI</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" x-data="roiCalculator()">

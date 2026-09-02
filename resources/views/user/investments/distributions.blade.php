@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'การจ่ายผลตอบแทน')
 
@@ -30,7 +30,7 @@
 
     @if(isset($position))
         <!-- Investment Summary Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <div class="tp-card rounded-2xl p-6">
             <div class="grid md:grid-cols-2 gap-6">
                 <!-- Left: Investment Details -->
                 <div>
@@ -90,7 +90,7 @@
         </div>
 
         <!-- Distributions Table -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="tp-card rounded-2xl overflow-hidden">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                     <span>📋</span> ประวัติการจ่ายผลตอบแทน
@@ -201,7 +201,7 @@
         </div>
     @else
         <!-- No Investment Found -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center">
+        <div class="tp-card rounded-2xl p-12 text-center">
             <span class="text-6xl mb-4 block">❌</span>
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">ไม่พบข้อมูลการลงทุน</h2>
             <p class="text-gray-600 dark:text-gray-400 mb-6">ไม่สามารถโหลดข้อมูลการลงทุนได้</p>

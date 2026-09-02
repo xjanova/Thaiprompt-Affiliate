@@ -2,7 +2,7 @@
     หน้าประวัติการซื้อ
 --}}
 
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', $pageTitle ?? 'ประวัติการซื้อ')
 
@@ -65,7 +65,7 @@
     </div>
 
     {{-- Filters --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 mb-6">
+    <div class="tp-card rounded-xl p-4 mb-6">
         <div class="flex flex-wrap items-center gap-4">
             {{-- Status Filter --}}
             <select onchange="window.location.href='{{ route('user.coin-shop.my-purchases') }}?status=' + this.value + '{{ $currentType ? '&type=' . $currentType : '' }}'"
@@ -95,7 +95,7 @@
     @if($purchases->count() > 0)
     <div class="space-y-4">
         @foreach($purchases as $purchase)
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition">
+        <div class="tp-card rounded-xl overflow-hidden hover:shadow-xl transition">
             <div class="p-4 sm:p-6">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                     {{-- Product Image --}}

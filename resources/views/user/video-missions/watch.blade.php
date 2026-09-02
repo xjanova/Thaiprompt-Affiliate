@@ -1,4 +1,4 @@
-@extends('layouts.user-arrow-x')
+@extends('layouts.user-v4')
 
 @section('title', 'ดูคลิป: ' . $mission->display_title)
 
@@ -411,7 +411,7 @@
              x-transition:enter="transition ease-out duration-300"
              x-transition:enter-start="opacity-0 scale-75"
              x-transition:enter-end="opacity-100 scale-100"
-             class="bg-white dark:bg-gray-800 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden">
+             class="tp-card rounded-3xl max-w-lg w-full overflow-hidden">
 
             {{-- Celebration Header --}}
             <div class="relative bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 p-8 text-center overflow-hidden">
