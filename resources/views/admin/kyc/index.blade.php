@@ -1,204 +1,267 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'จัดการการยืนยันตัวตน (KYC)')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">จัดการการยืนยันตัวตน (KYC)</h1>
+{{-- 🪪 จัดการการยืนยันตัวตน KYC (ธีม V4 นวลทองคำ) — คงตัวกรอง/ตาราง/ลิงก์เดิม 100% --}}
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · สมาชิก · ยืนยันตัวตน</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">การยืนยันตัวตน (KYC) 🪪</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ตรวจสอบเอกสารและอนุมัติการยืนยันตัวตนของสมาชิก</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+            @if($stats['pending'] > 0)
+                <a href="{{ route('admin.kyc.index', ['status' => 'pending']) }}" class="tp-btn tp-btn-sm" style="color:#a87d1e;">
+                    <i class="fas fa-clock"></i> รอตรวจสอบ {{ number_format($stats['pending']) }} รายการ
+                </a>
+            @endif
+        </div>
     </div>
 
+    {{-- ===== Flash messages ===== --}}
     @if(session('success'))
-        <div class="bg-green-50 border border-green-200 text-green-800 rounded-xl p-4">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+        <div class="tp-card" style="padding:16px 18px; border-left:4px solid #5aa07e;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--ink);">
+                <i class="fas fa-circle-check" style="color:#5aa07e;"></i>{{ session('success') }}
+            </div>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
+        <div class="tp-card" style="padding:16px 18px; border-left:4px solid #d9534f;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--ink);">
+                <i class="fas fa-circle-exclamation" style="color:#d9534f;"></i>{{ session('error') }}
+            </div>
         </div>
     @endif
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $stats['total'] }}</p>
+    {{-- ===== KPI grid ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        {{-- ทั้งหมด (ไทล์ทองคำ default) --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-layer-group"></i>
                 </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-list text-blue-600 text-xl"></i>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['total']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ทั้งหมด</div>
                 </div>
             </div>
         </div>
 
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">รอตรวจสอบ</p>
-                    <p class="text-2xl font-bold text-yellow-600">{{ $stats['pending'] }}</p>
+        {{-- รอตรวจสอบ --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#e0a52e;">
+                    <i class="fas fa-clock"></i>
                 </div>
-                <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['pending']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">รอตรวจสอบ</div>
                 </div>
             </div>
         </div>
 
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">อนุมัติแล้ว</p>
-                    <p class="text-2xl font-bold text-green-600">{{ $stats['approved'] }}</p>
+        {{-- อนุมัติแล้ว --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#5aa07e;">
+                    <i class="fas fa-circle-check"></i>
                 </div>
-                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['approved']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">อนุมัติแล้ว</div>
                 </div>
             </div>
         </div>
 
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ปฏิเสธ</p>
-                    <p class="text-2xl font-bold text-red-600">{{ $stats['rejected'] }}</p>
+        {{-- ปฏิเสธ --}}
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#d9534f;">
+                    <i class="fas fa-circle-xmark"></i>
                 </div>
-                <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['rejected']) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ปฏิเสธ</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md p-4" border border-white/20 dark:border-white/10>
-        <form method="GET" action="{{ route('admin.kyc.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    {{-- ===== Filters ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-filter"></i> ตัวกรองข้อมูล</div>
+        <form method="GET" action="{{ route('admin.kyc.index') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;">
+            {{-- ค้นหา (ชื่อ / อีเมล) --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">ค้นหา</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อหรืออีเมล"
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                    🔍 ค้นหา (ชื่อ / อีเมล)
+                </label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="ชื่อ หรือ อีเมลสมาชิก"
+                           style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                </div>
             </div>
 
+            {{-- สถานะ --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">สถานะ</label>
-                <select name="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                    <option value="">ทั้งหมด</option>
-                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>รอตรวจสอบ</option>
-                    <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
-                    <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>ปฏิเสธ</option>
-                </select>
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                    สถานะ
+                </label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="status" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>⏳ รอตรวจสอบ</option>
+                        <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>✅ อนุมัติแล้ว</option>
+                        <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>❌ ปฏิเสธ</option>
+                    </select>
+                </div>
             </div>
 
+            {{-- จำนวนต่อหน้า --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-1">จำนวนต่อหน้า</label>
-                <select name="per_page" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                    <option value="15" {{ request('per_page') == 15 ? 'selected' : '' }}>15</option>
-                    <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
-                    <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
-                    <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
-                </select>
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                    จำนวนต่อหน้า
+                </label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="per_page" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="15" {{ request('per_page') == 15 ? 'selected' : '' }}>15</option>
+                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
+                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
+                        <option value="100" {{ request('per_page') == 100 ? 'selected' : '' }}>100</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="flex items-end gap-2">
-                <button type="submit" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
-                    ค้นหา
+            {{-- ปุ่ม action --}}
+            <div style="grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:10px; padding-top:4px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-magnifying-glass"></i> กรองข้อมูล
                 </button>
-                <a href="{{ route('admin.kyc.index') }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 transition dark:bg-slate-700 dark:text-gray-300">
-                    ล้าง
+                <a href="{{ route('admin.kyc.index') }}" class="tp-btn">
+                    <i class="fas fa-rotate-left"></i> ล้างตัวกรอง
                 </a>
             </div>
         </form>
     </div>
 
-    <!-- KYC Verifications Table -->
-    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-md overflow-hidden" border border-white/20 dark:border-white/10>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
+    {{-- ===== KYC Table ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
-                            ผู้ใช้
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
-                            วันที่ส่ง
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
-                            สถานะ
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
-                            ผู้ตรวจสอบ
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase tracking-wider">
-                            จัดการ
-                        </th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ผู้ใช้</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">วันที่ส่ง</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">เอกสาร</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">สถานะ</th>
+                        <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">ผู้ตรวจสอบ</th>
+                        <th style="padding:14px 16px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                <tbody>
                     @forelse($kycVerifications as $kyc)
-                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold">
-                                        {{ strtoupper(substr($kyc->user->name, 0, 1)) }}
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ $kyc->user->name }}
-                                        </div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                            {{ $kyc->user->email }}
-                                        </div>
+                        <tr style="box-shadow:var(--inset-sm); transition:background .15s;"
+                            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+                            {{-- ผู้ใช้ --}}
+                            <td style="padding:14px 16px; font-size:13.5px; color:var(--ink);">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="tp-tile" style="width:34px; height:34px; border-radius:50%; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                        {{ mb_strtoupper(mb_substr($kyc->user?->name ?: '?', 0, 1)) }}
+                                    </span>
+                                    <div style="min-width:0;">
+                                        <div style="font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">{{ $kyc->user?->name ?: 'ไม่ระบุชื่อ' }}</div>
+                                        <div style="font-size:11.5px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px;">{{ $kyc->user?->email ?: '-' }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                {{ $kyc->submitted_at ? $kyc->submitted_at->format('d/m/Y H:i') : '-' }}
+
+                            {{-- วันที่ส่ง --}}
+                            <td style="padding:14px 16px; font-size:13.5px; color:var(--ink); white-space:nowrap;">
+                                @if($kyc->submitted_at)
+                                    <div>{{ $kyc->submitted_at->format('d/m/Y') }}</div>
+                                    <div style="font-size:11.5px; color:var(--ink2);">{{ $kyc->submitted_at->format('H:i') }}</div>
+                                @else
+                                    <span style="color:var(--ink2);">-</span>
+                                @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @if($kyc->status === 'pending')
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                        <i class="fas fa-clock mr-1"></i>รอตรวจสอบ
+
+                            {{-- เอกสาร — เตือนตั้งแต่หน้ารายการว่าไฟล์เปิดไม่ขึ้น --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                @php
+                                    $hasIdCard = $kyc->hasIdCardImage();
+                                    $hasSelfie = $kyc->hasSelfieImage();
+                                @endphp
+                                @if($hasIdCard && $hasSelfie)
+                                    <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">
+                                        <i class="fas fa-images"></i> ครบ 2 รูป
                                     </span>
-                                @elseif($kyc->status === 'approved')
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        <i class="fas fa-check-circle mr-1"></i>อนุมัติแล้ว
+                                @elseif($hasIdCard || $hasSelfie)
+                                    <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;" title="มีรูปเดียว อีกรูปไม่พบไฟล์">
+                                        <i class="fas fa-triangle-exclamation"></i> มี 1 รูป
                                     </span>
-                                @elseif($kyc->status === 'rejected')
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                        <i class="fas fa-times-circle mr-1"></i>ปฏิเสธ
+                                @else
+                                    <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f;" title="ไม่พบไฟล์รูปภาพบนเซิร์ฟเวอร์">
+                                        <i class="fas fa-image"></i> ไม่พบไฟล์
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                {{ $kyc->reviewer ? $kyc->reviewer->name : '-' }}
+
+                            {{-- สถานะ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                @if($kyc->status === 'pending')
+                                    <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;">⏳ รอตรวจสอบ</span>
+                                @elseif($kyc->status === 'approved')
+                                    <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">✅ อนุมัติแล้ว</span>
+                                @elseif($kyc->status === 'rejected')
+                                    <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f;">❌ ปฏิเสธ</span>
+                                @else
+                                    <span class="tp-pill tp-pill-soft">{{ $kyc->status }}</span>
+                                @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{{ route('admin.kyc.show', $kyc) }}"
-                                   class="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition">
-                                    <i class="fas fa-eye mr-1"></i>ดูรายละเอียด
+
+                            {{-- ผู้ตรวจสอบ --}}
+                            <td style="padding:14px 16px; font-size:13.5px; color:var(--ink2); white-space:nowrap;">
+                                {{ $kyc->reviewer->name ?? '-' }}
+                            </td>
+
+                            {{-- จัดการ --}}
+                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
+                                <a href="{{ route('admin.kyc.show', $kyc) }}" class="tp-btn tp-btn-sm tp-btn-primary">
+                                    <i class="fas fa-eye"></i> ดูรายละเอียด
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                <i class="fas fa-inbox text-4xl mb-3"></i>
-                                <p>ไม่พบข้อมูลการยืนยันตัวตน</p>
+                            <td colspan="6" style="padding:0;">
+                                {{-- Empty state --}}
+                                <div style="text-align:center; color:var(--ink2); padding:40px 0;">
+                                    <i class="fas fa-inbox" style="font-size:32px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                                    ไม่พบข้อมูลการยืนยันตัวตน
+                                </div>
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination -->
-        @if($kycVerifications->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 dark:border-slate-700">
-                {{ $kycVerifications->links() }}
-            </div>
-        @endif
     </div>
+
+    {{-- ===== Pagination ===== --}}
+    @if($kycVerifications->hasPages())
+        <div>
+            {{ $kycVerifications->appends(request()->query())->links() }}
+        </div>
+    @endif
+
 </div>
 @endsection

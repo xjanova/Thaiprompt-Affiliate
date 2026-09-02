@@ -1,5 +1,5 @@
 {{--
-    กล่องแทนรูป KYC ที่เปิดไม่ขึ้น (สำหรับหน้าแอดมินเท่านั้น)
+    กล่องแทนรูป KYC ที่เปิดไม่ขึ้น (หน้าแอดมิน ธีม V4 นวลทองคำ)
 
     ใช้เมื่อ "มีพาธในฐานข้อมูล แต่ไม่มีไฟล์จริงบนดิสก์" หรือ "ไม่ได้บันทึกพาธไว้เลย"
     เดิมหน้าแอดมินยิง <img> ตรงๆ พอไฟล์หายจะได้แค่ไอคอนรูปแตก แอดมินไม่รู้ว่า
@@ -9,34 +9,36 @@
 --}}
 @props(['path' => null])
 
-<div class="aspect-[4/3] border-2 border-dashed border-amber-300 dark:border-amber-700 rounded-lg
-            bg-amber-50 dark:bg-amber-900/20 flex flex-col items-center justify-center text-center p-4">
-    <i class="fas fa-exclamation-triangle text-3xl text-amber-500 dark:text-amber-400 mb-3"></i>
+<div style="aspect-ratio:4/3; border-radius:12px; border:2px dashed color-mix(in srgb, #e0a52e 45%, transparent);
+            background:color-mix(in srgb, #e0a52e 8%, transparent);
+            display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px; gap:4px;">
 
-    <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">
+    <i class="fas fa-triangle-exclamation" style="font-size:26px; color:#e0a52e; margin-bottom:6px;"></i>
+
+    <div style="font-size:13.5px; font-weight:700; color:var(--ink);">
         @if(filled($path))
             ไม่พบไฟล์รูปภาพบนเซิร์ฟเวอร์
         @else
             ไม่ได้บันทึกรูปภาพไว้
         @endif
-    </p>
+    </div>
 
-    <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">
+    <div style="font-size:12px; color:var(--ink2);">
         @if(filled($path))
             มีพาธในฐานข้อมูล แต่ไฟล์ถูกลบหรือย้ายไปแล้ว
         @else
             รายการนี้ถูกสร้างโดยไม่มีไฟล์แนบ (เช่น ข้อมูลตัวอย่าง)
         @endif
-    </p>
+    </div>
 
     @if(filled($path))
-        <code class="mt-2 px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/40
-                     text-[10px] text-amber-800 dark:text-amber-200 break-all">
+        <code style="margin-top:8px; padding:4px 8px; border-radius:6px; font-size:10.5px; word-break:break-all;
+                     background:color-mix(in srgb, #e0a52e 16%, transparent); color:var(--ink);">
             storage/{{ $path }}
         </code>
     @endif
 
-    <p class="text-xs text-amber-700 dark:text-amber-300 mt-3">
-        <i class="fas fa-info-circle mr-1"></i>ต้องให้ผู้ใช้ส่งเอกสารใหม่ก่อนจึงจะตรวจสอบได้
-    </p>
+    <div style="font-size:11.5px; color:var(--ink2); margin-top:8px;">
+        <i class="fas fa-circle-info" style="margin-right:4px;"></i>ต้องให้ผู้ใช้ส่งเอกสารใหม่ก่อนจึงจะตรวจสอบได้
+    </div>
 </div>

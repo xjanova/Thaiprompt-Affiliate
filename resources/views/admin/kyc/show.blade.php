@@ -1,122 +1,129 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'ตรวจสอบการยืนยันตัวตน')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center gap-4">
-        <a href="{{ route('admin.kyc.index') }}"
-           class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
-            <i class="fas fa-arrow-left text-xl"></i>
-        </a>
+{{-- 🪪 ตรวจสอบการยืนยันตัวตน KYC (ธีม V4 นวลทองคำ) — คง route/ฟอร์ม/โมดัล/JS เดิม 100% --}}
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.kyc.index') }}" class="tp-icon-btn" title="กลับไปหน้ารายการ">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · สมาชิก · ยืนยันตัวตน</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ตรวจสอบการยืนยันตัวตน 🪪</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ตรวจสอบเอกสารแล้วอนุมัติหรือปฏิเสธการยืนยันตัวตน</div>
+            </div>
+        </div>
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ตรวจสอบการยืนยันตัวตน</h1>
-            <p class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบและอนุมัติ/ปฏิเสธการยืนยันตัวตน</p>
+            @if($kycVerification->status === 'pending')
+                <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;">⏳ รอตรวจสอบ</span>
+            @elseif($kycVerification->status === 'approved')
+                <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">✅ อนุมัติแล้ว</span>
+            @elseif($kycVerification->status === 'rejected')
+                <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f;">❌ ปฏิเสธ</span>
+            @endif
         </div>
     </div>
 
+    {{-- ===== Flash messages ===== --}}
     @if(session('success'))
-        <div class="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+        <div class="tp-card" style="padding:16px 18px; border-left:4px solid #5aa07e;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--ink);">
+                <i class="fas fa-circle-check" style="color:#5aa07e;"></i>{{ session('success') }}
+            </div>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
+        <div class="tp-card" style="padding:16px 18px; border-left:4px solid #d9534f;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:13.5px; color:var(--ink);">
+                <i class="fas fa-circle-exclamation" style="color:#d9534f;"></i>{{ session('error') }}
+            </div>
         </div>
     @endif
 
-    <div class="grid lg:grid-cols-2 gap-6">
-        <!-- User Info Card -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                <i class="fas fa-user mr-2"></i>ข้อมูลผู้ใช้
-            </h2>
+    {{-- ===== ข้อมูลผู้ใช้ + สถานะ ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px;">
 
-            <div class="space-y-4">
-                <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xl font-bold">
-                        {{ strtoupper(substr($kycVerification->user->name, 0, 1)) }}
-                    </div>
-                    <div>
-                        <div class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->user->name }}</div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ $kycVerification->user->email }}</div>
-                    </div>
+        {{-- ข้อมูลผู้ใช้ --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-user"></i> ข้อมูลผู้ใช้</div>
+
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+                <div class="tp-tile" style="width:56px; height:56px; border-radius:50%; font-size:22px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    {{ mb_strtoupper(mb_substr($kycVerification->user->name ?? '?', 0, 1)) }}
                 </div>
+                <div style="min-width:0;">
+                    <div style="font-weight:700; font-size:15px; color:var(--ink);">{{ $kycVerification->user->name ?? 'ไม่ระบุชื่อ' }}</div>
+                    <div style="font-size:12.5px; color:var(--ink2);">{{ $kycVerification->user->email ?? '-' }}</div>
+                </div>
+            </div>
 
-                <div class="border-t pt-4 space-y-3">
-                    <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">User ID:</span>
-                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $kycVerification->user->id }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">บทบาท:</span>
-                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ ucfirst($kycVerification->user->role) }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">วันที่สมัคร:</span>
-                        <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $kycVerification->user->created_at->format('d/m/Y') }}</span>
-                    </div>
+            <div class="tp-divider" style="margin:14px 0;"></div>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px;">
+                    <span style="color:var(--ink2);">User ID</span>
+                    <span style="font-weight:600; color:var(--ink);">{{ $kycVerification->user->id }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px;">
+                    <span style="color:var(--ink2);">บทบาท</span>
+                    <span style="font-weight:600; color:var(--ink);">{{ ucfirst($kycVerification->user->role) }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px;">
+                    <span style="color:var(--ink2);">วันที่สมัคร</span>
+                    <span style="font-weight:600; color:var(--ink);">{{ $kycVerification->user->created_at->format('d/m/Y') }}</span>
                 </div>
             </div>
         </div>
 
-        <!-- KYC Status Card -->
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                <i class="fas fa-clipboard-check mr-2"></i>สถานะการยืนยัน
-            </h2>
+        {{-- สถานะการยืนยัน --}}
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-clipboard-check"></i> สถานะการยืนยัน</div>
 
-            <div class="space-y-3">
-                <div class="flex justify-between">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">สถานะ:</span>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:13.5px;">
+                    <span style="color:var(--ink2);">สถานะ</span>
                     @if($kycVerification->status === 'pending')
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            <i class="fas fa-clock mr-1"></i>รอตรวจสอบ
-                        </span>
+                        <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;">⏳ รอตรวจสอบ</span>
                     @elseif($kycVerification->status === 'approved')
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <i class="fas fa-check-circle mr-1"></i>อนุมัติแล้ว
-                        </span>
+                        <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">✅ อนุมัติแล้ว</span>
                     @elseif($kycVerification->status === 'rejected')
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            <i class="fas fa-times-circle mr-1"></i>ปฏิเสธ
-                        </span>
+                        <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f;">❌ ปฏิเสธ</span>
                     @endif
                 </div>
 
-                <div class="flex justify-between">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">วันที่ส่ง:</span>
-                    <span class="text-sm font-medium text-gray-900 dark:text-white">
+                <div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px;">
+                    <span style="color:var(--ink2);">วันที่ส่ง</span>
+                    <span style="font-weight:600; color:var(--ink);">
                         {{ $kycVerification->submitted_at ? $kycVerification->submitted_at->format('d/m/Y H:i') : '-' }}
                     </span>
                 </div>
 
                 @if($kycVerification->reviewed_at)
-                    <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">วันที่ตรวจสอบ:</span>
-                        <span class="text-sm font-medium text-gray-900 dark:text-white">
-                            {{ $kycVerification->reviewed_at->format('d/m/Y H:i') }}
-                        </span>
+                    <div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px;">
+                        <span style="color:var(--ink2);">วันที่ตรวจสอบ</span>
+                        <span style="font-weight:600; color:var(--ink);">{{ $kycVerification->reviewed_at->format('d/m/Y H:i') }}</span>
                     </div>
                 @endif
 
                 @if($kycVerification->reviewer)
-                    <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบโดย:</span>
-                        <span class="text-sm font-medium text-gray-900 dark:text-white">
-                            {{ $kycVerification->reviewer->name }}
-                        </span>
+                    <div style="display:flex; justify-content:space-between; gap:12px; font-size:13.5px;">
+                        <span style="color:var(--ink2);">ตรวจสอบโดย</span>
+                        <span style="font-weight:600; color:var(--ink);">{{ $kycVerification->reviewer->name }}</span>
                     </div>
                 @endif
 
                 @if($kycVerification->status === 'rejected' && $kycVerification->rejection_reason)
-                    <div class="border-t pt-3">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">เหตุผลในการปฏิเสธ:</p>
-                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                            <p class="text-sm text-red-800 dark:text-red-300">{{ $kycVerification->rejection_reason }}</p>
+                    <div class="tp-divider" style="margin:6px 0;"></div>
+                    <div>
+                        <div style="font-size:12.5px; color:var(--ink2); margin-bottom:8px;">เหตุผลในการปฏิเสธ</div>
+                        <div class="tp-well" style="padding:12px; border-left:3px solid #d9534f;">
+                            <p style="margin:0; font-size:13.5px; color:var(--ink);">{{ $kycVerification->rejection_reason }}</p>
                         </div>
                     </div>
                 @endif
@@ -124,213 +131,146 @@
         </div>
     </div>
 
-    {{-- 🤖 ผลตรวจอัตโนมัติชั้นที่ 1 (KycAutoCheckService) --}}
+    {{-- ===== 🤖 ผลตรวจอัตโนมัติชั้นที่ 1 (KycAutoCheckService) ===== --}}
     @if(!empty($autoChecks))
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">
-                    <i class="fas fa-clipboard-check mr-2"></i>ผลตรวจอัตโนมัติ
-                </h2>
+        <div class="tp-card" style="padding:20px;">
+            <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px;">
+                <div class="tp-section-h" style="margin:0;"><i class="fas fa-clipboard-check"></i> ผลตรวจอัตโนมัติ</div>
                 @if($autoChecks['all_green'])
-                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                    <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c; font-weight:700;">
                         ✅ ผ่านทุกข้อ — กดอนุมัติได้เลย
                     </span>
                 @elseif($autoChecks['fail'] > 0)
-                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                    <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f; font-weight:700;">
                         ⛔ ไม่ผ่าน {{ $autoChecks['fail'] }} ข้อ — ตรวจละเอียดก่อน
                     </span>
                 @else
-                    <span class="px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                    <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e; font-weight:700;">
                         ⚠️ มีข้อที่ต้องตรวจเอง
                     </span>
                 @endif
             </div>
 
-            <div class="space-y-2">
+            <div style="display:flex; flex-direction:column; gap:9px;">
                 @foreach($autoChecks['checks'] as $check)
                     @php
+                        // สีตามผลตรวจ — ธีม V4 ใช้ inline style ไม่ใช่คลาส utility
                         $style = match ($check['status']) {
-                            'pass' => ['icon' => '✅', 'cls' => 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'],
-                            'warn' => ['icon' => '⚠️', 'cls' => 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'],
-                            'fail' => ['icon' => '⛔', 'cls' => 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'],
-                            default => ['icon' => '❔', 'cls' => 'bg-gray-50 dark:bg-slate-700/40 border-gray-200 dark:border-slate-600'],
+                            'pass' => ['icon' => '✅', 'accent' => '#5aa07e'],
+                            'warn' => ['icon' => '⚠️', 'accent' => '#e0a52e'],
+                            'fail' => ['icon' => '⛔', 'accent' => '#d9534f'],
+                            default => ['icon' => '❔', 'accent' => 'var(--ink2)'],
                         };
                     @endphp
-                    <div class="flex items-start gap-3 border rounded-lg p-3 {{ $style['cls'] }}">
-                        <span class="text-lg leading-none mt-0.5">{{ $style['icon'] }}</span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $check['label'] }}</p>
-                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5">{{ $check['detail'] }}</p>
+                    <div class="tp-well" style="display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border-left:3px solid {{ $style['accent'] }};">
+                        <span style="font-size:17px; line-height:1.2; flex-shrink:0;">{{ $style['icon'] }}</span>
+                        <div style="min-width:0;">
+                            <p style="margin:0; font-size:13.5px; font-weight:700; color:var(--ink);">{{ $check['label'] }}</p>
+                            <p style="margin:3px 0 0; font-size:12px; color:var(--ink2);">{{ $check['detail'] }}</p>
                         </div>
                     </div>
                 @endforeach
             </div>
 
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-3">
+            <p style="font-size:11.5px; color:var(--ink2); margin:14px 0 0;">
                 ตัวช่วยตัดสินใจเท่านั้น — การอนุมัติสุดท้ายเป็นดุลยพินิจของแอดมิน
                 (ข้อ "ผู้โอนในสลิป" คือชื่อจากธนาคารจริงตอนลูกค้าจ่ายค่าดูดวง ปลอมยากที่สุด)
             </p>
         </div>
     @endif
 
-    <!-- Extracted Data Card (OCR) -->
+    {{-- ===== ข้อมูลที่ตรวจจับได้จากบัตร (OCR) ===== --}}
     @if(!empty($kycVerification->extracted_data))
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                <i class="fas fa-robot mr-2"></i>ข้อมูลที่ตรวจจับได้จากบัตร (OCR)
-            </h2>
+        @php
+            $ocr = $kycVerification->extracted_data;
+            $isLicense = ($ocr['document_type'] ?? null) === 'driver_license';
+            // ฟิลด์ที่จะโชว์: [key, label, เต็มแถวไหม]
+            $ocrFields = [
+                ['license_number',     'เลขที่ใบอนุญาต',   false],
+                ['id_card_number',     'เลขบัตรประชาชน',   false],
+                ['thai_first_name',    'ชื่อ (ไทย)',        false],
+                ['thai_last_name',     'นามสกุล (ไทย)',    false],
+                ['english_first_name', 'First Name',        false],
+                ['english_last_name',  'Last Name',         false],
+                ['birth_date',         'วันเกิด',           false],
+                ['religion',           'ศาสนา',             false],
+                ['issue_date',         'วันออกบัตร',        false],
+                ['expiry_date',        'วันหมดอายุ',        false],
+                ['address',            'ที่อยู่',            true],
+                ['license_type',       'ประเภทรถที่สามารถขับได้', true],
+            ];
+        @endphp
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-robot"></i> ข้อมูลที่ตรวจจับได้จากบัตร (OCR)</div>
 
-            <!-- Document Type Badge -->
-            @if(!empty($kycVerification->extracted_data['document_type']))
-                <div class="mb-4">
-                    @if($kycVerification->extracted_data['document_type'] === 'driver_license')
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
-                            <i class="fas fa-id-card-alt mr-2"></i>ใบขับขี่
+            {{-- ป้ายประเภทเอกสาร --}}
+            @if(!empty($ocr['document_type']))
+                <div style="margin-bottom:16px;">
+                    @if($isLicense)
+                        <span class="tp-pill" style="background:rgba(183,154,232,.18); color:#7a5db8;">
+                            <i class="fas fa-id-card-alt"></i> ใบขับขี่
                         </span>
                     @else
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                            <i class="fas fa-id-card mr-2"></i>บัตรประชาชน
+                        <span class="tp-pill" style="background:rgba(86,137,184,.18); color:#3f6a96;">
+                            <i class="fas fa-id-card"></i> บัตรประชาชน
                         </span>
                     @endif
                 </div>
             @endif
 
-            <div class="grid md:grid-cols-2 gap-4">
-                @if(!empty($kycVerification->extracted_data['license_number']))
-                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">เลขที่ใบอนุญาต</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['license_number'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['id_card_number']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">เลขบัตรประชาชน</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['id_card_number'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['thai_first_name']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ชื่อ (ไทย)</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['thai_first_name'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['thai_last_name']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">นามสกุล (ไทย)</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['thai_last_name'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['english_first_name']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">First Name</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['english_first_name'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['english_last_name']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Last Name</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['english_last_name'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['birth_date']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">วันเกิด</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['birth_date'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['religion']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ศาสนา</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['religion'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['issue_date']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">วันออกบัตร</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['issue_date'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['expiry_date']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">วันหมดอายุ</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['expiry_date'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['address']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 md:col-span-2">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ที่อยู่</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['address'] }}</p>
-                    </div>
-                @endif
-
-                @if(!empty($kycVerification->extracted_data['license_type']))
-                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 md:col-span-2">
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ประเภทรถที่สามารถขับได้</p>
-                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['license_type'] }}</p>
-                    </div>
-                @endif
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px;">
+                @foreach($ocrFields as [$key, $label, $fullWidth])
+                    @if(!empty($ocr[$key]))
+                        <div class="tp-well" style="padding:12px 14px;{{ $fullWidth ? ' grid-column:1 / -1;' : '' }}">
+                            <div style="font-size:11.5px; color:var(--ink2); margin-bottom:4px;">{{ $label }}</div>
+                            <div style="font-weight:600; font-size:14px; color:var(--ink); word-break:break-word;">{{ $ocr[$key] }}</div>
+                        </div>
+                    @endif
+                @endforeach
             </div>
 
-            <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <p class="text-xs text-yellow-800 dark:text-yellow-300">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    <strong>หมายเหตุ:</strong> ข้อมูลนี้ถูกตรวจจับโดยระบบ OCR อัตโนมัติ กรุณาตรวจสอบความถูกต้องก่อนอนุมัติ
+            <div class="tp-well" style="margin-top:16px; padding:12px 14px; border-left:3px solid #e0a52e;">
+                <p style="margin:0; font-size:12px; color:var(--ink2);">
+                    <i class="fas fa-circle-info" style="margin-right:5px; color:#e0a52e;"></i>
+                    <strong style="color:var(--ink);">หมายเหตุ:</strong> ข้อมูลนี้ถูกตรวจจับโดยระบบ OCR อัตโนมัติ กรุณาตรวจสอบความถูกต้องก่อนอนุมัติ
                 </p>
             </div>
         </div>
     @else
-        <div class="bg-gray-50 dark:bg-slate-700 rounded-lg shadow-md p-6">
-            <p class="text-center text-gray-600 dark:text-gray-400">
-                <i class="fas fa-robot text-2xl mb-2"></i><br>
+        <div class="tp-card" style="padding:28px 20px; text-align:center;">
+            <i class="fas fa-robot" style="font-size:26px; color:var(--ink2); opacity:.6; display:block; margin-bottom:10px;"></i>
+            <p style="margin:0; font-size:13.5px; color:var(--ink2);">
                 ไม่สามารถตรวจจับข้อมูลจากบัตรประชาชนได้ กรุณาตรวจสอบข้อมูลจากภาพด้านล่าง
             </p>
         </div>
     @endif
 
-    <!-- Documents Card -->
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            <i class="fas fa-images mr-2"></i>เอกสารที่ส่ง
-        </h2>
+    {{-- ===== เอกสารที่ส่ง ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-images"></i> เอกสารที่ส่ง</div>
 
-        <div class="grid md:grid-cols-2 gap-6">
-            <!-- ID Card Image (Thumbnail) -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px;">
+
+            {{-- รูปบัตรประชาชน / ใบขับขี่ --}}
             <div>
-                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <div style="font-size:13px; font-weight:600; color:var(--ink); margin-bottom:10px;">
                     @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
-                        <i class="fas fa-id-card-alt mr-1"></i>รูปใบขับขี่
+                        <i class="fas fa-id-card-alt" style="margin-right:5px;"></i>รูปใบขับขี่
                     @else
-                        <i class="fas fa-id-card mr-1"></i>รูปบัตรประชาชน
+                        <i class="fas fa-id-card" style="margin-right:5px;"></i>รูปบัตรประชาชน
                     @endif
-                </h3>
+                </div>
+
                 @if($kycVerification->idCardImageUrl())
-                    <div class="border dark:border-slate-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-700 relative group cursor-pointer"
+                    <div style="border-radius:12px; overflow:hidden; box-shadow:var(--inset-sm); cursor:pointer; background:var(--bg);"
                          onclick="openImageModal('{{ $kycVerification->idCardImageUrl() }}')">
-                        <!-- Thumbnail container with fixed aspect ratio -->
-                        <div class="aspect-[4/3] flex items-center justify-center">
-                            <img src="{{ $kycVerification->idCardImageUrl() }}"
-                                 alt="ID Document"
-                                 class="max-w-full max-h-full object-contain transition-transform duration-200 group-hover:scale-105">
-                        </div>
-                        <!-- Overlay on hover -->
-                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                            <span class="opacity-0 group-hover:opacity-100 text-white font-medium flex items-center gap-2">
-                                <i class="fas fa-search-plus text-2xl"></i>
-                            </span>
+                        <div style="aspect-ratio:4/3; display:flex; align-items:center; justify-content:center;">
+                            <img src="{{ $kycVerification->idCardImageUrl() }}" alt="ID Document"
+                                 style="max-width:100%; max-height:100%; object-fit:contain; display:block;">
                         </div>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                        <i class="fas fa-search-plus mr-1"></i>คลิกเพื่อขยายดูภาพเต็ม
+                    <p style="font-size:11.5px; color:var(--ink2); margin:8px 0 0; text-align:center;">
+                        <i class="fas fa-search-plus" style="margin-right:4px;"></i>คลิกเพื่อขยายดูภาพเต็ม
                     </p>
                 @else
                     {{-- ไม่มีไฟล์จริงบนดิสก์ — บอกสาเหตุให้ชัด แทนไอคอนรูปแตกที่ไม่บอกอะไรเลย --}}
@@ -338,33 +278,26 @@
                 @endif
             </div>
 
-            <!-- Selfie Image (Thumbnail) -->
+            {{-- รูปถ่ายตัวเองพร้อมบัตร --}}
             <div>
-                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                <div style="font-size:13px; font-weight:600; color:var(--ink); margin-bottom:10px;">
                     @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
-                        <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมใบขับขี่
+                        <i class="fas fa-user-circle" style="margin-right:5px;"></i>รูปถ่ายตัวเองพร้อมใบขับขี่
                     @else
-                        <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
+                        <i class="fas fa-user-circle" style="margin-right:5px;"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
                     @endif
-                </h3>
+                </div>
+
                 @if($kycVerification->selfieImageUrl())
-                    <div class="border dark:border-slate-700 rounded-lg overflow-hidden bg-gray-100 dark:bg-slate-700 relative group cursor-pointer"
+                    <div style="border-radius:12px; overflow:hidden; box-shadow:var(--inset-sm); cursor:pointer; background:var(--bg);"
                          onclick="openImageModal('{{ $kycVerification->selfieImageUrl() }}')">
-                        <!-- Thumbnail container with fixed aspect ratio -->
-                        <div class="aspect-[4/3] flex items-center justify-center">
-                            <img src="{{ $kycVerification->selfieImageUrl() }}"
-                                 alt="Selfie with ID Card"
-                                 class="max-w-full max-h-full object-contain transition-transform duration-200 group-hover:scale-105">
-                        </div>
-                        <!-- Overlay on hover -->
-                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                            <span class="opacity-0 group-hover:opacity-100 text-white font-medium flex items-center gap-2">
-                                <i class="fas fa-search-plus text-2xl"></i>
-                            </span>
+                        <div style="aspect-ratio:4/3; display:flex; align-items:center; justify-content:center;">
+                            <img src="{{ $kycVerification->selfieImageUrl() }}" alt="Selfie with ID Card"
+                                 style="max-width:100%; max-height:100%; object-fit:contain; display:block;">
                         </div>
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                        <i class="fas fa-search-plus mr-1"></i>คลิกเพื่อขยายดูภาพเต็ม
+                    <p style="font-size:11.5px; color:var(--ink2); margin:8px 0 0; text-align:center;">
+                        <i class="fas fa-search-plus" style="margin-right:4px;"></i>คลิกเพื่อขยายดูภาพเต็ม
                     </p>
                 @else
                     {{-- ไม่มีไฟล์จริงบนดิสก์ — บอกสาเหตุให้ชัด แทนไอคอนรูปแตกที่ไม่บอกอะไรเลย --}}
@@ -373,139 +306,120 @@
             </div>
         </div>
 
-        <!-- Image Format Info -->
-        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <p class="text-xs text-blue-800 dark:text-blue-300">
-                <i class="fas fa-info-circle mr-1"></i>
-                <strong>รูปแบบไฟล์:</strong> รูปภาพถูกบันทึกในรูปแบบ WebP เพื่อประหยัดพื้นที่จัดเก็บและรักษาคุณภาพ
+        <div class="tp-well" style="margin-top:16px; padding:12px 14px;">
+            <p style="margin:0; font-size:12px; color:var(--ink2);">
+                <i class="fas fa-circle-info" style="margin-right:5px;"></i>
+                <strong style="color:var(--ink);">รูปแบบไฟล์:</strong> รูปภาพถูกบันทึกในรูปแบบ WebP เพื่อประหยัดพื้นที่จัดเก็บและรักษาคุณภาพ
             </p>
         </div>
     </div>
 
-    <!-- Data Privacy Policy Card -->
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-            <i class="fas fa-shield-alt mr-2"></i>นโยบายการจัดเก็บข้อมูล
-        </h2>
+    {{-- ===== นโยบายการจัดเก็บข้อมูล ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-shield-halved"></i> นโยบายการจัดเก็บข้อมูล</div>
 
-        <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <i class="fas fa-check text-green-600 dark:text-green-400 text-xs"></i>
-                </div>
-                <p>รูปภาพเอกสารถูกบันทึกในรูปแบบ <strong class="text-gray-900 dark:text-white">WebP</strong> คุณภาพสูงเพื่อประหยัดพื้นที่จัดเก็บ</p>
-            </div>
+        @php
+            // แต่ละข้อ: [ไอคอน, สี, ข้อความ HTML ที่ปลอดภัย (แต่ง <strong> เอง)]
+            $policyLines = [
+                ['fa-check',      '#5aa07e', 'รูปภาพเอกสารถูกบันทึกในรูปแบบ <strong>WebP</strong> คุณภาพสูงเพื่อประหยัดพื้นที่จัดเก็บ'],
+                ['fa-check',      '#5aa07e', 'ข้อมูล KYC จะถูก <strong>เก็บรักษาอย่างปลอดภัย</strong> ตามมาตรฐานความปลอดภัยของระบบ'],
+                ['fa-trash-can',  '#d9534f', '<strong>สำคัญ:</strong> เมื่อผู้ใช้ลบบัญชี รูปภาพ KYC และข้อมูลที่เกี่ยวข้อง <strong>จะถูกลบออกโดยอัตโนมัติ</strong> เพื่อปกป้องความเป็นส่วนตัว'],
+                ['fa-eye-slash',  '#5689b8', 'รูปภาพและข้อมูลส่วนตัวจะ <strong>ไม่ถูกเปิดเผย</strong> ต่อบุคคลภายนอกโดยไม่ได้รับอนุญาต'],
+            ];
+        @endphp
 
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <i class="fas fa-check text-green-600 dark:text-green-400 text-xs"></i>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+            @foreach($policyLines as [$icon, $color, $text])
+                <div style="display:flex; align-items:flex-start; gap:12px;">
+                    <div style="flex-shrink:0; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:color-mix(in srgb, {{ $color }} 18%, transparent);">
+                        <i class="fas {{ $icon }}" style="font-size:11px; color:{{ $color }};"></i>
+                    </div>
+                    <p style="margin:0; font-size:13px; color:var(--ink2); line-height:1.65;">{!! $text !!}</p>
                 </div>
-                <p>ข้อมูล KYC จะถูก <strong class="text-gray-900 dark:text-white">เก็บรักษาอย่างปลอดภัย</strong> ตามมาตรฐานความปลอดภัยของระบบ</p>
-            </div>
-
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                    <i class="fas fa-trash-alt text-red-600 dark:text-red-400 text-xs"></i>
-                </div>
-                <p><strong class="text-red-600 dark:text-red-400">สำคัญ:</strong> เมื่อผู้ใช้ลบบัญชี รูปภาพ KYC และข้อมูลที่เกี่ยวข้อง <strong class="text-gray-900 dark:text-white">จะถูกลบออกโดยอัตโนมัติ</strong> เพื่อปกป้องความเป็นส่วนตัว</p>
-            </div>
-
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <i class="fas fa-eye-slash text-blue-600 dark:text-blue-400 text-xs"></i>
-                </div>
-                <p>รูปภาพและข้อมูลส่วนตัวจะ <strong class="text-gray-900 dark:text-white">ไม่ถูกเปิดเผย</strong> ต่อบุคคลภายนอกโดยไม่ได้รับอนุญาต</p>
-            </div>
+            @endforeach
         </div>
     </div>
 
-    <!-- Actions Card -->
+    {{-- ===== การดำเนินการ (เฉพาะรายการที่รอตรวจสอบ) ===== --}}
     @if($kycVerification->status === 'pending')
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                <i class="fas fa-gavel mr-2"></i>การดำเนินการ
-            </h2>
+        <div class="tp-card" style="padding:20px;">
+            <div class="tp-section-h" style="margin-bottom:16px;"><i class="fas fa-gavel"></i> การดำเนินการ</div>
 
-            <div class="grid md:grid-cols-2 gap-4">
-                <!-- Approve Form -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;">
+                {{-- ฟอร์มอนุมัติ --}}
                 <form action="{{ route('admin.kyc.approve', $kycVerification) }}" method="POST"
                       onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการอนุมัติการยืนยันตัวตนนี้?')">
                     @csrf
-                    <button type="submit"
-                            class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2">
-                        <i class="fas fa-check-circle"></i>
-                        <span>อนุมัติการยืนยันตัวตน</span>
+                    <button type="submit" class="tp-btn"
+                            style="width:100%; justify-content:center; padding:12px; background:#5aa07e; color:#fff; border-color:#5aa07e; font-weight:700;">
+                        <i class="fas fa-circle-check"></i> อนุมัติการยืนยันตัวตน
                     </button>
                 </form>
 
-                <!-- Reject Button (opens modal) -->
-                <button type="button"
-                        onclick="openRejectModal()"
-                        class="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center justify-center gap-2">
-                    <i class="fas fa-times-circle"></i>
-                    <span>ปฏิเสธการยืนยันตัวตน</span>
+                {{-- ปุ่มปฏิเสธ (เปิดโมดัล) --}}
+                <button type="button" onclick="openRejectModal()" class="tp-btn"
+                        style="width:100%; justify-content:center; padding:12px; background:#d9534f; color:#fff; border-color:#d9534f; font-weight:700;">
+                    <i class="fas fa-circle-xmark"></i> ปฏิเสธการยืนยันตัวตน
                 </button>
             </div>
         </div>
     @endif
 
-    <!-- Delete Form (for admin with manage_kyc permission) -->
+    {{-- ===== ลบข้อมูล (เฉพาะแอดมินที่มีสิทธิ์ manage_kyc) ===== --}}
     @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('manage_kyc'))
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-bold text-red-600 mb-4">
-                <i class="fas fa-trash mr-2"></i>ลบข้อมูล
-            </h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">การลบข้อมูลการยืนยันตัวตนนี้จะไม่สามารถกู้คืนได้</p>
+        <div class="tp-card" style="padding:20px; border-left:4px solid #d9534f;">
+            <div class="tp-section-h" style="margin-bottom:12px; color:#d9534f;"><i class="fas fa-trash"></i> ลบข้อมูล</div>
+            <p style="font-size:13px; color:var(--ink2); margin:0 0 14px;">
+                การลบข้อมูลการยืนยันตัวตนนี้จะไม่สามารถกู้คืนได้ (ไฟล์รูปจะถูกลบออกจากเซิร์ฟเวอร์ด้วย)
+            </p>
             <form action="{{ route('admin.kyc.destroy', $kycVerification) }}" method="POST"
                   onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลการยืนยันตัวตนนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้')">
                 @csrf
                 @method('DELETE')
-                <button type="submit"
-                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                    <i class="fas fa-trash mr-2"></i>ลบข้อมูลการยืนยันตัวตน
+                <button type="submit" class="tp-btn tp-btn-sm"
+                        style="background:#d9534f; color:#fff; border-color:#d9534f; font-weight:700;">
+                    <i class="fas fa-trash"></i> ลบข้อมูลการยืนยันตัวตน
                 </button>
             </form>
         </div>
     @endif
 </div>
 
-<!-- Reject Modal -->
+{{-- ===== โมดัลปฏิเสธ (JS สลับคลาส hidden/flex เหมือนเดิม) ===== --}}
 <div id="rejectModal"
-     class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4"
+     class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+     style="background:rgba(0,0,0,.55);"
      onclick="if(event.target === this) closeRejectModal()">
-    <div class="bg-white dark:bg-slate-800 rounded-lg max-w-md w-full p-6" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">ปฏิเสธการยืนยันตัวตน</h3>
-            <button onclick="closeRejectModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <i class="fas fa-times text-xl"></i>
+    <div class="tp-card" style="max-width:460px; width:100%; padding:22px;" onclick="event.stopPropagation()">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+            <div class="tp-section-h" style="margin:0;"><i class="fas fa-circle-xmark"></i> ปฏิเสธการยืนยันตัวตน</div>
+            <button type="button" onclick="closeRejectModal()" class="tp-icon-btn" title="ปิด">
+                <i class="fas fa-times"></i>
             </button>
         </div>
 
         <form action="{{ route('admin.kyc.reject', $kycVerification) }}" method="POST">
             @csrf
-            <div class="mb-4">
-                <label for="rejection_reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    เหตุผลในการปฏิเสธ <span class="text-red-500">*</span>
+            <div style="margin-bottom:16px;">
+                <label for="rejection_reason" style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                    เหตุผลในการปฏิเสธ <span style="color:#d9534f;">*</span>
                 </label>
-                <textarea name="rejection_reason"
-                          id="rejection_reason"
-                          rows="4"
-                          required
-                          placeholder="กรุณาระบุเหตุผลในการปฏิเสธ..."
-                          class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700 dark:text-white"></textarea>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <textarea name="rejection_reason" id="rejection_reason" rows="4" required
+                              placeholder="กรุณาระบุเหตุผลในการปฏิเสธ..."
+                              style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+                </div>
                 @error('rejection_reason')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                    <p style="font-size:12px; color:#d9534f; margin:6px 0 0;">{{ $message }}</p>
                 @enderror
             </div>
 
-            <div class="flex gap-3">
-                <button type="button"
-                        onclick="closeRejectModal()"
-                        class="flex-1 px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition">
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="closeRejectModal()" class="tp-btn" style="flex:1; justify-content:center;">
                     ยกเลิก
                 </button>
-                <button type="submit"
-                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                <button type="submit" class="tp-btn"
+                        style="flex:1; justify-content:center; background:#d9534f; color:#fff; border-color:#d9534f; font-weight:700;">
                     ปฏิเสธ
                 </button>
             </div>
@@ -513,16 +427,17 @@
     </div>
 </div>
 
-<!-- Image Modal -->
+{{-- ===== โมดัลดูภาพเต็ม ===== --}}
 <div id="imageModal"
-     class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden items-center justify-center p-4"
+     class="fixed inset-0 z-50 hidden items-center justify-center p-4"
+     style="background:rgba(0,0,0,.9);"
      onclick="closeImageModal()">
-    <div class="relative max-w-6xl max-h-full">
-        <button onclick="closeImageModal()"
-                class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300 z-10 bg-black bg-opacity-50 w-10 h-10 rounded-full flex items-center justify-center">
+    <div style="position:relative; max-width:1150px; max-height:100%;">
+        <button type="button" onclick="closeImageModal()"
+                style="position:absolute; top:14px; right:14px; z-index:10; width:40px; height:40px; border-radius:50%; border:none; cursor:pointer; background:rgba(0,0,0,.5); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center;">
             <i class="fas fa-times"></i>
         </button>
-        <img id="modalImage" src="" alt="Full Size" class="max-w-full max-h-screen rounded-lg">
+        <img id="modalImage" src="" alt="Full Size" style="max-width:100%; max-height:100vh; border-radius:12px; display:block;">
     </div>
 </div>
 
