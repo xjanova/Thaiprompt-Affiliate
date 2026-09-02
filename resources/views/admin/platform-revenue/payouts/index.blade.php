@@ -58,9 +58,10 @@
                     <select name="status" class="px-4 py-2 bg-white/10 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-orange-400">
                         <option value="">ทั้งหมด</option>
                         <option value="pending" {{ ($filters['status'] ?? '') === 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
+                        <option value="scheduled" {{ ($filters['status'] ?? '') === 'scheduled' ? 'selected' : '' }}>ตั้งเวลาจ่ายแล้ว</option>
                         <option value="approved" {{ ($filters['status'] ?? '') === 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
                         <option value="processing" {{ ($filters['status'] ?? '') === 'processing' ? 'selected' : '' }}>กำลังดำเนินการ</option>
-                        <option value="completed" {{ ($filters['status'] ?? '') === 'completed' ? 'selected' : '' }}>สำเร็จ</option>
+                        <option value="paid" {{ ($filters['status'] ?? '') === 'paid' ? 'selected' : '' }}>สำเร็จ</option>
                         <option value="rejected" {{ ($filters['status'] ?? '') === 'rejected' ? 'selected' : '' }}>ปฏิเสธ</option>
                     </select>
                 </div>
@@ -144,19 +145,20 @@
                                 <td class="p-4">
                                     <span class="px-2 py-1 bg-white/10 rounded-lg text-sm">{{ $payout->earning_type }}</span>
                                 </td>
-                                <td class="p-4 font-mono">฿{{ number_format($payout->gross_amount, 2) }}</td>
-                                <td class="p-4 font-mono text-red-400">-฿{{ number_format($payout->fee_amount, 2) }}</td>
+                                <td class="p-4 font-mono">฿{{ number_format($payout->amount, 2) }}</td>
+                                <td class="p-4 font-mono text-red-400">-฿{{ number_format($payout->fee, 2) }}</td>
                                 <td class="p-4 font-mono text-green-400 font-bold">฿{{ number_format($payout->net_amount, 2) }}</td>
                                 <td class="p-4">
                                     <span class="px-3 py-1 rounded-full text-sm
                                         {{ $payout->status === 'pending' ? 'bg-orange-500/20 text-orange-400' : '' }}
+                                        {{ $payout->status === 'scheduled' ? 'bg-indigo-500/20 text-indigo-400' : '' }}
                                         {{ $payout->status === 'approved' ? 'bg-blue-500/20 text-blue-400' : '' }}
                                         {{ $payout->status === 'processing' ? 'bg-cyan-500/20 text-cyan-400' : '' }}
-                                        {{ $payout->status === 'completed' ? 'bg-green-500/20 text-green-400' : '' }}
+                                        {{ $payout->status === 'paid' ? 'bg-green-500/20 text-green-400' : '' }}
                                         {{ $payout->status === 'rejected' ? 'bg-red-500/20 text-red-400' : '' }}
                                         {{ $payout->status === 'failed' ? 'bg-red-500/20 text-red-400' : '' }}
                                     ">
-                                        {{ ucfirst($payout->status) }}
+                                        {{ $payout->status_label }}
                                     </span>
                                 </td>
                                 <td class="p-4 text-white/40 text-sm">{{ $payout->created_at->format('d/m/Y H:i') }}</td>

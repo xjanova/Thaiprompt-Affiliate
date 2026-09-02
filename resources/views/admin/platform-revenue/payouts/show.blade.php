@@ -23,32 +23,36 @@
                 <div class="flex items-center gap-4">
                     <div class="w-16 h-16 rounded-full flex items-center justify-center
                         {{ $payout->status === 'pending' ? 'bg-orange-500/20' : '' }}
+                        {{ $payout->status === 'scheduled' ? 'bg-indigo-500/20' : '' }}
                         {{ $payout->status === 'approved' ? 'bg-blue-500/20' : '' }}
                         {{ $payout->status === 'processing' ? 'bg-cyan-500/20' : '' }}
-                        {{ $payout->status === 'completed' ? 'bg-green-500/20' : '' }}
+                        {{ $payout->status === 'paid' ? 'bg-green-500/20' : '' }}
                         {{ $payout->status === 'rejected' ? 'bg-red-500/20' : '' }}
                         {{ $payout->status === 'failed' ? 'bg-red-500/20' : '' }}
                     ">
                         <i class="fas text-3xl
                             {{ $payout->status === 'pending' ? 'fa-clock text-orange-400' : '' }}
+                            {{ $payout->status === 'scheduled' ? 'fa-calendar-check text-indigo-400' : '' }}
                             {{ $payout->status === 'approved' ? 'fa-check text-blue-400' : '' }}
                             {{ $payout->status === 'processing' ? 'fa-spinner fa-spin text-cyan-400' : '' }}
-                            {{ $payout->status === 'completed' ? 'fa-check-circle text-green-400' : '' }}
+                            {{ $payout->status === 'paid' ? 'fa-check-circle text-green-400' : '' }}
                             {{ $payout->status === 'rejected' ? 'fa-times-circle text-red-400' : '' }}
                             {{ $payout->status === 'failed' ? 'fa-exclamation-circle text-red-400' : '' }}
                         "></i>
                     </div>
                     <div>
-                        <div class="text-2xl font-bold text-white">{{ ucfirst($payout->status) }}</div>
+                        <div class="text-2xl font-bold text-white">{{ $payout->status_label }}</div>
                         <div class="text-white/60">
                             @if($payout->status === 'pending')
                                 รอการอนุมัติจาก Admin
+                            @elseif($payout->status === 'scheduled')
+                                ตั้งเวลาจ่ายอัตโนมัติไว้วันที่ {{ $payout->scheduled_at?->format('d/m/Y H:i') }}
                             @elseif($payout->status === 'approved')
                                 อนุมัติแล้ว รอดำเนินการ
-                            @elseif($payout->status === 'completed')
-                                จ่ายเงินสำเร็จเมื่อ {{ $payout->processed_at?->format('d/m/Y H:i') }}
+                            @elseif($payout->status === 'paid')
+                                จ่ายเงินสำเร็จเมื่อ {{ $payout->paid_at?->format('d/m/Y H:i') }}
                             @elseif($payout->status === 'rejected')
-                                ถูกปฏิเสธ: {{ $payout->reject_reason }}
+                                ถูกปฏิเสธ: {{ $payout->rejection_reason }}
                             @endif
                         </div>
                     </div>
@@ -112,11 +116,11 @@
                 <div class="space-y-3">
                     <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl">
                         <span class="text-white/60">ยอดขอถอน</span>
-                        <span class="text-white font-bold text-lg">฿{{ number_format($payout->gross_amount, 2) }}</span>
+                        <span class="text-white font-bold text-lg">฿{{ number_format($payout->amount, 2) }}</span>
                     </div>
                     <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl">
                         <span class="text-white/60">ค่าธรรมเนียม</span>
-                        <span class="text-red-400">-฿{{ number_format($payout->fee_amount, 2) }}</span>
+                        <span class="text-red-400">-฿{{ number_format($payout->fee, 2) }}</span>
                     </div>
                     @if($payout->debt_deduction > 0)
                     <div class="flex justify-between items-center p-3 bg-red-500/10 rounded-xl border border-red-500/30">
@@ -154,23 +158,23 @@
                     <div>
                         <div class="text-white font-medium">อนุมัติโดย {{ $payout->approvedByUser->name ?? 'Admin' }}</div>
                         <div class="text-white/40 text-sm">{{ $payout->approved_at->format('d/m/Y H:i:s') }}</div>
-                        @if($payout->admin_note)
-                        <div class="text-white/60 text-sm mt-1">หมายเหตุ: {{ $payout->admin_note }}</div>
+                        @if($payout->approval_note)
+                        <div class="text-white/60 text-sm mt-1">หมายเหตุ: {{ $payout->approval_note }}</div>
                         @endif
                     </div>
                 </div>
                 @endif
 
-                @if($payout->processed_at)
+                @if($payout->paid_at)
                 <div class="flex gap-4">
                     <div class="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center">
                         <i class="fas fa-check-circle text-emerald-400"></i>
                     </div>
                     <div>
                         <div class="text-white font-medium">จ่ายเงินสำเร็จ</div>
-                        <div class="text-white/40 text-sm">{{ $payout->processed_at->format('d/m/Y H:i:s') }}</div>
-                        @if($payout->transaction_ref)
-                        <div class="text-white/60 text-sm mt-1">Ref: {{ $payout->transaction_ref }}</div>
+                        <div class="text-white/40 text-sm">{{ $payout->paid_at->format('d/m/Y H:i:s') }}</div>
+                        @if($payout->payment_reference)
+                        <div class="text-white/60 text-sm mt-1">Ref: {{ $payout->payment_reference }}</div>
                         @endif
                     </div>
                 </div>
@@ -184,7 +188,7 @@
                     <div>
                         <div class="text-white font-medium">ปฏิเสธโดย {{ $payout->rejectedByUser->name ?? 'Admin' }}</div>
                         <div class="text-white/40 text-sm">{{ $payout->rejected_at->format('d/m/Y H:i:s') }}</div>
-                        <div class="text-red-400 text-sm mt-1">เหตุผล: {{ $payout->reject_reason }}</div>
+                        <div class="text-red-400 text-sm mt-1">เหตุผล: {{ $payout->rejection_reason }}</div>
                     </div>
                 </div>
                 @endif

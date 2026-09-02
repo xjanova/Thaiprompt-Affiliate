@@ -14,11 +14,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property int $id
  * @property int $user_id
+ * @property int|null $payout_setting_id
  * @property string $payout_type
+ * @property string|null $earning_type ประเภทรายได้ต้นทาง เช่น mlm_commission
  * @property float $amount
  * @property float $fee
+ * @property float $debt_deduction ยอดหนี้ที่หักไปตอนสร้างคำขอ
  * @property float $net_amount
  * @property string $status
+ * @property \Carbon\Carbon|null $scheduled_at เวลาที่ตั้งไว้ให้จ่ายอัตโนมัติ
  * @property string $payment_method
  * @property string|null $bank_name
  * @property string|null $bank_account_number
@@ -32,6 +36,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon|null $paid_at
  * @property string|null $payment_reference
  * @property string|null $payment_note
+ * @property string|null $error_message ข้อความ error ตอนจ่ายไม่สำเร็จ
  * @property int|null $wallet_transaction_id
  * @property string|null $description
  * @property array|null $metadata
@@ -43,11 +48,15 @@ class PayoutRequest extends Model
 
     protected $fillable = [
         'user_id',
+        'payout_setting_id',
         'payout_type',
+        'earning_type',
         'amount',
         'fee',
+        'debt_deduction',
         'net_amount',
         'status',
+        'scheduled_at',
         'payment_method',
         'bank_name',
         'bank_account_number',
@@ -61,6 +70,7 @@ class PayoutRequest extends Model
         'paid_at',
         'payment_reference',
         'payment_note',
+        'error_message',
         'wallet_transaction_id',
         'description',
         'metadata',
@@ -70,7 +80,9 @@ class PayoutRequest extends Model
     protected $casts = [
         'amount' => 'decimal:4',
         'fee' => 'decimal:4',
+        'debt_deduction' => 'decimal:4',
         'net_amount' => 'decimal:4',
+        'scheduled_at' => 'datetime',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
         'paid_at' => 'datetime',
@@ -92,6 +104,12 @@ class PayoutRequest extends Model
      * สถานะ
      */
     const STATUS_PENDING = 'pending';
+
+    /**
+     * ตั้งเวลาจ่ายไว้แล้ว รอ cron `payouts:process-scheduled` ถึงกำหนด
+     * ใช้เฉพาะ PayoutSetting ที่ payout_mode = 'auto_schedule'
+     */
+    const STATUS_SCHEDULED = 'scheduled';
 
     const STATUS_APPROVED = 'approved';
 
@@ -122,6 +140,14 @@ class PayoutRequest extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ตั้งค่า Payout ที่ใช้ตอนสร้างคำขอนี้
+     */
+    public function payoutSetting(): BelongsTo
+    {
+        return $this->belongsTo(PayoutSetting::class);
     }
 
     /**
@@ -162,6 +188,14 @@ class PayoutRequest extends Model
     public function scopePending($query)
     {
         return $query->where('status', self::STATUS_PENDING);
+    }
+
+    /**
+     * ตั้งเวลาจ่ายไว้แล้ว รอถึงกำหนด
+     */
+    public function scopeScheduled($query)
+    {
+        return $query->where('status', self::STATUS_SCHEDULED);
     }
 
     /**
@@ -276,7 +310,12 @@ class PayoutRequest extends Model
      */
     public function canBeCancelled(): bool
     {
-        return in_array($this->status, [self::STATUS_PENDING, self::STATUS_APPROVED]);
+        // รวม scheduled ด้วย เพราะยังไม่ได้จ่ายจริง ยกเลิกทัน
+        return in_array($this->status, [
+            self::STATUS_PENDING,
+            self::STATUS_SCHEDULED,
+            self::STATUS_APPROVED,
+        ]);
     }
 
     /**
@@ -286,6 +325,7 @@ class PayoutRequest extends Model
     {
         return match ($this->status) {
             self::STATUS_PENDING => 'yellow',
+            self::STATUS_SCHEDULED => 'indigo',
             self::STATUS_APPROVED => 'blue',
             self::STATUS_PROCESSING => 'purple',
             self::STATUS_PAID => 'green',
@@ -303,6 +343,7 @@ class PayoutRequest extends Model
     {
         return match ($this->status) {
             self::STATUS_PENDING => 'รอดำเนินการ',
+            self::STATUS_SCHEDULED => 'ตั้งเวลาจ่ายแล้ว',
             self::STATUS_APPROVED => 'อนุมัติแล้ว',
             self::STATUS_PROCESSING => 'กำลังดำเนินการ',
             self::STATUS_PAID => 'จ่ายแล้ว',

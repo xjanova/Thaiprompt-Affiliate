@@ -106,9 +106,14 @@ class PayoutService
             $payoutRequest = PayoutRequest::create([
                 'user_id' => $userId,
                 'payout_setting_id' => $setting->id,
+                // payout_type เป็นคอลัมน์ NOT NULL ต้องใส่เสมอ
+                // แปลงจาก earning_type เอง ไม่ใช้ $setting->payout_type
+                // เพราะคอลัมน์นั้นติด unique constraint เลยถูกบีบให้เหลือ 3 ค่า
+                // ทำให้ affiliate_commission ถูกแปะเป็น 'service' ซึ่งผิดความหมาย
+                'payout_type' => $this->resolvePayoutType($earningType),
                 'earning_type' => $earningType,
-                'gross_amount' => $payoutAmount,
-                'fee_amount' => $fee,
+                'amount' => $payoutAmount,
+                'fee' => $fee,
                 'debt_deduction' => $debtDeduction,
                 'net_amount' => $netAmount,
                 'status' => $status,
@@ -256,7 +261,7 @@ class PayoutService
                 'status' => PayoutRequest::STATUS_APPROVED,
                 'approved_by' => $approvedBy,
                 'approved_at' => now(),
-                'admin_note' => $note,
+                'approval_note' => $note,
             ]);
 
             Log::info('Payout approved', [
@@ -295,7 +300,7 @@ class PayoutService
                     'original_amount' => $payoutRequest->debt_deduction,
                     'deducted_amount' => 0,
                     'remaining_amount' => $payoutRequest->debt_deduction,
-                    'reason' => 'คืนหนี้จาก Payout ที่ถูกปฏิเสธ #' . $payoutRequest->id,
+                    'reason' => 'คืนหนี้จาก Payout ที่ถูกปฏิเสธ #'.$payoutRequest->id,
                     'source_type' => 'PayoutRequest',
                     'source_id' => $payoutRequest->id,
                     'status' => 'active',
@@ -313,7 +318,7 @@ class PayoutService
                 'status' => PayoutRequest::STATUS_REJECTED,
                 'rejected_by' => $rejectedBy,
                 'rejected_at' => now(),
-                'reject_reason' => $reason,
+                'rejection_reason' => $reason,
             ]);
 
             Log::info('Payout rejected', [
@@ -353,7 +358,9 @@ class PayoutService
 
             try {
                 // ดึงเงินจาก Platform Wallet ที่เหมาะสม
-                $walletSlug = $this->getSourceWallet($payoutRequest->earning_type);
+                // earning_type เป็นคอลัมน์ nullable แถวที่สร้างจากทางอื่นอาจไม่มีค่า
+                // ต้อง fallback เป็นสตริงว่าง ไม่งั้น TypeError เพราะ getSourceWallet() รับ string
+                $walletSlug = $this->getSourceWallet($payoutRequest->earning_type ?? '');
                 $wallet = PlatformWallet::where('slug', $walletSlug)->first();
 
                 if (! $wallet) {
@@ -380,9 +387,9 @@ class PayoutService
                 $transactionRef = 'PO'.date('Ymd').str_pad($payoutRequest->id, 8, '0', STR_PAD_LEFT);
 
                 $payoutRequest->update([
-                    'status' => PayoutRequest::STATUS_COMPLETED,
-                    'processed_at' => now(),
-                    'transaction_ref' => $transactionRef,
+                    'status' => PayoutRequest::STATUS_PAID,
+                    'paid_at' => now(),
+                    'payment_reference' => $transactionRef,
                 ]);
 
                 Log::info('Payout completed', [
@@ -407,6 +414,24 @@ class PayoutService
 
             return $payoutRequest->fresh();
         });
+    }
+
+    /**
+     * แปลง earning_type (ละเอียด) → payout_type (กลุ่มกว้าง) ของ payout_requests
+     *
+     * จับกลุ่มให้ตรงกับ getSourceWallet() คือ mlm_commission และ
+     * affiliate_commission ถือเป็นเงินกอง MLM เหมือนกัน
+     */
+    protected function resolvePayoutType(string $earningType): string
+    {
+        return match ($earningType) {
+            EarningsLedger::TYPE_SELLER_SALE => PayoutRequest::TYPE_SELLER,
+            EarningsLedger::TYPE_SERVICE_PROVIDER => PayoutRequest::TYPE_SERVICE,
+            EarningsLedger::TYPE_MLM_COMMISSION,
+            EarningsLedger::TYPE_AFFILIATE_COMMISSION,
+            EarningsLedger::TYPE_REFERRAL_BONUS => PayoutRequest::TYPE_MLM,
+            default => PayoutRequest::TYPE_WITHDRAWAL,
+        };
     }
 
     /**
@@ -473,7 +498,7 @@ class PayoutService
                 $payout->update([
                     'status' => PayoutRequest::STATUS_APPROVED,
                     'approved_at' => now(),
-                    'admin_note' => 'Auto-approved by scheduler',
+                    'approval_note' => 'อนุมัติอัตโนมัติโดยระบบตั้งเวลา',
                 ]);
 
                 // ประมวลผลจ่ายเงิน
@@ -557,8 +582,8 @@ class PayoutService
 
         return [
             'total_requests' => (clone $query)->count(),
-            'total_gross_amount' => (clone $query)->sum('gross_amount'),
-            'total_fee_amount' => (clone $query)->sum('fee_amount'),
+            'total_gross_amount' => (clone $query)->sum('amount'),
+            'total_fee_amount' => (clone $query)->sum('fee'),
             'total_net_amount' => (clone $query)->sum('net_amount'),
             'by_status' => (clone $query)->selectRaw('status, COUNT(*) as count, SUM(net_amount) as total')
                 ->groupBy('status')
