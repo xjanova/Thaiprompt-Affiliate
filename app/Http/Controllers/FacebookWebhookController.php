@@ -2941,6 +2941,11 @@ class FacebookWebhookController extends Controller
         //   ตรวจดูภายหลังด้วย: php artisan fortune:scan-link-spammers (--execute = แบน+block FB)
         //   🛡️ บันทึกแบบ non-blocking — ถ้าพังห้ามกระทบ flow หลัก
         //   🛡️ ลูกค้าจ่ายเงิน/เคยมี reading/กดปุ่ม → whitelist อัตโนมัติใน service (ไม่มีวันโดนแบน)
+        // ⚠️ ประกาศไว้นอก try — ด่านแบน/การ์ดสินค้าด้านล่างอ่านค่าพวกนี้ต่อ
+        //    ถ้า record พังกลางทาง ต้องได้ค่าปลอดภัย (ไม่มี signal = ไม่แบนใคร)
+        $contactSignal = null;
+        $hasReadingOrPaid = $isVipPaid;
+
         try {
             // 🩹 (2026-08-08) เดิมใช้แค่ ->exists() = "มีแถว reading ก็พอ"
             //   → กดเปิดเมนูดูดวงแล้วหายไป (ไม่จ่ายสักบาท) ก็ได้เกราะ whitelist ตลอดชีพ
@@ -2958,7 +2963,7 @@ class FacebookWebhookController extends Controller
                     })
                     ->exists();
 
-            app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
+            $contactSignal = app(\App\Services\Fortune\FortuneContactSignalService::class)->record(
                 'facebook',
                 $senderId,
                 $messageText,
@@ -2972,10 +2977,24 @@ class FacebookWebhookController extends Controller
             Log::debug('FB: contact signal record fail (non-blocking)', ['error' => $e->getMessage()]);
         }
 
+        // 🚫 (2026-09-02, เจ้าของสั่ง) ยิงลิงก์/รูปติดต่อกันครบ 5 ครั้ง → แบน 7 วัน · ทำซ้ำ = ถาวร
+        //   ต้องอยู่ "ก่อน" spam guard — ด่านสแปมแค่ปิดปาก 5 นาทีแล้ว return
+        //   คนยิงรัวจึงวนกลับมาได้เรื่อยๆ โดยไม่มีอะไรนับว่าเขาทำมากี่ครั้งแล้ว
+        //   🛡️ ลูกค้าจ่ายเงิน/แจ้งโอน/ส่งสลิป ถูกกันออกตั้งแต่ตอนนับ streak แล้ว (กันซ้ำอีกชั้นตรงนี้)
+        if (! $isVipPaid && ! $hasReadingOrPaid && $this->banBurstLinkImageSpammer($senderId, $contactSignal)) {
+            return;
+        }
+
         // 🚫 (2026-04-28) Spam guard — ปิดการตอบสนองคนป่วน
         // กัน: ส่งวิดีโอ/รูปสุ่ม/ลิงก์/ข้อความซ้ำ ๆ
         // ⚠️ (2026-05-24) Skip ถ้าเป็น VIP paid customer ระหว่างทำนาย
         if (! $isVipPaid && $this->isUserSpamming($senderId, $messageText, $attachments)) {
+            // 🛒 (2026-09-02, เจ้าของสั่ง) "ส่งสินค้าเสมอ เมื่อมีการส่งลิงก์หรือภาพ"
+            //   ด่านสแปม return ตรงนี้ = เดิมการ์ดของที่รออยู่ข้างล่าง (บรรทัด ~3350) ไม่เคยได้ทำงาน
+            //   กับลิงก์ภายนอกเลยสักครั้ง (prod ยืนยัน: gesture_image 150 ใบ/7 วัน แต่ gesture_link = 0)
+            //   ⚠️ เพดานวันละใบ · คนสั่งเงียบ · คนถูกแบน ยังคุมอยู่ใน FortuneMuOfferService เหมือนเดิม
+            $this->offerProductsOnSilencedMessage($senderId, $messageText, $attachments);
+
             // ไม่ตอบ ไม่ log error — แค่ log info สำหรับ audit
             Log::info('🚫 Fortune: ignore spam message (silenced)', [
                 'sender_id' => $senderId,
@@ -3865,6 +3884,222 @@ class FacebookWebhookController extends Controller
             Log::warning('FB: เสนอสินค้าจาก gesture ล้มเหลว (non-blocking)', [
                 'sender_id' => $senderId,
                 'gesture_type' => $gestureType,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🛒 ยื่นการ์ดสินค้าให้ข้อความที่ด่านสแปมเพิ่งปิดปากไป — เฉพาะที่มีลิงก์หรือรูป
+     *
+     * (2026-09-02, เจ้าของสั่ง) "ส่งสินค้าเสมอ ไม่เกี่ยวกับแชทปกติ เมื่อมีการส่งลิงก์ หรือภาพ"
+     *
+     * ทำไมต้องมีจุดนี้: ด่านสแปม `isUserSpamming()` เจอลิงก์ภายนอกแล้ว return ทันที
+     * การ์ดของที่รออยู่ปลายทาง (เส้น "ลิงก์/อีโมจิล้วน") จึงไม่มีวันได้ทำงาน
+     * — ยืนยันจาก prod: `gesture_image` 150 ใบ/7 วัน แต่ `gesture_link` = 0 ทั้งเดือน
+     *
+     * ⚠️ ไม่ต้องเติมด่านอะไรตรงนี้ — เพดานวันละใบ / คนสั่งเงียบ / คนถูกแบน
+     *    อยู่ใน FortuneMuOfferService::canOffer() ที่เดียว (คนถูกแบนแล้วจะไม่ได้การ์ดเอง)
+     *
+     * @param  array<int,mixed>  $attachments
+     */
+    protected function offerProductsOnSilencedMessage(string $senderId, string $text, array $attachments): void
+    {
+        try {
+            $gestureType = $this->classifySilencedGesture($text, $attachments);
+
+            // ไม่มีทั้งลิงก์และรูป (เช่นโดนปิดปากเพราะพิมพ์ข้อความเดิมซ้ำ) → ไม่ต้องยื่นการ์ด
+            if ($gestureType === null) {
+                return;
+            }
+
+            $this->offerProductsOnGesture($senderId, $gestureType);
+        } catch (\Throwable $e) {
+            // ⛔ ขายของพังห้ามทำให้ทางเดินหลักพัง
+            Log::warning('FB: เสนอสินค้าตอนโดนปิดปากล้มเหลว (non-blocking)', [
+                'sender_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ข้อความที่โดนปิดปากนี้ นับเป็น "ลิงก์" หรือ "ภาพ" — หรือไม่ใช่ทั้งคู่
+     *
+     * แยกออกมาเป็นเมธอดล้วนๆ (ไม่แตะ DB/เครือข่าย) เพื่อให้เขียนเทสต์ครอบเคสคนจริงได้
+     *
+     * @param  array<int,mixed>  $attachments
+     * @return string|null 'link' | 'image' | null (ไม่ใช่ทั้งสองอย่าง)
+     */
+    protected function classifySilencedGesture(string $text, array $attachments): ?string
+    {
+        // ลิงก์ในตัวข้อความ (ไม่นับ domain ของเรา) — regex เดียวกับ isUserSpamming Rule 3
+        $hasLink = $text !== '' && (bool) preg_match(
+            '#https?://(?!(www\.)?(main\.)?thaiprompt\.online)|t\.me/|bit\.ly/|tinyurl\.com#i',
+            $text
+        );
+        $hasMedia = false;
+
+        foreach ($attachments as $att) {
+            if (! is_array($att)) {
+                continue;
+            }
+
+            $type = $att['type'] ?? '';
+
+            // ลิงก์แชร์จากปุ่ม "แชร์ไป Messenger" มาเป็น type=fallback (ตัวข้อความว่าง)
+            if ($type === 'fallback') {
+                $hasLink = true;
+
+                continue;
+            }
+
+            // sticker มาเป็น type=image + payload.sticker_id → ไม่ใช่ "ภาพ" ที่เจ้าของหมายถึง
+            if ($type === 'image' && ! empty($att['payload']['sticker_id'])) {
+                continue;
+            }
+
+            // 🎙️ ไม่นับ 'audio' — ข้อความเสียงคือลูกค้าที่พยายามถามจริง ไม่ใช่คนโปรโมท
+            //   (เหตุผลเดียวกับ FortuneContactSignalService::isMedia)
+            if (in_array($type, ['image', 'video', 'file'], true)) {
+                $hasMedia = true;
+            }
+        }
+
+        if ($hasLink) {
+            return 'link';
+        }
+
+        return $hasMedia ? 'image' : null;
+    }
+
+    /**
+     * 🚫 แบนคนที่ยิงลิงก์/รูปติดต่อกันครบเกณฑ์ — 7 วันก่อน ทำซ้ำอีกรอบถึงถาวร
+     *
+     * (2026-09-02, เจ้าของสั่ง) "ส่งลิงก์ หรือภาพ ติดต่อกันเกิน 5 ครั้ง ก็คือแบนไปก่อน 7 วัน
+     * ถ้าเป็นอีกก็ถาวร"
+     *
+     * ต่างจาก `fortune:scan-link-spammers` (รอบ 09:00 ทุกวัน) ตรงที่ตัวนั้นบังคับให้สแปม
+     * **ข้ามวัน ≥2 วัน** ⇒ คนที่ยิงรัวหมดในวันเดียวลอยนวลได้ทั้งวัน (เคสจริง 2026-09-02
+     * PSID 28766739516256837 ยิงลิงก์ TikTok 6 ครั้งใน 8 ชั่วโมง ตัวสแกนแตะไม่ได้เลย)
+     *
+     * 🛡️ ชั้นกัน false-ban:
+     *   - streak รีเซ็ตทันทีที่ลูกค้าพิมพ์คุยจริง/กดปุ่ม/จ่ายเงิน (ดู FortuneContactSignalService)
+     *   - คนที่จ่ายเงิน/แจ้งโอน/ส่งสลิป ไม่ถูกนับ streak ตั้งแต่ต้นทาง + เช็คซ้ำที่ผู้เรียก
+     *   - รอบแรกเป็นแบน 7 วันที่หมดอายุเอง — พลาดแล้วยังคืนตัวได้
+     *   - บล็อกบนเพจ FB เฉพาะรอบถาวร (บล็อกไม่หมดอายุเอง ต้องมีคนไปปลด)
+     *
+     * @return bool true = แบนแล้ว ผู้เรียกต้องหยุดทำงานต่อทันที
+     */
+    protected function banBurstLinkImageSpammer(
+        string $senderId,
+        ?\App\Models\FortuneContactSignal $signal
+    ): bool {
+        try {
+            $signalService = app(\App\Services\Fortune\FortuneContactSignalService::class);
+            $verdict = $signalService->burstBanVerdict($signal);
+
+            if ($verdict === null || $signal === null) {
+                return false;
+            }
+
+            $isPermanent = $verdict === 'permanent';
+
+            // 🛡️ ตาข่ายชั้นสุดท้าย — เคยจ่าย/แจ้งโอน/ส่งสลิป ห้ามแบนเด็ดขาด
+            //   (ผู้เรียกกันไว้แล้วชั้นหนึ่ง ตรงนี้กันกรณีที่ค่าถูกส่งมาผิด/โค้ดถูกย้ายที่ภายหลัง)
+            $hasPaidHistory = FortuneReading::where('facebook_user_id', $senderId)
+                ->where(function ($q) {
+                    $q->where('is_paid', true)
+                        ->orWhere('transfer_reported', true)
+                        ->orWhereNotNull('paid_at')
+                        ->orWhereNotNull('slip_received_at');
+                })
+                ->exists();
+
+            if ($hasPaidHistory) {
+                Log::info('FB burst-ban: ข้าม — ลูกค้าเคยจ่าย/แจ้งโอน', [
+                    'sender_id' => $senderId,
+                    'streak' => $signal->burst_streak,
+                ]);
+
+                return false;
+            }
+
+            // 🛡️ กำลังอยู่ในเลนดูดวง/มีบิลค้างที่ยังขยับอยู่ (ภายใน 24 ชม.) → ห้ามแบน
+            //   เคสที่กลัวที่สุด: ลูกค้ามีบิลค้าง ส่งรูปสลิปรัวๆ เพราะระบบอ่านสลิปไม่ออก
+            //   → ไม่มีคำพิมพ์สักตัว = เข้าเกณฑ์ "รูปติดกัน 5 ครั้ง" ทั้งที่กำลังจะจ่ายเงิน
+            //   ⏱️ ต้องมีกรอบ 24 ชม. — ห้ามใช้ "มีแถว reading ค้าง" เฉยๆ เป็นเกราะตลอดชีพ
+            //      (บทเรียน 2026-08-08 เคสอุดม ศรีโปฎก: กดเมนูแล้วทิ้ง = เกราะถาวร แตะไม่ได้เลย)
+            $hasLiveFortuneFlow = FortuneReading::where('facebook_user_id', $senderId)
+                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+                ->where('updated_at', '>=', now()->subDay())
+                ->exists();
+
+            if ($hasLiveFortuneFlow) {
+                Log::info('FB burst-ban: ข้าม — ลูกค้ากำลังอยู่ในเลนดูดวง/มีบิลค้างที่ยังขยับ', [
+                    'sender_id' => $senderId,
+                    'streak' => $signal->burst_streak,
+                ]);
+
+                return false;
+            }
+
+            // ดึงชื่อมาติดใบแบน (แถว signal มี display_name เป็น null เกือบทั้งหมด)
+            //   ยิง Graph เฉพาะตอนจะแบนจริง — ไม่ใช่ทุกข้อความ
+            $displayName = $signal->display_name;
+            if (empty($displayName)) {
+                try {
+                    $profile = $this->facebookService->getUserProfile($senderId);
+                    $displayName = is_array($profile) ? ($profile['name'] ?? null) : null;
+                } catch (\Throwable $profileErr) {
+                    // ไม่มีชื่อก็แบนต่อได้
+                }
+            }
+
+            $streak = (int) $signal->burst_streak;
+            $reason = $isPermanent
+                ? 'auto: ยิงลิงก์/รูปติดต่อกัน '.$streak.' ครั้ง (ทำซ้ำหลังเคยโดนแบน → ถาวร)'
+                : 'auto: ยิงลิงก์/รูปติดต่อกัน '.$streak.' ครั้ง (แบน 7 วัน)';
+
+            $this->banService->ban(
+                'facebook',
+                $senderId,
+                $isPermanent ? null : \App\Services\Fortune\FortuneContactSignalService::BURST_BAN_MINUTES,
+                $reason,
+                null,
+                $displayName,
+            );
+
+            // บล็อกบนเพจ FB เฉพาะแบนถาวร — แบน 7 วันหมดอายุเอง แต่ block ไม่หมดอายุ
+            if ($isPermanent) {
+                try {
+                    $this->facebookService->blockPageUser($senderId);
+                } catch (\Throwable $blockErr) {
+                    Log::warning('FB burst-ban: block เพจไม่สำเร็จ (non-blocking)', [
+                        'sender_id' => $senderId,
+                        'error' => $blockErr->getMessage(),
+                    ]);
+                }
+            }
+
+            $signalService->markBurstBanned($signal, $displayName);
+
+            Log::warning('🚫 FB burst-ban: ยิงลิงก์/รูปติดต่อกันครบเกณฑ์', [
+                'sender_id' => $senderId,
+                'display_name' => $displayName,
+                'streak' => $streak,
+                'permanent' => $isPermanent,
+                'ban_count_before' => ((int) $signal->burst_ban_count) - 1,
+                'last_sample' => $signal->last_sample,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            // แบนพังห้ามทำให้ทางเดินหลักพัง — ปล่อยข้อความไหลไปตามด่านปกติ
+            Log::warning('FB burst-ban: ล้มเหลว (non-blocking)', [
+                'sender_id' => $senderId,
                 'error' => $e->getMessage(),
             ]);
 

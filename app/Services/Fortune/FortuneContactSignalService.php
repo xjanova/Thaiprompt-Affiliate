@@ -28,6 +28,26 @@ class FortuneContactSignalService
     protected const LONG_TEXT_CHARS = 40;
 
     /**
+     * 🚫 (2026-09-02, เจ้าของสั่ง) ส่งลิงก์/รูป "ติดต่อกัน" ครบกี่ครั้งถึงแบน
+     *
+     * ครบเกณฑ์ครั้งแรก → แบน 7 วัน (หมดอายุเอง) · ทำซ้ำอีกรอบ → ถาวร
+     */
+    public const BURST_BAN_THRESHOLD = 5;
+
+    /**
+     * แบน 7 วัน = กี่นาที (ใช้กับ FortuneBanService::ban)
+     */
+    public const BURST_BAN_MINUTES = 7 * 24 * 60;
+
+    /**
+     * streak เก่ากว่ากี่วันถือว่า "คนละรอบ" แล้วเริ่มนับหนึ่งใหม่
+     *
+     * เหตุผล: "ติดต่อกัน" ต้องมีขอบเขตเวลา ไม่งั้นคนที่ส่งลิงก์เดือนละใบ
+     * ห้าเดือนติดจะถูกนับเป็นสแปมรัว ทั้งที่เว้นห่างกันคนละเดือน
+     */
+    protected const BURST_WINDOW_DAYS = 7;
+
+    /**
      * บันทึกสัญญาณจากข้อความขาเข้า 1 ข้อความ
      *
      * @param  string  $platform  'facebook' | 'line'
@@ -39,6 +59,8 @@ class FortuneContactSignalService
      *                                  ⚠️ (2026-08-08) ไม่ใช่ "มีแถว reading" เฉยๆ อีกแล้ว —
      *                                  แค่กดเปิดเมนูดูดวงแล้วหายไป ไม่ถือเป็นลูกค้าจริง
      * @param  string|null  $displayName  ชื่อ (snapshot)
+     * @return FortuneContactSignal|null แถวที่บันทึกแล้ว (null = บันทึกไม่สำเร็จ)
+     *                                   ผู้เรียกใช้ตรวจ streak ต่อได้ทันทีโดยไม่ต้องคิวรีซ้ำ
      */
     public function record(
         string $platform,
@@ -48,7 +70,7 @@ class FortuneContactSignalService
         bool $buttonPressed = false,
         bool $hasReadingOrPaid = false,
         ?string $displayName = null,
-    ): void {
+    ): ?FortuneContactSignal {
         try {
             $hasWords = $this->hasRealWords($text);
 
@@ -169,12 +191,82 @@ class FortuneContactSignalService
                 }
             }
 
+            // 🚫 (2026-09-02, เจ้าของสั่ง) นับ "ลิงก์/รูปติดต่อกัน" → ครบ 5 แบน 7 วัน · ซ้ำ = ถาวร
+            //
+            //   🛡️ กัน false-ban 3 ชั้น:
+            //     (a) คุยจริง/กดปุ่ม/จ่ายเงิน → รีเซ็ตเป็น 0 ทันที (พิมพ์อะไรก็หลุดแล้ว)
+            //     (b) ข้ามคนที่จ่ายเงิน/แจ้งโอน/ส่งสลิป ($hasReadingOrPaid) — ไม่นับให้เลยสักครั้ง
+            //     (c) เว้นห่างเกิน BURST_WINDOW_DAYS = เริ่มนับหนึ่งใหม่ ไม่สะสมข้ามเดือน
+            //   sticker / เสียง / อีโมจิ / ข้อความว่าง ไม่เข้าเงื่อนไขทั้งเพิ่มและรีเซ็ต — เงียบไว้เฉยๆ
+            if ($genuineConvo) {
+                $signal->burst_streak = 0;
+            } elseif ($isSpamType && ! $hasReadingOrPaid) {
+                $lastBurst = $signal->burst_last_at;
+                $isStaleStreak = $lastBurst === null
+                    || $lastBurst->lt(now()->subDays(self::BURST_WINDOW_DAYS));
+
+                $signal->burst_streak = $isStaleStreak
+                    ? 1
+                    : ((int) $signal->burst_streak + 1);
+                $signal->burst_last_at = now();
+            }
+
             $signal->save();
+
+            return $signal;
         } catch (\Throwable $e) {
             // 🛡️ ห้าม block flow หลัก — log debug เฉยๆ
             Log::debug('FortuneContactSignal: record fail (non-blocking)', [
                 'platform' => $platform,
                 'user_id' => $platformUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ถึงเกณฑ์แบน "ยิงลิงก์/รูปติดต่อกัน" แล้วหรือยัง
+     *
+     * @return string|null 'temporary' = แบน 7 วัน · 'permanent' = ถาวร · null = ยังไม่ถึงเกณฑ์
+     */
+    public function burstBanVerdict(?FortuneContactSignal $signal): ?string
+    {
+        if ($signal === null) {
+            return null;
+        }
+
+        if ((int) $signal->burst_streak < self::BURST_BAN_THRESHOLD) {
+            return null;
+        }
+
+        // เคยโดนแบนด้วยกฎนี้มาแล้ว → รอบนี้ถาวร (เจ้าของสั่ง "ถ้าเป็นอีกก็ถาวร")
+        return ((int) $signal->burst_ban_count) >= 1 ? 'permanent' : 'temporary';
+    }
+
+    /**
+     * ปิดบัญชี streak หลังลงมือแบนแล้ว
+     *
+     * รีเซ็ต streak เป็น 0 เพื่อให้รอบหน้าเริ่มนับใหม่ตั้งแต่หนึ่ง
+     * และบวก burst_ban_count ไว้เป็นความจำว่า "เคยโดนมาแล้ว" → รอบต่อไปถาวร
+     */
+    public function markBurstBanned(FortuneContactSignal $signal, ?string $displayName = null): void
+    {
+        try {
+            $signal->burst_ban_count = ((int) $signal->burst_ban_count) + 1;
+            $signal->burst_streak = 0;
+            $signal->status = 'banned';
+            $signal->banned_at = now();
+
+            if (! empty($displayName)) {
+                $signal->display_name = $displayName;
+            }
+
+            $signal->save();
+        } catch (\Throwable $e) {
+            Log::warning('FortuneContactSignal: markBurstBanned fail (non-blocking)', [
+                'signal_id' => $signal->id ?? null,
                 'error' => $e->getMessage(),
             ]);
         }

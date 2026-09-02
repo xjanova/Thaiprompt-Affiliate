@@ -24,6 +24,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $wl_link_count จำนวนลิงก์ที่ยิงมาหลังถูก whitelist (ไม่นับรูป/วิดีโอ)
  * @property int $wl_link_days จำนวนวันต่างกันที่ยิงลิงก์หลัง whitelist
  * @property \Carbon\Carbon|null $wl_last_link_day วันล่าสุดที่ยิงลิงก์หลัง whitelist
+ * @property int $burst_streak จำนวนลิงก์/รูปที่ส่งติดต่อกัน (คุยจริง = รีเซ็ตเป็น 0)
+ * @property \Carbon\Carbon|null $burst_last_at เวลาลิงก์/รูปล่าสุดที่นับเข้า streak
+ * @property int $burst_ban_count เคยโดนแบนด้วยกฎ "ยิงติดกัน" มาแล้วกี่ครั้ง
  * @property string|null $last_sample ตัวอย่างข้อความสแปมล่าสุด
  * @property bool $whitelisted เคยคุยจริง/เคยจ่าย → ห้ามแบนอัตโนมัติ
  * @property string $status tracking | flagged | banned | cleared
@@ -61,6 +64,9 @@ class FortuneContactSignal extends Model
         'wl_link_count',
         'wl_link_days',
         'wl_last_link_day',
+        'burst_streak',
+        'burst_last_at',
+        'burst_ban_count',
         'last_sample',
         'whitelisted',
         'status',
@@ -85,6 +91,9 @@ class FortuneContactSignal extends Model
         'active_days' => 'integer',
         'wl_link_count' => 'integer',
         'wl_link_days' => 'integer',
+        'burst_streak' => 'integer',
+        'burst_last_at' => 'datetime',
+        'burst_ban_count' => 'integer',
         'whitelisted' => 'boolean',
         'first_seen_at' => 'datetime',
         'last_seen_at' => 'datetime',
