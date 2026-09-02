@@ -1,317 +1,328 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'Canned Responses')
+@section('title', 'ข้อความสำเร็จรูป')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header with Gradient -->
-    <div class="bg-gradient-to-br from-green-600 via-emerald-600 to-teal-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-3xl font-bold mb-2 flex items-center">
-                    <i class="fas fa-comment-dots mr-3"></i>
-                    Canned Responses
-                </h2>
-                <p class="text-green-100 text-sm">จัดการข้อความสำเร็จรูปสำหรับการตอบกลับอย่างรวดเร็ว</p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{{ route('admin.tickets.index') }}"
-                   class="inline-flex items-center px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm text-white font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    กลับหน้าหลัก
-                </a>
-                <button onclick="document.getElementById('createModal').classList.remove('hidden')"
-                        class="inline-flex items-center px-6 py-3 glass-fusion text-green-600 hover:bg-green-50 font-semibold rounded-xl transition-all transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create Response
-                </button>
-            </div>
+{{--
+    💬 ข้อความสำเร็จรูป (ธีม V4 นวลทองคำ)
+
+    ปรับปรุงเพิ่มจากของเดิม:
+    - ปุ่มแก้ไขเดิมแค่ alert("coming soon") ทั้งที่ route PUT มีอยู่จริง
+      → ต่อสายให้ใช้งานได้จริง (เติมค่าเดิมลงฟอร์ม + ส่ง PUT ไป /{id})
+    - รวมโมดัลสร้าง/แก้ไข/ดูเนื้อหา มาคุมด้วย Alpine ตัวเดียว แทน raw JS 3 ก้อน
+--}}
+@php
+    $respList = collect($responses ?? []);
+    // ส่งข้อมูลให้ Alpine ใช้เติมฟอร์มตอนกดแก้ไข / กดดู
+    $respPayload = $respList->map(fn ($r) => [
+        'id' => $r->id,
+        'title' => $r->title,
+        'shortcode' => $r->shortcode,
+        'content' => $r->content,
+        'category_id' => $r->category_id,
+        'is_public' => (bool) $r->is_public,
+        'is_active' => (bool) ($r->is_active ?? true),
+    ])->values();
+@endphp
+
+<div x-data="cannedResponses()" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ศูนย์ช่วยเหลือ · ข้อความสำเร็จรูป</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ข้อความสำเร็จรูป 💬</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">จัดการข้อความสำเร็จรูปสำหรับตอบกลับอย่างรวดเร็ว</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:9px;">
+            <a href="{{ route('admin.tickets.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับหน้าหลัก</a>
+            <button type="button" class="tp-btn tp-btn-sm tp-btn-primary" @click="openCreate()">
+                <i class="fas fa-plus"></i> เพิ่มข้อความ
+            </button>
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Total Responses</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mt-1">{{ $responses->count() }}</p>
-                </div>
-                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-comments text-2xl text-green-600 dark:text-green-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Active</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mt-1">{{ $responses->where('is_active', true)->count() }}</p>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-check-circle text-2xl text-blue-600 dark:text-blue-400"></i>
+    {{-- ===== KPI ===== --}}
+    @php
+        $kpis = [
+            [$respList->count(),                        'ข้อความทั้งหมด', 'fa-comments',     null],
+            [$respList->where('is_active', true)->count(),  'เปิดใช้งาน',   'fa-circle-check', '#5aa07e'],
+            [$respList->where('is_public', true)->count(),  'สาธารณะ',      'fa-globe',        '#b79ae8'],
+            [$respList->unique('category_id')->count(),     'หมวดหมู่',      'fa-folder',       '#5689b8'],
+        ];
+    @endphp
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        @foreach($kpis as [$value, $label, $icon, $color])
+            <div class="tp-card" style="padding:18px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;{{ $color ? ' background:'.$color.';' : '' }}">
+                        <i class="fas {{ $icon }}"></i>
+                    </div>
+                    <div>
+                        <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($value) }}</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $label }}</div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Public</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mt-1">{{ $responses->where('is_public', true)->count() }}</p>
-                </div>
-                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-globe text-2xl text-purple-600 dark:text-purple-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition-shadow" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 font-medium">Categories</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mt-1">{{ $responses->unique('category_id')->count() }}</p>
-                </div>
-                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-folder text-2xl text-orange-600 dark:text-orange-400"></i>
-                </div>
-            </div>
-        </div>
+        @endforeach
     </div>
 
-    <!-- Responses List -->
-    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
-        <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4">
-            <h3 class="text-xl font-bold text-white flex items-center">
-                <i class="fas fa-list mr-3"></i>
-                Quick Reply Templates
-            </h3>
-        </div>
-
-        <div class="p-6">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b-2 border-gray-200 dark:border-gray-700 dark:border-slate-700">
-                            <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider">Title</th>
-                            <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider">Shortcode</th>
-                            <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider">Category</th>
-                            <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider">Tags</th>
-                            <th class="text-center py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider">Public</th>
-                            <th class="text-center py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                            <th class="text-center py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
-                        @forelse($responses as $response)
-                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700/50 transition-colors">
-                            <td class="py-4 px-4">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl flex items-center justify-center mr-3">
-                                        <i class="fas fa-comment text-white"></i>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-gray-900 dark:text-white dark:text-white">{{ $response->title }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Created {{ $response->created_at->diffForHumans() }}</p>
-                                    </div>
-                                </div>
+    {{-- ===== ตาราง ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        @foreach(['หัวข้อ','ชอร์ตโค้ด','หมวดหมู่','แท็ก','สาธารณะ','สถานะ'] as $th)
+                            <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">{{ $th }}</th>
+                        @endforeach
+                        <th style="padding:14px 16px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($respList as $response)
+                        <tr style="box-shadow:var(--inset-sm); transition:background .15s;"
+                            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+                            {{-- หัวข้อ --}}
+                            <td style="padding:14px 16px;">
+                                <div style="font-size:13.5px; font-weight:700; color:var(--ink);">{{ $response->title }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2); margin-top:2px;">{{ $response->created_at?->format('d/m/Y') }}</div>
                             </td>
-                            <td class="py-4 px-4">
-                                <code class="px-3 py-1 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-green-600 dark:text-green-400 rounded-xl font-mono text-sm">{{ $response->shortcode }}</code>
+                            {{-- ชอร์ตโค้ด --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <span class="tp-pill tp-pill-gold" style="font-family:monospace;">{{ $response->shortcode }}</span>
                             </td>
-                            <td class="py-4 px-4">
-                                <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-xl text-sm font-medium">
-                                    {{ $response->category->name ?? 'All' }}
-                                </span>
+                            {{-- หมวดหมู่ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                @if($response->category)
+                                    <span class="tp-pill tp-pill-soft">{{ $response->category->name }}</span>
+                                @else
+                                    <span style="color:var(--ink2); font-size:12px;">ทุกหมวด</span>
+                                @endif
                             </td>
-                            <td class="py-4 px-4">
-                                <div class="flex flex-wrap gap-1">
-                                    @if($response->tags)
-                                        @foreach($response->tags as $tag)
-                                            <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs font-medium">{{ $tag }}</span>
-                                        @endforeach
-                                    @else
-                                        <span class="text-gray-400 text-sm">-</span>
-                                    @endif
-                                </div>
+                            {{-- แท็ก --}}
+                            <td style="padding:14px 16px; font-size:12.5px; color:var(--ink2);">
+                                @php $tags = is_array($response->tags) ? $response->tags : array_filter(explode(',', (string) $response->tags)); @endphp
+                                @forelse(array_slice($tags, 0, 3) as $tag)
+                                    <span class="tp-pill tp-pill-soft" style="margin-right:3px;">{{ trim($tag) }}</span>
+                                @empty
+                                    <span style="color:var(--ink2);">—</span>
+                                @endforelse
                             </td>
-                            <td class="py-4 px-4 text-center">
+                            {{-- สาธารณะ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
                                 @if($response->is_public)
-                                    <span class="inline-flex items-center px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-bold">
-                                        <i class="fas fa-globe mr-1"></i> Yes
-                                    </span>
+                                    <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;"><i class="fas fa-globe"></i> ใช่</span>
                                 @else
-                                    <span class="inline-flex items-center px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-xs font-bold">
-                                        <i class="fas fa-lock mr-1"></i> No
-                                    </span>
+                                    <span class="tp-pill" style="background:rgba(214,130,74,.18); color:#a4622f;"><i class="fas fa-lock"></i> ไม่</span>
                                 @endif
                             </td>
-                            <td class="py-4 px-4 text-center">
-                                @if($response->is_active)
-                                    <span class="inline-flex items-center px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-bold">
-                                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span> Active
-                                    </span>
+                            {{-- สถานะ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                @if($response->is_active ?? true)
+                                    <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">● เปิดใช้งาน</span>
                                 @else
-                                    <span class="inline-flex items-center px-3 py-1 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-600 dark:text-gray-400 dark:text-gray-400 rounded-full text-xs font-bold">
-                                        <span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span> Inactive
-                                    </span>
+                                    <span class="tp-pill" style="background:color-mix(in srgb, var(--ink2) 18%, transparent); color:var(--ink2);">● ปิดใช้งาน</span>
                                 @endif
                             </td>
-                            <td class="py-4 px-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button onclick="viewResponse('{{ addslashes($response->content) }}')"
-                                            class="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors" title="View">
+                            {{-- จัดการ --}}
+                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:7px;">
+                                    <button type="button" class="tp-btn tp-btn-sm" title="ดูเนื้อหา" @click="openView({{ $response->id }})">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button onclick="editResponse({{ $response->id }})"
-                                            class="p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-xl hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors" title="Edit">
-                                        <i class="fas fa-edit"></i>
+                                    <button type="button" class="tp-btn tp-btn-sm" title="แก้ไข" @click="openEdit({{ $response->id }})">
+                                        <i class="fas fa-pen"></i>
                                     </button>
-                                    <form action="{{ route('admin.tickets.canned-responses.destroy', $response->id) }}" method="POST" class="inline">
+                                    <form action="{{ route('admin.tickets.canned-responses.destroy', $response->id) }}" method="POST" style="display:inline;"
+                                          onsubmit="return confirm('ลบข้อความ &quot;{{ $response->title }}&quot; ใช่หรือไม่?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" onclick="return confirm('Are you sure?')"
-                                                class="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors" title="Delete">
+                                        <button type="submit" class="tp-btn tp-btn-sm" title="ลบ" style="color:#d9534f;">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
-                        @empty
+                    @empty
                         <tr>
-                            <td colspan="7" class="py-12 text-center">
-                                <div class="flex flex-col items-center justify-center">
-                                    <div class="w-20 h-20 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
-                                        <i class="fas fa-inbox text-4xl text-gray-400"></i>
-                                    </div>
-                                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-lg font-medium">No canned responses yet</p>
-                                    <p class="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm mt-1">Create your first quick reply template</p>
+                            <td colspan="7" style="padding:0;">
+                                <div style="text-align:center; color:var(--ink2); padding:44px 0;">
+                                    <i class="fas fa-inbox" style="font-size:34px; display:block; margin-bottom:10px; opacity:.5;"></i>
+                                    <div style="font-size:14px; font-weight:600;">ยังไม่มีข้อความสำเร็จรูป</div>
+                                    <div style="font-size:12px; margin-top:4px;">สร้างเทมเพลตตอบกลับอันแรกของคุณ</div>
                                 </div>
                             </td>
                         </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- ===== โมดัลสร้าง/แก้ไข ===== --}}
+    <div x-show="open" x-cloak style="position:fixed; inset:0; z-index:50; overflow-y:auto;">
+        <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:16px;">
+            <div style="position:fixed; inset:0; background:rgba(0,0,0,.55);" @click="open = false"></div>
+
+            <div class="tp-card" style="position:relative; max-width:640px; width:100%; padding:0; overflow:hidden;">
+                <form :action="formAction" method="POST">
+                    @csrf
+                    <template x-if="editingId">
+                        <input type="hidden" name="_method" value="PUT">
+                    </template>
+
+                    <div style="padding:18px 20px; background:linear-gradient(120deg, color-mix(in srgb, #5aa07e 24%, transparent), transparent 75%); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div class="tp-section-h" style="margin:0;">
+                            <i class="fas fa-comment-dots"></i>
+                            <span x-text="editingId ? 'แก้ไขข้อความสำเร็จรูป' : 'เพิ่มข้อความสำเร็จรูป'"></span>
+                        </div>
+                        <button type="button" class="tp-icon-btn" @click="open = false" title="ปิด"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <div style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+                        <div>
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                                หัวข้อ <span style="color:#d9534f;">*</span>
+                            </label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <input type="text" name="title" x-model="form.title" required
+                                       style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                                ชอร์ตโค้ด <span style="color:#d9534f;">*</span>
+                            </label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <input type="text" name="shortcode" x-model="form.shortcode" required placeholder="/greeting"
+                                       style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px; font-family:monospace;">
+                            </div>
+                            <div style="font-size:11px; color:var(--ink2); margin-top:5px;">รูปแบบ: /shortcode (เช่น /greeting, /thanks)</div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                                เนื้อหา <span style="color:#d9534f;">*</span>
+                            </label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <textarea name="content" x-model="form.content" rows="6" required
+                                          style="width:100%; background:transparent; border:none; outline:none; padding:12px; color:var(--ink); font-size:14px; resize:vertical; font-family:inherit; line-height:1.6;"></textarea>
+                            </div>
+                            <div style="font-size:11px; color:var(--ink2); margin-top:5px;">ตัวแปรที่ใช้ได้: {user_name}, {ticket_number}, {agent_name}</div>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">หมวดหมู่ (ไม่บังคับ)</label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <select name="category_id" x-model="form.category_id"
+                                        style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                                    <option value="">ทุกหมวดหมู่</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <label class="tp-well" style="display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer;">
+                            <input type="checkbox" name="is_public" value="1" x-model="form.is_public"
+                                   style="accent-color:#5aa07e; width:16px; height:16px; cursor:pointer;">
+                            <span style="font-size:13px; font-weight:600; color:var(--ink);">
+                                <i class="fas fa-globe" style="color:#5aa07e; margin-right:5px;"></i>สาธารณะ (เจ้าหน้าที่ทุกคนเห็น)
+                            </span>
+                        </label>
+                    </div>
+
+                    <div style="padding:16px 20px; display:flex; justify-content:flex-end; gap:10px; box-shadow:var(--inset-sm);">
+                        <button type="button" class="tp-btn" @click="open = false">ยกเลิก</button>
+                        <button type="submit" class="tp-btn tp-btn-primary" style="font-weight:700;">
+                            <i class="fas fa-save"></i> บันทึก
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== โมดัลดูเนื้อหา ===== --}}
+    <div x-show="viewOpen" x-cloak style="position:fixed; inset:0; z-index:50; overflow-y:auto;">
+        <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:16px;">
+            <div style="position:fixed; inset:0; background:rgba(0,0,0,.55);" @click="viewOpen = false"></div>
+
+            <div class="tp-card" style="position:relative; max-width:640px; width:100%; padding:0; overflow:hidden;">
+                <div style="padding:18px 20px; background:linear-gradient(120deg, color-mix(in srgb, #5689b8 24%, transparent), transparent 75%); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                    <div class="tp-section-h" style="margin:0;"><i class="fas fa-eye"></i> <span x-text="viewTitle"></span></div>
+                    <button type="button" class="tp-icon-btn" @click="viewOpen = false" title="ปิด"><i class="fas fa-times"></i></button>
+                </div>
+                <div style="padding:20px;">
+                    <div class="tp-well" style="padding:14px;">
+                        <pre style="margin:0; font-size:13px; color:var(--ink); white-space:pre-wrap; font-family:monospace; line-height:1.65;" x-text="viewContent"></pre>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Create Modal -->
-<div id="createModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" border border-white/20 dark:border-white/10>
-        <form action="{{ route('admin.tickets.canned-responses.store') }}" method="POST">
-            @csrf
-            <div class="bg-gradient-to-r from-green-500 to-emerald-500 px-6 py-4 flex items-center justify-between">
-                <h3 class="text-xl font-bold text-white">Create Canned Response</h3>
-                <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
-                        class="text-white hover:glass-fusion rounded-xl p-2 transition-colors">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Title <span class="text-red-500">*</span></label>
-                    <input type="text" name="title" required
-                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Shortcode <span class="text-red-500">*</span></label>
-                    <input type="text" name="shortcode" required placeholder="/greeting"
-                           class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Use format: /shortcode (e.g., /greeting, /thanks)</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Content <span class="text-red-500">*</span></label>
-                    <textarea name="content" rows="6" required
-                              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"></textarea>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Available variables: {user_name}, {ticket_number}, {agent_name}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Category (Optional)</label>
-                    <select name="category_id"
-                            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
-                        <option value="">All Categories</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="flex items-center">
-                    <input type="checkbox" name="is_public" id="is_public" value="1" checked
-                           class="w-5 h-5 text-green-600 border-gray-300 dark:border-gray-600 rounded focus:ring-green-500">
-                    <label for="is_public" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
-                        Public (visible to all agents)
-                    </label>
-                </div>
-            </div>
-
-            <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700/50 px-6 py-4 flex items-center justify-end gap-3">
-                <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')"
-                        class="px-6 py-3 bg-gray-200 dark:bg-gray-700 dark:bg-slate-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-500 font-semibold transition-colors">
-                    Cancel
-                </button>
-                <button type="submit"
-                        class="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 font-semibold transition-all transform hover:scale-105 shadow-lg">
-                    <i class="fas fa-save mr-2"></i>Create Response
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- View Modal -->
-<div id="viewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-2xl max-w-3xl w-full" border border-white/20 dark:border-white/10>
-        <div class="bg-gradient-to-r from-blue-500 to-indigo-500 px-6 py-4 flex items-center justify-between">
-            <h3 class="text-xl font-bold text-white">Response Content</h3>
-            <button type="button" onclick="document.getElementById('viewModal').classList.add('hidden')"
-                    class="text-white hover:glass-fusion rounded-xl p-2 transition-colors">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        <div class="p-6">
-            <pre id="responseContent" class="bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 text-gray-900 dark:text-white dark:text-gray-200 p-4 rounded-xl whitespace-pre-wrap font-mono text-sm"></pre>
-        </div>
-    </div>
-</div>
-
-@endsection
 
 @push('scripts')
 <script>
-function viewResponse(content) {
-    document.getElementById('responseContent').textContent = content;
-    document.getElementById('viewModal').classList.remove('hidden');
+function cannedResponses() {
+    return {
+        open: false,
+        viewOpen: false,
+        editingId: null,
+        viewTitle: '',
+        viewContent: '',
+        responses: @js($respPayload),
+        storeUrl: @js(route('admin.tickets.canned-responses.store')),
+        form: { title: '', shortcode: '', content: '', category_id: '', is_public: true },
+
+        get formAction() {
+            return this.editingId ? (this.storeUrl + '/' + this.editingId) : this.storeUrl;
+        },
+
+        find(id) {
+            return this.responses.find(x => x.id === id);
+        },
+
+        openCreate() {
+            this.editingId = null;
+            this.form = { title: '', shortcode: '', content: '', category_id: '', is_public: true };
+            this.open = true;
+        },
+
+        openEdit(id) {
+            const r = this.find(id);
+            if (!r) return;
+            this.editingId = id;
+            this.form = {
+                title: r.title || '',
+                shortcode: r.shortcode || '',
+                content: r.content || '',
+                category_id: r.category_id || '',
+                is_public: !!r.is_public,
+            };
+            this.open = true;
+        },
+
+        openView(id) {
+            const r = this.find(id);
+            if (!r) return;
+            this.viewTitle = r.title || '';
+            this.viewContent = r.content || '';
+            this.viewOpen = true;
+        },
+
+        init() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') { this.open = false; this.viewOpen = false; }
+            });
+        },
+    };
 }
-
-function editResponse(id) {
-    // TODO: Implement edit functionality
-    alert('Edit functionality coming soon!');
-}
-
-// Close modals on escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        document.getElementById('createModal').classList.add('hidden');
-        document.getElementById('viewModal').classList.add('hidden');
-    }
-});
-
-// Close modals on outside click
-document.querySelectorAll('[id$="Modal"]').forEach(modal => {
-    modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.classList.add('hidden');
-        }
-    });
-});
 </script>
 @endpush
+@endsection

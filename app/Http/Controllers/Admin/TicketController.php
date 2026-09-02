@@ -199,7 +199,9 @@ class TicketController extends Controller
      */
     public function categories()
     {
-        $categories = TicketCategory::orderBy('sort_order')->get();
+        // ⚠️ ต้อง withCount('tickets') ไม่งั้นคอลัมน์ "จำนวน Ticket" ในหน้ารายการ
+        //    จะอ่าน $category->tickets_count ไม่เจอ แล้วโชว์ 0 ทุกแถวตลอด
+        $categories = TicketCategory::withCount('tickets')->orderBy('sort_order')->get();
 
         return view('admin.tickets.categories', compact('categories'));
     }
@@ -225,7 +227,7 @@ class TicketController extends Controller
                 'sort_order' => TicketCategory::max('sort_order') + 1,
             ]);
 
-            return redirect()->route('admin.tickets.categories')
+            return redirect()->route('admin.tickets.categories.index')
                 ->with('success', 'เพิ่มหมวดหมู่เรียบร้อยแล้ว');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
@@ -249,7 +251,7 @@ class TicketController extends Controller
             $category = TicketCategory::findOrFail($id);
             $category->update($request->only(['name', 'icon', 'description', 'color', 'is_active']));
 
-            return redirect()->route('admin.tickets.categories')
+            return redirect()->route('admin.tickets.categories.index')
                 ->with('success', 'อัปเดตหมวดหมู่เรียบร้อยแล้ว');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
@@ -271,7 +273,7 @@ class TicketController extends Controller
 
             $category->delete();
 
-            return redirect()->route('admin.tickets.categories')
+            return redirect()->route('admin.tickets.categories.index')
                 ->with('success', 'ลบหมวดหมู่เรียบร้อยแล้ว');
         } catch (Exception $e) {
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());

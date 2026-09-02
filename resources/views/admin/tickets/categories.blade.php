@@ -269,6 +269,9 @@
 
                         {{-- เปิดใช้งาน --}}
                         <label class="tp-well" style="display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer;">
+                            {{-- hidden 0 นำหน้า: ถ้าไม่ติ๊ก เบราว์เซอร์จะไม่ส่ง is_active มาเลย
+                                 controller ใช้ $request->only([...]) → ค่าเดิมจะค้าง ปิดไม่ลง --}}
+                            <input type="hidden" name="is_active" value="0">
                             <input type="checkbox" name="is_active" value="1" x-model="form.is_active"
                                    style="accent-color:#e0a52e; width:16px; height:16px; cursor:pointer;">
                             <span style="font-size:13px; font-weight:600; color:var(--ink);">
