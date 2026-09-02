@@ -1,346 +1,339 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'Ticket Categories')
+@section('title', 'หมวดหมู่ Ticket')
 
 @section('content')
-<div class="container mx-auto px-4 py-8 max-w-7xl">
-    <!-- Modern Gradient Header -->
-    <div class="bg-gradient-to-br from-orange-600 via-amber-600 to-yellow-600 rounded-2xl shadow-2xl p-8 text-white mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-3xl font-bold mb-2 flex items-center">
-                    <i class="fas fa-folder-open mr-3"></i>
-                    Ticket Categories
-                </h2>
-                <p class="text-orange-100 text-lg">
-                    จัดการหมวดหมู่สำหรับ Ticket Support System
-                </p>
+{{--
+    📂 หมวดหมู่ Ticket (ธีม V4 นวลทองคำ)
+
+    ปรับปรุงเพิ่มจากของเดิม:
+    - ปุ่มแก้ไขเดิมแค่ alert("will be implemented") ทั้งที่ route PUT มีอยู่จริง
+      → ต่อสายให้ใช้งานได้จริง (เติมค่าเดิมลงฟอร์ม + ส่ง PUT)
+    - เดิมไม่มีปุ่มลบเลย ทั้งที่ route DELETE มีอยู่จริง → เพิ่มให้ พร้อม confirm
+    - เดิม modal ใช้ raw JS + <script> ลอยใน section → ย้ายมาใช้ Alpine + @push('scripts')
+--}}
+@php
+    $catList = collect($categories ?? []);
+    // ส่งข้อมูลหมวดหมู่ให้ Alpine ใช้เติมฟอร์มตอนกดแก้ไข
+    $catPayload = $catList->map(fn ($c) => [
+        'id' => $c->id,
+        'name' => $c->name,
+        'description' => $c->description,
+        'icon' => $c->icon,
+        'color' => $c->color ?: '#e0a52e',
+        'sort_order' => $c->sort_order ?? 0,
+        'is_active' => (bool) ($c->is_active ?? true),
+    ])->values();
+    $mostUsed = $catList->sortByDesc('tickets_count')->first();
+@endphp
+
+<div x-data="ticketCategories()" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ศูนย์ช่วยเหลือ · หมวดหมู่</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">หมวดหมู่ Ticket 📂</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">จัดการหมวดหมู่สำหรับระบบ Ticket Support</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:9px;">
+            <a href="{{ route('admin.tickets.index') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-arrow-left"></i> กลับหน้าหลัก
+            </a>
+            <button type="button" class="tp-btn tp-btn-sm tp-btn-primary" @click="openCreate()">
+                <i class="fas fa-plus"></i> เพิ่มหมวดหมู่
+            </button>
+        </div>
+    </div>
+
+    {{-- ===== KPI ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px;">
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center;">
+                    <i class="fas fa-folder"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($catList->count()) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">หมวดหมู่ทั้งหมด</div>
+                </div>
             </div>
-            <div class="flex gap-3">
-                <a href="{{ route('admin.tickets.index') }}"
-                   class="inline-flex items-center px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    กลับหน้าหลัก
-                </a>
-                <button onclick="openCreateModal()"
-                        class="inline-flex items-center px-6 py-3 glass-fusion text-orange-600 hover:bg-orange-50 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create Category
-                </button>
+        </div>
+
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#5aa07e;">
+                    <i class="fas fa-circle-check"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($catList->where('is_active', true)->count()) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">เปิดใช้งาน</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#5689b8;">
+                    <i class="fas fa-ticket"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($catList->sum('tickets_count')) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">Ticket ทั้งหมด</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tp-card" style="padding:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#b79ae8;">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div style="min-width:0;">
+                    <div style="font-size:15px; font-weight:800; line-height:1.3; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $mostUsed->name ?? '—' }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">ใช้มากที่สุด</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <!-- Total Categories Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-orange-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Categories</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ count($categories ?? []) }}</p>
-                </div>
-                <div class="bg-orange-100 dark:bg-orange-900/30 p-4 rounded-xl">
-                    <i class="fas fa-folder text-2xl text-orange-600 dark:text-orange-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Active Categories Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Active Categories</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">
-                        {{ collect($categories ?? [])->where('is_active', true)->count() }}
-                    </p>
-                </div>
-                <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-xl">
-                    <i class="fas fa-check-circle text-2xl text-green-600 dark:text-green-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Tickets Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Tickets</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">
-                        {{ collect($categories ?? [])->sum('tickets_count') }}
-                    </p>
-                </div>
-                <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-xl">
-                    <i class="fas fa-ticket-alt text-2xl text-blue-600 dark:text-blue-400"></i>
-                </div>
-            </div>
-        </div>
-
-        <!-- Most Used Card -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Most Used</p>
-                    <p class="text-sm font-bold text-gray-900 dark:text-white dark:text-white truncate">
-                        {{ collect($categories ?? [])->sortByDesc('tickets_count')->first()->name ?? 'N/A' }}
-                    </p>
-                </div>
-                <div class="bg-purple-100 dark:bg-purple-900/30 p-4 rounded-xl">
-                    <i class="fas fa-star text-2xl text-purple-600 dark:text-purple-400"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Categories Table -->
-    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
+    {{-- ===== ตาราง ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="min-width:100%; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            ID
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Category Name
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Description
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Icon
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Ticket Count
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
-                            Actions
-                        </th>
+                        @foreach(['ID','ชื่อหมวดหมู่','คำอธิบาย','ไอคอน','จำนวน Ticket','สถานะ'] as $th)
+                            <th style="padding:14px 16px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;">{{ $th }}</th>
+                        @endforeach
+                        <th style="padding:14px 16px; text-align:right; font-size:11px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($categories ?? [] as $category)
-                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors duration-150">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 text-white font-bold text-sm">
-                                    {{ $category->id }}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center">
-                                @if($category->color ?? null)
-                                    <div class="w-3 h-3 rounded-full mr-3" style="background-color: {{ $category->color }}"></div>
+                <tbody>
+                    @forelse($catList as $category)
+                        <tr style="box-shadow:var(--inset-sm); transition:background .15s;"
+                            onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
+                            {{-- ID --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <span class="tp-tile" style="width:30px; height:30px; border-radius:50%; font-size:12px; font-weight:800; display:inline-flex; align-items:center; justify-content:center;">{{ $category->id }}</span>
+                            </td>
+                            {{-- ชื่อ --}}
+                            <td style="padding:14px 16px;">
+                                <div style="display:flex; align-items:center; gap:9px;">
+                                    @if($category->color ?? null)
+                                        <span style="width:11px; height:11px; border-radius:50%; background:{{ $category->color }}; flex-shrink:0;"></span>
+                                    @endif
+                                    <span style="font-size:13.5px; font-weight:700; color:var(--ink);">{{ $category->name ?? '—' }}</span>
+                                </div>
+                            </td>
+                            {{-- คำอธิบาย --}}
+                            <td style="padding:14px 16px; font-size:13px; color:var(--ink2);">
+                                {{ Str::limit($category->description ?: 'ไม่มีคำอธิบาย', 50) }}
+                            </td>
+                            {{-- ไอคอน --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                @if($category->icon ?? null)
+                                    <span class="tp-tile" style="width:36px; height:36px; border-radius:10px; font-size:14px; display:inline-flex; align-items:center; justify-content:center; background:{{ $category->color ?: '#e0a52e' }};">
+                                        <i class="{{ $category->icon }}" style="color:#fff;"></i>
+                                    </span>
+                                @else
+                                    <span style="color:var(--ink2);">—</span>
                                 @endif
-                                <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                    {{ $category->name ?? 'N/A' }}
+                            </td>
+                            {{-- จำนวน Ticket --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                <span class="tp-pill" style="background:rgba(86,137,184,.18); color:#3f6a96;">
+                                    <i class="fas fa-ticket"></i> {{ number_format($category->tickets_count ?? 0) }}
+                                </span>
+                            </td>
+                            {{-- สถานะ --}}
+                            <td style="padding:14px 16px; white-space:nowrap;">
+                                @if($category->is_active ?? true)
+                                    <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">● เปิดใช้งาน</span>
+                                @else
+                                    <span class="tp-pill" style="background:color-mix(in srgb, var(--ink2) 18%, transparent); color:var(--ink2);">● ปิดใช้งาน</span>
+                                @endif
+                            </td>
+                            {{-- จัดการ --}}
+                            <td style="padding:14px 16px; text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:7px;">
+                                    <button type="button" class="tp-btn tp-btn-sm" title="แก้ไข"
+                                            @click="openEdit({{ $category->id }})">
+                                        <i class="fas fa-pen"></i>
+                                    </button>
+                                    <form method="POST" action="{{ route('admin.tickets.categories.destroy', $category->id) }}" style="display:inline;"
+                                          onsubmit="return confirm('ลบหมวดหมู่ &quot;{{ $category->name }}&quot; ใช่หรือไม่? Ticket ที่อยู่ในหมวดนี้จะไม่มีหมวดหมู่')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="tp-btn tp-btn-sm" title="ลบ" style="color:#d9534f;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                                {{ Str::limit($category->description ?? 'No description', 50) }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($category->icon ?? null)
-                                <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30">
-                                    <i class="{{ $category->icon }} text-orange-600 dark:text-orange-400"></i>
-                                </div>
-                            @else
-                                <span class="text-gray-400 text-sm">—</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                    <i class="fas fa-ticket-alt mr-1"></i>
-                                    {{ $category->tickets_count ?? 0 }}
-                                </span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if(($category->is_active ?? true))
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                                    Active
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white dark:bg-gray-700 dark:text-gray-300">
-                                    <span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
-                                    Inactive
-                                </span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex items-center space-x-2">
-                                <button onclick="editCategory({{ $category->id }})"
-                                        class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-600">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
-                            <div class="flex flex-col items-center justify-center">
-                                <i class="fas fa-folder-open text-6xl text-gray-300 dark:text-gray-600 dark:text-gray-400 mb-4"></i>
-                                <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-lg font-medium">No categories found</p>
-                                <p class="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm mt-2">Create your first category to organize tickets</p>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="7" style="padding:0;">
+                                <div style="text-align:center; color:var(--ink2); padding:44px 0;">
+                                    <i class="fas fa-folder-open" style="font-size:34px; display:block; margin-bottom:10px; opacity:.5;"></i>
+                                    <div style="font-size:14px; font-weight:600;">ยังไม่มีหมวดหมู่</div>
+                                    <div style="font-size:12px; margin-top:4px;">สร้างหมวดหมู่แรกเพื่อจัดระเบียบ Ticket</div>
+                                </div>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
-</div>
 
-<!-- Create/Edit Modal -->
-<div id="categoryModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen px-4 py-8">
-        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all" border border-white/20 dark:border-white/10>
-            <form id="categoryForm" method="POST">
-                @csrf
-                <div id="methodField"></div>
+    {{-- ===== โมดัลเพิ่ม/แก้ไข ===== --}}
+    <div x-show="open" x-cloak style="position:fixed; inset:0; z-index:50; overflow-y:auto;">
+        <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:16px;">
+            <div style="position:fixed; inset:0; background:rgba(0,0,0,.55);" @click="open = false"></div>
 
-                <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-orange-600 to-amber-600 px-8 py-6 rounded-t-2xl">
-                    <div class="flex items-center justify-between">
-                        <h3 id="modalTitle" class="text-2xl font-bold text-white flex items-center">
-                            <i class="fas fa-folder-open mr-3"></i>
-                            Create Category
-                        </h3>
-                        <button type="button" onclick="closeModal()"
-                                class="text-white/80 hover:text-white transition-colors">
-                            <i class="fas fa-times text-2xl"></i>
+            <div class="tp-card" style="position:relative; max-width:560px; width:100%; padding:0; overflow:hidden;">
+                <form :action="formAction" method="POST">
+                    @csrf
+                    {{-- ตอนแก้ไขต้องส่ง PUT ตาม route --}}
+                    <template x-if="editingId">
+                        <input type="hidden" name="_method" value="PUT">
+                    </template>
+
+                    {{-- หัวโมดัล --}}
+                    <div style="padding:18px 20px; background:linear-gradient(120deg, color-mix(in srgb, #e0a52e 26%, transparent), transparent 75%); display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                        <div class="tp-section-h" style="margin:0;">
+                            <i class="fas fa-folder-open"></i>
+                            <span x-text="editingId ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่'"></span>
+                        </div>
+                        <button type="button" class="tp-icon-btn" @click="open = false" title="ปิด"><i class="fas fa-times"></i></button>
+                    </div>
+
+                    <div style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+                        {{-- ชื่อ --}}
+                        <div>
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                                ชื่อหมวดหมู่ <span style="color:#d9534f;">*</span>
+                            </label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <input type="text" name="name" x-model="form.name" required placeholder="เช่น ปัญหาทางเทคนิค"
+                                       style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                            </div>
+                        </div>
+
+                        {{-- คำอธิบาย --}}
+                        <div>
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">คำอธิบาย</label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <textarea name="description" x-model="form.description" rows="3" placeholder="คำอธิบายสั้นๆ ของหมวดหมู่นี้"
+                                          style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px; resize:vertical; font-family:inherit;"></textarea>
+                            </div>
+                        </div>
+
+                        {{-- ไอคอน + สี --}}
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;">
+                            <div>
+                                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                                    <i class="fas fa-icons"></i> คลาสไอคอน
+                                </label>
+                                <div class="tp-well tp-input" style="padding:0;">
+                                    <input type="text" name="icon" x-model="form.icon" placeholder="fas fa-wrench"
+                                           style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                                </div>
+                                <div style="font-size:11px; color:var(--ink2); margin-top:5px;">คลาสของ FontAwesome</div>
+                            </div>
+
+                            <div>
+                                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                                    <i class="fas fa-palette"></i> สี
+                                </label>
+                                <div class="tp-well" style="padding:6px;">
+                                    <input type="color" name="color" x-model="form.color"
+                                           style="width:100%; height:34px; background:transparent; border:none; outline:none; cursor:pointer;">
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ลำดับ --}}
+                        <div>
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                                <i class="fas fa-sort"></i> ลำดับการแสดง
+                            </label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <input type="number" name="sort_order" x-model="form.sort_order" min="0"
+                                       style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                            </div>
+                            <div style="font-size:11px; color:var(--ink2); margin-top:5px;">เลขน้อยแสดงก่อน</div>
+                        </div>
+
+                        {{-- เปิดใช้งาน --}}
+                        <label class="tp-well" style="display:flex; align-items:center; gap:10px; padding:12px 14px; cursor:pointer;">
+                            <input type="checkbox" name="is_active" value="1" x-model="form.is_active"
+                                   style="accent-color:#e0a52e; width:16px; height:16px; cursor:pointer;">
+                            <span style="font-size:13px; font-weight:600; color:var(--ink);">
+                                <i class="fas fa-circle-check" style="color:#5aa07e; margin-right:5px;"></i>เปิดใช้งาน (ผู้ใช้มองเห็น)
+                            </span>
+                        </label>
+                    </div>
+
+                    {{-- ท้ายโมดัล --}}
+                    <div style="padding:16px 20px; display:flex; justify-content:flex-end; gap:10px; box-shadow:var(--inset-sm);">
+                        <button type="button" class="tp-btn" @click="open = false">ยกเลิก</button>
+                        <button type="submit" class="tp-btn tp-btn-primary" style="font-weight:700;">
+                            <i class="fas fa-save"></i> บันทึก
                         </button>
                     </div>
-                </div>
-
-                <!-- Modal Body -->
-                <div class="p-8 space-y-6">
-                    <!-- Category Name -->
-                    <div>
-                        <label for="name" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                            Category Name <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" name="name" id="name" required
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                               placeholder="e.g., Technical Support">
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                        <label for="description" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                            Description
-                        </label>
-                        <textarea name="description" id="description" rows="3"
-                                  class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                                  placeholder="Brief description of this category"></textarea>
-                    </div>
-
-                    <!-- Icon and Color -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label for="icon" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                <i class="fas fa-icons mr-1"></i>
-                                Icon Class
-                            </label>
-                            <input type="text" name="icon" id="icon"
-                                   class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                                   placeholder="fas fa-wrench">
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">FontAwesome icon class</p>
-                        </div>
-
-                        <div>
-                            <label for="color" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                <i class="fas fa-palette mr-1"></i>
-                                Color
-                            </label>
-                            <input type="color" name="color" id="color"
-                                   class="w-full h-12 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                                   value="#f59e0b">
-                        </div>
-                    </div>
-
-                    <!-- Sort Order -->
-                    <div>
-                        <label for="sort_order" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                            <i class="fas fa-sort mr-1"></i>
-                            Sort Order
-                        </label>
-                        <input type="number" name="sort_order" id="sort_order" min="0" value="0"
-                               class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                               placeholder="0">
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">Lower number appears first</p>
-                    </div>
-
-                    <!-- Active Status -->
-                    <div class="flex items-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
-                        <input type="checkbox" name="is_active" id="is_active" value="1" checked
-                               class="w-5 h-5 text-orange-600 bg-gray-100/50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 rounded focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                        <label for="is_active" class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">
-                            <i class="fas fa-check-circle mr-2 text-orange-600"></i>
-                            Active category (visible to users)
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Modal Footer -->
-                <div class="px-8 py-6 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900 rounded-b-2xl flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal()"
-                            class="px-6 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 text-gray-700 dark:text-gray-300 dark:text-gray-300 font-semibold hover:bg-gray-100/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-all">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                            class="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white font-semibold hover:from-orange-700 hover:to-amber-700 transition-all shadow-lg">
-                        <i class="fas fa-save mr-2"></i>
-                        Save Category
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
+@push('scripts')
 <script>
-function openCreateModal() {
-    document.getElementById('categoryModal').classList.remove('hidden');
-    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-folder-open mr-3"></i>Create Category';
-    document.getElementById('categoryForm').action = '{{ route("admin.tickets.categories.store") }}';
-    document.getElementById('methodField').innerHTML = '';
-    document.getElementById('categoryForm').reset();
+function ticketCategories() {
+    return {
+        open: false,
+        editingId: null,
+        categories: @js($catPayload),
+        storeUrl: @js(route('admin.tickets.categories.store')),
+        // route แก้ไขใช้ id ต่อท้าย — สร้าง URL จาก store แล้วเติม id
+        form: { name: '', description: '', icon: '', color: '#e0a52e', sort_order: 0, is_active: true },
+
+        get formAction() {
+            return this.editingId ? (this.storeUrl + '/' + this.editingId) : this.storeUrl;
+        },
+
+        openCreate() {
+            this.editingId = null;
+            this.form = { name: '', description: '', icon: '', color: '#e0a52e', sort_order: 0, is_active: true };
+            this.open = true;
+        },
+
+        openEdit(id) {
+            const c = this.categories.find(x => x.id === id);
+            if (!c) return;
+            this.editingId = id;
+            this.form = {
+                name: c.name || '',
+                description: c.description || '',
+                icon: c.icon || '',
+                color: c.color || '#e0a52e',
+                sort_order: c.sort_order || 0,
+                is_active: !!c.is_active,
+            };
+            this.open = true;
+        },
+
+        init() {
+            // ปิดโมดัลด้วยปุ่ม Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.open = false;
+            });
+        },
+    };
 }
-
-function editCategory(id) {
-    alert('Edit functionality will be implemented with AJAX');
-    // TODO: Load category data and populate form
-}
-
-function closeModal() {
-    document.getElementById('categoryModal').classList.add('hidden');
-    document.getElementById('categoryForm').reset();
-}
-
-// Close modal on Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeModal();
-    }
-});
-
-// Close modal on outside click
-document.getElementById('categoryModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
-});
 </script>
+@endpush
 @endsection

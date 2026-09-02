@@ -1,344 +1,312 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'รายละเอียด Ticket #' . $ticket->ticket_number)
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header with Priority Color -->
-    <div class="relative overflow-hidden rounded-2xl shadow-2xl p-8 text-white
-        {{ $ticket->priority === 'critical' ? 'bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 dark:from-red-800 dark:via-rose-800 dark:to-pink-800' : '' }}
-        {{ $ticket->priority === 'high' ? 'bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-800 dark:via-amber-800 dark:to-yellow-800' : '' }}
-        {{ $ticket->priority === 'medium' ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-800 dark:via-purple-800 dark:to-pink-800' : '' }}
-        {{ $ticket->priority === 'low' ? 'bg-gradient-to-r from-gray-600 via-slate-600 to-zinc-600 dark:from-gray-800 dark:via-slate-800 dark:to-zinc-800' : '' }}">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 glass-fusion dark:bg-gray-800 rounded-full opacity-10 blur-3xl" border border-white/20 dark:border-white/10></div>
-        <div class="relative flex items-center justify-between">
-            <div class="flex-1">
-                <div class="flex items-center gap-3 mb-3">
-                    <span class="px-4 py-2 glass-fusion backdrop-blur-sm rounded-xl text-sm font-bold">
-                        #{{ $ticket->ticket_number }}
-                    </span>
-                    <span class="px-4 py-2 glass-fusion backdrop-blur-sm rounded-xl text-sm font-bold">
-                        {{ $ticket->priority === 'critical' ? '🔴 วิกฤต' : '' }}
-                        {{ $ticket->priority === 'high' ? '🟠 สูง' : '' }}
-                        {{ $ticket->priority === 'medium' ? '🟡 ปานกลาง' : '' }}
-                        {{ $ticket->priority === 'low' ? '⚪ ต่ำ' : '' }}
-                    </span>
-                    <span class="px-4 py-2 glass-fusion backdrop-blur-sm rounded-xl text-sm font-bold">
-                        {{ $ticket->status === 'open' ? '🟢 เปิด' : '' }}
-                        {{ $ticket->status === 'in_progress' ? '🔵 กำลังดำเนินการ' : '' }}
-                        {{ $ticket->status === 'waiting_customer' ? '🟣 รอลูกค้า' : '' }}
-                        {{ $ticket->status === 'resolved' ? '✅ แก้ไขแล้ว' : '' }}
-                        {{ $ticket->status === 'closed' ? '⚫ ปิด' : '' }}
-                    </span>
+{{--
+    🎫 รายละเอียด Ticket (ธีม V4 นวลทองคำ)
+    คง route/ฟอร์ม/Alpine auto-submit เดิม 100%
+    ของเดิมมี HTML พังหลายจุด (style="..." ซ้อนอยู่ใน class="...", attribute หลุดนอก class) — แก้หมดในรอบนี้
+--}}
+@php
+    $prioMeta = [
+        'critical' => ['#d9534f', '🔴 วิกฤต'],
+        'high'     => ['#d6824a', '🟠 สูง'],
+        'medium'   => ['#5689b8', '🟡 ปานกลาง'],
+        'low'      => ['#9a8f7c', '⚪ ต่ำ'],
+    ];
+    $statusMeta = [
+        'open'             => ['#5689b8', '🟢 เปิด'],
+        'in_progress'      => ['#e0a52e', '🔵 กำลังดำเนินการ'],
+        'waiting_customer' => ['#b79ae8', '🟣 รอลูกค้า'],
+        'resolved'         => ['#5aa07e', '✅ แก้ไขแล้ว'],
+        'closed'           => ['#9a8f7c', '⚫ ปิด'],
+    ];
+    [$prioColor, $prioLabel] = $prioMeta[$ticket->priority] ?? ['#9a8f7c', $ticket->priority];
+    [$statColor, $statLabel] = $statusMeta[$ticket->status] ?? ['#9a8f7c', $ticket->status];
+@endphp
+
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== Header ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:22px 24px; background:linear-gradient(120deg, color-mix(in srgb, {{ $prioColor }} 20%, transparent), transparent 70%);">
+            <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:14px;">
+                <div style="min-width:0;">
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                        <span class="tp-pill tp-pill-gold" style="font-family:monospace; font-weight:700;">#{{ $ticket->ticket_number }}</span>
+                        <span class="tp-pill" style="background:color-mix(in srgb, {{ $prioColor }} 18%, transparent); color:{{ $prioColor }}; font-weight:700;">{{ $prioLabel }}</span>
+                        <span class="tp-pill" style="background:color-mix(in srgb, {{ $statColor }} 18%, transparent); color:{{ $statColor }}; font-weight:700;">{{ $statLabel }}</span>
+                    </div>
+                    <h1 style="font-size:clamp(19px,3.5vw,26px); font-weight:800; margin:0; color:var(--ink);">{{ $ticket->subject }}</h1>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:6px;">
+                        สร้างโดย {{ $ticket->user?->name ?: 'ไม่ระบุชื่อ' }} • {{ $ticket->created_at->format('d/m/Y H:i') }} • {{ $ticket->created_at->diffForHumans() }}
+                    </div>
                 </div>
-                <h1 class="text-3xl font-bold mb-2">{{ $ticket->subject }}</h1>
-                <p class="text-white/80 text-sm">
-                    สร้างโดย {{ $ticket->user->name }} • {{ $ticket->created_at->format('d/m/Y H:i') }} • {{ $ticket->created_at->diffForHumans() }}
-                </p>
+                <a href="{{ route('admin.tickets.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fa-solid fa-arrow-left"></i> กลับ
+                </a>
             </div>
-            <a href="{{ route('admin.tickets.index') }}" class="px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all flex items-center gap-2 font-semibold">
-                <i class="fa-solid fa-arrow-left"></i>
-                กลับ
-            </a>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Main Content (Conversation Thread) -->
-        <div class="lg:col-span-2 space-y-6">
-            <!-- Original Message -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-                <div class="flex items-start gap-4 mb-4">
-                    <div class="flex-shrink-0">
-                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                            {{ substr($ticket->user->name, 0, 1) }}
-                        </div>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex items-center justify-between mb-2">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:18px; align-items:start;">
+
+        {{-- ===================== คอลัมน์ซ้าย: บทสนทนา ===================== --}}
+        <div style="display:flex; flex-direction:column; gap:16px; grid-column:span 2; min-width:0;">
+
+            {{-- ข้อความต้นเรื่อง --}}
+            <div class="tp-card" style="padding:20px; border-left:4px solid #5689b8;">
+                <div style="display:flex; align-items:flex-start; gap:14px;">
+                    <span class="tp-tile" style="width:48px; height:48px; border-radius:50%; font-size:19px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#5689b8;">
+                        {{ mb_strtoupper(mb_substr($ticket->user?->name ?: '?', 0, 1)) }}
+                    </span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px;">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $ticket->user->name }}</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $ticket->user->email }}</p>
+                                <div style="font-size:15px; font-weight:800; color:var(--ink);">{{ $ticket->user?->name ?: 'ไม่ระบุชื่อ' }}</div>
+                                <div style="font-size:12px; color:var(--ink2);">{{ $ticket->user?->email ?: '-' }}</div>
                             </div>
-                            <div class="text-right">
-                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $ticket->created_at->format('d/m/Y') }}</div>
-                                <div class="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400">{{ $ticket->created_at->format('H:i') }}</div>
+                            <div style="text-align:right; white-space:nowrap;">
+                                <div style="font-size:11.5px; color:var(--ink2);">{{ $ticket->created_at->format('d/m/Y') }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2); opacity:.8;">{{ $ticket->created_at->format('H:i') }}</div>
                             </div>
                         </div>
-                        <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl p-4 mt-3">
-                            <p class="text-gray-700 dark:text-gray-300 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{{ $ticket->description }}</p>
+                        <div class="tp-well" style="padding:14px;">
+                            <p style="margin:0; font-size:13.5px; color:var(--ink); white-space:pre-wrap; line-height:1.7;">{{ $ticket->description }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Replies Timeline -->
-            @foreach($ticket->replies as $index => $reply)
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6
-                    {{ $reply->is_internal_note ? 'border-l-4 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/10' : '' }}
-                    {{ $reply->isFromStaff() && !$reply->is_internal_note ? 'border-l-4 border-purple-500' : '' }}
-                    {{ !$reply->isFromStaff() ? 'border-l-4 border-green-500' : '' }}" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-
+            {{-- ไทม์ไลน์การตอบกลับ --}}
+            @foreach($ticket->replies as $reply)
+                @php
+                    $isStaff = $reply->isFromStaff();
+                    $accent = $reply->is_internal_note ? '#e0a52e' : ($isStaff ? '#b79ae8' : '#5aa07e');
+                @endphp
+                <div class="tp-card" style="padding:20px; border-left:4px solid {{ $accent }};">
                     @if($reply->is_internal_note)
-                        <div class="mb-3 inline-flex items-center gap-2 px-3 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-full text-xs font-bold">
-                            <i class="fa-solid fa-lock"></i>
-                            บันทึกภายใน (เฉพาะพนักงาน)
+                        <div style="margin-bottom:12px;">
+                            <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e; font-weight:700;">
+                                <i class="fa-solid fa-lock"></i> บันทึกภายใน (เฉพาะพนักงาน)
+                            </span>
                         </div>
                     @endif
 
-                    <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0">
-                            <div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-lg
-                                {{ $reply->isFromStaff() ? 'bg-gradient-to-br from-purple-500 to-pink-600' : 'style="background: var(--arrow-x-success-gradient)"' }}">
-                                {{ substr($reply->user->name, 0, 1) }}
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex items-center justify-between mb-2">
+                    <div style="display:flex; align-items:flex-start; gap:14px;">
+                        <span class="tp-tile" style="width:48px; height:48px; border-radius:50%; font-size:19px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:{{ $isStaff ? '#b79ae8' : '#5aa07e' }};">
+                            {{ mb_strtoupper(mb_substr($reply->user?->name ?: '?', 0, 1)) }}
+                        </span>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px;">
                                 <div>
-                                    <div class="flex items-center gap-2">
-                                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                                            {{ $reply->user->name }}
-                                        </h3>
-                                        @if($reply->isFromStaff())
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded text-xs font-bold">
-                                                <i class="fa-solid fa-shield-halved"></i>
-                                                พนักงาน
+                                    <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
+                                        <span style="font-size:15px; font-weight:800; color:var(--ink);">{{ $reply->user?->name ?: 'ไม่ระบุชื่อ' }}</span>
+                                        @if($isStaff)
+                                            <span class="tp-pill" style="background:rgba(183,154,232,.18); color:#7a5db8; font-weight:700;">
+                                                <i class="fa-solid fa-shield-halved"></i> พนักงาน
                                             </span>
                                         @else
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded text-xs font-bold">
-                                                <i class="fa-solid fa-user"></i>
-                                                ลูกค้า
+                                            <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c; font-weight:700;">
+                                                <i class="fa-solid fa-user"></i> ลูกค้า
                                             </span>
                                         @endif
                                     </div>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">{{ $reply->user->email }}</p>
+                                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $reply->user?->email ?: '-' }}</div>
                                 </div>
-                                <div class="text-right">
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $reply->created_at->format('d/m/Y') }}</div>
-                                    <div class="text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400">{{ $reply->created_at->format('H:i') }}</div>
+                                <div style="text-align:right; white-space:nowrap;">
+                                    <div style="font-size:11.5px; color:var(--ink2);">{{ $reply->created_at->format('d/m/Y') }}</div>
+                                    <div style="font-size:11.5px; color:var(--ink2); opacity:.8;">{{ $reply->created_at->format('H:i') }}</div>
                                 </div>
                             </div>
-                            <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl p-4 mt-3">
-                                <p class="text-gray-700 dark:text-gray-300 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{{ $reply->message }}</p>
+                            <div class="tp-well" style="padding:14px;">
+                                <p style="margin:0; font-size:13.5px; color:var(--ink); white-space:pre-wrap; line-height:1.7;">{{ $reply->message }}</p>
                             </div>
-                            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                {{ $reply->created_at->diffForHumans() }}
-                            </div>
+                            <div style="font-size:11.5px; color:var(--ink2); margin-top:7px;">{{ $reply->created_at->diffForHumans() }}</div>
                         </div>
                     </div>
                 </div>
             @endforeach
 
-            <!-- Reply Form -->
+            {{-- ฟอร์มตอบกลับ --}}
             @if(!$ticket->isClosed())
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white">
-                            <i class="fa-solid fa-reply text-lg"></i>
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                            ตอบกลับ Ticket
-                        </h3>
-                    </div>
+                <div class="tp-card" style="padding:20px;">
+                    <div class="tp-section-h" style="margin-bottom:14px;"><i class="fa-solid fa-reply"></i> ตอบกลับ Ticket</div>
 
                     <form method="POST" action="{{ route('admin.tickets.reply', $ticket->id) }}">
                         @csrf
-                        <div class="mb-4">
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">ข้อความ</label>
-                            <textarea name="message" rows="6" required class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none" placeholder="พิมพ์ข้อความตอบกลับ..."></textarea>
+                        <div style="margin-bottom:14px;">
+                            <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ข้อความ</label>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <textarea name="message" rows="6" required placeholder="พิมพ์ข้อความตอบกลับ..."
+                                          style="width:100%; background:transparent; border:none; outline:none; padding:12px; color:var(--ink); font-size:14px; resize:vertical; font-family:inherit; line-height:1.6;"></textarea>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center gap-2 px-4 py-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 rounded-xl cursor-pointer hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors">
-                                <input type="checkbox" name="is_internal_note" value="1" class="rounded border-gray-300 dark:border-gray-600 text-yellow-600 focus:ring-yellow-500">
-                                <span class="text-sm font-semibold flex items-center gap-1">
-                                    <i class="fa-solid fa-lock"></i>
-                                    บันทึกภายใน (เฉพาะพนักงานเห็น)
+
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;">
+                            <label class="tp-well" style="display:flex; align-items:center; gap:9px; padding:9px 14px; cursor:pointer;">
+                                <input type="checkbox" name="is_internal_note" value="1" style="accent-color:#e0a52e; width:15px; height:15px; cursor:pointer;">
+                                <span style="font-size:12.5px; font-weight:600; color:#a87d1e;">
+                                    <i class="fa-solid fa-lock"></i> บันทึกภายใน (เฉพาะพนักงานเห็น)
                                 </span>
                             </label>
-                            <button type="submit" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-105">
-                                <i class="fa-solid fa-paper-plane mr-2"></i>
-                                ส่งข้อความ
+                            <button type="submit" class="tp-btn tp-btn-primary" style="font-weight:700;">
+                                <i class="fa-solid fa-paper-plane"></i> ส่งข้อความ
                             </button>
                         </div>
                     </form>
                 </div>
             @else
-                <div class="bg-gray-100/50 dark:bg-gray-800/50 dark:bg-slate-700 rounded-xl p-8 text-center">
-                    <i class="fa-solid fa-lock text-6xl text-gray-400 dark:text-gray-500 dark:text-gray-400 mb-4"></i>
-                    <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">Ticket นี้ถูกปิดแล้ว</h3>
-                    <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ไม่สามารถตอบกลับได้ กรุณาเปิด Ticket ใหม่หากต้องการติดต่อ</p>
+                <div class="tp-card" style="padding:40px 20px; text-align:center;">
+                    <i class="fa-solid fa-lock" style="font-size:40px; color:var(--ink2); opacity:.5; display:block; margin-bottom:14px;"></i>
+                    <div style="font-size:17px; font-weight:800; color:var(--ink); margin-bottom:6px;">Ticket นี้ถูกปิดแล้ว</div>
+                    <p style="margin:0; font-size:13px; color:var(--ink2);">ไม่สามารถตอบกลับได้ กรุณาเปิด Ticket ใหม่หากต้องการติดต่อ</p>
                 </div>
             @endif
         </div>
 
-        <!-- Sidebar -->
-        <div class="space-y-6">
-            <!-- Ticket Info Card -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-                <div class="flex items-center gap-2 mb-6">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white">
-                        <i class="fa-solid fa-info-circle"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                        ข้อมูล Ticket
-                    </h3>
-                </div>
+        {{-- ===================== คอลัมน์ขวา: แผงควบคุม ===================== --}}
+        <div style="display:flex; flex-direction:column; gap:16px; min-width:0;">
 
-                <div class="space-y-4">
-                    <!-- Status -->
+            {{-- ข้อมูล Ticket + ฟอร์มเปลี่ยนค่า (auto-submit ตอน change เหมือนเดิม) --}}
+            <div class="tp-card" style="padding:20px;">
+                <div class="tp-section-h" style="margin-bottom:16px;"><i class="fa-solid fa-circle-info"></i> ข้อมูล Ticket</div>
+
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    {{-- สถานะ --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">สถานะ</label>
-                        <form method="POST" action="{{ route('admin.tickets.update-status', $ticket->id) }}" x-data="{ status: '{{ $ticket->status }}' }">
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">สถานะ</label>
+                        <form method="POST" action="{{ route('admin.tickets.update-status', $ticket->id) }}" x-data="{}">
                             @csrf
                             @method('PUT')
-                            <select name="status" x-model="status" @change="$el.form.submit()" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 font-semibold">
-                                <option value="open">🟢 เปิด</option>
-                                <option value="in_progress">🔵 กำลังดำเนินการ</option>
-                                <option value="waiting_customer">🟣 รอลูกค้า</option>
-                                <option value="resolved">✅ แก้ไขแล้ว</option>
-                                <option value="closed">⚫ ปิด</option>
-                            </select>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <select name="status" @change="$el.form.submit()"
+                                        style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px; font-weight:600;">
+                                    @foreach($statusMeta as $key => [$c, $label])
+                                        <option value="{{ $key }}" {{ $ticket->status === $key ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </form>
                     </div>
 
-                    <!-- Priority -->
+                    {{-- ความสำคัญ --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">ความสำคัญ</label>
-                        <form method="POST" action="{{ route('admin.tickets.update-priority', $ticket->id) }}" x-data="{ priority: '{{ $ticket->priority }}' }">
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ความสำคัญ</label>
+                        <form method="POST" action="{{ route('admin.tickets.update-priority', $ticket->id) }}" x-data="{}">
                             @csrf
                             @method('PUT')
-                            <select name="priority" x-model="priority" @change="$el.form.submit()" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 font-semibold">
-                                <option value="low">⚪ ต่ำ</option>
-                                <option value="medium">🟡 ปานกลาง</option>
-                                <option value="high">🟠 สูง</option>
-                                <option value="critical">🔴 วิกฤต</option>
-                            </select>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <select name="priority" @change="$el.form.submit()"
+                                        style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px; font-weight:600;">
+                                    @foreach(['low','medium','high','critical'] as $key)
+                                        <option value="{{ $key }}" {{ $ticket->priority === $key ? 'selected' : '' }}>{{ $prioMeta[$key][1] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </form>
                     </div>
 
-                    <!-- Category -->
+                    {{-- หมวดหมู่ --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">หมวดหมู่</label>
-                        <form method="POST" action="{{ route('admin.tickets.update-category', $ticket->id) }}" x-data="{ category: '{{ $ticket->category_id }}' }">
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">หมวดหมู่</label>
+                        <form method="POST" action="{{ route('admin.tickets.update-category', $ticket->id) }}" x-data="{}">
                             @csrf
                             @method('PUT')
-                            <select name="category_id" x-model="category" @change="$el.form.submit()" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 font-semibold">
-                                <option value="">เลือกหมวดหมู่</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <select name="category_id" @change="$el.form.submit()"
+                                        style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px; font-weight:600;">
+                                    <option value="">เลือกหมวดหมู่</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" {{ (int) $ticket->category_id === (int) $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </form>
                     </div>
 
-                    <!-- Assigned To -->
+                    {{-- มอบหมายให้ --}}
                     <div>
-                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">มอบหมายให้</label>
-                        <form method="POST" action="{{ route('admin.tickets.assign', $ticket->id) }}" x-data="{ assigned: '{{ $ticket->assigned_to }}' }">
+                        <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">มอบหมายให้</label>
+                        <form method="POST" action="{{ route('admin.tickets.assign', $ticket->id) }}" x-data="{}">
                             @csrf
-                            <select name="assigned_to" x-model="assigned" @change="$el.form.submit()" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 font-semibold">
-                                <option value="">ไม่มอบหมาย</option>
-                                @foreach($staffUsers as $staff)
-                                    <option value="{{ $staff->id }}">{{ $staff->name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="tp-well tp-input" style="padding:0;">
+                                <select name="assigned_to" @change="$el.form.submit()"
+                                        style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px; font-weight:600;">
+                                    <option value="">ไม่มอบหมาย</option>
+                                    @foreach($staffUsers as $staff)
+                                        <option value="{{ $staff->id }}" {{ (int) $ticket->assigned_to === (int) $staff->id ? 'selected' : '' }}>{{ $staff->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </form>
                     </div>
 
-                    <!-- Divider -->
-                    <hr class="border-gray-200 dark:border-gray-700 dark:border-gray-700">
+                    <div class="tp-divider" style="margin:2px 0;"></div>
 
-                    <!-- Timeline Info -->
-                    <div class="space-y-3">
-                        <!-- Created At -->
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
-                                <i class="fa-solid fa-clock text-blue-600 dark:text-blue-400"></i>
+                    {{-- ไทม์ไลน์ --}}
+                    @php
+                        $timeline = [];
+                        $timeline[] = ['fa-clock', '#5689b8', 'สร้างเมื่อ', $ticket->created_at];
+                        if ($ticket->last_reply_at) {
+                            $timeline[] = ['fa-comment', '#5aa07e', 'ตอบกลับล่าสุด', $ticket->last_reply_at];
+                        }
+                        if ($ticket->resolved_at) {
+                            $timeline[] = ['fa-circle-check', '#b79ae8', 'แก้ไขเมื่อ', $ticket->resolved_at];
+                        }
+                    @endphp
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        @foreach($timeline as [$icon, $color, $label, $when])
+                            <div style="display:flex; align-items:center; gap:11px;">
+                                <span class="tp-tile" style="width:32px; height:32px; border-radius:10px; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:{{ $color }};">
+                                    <i class="fa-solid {{ $icon }}" style="color:#fff;"></i>
+                                </span>
+                                <div style="min-width:0;">
+                                    <div style="font-size:11px; font-weight:700; color:var(--ink2);">{{ $label }}</div>
+                                    <div style="font-size:13px; font-weight:700; color:var(--ink);">{{ $when->format('d/m/Y H:i') }}</div>
+                                    <div style="font-size:11px; color:var(--ink2);">{{ $when->diffForHumans() }}</div>
+                                </div>
                             </div>
-                            <div class="flex-1">
-                                <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">สร้างเมื่อ</div>
-                                <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $ticket->created_at->format('d/m/Y H:i') }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400">{{ $ticket->created_at->diffForHumans() }}</div>
-                            </div>
-                        </div>
-
-                        <!-- Last Reply -->
-                        @if($ticket->last_reply_at)
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
-                                <i class="fa-solid fa-comment text-green-600 dark:text-green-400"></i>
-                            </div>
-                            <div class="flex-1">
-                                <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">ตอบกลับล่าสุด</div>
-                                <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $ticket->last_reply_at->format('d/m/Y H:i') }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400">{{ $ticket->last_reply_at->diffForHumans() }}</div>
-                            </div>
-                        </div>
-                        @endif
-
-                        <!-- Resolved At -->
-                        @if($ticket->resolved_at)
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
-                                <i class="fa-solid fa-check-circle text-purple-600 dark:text-purple-400"></i>
-                            </div>
-                            <div class="flex-1">
-                                <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-400">แก้ไขเมื่อ</div>
-                                <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $ticket->resolved_at->format('d/m/Y H:i') }}</div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 dark:text-gray-400">{{ $ticket->resolved_at->diffForHumans() }}</div>
-                            </div>
-                        </div>
-                        @endif
+                        @endforeach
                     </div>
                 </div>
             </div>
 
-            <!-- User Info Card -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-                <div class="flex items-center gap-2 mb-6">
-                    <div class="w-8 h-8 style="background: var(--arrow-x-success-gradient)" rounded-xl flex items-center justify-center text-white">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                        ข้อมูลผู้ใช้
-                    </h3>
-                </div>
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                        {{ substr($ticket->user->name, 0, 1) }}
-                    </div>
-                    <div class="flex-1">
-                        <h4 class="font-bold text-gray-900 dark:text-white text-lg">{{ $ticket->user->name }}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ $ticket->user->email }}</p>
+            {{-- ข้อมูลผู้ใช้ --}}
+            <div class="tp-card" style="padding:20px;">
+                <div class="tp-section-h" style="margin-bottom:16px;"><i class="fa-solid fa-user"></i> ข้อมูลผู้ใช้</div>
+
+                <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+                    <span class="tp-tile" style="width:54px; height:54px; border-radius:50%; font-size:21px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#5689b8;">
+                        {{ mb_strtoupper(mb_substr($ticket->user?->name ?: '?', 0, 1)) }}
+                    </span>
+                    <div style="min-width:0;">
+                        <div style="font-size:15px; font-weight:800; color:var(--ink);">{{ $ticket->user?->name ?: 'ไม่ระบุชื่อ' }}</div>
+                        <div style="font-size:12px; color:var(--ink2); word-break:break-all;">{{ $ticket->user?->email ?: '-' }}</div>
                     </div>
                 </div>
-                <a href="{{ route('admin.users.show', $ticket->user->id) }}" class="block w-full text-center px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold transition-all transform hover:scale-105">
-                    <i class="fa-solid fa-external-link-alt mr-2"></i>
-                    ดูโปรไฟล์ผู้ใช้
-                </a>
+
+                @if($ticket->user && Route::has('admin.users.show'))
+                    <a href="{{ route('admin.users.show', $ticket->user->id) }}" class="tp-btn"
+                       style="width:100%; justify-content:center; font-weight:700;">
+                        <i class="fa-solid fa-up-right-from-square"></i> ดูโปรไฟล์ผู้ใช้
+                    </a>
+                @endif
             </div>
 
-            <!-- Actions Card -->
-            <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-                <div class="flex items-center gap-2 mb-6">
-                    <div class="w-8 h-8 style="background: var(--arrow-x-warning-gradient)" rounded-xl flex items-center justify-center text-white">
-                        <i class="fa-solid fa-bolt"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                        การดำเนินการ
-                    </h3>
-                </div>
-                <div class="space-y-3">
-                    <form method="POST" action="{{ route('admin.tickets.destroy', $ticket->id) }}" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ Ticket นี้?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-xl font-bold transition-all transform hover:scale-105">
-                            <i class="fa-solid fa-trash mr-2"></i>
-                            ลบ Ticket
-                        </button>
-                    </form>
-                </div>
+            {{-- การดำเนินการ --}}
+            <div class="tp-card" style="padding:20px; border-left:4px solid #d9534f;">
+                <div class="tp-section-h" style="margin-bottom:14px;"><i class="fa-solid fa-bolt"></i> การดำเนินการ</div>
+                <form method="POST" action="{{ route('admin.tickets.destroy', $ticket->id) }}"
+                      onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ Ticket นี้?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="tp-btn"
+                            style="width:100%; justify-content:center; background:#d9534f; color:#fff; border-color:#d9534f; font-weight:700;">
+                        <i class="fa-solid fa-trash"></i> ลบ Ticket
+                    </button>
+                </form>
             </div>
         </div>
     </div>
