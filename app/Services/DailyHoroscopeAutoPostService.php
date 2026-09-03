@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Models\AiGenProvider;
 use App\Models\FortuneDailyHoroscopePost;
 use App\Models\FortuneTellingSetting;
-use App\Services\Fortune\FortunePageContext;
-use App\Models\TarotCard;
 use App\Services\AiGen\CloudflareAiProvider;
+use App\Services\Fortune\DailyAstroBrief;
 use App\Services\Fortune\FacebookContentPolicy;
+use App\Services\Fortune\FortunePageContext;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -19,9 +19,12 @@ use Illuminate\Support\Facades\Storage;
  * บริการสร้างและโพสดวงประจำวันอัตโนมัติ (รายเจ้าของวันเกิด)
  *
  * Flow ของแต่ละชั่วโมง (01:00–07:00):
- * 1. สุ่มไพ่ทาโรต์ของวันนั้น
- * 2. สร้าง caption สั้นๆ ตรงประเด็น (เน้นจุดเด่นของวันเกิด)
- * 3. สร้างรูปประกอบ (composite ไพ่ + overlay text)
+ * 1. คำนวณตำแหน่งดาวจริงของวันนั้น (DailyAstroBrief)
+ * 2. สร้าง caption สั้นๆ ตรงประเด็น (เน้นจุดเด่นของวันเกิด ผูกกับดาววันนี้)
+ * 3. สร้างรูปประกอบ (ภาพวิวประจำวันเกิด + overlay text)
+ *
+ * 🃏 (2026-09-03) เลนนี้**เลิกจับไพ่ทาโรต์แล้ว** — เดิมสุ่มไพ่ด้วย inRandomOrder()
+ *    ทั้งที่เพจโฆษณาว่าโหราศาสตร์ไทย · ห้ามเอากลับมาโดยไม่คุยกับเจ้าของ
  * 4. POST /me/feed → Facebook Page
  * 5. บันทึก fb_post_id + posted_at
  *
@@ -92,7 +95,7 @@ class DailyHoroscopeAutoPostService
         ]);
 
         try {
-            // 1. สุ่มไพ่ + AI caption
+            // 1. คำนวณดาวจริง + AI caption
             $post->update(['status' => FortuneDailyHoroscopePost::STATUS_GENERATING]);
             $this->generateContent($post);
 
@@ -135,54 +138,70 @@ class DailyHoroscopeAutoPostService
     }
 
     /**
-     * 1. สุ่มไพ่ทาโรต์ + สร้าง caption สั้นๆ
+     * 1. คำนวณตำแหน่งดาวจริงของวันนั้น + สร้าง caption
+     *
+     * 🚨 (2026-09-03) เดิมเลนนี้ **สุ่มไพ่ทาโรต์** (`inRandomOrder()`) + สุ่มกลับด้าน 30%
+     *    (`mt_rand`) แล้วให้ AI เขียนคำทำนายจากความหมายไพ่ล้วน ๆ — ไม่มีดาวเลยสักดวง
+     *    ทั้งที่เพจโฆษณาว่า "โหราศาสตร์ไทย หลักเจ้าชนะ" ⇒ โหรจริงจับได้ทันที
+     *    และตัวเลขที่ลูกค้าเห็นก็คือ `rand()` ตรง ๆ ไม่ใช่ศาสตร์
+     *
+     *    เลิกจับไพ่ทั้งหมด → ใช้ [[DailyAstroBrief]] ตัวเดียวกับอีก 2 เลน
+     *    (ตำแหน่งดาวจริง 9 ดวง + ศักดิ์ + พักร + มุมสัมพันธ์ + ราย 5 ช่วงเวลา)
+     *    ⚠️ รูปภาพไม่เคยใช้ไพ่อยู่แล้วตั้งแต่ เม.ย. 2569 (dayScenes เป็นภาพวิวรายวันเกิด)
+     *       ไพ่จึงเป็นซากที่เหลืออยู่แค่ใน caption อย่างเดียว
      */
     protected function generateContent(FortuneDailyHoroscopePost $post): void
     {
-        // สุ่มไพ่ active 1 ใบ
-        $card = TarotCard::where('is_active', true)->inRandomOrder()->first();
-        if (! $card) {
-            throw new Exception('ไม่พบไพ่ทาโรต์ในระบบ — กรุณา seed tarot_cards table');
-        }
+        $brief = $this->buildAstroBrief($post);
 
-        // สุ่มกลับด้าน 30% (รักษาสมดุลดวงดี/แย่)
-        $isReversed = (mt_rand(1, 100) <= 30);
-
-        // (ลบ $dayName/$dayEmoji ที่ประกาศแล้วไม่ได้ใช้ออก — generateCaption หาเองจาก $post)
-        $cardMeaning = $isReversed
-            ? ($card->reversed_meaning_th ?: $card->upright_meaning_th)
-            : $card->upright_meaning_th;
-
-        // สร้าง caption ผ่าน AI (สั้นๆ ตรงประเด็น)
-        $caption = $this->generateCaption($post, $card, $isReversed, $cardMeaning);
+        $caption = $this->generateCaption($post, $brief);
 
         $post->update([
-            'tarot_card_id' => $card->id,
-            'is_reversed' => $isReversed,
+            // 🃏 เลนนี้ไม่จับไพ่แล้ว — เก็บ null ไว้ให้ชัดว่าคอนเทนต์ไม่ได้มาจากไพ่
+            'tarot_card_id' => null,
+            'is_reversed' => false,
             'caption' => $caption,
             'generated_at' => now(),
         ]);
     }
 
     /**
+     * 🪐 ข้อเท็จจริงทางโหราศาสตร์ของวันนั้น สำหรับคนเกิดวันหนึ่ง ๆ
+     *
+     * ⚠️ กับดักดัชนีวันเกิด — ตารางนี้ใช้คนละมาตรฐานกับที่เหลือของระบบ:
+     *      `fortune_daily_horoscope_posts.day_of_birth` = **1=จันทร์ … 7=อาทิตย์**
+     *      แต่ `DailyAstroBrief` / `CHAOCHANA` ใช้ **0=อาทิตย์ … 6=เสาร์** (Carbon::dayOfWeek)
+     *    แปลงด้วย `% 7` (7→0, 1→1, … 6→6) · ใส่ผิด = ทำนายให้คนผิดวันทั้งใบ
+     */
+    protected function buildAstroBrief(FortuneDailyHoroscopePost $post): array
+    {
+        $carbonDow = ((int) $post->day_of_birth) % 7;
+
+        return (new DailyAstroBrief)->build($carbonDow, Carbon::parse($post->post_date));
+    }
+
+    /**
      * สร้าง caption สั้นกระชับด้วย AI (fallback ถ้า AI ล้มเหลว → template-based)
      */
-    protected function generateCaption(
-        FortuneDailyHoroscopePost $post,
-        TarotCard $card,
-        bool $isReversed,
-        string $meaning
-    ): string {
+    protected function generateCaption(FortuneDailyHoroscopePost $post, array $brief): string
+    {
         $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
         $dateStr = $post->post_date->locale('th')->translatedFormat('j F Y');
-        $cardName = $card->name_th ?: $card->name_en;
-        $position = $isReversed ? 'กลับด้าน' : 'ตั้งตรง';
+        $briefOk = (bool) ($brief['ok'] ?? false);
 
-        $prompt = "เขียน caption Facebook สั้นกระชับ 4-6 บรรทัด (ภาษาไทย) สำหรับโพสดวงประจำวัน:\n\n"
+        // 🪐 ข้อเท็จจริงของวันนั้นจริง ๆ — คือสิ่งเดียวที่ทำให้วันนี้ต่างจากเมื่อวาน
+        //    คำนวณดาวไม่ได้ → ห้ามให้ AI อ้างดาวเลย (ดีกว่าปล่อยให้แต่ง)
+        $factBlock = $briefOk
+            ? $brief['text']
+            : '(วันนี้ระบบคำนวณตำแหน่งดาวไม่สำเร็จ — ห้ามอ้างดาว ราศี หรือมุมสัมพันธ์ใด ๆ '
+                .'ให้เขียนจากธรรมชาติของคนเกิดวัน'.$dayName.'เท่านั้น)';
+
+        $prompt = "คุณเป็นโหรไทยที่อ่านดวงจากตำแหน่งดาวจริง เขียน caption Facebook สำหรับดวงประจำวัน\n\n"
             ."วันนี้: {$dateStr}\n"
-            ."สำหรับ: ผู้เกิดวัน{$dayName}\n"
-            ."ไพ่ที่สุ่มได้: {$cardName} ({$position})\n"
-            .'ความหมาย: '.mb_substr($meaning, 0, 200)."\n\n"
+            ."สำหรับ: ผู้เกิดวัน{$dayName}\n\n"
+            ."════ ข้อเท็จจริงทางโหราศาสตร์ของวันนี้ (คำนวณจากตำแหน่งดาวจริง) ════\n"
+            .$factBlock."\n"
+            ."═══════════════════════════════════════════════════\n\n"
             ."กฎ:\n"
             ."1. ขึ้นต้นด้วย 'ดวงคนเกิดวัน{$dayName} | {$dateStr}'\n"
             ."2. บอกจุดเด่นชัดๆ 2-3 ข้อสั้น (การงาน/การเงิน/ความรัก)\n"
@@ -190,7 +209,8 @@ class DailyHoroscopeAutoPostService
             ."4. ปิดท้ายด้วยข้อแนะนำ 1 ข้อ + CTA 'อยากดูเชิงลึกทักแชทมาเลย'\n"
             .'5. '.FacebookContentPolicy::noEmojiRule()
             .'6. ใส่แฮชแท็กได้ไม่เกิน '.FacebookContentPolicy::MAX_HASHTAGS." อัน\n"
-            .'7. ห้ามยาวเกิน 350 ตัวอักษร';
+            ."7. ห้ามยาวเกิน 350 ตัวอักษร\n\n"
+            .DailyAstroBrief::promptRules($dayName, $briefOk);
 
         try {
             $aiService = new FortuneAIService($this->settings);
@@ -219,17 +239,35 @@ class DailyHoroscopeAutoPostService
         }
 
         // Fallback template (กรณี AI ล้มเหลว) — เขียนด้วยมือ จึงไม่มีอีโมจิตั้งแต่ต้นทาง
+        // 🚨 (2026-09-03) เดิม fallback พิมพ์ "ไพ่วันนี้: <ชื่อไพ่>" + แฮชแท็ก #ไพ่ทาโรต์
+        //    ⇒ วันที่ AI ล่ม ลูกค้าจะเห็นโพสอ้างไพ่ ทั้งที่เลนนี้ไม่จับไพ่แล้ว
+        //    ใหม่: รายงาน**ข้อเท็จจริงดาวล้วน ๆ** ไม่ตีความ (ตีความคืองานของ AI)
+        //    ถ้าคำนวณดาวไม่ได้ด้วย → เหลือแค่หัวเรื่อง + CTA ดีกว่าแต่งเนื้อขึ้นเอง
+        $factLine = '';
+        if ($briefOk) {
+            $lord = $brief['lord'] ?? [];
+            $dayLord = $brief['day_lord'] ?? [];
+            $parts = [];
+            if (! empty($lord['th']) && ! empty($lord['sign'])) {
+                $parts[] = "ดาวเจ้าเรือน {$lord['th']} สถิตราศี{$lord['sign']}"
+                    .(! empty($lord['retro']) ? ' (พักร)' : '');
+            }
+            if (! empty($dayLord['th']) && ! empty($dayLord['sign'])) {
+                $parts[] = "ดาวเจ้าการของวันนี้ {$dayLord['th']} สถิตราศี{$dayLord['sign']}";
+            }
+            $factLine = $parts === [] ? '' : implode("\n", $parts)."\n\n";
+        }
+
         // แฮชแท็ก 3 อันพอดีเพดาน (ดู FacebookContentPolicy::MAX_HASHTAGS)
         return FacebookContentPolicy::clean(
-            "ดวงคนเกิดวัน{$dayName} | {$dateStr}\n"
-            ."ไพ่วันนี้: {$cardName} ({$position})\n\n"
-            .mb_substr($meaning, 0, 180)."\n\n"
+            "ดวงคนเกิดวัน{$dayName} | {$dateStr}\n\n"
+            .$factLine
             .'อยากดูเชิงลึกแม่นๆ ทักแชทมาคุยกับแม่หมอจันทราได้เลย'
-        )."\n\n".'#ดวงประจำวัน #ไพ่ทาโรต์ #ดูดวงฟรี';
+        )."\n\n".'#ดวงประจำวัน #โหราศาสตร์ไทย #ดูดวงฟรี';
     }
 
     /**
-     * 2. สร้างรูปประกอบ (composite ไพ่ + overlay text)
+     * 2. สร้างรูปประกอบ (ภาพวิวประจำวันเกิด + overlay text)
      *
      * ใช้ GD library — ไม่ต้องพึ่ง 3rd party
      * Output: storage/app/public/fortune-daily/{date}/{day}.jpg
@@ -300,7 +338,6 @@ class DailyHoroscopeAutoPostService
                 return null;
             }
 
-            $card = $post->tarotCard;
             $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
 
             // 🎨 ภาพ: scene เฉพาะวันเกิด — ไม่อิงไพ่ทาโรต์ (user feedback 2026-04)
@@ -393,7 +430,6 @@ class DailyHoroscopeAutoPostService
             Log::info('DailyHoroscopeAutoPost: Cloudflare AI สำเร็จ', [
                 'post_id' => $post->id,
                 'day' => $post->day_of_birth,
-                'card' => $card?->name_en ?: 'unknown',
                 'size' => is_file($absolutePath) ? filesize($absolutePath) : 0,
             ]);
 
@@ -418,7 +454,6 @@ class DailyHoroscopeAutoPostService
      */
     protected function generateImageWithPollinations(FortuneDailyHoroscopePost $post): ?string
     {
-        $card = $post->tarotCard;
         $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
 
         // 🎨 ภาพ: scene เฉพาะวันเกิด — ไม่อิงไพ่ทาโรต์ (เหมือน Cloudflare path)
@@ -477,7 +512,6 @@ class DailyHoroscopeAutoPostService
             Log::info('DailyHoroscopeAutoPost: Pollinations.ai สร้างรูปสำเร็จ', [
                 'post_id' => $post->id,
                 'day' => $post->day_of_birth,
-                'card' => $card?->name_en ?: 'unknown',
                 'size' => strlen($response->body()),
             ]);
 
@@ -498,9 +532,21 @@ class DailyHoroscopeAutoPostService
     protected function generateImageWithGD(FortuneDailyHoroscopePost $post): ?string
     {
         try {
-            $card = $post->tarotCard;
             $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
             $dateStr = $post->post_date->locale('th')->translatedFormat('j M Y');
+
+            // 🪐 (2026-09-03) เดิมรูปนี้พิมพ์ "ชื่อไพ่ทาโรต์ + ตั้งตรง/กลับด้าน" ลงบนภาพ
+            //    เลนนี้ไม่จับไพ่แล้ว → พิมพ์ดาวเจ้าเรือนกับราศีที่สถิตจริงแทน
+            $brief = $this->buildAstroBrief($post);
+            $lordLine = 'โหราศาสตร์ไทย';
+            $signLine = '';
+            if (! empty($brief['ok']) && ! empty($brief['lord']['th'])) {
+                $lordLine = 'ดาวเจ้าเรือน '.$brief['lord']['th'];
+                if (! empty($brief['lord']['sign'])) {
+                    $signLine = 'สถิตราศี'.$brief['lord']['sign']
+                        .(! empty($brief['lord']['retro']) ? ' (พักร)' : '');
+                }
+            }
 
             $themeColors = [
                 1 => [255, 230, 100], 2 => [255, 90, 90], 3 => [120, 220, 120],
@@ -528,10 +574,10 @@ class DailyHoroscopeAutoPostService
             if ($fontPath) {
                 imagettftext($img, 50, 0, 80, 100, $gold, $fontPath, "ดวงคนเกิดวัน{$dayName}");
                 imagettftext($img, 28, 0, 80, 150, $cream, $fontPath, $dateStr);
-                $cardName = $card?->name_th ?: ($card?->name_en ?: 'ไพ่ทาโรต์');
-                $position = $post->is_reversed ? '(กลับด้าน)' : '(ตั้งตรง)';
-                imagettftext($img, 60, 0, 80, 580, $white, $fontPath, $cardName);
-                imagettftext($img, 32, 0, 80, 640, $cream, $fontPath, $position);
+                imagettftext($img, 52, 0, 80, 580, $white, $fontPath, $lordLine);
+                if ($signLine !== '') {
+                    imagettftext($img, 32, 0, 80, 640, $cream, $fontPath, $signLine);
+                }
                 imagettftext($img, 28, 0, 80, 1000, $gold, $fontPath, '✨ แม่หมอจันทรา • thaiprompt');
 
                 // 🌙 (2026-05-23) CTA text ตาม toggle — ไม่ฮาร์ดโค้ด "ดูดวงเชิงลึก" ถ้า Deep ปิด
@@ -544,7 +590,7 @@ class DailyHoroscopeAutoPostService
                 imagettftext($img, 22, 0, 80, 1040, $cream, $fontPath, $ctaText);
             } else {
                 imagestring($img, 5, 80, 100, "Day: {$dayName}", $gold);
-                imagestring($img, 4, 80, 580, ($card?->name_en ?: 'Tarot'), $white);
+                imagestring($img, 4, 80, 580, 'Thai Astrology', $white);
                 imagestring($img, 3, 80, 1000, 'thaiprompt fortune', $gold);
             }
 
