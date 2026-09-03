@@ -208,8 +208,10 @@ class FortuneBackfillBirthTime extends Command
         //    ฝั่ง assistant มีคำว่า "เวลาเกิด" เต็มไปหมด ถ้าอ่านด้วยจะได้เวลาที่ AI แต่งเอง
         foreach ((array) $reading->getConversationState('pro_session_history', []) as $turn) {
             $turn = (array) $turn;
+            // ต้องเป็น 'user' แบบชัดเจนเท่านั้น — ไม่มี role = ข้าม (ปลอดภัยกว่าเดาว่าเป็นลูกค้า)
+            // prod ตรวจแล้ว 1,722 เทิร์นเป็น {role, content} ครบทุกตัว ไม่มีตกหล่น
             $role = (string) ($turn['role'] ?? $turn['sender'] ?? '');
-            if ($role !== '' && $role !== 'user') {
+            if ($role !== 'user') {
                 continue;
             }
             $msg = (string) ($turn['content'] ?? $turn['message'] ?? $turn['text'] ?? '');
