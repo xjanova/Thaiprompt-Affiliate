@@ -2,6 +2,7 @@
 
 namespace App\Services\Fortune;
 
+use App\Services\FortuneChartService;
 use Carbon\Carbon;
 
 /**
@@ -39,6 +40,15 @@ class ThaiAstrologyService
      * และเป็นมาตรฐานที่โหราศาสตร์สากลใช้กับดวงที่ไม่ทราบเวลาเกิด (noon chart)
      */
     public const DEFAULT_BIRTH_HOUR = 12.0;
+
+    /** วันพุธ (Carbon::dayOfWeek) — วันเดียวที่ตำราไทยแบ่งเป็น 2 ดาว (พุธ / ราหู) */
+    public const WEDNESDAY = 3;
+
+    /** 🌙 ย่ำค่ำ — เข้าเขต "กลางคืน" ทางโหร */
+    public const NIGHT_STARTS_AT = 18.0;
+
+    /** 🌅 ย่ำรุ่ง — ออกจากเขต "กลางคืน" */
+    public const NIGHT_ENDS_AT = 6.0;
 
     /** เวลาเกิดที่ parse ได้ล่าสุด (ชม. เป็น float รวมนาที, 0-23.99) — null = ไม่ได้ระบุ */
     protected ?float $lastBirthHour = null;
@@ -324,6 +334,14 @@ class ThaiAstrologyService
         $zodiac = $this->getZodiacSignForDate($date);
         $p = $this->getPlanetByDayOfWeek($dow);
 
+        // 🌙 (2026-09-03) พุธกลางคืน = ราหู — ต้องทับ "ดาวเจ้าชนะ" ทั้งชุด ไม่ใช่แค่ทักษา
+        //    ไม่งั้นผังจะขัดกันเอง (หัวบอก "ดาวพุธ" แต่ทักษา/ดาวเสวยอายุเดินจากราหู)
+        $nightRahu = $this->isWednesdayNight($dow, $this->lastBirthHour);
+        if ($nightRahu) {
+            $p = $this->rahuRulerProfile($p);
+            $dayName .= ' (กลางคืน)';
+        }
+
         $base = "📅 {$date->day} {$thaiMonths[$date->month]} {$thaiYear} (วัน{$dayName}, อายุ {$age} ปี)\n"
             ."♈ ราศี: {$zodiac}\n"
             ."⭐ ดาวเจ้าชนะ: {$p['planet']} | 🔥 ธาตุ: {$p['element']}\n"
@@ -357,7 +375,7 @@ class ThaiAstrologyService
      */
     protected function formatNamingLine(int $dayOfWeek): string
     {
-        $thaksa = $this->getThaksa($dayOfWeek);
+        $thaksa = $this->getThaksa($dayOfWeek, $this->lastBirthHour);
         $letters = (array) config('thai_astrology_knowledge.naming_letters', []);
         if (empty($thaksa) || empty($letters)) {
             return '';
@@ -697,7 +715,7 @@ class ThaiAstrologyService
      */
     public function getNamingGuide(int $dayOfWeek): array
     {
-        $thaksa = $this->getThaksa($dayOfWeek);
+        $thaksa = $this->getThaksa($dayOfWeek, $this->lastBirthHour);
         $letters = (array) config('thai_astrology_knowledge.naming_letters', []);
         if (empty($thaksa)) {
             return ['good_planets' => [], 'good_letters' => [], 'kala_planet' => '', 'kala_letters' => ''];
@@ -721,7 +739,7 @@ class ThaiAstrologyService
      */
     protected function formatLuckyDayLine(int $dayOfWeek): string
     {
-        $thaksa = $this->getThaksa($dayOfWeek);
+        $thaksa = $this->getThaksa($dayOfWeek, $this->lastBirthHour);
         $map = (array) config('thai_astrology_knowledge.planet_to_day', []);
         if (empty($thaksa) || empty($map)) {
             return '';
@@ -831,7 +849,7 @@ class ThaiAstrologyService
      */
     protected function formatThaksaLine(int $dayOfWeek): string
     {
-        $thaksa = $this->getThaksa($dayOfWeek);
+        $thaksa = $this->getThaksa($dayOfWeek, $this->lastBirthHour);
         if (empty($thaksa)) {
             return '';
         }
@@ -858,7 +876,7 @@ class ThaiAstrologyService
      */
     protected function formatPeriodLine(int $dayOfWeek, int $age): string
     {
-        $period = $this->getPlanetaryPeriod($dayOfWeek, $age);
+        $period = $this->getPlanetaryPeriod($dayOfWeek, $age, $this->lastBirthHour);
         if (empty($period)) {
             return '';
         }
@@ -906,17 +924,119 @@ class ThaiAstrologyService
      * @param  int  $dayOfWeek  0=อาทิตย์..6=เสาร์
      * @return array<int, array{name:string, icon:string, planet:string, meaning:string}>
      */
-    public function getThaksa(int $dayOfWeek): array
+    /**
+     * 🌙 (2026-09-03) จุดเริ่มทักษา — รองรับ **พุธกลางคืน = ราหู** ตามตำราไทย
+     *
+     * ตำราไทยมีดาว 8 ดวง (รวมราหู) และ "วันพุธ" แบ่งเป็น 2 ดาว:
+     *   พุธกลางวัน (ย่ำรุ่ง–ย่ำค่ำ) = พุธ · พุธกลางคืน (ย่ำค่ำ–ย่ำรุ่ง) = **ราหู**
+     * โหรจริงตรวจข้อนี้เป็นข้อแรก ๆ ของคนเกิดวันพุธ
+     *
+     * ⚠️ ระบบมีข้อมูลราหูครบอยู่แล้วทุกช่อง (thaksa_order · planet_meta · period_tone ·
+     *    naming_letters · planet_to_day 'วันพุธ (กลางคืน)') และ config เขียนกำกับไว้ด้วยว่า
+     *    "พุธกลางคืน=ราหู ต้องมีเวลาเกิด" — **แต่ไม่เคยถูกต่อสายกับเวลาเกิดจริง**
+     *    เพราะเวลาเกิดไม่เคยถูกเก็บเลย (prod: 1,253 บิลจ่ายเงิน มี birth_time 0 ใบ)
+     *
+     * 🕛 ไม่รู้เวลาเกิด → คงพฤติกรรมเดิม (พุธกลางวัน) · **ห้ามเดา**
+     *    การเดาผิดข้างเปลี่ยนดาวเจ้าเรือนทั้งดวง แย่กว่าใช้ค่ากลาง
+     *
+     * @param  float|null  $birthHour  ชั่วโมงเกิด (18.5 = 18:30) · null = ไม่ทราบ
+     * @return int|null null = วันเกิดไม่ถูกต้อง
+     */
+    protected function thaksaStartIndex(int $dayOfWeek, ?float $birthHour = null): ?int
+    {
+        $startMap = (array) config('thai_astrology_knowledge.day_to_thaksa_start', []);
+        if (! isset($startMap[$dayOfWeek])) {
+            return null;
+        }
+
+        if ($dayOfWeek === self::WEDNESDAY && $this->isNightBirth($birthHour)) {
+            $order = (array) config('thai_astrology_knowledge.thaksa_order', []);
+            $rahu = array_search('ราหู', $order, true);
+            if ($rahu !== false) {
+                return (int) $rahu;
+            }
+        }
+
+        return (int) $startMap[$dayOfWeek];
+    }
+
+    /**
+     * 🌙 ชุดข้อมูล "ดาวเจ้าเรือน" ของคนเกิดพุธกลางคืน = ราหู
+     *
+     * 🚫 ไม่แต่งข้อมูลโหรขึ้นใหม่แม้แต่ช่องเดียว — ประกอบจากของที่มีอยู่จริงในระบบ:
+     *   - ธาตุ / สี / จุดเด่น / กำลังพระเคราะห์ ← `config/thai_astrology_knowledge.php`
+     *     ช่อง `planet_meta.ราหู` (คอมเมนต์ในไฟล์เขียนกำกับไว้เองว่าเป็น "ดาวที่ 8
+     *     ที่ getPlanetByDayOfWeek ไม่มี" — คือเตรียมไว้รอจุดนี้พอดี)
+     *   - ดาวมิตร/ศัตรู ← **อนุมานย้อนจาก `FortuneChartService::CHAOCHANA`**
+     *     (วันไหนระบุราหูเป็นมิตร ⇒ ราหูก็มีวันนั้นเป็นมิตร) ไม่ใช่การเดา
+     *   - เลขมงคล ← เลขดาวราหู = 8 ตามเลขศาสตร์ไทย (อาทิตย์ 1 … ราหู 8)
+     *
+     * @param  array  $fallback  ชุดของ "พุธกลางวัน" ใช้เป็นค่าตั้งต้นเผื่อ config หาย
+     */
+    protected function rahuRulerProfile(array $fallback): array
+    {
+        $meta = (array) config('thai_astrology_knowledge.planet_meta.ราหู', []);
+        if ($meta === []) {
+            return $fallback;   // config หาย → อย่าเดา ใช้ของเดิมไปก่อน
+        }
+
+        $friends = [];
+        $enemies = [];
+        foreach (FortuneChartService::CHAOCHANA as $row) {
+            $self = FortuneChartService::PLANETS[$row['planet']]['name'] ?? null;
+            if ($self === null) {
+                continue;
+            }
+            if (in_array('rahu', $row['friends'] ?? [], true)) {
+                $friends[] = $self;
+            }
+            if (in_array('rahu', $row['enemies'] ?? [], true)) {
+                $enemies[] = $self;
+            }
+        }
+
+        return [
+            'planet' => 'ราหู (☊) — เกิดวันพุธกลางคืน',
+            'element' => 'ธาตุ'.($meta['element'] ?? 'ลม'),
+            'friends' => $friends === [] ? ($fallback['friends'] ?? '-') : implode(', ', array_unique($friends)),
+            'enemies' => $enemies === [] ? ($fallback['enemies'] ?? '-') : implode(', ', array_unique($enemies)),
+            'lucky_color' => (string) ($meta['color'] ?? ''),
+            'unlucky_color' => $fallback['unlucky_color'] ?? '',
+            'lucky_number' => '8',
+            'lucky_days' => $fallback['lucky_days'] ?? '',
+            'unlucky_days' => $fallback['unlucky_days'] ?? '',
+            'personality' => (string) ($meta['trait'] ?? ''),
+        ];
+    }
+
+    /** 🌙 เกิดกลางคืนไหม (ย่ำค่ำ 18:00 – ย่ำรุ่ง 06:00) · null = ไม่ทราบเวลา = ไม่ใช่ */
+    protected function isNightBirth(?float $birthHour): bool
+    {
+        if ($birthHour === null) {
+            return false;
+        }
+
+        return $birthHour >= self::NIGHT_STARTS_AT || $birthHour < self::NIGHT_ENDS_AT;
+    }
+
+    /**
+     * 🌙 คนเกิดวันพุธกลางคืน — ดาวเจ้าเรือนคือ "ราหู" ไม่ใช่ "พุธ"
+     */
+    public function isWednesdayNight(int $dayOfWeek, ?float $birthHour = null): bool
+    {
+        return $dayOfWeek === self::WEDNESDAY && $this->isNightBirth($birthHour);
+    }
+
+    public function getThaksa(int $dayOfWeek, ?float $birthHour = null): array
     {
         $order = (array) config('thai_astrology_knowledge.thaksa_order', []);
         $bhava = (array) config('thai_astrology_knowledge.thaksa_bhava', []);
-        $startMap = (array) config('thai_astrology_knowledge.day_to_thaksa_start', []);
+        $start = $this->thaksaStartIndex($dayOfWeek, $birthHour);
 
-        if (empty($order) || empty($bhava) || ! isset($startMap[$dayOfWeek])) {
+        if (empty($order) || empty($bhava) || $start === null) {
             return [];
         }
 
-        $start = (int) $startMap[$dayOfWeek];
         $count = count($order);
         $result = [];
 
@@ -938,18 +1058,18 @@ class ThaiAstrologyService
      *
      * @return array{planet:string, from:int, to:int, tone:string} ว่าง = คำนวณไม่ได้
      */
-    public function getPlanetaryPeriod(int $dayOfWeek, int $age): array
+    public function getPlanetaryPeriod(int $dayOfWeek, int $age, ?float $birthHour = null): array
     {
         $order = (array) config('thai_astrology_knowledge.thaksa_order', []);
-        $startMap = (array) config('thai_astrology_knowledge.day_to_thaksa_start', []);
         $meta = (array) config('thai_astrology_knowledge.planet_meta', []);
         $tones = (array) config('thai_astrology_knowledge.period_tone', []);
+        // wednesday-night charts start the maha-thaksa cycle on Rahu (12y) not Mercury (17y)
+        $start = $this->thaksaStartIndex($dayOfWeek, $birthHour);
 
-        if (empty($order) || ! isset($startMap[$dayOfWeek]) || $age < 0) {
+        if (empty($order) || $start === null || $age < 0) {
             return [];
         }
 
-        $start = (int) $startMap[$dayOfWeek];
         $count = count($order);
         $ageInCycle = $age % 108; // มหาทักษารวม 108 ปี — วนรอบ
 
@@ -1220,33 +1340,154 @@ class ThaiAstrologyService
         );
     }
 
+    /**
+     * 🇹🇭 เลขไทยแบบคำ → ตัวเลข (ใช้กับนาฬิกาไทย "ตีห้า" / "บ่ายสองโมง" / "ยี่สิบนาฬิกา")
+     *
+     * ⚠️ ลำดับใน regex ต้องยาวก่อนสั้นเสมอ — ไม่งั้น "ยี่สิบเอ็ด" ถูกจับแค่ "ยี่" = 2
+     */
+    protected function thaiWordToInt(string $w): ?int
+    {
+        $map = [
+            'ยี่สิบสาม' => 23, 'ยี่สิบสอง' => 22, 'ยี่สิบเอ็ด' => 21, 'ยี่สิบ' => 20,
+            'สิบเก้า' => 19, 'สิบแปด' => 18, 'สิบเจ็ด' => 17, 'สิบหก' => 16, 'สิบห้า' => 15,
+            'สิบสี่' => 14, 'สิบสาม' => 13, 'สิบสอง' => 12, 'สิบเอ็ด' => 11, 'สิบ' => 10,
+            'หนึ่ง' => 1, 'นึง' => 1, 'เอ็ด' => 1, 'สอง' => 2, 'สาม' => 3, 'สี่' => 4,
+            'ห้า' => 5, 'หก' => 6, 'เจ็ด' => 7, 'แปด' => 8, 'เก้า' => 9,
+        ];
+
+        return $map[$w] ?? null;
+    }
+
+    /**
+     * 🇹🇭 อ่าน "นาฬิกาแบบไทย" ให้เป็นเวลาสากล (owner directive 2026-09-03)
+     *   *"บอทต้องแยกแยะเข้าใจได้เอง แม้บอกเวลาแบบไทยๆ ก็ต้องประมาณได้ว่าเป็นเวลาสากลแบบไหน"*
+     *
+     * รองรับ: ตีห้า · ตี 5 ครึ่ง · บ่ายโมง · บ่าย 2 โมง · บ่ายสองโมง · หกโมงเช้า ·
+     *         สี่โมงเย็น · สองทุ่มครึ่ง · ยี่สิบนาฬิกา · เที่ยงคืน · ย่ำรุ่ง/ย่ำค่ำ
+     *
+     * 🐛 บั๊กที่แก้ไปด้วย — **"บ่าย 2 โมง" เคยอ่านเป็น 02:00 (ผิดไป 12 ชม.)**
+     *    เพราะกฎเดิม `(\d)\s*โมง\s*(บ่าย)?` คาดว่าตัวบอกช่วงอยู่ *หลัง* ตัวเลข
+     *    แต่คนไทยพูด "บ่าย" นำหน้า ⇒ จับได้แค่ "2 โมง" แล้วคืน 2.0 ดิบๆ
+     *
+     * 🚫 จงใจไม่จับ "เที่ยง" เดี่ยวๆ (เที่ยงวัน/เที่ยงตรง) — เป็นคำที่โผล่ในประโยคทั่วไปบ่อย
+     *    ("ตอนเที่ยงจะไปสัมภาษณ์") ปล่อยให้ลำดับ 3 ที่บังคับติดกับคำว่า "เกิด" จัดการ
+     *
+     * @return float|null ชั่วโมงทศนิยม (20.5 = 20:30) · null = ไม่ใช่นาฬิกาไทย
+     */
+    public function parseThaiClock(string $text): ?float
+    {
+        $t = $this->normalizeThaiDigits($text);
+
+        $words = implode('|', array_keys([
+            'ยี่สิบสาม' => 0, 'ยี่สิบสอง' => 0, 'ยี่สิบเอ็ด' => 0, 'ยี่สิบ' => 0,
+            'สิบเก้า' => 0, 'สิบแปด' => 0, 'สิบเจ็ด' => 0, 'สิบหก' => 0, 'สิบห้า' => 0,
+            'สิบสี่' => 0, 'สิบสาม' => 0, 'สิบสอง' => 0, 'สิบเอ็ด' => 0, 'สิบ' => 0,
+            'หนึ่ง' => 0, 'นึง' => 0, 'เอ็ด' => 0, 'สอง' => 0, 'สาม' => 0, 'สี่' => 0,
+            'ห้า' => 0, 'หก' => 0, 'เจ็ด' => 0, 'แปด' => 0, 'เก้า' => 0,
+        ]));
+        $n = '(?:(?<d>\d{1,2})|(?<w>'.$words.'))';
+        $min = '(?:\s*[:\.](?<mm>\d{2})|\s*(?<half>ครึ่ง))?';
+
+        $hourOf = function (array $m): ?int {
+            $d = (string) ($m['d'] ?? '');
+
+            return $d !== '' ? (int) $d : $this->thaiWordToInt((string) ($m['w'] ?? ''));
+        };
+        $fracOf = function (array $m): float {
+            if ((string) ($m['half'] ?? '') !== '') {
+                return 0.5;
+            }
+            $mm = (string) ($m['mm'] ?? '');
+
+            return ($mm !== '' && (int) $mm < 60) ? ((int) $mm) / 60.0 : 0.0;
+        };
+
+        // เที่ยงคืน = 00:00 · ย่ำรุ่ง = 06:00 · ย่ำค่ำ = 18:00
+        if (preg_match('/เที่ยงคืน/u', $t)) {
+            return 0.0;
+        }
+        if (preg_match('/ย่ำรุ่ง/u', $t)) {
+            return 6.0;
+        }
+        if (preg_match('/ย่ำค่ำ/u', $t)) {
+            return 18.0;
+        }
+
+        // ตี 1-6 → 01:00-06:00 · ต้องติดตัวเลข/คำเลข ไม่งั้น "ตีราคา 5 แสน" กลายเป็นเวลาเกิด
+        if (preg_match('/ตี\s*'.$n.$min.'/u', $t, $m)) {
+            $h = $hourOf($m);
+            if ($h !== null && $h >= 1 && $h <= 6) {
+                return $h + $fracOf($m);
+            }
+        }
+
+        // "บ่ายโมง" (ไม่มีตัวเลขเลย) = 13:00
+        if (preg_match('/บ่าย\s*โมง'.$min.'/u', $t, $m)) {
+            return 13.0 + $fracOf($m);
+        }
+
+        // "บ่าย N โมง" = N+12 (บ่ายสองโมง = 14:00)
+        if (preg_match('/บ่าย\s*'.$n.'\s*โมง'.$min.'/u', $t, $m)) {
+            $h = $hourOf($m);
+            if ($h !== null && $h >= 1 && $h <= 5) {
+                return $h + 12 + $fracOf($m);
+            }
+        }
+
+        // "N โมงเช้า" 1-11 → ตรงตัว · "N โมงเย็น" 1-6 → +12 (สี่โมงเย็น = 16:00)
+        if (preg_match('/'.$n.'\s*โมง\s*(?<p>เช้า|เย็น)'.$min.'/u', $t, $m)) {
+            $h = $hourOf($m);
+            $p = (string) ($m['p'] ?? '');
+            if ($h !== null && $p === 'เย็น' && $h >= 1 && $h <= 6) {
+                return $h + 12 + $fracOf($m);
+            }
+            if ($h !== null && $p === 'เช้า' && $h >= 1 && $h <= 11) {
+                return $h + $fracOf($m);
+            }
+        }
+
+        // "ทุ่มนึง" / "ทุ่มหนึ่ง" = 19:00 — ตัวเลขอยู่ *หลัง* หน่วย (คนไทยพูดแบบนี้บ่อย)
+        if (preg_match('/ทุ่ม\s*(?:นึง|หนึ่ง)'.$min.'/u', $t, $m)) {
+            return 19.0 + $fracOf($m);
+        }
+
+        // "N ทุ่ม" 1-5 → 19:00-23:00 · (?!เท) กัน "ทุ่มเท" ที่ไม่เกี่ยวกับเวลา
+        if (preg_match('/'.$n.'\s*ทุ่ม(?!เท)'.$min.'/u', $t, $m)) {
+            $h = $hourOf($m);
+            if ($h !== null && $h >= 1 && $h <= 5) {
+                return $h + 18 + $fracOf($m);
+            }
+        }
+
+        // "N นาฬิกา" 0-23 → ตรงตัว (ระบบ 24 ชม. อยู่แล้ว)
+        if (preg_match('/'.$n.'\s*นาฬิกา'.$min.'/u', $t, $m)) {
+            $h = $hourOf($m);
+            if ($h !== null && $h >= 0 && $h <= 23) {
+                return $h + $fracOf($m);
+            }
+        }
+
+        // "N โมง" ลอยๆ ไม่มีเช้า/เย็น — คนไทยหมายถึงกลางวัน (6 โมง = 06:00, 10 โมง = 10:00)
+        if (preg_match('/'.$n.'\s*โมง'.$min.'/u', $t, $m)) {
+            $h = $hourOf($m);
+            if ($h !== null && $h >= 1 && $h <= 11) {
+                return $h + $fracOf($m);
+            }
+        }
+
+        return null;
+    }
+
     public function extractBirthHourFromText(string $text): ?float
     {
         // 🎭 ตัดวันเดือนปีทิ้งก่อนเสมอ — ไม่งั้น "01.01.2521" กลายเป็นเวลา 01:01 (ดู maskBirthDates)
         $t = $this->maskBirthDates($this->normalizeThaiDigits($text));
 
-        // 🕛 (2026-09-03) ลำดับ 0: คำบอกเวลาแบบไทยที่คนใช้จริงแต่ของเดิมอ่านไม่ออกเลย
-        //    ต้องมาก่อน "โมง" และก่อนลำดับ 3 — ไม่งั้น "เที่ยงคืน" จะถูกจับเป็น "เที่ยง" = 12:00
-        if (preg_match('/เที่ยงคืน/u', $t)) {
-            return 0.0;
-        }
-        if (preg_match('/ตี\s*(\d{1,2})/u', $t, $m)) {
-            $h = (int) $m[1];
-            if ($h >= 1 && $h <= 5) {
-                return (float) $h;   // ตี 1 = 01:00 … ตี 5 = 05:00
-            }
-        }
-        if (preg_match('/(\d{1,2})\s*ทุ่ม/u', $t, $m)) {
-            $h = (int) $m[1];
-            if ($h >= 1 && $h <= 5) {
-                return (float) ($h + 18);  // 1 ทุ่ม = 19:00 … 5 ทุ่ม = 23:00
-            }
-        }
-        if (preg_match('/(\d{1,2})\s*นาฬิกา/u', $t, $m)) {
-            $h = (int) $m[1];
-            if ($h >= 0 && $h <= 23) {
-                return (float) $h;
-            }
+        // 🕛 ลำดับ 0: นาฬิกาแบบไทย (ตี/ทุ่ม/โมง/บ่าย/นาฬิกา) — ต้องมาก่อน HH:MM
+        //    เพราะ "ตี 5.30" ต้องได้ 05:30 ไม่ใช่ให้กฎ HH.MM คว้าไปตีความเอง
+        $thaiClock = $this->parseThaiClock($t);
+        if ($thaiClock !== null) {
+            return $thaiClock;
         }
 
         // ลำดับ 1: HH:MM หรือ HH.MM (+ optional น./AM/PM) — เก็บนาทีด้วย
