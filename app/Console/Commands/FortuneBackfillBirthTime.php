@@ -181,12 +181,56 @@ class FortuneBackfillBirthTime extends Command
                 continue;
             }
 
-            if ($hour !== null) {
-                return [$hour, $source, preg_replace('/\s+/u', ' ', $text)];
+            if ($hour === null) {
+                continue;
             }
+
+            // 🚨 เวลานี้เป็นของ "คนอื่น" หรือเปล่า (เคสจริง บิล 10711)
+            //    ลูกค้าเกิด 27/06/1978 แต่พิมพ์ว่า "แฟนผม.เกิดวันที่6/2/2532...เวลา19.00"
+            //    ⇒ 19:00 คือเวลาเกิดของแฟน เขียนลงบิลนี้ = เอาผังคนอื่นมาทับลูกค้า
+            if ($this->mentionsThirdParty($text) || $this->hasConflictingDate($text, $reading)) {
+                continue;
+            }
+
+            return [$hour, $source, preg_replace('/\s+/u', ' ', $text)];
         }
 
         return null;
+    }
+
+    /**
+     * ข้อความนี้พูดถึง "คนอื่น" ไหม — ลูกค้าถามดวงคู่/ญาติบ่อยมาก
+     *
+     * ยอมทิ้งของจริงบางใบดีกว่าเขียนเวลาเกิดของคนอื่นทับผังลูกค้าที่จ่ายเงินแล้ว
+     */
+    private function mentionsThirdParty(string $text): bool
+    {
+        return (bool) preg_match(
+            '/(แฟน|สามี|ภรรยา|เมีย|ผัว|คู่ครอง|พ่อ|แม่|ลูก|พี่|น้อง|เพื่อน|หัวหน้า|เจ้านาย|คนรัก|เขาเกิด|เธอเกิด)/u',
+            $text
+        );
+    }
+
+    /**
+     * ข้อความมีวันเกิด "คนละวัน" กับบิลนี้ไหม — สัญญาณว่ากำลังพูดถึงดวงคนอื่น
+     *
+     * ถ้าไม่มีวันที่ในข้อความเลย = ถือว่าพูดถึงตัวเอง (ผ่าน)
+     * มีวันที่และตรงกับบิล = ผ่าน · มีวันที่แต่ไม่ตรงเลย = ข้าม
+     */
+    private function hasConflictingDate(string $text, FortuneReading $reading): bool
+    {
+        if (! preg_match_all('/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*\d{2,4}/u', $text, $m, PREG_SET_ORDER)) {
+            return false;
+        }
+
+        foreach ($m as $hit) {
+            if ((int) $hit[1] === (int) $reading->birth_date->day
+                && (int) $hit[2] === (int) $reading->birth_date->month) {
+                return false; // เจอวันที่ที่ตรงกับบิล = พูดถึงตัวเอง
+            }
+        }
+
+        return true;
     }
 
     /**
