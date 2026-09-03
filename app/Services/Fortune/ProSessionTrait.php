@@ -1828,6 +1828,11 @@ trait ProSessionTrait
         if ($reading->getConversationState('celtic_birthdate_pending', false)) {
             return false;
         }
+        // 🕛 (2026-09-03) เช่นเดียวกัน — กำลังรอ "เวลาเกิด" อยู่ = ยังไม่ถึงขั้นถามคำถาม
+        //   ไม่กันไว้ = ลูกค้าได้กล่อง "พิมพ์คำถามได้เลย" ทับคำถามเวลาเกิดที่แม่หมอเพิ่งถาม (งงสองทาง)
+        if ($reading->getConversationState('celtic_birthtime_pending', false)) {
+            return false;
+        }
         $readyAt = $reading->getConversationState('pro_session_ready_at');
         if (empty($readyAt)) {
             return false; // ยังไม่พร้อมให้ถาม (เช่น Celtic ยังไม่ส่งพื้นดวง)

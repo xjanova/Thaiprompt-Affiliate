@@ -2139,6 +2139,46 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 🕛 (2026-09-03, owner) ขั้นรับ "เวลาเกิด" ของ Celtic 99 — ถามครั้งเดียว ไม่บล็อกใคร
+     *
+     * เข้ามาเมื่อธง `celtic_birthtime_pending` ติดเท่านั้น (ตั้งตอนได้วันเกิดแต่ยังไม่รู้เวลา)
+     *
+     * 🛡️ กฎเหล็กของขั้นนี้: **ตอบอะไรมาก็เดินต่อเสมอ**
+     *   - อ่านเวลาออก → เก็บลง DB (ผังคำนวณลัคนาใหม่ทันทีในพรอมต์ถัดไป)
+     *   - อ่านไม่ออก / "ไม่ทราบ" / พิมพ์คำถามมาแทน → ใช้เวลามาตรฐาน 12:00 น. เดินหน้าต่อ
+     *   ⇒ ไม่มีทางที่ลูกค้าจ่าย 99 แล้วติดค้างเพราะขั้นนี้ (ธงถูกล้างก่อนเสมอ ไม่ว่าจะ path ไหน)
+     *
+     * @return string คำถามสังเคราะห์ "พื้นดวงรวม" → ไหลเข้า askQuestion ต่อ
+     */
+    protected function handleCelticBirthTimeStep(FortuneReading $reading, string $text): string
+    {
+        // ล้างธงก่อนทำอย่างอื่นเสมอ — กันขั้นนี้ค้างถ้ามีอะไรพังด้านล่าง
+        $reading->setConversationState('celtic_birthtime_pending', false);
+
+        $text = trim($text);
+        try {
+            // source=time_answer → ใช้ตัวอ่านแบบผ่อนกฎ (ทั้งข้อความคือคำตอบเรื่องเวลา)
+            $reading->captureStatedBirthTime($text, FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER);
+        } catch (\Throwable $e) {
+            // non-blocking — ตกไปใช้เวลามาตรฐาน 12:00 น.
+        }
+
+        try {
+            $reading->setConversationState('awaiting_birth_time', null);
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        \Log::info('Celtic: birthtime step ตอบกลับแล้ว → เดินต่อไปพื้นดวง', [
+            'reading_id' => $reading->id,
+            'raw' => mb_substr($text, 0, 30),
+            'known' => $reading->birthTimeIsKnown(),
+        ]);
+
+        return $this->celticBaseChartQuestion($reading);
+    }
+
+    /**
      * 🎂 (2026-06-08) ขั้นรับวันเกิดของ Celtic 99 (คำถามแรกบังคับ — ข้ามได้ถ้าไม่ให้)
      *
      * @return array|string
@@ -2208,6 +2248,35 @@ trait CelticCrossConversationTrait
                 'reading_id' => $reading->id,
                 'birth_date' => $human,
             ]);
+
+            // 🕛 (2026-09-03, owner) ขั้นถาม "เวลาเกิด" — ถามครั้งเดียวเมื่อยังไม่รู้เวลา
+            //   owner directive: "ให้ดูในเรื่องของการถามเวลาเกิด ... แต่ถ้าไม่ทราบก็ใช้เวลามาตรฐานไป"
+            //   เวลาเกิดคือตัวกำหนด *ลัคนา + ภพทั้ง 12* = วัตถุดิบของเซคชั่นใหม่ 🕛 ลัคนา&เรือนชะตา
+            //   ⚠️ ต้องไม่บล็อกของที่จ่ายเงินแล้ว ([[feedback_never_interrupt_payment_to_prediction_flow]]):
+            //      - ถามได้ *ครั้งเดียว* (ธง one-shot) ตอบอะไรมาก็เดินต่อทันที ไม่ถามซ้ำ
+            //      - ปุ่ม "ไม่ทราบ" = จบขั้นตอนด้วยการกดครั้งเดียว
+            //      - เงียบไป = ความเสี่ยงระดับเดียวกับขั้นขอวันเกิดเดิม ซึ่ง fortune:remind-stuck-celtic
+            //        (เงียบ 30 นาที–6 ชม.) ตามเก็บอยู่แล้ว
+            if (! $reading->birthTimeIsKnown()) {
+                $reading->setConversationState('celtic_birthtime_pending', true);
+                // ธงเดียวกับ ProSession — บอกตัวอ่านว่า "ข้อความถัดไปคือคำตอบเรื่องเวลา"
+                //   ⇒ ลูกค้าตอบ "ตี 5" / "19.00" เฉย ๆ (ไม่มีคำว่าเกิด) ก็อ่านออก
+                $reading->setConversationState('awaiting_birth_time', now()->toIso8601String());
+
+                return [
+                    'action' => 'celtic_ask_birthtime',
+                    'message' => "✅ รับวันเกิด *{$human}* แล้วค่ะ\n\n"
+                        ."🕛 อีกอย่างเดียว — *ลูกเกิดกี่โมง* คะ?\n"
+                        ."   เวลาเกิดเป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* แม่หมอจะอ่านให้ได้อีกหนึ่งหัวข้อเต็ม ๆ\n\n"
+                        ."📝 พิมพ์มาได้เลย เช่น *ตี 5* / *06:30* / *บ่าย 2*\n"
+                        .'   (จำไม่ได้ก็ไม่เป็นไร กด *ไม่ทราบ* แม่หมอจะใช้เวลามาตรฐานเที่ยงวันให้)',
+                    'reading' => $reading,
+                    'show_quick_replies' => true,
+                    'quick_replies' => [
+                        ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'],
+                    ],
+                ];
+            }
 
             // คำถามสังเคราะห์ = พื้นดวงรวม (ดาวเจ้าชนะจากวันเกิด + ภาพรวมไพ่ 10 ใบ)
             //   ผ่าน askQuestion → buildFollowupPrompt → ฉีด birthAstroBlock + แม่หมอ Knowledge RAG +
@@ -2434,7 +2503,14 @@ trait CelticCrossConversationTrait
         //     • array  = จัดการจบแล้ว (ถามวันเกิดซ้ำ / ข้าม) → ส่งกลับลูกค้าเลย
         //     • string = ได้วันเกิดแล้ว = คำถามสังเคราะห์ "พื้นดวงรวม" → ไหลเข้า askQuestion ปกติด้านล่าง
         //       (buildFollowupPrompt ฉีด ดาวเจ้าชนะ + แม่หมอ Knowledge RAG + AdminQA RAG ให้อัตโนมัติ)
-        if ($reading->getConversationState('celtic_birthdate_pending')) {
+        if ($reading->getConversationState('celtic_birthtime_pending')) {
+            // 🕛 (2026-09-03, owner) ขั้นถามเวลาเกิด — ต้องเช็คก่อน gate วันเกิด
+            //   (ตอนนี้ celtic_birthdate_pending=false แล้ว แต่วางไว้บนสุดเพื่อไม่ให้ลำดับสลับกันได้ในอนาคต)
+            //   คืน string เสมอ = คำถามพื้นดวง → ไหลเข้า askQuestion เหมือน path วันเกิด
+            $question = $this->handleCelticBirthTimeStep($reading, $question);
+            $messageText = $question;
+            $isCelticBaseChart = (bool) $reading->getConversationState('celtic_base_chart', false);
+        } elseif ($reading->getConversationState('celtic_birthdate_pending')) {
             $bdStep = $this->handleCelticBirthdateStep($reading, $question);
             if (is_array($bdStep)) {
                 return $bdStep;

@@ -67,7 +67,17 @@ class FortuneRemindStuckCeltic extends Command
         $candidates = FortuneReading::query()
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
             ->where('is_paid', true)
-            ->where('conversation_status', FortuneReading::STATUS_CELTIC_PICKING)
+            // 🕛 (2026-09-03) ขอบเขตเดิม = ค้างขั้นเปิดไพ่ (CELTIC_PICKING) เท่านั้น
+            //   เพิ่มขั้น "รอเวลาเกิด" เข้ามาด้วย — ขั้นนี้ค้างแล้ว *พื้นดวงที่จ่ายเงินแล้วไม่ถูกสร้าง*
+            //   และไม่มี cron ตัวไหนเห็นเลย (pro-session-nudge อ้าง pro_session_ready_at ซึ่ง Celtic
+            //   ยังไม่ได้ตั้งจนกว่าพื้นดวงจะถูกส่ง) ⇒ ต้องมีคนตามเก็บ ไม่งั้นเงียบยาว
+            ->where(function ($q) {
+                $q->where('conversation_status', FortuneReading::STATUS_CELTIC_PICKING)
+                    ->orWhere(function ($q2) {
+                        $q2->where('conversation_status', FortuneReading::STATUS_CELTIC_AWAITING_QUESTION)
+                            ->where('conversation_state', 'like', '%"celtic_birthtime_pending":true%');
+                    });
+            })
             ->whereNotNull('paid_at')
             ->where('paid_at', '<=', $cutoffMin)
             ->where('paid_at', '>=', $cutoffMax)
@@ -131,18 +141,31 @@ class FortuneRemindStuckCeltic extends Command
                 continue;
             }
 
-            $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+            $name = $reading->facebook_user_name ?? 'ลูก';
             $billRef = $reading->bill_reference ?? '-';
             $picked = count($reading->getCelticCards());
-            $message = $picked > 0
+
+            // 🕛 (2026-09-03) ค้างที่ขั้น "รอเวลาเกิด" — ไพ่เปิดครบแล้ว ขาดแค่คำตอบเดียว
+            //   ต้องบอกทางออกให้ชัดว่า *พิมพ์ "ไม่ทราบ" ก็เดินต่อได้ทันที* (ไม่ใช่ทวงให้ตอบให้ได้)
+            $waitingBirthTime = (bool) $reading->getConversationState('celtic_birthtime_pending', false);
+
+            if ($waitingBirthTime) {
+                $message = "🌙 คุณ{$name}คะ — แม่หมอเปิดไพ่ครบ 10 ใบรอลูกอยู่แล้วนะคะ ✨\n\n"
+                    ."🕛 ขาดอย่างเดียวคือ *เวลาเกิด* ของลูก (บิลเลขที่ {$billRef})\n"
+                    ."   พิมพ์มาได้เลย เช่น *ตี 5* / *06:30* / *บ่าย 2*\n\n"
+                    ."💡 จำไม่ได้ก็ไม่เป็นไรค่ะ — พิมพ์ว่า *ไม่ทราบ* แม่หมอจะใช้เวลามาตรฐานเที่ยงวัน\n"
+                    .'   แล้วเปิดพื้นดวงให้ทันทีเลย 🃏';
+            } else {
+                $message = $picked > 0
                 ? "🌙 หมอจันทรารอเปิดไพ่ต่อให้คุณ{$name}อยู่นะคะ ✨\n\n"
-                    ."บิล Celtic 99฿ ของเจ้าชะตา (เลขที่ {$billRef}) เปิดไพ่ไปแล้ว {$picked}/10 ใบ\n"
+                    ."บิล Celtic 99฿ ของลูก (เลขที่ {$billRef}) เปิดไพ่ไปแล้ว {$picked}/10 ใบ\n"
                     ."เหลืออีกนิดเดียวเองค่ะ พิมพ์ \"พร้อม\" เพื่อเปิดใบต่อไปได้เลย 🃏\n\n"
                     .'(บิลนี้ใช้ได้เสมอ — กลับมาทำต่อเมื่อสะดวกได้เลยนะคะ 🙏)'
                 : "🌙 หมอจันทรารอเปิดไพ่ให้คุณ{$name}อยู่นะคะ ✨\n\n"
-                    ."บิล Celtic 99฿ ของเจ้าชะตา (เลขที่ {$billRef}) ยังไม่ได้เริ่มเปิดไพ่เลย\n"
+                    ."บิล Celtic 99฿ ของลูก (เลขที่ {$billRef}) ยังไม่ได้เริ่มเปิดไพ่เลย\n"
                     ."ถ้าพร้อมแล้ว พิมพ์ \"เริ่มเปิดไพ่\" ได้เลยค่ะ 🃏\n\n"
                     .'(บิลนี้ใช้ได้เสมอ — กลับมาทำต่อเมื่อสะดวกได้เลยนะคะ 🙏)';
+            }
 
             $this->info("  #{$reading->id} ({$platform}/{$name}) paid {$reading->paid_at}");
 

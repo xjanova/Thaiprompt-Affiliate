@@ -6972,23 +6972,44 @@ class FortuneConversationService
 
         $formatted = $this->formatThaiDate($birthDate);
 
+        // 🕛 (2026-09-03, owner) ขั้นถาม "เวลาเกิด" ของเลน 39 — ถามครั้งเดียว *โดยไม่เพิ่มรอบ*
+        //   owner directive: "ให้ดูในเรื่องของการถามเวลาเกิด ... ถ้าไม่ทราบก็ใช้เวลามาตรฐานไป"
+        //   เวลาเกิด = วัตถุดิบของเซคชั่นใหม่ 🕛 ลัคนา&เรือนชะตา (ThaiAstrologyService::lagnaSectionDirective)
+        //
+        //   ⚠️ ทำไม *ไม่* ทำเป็น state ใหม่ที่ต้องรอคำตอบ ([[feedback_never_interrupt_payment_to_prediction_flow]]):
+        //     ขั้นถัดไปคือ "ตั้งจิต → กดพร้อม" ซึ่งรอลูกค้าพิมพ์อยู่แล้ว → แปะคำถามไปกับกล่องนี้เลย
+        //     ตอบเป็นเวลา = เก็บ · กด "พร้อมเปิดไพ่" = ข้าม (ใช้ 12:00) — ไม่มีทางค้างเพิ่มสักกรณี
+        $askBirthTime = ! $reading->birthTimeIsKnown();
+        $birthTimeBlock = '';
+        $quickReplies = [['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม']];
+        if ($askBirthTime) {
+            $reading->setConversationState('deep_birthtime_pending', true);
+            // ธงเดียวกับ ProSession — บอกตัวอ่านว่า "ข้อความถัดไปคือคำตอบเรื่องเวลา" (ผ่อนกฎ parse)
+            $reading->setConversationState('awaiting_birth_time', now()->toIso8601String());
+
+            $birthTimeBlock = "🕛 *ลูกเกิดกี่โมงคะ?* (ถ้าจำได้ พิมพ์มาก่อนเปิดไพ่ได้เลย)\n"
+                ."   เวลาเกิดเป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
+                ."   ตัวอย่าง: *ตี 5* / *06:30* / *บ่าย 2*\n"
+                ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอใช้เวลามาตรฐานเที่ยงวันให้)\n\n";
+            $quickReplies[] = ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'];
+        }
+
         return [
             'action' => 'awaiting_tarot_intention',
             'message' => "📅 *รับวันเกิดแล้ว: {$formatted}* ✨\n\n"
                 .$interpretationNote
+                .$birthTimeBlock
                 ."═══════════════════════\n"
                 ."🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
                 ."═══════════════════════\n\n"
                 ."หลับตา หายใจลึก ๆ 3 ครั้ง นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
-                ."🃏 แม่หมอจะเปิดไพ่ให้ แล้ว*อ่านพื้นดวงรวม*จากวันเกิด + ไพ่ของเจ้าชะตาให้ทันที\n"
+                ."🃏 แม่หมอจะเปิดไพ่ให้ แล้ว*อ่านพื้นดวงรวม*จากวันเกิด + ไพ่ของลูกให้ทันที\n"
                 ."จากนั้นถามแม่หมอต่อได้เลยค่ะ ✨\n\n"
                 ."เมื่อพร้อม → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
                 .'หรือกดปุ่มด้านล่าง 👇',
             'reading' => $reading,
             'show_quick_replies' => true,
-            'quick_replies' => [
-                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
-            ],
+            'quick_replies' => $quickReplies,
         ];
     }
 
@@ -7767,6 +7788,49 @@ class FortuneConversationService
                     ],
                 ];
             }
+        }
+
+        // 🕛 (2026-09-03, owner) ลูกค้าตอบ "เวลาเกิด" ที่แม่หมอถามไปพร้อมกล่องตั้งจิต
+        //   ต้องอยู่ *ก่อน* ขั้นตั้งจิต — ไม่งั้น "ตี 5" ถูกนับเป็น "ตั้งจิตเสร็จ" แล้วเปิดไพ่ทันที
+        //   โดยที่เวลาเกิดไม่เคยถูกเก็บ (= ถามเอง ตอบให้ แต่ไม่เก็บ — บั๊กเดียวกับ FTU-260903-A2742)
+        //
+        //   🛡️ ไม่บล็อกใครทั้งสิ้น: ธงถูกล้างทุกกรณี · อ่านเวลาไม่ออก (เช่น "พร้อม" / "ไม่ทราบ")
+        //      = ไหลลงไปเปิดไพ่ต่อตามปกติในเทิร์นเดียวกัน ไม่ถามซ้ำ
+        if ($reading->getConversationState('deep_birthtime_pending', false)) {
+            $reading->setConversationState('deep_birthtime_pending', false);
+
+            try {
+                $reading->captureStatedBirthTime(
+                    $messageText,
+                    FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER
+                );
+            } catch (\Throwable $e) {
+                // non-blocking — ตกไปใช้เวลามาตรฐาน 12:00 น.
+            }
+            $reading->setConversationState('awaiting_birth_time', null);
+
+            if ($reading->birthTimeIsKnown()) {
+                $shownTime = FortuneReading::hourToTimeString($reading->birthHourFloat() ?? 12.0, false);
+
+                Log::info('Fortune Deep39: รับเวลาเกิดก่อนเปิดไพ่', [
+                    'reading_id' => $reading->id,
+                    'birth_time' => $shownTime,
+                ]);
+
+                // ตั้งจิตยังไม่จบ — ลูกค้าเพิ่งตอบเรื่องเวลา ไม่ใช่คำว่า "พร้อม"
+                //   ⇒ ทวนให้เห็นว่าเก็บแล้วจริง (ห้ามรับปากลอย ๆ) แล้วชวนกดพร้อมต่อ
+                return [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => "✅ รับเวลาเกิด *{$shownTime} น.* แล้วค่ะ — แม่หมอจะผูก *ลัคนา* กับ *เรือนชะตา* ให้ลูกด้วย ✨\n\n"
+                        .'🃏 พร้อมแล้ว → พิมพ์ *"พร้อม"* หรือกดปุ่มด้านล่างได้เลย 👇',
+                    'reading' => $reading,
+                    'show_quick_replies' => true,
+                    'quick_replies' => [
+                        ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+                    ],
+                ];
+            }
+            // อ่านไม่ออก/ไม่ทราบ → ไม่ทวงซ้ำ ใช้เวลามาตรฐาน แล้วไหลไปเปิดไพ่ต่อ
         }
 
         // 🧘 ขั้นตั้งจิตก่อนเปิดไพ่ — ส่งข้อความเตือนสติ แล้วผู้ใช้ตอบอะไรก็ถือว่า "ตั้งจิตเสร็จ"
