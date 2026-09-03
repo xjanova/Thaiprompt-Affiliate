@@ -98,13 +98,38 @@ class ThaiAstrologyServiceTest extends TestCase
         $this->assertCount(3, $dates);
     }
 
-    /** @test */
-    public function it_calculates_western_zodiac(): void
+    /**
+     * ราศีต้องเป็น **นิรายนะ (แบบไทย)** ไม่ใช่สายนะ (สากล)
+     *
+     * ⚠️ เทสต์นี้เคยชื่อ `it_calculates_western_zodiac` และยืนยันช่วงวันแบบสากล
+     *    พอ `624d56855` เปลี่ยนตารางเป็นราศีไทยตามเจตนาเจ้าของระบบ ค่าที่ถูกต้องก็เปลี่ยนตาม
+     *    (ราศีไทยยกช้ากว่าสากลเกือบเดือน ⇒ 27 มิ.ย. ยังเป็น "เมถุน" ไม่ใช่ "กรกฎ")
+     *    ของเดิมผิดทั้ง 4 บรรทัด แต่ PHPUnit รายงานแค่บรรทัดแรก
+     *
+     * @test
+     */
+    public function it_calculates_thai_sidereal_zodiac(): void
     {
-        $this->assertStringContainsString('กรกฎ', $this->service->getZodiacSign(6, 27));   // Cancer
-        $this->assertStringContainsString('กุมภ์', $this->service->getZodiacSign(2, 6));    // Aquarius
-        $this->assertStringContainsString('มังกร', $this->service->getZodiacSign(1, 1));   // Capricorn
-        $this->assertStringContainsString('ธนู', $this->service->getZodiacSign(12, 10));   // Sagittarius
+        $this->assertStringContainsString('เมถุน', $this->service->getZodiacSign(6, 27));
+        $this->assertStringContainsString('มังกร', $this->service->getZodiacSign(2, 6));
+        $this->assertStringContainsString('ธนู', $this->service->getZodiacSign(1, 1));
+        $this->assertStringContainsString('พิจิก', $this->service->getZodiacSign(12, 10));
+    }
+
+    /**
+     * วันที่ดวงอาทิตย์ "ยกราศี" — ขอบเขตที่พลาดง่ายที่สุดเวลาแก้ตาราง
+     *
+     * @test
+     */
+    public function it_switches_sign_on_the_thai_transition_day(): void
+    {
+        // สงกรานต์ 14 เม.ย. = อาทิตย์ยกเข้าเมษ (ขึ้นปีใหม่ทางโหราศาสตร์ไทย)
+        $this->assertStringContainsString('มีน', $this->service->getZodiacSign(4, 13));
+        $this->assertStringContainsString('เมษ', $this->service->getZodiacSign(4, 14));
+
+        // 17 ก.ย. = ยกเข้ากันย์
+        $this->assertStringContainsString('สิงห์', $this->service->getZodiacSign(9, 16));
+        $this->assertStringContainsString('กันย์', $this->service->getZodiacSign(9, 17));
     }
 
     /** @test */
