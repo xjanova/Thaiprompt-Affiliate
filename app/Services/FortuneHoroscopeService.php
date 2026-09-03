@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FortuneHoroscopeCampaign;
 use App\Models\FortuneHoroscopeContent;
 use App\Services\AiGen\AiGenProviderFactory;
+use App\Services\Fortune\DailyAstroBrief;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -135,8 +136,8 @@ class FortuneHoroscopeService
         );
 
         try {
-            // ขั้นที่ 1: ดึงข้อมูลดาวศาสตร์
-            $astrologyData = $this->getAstrologyData($birthDay);
+            // ขั้นที่ 1: ดึงข้อมูลดาวศาสตร์ ณ วันที่ทำนาย (ต้องส่ง $targetDate ไม่งั้นดาวคงที่ทุกวัน)
+            $astrologyData = $this->getAstrologyData($birthDay, $targetDate);
             $content->update([
                 'main_planet' => $astrologyData['main_planet'],
                 'planet_positions' => $astrologyData['planet_positions'],
@@ -184,14 +185,34 @@ class FortuneHoroscopeService
     }
 
     /**
-     * ดึงข้อมูลโหราศาสตร์สำหรับวันเกิด
+     * ดึงข้อมูลโหราศาสตร์สำหรับวันเกิด ณ "วันที่ทำนาย" จริง ๆ
+     *
+     * 🪐 (2026-09-03) เดิมรับแค่ $birthDay แล้วเรียก `calculatePlanetPositions($birthDay)`
+     *    ซึ่งเป็น **ผังภพคงที่ตามวันเกิด ไม่มีวันที่เข้ามาเกี่ยวเลย** → ค่าที่ยัดเข้า prompt
+     *    ช่อง "ตำแหน่งดาว" เหมือนกันเป๊ะทุกวันตั้งแต่ ก.พ. 2569 (ตรวจจาก prod: 103 วัน
+     *    แต่ distinct planet_positions = 1 ต่อวันเกิด) ทั้งที่ prompt สั่ง "อ้างอิงตำแหน่ง
+     *    ดาวจริง" ⇒ AI ไม่มีข้อเท็จจริงรายวันให้ยึด จึงแต่งเอง = มโน
+     *
+     *    บทเรียนเดียวกับที่แก้ไปแล้วในเลนบทความเว็บ/DM เมื่อ 2026-08-02 —
+     *    ระบบมี [[PlanetEphemeris]] คำนวณดาวจริงอยู่แล้ว แค่ไม่เคยถูกเรียกในเลนนี้
+     *
+     * @param  int  $birthDay  0=อาทิตย์ … 6=เสาร์ (ตรงกับ FortuneChartService::CHAOCHANA)
+     * @param  Carbon|null  $targetDate  วันที่ทำนาย (null = วันนี้)
      */
-    protected function getAstrologyData(int $birthDay): array
+    protected function getAstrologyData(int $birthDay, ?Carbon $targetDate = null): array
     {
+        $targetDate = $targetDate ?? Carbon::now('Asia/Bangkok');
+
         $chaochana = FortuneChartService::CHAOCHANA[$birthDay];
         $mainPlanetKey = $chaochana['planet'];
         $mainPlanet = FortuneChartService::PLANETS[$mainPlanetKey];
+
+        // ผังภพตามตำราเจ้าชนะ — คงที่ตามวันเกิด (ใช้โชว์ผังในแอดมิน + prompt รูปภาพ)
         $planetPositions = $this->chartService->calculatePlanetPositions($birthDay);
+
+        // ข้อเท็จจริงของ "วันนั้นจริง ๆ" — ตำแหน่งดาวจริง 9 ดวง + ศักดิ์ + พักร + มุมสัมพันธ์
+        // fail-open: คำนวณไม่ได้จะได้ ok=false แล้ว prompt จะสั่งห้าม AI อ้างตำแหน่งดาว
+        $astroBrief = (new DailyAstroBrief)->build($birthDay, $targetDate);
 
         // แปลงชื่อดาวมิตร/ศัตรูเป็นภาษาไทย
         $friendNames = array_map(
@@ -211,6 +232,7 @@ class FortuneHoroscopeService
             'chaochana' => $chaochana,
             'friend_planets' => implode(', ', $friendNames),
             'enemy_planets' => implode(', ', $enemyNames),
+            'astro_brief' => $astroBrief,
         ];
     }
 
@@ -259,8 +281,21 @@ class FortuneHoroscopeService
             $template = $this->getDefaultTextPrompt();
         }
 
-        // แปลง planet_positions เป็นข้อความ
-        $positionsText = $this->formatPlanetPositions($astrologyData['planet_positions']);
+        // ผังภพตามวันเกิด (คงที่) — เก็บไว้เป็น placeholder แยกสำหรับ template ที่อยากใช้
+        $natalHouses = $this->formatPlanetPositions($astrologyData['planet_positions']);
+
+        // 🪐 ข้อเท็จจริงรายวันจริง ๆ — ตัวนี้คือสิ่งที่ทำให้ "วันนี้" ต่างจาก "เมื่อวาน"
+        $brief = $astrologyData['astro_brief'] ?? ['ok' => false, 'text' => ''];
+        $briefOk = (bool) ($brief['ok'] ?? false);
+
+        // ⚠️ {planet_positions} ตัวเดิมชี้ไปที่ผังภพคงที่ = ค่าเดิมทุกวัน
+        //    template ที่แอดมินบันทึกไว้ใน DB ใช้ชื่อนี้อยู่ จึงชี้มันมาที่ข้อเท็จจริงจริง
+        //    (ไม่ต้องรอแอดมินแก้ template เอง — ดู [[rule_db_prompt_overrides_code]])
+        $positionsText = $briefOk
+            ? "\n".$brief['text']
+            : "\n".'(วันนี้ระบบคำนวณตำแหน่งดาวจริงไม่สำเร็จ) ด้านล่างคือ "ผังภพตามวันเกิด" '
+                .'ตามตำราเจ้าชนะ ซึ่งคงที่ทุกวัน ไม่ใช่ตำแหน่งดาวของวันนี้ '
+                .'ห้ามนำไปอ้างเป็นราศีหรือมุมสัมพันธ์ประจำวันเด็ดขาด: '.$natalHouses;
 
         // วันที่แบบไทย
         $thaiDate = $targetDate->format('d/m/').($targetDate->year + 543);
@@ -276,9 +311,42 @@ class FortuneHoroscopeService
             '{friend_planets}' => $astrologyData['friend_planets'],
             '{enemy_planets}' => $astrologyData['enemy_planets'],
             '{planet_positions}' => $positionsText,
+            '{astro_brief}' => $positionsText,
+            '{natal_houses}' => $natalHouses,
         ];
 
-        return str_replace(array_keys($replacements), array_values($replacements), $template);
+        $prompt = str_replace(array_keys($replacements), array_values($replacements), $template);
+
+        return $prompt."\n\n".$this->antiHallucinationRules($dayName, $briefOk);
+    }
+
+    /**
+     * 🚨 กฎเหล็กท้าย prompt — บังคับให้ทำนายจากข้อเท็จจริงชุดที่ให้ไปเท่านั้น
+     *
+     * ผนวกท้ายเสมอไม่ว่าแอดมินจะเขียน template ยังไง เพราะ template ใน DB แก้ได้อิสระ
+     * ถ้าปล่อยให้กฎอยู่ใน template อย่างเดียว วันหนึ่งมีคนแก้ทับ = กลับไปมโนเงียบ ๆ
+     *
+     * @param  bool  $briefOk  false = คำนวณดาวไม่สำเร็จ ต้องห้ามอ้างดาวทั้งหมด
+     */
+    protected function antiHallucinationRules(string $dayName, bool $briefOk): string
+    {
+        $factRule = $briefOk
+            ? 'ทุกคำทำนายต้องสาวกลับไปหาดาว ราศี หรือมุมสัมพันธ์ที่ระบุไว้ในข้อมูลด้านบนได้ '
+                .'ห้ามอ้างดาว ราศี มุมสัมพันธ์ หรือปรากฏการณ์ที่ไม่มีในรายการนั้นเด็ดขาด '
+                .'ถ้าข้อมูลไม่พอสำหรับด้านไหน ให้เขียนด้านนั้นสั้นลง ห้ามแต่งเพิ่ม'
+            : 'วันนี้ระบบคำนวณตำแหน่งดาวไม่สำเร็จ ให้ทำนายจากธรรมชาติของดาวเจ้าเรือน'
+                .'วันเกิดเท่านั้น และห้ามอ้างตำแหน่งดาว ราศี หรือมุมสัมพันธ์ใด ๆ';
+
+        // ⚠️ บล็อกนี้ตั้งใจไม่ใส่อีโมจิ — คอนเทนต์ปลายทางถูก FacebookContentPolicy กวาดอีโมจิทิ้ง
+        //    ใส่อีโมจิใน prompt เท่ากับสอนโมเดลว่าใช้ได้ (บทเรียนเดียวกับ dignity_label 2026-08-02)
+        return <<<RULES
+        กฎเหล็ก (ผิดข้อใดข้อหนึ่ง = คำทำนายใช้ไม่ได้):
+        1. {$factRule}
+        2. ห้ามอ้างไพ่ทาโรต์ ไพ่ยิปซี หรือการเปิดไพ่ — งานนี้ไม่มีการจับไพ่
+           ห้ามอ้างฤกษ์ยาม เลขศาสตร์ หรือของมงคลที่ไม่มีในข้อมูลด้านบน
+        3. ห้ามเดาช่วงเวลาเอง — จะอ้างช่วงเวลาของวันได้เฉพาะที่ข้อเท็จจริงระบุไว้เท่านั้น
+        4. เอาธรรมชาติของคนเกิดวัน{$dayName} มาผูกกับดาวของวันนี้ ไม่ใช่ทำนายกลาง ๆ ที่ใครอ่านก็ได้
+        RULES;
     }
 
     /**
