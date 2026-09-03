@@ -170,15 +170,6 @@ class PlanetEphemeris
     }
 
     /**
-     * 🇹🇭 ราศีนิรายนะของลองจิจูดสายนะที่ให้มา
-     *
-     * ใช้กับตัวเลขที่คำนวณนอกคลาสนี้ (เช่น ลัคนาใน ThaiAstrologyService)
-     * ให้แปลงกรอบด้วยสูตรเดียวกัน จะได้ไม่มีสองมาตรฐานในระบบ
-     *
-     * @param  float  $lonTropical  ลองจิจูดสายนะ (องศา)
-     * @return array{lon:float, sign:string, sign_index:int}
-     */
-    /**
      * 🇹🇭 ราศีเกิด (ราศีที่ดวงอาทิตย์สถิตในวันนั้น) แบบนิรายนะ
      *
      * 🚨 (2026-09-03) ใช้แทนตารางช่วงวันแบบสากล (มังกร 22 ธ.ค.–19 ม.ค. ฯลฯ) ที่เดิม
@@ -199,6 +190,15 @@ class PlanetEphemeris
         return self::SIGN_LABELS[$idx] ?? self::SIGN_LABELS[0];
     }
 
+    /**
+     * 🇹🇭 ราศีนิรายนะของลองจิจูดสายนะที่ให้มา
+     *
+     * ใช้กับตัวเลขที่คำนวณนอกคลาสนี้ (เช่น ลัคนาใน ThaiAstrologyService)
+     * ให้แปลงกรอบด้วยสูตรเดียวกัน จะได้ไม่มีสองมาตรฐานในระบบ
+     *
+     * @param  float  $lonTropical  ลองจิจูดสายนะ (องศา)
+     * @return array{lon:float, sign:string, sign_index:int}
+     */
     public function toSidereal(float $lonTropical, float $jd): array
     {
         $lon = $this->normalize360($lonTropical - $this->ayanamsa($jd));

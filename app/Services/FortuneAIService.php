@@ -5915,19 +5915,22 @@ PROMPT;
      */
     protected function getZodiacSign(int $month, int $day): string
     {
+        // 🐛 (จับผี 2026-09-03) ราศีไทยยกช้ากว่าสากลเกือบเดือน ⇒ ต้องเลื่อน **ชื่อราศี**
+        //    ถอยไป 1 ราศีด้วย ไม่ใช่แก้แค่ตัวเลขวัน · แต่ละแถว = ราศีที่ครอบวันที่ 1..end_day
+        //    (sync กับ ThaiAstrologyService::getZodiacSign — ดูคำอธิบายเต็มที่นั่น)
         $signs = [
-            ['name' => 'มังกร (Capricorn)', 'end_month' => 1, 'end_day' => 14],
-            ['name' => 'กุมภ์ (Aquarius)', 'end_month' => 2, 'end_day' => 12],
-            ['name' => 'มีน (Pisces)', 'end_month' => 3, 'end_day' => 14],
-            ['name' => 'เมษ (Aries)', 'end_month' => 4, 'end_day' => 13],
-            ['name' => 'พฤษภ (Taurus)', 'end_month' => 5, 'end_day' => 14],
-            ['name' => 'เมถุน (Gemini)', 'end_month' => 6, 'end_day' => 15],
-            ['name' => 'กรกฎ (Cancer)', 'end_month' => 7, 'end_day' => 16],
-            ['name' => 'สิงห์ (Leo)', 'end_month' => 8, 'end_day' => 16],
-            ['name' => 'กันย์ (Virgo)', 'end_month' => 9, 'end_day' => 16],
-            ['name' => 'ตุลย์ (Libra)', 'end_month' => 10, 'end_day' => 16],
-            ['name' => 'พิจิก (Scorpio)', 'end_month' => 11, 'end_day' => 15],
-            ['name' => 'ธนู (Sagittarius)', 'end_month' => 12, 'end_day' => 15],
+            ['name' => 'ธนู (Sagittarius)', 'end_month' => 1, 'end_day' => 14],
+            ['name' => 'มังกร (Capricorn)', 'end_month' => 2, 'end_day' => 12],
+            ['name' => 'กุมภ์ (Aquarius)', 'end_month' => 3, 'end_day' => 14],
+            ['name' => 'มีน (Pisces)', 'end_month' => 4, 'end_day' => 13],
+            ['name' => 'เมษ (Aries)', 'end_month' => 5, 'end_day' => 14],
+            ['name' => 'พฤษภ (Taurus)', 'end_month' => 6, 'end_day' => 15],
+            ['name' => 'เมถุน (Gemini)', 'end_month' => 7, 'end_day' => 16],
+            ['name' => 'กรกฎ (Cancer)', 'end_month' => 8, 'end_day' => 16],
+            ['name' => 'สิงห์ (Leo)', 'end_month' => 9, 'end_day' => 16],
+            ['name' => 'กันย์ (Virgo)', 'end_month' => 10, 'end_day' => 17],
+            ['name' => 'ตุลย์ (Libra)', 'end_month' => 11, 'end_day' => 16],
+            ['name' => 'พิจิก (Scorpio)', 'end_month' => 12, 'end_day' => 15],
         ];
 
         foreach ($signs as $sign) {
@@ -5939,7 +5942,7 @@ PROMPT;
             }
         }
 
-        return 'มังกร (Capricorn)'; // ธันวาคม 22-31
+        return 'ธนู (Sagittarius)'; // 16 ธ.ค. เป็นต้นไป
     }
 
     protected function formatUserProfile(?array $userProfile): string
