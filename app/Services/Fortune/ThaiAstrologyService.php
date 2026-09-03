@@ -44,6 +44,22 @@ class ThaiAstrologyService
     /** วันพุธ (Carbon::dayOfWeek) — วันเดียวที่ตำราไทยแบ่งเป็น 2 ดาว (พุธ / ราหู) */
     public const WEDNESDAY = 3;
 
+    /** 🕛 ชั่วโมง (float) → "HH:MM" สำหรับโชว์ในผัง */
+    public static function hourLabel(?float $hour): string
+    {
+        if ($hour === null) {
+            return '-';
+        }
+        $h = (int) floor($hour);
+        $m = (int) round(($hour - $h) * 60);
+        if ($m >= 60) {
+            $h++;
+            $m = 0;
+        }
+
+        return sprintf('%02d:%02d', $h % 24, $m);
+    }
+
     /** 🌙 ย่ำค่ำ — เข้าเขต "กลางคืน" ทางโหร */
     public const NIGHT_STARTS_AT = 18.0;
 
@@ -329,21 +345,42 @@ class ThaiAstrologyService
 
         $thaiYear = $date->year + 543;
         $age = $date->age;
-        $dow = $date->dayOfWeek; // 0=อาทิตย์ ... 6=เสาร์
+        $calendarDow = $date->dayOfWeek;  // 0=อาทิตย์ ... 6=เสาร์ (ตามปฏิทิน)
+
+        // 🌅 (2026-09-03) วันทางโหรเปลี่ยนตอน "ย่ำรุ่ง 06:00" ไม่ใช่เที่ยงคืน
+        //    เกิดพุธ ตี 2 ⇒ ทางโหรยังเป็นอังคารกลางคืน ⇒ ดาวเจ้าเรือน = อังคาร
+        //    ทุกอย่างในระบบเจ้าชนะ (ดาวเจ้าเรือน/ทักษา/มหาทักษา/อักษร/วันมงคล)
+        //    ต้องเดินจากวัน**ทางโหร** ตัวนี้ ห้ามใช้วันปฏิทินอีก
+        $dow = $this->thaiWeekday($calendarDow, $this->lastBirthHour);
+        $dayShifted = $dow !== $calendarDow;
+
         $dayName = $dayNames[$dow];
         $zodiac = $this->getZodiacSignForDate($date);
         $p = $this->getPlanetByDayOfWeek($dow);
 
-        // 🌙 (2026-09-03) พุธกลางคืน = ราหู — ต้องทับ "ดาวเจ้าชนะ" ทั้งชุด ไม่ใช่แค่ทักษา
+        // 🌙 พุธกลางคืน = ราหู — ต้องทับ "ดาวเจ้าชนะ" ทั้งชุด ไม่ใช่แค่ทักษา
         //    ไม่งั้นผังจะขัดกันเอง (หัวบอก "ดาวพุธ" แต่ทักษา/ดาวเสวยอายุเดินจากราหู)
         $nightRahu = $this->isWednesdayNight($dow, $this->lastBirthHour);
         if ($nightRahu) {
             $p = $this->rahuRulerProfile($p);
-            $dayName .= ' (กลางคืน)';
+        }
+        if ($this->isNightBirth($this->lastBirthHour)) {
+            $dayName .= ' กลางคืน';
         }
 
-        $base = "📅 {$date->day} {$thaiMonths[$date->month]} {$thaiYear} (วัน{$dayName}, อายุ {$age} ปี)\n"
-            ."♈ ราศี: {$zodiac}\n"
+        $base = "📅 {$date->day} {$thaiMonths[$date->month]} {$thaiYear} (วัน{$dayName}, อายุ {$age} ปี)\n";
+
+        // 🔎 เปลี่ยนวันเพราะย่ำรุ่ง = **ต้องบอกลูกค้า ห้ามเปลี่ยนเงียบ**
+        //    ลูกค้าเห็นปฏิทินว่า "วันพุธ" แต่ผังบอก "อังคาร" จะงงและคิดว่าบอทพัง
+        if ($dayShifted) {
+            $calName = $dayNames[$calendarDow];
+            $hh = self::hourLabel($this->lastBirthHour);
+            $base .= "   ⚠️ ปฏิทินคือวัน{$calName} แต่เกิด {$hh} น. ซึ่ง**ก่อนย่ำรุ่ง 06:00** — "
+                ."ทางโหรจึงนับเป็น \"วัน{$dayName}\"\n"
+                ."   → เปิดคำทำนายด้วยการอธิบายข้อนี้สั้น ๆ 1 ประโยค (เจ้าชะตาจำว่าตัวเองเกิดวัน{$calName})\n";
+        }
+
+        $base .= "♈ ราศี: {$zodiac}\n"
             ."⭐ ดาวเจ้าชนะ: {$p['planet']} | 🔥 ธาตุ: {$p['element']}\n"
             ."🤝 ดาวมิตร: {$p['friends']} | ⚔️ ดาวศัตรู: {$p['enemies']}\n"
             ."🎨 สีมงคล: {$p['lucky_color']} | 🔢 เลขมงคล: {$p['lucky_number']}\n"
@@ -1020,7 +1057,32 @@ class ThaiAstrologyService
     }
 
     /**
+     * 🌅 "วันทางโหร" — วันในสัปดาห์ที่ใช้หาดาวเจ้าเรือน ซึ่งเปลี่ยนตอน **ย่ำรุ่ง 06:00**
+     *    ไม่ใช่เที่ยงคืนแบบปฏิทินสากล
+     *
+     * ⇒ เกิด "วันพุธ ตี 2" ทางโหรยังเป็น **อังคารกลางคืน** (ดาวเจ้าเรือน = อังคาร)
+     * ⇒ เกิด "วันพฤหัส ตี 3" ทางโหรคือ **พุธกลางคืน** (ดาวเจ้าเรือน = ราหู)
+     *
+     * ⚠️ นี่คือเหตุผลที่ขอบเขตราหูไม่ใช่ "วันพุธ 18:00–05:59" ตามปฏิทิน
+     *    แต่เป็น "พุธ 18:00 → พฤหัส 05:59" ตามวันโหร
+     *
+     * 🕛 ไม่ทราบเวลาเกิด → คืนวันตามปฏิทินเหมือนเดิม (ห้ามเดา)
+     *
+     * @param  int  $calendarDayOfWeek  Carbon::dayOfWeek (0=อาทิตย์..6=เสาร์)
+     */
+    public function thaiWeekday(int $calendarDayOfWeek, ?float $birthHour = null): int
+    {
+        if ($birthHour !== null && $birthHour < self::NIGHT_ENDS_AT) {
+            return ($calendarDayOfWeek + 6) % 7;   // ก่อนย่ำรุ่ง = ยังเป็นคืนของ "เมื่อวาน"
+        }
+
+        return $calendarDayOfWeek;
+    }
+
+    /**
      * 🌙 คนเกิดวันพุธกลางคืน — ดาวเจ้าเรือนคือ "ราหู" ไม่ใช่ "พุธ"
+     *
+     * @param  int  $dayOfWeek  วัน**ทางโหร**แล้ว (ผ่าน thaiWeekday มาก่อน)
      */
     public function isWednesdayNight(int $dayOfWeek, ?float $birthHour = null): bool
     {
