@@ -546,6 +546,7 @@ class FortuneReading extends Model
         'user_posts_context',
         'birth_date',
         'birth_time',
+        'birth_time_source',
         'ai_provider',
         'ai_model',
         'tokens_used',
@@ -2307,11 +2308,69 @@ class FortuneReading extends Model
     //   จุดกลางจุดเดียว — ทุกเลน (39 บทแรก / 39 คุยต่อ / Celtic ทุกพรอมต์ / แอดมิน) อ่าน-เขียนผ่านที่นี่
     // ════════════════════════════════════════════════════════════════
 
+    /** ค่ามาตรฐานที่เก็บลงคอลัมน์เมื่อไม่ทราบเวลาเกิด (ตรงกับ ThaiAstrologyService::DEFAULT_BIRTH_HOUR) */
+    public const DEFAULT_BIRTH_TIME = '12:00:00';
+
+    /** ป้ายที่มาของ birth_time — 'default' คือค่าที่ระบบเติมเอง ไม่ใช่ลูกค้าบอก */
+    public const BIRTH_TIME_SOURCE_DEFAULT = 'default';
+
+    /** ที่มาพิเศษ: ตอบคำถาม "เวลาเกิดกี่โมง" ที่แม่หมอเพิ่งถามไป → ใช้ตัวอ่านที่ผ่อนสุด */
+    public const BIRTH_TIME_SOURCE_TIME_ANSWER = 'time_answer';
+
     /**
-     * เวลาเกิดเป็นชั่วโมงทศนิยม (21:30 → 21.5) — null = ไม่ทราบ (ผู้เรียกใช้ 12:00 น.)
+     * 🕛 ลูกค้า/แอดมิน "บอกเวลาเกิดมาจริง" หรือเปล่า
+     *
+     * ⚠️ (2026-09-03) ห้ามใช้ `birth_time !== null` แทนเมธอดนี้อีกต่อไป
+     *    เพราะทุกบิลมี birth_time แล้ว (ไม่ทราบ = เติม 12:00 + ป้าย 'default')
+     *    ตัวชี้ขาดว่า "รู้จริงไหม" ย้ายไปอยู่ที่ **ป้ายที่มา** ไม่ใช่ค่าว่าง
+     *
+     *    ถ้าเผลอเช็คค่าว่างเหมือนเดิม พรอมต์จะพิมพ์ว่า
+     *    "จากเวลาเกิด 12:00 น. *ที่เจ้าชะตาบอก*" ให้ทุกคน = โกหกทั้งระบบ
+     */
+    public function birthTimeIsKnown(): bool
+    {
+        return ! empty($this->birth_time)
+            && $this->birth_time_source !== self::BIRTH_TIME_SOURCE_DEFAULT;
+    }
+
+    /** คอลัมน์ birth_time_source มีแล้วหรือยัง — เช็คครั้งเดียวต่อโปรเซส (กันช่วง deploy) */
+    protected static ?bool $birthTimeSourceColumn = null;
+
+    protected static function hasBirthTimeSourceColumn(): bool
+    {
+        if (self::$birthTimeSourceColumn === null) {
+            try {
+                self::$birthTimeSourceColumn = \Illuminate\Support\Facades\Schema::hasColumn(
+                    (new self)->getTable(),
+                    'birth_time_source'
+                );
+            } catch (\Throwable $e) {
+                self::$birthTimeSourceColumn = false;
+            }
+        }
+
+        return self::$birthTimeSourceColumn;
+    }
+
+    /**
+     * เวลาเกิดเป็นชั่วโมงทศนิยม (21:30 → 21.5) — **null = ไม่รู้เวลาเกิดจริง**
+     *
+     * 🛡️ (2026-09-03) คืน null เมื่อป้ายที่มาเป็น 'default' ด้วย ทั้งที่คอลัมน์มี 12:00 อยู่
+     *
+     *    ทำแบบนี้เพราะผู้เรียกทุกตัวถามคำถามเดียวกันว่า *"รู้เวลาเกิดไหม"*
+     *    ไม่มีใครต้องการเลข 12:00 จากที่นี่ (ตัวคำนวณมี DEFAULT_BIRTH_HOUR ของตัวเองอยู่แล้ว)
+     *    ⇒ ปลอดภัยโดยปริยาย: โค้ดเก่าที่เขียนว่า `birthHourFloat() !== null` ยังถูกต้องทันที
+     *      ไม่ต้องไล่แก้ทุก call site ให้ครบก่อน (ถ้าตกหล่นแม้จุดเดียว บอทจะอ้างกับลูกค้าว่า
+     *      "เจ้าชะตาเกิดเวลา 12:00 น." ทั้งที่เขาไม่เคยบอก — cf. birthTimeIsKnown())
+     *
+     *    ค่าดิบในคอลัมน์ยังอ่านได้จาก `$reading->birth_time` (หน้าหลังบ้านใช้ตัวนั้น)
      */
     public function birthHourFloat(): ?float
     {
+        if (! $this->birthTimeIsKnown()) {
+            return null;
+        }
+
         $t = trim((string) ($this->birth_time ?? ''));
         if ($t === '' || ! preg_match('/^(\d{1,2}):(\d{2})/', $t, $m)) {
             return null;
@@ -2338,6 +2397,11 @@ class FortuneReading extends Model
             return null;
         }
         $ymd = $this->birth_date->format('Y-m-d');
+
+        // 🕛 ไม่รู้เวลาจริง → ส่งแค่วันที่ ให้ formatPersonBlock() ตกไปใช้ DEFAULT_BIRTH_HOUR
+        //    แล้วพิมพ์บรรทัดตามจริงว่า "⏱️ คำนวณจากเวลามาตรฐาน 12:00 น. — ยังไม่ได้บอกเวลาเกิด"
+        //    (ผลลัพธ์การคำนวณเท่ากันเป๊ะ ต่างกันแค่ประโยคที่บอกลูกค้า ซึ่งคือทั้งหมดของเรื่องนี้)
+        //    birthHourFloat() คืน null ให้เองเมื่อป้ายเป็น 'default'
         $hour = $this->birthHourFloat();
         if ($hour === null) {
             return $ymd;
@@ -2384,9 +2448,14 @@ class FortuneReading extends Model
     {
         try {
             $astro = app(\App\Services\Fortune\ThaiAstrologyService::class);
-            $hour = in_array($source, self::BIRTH_TIME_ANSWER_SOURCES, true)
-                ? $astro->extractBirthHourFromAnswer($text)
-                : $astro->extractStatedBirthHour($text);
+            if ($source === self::BIRTH_TIME_SOURCE_TIME_ANSWER) {
+                // แม่หมอเพิ่งถามเรื่อง *เวลา* โดยตรง → ทั้งข้อความคือคำตอบ ไม่ต้องมีวันที่/คำว่าเกิด
+                $hour = $astro->extractBirthTimeAnswer($text);
+            } elseif (in_array($source, self::BIRTH_TIME_ANSWER_SOURCES, true)) {
+                $hour = $astro->extractBirthHourFromAnswer($text);
+            } else {
+                $hour = $astro->extractStatedBirthHour($text);
+            }
         } catch (\Throwable $e) {
             return null;
         }
@@ -2396,12 +2465,21 @@ class FortuneReading extends Model
 
         $new = self::hourToTimeString($hour);
         $old = (string) ($this->birth_time ?? '');
-        if (substr($old, 0, 5) === substr($new, 0, 5)) {
-            return null; // เหมือนเดิม — ไม่ต้องเขียน ไม่ต้องแจ้ง
+
+        // ⚠️ (2026-09-03) ต้องเช็ค "ป้ายที่มา" ด้วย ไม่ใช่เทียบแค่ตัวเลข
+        //    ตั้งแต่เก็บค่ามาตรฐาน 12:00 ลงคอลัมน์ คนที่ **เกิดเที่ยงจริง** จะมีค่าตรงกับของเดิมพอดี
+        //    ⇒ ถ้าเทียบแค่ตัวเลขจะถูกมองว่า "เหมือนเดิม" แล้ว return ทิ้ง
+        //      = เขาบอกเวลาเกิดมาแล้วแต่ระบบไม่เคยรู้ว่ารู้ ผังก็ยังติดป้ายว่า "ยังไม่ได้บอก" ตลอดไป
+        if (substr($old, 0, 5) === substr($new, 0, 5) && $this->birthTimeIsKnown()) {
+            return null; // เหมือนเดิมจริง (และเคยรู้อยู่แล้ว) — ไม่ต้องเขียน ไม่ต้องแจ้ง
         }
 
         try {
-            $this->update(['birth_time' => $new]);
+            $this->update([
+                'birth_time' => $new,
+                // ลบป้าย 'default' ทิ้ง — ต่อไปนี้คือเวลาที่ "รู้จริง"
+                'birth_time_source' => $source,
+            ]);
             $this->setConversationState('birth_time_source', $source);
             $this->setConversationState('birth_time_updated_at', now()->toIso8601String());
             // ธง one-shot — พรอมต์เทิร์นถัดไปอ่านแล้วล้าง (บอกลูกค้าสั้นๆ ว่าปรับผังแล้ว)
@@ -3141,6 +3219,29 @@ class FortuneReading extends Model
             $paidTypes = ['deep', 'celtic_cross'];
             if (empty($reading->bill_reference) && in_array($reading->reading_type, $paidTypes, true)) {
                 $reading->bill_reference = self::generateBillReference();
+            }
+        });
+
+        // 🕛 (2026-09-03 owner directive) "เวลาเกิดควรมีเวลามาตรฐานแม้ไม่ได้บอก/ไม่ทราบ"
+        //   รู้วันเกิดแล้วแต่ยังไม่รู้เวลา → เติม 12:00 ลงคอลัมน์ทันที + ติดป้ายว่าเป็นค่ามาตรฐาน
+        //
+        //   ⚠️ ทำที่นี่จุดเดียว เพราะ `birth_date` ถูกเขียนจาก **10+ จุด** ทั่วระบบ
+        //     (Celtic trait / Deep flow / DailyHoroscope / แอดมิน / BirthdateCorrection ฯลฯ)
+        //     ไล่แก้ทีละจุด = ตกหล่นแน่นอน (เทียบ [[rule_feature_built_but_never_wired]])
+        //
+        //   ป้าย 'default' คือสิ่งที่กันไม่ให้บอทพูดว่า "จากเวลาเกิดที่เจ้าชะตาบอก" — ดู birthTimeIsKnown()
+        static::saving(function ($reading) {
+            if (empty($reading->birth_date) || ! empty($reading->birth_time)) {
+                return;
+            }
+
+            $reading->birth_time = self::DEFAULT_BIRTH_TIME;
+
+            // 🛟 ระหว่าง deploy โค้ดใหม่ขึ้นก่อน migration เสร็จได้ (worker ที่ยังไม่ตายก็รันโค้ดใหม่)
+            //    เขียนคอลัมน์ที่ยังไม่มี = SQL error ทุกครั้งที่เซฟบิล = ระบบล่มทั้งเลน
+            //    เช็คครั้งเดียวต่อโปรเซสแล้วจำไว้ (cf. [[rule_undefined_const_is_tip_of_schema_mismatch]])
+            if (self::hasBirthTimeSourceColumn()) {
+                $reading->birth_time_source = self::BIRTH_TIME_SOURCE_DEFAULT;
             }
         });
 

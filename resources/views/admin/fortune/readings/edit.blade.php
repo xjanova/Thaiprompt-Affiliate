@@ -189,11 +189,12 @@
                         </label>
                         <div class="tp-well tp-input" style="padding:0;">
                             <input type="time" name="birth_time"
-                                   value="{{ old('birth_time', $reading->birth_time ? substr((string) $reading->birth_time, 0, 5) : '') }}"
+                                   value="{{ old('birth_time', $reading->birthTimeIsKnown() ? substr((string) $reading->birth_time, 0, 5) : '') }}"
                                    style="width:100%; background:transparent; border:0; outline:0; padding:11px 13px; color:var(--ink); font-size:14px;">
                         </div>
                         <p style="margin:6px 0 0; font-size:11px; color:var(--ink2);">
-                            ปัจจุบัน: {{ $reading->birth_time ? substr((string) $reading->birth_time, 0, 5).' น.' : '⏱️ ไม่ทราบ — ผูกดวงจากเวลามาตรฐาน 12:00 น.' }}
+                            ปัจจุบัน: {{ substr((string) ($reading->birth_time ?: '12:00'), 0, 5) }} น.
+                            {{ $reading->birthTimeIsKnown() ? '(เจ้าชะตาบอกเอง)' : '— ⏱️ ค่ามาตรฐาน ยังไม่ได้บอกเวลาเกิด' }}
                             · ลัคนา/ภพจะคำนวณใหม่ทันทีที่บันทึก (คำทำนายที่ส่งไปแล้วไม่เปลี่ยน — กด "สร้างใหม่" ถ้าต้องการ)
                         </p>
                     </div>

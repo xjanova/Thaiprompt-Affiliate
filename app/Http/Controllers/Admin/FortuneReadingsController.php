@@ -179,7 +179,9 @@ class FortuneReadingsController extends Controller
             'amount_paid' => $reading->amount_paid,
             'paid_at' => $reading->paid_at?->toIso8601String(),
             'birth_date' => $reading->birth_date?->toDateString(),
-            'birth_time' => $reading->birth_time ? substr((string) $reading->birth_time, 0, 5) : null,
+            // 🕛 บันทึกลง audit ว่า "ก่อนแก้ เคยรู้เวลาเกิดจริงไหม" — ค่ามาตรฐาน 12:00 นับเป็น null
+            //    (ฟอร์มก็ปล่อยช่องว่างเช่นกัน ไม่งั้นแอดมินกดบันทึกเฉย ๆ จะกลายเป็นยืนยันว่า "เกิดเที่ยง")
+            'birth_time' => $reading->birthTimeIsKnown() ? substr((string) $reading->birth_time, 0, 5) : null,
             'questions_count' => is_array($reading->questions) ? count($reading->questions) : 0,
             'tarot_count' => count($reading->getCollectedTarotCards()),
         ];
@@ -198,9 +200,17 @@ class FortuneReadingsController extends Controller
         $pickTarotRandom = (bool) ($validated['pick_tarot_random'] ?? false);
         unset($validated['admin_note'], $validated['questions_input'], $validated['pick_tarot_random']);
 
-        // 🕛 birth_time: "H:i" จากฟอร์ม → "H:i:00" ลงคอลัมน์ TIME · ช่องว่าง = null (ไม่ทราบ)
+        // 🕛 birth_time: "H:i" จากฟอร์ม → "H:i:00" ลงคอลัมน์ TIME
+        //    แอดมินกรอกเอง = "รู้จริง" → ติดป้าย admin ทับป้าย default
+        //    ล้างช่องทิ้ง = กลับไปเป็นค่ามาตรฐาน 12:00 (model เติมให้เองตอน saving)
         if (array_key_exists('birth_time', $validated)) {
-            $validated['birth_time'] = ! empty($validated['birth_time']) ? $validated['birth_time'].':00' : null;
+            if (! empty($validated['birth_time'])) {
+                $validated['birth_time'] = $validated['birth_time'].':00';
+                $validated['birth_time_source'] = 'admin';
+            } else {
+                $validated['birth_time'] = null;
+                $validated['birth_time_source'] = FortuneReading::BIRTH_TIME_SOURCE_DEFAULT;
+            }
         }
 
         // 🌙 (2026-05-14) แปลง questions_input (textarea) → questions array

@@ -122,8 +122,10 @@
                         <div class="tp-muted" style="font-size:12px;">วันเกิด</div>
                         <div style="font-weight:700; color:var(--ink); margin-top:2px;">
                             {{ $reading->birth_date->format('d/m/Y') }}
-                            @if($reading->birth_time)
+                            @if($reading->birthTimeIsKnown())
                                 <span style="font-weight:500;">🕛 {{ substr((string) $reading->birth_time, 0, 5) }} น.</span>
+                            @elseif($reading->birth_time)
+                                <span style="font-weight:500;opacity:.7;">🕛 {{ substr((string) $reading->birth_time, 0, 5) }} น. <em>(ค่ามาตรฐาน)</em></span>
                             @else
                                 <span class="tp-muted" style="font-weight:500; font-size:11px;">⏱️ ไม่ทราบเวลา (ใช้ 12:00)</span>
                             @endif
@@ -519,7 +521,8 @@
                     </p>
                 </div>
                 <div style="text-align:right; font-size:12px; color:var(--ink2);">
-                    🕛 เวลาเกิดที่ใช้ผูกดวง: <strong>{{ $reading->birth_time ? substr((string) $reading->birth_time, 0, 5).' น.' : '12:00 น. (มาตรฐาน)' }}</strong>
+                    🕛 เวลาเกิดที่ใช้ผูกดวง: <strong>{{ substr((string) ($reading->birth_time ?: '12:00'), 0, 5) }} น.</strong>
+                    <span style="opacity:.75;">{{ $reading->birthTimeIsKnown() ? '(เจ้าชะตาบอกเอง)' : '(ค่ามาตรฐาน — ยังไม่ได้บอกเวลาเกิด)' }}</span>
                 </div>
             </div>
 
