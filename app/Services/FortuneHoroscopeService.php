@@ -6,6 +6,7 @@ use App\Models\FortuneHoroscopeCampaign;
 use App\Models\FortuneHoroscopeContent;
 use App\Services\AiGen\AiGenProviderFactory;
 use App\Services\Fortune\DailyAstroBrief;
+use App\Services\Fortune\PlanetEphemeris;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,15 @@ use Illuminate\Support\Facades\Log;
  */
 class FortuneHoroscopeService
 {
+    /**
+     * 🔢 วันที่ที่ "แจกเลขนำโชค" ได้เท่านั้น
+     *
+     * เจ้าของสั่ง (2026-08-02): "งดเลขนำโชค สีมงคล — เลขนำโชคจะให้ในวันที่ 29
+     *   และวันที่ 15 เท่านั้น" · ตรงกับ HoroscopeDailyService::LUCKY_NUMBER_DAYS
+     * (2026-09-03) เดิมกฎนี้ลงแค่เลนบทความเว็บ/DM เลนโพสเพจตกค้าง แจกทุกวัน
+     */
+    public const LUCKY_NUMBER_DAYS = [15, 29];
+
     protected FortuneChartService $chartService;
 
     protected FortuneAIService $aiService;
@@ -142,8 +152,10 @@ class FortuneHoroscopeService
                 'main_planet' => $astrologyData['main_planet'],
                 'planet_positions' => $astrologyData['planet_positions'],
                 'chaochana_data' => $astrologyData['chaochana'],
-                'lucky_color' => $astrologyData['chaochana']['lucky_color'] ?? null,
-                'lucky_number' => $this->generateLuckyNumber($birthDay),
+                // 🎨 (2026-09-03) สีมงคล = null ถาวร · เลขนำโชค = เฉพาะวันที่ 15/29
+                //    ตามคำสั่งเจ้าของ 2026-08-02 ที่เดิมลงแค่เลนบทความเว็บ/DM
+                'lucky_color' => null,
+                'lucky_number' => $this->luckyNumberForDate($birthDay, $targetDate, $astrologyData['astro_brief']),
                 'lucky_direction' => $this->generateLuckyDirection($birthDay),
             ]);
 
@@ -444,27 +456,47 @@ class FortuneHoroscopeService
     }
 
     /**
-     * สร้างเลขมงคลจากวันเกิด
+     * 🔢 เลขนำโชค — ให้เฉพาะ "วันที่ 15 และ 29" เท่านั้น
+     *
+     * ⚠️ (2026-09-03) ของเดิม `generateLuckyNumber($birthDay)` แจกทุกวัน และเลขตัวสุดท้าย
+     *    มาจาก `(now()->dayOfYear + $birthDay) % 36 + 1` ซึ่ง (ก) ไม่มีที่มาทางโหรเลย
+     *    (ข) ใช้ `now()` ไม่ใช่วันที่ทำนาย ⇒ รีเจนคนละวันได้เลขคนละชุดของวันเดียวกัน
+     *
+     *    ตัวใหม่ลอกสูตรจาก `HoroscopeDailyService::luckyNumberForDate()` ให้สองระบบ
+     *    พูดตรงกัน — derive จากของจริงล้วน จึงคงที่เสมอสำหรับวันเดียวกัน:
+     *      - เลขดาวเจ้าเรือนวันเกิด (เลขศาสตร์ไทย: อาทิตย์ 1 … เสาร์ 7)
+     *      - กำลังพระเคราะห์ของดาวเจ้าเรือน
+     *      - ลำดับราศีที่ดาวเจ้าเรือนสถิตอยู่ **จริง** ในวันนั้น (จาก ephemeris)
+     *
+     * @param  array  $brief  ผลจาก DailyAstroBrief::build()
+     * @return string|null null = วันนี้ไม่ใช่วันแจกเลข (คอลัมน์ว่าง = โพสไม่พิมพ์บรรทัดมงคล)
      */
-    protected function generateLuckyNumber(int $birthDay): string
+    protected function luckyNumberForDate(int $birthDay, Carbon $date, array $brief): ?string
     {
-        $baseNumbers = [
-            0 => [1, 6, 9],      // อาทิตย์
-            1 => [2, 7, 11],     // จันทร์
-            2 => [3, 8, 9],      // อังคาร
-            3 => [4, 5, 14],     // พุธ
-            4 => [5, 9, 19],     // พฤหัสบดี
-            5 => [6, 15, 24],    // ศุกร์
-            6 => [7, 8, 17],     // เสาร์
+        if (! in_array((int) $date->day, self::LUCKY_NUMBER_DAYS, true)) {
+            return null;
+        }
+
+        $planetNum = $birthDay + 1;                       // อาทิตย์=1 … เสาร์=7
+        $power = (int) ($brief['lord']['power'] ?? 9);    // กำลังพระเคราะห์
+        $signIndex = array_search(
+            $brief['lord']['sign'] ?? null,
+            PlanetEphemeris::SIGNS,
+            true
+        );
+        $signIndex = $signIndex === false ? 0 : (int) $signIndex + 1;
+
+        $numbers = [
+            $planetNum,
+            ($power + $signIndex) % 100,
+            ($planetNum * $signIndex + $power) % 100,
         ];
 
-        $numbers = $baseNumbers[$birthDay] ?? [1, 5, 9];
-        // เพิ่มความหลากหลายตามวันที่
-        $dayOfYear = now()->dayOfYear;
-        $extra = ($dayOfYear + $birthDay) % 36 + 1;
-        $numbers[] = $extra;
+        // กันเลข 0 และเลขซ้ำ
+        $numbers = array_map(fn ($n) => $n < 1 ? $n + 7 : $n, $numbers);
+        $numbers = array_values(array_unique($numbers));
 
-        return implode(', ', array_unique($numbers));
+        return implode(', ', array_map(fn ($n) => str_pad((string) $n, 2, '0', STR_PAD_LEFT), $numbers));
     }
 
     /**
