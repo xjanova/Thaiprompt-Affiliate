@@ -881,6 +881,8 @@ trait ProSessionTrait
                         ."\n   → เปิดคำตอบด้วยประโยคสั้นๆ ว่ารับเวลาเกิดแล้วและปรับดวงให้ใหม่ (1 ประโยคพอ) แล้วตอบต่อตามปกติ";
                 }
 
+                $block .= $this->birthTimeUnparsedDirective($reading);
+
                 if ($block !== '') {
                     // ⚠️ ต้องบอกว่า "ตัวนี้ชนะ" — บิลที่ทำนายไปก่อน 2026-09-01 ใช้ผังดาวชุดเก่า
                     //   ถ้าคำทำนายเดิมในสรุปด้านล่างอ้างดาวไม่ตรงกับผังนี้ AI จะได้ไม่สับสน
@@ -1032,6 +1034,7 @@ trait ProSessionTrait
                     $celticAstroBlock .= "🕛 เจ้าชะตาเพิ่งบอกเวลาเกิด {$justUpdated} น. — ผังข้างบนคำนวณใหม่แล้ว "
                         ."→ เปิดคำตอบด้วยประโยคสั้นๆ ว่ารับเวลาเกิดแล้ว (1 ประโยค) แล้วตอบต่อ\n\n";
                 }
+                $celticAstroBlock .= $this->birthTimeUnparsedDirective($reading);
             }
         } catch (\Throwable $e) {
             // ผูกดวงไม่ได้ → ทำนายจากไพ่ล้วนเหมือนเดิม
@@ -1075,6 +1078,52 @@ trait ProSessionTrait
     }
 
     /**
+     * 🕛 เจ้าชะตา "พยายามบอกเวลาเกิด" แต่ระบบอ่านไม่ออก → ใช่ไหม
+     *
+     * ต้องเห็นหน่วยเวลาชัดๆ (ตี/ทุ่ม/โมง/นาฬิกา/HH:MM) หรือวลี "เวลาเกิด/เกิดตอน/เกิดเวลา"
+     * ⚠️ ห้ามหลวมกว่านี้ — "เกิดวันที่ 17 ตุลาคม 2508" คือ *วัน* ไม่ใช่เวลา
+     *    ถ้าดักกว้างไป แม่หมอจะทวงเวลาเกิดทั้งที่ลูกค้าไม่ได้ตั้งใจบอก
+     */
+    protected function mentionsBirthTimeIntent(string $text): bool
+    {
+        if (preg_match('/(เวลาเกิด|เกิดเวลา|เกิดตอน|คลอดตอน|เกิดช่วง)/u', $text)) {
+            return true;
+        }
+
+        // มีคำบ่งชี้การเกิด + หน่วยเวลาที่ติดกับตัวเลข
+        //   ⚠️ ต้องตัด "เกิด" ที่ไม่ได้แปลว่าคลอด ด้วยรายการเดียวกับ extractStatedBirthHour
+        //      ไม่งั้น *"หนี้ 2.30 แสน จะเกิดอะไรขึ้น"* ติดธง แล้วแม่หมอทวงเวลาเกิดกลางคำถามหนี้
+        return (bool) preg_match('/(เกิด(?!อะไร|เรื่อง|ปัญหา|ขึ้น|ผล|เหตุ|ความ)|คลอด|ลืมตา)/u', $text)
+            && (bool) preg_match('/(ตี\s*\d|\d\s*ทุ่ม|\d\s*โมง|\d\s*นาฬิกา|\d{1,2}[:.]\d{2}|เที่ยงคืน)/u', $text);
+    }
+
+    /**
+     * 🚨 (2026-09-03 — เคสจริง FTU-260903-X0866) กันแม่หมอ "รับปากลอยๆ" เรื่องเวลาเกิด
+     *
+     * ลูกค้าพิมพ์ *"เวลาเกิดตี5"* → ตัวดึงอ่านไม่ออก → `birth_time` ยังเป็น NULL
+     * แต่ AI เห็นข้อความลูกค้าในประวัติแล้วตอบเองว่า
+     *   *"รับข้อมูลเวลาเกิดแล้วค่ะ ... ละเอียดขึ้นกว่าการใช้เวลาเที่ยงมาตรฐาน"*
+     * ⇒ ผังยังคำนวณจาก 12:00 อยู่ดี = **โกหกลูกค้าที่จ่ายเงินแล้ว**
+     *
+     * บล็อกในผังบอกแค่ "ยังไม่ได้บอกเวลาเกิด" ซึ่ง AI เลือกเชื่อลูกค้าแทนระบบ
+     * → ต้องสั่งตรงๆ ว่า *ห้ามอ้างว่ารับแล้ว* และให้ขอเป็นตัวเลข
+     *
+     * one-shot: อ่านแล้วล้างธง ไม่งั้นทวงซ้ำทุกเทิร์น
+     */
+    protected function birthTimeUnparsedDirective(FortuneReading $reading): string
+    {
+        $raw = $reading->getConversationState('birth_time_unparsed');
+        if (empty($raw)) {
+            return '';
+        }
+        $reading->setConversationState('birth_time_unparsed', null);
+
+        return "\n🚨 เจ้าชะตาเพิ่งพยายามบอกเวลาเกิด (\"{$raw}\") แต่ *ระบบอ่านค่าไม่ออก* — ผังข้างบนยังคำนวณจาก 12:00 น. เหมือนเดิม"
+            ."\n   ❌ ห้ามพูดว่า \"รับเวลาเกิดแล้ว\" / \"ปรับผังให้ใหม่แล้ว\" / \"แม่นขึ้นกว่าเวลามาตรฐาน\" — ยังไม่ได้ปรับอะไรทั้งนั้น"
+            ."\n   ✅ ให้ขอใหม่สั้นๆ 1 ประโยค เป็น *ตัวเลข* เช่น \"รบกวนพิมพ์เป็นตัวเลขให้แม่หมออีกครั้งนะคะ เช่น 05:00\" แล้วตอบคำถามต่อตามปกติ";
+    }
+
+    /**
      * AI ตอบใน Pro Session — ใช้ Pro key (sensitive purpose) + custom system prompt
      */
     protected function generateProSessionAnswer(FortuneReading $reading, string $messageText, ?array $userProfile): ?array
@@ -1083,6 +1132,19 @@ trait ProSessionTrait
         //    ผังในพรอมต์เทิร์นนี้จะคำนวณด้วยเวลาใหม่ทันที (ทั้ง Deep 39 และ Celtic คุยต่อ)
         //    จุดนี้เป็นคอขวดเดียวของทั้งทางตรงและทาง settle-buffer → ไม่ต้องดัก 2 ที่
         $reading->captureStatedBirthTime($messageText, 'pro_session');
+
+        // 🚨 บอกเวลาเกิดมาแล้วแต่ยังไม่มีค่าใน DB = ตัวดึงอ่านไม่ออก → ติดธงกันแม่หมอรับปากลอยๆ
+        //    (เช็ค birthHourFloat() ไม่ใช่ค่า return ของ capture — capture คืน null ตอน "ค่าเดิมอยู่แล้ว" ด้วย)
+        if ($reading->birthHourFloat() !== null) {
+            // รู้เวลาแล้ว → ล้างธงค้างจากเทิร์นก่อน ไม่งั้นพรอมต์จะได้ทั้ง "รับแล้ว" และ "อ่านไม่ออก" พร้อมกัน
+            if (! empty($reading->getConversationState('birth_time_unparsed'))) {
+                $reading->setConversationState('birth_time_unparsed', null);
+            }
+        } elseif ($this->mentionsBirthTimeIntent($messageText)) {
+            // เก็บเฉพาะบรรทัดเดียว ตัดอัญประกาศ — สตริงนี้ถูกยัดลงพรอมต์ในเครื่องหมายคำพูด
+            $snippet = preg_replace('/\s+/u', ' ', str_replace(['"', '"', '"'], '', trim($messageText)));
+            $reading->setConversationState('birth_time_unparsed', mb_substr((string) $snippet, 0, 40));
+        }
 
         try {
             $aiService = new FortuneAIService($this->settings);
