@@ -174,8 +174,8 @@ class ThaiAstrologyService
         }
 
         // 3) ธาตุราศี
-        $zElA = $this->getZodiacElement($this->getZodiacSign($a->month, $a->day));
-        $zElB = $this->getZodiacElement($this->getZodiacSign($b->month, $b->day));
+        $zElA = $this->getZodiacElement($this->getZodiacSignForDate($a));
+        $zElB = $this->getZodiacElement($this->getZodiacSignForDate($b));
         if ($zElA !== null && $zElB !== null) {
             $ztone = $matrix[$toEn[$zElA] ?? ''][$toEn[$zElB] ?? ''] ?? null;
             if ($ztone === 'friendly' || $ztone === 'same') {
@@ -321,7 +321,7 @@ class ThaiAstrologyService
         $age = $date->age;
         $dow = $date->dayOfWeek; // 0=อาทิตย์ ... 6=เสาร์
         $dayName = $dayNames[$dow];
-        $zodiac = $this->getZodiacSign($date->month, $date->day);
+        $zodiac = $this->getZodiacSignForDate($date);
         $p = $this->getPlanetByDayOfWeek($dow);
 
         $base = "📅 {$date->day} {$thaiMonths[$date->month]} {$thaiYear} (วัน{$dayName}, อายุ {$age} ปี)\n"
@@ -605,7 +605,11 @@ class ThaiAstrologyService
             $asc += 360.0;
         }
 
-        $signIdx = (int) floor($asc / 30.0) % 12;
+        // 🇹🇭 (2026-09-03) สูตร Meeus คืนลัคนาแบบ **สายนะ (tropical)** — ต้องลบอายนางศ
+        //    ให้เป็นนิรายนะก่อน ไม่งั้นลัคนาเพี้ยนเกือบเต็มราศีเทียบปฏิทินโหรไทย
+        //    (ชื่อเมธอด "sidereal" เดิมหมายถึง Local Sidereal Time = เวลาดาราคติ
+        //     คนละเรื่องกับ "ราศีนิรายนะ" — เป็นที่มาของความเข้าใจผิดตอนเขียนครั้งแรก)
+        $signIdx = $eph->toSidereal($asc, $jdUT)['sign_index'];
 
         return (string) $order[$signIdx];
     }
@@ -1305,19 +1309,23 @@ class ThaiAstrologyService
      */
     public function getZodiacSign(int $month, int $day): string
     {
+        // 🇹🇭 (2026-09-03) ตารางเดิมเป็น **ราศีสากล** (มังกร 22 ธ.ค.–19 ม.ค.)
+        //    ต่างจากราศีไทยเกือบครึ่งเดือน · ตารางนี้เปลี่ยนเป็นช่วงวันแบบไทย (นิรายนะ)
+        //    ⚠️ ยังเป็นแค่ค่าประมาณเพราะไม่รู้ปีเกิด — ถ้ามี Carbon ให้ใช้
+        //       getZodiacSignForDate() ซึ่งคำนวณจากดวงอาทิตย์จริง
         $signs = [
-            ['name' => 'มังกร (Capricorn)', 'end_month' => 1, 'end_day' => 19],
-            ['name' => 'กุมภ์ (Aquarius)', 'end_month' => 2, 'end_day' => 18],
-            ['name' => 'มีน (Pisces)', 'end_month' => 3, 'end_day' => 20],
-            ['name' => 'เมษ (Aries)', 'end_month' => 4, 'end_day' => 19],
-            ['name' => 'พฤษภ (Taurus)', 'end_month' => 5, 'end_day' => 20],
-            ['name' => 'เมถุน (Gemini)', 'end_month' => 6, 'end_day' => 20],
-            ['name' => 'กรกฎ (Cancer)', 'end_month' => 7, 'end_day' => 22],
-            ['name' => 'สิงห์ (Leo)', 'end_month' => 8, 'end_day' => 22],
-            ['name' => 'กันย์ (Virgo)', 'end_month' => 9, 'end_day' => 22],
-            ['name' => 'ตุลย์ (Libra)', 'end_month' => 10, 'end_day' => 22],
-            ['name' => 'พิจิก (Scorpio)', 'end_month' => 11, 'end_day' => 21],
-            ['name' => 'ธนู (Sagittarius)', 'end_month' => 12, 'end_day' => 21],
+            ['name' => 'มังกร (Capricorn)', 'end_month' => 1, 'end_day' => 14],
+            ['name' => 'กุมภ์ (Aquarius)', 'end_month' => 2, 'end_day' => 12],
+            ['name' => 'มีน (Pisces)', 'end_month' => 3, 'end_day' => 14],
+            ['name' => 'เมษ (Aries)', 'end_month' => 4, 'end_day' => 13],
+            ['name' => 'พฤษภ (Taurus)', 'end_month' => 5, 'end_day' => 14],
+            ['name' => 'เมถุน (Gemini)', 'end_month' => 6, 'end_day' => 15],
+            ['name' => 'กรกฎ (Cancer)', 'end_month' => 7, 'end_day' => 16],
+            ['name' => 'สิงห์ (Leo)', 'end_month' => 8, 'end_day' => 16],
+            ['name' => 'กันย์ (Virgo)', 'end_month' => 9, 'end_day' => 16],
+            ['name' => 'ตุลย์ (Libra)', 'end_month' => 10, 'end_day' => 16],
+            ['name' => 'พิจิก (Scorpio)', 'end_month' => 11, 'end_day' => 15],
+            ['name' => 'ธนู (Sagittarius)', 'end_month' => 12, 'end_day' => 15],
         ];
 
         foreach ($signs as $sign) {
@@ -1329,6 +1337,17 @@ class ThaiAstrologyService
             }
         }
 
-        return 'มังกร (Capricorn)'; // ธันวาคม 22-31
+        return 'มังกร (Capricorn)'; // 16 ธ.ค. เป็นต้นไป
+    }
+
+    /**
+     * 🇹🇭 ราศีเกิดแบบนิรายนะ คำนวณจากตำแหน่งดวงอาทิตย์จริงของวันนั้น
+     *
+     * ใช้ตัวนี้เสมอเมื่อมี Carbon ในมือ — แม่นกว่าตารางช่วงวัน และไม่ขัดกับ
+     * บรรทัด "ตำแหน่งดาวอาทิตย์" ในผังดวงเดียวกัน
+     */
+    public function getZodiacSignForDate(\Carbon\Carbon $date): string
+    {
+        return (new PlanetEphemeris)->zodiacSignLabel($date);
     }
 }

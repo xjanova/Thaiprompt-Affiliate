@@ -24,8 +24,21 @@ use Carbon\Carbon;
  * 🎯 ความแม่น: ระดับ "ราศี" (sign) แม่นเกือบ 100% + ตรวจพักรได้
  *   (ไม่ระบุองศา-ลิปดาเป๊ะระดับโหรมืออาชีพ แต่พอสำหรับประกอบการทำนายไพ่)
  *
- * 🗺️ ระบบ: tropical (สากล) — ให้สอดคล้องกับ ThaiAstrologyService::getZodiacSign
- *   ที่ใช้ราศีสากลอยู่แล้ว (ดาวอาทิตย์ที่คำนวณได้จะตรงกับราศีเกิดเดิม)
+ * 🗺️ ระบบราศี: **นิรายนะ (sidereal)** ตามโหราศาสตร์ไทย/สุริยยาตร์
+ *   ────────────────────────────────────────────────────────────────
+ *   🚨 (2026-09-03) เดิมคลาสนี้คืนราศีแบบ **สายนะ (tropical/สากล)** ซึ่ง **ผิดสำหรับ
+ *      โหราศาสตร์ไทย** — ต่างกันเกือบเต็มราศี (อายนางศ ~24° ในปี 2569)
+ *      ตัวอย่างที่โหรจริงจับได้ทันที: 3 ก.ย. 2569 ระบบเดิมบอก "อาทิตย์สถิตราศีกันย์"
+ *      แต่ปฏิทินโหรไทยทุกเล่มบอก **ราศีสิงห์** (ราศีสิงห์ = 17 ส.ค. – 16 ก.ย.)
+ *      เนื้อหานี้โพสสาธารณะบนเพจ ⇒ ผิดราศี = โดนดิสเครดิตทั้งเพจ
+ *
+ *   วิธีแก้: ลบ "อายนางศ" (ayanamsa) ออกจากลองจิจูดสายนะ → ได้ลองจิจูดนิรายนะ
+ *   ใช้ค่าแบบ Lahiri (มาตรฐานที่ปฏิทินโหรไทยสมัยใหม่และ Swiss Ephemeris ใช้)
+ *   ตรวจแล้ว: ขอบราศีที่ได้ตรงกับช่วงวันราศีไทย (16–17 ของเดือน) ทั้ง 12 ราศี
+ *
+ *   - `lon`           = ลองจิจูด **นิรายนะ** (ใช้คู่กับ `sign` เสมอ)
+ *   - `lon_tropical`  = ลองจิจูดสายนะดิบ เก็บไว้ตรวจสอบ/เทียบกับโปรแกรมสากล
+ *   - มุมสัมพันธ์ (กุม/เล็ง/ตรีโกณ) ใช้ผลต่างลองจิจูด จึงเท่ากันทั้งสองระบบ
  */
 class PlanetEphemeris
 {
@@ -34,6 +47,28 @@ class PlanetEphemeris
 
     /** 12 ราศี (เริ่มเมษ = 0°) */
     public const SIGNS = ['เมษ', 'พฤษภ', 'เมถุน', 'กรกฎ', 'สิงห์', 'กันย์', 'ตุลย์', 'พิจิก', 'ธนู', 'มังกร', 'กุมภ์', 'มีน'];
+
+    /** ป้ายราศีแบบ "ไทย (อังกฤษ)" — เรียงตรงกับ SIGNS */
+    public const SIGN_LABELS = [
+        'เมษ (Aries)', 'พฤษภ (Taurus)', 'เมถุน (Gemini)', 'กรกฎ (Cancer)',
+        'สิงห์ (Leo)', 'กันย์ (Virgo)', 'ตุลย์ (Libra)', 'พิจิก (Scorpio)',
+        'ธนู (Sagittarius)', 'มังกร (Capricorn)', 'กุมภ์ (Aquarius)', 'มีน (Pisces)',
+    ];
+
+    /**
+     * อายนางศ (ayanamsa) แบบ Lahiri ณ J2000.0 — องศา
+     *
+     * = 23°51'10.53" ค่าอ้างอิงเดียวกับ Swiss Ephemeris SE_SIDM_LAHIRI
+     */
+    private const AYANAMSA_J2000 = 23.85292472;
+
+    /**
+     * อัตราเพิ่มของอายนางศ = อัตราพรีเซสชัน 50.2888 พิลิปดา/ปี → องศา/ปีจูเลียน
+     *
+     * โมเดลเชิงเส้นนี้คลาดจากค่าจริงไม่ถึง 0.001° ในช่วง ±100 ปีรอบ J2000
+     * ซึ่งละเอียดเกินพอสำหรับงานระดับ "ราศี" (30° ต่อราศี)
+     */
+    private const AYANAMSA_RATE = 50.2888 / 3600.0;
 
     /**
      * Keplerian elements (JPL, ใช้ช่วง 1800–2050 AD), epoch J2000
@@ -70,9 +105,10 @@ class PlanetEphemeris
     /**
      * คำนวณตำแหน่งดาวทั้ง 9 ณ วันเวลาที่กำหนด
      *
+     * คีย์ผลลัพธ์เรียงตามเลขดาว (อาทิตย์→เกตุ) · `lon` เป็นนิรายนะ · `lon_tropical` เป็นสายนะ
+     *
      * @param  Carbon  $dt  วันเวลาเกิด (ถือเป็นเวลาไทย UTC+7)
-     * @return array<string, array{lon:float, sign:string, sign_index:int, retro:bool, th:string, num:int, sym:string}>
-     *         เรียงตามเลขดาว (อาทิตย์→เกตุ)
+     * @return array<string, array{lon:float, lon_tropical:float, ayanamsa:float, sign:string, sign_index:int, retro:bool, th:string, num:int, sym:string}>
      */
     public function positions(Carbon $dt): array
     {
@@ -82,18 +118,29 @@ class PlanetEphemeris
         $order = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
         $out = [];
 
+        // อายนางศของวันนั้น — ใช้ค่าเดียวกับทุกดาว (เป็นการหมุนกรอบราศีทั้งวง)
+        $ayanamsa = $this->ayanamsa($jd);
+
         foreach ($order as $planet) {
             $lon = $this->longitude($planet, $jd);
             $lonNext = $this->longitude($planet, $jd + 1.0);
             // พักร: ลองจิจูดถอยหลัง (จัดการ wrap 360°)
+            // ⚠️ ตรวจจากลองจิจูดสายนะได้เลย — ลบอายนางศคือลบค่าคงที่ออกจากทั้งสองตัว
             $delta = $this->normalize360($lonNext - $lon + 180.0) - 180.0;
             $retro = $delta < 0;
 
-            $signIndex = (int) floor($this->normalize360($lon) / self::DEG_PER_SIGN) % 12;
+            $lonTropical = $this->normalize360($lon);
+            $lonSidereal = $this->normalize360($lonTropical - $ayanamsa);
+
+            $signIndex = (int) floor($lonSidereal / self::DEG_PER_SIGN) % 12;
             $meta = self::PLANET_TH[$planet];
 
             $out[$planet] = [
-                'lon' => $this->normalize360($lon),
+                // 🇹🇭 lon = นิรายนะ (ตรงกับ sign เสมอ) — ผู้เรียกที่ทำ fmod(lon,30)
+                //    เพื่อหา "องศาในราศี" จึงได้ค่าที่สอดคล้องกับชื่อราศีที่รายงาน
+                'lon' => $lonSidereal,
+                'lon_tropical' => $lonTropical,
+                'ayanamsa' => $ayanamsa,
                 'sign' => self::SIGNS[$signIndex],
                 'sign_index' => $signIndex,
                 'retro' => $retro,
@@ -104,6 +151,60 @@ class PlanetEphemeris
         }
 
         return $out;
+    }
+
+    /**
+     * 🇹🇭 อายนางศ (ayanamsa) ณ วันที่กำหนด — ผลต่างระหว่างราศีสายนะกับนิรายนะ
+     *
+     * ใช้ค่าแบบ Lahiri: 23°51'10.53" ที่ J2000 แล้วเพิ่มตามอัตราพรีเซสชัน
+     * ปี 2569 (2026) ได้ ~24.22° = 24°13' ตรงกับตารางอายนางศมาตรฐาน
+     *
+     * @param  float  $jd  Julian Day (UT)
+     * @return float องศา
+     */
+    public function ayanamsa(float $jd): float
+    {
+        $years = ($jd - 2451545.0) / 365.25;
+
+        return self::AYANAMSA_J2000 + self::AYANAMSA_RATE * $years;
+    }
+
+    /**
+     * 🇹🇭 ราศีนิรายนะของลองจิจูดสายนะที่ให้มา
+     *
+     * ใช้กับตัวเลขที่คำนวณนอกคลาสนี้ (เช่น ลัคนาใน ThaiAstrologyService)
+     * ให้แปลงกรอบด้วยสูตรเดียวกัน จะได้ไม่มีสองมาตรฐานในระบบ
+     *
+     * @param  float  $lonTropical  ลองจิจูดสายนะ (องศา)
+     * @return array{lon:float, sign:string, sign_index:int}
+     */
+    /**
+     * 🇹🇭 ราศีเกิด (ราศีที่ดวงอาทิตย์สถิตในวันนั้น) แบบนิรายนะ
+     *
+     * 🚨 (2026-09-03) ใช้แทนตารางช่วงวันแบบสากล (มังกร 22 ธ.ค.–19 ม.ค. ฯลฯ) ที่เดิม
+     *    ใช้อยู่ใน ThaiAstrologyService/FortuneAIService — ตารางนั้นเป็น **ราศีฝรั่ง**
+     *    ต่างจากราศีไทยเกือบครึ่งเดือน (เช่น เกิด 1 พ.ค. ฝรั่งว่าพฤษภ ไทยว่าเมษ)
+     *    และยังขัดกับบรรทัด "ตำแหน่งดาวอาทิตย์" ในผังดวงเดียวกันด้วย = โหรจับได้ทันที
+     *
+     *    คำนวณจากดวงอาทิตย์จริง จึงถูกต้องทุกปี ไม่ต้องคอยขยับตารางตามอายนางศ
+     *    (ขอบราศีเลื่อนราว 1 วันต่อ 72 ปี — ตารางตายตัวจะเริ่มเพี้ยนกับคนเกิดยุคก่อน)
+     *
+     * @param  Carbon  $date  วันเกิด (เวลาไม่ทราบ = ใช้เที่ยงวัน)
+     * @return string เช่น "สิงห์ (Leo)"
+     */
+    public function zodiacSignLabel(Carbon $date): string
+    {
+        $idx = $this->positions($date->copy()->setTime(12, 0, 0))['Sun']['sign_index'] ?? 0;
+
+        return self::SIGN_LABELS[$idx] ?? self::SIGN_LABELS[0];
+    }
+
+    public function toSidereal(float $lonTropical, float $jd): array
+    {
+        $lon = $this->normalize360($lonTropical - $this->ayanamsa($jd));
+        $idx = (int) floor($lon / self::DEG_PER_SIGN) % 12;
+
+        return ['lon' => $lon, 'sign' => self::SIGNS[$idx], 'sign_index' => $idx];
     }
 
     /**

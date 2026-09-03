@@ -5771,8 +5771,10 @@ PROMPT;
             $dayOfWeekIndex = $date->dayOfWeek; // 0=อาทิตย์, 1=จันทร์, ...6=เสาร์
             $dayOfWeek = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'][$dayOfWeekIndex];
 
-            // คำนวณราศีจากวันเกิด (โหราศาสตร์สากล)
-            $zodiac = $this->getZodiacSign($date->month, $date->day);
+            // 🇹🇭 (2026-09-03) ราศีเกิดแบบ **นิรายนะ (โหราศาสตร์ไทย)** คำนวณจากดวงอาทิตย์จริง
+            //    เดิมใช้ตารางราศีสากล ซึ่งต่างจากราศีไทยเกือบครึ่งเดือน และขัดกับ
+            //    บรรทัดตำแหน่งดาวอาทิตย์ในผังดวงเดียวกัน = โหรอ่านแล้วจับได้ทันที
+            $zodiac = (new \App\Services\Fortune\PlanetEphemeris)->zodiacSignLabel($date);
 
             // === คำนวณโหราศาสตร์ไทย (เจ้าชนะ) ===
             $planetInfo = $this->getPlanetByDayOfWeek($dayOfWeekIndex);
@@ -5901,7 +5903,11 @@ PROMPT;
     }
 
     /**
-     * คำนวณราศีจากเดือนและวันเกิด (Western Zodiac)
+     * คำนวณราศีจากเดือนและวันเกิด — ช่วงวันแบบ **ไทย (นิรายนะ)**
+     *
+     * ⚠️ (2026-09-03) เดิมเป็นตารางราศีสากล · ถ้ามี Carbon ในมือให้ใช้
+     *    `PlanetEphemeris::zodiacSignLabel($date)` แทน (คำนวณจากดวงอาทิตย์จริง)
+     *    ตัวนี้เหลือไว้เป็น fallback สำหรับที่ที่มีแค่เดือน/วัน
      *
      * @param  int  $month  เดือน
      * @param  int  $day  วัน
@@ -5910,18 +5916,18 @@ PROMPT;
     protected function getZodiacSign(int $month, int $day): string
     {
         $signs = [
-            ['name' => 'มังกร (Capricorn)', 'end_month' => 1, 'end_day' => 19],
-            ['name' => 'กุมภ์ (Aquarius)', 'end_month' => 2, 'end_day' => 18],
-            ['name' => 'มีน (Pisces)', 'end_month' => 3, 'end_day' => 20],
-            ['name' => 'เมษ (Aries)', 'end_month' => 4, 'end_day' => 19],
-            ['name' => 'พฤษภ (Taurus)', 'end_month' => 5, 'end_day' => 20],
-            ['name' => 'เมถุน (Gemini)', 'end_month' => 6, 'end_day' => 20],
-            ['name' => 'กรกฎ (Cancer)', 'end_month' => 7, 'end_day' => 22],
-            ['name' => 'สิงห์ (Leo)', 'end_month' => 8, 'end_day' => 22],
-            ['name' => 'กันย์ (Virgo)', 'end_month' => 9, 'end_day' => 22],
-            ['name' => 'ตุลย์ (Libra)', 'end_month' => 10, 'end_day' => 22],
-            ['name' => 'พิจิก (Scorpio)', 'end_month' => 11, 'end_day' => 21],
-            ['name' => 'ธนู (Sagittarius)', 'end_month' => 12, 'end_day' => 21],
+            ['name' => 'มังกร (Capricorn)', 'end_month' => 1, 'end_day' => 14],
+            ['name' => 'กุมภ์ (Aquarius)', 'end_month' => 2, 'end_day' => 12],
+            ['name' => 'มีน (Pisces)', 'end_month' => 3, 'end_day' => 14],
+            ['name' => 'เมษ (Aries)', 'end_month' => 4, 'end_day' => 13],
+            ['name' => 'พฤษภ (Taurus)', 'end_month' => 5, 'end_day' => 14],
+            ['name' => 'เมถุน (Gemini)', 'end_month' => 6, 'end_day' => 15],
+            ['name' => 'กรกฎ (Cancer)', 'end_month' => 7, 'end_day' => 16],
+            ['name' => 'สิงห์ (Leo)', 'end_month' => 8, 'end_day' => 16],
+            ['name' => 'กันย์ (Virgo)', 'end_month' => 9, 'end_day' => 16],
+            ['name' => 'ตุลย์ (Libra)', 'end_month' => 10, 'end_day' => 16],
+            ['name' => 'พิจิก (Scorpio)', 'end_month' => 11, 'end_day' => 15],
+            ['name' => 'ธนู (Sagittarius)', 'end_month' => 12, 'end_day' => 15],
         ];
 
         foreach ($signs as $sign) {
