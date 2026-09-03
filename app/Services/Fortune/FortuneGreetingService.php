@@ -2,7 +2,6 @@
 
 namespace App\Services\Fortune;
 
-use App\Models\FortuneDailyHoroscopePost;
 use App\Models\FortuneHoroscopePost;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
@@ -21,8 +20,10 @@ use Illuminate\Support\Facades\Log;
  * - ลูกค้าใหม่ (ไม่มี birth_date) → ทักทายอบอุ่น เปิดประตูคุย ไม่กดดัน
  *   ไม่สัญญาว่าจะให้ฟรีหรือยื่นข้อเสนอใดๆ
  *
- * ใช้ FortuneDailyHoroscopePost ที่ scheduler สร้างไว้ — ถ้าวันนี้ไม่มี post
- * → fallback generic by day name (ยังคงมี personalization)
+ * 📚 แหล่งบทความ = `horoscope_daily_predictions` (job `horoscope:generate-daily` 00:01)
+ *   ถ้าวันนี้ยังไม่มีบทความ → fallback generic by day name (ยังคงมี personalization)
+ *   ⛔ **ห้ามกลับไปอ่าน `FortuneDailyHoroscopePost`** — ระบบเก่ารายวันเกิดที่ปิดสวิตช์
+ *      และหยุดเขียนตั้งแต่ 29 เม.ย. 2569 (อ่านแล้วได้ null เสมอ = ลูกค้าได้แต่ประโยคน้ำเปล่า)
  *
  * Used by:
  * - FacebookWebhookController::tryReactionDm (reaction → DM)
@@ -796,15 +797,26 @@ class FortuneGreetingService
      */
     protected function buildHoroscopeForKnownUser(string $name, Carbon $birthdate): string
     {
-        $dayOfBirth = $birthdate->dayOfWeekIso; // 1=จันทร์ ... 7=อาทิตย์
-        $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$dayOfBirth] ?? '?';
-        $dayEmoji = FortuneDailyHoroscopePost::DAY_EMOJI[$dayOfBirth] ?? '✨';
+        // 🚨 (2026-09-03) เดิมอ่าน `FortuneDailyHoroscopePost` = ตารางของระบบเก่ารายวันเกิด
+        //    ซึ่งถูกปิดสวิตช์ (`daily_horoscope_per_day_enabled=0`) และหยุดเขียนตั้งแต่
+        //    29 เม.ย. 2569 ⇒ `findTodayForDayOfBirth()` คืน null ทุกครั้ง ⇒ ลูกค้าที่
+        //    ระบบ**รู้วันเกิดแล้ว** ได้ประโยคน้ำเปล่า "พลังดวงดาวกำลังหมุนเวียน" มา 4 เดือน
+        //    ทั้งที่บทความจริงของวันนั้นถูกสร้างครบ 7 วันเกิดทุกวันอยู่แล้ว
+        //    (เป็นแผลเดียวกับที่เคยเจอใน DM greeting 2026-07-31 — ตอนนั้นแก้แค่เลนกล่องดวง)
+        //
+        // ⚠️ index: `horoscope_daily_predictions.birth_day` ใช้ 0=อาทิตย์…6=เสาร์
+        //    = Carbon::dayOfWeek **ไม่ใช่** dayOfWeekIso (1=จันทร์…7=อาทิตย์) ที่เคยใช้
+        $dayIndex = (int) $birthdate->dayOfWeek;
+        $dayName = self::DAY_NAMES[$dayIndex] ?? '?';
+        $dayEmoji = self::DAY_EMOJIS[$dayIndex] ?? '✨';
 
-        $post = FortuneDailyHoroscopePost::findTodayForDayOfBirth($dayOfBirth);
+        $prediction = $this->findTodayPrediction($dayIndex);
 
-        if ($post !== null) {
-            $teaser = $post->getShortCaption(140);
+        if ($prediction !== null) {
+            $teaser = trim((string) $prediction->overall_prediction_th);
             if ($teaser !== '') {
+                $teaser = mb_strlen($teaser) > 140 ? mb_substr($teaser, 0, 140).'…' : $teaser;
+
                 return "🌙 สวัสดีคุณ {$name}\n"
                     ."ดวงประจำวันสำหรับคนเกิดวัน{$dayName} {$dayEmoji}\n\n"
                     .$teaser."\n\n"
@@ -812,7 +824,7 @@ class FortuneGreetingService
             }
         }
 
-        // วันนี้ยังไม่มี post → ใช้ teaser generic ตามวันเกิด
+        // วันนี้ยังไม่มีบทความ (job 00:01 ยังไม่รัน / ล้ม) → teaser generic ตามวันเกิด
         return $this->buildGenericByDay($name, $dayName, $dayEmoji);
     }
 
