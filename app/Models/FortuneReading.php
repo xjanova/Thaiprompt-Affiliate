@@ -58,6 +58,14 @@ class FortuneReading extends Model
     /**
      * สถานะ conversation ที่เป็นไปได้
      */
+    /**
+     * 🕛 ที่มาของข้อความที่ถือว่าเป็น "คำตอบของคำถามวันเกิด"
+     *
+     * ข้อความจากที่มาเหล่านี้ทั้งก้อนพูดถึงวันเกิดอยู่แล้ว → ใช้ตัวดึงเวลาแบบผ่อนกฎ
+     * (ดู captureStatedBirthTime) · ที่มาอื่น = แชททั่วไป ต้องใช้ตัวเข้มงวด
+     */
+    public const BIRTH_TIME_ANSWER_SOURCES = ['celtic_birthdate', 'birthdate_answer', 'admin_form'];
+
     public const STATUS_NEW = 'new';
 
     public const STATUS_AWAITING_CONFIRMATION = 'awaiting_confirmation';
@@ -2357,8 +2365,13 @@ class FortuneReading extends Model
     /**
      * 🕛 ลูกค้าบอกเวลาเกิดในข้อความไหม → เก็บลง birth_time (จุดเดียวที่เขียนคอลัมน์นี้จากบทสนทนา)
      *
-     * ใช้ตัวดึงแบบเข้มงวด (extractStatedBirthHour) — ต้องมีคำว่า เกิด/คลอด ใกล้ตัวเลข
-     * ไม่งั้น "เงินเดือน 2.50 หมื่น" กลายเป็นเวลาเกิด 02:50 แล้วลัคนาเพี้ยนทั้งผัง
+     * มีตัวดึง 2 ระดับ เลือกตาม $source:
+     *   - แชททั่วไป (`pro_session`, `celtic_qa`) → `extractStatedBirthHour()` **เข้มงวด**
+     *     ต้องมีคำว่า เกิด/คลอด ใกล้ตัวเลข ไม่งั้น "เงินเดือน 2.50 หมื่น" กลายเป็น 02:50
+     *   - คำตอบของคำถามวันเกิด (ดู ANSWER_SOURCES) → `extractBirthHourFromAnswer()`
+     *     🕛 (2026-09-03) ลูกค้าตอบว่า "1/1/2521 06:30" ไม่มีคำว่า "เกิด" เลย
+     *     ตัวเข้มงวดจึงทิ้งเวลาทุกครั้ง — prod มีบิลจ่ายเงิน 1,253 ใบ birth_time = 0 ใบ
+     *     ตัวใหม่ยังต้องเห็นวันเดือนปีหรือคำบ่งชี้ในข้อความเดียวกันถึงจะยอมอ่าน
      *
      * ค่าใหม่ทับค่าเก่าเสมอ (ลูกค้าแก้ได้) + ตั้งธง one-shot ให้พรอมต์เทิร์นถัดไปบอกว่า "ปรับผังแล้ว"
      * แอดมินแก้จากหลังบ้านไม่ผ่านเมธอดนี้ (update() ตรง) → ไม่ตั้งธง
@@ -2370,7 +2383,10 @@ class FortuneReading extends Model
     public function captureStatedBirthTime(string $text, string $source = 'customer'): ?float
     {
         try {
-            $hour = app(\App\Services\Fortune\ThaiAstrologyService::class)->extractStatedBirthHour($text);
+            $astro = app(\App\Services\Fortune\ThaiAstrologyService::class);
+            $hour = in_array($source, self::BIRTH_TIME_ANSWER_SOURCES, true)
+                ? $astro->extractBirthHourFromAnswer($text)
+                : $astro->extractStatedBirthHour($text);
         } catch (\Throwable $e) {
             return null;
         }

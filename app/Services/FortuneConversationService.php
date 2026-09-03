@@ -6510,6 +6510,12 @@ class FortuneConversationService
         $messageText = trim(preg_replace('/[\*_~`]+/', ' ', $messageText) ?? $messageText);
         $messageText = trim(preg_replace('/\s+/', ' ', $messageText) ?? $messageText);
 
+        // 🕛 (2026-09-03) ลูกค้าพิมพ์เวลาเกิดมาพร้อมวันเกิด ("1/1/2521 06:30" / "29/01/2516 ตี 3")
+        //   เก็บที่นี่จุดเดียว — เป็นข้อความดิบก่อน flow แตกเป็นหลายทาง (accept / confirm / step mode)
+        //   ⚠️ ต้องอยู่ก่อน service call ใด ๆ ที่แก้ conversation_state บนอินสแตนซ์อื่นของแถวเดียวกัน
+        //      (setConversationState เป็น read-modify-write ทั้งก้อน — ดูบทเรียน 2026-09-01)
+        $reading->captureStatedBirthTime($messageText, 'birthdate_answer');
+
         Log::debug('Fortune handleBirthdateInput: เริ่มประมวลผลวันเกิด', [
             'reading_id' => $reading->id,
             'status' => $reading->conversation_status,
@@ -11552,9 +11558,15 @@ class FortuneConversationService
     {
         // 🎯 (2026-05-17) ข้อความใหม่ตาม user spec — สั้น ตรงประเด็น เน้น พ.ศ. 4 หลัก
         //   user spec: "ขณะนี้ ให้กรอกวันเดือนปีเกิด เป็นตัวเลข พศ ต้องกรอก 4 ตัว เช่น 1/1/2521"
+        // 🕛 (2026-09-03) ชวนบอก "เวลาเกิด" ด้วย — ไม่บังคับ ไม่เพิ่มขั้นตอน
+        //   เวลาเกิดคือตัวกำหนด *ลัคนา* และ *ภพทั้ง 12* ถ้าไม่รู้ระบบใช้เที่ยงวันเป็นค่ากลาง
+        //   (ThaiAstrologyService::DEFAULT_BIRTH_HOUR) ⇒ ผังคลาดได้ทั้งดวง
+        //   ⚠️ ต้องต่อท้าย ห้ามแทรกกลาง — user spec เดิมเน้น "สั้น ตรงประเด็น พ.ศ. 4 หลัก"
         return "🎂 *ขณะนี้ ให้กรอกวันเดือนปีเกิด*\n\n"
             ."เป็นตัวเลข *พ.ศ.* ต้องกรอก *4 ตัว*\n\n"
-            .'📅 เช่น *1/1/2521*';
+            ."📅 เช่น *1/1/2521*\n\n"
+            ."🕛 ถ้าจำ *เวลาเกิด* ได้ พิมพ์ต่อท้ายมาเลยค่ะ เช่น *1/1/2521 06:30*\n"
+            .'   (จำไม่ได้ก็ไม่เป็นไร — แต่ถ้ารู้ แม่หมอจะผูกลัคนาให้แม่นขึ้นมาก)';
     }
 
     /**
