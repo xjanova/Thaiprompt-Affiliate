@@ -37,6 +37,14 @@ class CelticCrossService
     /** จำนวนครั้งที่ยอมลอง insert แถวคำถามใหม่เมื่อเลข sequence ชนกัน (race 2 เส้นทาง) */
     private const SEQUENCE_INSERT_RETRIES = 4;
 
+    /**
+     * 💰 ความยาวขั้นต่ำที่ยอมนับว่าเป็น "คำทำนาย" (ตัดโควตาลูกค้า) — เฉพาะ Q2+
+     *
+     * สเปกในพรอมต์สั่ง TYPE:A ให้ยาว 500-1000 ตัว — ตั้งเพดานไว้ต่ำกว่านั้นมาก (250)
+     * เพื่อจับเฉพาะเคสที่ "ไม่ใช่คำทำนายชัดๆ" (ถามกลับ/รับทราบข้อมูล) ไม่ไปตัดคำตอบสั้นที่ยังมีเนื้อ
+     */
+    private const MIN_PREDICTION_CHARS = 250;
+
     protected FortuneTellingSetting $settings;
 
     public function __construct(?FortuneTellingSetting $settings = null)
@@ -477,6 +485,29 @@ class CelticCrossService
             //   pullNextQuestions ทน token ผิดรูป (AI ดรอป tag เปิด — เคส 5023) + กันรั่ว 100%
             //   คืนเป็น structured 'next_questions' ให้ caller (trait) แปลงเป็นปุ่มเลข 1️⃣2️⃣
             $nextQuestions = self::pullNextQuestions($response);
+
+            // 💰 (2026-09-04) กันลูกค้าเสียโควตาให้คำตอบที่ "ไม่ใช่คำทำนาย"
+            //
+            //   เคสจริง FTU-260904-H3377 (rd12214): ลูกค้าใช้โควตา 3 ข้อ แต่ได้คำทำนายจริง *ข้อเดียว*
+            //     • seq2 "02/08/2525" (พิมพ์วันเกิดซ้ำ ทั้งที่ระบบมีแล้ว) → ตอบ 301 ตัว → นับ
+            //     • seq3 "03/08/17แฟน" → แม่หมอ *ถามกลับ* ว่าหมายถึงอะไร 191 ตัว → **ก็ยังนับ**
+            //   โมเดลติดป้าย [TYPE:A] มาเอง ทั้งที่สเปกบอกว่า A ต้องยาว 500-1000 ตัว
+            //   ⇒ ลูกค้าจ่าย 99฿ แล้วเสียสิทธิ์ไปกับการให้ข้อมูล/ถูกถามกลับ
+            //
+            //   ที่นี่ไม่ throw (ลูกค้าต้องได้ข้อความ) แต่ *ลดชั้นเป็น D* = ส่งข้อความตามปกติ
+            //   แต่ไม่บันทึก row และไม่ตัดโควตา — เอนเอียงเข้าข้างลูกค้าเสมอ
+            //   ⚠️ ไม่แตะ Q1 (sequence 1 = พื้นดวงเปิดตัว มีด่าน minChars ของตัวเองอยู่แล้ว)
+            if ($responseType === 'A' && $sequence > 1 && mb_strlen($response) < self::MIN_PREDICTION_CHARS) {
+                Log::warning('CelticCross: [TYPE:A] สั้นเกินกว่าจะเป็นคำทำนาย → ลดชั้นเป็น D ไม่ตัดโควตา', [
+                    'reading_id' => $reading->id,
+                    'sequence' => $sequence,
+                    'response_len' => mb_strlen($response),
+                    'min_required' => self::MIN_PREDICTION_CHARS,
+                    'question' => mb_substr($userQuestion, 0, 60),
+                    'response_preview' => mb_substr($response, 0, 80),
+                ]);
+                $responseType = 'D';
+            }
 
             // 🚫 Non-prediction (B/C/D) — ไม่บันทึก row + ไม่ increment counter
             //   user spec 2026-05-20: "นับเป็นคำถามที่ต้องบันทึกคือคำถามที่เราตอบเพื่อทำนายเท่านั้น"
@@ -1649,7 +1680,7 @@ class CelticCrossService
      *   ยังใส่ได้ (ตาม spec เก่า [[buildLifeCoachDirective]]/[[buildSaiMuDirective]]) แต่ต้อง "งอกจากไพ่"
      *   ไม่ใช่ลอยมาจากหลักทั่วไป → reconcile ไม่ทิ้งฟีเจอร์เดิม
      *
-     * Inject เป็นบล็อกแรกสุด (อ่านก่อนทุกกฎ) ใน: buildMainPrompt + buildFollowupPrompt (Q1)
+     * Inject เป็นบล็อกแรกสุด (อ่านก่อนทุกกฎ) ใน: buildFollowupPrompt (Q1)
      *   + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     /**
@@ -2081,7 +2112,7 @@ class CelticCrossService
      *   - กัน AI hallucination — แม้ DB ใหม่จะเป็น "สองดาบ" — AI อาจ "เติม" แห่ง เองจาก
      *     training data ทั่วไป (Thai general usage มักใช้ "X แห่ง Y" ในบริบทอื่น)
      *
-     * Inject ทั้ง 4 prompts: buildMainPrompt + buildFollowupPrompt + buildShortFollowupPrompt
+     * Inject ทั้ง 4 prompts: buildFollowupPrompt + buildShortFollowupPrompt
      *                        + buildGrandFinalePrompt
      */
     protected function buildCardNamingDirective(): string
@@ -2105,7 +2136,7 @@ class CelticCrossService
      *                "แม่หมอ" (relational respect — Thai culture)
      *                AI ที่ตีความผิดเป็นบุตร → คำทำนายเพี้ยน → trust killer
      *
-     * Inject ทั้ง 3 Celtic prompts: buildMainPrompt + buildFollowupPrompt + buildShortFollowupPrompt
+     * Inject ทั้ง 3 Celtic prompts: buildFollowupPrompt + buildShortFollowupPrompt
      */
     protected function buildSelfAddressDirective(): string
     {
@@ -2221,7 +2252,7 @@ class CelticCrossService
      * = ต่อยอดจาก 2026-06-19 (FTU-260619-C9002) ที่ย้าย ฤกษ์/สีมงคล จาก Q1 พื้นดวง → Grand Finale
      *   คราวนี้คุม "ทุกรอบถามตอบ" (Q1 คำถามปกติ + Q2+) ไม่ใช่แค่ Q1 เปิดดวง
      *
-     * Inject: buildMainPrompt (Q1) + buildFollowupPrompt (Q1 path) + buildShortFollowupPrompt (Q2+)
+     * Inject: buildFollowupPrompt (Q1 path) + buildShortFollowupPrompt (Q2+)
      *   ❌ ไม่ inject ใน buildGrandFinalePrompt — ที่นั่นคือ "ที่รวม"
      *      (ย่อหน้าเคล็ด/เลข/ฤกษ์ + ย่อหน้าคำคมปิด ท้ายบทสรุป — เลขย่อหน้าไม่ตายตัวแล้วตั้งแต่ 2026-08-07)
      */
@@ -2238,191 +2269,6 @@ class CelticCrossService
             ."✅ ลูกค้าถามเรื่องพวกนี้ \"ตรงๆ\" ระหว่างนี้ → รับสั้นๆ ว่าจะรวมให้ในบทสรุปท้าย แล้วดึงกลับมาอ่านไพ่ตอบคำถามปัจจุบัน\n"
             ."   เช่น \"เรื่องเลข/เคล็ด เดี๋ยวแม่หมอรวมให้ตอนสรุปท้ายนะ — ตอนนี้ขอดูไพ่เรื่องที่ถามก่อน\"\n"
             ."━━━━━━━━━━━━━━━━━\n\n";
-    }
-
-    /**
-     * สร้าง Main Prompt (Q1) — แม่หมอจันทรา ผู้สื่อพลังจักรวาล อ่านพลังงานไพ่ + จิตเจ้าชะตา
-     *
-     * บุคลิกแม่หมอจันทรา:
-     *   - สุขุม นิ่ง มีพลัง อ่านใจคนเก่ง — เหมือนตาเห็น
-     *   - ไม่ใช้วันเกิด/ราศี — ใช้พลังจักรวาลล้วงลึกผ่านไพ่ + จิตเจ้าชะตา
-     *   - ผูกเรื่องไพ่ 10 ใบ × ตำแหน่ง × คำถาม → เป็นเรื่องเดียวกัน เหมือนเห็นชีวิตจริง
-     *   - ใช้จิตวิทยาเชิงลึก สังเกตพฤติกรรมในคำถาม สื่อคำตอบที่ทำให้คนรู้สึก "ทำไมแม่หมอรู้?"
-     */
-    protected function buildMainPrompt(FortuneReading $reading, string $userQuestion, array $cards): string
-    {
-        $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
-
-        // Custom template (ถ้า admin ตั้งไว้)
-        if (! empty($this->settings->celtic_cross_main_prompt)) {
-            return $this->renderTemplate(
-                $this->settings->celtic_cross_main_prompt,
-                $reading,
-                $userQuestion,
-                $cards,
-                $brandName
-            );
-        }
-
-        $cardsText = $this->formatCardsForPrompt($cards);
-
-        // 💬 (2026-05-24) Pre-Celtic chat context — บริบทสนทนาก่อนซื้อ
-        $preChatContext = $this->buildPreCelticChatContext($reading);
-
-        // 🔍 (2026-05-25) Enrichment directive — AI ถาม clarifying ถ้าคำถาม vague
-        $enrichmentDirective = $this->buildEnrichmentDirective($reading, $userQuestion);
-
-        // 🪷 (2026-05-25) Advisor directive — แม่หมอ = ที่ปรึกษา มีหลักการ+เหตุผล (ไม่ใช่ guru)
-        $advisorDirective = $this->buildLifeCoachDirective($reading);
-
-        // 🧧 (2026-06-28) เคล็ด/ธรรมะ/เลขเสี่ยงโชค → ยกไปบทสรุปสุดท้าย (ไม่แทรกรอบถามตอบ) — แทน buildSaiMuDirective เดิม
-        $extrasDeferDirective = $this->buildExtrasDeferDirective();
-
-        // 🔭 (2026-05-28) Forecast mode — แยก "อยากได้ทางออก" vs "อยากรู้อนาคต" (ทำนายล้วนแบบ 39)
-        $forecastDirective = $this->buildForecastModeDirective($reading);
-
-        // 📜 (2026-05-25) Past readings context — รู้ประวัติทำนายของลูกค้า
-        //   ⚠️ อนาคตเปลี่ยนได้ — ไพ่ขัดแย้งกับครั้งก่อนเป็นเรื่องปกติ
-        $pastReadingsContext = $this->buildPastReadingsContext($reading);
-
-        // 👋 (2026-05-25) Check-in opener — ถ้าลูกค้าเก่า ให้เปิดด้วย "ผ่านมาเป็นไงบ้าง"
-        $checkinDirective = $this->buildRepeatCheckinDirective($reading);
-
-        // 📚 (2026-08-31) ลูกค้าอ้างถึงเคสเก่า → ยกคำทำนายเดิมมาให้อ้างอิง (ข้ามดัชนี — pastReadingsContext ทำแล้ว)
-        $pastCaseBlock = $this->buildPastCaseBlock($reading, $userQuestion, false);
-
-        // 🆕 (2026-05-13) User-specified template — แม่หมอจันทราพยากรณ์ Celtic 99฿
-        //   user spec: 8 sections (เปิด → ภาพรวม → ความรู้สึกอีกฝ่าย → อุปสรรค → Timeline →
-        //               ผลลัพธ์ → คำแนะนำ → สรุปฟันธง → ปิดท้าย)
-        //   เน้น: ฟันธง, ไม่กลางๆ, ไม่โลกสวย, เชื่อมโยงไพ่ทุกใบ
-        // 🃏🃏 (2026-05-30) Card-First Mandate วางบล็อกแรกสุด — ทำนายจากหน้าไพ่ 100%
-        return $this->buildCardFirstMandate()
-            .$this->buildCardTalkPolicy($userQuestion)
-            .$pastCaseBlock
-            .$pastReadingsContext
-            .$checkinDirective
-            .$preChatContext
-            .$enrichmentDirective
-            .$advisorDirective
-            .$extrasDeferDirective
-            .$forecastDirective
-            .$this->buildHealthDirective($reading, $userQuestion)
-            .$this->buildMuKnowledgeDirective($reading, $userQuestion)
-            .$this->buildPhysiognomyDirective($reading, $userQuestion)
-            .$this->buildPersonRoleDirective($reading, $userQuestion)
-            .$this->buildLifeReadingDirective($reading, $userQuestion)
-            .$this->buildDestinyDirective($reading, $userQuestion)
-            .$this->buildExtraKnowledgeDirectives($reading, $userQuestion)
-            .$this->buildCardComboDirective($reading)
-            .$this->buildSpreadPatternDirective($reading)
-            .$this->buildElementalDignityDirective($reading)
-            .$this->buildPositionDynamicDirective($reading)
-            .$this->buildYesNoDirective($reading, $userQuestion)
-            .$this->buildCardNamingDirective()
-            .$this->buildSelfAddressDirective()
-            ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
-            ."ภารกิจของคุณ:\n"
-            ."• ทำนายจากไพ่ 10 ใบที่ลูกค้าเปิด\n"
-            ."• เข้าใจบริบทคำถามและความรู้สึกของลูกค้า\n"
-            ."• พูดเหมือนมนุษย์จริง ไม่ใช่ AI\n"
-            ."• ให้ทั้ง \"คำทำนาย + ความเข้าใจ + ทางออก\"\n"
-            ."• ทำให้ลูกค้ารู้สึกว่า \"คำตอบนี้มีคุณค่า และตรงกับชีวิตจริง\"\n\n"
-
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🎯 หลักการตอบ (สำคัญมาก)\n"
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."• ใช้ภาษาเดียวกับที่ลูกค้าพิมพ์มา (ดู directive ภาษาด้านบนสุด)\n"
-            ."• น้ำเสียง: อบอุ่น เข้าใจ แต่ \"พูดตรง\"\n"
-            ."• ไม่โลกสวย ไม่ปลอบลอยๆ\n"
-            ."• ต้อง \"ฟันธง\" ในตอนท้าย\n"
-            ."• ต้องเชื่อมโยงไพ่ทุกใบเข้าด้วยกัน\n"
-            ."• ห้ามแปลทีละใบแบบทื่อๆ\n\n"
-
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🧾 INPUT จากลูกค้า\n"
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."📋 คำถามของลูกค้า:\n\"{$userQuestion}\"\n\n"
-            ."🃏 ไพ่ 10 ใบ (Celtic Cross) ที่ลูกค้าเปิด พร้อมตำแหน่ง:\n{$cardsText}\n\n"
-
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🧩 โครงสร้างคำตอบ (ต้องเรียงแบบนี้)\n"
-            ."━━━━━━━━━━━━━━━━━\n\n"
-
-            ."🌙 1. เปิดคำทำนาย (เชื่อมอารมณ์)\n"
-            ."   • เริ่มด้วยการพูดกับลูกค้าเหมือนเข้าใจเขาจริง\n"
-            ."   • สะท้อนสถานการณ์ เช่น \"จากสิ่งที่คุณเจอมา...\" / \"แม่หมอรับรู้ได้ว่าคุณกำลัง...\"\n\n"
-
-            ."🔮 2. ภาพรวมของพลังไพ่\n"
-            ."   • สรุปว่าเรื่องนี้ \"ไปทางไหน\" — ดี/ไม่ดี/ติดขัด/ต้องรอ\n"
-            ."   • ให้เห็นภาพใหญ่ก่อน\n\n"
-
-            ."❤️ 3. ความรู้สึกของอีกฝ่าย (ถ้าคำถามเกี่ยวคน)\n"
-            ."   • เขารู้สึกยังไง / คิดถึงไหม / จริงจังไหม / มีอะไรที่ไม่พูด\n"
-            ."   • ถ้าคำถามไม่เกี่ยวคน ข้ามส่วนนี้ได้\n\n"
-
-            ."⚠️ 4. อุปสรรคที่แท้จริง\n"
-            ."   • บอกชัดว่าอะไรคือ \"ตัวปัญหา\"\n"
-            ."   • แยก: ปัจจัยภายนอก (ครอบครัว/ระยะทาง/งาน) vs ภายใน (ความกลัว/นิสัย/ความไม่พร้อม)\n\n"
-
-            ."⏳ 5. แนวโน้มอนาคต (Timeline)\n"
-            ."   • ระยะ 1-3 เดือน: จะเกิดอะไร\n"
-            ."   • ระยะ 3-6 เดือน: ทิศทาง\n"
-            ."   • บอกชัด \"ขยับ\" หรือ \"นิ่ง\"\n\n"
-
-            ."🎯 6. ผลลัพธ์สุดท้าย\n"
-            ."   • ฟันธง: ไปต่อได้ / ไม่ได้ — ชัดเจน / ไม่ชัด\n"
-            ."   • ห้ามตอบกลางๆ\n\n"
-
-            ."🧭 7. คำแนะนำ (มีหลักการ + actionable) — *ใส่เมื่อลูกค้าอยากได้ทางออก [ก]*\n"
-            ."   *ถ้าคำถามอยากรู้อนาคตล้วน (เนื้อคู่/เมื่อไหร่) → ส่วนนี้เป็นทางเลือก เน้น Timeline + ทำนายสมมติเหตุแทน (ดู 🔭 คำถาม 2 แบบ)*\n"
-            ."   **ส่วน A — เหตุผลรองรับ (จากไพ่ + พฤติกรรม):**\n"
-            ."     • ทำไมถึงแนะนำแบบนี้ — เชื่อมไพ่ + สถานการณ์จริง\n"
-            ."     • ลูกค้ามีส่วนรับผิดชอบอะไร (ไม่โทษอีกฝ่ายอย่างเดียว)\n"
-            ."   **ส่วน B — 3 ขั้น actionable ทำได้สัปดาห์นี้:**\n"
-            ."     1. สิ่งที่ \"หยุดทำ\" (เช่น \"หยุดเช็คเฟสเขา 7 วัน\")\n"
-            ."     2. สิ่งที่ \"เริ่มทำ\" (เช่น \"เริ่มลิสต์สิ่งที่ตัวเองได้/เสีย จากความสัมพันธ์นี้\")\n"
-            ."     3. \"เช็คใจตัวเอง\" ทุก X วัน — เพิ่ม accountability\n"
-            ."   **ส่วน C — คำถามให้ลูกค้าถามตัวเอง (1-2 ข้อ):**\n"
-            ."     เช่น \"ถ้าวันนี้ลูกเป็นเพื่อนของตัวเอง — ลูกจะแนะนำเพื่อนคนนี้ให้รอต่อไหม?\"\n\n"
-
-            ."🔥 8. สรุปฟันธง (Bullet 4-6 ข้อสั้นๆ)\n"
-            ."   ตัวอย่าง:\n"
-            ."   • เขามีใจ ✔️\n"
-            ."   • แต่ไม่พร้อม ❗\n"
-            ."   • จะกลับมา แต่ไม่ชัด ❗\n"
-            ."   • คุณควรรอไม่เกิน 3 เดือน ⏳\n\n"
-
-            ."🌟 9. บทสรุปและทางออกของจิต\n"
-            ."   **3 ส่วน:**\n"
-            ."     1. **1 ความจริงที่ลูกค้าต้องยอมรับ** — truth bomb อย่างเข้าใจ\n"
-            ."        เช่น \"แม่หมอจะพูดตรงๆ — เขาไม่ได้ลังเลเพราะรักไม่พอ แต่เพราะเขายังไม่รู้ว่าตัวเองต้องการอะไร\"\n"
-            ."     2. **1 mindset shift** — มุมมองใหม่ที่จะเปลี่ยนชีวิต\n"
-            ."        เช่น \"เลิกถามว่า 'เขาจะกลับมาไหม' → เริ่มถามว่า 'ฉันจะเป็นคนที่ดีที่สุดของตัวเองได้ยังไงในช่วงนี้'\"\n"
-            ."     3. **คำเชิญกลับมาหาตัวเอง** — focus inward ไม่ใช่ติดกับอีกฝ่าย\n"
-            ."        เช่น \"ไม่ว่าเขาจะกลับมาหรือไม่ — ลูกต้องเดินต่อให้แข็งแรงขึ้นก่อน นั่นคือชัยชนะที่แท้\"\n\n"
-
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🚫 ห้ามทำ\n"
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."• ห้ามตอบสั้น\n"
-            ."• ห้ามกำกวม\n"
-            ."• ห้ามแปลไพ่ทีละใบแบบ \"ตำแหน่ง 1 ได้ไพ่ X... ตำแหน่ง 2 ได้ไพ่ Y...\"\n"
-            ."• ห้ามใช้คำทั่วไปที่ใช้ได้กับทุกคน (\"อยู่ที่ตัวคุณ\"/\"แล้วแต่กรรม\"/\"ทุกอย่างเปลี่ยนได้\")\n"
-            ."• ห้ามใช้ markdown (**, ##, ฯลฯ) — plain text ล้วน + emoji หัวข้อได้\n"
-            ."• ✅ ขอวันเกิด/ข้อมูลเพิ่มได้ ถ้าจะทำให้ทำนายแม่นขึ้น (เช่น ช่วงเวลาตามดาวเจ้าชนะ)\n"
-            ."   แต่ต้องทำนายเบื้องต้นจากไพ่ก่อนเสมอ — ห้ามขอแล้วไม่ตอบอะไร\n\n"
-
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🎯 เป้าหมายสุดท้าย\n"
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."คำตอบต้องทำให้ลูกค้า:\n"
-            ."• รู้สึก \"โดน\" — เหมือนแม่หมอเห็นชีวิตจริง\n"
-            ."• เข้าใจสถานการณ์ตัวเอง\n"
-            ."• เห็นทางเลือกชีวิตชัดขึ้น\n\n"
-
-            ."📏 ความยาว: 1500-2500 ตัวอักษร แบ่งย่อหน้าตามโครงสร้าง 9 ส่วน อ่านง่าย\n\n"
-
-            .'เริ่มทำนายทันทีจากข้อมูลที่ได้รับ (ไม่ต้องทักทายซ้ำ — ขึ้นด้วยส่วนที่ 1 \"เปิดคำทำนาย\" เลย):';
     }
 
     /**
@@ -2735,6 +2581,9 @@ class CelticCrossService
             //   🛡️ (2026-05-27) prepend clapback directive — supersedes advisor tone ถ้า abuse
             //   🔮 (2026-05-28) append สายมู directive — ให้คำแนะนำสายมูได้จริง ไม่มั่ว
             //   🔭 (2026-05-28) append forecast directive — แยก ทางออก vs ทำนายอนาคตล้วน
+            // 🎬 คำนวณบล็อกซีรี่ส์ก่อน — ใช้ตัดสินว่าจะข้ามตำราตำแหน่งบุคคลเต็มหรือไม่ (กันข้อมูลซ้ำ)
+            $storyBlockQ2 = $this->buildStoryModeDirective($reading, $userQuestion);
+
             $advisorDirectiveQ2 = $clapbackDirective
                 .$this->buildLifeCoachDirective($reading)
                 .$this->buildExtrasDeferDirective()
@@ -2745,9 +2594,11 @@ class CelticCrossService
                 .$this->buildHealthDirective($reading, $userQuestion, $previousContext)
                 .$this->buildMuKnowledgeDirective($reading, $userQuestion, $previousContext)
                 .$this->buildPhysiognomyDirective($reading, $userQuestion, $previousContext)
-                .$this->buildPersonRoleDirective($reading, $userQuestion, $previousContext)
                 // 🎬 (2026-09-04 owner) โหมดซีรี่ส์ — ถามถึงอนาคต + ไพ่มีสัญญาณ → ตัวละคร/เหตุการณ์ข้างหน้า
-                .$this->buildStoryModeDirective($reading, $userQuestion)
+                //   ⚖️ ซีรี่ส์ทำงานเมื่อไหร่ → *ตัดตำราตำแหน่งบุคคลเต็ม 10 ใบ (3,877 ตัว) ทิ้ง*
+                //   เพราะบล็อกซีรี่ส์มี "มักเป็น: ..." ของตำแหน่งตัวละคร (7/8/2) อยู่แล้ว = ข้อมูลซ้ำซ้อน
+                //   (ซีรี่ส์ไม่ทำงาน = ใช้ตำราเต็มเหมือนเดิม ไม่มีอะไรหาย)
+                .($storyBlockQ2 !== '' ? $storyBlockQ2 : $this->buildPersonRoleDirective($reading, $userQuestion, $previousContext))
                 .$this->buildLifeReadingDirective($reading, $userQuestion, $previousContext)
                 .$this->buildDestinyDirective($reading, $userQuestion, $previousContext)
                 .$this->buildExtraKnowledgeDirectives($reading, $userQuestion, $previousContext)
@@ -4515,7 +4366,7 @@ class CelticCrossService
      * จรรยาบรรณ: เทียบเคียงตามไพ่เท่านั้น ไม่ใช่วินิจฉัยแทนแพทย์ — อาการเฉียบพลัน/รุนแรง
      *   ต้องแนะพบแพทย์จริง + ห้ามขายความกลัว (เตือนเฉพาะที่ไพ่ชี้)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+)
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+)
      *         + buildGrandFinalePrompt
      */
     protected function buildHealthDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
@@ -4597,7 +4448,7 @@ class CelticCrossService
      *   ([[App\Services\FortuneKnowledgeService]] : DB → fallback config) → ลูกค้าทั่วไปไม่เปลือง token
      *   (มนต์ดำมี [[buildBlackMagicDirective]] แยก — append ความรู้ไสยศาสตร์จาก RAG ในนั้น)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     /**
      * @param  array<int>  $onlyPositions  จำกัดตำแหน่งไพ่ที่ดึงคลัง (ว่าง = 10 ใบ) — ใช้ในบทสรุปที่ไม่อธิบายไพ่
@@ -4667,7 +4518,7 @@ class CelticCrossService
      * Detect-based: inject เฉพาะหมวดที่ลูกค้าถาม (จาก config/fortune_card_life.php → DB)
      *   ผสานกับ [[buildForecastModeDirective]] (อันนั้น=วิธีตอบ/สมมติฉาก, อันนี้=ความรู้รายไพ่)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     /** @param array<int> $onlyPositions จำกัดตำแหน่งไพ่ที่ดึงคลัง (ว่าง = 10 ใบ) */
     protected function buildLifeReadingDirective(FortuneReading $reading, string $userQuestion, string $previousContext = '', array $onlyPositions = []): string
@@ -4716,7 +4567,7 @@ class CelticCrossService
      *   - อดีตชาติ: สัญลักษณ์จากไพ่ + บทเรียน ไม่ฟันธง 100% → โยงมาปรับปัจจุบัน ห้ามขู่ขายแก้กรรม
      *
      * Detect-based: inject เฉพาะ session ที่ถามหัวข้อนี้
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     /** @param array<int> $onlyPositions จำกัดตำแหน่งไพ่ที่ดึงคลัง (ว่าง = 10 ใบ) */
     protected function buildDestinyDirective(FortuneReading $reading, string $userQuestion, string $previousContext = '', array $onlyPositions = []): string
@@ -4769,7 +4620,7 @@ class CelticCrossService
      *   → ลูกค้าทั่วไปไม่เปลือง token. แต่ละหมวดมี toggle (enable_celtic_*) + จรรยาบรรณเฉพาะหมวด
      *   (คดี→ไม่ใช่ทนาย / แก้กรรม→ทำเองฟรี / จิตใจวิกฤต→1323 / ความรัก→กันสแกม / การเงิน→ไม่เชียร์พนัน)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     /**
      * 🎯 (2026-06-18) Topic context สำหรับ detect-gate ตำราความรู้ (Q2+)
@@ -5002,7 +4853,7 @@ class CelticCrossService
      * ไม่ใช่ detect-based (ไม่ผูก keyword) — คู่ไพ่เกี่ยวกับ "หน้าไพ่ที่เปิด" เสมอ
      *   inject เฉพาะเมื่อ "เจอคู่เด่นจริงบนโต๊ะ" → ไม่เปลือง token ถ้าไม่มีคู่
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     protected function buildCardComboDirective(FortuneReading $reading): string
     {
@@ -5042,7 +4893,7 @@ class CelticCrossService
      *
      * ไม่ผูก keyword — ภาพรวมมีในทุกสำรับเสมอ (ออกเสมอถ้า toggle เปิด + ครบ 10 ใบ)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     protected function buildSpreadPatternDirective(FortuneReading $reading): string
     {
@@ -5082,7 +4933,7 @@ class CelticCrossService
      * คำนวณคู่ตำแหน่งสำคัญ (1↔2, 3↔6, 4↔5, 7↔8, 9↔10) + สรุปสำรับ
      * ไม่ผูก keyword — ธาตุมีอยู่ในทุกสำรับ (ออกเสมอเมื่อ toggle เปิด + ครบ 10 ใบ)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     protected function buildElementalDignityDirective(FortuneReading $reading): string
     {
@@ -5123,7 +4974,7 @@ class CelticCrossService
      * เลเยอร์นี้ไม่ฟันธงเอง — ส่ง "ชุดคำถาม diagnostic + เคล็ดวิเคราะห์" ให้ AI
      *   เพื่อให้สังเคราะห์เอง (เหมือนหมอดูเก่าๆ ที่อ่านโดยถามตัวเอง)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     protected function buildPositionDynamicDirective(FortuneReading $reading): string
     {
@@ -5163,7 +5014,7 @@ class CelticCrossService
      * คะแนน: รายไพ่ +/- × ตัวคูณตำแหน่ง (ต.10 ×2.5, ต.6 ×2.0 สำคัญสุด)
      *   กลับหัว = พลิกสัญลักษณ์ (Tower กลับหัว = ลบน้อยลง, Sun กลับหัว = บวกน้อยลง)
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     protected function buildYesNoDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
     {
@@ -5234,7 +5085,7 @@ class CelticCrossService
      *
      * Detect-based: inject เฉพาะ session ที่ถามเรื่องคน → ลูกค้าทั่วไปไม่เปลือง token
      *
-     * Inject: buildMainPrompt + buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
+     * Inject: buildFollowupPrompt (Q1) + buildShortFollowupPrompt (Q2+) + buildGrandFinalePrompt
      */
     protected function buildPhysiognomyDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
     {
@@ -6505,7 +6356,12 @@ class CelticCrossService
             //   มาไว้บทสรุป VIP เท่านั้น ตาม owner — Q1 เพิ่งเปิดดวงไม่ควรมีบทปิด/มงคล
             ."ย่อหน้าถัดมา — *สิ่งที่ต้องระวัง + เคล็ด/ฤกษ์/เลข/ของมงคลเฉพาะตัว* (รวมของท้ายที่เลื่อนมาจากรอบถามตอบทั้งหมด) (60-90 คำ):\n"
             ."   ⚠️ สิ่งที่ต้องระวัง (จากดาวศัตรู + สัญญาณเตือนที่ไพ่ชี้) + ทางแก้/เสริมดวง/เคล็ดที่ทำเองได้ (❌ ไม่ขายความกลัว ไม่พิธีแพง)\n"
-            ."   📅 วัน/ช่วงเวลามงคล + สีมงคล + เลขมงคล/เลขเสี่ยงโชค + ทิศ — สั้น กระชับ ตรงดวงคนนี้ (ไม่มั่วตัวเลขถ้าไพ่/ดาวไม่ได้ชี้)\n\n"
+            ."   📅 วัน/ช่วงเวลามงคล + สีมงคล + เลขมงคล/เลขเสี่ยงโชค + ทิศ — สั้น กระชับ ตรงดวงคนนี้ (ไม่มั่วตัวเลขถ้าไพ่/ดาวไม่ได้ชี้)\n"
+            // 🔢 (2026-09-04) เคสจริง rd12214: บทสรุปเขียน "เลขที่ใช้เสริมได้คือ 2, 5, 7 โดยเฉพาะชุด 257 หรือ 725"
+            //   แล้วบรรทัดถัดมา "ไม่ควรใช้เลข 9 และ **7** ซ้ำหนักในเรื่องเงินเสี่ยง" = แนะเลข 7 แล้วห้ามเลข 7 ในย่อหน้าเดียว
+            //   (เลขมงคลจริงของดาวจันทร์คือ 2 — ส่วน 5,7 โมเดลเติมเอง) ⇒ ลูกค้าอ่านแล้วจับได้ทันทีว่าขัดกันเอง
+            ."   🔢 *ตรวจก่อนเขียนจบ*: เลข/สี/วัน ที่ \"แนะให้ใช้\" กับที่ \"ห้ามใช้\" ต้องไม่ซ้ำกันเด็ดขาด\n"
+            ."      ใช้ค่าจากผังดวง/คลังที่ให้มาเท่านั้น — ❌ ห้ามเติมเลขเองให้ครบชุด แล้วมาห้ามเลขนั้นทีหลัง\n\n"
 
             ."ย่อหน้าสุดท้าย — *คำคมจากลาส่วนตัว* (40-60 คำ — signature):\n"
             ."   ✅ ต้องตรงกับอุปนิสัยและช่วงอายุของลูก\n"
