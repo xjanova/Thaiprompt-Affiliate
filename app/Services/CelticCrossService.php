@@ -932,6 +932,13 @@ class CelticCrossService
             $txt = trim($stripped);
         }
 
+        // 🧹 (2026-09-04) ตัดอักษรต่างภาษาที่โมเดลหลุดมา — พื้นดวงเปิดตัวโหมดแบ่งบล็อก
+        $txt = ThaiOutputSanitizer::stripForeignScript($txt, [
+            'lane' => 'celtic_base_chart_block',
+            'reading_id' => $reading->id,
+            'ai_model' => $r['model'] ?? null,
+        ]);
+
         return [
             'response' => $txt,
             'tokens_used' => (int) ($r['tokens_used'] ?? 0),
@@ -1041,6 +1048,13 @@ class CelticCrossService
         if (is_string($stripped)) {
             $txt = trim($stripped);
         }
+
+        // 🧹 (2026-09-04) ตัดอักษรต่างภาษาที่โมเดลหลุดมา — พื้นดวงเปิดตัวโหมดคอลเดียว
+        $txt = ThaiOutputSanitizer::stripForeignScript($txt, [
+            'lane' => 'celtic_base_chart_single',
+            'reading_id' => $reading->id,
+            'ai_model' => $r['model'] ?? null,
+        ]);
 
         if ($txt === '') {
             return null;
@@ -1511,6 +1525,12 @@ class CelticCrossService
             //   ใช้ pattern เดียวกับ askQuestion (รองรับ fullwidth bracket/markdown wrapper)
             $response = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', (string) $response);
             $response = trim((string) preg_replace('/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］\」]?[`*]{0,3}/iu', '', (string) $response));
+
+            // 🧹 (2026-09-04) ตัดอักษรต่างภาษาที่โมเดลหลุดมา — เส้น admin regenerate
+            $response = ThaiOutputSanitizer::stripForeignScript($response, [
+                'lane' => 'celtic_admin_regen',
+                'reading_id' => $reading->id,
+            ]);
 
             // 🔢 (2026-06-05 v2) Strip token คำถามแนะนำ — buildFollowupPrompt มี directive คำถามแนะนำ
             //   admin path ไม่สร้างปุ่มแนะนำ → แค่ลบ token กันรั่วหน้าลูกค้า + DB + bridge
@@ -5746,6 +5766,13 @@ class CelticCrossService
 
             // ลบ token [END_SESSION] ถ้า AI ติดมา
             $summary = trim(preg_replace('/\[\s*(END[_\s]?SESSION|จบ|END)\s*\]/iu', '', $summary));
+
+            // 🧹 (2026-09-04) ตัดอักษรต่างภาษา — บทสรุป VIP คือบทที่ลูกค้าเก็บไว้อ่านซ้ำ + เอาไปทำเสียงอ่าน
+            //    (ของหลุดในนี้จะติดไปทั้งข้อความ ทั้งไฟล์เสียง และรูปสรุป)
+            $summary = ThaiOutputSanitizer::stripForeignScript($summary, [
+                'lane' => 'celtic_grand_finale',
+                'reading_id' => $reading->id,
+            ]);
 
             if ($summary === '' || mb_strlen($summary) < 200) {
                 throw new Exception('AI Grand Finale ตอบสั้นเกินไป ('.mb_strlen($summary).' chars)');
