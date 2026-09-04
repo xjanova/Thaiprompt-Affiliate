@@ -3621,22 +3621,33 @@ class FortuneReading extends Model
      * บันทึกว่าตอบ Celtic question ไปแล้ว
      * ถ้าเป็น Q1 → set celtic_first_answered_at (start QA window)
      */
-    public function markCelticAnswered(int $sequence, bool $startQaWindow = true): void
+    /**
+     * @param  bool  $countQuota  false = ตอบแล้วแต่ *ไม่ตัดโควตา* (พื้นดวงเปิดตัวรอบที่ 2+)
+     *
+     * 💰 (2026-09-04) เคส FTU-260904-S1420: พื้นดวงยิง 2 รอบ (รอบแรกไม่มีวันเกิด → ไพ่ล้วน,
+     *   ลูกค้าพิมพ์วันเกิดตามมาทีหลัง → ยิงใหม่พร้อมดวงดาว) ⇒ used=2 ทั้งที่เป็น
+     *   "พื้นดวงเปิดตัว" เหมือนกัน ลูกค้าเสียสิทธิ์ถามฟรีไป 1 ข้อเพราะระบบส่งซ้ำเอง
+     */
+    public function markCelticAnswered(int $sequence, bool $startQaWindow = true, bool $countQuota = true): void
     {
         // 🆕 (2026-06-23, owner) เริ่มจับเวลา QA window ที่ "คำถามจริงข้อแรกของลูกค้า" (Q2)
         //   ไม่ใช่ตอนพื้นดวงเปิดตัว (Q1 auto) — base chart ส่ง $startQaWindow=false (นับ used แต่ไม่เริ่มเวลา)
         //   เงื่อนไขเปลี่ยนจาก sequence===1 → empty() เพราะคำถามจริงข้อแรกอาจเป็น sequence 2 (หลังพื้นดวง)
         $justStarted = $startQaWindow && empty($this->celtic_first_answered_at);
 
-        $update = [
-            'celtic_questions_used' => max($this->celtic_questions_used, $sequence),
-        ];
+        $update = [];
+        if ($countQuota) {
+            $update['celtic_questions_used'] = max($this->celtic_questions_used, $sequence);
+        }
 
         if ($justStarted) {
             $update['celtic_first_answered_at'] = now();
         }
 
-        $this->update($update);
+        // ไม่มีอะไรต้องอัพเดต (พื้นดวงซ้ำ + window เริ่มไปแล้ว) → ข้าม query ไปเลย
+        if (! empty($update)) {
+            $this->update($update);
+        }
 
         // 🆕 (2026-06-23) sync Pro Session avatar timer ให้เริ่มพร้อม QA window (เริ่มที่คำถามจริงข้อแรก)
         //   enterProSession เปิด session ค้างไว้ (awaiting) — ตั้ง started_at ตรงนี้เมื่อ window เริ่มจริง
