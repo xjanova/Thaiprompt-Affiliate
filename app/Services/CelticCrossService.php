@@ -4362,6 +4362,14 @@ class CelticCrossService
                     break;
                 }
             }
+
+            // 🪬 เทิร์นนี้ไม่มีคีย์เวิร์ด → เช็คว่าเคยถามเรื่องของมาก่อนในบิลนี้ไหม (lock ทั้งรอบ)
+            //    ลูกค้าถาม "โดนของไหม" Q2 แล้วถาม "แล้วแก้ยังไง" Q6 — Q6 ไม่มีคีย์เวิร์ด และ Q2
+            //    หลุดหน้าต่าง 3 คำถามไปแล้ว ⇒ ถ้าไม่เช็คตรงนี้ ตำราจะหายกลางวงทั้งที่กำลังคุยเรื่องนี้อยู่
+            if (! $hit && $this->blackMagicAskedEarlier($reading, $keywords)) {
+                $hit = true;
+            }
+
             if (! $hit) {
                 return '';
             }
@@ -4770,10 +4778,21 @@ class CelticCrossService
      * เหตุผล: $previousContext = คำตอบ AI พื้นดวง Q1 ที่พูดครบทุกด้าน (รัก/งาน/เงิน/สุขภาพ/ฤกษ์)
      *   → ถ้า detect บนนั้น ตำราเกือบทุกหมวดจะ fire ทุก turn = over-fire + prompt บวมบนโมเดลเล็ก
      * ใช้ร่วม buildExtraKnowledgeDirectives + ตำราพี่น้อง (health/mu/life/destiny/yesno/physiognomy/personRole)
-     * ยกเว้น buildBlackMagicDirective ที่ต้องเห็น topic Q1 เพื่อ lock รอบ (จึงคง previousContext ไว้)
+     * 🪬 (2026-09-04) buildBlackMagicDirective ย้ายมาใช้ตัวนี้ด้วยแล้ว — ของเดิมสแกน $previousContext
+     *   (คำตอบ AI) ⇒ พื้นดวงเขียน "มีเสน่ห์ พูดดี" ⇒ ตำราคุณไสย 7.1k ยิงทุกเทิร์นแทบทุกบิลความรัก
+     *   ส่วน "lock รอบ" ที่เคยพึ่ง previousContext ตอนนี้อ่านจากคำถามทั้งบิลแทน (ดู blackMagicAskedEarlier)
+     *
+     * 🗄️ memo ต่อ request — เมธอดนี้ถูกเรียก **12 จุด** ในการประกอบพรอมต์ครั้งเดียว
+     *   (ตำราสุขภาพ/มู/ชีวิต/ชะตา/โหงวเฮ้ง/ตำแหน่งบุคคล/yes-no/สปีชีส์/คุณไสย ฯลฯ)
+     *   ทุกครั้ง = 1 query `celticQuestions` + 1 อ่าน conversation_state ⇒ เดิมยิงซ้ำ ~12 รอบต่อ 1 คำตอบ
      */
     protected function celticTopicContext(FortuneReading $reading, string $userQuestion): string
     {
+        $memoKey = $reading->id.'|'.md5($userQuestion);
+        if (isset($this->topicContextMemo[$memoKey])) {
+            return $this->topicContextMemo[$memoKey];
+        }
+
         $priorQuestions = '';
         try {
             $priorQuestions = $reading->celticQuestions()
@@ -4806,8 +4825,56 @@ class CelticCrossService
             // non-blocking
         }
 
-        return trim($userQuestion.' '.$priorQuestions.' '.$parked);
+        return $this->topicContextMemo[$memoKey] = trim($userQuestion.' '.$priorQuestions.' '.$parked);
     }
+
+    /** 🗄️ memo ของ celticTopicContext() — ต่อ request เท่านั้น (service ถูก new ใหม่ทุก AI call) */
+    protected array $topicContextMemo = [];
+
+    /**
+     * 🪬 (2026-09-04) "บิลนี้เคยคุยเรื่องของ/คุณไสย์ไปแล้วไหม" — อ่านจากคำถาม *ทั้งบิล*
+     *
+     * แทนกลไกเดิมที่ lock ด้วยการสแกน $previousContext (คำตอบ AI) ซึ่งพังเพราะคำว่า "เสน่ห์"
+     * ในพื้นดวงความรักทำให้ตำราคุณไสย 7.1k ยิงทุกเทิร์นแทบทุกบิล
+     *
+     * เจตนาที่ต้องรักษาไว้: ลูกค้าถาม "โดนของไหม" ที่ Q2 แล้วถามต่อ "แล้วแก้ยังไง" ที่ Q6
+     *   → Q6 ไม่มีคีย์เวิร์ด และ Q2 หลุดหน้าต่าง 3 คำถามของ celticTopicContext ไปแล้ว
+     *   ⇒ ตำราหายกลางวง ลูกค้าได้คำตอบลอย
+     *
+     * ⚠️ จงใจ **ไม่ใช้ธง sticky ใน conversation_state**: `setConversationState()` เรียก `update()`
+     *   = เขียน DB จริง — การเขียน state ระหว่าง "ประกอบพรอมต์" เสี่ยงทับค่าที่เลนอื่นเพิ่งเขียน
+     *   (กับดัก clobber ที่เคยเจอในรอบ audit 2026-09-01) ⇒ ใช้ query อ่านอย่างเดียวแทน ปลอดภัยกว่า
+     *   และแม่นกว่าด้วย เพราะดูคำถามครบทั้งบิล ไม่ใช่แค่ที่บังเอิญปักธงไว้
+     *
+     * @param  array<int, string>  $keywords  คีย์เวิร์ดชุดเดียวกับที่ใช้ตรวจเทิร์นปัจจุบัน
+     */
+    protected function blackMagicAskedEarlier(FortuneReading $reading, array $keywords): bool
+    {
+        $memoKey = (string) $reading->id;
+        if (isset($this->blackMagicHistoryMemo[$memoKey])) {
+            return $this->blackMagicHistoryMemo[$memoKey];
+        }
+
+        $hit = false;
+        try {
+            $all = mb_strtolower(
+                (string) $reading->celticQuestions()->pluck('question')->implode(' ')
+            );
+            foreach ($keywords as $kw) {
+                if (mb_strpos($all, $kw) !== false) {
+                    $hit = true;
+                    break;
+                }
+            }
+        } catch (\Throwable $e) {
+            $hit = false; // query ไม่ได้ → ถือว่าไม่เคยถาม (พฤติกรรมเดิม)
+        }
+
+        return $this->blackMagicHistoryMemo[$memoKey] = $hit;
+    }
+
+    /** 🗄️ memo ของ blackMagicAskedEarlier() — ต่อ request */
+    protected array $blackMagicHistoryMemo = [];
 
     /**
      * 🚫 (2026-06-18) ห้าม filler ซ้ำ — ใช้ร่วมทุก path (Q1 ถามตรง + Q2+) กัน treatment drift
