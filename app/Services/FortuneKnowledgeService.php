@@ -134,6 +134,217 @@ class FortuneKnowledgeService
         return $this->linesFromCardMap($cards, $this->personRoleMap());
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // STORY — สัญญาณ "ตัวละคร + เหตุการณ์ข้างหน้า" แบบย่อ (โหมดซีรี่ส์)
+    // ════════════════════════════════════════════════════════════════
+
+    /** ตำแหน่งที่เป็น "ตัวละคร" ของเรื่อง → ป้ายบทบาท */
+    public const STORY_CAST_POSITIONS = [
+        7 => 'ตัวเจ้าชะตา',
+        8 => 'คนรอบตัว/อิทธิพลภายนอก',
+        2 => 'ผู้ขวาง/คู่ปรับ/ผู้ก่อเรื่อง',
+    ];
+
+    /** ตำแหน่งที่เป็น "เหตุการณ์ข้างหน้า" → ป้าย */
+    public const STORY_EVENT_POSITIONS = [
+        6 => 'อนาคตอันใกล้',
+        10 => 'ผลลัพธ์/จุดจบ',
+        2 => 'สิ่งที่จะมาขวาง',
+    ];
+
+    /** ความยาวสูงสุดต่อ 1 ชิ้นข้อมูล — กันบล็อกบวม (คลังเต็มมีถึง 300 ตัว/ใบ/หมวด) */
+    protected const STORY_BIT_MAX = 95;
+
+    /**
+     * 🎬 (2026-09-04 owner) สัญญาณสำหรับ "เล่าเป็นซีรี่ส์" — ตัวละคร (รูปพรรณ/วัย) + เหตุการณ์ข้างหน้า
+     *
+     * owner: "เราเคยทำว่าให้สร้างเป็นเหมือนซีรี่ เหตุการณ์ มีตัวละคร ... มีเกณฑ์เดินทางแล้วมีปัญหา
+     *   อุบัติเหตุ หรือมีคนสร้างเรื่องให้เรา หรือมีคนนำโชคมาให้ รูปร่างหน้าตาอายุ (มีในคลังความรู้)
+     *   โรคต่างๆ มีในคลังหมด แต่เหมือนไม่ถูกหยิบมาใช้เลย"
+     *
+     * ⚠️ ทำไมคลังไม่เคยถูกใช้ ทั้งที่มีครบ:
+     *   คลัง persona/person_role/health/travel/legal/wealth *ทุกตัว* ยิงตาม "คีย์เวิร์ดในคำถาม"
+     *   (buildPhysiognomyDirective → ต้องมีคำว่า หน้าตา/ลักษณะ · buildHealthDirective → ต้องมีคำว่า ป่วย/โรค …)
+     *   ⇒ เหตุการณ์ที่ลูกค้า *ไม่รู้จะถาม* (เดินทางแล้วมีเรื่อง · คนสร้างเรื่อง · คนนำโชค · โรคที่กำลังมา)
+     *     ไม่มีวันโผล่ — ทั้งที่นี่คือของที่ต้อง "รีบบอก" ที่สุด
+     *   ตัวนี้ยิงตาม *หน้าไพ่* (card-gated) ไม่รอคำถาม — แต่ย่อให้เหลือเฉพาะตำแหน่งที่เป็น
+     *   ตัวละคร (7/8/2) กับเหตุการณ์ข้างหน้า (6/10/2) และตัดแต่ละชิ้นเหลือ ≤95 ตัว
+     *   (เท 10 ใบ × 5 คลังเต็ม = 10k+ ตัวอักษร — บวมเกินจะฉีดทุกคำถาม)
+     *
+     * @param  array<int, array>  $cards  ผลจาก FortuneReading::getCelticCards()
+     * @return string ว่าง = ไม่มีสัญญาณ (ผู้เรียกต้องไม่ฉีดบทซีรี่ส์ — ห้ามปั้นเรื่องจากอากาศ)
+     */
+    public function storySignalLines(array $cards): string
+    {
+        if (count($cards) < 10) {
+            return '';
+        }
+
+        $persona = $this->personaMap();
+        $role = $this->personRoleMap();
+        $age = $this->muCardMap(FortuneKnowledge::CATEGORY_AGE_RANGE);
+        $health = $this->healthMap();
+        $travel = $this->muCardMap(FortuneKnowledge::CATEGORY_TRAVEL_ABROAD);
+        $legal = $this->muCardMap(FortuneKnowledge::CATEGORY_LEGAL_DISPUTES);
+        $wealth = $this->muCardMap(FortuneKnowledge::CATEGORY_WEALTH_LUCK);
+        $timing = $this->muCardMap(FortuneKnowledge::CATEGORY_TIMING);
+
+        $castLines = [];
+        $castPositions = self::STORY_CAST_POSITIONS;
+
+        // 👤 ไพ่ราชสำนัก (Page/Knight/Queen/King) ที่ตกตำแหน่งอนาคต = "คนที่จะเข้ามา" — ต้องอยู่ในตัวละครด้วย
+        foreach ([6 => 'คนที่จะเข้ามา (อนาคตอันใกล้)', 10 => 'คนที่อยู่ปลายทาง (ผลลัพธ์)'] as $pos => $label) {
+            $nameEn = (string) ($cards[$pos]['card_name_en'] ?? '');
+            if (preg_match('/^(Page|Knight|Queen|King) of /', $nameEn)) {
+                $castPositions[$pos] = $label;
+            }
+        }
+
+        foreach ($castPositions as $pos => $roleLabel) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            [$nameEn, $nameTh, $rev] = $this->storyCardIdentity($card);
+
+            $bits = [];
+            $look = $this->storyLine($persona[$nameEn]['content'] ?? '', 'รูปลักษณ์');
+            if ($look !== '') {
+                $bits[] = 'รูปพรรณ: '.$look;
+            }
+            $trait = $rev
+                ? $this->storyLine($persona[$nameEn]['content'] ?? '', 'กลับหัว')
+                : $this->storyLine($persona[$nameEn]['content'] ?? '', 'นิสัย');
+            if ($trait !== '') {
+                $bits[] = 'นิสัย/ท่าที: '.$trait;
+            }
+            $who = $this->storyLine($role[$nameEn]['content'] ?? '', 'ตำแหน่งบุคคล');
+            if ($who !== '') {
+                $bits[] = 'มักเป็น: '.$who;
+            }
+            $ageTxt = $this->storyClip($this->orientedContent((string) ($age[$nameEn]['content'] ?? ''), $rev));
+            if ($ageTxt !== '') {
+                $bits[] = 'วัย: '.$ageTxt;
+            }
+            if (empty($bits)) {
+                continue;
+            }
+            $castLines[] = "• [{$roleLabel}] {$nameTh} ".($rev ? 'กลับหัว' : 'ตั้งตรง').' — '.implode(' · ', $bits);
+        }
+
+        $eventLines = [];
+        foreach (self::STORY_EVENT_POSITIONS as $pos => $label) {
+            $card = $cards[$pos] ?? null;
+            if (! $card) {
+                continue;
+            }
+            [$nameEn, $nameTh, $rev] = $this->storyCardIdentity($card);
+
+            $bits = [];
+            $h = (string) ($health[$nameEn]['content'] ?? '');
+            if ($h !== '') {
+                $body = $this->storyLine($h, 'อวัยวะ');
+                $tend = $rev ? $this->storyLine($h, 'กลับหัว') : $this->storyLine($h, 'ตั้งตรง');
+                if ($body === '' && $tend === '') {
+                    $tend = $this->storyClip($this->orientedContent($h, $rev));
+                }
+                $joined = trim($body.($body !== '' && $tend !== '' ? ' — ' : '').$tend);
+                if ($joined !== '') {
+                    $bits[] = '🩺 '.$joined;
+                }
+            }
+            foreach ([
+                ['✈️ เดินทาง', $travel],
+                ['⚖️ ข้อพิพาท/สัญญา', $legal],
+                ['💰 ลาภ/เงิน', $wealth],
+            ] as [$icon, $map]) {
+                $txt = $this->storyClip($this->orientedContent((string) ($map[$nameEn]['content'] ?? ''), $rev));
+                if ($txt !== '') {
+                    $bits[] = $icon.': '.$txt;
+                }
+            }
+            if ($pos !== 2) {
+                $t = $this->storyClip($this->orientedContent((string) ($timing[$nameEn]['content'] ?? ''), $rev));
+                if ($t !== '') {
+                    $bits[] = '⏳ จังหวะ: '.$t;
+                }
+            }
+            if (empty($bits)) {
+                continue;
+            }
+            $eventLines[] = "• [{$label}] {$nameTh} ".($rev ? 'กลับหัว' : 'ตั้งตรง').' — '.implode(' · ', $bits);
+        }
+
+        // 🪬 สัญญาณของ/คุณไสย์ — ใช้ตัวเดิมที่กรอง "เฉพาะใบที่มีของจริง" อยู่แล้ว (orientation-aware)
+        $bm = trim((string) $this->blackMagicSignalLinesForCards($cards));
+
+        if (empty($castLines) && empty($eventLines) && $bm === '') {
+            return '';
+        }
+
+        $out = '';
+        if (! empty($castLines)) {
+            $out .= "🎭 ตัวละครในสำรับ (รูปพรรณ/วัย/ท่าที — ใช้เฉพาะที่ไพ่ชี้):\n".implode("\n", $castLines)."\n";
+        }
+        if (! empty($eventLines)) {
+            $out .= ($out !== '' ? "\n" : '')
+                ."⚡ เหตุการณ์ข้างหน้าที่ไพ่ชี้ (ต.6 อนาคตอันใกล้ · ต.10 ผลลัพธ์ · ต.2 สิ่งที่จะมาขวาง):\n"
+                .implode("\n", $eventLines)."\n";
+        }
+        if ($bm !== '') {
+            $out .= ($out !== '' ? "\n" : '')."🪬 สัญญาณของ/คุณไสย์ (เฉพาะใบที่ชี้จริง — ทักเท่าที่ไพ่บอก ห้ามขยาย):\n".$bm."\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * ดึง name_en / name_th / กลับหัว ของไพ่ 1 ใบ (ใช้ซ้ำใน storySignalLines)
+     *
+     * @return array{0:string,1:string,2:bool}
+     */
+    protected function storyCardIdentity(array $card): array
+    {
+        $nameEn = (string) ($card['card_name_en'] ?? '');
+        $nameTh = (string) ($card['card_name_th'] ?? '') ?: ($nameEn ?: '?');
+
+        return [$nameEn, $nameTh, ! empty($card['is_reversed'])];
+    }
+
+    /**
+     * หยิบ "บรรทัดที่ขึ้นต้นด้วยป้าย" ออกจากเนื้อคลัง แล้วตัดป้ายทิ้ง — เช่น "รูปลักษณ์/โหงวเฮ้ง: X" → "X"
+     *
+     * คลังเขียนเป็นหลายบรรทัด (รูปลักษณ์ / นิสัย / กลับหัว) — โหมดซีรี่ส์เอาแค่บรรทัดที่ต้องการ
+     * ไม่เจอป้าย = คืนว่าง (ผู้เรียกตัดสินใจเองว่าจะ fallback ไหม)
+     */
+    protected function storyLine(string $content, string $labelPrefix): string
+    {
+        foreach (preg_split('/\R/u', trim($content)) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '' || mb_strpos($line, $labelPrefix) !== 0) {
+                continue;
+            }
+            $value = preg_replace('/^[^:：]*[:：]\s*/u', '', $line);
+
+            return $this->storyClip((string) $value);
+        }
+
+        return '';
+    }
+
+    /** ตัดชิ้นข้อมูลให้สั้น — บล็อกซีรี่ส์ต้องไม่บวม */
+    protected function storyClip(string $text): string
+    {
+        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        if ($text === '') {
+            return '';
+        }
+
+        return mb_strlen($text) > self::STORY_BIT_MAX
+            ? rtrim(mb_substr($text, 0, self::STORY_BIT_MAX)).'…'
+            : $text;
+    }
+
     /**
      * สร้างบรรทัดรายไพ่จาก map (name_en => ['content']) — ใช้ร่วม health/physiognomy/person_role
      *
