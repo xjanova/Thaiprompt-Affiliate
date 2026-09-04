@@ -1936,6 +1936,100 @@ class CelticCrossService
     }
 
     /**
+     * 🗄️ (2026-09-04) memo ผล resolveSubjectSpecies ต่อ request — key = readingId|md5(question)
+     *   เทิร์นเดียวถูกถามซ้ำหลายครั้งจากหลายบล็อกพรอมต์
+     *
+     * @var array<string, array{kind:string, species:?string, breed:?string, signals:array<string>}>
+     */
+    protected array $subjectSpeciesMemo = [];
+
+    /**
+     * 🐾 (2026-09-04) ตัวละครในคำถามเป็น "คน" หรือ "สัตว์เลี้ยง" — จำติดบิลไว้ (sticky)
+     *
+     * เคสจริง FTU-260904-S9843 (LINE Celtic 99, reading 12223): ลูกค้าเรียกสุนัขว่า "น้อง"
+     *   → แม่หมอทำนายเป็นคนหนีออกจากบ้าน (แนะแจ้งตำรวจ/โรงพยาบาล/บอกว่าน้องงอน) ผิดทั้งใบ
+     *
+     * sticky เพราะ celticTopicContext() มองย้อนแค่ 3 คำถาม — ถ้าไม่จำไว้ พอคุยเกิน 3 รอบ
+     *   คำว่า "หมา" จะเลื่อนหลุด window แล้วแม่หมอกลับไปอ่านเป็นคนอีก (regression เงียบ)
+     *
+     * @return array{kind:string, species:?string, breed:?string, signals:array<string>}
+     */
+    protected function resolveSubjectSpecies(FortuneReading $reading, string $userQuestion): array
+    {
+        $detector = \App\Services\Fortune\SubjectSpeciesDetector::class;
+
+        // 🗄️ memo ต่อ request — เทิร์นเดียวถูกเรียก 3-4 ครั้ง (บล็อกพรอมต์ + ด่านปิดตำราคน 2 ตัว)
+        //   ถ้าไม่ memo = query celticQuestions ซ้ำ + เขียน conversation_state ซ้ำทุกครั้ง
+        $memoKey = $reading->id.'|'.md5($userQuestion);
+        if (isset($this->subjectSpeciesMemo[$memoKey])) {
+            return $this->subjectSpeciesMemo[$memoKey];
+        }
+
+        $fresh = $detector::analyze($this->celticTopicContext($reading, $userQuestion));
+
+        // ค่าที่เคยยืนยันไว้ในบิลนี้ (ล็อกไว้ตั้งแต่รอบก่อน)
+        $stickyKind = (string) $reading->getConversationState('subject_kind', '');
+        $stickySpecies = $reading->getConversationState('subject_species', null);
+        $stickyBreed = $reading->getConversationState('subject_breed', null);
+
+        if ($fresh['kind'] === $detector::KIND_PET) {
+            // เจอสัญญาณสัตว์ชัดในรอบนี้ → ล็อกไว้ + เก็บชนิด/พันธุ์ที่เพิ่งรู้เพิ่ม
+            $species = $fresh['species'] ?: ($stickySpecies ?: null);
+            $breed = $fresh['breed'] ?: ($stickyBreed ?: null);
+
+            try {
+                $reading->setConversationState('subject_kind', $detector::KIND_PET);
+                if ($species !== null) {
+                    $reading->setConversationState('subject_species', $species);
+                }
+                if ($breed !== null) {
+                    $reading->setConversationState('subject_breed', $breed);
+                }
+            } catch (\Throwable $e) {
+                // non-blocking — เขียน state ไม่ได้ ไม่ควรทำให้คำทำนายล่ม
+            }
+
+            return $this->subjectSpeciesMemo[$memoKey] = [
+                'kind' => $detector::KIND_PET,
+                'species' => $species,
+                'breed' => $breed,
+                'signals' => $fresh['signals'],
+            ];
+        }
+
+        // เคยยืนยันแล้วว่าเป็นสัตว์ → รอบถัด ๆ ไปยึดของเดิม (ห้ามถอยกลับไปอ่านเป็นคน)
+        if ($stickyKind === $detector::KIND_PET) {
+            return $this->subjectSpeciesMemo[$memoKey] = [
+                'kind' => $detector::KIND_PET,
+                'species' => $stickySpecies ?: null,
+                'breed' => $stickyBreed ?: null,
+                'signals' => ['ยืนยันไว้แล้วในบิลนี้'],
+            ];
+        }
+
+        return $this->subjectSpeciesMemo[$memoKey] = $fresh;
+    }
+
+    /**
+     * 🐾 (2026-09-04) บล็อกกำกับ "อ่านให้ถูกตัว — คนหรือสัตว์เลี้ยง"
+     *
+     * owner directive: "ตอนนี้แอดมินแก้สถานการณ์โดยถามเรื่องพันธุ์ เพื่อให้ผู้ใช้บอกว่าเป็นพันธุ์อะไร
+     *   บอทจึงเข้าใจว่าเป็นสุนัข — เราต้องหาทางแก้แบบนี้เอาไว้ด้วย"
+     *   ⇒ กำกวมเมื่อไหร่ ให้แม่หมอ *ถามพันธุ์/ชื่อ* เองอัตโนมัติ ไม่ต้องรอแอดมินมานั่งถามมือ
+     *
+     * ⚠️ ไม่หยุดบริการ: ยังอ่านไพ่ตอบไปตามปกติในรอบเดียวกัน แค่พ่วงคำถามยืนยันตัวตนท้ายคำตอบ
+     *   ([[feedback_never_interrupt_payment_to_prediction_flow]] — ลูกค้าจ่าย 99 แล้ว ห้ามค้าง)
+     */
+    protected function buildSubjectSpeciesDirective(FortuneReading $reading, string $userQuestion, string $previousContext = ''): string
+    {
+        // ถ้อยคำทั้งหมดอยู่ใน SubjectSpeciesDetector::promptBlock() ที่เดียว
+        //   (เลนคุยต่อหลังบิลใช้ก้อนเดียวกัน — ห้ามเขียนสำนวนที่สองที่นี่)
+        return \App\Services\Fortune\SubjectSpeciesDetector::promptBlock(
+            $this->resolveSubjectSpecies($reading, $userQuestion)
+        );
+    }
+
+    /**
      * 🧧 (2026-06-28) เคล็ด/ธรรมะ/เลขเสี่ยงโชค → ยกไป "บทสรุปสุดท้าย" เท่านั้น (ไม่แทรกในรอบถามตอบ)
      *
      * owner directive 2026-06-28: "เคล็ดเสริมดวง ธรรมะทิ้งท้าย เลขเสี่ยงโชค ต้องยกไปไว้ใน
@@ -2365,6 +2459,15 @@ class CelticCrossService
             }
         }
 
+        // 📌 (2026-09-04) สิ่งที่ลูกค้าเล่าไว้ตอนติดด่านขอวันเกิด/เวลาเกิด — ไม่เคยถูกนับเป็นคำถาม
+        //   เคส FTU-260904-S9843: ลูกค้าบอกว่าเป็น "น้องหมา" ตรงจุดนี้จุดเดียวในทั้งบิล
+        //   ⇒ ถ้าไม่ยกมาเข้าพรอมต์ แม่หมอจะไม่มีวันรู้ว่ากำลังทำนายให้สัตว์เลี้ยง ไม่ใช่คน
+        $parkedContext = (string) $reading->getConversationState('celtic_parked_context', '');
+        if (trim($parkedContext) !== '') {
+            $previousContext .= "📌 สิ่งที่ลูกค้าพิมพ์เล่าไว้ก่อนหน้า (ตอนแม่หมอกำลังขอวันเกิด/เวลาเกิด) — *ถือเป็นข้อเท็จจริงของบิลนี้*:\n"
+                .'"'.trim($parkedContext)."\"\n\n";
+        }
+
         // 🌟 (2026-05-30) Birth-date astrology — ถ้าลูกค้าพิมพ์วันเกิดมา → คำนวณดวงดาวสด (ราศี/ดาวเจ้าชนะ/ธาตุ)
         //   เคส bill FTU-260530-Z4397: ลูกค้าใส่วันเกิดตัวเอง+คู่ปรับใน Q1 แต่ Celtic เดิมส่ง birthDate=null
         //   → AI เดาจากตัวเลขดิบ ไม่ได้คำนวณดวงดาวจริง (ระบบ 39฿ มี engine แต่ Celtic ไม่เรียก)
@@ -2471,7 +2574,11 @@ class CelticCrossService
                 // 📚 (2026-08-31) เคสเก่า — **ต้องมีที่ Q2+ ด้วย**
                 //   เดิม pastReadingsContext อยู่ใต้บรรทัดนี้ แต่ branch นี้ return ก่อน
                 //   ⇒ ลูกค้าถามถึงเรื่องที่เคยดูไว้กลางวง บอทไม่มีข้อมูลเลย (เคส FTU-260831-W5209)
-                .$this->buildPastCaseBlock($reading, $userQuestion);
+                .$this->buildPastCaseBlock($reading, $userQuestion)
+                // 🐾 (2026-09-04) "น้อง" = คนหรือสัตว์เลี้ยง — ต้องมีที่ Q2+ ด้วย
+                //   เคส FTU-260904-S9843: คำถามเรื่องน้องหมาหายอยู่ที่ Q2 ทั้งหมด
+                //   (buildShortFollowupPrompt ไม่รับ $reading → ฝากมากับ advisor directive ก้อนนี้)
+                .$this->buildSubjectSpeciesDirective($reading, $userQuestion, $previousContext);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -2668,6 +2775,8 @@ class CelticCrossService
             .$this->buildYesNoDirective($reading, $userQuestion, $previousContext)
             .$this->buildCardNamingDirective()
             .$this->buildSelfAddressDirective()
+            // 🐾 (2026-09-04) วางหลังกฎสรรพนาม — "น้อง" ที่ลูกเอ่ยถึงอาจเป็นสัตว์เลี้ยง ห้ามเดาเป็นคน
+            .$this->buildSubjectSpeciesDirective($reading, $userQuestion, $previousContext)
             .$complaintHandlingQ1
             .$multiBulletHandlingQ1
             .$q1Classifier
@@ -2899,9 +3008,13 @@ class CelticCrossService
         if ((bool) $reading->getConversationState('celtic_birthdate_pending', false)) {
             return [
                 'success' => false,
-                'message' => "🌙 เดี๋ยวแม่หมอเปิด *พื้นดวง* ให้ก่อนนะคะ —\n"
+                // 📸 (2026-09-04) ต้องบอกตรง ๆ ว่า "ยังไม่ได้เปิดดูรูป" — เคส FTU-260904-S9843
+                //   ลูกค้าส่งรูปน้องหมามาแล้วเข้าใจว่าแม่หมอเห็นแล้ว จึงเล่าต่อว่า "น้อง..." เฉย ๆ
+                //   ทั้งที่รูปถูกด่านนี้ตีกลับไปโดยไม่เคยถึงตา vision เลย
+                'message' => "🌙 แม่หมอ *ยังไม่ได้เปิดดูรูป* นะคะ — ขอเปิด *พื้นดวง* ให้ก่อน\n"
                     ."ขอ *วัน/เดือน/ปีเกิด* ของลูกก่อน (เช่น 14/02/2540)\n"
-                    .'หรือพิมพ์ *"ข้าม"* ถ้าไม่สะดวก แม่หมอจะเปิดพื้นดวงจากไพ่ให้เลยค่ะ ✨',
+                    ."หรือพิมพ์ *\"ข้าม\"* ถ้าไม่สะดวก แม่หมอจะเปิดพื้นดวงจากไพ่ให้เลยค่ะ ✨\n"
+                    .'📸 เสร็จแล้ว *ส่งรูปมาใหม่อีกครั้ง* พร้อมบอกว่าอยากให้ดูอะไรในรูปนะคะ',
             ];
         }
 
@@ -2911,9 +3024,10 @@ class CelticCrossService
         if ((bool) $reading->getConversationState('celtic_birthtime_pending', false)) {
             return [
                 'success' => false,
-                'message' => "🕛 แม่หมอขอ *เวลาเกิด* ของลูกก่อนนะคะ — พิมพ์เป็นข้อความมาได้เลย\n"
+                'message' => "🕛 แม่หมอ *ยังไม่ได้เปิดดูรูป* นะคะ — ขอ *เวลาเกิด* ของลูกก่อน พิมพ์เป็นข้อความมาได้เลย\n"
                     ."   เช่น *ตี 5* / *06:30* / *บ่าย 2*\n"
-                    .'   (จำไม่ได้ก็พิมพ์ว่า *ไม่ทราบ* แม่หมอจะใช้เวลามาตรฐานเที่ยงวันให้ค่ะ ✨)',
+                    ."   (จำไม่ได้ก็พิมพ์ว่า *ไม่ทราบ* แม่หมอจะใช้เวลามาตรฐานเที่ยงวันให้ค่ะ ✨)\n"
+                    .'📸 เสร็จแล้ว *ส่งรูปมาใหม่อีกครั้ง* พร้อมบอกว่าอยากให้ดูอะไรในรูปนะคะ',
             ];
         }
 
@@ -2980,6 +3094,9 @@ class CelticCrossService
             // 📚 (2026-08-31) เส้นรูปประกอบ prompt เอง ไม่ผ่าน buildFollowupPrompt
             //   ⇒ ต้องเรียก buildPastCaseBlock ตรงนี้ด้วย ไม่งั้นลูกค้าส่งรูปพร้อมถามถึงเคสเก่า = จำไม่ได้
             .$this->buildPastCaseBlock($reading, $userText)
+            // 🐾 (2026-09-04) ถ้าบทสนทนาก่อนหน้าบอกแล้วว่า "น้อง" = สัตว์เลี้ยง → บอก vision ด้วย
+            //   (LINE ส่งรูปมาเป็น event แยก ไม่มีข้อความแนบ — บริบทต้องมาจากคำถามเก่า/ธงที่ล็อกไว้)
+            .$this->buildSubjectSpeciesDirective($reading, $userText)
             ."คุณคือ \"{$brandName}\" — แม่หมอเซียนระบบเซลติก (ไพ่ 10 ใบเปิดไว้แล้ว)\n\n"
             ."━━━━━━━━━━━━━━━━━\n"
             ."🃏 ไพ่ Celtic Cross 10 ใบของเจ้าชะตา (ใช้อ้างอิง)\n"
@@ -2987,15 +3104,26 @@ class CelticCrossService
             .$cardsText."\n\n"
             .$previousContextBlock
             ."━━━━━━━━━━━━━━━━━\n"
-            ."📸 วิธีอ่านรูปที่เจ้าชะตาส่งมา — ทำ 2 ขั้นตามลำดับ\n"
+            ."📸 วิธีอ่านรูปที่เจ้าชะตาส่งมา — ทำ 3 ขั้นตามลำดับ\n"
             ."━━━━━━━━━━━━━━━━━\n"
             ."• 👍 ถ้าเป็น *รูปยกนิ้ว/สติกเกอร์/อิโมจิ/มีม/รูปที่ไม่เกี่ยวการดูดวง* → ห้ามวิเคราะห์ลึก\n"
             ."  ตอบสั้น ๆ รับทราบเป็นกันเอง + ชวนถามต่อ เช่น \"รับทราบค่ะ 🌙 อยากให้แม่หมอดูเรื่องไหนต่อคะ\"\n\n"
-            ."ถ้าเป็นรูปคน/หน้า/มือ/บ้าน/วัตถุมงคล/สถานที่ ฯลฯ ที่เกี่ยวกับการดูดวง — ทำ 2 ขั้นนี้:\n\n"
-            ."🔍 ขั้นที่ 1 — *บรรยายสิ่งที่เห็นจริงในรูปก่อน* (สำคัญมาก! ให้เจ้าชะตารู้ว่าแม่หมอเห็นรูปจริง):\n"
-            ."   บอกอย่างเป็นธรรมชาติว่าเห็นอะไร — กี่คน / เพศ / ช่วงวัย / สีผิว / ทรงผม / แววตา-สีหน้า-อารมณ์ / จุดเด่น / บรรยากาศฉาก\n"
+            ."ถ้าเป็นรูปคน/สัตว์เลี้ยง/มือ/บ้าน/วัตถุมงคล/สถานที่ ฯลฯ ที่เกี่ยวกับการดูดวง — ทำ 3 ขั้นนี้:\n\n"
+            // 🐾 (2026-09-04) ขั้นที่ 0 เกิดจากเคส FTU-260904-S9843 — ลูกค้าส่งรูปสุนัข + เรียกว่า "น้อง"
+            //   พรอมต์เดิมเปิดหัวด้วย "กี่คน/เพศ/สีผิว/ทรงผม" ทันที = ผลักให้โมเดลอ่านทุกรูปเป็นคน
+            ."🧭 ขั้นที่ 0 — *ระบุก่อนว่าในรูปคืออะไร* (ห้ามข้าม! ผิดตรงนี้ = คำทำนายผิดทั้งใบ):\n"
+            ."   เลือก 1 อย่าง: 👤 คน / 🐾 สัตว์เลี้ยง / 🏠 บ้าน-สถานที่ / 🧿 วัตถุมงคล-สิ่งของ / 📄 เอกสาร-หน้าจอ\n"
+            ."   • 🐾 *ถ้าเป็นสัตว์* (หมา แมว นก ปลา ฯลฯ) → อ่านเป็นสัตว์เลี้ยงเท่านั้น **ห้ามบรรยายเป็นคนเด็ดขาด**\n"
+            ."     คนไทยเรียกสัตว์เลี้ยงว่า \"น้อง\" เป็นปกติ — เจอคำว่า \"น้อง\" ห้ามสรุปว่าเป็นคน ให้ดูจากรูปเป็นหลัก\n"
+            ."     บรรยายแบบสัตว์: ชนิด / *พันธุ์ที่พอเดาได้จากรูป* / สีขน-ลาย / ขนาด-วัย / เพศถ้าพอดูออก /\n"
+            ."     ปลอกคอ-สายจูง / ท่าทาง-แววตา / ฉากรอบตัว → แล้วอ่านดวงของ *สัตว์ตัวนั้น* (ปลอดภัยไหม อยู่ทิศไหน\n"
+            ."     มีคนดูแลไหม จะได้กลับไหม) 🚫 ห้ามพูดถึง งอน/น้อยใจ/แจ้งความคนหาย/โรงพยาบาลคน/ที่ทำงาน\n"
+            ."   • ถ้าดูไม่ออกว่าคนหรือสัตว์ → บอกตามตรง แล้วถามลูกสั้น ๆ (\"น้องในรูปเป็นน้องหมาพันธุ์อะไรคะ\")\n\n"
+            ."🔍 ขั้นที่ 1 — *บรรยายสิ่งที่เห็นจริงในรูป* (สำคัญมาก! ให้เจ้าชะตารู้ว่าแม่หมอเห็นรูปจริง):\n"
+            ."   บอกอย่างเป็นธรรมชาติว่าเห็นอะไร — (รูปคน) กี่คน / เพศ / ช่วงวัย / สีผิว / ทรงผม / แววตา-สีหน้า-อารมณ์ / จุดเด่น / บรรยากาศฉาก\n"
             ."   • หลายคน/หลายรูป → บรรยาย *แยกทีละคน* (ห้ามตอบสำเร็จรูปขึ้นต้นเหมือนกันทุกรูป)\n"
-            ."   • บรรยายตามจริงแบบสุภาพ — ระบุได้ว่าผิวขาว/ผิวเข้ม วัยเด็ก/ผู้ใหญ่ ฯลฯ แต่ห้ามดูถูกหรือตัดสินรูปลักษณ์รุนแรง\n\n"
+            ."   • บรรยายตามจริงแบบสุภาพ — ระบุได้ว่าผิวขาว/ผิวเข้ม วัยเด็ก/ผู้ใหญ่ ฯลฯ แต่ห้ามดูถูกหรือตัดสินรูปลักษณ์รุนแรง\n"
+            ."   • ⚠️ หัวข้อ \"กี่คน/เพศ/สีผิว/ทรงผม\" ใช้กับ *รูปคน* เท่านั้น — รูปสัตว์ให้ใช้หัวข้อของขั้นที่ 0\n\n"
             ."🔗 ขั้นที่ 2 — *เทียบลักษณะที่เห็น กับไพ่ + คำทำนายเดิมด้านบน*:\n"
             ."   • ถ้า *ตรงกัน* → ผูกเข้าด้วยกัน ยืนยันให้เจ้าชะตามั่นใจว่าไพ่กับคนในรูปคือคนเดียวกัน\n"
             ."   • ⚠️ ถ้า *ขัดแย้งกัน* (ไพ่/คำทำนายพูดถึงคนลักษณะหนึ่ง แต่รูปเป็นอีกลักษณะชัดเจน\n"
@@ -4370,7 +4498,17 @@ class CelticCrossService
             // non-blocking — fallback ใช้คำถามปัจจุบันอย่างเดียว
         }
 
-        return trim($userQuestion.' '.$priorQuestions);
+        // 📌 (2026-09-04) บริบทที่ลูกค้าพิมพ์ตอนติดด่านวันเกิด/เวลาเกิด (parkCelticPendingContext)
+        //   ข้อความพวกนี้ไม่เคยกลายเป็น "คำถาม" จึงไม่อยู่ใน priorQuestions
+        //   แต่มันคือที่ที่ลูกค้าบอกว่า "น้อง" คือ *น้องหมา* (เคส FTU-260904-S9843)
+        $parked = '';
+        try {
+            $parked = (string) $reading->getConversationState('celtic_parked_context', '');
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        return trim($userQuestion.' '.$priorQuestions.' '.$parked);
     }
 
     /**
@@ -4740,6 +4878,14 @@ class CelticCrossService
             return '';
         }
 
+        // 🐾 (2026-09-04) ตัวละครเป็นสัตว์เลี้ยง → ปิดตำราโหงวเฮ้ง "คน"
+        //   เคส FTU-260904-S9843: คำว่า "ลักษณะ/หน้าตา" ในคำถามเรื่องน้องหมา ปลุกตำราคนขึ้นมา
+        //   → prompt ดันให้ AI บรรยายเพศ/วัย/ผิว/นิสัยแบบคน = ต้นทางของคำทำนายผิดตัว
+        if ($this->resolveSubjectSpecies($reading, $userQuestion)['kind']
+            === \App\Services\Fortune\SubjectSpeciesDetector::KIND_PET) {
+            return '';
+        }
+
         // Detect: ถามเรื่อง "คน" ไหม
         $haystack = mb_strtolower($this->celticTopicContext($reading, $userQuestion));
         $keywords = [
@@ -4800,6 +4946,14 @@ class CelticCrossService
     {
         // settings gate — admin ปิดได้
         if (! (bool) ($this->settings->enable_celtic_person_role ?? true)) {
+            return '';
+        }
+
+        // 🐾 (2026-09-04) ตัวละครเป็นสัตว์เลี้ยง → ปิดตำรา "ตำแหน่งบุคคล"
+        //   keyword 'น้อง' ในลิสต์ด้านล่างคือตัวที่ยิงพลาดในเคส FTU-260904-S9843
+        //   (ลูกค้าเรียกสุนัขว่า "น้อง" → prompt สั่ง AI ระบุว่าไพ่ใบไหน = ญาติคนไหน)
+        if ($this->resolveSubjectSpecies($reading, $userQuestion)['kind']
+            === \App\Services\Fortune\SubjectSpeciesDetector::KIND_PET) {
             return '';
         }
 
@@ -5884,6 +6038,9 @@ class CelticCrossService
             //   (Main / Followup / ShortFollowup ฉีดครบ — finale ตกหล่น) ⇒ บทที่ลูกค้าเก็บไว้อ่านซ้ำ
             //   และเอาไปทำเสียงอ่าน กลายเป็นบทเดียวที่ยังเรียก "เธอ/เจ้าชะตา" → ฉีดให้ครบตรงนี้
             .$this->buildSelfAddressDirective()
+            // 🐾 (2026-09-04) เหตุผลเดียวกับกฎสรรพนามข้างบน — บทสรุปคือบทที่ลูกเก็บไว้อ่านซ้ำ
+            //   ถ้าไม่ฉีด บทสรุปจะย้อนไปเรียก "น้อง" ที่เป็นสัตว์เลี้ยงว่าเป็นคนอีกครั้ง (ธง sticky อ่านจาก reading)
+            .$this->buildSubjectSpeciesDirective($reading, '')
 
             ."✍️ ภารกิจ: ปิดรอบด้วยบทสรุประดับ *ปรมาจารย์ฟันธง* —\n"
             ."   *รวบทุกคำถามที่ลูกถามมาตลอดรอบ มาตอบให้จบทีละข้อ ไม่เหลือค้างคาใจแม้ข้อเดียว*\n\n"

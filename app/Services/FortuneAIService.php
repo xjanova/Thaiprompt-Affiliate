@@ -2613,6 +2613,20 @@ PROMPT;
                 }
             }
 
+            // 🐾 (2026-09-04) "น้อง" ที่ลูกพูดถึงอาจเป็น *สัตว์เลี้ยง* ไม่ใช่คน — เลนคุยต่อหลังบิล
+            //   เคส FTU-260904-S9843 เริ่มที่ Celtic Q&A แต่ลูกค้าคุยต่อในเลนนี้ด้วย
+            //   ⇒ ถ้าไม่ฉีดที่นี่ พอข้ามมาคุยต่อ แม่หมอจะกลับไปอ่าน "น้อง" เป็นคนอีก
+            //   idempotent — Celtic แปะมาแล้วจาก builder ของตัวเอง
+            if (! str_contains($systemPromptWithName, 'ไม่ใช่คน (กฎเหล็ก')
+                && ! str_contains($systemPromptWithName, 'ยังไม่ชัดว่าเป็นคนหรือสัตว์เลี้ยง')) {
+                $subjectBlock = \App\Services\Fortune\SubjectSpeciesDetector::promptBlock(
+                    \App\Services\Fortune\SubjectSpeciesDetector::analyze($messageText)
+                );
+                if ($subjectBlock !== '') {
+                    $systemPromptWithName .= "\n\n".$subjectBlock;
+                }
+            }
+
             // 📚 (2026-05-19) RAG Admin Q&A — ครอบ Bill Psychology / Celtic Premium / Post-Reading Deep / Sensitive
             //   ลูกค้าลังเลเลือกแพคเกจ + บิลค้างยังไม่โอน = สถานการณ์ที่ admin ตอบบ่อยที่สุด
             //   → Pro AI ใช้ few-shot ของ admin → ตอบกระตุ้น/แนะนำในแนวสไตล์เดียวกัน

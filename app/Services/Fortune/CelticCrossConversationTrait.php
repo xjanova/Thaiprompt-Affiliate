@@ -2139,6 +2139,52 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 📌 (2026-09-04) เก็บข้อความที่ลูกค้าพิมพ์ "ระหว่างด่านขอวันเกิด/เวลาเกิด" ไม่ให้หล่นหาย
+     *
+     * เคสจริง FTU-260904-S9843 (LINE Celtic 99, reading 12223):
+     *   ลูกค้าพิมพ์ *"น้องหมาตัวนี้ยังมีชีวิตอยู่ไหม"* ตอนระบบกำลังรอวันเกิด
+     *   → ด่านอ่านไม่ออกว่าเป็นวันเกิด → ตอบ "ขอวันเกิดก่อนนะคะ" แล้ว **ทิ้งข้อความนั้นทั้งประโยค**
+     *   → ข้อความถัดมาลูกค้าพิมพ์แค่ "น้องหายออกจากบ้าน / น้องจะกลับบ้านไหม"
+     *   ⇒ คำว่า "หมา" คำเดียวในทั้งบิลหายไปกับด่าน → แม่หมอทำนายน้องหมาเป็น *คน* หนีออกจากบ้าน
+     *
+     * ⇒ ที่นี่จึงเก็บข้อความไว้เป็น "บริบทค้าง" แล้วส่งต่อเข้าพรอมต์ + ตัวตรวจหัวข้อทุกตัว
+     *   (ดู CelticCrossService::celticTopicContext + บล็อก 📌 ใน askQuestion)
+     */
+    protected function parkCelticPendingContext(FortuneReading $reading, string $text): void
+    {
+        $text = trim($text);
+
+        // สั้นเกินไป / เป็นแค่ตัวเลข-เครื่องหมาย (= ความพยายามพิมพ์วันเกิด) → ไม่ใช่บริบทที่ต้องเก็บ
+        if (mb_strlen($text) < 6 || preg_match('/^[\d\s\/\.\-:]+$/u', $text)) {
+            return;
+        }
+
+        try {
+            $existing = trim((string) $reading->getConversationState('celtic_parked_context', ''));
+
+            // กันเก็บซ้ำประโยคเดิม (ลูกค้าพิมพ์ย้ำได้)
+            if ($existing !== '' && mb_strpos($existing, $text) !== false) {
+                return;
+            }
+
+            $merged = trim($existing.' | '.$text, ' |');
+            // cap 400 ตัว — เก็บ *ท้าย* ไว้ (ประโยคล่าสุดคือบริบทที่ใกล้คำถามจริงที่สุด)
+            if (mb_strlen($merged) > 400) {
+                $merged = '...'.mb_substr($merged, mb_strlen($merged) - 400);
+            }
+
+            $reading->setConversationState('celtic_parked_context', $merged);
+
+            \Log::info('Celtic: park ข้อความระหว่างด่านวันเกิด/เวลาเกิด (กันบริบทหล่นหาย)', [
+                'reading_id' => $reading->id,
+                'text' => mb_substr($text, 0, 60),
+            ]);
+        } catch (\Throwable $e) {
+            // non-blocking — เก็บบริบทไม่ได้ ไม่ควรทำให้ด่านวันเกิดพัง
+        }
+    }
+
+    /**
      * 🕛 (2026-09-03, owner) ขั้นรับ "เวลาเกิด" ของ Celtic 99 — ถามครั้งเดียว ไม่บล็อกใคร
      *
      * เข้ามาเมื่อธง `celtic_birthtime_pending` ติดเท่านั้น (ตั้งตอนได้วันเกิดแต่ยังไม่รู้เวลา)
@@ -2167,6 +2213,15 @@ trait CelticCrossConversationTrait
             $reading->setConversationState('awaiting_birth_time', null);
         } catch (\Throwable $e) {
             // non-blocking
+        }
+
+        // 📌 (2026-09-04) ลูกค้าพิมพ์ "คำถามจริง" มาแทนเวลาเกิด → เก็บไว้เป็นบริบท ห้ามทิ้ง
+        //   ขั้นนี้ทับข้อความลูกค้าด้วยคำถามสังเคราะห์ "พื้นดวงรวม" เสมอ ⇒ ไม่เก็บ = หายถาวร
+        //   ⚠️ ตั้งใจ *ไม่* เช็ค birthTimeIsKnown() — ถ้าตัวอ่านเวลาดันจับเลขในประโยคคำถาม
+        //      ("น้องหาย 3 วันแล้ว") เป็นเวลาเกิด เงื่อนไขนั้นจะกลืนคำถามไปด้วย
+        //      ตัว park กรองของสั้น/ตัวเลขล้วนออกอยู่แล้ว ("ตี 5" / "06:30" ไม่ถูกเก็บ)
+        if (! preg_match('/ไม่ทราบ|ไม่รู้|จำไม่ได้|ไม่แน่ใจ/u', $text)) {
+            $this->parkCelticPendingContext($reading, $text);
         }
 
         \Log::info('Celtic: birthtime step ตอบกลับแล้ว → เดินต่อไปพื้นดวง', [
@@ -2317,6 +2372,12 @@ trait CelticCrossConversationTrait
                 'reading' => $reading,
             ];
         }
+
+        // 📌 (2026-09-04) ก่อนถามซ้ำ — เก็บสิ่งที่ลูกค้าพิมพ์มาไว้เป็นบริบทเสมอ
+        //   เคส FTU-260904-S9843: ประโยค "น้องหมาตัวนี้ยังมีชีวิตอยู่ไหม" ตกร่องตรงนี้
+        //   (ครั้งที่ 1 ถูกทิ้ง — โค้ดเดิม carry ให้เฉพาะตอน attempts ครบ 2 เท่านั้น)
+        //   ⇒ ทั้งบิลไม่เหลือคำว่า "หมา" → คำทำนายผิดตัวทั้งใบ
+        $this->parkCelticPendingContext($reading, $text);
 
         // ❌ parse ไม่ได้ + ไม่ใช่ข้าม → นับครั้ง + ถามซ้ำ / ข้ามถ้าครบ 2 ครั้ง (ไม่บล็อกลูกค้า)
         $attempts = (int) $reading->getConversationState('celtic_birthdate_attempts', 0) + 1;
