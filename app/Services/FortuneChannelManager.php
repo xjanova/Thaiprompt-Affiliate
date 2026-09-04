@@ -1274,8 +1274,12 @@ class FortuneChannelManager
                 // 🧾 (2026-06-07) slipok_approved_celtic + fuzzy_auto_approved_celtic — จ่ายผ่าน SlipOK fallback / SMS-fuzzy
                 //   ก็คืน onCelticPaymentConfirmed (promptNextCelticCard) เหมือนกัน → ต้อง render แบบ celtic ด้วย
                 //   ไม่งั้นตกไป default = text ล้วน (รูปหาย) ลูกค้าไม่รู้ต้องพิมพ์ "พร้อม" → แอดมินต้อง reset เอง (เคส FTU-260607-P3861)
+                // 📌 (2026-09-04) celtic_question_parked — ลูกค้าถามระหว่างยังเปิดไพ่ไม่ครบ
+                //   ต้อง render แบบ celtic (มีปุ่ม "เปิดไพ่") ไม่ใช่ default ที่ให้ปุ่ม "ดูดวง 39/99"
+                //   ลูกค้าจ่ายแล้ว เห็นปุ่มขายซ้ำ = สับสน (เหตุผลเดียวกับ FTU-260607-P3861)
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
-                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic',
+                'celtic_restart_hint', 'celtic_already_in_session', 'celtic_question_parked',
+                'slipok_recovered_celtic',
                 'slipok_approved_celtic', 'fuzzy_auto_approved_celtic' => (function () use ($fbService, $userId, $message, $result, $extra, $action) {
                     // ส่งรูปไพ่ก่อน (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
@@ -3217,8 +3221,12 @@ class FortuneChannelManager
                 //   override action แต่ response = promptNextCelticCard → ต้อง render แบบ celtic (ปุ่ม "เปิดไพ่")
                 //   เดิมตกไป default → ได้ปุ่ม generic "ดูดวง" (สับสน — ลูกค้าจ่ายแล้วต้องพิมพ์ "พร้อม" เปิดไพ่)
                 // 🧾 (2026-06-07) + slipok_approved_celtic + fuzzy_auto_approved_celtic — เหตุผลเดียวกับ FB ด้านบน (promptNextCelticCard → ต้อง render celtic)
+                // 📌 (2026-09-04) celtic_question_parked — ลูกค้าถามระหว่างยังเปิดไพ่ไม่ครบ
+                //   ต้อง render แบบ celtic (มีปุ่ม "เปิดไพ่") ไม่ใช่ default ที่ให้ปุ่ม "ดูดวง 39/99"
+                //   ลูกค้าจ่ายแล้ว เห็นปุ่มขายซ้ำ = สับสน (เหตุผลเดียวกับ FTU-260607-P3861)
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
-                'celtic_restart_hint', 'celtic_already_in_session', 'slipok_recovered_celtic',
+                'celtic_restart_hint', 'celtic_already_in_session', 'celtic_question_parked',
+                'slipok_recovered_celtic',
                 'slipok_approved_celtic', 'fuzzy_auto_approved_celtic' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     // 🃏 Dynamic label ตามจำนวนไพ่ที่เปิด
                     $reading = $result['reading'] ?? null;

@@ -1427,6 +1427,52 @@ trait CelticCrossConversationTrait
             ];
         }
 
+        // 📌 (2026-09-04, owner) ลูกค้าพิมพ์ "คำถาม/เล่าเรื่องจริง" ทั้งที่ยังเปิดไพ่ไม่ครบ
+        //   เดิม: อะไรก็ตามที่ไม่ใช่ chitchat = ถือว่าพิมพ์ "พร้อม" → เปิดไพ่ 1 ใบ + **ทิ้งประโยคทั้งประโยค**
+        //   owner directive: "ถ้ายังอยู่ในขั้นตอนเปิดไพ่ บอทก็ตบให้ลูกค้าเข้ามาเปิดไพ่ก่อนค่อยถาม
+        //     แต่ก็เก็บข้อมูลคำพูดไว้ ... เพราะคนไม่รู้ขั้นตอนเยอะ และมีหลายเคส"
+        //   (ต้นเหตุเดียวกับ FTU-260904-S9843 ที่คำว่า "หมา" หายไปทั้งบิล — คนละด่าน เหตุผลเดียวกัน)
+        //
+        //   🛡️ ทางหนีไฟ: park ได้ไม่เกิน 3 ครั้ง — เกินนั้นกลับไปพฤติกรรมเดิม (เปิดไพ่ให้)
+        //      กันลูกค้าที่พิมพ์ยาวทุกครั้งจนวนอยู่กับข้อความเตือน ไม่คืบไปไหน
+        if (! $isExplicitPick && $this->looksLikeSubstantiveCelticInput($messageText)) {
+            $parkedCount = (int) $reading->getConversationState('celtic_picking_parked_count', 0);
+
+            if ($parkedCount < 3) {
+                $this->parkCelticPendingContext($reading, $messageText);
+                $reading->setConversationState('celtic_picking_parked_count', $parkedCount + 1);
+
+                $picked = $reading->getCelticPickedCount();
+                $remain = max(0, 10 - $picked);
+
+                Log::info('🃏 Celtic: park คำถามระหว่างเปิดไพ่ (ไม่กินไพ่ 1 ใบ)', [
+                    'reading_id' => $reading->id,
+                    'picked' => $picked,
+                    'parked_count' => $parkedCount + 1,
+                    'text' => mb_substr($messageText, 0, 60),
+                ]);
+
+                return [
+                    'action' => 'celtic_question_parked',
+                    'message' => "📝 แม่หมอ *จดสิ่งที่ลูกเล่าไว้แล้ว* นะคะ — ไม่หายไปไหน\n\n"
+                        ."🃏 แต่ขอเปิดไพ่ให้ครบก่อน ตอนนี้ได้ *{$picked}/10 ใบ* (เหลืออีก {$remain} ใบ)\n"
+                        ."ไพ่ครบเมื่อไหร่ แม่หมอจะยกเรื่องที่ลูกถามมาตอบให้เต็ม ๆ ค่ะ\n\n"
+                        ."──────────────────────\n"
+                        .'👉 พิมพ์ *"พร้อม"* เพื่อเปิดไพ่ใบถัดไปได้เลยค่ะ ✨',
+                    'reading' => $reading,
+                ];
+            }
+
+            // เกิน 3 ครั้ง → เก็บข้อความไว้เหมือนเดิม แต่ปล่อยให้เปิดไพ่ต่อ (ไม่ให้ลูกค้าติดวน)
+            $this->parkCelticPendingContext($reading, $messageText);
+        }
+
+        // 📌 (2026-09-04) พิมพ์ "พร้อม" พ่วงคำถามมาด้วย ("พร้อมค่ะ อยากรู้เรื่องน้องหมาที่หายไป")
+        //   → เปิดไพ่ตามปกติ *และ* เก็บคำถามไว้ด้วย (เดิมคำถามหายไปกับการเปิดไพ่)
+        if ($isExplicitPick && $this->looksLikeSubstantiveCelticInput($messageText, strict: true)) {
+            $this->parkCelticPendingContext($reading, $messageText);
+        }
+
         // 📊 (2026-05-04) Diagnostic log — ทำให้ debug stuck-at-card-N ในอนาคตง่าย
         Log::info('🃏 Celtic: handleCelticPicking → attempt pickNextCard', [
             'reading_id' => $reading->id,
@@ -2139,7 +2185,8 @@ trait CelticCrossConversationTrait
     }
 
     /**
-     * 📌 (2026-09-04) เก็บข้อความที่ลูกค้าพิมพ์ "ระหว่างด่านขอวันเกิด/เวลาเกิด" ไม่ให้หล่นหาย
+     * 📌 (2026-09-04) เก็บข้อความที่ลูกค้าพิมพ์ "ระหว่างขั้นตอนที่ยังตอบให้ไม่ได้" ไม่ให้หล่นหาย
+     *   (ระหว่างเปิดไพ่ยังไม่ครบ 10 ใบ / ด่านขอวันเกิด / ด่านขอเวลาเกิด)
      *
      * เคสจริง FTU-260904-S9843 (LINE Celtic 99, reading 12223):
      *   ลูกค้าพิมพ์ *"น้องหมาตัวนี้ยังมีชีวิตอยู่ไหม"* ตอนระบบกำลังรอวันเกิด
@@ -2152,36 +2199,45 @@ trait CelticCrossConversationTrait
      */
     protected function parkCelticPendingContext(FortuneReading $reading, string $text): void
     {
-        $text = trim($text);
-
-        // สั้นเกินไป / เป็นแค่ตัวเลข-เครื่องหมาย (= ความพยายามพิมพ์วันเกิด) → ไม่ใช่บริบทที่ต้องเก็บ
-        if (mb_strlen($text) < 6 || preg_match('/^[\d\s\/\.\-:]+$/u', $text)) {
-            return;
-        }
-
-        try {
-            $existing = trim((string) $reading->getConversationState('celtic_parked_context', ''));
-
-            // กันเก็บซ้ำประโยคเดิม (ลูกค้าพิมพ์ย้ำได้)
-            if ($existing !== '' && mb_strpos($existing, $text) !== false) {
-                return;
-            }
-
-            $merged = trim($existing.' | '.$text, ' |');
-            // cap 400 ตัว — เก็บ *ท้าย* ไว้ (ประโยคล่าสุดคือบริบทที่ใกล้คำถามจริงที่สุด)
-            if (mb_strlen($merged) > 400) {
-                $merged = '...'.mb_substr($merged, mb_strlen($merged) - 400);
-            }
-
-            $reading->setConversationState('celtic_parked_context', $merged);
-
-            \Log::info('Celtic: park ข้อความระหว่างด่านวันเกิด/เวลาเกิด (กันบริบทหล่นหาย)', [
+        // ตรรกะจริงอยู่ที่ FortuneReading::parkPendingContext() — ใช้ร่วมกับ CelticCrossService
+        //   (เส้นรูปเรียกจาก service ไม่ได้ผ่าน trait นี้)
+        if ($reading->parkPendingContext($text)) {
+            \Log::info('Celtic: park ข้อความ/บริบทที่ยังตอบไม่ได้ (กันหล่นหาย)', [
                 'reading_id' => $reading->id,
-                'text' => mb_substr($text, 0, 60),
+                'text' => mb_substr(trim($text), 0, 60),
             ]);
-        } catch (\Throwable $e) {
-            // non-blocking — เก็บบริบทไม่ได้ ไม่ควรทำให้ด่านวันเกิดพัง
         }
+    }
+
+    /**
+     * 🗣️ (2026-09-04, owner) ข้อความนี้ "มีเนื้อความจริง" ไหม (คำถาม / เล่าเรื่อง)
+     *
+     * owner: "คนไม่รู้ขั้นตอนเยอะ และมีหลายเคส" — ลูกค้าจ่ายเงินแล้วพิมพ์คำถามทันที
+     * ทั้งที่ยังเปิดไพ่ไม่ครบ ⇒ ต้องแยกให้ออกจากคำว่า "พร้อม/ค่ะ/โอเค"
+     *
+     * ใช้หลัง `matchesCelticReadyKeyword` + `looksLikeMetaOrChitchat` กรองไปแล้ว
+     */
+    protected function looksLikeSubstantiveCelticInput(string $text, bool $strict = false): bool
+    {
+        $t = trim($text);
+
+        if (mb_strlen($t) < 10) {
+            return false;
+        }
+
+        // มีรูปประโยคคำถามชัดเจน
+        if (preg_match('/[?？]|ไหม|มั้ย|หรือเปล่า|รึเปล่า|เมื่อไหร่|เมื่อไร|ทำไม|อย่างไร|ยังไง|ที่ไหน|อยากรู้|อยากถาม|ช่วยดู|ดูให้|ขอดู|อยากให้ดู/u', $t)) {
+            return true;
+        }
+
+        // strict = ข้อความนี้มีคำสั่งเปิดไพ่อยู่แล้ว ("เปิดไพ่ใบที่ 3 ให้หน่อยค่ะ")
+        //   ⇒ ความยาวอย่างเดียวไม่พอ ไม่งั้นคำสั่งนำทางจะไหลเข้าไปปนใน "บริบทค้าง"
+        if ($strict) {
+            return false;
+        }
+
+        // เล่าเรื่อง/ให้บริบท — ยาวพอที่จะไม่ใช่คำตอบรับสั้น ๆ
+        return mb_strlen($t) >= 20;
     }
 
     /**

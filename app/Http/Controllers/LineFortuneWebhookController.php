@@ -461,6 +461,8 @@ class LineFortuneWebhookController extends Controller
                     ->whereIn('conversation_status', [
                         FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
                         FortuneReading::STATUS_CELTIC_GENERATING,
+                        // 🆕 (2026-09-04, owner) "เปิดระบบดูภาพตั้งแต่จ่ายเงินสำเร็จ จะได้ไม่พลาด"
+                        FortuneReading::STATUS_CELTIC_PICKING,
                     ])
                     ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
                     ->latest()
@@ -468,6 +470,16 @@ class LineFortuneWebhookController extends Controller
 
                 if ($celticVisionReading && $celticVisionReading->getCelticPickedCount() >= 10) {
                     $this->handleCelticVisionImage($userId, $messageId, $celticVisionReading, $replyToken);
+
+                    return;
+                }
+
+                // 📸 (2026-09-04, owner) จ่ายแล้วแต่ยังเปิดไพ่ไม่ครบ → อ่านรูปเก็บเป็นบริบท + ตบกลับไปเปิดไพ่
+                //   ⚠️ ต้องอยู่ *หลัง* classifier — ไม่งั้นสลิปโอนเงินระหว่างเปิดไพ่จะถูกดูดมาเป็น "รูปบริบท"
+                //      แทนที่จะวิ่งเข้า handleSlipImageOnly (ทำเงินหาย)
+                //   ⚠️ intent=null (classify พัง/ถูกข้าม) = *ไม่รู้ว่าใช่สลิปไหม* → ปล่อยไปทาง slip เหมือนเดิม
+                if ($intent !== null && $celticVisionReading && $celticVisionReading->is_paid) {
+                    $this->handleCelticPendingImage($userId, $messageId, $celticVisionReading, $replyToken, $cachedBase64);
 
                     return;
                 }
@@ -2275,6 +2287,70 @@ class LineFortuneWebhookController extends Controller
 
             return null;
         }
+    }
+
+    /**
+     * 📸 (2026-09-04, owner) จ่ายเงินแล้วแต่ยังเปิดไพ่ไม่ครบ 10 ใบ — อ่านรูปเก็บไว้เป็นบริบท
+     *
+     * owner directive: *"การเปิดระบบดูภาพ และรับคำพูด ควรเปิดตั้งแต่จ่ายเงินสำเร็จเลย จะได้ไม่พลาด
+     *   และถ้ายังอยู่ในขั้นตอนเปิดไพ่ บอทก็จะตบให้ลูกค้าเข้ามาเปิดไพ่ก่อนค่อยถาม"*
+     *
+     * ต่างจาก handleCelticVisionImage(): ตัวนั้นตอบคำถามจากรูป + กินโควต้าคำถาม (ต้องเปิดไพ่ครบก่อน)
+     *   ตัวนี้แค่ให้ vision บรรยายว่าเห็นอะไร แล้ว park ไว้ให้พรอมต์รอบทำนายใช้ต่อ
+     */
+    protected function handleCelticPendingImage(
+        string $userId,
+        string $messageId,
+        \App\Models\FortuneReading $reading,
+        ?string $replyToken,
+        ?string $cachedBase64 = null
+    ): void {
+        $picked = $reading->getCelticPickedCount();
+        $remain = max(0, 10 - $picked);
+
+        $summaryLine = '📸 แม่หมอ *เก็บรูปที่ลูกส่งมาไว้แล้ว* นะคะ ไม่หายไปไหน';
+
+        try {
+            $base64 = $cachedBase64 ?: (empty($messageId) ? null : $this->downloadLineImageAsBase64($messageId));
+
+            if ($base64 !== null) {
+                $captured = app(\App\Services\CelticCrossService::class)
+                    ->captureImageAsContext($reading, $base64);
+
+                // 🔇 ส่งรูปรัวเกินเพดาน → เงียบ ไม่ตอบ (กันเปลืองโควต้าข้อความ LINE)
+                //   [[rule_line_push_is_emergency_reserve_only]] — ข้อความเตือนซ้ำ ๆ ไม่คุ้มโควต้า
+                if (($captured['reason'] ?? null) === 'cap_reached') {
+                    Log::info('LINE: Celtic pending image เกินเพดานเก็บรูป → silent', [
+                        'user_id' => $userId,
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    return;
+                }
+
+                if (! $captured['captured']) {
+                    $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+                }
+            } else {
+                $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+            }
+        } catch (\Throwable $e) {
+            Log::warning('LINE: Celtic pending image capture ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+            $summaryLine = '📸 รูปที่ลูกส่งมา แม่หมอยังเปิดดูไม่ได้ตอนนี้ค่ะ — เปิดไพ่ครบแล้วส่งมาใหม่อีกทีนะคะ';
+        }
+
+        $this->lineService->sendMessageWithReplyFallback(
+            $userId,
+            $summaryLine."\n\n"
+                ."🃏 ตอนนี้เปิดไพ่ได้ *{$picked}/10 ใบ* (เหลืออีก {$remain} ใบ)\n"
+                ."ไพ่ครบเมื่อไหร่ แม่หมอจะอ่านรูปนี้ผูกกับไพ่ให้เต็ม ๆ ค่ะ\n\n"
+                .'👉 พิมพ์ *"พร้อม"* เพื่อเปิดไพ่ใบถัดไปได้เลยค่ะ ✨',
+            $replyToken
+        );
     }
 
     protected function handleCelticVisionImage(

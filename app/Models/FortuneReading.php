@@ -2302,6 +2302,57 @@ class FortuneReading extends Model
         return is_array($state) ? ($state[$key] ?? $default) : $default;
     }
 
+    /** จำนวนบริบทค้างสูงสุดที่เก็บได้ต่อบิล (ตัวอักษร) */
+    public const PARKED_CONTEXT_MAX_CHARS = 600;
+
+    /**
+     * 📌 (2026-09-04, owner) เก็บ "สิ่งที่ลูกค้าพูด/ส่งมา" ที่ยังตอบไม่ได้ ณ ตอนนั้น
+     *
+     * owner directive: *"ถ้ายังเปิดไพ่ไม่เสร็จ ก็เก็บข้อมูลคำพูดไว้ คำถามที่เขาอาจถามก่อนเปิดไพ่เสร็จ
+     *   เพราะคนไม่รู้ขั้นตอนเยอะ และมีหลายเคส"*
+     *
+     * ทุกด่านหลัง "จ่ายเงินสำเร็จ" ที่ตอบว่า "ขอ X ก่อนนะคะ" ต้องเรียกตัวนี้ก่อนตีกลับเสมอ —
+     * ไม่งั้นประโยคที่เฉลยบริบททั้งบิลจะหายไปเงียบ ๆ (เคสจริง FTU-260904-S9843: คำว่า "หมา")
+     *
+     * ของที่ park ไหลต่อไปที่:
+     *   • `CelticCrossService::askQuestion()` → บล็อก 📌 ใน previousContext (ให้ AI เห็น)
+     *   • `CelticCrossService::celticTopicContext()` → ตัวตรวจหัวข้อทุกตัว (สัตว์เลี้ยง/สุขภาพ/คุณไสย ฯลฯ)
+     *
+     * @param  string  $text  ข้อความลูกค้า หรือคำบรรยายรูปที่ vision อ่านได้
+     * @return bool เก็บจริงหรือไม่ (false = สั้นเกิน/ซ้ำ/เขียนไม่สำเร็จ)
+     */
+    public function parkPendingContext(string $text): bool
+    {
+        $text = trim($text);
+
+        // สั้นเกินไป / ตัวเลข-เครื่องหมายล้วน (= ความพยายามพิมพ์วันเกิด-เวลา) → ไม่ใช่บริบทที่ต้องเก็บ
+        if (mb_strlen($text) < 6 || preg_match('/^[\d\s\/\.\-:]+$/u', $text)) {
+            return false;
+        }
+
+        try {
+            $existing = trim((string) $this->getConversationState('celtic_parked_context', ''));
+
+            // กันเก็บซ้ำประโยคเดิม (ลูกค้าพิมพ์ย้ำได้)
+            if ($existing !== '' && mb_strpos($existing, $text) !== false) {
+                return false;
+            }
+
+            $merged = trim($existing.' | '.$text, ' |');
+            // cap — เก็บ *ท้าย* ไว้ (ประโยคล่าสุดใกล้คำถามจริงที่สุด)
+            if (mb_strlen($merged) > self::PARKED_CONTEXT_MAX_CHARS) {
+                $merged = '...'.mb_substr($merged, mb_strlen($merged) - self::PARKED_CONTEXT_MAX_CHARS);
+            }
+
+            $this->setConversationState('celtic_parked_context', $merged);
+
+            return true;
+        } catch (\Throwable $e) {
+            // non-blocking — เก็บบริบทไม่ได้ ไม่ควรทำให้ด่านที่เรียกใช้พัง
+            return false;
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════
     // 🕛 เวลาเกิด (2026-09-02 owner directive)
     //   "ไม่บอก = ยึด 12:00 น. · บอกทีหลัง/บอทถามทีหลัง = คำนวณใหม่ได้ · หลังบ้านบันทึกได้"
