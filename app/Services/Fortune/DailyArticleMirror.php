@@ -64,22 +64,6 @@ class DailyArticleMirror
     ];
 
     /**
-     * 🚫 หางท้ายที่ห้ามติดเข้าไปในแชท
-     *
-     * template ของแคมเปญใน DB สั่ง AI ไว้ตรง ๆ ว่า *"เขียนให้คนอ่านอยากแท็กเพื่อน"*
-     * ⇒ คำทำนายจริงลงท้ายด้วย "แท็กเพื่อนคนเกิดวันพุธให้มาเช็กดวงวันนี้"
-     * บนโพสมันคือ engagement hook ของเจ้าของ แต่ใน**คำตอบบอท**คือการขอไลก์/แชร์/แท็ก
-     * ซึ่งห้ามเด็ดขาด ([[rule_never_ask_for_engagement_in_bot_replies]] — โดนลด reach ทั้งเพจ)
-     */
-    protected const ENGAGEMENT_TAIL = [
-        'แท็กเพื่อน', 'แท๊กเพื่อน', 'กดไลค์', 'กดไลก์', 'กดแชร์', 'ช่วยแชร์',
-        'คอมเมนต์บอก', 'คอมเม้นบอก', 'พิมพ์ชื่อคนที่เกิด', 'แชร์ให้เพื่อน',
-        'กดติดตาม', 'กดหัวใจ',
-        // เก็บจากคอนเทนต์จริง 4 ก.ย. — "ถ้าถูกใจ ฝากส่งต่อให้เพื่อนที่เกิดวันอาทิตย์…"
-        'ส่งต่อให้เพื่อน', 'ฝากส่งต่อ', 'ชวนเพื่อน', 'บอกต่อให้เพื่อน', 'แชร์ต่อ',
-    ];
-
-    /**
      * คัดลอกบทความของเลน A ลงตารางของเลน B
      *
      * idempotent — เรียกซ้ำได้ ทับของเดิมที่ target_date+birth_day เดียวกัน
@@ -307,7 +291,12 @@ class DailyArticleMirror
     }
 
     /**
-     * ล้างเนื้อแต่ละด้าน — ตัดหางขอ engagement + ตัวคั่นตกแต่ง + ช่องว่างเกิน
+     * ล้างเนื้อแต่ละด้าน — ตัดคำขอ engagement + ตัวคั่นตกแต่ง + ช่องว่างเกิน
+     *
+     * 🚫 คำขอไลก์/แชร์/แท็ก ใช้ลิสต์กลางที่ [[FacebookContentPolicy]] ไม่เก็บสำเนาของตัวเอง —
+     *    ของแบบนี้ต้องมีสวิตช์เดียว ไม่งั้นอีกหกเดือนจะเหลือลิสต์ที่ตกรุ่นอยู่ที่ใดที่หนึ่ง
+     *    (บนโพสมันคือ engagement hook แต่ใน**คำตอบบอท**ห้ามเด็ดขาด
+     *     [[rule_never_ask_for_engagement_in_bot_replies]])
      */
     protected function clean(string $text): string
     {
@@ -316,33 +305,7 @@ class DailyArticleMirror
         // ตัดเส้นคั่นตกแต่งที่ composePostContent ใช้ (━━━ / ─── / ===)
         $text = preg_replace('/^[\x{2500}-\x{257F}=\-_*]{3,}\s*$/mu', '', $text) ?? $text;
 
-        // ตัดหางขอไลก์/แชร์/แท็ก — ไล่จากท้ายมาหน้า หยุดทันทีที่เจอเนื้อจริง
-        $lines = preg_split('/\n/u', $text) ?: [];
-        while ($lines !== []) {
-            $last = trim((string) end($lines));
-
-            if ($last === '') {
-                array_pop($lines);
-
-                continue;
-            }
-
-            $isBait = false;
-            foreach (self::ENGAGEMENT_TAIL as $needle) {
-                if (mb_strpos($last, $needle) !== false) {
-                    $isBait = true;
-                    break;
-                }
-            }
-
-            if (! $isBait) {
-                break;
-            }
-
-            array_pop($lines);
-        }
-
-        $text = implode("\n", $lines);
+        $text = FacebookContentPolicy::stripEngagementBait($text);
 
         // ยุบบรรทัดว่างซ้อน 3+ ให้เหลือ 2
         $text = preg_replace('/\n{3,}/u', "\n\n", $text) ?? $text;

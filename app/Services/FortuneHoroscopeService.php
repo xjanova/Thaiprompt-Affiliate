@@ -341,6 +341,10 @@ class FortuneHoroscopeService
         return $prompt
             ."\n\n".$this->wednesdayNightNote($birthDay)
             ."\n\n".$this->periodBlockRequirement($briefOk)
+            // 🚫 (2026-09-05) ต้องฉีดจาก**โค้ด** เพราะ template ตัวบนอยู่ใน DB และเคยสั่ง
+            //    ตรงกันข้ามไว้เอง ("เขียนให้คนอ่านอยากแท็กเพื่อน…") — กฎที่มาทีหลังชนะ
+            //    และยังมี FacebookContentPolicy::clean() กวาดของที่หลุดมาอีกชั้น
+            ."\n\n".FacebookContentPolicy::noEngagementBaitRule()
             ."\n\n".$this->antiHallucinationRules($dayName, $briefOk);
     }
 

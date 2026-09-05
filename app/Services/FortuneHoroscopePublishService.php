@@ -490,12 +490,14 @@ class FortuneHoroscopePublishService
         $hashtags = $campaign->generateSmartHashtags($targetDate);
 
         if (! $applyFacebookPolicy) {
-            // LINE — พฤติกรรมเดิม 100% (อีโมจิครบ แฮชแท็กเต็ม)
+            // LINE — พฤติกรรมเดิม (อีโมจิครบ แฮชแท็กเต็ม)
+            // 🚫 (2026-09-05) ยกเว้นคำขอไลก์/แชร์/แท็ก ที่ถอดทุกช่องทางตามคำสั่งเจ้าของ
+            //    (บน LINE ไม่มีเรื่อง reach แต่ก็ไม่ใช่สิ่งที่เราอยากพูดกับลูกค้าอยู่ดี)
             if (! empty($hashtags)) {
                 $parts[] = $hashtags;
             }
 
-            return implode("\n", $parts);
+            return FacebookContentPolicy::stripEngagementBait(implode("\n", $parts));
         }
 
         // 📘 ลบอีโมจิทั้งโพส — ครอบทั้งอีโมจิประจำวันเกิดที่ฝังในโค้ด (☀️🌙🔴…)

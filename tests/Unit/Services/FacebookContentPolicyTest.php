@@ -146,4 +146,80 @@ class FacebookContentPolicyTest extends TestCase
         // ตัวกฎเองต้องไม่มีอีโมจิ (ไม่งั้นเป็นการสอนโมเดลผิดทาง)
         $this->assertSame($rule, FacebookContentPolicy::stripEmoji($rule));
     }
+
+    /**
+     * 🚫 (2026-09-05) คำขอไลก์/แชร์/แท็ก ต้องถูกกวาดทิ้งทั้งบรรทัด
+     *
+     * เจ้าของสั่ง "ถอด" — Meta ลดการมองเห็น **ทั้งเพจ** ไม่ใช่แค่โพสที่ทำ
+     * เคสในลิสต์เก็บจากคอนเทนต์จริงบน prod (4-5 ก.ย.) ทั้งจากที่ template สั่ง
+     * และจากที่โมเดลเขียนเองโดยไม่มีใครสั่ง
+     *
+     * @test
+     */
+    public function คำขอไลก์แชร์แท็กต้องถูกกวาดทิ้ง(): void
+    {
+        $baits = [
+            'แท็กเพื่อนคนเกิดวันพุธให้มาเช็กดวงวันนี้',
+            'ถ้าถูกใจ ฝากส่งต่อให้เพื่อนที่เกิดวันอาทิตย์มาลองดูดวงด้วย',
+            'คนเกิดวันจันทร์ กดไลค์ถ้าอยากรู้ดวงเพิ่ม',
+            'วันนี้โชคดีมาก กดแชร์เก็บไว้',
+            'คนเกิดวันศุกร์ คอมเมนต์บอกหน่อย ตรงไหม',
+            'แชร์ให้เพื่อนที่เกิดวันเสาร์ได้รู้ดวงด้วย',
+            'พิมพ์ชื่อคนที่เกิดวันพุธ แล้วแท็กมาเลย',
+            'กดติดตามเพจไว้ไม่พลาดดวงรายวัน',
+            'ชวนเพื่อนมาเช็กดวงกันเยอะ ๆ',
+        ];
+
+        foreach ($baits as $bait) {
+            $this->assertTrue(FacebookContentPolicy::hasEngagementBait($bait), "ต้องจับได้: {$bait}");
+
+            $out = FacebookContentPolicy::stripEngagementBait("ดวงวันนี้การเงินเด่น\n".$bait);
+            $this->assertSame('ดวงวันนี้การเงินเด่น', $out, "ต้องตัดทิ้งทั้งบรรทัด: {$bait}");
+        }
+
+        // clean() ต้องกวาดให้ด้วย — จุดประกอบ caption ทั้ง 4 จุดใช้ตัวนี้ตัวเดียว
+        $this->assertStringNotContainsString(
+            'แท็กเพื่อน',
+            FacebookContentPolicy::clean("ดวงวันนี้ดี\nแท็กเพื่อนที่เกิดวันพุธมาอ่าน")
+        );
+    }
+
+    /**
+     * ⚠️ ด่านห้ามกว้างเกิน — คำว่า "แชร์/ชวนเพื่อน/ไลก์" โผล่ในคำทำนายจริงได้
+     *
+     * ตัดทั้งบรรทัดแปลว่าค่าเสียหายของ false positive คือ "เนื้อคำทำนายหายไปหนึ่งย่อหน้า"
+     * โดยไม่มี error สักบรรทัด ⇒ ต้องล็อกฝั่งห้ามติดไว้ให้แน่นพอ ๆ กับฝั่งต้องจับ
+     *
+     * @test
+     */
+    public function ประโยคคำทำนายจริงต้องไม่โดนกวาดไปด้วย(): void
+    {
+        $keep = [
+            'วันนี้เหมาะกับการแชร์ความรู้สึกกับคนรัก อย่าเก็บไว้คนเดียว',
+            'ชวนเพื่อนไปทำบุญด้วยกันจะเสริมดวงได้ดี',
+            'งานที่ต้องส่งต่อให้ทีมควรตรวจซ้ำก่อนหนึ่งรอบ',
+            'ระวังคำพูดกับคนที่บ้าน อาจกระทบใจกันได้',
+            'ดาวศุกร์ส่งผลให้เสน่ห์เด่น มีคนเข้าหามากกว่าปกติ',
+        ];
+
+        foreach ($keep as $line) {
+            $this->assertFalse(FacebookContentPolicy::hasEngagementBait($line), "ห้ามจับ: {$line}");
+            $this->assertSame($line, FacebookContentPolicy::stripEngagementBait($line));
+        }
+    }
+
+    /**
+     * กฎห้ามขอ engagement ที่ฉีดเข้า prompt — ต้องสะอาดเหมือนกฎอีโมจิ
+     *
+     * @test
+     */
+    public function กฎห้ามขอengagementในpromptต้องสะอาด(): void
+    {
+        $rule = FacebookContentPolicy::noEngagementBaitRule();
+
+        $this->assertStringContainsString('แชร์', $rule);
+        $this->assertStringContainsString('แท็กเพื่อน', $rule);
+        $this->assertStringEndsWith("\n", $rule);
+        $this->assertSame($rule, FacebookContentPolicy::stripEmoji($rule), 'ตัวกฎเองต้องไม่มีอีโมจิ');
+    }
 }
