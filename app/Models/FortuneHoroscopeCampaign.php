@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FortuneChartService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * FortuneHoroscopeCampaign Model
  *
  * แคมเปญโพสดวงรายวันอัตโนมัติ
- * ตั้งค่า AI สร้างคำทำนาย 7 วันเกิด + ภาพ → โพสลง FB/LINE ตามเวลา
+ * ตั้งค่า AI สร้างคำทำนาย 8 วันเกิด (7 วัน + พุธกลางคืน) + ภาพ → โพสลง FB/LINE ตามเวลา
  *
  * @property int $id
  * @property string $name ชื่อแคมเปญ
@@ -71,8 +72,14 @@ class FortuneHoroscopeCampaign extends Model
 
     public const STATUS_CANCELLED = 'cancelled';
 
-    // ชื่อวันเกิดภาษาไทย
-    public const THAI_DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    /**
+     * ชื่อวันเกิดภาษาไทย — index 0=อาทิตย์ … 6=เสาร์
+     *
+     * 🌙 (2026-09-05) index 7 = "พุธกลางคืน" (ดาวเจ้าเรือน = ราหู) วันเกิดที่ 8 ตามตำราไทย
+     *    ⚠️ ตัวนี้เป็น "ดัชนีวันเกิด" ไม่ใช่ "วันในสัปดาห์" — ห้ามเอาไป index ด้วย
+     *    Carbon::dayOfWeek ของวันที่โพส (ซึ่งมีแค่ 0–6)
+     */
+    public const THAI_DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
 
     protected $fillable = [
         'name',
@@ -257,9 +264,21 @@ class FortuneHoroscopeCampaign extends Model
     {
         $days = $this->target_birth_days;
 
-        // null = ทุกวันเกิด (0-6)
+        // null = ทุกวันเกิด (0-6 + 7=พุธกลางคืน)
         if ($days === null || empty($days)) {
-            return [0, 1, 2, 3, 4, 5, 6];
+            return [0, 1, 2, 3, 4, 5, 6, FortuneChartService::WEDNESDAY_NIGHT];
+        }
+
+        // 🔢 ค่าใน DB เก็บเป็น **สตริง** (`["0","1",...]`) — ต้องแปลงเป็น int ก่อนส่งออก
+        //    ไม่งั้นการเทียบแบบ strict (===) ที่ปลายทางพลาดเงียบ ๆ ทุกจุด
+        $days = array_values(array_unique(array_map('intval', (array) $days)));
+
+        // 🌙 (2026-09-05) พุธกลางวัน/พุธกลางคืนคือ "สองครึ่งของวันเดียวกัน" ตามตำราไทย
+        //    แถวที่บันทึกไว้ก่อนมีวันเกิดที่ 8 ย่อมมีแค่ 0-6 เสมอ — ถ้าไม่เติมให้
+        //    ฟีเจอร์นี้จะ "สร้างครบแต่ไม่เคยถูกใช้" บน prod ([[rule_feature_built_but_never_wired]])
+        //    เงื่อนไข: เลือกวันพุธไว้ = ต้องได้พุธกลางคืนด้วย (ลงครึ่งเดียวคือบั๊กที่กำลังแก้อยู่)
+        if (in_array(3, $days, true) && ! in_array(FortuneChartService::WEDNESDAY_NIGHT, $days, true)) {
+            $days[] = FortuneChartService::WEDNESDAY_NIGHT;
         }
 
         return $days;

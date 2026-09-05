@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FortuneHoroscopeCampaign;
 use App\Models\FortuneHoroscopeContent;
 use App\Services\AiGen\AiGenProviderFactory;
+use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\DailyAstroBrief;
 use App\Services\Fortune\PlanetEphemeris;
 use Carbon\Carbon;
@@ -122,7 +123,7 @@ class FortuneHoroscopeService
     /**
      * สร้างเนื้อหาสำหรับ 1 วันเกิด
      *
-     * @param  int  $birthDay  0-6
+     * @param  int  $birthDay  0-6 · 7 = พุธกลางคืน (ราหู)
      */
     public function generateForBirthDay(
         FortuneHoroscopeCampaign $campaign,
@@ -183,6 +184,13 @@ class FortuneHoroscopeService
 
             $content->markGenerated();
 
+            // 🪞 (2026-09-05) คัดลอกลงตารางของเลนแชท/เว็บทันที — เลนนี้เป็นเจ้าของ
+            //    คำทำนายรอบเดียวของทั้งระบบแล้ว เลนแชทจะได้ไม่ต้องยิง AI ซ้ำอีกรอบ
+            //    ต้องทำ **ที่นี่** ไม่ใช่รอ cron 00:01 มาหยิบ เพราะ 2 รอบคาบเกี่ยวกันจริง
+            //    บน prod (เลนนี้ 00:00:05–00:01:10 · เลนแชท 00:01:02) — ใบท้าย ๆ จะหลุด
+            //    best-effort: คัดลอกพังต้องไม่ทำให้โพสของวันนั้นล้มตาม
+            app(DailyArticleMirror::class)->mirror($content);
+
             Log::info("FortuneHoroscope: สร้างเนื้อหาสำเร็จ วัน{$dayName}", [
                 'content_id' => $content->id,
                 'has_image' => ! empty($content->image_url),
@@ -215,7 +223,8 @@ class FortuneHoroscopeService
     {
         $targetDate = $targetDate ?? Carbon::now('Asia/Bangkok');
 
-        $chaochana = FortuneChartService::CHAOCHANA[$birthDay];
+        // 🌙 chaochanaFor() — รองรับ index 7 (พุธกลางคืน = ราหู) ที่ไม่มีใน CHAOCHANA
+        $chaochana = FortuneChartService::chaochanaFor($birthDay) ?? FortuneChartService::CHAOCHANA[0];
         $mainPlanetKey = $chaochana['planet'];
         $mainPlanet = FortuneChartService::PLANETS[$mainPlanetKey];
 
@@ -329,7 +338,67 @@ class FortuneHoroscopeService
 
         $prompt = str_replace(array_keys($replacements), array_values($replacements), $template);
 
-        return $prompt."\n\n".$this->antiHallucinationRules($dayName, $briefOk);
+        return $prompt
+            ."\n\n".$this->wednesdayNightNote($birthDay)
+            ."\n\n".$this->periodBlockRequirement($briefOk)
+            ."\n\n".$this->antiHallucinationRules($dayName, $briefOk);
+    }
+
+    /**
+     * 🕐 บังคับให้ AI ต่อท้ายบล็อก "ช่วงเวลา" — สั่งจาก**โค้ด** ไม่ใช่ template ใน DB
+     *
+     * 🚨 (2026-09-05) ทำไมต้องมี: เลนนี้กลายเป็นเจ้าของคำทำนายรอบเดียวของทั้งระบบแล้ว
+     *    (แชทคัดลอกไปใช้ต่อ ดู [[DailyArticleMirror]]) แต่กล่องแชทมีหัวข้อ "ช่วงเวลาของวัน"
+     *    ที่เจ้าของสั่งไว้เอง 2026-08-02 ว่า *"คำนวณช่วงเวลาของวันไปด้วย ให้คำทำนายครบ"*
+     *    ถ้าเลนนี้ไม่ผลิต บล็อกนั้นจะหายจากแชทเงียบ ๆ ตอนเลิกยิง AI รอบสอง
+     *
+     * 📌 **โพสบนเพจตัดบล็อกนี้ทิ้ง** ก่อนประกอบข้อความ (FortuneHoroscopePublishService)
+     *    ⇒ หน้าตาโพสไม่เปลี่ยนเลย · ยิง AI ครั้งเดียว แต่ละปลายทางเลือกหยิบเอง
+     *
+     * ⚠️ อยู่ในโค้ดเพราะ template อยู่ใน DB ที่แอดมินแก้ทับได้ ([[rule_db_prompt_overrides_code]])
+     *    ถ้าเขียนไว้ใน template วันหนึ่งมีคนแก้ = แชทไม่มีช่วงเวลาโดยไม่มีใครรู้
+     */
+    protected function periodBlockRequirement(bool $briefOk): string
+    {
+        if (! $briefOk) {
+            // คำนวณดาวไม่ได้ = ไม่มีข้อเท็จจริงรายช่วงให้ยึด → ห้ามให้แต่งเวลาขึ้นเอง
+            return '⛔ ห้ามเขียนบล็อก '.DailyArticleMirror::PERIOD_MARKER
+                .' และห้ามระบุช่วงเวลาใด ๆ วันนี้ระบบคำนวณตำแหน่งดาวรายช่วงไม่สำเร็จ';
+        }
+
+        return "🕐 ปิดท้ายด้วยบล็อกช่วงเวลา — บรรทัดสุดท้ายของคำทำนายต้องเป็นแบบนี้เป๊ะ ๆ:\n"
+            .DailyArticleMirror::PERIOD_MARKER."\n"
+            ."เช้า (06:00-11:00): 1 ประโยค\n"
+            ."เที่ยง (11:00-13:00): 1 ประโยค\n"
+            ."บ่าย (13:00-17:00): 1 ประโยค\n"
+            ."เย็น (17:00-20:00): 1 ประโยค\n"
+            ."กลางคืน (20:00-06:00): 1 ประโยค\n\n"
+            .'⚠️ ต้องอิง "ช่วงเวลาของวัน" ในข้อเท็จจริงด้านบนเท่านั้น — ดูว่าช่วงไหนมุมแน่น '
+            ."(คลาดน้อย = แรง) กำลังเข้าหรือกำลังคลาย แล้วบอกว่าควรทำ/เลี่ยงอะไร\n"
+            .'ห้ามแต่งเวลาขึ้นเอง ครบทั้ง 5 ช่วง ช่วงละ 1 ประโยค ห้ามยาว '
+            .'และห้ามใส่หัวข้อนี้ซ้ำหรือเขียนอะไรต่อท้ายอีก';
+    }
+
+    /**
+     * 🌙 หมายเหตุพิเศษสำหรับ "คนเกิดวันพุธกลางคืน" — ดาวเจ้าเรือนคือราหู ไม่ใช่พุธ
+     *
+     * ตำราไทยมีดาว 8 ดวง วันพุธแบ่งเป็นพุธกลางวัน (ย่ำรุ่ง–ย่ำค่ำ) กับพุธกลางคืน
+     * (ย่ำค่ำ–ย่ำรุ่งของวันพฤหัส) ซึ่งใช้ราหูเป็นเจ้าเรือน — โหรจริงตรวจข้อนี้ก่อนเพื่อน
+     *
+     * ⚠️ โมเดลมักเผลอเขียน "ดาวพุธเจ้าชนะของคนเกิดวันพุธ" ให้กลุ่มนี้เพราะชื่อวันมีคำว่าพุธ
+     *    ⇒ ต้องบอกตรง ๆ ว่าเจ้าเรือนคือราหู ไม่งั้นคำทำนายขัดกับข้อเท็จจริงที่ส่งไปเอง
+     */
+    protected function wednesdayNightNote(int $birthDay): string
+    {
+        if ($birthDay !== FortuneChartService::WEDNESDAY_NIGHT) {
+            return '';
+        }
+
+        return '🌙 กลุ่มนี้คือ "คนเกิดวันพุธกลางคืน" (เกิดวันพุธหลังย่ำค่ำ 18:00 น. '
+            ."ไปจนถึงย่ำรุ่ง 06:00 น. ของเช้าวันพฤหัสบดี) ตามตำราไทย\n"
+            ."ดาวเจ้าเรือนของกลุ่มนี้คือ **ราหู** ไม่ใช่ดาวพุธ — ห้ามเรียกว่า \"ดาวพุธเจ้าชนะ\" เด็ดขาด\n"
+            .'ให้ทำนายจากธรรมชาติของราหู (พลิกผัน ลึกลับ เสน่ห์ ต่างแดน ความไม่แน่นอน) '
+            .'ผูกกับตำแหน่งราหูจริงในข้อเท็จจริงด้านบน';
     }
 
     /**
@@ -463,7 +532,7 @@ class FortuneHoroscopeService
             return null;
         }
 
-        $planetNum = $birthDay + 1;                       // อาทิตย์=1 … เสาร์=7
+        $planetNum = $birthDay + 1;                       // อาทิตย์=1 … เสาร์=7 · พุธกลางคืน(7)=8 = เลขราหู
         $power = (int) ($brief['lord']['power'] ?? 9);    // กำลังพระเคราะห์
         $signIndex = array_search(
             $brief['lord']['sign'] ?? null,
@@ -490,17 +559,13 @@ class FortuneHoroscopeService
      */
     protected function generateLuckyDirection(int $birthDay): string
     {
-        $directions = [
-            0 => 'ตะวันออกเฉียงเหนือ',  // อาทิตย์
-            1 => 'ตะวันตกเฉียงเหนือ',     // จันทร์
-            2 => 'ใต้',                      // อังคาร
-            3 => 'เหนือ',                   // พุธ
-            4 => 'ตะวันออกเฉียงเหนือ',    // พฤหัสบดี
-            5 => 'ตะวันออกเฉียงใต้',       // ศุกร์
-            6 => 'ตะวันตก',                 // เสาร์
-        ];
+        // 🧭 (2026-09-05) เดิมตารางนี้เขียนไว้ในเมธอดนี้เอง และ **ไม่ตรง** กับตารางของ
+        //    เลนบทความ (อาทิตย์ = "ตะวันออกเฉียงเหนือ" ที่นี่ แต่ = "ตะวันออก" ที่โน่น)
+        //    ⇒ ลูกค้าที่อ่านโพสกับที่อ่านในแชทได้คนละทิศของวันเดียวกัน
+        //    ตอนนี้ทั้งสองเลนอ่านชุดเดียวที่ FortuneChartService::LUCKY_DIRECTIONS
+        $planetKey = FortuneChartService::chaochanaFor($birthDay)['planet'] ?? 'sun';
 
-        return $directions[$birthDay] ?? 'เหนือ';
+        return FortuneChartService::LUCKY_DIRECTIONS[$planetKey] ?? 'เหนือ';
     }
 
     /**

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\HoroscopeDailyPrediction;
 use App\Models\HoroscopeZodiacSign;
+use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\DailyAstroBrief;
 use App\Services\Fortune\PlanetEphemeris;
 use Carbon\Carbon;
@@ -15,7 +16,8 @@ use Illuminate\Support\Facades\Log;
  *
  * รับผิดชอบ:
  * - สร้างดวงรายวัน 12 ราศี ด้วย AI
- * - สร้างดวงรายวัน 7 วันเกิด ด้วย AI
+ * - สร้างดวงรายวัน 8 วันเกิด (7 วัน + พุธกลางคืน) — คัดลอกจากบทความที่โพสลงเพจก่อน
+ *   ยิง AI เองเฉพาะตอนเลนโพสไม่มีของให้ (ดู DailyArticleMirror)
  * - ดึงข้อมูลดวงพร้อม cache
  * - สร้าง prompt สำหรับ AI
  */
@@ -40,16 +42,12 @@ class HoroscopeDailyService
 
     /**
      * ทิศมงคลตามดาว
+     *
+     * 🧭 (2026-09-05) ย้ายเนื้อตารางไป `FortuneChartService::LUCKY_DIRECTIONS` แหล่งเดียว
+     *    เพราะเลนโพสเคยมีตารางของตัวเองที่ไม่ตรงกับชุดนี้ (อาทิตย์ได้คนละทิศ)
+     *    ชุดกลางเติม `rahu` = ตะวันตกเฉียงใต้ (หรดี) ให้ครบ 8 ดาวด้วย
      */
-    protected const LUCKY_DIRECTIONS = [
-        'sun' => 'ตะวันออก',
-        'moon' => 'ตะวันตกเฉียงเหนือ',
-        'mars' => 'ใต้',
-        'mercury' => 'เหนือ',
-        'jupiter' => 'ตะวันออกเฉียงเหนือ',
-        'venus' => 'ตะวันออกเฉียงใต้',
-        'saturn' => 'ตะวันตก',
-    ];
+    protected const LUCKY_DIRECTIONS = FortuneChartService::LUCKY_DIRECTIONS;
 
     // (ลบ ELEMENT_COLORS + generateLuckyColorForZodiac ออก 2026-08-02 —
     //  สีมงคลถูกงดถาวรตามคำสั่งเจ้าของ ตารางสีจึงกลายเป็น dead code)
@@ -108,7 +106,7 @@ class HoroscopeDailyService
     }
 
     /**
-     * สร้างดวงรายวันสำหรับทุกวันเกิด (7 วัน)
+     * สร้างดวงรายวันสำหรับทุกวันเกิด (7 วัน + พุธกลางคืน = 8)
      *
      * @param  Carbon  $date  วันที่เป้าหมาย
      * @return array ผลการสร้าง
@@ -117,7 +115,7 @@ class HoroscopeDailyService
     {
         $results = ['success' => 0, 'failed' => 0, 'skipped' => 0];
 
-        for ($day = 0; $day <= 6; $day++) {
+        foreach (DailyArticleMirror::allBirthDays() as $day) {
             try {
                 // ตรวจสอบว่ามีดวงวันนี้แล้วหรือยัง
                 $existing = HoroscopeDailyPrediction::where('target_date', $date->toDateString())
@@ -222,10 +220,26 @@ class HoroscopeDailyService
     /**
      * สร้างดวงวันเกิดเดี่ยว
      *
-     * @param  int  $birthDay  0-6 (อาทิตย์-เสาร์)
+     * 🪞 (2026-09-05) **ลองรับช่วงจากบทความที่โพสลงเพจก่อนเสมอ** — เจ้าของสั่ง:
+     *    *"ดวงรายวันในแชทต้องดึงจากโพสรายวัน ไม่งั้นเสียโทเค็นสองรอบ และได้ไม่เหมือนกันด้วย"*
+     *    เจอบทความของวันเดียวกัน = คัดลอกมาใช้ ไม่ยิง AI เลย
+     *    ไม่เจอ (เลนโพสล้ม/ปิด) = ยิง AI เองเหมือนเดิม เพื่อไม่ให้แชทไม่มีดวงส่ง
+     *
+     * @param  int  $birthDay  0-6 (อาทิตย์-เสาร์) · 7 = พุธกลางคืน
      */
     public function generateBirthDayPrediction(int $birthDay, Carbon $date): HoroscopeDailyPrediction
     {
+        $adopted = app(DailyArticleMirror::class)->adoptForDay($birthDay, $date);
+        if ($adopted !== null) {
+            Log::info('HoroscopeDaily: ใช้บทความจากเลนโพสเพจ ไม่ยิง AI ซ้ำ', [
+                'birth_day' => $birthDay,
+                'day_name' => DailyArticleMirror::dayName($birthDay),
+                'target_date' => $date->toDateString(),
+            ]);
+
+            return $adopted;
+        }
+
         $prediction = HoroscopeDailyPrediction::updateOrCreate(
             [
                 'target_date' => $date->toDateString(),
@@ -247,7 +261,8 @@ class HoroscopeDailyService
 
             $parsed = $this->parseAIPrediction($result['response'] ?? '');
 
-            $chaochana = FortuneChartService::CHAOCHANA[$birthDay] ?? [];
+            // 🌙 chaochanaFor() — รองรับ index 7 (พุธกลางคืน = ราหู)
+            $chaochana = FortuneChartService::chaochanaFor($birthDay) ?? [];
             $planetKey = $chaochana['planet'] ?? 'sun';
 
             // 🎯 (2026-08-02) คะแนน fallback มาจากศักดิ์ดาว+มุมสัมพันธ์จริง ไม่ใช่ rand()
@@ -652,7 +667,7 @@ PROMPT;
             return null;
         }
 
-        $planetNum = $birthDay + 1;                       // อาทิตย์=1 … เสาร์=7
+        $planetNum = $birthDay + 1;                       // อาทิตย์=1 … เสาร์=7 · พุธกลางคืน(7)=8 = เลขราหู
         $power = (int) ($brief['lord']['power'] ?? 9);    // กำลังพระเคราะห์
         $signIndex = array_search(
             $brief['lord']['sign'] ?? null,

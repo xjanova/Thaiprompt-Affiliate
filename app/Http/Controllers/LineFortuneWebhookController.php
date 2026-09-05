@@ -1704,7 +1704,8 @@ class LineFortuneWebhookController extends Controller
      */
     protected function dailyDayNames(): array
     {
-        return ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        // 🌙 index 7 = พุธกลางคืน (ราหู) — วันเกิดที่ 8 ตามตำราไทย
+        return ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
     }
 
     /**

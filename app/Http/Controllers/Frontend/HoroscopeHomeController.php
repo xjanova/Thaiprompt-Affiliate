@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneTellingSetting;
 use App\Models\HoroscopeDailyPrediction;
 use App\Models\HoroscopeZodiacSign;
+use App\Services\Fortune\DailyArticleMirror;
 use App\Services\FortuneChartService;
 use Illuminate\Http\Request;
 
@@ -23,7 +24,6 @@ class HoroscopeHomeController extends Controller
      * ดึงข้อมูล: 12 ราศี + ดวงวันนี้ (ถ้ามี) + 7 วันเกิด
      * แสดง 5 หมวดหลักเป็น animated cards
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -90,18 +90,20 @@ class HoroscopeHomeController extends Controller
     }
 
     /**
-     * ดึงข้อมูล 7 วันเกิดจาก FortuneChartService
-     *
-     * @return array
+     * ดึงข้อมูลวันเกิดทั้งหมด (7 วัน + พุธกลางคืน) จาก FortuneChartService
      */
     protected function getBirthDayData(): array
     {
-        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-        $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
-        $dayColors = ['#ef4444', '#eab308', '#ec4899', '#22c55e', '#f97316', '#06b6d4', '#7c3aed'];
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
+        $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣', '🌘'];
+        $dayColors = ['#ef4444', '#eab308', '#ec4899', '#22c55e', '#f97316', '#06b6d4', '#7c3aed', '#34495e'];
 
         $birthDays = [];
-        foreach (FortuneChartService::CHAOCHANA as $day => $data) {
+        foreach (DailyArticleMirror::allBirthDays() as $day) {
+            $data = FortuneChartService::chaochanaFor($day);
+            if ($data === null) {
+                continue;
+            }
             $birthDays[$day] = [
                 'day' => $day,
                 'name_th' => 'วัน'.$dayNames[$day],
@@ -118,8 +120,6 @@ class HoroscopeHomeController extends Controller
 
     /**
      * 5 หมวดหลักของระบบดูดวง
-     *
-     * @return array
      */
     protected function getMainCategories(): array
     {

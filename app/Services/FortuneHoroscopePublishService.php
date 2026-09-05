@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FortuneHoroscopeCampaign;
 use App\Models\FortuneHoroscopeContent;
 use App\Models\FortuneHoroscopePost;
+use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\FacebookContentPolicy;
 use Carbon\Carbon;
 use Exception;
@@ -407,14 +408,34 @@ class FortuneHoroscopePublishService
         $parts[] = '';
 
         // === 2. เนื้อหาแต่ละวันเกิด ===
+        // 🌙 (2026-09-05) วางพุธกลางคืน (index 7) ต่อจากพุธกลางวัน ไม่ใช่ท้ายสุดหลังเสาร์ —
+        //    คนเกิดวันพุธไล่สายตาหาบล็อกของตัวเองอยู่ตรงนั้น ถ้าไปอยู่ท้ายโพสจะไม่มีใครเห็น
+        //    (เรียงตาม birth_day ตรง ๆ จะได้ … เสาร์ แล้วค่อยพุธกลางคืน = ผิดที่)
+        $contents = $contents->sortBy(fn ($c) => (int) $c->birth_day === FortuneChartService::WEDNESDAY_NIGHT
+            ? 3.5
+            : (float) $c->birth_day)->values();
+
         foreach ($contents as $content) {
-            $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
+            // 🌙 index 7 = พุธกลางคืน (ราหู) — วันเกิดที่ 8 ตามตำราไทย
+            $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣', '🌘'];
             $emoji = $dayEmojis[$content->birth_day] ?? '⭐';
 
             $parts[] = "{$emoji} 【คนเกิดวัน{$content->birth_day_name}】";
 
+            // 🌙 (2026-09-05) บนโพสสาธารณะเราไม่รู้เวลาเกิดของคนอ่าน — ต้องให้เขา
+            //    เลือกบล็อกเองตามธรรมเนียมโหรไทย ไม่ใช่เดาแทน
+            //    ขอบเขตคือ "วันโหร" (เปลี่ยนวันตอนย่ำรุ่ง 06:00) ไม่ใช่เที่ยงคืนแบบปฏิทิน
+            //    ⇒ พุธ 18:00 → พฤหัสบดี 05:59 (ดู ThaiAstrologyService::thaiWeekday)
+            if ((int) $content->birth_day === FortuneChartService::WEDNESDAY_NIGHT) {
+                $parts[] = '(เกิดวันพุธหลัง 18:00 น. ถึงเช้ามืดวันพฤหัสบดี 06:00 น. '
+                    .'ตำราไทยถือเป็นพุธกลางคืน ดาวเจ้าเรือนคือราหู อ่านบล็อกนี้)';
+            }
+
             if ($content->ai_prediction) {
-                $parts[] = $content->ai_prediction;
+                // 🕐 บล็อก [ช่วงเวลา] ถูกสั่งให้ AI เขียนไว้เพื่อ**กล่องแชท** โดยเฉพาะ
+                //    (ยิง AI รอบเดียวแล้วแบ่งกันใช้ — ดู FortuneHoroscopeService::periodBlockRequirement)
+                //    โพสบนเพจตัดทิ้ง เพื่อให้หน้าตาโพสเหมือนเดิมเป๊ะและไม่ยาวเกิน
+                $parts[] = app(DailyArticleMirror::class)->splitPeriodBlock((string) $content->ai_prediction)[0];
             }
 
             if ($campaign->include_lucky_info) {

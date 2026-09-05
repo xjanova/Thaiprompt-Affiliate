@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\GenerateHoroscopeContentJob;
 use App\Models\FortuneHoroscopeCampaign;
 use App\Models\FortuneHoroscopeContent;
 use App\Models\FortuneHoroscopePost;
@@ -87,7 +86,7 @@ class FortuneHoroscopeController extends Controller
         return view('admin.fortune.horoscope.form', [
             'campaign' => $campaign,
             'isEdit' => true,
-            'pageTitle' => 'แก้ไขแคมเปญ: ' . $campaign->name,
+            'pageTitle' => 'แก้ไขแคมเปญ: '.$campaign->name,
         ]);
     }
 
@@ -172,7 +171,7 @@ class FortuneHoroscopeController extends Controller
         $msg = "โพสสำเร็จ {$result['posts_published']} / สร้าง {$result['posts_created']}";
 
         if (! empty($result['errors'])) {
-            $msg .= ' | ข้อผิดพลาด: ' . implode(', ', $result['errors']);
+            $msg .= ' | ข้อผิดพลาด: '.implode(', ', $result['errors']);
 
             return back()->with('warning', $msg);
         }
@@ -268,8 +267,10 @@ class FortuneHoroscopeController extends Controller
             'timezone' => 'nullable|string|max:50',
             'active_days' => 'nullable|array',
             'active_days.*' => 'integer|between:0,6',
+            // 🌙 0-6 = วันในสัปดาห์ · 7 = พุธกลางคืน (ราหู) วันเกิดที่ 8 ตามตำราไทย
+            //    ⚠️ `active_days` ด้านบนคือ "วันที่โพส" (ปฏิทิน) ต้องคง 0-6 ห้ามขยายตาม
             'target_birth_days' => 'nullable|array',
-            'target_birth_days.*' => 'integer|between:0,6',
+            'target_birth_days.*' => 'integer|between:0,7',
             'include_image' => 'boolean',
             'include_lucky_info' => 'boolean',
             'post_format' => 'nullable|string|in:single,combined',

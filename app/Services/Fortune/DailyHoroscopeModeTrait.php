@@ -3,6 +3,7 @@
 namespace App\Services\Fortune;
 
 use App\Models\FortuneReading;
+use App\Services\FortuneChartService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -32,8 +33,27 @@ trait DailyHoroscopeModeTrait
     /** อายุธง pending — ลูกค้าบางคนตอบข้ามวัน */
     protected const DAILY_PENDING_TTL_DAYS = 7;
 
-    /** ชื่อวันในสัปดาห์ index 0=อาทิตย์ … 6=เสาร์ (ตรงกับคอลัมน์ birth_day) */
-    protected const DAILY_DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    /**
+     * ชื่อวันในสัปดาห์ index 0=อาทิตย์ … 6=เสาร์ (ตรงกับคอลัมน์ birth_day)
+     *
+     * 🌙 (2026-09-05) index 7 = "พุธกลางคืน" (ดาวเจ้าเรือน = ราหู) วันเกิดที่ 8 ตามตำราไทย
+     */
+    protected const DAILY_DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
+
+    /** index ของวันพุธ (กลางวัน) — ตัวเดียวที่ต้องถามต่อว่ากลางวันหรือกลางคืน */
+    protected const DAILY_WEDNESDAY = 3;
+
+    /**
+     * 🌙 คำที่แปลว่า "กลางคืน" ทางโหร — พุธ + คำพวกนี้ = ราหู
+     *
+     * ขอบเขตทางโหราศาสตร์ไทยคือ **ย่ำค่ำ 18:00 → ย่ำรุ่ง 06:00** ของเช้าวันถัดไป
+     * ⇒ "ค่ำ/ดึก/กลางคืน/เช้ามืด/ตี…" ทั้งหมดอยู่ในฝั่งกลางคืน
+     * ส่วน "เช้า/สาย/เที่ยง/บ่าย/เย็น" = กลางวัน (เย็นก่อน 18:00 ยังเป็นพุธกลางวัน)
+     */
+    protected const DAILY_NIGHT_WORDS_RE = 'กลางคืน|กลางดึก|เช้ามืด|ตอนดึก|ดึก|ค่ำ|ตี\s*[1-5]|หัวค่ำ';
+
+    /** คำที่แปลว่า "กลางวัน" ชัดเจน — ใช้ตอบคำถามพุธกลางวัน/กลางคืน */
+    protected const DAILY_DAY_WORDS_RE = 'กลางวัน|ตอนเช้า|เช้า|สาย|เที่ยง|บ่าย|เย็น';
 
     /**
      * 🇹🇭 (2026-08-27) คำนำหน้า "วัน" ที่พิมพ์ตกหล่น — เคสจริง แม่ฝน คำแจ่ม
@@ -279,6 +299,14 @@ trait DailyHoroscopeModeTrait
                 $resolved = $this->resolveDayIndexFromShortYes($messageText, $userId);
             }
 
+            // 🌙 (2026-09-05) คำตอบของคำถาม "พุธกลางวันหรือกลางคืน" — เทิร์นนี้ไม่มีชื่อวัน
+            //    ในข้อความเลย ("กลางคืนค่ะ") ตัวจับชื่อวันทุกตัวจึงคืน null
+            $answeringWednesdayHalf = false;
+            if ($resolved === null) {
+                $resolved = $this->resolveWednesdayHalfReply($platform, $userId, $messageText);
+                $answeringWednesdayHalf = $resolved !== null;
+            }
+
             // 🎁 (2026-08-21) ขอดวงรายวันมาชัด ๆ แต่ยังไม่บอกวันเกิด
             //    → ยื่นกล่องดวงรายวัน (maybeOfferDailyForFreeRequest จัดการครบแล้วทั้งเคส
             //      "รู้วันเกิดแล้ว" / "ยังไม่รู้" / "บทความยังไม่พร้อม" — ห้ามเขียนใหม่)
@@ -319,7 +347,11 @@ trait DailyHoroscopeModeTrait
             //       ตอนนี้อ่านจาก settings (default 25) ปรับได้โดยไม่ต้อง deploy
             $answerLockSec = max(1, (int) ($this->settings->nav_flood_same_payload_lock_sec ?? 25));
 
-            if (! Cache::add("fortune:daily_answer_lock:{$platform}:{$userId}", true, $answerLockSec)) {
+            // 🌙 (2026-09-05) ยกเว้นคนที่กำลัง**ตอบคำถามที่เราเพิ่งถาม** ("กลางคืนค่ะ")
+            //    เทิร์นก่อนหน้า (คำถาม) เพิ่งจองล็อกไปเมื่อไม่กี่วินาที ถ้าไม่ยกเว้น
+            //    คำตอบของลูกค้าจะโดนเบรกเงียบ = เราถามแล้วเงียบใส่คนที่ตอบ (แย่ที่สุด)
+            if (! $answeringWednesdayHalf
+                && ! Cache::add("fortune:daily_answer_lock:{$platform}:{$userId}", true, $answerLockSec)) {
                 // 🔎 เดิมเงียบสนิทไม่มี log เลย — เวลามันทำงานจึงไม่มีหลักฐานย้อนหลัง
                 Log::info('🌙 Daily: เบรกเงียบ (ตอบซ้ำเร็วเกิน)', [
                     'user_id' => $userId,
@@ -332,6 +364,13 @@ trait DailyHoroscopeModeTrait
                     'message' => null,
                     'reading' => null,
                 ];
+            }
+
+            // 🌙 (2026-09-05) ลูกค้าบอกแค่ "วันพุธ" — ตำราไทยแยกพุธกลางวัน/กลางคืน
+            //    (กลางคืน = ราหู คนละดาวเจ้าเรือน) ต้องถามก่อน ห้ามเดาข้างเอง
+            //    ⚠️ ต้องอยู่ **หลังล็อกกันกดรัว** เพื่อไม่ให้คำถามถูกยิงซ้ำจาก FB retry
+            if ($ask = $this->maybeAskWednesdayHalf($platform, $userId, $messageText, $dayIndex)) {
+                return $ask;
             }
 
             return $this->buildDailyHoroscopeReply($platform, $userId, $dayIndex, $fullDate, $userProfile);
@@ -794,7 +833,8 @@ trait DailyHoroscopeModeTrait
                 ->whereNotNull('birth_day')
                 ->value('birth_day');
 
-            return \App\Models\FortuneUserCredit::normalizeBirthDayIndex($day);
+            // 🌙 อ่านคอลัมน์ birth_day ของเราเอง → รับ 7 (พุธกลางคืน) ด้วย
+            return \App\Models\FortuneUserCredit::normalizeStoredBirthDayIndex($day);
         } catch (\Throwable $e) {
             // ⚠️ ห้ามกลืนเงียบ — บทเรียนจาก buildReturningCustomerContext ที่ query พังมา
             //   หลายเดือนโดยไม่มีใครเห็น เพราะ catch ไม่เคยพูดอะไรออกมาเลย
@@ -841,11 +881,169 @@ trait DailyHoroscopeModeTrait
     {
         foreach (self::DAILY_DAY_ALIASES as $needle => $index) {
             if (mb_strpos($text, $needle) !== false) {
-                return $index;
+                return $this->applyWednesdayHalf($index, $text);
             }
         }
 
         return null;
+    }
+
+    /**
+     * 🌙 (2026-09-05) "พุธ" + คำบอกกลางคืน = **พุธกลางคืน (ราหู)** ไม่ใช่พุธกลางวัน
+     *
+     * 🚨 ต้นเหตุ: `DAILY_TIME_OF_DAY_RE` ถูกเพิ่มไว้ตั้งแต่ 2026-08-27 เพื่อ**ปอกทิ้ง**
+     *    คำว่า "กลางคืน" ให้เทียบชื่อวันติด (เคสจริง PSID 26646988441640086 พิมพ์
+     *    "วันพุธกลางคืน" แล้วตกไป AI chat) — แก้ให้เข้าเลนได้ แต่**ทิ้งข้อมูลชิ้นที่สำคัญที่สุด**
+     *    ลูกค้าจึงได้ดวงพุธกลางวันมาตลอด ทั้งที่ดาวเจ้าเรือนคนละดวง (พุธ vs ราหู)
+     *    ⇒ ต้องอ่านคำที่ปอกทิ้ง**ก่อน** แล้วค่อยแปลงเป็นดัชนีวันเกิดที่ 8
+     *
+     * ⚠️ ใช้ได้เฉพาะกับ index 3 (พุธ) เท่านั้น — "เสาร์กลางคืน" ไม่มีในตำรา
+     *    (วันอื่นไม่แยกกลางวัน/กลางคืน มีแต่พุธ)
+     *
+     * @param  string  $rawText  ข้อความ**ก่อน**ปอกคำบอกช่วงเวลา
+     */
+    protected function applyWednesdayHalf(int $dayIndex, string $rawText): int
+    {
+        if ($dayIndex !== self::DAILY_WEDNESDAY) {
+            return $dayIndex;
+        }
+
+        return $this->saysNightTime($rawText)
+            ? FortuneChartService::WEDNESDAY_NIGHT
+            : $dayIndex;
+    }
+
+    /** ข้อความนี้บอกว่า "กลางคืน" (ทางโหร = ย่ำค่ำ–ย่ำรุ่ง) ไหม */
+    protected function saysNightTime(string $text): bool
+    {
+        return preg_match('/(?:'.self::DAILY_NIGHT_WORDS_RE.')/u', $text) === 1;
+    }
+
+    /** ข้อความนี้บอกว่า "กลางวัน" ชัดเจนไหม (ต้องเช็คหลัง saysNightTime เสมอ) */
+    protected function saysDayTime(string $text): bool
+    {
+        return preg_match('/(?:'.self::DAILY_DAY_WORDS_RE.')/u', $text) === 1;
+    }
+
+    /**
+     * คีย์ธง "ถามไปแล้ววันนี้" — กันถามวนไม่จบ (อายุถึงเที่ยงคืน)
+     *
+     * ⚠️ ต้องแยกจากคีย์ "กำลังรอคำตอบ" ด้านล่าง ไม่ใช้ตัวเดียวกัน:
+     *   ถ้าใช้คีย์เดียวยาวทั้งวัน ตัวรับคำตอบจะยังเปิดอยู่ตลอด แล้วประโยคหลังจากนั้น
+     *   ที่บังเอิญมีคำว่า "เย็น/เช้า/ดึก" ("ตอนเย็นนี้ว่างไหมคะ") จะถูกตีเป็นคำตอบวันเกิด
+     *   แล้วยิงดวงพุธออกไปให้คนที่ไม่ได้ถาม
+     */
+    protected function wednesdayAskedKey(string $platform, string $userId): string
+    {
+        return "fortune:daily_wed_asked:{$platform}:{$userId}";
+    }
+
+    /** คีย์ธง "กำลังรอคำตอบ พุธกลางวัน/กลางคืน" — อายุสั้น ใช้แล้วทิ้ง */
+    protected function wednesdayAwaitKey(string $platform, string $userId): string
+    {
+        return "fortune:daily_wed_await:{$platform}:{$userId}";
+    }
+
+    /**
+     * 🌙 ถามต่อเมื่อลูกค้าบอกแค่ "วันพุธ" — วันเกิดที่ 8 ตัดสินด้วย**เวลาเกิด** ไม่ใช่ชื่อวัน
+     *
+     * เจ้าของสั่ง (2026-09-05): *"ถามด้วย"*
+     *
+     * 🚨 ห้ามเดาข้างเอง — เดาผิดเปลี่ยนดาวเจ้าเรือนทั้งดวง แย่กว่าถามเพิ่ม 1 เทิร์น
+     *    ([[rule_self_address_disambiguation]] · [[rule_birth_time_ask_and_parse]])
+     *
+     * ⚠️ ถามได้ **ครั้งเดียวต่อคนต่อวัน** — คนที่ตอบ "พุธ" ซ้ำอีกรอบต้องได้ดวงเลย
+     *    ไม่ใช่โดนถามวนไม่จบ (ธง TTL ถึงเที่ยงคืน)
+     *
+     * @return array|null null = ไม่ต้องถาม ปล่อยส่งดวงตามปกติ
+     */
+    protected function maybeAskWednesdayHalf(
+        string $platform,
+        string $userId,
+        string $messageText,
+        int $dayIndex
+    ): ?array {
+        if ($dayIndex !== self::DAILY_WEDNESDAY) {
+            return null;
+        }
+
+        // 🚧 ถามเฉพาะตอนที่ลูกค้า **เพิ่งพิมพ์คำว่า "พุธ" มาในข้อความนี้** เท่านั้น
+        //    ดัชนีที่มาจากที่เก็บ (ขาประจำตอบ "เอาค่ะ" / ปุ่ม DAILY_SHOW_MINE) ห้ามถาม —
+        //    เขาเคยตอบเราไปแล้ว การถามซ้ำทุกวันคือการรบกวนคนที่กลับมาหาเราเอง
+        if (mb_strpos($messageText, 'พุธ') === false) {
+            return null;
+        }
+
+        // ลูกค้าบอกช่วงเวลามาแล้ว (ทางใดทางหนึ่ง) → ไม่ต้องถามซ้ำ
+        if ($this->saysNightTime($messageText) || $this->saysDayTime($messageText)) {
+            return null;
+        }
+
+        // ถามไปแล้ววันนี้ → ให้ดวงพุธกลางวันไปเลย ห้ามถามวน
+        if (! Cache::add($this->wednesdayAskedKey($platform, $userId), true, now()->endOfDay())) {
+            return null;
+        }
+
+        // เปิดรับคำตอบ 15 นาที — สั้นพอที่ประโยคอื่นในวันเดียวกันจะไม่ถูกตีเป็นคำตอบ
+        Cache::put($this->wednesdayAwaitKey($platform, $userId), true, 900);
+
+        // ตั้งธง pending ให้คำตอบเทิร์นถัดไป ("กลางคืนค่ะ") วิ่งเข้าด่านนี้ได้
+        $this->markDailyPending($platform, $userId);
+
+        Log::info('🌙 Daily: ถามต่อ พุธกลางวันหรือกลางคืน', [
+            'user_id' => $userId,
+            'platform' => $platform,
+        ]);
+
+        return [
+            'action' => 'daily_ask_wednesday_half',
+            'message' => "🌙 คนเกิดวันพุธ ตำราไทยแยกเป็น 2 แบบนะคะ\n\n"
+                ."🟢 พุธกลางวัน — เกิดตั้งแต่ย่ำรุ่ง 06:00 น. ถึงก่อนหกโมงเย็น\n"
+                ."🌘 พุธกลางคืน — เกิดตั้งแต่หกโมงเย็นเป็นต้นไป ถึงเช้ามืดวันพฤหัสฯ\n"
+                .'(พุธกลางคืนใช้ "ราหู" เป็นดาวเจ้าเรือน คนละดวงกับพุธกลางวัน '
+                ."คำทำนายจึงคนละใบเลยค่ะ)\n\n"
+                .'เจ้าชะตาเกิดกลางวันหรือกลางคืนคะ ถ้าจำเวลาไม่ได้ บอกว่า "กลางวัน" ไปก่อนก็ได้ค่ะ',
+            'reading' => null,
+            'quick_replies' => [],
+        ];
+    }
+
+    /**
+     * 🌙 คำตอบของคำถาม "พุธกลางวันหรือกลางคืน" — รับคำบอกช่วงเวลาล้วน ๆ
+     *
+     * เทิร์นนี้ลูกค้าตอบแค่ "กลางคืนค่ะ" ซึ่งไม่มีชื่อวันเลย ตัวจับชื่อวันทุกตัวจึงคืน null
+     * ⇒ ต้องมีตัวรับของตัวเอง และรับ**เฉพาะคนที่เราเพิ่งถามไป**เท่านั้น
+     *
+     * @return array{0:int, 1:null}|null
+     */
+    protected function resolveWednesdayHalfReply(string $platform, string $userId, string $text): ?array
+    {
+        if (! Cache::has($this->wednesdayAwaitKey($platform, $userId))) {
+            return null;
+        }
+
+        $t = trim($text);
+
+        // ต้องเป็นคำตอบสั้น ๆ เท่านั้น — ประโยคยาวแปลว่าลูกค้าเปลี่ยนเรื่องแล้ว
+        if ($t === '' || mb_strlen($t) > 30) {
+            return null;
+        }
+
+        // ⚠️ เช็คกลางคืนก่อนเสมอ — "เช้ามืด" มีคำว่า "เช้า" อยู่ในตัว
+        $index = match (true) {
+            $this->saysNightTime($t) => FortuneChartService::WEDNESDAY_NIGHT,
+            $this->saysDayTime($t) => self::DAILY_WEDNESDAY,
+            default => null,
+        };
+
+        if ($index === null) {
+            return null;
+        }
+
+        // ใช้แล้วทิ้งทันที — กันประโยคถัดไปที่มีคำบอกเวลาถูกตีเป็นคำตอบซ้ำ
+        Cache::forget($this->wednesdayAwaitKey($platform, $userId));
+
+        return [$index, null];
     }
 
     /**
@@ -1050,7 +1248,8 @@ trait DailyHoroscopeModeTrait
         }
 
         if ($peeled !== '' && array_key_exists($peeled, self::DAILY_DAY_ALIASES)) {
-            return self::DAILY_DAY_ALIASES[$peeled];
+            // 🌙 อ่านคำบอกช่วงเวลาจาก $t (ก่อนปอก) — "พุธกลางคืน" = ราหู ไม่ใช่พุธ
+            return $this->applyWednesdayHalf(self::DAILY_DAY_ALIASES[$peeled], $t);
         }
 
         // ── ทาง B: "เกิด" ติดกับชื่อวัน แม้อยู่กลางประโยค
@@ -1062,9 +1261,12 @@ trait DailyHoroscopeModeTrait
 
         // (?![\p{L}\p{M}]) กัน alias สั้น 3 ตัว (จัน/เสา/ศุก) ไปติดใน "จันทบุรี" / "เสาไฟ" / "ศุกร์"
         //   ⚠️ ต้องมี \p{M} ด้วย ไม่งั้นสระ/วรรณยุกต์ที่ตามมาไม่ถูกนับเป็นตัวกั้น
+        // 🌙 (2026-09-05) ยอมให้คำบอกช่วงเวลาต่อท้ายชื่อวันได้ ก่อนถึงตัวกั้น —
+        //    ไม่งั้น "เกิดวันพุธกลางคืน" จะตกที่ lookahead (ตัว "ก" เป็น \p{L})
+        //    ใช้กลุ่มแบบไม่จับ เพื่อไม่ให้เลข $m[2] ("นี้/ที่ผ่านมา") เลื่อน
         $pattern = '/(?:เกิด|วันเกิด)\s*(?:คือ|เป็น|ตรงกับ|ที่)?\s*(?:วัน)?\s*('
             .$days
-            .')(?![\p{L}\p{M}])\s*(นี้|หน้า|ที่แล้ว|ที่ผ่านมา|ก่อน)?/u';
+            .')(?:\s*(?:'.self::DAILY_TIME_OF_DAY_RE.'))?(?![\p{L}\p{M}])\s*(นี้|หน้า|ที่แล้ว|ที่ผ่านมา|ก่อน)?/u';
 
         if (preg_match($pattern, $t, $m) === 1) {
             // "เกิดวันจันทร์ที่ผ่านมา" = เล่าเรื่อง ไม่ใช่วันเกิด
@@ -1072,7 +1274,9 @@ trait DailyHoroscopeModeTrait
                 return null;
             }
 
-            return self::DAILY_DAY_ALIASES[$m[1]] ?? null;
+            $index = self::DAILY_DAY_ALIASES[$m[1]] ?? null;
+
+            return $index === null ? null : $this->applyWednesdayHalf($index, $t);
         }
 
         return null;
@@ -2073,7 +2277,10 @@ trait DailyHoroscopeModeTrait
 
             $payload = trim((string) ($b['payload'] ?? ''));
 
-            if (preg_match('/^DAILY_BDAY_([0-6])$/', $payload, $m) === 1) {
+            // 🌙 (2026-09-05) ขยายเป็น 0-7 — index 7 = พุธกลางคืน (ราหู)
+            //    ถ้าไม่ขยาย ปุ่มที่ 8 จะตกไปทางปอกอีโมจิ แล้วได้ข้อความไม่มีคำว่า "วัน"
+            //    ซึ่งด่านขาเข้าบางตัวใช้คำนำหน้านั้นเป็นตัวช่วยแยกบริบท
+            if (preg_match('/^DAILY_BDAY_([0-7])$/', $payload, $m) === 1) {
                 $text = 'วัน'.self::DAILY_DAY_NAMES[(int) $m[1]];
             } else {
                 $text = trim((string) ($b['text'] ?? ''));
@@ -2100,17 +2307,22 @@ trait DailyHoroscopeModeTrait
     }
 
     /**
-     * 🔘 ปุ่ม 7 วันเกิด — ทางหลักของโหมดนี้ (ไม่ต้องพึ่ง parser เลย)
+     * 🔘 ปุ่มวันเกิด — ทางหลักของโหมดนี้ (ไม่ต้องพึ่ง parser เลย)
      *
-     * payload = DAILY_BDAY_0 … DAILY_BDAY_6 (ตรงกับ index วัน)
+     * payload = DAILY_BDAY_0 … DAILY_BDAY_7 (ตรงกับ index วัน)
      * ต้องมี case ใน FacebookWebhookController::handleQuickReply ไม่งั้น payload
      * จะถูกส่งเป็น "ข้อความลูกค้า" ดิบ ๆ เข้า processMessage (default branch)
+     *
+     * 🌙 (2026-09-05) ปุ่มที่ 8 = "พุธกลางคืน" (ราหู) วันเกิดที่ 8 ตามตำราไทย
+     *    ⚠️ ป้ายปุ่มถูกส่งกลับมาเป็น **ข้อความ** ด้วย ([[rule_fb_quickreply_label_arrives_as_text]])
+     *    "🌘 พุธกลางคืน" → ตัวจับชื่อวันอ่านเป็น index 7 ได้เอง ⇒ ปุ่มไม่ตายแม้ payload หาย
+     *    (FB รับได้ 13 ปุ่ม · LINE 13 — 8 ปุ่มยังอยู่ในเพดานทั้งคู่)
      *
      * @return array<int, array{content_type: string, title: string, payload: string}>
      */
     public static function dailyBirthdayQuickReplies(): array
     {
-        $emojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
+        $emojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣', '🌘'];
 
         $buttons = [];
         foreach (self::DAILY_DAY_NAMES as $index => $dayName) {

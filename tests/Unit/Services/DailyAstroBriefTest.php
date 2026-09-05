@@ -344,4 +344,48 @@ class DailyAstroBriefTest extends TestCase
             );
         }
     }
+
+    /**
+     * 🌙 (2026-09-05) วันเกิดที่ 8 — พุธกลางคืนต้องใช้ "ราหู" เป็นดาวเจ้าเรือน
+     *
+     * 🚨 นี่คือข้อที่โหรจริงตรวจก่อนเพื่อนสำหรับคนเกิดวันพุธ ถ้าเราส่งดวงพุธกลางวัน
+     *    ให้คนเกิดพุธกลางคืน = ผิดตั้งแต่ดาวเจ้าเรือน คำทำนายทั้งใบใช้ไม่ได้
+     *
+     * ⚠️ ตารางแถวที่ 8 **ไม่ได้อยู่ใน CHAOCHANA** (ตารางนั้นถูกวนทั้งใบหลายที่)
+     *    ต้องผ่าน chaochanaFor() เสมอ — เทสต์นี้จับได้ทันทีถ้าใครกลับไปอ่าน
+     *    CHAOCHANA ตรง ๆ (จะได้ brief เปล่า ok=false)
+     *
+     * @test
+     */
+    public function พุธกลางคืนต้องใช้ราหูเป็นดาวเจ้าเรือน(): void
+    {
+        $date = Carbon::create(2026, 9, 5);
+
+        $wedDay = $this->brief->build(3, $date);                                        // พุธกลางวัน
+        $wedNight = $this->brief->build(\App\Services\FortuneChartService::WEDNESDAY_NIGHT, $date);
+
+        $this->assertTrue($wedNight['ok'], 'พุธกลางคืนต้องคำนวณดาวได้ ไม่ใช่ตกไป brief เปล่า');
+        $this->assertSame('พุธกลางคืน', $wedNight['day_name']);
+        $this->assertSame('ราหู', $wedNight['lord']['th'], 'ดาวเจ้าเรือนของพุธกลางคืนคือราหู');
+        $this->assertSame('พุธ', $wedDay['lord']['th']);
+
+        // ต้องเป็นคนละคำทำนายจริง ๆ ไม่ใช่ก็อปของพุธกลางวันมาเปลี่ยนชื่อ
+        $this->assertNotSame($wedDay['text'], $wedNight['text']);
+
+        // ราหู/เกตุ เดินถอยหลังตลอดโดยธรรมชาติ — ห้ามรายงานว่า "พักร" ทุกวัน
+        $this->assertFalse($wedNight['lord']['retro'], 'ราหูห้ามถูกรายงานว่าพักร');
+
+        // มิตร/ศัตรูต้องไม่ขัดกับตารางหลัก (อนุมานย้อนจาก CHAOCHANA ไม่ใช่แต่งใหม่)
+        $row = \App\Services\FortuneChartService::CHAOCHANA_WEDNESDAY_NIGHT;
+        $this->assertNotContains($row['planet'], $row['friends'], 'ราหูห้ามเป็นมิตรของตัวเอง');
+        $this->assertNotContains($row['planet'], $row['enemies'], 'ราหูห้ามเป็นศัตรูของตัวเอง');
+        $this->assertSame([], array_intersect($row['friends'], $row['enemies']));
+
+        foreach ($row['friends'] as $friend) {
+            $other = \App\Services\FortuneChartService::CHAOCHANA[
+                \App\Services\FortuneChartService::PLANETS[$friend]['day'] ?? 0
+            ];
+            $this->assertNotContains('rahu', $other['enemies'] ?? [], "{$friend} ถือราหูเป็นศัตรู แต่ราหูถือเป็นมิตร");
+        }
+    }
 }

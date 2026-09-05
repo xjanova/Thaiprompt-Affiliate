@@ -168,8 +168,64 @@ class FortuneDailyColdDayNameTest extends TestCase
     {
         // เคสจริงจาก prod 2026-08-27
         $this->assertSame(4, $this->invokeHidden('resolveBirthDayNameIndex', 'วัพฤหัสบดีค่ะ'), 'ขาด น ใน "วัน"');
-        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'วันพุธกลางคืน'), 'ช่วงเวลาพ่วงท้าย');
-        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธกลางคืนน่ะ'), 'ช่วงเวลา + คำลงท้าย');
+
+        // 🌙 (2026-09-05) **เปลี่ยนค่าคาดหวังจาก 3 → 7 โดยตั้งใจ**
+        //    รอบ 2026-08-27 แก้ให้ "วันพุธกลางคืน" เข้าเลนรายวันได้ (เดิมตกไป AI chat)
+        //    แต่วิธีแก้คือ **ปอก "กลางคืน" ทิ้ง** ⇒ เข้าเลนได้จริง แต่ได้ดวงพุธกลางวัน
+        //    ทั้งที่ตำราไทยใช้ **ราหู** เป็นดาวเจ้าเรือนของพุธกลางคืน = คนละดวงกันเลย
+        //    ตอนนี้แปลงเป็นดัชนีวันเกิดที่ 8 (FortuneChartService::WEDNESDAY_NIGHT)
+        $this->assertSame(7, $this->invokeHidden('resolveBirthDayNameIndex', 'วันพุธกลางคืน'), 'พุธกลางคืน = ราหู');
+        $this->assertSame(7, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธกลางคืนน่ะ'), 'ช่วงเวลา + คำลงท้าย');
+        $this->assertSame(7, $this->invokeHidden('resolveBirthDayNameIndex', 'เกิดวันพุธตอนกลางคืนค่ะ'));
+        $this->assertSame(7, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธ ตอนดึกค่ะ'));
+
+        // พุธกลางวัน (และคำที่ไม่ได้บอกกลางคืน) ต้องยังเป็น 3 เหมือนเดิม
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'วันพุธ'));
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธค่ะ'));
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'วันพุธกลางวัน'));
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธตอนเช้าค่ะ'));
+        $this->assertSame(3, $this->invokeHidden('resolveBirthDayNameIndex', 'พุธตอนเย็นค่ะ'), 'เย็นก่อนย่ำค่ำ = ยังกลางวัน');
+
+        // ⚠️ วันอื่นไม่มีการแยกกลางวัน/กลางคืนในตำรา — ห้ามเผลอแปลงข้าม
+        $this->assertSame(6, $this->invokeHidden('resolveBirthDayNameIndex', 'เสาร์กลางคืนค่ะ'));
+        $this->assertSame(1, $this->invokeHidden('resolveBirthDayNameIndex', 'จันทร์กลางคืนค่ะ'));
+
+        // detectThaiDayName (จับกลางประโยค) ต้องเห็นตรงกัน — ใช้ตัวแปลงตัวเดียวกัน
+        $this->assertSame(7, $this->invokeHidden('detectThaiDayName', 'เกิดวันพุธกลางคืนค่ะ'));
+        $this->assertSame(3, $this->invokeHidden('detectThaiDayName', 'เกิดวันพุธค่ะ'));
+    }
+
+    /**
+     * 🌙 (2026-09-05) ตัวแยก "กลางวัน/กลางคืน" ทางโหร
+     *
+     * ขอบเขตคือ **ย่ำค่ำ 18:00 → ย่ำรุ่ง 06:00** ของเช้าวันถัดไป (วันโหรเปลี่ยนตอนย่ำรุ่ง
+     * ไม่ใช่เที่ยงคืนแบบปฏิทิน) ⇒ "เย็น" ยังเป็นกลางวัน แต่ "ค่ำ/ดึก/ตี 3/เช้ามืด" เป็นกลางคืน
+     *
+     * ⚠️ "เช้ามืด" มีคำว่า "เช้า" อยู่ในตัว — ทุกจุดต้องเช็คกลางคืน **ก่อน** กลางวันเสมอ
+     *
+     * @test
+     */
+    public function ตัวแยกกลางวันกลางคืนต้องตรงตามวันโหร(): void
+    {
+        foreach (['กลางคืน', 'ตอนดึก', 'ดึกมาก', 'ค่ำ ๆ', 'หัวค่ำ', 'เช้ามืด', 'ตี 3', 'ตี5'] as $night) {
+            $this->assertTrue($this->invokeHidden('saysNightTime', $night), "'{$night}' ต้องเป็นกลางคืน");
+        }
+
+        foreach (['กลางวัน', 'ตอนเช้า', 'สาย ๆ', 'เที่ยง', 'บ่าย', 'เย็น'] as $day) {
+            $this->assertFalse($this->invokeHidden('saysNightTime', $day), "'{$day}' ต้องไม่ใช่กลางคืน");
+            $this->assertTrue($this->invokeHidden('saysDayTime', $day), "'{$day}' ต้องเป็นกลางวัน");
+        }
+
+        // ⚠️ "ค่ะ" (ค+่+ะ) ห้ามชนกับ "ค่ำ" (ค+่+ำ) — ต่างกันแค่สระตัวเดียว
+        $this->assertFalse($this->invokeHidden('saysNightTime', 'วันพุธค่ะ'));
+        $this->assertFalse($this->invokeHidden('saysNightTime', 'พุธครับ'));
+
+        // ตัวแปลงต้องแตะเฉพาะวันพุธ
+        $this->assertSame(7, $this->invokeHidden('applyWednesdayHalf', 3, 'พุธกลางคืน'));
+        $this->assertSame(3, $this->invokeHidden('applyWednesdayHalf', 3, 'พุธกลางวัน'));
+        $this->assertSame(3, $this->invokeHidden('applyWednesdayHalf', 3, 'พุธ'));
+        $this->assertSame(6, $this->invokeHidden('applyWednesdayHalf', 6, 'เสาร์กลางคืน'));
+        $this->assertSame(0, $this->invokeHidden('applyWednesdayHalf', 0, 'อาทิตย์ตอนดึก'));
 
         // ตระกูลเดียวกันที่ต้องรอดไปด้วย
         $this->assertSame(5, $this->invokeHidden('resolveBirthDayNameIndex', 'ศุกร์ตอนเช้าค่ะ'));

@@ -9,12 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * HoroscopeDailyPrediction Model — ดวงรายวัน AI-generated
  *
  * เก็บคำทำนาย 5 ด้าน + คะแนน 1-5 + เลข/สี/ทิศมงคล
- * รองรับทั้งระบบ 12 ราศี (zodiac) และ 7 วันเกิด (birth_day)
+ * รองรับทั้งระบบ 12 ราศี (zodiac) และ 8 วันเกิด (birth_day — 7 วัน + พุธกลางคืน)
+ *
+ * 🪞 (2026-09-05) แถว birth_day ส่วนใหญ่ถูก **คัดลอกมาจากบทความที่โพสลงเพจ**
+ *    (`fortune_horoscope_contents`) ผ่าน [[DailyArticleMirror]] ไม่ได้ยิง AI เอง —
+ *    เพื่อให้คำทำนายในแชทตรงกับบนเพจเป๊ะ และจ่ายค่า AI รอบเดียวต่อวัน
+ *    ยิง AI เองเฉพาะตอนที่เลนโพสไม่มีบทความให้ (ล้ม/ปิด)
  *
  * @property int $id
  * @property int|null $zodiac_sign_id FK ราศี
  * @property \Carbon\Carbon $target_date วันที่ทำนาย
- * @property int|null $birth_day วันเกิด (0=อาทิตย์..6=เสาร์)
+ * @property int|null $birth_day วันเกิด (0=อาทิตย์..6=เสาร์ · 7=พุธกลางคืน)
  * @property string $prediction_type zodiac|birth_day
  * @property string|null $overall_prediction_th คำทำนายภาพรวม
  * @property string|null $love_prediction_th คำทำนายความรัก
@@ -164,7 +169,8 @@ class HoroscopeDailyPrediction extends Model
      */
     public function getBirthDayNameThAttribute(): ?string
     {
-        $days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        // 🌙 index 7 = พุธกลางคืน (ราหู) — วันเกิดที่ 8 ตามตำราไทย
+        $days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
 
         return $this->birth_day !== null ? ($days[$this->birth_day] ?? null) : null;
     }

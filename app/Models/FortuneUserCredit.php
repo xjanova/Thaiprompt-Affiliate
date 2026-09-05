@@ -226,7 +226,8 @@ class FortuneUserCredit extends Model
                 ->whereNotNull('birth_day')
                 ->value('birth_day');
 
-            return self::normalizeBirthDayIndex($day);
+            // 🌙 อ่านคอลัมน์ของเราเอง → รับ 7 (พุธกลางคืน) ได้ ไม่ใช่ค่าที่ derive จากวันที่
+            return self::normalizeStoredBirthDayIndex($day);
         } catch (\Throwable $e) {
             // fail-safe = "ไม่รู้" → กลับไปถามวันเกิด ดีกว่าเดาผิดแล้วส่งดวงของคนอื่น
             return null;
@@ -234,10 +235,15 @@ class FortuneUserCredit extends Model
     }
 
     /**
-     * ค่าที่อ่านมาเป็น index วันเกิดที่ใช้ได้จริงไหม (0-6)
+     * ค่าที่อ่านมาเป็น index "วันในสัปดาห์" ที่ใช้ได้จริงไหม (0-6 เท่านั้น)
      *
      * แยกออกมาเพราะเป็นส่วนบริสุทธิ์ที่เทสต์ได้โดยไม่ต้องมี DB —
      * และเพราะ index นอกช่วงต้องแปลว่า "ไม่รู้" ไม่ใช่ปล่อยไปทำ array index ระเบิดปลายทาง
+     *
+     * 🚨 **ห้ามขยายเพดานเป็น 7 เด็ดขาด** — ตัวนี้คือด่านดัก `dayOfWeekIso` ที่ให้
+     *    วันอาทิตย์ = 7 ถ้ายอมรับ 7 คนเกิดวันอาทิตย์ที่หลุดมาทาง ISO จะได้ดวง
+     *    "พุธกลางคืน" แทนที่จะถูกตีตกอย่างที่ควร (มีเทสต์ล็อกไว้ที่
+     *    FortuneDailyBirthDayIndexTest) · วันเกิดที่ 8 ใช้ตัวด้านล่างแทน
      */
     public static function normalizeBirthDayIndex(mixed $day): ?int
     {
@@ -248,6 +254,29 @@ class FortuneUserCredit extends Model
         $index = (int) $day;
 
         return ($index >= 0 && $index <= 6) ? $index : null;
+    }
+
+    /**
+     * 🌙 (2026-09-05) ค่าที่อ่านจาก **คอลัมน์ของเราเอง** — รับ 7 = พุธกลางคืน (ราหู) ด้วย
+     *
+     * ต่างจาก normalizeBirthDayIndex() ตรงที่ตัวนั้นเป็นด่านดัก dayOfWeekIso ของค่าที่
+     * "อาจมาจากการแปลงวันที่" ส่วนตัวนี้ใช้กับค่าที่ **เราเขียนเองลง `birth_day`**
+     * ซึ่งเขียนจาก 2 ทางเท่านั้น (daily_dm_button / daily_dm_text) จึงไม่มีทางเป็น ISO
+     *
+     * ⚠️ ใช้เฉพาะตอนอ่านคอลัมน์ `fortune_user_credits.birth_day` — ห้ามเอาไปครอบค่า
+     *    ที่ derive มาจาก Carbon
+     */
+    public static function normalizeStoredBirthDayIndex(mixed $day): ?int
+    {
+        if ($day === null || $day === '' || ! is_numeric($day)) {
+            return null;
+        }
+
+        $index = (int) $day;
+
+        return ($index >= 0 && $index <= \App\Services\FortuneChartService::WEDNESDAY_NIGHT)
+            ? $index
+            : null;
     }
 
     /**

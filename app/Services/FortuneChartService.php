@@ -79,6 +79,80 @@ class FortuneChartService
     public const CHAOCHANA_PAIR_RULE = 'ห้ามมีคู่ดาวที่ฝั่งหนึ่งว่ามิตร อีกฝั่งว่าศัตรู';
 
     /**
+     * 🌙 (2026-09-05) ดัชนี "วันเกิดที่ 8" — พุธกลางคืน (ดาวเจ้าเรือน = ราหู)
+     *
+     * ตำราไทยมีดาว 8 ดวง และ "วันพุธ" แบ่งเป็น 2 ดาว:
+     *   พุธกลางวัน (ย่ำรุ่ง–ย่ำค่ำ) = พุธ · พุธกลางคืน (ย่ำค่ำ–ย่ำรุ่ง) = **ราหู**
+     * โหรจริงตรวจข้อนี้เป็นข้อแรก ๆ ของคนเกิดวันพุธ — เพจโฆษณาว่า "โหราศาสตร์ไทย
+     * หลักเจ้าชนะ" แล้วมีแค่ 7 วันเกิด = จุดที่โดนจับได้ง่ายที่สุด
+     *
+     * ⚠️ **จงใจไม่ใส่เป็นแถวที่ 7 ของ CHAOCHANA** — ตารางนั้นถูกวนทั้งใบอยู่หลายที่
+     *    (`ThaiAstrologyService::rahuRulerProfile()` อนุมานมิตร/ศัตรูของราหูจากมัน,
+     *     `ChaochanaConsistencyTest` เทียบทีละแถวกับอีก 2 ตารางในระบบ) การยัดราหู
+     *    เข้าไปจะทำให้ราหูกลายเป็นมิตร/ศัตรูของตัวเอง และเทียบกับ
+     *    `getPlanetByDayOfWeek(7)` ที่ไม่มีจริง ⇒ แยกเป็นค่าคงที่ต่างหาก แล้วเข้าถึง
+     *    ผ่าน `chaochanaFor()` จุดเดียว
+     */
+    public const WEDNESDAY_NIGHT = 7;
+
+    /**
+     * 🌙 แถวเจ้าชนะของคนเกิด "พุธกลางคืน" (ราหู)
+     *
+     * 🚫 ไม่แต่งตำราขึ้นใหม่แม้แต่ช่องเดียว — **อนุมานย้อนจาก CHAOCHANA ที่มีอยู่**:
+     *   - วันเสาร์ระบุ `rahu` เป็นมิตร ⇒ ราหูถือเสาร์เป็นมิตร
+     *   - วันอาทิตย์/จันทร์/พุธ/พฤหัสบดี ระบุ `rahu` เป็นศัตรู ⇒ ราหูถือ 4 ดวงนั้นเป็นศัตรู
+     *   - อังคาร/ศุกร์ เงียบทั้งคู่ ⇒ เป็นกลาง (ตำราไม่บังคับให้มิตรภาพตอบแทนกันเสมอ
+     *     ดูกติกาข้อ 2 ของ CHAOCHANA_PAIR_RULE)
+     *   - ธาตุ/สี ← `config/thai_astrology_knowledge.php` ช่อง `planet_meta.ราหู`
+     */
+    public const CHAOCHANA_WEDNESDAY_NIGHT = [
+        'planet' => 'rahu',
+        'friends' => ['saturn'],
+        'enemies' => ['sun', 'moon', 'mercury', 'jupiter'],
+        'element' => 'ลม',
+        'lucky_color' => 'เทา-ตุ่น-รุ้ง-ทอง',
+    ];
+
+    /**
+     * 🧭 ทิศประจำดาว (ทิศทั้ง 8 ตามตำรานพเคราะห์)
+     *
+     * 🚨 (2026-09-05) เดิมตารางนี้ถูกเขียนไว้ **2 ที่ที่ไม่ตรงกัน**:
+     *   `HoroscopeDailyService::LUCKY_DIRECTIONS` บอกอาทิตย์ = ตะวันออก
+     *   `FortuneHoroscopeService::generateLuckyDirection()` บอกอาทิตย์ = ตะวันออกเฉียงเหนือ
+     * ⇒ ลูกค้าที่อ่านโพสกับที่อ่านในแชทได้คนละทิศ (แผลตระกูลเดียวกับ CHAOCHANA)
+     *   ชุดนี้ยึดตามมาตรฐาน (อาทิตย์=บูรพา จันทร์=พายัพ อังคาร=ทักษิณ พุธ=อุดร
+     *   พฤหัสบดี=อีสาน ศุกร์=อาคเนย์ เสาร์=ประจิม ราหู=หรดี) ซึ่งตรงกับชุดของ
+     *   HoroscopeDailyService เดิมทุกช่อง แค่เติมราหูที่ขาดไป
+     */
+    public const LUCKY_DIRECTIONS = [
+        'sun' => 'ตะวันออก',
+        'moon' => 'ตะวันตกเฉียงเหนือ',
+        'mars' => 'ใต้',
+        'mercury' => 'เหนือ',
+        'jupiter' => 'ตะวันออกเฉียงเหนือ',
+        'venus' => 'ตะวันออกเฉียงใต้',
+        'saturn' => 'ตะวันตก',
+        'rahu' => 'ตะวันตกเฉียงใต้',
+    ];
+
+    /**
+     * แถวเจ้าชนะของดัชนีวันเกิด — รองรับวันที่ 8 (พุธกลางคืน)
+     *
+     * ⚠️ ทุกจุดที่รับดัชนีวันเกิดจากภายนอกต้องเรียกตัวนี้ **ห้ามแตะ CHAOCHANA ตรง ๆ**
+     *    ไม่งั้น index 7 จะได้ null เงียบ ๆ แล้วตกไป brief เปล่า
+     *
+     * @param  int  $dayIndex  0=อาทิตย์ … 6=เสาร์ · 7=พุธกลางคืน
+     */
+    public static function chaochanaFor(int $dayIndex): ?array
+    {
+        if ($dayIndex === self::WEDNESDAY_NIGHT) {
+            return self::CHAOCHANA_WEDNESDAY_NIGHT;
+        }
+
+        return self::CHAOCHANA[$dayIndex] ?? null;
+    }
+
+    /**
      * สร้าง birth chart จากวันเกิด
      *
      * @param  string  $birthDate  วันเกิด (Y-m-d)
@@ -267,7 +341,8 @@ class FortuneChartService
         $positions = array_fill(1, 12, []);
 
         // ดาวเจ้าชนะอยู่ภพตนุ (1) เสมอ
-        $chaochana = self::CHAOCHANA[$dayOfWeek];
+        // 🌙 ผ่าน chaochanaFor() — รองรับ index 7 (พุธกลางคืน = ราหู) ที่ไม่มีใน CHAOCHANA
+        $chaochana = self::chaochanaFor($dayOfWeek) ?? self::CHAOCHANA[0];
         $mainPlanetKey = $chaochana['planet'];
         $positions[1][] = $mainPlanetKey;
 

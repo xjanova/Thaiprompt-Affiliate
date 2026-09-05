@@ -44,8 +44,13 @@ class DailyAstroBrief
         ['angle' => 180, 'orb' => 8, 'name' => 'เล็ง',     'nature' => 'ดึงกันคนละทาง'],
     ];
 
-    /** ชื่อวันในสัปดาห์ index 0=อาทิตย์ … 6=เสาร์ */
-    private const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    /**
+     * ชื่อวันในสัปดาห์ index 0=อาทิตย์ … 6=เสาร์
+     *
+     * 🌙 (2026-09-05) index 7 = "พุธกลางคืน" — วันเกิดที่ 8 ตามตำราไทย
+     *    ดาวเจ้าเรือนคือราหู ไม่ใช่พุธ (ดู FortuneChartService::WEDNESDAY_NIGHT)
+     */
+    private const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
 
     /**
      * 🚨 กฎเหล็กท้าย prompt — บังคับให้ทำนายจากข้อเท็จจริงชุดที่ให้ไปเท่านั้น
@@ -112,7 +117,7 @@ class DailyAstroBrief
     /**
      * ประกอบข้อเท็จจริงของคนเกิดวัน $birthDay สำหรับวันที่ $date
      *
-     * @param  int  $birthDay  0=อาทิตย์ … 6=เสาร์
+     * @param  int  $birthDay  0=อาทิตย์ … 6=เสาร์ · 7=พุธกลางคืน (ราหู)
      * @return array{
      *   ok: bool, day_name: string, thai_date: string,
      *   lord: array, day_lord: array, friends: array, enemies: array,
@@ -126,7 +131,8 @@ class DailyAstroBrief
             // (จันทร์เดินเร็วสุด ~13°/วัน ใช้เที่ยงจึงคลาดจากขอบวันไม่เกินครึ่งราศี)
             $positions = (new PlanetEphemeris)->positions($date->copy()->setTime(12, 0));
 
-            $chaochana = FortuneChartService::CHAOCHANA[$birthDay] ?? null;
+            // 🌙 ผ่าน chaochanaFor() เสมอ — index 7 (พุธกลางคืน) ไม่มีใน CHAOCHANA
+            $chaochana = FortuneChartService::chaochanaFor($birthDay);
             if ($chaochana === null) {
                 return $this->emptyBrief($birthDay, $date);
             }

@@ -852,7 +852,8 @@ class FacebookWebhookController extends Controller
     {
         $dayIndex = (int) substr($payload, -1);
 
-        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        // 🌙 index 7 = พุธกลางคืน (ราหู) — ยังไม่มีปุ่มของตัวเอง แต่รับไว้เผื่อ payload มา
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
 
         if (! isset($dayNames[$dayIndex])) {
             return;
@@ -885,7 +886,7 @@ class FacebookWebhookController extends Controller
      */
     protected function handleDailyShowMine(string $senderId, ?string $askBirthdayMessage = null): void
     {
-        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
 
         try {
             $dayIndex = \App\Models\FortuneUserCredit::findBirthDayIndex($senderId, 'facebook');
@@ -6210,13 +6211,16 @@ class FacebookWebhookController extends Controller
             'INVITE_SNOOZE_7D' => $this->handleInviteSnooze($senderId),
             'INVITE_OPTOUT' => $this->handleInviteOptOut($senderId),
 
-            // 🌙 (2026-07-31) โหมด daily — ปุ่ม 7 วันเกิด (DAILY_BDAY_0..6)
+            // 🌙 (2026-07-31) โหมด daily — ปุ่มวันเกิด (DAILY_BDAY_0..7)
             //   ทางหลักของโหมดนี้: ไม่ต้องพึ่ง parser เลย และการกดปุ่มเปิดหน้าต่าง 24 ชม.
             //   ให้เอง → ส่งคำทำนายเต็มกลับได้ทันที
             //   ⚠️ ต้องมี case ที่นี่ ไม่งั้น default จะส่ง payload ดิบเป็น "ข้อความลูกค้า"
             //      เข้า processMessage แล้วบอทตอบมั่ว
+            //   🌙 (2026-09-05) _7 = พุธกลางคืน (ราหู) — เพิ่มปุ่มแล้วต้องเพิ่ม case ที่นี่ด้วย
+            //      ไม่งั้นปุ่มใหม่ตายทันทีแบบเงียบ ๆ ([[rule_feature_built_but_never_wired]])
             'DAILY_BDAY_0', 'DAILY_BDAY_1', 'DAILY_BDAY_2', 'DAILY_BDAY_3',
-            'DAILY_BDAY_4', 'DAILY_BDAY_5', 'DAILY_BDAY_6' => $this->handleDailyBirthdayPick($senderId, $payload),
+            'DAILY_BDAY_4', 'DAILY_BDAY_5', 'DAILY_BDAY_6',
+            'DAILY_BDAY_7' => $this->handleDailyBirthdayPick($senderId, $payload),
 
             // 🔔 (2026-07-31) คนที่เรารู้วันเกิดแล้วกด "ดูดวงวันนี้เลย"
             'DAILY_SHOW_MINE' => $this->handleDailyShowMine($senderId),

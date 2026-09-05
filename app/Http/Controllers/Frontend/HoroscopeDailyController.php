@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
-use App\Models\FortuneTellingSetting;
 use App\Models\HoroscopeDailyPrediction;
 use App\Models\HoroscopeZodiacSign;
+use App\Services\Fortune\DailyArticleMirror;
 use App\Services\FortuneChartService;
 use App\Services\HoroscopeDailyService;
 use Illuminate\Http\Request;
@@ -20,9 +20,6 @@ use Illuminate\Http\Request;
  */
 class HoroscopeDailyController extends Controller
 {
-    /**
-     * @var HoroscopeDailyService
-     */
     protected HoroscopeDailyService $dailyService;
 
     /**
@@ -36,7 +33,6 @@ class HoroscopeDailyController extends Controller
     /**
      * หน้าหลักดวงรายวัน — แสดง 12 ราศี + 7 วันเกิด
      *
-     * @param Request $request
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -82,7 +78,7 @@ class HoroscopeDailyController extends Controller
     /**
      * หน้ารายละเอียดดวงราศี
      *
-     * @param string $slug slug ของราศี เช่น 'aries'
+     * @param  string  $slug  slug ของราศี เช่น 'aries'
      * @return \Illuminate\View\View
      */
     public function showZodiac(string $slug)
@@ -121,13 +117,13 @@ class HoroscopeDailyController extends Controller
     /**
      * หน้ารายละเอียดดวงตามวันเกิด
      *
-     * @param int $day วันเกิด 0-6
+     * @param  int  $day  วันเกิด 0-6
      * @return \Illuminate\View\View
      */
     public function showBirthDay(int $day)
     {
-        // ตรวจสอบค่า day
-        if ($day < 0 || $day > 6) {
+        // ตรวจสอบค่า day — 7 = พุธกลางคืน (ราหู) วันเกิดที่ 8 ตามตำราไทย
+        if ($day < 0 || $day > FortuneChartService::WEDNESDAY_NIGHT) {
             abort(404, 'ไม่พบข้อมูลวันเกิดนี้');
         }
 
@@ -142,15 +138,15 @@ class HoroscopeDailyController extends Controller
         // ประวัติ 7 วัน
         $history = $this->dailyService->getBirthDayHistory($day, 7);
 
-        // ข้อมูล Chaochana
-        $chaochana = FortuneChartService::CHAOCHANA[$day] ?? [];
+        // ข้อมูล Chaochana — chaochanaFor() รองรับ index 7 (พุธกลางคืน = ราหู)
+        $chaochana = FortuneChartService::chaochanaFor($day) ?? [];
         $planetKey = $chaochana['planet'] ?? 'sun';
         $planet = FortuneChartService::PLANETS[$planetKey] ?? [];
 
-        // ข้อมูลวันเกิด
-        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-        $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
-        $dayColors = ['#ef4444', '#eab308', '#ec4899', '#22c55e', '#f97316', '#06b6d4', '#7c3aed'];
+        // ข้อมูลวันเกิด — index 7 = พุธกลางคืน (วันเกิดที่ 8 ตามตำราไทย)
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
+        $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣', '🌘'];
+        $dayColors = ['#ef4444', '#eab308', '#ec4899', '#22c55e', '#f97316', '#06b6d4', '#7c3aed', '#34495e'];
 
         $birthDayInfo = [
             'day' => $day,
@@ -182,18 +178,20 @@ class HoroscopeDailyController extends Controller
     }
 
     /**
-     * ดึงข้อมูล 7 วันเกิดจาก FortuneChartService
-     *
-     * @return array
+     * ดึงข้อมูลวันเกิดทั้งหมด (7 วัน + พุธกลางคืน) จาก FortuneChartService
      */
     protected function getBirthDayData(): array
     {
-        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-        $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
-        $dayColors = ['#ef4444', '#eab308', '#ec4899', '#22c55e', '#f97316', '#06b6d4', '#7c3aed'];
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
+        $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣', '🌘'];
+        $dayColors = ['#ef4444', '#eab308', '#ec4899', '#22c55e', '#f97316', '#06b6d4', '#7c3aed', '#34495e'];
 
         $birthDays = [];
-        foreach (FortuneChartService::CHAOCHANA as $day => $data) {
+        foreach (DailyArticleMirror::allBirthDays() as $day) {
+            $data = FortuneChartService::chaochanaFor($day);
+            if ($data === null) {
+                continue;
+            }
             $planet = FortuneChartService::PLANETS[$data['planet']] ?? [];
             $birthDays[$day] = [
                 'day' => $day,

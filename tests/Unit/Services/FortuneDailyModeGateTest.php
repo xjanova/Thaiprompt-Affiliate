@@ -134,15 +134,28 @@ class FortuneDailyModeGateTest extends TestCase
     }
 
     /**
-     * ปุ่ม 7 วันเกิด — payload ต้องตรงกับ index และมีครบ 7 ปุ่ม
+     * ปุ่มวันเกิด — payload ต้องตรงกับ index และมีครบ 8 ปุ่ม
+     *
+     * 🌙 (2026-09-05) เพิ่มปุ่มที่ 8 "พุธกลางคืน" (ราหู) — ตำราไทยมี 8 วันเกิด ไม่ใช่ 7
+     *    ปุ่มสุดท้ายต้องเป็น index 7 และป้ายต้องอ่านออกด้วยตัวจับชื่อวัน (เผื่อ payload หาย)
      *
      * @test
      */
-    public function ปุ่มเจ็ดวันเกิดต้องครบและpayloadตรงindex(): void
+    public function ปุ่มแปดวันเกิดต้องครบและpayloadตรงindex(): void
     {
         $buttons = FortuneConversationService::dailyBirthdayQuickReplies();
 
-        $this->assertCount(7, $buttons);
+        $this->assertCount(8, $buttons);
+        $this->assertStringContainsString('พุธกลางคืน', $buttons[7]['title']);
+        $this->assertSame('DAILY_BDAY_7', $buttons[7]['payload']);
+
+        // 🚨 ปุ่มต้องไม่ตาย — ทุก payload ต้องมี case จริงใน handleQuickReply
+        //    (เพิ่มปุ่มแล้วลืม case = ลูกค้ากดแล้ว payload ดิบไหลเข้า processMessage)
+        $controller = file_get_contents(app_path('Http/Controllers/FacebookWebhookController.php'));
+        foreach ($buttons as $btn) {
+            $this->assertStringContainsString("'{$btn['payload']}'", (string) $controller,
+                "payload {$btn['payload']} ไม่มี case รองรับ = ปุ่มตาย");
+        }
 
         foreach ($buttons as $index => $btn) {
             $this->assertSame('DAILY_BDAY_'.$index, $btn['payload']);
@@ -193,7 +206,8 @@ class FortuneDailyModeGateTest extends TestCase
         $m->setAccessible(true);
         $withUpgrade = $m->invoke(null, FortuneConversationService::dailyBirthdayQuickReplies());
 
-        $this->assertCount(8, $withUpgrade);
+        // 8 วันเกิด + ปุ่มอัปเกรด = 9 (ยังอยู่ใต้เพดาน 13 ปุ่มของทั้ง FB และ LINE)
+        $this->assertCount(9, $withUpgrade);
         $this->assertSame($upgrade['payload'], end($withUpgrade)['payload']);
     }
 
@@ -339,13 +353,15 @@ class FortuneDailyModeGateTest extends TestCase
      */
     public function ปุ่มวันเกิดฝั่งlineต้องส่งชื่อวันที่parserอ่านออก(): void
     {
-        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+        // 🌙 index 7 = พุธกลางคืน (ราหู) — ป้ายที่ส่งกลับคือ "วันพุธกลางคืน"
+        //    ซึ่ง parser ต้องอ่านเป็น 7 ไม่ใช่ 3 (คนละดาวเจ้าเรือน)
+        $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
 
         $converted = FortuneConversationService::dailyQuickRepliesForLine(
             FortuneConversationService::dailyBirthdayQuickReplies()
         );
 
-        $this->assertCount(7, $converted);
+        $this->assertCount(8, $converted);
 
         foreach ($converted as $index => $btn) {
             $this->assertSame('วัน'.$dayNames[$index], $btn['text'],

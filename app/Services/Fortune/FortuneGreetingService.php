@@ -229,9 +229,13 @@ class FortuneGreetingService
             return null;
         }
 
+        // 🌙 (2026-09-05) นับจาก **บทความที่มีจริงวันนี้** ไม่ใช่ตัวเลขตายตัว —
+        //    เดิมเขียน "ทั้ง 7 วันเกิด" ไว้ตรง ๆ พอเพิ่มวันเกิดที่ 8 หรือวันไหน generate
+        //    ไม่ครบ ตัวเลขในกล่องจะโกหกลูกค้าทันทีโดยไม่มีใครเห็น
         $header = [
             "🌙 ดวงประจำ{$this->thaiFullDate()}",
-            "ทั้ง 7 วันเกิดค่ะคุณ {$name} — เลื่อนหาวันเกิดของเจ้าชะตาได้เลยนะคะ ✨",
+            'ทั้ง '.$predictions->count()." วันเกิดค่ะคุณ {$name} — เลื่อนหาวันเกิดของเจ้าชะตาได้เลยนะคะ ✨",
+            '(เกิดวันพุธหลังหกโมงเย็นถึงเช้ามืดวันพฤหัสฯ ตำราไทยถือเป็น "พุธกลางคืน" นะคะ)',
             '',
         ];
 
@@ -315,7 +319,7 @@ class FortuneGreetingService
     public function buildDailyBoxForDayIndex(int $dayIndex, string $name): ?array
     {
         try {
-            if ($dayIndex < 0 || $dayIndex > 6) {
+            if ($dayIndex < 0 || $dayIndex > self::MAX_DAY_INDEX) {
                 return null;
             }
 
@@ -628,7 +632,7 @@ class FortuneGreetingService
      */
     protected function findTodayPrediction(int $dayIndex): ?HoroscopeDailyPrediction
     {
-        if ($dayIndex < 0 || $dayIndex > 6) {
+        if ($dayIndex < 0 || $dayIndex > self::MAX_DAY_INDEX) {
             return null;
         }
 
@@ -787,10 +791,18 @@ class FortuneGreetingService
 
     /**
      * ชื่อวัน/อีโมจิ index 0=อาทิตย์ … 6=เสาร์ — ตรงกับคอลัมน์ birth_day
+     *
+     * 🌙 (2026-09-05) index 7 = "พุธกลางคืน" (ราหู) วันเกิดที่ 8 ตามตำราไทย
+     *    ⚠️ index นี้มาจาก **คำที่ลูกค้าพิมพ์เอง** เท่านั้น ("วันพุธกลางคืน")
+     *    ห้ามคำนวณจาก `$birthdate->dayOfWeek` เพราะวันที่ในปฏิทินไม่มีเวลาเกิดติดมาด้วย
+     *    การเดาข้างผิดเปลี่ยนดาวเจ้าเรือนทั้งดวง ([[rule_birth_time_ask_and_parse]])
      */
-    protected const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    protected const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์', 'พุธกลางคืน'];
 
-    protected const DAY_EMOJIS = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
+    protected const DAY_EMOJIS = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣', '🌘'];
+
+    /** ดัชนีวันเกิดสูงสุดที่รับได้ (7 = พุธกลางคืน) */
+    protected const MAX_DAY_INDEX = 7;
 
     /**
      * คำทักทายสำหรับลูกค้าเก่า — มีวันเกิดใน DB
