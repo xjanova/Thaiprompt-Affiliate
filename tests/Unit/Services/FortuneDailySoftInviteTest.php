@@ -249,13 +249,17 @@ class FortuneDailySoftInviteTest extends TestCase
     }
 
     /**
-     * dayIndex นอกช่วง 0-6 (ข้อมูลเพี้ยน) ต้องยังได้ประโยคที่อ่านรู้เรื่อง ไม่ใช่ช่องว่างโหว่
+     * dayIndex นอกช่วง (ข้อมูลเพี้ยน) ต้องยังได้ประโยคที่อ่านรู้เรื่อง ไม่ใช่ช่องว่างโหว่
+     *
+     * 🌙 (2026-09-05) **เอา 7 ออกจากลิสต์ "นอกช่วง" โดยตั้งใจ** — ตอนนี้ 7 = พุธกลางคืน
+     *    (ราหู) ซึ่งเป็นวันเกิดที่ 8 ตามตำราไทย เป็นดัชนีที่ถูกต้องแล้ว
+     *    (เดิมเทสต์นี้ยืม 7 มาเป็นตัวแทน "ข้อมูลเพี้ยน" เพราะตอนนั้นมีแค่ 0-6)
      *
      * @test
      */
     public function วันเกิดนอกช่วงต้องยังอ่านรู้เรื่อง(): void
     {
-        foreach ([-1, 7, 99] as $bad) {
+        foreach ([-1, 8, 99] as $bad) {
             foreach ([true, false] as $knows) {
                 $msg = $this->invite('seed-bad', $bad, $knows);
 
@@ -263,6 +267,24 @@ class FortuneDailySoftInviteTest extends TestCase
                 $this->assertStringContainsString('วันเดียวกัน', $msg, 'ต้องมีสำนวนสำรองแทนชื่อวัน');
                 $this->assertStringNotContainsString('เกิดวันทั้งหมด', $msg, 'ห้ามมีช่องว่างจากชื่อวันที่หายไป');
             }
+        }
+    }
+
+    /**
+     * 🌙 วันเกิดที่ 8 (พุธกลางคืน) ต้องเรียกชื่อวันได้จริง ไม่ตกไปสำนวนสำรอง
+     *
+     * ถ้าใครลืมเติมชื่อวันที่ 8 ในตารางใดตารางหนึ่ง คำชวนจะกลายเป็น "คนเกิดวันเดียวกัน"
+     * ลอย ๆ ซึ่งอ่านรู้เรื่องแต่**กลบความผิดพลาดไว้** — เทสต์นี้จับก่อน
+     *
+     * @test
+     */
+    public function พุธกลางคืนต้องเรียกชื่อวันได้ไม่ตกไปสำนวนสำรอง(): void
+    {
+        foreach ([true, false] as $knows) {
+            $msg = $this->invite('seed-wed-night', \App\Services\FortuneChartService::WEDNESDAY_NIGHT, $knows);
+
+            $this->assertStringContainsString('พุธกลางคืน', $msg);
+            $this->assertStringNotContainsString('วันเดียวกัน', $msg, 'มีชื่อวันแล้วต้องไม่ใช้สำนวนสำรอง');
         }
     }
 }
