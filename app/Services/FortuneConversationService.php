@@ -271,24 +271,6 @@ class FortuneConversationService
     ];
 
     /**
-     * คำที่ไม่เกี่ยวกับดูดวง (off-topic)
-     */
-    protected const OFF_TOPIC_KEYWORDS = [
-        // เขียนโค้ด/โปรแกรม
-        'code', 'โค้ด', 'เขียนโปรแกรม', 'programming', 'javascript', 'python', 'php', 'html', 'css',
-        'function', 'class', 'variable', 'array', 'loop', 'if else', 'database', 'sql', 'api',
-        // คำถามทั่วไป
-        'สูตรอาหาร', 'ทำอาหาร', 'วิธีทำ', 'recipe',
-        'แนะนำร้าน', 'ร้านอาหาร', 'ร้านกาแฟ', 'โรงแรม',
-        'แปลภาษา', 'translate', 'แปลให้หน่อย',
-        'เล่าเรื่อง', 'นิทาน', 'เรื่องผี', 'เรื่องตลก', 'มุก', 'joke',
-        'คำนวณ', 'บวก', 'ลบ', 'คูณ', 'หาร', 'เปอร์เซ็นต์', 'calculate',
-        'ดาวน์โหลด', 'download', 'ลิงค์', 'link', 'url',
-        'hack', 'แฮก', 'crack', 'เจาะระบบ', 'password', 'รหัสผ่าน',
-        'เขียนบทความ', 'เขียนเรียงความ', 'รายงาน', 'การบ้าน', 'homework',
-    ];
-
-    /**
      * ตัวอย่างคำถามดูดวง (แสดงให้ผู้ใช้ดู)
      */
     protected const EXAMPLE_QUESTIONS = [
@@ -13551,79 +13533,6 @@ class FortuneConversationService
     }
 
     /**
-     * ตรวจจับคำถาม off-topic
-     *
-     * @return array ['is_off_topic' => bool, 'category' => string|null]
-     */
-    protected function detectOffTopic(string $text): array
-    {
-        $textLower = mb_strtolower($text);
-
-        // ตรวจสอบ off-topic keywords
-        foreach (self::OFF_TOPIC_KEYWORDS as $keyword) {
-            if (str_contains($textLower, mb_strtolower($keyword))) {
-                // หา category
-                $category = $this->categorizeOffTopic($keyword);
-
-                return [
-                    'is_off_topic' => true,
-                    'category' => $category,
-                ];
-            }
-        }
-
-        // ถ้ายาวพอ แต่ไม่มีคำเกี่ยวกับดูดวงเลย อาจเป็น off-topic
-        if (mb_strlen($text) > 30) {
-            $hasFortuneKeyword = false;
-            foreach (self::FORTUNE_RELATED_KEYWORDS as $keyword) {
-                if (str_contains($textLower, mb_strtolower($keyword))) {
-                    $hasFortuneKeyword = true;
-                    break;
-                }
-            }
-
-            // ถ้าไม่มีคำเกี่ยวกับดูดวง และไม่ใช่คำสั่งพื้นฐาน
-            if (! $hasFortuneKeyword && ! $this->isBasicCommand($text)) {
-                return [
-                    'is_off_topic' => true,
-                    'category' => 'unknown',
-                ];
-            }
-        }
-
-        return [
-            'is_off_topic' => false,
-            'category' => null,
-        ];
-    }
-
-    /**
-     * จัดหมวดหมู่ off-topic
-     */
-    protected function categorizeOffTopic(string $keyword): string
-    {
-        $keywordLower = mb_strtolower($keyword);
-
-        $categories = [
-            'code' => ['code', 'โค้ด', 'programming', 'javascript', 'python', 'php', 'html', 'css', 'function', 'class', 'database', 'sql', 'api'],
-            'food' => ['สูตรอาหาร', 'ทำอาหาร', 'วิธีทำ', 'recipe', 'แนะนำร้าน', 'ร้านอาหาร', 'ร้านกาแฟ'],
-            'translate' => ['แปลภาษา', 'translate', 'แปลให้หน่อย'],
-            'story' => ['เล่าเรื่อง', 'นิทาน', 'เรื่องผี', 'เรื่องตลก', 'มุก', 'joke'],
-            'math' => ['คำนวณ', 'บวก', 'ลบ', 'คูณ', 'หาร', 'เปอร์เซ็นต์', 'calculate'],
-            'hack' => ['hack', 'แฮก', 'crack', 'เจาะระบบ', 'password', 'รหัสผ่าน'],
-            'homework' => ['เขียนบทความ', 'เขียนเรียงความ', 'รายงาน', 'การบ้าน', 'homework'],
-        ];
-
-        foreach ($categories as $category => $keywords) {
-            if (in_array($keywordLower, array_map('mb_strtolower', $keywords))) {
-                return $category;
-            }
-        }
-
-        return 'other';
-    }
-
-    /**
      * ตรวจสอบว่าเป็นคำสั่งพื้นฐานหรือไม่
      */
     protected function isBasicCommand(string $text): bool
@@ -13665,20 +13574,6 @@ class FortuneConversationService
     // ============================================================
     // Pre-Filter Messages - ข้อความตอบกลับสำหรับ filter
     // ============================================================
-
-    /**
-     * ข้อความเมื่อตรวจจับ security threat (prompt injection, AI attack)
-     */
-    protected function getSecurityBlockMessage(): string
-    {
-        return "🙏 ขอบคุณที่ทักมานะคะ\n\n".
-               "หมอจันทราขอตอบเฉพาะเรื่องดูดวงเท่านั้นค่ะ\n\n".
-               "💡 *ตัวอย่างคำถาม*:\n".
-               "• ดวงความรักปีนี้เป็นอย่างไร\n".
-               "• การเงินจะดีขึ้นไหม\n".
-               "• ควรเปลี่ยนงานไหม\n\n".
-               'หมอจันทราพร้อมทำนายให้ 🔮✨';
-    }
 
     /**
      * ข้อความเมื่อโดน rate limit
