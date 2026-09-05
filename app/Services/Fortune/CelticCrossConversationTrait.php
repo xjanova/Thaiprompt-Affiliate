@@ -2902,7 +2902,10 @@ trait CelticCrossConversationTrait
                 ? ($reading->platform_user_id ?: $reading->facebook_user_id)
                 : ($reading->facebook_user_id ?: $reading->platform_user_id);
 
-            if ($dUserId) {
+            // 🛟 (2026-09-05) $settleSec = 0 → เหลือเวลาไม่พอจะรอ (qaClampToRemainingWindow หดจนหมด)
+            //   ⇒ ห้าม buffer ต้องตกไปตอบทันทีข้างล่าง ไม่งั้น job ตื่นมาเจอ "session expired → skip"
+            //   = คำถามของคนที่จ่ายเงินแล้วหายเงียบ (เคส FTU-260905-N3337)
+            if ($dUserId && $settleSec > 0) {
                 // 🔢 (2026-06-23 FIX D fix) carry (both-pick ข้อ 2) → Cache TTL 3 นาที (local var หายเมื่อ silent_skip)
                 //   job อ่านกลับใน finalizeCelticAnswer ด้วย cache()->pull (atomic read+delete) + TTL กัน stale leak ถ้า job หาย
                 if ($carryForwardQuestion !== null && trim((string) $carryForwardQuestion) !== '') {

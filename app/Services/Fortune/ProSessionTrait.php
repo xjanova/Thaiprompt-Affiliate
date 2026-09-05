@@ -1454,7 +1454,10 @@ trait ProSessionTrait
                 $dPlatform = preg_match('/^U[a-f0-9]{32}$/i', $dUserId) ? 'line' : 'facebook';
             }
 
-            if ($dUserId !== '') {
+            // 🛟 (2026-09-05) $settleSec = 0 → เหลือเวลาไม่พอจะรอ (qaClampToRemainingWindow หดจนหมด)
+            //   ⇒ ห้าม buffer ต้องตกไปตอบทันทีข้างล่าง ไม่งั้น job ตื่นมาเจอ session หมดอายุ
+            //   = คำถามของคนที่จ่ายเงินแล้วหายเงียบ (เคส FTU-260905-N3337 ฝั่ง Celtic — เส้นนี้รูเดียวกัน)
+            if ($dUserId !== '' && $settleSec > 0) {
                 app(\App\Services\Fortune\MessageBuffer::class)->append('deep_qa', $dUserId, $messageText);
 
                 // 🛟 (2026-08-21) จดคำถามลง conversation_state ด้วย — buffer อยู่บน Cache (redis DB 1)

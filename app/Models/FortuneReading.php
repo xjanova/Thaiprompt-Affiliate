@@ -3697,4 +3697,51 @@ class FortuneReading extends Model
 
         return (int) ceil(now()->diffInSeconds($deadline, false) / 60);
     }
+
+    /**
+     * ⏳ (2026-09-05) เหลืออีกกี่วินาทีก่อน "บิลนี้จะไม่รับคำถามแล้ว" — รวมทุกเส้นตายที่ใช้อยู่
+     *
+     * ใช้โดย QaSettleTrait::qaClampToRemainingWindow() เพื่อกันเคสที่หน้าต่างรอ (settle-buffer)
+     * ยาวกว่าเวลาที่เหลือ ⇒ พอ job ตื่นมา flush ด่านหมดเวลาตัดทิ้ง คำถามลูกค้าหายเงียบ
+     * (เคสจริง FTU-260905-N3337 — ช้าไป 1 วินาที)
+     *
+     * คืนค่าน้อยที่สุดของเส้นตายที่ "ใช้อยู่จริง" เพราะด่านฝั่ง flush มี 2 ตัวคนละเลน:
+     *   • Celtic 99  → canAskMoreCeltic()      = celtic_first_answered_at + celtic_cross_qa_window_minutes
+     *   • Deep 39    → isProSessionActive()    = pro_session_started_at + pro_session_window_minutes
+     * บิลเดียวติดได้ทั้งสอง (Celtic เปิด ProSession ต่อ) ⇒ ตัวที่หมดก่อนคือตัวที่ตัดจริง
+     *
+     * ⚠️ จงใจ **ไม่** จำลองกลไก "หยุดนาฬิกาเมื่อมีคำถามค้าง" ของ ProSessionTrait —
+     *   ประเมินต่ำไว้ปลอดภัยกว่า: ผลคือหดหน้าต่างรอเร็วไป (ตอบไวขึ้น) ไม่ใช่ทำคำถามหาย
+     *
+     * @return int|null null = ยังไม่มีเส้นตาย (ยังไม่เริ่มจับเวลา) — caller ไม่ต้องหดอะไร
+     */
+    public function qaRemainingSeconds(): ?int
+    {
+        $deadlines = [];
+
+        // เลน Celtic 99 — ประตูเดียวกับ canAskMoreCeltic()
+        if ($this->celtic_first_answered_at) {
+            $settings = FortuneTellingSetting::getSettings();
+            $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
+            $deadlines[] = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
+        }
+
+        // เลน Pro Session (Deep 39 + Celtic หลังบทสรุป) — ประตูเดียวกับ isProSessionActive()
+        //   ไม่มี pro_session_started_at = ยังไม่เริ่มนับ (รอคำถามแรก) → ไม่ใช่เส้นตาย
+        try {
+            $startedAt = $this->getConversationState('pro_session_started_at');
+            if (! empty($startedAt)) {
+                $windowMin = (int) $this->getConversationState('pro_session_window_minutes', 30);
+                $deadlines[] = \Carbon\Carbon::parse($startedAt)->addMinutes($windowMin);
+            }
+        } catch (\Throwable $e) {
+            // non-blocking — อ่าน state ไม่ได้ → ใช้เฉพาะเส้นตายที่เหลือ
+        }
+
+        if ($deadlines === []) {
+            return null;
+        }
+
+        return max(0, (int) now()->diffInSeconds(min($deadlines), false));
+    }
 }

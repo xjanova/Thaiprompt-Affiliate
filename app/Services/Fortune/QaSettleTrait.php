@@ -122,17 +122,86 @@ trait QaSettleTrait
      * ⏱️ หน้าต่างรอที่ควรใช้กับลูกค้ารายนี้
      *
      * @param  int  $baseSec  ค่าพื้นฐานของเส้นนั้น (Celtic / ProSession)
+     * @return int วินาทีที่จะรอ — **0 = ห้าม buffer ให้ตอบทันที** (caller ต้องเช็ค > 0)
      */
     public function qaSettleWindow(FortuneReading $reading, int $baseSec): int
     {
-        if (! $this->qaIsRambling($reading)) {
-            return $baseSec; // ถามข้อเดียวแล้วหยุด → ไวเหมือนเดิม ไม่มี regression
+        $window = $baseSec;
+
+        if ($this->qaIsRambling($reading)) {
+            $ramble = (int) ($this->settings->qa_settle_ramble_seconds ?? 50);
+
+            // ตั้ง 0 = ไม่อยากให้ขยาย → คงพฤติกรรมเดิม
+            $window = $ramble > 0 ? max($baseSec, $ramble) : $baseSec;
         }
 
-        $ramble = (int) ($this->settings->qa_settle_ramble_seconds ?? 50);
+        return $this->qaClampToRemainingWindow($reading, $window);
+    }
 
-        // ตั้ง 0 = ไม่อยากให้ขยาย → คงพฤติกรรมเดิม
-        return $ramble > 0 ? max($baseSec, $ramble) : $baseSec;
+    /**
+     * 🛟 (2026-09-05) หน้าต่างรอต้อง "ยิงทันหน้าต่างคุย" — ไม่งั้นคำถามหายเงียบ
+     *
+     * เคสจริง FTU-260905-N3337 (reading 12386, ปราณี):
+     *   21:37:29  ตอบคำถามที่ 7 · log remaining_min = 2   ⇒ หน้าต่างหมด ~21:39:29
+     *   21:38:37  ลูกค้ากดปุ่มคำถามแนะนำข้อ 2 → settle-buffer 50 วิ (rambling)
+     *   21:39:30  ProcessBufferedCelticMessageJob: session expired → skip   ⇐ ช้าไป 1 วินาที
+     *   ⇒ ลูกค้าจ่าย 99 กดปุ่มที่ *ระบบเสนอเอง* แล้วได้ความเงียบ ไม่มีข้อความบอกว่าทำไม
+     *
+     * ต้นเหตุคือ **นาฬิกาสองตัวไม่คุยกัน** — `settle_sec` (debounce) กับหน้าต่างคุย (`canAskMoreCeltic`
+     * / `isProSessionActive`) · ด่าน "หมดเวลา" อยู่ที่ job ตอน flush ซึ่งสายเกินจะตัดสินใจอะไรได้แล้ว
+     * ⇒ ต้องเช็คตอน **เข้าคิว** ไม่ใช่ตอน flush
+     *
+     * กฎ: เหลือเวลาน้อยกว่าที่จะรอ → **หดหน้าต่าง** ; หดจนไม่เหลือ → คืน 0 = ยิงทันที
+     *   ยอมเสีย debounce ดีกว่าเสียคำถามของคนที่จ่ายเงินมาแล้ว
+     *
+     * ⚠️ ห้ามแก้ด้วยการยืดหน้าต่างคุยเฉย ๆ — คนละปัญหา
+     */
+    protected function qaClampToRemainingWindow(FortuneReading $reading, int $window): int
+    {
+        try {
+            $remaining = $reading->qaRemainingSeconds();
+        } catch (\Throwable $e) {
+            return $window; // อ่านเวลาที่เหลือไม่ได้ → คงพฤติกรรมเดิม (non-blocking)
+        }
+
+        // null = ไม่มีเส้นตายที่รู้จัก (ยังไม่เริ่มจับเวลา / ไม่จำกัด) → ไม่ต้องหด
+        if ($remaining === null) {
+            return $window;
+        }
+
+        // เผื่อเวลาให้ job ตื่น + queue หน่วง — flush ต้องเกิด *ก่อน* เส้นตาย ไม่ใช่พอดีเป๊ะ
+        $usable = $remaining - $this->qaSettleDeadlineGuardSeconds();
+
+        if ($usable >= $window) {
+            return $window; // เวลาเหลือเฟือ → ไม่แตะ
+        }
+
+        $clamped = max(0, $usable);
+
+        \Log::info('QaSettle: หดหน้าต่างรอให้ทันเส้นตายหน้าต่างคุย', [
+            'reading_id' => $reading->id,
+            'window_was' => $window,
+            'window_now' => $clamped,
+            'remaining_sec' => $remaining,
+            'immediate' => $clamped === 0,
+        ]);
+
+        return $clamped;
+    }
+
+    /**
+     * กันชนก่อนเส้นตาย (วินาที) — flush ต้องเกิดก่อนเส้นตาย ไม่ใช่พอดีเป๊ะ
+     *
+     * job dispatch ด้วย delay = window+1 แล้วยังต้องรอ queue ตื่น + job เช็ค isSettled ก่อน flush
+     * 20 วินาทีเผื่อพอสำหรับ worker ที่ยุ่ง โดยไม่กิน debounce ตอนเวลายังเหลือเยอะ
+     * (เวลาเหลือเยอะ = ไม่ถูกหดเลย ดู qaClampToRemainingWindow)
+     *
+     * ⚠️ ต้องเป็นเมธอด **ห้ามเป็น const ใน trait** — const ใน trait ใช้ได้ตั้งแต่ PHP 8.2
+     *    แต่โปรเจกต์นี้รองรับ PHP 8.1 ขึ้นไป
+     */
+    protected function qaSettleDeadlineGuardSeconds(): int
+    {
+        return 20;
     }
 
     /**
