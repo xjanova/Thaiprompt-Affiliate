@@ -66,6 +66,23 @@ TXT;
         $history = Cache::get($this->cacheKey($user->id, $sessionId), []);
         $history[] = ['role' => 'user', 'text' => $text];
 
+        // 🪬 (2026-09-05 owner) ด่านกัน "ใช้แม่หมอเป็น AI ฟรี" — ขอบทสวด/สูตร/แปล/สรุป/เขียนให้
+        //   เลนนี้เข้า chatWithCustomSystemPrompt ซึ่งใช้ร่วมกับน้อง Eve (ผู้ช่วยทั่วไป)
+        //   ⇒ ห้ามใส่ด่านในเมธอดนั้น จะไปตัดงานแปล/สรุปของ Eve — ต้องดักที่ปากทางเลนแม่หมอเอง
+        $scopeHit = \App\Services\Fortune\FortuneScopeGuard::detectExtraction($text);
+        if ($scopeHit !== null) {
+            $reply = \App\Services\Fortune\FortuneScopeGuard::deflect($scopeHit);
+            $history[] = ['role' => 'assistant', 'text' => $reply];
+            $history = array_slice($history, -self::MAX_HISTORY * 2);
+            Cache::put($this->cacheKey($user->id, $sessionId), $history, self::SESSION_TTL_SEC);
+
+            return response()->json(['data' => [
+                'session_id' => $sessionId,
+                'reply' => $reply,
+                'ai_provider' => 'guard',
+            ]]);
+        }
+
         try {
             $ai = new FortuneAIService;
             // Build a flat user message that includes recent history
