@@ -1135,6 +1135,49 @@ class FortuneChannelManager
                     return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
+                // 💚 (2026-09-06) ลูกค้าขอไลน์ — ส่ง QR + ปุ่มเพิ่มเพื่อน
+                //   เดิม action นี้ตกไป default => ข้อความล้วน ลูกค้าต้องก็อปลิงก์เอง
+                //   คนที่แชทอยู่บนคอมยิ่งตัน (กดลิงก์ไม่เด้งเข้าแอป) → ต้องมี QR ให้สแกน
+                'line_add_friend' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    // 1. QR ก่อน — สแกนจากมือถืออีกเครื่องได้ทันที
+                    if (! empty($result['line_qr_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['line_qr_url']);
+                            usleep(500000); // 0.5s ให้ภาพ render ก่อนข้อความ
+                        } catch (\Throwable $e) {
+                            Log::warning('Facebook: ส่ง QR เพิ่มเพื่อน LINE ไม่สำเร็จ', ['err' => $e->getMessage()]);
+                        }
+                    }
+
+                    // 2. ปุ่มกดเดียวเข้า LINE
+                    //   ⚠️ ต้องห่อ attachment/template ให้ครบ — ขาดแล้ว FB ทิ้งกล่องเงียบ
+                    //   (บทเรียนเดิมจาก handleFortuneEarnInfo 2026-08-19)
+                    $lineUrl = $result['line_url'] ?? null;
+                    if ($lineUrl) {
+                        $sent = $fbService->sendButtonTemplate($userId, [
+                            'attachment' => [
+                                'type' => 'template',
+                                'payload' => [
+                                    'template_type' => 'button',
+                                    // FB จำกัด text ของ button template ที่ 640 ตัวอักษร
+                                    'text' => mb_substr($message, 0, 620),
+                                    'buttons' => [
+                                        ['type' => 'web_url', 'title' => '💚 เพิ่มเพื่อน LINE', 'url' => $lineUrl],
+                                        ['type' => 'postback', 'title' => '🔮 ดูดวงต่อ', 'payload' => 'FORTUNE_BASIC'],
+                                    ],
+                                ],
+                            ],
+                        ], $extra);
+
+                        if ($sent) {
+                            return true;
+                        }
+                    }
+
+                    // 3. Fallback — ข้อความล้วน (ลิงก์ + ไอดีอยู่ในข้อความอยู่แล้ว)
+                    return $fbService->sendMessage($userId, $message, $extra);
+                })(),
+
                 // 🌍 (2026-08-23) ลูกค้าต่างประเทศถามเรื่องโอน — แนบปุ่ม "จ่ายบัตร" ถ้าเลนบัตรเปิด
                 //   ⚠️ ก่อนหน้านี้ตกไป default => sendMessage() = quick_replies ถูกทิ้งเงียบ
                 //   ปุ่มสำคัญมากกับเคสนี้: ลูกค้าต่างชาติหลายคน **พิมพ์ไทยไม่ได้**
@@ -3093,6 +3136,22 @@ class FortuneChannelManager
                     $payMsgs[] = ['type' => 'text', 'text' => mb_substr($message, 0, 4900)];
 
                     return $lineService->sendMessagesWithReplyFallback($userId, $payMsgs, $replyToken);
+                })(),
+
+                // 💚 (2026-09-06) ลูกค้าขอไลน์ (ฝั่ง LINE = ขอไว้ส่งต่อให้เพื่อน) — QR + ข้อความ
+                //   💸 reply-first ชุดเดียว (ฟรี) — ห้ามแยก push รูป + push ข้อความ (โควต้า 300/เดือน)
+                'line_add_friend' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $lineMsgs = [];
+                    if (! empty($result['line_qr_url'])) {
+                        try {
+                            $lineMsgs[] = $lineService->imageMessageObject($result['line_qr_url']);
+                        } catch (\Throwable $e) {
+                            Log::warning('LINE: เตรียม QR เพิ่มเพื่อนไม่สำเร็จ', ['err' => $e->getMessage()]);
+                        }
+                    }
+                    $lineMsgs[] = ['type' => 'text', 'text' => mb_substr($message, 0, 4900)];
+
+                    return $lineService->sendMessagesWithReplyFallback($userId, $lineMsgs, $replyToken);
                 })(),
 
                 // 🌍 (2026-08-23) ลูกค้าต่างประเทศถามเรื่องโอน (LINE) — แนบปุ่ม "จ่ายบัตร"

@@ -20459,14 +20459,24 @@ PROMPT;
         }
         $url = 'https://line.me/R/ti/p/'.$basicId;
 
+        // 📷 (2026-09-06) QR เพิ่มเพื่อน LINE OA — ลูกค้าที่เปิดแชทบนคอม/แท็บเล็ต
+        //   กดลิงก์แล้วไม่เด้งเข้าแอป LINE ต้องสแกนจากมือถืออีกเครื่อง
+        //   รูปแบบทางการของ LINE: qr-official.line.me/gs/M_<basic id ไม่มี @>_GW.png
+        //   🛡️ ล้างอักขระแปลกก่อนต่อเข้า URL (ค่ามาจาก setting หลังบ้าน)
+        $qrSlug = preg_replace('/[^A-Za-z0-9_-]/', '', ltrim($basicId, '@'));
+        $qrUrl = $qrSlug !== '' ? 'https://qr-official.line.me/gs/M_'.$qrSlug.'_GW.png' : null;
+
         return [
             'action' => 'line_add_friend',
-            'message' => "💚 *LINE OA แม่หมอจันทรา* 💚\n\n"
-                ."📱 *ID:* {$basicId}\n"
+            // ⚠️ ห้ามครอบด้วย * — FB/LINE ไม่ render markdown ลูกค้าเห็นดอกจันจริงๆ
+            'message' => "💚 LINE OA แม่หมอจันทรา 💚\n\n"
+                ."📱 ไอดี: {$basicId}\n"
                 ."🔗 {$url}\n\n"
-                ."กดลิงก์เพิ่มเพื่อนได้เลยนะคะ ✨\n"
-                .'หรือเปิด LINE → เพิ่มเพื่อน → ค้นหา ID นี้ก็ได้ค่ะ',
+                // 🛡️ ไม่มี QR (basic id เพี้ยน) → ห้ามพูดถึงภาพที่ไม่ได้ส่ง
+                .($qrUrl ? "สแกน QR ในภาพ หรือกดลิงก์เพิ่มเพื่อนได้เลยนะคะ ✨\n" : "กดลิงก์เพิ่มเพื่อนได้เลยนะคะ ✨\n")
+                .'หรือเปิด LINE → เพิ่มเพื่อน → ค้นหาไอดีนี้ก็ได้ค่ะ',
             'line_url' => $url,
+            'line_qr_url' => $qrUrl,
             'line_id' => $basicId,
             'reading' => null,
         ];

@@ -1129,6 +1129,15 @@ trait CelticCrossConversationTrait
             }
         }
 
+        // 💚 (2026-09-06) ลูกค้ารอจ่าย Celtic แต่ถามหาไลน์ — ส่ง QR/ลิงก์ทันที ไม่ปิดบิล
+        //   เดิมด่านนี้มีเฉพาะบิล Deep (handlePendingPayment) → บิล 99 ตกหล่น
+        //   คนที่ถามคาบิลมักอยากย้ายไปคุยทาง LINE ก่อนโอน ถ้าไม่ตอบ = เงียบใส่
+        if (method_exists($this, 'maybePresentLineAddFriend')) {
+            if ($lineInfo = $this->maybePresentLineAddFriend($messageText)) {
+                return $lineInfo;
+            }
+        }
+
         // 💳 (2026-05-14) ลูกค้ารอจ่าย Celtic แต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
         if (method_exists($this, 'maybePresentPaymentInfo')) {
             if ($paymentInfo = $this->maybePresentPaymentInfo($messageText, $reading->facebook_user_id, $reading)) {
