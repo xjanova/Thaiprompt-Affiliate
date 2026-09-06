@@ -282,6 +282,27 @@ class FortuneFlowNudge extends Command
                 if ($ok) {
                     $reading->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
 
+                    // 🛒 (2026-09-06) ต่ออายุความจำ "เรากำลังขายอยู่กับคนนี้" ให้ยาวกว่าตัว reading
+                    //   กล่องนี้ส่งตอนลูกค้าเงียบ แล้วอีก ~27 นาที reading จะถูกปิดเอง (EXIT_AFTER_SEC)
+                    //   ถ้าไม่ต่ออายุ ปุ่มที่เพิ่งส่งจะกลายเป็นปุ่มตายทันทีที่ reading ปิด
+                    //   ⇒ เคสจริง Bunphon r12479: กดปุ่มคุณไสยช้าไป 3 ชม. แล้วบอทปฏิเสธ
+                    //   ⚠️ ต้องอยู่ "หลังส่งสำเร็จ" — ส่งไม่ออก = ลูกค้าไม่เคยเห็นปุ่ม ห้ามติดธง
+                    if ($step === 'tier_choice') {
+                        // ⚠️ เงื่อนไขต้องตรงกับ buildBox() เป๊ะ ๆ — ติดธงแพคเกจที่ไม่ได้ส่งปุ่มไป
+                        //    = รับคำตอบของปุ่มที่ลูกค้าไม่เคยเห็น
+                        $offerTiers = [];
+                        if ($settings->isDeepReadingEnabled()) {
+                            $offerTiers[] = 'deep';
+                        }
+                        if ((bool) ($settings->enable_celtic_cross ?? false)) {
+                            $offerTiers[] = 'celtic';
+                            if ((bool) ($settings->enable_celtic_black_magic_mode ?? true)) {
+                                $offerTiers[] = 'celtic_blackmagic';
+                            }
+                        }
+                        \App\Services\Fortune\FortunePackageOffer::arm($userId, $offerTiers);
+                    }
+
                     // 💳 (2026-06-20) RE-ARM consent flag เมื่อ re-send กล่องกติกา (consent_gate)
                     //   ราก (มุกดา แสนนุภาพ FTU-260620-*): flow-nudge ส่งปุ่ม "พร้อมบูชาครู" ซ้ำ แต่ไม่ได้
                     //   ตั้ง fortune:consent_pending → ถ้า flag เดิมหมดอายุ/หาย ลูกค้ากด "พร้อมบูชาครูแล้ว"
@@ -415,16 +436,26 @@ class FortuneFlowNudge extends Command
                 //    "ดู vip ส่วนตัว 99บาท" = 20 พอดี แต่ถ้าแอดมินขึ้นค่าครูเป็น 3 หลัก (129)
                 //    จะกลายเป็น 21 ตัว → กล่องกระตุ้นตายเงียบทั้งใบบน LINE
                 $celticLabel = mb_substr("ดู vip ส่วนตัว {$celticPrice}บาท", 0, 20);
-                $buttons[] = ['content_type' => 'text', 'title' => $celticLabel, 'text' => 'celtic', 'payload' => 'celtic'];
+                // 🎯 (2026-09-06) payload = โค้ดจริง / text = คำไทย — FB อ่าน payload, LINE อ่าน text
+                //   (FacebookWebhookService::normalizeButtonShape ใช้ payload ก่อน ·
+                //    LineFortuneService::buildQuickReplyItems ใช้ text ก่อน)
+                //   ของเดิมส่ง payload='celtic' → FB ตกเข้า default ของ switch postback = ข้อความดิบ
+                //   → ถ้า reading หมดอายุไปแล้วจะไม่มีด่านไหนรับ (ดูคอมเมนต์ปุ่มคุณไสยด้านล่าง)
+                $buttons[] = ['content_type' => 'text', 'title' => $celticLabel, 'text' => 'celtic', 'payload' => 'TIER_CELTIC_99'];
             }
             // 📦 ครบ 3 ปุ่มพอดี = กล่องเดียวจบ ถ้าอนาคตเพิ่มปุ่มที่ 4 ระบบจะแตกเป็น 2 กล่อง
             //    (2+2) ส่งไปให้ครบเอง — ไม่ตกกลับไปเป็น quick reply แล้ว
             //    (ดู FacebookWebhookService::sendPostbackButtons)
-            // 📌 ส่ง text "ดูคุณไสย" ไม่ใช่ payload TIER_CELTIC_BLACKMAGIC — กล่องนี้ส่งทั้ง FB
-            //    และ LINE ด้วยชุดปุ่มเดียวกัน คำว่า "ดูคุณไสย" เข้าด่าน keyword ใน
-            //    handleTierChoice ได้ทั้งสองช่องทาง (CelticCrossConversationTrait:514)
+            // 🚨 (2026-09-06 · Bunphon r12479) ของเดิมตั้ง payload='ดูคุณไสย' โดยหวังพึ่ง
+            //    ด่าน keyword ใน handleTierChoice — แต่ด่านนั้นรันได้ต่อเมื่อ **ยังมี reading
+            //    สถานะ tier_choice** ส่วนกล่องนี้มีอายุยาวกว่า reading (flow_exit ปิดที่ 30 นาที)
+            //    ⇒ ลูกค้ากดช้า 3 ชม. → FB switch ตกเข้า default → ข้อความดิบ → ไม่มีด่านไหนรับ
+            //      → หล่นเข้าเลนแชทฟรี → กฎ G ตีเป็นเรื่องนอกขอบเขต → **บอทปฏิเสธคนจะจ่าย 99฿**
+            //    แก้ 2 ชั้น: (1) payload = โค้ดจริงให้ FB เข้า case ตรง ๆ
+            //               (2) FortunePackageOffer::arm ตอนส่งสำเร็จ (processReading) รับฝั่ง LINE
+            //                   ที่ส่งกลับมาเป็น text 'ดูคุณไสย' — LINE ไม่มี postback payload
             if ($blackMagicEnabled) {
-                $buttons[] = ['content_type' => 'text', 'title' => "🪬 ดูคุณไสย {$celticPrice}฿", 'text' => 'ดูคุณไสย', 'payload' => 'ดูคุณไสย'];
+                $buttons[] = ['content_type' => 'text', 'title' => "🪬 ดูคุณไสย {$celticPrice}฿", 'text' => 'ดูคุณไสย', 'payload' => 'TIER_CELTIC_BLACKMAGIC'];
             }
 
             $message = "🌙 เลือกได้เลยนะคะ คุณ{$name} — แม่หมอจันทรารออยู่ค่ะ ✨\n\n"

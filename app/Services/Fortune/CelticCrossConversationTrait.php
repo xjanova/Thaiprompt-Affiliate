@@ -422,6 +422,25 @@ trait CelticCrossConversationTrait
             );
         }
 
+        // 🛒 (2026-09-06) จำว่า "เรากำลังขายอยู่กับคนนี้" — อายุยาวกว่าตัว reading
+        //   ราก (Bunphon r12479): reading ปิดเองที่ 30 นาที (flow_exit) แต่ลูกค้ากดปุ่มทีหลัง 3 ชม.
+        //   → ไม่มี reading ให้ handleTierChoice รัน → ข้อความหล่นเข้าเลนแชทฟรี → บอทปฏิเสธ
+        //   ⇒ ธงนี้ผูกกับ *ตัวลูกค้า* ให้ processMessage อ่านคำตอบเป็น "การเลือกแพคเกจ" ได้เสมอ
+        $offerTiers = [];
+        if ($deepEnabled) {
+            $offerTiers[] = 'deep';
+        }
+        if ($celticEnabled) {
+            $offerTiers[] = 'celtic';
+        }
+        if ($blackMagicEnabled) {
+            $offerTiers[] = 'celtic_blackmagic';
+        }
+        \App\Services\Fortune\FortunePackageOffer::arm(
+            (string) ($reading->facebook_user_id ?: $reading->platform_user_id),
+            $offerTiers
+        );
+
         return [
             'action' => 'tier_choice',
             'message' => $message,
@@ -545,7 +564,10 @@ trait CelticCrossConversationTrait
         //   ⚠️ ตรวจก่อน generic Celtic — ปุ่มส่ง text "ดูคุณไสย" ไม่มี "99"/"celtic" ; gate ด้วย setting
         //   ตั้งธง black_magic_mode บน reading (persist) + carrier cache → buildBlackMagicDirective เทเรื่องนี้ 100%
         if ((bool) ($this->settings->enable_celtic_black_magic_mode ?? true)) {
-            $bmKeywords = ['คุณไสย', 'มนต์ดำ', 'มนตร์ดำ', 'ดูคุณไสย', 'tier_celtic_blackmagic', 'blackmagic', 'black_magic'];
+            // 📚 (2026-09-06) คลังคำอยู่ที่ FortunePackageOffer ที่เดียว — ด่านนี้กับด่านระดับบนสุด
+            //   ใน processMessage ต้องรู้จักคำชุดเดียวกันเป๊ะ ๆ ไม่งั้นปุ่มเดียวกันทำงานคนละแบบ
+            //   ตามว่ายังมี reading อยู่ไหม ([[rule_button_path_needs_own_guards]])
+            $bmKeywords = \App\Services\Fortune\FortunePackageOffer::BLACK_MAGIC_KEYWORDS;
             foreach ($bmKeywords as $kw) {
                 if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
                     $bmUserId = $reading->facebook_user_id ?? $reading->platform_user_id;

@@ -1205,6 +1205,70 @@ class FortuneConversationService
                 }
             }
 
+            // ═══════════════════════════════════════════════════════════════
+            // 🛒 (2026-09-06) ตอบกลับ "ปุ่มแพคเกจที่เราเพิ่งยื่นไป" = กำลังเลือกแพคเกจ
+            // ═══════════════════════════════════════════════════════════════
+            //   ราก (owner · Bunphon Saenchawee r12479 FTU-260906-H1143):
+            //   ลูกค้ากด "🪬 ดูคุณไสย 99฿" จากกล่องกระตุ้น ช้าไป 3 ชม. 12 นาที
+            //   ตอนนั้น flow ปิดเองไปแล้ว (flow_exit 30 นาที) → ไม่มี reading สถานะ tier_choice
+            //   → handleTierChoice (ด่านเดียวที่รู้จักคำว่า "คุณไสย") ไม่ถูกเรียก
+            //   → ข้อความหล่นเข้าเลนแชทฟรี → กฎ G ตีเป็นเรื่องนอกขอบเขต → **บอทปฏิเสธคนที่จะจ่าย 99฿**
+            //
+            //   ⚠️ บล็อก '39'/'99' ด้านบนรอดเพราะเป็นตัวเลข — แต่ปุ่มอื่นส่งเป็น *ข้อความ*
+            //      ('celtic' / 'ดูคุณไสย') ⇒ ตายทั้งคู่เมื่อ reading หมดอายุ
+            //      (FortuneFlowNudge · FortuneChannelManager quick reply · LineFortuneService)
+            //
+            //   ปลอดภัยพอจะข้ามไปสร้างบิล เพราะ resolveChoice ยอมเฉพาะเมื่อ:
+            //     1) เรายื่นเมนูให้คนนี้จริง (ธง armed ตอน presentTierChoice/flow-nudge)
+            //     2) แพคเกจที่ตอบมาอยู่ในชุดที่ยื่นไปจริง  3) ข้อความสั้นระดับป้ายปุ่ม (≤40)
+            //   ⇒ ลูกค้าเห็นราคาบนปุ่มไปแล้ว ([[rule_gate_must_not_swallow_customer_text]])
+            if ($forceTier === null) {
+                $offerChoice = \App\Services\Fortune\FortunePackageOffer::resolveChoice($facebookUserId, $messageText);
+
+                if ($offerChoice !== null) {
+                    // 🔒 จ่ายแล้วกำลังทำนายอยู่ = ห้ามแซง ([[rule_paid_bills_always_resume]])
+                    if (! $this->hasPaidActiveReading($facebookUserId)) {
+                        $forceTier = $offerChoice;
+                        Log::info('Fortune: กำลังเลือกแพคเกจ — คำตอบตรงกับปุ่มที่เรายื่นไป (offer-pending)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'tier' => $offerChoice,
+                            'text_preview' => mb_substr($messageText, 0, 40),
+                        ]);
+                    } else {
+                        Log::info('Fortune: ข้าม offer-pending — ลูกค้ามี paid active reading', [
+                            'facebook_user_id' => $facebookUserId,
+                            'tier_request' => $offerChoice,
+                        ]);
+                    }
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // 🪬 (2026-09-06) "ดูคุณไสย" แบบเย็น ๆ (ไม่มีเมนูค้าง ไม่มี flow) → เปิดเมนู ห้ามปฏิเสธ
+            // ═══════════════════════════════════════════════════════════════
+            //   คำนี้คือ **สัญญาณซื้อที่แรงที่สุด** ของแพคเกจ 99฿ — แต่เดิมไม่มีอยู่ใน
+            //   start-keyword ชุดไหนเลย (isFortuneRequest / $startKeywords / $tierKeywords)
+            //   ⇒ หล่นเข้าเลนแชทฟรี แล้วโดนกฎ G ตอบว่า "ไม่ใช่ทางของแม่หมอ" — ทั้งที่เราขายอยู่
+            //
+            //   ⚠️ ที่นี่ให้แค่ "เปิดเมนู" ไม่ใช่เปิดบิล — ต่างจากบล็อก offer-pending ด้านบน
+            //      ตรงที่ลูกค้ายังไม่เคยเห็นราคา ([[rule_hardship_is_not_a_buy_signal]])
+            //   ⚠️ เฉพาะตอน "ไม่มี reading ค้าง" — ถ้ามี flow อยู่ ปล่อยให้ด่านของ flow นั้นจัดการ
+            //      (handleTierChoice จับคำนี้แบบหลวมกว่า และควรได้จัดการก่อน)
+            if ($forceTier === null
+                && (bool) ($this->settings->enable_celtic_cross ?? false)
+                && (bool) ($this->settings->enable_celtic_black_magic_mode ?? true)
+                && \App\Services\Fortune\FortunePackageOffer::matchTier($messageText) === 'celtic_blackmagic'
+                && FortuneReading::findActiveConversation($facebookUserId) === null) {
+                Log::info('Fortune: ขอดูคุณไสยแบบไม่มี flow ค้าง — เปิดเมนูแพคเกจให้ (กันเลนแชทฟรีปฏิเสธ)', [
+                    'facebook_user_id' => $facebookUserId,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                // ส่งเข้าเลน "ดูดวง" ปกติ → presentTierChoice โชว์เมนูที่มีปุ่มคุณไสยอยู่แล้ว
+                // (แนวเดียวกับ postback switch ที่แปลง payload → คีย์เวิร์ดชัดเจน)
+                $messageText = 'ดูดวง';
+            }
+
             // 🪬 (2026-06-24) โหมดคุณไสย์ — FB postback ตั้ง force_tier='celtic_blackmagic'
             //   → ตั้ง carrier flag (buildBlackMagicDirective/doStartCelticCrossFlow อ่าน) แล้ว normalize เป็น 'celtic'
             //     ให้ flow สร้างบิล Celtic 99 ตามปกติ (ราคา/engine เดียวกัน ต่างที่ prompt ล็อกเรื่องคุณไสย์)
