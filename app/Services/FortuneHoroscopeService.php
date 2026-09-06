@@ -7,6 +7,10 @@ use App\Models\FortuneHoroscopeContent;
 use App\Services\AiGen\AiGenProviderFactory;
 use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\DailyAstroBrief;
+// ⚠️ (2026-09-06) ไฟล์นี้อยู่ namespace App\Services แต่คลาสอยู่ App\Services\Fortune
+//    ลืม use = PHP resolve เป็น App\Services\FacebookContentPolicy → fatal ตอน runtime เท่านั้น
+//    (ดวงรายวัน 6 ก.ย. 2569 ตายทั้งวัน 0/7 ใบ — ดู FortuneHoroscopeServiceImportTest)
+use App\Services\Fortune\FacebookContentPolicy;
 use App\Services\Fortune\PlanetEphemeris;
 use Carbon\Carbon;
 use Exception;
@@ -67,7 +71,12 @@ class FortuneHoroscopeService
                 $content = $this->generateForBirthDay($campaign, $targetDate, $birthDay);
                 $contents->push($content);
                 $success++;
-            } catch (Exception $e) {
+                // 🛟 (2026-09-06) ต้องเป็น Throwable ไม่ใช่ Exception — `Error` (class not found,
+                //    TypeError, ArgumentCountError) **ไม่ใช่ลูกของ Exception** จึงหลุดด่านนี้ไปฆ่าทั้งลูป
+                //    เคสจริง 6 ก.ย. 2569: ลืม `use FacebookContentPolicy` → Error ที่ใบแรก (วันอาทิตย์)
+                //    → อีก 6 วันเกิดไม่ถูกสร้างเลย ได้ 0/7 ทั้งที่ควรพังแค่ใบเดียว
+                //    ⇒ ด่านกันรายใบต้องกันของที่ "ไม่คาดคิด" ได้จริง ไม่ใช่แค่ของที่เราตั้งใจโยน
+            } catch (\Throwable $e) {
                 $failed++;
                 Log::error('FortuneHoroscope: สร้างเนื้อหาล้มเหลวสำหรับวัน '.FortuneHoroscopeCampaign::THAI_DAYS[$birthDay], [
                     'campaign_id' => $campaign->id,
@@ -198,7 +207,10 @@ class FortuneHoroscopeService
 
             return $content;
 
-        } catch (Exception $e) {
+            // 🛟 (2026-09-06) Throwable ไม่ใช่ Exception — `Error` หลุดด่านนี้ = แถวค้าง
+            //    สถานะ `generating` ถาวร (ไม่เคย markFailed) มองจากแอดมินเหมือน "กำลังทำอยู่"
+            //    เคสจริง 6 ก.ย. 2569 แถว 736 ค้างตั้งแต่ 00:05:03 ยาว 13 ชม. โดยไม่มีใครรู้
+        } catch (\Throwable $e) {
             $content->markFailed($e->getMessage());
             throw $e;
         }
