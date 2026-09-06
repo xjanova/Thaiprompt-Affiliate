@@ -34,10 +34,10 @@ if [ "$EMERGENCY_DISK_MB" -lt 100 ]; then
 
     # 2. ลบ backups เก่าทั้งหมด (เก็บแค่ 1 ล่าสุด)
     if [ -d "$BACKUP_DIR" ]; then
-        ls -t "$BACKUP_DIR"/*.sql 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
+        ls -t "$BACKUP_DIR"/*.sql* 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
         ls -dt "$BACKUP_DIR"/critical_* 2>/dev/null | tail -n +2 | xargs rm -rf 2>/dev/null
-        ls -t "$BACKUP_DIR"/pre_migration_*.sql 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
-        ls -t "$BACKUP_DIR"/pre_autofix_*.sql 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
+        ls -t "$BACKUP_DIR"/pre_migration_*.sql* 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
+        ls -t "$BACKUP_DIR"/pre_autofix_*.sql* 2>/dev/null | tail -n +2 | xargs rm -f 2>/dev/null
         echo "  ✓ ลบ backups เก่าแล้ว"
     fi
 
@@ -409,16 +409,16 @@ cleanup_old_backups() {
 
     if [ -d "$BACKUP_DIR" ]; then
         # Count total backups before cleanup
-        local total_before=$(find "$BACKUP_DIR" -type f -name "*.sql" -o -type d -name "critical_*" | wc -l)
+        local total_before=$(find "$BACKUP_DIR" -type f -name "*.sql*" -o -type d -name "critical_*" | wc -l)
 
         # Remove SQL backups older than 2 days
-        find "$BACKUP_DIR" -type f -name "*.sql" -mtime +2 -delete 2>/dev/null || true
+        find "$BACKUP_DIR" -type f -name "*.sql*" -mtime +2 -delete 2>/dev/null || true
 
         # Remove critical backup directories older than 2 days
         find "$BACKUP_DIR" -type d -name "critical_*" -mtime +2 -exec rm -rf {} + 2>/dev/null || true
 
         # Count total backups after cleanup
-        local total_after=$(find "$BACKUP_DIR" -type f -name "*.sql" -o -type d -name "critical_*" 2>/dev/null | wc -l)
+        local total_after=$(find "$BACKUP_DIR" -type f -name "*.sql*" -o -type d -name "critical_*" 2>/dev/null | wc -l)
         local deleted=$((total_before - total_after))
 
         if [ $deleted -gt 0 ]; then
@@ -476,6 +476,32 @@ generate_rollback_commands() {
     done < "$history_file"
 }
 
+# 💾 (2026-09-07) dump ฐานข้อมูล — ฟังก์ชันเดียวใช้ทุกจุด (STEP 1 / pre_autofix / pre_migration)
+#   วัดจริง: DB 2.26GB (InnoDB ทั้ง 621 ตาราง) → dump 1.3GB ใช้ 98 วิ
+#   - --single-transaction : snapshot สม่ำเสมอโดยไม่ LOCK TABLES (ของเดิมไม่ใส่ ⇒ lock ทีละตาราง
+#                             ขณะที่ queue worker ยังเขียนอยู่ ได้ dump ที่ไม่สม่ำเสมออยู่ดี)
+#   - --quick              : stream ทีละแถว ไม่โหลดทั้งตาราง (fortune_post_reactions 1GB) เข้า RAM
+#   - บีบ pigz/gzip        : 1.3GB → ~200MB ต่อรอบ ไม่งั้น backups/ ที่ตอนนี้รอด git clean แล้ว
+#                             จะโต ~40GB ใน 3 วัน (deploy ~10 รอบ/วัน × เก็บ 2 วัน)
+#   - MYSQL_PWD            : ไม่โชว์รหัสใน `ps` ตลอด 98 วิ (ของเดิมส่ง -p บน command line)
+#   คืน 0 เฉพาะเมื่อ mysqldump และตัวบีบสำเร็จทั้งคู่ และไฟล์มีขนาด > 0 — ล้มเหลวจะลบไฟล์ครึ่ง ๆ กลาง ๆ ทิ้ง
+#   ใช้: dump_database "/path/to/file.sql.gz"
+dump_database() {
+    local out="$1"
+    local zip="gzip"
+    command -v pigz >/dev/null 2>&1 && zip="pigz"
+
+    MYSQL_PWD="$DB_PASSWORD" mysqldump --single-transaction --quick \
+        -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" 2>/dev/null | "$zip" > "$out"
+    local st=("${PIPESTATUS[@]}")
+
+    if [ "${st[0]}" -eq 0 ] && [ "${st[1]}" -eq 0 ] && [ -s "$out" ]; then
+        return 0
+    fi
+    rm -f "$out" 2>/dev/null
+    return 1
+}
+
 # Backup critical files (PREVENT DATA LOSS!)
 backup_critical_files() {
     local backup_timestamp=$(date +'%Y%m%d_%H%M%S')
@@ -493,8 +519,18 @@ backup_critical_files() {
     #   root cause: APP_ENV=production ทำให้ config:cache โหลด .env.production (your_username) แทน .env
 
     # Backup uploaded files
+    # 🔗 (2026-09-07) hardlink แทน copy จริง — 1.1GB / 7,437 ไฟล์ เคยกิน 43 วิ ทุก deploy
+    #   hardlink = โฟลเดอร์ใหม่ชี้ inode เดิม ⇒ ไฟล์ที่ถูก "ลบ" จากที่เดิมยังอยู่ในนี้ (นั่นคือสิ่งที่ backup นี้กัน)
+    #   ถ้า hardlink ไม่ได้ (คนละ filesystem) ค่อยถอยไป copy จริงแบบเดิม
     if [ -d "storage/app/public" ]; then
-        cp -r storage/app/public "$CRITICAL_BACKUP_DIR/storage_public" 2>/dev/null || true
+        if cp -al storage/app/public "$CRITICAL_BACKUP_DIR/storage_public" 2>/dev/null; then
+            print_success "✓ Backed up uploads (hardlink snapshot)"
+        else
+            rm -rf "$CRITICAL_BACKUP_DIR/storage_public" 2>/dev/null
+            cp -r storage/app/public "$CRITICAL_BACKUP_DIR/storage_public" 2>/dev/null && \
+                print_success "✓ Backed up uploads (full copy)" || \
+                print_warning "⚠ Could not back up uploads (continuing — git clean excludes storage/app/public/* anyway)"
+        fi
     fi
 
     # Backup Google credentials for OCR/KYC (if exists)
@@ -536,10 +572,15 @@ restore_critical_files() {
             fi
 
             # Restore uploaded files
+            # ⚠️ (2026-09-07) เดิมเป็น `cp -r <backup>/storage_public storage/app/public` — ถ้าปลายทางมีอยู่แล้ว
+            #   (ซึ่งมีเสมอ เพราะ git clean exclude storage/app/public/*) cp จะ "ซ้อน" เป็น
+            #   storage/app/public/storage_public/ = ก็อปอัปโหลด 1.1GB ยัดเข้าไปในอัปโหลดจริง แล้วโตทบต้นทุก deploy
+            #   ที่ผ่านมาไม่เคยระเบิดเพราะ git clean ลบ backup ทิ้งก่อนถึงบรรทัดนี้ (ดู -e '/backups' ข้างล่าง)
+            #   แก้: copy "เนื้อใน" แบบ no-clobber — เติมเฉพาะไฟล์ที่หายไป ไม่ทับของใหม่ ไม่ซ้อนโฟลเดอร์
             if [ -d "$backup_path/storage_public" ]; then
-                mkdir -p storage/app
-                cp -r "$backup_path/storage_public" storage/app/public 2>/dev/null || true
-                print_success "✓ Restored uploaded files"
+                mkdir -p storage/app/public
+                cp -an "$backup_path/storage_public/." storage/app/public/ 2>/dev/null || true
+                print_success "✓ Restored uploaded files (missing files only)"
             fi
 
             # Restore Google credentials for OCR/KYC (if exists)
@@ -646,7 +687,7 @@ if [ "$DISK_AVAILABLE_MB" -lt "$MIN_REQUIRED_MB" ]; then
         print_error "ไม่พบ cleanup-disk.sh script"
         echo ""
         print_info "💡 วิธีแก้ไขด้วยตัวเอง:"
-        echo "  1. ลบ backups เก่า: rm -rf backups/*.sql backups/critical_*"
+        echo "  1. ลบ backups เก่า: rm -rf backups/*.sql* backups/critical_*"
         echo "  2. ลบ logs: rm -f storage/logs/*.log"
         echo "  3. ลบ cache: rm -rf storage/framework/cache/data/*"
         echo ""
@@ -726,21 +767,15 @@ cleanup_old_backups
 # Start deployment
 print_header "📦 Deployment Process"
 
-# Step 1: Enable Maintenance Mode
-print_step 1 22 "Enabling Maintenance Mode"
+# ⏱️ (2026-09-07) สลับลำดับ: backup ก่อน แล้วค่อยปิดเว็บ
+#   วัดจาก log จริง (run 34038203235): STEP 1..20 = maintenance 4m50s ทุก deploy
+#   ในนั้น DB dump 98 วิ + copy uploads 43 วิ = 141 วิ ที่เว็บ/webhook FB+LINE ตอบ 503 ทั้งที่ยังไม่ได้แตะโค้ดเลย
+#   dump ใช้ --single-transaction ⇒ snapshot สม่ำเสมอแม้เว็บยังเปิด (ดีกว่าของเดิมที่ dump ตอน worker ยังเขียน)
+#   ⇒ ย้าย 2 step นี้มาก่อน `artisan down` — ไม่ตัดอะไรออก แค่ downtime สั้นลง ~2.5 นาที
 
-# Ensure directories exist before running artisan
-ensure_laravel_directories
-
-php artisan down --retry=60 --render="errors::503" 2>/dev/null || {
-    print_warning "Could not enable maintenance mode (may already be down or need manual intervention)"
-}
-print_success "Maintenance mode enabled"
-sleep 2  # Give time for requests to finish
-
-# Step 2: Backup Database
-print_step 2 22 "Creating Database Backup"
-BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
+# Step 1: Backup Database (ก่อนปิดเว็บ)
+print_step 1 22 "Creating Database Backup"
+BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql.gz"
 
 # Get database info from .env
 DB_CONNECTION=$(grep "^DB_CONNECTION=" .env | cut -d '=' -f2)
@@ -752,33 +787,37 @@ DB_PORT=$(grep "^DB_PORT=" .env | cut -d '=' -f2)
 DB_PORT=${DB_PORT:-3306}  # Default to 3306 if not set
 
 if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
-    if [ -z "$DB_PASSWORD" ]; then
-        mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" > "$BACKUP_FILE" 2>/dev/null || {
-            print_warning "Database backup failed (continuing anyway)"
-        }
-    else
-        mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$BACKUP_FILE" 2>/dev/null || {
-            print_warning "Database backup failed (continuing anyway)"
-        }
-    fi
-
-    if [ -f "$BACKUP_FILE" ]; then
-        print_success "Database backed up to: $BACKUP_FILE"
+    if dump_database "$BACKUP_FILE"; then
+        print_success "Database backed up to: $BACKUP_FILE ($(du -h "$BACKUP_FILE" 2>/dev/null | cut -f1))"
         log "Database backup: $BACKUP_FILE"
+    else
+        print_warning "Database backup failed (continuing anyway)"
     fi
 else
     print_warning "Skipping database backup (mysqldump not available or not MySQL)"
 fi
 
-# Step 3: Get current git commit (for rollback)
+# Get current git commit (for rollback)
 CURRENT_COMMIT=$(git rev-parse HEAD)
 log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
-# Step 3: Backup Critical Files (PREVENT DATA LOSS!)
-print_step 3 22 "Backing up Critical Files (.env, uploads)"
+# Step 2: Backup Critical Files (PREVENT DATA LOSS!) (ก่อนปิดเว็บ)
+print_step 2 22 "Backing up Critical Files (.env, uploads)"
 backup_critical_files
 print_success "Critical files backed up safely"
+
+# Step 3: Enable Maintenance Mode
+print_step 3 22 "Enabling Maintenance Mode"
+
+# Ensure directories exist before running artisan
+ensure_laravel_directories
+
+php artisan down --retry=60 --render="errors::503" 2>/dev/null || {
+    print_warning "Could not enable maintenance mode (may already be down or need manual intervention)"
+}
+print_success "Maintenance mode enabled"
+sleep 2  # Give time for requests to finish
 
 # Step 4: Force Pull Latest Code from GitHub
 print_step 4 22 "Force Syncing with GitHub"
@@ -811,7 +850,19 @@ print_info "Removing untracked files and directories..."
 # 🔐 (2026-07-17) ต้อง exclude 'storage/oauth-*.key' ด้วย — คีย์ signing ของ Passport OAuth
 #   (SSO juntraweb). keys เป็น gitignored (untracked) → -x จะลบทุก deploy ถ้าไม่ exclude
 #   → access/refresh token ทั้งหมด invalid + SSO auto-login พังทุกครั้งที่ deploy. gen ครั้งเดียวด้วย passport:keys แล้วต้องคงอยู่ถาวร
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' || print_warning "Git clean failed (continuing anyway)"
+# 🗑️ (2026-09-07) `-x` = ลบไฟล์ที่ .gitignore ด้วย และ `/backups` อยู่ใน .gitignore ⇒ ที่ผ่านมา git clean ตรงนี้
+#   ลบ DB dump 1.3GB (98 วิ) + snapshot uploads (43 วิ) ที่ STEP 1-2 เพิ่งสร้าง ทิ้งภายใน 49 วิ ทุก deploy
+#   (log จริง: "Removing backups/db_backup_20260906_211622.sql") — บนเครื่องไม่เคยมี db_backup_*.sql เหลือสักไฟล์
+#   และ backups/.deployment_history โดนลบด้วย ⇒ เมนู rollback ว่างเปล่าตลอด
+#   - 'backups/'                : backup ต้องรอดไปถึงตอนที่ต้องใช้ (มี cleanup_old_backups เก็บแค่ 2 วันอยู่แล้ว)
+#   - 'vendor/' + checksum      : vendor เป็น gitignored ⇒ โดนลบทุกรอบแล้ว composer install ใหม่ 138MB (19 วิ ใน maintenance)
+#                                 เก็บไว้ให้ smart_composer_install ข้ามได้จริงเมื่อ composer.lock ไม่เปลี่ยน
+#                                 (composer install กับ vendor ที่มีอยู่ = วิธีมาตรฐาน: เพิ่ม/ลบ/อัปเฉพาะที่ต่างจาก lock)
+#   ⚠️ pattern ต้องเป็น 'backups/' ไม่ใช่ '/backups' — ทดสอบแล้ว: แบบมี / นำหน้า ทำงานบน git 2.34 (prod) แต่
+#      ไม่ทำงานบน git 2.53 ⇒ ถ้าวันหนึ่ง apt upgrade git แบบ anchored จะกลับไปลบ backup เงียบ ๆ อีก
+#   ตั้งใจ *ไม่* exclude storage/logs — LOG_CHANNEL=stack(single) ไม่มี rotation ถ้าเก็บไว้ไฟล์โตไม่มีเพดาน
+#   (ถ้าจะเก็บ log ข้าม deploy ให้ตั้ง LOG_CHANNEL=daily ใน .env ก่อน แล้วค่อยเติม -e 'storage/logs')
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -1111,17 +1162,12 @@ else
 
     # Backup database before auto-repair
     print_info "→ Creating safety backup before auto-repair..."
-    SCHEMA_BACKUP="$BACKUP_DIR/pre_autofix_$(date +'%Y%m%d_%H%M%S').sql"
+    SCHEMA_BACKUP="$BACKUP_DIR/pre_autofix_$(date +'%Y%m%d_%H%M%S').sql.gz"
     if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
-        if [ -z "$DB_PASSWORD" ]; then
-            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
-                print_warning "Backup failed (continuing anyway)"
-        else
-            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
-                print_warning "Backup failed (continuing anyway)"
-        fi
-        if [ -f "$SCHEMA_BACKUP" ]; then
+        if dump_database "$SCHEMA_BACKUP"; then
             print_success "✓ Schema backed up: $SCHEMA_BACKUP"
+        else
+            print_warning "Backup failed (continuing anyway)"
         fi
     fi
     echo ""
@@ -1168,8 +1214,15 @@ php artisan migrate:status 2>/dev/null | tail -15 || true
 echo ""
 
 # Step 10.5: Check for pending migrations
-PENDING_COUNT=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
-TOTAL_MIGRATIONS=$(php artisan migrate:status 2>/dev/null | grep -c "migration" || echo "0")
+# 🐛 (2026-09-07) เดิมเป็น `grep -c ... || echo "0"` — grep -c พิมพ์ "0" อยู่แล้วแต่ exit 1 เมื่อไม่เจอ
+#   ⇒ `|| echo "0"` พิมพ์ซ้ำ ได้ค่า "0\n0" ซึ่ง != "0" ⇒ deploy **ทุกรอบ** เข้า branch "มี migration ค้าง"
+#   ⇒ dump DB ซ้ำอีก 51 วิ + รัน migrate:smart ทั้งที่ไม่มีอะไรค้าง
+#   (log จริงโชว์เป็น "⚠ Found 0" บรรทัดหนึ่ง แล้ว "0 pending migration(s) - Will apply now" อีกบรรทัด)
+#   grep -c บน input ว่างก็พิมพ์ 0 อยู่แล้ว จึงไม่ต้อง fallback; ${VAR:-0} กันกรณีไม่มี output เลย
+PENDING_COUNT=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending")
+PENDING_COUNT=${PENDING_COUNT:-0}
+TOTAL_MIGRATIONS=$(php artisan migrate:status 2>/dev/null | grep -c "migration")
+TOTAL_MIGRATIONS=${TOTAL_MIGRATIONS:-0}
 
 print_info "→ Migration Analysis:"
 echo "  • Total migrations: $TOTAL_MIGRATIONS"
@@ -1292,18 +1345,22 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     echo ""
 
     # Backup database schema before migration
+    # 💾 (2026-09-07) ใช้ dump ของ STEP 1 ซ้ำถ้ามี — ตั้งแต่ dump จนถึงตรงนี้เว็บปิดอยู่ (maintenance)
+    #   เขียน DB ได้แค่ queue worker ⇒ ต่างกันไม่กี่แถว ไม่คุ้ม dump 1.3GB ซ้ำอีก 51 วิ ใน maintenance
+    #   (ของเดิมเรียกว่า "schema backup" แต่จริง ๆ คือ full dump ก้อนเดียวกันเป๊ะ)
+    #   ถ้า STEP 1 dump ไม่สำเร็จ ค่อย dump ใหม่ตรงนี้ — ก่อน migrate ต้องมี backup เสมอ
     print_info "→ Backing up database schema..."
-    MIGRATION_BACKUP="$BACKUP_DIR/pre_migration_$(date +'%Y%m%d_%H%M%S').sql"
-    if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
-        if [ -z "$DB_PASSWORD" ]; then
-            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
+    if [ -n "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
+        MIGRATION_BACKUP="$BACKUP_FILE"
+        print_success "✓ Reusing STEP 1 backup: $MIGRATION_BACKUP"
+    else
+        MIGRATION_BACKUP="$BACKUP_DIR/pre_migration_$(date +'%Y%m%d_%H%M%S').sql.gz"
+        if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
+            if dump_database "$MIGRATION_BACKUP"; then
+                print_success "✓ Schema backed up: $MIGRATION_BACKUP"
+            else
                 print_warning "Schema backup failed (continuing anyway)"
-        else
-            mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
-                print_warning "Schema backup failed (continuing anyway)"
-        fi
-        if [ -f "$MIGRATION_BACKUP" ]; then
-            print_success "✓ Schema backed up: $MIGRATION_BACKUP"
+            fi
         fi
     fi
     echo ""
@@ -1342,7 +1399,7 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
             print_warning "→ Rollback information:"
             echo "  • Backup file: $MIGRATION_BACKUP"
             echo "  • Rollback command: php artisan migrate:rollback"
-            echo "  • Restore DB: mysql -u $DB_USERNAME -p $DB_DATABASE < $MIGRATION_BACKUP"
+            echo "  • Restore DB: zcat $MIGRATION_BACKUP | mysql -u $DB_USERNAME -p $DB_DATABASE"
             echo ""
             print_info "💡 Manual Fix:"
             echo "  1. Check migration status: php artisan migrate:status"
@@ -1376,11 +1433,13 @@ echo ""
 
 # Step 10.9: Verify migration integrity
 print_info "→ Verifying database integrity..."
-MIGRATED_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+MIGRATED_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran")
+MIGRATED_COUNT=${MIGRATED_COUNT:-0}
 echo "  • Successfully migrated: $MIGRATED_COUNT migrations"
 
 if [ "$PENDING_COUNT" != "0" ]; then
-    NEW_PENDING=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
+    NEW_PENDING=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending")
+    NEW_PENDING=${NEW_PENDING:-0}
     if [ "$NEW_PENDING" = "0" ]; then
         print_success "✓ All migrations completed successfully!"
     else
@@ -1686,8 +1745,9 @@ fi
 
 # Set proper permissions
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
-find storage -type f -exec chmod 664 {} \; 2>/dev/null || true
-find bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null || true
+# ⚡ (2026-09-07) `{} +` แทน `{} \;` — ของเดิม fork chmod ทีละไฟล์ 9,132 ครั้ง = 17 วิ ใน maintenance
+find storage -type f -exec chmod 664 {} + 2>/dev/null || true
+find bootstrap/cache -type f -exec chmod 664 {} + 2>/dev/null || true
 
 # Set ownership if web server user is detected
 if [ -n "$WEB_USER" ]; then
@@ -2146,7 +2206,7 @@ echo ""
 echo "🔄 What was deployed:"
 echo "  ✓ Code synced from GitHub (forced)"
 echo "  ✓ Environment variables synced (.env updated)"
-echo "  ✓ Dependencies reinstalled (clean)"
+echo "  ✓ Dependencies synced (composer install เฉพาะเมื่อ composer.lock เปลี่ยน)"
 echo "  ✓ Laravel Sanctum installed/updated"
 echo "  ✓ Database migrations applied"
 echo "  ✓ All caches regenerated"
