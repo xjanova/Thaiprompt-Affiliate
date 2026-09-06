@@ -923,6 +923,9 @@ G) **ห้ามเป็นผู้ช่วยความรู้ทั่
                     'mode' => $mode,
                     'before_len' => mb_strlen($cleaned),
                     'after_len' => mb_strlen($chantCheck['text']),
+                    // (2026-09-06 FTU-260906-V4421) ต้องเห็น "ตัดอะไรออก" ในบรรทัดเดียว —
+                    //   รอบก่อนต้อง reproduce เองกว่าจะรู้ว่ามันไปกินข้อความเตือนโอนเงิน
+                    'removed' => mb_substr((string) ($chantCheck['removed'] ?? ''), 0, 120),
                 ]);
                 $cleaned = $chantCheck['text'];
                 $result['chant_stripped'] = true;

@@ -303,6 +303,20 @@ class FortuneScopeGuard
     ];
 
     /**
+     * ⚠️ (2026-09-06 FTU-260906-V4421) **ท้าย** ก้อนคำที่แปลว่า "นี่คือภาษาไทย ไม่ใช่บาลี"
+     *
+     * ลิสต์ข้างบนเทียบแบบ exact ⇒ กันได้แค่ `ค่ะ`/`นะ` ที่ยืนเดี่ยว ๆ
+     * แต่ token ที่นับจริงคือ "ก้อนที่คั่นด้วยช่องว่าง" และภาษาไทยไม่เว้นวรรคระหว่างคำ
+     * ⇒ ของจริงที่โผล่มาคือ `นะคะ` / `เลยค่ะ` / `ให้ค่ะ` / `ทันทีค่ะ` ซึ่งไม่เคยตรงลิสต์นั้นเลย
+     */
+    protected const PALI_LOOKALIKE_SUFFIXES = [
+        'คะ', 'ค่ะ', 'คับ', 'ครับ', 'คร้าบ', 'จ้ะ', 'จ๊ะ', 'จ้า', 'ฮะ',
+        'นะ', 'น่ะ', 'ละ', 'ล่ะ', 'สิ', 'เถอะ', 'เนอะ', 'เนาะ', 'ไหม', 'มั้ย',
+        'ยัง', 'พระ', 'เหตุ', 'ภูมิ', 'ระยะ', 'เวลา', 'ปัญหา', 'ศรัทธา', 'เมตตา',
+        'กรุณา', 'ปัญญา', 'วาสนา', 'สมาธิ', 'บารมี', 'เพราะ', 'ธุระ', 'กะ', 'อะ',
+    ];
+
+    /**
      * ตัดตัวบทสวด/คาถาออกจากคำตอบ AI
      *
      * ⚠️ (จับผี #3) **ตัดเป็น "ช่วง" ไม่ใช่ทั้งบรรทัด** —
@@ -316,16 +330,17 @@ class FortuneScopeGuard
      *    ([[rule_must_gate_no_foreign_emoji_in_spec]])
      *
      * @param  string  $reply  คำตอบจาก AI
-     * @return array{text: string, stripped: bool} ข้อความที่ล้างแล้ว + เจอบทสวดไหม
+     * @return array{text: string, stripped: bool, removed: string} ข้อความที่ล้างแล้ว + เจอบทสวดไหม + ท่อนแรกที่ตัดออก
      */
     public static function stripChantText(string $reply): array
     {
         if (trim($reply) === '') {
-            return ['text' => $reply, 'stripped' => false];
+            return ['text' => $reply, 'stripped' => false, 'removed' => ''];
         }
 
         $lines = preg_split('/\R/u', $reply) ?: [];
         $stripped = false;
+        $removed = '';
         $out = [];
 
         foreach ($lines as $line) {
@@ -337,17 +352,32 @@ class FortuneScopeGuard
             }
 
             $stripped = true;
+            // เก็บท่อนแรกที่ตัดออกไว้ลง log — วันที่ด่านจับผิด จะได้รู้ทันทีว่ามันไปกินอะไรมา
+            if ($removed === '') {
+                $removed = trim(mb_substr($line, mb_strlen($cut)));
+            }
             if (trim($cut) !== '') {
                 $out[] = $cut;   // เก็บหัวข้อ/เนื้อความก่อนหน้าบทสวดไว้
             }
         }
 
         if (! $stripped) {
-            return ['text' => $reply, 'stripped' => false];
+            return ['text' => $reply, 'stripped' => false, 'removed' => ''];
         }
 
         $text = preg_replace("/\n{3,}/u", "\n\n", implode("\n", $out)) ?? implode("\n", $out);
         $text = trim($text);
+
+        // 🩹 (2026-09-06 FTU-260906-V4421) **ห้ามส่งหมายเหตุลอย ๆ จากการ "เดา"**
+        //    เคสจริง: ข้อความเตือนโอนเงินของ SendBillReminderJob ("...นะคะ ...ค่ะ" ×4)
+        //    ถูกฮิวริสติกความหนาแน่นนับเป็นบาลีทั้งใบ → ตัดหมด → ลูกค้าที่กำลังจะโอน
+        //    ได้ข้อความเรื่องบทสวดที่เขาไม่เคยถาม แทนคำเตือนจ่ายเงิน (บิล FTU-260906-V4421)
+        //    ⇒ ถ้าตัดจนไม่เหลืออะไรเลย **และ** ไม่มีคำเปิดบทที่รู้จักแน่ = ฮิวริสติกจับผิด
+        //      คืนของเดิมไปเลย ยอมปล่อยหลุดดีกว่ากลืนข้อความคนจ่ายเงิน
+        //      (เจตนา fail-open เดียวกับด่าน input — [[rule_gate_must_not_swallow_customer_text]])
+        if ($text === '' && ! self::containsKnownMarker($reply)) {
+            return ['text' => $reply, 'stripped' => false, 'removed' => ''];
+        }
 
         // ❌ ห้ามมีอีโมจิในหมายเหตุ — จะไปหลอกด่าน must ของ Celtic
         $notice = '(บทสวดเต็ม ๆ แม่หมอไม่ท่องให้ผ่านตัวหนังสือนะลูก '
@@ -356,6 +386,7 @@ class FortuneScopeGuard
         return [
             'text' => $text === '' ? $notice : $text."\n\n".$notice,
             'stripped' => true,
+            'removed' => $removed,
         ];
     }
 
@@ -402,7 +433,32 @@ class FortuneScopeGuard
     }
 
     /**
-     * หา offset ของพยางค์บาลีตัวแรก เมื่อบรรทัดนี้มีพยางค์บาลี ≥4 คำ
+     * มีคำเปิดบทที่ "รู้จักแน่" อยู่ในข้อความไหม (ไม่ใช่เดาจากความหนาแน่น)
+     */
+    protected static function containsKnownMarker(string $text): bool
+    {
+        $lower = mb_strtolower($text);
+        foreach (self::CHANT_MARKERS as $marker) {
+            if (mb_strpos($lower, mb_strtolower($marker)) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * หา offset ของพยางค์บาลีตัวแรก เมื่อบรรทัดนี้ "หนาแน่นพอ" ว่าเป็นตัวบทจริง
+     *
+     * ⚠️ (2026-09-06 FTU-260906-V4421) ของเดิมดูแค่ "ตัวท้ายของ token" แล้วนับให้ครบ 4 —
+     *    แต่ token = ก้อนที่คั่นด้วยช่องว่าง และ **ภาษาไทยไม่เว้นวรรคระหว่างคำ**
+     *    ⇒ 1 token = 1 *วลี* และวลีสุภาพของแม่หมอลงท้าย `นะคะ` / `เลยค่ะ` / `ให้ค่ะ`
+     *      ซึ่งลงท้ายด้วย `ะ` ทุกตัว ⇒ ประโยคเตือนโอนเงินธรรมดา = ครบ 4 = เด้ง
+     *    ⇒ เพิ่ม 3 ด่าน:
+     *      1. มีวรรณยุกต์/ทัณฑฆาต (U+0E48–U+0E4C) = ไทยแท้ บาลีถอดเสียงไม่ใช้
+     *      2. ลงท้ายด้วยคำลงท้ายไทย (คะ/ค่ะ/สิ/นะ/ยัง…) = ไม่นับ
+     *      3. ต้องเป็น **สัดส่วน ≥60%** ของคำไทยในบรรทัด ไม่ใช่แค่นับให้ครบ 4
+     *        (คำบาลี 4 คำที่ปนอยู่ในประโยคไทยยาว ๆ ไม่ใช่ "ตัวบท")
      *
      * @return int|null null = ไม่หนาแน่นพอ
      */
@@ -416,6 +472,7 @@ class FortuneScopeGuard
             return null;
         }
 
+        $thaiWords = 0;
         $paliCount = 0;
         $firstOffsetBytes = null;
 
@@ -424,10 +481,21 @@ class FortuneScopeGuard
             if ($token === '' || mb_strlen($token) < 2) {
                 continue;
             }
+            if (! preg_match('/^[\p{Thai}]+$/u', $token)) {
+                continue;
+            }
+
+            // ตัวหารของสัดส่วน — นับคำไทย "ทุกคำ" ก่อนคัดออก
+            $thaiWords++;
+
             if (in_array($token, self::PALI_LOOKALIKE_STOPWORDS, true)) {
                 continue;
             }
-            if (! preg_match('/^[\p{Thai}]+$/u', $token)) {
+            // บาลีถอดเสียงไทยไม่ใช้วรรณยุกต์/ทัณฑฆาต — เจอเมื่อไหร่คือคำไทยแท้
+            if (preg_match('/[\x{0E48}-\x{0E4C}]/u', $token)) {
+                continue;
+            }
+            if (self::endsWithThaiParticle($token)) {
                 continue;
             }
             if (preg_match('/(ะ|ัง|ุง|โต|โน|โส|ตุ|มิ|สิ|นัง|ตัง|ยะ|วา|ตี|นโต)$/u', $token)) {
@@ -441,8 +509,27 @@ class FortuneScopeGuard
         if ($paliCount < 4 || $firstOffsetBytes === null) {
             return null;
         }
+        if ($thaiWords > 0 && ($paliCount / $thaiWords) < 0.6) {
+            return null;
+        }
 
         // แปลง byte offset → character offset (mb_substr ใช้หน่วยตัวอักษร)
         return mb_strlen(substr($line, 0, $firstOffsetBytes));
+    }
+
+    /**
+     * ก้อนคำนี้ลงท้ายด้วยคำลงท้าย/คำช่วยภาษาไทยไหม
+     *
+     * กัน `นะคะ` / `เลยค่ะ` / `ดูสิ` ถูกนับเป็นพยางค์บาลีเพราะบังเอิญลงท้ายด้วย `ะ`
+     */
+    protected static function endsWithThaiParticle(string $token): bool
+    {
+        foreach (self::PALI_LOOKALIKE_SUFFIXES as $suffix) {
+            if (mb_substr($token, -mb_strlen($suffix)) === $suffix) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
