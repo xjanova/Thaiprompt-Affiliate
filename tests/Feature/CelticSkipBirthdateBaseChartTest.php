@@ -220,23 +220,69 @@ class CelticSkipBirthdateBaseChartTest extends TestCase
     }
 
     /**
-     * ❌ ครบ 2 ครั้งแล้วยังอ่านวันเกิดไม่ออก + มีเนื้อความ → ยังเป็นเจตนาเดิม (A3):
-     *    ส่งข้อความนั้นเข้า askQuestion เป็นคำถามจริง (ไม่ทิ้งให้พิมพ์ใหม่)
+     * 🃏 ครบ 2 ครั้งแล้วยังอ่านวันเกิดไม่ออก → ต้องได้ทั้ง **พื้นดวง + คำถามของลูกค้า**
      *
-     * ล็อกไว้ให้ชัดว่าเส้นนี้ *ไม่ได้* ถูกเปลี่ยนไปด้วย — เส้นนี้ลูกค้าไม่เคยขอข้าม
-     * (ยังเป็นช่องที่พื้นดวงเปิดตัวหาย แต่เป็นคนละอาการกับบั๊กที่แก้รอบนี้)
+     * คนกลุ่มนี้ *ไม่ได้ขอข้าม* — พยายามบอกวันเกิดแล้วระบบอ่านไม่ออกเอง
+     * (prod 8 มิ.ย.–6 ก.ย. 2569: 27 ใบจาก 85 ใบที่ไม่ได้พื้นดวง มาจากเส้นนี้)
+     *
+     * ⚠️ ห้ามลดของเดิม: ก่อนหน้านี้ข้อความนั้นถูกเอาไปตอบเป็นคำถามจริง — ต้องยังได้ตอบอยู่
      */
-    public function test_two_failed_attempts_with_text_still_carries_it_as_question(): void
+    public function test_two_failed_attempts_with_text_gets_base_chart_and_keeps_question(): void
     {
-        $result = $this->step('อืมมม จำไม่แน่ใจ', 1);
+        $result = $this->step('เจ้าหนี้เขาไม่ยอมค่ะ เขาจะเอาให้ครบ 63,000 บาทค่ะ', 1);
 
         $this->assertIsString($result, 'ครบ 2 ครั้งต้องไหลเข้า askQuestion ไม่ทิ้งข้อความลูกค้า');
-        $this->assertStringNotContainsString(
-            self::BASE_CHART,
+        $this->assertStringContainsString(self::BASE_CHART, $result, 'ต้องได้พื้นดวงเปิดตัวด้วย');
+        $this->assertStringContainsString(
+            'เจ้าหนี้เขาไม่ยอม',
             $result,
-            'เส้น carry ยังไม่แนบพื้นดวง — ถ้าจะเปลี่ยนต้องตั้งใจแก้ พร้อมอัปเดตเทสต์นี้'
+            'ข้อความเดิมที่เคยถูกตอบเป็นคำถาม ต้องยังอยู่ในคำถาม (ห้ามลดของที่ลูกค้าเคยได้)'
         );
-        $this->assertStringContainsString('อืมมม จำไม่แน่ใจ', $result);
+        $this->assertTrue((bool) $this->lastReading->getConversationState('celtic_base_chart'));
+    }
+
+    /**
+     * 🎂 ข้อความที่หน้าตาเป็น "ความพยายามบอกวันเกิด" → ห้ามยัดเป็นคำถาม
+     *
+     * ยัดเข้าไปจะได้คำถามประหลาด `คำถามคือ "เกิดธันวาคม2512"` — ตัวนี้ถูก park เป็นบริบทอยู่แล้ว
+     * เคสจริง: r12359 (FTU-260905-Y4174) "เกิดธันวาคม2512" · r9467 "19.10.2503" · r7145 "วันจันทร"
+     */
+    public function test_failed_birthdate_text_is_not_carried_as_question(): void
+    {
+        // ทุกสตริงมาจาก fortune_celtic_questions บน prod จริง (r12359 · r9467 · r8641 · r7145 · r6391)
+        //   + '[IMAGE_ATTACHED]' รูปเปล่าไม่มีคำบรรยาย (r7804 · r11055)
+        foreach (['เกิดธันวาคม2512', '19.10.2503', '10 25', 'วันจันทร', 'ของลูก8สิงหาคมปีกุน2514ค่ะ', '[IMAGE_ATTACHED]'] as $text) {
+            $result = $this->step($text, 1);
+
+            $this->assertIsString($result);
+            $this->assertStringContainsString(self::BASE_CHART, $result, "\"{$text}\" ต้องยังได้พื้นดวง");
+            $this->assertSame(
+                self::BASE_CHART,
+                trim($result),
+                "\"{$text}\" หน้าตาเป็นวันเกิด → ห้ามต่อท้ายเป็นคำถาม (park เป็นบริบทแทน)"
+            );
+        }
+    }
+
+    /** ตัวแยกแยะ "วันเกิดที่อ่านไม่ออก" ห้ามกินคำถามจริงที่มีตัวเลขปน */
+    public function test_birthdate_detector_does_not_eat_real_questions(): void
+    {
+        $method = new ReflectionMethod($this->subject, 'looksLikeFailedBirthdateAttempt');
+        $method->setAccessible(true);
+
+        $questions = [
+            'เจ้าหนี้เขาไม่ยอมค่ะ เขาจะเอาให้ครบ 63,000 บาทค่ะ',
+            'การเงิน',
+            'ปี 2570 จะได้ทำงานต่อไหมคะ',      // มีปี พ.ศ. แต่เป็นคำถาม
+            'เกิดวันจันทร์ ดูเรื่องงานให้หน่อย',  // มีวันในสัปดาห์ แต่ขอให้ดู
+        ];
+        foreach ($questions as $q) {
+            $this->assertFalse($method->invoke($this->subject, $q), "\"{$q}\" ต้องไม่ถูกมองเป็นวันเกิด");
+        }
+
+        foreach (['เกิดธันวาคม2512', '19.10.2503', '2518', 'วันจันทร', '03/04/2532'] as $bd) {
+            $this->assertTrue($method->invoke($this->subject, $bd), "\"{$bd}\" ต้องถูกมองเป็นวันเกิด");
+        }
     }
 
     /** ปุ่มค้าง/คำตอบรับ ("พร้อม") ยังต้องถูกย้ำขอวันเกิด ไม่ใช่กลายเป็นข้าม (กันบั๊ก reading 11055 กลับมา) */
