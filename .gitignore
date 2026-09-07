@@ -63,6 +63,11 @@ plptdb-firebase-adminsdk-*.json
 #   (stash -u เอาเฉพาะ untracked ที่ไม่ถูก ignore) ⇒ STEP 10 เห็น "New seeders: 140" ตลอดกาล
 #   และตัวจับ seeder ที่ถูกแก้จริงก็ไม่มีวันทำงาน · คู่กับ -e '.seeder_checksums' ใน git clean
 .seeder_checksums/
+# (2026-09-07) symlink ไปคลังสลิปที่อยู่นอก git tree (deploy.sh STEP 4.5.1 สร้างใหม่ทุกรอบ)
+#   ต้อง ignore ด้วยเหตุผลเดียวกับบรรทัดบน — `git stash push -u` ที่ STEP 4.1 กวาด untracked
+#   ที่ไม่ถูก ignore ทั้งหมด สองตัวนี้คือของที่เหลืออยู่ ทำให้ stash ยิงทุก deploy ไม่หยุด
+#   จนกอง 2,046 ก้อนและดัน .git ไป 1.9GB (ล้างแล้ว 2026-09-07 เหลือ 129MB)
+storage/app/fortune
 /backups
 *.backup
 
