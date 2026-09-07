@@ -46,6 +46,24 @@ trait ProSessionTrait
     public const PRO_SESSION_EXIT_CONFIRM_SECONDS = 60;
 
     /**
+     * 🤫 (2026-09-07, owner) ลูกค้าพิมพ์ฟิลเลอร์ล้วน ("ค่ะ" / "คะ" / "👍") ติดกันกี่ครั้ง
+     *   ถึงจะถามว่า "หยุดใช่ไหมคะ"
+     *
+     * ทำไมต้อง 2 ไม่ใช่ 1: "ค่ะ" ครั้งแรกมักแปลว่า **"เอาค่ะ"** — ตอบรับคำถามที่แม่หมอ
+     *   เพิ่งถามท้ายคำตอบ ("อยากให้แม่หมอขยายเรื่องงานต่อไหมคะ") ⇒ ต้องให้ AI ตอบตามปกติ
+     *   ครั้งที่ 2 ติดกันโดยไม่มีเนื้อความเลย = ไม่มีสัญญาณคุยต่อแล้วจริง
+     */
+    public const PRO_SESSION_IDLE_ASK_AFTER = 2;
+
+    /**
+     * 🤫 (2026-09-07) อายุคำถาม "หยุดใช่ไหมคะ" — ตอบฟิลเลอร์กลับมาในกรอบนี้ = ยืนยันจบ
+     *
+     * ยาวกว่า PRO_SESSION_EXIT_CONFIRM_SECONDS (60 วิ) เพราะเคสจริง (FTU-260907-C5731)
+     *   ลูกค้าพิมพ์ "คะ" ห่างกัน 50–60 วินาที ⇒ 60 วิ สั้นเกินจนด่านหมดอายุก่อนทุกรอบ
+     */
+    public const PRO_SESSION_IDLE_ASK_TTL = 900;
+
+    /**
      * 🛟 (2026-08-21) เพดานจำนวนคำถามค้างที่จดไว้ใน conversation_state
      *   ลูกค้ารัวเกินนี้ = เอาก้อนท้ายสุด (คำถามล่าสุดคือสิ่งที่เขาอยากรู้จริง)
      */
@@ -267,6 +285,9 @@ trait ProSessionTrait
     {
         $reading->setConversationState('pro_session_active', false);
         $reading->setConversationState('pro_session_pending_exit', false);
+        // 🤫 (2026-09-07) ล้างตัวนับฟิลเลอร์ด้วย — ไม่งั้นรอบใหม่เริ่มมาพร้อม streak ค้างจากรอบเก่า
+        $reading->setConversationState('pro_session_idle_streak', 0);
+        $reading->setConversationState('pro_session_idle_ask_at', null);
         // 🛟 (2026-08-21) ปิด session = ไม่มีคำถามค้างให้กู้แล้ว — กันคำถามเก่าโผล่มาตอบข้ามวัน
         $this->clearPendingProSessionQuestion($reading);
     }
@@ -757,6 +778,222 @@ trait ProSessionTrait
         }
 
         return false;
+    }
+
+    /**
+     * 🤫 (2026-09-07, owner) ข้อความนี้ "ไม่มีเนื้อความ" เลยหรือเปล่า
+     *
+     * owner: *"ถ้าผู้ใช้พิมพ์ ค่ะ ค่ะ ไปเรื่อยๆ ให้ถามว่าหยุดใช่ไหม และจบการสนทนา
+     *          ฉลาดพอจะรู้ว่าไม่มีสัญญาณในการคุยแล้ว"*
+     *
+     * เคสจริง FTU-260907-C5731 (LINE · Celtic 99 · ช่วงคุยต่อหลังบทสรุป):
+     *   ลูกค้าพิมพ์ "คะ" เปล่า ๆ 5 ครั้งติด 10:44–10:47 → บอทยิง AI ตอบครบ 5 ครั้ง
+     *   (`action=pro_session_answer` ทุกรอบ) ทั้งที่ไม่มีคำถามสักคำ = จ่ายค่า token ให้ความเงียบ
+     *
+     * วิธีตัดสิน: ยืมตัว normalize กลาง (`normalizeUserInput`) ที่ตัดอีโมจิ + คำลงท้ายสุภาพอยู่แล้ว
+     *   "ค่ะ" / "คะ" / "ครับ" / "จ้า" / "👍" → เหลือ '' ⇒ ฟิลเลอร์
+     *   ที่เหลือเทียบ **แบบเป๊ะทั้งคำ** กับ whitelist สั้น ๆ เท่านั้น
+     *
+     * ⚠️ ห้ามเทียบแบบ substring เด็ดขาด — คำไทยพยางค์เดียวฝังอยู่ในคำอื่นเต็มไปหมด
+     *    ("ได้" อยู่ใน "ได้ยินว่า...", "เค" อยู่ใน "เคยรักกัน") ⇒ กับดักเดียวกับ "เหมาะ"/"หมา"
+     * ⚠️ มี marker คำถามเมื่อไหร่ = ยังมีสัญญาณคุย ห้ามนับเป็นฟิลเลอร์
+     */
+    protected function looksLikeContentFreeFiller(string $text): bool
+    {
+        $raw = trim($text);
+
+        // ยาวเกิน = มีเนื้อความแน่นอน (เผื่อ normalize ตัดพลาด)
+        if ($raw === '' || mb_strlen($raw) > 24) {
+            return false;
+        }
+
+        if (str_contains($raw, '?') || str_contains($raw, '？')) {
+            return false;
+        }
+
+        foreach ([
+            'ไหม', 'มั้ย', 'มัย', 'เหรอ', 'หรอ', 'รึ', 'เมื่อไหร่', 'เมื่อไร',
+            'ทำไม', 'อะไร', 'ยังไง', 'อย่างไร', 'ที่ไหน', 'ใคร', 'กี่', 'เท่าไหร่', 'เท่าไร',
+        ] as $qm) {
+            if (mb_stripos($raw, $qm) !== false) {
+                return false;
+            }
+        }
+
+        // normalize ตัดคำลงท้ายให้แค่ 2 รอบ — ลูกค้าพิมพ์ซ้อน ("ค่ะค่ะค่ะ") ต้องวนจนนิ่ง
+        $core = $this->normalizeUserInput($raw);
+        for ($i = 0; $i < 6 && $core !== ''; $i++) {
+            $next = $this->normalizeUserInput($core);
+            if ($next === $core) {
+                break;
+            }
+            $core = $next;
+        }
+
+        // เหลือแต่คำลงท้ายสุภาพ/อีโมจิล้วน = ฟิลเลอร์ชัดเจน
+        if ($core === '') {
+            return true;
+        }
+
+        // เสียงรับรู้สั้น ๆ ที่ normalize ตัดไม่ได้ — เทียบเป๊ะทั้งคำเท่านั้น
+        $ackWords = [
+            'อืม', 'อืมม', 'อืมมม', 'อื้ม', 'อึม', 'อือ', 'อ่อ', 'อ๋อ', 'อ้อ', 'ออ',
+            'โอเค', 'โอเคร', 'โอ', 'เค', 'ok', 'okay', 'oke', 'okey', 'k', 'kk',
+            'ได้', 'ได้เลย', 'รับทราบ', 'ทราบ', 'เข้าใจ', 'เข้าใจแล้ว',
+            '555', '5555', '55555', 'ๆ',
+        ];
+
+        return in_array($core, $ackWords, true) || in_array(str_replace(' ', '', $core), $ackWords, true);
+    }
+
+    /**
+     * 🤫 (2026-09-07) กล่องถาม "หยุดใช่ไหมคะ" — สคริปต์ล้วน ไม่ผ่าน AI (ฟรี + ไม่มีทางล่ม)
+     *
+     * ต้องบอกทางออกทั้งสองทางในกล่องเดียว ไม่งั้นลูกค้าที่ยังอยากคุยจะไม่รู้ว่าพิมพ์อะไรถึงจะอยู่ต่อ
+     */
+    protected function buildProSessionIdleStopAskMessage(FortuneReading $reading): string
+    {
+        $name = $reading->resolveCustomerName();
+
+        return "🌙 *แม่หมอขอถามเจ้าชะตาหน่อยนะคะ คุณ{$name}* 🙏\n\n"
+            ."แม่หมอเห็นว่าเจ้าชะตายังไม่มีเรื่องอยากถามเพิ่มแล้ว\n"
+            ."*จะให้แม่หมอเก็บไพ่ปิดวงตรงนี้เลยไหมคะ?*\n\n"
+            ."──────────────────────\n"
+            ."✅ *ถ้าพอแล้ว* — ตอบกลับมาสั้น ๆ ได้เลย แม่หมอจะกล่าวลาและอวยพรให้\n"
+            .'💬 *ถ้ายังมีเรื่องค้างใจ* — พิมพ์คำถามมาได้เลยค่ะ แม่หมอรอฟังอยู่ ✨';
+    }
+
+    /**
+     * 🤫 (2026-09-07, owner) ด่าน "ไม่มีสัญญาณคุยต่อแล้ว" — ฟิลเลอร์ซ้ำ → ถาม → จบ
+     *
+     * ลำดับ:
+     *   1. ข้อความมีเนื้อความ → ล้างตัวนับ คืน null (ปล่อยให้ AI ตอบตามปกติ)
+     *   2. ฟิลเลอร์ + เคยถาม "หยุดใช่ไหม" ไว้แล้ว (ในกรอบ TTL) → **จบการสนทนา**
+     *   3. ฟิลเลอร์ครบ PRO_SESSION_IDLE_ASK_AFTER ครั้งติด → ถาม "หยุดใช่ไหมคะ"
+     *   4. ฟิลเลอร์ครั้งแรก → คืน null (อาจเป็น "เอาค่ะ" ตอบรับคำถามที่แม่หมอเพิ่งถาม)
+     *
+     * ⚠️ ต้องถูกเรียก **หลัง** settle-buffer (จุด 3c) เท่านั้น — ไม่งั้นนับซ้ำ 2 รอบต่อ 1 ข้อความ
+     *    (เส้นตรงจาก webhook ครั้งหนึ่ง + เส้น ProcessBufferedProSessionMessageJob อีกครั้งหนึ่ง)
+     *
+     * ⚠️ กล่องที่คืนไปใช้ action เดิม (`pro_session_exit_confirm` / `pro_session_closed` /
+     *    `celtic_session_ended`) — **ห้ามประดิษฐ์ action ใหม่** เพราะ LINE arm ที่ไม่รู้จัก action
+     *    จะตกไป default = แปะปุ่ม "🔮 ดูดวง" ท้ายกล่องกลางเซสชันที่ลูกค้าจ่ายเงินแล้ว
+     *
+     * @return array|null array = จัดการแล้ว (คืนให้ caller ส่งเลย), null = ปล่อยไหลไป AI
+     */
+    protected function handleProSessionIdleFillerGate(FortuneReading $reading, string $messageText): ?array
+    {
+        $streak = (int) $reading->getConversationState('pro_session_idle_streak', 0);
+
+        // เคยถาม "หยุดใช่ไหมคะ" ค้างอยู่ไหม (และยังไม่หมดอายุ)
+        $askPending = false;
+        $askedAt = $reading->getConversationState('pro_session_idle_ask_at');
+        if (! empty($askedAt)) {
+            try {
+                // 🩹 Carbon 3 — absolute=true เสมอ
+                $askPending = (int) Carbon::parse($askedAt)->diffInSeconds(now(), true) <= self::PRO_SESSION_IDLE_ASK_TTL;
+            } catch (\Throwable $e) {
+                $askPending = false;
+            }
+        }
+
+        // ── 1. มีเนื้อความจริง = ยังคุยอยู่ → ล้างตัวนับแล้วปล่อยผ่าน
+        if (! $this->looksLikeContentFreeFiller($messageText)) {
+            if ($streak > 0 || $askPending || ! empty($askedAt)) {
+                $reading->setConversationState('pro_session_idle_streak', 0);
+                $reading->setConversationState('pro_session_idle_ask_at', null);
+            }
+
+            return null;
+        }
+
+        // ── 2. ถามไปแล้วว่าหยุดไหม แล้วยังได้แต่ฟิลเลอร์กลับมา = ยืนยันว่าไม่มีอะไรจะคุยแล้ว
+        if ($askPending) {
+            Log::info('Fortune ProSession: ไม่มีสัญญาณคุยต่อ (ฟิลเลอร์หลังถามหยุด) → ปิดการสนทนา', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 24),
+            ]);
+
+            return $this->closeProSessionConfirmed($reading, 'idle_no_signal');
+        }
+
+        // ── 3/4. นับฟิลเลอร์ติดกัน
+        $streak++;
+        $reading->setConversationState('pro_session_idle_streak', $streak);
+
+        if ($streak < self::PRO_SESSION_IDLE_ASK_AFTER) {
+            // ครั้งแรก — "ค่ะ" อาจแปลว่า "เอาค่ะ" ตอบรับคำถามท้ายคำตอบของแม่หมอ ⇒ ให้ AI ตอบต่อ
+            return null;
+        }
+
+        $reading->setConversationState('pro_session_idle_ask_at', now()->toIso8601String());
+
+        // เปิดด่านยืนยันเดิมควบไปด้วย — ลูกค้าพิมพ์ "ใช่/ปิด/ok" จะถูกปิดโดย logic เดิมที่ข้อ 1
+        $reading->setConversationState('pro_session_pending_exit', true);
+        $reading->setConversationState('pro_session_pending_exit_at', now()->toIso8601String());
+
+        Log::info('Fortune ProSession: ฟิลเลอร์ซ้ำ → ถามว่าจะหยุดไหม', [
+            'reading_id' => $reading->id,
+            'streak' => $streak,
+            'text_preview' => mb_substr($messageText, 0, 24),
+        ]);
+
+        return [
+            'action' => 'pro_session_exit_confirm',
+            'message' => $this->buildProSessionIdleStopAskMessage($reading),
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🔚 ปิด Pro Session แบบ "ลูกค้ายืนยันแล้ว" — จุดเดียวที่รวมทุกเส้นทางปิด
+     *
+     * แยกออกมาจาก handleProSession ข้อ 1 (2026-09-07) เพราะมี caller เพิ่มอีกทาง (ด่านฟิลเลอร์)
+     *
+     * 🤝 ถ้าอยู่ในช่วง "คุยต่อหลังบทสรุป" ของ Celtic 99 → ส่งต่อให้ closeCelticAftercare
+     *    เพื่อให้ได้ **คำอวยพรส่งท้าย** + ธง celtic_aftercare_farewelled + คำชวนรีวิว
+     *    (ถ้าปิดด้วยข้อความ Pro Session ธรรมดา ธงจะไม่ถูกตั้ง → cron aftercare มาอวยพรซ้ำอีกกล่อง)
+     *
+     * @param  string  $reason  confirmed | idle_no_signal
+     */
+    protected function closeProSessionConfirmed(FortuneReading $reading, string $reason = 'confirmed'): array
+    {
+        $reading->setConversationState('pro_session_idle_streak', 0);
+        $reading->setConversationState('pro_session_idle_ask_at', null);
+
+        if ((string) $reading->getConversationState('pro_session_type', 'deep') === 'celtic'
+            && method_exists($this, 'isInCelticAftercare')
+            && method_exists($this, 'closeCelticAftercare')
+            && $this->isInCelticAftercare($reading)) {
+            $aftercare = $this->closeCelticAftercare($reading, 'customer_farewell');
+            if ($aftercare !== null) {
+                return $aftercare;
+            }
+        }
+
+        $closingMessage = $this->buildProSessionClosingMessage($reading);
+        $this->clearProSessionFlags($reading);
+        // 🌙 (2026-06-08) กัน Deep 39 cron ส่ง "หมดเวลา" ซ้ำ หลังลูกค้าปิด session เอง (deep-only path)
+        $reading->setConversationState('pro_session_timeout_notified', true);
+
+        // ถ้ายังอยู่ใน Celtic state — เคลียร์ status ให้เป็น COMPLETED ด้วย
+        if (in_array($reading->conversation_status, [
+            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            FortuneReading::STATUS_CELTIC_QA_PROMPT,
+        ], true)) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+        }
+
+        Log::info('Fortune ProSession: ปิด session', [
+            'reading_id' => $reading->id,
+            'reason' => $reason,
+        ]);
+
+        return [
+            'action' => 'pro_session_closed',
+            'message' => $closingMessage,
+            'reading' => $reading,
+        ];
     }
 
     /**
@@ -1334,28 +1571,7 @@ trait ProSessionTrait
 
             if ($pendingValid && $this->isProSessionExitConfirmed($messageText)) {
                 // ✅ Confirmed → ปิด session
-                $closingMessage = $this->buildProSessionClosingMessage($reading);
-                $this->clearProSessionFlags($reading);
-                // 🌙 (2026-06-08) กัน Deep 39 cron ส่ง "หมดเวลา" ซ้ำ หลังลูกค้าปิด session เอง (deep-only path)
-                $reading->setConversationState('pro_session_timeout_notified', true);
-
-                // ถ้ายังอยู่ใน Celtic state — เคลียร์ status ให้เป็น COMPLETED ด้วย
-                if (in_array($reading->conversation_status, [
-                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
-                    FortuneReading::STATUS_CELTIC_QA_PROMPT,
-                ], true)) {
-                    $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-                }
-
-                Log::info('Fortune ProSession: ปิด session — confirmed', [
-                    'reading_id' => $reading->id,
-                ]);
-
-                return [
-                    'action' => 'pro_session_closed',
-                    'message' => $closingMessage,
-                    'reading' => $reading,
-                ];
+                return $this->closeProSessionConfirmed($reading, 'confirmed');
             }
 
             // ลูกค้าตอบอย่างอื่น → cancel exit gate, treat as normal question
@@ -1490,6 +1706,18 @@ trait ProSessionTrait
                     'reading' => $reading,
                 ];
             }
+        }
+
+        // 3c-1. 🤫 (2026-09-07, owner) ด่าน "ไม่มีสัญญาณคุยต่อแล้ว"
+        //   owner: "ถ้าผู้ใช้พิมพ์ ค่ะ ค่ะ ไปเรื่อยๆ ให้ถามว่าหยุดใช่ไหม และจบการสนทนา"
+        //
+        //   ⚠️ ต้องอยู่ **หลัง** settle-buffer (3c-0) ห้ามย้ายขึ้นไปข้างบน —
+        //      ข้อความหนึ่งของลูกค้าวิ่งผ่าน handleProSession **สองรอบ** (เส้นตรงจาก webhook
+        //      แล้วเส้น ProcessBufferedProSessionMessageJob อีกรอบด้วย skipSettle=true)
+        //      ถ้าวางก่อน buffer ตัวนับจะเด้ง 2 ต่อ 1 ข้อความ = ถาม/ปิดเร็วกว่าที่ควรเท่าตัว
+        //      ตรงนี้เส้นตรงคืน silent_skip ไปแล้ว ⇒ นับแค่รอบเดียวเสมอ
+        if (($idleGate = $this->handleProSessionIdleFillerGate($reading, $messageText)) !== null) {
+            return $idleGate;
         }
 
         // 3c. Default — AI Pro ตอบจาก context (Deep 39 หรือ Celtic หลัง 3Q จบ)
