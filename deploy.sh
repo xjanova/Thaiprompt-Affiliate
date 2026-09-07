@@ -830,6 +830,13 @@ sleep 2  # Give time for requests to finish
 print_step 4 22 "Force Syncing with GitHub"
 
 # Step 4.1: Stash any local changes (for safety backup)
+# ⚠️ (2026-09-07) `-u` = กวาด untracked ที่ *ไม่ถูก ignore* เข้าสแตชด้วย
+#   git status -s ไม่เคยว่างบน prod เพราะ STEP 12 chmod 755→644 ทับไฟล์ tracked ใต้ storage/ 11 ตัว
+#   ⇒ สแตชยิงทุก deploy และเคยกวาด .seeder_checksums/ (140 ไฟล์) ไปด้วย จน STEP 10 เห็น "New: 140" ตลอดกาล
+#   แก้แล้วโดยใส่ '.seeder_checksums/' ลง .gitignore
+#   🚧 ยังเหลือ: สแตชสะสม 2,045 ก้อน ทำให้ .git บวมเป็น 1.9GB — ทางแก้ที่ต้นเหตุคือ
+#      `git config core.fileMode false` บน prod (ให้ git เมิน mode 755/644) แล้ว git status จะว่าง
+#      และ `git stash clear` ทิ้งของเก่า (ในนั้นมีแค่ mode change + checksum ที่สร้างใหม่ได้)
 if [[ -n $(git status -s) ]]; then
     print_info "Backing up local changes to stash..."
     git stash push -u -m "Auto-stash before deployment $(date +'%Y-%m-%d %H:%M:%S')" 2>/dev/null || true
@@ -873,10 +880,11 @@ print_info "Removing untracked files and directories..."
 #                                    หน้าแอดมินที่อ่าน log ใช้ App\Support\LaravelLogFile::current() เลือกไฟล์ล่าสุดให้เอง
 #   - 'storage/logs/deployment.log' : log ของสคริปต์นี้เอง เดิมโดนลบกลางทางทุกรอบ เหลือแค่ครึ่งหลัง
 #   - '.seeder_checksums'          : (2026-09-07) ลายนิ้วมือ md5 ของ seeder 140 ตัวที่ STEP 10 ใช้เทียบ
-#                                    เป็น untracked และ *ไม่ได้* อยู่ใน .gitignore ⇒ โดนลบทุก deploy
-#                                    ⇒ STEP 10 เห็น "New seeders: 140" ทุกรอบ พ่น CAUTION 90 บรรทัด
-#                                    และ **ไม่มีวันจับได้เลยว่า seeder ตัวไหนถูกแก้จริง** (ตาข่ายนิรภัยที่ตายแล้ว)
-#                                    เก็บไว้แล้ว = new/changed เป็น 0 ⇒ ข้าม safety analysis + tinker 2 ครั้ง
+#                                    ⚠️ ตัวที่ลบมันจริง ๆ **ไม่ใช่บรรทัดนี้** แต่เป็น `git stash push -u`
+#                                    ที่ STEP 4.1 ข้างบน (พิสูจน์แล้ว: stash@{0} มีไฟล์ .md5 ครบ 140 ตัว)
+#                                    แก้ที่ต้นเหตุด้วยการใส่ '.seeder_checksums/' ลง .gitignore แล้ว
+#                                    (stash -u เอาเฉพาะ untracked ที่ไม่ถูก ignore) — บรรทัดนี้กัน `-x` อีกชั้น
+#                                    ผล: new/changed เป็น 0 ⇒ ข้าม safety analysis + tinker 2 ครั้ง
 #                                    ปลอดภัย: ต่อให้เจอ changed prod ก็ไม่ seed เอง (auto-run ต้องฐานว่าง)
 #                                    และ read -p ตอบ n อัตโนมัติเมื่อไม่มี TTY
 git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"

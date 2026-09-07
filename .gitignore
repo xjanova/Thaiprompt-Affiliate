@@ -58,6 +58,11 @@ plptdb-firebase-adminsdk-*.json
 # Deployment
 .composer.lock.checksum
 .seeders.checksum
+# (2026-09-07) ชื่อจริงที่ deploy.sh ใช้คือ .seeder_checksums/ (บรรทัดบนสะกดผิดมาแต่แรก)
+#   ต้อง ignore ไม่งั้น `git stash push -u` ที่ STEP 4.1 กวาดมันไปทั้งโฟลเดอร์ทุก deploy
+#   (stash -u เอาเฉพาะ untracked ที่ไม่ถูก ignore) ⇒ STEP 10 เห็น "New seeders: 140" ตลอดกาล
+#   และตัวจับ seeder ที่ถูกแก้จริงก็ไม่มีวันทำงาน · คู่กับ -e '.seeder_checksums' ใน git clean
+.seeder_checksums/
 /backups
 *.backup
 
