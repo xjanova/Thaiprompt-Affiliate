@@ -774,3 +774,28 @@ php artisan migrate --pretend
 - ✅ เขียน `down()` method ที่ปลอดภัยด้วย
 
 ด้วยวิธีนี้จะทำให้ migration ของคุณปลอดภัยและสามารถ deploy production ได้อย่างมั่นใจ! 🚀
+
+---
+
+## 🗜️ Schema Dump (`database/schema/mysql-schema.sql`) — เพิ่ม 2026-09-07
+
+**มีไว้ทำไม:** migration มี 900+ ไฟล์ การ replay ทั้งหมดบนฐานเปล่าใช้เวลา 2-6 นาที และ CI ต้องทำอย่างน้อย 2 รอบต่อ run
+(สเต็ป `migrate` + `RefreshDatabase` ใน phpunit) ไฟล์นี้คือ snapshot ของ schema + แถวในตาราง `migrations`
+Laravel จะโหลดมันแทนการ replay **เฉพาะเมื่อฐานข้อมูลยังไม่เคยรัน migration เลย** (CI / เครื่องใหม่)
+
+**สิ่งที่ต้องรู้:**
+- ✅ **prod ไม่ได้รับผลใด ๆ** — ตาราง `migrations` มีอยู่แล้ว Laravel จะข้ามไฟล์นี้และรัน migration ตามปกติ
+- ✅ migration ใหม่ที่เพิ่มหลัง dump จะถูกรันต่อจาก dump เองอัตโนมัติ — ไม่ต้องอัปเดตไฟล์นี้ทุกครั้ง
+- ❌ **ห้ามรัน `schema:dump --prune`** — `deploy.sh` / `migrate:smart` / `schema:verify` อ่านจากไฟล์ migration ต้องคงไฟล์ทั้งหมดไว้
+- ❌ **ห้ามลบไฟล์นี้** — CI จะกลับไปช้า 2-3 เท่าทันที
+- ⚠️ สร้างจาก **MySQL 8.0 ของ CI** (ไม่ใช่ MariaDB ของ prod) เพื่อให้โหลดบน CI ได้แน่นอน
+
+**วิธีอัปเดตไฟล์ (นาน ๆ ครั้ง เช่นทุกไตรมาส หรือเมื่อ migration ใหม่สะสมเยอะจน CI เริ่มช้า):**
+```bash
+# CI ทุก run สร้าง artifact ชื่อ mysql-schema ให้อยู่แล้ว (สเต็ป "Dump database schema" ใน .github/workflows/ci.yml)
+gh run list --branch claude/Main --limit 1          # เอา run id ล่าสุดที่เขียว
+gh run download <run_id> -n mysql-schema -D /tmp/schema
+cp /tmp/schema/mysql-schema.sql database/schema/mysql-schema.sql
+git add database/schema/mysql-schema.sql && git commit -m "chore(db): refresh schema dump"
+```
+

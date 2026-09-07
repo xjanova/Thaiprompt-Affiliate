@@ -734,6 +734,7 @@ return new class extends Migration
 2. ❌ **ALTER TABLE (เพิ่มคอลัมน์)** → ห้ามใช้ `Schema::hasTable()` + `return`
 3. ⭐ **แนะนำ** → ใช้ `SafeMigration` trait เสมอ (ปลอดภัยที่สุด)
 4. ⚠️ **Foreign Keys** → ระบุชื่อตารางชัดเจนใน `->constrained('table_name')`
+5. 🗜️ **`database/schema/mysql-schema.sql`** → snapshot สำหรับ CI/เครื่องใหม่ (prod ไม่ใช้) — **ห้ามลบ / ห้าม `schema:dump --prune`** ดู [database/migrations/README_MIGRATIONS.md](database/migrations/README_MIGRATIONS.md#-schema-dump-databaseschemamysql-schemasql--เพิ่ม-2026-09-07)
 
 ---
 
