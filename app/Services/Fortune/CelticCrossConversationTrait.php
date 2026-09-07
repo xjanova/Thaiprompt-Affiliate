@@ -1967,9 +1967,14 @@ trait CelticCrossConversationTrait
         // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
         //   เปิด AI session ก่อน call AI — pings วิ่ง async ใน queue worker
         //   ถ้า AI เสร็จก่อน 10s → ping ทั้งหมด skip (cache cleared)
-        $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
-        $userId = $reading->facebook_user_id ?: $reading->line_user_id;
-        if ($userId) {
+        //
+        // 🐛 (2026-09-07) เดิมแยกช่องทางด้วย `! empty($reading->facebook_user_id)` + อ่าน
+        //   `$reading->line_user_id` ที่ **ไม่มีคอลัมน์นี้อยู่จริง** ⇒ ลูกค้า LINE ทุกคน
+        //   ถูกติดป้าย platform='facebook' แล้วยิง ping เข้า Facebook Send API ด้วย LINE uid
+        //   (เคสจริง reading 12537 / FTU-260907-C5731 — 2 กล่องหายถาวร)
+        //   ⇒ ใช้ FortuneRecipient เป็นแหล่งความจริงเดียว ห้ามเขียนท่าเดาเองอีก
+        ['platform' => $platform, 'user_id' => $userId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
+        if ($userId !== '') {
             \App\Services\Fortune\FortuneAiPingDispatcher::start(
                 $reading->id,
                 $platform,
@@ -3145,9 +3150,15 @@ trait CelticCrossConversationTrait
 
         // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
         //   ต่อจาก thinking ack ทันที — pings วิ่ง async ใน queue worker
-        $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
-        $userId = $reading->facebook_user_id ?: $reading->line_user_id;
-        if ($userId) {
+        //
+        // 🐛 (2026-09-07) จุดนี้คือต้นทางของเคส reading 12537 / FTU-260907-C5731 โดยตรง:
+        //   log บอกชัด `FortuneAiPingDispatcher: เริ่ม AI session {"platform":"facebook",
+        //   "purpose":"celtic-question"}` ทั้งที่บิลเป็น `platform='line'`
+        //   ⇒ ping 2 กล่องยิงเข้า Facebook Send API ด้วย LINE uid → 400 ×2 → หายถาวร
+        //   สาเหตุ: `line_user_id` ไม่ใช่คอลัมน์จริง + facebook_user_id ไม่เคยว่างฝั่ง LINE
+        //   ⇒ ใช้ FortuneRecipient เป็นแหล่งความจริงเดียว (ท่าเดียวกับ sendCelticThinkingAck ข้างบน)
+        ['platform' => $platform, 'user_id' => $userId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
+        if ($userId !== '') {
             \App\Services\Fortune\FortuneAiPingDispatcher::start(
                 $reading->id,
                 $platform,

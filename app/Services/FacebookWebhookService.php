@@ -7,6 +7,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneResponseTemplate;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortunePageContext;
+use App\Services\Fortune\FortuneRecipient;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
@@ -265,6 +266,41 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🛑 (2026-09-07) ด่านกัน "LINE userId หลุดเข้า Facebook Send API"
+     *
+     * ## เคสจริงที่ทำให้ต้องมีด่านนี้ — reading 12537 / FTU-260907-C5731 (LINE · Celtic 99฿)
+     * โค้ดต้นทางแยกช่องทางผิด (เดาจาก `! empty($reading->facebook_user_id)` ทั้งที่คอลัมน์นั้น
+     * เก็บ LINE uid ด้วย) ⇒ ยิง `U388416b0...` เข้า /me/messages
+     * → 400 `(#100) Param recipient[id] must be a valid ID string` **retry อีก 1 ครั้ง** แล้วเงียบ
+     * ⇒ ข้อความ 2 กล่องของลูกค้าที่จ่ายเงินแล้ว **หายถาวร โดยไม่มีใครรู้**
+     *
+     * ## ทำไมถึงแค่ "ตัดทิ้ง + ตะโกน" ไม่ route กลับไป LINE ให้เอง
+     *   1. คลาสนี้ไม่รู้จัก replyToken ของเทิร์นนั้น ⇒ ส่งได้ทางเดียวคือ **push** ซึ่งมีแค่
+     *      300 ครั้ง/เดือน และของที่หลุดมาส่วนใหญ่คือกล่อง "กำลังคิด" ที่ **ห้าม push เด็ดขาด**
+     *      (📖 .claude/LINE_MESSAGING_RULES.md กฎข้อ 1) — auto-route = เผาโควต้าเงียบ ๆ แทน
+     *   2. ปลายทางที่ถูกต้องคือ `FortuneChannelManager::sendResponse()` / `FortuneRecipient`
+     *      ด่านนี้มีไว้ให้ "ยิงผิดช่องทาง" ดังพอที่จะเห็นใน log แล้วไปแก้ที่ต้นทาง
+     *      ไม่ใช่กลบปัญหาไว้ใต้ fallback
+     *
+     * @return bool true = ผู้รับผิดช่องทาง caller ต้องออกทันที (ห้าม retry)
+     */
+    protected function isMisroutedLineRecipient(?string $recipientId, string $method = ''): bool
+    {
+        if (! FortuneRecipient::looksLikeLineUserId($recipientId)) {
+            return false;
+        }
+
+        Log::error('🛑 ผู้รับเป็น LINE userId แต่ถูกส่งเข้า Facebook Send API — ตัดทิ้ง (ไม่ retry)', [
+            'recipient' => $recipientId,
+            'method' => $method,
+            'hint' => 'ต้นทางแยกช่องทางผิด — ใช้ FortuneRecipient::resolve($reading) '
+                .'หรือ FortuneChannelManager::sendResponse() แทนการเดาจาก facebook_user_id',
+        ]);
+
+        return true;
+    }
+
+    /**
      * 🏬 (2026-08-10) ระบบสาขา — กันส่งข้อความด้วย token ผิดเพจ
      *
      * เส้นทาง webhook/queue จะ bind สาขาไว้ให้แล้ว → เมธอดนี้คืนทันที ไม่เสีย query
@@ -323,6 +359,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
     public function sendMessage(string $recipientId, string $message, array $options = []): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         // ตรวจสอบ Page Access Token ก่อนส่ง
@@ -573,6 +614,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null, array $options = []): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         $commentId = $options['comment_id'] ?? null;
@@ -1061,6 +1107,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendAudio(string $recipientId, string $audioUrl, array $options = []): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         $commentId = $options['comment_id'] ?? null;
@@ -1181,6 +1232,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendTypingIndicator(string $recipientId, bool $on = true): void
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         try {
@@ -1249,6 +1305,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendQuickReplies(string $recipientId, string $message, array $quickReplies, array $options = []): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         try {
@@ -3878,6 +3939,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
     public function sendButtonTemplate(string $recipientId, array $templatePayload, array $options = []): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         try {
@@ -3981,6 +4047,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendGenericTemplate(string $recipientId, array $elements, array $options = []): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         try {
@@ -4012,6 +4083,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendTemplateWithQuickReplies(string $recipientId, array $templatePayload, array $quickReplies): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         try {
@@ -4041,6 +4117,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendRichMessage(string $recipientId, array $richContent): bool
     {
+        // 🛑 ผู้รับเป็น LINE userId → ยิงเข้า Graph API ไม่มีทางสำเร็จ ออกทันที (ดู isMisroutedLineRecipient)
+        if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+            return false;
+        }
+
         $this->ensurePageContextForRecipient($recipientId);
 
         try {
