@@ -3303,11 +3303,19 @@ class FortuneReading extends Model
                 return;
             }
 
-            if (! empty($reading->facebook_user_id)) {
-                self::clearActiveReadingCache('facebook', $reading->facebook_user_id);
-            }
-            if (! empty($reading->line_user_id)) {
-                self::clearActiveReadingCache('line', $reading->line_user_id);
+            // 🩹 (2026-09-07) เดิมสาขา LINE อ่าน `$reading->line_user_id` ซึ่ง
+            //   **ไม่มีคอลัมน์นี้ในตาราง** ⇒ null เสมอ ⇒ คีย์ 'line' ไม่เคยถูกล้าง
+            //   = hasActiveReading('line', ...) ค้างค่าเก่านานถึง 30 วิ หลังสถานะเปลี่ยน
+            //   LINE userId อยู่ในคอลัมน์ชื่อ `facebook_user_id` ⇒ ล้างทั้งสองป้าย
+            //   ด้วย id จริงที่มี (ป้าย platform บนแถวเก่าเชื่อไม่ได้ 100%)
+            $uids = array_unique(array_filter([
+                $reading->facebook_user_id,
+                $reading->platform_user_id,
+            ]));
+
+            foreach ($uids as $uid) {
+                self::clearActiveReadingCache('facebook', $uid);
+                self::clearActiveReadingCache('line', $uid);
             }
         });
     }

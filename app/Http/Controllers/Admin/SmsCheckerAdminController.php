@@ -932,8 +932,13 @@ class SmsCheckerAdminController extends Controller
                 'product_name' => $productName,
                 'product_details' => $reading->question ?? null,
                 'amount' => $amount,
+                // 🩹 (2026-09-07) เดิมอ่าน `$reading->line_user_id` ซึ่งไม่มีคอลัมน์นี้จริง
+                //   ⇒ null เสมอ ⇒ บิลฝั่ง LINE ที่ไม่มีชื่อ โชว์ customer_name ว่าง
+                //   LINE userId เก็บในคอลัมน์ชื่อ `facebook_user_id` แยกฝั่งด้วย `platform`
                 'customer_name' => $reading->facebook_user_name
-                    ?? ($reading->line_user_id ? 'LINE:' . substr($reading->line_user_id, 0, 8) : null),
+                    ?: ($reading->platform === 'line'
+                        ? 'LINE:'.substr((string) ($reading->facebook_user_id ?: $reading->platform_user_id), 0, 8)
+                        : null),
                 'website_name' => 'thaiprompt.com',
             ],
             'server_name' => config('app.name', 'Thaiprompt'),

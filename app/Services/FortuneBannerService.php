@@ -189,10 +189,27 @@ class FortuneBannerService
             }
 
             // 3️⃣ Check FortuneReading — มี reading ใดๆ = ลูกค้าเก่า
-            $platformField = $platform === 'facebook' ? 'facebook_user_id' : 'line_user_id';
-            $hasReading = \App\Models\FortuneReading::where($platformField, $userId)->exists();
-
-            return $hasReading;
+            //
+            // 🩹 (2026-09-07) `fortune_readings` **ไม่มีคอลัมน์ `line_user_id`**
+            //   ของเดิมสลับชื่อคอลัมน์ตาม platform → ฝั่ง LINE ยิง `where('line_user_id', ...)`
+            //   = SQLSTATE[42S22] Unknown column ทุกครั้ง แล้วโดน catch ข้างล่างกลืน
+            //   ⇒ คืน false = "ลูกค้าใหม่" ⇒ ด่าน 3 ตายสนิททั้งเลน LINE
+            //   (ลูกค้าเก่าฝั่ง LINE ได้ banner ต้อนรับซ้ำ) — LINE userId นั่งอยู่ใน
+            //   คอลัมน์ชื่อ `facebook_user_id` ตามชื่อเดิมสมัยมีแต่ FB
+            //   cf. [[rule_missing_column_reads_as_null_not_empty]]
+            //
+            // ❗ ตั้งใจ **ไม่กรอง `platform`** — ยึดแพตเทิร์นเดียวกับ
+            //   FortuneReading::hasActiveReading() เพราะข้อมูลจริงบน prod (2026-09-07)
+            //   มีแถวติดป้ายผิด: platform='line' แต่ id เป็น PSID ตัวเลข 56 ราย
+            //   ซึ่ง 24 รายไม่มีแถว platform='facebook' เลย ⇒ ถ้ากรอง platform
+            //   ลูกค้าเก่า 24 รายนี้จะกลายเป็น "ลูกค้าใหม่" = บั๊กเดิมย้ายฝั่ง
+            //   ปลอดภัยเพราะ id คนละทรง ชนกันไม่ได้ (PSID = ตัวเลข, LINE = U+hex32)
+            //
+            // เช็คสองคอลัมน์: แถวเก่าบางชุด platform_user_id ยังไม่ถูก stamp
+            return \App\Models\FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })->exists();
         } catch (\Throwable $e) {
             // ถ้า check ล้ม → fail-safe = treat as NEW customer (ส่ง banner)
             //   เพราะ user spec ต้องการ banner สำหรับใหม่ — false-positive (เก่าได้ banner) ดีกว่า false-negative (ใหม่ไม่ได้ banner)
