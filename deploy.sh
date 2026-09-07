@@ -872,7 +872,14 @@ print_info "Removing untracked files and directories..."
 #                                    เก็บเฉพาะไฟล์รายวัน — laravel.log (single) / queue-*.log ไม่มี rotation ยังล้างเหมือนเดิม
 #                                    หน้าแอดมินที่อ่าน log ใช้ App\Support\LaravelLogFile::current() เลือกไฟล์ล่าสุดให้เอง
 #   - 'storage/logs/deployment.log' : log ของสคริปต์นี้เอง เดิมโดนลบกลางทางทุกรอบ เหลือแค่ครึ่งหลัง
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' || print_warning "Git clean failed (continuing anyway)"
+#   - '.seeder_checksums'          : (2026-09-07) ลายนิ้วมือ md5 ของ seeder 140 ตัวที่ STEP 10 ใช้เทียบ
+#                                    เป็น untracked และ *ไม่ได้* อยู่ใน .gitignore ⇒ โดนลบทุก deploy
+#                                    ⇒ STEP 10 เห็น "New seeders: 140" ทุกรอบ พ่น CAUTION 90 บรรทัด
+#                                    และ **ไม่มีวันจับได้เลยว่า seeder ตัวไหนถูกแก้จริง** (ตาข่ายนิรภัยที่ตายแล้ว)
+#                                    เก็บไว้แล้ว = new/changed เป็น 0 ⇒ ข้าม safety analysis + tinker 2 ครั้ง
+#                                    ปลอดภัย: ต่อให้เจอ changed prod ก็ไม่ seed เอง (auto-run ต้องฐานว่าง)
+#                                    และ read -p ตอบ n อัตโนมัติเมื่อไม่มี TTY
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -1604,16 +1611,16 @@ else
 
                         case "$safety_level" in
                             SAFE)
-                                echo "  ✅ $seeder [${GREEN}SAFE${NC}]"
+                                echo -e "  ✅ $seeder [${GREEN}SAFE${NC}]"
                                 [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
                                 ;;
                             CAUTION)
-                                echo "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
+                                echo -e "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
                                 [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
                                 [ -n "$issues" ] && echo "     → Issues: $issues"
                                 ;;
                             UNSAFE)
-                                echo "  ❌ $seeder [${RED}UNSAFE${NC}]"
+                                echo -e "  ❌ $seeder [${RED}UNSAFE${NC}]"
                                 [ -n "$issues" ] && echo "     → Issues: $issues"
                                 ;;
                         esac
@@ -1633,16 +1640,16 @@ else
 
                         case "$safety_level" in
                             SAFE)
-                                echo "  ✅ $seeder [${GREEN}SAFE${NC}]"
+                                echo -e "  ✅ $seeder [${GREEN}SAFE${NC}]"
                                 [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
                                 ;;
                             CAUTION)
-                                echo "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
+                                echo -e "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
                                 [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
                                 [ -n "$issues" ] && echo "     → Issues: $issues"
                                 ;;
                             UNSAFE)
-                                echo "  ❌ $seeder [${RED}UNSAFE${NC}]"
+                                echo -e "  ❌ $seeder [${RED}UNSAFE${NC}]"
                                 [ -n "$issues" ] && echo "     → Issues: $issues"
                                 ;;
                         esac
