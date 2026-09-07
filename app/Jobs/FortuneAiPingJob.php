@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\FortuneReading;
+use App\Services\Fortune\FortuneRecipient;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -65,6 +66,35 @@ class FortuneAiPingJob implements ShouldQueue
             return;
         }
 
+        // 🛟 (2026-09-07) อย่าเชื่อ platform ที่ติดมากับ payload — ยืนยันกับตัวบิลก่อนเสมอ
+        //   1. ตัวบิลคือแหล่งความจริง (`platform` column) — caller ที่เดาช่องทางเองจะถูกลบล้างที่นี่
+        //   2. job ที่เข้าคิวไว้ **ก่อน** deploy ยังถือค่าผิดติดตัวมา ⇒ ถ้าไม่ซ่อม ของค้างในคิว
+        //      จะยิงผิดช่องทางต่ออีกหลายนาทีหลังโค้ดใหม่ขึ้น
+        //   เคสจริง reading 12537 / FTU-260907-C5731: ping 2 กล่องยิงเข้า Facebook Send API
+        //   ด้วย LINE userId → 400 `(#100) Param recipient[id]...` ×2 → กล่องหายถาวร
+        ['platform' => $platform, 'user_id' => $userId] = FortuneRecipient::resolve($reading);
+
+        // บิลไม่มี id ให้ใช้ (แถวเก่า/ข้อมูลไม่ครบ) → ค่อยถอยไปใช้ payload ที่ซ่อมแล้ว
+        if ($userId === '') {
+            ['platform' => $platform, 'user_id' => $userId] = FortuneRecipient::normalize(
+                $this->platform,
+                $this->userId
+            );
+        }
+
+        if ($platform !== $this->platform) {
+            Log::warning('FortuneAiPingJob: payload ระบุช่องทางผิด — ซ่อมจากรูปทรงของ user id', [
+                'reading_id' => $this->readingId,
+                'payload_platform' => $this->platform,
+                'resolved_platform' => $platform,
+                'stage_seconds' => $this->stageSeconds,
+            ]);
+        }
+
+        if ($userId === '') {
+            return;
+        }
+
         // ดึงข้อความตาม stage
         $message = $this->getMessageForStage();
         if (! $message) {
@@ -73,11 +103,14 @@ class FortuneAiPingJob implements ShouldQueue
 
         // ส่งข้อความ (best-effort, non-blocking)
         try {
-            $this->sendMessage($message);
+            $sent = $this->sendMessage($platform, $userId, $message);
 
-            Log::info('FortuneAiPingJob: ส่ง ping สำเร็จ', [
+            // 📌 ธง "ส่งแล้ว" ต้องมาจากผลส่งจริงเท่านั้น — ของเดิม log "สำเร็จ" ทุกครั้ง
+            //    เพราะ sendMessage() คืน false ไม่ได้ throw ⇒ log บอกว่าส่งได้ทั้งที่ 400
+            //    (เคส 12537: "ส่ง ping สำเร็จ" ตามหลัง "ส่งข้อความล้มเหลวหลังลอง 2 ครั้ง" ทันที)
+            Log::log($sent ? 'info' : 'warning', 'FortuneAiPingJob: ส่ง ping '.($sent ? 'สำเร็จ' : 'ไม่สำเร็จ'), [
                 'reading_id' => $this->readingId,
-                'platform' => $this->platform,
+                'platform' => $platform,
                 'stage_seconds' => $this->stageSeconds,
             ]);
         } catch (\Throwable $e) {
@@ -91,17 +124,20 @@ class FortuneAiPingJob implements ShouldQueue
 
     /**
      * ข้อความ ping ตามช่วงเวลา — escalate ความรู้สึก "ใกล้เสร็จ"
+     *
+     * ⚠️ ฝั่ง LINE ไม่ได้ใช้ "ข้อความ" ก้อนนี้ส่งจริง (ส่งเป็น typing dots แทน — ดู sendMessage())
+     *   ค่าที่คืนออกไปทำหน้าที่เป็น **ด่านว่าสเตจนี้ควรส่งสัญญาณไหม** เท่านั้น
      */
     private function getMessageForStage(): ?string
     {
-        // 💸 (2026-07-25) LINE: ตัด ping ที่ 10 วินาทีทิ้ง — มันมาติดกับกล่อง "🃏 ได้ไพ่..."
-        //   ที่เพิ่งส่งไปไม่กี่วินาที (ลูกค้าเห็น 2 กล่องซ้อนโดยไม่ได้ข้อมูลใหม่)
-        //   คงไว้ที่ 30s + 60s เพราะ Deep 39 ใช้เวลา gen 30-90 วิ (มี completeness-gate retry)
-        //   ถ้าตัดเหลือกล่องเดียวลูกค้าจะเงียบยาวเกินไปจนคิดว่าบอทค้าง
+        // 💸 (2026-07-25) LINE เคยตัดสเตจ 10 วินาทีทิ้ง เพราะกล่อง ping ไปติดกับกล่อง
+        //   "🃏 ได้ไพ่..." ที่เพิ่งส่งไปไม่กี่วินาที — ลูกค้าเห็น 2 กล่องซ้อนโดยไม่ได้ข้อมูลใหม่
         //   (เจ้าของ 2026-07-25: "ทำไมมีการส่งกล่องข้อความซ้ำหลายกล่อง")
-        if ($this->platform === 'line' && ! in_array($this->stageSeconds, [30, 60], true)) {
-            return null;
-        }
+        //
+        // ✅ (2026-09-07) ฝั่ง LINE ไม่ส่งกล่องข้อความอีกแล้ว — เป็น typing dots (ดู sendMessage())
+        //   ไม่มีอะไรให้ซ้อนอีก จึงเปิดครบทั้ง 3 สเตจได้ และดีกว่าเดิมด้วย:
+        //   dots โชว์ได้ครั้งละ 60 วิ ⇒ ต่ออายุที่ 10/30/60 = คลุมยาวถึง ~120 วิ
+        //   (Deep 39 ใช้ gen 30-90 วิ เมื่อมี completeness-gate retry)
 
         return match ($this->stageSeconds) {
             10 => "🌙 *แม่หมอกำลังเปิดตำราดู...*\n"
@@ -120,27 +156,45 @@ class FortuneAiPingJob implements ShouldQueue
     }
 
     /**
-     * ส่งข้อความผ่าน FB หรือ LINE
+     * ส่งสัญญาณ "แม่หมอยังทำงานอยู่" ตามช่องทาง
+     *
+     * 💸 ฝั่ง LINE ใช้ typing dots ไม่ใช่กล่องข้อความ
+     *   `showLoadingAnimation()` **ฟรี ไม่กินโควต้า และไม่กิน replyToken** (คนละ endpoint)
+     *   ส่วน `LineFortuneService::sendMessage()` วิ่งเข้า `pushMessage()` ตรง ๆ = กินโควต้า
+     *   ที่มีแค่ **300 ครั้ง/เดือน** — และกล่อง "กำลังคิด" อยู่ในรายการ **ห้าม push เด็ดขาด**
+     *   📖 .claude/LINE_MESSAGING_RULES.md กฎข้อ 1 (ท่าเดียวกับ sendCelticThinkingAck)
+     *
+     *   ⚠️ ก่อน 2026-09-07 ลูกค้า LINE ถูกติดป้าย platform='facebook' ⇒ ping ไม่เคยถึงฝั่ง LINE เลย
+     *      พอแก้การแยกช่องทางแล้ว ถ้าไม่เปลี่ยนมาใช้ loading animation ตรงนี้ด้วย
+     *      บิล Celtic ของลูกค้า LINE จะเริ่ม push ping 2 กล่อง/คำถาม = เผาโควต้าเดือนละไม่กี่ร้อยทิ้ง
+     *
+     * @return bool ผลส่งจริง (ห้ามเดา — คนเรียกเอาไปลง log)
      */
-    private function sendMessage(string $message): void
+    private function sendMessage(string $platform, string $userId, string $message): bool
     {
-        if ($this->platform === 'facebook') {
+        if ($platform === FortuneRecipient::PLATFORM_FACEBOOK) {
             $fbService = app(\App\Services\FacebookWebhookService::class);
+
             // ใช้ POST_PURCHASE_UPDATE — ลูกค้าจ่ายแล้ว/อยู่ในระหว่างขอคำถาม → ในกรอบ 24hr อยู่แล้ว
             //   ใช้ tag เพื่อเป็น safety net หาก 24hr expired (เคส Celtic Q&A นาน)
-            $fbService->sendMessage($this->userId, $message, [
+            return (bool) $fbService->sendMessage($userId, $message, [
                 'message_tag' => 'POST_PURCHASE_UPDATE',
                 'from_admin' => true,
             ]);
-        } elseif ($this->platform === 'line') {
-            $lineService = app(\App\Services\LineFortuneService::class);
-            $lineService->sendMessage($this->userId, $message);
-        } else {
-            Log::warning('FortuneAiPingJob: platform ไม่รู้จัก', [
-                'reading_id' => $this->readingId,
-                'platform' => $this->platform,
-            ]);
         }
+
+        if ($platform === FortuneRecipient::PLATFORM_LINE) {
+            // ต่ออายุ typing dots อีก 60 วิ — ฟรี และไม่มีกล่องซ้อนให้ลูกค้ารำคาญ
+            return (bool) app(\App\Services\LineFortuneService::class)
+                ->showLoadingAnimation($userId, 60);
+        }
+
+        Log::warning('FortuneAiPingJob: platform ไม่รู้จัก', [
+            'reading_id' => $this->readingId,
+            'platform' => $platform,
+        ]);
+
+        return false;
     }
 
     private function getSessionCacheKey(): string
