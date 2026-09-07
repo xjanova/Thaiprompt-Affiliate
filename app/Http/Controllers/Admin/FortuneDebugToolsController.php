@@ -420,7 +420,9 @@ class FortuneDebugToolsController extends Controller
 
     protected function getLogPath(): string
     {
-        return storage_path('logs/laravel.log');
+        // (2026-09-07) prod เปลี่ยนเป็น LOG_CHANNEL=daily — ไฟล์เป็น laravel-YYYY-MM-DD.log
+        //   ตัวช่วยจะเลือกไฟล์ที่เขียนล่าสุดให้ (ข้ามวันแล้ว poll รอบถัดไปก็ได้ไฟล์ใหม่เอง)
+        return \App\Support\LaravelLogFile::current();
     }
 
     /**

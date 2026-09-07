@@ -173,7 +173,7 @@ class FortuneAstrologyController extends Controller
 
             // ลอง read ไฟล์ log ล่าสุด
             try {
-                $logFile = storage_path('logs/laravel.log');
+                $logFile = \App\Support\LaravelLogFile::current(); // (2026-09-07) รองรับ LOG_CHANNEL=daily
                 if (@file_exists($logFile)) {
                     // อ่าน 5000 bytes สุดท้าย
                     $fh = @fopen($logFile, 'r');

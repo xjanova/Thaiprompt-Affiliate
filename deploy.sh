@@ -747,9 +747,16 @@ print_info "Environment: $APP_ENV"
 
 if [ "$APP_ENV" != "production" ]; then
     print_warning "APP_ENV is not 'production' (current: $APP_ENV)"
-    read -p "Continue anyway? (y/n): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    # 🖥️ (2026-09-07) ถามได้เฉพาะตอนมีคนนั่งหน้าจอ — รันจาก GitHub Actions stdin คือ heredoc ของ deploy.yml
+    #   `read -n 1` จะไปกินตัวอักษรของคำสั่งถัดไปในสคริปต์แม่ (ที่ผ่านมารอดเพราะบรรทัดถัดจาก fi เป็นบรรทัดว่างพอดี)
+    if [ -t 0 ]; then
+        read -p "Continue anyway? (y/n): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    else
+        print_error "Non-interactive deploy on APP_ENV=$APP_ENV — ยกเลิกเพื่อความปลอดภัย (รันมือแล้วตอบ y ถ้าตั้งใจ)"
         exit 1
     fi
 fi
@@ -860,9 +867,12 @@ print_info "Removing untracked files and directories..."
 #                                 (composer install กับ vendor ที่มีอยู่ = วิธีมาตรฐาน: เพิ่ม/ลบ/อัปเฉพาะที่ต่างจาก lock)
 #   ⚠️ pattern ต้องเป็น 'backups/' ไม่ใช่ '/backups' — ทดสอบแล้ว: แบบมี / นำหน้า ทำงานบน git 2.34 (prod) แต่
 #      ไม่ทำงานบน git 2.53 ⇒ ถ้าวันหนึ่ง apt upgrade git แบบ anchored จะกลับไปลบ backup เงียบ ๆ อีก
-#   ตั้งใจ *ไม่* exclude storage/logs — LOG_CHANNEL=stack(single) ไม่มี rotation ถ้าเก็บไว้ไฟล์โตไม่มีเพดาน
-#   (ถ้าจะเก็บ log ข้าม deploy ให้ตั้ง LOG_CHANNEL=daily ใน .env ก่อน แล้วค่อยเติม -e 'storage/logs')
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' || print_warning "Git clean failed (continuing anyway)"
+#   - 'storage/logs/laravel-*.log' : (2026-09-07) prod ตั้ง LOG_CHANNEL=daily แล้ว (Laravel เก็บ 14 วันแล้วลบเอง)
+#                                    เดิม laravel.log หายทุก deploy ~10 ครั้ง/วัน ⇒ ไม่เหลือร่องรอย error ให้ไล่ย้อน
+#                                    เก็บเฉพาะไฟล์รายวัน — laravel.log (single) / queue-*.log ไม่มี rotation ยังล้างเหมือนเดิม
+#                                    หน้าแอดมินที่อ่าน log ใช้ App\Support\LaravelLogFile::current() เลือกไฟล์ล่าสุดให้เอง
+#   - 'storage/logs/deployment.log' : log ของสคริปต์นี้เอง เดิมโดนลบกลางทางทุกรอบ เหลือแค่ครึ่งหลัง
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -1192,13 +1202,16 @@ else
         echo ""
         print_warning "→ Rollback information:"
         echo "  • Backup file: $SCHEMA_BACKUP"
-        echo "  • Restore: mysql -u $DB_USERNAME -p $DB_DATABASE < $SCHEMA_BACKUP"
+        echo "  • Restore: zcat $SCHEMA_BACKUP | mysql -u $DB_USERNAME -p $DB_DATABASE"
         echo ""
         log "Schema auto-repair: FAILED"
 
-        # Ask whether to continue
-        read -p "Continue with deployment anyway? (y/n) [n]: " -n 1 -r CONTINUE_DEPLOY
-        echo
+        # Ask whether to continue — (2026-09-07) ถามได้เฉพาะมี TTY; รันจาก CI ให้ยกเลิกเสมอ (= default [n] เดิม)
+        CONTINUE_DEPLOY="n"
+        if [ -t 0 ]; then
+            read -p "Continue with deployment anyway? (y/n) [n]: " -n 1 -r CONTINUE_DEPLOY
+            echo
+        fi
         if [[ ! $CONTINUE_DEPLOY =~ ^[Yy]$ ]]; then
             error_exit "Deployment cancelled due to schema repair failure"
         fi
@@ -1671,8 +1684,12 @@ else
                 echo "  • UNSAFE seeders may overwrite existing data"
                 echo ""
 
-                read -p "Run seeders now? (y/n) [n]: " -n 1 -r RUN_SEEDER
-                echo
+                # (2026-09-07) ถามได้เฉพาะมี TTY — จาก CI ข้ามเสมอ (= default [n] เดิม) ไม่ให้ read ไปกิน stdin ของสคริปต์แม่
+                RUN_SEEDER="n"
+                if [ -t 0 ]; then
+                    read -p "Run seeders now? (y/n) [n]: " -n 1 -r RUN_SEEDER
+                    echo
+                fi
                 echo ""
 
                 if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
@@ -2094,7 +2111,16 @@ print_info "→ Running HTTP Health Check..."
 APP_URL=$(grep "^APP_URL=" .env | cut -d '=' -f2)
 if [ -n "$APP_URL" ] && command -v curl >/dev/null 2>&1; then
     print_info "Checking HTTP response from $APP_URL..."
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$APP_URL" 2>/dev/null || echo "000")
+    # 🔁 (2026-09-07) ลองซ้ำ 3 ครั้ง ห่าง 5 วิ — เคยได้ 000 (timeout) ครั้งเดียวหลัง up แล้วรอบถัดมา 200 ทันที
+    #   และเลิก `|| echo "000"` — curl ตอน timeout พิมพ์ 000 จาก -w อยู่แล้ว + exit 28 ⇒ ของเดิมได้ "000000"
+    #   (log จริง: "HTTP Health Check returned HTTP 000000") บั๊กแบบเดียวกับ grep -c || echo ข้างบน
+    HTTP_CODE="000"
+    for _hc_try in 1 2 3; do
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$APP_URL" 2>/dev/null)
+        HTTP_CODE=${HTTP_CODE:-000}
+        case "$HTTP_CODE" in 200|301|302) break ;; esac
+        [ "$_hc_try" -lt 3 ] && sleep 5
+    done
 
     if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ] || [ "$HTTP_CODE" = "301" ]; then
         print_success "✓ HTTP Health Check OK (HTTP $HTTP_CODE)"

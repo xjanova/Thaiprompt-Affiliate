@@ -100,6 +100,36 @@ jobs:
           DB_PASSWORD: password
         run: php artisan migrate --force
 
+      # 🗜️ (2026-09-07) สร้าง schema dump จากฐานที่ migrate ครบแล้ว (MySQL 8.0 ตัวเดียวกับ CI)
+      #   ทำไม: migration มี 913 ไฟล์และไม่มี database/schema/mysql-schema.sql ⇒ CI replay ทั้ง 913
+      #   อย่างน้อย 2 รอบ/run (สเต็ปนี้ 2-6 นาที + RefreshDatabase ใน phpunit อีก 3-9 นาที)
+      #   เมื่อมีไฟล์ schema, `migrate` บนฐานเปล่าจะโหลด SQL ก้อนเดียวแล้วรันเฉพาะ migration ที่ใหม่กว่า dump
+      #   - ไม่ใช้ --prune: เก็บไฟล์ migration ทั้ง 913 ไว้ (deploy.sh / migrate:smart / schema:verify อ่านจากไฟล์)
+      #   - prod ไม่ได้รับผล: ตาราง migrations มีอยู่แล้ว Laravel จะไม่โหลด schema dump เลย
+      #   - ไฟล์ที่ commit ไว้ = ตัวที่ใช้จริง; สเต็ปนี้แค่ทำ artifact ไว้ให้ดาวน์โหลดมาอัปเดตเมื่อต้องการ
+      #     (gh run download <run_id> -n mysql-schema → commit database/schema/mysql-schema.sql)
+      #   ⚠️ phpunit (RefreshDatabase → migrate:fresh) ในสเต็ปถัดไปจะโหลดไฟล์ที่เพิ่งสร้างนี้ทันที
+      #      ⇒ ถ้า dump โหลดไม่ขึ้นบน MySQL 8.0 เทสต์จะแดงตั้งแต่ run นี้ ก่อนไฟล์จะถูก commit
+      - name: Dump database schema (artifact)
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: |
+          php artisan schema:dump
+          ls -la database/schema/
+          echo "tables in dump: $(grep -c 'CREATE TABLE' database/schema/mysql-schema.sql)"
+
+      - name: Upload schema dump
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: mysql-schema
+          path: database/schema/mysql-schema.sql
+          retention-days: 7
+
       # 🚨 (2026-08-10) ถอด continue-on-error ออก — **นี่คือประตูที่ไม่เคยกันอะไรเลย**
       #
       #   deploy.yml รับเฉพาะ workflow_call จาก job auto-deploy ← auto-release
