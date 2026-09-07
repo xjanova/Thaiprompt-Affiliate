@@ -688,6 +688,115 @@ class SmsPaymentService
     }
 
     /**
+     * 🧹 หา SMS ที่ค้างคิว admin (orphan) มาผูกกับบิลที่ admin กำลังอนุมัติมือ — แล้วจองใบนั้นเลย
+     *
+     * ปัญหาที่แก้ (เคสจริง 2026-09-07 — reading 12570 / FTU-260907-H8933):
+     *   บิลออก "ยอดเฉพาะ" 39.63 แต่ลูกค้าโอนราคาป้าย 39.00 → UPA จับคู่ไม่ติด
+     *   → SMS โดน flag เป็น requires_admin_review → admin อนุมัติมือ
+     *   → บิลถูกตัด ลูกค้าได้บริการ แต่ SMS ใบนั้น "ไม่เคยถูกล้างธง"
+     *   → คิวรีวิวสะสม 655 ใบ ซึ่ง 607 ใบจัดการไปแล้ว ⇒ เคสค้างจริง 48 ใบถูกกลบ
+     *
+     * ทำไมต้องอยู่ใน service: ทางอนุมัติมือมี 4 ทาง (approveOrder / bulkApproveOrders /
+     *   executeFortuneApproveAction / FortuneCelticCrossController) — ก่อนหน้านี้แต่ละทาง
+     *   หา notification คนละแบบ และ 3 ใน 4 ทางปล่อย null ทิ้งธงไว้ ⇒ รวมมาไว้ที่เดียว
+     *
+     * เกณฑ์ (อนุรักษ์นิยม — ยอมไม่เจอ ดีกว่าผูกผิดใบ):
+     *   - ยังไม่ถูกผูกกับบิลไหน + เป็นเงินเข้า + ยังค้างจริง (requires_admin_review / pending)
+     *   - อยู่ในหลักบาทเดียวกับบิล เช่น 39.xx ↔ 39.xx
+     *     (ช่วงเดียวกับที่ flagOrphanFortunePayment() ใช้ตัดสินว่าเป็น orphan)
+     *   - มาถึงหลังบิลถูกสร้าง และไม่เกินอายุบิล (billTimeoutMinutes)
+     *   - ต้องเจอ "ใบเดียวเท่านั้น" — กำกวมเมื่อไหร่ไม่ผูก (เหตุผลอยู่ตรงจุดเช็คด้านล่าง)
+     *
+     * ⚠️ ไม่ผ่อนเกณฑ์อนุมัติของใคร — เป็นแค่งานลงบัญชีหลัง admin ตัดสินใจอนุมัติแล้ว
+     *
+     * @param  float|null  $billAmount  ยอดบิล (ไม่ส่ง = ใช้ amount_paid ของบิล)
+     * @return SmsPaymentNotification|null null = ไม่มีใบที่มั่นใจพอ → caller ทำงานแบบเดิม
+     */
+    public function reconcileOrphanNotificationForBill(FortuneReading $reading, ?float $billAmount = null): ?SmsPaymentNotification
+    {
+        $billAmount = (float) ($billAmount ?? $reading->amount_paid);
+
+        if ($billAmount <= 0 || $reading->created_at === null) {
+            return null;
+        }
+
+        // บิล 39.63 → รับ 39.00–39.99 (ยอดเฉพาะถูกสุ่มเป็นเศษสตางค์ในหลักบาทเดียวกันเสมอ)
+        $tierFloor = floor($billAmount);
+        $windowStart = $reading->created_at->copy();
+        $windowEnd = $windowStart->copy()->addMinutes(FortuneReading::billTimeoutMinutes());
+
+        $candidates = SmsPaymentNotification::query()
+            ->whereNull('matched_transaction_id')
+            ->where('type', 'credit')
+            ->whereIn('status', ['requires_admin_review', 'pending'])
+            ->where('amount', '>=', $tierFloor)
+            ->where('amount', '<', $tierFloor + 1)
+            ->where(function ($q) use ($windowStart, $windowEnd) {
+                // ใช้ sms_timestamp เป็นหลัก — บางใบไม่มี ให้ตกมาใช้ created_at
+                $q->whereBetween('sms_timestamp', [$windowStart, $windowEnd])
+                    ->orWhere(function ($inner) use ($windowStart, $windowEnd) {
+                        $inner->whereNull('sms_timestamp')
+                            ->whereBetween('created_at', [$windowStart, $windowEnd]);
+                    });
+            })
+            ->orderBy('sms_timestamp')
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        // 🛑 เจอมากกว่า 1 ใบ = เดาไม่ได้ว่าเงินก้อนไหนของบิลนี้ → "ไม่ผูก" ดีกว่าผูกมั่ว
+        //    เพราะถ้าผูกผิดใบ = ไปกลืนเงินของลูกค้าอีกคนที่ยังไม่ได้รับบริการ
+        //    แล้วใบนั้นจะหลุดออกจากคิวรีวิวถาวร = ซ่อนปัญหาที่เรากำลังพยายามขุดขึ้นมา
+        //    (วัดกับข้อมูลจริง พ.ค.–ก.ย. 2026: 190 บิลที่เจอ candidate มี 91 บิลกำกวม ≈ 48%)
+        //    เคสกำกวมให้ admin ผูกเองผ่าน findBillCandidatesForOrphan() / confirmOrphanMatch()
+        if ($candidates->count() > 1) {
+            Log::warning('🤔 SMS Payment: อนุมัติมือ — มี SMS ค้างคิวหลายใบ ไม่ผูกอัตโนมัติ (ให้ admin เลือกเอง)', [
+                'fortune_reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'bill_amount' => $billAmount,
+                'candidate_count' => $candidates->count(),
+                'candidate_ids' => $candidates->pluck('id')->all(),
+                'candidate_amounts' => $candidates->pluck('amount')->all(),
+            ]);
+
+            return null;
+        }
+
+        $picked = $candidates->first();
+
+        // 🔒 จองแบบ compare-and-swap — ถ้ามีอีก request ชิงผูกไปแล้ว update จะได้ 0 แถว
+        //    (อนุมัติมือหลายทางอาจยิงพร้อมกันได้ เช่น bulk + แอพ SMS)
+        $claimed = SmsPaymentNotification::where('id', $picked->id)
+            ->whereNull('matched_transaction_id')
+            ->update([
+                'matched_transaction_id' => $reading->id,
+                'status' => 'confirmed',
+            ]);
+
+        if ($claimed === 0) {
+            Log::info('🤝 SMS Payment: race — SMS ใบนี้ถูกบิลอื่นผูกไปก่อนแล้ว', [
+                'fortune_reading_id' => $reading->id,
+                'notification_id' => $picked->id,
+            ]);
+
+            return null;
+        }
+
+        Log::warning('🧹 SMS Payment: อนุมัติมือ — ผูกกับ SMS ยอดไม่ตรงที่ค้างคิว admin', [
+            'fortune_reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'bill_amount' => $billAmount,
+            'notification_id' => $picked->id,
+            'notification_amount' => $picked->amount,
+            'delta' => round($billAmount - (float) $picked->amount, 2),
+        ]);
+
+        return $picked->fresh();
+    }
+
+    /**
      * ตรวจจับและจัดการยอดเงินดูดวงจาก Conversational Flow
      *
      * ตรวจสอบว่ายอดเงินตรงกับ FortuneReading ที่รอชำระเงินหรือไม่

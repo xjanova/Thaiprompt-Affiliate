@@ -388,9 +388,12 @@ class FortuneCelticCrossController extends Controller
      *           แอดมินยืนยันว่าเงินเข้าจริง → กดปุ่มนี้แทนการเปิด SMS app มือถือ
      *
      * Action:
-     *   1. confirmPayment(null) → is_paid=true, paid_at=now, conversation_status=STATUS_PAID,
-     *      mark UPA as 'used' (ปลด unique amount slot)
-     *   2. SmsPaymentService::handleCelticPaymentMatched(null notification)
+     *   0. (2026-09-07) reconcileOrphanNotificationForBill() — ลองผูก SMS ที่ค้างคิว admin
+     *      ให้บิลนี้ก่อน (ผูกได้เมื่อเจอใบเดียวชัดเจนเท่านั้น) ไม่งั้นธง requires_admin_review
+     *      ของ SMS ใบนั้นจะค้างถาวรทั้งที่บิลถูกตัดไปแล้ว
+     *   1. confirmPayment($notification) → is_paid=true, paid_at=now, conversation_status=STATUS_PAID,
+     *      mark UPA as 'used' (ปลด unique amount slot) — notification=null ได้ถ้าไม่มีใบให้ผูก
+     *   2. SmsPaymentService::handleCelticPaymentMatched($notification)
      *      → onCelticPaymentConfirmed → CELTIC_PICKING + push prompt ใบ 1
      *
      * Safety:
@@ -423,14 +426,20 @@ class FortuneCelticCrossController extends Controller
             ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
 
         try {
-            // 1. มาร์คบิลเป็นจ่ายแล้ว (notification = null = admin force)
-            $reading->confirmPayment(null);
+            // 🧹 (2026-09-07) ลองผูก SMS ที่ค้างคิว admin ให้บิลนี้ก่อน โดยใช้ยอดที่ admin กรอกเป็นตัวตั้ง
+            //    เดิมส่ง null ตายตัว ⇒ ถ้าลูกค้าโอนยอดไม่ตรง (เช่นบิล 99.56 โอน 99.00)
+            //    ธง requires_admin_review ของ SMS ใบนั้นจะค้างถาวร ทั้งที่บิลถูกตัดไปแล้ว
+            $smsService = app(SmsPaymentService::class);
+            $notification = $smsService->reconcileOrphanNotificationForBill($reading, $actualAmount);
+
+            // 1. มาร์คบิลเป็นจ่ายแล้ว (notification = null = ไม่มี SMS ให้ผูก → force ล้วน)
+            $reading->confirmPayment($notification);
             $reading = $reading->fresh();
 
-            // 2. ส่ง flow Celtic เริ่มเปิดไพ่ใบ 1 (SMS notification = null)
-            $dispatched = app(SmsPaymentService::class)->handleCelticPaymentMatched(
+            // 2. ส่ง flow Celtic เริ่มเปิดไพ่ใบ 1
+            $dispatched = $smsService->handleCelticPaymentMatched(
                 $reading,
-                null,
+                $notification,
                 $platform,
                 (string) $userId,
                 $actualAmount
