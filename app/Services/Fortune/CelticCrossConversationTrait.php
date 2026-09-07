@@ -1917,11 +1917,30 @@ trait CelticCrossConversationTrait
                 && empty($reading->getConversationState('celtic_birthdate_text'))
                 && empty($reading->getConversationState('celtic_birthdate_skipped'))) {
 
-                $priorBirth = $this->findPriorBirthDateForCeltic($reading);
+                $priorHit = $this->findPriorBirthdateHitForCeltic($reading);
+                $priorBirth = $priorHit === null ? null : $priorHit['date']->format('d/m/Y');
                 if ($priorBirth !== null) {
                     // เคยให้วันเกิด/ทำ 39 มาแล้ว → ใช้เลย ไม่ถามซ้ำ
                     $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$priorBirth);
                     $reading->setConversationState('celtic_birthdate_from_prior', true);
+                    // 🎂 (2026-09-07) เขียนคอลัมน์ `birth_date` ด้วย — ห้ามเก็บไว้แค่ใน conversation_state
+                    //   เดิม path นี้ตั้งแต่ state อย่างเดียว ⇒ คอลัมน์ค้าง NULL ทั้งบิล
+                    //   ผลจริง (prod 14 วัน: 13 จาก 75 บิล 99฿ ที่ลูกค้า *ให้วันเกิดแล้ว*):
+                    //     • `buildCelticBirthChartUrl()` เห็นคอลัมน์ว่าง → return null = **ไม่มีแผนที่ดาว**
+                    //       ทั้งที่ลูกค้าจ่าย 99 และเคยบอกวันเกิดไว้
+                    //     • รายงาน/แอดมิน/บิลถัดไปที่อ่านคอลัมน์ มองไม่เห็นวันเกิดเลย
+                    //   เขียนเฉพาะตอนคอลัมน์ยังว่าง (ไม่ทับของที่ลูกค้ายืนยันมาเอง)
+                    //   non-blocking: เขียนไม่ผ่านก็ยังมี celtic_birthdate_text ให้คำนวณดาวต่อได้
+                    if (empty($reading->birth_date)) {
+                        try {
+                            $reading->update(['birth_date' => $priorHit['ymd']]);
+                        } catch (\Throwable $e) {
+                            \Log::warning('Celtic: เขียน birth_date จากบิลเก่าไม่สำเร็จ (non-blocking)', [
+                                'reading_id' => $reading->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
                     // 🌟 (2026-06-19 FTU-260619-C9002) ลูกค้าซื้อซ้ำ (วันเกิดอยู่ในฐาน) ต้องได้ "พื้นดวงเปิดตัว + เรื่องเด่น"
                     //   เหมือน path พิมพ์วันเกิดเอง — เดิม path นี้ "ไหลต่อทักทายเฉยๆ" ไม่ตั้ง celtic_base_chart
                     //   → reading 7238 (C9002) ข้ามพื้นดวง = เรื่องเด่นหาย. ตั้ง flag ที่นี่ แล้วยิงพื้นดวง
