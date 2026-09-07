@@ -112,11 +112,17 @@ class SitemapController extends Controller
         }
 
         // Dynamic pages from CMS
-        $cmsPages = Page::where('is_active', true)->get();
+        //
+        // ⚠️ ตาราง `pages` ไม่มีคอลัมน์ `is_active` — ตัวจริงคือ `is_published`
+        // (ดู database/migrations/2025_01_29_000001_create_pages_table.php)
+        // ใช้ scope published() ตัวเดียวกับ Frontend\PageController เพื่อไม่ให้หลุดอีก
+        $cmsPages = Page::published()->get();
         foreach ($cmsPages as $page) {
             $urls[] = [
                 'loc' => url('/page/'.$page->slug),
-                'lastmod' => $page->updated_at->toAtomString(),
+                // updated_at เป็น nullable — ถ้าว่างให้ fallback เป็นเวลาปัจจุบัน
+                // ไม่งั้น sitemap ทั้งไฟล์พังเพราะแถวเดียว
+                'lastmod' => $page->updated_at?->toAtomString() ?? $now,
                 'changefreq' => 'weekly',
                 'priority' => '0.7',
             ];
