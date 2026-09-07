@@ -2970,6 +2970,13 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
+        // 🧹 (2026-09-07) ก่อนจะ force แบบ "ไม่มี SMS" — ลองผูก SMS ที่ค้างคิว admin ให้บิลนี้ก่อน
+        //    ทำงาน "หลัง" ด่านปฏิเสธข้างบนเท่านั้น = ไม่ผ่อนเกณฑ์อนุมัติเดิมแม้แต่นิดเดียว
+        //    (เส้นที่ไม่ force ยังต้องมี SMS ยอดตรงเป๊ะเหมือนเดิม)
+        if (! $notification && $force) {
+            $notification = $this->findOrphanNotificationForBill($reading, $billAmount);
+        }
+
         // ⚠️ Force approve โดยไม่มี SMS — log critical สำหรับ audit
         if (! $notification && $force) {
             Log::critical('⚠️ SMS Payment: Force approve โดยไม่มี SMS', [
@@ -3021,6 +3028,93 @@ class SmsPaymentController extends Controller
             'message' => 'Fortune reading approved and deep reading sent',
             'data' => ['order' => $this->transformFortuneReadingToOrderApproval($reading)],
         ]);
+    }
+
+    /**
+     * 🧹 หา SMS ที่ค้างคิว admin (orphan) มาผูกกับบิลที่กำลังถูก force approve
+     *
+     * ปัญหาที่แก้ (เคสจริง 2026-09-07 — reading 12570 / FTU-260907-H8933):
+     *   บิลออก "ยอดเฉพาะ" 39.63 แต่ลูกค้าโอนราคาป้าย 39.00
+     *   → UPA จับคู่ไม่ติด → SMS โดน flag เป็น requires_admin_review
+     *   → admin กด force approve → บิลถูกตัด แต่ SMS ใบนั้น "ไม่เคยถูกล้างธง"
+     *   → คิวรีวิวสะสม 655 ใบ ซึ่ง 607 ใบจัดการไปแล้ว ⇒ เคสที่ค้างจริง 48 ใบถูกกลบ
+     *
+     * เกณฑ์ (อนุรักษ์นิยม — ยอมไม่เจอ ดีกว่าผูกผิดใบ):
+     *   - ยังไม่ถูกผูกกับบิลไหน (matched_transaction_id = NULL)
+     *   - เป็นเงินเข้า และยังค้างจริง (requires_admin_review / pending)
+     *   - อยู่ในหลักบาทเดียวกับบิล เช่น 39.xx ↔ 39.xx
+     *     (ช่วงเดียวกับที่ SmsPaymentService::flagOrphanFortunePayment() ใช้ตัดสินว่าเป็น orphan)
+     *   - มาถึงหลังบิลถูกสร้าง และไม่เกินอายุบิล (billTimeoutMinutes)
+     *     → กันไปดูดเงินข้ามวันที่อาจเป็นของลูกค้าคนอื่น
+     *   - ต้องเจอ "ใบเดียวเท่านั้น" — กำกวมเมื่อไหร่ไม่ผูก (เหตุผลอยู่ตรงจุดเช็คด้านล่าง)
+     *
+     * ⚠️ ไม่ผ่อนเกณฑ์อนุมัติ — ถูกเรียกหลัง admin ตัดสินใจ force แล้วเท่านั้น
+     *    เส้นที่ไม่ force ยังต้องมี SMS ยอดตรงเป๊ะเหมือนเดิมทุกประการ
+     *
+     * @return SmsPaymentNotification|null null = ไม่มีใบที่มั่นใจพอ → ปล่อยให้ force ทำงานแบบเดิม
+     */
+    private function findOrphanNotificationForBill(FortuneReading $reading, float $billAmount): ?SmsPaymentNotification
+    {
+        if ($billAmount <= 0 || $reading->created_at === null) {
+            return null;
+        }
+
+        // บิล 39.63 → รับ 39.00–39.99 (ยอดเฉพาะถูกสุ่มเป็นเศษสตางค์ในหลักบาทเดียวกันเสมอ)
+        $tierFloor = floor($billAmount);
+        $windowStart = $reading->created_at->copy();
+        $windowEnd = $windowStart->copy()->addMinutes(FortuneReading::billTimeoutMinutes());
+
+        $candidates = SmsPaymentNotification::query()
+            ->whereNull('matched_transaction_id')
+            ->where('type', 'credit')
+            ->whereIn('status', ['requires_admin_review', 'pending'])
+            ->where('amount', '>=', $tierFloor)
+            ->where('amount', '<', $tierFloor + 1)
+            ->where(function ($q) use ($windowStart, $windowEnd) {
+                // ใช้ sms_timestamp เป็นหลัก — บางใบไม่มี ให้ตกมาใช้ created_at
+                $q->whereBetween('sms_timestamp', [$windowStart, $windowEnd])
+                    ->orWhere(function ($inner) use ($windowStart, $windowEnd) {
+                        $inner->whereNull('sms_timestamp')
+                            ->whereBetween('created_at', [$windowStart, $windowEnd]);
+                    });
+            })
+            ->orderBy('sms_timestamp')
+            ->get();
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        // 🛑 เจอมากกว่า 1 ใบ = เดาไม่ได้ว่าเงินก้อนไหนของบิลนี้ → "ไม่ผูก" ดีกว่าผูกมั่ว
+        //    เพราะถ้าผูกผิดใบ = ไปกลืนเงินของลูกค้าอีกคนที่ยังไม่ได้รับบริการ
+        //    แล้วใบนั้นจะหลุดออกจากคิวรีวิวถาวร = ซ่อนปัญหาที่เรากำลังพยายามขุดขึ้นมา
+        //    (วัดกับข้อมูลจริง พ.ค.–ก.ย. 2026: 190 บิลที่เจอ candidate มี 91 บิลที่กำกวม ≈ 48%)
+        //    เคสกำกวมให้ admin ผูกเองผ่าน findBillCandidatesForOrphan() / confirmOrphanMatch()
+        if ($candidates->count() > 1) {
+            Log::warning('🤔 SMS Payment: force approve — มี SMS ค้างคิวหลายใบ ไม่ผูกอัตโนมัติ (ให้ admin เลือกเอง)', [
+                'fortune_reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'bill_amount' => $billAmount,
+                'candidate_count' => $candidates->count(),
+                'candidate_ids' => $candidates->pluck('id')->all(),
+                'candidate_amounts' => $candidates->pluck('amount')->all(),
+            ]);
+
+            return null;
+        }
+
+        $picked = $candidates->first();
+
+        Log::warning('🧹 SMS Payment: force approve — ผูกกับ SMS ยอดไม่ตรงที่ค้างคิว admin', [
+            'fortune_reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'bill_amount' => $billAmount,
+            'notification_id' => $picked->id,
+            'notification_amount' => $picked->amount,
+            'delta' => round($billAmount - (float) $picked->amount, 2),
+        ]);
+
+        return $picked;
     }
 
     /**
