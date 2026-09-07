@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?php echo '<?xml version="1.0" encoding="UTF-8"?>'; ?>
+{{-- ห้ามเขียน <?xml ตรงๆ: prod ตั้ง short_open_tag=On ⇒ Blade (token_get_all) อ่านเป็น PHP short tag --}}
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
