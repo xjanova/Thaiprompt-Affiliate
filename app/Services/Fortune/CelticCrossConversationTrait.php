@@ -3484,9 +3484,14 @@ trait CelticCrossConversationTrait
             $celticNextQuestions = array_slice($celticNextQuestions, 0, 2);
         }
 
+        // ⏳ (2026-09-08 FTU-260905-N3337) ด่านเวลา — เดิมกล่องนี้ดูแค่ "โควตาจำนวนคำถาม"
+        //   ไม่เคยดูว่า *หน้าต่างคุยเหลือกี่วินาที* ⇒ ยื่นปุ่มให้ตอนเหลือ 50 วิ ลูกค้ากดแล้วเงียบ
+        //   (คู่กับ QaSettleTrait::qaClampToRemainingWindow ที่กันฝั่ง "กดแล้วยิงไม่ทัน")
+        $canOfferNext = $this->qaCanOfferNextQuestion($reading, (string) $finalMessage);
+
         $suggestionBox = null;
         $suggestionButtons = [];
-        if (! empty($celticNextQuestions) && ($remainingQ === null || $remainingQ > 0)) {
+        if (! empty($celticNextQuestions) && ($remainingQ === null || $remainingQ > 0) && $canOfferNext) {
             $suggestionBox = $this->buildCelticSuggestionBox($celticNextQuestions);
             $suggestionButtons = $this->buildCelticSuggestionButtons($celticNextQuestions);
             // เก็บคำถามเต็มไว้ map ตอนลูกค้ากดเลข (TTL ยาวกว่า qa window เผื่อกดช้า)
@@ -3542,6 +3547,16 @@ trait CelticCrossConversationTrait
     {
         // carry (both-pick ข้อ 2) อ่านจาก Cache ภายใน finalizeCelticAnswer เอง (buffer path ไม่มี local carry)
         return $this->finalizeCelticAnswer($reading, $result, null);
+    }
+
+    /**
+     * 🔧 (2026-09-08) public wrapper — ให้ ProcessBufferedCelticMessageJob ฝากคำถามที่มาหลังหมดเวลา
+     *   เข้าบทสรุปได้เหมือนเส้นตรง (handleCelticAwaitingQuestion ตอน canAskMoreCeltic() = false)
+     *   เดิม job ไม่มีทางเรียก → คำถามที่ตกด่านเวลาหายเงียบทั้งข้อ
+     */
+    public function stashUnansweredCelticQuestionPublic(FortuneReading $reading, string $question): bool
+    {
+        return $this->stashUnansweredCelticQuestion($reading, $question);
     }
 
     /**

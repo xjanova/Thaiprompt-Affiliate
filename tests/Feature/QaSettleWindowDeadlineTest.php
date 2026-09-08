@@ -186,4 +186,65 @@ class QaSettleWindowDeadlineTest extends TestCase
         $this->subject->rambling = true;
         $this->assertSame(0, $this->subject->qaSettleWindow($reading, 10));
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 🔘 ครึ่งหลังของบั๊กเดียวกัน — ปุ่มคำถามแนะนำที่ยื่นตอนเวลาไม่พอ
+    //
+    //   การหดหน้าต่างรอกันได้แค่ "กดแล้วยิงไม่ทัน" แต่ต้นทางของ FTU-260905-N3337
+    //   คือระบบยื่นปุ่มให้ตอนเหลือเวลาไม่ถึงจะอ่านคำตอบจบด้วยซ้ำ
+    //   เกณฑ์ = readSec ของคำตอบที่เพิ่งส่ง (เพดาน 60 วิ) + กันชน 20 วิ
+    // ══════════════════════════════════════════════════════════════════════
+
+    /** คำตอบยาว = ต้องใช้เวลาอ่านนาน — เหลือ 60 วิ ยื่นปุ่มไปก็กดไม่ทัน */
+    public function test_คำตอบยาว_เหลือเวลาน้อย_ต้องไม่ยื่นปุ่ม(): void
+    {
+        $คำตอบยาว = str_repeat('ก', 1200);   // readSec = 1200/4 = 300 → clamp 60 ⇒ ต้องการ 80 วิ
+
+        $this->assertFalse(
+            $this->subject->qaCanOfferNextQuestion($this->readingWithRemaining(60), $คำตอบยาว),
+            'เหลือ 60 วิ แต่ต้องการ 80 วิ → ห้ามยื่นปุ่ม'
+        );
+    }
+
+    /** เวลาเหลือเยอะ → ต้องยื่นปุ่มตามเดิม (กัน regression) */
+    public function test_เวลาเหลือเยอะ_ต้องยื่นปุ่มตามเดิม(): void
+    {
+        $คำตอบยาว = str_repeat('ก', 1200);
+
+        $this->assertTrue(
+            $this->subject->qaCanOfferNextQuestion($this->readingWithRemaining(600), $คำตอบยาว)
+        );
+    }
+
+    /**
+     * ✂️ คำตอบสั้น = อ่านจบไว — เหลือ 40 วิ ยังกดทัน ต้องไม่ตัดปุ่มทิ้ง
+     *
+     * ⚠️ เกณฑ์ต้องผูกกับ "ความยาวคำตอบ" ไม่ใช่เลขตายตัว
+     *    ถ้าตัดด้วยเลขเดียวทุกเคส ลูกค้าที่ยังกดทันจะเสียทางลัดฟรี ๆ
+     */
+    public function test_คำตอบสั้น_เหลือเวลาพอ_ต้องยังยื่นปุ่ม(): void
+    {
+        $คำตอบสั้น = str_repeat('ก', 40);   // readSec = 10 (ขั้นต่ำ) ⇒ ต้องการ 30 วิ
+
+        $this->assertTrue(
+            $this->subject->qaCanOfferNextQuestion($this->readingWithRemaining(40), $คำตอบสั้น),
+            'เหลือ 40 วิ ต้องการ 30 วิ → ยังยื่นปุ่มได้'
+        );
+
+        $this->assertFalse(
+            $this->subject->qaCanOfferNextQuestion($this->readingWithRemaining(15), $คำตอบสั้น),
+            'เหลือ 15 วิ ต้องการ 30 วิ → ห้ามยื่นปุ่ม'
+        );
+    }
+
+    /** ยังไม่เริ่มจับเวลา = ไม่มีเส้นตาย → fail-open ยื่นปุ่มตามปกติ */
+    public function test_ไม่มีเส้นตาย_ต้องยื่นปุ่มตามปกติ(): void
+    {
+        $reading = new FortuneReading;
+        $reading->id = 12386;
+
+        $this->assertTrue(
+            $this->subject->qaCanOfferNextQuestion($reading, str_repeat('ก', 1200))
+        );
+    }
 }

@@ -205,6 +205,57 @@ trait QaSettleTrait
     }
 
     /**
+     * 🔘 (2026-09-08) ยังควรยื่น "ปุ่มคำถามข้อต่อไป" ให้ลูกค้าไหม
+     *
+     * ครึ่งหลังของบทเรียนเดียวกับ qaClampToRemainingWindow (เคส FTU-260905-N3337):
+     * การหดหน้าต่างรอกันได้แค่ "กดแล้วยิงไม่ทัน" — แต่ต้นทางของเคสนั้นคือ
+     * **ระบบยื่นปุ่มคำถามแนะนำให้ตอนเหลือเวลาไม่ถึงจะอ่านคำตอบจบด้วยซ้ำ**
+     * ปุ่มที่กดแล้วไม่มีอะไรเกิดขึ้น เจ็บกว่าไม่มีปุ่มให้กด (ลูกค้าจ่าย 99 แล้วเจอความเงียบ)
+     *
+     * เกณฑ์ = "อ่านคำตอบนี้จบแล้วยังเหลือเวลาให้แม่หมอตอบอีกข้อไหม"
+     *   readSec ของคำตอบที่เพิ่งส่ง (เพดาน 60 วิ — คนอ่านผ่าน ๆ แล้วกดเลยก็มี ไม่ตัดปุ่มเร็วเกิน)
+     *   + กันชนก่อนเส้นตายตัวเดียวกับ settle-buffer
+     *
+     * ⚠️ fail-open ทุกทาง — อ่านเวลาไม่ได้/ไม่มีเส้นตาย = ยื่นปุ่มตามเดิม
+     *    (ตัดปุ่มผิดพลาด = ลูกค้าเสียทางลัด ; ปล่อยปุ่มผิดพลาด = แค่กลับไปเท่าพฤติกรรมเดิม)
+     *
+     * @param  string  $answerText  คำตอบที่กำลังจะส่งไปพร้อมปุ่มชุดนี้
+     */
+    public function qaCanOfferNextQuestion(FortuneReading $reading, string $answerText = ''): bool
+    {
+        try {
+            $remaining = $reading->qaRemainingSeconds();
+        } catch (\Throwable $e) {
+            return true;
+        }
+
+        // null = ยังไม่มีเส้นตาย (ยังไม่เริ่มจับเวลา / ไม่จำกัด) → ยื่นปุ่มได้
+        if ($remaining === null) {
+            return true;
+        }
+
+        $tune = $this->qaRambleTuning();
+
+        $readSec = (int) round(mb_strlen(strip_tags($answerText)) / max(1, $tune['charsPerSec']));
+        $readSec = max($tune['minSec'], min(60, $readSec));
+
+        $need = $readSec + $this->qaSettleDeadlineGuardSeconds();
+
+        if ($remaining >= $need) {
+            return true;
+        }
+
+        Log::info('QaSettle: เวลาเหลือไม่พอ → ไม่ยื่นปุ่มคำถามข้อต่อไป', [
+            'reading_id' => $reading->id,
+            'remaining_sec' => $remaining,
+            'need_sec' => $need,
+            'read_sec' => $readSec,
+        ]);
+
+        return false;
+    }
+
+    /**
      * เพดานแข็ง — นับจากข้อความแรกในชุด ครบแล้วต้องตอบแม้ลูกค้ายังพิมพ์อยู่
      */
     public function qaSettleMaxSeconds(): int

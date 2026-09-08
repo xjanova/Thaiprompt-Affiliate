@@ -7,6 +7,7 @@ use App\Models\FortuneTellingSetting;
 use App\Services\CelticCrossService;
 use App\Services\Fortune\MessageBuffer;
 use App\Services\FortuneChannelManager;
+use App\Services\FortuneLocaleService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -89,6 +90,33 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
         //   เดิมเคสนี้ = `return;` เงียบ → คำถามลูกค้าที่จ่าย 99฿ ระเหยโดยไม่มี error
         $convService = new \App\Services\FortuneConversationService(FortuneTellingSetting::getSettings());
 
+        // 🛟 (2026-09-08 FTU-260905-N3337) ด่านสถานะ/หมดเวลา ต้องตัดสิน **ก่อน** หยิบคำถามออกจากตาข่ายกู้
+        //
+        //   ลำดับเดิมกลับหัว: flush + take (ล้างสำเนาบน conversation_state ทิ้ง) แล้วค่อยเช็ค
+        //   canAskMoreCeltic() → หมดเวลา = `return;` เงียบ ⇒ คำถามหายถาวร ไม่เหลือให้
+        //   fortune:celtic-answer-recover กู้ และไม่เข้าบทสรุปด้วย
+        //   (ลูกค้าจ่าย 99 กดปุ่มที่ระบบเสนอเอง แล้วได้ความเงียบ — ช้าไป 1 วินาที)
+        //
+        //   บทเรียนเดียวกับฝั่ง Deep 39 (FTU-260822-P2391): เช็ค session ก่อน แล้วค่อยหยิบของ
+        if (! in_array($reading->conversation_status, [
+            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            FortuneReading::STATUS_CELTIC_GENERATING,
+        ], true)) {
+            // ⚠️ ห้าม take — ปล่อยสำเนาไว้ให้ตาข่ายกู้/บทสรุปเก็บ (เดิมกินทิ้งไปแล้วถึงค่อย return)
+            $peek = $convService->peekPendingProSessionQuestionPublic($reading, 'celtic');
+
+            Log::warning('ProcessBufferedCelticMessageJob: สถานะไม่ตรง → ไม่ตอบ (คงคำถามไว้ให้ตาข่ายกู้)', [
+                'reading_id' => $this->readingId,
+                'state' => $reading->conversation_status,
+                'q_preview' => mb_substr((string) $peek['text'], 0, 120),
+            ]);
+
+            return;
+        }
+
+        // อ่านไว้ก่อนหยิบของ — ใช้ตัดสินท้ายบล็อกว่าจะตอบปกติ หรือปิดรอบด้วยบทสรุป
+        $windowClosed = ! $reading->canAskMoreCeltic();
+
         $combined = '';
         $messageCount = 0;
         if (! empty($buf)) {
@@ -121,23 +149,10 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             return;
         }
 
-        // ตรวจ canAskMore + state เผื่อ session หมดเวลาแล้ว
-        if (! $reading->canAskMoreCeltic()) {
-            Log::info('ProcessBufferedCelticMessageJob: session expired → skip', [
-                'reading_id' => $this->readingId,
-            ]);
-
-            return;
-        }
-
-        if (! in_array($reading->conversation_status, [
-            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
-            FortuneReading::STATUS_CELTIC_GENERATING,
-        ], true)) {
-            Log::info('ProcessBufferedCelticMessageJob: state mismatch → skip', [
-                'reading_id' => $this->readingId,
-                'state' => $reading->conversation_status,
-            ]);
+        // ⏳ (2026-09-08) หน้าต่างคุยปิดไปแล้วระหว่างที่คำถามนอนอยู่ใน settle-buffer
+        //   เดิมจุดนี้คือ `return;` เปล่า ๆ — ตอนนี้ทำแบบเดียวกับเส้นตรง: ฝากเข้าบทสรุป + ปิดรอบ
+        if ($windowClosed) {
+            $this->closeSessionWithLateQuestion($reading, $convService, $combined);
 
             return;
         }
@@ -164,6 +179,14 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             $reading->refresh();
 
             if (! $result['success']) {
+                // ⏳ (2026-09-08) หน้าต่างเพิ่งปิดระหว่างที่ AI กำลังคิด — askQuestion() ก็ตัดด้วยด่านเวลาเหมือนกัน
+                //   ถ้าตอบ "พิมพ์คำถามเดิมส่งมาอีกครั้ง" ตรงนี้ = หลอกลูกค้าให้พิมพ์ซ้ำเข้าประตูที่ปิดไปแล้ว
+                if (! $reading->canAskMoreCeltic()) {
+                    $this->closeSessionWithLateQuestion($reading, $convService, $combined);
+
+                    return;
+                }
+
                 // 🌙 (2026-06-06) user spec: "อย่าแจ้งลูกค้าว่าเอไอขัดข้องเด็ดขาด" — ไม่ echo technical msg
                 $this->sendErrorReply('🌙 แม่หมอขอตั้งสมาธิที่ไพ่อีกครู่นะคะ — พิมพ์คำถามเดิมส่งมาอีกครั้งได้เลยค่ะ ✨');
                 $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
@@ -192,6 +215,90 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
             $this->sendErrorReply('เกิดข้อผิดพลาด ลองพิมพ์ใหม่อีกครั้งค่ะ');
+        }
+    }
+
+    /**
+     * ⏳ (2026-09-08 FTU-260905-N3337) คำถามมาถึงหลังหน้าต่างคุยปิด — **ห้ามเงียบ**
+     *
+     * เดิมจุดนี้คือ `return;` เปล่า ๆ หลังจากคำถามถูกหยิบออกจากตาข่ายกู้ไปแล้ว
+     * ⇒ ลูกค้าจ่าย 99 กดปุ่มคำถามแนะนำที่ระบบเสนอเอง แล้วได้ความเงียบ ไม่มีข้อความบอกว่าทำไม
+     *
+     * ทำแบบเดียวกับเส้นตรง (handleCelticAwaitingQuestion เมื่อ canAskMoreCeltic() = false):
+     *   1) ฝากคำถามเป็นแถว pending → บทสรุปท้าย (Grand Finale) ตอบให้ในนั้น
+     *   2) ปิดรอบ + ส่งบทสรุปทันที ไม่ต้องรอ cron fortune:celtic-auto-finalize (สูงสุด 5 นาที)
+     *
+     * ⚠️ ธง `celtic_grand_finale_at` = กันส่งบทสรุปซ้ำ (ธงตัวเดียวกับที่ cron ใช้)
+     */
+    protected function closeSessionWithLateQuestion(
+        FortuneReading $reading,
+        \App\Services\FortuneConversationService $convService,
+        string $question
+    ): void {
+        $stashed = false;
+
+        try {
+            $stashed = $convService->stashUnansweredCelticQuestionPublic($reading, $question);
+        } catch (\Throwable $e) {
+            Log::error('ProcessBufferedCelticMessageJob: ฝากคำถามเข้าบทสรุปไม่สำเร็จ', [
+                'reading_id' => $this->readingId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        Log::warning('ProcessBufferedCelticMessageJob: ⏳ คำถามมาถึงหลังหมดเวลา → ฝากเข้าบทสรุปแล้วปิดรอบ', [
+            'reading_id' => $this->readingId,
+            'stashed' => $stashed,
+            'q_preview' => mb_substr($question, 0, 120),
+        ]);
+
+        try {
+            $reading->refresh();
+
+            // 🛡️ บทสรุปส่งไปแล้ว (cron ชิงปิดก่อน / เส้นอื่นปิดไปแล้ว) → ห้ามส่งซ้ำ
+            //
+            //   เช็ค 2 ชั้น เพราะธงกับสถานะถูกตั้งคนละจังหวะ:
+            //     • endCelticSession() ตั้ง status = COMPLETED **ทันทีที่เข้า** (ก่อนยิง AI)
+            //     • celtic_grand_finale_at ถูกตั้ง **ตอนบทสรุปเสร็จ** (CelticCrossService)
+            //   ⇒ ถ้าดูแค่ธง จะมองไม่เห็นตัวที่กำลัง generate อยู่ = ลูกค้าได้บทสรุป 2 ใบ
+            if (! empty($reading->getConversationState('celtic_grand_finale_at'))
+                || $reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
+                Log::info('ProcessBufferedCelticMessageJob: มีเส้นอื่นปิดรอบไปแล้ว → ไม่ส่งบทสรุปซ้ำ', [
+                    'reading_id' => $this->readingId,
+                    'state' => $reading->conversation_status,
+                ]);
+
+                return;
+            }
+
+            // 🌐 queue worker ไม่มี request context → คืน locale ก่อนสร้างบทสรุป (แบบเดียวกับ cron auto-finalize)
+            try {
+                FortuneLocaleService::setCurrent(
+                    FortuneLocaleService::getStored($this->platform, $this->userId)
+                        ?? FortuneLocaleService::LOCALE_TH
+                );
+            } catch (\Throwable $e) {
+                FortuneLocaleService::setCurrent(FortuneLocaleService::LOCALE_TH);
+            }
+
+            $payload = $convService->endCelticSession($reading, 'time_expired');
+
+            // 🎟️ LINE: ใช้ replyToken ที่เทิร์น silent_skip ฝากไว้ก่อน = ฟรี ไม่กินโควต้า push
+            //    FB: POST_PURCHASE_UPDATE ส่งได้แม้พ้นหน้าต่าง 24 ชม. (แบบเดียวกับ cron auto-finalize)
+            app(FortuneChannelManager::class)->sendResponse(
+                $this->platform,
+                $this->userId,
+                $payload,
+                array_merge(
+                    ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'],
+                    $this->borrowedReplyExtra()
+                )
+            );
+        } catch (\Throwable $e) {
+            Log::error('ProcessBufferedCelticMessageJob: ปิดรอบ + ส่งบทสรุปไม่สำเร็จ', [
+                'reading_id' => $this->readingId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
