@@ -352,6 +352,14 @@ class FortuneTellingSetting extends Model
         'nav_flood_same_payload_lock_sec',
         'nav_flood_cooldown_minutes',
         'nav_flood_ban_days',
+        // 🎭 (2026-09-08) ด่านยิงสติกเกอร์/อีโมจิรัว — ดู App\Services\Fortune\GestureFloodGuard
+        'enable_gesture_flood_guard',
+        'gesture_flood_mode',
+        'gesture_flood_free_replies',
+        'gesture_flood_max',
+        'gesture_flood_window_sec',
+        'gesture_flood_cooldown_minutes',
+        'gesture_flood_ban_days',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม จาก RAG — รัก/เงิน/ฤกษ์/เลข/ของมงคล/จิตใจ/ครอบครัว/เดินทาง/คดี/แก้กรรม
         'enable_celtic_love',
         'enable_celtic_wealth',
@@ -669,6 +677,13 @@ class FortuneTellingSetting extends Model
         'nav_flood_same_payload_lock_sec' => 'integer',
         'nav_flood_cooldown_minutes' => 'integer',
         'nav_flood_ban_days' => 'integer',
+        // 🎭 (2026-09-08) GestureFloodGuard
+        'enable_gesture_flood_guard' => 'boolean',
+        'gesture_flood_free_replies' => 'integer',
+        'gesture_flood_max' => 'integer',
+        'gesture_flood_window_sec' => 'integer',
+        'gesture_flood_cooldown_minutes' => 'integer',
+        'gesture_flood_ban_days' => 'integer',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม
         'enable_celtic_love' => 'boolean',
         'enable_celtic_wealth' => 'boolean',
@@ -942,6 +957,16 @@ class FortuneTellingSetting extends Model
         'nav_flood_same_payload_lock_sec' => 25,
         'nav_flood_cooldown_minutes' => 5,
         'nav_flood_ban_days' => 7,
+        // 🎭 (2026-09-08, เจ้าของสั่ง "เปิดเลย") ด่านยิงสติกเกอร์/อีโมจิรัว
+        //   ต่างจาก nav_flood: เปิด + enforce ตั้งแต่แรก เพราะมีเคสจริงกำลังกวนอยู่ตอนตั้งค่า
+        //   ความเสี่ยง false-positive ถูกกดด้วยขั้นบันไดแทน (ตอบปกติ 2 ใบ → เงียบ → เตือน 2 → ระงับ)
+        'enable_gesture_flood_guard' => true,
+        'gesture_flood_mode' => 'enforce',
+        'gesture_flood_free_replies' => 2,
+        'gesture_flood_max' => 6,
+        'gesture_flood_window_sec' => 300,
+        'gesture_flood_cooldown_minutes' => 5,
+        'gesture_flood_ban_days' => 7,
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,

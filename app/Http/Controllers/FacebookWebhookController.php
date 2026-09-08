@@ -2893,6 +2893,46 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🎭 (2026-09-08, เจ้าของสั่ง) ด่านยิงสติกเกอร์/อีโมจิรัว — รู้ทัน / เงียบ / เตือน / ระงับ
+        //    ⚠️ ต้องอยู่ "หลัง" pendingDelivery + ด่านแบน (กันลูกค้าจ่ายแล้วคำทำนายค้าง)
+        //       และ "ก่อน" ทุก flow ที่ผลิตคำตอบ — ไม่งั้นเส้น waiting_payment / filtered
+        //       ยังส่งข้อความออกอยู่ดีแม้ด่านจะตัดสินว่าให้เงียบ
+        //
+        //    เคสจริง FTU-260908-Y1018 (แสนที เล็ก): เปิดบิล 39฿ ไม่จ่าย แล้วยิง 113 ข้อความ
+        //    ใน 15 นาที (สติกเกอร์/อีโมจิล้วน 73 ใบ) บอทถูกลากตอบกลับ 94 ข้อความ
+        //    เพราะ "มีบิลค้าง" = ได้เกราะ active flow — ด่านสติกเกอร์เดิมทั้ง 3 ตัว gate ผิดที่หมด
+        $gestureVerdict = app(\App\Services\Fortune\GestureFloodGuard::class)->check(
+            'facebook',
+            $senderId,
+            $messageText,
+            $attachments,
+            // 🏷️ lazy — ยิง Graph เฉพาะตอนด่านจะบันทึกความผิดจริง ไม่ใช่ทุกข้อความขาเข้า
+            function () use ($senderId) {
+                $p = $this->facebookService->getUserProfile($senderId);
+
+                return trim(($p['first_name'] ?? '').' '.($p['last_name'] ?? '')) ?: ($p['name'] ?? null);
+            },
+        );
+
+        if ($gestureVerdict['action'] !== \App\Services\Fortune\GestureFloodGuard::ACTION_PASS) {
+            if (! empty($gestureVerdict['message'])) {
+                try {
+                    $this->facebookService->sendMessage($senderId, $gestureVerdict['message']);
+                } catch (\Throwable $e) {
+                    Log::warning('FB gesture flood: ส่งข้อความเตือนล้มเหลว (non-blocking)', [
+                        'sender_id' => $senderId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info('🎭 FB: gesture flood guard → '.$gestureVerdict['action'], [
+                'sender_id' => $senderId,
+            ]);
+
+            return;
+        }
+
         // 🔒 (2026-05-20) IN-PREDICTION guard — ห้าม handoff/affiliate ระหว่างทำนาย
         //    User spec: ระหว่างทำนาย ไม่ต้องคุยกับคน ไม่ต้องโยน affiliate
         //    เดี๋ยวแอดมินจะแทคเอง ถ้าจำเป็น (admin /aistop ยัง win)

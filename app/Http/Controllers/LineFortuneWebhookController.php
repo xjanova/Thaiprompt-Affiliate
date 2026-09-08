@@ -259,6 +259,42 @@ class LineFortuneWebhookController extends Controller
             return;
         }
 
+        // 🎭 (2026-09-08, เจ้าของสั่ง) ด่านยิงสติกเกอร์/อีโมจิรัว — parity กับ FB
+        //    [[rule_spam_guard_parity_fb_line]] — ด่านที่ทำฝั่งเดียวคือด่านที่คนกวนย้ายช่องหนี
+        //    ⚠️ ต้องอยู่หลัง parked-delivery + ban guard (ของที่ลูกค้าจ่ายแล้วต้องไปถึงก่อนเสมอ)
+        //    ⚠️ เตือนด้วย reply เท่านั้น — ไม่มี replyToken = เงียบ ห้ามเผาโควต้า push 300/เดือน
+        //       ไปกับคนกวน ([[rule_line_push_is_emergency_reserve_only]])
+        $gestureVerdict = app(\App\Services\Fortune\GestureFloodGuard::class)->check(
+            'line',
+            $userId,
+            $messageText,
+            [],
+            null,
+            $messageType === 'sticker',
+        );
+
+        if ($gestureVerdict['action'] !== \App\Services\Fortune\GestureFloodGuard::ACTION_PASS) {
+            if (! empty($gestureVerdict['message']) && $replyToken) {
+                try {
+                    $this->lineService->replyMessage($replyToken, [
+                        ['type' => 'text', 'text' => $gestureVerdict['message']],
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('LINE gesture flood: ส่งข้อความเตือนล้มเหลว (non-blocking)', [
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info('🎭 LINE: gesture flood guard → '.$gestureVerdict['action'], [
+                'user_id' => $userId,
+                'message_type' => $messageType,
+            ]);
+
+            return;
+        }
+
         // 📸 รับรูปภาพ — ตรวจบริบท active reading แล้วตอบตามสถานะ
         //   📸 (2026-05-16) Celtic Pro Session (เปิดไพ่ครบ 10) + image → vision AI วิเคราะห์
         //   PENDING_PAYMENT → assume สลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"
