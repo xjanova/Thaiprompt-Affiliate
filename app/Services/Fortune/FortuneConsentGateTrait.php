@@ -65,23 +65,42 @@ trait FortuneConsentGateTrait
      */
     protected function consentGateOrNull(string $uid, string $tier, ?FortuneReading $reading = null): ?array
     {
-        // ⚡ (2026-06-26) Bypass สวิตช์ — ข้ามกล่องกติกา/รหัสเสียงทั้งหมด → สร้างบิลทันที (ตาม tier ที่เลือก)
-        //   มีศักดิ์เหนือทุก setting (เช็คก่อนสุด). owner เปิดเมื่ออยากให้ flow ลื่นไม่มีด่านกติกาเลย
-        if ((bool) ($this->settings->consent_gate_bypass ?? false)) {
-            return null;
-        }
-
-        // ปิดทั้งระบบ → ไม่ขวาง flow เดิม
-        if (! $this->settings->isConsentEnabled()) {
-            return null;
-        }
-
         if (empty($uid)) {
             return null;
         }
 
         // ลูกค้าจ่ายแล้ว / กำลังทำนาย → ห้ามเด้งกติกาคั่น (เคารพ paid customer)
+        //   ⬆️ (2026-09-08) ย้ายขึ้นมาก่อน bypass — ต้องรู้ให้ชัดว่าเป็นลูกค้าจ่ายเงินไหม
+        //      ก่อนตัดสินอะไรทั้งนั้น ([[rule_paid_customer_bypass_all_guards]])
         if (method_exists($this, 'hasPaidActiveReading') && $this->hasPaidActiveReading($uid)) {
+            return null;
+        }
+
+        // 📋 (2026-09-08, เจ้าของสั่ง "เปิดบิลซ้ำๆ แต่ไม่จ่าย จะสร้างบิลใหม่ต้องเข้าใจก่อน")
+        //   คนที่ค้างบิลไม่จ่าย ≥ N ใบใน 7 วัน ต้องผ่านแบบสอบถาม 5 ข้อก่อนเสมอ
+        //   ⚠️ ตัวนับล้างเองเมื่อจ่ายสำเร็จ (unpaidBillCountRecent นับเฉพาะบิลหลังการจ่ายล่าสุด)
+        //      ⇒ ลูกค้าที่เคยจ่ายจะไม่มีวันเจอด่านนี้
+        $mustQuiz = $this->shouldUseConsentQuiz($uid);
+
+        // ⚡ (2026-06-26) Bypass สวิตช์ — ข้ามกล่องกติกา/รหัสเสียงทั้งหมด → สร้างบิลทันที
+        //   owner เปิดเมื่ออยากให้ flow ลื่นไม่มีด่านกติกาเลย
+        //
+        // 🩹 (2026-09-08) เดิมอยู่บรรทัดแรกและ return ทันที ⇒ ปิดทั้ง 3 ด่านรวด
+        //   (แบบสอบถาม + รหัสเสียง + กล่องกติกา) ทั้งที่ทุกสวิตช์เปิดอยู่
+        //   prod วัดได้: `enable_consent_quiz=1` แต่ log "แสดงกล่องกติกาก่อนสร้างบิล" = **0 ครั้ง/7 วัน**
+        //   ⇒ ด่านกันคนเปิดบิลเล่นตายสนิทมาตลอด และ BillTrollGuard ที่รอ `quiz_gate_accepted`
+        //      ก็เลยไม่มีวันได้ธงนั้น (ออกทางประตู "ข้าม" 12/12 ครั้ง)
+        //
+        //   Fix: bypass มีไว้ลด friction ให้ **ลูกค้าปกติ** ไม่ใช่ให้คนที่ค้างบิลซ้ำๆ
+        //   ⇒ คนเข้าเกณฑ์แบบสอบถามยังต้องผ่านด่าน แม้ bypass เปิด
+        $bypass = (bool) ($this->settings->consent_gate_bypass ?? false);
+        if ($bypass && ! $mustQuiz) {
+            return null;
+        }
+
+        // ปิดทั้งระบบ → ไม่ขวาง flow เดิม
+        //   (consent ปิด ⇒ consentQuizEnabled() เป็น false อยู่แล้ว ⇒ $mustQuiz = false)
+        if (! $this->settings->isConsentEnabled()) {
             return null;
         }
 
@@ -120,11 +139,27 @@ trait FortuneConsentGateTrait
         // 📋 (2026-07-11) โหมด "แบบสอบถามยืนยันเจตนา 5 ข้อ" — เฉพาะคนสร้างบิลแล้วไม่จ่าย (พวก "หลอด")
         //   ถามใช่/ไม่ใช่ 5 ข้อ เชิงจิตวิทยา (รวมข้อยอมรับ "ถ้าไม่จ่าย = งดใช้งานเพจ N วัน") ก่อนออกบิล
         //   มีศักดิ์เหนือรหัสเสียง (เป็น contract ที่ชัดกว่า). error → degrade เป็น audio-code/กล่องปกติ
-        if ($this->shouldUseConsentQuiz($uid)) {
+        if ($mustQuiz) {
             $quizGate = $this->buildConsentQuizGate($uid, $tier, $reading);
             if ($quizGate !== null) {
                 return $quizGate;
             }
+        }
+
+        // 🩹 (2026-09-08) bypass เปิด + แบบสอบถามสร้างไม่สำเร็จ → เคารพ bypass ปล่อยผ่าน
+        //   ห้ามให้ด่านอื่น (รหัสเสียง / กล่องกติกา) โผล่มาแทน — เจ้าของเปิด bypass ไว้ตั้งใจ
+        //   เราแค่เจาะรูให้แบบสอบถามลอดผ่าน ไม่ได้ยกเลิก bypass
+        //   ⚠️ ต้องเก็บกวาด marker ที่เพิ่งตั้งไว้ด้วย ไม่งั้นข้อความถัดไปของลูกค้า
+        //      จะถูกอ่านเป็น "กดยอมรับกติกา" ทั้งที่ไม่เคยเห็นกล่องอะไรเลย
+        if ($bypass) {
+            Cache::forget(self::CONSENT_PENDING_PREFIX.$uid);
+
+            Log::warning('📋 ConsentQuiz: สร้างแบบสอบถามไม่สำเร็จ + bypass เปิด → ปล่อยผ่าน (ไม่ใช้ด่านสำรอง)', [
+                'user_id' => $uid,
+                'tier' => $tier,
+            ]);
+
+            return null;
         }
 
         // 🔊 (2026-06-26) โหมดบังคับฟังเสียงกติกา + กรอกรหัสท้ายคลิป
