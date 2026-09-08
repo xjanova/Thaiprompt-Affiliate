@@ -15,6 +15,10 @@ use App\Services\Fortune\PlanetEphemeris;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Log;
+// ⚠️ ไฟล์นี้อยู่ namespace App\Services — ลืม use = PHP resolve เป็น App\Services\Str
+//    / App\Services\Storage แล้ว fatal ตอน runtime เท่านั้น (บทเรียน 2026-09-06)
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * FortuneHoroscopeService
@@ -34,6 +38,42 @@ class FortuneHoroscopeService
      * (2026-09-03) เดิมกฎนี้ลงแค่เลนบทความเว็บ/DM เลนโพสเพจตกค้าง แจกทุกวัน
      */
     public const LUCKY_NUMBER_DAYS = [15, 29];
+
+    /**
+     * 🎨 คลังสไตล์ภาพ — หมุนตามวันที่ (ดู appendDailyVariation)
+     *
+     * เจ้าของทัก 2026-09-08: "มันใช้ภาพเดิมซ้ำ ๆ กลัวว่ามันจะมองว่าเป็นสแปม"
+     * ตรวจแล้วซ้ำจริงระดับ md5 เดียวกัน 4 วันติด ⇒ ต้องหมุนทั้ง seed และหน้าตา prompt
+     *
+     * เขียนเป็นอังกฤษเพราะโมเดลเจนภาพอ่านอังกฤษแม่นกว่า (ตัว caption ยังไทย 100% เหมือนเดิม)
+     */
+    public const IMAGE_STYLE_ROTATION = [
+        'ornate Thai lacquer and gold-leaf illustration',
+        'ethereal watercolor with soft ink outlines',
+        'deep-space cosmic digital painting',
+        'luminous stained-glass mosaic',
+        'art nouveau poster with flowing linework',
+        'dreamy pastel gouache illustration',
+        'baroque oil painting with dramatic chiaroscuro',
+        'minimal flat vector with fine gold accents',
+        'traditional Thai temple mural style',
+        'layered papercut diorama with depth lighting',
+        'antique celestial engraving, astronomy plate',
+        'iridescent holographic 3D render',
+    ];
+
+    /**
+     * 🎬 คลังมุมภาพ/องค์ประกอบ — จำนวน 7 (เฉพาะกับ 12 สไตล์ ⇒ วนครบรอบที่ 84 วัน)
+     */
+    public const IMAGE_SCENE_ROTATION = [
+        'centered symmetrical mandala composition',
+        'low angle night sky with drifting clouds',
+        'close-up amulet resting on silk fabric',
+        'wide temple courtyard under starlight',
+        'lotus pond reflecting constellations',
+        'swirling nebula framing a zodiac wheel',
+        'candle-lit shrine with incense smoke',
+    ];
 
     protected FortuneChartService $chartService;
 
@@ -179,8 +219,10 @@ class FortuneHoroscopeService
             ]);
 
             // ขั้นที่ 3: สร้างรูปภาพ (ถ้าเปิดใช้)
+            //   ⚠️ ต้องส่ง $targetDate ด้วย — seed/สไตล์ของรูปผูกกับ "วันที่" ไม่ใช่แค่วันเกิด
+            //   (ไม่ส่ง = prompt เดิมทุกวัน = ภาพเดิมไบต์ต่อไบต์ ดู IMAGE_STYLE_ROTATION)
             if ($campaign->include_image) {
-                $imageResult = $this->generateImage($campaign, $birthDay, $astrologyData);
+                $imageResult = $this->generateImage($campaign, $birthDay, $astrologyData, $targetDate);
                 if ($imageResult) {
                     $content->update([
                         'image_url' => $imageResult['url'] ?? null,
@@ -434,25 +476,43 @@ class FortuneHoroscopeService
 
     /**
      * สร้างรูปภาพด้วย AI
+     *
+     * 🎨 (2026-09-08) หมุนภาพทุกวัน — เดิมโพสรูป **ไฟล์เดิมไบต์ต่อไบต์** ทุกวัน
+     *
+     *   หลักฐานจาก prod 8 ก.ย. 2569: md5 ของรูปที่โพส 5/6/7/8 ก.ย. = `0f4add15…` ตัวเดียวกัน
+     *   FB จับรูปซ้ำด้วย hash ⇒ โพสรูปเดิมทุกวัน = สัญญาณสแปมชัดเจน
+     *
+     *   ต้นเหตุซ้อนกัน 2 ชั้น (แก้ทั้งคู่ที่นี่):
+     *     1. เรียก provider **ไม่ส่ง `seed`** — `PollinationsProvider` ใส่ seed ให้เฉพาะภาพที่ 2
+     *        เป็นต้นไปของ batch (`$i > 0`) เราขอ `num_images=1` เสมอ ⇒ ไม่เคยมี seed
+     *        และ Pollinations เป็น deterministic ต่อ prompt ⇒ prompt เดิม = ภาพเดิมเป๊ะ
+     *     2. prompt เดิมทุกวันจริง ๆ — template แทนค่าแค่ {birth_day_name}/{element}/
+     *        {lucky_color}/{main_planet} ซึ่งทั้งหมด**ผูกกับวันเกิด ไม่ใช่วันที่**
+     *
+     *   ⇒ ใส่ seed ที่เปลี่ยนทุกวัน + หมุนสไตล์/มุมภาพจากวันที่ (ดู appendDailyVariation)
      */
     protected function generateImage(
         FortuneHoroscopeCampaign $campaign,
         int $birthDay,
-        array $astrologyData
+        array $astrologyData,
+        Carbon $targetDate
     ): ?array {
         try {
             $dayName = FortuneHoroscopeCampaign::THAI_DAYS[$birthDay];
-            $imagePrompt = $this->buildImagePrompt($campaign, $birthDay, $astrologyData);
+            $imagePrompt = $this->buildImagePrompt($campaign, $birthDay, $astrologyData, $targetDate);
 
             // สร้าง provider instance
             $provider = AiGenProviderFactory::create($campaign->ai_image_provider);
 
-            $result = $provider->generateImage($imagePrompt, [
+            $options = [
                 'model' => $campaign->ai_image_model,
                 'size' => $campaign->image_size,
                 'style' => $campaign->image_style,
                 'num_images' => 1,
-            ]);
+                'seed' => $this->imageSeed($targetDate, $birthDay),
+            ];
+
+            $result = $provider->generateImage($imagePrompt, $options);
 
             if (! ($result['success'] ?? false) || empty($result['images'])) {
                 Log::warning("FortuneHoroscope: สร้างรูปล้มเหลวสำหรับวัน{$dayName}", [
@@ -462,8 +522,34 @@ class FortuneHoroscopeService
                 return null;
             }
 
+            $url = $result['images'][0]['url'] ?? null;
+
+            // 🛡️ ด่านกันรูปซ้ำ — seed ใหม่ "ควร" ได้รูปใหม่ แต่ควรไม่พอ
+            //    (provider แคช / seed ถูกมองข้าม / prompt ชนกันเอง) ⇒ เทียบ md5 กับใบก่อนหน้า
+            //    ของวันเกิดเดียวกันจริง แล้วยิงซ้ำด้วย seed คนละตัวถ้าซ้ำ
+            //    ยิงซ้ำได้ครั้งเดียว — ซ้ำอีกก็ปล่อยผ่าน ดีกว่าวันนั้นไม่มีรูปเลย
+            if ($url !== null && $this->sameAsPreviousImage($campaign, $birthDay, $targetDate, $url)) {
+                Log::warning("FortuneHoroscope: รูปวัน{$dayName} ซ้ำกับใบก่อนหน้า — ยิงใหม่ด้วย seed อื่น", [
+                    'birth_day' => $birthDay,
+                    'target_date' => $targetDate->toDateString(),
+                ]);
+
+                $options['seed'] = $this->imageSeed($targetDate, $birthDay, 1);
+                $retry = $provider->generateImage($imagePrompt, $options);
+
+                if (($retry['success'] ?? false) && ! empty($retry['images'])) {
+                    $ใหม่ = $retry['images'][0]['url'] ?? null;
+
+                    if ($ใหม่ !== null && $ใหม่ !== $url) {
+                        // ไฟล์รอบแรกยังไม่ถูกอ้างจากที่ไหน (ยังไม่ได้เขียนลง DB) — ลบทิ้งกันขยะ
+                        $this->deletePublicFile($url);
+                        $url = $ใหม่;
+                    }
+                }
+            }
+
             return [
-                'url' => $result['images'][0]['url'] ?? null,
+                'url' => $url,
                 'path' => null,
                 'prompt' => $imagePrompt,
             ];
@@ -479,12 +565,26 @@ class FortuneHoroscopeService
     }
 
     /**
+     * 🎲 seed ของรูป — เปลี่ยนทุกวัน แต่คงที่ภายในวันเดียวกัน
+     *
+     * ตั้งใจไม่ใช้ `rand()` เพื่อให้สั่ง regenerate ของวันเดิมแล้วได้ภาพเดิม (idempotent)
+     * แต่พอข้ามวันแล้วต่างแน่นอน — `20260908` + วันเกิด = 202609087 (ไม่เกิน int32 ของ API)
+     *
+     * @param  int  $attempt  0 = ครั้งแรก · 1+ = ยิงซ้ำตอนเจอรูปซ้ำ (บวก prime กันชนกันเอง)
+     */
+    protected function imageSeed(Carbon $targetDate, int $birthDay, int $attempt = 0): int
+    {
+        return (int) ($targetDate->format('Ymd').$birthDay) + ($attempt * 7919);
+    }
+
+    /**
      * สร้าง image prompt จาก template
      */
     protected function buildImagePrompt(
         FortuneHoroscopeCampaign $campaign,
         int $birthDay,
-        array $astrologyData
+        array $astrologyData,
+        ?Carbon $targetDate = null
     ): string {
         $dayName = FortuneHoroscopeCampaign::THAI_DAYS[$birthDay];
         $template = $campaign->image_prompt_template;
@@ -501,7 +601,108 @@ class FortuneHoroscopeService
             '{planet_color}' => $astrologyData['main_planet_color'] ?? '#FFD700',
         ];
 
-        return str_replace(array_keys($replacements), array_values($replacements), $template);
+        $prompt = str_replace(array_keys($replacements), array_values($replacements), $template);
+
+        // ⭐ ต่อท้าย ไม่ทับ template ของแอดมิน — template อยู่ใน DB แอดมินแก้เองได้
+        //    (เขียนทับ = ของที่แอดมินตั้งไว้หายเงียบ)
+        return $this->appendDailyVariation($prompt, $targetDate ?? Carbon::today(), $birthDay);
+    }
+
+    /**
+     * 🎠 ต่อท้าย prompt ด้วยสไตล์ + มุมภาพที่หมุนตามวัน
+     *
+     * 12 สไตล์ × 7 มุมภาพ ⇒ คู่เดิมวนกลับมาทุก 84 วัน (ค.ร.น. ของ 12 กับ 7)
+     * และเลื่อนด้วย $birthDay ด้วย ⇒ การ์ด 7 ใบของวันเดียวกันก็ไม่ซ้ำสไตล์กันเอง
+     *
+     * `no text` — flux เขียนตัวหนังสือมั่ว อ่านไม่ออก เป็นสัญญาณคุณภาพต่ำบนฟีด
+     */
+    protected function appendDailyVariation(string $prompt, Carbon $targetDate, int $birthDay): string
+    {
+        // นับเป็น "วันที่เท่าไหร่ตั้งแต่ epoch" ไม่ใช่ dayOfYear — dayOfYear รีเซ็ตทุกปีใหม่
+        // (365 → 1) ทำให้รอบการหมุนสะดุดตรงรอยต่อปี ตัวนี้เดินหน้าอย่างเดียวตลอดกาล
+        $offset = intdiv($targetDate->copy()->startOfDay()->getTimestamp(), 86400) + $birthDay;
+
+        $style = self::IMAGE_STYLE_ROTATION[$offset % count(self::IMAGE_STYLE_ROTATION)];
+        $scene = self::IMAGE_SCENE_ROTATION[$offset % count(self::IMAGE_SCENE_ROTATION)];
+
+        return rtrim($prompt, " ,.\n\r\t")
+            .', '.$style
+            .', '.$scene
+            .', no text, no letters, no watermark';
+    }
+
+    /**
+     * เทียบรูปใหม่กับรูปล่าสุดของวันเกิดเดียวกัน — เหมือนกันไบต์ต่อไบต์ไหม
+     *
+     * best-effort ล้วน: อ่านไฟล์ไม่ได้/ตารางมีปัญหา = ตอบ false (ถือว่าไม่ซ้ำ)
+     * ด่านกันซ้ำต้องไม่กลายเป็นตัวทำให้วันนั้นไม่มีรูป
+     */
+    protected function sameAsPreviousImage(
+        FortuneHoroscopeCampaign $campaign,
+        int $birthDay,
+        Carbon $targetDate,
+        string $newUrl
+    ): bool {
+        try {
+            $previousUrl = FortuneHoroscopeContent::query()
+                ->where('campaign_id', $campaign->id)
+                ->where('birth_day', $birthDay)
+                ->where('target_date', '<', $targetDate->toDateString())
+                ->whereNotNull('image_url')
+                ->orderByDesc('target_date')
+                ->value('image_url');
+
+            if (empty($previousUrl)) {
+                return false;
+            }
+
+            $new = $this->publicDiskMd5($newUrl);
+
+            return $new !== null && $new === $this->publicDiskMd5($previousUrl);
+        } catch (\Throwable $e) {
+            Log::warning('FortuneHoroscope: เทียบรูปซ้ำไม่สำเร็จ (ปล่อยผ่าน)', [
+                'birth_day' => $birthDay,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * md5 ของไฟล์รูปบน disk `public` จาก URL เต็ม
+     *
+     * @return string|null null = ไม่ใช่ไฟล์ของเรา / ไฟล์หาย (เทียบไม่ได้ = ไม่ซ้ำ)
+     */
+    protected function publicDiskMd5(?string $url): ?string
+    {
+        if (empty($url) || ! str_contains($url, '/storage/')) {
+            return null;
+        }
+
+        $relative = Str::after($url, '/storage/');
+
+        if (! Storage::disk('public')->exists($relative)) {
+            return null;
+        }
+
+        return md5((string) Storage::disk('public')->get($relative));
+    }
+
+    /**
+     * ลบไฟล์รูปบน disk `public` จาก URL เต็ม (best-effort)
+     */
+    protected function deletePublicFile(?string $url): void
+    {
+        try {
+            if (empty($url) || ! str_contains($url, '/storage/')) {
+                return;
+            }
+
+            Storage::disk('public')->delete(Str::after($url, '/storage/'));
+        } catch (\Throwable $e) {
+            // ลบขยะไม่สำเร็จ ไม่ใช่เรื่องคอขาดบาดตาย — ปล่อยผ่าน
+        }
     }
 
     /**

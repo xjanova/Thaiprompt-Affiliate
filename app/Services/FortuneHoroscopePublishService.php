@@ -74,7 +74,11 @@ class FortuneHoroscopePublishService
                     $targetDate,
                     $platform === FortuneHoroscopePost::PLATFORM_FACEBOOK
                 );
-                $imageUrls = $contents->pluck('image_url')->filter()->values()->toArray();
+                // 🎠 (2026-09-08) รูปหน้าโพส = การ์ดของ "วันในสัปดาห์ที่โพสวันนั้น"
+                //    เดิม pluck ตรง ๆ แล้วปลายทางหยิบ index 0 = การ์ดวันอาทิตย์ทุกวัน
+                //    ⇒ ต่อให้เจนรูปใหม่แล้ว หน้าฟีดก็ยังเป็นโทนเดิม (ธาตุ/ดาวของวันอาทิตย์) ทุกวัน
+                //    จัดลำดับที่นี่ที่เดียว เพราะทั้ง publishToFacebook และ publishToLine ใช้ [0]
+                $imageUrls = $this->orderImagesForToday($contents, $targetDate);
 
                 // สร้าง post record
                 $post = FortuneHoroscopePost::updateOrCreate(
@@ -115,6 +119,48 @@ class FortuneHoroscopePublishService
             'posts_published' => $postsPublished,
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * เรียงรูปให้การ์ดของ "วันในสัปดาห์ที่โพส" มาเป็นใบแรก
+     *
+     * ปลายทาง (FB `/photos` และ LINE image message) หยิบ `$imageUrls[0]` ทั้งคู่
+     * ⇒ ใบแรกคือรูปเดียวที่คนเห็นจริง จัดลำดับที่นี่จบทีเดียวทั้ง 2 แพลตฟอร์ม
+     *
+     * ⚠️ ห้าม index ด้วยลำดับใน collection — วันที่เจนรูปไม่สำเร็จจะหายไปจากลิสต์
+     *    ทำให้ลำดับเลื่อน (8 ก.ย. 2569 วันเสาร์ image_url เป็น null จริง) ⇒ key ด้วย birth_day
+     *
+     * @param  Collection<int, FortuneHoroscopeContent>  $contents
+     * @return array<int, string>
+     */
+    protected function orderImagesForToday(Collection $contents, Carbon $targetDate): array
+    {
+        $byBirthDay = $contents
+            ->filter(fn ($content) => ! empty($content->image_url))
+            ->keyBy('birth_day');
+
+        if ($byBirthDay->isEmpty()) {
+            return [];
+        }
+
+        // birth_day 0=อาทิตย์ … 6=เสาร์ ตรงกับ Carbon::dayOfWeek พอดี
+        // (7 = พุธกลางคืน/ราหู ไม่มีวันตรงกับ dayOfWeek — ตกไปต่อท้ายตามปกติ)
+        $todayIndex = (int) $targetDate->dayOfWeek;
+
+        $ordered = [];
+
+        if ($byBirthDay->has($todayIndex)) {
+            $ordered[] = $byBirthDay->get($todayIndex)->image_url;
+        }
+
+        foreach ($byBirthDay as $birthDay => $content) {
+            if ((int) $birthDay === $todayIndex) {
+                continue;
+            }
+            $ordered[] = $content->image_url;
+        }
+
+        return $ordered;
     }
 
     /**
