@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\FortuneHoroscopeContent;
 use App\Models\FortuneInviteMessage;
+use App\Services\Fortune\DailyArticleMirror;
 use App\Services\Fortune\FortuneBotMode;
 use App\Services\Fortune\FortuneGreetingService;
 use App\Services\FortuneHoroscopeService;
@@ -207,6 +208,17 @@ class FortuneDailyPreflight extends Command
         try {
             $today = Carbon::now('Asia/Bangkok')->toDateString();
 
+            // 🪞 (2026-09-09) ขั้นแรก: คัดลอกใบที่ "สำเร็จ" ลงเลนแชทซ้ำเสมอ — **ฟรี ไม่กิน AI**
+            //
+            //   ทำไมต้องทำแม้เลน A จะสำเร็จ: เลน B อาจเขียนทับ mirror ไปแล้ว (race)
+            //   เคสจริง 2026-09-09 วันพฤหัสบดี — A สำเร็จ 00:01:45 · B ทับ 00:01:51
+            //   ด่าน "ใบที่ล้ม" ข้างล่างมองไม่เห็นเคสนี้เลย เพราะ status = generated
+            //
+            //   mirror() เป็น updateOrCreate ⇒ idempotent · รันซ้ำได้ไม่เสียอะไร
+            //   ⇒ กติกาง่ายที่สุดที่รับประกันผล: **มีของเลน A เมื่อไหร่ คัดลอกทับเสมอ**
+            //   ไม่ต้องเดาว่า "ตรงกันหรือยัง" ด้วย heuristic ใด ๆ
+            $this->remirrorGeneratedArticles($today);
+
             $failed = FortuneHoroscopeContent::whereDate('target_date', $today)
                 ->where('status', FortuneHoroscopeContent::STATUS_FAILED)
                 ->orderBy('birth_day')
@@ -291,6 +303,45 @@ class FortuneDailyPreflight extends Command
             // ยามล้มต้องไม่ทำให้ด่านอื่นของ preflight ตายตาม
             $this->error('  ⚠️ ตรวจบทความเลนโพสไม่สำเร็จ: '.$e->getMessage());
             Log::error('🩺 daily-preflight: ตรวจเลนโพสล้ม (non-blocking)', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 🪞 คัดลอกบทความเลนโพสที่สำเร็จแล้วลงเลนแชทซ้ำ — ฟรี ไม่กิน AI
+     *
+     * รันเสมอ (ไม่ต้องรอ --heal) เพราะไม่มีผลข้างเคียงและไม่มีต้นทุน
+     * `mirror()` เป็น updateOrCreate ⇒ idempotent
+     *
+     * ปิดช่องของ race ย้อนหลัง: เลน B ที่เขียนทับ mirror ไปแล้วจะถูกทับกลับให้ตรงกับโพส
+     */
+    protected function remirrorGeneratedArticles(string $today): void
+    {
+        try {
+            $generated = FortuneHoroscopeContent::whereDate('target_date', $today)
+                ->where('status', FortuneHoroscopeContent::STATUS_GENERATED)
+                ->whereNotNull('ai_prediction')
+                ->orderBy('birth_day')
+                ->get();
+
+            if ($generated->isEmpty()) {
+                return;
+            }
+
+            $mirror = app(DailyArticleMirror::class);
+            $count = 0;
+
+            foreach ($generated as $content) {
+                if ($mirror->mirror($content) !== null) {
+                    $count++;
+                }
+            }
+
+            if ($count > 0) {
+                $this->line("  🪞 คัดลอกโพส→แชท : {$count}/{$generated->count()} ใบ (กันเลนแชทเขียนทับ)");
+            }
+        } catch (Throwable $e) {
+            $this->error('  ⚠️ คัดลอกโพส→แชทไม่สำเร็จ: '.$e->getMessage());
+            Log::error('🩺 daily-preflight: re-mirror ล้ม (non-blocking)', ['error' => $e->getMessage()]);
         }
     }
 
