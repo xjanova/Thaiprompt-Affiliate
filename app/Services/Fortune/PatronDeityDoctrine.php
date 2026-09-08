@@ -161,20 +161,6 @@ class PatronDeityDoctrine
      */
     public function knowledgeBlock(array $doctrine): string
     {
-        $roster = (array) config('fortune_patron_deity_doctrine.roster', []);
-
-        $line = function (string $name, string $role) use ($roster): string {
-            $meta = (array) ($roster[$name] ?? []);
-            $parts = array_filter([
-                $meta['level'] ?? null,
-                $meta['domain'] ?? null,
-                ! empty($meta['offering']) ? 'ของบูชา: '.$meta['offering'] : null,
-                ! empty($meta['day']) ? 'วันไหว้: '.$meta['day'] : null,
-            ]);
-
-            return "• [{$role}] {$name}".($parts === [] ? '' : ' — '.implode(' · ', $parts))."\n";
-        };
-
         $out = "🕉️ องค์เทพตามตำรา (คำนวณจากวันเกิดจริงของเจ้าชะตา — ไม่ใช่จากหน้าไพ่)\n"
             ."• เกิดวัน{$doctrine['day_name']} → ดาวประจำวัน {$doctrine['planet']} · พระประจำวันเกิด {$doctrine['buddha_pose']}\n";
 
@@ -182,10 +168,94 @@ class PatronDeityDoctrine
             $out .= "• ธาตุเจ้าเรือนจากราศีเกิด: ธาตุ{$doctrine['element']}\n";
         }
 
-        $out .= $line((string) $doctrine['main'], 'องค์ประธาน');
+        $out .= $this->rosterLine((string) $doctrine['main'], 'องค์ประธาน');
 
         foreach ((array) $doctrine['support'] as $name) {
-            $out .= $line((string) $name, 'องค์เสริม');
+            $out .= $this->rosterLine((string) $name, 'องค์เสริม');
+        }
+
+        return $out;
+    }
+
+    /**
+     * 1 บรรทัดของ 1 องค์ — ระดับ · ด้านที่หนุน · ของบูชา · วันไหว้ (ดึงจากทะเบียน)
+     *
+     * องค์ที่ไม่มีในทะเบียนจะได้แค่ชื่อ — มีเทสต์ integrity กันไว้ไม่ให้เกิดขึ้นจริง
+     * (พรอมต์สั่งให้แม่หมอบอกวิธีบูชา ⇒ ไม่มีข้อมูล = เปิดช่องให้มโน)
+     */
+    protected function rosterLine(string $name, string $role): string
+    {
+        $meta = (array) (config('fortune_patron_deity_doctrine.roster', [])[$name] ?? []);
+
+        $parts = array_filter([
+            $meta['level'] ?? null,
+            $meta['domain'] ?? null,
+            ! empty($meta['offering']) ? 'ของบูชา: '.$meta['offering'] : null,
+            ! empty($meta['day']) ? 'วันไหว้: '.$meta['day'] : null,
+        ]);
+
+        return "• [{$role}] {$name}".($parts === [] ? '' : ' — '.implode(' · ', $parts))."\n";
+    }
+
+    /**
+     * 🎯 ตำราชั้นที่ 3 — องค์ที่เด่นเรื่อง "ที่ลูกค้าถาม" (เสริม ไม่ใช่แทนองค์ประธาน)
+     *
+     * เจ้าของสั่ง 2026-09-08 ให้ทำเป็นชั้นแยก แทนที่จะยัดสีวลี/หลวงปู่ทวดไปผูกวันเกิดมั่ว ๆ
+     * — องค์กลุ่มนี้เด่นที่ "เรื่อง" ไม่ใช่ที่ "วันเกิด"
+     *
+     * @param  string  $text  ข้อความ**ของลูกค้า** (ไม่ใช่ทั้งบทสนทนา — ยิ่งกว้างยิ่งจับมั่ว)
+     * @param  array<int,string>  $exclude  องค์ที่พูดไปแล้ว (องค์ประธาน/เสริม) — กันซ้ำในบล็อกเดียว
+     * @return array{topics:array<int,string>, deities:array<int,string>} ว่างทั้งคู่ = ไม่เข้าเรื่องไหน
+     */
+    public function topicDeities(string $text, array $exclude = []): array
+    {
+        $text = trim($text);
+
+        if ($text === '' || ! $this->isEnabled()) {
+            return ['topics' => [], 'deities' => []];
+        }
+
+        $topics = [];
+        $deities = [];
+
+        foreach ((array) config('fortune_patron_deity_doctrine.by_topic', []) as $topic) {
+            foreach ((array) ($topic['keywords'] ?? []) as $keyword) {
+                if ($keyword !== '' && mb_strpos($text, (string) $keyword) !== false) {
+                    $topics[] = (string) ($topic['label'] ?? '');
+                    $deities = array_merge($deities, (array) ($topic['deities'] ?? []));
+                    break; // เข้าเรื่องนี้แล้ว ไม่ต้องนับคีย์เวิร์ดที่เหลือของเรื่องเดียวกัน
+                }
+            }
+        }
+
+        $deities = array_values(array_filter(
+            array_unique($deities),
+            fn ($name) => ! in_array($name, $exclude, true)
+        ));
+
+        $max = (int) config('fortune_patron_deity_doctrine.max_topic_deities', 3);
+
+        return [
+            'topics' => array_values(array_unique($topics)),
+            'deities' => array_slice($deities, 0, max(0, $max)),
+        ];
+    }
+
+    /**
+     * บล็อก "องค์สำหรับเรื่องที่ถามรอบนี้" — ต่อท้าย knowledgeBlock()
+     *
+     * @param  array{topics:array<int,string>, deities:array<int,string>}  $hit  ผลจาก topicDeities()
+     */
+    public function topicBlock(array $hit): string
+    {
+        if (empty($hit['deities'])) {
+            return '';
+        }
+
+        $out = '🎯 องค์ที่เด่นเฉพาะ "เรื่องที่ลูกถามรอบนี้" ('.implode(' + ', $hit['topics']).") — *เสริม ไม่ใช่แทนองค์ประธาน*\n";
+
+        foreach ($hit['deities'] as $name) {
+            $out .= $this->rosterLine((string) $name, 'องค์เฉพาะเรื่อง');
         }
 
         return $out;

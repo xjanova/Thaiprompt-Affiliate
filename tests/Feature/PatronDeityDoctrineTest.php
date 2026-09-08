@@ -118,6 +118,26 @@ class PatronDeityDoctrineTest extends TestCase
             }
         }
 
+        foreach ((array) config('fortune_patron_deity_doctrine.by_topic') as $key => $topic) {
+            foreach ((array) ($topic['deities'] ?? []) as $ชื่อ) {
+                if (! isset($roster[$ชื่อ])) {
+                    $ขาด[] = "เรื่อง {$key}: {$ชื่อ}";
+                }
+            }
+
+            $this->assertNotEmpty($topic['keywords'] ?? [], "เรื่อง {$key} ไม่มีคีย์เวิร์ด = ชั้นนี้ไม่มีวันทำงาน");
+            $this->assertNotEmpty($topic['label'] ?? '', "เรื่อง {$key} ไม่มีป้ายชื่อ");
+
+            // คีย์เวิร์ดสั้นเกินไป = กับดักคำไทย (เช่น 'ลูก' 'รัก' 'สอบ' 'ของ')
+            foreach ((array) ($topic['keywords'] ?? []) as $kw) {
+                $this->assertGreaterThanOrEqual(
+                    4,
+                    mb_strlen((string) $kw),
+                    "คีย์เวิร์ด \"{$kw}\" ของเรื่อง {$key} สั้นเกินไป เสี่ยงไปโดนคำอื่นที่สะกดคร่อมกัน"
+                );
+            }
+        }
+
         $this->assertSame([], $ขาด, 'องค์ที่ไม่มีในทะเบียน: '.implode(' · ', $ขาด));
 
         // ทะเบียนแต่ละองค์ต้องมีของบูชา + วันไหว้ครบ (พรอมต์ดึงไปใช้ตรง ๆ)
@@ -153,6 +173,62 @@ class PatronDeityDoctrineTest extends TestCase
         $ธาตุ = $this->doctrine()->resolve(Carbon::create(2026, 9, 5), null);
         $องค์ธาตุ = array_intersect($ธาตุ['support'], $ธาตุ['element_deities']);
         $this->assertNotEmpty($องค์ธาตุ, 'องค์เสริมสายธาตุต้องไม่ถูกเบียดตกทุกครั้ง');
+    }
+
+    /**
+     * 🎯 ชั้นที่ 3 — องค์ตามเรื่องที่ถาม (สีวลี/หลวงปู่ทวด ได้ที่ยืนตรงนี้)
+     */
+    public function test_องค์ตามเรื่องที่ถาม_ต้องจับเรื่องได้ถูก(): void
+    {
+        $d = $this->doctrine();
+
+        $ค้าขาย = $d->topicDeities('ร้านค้าเงียบมาก ยอดขายตกลงเยอะเลยค่ะ');
+        $this->assertContains('พระสีวลี', $ค้าขาย['deities']);
+        $this->assertContains('แม่นางกวัก', $ค้าขาย['deities']);
+
+        $เดินทาง = $d->topicDeities('ปีนี้จะได้ไปทำงานต่างประเทศไหมคะ');
+        $this->assertContains('หลวงปู่ทวด', $เดินทาง['deities']);
+
+        $สุขภาพ = $d->topicDeities('ต้องผ่าตัดเดือนหน้า กังวลมากค่ะ');
+        $this->assertContains('หมอชีวกโกมารภัจจ์', $สุขภาพ['deities']);
+
+        // ไม่เข้าเรื่องไหน → ต้องว่าง (ไม่ยัดองค์มั่ว)
+        $this->assertSame([], $d->topicDeities('สวัสดีค่ะแม่หมอ')['deities']);
+        $this->assertSame([], $d->topicDeities('')['deities']);
+    }
+
+    /**
+     * 🪤 กับดักคำไทย — คีย์เวิร์ดต้องไม่ไปโดนคำอื่นที่สะกดคร่อมกัน
+     *
+     * แม่หมอเรียกลูกค้าว่า "ลูก" ทุกประโยค · "รักษา" มี "รัก" · "สอบถาม" มี "สอบ"
+     * ([[rule_thai_single_syllable_regex_needs_both_guards]])
+     */
+    public function test_คีย์เวิร์ดต้องไม่ติดกับดักคำไทย(): void
+    {
+        $ผล = $this->doctrine()->topicDeities('ลูกอยากสอบถามเรื่องรักษาสุขภาพหน่อยค่ะ');
+
+        $this->assertContains('สุขภาพ-การรักษา', $ผล['topics'], 'ต้องจับเรื่องสุขภาพได้');
+        $this->assertNotContains('ความรัก-เนื้อคู่', $ผล['topics'], '"รักษา" ต้องไม่ถูกอ่านเป็น "รัก"');
+        $this->assertNotContains('การเรียน-วิชาความรู้', $ผล['topics'], '"สอบถาม" ต้องไม่ถูกอ่านเป็น "สอบ"');
+        $this->assertNotContains('ครอบครัว-บุตร', $ผล['topics'], '"ลูก" (สรรพนามเรียกลูกค้า) ต้องไม่ถูกนับ');
+    }
+
+    /**
+     * 🔁 องค์ตามเรื่อง ต้องไม่ซ้ำกับองค์ประธาน/องค์เสริมที่พูดไปแล้วในบล็อกเดียวกัน
+     */
+    public function test_องค์ตามเรื่อง_ต้องไม่ซ้ำองค์ที่พูดไปแล้ว(): void
+    {
+        $d = $this->doctrine();
+        $ตำรา = $d->resolve(Carbon::create(2026, 9, 5), null);   // เสาร์ → พญานาค
+
+        $ผล = $d->topicDeities('อยากปลดหนี้สินให้หมดค่ะ', $ตำรา['all']);
+
+        $this->assertNotContains('พญานาค', $ผล['deities'], 'องค์ประธานพูดไปแล้ว ห้ามซ้ำในบล็อกเดียว');
+        $this->assertNotEmpty($ผล['deities'], 'ตัดตัวซ้ำแล้วต้องยังเหลือองค์อื่นให้แนะ');
+
+        $block = $d->topicBlock($ผล);
+        $this->assertStringContainsString('เสริม ไม่ใช่แทนองค์ประธาน', $block);
+        $this->assertStringContainsString('ของบูชา:', $block);
     }
 
     /**
