@@ -53,6 +53,8 @@ class FortunePredictionInterruptGuardTest extends TestCase
             'platform' => 'facebook',
             'platform_user_id' => self::PSID,
             'reading_type' => 'deep',
+            // ⚠️ คอลัมน์ NOT NULL ไม่มี default — ไม่ใส่ = insert ตายที่ MySQL (error 1364)
+            'questions' => ['ขอดูพื้นดวงโดยรวมของเจ้าชะตา'],
             'is_paid' => true,
             'amount_paid' => 39.30,
             'paid_at' => now()->subMinutes(8),
@@ -189,18 +191,28 @@ class FortunePredictionInterruptGuardTest extends TestCase
         $settings->save();
         Cache::flush();
 
-        $this->makePaidReading(proSessionActive: true);
-
         $service = new FortuneConversationService($settings->fresh());
+        $text = 'ตอนนี้ไม่อะไรเลยจ่ายไปแล้วละคับ';
 
-        // ยืนยันก่อนว่าประโยคนี้ "ติดกับดัก" จริง — ไม่งั้นเทสต์ผ่านด้วยเหตุผลผิด
         $this->assertTrue(
-            $service->looksLikePaidNotReceived('ตอนนี้ไม่อะไรเลยจ่ายไปแล้วละคับ'),
+            $service->looksLikePaidNotReceived($text),
             'ประโยคนี้ต้องยังเข้าเงื่อนไข paid-claim อยู่ (ไม่งั้นเทสต์นี้ไม่ได้ทดสอบอะไร)'
         );
 
+        // ── ตัวควบคุม: ยังไม่มีบิลที่จ่ายแล้ว → ประโยคนี้ต้อง "ทวงสลิป" จริง ─────────
+        //   ขาดขานี้ เทสต์จะผ่านได้ด้วยเหตุผลผิด (เช่นด่าน looksLikeStoryNotPaymentClaim
+        //   ดักไปก่อนตั้งแต่ต้นทาง) แล้วเราจะไม่มีทางรู้ว่าด่านใหม่ทำงานหรือเปล่า
+        $this->assertNotNull(
+            $service->tryReturningPaidSlipCheck('facebook', self::PSID, $text),
+            'ยังไม่มีบิลที่จ่ายแล้ว ประโยคนี้ต้องไปถึงขั้นทวงสลิป (ไม่งั้นตัวเทียบไม่มีความหมาย)'
+        );
+
+        // ── ของจริง: กำลังทำนายอยู่ → ต้องไม่ทวงสลิป และต้องไม่กลืนข้อความ ──────────
+        $this->makePaidReading(proSessionActive: true);
+        Cache::flush(); // ล้าง flag ขอสลิป + cache paid-active ที่ขาควบคุมเพิ่งตั้งไว้
+
         $this->assertNull(
-            $service->tryReturningPaidSlipCheck('facebook', self::PSID, 'ตอนนี้ไม่อะไรเลยจ่ายไปแล้วละคับ'),
+            $service->tryReturningPaidSlipCheck('facebook', self::PSID, $text),
             'กำลังทำนายอยู่ ต้องไม่ทวงสลิป และต้องปล่อยข้อความไหลต่อ'
         );
     }
