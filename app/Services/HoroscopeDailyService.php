@@ -269,6 +269,33 @@ class HoroscopeDailyService
             //    เดิม rand(2,5) = มโนตรง ๆ · วันเดิมรีเจนใหม่ได้คะแนนคนละอย่าง
             $fallbackScore = $brief['score_hint'];
 
+            // 🪞🏁 (2026-09-09) เช็คเลนโพส **อีกครั้ง** ก่อนเขียนทับ — ปิด race ให้ขาด
+            //
+            // 🚨 เคสจริง 2026-09-09 วันพฤหัสบดี: เลน A เจนเสร็จ 00:01:45 → mirror เขียนเลนแชท
+            //    เลน B มาถึงวันนี้ตอน ~00:01:45 เช็ค adoptForDay() ตอนนั้น A ยังเป็น `generating`
+            //    → ได้ null → ยิง AI เอง → เขียนทับ mirror ตอน 00:01:51
+            //    ⇒ ลูกค้าที่อ่านโพสแล้วทักมา ได้คำทำนายคนละใบ ทั้งที่เลน A **สำเร็จ**
+            //
+            //    การเช็คครั้งเดียว "ก่อน" ยิง AI ไม่พอ เพราะช่องว่างระหว่าง
+            //    เช็ค → AI ตอบ (หลายวินาที) คือช่วงที่เลน A เจนเสร็จพอดี
+            //    (เลน A 00:00:05–00:03:02 · เลน B 00:01:02+ — คาบเกี่ยวกันเต็ม ๆ)
+            //
+            // 💸 ยอมเสีย AI ที่ยิงไปแล้วทิ้ง — ของที่ลูกค้าเห็นต้องตรงกับโพสเสมอ
+            //    (คำสั่งเจ้าของ: "ดวงรายวันในแชทต้องดึงจากโพสรายวัน")
+            //    รอบถัดไปไม่เสียซ้ำ เพราะแถวถูก mirror เขียนแล้ว = เลน B ข้ามไปเอง
+            $lateAdopted = app(DailyArticleMirror::class)->adoptForDay($birthDay, $date);
+            if ($lateAdopted !== null) {
+                Log::warning('HoroscopeDaily: เลนโพสเจนเสร็จระหว่างที่รอ AI → ใช้ของเลนโพส ทิ้งผลที่เพิ่งยิง', [
+                    'birth_day' => $birthDay,
+                    'day_name' => DailyArticleMirror::dayName($birthDay),
+                    'target_date' => $date->toDateString(),
+                ]);
+
+                $this->clearBirthDayCache($birthDay, $date);
+
+                return $lateAdopted;
+            }
+
             $prediction->update([
                 'overall_prediction_th' => $parsed['overall'] ?? $result['response'],
                 'love_prediction_th' => $parsed['love'] ?? null,

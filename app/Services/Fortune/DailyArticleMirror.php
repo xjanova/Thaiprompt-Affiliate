@@ -23,12 +23,28 @@ use Illuminate\Support\Facades\Log;
  *   ⇒ ทุกจุดปลายทางเดิม (กล่องแชท, DM, หน้าเว็บ, preflight, `dailyArticlesReadyToday()`)
  *     ยังอ่านตารางเดิมไม่ต้องแก้สักบรรทัด แต่ได้ข้อความเดียวกับที่โพสจริง
  *
- * ⏱️ ต่อสาย 2 จุด (ต้องมีทั้งคู่ — [[rule_feature_built_but_never_wired]]):
+ * ⏱️ ต่อสาย 4 จุด (ต้องครบ — [[rule_feature_built_but_never_wired]]):
  *   1. `FortuneHoroscopeService::generateForBirthDay()` — คัดลอกทันทีที่โพสสร้างเสร็จ
  *      (ปิด race: เลน A เริ่ม 00:00:05 เลน B เริ่ม 00:01:02 ซึ่ง**คาบเกี่ยวกันจริง**
  *       บน prod — วันเกิดใบท้าย ๆ ของเลน A ยังไม่เสร็จตอนเลน B เริ่มวิ่ง)
- *   2. `HoroscopeDailyService::generateBirthDayPrediction()` — ก่อนยิง AI ให้มาหยิบก่อน
- *      (ตาข่ายสำหรับใบที่รอบ 00:00 ล้ม แล้ว `--heal` มาเก็บทีหลัง)
+ *   2. `HoroscopeDailyService::generateBirthDayPrediction()` — **ก่อน** ยิง AI ให้มาหยิบก่อน
+ *   3. `HoroscopeDailyService::generateBirthDayPrediction()` — **หลัง** AI ตอบ เช็คซ้ำอีกครั้ง
+ *      🚨 (2026-09-09) จุดนี้เพิ่มทีหลังเพราะจุดที่ 2 **ไม่พอ**: เคสจริงวันพฤหัสบดี
+ *      เลน A เจนเสร็จ 00:01:45 แต่ตอนเลน B เช็ค (ก่อนยิง AI) A ยังเป็น `generating`
+ *      → ได้ null → ยิง AI เอง → **เขียนทับ mirror** ตอน 00:01:51
+ *      ช่องว่าง "เช็ค → AI ตอบ" คือหลายวินาที ซึ่งพอดีกับจังหวะที่เลน A เจนเสร็จ
+ *   4. `FortuneDailyPreflight::healFailedPostLaneArticles()` (00:20 / 06:00) — ใบที่เลน A
+ *      ล้มรายใบ ("0 keys" = พูลคีย์ว่างชั่วขณะ) เจนซ้ำเฉพาะใบนั้น แล้ว mirror ทับให้ตรง
+ *
+ * 🔍 วิธีตรวจว่าตรงกันจริงไหม (คำถามนี้กลับมาบ่อย):
+ *   SELECT b.birth_day, a.status,
+ *     CASE WHEN a.ai_prediction IS NULL THEN 'A ไม่มี → B เจนเอง'
+ *          WHEN LOCATE(LEFT(b.overall_prediction_th,60), a.ai_prediction) > 0 THEN 'ตรงกัน'
+ *          ELSE 'ไม่ตรง' END
+ *   FROM horoscope_daily_predictions b
+ *   LEFT JOIN fortune_horoscope_contents a
+ *     ON a.target_date = b.target_date AND a.birth_day = b.birth_day
+ *   WHERE b.target_date = CURDATE() ORDER BY b.birth_day;
  *
  * 🛟 ถ้าไม่มีบทความของเลน A → คืน null แล้วเลน B ยิง AI เองเหมือนเดิม
  *    (เลน A พังทั้งวัน ต้องไม่ลากให้แชทไม่มีดวงส่ง)

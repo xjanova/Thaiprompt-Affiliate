@@ -2,11 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Models\FortuneHoroscopeContent;
 use App\Models\FortuneInviteMessage;
 use App\Services\Fortune\FortuneBotMode;
 use App\Services\Fortune\FortuneGreetingService;
+use App\Services\FortuneHoroscopeService;
 use App\Services\LineAlertService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -120,6 +123,28 @@ class FortuneDailyPreflight extends Command
             $this->line('     แก้: <fg=yellow>php artisan horoscope:generate-daily</>');
         }
 
+        // ── 2b. 🪞 (2026-09-09) บทความ "เลนโพส" ที่ล้มรายใบ — ต้นทางของคำทำนายทั้งระบบ
+        //
+        // 🚨 ทำไมด่านข้อ 2 จับไม่ได้: มันถามว่า "เลนแชทครบ 7 ใบไหม" — ครบเสมอ
+        //    เพราะเมื่อไม่มีบทความเลนโพส เลนแชทจะ **ยิง AI เอง** เป็น fallback
+        //    ⇒ ลูกค้าที่อ่านโพสแล้วทักมา ได้คำทำนาย **คนละใบ** ของวันเดียวกัน
+        //    ผิดคำสั่งเจ้าของ: "ดวงรายวันในแชทต้องดึงจากโพสรายวัน"
+        //    (ซ้ำรอย [[rule_feature_built_but_never_wired]] — fallback ที่ดี = ความล้มเหลวที่มองไม่เห็น)
+        //
+        // เคสจริง: 2026-09-08 ล้ม 1 ใบ (เสาร์) · 2026-09-09 ล้ม 2 ใบ (อังคาร/พุธ)
+        //    error เดียวกัน "ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว 0 keys)" = พูลคีย์ว่างชั่วขณะ
+        //    (ใบอื่นในนาทีเดียวกันผ่านหมด ⇒ ไม่ใช่ AI ล่ม แค่จังหวะไม่มีคีย์ว่าง)
+        //
+        // ⚠️ ทำไมไม่แก้ที่ generateDailyContent(): `schedule_time = 00:01` ⇒ หน้าต่าง
+        //    "ยังไม่ถึงเวลาโพส" ปิดตั้งแต่ 00:01 = retry ได้ **0 ครั้ง**
+        //    และการเลิก stamp `last_generated_at` ตอนล้มบางใบ จะเปิดทางให้ tick 5 นาที
+        //    ยิง AI ซ้ำทั้งวันถ้าใบนั้นพังถาวร — ยามตัวนี้รัน 00:20 + 06:00 = retry 2 ครั้ง
+        //    มีขอบเขตชัด นับได้ ไม่วนเผาเงิน
+        //
+        // 🪞 generateForBirthDay() เรียก DailyArticleMirror::mirror() ให้เองหลัง markGenerated()
+        //    ⇒ ซ่อมเลนโพสสำเร็จ = เลนแชทถูกทับให้ตรงทันที ไม่ต้องสั่งอะไรเพิ่ม
+        $this->healFailedPostLaneArticles($heal, $problems, $alertProblems);
+
         // ── 3. ข้อความชวนชุดโหมด daily
         $inviteCount = FortuneInviteMessage::where('mode', FortuneInviteMessage::MODE_DAILY)
             ->where('is_active', true)
@@ -170,6 +195,105 @@ class FortuneDailyPreflight extends Command
      *
      * @param  array<int, string>  $problems
      */
+    /**
+     * 🪞 ซ่อมบทความ "เลนโพส" ที่ล้มรายใบของวันนี้ — แล้ว mirror จะทับเลนแชทให้ตรงเอง
+     *
+     * @param  bool  $heal  ลงมือซ่อมจริงไหม (false = รายงานอย่างเดียว)
+     * @param  array<int,string>  $problems  รายการปัญหาที่โชว์บนจอ (by-ref)
+     * @param  array<int,string>  $alertProblems  รายการที่ส่งแจ้งแอดมิน (by-ref)
+     */
+    protected function healFailedPostLaneArticles(bool $heal, array &$problems, array &$alertProblems): void
+    {
+        try {
+            $today = Carbon::now('Asia/Bangkok')->toDateString();
+
+            $failed = FortuneHoroscopeContent::whereDate('target_date', $today)
+                ->where('status', FortuneHoroscopeContent::STATUS_FAILED)
+                ->orderBy('birth_day')
+                ->get();
+
+            if ($failed->isEmpty()) {
+                $this->line('  ✅ บทความเลนโพส : ไม่มีใบที่ล้ม (แชทดึงจากโพสได้ครบ)');
+
+                return;
+            }
+
+            // 🏷️ ใช้คอลัมน์ `birth_day_name` ที่ถูกเขียนไว้ตอน updateOrCreate
+            //    ⚠️ ห้ามใช้ FortuneHoroscopeContent::THAI_DAYS — ค่านั้นอยู่บน *Campaign*
+            //    (undefined constant = Error ไม่ใช่ Exception → หลุด catch ที่ดักแค่ Exception)
+            //    และตารางนั้นมี 7 ช่อง ไม่ครอบ birth_day = 7 (พุธกลางคืน)
+            $dayLabel = fn ($c) => 'วัน'.($c->birth_day_name ?: $c->birth_day);
+            $failedLabel = implode(', ', $failed->map($dayLabel)->all());
+
+            $this->line("  ❌ บทความเลนโพส : ล้ม {$failed->count()} ใบ ({$failedLabel})");
+            $this->line('     ผลกระทบ: แชทของวันเกิดนั้นยิง AI เอง → ได้คนละใบกับโพส');
+
+            if (! $heal) {
+                $problems[] = $alertProblems[] = "บทความเลนโพสของ {$today} ล้ม {$failed->count()} ใบ ({$failedLabel})"
+                    .' — แชทจะได้คำทำนายคนละใบกับโพส';
+                $this->line('     แก้: <fg=yellow>php artisan fortune:daily-preflight --heal</>');
+
+                return;
+            }
+
+            $this->newLine();
+            $this->warn("  🔧 กำลังสร้างซ้ำเฉพาะใบที่ล้ม ({$failedLabel})...");
+
+            $service = app(FortuneHoroscopeService::class);
+            $fixed = 0;
+            $stillFailed = [];
+
+            foreach ($failed as $content) {
+                $campaign = $content->campaign;
+
+                if (! $campaign) {
+                    $stillFailed[] = $dayLabel($content).' (ไม่พบแคมเปญ)';
+
+                    continue;
+                }
+
+                try {
+                    // 🪞 เมธอดนี้เรียก mirror() ให้เองหลังสำเร็จ ⇒ เลนแชทถูกทับให้ตรงทันที
+                    $service->generateForBirthDay(
+                        $campaign,
+                        Carbon::parse((string) $content->target_date),
+                        (int) $content->birth_day
+                    );
+                    $fixed++;
+                } catch (Throwable $e) {
+                    $stillFailed[] = $dayLabel($content);
+                    Log::error('🩺 daily-preflight: ซ่อมบทความเลนโพสไม่สำเร็จ', [
+                        'content_id' => $content->id,
+                        'birth_day' => $content->birth_day,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $this->newLine();
+
+            if ($stillFailed === []) {
+                $this->line("  ✅ บทความเลนโพส : กู้คืนครบ {$fixed} ใบ — แชทตรงกับโพสแล้ว");
+
+                Log::warning('🩺 daily-preflight: กู้บทความเลนโพสสำเร็จ', [
+                    'date' => $today,
+                    'fixed' => $fixed,
+                ]);
+
+                return;
+            }
+
+            $remain = implode(', ', $stillFailed);
+            $problems[] = $alertProblems[] = "บทความเลนโพสของ {$today} ยังล้ม ".count($stillFailed)." ใบ ({$remain})"
+                .' — แชทของวันเกิดนั้นจะได้คำทำนายคนละใบกับโพส';
+            $this->line("  ❌ บทความเลนโพส : กู้ได้ {$fixed} ใบ · ยังล้ม {$remain}");
+        } catch (Throwable $e) {
+            // ยามล้มต้องไม่ทำให้ด่านอื่นของ preflight ตายตาม
+            $this->error('  ⚠️ ตรวจบทความเลนโพสไม่สำเร็จ: '.$e->getMessage());
+            Log::error('🩺 daily-preflight: ตรวจเลนโพสล้ม (non-blocking)', ['error' => $e->getMessage()]);
+        }
+    }
+
     protected function pushAlert(array $problems, bool $healed, string $today): void
     {
         $title = $problems !== []
