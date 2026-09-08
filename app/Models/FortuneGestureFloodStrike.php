@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * 🎭 FortuneGestureFloodStrike — ประวัติ "ยิงสติกเกอร์/อีโมจิรัว" ของลูกค้าแต่ละคน
  *
- * 1 แถว = 1 ลูกค้า ต่อ 1 ช่องทาง
+ * 1 แถว = 1 ลูกค้า ต่อ 1 ช่องทาง ต่อ 1 ราง
+ *
+ * ราง (`rail`) — สองพฤติกรรมนี้ strike ห้ามบวกข้ามกัน:
+ *   `gesture` = สติกเกอร์/อีโมจิล้วน (6 ใบ/5 นาที)
+ *   `volume`  = ยิงข้อความรัวทุกชนิด (40 ใบ/10 นาที) — จับคนที่พิมพ์จริงคั่นเพื่อเลี่ยงราง gesture
  *
  * เก็บใน DB ไม่ใช่ Cache เพราะ deploy.sh รัน cache:clear ทุกครั้ง
  * ⇒ ถ้าอยู่ Cache คนป่วนได้รีเซ็ตประวัติฟรีทุกครั้งที่เราพุชโค้ด
@@ -32,6 +36,7 @@ class FortuneGestureFloodStrike extends Model
     protected $fillable = [
         'platform',
         'platform_user_id',
+        'rail',
         'display_name',
         'strikes',
         'window_started_at',

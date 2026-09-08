@@ -2133,6 +2133,11 @@ class FortuneChannelManager
      */
     protected function sendFacebookHelpResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
+        // 🤐 (2026-09-08) ถูกด่านสแปมปิดปาก → ตอบได้ครั้งเดียวต่อคูลดาวน์ แล้วเงียบ
+        if ($this->shouldMuteFilteredReply(self::PLATFORM_FACEBOOK, $userId, $result)) {
+            return true;
+        }
+
         // 🔒 Guard: ถ้าลูกค้ามีบิลค้าง / กำลังประมวลผล / มีคำทำนายเสร็จแล้ว
         //   → ห้ามแสดง welcome bubble — ตอบ contextual message แทน
         $contextual = $this->buildActiveBillContextMessage(self::PLATFORM_FACEBOOK, $userId);
@@ -4434,6 +4439,11 @@ class FortuneChannelManager
      */
     protected function sendLineHelpResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
+        // 🤐 (2026-09-08) ถูกด่านสแปมปิดปาก → ตอบได้ครั้งเดียวต่อคูลดาวน์ แล้วเงียบ
+        if ($this->shouldMuteFilteredReply(self::PLATFORM_LINE, $userId, $result)) {
+            return true;
+        }
+
         // 🔒 Guard: ถ้าลูกค้ามีบิลค้าง / กำลังประมวลผล / มีคำทำนายเสร็จแล้ว
         //   → ห้ามแสดง welcome bubble "ยินดีต้อนรับ" (สับสนลูกค้าที่จ่ายเงินแล้ว)
         //   → ตอบ contextual message แทน เช่น "แม่หมอกำลังพยากรณ์" / "พิมพ์ อ่านคำทำนาย"
@@ -4448,6 +4458,52 @@ class FortuneChannelManager
         return $lineService->sendFlexWithReplyFallback(
             $userId, $welcomeFlex, "{$this->settings->getFortuneBrandName()}ยินดีต้อนรับค่ะ", $replyToken
         );
+    }
+
+    /**
+     * 🤐 (2026-09-08) ข้อความนี้ถูก "ด่านสแปมปิดปาก" แล้วยังจะตอบซ้ำอีกไหม
+     *
+     * 🚨 บั๊กที่เมธอดนี้แก้: `action='filtered'` แปลว่า pre-filter **บล็อกไม่ให้เข้า AI**
+     *    แต่มันยังวิ่งมาที่ help response ซึ่ง **ส่งข้อความกลับทุกครั้ง**
+     *    ⇒ "บล็อก" ไม่เคยแปลว่า "เงียบ" — ยิ่งโดนบล็อก ยิ่งได้กล่องตอบ
+     *
+     *    เคสจริง FTU-260908-Y1018 (แสนที เล็ก) 2026-09-08 21:40-21:56:
+     *    โดนบล็อก 27 ครั้งใน 15 นาที = ได้ข้อความกลับ 27 ใบ ทั้งที่ระบบตัดสินว่าเป็นสแปม
+     *
+     * กติกา: ตอบ "อธิบาย" ครั้งแรกของคูลดาวน์ (ลูกค้าจริงที่พลาดต้องรู้ว่าเกิดอะไร)
+     *        ที่เหลือเงียบสนิท
+     *
+     * ⚠️ ผูกกับ `filter_reason` เท่านั้น — คนที่ขอความช่วยเหลือจริง (action='help' ปกติ)
+     *    ไม่มีคีย์นี้ จึงไม่โดนปิดปากแม้แต่ครั้งเดียว
+     *    ([[rule_gate_must_not_swallow_customer_text]] — ด่านห้ามกลืนคนที่ตั้งใจคุยจริง)
+     */
+    protected function shouldMuteFilteredReply(string $platform, string $userId, array $result): bool
+    {
+        if (empty($result['filter_reason']) || $userId === '') {
+            return false;
+        }
+
+        try {
+            $key = 'fortune:filtered_reply:'.$platform.':'.$userId;
+
+            // Cache::add คืน true เฉพาะครั้งแรก — ครั้งถัดไปในคูลดาวน์คืน false ⇒ ปิดปาก
+            $firstInWindow = \Illuminate\Support\Facades\Cache::add($key, 1, now()->addMinutes(10));
+
+            if ($firstInWindow) {
+                return false;
+            }
+
+            Log::info('🤐 ChannelManager: ปิดปากกล่องตอบของด่านสแปม (ตอบไปแล้วในคูลดาวน์)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'filter_reason' => $result['filter_reason'],
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            // แคชล่ม → ตอบตามเดิม ดีกว่าเงียบใส่ลูกค้าจริง
+            return false;
+        }
     }
 
     /**

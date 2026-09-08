@@ -335,31 +335,49 @@ class BillTrollGuardService
             return;
         }
 
-        // 🚧 (2026-07-13) เจ้าของสั่ง: "ต้องยิงคำถาม 5 ข้อก่อนแบน ไม่ใช่แบนเลย" — ทุกคน แม้หลอดขาประจำ
-        //   ถ้าเปิดระบบแบบสอบถามอยู่ แต่บิลนี้ไม่ได้ผ่านการยอมรับ quiz (quiz_gate_accepted=false)
-        //   → ห้าม auto-ban ถาวร. ปล่อยให้ consent quiz gate จัดการบิลถัดไป (เด้ง 5 คำถามก่อนออกบิล)
-        //   → คนที่ยอมรับแล้วไม่จ่ายเท่านั้นถึงโดนแบน (7 วัน auto-expire ผ่าน quiz_gate_accepted ด้านบน)
-        //   permanent auto-ban เหลือไว้เฉพาะเพจที่ "ปิด" ระบบแบบสอบถาม (legacy)
-        //   เหตุ: เคสบ่าวหนอม/หลอด หลอด/เชืง ปานหอม โดนแบนถาวรทั้งที่ไม่เคยเห็นคำถาม (2026-07-13)
-        if ($this->consentQuizGatingActive()) {
-            Log::info('BillTrollGuard: ข้าม permanent auto-ban — ระบบแบบสอบถามเปิดอยู่ (ต้องผ่าน 5 คำถามก่อนแบน)', [
-                'reading_id' => $reading->id,
-                'bill_reference' => $reading->bill_reference,
-                'user_id' => $userId,
-                'platform' => $platform,
-            ]);
-
-            return;
-        }
-
-        // ต้องเคยเห็นคำเตือนบนบิลใบนี้ก่อน — กันแบนย้อนหลังคนที่ไม่เคยถูกเตือน
+        // ต้องเคยเห็นคำเตือนบนบิลใบนี้ก่อน — ยุติธรรม: ไม่แบนคนที่ไม่เคยถูกเตือน
+        //   ⬆️ (2026-09-08) ย้ายขึ้นมาจากใต้ด่าน quiz — ตอนนี้ทั้งเส้น "แบนถาวร" และเส้น
+        //      "แบนชั่วคราว" ใช้เงื่อนไขนี้ร่วมกัน
+        //   ⚠️ ต้องอยู่ "หลัง" เส้น quiz_gate_accepted ข้างบนเสมอ — คนที่กดยอมรับกติกา 5 ข้อ
+        //      จงใจให้ข้ามด่านนี้ (เขาเห็น contract ชัดเจนกว่าคำเตือนบนบิลอีก)
         if (! (bool) $reading->getConversationState('troll_warning_shown')) {
             return;
         }
 
+        // 🚧 (2026-07-13) เจ้าของสั่ง: "ต้องยิงคำถาม 5 ข้อก่อนแบน ไม่ใช่แบนเลย" — ทุกคน แม้หลอดขาประจำ
+        //   ⇒ quiz เปิดอยู่ = **ห้ามแบนถาวร** ([[rule_quiz_gates_all_autoban]])
+        //   เหตุ: เคสบ่าวหนอม / เชืง ปานหอม โดนแบนถาวรทั้งที่ไม่เคยเห็นคำถาม (2026-07-13)
+        //
+        // 🩹 (2026-09-08, เจ้าของสั่ง "พวกเปิดบิลไม่เคยจ่าย เปิดเล่นก็มี") เดิมตรงนี้ `return` เปล่า
+        //   ⇒ "ห้ามแบนถาวร" กลายเป็น "ไม่ลงโทษอะไรเลย" แล้วโยนให้ consent quiz รับช่วง
+        //   แต่ quiz ไม่เคยรับช่วงจริง — prod 2026-09-08 วัดได้:
+        //     • BillTrollGuard ทำงาน 12 ครั้ง/7 วัน → ออกทางประตู "ข้าม" **12/12 = 100%**
+        //     • log `ConsentQuiz` = **0 บรรทัด** · บิลที่มี `quiz_gate_accepted` = **0 ใบ/30 วัน**
+        //     • เคสจริง PSID 27885437957776628 เปิด 5 บิลใน 7 ชม. ไม่จ่ายสักใบ → ไม่โดนอะไรเลย
+        //   ด่านสองตัวหักล้างกันเอง = คนเปิดบิลเล่นไม่มีวันโดนอะไร
+        //
+        //   Fix: quiz เปิด → แบน **ชั่วคราว** เท่าที่ประกาศไว้ในคำเตือน (consent_quiz_ban_days)
+        //   ไม่ใช่ถาวร — ยังเคารพกฎ "quiz เปิด = ห้าม auto perma-ban" ครบทุกตัวอักษร
+        //   และไม่ขู่เกินจริง: `warningForNewBill()` บอกไว้แล้วว่า "งดให้บริการ N วัน"
+        $quizGating = $this->consentQuizGatingActive();
+
         // บิลใบนี้ถูก mark COMPLETED แล้วก่อนเรียก → strikeCount รวมใบนี้ด้วย
         $strikes = $this->strikeCount($userId);
         if ($strikes < self::MAX_STRIKES) {
+            return;
+        }
+
+        if ($quizGating) {
+            Log::warning('BillTrollGuard: quiz เปิด → แบนชั่วคราวตามที่ประกาศ (ไม่ใช่ถาวร)', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'user_id' => $userId,
+                'platform' => $platform,
+                'strikes' => $strikes,
+            ]);
+
+            $this->banForUnpaidStrikes($reading, $userId, $platform, $strikes);
+
             return;
         }
 
@@ -449,6 +467,88 @@ class BillTrollGuardService
      *   → แบนชั่วคราวตามที่ตกลง (bot-level, auto หมดอายุเอง) แทนแบนถาวร + FB page-block
      *   → ไม่ FB page-block เพราะ block ไม่มีอายุ = ไม่ตรงกับ "N วัน" (แบน bot-level หมดอายุเองพอ)
      */
+    /**
+     * 🔨 (2026-09-08) แบน "ชั่วคราว" เพราะสร้างบิลไม่ชำระครบ 3 ครั้ง — ใช้เมื่อ quiz เปิดอยู่
+     *
+     * ต่างจาก `banForQuizUnpaid()` ตรงที่ลูกค้า **ไม่ได้กดยอมรับกติกา 5 ข้อ** (quiz ไม่เคยเด้ง)
+     * จึงต้องมีเงื่อนไขครบกว่า: เห็นคำเตือนบนบิลแล้ว + strike ครบ 3 ใน 3 วัน
+     *
+     * ทำไมต้องมี: เดิมสาขา `consentQuizGatingActive()` `return` เปล่า ⇒ "ห้ามแบนถาวร"
+     * ถูกอ่านเป็น "ไม่ลงโทษอะไรเลย" — prod วัดได้ว่าออกทางนี้ 12/12 ครั้ง และ quiz
+     * ที่ควรรับช่วงต่อไม่เคยยิงเลยสักครั้ง ⇒ คนเปิดบิลเล่นลอยนวลถาวร
+     *
+     * ⚠️ จำนวนวันต้องตรงกับที่ `warningForNewBill()` ประกาศไว้ (`consent_quiz_ban_days`)
+     *    ไม่งั้นเป็นการขู่อย่างทำอย่าง
+     */
+    protected function banForUnpaidStrikes(FortuneReading $reading, string $userId, string $platform, int $strikes): void
+    {
+        $days = $this->quizBanDays($reading);
+
+        // 🛟 Safety: ลูกค้าจริงที่เคยจ่ายใน 30 วัน → ไม่ auto-ban (log แจ้งแอดมิน)
+        $recentlyPaid = FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('is_paid', true)
+            ->where('created_at', '>=', now()->subDays(self::PAID_CUSTOMER_GRACE_DAYS))
+            ->exists();
+
+        if ($recentlyPaid) {
+            Log::warning('BillTrollGuard: เข้าเกณฑ์แบนชั่วคราวแต่เป็นลูกค้าเคยจ่ายใน 30 วัน → ข้าม (แอดมินรีวิว)', [
+                'reading_id' => $reading->id,
+                'user_id' => $userId,
+                'platform' => $platform,
+                'strikes' => $strikes,
+                'ban_days' => $days,
+            ]);
+
+            return;
+        }
+
+        $banService = app(FortuneBanService::class);
+        if ($banService->isBanned($platform, $userId)) {
+            return; // แบนอยู่แล้ว — ไม่ทำซ้ำ
+        }
+
+        // 1) แจ้งครั้งสุดท้าย (best-effort ก่อนแบน)
+        try {
+            $platformService = app(\App\Services\FortuneChannelManager::class)->getPlatform($platform);
+            if ($platformService) {
+                $platformService->sendMessage($userId,
+                    "🚫 *ระบบงดให้บริการชั่วคราว {$days} วัน*\n"
+                    ."═══════════════════════\n"
+                    .'เจ้าชะตาสร้างบิลโดยไม่ชำระมาแล้ว '.$strikes.' ครั้งภายใน '.self::STRIKE_WINDOW_DAYS." วัน\n"
+                    ."ระบบได้แจ้งเตือนไว้บนบิลก่อนหน้าแล้ว จึงงดให้บริการตามที่ประกาศไว้ค่ะ\n"
+                    ."═══════════════════════\n"
+                    .'ครบกำหนดแล้วกลับมาดูดวงได้ตามปกติ — หากเป็นความเข้าใจผิด ติดต่อแอดมินเพจค่ะ 🙏'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('BillTrollGuard: ส่งข้อความแจ้งแบนชั่วคราวล้มเหลว (best-effort)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 2) Bot-level ban ชั่วคราว N วัน (auto หมดอายุ — หน่วยเป็น "นาที" · null = ถาวร ห้ามส่ง)
+        $banService->ban(
+            $platform,
+            $userId,
+            $days * 24 * 60,
+            'bill_troll: สร้างบิลไม่ชำระ '.$strikes.' ครั้งใน '.self::STRIKE_WINDOW_DAYS.' วัน (แบน '.$days.' วัน — quiz เปิด จึงไม่ถาวร)',
+            null,
+            $reading->facebook_user_name
+        );
+
+        Log::warning('🔨 BillTrollGuard: แบนชั่วคราว '.$days.' วัน — สร้างบิลไม่ชำระ '.$strikes.' ครั้ง', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'user_id' => $userId,
+            'platform' => $platform,
+            'strikes' => $strikes,
+        ]);
+    }
+
     protected function banForQuizUnpaid(FortuneReading $reading, string $userId, string $platform): void
     {
         $days = $this->quizBanDays($reading);

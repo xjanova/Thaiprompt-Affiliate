@@ -360,6 +360,8 @@ class FortuneTellingSetting extends Model
         'gesture_flood_window_sec',
         'gesture_flood_cooldown_minutes',
         'gesture_flood_ban_days',
+        'gesture_flood_volume_max',
+        'gesture_flood_volume_window_sec',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม จาก RAG — รัก/เงิน/ฤกษ์/เลข/ของมงคล/จิตใจ/ครอบครัว/เดินทาง/คดี/แก้กรรม
         'enable_celtic_love',
         'enable_celtic_wealth',
@@ -684,6 +686,8 @@ class FortuneTellingSetting extends Model
         'gesture_flood_window_sec' => 'integer',
         'gesture_flood_cooldown_minutes' => 'integer',
         'gesture_flood_ban_days' => 'integer',
+        'gesture_flood_volume_max' => 'integer',
+        'gesture_flood_volume_window_sec' => 'integer',
         // 🧩 (2026-06-02) 10 หมวดความรู้รายไพ่เสริม
         'enable_celtic_love' => 'boolean',
         'enable_celtic_wealth' => 'boolean',
@@ -948,8 +952,13 @@ class FortuneTellingSetting extends Model
         // 🚦 (2026-08-21) NavFloodGuard — ปิดไว้ก่อน + log อย่างเดียว
         //   ต้องรัน shadow mode ดู distribution จริง 3-7 วันก่อนเปิด enforce
         //   ไม่งั้นเสี่ยงปิดปากลูกค้าที่จ่ายเงิน
-        'enable_nav_flood_guard' => false,
-        'nav_flood_mode' => 'log_only',
+        // 🚦 (2026-09-08, เจ้าของสั่งปิดรู) เปิดใช้จริง — เดิม false/log_only ตั้งแต่ 2026-08-21
+        //   แล้วไม่เคยถูกเปิดเลย: prod `fortune_nav_flood_strikes` = 0 แถว ทั้งที่เคยมีเคสจริง
+        //   (กดปุ่มเดิม 10+ ครั้ง/2 นาที กินโควตาส่งของเพจ 26% ใน 1 ชม.)
+        //   ความเสี่ยงถูกกดด้วยขั้นบันไดของตัวมันเอง: เบรกเงียบ → เตือน → เตือนสุดท้าย → แบน
+        //   + ลูกค้าจ่ายเงินยกเว้นทุกขั้น + REPEAT_SAFE_PREFIXES กันปุ่มที่ตั้งใจให้กดซ้ำ
+        'enable_nav_flood_guard' => true,
+        'nav_flood_mode' => 'enforce',
         'nav_flood_repeat_max' => 4,
         'nav_flood_repeat_window_sec' => 120,
         'nav_flood_rate_max' => 15,
@@ -967,6 +976,11 @@ class FortuneTellingSetting extends Model
         'gesture_flood_window_sec' => 300,
         'gesture_flood_cooldown_minutes' => 5,
         'gesture_flood_ban_days' => 7,
+        // ราง 2 (2026-09-08): ยิงข้อความรัวทุกชนิด 40 ใบ/10 นาที = 4 ใบ/นาทีต่อเนื่อง
+        //   เกณฑ์เดิม isUserSpamming Rule 1 = 20 ใบ/นาที (สำหรับบอท) — คนกวนจริงยิง 7.5 ใบ/นาที
+        //   ลอดใต้เพดานนั้นได้สบาย จึงต้องมีตัววัด "ปริมาณสะสม" แยกออกมา
+        'gesture_flood_volume_max' => 40,
+        'gesture_flood_volume_window_sec' => 600,
         // 🛡️ (2026-05-27) Abuse Clapback — default ปิด (admin opt-in เท่านั้น)
         'enable_abuse_clapback' => false,
         'abuse_clapback_use_grok' => true,

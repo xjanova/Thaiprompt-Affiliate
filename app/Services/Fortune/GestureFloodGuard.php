@@ -121,20 +121,17 @@ class GestureFloodGuard
                 return $pass;
             }
 
-            // 📝 มีเนื้อหาจริง → ปล่อยผ่านทันที
-            //    ⚠️ ห้ามล้าง strike ตรงนี้ — ดูกติกาข้อ 3 ในหัวคลาส
-            if (! $forceGesture && ! $this->isContentFree($messageText, $attachments)) {
-                return $pass;
-            }
-
             // 💰 ลูกค้าจ่ายเงิน/แจ้งโอน/ส่งสลิป — ยกเว้นทุกขั้น + ล้างประวัติที่ค้าง
+            //    ⚠️ ต้องเช็ค "ก่อน" นับราง volume — ไม่งั้นลูกค้าที่จ่ายแล้วคุยยาวๆ โดนนับไปด้วย
             if ($this->isPayingCustomer($platform, $userId)) {
                 $this->clearStrikes($platform, $userId);
 
                 return $pass;
             }
 
-            $result = $this->evaluate($platform, $userId, $messageText, $displayName);
+            $isGesture = $forceGesture || $this->isContentFree($messageText, $attachments);
+
+            $result = $this->evaluate($platform, $userId, $messageText, $displayName, $isGesture);
 
             // 👁️ shadow mode — คำนวณครบ เขียน log ครบ แต่ไม่บล็อกใคร
             if ($this->mode() !== 'enforce' && $result['action'] !== self::ACTION_PASS) {
@@ -224,8 +221,36 @@ class GestureFloodGuard
         string $userId,
         string $messageText,
         string|\Closure|null $displayName,
+        bool $isGesture,
     ): array {
         $now = time();
+
+        // ══ ราง 2: ปริมาณ — นับ "ทุกข้อความ" ไม่ว่าจะพิมพ์จริงหรือท่าทาง
+        //   ต้องนับก่อน แล้วค่อย return ตามราง gesture — ไม่งั้นคนที่สลับพิมพ์จริงคั่น
+        //   จะทำให้ตัวนับปริมาณขาดช่วง (เคสแสนที: พิมพ์จริง 38 คั่นท่าทาง 73)
+        $volumeMax = (int) ($this->settings->gesture_flood_volume_max ?? 40);
+
+        if ($volumeMax > 0) {
+            $volumeWindow = max(60, (int) ($this->settings->gesture_flood_volume_window_sec ?? 600));
+            $volumeHits = $this->bump('fortune:gesture:volume:'.$platform.':'.$userId, $volumeWindow, $now);
+
+            if ($volumeHits >= $volumeMax) {
+                return $this->applyStrike(
+                    $platform,
+                    $userId,
+                    $displayName,
+                    "ยิงรัว {$volumeHits} ใบ/{$volumeWindow}วิ",
+                    $this->sample($messageText),
+                    'volume',
+                );
+            }
+        }
+
+        // ══ ราง 1: ท่าทางล้วน — ข้อความที่มีเนื้อหาจริงจบแค่นี้ (ผ่าน แต่ถูกนับปริมาณไปแล้ว)
+        //   ⚠️ ห้ามล้าง strike ตรงนี้ — ดูกติกาข้อ 3 ในหัวคลาส
+        if (! $isGesture) {
+            return ['action' => self::ACTION_PASS, 'message' => null];
+        }
 
         $windowSec = max(30, (int) ($this->settings->gesture_flood_window_sec ?? 300));
         $freeReplies = max(1, (int) ($this->settings->gesture_flood_free_replies ?? 2));
@@ -259,6 +284,7 @@ class GestureFloodGuard
             $displayName,
             "ท่าทางล้วน {$hits} ใบ/{$windowSec}วิ",
             $this->sample($messageText),
+            'gesture',
         );
     }
 
@@ -273,6 +299,7 @@ class GestureFloodGuard
         string|\Closure|null $displayName,
         string $reason,
         string $sample,
+        string $rail,
     ): array {
         if (! Schema::hasTable('fortune_gesture_flood_strikes')) {
             // ช่วง deploy ที่โค้ดขึ้นก่อน migrate — เงียบไปก่อน ดีกว่าปล่อยให้ยิงต่อ
@@ -283,13 +310,18 @@ class GestureFloodGuard
 
         // 🔒 นับความผิด 1 ครั้งต่อคูลดาวน์ ไม่ใช่ทุกใบที่ยิงมา
         //    ไม่งั้นยิงรัว 20 ใบ = 20 strikes = ระงับทันทีโดยไม่มีโอกาสได้เห็นคำเตือน
-        $strikeLock = 'fortune:gesture:struck:'.$platform.':'.$userId;
+        //    ⚠️ คูลดาวน์แยกตามราง — ไม่งั้นรางปริมาณจะกลืนคูลดาวน์ของรางท่าทาง
+        $strikeLock = 'fortune:gesture:struck:'.$rail.':'.$platform.':'.$userId;
         $isNewStrike = Cache::add($strikeLock, true, $cooldownMin * 60);
 
-        $row = FortuneGestureFloodStrike::firstOrNew([
-            'platform' => $platform,
-            'platform_user_id' => $userId,
-        ]);
+        // 🛤️ แยกแถวตามราง — สติกเกอร์กับพิมพ์รัวเป็นคนละพฤติกรรม strike ห้ามบวกข้ามกัน
+        //    (คอลัมน์ `rail` เพิ่งเพิ่ม — ระหว่าง deploy ที่ยังไม่ migrate ให้ถอยไปใช้แถวเดียว)
+        $keys = ['platform' => $platform, 'platform_user_id' => $userId];
+        if (Schema::hasColumn('fortune_gesture_flood_strikes', 'rail')) {
+            $keys['rail'] = $rail;
+        }
+
+        $row = FortuneGestureFloodStrike::firstOrNew($keys);
 
         // หน้าต่างสะสมหมดอายุ → เริ่มนับใหม่
         if ($row->window_started_at === null
@@ -324,9 +356,10 @@ class GestureFloodGuard
 
         $row->strikes = (int) $row->strikes + 1;
 
-        Log::warning('🎭 GestureFloodGuard: แตะเกณฑ์ยิงท่าทางรัว', [
+        Log::warning('🎭 GestureFloodGuard: แตะเกณฑ์ยิงรัว', [
             'platform' => $platform,
             'user_id' => $userId,
+            'rail' => $rail,
             'reason' => $reason,
             'sample' => $sample,
             'strikes' => $row->strikes,
@@ -344,7 +377,7 @@ class GestureFloodGuard
                     $platform,
                     $userId,
                     $banDays * 24 * 60,   // ⚠️ หน่วยเป็นนาที · null = แบนถาวร ห้ามส่ง
-                    'gesture_flood: '.$reason,
+                    'gesture_flood['.$rail.']: '.$reason,
                     null,
                     $row->display_name,
                 );
@@ -357,7 +390,7 @@ class GestureFloodGuard
 
             return [
                 'action' => self::ACTION_BANNED,
-                'message' => $this->buildBanMessage($banDays),
+                'message' => $this->buildBanMessage($banDays, $rail),
             ];
         }
 
@@ -377,8 +410,8 @@ class GestureFloodGuard
         return [
             'action' => self::ACTION_WARN,
             'message' => $row->warned_count === 1
-                ? $this->buildFirstWarning()
-                : $this->buildFinalWarning($banDays),
+                ? $this->buildFirstWarning($rail)
+                : $this->buildFinalWarning($banDays, $rail),
         ];
     }
 
@@ -497,26 +530,44 @@ class GestureFloodGuard
         return '[sticker]';
     }
 
-    protected function buildFirstWarning(): string
+    /**
+     * ⚠️ ข้อความต้องบรรยาย "สิ่งที่เขาทำจริง" ให้ตรงราง
+     *
+     * ถ้าเตือนคนที่พิมพ์ข้อความรัวว่า "ส่งสติกเกอร์รัว" เขาจะงงและไม่รู้ว่าต้องหยุดอะไร
+     * — คำเตือนที่ผิดพฤติกรรม = คำเตือนที่ใช้ไม่ได้ (และไม่ยุติธรรมพอจะเอาไปแบนต่อ)
+     */
+    protected function buildFirstWarning(string $rail): string
     {
-        return "🌙 แม่หมอเห็นนะคะว่าเจ้าชะตาส่งสติกเกอร์รัวๆ มาหลายใบแล้ว\n\n"
+        $what = $rail === 'volume'
+            ? 'ส่งข้อความถี่มากในเวลาสั้นๆ'
+            : 'ส่งสติกเกอร์/อีโมจิรัวๆ มาหลายใบ';
+
+        return "🌙 แม่หมอเห็นนะคะว่าเจ้าชะตา{$what}แล้ว\n\n"
             ."แม่หมอจะขอพักไม่ตอบสักครู่นะคะ — ถ้าอยากให้ดูดวงจริงๆ\n"
-            ."**พิมพ์เรื่องที่อยากรู้มาเป็นข้อความ** แม่หมอตอบให้ทันทีค่ะ\n\n"
+            ."*พิมพ์เรื่องที่อยากรู้มาทีเดียว* แล้วรอแม่หมอตอบนะคะ\n\n"
             .'_ถ้ายังส่งแบบนี้ต่อ แม่หมอจำเป็นต้องระงับการคุยชั่วคราวนะคะ_';
     }
 
-    protected function buildFinalWarning(int $banDays): string
+    protected function buildFinalWarning(int $banDays, string $rail): string
     {
+        $what = $rail === 'volume'
+            ? 'ยังส่งข้อความถี่มากอย่างต่อเนื่อง'
+            : 'ยังส่งสติกเกอร์/อีโมจิรัวเข้ามาเรื่อยๆ โดยไม่พิมพ์อะไรเลย';
+
         return "⚠️ เตือนครั้งสุดท้ายนะคะ\n\n"
-            ."เจ้าชะตายังส่งสติกเกอร์/อีโมจิรัวเข้ามาเรื่อยๆ โดยไม่พิมพ์อะไรเลย\n"
+            ."เจ้าชะตา{$what}\n"
             ."ถ้ายังทำแบบนี้อีก แม่หมอจะระงับการคุย {$banDays} วันค่ะ\n\n"
             .'_อยากดูดวง — พิมพ์เรื่องที่อยากรู้มาได้เลย แม่หมอรออยู่ค่ะ_';
     }
 
-    protected function buildBanMessage(int $banDays): string
+    protected function buildBanMessage(int $banDays, string $rail): string
     {
+        $what = $rail === 'volume'
+            ? 'ยังส่งข้อความถี่มากต่อเนื่อง'
+            : 'ยังส่งสติกเกอร์รัวเข้ามาโดยไม่พิมพ์อะไรเลย';
+
         return "🚫 แม่หมอขอระงับการคุยไว้ {$banDays} วันนะคะ\n\n"
-            ."เตือนไปสองครั้งแล้ว แต่ยังส่งสติกเกอร์รัวเข้ามาโดยไม่พิมพ์อะไรเลย\n"
+            ."เตือนไปสองครั้งแล้ว แต่{$what}\n"
             .'ครบกำหนดแล้วกลับมาคุยกันใหม่ได้ค่ะ';
     }
 }
