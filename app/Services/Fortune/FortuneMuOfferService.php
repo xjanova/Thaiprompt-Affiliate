@@ -283,6 +283,35 @@ class FortuneMuOfferService
             return false;
         }
 
+        // 🔮 (2026-09-08 FTU-260908-W7476) ลูกค้าจ่ายเงินแล้ว "ยังทำนายไม่จบ" → ห้ามยื่นการ์ดขายของ
+        //
+        //   เคสจริง: Deep-39 อยู่ในช่วงถามต่อ 7 นาที ลูกค้าส่งรูปเข้ามา →
+        //   เส้น gesture_image ยิงการ์ด "แม่หมอมีของเสริมดวงฝากไว้ให้ดู" แทรกกลางคำทำนายที่จ่ายเงินแล้ว
+        //
+        //   ⚠️ ทำไมด่านนี้ต้องอยู่ "ที่นี่" ไม่ใช่ที่ผู้เรียก:
+        //     กฎเหล็กข้อ 1 ของคลาสนี้ฝากความรับผิดชอบไว้กับผู้เรียก ⇒ เส้นท้ายบิล
+        //     (celtic_end/deep_end) ทำถูกอยู่แล้ว แต่เส้น gesture ยิงจาก webhook ซึ่ง
+        //     ไม่รู้เรื่องบิลเลยสักนิด ⇒ รูเปิดค้างอยู่ทางนั้นทางเดียว และจะเปิดใหม่ทุกครั้ง
+        //     ที่มีจุดยิงใหม่เกิดขึ้น ถ้าไม่ย้ายด่านมาไว้ที่ประตูรวม
+        //
+        //   ยกเว้น 2 กลุ่ม (จงใจ):
+        //     - PAID_END_TRIGGERS = จุดจบจริงของบิล มีด่านของตัวเองอยู่แล้ว
+        //       (celtic_end กันด้วย is_lingering · deep_end ยิงที่ deep_pro_session_timeout)
+        //       ถ้ากันตรงนี้ด้วย การ์ดท้ายบิลจะดับทั้งเส้น — และ cache 30 วิ ของ
+        //       hasPaidActiveReading() อาจยังตอบ true อยู่ ณ วินาทีที่เพิ่งปิด session
+        //     - ALWAYS_ON_TRIGGERS = ลูกค้าถามหาของเอง ต้องได้คำตอบเสมอ (ดู ALWAYS_ON_TRIGGERS)
+        if (! in_array($trigger, FortuneProductOffer::PAID_END_TRIGGERS, true)
+            && ! in_array($trigger, FortuneProductOffer::ALWAYS_ON_TRIGGERS, true)
+            && $this->predictionInFlight($platformUserId)) {
+            Log::info('MuOffer: ลูกค้าจ่ายแล้วยังทำนายไม่จบ → ไม่แทรกการ์ดขายของ', [
+                'platform' => $platform,
+                'user_id' => $platformUserId,
+                'trigger' => $trigger,
+            ]);
+
+            return false;
+        }
+
         // 💸 (2026-08-27) การ์ดขายของ = push ที่ไม่วิกฤต — โควตา LINE ใกล้หมดให้ข้าม
         //   ย้ายมาจาก FortuneChannelManager::offerProductsAfterReading() เพราะเดิมกันแค่
         //   ท้ายบิล ⇒ สายดวงฟรี (1,841 ใบ/7 วัน) กินโควตาไปโดยไม่ผ่านด่านนี้เลย
@@ -348,6 +377,37 @@ class FortuneMuOfferService
         }
 
         return true;
+    }
+
+    /**
+     * 🔮 ลูกค้าคนนี้ "จ่ายเงินแล้วแต่ยังทำนายไม่จบ" อยู่หรือเปล่า
+     *
+     * ยืมด่านเดียวกับที่ใช้ bypass spam guard ให้ลูกค้าที่จ่ายแล้ว —
+     * `hasPaidActiveReading()` ครอบทั้ง 2 ทรง:
+     *   1. conversation_status ยังไม่ completed (กำลังกรอกวันเกิด / เปิดไพ่ / รอ AI)
+     *   2. completed แล้วแต่ `pro_session_active = true` (ช่วงถามต่อ 7/15 นาที)
+     *      ⚠️ ทรงที่ 2 คือทรงที่ทำให้เคส FTU-260908-W7476 หลุด — ถ้าเช็คแค่ status
+     *      จะเห็นเป็น "จบแล้ว" ทั้งที่ลูกค้ายังถามอยู่และเพิ่งได้คำตอบไปเมื่อ 30 วินาทีก่อน
+     *
+     * ไม่รับ $platform เพราะตัวด่านค้นทั้ง `facebook_user_id` และ `platform_user_id`
+     * อยู่แล้ว (LINE เก็บ userId ไว้ในคอลัมน์ชื่อ facebook — ดู FortuneReading)
+     */
+    private function predictionInFlight(string $platformUserId): bool
+    {
+        try {
+            return app(\App\Services\FortuneConversationService::class)
+                ->hasPaidActiveReading($platformUserId);
+        } catch (\Throwable $e) {
+            // อ่านสถานะไม่ได้ ⇒ ไม่รู้ว่าลูกค้ากำลังทำนายอยู่ไหม → ไม่ยิงไว้ก่อน (fail-closed)
+            //   กลับด้านไม่ได้: ปล่อยผ่านตอน DB มีปัญหา = การ์ดขายของไปโผล่กลางคำทำนาย
+            //   ที่ลูกค้าจ่ายเงินแล้ว ซึ่งแพงกว่าการพลาดโอกาสขายไป 1 ใบมาก
+            Log::warning('MuOffer: เช็คสถานะ "กำลังทำนาย" ไม่ได้ — ไม่ส่งไว้ก่อน', [
+                'user_id' => $platformUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return true;
+        }
     }
 
     /**
