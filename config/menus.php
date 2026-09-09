@@ -796,9 +796,9 @@ return [
                 ['label' => '---', 'route' => null],
                 // ═══ ดูดวงสาธารณะ (หน้าเว็บ) ═══
                 ['label' => '🌙 ตั้งค่าดูดวงสาธารณะ', 'route' => 'admin.fortune.horoscope-public.settings', 'description' => 'เปิด/ปิด จำกัดฟรี SEO'],
-                ['label' => '♈ 12 ราศี + ดวงรายวัน', 'route' => 'admin.fortune.horoscope-public.zodiac.index', 'description' => 'จัดการราศี + Generate ดวง AI'],
+                ['label' => '🗓️ ดวงรายวัน (วันเกิด)', 'route' => 'admin.fortune.horoscope-public.daily.index', 'description' => 'ตรวจดวง 7+1 วันเกิด + สั่งสร้างซ้ำ'],
                 ['label' => '💤 พจนานุกรมฝัน', 'route' => 'admin.fortune.horoscope-public.dream.index', 'description' => 'สัญลักษณ์ฝัน หมวดหมู่ ผลทำนาย'],
-                ['label' => '📈 สถิติดูดวงสาธารณะ', 'route' => 'admin.fortune.horoscope-public.analytics', 'description' => 'กราฟ สถิติ Top ราศี/ฝัน'],
+                ['label' => '📈 สถิติดูดวงสาธารณะ', 'route' => 'admin.fortune.horoscope-public.analytics', 'description' => 'กราฟ สถิติ Top ฝัน/เลขศาสตร์'],
             ],
         ],
 

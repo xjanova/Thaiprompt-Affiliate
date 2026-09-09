@@ -111,7 +111,7 @@
                     <ul class="space-y-2">
                         <li>
                             <a href="{{ route('horoscope.daily.index') }}" class="text-purple-300/70 hover:text-purple-200 transition text-sm flex items-center gap-2">
-                                <span>⭐</span> ดวงรายวัน 12 ราศี
+                                <span>⭐</span> ดวงรายวันตามวันเกิด
                             </a>
                         </li>
                         <li>

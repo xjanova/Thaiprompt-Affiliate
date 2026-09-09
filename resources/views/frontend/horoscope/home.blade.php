@@ -143,104 +143,6 @@
         </div>
     </section>
 
-    {{-- ==================== ราศีเด่นวันนี้ (Featured) ==================== --}}
-    @if($featuredZodiac)
-    @php
-        $featuredPrediction = $todayPredictions[$featuredZodiac->id] ?? null;
-    @endphp
-    <section class="py-16">
-        <div class="container mx-auto px-4">
-            <div class="max-w-4xl mx-auto">
-                <div class="text-center mb-8">
-                    <span class="inline-block px-4 py-1.5 bg-amber-500/20 border border-amber-500/30 rounded-full text-amber-300 text-sm font-medium mb-4">
-                        ⭐ ราศีเด่นวันนี้
-                    </span>
-                    <h2 class="text-3xl md:text-4xl font-black text-white">
-                        ราศี{{ $featuredZodiac->name_th }} {{ $featuredZodiac->symbol_emoji }}
-                    </h2>
-                    <p class="text-purple-300/60 mt-2">{{ \Carbon\Carbon::today()->locale('th')->translatedFormat('l j F Y') }}</p>
-                </div>
-
-                <div class="bg-white/5 backdrop-blur-xl rounded-3xl p-6 md:p-8 border border-white/10 shadow-xl"
-                     style="box-shadow: 0 0 40px {{ $featuredZodiac->color_hex ?? '#9333ea' }}20;">
-                    @if($featuredPrediction)
-                        {{-- คะแนนรวม --}}
-                        <div class="text-center mb-6">
-                            <div class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-2xl">
-                                <span class="text-3xl font-black text-amber-400">{{ number_format($featuredPrediction->average_score, 1) }}</span>
-                                <span class="text-amber-300/80 text-sm">/5 คะแนน</span>
-                            </div>
-                        </div>
-
-                        {{-- คะแนน 5 ด้าน --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-                            @include('frontend.horoscope.partials._score-meter', ['label' => 'ภาพรวม', 'score' => $featuredPrediction->overall_score, 'color' => 'purple'])
-                            @include('frontend.horoscope.partials._score-meter', ['label' => 'ความรัก', 'score' => $featuredPrediction->love_score, 'color' => 'pink'])
-                            @include('frontend.horoscope.partials._score-meter', ['label' => 'การงาน', 'score' => $featuredPrediction->career_score, 'color' => 'cyan'])
-                            @include('frontend.horoscope.partials._score-meter', ['label' => 'การเงิน', 'score' => $featuredPrediction->finance_score, 'color' => 'amber'])
-                            @include('frontend.horoscope.partials._score-meter', ['label' => 'สุขภาพ', 'score' => $featuredPrediction->health_score, 'color' => 'emerald'])
-                        </div>
-
-                        {{-- คำทำนายภาพรวม --}}
-                        @if($featuredPrediction->overall_prediction_th)
-                        <div class="bg-white/5 rounded-2xl p-4 mb-4 border border-white/5">
-                            <p class="text-purple-200/80 text-sm leading-relaxed">
-                                {{ Str::limit($featuredPrediction->overall_prediction_th, 200) }}
-                            </p>
-                        </div>
-                        @endif
-
-                        {{-- ข้อมูลมงคล --}}
-                        @include('frontend.horoscope.partials._lucky-info', ['prediction' => $featuredPrediction])
-                    @endif
-
-                    {{-- ปุ่มดูเพิ่ม --}}
-                    <div class="text-center mt-6">
-                        <a href="{{ route('horoscope.daily.zodiac', $featuredZodiac->slug) }}"
-                           class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white font-semibold hover:scale-105 transition-all duration-300 shadow-lg shadow-purple-500/20">
-                            ดูดวงราศี{{ $featuredZodiac->name_th }} เต็มๆ
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                            </svg>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    @endif
-
-    {{-- ==================== 12 ราศี Grid ==================== --}}
-    <section class="py-16">
-        <div class="container mx-auto px-4">
-            <div class="text-center mb-10">
-                <h2 class="text-3xl md:text-4xl font-black text-white mb-3">
-                    ดวง 12 ราศีวันนี้
-                </h2>
-                <p class="text-purple-300/70">เลือกราศีของคุณเพื่อดูดวงรายวัน</p>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-6xl mx-auto">
-                @foreach($zodiacSigns as $zodiac)
-                    @include('frontend.horoscope.partials._zodiac-card', [
-                        'zodiac' => $zodiac,
-                        'todayPredictions' => $todayPredictions,
-                    ])
-                @endforeach
-            </div>
-
-            <div class="text-center mt-8">
-                <a href="{{ route('horoscope.daily.index') }}"
-                   class="inline-flex items-center gap-2 px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium hover:bg-white/20 transition-all duration-300">
-                    ดูดวงรายวันทั้งหมด
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                    </svg>
-                </a>
-            </div>
-        </div>
-    </section>
-
     {{-- ==================== 7 วันเกิด ==================== --}}
     <section class="py-16">
         <div class="container mx-auto px-4">
@@ -327,7 +229,7 @@
                         </div>
                         <div>
                             <h3 class="text-white font-bold text-lg group-hover:text-cyan-200 transition-colors">ดวงรายวัน</h3>
-                            <p class="text-purple-300/60 text-sm">12 ราศี + 7 วันเกิด ทำนายด้วย AI</p>
+                            <p class="text-purple-300/60 text-sm">7+1 วันเกิด ทำนายด้วย AI</p>
                         </div>
                         <svg class="w-5 h-5 text-white/30 ml-auto group-hover:text-white/70 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -348,7 +250,7 @@
                     </h2>
                     <p class="text-purple-300/60 text-sm leading-relaxed mb-4">
                         ระบบดูดวงออนไลน์ที่ขับเคลื่อนด้วย AI แม่นยำ ทันสมัย
-                        ครอบคลุมทุกศาสตร์ — ดวงรายวัน 12 ราศี, ไพ่ทาโรต์ 78 ใบ,
+                        ครอบคลุมทุกศาสตร์ — ดวงรายวันตามวันเกิด, ไพ่ทาโรต์ 78 ใบ,
                         เลขศาสตร์วิเคราะห์ชื่อ-เบอร์โทร-ทะเบียนรถ, ทำนายฝันพร้อมเลขเด็ด
                         {{ ($freeFortuneEnabled ?? true) ? 'ฟรีทุกวัน ' : '' }}ใช้งานง่าย สวยงาม รองรับมือถือทุกรุ่น
                     </p>
@@ -357,7 +259,7 @@
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ดูดวงฟรี</span>
                         @endif
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ดวงรายวัน</span>
-                        <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">12 ราศี</span>
+                        <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ดวงตามวันเกิด</span>
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ไพ่ทาโรต์</span>
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">เลขศาสตร์</span>
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ทำนายฝัน</span>
@@ -382,9 +284,9 @@ function horoscopeHome() {
 @endsection
 
 @push('seo')
-<meta name="description" content="{{ $pageDescription ?? 'ดูดวงออนไลน์ฟรี ดวงรายวัน 12 ราศี ไพ่ทาโรต์ ทำนายฝัน เลขเด็ด วิเคราะห์ชื่อ เบอร์โทร ทะเบียนรถ ทำนายด้วย AI แม่นยำ ทันสมัย' }}">
+<meta name="description" content="{{ $pageDescription ?? 'ดูดวงออนไลน์ฟรี ดวงรายวันตามวันเกิด ไพ่ทาโรต์ ทำนายฝัน เลขเด็ด วิเคราะห์ชื่อ เบอร์โทร ทะเบียนรถ ทำนายด้วย AI แม่นยำ ทันสมัย' }}">
 <meta property="og:title" content="{{ $pageTitle ?? 'ดูดวงออนไลน์ ฟรี — ดวงรายวัน ไพ่ทาโรต์ ทำนายฝัน เลขศาสตร์' }}">
-<meta property="og:description" content="{{ $pageDescription ?? 'ดูดวงออนไลน์ฟรี ดวงรายวัน 12 ราศี ไพ่ทาโรต์ ทำนายฝัน เลขเด็ด วิเคราะห์ชื่อ เบอร์โทร ทะเบียนรถ ทำนายด้วย AI แม่นยำ ทันสมัย' }}">
+<meta property="og:description" content="{{ $pageDescription ?? 'ดูดวงออนไลน์ฟรี ดวงรายวันตามวันเกิด ไพ่ทาโรต์ ทำนายฝัน เลขเด็ด วิเคราะห์ชื่อ เบอร์โทร ทะเบียนรถ ทำนายด้วย AI แม่นยำ ทันสมัย' }}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{{ route('horoscope.home') }}">
 @endpush

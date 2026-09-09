@@ -4,19 +4,20 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\HoroscopeDailyPrediction;
-use App\Models\HoroscopeZodiacSign;
 use App\Services\Fortune\DailyArticleMirror;
 use App\Services\FortuneChartService;
 use App\Services\HoroscopeDailyService;
 use Illuminate\Http\Request;
 
 /**
- * HoroscopeDailyController — ดวงรายวัน 12 ราศี + 7 วันเกิด
+ * HoroscopeDailyController — ดวงรายวัน 7+1 วันเกิด
  *
  * หน้าต่างๆ:
- * - index: แสดง grid 12 ราศี + tabs 7 วันเกิด
- * - showZodiac: รายละเอียดดวงราศี 5 ด้าน + ประวัติ 7 วัน
+ * - index: แสดง grid วันเกิด (7 วัน + พุธกลางคืน)
  * - showBirthDay: รายละเอียดดวงตามวันเกิด
+ *
+ * 🗑️ (2026-09-09) ถอดเลน 12 ราศี ออก — horoscope_zodiac_signs บน prod
+ *    = 0 แถว หน้านี้จึงเปิดมาด้วยแท็บ "12 ราศี" ที่ว่างเปล่ามาตลอด
  */
 class HoroscopeDailyController extends Controller
 {
@@ -31,85 +32,28 @@ class HoroscopeDailyController extends Controller
     }
 
     /**
-     * หน้าหลักดวงรายวัน — แสดง 12 ราศี + 7 วันเกิด
+     * หน้าหลักดวงรายวัน — grid 7+1 วันเกิด
      *
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
     {
-        // ดึง 12 ราศี
-        $zodiacSigns = HoroscopeZodiacSign::active()
-            ->ordered()
-            ->get();
-
-        // ดวงวันนี้ — 12 ราศี
-        $zodiacPredictions = HoroscopeDailyPrediction::where('target_date', today())
-            ->where('prediction_type', 'zodiac')
-            ->generated()
-            ->get()
-            ->keyBy('zodiac_sign_id');
-
-        // ดวงวันนี้ — 7 วันเกิด
+        // ดวงวันนี้ — 7+1 วันเกิด
         $birthDayPredictions = HoroscopeDailyPrediction::where('target_date', today())
             ->where('prediction_type', 'birth_day')
             ->generated()
             ->get()
             ->keyBy('birth_day');
 
-        // ข้อมูล 7 วันเกิด
+        // ข้อมูล 7+1 วันเกิด
         $birthDays = $this->getBirthDayData();
 
-        // Tab ที่ active
-        $activeTab = $request->get('tab', 'zodiac');
-
         // SEO
-        $pageTitle = 'ดวงรายวัน 12 ราศี + 7 วันเกิด — '.today()->locale('th')->translatedFormat('j F Y');
+        $pageTitle = 'ดวงรายวันตามวันเกิด — '.today()->locale('th')->translatedFormat('j F Y');
 
         return view('frontend.horoscope.daily.index', [
-            'zodiacSigns' => $zodiacSigns,
-            'zodiacPredictions' => $zodiacPredictions,
             'birthDayPredictions' => $birthDayPredictions,
             'birthDays' => $birthDays,
-            'activeTab' => $activeTab,
-            'pageTitle' => $pageTitle,
-        ]);
-    }
-
-    /**
-     * หน้ารายละเอียดดวงราศี
-     *
-     * @param  string  $slug  slug ของราศี เช่น 'aries'
-     * @return \Illuminate\View\View
-     */
-    public function showZodiac(string $slug)
-    {
-        // ดึงราศี
-        $zodiac = HoroscopeZodiacSign::where('slug', $slug)
-            ->where('is_active', true)
-            ->firstOrFail();
-
-        // ดวงวันนี้
-        $prediction = $this->dailyService->getZodiacPrediction($slug);
-
-        // เพิ่ม view count
-        if ($prediction) {
-            $prediction->incrementView();
-        }
-
-        // ประวัติ 7 วัน
-        $history = $this->dailyService->getZodiacHistory($zodiac->id, 7);
-
-        // ราศีอื่นๆ สำหรับ navigation
-        $allZodiacs = HoroscopeZodiacSign::active()->ordered()->get();
-
-        // SEO
-        $pageTitle = "ดวงราศี{$zodiac->name_th}วันนี้ — ".today()->locale('th')->translatedFormat('j F Y');
-
-        return view('frontend.horoscope.daily.zodiac-detail', [
-            'zodiac' => $zodiac,
-            'prediction' => $prediction,
-            'history' => $history,
-            'allZodiacs' => $allZodiacs,
             'pageTitle' => $pageTitle,
         ]);
     }

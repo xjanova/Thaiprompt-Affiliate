@@ -5,10 +5,12 @@
     $prediction = $todayBirthDayPredictions[$birthDay['day']] ?? null;
 
     // ภาพเทพพาหนะประจำวันเกิด — เจนไว้ล่วงหน้า 7 ใบ ตั้งชื่อตามเลขวัน 0=อาทิตย์ ถึง 6=เสาร์
-    $artPath = 'images/horoscope/birth-days/day-'.$birthDay['day'].'.webp';
+    // วันที่ 7 (พุธกลางคืน) ยังไม่มีภาพของตัวเอง — ยืมภาพวันพุธ (3) ไปก่อน กันรูปแตก
+    $artDay = $birthDay['day'] === 7 ? 3 : $birthDay['day'];
+    $artPath = 'images/horoscope/birth-days/day-'.$artDay.'.webp';
 
     // สัตว์พาหนะประจำวันตามคติไทย — ใช้เขียน alt ให้สื่อความหมายจริง ไม่ใช่ชื่อไฟล์
-    $mounts = ['ราชสีห์', 'ม้า', 'กระบือ', 'ช้าง', 'กวาง', 'โค', 'เสือ'];
+    $mounts = ['ราชสีห์', 'ม้า', 'กระบือ', 'ช้าง', 'กวาง', 'โค', 'เสือ'];  // ดัชนี 7 ไม่มี — alt จะเว้นชื่อพาหนะไปเอง
     $mount = $mounts[$birthDay['day']] ?? '';
 @endphp
 

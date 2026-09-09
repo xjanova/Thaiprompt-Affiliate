@@ -23,9 +23,9 @@
 
         {{-- ปุ่มลัดไปหน้าอื่น --}}
         <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            @if(Route::has('admin.fortune.horoscope-public.zodiac.index'))
-                <a href="{{ route('admin.fortune.horoscope-public.zodiac.index') }}" class="tp-btn tp-btn-sm">
-                    <i class="fas fa-star"></i> จัดการราศี
+            @if(Route::has('admin.fortune.horoscope-public.daily.index'))
+                <a href="{{ route('admin.fortune.horoscope-public.daily.index') }}" class="tp-btn tp-btn-sm">
+                    <i class="fas fa-calendar-day"></i> ดวงรายวัน
                 </a>
             @endif
             @if(Route::has('admin.fortune.horoscope-public.dream.index'))

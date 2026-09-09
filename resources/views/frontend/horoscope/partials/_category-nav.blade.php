@@ -20,7 +20,7 @@
                 <a href="{{ route('horoscope.daily.index') }}"
                    class="px-4 py-2 rounded-lg text-sm font-medium transition
                           {{ request()->routeIs('horoscope.daily.*') ? 'bg-purple-600/50 text-white' : 'text-purple-200/80 hover:bg-white/10 hover:text-white' }}">
-                    ⭐ ดวงรายวัน
+                    📅 ดวงรายวัน
                 </a>
                 <a href="{{ route('horoscope.tarot.index') }}"
                    class="px-4 py-2 rounded-lg text-sm font-medium transition
@@ -72,7 +72,7 @@
                 <a href="{{ route('horoscope.daily.index') }}"
                    class="px-4 py-3 rounded-lg text-sm font-medium transition
                           {{ request()->routeIs('horoscope.daily.*') ? 'bg-purple-600/50 text-white' : 'text-purple-200/80 hover:bg-white/10' }}">
-                    ⭐ ดวงรายวัน 12 ราศี
+                    📅 ดวงรายวันตามวันเกิด
                 </a>
                 <a href="{{ route('horoscope.tarot.index') }}"
                    class="px-4 py-3 rounded-lg text-sm font-medium transition

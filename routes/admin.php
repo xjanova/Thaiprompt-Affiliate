@@ -98,9 +98,9 @@ use App\Http\Controllers\Admin\HDWalletManagementController;
 use App\Http\Controllers\Admin\HeaderSettingsController;
 use App\Http\Controllers\Admin\HomepageManagerController;
 use App\Http\Controllers\Admin\HoroscopeAnalyticsController;
+use App\Http\Controllers\Admin\HoroscopeDailyPredictionController;
 use App\Http\Controllers\Admin\HoroscopeDreamManagementController;
 use App\Http\Controllers\Admin\HoroscopePublicSettingsController;
-use App\Http\Controllers\Admin\HoroscopeZodiacController;
 use App\Http\Controllers\Admin\HotelBookingManagementController;
 use App\Http\Controllers\Admin\HotelFacilityController;
 use App\Http\Controllers\Admin\HotelManagementController;
@@ -4319,14 +4319,17 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/settings', [HoroscopePublicSettingsController::class, 'index'])->name('settings');
         Route::put('/settings', [HoroscopePublicSettingsController::class, 'update'])->name('settings.update');
 
-        // จัดการ 12 ราศี
-        Route::prefix('zodiac')->name('zodiac.')->group(function () {
-            Route::get('/', [HoroscopeZodiacController::class, 'index'])->name('index');
-            Route::get('/{zodiac}/edit', [HoroscopeZodiacController::class, 'edit'])->name('edit');
-            Route::put('/{zodiac}', [HoroscopeZodiacController::class, 'update'])->name('update');
-            Route::post('/generate-daily', [HoroscopeZodiacController::class, 'generateDaily'])->name('generate-daily');
-            Route::get('/predictions', [HoroscopeZodiacController::class, 'predictions'])->name('predictions');
-            Route::delete('/predictions/{prediction}', [HoroscopeZodiacController::class, 'destroyPrediction'])->name('predictions.destroy');
+        // ดวงรายวัน 7+1 วันเกิด — ดูรายการ / สั่งสร้างซ้ำมือ / ลบใบที่พัง
+        //
+        // 🗑️ (2026-09-09) ถอดหน้า "จัดการ 12 ราศี" ออกจาก prefix นี้
+        //    ตาราง horoscope_zodiac_signs บน prod = 0 แถว (ไม่เคยรัน
+        //    HoroscopeZodiacSignSeeder) ⇒ ตลอดอายุระบบไม่เคยมี prediction
+        //    ชนิด zodiac สักใบ · หน้าเลยว่างเปล่ามาตลอด
+        //    เหลือไว้เฉพาะเลนวันเกิดที่วิ่งจริง (cron 00:01 วันละ 8 ใบ)
+        Route::prefix('daily')->name('daily.')->group(function () {
+            Route::get('/', [HoroscopeDailyPredictionController::class, 'index'])->name('index');
+            Route::post('/generate', [HoroscopeDailyPredictionController::class, 'generate'])->name('generate');
+            Route::delete('/{prediction}', [HoroscopeDailyPredictionController::class, 'destroy'])->name('destroy');
         });
 
         // จัดการพจนานุกรมฝัน

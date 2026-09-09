@@ -1,20 +1,18 @@
-{{-- ดวงรายวันทั้งหมด — ธีม V4 นวลทองคำ --}}
+{{-- ดวงรายวัน 7+1 วันเกิด — ธีม V4 นวลทองคำ --}}
 @extends('layouts.admin-v4')
 
 @section('title', $pageTitle)
 
 @section('content')
 @php
-    // ชื่อวันเกิด (index 0=อาทิตย์)
-    $dayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+    // สรุป KPI จากรายการในหน้านี้
+    $rows       = collect($predictions->items());
+    $countTotal = $predictions->total();
+    $countGen   = $rows->where('status', 'generated')->count();
+    $sumViews   = $rows->sum('view_count');
 
-    // คำนวณสรุป KPI จากรายการในหน้านี้
-    $rows         = collect($predictions->items());
-    $countTotal   = $predictions->total();
-    $countZodiac  = $rows->where('prediction_type', 'zodiac')->count();
-    $countBirth   = $rows->where('prediction_type', 'birth_day')->count();
-    $countGen     = $rows->where('status', 'generated')->count();
-    $sumViews     = $rows->sum('view_count');
+    // วันนี้ครบหรือยัง — ตัวเลขที่ต้องมองทุกเช้า
+    $todayComplete = $readyToday >= $expectedToday;
 @endphp
 
 <div style="display:flex;flex-direction:column;gap:18px;">
@@ -26,18 +24,37 @@
                 หลังบ้าน · ระบบดูดวง · ดวงรายวัน
             </div>
             <h1 class="tp-num" style="font-size:26px;font-weight:800;margin:0;display:flex;align-items:center;gap:10px;">
-                <i class="fas fa-calendar-star" style="color:var(--accent1);"></i>
-                ดวงรายวันทั้งหมด
+                <i class="fas fa-calendar-day" style="color:var(--accent1);"></i>
+                ดวงรายวัน (7+1 วันเกิด)
             </h1>
-            <div class="tp-muted" style="font-size:13px;margin-top:4px;">รายการดวงรายวันที่สร้างจาก AI</div>
+            <div class="tp-muted" style="font-size:13px;margin-top:4px;">
+                cron สร้างให้อัตโนมัติทุกวัน 00:01 น. · ยามตรวจซ้ำ 00:20 และ 06:00
+            </div>
         </div>
-        <a href="{{ route('admin.fortune.horoscope-public.zodiac.index') }}" class="tp-btn">
-            <i class="fas fa-arrow-left"></i> จัดการราศี
-        </a>
+        @if(Route::has('admin.fortune.horoscope-public.settings'))
+            <a href="{{ route('admin.fortune.horoscope-public.settings') }}" class="tp-btn">
+                <i class="fas fa-gear"></i> ตั้งค่า
+            </a>
+        @endif
     </div>
 
     {{-- ===== KPI SUMMARY ===== --}}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+        {{-- วันนี้ --}}
+        <div class="tp-card">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="tp-tile" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;color:{{ $todayComplete ? '#5aa07e' : '#d9534f' }};">
+                    <i class="fas {{ $todayComplete ? 'fa-circle-check' : 'fa-triangle-exclamation' }}"></i>
+                </div>
+                <div>
+                    <div class="tp-muted" style="font-size:12px;">ดวงวันนี้</div>
+                    <div class="tp-num" style="font-size:22px;font-weight:800;color:{{ $todayComplete ? '#5aa07e' : '#d9534f' }};">
+                        {{ $readyToday }}<span class="tp-muted" style="font-size:16px;font-weight:600;">/{{ $expectedToday }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ทั้งหมด --}}
         <div class="tp-card">
             <div style="display:flex;align-items:center;gap:12px;">
@@ -47,32 +64,6 @@
                 <div>
                     <div class="tp-muted" style="font-size:12px;">ทั้งหมด (ในระบบ)</div>
                     <div class="tp-num" style="font-size:22px;font-weight:800;">{{ number_format($countTotal) }}</div>
-                </div>
-            </div>
-        </div>
-
-        {{-- ราศี --}}
-        <div class="tp-card">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div class="tp-tile" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#b79ae8;">
-                    <i class="fas fa-star"></i>
-                </div>
-                <div>
-                    <div class="tp-muted" style="font-size:12px;">ราศี (หน้านี้)</div>
-                    <div class="tp-num" style="font-size:22px;font-weight:800;">{{ number_format($countZodiac) }}</div>
-                </div>
-            </div>
-        </div>
-
-        {{-- วันเกิด --}}
-        <div class="tp-card">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div class="tp-tile" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:18px;color:#5689b8;">
-                    <i class="fas fa-calendar-day"></i>
-                </div>
-                <div>
-                    <div class="tp-muted" style="font-size:12px;">วันเกิด (หน้านี้)</div>
-                    <div class="tp-num" style="font-size:22px;font-weight:800;">{{ number_format($countBirth) }}</div>
                 </div>
             </div>
         </div>
@@ -104,6 +95,39 @@
         </div>
     </div>
 
+    {{-- ===== สร้างซ้ำด้วยมือ ===== --}}
+    <div class="tp-card tp-raise">
+        <div class="tp-section-h" style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <i class="fas fa-robot" style="color:var(--accent1);"></i>
+            <span>สร้างดวงรายวันด้วยมือ</span>
+        </div>
+        <div class="tp-muted" style="font-size:13px;margin-bottom:14px;">
+            ใช้เมื่อรอบอัตโนมัติล้ม — ใบที่มีอยู่แล้วจะถูกข้าม ไม่ยิง AI ซ้ำ
+            (ถ้าอยากให้สร้างใหม่จริง ให้ลบใบนั้นก่อน)
+        </div>
+
+        <form action="{{ route('admin.fortune.horoscope-public.daily.generate') }}" method="POST"
+              style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;"
+              onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+            @csrf
+
+            <div style="flex:1;min-width:180px;">
+                <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:6px;">
+                    <i class="fas fa-calendar"></i> วันที่
+                </label>
+                <div class="tp-well">
+                    <input type="date" name="target_date" value="{{ today()->format('Y-m-d') }}"
+                           class="tp-input" style="width:100%;">
+                </div>
+            </div>
+
+            <button type="submit" class="tp-btn tp-btn-primary"
+                    onclick="return confirm('สั่งสร้างดวงรายวันของวันที่เลือก? (ใบที่มีอยู่แล้วจะถูกข้าม)')">
+                <i class="fas fa-wand-magic-sparkles"></i> สร้างดวงรายวัน
+            </button>
+        </form>
+    </div>
+
     {{-- ===== ตัวกรอง ===== --}}
     <div class="tp-card">
         <div class="tp-section-h" style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
@@ -118,18 +142,6 @@
                 </div>
             </div>
 
-            {{-- ประเภท --}}
-            <div style="flex:1;min-width:160px;">
-                <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:6px;">ประเภท</label>
-                <div class="tp-well" style="padding:0;">
-                    <select name="type" class="tp-input" style="background:transparent;border:0;width:100%;">
-                        <option value="">— ทุกประเภท —</option>
-                        <option value="zodiac" {{ request('type') === 'zodiac' ? 'selected' : '' }}>⭐ 12 ราศี</option>
-                        <option value="birth_day" {{ request('type') === 'birth_day' ? 'selected' : '' }}>📅 7 วันเกิด</option>
-                    </select>
-                </div>
-            </div>
-
             {{-- สถานะ --}}
             <div style="flex:1;min-width:160px;">
                 <label class="tp-muted" style="font-size:12px;display:block;margin-bottom:6px;">สถานะ</label>
@@ -137,6 +149,7 @@
                     <select name="status" class="tp-input" style="background:transparent;border:0;width:100%;">
                         <option value="">— ทุกสถานะ —</option>
                         <option value="generated" {{ request('status') === 'generated' ? 'selected' : '' }}>✅ สร้างแล้ว</option>
+                        <option value="generating" {{ request('status') === 'generating' ? 'selected' : '' }}>⏳ กำลังสร้าง</option>
                         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>⏳ รอดำเนินการ</option>
                         <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>❌ ล้มเหลว</option>
                     </select>
@@ -148,7 +161,7 @@
                 <button type="submit" class="tp-btn tp-btn-primary">
                     <i class="fas fa-magnifying-glass"></i> กรอง
                 </button>
-                <a href="{{ route('admin.fortune.horoscope-public.zodiac.predictions') }}" class="tp-btn">
+                <a href="{{ route('admin.fortune.horoscope-public.daily.index') }}" class="tp-btn">
                     <i class="fas fa-eraser"></i> ล้าง
                 </a>
             </div>
@@ -158,12 +171,11 @@
     {{-- ===== ตาราง ===== --}}
     <div class="tp-card" style="padding:0;overflow:hidden;">
         <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;min-width:760px;">
+            <table style="width:100%;border-collapse:collapse;min-width:720px;">
                 <thead>
                     <tr style="text-align:left;">
                         <th style="padding:14px 16px;font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em;">วันที่</th>
-                        <th style="padding:14px 16px;font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em;">ราศี/วันเกิด</th>
-                        <th style="padding:14px 16px;font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em;text-align:center;">ประเภท</th>
+                        <th style="padding:14px 16px;font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em;">วันเกิด</th>
                         <th style="padding:14px 16px;font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em;text-align:center;">คะแนนรวม</th>
                         <th style="padding:14px 16px;font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em;text-align:center;">Views</th>
                         <th style="padding:14px 16px;font-size:12px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em;text-align:center;">AI</th>
@@ -179,27 +191,11 @@
                                 {{ \Carbon\Carbon::parse($pred->target_date)->locale('th')->translatedFormat('j M Y') }}
                             </td>
 
-                            {{-- ราศี/วันเกิด --}}
+                            {{-- วันเกิด (index 7 = พุธกลางคืน) --}}
                             <td style="padding:14px 16px;">
-                                @if($pred->prediction_type === 'zodiac' && $pred->zodiacSign)
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <span style="font-size:18px;">{{ $pred->zodiacSign->symbol_emoji }}</span>
-                                        <span style="font-size:14px;font-weight:600;color:var(--ink);">{{ $pred->zodiacSign->name_th }}</span>
-                                    </div>
-                                @elseif($pred->prediction_type === 'birth_day')
-                                    <span style="font-size:14px;color:var(--ink);">📅 วัน{{ $dayNames[$pred->birth_day] ?? $pred->birth_day }}</span>
-                                @else
-                                    <span class="tp-muted">—</span>
-                                @endif
-                            </td>
-
-                            {{-- ประเภท --}}
-                            <td style="padding:14px 16px;text-align:center;">
-                                @if($pred->prediction_type === 'zodiac')
-                                    <span class="tp-pill" style="color:#b79ae8;">⭐ ราศี</span>
-                                @else
-                                    <span class="tp-pill" style="color:#5689b8;">📅 วันเกิด</span>
-                                @endif
+                                <span style="font-size:14px;color:var(--ink);">
+                                    📅 วัน{{ \App\Services\Fortune\DailyArticleMirror::dayName((int) $pred->birth_day) }}
+                                </span>
                             </td>
 
                             {{-- คะแนนรวม --}}
@@ -228,8 +224,8 @@
                             <td style="padding:14px 16px;text-align:center;">
                                 @if($pred->status === 'generated')
                                     <span class="tp-pill" style="color:#5aa07e;"><i class="fas fa-circle-check"></i> สร้างแล้ว</span>
-                                @elseif($pred->status === 'pending')
-                                    <span class="tp-pill" style="color:#e0a52e;"><i class="fas fa-clock"></i> รอ</span>
+                                @elseif(in_array($pred->status, ['pending', 'generating'], true))
+                                    <span class="tp-pill" style="color:#e0a52e;"><i class="fas fa-clock"></i> {{ $pred->status === 'generating' ? 'กำลังสร้าง' : 'รอ' }}</span>
                                 @else
                                     <span class="tp-pill" style="color:#d9534f;"><i class="fas fa-circle-xmark"></i> ล้มเหลว</span>
                                 @endif
@@ -237,8 +233,8 @@
 
                             {{-- จัดการ (ลบ) --}}
                             <td style="padding:14px 16px;text-align:right;">
-                                <form action="{{ route('admin.fortune.horoscope-public.zodiac.predictions.destroy', $pred) }}" method="POST" style="display:inline;"
-                                      onsubmit="return confirm('ลบ prediction นี้?')">
+                                <form action="{{ route('admin.fortune.horoscope-public.daily.destroy', $pred) }}" method="POST" style="display:inline;"
+                                      onsubmit="return confirm('ลบดวงใบนี้? รอบถัดไปจะสร้างใหม่ให้')">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="tp-icon-btn" style="color:#d9534f;" title="ลบรายการ">
@@ -249,10 +245,10 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="padding:48px 16px;text-align:center;">
+                            <td colspan="7" style="padding:48px 16px;text-align:center;">
                                 <div class="tp-muted" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
                                     <i class="fas fa-inbox" style="font-size:32px;opacity:.5;"></i>
-                                    <span>ยังไม่มี prediction</span>
+                                    <span>ยังไม่มีดวงรายวันตามเงื่อนไขที่กรอง</span>
                                 </div>
                             </td>
                         </tr>

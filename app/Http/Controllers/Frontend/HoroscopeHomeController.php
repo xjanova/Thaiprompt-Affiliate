@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\FortuneTellingSetting;
 use App\Models\HoroscopeDailyPrediction;
-use App\Models\HoroscopeZodiacSign;
 use App\Services\Fortune\DailyArticleMirror;
 use App\Services\FortuneChartService;
 use Illuminate\Http\Request;
@@ -21,7 +20,7 @@ class HoroscopeHomeController extends Controller
     /**
      * แสดงหน้าแรกดูดวง
      *
-     * ดึงข้อมูล: 12 ราศี + ดวงวันนี้ (ถ้ามี) + 7 วันเกิด
+     * ดึงข้อมูล: 7+1 วันเกิด + ดวงวันนี้ (ถ้ามี)
      * แสดง 5 หมวดหลักเป็น animated cards
      *
      * @return \Illuminate\View\View
@@ -36,19 +35,7 @@ class HoroscopeHomeController extends Controller
             abort(404, 'ระบบดูดวงปิดให้บริการชั่วคราว');
         }
 
-        // ดึง 12 ราศี พร้อมดวงวันนี้
-        $zodiacSigns = HoroscopeZodiacSign::active()
-            ->ordered()
-            ->get();
-
-        // ดึงดวงวันนี้ทั้ง 12 ราศี (ถ้ามี)
-        $todayPredictions = HoroscopeDailyPrediction::where('target_date', today())
-            ->where('prediction_type', 'zodiac')
-            ->where('status', 'generated')
-            ->get()
-            ->keyBy('zodiac_sign_id');
-
-        // ดึงข้อมูล 7 วันเกิดจาก FortuneChartService
+        // ดึงข้อมูล 7+1 วันเกิดจาก FortuneChartService
         $birthDays = $this->getBirthDayData();
 
         // ดวงวันนี้ของ 7 วันเกิด (ถ้ามี)
@@ -57,13 +44,6 @@ class HoroscopeHomeController extends Controller
             ->where('status', 'generated')
             ->get()
             ->keyBy('birth_day');
-
-        // หาราศีเด่นวันนี้ (คะแนนสูงสุด)
-        $featuredZodiac = null;
-        if ($todayPredictions->isNotEmpty()) {
-            $bestPrediction = $todayPredictions->sortByDesc('overall_score')->first();
-            $featuredZodiac = $zodiacSigns->firstWhere('id', $bestPrediction->zodiac_sign_id);
-        }
 
         // 5 หมวดหลัก
         $categories = $this->getMainCategories();
@@ -75,14 +55,11 @@ class HoroscopeHomeController extends Controller
         $seoTitle = $settings?->horoscope_seo_title_th
             ?? 'ดูดวงออนไลน์'.$freeWord.' — ดวงรายวัน ไพ่ทาโรต์ ทำนายฝัน เลขศาสตร์';
         $seoDescription = $settings?->horoscope_seo_description_th
-            ?? 'ดูดวงออนไลน์'.$freeWord.' ดวงรายวัน 12 ราศี ไพ่ทาโรต์ ทำนายฝัน เลขเด็ด วิเคราะห์ชื่อ เบอร์โทร ทะเบียนรถ ทำนายด้วย AI แม่นยำ ทันสมัย';
+            ?? 'ดูดวงออนไลน์'.$freeWord.' ดวงรายวันตามวันเกิด ไพ่ทาโรต์ ทำนายฝัน เลขเด็ด วิเคราะห์ชื่อ เบอร์โทร ทะเบียนรถ ทำนายด้วย AI แม่นยำ ทันสมัย';
 
         return view('frontend.horoscope.home', [
-            'zodiacSigns' => $zodiacSigns,
-            'todayPredictions' => $todayPredictions,
             'birthDays' => $birthDays,
             'todayBirthDayPredictions' => $todayBirthDayPredictions,
-            'featuredZodiac' => $featuredZodiac,
             'categories' => $categories,
             'pageTitle' => $seoTitle,
             'pageDescription' => $seoDescription,

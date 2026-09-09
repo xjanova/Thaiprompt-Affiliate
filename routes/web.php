@@ -817,12 +817,11 @@ Route::prefix('horoscope')->name('horoscope.')->group(function () {
     // หน้าแรกดูดวง (แสดงทุกหมวด)
     Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeHomeController::class, 'index'])->name('home');
 
-    // ดวงรายวัน 12 ราศี + 7 วันเกิด
+    // ดวงรายวัน 7+1 วันเกิด (ถอดเลน 12 ราศี ออก 2026-09-09 — ตารางราศีว่างมาตลอด)
     Route::prefix('daily')->name('daily.')->group(function () {
         Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeDailyController::class, 'index'])->name('index');
-        Route::match(['GET', 'HEAD'], '/zodiac/{slug}', [\App\Http\Controllers\Frontend\HoroscopeDailyController::class, 'showZodiac'])->name('zodiac');
         Route::match(['GET', 'HEAD'], '/birth-day/{day}', [\App\Http\Controllers\Frontend\HoroscopeDailyController::class, 'showBirthDay'])->name('birth-day')
-            ->where('day', '[0-6]');
+            ->where('day', '[0-7]'); // 7 = พุธกลางคืน (ราหู) — วันเกิดที่ 8 ตามตำราไทย
     });
 
     // ไพ่ทาโรต์ Interactive

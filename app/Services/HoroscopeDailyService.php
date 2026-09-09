@@ -68,6 +68,10 @@ class HoroscopeDailyService
     /**
      * สร้างดวงรายวันสำหรับทุกราศี
      *
+     * 💤 (2026-09-09) เลนนี้ถูกพักไว้ — ไม่มีใครเรียกแล้ว (ถอด route/หน้าหลังบ้าน/cron ออก)
+     *    เหตุ: horoscope_zodiac_signs บน prod = 0 แถว ตลอดอายุระบบ
+     *    เมธอดชุดนี้เก็บไว้เป็นทางกลับ: seed 12 ราศี + revert คอมมิตที่ถอดเลน
+     *
      * @param  Carbon  $date  วันที่เป้าหมาย
      * @return array ผลการสร้าง ['success' => int, 'failed' => int, 'skipped' => int]
      */

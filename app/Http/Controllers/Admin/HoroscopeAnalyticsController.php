@@ -7,7 +7,7 @@ use App\Models\HoroscopeDailyPrediction;
 use App\Models\HoroscopeDreamDictionary;
 use App\Models\HoroscopeDreamReading;
 use App\Models\HoroscopeNumerologyReading;
-use App\Models\HoroscopeZodiacSign;
+use App\Services\Fortune\DailyArticleMirror;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,7 +42,8 @@ class HoroscopeAnalyticsController extends Controller
             'total_predictions' => HoroscopeDailyPrediction::count(),
             'generated_today' => HoroscopeDailyPrediction::where('target_date', $today)->count(),
             'total_views' => HoroscopeDailyPrediction::sum('view_count'),
-            'zodiacs_active' => HoroscopeZodiacSign::where('is_active', true)->count(),
+            // คาดว่าควรมีกี่ใบต่อวัน (7 วัน + พุธกลางคืน)
+            'expected_today' => count(DailyArticleMirror::allBirthDays()),
         ];
 
         // ทำนายฝัน
@@ -63,16 +64,6 @@ class HoroscopeAnalyticsController extends Controller
         ];
 
         // === Top Items ===
-
-        // ราศียอดนิยม (วิวมากสุด 7 วัน)
-        $topZodiacs = HoroscopeDailyPrediction::select('zodiac_sign_id', DB::raw('SUM(view_count) as total_views'))
-            ->where('target_date', '>=', $weekAgo)
-            ->where('prediction_type', 'zodiac')
-            ->groupBy('zodiac_sign_id')
-            ->orderByDesc('total_views')
-            ->limit(5)
-            ->with('zodiacSign')
-            ->get();
 
         // สัญลักษณ์ฝันยอดนิยม (ค้นหามากสุด)
         $topDreamSymbols = HoroscopeDreamDictionary::where('is_active', true)
@@ -95,7 +86,6 @@ class HoroscopeAnalyticsController extends Controller
             'dailyStats' => $dailyStats,
             'dreamStats' => $dreamStats,
             'numerologyStats' => $numerologyStats,
-            'topZodiacs' => $topZodiacs,
             'topDreamSymbols' => $topDreamSymbols,
             'numerologyTypes' => $numerologyTypes,
             'chartData' => $chartData,

@@ -7,13 +7,15 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 
 /**
- * สร้างดวงรายวันอัตโนมัติ — 12 ราศี + 7 วันเกิด
+ * สร้างดวงรายวันอัตโนมัติ — 7+1 วันเกิด (7 วัน + พุธกลางคืน)
  *
  * ใช้กับ Laravel Scheduler:
  * - php artisan horoscope:generate-daily          (สร้างดวงวันนี้)
  * - php artisan horoscope:generate-daily --date=2026-02-25 (วันที่เฉพาะ)
- * - php artisan horoscope:generate-daily --zodiac  (เฉพาะ 12 ราศี)
- * - php artisan horoscope:generate-daily --birthday (เฉพาะ 7 วันเกิด)
+ *
+ * 🗑️ (2026-09-09) ถอดเลน 12 ราศี ออก — ตาราง horoscope_zodiac_signs
+ * บน prod = 0 แถว (ไม่เคยรัน seeder) ลูปจึงวนบน collection ว่างมาตลอด
+ * ถ้ามีคน seed ทีหลังโดยไม่ตั้งใจ มันจะเผา AI เงียบ ๆ วันละ 12 ใบ
  *
  * ตั้ง cron ทุกวัน 00:01 น. (2026-08-06 ย้ายจาก 06:00 — ปิดช่องโหว่เที่ยงคืน–เช้า
  * ที่บทความของ "วันนี้" ยังไม่ถูกสร้าง ทำให้ลูกค้าที่ทักตอนดึกไม่มีดวงรายวันให้ส่ง)
@@ -28,8 +30,6 @@ class HoroscopeGenerateDailyCommand extends Command
      */
     protected $signature = 'horoscope:generate-daily
         {--date= : ระบุวันที่เป้าหมาย (Y-m-d) default=วันนี้}
-        {--zodiac : สร้างเฉพาะดวง 12 ราศี}
-        {--birthday : สร้างเฉพาะดวง 7 วันเกิด}
         {--force : บังคับสร้างใหม่ แม้มีอยู่แล้ว}';
 
     /**
@@ -37,7 +37,7 @@ class HoroscopeGenerateDailyCommand extends Command
      *
      * @var string
      */
-    protected $description = 'สร้างดวงรายวัน 12 ราศี + 7 วันเกิด ด้วย AI อัตโนมัติ';
+    protected $description = 'สร้างดวงรายวัน 7+1 วันเกิด ด้วย AI อัตโนมัติ';
 
     /**
      * ดำเนินการหลัก
@@ -48,8 +48,6 @@ class HoroscopeGenerateDailyCommand extends Command
     public function handle(HoroscopeDailyService $dailyService): int
     {
         $dateStr = $this->option('date');
-        $onlyZodiac = $this->option('zodiac');
-        $onlyBirthday = $this->option('birthday');
 
         // กำหนดวันที่เป้าหมาย
         try {
@@ -68,57 +66,29 @@ class HoroscopeGenerateDailyCommand extends Command
 
         $totalResults = ['success' => 0, 'failed' => 0, 'skipped' => 0];
 
-        // สร้างดวง 12 ราศี
-        if (! $onlyBirthday) {
-            $this->info('⭐ สร้างดวง 12 ราศี...');
-            $startTime = microtime(true);
+        // สร้างดวง 7+1 วันเกิด
+        $this->info('📅 สร้างดวง 7+1 วันเกิด...');
+        $startTime = microtime(true);
 
-            $zodiacResults = $dailyService->generateDailyForAllZodiacs($targetDate);
+        $birthdayResults = $dailyService->generateDailyForAllBirthDays($targetDate);
 
-            $duration = round(microtime(true) - $startTime, 1);
+        $duration = round(microtime(true) - $startTime, 1);
 
-            $this->table(
-                ['ผลลัพธ์', 'จำนวน'],
-                [
-                    ['✅ สำเร็จ', $zodiacResults['success']],
-                    ['❌ ล้มเหลว', $zodiacResults['failed']],
-                    ['⏭️ ข้าม (มีอยู่แล้ว)', $zodiacResults['skipped']],
-                    ['⏱️ เวลา', "{$duration} วินาที"],
-                ]
-            );
+        $this->table(
+            ['ผลลัพธ์', 'จำนวน'],
+            [
+                ['✅ สำเร็จ', $birthdayResults['success']],
+                ['❌ ล้มเหลว', $birthdayResults['failed']],
+                ['⏭️ ข้าม (มีอยู่แล้ว)', $birthdayResults['skipped']],
+                ['⏱️ เวลา', "{$duration} วินาที"],
+            ]
+        );
 
-            $totalResults['success'] += $zodiacResults['success'];
-            $totalResults['failed'] += $zodiacResults['failed'];
-            $totalResults['skipped'] += $zodiacResults['skipped'];
+        $totalResults['success'] += $birthdayResults['success'];
+        $totalResults['failed'] += $birthdayResults['failed'];
+        $totalResults['skipped'] += $birthdayResults['skipped'];
 
-            $this->newLine();
-        }
-
-        // สร้างดวง 7 วันเกิด
-        if (! $onlyZodiac) {
-            $this->info('📅 สร้างดวง 7 วันเกิด...');
-            $startTime = microtime(true);
-
-            $birthdayResults = $dailyService->generateDailyForAllBirthDays($targetDate);
-
-            $duration = round(microtime(true) - $startTime, 1);
-
-            $this->table(
-                ['ผลลัพธ์', 'จำนวน'],
-                [
-                    ['✅ สำเร็จ', $birthdayResults['success']],
-                    ['❌ ล้มเหลว', $birthdayResults['failed']],
-                    ['⏭️ ข้าม (มีอยู่แล้ว)', $birthdayResults['skipped']],
-                    ['⏱️ เวลา', "{$duration} วินาที"],
-                ]
-            );
-
-            $totalResults['success'] += $birthdayResults['success'];
-            $totalResults['failed'] += $birthdayResults['failed'];
-            $totalResults['skipped'] += $birthdayResults['skipped'];
-
-            $this->newLine();
-        }
+        $this->newLine();
 
         // สรุปผล
         $this->info('📊 สรุปผลรวม:');

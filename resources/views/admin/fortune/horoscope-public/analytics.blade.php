@@ -13,8 +13,7 @@
         'id_card' => '🪪 เลขบัตรประชาชน',
         'birthday' => '🎂 วันเกิด',
     ];
-    // หาค่าสูงสุดของลิสต์ราศี/สัญลักษณ์ฝัน เพื่อทำแถบสัดส่วน
-    $maxZodiacViews = $topZodiacs->max('total_views') ?: 1;
+    // หาค่าสูงสุดของลิสต์สัญลักษณ์ฝัน เพื่อทำแถบสัดส่วน
     $maxSymbolCount = $topDreamSymbols->max('search_count') ?: 1;
 @endphp
 
@@ -80,14 +79,14 @@
                     {{ number_format($dailyStats['total_views']) }}
                 </div>
             </div>
-            {{-- ราศีเปิดใช้ --}}
+            {{-- ดวงวันนี้ --}}
             <div class="tp-card tp-raise">
                 <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <span class="tp-muted" style="font-size:12.5px;">ราศีเปิดใช้</span>
+                    <span class="tp-muted" style="font-size:12.5px;">ดวงวันนี้ (วันเกิด)</span>
                     <i class="fas fa-circle-check" style="color:#5aa07e; font-size:18px;"></i>
                 </div>
                 <div class="tp-num" style="font-size:28px; font-weight:800; color:var(--ink); margin-top:8px;">
-                    {{ $dailyStats['zodiacs_active'] }}<span class="tp-muted" style="font-size:16px; font-weight:600;">/12</span>
+                    {{ $dailyStats['generated_today'] }}<span class="tp-muted" style="font-size:16px; font-weight:600;">/{{ $dailyStats['expected_today'] }}</span>
                 </div>
             </div>
         </div>
@@ -201,38 +200,6 @@
 
     {{-- ==================== Top lists ==================== --}}
     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px,1fr)); gap:18px;">
-
-        {{-- ราศียอดนิยม --}}
-        <div class="tp-card">
-            <div class="tp-section-h" style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
-                <i class="fas fa-star" style="color:#e0a52e;"></i> ราศียอดนิยม (7 วัน)
-            </div>
-            @if($topZodiacs->isNotEmpty())
-                <div style="display:flex; flex-direction:column; gap:12px;">
-                    @foreach($topZodiacs as $idx => $item)
-                        @php $zpct = ($item->total_views / $maxZodiacViews) * 100; @endphp
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span class="tp-num" style="font-size:13px; font-weight:800; color:var(--accent1); width:20px; text-align:center;">{{ $idx + 1 }}</span>
-                            <span style="font-size:19px;">{{ $item->zodiacSign?->symbol_emoji ?? '⭐' }}</span>
-                            <div style="flex:1; min-width:0;">
-                                <div style="font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:5px;">
-                                    {{ $item->zodiacSign?->name_th ?? 'ไม่ระบุ' }}
-                                </div>
-                                <div class="tp-inset-sm" style="height:7px; border-radius:99px; overflow:hidden;">
-                                    <div style="height:100%; width:{{ $zpct }}%; border-radius:99px; background:linear-gradient(90deg,var(--accent1),var(--accent2));"></div>
-                                </div>
-                            </div>
-                            <span class="tp-num tp-muted" style="font-size:12.5px; white-space:nowrap;">{{ number_format($item->total_views) }} views</span>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="tp-muted" style="text-align:center; padding:30px 0;">
-                    <i class="fas fa-inbox" style="font-size:26px; opacity:.5;"></i>
-                    <div style="margin-top:8px;">ยังไม่มีข้อมูล</div>
-                </div>
-            @endif
-        </div>
 
         {{-- สัญลักษณ์ฝันยอดนิยม --}}
         <div class="tp-card">
