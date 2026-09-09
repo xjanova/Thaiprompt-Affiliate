@@ -184,6 +184,9 @@ class FortuneReadingsController extends Controller
             // 🕛 บันทึกลง audit ว่า "ก่อนแก้ เคยรู้เวลาเกิดจริงไหม" — ค่ามาตรฐาน 12:00 นับเป็น null
             //    (ฟอร์มก็ปล่อยช่องว่างเช่นกัน ไม่งั้นแอดมินกดบันทึกเฉย ๆ จะกลายเป็นยืนยันว่า "เกิดเที่ยง")
             'birth_time' => $reading->birthTimeIsKnown() ? substr((string) $reading->birth_time, 0, 5) : null,
+            // 🗺️ (2026-09-10) จังหวัดเกิดต้องอยู่ใน audit ด้วย — เป็นวัตถุดิบผูกลัคนาเท่ากับเวลาเกิด
+            //    แก้จังหวัดแล้วผังเปลี่ยน ⇒ ต้องย้อนได้ว่าคำทำนายใบนั้นผูกจากจังหวัดอะไร
+            'birth_province' => $reading->birthProvinceIfKnown(),
             'questions_count' => is_array($reading->questions) ? count($reading->questions) : 0,
             'tarot_count' => count($reading->getCollectedTarotCards()),
         ];

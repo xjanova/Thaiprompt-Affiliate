@@ -217,7 +217,38 @@
                             </select>
                         </div>
                         <p style="margin:6px 0 0; font-size:11px; color:var(--ink2);">
+                            {{-- 🗺️ (2026-09-10) บรรทัด "ปัจจุบัน" แบบเดียวกับวันเกิด/เวลาเกิด — ไว้อ้างอิงว่าผังผูกจากอะไร --}}
+                            ปัจจุบัน:
+                            @if($reading->birthProvinceIfKnown())
+                                {{-- ⚠️ ต้องใช้บล็อก php แบบเปิด-ปิด — coords()/match() มีวงเล็บซ้อน แบบวงเล็บจะพัง --}}
+                                @php
+                                    $coords = \App\Support\ThaiProvinces::coords($reading->birth_province);
+                                    $provSrc = match ($reading->birth_province_source) {
+                                        'admin' => 'แอดมินกรอก',
+                                        'inherited' => 'ยืมจากบิลเก่าของลูกค้าคนนี้',
+                                        default => 'เจ้าชะตาบอกเอง',
+                                    };
+                                    $lmt = \App\Support\ThaiProvinces::localMeanTimeOffsetMinutes($reading->birth_province);
+                                    // ⚠️ ประกอบสตริงในนี้ให้จบ — directive ที่ติดหลังตัวอักษร (เช่น "°E" ตามด้วย if)
+                                    //    Blade จะไม่คอมไพล์ให้ (ต้องมีขอบเขตคำหน้า @) แล้วตัวปิดจะไปจับผิดคู่ = หน้าพัง
+                                    $coordText = '';
+                                    if ($coords) {
+                                        $coordText = number_format($coords['lat'], 2).'°N '.number_format($coords['lon'], 2).'°E';
+                                        if ($lmt !== null) {
+                                            $coordText .= ' · เวลาอัตโนมัติ '.($lmt > 0 ? '+' : '').$lmt.' นาที';
+                                        }
+                                        $coordText = '('.$coordText.')';
+                                    }
+                                @endphp
+                                <strong>{{ $reading->birth_province }}</strong>
+                                {{ $coordText }}
+                                · {{ $provSrc }}
+                            @else
+                                ❌ ยังไม่ทราบ — ผูกลัคนาด้วยพิกัดกรุงเทพฯ เป็นค่ากลาง
+                            @endif
+                            <br>
                             จังหวัดเกิดทำให้ลัคนาแม่นขึ้น — เหนือสุดกับใต้สุดของไทยต่างกันได้ถึง ~9° (ข้ามราศีได้ถ้าเกิดต้น/ท้ายราศี)
+                            · บันทึกแล้วผังคำนวณใหม่ทันที
                         </p>
                     </div>
 

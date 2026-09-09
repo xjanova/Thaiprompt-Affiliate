@@ -1124,6 +1124,13 @@ trait ProSessionTrait
                         ."\n   → เปิดคำตอบด้วยประโยคสั้นๆ ว่ารับเวลาเกิดแล้วและปรับดวงให้ใหม่ (1 ประโยคพอ) แล้วตอบต่อตามปกติ";
                 }
 
+                // 🗺️ (2026-09-10) จังหวัดเกิดก็ต้องทวนเหมือนกัน — ลูกค้าอุตส่าห์บอกมาแล้วเงียบ = เหมือนไม่ได้ใช้
+                $placeUpdated = $reading->pullBirthProvinceJustUpdated();
+                if ($placeUpdated !== null && $block !== '') {
+                    $block .= "\n🗺️ เจ้าชะตาเพิ่งบอกจังหวัดเกิด: {$placeUpdated} — ผังข้างบนใช้พิกัดจังหวัดนี้คำนวณแล้ว"
+                        ."\n   → ทวนสั้นๆ 1 ประโยคว่ารับจังหวัดเกิดแล้วและผูกดวงให้ละเอียดขึ้น แล้วตอบต่อตามปกติ";
+                }
+
                 $block .= $this->birthTimeUnparsedDirective($reading);
 
                 if ($block !== '') {
@@ -1281,6 +1288,12 @@ trait ProSessionTrait
                 if ($justUpdated !== null && $celticAstroBlock !== '') {
                     $celticAstroBlock .= "🕛 เจ้าชะตาเพิ่งบอกเวลาเกิด {$justUpdated} น. — ผังข้างบนคำนวณใหม่แล้ว "
                         ."→ เปิดคำตอบด้วยประโยคสั้นๆ ว่ารับเวลาเกิดแล้ว (1 ประโยค) แล้วตอบต่อ\n\n";
+                }
+                // 🗺️ (2026-09-10) ทวนจังหวัดเกิดด้วย — mirror ของเวลาเกิด
+                $placeUpdated = $reading->pullBirthProvinceJustUpdated();
+                if ($placeUpdated !== null && $celticAstroBlock !== '') {
+                    $celticAstroBlock .= "🗺️ เจ้าชะตาเพิ่งบอกจังหวัดเกิด: {$placeUpdated} — ผังข้างบนใช้พิกัดจังหวัดนี้แล้ว "
+                        ."→ ทวนสั้นๆ 1 ประโยคว่ารับจังหวัดเกิดแล้ว แล้วตอบต่อ\n\n";
                 }
                 $celticAstroBlock .= $this->birthTimeUnparsedDirective($reading);
             }

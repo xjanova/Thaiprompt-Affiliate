@@ -129,9 +129,18 @@
                             @else
                                 <span class="tp-muted" style="font-weight:500; font-size:11px;">⏱️ ไม่ทราบเวลา (ยกจันทร์ลัคน์ตามตำรา)</span>
                             @endif
-                            {{-- 🗺️ (2026-09-09) จังหวัดเกิด = พิกัดที่ใช้ผูกลัคนา --}}
+                            {{-- 🗺️ (2026-09-09) จังหวัดเกิด = พิกัดที่ใช้ผูกลัคนา · แสดงที่มาเหมือนเวลาเกิด --}}
                             @if($reading->birthProvinceIfKnown())
+                                {{-- ⚠️ ต้องใช้บล็อก php แบบเปิด-ปิด ไม่ใช่แบบวงเล็บ — match() มีวงเล็บซ้อน Blade จะพัง --}}
+                                @php
+                                    $provSrc = match ($reading->birth_province_source) {
+                                        'admin' => 'แอดมินกรอก',
+                                        'inherited' => 'จากบิลเก่าของลูกค้าคนนี้',
+                                        default => 'เจ้าชะตาบอกเอง',
+                                    };
+                                @endphp
                                 <span style="font-weight:500;">· 🗺️ {{ $reading->birth_province }}</span>
+                                <span class="tp-muted" style="font-weight:500; font-size:11px;">({{ $provSrc }})</span>
                             @else
                                 <span class="tp-muted" style="font-weight:500; font-size:11px;">· 🗺️ ไม่ทราบจังหวัด (ใช้พิกัดกรุงเทพฯ)</span>
                             @endif
@@ -401,6 +410,9 @@
                             </p>
                             <ul style="color:var(--ink2); font-size:12px; margin:8px 0 0; padding-left:18px; list-style:disc;">
                                 <li>วันเกิด: {{ $reading->birth_date ? $reading->birth_date->format('d/m/Y') : '❌ ยังไม่กรอก' }}</li>
+                                {{-- 🕛🗺️ (2026-09-10) เวลา+จังหวัดเกิด = วัตถุดิบผูกลัคนา · ไม่มี = อ่านภพไม่ได้ ต้องเห็นในเช็คลิสต์ --}}
+                                <li>เวลาเกิด: {{ $reading->birthTimeIsKnown() ? substr((string) $reading->birth_time, 0, 5).' น.' : '➖ ไม่ทราบ (ยกจันทร์ลัคน์ตามตำรา)' }}</li>
+                                <li>จังหวัดเกิด: {{ $reading->birthProvinceIfKnown() ?? '➖ ไม่ทราบ (ใช้พิกัดกรุงเทพฯ)' }}</li>
                                 <li>คำถาม: {{ is_array($reading->questions) && count($reading->questions) > 0 ? count($reading->questions).' คำถาม' : '❌ ยังไม่ถาม' }}</li>
                             </ul>
                             <p style="color:var(--ink); font-size:13px; margin:8px 0 0;">
