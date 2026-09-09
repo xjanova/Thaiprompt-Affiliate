@@ -183,9 +183,14 @@
                     <div class="tp-muted" style="font-size:.7rem;margin-top:3px;">หน้าละ ~40 ชิ้น</div>
                 </div>
                 <div>
-                    <label class="tp-muted" style="display:block;font-size:.72rem;font-weight:600;margin-bottom:4px;">เอาขึ้นหน้าแรกสูงสุด (ชิ้น)</label>
+                    <label class="tp-muted" style="display:block;font-size:.72rem;font-weight:600;margin-bottom:4px;">เก็บของใหม่สูงสุด (ชิ้น/รอบ)</label>
                     <input type="number" name="publish_limit" value="{{ old('publish_limit', $limits['publish_limit']) }}" min="1" max="60" class="tp-input tp-num" style="width:100px;">
-                    <div class="tp-muted" style="font-size:.7rem;margin-top:3px;">แถบหน้าแรกโชว์ 12 ชิ้นแรก ที่เหลืออยู่ในหน้า “ดูทั้งหมด”</div>
+                    {{-- ⚠️ ต้องเขียนว่า "ต่อรอบ" ให้ชัด — ของรอบก่อนที่ยังไม่หมดอายุยังอยู่
+                         วัดจริง: กวาด 2 รอบ (24 + 13) ได้ดีลรวม 31 ชิ้น ไม่ใช่ 24 --}}
+                    <div class="tp-muted" style="font-size:.7rem;margin-top:3px;">
+                        ต่อ 1 รอบกวาด — ของรอบก่อนที่ยังไม่หมดอายุยังอยู่ ยอดรวมจึงมากกว่านี้ได้ ·
+                        แถบหน้าแรกโชว์ 12 ชิ้นแรก ที่เหลืออยู่ในหน้า “ดูทั้งหมด”
+                    </div>
                 </div>
                 <div>
                     <label class="tp-muted" style="display:block;font-size:.72rem;font-weight:600;margin-bottom:4px;">คำค้นละไม่เกิน (ชิ้น)</label>
