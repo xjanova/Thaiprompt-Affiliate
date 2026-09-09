@@ -18,6 +18,17 @@ use Illuminate\Support\Facades\Cache;
 class StorefrontController extends Controller
 {
     /**
+     * คีย์แคชของ Flash Deals
+     *
+     * ⚠️ ห้ามเปลี่ยนชื่อโดยไม่แก้ตาม — คำสั่ง `lazada:scan-deals` เรียก Cache::forget()
+     *    ด้วยค่านี้ทันทีที่กวาดดีลใหม่เสร็จ ถ้าคนละคีย์ ดีลใหม่จะไม่ขึ้นหน้าแรกจนกว่าแคชหมดอายุ
+     *
+     * v3 = รอบที่เปลี่ยนเกณฑ์จาก "compare_at_price > price OR is_featured" (ได้ของ seeder เดโม)
+     *      มาเป็น "ดีลที่ยืนยันกับ Lazada จริงและยังสด"
+     */
+    public const FLASH_DEALS_CACHE_KEY = 'storefront_flash_deals_v3';
+
+    /**
      * แสดงหน้าร้านค้าหลัก (Storefront Index)
      *
      * รวม: Banner Carousel, Flash Deals, Categories, Featured Stores, Products
@@ -32,9 +43,17 @@ class StorefrontController extends Controller
         // ดึงข้อมูล Categories พร้อม children และ products count
         $categories = $this->getCategories();
 
-        // ดึง Flash Deals (สินค้าลดราคา หรือ featured)
+        // ดึง Flash Deals — เฉพาะดีลที่ยืนยันกับปลายทางจริง (ดู getFlashDeals)
         $flashDeals = $this->getFlashDeals();
-        $flashDealEndTime = now()->endOfDay()->toIso8601String();
+
+        // ⏱️ ตัวนับถอยหลังบนแถบดีล = "อีกนานแค่ไหนถึงรอบเช็คราคาถัดไป" ไม่ใช่ "โปรจะหมดเมื่อไหร่"
+        //    เพราะหน้ารายการของ Lazada ไม่ได้บอกเวลาสิ้นสุดโปรมาด้วย
+        //    ⇒ ตั้งเวลาสิ้นสุดแบบมั่ว = โกหกลูกค้า จึงนับถอยหลังไปที่รอบตรวจซ้ำแทน
+        $flashDealCheckedAt = $flashDeals->max('deal_verified_at');
+        $flashDealEndTime = ($flashDealCheckedAt ?: now())
+            ->copy()
+            ->addHours(max(1, (int) config('lazada-deals.rescan_hours', 3)))
+            ->toIso8601String();
 
         // ดึง Featured Stores
         $featuredStores = $this->getFeaturedStores();
@@ -57,6 +76,7 @@ class StorefrontController extends Controller
             || $request->filled('search')
             || $request->filled('q')
             || $request->filled('tag')
+            || $request->boolean('deals')
             || ($request->filled('shop_type') && $request->get('shop_type') !== 'all'))
             ? 'browse'
             : 'home';
@@ -71,6 +91,7 @@ class StorefrontController extends Controller
             'categories',
             'flashDeals',
             'flashDealEndTime',
+            'flashDealCheckedAt',
             'featuredStores',
             'products',
             'stats',
@@ -242,35 +263,38 @@ class StorefrontController extends Controller
     }
 
     /**
-     * ดึงสินค้า Flash Deals
+     * ดึงสินค้า Flash Deals — เฉพาะ "ดีลที่ยืนยันกับปลายทางจริงและยังสด"
      *
-     * ⚠️ แก้บั๊กลำดับความสำคัญของ OR:
-     * เดิมเขียน ->where(ลดราคา)->orWhere(featured) โดยไม่ครอบวงเล็บรวม
-     * ทำให้ SQL กลายเป็น "(เงื่อนไขพื้นฐาน AND ลดราคา) OR (featured)"
-     * ส่งผลให้สินค้าที่ถูกลบ (soft delete) / ซ่อน / ถูกบล็อก / ของหมด
-     * หลุดเข้ามาผ่านสาขา featured
-     * แก้โดยครอบทั้งสองสาขาไว้ใน where() ก้อนเดียว เพื่อให้เงื่อนไขพื้นฐาน
-     * (publicVisible + inStock) บังคับใช้กับทั้งสองสาขา
+     * 🚨 เกณฑ์เดิมพังยังไง (วัดจริงบนพร็อด 2026-09-09)
+     *    เดิมคัดจาก `compare_at_price > price OR is_featured` ได้มา 85 ชิ้น
+     *    ซึ่ง **เป็นสินค้า seeder เดโมทั้ง 85 ชิ้น** (iPhone/คอร์สเรียน/โซฟา IKEA ที่ไม่มีขายจริง)
+     *    ส่วนสินค้า affiliate จริง 2,104 ชิ้น ไม่มี compare_at_price สักชิ้น
+     *    ⇒ แถบ "ลดกระหน่ำ" หน้าแรกคือของปลอม 100%
+     *
+     * ✅ เกณฑ์ใหม่ — ต้องผ่านครบ 3 ข้อ
+     *    1. `deal_verified_at` ไม่ว่าง = ผ่านตัวกวาด `lazada:scan-deals` (ยืนยันกับหน้า Lazada จริง)
+     *    2. ยืนยันล่าสุดไม่เกิน `lazada-deals.fresh_hours` ชั่วโมง = โปรยังไม่หมดอายุความน่าเชื่อถือ
+     *    3. ราคาก่อนลดยังมากกว่าราคาขายจริง
+     *
+     * ทำไมไม่มี fallback ไปของ featured/เดโม: ถ้าไม่มีดีลจริง ต้องปล่อยว่างไปเลย
+     * (Blade หน้าแรกซ่อนทั้งแถบเมื่อคอลเลกชันว่าง) — โชว์ของปลอมแทนคือปัญหาที่กำลังแก้อยู่นี่แหละ
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
     private function getFlashDeals()
     {
-        // bump เป็น v2 เพื่อทิ้ง cache เก่าที่มีสินค้าหลุดเงื่อนไขค้างอยู่
-        return Cache::remember('storefront_flash_deals_v2', 300, function () {
+        return Cache::remember(self::FLASH_DEALS_CACHE_KEY, 300, function () {
+            $freshHours = max(1, (int) config('lazada-deals.fresh_hours', 8));
+
             return Product::with(['category', 'mlmProductPv'])
                 ->publicVisible()
                 ->inStock()
-                ->where(function ($query) {
-                    // สินค้าลดราคา
-                    $query->where(function ($q) {
-                        $q->whereNotNull('compare_at_price')
-                            ->whereColumn('compare_at_price', '>', 'price');
-                    })
-                        // หรือสินค้า featured
-                        ->orWhere('is_featured', true);
-                })
-                ->orderByRaw('CASE WHEN compare_at_price > price THEN (compare_at_price - price) / compare_at_price ELSE 0 END DESC')
+                ->whereNotNull('deal_verified_at')
+                ->where('deal_verified_at', '>=', now()->subHours($freshHours))
+                ->whereNotNull('compare_at_price')
+                ->whereColumn('compare_at_price', '>', 'price')
+                ->orderByDesc('deal_discount_percent')
+                ->orderByDesc('deal_verified_at')
                 ->take(12)
                 ->get();
         });
@@ -339,6 +363,16 @@ class StorefrontController extends Controller
             });
         }
 
+        // ?deals=1 — เฉพาะดีลที่ยืนยันกับปลายทางจริงและยังสด (ปุ่ม "ดู Flash Deals ทั้งหมด")
+        // ใช้เกณฑ์ชุดเดียวกับ getFlashDeals() เพื่อไม่ให้หน้ารวมกับแถบหน้าแรกเห็นของคนละชุด
+        if ($request->boolean('deals')) {
+            $freshHours = max(1, (int) config('lazada-deals.fresh_hours', 8));
+            $query->whereNotNull('deal_verified_at')
+                ->where('deal_verified_at', '>=', now()->subHours($freshHours))
+                ->whereNotNull('compare_at_price')
+                ->whereColumn('compare_at_price', '>', 'price');
+        }
+
         // กรองตามช่วงราคา
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
@@ -361,6 +395,12 @@ class StorefrontController extends Controller
                 break;
             case 'rating':
                 $query->orderBy('rating_average', 'desc');
+                break;
+            case 'discount':
+                // ⚠️ เดิมค่านี้ไม่มี case รองรับ → ตกไป default (ใหม่ล่าสุด)
+                //    ปุ่ม "ดู Flash Deals ทั้งหมด" ส่ง sort_by=discount มาตลอด แต่ได้ผลลัพธ์เรียงผิด
+                $query->orderByDesc('deal_discount_percent')
+                    ->orderByRaw('CASE WHEN compare_at_price > price THEN (compare_at_price - price) / compare_at_price ELSE 0 END DESC');
                 break;
             case 'newest':
             default:
@@ -386,7 +426,7 @@ class StorefrontController extends Controller
      * ใช้ทำ "หัวหมวด" บนหน้าเลือกดู — ต้องมี children ไว้ทำชิปหมวดย่อย
      * และ parent ไว้ทำ breadcrumb
      *
-     * @return \App\Models\ProductCategory|null  null = ไม่ได้เลือกหมวด หรือ slug ไม่ตรงกับหมวดไหน
+     * @return \App\Models\ProductCategory|null null = ไม่ได้เลือกหมวด หรือ slug ไม่ตรงกับหมวดไหน
      */
     private function resolveActiveCategory(Request $request): ?ProductCategory
     {
@@ -639,7 +679,7 @@ class StorefrontController extends Controller
         }
 
         // เตรียมข้อมูลสินค้าสำหรับ JSON response
-        $productData = $products->map(function ($product) use ($goCodes) {
+        $productData = $products->map(function ($product) {
             $discount = 0;
             if ($product->compare_at_price && $product->compare_at_price > $product->price) {
                 $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);

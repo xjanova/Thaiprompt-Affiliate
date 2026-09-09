@@ -10,8 +10,7 @@
     - Flash Deals with Countdown
     - Category Showcase
     - Featured Stores
-    - Product Grid (AliExpress style)
-    - Infinite Scroll / Load More
+    - Product Grid (AliExpress style) — โหลดเพิ่มด้วยการ "กดปุ่ม" เท่านั้น ไม่โหลดอัตโนมัติตอนเลื่อน
 --}}
 
 @extends('layouts.storefront')
@@ -400,7 +399,8 @@
     <div class="container mx-auto px-4 py-6">
         <x-storefront.flash-deals
             :products="$flashDeals"
-            :endTime="$flashDealEndTime ?? now()->addHours(6)->toIso8601String()"
+            :endTime="$flashDealEndTime ?? now()->addHours(3)->toIso8601String()"
+            :checkedAt="$flashDealCheckedAt ?? null"
             title="Flash Deals" />
     </div>
     @endif
@@ -578,7 +578,7 @@
                 </div>
             </div>
 
-            {{-- Products Content with Infinite Scroll --}}
+            {{-- Products Content — โหลดเพิ่มด้วยการกดปุ่มเท่านั้น --}}
             {{-- tp-lava-wrap = ฉากหลังลาวาแลมป์สีสด ทำให้การ์ดกระจกมีสีให้สะท้อน --}}
             <div class="tp-lava-wrap p-4 md:p-6"
                  x-data="infiniteProducts()"
@@ -602,7 +602,7 @@
                         :showCommission="auth()->check()" />
                 </div>
 
-                {{-- Additional Products (loaded via infinite scroll) --}}
+                {{-- Additional Products (มาจากการกดปุ่ม "โหลดสินค้าเพิ่มเติม") --}}
                 <div id="additional-products"
                      class="tp-lava-content grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 mt-4">
                     <template x-for="product in additionalProducts" :key="product.id">
@@ -711,9 +711,10 @@
                     </template>
                 </div>
 
-                {{-- Load More / Infinite Scroll Trigger --}}
-                <div class="mt-8 flex flex-col items-center gap-4"
-                     x-intersect:enter.margin.300px="!isLoading && hasMore && loadMore()">
+                {{-- Load More — กดเองเท่านั้น
+                     ⚠️ ห้ามใส่ x-intersect กลับมา: owner สั่งไว้ว่าให้ "กดโหลดเพิ่ม" ไม่ใช่โหลดตอนเลื่อน
+                        (โหลดอัตโนมัติทำให้เลื่อนถึง footer ไม่ได้ + กินเน็ตมือถือโดยลูกค้าไม่ได้ขอ) --}}
+                <div class="mt-8 flex flex-col items-center gap-4">
 
                     {{-- Loading Indicator --}}
                     <div x-show="isLoading" class="flex items-center gap-3">
@@ -740,6 +741,12 @@
                             โหลดสินค้าเพิ่มเติม
                         </span>
                     </button>
+
+                    {{-- ข้อความเมื่อกดแล้วโหลดไม่สำเร็จ (ปุ่มยังอยู่ กดซ้ำได้) --}}
+                    <p x-show="loadError"
+                       x-cloak
+                       x-text="loadError"
+                       class="text-sm font-medium text-red-600 dark:text-red-400"></p>
 
                     {{-- End of Products --}}
                     <div x-show="!hasMore && totalProducts > 0" class="text-center py-4">
@@ -1035,9 +1042,10 @@ function storefrontManager() {
 }
 
 /**
- * Infinite Products - จัดการ Infinite Scroll สำหรับสินค้า
+ * รายการสินค้าแบบ "กดโหลดเพิ่ม"
  *
- * ใช้ Alpine.js + Intersection Observer สำหรับ lazy loading
+ * ⚠️ ชื่อฟังก์ชันยังเป็น infiniteProducts เพื่อไม่ให้ x-data ในหน้าอื่นที่อ้างถึงพัง
+ *    แต่พฤติกรรมคือ **กดปุ่มเท่านั้น** — ไม่มี x-intersect / Intersection Observer แล้ว
  */
 function infiniteProducts() {
     return {
@@ -1048,6 +1056,7 @@ function infiniteProducts() {
         totalProducts: {{ $products->total() }},
         initialCount: {{ $products->count() }},
         isLoading: false,
+        loadError: '',
         hasMore: {{ $products->hasMorePages() ? 'true' : 'false' }},
 
         // Computed
@@ -1073,6 +1082,7 @@ function infiniteProducts() {
             if (this.isLoading || !this.hasMore) return;
 
             this.isLoading = true;
+            this.loadError = '';
             const nextPage = this.currentPage + 1;
 
             try {
@@ -1081,6 +1091,10 @@ function infiniteProducts() {
                 params.set('page', nextPage);
 
                 const response = await fetch(`{{ route('storefront.products') }}?${params.toString()}`);
+                // ⚠️ fetch ไม่ throw เมื่อเจอ 4xx/5xx — ต้องเช็คเอง ไม่งั้น response.json() จะพังแบบไม่รู้สาเหตุ
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
                 const data = await response.json();
 
                 if (data.products && data.products.length > 0) {
@@ -1096,7 +1110,9 @@ function infiniteProducts() {
                 }
             } catch (error) {
                 console.error('Error loading more products:', error);
-                // แสดง notification ถ้ามี
+                // ตอนนี้ปุ่มคือทางเดียวที่จะโหลดเพิ่ม — พังแล้วต้องบอกให้เห็นบนหน้า
+                // (เดิมพึ่ง window.showNotification ซึ่งอาจไม่มี ⇒ กดแล้วเงียบ ลูกค้าไม่รู้ว่าเกิดอะไร)
+                this.loadError = 'โหลดสินค้าเพิ่มไม่สำเร็จ กรุณาลองกดอีกครั้ง';
                 if (window.showNotification) {
                     window.showNotification('ไม่สามารถโหลดสินค้าเพิ่มเติมได้', 'error');
                 }

@@ -1,16 +1,25 @@
 {{--
     Flash Deals Component - สไตล์ AliExpress
 
-    แสดงสินค้าลดราคาพร้อม countdown timer
+    แสดง "สินค้าที่ปลายทางลดราคาจริง" เท่านั้น (คัดโดย StorefrontController::getFlashDeals)
     รองรับ Dark Mode และ Responsive
 
-    @param Collection $products - สินค้าลดราคา
-    @param string $endTime - เวลาสิ้นสุด (ISO format)
+    🚨 กติกาของแถบนี้ (ห้ามละเมิด — เคยพลาดมาแล้ว)
+       ทุกตัวเลขบนการ์ดต้องมาจากข้อมูลจริง ห้ามคำนวณ "ความเร่งด่วน" ขึ้นมาเอง
+       - % ส่วนลด  → deal_discount_percent (ยืนยันจากหน้า Lazada) ไม่มีค่อยคำนวณจากราคา
+       - ยอดขาย    → sales_count ที่ดึงมาจริง (ไม่มี = ไม่โชว์ ไม่ใช่โชว์ 0 หรือเดาเป็น %)
+       - ตัวนับถอยหลัง → นับไปที่ "รอบเช็คราคาถัดไป" ไม่ใช่ "เวลาโปรหมด"
+         เพราะหน้ารายการของ Lazada ไม่ได้ส่งเวลาสิ้นสุดโปรมาด้วย ⇒ ตั้งเองคือโกหก
+
+    @param Collection $products - สินค้าที่ยืนยันว่าลดราคาจริง
+    @param string $endTime - เวลาที่จะเช็คราคารอบถัดไป (ISO format)
+    @param \Illuminate\Support\Carbon|null $checkedAt - ยืนยันราคาครั้งล่าสุดเมื่อไหร่
 --}}
 
 @props([
     'products' => collect(),
-    'endTime' => now()->addHours(6)->toIso8601String(),
+    'endTime' => now()->addHours(3)->toIso8601String(),
+    'checkedAt' => null,
     'title' => 'Flash Deals',
 ])
 
@@ -59,16 +68,20 @@
                     <h2 class="text-3xl md:text-4xl font-black text-white tracking-tight">
                         {{ $title }}
                     </h2>
+                    {{-- คำโปรยต้องบอกความจริง: ของพวกนี้ "ลดจริงบน Lazada" และเราเช็คราคาล่าสุดเมื่อไหร่ --}}
                     <p class="text-white/80 text-sm font-medium mt-1">
-                        ลดกระหน่ำ! ดีลเด็ดประจำวัน
+                        ราคาลดจริงบน Lazada
+                        @if($checkedAt)
+                            · ตรวจสอบล่าสุด {{ $checkedAt->timezone('Asia/Bangkok')->format('H:i') }} น.
+                        @endif
                     </p>
                 </div>
             </div>
 
-            {{-- Countdown Timer --}}
+            {{-- ตัวนับถอยหลังไปที่ "รอบเช็คราคาถัดไป" (ไม่ใช่เวลาโปรหมด — ดูหมายเหตุหัวไฟล์) --}}
             <div class="flex items-center gap-2 bg-white/10 backdrop-blur-lg
                        rounded-2xl px-6 py-3 border border-white/20">
-                <span class="text-white text-sm font-semibold">สิ้นสุดใน</span>
+                <span class="text-white text-sm font-semibold">อัปเดตราคาใหม่ใน</span>
 
                 <div class="flex items-center gap-1">
                     {{-- Hours --}}
@@ -110,11 +123,18 @@
 
                 @forelse($products as $product)
                 @php
-                    $discount = 0;
-                    if ($product->compare_at_price && $product->compare_at_price > $product->price) {
-                        $discount = round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
+                    // % ส่วนลด: ใช้ค่าที่ยืนยันจากปลายทางก่อนเสมอ (deal_discount_percent)
+                    // ถ้าไม่มีค่อยคำนวณจากราคาที่เก็บไว้
+                    $discount = (int) ($product->deal_discount_percent ?? 0);
+                    if ($discount <= 0 && $product->compare_at_price && $product->compare_at_price > $product->price) {
+                        $discount = (int) round((($product->compare_at_price - $product->price) / $product->compare_at_price) * 100);
                     }
-                    $soldPercent = min(100, ($product->sales_count / max(1, $product->stock_quantity + $product->sales_count)) * 100);
+
+                    // 💰 ประหยัดไปเท่าไหร่ (บาท) — คำนวณจากราคาจริงสองตัว ไม่ใช่ตัวเลขปั้น
+                    $saved = ($product->compare_at_price && $product->compare_at_price > $product->price)
+                        ? (float) $product->compare_at_price - (float) $product->price
+                        : 0;
+
                     // รูปสำรองเมื่อสินค้าไม่มีรูป หรือรูปปลายทาง (Lazada CDN) โหลดไม่ขึ้น
                     $fallbackImage = asset('images/no-image.png');
                 @endphp
@@ -183,23 +203,31 @@
                                     @endif
                                 </div>
 
-                                {{-- Progress Bar (Sold) --}}
-                                <div class="relative mb-2">
-                                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                        <div class="h-full bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500
-                                                   rounded-full transition-all duration-500 relative"
-                                             style="width: {{ $soldPercent }}%;">
-                                            {{-- Fire Animation --}}
-                                            <div class="absolute -right-1 top-1/2 -translate-y-1/2
-                                                       w-4 h-4 bg-yellow-400 rounded-full
-                                                       animate-pulse"></div>
-                                        </div>
-                                    </div>
-                                    <div class="absolute inset-0 flex items-center justify-center">
-                                        <span class="text-xs font-bold text-white drop-shadow-md">
-                                            ขายแล้ว {{ number_format($product->sales_count) }}
+                                {{-- ข้อเท็จจริงของสินค้า — โชว์เฉพาะตัวที่มีข้อมูลจริง
+                                     ⚠️ เดิมตรงนี้เป็นแถบ "ขายไปแล้วกี่ %" ที่คำนวณจาก
+                                        sales_count / (stock_quantity + sales_count)
+                                        แต่สินค้า affiliate ตั้ง stock_quantity = 99 ตายตัวทุกชิ้น
+                                        ⇒ แถบนั้นไม่ได้วัดอะไรเลย เป็นแค่ความเร่งด่วนปลอม จึงถอดออก --}}
+                                <div class="flex items-center flex-wrap gap-x-2 gap-y-1 mb-2 min-h-[1.25rem]
+                                            text-xs text-gray-500 dark:text-gray-400">
+                                    @if($saved > 0)
+                                        <span class="font-bold text-green-600 dark:text-green-400">
+                                            ประหยัด ฿{{ number_format($saved, 0) }}
                                         </span>
-                                    </div>
+                                    @endif
+
+                                    @if($product->rating_average > 0)
+                                        <span class="flex items-center gap-0.5">
+                                            <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                            </svg>
+                                            {{ number_format((float) $product->rating_average, 1) }}
+                                        </span>
+                                    @endif
+
+                                    @if($product->sales_count > 0)
+                                        <span>ขายแล้ว {{ number_format($product->sales_count) }} ชิ้น</span>
+                                    @endif
                                 </div>
 
                                 {{-- Quick Buy Button
@@ -283,7 +311,9 @@
 
         {{-- View All Link --}}
         <div class="flex justify-center mt-6">
-            <a href="{{ route('storefront.index', ['sort_by' => 'discount']) }}"
+            {{-- ?deals=1 = กรองเฉพาะดีลที่ยืนยันจริง (เกณฑ์ชุดเดียวกับแถบนี้)
+                 ถ้าส่งแค่ sort_by=discount จะได้สินค้าทั้งร้านเรียงตามส่วนลด ซึ่งไม่ใช่ "Flash Deals ทั้งหมด" --}}
+            <a href="{{ route('storefront.index', ['deals' => 1, 'sort_by' => 'discount']) }}"
                class="inline-flex items-center gap-2 px-8 py-3
                      bg-white hover:bg-gray-100
                      text-red-600 font-bold text-sm

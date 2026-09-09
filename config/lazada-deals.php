@@ -1,0 +1,102 @@
+<?php
+
+/**
+ * ⚡ Flash Deals — ตั้งค่าตัวกวาด "สินค้าที่ Lazada จัดโปรจริง"
+ *
+ * ใช้โดย App\Services\Marketplace\LazadaDealScanner + คำสั่ง `lazada:scan-deals`
+ *
+ * ที่มาของข้อมูล: หน้ารายการสินค้าของ Lazada เอง (`/catalog/?ajax=true&q=...`)
+ * ซึ่งคืน JSON ที่มี **ราคาก่อนลด (originalPrice)** + **ราคาโปรตอนนี้ (price)** + **% ส่วนลด**
+ *
+ * ⚠️ ทำไมไม่ใช้ฟีด affiliate ทางการอย่างเดียว
+ *    ฟีด `/marketing/product/feed` คืนแค่ `discountPrice` — **ไม่มีราคาก่อนลด**
+ *    (วัดจริง 2026-09-09: marketplace_products.original_price เป็น NULL ครบ 12,076 แถว)
+ *    ⇒ รู้ราคาแต่ไม่รู้ว่า "ลดจากเท่าไหร่" ⇒ ทำ Flash Deals จริงไม่ได้
+ *    ฟีดจึงถูกใช้เป็น "ด่านยืนยันค่าคอม" แทน (ของที่กินค่าคอมไม่ได้ = ไม่เอาขึ้นหน้าแรก)
+ */
+return [
+
+    /**
+     * คำค้นที่ใช้กวาดโปร → ผูกกับหมวดบนหน้าร้านเรา (slug ของ product_categories)
+     *
+     * ทำไมใช้ "คำค้น" ไม่ใช่ "เลขหมวด Lazada"
+     *   หน้ารายการของ Lazada รับได้ทั้ง `/catalog/?q=` (คำค้น) และ `/shop-xxx/` (ช่องหมวด)
+     *   แต่ slug ช่องหมวดของ Lazada เปลี่ยน/หายบ่อย — วัดจริง 2026-09-09 ลอง 14 slug
+     *   ใช้ได้จริงแค่ 3 (ที่เหลือคืน HTML แทน JSON) ส่วน `?q=` ใช้ได้ 100%
+     *
+     * `category` = slug หมวดปลายทางบนเว็บเรา (ไม่พบ = ตกไปหมวด lazada-affiliate)
+     */
+    'seeds' => [
+        ['keyword' => 'มือถือ สมาร์ทโฟน', 'category' => 'electronics'],
+        ['keyword' => 'หูฟังบลูทูธ', 'category' => 'electronics'],
+        ['keyword' => 'โน๊ตบุ๊ค', 'category' => 'it-computer'],
+        ['keyword' => 'เมาส์ คีย์บอร์ด', 'category' => 'it-computer'],
+        ['keyword' => 'เสื้อผ้าผู้หญิง', 'category' => 'fashion-and-apparel'],
+        ['keyword' => 'รองเท้าผ้าใบ', 'category' => 'fashion-and-apparel'],
+        ['keyword' => 'ครีมบำรุงผิวหน้า', 'category' => 'beauty-and-personal-care'],
+        ['keyword' => 'เครื่องสำอาง', 'category' => 'beauty-and-personal-care'],
+        ['keyword' => 'ของใช้ในบ้าน', 'category' => 'home-and-garden'],
+        ['keyword' => 'หม้อทอดไร้น้ำมัน', 'category' => 'home-appliances'],
+        ['keyword' => 'พัดลม แอร์', 'category' => 'home-appliances'],
+        ['keyword' => 'อุปกรณ์ออกกำลังกาย', 'category' => 'sports-and-outdoors'],
+        ['keyword' => 'อาหารเสริม วิตามิน', 'category' => 'health-and-supplements'],
+        ['keyword' => 'ขนม เครื่องดื่ม', 'category' => 'food-and-beverages'],
+        ['keyword' => 'อาหารสัตว์เลี้ยง', 'category' => 'pets'],
+        ['keyword' => 'ของใช้เด็กอ่อน', 'category' => 'mother-and-baby'],
+        ['keyword' => 'ของเล่นเด็ก', 'category' => 'toys-and-hobbies'],
+        ['keyword' => 'อุปกรณ์รถยนต์', 'category' => 'automotive'],
+        ['keyword' => 'นาฬิกาข้อมือ', 'category' => 'watches-and-eyewear'],
+        ['keyword' => 'กล้องวงจรปิด', 'category' => 'cameras-and-photography'],
+        ['keyword' => 'เครื่องเขียน', 'category' => 'books-and-stationery'],
+    ],
+
+    /** เกณฑ์คัดของเข้า Flash Deals (ค่าเริ่มต้น — แอดมินทับได้ผ่าน settings ในตาราง settings) */
+    'filters' => [
+        /** ลดอย่างน้อยกี่ % ถึงจะเรียกว่า "ดีล" */
+        'min_discount_percent' => 25,
+
+        /** ค่าคอมขั้นต่ำ (%) — ต่ำกว่านี้ไม่คุ้มพื้นที่หน้าแรก */
+        'min_commission_percent' => 3,
+
+        /** ช่วงราคาที่ยอมรับ (บาท) — กันของราคา 9 บาทและของหลักแสนขึ้นหน้าแรก */
+        'min_price' => 49,
+        'max_price' => 50000,
+
+        /** กันเคสส่วนลดหลอก: ลดเกินกี่ % ถือว่าราคาก่อนลดไม่น่าเชื่อถือ */
+        'max_discount_percent' => 90,
+    ],
+
+    /** เพดานการยิงต่อการรัน 1 ครั้ง (กันโดน Lazada บล็อก + กันคำสั่งรันนาน) */
+    'limits' => [
+        /** กวาดกี่หน้าต่อ 1 คำค้น (หน้าละ ~40 ชิ้น) */
+        'pages_per_keyword' => 1,
+
+        /** เก็บของเข้าหน้าแรกสูงสุดกี่ชิ้นต่อการรัน */
+        'publish_limit' => 24,
+
+        /** ขอลิงก์ค่าคอมสูงสุดกี่ชิ้นต่อการรัน (คอขวด ~1.2 วิ/ชิ้น) */
+        'link_budget' => 40,
+
+        /** หน่วงระหว่างยิงหน้ารายการ Lazada (ไมโครวินาที) */
+        'listing_sleep_us' => 500000,
+
+        /** หน่วงระหว่างขอลิงก์ค่าคอม (ไมโครวินาที) */
+        'link_sleep_us' => 200000,
+    ],
+
+    /**
+     * ดีลถือว่า "ยังสด" กี่ชั่วโมงหลังยืนยันครั้งล่าสุด
+     *
+     * เกินนี้แล้วยังไม่ได้ยืนยันซ้ำ = ร่วงจากหน้าแรกเอง (ไม่ลบสินค้า ไม่แก้ราคา)
+     * ตั้งให้ยาวกว่ารอบ cron พอสมควร เพื่อไม่ให้หน้าแรกว่างตอนรอบเดียวพลาด
+     */
+    'fresh_hours' => 8,
+
+    /**
+     * รอบตรวจราคาซ้ำ (ชั่วโมง) — ต้องตรงกับ Schedule ใน routes/console.php
+     *
+     * ใช้ 2 ที่: ตัวนับถอยหลังบนแถบดีลหน้าแรก ("อัปเดตราคาใหม่ใน …")
+     * และเป็นตัวอ้างอิงว่า fresh_hours ควรยาวกว่านี้กี่เท่า (ตอนนี้ ~2.7 เท่า = พลาดได้ 2 รอบ)
+     */
+    'rescan_hours' => 3,
+];

@@ -27,6 +27,9 @@ class MarketplaceProduct extends Model
         'seller_name',
         'price',
         'original_price',
+        // ⚡ ดีลจริง — ยืนยันราคาลดจากหน้ารายการ Lazada ครั้งล่าสุด (ดู lazada:scan-deals)
+        'deal_verified_at',
+        'deal_discount_percent',
         'cost_price',
         'selling_price',
         'markup_percent',
@@ -76,6 +79,8 @@ class MarketplaceProduct extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'original_price' => 'decimal:2',
+        'deal_verified_at' => 'datetime',
+        'deal_discount_percent' => 'integer',
         'cost_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
         'markup_percent' => 'decimal:2',

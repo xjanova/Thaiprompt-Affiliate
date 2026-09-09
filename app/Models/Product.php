@@ -28,6 +28,10 @@ class Product extends Model
         'price_coins',
         'allow_coin_purchase',
         'compare_at_price',
+        // ⚡ ดีลจริง — ยืนยันราคาลดกับปลายทาง (Lazada) ครั้งล่าสุดเมื่อไหร่ + ลดกี่ %
+        //    Flash Deals หน้าแรกคัดจาก 2 ตัวนี้ ไม่ใช่จาก compare_at_price ลอย ๆ
+        'deal_verified_at',
+        'deal_discount_percent',
         'cost_price',
         'stock_quantity',
         'low_stock_threshold',
@@ -89,6 +93,8 @@ class Product extends Model
         'price_coins' => 'decimal:2',
         'allow_coin_purchase' => 'boolean',
         'compare_at_price' => 'decimal:2',
+        'deal_verified_at' => 'datetime',
+        'deal_discount_percent' => 'integer',
         'cost_price' => 'decimal:2',
         'stock_quantity' => 'integer',
         'low_stock_threshold' => 'integer',
@@ -142,7 +148,7 @@ class Product extends Model
      * แก้ปัญหา: ภาพไม่แสดงในหน้า shop/show เพราะ relative path ถูก resolve
      * ผิดเป็น /shop/products/xxx.webp แทน /storage/products/xxx.webp
      *
-     * @param string|null $value ค่า raw จาก database
+     * @param  string|null  $value  ค่า raw จาก database
      * @return string|null URL ที่ใช้งานได้
      */
     public function getMainImageUrlAttribute($value): ?string
@@ -178,7 +184,7 @@ class Product extends Model
                 }
                 // ถ้ายังว่างอยู่ ใช้ random string
                 if (empty($slug)) {
-                    $slug = 'product-' . Str::random(8);
+                    $slug = 'product-'.Str::random(8);
                 }
                 $product->slug = $slug;
             }

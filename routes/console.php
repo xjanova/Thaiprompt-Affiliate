@@ -59,6 +59,25 @@ Schedule::command('lazada-hub:auto-import --limit=5')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// ⚡ (2026-09-09) Flash Deals — กวาดของที่ Lazada จัดโปรจริงขึ้นหน้าแรก
+// ════════════════════════════════════════════════════════════════
+// เดิมแถบ Flash Deals หน้าแรกคัดจาก compare_at_price > price OR is_featured
+// ซึ่งวัดจริงบนพร็อดได้ 85 ชิ้น **เป็นสินค้า seeder เดโมทั้ง 85 ชิ้น** (ของที่ไม่มีขายจริง)
+//
+// คำสั่งนี้ไปอ่าน "ราคาก่อนลด" จากหน้ารายการของ Lazada เอง แล้วยืนยันกับฟีด affiliate
+// ว่ากินค่าคอมได้ ก่อนเอาขึ้นหน้าแรก — ของที่ไม่ได้ยืนยันซ้ำภายใน lazada-deals.fresh_hours
+// จะร่วงจากหน้าแรกเอง (ไม่มีการลบสินค้า/แก้ราคาย้อนหลัง)
+//
+// ⏱️ ทุก 3 ชม. ต้องตรงกับ config('lazada-deals.rescan_hours') — ตัวนับถอยหลังหน้าแรกอ่านค่านั้น
+//    รันครั้งละ ~2-4 นาที (ยิงหน้ารายการ 21 คำค้น + ขอลิงก์ค่าคอมทีละชิ้น) จึงต้อง runInBackground
+Schedule::command('lazada:scan-deals')
+    ->cron('7 */3 * * *')
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('lazada-scan-deals')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 💬 (2026-06-19) Realtime warroom chat log — midnight cleanup
 // ════════════════════════════════════════════════════════════════
 // The chat log (Redis) keeps only TODAY's conversation for the warroom /chat
