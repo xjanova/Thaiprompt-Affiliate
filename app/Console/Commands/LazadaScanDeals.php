@@ -74,8 +74,12 @@ class LazadaScanDeals extends Command
         $minCommission = (float) ($this->option('min-commission') ?: $filters['min_commission_percent']);
         $minPrice = (float) $filters['min_price'];
         $maxPrice = (float) ($this->option('max-price') ?: $filters['max_price']);
+        $minRating = (float) ($filters['min_rating'] ?? 0);
+        $minReviews = (int) ($filters['min_reviews'] ?? 0);
+        $minSold = (int) ($filters['min_sold'] ?? 0);
         $pages = max(1, (int) ($this->option('pages') ?: $limits['pages_per_keyword']));
         $publishLimit = max(1, (int) ($this->option('limit') ?: $limits['publish_limit']));
+        $maxPerSeed = max(1, (int) ($limits['max_per_seed'] ?? 99));
         $linkBudget = max(1, (int) $limits['link_budget']);
         $dry = (bool) $this->option('dry');
 
@@ -87,16 +91,18 @@ class LazadaScanDeals extends Command
         }
 
         $this->info('⚡ กวาดโปร Lazada '.count($seeds).' คำค้น × '.$pages.' หน้า'.($dry ? ' (dry-run)' : ''));
-        $this->line(sprintf('   เกณฑ์: ลด %d-%d%% · ค่าคอม ≥ %.1f%% · ราคา %s-%s฿ · เอาขึ้นไม่เกิน %d ชิ้น',
+        $this->line(sprintf('   เกณฑ์: ลด %d-%d%% · ค่าคอม ≥ %.1f%% · ราคา %s-%s฿ · เอาขึ้นไม่เกิน %d ชิ้น (คำค้นละไม่เกิน %d)',
             $minDiscount, $maxDiscount, $minCommission,
-            number_format($minPrice), number_format($maxPrice), $publishLimit));
+            number_format($minPrice), number_format($maxPrice), $publishLimit, $maxPerSeed));
+        $this->line(sprintf('   ด่านคุณภาพ: เรตติ้ง ≥ %.1f · รีวิว ≥ %d · ขายแล้ว ≥ %d',
+            $minRating, $minReviews, $minSold));
         $this->newLine();
 
         // ── 1) กวาดหน้ารายการ → ได้ผู้เข้าชิงพร้อมราคาก่อนลด ──────────────────
         $candidates = [];
         $seenTotal = 0;
 
-        foreach ($seeds as $seed) {
+        foreach ($seeds as $seedIndex => $seed) {
             $keptForSeed = 0;
 
             for ($page = 1; $page <= $pages; $page++) {
@@ -114,12 +120,19 @@ class LazadaScanDeals extends Command
                         continue;
                     }
 
+                    // ด่านคุณภาพ — ส่วนลดอย่างเดียวเชื่อไม่ได้ (ผู้ขายตั้งราคาก่อนลดเองได้)
+                    // ต้องมีร่องรอยว่ามีคนซื้อจริงและพอใจจริงประกอบด้วย
+                    if ($row['rating'] < $minRating || $row['review_count'] < $minReviews || $row['sold_count'] < $minSold) {
+                        continue;
+                    }
+
                     // ชิ้นเดียวกันอาจโผล่หลายคำค้น — เก็บครั้งแรก (คำค้นแรกให้หมวดที่ตรงกว่า)
                     if (isset($candidates[$row['item_id']])) {
                         continue;
                     }
 
                     $row['category_slug'] = $seed['category'];
+                    $row['seed_index'] = $seedIndex;
                     $candidates[$row['item_id']] = $row;
                     $keptForSeed++;
                 }
@@ -143,12 +156,34 @@ class LazadaScanDeals extends Command
         // ลดมากอยู่หน้าสุด
         uasort($candidates, fn ($a, $b) => $b['discount_percent'] <=> $a['discount_percent']);
 
+        // 🎯 คัดรายชื่อสั้นโดย "เฉลี่ยตามคำค้น" ก่อนไปยิงฟีด
+        //    ⚠️ ต้องทำก่อนยิง ไม่ใช่ตอนเขียนฐาน — ถ้าเอาท็อปตามส่วนลดล้วนไปยิง
+        //    โควตาฟีดจะถูกหมวดที่ลดหนักกินหมด แล้วพอมาตัดตอนเขียนก็เหลือของไม่พอเติมหน้าแรก
+        $shortlist = [];
+        $perSeedCount = [];
+        $crowdedSeed = 0;
+        foreach ($candidates as $itemId => $row) {
+            $seedIndex = $row['seed_index'] ?? 0;
+            if (($perSeedCount[$seedIndex] ?? 0) >= $maxPerSeed) {
+                $crowdedSeed++;
+
+                continue;
+            }
+            $perSeedCount[$seedIndex] = ($perSeedCount[$seedIndex] ?? 0) + 1;
+            $shortlist[(string) $itemId] = $row;
+
+            if (count($shortlist) >= $linkBudget * 2) {
+                break;
+            }
+        }
+
         $this->newLine();
-        $this->info('📋 ผู้เข้าชิง '.count($candidates).' ชิ้น (จากที่เห็นทั้งหมด '.$seenTotal.' ชิ้น)');
+        $this->info(sprintf('📋 ผู้เข้าชิง %d ชิ้น (จากที่เห็นทั้งหมด %d) → คัดเหลือ %d ชิ้น (ข้ามเพราะคำค้นเต็มโควตา %d)',
+            count($candidates), $seenTotal, count($shortlist), $crowdedSeed));
 
         // ── 2) ยืนยันกับฟีด affiliate ว่า "กินค่าคอมได้" ────────────────────────
         $service = new LazadaAffiliateService($account);
-        $probeIds = array_slice(array_keys($candidates), 0, $linkBudget * 2);
+        $probeIds = array_keys($shortlist);
         $eligible = [];
 
         foreach (array_chunk($probeIds, self::FEED_CHUNK) as $chunk) {
@@ -186,7 +221,7 @@ class LazadaScanDeals extends Command
         $failed = 0;
         $verifiedAt = now();
 
-        foreach ($candidates as $itemId => $row) {
+        foreach ($shortlist as $itemId => $row) {
             if ($published >= $publishLimit) {
                 break;
             }
@@ -219,13 +254,15 @@ class LazadaScanDeals extends Command
 
             if ($dry) {
                 $published++;
-                $this->line(sprintf('  [dry] %s | %s฿ ← %s฿ (-%d%%) | คอม %.1f%% | %s',
-                    $itemId,
+                $this->line(sprintf('  [dry] -%d%% | %s฿ ← %s฿ | คอม %.1f%% | ⭐%.1f (%d) | ขาย %s | %s',
+                    $row['discount_percent'],
                     number_format($row['price'], 0),
                     number_format($row['original_price'], 0),
-                    $row['discount_percent'],
                     $commissionPercent,
-                    mb_substr($row['name'], 0, 45)));
+                    $row['rating'],
+                    $row['review_count'],
+                    number_format($row['sold_count']),
+                    mb_substr($row['name'], 0, 38)));
 
                 continue;
             }
@@ -262,7 +299,7 @@ class LazadaScanDeals extends Command
         $expired = $this->expireStaleDeals($dry);
 
         $this->newLine();
-        $this->info(sprintf('✅ ขึ้นหน้าแรก %d ชิ้น | ไม่มีลิงก์ค่าคอม %d | ค่าคอมต่ำกว่าเกณฑ์ %d | ล้มเหลว %d | หมดอายุ %d%s',
+        $this->info(sprintf('✅ ขึ้นหน้าแรก %d ชิ้น | ไม่อยู่ในโปรแกรม/ไม่มีลิงก์ %d | ค่าคอมต่ำกว่าเกณฑ์ %d | ล้มเหลว %d | ดีลเก่าหมดอายุ %d%s',
             $published, $noLink, $lowCommission, $failed, $expired, $dry ? ' (dry-run ไม่ได้เขียนฐาน)' : ''));
 
         return self::SUCCESS;
