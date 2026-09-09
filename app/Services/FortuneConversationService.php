@@ -6993,6 +6993,70 @@ class FortuneConversationService
     }
 
     /**
+     * 🕛🗺️ กล่องถาม "เวลาเกิด + จังหวัดเกิด" ของเลน 39 — แหล่งเดียว ใช้ร่วมทุกทางเข้า
+     *
+     * ⚠️ ทำไมต้องรวมไว้ที่เดียว (บทเรียน 2026-09-10):
+     *   รอบแรกเขียนกล่องนี้ inline ไว้ใน beginDeepGeneralReading() ที่เดียว
+     *   แต่เลน 39 มี **ทางไปขั้นตั้งจิตมากกว่าหนึ่งทาง** — เส้น "จ่ายก่อน + ยืมวันเกิดจากบิลเก่า"
+     *   (Pay-First guard) push ข้อความตั้งจิตของตัวเองโดยไม่ผ่านเมธอดนั้นเลย
+     *   ⇒ บิล #12793 ไม่เคยถูกถามจังหวัดสักครั้ง ทั้งที่โค้ดถามมีอยู่จริง
+     *   ([[rule_feature_built_but_never_wired]] — โค้ดครบ แต่ทางเข้าไม่ครบ)
+     *
+     * 🛡️ ปลอดภัยกับบิลที่จ่ายแล้ว: ตั้งธง `deep_birthtime_pending` ให้ตัวรับคำตอบเก็บค่า
+     *   แต่ตัวรับ "ตอบอะไรมาก็เดินต่อ" เสมอ — กดปุ่ม/พิมพ์คำถามมาก็ไม่ค้าง ไม่กลืนข้อความ
+     *
+     * @return array{block: string, quick_reply: array{title: string, text: string}|null}
+     *                                                                                    block = '' แปลว่ารู้ครบแล้ว ไม่ต้องถาม
+     */
+    protected function deepBirthInfoAsk(FortuneReading $reading): array
+    {
+        // ลูกค้าเก่าเคยบอกจังหวัดไว้แล้ว → ยืมมาเลย ไม่ถามซ้ำ (จังหวัดเกิดไม่เปลี่ยน)
+        try {
+            $reading->inheritBirthProvinceFromHistory();
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        $askTime = ! $reading->birthTimeIsKnown();
+        $askPlace = $reading->birthProvinceIfKnown() === null;
+
+        if (! $askTime && ! $askPlace) {
+            return ['block' => '', 'quick_reply' => null];
+        }
+
+        $reading->setConversationState('deep_birthtime_pending', true);
+        // ธงเดียวกับ ProSession — บอกตัวอ่านว่า "ข้อความถัดไปคือคำตอบเรื่องเวลา" (ผ่อนกฎ parse)
+        $reading->setConversationState('awaiting_birth_time', now()->toIso8601String());
+
+        if ($askTime && $askPlace) {
+            return [
+                'block' => "🕛 *ลูกเกิดกี่โมง และเกิดที่จังหวัดอะไรคะ?*\n"
+                    ."   สองอย่างนี้คือตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
+                    ."   พิมพ์รวดเดียวได้เลย เช่น *ตี 5 เชียงใหม่* / *06:30 กรุงเทพ* / *บ่าย 2 โคราช*\n"
+                    ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอมีวิธีของตำราไว้ใช้แทน)\n\n",
+                'quick_reply' => ['title' => '🕛 ไม่ทราบ', 'text' => 'ไม่ทราบเวลาเกิด'],
+            ];
+        }
+
+        if ($askTime) {
+            return [
+                'block' => "🕛 *ลูกเกิดกี่โมงคะ?* (ถ้าจำได้ พิมพ์มาก่อนเปิดไพ่ได้เลย)\n"
+                    ."   เวลาเกิดเป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
+                    ."   ตัวอย่าง: *ตี 5* / *06:30* / *บ่าย 2*\n"
+                    ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอมีวิธีของตำราไว้ใช้แทน)\n\n",
+                'quick_reply' => ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'],
+            ];
+        }
+
+        return [
+            'block' => "🗺️ *ลูกเกิดที่จังหวัดอะไรคะ?*\n"
+                ."   จังหวัดเกิดทำให้ *ลัคนา* แม่นขึ้น (คนละจังหวัด ลัคนาเลื่อนได้ถึงคนละราศี)\n"
+                ."   พิมพ์ชื่อจังหวัดมาได้เลย เช่น *เชียงใหม่* / *กรุงเทพ* / *อุบล*\n\n",
+            'quick_reply' => ['title' => '🗺️ ไม่ทราบจังหวัด', 'text' => 'ไม่ทราบ'],
+        ];
+    }
+
+    /**
      * 🔁 (2026-06-08) เริ่มทำนายพื้นดวง 39 ด้วยวันเกิดที่มีอยู่แล้ว (ไม่ถามซ้ำ)
      *
      * ใช้โดย path "ดึง 2 ทาง" (handleDeepPayFirstPaymentMatched) เมื่อลูกค้าเคยให้วันเกิดมาก่อน
@@ -7025,40 +7089,12 @@ class FortuneConversationService
         //   ⚠️ ทำไม *ไม่* ทำเป็น state ใหม่ที่ต้องรอคำตอบ ([[feedback_never_interrupt_payment_to_prediction_flow]]):
         //     ขั้นถัดไปคือ "ตั้งจิต → กดพร้อม" ซึ่งรอลูกค้าพิมพ์อยู่แล้ว → แปะคำถามไปกับกล่องนี้เลย
         //     ตอบเป็นเวลา = เก็บ · กด "พร้อมเปิดไพ่" = ข้าม (ใช้ 12:00) — ไม่มีทางค้างเพิ่มสักกรณี
-        // 🗺️ (2026-09-09) ถาม *เวลาเกิด + จังหวัดเกิด* ในกล่องเดียว — ตอบครั้งเดียวจบ
-        //    ทั้งคู่คือวัตถุดิบของลัคนา: เวลา = ราศีขึ้น · จังหวัด = พิกัดที่ใช้คำนวณ
-        //    ⚠️ ยังคงเป็น "กล่องเดียว ไม่เพิ่มรอบ" ตามเหตุผลเดิม — ขั้นถัดไปรอลูกค้าพิมพ์อยู่แล้ว
-        //    ลูกค้าเก่าเคยบอกจังหวัดไว้แล้ว → ยืมมาเลย ไม่ถามซ้ำ (จังหวัดเกิดไม่เปลี่ยน)
-        $reading->inheritBirthProvinceFromHistory();
-
-        $askBirthTime = ! $reading->birthTimeIsKnown();
-        $askBirthPlace = $reading->birthProvinceIfKnown() === null;
-        $birthTimeBlock = '';
+        // 🗺️ (2026-09-09) ถาม *เวลาเกิด + จังหวัดเกิด* — ตัวประกอบกล่องอยู่ที่ deepBirthInfoAsk()
+        $ask = $this->deepBirthInfoAsk($reading);
+        $birthTimeBlock = $ask['block'];
         $quickReplies = [['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม']];
-
-        if ($askBirthTime || $askBirthPlace) {
-            $reading->setConversationState('deep_birthtime_pending', true);
-            // ธงเดียวกับ ProSession — บอกตัวอ่านว่า "ข้อความถัดไปคือคำตอบเรื่องเวลา" (ผ่อนกฎ parse)
-            $reading->setConversationState('awaiting_birth_time', now()->toIso8601String());
-
-            if ($askBirthTime && $askBirthPlace) {
-                $birthTimeBlock = "🕛 *ลูกเกิดกี่โมง และเกิดที่จังหวัดอะไรคะ?*\n"
-                    ."   สองอย่างนี้คือตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
-                    ."   พิมพ์รวดเดียวได้เลย เช่น *ตี 5 เชียงใหม่* / *06:30 กรุงเทพ* / *บ่าย 2 โคราช*\n"
-                    ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอมีวิธีของตำราไว้ใช้แทน)\n\n";
-                $quickReplies[] = ['title' => '🕛 ไม่ทราบ', 'text' => 'ไม่ทราบเวลาเกิด'];
-            } elseif ($askBirthTime) {
-                $birthTimeBlock = "🕛 *ลูกเกิดกี่โมงคะ?* (ถ้าจำได้ พิมพ์มาก่อนเปิดไพ่ได้เลย)\n"
-                    ."   เวลาเกิดเป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
-                    ."   ตัวอย่าง: *ตี 5* / *06:30* / *บ่าย 2*\n"
-                    ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอมีวิธีของตำราไว้ใช้แทน)\n\n";
-                $quickReplies[] = ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'];
-            } else {
-                $birthTimeBlock = "🗺️ *ลูกเกิดที่จังหวัดอะไรคะ?*\n"
-                    ."   จังหวัดเกิดทำให้ *ลัคนา* แม่นขึ้น (คนละจังหวัด ลัคนาเลื่อนได้ถึงคนละราศี)\n"
-                    ."   พิมพ์ชื่อจังหวัดมาได้เลย เช่น *เชียงใหม่* / *กรุงเทพ* / *อุบล*\n\n";
-                $quickReplies[] = ['title' => '🗺️ ไม่ทราบจังหวัด', 'text' => 'ไม่ทราบ'];
-            }
+        if ($ask['quick_reply'] !== null) {
+            $quickReplies[] = $ask['quick_reply'];
         }
 
         return [
@@ -10232,6 +10268,9 @@ class FortuneConversationService
                     $amountStr = number_format((float) ($reading->amount_paid ?? 39), 2);
                     // 🆕 (2026-06-23) ถ้าระบบเติมวันเกิดเดิมให้ → แทรกบรรทัดบอกลูกค้า + เปิดทางเปลี่ยน
                     $reusedNote = $this->buildReusedBirthdateNote($reading);
+                    // 🕛🗺️ (2026-09-10) เส้นนี้ push ข้อความตั้งจิตเอง ไม่ผ่าน beginDeepGeneralReading()
+                    //   ⇒ ต้องแนบกล่องถามเวลา/จังหวัดเองด้วย ไม่งั้นบิลเส้นนี้ไม่เคยถูกถามเลย (เคส #12793)
+                    $askInfo = $hasBirthdate ? $this->deepBirthInfoAsk($reading) : ['block' => '', 'quick_reply' => null];
                     $prompt = ! $hasBirthdate
                         ? "🙏 รับชำระเงิน ฿{$amountStr} สำเร็จค่ะ คุณ{$name} ✨\n\n"
                             ."🌙 *แม่หมอจันทราเปิดประตูดวงให้แล้ว*\n"
@@ -10240,6 +10279,7 @@ class FortuneConversationService
                             .'📝 *ตัวอย่าง:* 15 มีนาคม 2538 / 15/3/2538'
                         : "🙏 รับชำระเงิน ฿{$amountStr} สำเร็จค่ะ ✨\n\n"
                             .$reusedNote
+                            .$askInfo['block']
                             ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
                             .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ';
 
@@ -10256,6 +10296,10 @@ class FortuneConversationService
                     if ($hasBirthdate && $reusedNote !== '') {
                         $pushPayload['show_quick_replies'] = true;
                         $pushPayload['quick_replies'] = $this->buildReusedBirthdateQuickReplies($reading);
+                        // ปุ่ม "ไม่ทราบ" ของกล่องถามเวลา/จังหวัด — ต่อท้ายปุ่มยืนยันวันเกิดเดิม
+                        if ($askInfo['quick_reply'] !== null) {
+                            $pushPayload['quick_replies'][] = $askInfo['quick_reply'];
+                        }
                     }
 
                     try {
@@ -10286,16 +10330,23 @@ class FortuneConversationService
                     //   เป็นของ birthdate เท่านั้น → push prompt ตั้งจิตเปิดไพ่ตรงเอง
                     try {
                         $tarotManager = new FortuneChannelManager($this->settings);
+                        // 🕛🗺️ (2026-09-10) เส้น Job ก็ push เองเหมือนกัน → ต้องแนบกล่องถามเช่นกัน
+                        $askInfoJob = $this->deepBirthInfoAsk($reading);
+                        $jobQuickReplies = $this->buildReusedBirthdateQuickReplies($reading);
+                        if ($askInfoJob['quick_reply'] !== null) {
+                            $jobQuickReplies[] = $askInfoJob['quick_reply'];
+                        }
                         $tarotManager->sendResponse($platform, $userId, [
                             'action' => 'awaiting_tarot_intention',
                             'message' => "🙏 รับชำระเงินเรียบร้อยแล้วค่ะ ✨\n\n"
                                 .$this->buildReusedBirthdateNote($reading)
+                                .$askInfoJob['block']
                                 ."🧘 *ตั้งจิตก่อนเปิดไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
                                 .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ทันทีค่ะ',
                             'reading' => $reading,
                             'show_quick_replies' => true,
                             // 🎂 (2026-07-25) ใช้วันเกิดเดิม → ปุ่ม "ใช่/เปลี่ยนวันเกิด" แทน "พร้อมเปิดไพ่"
-                            'quick_replies' => $this->buildReusedBirthdateQuickReplies($reading),
+                            'quick_replies' => $jobQuickReplies,
                         ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                     } catch (\Throwable $pushErr) {
                         Log::warning('Fortune: Pay-First guard — push ตั้งจิตเปิดไพ่ ล้ม (non-blocking)', [
