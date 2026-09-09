@@ -547,6 +547,8 @@ class FortuneReading extends Model
         'birth_date',
         'birth_time',
         'birth_time_source',
+        'birth_province',
+        'birth_province_source',
         'ai_provider',
         'ai_model',
         'tokens_used',
@@ -2552,6 +2554,169 @@ class FortuneReading extends Model
         ]);
 
         return $hour;
+    }
+
+    /**
+     * 🗺️ จังหวัดเกิดที่ "รู้จริง" — null = ยังไม่ทราบ (ผังจะใช้พิกัดกรุงเทพเป็นค่ากลางและบอกตามตรง)
+     *
+     * ต่างจาก birthTimeIsKnown() ตรงที่ไม่ต้องดูป้ายที่มา เพราะคอลัมน์นี้
+     * **ไม่เคยถูกเติมค่ามาตรฐาน** — มีค่า = ลูกค้า/แอดมินบอกมาจริงเสมอ
+     */
+    public function birthProvinceIfKnown(): ?string
+    {
+        if (! self::hasBirthProvinceColumn()) {
+            return null;
+        }
+
+        $p = trim((string) ($this->birth_province ?? ''));
+
+        return $p !== '' && \App\Support\ThaiProvinces::isKnown($p) ? $p : null;
+    }
+
+    /** คอลัมน์ birth_province มีแล้วหรือยัง — เช็คครั้งเดียวต่อโปรเซส (กันช่วง deploy) */
+    protected static ?bool $birthProvinceColumn = null;
+
+    protected static function hasBirthProvinceColumn(): bool
+    {
+        if (self::$birthProvinceColumn === null) {
+            try {
+                self::$birthProvinceColumn = \Illuminate\Support\Facades\Schema::hasColumn(
+                    (new self)->getTable(),
+                    'birth_province'
+                );
+            } catch (\Throwable $e) {
+                self::$birthProvinceColumn = false;
+            }
+        }
+
+        return self::$birthProvinceColumn;
+    }
+
+    /**
+     * 🗺️ อ่าน "จังหวัดเกิด" จากข้อความลูกค้า แล้วบันทึกถ้าเจอ
+     *
+     * เรียกคู่กับ captureStatedBirthTime() ทุกจุด — ลูกค้าตอบกล่องเดียวว่า
+     * "ตี 5 ที่เชียงใหม่" ⇒ ต้องเก็บทั้งเวลาและจังหวัดจากข้อความเดียวกัน
+     *
+     * @param  string  $source  ที่มา (audit): customer | celtic_birthdate | time_answer | place_answer
+     * @return string|null ชื่อจังหวัดที่บันทึก (null = ไม่พบ / เหมือนเดิม)
+     */
+    public function captureStatedBirthProvince(string $text, string $source = 'customer'): ?string
+    {
+        if (! self::hasBirthProvinceColumn()) {
+            return null;
+        }
+
+        try {
+            $province = \App\Support\ThaiProvinces::resolve($text);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if ($province === null) {
+            return null;
+        }
+
+        // เคยรู้อยู่แล้วและเป็นจังหวัดเดิม — ไม่ต้องเขียนซ้ำ ไม่ต้องแจ้ง
+        if ($this->birthProvinceIfKnown() === $province) {
+            return null;
+        }
+
+        try {
+            $this->update([
+                'birth_province' => $province,
+                'birth_province_source' => $source,
+            ]);
+            // ธง one-shot — พรอมต์เทิร์นถัดไปอ่านแล้วล้าง (บอกลูกค้าสั้น ๆ ว่าปรับผังแล้ว)
+            $this->setConversationState('birth_province_just_updated', $province);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FortuneReading: บันทึกจังหวัดเกิดไม่สำเร็จ', [
+                'reading_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        \Illuminate\Support\Facades\Log::info('FortuneReading: ลูกค้าบอกจังหวัดเกิด → บันทึกแล้ว', [
+            'reading_id' => $this->id,
+            'birth_province' => $province,
+            'source' => $source,
+        ]);
+
+        return $province;
+    }
+
+    /**
+     * 🗺️ ยืมจังหวัดเกิดจากบิลเก่าของลูกค้าคนเดียวกัน — จะได้ไม่ถามซ้ำทุกบิล
+     *
+     * เหตุผลเดียวกับ [[BirthdateResolver]]: จังหวัดเกิดของคนคนหนึ่งไม่เปลี่ยน
+     * ถามซ้ำทุกครั้ง = กวนลูกค้าที่กลับมาซื้อซ้ำ (กลุ่มที่หวงที่สุด)
+     *
+     * ⚠️ จับคู่ลูกค้าแบบเดียวกับ BirthdateResolver::fromReadings() —
+     *    `fortune_readings` ไม่มีคอลัมน์ line_user_id · LINE นั่งอยู่ที่ platform_user_id
+     *
+     * @return string|null จังหวัดที่ยืมมาได้ (บันทึกลงบิลนี้แล้ว) · null = ไม่มีของเก่า
+     */
+    public function inheritBirthProvinceFromHistory(): ?string
+    {
+        if (! self::hasBirthProvinceColumn() || $this->birthProvinceIfKnown() !== null) {
+            return null;
+        }
+
+        try {
+            $fbId = (string) ($this->facebook_user_id ?? '');
+            $platformId = (string) ($this->platform_user_id ?? '');
+            if ($fbId === '' && $platformId === '') {
+                return null;
+            }
+
+            $prior = self::query()
+                ->whereNotNull('birth_province')
+                ->where('id', '!=', (int) $this->id)
+                ->where(function ($q) use ($fbId, $platformId) {
+                    if ($fbId !== '') {
+                        $q->where('facebook_user_id', $fbId);
+                    }
+                    if ($platformId !== '') {
+                        $q->orWhere('platform_user_id', $platformId);
+                    }
+                })
+                ->orderByDesc('is_paid')
+                ->orderByDesc('created_at')
+                ->value('birth_province');
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (empty($prior) || ! \App\Support\ThaiProvinces::isKnown((string) $prior)) {
+            return null;
+        }
+
+        try {
+            $this->update([
+                'birth_province' => (string) $prior,
+                'birth_province_source' => 'inherited',
+            ]);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return (string) $prior;
+    }
+
+    /**
+     * 🗺️ ดึงธง "เพิ่งได้จังหวัดเกิดใหม่" (one-shot) — คืนชื่อจังหวัดแล้วล้างธง / null = ไม่มี
+     */
+    public function pullBirthProvinceJustUpdated(): ?string
+    {
+        $v = $this->getConversationState('birth_province_just_updated');
+        if (empty($v)) {
+            return null;
+        }
+        $this->setConversationState('birth_province_just_updated', null);
+
+        return (string) $v;
     }
 
     /**

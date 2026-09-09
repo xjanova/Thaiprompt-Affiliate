@@ -10,8 +10,8 @@ use Carbon\Carbon;
  * User directive (2026-06-03): "ทำให้ดี ไม่ต้องอาศัยใคร เราต้องรู้หมด คำนวณได้
  *   เพื่อประกอบการทำนายไพ่ทาโร่ 99 บาท"
  *
- * คำนวณลองจิจูดสุริยวิถี (geocentric ecliptic longitude) ของดาวพระเคราะห์ไทยครบ 9:
- *   ☉ อาทิตย์ · ☽ จันทร์ · ♂ อังคาร · ☿ พุธ · ♃ พฤหัสบดี · ♀ ศุกร์ · ♄ เสาร์ · ☊ ราหู · ☋ เกตุ
+ * คำนวณลองจิจูดสุริยวิถี (geocentric ecliptic longitude) ของดาวพระเคราะห์ไทยครบ 10:
+ *   ☉ อาทิตย์ · ☽ จันทร์ · ♂ อังคาร · ☿ พุธ · ♃ พฤหัสบดี · ♀ ศุกร์ · ♄ เสาร์ · ☊ ราหู · ☋ เกตุ · ⛢ มฤตยู
  *
  * วิธีคำนวณ (pure PHP — ไม่มี dependency):
  *   - JD จากปฏิทินเกรกอเรียน (Meeus)
@@ -87,6 +87,9 @@ class PlanetEphemeris
             -0.00011607, -0.00013253, -0.00183714, 3034.74612775, 0.21252668, 0.20469106],
         'Saturn' => [9.53667594, 0.05386179, 2.48599187, 49.95424423, 92.59887831, 113.66242448,
             -0.00125060, -0.00050991, 0.00193609, 1222.49362201, -0.41897216, -0.28867794],
+        // 🜨 มฤตยู (ดาว ๐) — ตำราไทยสมัยใหม่นับเป็นดาวพระเคราะห์ลำดับที่ 10
+        'Uranus' => [19.18916464, 0.04725744, 0.77263783, 313.23810451, 170.95427630, 74.01692503,
+            -0.00196176, -0.00004397, -0.00242939, 428.48202785, 0.40805281, 0.04240589],
     ];
 
     /** Planet (en) → ไทย + เลขดาว + สัญลักษณ์ */
@@ -100,7 +103,19 @@ class PlanetEphemeris
         'Saturn' => ['th' => 'เสาร์', 'num' => 7, 'sym' => '♄'],
         'Rahu' => ['th' => 'ราหู', 'num' => 8, 'sym' => '☊'],
         'Ketu' => ['th' => 'เกตุ', 'num' => 9, 'sym' => '☋'],
+        // 🜨 (2026-09-09) มฤตยู = ดาว ๐ ตามตำราไทย — เพิ่มเข้ามาเพราะโหรไทยสมัยใหม่ใช้จริง
+        //    (ดาวช้ามาก ~7 ปี/ราศี ⇒ อ่านเป็น "พื้นดวงยุคสมัย" ไม่ใช่จังหวะรายเดือน)
+        'Uranus' => ['th' => 'มฤตยู', 'num' => 0, 'sym' => '⛢'],
     ];
+
+    /**
+     * ดาวที่ "เดินถอยหลังเป็นปกติ" — ไม่ใช่พักร
+     *
+     * ราหู/เกตุ คือจุดโหนดจันทร์เฉลี่ย ซึ่งถอยหลังตลอดเวลาโดยธรรมชาติ
+     * เดิมตรวจพักรด้วยการเทียบลองจิจูด ⇒ ติดป้าย "⏪ พักร" ให้ราหู-เกตุ **ทุกวัน**
+     * โหรอ่านแล้วสะดุดทันที เพราะไม่มีใครเรียกราหูว่าพักร
+     */
+    public const ALWAYS_RETROGRADE = ['Rahu', 'Ketu'];
 
     /**
      * คำนวณตำแหน่งดาวทั้ง 9 ณ วันเวลาที่กำหนด
@@ -115,7 +130,7 @@ class PlanetEphemeris
         // เวลาไทย → UT (ลบ 7 ชม.)
         $jd = $this->julianDay($dt) - (7.0 / 24.0);
 
-        $order = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu'];
+        $order = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn', 'Rahu', 'Ketu', 'Uranus'];
         $out = [];
 
         // อายนางศของวันนั้น — ใช้ค่าเดียวกับทุกดาว (เป็นการหมุนกรอบราศีทั้งวง)
@@ -127,7 +142,8 @@ class PlanetEphemeris
             // พักร: ลองจิจูดถอยหลัง (จัดการ wrap 360°)
             // ⚠️ ตรวจจากลองจิจูดสายนะได้เลย — ลบอายนางศคือลบค่าคงที่ออกจากทั้งสองตัว
             $delta = $this->normalize360($lonNext - $lon + 180.0) - 180.0;
-            $retro = $delta < 0;
+            // 🚫 ราหู/เกตุ ถอยหลังตลอดโดยธรรมชาติ — ไม่ใช่ "พักร" ห้ามติดป้าย
+            $retro = $delta < 0 && ! in_array($planet, self::ALWAYS_RETROGRADE, true);
 
             $lonTropical = $this->normalize360($lon);
             $lonSidereal = $this->normalize360($lonTropical - $ayanamsa);
@@ -144,6 +160,7 @@ class PlanetEphemeris
                 'sign' => self::SIGNS[$signIndex],
                 'sign_index' => $signIndex,
                 'retro' => $retro,
+                'always_retro' => in_array($planet, self::ALWAYS_RETROGRADE, true),
                 'th' => $meta['th'],
                 'num' => $meta['num'],
                 'sym' => $meta['sym'],
@@ -205,6 +222,34 @@ class PlanetEphemeris
         $idx = (int) floor($lon / self::DEG_PER_SIGN) % 12;
 
         return ['lon' => $lon, 'sign' => self::SIGNS[$idx], 'sign_index' => $idx];
+    }
+
+    /**
+     * 🔯 นวางค์ (D9) — แบ่งราศีละ 9 ช่อง ช่องละ 3°20'
+     *
+     * ⚠️ ใช้ได้ **เฉพาะเมื่อรู้เวลาเกิดจริง** เท่านั้น — ช่องหนึ่งกว้าง 3°20'
+     *    ลัคนาเลื่อน ~1 ราศี/2 ชม. ⇒ ถ้าเดาเวลา นวางค์แทบไม่มีทางถูก
+     *    ผู้เรียกต้องเช็ค birthTimeIsKnown() ก่อนเสมอ (อย่าคำนวณให้คนที่ไม่ได้บอกเวลา)
+     *
+     * @param  float  $lonSidereal  ลองจิจูดนิรายนะ 0–360
+     * @return array{sign:string, sign_index:int, pada:int} pada = ช่องที่ 1–9 ในราศีนั้น
+     */
+    public function navamsa(float $lonSidereal): array
+    {
+        $lon = $this->normalize360($lonSidereal);
+        $signIndex = (int) floor($lon / self::DEG_PER_SIGN) % 12;
+        $degInSign = $lon - $signIndex * self::DEG_PER_SIGN;
+        $pada = (int) floor($degInSign / (self::DEG_PER_SIGN / 9.0)); // 0–8
+
+        // จุดเริ่มนวางค์ตามธาตุของราศี: ไฟ→เมษ · ดิน→มังกร · ลม→ตุลย์ · น้ำ→กรกฎ
+        $start = [0 => 0, 1 => 9, 2 => 6, 3 => 3][$signIndex % 4];
+        $navIndex = ($start + $pada) % 12;
+
+        return [
+            'sign' => self::SIGNS[$navIndex],
+            'sign_index' => $navIndex,
+            'pada' => $pada + 1,
+        ];
     }
 
     /**

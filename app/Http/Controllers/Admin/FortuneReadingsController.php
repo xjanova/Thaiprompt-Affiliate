@@ -166,6 +166,8 @@ class FortuneReadingsController extends Controller
             'birth_date' => 'nullable|date',
             // 🕛 (2026-09-02) เวลาเกิด — ว่าง = ไม่ทราบ (ผูกดวงจาก 12:00 น.)
             'birth_time' => 'nullable|date_format:H:i',
+            // 🗺️ (2026-09-09) จังหวัดเกิด — ว่าง = ไม่ทราบ (ผูกลัคนาจากพิกัดกรุงเทพเป็นค่ากลาง)
+            'birth_province' => 'nullable|string|max:60',
             'questions_input' => 'nullable|string|max:5000',
             'pick_tarot_random' => 'nullable|boolean',
         ]);
@@ -210,6 +212,27 @@ class FortuneReadingsController extends Controller
             } else {
                 $validated['birth_time'] = null;
                 $validated['birth_time_source'] = FortuneReading::BIRTH_TIME_SOURCE_DEFAULT;
+            }
+        }
+
+        // 🗺️ birth_province: แอดมินเลือกจากดรอปดาวน์ = "รู้จริง" → ติดป้าย admin
+        //    เลือก "— ไม่ทราบ —" = ล้างทิ้ง (ผังกลับไปใช้พิกัดกรุงเทพเป็นค่ากลางและบอกตามตรง)
+        //    ⚠️ ตรวจกับฐาน 77 จังหวัดก่อนเสมอ — ชื่อมั่วเข้าไป = coords() คืน null
+        //      แล้วผังจะเงียบ ๆ กลับไปใช้กรุงเทพทั้งที่หน้าจอโชว์ว่ามีจังหวัดแล้ว
+        //    ⚠️ กันช่วง deploy ที่โค้ดขึ้นก่อน migration — เขียนคอลัมน์ที่ยังไม่มี = 500 ตอนกดบันทึก
+        if (array_key_exists('birth_province', $validated)
+            && ! \Illuminate\Support\Facades\Schema::hasColumn('fortune_readings', 'birth_province')) {
+            unset($validated['birth_province']);
+        }
+
+        if (array_key_exists('birth_province', $validated)) {
+            $province = trim((string) ($validated['birth_province'] ?? ''));
+            if ($province !== '' && \App\Support\ThaiProvinces::isKnown($province)) {
+                $validated['birth_province'] = $province;
+                $validated['birth_province_source'] = 'admin';
+            } else {
+                $validated['birth_province'] = null;
+                $validated['birth_province_source'] = null;
             }
         }
 

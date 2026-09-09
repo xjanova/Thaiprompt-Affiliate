@@ -7025,19 +7025,40 @@ class FortuneConversationService
         //   ⚠️ ทำไม *ไม่* ทำเป็น state ใหม่ที่ต้องรอคำตอบ ([[feedback_never_interrupt_payment_to_prediction_flow]]):
         //     ขั้นถัดไปคือ "ตั้งจิต → กดพร้อม" ซึ่งรอลูกค้าพิมพ์อยู่แล้ว → แปะคำถามไปกับกล่องนี้เลย
         //     ตอบเป็นเวลา = เก็บ · กด "พร้อมเปิดไพ่" = ข้าม (ใช้ 12:00) — ไม่มีทางค้างเพิ่มสักกรณี
+        // 🗺️ (2026-09-09) ถาม *เวลาเกิด + จังหวัดเกิด* ในกล่องเดียว — ตอบครั้งเดียวจบ
+        //    ทั้งคู่คือวัตถุดิบของลัคนา: เวลา = ราศีขึ้น · จังหวัด = พิกัดที่ใช้คำนวณ
+        //    ⚠️ ยังคงเป็น "กล่องเดียว ไม่เพิ่มรอบ" ตามเหตุผลเดิม — ขั้นถัดไปรอลูกค้าพิมพ์อยู่แล้ว
+        //    ลูกค้าเก่าเคยบอกจังหวัดไว้แล้ว → ยืมมาเลย ไม่ถามซ้ำ (จังหวัดเกิดไม่เปลี่ยน)
+        $reading->inheritBirthProvinceFromHistory();
+
         $askBirthTime = ! $reading->birthTimeIsKnown();
+        $askBirthPlace = $reading->birthProvinceIfKnown() === null;
         $birthTimeBlock = '';
         $quickReplies = [['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม']];
-        if ($askBirthTime) {
+
+        if ($askBirthTime || $askBirthPlace) {
             $reading->setConversationState('deep_birthtime_pending', true);
             // ธงเดียวกับ ProSession — บอกตัวอ่านว่า "ข้อความถัดไปคือคำตอบเรื่องเวลา" (ผ่อนกฎ parse)
             $reading->setConversationState('awaiting_birth_time', now()->toIso8601String());
 
-            $birthTimeBlock = "🕛 *ลูกเกิดกี่โมงคะ?* (ถ้าจำได้ พิมพ์มาก่อนเปิดไพ่ได้เลย)\n"
-                ."   เวลาเกิดเป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
-                ."   ตัวอย่าง: *ตี 5* / *06:30* / *บ่าย 2*\n"
-                ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอใช้เวลามาตรฐานเที่ยงวันให้)\n\n";
-            $quickReplies[] = ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'];
+            if ($askBirthTime && $askBirthPlace) {
+                $birthTimeBlock = "🕛 *ลูกเกิดกี่โมง และเกิดที่จังหวัดอะไรคะ?*\n"
+                    ."   สองอย่างนี้คือตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
+                    ."   พิมพ์รวดเดียวได้เลย เช่น *ตี 5 เชียงใหม่* / *06:30 กรุงเทพ* / *บ่าย 2 โคราช*\n"
+                    ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอมีวิธีของตำราไว้ใช้แทน)\n\n";
+                $quickReplies[] = ['title' => '🕛 ไม่ทราบ', 'text' => 'ไม่ทราบเวลาเกิด'];
+            } elseif ($askBirthTime) {
+                $birthTimeBlock = "🕛 *ลูกเกิดกี่โมงคะ?* (ถ้าจำได้ พิมพ์มาก่อนเปิดไพ่ได้เลย)\n"
+                    ."   เวลาเกิดเป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* — แม่หมอจะอ่านให้อีกหนึ่งหัวข้อเต็ม ๆ\n"
+                    ."   ตัวอย่าง: *ตี 5* / *06:30* / *บ่าย 2*\n"
+                    ."   (จำไม่ได้ก็ข้ามได้ — แม่หมอมีวิธีของตำราไว้ใช้แทน)\n\n";
+                $quickReplies[] = ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'];
+            } else {
+                $birthTimeBlock = "🗺️ *ลูกเกิดที่จังหวัดอะไรคะ?*\n"
+                    ."   จังหวัดเกิดทำให้ *ลัคนา* แม่นขึ้น (คนละจังหวัด ลัคนาเลื่อนได้ถึงคนละราศี)\n"
+                    ."   พิมพ์ชื่อจังหวัดมาได้เลย เช่น *เชียงใหม่* / *กรุงเทพ* / *อุบล*\n\n";
+                $quickReplies[] = ['title' => '🗺️ ไม่ทราบจังหวัด', 'text' => 'ไม่ทราบ'];
+            }
         }
 
         return [
@@ -7850,24 +7871,44 @@ class FortuneConversationService
                     $messageText,
                     FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER
                 );
+                // 🗺️ (2026-09-09) กล่องเดียวถามทั้งเวลาและจังหวัด ⇒ ต้องอ่านทั้งสองอย่างจากข้อความเดียว
+                //    "ตี 5 ที่เชียงใหม่" — ถ้าเก็บแต่เวลา จังหวัดจะหล่นหายทุกครั้ง
+                $reading->captureStatedBirthProvince(
+                    $messageText,
+                    FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER
+                );
             } catch (\Throwable $e) {
-                // non-blocking — ตกไปใช้เวลามาตรฐาน 12:00 น.
+                // non-blocking — ตกไปใช้เวลามาตรฐาน 12:00 น. + พิกัดกรุงเทพ
             }
             $reading->setConversationState('awaiting_birth_time', null);
 
-            if ($reading->birthTimeIsKnown()) {
-                $shownTime = FortuneReading::hourToTimeString($reading->birthHourFloat() ?? 12.0, false);
+            $gotTime = $reading->birthTimeIsKnown();
+            $gotPlace = $reading->birthProvinceIfKnown();
 
-                Log::info('Fortune Deep39: รับเวลาเกิดก่อนเปิดไพ่', [
+            if ($gotTime || $gotPlace !== null) {
+                $bits = [];
+                if ($gotTime) {
+                    $bits[] = 'เวลาเกิด *'.FortuneReading::hourToTimeString($reading->birthHourFloat() ?? 12.0, false).' น.*';
+                }
+                if ($gotPlace !== null) {
+                    $bits[] = "จังหวัดเกิด *{$gotPlace}*";
+                }
+
+                Log::info('Fortune Deep39: รับข้อมูลผูกดวงก่อนเปิดไพ่', [
                     'reading_id' => $reading->id,
-                    'birth_time' => $shownTime,
+                    'birth_time' => $gotTime ? FortuneReading::hourToTimeString($reading->birthHourFloat() ?? 12.0, false) : null,
+                    'birth_province' => $gotPlace,
                 ]);
 
-                // ตั้งจิตยังไม่จบ — ลูกค้าเพิ่งตอบเรื่องเวลา ไม่ใช่คำว่า "พร้อม"
+                // ตั้งจิตยังไม่จบ — ลูกค้าเพิ่งตอบเรื่องข้อมูลผูกดวง ไม่ใช่คำว่า "พร้อม"
                 //   ⇒ ทวนให้เห็นว่าเก็บแล้วจริง (ห้ามรับปากลอย ๆ) แล้วชวนกดพร้อมต่อ
+                $note = $gotTime
+                    ? ' — แม่หมอจะผูก *ลัคนา* กับ *เรือนชะตา* ให้ลูกด้วย ✨'
+                    : ' — แม่หมอจดไว้ใช้ผูกดวงแล้วค่ะ ✨';
+
                 return [
                     'action' => 'awaiting_tarot_intention',
-                    'message' => "✅ รับเวลาเกิด *{$shownTime} น.* แล้วค่ะ — แม่หมอจะผูก *ลัคนา* กับ *เรือนชะตา* ให้ลูกด้วย ✨\n\n"
+                    'message' => '✅ รับ'.implode(' + ', $bits).' แล้วค่ะ'.$note."\n\n"
                         .'🃏 พร้อมแล้ว → พิมพ์ *"พร้อม"* หรือกดปุ่มด้านล่างได้เลย 👇',
                     'reading' => $reading,
                     'show_quick_replies' => true,
@@ -7876,7 +7917,7 @@ class FortuneConversationService
                     ],
                 ];
             }
-            // อ่านไม่ออก/ไม่ทราบ → ไม่ทวงซ้ำ ใช้เวลามาตรฐาน แล้วไหลไปเปิดไพ่ต่อ
+            // อ่านไม่ออก/ไม่ทราบ → ไม่ทวงซ้ำ เดินตามตำรา (จันทร์ลัคน์) แล้วไหลไปเปิดไพ่ต่อ
         }
 
         // 🧘 ขั้นตั้งจิตก่อนเปิดไพ่ — ส่งข้อความเตือนสติ แล้วผู้ใช้ตอบอะไรก็ถือว่า "ตั้งจิตเสร็จ"

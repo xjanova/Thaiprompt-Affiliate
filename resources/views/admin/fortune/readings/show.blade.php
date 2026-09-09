@@ -127,7 +127,13 @@
                             @elseif($reading->birth_time)
                                 <span style="font-weight:500;opacity:.7;">🕛 {{ substr((string) $reading->birth_time, 0, 5) }} น. <em>(ค่ามาตรฐาน)</em></span>
                             @else
-                                <span class="tp-muted" style="font-weight:500; font-size:11px;">⏱️ ไม่ทราบเวลา (ใช้ 12:00)</span>
+                                <span class="tp-muted" style="font-weight:500; font-size:11px;">⏱️ ไม่ทราบเวลา (ยกจันทร์ลัคน์ตามตำรา)</span>
+                            @endif
+                            {{-- 🗺️ (2026-09-09) จังหวัดเกิด = พิกัดที่ใช้ผูกลัคนา --}}
+                            @if($reading->birthProvinceIfKnown())
+                                <span style="font-weight:500;">· 🗺️ {{ $reading->birth_province }}</span>
+                            @else
+                                <span class="tp-muted" style="font-weight:500; font-size:11px;">· 🗺️ ไม่ทราบจังหวัด (ใช้พิกัดกรุงเทพฯ)</span>
                             @endif
                         </div>
                     </div>
@@ -521,8 +527,16 @@
                     </p>
                 </div>
                 <div style="text-align:right; font-size:12px; color:var(--ink2);">
-                    🕛 เวลาเกิดที่ใช้ผูกดวง: <strong>{{ substr((string) ($reading->birth_time ?: '12:00'), 0, 5) }} น.</strong>
-                    <span style="opacity:.75;">{{ $reading->birthTimeIsKnown() ? '(เจ้าชะตาบอกเอง)' : '(ค่ามาตรฐาน — ยังไม่ได้บอกเวลาเกิด)' }}</span>
+                    {{-- 🗺️ (2026-09-09) ไม่รู้เวลาเกิด = ไม่ผูกลัคนาแล้ว ยกจันทร์ลัคน์ตามตำราแทน --}}
+                    @if($reading->birthTimeIsKnown())
+                        🕛 ผูกลัคนาจากเวลาเกิด <strong>{{ substr((string) $reading->birth_time, 0, 5) }} น.</strong>
+                        <span style="opacity:.75;">(เจ้าชะตาบอกเอง)</span>
+                    @else
+                        🌙 <strong>ยกจันทร์ลัคน์</strong> <span style="opacity:.75;">(ยังไม่ทราบเวลาเกิด — ไม่ผูกลัคนามั่ว)</span>
+                    @endif
+                    <br>
+                    🗺️ พิกัด: <strong>{{ $reading->birthProvinceIfKnown() ?? 'กรุงเทพฯ' }}</strong>
+                    <span style="opacity:.75;">{{ $reading->birthProvinceIfKnown() ? '' : '(ค่ากลาง — ยังไม่ได้บอกจังหวัด)' }}</span>
                 </div>
             </div>
 

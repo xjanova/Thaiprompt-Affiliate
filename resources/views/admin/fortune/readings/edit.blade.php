@@ -194,8 +194,30 @@
                         </div>
                         <p style="margin:6px 0 0; font-size:11px; color:var(--ink2);">
                             ปัจจุบัน: {{ substr((string) ($reading->birth_time ?: '12:00'), 0, 5) }} น.
-                            {{ $reading->birthTimeIsKnown() ? '(เจ้าชะตาบอกเอง)' : '— ⏱️ ค่ามาตรฐาน ยังไม่ได้บอกเวลาเกิด' }}
+                            {{ $reading->birthTimeIsKnown() ? '(เจ้าชะตาบอกเอง)' : '— ⏱️ ไม่ทราบเวลาเกิด ระบบจะยกจันทร์ลัคน์ตามตำราแทน' }}
                             · ลัคนา/ภพจะคำนวณใหม่ทันทีที่บันทึก (คำทำนายที่ส่งไปแล้วไม่เปลี่ยน — กด "สร้างใหม่" ถ้าต้องการ)
+                        </p>
+                    </div>
+
+                    {{-- 🗺️ (2026-09-09) จังหวัดเกิด — ใช้หาพิกัดผูกลัคนา ว่าง = ใช้พิกัดกรุงเทพเป็นค่ากลาง --}}
+                    <div>
+                        <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink2); margin-bottom:6px;">
+                            🗺️ จังหวัดที่เกิด (ถ้าทราบ)
+                        </label>
+                        <div class="tp-well tp-input" style="padding:0;">
+                            <select name="birth_province"
+                                    style="width:100%; background:transparent; border:0; outline:0; padding:11px 13px; color:var(--ink); font-size:14px;">
+                                <option value="">— ไม่ทราบ (ใช้พิกัดกรุงเทพฯ เป็นค่ากลาง) —</option>
+                                @foreach(\App\Support\ThaiProvinces::all() as $province)
+                                    <option value="{{ $province }}"
+                                        @selected(old('birth_province', $reading->birth_province) === $province)>
+                                        {{ $province }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <p style="margin:6px 0 0; font-size:11px; color:var(--ink2);">
+                            จังหวัดเกิดทำให้ลัคนาแม่นขึ้น — เหนือสุดกับใต้สุดของไทยต่างกันได้ถึง ~9° (ข้ามราศีได้ถ้าเกิดต้น/ท้ายราศี)
                         </p>
                     </div>
 

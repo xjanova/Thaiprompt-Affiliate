@@ -5868,7 +5868,16 @@ PROMPT;
             // non-blocking — ตกไปใช้เวลามาตรฐาน
         }
 
-        $birthDateSection = $this->formatBirthDateSection($birthDate, $birthHour);
+        // 🗺️ (2026-09-09) จังหวัดเกิดถ้าลูกค้าพิมพ์มาเอง — เหตุผลเดียวกับเวลาเกิด
+        //    ไม่พบ = ผังใช้พิกัดกรุงเทพเป็นค่ากลาง *และพิมพ์บอกตามตรงในบล็อก*
+        $birthProvince = null;
+        try {
+            $birthProvince = \App\Support\ThaiProvinces::resolve($questionsText);
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        $birthDateSection = $this->formatBirthDateSection($birthDate, $birthHour, $birthProvince);
 
         $assembled = str_replace(
             ['{user_profile}', '{user_posts}', '{questions}', '{birth_date_section}'],
@@ -5918,7 +5927,7 @@ PROMPT;
      * @param  string|null  $birthDate  วันเดือนปีเกิด (Y-m-d)
      * @param  float|null  $birthHour  เวลาเกิดเป็นชั่วโมง (13.5 = 13:30) — null = ใช้เวลามาตรฐาน 12:00 น.
      */
-    protected function formatBirthDateSection(?string $birthDate, ?float $birthHour = null): string
+    protected function formatBirthDateSection(?string $birthDate, ?float $birthHour = null, ?string $birthProvince = null): string
     {
         if (empty($birthDate)) {
             return '(ไม่ได้ระบุวันเดือนปีเกิด - ทำนายจากคำถามและบริบทที่มี ใช้หลักเจ้าชนะเมื่อได้รับวันเกิดภายหลัง)';
@@ -5926,7 +5935,10 @@ PROMPT;
 
         // 🪐 ผูกดวงจริง (ephemeris) — ทางหลัก
         try {
-            $chart = trim((new \App\Services\Fortune\ThaiAstrologyService)->formatPersonBlock($birthDate, $birthHour));
+            // ⚠️ ต้องเก็บ instance ไว้ — คำสั่งเซคชั่นลัคนาต้องรู้ว่าผังนับภพจากอะไร
+            //    (ลัคนาจริง / จันทร์ลัคน์ / ไม่มีเลย) ไม่งั้นสั่งให้เขียนลัคนาทั้งที่ผังไม่มี
+            $astro = new \App\Services\Fortune\ThaiAstrologyService;
+            $chart = trim($astro->formatPersonBlock($birthDate, $birthHour, true, $birthProvince));
             if ($chart !== '' && ! str_starts_with($chart, '(วันเกิด:')) {
                 return "=== 🪐 ดวงพื้นของเจ้าชะตา (คำนวณจริงจากวันเกิด) ===\n"
                     .$chart
@@ -5937,7 +5949,7 @@ PROMPT;
                     //   วางท้ายบล็อกดวงโดยตั้งใจ: ผัง (ลัคนา+ภพ) อยู่ข้างบน คำสั่งอ่านอยู่ติดกันทันที
                     //   ⚠️ อยู่ในบล็อกนี้ = ไหลไปพร้อม {birth_date_section} ทั้งทาง template ของแอดมิน
                     //      และทาง fallback ต่อท้ายใน buildPrompt() ([[rule_db_prompt_overrides_code]])
-                    .\App\Services\Fortune\ThaiAstrologyService::lagnaSectionDirective();
+                    .\App\Services\Fortune\ThaiAstrologyService::lagnaSectionDirective($astro->lagnaBasis());
             }
         } catch (\Throwable $e) {
             Log::warning('FortuneAIService: ผูกดวงจริงล้มเหลว ใช้บล็อกเจ้าชนะแทน', [

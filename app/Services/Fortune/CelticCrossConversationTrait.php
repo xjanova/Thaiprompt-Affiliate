@@ -2462,8 +2462,10 @@ trait CelticCrossConversationTrait
         try {
             // source=time_answer → ใช้ตัวอ่านแบบผ่อนกฎ (ทั้งข้อความคือคำตอบเรื่องเวลา)
             $reading->captureStatedBirthTime($text, FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER);
+            // 🗺️ (2026-09-09) กล่องเดียวถามทั้งเวลาและจังหวัด ⇒ ต้องอ่านทั้งสองจากข้อความเดียวกัน
+            $reading->captureStatedBirthProvince($text, FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER);
         } catch (\Throwable $e) {
-            // non-blocking — ตกไปใช้เวลามาตรฐาน 12:00 น.
+            // non-blocking — ตกไปใช้เวลามาตรฐาน 12:00 น. + พิกัดกรุงเทพ
         }
 
         try {
@@ -2596,6 +2598,8 @@ trait CelticCrossConversationTrait
             $reading->setConversationState('celtic_birthdate_pending', false);
             // 🕛 (2026-09-02) ลูกค้าพิมพ์เวลาเกิดมาพร้อมวันเกิด ("29/01/2516 ตอน 6 โมงเช้า") → เก็บด้วย
             $reading->captureStatedBirthTime($text, 'celtic_birthdate');
+            // 🗺️ (2026-09-09) เช่นเดียวกับจังหวัด ("29/01/2516 ที่เชียงใหม่") — เก็บตั้งแต่ตอนนี้จะได้ไม่ต้องถาม
+            $reading->captureStatedBirthProvince($text, 'celtic_birthdate');
             // 🌟 (2026-06-08) flag คำทำนายพื้นดวงเปิดตัว — รอบแรกใช้โครงสร้างแบบ 39 (ดวงดาวเต็ม)
             //   ผสานไพ่ 10 ใบ + ยาว 1500-3000 (buildFollowupPrompt อ่าน flag นี้ + เคลียร์ทิ้งหลังใช้)
             $reading->setConversationState('celtic_base_chart', true);
@@ -2614,23 +2618,47 @@ trait CelticCrossConversationTrait
             //      - ปุ่ม "ไม่ทราบ" = จบขั้นตอนด้วยการกดครั้งเดียว
             //      - เงียบไป = ความเสี่ยงระดับเดียวกับขั้นขอวันเกิดเดิม ซึ่ง fortune:remind-stuck-celtic
             //        (เงียบ 30 นาที–6 ชม.) ตามเก็บอยู่แล้ว
-            if (! $reading->birthTimeIsKnown()) {
+            // 🗺️ (2026-09-09) ถามเวลาเกิด + จังหวัดเกิดในกล่องเดียว — ทั้งคู่คือวัตถุดิบของลัคนา
+            //    (จังหวัด = พิกัดที่ใช้คำนวณ · ต่างจังหวัดกัน ลัคนาเลื่อนได้ถึงคนละราศี)
+            //    ลูกค้าเก่าเคยบอกจังหวัดไว้แล้ว → ยืมมาเลย ไม่ถามซ้ำ (จังหวัดเกิดไม่เปลี่ยน)
+            $reading->inheritBirthProvinceFromHistory();
+
+            $needTime = ! $reading->birthTimeIsKnown();
+            $needPlace = $reading->birthProvinceIfKnown() === null;
+
+            if ($needTime || $needPlace) {
                 $reading->setConversationState('celtic_birthtime_pending', true);
                 // ธงเดียวกับ ProSession — บอกตัวอ่านว่า "ข้อความถัดไปคือคำตอบเรื่องเวลา"
                 //   ⇒ ลูกค้าตอบ "ตี 5" / "19.00" เฉย ๆ (ไม่มีคำว่าเกิด) ก็อ่านออก
                 $reading->setConversationState('awaiting_birth_time', now()->toIso8601String());
 
-                return [
-                    'action' => 'celtic_ask_birthtime',
-                    'message' => "✅ รับวันเกิด *{$human}* แล้วค่ะ\n\n"
-                        ."🕛 อีกอย่างเดียว — *ลูกเกิดกี่โมง* คะ?\n"
+                if ($needTime && $needPlace) {
+                    $ask = "🕛 อีกนิดเดียว — *ลูกเกิดกี่โมง และเกิดที่จังหวัดอะไร* คะ?\n"
+                        ."   สองอย่างนี้เป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* แม่หมอจะอ่านให้ได้อีกหนึ่งหัวข้อเต็ม ๆ\n\n"
+                        ."📝 พิมพ์รวดเดียวได้เลย เช่น *ตี 5 เชียงใหม่* / *06:30 กรุงเทพ* / *บ่าย 2 โคราช*\n"
+                        .'   (จำไม่ได้ก็ไม่เป็นไร กด *ไม่ทราบ* แม่หมอมีวิธีของตำราไว้ใช้แทน)';
+                    $btn = '🕛 ไม่ทราบ';
+                } elseif ($needTime) {
+                    $ask = "🕛 อีกอย่างเดียว — *ลูกเกิดกี่โมง* คะ?\n"
                         ."   เวลาเกิดเป็นตัวกำหนด *ลัคนา* กับ *เรือนชะตา* แม่หมอจะอ่านให้ได้อีกหนึ่งหัวข้อเต็ม ๆ\n\n"
                         ."📝 พิมพ์มาได้เลย เช่น *ตี 5* / *06:30* / *บ่าย 2*\n"
-                        .'   (จำไม่ได้ก็ไม่เป็นไร กด *ไม่ทราบ* แม่หมอจะใช้เวลามาตรฐานเที่ยงวันให้)',
+                        .'   (จำไม่ได้ก็ไม่เป็นไร กด *ไม่ทราบ* แม่หมอมีวิธีของตำราไว้ใช้แทน)';
+                    $btn = '🕛 ไม่ทราบเวลาเกิด';
+                } else {
+                    $ask = "🗺️ อีกอย่างเดียว — *ลูกเกิดที่จังหวัดอะไร* คะ?\n"
+                        ."   จังหวัดเกิดทำให้ *ลัคนา* แม่นขึ้น (คนละจังหวัด ลัคนาเลื่อนได้ถึงคนละราศี)\n\n"
+                        ."📝 พิมพ์ชื่อจังหวัดมาได้เลย เช่น *เชียงใหม่* / *กรุงเทพ* / *อุบล*\n"
+                        .'   (ไม่แน่ใจก็กด *ไม่ทราบ* ได้ค่ะ)';
+                    $btn = '🗺️ ไม่ทราบจังหวัด';
+                }
+
+                return [
+                    'action' => 'celtic_ask_birthtime',
+                    'message' => "✅ รับวันเกิด *{$human}* แล้วค่ะ\n\n".$ask,
                     'reading' => $reading,
                     'show_quick_replies' => true,
                     'quick_replies' => [
-                        ['title' => '🕛 ไม่ทราบเวลาเกิด', 'text' => 'ไม่ทราบเวลาเกิด'],
+                        ['title' => $btn, 'text' => 'ไม่ทราบเวลาเกิด'],
                     ],
                 ];
             }

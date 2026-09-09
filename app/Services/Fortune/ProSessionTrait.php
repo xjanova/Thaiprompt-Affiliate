@@ -1108,8 +1108,14 @@ trait ProSessionTrait
         if ($reading->birth_date) {
             try {
                 // 🕛 birthDateTimeForChart() = "Y-m-d" หรือ "Y-m-d H:i" ถ้ารู้เวลา (ลูกค้าบอก/แอดมินกรอก)
+                // 🗺️ (2026-09-09) ส่งจังหวัดเกิดไปด้วย — ลัคนาขึ้นกับพิกัด ไม่ใช่แค่เวลา
                 $block = trim((new ThaiAstrologyService)
-                    ->formatPersonBlock((string) $reading->birthDateTimeForChart()));
+                    ->formatPersonBlock(
+                        (string) $reading->birthDateTimeForChart(),
+                        null,
+                        true,
+                        $reading->birthProvinceIfKnown()
+                    ));
 
                 // ลูกค้าเพิ่งบอกเวลาเกิดเทิร์นนี้ → ให้แม่หมอบอกสั้นๆ ว่าปรับผังแล้ว (ครั้งเดียว)
                 $justUpdated = $reading->pullBirthTimeJustUpdated();
@@ -1266,7 +1272,11 @@ trait ProSessionTrait
                 $astroSource .= ' เวลาเกิด '.FortuneReading::hourToTimeString((float) $reading->birthHourFloat(), false).' น.';
             }
             if ($astroSource !== '') {
-                $celticAstroBlock = (new ThaiAstrologyService)->buildCelticBirthAstrologyBlock($astroSource);
+                $celticAstroBlock = (new ThaiAstrologyService)->buildCelticBirthAstrologyBlock(
+                    $astroSource,
+                    null,
+                    $reading->birthProvinceIfKnown()
+                );
                 $justUpdated = $reading->pullBirthTimeJustUpdated();
                 if ($justUpdated !== null && $celticAstroBlock !== '') {
                     $celticAstroBlock .= "🕛 เจ้าชะตาเพิ่งบอกเวลาเกิด {$justUpdated} น. — ผังข้างบนคำนวณใหม่แล้ว "
