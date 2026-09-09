@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\StoreBanner;
 use App\Models\VendorStore;
+use App\Support\LazadaDealSettings;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -52,7 +53,7 @@ class StorefrontController extends Controller
         $flashDealCheckedAt = $flashDeals->max('deal_verified_at');
         $flashDealEndTime = ($flashDealCheckedAt ?: now())
             ->copy()
-            ->addHours(max(1, (int) config('lazada-deals.rescan_hours', 3)))
+            ->addHours(LazadaDealSettings::rescanHours())
             ->toIso8601String();
 
         // ดึง Featured Stores
@@ -284,7 +285,7 @@ class StorefrontController extends Controller
     private function getFlashDeals()
     {
         return Cache::remember(self::FLASH_DEALS_CACHE_KEY, 300, function () {
-            $freshHours = max(1, (int) config('lazada-deals.fresh_hours', 8));
+            $freshHours = LazadaDealSettings::freshHours();
 
             return Product::with(['category', 'mlmProductPv'])
                 ->publicVisible()
@@ -366,7 +367,7 @@ class StorefrontController extends Controller
         // ?deals=1 — เฉพาะดีลที่ยืนยันกับปลายทางจริงและยังสด (ปุ่ม "ดู Flash Deals ทั้งหมด")
         // ใช้เกณฑ์ชุดเดียวกับ getFlashDeals() เพื่อไม่ให้หน้ารวมกับแถบหน้าแรกเห็นของคนละชุด
         if ($request->boolean('deals')) {
-            $freshHours = max(1, (int) config('lazada-deals.fresh_hours', 8));
+            $freshHours = LazadaDealSettings::freshHours();
             $query->whereNotNull('deal_verified_at')
                 ->where('deal_verified_at', '>=', now()->subHours($freshHours))
                 ->whereNotNull('compare_at_price')

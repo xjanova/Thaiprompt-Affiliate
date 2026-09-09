@@ -3539,6 +3539,15 @@ Route::prefix('lazada-hub')->name('lazada-hub.')->group(function () {
     });
     Route::post('/wishes/{wish}/status', [\App\Http\Controllers\Admin\LazadaHub\AutoImportController::class, 'wishStatus'])->name('wishes.status');
 
+    // ⚡ Flash Deals — เกณฑ์คัด "ของที่ Lazada ลดราคาจริง" ขึ้นแถบหน้าแรก
+    //    ห้ามใส่ route แบบ GET ที่ทำให้เกิดการเขียน (scan/clear ต้องเป็น POST เสมอ)
+    Route::prefix('flash-deals')->name('flash-deals.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\FlashDealsController::class, 'index'])->name('index');
+        Route::put('/', [\App\Http\Controllers\Admin\LazadaHub\FlashDealsController::class, 'update'])->name('update');
+        Route::post('/scan', [\App\Http\Controllers\Admin\LazadaHub\FlashDealsController::class, 'scan'])->name('scan');
+        Route::post('/clear', [\App\Http\Controllers\Admin\LazadaHub\FlashDealsController::class, 'clear'])->name('clear');
+    });
+
     // 🛒 แม่หมอเสนอสินค้า — เปิด/ปิดรายจุดยิง + หน่วงเวลาก่อนส่ง (นาที)
     Route::prefix('mu-offer')->name('mu-offer.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\LazadaHub\MuOfferController::class, 'index'])->name('index');

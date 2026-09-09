@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\VendorStore;
 use App\Services\Marketplace\LazadaAffiliateService;
 use App\Services\Marketplace\LazadaDealScanner;
+use App\Support\LazadaDealSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -44,12 +45,13 @@ class LazadaScanDeals extends Command
 {
     protected $signature = 'lazada:scan-deals
         {--account=2 : id ของ MarketplaceAccount (program_type=affiliate_native)}
-        {--keyword= : ทำเฉพาะคำค้นนี้คำเดียว (ว่าง = ใช้ทุกคำใน config/lazada-deals.php)}
-        {--pages= : กวาดกี่หน้าต่อคำค้น (ว่าง = ตาม config)}
-        {--limit= : เอาขึ้นหน้าแรกสูงสุดกี่ชิ้น (ว่าง = ตาม config)}
-        {--min-discount= : ส่วนลดขั้นต่ำ % (ว่าง = ตาม config)}
-        {--min-commission= : ค่าคอมขั้นต่ำ % (ว่าง = ตาม config)}
-        {--max-price= : ราคาสูงสุด (ว่าง = ตาม config)}
+        {--keyword= : ทำเฉพาะคำค้นนี้คำเดียว (ว่าง = ใช้ทุกคำที่ตั้งไว้ในหลังบ้าน)}
+        {--pages= : กวาดกี่หน้าต่อคำค้น (ว่าง = ตามที่ตั้งไว้ในหลังบ้าน)}
+        {--limit= : เอาขึ้นหน้าแรกสูงสุดกี่ชิ้น (ว่าง = ตามที่ตั้งไว้ในหลังบ้าน)}
+        {--min-discount= : ส่วนลดขั้นต่ำ % (ว่าง = ตามที่ตั้งไว้ในหลังบ้าน)}
+        {--min-commission= : ค่าคอมขั้นต่ำ % (ว่าง = ตามที่ตั้งไว้ในหลังบ้าน)}
+        {--max-price= : ราคาสูงสุด (ว่าง = ตามที่ตั้งไว้ในหลังบ้าน)}
+        {--scheduled : ถูกเรียกจาก cron — เคารพสวิตช์เปิด/ปิดในหลังบ้าน}
         {--dry : กวาดและรายงานอย่างเดียว ไม่เขียนฐานข้อมูล}';
 
     protected $description = '⚡ กวาดสินค้าที่ Lazada จัดโปรจริง (มีราคาก่อนลด + กินค่าคอมได้) ขึ้นแถบ Flash Deals';
@@ -59,6 +61,16 @@ class LazadaScanDeals extends Command
 
     public function handle(LazadaDealScanner $scanner): int
     {
+        // 🎚️ สวิตช์ใหญ่ในหลังบ้าน — มีผลเฉพาะรอบที่ cron เรียก
+        //    การกดปุ่ม "กวาดเดี๋ยวนี้" หรือรันมือจาก CLI ต้องทำงานได้เสมอ
+        //    (ไม่งั้นแอดมินปิดสวิตช์แล้วจะทดสอบเกณฑ์ใหม่ไม่ได้เลย)
+        if ($this->option('scheduled') && ! LazadaDealSettings::enabled()) {
+            $this->line('⏸️  ปิดการกวาดอัตโนมัติอยู่ (หลังบ้าน → Lazada Hub → Flash Deals) — ข้ามรอบนี้');
+            $this->expireStaleDeals(false);
+
+            return self::SUCCESS;
+        }
+
         $account = MarketplaceAccount::find((int) $this->option('account'));
         if (! $account) {
             $this->error('❌ ไม่พบบัญชี marketplace_accounts id='.$this->option('account'));
@@ -66,8 +78,10 @@ class LazadaScanDeals extends Command
             return self::FAILURE;
         }
 
-        $filters = config('lazada-deals.filters');
-        $limits = config('lazada-deals.limits');
+        // ⚠️ ต้องอ่านผ่าน LazadaDealSettings เสมอ ห้ามเรียก config() ตรง ๆ
+        //    ค่าที่แอดมินตั้งในหลังบ้านอยู่ใน marketplace_settings และต้องทับ config ให้ครบทุกฝั่ง
+        $filters = LazadaDealSettings::filters();
+        $limits = LazadaDealSettings::limits();
 
         $minDiscount = (int) ($this->option('min-discount') ?: $filters['min_discount_percent']);
         $maxDiscount = (int) $filters['max_discount_percent'];
@@ -85,7 +99,7 @@ class LazadaScanDeals extends Command
 
         $seeds = $this->resolveSeeds();
         if (empty($seeds)) {
-            $this->error('❌ ไม่มีคำค้นให้กวาด — ตรวจ config/lazada-deals.php');
+            $this->error('❌ ไม่มีคำค้นให้กวาด — เพิ่มคำค้นที่ หลังบ้าน → Lazada Hub → ⚡ Flash Deals');
 
             return self::FAILURE;
         }
@@ -148,7 +162,9 @@ class LazadaScanDeals extends Command
 
         if (empty($candidates)) {
             $this->warn('⚠️  ไม่พบสินค้าที่เข้าเกณฑ์เลย (ดูจากหน้ารายการ '.$seenTotal.' ชิ้น)');
-            $this->expireStaleDeals($dry);
+            $expired = $this->expireStaleDeals($dry);
+            $this->recordRun($dry, ['seen' => $seenTotal, 'candidates' => 0, 'published' => 0, 'expired' => $expired,
+                'note' => 'ไม่พบสินค้าที่เข้าเกณฑ์ — ลองผ่อนเกณฑ์ หรือเพิ่มคำค้น']);
 
             return self::SUCCESS;
         }
@@ -203,7 +219,9 @@ class LazadaScanDeals extends Command
 
         if (empty($eligible)) {
             $this->warn('⚠️  ไม่มีชิ้นไหนอยู่ในโปรแกรม affiliate — ไม่เอาขึ้นหน้าแรก (ของที่ไม่ได้ค่าคอม ไม่คุ้มพื้นที่)');
-            $this->expireStaleDeals($dry);
+            $expired = $this->expireStaleDeals($dry);
+            $this->recordRun($dry, ['seen' => $seenTotal, 'candidates' => count($candidates), 'published' => 0, 'expired' => $expired,
+                'note' => 'ไม่มีชิ้นไหนกินค่าคอมได้ — ตรวจ User Token ของบัญชี affiliate']);
 
             return self::SUCCESS;
         }
@@ -298,11 +316,40 @@ class LazadaScanDeals extends Command
 
         $expired = $this->expireStaleDeals($dry);
 
+        $this->recordRun($dry, [
+            'seen' => $seenTotal,
+            'candidates' => count($candidates),
+            'shortlisted' => count($shortlist),
+            'eligible' => count($eligible),
+            'published' => $published,
+            'no_link' => $noLink,
+            'low_commission' => $lowCommission,
+            'failed' => $failed,
+            'expired' => $expired,
+        ]);
+
         $this->newLine();
         $this->info(sprintf('✅ ขึ้นหน้าแรก %d ชิ้น | ไม่อยู่ในโปรแกรม/ไม่มีลิงก์ %d | ค่าคอมต่ำกว่าเกณฑ์ %d | ล้มเหลว %d | ดีลเก่าหมดอายุ %d%s',
             $published, $noLink, $lowCommission, $failed, $expired, $dry ? ' (dry-run ไม่ได้เขียนฐาน)' : ''));
 
         return self::SUCCESS;
+    }
+
+    /**
+     * บันทึกสรุปผลการรันไว้ให้หลังบ้านอ่าน
+     *
+     * ⚠️ dry-run ห้ามเขียนทับสรุปของรอบจริง — ไม่งั้นหลังบ้านจะโชว์ "ขึ้นหน้าแรก 12 ชิ้น"
+     *    ทั้งที่รอบนั้นไม่ได้เขียนอะไรลงฐานเลย
+     *
+     * @param  array<string,mixed>  $summary
+     */
+    private function recordRun(bool $dry, array $summary): void
+    {
+        if ($dry) {
+            return;
+        }
+
+        LazadaDealSettings::recordRun($summary + ['at' => now()->toIso8601String()]);
     }
 
     /**
@@ -321,7 +368,7 @@ class LazadaScanDeals extends Command
      */
     private function expireStaleDeals(bool $dry): int
     {
-        $cutoff = now()->subHours(max(1, (int) config('lazada-deals.fresh_hours', 8)));
+        $cutoff = now()->subHours(LazadaDealSettings::freshHours());
 
         $query = Product::where('is_affiliate', true)
             ->where('external_platform', 'lazada')
@@ -357,16 +404,8 @@ class LazadaScanDeals extends Command
             return [['keyword' => $single, 'category' => null]];
         }
 
-        $seeds = [];
-        foreach ((array) config('lazada-deals.seeds', []) as $seed) {
-            $keyword = trim((string) ($seed['keyword'] ?? ''));
-            if ($keyword === '') {
-                continue;
-            }
-            $seeds[] = ['keyword' => $keyword, 'category' => $seed['category'] ?? null];
-        }
-
-        return $seeds;
+        // คำค้นที่แอดมินตั้งไว้ในหลังบ้าน (ยังไม่เคยตั้ง = ชุดปริยายใน config)
+        return LazadaDealSettings::seeds();
     }
 
     /**

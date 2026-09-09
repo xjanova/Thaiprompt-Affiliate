@@ -70,7 +70,7 @@ Schedule::command('lazada-hub:auto-import --limit=5')
 //
 // ⏱️ ทุก 3 ชม. ต้องตรงกับ config('lazada-deals.rescan_hours') — ตัวนับถอยหลังหน้าแรกอ่านค่านั้น
 //    รันครั้งละ ~2-4 นาที (ยิงหน้ารายการ 21 คำค้น + ขอลิงก์ค่าคอมทีละชิ้น) จึงต้อง runInBackground
-Schedule::command('lazada:scan-deals')
+Schedule::command('lazada:scan-deals --scheduled')
     ->cron('7 */3 * * *')
     ->withoutOverlapping(30)
     ->onOneServer()
