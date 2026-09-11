@@ -173,18 +173,51 @@ class LagnaAndAspectsTest extends TestCase
     /**
      * @test
      *
-     * ราหู-เกตุ ตรงข้ามกัน 180° ตลอดกาลโดยนิยาม — นับเป็น "เล็ง" ทุกดวงทุกวัน = noise ล้วน
+     * ☋ (2026-09-11) เกตุไทยเดินเอง ไม่ได้ผูกตรงข้ามราหูแล้ว — ห้ามมี "มุมแฝด" อีก
+     *
+     * สมัยเกตุ = ราหู + 180° ทุกมุมที่ดาวทำกับราหู จะมีมุมคู่กับเกตุที่ orb เท่ากันเป๊ะ
+     * (กุมราหู ⇔ เล็งเกตุ · จตุโกณราหู ⇔ จตุโกณเกตุ) กินช่อง 6 มุมที่โชว์ในผังไปฟรี ๆ
+     * ผังจริงของบิล 12840 เคยขึ้น "จันทร์ จตุโกณ ราหู 1.2°" คู่กับ "จันทร์ จตุโกณ เกตุ 1.2°"
      */
-    public function it_ignores_the_rahu_ketu_axis(): void
+    public function ketu_no_longer_mirrors_every_rahu_aspect(): void
     {
         $positions = (new PlanetEphemeris)->positions(Carbon::create(2026, 9, 9, 12, 0, 0));
-        $aspects = AstroAspects::withinChart($positions);
 
-        foreach ($aspects as $a) {
-            $pair = [$a['a_key'], $a['b_key']];
-            sort($pair);
-            $this->assertNotSame(['Ketu', 'Rahu'], $pair, 'ห้ามรายงานราหูเล็งเกตุ');
+        $sep = AstroAspects::separation($positions['Rahu']['lon'], $positions['Ketu']['lon']);
+        $this->assertGreaterThan(30.0, abs($sep - 180.0), 'เกตุไทยไม่ได้อยู่ตรงข้ามราหู');
+
+        // orb ของมุมที่ดาวแต่ละดวงทำกับราหู / กับเกตุ
+        $orbWith = ['Rahu' => [], 'Ketu' => []];
+        foreach (AstroAspects::withinChart($positions) as $a) {
+            foreach (['Rahu', 'Ketu'] as $node) {
+                if ($a['a_key'] === $node || $a['b_key'] === $node) {
+                    $other = $a['a_key'] === $node ? $a['b_key'] : $a['a_key'];
+                    $orbWith[$node][$other] = $a['orb'];
+                }
+            }
         }
+
+        foreach ($orbWith['Rahu'] as $planet => $orb) {
+            if ($planet === 'Ketu' || ! isset($orbWith['Ketu'][$planet])) {
+                continue;
+            }
+            $this->assertNotSame($orb, $orbWith['Ketu'][$planet], "มุม {$planet}-ราหู กับ {$planet}-เกตุ ต้องไม่ใช่เงาของกัน");
+        }
+    }
+
+    /**
+     * @test
+     *
+     * ดาวจรในเลนจ่ายเงินต้องเป็นเกตุไทย + บอกความเร็วจริง (ราศีละ ~2 เดือน ไม่ใช่ 1 ปีครึ่งแบบราหู)
+     * ไม่งั้นผังบอกตำแหน่งหนึ่ง แต่บรรทัดความเร็วสอนโมเดลอีกแบบ = โมเดลเลือกเชื่ออันเดียว
+     */
+    public function transit_block_uses_thai_ketu_position_and_speed(): void
+    {
+        $block = $this->service->formatTransitBlock(null, Carbon::create(2026, 9, 16, 9, 0, 0, 'Asia/Bangkok'));
+
+        $this->assertStringContainsString('☋ เกตุ จรราศีพิจิก', $block, 'เกตุไทย 16 ก.ย. 2569 อยู่พิจิก ไม่ใช่สิงห์ตรงข้ามราหู');
+        $this->assertStringContainsString('เกตุ ~2 เดือน', $block);
+        $this->assertStringNotContainsString('ราหู-เกตุ ~1 ปีครึ่ง', $block);
     }
 
     /** @test */
