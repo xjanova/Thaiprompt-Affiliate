@@ -65,6 +65,14 @@ class FortuneAIService
     protected ?array $callContext = null;
 
     /**
+     * 🗺️ (2026-09-11) จังหวัดเกิดที่ผู้เรียกรู้แล้ว สำหรับผังดวงที่ buildPrompt() ต่อท้ายพรอมต์ของ call ถัดไป
+     *
+     * ตั้งผ่าน withBirthProvince() · ONE-SHOT เหมือน $callContext — ล้างใน finally ของทุก generate
+     * ที่เรียก buildPrompt() เพราะ instance นี้ใช้ร่วมกับลูกค้าทุกคน ค้าง = ผูกดวงคนถัดไปด้วยพิกัดคนก่อน
+     */
+    protected ?string $chartBirthProvince = null;
+
+    /**
      * 🆕 (2026-05-07) constructor รับ $purpose เพื่อเลือก key ที่ตรง purpose ตั้งแต่แรก
      *   เดิม: acquire key โดยไม่รู้ purpose → ได้ key ทั่วไป (ละเลย purpose enum)
      *   ใหม่: caller ระบุ purpose ('prediction'/'chat'/'free_card') → key ตรงประเภทถูกเลือก
@@ -4736,6 +4744,7 @@ PROMPT;
             // 🪪 (2026-05-24) Clear customer context so the next call on a reused
             // FortuneAIService instance can't inherit this customer's identity.
             $this->callContext = null;
+            $this->chartBirthProvince = null;
         }
     }
 
@@ -4812,6 +4821,32 @@ PROMPT;
     }
 
     /**
+     * 🗺️ (2026-09-11) บอกผังดวงของ call ถัดไปว่าเจ้าชะตาเกิดจังหวัดไหน (ที่รู้แล้วจาก DB)
+     *
+     * ที่มา: เลนดูดวง 39 ถามเวลาเกิด + จังหวัดก่อนเปิดไพ่ แล้วเก็บลง fortune_readings
+     *   แต่ buildPrompt() อ่านจังหวัดจาก *ข้อความคำถาม* อย่างเดียว — คำถามของเลน 39 เป็น
+     *   คำถามพื้นดวงที่ระบบใส่ให้เอง ไม่มีชื่อจังหวัด ⇒ ลัคนาใช้พิกัดกรุงเทพทุกบิล
+     *   ทั้งที่แม่หมอเพิ่งทวนกับลูกค้าว่า "จดจังหวัดเกิดไว้ใช้ผูกดวงแล้ว"
+     *
+     * ทำไมไม่เพิ่มพารามิเตอร์: เวลาเกิดวิ่งผ่านช่อง $birthDate เป็น "Y-m-d H:i" ได้เพราะ Carbon::parse
+     *   ยังอ่านออก — ชื่อจังหวัดยัดลงสตริงวันที่ไม่ได้ (ผู้เรียกหลายจุด parse สตริงนี้เป็นวันที่)
+     *   และ generateWithRetryAndFallback มีผู้เรียกกว่า 20 จุด ⇒ ใช้ช่องทางเดียวกับ forReading()
+     *
+     *     $aiService->forReading($reading)->withBirthProvince($province)->generateWithRetryAndFallback(...);
+     *
+     * ⚠️ ONE-SHOT เหมือน forReading() — ถูกล้างหลัง generate ทุกครั้ง ในลูป/retry ต้องเรียกซ้ำก่อนทุก call
+     * ⚠️ ฝั่งช่อง {transit_info} ต้องได้จังหวัดเดียวกัน (FortuneConversationService::buildPerQuestionDeepPrompt)
+     *
+     * @param  string|null  $province  จังหวัดเกิดที่รู้แล้ว — null / ชื่อที่ไม่รู้จัก = ไม่ทราบ (อ่านจากคำถามแบบเดิม)
+     */
+    public function withBirthProvince(?string $province): self
+    {
+        $this->chartBirthProvince = \App\Support\ThaiProvinces::isKnown($province) ? $province : null;
+
+        return $this;
+    }
+
+    /**
      * สร้างคำทำนายพร้อม retry + สลับ provider อัตโนมัติ
      *
      * ลองต่อ AI หลายครั้ง ถ้า provider หลักล้มเหลว จะลองสลับไป provider อื่นอัตโนมัติ
@@ -4855,6 +4890,7 @@ PROMPT;
             // wrapper guarantees the next call on a reused FortuneAIService
             // instance starts with a clean slate.
             $this->callContext = null;
+            $this->chartBirthProvince = null;
         }
     }
 
@@ -5870,9 +5906,11 @@ PROMPT;
 
         // 🗺️ (2026-09-09) จังหวัดเกิดถ้าลูกค้าพิมพ์มาเอง — เหตุผลเดียวกับเวลาเกิด
         //    ไม่พบ = ผังใช้พิกัดกรุงเทพเป็นค่ากลาง *และพิมพ์บอกตามตรงในบล็อก*
+        // 🗺️ (2026-09-11) จังหวัดที่ผู้เรียกรู้แล้ว (withBirthProvince — เลน 39 ถามไว้ก่อนเปิดไพ่) ชนะข้อความ
+        //    ⚠️ ต้องเป็นกฎเดียวกับช่อง {transit_info} (getCurrentTransitDescription) — ใช้ forChart() ทั้งคู่
         $birthProvince = null;
         try {
-            $birthProvince = \App\Support\ThaiProvinces::resolve($questionsText);
+            $birthProvince = \App\Support\ThaiProvinces::forChart($this->chartBirthProvince, $questionsText);
         } catch (\Throwable $e) {
             // non-blocking
         }

@@ -198,6 +198,32 @@ class ThaiProvinces
     }
 
     /**
+     * 🗺️ จังหวัดเกิดที่จะใช้ผูกดวง — จังหวัดที่ระบบรู้แล้ว ชนะชื่อจังหวัดที่เจอในข้อความเสมอ
+     *
+     * ทำไมค่าที่รู้แล้วต้องชนะ: resolve() ไม่ต้องมีคำว่า "เกิด" นำหน้า (ยกเว้นชื่อกำกวมใน NEEDS_CUE)
+     *   ⇒ คำถาม "จะได้ย้ายไปทำงานภูเก็ตไหม" ก็อ่านได้ว่าภูเก็ต ทั้งที่ไม่ใช่ที่เกิด
+     *   ส่วนค่าที่รู้แล้ว (FortuneReading::birthProvinceIfKnown) มาจากคำตอบกล่อง "เกิดจังหวัดอะไร"
+     *   / แอดมินกรอก / บิลเก่าของคนเดียวกัน — เชื่อได้กว่า
+     *   (ลำดับเดียวกับ ThaiAstrologyService::buildCelticBirthAstrologyBlock)
+     *
+     * ⚠️ พรอมต์ดูดวง 39 ใบเดียวมีผังดวง 2 ทาง — ผังท้ายพรอมต์ (FortuneAIService::buildPrompt)
+     *    กับช่อง {transit_info} (FortuneConversationService::getCurrentTransitDescription)
+     *    ทั้งสองต้องเรียกเมธอดนี้ด้วยอินพุตชุดเดียวกัน ไม่งั้นลัคนาคนละราศี = ภพของดาวจรขัดกันเอง
+     *
+     * @param  string|null  $known  จังหวัดที่รู้แล้ว (null / ชื่อที่ไม่รู้จัก = ยังไม่รู้)
+     * @param  string  $text  ข้อความลูกค้า — อ่านก็ต่อเมื่อยังไม่รู้จังหวัดเท่านั้น
+     * @return string|null ชื่อจังหวัด · null = ไม่ทราบ (ผังใช้พิกัดกรุงเทพและบอกตามตรง)
+     */
+    public static function forChart(?string $known, string $text = ''): ?string
+    {
+        if (self::isKnown($known)) {
+            return $known;
+        }
+
+        return self::resolve($text);
+    }
+
+    /**
      * ชื่อทางการ + ชื่อเรียกอื่น เรียง "ยาวก่อนสั้น" (คำนวณครั้งเดียวต่อโปรเซส)
      *
      * @return array<string, string>

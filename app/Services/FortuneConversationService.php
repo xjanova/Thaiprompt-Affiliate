@@ -10181,6 +10181,11 @@ class FortuneConversationService
                 // non-blocking
             }
             $birthDate = $reading->birthDateTimeForChart();
+            // 🗺️ (2026-09-11) จังหวัดเกิดที่ลูกค้าตอบกล่อง "เกิดกี่โมง ที่จังหวัดไหน" ก่อนเปิดไพ่ (deep_birthtime_pending)
+            //    เดิมไม่มีใครอ่านค่านี้ในบิลแรก ⇒ ลัคนาใช้พิกัดกรุงเทพทุกบิล ทั้งที่แม่หมอทวนว่า "จดไว้ใช้ผูกดวงแล้ว"
+            //    อ่านครั้งเดียวที่นี่ แล้วส่ง *ค่าเดียวกัน* ให้ทั้ง 2 ผังในพรอมต์ใบเดียว:
+            //    ช่อง {transit_info} (buildPerQuestionDeepPrompt) + ผังท้ายพรอมต์ (aiService->withBirthProvince)
+            $birthProvince = $reading->birthProvinceIfKnown();
             $name = $reading->facebook_user_name ?? 'คุณ';
             $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
 
@@ -10430,7 +10435,8 @@ class FortuneConversationService
                     $totalQuestions,
                     $birthDate,
                     $deepReadings,
-                    $tarotCard
+                    $tarotCard,
+                    $birthProvince
                 );
 
                 // ✅ Gatekeeper: เช็คทราฟฟิค AI ก่อนเรียกทุกคำถาม
@@ -10472,7 +10478,8 @@ class FortuneConversationService
 
                 // 🪪 (2026-08-17) ผูก usage log กับใบดูดวงนี้ (Deep ยิงทีละคำถาม
                 //   → ต้องเรียกในลูปทุกข้อ ไม่ใช่ครั้งเดียวก่อนลูป)
-                $this->aiService->forReading($reading);
+                // 🗺️ (2026-09-11) จังหวัดเกิดของผังท้ายพรอมต์ — one-shot เหมือนกัน ต้องเป็นค่าเดียวกับ {transit_info}
+                $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
 
                 $aiResult = $this->aiService->generateWithRetryAndFallback(
                     [$question],
@@ -10554,7 +10561,8 @@ class FortuneConversationService
                     try {
                         // 🪪 (2026-08-17) retry = อีก 1 call จริง มีต้นทุน token ของตัวเอง
                         //   ต้องผูก reading_id ซ้ำ ไม่งั้น token ของ retry ตกหล่นจากบิลใบนี้
-                        $this->aiService->forReading($reading);
+                        // 🗺️ จังหวัดเกิดก็ถูกล้างหลัง call แรกแล้ว — ไม่ตั้งซ้ำ = retry ได้ลัคนากรุงเทพ ขัดกับ {transit_info}
+                        $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
 
                         $retryResult = $this->aiService->generateWithRetryAndFallback(
                             [$question],
@@ -24721,6 +24729,8 @@ PROMPT;
      * @param  int  $totalQuestions  จำนวนคำถามทั้งหมด
      * @param  string|null  $birthDate  วันเกิด
      * @param  array  $previousReadings  คำทำนายก่อนหน้า (เพื่อไม่ให้ซ้ำ)
+     * @param  string|null  $birthProvince  จังหวัดเกิดที่รู้แล้ว — ต้องเป็นค่าเดียวกับที่ส่งให้
+     *                                      FortuneAIService::withBirthProvince() ของ call เดียวกัน
      */
     protected function buildPerQuestionDeepPrompt(
         ?array $userProfile,
@@ -24729,7 +24739,8 @@ PROMPT;
         int $totalQuestions,
         ?string $birthDate,
         array $previousReadings = [],
-        ?array $tarotCard = null
+        ?array $tarotCard = null,
+        ?string $birthProvince = null
     ): string {
         // 🐛 (2026-05-02) Bug fix: name fallback "คุณ" + genderPrefix "คุณ" = "คุณคุณ"
         //   ถ้าไม่มีชื่อในโปรไฟล์ → ใช้ "เจ้าชะตา" (ศัพท์ตำราโหร) แทน + ไม่ใส่ prefix
@@ -24817,7 +24828,7 @@ PROMPT;
 
             // 🔭 (2026-09-11) ดาวจรจริง — แยกจาก try ของผังข้างบน (ผังล้ม ≠ ต้องทิ้งดาวจร)
             //   ส่งคำถามข้อนี้ไปด้วย เพื่ออ่านเวลา/จังหวัดเกิดแบบเดียวกับผังที่ FortuneAIService ต่อท้ายพรอมต์
-            $transitInfo = $this->getCurrentTransitDescription($birthDate, $question);
+            $transitInfo = $this->getCurrentTransitDescription($birthDate, $question, $birthProvince);
         }
 
         // 🎯 Phase B.2 — สรุปคำทำนายก่อนหน้า เน้น "สอดคล้อง" ไม่ใช่แค่ "ห้ามซ้ำ"
@@ -25518,9 +25529,11 @@ PROMPT;
      *
      * @param  string|null  $birthDate  "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
      * @param  string  $questionText  คำถามของลูกค้า — ใช้อ่านเวลา/จังหวัดเกิดที่พิมพ์มาเอง
+     * @param  string|null  $knownProvince  จังหวัดเกิดที่รู้แล้วจาก DB (FortuneReading::birthProvinceIfKnown)
+     *                                      — ต้องเป็นค่าเดียวกับที่ส่งให้ FortuneAIService::withBirthProvince()
      * @return string ข้อมูล transit สำหรับใส่ใน prompt ('' = ไม่มีวันเกิด / คำนวณไม่ได้)
      */
-    protected function getCurrentTransitDescription(?string $birthDate, string $questionText = ''): string
+    protected function getCurrentTransitDescription(?string $birthDate, string $questionText = '', ?string $knownProvince = null): string
     {
         if (empty($birthDate)) {
             return '';
@@ -25533,12 +25546,12 @@ PROMPT;
             //   เพราะผังดวง (พร้อมดาวจรวันนี้) ที่ต่อท้ายพรอมต์ใบเดียวกันมาจากทางนั้น
             //   ถ้าอ่านคนละแบบ → ลัคนาคนละราศี → ภพของดาวจร 2 บล็อกไม่ตรงกัน = บั๊กเดิมกลับมา
             //   (ล็อกไว้ที่ RealTransitPromptTest::test_transit_block_matches_the_chart_block_in_the_same_prompt)
+            // 🗺️ (2026-09-11) จังหวัดที่รู้แล้วชนะข้อความ — กฎเดียวกับ buildPrompt() ผ่าน ThaiProvinces::forChart()
             $birthHour = null;
-            $birthProvince = null;
             if (trim($questionText) !== '') {
                 $birthHour = $astro->extractStatedBirthHour($questionText);
-                $birthProvince = \App\Support\ThaiProvinces::resolve($questionText);
             }
+            $birthProvince = \App\Support\ThaiProvinces::forChart($knownProvince, $questionText);
 
             $block = trim($astro->formatTransitOutlookBlock($birthDate, $birthHour, $birthProvince));
             if ($block === '') {
