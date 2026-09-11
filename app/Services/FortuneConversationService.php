@@ -24568,8 +24568,8 @@ PROMPT;
                     $deepPlanetPositionsInfo .= "⚠️ ต้องอ้างอิงตำแหน่งดาวข้างต้นในคำทำนายทุกข้อ ห้ามสร้างตำแหน่งดาวขึ้นเอง\n";
                 }
 
-                // คำนวณ Transit ดาวปัจจุบัน
-                $transitInfo = $this->getCurrentTransitDescription($dayOfWeek);
+                // 🔭 ดาวจรจริง (2026-09-11 — เดิมเป็นสูตรตามวันเกิด ดู getCurrentTransitDescription)
+                $transitInfo = $this->getCurrentTransitDescription($birthDate, implode("\n", $questions));
 
             } catch (\Exception $e) {
                 // ถ้าคำนวณไม่ได้ก็ข้ามไป
@@ -24811,12 +24811,13 @@ PROMPT;
                     $planetPositionsInfo .= "⚠️ ต้องอ้างอิงตำแหน่งดาวข้างต้นในคำทำนาย เช่น \"ดาว[ชื่อ]อยู่ภพ[ชื่อ]ส่งผลให้...\" ห้ามสร้างตำแหน่งดาวขึ้นเอง\n";
                 }
 
-                // คำนวณ Transit ดาวปัจจุบัน
-                $transitInfo = $this->getCurrentTransitDescription($dayOfWeek);
-
             } catch (\Exception $e) {
                 // ถ้าคำนวณไม่ได้ก็ข้ามไป
             }
+
+            // 🔭 (2026-09-11) ดาวจรจริง — แยกจาก try ของผังข้างบน (ผังล้ม ≠ ต้องทิ้งดาวจร)
+            //   ส่งคำถามข้อนี้ไปด้วย เพื่ออ่านเวลา/จังหวัดเกิดแบบเดียวกับผังที่ FortuneAIService ต่อท้ายพรอมต์
+            $transitInfo = $this->getCurrentTransitDescription($birthDate, $question);
         }
 
         // 🎯 Phase B.2 — สรุปคำทำนายก่อนหน้า เน้น "สอดคล้อง" ไม่ใช่แค่ "ห้ามซ้ำ"
@@ -25501,167 +25502,61 @@ PROMPT;
     }
 
     /**
-     * คำนวณตำแหน่ง Transit ดาวปัจจุบัน + เหตุการณ์ดาวสำคัญ
+     * 🔭 ดาวจรจริง "ตอนนี้ + ล่วงหน้า 1/3/6/12 เดือน" สำหรับช่อง {transit_info} ของพรอมต์ดูดวง 39
      *
-     * ใช้ส่งให้ AI เพื่อให้ทำนาย timing แม่นยำ
-     * อ้างอิงตำแหน่งดาวจริงๆ ในช่วงเวลาปัจจุบัน
+     * 🚨 (2026-09-11) ของเดิมในช่องนี้แต่งขึ้นทั้งก้อน แต่ถูกส่งให้โมเดลในฐานะ "ตำแหน่งดาวจริง":
+     *   - ภพของดาวจรมาจากสูตร `FortuneChartService::calculateTransitForDate()`
+     *     (ปี×31 + วันในปี) ÷ (ความเร็ว/12) และบังคับเกตุห่างราหู 6 ภพ — ไม่ใช่ตำแหน่งดาวจริง
+     *   - "เหตุการณ์ดาวสำคัญช่วงนี้" เป็นตาราง 12 เดือนตายตัว (มีดาวพลูโตซึ่งตำราไทยไม่ใช้ด้วย)
+     *   - "ช่วงฤกษ์ดีที่สุด" ให้คะแนนจากภพปลอมข้างบน
+     *   และหัวบล็อกบอกโมเดลว่า "คำนวณจากหลักเจ้าชนะ ... ห้ามแต่งตำแหน่งดาวขึ้นเอง ใช้เฉพาะข้อมูลที่ให้"
+     *   ⇒ พรอมต์บิล 39 ที่จ่ายเงินแล้วมีดาวจร 2 ชุดขัดกัน (ชุดนี้ + ผังจริงที่ FortuneAIService ต่อท้าย)
+     *   ตรวจ prod 2026-09-11: deep_prompt_template มี {transit_info} · บิล 39 ที่ได้คำทำนาย 63 ใบใน 14 วัน
      *
-     * @param  int  $birthDayOfWeek  วันเกิด (0=อาทิตย์ ... 6=เสาร์)
-     * @return string ข้อมูล transit สำหรับใส่ใน prompt
+     *   ใหม่: ThaiAstrologyService::formatTransitOutlookBlock() — ตำแหน่งจริงจาก PlanetEphemeris ทุกจุดตรวจ
+     *   ภพนับจากลัคนา/จันทร์ลัคน์ตัวเดียวกับผัง · ไม่มีฐานนับภพ = ไม่พิมพ์ภพ (ไม่เดา)
+     *
+     * @param  string|null  $birthDate  "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
+     * @param  string  $questionText  คำถามของลูกค้า — ใช้อ่านเวลา/จังหวัดเกิดที่พิมพ์มาเอง
+     * @return string ข้อมูล transit สำหรับใส่ใน prompt ('' = ไม่มีวันเกิด / คำนวณไม่ได้)
      */
-    protected function getCurrentTransitDescription(int $birthDayOfWeek): string
+    protected function getCurrentTransitDescription(?string $birthDate, string $questionText = ''): string
     {
-        try {
-            $chartService = new FortuneChartService;
-
-            // คำนวณ Transit อนาคตหลายช่วง (ปัจจุบัน, 1, 3, 6, 12 เดือน)
-            $futureTransits = $chartService->calculateFutureTransits($birthDayOfWeek);
-
-            $result = "\n[🌟 ตำแหน่งดาวโคจร (Transit) ปัจจุบัน + อนาคต — คำนวณจากหลักเจ้าชนะ]\n";
-            $result .= "(ข้อมูลนี้คำนวณจากศาสตร์โหราศาสตร์โบราณ ใช้อ้างอิงในคำทำนาย)\n\n";
-
-            foreach ($futureTransits as $transit) {
-                $label = $transit['label'];
-                $date = $transit['date'];
-
-                $result .= "📆 [{$label}] ({$date}):\n";
-
-                // ดาวมิตรที่ส่งผลดี
-                if (! empty($transit['friend_impacts'])) {
-                    foreach ($transit['friend_impacts'] as $impact) {
-                        $result .= "  ✅ ดาวมิตร \"{$impact['planet_name']}\" โคจรภพ{$impact['house']}.{$impact['house_name']}({$impact['house_meaning']}) → ส่งผลดีด้าน{$impact['house_meaning']}\n";
-                    }
-                }
-
-                // ดาวศัตรูที่ต้องระวัง
-                if (! empty($transit['enemy_impacts'])) {
-                    foreach ($transit['enemy_impacts'] as $impact) {
-                        $result .= "  ⚠️ ดาวศัตรู \"{$impact['planet_name']}\" โคจรภพ{$impact['house']}.{$impact['house_name']}({$impact['house_meaning']}) → ระวังด้าน{$impact['house_meaning']}\n";
-                    }
-                }
-
-                $result .= "\n";
-            }
-
-            // ========== เหตุการณ์ดาวสำคัญตามเดือน ==========
-            $now = \Carbon\Carbon::now('Asia/Bangkok');
-            $transitEvents = $this->getTransitEvents($now->month);
-            if ($transitEvents) {
-                $result .= "[📅 เหตุการณ์ดาวสำคัญช่วงนี้]\n";
-                $result .= $transitEvents;
-            }
-
-            // วิเคราะห์ฤกษ์ดี/ไม่ดีจาก Transit
-            $result .= $this->analyzeTransitLuckPeriods($futureTransits);
-
-            $result .= "\n⚠️ กฎ: ต้องอ้างอิงตำแหน่งดาว Transit ข้างต้นในคำทำนาย เช่น:\n";
-            $result .= "- \"ช่วงนี้ดาว[ชื่อ]กำลังโคจรผ่านภพ[ชื่อ] ส่งผลให้...\"\n";
-            $result .= "- \"อีก 3 เดือนข้างหน้า ดาว[ชื่อ]จะเลื่อนเข้าภพ[ชื่อ] จึงเป็นช่วงที่...\"\n";
-            $result .= "- ห้ามแต่งตำแหน่งดาวขึ้นเอง ใช้เฉพาะข้อมูลที่ให้เท่านั้น\n";
-
-            return $result;
-
-        } catch (\Exception $e) {
+        if (empty($birthDate)) {
             return '';
         }
-    }
 
-    /**
-     * วิเคราะห์ช่วงเวลาฤกษ์ดี/ไม่ดี จาก Transit อนาคต
-     *
-     * เปรียบเทียบดาวมิตร vs ศัตรู ในแต่ละช่วง
-     * ช่วงไหนดาวมิตรเด่น = ฤกษ์ดี ควรลงมือทำ
-     * ช่วงไหนดาวศัตรูเด่น = ต้องระวัง ควรชะลอ
-     *
-     * @param  array  $futureTransits  ข้อมูล transit แต่ละช่วง
-     * @return string ข้อมูลวิเคราะห์ฤกษ์
-     */
-    protected function analyzeTransitLuckPeriods(array $futureTransits): string
-    {
-        $result = "\n[🔮 วิเคราะห์ฤกษ์ดี-ฤกษ์ระวัง จากตำแหน่งดาวอนาคต]\n";
+        try {
+            $astro = new \App\Services\Fortune\ThaiAstrologyService;
 
-        $bestPeriod = null;
-        $worstPeriod = null;
-        $bestScore = -999;
-        $worstScore = 999;
-
-        foreach ($futureTransits as $transit) {
-            if ($transit['months'] === 0) {
-                continue; // ข้ามปัจจุบัน ดูเฉพาะอนาคต
+            // ⚠️ อ่านเวลา/จังหวัดเกิดจากคำถาม "แบบเดียวกับ FortuneAIService::buildPrompt()" เป๊ะ
+            //   เพราะผังดวง (พร้อมดาวจรวันนี้) ที่ต่อท้ายพรอมต์ใบเดียวกันมาจากทางนั้น
+            //   ถ้าอ่านคนละแบบ → ลัคนาคนละราศี → ภพของดาวจร 2 บล็อกไม่ตรงกัน = บั๊กเดิมกลับมา
+            //   (ล็อกไว้ที่ RealTransitPromptTest::test_transit_block_matches_the_chart_block_in_the_same_prompt)
+            $birthHour = null;
+            $birthProvince = null;
+            if (trim($questionText) !== '') {
+                $birthHour = $astro->extractStatedBirthHour($questionText);
+                $birthProvince = \App\Support\ThaiProvinces::resolve($questionText);
             }
 
-            // คะแนน = จำนวนดาวมิตรในภพดี - จำนวนดาวศัตรูในภพสำคัญ
-            $goodHouses = [1, 2, 5, 9, 10, 11]; // ภพดี
-            $badHouses = [6, 8, 12]; // ภพท้าทาย
-
-            $friendScore = 0;
-            $enemyScore = 0;
-
-            foreach ($transit['friend_impacts'] as $impact) {
-                if (in_array($impact['house'], $goodHouses)) {
-                    $friendScore += 2; // ดาวมิตรในภพดี = +2
-                } else {
-                    $friendScore += 1; // ดาวมิตรในภพอื่น = +1
-                }
+            $block = trim($astro->formatTransitOutlookBlock($birthDate, $birthHour, $birthProvince));
+            if ($block === '') {
+                return '';
             }
 
-            foreach ($transit['enemy_impacts'] as $impact) {
-                if (in_array($impact['house'], $goodHouses)) {
-                    $enemyScore += 2; // ดาวศัตรูในภพดี = ลบ 2 (กดดันเรื่องดี)
-                } elseif (in_array($impact['house'], $badHouses)) {
-                    $enemyScore += 1; // ดาวศัตรูในภพร้าย = ลบ 1
-                }
-            }
+            // ⚠️ หัวบล็อกห้ามสั่ง "ห้ามพูดตัวเลข" — template สั่งให้อ้าง "ดาว[X]ในภพ[Y]" อยู่แล้ว สั่งขัดกัน = โมเดลทิ้งอันนึง
+            return "\n[🔭 ดาวจรจริง ตอนนี้ + ล่วงหน้า — คำนวณจากตำแหน่งดาวจริง ระบบนิรายนะ]\n"
+                .$block."\n";
+        } catch (\Throwable $e) {
+            // ว่างดีกว่าป้อนดาวผิดให้บิลที่จ่ายเงินแล้ว — ผังจริงที่ต่อท้ายพรอมต์ยังมีดาวจรวันนี้อยู่
+            Log::warning('Fortune Deep: คำนวณดาวจรจริงไม่สำเร็จ — ปล่อย {transit_info} ว่าง', [
+                'birth_date' => $birthDate,
+                'error' => $e->getMessage(),
+            ]);
 
-            $score = $friendScore - $enemyScore;
-
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $bestPeriod = $transit;
-            }
-            if ($score < $worstScore) {
-                $worstScore = $score;
-                $worstPeriod = $transit;
-            }
+            return '';
         }
-
-        if ($bestPeriod) {
-            $result .= "✅ ช่วงฤกษ์ดีที่สุด: {$bestPeriod['label']} ({$bestPeriod['date']}) → ดาวมิตรเด่น เหมาะเริ่มต้นสิ่งใหม่ ตัดสินใจสำคัญ\n";
-        }
-        if ($worstPeriod) {
-            $result .= "⚠️ ช่วงที่ต้องระวังที่สุด: {$worstPeriod['label']} ({$worstPeriod['date']}) → ดาวศัตรูกดดัน ควรชะลอการตัดสินใจ ระวังรอบด้าน\n";
-        }
-
-        return $result;
-    }
-
-    /**
-     * เหตุการณ์ดาวสำคัญตามเดือน (ช่วงเวลาดาวโคจรที่มีผลกระทบ)
-     *
-     * ข้อมูลนี้ช่วยให้ AI ระบุ timing ได้ชัดเจน ไม่ต้องแต่งเอง
-     *
-     * @param  int  $month  เดือนปัจจุบัน (1-12)
-     * @return string เหตุการณ์ดาว
-     */
-    protected function getTransitEvents(int $month): string
-    {
-        // เหตุการณ์ดาวประจำเดือน (ปรับปรุงได้ตามปี)
-        $events = [
-            1 => "- ดาวเสาร์โคจรช้า ช่วงต้นปีเหมาะวางแผนระยะยาว\n- ดาวพฤหัสบดีเสริมโชคลาภช่วงกลางเดือน\n- ดาวอังคารให้พลังขับเคลื่อนเรื่องงาน\n",
-            2 => "- ดาวศุกร์เสริมเรื่องความรักและความสัมพันธ์\n- ช่วงกลางเดือนดาวพุธย้ายราศีอาจมีการเปลี่ยนแปลงเรื่องการสื่อสาร\n- ดาวพฤหัสบดีเสริมด้านการเงินและโชคลาภ\n",
-            3 => "- ดาวอังคารให้พลังแรงกล้า เหมาะเริ่มต้นสิ่งใหม่\n- ดาวพฤหัสบดีส่งเสริมการเรียนรู้และเดินทาง\n- ช่วงปลายเดือนดาวเสาร์กดดันเรื่องการงาน\n",
-            4 => "- ดาวอาทิตย์ให้พลังอำนาจและความมั่นใจ\n- ดาวศุกร์ย้ายราศี เปิดโอกาสใหม่ด้านความรัก\n- ดาวราหูส่งผลให้เกิดเหตุไม่คาดฝัน ต้องรอบคอบ\n",
-            5 => "- ดาวพุธเสริมเรื่องการค้าขายและเจรจา\n- ดาวจันทร์เต็มดวงกลางเดือน เสริมพลังสัญชาตญาณ\n- ดาวเสาร์โคจรถอยหลัง ระวังเรื่องสุขภาพ\n",
-            6 => "- ดาวอาทิตย์ครึ่งปี เป็นช่วงทบทวนและปรับแผน\n- ดาวพฤหัสบดีเสริมเรื่องการเงินและลาภลอย\n- ดาวศุกร์เสริมเสน่ห์และมิตรภาพ\n",
-            7 => "- ดาวอังคารให้พลังต่อสู้แข่งขัน เหมาะเลื่อนตำแหน่ง\n- ดาวเกตุส่งผลด้านจิตวิญญาณ การทำบุญได้ผลดี\n- ช่วงกลางเดือนระวังดาวศัตรูกดดันเรื่องเงิน\n",
-            8 => "- ดาวพฤหัสบดีเสริมโชคลาภสูงสุดในรอบปี\n- ดาวอาทิตย์ให้ความมั่นใจและอำนาจ\n- ดาวพุธเสริมเรื่องการเจรจาต่อรอง\n",
-            9 => "- ดาวศุกร์เสริมความรักและศิลปะ\n- ดาวเสาร์ให้บทเรียนเรื่องความอดทน\n- ช่วงปลายเดือนดาวราหูเปลี่ยนทิศ ระวังเรื่องไม่คาดคิด\n",
-            10 => "- ดาวพลูโตส่งผลให้เกิดการเปลี่ยนแปลงครั้งใหญ่\n- ดาวพฤหัสบดีเสริมเรื่องการงานและตำแหน่ง\n- ดาวจันทร์เสริมเรื่องครอบครัวและความสุข\n",
-            11 => "- ดาวพุธย้ายราศี เปิดโอกาสด้านการสื่อสารและธุรกิจ\n- ดาวศุกร์เสริมเรื่องทรัพย์สินและความมั่งคั่ง\n- ช่วงปลายเดือนดาวอังคารเสริมพลังต่อสู้\n",
-            12 => "- ดาวพฤหัสบดีเสริมโชคลาภปิดท้ายปี\n- ดาวเสาร์สอนบทเรียนสำคัญเรื่องความอดทน\n- ช่วงส่งท้ายปีเหมาะสำหรับวางแผนปีหน้า ตั้งเป้าหมายใหม่\n",
-        ];
-
-        return $events[$month] ?? '';
     }
 
     // ============================================================

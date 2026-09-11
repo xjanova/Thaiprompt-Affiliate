@@ -85,6 +85,25 @@ class ThaiAstrologyService
     /** ตำแหน่งดาวกำเนิดที่คำนวณล่าสุด — ใช้หามุมดาวจรกระทบดวงกำเนิด */
     protected ?array $lastNatalPositions = null;
 
+    /**
+     * ชุด "ดาวเจ้าเรือน" ของคนล่าสุด (ผ่านย่ำรุ่ง + พุธกลางคืน = ราหู แล้ว)
+     *
+     * เก็บไว้ให้ตารางดาวจรล่วงหน้าติดป้ายดาวมิตร/ศัตรูจากชุดเดียวกับหัวผัง
+     * ⚠️ ห้ามไปหยิบ FortuneChartService::CHAOCHANA ตามวันปฏิทินเอง — คนเกิดก่อน 06:00
+     *    หรือพุธกลางคืนจะได้มิตร/ศัตรูคนละชุดกับที่ผังบอก
+     */
+    protected ?array $lastRulerProfile = null;
+
+    /**
+     * ดาวที่ "ช้าพอจะเป็นจังหวะชีวิต" — ใช้ทั้งมุมดาวจรกระทบดวงกำเนิดและตารางดาวจรล่วงหน้า
+     *
+     * จันทร์ ~2.5 วัน/ราศี · พุธ-ศุกร์ ไวเกิน ⇒ ตำแหน่ง ณ วันเดียวไม่บอกอะไรเรื่องช่วงเดือน
+     */
+    public const TIMING_PLANETS = ['Sun', 'Mars', 'Jupiter', 'Saturn', 'Rahu', 'Ketu', 'Uranus'];
+
+    /** จุดตรวจของตารางดาวจรล่วงหน้า (เดือนนับจากวันนี้) — "ตอนนี้" ใส่ให้เองเสมอ */
+    public const TRANSIT_OUTLOOK_MONTHS = [1, 3, 6, 12];
+
     /** พิกัดกลางเมื่อไม่ทราบจังหวัดเกิด (กรุงเทพฯ) — ต้องบอกลูกค้าตามตรงทุกครั้งที่ใช้ */
     public const DEFAULT_LAT = 13.75;
 
@@ -538,6 +557,7 @@ class ThaiAstrologyService
         if ($nightRahu) {
             $p = $this->rahuRulerProfile($p);
         }
+        $this->lastRulerProfile = $p;
         if ($this->isNightBirth($this->lastBirthHour)) {
             $dayName .= ' กลางคืน';
         }
@@ -833,7 +853,7 @@ class ThaiAstrologyService
         }
 
         // ดาวจรที่ "ช้าพอจะเป็นจังหวะชีวิต" — จันทร์ 2.5 วัน/ราศี, พุธ-ศุกร์ไวเกิน ⇒ ตัดออก
-        $slow = ['Sun', 'Mars', 'Jupiter', 'Saturn', 'Rahu', 'Ketu', 'Uranus'];
+        $slow = self::TIMING_PLANETS;
 
         $natal = $this->lastNatalPositions;
         // 🌙 ไม่รู้เวลาเกิด = จันทร์กำเนิดคลาด ±6.6° ⇒ มุมที่ยิงใส่จันทร์เป็นการเดา (เหตุผลเดียวกับมุมในดวง)
@@ -978,6 +998,210 @@ class ThaiAstrologyService
             ."      พฤหัสบดี ~1 ปี · เสาร์ ~2 ปีครึ่ง · ราหู ~1 ปีครึ่ง · เกตุ ~2 เดือน (ราหู-เกตุเดินถอยหลังทั้งคู่)\n";
 
         return $out;
+    }
+
+    /**
+     * 🔭🗓️ ดาวจร "ตอนนี้ + ล่วงหน้า" ของเจ้าชะตาคนหนึ่ง — ใช้กับช่อง {transit_info} ของพรอมต์ดูดวง 39
+     *
+     * 🚨 (2026-09-11) ของเดิมในช่องนี้ไม่ใช่ตำแหน่งดาวจริง
+     *   `FortuneChartService::calculateTransitForDate()` หาภพด้วยสูตร (ปี×31 + วันในปี) ÷ (ความเร็ว/12)
+     *   และบังคับเกตุให้ห่างราหู 6 ภพ ⇒ ได้ "ดาวมิตรโคจรภพ 9" ที่ไม่มีดาวจริงดวงไหนอยู่ตรงนั้น
+     *   แล้วถูกติดป้ายส่งโมเดลว่า "คำนวณจากหลักเจ้าชนะ" พร้อมสั่งห้ามแต่งตำแหน่งเอง
+     *   ⇒ พรอมต์ใบเดียวกันมีดาวจร 2 ชุดขัดกัน (ชุดสูตร + ชุดจริงที่ FortuneAIService ต่อท้าย)
+     *
+     * สิ่งที่บล็อกนี้ทำ (ไม่มีอะไรเดา):
+     *   1. ผูกดวงกำเนิดด้วย formatPersonBlock() ตัวเดียวกับผังในพรอมต์ ⇒ ภพนับจากฐานเดียวกัน
+     *      (ลัคนาจริง → จันทร์ลัคน์ → ไม่มีภพเลย) ภพของดาวจรจึงไม่มีทางขัดกับผัง
+     *   2. ดาวจรวันนี้ = formatTransitBlock() ตัวเดิม (ข้อความตรงกับบล็อกในผังทุกตัวอักษร)
+     *   3. จุดตรวจล่วงหน้า 1/3/6/12 เดือน = PlanetEphemeris::positions() ณ วันนั้นจริง
+     *      ⚠️ เกตุเอามาจาก positions() เท่านั้น — ห้ามคิดเองจากราหู (เกตุไทยสุริยยาตร์ ≠ ราหู + 180°)
+     *
+     * @param  string  $ymd  วันเกิด "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
+     * @param  float|null  $birthHour  เวลาเกิดที่ผู้เรียกรู้ (null = อ่านจาก $ymd / ไม่ทราบ)
+     * @param  string|null  $birthProvince  จังหวัดเกิด (null = ไม่ทราบ ใช้พิกัดกรุงเทพ)
+     * @param  Carbon|null  $now  วันที่ถือเป็น "ตอนนี้" (null = วันนี้ เวลาไทย)
+     * @param  int[]  $monthOffsets  จุดตรวจล่วงหน้า (เดือน)
+     * @return string ว่าง = ผูกดวงไม่ได้ (วันเกิดอ่านไม่ออก / คำนวณล้ม)
+     */
+    public function formatTransitOutlookBlock(
+        string $ymd,
+        ?float $birthHour = null,
+        ?string $birthProvince = null,
+        ?Carbon $now = null,
+        array $monthOffsets = self::TRANSIT_OUTLOOK_MONTHS
+    ): string {
+        $now = ($now ?? Carbon::now('Asia/Bangkok'))->copy()->setTimezone('Asia/Bangkok');
+
+        // ล้างของค้างจากคนก่อน — formatPersonBlock() คืนค่าก่อนตั้งค่าเหล่านี้เมื่ออ่านวันเกิดไม่ออก
+        $this->lastLagna = null;
+        $this->lastLagnaBasis = 'none';
+        $this->lastNatalPositions = null;
+        $this->lastRulerProfile = null;
+
+        // ผูกดวงกำเนิดก่อน (ไม่ใช้ตัวข้อความ) — ต้องการแค่ฐานนับภพ + ดาวกำเนิด + ดาวเจ้าเรือน
+        $natal = $this->formatPersonBlock($ymd, $birthHour, false, $birthProvince);
+        if ($this->lastRulerProfile === null || str_starts_with($natal, '(วันเกิด:')) {
+            return '';
+        }
+
+        $today = $this->formatTransitBlock($this->lastLagna, $now);
+        if ($today === '') {
+            return '';
+        }
+
+        return $today.$this->formatTransitTimelineLines($this->lastLagna, $now, $monthOffsets);
+    }
+
+    /**
+     * 🗓️ ตำแหน่งดาวจรจริง ณ จุดตรวจ "ตอนนี้ + N เดือน" — ข้อมูลดิบ (ตัวเรนเดอร์คือ formatTransitTimelineLines)
+     *
+     * ทุกจุดตรวจคำนวณที่ 12:00 น. เวลาไทย เหมือน formatTransitBlock() ของ "วันนี้"
+     * เอาเฉพาะ TIMING_PLANETS — จันทร์/พุธ/ศุกร์ ณ วันเดียวไม่ได้บอกอะไรเรื่องช่วงเดือน
+     *
+     * @param  string|null  $anchor  ราศีที่เป็นภพที่ 1 (ลัคนา/จันทร์ลัคน์) — null = ไม่คำนวณภพ
+     * @param  int[]  $monthOffsets  จุดตรวจล่วงหน้า (เดือน) — 0 (ตอนนี้) ใส่ให้เองเสมอ
+     * @return array<int, array{months:int, date:Carbon, positions:array<string, array{th:string, sym:string, sign:string, house:int|null, retro:bool}>}>
+     */
+    public function transitCheckpoints(?string $anchor, Carbon $now, array $monthOffsets = self::TRANSIT_OUTLOOK_MONTHS): array
+    {
+        $offsets = array_filter(array_map('intval', $monthOffsets), fn (int $m) => $m > 0);
+        $offsets = array_values(array_unique(array_merge([0], $offsets)));
+        sort($offsets);
+
+        $eph = new PlanetEphemeris;
+        $base = $now->copy()->setTimezone('Asia/Bangkok');
+        $out = [];
+
+        foreach ($offsets as $months) {
+            // addMonthsNoOverflow: 31 ม.ค. + 1 เดือน = 28/29 ก.พ. (ไม่ล้นไป มี.ค.)
+            $date = $base->copy()->addMonthsNoOverflow($months)->setTime(12, 0, 0);
+            $all = $eph->positions($date);
+
+            $positions = [];
+            foreach (self::TIMING_PLANETS as $key) {
+                if (! isset($all[$key])) {
+                    continue;
+                }
+                $p = $all[$key];
+                $house = $anchor !== null ? $this->houseNumber($anchor, $p['sign']) : 0;
+
+                $positions[$key] = [
+                    'th' => $p['th'],
+                    'sym' => $p['sym'],
+                    'sign' => $p['sign'],
+                    'house' => $house > 0 ? $house : null,
+                    'retro' => ! empty($p['retro']),
+                ];
+            }
+
+            $out[] = ['months' => $months, 'date' => $date, 'positions' => $positions];
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🗓️ ตารางดาวจรล่วงหน้า — 1 บรรทัดต่อดาว เดินจาก "ตอนนี้" ไปทุกจุดตรวจ
+     *
+     * เรียงรายดาว (ไม่ใช่รายเดือน) เพราะคำถามที่โมเดลต้องตอบคือ "ดาวดวงนี้จะไปอยู่ไหนเมื่อไหร่"
+     * — ป้าย "(ย้ายราศี)" คำนวณให้แล้ว โมเดลไม่ต้องเทียบเอง
+     */
+    protected function formatTransitTimelineLines(?string $anchor, Carbon $now, array $monthOffsets): string
+    {
+        $checkpoints = $this->transitCheckpoints($anchor, $now, $monthOffsets);
+        if (count($checkpoints) < 2) {
+            return ''; // มีแต่ "ตอนนี้" = ซ้ำกับบล็อกดาวจรวันนี้ ไม่ต้องพิมพ์
+        }
+
+        $shortMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        $label = fn (int $months): string => $months === 0 ? 'ตอนนี้' : "อีก {$months} เดือน";
+
+        $basisWord = $this->lastLagnaBasis === 'moon' ? 'จันทร์ลัคน์' : 'ลัคนา';
+        $out = '🗓️ ดาวจรล่วงหน้า — ตำแหน่งจริง ณ วันที่กำกับ'
+            .($anchor !== null ? " · ภพนับจาก{$basisWord}" : ' · ดวงนี้ไม่มีภพ').":\n";
+
+        $dates = [];
+        foreach ($checkpoints as $c) {
+            $d = $c['date'];
+            $dates[] = $label($c['months']).' = '.$d->day.' '.$shortMonths[$d->month].' '.($d->year + 543);
+        }
+        $out .= '   📆 จุดตรวจ: '.implode(' · ', $dates)."\n";
+
+        $friends = $this->rulerRelationNames('friends');
+        $enemies = $this->rulerRelationNames('enemies');
+
+        foreach (self::TIMING_PLANETS as $key) {
+            $cells = [];
+            $prevSign = null;
+            $meta = null;
+
+            foreach ($checkpoints as $c) {
+                $p = $c['positions'][$key] ?? null;
+                if ($p === null) {
+                    continue 2; // ขาดจุดตรวจไหน = ไม่พิมพ์ดาวนี้ทั้งแถว (ห้ามเติมเอง)
+                }
+                $meta ??= $p;
+
+                $cell = $label($c['months']).' ราศี'.$p['sign'];
+                if ($p['house'] !== null) {
+                    $cell .= ' ภพ'.$p['house'];
+                }
+                if ($p['retro']) {
+                    $cell .= ' ⏪พักร';
+                }
+                if ($prevSign !== null && $prevSign !== $p['sign']) {
+                    $cell .= ' (ย้ายราศี)';
+                }
+                $prevSign = $p['sign'];
+                $cells[] = $cell;
+            }
+
+            $tag = match (true) {
+                in_array($meta['th'], $friends, true) => ' (ดาวมิตร)',
+                in_array($meta['th'], $enemies, true) => ' (ดาวศัตรู)',
+                default => '',
+            };
+            $out .= "   {$meta['sym']} {$meta['th']}{$tag}: ".implode(' → ', $cells)."\n";
+        }
+
+        // ⚠️ ต้องผูกกับกฎ "ระบุช่วงเวลาได้เฉพาะจากดาวจรชุดนี้" ของบล็อกข้างบนให้ชัด
+        //    ไม่งั้นโมเดลอ่านว่า 2 กฎขัดกันแล้วทิ้งตารางนี้ไป ([[rule_conflicting_directives_model_drops_one]])
+        $out .= "   🔒 *ช่วงเวลาอนาคตอ้างได้เฉพาะจากตารางนี้* (ดาวจรชุดเดียวกับข้างบน ต่อไปข้างหน้า) — เป็นตำแหน่งจริง ณ วันที่กำกับ ไม่ใช่วันย้ายราศี\n"
+            ."      ❌ ห้ามระบุวันย้ายราศี/ย้ายภพเป็นวันที่เป๊ะ ❌ ห้ามแต่งหรือคำนวณตำแหน่งดาวนอกตารางเอง\n";
+
+        if ($anchor !== null) {
+            $out .= "      ✅ อ้างได้แบบ \"อีก [ช่วง] ดาว[ชื่อ]จรราศี[ราศี] ทับภพ[เลข]\" โดยใช้ค่าในตารางตรงตัว\n";
+        } else {
+            // ไม่รู้เวลาเกิด + จันทร์ย้ายราศีวันเกิด ⇒ ไม่มีฐานนับภพจริง ๆ — ต้องบอกให้ชัด ไม่งั้นโมเดลเติมภพเอง
+            $out .= "      🔒 ดวงนี้ไม่มีภพ (ไม่ทราบเวลาเกิด และจันทร์ย้ายราศีในวันเกิด) — ❌ ห้ามพูดว่าดาวจรทับภพใด ใช้ราศี + ดาวมิตร/ศัตรูแทน\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * ชื่อดาว (ไทย ไม่มีคำว่า "ดาว") ในช่องมิตร/ศัตรูของดาวเจ้าเรือนคนล่าสุด
+     *
+     * ช่องต้นทางเขียนสองแบบ: "ดาวพฤหัสบดี, ดาวอังคาร" (getPlanetByDayOfWeek)
+     * กับ "เสาร์" (rahuRulerProfile) ⇒ ตัด "ดาว" นำหน้าแล้วเทียบแบบตรงตัวทั้งคำ
+     * (❌ ห้าม str_contains — ชื่อดาวสั้นไปติดคำอื่นได้)
+     *
+     * @param  string  $field  'friends' | 'enemies'
+     * @return string[]
+     */
+    protected function rulerRelationNames(string $field): array
+    {
+        $raw = (string) ($this->lastRulerProfile[$field] ?? '');
+        $names = [];
+
+        foreach (preg_split('/[,+]/u', $raw) ?: [] as $part) {
+            $name = (string) preg_replace('/^ดาว/u', '', trim($part));
+            if ($name !== '' && $name !== '-') {
+                $names[] = $name;
+            }
+        }
+
+        return $names;
     }
 
     /**

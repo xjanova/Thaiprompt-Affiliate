@@ -386,11 +386,20 @@ class FortuneChartService
     }
 
     /**
-     * คำนวณดาวโคจร ณ วันที่กำหนด (transit)
+     * จัดวางดาวลงภพ ณ วันที่กำหนด ด้วย "สูตรตามวันในปี" (ผังสาธิต — ไม่ใช่ดาวจรจริง)
      *
      * ใช้สูตรจัดวางดาวตามวันในปี โดยดาวแต่ละดวงมีความเร็วโคจรต่างกัน
      * - ดาวเร็ว (พุธ, ศุกร์, อาทิตย์, จันทร์) เปลี่ยนภพบ่อย
      * - ดาวช้า (เสาร์, พฤหัส, ราหู, เกตุ) อยู่ภพนานหลายเดือน
+     *
+     * 🚨 (2026-09-11) อย่าเข้าใจผิดว่านี่คือตำแหน่งดาว — ไม่มีการคำนวณดาราศาสตร์เลย
+     *   ภพ = (ปี×31 + วันในปี) ÷ (ความเร็ว/12) และเกตุถูกบังคับให้ห่างราหู 6 ภพ
+     *   (ไม่มีลัคนาของใครทั้งนั้น ⇒ "ภพ" ในผลลัพธ์ไม่ได้นับจากดวงของลูกค้าคนไหน)
+     *   เคยถูกป้อน AI ผ่าน calculateFutureTransits() ในช่อง {transit_info} ของดูดวง 39
+     *   โดยติดป้ายว่า "คำนวณจากหลักเจ้าชนะ" → ลบเมธอดนั้นทิ้งแล้ว
+     *   ดาวจรจริง = ThaiAstrologyService::formatTransitBlock() / formatTransitOutlookBlock()
+     *   ⚠️ เหลือไว้ให้รูป quick chart (generateQuickChart) เท่านั้น
+     *     **ห้ามนำไปป้อน AI สำหรับคำทำนายที่ลูกค้าจ่ายเงิน**
      *
      * @param  Carbon  $date  วันที่ต้องการคำนวณ
      * @return array [house_number => [planet_keys]]
@@ -436,79 +445,6 @@ class FortuneChartService
         }
 
         return $positions;
-    }
-
-    /**
-     * คำนวณ Transit ในอนาคตหลายช่วงเวลา เทียบกับดวงกำเนิด
-     *
-     * @param  int  $birthDayOfWeek  วันเกิด (0=อาทิตย์...6=เสาร์)
-     * @param  array  $periods  ช่วงเวลาที่ต้องการ [['label' => 'ชื่อ', 'months' => จำนวนเดือน]]
-     * @return array ข้อมูล transit แต่ละช่วง
-     */
-    public function calculateFutureTransits(int $birthDayOfWeek, array $periods = []): array
-    {
-        if (empty($periods)) {
-            $periods = [
-                ['label' => 'ปัจจุบัน', 'months' => 0],
-                ['label' => 'อีก 1 เดือน', 'months' => 1],
-                ['label' => 'อีก 3 เดือน', 'months' => 3],
-                ['label' => 'อีก 6 เดือน', 'months' => 6],
-                ['label' => 'อีก 12 เดือน', 'months' => 12],
-            ];
-        }
-
-        $chaochana = self::CHAOCHANA[$birthDayOfWeek] ?? null;
-        $now = Carbon::now('Asia/Bangkok');
-        $results = [];
-
-        foreach ($periods as $period) {
-            $targetDate = $now->copy()->addMonths($period['months']);
-            $positions = $this->calculateTransitForDate($targetDate);
-
-            $periodData = [
-                'label' => $period['label'],
-                'months' => $period['months'],
-                'date' => $targetDate->format('d/m/').($targetDate->year + 543),
-                'positions' => $positions,
-                'friend_impacts' => [],
-                'enemy_impacts' => [],
-            ];
-
-            // วิเคราะห์ดาวมิตร/ศัตรูในแต่ละช่วง
-            if ($chaochana) {
-                foreach ($chaochana['friends'] as $friend) {
-                    foreach ($positions as $houseNum => $planets) {
-                        if (in_array($friend, $planets)) {
-                            $periodData['friend_impacts'][] = [
-                                'planet' => $friend,
-                                'planet_name' => self::PLANETS[$friend]['name'] ?? $friend,
-                                'house' => $houseNum,
-                                'house_name' => self::HOUSES[$houseNum]['name'] ?? '',
-                                'house_meaning' => self::HOUSES[$houseNum]['meaning'] ?? '',
-                            ];
-                        }
-                    }
-                }
-
-                foreach ($chaochana['enemies'] as $enemy) {
-                    foreach ($positions as $houseNum => $planets) {
-                        if (in_array($enemy, $planets)) {
-                            $periodData['enemy_impacts'][] = [
-                                'planet' => $enemy,
-                                'planet_name' => self::PLANETS[$enemy]['name'] ?? $enemy,
-                                'house' => $houseNum,
-                                'house_name' => self::HOUSES[$houseNum]['name'] ?? '',
-                                'house_meaning' => self::HOUSES[$houseNum]['meaning'] ?? '',
-                            ];
-                        }
-                    }
-                }
-            }
-
-            $results[] = $periodData;
-        }
-
-        return $results;
     }
 
     /**
