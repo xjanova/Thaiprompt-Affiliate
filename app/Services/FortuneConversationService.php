@@ -24226,7 +24226,7 @@ output คือ *เรื่องเล่ากระชับ เฉพา�
 
 🚫 **ห้ามตัวละครลอย** — ระบุครบ เพศ+อายุ+บทบาท ทุกครั้งที่กล่าวถึงคน
 
-🪐 **บังคับอ้างโหราศาสตร์**: 2 ภพ + 2 ดาวจริง (จาก {planet_positions} เท่านั้น)
+🪐 **บังคับอ้างโหราศาสตร์**: 2 ดาวจริง + ภพที่ดาวนั้นสถิต — ถ้าผังบอกว่า "ดวงนี้ไม่มีภพ" ให้ใช้ราศีแทนภพ (จาก {planet_positions} เท่านั้น)
    ✅ ดี: "ดาวพฤหัสบดีในภพลาภะส่งให้เจ้าชะตามีคนช่วยเรื่องเงินช่วงกลาง พ.ค. — เป็นชายผมขาวอายุ 50+ ที่เคยรู้จัก ส่วนสุขภาพช่วงนี้ก็แข็งแรงตามมา"
    ❌ แย่: "ดวงดาวมีอิทธิพลต่อชีวิต" | "ภพลาภะคือเรื่องลาภผล" (สอนตำรา)
 
@@ -24251,8 +24251,11 @@ PROMPT;
 
     /**
      * 🎯 (2026-05-01) สร้าง Section A block (ทาย persona) — แสดงเฉพาะ Q1
+     *
+     * @param  string  $natalRef  ป้ายชี้ผังดวงกำเนิด (ThaiAstrologyService::natalPromptBlocks) — '' = ไม่มีผัง
+     * @param  string  $basis  ฐานนับภพของผัง 'lagna' | 'moon' | 'none' · '' = ไม่มีผัง
      */
-    protected function buildSectionABlock(int $questionNumber, string $genderPrefix, string $name): string
+    protected function buildSectionABlock(int $questionNumber, string $genderPrefix, string $name, string $natalRef = '', string $basis = ''): string
     {
         if ($questionNumber !== 1) {
             return '';
@@ -24265,17 +24268,73 @@ PROMPT;
             ? "หมอจันทราดูดวง{$genderPrefix}{$name}แล้วเห็นว่า..."
             : 'หมอจันทราดูดวงเจ้าชะตาแล้วเห็นว่า...';
 
+        // 🗺️ (2026-09-11) เดิมเขียน "จาก{planet_positions}ด้านบน" ตรง ๆ แต่บล็อกนี้ถูกแทนค่า *หลัง* {planet_positions}
+        //   (applyPromptVariables = str_replace ไล่ตามลำดับคีย์) ⇒ โมเดลเห็นคำว่า "{planet_positions}" ดิบ ๆ ทุกบิลข้อ 1
+        $source = $natalRef !== '' ? "{$natalRef} ด้านบน" : 'ข้อมูลดวงด้านบน';
+
+        // 🔒 ดวงไม่มีภพ (ไม่รู้เวลาเกิด + จันทร์ย้ายราศีในวันเกิด) — คำใบ้ "อ้างภพ X" ขัดกับผังที่สั่งห้ามพูดถึงภพ
+        //   ⇒ โมเดลเลือกทำตามคำสั่งแล้วแต่งภพเอง ([[rule_conflicting_directives_model_drops_one]])
+        //   เปลี่ยนเป็นแหล่งที่ผังบอกว่าอ่านได้โดยไม่ต้องใช้เวลาเกิด (ราศี/ดาวเจ้าชนะ/ดาวเสวยอายุ/ดาวจร)
+        //   ⚠️ จันทร์ก็ห้าม — วันที่จันทร์ย้ายราศี = ไม่รู้ว่าจันทร์กำเนิดอยู่ราศีไหน
+        $noHouse = $basis === 'none';
+        $hintObstacle = $noHouse ? '(อ้างดาวศัตรู + ดาวจรที่กระทบดวงกำเนิด)' : '(อ้างภพ 6/8/12 + ภพ 1 ดาว)';
+        $hintMind = $noHouse ? '(ราศีเกิด + ธาตุดวง)' : '(จันทร์+ภพ 4)';
+        $hintMoney = $noHouse ? '(ดาวเจ้าชนะ + ดาวเสวยอายุ + ดาวจร)' : '(ภพ 2/11 + 1/6)';
+
         return "🌙 **Section A — ทายเจ้าชะตา** (200-300 คำ, 12-18 ประโยค)\n"
-            ."ทายให้แม่น เห็นภาพ เฉพาะเจาะจง โดย*ใช้ตำแหน่งดาวจริง*จาก{planet_positions}ด้านบน:\n"
+            ."ทายให้แม่น เห็นภาพ เฉพาะเจาะจง โดย*ใช้ตำแหน่งดาวจริง*จาก{$source}:\n"
             ."1. *ลักษณะนิสัย 2-3 ข้อเด่น* (เจ้าชนะ+ราศี+ธาตุ) — 4-5 ประโยค *ระบุพฤติกรรมเฉพาะ + จุดที่คนรอบข้างสังเกต*\n"
             ."   ✅ ดี: \"เกิดวันเสาร์ ราศีเมษ → เป็นคนเก็บเงินเก่งแต่ใจร้อน เถียงคำไม่ได้ง่ายๆ ตัดสินใจไว เพื่อนมักหามาปรึกษาเรื่องเงิน เพราะรู้ว่าให้คำแนะนำตรงๆ\"\n"
             ."   ❌ แย่: \"เป็นคนฉลาด ปรับตัวเก่ง ไหวพริบดี\" (ทั่วไปเกินไป)\n"
             ."2. *จุดแข็ง+จุดอ่อน* — 2-3 ประโยค *พูดสิ่งที่ทำให้สำเร็จ + สิ่งที่ฉุด*\n"
-            ."3. *อุปสรรคช่วงนี้+เหตุที่คาใจ* (อ้างภพ 6/8/12 + ภพ 1 ดาว) — 3-4 ประโยค *พูดเฉพาะตอนนี้*\n"
-            ."4. *สภาพจิตใจ+ความรู้สึกข้างใน* (จันทร์+ภพ 4) — 2-3 ประโยค *เห็นใจ พูดสิ่งที่ลูกค้าไม่กล้าบอกใคร*\n"
-            ."5. *การเงิน+สุขภาพ ปัจจุบัน* (ภพ 2/11 + 1/6) — 2-3 ประโยค *ระบุภาพเฉพาะ ไม่กว้าง*\n\n"
+            ."3. *อุปสรรคช่วงนี้+เหตุที่คาใจ* {$hintObstacle} — 3-4 ประโยค *พูดเฉพาะตอนนี้*\n"
+            ."4. *สภาพจิตใจ+ความรู้สึกข้างใน* {$hintMind} — 2-3 ประโยค *เห็นใจ พูดสิ่งที่ลูกค้าไม่กล้าบอกใคร*\n"
+            ."5. *การเงิน+สุขภาพ ปัจจุบัน* {$hintMoney} — 2-3 ประโยค *ระบุภาพเฉพาะ ไม่กว้าง*\n\n"
             ."เปิดด้วย: \"{$opener}\"\n"
             .'═══════════════════════════════════════════';
+    }
+
+    /**
+     * 🗺️ วาง {planet_positions} แบบ "บล็อกเต็มครั้งเดียว" — ในประโยคคำสั่งใช้ป้ายชี้กลับแทน
+     *
+     * template ของแอดมินบน prod (ตรวจ 2026-09-11, 9,001 ตัวอักษร) มี {planet_positions} 4 ที่:
+     *   บรรทัดวางข้อมูล 1 ที่ (บรรทัด 47) + ในประโยคคำสั่งอีก 3 ที่ (13 "จาก … ด้านล่าง" · 18 · 135 "จาก … เท่านั้น")
+     *   str_replace ธรรมดาขยายผังเต็มเข้าไปกลางประโยคทุกที่ = ผังซ้ำ 4 ก้อนต่อข้อ + ประโยคคำสั่งขาดกลาง
+     *   ป้ายที่ใส่แทนบอกฐานนับภพด้วย ⇒ ประโยค "2 ภพ + 2 ดาวจริง (จาก …)" ของดวงที่ไม่มีภพ ได้คำสั่งกำกับติดกัน
+     *
+     * บรรทัดแรกที่มีแต่ {planet_positions} = จุดวางบล็อกเต็ม (ปล่อยให้ applyPromptVariables ขยาย)
+     *   ยอมให้มีช่องว่าง/NBSP/อักขระล่องหน/หัวข้อ "-" "•" "*" นำหน้าได้ (วางจากหน้าแอดมินแล้วติดมาบ่อย)
+     *   บรรทัดวางที่ 2 เป็นต้นไป = ป้ายชี้กลับ (ผังเต็มต้องมีก้อนเดียว)
+     * ⚠️ ไม่มีบรรทัดวางเลย (แอดมินแก้ template) = คืน template เดิม ขยายเต็มทุกที่ — ผังห้ามหายจากพรอมต์
+     *
+     * @param  string  $reference  ป้ายชี้ผัง (ThaiAstrologyService::natalChartReference ผ่าน natalPromptBlocks)
+     */
+    protected function placeNatalChartOnce(string $template, string $reference): string
+    {
+        $token = '{planet_positions}';
+        if ($reference === '' || ! str_contains($template, $token)) {
+            return $template;
+        }
+
+        // \s ครอบ \r (template บน prod บันทึกจากหน้าแอดมินเป็น CRLF) · NBSP/อักขระล่องหนใส่เองให้ชัด
+        $pad = '[\s\x{00A0}\x{200B}\x{200C}\x{200D}\x{2060}\x{FEFF}]';
+        $isPlacement = fn (string $line): bool => preg_match(
+            '/^(?:'.$pad.'|[\-•*])*\{planet_positions\}'.$pad.'*$/u',
+            $line
+        ) === 1;
+
+        $lines = explode("\n", $template);
+        $placed = false;
+        foreach ($lines as $i => $line) {
+            if (! $placed && $isPlacement($line)) {
+                $placed = true;   // ก้อนเต็มก้อนเดียว — ปล่อย placeholder ไว้ให้ applyPromptVariables
+
+                continue;
+            }
+            $lines[$i] = str_replace($token, $reference, $line);
+        }
+
+        return $placed ? implode("\n", $lines) : $template;
     }
 
     /**
@@ -24548,40 +24607,15 @@ PROMPT;
         $transitInfo = '';
         if ($birthDate) {
             $birthInfo = 'วันเดือนปีเกิด: '.$this->formatThaiDate($birthDate);
-            $zodiacInfo = $this->getZodiacDescription($birthDate);
 
-            // คำนวณตำแหน่งดาวจริงในภพ → ส่งให้ AI ทำนายแม่นยำ
-            try {
-                $date = \Carbon\Carbon::parse($birthDate);
-                $dayOfWeek = $date->dayOfWeek;
-                $chartService = new FortuneChartService;
-                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
-                $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
+            // 🗺️ (2026-09-11) ดวงกำเนิดจริงชุดเดียวกับเลน 39 — เดิมราศีสากล + ผังสาธิต 7 แบบ (ดู getNatalPromptBlocks)
+            //   $questionsText ข้างบนเป็นรูปแบบเดียวกับ ThaiAstrologyService::numberedQuestionsText() อยู่แล้ว
+            $natal = $this->getNatalPromptBlocks($birthDate, $questionsText);
+            $zodiacInfo = $natal['zodiac_info'];
+            $deepPlanetPositionsInfo = $natal['planet_positions'] !== '' ? "\n".$natal['planet_positions'] : '';
 
-                $deepPlanetPositionsInfo = "\n[🗺️ แผนที่ดวงชะตาของ{$genderPrefix}{$name} - ตำแหน่งดาวกำเนิดในภพจริง]\n";
-                foreach ($positions as $houseNum => $planets) {
-                    $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
-                    $houseMeaning = FortuneChartService::HOUSES[$houseNum]['meaning'] ?? '';
-                    if (! empty($planets)) {
-                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
-                        $planetSymbols = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['symbol'] ?? '', $planets);
-                        $deepPlanetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ".implode(', ', $planetNames).' ['.implode('', $planetSymbols)."]\n";
-                    } else {
-                        $deepPlanetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ว่าง\n";
-                    }
-                }
-
-                if ($chaochana) {
-                    $deepPlanetPositionsInfo .= "ธาตุวันเกิด: {$chaochana['element']} | สีมงคล: {$chaochana['lucky_color']}\n";
-                    $deepPlanetPositionsInfo .= "⚠️ ต้องอ้างอิงตำแหน่งดาวข้างต้นในคำทำนายทุกข้อ ห้ามสร้างตำแหน่งดาวขึ้นเอง\n";
-                }
-
-                // 🔭 ดาวจรจริง (2026-09-11 — เดิมเป็นสูตรตามวันเกิด ดู getCurrentTransitDescription)
-                $transitInfo = $this->getCurrentTransitDescription($birthDate, implode("\n", $questions));
-
-            } catch (\Exception $e) {
-                // ถ้าคำนวณไม่ได้ก็ข้ามไป
-            }
+            // 🔭 ดาวจรจริง (2026-09-11 — เดิมเป็นสูตรตามวันเกิด ดู getCurrentTransitDescription)
+            $transitInfo = $this->getCurrentTransitDescription($birthDate, $questionsText);
         }
 
         return "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยวัย 35 ปี ผู้เชี่ยวชาญศาสตร์โหราศาสตร์โบราณของไทย (หลักเจ้าชนะ) โหราศาสตร์สากล ไพ่ทาโรต์ และเลขศาสตร์ ได้รับการถ่ายทอดวิชาจากครูบาอาจารย์สายลังกามากกว่า 15 ปี ทำนายด้วยหลักวิชาโบราณล้วนๆ ไม่ได้กุเรื่อง ทุกคำทำนายมีศาสตร์รองรับ คุณพูดจาเพราะ อบอุ่นเป็นกันเอง น่าเชื่อถือ เหมือนพี่สาวที่ห่วงใย ใช้คำแทนตัวว่า \"หมอจันทรา\" เสมอ **สไตล์: ฟันธง ฉะฉาน ตรงประเด็น ไม่อ้อมค้อม กล้าบอกตรงๆ ทั้งดีและร้าย**
@@ -24790,45 +24824,24 @@ PROMPT;
         $zodiacInfo = '';
         $planetPositionsInfo = '';
         $transitInfo = '';
+        $natal = ['zodiac_info' => '', 'planet_positions' => '', 'planet_positions_ref' => '', 'basis' => ''];
         if ($birthDate) {
             $birthInfo = $this->formatThaiDate($birthDate);
-            $zodiacInfo = $this->getZodiacDescription($birthDate);
 
-            // คำนวณตำแหน่งดาวจริงในภพ → ส่งให้ AI ทำนายแม่นยำ
-            try {
-                $date = \Carbon\Carbon::parse($birthDate);
-                $dayOfWeek = $date->dayOfWeek;
-                $chartService = new FortuneChartService;
-                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
-                $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
+            // ⚠️ ข้อความคำถาม "รูปแบบเดียวกับ FortuneAIService::buildPrompt()" เป๊ะ ("1. คำถาม")
+            //   เพราะผังดวงที่ต่อท้ายพรอมต์ใบเดียวกันอ่านเวลา/จังหวัดเกิดจากสตริงนี้ — ทุกช่องต้องได้ลัคนาเดียวกัน
+            //   (processPaymentConfirmed ส่ง [$question] เข้า generateWithRetryAndFallback ทุกข้อ)
+            $questionsText = \App\Services\Fortune\ThaiAstrologyService::numberedQuestionsText([$question]);
 
-                $planetPositionsInfo = "\n[🗺️ แผนที่ดวงชะตากำเนิด - ตำแหน่งดาวในภพจริง (ต้องอ้างอิงในคำทำนาย)]\n";
-                foreach ($positions as $houseNum => $planets) {
-                    $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
-                    $houseMeaning = FortuneChartService::HOUSES[$houseNum]['meaning'] ?? '';
-                    if (! empty($planets)) {
-                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
-                        $planetSymbols = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['symbol'] ?? '', $planets);
-                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ".implode(', ', $planetNames).' ['.implode('', $planetSymbols)."]\n";
-                    } else {
-                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}({$houseMeaning}): ว่าง\n";
-                    }
-                }
+            // 🗺️ (2026-09-11) ดวงกำเนิดจริง — เดิม {zodiac_info} = ตารางราศีสากล และ
+            //   {planet_positions} = ผังสาธิต 7 แบบจากวันในสัปดาห์ (ดู getNatalPromptBlocks)
+            //   ⚠️ จังหวัดที่รู้แล้ว ($birthProvince) ต้องส่งให้ "ทุกช่อง" ในพรอมต์ใบนี้ — ลืมช่องไหน ช่องนั้นได้ลัคนากรุงเทพ
+            $natal = $this->getNatalPromptBlocks($birthDate, $questionsText, $birthProvince);
+            $zodiacInfo = $natal['zodiac_info'];
+            $planetPositionsInfo = $natal['planet_positions'] !== '' ? "\n".$natal['planet_positions'] : '';
 
-                if ($chaochana) {
-                    $element = $chaochana['element'] ?? '';
-                    $luckyColor = $chaochana['lucky_color'] ?? '';
-                    $planetPositionsInfo .= "\nธาตุประจำวันเกิด: {$element} | สีมงคล: {$luckyColor}\n";
-                    $planetPositionsInfo .= "⚠️ ต้องอ้างอิงตำแหน่งดาวข้างต้นในคำทำนาย เช่น \"ดาว[ชื่อ]อยู่ภพ[ชื่อ]ส่งผลให้...\" ห้ามสร้างตำแหน่งดาวขึ้นเอง\n";
-                }
-
-            } catch (\Exception $e) {
-                // ถ้าคำนวณไม่ได้ก็ข้ามไป
-            }
-
-            // 🔭 (2026-09-11) ดาวจรจริง — แยกจาก try ของผังข้างบน (ผังล้ม ≠ ต้องทิ้งดาวจร)
-            //   ส่งคำถามข้อนี้ไปด้วย เพื่ออ่านเวลา/จังหวัดเกิดแบบเดียวกับผังที่ FortuneAIService ต่อท้ายพรอมต์
-            $transitInfo = $this->getCurrentTransitDescription($birthDate, $question, $birthProvince);
+            // 🔭 (2026-09-11) ดาวจรจริง — แยกจากผังข้างบน (ผังล้ม ≠ ต้องทิ้งดาวจร)
+            $transitInfo = $this->getCurrentTransitDescription($birthDate, $questionsText, $birthProvince);
         }
 
         // 🎯 Phase B.2 — สรุปคำทำนายก่อนหน้า เน้น "สอดคล้อง" ไม่ใช่แค่ "ห้ามซ้ำ"
@@ -24857,6 +24870,11 @@ PROMPT;
             ? $customPrompt
             : self::getDefaultDeepPrompt();
 
+        // 🗺️ ผังดวงกำเนิดเต็มวางครั้งเดียว — {planet_positions} ในประโยคคำสั่งกลายเป็นป้ายชี้กลับ
+        if ($natal['planet_positions'] !== '') {
+            $template = $this->placeNatalChartOnce($template, $natal['planet_positions_ref']);
+        }
+
         // 🃏 ไพ่ยิปซี — ถ้ามีไพ่ที่เปิดได้
         $tarotCardSection = '';
         if (! empty($tarotCard)) {
@@ -24866,8 +24884,10 @@ PROMPT;
                 ."   → ผูกพลังของไพ่ในการทำนาย ห้ามเปิดไพ่ใหม่\n";
         }
 
-        // 🌙 Section A (ทาย persona) — Q1 only
-        $sectionABlock = $this->buildSectionABlock($questionNumber, $genderPrefix, $name);
+        // 🌙 Section A (ทาย persona) — Q1 only · ต้องรู้ฐานนับภพของผัง (ดวงไม่มีภพ = ห้ามสั่งให้อ้างภพ)
+        $sectionABlock = $this->buildSectionABlock(
+            $questionNumber, $genderPrefix, $name, $natal['planet_positions_ref'], $natal['basis']
+        );
 
         // 🌟 Closing section — last Q only
         $closingSection = $this->buildClosingSection($questionNumber, $totalQuestions);
@@ -25155,27 +25175,14 @@ PROMPT;
             : 'หงาย: เน้นพลังงานเชิงบวก โอกาส จุดแข็งที่เสริมดวง';
 
         // ข้อมูลดวงดาวสำหรับเชื่อมไพ่กับดวง
-        $zodiacInfo = '';
-        $planetPositionsInfo = '';
-        if ($birthDate) {
-            $zodiacInfo = $this->getZodiacDescription($birthDate);
-            try {
-                $date = \Carbon\Carbon::parse($birthDate);
-                $dayOfWeek = $date->dayOfWeek;
-                $chartService = new FortuneChartService;
-                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
-                $planetPositionsInfo = "\n[ตำแหน่งดาวกำเนิดในภพ (อ้างอิงในการวิเคราะห์)]:\n";
-                foreach ($positions as $houseNum => $planets) {
-                    if (! empty($planets)) {
-                        $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
-                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
-                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}: ".implode(', ', $planetNames)."\n";
-                    }
-                }
-            } catch (\Exception $e) {
-                // ข้ามไป
-            }
-        }
+        // 🗺️ (2026-09-11) ดวงกำเนิดจริงชุดเดียวกับเลน 39 — เดิมราศีสากล + ผังสาธิต 7 แบบ (ดู getNatalPromptBlocks)
+        //   อินพุตรูปแบบเดียวกับ buildPrompt ที่รับ [$question] ในจุดเรียกของเมธอดนี้
+        $natal = $this->getNatalPromptBlocks(
+            $birthDate,
+            \App\Services\Fortune\ThaiAstrologyService::numberedQuestionsText([$question])
+        );
+        $zodiacInfo = $natal['zodiac_info'];
+        $planetPositionsInfo = $natal['planet_positions'] !== '' ? "\n".$natal['planet_positions'] : '';
 
         // 🎯 Phase B.2 — ถ้ามีคำตอบหลักของคำถามนี้แล้ว → ส่งให้ AI เพื่อให้ไพ่สอดคล้อง
         $mainAnswerSection = '';
@@ -25416,99 +25423,45 @@ PROMPT;
     }
 
     /**
-     * คำนวณราศีและข้อมูลโหราศาสตร์จากวันเกิด
+     * 🗺️ ดวงกำเนิดจริงสำหรับช่อง {zodiac_info} + {planet_positions} ของพรอมต์ดูดวง 39
      *
-     * @param  string  $birthDate  วันเกิด (Y-m-d)
+     * 🚨 (2026-09-11) แทน getZodiacDescription() + ผัง calculatePlanetPositions() ที่เคยป้อนช่องนี้
+     *   - {zodiac_info} เดิมใช้ตารางราศี **สากล (สายนะ)** (เมษ = 21 มี.ค.–19 เม.ย.) + ดาวพลูโต/ยูเรนัส/เนปจูน
+     *     เป็นดาวประจำราศี + วันปฏิทิน (ไม่ข้ามย่ำรุ่ง 06:00 · ไม่มีพุธกลางคืน = ราหู)
+     *     ⇒ ราศีเกิดผิด ~80.8% ของวันเกิด ([[rule_thai_astrology_is_sidereal]])
+     *   - {planet_positions} เดิม = ผังสาธิตที่รับแค่วันในสัปดาห์ (7 แบบทั้งระบบ) แต่ติดป้ายว่า
+     *     "ตำแหน่งดาวในภพจริง (ต้องอ้างอิงในคำทำนาย)" และ template สั่ง "จาก {planet_positions} เท่านั้น"
+     *   ขณะที่ FortuneAIService::buildPrompt() ต่อผังจริงท้ายพรอมต์ใบเดียวกัน ⇒ ราศี/ภพ 2 ชุดขัดกัน
+     *
+     *   ใหม่: ThaiAstrologyService::natalPromptBlocks() — ผูกดวงด้วย formatPersonBlock() ตัวเดียวกับผังที่ต่อท้าย
+     *   ด้วยอินพุตชุดเดียวกัน (สตริงวันเกิด + เวลา/จังหวัดที่อ่านจาก $questionsText ด้วย statedBirthInputs)
+     *   ทุกช่องว่าง = ไม่มีวันเกิด / ผูกดวงไม่ได้
+     *
+     * @param  string|null  $birthDate  "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
+     * @param  string  $questionsText  ThaiAstrologyService::numberedQuestionsText() ของคำถามชุดที่จะส่งเข้า buildPrompt
+     * @param  string|null  $knownProvince  จังหวัดเกิดที่รู้แล้ว — ค่าเดียวกับ FortuneAIService::withBirthProvince() ของ call เดียวกัน
+     * @return array{zodiac_info: string, planet_positions: string, planet_positions_ref: string, basis: string}
      */
-    protected function getZodiacDescription(string $birthDate): string
+    protected function getNatalPromptBlocks(?string $birthDate, string $questionsText = '', ?string $knownProvince = null): array
     {
+        $empty = ['zodiac_info' => '', 'planet_positions' => '', 'planet_positions_ref' => '', 'basis' => ''];
+        if (empty($birthDate)) {
+            return $empty;
+        }
+
         try {
-            $date = \Carbon\Carbon::parse($birthDate);
-            $month = $date->month;
-            $day = $date->day;
-            $year = $date->year;
+            $astro = new \App\Services\Fortune\ThaiAstrologyService;
+            $stated = $astro->statedBirthInputs($questionsText, $knownProvince);
 
-            // ราศีตามโหราศาสตร์สากล (Western Zodiac)
-            $zodiac = match (true) {
-                ($month == 3 && $day >= 21) || ($month == 4 && $day <= 19) => ['ราศีเมษ (Aries)', 'ไฟ', 'ดาวอังคาร', 'กล้าหาญ ร้อนแรง เป็นผู้นำ มีพลัง'],
-                ($month == 4 && $day >= 20) || ($month == 5 && $day <= 20) => ['ราศีพฤษภ (Taurus)', 'ดิน', 'ดาวศุกร์', 'มั่นคง อดทน รักความสวยงาม ภักดี'],
-                ($month == 5 && $day >= 21) || ($month == 6 && $day <= 20) => ['ราศีเมถุน (Gemini)', 'ลม', 'ดาวพุธ', 'ฉลาด ช่างพูด ปรับตัวเก่ง ไหวพริบดี'],
-                ($month == 6 && $day >= 21) || ($month == 7 && $day <= 22) => ['ราศีกรกฎ (Cancer)', 'น้ำ', 'ดวงจันทร์', 'อ่อนโยน รักครอบครัว อารมณ์ลึกซึ้ง เอาใจใส่'],
-                ($month == 7 && $day >= 23) || ($month == 8 && $day <= 22) => ['ราศีสิงห์ (Leo)', 'ไฟ', 'ดวงอาทิตย์', 'มีเสน่ห์ ผู้นำ มั่นใจ ใจกว้าง'],
-                ($month == 8 && $day >= 23) || ($month == 9 && $day <= 22) => ['ราศีกันย์ (Virgo)', 'ดิน', 'ดาวพุธ', 'ละเอียด พิถีพิถัน ชอบวิเคราะห์ มีระเบียบ'],
-                ($month == 9 && $day >= 23) || ($month == 10 && $day <= 22) => ['ราศีตุลย์ (Libra)', 'ลม', 'ดาวศุกร์', 'รักความยุติธรรม มีเสน่ห์ ชอบความสมดุล ทูต'],
-                ($month == 10 && $day >= 23) || ($month == 11 && $day <= 21) => ['ราศีพิจิก (Scorpio)', 'น้ำ', 'ดาวพลูโต', 'ลึกลับ เข้มแข็ง มีพลังแฝง เด็ดเดี่ยว'],
-                ($month == 11 && $day >= 22) || ($month == 12 && $day <= 21) => ['ราศีธนู (Sagittarius)', 'ไฟ', 'ดาวพฤหัส', 'รักอิสระ มองโลกกว้าง โชคดี มองการณ์ไกล'],
-                ($month == 12 && $day >= 22) || ($month == 1 && $day <= 19) => ['ราศีมังกร (Capricorn)', 'ดิน', 'ดาวเสาร์', 'ขยัน อดทน ทะเยอทะยาน รับผิดชอบสูง'],
-                ($month == 1 && $day >= 20) || ($month == 2 && $day <= 18) => ['ราศีกุมภ์ (Aquarius)', 'ลม', 'ดาวยูเรนัส', 'คิดนอกกรอบ เป็นตัวเอง สร้างสรรค์ ก้าวหน้า'],
-                default => ['ราศีมีน (Pisces)', 'น้ำ', 'ดาวเนปจูน', 'จิตใจอ่อนโยน สัญชาตญาณแม่น จินตนาการล้ำ'],
-            };
+            return $astro->natalPromptBlocks($birthDate, $stated['hour'], $stated['province']);
+        } catch (\Throwable $e) {
+            // ว่างดีกว่าป้อนดวงผิดให้บิลที่จ่ายเงินแล้ว — ผังจริงที่ FortuneAIService ต่อท้ายพรอมต์ยังอยู่
+            Log::warning('Fortune Deep: ผูกดวงกำเนิดจริงไม่สำเร็จ — ปล่อย {zodiac_info}/{planet_positions} ว่าง', [
+                'birth_date' => $birthDate,
+                'error' => $e->getMessage(),
+            ]);
 
-            // วันเกิดตามโหราศาสตร์ไทย + เจ้าชนะ
-            $thaiDayOfWeek = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-            $dayName = $thaiDayOfWeek[$date->dayOfWeek];
-
-            // ดาวเจ้าชนะตามวันเกิด
-            $chaochana = [
-                0 => ['ดาวอาทิตย์', 'พฤหัสบดี+อังคาร', 'เสาร์+ราหู'],
-                1 => ['ดาวจันทร์', 'พุธ+ศุกร์', 'ราหู+เสาร์'],
-                2 => ['ดาวอังคาร', 'อาทิตย์+พฤหัสบดี', 'พุธ+เสาร์'],
-                3 => ['ดาวพุธ', 'จันทร์+ศุกร์', 'ราหู+อังคาร'],
-                4 => ['ดาวพฤหัสบดี', 'อาทิตย์+อังคาร', 'ราหู+เสาร์'],
-                5 => ['ดาวศุกร์', 'พุธ+จันทร์', 'อาทิตย์+อังคาร'],
-                6 => ['ดาวเสาร์', 'ราหู+พฤหัสบดี', 'อาทิตย์+อังคาร'],
-            ];
-            $cc = $chaochana[$date->dayOfWeek] ?? $chaochana[0];
-
-            // ========== ปีนักษัตร (12 ปี) ==========
-            $chineseZodiacAnimals = ['วอก (ลิง)', 'ระกา (ไก่)', 'จอ (สุนัข)', 'กุน (หมู)', 'ชวด (หนู)', 'ฉลู (วัว)', 'ขาล (เสือ)', 'เถาะ (กระต่าย)', 'มะโรง (งูใหญ่)', 'มะเส็ง (งูเล็ก)', 'มะเมีย (ม้า)', 'มะแม (แพะ)'];
-            $zodiacAnimalIndex = $year % 12;
-            $zodiacAnimal = $chineseZodiacAnimals[$zodiacAnimalIndex];
-
-            // ธาตุจีน (วัฏจักร 10 ปี = 5 ธาตุ x 2)
-            $chineseElements = ['ทอง (金)', 'ทอง (金)', 'น้ำ (水)', 'น้ำ (水)', 'ไม้ (木)', 'ไม้ (木)', 'ไฟ (火)', 'ไฟ (火)', 'ดิน (土)', 'ดิน (土)'];
-            $elementIndex = $year % 10;
-            $chineseElement = $chineseElements[$elementIndex];
-
-            // ========== เลขมงคลจริง จากดาวเจ้าชนะ+มิตร ==========
-            // เลขประจำดาว: อาทิตย์=1, จันทร์=2, อังคาร=3, พุธ=4, พฤหัสบดี=5, ศุกร์=6, เสาร์=7, ราหู=8, เกตุ=9
-            $planetNumbers = [
-                0 => [1, 5, 3],   // อาทิตย์=1 มิตร=พฤหัส(5)+อังคาร(3)
-                1 => [2, 4, 6],   // จันทร์=2 มิตร=พุธ(4)+ศุกร์(6)
-                2 => [3, 1, 5],   // อังคาร=3 มิตร=อาทิตย์(1)+พฤหัส(5)
-                3 => [4, 2, 6],   // พุธ=4 มิตร=จันทร์(2)+ศุกร์(6)
-                4 => [5, 1, 3],   // พฤหัส=5 มิตร=อาทิตย์(1)+อังคาร(3)
-                5 => [6, 4, 2],   // ศุกร์=6 มิตร=พุธ(4)+จันทร์(2)
-                6 => [7, 8, 5],   // เสาร์=7 มิตร=ราหู(8)+พฤหัส(5)
-            ];
-            $luckyNums = $planetNumbers[$date->dayOfWeek] ?? [1, 5, 9];
-            // เลขมงคลรวม = ผลรวมเลขดาวเจ้าชนะ+มิตร
-            $luckySum = array_sum($luckyNums) % 10 ?: 10;
-            $luckyNumberStr = implode(', ', $luckyNums).", {$luckySum}";
-
-            // ========== เลขที่ควรระวัง จากดาวศัตรู ==========
-            $enemyNumbers = [
-                0 => [7, 8],   // อาทิตย์: ศัตรู=เสาร์(7)+ราหู(8)
-                1 => [8, 7],   // จันทร์: ศัตรู=ราหู(8)+เสาร์(7)
-                2 => [4, 7],   // อังคาร: ศัตรู=พุธ(4)+เสาร์(7)
-                3 => [8, 3],   // พุธ: ศัตรู=ราหู(8)+อังคาร(3)
-                4 => [8, 7],   // พฤหัส: ศัตรู=ราหู(8)+เสาร์(7)
-                5 => [1, 3],   // ศุกร์: ศัตรู=อาทิตย์(1)+อังคาร(3)
-                6 => [1, 3],   // เสาร์: ศัตรู=อาทิตย์(1)+อังคาร(3)
-            ];
-            $unluckyNums = $enemyNumbers[$date->dayOfWeek] ?? [8, 7];
-            $unluckyNumberStr = implode(', ', $unluckyNums);
-
-            // ========== อายุปัจจุบัน ==========
-            $age = $date->age;
-
-            // ========== คำนวณปีพุทธศักราชเกิด ==========
-            $buddhistYear = $year + 543;
-
-            return "ราศี: {$zodiac[0]} | ธาตุราศี: {$zodiac[1]} | ดาวประจำราศี: {$zodiac[2]} | ลักษณะ: {$zodiac[3]} | เกิดวัน{$dayName} | ดาวเจ้าชนะ: {$cc[0]} | ดาวมิตร: {$cc[1]} | ดาวศัตรู: {$cc[2]} | ปีนักษัตร: ปี{$zodiacAnimal} | ธาตุจีน: {$chineseElement} | อายุ: {$age} ปี (พ.ศ. {$buddhistYear}) | เลขมงคล: {$luckyNumberStr} | เลขควรระวัง: {$unluckyNumberStr}";
-
-        } catch (\Exception $e) {
-            return '';
+            return $empty;
         }
     }
 
@@ -25529,6 +25482,7 @@ PROMPT;
      *
      * @param  string|null  $birthDate  "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
      * @param  string  $questionText  คำถามของลูกค้า — ใช้อ่านเวลา/จังหวัดเกิดที่พิมพ์มาเอง
+     *                                (ส่ง ThaiAstrologyService::numberedQuestionsText() ให้ตรงกับ buildPrompt)
      * @param  string|null  $knownProvince  จังหวัดเกิดที่รู้แล้วจาก DB (FortuneReading::birthProvinceIfKnown)
      *                                      — ต้องเป็นค่าเดียวกับที่ส่งให้ FortuneAIService::withBirthProvince()
      * @return string ข้อมูล transit สำหรับใส่ใน prompt ('' = ไม่มีวันเกิด / คำนวณไม่ได้)
@@ -25542,18 +25496,14 @@ PROMPT;
         try {
             $astro = new \App\Services\Fortune\ThaiAstrologyService;
 
-            // ⚠️ อ่านเวลา/จังหวัดเกิดจากคำถาม "แบบเดียวกับ FortuneAIService::buildPrompt()" เป๊ะ
+            // ⚠️ อ่านเวลา/จังหวัดเกิดจากคำถามด้วย "ตัวอ่านเดียวกับ FortuneAIService::buildPrompt()"
             //   เพราะผังดวง (พร้อมดาวจรวันนี้) ที่ต่อท้ายพรอมต์ใบเดียวกันมาจากทางนั้น
             //   ถ้าอ่านคนละแบบ → ลัคนาคนละราศี → ภพของดาวจร 2 บล็อกไม่ตรงกัน = บั๊กเดิมกลับมา
             //   (ล็อกไว้ที่ RealTransitPromptTest::test_transit_block_matches_the_chart_block_in_the_same_prompt)
             // 🗺️ (2026-09-11) จังหวัดที่รู้แล้วชนะข้อความ — กฎเดียวกับ buildPrompt() ผ่าน ThaiProvinces::forChart()
-            $birthHour = null;
-            if (trim($questionText) !== '') {
-                $birthHour = $astro->extractStatedBirthHour($questionText);
-            }
-            $birthProvince = \App\Support\ThaiProvinces::forChart($knownProvince, $questionText);
+            $stated = $astro->statedBirthInputs($questionText, $knownProvince);
 
-            $block = trim($astro->formatTransitOutlookBlock($birthDate, $birthHour, $birthProvince));
+            $block = trim($astro->formatTransitOutlookBlock($birthDate, $stated['hour'], $stated['province']));
             if ($block === '') {
                 return '';
             }
@@ -27301,30 +27251,13 @@ PROMPT;
             $name = $reading->resolveCustomerName();
 
             // 🆕 (2026-05-01) Planet positions context — ให้ AI อ้างอิงตำแหน่งดาวเดิมในตอบ
+            // 🗺️ (2026-09-11) ดวงกำเนิดจริง (เดิมผังสาธิต 7 แบบจากวันในสัปดาห์ — ดู getNatalPromptBlocks)
             $birthChartContext = '';
             if ($reading->birth_date) {
-                try {
-                    $dayOfWeek = \Carbon\Carbon::parse($reading->birth_date->format('Y-m-d'))->dayOfWeek;
-                    $chartService = new FortuneChartService;
-                    $positions = $chartService->calculatePlanetPositions($dayOfWeek);
-                    $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
-
-                    $lines = [];
-                    foreach ($positions as $houseNum => $planets) {
-                        if (! empty($planets)) {
-                            $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
-                            $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
-                            $lines[] = "ภพ{$houseNum}.{$houseName}: ".implode(',', $planetNames);
-                        }
-                    }
-                    if (! empty($lines)) {
-                        $birthChartContext = "\n[🪐 ตำแหน่งดาวเดิม — ใช้ผูกในการตอบ]\n".implode(' | ', $lines)."\n";
-                        if ($chaochana) {
-                            $birthChartContext .= "ดาวเจ้าชนะ: {$chaochana['planet']} | ธาตุ: {$chaochana['element']}\n";
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    // ข้ามไปได้ ไม่ critical
+                $natal = $this->getNatalPromptBlocks($reading->birthDateTimeForChart(), '', $reading->birthProvinceIfKnown());
+                if ($natal['planet_positions'] !== '') {
+                    $birthChartContext = "\n".$natal['planet_positions']
+                        .($natal['zodiac_info'] !== '' ? $natal['zodiac_info']."\n" : '');
                 }
             }
 

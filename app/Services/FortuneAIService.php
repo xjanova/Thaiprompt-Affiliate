@@ -5891,29 +5891,20 @@ PROMPT;
         $template = $promptTemplate ?? $this->settings->getDefaultPromptTemplate();
         $profileText = $this->formatUserProfile($userProfile);
         $postsText = $this->formatUserPosts($userPosts);
-        $questionsText = implode("\n", array_map(fn ($i, $q) => ($i + 1).". $q", array_keys($questions), $questions));
+        $questionsText = \App\Services\Fortune\ThaiAstrologyService::numberedQuestionsText($questions);
 
         // 🕛 (2026-09-02) ลูกค้าบอกเวลาเกิดมาในคำถามไหม — บอกมา = ผูกดวงแม่นขึ้น (ลัคนา+ดาวจันทร์)
-        //    ไม่บอก = ใช้เวลามาตรฐาน 12:00 น. (ThaiAstrologyService::DEFAULT_BIRTH_HOUR)
+        //    ไม่บอก = ไม่ทราบเวลาเกิด (ผังใช้จันทร์ลัคน์ / ไม่มีภพ ตามตำรา)
         //    เราไม่ถามเวลาเกิดเป็นขั้นตอนบังคับ — แต่ถ้าเขาพิมพ์มาเอง ต้องเก็บมาใช้
-        $birthHour = null;
-        try {
-            $birthHour = (new \App\Services\Fortune\ThaiAstrologyService)
-                ->extractStatedBirthHour($questionsText);
-        } catch (\Throwable $e) {
-            // non-blocking — ตกไปใช้เวลามาตรฐาน
-        }
-
         // 🗺️ (2026-09-09) จังหวัดเกิดถ้าลูกค้าพิมพ์มาเอง — เหตุผลเดียวกับเวลาเกิด
         //    ไม่พบ = ผังใช้พิกัดกรุงเทพเป็นค่ากลาง *และพิมพ์บอกตามตรงในบล็อก*
         // 🗺️ (2026-09-11) จังหวัดที่ผู้เรียกรู้แล้ว (withBirthProvince — เลน 39 ถามไว้ก่อนเปิดไพ่) ชนะข้อความ
-        //    ⚠️ ต้องเป็นกฎเดียวกับช่อง {transit_info} (getCurrentTransitDescription) — ใช้ forChart() ทั้งคู่
-        $birthProvince = null;
-        try {
-            $birthProvince = \App\Support\ThaiProvinces::forChart($this->chartBirthProvince, $questionsText);
-        } catch (\Throwable $e) {
-            // non-blocking
-        }
+        // ⚠️ (2026-09-11) ใช้ตัวอ่านเดียวกับช่อง {zodiac_info}/{planet_positions}/{transit_info}
+        //    ของพรอมต์ดูดวง 39 (FortuneConversationService) — อ่านคนละแบบ = ลัคนาคนละราศีในพรอมต์ใบเดียว
+        [
+            'hour' => $birthHour,
+            'province' => $birthProvince,
+        ] = (new \App\Services\Fortune\ThaiAstrologyService)->statedBirthInputs($questionsText, $this->chartBirthProvince);
 
         $birthDateSection = $this->formatBirthDateSection($birthDate, $birthHour, $birthProvince);
 

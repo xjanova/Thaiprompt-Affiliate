@@ -95,6 +95,16 @@ class ThaiAstrologyService
     protected ?array $lastRulerProfile = null;
 
     /**
+     * หัวผังของคนล่าสุด (ราศีเกิด · วันทางโหร · อายุ · ปีเกิด) — ค่าชุดเดียวกับที่ formatPersonBlock() พิมพ์
+     *
+     * เก็บไว้ให้ช่อง {zodiac_info} ของพรอมต์ดูดวง 39 หยิบไปใช้ ⇒ ไม่ต้องคำนวณซ้ำคนละที่แล้วเพี้ยนกัน
+     * (ของเดิมคำนวณเองจากตารางราศีสากล + วันปฏิทิน ⇒ ขัดกับผังในพรอมต์ใบเดียวกัน)
+     *
+     * @var array{zodiac:string, day_name:string, calendar_day_name:string, day_shifted:bool, age:int, year:int, thai_year:int}|null
+     */
+    protected ?array $lastNatalSummary = null;
+
+    /**
      * ดาวที่ "ช้าพอจะเป็นจังหวะชีวิต" — ใช้ทั้งมุมดาวจรกระทบดวงกำเนิดและตารางดาวจรล่วงหน้า
      *
      * จันทร์ ~2.5 วัน/ราศี · พุธ-ศุกร์ ไวเกิน ⇒ ตำแหน่ง ณ วันเดียวไม่บอกอะไรเรื่องช่วงเดือน
@@ -496,6 +506,7 @@ class ThaiAstrologyService
         //    ⚠️ ต้องล้างทุกครั้งที่เริ่มคนใหม่ — instance เดียวถูกใช้ซ้ำหลายคนในบล็อกเดียว
         //      (เจ้าชะตา + คู่ + คู่ปรับ) ถ้าไม่ล้าง คนที่ 2 จะยืมจังหวัดของคนที่ 1 ไปคำนวณ
         $this->lastPlace = null;
+        $this->lastNatalSummary = null;
         if ($birthProvince !== null && $birthProvince !== '') {
             $coords = \App\Support\ThaiProvinces::coords($birthProvince);
             if ($coords !== null) {
@@ -548,7 +559,7 @@ class ThaiAstrologyService
         $dayShifted = $dow !== $calendarDow;
 
         $dayName = $dayNames[$dow];
-        $zodiac = $this->getZodiacSignForDate($date);
+        $zodiac = $this->natalZodiacLabel($date);
         $p = $this->getPlanetByDayOfWeek($dow);
 
         // 🌙 พุธกลางคืน = ราหู — ต้องทับ "ดาวเจ้าชนะ" ทั้งชุด ไม่ใช่แค่ทักษา
@@ -561,6 +572,16 @@ class ThaiAstrologyService
         if ($this->isNightBirth($this->lastBirthHour)) {
             $dayName .= ' กลางคืน';
         }
+
+        $this->lastNatalSummary = [
+            'zodiac' => $zodiac,
+            'day_name' => $dayName,
+            'calendar_day_name' => $dayNames[$calendarDow],
+            'day_shifted' => $dayShifted,
+            'age' => $age,
+            'year' => $date->year,
+            'thai_year' => $thaiYear,
+        ];
 
         $base = "📅 {$date->day} {$thaiMonths[$date->month]} {$thaiYear} (วัน{$dayName}, อายุ {$age} ปี)\n";
 
@@ -790,27 +811,7 @@ class ThaiAstrologyService
         // ── ตำแหน่งดาวทั้ง 10 ──
         $out .= "   📍 ตำแหน่งดาว:\n";
         foreach ($positions as $key => $p) {
-            $deg = floor($p['lon']) % 30;
-            $line = "      {$p['sym']} {$p['th']} ราศี{$p['sign']} ".sprintf('%2d°', $deg);
-            if ($anchor !== null) {
-                $h = $this->houseNumber($anchor, $p['sign']);
-                $line .= " · ภพ{$h}";
-            }
-            $dig = $this->dignityOf($p['th'], $p['sign']);
-            if ($dig !== '' && strpos($dig, 'เป็นกลาง') === false) {
-                $line .= ' · '.$dig;
-            }
-            if (! empty($p['retro'])) {
-                $line .= ' · ⏪ พักร';
-            }
-
-            // 🌙 จันทร์เดิน ~13°/วัน ⇒ ไม่รู้เวลาเกิด = องศาจันทร์คลาดได้ ±6.6°
-            //    บรรทัดนี้จึงต้องติดป้ายตามตรง ไม่ใช่พิมพ์องศาเป๊ะ ๆ ให้ AI เอาไปฟันธง
-            if (! $hourKnown && $key === 'Moon') {
-                $line .= ' · ⚠️ องศาโดยประมาณ (ไม่ทราบเวลาเกิด — คลาดได้ ±7°)';
-            }
-
-            $out .= $line."\n";
+            $out .= '      '.$this->formatNatalPlanetLine((string) $key, $p, $anchor, $hourKnown)."\n";
         }
 
         // ── 📐 มุมสัมพันธ์ในดวงกำเนิด (ของใหม่ 2026-09-09 — เดิมเลนจ่ายเงินไม่เคยได้เลย) ──
@@ -838,6 +839,281 @@ class ThaiAstrologyService
         }
 
         return $out;
+    }
+
+    /**
+     * ♈ ราศีเกิด = ราศีของดวงอาทิตย์ "ขณะเกิด"
+     *
+     * 🐛 (2026-09-11 จับผี) เดิมใช้ getZodiacSignForDate() ซึ่งคิดที่เที่ยงวันเสมอ แต่บรรทัด "☉ อาทิตย์"
+     *   ในผังคิดที่เวลาเกิดจริง ⇒ คนที่รู้เวลาเกิดและเกิดวันอาทิตย์ยกราศี ได้หัวผังกับบรรทัดดาวคนละราศี
+     *   (ตรวจจริง: 14 ม.ค. 2528 ตี 1 → หัวผัง "มังกร" แต่ ☉ อยู่ "ธนู")
+     *   ⇒ รู้เวลาเกิด = คิดที่เวลาเดียวกับผัง (ปัดนาทีแบบเดียวกับ formatBirthChartBlock) · ไม่รู้ = เที่ยงวันแบบเดิม
+     */
+    protected function natalZodiacLabel(Carbon $date): string
+    {
+        if ($this->lastBirthHour === null) {
+            return $this->getZodiacSignForDate($date);
+        }
+
+        $hh = (int) floor($this->lastBirthHour);
+        $mm = (int) round(($this->lastBirthHour - $hh) * 60);
+        if ($mm >= 60) {
+            $mm = 0;
+            $hh++;
+        }
+
+        $idx = (new PlanetEphemeris)->positions($date->copy()->setTime($hh, $mm, 0))['Sun']['sign_index'] ?? null;
+
+        return PlanetEphemeris::SIGN_LABELS[$idx] ?? $this->getZodiacSignForDate($date);
+    }
+
+    /**
+     * 📍 บรรทัดตำแหน่งดาวกำเนิด 1 ดวง (ไม่มีย่อหน้านำ) — ตัวเรนเดอร์เดียวของทั้งผังดวงพื้นและช่อง {planet_positions}
+     *
+     * ⚠️ แยกออกมาเพื่อให้ 2 บล็อกในพรอมต์ใบเดียวพิมพ์ดาวดวงเดียวกันได้ตรงกันทุกตัวอักษร
+     *    (ล็อกไว้ที่ RealNatalPromptTest) — ห้ามแต่งบรรทัดดาวกำเนิดเองที่อื่น
+     *
+     * @param  string|null  $anchor  ราศีภพที่ 1 (ลัคนา/จันทร์ลัคน์) — null = ดวงไม่มีภพ ห้ามพิมพ์เลขภพ
+     */
+    protected function formatNatalPlanetLine(string $key, array $p, ?string $anchor, bool $hourKnown): string
+    {
+        $deg = floor($p['lon']) % 30;
+        $line = "{$p['sym']} {$p['th']} ราศี{$p['sign']} ".sprintf('%2d°', $deg);
+        if ($anchor !== null) {
+            $h = $this->houseNumber($anchor, $p['sign']);
+            $line .= " · ภพ{$h}";
+        }
+        $dig = $this->dignityOf($p['th'], $p['sign']);
+        if ($dig !== '' && strpos($dig, 'เป็นกลาง') === false) {
+            $line .= ' · '.$dig;
+        }
+        if (! empty($p['retro'])) {
+            $line .= ' · ⏪ พักร';
+        }
+
+        // 🌙 จันทร์เดิน ~13°/วัน ⇒ ไม่รู้เวลาเกิด = องศาจันทร์คลาดได้ ±6.6°
+        //    บรรทัดนี้จึงต้องติดป้ายตามตรง ไม่ใช่พิมพ์องศาเป๊ะ ๆ ให้ AI เอาไปฟันธง
+        if (! $hourKnown && $key === 'Moon') {
+            $line .= ' · ⚠️ องศาโดยประมาณ (ไม่ทราบเวลาเกิด — คลาดได้ ±7°)';
+        }
+
+        return $line;
+    }
+
+    /**
+     * 🗺️ ดวงกำเนิดจริงสำหรับช่อง {zodiac_info} + {planet_positions} ของพรอมต์ดูดวง 39
+     *
+     * 🚨 (2026-09-11) 2 ช่องนี้เคยเป็นของปลอมทั้งคู่ แต่ถูกส่งให้โมเดลในฐานะดวงจริงของลูกค้าที่จ่ายเงิน:
+     *   - {planet_positions} มาจาก FortuneChartService::calculatePlanetPositions($dayOfWeek)
+     *     = ผังสาธิตที่รับแค่ "วันในสัปดาห์" (เจ้าชนะ→ภพ 1 · มิตร→9/11/5 · ศัตรู→6/12/8)
+     *     ⇒ มีแค่ 7 แบบทั้งระบบ แต่ติดป้ายว่า "ตำแหน่งดาวในภพจริง (ต้องอ้างอิงในคำทำนาย)"
+     *   - {zodiac_info} ใช้ตารางราศี **สากล (สายนะ)** + ดาวพลูโต/ยูเรนัส/เนปจูน เป็นดาวประจำราศี
+     *     + วันปฏิทิน (ไม่ข้ามย่ำรุ่ง · ไม่มีพุธกลางคืน=ราหู) ⇒ ราศีผิด ~80.8% ของวันเกิด
+     *   ขณะที่ FortuneAIService::buildPrompt() ต่อผังจริง (formatPersonBlock) ท้ายพรอมต์ใบเดียวกัน
+     *   ⇒ โมเดลเห็นราศี/ภพ 2 ชุดขัดกัน — template สั่ง "จาก {planet_positions} เท่านั้น" มันจึงเลือกชุดปลอม
+     *
+     * ใหม่: ผูกดวงด้วย formatPersonBlock() ตัวเดียวกับผังที่ต่อท้าย (อินพุตชุดเดียวกัน) แล้วหยิบค่าจาก state
+     *   - บรรทัดดาวใช้ formatNatalPlanetLine() ตัวเดียวกับผัง ⇒ ตรงกันทุกตัวอักษร
+     *   - ภพนับจากฐานเดียวกับผัง (ลัคนาจริง → จันทร์ลัคน์ → ไม่มีภพ) · ไม่มีฐาน = **ไม่มีเลขภพเลย**
+     *   - คืน basis = 'lagna' | 'moon' | 'none' · '' = ผูกดวงไม่ได้ (ทุกช่องว่าง)
+     *
+     * @param  string  $ymd  วันเกิด "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
+     * @param  float|null  $birthHour  เวลาเกิดที่ลูกค้าพิมพ์ในคำถาม (statedBirthInputs) — ชนะเวลาในสตริงวันเกิด
+     * @param  string|null  $birthProvince  จังหวัดเกิดที่ลูกค้าพิมพ์ในคำถาม (null = ใช้พิกัดกรุงเทพ)
+     * @return array{zodiac_info: string, planet_positions: string, planet_positions_ref: string, basis: string}
+     */
+    public function natalPromptBlocks(string $ymd, ?float $birthHour = null, ?string $birthProvince = null): array
+    {
+        $empty = ['zodiac_info' => '', 'planet_positions' => '', 'planet_positions_ref' => '', 'basis' => ''];
+
+        // ล้างของค้างจากคนก่อน — formatPersonBlock() คืนค่าก่อนตั้ง state เมื่ออ่านวันเกิดไม่ออก
+        $this->lastLagna = null;
+        $this->lastLagnaBasis = 'none';
+        $this->lastNatalPositions = null;
+        $this->lastRulerProfile = null;
+        $this->lastNatalSummary = null;
+
+        $natal = $this->formatPersonBlock($ymd, $birthHour, false, $birthProvince);
+        if ($this->lastRulerProfile === null || $this->lastNatalSummary === null || str_starts_with($natal, '(วันเกิด:')) {
+            return $empty;
+        }
+
+        $positions = $this->formatNatalPositionsBlock();
+
+        return [
+            'zodiac_info' => $this->formatZodiacInfoLine(),
+            'planet_positions' => $positions,
+            'planet_positions_ref' => $positions === '' ? '' : $this->natalChartReference(),
+            'basis' => $positions === '' ? '' : $this->lastLagnaBasis,
+        ];
+    }
+
+    /**
+     * ♈ บรรทัด {zodiac_info} — ทุกค่าหยิบจาก state ของผังล่าสุด (ห้ามคำนวณใหม่ที่นี่)
+     *
+     * ราศี = นิรายนะจากดวงอาทิตย์จริง · วันเกิด = วันทางโหร (ย่ำรุ่ง 06:00 + กลางคืน)
+     * ดาวเจ้าชนะ/มิตร/ศัตรู/สี/เลข = ชุดดาวเจ้าเรือนเดียวกับหัวผัง (พุธกลางคืน = ราหู แล้ว)
+     */
+    protected function formatZodiacInfoLine(): string
+    {
+        $s = $this->lastNatalSummary;
+        $p = $this->lastRulerProfile;
+        if ($s === null || $p === null) {
+            return '';
+        }
+
+        $sign = $this->extractSignFromName((string) $s['zodiac']);
+        $element = $this->getZodiacElement((string) $s['zodiac']);
+        $lords = $sign !== null ? $this->signLords($sign) : [];
+        $trait = $sign !== null ? (string) config('thai_astrology_knowledge.zodiac_trait.'.$sign, '') : '';
+        $zy = $this->getZodiacYear((int) $s['year']);
+
+        $day = "เกิดวัน{$s['day_name']}";
+        if ($s['day_shifted']) {
+            $day .= " (ทางโหร — ปฏิทินคือวัน{$s['calendar_day_name']} แต่เกิดก่อนย่ำรุ่ง 06:00)";
+        }
+
+        $parts = [
+            "ราศีเกิด: {$s['zodiac']} (นิรายนะ — จากตำแหน่งดวงอาทิตย์จริง)",
+            $element !== null ? "ธาตุราศี: {$element}" : '',
+            $lords !== [] ? 'ดาวเกษตรของราศี: '.implode(', ', $lords) : '',
+            $trait !== '' ? "ลักษณะราศี: {$trait}" : '',
+            $day,
+            "ดาวเจ้าชนะ: {$p['planet']}",
+            "ดาวมิตร: {$p['friends']}",
+            "ดาวศัตรู: {$p['enemies']}",
+            "สีมงคล: {$p['lucky_color']}",
+            "เลขมงคล: {$p['lucky_number']}",
+            $zy !== [] ? "ปีนักษัตร: ปี{$zy['name']} ({$zy['animal']})" : '',
+            "อายุ: {$s['age']} ปี (เกิด พ.ศ. {$s['thai_year']})",
+        ];
+
+        return implode(' | ', array_filter($parts, fn (string $x) => $x !== ''));
+    }
+
+    /**
+     * 🗺️ บล็อก {planet_positions} — ดาวกำเนิด 10 ดวงชุดเดียวกับ "🌀 ดวงพื้น" ในผังดวง
+     *
+     * ภพมีเฉพาะเมื่อผังมีฐานนับภพจริง — ไม่มีฐาน = ไม่มีเลขภพ + บอกโมเดลให้ใช้ราศีแทน
+     * (template ของแอดมินสั่ง "ระบุดาว[X]ในภพ[Y] ทุก paragraph" ⇒ ไม่บอก = โมเดลแต่งภพเอง)
+     */
+    protected function formatNatalPositionsBlock(): string
+    {
+        $positions = $this->lastNatalPositions;
+        if (empty($positions)) {
+            return '';
+        }
+
+        $hourKnown = $this->lastBirthHour !== null;
+        $anchor = $this->lastLagna;
+
+        $out = "[🗺️ ผังดวงกำเนิด — ตำแหน่งดาวจริง 10 ดวง · ระบบนิรายนะ · ชุดเดียวกับ \"🌀 ดวงพื้น\" ในผังดวง]\n";
+
+        if ($anchor !== null && $this->lastLagnaBasis === 'lagna') {
+            $out .= "⬆️ ภพนับจากลัคนาราศี{$anchor} (ผูกจากเวลาเกิดที่เจ้าชะตาบอก)\n";
+        } elseif ($anchor !== null && $this->lastLagnaBasis === 'moon') {
+            $out .= "🌙 ไม่ทราบเวลาเกิด → ภพนับจาก *จันทร์ลัคน์* ราศี{$anchor} — เรียกว่า \"จันทร์ลัคน์\" เท่านั้น ❌ ห้ามเรียกว่าลัคนา\n";
+        } else {
+            // ไม่รู้เวลาเกิด + จันทร์ย้ายราศีในวันเกิด ⇒ ผูกไม่ได้ทั้งลัคนาและจันทร์ลัคน์
+            $anchor = null;
+            $out .= "🔒 ดวงนี้ไม่มีภพ — ไม่ทราบเวลาเกิด และจันทร์ย้ายราศีในวันเกิด จึงผูกได้ทั้งลัคนาและจันทร์ลัคน์ไม่ได้\n"
+                ."   คำสั่งใดในพรอมต์นี้ที่ให้อ้าง \"ภพ\" → ให้อ้าง \"ดาว[ชื่อ]สถิตราศี[ราศี]\" + ดาวมิตร/ศัตรูแทน ❌ ห้ามแต่งเลขภพหรือชื่อภพเอง\n"
+                // 🌙 ราศีจันทร์ในรายการคำนวณที่เที่ยงวัน — วันที่จันทร์ย้ายราศี = ไม่รู้ว่าเกิดก่อนหรือหลังย้าย
+                ."   ☽ ราศีจันทร์ข้างล่างคิดที่เที่ยงวัน — วันนั้นจันทร์ย้ายราศี จึงไม่รู้แน่ว่าจันทร์กำเนิดอยู่ราศีไหน ❌ ห้ามฟันธงจากราศีจันทร์\n";
+        }
+
+        foreach ($positions as $key => $p) {
+            $out .= '- '.$this->formatNatalPlanetLine((string) $key, $p, $anchor, $hourKnown)."\n";
+        }
+
+        if ($anchor !== null) {
+            $out .= "🔒 อ้าง \"ดาว[ชื่อ]ในภพ[เลข]\" ได้เฉพาะคู่ดาว–ภพในรายการนี้ ❌ ห้ามย้ายดาวไปภพอื่น ❌ ห้ามแต่งดาวที่ไม่มีในรายการ\n";
+        } else {
+            $out .= "🔒 ใช้ได้เฉพาะดาว–ราศีในรายการนี้ ❌ ห้ามแต่งตำแหน่งดาวเอง\n";
+        }
+
+        return $out;
+    }
+
+    /**
+     * 🔗 ป้ายอ้างอิงสั้นของผังดวงกำเนิด — ใช้แทน {planet_positions} ที่อยู่ "ในประโยคคำสั่ง"
+     *
+     * บล็อกเต็มวางครั้งเดียวที่บรรทัดวางข้อมูล ส่วนในประโยคให้ชี้กลับมาที่บล็อก
+     * ⚠️ ดวงไม่มีภพต้องบอกในป้ายด้วย — ป้ายไปอยู่ในประโยคที่สั่ง "2 ภพ + 2 ดาว" ตรง ๆ
+     */
+    protected function natalChartReference(): string
+    {
+        return match (true) {
+            $this->lastLagna !== null && $this->lastLagnaBasis === 'lagna' => "ผังดวงกำเนิด 🗺️ (ภพนับจากลัคนาราศี{$this->lastLagna})",
+            $this->lastLagna !== null && $this->lastLagnaBasis === 'moon' => "ผังดวงกำเนิด 🗺️ (ภพนับจากจันทร์ลัคน์ราศี{$this->lastLagna})",
+            default => 'ผังดวงกำเนิด 🗺️ (ดวงนี้ไม่มีภพ — อ้างดาว+ราศีแทนภพ ❌ ห้ามแต่งเลขภพ)',
+        };
+    }
+
+    /**
+     * ดาวเกษตร (เจ้าของราศี) ตาม config `planet_dignity.*.rules` — แหล่งเดียวกับป้ายเกษตรในผัง
+     *
+     * ⚠️ ตำราไทยไม่มีพลูโต/ยูเรนัส/เนปจูนเป็นเจ้าราศี (ของเดิมยกมาจากโหราศาสตร์สากล)
+     *
+     * @return string[]
+     */
+    protected function signLords(string $sign): array
+    {
+        $lords = [];
+        foreach ((array) config('thai_astrology_knowledge.planet_dignity', []) as $planet => $dig) {
+            if (in_array($sign, (array) ($dig['rules'] ?? []), true)) {
+                $lords[] = (string) $planet;
+            }
+        }
+
+        return $lords;
+    }
+
+    /**
+     * 🧾 ข้อความคำถามรูปแบบเดียวกับที่ FortuneAIService::buildPrompt() ใช้ ("1. ...\n2. ...")
+     *
+     * ⚠️ พรอมต์ดูดวง 39 อ่านเวลา/จังหวัดเกิดจากข้อความนี้ 2 ฝั่ง (ช่องใน template + ผังที่ต่อท้าย)
+     *    ต้องเป็นสตริงเดียวกันเป๊ะ — หน้าต่างอ่านเวลาเกิดกว้าง 90 ตัวอักษร เลขลำดับ "1. " จึงอยู่ในหน้าต่างได้
+     */
+    public static function numberedQuestionsText(array $questions): string
+    {
+        return implode("\n", array_map(fn ($i, $q) => ($i + 1).". $q", array_keys($questions), $questions));
+    }
+
+    /**
+     * 🕛🗺️ เวลา + จังหวัดเกิดสำหรับผูกดวงของพรอมต์ทำนาย — ตัวอ่านเดียวของทุกผังในพรอมต์ใบเดียว
+     *
+     * ใช้ร่วมกันระหว่าง FortuneAIService::buildPrompt() (ผังที่ต่อท้าย) กับช่อง
+     * {zodiac_info}/{planet_positions}/{transit_info} ของพรอมต์ดูดวง 39 — อ่านคนละแบบ = ลัคนาคนละราศีในใบเดียว
+     *   - เวลาเกิด: อ่านจากข้อความคำถาม (extractStatedBirthHour — ต้องมีคำว่าเกิด/คลอดกำกับ)
+     *   - จังหวัดเกิด: จังหวัดที่ระบบรู้แล้วชนะข้อความเสมอ (ThaiProvinces::forChart)
+     *     ⚠️ ข้อความว่างก็ยังต้องคืนจังหวัดที่รู้แล้ว — ห้าม return ก่อนถึงบรรทัดนั้น
+     * ล้มตัวไหน = ตัวนั้นเป็น null (ไม่บล็อกการทำนาย)
+     *
+     * @param  string  $questionsText  จาก numberedQuestionsText()
+     * @param  string|null  $knownProvince  จังหวัดเกิดที่รู้แล้ว (FortuneReading::birthProvinceIfKnown) — null = ไม่ทราบ
+     * @return array{hour: float|null, province: string|null}
+     */
+    public function statedBirthInputs(string $questionsText, ?string $knownProvince = null): array
+    {
+        $hour = null;
+        $province = null;
+
+        if (trim($questionsText) !== '') {
+            try {
+                $hour = $this->extractStatedBirthHour($questionsText);
+            } catch (\Throwable $e) {
+                // non-blocking — ตกไปใช้ "ไม่ทราบเวลาเกิด"
+            }
+        }
+
+        try {
+            $province = \App\Support\ThaiProvinces::forChart($knownProvince, $questionsText);
+        } catch (\Throwable $e) {
+            // non-blocking — ตกไปใช้พิกัดกรุงเทพ (ผังพิมพ์บอกตามตรง)
+        }
+
+        return ['hour' => $hour, 'province' => $province];
     }
 
     /**
