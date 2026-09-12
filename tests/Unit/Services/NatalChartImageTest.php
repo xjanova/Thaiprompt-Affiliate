@@ -269,7 +269,8 @@ class NatalChartImageTest extends TestCase
     {
         $paid = $this->methodSource(FortuneConversationService::class, 'processPaymentConfirmed');
         $this->assertMatchesRegularExpression(
-            '/\$chartInputs\s*=\s*\$this->deepChartImageInputs\(\(array\) \$questions, \$birthProvince\)/',
+            // (2026-09-12) resolve ครั้งเดียวต่อบิลก่อนวาดรูป แล้วใช้ค่าเดียวกันทุกข้อ ⇒ มีเงื่อนไข $birthDate นำหน้าได้
+            '/\$chartInputs\s*=\s*(?:\$birthDate\s*\?\s*)?\$this->deepChartImageInputs\(\(array\) \$questions, \$birthProvince(?:, \$reading->birthTimeIsKnown\(\))?\)/',
             $paid,
             'รูปบิล 39 ต้องใช้คำถาม + จังหวัดชุดเดียวกับที่ส่งให้พรอมต์'
         );

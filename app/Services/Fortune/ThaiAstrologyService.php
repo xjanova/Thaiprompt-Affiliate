@@ -181,7 +181,9 @@ class ThaiAstrologyService
                 $d['ymd'],
                 $i === 0 ? $statedHour : null,
                 $i === 0,
-                $i === 0 ? ($birthProvince ?? \App\Support\ThaiProvinces::resolve($text)) : null
+                // 🗺️ (2026-09-12) ข้อความนี้คือคำถาม ไม่ใช่คำตอบกล่องจังหวัด ⇒ ต้องมีคำว่า "เกิด" กำกับ (forChart)
+                //    เดิม resolve() ⇒ "ย้ายไปทำงานภูเก็ต" = เกิดภูเก็ต · พรอมต์ขัดกับรูปผังที่ใช้ค่าจาก DB
+                $i === 0 ? \App\Support\ThaiProvinces::forChart($birthProvince, $text) : null
             )."\n";
 
             // 🕛 (2026-09-09) ฐานที่ใช้นับภพ = ของ "เจ้าชะตา" (คนแรก) เท่านั้น
@@ -1163,6 +1165,24 @@ class ThaiAstrologyService
     public static function numberedQuestionsText(array $questions): string
     {
         return implode("\n", array_map(fn ($i, $q) => ($i + 1).". $q", array_keys($questions), $questions));
+    }
+
+    /**
+     * 🕛🗺️ ทำความสะอาดค่าเวลา+จังหวัดเกิด "ต่อบิล" ที่ผู้เรียกล็อกไว้ — กติกาเดียวของทุกที่ที่รับค่านี้
+     *
+     * (FortuneAIService::withChartInputs + ช่องผังในพรอมต์ดูดวง 39) — ถ้าสองฝั่งกรองคนละแบบ ผังจะขัดกันเอง
+     *
+     * @return array{hour: float|null, province: string|null}
+     */
+    public static function normalizeChartInputs(array $inputs): array
+    {
+        $hour = $inputs['hour'] ?? null;
+        $province = $inputs['province'] ?? null;
+
+        return [
+            'hour' => (is_int($hour) || is_float($hour)) && $hour >= 0 && $hour < 24 ? (float) $hour : null,
+            'province' => is_string($province) && \App\Support\ThaiProvinces::isKnown($province) ? $province : null,
+        ];
     }
 
     /**

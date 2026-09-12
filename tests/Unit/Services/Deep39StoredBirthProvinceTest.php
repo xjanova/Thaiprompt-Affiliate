@@ -195,10 +195,16 @@ class Deep39StoredBirthProvinceTest extends TestCase
             $body,
             'ต้องอ่านจังหวัดที่เก็บไว้ครั้งเดียว แล้วใช้ค่านั้นทั้ง 2 ทาง'
         );
+        // 🕛 (2026-09-12) + ค่า "ต่อบิล" ($chartInputs) ตามหลังจังหวัด — ทุกข้อใช้เวลา/จังหวัดชุดเดียวกัน
         $this->assertMatchesRegularExpression(
-            '/buildPerQuestionDeepPrompt\([^;]*\$birthProvince\s*\)/s',
+            '/buildPerQuestionDeepPrompt\([^;]*\$birthProvince\s*,\s*\$chartInputs\s*\)/s',
             $body,
-            'ช่อง {transit_info} ต้องได้จังหวัดเดียวกัน'
+            'ช่อง {transit_info}/{planet_positions} ต้องได้จังหวัด + ค่า "ต่อบิล" เดียวกัน'
+        );
+        $this->assertMatchesRegularExpression(
+            '/\$chartInputs\s*=\s*\$birthDate\s*\?\s*\$this->deepChartImageInputs\(/',
+            $body,
+            'ค่า "ต่อบิล" ต้อง resolve ครั้งเดียว (ตัวเดียวกับรูปผัง)'
         );
 
         // ทุก AI call ที่ใช้พรอมต์ต่อคำถาม ต้องตั้งจังหวัดใหม่หลัง call ก่อนหน้า (one-shot ล้างทุก call)
@@ -213,6 +219,11 @@ class Deep39StoredBirthProvinceTest extends TestCase
                 '->withBirthProvince($birthProvince)',
                 $chunks[$i - 1],
                 "AI call ที่ {$calls} ของพรอมต์ต่อคำถามไม่ได้ตั้งจังหวัด = ผังท้ายพรอมต์กลับไปใช้พิกัดกรุงเทพ"
+            );
+            $this->assertStringContainsString(
+                '->withChartInputs($chartInputs)',
+                $chunks[$i - 1],
+                "AI call ที่ {$calls} ไม่ได้ล็อกค่า \"ต่อบิล\" = ผังท้ายพรอมต์กลับไปอ่านเวลาจากข้อความข้อนี้"
             );
         }
 

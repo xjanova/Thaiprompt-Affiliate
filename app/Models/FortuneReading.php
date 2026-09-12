@@ -2598,17 +2598,22 @@ class FortuneReading extends Model
      * เรียกคู่กับ captureStatedBirthTime() ทุกจุด — ลูกค้าตอบกล่องเดียวว่า
      * "ตี 5 ที่เชียงใหม่" ⇒ ต้องเก็บทั้งเวลาและจังหวัดจากข้อความเดียวกัน
      *
-     * @param  string  $source  ที่มา (audit): customer | celtic_birthdate | time_answer | place_answer
+     * @param  string  $source  ที่มา (audit): customer | celtic_birthdate | time_answer | place_answer | question
+     * @param  bool  $requireBirthCue  (2026-09-12) true = ข้อความเป็น "คำถามอิสระ" ไม่ใช่คำตอบกล่องถามจังหวัด
+     *                                 ⇒ นับเฉพาะจังหวัดที่มีคำว่า "เกิด" กำกับ (ThaiProvinces::resolveBirthplace)
+     *                                 ไม่งั้น "ย้ายไปทำงานภูเก็ต" ถูกบันทึกเป็นจังหวัดเกิด
      * @return string|null ชื่อจังหวัดที่บันทึก (null = ไม่พบ / เหมือนเดิม)
      */
-    public function captureStatedBirthProvince(string $text, string $source = 'customer'): ?string
+    public function captureStatedBirthProvince(string $text, string $source = 'customer', bool $requireBirthCue = false): ?string
     {
         if (! self::hasBirthProvinceColumn()) {
             return null;
         }
 
         try {
-            $province = \App\Support\ThaiProvinces::resolve($text);
+            $province = $requireBirthCue
+                ? \App\Support\ThaiProvinces::resolveBirthplace($text)
+                : \App\Support\ThaiProvinces::resolve($text);
         } catch (\Throwable $e) {
             return null;
         }

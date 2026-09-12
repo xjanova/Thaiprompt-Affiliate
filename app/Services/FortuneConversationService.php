@@ -8176,7 +8176,9 @@ class FortuneConversationService
                     $birthDateStr = $reading->birthDateTimeForChart() ?? $reading->birth_date->format('Y-m-d');
                     $chartName = $reading->facebook_user_name ?? 'คุณ';
                     $chartGender = ($reading->user_profile['gender'] ?? null);
-                    $chartInputs = $this->deepChartImageInputs($collectedQuestions, $reading->birthProvinceIfKnown());
+                    $chartInputs = $this->deepChartImageInputs(
+                        $collectedQuestions, $reading->birthProvinceIfKnown(), $reading->birthTimeIsKnown()
+                    );
                     $chartUrl = $this->chartService->generateBirthChart(
                         $birthDateStr, $chartName, $chartGender, $chartInputs['hour'], $chartInputs['province']
                     );
@@ -9974,7 +9976,9 @@ class FortuneConversationService
                     $gender = $userProfile['gender'] ?? null;
 
                     if ($birthDate) {
-                        $chartInputs = $this->deepChartImageInputs($questions, $reading->birthProvinceIfKnown());
+                        $chartInputs = $this->deepChartImageInputs(
+                            $questions, $reading->birthProvinceIfKnown(), $reading->birthTimeIsKnown()
+                        );
                         $chartImageUrl = $this->chartService->generateBirthChart(
                             $birthDate, $name, $gender, $chartInputs['hour'], $chartInputs['province']
                         );
@@ -10093,23 +10097,65 @@ class FortuneConversationService
      *   ตอนนี้รูปวาดจากผังจริงแล้ว (FortuneChartService::generateBirthChart) แต่ต้องได้ "อินพุตชุดเดียวกัน" ด้วย
      *   ไม่งั้นลัคนาคนละราศี = ภพในรูปไม่ตรงกับข้อความอีก
      *
-     * ทำไมข้อ 1: พรอมต์ทำทีละข้อ แต่ละข้ออ่านเวลา/จังหวัดจาก numberedQuestionsText([$question]) ของตัวเอง
-     *   ส่วนรูปมีใบเดียวต่อบิล ⇒ ยึดข้อ 1 ซึ่งเป็นข้อที่มี Section A (ทายเจ้าชะตาจากผังดวงกำเนิด)
-     *   (ปกติทุกข้อได้ค่าเดียวกันอยู่แล้ว — เวลาที่พิมพ์ในคำถามถูกเก็บลง DB แล้วมากับสตริงวันเกิด
-     *    และจังหวัดที่รู้แล้ว ชนะข้อความเสมอผ่าน ThaiProvinces::forChart)
+     * ทำไมข้อ 1: รูปมีใบเดียวต่อบิล ⇒ ยึดข้อ 1 ซึ่งเป็นข้อที่มี Section A (ทายเจ้าชะตาจากผังดวงกำเนิด)
+     *   🕛 (2026-09-12) ค่านี้คือค่า "ต่อบิล" แล้ว — processPaymentConfirmed ล็อกเข้าพรอมต์ทุกข้อด้วย
+     *   (buildPerQuestionDeepPrompt $chartInputs + FortuneAIService::withChartInputs) เดิมแต่ละข้ออ่านจากข้อความ
+     *   ข้อตัวเอง ⇒ ข้อ 2 "แฟนเกิดตี 2" ถูกนับเป็นเวลาเกิดเจ้าชะตา ⇒ ลัคนาคนละราศีกับรูปและข้อ 1
+     *   จังหวัดจากข้อความต้องมีคำว่า "เกิด" กำกับ (ThaiProvinces::resolveBirthplace ผ่าน forChart)
      *
      * @param  array  $questions  คำถามของบิล (ลำดับเดียวกับลูปทำนาย)
      * @param  string|null  $knownProvince  FortuneReading::birthProvinceIfKnown() — ค่าเดียวกับที่ส่งให้พรอมต์
+     * @param  bool  $knownTime  (2026-09-12) FortuneReading::birthTimeIsKnown() — true = เวลาใน DB (มากับสตริง
+     *                           "Y-m-d H:i") ชนะข้อความ ⇒ hour = null ให้ผังอ่านเวลาจากสตริงวันเกิดเอง
+     *                           (คำตอบกล่อง "เกิดกี่โมง" บอกเวลาของเจ้าชะตาชัด ส่วนข้อความคำถามอาจเป็นของคนอื่น)
      * @return array{hour: float|null, province: string|null}
      */
-    protected function deepChartImageInputs(array $questions, ?string $knownProvince): array
+    protected function deepChartImageInputs(array $questions, ?string $knownProvince, bool $knownTime = false): array
     {
         $first = reset($questions);
         $questionsText = is_string($first)
             ? \App\Services\Fortune\ThaiAstrologyService::numberedQuestionsText([$first])
             : '';
 
-        return (new \App\Services\Fortune\ThaiAstrologyService)->statedBirthInputs($questionsText, $knownProvince);
+        $inputs = (new \App\Services\Fortune\ThaiAstrologyService)->statedBirthInputs($questionsText, $knownProvince);
+        if ($knownTime) {
+            $inputs['hour'] = null;
+        }
+
+        return $inputs;
+    }
+
+    /**
+     * 🕛🗺️ (2026-09-12) เก็บเวลา/จังหวัดเกิดที่เจ้าชะตาพิมพ์ใน "คำถามข้อ 1" ลง DB — เฉพาะช่องที่ยังไม่รู้
+     *
+     * เดิม processPaymentConfirmed: captureStatedBirthTime(implode(' ', ทุกข้อ), 'question') — สแกนทุกข้อ + ทับทุกค่า
+     *   ⇒ ข้อ 2 "แฟนเกิดตี 2" ทับเวลาที่ลูกค้าตอบกล่อง "เกิดกี่โมง" (time_answer) ⇒ รูป + ทุกข้อ + แชทคุยต่อ
+     *   กลายเป็นดวงของแฟน (จันทร์กลางคืน) · หน้าต่างอ่าน 90 ตัวอักษรยังข้ามรอยต่อคำถามได้ด้วย (จับผี 2026-09-12)
+     *
+     * ใหม่ — ต้องตรงกับค่า "ต่อบิล" (deepChartImageInputs) ทุกข้อ:
+     *   - อ่านเฉพาะข้อ 1 ด้วยข้อความรูปแบบเดียวกับพรอมต์ (numberedQuestionsText)
+     *   - ไม่ทับค่าที่รู้แล้ว (คำตอบกล่อง/แอดมิน/บิลก่อน) — ข้อความคำถามอาจเป็นเรื่องของคนอื่น
+     *   - จังหวัดต้องมีคำว่า "เกิด" กำกับ (resolveBirthplace) · เก็บลง DB เพื่อให้แชทคุยต่อได้ผังเดียวกับบิล
+     */
+    protected function captureOwnerBirthDetailsFromFirstQuestion(FortuneReading $reading, array $questions): void
+    {
+        $first = reset($questions);
+        if (! is_string($first) || trim($first) === '') {
+            return;
+        }
+
+        $text = \App\Services\Fortune\ThaiAstrologyService::numberedQuestionsText([$first]);
+
+        try {
+            if (! $reading->birthTimeIsKnown()) {
+                $reading->captureStatedBirthTime($text, 'question');
+            }
+            if ($reading->birthProvinceIfKnown() === null) {
+                $reading->captureStatedBirthProvince($text, 'question', true);
+            }
+        } catch (\Throwable $e) {
+            // non-blocking — ผังตกไปใช้ค่าที่มีอยู่ใน DB
+        }
     }
 
     /**
@@ -10209,12 +10255,10 @@ class FortuneConversationService
 
             // 🕛 (2026-09-02) เวลาเกิด — ลำดับ: ลูกค้าพิมพ์ในคำถาม → เก็บลง DB · แล้วอ่านจาก DB (แอดมินกรอกได้)
             //    ส่งเป็น "Y-m-d H:i" ผ่านช่อง $birthDate เดิม (ThaiAstrologyService อ่านเวลาจากสตริงเอง)
-            //    ไม่รู้เวลา = "Y-m-d" ล้วน → ผูกดวงจาก 12:00 น.
-            try {
-                $reading->captureStatedBirthTime(implode(' ', array_map('strval', (array) $questions)), 'question');
-            } catch (\Throwable $e) {
-                // non-blocking
-            }
+            //    ไม่รู้เวลา = "Y-m-d" ล้วน → ไม่มีลัคนา (จันทร์ลัคน์ / ไม่มีภพ ตามตำรา)
+            // 🐛 (2026-09-12 จับผี) เดิมสแกน "ทุกข้อ" แล้ว "ทับทุกค่า" ⇒ ข้อ 2 "แฟนเกิดตี 2" ทับเวลาที่ลูกค้า
+            //    ตอบกล่อง "เกิดกี่โมง" ⇒ รูป+ทุกข้อ+แชทต่อ เป็นดวงแฟน · ดู captureOwnerBirthDetailsFromFirstQuestion
+            $this->captureOwnerBirthDetailsFromFirstQuestion($reading, (array) $questions);
             $birthDate = $reading->birthDateTimeForChart();
             // 🗺️ (2026-09-11) จังหวัดเกิดที่ลูกค้าตอบกล่อง "เกิดกี่โมง ที่จังหวัดไหน" ก่อนเปิดไพ่ (deep_birthtime_pending)
             //    เดิมไม่มีใครอ่านค่านี้ในบิลแรก ⇒ ลัคนาใช้พิกัดกรุงเทพทุกบิล ทั้งที่แม่หมอทวนว่า "จดไว้ใช้ผูกดวงแล้ว"
@@ -10406,12 +10450,19 @@ class FortuneConversationService
             // สร้าง Birth Chart ใหม่จากวันเกิดจริง (ส่งก่อนคำทำนาย)
             // ถ้าไม่มีวันเกิด → ใช้ Quick Chart แทน (เพื่อให้มีภาพส่งเสมอ)
             // (2026-05-13 clarification: chart = ส่วนของการทำนาย ต้องส่ง — ไม่ใช่ "ข้อมูลอื่นแทรก")
+            // 🕛🗺️ (2026-09-12) เวลา+จังหวัดเกิด "ต่อบิล" — resolve ครั้งเดียว ใช้ทั้งรูปผังและทุกข้อคำทำนาย
+            //   เดิมแต่ละข้ออ่านจากข้อความข้อตัวเอง ⇒ ข้อ 2 "แฟนเกิดตี 2" ถูกนับเป็นเวลาเกิดเจ้าชะตา
+            //   ⇒ ลัคนา/วันทางโหรของข้อ 2 คนละชุดกับข้อ 1 และรูปในบิลเดียวกัน (จับผี 2026-09-12)
+            //   ล็อกเข้า buildPerQuestionDeepPrompt + aiService->withChartInputs ทุก call (รวม retry)
+            $chartInputs = $birthDate
+                ? $this->deepChartImageInputs((array) $questions, $birthProvince, $reading->birthTimeIsKnown())
+                : null;
+
             $chartImageUrl = null;
             try {
                 if ($birthDate) {
-                    // 🖼️ (2026-09-12) รูปต้องเป็นผังเดียวกับที่คำทำนายอ้าง — อินพุตชุดเดียวกับพรอมต์ข้อ 1
-                    //   (สตริงวันเกิด + เวลา/จังหวัดจากคำถาม + จังหวัดที่รู้แล้วชนะ) ดู deepChartImageInputs
-                    $chartInputs = $this->deepChartImageInputs((array) $questions, $birthProvince);
+                    // 🖼️ (2026-09-12) รูปต้องเป็นผังเดียวกับที่คำทำนายอ้าง — อินพุต "ต่อบิล" ชุดเดียวกับทุกข้อ
+                    //   (สตริงวันเกิด + เวลา/จังหวัดจากคำถามข้อ 1 + จังหวัดที่รู้แล้วชนะ) ดู deepChartImageInputs
                     $chartImageUrl = $this->chartService->generateBirthChart(
                         $birthDate, $name, $userProfile['gender'] ?? null,
                         $chartInputs['hour'], $chartInputs['province']
@@ -10475,7 +10526,8 @@ class FortuneConversationService
                     $birthDate,
                     $deepReadings,
                     $tarotCard,
-                    $birthProvince
+                    $birthProvince,
+                    $chartInputs
                 );
 
                 // ✅ Gatekeeper: เช็คทราฟฟิค AI ก่อนเรียกทุกคำถาม
@@ -10519,6 +10571,10 @@ class FortuneConversationService
                 //   → ต้องเรียกในลูปทุกข้อ ไม่ใช่ครั้งเดียวก่อนลูป)
                 // 🗺️ (2026-09-11) จังหวัดเกิดของผังท้ายพรอมต์ — one-shot เหมือนกัน ต้องเป็นค่าเดียวกับ {transit_info}
                 $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
+                // 🕛 (2026-09-12) ล็อกเวลา+จังหวัด "ต่อบิล" — ผังท้ายพรอมต์ต้องไม่อ่านจากข้อความข้อนี้เอง
+                if ($chartInputs !== null) {
+                    $this->aiService->withChartInputs($chartInputs);
+                }
 
                 $aiResult = $this->aiService->generateWithRetryAndFallback(
                     [$question],
@@ -10602,6 +10658,10 @@ class FortuneConversationService
                         //   ต้องผูก reading_id ซ้ำ ไม่งั้น token ของ retry ตกหล่นจากบิลใบนี้
                         // 🗺️ จังหวัดเกิดก็ถูกล้างหลัง call แรกแล้ว — ไม่ตั้งซ้ำ = retry ได้ลัคนากรุงเทพ ขัดกับ {transit_info}
                         $this->aiService->forReading($reading)->withBirthProvince($birthProvince);
+                        // 🕛 ค่า "ต่อบิล" ก็ one-shot — ไม่ตั้งซ้ำ = retry กลับไปอ่านเวลาจากข้อความข้อนี้
+                        if ($chartInputs !== null) {
+                            $this->aiService->withChartInputs($chartInputs);
+                        }
 
                         $retryResult = $this->aiService->generateWithRetryAndFallback(
                             [$question],
@@ -24804,6 +24864,9 @@ PROMPT;
      * @param  array  $previousReadings  คำทำนายก่อนหน้า (เพื่อไม่ให้ซ้ำ)
      * @param  string|null  $birthProvince  จังหวัดเกิดที่รู้แล้ว — ต้องเป็นค่าเดียวกับที่ส่งให้
      *                                      FortuneAIService::withBirthProvince() ของ call เดียวกัน
+     * @param  array|null  $chartInputs  🕛🗺️ (2026-09-12) เวลา+จังหวัดเกิด "ต่อบิล" (deepChartImageInputs)
+     *                                   มีค่า = ทุกช่องผังในพรอมต์ใช้ค่านี้ ไม่อ่านจากข้อความข้อนี้ — ต้องเป็นค่าเดียวกับ
+     *                                   FortuneAIService::withChartInputs() ของ call เดียวกัน · null = อ่านจากข้อความแบบเดิม
      */
     protected function buildPerQuestionDeepPrompt(
         ?array $userProfile,
@@ -24813,7 +24876,8 @@ PROMPT;
         ?string $birthDate,
         array $previousReadings = [],
         ?array $tarotCard = null,
-        ?string $birthProvince = null
+        ?string $birthProvince = null,
+        ?array $chartInputs = null
     ): string {
         // 🐛 (2026-05-02) Bug fix: name fallback "คุณ" + genderPrefix "คุณ" = "คุณคุณ"
         //   ถ้าไม่มีชื่อในโปรไฟล์ → ใช้ "เจ้าชะตา" (ศัพท์ตำราโหร) แทน + ไม่ใส่ prefix
@@ -24875,12 +24939,14 @@ PROMPT;
             // 🗺️ (2026-09-11) ดวงกำเนิดจริง — เดิม {zodiac_info} = ตารางราศีสากล และ
             //   {planet_positions} = ผังสาธิต 7 แบบจากวันในสัปดาห์ (ดู getNatalPromptBlocks)
             //   ⚠️ จังหวัดที่รู้แล้ว ($birthProvince) ต้องส่งให้ "ทุกช่อง" ในพรอมต์ใบนี้ — ลืมช่องไหน ช่องนั้นได้ลัคนากรุงเทพ
-            $natal = $this->getNatalPromptBlocks($birthDate, $questionsText, $birthProvince);
+            //   🕛 (2026-09-12) บิลที่ล็อกค่า "ต่อบิล" มา ($chartInputs) = ทุกข้อใช้เวลา/จังหวัดเดียวกับข้อ 1 และรูปผัง
+            //      (ข้อ 2 "แฟนเกิดตี 2" เคยถูกอ่านเป็นเวลาเกิดเจ้าชะตา ⇒ ลัคนาคนละราศีในบิลเดียวกัน)
+            $natal = $this->getNatalPromptBlocks($birthDate, $questionsText, $birthProvince, $chartInputs);
             $zodiacInfo = $natal['zodiac_info'];
             $planetPositionsInfo = $natal['planet_positions'] !== '' ? "\n".$natal['planet_positions'] : '';
 
             // 🔭 (2026-09-11) ดาวจรจริง — แยกจากผังข้างบน (ผังล้ม ≠ ต้องทิ้งดาวจร)
-            $transitInfo = $this->getCurrentTransitDescription($birthDate, $questionsText, $birthProvince);
+            $transitInfo = $this->getCurrentTransitDescription($birthDate, $questionsText, $birthProvince, $chartInputs);
         }
 
         // 🎯 Phase B.2 — สรุปคำทำนายก่อนหน้า เน้น "สอดคล้อง" ไม่ใช่แค่ "ห้ามซ้ำ"
@@ -25479,9 +25545,10 @@ PROMPT;
      * @param  string|null  $birthDate  "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
      * @param  string  $questionsText  ThaiAstrologyService::numberedQuestionsText() ของคำถามชุดที่จะส่งเข้า buildPrompt
      * @param  string|null  $knownProvince  จังหวัดเกิดที่รู้แล้ว — ค่าเดียวกับ FortuneAIService::withBirthProvince() ของ call เดียวกัน
+     * @param  array|null  $lockedInputs  เวลา+จังหวัด "ต่อบิล" ที่ resolve แล้ว — มีค่า = ไม่อ่านจากข้อความ (ดู buildPerQuestionDeepPrompt)
      * @return array{zodiac_info: string, planet_positions: string, planet_positions_ref: string, basis: string}
      */
-    protected function getNatalPromptBlocks(?string $birthDate, string $questionsText = '', ?string $knownProvince = null): array
+    protected function getNatalPromptBlocks(?string $birthDate, string $questionsText = '', ?string $knownProvince = null, ?array $lockedInputs = null): array
     {
         $empty = ['zodiac_info' => '', 'planet_positions' => '', 'planet_positions_ref' => '', 'basis' => ''];
         if (empty($birthDate)) {
@@ -25490,7 +25557,7 @@ PROMPT;
 
         try {
             $astro = new \App\Services\Fortune\ThaiAstrologyService;
-            $stated = $astro->statedBirthInputs($questionsText, $knownProvince);
+            $stated = $this->lockedOrStatedInputs($astro, $questionsText, $knownProvince, $lockedInputs);
 
             return $astro->natalPromptBlocks($birthDate, $stated['hour'], $stated['province']);
         } catch (\Throwable $e) {
@@ -25502,6 +25569,24 @@ PROMPT;
 
             return $empty;
         }
+    }
+
+    /**
+     * 🕛🗺️ เวลา+จังหวัดเกิดของผังในพรอมต์ — ค่า "ต่อบิล" ที่ล็อกมา ชนะการอ่านจากข้อความเสมอ
+     *
+     * ต้องเป็นกติกาเดียวกับ FortuneAIService::buildPrompt() (withChartInputs) ไม่งั้นช่องในพรอมต์กับผังท้ายพรอมต์ขัดกัน
+     *
+     * @return array{hour: float|null, province: string|null}
+     */
+    protected function lockedOrStatedInputs(
+        \App\Services\Fortune\ThaiAstrologyService $astro,
+        string $questionsText,
+        ?string $knownProvince,
+        ?array $lockedInputs
+    ): array {
+        return $lockedInputs === null
+            ? $astro->statedBirthInputs($questionsText, $knownProvince)
+            : \App\Services\Fortune\ThaiAstrologyService::normalizeChartInputs($lockedInputs);
     }
 
     /**
@@ -25524,9 +25609,10 @@ PROMPT;
      *                                (ส่ง ThaiAstrologyService::numberedQuestionsText() ให้ตรงกับ buildPrompt)
      * @param  string|null  $knownProvince  จังหวัดเกิดที่รู้แล้วจาก DB (FortuneReading::birthProvinceIfKnown)
      *                                      — ต้องเป็นค่าเดียวกับที่ส่งให้ FortuneAIService::withBirthProvince()
+     * @param  array|null  $lockedInputs  เวลา+จังหวัด "ต่อบิล" ที่ resolve แล้ว — มีค่า = ไม่อ่านจากข้อความ
      * @return string ข้อมูล transit สำหรับใส่ใน prompt ('' = ไม่มีวันเกิด / คำนวณไม่ได้)
      */
-    protected function getCurrentTransitDescription(?string $birthDate, string $questionText = '', ?string $knownProvince = null): string
+    protected function getCurrentTransitDescription(?string $birthDate, string $questionText = '', ?string $knownProvince = null, ?array $lockedInputs = null): string
     {
         if (empty($birthDate)) {
             return '';
@@ -25540,7 +25626,7 @@ PROMPT;
             //   ถ้าอ่านคนละแบบ → ลัคนาคนละราศี → ภพของดาวจร 2 บล็อกไม่ตรงกัน = บั๊กเดิมกลับมา
             //   (ล็อกไว้ที่ RealTransitPromptTest::test_transit_block_matches_the_chart_block_in_the_same_prompt)
             // 🗺️ (2026-09-11) จังหวัดที่รู้แล้วชนะข้อความ — กฎเดียวกับ buildPrompt() ผ่าน ThaiProvinces::forChart()
-            $stated = $astro->statedBirthInputs($questionText, $knownProvince);
+            $stated = $this->lockedOrStatedInputs($astro, $questionText, $knownProvince, $lockedInputs);
 
             $block = trim($astro->formatTransitOutlookBlock($birthDate, $stated['hour'], $stated['province']));
             if ($block === '') {

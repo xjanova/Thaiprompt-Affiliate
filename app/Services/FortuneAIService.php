@@ -73,6 +73,14 @@ class FortuneAIService
     protected ?string $chartBirthProvince = null;
 
     /**
+     * 🕛🗺️ (2026-09-12) เวลา+จังหวัดเกิด "ต่อบิล" ที่ผู้เรียกล็อกไว้ — ตั้งผ่าน withChartInputs()
+     *
+     * มีค่า = buildPrompt() **ไม่อ่านเวลา/จังหวัดจากข้อความคำถามของ call นี้เลย** (null ในนี้ = ไม่ทราบจริง ๆ)
+     * null = ไม่ได้ล็อก → อ่านจากข้อความแบบเดิม · ONE-SHOT ล้างใน finally เดียวกับ $chartBirthProvince
+     */
+    protected ?array $chartInputs = null;
+
+    /**
      * 🆕 (2026-05-07) constructor รับ $purpose เพื่อเลือก key ที่ตรง purpose ตั้งแต่แรก
      *   เดิม: acquire key โดยไม่รู้ purpose → ได้ key ทั่วไป (ละเลย purpose enum)
      *   ใหม่: caller ระบุ purpose ('prediction'/'chat'/'free_card') → key ตรงประเภทถูกเลือก
@@ -4745,6 +4753,7 @@ PROMPT;
             // FortuneAIService instance can't inherit this customer's identity.
             $this->callContext = null;
             $this->chartBirthProvince = null;
+            $this->chartInputs = null;
         }
     }
 
@@ -4847,6 +4856,27 @@ PROMPT;
     }
 
     /**
+     * 🕛🗺️ (2026-09-12) ล็อกเวลา+จังหวัดเกิดของผังท้ายพรอมต์ call ถัดไป เป็นค่า "ต่อบิล"
+     *
+     * ที่มา (จับผี): บิลดูดวง 39 ทำนายทีละข้อ แต่ละข้ออ่านเวลา/จังหวัดจากข้อความข้อตัวเอง
+     *   ⇒ ข้อ 2 "แฟนเกิดตี 2 จะไปรอดไหม" ถูกอ่านเป็นเวลาเกิดเจ้าชะตา ⇒ คำตอบข้อ 2 ลัคนา/วันทางโหร
+     *   คนละชุดกับข้อ 1 และรูปผังดวงในบิลเดียวกัน (ตรวจด้วยสคริปต์: ลัคนาเมถุน vs กุมภ์)
+     *   ⇒ ผู้เรียก resolve ครั้งเดียว (FortuneConversationService::deepChartImageInputs) แล้วล็อกทุก call
+     *
+     *     $ai->forReading($reading)->withChartInputs($chartInputs)->generateWithRetryAndFallback(...);
+     *
+     * ⚠️ ONE-SHOT เหมือน forReading()/withBirthProvince() — ล้างหลัง generate ทุกครั้ง ในลูป/retry ต้องเรียกซ้ำ
+     *
+     * @param  array{hour?: float|int|null, province?: string|null}  $inputs  null ในช่องไหน = ไม่ทราบค่านั้นจริง ๆ
+     */
+    public function withChartInputs(array $inputs): self
+    {
+        $this->chartInputs = \App\Services\Fortune\ThaiAstrologyService::normalizeChartInputs($inputs);
+
+        return $this;
+    }
+
+    /**
      * สร้างคำทำนายพร้อม retry + สลับ provider อัตโนมัติ
      *
      * ลองต่อ AI หลายครั้ง ถ้า provider หลักล้มเหลว จะลองสลับไป provider อื่นอัตโนมัติ
@@ -4891,6 +4921,7 @@ PROMPT;
             // instance starts with a clean slate.
             $this->callContext = null;
             $this->chartBirthProvince = null;
+            $this->chartInputs = null;
         }
     }
 
@@ -5901,10 +5932,15 @@ PROMPT;
         // 🗺️ (2026-09-11) จังหวัดที่ผู้เรียกรู้แล้ว (withBirthProvince — เลน 39 ถามไว้ก่อนเปิดไพ่) ชนะข้อความ
         // ⚠️ (2026-09-11) ใช้ตัวอ่านเดียวกับช่อง {zodiac_info}/{planet_positions}/{transit_info}
         //    ของพรอมต์ดูดวง 39 (FortuneConversationService) — อ่านคนละแบบ = ลัคนาคนละราศีในพรอมต์ใบเดียว
-        [
-            'hour' => $birthHour,
-            'province' => $birthProvince,
-        ] = (new \App\Services\Fortune\ThaiAstrologyService)->statedBirthInputs($questionsText, $this->chartBirthProvince);
+        // 🕛🗺️ (2026-09-12) ผู้เรียกล็อกค่า "ต่อบิล" ไว้ (withChartInputs) = ใช้ค่านั้น ไม่อ่านข้อความข้อนี้อีก
+        if ($this->chartInputs !== null) {
+            ['hour' => $birthHour, 'province' => $birthProvince] = $this->chartInputs;
+        } else {
+            [
+                'hour' => $birthHour,
+                'province' => $birthProvince,
+            ] = (new \App\Services\Fortune\ThaiAstrologyService)->statedBirthInputs($questionsText, $this->chartBirthProvince);
+        }
 
         $birthDateSection = $this->formatBirthDateSection($birthDate, $birthHour, $birthProvince);
 
