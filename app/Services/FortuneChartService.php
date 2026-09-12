@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Services\Fortune\ThaiAstrologyService;
+use App\Support\ThaiFontText;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -743,42 +744,52 @@ class FortuneChartService
             $this->drawCenteredText($img, $thaiFont, 14, $tx, $ty, $house['name'], $textDark);
 
             // ดาวเคราะห์ในภพ
-            $planets = $chartData['planetPositions'][$i] ?? [];
+            $planets = array_values($chartData['planetPositions'][$i] ?? []);
             if (! empty($planets)) {
                 $planetR = ($innerR + $centerR) / 2 + 22;
-                $planetCount = count($planets);
+                // 🧩 (2026-09-12) ดาวกองภพเดียวกัน — เดิมเยื้องกันแค่ 18px ตามแนวรัศมี วงดาว 46px เลยทับกันเกือบมิด
+                //   quick chart มีดาวกองภพเดียวกันแทบทุกวัน (วัด 2024-2031: กอง 2 ดวง 64% · 3 ดวง 27% · 4-5 ดวง 5%)
+                $slots = $this->planetSlotsInHouse(count($planets), $planetR);
 
                 foreach ($planets as $pIdx => $planetKey) {
                     $planet = self::PLANETS[$planetKey];
                     $planetColor = $this->hexColor($img, $planet['color']);
-                    $offset = ($pIdx - ($planetCount - 1) / 2) * 18;
-                    $px = $cx + ($planetR + $offset) * cos($midAngle);
-                    $py = $cy + ($planetR + $offset) * sin($midAngle);
+                    $slot = $slots[$pIdx];
+                    $slotAngle = $midAngle + deg2rad($slot['angle']);
+                    $px = $cx + $slot['radius'] * cos($slotAngle);
+                    $py = $cy + $slot['radius'] * sin($slotAngle);
+                    $scale = $slot['scale'];
+                    $ringSize = (int) round(46 * $scale);
+                    $fillSize = (int) round(40 * $scale);
 
                     // 🌟 Planet badge ใหญ่ขึ้น: เงานุ่ม → กรอบขาว → fill สีดาว → symbol ขาว
                     // 1. เงานุ่ม (drop shadow)
-                    imagefilledellipse($img, (int) $px + 2, (int) $py + 2, 46, 46, $shadowSoft);
+                    imagefilledellipse($img, (int) $px + 2, (int) $py + 2, $ringSize, $ringSize, $shadowSoft);
                     // 2. กรอบขาว (white ring)
-                    imagefilledellipse($img, (int) $px, (int) $py, 46, 46, $whiteOpaque);
+                    imagefilledellipse($img, (int) $px, (int) $py, $ringSize, $ringSize, $whiteOpaque);
                     // 3. fill สีดาว (full saturation)
-                    imagefilledellipse($img, (int) $px, (int) $py, 40, 40, $planetColor);
+                    imagefilledellipse($img, (int) $px, (int) $py, $fillSize, $fillSize, $planetColor);
 
                     // สัญลักษณ์ดาว (ขาว — contrast ดี)
-                    $this->drawCenteredText($img, $symbolFont, 24, $px, $py - 2, $planet['symbol'], $whiteOpaque);
+                    $this->drawCenteredText($img, $symbolFont, 24 * $scale, $px, $py - 2 * $scale, $planet['symbol'], $whiteOpaque);
 
                     // ชื่อดาว (ภาษาไทย) — ใต้ดวงดาว สีเข้ม contrast ดีกับพื้น cream
-                    $this->drawCenteredText($img, $thaiFont, 13, $px, $py + 26, $planet['name'], $textDark);
+                    $this->drawCenteredText($img, $thaiFont, 13 * $scale, $px, $py + 26 * $scale, $planet['name'], $textDark);
                 }
             }
         }
 
+        // 🔤 (2026-09-12) ทุกข้อความที่วาดด้วย $thaiFont ต้องมีแต่ตัวที่ NotoSansThai มีจริง (ไทย/ASCII/Latin-1)
+        //   เดิมมี ✦ ✨ (ขึ้นเป็นกล่อง) และ 💚💔🌙 (GD ถอดเป็น "ð���") — ประกายวาดเป็นรูปทรงแทน · อีโมจิตัดทิ้ง
+        //   ชื่อลูกค้ากรองผ่าน ThaiFontText::safe() · ล็อกด้วย ChartPngTextCoverageTest
+
         // === ตรงกลาง: ข้อมูลผู้ใช้ ===
-        $name = mb_substr($chartData['name'], 0, 15);
+        $name = mb_substr(ThaiFontText::safe((string) $chartData['name'], 'เจ้าชะตา'), 0, 15);
 
         if ($chartData['isFullChart']) {
             $mainColor = $this->hexColor($img, $chartData['mainPlanetColor'] ?? '#D97706');
 
-            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy - 110, '✦ BIRTH CHART ✦', $gold);
+            $this->drawCenteredTextWithSparkles($img, $thaiFont, 16, $cx, $cy - 110, 'BIRTH CHART', $gold);
             $this->drawCenteredText($img, $thaiFont, 26, $cx, $cy - 80, $name, $textDark);
 
             // เส้นคั่นใต้ชื่อ
@@ -803,11 +814,11 @@ class FortuneChartService
             // มิตร/ศัตรู
             $friendNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
             $enemyNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 92, "💚 มิตร: {$friendNames}", $green);
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 114, "💔 ศัตรู: {$enemyNames}", $red);
+            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 92, "มิตร: {$friendNames}", $green);
+            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 114, "ศัตรู: {$enemyNames}", $red);
         } else {
             // Quick chart (ไม่มีวันเกิด)
-            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy - 90, '✦ TRANSIT CHART ✦', $gold);
+            $this->drawCenteredTextWithSparkles($img, $thaiFont, 16, $cx, $cy - 90, 'TRANSIT CHART', $gold);
             $this->drawCenteredText($img, $thaiFont, 26, $cx, $cy - 50, $name, $textDark);
 
             imagesetthickness($img, 2);
@@ -816,15 +827,15 @@ class FortuneChartService
 
             $this->drawCenteredText($img, $thaiFont, 15, $cx, $cy - 8, 'ดวงดาวโคจรขณะนี้', $purple);
             $this->drawCenteredText($img, $thaiFont, 14, $cx, $cy + 16, $chartData['transitDate'], $textGray);
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 70, '✨ บอกวันเกิดเพื่อดู Birth Chart', $purpleLight);
+            $this->drawCenteredTextWithSparkles($img, $thaiFont, 13, $cx, $cy + 70, 'บอกวันเกิดเพื่อดู Birth Chart', $purpleLight);
         }
 
         // === หัวเรื่องด้านบน ===
-        $this->drawCenteredText($img, $thaiFont, 30, $cx, 42, '✨ หมอจันทราพยากรณ์ ✨', $goldDark);
-        $this->drawCenteredText($img, $thaiFont, 14, $cx, 72, 'โหราศาสตร์เจ้าชนะ ✦ ดวงดาว 9 ดวง ✦ ภพ 12 ภพ', $purple);
+        $this->drawCenteredTextWithSparkles($img, $thaiFont, 30, $cx, 42, 'หมอจันทราพยากรณ์', $goldDark);
+        $this->drawCenteredText($img, $thaiFont, 14, $cx, 72, 'โหราศาสตร์เจ้าชนะ · ดวงดาว 9 ดวง · ภพ 12 ภพ', $purple);
 
         // === Footer ===
-        $this->drawCenteredText($img, $thaiFont, 12, $cx, $height - 22, '🌙 หมอจันทราพยากรณ์ | thaiprompt.online', $textMuted);
+        $this->drawCenteredText($img, $thaiFont, 12, $cx, $height - 22, 'หมอจันทราพยากรณ์ | thaiprompt.online', $textMuted);
 
         // === Export PNG ===
         ob_start();
@@ -991,7 +1002,7 @@ class FortuneChartService
 
         $lines = [
             ['text' => 'ผังดวงกำเนิด', 'size' => 14, 'color' => $gold, 'h' => 24],
-            ['text' => mb_substr($this->fontSafeText((string) $d['name'], 'เจ้าชะตา'), 0, 18), 'size' => 24, 'color' => $textDark, 'h' => 38],
+            ['text' => mb_substr(ThaiFontText::safe((string) $d['name'], 'เจ้าชะตา'), 0, 18), 'size' => 24, 'color' => $textDark, 'h' => 38],
             ['divider' => true, 'h' => 14],
             ['text' => 'เกิดวัน'.$d['dayOfWeek'], 'size' => 16, 'color' => $purple, 'h' => 26],
         ];
@@ -1045,19 +1056,6 @@ class FortuneChartService
         imagedestroy($img);
 
         return $pngData;
-    }
-
-    /**
-     * ตัดอักขระที่ฟอนต์ไทยในรีโปไม่มี (อีโมจิ/อักษรลาว/จีน ฯลฯ ในชื่อเฟซบุ๊ก) — ไม่งั้นขึ้นเป็นกล่องสี่เหลี่ยม
-     *
-     * NotoSansThai ครอบคลุมอักษรไทย + ASCII + Latin-1 (ตรวจ cmap 2026-09-12) · เหลือว่าง = ใช้ $fallback
-     */
-    protected function fontSafeText(string $text, string $fallback): string
-    {
-        $clean = (string) preg_replace('/[^\x{0E00}-\x{0E7F}\x{0020}-\x{007E}\x{00A0}-\x{00FF}]+/u', ' ', $text);
-        $clean = trim((string) preg_replace('/\s+/u', ' ', $clean));
-
-        return $clean !== '' ? $clean : $fallback;
     }
 
     /**
@@ -1262,6 +1260,82 @@ class FortuneChartService
         imagesetthickness($img, $thickness);
         imagearc($img, (int) $cx, (int) $cy, (int) ($r * 2), (int) ($r * 2), 0, 360, $color);
         imagesetthickness($img, 1);
+    }
+
+    /**
+     * วาดข้อความจัดกลาง + ดาวประกาย 4 แฉกสองข้าง
+     *
+     * แทน ✦ ✨ ที่เคยพิมพ์ติดข้อความ — ฟอนต์ไทยไม่มีสองตัวนี้ เลยขึ้นเป็นกล่องสี่เหลี่ยม (2026-09-12)
+     * ประกายวาดเป็นรูปทรงด้วย GD ไม่พึ่งฟอนต์ใดเลย ⇒ ไม่ขึ้นเป็นกล่องไม่ว่าเครื่องไหนมีฟอนต์อะไร
+     */
+    protected function drawCenteredTextWithSparkles($img, string $font, float $size, float $x, float $y, string $text, int $color): void
+    {
+        $this->drawCenteredText($img, $font, $size, $x, $y, $text, $color);
+
+        $bbox = (! empty($font) && @file_exists($font)) ? @imagettfbbox($size, 0, $font, $text) : false;
+        if ($bbox === false) {
+            // วัดความกว้างข้อความไม่ได้ = ไม่รู้จะวางประกายตรงไหน → ข้ามไป (ตัวข้อความยังขึ้นตามปกติ)
+            return;
+        }
+
+        $offset = ($bbox[2] - $bbox[0]) / 2 + $size * 0.9;
+        $this->drawSparkle($img, $x - $offset, $y, $size * 0.5, $color);
+        $this->drawSparkle($img, $x + $offset, $y, $size * 0.5, $color);
+    }
+
+    /**
+     * ดาวประกาย 4 แฉก (หน้าตาแบบ ✦) — polygon 8 จุด สลับปลายแฉกกับเอว
+     */
+    protected function drawSparkle($img, float $cx, float $cy, float $r, int $color): void
+    {
+        $points = [];
+        for ($i = 0; $i < 8; $i++) {
+            $angle = deg2rad(-90 + $i * 45);
+            $length = $i % 2 === 0 ? $r : $r * 0.3;
+            $points[] = (int) round($cx + $length * cos($angle));
+            $points[] = (int) round($cy + $length * sin($angle));
+        }
+
+        imagefilledpolygon($img, $points, $color);
+    }
+
+    /**
+     * 🧩 ตำแหน่งดาวที่กองอยู่ภพเดียวกัน (buildPngChart) — วงดาวกับชื่อดาวต้องไม่ทับกัน
+     *
+     * - 1 ดวง = กลางภพ ขนาดเต็ม (หน้าตาเหมือนเดิม)
+     * - 2 ดวง = เรียงคู่ตามแนวโค้ง ห่างกัน 68px ย่อเหลือ 90%
+     * - 3-5 ดวง = 2 แถว (แถวนอกได้ครึ่งที่ปัดขึ้น) ย่อเหลือ 78% ห่างกันในแถว 56px (แถวละ 3 ดวง = 50px)
+     * ระยะเผื่อชื่อดาวใต้วงไว้แล้ว: ภพเฉียง ชื่อยาว (พฤหัสบดี) ต้องไม่ชนวงอีกดวงที่อยู่เยื้องลงไป ·
+     * ภพข้างซ้าย/ขวา แนวโค้งเป็นแนวตั้ง ชื่อดาวตัวบนต้องไม่ลงไปทับวงตัวล่าง (รวมภพข้างเคียงที่มี 2 ดวงเหมือนกัน)
+     * แถวทั้งหมดอยู่ในแถบวงดาว (ระหว่างวงกลาง r=175 กับวงภพ r=275)
+     *
+     * @param  int  $count  จำนวนดาวในภพ
+     * @param  float  $planetR  รัศมีวงดาวปกติของ buildPngChart
+     * @return array<int, array{angle: float, radius: float, scale: float}> องศาที่เยื้องจากกลางภพ · รัศมี · อัตราย่อ
+     */
+    protected function planetSlotsInHouse(int $count, float $planetR): array
+    {
+        if ($count <= 1) {
+            return [['angle' => 0.0, 'radius' => $planetR, 'scale' => 1.0]];
+        }
+
+        [$rows, $scale] = $count === 2
+            ? [[[$planetR, 2]], 0.9]
+            : [[[$planetR + 7, (int) ceil($count / 2)], [$planetR - 52, intdiv($count, 2)]], 0.78];
+
+        $slots = [];
+        foreach ($rows as [$radius, $perRow]) {
+            // ระยะห่างตามแนวโค้ง: คู่ขนาด 90% = 68px · แถวละ 2 ดวง (ย่อ 78%) = 56px
+            // แถวละ 3 ดวง (มีแค่ตอนกอง 5 ดวง) บีบเหลือ 50px ไม่งั้นแถวยาวล้นไปชนดาวภพข้างๆ
+            $gap = $count === 2 ? 68.0 : ($perRow >= 3 ? 50.0 : 56.0);
+            for ($k = 0; $k < $perRow; $k++) {
+                // ระยะตามแนวโค้ง (px) → แปลงเป็นองศาที่รัศมีของแถวนั้น
+                $arc = ($k - ($perRow - 1) / 2) * $gap;
+                $slots[] = ['angle' => rad2deg($arc / $radius), 'radius' => $radius, 'scale' => $scale];
+            }
+        }
+
+        return $slots;
     }
 
     /**
