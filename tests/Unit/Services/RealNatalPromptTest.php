@@ -270,6 +270,10 @@ class RealNatalPromptTest extends TestCase
             $this->assertStringNotContainsString('{planet_positions}', $final, "[{$label}] ห้ามเหลือ placeholder ดิบ");
             $this->assertStringNotContainsString('{zodiac_info}', $final);
             $this->assertSame(2, substr_count($final, $expected['zodiac_info']), "[{$label}] {zodiac_info} 2 ที่ตาม template");
+            // 🔭 ตารางดาวจรก็ก้อนเดียว — ประโยคกฎข้อ 5 ได้ป้ายชี้แทนตาราง ~40 บรรทัด
+            $this->assertSame(1, substr_count($final, '[🔭 ดาวจรจริง'), "[{$label}] ตารางดาวจรต้องมีก้อนเดียว");
+            $this->assertStringContainsString(', ตารางดาวจรจริง 🔭', $final, "[{$label}] ประโยคคำสั่งต้องได้ป้ายชี้ตารางดาวจร");
+            $this->assertStringNotContainsString('{transit_info}', $final);
 
             foreach (self::FAKE_MARKERS as $fake) {
                 $this->assertStringNotContainsString($fake, $final, "[{$label}] ของปลอมหลุดกลับมา: {$fake}");

@@ -24410,7 +24410,21 @@ PROMPT;
      */
     protected function placeNatalChartOnce(string $template, string $reference): string
     {
-        $token = '{planet_positions}';
+        return $this->placeBlockOnce($template, '{planet_positions}', $reference);
+    }
+
+    /**
+     * วาง placeholder ที่เป็น "บล็อกหลายบรรทัด" แบบก้อนเต็มครั้งเดียว — ที่อื่นใช้ป้ายชี้กลับ (กติกาเดียวกับ placeNatalChartOnce)
+     *
+     * 🔭 (2026-09-12) {transit_info} ก็โดนเหมือนกัน: template บน prod มีในประโยคคำสั่ง (บรรทัด 18
+     *    "ทุกคำทำนายต้องเชื่อมโยงกับ …, {transit_info}") + บรรทัดวางข้อมูล (48) ⇒ ตารางดาวจร ~40 บรรทัดซ้ำ 2 ก้อน
+     *    และก้อนแรกแทรกกลางกฎ DNA ข้อ 5 (ตรวจจากพรอมต์จริงบน prod · ~14% ของความยาวพรอมต์ต่อข้อ)
+     *
+     * @param  string  $token  placeholder เช่น '{transit_info}'
+     * @param  string  $reference  ป้ายชี้กลับที่ใส่แทนในประโยค ('' = ไม่แตะ template)
+     */
+    protected function placeBlockOnce(string $template, string $token, string $reference): string
+    {
         if ($reference === '' || ! str_contains($template, $token)) {
             return $template;
         }
@@ -24418,7 +24432,7 @@ PROMPT;
         // \s ครอบ \r (template บน prod บันทึกจากหน้าแอดมินเป็น CRLF) · NBSP/อักขระล่องหนใส่เองให้ชัด
         $pad = '[\s\x{00A0}\x{200B}\x{200C}\x{200D}\x{2060}\x{FEFF}]';
         $isPlacement = fn (string $line): bool => preg_match(
-            '/^(?:'.$pad.'|[\-•*])*\{planet_positions\}'.$pad.'*$/u',
+            '/^(?:'.$pad.'|[\-•*])*'.preg_quote($token, '/').$pad.'*$/u',
             $line
         ) === 1;
 
@@ -24978,6 +24992,11 @@ PROMPT;
         // 🗺️ ผังดวงกำเนิดเต็มวางครั้งเดียว — {planet_positions} ในประโยคคำสั่งกลายเป็นป้ายชี้กลับ
         if ($natal['planet_positions'] !== '') {
             $template = $this->placeNatalChartOnce($template, $natal['planet_positions_ref']);
+        }
+        // 🔭 ตารางดาวจรก็วางครั้งเดียว — ป้ายใช้คำเดียวกับหัวบล็อก "[🔭 ดาวจรจริง …]" ให้โมเดลโยงถูกก้อน
+        //   (ไม่บอกทิศ "ด้านล่าง" — แอดมินย้ายบรรทัดวางขึ้นไปไว้บนประโยคได้)
+        if ($transitInfo !== '') {
+            $template = $this->placeBlockOnce($template, '{transit_info}', 'ตารางดาวจรจริง 🔭');
         }
 
         // 🃏 ไพ่ยิปซี — ถ้ามีไพ่ที่เปิดได้

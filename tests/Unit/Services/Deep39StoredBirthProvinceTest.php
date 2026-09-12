@@ -72,7 +72,8 @@ class Deep39StoredBirthProvinceTest extends TestCase
         $final = $this->firstPaidPrompt($birthDate, self::GENERAL_QUESTION, self::PROVINCE);
         $sections = $this->todayTransitSections($final);
 
-        $this->assertCount(3, $sections, '{transit_info} 2 ที่ + ผังที่ต่อท้าย 1');
+        // (2026-09-12) {transit_info} ในประโยคคำสั่งเป็นป้ายชี้แล้ว — ตารางเต็มก้อนเดียวที่บรรทัดวาง
+        $this->assertCount(2, $sections, '{transit_info} ก้อนเดียว + ผังที่ต่อท้าย 1');
         $this->assertCount(1, array_unique($sections), 'ดาวจรทุกบล็อกในพรอมต์ใบเดียวต้องตรงกันทุกตัวอักษร');
 
         // ผังท้ายพรอมต์บอกจังหวัดจริง — ไม่ใช่ค่ากลางกรุงเทพ

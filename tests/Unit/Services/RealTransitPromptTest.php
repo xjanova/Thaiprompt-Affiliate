@@ -297,7 +297,11 @@ class RealTransitPromptTest extends TestCase
             $final = $this->invoke($ai, 'buildPrompt', [[$question], ['name' => 'ทดสอบ'], null, $perQuestion, $birthDate]);
 
             $sections = $this->todayTransitSections($final);
-            $this->assertCount(3, $sections, "[{$label}] {transit_info} 2 ที่ + ผังที่ต่อท้าย 1");
+            // (2026-09-12) {transit_info} ในประโยคคำสั่งกลายเป็นป้ายชี้ — ตารางเต็มก้อนเดียวที่บรรทัดวาง
+            //   เดิม 3 ก้อน (ในประโยค + บรรทัดวาง + ผังท้าย) ⇒ ตาราง ~40 บรรทัดซ้ำ และแทรกกลางกฎ DNA
+            $this->assertCount(2, $sections, "[{$label}] {transit_info} ก้อนเดียว + ผังที่ต่อท้าย 1");
+            $this->assertStringContainsString(', ตารางดาวจรจริง 🔭', $final, "[{$label}] ประโยคคำสั่งต้องได้ป้ายชี้ตารางดาวจร");
+            $this->assertStringNotContainsString('{transit_info}', $final, "[{$label}] ห้ามเหลือ placeholder ดิบ");
             $this->assertCount(1, array_unique($sections), "[{$label}] ดาวจรทุกบล็อกในพรอมต์ใบเดียวต้องตรงกันทุกตัวอักษร");
             $this->assertStringContainsString('🗓️ ดาวจรล่วงหน้า', $final, "[{$label}] ต้องมีตารางล่วงหน้า 1/3/6/12 เดือน");
             $this->assertStringNotContainsString('คำนวณจากหลักเจ้าชนะ', $final);
