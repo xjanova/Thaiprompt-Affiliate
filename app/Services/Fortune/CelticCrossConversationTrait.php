@@ -2953,8 +2953,10 @@ trait CelticCrossConversationTrait
         //   → ตอบข้อ 1 เต็มๆ ตอนนี้ (กิน 1 สิทธิ์ ตามจริง) + carry ข้อ 2 ไป re-offer หลังคำตอบ (ไม่หล่น)
         //   ต้องอยู่บนสุด — ก่อน end-confirm/readiness-ack
         $carryForwardQuestion = null;
+        $fromSuggestionPick = false; // 🔢 (2026-09-12) มาจากปุ่มคำถามแนะนำ → job รอคิวข้อก่อนหน้าส่งครบ
         $bothPick = $this->resolveCelticSuggestionPickBoth($reading, $question);
         if ($bothPick !== null) {
+            $fromSuggestionPick = true;
             \Log::info('Celtic: customer picked BOTH suggested questions → answer #1 now, carry #2', [
                 'reading_id' => $reading->id,
                 'tapped' => $question,
@@ -2968,6 +2970,23 @@ trait CelticCrossConversationTrait
             // 🔢 (2026-06-05) กดปุ่มเลขเดี่ยว 1/2 = เลือกคำถามแนะนำข้อนั้น → คืนคำถามเต็มจาก Cache
             //   แล้วไหลเข้า askQuestion ปกติ (นับเป็นคำถามจริง 1 ข้อ เหมือนพิมพ์เอง)
             $pickedSuggestion = $this->resolveCelticSuggestionPick($reading, $question);
+
+            // 🔢 (2026-09-12 FTU-260912-J8005) กดข้อที่แม่หมอตอบไปแล้ว — ชุดแนะนำคงอยู่ + ปุ่ม FB อยู่ในแชทถาวร
+            //   กดซ้ำได้ง่าย ถ้าปล่อยผ่าน = ตอบซ้ำข้อเดิม เผาเวลา/สิทธิ์ ⇒ ชี้ว่าตอบแล้ว + บอกข้อที่ยังเหลือ (ไม่กินสิทธิ์)
+            if ($pickedSuggestion !== null
+                && $this->celticQuestionWasAsked($pickedSuggestion, $this->celticAskedQuestionTexts($reading))) {
+                if (! $reading->canAskMoreCeltic()) {
+                    return $this->endCelticSession($reading, 'time_expired');
+                }
+
+                \Log::info('Celtic: กดเลขข้อที่ตอบไปแล้ว → ชี้ว่าตอบแล้ว + ข้อที่เหลือ (ไม่กินสิทธิ์)', [
+                    'reading_id' => $reading->id,
+                    'tapped' => mb_substr($question, 0, 20),
+                ]);
+
+                return $this->celticAlreadyAnsweredPickResponse($reading);
+            }
+
             if ($pickedSuggestion !== null) {
                 \Log::info('Celtic: customer tapped suggested-question number → expand to full question', [
                     'reading_id' => $reading->id,
@@ -2976,6 +2995,7 @@ trait CelticCrossConversationTrait
                 ]);
                 $question = $pickedSuggestion;
                 $messageText = $pickedSuggestion;
+                $fromSuggestionPick = true;
             } elseif ($this->looksLikeSuggestionNumberInput($question)) {
                 // 🔢 (2026-06-06 R5125) พิมพ์เลข/"ทั้งสอง" แต่ไม่มี suggestion ค้าง (cache หมด/ไม่เคยเสนอ)
                 //   เคสจริง FTU-260606-W4360 seq4: "1" ตกไปให้ askQuestion เป็นข้อความ literal →
@@ -3140,8 +3160,10 @@ trait CelticCrossConversationTrait
             if ($dUserId && $settleSec > 0) {
                 // 🔢 (2026-06-23 FIX D fix) carry (both-pick ข้อ 2) → Cache TTL 3 นาที (local var หายเมื่อ silent_skip)
                 //   job อ่านกลับใน finalizeCelticAnswer ด้วย cache()->pull (atomic read+delete) + TTL กัน stale leak ถ้า job หาย
+                //   ⏳ (2026-09-12) 3 → 8 นาที — job โหมดรอคิว (waitForIdle) รอข้อก่อนหน้าได้ถึง ~3 นาที
+                //     + settle สูงสุด 50 วิ + เวลา AI ⇒ TTL เดิมหมดก่อน job ตื่น = ข้อ 2 หายเงียบ
                 if ($carryForwardQuestion !== null && trim((string) $carryForwardQuestion) !== '') {
-                    cache()->put('celtic:pending_carry:'.$reading->id, $carryForwardQuestion, now()->addMinutes(3));
+                    cache()->put('celtic:pending_carry:'.$reading->id, $carryForwardQuestion, now()->addMinutes(8));
                 }
                 // 🔔 (2026-06-23) ลูกค้าพิมพ์คำถาม (กำลัง buffer) = engaged → กัน nudge ตามถามยิงระหว่างรอ settle window
                 //   🔔 (2026-06-30) nudge เปลี่ยนเป็นตามทุก interval → กดเวลา last_nudge เพื่อระงับ nudge ช่วง settle
@@ -3158,8 +3180,14 @@ trait CelticCrossConversationTrait
                 //   (แก้ฝั่งเดียว = อีกฝั่งเป็นระเบิดเวลา — บทเรียนเดิมจาก spam guard FB/LINE)
                 $this->rememberPendingProSessionQuestion($reading, $question, 'celtic');
 
-                \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec)
-                    ->delay(now()->addSeconds($settleSec + 1));
+                $settleJob = \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $dPlatform, $dUserId, $settleSec);
+                // 🔢 (2026-09-12 FTU-260912-J8005) กดปุ่มคำถามแนะนำตอนคำตอบข้อก่อนยังทยอยส่งอยู่
+                //   → รอให้ข้อก่อนส่งครบก่อน ไม่งั้นคำตอบใหม่แทรกกลางบับเบิ้ลของข้อเดิม (ว่างอยู่ = ตอบทันทีเหมือนเดิม)
+                if ($fromSuggestionPick) {
+                    $settleJob->waitForIdle();
+                }
+                $settleJob->delay(now()->addSeconds($settleSec + 1));
+                unset($settleJob); // PendingDispatch เข้าคิวตอน destruct — ปล่อยตรงนี้เลย ไม่รอจบฟังก์ชัน
 
                 // 💬 ระหว่างนิ่งรอ ให้เห็น "จุดสามจุดกำลังพิมพ์" — owner: ห้ามเพิ่มกล่องข้อความ
                 $this->qaSendTypingHint($reading, $settleSec);
@@ -3501,7 +3529,7 @@ trait CelticCrossConversationTrait
         //   user spec: "ยกเว้นคำถาม Q5 ไม่ต้องสร้างปุ่ม เพราะหมดโควต้าถามแล้ว"
         //   ที่นี่ผ่าน hard-cap (usedQ >= maxQ) มาแล้ว → usedQ < maxQ → ยังถามต่อได้เสมอ
         //   remainingQ === null = admin ตั้งถามไม่จำกัด (maxQ=0) → ยังโชว์ปุ่มได้
-        //   sync Cache กับคำตอบล่าสุด: มีคำถามแนะนำ → put / ไม่มี → forget (กันกดเลขเก่าค้าง)
+        //   มีคำถามแนะนำใหม่ → แทนชุดเดิม / ไม่มี → คงชุดเดิม (ดูหมายเหตุ 2026-09-12 ท้ายบล็อก)
         // 🔢 (2026-06-06 R5125) ลูกค้าเลือก "ทั้งสองข้อ" — เอาข้อ 2 ที่ค้างมา re-offer เป็นปุ่มแรก
         //   รวมกับคำถามแนะนำใหม่ที่เพิ่งทำนายได้ (user spec: "คำถามที่เหลือ + คำถามแนะนำใหม่ เพิ่มอีก 1")
         //   → กล่องถัดไป = [ข้อ 2 ที่ค้าง] + [คำถามแนะนำใหม่] (ตัดซ้ำ + ตัดค่าว่าง + จำกัด 2 ปุ่ม 1️⃣2️⃣)
@@ -3526,9 +3554,15 @@ trait CelticCrossConversationTrait
             $suggestionButtons = $this->buildCelticSuggestionButtons($celticNextQuestions);
             // เก็บคำถามเต็มไว้ map ตอนลูกค้ากดเลข (TTL ยาวกว่า qa window เผื่อกดช้า)
             $this->storeCelticSuggestions($reading, $celticNextQuestions);
-        } else {
+        } elseif ($remainingQ !== null && $remainingQ <= 0) {
+            // ครบโควตาคำถามแล้ว — ปุ่มเลขเก่าไม่มีความหมายอีก
             $this->forgetCelticSuggestions($reading);
         }
+        // 🔢 (2026-09-12 FTU-260912-J8005) คำตอบนี้ไม่มีคำถามแนะนำใหม่ → **คงชุดเดิมไว้ ห้ามล้าง**
+        //   กล่องปุ่มเดิมยังเป็นกล่องล่าสุดบนจอลูกค้า (FB ปุ่ม postback อยู่ในแชทถาวร)
+        //   เดิมล้างทิ้งตรงนี้ ⇒ ลูกค้ากด 1 แล้วกด 2 จากกล่องเดียวกัน ได้ "อยากให้แม่หมอทำนาย
+        //   เรื่องไหนต่อดีคะ?" 2 รอบ — คำถามข้อ 2 ไม่เคยถูกตอบ เสียเวลา 8 จาก 15 นาที
+        //   ชุดเดิมยังมี TTL 20 นาทีกำกับอยู่ (loadCelticSuggestions) ไม่ค้างข้ามรอบ
 
         // 💾 (2026-08-31) เก็บกล่องแนะนำ + ปุ่มลง DB **ก่อนส่ง** — ให้เส้นกู้ส่งคืนได้
         //   เดิมกล่องนี้อยู่แค่ใน $result ของ request เดียว ⇒ ส่งล้มครั้งเดียว = ปุ่มหายถาวร
@@ -3738,9 +3772,9 @@ trait CelticCrossConversationTrait
      */
     protected function resolveCelticSuggestionPick(FortuneReading $reading, string $text): ?string
     {
-        // strip variation-selector (FE0F) + keycap (20E3) → "1️⃣" กลายเป็น "1"
-        $n = trim((string) preg_replace('/[\x{FE00}-\x{FE0F}\x{20E3}]/u', '', $text));
-        if (! preg_match('/^[12]$/', $n)) {
+        // 🔢 (2026-09-12) รับ "ข้อ1ก่อน" / "เอาข้อ 2 ค่ะ" ด้วย — ดู celticPickNumber()
+        $n = $this->celticPickNumber($text);
+        if ($n === null) {
             return null; // ไม่ใช่การกดเลขแนะนำ
         }
 
@@ -3776,10 +3810,198 @@ trait CelticCrossConversationTrait
             return null; // ไม่มีคำถามแนะนำ ≥ 2 ให้เลือก → ปล่อยให้ re-invite guard จัดการ
         }
 
+        // 🔢 (2026-09-12 FTU-260912-J8005) ตัดข้อที่ถามไปแล้วออก — "อยากรู้ทั้ง 2 ข้อ" หลังได้คำตอบข้อ 1
+        //   แปลว่า "ขอข้อที่เหลือด้วย" ไม่ใช่ให้ตอบข้อ 1 ซ้ำแล้วค่อยยื่นข้อ 2 เป็นปุ่มให้กดอีกรอบ
+        $asked = $this->celticAskedQuestionTexts($reading);
+        $fresh = array_values(array_filter(
+            $stored,
+            fn ($q) => ! $this->celticQuestionWasAsked((string) $q, $asked)
+        ));
+        if ($fresh === []) {
+            return null; // ตอบครบทั้งสองข้อแล้ว → re-invite guard ชวนถามเรื่องใหม่
+        }
+
         return [
-            'answer' => (string) $stored[0],
-            'carry' => isset($stored[1]) ? (string) $stored[1] : null,
+            'answer' => (string) $fresh[0],
+            'carry' => isset($fresh[1]) ? (string) $fresh[1] : null,
         ];
+    }
+
+    /**
+     * 🔢 (2026-09-12 FTU-260912-J8005) ข้อความ = "เลือกข้อที่เท่าไร" → คืน '1' / '2' (null = ไม่ใช่)
+     *
+     * เดิมรับแค่ "1"/"2" เปล่า ๆ — ลูกค้าพิมพ์ "ข้อ1ก่อน" หลุดไปให้ AI ตอบรับลอย ๆ
+     * ("ได้เลยลูก เริ่มที่ข้อ 1 ก่อนนะ") แล้วไม่มีคำทำนายตามมาเลย
+     *
+     * รับ: "1" · "1️⃣" · "๑" · "ข้อ1" · "ข้อ 2" · "ข้อที่ 2" · "เอาข้อ 2 ค่ะ" · "ข้อ1ก่อน"
+     * ไม่รับ: ประโยคที่มีคำถามปน ("ข้อ 2 จะเป็นยังไง") — ให้ไหลไปเป็นคำถามจริงตามเดิม
+     * ⚠️ เลขที่มีคำอื่นติดมาต้องมีคำว่า "ข้อ" — "2 ค่ะ" อาจเป็นคำตอบของคำถามที่แม่หมอถามกลับ
+     *   ("มีลูกกี่คนคะ" → "2 ค่ะ") ถ้ารับไว้จะถูกแปลงเป็นคำถามแนะนำข้อ 2 ไปเฉย ๆ (ชุดแนะนำค้างได้ 20 นาที)
+     */
+    protected function celticPickNumber(string $text): ?string
+    {
+        // strip variation-selector (FE0F) + keycap (20E3) → "1️⃣" กลายเป็น "1"
+        $t = mb_strtolower(trim((string) preg_replace('/[\x{FE00}-\x{FE0F}\x{20E3}]/u', '', $text)));
+        $t = strtr($t, ['๑' => '1', '๒' => '2']);
+        if ($t === '' || mb_strlen($t) > 30) {
+            return null;
+        }
+        if (preg_match('/^[12]$/', $t)) {
+            return $t; // ทางเดิม — ปุ่ม FB/LINE ส่งเลขเปล่ามา
+        }
+        if ($this->celticHasQuestionParticle($t)) {
+            return null;
+        }
+
+        $core = (string) preg_replace('/^(เลือก|เอาที่|เอา|ขอดู|ขอ|อยากรู้|อยากทราบ|อยากได้|อยากดู|อยาก|ดู)\s*/u', '', $t);
+        $core = (string) preg_replace('/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|ครับผม|นะ|น่ะ|เลย|ด้วย|ก่อน|จ้า|จ้ะ|จ๊ะ|จ๋า|ละ|ล่ะ|ๆ)+$/u', '', trim($core));
+        $core = (string) preg_replace('/\s+/u', '', $core);
+
+        return preg_match('/^(?:ข้อที่|ข้อ)([12])$/u', $core, $m) ? $m[1] : null;
+    }
+
+    /**
+     * 🔢 (2026-09-12) จดคำถามค้างสำรองลง conversation_state แบบ **แตะแค่ 2 คีย์ + ไม่ดัน updated_at**
+     *
+     * ใช้ตอน AI กำลังตอบอีกข้อ (celtic_generating) แทน rememberPendingProSessionQuestion() เพราะตัวนั้น
+     *   เขียน JSON ทั้งก้อนจากสำเนาในหน่วยความจำ = ทับคีย์ที่เส้นตอบกำลังเขียน (celtic_suggq ชุดใหม่ /
+     *   bubble_pending) ได้ และดัน updated_at = ด่านเด้งสถานะค้าง 90 วิ มองว่ายังสด
+     *
+     * คีย์/เพดานเดียวกับของเดิม — ตาข่ายกู้ (celtic-answer-recover) และ job อ่านได้เหมือนเดิม
+     */
+    protected function rememberCelticPendingQuietly(FortuneReading $reading, string $text): void
+    {
+        $text = trim($text);
+        if ($text === '') {
+            return;
+        }
+
+        $state = FortuneReading::whereKey($reading->id)->value('conversation_state');
+        if (is_string($state)) {
+            $state = json_decode($state, true);
+        }
+        $state = is_array($state) ? $state : [];
+
+        $pending = is_array($state['celtic_pending_q'] ?? null) ? $state['celtic_pending_q'] : [];
+        $pending[] = $text;
+        $pending = array_slice($pending, -self::PRO_SESSION_PENDING_MAX);
+
+        // json_set เฉพาะ path — ไม่ผ่าน Eloquent save จึงไม่แตะคีย์อื่นและไม่ดัน updated_at
+        //   พลาด = เสียแค่ตาข่ายสำรอง (buffer ยังถือคำถามอยู่) ห้ามทำให้การเข้าคิวล้ม
+        try {
+            \Illuminate\Support\Facades\DB::update(
+                // ท่าเดียวกับ FortuneReading (cancellation_reason) ที่ใช้บน prod อยู่แล้ว — คอลัมน์เป็น LONGTEXT
+                'UPDATE '.$reading->getTable().' SET conversation_state = JSON_SET(COALESCE(conversation_state, \'{}\'),'
+                ." '$.celtic_pending_q', CAST(? AS JSON), '$.celtic_pending_q_at', ?) WHERE id = ?",
+                [
+                    json_encode(array_values($pending), JSON_UNESCAPED_UNICODE),
+                    (string) ($state['celtic_pending_q_at'] ?? now()->toIso8601String()),
+                    $reading->id,
+                ]
+            );
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: จดคำถามค้างสำรอง (เงียบ) ไม่สำเร็จ — ยังมีใน buffer', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🔢 (2026-09-12) ตอบลูกค้าที่กดเลขข้อที่แม่หมอตอบไปแล้ว — ชี้ขึ้นไป + บอกข้อที่ยังเหลือในชุดเดิม
+     *
+     * เลขที่บอกต้องตรงกับปุ่มเดิม (ตำแหน่งในชุด) ไม่ใช่นับใหม่ — ปุ่ม FB เก่ายังกดได้อยู่
+     */
+    protected function celticAlreadyAnsweredPickResponse(FortuneReading $reading): array
+    {
+        $asked = $this->celticAskedQuestionTexts($reading);
+        $rest = [];
+        foreach (array_values((array) $this->loadCelticSuggestions($reading)) as $i => $q) {
+            if (is_string($q) && trim($q) !== '' && ! $this->celticQuestionWasAsked($q, $asked)) {
+                $rest[] = ($i === 0 ? '1️⃣' : '2️⃣').' '.$q;
+            }
+        }
+
+        $message = "🌙 ข้อนี้แม่หมอตอบไว้ด้านบนแล้วนะคะ ☝️\n\n"
+            .($rest !== []
+                ? "ข้อที่ยังไม่ได้ดู\n".implode("\n", $rest)."\n\n💬 กดเลขหรือพิมพ์เลขข้อมาได้เลย — หรือถามเรื่องอื่นที่อยากรู้ก็ได้ค่ะ ✨"
+                : '💬 อยากให้แม่หมอดูเรื่องไหนต่อ พิมพ์มาได้เลยค่ะ ✨');
+
+        return [
+            'action' => 'celtic_invite_question',
+            'message' => $message,
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🔢 มีคำ/เครื่องหมายคำถามปน = เป็นคำถามจริง ไม่ใช่การเลือกข้อ
+     *
+     * ⚠️ ghost-bug guard: กัน "ทั้งคู่จะรักกันไหม" / "ข้อ 2 เป็นยังไง" ถูกตีเป็นการเลือกข้อ
+     *   แล้วไฮแจ็กไปตอบคำถามแนะนำแทนคำถามจริงของลูกค้า
+     */
+    protected function celticHasQuestionParticle(string $t): bool
+    {
+        foreach (['ไหม', 'มั้ย', 'มัย', 'หรือ', 'เหรอ', 'หรอ', 'รึ', 'อะไร', 'ทำไม', 'ยังไง',
+            'อย่างไร', 'เมื่อไหร่', 'เมื่อไร', 'ที่ไหน', 'ใคร', 'กี่', 'เท่าไหร่', 'เท่าไร', '?'] as $qm) {
+            if (str_contains($t, $qm)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🔢 (2026-09-12) คำถามทุกข้อของบิลนี้ (รวมข้อที่ AI กำลังตอบอยู่ — แถวถูกสร้างก่อนเรียก AI)
+     *
+     * @return array<int,string> ข้อความที่ยุบช่องว่างแล้ว
+     */
+    protected function celticAskedQuestionTexts(FortuneReading $reading): array
+    {
+        try {
+            return $reading->celticQuestions()
+                ->pluck('question')
+                ->map(fn ($q) => $this->normalizeCelticQuestionText((string) $q))
+                ->filter(fn ($q) => $q !== '')
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            return []; // อ่านไม่ได้ = ถือว่ายังไม่เคยถาม (ตอบซ้ำดีกว่าทิ้งคำถาม)
+        }
+    }
+
+    /**
+     * 🔢 (2026-09-12) คำถามแนะนำข้อนี้ถูกถามไปแล้วหรือยัง
+     *
+     * ใช้ str_contains ไม่ใช่ === — แถวคำถามอาจมีบริบทที่ park ไว้ต่อท้าย
+     *
+     * @param  array<int,string>  $askedTexts  จาก celticAskedQuestionTexts()
+     */
+    protected function celticQuestionWasAsked(string $question, array $askedTexts): bool
+    {
+        $needle = $this->normalizeCelticQuestionText($question);
+        if ($needle === '') {
+            return false;
+        }
+
+        foreach ($askedTexts as $asked) {
+            if (str_contains($asked, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ยุบช่องว่าง/ขึ้นบรรทัดให้เทียบกันได้
+     *
+     * ⚠️ ยุบเฉพาะ whitespace — ห้ามใช้ regex ตัดอักขระ เพราะจะกินสระ/วรรณยุกต์ไทย (Mark class)
+     */
+    protected function normalizeCelticQuestionText(string $text): string
+    {
+        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $text)));
     }
 
     /**
@@ -3791,6 +4013,7 @@ trait CelticCrossConversationTrait
     {
         // strip keycap (20E3) + variation selector (FE0F) → "1️⃣" เป็น "1"
         $t = mb_strtolower(trim((string) preg_replace('/[\x{FE00}-\x{FE0F}\x{20E3}]/u', '', $text)));
+        $t = strtr($t, ['๑' => '1', '๒' => '2']);
         if ($t === '') {
             return false;
         }
@@ -3798,20 +4021,19 @@ trait CelticCrossConversationTrait
         // 🚫 มี particle คำถาม → เป็นคำถามจริง ไม่ใช่การเลือก
         //   ⚠️ ghost-bug guard: กัน "ทั้งคู่จะรักกันไหม" / "เราทั้งสองจะรอดไหม" (คำถามรักที่มี "ทั้งคู่")
         //   ถูกตีเป็น both-pick แล้วไฮแจ็กไปตอบคำถามแนะนำแทนคำถามจริงของลูกค้า
-        foreach (['ไหม', 'มั้ย', 'มัย', 'หรือ', 'เหรอ', 'หรอ', 'รึ', 'อะไร', 'ทำไม', 'ยังไง',
-            'อย่างไร', 'เมื่อไหร่', 'เมื่อไร', 'ที่ไหน', 'ใคร', 'กี่', 'เท่าไหร่', 'เท่าไร', '?'] as $qm) {
-            if (str_contains($t, $qm)) {
-                return false;
-            }
+        if ($this->celticHasQuestionParticle($t)) {
+            return false;
         }
 
         // strip คำขึ้นต้น (เอา/ขอ/อยาก/ดู) + คำลงท้ายสุภาพ → เหลือ "แก่น"
-        $core = trim((string) preg_replace('/^(เอาที่|เอา|ขอดู|ขอ|อยากได้|อยากดู|อยาก|ดู)\s*/u', '', $t));
+        //   🔢 (2026-09-12 FTU-260912-J8005) + อยากรู้/อยากทราบ/เลือก — "อยากรู้ทั้ง 2 ข้อเลยค่ะ" เคยหลุด
+        //     (ตัดแค่ "อยาก" เหลือ "รู้ทั้ง2ข้อ") ไปให้ AI ตอบรับลอย ๆ แทนการทำนาย
+        $core = trim((string) preg_replace('/^(เลือก|เอาที่|เอา|ขอดู|ขอ|อยากรู้|อยากทราบ|อยากได้|อยากดู|อยาก|ดู)\s*/u', '', $t));
         $core = trim((string) preg_replace('/\s*(ค่ะ|คะ|ค่า|ครับ|คับ|ครับผม|นะ|น่ะ|เลย|ด้วย|ก่อน|จ้า|จ้ะ|จ๊ะ|จ๋า|ละ|ล่ะ|ๆ)+$/u', '', $core));
         $coreNs = (string) preg_replace('/\s+/u', '', $core); // ตัดช่องว่าง
 
         // วลี both แบบ EXACT (=== ไม่ใช่ str_contains) — กัน substring ในประโยค ("เราทั้งคู่จะรอด")
-        $baseBoth = ['ทั้งสองข้อ', 'ทั้งสอง', 'ทั้งคู่', 'ทั้ง2', 'สองข้อ', 'both'];
+        $baseBoth = ['ทั้งสองข้อ', 'ทั้งสอง', 'ทั้งคู่', 'ทั้ง2ข้อ', 'ทั้ง2', 'สองข้อ', '2ข้อ', 'both'];
         if (in_array($coreNs, $baseBoth, true)) {
             return true;
         }
@@ -3834,12 +4056,86 @@ trait CelticCrossConversationTrait
      */
     protected function looksLikeSuggestionNumberInput(string $text): bool
     {
-        $n = trim((string) preg_replace('/[\x{FE00}-\x{FE0F}\x{20E3}]/u', '', $text));
-        if (preg_match('/^[12]$/', $n)) {
+        if ($this->celticPickNumber($text) !== null) {
             return true;
         }
 
         return $this->looksLikeCelticPickBoth($text);
+    }
+
+    /**
+     * 🔢 (2026-09-12 FTU-260912-J8005) ลูกค้ากดปุ่มคำถามแนะนำ **ระหว่างที่แม่หมอกำลังตอบอีกข้อ**
+     *
+     * เดิม IN-PREDICTION guard (FortuneConversationService) silent_skip ทุกข้อความตอน AI กำลังตอบ
+     * ⇒ กด 1 → กด 2 ตามทันที = ข้อ 2 หายเงียบ ไม่มีทั้งคำตอบและข้อความบอก
+     *   ลูกค้าต้องพิมพ์ "อยากรู้ทั้ง 2 ข้อ" ต่อ แล้ววนอยู่ 8 นาทีจนแอดมินต้องเข้ามาถามแทน
+     *
+     * ตอนนี้: แปลงเลขเป็นคำถามเต็มจากชุดที่เสนอไว้ → เข้าคิว settle-buffer เดิม
+     *   + dispatch job แบบ "รอคิว" (waitForIdle) ให้ตอบ **หลัง** ข้อที่กำลังตอบส่งครบทุกกล่อง
+     *   (ไม่งั้นคำตอบข้อ 2 จะแทรกกลางบับเบิ้ลของข้อ 1)
+     *
+     * รับเฉพาะ "เลือกข้อ" จากชุดที่เสนอไว้ — ข้อความอื่นยังเงียบตามสเปก "ห้ามแทรกระหว่างทำนาย"
+     * กดข้อที่ถามไปแล้ว/กำลังตอบอยู่ (กดซ้ำ) → ไม่เข้าคิว
+     *
+     * @return bool true = รับเข้าคิวแล้ว (ผู้เรียกตอบ silent_skip) · false = ไม่ใช่การเลือกข้อ
+     */
+    protected function queueCelticPickDuringGeneration(FortuneReading $reading, string $text): bool
+    {
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            return false;
+        }
+
+        $bothPick = $this->resolveCelticSuggestionPickBoth($reading, $text);
+        $picked = $bothPick !== null
+            ? array_values(array_filter([$bothPick['answer'], $bothPick['carry'] ?? null]))
+            : array_values(array_filter([$this->resolveCelticSuggestionPick($reading, $text)]));
+
+        $asked = $this->celticAskedQuestionTexts($reading);
+        $picked = array_values(array_filter(
+            $picked,
+            fn ($q) => is_string($q) && ! $this->celticQuestionWasAsked($q, $asked)
+        ));
+        if ($picked === []) {
+            return false;
+        }
+
+        ['platform' => $platform, 'user_id' => $userId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
+        if ($userId === '') {
+            return false;
+        }
+
+        $buffer = app(\App\Services\Fortune\MessageBuffer::class);
+        $queued = array_map(
+            fn ($m) => $this->normalizeCelticQuestionText((string) ($m['text'] ?? '')),
+            $buffer->peek('celtic_q', $userId)
+        );
+
+        // ทีละข้อ = แยกบรรทัดใน buffer → job รวมเป็นคำถามเดียว (แบบเดียวกับที่ลูกค้าพิมพ์ 2 บรรทัด)
+        $added = 0;
+        foreach ($picked as $q) {
+            if (in_array($this->normalizeCelticQuestionText($q), $queued, true)) {
+                continue; // กดซ้ำระหว่างรอ — อยู่ในคิวแล้ว
+            }
+            $buffer->append('celtic_q', $userId, $q);
+            $this->rememberCelticPendingQuietly($reading, $q);
+            $added++;
+        }
+
+        if ($added > 0) {
+            $settleSec = max(1, (int) ($this->settings->celtic_qa_settle_seconds ?? 10));
+            \App\Jobs\ProcessBufferedCelticMessageJob::dispatch($reading->id, $platform, $userId, $settleSec)
+                ->waitForIdle()
+                ->delay(now()->addSeconds($settleSec + 1));
+        }
+
+        \Log::info('Celtic: กดเลือกข้อระหว่าง AI กำลังตอบ → เข้าคิวตอบต่อ (ไม่ทิ้ง)', [
+            'reading_id' => $reading->id,
+            'tapped' => mb_substr($text, 0, 20),
+            'queued' => array_map(fn ($q) => mb_substr($q, 0, 50), $picked),
+            'added' => $added,
+        ]);
+
+        return true;
     }
 
     // 🛑 (2026-05-14) handleCelticPredictAll + buildPredictAllPrompt + CELTIC_PREDICT_NOW

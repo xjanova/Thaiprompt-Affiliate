@@ -102,6 +102,15 @@ class FortuneCelticAnswerRecover extends Command
                 continue;
             }
 
+            // 🔢 (2026-09-12 FTU-260912-J8005) ข้อก่อนหน้ายังตอบ/ทยอยส่งบับเบิ้ลไม่ครบ = ยังไม่ใช่ "ค้าง"
+            //   คำถามที่ลูกค้ากดระหว่างแม่หมอตอบ มี job โหมดรอคิว (waitForIdle) ดูแลอยู่ — แย่งตอบตอนนี้
+            //   = คำตอบแทรกกลางบับเบิ้ลของข้อเดิม · ข้อเดิมส่งครบเมื่อไหร่ รอบถัดไปของ cron นี้รับช่วงเอง
+            if (ProcessBufferedCelticMessageJob::previousAnswerInFlight($reading)) {
+                $skipped++;
+
+                continue;
+            }
+
             // buffer บน cache ยังอยู่ไหม (ใช้แค่รายงาน — ไม่ใช่เงื่อนไขตัดสินแล้ว)
             $buf = $buffer->peek('celtic_q', $userId);
 

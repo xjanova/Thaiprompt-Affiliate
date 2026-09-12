@@ -2436,12 +2436,12 @@ class LineFortuneWebhookController extends Controller
 
             $base64DataUrl = 'data:'.$mimeType.';base64,'.base64_encode($imageBytes);
 
-            // 2. ส่ง pre-reply "กำลังพิมพ์" → ลูกค้ารู้ว่ารับรูปแล้ว
-            $this->lineService->sendMessageWithReplyFallback(
-                $userId,
-                '🌙 แม่หมอจันทรากำลังดูภาพของเจ้าชะตา... ✨',
-                $replyToken
-            );
+            // 2. บอกลูกค้าว่ารับรูปแล้ว — ใช้ loading animation (ฟรี + ไม่กิน replyToken)
+            //   📬 (2026-09-12) เดิมส่งกล่อง "กำลังดูภาพ" ด้วย reply → token หมด → คำตอบจริงต้อง push
+            //   (โควต้า 300/เดือน) แล้วตัว redeliver ยังส่งซ้ำอีกรอบเพราะไม่เคย mark delivered = 2 push/รูป
+            //   ตอนนี้เก็บ token ไว้ตอบคำทำนายจริงข้างล่าง — vision เสร็จใน ~10-20 วิ ทัน token 60 วิเกือบทุกครั้ง
+            //   📖 .claude/LINE_MESSAGING_RULES.md กฎข้อ 1
+            $this->lineService->showLoadingAnimation($userId, 30);
 
             // 3. ตั้ง state = GENERATING (กัน user spam)
             $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_GENERATING]);
@@ -2454,15 +2454,16 @@ class LineFortuneWebhookController extends Controller
             $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
             if (! $result['success']) {
-                $this->lineService->sendMessage(
+                $this->lineService->sendMessageWithReplyFallback(
                     $userId,
-                    $result['message'] ?? "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
+                    $result['message'] ?? "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏",
+                    $replyToken
                 );
 
                 return;
             }
 
-            // 6. ส่งคำตอบ + footer (push เพราะ replyToken ใช้ไปแล้ว)
+            // 6. ส่งคำตอบ + footer — reply ก่อน (ฟรี) token ตาย/ใช้ไม่ได้ค่อย push
             $reading->refresh();
             $remainingMin = $reading->getCelticQaRemainingMinutes();
             $settingsObj = \App\Models\FortuneTellingSetting::getSettings();
@@ -2483,13 +2484,28 @@ class LineFortuneWebhookController extends Controller
                 .$timeHint."\n"
                 .'💬 พิมพ์ต่อได้เลย — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม ✨';
 
-            $this->lineService->sendMessage($userId, $message);
+            $sent = $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+            // 📬 (2026-09-12) คู่แฝดฝั่ง FB — เส้นนี้ส่งเอง ต้อง mark delivered เอง ไม่งั้น redeliver ส่งซ้ำ
+            //   ส่งไม่ออก (โควต้าหมด) → ปล่อยว่าง ให้ flushParkedCelticAnswers() ส่งคืนตอนลูกค้าทักมา
+            //   try แยก — mark พลาด = แย่สุดแค่โดนส่งซ้ำ ห้ามไหลลง catch ล่างที่ขอโทษว่า "ดูรูปไม่ได้"
+            if ($sent && ($result['question_record'] ?? null) instanceof \App\Models\FortuneCelticQuestion) {
+                try {
+                    $result['question_record']->markDelivered();
+                } catch (\Throwable $markErr) {
+                    Log::warning('LINE Celtic vision: mark delivered ไม่สำเร็จ (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $markErr->getMessage(),
+                    ]);
+                }
+            }
 
             Log::info('LINE Celtic vision สำเร็จ', [
                 'user_id' => $userId,
                 'reading_id' => $reading->id,
                 'message_id' => $messageId,
                 'image_bytes' => strlen($imageBytes),
+                'delivered' => $sent,
             ]);
         } catch (\Throwable $e) {
             // Reset state กลับ
@@ -2506,9 +2522,10 @@ class LineFortuneWebhookController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            $this->lineService->sendMessage(
+            $this->lineService->sendMessageWithReplyFallback(
                 $userId,
-                "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
+                "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏",
+                $replyToken
             );
         }
     }

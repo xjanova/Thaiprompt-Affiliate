@@ -305,6 +305,9 @@ trait TransferModeTrait
         foreach ([
             'matchesFreeCardKeyword',
             'isExplicitDeepReadingRequest',
+            // 🙊 (2026-09-12) ถ้อยคำล้วนก่อน — isGenericFortuneRequest ตัดคำชม/คน "ไม่มีเงิน" ออกแล้ว
+            //   แต่โหมดนี้พาไปกล่องดูฟรี คนที่บอกว่าไม่มีเงินต้องยังได้กล่องนี้ (คลาสที่ไม่มีเมธอดนี้ข้ามไปตัวถัดไป)
+            'matchesFortuneRequestWording',
             'isGenericFortuneRequest',
             'isExplicitlyAsking39',
             'looksLikePricingQuestion',

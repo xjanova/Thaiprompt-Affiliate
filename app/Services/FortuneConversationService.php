@@ -769,6 +769,30 @@ class FortuneConversationService
                                 ]);
                             }
                         } else {
+                            // 🔢 (2026-09-12 FTU-260912-J8005) กดปุ่มคำถามแนะนำระหว่างแม่หมอกำลังตอบอีกข้อ
+                            //   = ลูกค้าเลือกจากตัวเลือกที่ระบบเสนอเอง ห้ามทิ้ง → เข้าคิวตอบต่อทันทีที่ข้อนี้ส่งครบ
+                            //   ข้อความอื่นยังเงียบตามสเปก "ห้ามแทรกระหว่างทำนาย" เหมือนเดิม
+                            //   ⚠️ try แยก — พลาดแล้วต้องตกลง silent_skip เดิม ห้ามไหลลง catch ล่าง
+                            //     (catch ล่าง fail-open = ปล่อยข้อความเข้าโฟลว์ปกติ ทั้งที่ AI กำลังตอบอยู่)
+                            $queuedPick = false;
+                            if ($status === FortuneReading::STATUS_CELTIC_GENERATING) {
+                                try {
+                                    $queuedPick = $this->queueCelticPickDuringGeneration($inPredictionReading, $messageText);
+                                } catch (\Throwable $queueErr) {
+                                    Log::warning('Fortune: เข้าคิวปุ่มคำถามแนะนำระหว่างตอบไม่สำเร็จ → เงียบตามเดิม', [
+                                        'reading_id' => $inPredictionReading->id,
+                                        'error' => $queueErr->getMessage(),
+                                    ]);
+                                }
+                            }
+                            if ($queuedPick) {
+                                return [
+                                    'action' => 'silent_skip',
+                                    'message' => null,
+                                    'reading' => $inPredictionReading,
+                                ];
+                            }
+
                             Log::info('Fortune: in-prediction silent_skip (AI generating)', [
                                 'facebook_user_id' => $facebookUserId,
                                 'reading_id' => $inPredictionReading->id,
@@ -1441,7 +1465,8 @@ class FortuneConversationService
             //   Wake up: (1) พิมพ์ขอดูดวง / (2) cache TTL หมด (endOfDay) / (3) paid_active_reading
             if (! $hasPaidActiveReading && ! $hasPendingUnpaidBill) {
                 if ($this->isFarewellClosed($facebookUserId)) {
-                    if ($this->isGenericFortuneRequest($messageText) || $this->looksLikePaymentIntent($messageText)) {
+                    // 🙊 (2026-09-12) ปลุกด้วยถ้อยคำล้วน — คงพฤติกรรมเดิม (เปิดเมนูไหม isGenericFortuneRequest ตัดสินต่อ)
+                    if ($this->matchesFortuneRequestWording($messageText) || $this->looksLikePaymentIntent($messageText)) {
                         // wake up — ลูกค้ากลับมาขอดูดวง หรือ แจ้งว่าจ่ายเงินแล้ว (2026-06-03)
                         $this->clearFarewellClose($facebookUserId);
                         Log::info('Fortune: farewell — wake up (fortune/payment intent)', [
@@ -1475,7 +1500,7 @@ class FortuneConversationService
                 //   เคส Atthanon Thamsiri 2026-05-27: 82 turns/วัน, "เรื่องผมไม่ต้องดู" + "ผมรู้หมดแล้ว"
                 //   pattern คล้าย farewell แต่ trigger word + TTL ต่าง (6hr vs endOfDay)
                 if ($this->isNoIntentClosed($facebookUserId)) {
-                    if ($this->isGenericFortuneRequest($messageText)) {
+                    if ($this->matchesFortuneRequestWording($messageText)) {
                         // wake up — ลูกค้าเปลี่ยนใจ
                         $this->clearNoIntentClose($facebookUserId);
                         Log::info('Fortune: no-intent — wake up (fortune intent)', [
@@ -5133,6 +5158,84 @@ class FortuneConversationService
      * @return bool true = เป็นคำขอดูดวงชัดเจน
      */
     protected function isGenericFortuneRequest(string $text): bool
+    {
+        if (! $this->matchesFortuneRequestWording($text)) {
+            return false;
+        }
+
+        // 🙊 (2026-09-12 FTU-260912-J8005) มีคำว่า "ดูดวง/ทำนาย" ≠ อยากซื้อตอนนี้
+        //   ทุกจุดที่เรียกฟังก์ชันนี้ = จุดเปิดเมนูราคา ⇒ คำชม/คนที่บอกว่าจ่ายไม่ได้ต้องไม่ผ่าน
+        return ! $this->looksLikeFeedbackOrCantBuyNow($text);
+    }
+
+    /**
+     * 🙊 (2026-09-12 FTU-260912-J8005) ข้อความที่ "มีคำว่าดูดวง/ทำนาย" แต่ไม่ใช่การขอดูดวงตอนนี้
+     *
+     * 1) **คำชมหลังได้คำทำนาย** — "ทำนายได้แม่นดีค่ะ" ขึ้นต้นด้วย "ทำนาย" → เคยเด้งเมนูราคา 39/99
+     *    + FlowNudge ตามทวงอีก 3 นาที ใส่ลูกค้าที่เพิ่งจ่าย 99 และกำลังตอบคำชวนรีวิว
+     *    ⚠️ มีคำขอปนอยู่ด้วย ("เพื่อนบอกทำนายแม่นมาก อยากดูบ้าง") = ยังเป็นคำขอ
+     *    ⚠️ "ดูดวงแม่นๆ" (มี ๆ) = ขอให้ดูแม่น ๆ ไม่ใช่คำชม
+     * 2) **บอกว่าจ่ายไม่ได้ตอนนี้ / ขอไว้ก่อน** — "อยากดูแต่ไม่มีเงิน", "ขอดูรอบหน้าค่ะ"
+     *    ด่าน Tier 3 จับ "อยากดู/ขอดู" ที่ไหนก็ได้ในประโยค → ยิงเมนูใส่คนที่เพิ่งบอกว่าไม่มีเงิน
+     *    (7 วันก่อนแก้ ~10 เคส) ขัด [[rule_hardship_is_not_a_buy_signal]]
+     *    ⚠️ ห้ามใส่ "เรื่องเงิน" เปล่า ๆ — "ดูดวงเรื่องเงิน" คือคำขอดูดวงหัวข้อการเงิน
+     *
+     * ไม่ครอบ "ไม่มีบัญชีไทย"/"โอนไม่เป็น" — เป็นเรื่องวิธีจ่าย ต้องไปเส้นช่วยจ่าย ไม่ใช่เงียบ
+     *
+     * ⚠️ ขึ้นต้นด้วยคำขอ ("ดูดวง…", "ขอดู…", "อยากดู…") = ลูกค้ากำลังขอดู — คำชม/คำเรื่องเงินที่ตามมา
+     *   คือ "หัวข้อ" หรือ "เหตุผล" ไม่ใช่การปฏิเสธ: "ดูดวงหน่อยค่ะ เพื่อนบอกว่าแม่นมาก" ·
+     *   "ดูดวงการเงินค่ะ ทำไมเงินไม่พอใช้" · "ขอดูดวงสอบครั้งหน้าค่ะ" ต้องได้เมนูตามเดิม
+     *   นับคำเรื่องเงินในกลุ่มนี้เฉพาะเมื่อมีคำหักมุม (แต่/ตอนนี้/ยังไม่/ค่อย/ไว้) — "อยากดูแต่ไม่มีเงิน"
+     */
+    protected function looksLikeFeedbackOrCantBuyNow(string $text): bool
+    {
+        $ns = (string) preg_replace('/\s+/u', '', mb_strtolower(trim($text)));
+        if ($ns === '') {
+            return false;
+        }
+
+        $startsAsRequest = (bool) preg_match('/^(ดูดวง|ขอดู|ขอทำนาย|อยากดู|อยากให้|ช่วยดู|ช่วยทำนาย|ทำนายดวง|ทำนายให้|หมอดู)/u', $ns);
+
+        // 1) คำชม — "ตรง" เปล่า ๆ กำกวม (ตรงนี้ = ที่นี่) นับเฉพาะ "ตรงกับ" หรือมีคำเสริมตามหลัง
+        $asksSomething = (bool) preg_match('/(ไหม|มั้ย|มัย|หรือเปล่า|รึเปล่า|ไหน|ยังไง|อย่างไร|\?)/u', $ns);
+        $alsoRequests = (bool) preg_match('/^(อยาก|ขอ|ช่วย|เอา)|อยากดู|ขอดู|อยากให้|ช่วยดู|ดูให้|ดูบ้าง|ดูหน่อย|ดูดวงหน่อย|ดูดวงให้|ทำนายให้|อยากทำนาย|ขอทำนาย/u', $ns);
+        if (! $startsAsRequest && ! $asksSomething && ! $alsoRequests
+            && (preg_match('/(ทำนาย|ไพ่|แม่หมอ)(ได้)?(แม่น|ถูกต้อง|ถูกหมด|ถูกเป๊ะ|ตรงกับ)(?!ๆ)/u', $ns)
+                || preg_match('/(แม่น|ตรง)(มาก|จริง|เป๊ะ|สุด|ทุกข้อ)/u', $ns))) {
+            return true;
+        }
+
+        // 2a) วลีที่แปลว่า "ไว้ทีหลัง" เสมอ ไม่ว่าจะขึ้นต้นยังไง (สะกดผิดที่เจอจริง: ใว้พร้อม)
+        foreach (['โอกาสหน้า', 'ว่างแล้วจะ', 'ขอเวลา', 'ไว้พร้อม', 'ใว้พร้อม', 'เอาไว้ก่อน',
+            'ดูรอบหน้า', 'ดูคราวหน้า', 'ดูครั้งหน้า', 'ไว้รอบหน้า', 'ไว้คราวหน้า', 'ไว้ครั้งหน้า'] as $kw) {
+            if (str_contains($ns, $kw)) {
+                return true;
+            }
+        }
+
+        // 2b) คำเรื่องเงิน/เลื่อน ที่อาจเป็น "หัวข้อ" ของคำขอ (สะกดผิดที่เจอจริง: ไม่เงิน · เรื้องเงิน)
+        $hasSoftWord = (bool) preg_match('/ติด(จัด)?เร(ื่|ื้)องเงิน/u', $ns);
+        foreach (['ไม่มีเงิน', 'ไม่มีตัง', 'ไม่เงิน', 'เงินไม่พอ', 'ไม่มีพอ', 'เงินหมด', 'หมดตัว',
+            'รอบหน้า', 'คราวหน้า', 'ครั้งหน้า', 'ไว้ก่อน'] as $kw) {
+            if (str_contains($ns, $kw)) {
+                $hasSoftWord = true;
+                break;
+            }
+        }
+        if (! $hasSoftWord) {
+            return false;
+        }
+
+        return ! $startsAsRequest || (bool) preg_match('/แต่|ตอนนี้|ยังไม่|ค่อย|ไว้/u', $ns);
+    }
+
+    /**
+     * ถ้อยคำ "ขอดูดวง" ล้วน ๆ — ไม่ดูว่าลูกค้าพร้อมซื้อไหม (เนื้อเดิมของ isGenericFortuneRequest)
+     *
+     * ใช้ตรง ๆ เฉพาะจุด "ปลุก" จากโหมดเงียบหลังลา (farewell / no-intent) — คนที่กลับมาพูดถึงดวง
+     * ต้องได้คำตอบ แม้จะเป็นคำชมหรือบอกว่าไม่มีเงิน (ส่วนจะเปิดเมนูไหม isGenericFortuneRequest ตัดสินต่อ)
+     */
+    protected function matchesFortuneRequestWording(string $text): bool
     {
         $textClean = mb_strtolower(trim($text));
 

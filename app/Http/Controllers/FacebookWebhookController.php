@@ -3547,14 +3547,32 @@ class FacebookWebhookController extends Controller
                 .$timeHint."\n"
                 .'💬 พิมพ์ต่อได้เลย — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม ✨';
 
-            $this->facebookService->sendQuickReplies($senderId, $message, [
+            $sent = $this->facebookService->sendQuickReplies($senderId, $message, [
                 ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+            // 📬 (2026-09-12 FTU-260912-J8005) เส้นนี้ส่งเอง ไม่ผ่าน ChannelManager → ต้อง mark เอง
+            //   เดิมไม่เคย mark ⇒ fortune:celtic-redeliver เห็น delivered_at ว่าง แล้วส่งคำตอบรูป **ซ้ำ**
+            //   ~90 วิถัดมา พร้อมป้าย «[IMAGE_ATTACHED]» — FB ตั้งแต่ 1 ส.ค. โดนซ้ำ 13 จาก 14 รูป
+            //   (ตระกูลเดียวกับพื้นดวง Q1 ส่งซ้ำ FTU-260621-E2159 ที่แก้ไปแล้ว แต่เส้นรูปตกหล่น)
+            //   mark จากผลส่งจริงเท่านั้น — ส่งไม่ออกให้ว่างไว้ ตัว redeliver จะตามส่งให้เอง
+            //   try แยก — mark พลาด = แย่สุดแค่โดนส่งซ้ำ ห้ามไหลลง catch ล่างที่ขอโทษว่า "ดูรูปไม่ได้"
+            if ($sent && ($result['question_record'] ?? null) instanceof \App\Models\FortuneCelticQuestion) {
+                try {
+                    $result['question_record']->markDelivered();
+                } catch (\Throwable $markErr) {
+                    \Log::warning('FB Celtic vision: mark delivered ไม่สำเร็จ (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $markErr->getMessage(),
+                    ]);
+                }
+            }
 
             \Log::info('FB Celtic vision สำเร็จ', [
                 'sender_id' => $senderId,
                 'reading_id' => $reading->id,
                 'image_url' => $imageUrl,
+                'delivered' => $sent,
             ]);
         } catch (\Throwable $e) {
             // Reset state

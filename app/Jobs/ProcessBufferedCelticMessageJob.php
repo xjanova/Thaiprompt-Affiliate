@@ -44,6 +44,29 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
     /** @var int Job timeout — flush + AI call + reply */
     public int $timeout = 180;
 
+    /**
+     * 🔢 (2026-09-12 FTU-260912-J8005) โหมด "รอคิว" — ข้อที่ลูกค้ากดระหว่างแม่หมอกำลังตอบอีกข้อ
+     *   ต้องรอให้ข้อก่อนหน้า **ตอบเสร็จและส่งครบทุกกล่อง** ก่อน ไม่งั้นคำตอบแทรกกลางบับเบิ้ล
+     *
+     * ⚠️ ห้ามย้ายไปเป็น promoted constructor property — job ที่ค้างในคิวตอน deploy ถูก unserialize
+     *   โดยไม่เรียก constructor ⇒ property แบบ typed ที่ไม่มีค่าเริ่มต้นจะ "uninitialized" แล้ว Error
+     */
+    public bool $waitForIdle = false;
+
+    /** รอบที่รอคิวไปแล้ว — เพดานกันวนไม่จบถ้าสถานะค้าง */
+    public int $idleWaits = 0;
+
+    /**
+     * รอได้สูงสุดกี่รอบ (× IDLE_RECHECK_SECONDS ≈ 3 นาที)
+     *
+     * ครบแล้ว **ไม่ตอบเอง** — ปล่อยคำถามค้างไว้ใน buffer + conversation_state ให้
+     * fortune:celtic-answer-recover หยิบไปตอบเมื่อข้อก่อนหน้าเสร็จจริง
+     * (ถ้าฝืนตอบตอนข้อเดิมยัง generating = ชนเลขลำดับคำถาม → ลูกค้าได้ "พิมพ์คำถามเดิมส่งมาอีกครั้ง")
+     */
+    private const MAX_IDLE_WAITS = 22;
+
+    private const IDLE_RECHECK_SECONDS = 8;
+
     public function __construct(
         public int $readingId,
         public string $platform,
@@ -51,6 +74,60 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
         public int $windowSeconds,
     ) {
         $this->onQueue('tpix-default'); // queue ที่มี worker อยู่
+    }
+
+    /**
+     * เปิดโหมดรอคิว (ดู $waitForIdle) — ใช้ต่อท้าย dispatch(): `::dispatch(...)->waitForIdle()`
+     */
+    public function waitForIdle(bool $wait = true): static
+    {
+        $this->waitForIdle = $wait;
+
+        return $this;
+    }
+
+    /**
+     * 🔢 (2026-09-12) ข้อก่อนหน้ายังไม่เสร็จ — AI ยังตอบอยู่ หรือบับเบิ้ลยังทยอยส่งไม่ครบ
+     *
+     * public static — fortune:celtic-answer-recover ใช้ตัวเดียวกันตัดสินว่า "ยังไม่ใช่คำถามค้าง"
+     *
+     *   • celtic_generating = รอเสมอ ไม่ดูอายุ — ค้างจริง FortuneCelticRedeliver::recoverStuckGenerating
+     *     เด้งกลับเป็น awaiting ให้เองที่ 90 วิ (ถ้าฝืนตอบระหว่าง generating = ชนเลขลำดับคำถาม)
+     *   • แถวที่เพิ่งตอบ (< 90 วิ) แต่ยังไม่ mark delivered = กล่องแรกกำลังส่ง
+     *     (ยกเว้นแถว error ขึ้นต้น ⚠️ — ไม่มีวันถูก mark ห้ามทำให้ข้อถัดไปรอฟรี 90 วิ)
+     *   • bubble_pending ค้าง > 3 นาที = FortuneBubbleRecover รับช่วงกู้ไปแล้ว ไม่ต้องรอ
+     */
+    public static function previousAnswerInFlight(FortuneReading $reading): bool
+    {
+        if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_GENERATING) {
+            return true;
+        }
+
+        // ช่องสั้น ๆ หลังสถานะกลับเป็น awaiting แต่กล่องแรกยังส่งไม่เสร็จ (ยังไม่ mark / ยังไม่จดบับเบิ้ล)
+        try {
+            $justAnswered = $reading->celticQuestions()
+                ->whereNotNull('answered_at')
+                ->whereNull('delivered_at')
+                ->where('answered_at', '>=', now()->subSeconds(90))
+                ->where('response', 'not like', '⚠️%')
+                ->exists();
+            if ($justAnswered) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // อ่านไม่ได้ → ไปดูบับเบิ้ลต่อ
+        }
+
+        $bubbleAt = $reading->getConversationState('bubble_pending_at');
+        if (! empty($reading->getConversationState('bubble_pending')) && $bubbleAt) {
+            try {
+                return \Carbon\Carbon::parse($bubbleAt)->gt(now()->subMinutes(3));
+            } catch (\Throwable $e) {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     public function handle(): void
@@ -109,6 +186,40 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
                 'reading_id' => $this->readingId,
                 'state' => $reading->conversation_status,
                 'q_preview' => mb_substr((string) $peek['text'], 0, 120),
+            ]);
+
+            return;
+        }
+
+        // 🔢 (2026-09-12 FTU-260912-J8005) โหมดรอคิว — ข้อก่อนหน้ายังตอบ/ส่งไม่เสร็จ → ยังไม่หยิบของ
+        //   นัดตัวเองมาดูใหม่ทุก IDLE_RECHECK_SECONDS จนกว่าข้อก่อนหน้าจะส่งครบทุกกล่อง
+        //   ต้องเช็ค "มีของรอ" ก่อน — job อื่นอาจ flush ไปแล้ว ห้ามนัดวนเปล่า ๆ
+        //   ⚠️ ลูปนี้ **ห้ามเขียนอะไรลง reading** — setConversationState() เขียน JSON ทั้งก้อนจากสำเนาที่โหลด
+        //     ตอนต้น job = ทับ bubble_pending / celtic_pending_q ที่ job อื่นเพิ่งแก้ (บับเบิ้ลส่งซ้ำ/ตอบซ้ำ)
+        //     และดัน updated_at = ด่านเด้งสถานะค้าง 90 วิ มองว่ายังสด
+        //     ส่วน fortune:celtic-answer-recover ไม่แย่งตอบเพราะเช็ค previousAnswerInFlight() ตัวเดียวกัน
+        $pendingQ = $reading->getConversationState('celtic_pending_q', []);
+        $hasWork = ! empty($buf) || (is_array($pendingQ) && $pendingQ !== []);
+        if ($this->waitForIdle && $hasWork && self::previousAnswerInFlight($reading)) {
+            if ($this->idleWaits >= self::MAX_IDLE_WAITS) {
+                // ครบเพดาน — ไม่ฝืนตอบทับข้อที่ยังไม่เสร็จ ปล่อยของค้างไว้ให้ตาข่ายกู้ (ดู MAX_IDLE_WAITS)
+                Log::warning('ProcessBufferedCelticMessageJob: รอคิวครบเพดาน → ปล่อยให้ celtic-answer-recover ตอบ', [
+                    'reading_id' => $this->readingId,
+                    'state' => $reading->conversation_status,
+                ]);
+
+                return;
+            }
+
+            $next = new self($this->readingId, $this->platform, $this->userId, $this->windowSeconds);
+            $next->waitForIdle = true;
+            $next->idleWaits = $this->idleWaits + 1;
+            dispatch($next)->delay(now()->addSeconds(self::IDLE_RECHECK_SECONDS));
+
+            Log::debug('ProcessBufferedCelticMessageJob: รอคิว — ข้อก่อนหน้ายังส่งไม่ครบ', [
+                'reading_id' => $this->readingId,
+                'wait_no' => $next->idleWaits,
+                'state' => $reading->conversation_status,
             ]);
 
             return;

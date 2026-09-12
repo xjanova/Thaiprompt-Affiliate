@@ -160,12 +160,7 @@ class FortuneCelticRedeliver extends Command
             // 🏷️ (2026-09-01) ติดป้ายว่าคำตอบนี้ตอบคำถามข้อไหน — เส้น cron ส่งช้ากว่าจังหวะสนทนาเสมอ
             //   (สถานการณ์เดียวกับ off-by-one ของ parked flush) เดิมส่ง response เปล่า ลูกค้าอ่านคำตอบ
             //   เรื่องเงินต่อจากคำถามเรื่องแฟน = งง — ป้ายอยู่ในข้อความเดิม ไม่กิน message object เพิ่ม
-            $asked = trim((string) $q->question);
-            $label = $asked !== ''
-                ? '↩️ ตอบคำถาม: «'.mb_substr($asked, 0, 60).(mb_strlen($asked) > 60 ? '…' : '')."»\n\n"
-                : '';
-
-            $message = $label.trim((string) $q->response)
+            $message = $this->answerLabel((string) $q->question).trim((string) $q->response)
                 ."\n\n──────────────────────\n"
                 .'💬 พิมพ์คำถามต่อได้เลย — หรือพิมพ์ *"เลิกทำนายและสรุปผล"* เมื่อพร้อมค่ะ ✨';
 
@@ -228,6 +223,28 @@ class FortuneCelticRedeliver extends Command
         $this->info("📊 สรุป: re-delivered={$sent} skipped={$skipped} failed={$failed}");
 
         return $failed > 0 ? 1 : 0;
+    }
+
+    /**
+     * 🏷️ ป้าย "ตอบคำถามข้อไหน" หัวคำตอบที่ส่งตาม ('' = ไม่มีคำถามให้อ้าง)
+     *
+     * 🏷️ (2026-09-12 FTU-260912-J8005) marker ภายในระบบห้ามหลุดถึงลูกค้า
+     *   เดิมลูกค้าเห็น `↩️ ตอบคำถาม: «[IMAGE_ATTACHED]»` ตรง ๆ
+     */
+    protected function answerLabel(string $question): string
+    {
+        $asked = trim($question);
+
+        if (str_starts_with($asked, '[IMAGE_ATTACHED]')) {
+            $typed = trim(mb_substr($asked, mb_strlen('[IMAGE_ATTACHED]')));
+            $asked = $typed !== '' ? '📸 รูปที่ส่งมา — '.$typed : '📸 รูปที่ส่งมา';
+        } elseif ($asked === '__PREDICT_ALL__') {
+            $asked = 'พื้นดวงรวม';
+        }
+
+        return $asked !== ''
+            ? '↩️ ตอบคำถาม: «'.mb_substr($asked, 0, 60).(mb_strlen($asked) > 60 ? '…' : '')."»\n\n"
+            : '';
     }
 
     /**
