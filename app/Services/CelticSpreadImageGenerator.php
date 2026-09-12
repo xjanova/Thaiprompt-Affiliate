@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FortuneReading;
+use App\Support\FontFile;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -494,10 +495,13 @@ class CelticSpreadImageGenerator
 
     /**
      * หา TTF font ภาษาไทย (เหมือน DailyHoroscopeAutoPostService)
+     *
+     * เช็คด้วย FontFile::isReal() ไม่ใช่ is_file() — (2026-09-12) resources/fonts/DejaVuSans.ttf เคยเป็นหน้า HTML
+     * ไฟล์ที่มีอยู่แต่ไม่ใช่ฟอนต์ต้องถูกข้าม ไม่ใช่ถูกคืนไปให้ GD วาดข้อความว่างเปล่า
      */
     protected function findThaiFont(): ?string
     {
-        $candidates = [
+        return FontFile::firstReal([
             // ⭐ (2026-06-02) ฟอนต์ไทยที่ฝังมากับ repo จริง — ต้องมาก่อน!
             //   เดิม list หาแต่ Sarabun/Kanit ที่ไม่มีบน prod → คืน null → ข้อความไทยทั้งหมด
             //   (subtitle/legend/เลขตำแหน่ง) หายเงียบๆ — เห็นแต่หัวอังกฤษ bitmap
@@ -507,18 +511,11 @@ class CelticSpreadImageGenerator
             public_path('fonts/THSarabun.ttf'),
             resource_path('fonts/Sarabun-Bold.ttf'),
             resource_path('fonts/Kanit-Bold.ttf'),
-            resource_path('fonts/DejaVuSans.ttf'),
             '/usr/share/fonts/truetype/sarabun/Sarabun-Bold.ttf',
             '/usr/share/fonts/truetype/thai/TlwgTypist.ttf',
             'C:/Windows/Fonts/Tahoma.ttf',
-        ];
-
-        foreach ($candidates as $path) {
-            if (is_file($path)) {
-                return $path;
-            }
-        }
-
-        return null;
+            // DejaVu Sans ไม่มีอักษรไทย — อยู่ท้ายสุด ให้อย่างน้อยตัวละติน/ตัวเลขขึ้นเมื่อหาฟอนต์ไทยไม่เจอเลย
+            resource_path('fonts/DejaVuSans.ttf'),
+        ]);
     }
 }

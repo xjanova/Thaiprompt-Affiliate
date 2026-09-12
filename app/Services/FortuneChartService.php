@@ -842,8 +842,8 @@ class FortuneChartService
      *   - ผังมีฐานนับภพ (ลัคนา/จันทร์ลัคน์) → ช่อง = ภพ 1-12 · ป้ายเลขภพ + ชื่อภพ + ราศีของภพ
      *   - ฐาน 'none' → ช่อง = ราศี เมษ…มีน · **ไม่มีเลข/ชื่อภพเลย** และกลางวงบอกว่าไม่ทราบเวลาเกิด
      * ดาวเขียนด้วยเลขไทยตามแบบผังดวงไทย (อาทิตย์ ๑ … เกตุ ๙ · มฤตยู ๐) + ชื่อดาวใต้วง
-     *   ⚠️ ใช้ฟอนต์ไทยตัวเดียว — resources/fonts/DejaVuSans.ttf ในรีโปไม่ใช่ไฟล์ฟอนต์ (เป็นหน้า HTML 404)
-     *      สัญลักษณ์ ☉☽♂ ในรูป PNG จึงไม่เคยขึ้นจริง · ฟอนต์ไทยไม่มีอีโมจิ/✦ ⇒ ห้ามใส่ในข้อความรูปนี้
+     *   ⚠️ ใช้ฟอนต์ไทยตัวเดียว (เลขไทยแทนสัญลักษณ์ดาว) — ฟอนต์ไทยไม่มีอีโมจิ/✦ ⇒ ห้ามใส่ในข้อความรูปนี้
+     *      (DejaVuSans.ttf เคยเป็นหน้า HTML 404 — เปลี่ยนเป็นของจริงแล้ว 2026-09-12 แต่ไม่มีอักษรไทย ใช้กับข้อความไทยไม่ได้)
      *
      * @param  array  $d  ผลจาก natalChartData()
      * @return string PNG binary data
@@ -1141,12 +1141,15 @@ class FortuneChartService
 
     /**
      * หา path ฟอนต์ภาษาไทย
+     *
+     * เช็คด้วย FontFile::isReal() ไม่ใช่ file_exists() — ไฟล์ที่มีอยู่แต่ไม่ใช่ฟอนต์ (เช่นหน้า HTML ที่โหลดผิดมา)
+     * ต้องถูกข้ามไป fallback ตัวถัดไป ไม่ใช่ถูกคืนไปให้ GD วาดว่างเปล่าเงียบๆ
      */
     protected function getThaiFont(): string
     {
         // ✅ ใช้ฟอนต์ใน resources/ เป็นหลัก (หลีกเลี่ยง system paths ที่ถูก open_basedir บล็อค)
         $localFont = resource_path('fonts/NotoSansThai-Bold.ttf');
-        if (@file_exists($localFont)) {
+        if (\App\Support\FontFile::isReal($localFont)) {
             return $localFont;
         }
 
@@ -1158,10 +1161,9 @@ class FortuneChartService
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
         ];
 
-        foreach ($systemPaths as $path) {
-            if (@file_exists($path)) {
-                return $path;
-            }
+        $systemFont = \App\Support\FontFile::firstReal($systemPaths);
+        if ($systemFont !== null) {
+            return $systemFont;
         }
 
         // fallback สุดท้าย — ใช้ path ใน resources เสมอ (อาจไม่มีจริง แต่ดีกว่า system path ที่ถูกบล็อค)
@@ -1169,26 +1171,27 @@ class FortuneChartService
     }
 
     /**
-     * หา path ฟอนต์สำหรับ Unicode symbols (☉☽♂☿♃♀♄)
+     * หา path ฟอนต์สำหรับ Unicode symbols (☉☽♂☿♃♀♄☊☋)
+     *
+     * 🚨 (2026-09-12) resources/fonts/DejaVuSans.ttf เคยเป็นหน้า HTML 404 ตั้งแต่ 2026-02-16
+     *    file_exists() ผ่าน ⇒ คืน path นี้ ⇒ สัญลักษณ์ดาวในรูปไม่เคยขึ้น — เปลี่ยนเป็นไฟล์ DejaVu Sans 2.37 ของจริงแล้ว
+     *    และเช็คด้วย FontFile::isReal() เพื่อให้ไฟล์เสียข้ามไป fallback แทนการวาดว่างเปล่า
      */
     protected function getSymbolFont(): string
     {
-        // ✅ ใช้ DejaVuSans เป็นหลัก — รองรับ Unicode astrological symbols (☉☽♂☿♃♀♄) ครบ
+        // ✅ ใช้ DejaVuSans เป็นหลัก — รองรับ Unicode astrological symbols (☉☽♂☿♃♀♄☊☋) ครบ
         $dejaVu = resource_path('fonts/DejaVuSans.ttf');
-        if (@file_exists($dejaVu)) {
+        if (\App\Support\FontFile::isReal($dejaVu)) {
             return $dejaVu;
         }
 
         // fallback: ลอง system paths (suppress warning เพื่อป้องกัน open_basedir)
-        $systemPaths = [
+        $systemFont = \App\Support\FontFile::firstReal([
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
             '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
-        ];
-
-        foreach ($systemPaths as $path) {
-            if (@file_exists($path)) {
-                return $path;
-            }
+        ]);
+        if ($systemFont !== null) {
+            return $systemFont;
         }
 
         // fallback สุดท้าย → NotoSansThai (symbols อาจแสดงไม่ครบ)

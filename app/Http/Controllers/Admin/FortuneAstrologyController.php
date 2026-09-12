@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\FortuneChartService;
+use App\Support\FontFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -94,12 +95,16 @@ class FortuneAstrologyController extends Controller
         // Step 1: เช็ค font files
         $thaiFont = resource_path('fonts/NotoSansThai-Bold.ttf');
         $symbolFont = resource_path('fonts/DejaVuSans.ttf');
+        // *_is_font = ไฟล์ขึ้นต้นด้วย signature ของฟอนต์จริง — (2026-09-12) DejaVuSans.ttf เคยเป็นหน้า HTML
+        // ที่ exists=true + size ดูปกติ แต่ GD อ่านไม่ได้ ⇒ ต้องดูช่องนี้ ไม่ใช่แค่ exists
         $results['fonts'] = [
             'thai_font_path' => $thaiFont,
             'thai_font_exists' => @file_exists($thaiFont),
+            'thai_font_is_font' => FontFile::isReal($thaiFont),
             'thai_font_size' => @file_exists($thaiFont) ? @filesize($thaiFont) : null,
             'symbol_font_path' => $symbolFont,
             'symbol_font_exists' => @file_exists($symbolFont),
+            'symbol_font_is_font' => FontFile::isReal($symbolFont),
             'symbol_font_size' => @file_exists($symbolFont) ? @filesize($symbolFont) : null,
             'resource_path' => resource_path('fonts'),
             'resource_dir_exists' => @is_dir(resource_path('fonts')),
@@ -131,7 +136,7 @@ class FortuneAstrologyController extends Controller
                 $testImg = @imagecreatetruecolor(100, 100);
                 if ($testImg) {
                     $white = imagecolorallocate($testImg, 255, 255, 255);
-                    $fontToTest = @file_exists($thaiFont) ? $thaiFont : (@file_exists($symbolFont) ? $symbolFont : null);
+                    $fontToTest = FontFile::firstReal([$thaiFont, $symbolFont]);
 
                     if ($fontToTest) {
                         $ttfResult = @imagettftext($testImg, 14, 0, 10, 50, $white, $fontToTest, 'Test');

@@ -52,6 +52,9 @@ class PaymentBannerService
      *   - NotoSansThai-Bold.ttf → bbox return ปกติ ✅
      *   - DejaVuSans.ttf → bbox = false ("Could not read font") ❌
      *   → ใช้ Noto Sans Thai ทั้งคู่ (รองรับ Latin chars + Thai)
+     *
+     * 🔎 (2026-09-12) ต้นเหตุจริง: ไฟล์ DejaVuSans.ttf ในรีโปเป็นหน้า HTML 404 ของ GitHub ไม่ใช่ฟอนต์
+     *   เปลี่ยนเป็น DejaVu Sans 2.37 ของจริงแล้ว แต่แบนเนอร์นี้ยังใช้ Noto ต่อไป (render ปกติอยู่แล้ว ไม่ต้องแตะ)
      */
     protected function thaiFont(): string
     {
