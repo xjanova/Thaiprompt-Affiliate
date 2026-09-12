@@ -8172,10 +8172,14 @@ class FortuneConversationService
             //   มาสร้างที่นี่แทน — ส่งคู่กับคำทำนายทีเดียว
             if (empty($reading->reading_image_url) && $reading->birth_date) {
                 try {
-                    $birthDateStr = $reading->birth_date->format('Y-m-d');
+                    // 🖼️ (2026-09-12) อินพุตชุดเดียวกับรูปที่ processPaymentConfirmed วาด (เวลาเกิดที่รู้ + คำถามข้อ 1 + จังหวัด)
+                    $birthDateStr = $reading->birthDateTimeForChart() ?? $reading->birth_date->format('Y-m-d');
                     $chartName = $reading->facebook_user_name ?? 'คุณ';
                     $chartGender = ($reading->user_profile['gender'] ?? null);
-                    $chartUrl = $this->chartService->generateBirthChart($birthDateStr, $chartName, $chartGender);
+                    $chartInputs = $this->deepChartImageInputs($collectedQuestions, $reading->birthProvinceIfKnown());
+                    $chartUrl = $this->chartService->generateBirthChart(
+                        $birthDateStr, $chartName, $chartGender, $chartInputs['hour'], $chartInputs['province']
+                    );
                     if ($chartUrl) {
                         $reading->update(['reading_image_url' => $chartUrl]);
                     }
@@ -9962,13 +9966,18 @@ class FortuneConversationService
             $elapsed = microtime(true) - $billStartTime;
             if (empty($chartImageUrl) && $elapsed < $maxBillTime) {
                 try {
-                    $birthDate = $reading->birth_date?->format('Y-m-d');
+                    // 🖼️ (2026-09-12) รูปตัวอย่างก่อนจ่าย = ผังเดียวกับรูปหลังจ่าย (processPaymentConfirmed วาดใหม่อีกใบ)
+                    //   วันเกิดเฉย ๆ = ไม่รู้เวลา ⇒ ลูกค้าที่บอกเวลาไว้จะได้ 2 รูปคนละภพ
+                    $birthDate = $reading->birthDateTimeForChart();
                     $name = $reading->facebook_user_name ?? 'คุณ';
                     $userProfile = $reading->user_profile ?? [];
                     $gender = $userProfile['gender'] ?? null;
 
                     if ($birthDate) {
-                        $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $gender);
+                        $chartInputs = $this->deepChartImageInputs($questions, $reading->birthProvinceIfKnown());
+                        $chartImageUrl = $this->chartService->generateBirthChart(
+                            $birthDate, $name, $gender, $chartInputs['hour'], $chartInputs['province']
+                        );
                     } else {
                         $chartImageUrl = $this->chartService->generateQuickChart($name);
                     }
@@ -10075,6 +10084,32 @@ class FortuneConversationService
                 'reading' => $reading,
             ];
         }
+    }
+
+    /**
+     * 🖼️ เวลา/จังหวัดเกิดสำหรับ "รูปผังดวงกำเนิด" ของบิลดูดวง 39 — ชุดเดียวกับผังในพรอมต์ข้อ 1
+     *
+     * (2026-09-12) รูปผังเคยวาดจากผังสาธิตตามวันในสัปดาห์ ⇒ ขัดกับคำทำนายที่อ้างผังจริง
+     *   ตอนนี้รูปวาดจากผังจริงแล้ว (FortuneChartService::generateBirthChart) แต่ต้องได้ "อินพุตชุดเดียวกัน" ด้วย
+     *   ไม่งั้นลัคนาคนละราศี = ภพในรูปไม่ตรงกับข้อความอีก
+     *
+     * ทำไมข้อ 1: พรอมต์ทำทีละข้อ แต่ละข้ออ่านเวลา/จังหวัดจาก numberedQuestionsText([$question]) ของตัวเอง
+     *   ส่วนรูปมีใบเดียวต่อบิล ⇒ ยึดข้อ 1 ซึ่งเป็นข้อที่มี Section A (ทายเจ้าชะตาจากผังดวงกำเนิด)
+     *   (ปกติทุกข้อได้ค่าเดียวกันอยู่แล้ว — เวลาที่พิมพ์ในคำถามถูกเก็บลง DB แล้วมากับสตริงวันเกิด
+     *    และจังหวัดที่รู้แล้ว ชนะข้อความเสมอผ่าน ThaiProvinces::forChart)
+     *
+     * @param  array  $questions  คำถามของบิล (ลำดับเดียวกับลูปทำนาย)
+     * @param  string|null  $knownProvince  FortuneReading::birthProvinceIfKnown() — ค่าเดียวกับที่ส่งให้พรอมต์
+     * @return array{hour: float|null, province: string|null}
+     */
+    protected function deepChartImageInputs(array $questions, ?string $knownProvince): array
+    {
+        $first = reset($questions);
+        $questionsText = is_string($first)
+            ? \App\Services\Fortune\ThaiAstrologyService::numberedQuestionsText([$first])
+            : '';
+
+        return (new \App\Services\Fortune\ThaiAstrologyService)->statedBirthInputs($questionsText, $knownProvince);
     }
 
     /**
@@ -10374,8 +10409,12 @@ class FortuneConversationService
             $chartImageUrl = null;
             try {
                 if ($birthDate) {
+                    // 🖼️ (2026-09-12) รูปต้องเป็นผังเดียวกับที่คำทำนายอ้าง — อินพุตชุดเดียวกับพรอมต์ข้อ 1
+                    //   (สตริงวันเกิด + เวลา/จังหวัดจากคำถาม + จังหวัดที่รู้แล้วชนะ) ดู deepChartImageInputs
+                    $chartInputs = $this->deepChartImageInputs((array) $questions, $birthProvince);
                     $chartImageUrl = $this->chartService->generateBirthChart(
-                        $birthDate, $name, $userProfile['gender'] ?? null
+                        $birthDate, $name, $userProfile['gender'] ?? null,
+                        $chartInputs['hour'], $chartInputs['province']
                     );
                 } else {
                     // ไม่มีวันเกิด → สร้าง Quick Chart เป็น fallback

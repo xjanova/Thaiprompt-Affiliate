@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Fortune\ThaiAstrologyService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -153,18 +154,49 @@ class FortuneChartService
     }
 
     /**
-     * สร้าง birth chart จากวันเกิด
+     * 🜨 ดาวที่ผังดวงกำเนิดจริงมี แต่ PLANETS ไม่มี — มฤตยู (ดาว ๐)
      *
-     * @param  string  $birthDate  วันเกิด (Y-m-d)
+     * ⚠️ จงใจไม่ใส่ใน PLANETS: ตารางนั้นถูกวนทั้งใบหลายที่ (หน้าแอดมิน · ผังสาธิต array_diff ·
+     *    ดวงรายวัน) ใส่เพิ่ม = ผังสาธิตเปลี่ยนหน้าตา + หน้าแอดมินมีดาวที่ตารางเจ้าชนะไม่รู้จัก
+     */
+    protected const NATAL_EXTRA_PLANETS = [
+        'uranus' => ['name' => 'มฤตยู', 'symbol' => "\u{26E2}", 'color' => '#0E7490'],
+    ];
+
+    /**
+     * 🔢 รุ่นหน้าตารูปผังดวงกำเนิด — อยู่ในชื่อไฟล์ (natalChartKey)
+     *
+     * แก้วิธีวาดเมื่อไหร่ให้เลื่อนเลข ⇒ ไฟล์ของผังเดิมที่วาดใหม่ได้ชื่อใหม่ แยกจากรูปรุ่นก่อนได้ทันที
+     */
+    protected const NATAL_RENDER_VERSION = 'natal-v1';
+
+    /**
+     * สร้างรูปผังดวงกำเนิด (PNG) จากวันเกิด — ผังจริงชุดเดียวกับที่คำทำนายอ้าง
+     *
+     * 🚨 (2026-09-12) เดิมวาดจาก calculatePlanetPositions($dayOfWeek) = ผังสาธิต 7 แบบทั้งระบบ
+     *   (เจ้าชนะ→ภพ 1 · มิตร→9/11/5 · ศัตรู→6/12/8) + วันปฏิทิน (ไม่ข้ามย่ำรุ่ง · ไม่มีพุธกลางคืน)
+     *   แล้วส่งให้ลูกค้าดูดวง 39 เป็น "ผังของคุณ" คู่กับคำทำนายที่อ้างผังจริง ⇒ รูปกับข้อความขัดกัน
+     *   ใหม่: วาดจาก ThaiAstrologyService::natalChartSnapshot() — ผังตัวเดียวกับ natalPromptBlocks()
+     *   ⚠️ อินพุตต้องเป็นชุดเดียวกับพรอมต์ (สตริงวันเกิด + เวลา/จังหวัดจาก statedBirthInputs)
+     *      ไม่งั้นลัคนาคนละราศี = ภพในรูปไม่ตรงกับคำทำนาย
+     *
+     * @param  string  $birthDate  วันเกิด "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
      * @param  string  $name  ชื่อผู้ใช้
-     * @param  string|null  $gender  เพศ
+     * @param  string|null  $gender  เพศ (ไม่ได้ใช้วาด — คงไว้ให้ผู้เรียกเดิม)
+     * @param  float|null  $birthHour  เวลาเกิดที่ลูกค้าพิมพ์ในคำถาม — ชนะเวลาในสตริงวันเกิด
+     * @param  string|null  $birthProvince  จังหวัดเกิด (null = พิกัดกรุงเทพ)
      * @return string|null URL ของภาพ chart หรือ null ถ้าเกิดข้อผิดพลาด
      */
-    public function generateBirthChart(string $birthDate, string $name, ?string $gender = null): ?string
-    {
+    public function generateBirthChart(
+        string $birthDate,
+        string $name,
+        ?string $gender = null,
+        ?float $birthHour = null,
+        ?string $birthProvince = null
+    ): ?string {
         try {
             // ✅ เช็ค GD extension ก่อนสร้าง chart
-            if (! extension_loaded('gd')) {
+            if (! $this->gdAvailable()) {
                 Log::error('FortuneChart: GD extension ไม่ได้ติดตั้ง! ไม่สามารถสร้าง chart ได้', [
                     'birthDate' => $birthDate,
                     'name' => $name,
@@ -175,35 +207,24 @@ class FortuneChartService
                 return null;
             }
 
-            $date = Carbon::parse($birthDate);
-            $dayOfWeek = $date->dayOfWeek;
+            $chartData = $this->natalChartData($birthDate, $name, $birthHour, $birthProvince);
+            if ($chartData === null) {
+                // 🚫 ผูกดวงไม่ได้ = ไม่มีรูป — ห้ามถอยไปวาดผังสาธิตแทน (นั่นคือบั๊กที่เพิ่งแก้)
+                Log::warning('FortuneChart: ผูกดวงกำเนิดไม่ได้ — ไม่สร้างรูปผัง', [
+                    'birthDate' => $birthDate,
+                ]);
 
-            $planetPositions = $this->calculatePlanetPositions($dayOfWeek);
-            $chaochana = self::CHAOCHANA[$dayOfWeek];
-            $mainPlanet = self::PLANETS[$chaochana['planet']];
+                return null;
+            }
 
-            $thaiDays = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
-            $dayName = $thaiDays[$dayOfWeek];
+            $pngData = $this->buildNatalPngChart($chartData);
 
-            $chartData = [
-                'name' => $name,
-                'birthDate' => $date->format('d/m/').($date->year + 543),
-                'dayOfWeek' => $dayName,
-                'mainPlanet' => $mainPlanet['name'],
-                'mainPlanetSymbol' => $mainPlanet['symbol'],
-                'mainPlanetColor' => $mainPlanet['color'],
-                'planetPositions' => $planetPositions,
-                'chaochana' => $chaochana,
-                'isFullChart' => true,
-            ];
-
-            $pngData = $this->buildPngChart($chartData);
-
-            $url = $this->saveChartAsImage($pngData, "birth-chart-{$dayOfWeek}");
+            $url = $this->saveChartAsImage($pngData, 'birth-chart-'.$chartData['chartKey']);
 
             Log::info('FortuneChart: สร้าง birth chart สำเร็จ', [
                 'name' => $name,
                 'birthDate' => $birthDate,
+                'basis' => $chartData['basis'],
                 'url' => $url,
             ]);
 
@@ -221,6 +242,134 @@ class FortuneChartService
 
             return null;
         }
+    }
+
+    /**
+     * 🗺️ ข้อมูลที่ส่งให้ตัววาดรูปผังดวงกำเนิด — แยกออกมาให้เทสต์เทียบกับผังในพรอมต์ได้โดยไม่ต้องวาดจริง
+     *
+     * ทุกค่ามาจาก ThaiAstrologyService::natalChartSnapshot() (ห้ามคำนวณภพ/ดาวเจ้าชนะเองที่นี่):
+     *   - planetPositions [ภพ 1-12 => [คีย์ดาว]] — มีเฉพาะเมื่อผังมีฐานนับภพ (ลัคนา/จันทร์ลัคน์)
+     *     ฐาน 'none' = **อาร์เรย์ว่าง** ⇒ ตัววาดวางดาวตามราศี (signPositions) และบอกว่าไม่มีภพ
+     *   - signPositions [ราศี => [คีย์ดาว]] — มีทุกกรณี (ราศีของดาวไม่ต้องใช้เวลาเกิด)
+     *   - ดาวเจ้าชนะ/มิตร/ศัตรู/วันเกิด = ชุดเดียวกับหัวผัง (ย่ำรุ่ง 06:00 + พุธกลางคืน = ราหู)
+     *
+     * @return array|null null = ผูกดวงไม่ได้ (วันเกิดอ่านไม่ออก)
+     */
+    public function natalChartData(string $birthDate, string $name, ?float $birthHour = null, ?string $birthProvince = null): ?array
+    {
+        $snap = (new ThaiAstrologyService)->natalChartSnapshot($birthDate, $birthHour, $birthProvince);
+        if ($snap === null) {
+            return null;
+        }
+
+        $date = Carbon::parse($birthDate);
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+        $anchor = $snap['anchor'];
+
+        $planets = [];
+        $houses = [];
+        $signs = array_fill_keys($order, []);
+        foreach ($snap['planets'] as $enKey => $p) {
+            $key = strtolower((string) $enKey);
+            $meta = self::PLANETS[$key] ?? self::NATAL_EXTRA_PLANETS[$key] ?? [];
+            $planets[$key] = [
+                'name' => $p['th'],
+                'numeral' => self::thaiNumeral($p['num']),
+                'color' => $meta['color'] ?? '#6B7280',
+                'sign' => $p['sign'],
+                'deg' => $p['deg'],
+                'retro' => $p['retro'],
+                'house' => $p['house'],
+                // 🌙 ฐาน 'none' = ไม่รู้เวลาเกิด + จันทร์ย้ายราศีวันนั้น ⇒ ราศีจันทร์ที่คิดตอนเที่ยงอาจผิดราศี
+                'uncertain' => $key === 'moon' && $snap['basis'] === 'none',
+            ];
+            $signs[$p['sign']][] = $key;
+            if ($p['house'] !== null) {
+                $houses[$p['house']][] = $key;
+            }
+        }
+
+        // ในช่องเดียวกันเรียงตามองศา — วงเดินตามเข็มนาฬิกา = ลองจิจูดเพิ่มขึ้น
+        $byDegree = fn (array $keys): array => collect($keys)->sortBy(fn (string $k) => $planets[$k]['deg'])->values()->all();
+        $houses = array_map($byDegree, $houses);
+        $signs = array_map($byDegree, $signs);
+
+        // ราศีประจำภพ 1-12 (นับจากราศีภพที่ 1 ตามจักรราศี) — ไม่มีฐาน = ไม่มีภพ
+        $houseSigns = [];
+        $anchorIdx = $anchor !== null ? array_search($anchor, $order, true) : false;
+        if ($anchorIdx !== false && count($order) === 12) {
+            for ($h = 1; $h <= 12; $h++) {
+                $houseSigns[$h] = $order[($anchorIdx + $h - 1) % 12];
+            }
+        }
+
+        $ruler = $snap['ruler'];
+        $rulerKey = $this->planetKeyByName($ruler['name']);
+        $time = $snap['birth_hour'] !== null ? ThaiAstrologyService::hourLabel($snap['birth_hour']) : null;
+
+        return [
+            'name' => $name,
+            'birthDate' => $date->format('d/m/').($date->year + 543),
+            'birthTime' => $time,
+            'place' => $snap['place'],
+            'dayOfWeek' => $snap['day_name'],
+            'calendarDayOfWeek' => $snap['day_shifted'] ? $snap['calendar_day_name'] : null,
+            'zodiac' => $snap['zodiac'],
+            'mainPlanet' => $ruler['name'],
+            'mainPlanetKey' => $rulerKey,
+            'mainPlanetNumeral' => $rulerKey !== null ? ($planets[$rulerKey]['numeral'] ?? '') : '',
+            'mainPlanetColor' => $rulerKey !== null ? (self::PLANETS[$rulerKey]['color'] ?? '#D97706') : '#D97706',
+            'friends' => $ruler['friends'],
+            'enemies' => $ruler['enemies'],
+            'basis' => $snap['basis'],
+            'anchor' => $anchor,
+            'houseSigns' => $houseSigns,
+            'planetPositions' => $anchor !== null ? array_replace(array_fill(1, 12, []), $houses) : [],
+            'signPositions' => $signs,
+            'planets' => $planets,
+            'chartKey' => $this->natalChartKey($date, $time, $snap['place']),
+        ];
+    }
+
+    /**
+     * 🔑 ชื่อไฟล์ประจำผัง = แฮชของอินพุตที่ใช้ผูกดวงจริง (วันเกิด + เวลาเกิด + จังหวัด) + รุ่นหน้าตา
+     *
+     * เดิม "birth-chart-{วันในสัปดาห์}" ⇒ ป้ายไฟล์บอกได้แค่ 7 แบบ (สมัยผังสาธิตก็มีแค่ 7 แบบจริง)
+     * ใช้ค่าหลังผูกดวงแล้ว (จังหวัดที่ไม่รู้จัก = ไม่มีพิกัด = ผังเดียวกับไม่บอก ⇒ แฮชเดียวกัน)
+     * ⚠️ saveChartAsImage() ยังต่อท้ายสุ่ม 8 ตัวเสมอ — ในรูปมีชื่อลูกค้า ผังเดียวกันคนละชื่อห้ามทับไฟล์กัน
+     */
+    protected function natalChartKey(Carbon $date, ?string $time, ?string $place): string
+    {
+        return substr(sha1(implode('|', [
+            self::NATAL_RENDER_VERSION,
+            $date->format('Y-m-d'),
+            $time ?? '-',
+            $place ?? '-',
+        ])), 0, 12);
+    }
+
+    /** คีย์ดาวของตัววาด (sun/moon/…/uranus) จากชื่อไทย — null = ไม่รู้จัก */
+    protected function planetKeyByName(string $thaiName): ?string
+    {
+        foreach (self::PLANETS + self::NATAL_EXTRA_PLANETS as $key => $meta) {
+            if ($meta['name'] === $thaiName) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /** เลขดาวแบบเลขไทย (อาทิตย์ ๑ … เกตุ ๙ · มฤตยู ๐) — ฟอนต์ไทยมีครบ ต่างจากสัญลักษณ์ ☉☽ */
+    protected static function thaiNumeral(int $num): string
+    {
+        return mb_chr(0x0E50 + max(0, min(9, $num)), 'UTF-8');
+    }
+
+    /** มี GD ให้วาดไหม — แยกเป็นเมธอดให้เทสต์สลับได้ */
+    protected function gdAvailable(): bool
+    {
+        return extension_loaded('gd');
     }
 
     /**
@@ -332,6 +481,8 @@ class FortuneChartService
      *     (คำนวณดาวจริงด้วย PlanetEphemeris) แล้ว
      *   ⚠️ เมธอดนี้เหลือไว้ให้หน้าแอดมิน/มาร์เก็ตติ้งใช้แสดงผังเท่านั้น
      *     **ห้ามนำกลับไปป้อน AI สำหรับคำทำนายที่ลูกค้าจ่ายเงิน**
+     *   🖼️ (2026-09-12) รูป PNG ที่ส่งลูกค้า (generateBirthChart) เลิกใช้เมธอดนี้แล้ว — วาดจากผังจริง
+     *     ผ่าน natalChartData() · เหลือพรีวิว SVG หน้าแอดมิน (generateBirthChartSvg) ที่ยังวาดผังสาธิต
      *
      * @param  int  $dayOfWeek  0-6
      * @return array [house_number => [planet_keys]]
@@ -449,6 +600,9 @@ class FortuneChartService
 
     /**
      * สร้าง PNG chart ด้วย GD — รองรับภาษาไทย + ใช้ได้ใน Facebook/LINE
+     *
+     * ⚠️ (2026-09-12) เหลือผู้เรียกเดียวคือ generateQuickChart() (isFullChart=false)
+     *    รูปผังดวงกำเนิดย้ายไป buildNatalPngChart() แล้ว — กิ่ง isFullChart=true วาดผังสาธิต ห้ามนำกลับมาใช้กับลูกค้า
      *
      * @param  array  $chartData  ข้อมูล chart
      * @return string PNG binary data
@@ -679,6 +833,310 @@ class FortuneChartService
         imagedestroy($img);
 
         return $pngData;
+    }
+
+    /**
+     * 🖼️ วาดรูปผังดวงกำเนิดจริง (PNG 1000×1000) จาก natalChartData()
+     *
+     * วงนอก 12 ช่อง เดินตามเข็มนาฬิกาจากบนสุด:
+     *   - ผังมีฐานนับภพ (ลัคนา/จันทร์ลัคน์) → ช่อง = ภพ 1-12 · ป้ายเลขภพ + ชื่อภพ + ราศีของภพ
+     *   - ฐาน 'none' → ช่อง = ราศี เมษ…มีน · **ไม่มีเลข/ชื่อภพเลย** และกลางวงบอกว่าไม่ทราบเวลาเกิด
+     * ดาวเขียนด้วยเลขไทยตามแบบผังดวงไทย (อาทิตย์ ๑ … เกตุ ๙ · มฤตยู ๐) + ชื่อดาวใต้วง
+     *   ⚠️ ใช้ฟอนต์ไทยตัวเดียว — resources/fonts/DejaVuSans.ttf ในรีโปไม่ใช่ไฟล์ฟอนต์ (เป็นหน้า HTML 404)
+     *      สัญลักษณ์ ☉☽♂ ในรูป PNG จึงไม่เคยขึ้นจริง · ฟอนต์ไทยไม่มีอีโมจิ/✦ ⇒ ห้ามใส่ในข้อความรูปนี้
+     *
+     * @param  array  $d  ผลจาก natalChartData()
+     * @return string PNG binary data
+     */
+    protected function buildNatalPngChart(array $d): string
+    {
+        $width = 1000;
+        $height = 1000;
+        $cx = $width / 2;
+        $cy = 532;
+        $outerR = 440;
+        $innerR = 238;
+        $centerR = 228;
+
+        // ไม่มีการวางดาวลงภพ = ฐาน 'none' → วงนอกเป็นราศี
+        $houseMode = ! empty($d['planetPositions']);
+        $order = (array) config('thai_astrology_knowledge.zodiac_order', []);
+
+        $img = imagecreatetruecolor($width, $height);
+        imagealphablending($img, true);
+        imagesavealpha($img, true);
+
+        $font = $this->getThaiFont();
+
+        $bgCream = $this->hexColor($img, '#FFFBF7');
+        $white = $this->hexColor($img, '#FFFFFF');
+        $purple = $this->hexColor($img, '#7C3AED');
+        $purpleDark = $this->hexColor($img, '#5B21B6');
+        $purpleLight = $this->hexColor($img, '#A78BFA');
+        $gold = $this->hexColor($img, '#B45309');
+        $goldDark = $this->hexColor($img, '#92400E');
+        $textDark = $this->hexColor($img, '#1F2937');
+        $textGray = $this->hexColor($img, '#4B5563');
+        $textMuted = $this->hexColor($img, '#9CA3AF');
+        $green = $this->hexColor($img, '#047857');
+        $red = $this->hexColor($img, '#B91C1C');
+        $shadowSoft = imagecolorallocatealpha($img, 124, 58, 237, 112);
+        $mainColor = $this->hexColor($img, $d['mainPlanetColor'] ?? '#D97706');
+
+        // === พื้นหลัง: ครีมบน → ลาเวนเดอร์ล่าง (โทนเดียวกับรูปเดิม) ===
+        for ($y = 0; $y < $height; $y++) {
+            $ratio = $y / $height;
+            $lineColor = imagecolorallocate($img, (int) (255 - 12 * $ratio), (int) (251 - 12 * $ratio), (int) (247 + 8 * $ratio));
+            imageline($img, 0, $y, $width, $y, $lineColor);
+        }
+
+        // === พื้นสีพาสเทล 12 ช่อง ===
+        for ($i = 1; $i <= 12; $i++) {
+            $hex = ltrim(self::HOUSES[$i]['color'], '#');
+            $zone = imagecolorallocatealpha(
+                $img,
+                hexdec(substr($hex, 0, 2)),
+                hexdec(substr($hex, 2, 2)),
+                hexdec(substr($hex, 4, 2)),
+                $i % 2 === 0 ? 108 : 100
+            );
+            imagefilledarc($img, (int) $cx, (int) $cy, $outerR * 2, $outerR * 2, ($i - 1) * 30 - 90, $i * 30 - 90, $zone, IMG_ARC_PIE);
+        }
+
+        // === วงกลาง: เจาะพาสเทลออก + เงานุ่มในร่องระหว่างวง ===
+        imagefilledellipse($img, (int) $cx, (int) $cy, $innerR * 2, $innerR * 2, $bgCream);
+        for ($r = $centerR + 10; $r > $centerR; $r -= 2) {
+            $alpha = (int) (112 + 15 * (($centerR + 10 - $r) / 10));
+            imagefilledellipse($img, (int) $cx, (int) $cy, $r * 2, $r * 2, imagecolorallocatealpha($img, 124, 58, 237, $alpha));
+        }
+        imagefilledellipse($img, (int) $cx, (int) $cy, $centerR * 2, $centerR * 2, $white);
+
+        $this->drawCircle($img, $cx, $cy, $outerR, $purple, 4);
+        $this->drawCircle($img, $cx, $cy, $innerR, $purpleDark, 2);
+        $this->drawCircle($img, $cx, $cy, $centerR, $purple, 3);
+
+        imagesetthickness($img, 2);
+        for ($i = 0; $i < 12; $i++) {
+            $a = deg2rad($i * 30 - 90);
+            imageline(
+                $img,
+                (int) ($cx + $innerR * cos($a)), (int) ($cy + $innerR * sin($a)),
+                (int) ($cx + $outerR * cos($a)), (int) ($cy + $outerR * sin($a)),
+                $purpleDark
+            );
+        }
+        imagesetthickness($img, 1);
+
+        // === ป้ายช่อง + ดาว ===
+        for ($i = 1; $i <= 12; $i++) {
+            $midDeg = ($i - 1) * 30 - 90 + 15;
+            $mid = deg2rad($midDeg);
+            $at = fn (float $r): array => [$cx + $r * cos($mid), $cy + $r * sin($mid)];
+
+            // ป้ายข้อความกว้างกว่าสูง ⇒ ช่องซ้าย/ขวาต้องถอยเข้าในมากกว่าช่องบน/ล่าง
+            //   ครึ่งความยาวของป้ายตามแนวรัศมี = ครึ่งกว้าง×|cos| + ครึ่งสูง×|sin|
+            $cosA = abs(cos($mid));
+            $sinA = abs(sin($mid));
+
+            if ($houseMode) {
+                // เลขภพคร่อมเส้นวงนอก — เหลือที่ในช่องให้ดาว
+                $sectorColor = $this->hexColor($img, self::HOUSES[$i]['color']);
+                [$bx, $by] = $at($outerR);
+                imagefilledellipse($img, (int) $bx, (int) $by, 28, 28, $white);
+                imagesetthickness($img, 2);
+                imageellipse($img, (int) $bx, (int) $by, 28, 28, $sectorColor);
+                imagesetthickness($img, 1);
+                $this->drawCenteredText($img, $font, 12, $bx, $by, (string) $i, $sectorColor);
+
+                // ชื่อภพ + ราศีของภพ ซ้อนกันแนวตั้งบนจอ (ซ้อนตามรัศมี = ช่องซ้าย/ขวาทับกันเอง)
+                $half = 34 * $cosA + 20 * $sinA;
+                $labelR = $outerR - 16 - $half;
+                [$tx, $ty] = $at($labelR);
+                $this->drawCenteredText($img, $font, 13, $tx, $ty - 9, self::HOUSES[$i]['name'], $textDark);
+                $this->drawCenteredText($img, $font, 11, $tx, $ty + 10, 'ราศี'.($d['houseSigns'][$i] ?? ''), $textGray);
+
+                $keys = $d['planetPositions'][$i] ?? [];
+            } else {
+                $sign = (string) ($order[$i - 1] ?? '');
+                $half = 24 * $cosA + 11 * $sinA;
+                $labelR = $outerR - 8 - $half;
+                [$tx, $ty] = $at($labelR);
+                $this->drawCenteredText($img, $font, 15, $tx, $ty, $sign, $textDark);
+
+                $keys = $d['signPositions'][$sign] ?? [];
+            }
+            $zoneOuter = $labelR - $half - 8;
+
+            foreach ($this->natalPlanetSlots(count($keys), $midDeg, $innerR + 6, $zoneOuter) as $idx => $slot) {
+                $p = $d['planets'][$keys[$idx]] ?? null;
+                if ($p === null) {
+                    continue;
+                }
+                $this->drawNatalPlanetBadge(
+                    $img, $font,
+                    $cx + $slot['r'] * cos($slot['a']),
+                    $cy + $slot['r'] * sin($slot['a']),
+                    $p, $slot['scale'], $white, $shadowSoft, $textDark
+                );
+            }
+        }
+
+        // === กลางวง: ข้อมูลเจ้าชะตา — เรียงเป็นบรรทัด แล้วจัดกึ่งกลางทั้งก้อน ===
+        $zodiacTh = explode(' ', trim((string) $d['zodiac']))[0];
+        [$basisTitle, $basisNote] = match ($d['basis']) {
+            'lagna' => ["ลัคนาราศี{$d['anchor']}", 'ภพนับจากลัคนา'],
+            'moon' => ["จันทร์ลัคน์ราศี{$d['anchor']}", 'ไม่ทราบเวลาเกิด · ภพนับจากจันทร์ลัคน์'],
+            default => ['ไม่ทราบเวลาเกิด', 'จันทร์ย้ายราศีวันเกิด · วางดาวตามราศี ไม่มีภพ'],
+        };
+
+        $lines = [
+            ['text' => 'ผังดวงกำเนิด', 'size' => 14, 'color' => $gold, 'h' => 24],
+            ['text' => mb_substr($this->fontSafeText((string) $d['name'], 'เจ้าชะตา'), 0, 18), 'size' => 24, 'color' => $textDark, 'h' => 38],
+            ['divider' => true, 'h' => 14],
+            ['text' => 'เกิดวัน'.$d['dayOfWeek'], 'size' => 16, 'color' => $purple, 'h' => 26],
+        ];
+        if ($d['calendarDayOfWeek'] !== null) {
+            // 🔎 ข้ามย่ำรุ่ง = ต้องบอกตามตรง (ลูกค้าจำว่าตัวเองเกิดอีกวัน) — ตรงกับคำเตือนในผังข้อความ
+            $lines[] = ['text' => "(ปฏิทินคือวัน{$d['calendarDayOfWeek']} · เกิดก่อนย่ำรุ่ง 06:00)", 'size' => 11, 'color' => $textGray, 'h' => 18];
+        }
+        $lines[] = [
+            'text' => $d['birthDate'].($d['birthTime'] !== null ? " · {$d['birthTime']} น." : ' · ไม่ทราบเวลาเกิด'),
+            'size' => 14, 'color' => $textGray, 'h' => 22,
+        ];
+        if ($d['basis'] === 'lagna') {
+            // ลัคนาขึ้นกับพิกัด — ไม่รู้จังหวัดต้องบอกเหมือนผังข้อความ
+            $lines[] = ['text' => $d['place'] ?? 'ไม่ทราบจังหวัดเกิด · ใช้พิกัดกรุงเทพฯ', 'size' => 11, 'color' => $textGray, 'h' => 18];
+        }
+        $lines[] = ['ruler' => true, 'h' => 66];
+        $lines[] = ['text' => 'ดาวเจ้าชนะ: '.$d['mainPlanet'], 'size' => 14, 'color' => $mainColor, 'h' => 22];
+        $lines[] = ['text' => 'มิตร: '.(implode(' ', $d['friends']) ?: '-'), 'size' => 12, 'color' => $green, 'h' => 20];
+        $lines[] = ['text' => 'ศัตรู: '.(implode(' ', $d['enemies']) ?: '-'), 'size' => 12, 'color' => $red, 'h' => 20];
+        $lines[] = ['text' => 'ราศีเกิด: '.$zodiacTh, 'size' => 12, 'color' => $textDark, 'h' => 22];
+        $lines[] = ['text' => $basisTitle, 'size' => 15, 'color' => $purpleDark, 'h' => 26];
+        $lines[] = ['text' => $basisNote, 'size' => 11, 'color' => $textGray, 'h' => 18];
+
+        $y = $cy - array_sum(array_column($lines, 'h')) / 2;
+        foreach ($lines as $line) {
+            $lineMid = $y + $line['h'] / 2;
+            if (! empty($line['divider'])) {
+                imagesetthickness($img, 2);
+                imageline($img, (int) ($cx - 60), (int) $lineMid, (int) ($cx + 60), (int) $lineMid, $purpleLight);
+                imagesetthickness($img, 1);
+            } elseif (! empty($line['ruler'])) {
+                imagefilledellipse($img, (int) $cx, (int) $lineMid, 58, 58, $mainColor);
+                imagesetthickness($img, 3);
+                imageellipse($img, (int) $cx, (int) $lineMid, 58, 58, $white);
+                imagesetthickness($img, 1);
+                $this->drawCenteredText($img, $font, 24, $cx, $lineMid - 1, (string) $d['mainPlanetNumeral'], $white);
+            } else {
+                $this->drawCenteredText($img, $font, $line['size'], $cx, $lineMid, $line['text'], $line['color']);
+            }
+            $y += $line['h'];
+        }
+
+        // === หัวเรื่อง + ท้ายรูป ===
+        $this->drawCenteredText($img, $font, 26, $cx, 40, 'หมอจันทราพยากรณ์', $goldDark);
+        $this->drawCenteredText($img, $font, 13, $cx, 72, 'โหราศาสตร์ไทย · ตำแหน่งดาวจริง 10 ดวง · ระบบนิรายนะ', $purple);
+        $this->drawCenteredText($img, $font, 11, $cx, $height - 16, 'หมอจันทราพยากรณ์ | thaiprompt.online', $textMuted);
+
+        ob_start();
+        imagepng($img, null, 7);
+        $pngData = ob_get_clean();
+        imagedestroy($img);
+
+        return $pngData;
+    }
+
+    /**
+     * ตัดอักขระที่ฟอนต์ไทยในรีโปไม่มี (อีโมจิ/อักษรลาว/จีน ฯลฯ ในชื่อเฟซบุ๊ก) — ไม่งั้นขึ้นเป็นกล่องสี่เหลี่ยม
+     *
+     * NotoSansThai ครอบคลุมอักษรไทย + ASCII + Latin-1 (ตรวจ cmap 2026-09-12) · เหลือว่าง = ใช้ $fallback
+     */
+    protected function fontSafeText(string $text, string $fallback): string
+    {
+        $clean = (string) preg_replace('/[^\x{0E00}-\x{0E7F}\x{0020}-\x{007E}\x{00A0}-\x{00FF}]+/u', ' ', $text);
+        $clean = trim((string) preg_replace('/\s+/u', ' ', $clean));
+
+        return $clean !== '' ? $clean : $fallback;
+    }
+
+    /**
+     * ตำแหน่งวางดาว n ดวงในช่องเดียว (กว้าง 30°) — วางแถวนอกก่อน แถวไม่พอค่อยย่อขนาด
+     *
+     * ผังจริงมีดาวกองราศีเดียวกันได้หลายดวง (อาทิตย์-พุธ-ศุกร์ ห่างกันไม่เกิน ~48° เสมอ)
+     * ของเดิมเรียงดาวซ้อนกันตามรัศมีห่างแค่ 18px บนวง 46px ⇒ 3 ดวงขึ้นไปทับกันอ่านไม่ออก
+     *
+     * @return array<int, array{r: float, a: float, scale: float}> a = มุม (เรเดียน)
+     */
+    protected function natalPlanetSlots(int $count, float $midDeg, float $rMin, float $rMax): array
+    {
+        if ($count <= 0) {
+            return [];
+        }
+
+        // ช่องละ 56px ทั้งสองแนว — ก้อน "วง + ชื่อ" สูง ~54px ช่องบน/ล่างของวงเรียงแถวตามแนวตั้ง
+        $span = deg2rad(30);
+        $scales = [1.0, 0.82, 0.68, 0.56];
+        $rows = [];
+        $cell = 56.0;
+        $scale = 1.0;
+        foreach ($scales as $scale) {
+            $cell = 56.0 * $scale;
+            $rowCount = max(1, (int) floor(($rMax - $rMin) / $cell));
+            $rows = [];
+            for ($k = 0; $k < $rowCount; $k++) {
+                $r = $rMax - $cell / 2 - $k * $cell;
+                $rows[] = ['r' => $r, 'cap' => max(1, (int) floor(($r * $span - 6) / $cell))];
+            }
+            if (array_sum(array_column($rows, 'cap')) >= $count) {
+                break;
+            }
+        }
+
+        $slots = [];
+        $left = $count;
+        $lastRow = count($rows) - 1;
+        foreach ($rows as $k => $row) {
+            // ย่อสุดแล้วยังไม่พอ → อัดส่วนที่เหลือลงแถวในสุด (เบียดกันดีกว่าดาวหายจากรูป)
+            $m = $k === $lastRow ? $left : min($left, $row['cap']);
+            for ($j = 0; $j < $m; $j++) {
+                $slots[] = [
+                    'r' => $row['r'],
+                    'a' => deg2rad($midDeg) + ($j - ($m - 1) / 2) * ($cell / $row['r']),
+                    'scale' => $scale,
+                ];
+            }
+            $left -= $m;
+            if ($left <= 0) {
+                break;
+            }
+        }
+
+        return $slots;
+    }
+
+    /**
+     * วาดดาว 1 ดวง: วงสีดาว + เลขไทยตรงกลาง + ชื่อดาวใต้วง
+     *
+     * ($x, $y) = กึ่งกลางของ "วง + ชื่อ" ทั้งก้อน — ไม่ใช่กึ่งกลางวง
+     * ⇒ ก้อนสูงเท่ากันทั้งบน/ล่างจุดวาง ช่องครึ่งล่างของวงชื่อดาวจะไม่ยื่นไปชนป้ายภพ
+     */
+    protected function drawNatalPlanetBadge($img, string $font, float $x, float $y, array $p, float $scale, int $white, int $shadow, int $textColor): void
+    {
+        $d = (int) round(30 * $scale);
+        $ring = $d + (int) round(6 * $scale);
+        $color = $this->hexColor($img, (string) $p['color']);
+        $by = $y - 8 * $scale;
+
+        imagefilledellipse($img, (int) $x + 2, (int) $by + 2, $ring, $ring, $shadow);
+        imagefilledellipse($img, (int) $x, (int) $by, $ring, $ring, $white);
+        imagefilledellipse($img, (int) $x, (int) $by, $d, $d, $color);
+
+        // "?" = ราศีของดาวดวงนี้ยังไม่แน่ (จันทร์ในวันที่จันทร์ย้ายราศี + ไม่รู้เวลาเกิด) — ตรงกับคำเตือนในผังข้อความ
+        $label = (string) $p['name'].(! empty($p['uncertain']) ? '?' : '');
+
+        $this->drawCenteredText($img, $font, 14 * $scale, $x, $by - 1, (string) $p['numeral'], $white);
+        $this->drawCenteredText($img, $font, max(8.0, 10.5 * $scale), $x, $by + $ring / 2 + 9 * $scale, $label, $textColor);
     }
 
     /**

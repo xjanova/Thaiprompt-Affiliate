@@ -490,6 +490,91 @@ class ThaiAstrologyService
     }
 
     /**
+     * 🖼️ ดวงกำเนิดแบบข้อมูลดิบ — ให้ "รูปผังดวง" วาดจากผังชุดเดียวกับที่พรอมต์พิมพ์
+     *
+     * 🚨 (2026-09-12) รูปผังที่ส่งให้ลูกค้าดูดวง 39 เคยวาดจาก FortuneChartService::calculatePlanetPositions()
+     *   = ผังสาธิตที่รับแค่วันในสัปดาห์ (7 แบบทั้งระบบ) + วันปฏิทิน (ไม่ข้ามย่ำรุ่ง · ไม่มีพุธกลางคืน)
+     *   ขณะที่คำทำนายอ้างผังจริงจาก formatPersonBlock() ⇒ รูปกับข้อความในบิลเดียวกันขัดกัน
+     *
+     * ผูกดวงด้วย formatPersonBlock() ตัวเดียวกับ natalPromptBlocks() (อินพุตชุดเดียวกัน) แล้วหยิบค่าจาก state:
+     *   - ภพนับด้วย houseNumber() จากฐานเดียวกับผัง (ลัคนาจริง → จันทร์ลัคน์) · ไม่มีฐาน = house เป็น null ทุกดวง
+     *   - ดาวเจ้าชนะ/มิตร/ศัตรู = ชุดดาวเจ้าเรือนเดียวกับหัวผัง (ผ่านย่ำรุ่ง 06:00 + พุธกลางคืน = ราหู แล้ว)
+     *   ❌ ห้ามคำนวณภพ/ดาวเจ้าชนะเองที่อื่น — ต้องเดินผ่านเมธอดนี้ ไม่งั้นรูปเพี้ยนจากข้อความอีก
+     *
+     * @param  string  $ymd  วันเกิด "Y-m-d" หรือ "Y-m-d H:i" (FortuneReading::birthDateTimeForChart)
+     * @param  float|null  $birthHour  เวลาเกิดที่ลูกค้าพิมพ์ในคำถาม (statedBirthInputs) — ชนะเวลาในสตริงวันเกิด
+     * @param  string|null  $birthProvince  จังหวัดเกิด (null = ใช้พิกัดกรุงเทพ)
+     * @return array|null null = ผูกดวงไม่ได้ (วันเกิดอ่านไม่ออก) · คีย์: basis ('lagna'|'moon'|'none') · anchor (ราศีภพ 1)
+     *                    · birth_hour · place · zodiac · day_name · calendar_day_name · day_shifted
+     *                    · ruler {name, friends[], enemies[]} · planets {Sun..Uranus → th, num, sym, sign, deg, retro, house|null}
+     */
+    public function natalChartSnapshot(string $ymd, ?float $birthHour = null, ?string $birthProvince = null): ?array
+    {
+        // ล้างของค้างจากคนก่อน — formatPersonBlock() คืนค่าก่อนตั้ง state เมื่ออ่านวันเกิดไม่ออก
+        $this->lastLagna = null;
+        $this->lastLagnaBasis = 'none';
+        $this->lastNatalPositions = null;
+        $this->lastRulerProfile = null;
+        $this->lastNatalSummary = null;
+
+        $natal = $this->formatPersonBlock($ymd, $birthHour, false, $birthProvince);
+        if ($this->lastRulerProfile === null || $this->lastNatalSummary === null
+            || empty($this->lastNatalPositions) || str_starts_with($natal, '(วันเกิด:')) {
+            return null;
+        }
+
+        // ฐานนับภพ — เงื่อนไขเดียวกับ formatNatalPositionsBlock() (ภพมีเฉพาะลัคนาจริง/จันทร์ลัคน์)
+        $hasAnchor = $this->lastLagna !== null && in_array($this->lastLagnaBasis, ['lagna', 'moon'], true);
+        $anchor = $hasAnchor ? $this->lastLagna : null;
+
+        $planets = [];
+        foreach ($this->lastNatalPositions as $key => $p) {
+            $planets[(string) $key] = [
+                'th' => (string) $p['th'],
+                'num' => (int) $p['num'],
+                'sym' => (string) $p['sym'],
+                'sign' => (string) $p['sign'],
+                'deg' => (int) (floor($p['lon']) % 30),
+                'retro' => ! empty($p['retro']),
+                'house' => $anchor !== null ? $this->houseNumber($anchor, (string) $p['sign']) : null,
+            ];
+        }
+
+        $s = $this->lastNatalSummary;
+
+        return [
+            'basis' => $anchor !== null ? $this->lastLagnaBasis : 'none',
+            'anchor' => $anchor,
+            'birth_hour' => $this->lastBirthHour,
+            'place' => $this->lastPlace['name'] ?? null,
+            'zodiac' => (string) $s['zodiac'],
+            'day_name' => (string) $s['day_name'],
+            'calendar_day_name' => (string) $s['calendar_day_name'],
+            'day_shifted' => (bool) $s['day_shifted'],
+            'ruler' => [
+                'name' => $this->rulerPlanetName(),
+                'friends' => $this->rulerRelationNames('friends'),
+                'enemies' => $this->rulerRelationNames('enemies'),
+            ],
+            'planets' => $planets,
+        ];
+    }
+
+    /**
+     * ชื่อดาวเจ้าชนะ (ไทย ไม่มีคำว่า "ดาว") ของคนล่าสุด — อ่านจากชุดดาวเจ้าเรือนเดียวกับหัวผัง
+     *
+     * ช่องต้นทางเขียนสองแบบ: "ดาวอาทิตย์ (☉)" (getPlanetByDayOfWeek)
+     * กับ "ราหู (☊) — เกิดวันพุธกลางคืน" (rahuRulerProfile) ⇒ ตัด "ดาว" นำหน้า แล้วเอาคำแรก
+     */
+    protected function rulerPlanetName(): string
+    {
+        $raw = (string) preg_replace('/^ดาว/u', '', trim((string) ($this->lastRulerProfile['planet'] ?? '')));
+        $parts = preg_split('/[\s(]/u', $raw, 2) ?: [''];
+
+        return trim((string) $parts[0]);
+    }
+
+    /**
      * สร้างบล็อกดวงดาวของคนหนึ่งคน (กระชับ — สำหรับ inject หลายคน)
      *
      * @param  string  $ymd  วันเกิดรูปแบบ Y-m-d

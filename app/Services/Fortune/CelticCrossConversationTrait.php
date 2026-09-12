@@ -2866,9 +2866,11 @@ trait CelticCrossConversationTrait
 
         try {
             $name = $reading->resolveCustomerName();
-            $bd = \Carbon\Carbon::parse($reading->birth_date)->format('Y-m-d');
+            // 🖼️ (2026-09-12) รูปวาดจากผังจริงแล้ว — ต้องได้เวลา/จังหวัดเกิดชุดเดียวกับบล็อกดวงในพรอมต์ 99
+            //   (CelticCrossService ส่งเวลาที่ยืนยันแล้ว + birthProvinceIfKnown) ไม่งั้นลัคนาในรูปคนละราศีกับคำทำนาย
+            $bd = $reading->birthDateTimeForChart() ?? \Carbon\Carbon::parse($reading->birth_date)->format('Y-m-d');
             $chartService = new \App\Services\FortuneChartService;
-            $url = $chartService->generateBirthChart($bd, $name, null);
+            $url = $chartService->generateBirthChart($bd, $name, null, null, $reading->birthProvinceIfKnown());
             if (! empty($url)) {
                 $reading->update(['reading_image_url' => $url]);
 
