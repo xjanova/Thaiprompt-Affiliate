@@ -378,9 +378,21 @@ PROMPT;
                     $birthDate = $recipient->birth_date;
 
                     if ($birthDate) {
+                        // 🖼️ (2026-09-12) ผังเดียวกับบิลจริงของลูกค้า — แถวรวมจาก GROUP BY มีแค่วันที่
+                        //   ส่งวันที่เปล่า = ไม่รู้เวลา/จังหวัด ⇒ ลัคนา (หรือ "ไม่มีภพ") คนละแบบกับรูปที่ลูกค้าเคยได้ตอนจ่ายเงิน
+                        //   ⇒ ใช้เวลา/จังหวัดเกิดจากบิลล่าสุดที่มีวันเกิด (ชุดเดียวกับ Celtic/บิล 39)
+                        $source = FortuneReading::where('facebook_user_id', $uid)
+                            ->where('platform', $recipient->platform)
+                            ->whereNotNull('birth_date')
+                            ->latest('id')
+                            ->first();
                         $chartUrl = $chartService->generateBirthChart(
-                            $birthDate instanceof \Carbon\Carbon ? $birthDate->format('Y-m-d') : $birthDate,
-                            $name
+                            $source?->birthDateTimeForChart()
+                                ?? ($birthDate instanceof \Carbon\Carbon ? $birthDate->format('Y-m-d') : (string) $birthDate),
+                            $name,
+                            null,
+                            null,
+                            $source?->birthProvinceIfKnown()
                         );
                     } else {
                         $chartUrl = $chartService->generateQuickChart($name);

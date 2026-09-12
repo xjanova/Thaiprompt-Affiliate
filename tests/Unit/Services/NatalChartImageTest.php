@@ -289,6 +289,11 @@ class NatalChartImageTest extends TestCase
         $celtic = $this->methodSource(CelticCrossConversationTrait::class, 'buildCelticBirthChartUrl');
         $this->assertStringContainsString('birthDateTimeForChart()', $celtic, 'Celtic 99: เวลาเกิดที่ยืนยันแล้วต้องมากับรูป');
         $this->assertStringContainsString('$reading->birthProvinceIfKnown()', $celtic, 'Celtic 99: จังหวัดเดียวกับบล็อกดวงในพรอมต์');
+
+        // แคมเปญการตลาดส่งรูปผังให้ลูกค้าเก่า — ต้องเป็นผังเดียวกับบิลที่ลูกค้าเคยได้ (ไม่ใช่วันที่เปล่า)
+        $campaign = $this->methodSource(\App\Http\Controllers\Admin\FortuneMarketingController::class, 'executeCampaign');
+        $this->assertStringContainsString('birthDateTimeForChart()', $campaign, 'แคมเปญ: เวลาเกิดที่รู้แล้วต้องมากับรูป');
+        $this->assertStringContainsString('birthProvinceIfKnown()', $campaign, 'แคมเปญ: จังหวัดเกิดที่รู้แล้วต้องมากับรูป');
     }
 
     // ─────────────────────────────────────────────────────────────
