@@ -15670,24 +15670,10 @@ class FortuneConversationService
      * @param  bool  $explicitClaim  true = ลูกค้าบอกเองว่าโอนแล้ว (ไม่ใช่สลิป/อ่านไม่ได้ → ขอสลิปตามเดิม)
      *                               false = ส่งรูปมาเฉย ๆ → ต้องถอด QR สลิปได้เองในเครื่อง (ไม่ใช้ vision)
      *                               ไม่ชัด = เงียบ · ไม่ทวงเงิน · ไม่นับ strike
-     * @return array|null response หรือ null = ไม่แตะ (webhook เก็บรูปไว้ตามเดิม)
+     * @return array|null response · null = ยังไม่ได้ส่งไปตรวจ (webhook เก็บรูปไว้ / ไหลไปเส้นเดิมได้)
+     *                    ['action' => 'silent_skip', 'late_quiet' => true] = ตรวจแล้ว จบแบบเงียบ (ห้ามตรวจซ้ำ)
      */
     public function processLateDeepSlip(FortuneReading $bill, string $platform, string $userId, ?string $url, ?string $base64, bool $explicitClaim): ?array
-    {
-        $resp = $this->runLateDeepSlip($bill, $platform, $userId, $url, $base64, $explicitClaim);
-
-        // ลูกค้าพิมพ์ "โอนแล้ว" เข้ามาระหว่างที่รูปนี้กำลังถูกตรวจ (ได้ข้อความ "กำลังตรวจ" ไปแล้ว)
-        //   → รูปอย่างเดียวที่จบแบบเงียบ ต้องกลายเป็น "ขอสลิป" ไม่งั้นคำว่ากำลังตรวจจะหายเงียบ
-        $claimedDuringCheck = \Illuminate\Support\Facades\Cache::pull('fortune:late_slip_claim_waiting:'.$userId);
-        if ($resp === null && ! $explicitClaim && $claimedDuringCheck) {
-            return $this->askForSlipMessage(null);
-        }
-
-        return $resp;
-    }
-
-    /** 🧾 ตัวทำงานของ processLateDeepSlip — แยกไว้ให้ชั้นนอกดูธง "พิมพ์โอนแล้วระหว่างตรวจ" ได้ทุกทางออก */
-    protected function runLateDeepSlip(FortuneReading $bill, string $platform, string $userId, ?string $url, ?string $base64, bool $explicitClaim): ?array
     {
         $svc = new \App\Services\Fortune\SlipOkService($this->settings);
         if (! $svc->isEnabled() || $userId === '') {
@@ -15698,12 +15684,41 @@ class FortuneConversationService
         //   TTL 90 วิ: ดาวน์โหลด (≤20) + SlipOK (≤25) + รอล็อก SMS (≤8) + ตัดบิล — 30 วิหมดอายุกลางทางได้
         $lockKey = 'fortune:celtic_create_lock:'.$userId;
         if (! \Illuminate\Support\Facades\Cache::add($lockKey, 1, 90)) {
-            return $explicitClaim ? $this->lateSlipCheckingMessage() : null;
+            // อีกรูปกำลังตรวจอยู่ → เก็บรูปนี้ไว้ก่อน (ห้ามทิ้ง) · ไม่แตะธง "พิมพ์โอนแล้วระหว่างตรวจ"
+            //   (ธงเป็นของสายที่ถือล็อก — สายนี้ดึงไปใช้ = สายนั้นจบเงียบแล้วลูกค้าเหลือแค่ "กำลังตรวจ")
+            try {
+                $this->capturePendingSlipFromImage($platform, $userId, $url, $base64);
+            } catch (\Throwable $e) {
+                // non-blocking
+            }
+
+            return $explicitClaim ? $this->lateSlipCheckingMessage() : $this->lateSlipQuiet();
         }
         // ข้อความ "โอนแล้ว" ที่เข้ามาระหว่างตรวจ → ตอบว่ากำลังตรวจ แทนการขอสลิปซ้อน (ดู tryReturningPaidSlipCheck)
         $inflightKey = 'fortune:late_slip_inflight:'.$userId;
         \Illuminate\Support\Facades\Cache::put($inflightKey, 1, 90);
 
+        try {
+            $resp = $this->checkLateSlipLocked($svc, $bill, $platform, $userId, $url, $base64, $explicitClaim);
+
+            // ลูกค้าพิมพ์ "โอนแล้ว" ระหว่างตรวจ (ได้ "กำลังตรวจ" ไปแล้ว) + รูปนี้จบแบบเงียบ → ต้องกลายเป็นขอสลิป
+            //   เช็คตอนยังถือล็อกอยู่ — สายอื่นที่ชนล็อกไม่มีสิทธิ์ดึงธงนี้
+            $quietEnd = $resp === null || ($resp['late_quiet'] ?? false);
+            if (! $explicitClaim && $quietEnd
+                && \Illuminate\Support\Facades\Cache::pull('fortune:late_slip_claim_waiting:'.$userId)) {
+                return $this->askForSlipMessage(null);
+            }
+
+            return $resp;
+        } finally {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
+            \Illuminate\Support\Facades\Cache::forget($inflightKey);
+        }
+    }
+
+    /** 🧾 ตัวทำงานของ processLateDeepSlip ขณะถือล็อก — ด่าน → ตรวจครั้งเดียว → ตัดสิน */
+    protected function checkLateSlipLocked(\App\Services\Fortune\SlipOkService $svc, FortuneReading $bill, string $platform, string $userId, ?string $url, ?string $base64, bool $explicitClaim): ?array
+    {
         $relPath = null;
         $verify = null;
         try {
@@ -15718,12 +15733,13 @@ class FortuneConversationService
                 }
                 $bytes = $this->readSlipBytes($url, $base64);
             } else {
-                // ส่งรูปอย่างเดียว: รูปเซลฟี่ก็เข้ามาทางนี้ได้ → ห้ามนับ strike (เพดานเต็ม = เงียบ)
+                // ส่งรูปอย่างเดียว: รูปเซลฟี่ก็เข้ามาทางนี้ได้ → ห้ามนับ strike (เพดานเต็ม = ยังไม่ตรวจ)
                 if (! $svc->canSpendForUser($platform, $userId)) {
                     return null;
                 }
                 // ห้ามใช้ vision (owner: enable_image_vision=false = ไม่วิเคราะห์รูปในแชททั่วไป)
                 //   → ถอด QR เองในเครื่อง (ฟรี) ต้องเจอ QR ของสลิปจริงเท่านั้นถึงไปต่อ (fail closed)
+                //   ⚠️ รูปถ่ายใบเสร็จจากร้าน (เคส Pantaree) ถอดไม่ออก → คืน null ให้เส้นเดิม/คำเคลมจัดการ
                 $bytes = $this->readSlipBytes($url, $base64);
                 if ($bytes === null || ! $this->imageHasSlipQr($bytes)) {
                     return null;
@@ -15773,9 +15789,9 @@ class FortuneConversationService
                 'error' => $e->getMessage(),
             ]);
 
-            // 💸 ตรวจผ่านแล้ว (SlipOK จดสลิปนี้ไว้แล้ว — ส่งซ้ำจะได้ "ซ้ำ") แต่พังก่อนตัดบิล → ห้ามเงียบกับเงินจริง
+            // 💸 ตรวจผ่านแล้ว (SlipOK จดสลิปนี้ไว้แล้ว — ส่งซ้ำจะได้ "ซ้ำ") แต่พังระหว่างตัดบิล → ห้ามเงียบกับเงินจริง
             if (is_array($verify) && ($verify['ok'] ?? false)) {
-                Log::critical('🧾 ADMIN_REVIEW: สลิปหลังบิล 39 ตรวจผ่านแล้ว แต่ตัดบิลไม่สำเร็จ — ต้องตรวจมือ', [
+                Log::critical('🧾 ADMIN_REVIEW: สลิปหลังบิล 39 ตรวจผ่านแล้ว แต่ตัดบิลไม่จบ — ต้องตรวจมือ', [
                     'platform' => $platform,
                     'user_id' => $userId,
                     'bill_reading_id' => $bill->id,
@@ -15785,7 +15801,10 @@ class FortuneConversationService
                     'error' => $e->getMessage(),
                 ]);
 
-                return $this->lateSlipReceivedPendingMessage($bill);
+                // พังหลังตัดบิลไปแล้ว = ได้เงินแล้ว ห้ามบอกว่า "ยังยืนยันไม่ได้" · ยังไม่ตัด = ห้ามขอส่งซ้ำ (จะได้ "ซ้ำ")
+                return $this->userPaidJustNow($userId)
+                    ? $this->lateSlipPaidMessage($bill)
+                    : $this->lateSlipReceivedPendingMessage($bill, false);
             }
 
             return null;
@@ -15797,8 +15816,6 @@ class FortuneConversationService
                     // non-blocking
                 }
             }
-            \Illuminate\Support\Facades\Cache::forget($lockKey);
-            \Illuminate\Support\Facades\Cache::forget($inflightKey);
         }
     }
 
@@ -15807,12 +15824,13 @@ class FortuneConversationService
      *
      *   ผ่าน / ยอดขาด:
      *     1. บิลค้างจ่ายที่ "ยอดทศนิยมตรงสลิปเป๊ะ" (ลูกค้าสแกน QR ใบนั้นจริง) → ตัดใบนั้น
-     *        กันเคสบิล 39 สองใบ / สลับ Celtic→39: สลิปตัดใบหนึ่ง SMS ปลุกอีกใบ = จ่ายซ้ำ
+     *        กันเคสบิล 39 สองใบ / สลับแพคเกจ: สลิปตัดใบหนึ่ง SMS ปลุกอีกใบ = จ่ายซ้ำ
      *     2. ยอดขนาดดูดวง 39 (39.00–40.00 เกณฑ์เดียวกับเส้นโอนก่อนบิล เช่นโอนเลขกลมที่ร้าน) → บิล 39 ล่าสุด
      *     3. ยอดอื่น (<39 / 40.01–98 / ≥99) → เส้นแยกแพคเกจตามยอดเดิม ด้วยผลตรวจที่มีแล้ว
      *   อื่น ๆ:
      *     • บอกว่าโอนแล้ว → ตอบตามเคสเหมือนเส้นเดิม (ซ้ำ / บัญชีผิด / เก่า / ขอสลิป)
-     *     • ส่งรูปเฉย ๆ → ธนาคาร/โควตา/ระบบยังยืนยันไม่ได้ (สลิปมี QR จริง) = บอกว่าได้รับแล้ว · ที่เหลือเงียบ
+     *     • ส่งรูปเฉย ๆ → ธนาคารช้า = บอกว่าได้รับแล้ว ขอส่งใหม่ · โควตา/ระบบล่ม = บอกว่าได้รับแล้ว รอตรวจ
+     *       ที่เหลือ (ซ้ำ/บัญชีอื่น/เก่า/อ่าน QR ไม่ได้) = เงียบ (ตรวจแล้ว ห้ามส่งให้เส้นอื่นตรวจซ้ำ)
      */
     protected function decideLateDeepSlip(FortuneReading $bill, array $verify, array $eval, string $platform, string $userId, bool $explicitClaim): ?array
     {
@@ -15821,7 +15839,7 @@ class FortuneConversationService
         $amount = (float) ($verify['amount'] ?? 0);
 
         if (in_array($decision, [$S::DECISION_APPROVE, $S::DECISION_REJECT_AMOUNT], true)) {
-            $exact = $this->findUnpaidBillByExactSlipAmount($userId, $amount);
+            $exact = $this->findUnpaidBillByExactSlipAmount($userId, $amount, $verify['trans_timestamp'] ?? null);
             if ($exact !== null) {
                 return $this->payOriginalBill($exact, $verify, $platform, $userId);
             }
@@ -15845,11 +15863,12 @@ class FortuneConversationService
                     'reason' => $eval['reason'] ?? null,
                 ]);
 
-                return $this->lateSlipReceivedPendingMessage($bill);
+                // ส่งใหม่ช่วยได้เฉพาะธนาคารช้า — โควตาเราหมด/ระบบล่ม ส่งใหม่ก็วนกลับมาที่เดิม
+                return $this->lateSlipReceivedPendingMessage($bill, $decision === $S::DECISION_BANK_DELAY);
             }
 
             // ซ้ำ / บัญชีอื่น / เก่า / อ่าน QR ไม่ได้ — ลูกค้ายังไม่ได้บอกว่าโอน → เงียบ (มีบันทึกในหน้า slip-logs แล้ว)
-            return null;
+            return $this->lateSlipQuiet();
         }
 
         return match ($decision) {
@@ -15863,18 +15882,24 @@ class FortuneConversationService
     /**
      * 🧾 (2026-09-13) บิลค้างจ่าย (39 / Celtic) ของลูกค้าคนนี้ ที่ยอดทศนิยมตรงกับสลิปเป๊ะ ภายใน 3 วัน
      *   = ใบที่ลูกค้าสแกน QR จ่ายจริง และเป็นใบเดียวกับที่เส้น SMS จะปลุก (จับด้วยยอดตรงเป๊ะเหมือนกัน)
+     *
+     *   • UPA ต้องถูกสร้าง "ก่อน" เวลาโอนในสลิป (เหมือนด่าน SMS) — ยอดทศนิยมเวียนใช้ซ้ำได้หลัง 24 ชม.
+     *   • ไม่แตะบิลที่พัก HOLD (โอนขาด 3 รอบ = รอแม่หมอ/แอดมินตัดสิน ห้ามระบบตัดเอง)
      */
-    protected function findUnpaidBillByExactSlipAmount(string $userId, float $amount): ?FortuneReading
+    protected function findUnpaidBillByExactSlipAmount(string $userId, float $amount, ?string $transTimestamp = null): ?FortuneReading
     {
         if ($userId === '' || $amount <= 0) {
             return null;
         }
 
         try {
-            $upaIds = \App\Models\UniquePaymentAmount::whereBetween('unique_amount', [$amount - 0.001, $amount + 0.001])
+            $upaQuery = \App\Models\UniquePaymentAmount::whereBetween('unique_amount', [$amount - 0.001, $amount + 0.001])
                 ->where('transaction_type', 'fortune_reading')
-                ->where('created_at', '>=', now()->subDays(3))
-                ->pluck('id');
+                ->where('created_at', '>=', now()->subDays(3));
+            if (! empty($transTimestamp)) {
+                $upaQuery->where('created_at', '<=', \Carbon\Carbon::parse($transTimestamp)->setTimezone(config('app.timezone')));
+            }
+            $upaIds = $upaQuery->pluck('id');
             if ($upaIds->isEmpty()) {
                 return null;
             }
@@ -15885,6 +15910,7 @@ class FortuneConversationService
                 ->whereIn('unique_payment_amount_id', $upaIds)
                 ->whereIn('reading_type', [FortuneReading::READING_TYPE_DEEP, FortuneReading::READING_TYPE_CELTIC_CROSS])
                 ->where('is_paid', false)
+                ->whereNull('partial_hold_at')
                 ->where('created_at', '>=', now()->subDays(3))
                 ->latest('id')
                 ->first();
@@ -15895,6 +15921,8 @@ class FortuneConversationService
 
     /**
      * 🧾 (2026-09-13) ตัดบิลเดิมจากสลิปที่ตรวจผ่าน — ล็อกตัวเดียวกับเส้น SMS (sms-fortune-match:{id})
+     *   ประเมินผลตรวจกับ "ใบที่เลือกจริง" อีกรอบก่อนตัด (ด่านอายุสลิปไม่ได้วิ่งถ้าผลแรกเป็นยอดขาด)
+     *   ใบที่มียอดสะสมโอนขาดอยู่ → เส้นโอนขาดเดิม (บวกยอดสะสม ห้ามตัดข้าม partial_paid_total)
      *   ดูดวง 39 → finalizeSlipOkApproved · Celtic → เส้นกู้ Celtic เดิม (respondWithEvaluatedSlip)
      *   เส้น SMS กำลังตัดใบนี้ / ตัดไปแล้ว → ไม่ทำซ้ำ (เส้น SMS ส่งข้อความหาลูกค้าเอง)
      */
@@ -15930,6 +15958,13 @@ class FortuneConversationService
                 return ['action' => 'silent_skip', 'message' => null, 'reading' => $fresh ?? $bill];
             }
 
+            $S = \App\Services\Fortune\SlipOkService::class;
+            $eval = $this->evaluateLateSlip(new $S($this->settings), $fresh, $verify);
+            if (! in_array($eval['decision'] ?? null, [$S::DECISION_APPROVE, $S::DECISION_REJECT_AMOUNT], true)) {
+                // ใบที่เลือกไม่ผ่าน (เช่น สลิปเก่ากว่าเกณฑ์) → ตอบตามเคสเดิม ไม่ตัด
+                return $this->respondWithEvaluatedSlip($fresh, $verify, $eval, $platform, $userId);
+            }
+
             Log::warning('🧾 SlipOK: สลิปหลังบิลหมดเวลา → ตัดบิลเดิม (ไม่เปิดแถวใหม่)', [
                 'reading_id' => $fresh->id,
                 'reading_type' => $fresh->reading_type,
@@ -15939,8 +15974,11 @@ class FortuneConversationService
             ]);
             $fresh->setConversationState('late_slip_revived_at', now()->toIso8601String());
 
-            if ($fresh->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
-                $eval = $this->evaluateLateSlip(new \App\Services\Fortune\SlipOkService($this->settings), $fresh, $verify);
+            if ((float) ($fresh->partial_paid_total ?? 0) > 0) {
+                // context 'returning' = ครบแล้วกู้แบบ Celtic (เปิดไพ่) · อื่น ๆ = finalizeSlipOkApproved (ดูดวง 39)
+                $isCeltic = $fresh->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+                $resp = $this->handlePartialPayment($fresh, $verify, $platform, $userId, $isCeltic ? 'returning' : 'late_slip');
+            } elseif ($fresh->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
                 $resp = $this->respondWithEvaluatedSlip($fresh, $verify, $eval, $platform, $userId);
             } else {
                 $resp = $this->finalizeSlipOkApproved($fresh, $verify, $platform, $userId);
@@ -16000,6 +16038,7 @@ class FortuneConversationService
      *   ใช้เฉพาะเส้นรูปที่ส่งมาเฉย ๆ (ลูกค้ายังไม่ได้บอกว่าโอน) → fail closed: ถอดไม่ได้ = ไม่แตะ
      *   (SlipQrReader ตั้งใจ fail-open ในเส้นที่ลูกค้าบอกว่าโอนแล้ว — ที่นั่นถอดไม่ได้ ≠ ไม่ใช่สลิป)
      *   QR บิลพร้อมเพย์ของเราเอง (EMVCo ขึ้นต้น 000201) ≠ สลิป — กันลูกค้าแคป QR บิลส่งมาแล้วเผาโควตา SlipOK
+     *   ⚠️ วัดบน prod: รูปถ่ายใบเสร็จจากร้าน (เคส Pantaree) ถอดไม่ออก — จับได้แค่ภาพแคปแอปธนาคาร
      */
     protected function imageHasSlipQr(string $bytes): bool
     {
@@ -16016,6 +16055,27 @@ class FortuneConversationService
         }
     }
 
+    /** 🧾 ลูกค้าคนนี้มีบิลที่เพิ่งจ่ายสำเร็จ (2 นาทีล่าสุด) ไหม — ใช้ตอบให้ถูกเมื่อพังหลังตัดบิล */
+    protected function userPaidJustNow(string $userId): bool
+    {
+        try {
+            return FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)->orWhere('platform_user_id', $userId);
+            })
+                ->where('is_paid', true)
+                ->where('paid_at', '>=', now()->subMinutes(2))
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /** 🧾 ตรวจแล้ว จบแบบเงียบ — ห้ามคืน null (webhook จะเก็บรูปไว้ แล้วเส้นอื่นตรวจซ้ำ = SlipOK ตอบ "ซ้ำ") */
+    protected function lateSlipQuiet(): array
+    {
+        return ['action' => 'silent_skip', 'message' => null, 'reading' => null, 'late_quiet' => true];
+    }
+
     /** 🧾 ข้อความ "กำลังตรวจสลิป" — ใช้ทั้งตอนล็อกไม่ว่าง และตอนลูกค้าพิมพ์โอนแล้วระหว่างตรวจ */
     protected function lateSlipCheckingMessage(): array
     {
@@ -16026,14 +16086,31 @@ class FortuneConversationService
         ];
     }
 
-    /** 🧾 ข้อความ "ได้รับสลิปแล้ว แต่ยังยืนยันยอดไม่ได้" — ไม่สัญญาสิ่งที่ไม่มีโค้ดรองรับ (ให้ลูกค้าเรียกแม่หมอเองได้) */
-    protected function lateSlipReceivedPendingMessage(FortuneReading $bill): array
+    /**
+     * 🧾 ข้อความ "ได้รับสลิปแล้ว แต่ยังยืนยันยอดไม่ได้" — ไม่สัญญาสิ่งที่ไม่มีโค้ดรองรับ (ให้ลูกค้าเรียกแม่หมอเองได้)
+     *
+     * @param  bool  $canResend  true = ธนาคารช้า (ส่งใหม่ช่วยได้) · false = อย่าขอส่งใหม่ (จะได้ "ซ้ำ"/วนที่เดิม)
+     */
+    protected function lateSlipReceivedPendingMessage(FortuneReading $bill, bool $canResend): array
     {
         return [
             'action' => 'slipok_received_pending',
             'message' => "🙏 แม่หมอได้รับสลิปของเจ้าชะตาแล้วนะคะ\n\n"
-                ."⏳ ตอนนี้ระบบธนาคารยังยืนยันยอดให้ไม่ทัน — รบกวนส่งสลิปใบเดิมมาอีกครั้งในอีกสักครู่นะคะ\n"
+                .($canResend
+                    ? "⏳ ตอนนี้ระบบธนาคารยังยืนยันยอดให้ไม่ทัน — รบกวนส่งสลิปใบเดิมมาอีกครั้งในอีกสักครู่นะคะ\n"
+                    : "⏳ แม่หมอกำลังตรวจสอบยอดให้อยู่นะคะ ไม่ต้องส่งสลิปซ้ำค่ะ\n")
                 .'💬 ถ้ารอนานผิดปกติ พิมพ์ "คุยกับแม่หมอ" ได้เลยค่ะ 🌙',
+            'reading' => $bill,
+        ];
+    }
+
+    /** 🧾 ข้อความ "ได้รับยอดแล้ว" — ใช้เมื่อพังหลังตัดบิลสำเร็จ (ห้ามบอกว่ายังยืนยันไม่ได้) */
+    protected function lateSlipPaidMessage(FortuneReading $bill): array
+    {
+        return [
+            'action' => 'slipok_received_paid',
+            'message' => "✅ แม่หมอได้รับยอดของเจ้าชะตาเรียบร้อยแล้วนะคะ\n\n"
+                .'✨ พิมพ์บอกแม่หมอได้เลยค่ะ ถ้ารอนานผิดปกติ พิมพ์ "คุยกับแม่หมอ" ได้เลยนะคะ 🌙',
             'reading' => $bill,
         ];
     }
@@ -16203,7 +16280,8 @@ class FortuneConversationService
             $recentCeltic = $this->findRecoverableCelticReading($userId);
             // 🧾 (2026-09-13) บิล 39 ค้างจ่ายที่ "ใหม่กว่า" Celtic = ความตั้งใจล่าสุดของลูกค้า (สลับ Celtic → 39)
             //   → ใช้เส้นบิล 39 ด้านล่าง (เดิม Celtic ชนะเสมอ → สลิป 39 ถูกตีเป็น "โอนขาด 99")
-            if ($recentCeltic) {
+            //   ⚠️ ยกเว้น Celtic ที่จ่ายแล้วแต่ยังไม่ได้ดู (เคส entony) — ต้องเปิดบิลนั้นเสมอ
+            if ($recentCeltic && ! $recentCeltic->is_paid) {
                 $newerDeep = $this->findAbandonedUnpaidDeepBill($userId);
                 if ($newerDeep && $newerDeep->id > $recentCeltic->id) {
                     $recentCeltic = null;
@@ -16292,10 +16370,17 @@ class FortuneConversationService
             if ($this->isSlipAutoProvisionEnabled()) {
                 $lateDeep = $this->findAbandonedUnpaidDeepBill($userId);
                 $olderCeltic = $lateDeep ? $this->findRecoverableCelticReading($userId) : null;
-                if ($lateDeep && (! $olderCeltic || $lateDeep->id > $olderCeltic->id)) {
+                // Celtic ที่จ่ายแล้วแต่ยังไม่ได้ดู (เคส entony) = ต้องเปิดบิลนั้น — บิล 39 ที่ใหม่กว่าห้ามแย่ง
+                $deepWins = $lateDeep && (! $olderCeltic || ($lateDeep->id > $olderCeltic->id && ! $olderCeltic->is_paid));
+                if ($deepWins) {
                     $claimed = \Illuminate\Support\Facades\Cache::has('fortune:returning_slip_ask:'.$userId);
+                    $lateResp = $this->processLateDeepSlip($lateDeep, $platform, $userId, $url, $base64, $claimed);
 
-                    return $this->processLateDeepSlip($lateDeep, $platform, $userId, $url, $base64, $claimed);
+                    // ยังไม่ได้ส่งไปตรวจ (ถอด QR ไม่ได้ / โควตา) + มี Celtic ให้กู้ → ไหลต่อเส้น Celtic เดิม
+                    //   (เดิมรูปของลูกค้ากลุ่มนี้ถูกตรวจทางนั้น — ห้ามกลายเป็นเงียบเพราะเส้นใหม่)
+                    if ($lateResp !== null || ! $olderCeltic) {
+                        return $lateResp;
+                    }
                 }
             }
 
@@ -18541,6 +18626,25 @@ class FortuneConversationService
      */
     protected function respondWithEvaluatedSlip(FortuneReading $recentCeltic, array $verify, array $eval, string $platform, string $userId): array
     {
+        // 🧾 (2026-09-13) ยอดสลิปตรง "บิลอื่น" ของลูกค้าเป๊ะ (ไม่ใช่ใบที่กำลังประเมิน) → ตัดใบนั้นแทน
+        //   เคสสลับ 39 → Celtic แล้วโอนตาม QR บิล 39 เดิม: เดิมเครดิต 39.16 เข้า Celtic เป็น "โอนขาด"
+        //   + SMS ปลุกบิล 39 เดิม (ยอดตรง) ได้ถึง 180 นาที = โอนครั้งเดียวนับสองใบ
+        if (in_array($eval['decision'] ?? null, [
+            \App\Services\Fortune\SlipOkService::DECISION_APPROVE,
+            \App\Services\Fortune\SlipOkService::DECISION_REJECT_AMOUNT,
+        ], true)) {
+            $exact = $this->findUnpaidBillByExactSlipAmount($userId, (float) ($verify['amount'] ?? 0), $verify['trans_timestamp'] ?? null);
+            if ($exact !== null && $exact->id !== $recentCeltic->id) {
+                Log::warning('🧾 SlipOK: ยอดสลิปตรงบิลอื่นของลูกค้าเป๊ะ → ตัดใบนั้น (ไม่เครดิตเข้าใบที่กำลังประเมิน)', [
+                    'evaluated_reading_id' => $recentCeltic->id,
+                    'matched_reading_id' => $exact->id,
+                    'amount' => $verify['amount'] ?? null,
+                ]);
+
+                return $this->payOriginalBill($exact, $verify, $platform, $userId);
+            }
+        }
+
         // 💎 (2026-06-23, owner) โอนก่อนสร้างบิล (provisional ไม่มี UPA) → route ตามยอด:
         //   ≤40 เปิด Deep ทันที / 40.01-98 ถาม 39-99 / ≥99 คืน null ปล่อย APPROVE เปิด Celtic ตามเดิม
         //   ⚠️ ผ่าน duplicate/receiver/stale มาแล้ว — เหลือแค่ decide ตามยอด (บิลจริงมี UPA = คืน null ไม่แตะ)

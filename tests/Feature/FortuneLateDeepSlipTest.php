@@ -121,8 +121,28 @@ class FortuneLateDeepSlipTest extends TestCase
                 }
                 $this->calls[] = 'finalize:'.$reading->id;
                 $reading->confirmPayment(null);
+                if ($this->opts['throw_after_pay'] ?? false) {
+                    throw new \RuntimeException('พังหลังตัดบิลแล้ว (จำลอง)');
+                }
 
                 return ['action' => 'test_finalized', 'message' => 'ok', 'reading' => $reading];
+            }
+
+            protected function handlePartialPayment(FortuneReading $reading, array $verify, ?string $platform, ?string $userId, string $context): array
+            {
+                $this->calls[] = 'partial:'.$reading->id.':'.$context;
+
+                return ['action' => 'test_partial', 'message' => 'ok', 'reading' => $reading];
+            }
+
+            public function respondEval(FortuneReading $reading, array $verify, array $eval): array
+            {
+                return $this->respondWithEvaluatedSlip($reading, $verify, $eval, 'facebook', (string) $reading->facebook_user_id);
+            }
+
+            public function exactFor(string $userId, float $amount, ?string $transTimestamp = null): ?FortuneReading
+            {
+                return $this->findUnpaidBillByExactSlipAmount($userId, $amount, $transTimestamp);
             }
 
             protected function recoverCelticFromVerifiedSlip(FortuneReading $reading, array $verify, string $platform, string $userId): array
@@ -165,7 +185,7 @@ class FortuneLateDeepSlipTest extends TestCase
     }
 
     /** ยอดจองของบิล (UPA) ที่หมดอายุแล้ว — ใช้ทดสอบการจับบิลด้วยยอดทศนิยมตรงเป๊ะ */
-    private function makeExpiredUpa(float $uniqueAmount, float $base): int
+    private function makeExpiredUpa(float $uniqueAmount, float $base, int $createdHoursAgo = 4): int
     {
         return (int) DB::table('unique_payment_amounts')->insertGetId([
             'base_amount' => $base,
@@ -174,9 +194,16 @@ class FortuneLateDeepSlipTest extends TestCase
             'transaction_type' => 'fortune_reading',
             'status' => 'cancelled',
             'expires_at' => now()->subHour(),
-            'created_at' => now()->subHours(4),
+            'created_at' => now()->subHours($createdHoursAgo),
             'updated_at' => now()->subHour(),
         ]);
+    }
+
+    /** "ตรวจแล้ว จบเงียบ" — ห้ามเป็น null (null = webhook เก็บรูป แล้วเส้นอื่นตรวจซ้ำได้ "ซ้ำ") */
+    private function assertVerifiedQuiet(?array $resp, string $why): void
+    {
+        $this->assertSame('silent_skip', $resp['action'] ?? null, $why);
+        $this->assertTrue((bool) ($resp['late_quiet'] ?? false), $why);
     }
 
     /** บิลดูดวง 39 ทรงเดียวกับ FTU-260912-Q1090 หลังถูกปิดเพราะหมดเวลา */
@@ -281,6 +308,63 @@ class FortuneLateDeepSlipTest extends TestCase
         $this->assertNotContains('reroute', $svc->calls, 'ยอดตรงบิล Celtic เดิม = ห้ามเปิดบิลชั่วคราวใหม่ (SMS จะปลุกใบเดิม = จ่ายซ้ำ)');
     }
 
+    /** สลับ 39 → Celtic แล้วโอนตาม QR บิล 39 เดิม: เส้น Celtic ต้องตัดบิล 39 ใบนั้น ไม่เครดิตเข้า Celtic เป็นโอนขาด */
+    public function test_celtic_path_pays_the_older_deep_bill_whose_amount_matches(): void
+    {
+        $deep = $this->makeExpiredDeepBill(['unique_payment_amount_id' => $this->makeExpiredUpa(39.16, 39)]);
+        $celtic = $this->makeExpiredDeepBill([
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+            'amount_paid' => 99.37,
+            'unique_payment_amount_id' => $this->makeExpiredUpa(99.37, 99),
+        ]);
+        $svc = $this->service();
+
+        $svc->respondEval($celtic, ['ok' => true, 'transRef' => 'T8', 'amount' => 39.16],
+            ['decision' => SlipOkService::DECISION_REJECT_AMOUNT, 'reason' => 'test']);
+
+        $this->assertContains('finalize:'.$deep->id, $svc->calls, 'SMS จะปลุกบิล 39 ใบนั้น — ต้องตัดใบนั้น ไม่ใช่เครดิตเข้า Celtic');
+        $this->assertNotContains('partial:'.$celtic->id.':returning', $svc->calls);
+    }
+
+    /** ยอดทศนิยมเวียนใช้ซ้ำได้ — UPA ที่สร้าง "หลัง" เวลาโอนในสลิป ไม่ใช่ใบที่ลูกค้าจ่าย (ด่านเดียวกับ SMS) */
+    public function test_exact_match_ignores_price_codes_created_after_the_transfer(): void
+    {
+        $this->makeExpiredDeepBill(['unique_payment_amount_id' => $this->makeExpiredUpa(39.16, 39, 1)]);
+        $svc = $this->service();
+
+        $this->assertNull($svc->exactFor(self::PSID, 39.16, now()->subHours(5)->toIso8601ZuluString()));
+        $this->assertNotNull($svc->exactFor(self::PSID, 39.16, now()->toIso8601ZuluString()), 'ตัวเทียบ: โอนหลังออกยอด = ใบนี้');
+    }
+
+    /** บิลที่พัก HOLD (โอนขาด 3 รอบ) = รอแม่หมอ/แอดมินตัดสิน — ระบบห้ามตัดเอง */
+    public function test_exact_match_skips_bills_on_partial_hold(): void
+    {
+        $this->makeExpiredDeepBill([
+            'unique_payment_amount_id' => $this->makeExpiredUpa(39.16, 39),
+            'partial_hold_at' => now(),
+        ]);
+
+        $this->assertNull($this->service()->exactFor(self::PSID, 39.16));
+    }
+
+    /** บิลที่มียอดสะสมโอนขาดอยู่ → ต้องผ่านเส้นโอนขาดเดิม (บวกยอดสะสม) ไม่ตัดข้าม partial_paid_total */
+    public function test_exact_bill_with_running_partial_total_goes_through_partial_flow(): void
+    {
+        $bill = $this->makeExpiredDeepBill([
+            'unique_payment_amount_id' => $this->makeExpiredUpa(19.42, 19),
+            'partial_paid_total' => 20.00,
+        ]);
+        $svc = $this->service([
+            'verify' => ['ok' => true, 'transRef' => 'T9', 'amount' => 19.42],
+            'eval' => ['decision' => SlipOkService::DECISION_APPROVE, 'reason' => 'test'],
+        ]);
+
+        $svc->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false);
+
+        $this->assertContains('partial:'.$bill->id.':late_slip', $svc->calls);
+        $this->assertNotContains('finalize:'.$bill->id, $svc->calls);
+    }
+
     // ── 2. SMS ตัดไปแล้ว → ไม่ซ้ำ ไม่ส่งข้อความว่าง ──────────────────────
 
     public function test_bill_already_paid_by_sms_is_not_paid_again(): void
@@ -320,7 +404,10 @@ class FortuneLateDeepSlipTest extends TestCase
         $noQr = ['decision' => SlipOkService::DECISION_NO_QR, 'reason' => 'test'];
 
         $imageOnly = $this->service(['verify' => ['ok' => false, 'error_code' => 1007], 'eval' => $noQr]);
-        $this->assertNull($imageOnly->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false));
+        $this->assertVerifiedQuiet(
+            $imageOnly->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false),
+            'ส่งไปตรวจแล้ว อ่านไม่ได้ + ลูกค้ายังไม่ได้บอกว่าโอน = เงียบ แต่ห้ามให้เส้นอื่นตรวจซ้ำ'
+        );
 
         $claimed = $this->service(['verify' => ['ok' => false, 'error_code' => 1007], 'eval' => $noQr]);
         $resp = $claimed->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, true);
@@ -340,7 +427,23 @@ class FortuneLateDeepSlipTest extends TestCase
         $resp = $svc->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false);
 
         $this->assertSame('slipok_received_pending', $resp['action'] ?? null);
+        $this->assertStringContainsString('ส่งสลิปใบเดิม', $resp['message'] ?? '', 'ธนาคารช้า = ส่งใหม่ช่วยได้');
         $this->assertTrue(Cache::has('fortune:returning_slip_ask:'.self::PSID));
+    }
+
+    /** โควตา SlipOK ของเราหมด → ได้รับแล้ว แต่ห้ามขอส่งใหม่ (ส่งใหม่ก็วนกลับมาที่เดิม) */
+    public function test_quota_out_acknowledges_without_asking_to_resend(): void
+    {
+        $bill = $this->makeExpiredDeepBill();
+        $svc = $this->service([
+            'verify' => ['ok' => false, 'error_code' => 1004],
+            'eval' => ['decision' => SlipOkService::DECISION_QUOTA, 'reason' => 'test'],
+        ]);
+
+        $resp = $svc->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false);
+
+        $this->assertSame('slipok_received_pending', $resp['action'] ?? null);
+        $this->assertStringNotContainsString('ส่งสลิปใบเดิม', $resp['message'] ?? '');
     }
 
     public function test_image_only_respects_slipok_quota_without_strikes(): void
@@ -364,8 +467,10 @@ class FortuneLateDeepSlipTest extends TestCase
         $bill = $this->makeExpiredDeepBill();
         $dup = ['decision' => SlipOkService::DECISION_DUPLICATE, 'reason' => 'test'];
 
-        $this->assertNull($this->service(['eval' => $dup])
-            ->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false));
+        $this->assertVerifiedQuiet(
+            $this->service(['eval' => $dup])->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false),
+            'สลิปซ้ำจากรูปที่ส่งมาเฉย ๆ = เงียบ'
+        );
 
         $resp = $this->service(['eval' => $dup])
             ->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, true);
@@ -410,6 +515,19 @@ class FortuneLateDeepSlipTest extends TestCase
         $resp = $svc->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false);
 
         $this->assertSame('slipok_received_pending', $resp['action'] ?? null);
+        $this->assertStringNotContainsString('ส่งสลิปใบเดิม', $resp['message'] ?? '', 'SlipOK จดสลิปไว้แล้ว ส่งใหม่จะได้ "ซ้ำ" — ห้ามขอส่งใหม่');
+    }
+
+    /** พังหลังตัดบิลสำเร็จแล้ว → ต้องบอกว่า "ได้รับยอดแล้ว" ไม่ใช่ "ยังยืนยันไม่ได้" */
+    public function test_crash_after_the_bill_was_paid_says_paid(): void
+    {
+        $bill = $this->makeExpiredDeepBill();
+        $svc = $this->service(['throw_after_pay' => true]);
+
+        $resp = $svc->processLateDeepSlip($bill, 'facebook', self::PSID, 'https://cdn.test/a.jpg', null, false);
+
+        $this->assertSame('slipok_received_paid', $resp['action'] ?? null);
+        $this->assertTrue((bool) $bill->fresh()->is_paid);
     }
 
     // ── 5. พิมพ์ "โอนแล้ว" ระหว่างตรวจ ─────────────────────────────────────
@@ -438,6 +556,27 @@ class FortuneLateDeepSlipTest extends TestCase
 
         $this->assertSame('slipok_ask_slip', $resp['action'] ?? null);
         $this->assertFalse(Cache::has('fortune:late_slip_claim_waiting:'.self::PSID), 'ใช้ธงแล้วต้องล้าง');
+    }
+
+    /**
+     * อีกรูปมาชนระหว่างตรวจ (ล็อกไม่ว่าง) → ห้ามดึงธง "พิมพ์โอนแล้วระหว่างตรวจ" ไปใช้ + ห้ามทิ้งรูป
+     * (สายที่ถือล็อกต้องเป็นคนตัดสินว่ารูปแรกจบเงียบแล้วต้องขอสลิปไหม)
+     */
+    public function test_image_hitting_a_busy_check_keeps_the_marker_and_stashes_itself(): void
+    {
+        $bill = $this->makeExpiredDeepBill();
+        $svc = $this->service();
+        Cache::add('fortune:celtic_create_lock:'.self::PSID, 1, 90);
+        Cache::put('fortune:late_slip_claim_waiting:'.self::PSID, 1, 120);
+
+        $resp = $svc->processLateDeepSlip($bill, 'facebook', self::PSID, null, base64_encode('second-slip-bytes'), false);
+
+        $this->assertVerifiedQuiet($resp, 'ชนล็อก = ไม่ตอบ (สายแรกกำลังจะตอบ)');
+        $this->assertTrue(Cache::has('fortune:late_slip_claim_waiting:'.self::PSID), 'ธงเป็นของสายที่ถือล็อก');
+        $this->assertTrue(Cache::has('fortune:pending_slip:facebook:'.self::PSID), 'รูปที่สองต้องถูกเก็บไว้ ไม่ทิ้ง');
+        $this->assertNotContains('slipok', $svc->calls);
+
+        Storage::disk('local')->delete((string) Cache::get('fortune:pending_slip:facebook:'.self::PSID));
     }
 
     // ── 6. ต่อสายจริงทุกทางเข้า ───────────────────────────────────────────
@@ -496,6 +635,41 @@ class FortuneLateDeepSlipTest extends TestCase
         $svc->handleReturningSlipImage('facebook', self::PSID, 'https://cdn.test/a.jpg', null);
 
         $this->assertSame([], $svc->processArgs);
+        $this->assertContains('classify_loose', $svc->calls, 'ต้องวิ่งเส้น Celtic เดิมจริง (ไม่ใช่แค่ไม่เข้าเส้นใหม่)');
+    }
+
+    /** Celtic ที่จ่ายแล้วแต่ยังไม่ได้ดู (เคส entony) ต้องได้เปิดบิลนั้น — บิล 39 ที่ใหม่กว่าห้ามแย่ง */
+    public function test_paid_but_unread_celtic_keeps_its_path_over_a_newer_deep_bill(): void
+    {
+        $this->makeExpiredDeepBill([
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+            'amount_paid' => 99.37,
+            'is_paid' => true,
+            'paid_at' => now()->subDays(2),
+            'celtic_questions_used' => 0,
+        ]);
+        $this->makeExpiredDeepBill();
+        $svc = $this->service(['spy_process' => true]);
+
+        $svc->handleReturningSlipImage('facebook', self::PSID, 'https://cdn.test/a.jpg', null);
+
+        $this->assertSame([], $svc->processArgs);
+    }
+
+    /** เส้นใหม่ยังไม่ได้ส่งไปตรวจ (ถอด QR ไม่ได้) + มี Celtic เก่าให้กู้ → ไหลต่อเส้น Celtic เดิม ไม่เงียบ */
+    public function test_undecodable_image_falls_back_to_the_older_celtic_path(): void
+    {
+        $this->makeExpiredDeepBill([
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+            'amount_paid' => 99.37,
+        ]);
+        $this->makeExpiredDeepBill();
+        $svc = $this->service(['slip' => false]);
+
+        $svc->handleReturningSlipImage('facebook', self::PSID, 'https://cdn.test/a.jpg', null);
+
+        $this->assertContains('qr', $svc->calls, 'ลองเส้นบิล 39 ก่อน');
+        $this->assertContains('classify_loose', $svc->calls, 'แล้วต้องไหลต่อเส้น Celtic เดิม (พฤติกรรมก่อนหน้า)');
     }
 
     /** ลำดับเดียวกับเคสจริง: รูปก่อน (เก็บไว้) → "หนูโอนให้แล้วนะคะ" → รูปที่เก็บไว้เข้าเส้นตัดบิลเดิม */
