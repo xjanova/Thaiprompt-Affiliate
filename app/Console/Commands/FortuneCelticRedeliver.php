@@ -101,6 +101,10 @@ class FortuneCelticRedeliver extends Command
         $failed = 0;
 
         foreach ($candidates as $q) {
+            // 🏬 (2026-09-13) ผู้รับแต่ละคนต้องหาเพจ (token) ของตัวเอง — ห้ามค้าง context ของลูกค้าคนก่อน
+            //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
+            \App\Services\Fortune\FortunePageContext::forget();
+
             $reading = $q->reading;
 
             // ต้องเป็น Celtic paid เท่านั้น (กันเคสแปลก)
@@ -212,6 +216,9 @@ class FortuneCelticRedeliver extends Command
                 ]);
             }
         }
+
+        // จบรอบ — ไม่ทิ้ง context ของผู้รับคนสุดท้ายไว้ให้โค้ดถัดไปในโปรเซสเดียวกัน
+        \App\Services\Fortune\FortunePageContext::forget();
 
         $this->newLine();
         $this->info("📊 สรุป: re-delivered={$sent} skipped={$skipped} failed={$failed}");

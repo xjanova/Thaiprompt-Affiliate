@@ -29,6 +29,21 @@ class FortunePageContext
     protected static ?FortunePage $current = null;
 
     /**
+     * 🏬 (2026-09-13) context ปัจจุบันถูก "เดา" มาจากผู้รับ (FacebookWebhookService bind แบบ lazy)
+     * ไม่ใช่เจ้าของงาน (webhook / job / cron) ตั้งเอง
+     *
+     * ทำไมต้องเก็บเป็น static ไม่ใช่ธงของ instance:
+     *   cron / queue worker สร้าง FacebookWebhookService ใหม่ต่อผู้รับหนึ่งคน
+     *   ตัวแรก bind เพจ A ไว้ (static) → ตัวที่สองเห็นว่า "มี context แล้ว + ตัวเองไม่ได้ bind"
+     *   → เข้าใจผิดว่าเจ้าของงานตั้งไว้ → ไม่เดาใหม่ → ส่งหาลูกค้าเพจ B ด้วย token เพจ A
+     *   → Graph 400 → คำตอบที่ลูกค้าจ่ายเงินแล้วหายเงียบ
+     *   (queue worker เป็นโปรเซสรันยาว static ค้างข้าม job — job ถัดไปโดนแบบเดียวกัน)
+     *
+     * set() จากเจ้าของงานล้างธงนี้เสมอ → ของจริงชนะของเดา
+     */
+    protected static bool $lazilyBound = false;
+
+    /**
      * memo ของการ resolve เพจ: "platform:external_id" => FortunePage|false
      *
      * @var array<string, FortunePage|false>
@@ -52,6 +67,8 @@ class FortunePageContext
         $changed = (self::$current?->id) !== ($page?->id);
 
         self::$current = $page;
+        // เจ้าของงานตั้งเอง = ของจริง (bindLazilyFromId() ตั้งธงกลับเองหลังเรียก set)
+        self::$lazilyBound = false;
 
         if ($changed) {
             // 🔑 บังคับให้ getSettings() อ่านใหม่ตาม context ใหม่ทันที
@@ -215,6 +232,29 @@ class FortunePageContext
     }
 
     /**
+     * 🏬 (2026-09-13) bind แบบ "เดาจากผู้รับ" — ใช้โดย FacebookWebhookService::ensurePageContextForRecipient() เท่านั้น
+     *
+     * ผลเหมือน bindFromId() แต่จด context นี้ว่าเป็นของเดา → ผู้รับคนถัดไป (แม้ใช้ instance ใหม่) เดาใหม่ได้
+     * เจ้าของงานที่อยาก fix สาขาเองต้องใช้ set()/bindFromId()/run() ตามเดิม
+     */
+    public static function bindLazilyFromId(?int $pageId): ?FortunePage
+    {
+        $page = self::bindFromId($pageId);
+
+        self::$lazilyBound = $page !== null;
+
+        return $page;
+    }
+
+    /**
+     * context ปัจจุบันเป็นของเดาจากผู้รับหรือไม่ (false = ไม่มี context หรือเจ้าของงานตั้งเอง)
+     */
+    public static function isLazilyBound(): bool
+    {
+        return self::$lazilyBound && self::$current !== null;
+    }
+
+    /**
      * รันโค้ดภายใต้ context ของสาขาหนึ่ง แล้วคืน context เดิมเสมอ
      *
      * ใช้กับ cron ที่ต้องวนโพสต์ทีละเพจ:
@@ -228,6 +268,7 @@ class FortunePageContext
     public static function run(?FortunePage $page, callable $callback)
     {
         $previous = self::$current;
+        $previousLazy = self::$lazilyBound;
 
         self::set($page);
 
@@ -235,6 +276,8 @@ class FortunePageContext
             return $callback();
         } finally {
             self::set($previous);
+            // คืนสถานะ "ของเดา/ของจริง" เดิมด้วย — ไม่งั้น context ที่เดามาจะกลายเป็นของจริงหลัง run()
+            self::$lazilyBound = $previousLazy;
         }
     }
 

@@ -96,6 +96,10 @@ class FortuneRemindStuckCeltic extends Command
         $failed = 0;
 
         foreach ($candidates as $reading) {
+            // 🏬 (2026-09-13) ผู้รับแต่ละคนต้องหาเพจ (token) ของตัวเอง — ห้ามค้าง context ของลูกค้าคนก่อน
+            //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
+            \App\Services\Fortune\FortunePageContext::forget();
+
             $state = is_array($reading->conversation_state) ? $reading->conversation_state : [];
 
             // กัน duplicate: ถ้าเคย remind แล้ว skip
@@ -203,6 +207,9 @@ class FortuneRemindStuckCeltic extends Command
                 ]);
             }
         }
+
+        // จบรอบ — ไม่ทิ้ง context ของผู้รับคนสุดท้ายไว้ให้โค้ดถัดไปในโปรเซสเดียวกัน
+        \App\Services\Fortune\FortunePageContext::forget();
 
         $this->newLine();
         $this->info("📊 สรุป: sent={$sent} skipped={$skipped} failed={$failed}");

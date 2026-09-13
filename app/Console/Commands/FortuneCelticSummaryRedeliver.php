@@ -85,6 +85,10 @@ class FortuneCelticSummaryRedeliver extends Command
         $noText = 0;
 
         foreach ($readings as $reading) {
+            // 🏬 (2026-09-13) ผู้รับแต่ละคนต้องหาเพจ (token) ของตัวเอง — ห้ามค้าง context ของลูกค้าคนก่อน
+            //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
+            \App\Services\Fortune\FortunePageContext::forget();
+
             $tag = "reading {$reading->id} (".($reading->bill_reference ?? $reading->order_number ?? '-').')';
 
             // ส่งไปแล้ว → ไม่ต้องส่งซ้ำ (โหมดมือก็ห้ามยิงซ้ำ — ลูกค้าจะเห็นบทสรุป 2 รอบ)
@@ -211,6 +215,9 @@ class FortuneCelticSummaryRedeliver extends Command
                 ]);
             }
         }
+
+        // จบรอบ — ไม่ทิ้ง context ของผู้รับคนสุดท้ายไว้ให้โค้ดถัดไปในโปรเซสเดียวกัน
+        \App\Services\Fortune\FortunePageContext::forget();
 
         $this->newLine();
         $this->info("📊 สรุป: ส่งแล้ว={$sent} ข้าม={$skipped} ล้มเหลว={$failed} ไม่มีเนื้อบทสรุป={$noText}");

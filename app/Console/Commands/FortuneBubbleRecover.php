@@ -69,6 +69,10 @@ class FortuneBubbleRecover extends Command
             ->get();
 
         foreach ($candidates as $reading) {
+            // 🏬 (2026-09-13) ผู้รับแต่ละคนต้องหาเพจ (token) ของตัวเอง — ห้ามค้าง context ของลูกค้าคนก่อน
+            //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
+            \App\Services\Fortune\FortunePageContext::forget();
+
             $pending = $reading->getConversationState('bubble_pending');
             $pendingAt = $reading->getConversationState('bubble_pending_at');
 
@@ -162,6 +166,9 @@ class FortuneBubbleRecover extends Command
                 ]);
             }
         }
+
+        // จบรอบ — ไม่ทิ้ง context ของผู้รับคนสุดท้ายไว้ให้โค้ดถัดไปในโปรเซสเดียวกัน
+        \App\Services\Fortune\FortunePageContext::forget();
 
         $this->info("💬 bubble-recover: กู้ {$recovered} · ข้าม (ยังไม่ถึง grace {$graceSec}s) {$skipped}");
 
