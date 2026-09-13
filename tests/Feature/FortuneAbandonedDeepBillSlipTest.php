@@ -40,6 +40,8 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
+        // getSettings() มี static memo ข้ามเทสต์ — ชี้แถวที่เทสต์ก่อนหน้า rollback ทิ้งไปแล้ว (ดู FortuneLateDeepSlipTest)
+        FortuneTellingSetting::clearSettingsCache();
         $this->service = new FortuneConversationService(FortuneTellingSetting::getSettings());
     }
 
@@ -52,8 +54,9 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
         $settings->slipok_api_key = 'test-key';
         $settings->save();
         Cache::flush();
+        FortuneTellingSetting::clearSettingsCache();
 
-        $this->service = new FortuneConversationService($settings->fresh());
+        $this->service = new FortuneConversationService(FortuneTellingSetting::getSettings());
     }
 
     /**

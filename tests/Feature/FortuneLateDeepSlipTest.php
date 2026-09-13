@@ -40,6 +40,9 @@ class FortuneLateDeepSlipTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
+        // ⚠️ getSettings() มี static memo ข้ามเทสต์ใน process เดียวกัน — เทสต์ก่อนหน้า rollback แถวทิ้งไปแล้ว
+        //   memo ยังชี้แถวเดิม → save() อัปเดต 0 แถว → fresh() คืน null (CI แดง 13/14 รอบแรก)
+        FortuneTellingSetting::clearSettingsCache();
     }
 
     /**
@@ -56,8 +59,9 @@ class FortuneLateDeepSlipTest extends TestCase
         $settings->deep_reading_price = 39;
         $settings->save();
         Cache::flush();
+        FortuneTellingSetting::clearSettingsCache();
 
-        return new class($settings->fresh(), $opts) extends FortuneConversationService
+        return new class(FortuneTellingSetting::getSettings(), $opts) extends FortuneConversationService
         {
             /** @var array<int, string> */
             public array $calls = [];
