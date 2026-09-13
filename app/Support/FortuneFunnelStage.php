@@ -153,9 +153,15 @@ final class FortuneFunnelStage
      */
     public static function detail(FortuneReading $reading): ?string
     {
-        // บิลยกเลิก — เหตุผลยกเลิกบอกอยู่แล้ว (Warroom ขึ้นเป็นป้ายหมุด)
+        // บิลยกเลิก — โชว์เหตุผลเฉพาะที่ "บอกเพิ่ม" จากป้ายขั้น (Warroom ขึ้นเป็นป้ายหมุด)
+        //   หมดเวลา/ลูกค้ายกเลิกเอง = ความหมายเดียวกับป้ายขั้นอยู่แล้ว → ไม่ต้องพูดซ้ำ
+        //   แอดมินยกเลิกการอนุมัติ / ลูกค้าจ่ายบิลอื่นแทน / ไม่ทราบสาเหตุ → ต้องบอก แอดมินจะได้รู้ว่าทำไม
         if ($reading->isCancelled()) {
-            return $reading->getCancellationReasonLabelOrNull();
+            $reason = (string) $reading->getConversationState('cancellation_reason');
+
+            return in_array($reason, ['auto_expired', 'auto_expired_grace', 'user_cancelled'], true)
+                ? null
+                : $reading->getCancellationReasonLabelOrNull();
         }
 
         $usedQ = (int) ($reading->celtic_questions_used ?? 0);

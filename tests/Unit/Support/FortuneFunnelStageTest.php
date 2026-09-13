@@ -89,7 +89,7 @@ class FortuneFunnelStageTest extends TestCase
             'conversation_state' => ['cancellation_reason' => 'user_cancelled'],
         ]);
         $this->assertSame('cancelled_user', FortuneFunnelStage::of($byCustomer));
-        $this->assertSame('ยกเลิกโดยลูกค้า', FortuneFunnelStage::detail($byCustomer));
+        $this->assertNull(FortuneFunnelStage::detail($byCustomer), 'ป้ายขั้นบอกแล้วว่าลูกค้ายกเลิกเอง ไม่ต้องพูดซ้ำ');
         $this->assertSame(['intake', 'choosing', 'deciding', 'cancelled_user'], FortuneFunnelStage::path($byCustomer));
 
         $bySystem = $this->reading([
@@ -98,7 +98,17 @@ class FortuneFunnelStageTest extends TestCase
             'conversation_state' => ['cancellation_reason' => 'auto_expired'],
         ]);
         $this->assertSame('cancelled_system', FortuneFunnelStage::of($bySystem));
+        $this->assertNull(FortuneFunnelStage::detail($bySystem), 'หมดเวลา = "ยกเลิกโดยระบบ" ซ้ำกับป้ายขั้น');
         $this->assertNotContains('waiting', FortuneFunnelStage::path($bySystem));
+
+        // เหตุผลที่ป้ายขั้นไม่ได้บอก ต้องขึ้นเป็นรายละเอียด — แอดมินต้องรู้ว่าทำไมกดอนุมัติไม่ได้
+        $voided = $this->reading([
+            'conversation_status' => FortuneReading::STATUS_COMPLETED,
+            'amount_paid' => 99,
+            'conversation_state' => ['cancellation_reason' => 'approval_voided'],
+        ]);
+        $this->assertSame('cancelled_system', FortuneFunnelStage::of($voided));
+        $this->assertSame('ยกเลิกการอนุมัติโดยแอดมิน', FortuneFunnelStage::detail($voided));
 
         // จ่ายแล้วมีเหตุผลยกเลิกค้างใน state = ไม่ใช่บิลยกเลิก (isCancelled เช็คการจ่ายก่อน)
         $paid = $this->reading([
