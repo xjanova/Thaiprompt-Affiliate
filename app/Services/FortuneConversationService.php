@@ -1339,7 +1339,9 @@ class FortuneConversationService
                     }
 
                     // ปิด conversation เก่าก่อนเริ่ม flow ใหม่ (กันค้าง)
-                    $this->closeAllActiveConversations($facebookUserId);
+                    // ♻️ (2026-09-14) เว้นแถวเมนูที่ลูกค้าเพิ่งกดปุ่มจากมัน — startDeepReadingFlow จะใช้แถวนั้นต่อเป็นบิล
+                    //   ไม่งั้นแถวเมนูถูกปิดตรงนี้ก่อน แล้วกลายเป็นแถว "ไม่เคยออกบิล" ค้างในหน้าบิล
+                    $this->closeAllActiveConversations($facebookUserId, null, $this->findTierMenuReadingToReuse($facebookUserId)?->id);
 
                     return $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTier);
                 } finally {
@@ -4460,12 +4462,54 @@ class FortuneConversationService
     }
 
     /**
+     * ♻️ (2026-09-14) แถวเมนูแพคเกจที่ใช้ต่อเป็นบิลได้ — ลูกค้ากดปุ่ม 39/99 จากเมนูที่เพิ่งโชว์
+     *
+     * เดิมกดปุ่มแล้ว closeAllActiveConversations() ปิดแถวเมนู แล้ว startDeepReadingFlow() สร้างแถวใหม่
+     * ⇒ ลูกค้าคนเดียวมี 2 แถว แถวแรกค้างเป็น "คุยแล้วหายไป (ไม่เคยออกบิล)" ทั้งที่เขาไปได้บิลแล้ว
+     *   (เคส FTU-260913-K3863 → E7850 · prod มี 2,060 แถวแบบนี้)
+     * ทางพิมพ์ "39" ที่เมนู (handleTierChoice) ใช้แถวเดิมต่ออยู่แล้ว — ทางปุ่มควรได้ผลแบบเดียวกัน
+     *
+     * ใช้ต่อได้เฉพาะแถวที่: อยู่ที่เมนูจริง (tier_choice) · ยังไม่มีร่องรอยบิล (neverBilled)
+     *   · ยังไม่เงียบเกิน PAYMENT_TIMEOUT_MINUTES (ตัวเก็บกวาดปิดเมนูที่เวลานี้)
+     *   · ช่องทางและสาขาเดียวกับข้อความนี้ — ไม่ตรงข้อไหนคืน null = สร้างแถวใหม่แบบเดิม
+     */
+    protected function findTierMenuReadingToReuse(string $userId): ?FortuneReading
+    {
+        $menu = FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('conversation_status', FortuneReading::STATUS_TIER_CHOICE)
+            ->where('updated_at', '>=', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES))
+            ->neverBilled()
+            ->orderByDesc('id')
+            ->first();
+
+        if ($menu === null) {
+            return null;
+        }
+
+        if (! empty($this->currentPlatform) && ! empty($menu->platform) && $menu->platform !== $this->currentPlatform) {
+            return null;
+        }
+
+        $pageId = \App\Services\Fortune\FortunePageContext::currentId();
+        if ($pageId !== null && $menu->fortune_page_id !== null && (int) $menu->fortune_page_id !== $pageId) {
+            return null;
+        }
+
+        return $menu;
+    }
+
+    /**
      * ปิด conversation ที่ยังค้างอยู่ทั้งหมดของผู้ใช้
      *
      * ป้องกัน orphan conversations ที่ทำให้ findActiveConversation() สับสน
      * เรียกก่อนสร้าง conversation ใหม่เสมอ
+     *
+     * @param  int|null  $exceptReadingId  แถวที่ห้ามปิด — แถวเมนูที่กำลังจะใช้ต่อเป็นบิล (ดู findTierMenuReadingToReuse)
      */
-    protected function closeAllActiveConversations(string $facebookUserId, ?string $cancelReasonText = null): int
+    protected function closeAllActiveConversations(string $facebookUserId, ?string $cancelReasonText = null, ?int $exceptReadingId = null): int
     {
         // 💎 (2026-06-23 bug-hunt) ยกเลิก/ปิด conversation → ล้าง prepay-choice ที่ค้าง (กัน 39/99 รอบหน้า re-fire)
         //   reading ที่ค้างจะถูกตั้ง COMPLETED ด้านล่าง → status guard ใน maybeHandlePrepayChoiceReply กัน re-fire อยู่แล้ว
@@ -4489,6 +4533,7 @@ class FortuneConversationService
             ])
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
+            ->when($exceptReadingId !== null, fn ($q) => $q->where('id', '!=', $exceptReadingId))
             ->with('uniquePaymentAmount')
             ->get();
 
@@ -4534,6 +4579,7 @@ class FortuneConversationService
                 FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
                 FortuneReading::STATUS_NEW,
             ])
+            ->when($exceptReadingId !== null, fn ($q) => $q->where('id', '!=', $exceptReadingId))
             ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
         if ($closed > 0) {
@@ -6321,8 +6367,13 @@ class FortuneConversationService
                 ];
             }
 
-            // ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมด
-            $this->closeAllActiveConversations($facebookUserId);
+            // ♻️ (2026-09-14) กดปุ่ม 39/99 จากเมนูที่เพิ่งโชว์ → ใช้แถวเมนูเดิมต่อเป็นบิล ไม่สร้างแถวใหม่
+            //   ด่านทั้งหมดข้างบน (กำลังทำนาย / ลูกค้าต่างประเทศ / แพคเกจปิด) ผ่านมาแล้วเหมือนเดิม
+            //   เปลี่ยนแค่ขั้น "ปิดแถวเมนู + สร้างแถวใหม่" ด้านล่าง (ดู findTierMenuReadingToReuse)
+            $menuReading = $forceTier !== null ? $this->findTierMenuReadingToReuse($facebookUserId) : null;
+
+            // ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมด (ยกเว้นแถวเมนูที่จะใช้ต่อ)
+            $this->closeAllActiveConversations($facebookUserId, null, $menuReading?->id);
 
             // 🛒 (2026-05-18) Hook A — บันทึก "บอทเสนอขาย" (throttle 5min ใน model)
             //   จุดนี้ flow แน่นอนว่าจะ pitch (deep enabled + ปิด basic = ต้องจ่าย)
@@ -6380,24 +6431,55 @@ class FortuneConversationService
                 default => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
             };
 
-            // สร้าง FortuneReading ใหม่สำหรับ deep reading
-            $reading = FortuneReading::create([
-                'facebook_user_id' => $facebookUserId,
-                'facebook_user_name' => $name,
-                'user_profile' => $userProfile,
-                'questions' => [],
-                'reading_type' => 'deep',
-                'conversation_status' => $initialStatus,
-                'response_type' => 'private_message',
-                'ai_response' => '',
-                'ai_provider' => '',
-                'platform' => $this->currentPlatform,
-                'platform_user_id' => $facebookUserId,
-            ]);
+            $reading = null;
+            if ($menuReading !== null) {
+                // ♻️ แถวเมนูสร้างโดยโค้ดด้านล่างนี้เองเมื่อไม่กี่นาทีก่อน (ชื่อ/โปรไฟล์/ช่องทางชุดเดียวกัน)
+                //   ตั้งแค่สถานะให้เหมือนแถวใหม่ — บิลจริง (ยอด/UPA/QR) ถูกออกในขั้นถัดไปตามปกติ
+                //
+                //   🔒 จองแถวแบบ atomic (update เฉพาะตอนยังเป็นเมนู) — lock ด้านบนแยกตามแพคเกจ
+                //     กด 39 กับ 99 เกือบพร้อมกัน = 2 คำขอคนละ lock อาจแย่งแถวเดียวแล้วเขียนบิลทับกัน
+                //     จองไม่ทัน → สร้างแถวใหม่แบบเดิม
+                //   (update แบบ query ไม่ยิง saved hook — ขั้นออกบิลถัดไปเปลี่ยนสถานะผ่านโมเดลอีกรอบ cache ถูกล้างตรงนั้น)
+                $claimed = FortuneReading::whereKey($menuReading->id)
+                    ->where('conversation_status', FortuneReading::STATUS_TIER_CHOICE)
+                    ->update([
+                        'reading_type' => 'deep',
+                        'conversation_status' => $initialStatus,
+                        'updated_at' => now(),
+                    ]);
+
+                if ($claimed === 1) {
+                    $reading = $menuReading->fresh();
+                    // ธงโหมดคุณไสยล้างให้เหมือนแถวใหม่ — startCelticCrossFlow ตั้งใหม่เองจาก carrier ถ้ากดปุ่มคุณไสย
+                    if ($reading->getConversationState('black_magic_mode')) {
+                        $reading->setConversationState('black_magic_mode', null);
+                    }
+                } else {
+                    $menuReading = null;
+                }
+            }
+
+            if ($reading === null) {
+                // สร้าง FortuneReading ใหม่สำหรับ deep reading
+                $reading = FortuneReading::create([
+                    'facebook_user_id' => $facebookUserId,
+                    'facebook_user_name' => $name,
+                    'user_profile' => $userProfile,
+                    'questions' => [],
+                    'reading_type' => 'deep',
+                    'conversation_status' => $initialStatus,
+                    'response_type' => 'private_message',
+                    'ai_response' => '',
+                    'ai_provider' => '',
+                    'platform' => $this->currentPlatform,
+                    'platform_user_id' => $facebookUserId,
+                ]);
+            }
 
             Log::info('Fortune: เริ่ม deep reading flow ใหม่', [
                 'facebook_user_id' => $facebookUserId,
                 'reading_id' => $reading->id,
+                'reused_menu_reading' => $menuReading !== null,
                 'discovery_chat_mode' => $useDiscoveryChat,
                 'force_tier' => $forceTier,
             ]);
