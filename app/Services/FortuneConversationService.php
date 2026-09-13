@@ -14920,27 +14920,31 @@ class FortuneConversationService
     }
 
     /**
-     * 🔁 (2026-05-15) จัดการคำตอบยืนยันจากลูกค้า (ใช่/ไม่ใช่) — Fuzzy match flow
-     *
-     * Cache key: "fortune:fuzzy_pending:{platform}:{userId}" (TTL 10 นาที)
-     *
-     * @return array|null result หรือ null = ไม่มี pending / ไม่ใช่ yes/no
-     */
-    /**
      * 🚨 (2026-09-13 จับผี) ตัดสินคำตอบ "ยอดโอนนี้ใช่ของคุณไหม" — true = ใช่ · false = ไม่ใช่ · null = ไม่ชัด (ปล่อย flow อื่น)
      *
-     * ตัวเดิมอนุมัติบิลผิดได้ 2 ทาง (ฝั่งนี้คือเงินลูกค้า ต้องเอียงไปทาง "ไม่อนุมัติ"):
+     * ตัวเดิมอนุมัติบิลผิดได้ (ฝั่งนี้คือเงินลูกค้า):
      *   1) ปุ่ม "❌ ไม่ใช่" ส่ง payload ดิบ `FUZZY_CONFIRM_NO` (FB default ส่ง payload เข้าสมอง)
      *      → มีตัว 'y' (ใน fuzzy) + คำ 'confirm' → ถูกนับเป็น "ใช่" → approve() SMS ที่ลูกค้าบอกว่าไม่ใช่ของตัวเอง
-     *   2) คำใช่ใช้ str_contains แต่คำไม่ใช้ str_starts_with → "ยังไม่ได้โอนเลย" มีคำว่า "โอน" = ใช่ · ไม่ขึ้นต้นด้วย "ไม่" = ไม่ติด
+     *   2) คำใช่ใช้ str_contains แต่คำไม่ใช้ str_starts_with → "ยังไม่ได้โอนเลย" มีคำว่า "โอน" = ใช่
      *
-     * กติกาใหม่: รหัสปุ่มก่อน → มีคำปฏิเสธที่ไหนก็ได้ = ไม่ใช่ → คำใช่ตัวสั้นต้องตรงเป๊ะ / วลียาวที่ชัดเจนค่อย contains
+     * แต่ห้ามเข้มจนปฏิเสธคนที่ตอบใช่จริง — ถามข้อนี้เพราะ "ยอดไม่ตรง" คนจึงมักตอบ "ใช่ค่ะ โอนผิดยอด /
+     * ไม่ได้ใส่เศษสตางค์ / โอนไม่ครบ" (มีคำว่า "ไม่" ตามหลังแต่ความหมายคือใช่)
      *
-     * @param  string  $normalized  ข้อความหลัง normalizeUserInput() (ตัวเล็ก ตัดอีโมจิแล้ว)
+     * ลำดับตัดสิน:
+     *   1. รหัสปุ่ม FUZZY_CONFIRM_YES/NO
+     *   2. ประโยคคำถาม ("ใช่ไหม" / "ของหนูหรือเปล่า" / มี ?) → ไม่ชัด
+     *   3. ขึ้นต้นด้วยคำปฏิเสธ (ไม่ / ยังไม่ / ไม่ได้โอน / ผิดคน / no) หรือตอบคำเดียว "ยัง" / "ผิด" → ไม่ใช่
+     *   4. ขึ้นต้นด้วยคำยืนยัน (ใช่ / ยืนยัน / ถูกต้อง / yes / ok) → ใช่ (เว้นมี "ไม่ใช่" ตามมา = ขัดกันเอง → ไม่ชัด)
+     *   5. มีวลีปฏิเสธชัด ๆ ที่ไหนก็ได้ (ไม่ใช่ / ไม่ได้โอน / ยังไม่โอน / ผิดคน / not mine) → ไม่ใช่
+     *   6. วลียืนยัน (ของหนู / ของผม / โอนแล้ว / โอนเอง ...) → ใช่
+     *   7. นอกนั้น → ไม่ชัด ("ยกเลิก" ต้องไหลไปเส้นยกเลิกบิล ไม่ใช่ถูกกลืนเป็นคำปฏิเสธ)
+     *
+     * @param  string  $normalized  ข้อความหลัง normalizeUserInput() (ตัวเล็ก ตัดอีโมจิ/คำลงท้ายสุภาพแล้ว)
      */
     protected static function fuzzyConfirmationDecision(string $normalized): ?bool
     {
-        $noSpace = str_replace(' ', '', $normalized);
+        $text = trim($normalized);
+        $noSpace = str_replace(' ', '', $text);
 
         if ($noSpace === 'fuzzy_confirm_no') {
             return false;
@@ -14948,21 +14952,39 @@ class FortuneConversationService
         if ($noSpace === 'fuzzy_confirm_yes') {
             return true;
         }
+        if ($noSpace === '') {
+            return null;
+        }
 
-        $hasNegation = (bool) preg_match('/ไม่|ยัง|ผิด|ปฏิเสธ|ยกเลิก/u', $normalized)
-            || (bool) preg_match('/\b(no|not|nope|cancel|wrong)\b/i', $normalized)
-            || in_array($noSpace, ['n', 'no'], true);
+        // 2) ประโยคคำถาม — ลูกค้ายังถามกลับ ยังไม่ได้ยืนยัน
+        if (str_contains($text, '?')
+            || preg_match('/(ไหม|มั้ย|มั๊ย|ไม๊|เหรอ|หรอ|หรือเปล่า|รึเปล่า|หรือป่าว|ป่ะ|ปะ)$/u', $noSpace)) {
+            return null;
+        }
 
-        if ($hasNegation) {
+        // 3) ขึ้นต้นด้วยคำปฏิเสธชัด ๆ / ตอบคำเดียวว่า "ไม่" "ยัง" "ผิด"
+        //    ⚠️ "ไม่…" เฉย ๆ ไม่นับ — "ไม่ได้ใส่เศษสตางค์ / ไม่ครบ" ความหมายคือโอนจริง (ไหลไปข้อ 5-7)
+        if (preg_match('/^(ไม่ใช่|ไม่ได้โอน|ยังไม่|ผิดคน|ปฏิเสธ)/u', $noSpace)
+            || preg_match('/^(no|not|nope|wrong)\b/i', $text)
+            || in_array($noSpace, ['ไม่', 'ยัง', 'ผิด', 'n'], true)) {
             return false;
         }
 
-        $exactYes = ['ใช่', 'ใช', 'ครับ', 'ค่ะ', 'คะ', 'yes', 'y', 'ok', 'โอเค', 'confirm', 'ยืนยัน', 'รับ', 'ถูก', 'ถูกต้อง'];
-        if (in_array($noSpace, $exactYes, true)) {
-            return true;
+        // 4) ขึ้นต้นด้วยคำยืนยัน (ระวัง "ใช้" ≠ "ใช่" — จับ "ใช" เฉพาะตอบคำเดียว)
+        if (preg_match('/^(ใช่|ยืนยัน|ถูกต้อง|โอเค)/u', $noSpace)
+            || preg_match('/^(yes|ok|okay|confirm)\b/i', $text)
+            || in_array($noSpace, ['ใช', 'ถูก', 'y'], true)) {
+            return str_contains($noSpace, 'ไม่ใช่') ? null : true;
         }
 
-        foreach (['ใช่', 'ยืนยัน', 'ของฉัน', 'ของหนู', 'ของผม', 'ของเรา', 'โอนแล้ว', 'โอนเอง', 'confirm'] as $phrase) {
+        // 5) วลีปฏิเสธชัด ๆ ที่ไหนก็ได้
+        if (preg_match('/ไม่ใช่|ไม่ได้โอน|ยังไม่ได้โอน|ยังไม่โอน|ผิดคน|ไม่รู้จัก/u', $noSpace)
+            || preg_match('/\b(not mine|not me|wrong person)\b/i', $text)) {
+            return false;
+        }
+
+        // 6) วลียืนยัน
+        foreach (['ของหนู', 'ของผม', 'ของฉัน', 'ของเรา', 'ของดิฉัน', 'โอนแล้ว', 'โอนเอง', 'ถูกต้อง'] as $phrase) {
             if (str_contains($noSpace, $phrase)) {
                 return true;
             }
@@ -14971,6 +14993,13 @@ class FortuneConversationService
         return null;
     }
 
+    /**
+     * 🔁 (2026-05-15) จัดการคำตอบยืนยันจากลูกค้า (ใช่/ไม่ใช่) — Fuzzy match flow
+     *
+     * Cache key: "fortune:fuzzy_pending:{platform}:{userId}" (TTL 10 นาที)
+     *
+     * @return array|null result หรือ null = ไม่มี pending / ไม่ใช่ yes/no
+     */
     protected function tryHandleFuzzyConfirmation(string $platform, string $userId, string $messageText): ?array
     {
         try {
