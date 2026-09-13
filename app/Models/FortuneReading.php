@@ -188,6 +188,14 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🧾 (2026-09-13) แพคเกจที่ต้องมีบิล — แถวของแพคเกจพวกนี้ที่ไม่มีร่องรอยบิลเลย = ซากแชท (ดู isNeverBilled())
+     */
+    public const BILLABLE_READING_TYPES = [
+        self::READING_TYPE_DEEP,
+        self::READING_TYPE_CELTIC_CROSS,
+    ];
+
+    /**
      * 🔮 Celtic active states — หลังจ่ายแล้ว แต่ยังไม่จบ session
      *
      * ใช้เป็น "lock guard" — เมื่อ status ใดๆ ในนี้ active:
@@ -803,6 +811,58 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🧾 (2026-09-13) เงื่อนไข SQL ของ isNeverBilled() — **ต้องตรงกับ isNeverBilled() ทุกข้อ**
+     *
+     * "ไม่เคยออกบิล" = แถวแพคเกจ 39/99 ที่ลูกค้าไม่เคยได้บิลจริง — เป็นแค่ที่เก็บสถานะแชท
+     * ที่มา: บอทสร้างแถวตั้งแต่ตอนโชว์เมนูแพคเกจ และแถว deep/celtic ได้เลข FTU อัตโนมัติตอนสร้าง (boot → creating)
+     *        ⇒ หน้าบิลเห็นเป็นบิลทั้งที่ไม่มียอด · ลูกค้ากดปุ่ม 39/99 บนเมนู → closeAllActiveConversations()
+     *        ปิดแถวเมนูแล้วสร้างแถวบิลใหม่ ⇒ ลูกค้าคนเดียวมี 2 แถว (เคส FTU-260913-K3863 → E7850)
+     *        prod 2026-09-13: 9,436 จาก 13,136 แถว (72%) · ในนั้น 2,060 แถวได้บิลใบใหม่ภายใน 30 นาที
+     *
+     * มีร่องรอยบิลข้อใดข้อหนึ่ง = ไม่ใช่ซาก: จ่ายแล้ว · บิลลอย · มียอดบิล · เคยจอง UPA (ออก QR แล้ว)
+     *   · มี Stripe session · อยู่ในสถานะรอชำระ
+     *   (prod มี 2 ใบที่ยอดบิล 0 แต่ UPA ถูกใช้ไปแล้ว — ถ้าไม่เช็ค UPA จะหายจากหน้าบิล)
+     *
+     * COALESCE ทุกตัว — ใช้คู่กับ NOT (...) ใน scopeExceptNeverBilled() ถ้าได้ NULL แถวจะหายจากทั้งสองฝั่ง
+     * (prod: is_floating / conversation_status เป็น NULL ได้ แม้ schema ใหม่จะตั้ง NOT NULL)
+     */
+    public static function neverBilledSql(string $table = 'fortune_readings'): string
+    {
+        $types = "'".implode("', '", self::BILLABLE_READING_TYPES)."'";
+        $pending = "'".implode("', '", self::PENDING_DISPLAY_STATUSES)."'";
+
+        return "(COALESCE({$table}.reading_type, '') IN ({$types})"
+            ." AND COALESCE({$table}.is_paid, 0) = 0"
+            ." AND COALESCE({$table}.is_floating, 0) = 0"
+            ." AND COALESCE({$table}.amount_paid, 0) <= 0"
+            ." AND {$table}.unique_payment_amount_id IS NULL"
+            ." AND COALESCE({$table}.stripe_session_id, '') = ''"
+            ." AND COALESCE({$table}.conversation_status, '') NOT IN ({$pending}))";
+    }
+
+    /**
+     * Scope: เฉพาะแถวที่ไม่เคยออกบิล (เงื่อนไขเดียวกับ isNeverBilled())
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeNeverBilled($query)
+    {
+        return $query->whereRaw(self::neverBilledSql($query->getModel()->getTable()));
+    }
+
+    /**
+     * Scope: ตัดแถวที่ไม่เคยออกบิลออก — หน้าบิลใช้เป็นค่าเริ่มต้น ไม่งั้น 3 ใน 4 แถวไม่ใช่บิล
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeExceptNeverBilled($query)
+    {
+        return $query->whereRaw('NOT '.self::neverBilledSql($query->getModel()->getTable()));
+    }
+
+    /**
      * 🔎 (2026-09-13) Scope: ตัวกรอง "สถานะ Conversation" ของหน้ารายการแอดมิน
      *
      * ค่าพิเศษ (ไม่ใช่สถานะในคอลัมน์ตรง ๆ):
@@ -1388,6 +1448,22 @@ class FortuneReading extends Model
         $state = $this->conversation_state ?? [];
 
         return is_array($state) && ! empty($state['cancellation_reason']);
+    }
+
+    /**
+     * 🧾 (2026-09-13) แถวนี้เป็นซากแชทที่ไม่เคยออกบิลไหม — ตรรกะเดียวกับ neverBilledSql() เป๊ะ
+     *
+     * ใช้ทำป้ายสถานะหน้าบิล — แก้ข้อไหนต้องแก้ neverBilledSql() คู่กันเสมอ
+     */
+    public function isNeverBilled(): bool
+    {
+        return in_array((string) $this->reading_type, self::BILLABLE_READING_TYPES, true)
+            && ! $this->is_paid
+            && ! $this->is_floating
+            && (float) ($this->amount_paid ?? 0) <= 0
+            && $this->unique_payment_amount_id === null
+            && (string) ($this->stripe_session_id ?? '') === ''
+            && ! in_array((string) $this->conversation_status, self::PENDING_DISPLAY_STATUSES, true);
     }
 
     // ============================================================

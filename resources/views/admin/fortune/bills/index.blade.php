@@ -55,7 +55,8 @@
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;">
         @php
             $tpKpis = [
-                ['ทั้งหมดในขอบเขต', number_format($stats['total']), 'fa-layer-group', null, '', ''],
+                // 🧾 (2026-09-13) นับเฉพาะบิลจริง — แถวแชทที่ไม่เคยออกบิลแยกไปบอกบนหัวตาราง
+                ['บิลทั้งหมดในขอบเขต', number_format($stats['total']), 'fa-layer-group', null, '', ''],
                 // ⏱️ โชว์เฉพาะ "ยังลุ้นได้เงิน" เป็นตัวเลขหลัก — ของค้างเก่าแยกไปอีกการ์ด
                 //    ไม่งั้นตัวเลขหลอกตา (prod: บิลรอชำระ 417 ใบ เก่ากว่า 30 วันทั้งหมด = ไม่มีอะไรให้ตาม)
                 ['รอชำระ (ใหม่ ≤7 วัน)', number_format($stats['pending_fresh']), 'fa-hourglass-half', '#a9791a', '', 'pending_fresh'],
@@ -154,7 +155,7 @@
                     <select name="status" style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
                         @php
                             $tpStatuses = [
-                                '' => '— ทุกสถานะ —',
+                                '' => '— ทุกบิล —',
                                 'paid' => '✅ จ่ายแล้ว',
                                 'pending_fresh' => '⏳ รอชำระ ใหม่ ≤7 วัน (ยังลุ้นได้เงิน)',
                                 'pending_stale' => '🪦 ค้างเก่า เกิน 7 วัน (ซากบิล)',
@@ -162,7 +163,7 @@
                                 'unpaid' => 'ยังไม่จ่าย (ทั้งหมด)',
                                 'cancelled' => '❌ ยกเลิก',
                                 'abandoned' => '🕳️ ปิดเงียบ (ออกบิลแล้วไม่จ่าย)',
-                                'no_bill' => '💬 คุยแล้วหายไป (ไม่เคยออกบิล)',
+                                'no_bill' => '💬 ไม่เคยออกบิล (แชทอย่างเดียว)',
                                 'floating' => '💸 บิลลอย (เงินเข้าไม่รู้เจ้าของ)',
                                 'stuck_celtic' => '🧊 Celtic ค้าง (จ่ายแล้ว ไพ่ไม่ครบ)',
                                 'stuck_deep' => '🧊 Deep ค้าง (จ่ายแล้ว ไม่มีคำทำนาย)',
@@ -216,6 +217,14 @@
         <div class="tp-section-h" style="margin-bottom:14px;">
             <i class="fas fa-receipt"></i> รายการบิล
             <span class="tp-pill tp-pill-soft" style="margin-left:8px;">{{ number_format($bills->total()) }} รายการ</span>
+            {{-- 💬 (2026-09-13) บอกว่าซ่อนแถวแชทที่ไม่เคยออกบิลไปกี่แถว + ลิงก์ไปดู — ซ่อนได้ แต่ห้ามซ่อนเงียบ --}}
+            @if(in_array($filters['status'] ?? '', ['', 'unpaid'], true) && ($stats['never_billed'] ?? 0) > 0)
+                <a href="{{ $tpQ(['status' => 'no_bill']) }}"
+                   style="margin-left:8px; font-size:12px; font-weight:500; color:var(--ink2); text-decoration:underline;"
+                   title="แถวที่บอทสร้างไว้เก็บสถานะแชทตอนโชว์เมนูแพคเกจ — ลูกค้ายังไม่เคยได้บิล จึงไม่นับเป็นบิล">
+                    ไม่รวมแชทที่ไม่เคยออกบิล {{ number_format($stats['never_billed']) }} รายการ · ดู
+                </a>
+            @endif
         </div>
 
         @if($bills->isEmpty())
@@ -245,20 +254,37 @@
                                 $pfKey = in_array($bill->platform, ['facebook', 'line', 'telegram'], true) ? $bill->platform : 'other';
                                 $pf = $platforms[$pfKey];
 
+                                $tpNeverBilled = $bill->isNeverBilled();
+
                                 if ($bill->is_floating) {
                                     $pill = ['💸 บิลลอย', 'background:rgba(214,130,74,.18); color:#a85f2c;'];
+                                } elseif ($tpNeverBilled) {
+                                    // 💬 (2026-09-13) แถวแชทที่ไม่เคยมีบิล — ต้องเช็คก่อน isCancelled()
+                                    //   ไม่งั้นคนที่ปฏิเสธตั้งแต่เมนูขึ้น "❌ ยกเลิก" เหมือนมีบิลถูกยกเลิก
+                                    if ($bill->isCancelled()) {
+                                        $pill = ['💬 ปฏิเสธที่เมนู (ไม่เคยออกบิล)', 'background:rgba(140,140,150,.12); color:#8c8c96;'];
+                                    } elseif ($cStatus === \App\Models\FortuneReading::STATUS_COMPLETED) {
+                                        $pill = ['💬 คุยแล้วหายไป (ไม่เคยออกบิล)', 'background:rgba(140,140,150,.12); color:#8c8c96;'];
+                                    } else {
+                                        $pill = ['💬 กำลังคุย (ยังไม่ออกบิล)', 'background:rgba(224,165,46,.18); color:#a9791a;'];
+                                    }
                                 } elseif ($bill->isCancelled()) {
                                     $pill = ['❌ '.$bill->getCancellationReasonLabelOrNull(), 'background:rgba(217,83,79,.16); color:#d9534f;'];
+                                } elseif (! $isPaid && $cStatus === \App\Support\FortuneFunnelStage::REJECTED_STATUS) {
+                                    // ❌ (2026-09-13) สถานะดิบ 'cancelled' = แอป SMS Checker กดปฏิเสธบิล
+                                    //   เดิมตกไปขึ้น "💬 กำลังคุย" — ป้ายเดียวกับ FortuneFunnelStage (ยกเลิกโดยระบบ)
+                                    $pill = ['❌ ยกเลิกโดยระบบ (ปฏิเสธจากแอป)', 'background:rgba(217,83,79,.16); color:#d9534f;'];
                                 } elseif ($cStatus === \App\Models\FortuneReading::STATUS_COMPLETED) {
                                     // 🩹 (2026-08-07) แยก "ออกบิลแล้วไม่จ่าย" ออกจาก "คุยแล้วหายไปก่อนออกบิล"
                                     //   เดิมเหมารวมเป็น "ปิดเงียบ" หมด → prod โชว์ 8,258 ใบ
                                     //   ทั้งที่เคยออกบิลจริงแค่ 309 ใบ = ดูเหมือนเสียบิลเกินจริง ~26 เท่า
+                                    //   (2026-09-13) แถวไม่เคยออกบิลคัดไปข้างบนแล้ว — แพคเกจเสียเงินที่เหลือมีร่องรอยบิลเสมอ
                                     if ($isPaid) {
                                         $pill = ['✅ จบแล้ว', 'background:rgba(90,160,126,.18); color:#3f7a5c;'];
-                                    } elseif ((float) $bill->amount_paid > 0) {
+                                    } elseif ((float) $bill->amount_paid > 0 || in_array($bill->reading_type, \App\Models\FortuneReading::BILLABLE_READING_TYPES, true)) {
                                         $pill = ['🕳️ ปิดเงียบ (ออกบิลแล้วไม่จ่าย)', 'background:rgba(140,140,150,.18); color:#70707a;'];
                                     } else {
-                                        $pill = ['💬 คุยแล้วหายไป (ไม่เคยออกบิล)', 'background:rgba(140,140,150,.12); color:#8c8c96;'];
+                                        $pill = ['🎁 ฟรี', 'background:rgba(90,160,126,.12); color:#3f7a5c;'];
                                     }
                                 } elseif (in_array($cStatus, \App\Models\FortuneReading::PENDING_DISPLAY_STATUSES, true)) {
                                     $pill = ['⏳ รอชำระ', 'background:rgba(224,165,46,.18); color:#a9791a;'];
@@ -327,7 +353,13 @@
                                     @else
                                         <span style="color:var(--ink2);">{{ $bill->amount_paid > 0 ? '฿'.number_format((float) $bill->amount_paid, 0) : '—' }}</span>
                                         <span style="display:block; font-size:10px; color:var(--ink2);">
-                                            {{ ($bill->isCancelled() || $cStatus === \App\Models\FortuneReading::STATUS_COMPLETED) ? 'ไม่ได้ชำระ' : 'รอชำระ' }}
+                                            @if($tpNeverBilled)
+                                                ไม่มีบิล
+                                            @elseif($bill->isCancelled() || $cStatus === \App\Models\FortuneReading::STATUS_COMPLETED || $cStatus === \App\Support\FortuneFunnelStage::REJECTED_STATUS)
+                                                ไม่ได้ชำระ
+                                            @else
+                                                รอชำระ
+                                            @endif
                                         </span>
                                     @endif
                                 </td>

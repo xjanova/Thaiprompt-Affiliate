@@ -146,7 +146,7 @@ class FortuneBillsController extends Controller
                             $r->platform_user_id ?? $r->facebook_user_id ?? '',
                             $r->getReadingTypeLabel(),
                             $r->conversation_status,
-                            $r->is_paid ? 'จ่ายแล้ว' : ($r->isCancelled() ? 'ยกเลิก' : 'ยังไม่จ่าย'),
+                            $r->is_paid ? 'จ่ายแล้ว' : ($r->isNeverBilled() ? 'ไม่เคยออกบิล' : ($r->isCancelled() ? 'ยกเลิก' : 'ยังไม่จ่าย')),
                             (float) $r->amount_paid,
                             $r->amount_received !== null ? (float) $r->amount_received : '',
                             $r->paid_at?->format('Y-m-d H:i') ?? '',
@@ -259,32 +259,39 @@ class FortuneBillsController extends Controller
                 break;
 
             case 'cancelled':
-                // ❌ ล้อ FortuneReading::isCancelled() เป๊ะ — บิลยกเลิกเก็บเป็น completed ไม่ใช่ status='cancelled'
-                $query->where('is_paid', false)
-                    ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                    ->whereNotNull('conversation_state->cancellation_reason');
+                // ❌ นิยามกลางจากโมเดล — ตรงกับ isCancelled() + สถานะดิบ 'cancelled' ที่แอป SMS Checker เขียนตอนปฏิเสธบิล
+                //   🩹 (2026-09-13) เดิม whereNotNull('conversation_state->cancellation_reason') นับคีย์ที่ค่าเป็น
+                //      JSON null เป็นบิลยกเลิก (กับดัก MariaDB — ดู FortuneReading::cancelledSql())
+                //   ตัดแถวที่ปฏิเสธตั้งแต่เมนูออก — ยังไม่เคยมีบิล จะเรียก "บิลยกเลิก" ไม่ได้ (อยู่กอง no_bill)
+                $query->filterConversationStatus('cancelled')->exceptNeverBilled();
                 break;
 
             case 'abandoned':
-                // 🕳️ ปิดเงียบ = **เคยออกบิลจริง** (มียอดเงิน) แต่ไม่ได้จ่าย และไม่มีเหตุผลยกเลิก
-                //   ⚠️ ต้องมี amount_paid > 0 ไม่งั้นเหมารวมผิดมหาศาล:
+                // 🕳️ ปิดเงียบ = **เคยออกบิลจริง** แต่ไม่ได้จ่าย และไม่ใช่บิลยกเลิก
+                //   ⚠️ ต้องมีร่องรอยบิล ไม่งั้นเหมารวมผิดมหาศาล:
                 //      prod มี completed+ไม่จ่าย+ไม่มีเหตุผล 8,258 ใบ แต่ **มียอดบิลจริงแค่ 309 ใบ**
                 //      ที่เหลือ 7,949 คือคนเข้ามาคุยแล้วหายไปตั้งแต่ก่อนออกบิล = ไม่ใช่บิลที่เสียไป
                 //      ถ้านับรวมกัน แอดมินจะเห็น "บิลหลุด" เกินจริง ~26 เท่า
+                //   (2026-09-13) ร่องรอยบิลใช้นิยามกลาง exceptNeverBilled() — รวมใบที่ยอด 0 แต่เคยจอง UPA
+                //   บิลลอยมีตัวกรอง/ป้ายของตัวเอง (เงินเข้าไม่รู้เจ้าของ ≠ ออกบิลแล้วไม่จ่าย)
                 $query->where('is_paid', false)
                     ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                    ->whereNull('conversation_state->cancellation_reason')
-                    ->where('amount_paid', '>', 0);
+                    ->where(function ($q) {
+                        $q->whereNull('is_floating')->orWhere('is_floating', false);
+                    })
+                    ->notCancelled()
+                    ->exceptNeverBilled()
+                    ->where(function ($q) {
+                        $q->where('amount_paid', '>', 0)
+                            ->orWhereIn('reading_type', FortuneReading::BILLABLE_READING_TYPES);
+                    });
                 break;
 
             case 'no_bill':
-                // 💬 คุยแล้วหายไปก่อนออกบิล — ไม่เคยมียอดเงิน ไม่ถือเป็นบิลที่เสียไป
-                $query->where('is_paid', false)
-                    ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                    ->whereNull('conversation_state->cancellation_reason')
-                    ->where(function ($q) {
-                        $q->whereNull('amount_paid')->orWhere('amount_paid', '<=', 0);
-                    });
+                // 💬 ไม่เคยออกบิล — นิยามกลางจากโมเดล (FortuneReading::neverBilledSql())
+                //   รวม: คุยแล้วหายไป · ปฏิเสธที่เมนู · กำลังคุยอยู่ที่เมนู
+                //   · แถวเมนูที่ลูกค้ากดแพคเกจแล้วไปได้บิลใบใหม่ (ระบบปิดแถวเดิมทิ้งไว้)
+                $query->neverBilled();
                 break;
 
             case 'floating':
@@ -311,7 +318,16 @@ class FortuneBillsController extends Controller
                 break;
 
             case 'unpaid':
-                $query->where('is_paid', false);
+                // ยังไม่จ่าย = บิลที่ออกแล้วแต่ยังไม่ได้เงิน — ไม่รวมแถวแชทที่ไม่เคยมีบิล
+                $query->where('is_paid', false)->exceptNeverBilled();
+                break;
+
+            default:
+                // 🧾 (2026-09-13) ค่าเริ่มต้น "ทุกบิล" = เฉพาะที่มีบิลจริง
+                //   เจ้าของถาม "เขายังไม่ได้ออกบิล ทำไมต้องมีรายการบิลมารอ มันรกตาราง"
+                //   prod: 3 ใน 4 แถวของตารางนี้คือแถวแชทที่ไม่เคยมีบิล — ยังดูได้ที่ตัวกรอง no_bill
+                //   (หัวตารางบอกจำนวนที่ซ่อน + ลิงก์ไปดู ไม่ใช่ซ่อนเงียบ)
+                $query->exceptNeverBilled();
                 break;
         }
     }
@@ -355,7 +371,10 @@ class FortuneBillsController extends Controller
         $scope = fn () => $this->applyFilters(FortuneReading::query(), $filters, withStatus: false);
 
         return [
-            'total' => $scope()->count(),
+            // 🧾 (2026-09-13) นับเฉพาะบิลจริง — ตรงกับตารางตอนไม่เลือกสถานะ
+            'total' => $scope()->exceptNeverBilled()->count(),
+            // 💬 แถวแชทที่ไม่เคยออกบิล — ไว้บอกบนหัวตารางว่าซ่อนไปกี่แถว
+            'never_billed' => $scope()->neverBilled()->count(),
             'paid' => $scope()->where('is_paid', true)->count(),
             'pending' => $scope()->where('is_paid', false)
                 ->whereIn('conversation_status', FortuneReading::PENDING_DISPLAY_STATUSES)
