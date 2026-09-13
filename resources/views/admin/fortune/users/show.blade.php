@@ -142,13 +142,10 @@
     <div style="display:flex; flex-direction:column; gap:14px;">
         @forelse($readings as $reading)
             @php
-                // สีสถานะ conversation_status — map ตามค่าจริงในระบบ
-                $statusColor = match($reading->conversation_status) {
-                    'completed' => '#5aa07e',
-                    'paid' => '#5689b8',
-                    'pending_payment' => '#e0a52e',
-                    default => '#9a8f7c',
-                };
+                // 🔲 (2026-09-13) ป้าย+สีสถานะ = ขั้นกรวยชุดเดียวกับ Warroom (App\Support\FortuneFunnelStage)
+                //    เดิม completed = เขียวทุกใบ ⇒ บิลยกเลิก (completed + ไม่จ่าย) ก็ขึ้นเขียวเหมือนสำเร็จ
+                $stageMeta = \App\Support\FortuneFunnelStage::meta(\App\Support\FortuneFunnelStage::of($reading));
+                $statusColor = $stageMeta['color'];
             @endphp
             <div class="tp-card tp-card-hover">
                 {{-- หัวการ์ด: ชนิด + สถานะ + ลิงก์ --}}
@@ -179,8 +176,8 @@
                     </div>
                     <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
                         @if($reading->conversation_status)
-                            <span class="tp-pill" style="color:#fff; background:{{ $statusColor }}; font-size:10.5px;">
-                                {{ $reading->conversation_status }}
+                            <span class="tp-pill" style="color:var(--ink); background:{{ $statusColor }}26; box-shadow:inset 0 0 0 1px {{ $statusColor }}80; font-size:10.5px;" title="{{ $reading->conversation_status }}">
+                                {{ $stageMeta['icon'] }} {{ $stageMeta['label'] }}
                             </span>
                         @endif
                         <a href="{{ route('admin.fortune.readings.show', $reading) }}" class="tp-btn tp-btn-sm">

@@ -115,7 +115,10 @@ class FortunePersonasController extends Controller
         // 🔗 Link กับ readings ที่เคยทำนาย (ถ้ามี)
         $readings = FortuneReading::where('platform', $persona->platform)
             ->where('facebook_user_id', $persona->platform_user_id)
-            ->select(['id', 'reading_type', 'conversation_status', 'amount_paid', 'is_paid', 'created_at'])
+            // 🔲 (2026-09-13) + conversation_state / celtic_questions_used / response_type — ป้ายสถานะแบบ Warroom
+            //    (FortuneFunnelStage) ต้องใช้แยกบิลยกเลิก (completed + ไม่จ่าย + cancellation_reason ใน state)
+            //    ไม่ select = อ่านได้ null เงียบ ๆ ⇒ บิลยกเลิกจะขึ้น "ส่งคำทำนายแล้ว"
+            ->select(['id', 'reading_type', 'response_type', 'conversation_status', 'conversation_state', 'celtic_questions_used', 'amount_paid', 'is_paid', 'created_at'])
             ->latest()
             ->limit(10)
             ->get();
