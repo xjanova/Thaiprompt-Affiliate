@@ -386,7 +386,10 @@
                                             </a>
                                         @endif
 
-                                        @if(! $isPaid && Route::has('admin.fortune.debug-tools.index'))
+                                        {{-- 💬 (2026-09-14) แถวที่ไม่เคยออกบิล ไม่มีปุ่มเงิน (สลับแพคเกจ / ยืนยันชำระ / อนุมัติ)
+                                             เคยกดอนุมัติแถวแบบนี้ผิดจริง 2 ใบ (Celtic 3739, 4106 ต้อง void ทีหลัง)
+                                             เงินเข้าแบบไม่มีบิล → ใช้หน้าบิลลอย "ระบุเจ้าของ" · เครื่องมืออื่นอยู่ในหน้า ดู/แก้ไข --}}
+                                        @if(! $isPaid && ! $tpNeverBilled && Route::has('admin.fortune.debug-tools.index'))
                                             {{-- 🔀 สลับแพคเกจ 39 ↔ 99 — เครื่องมืออยู่ที่ Debug Tools
                                                  ลิงก์แนบเลขบิลไปให้ หน้าปลายทางโหลดบิลเองไม่ต้องพิมพ์ซ้ำ
                                                  โชว์เฉพาะบิลที่ยังไม่จ่าย (จ่ายแล้วสลับ = ต้องคิดเรื่องเงินส่วนต่าง
@@ -410,7 +413,7 @@
                                             </a>
                                         @endif
 
-                                        @if(! $isPaid && ! $isCeltic && Route::has('admin.fortune.billing.manual-confirm'))
+                                        @if(! $isPaid && ! $isCeltic && ! $tpNeverBilled && Route::has('admin.fortune.billing.manual-confirm'))
                                             {{-- ⚠️ manualConfirm ไม่รองรับ Celtic (ไม่มี getCollectedQuestions) — Celtic ต้องใช้ force-approve --}}
                                             <button type="button"
                                                     onclick="tpBillConfirm('{{ route('admin.fortune.billing.manual-confirm', $bill) }}', {{ (float) $bill->amount_paid }}, '{{ $bill->bill_reference ?? '#'.$bill->id }}')"
@@ -419,7 +422,7 @@
                                             </button>
                                         @endif
 
-                                        @if(! $isPaid && $isCeltic && Route::has('admin.fortune.celtic-cross.force-approve'))
+                                        @if(! $isPaid && $isCeltic && ! $tpNeverBilled && Route::has('admin.fortune.celtic-cross.force-approve'))
                                             <form action="{{ route('admin.fortune.celtic-cross.force-approve', $bill) }}" method="POST" style="display:inline;"
                                                   onsubmit="return confirm('อนุมัติบิล {{ $bill->bill_reference ?? '#'.$bill->id }} ว่าชำระแล้ว? ระบบจะเริ่มเปิดไพ่ให้ลูกค้าทันที');">
                                                 @csrf
