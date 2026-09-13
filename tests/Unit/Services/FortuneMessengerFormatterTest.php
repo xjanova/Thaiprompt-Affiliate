@@ -98,6 +98,14 @@ class FortuneMessengerFormatterTest extends TestCase
         $this->assertSame($sentences, $f->format($sentences));
 
         $this->assertSame('', $f->format(''));
+
+        // รายการ "หัวข้อ: ค่า" เรียงติดกัน (เช่น ของเสริมดวงในบทสรุป) — ห้ามยกเป็นหัวข้อ/แทรกเส้นกลางรายการ
+        $list = "ของเสริมดวงของลูก\n\n🍀 เลขนำโชค: 3, 7\n🌿 สีมงคล: เขียว\n\n💰 การเงิน: ดีขึ้น\n\nขอให้โชคดีนะลูก";
+        $this->assertSame($list, $f->format($list));
+
+        // หัวข้อที่ติดกับเนื้อโดยไม่เว้นบรรทัด = ไม่ใช่รูปทรงที่เรารู้จัก → ไม่แตะ (เลือกปลอดภัยไว้ก่อน)
+        $glued = "💞 ความรัก\nเขาชอบลูก\n\n💼 การงาน\nงานดี";
+        $this->assertSame($glued, $f->format($glued));
     }
 
     #[Test]
