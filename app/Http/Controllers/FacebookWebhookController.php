@@ -3258,6 +3258,11 @@ class FacebookWebhookController extends Controller
                                     ->orWhere('celtic_questions_used', '<=', 0);
                             })
                             ->exists()
+                        // 🧾 (2026-09-13) บิลดูดวง 39 ออก QR แล้วหมดเวลา — รูปอาจเป็นสลิปที่โอนตามมาทีหลัง
+                        //   (Pantaree Donpar: บิลหมดเวลาเมื่อคืน → ไปโอนที่ร้านตอนเช้า) → processLateDeepSlip
+                        //   ไม่ใช่สลิปชัด ๆ = เงียบ + เก็บรูปตามเดิม · ไม่นับ strike
+                        || (($this->settings->slipok_auto_provision ?? true)
+                            && $this->conversationService?->findAbandonedUnpaidDeepBill($senderId) !== null)
                     );
 
                 if ($hasRecoverableCeltic) {

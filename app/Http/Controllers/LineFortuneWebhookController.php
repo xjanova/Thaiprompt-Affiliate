@@ -420,6 +420,9 @@ class LineFortuneWebhookController extends Controller
                                     ->orWhere('celtic_questions_used', '<=', 0);
                             })
                             ->exists()
+                        // 🧾 (2026-09-13) บิลดูดวง 39 ออก QR แล้วหมดเวลา — parity กับ FB (processLateDeepSlip)
+                        || (($this->settings->slipok_auto_provision ?? true)
+                            && $this->conversationService?->findAbandonedUnpaidDeepBill($userId) !== null)
                     );
 
                 if ($hasRecoverableCeltic) {
