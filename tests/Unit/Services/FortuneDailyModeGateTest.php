@@ -418,13 +418,21 @@ class FortuneDailyModeGateTest extends TestCase
      */
     public function ชื่อวันเกิดต้องรอดด่านสแปมฝั่งline(): void
     {
-        $line = (string) file_get_contents(app_path('Http/Controllers/LineFortuneWebhookController.php'));
+        // 🔁 (2026-09-13) ด่านสแปมของ LINE ย้ายไป ChatSpamGuard (ใช้ร่วมกับ Telegram) — LINE ต้องยังเรียกด้วย 'line'
+        $controller = (string) file_get_contents(app_path('Http/Controllers/LineFortuneWebhookController.php'));
+        $this->assertStringContainsString(
+            "ChatSpamGuard::class)->isSpamming('line',",
+            $controller,
+            'LINE ต้องส่งต่อด่านสแปมไป ChatSpamGuard ด้วยช่องทาง line (cache key เดิม)'
+        );
+
+        $line = (string) file_get_contents(app_path('Services/Fortune/ChatSpamGuard.php'));
 
         // ตัดเอาเฉพาะบล็อก $stateExpectedInputs — ไม่งั้นไปเจอชื่อวันในเมธอดอื่นแล้วได้ผลลวง
         $this->assertSame(
             1,
             preg_match('/\$stateExpectedInputs\s*=\s*\[(.*?)\];/s', $line, $m),
-            'หา $stateExpectedInputs ไม่เจอ — โครงด่านสแปมฝั่ง LINE เปลี่ยนไปแล้ว'
+            'หา $stateExpectedInputs ไม่เจอ — โครงด่านสแปม (ChatSpamGuard) เปลี่ยนไปแล้ว'
         );
 
         $whitelist = $m[1];

@@ -50,7 +50,7 @@ class SendFortuneBubbleJob implements ShouldQueue
     public int $timeout = 60;
 
     /**
-     * @param  string  $platform  ตอนนี้รองรับ 'facebook' เท่านั้น
+     * @param  string  $platform  'facebook' / 'telegram' (เส้นเดียวกัน) · 'line' (push — สวิตช์แยก)
      * @param  array<int, string>  $bubbles  กล่องที่ "ยังไม่ได้ส่ง" (กล่องแรกส่ง sync ไปแล้ว)
      * @param  string|null  $tailMessage  กล่องปิดท้าย เช่น กล่องคำถามแนะนำ (ส่งหลังบับเบิ้ลหมด)
      * @param  array<int, array<string, mixed>>  $tailQuickReplies  ปุ่มของกล่องปิดท้าย
@@ -133,7 +133,8 @@ class SendFortuneBubbleJob implements ShouldQueue
 
     public function handle(): void
     {
-        if (! in_array($this->platform, ['facebook', 'line'], true)) {
+        // ✈️ (2026-09-13) + telegram — ใช้เส้นเดียวกับ FB ผ่าน FortuneMessengerFactory
+        if (! in_array($this->platform, ['facebook', 'line', 'telegram'], true)) {
             return;
         }
 
@@ -145,7 +146,8 @@ class SendFortuneBubbleJob implements ShouldQueue
             return;
         }
 
-        $fb = new FacebookWebhookService($settings);
+        $fb = \App\Services\Fortune\FortuneMessengerFactory::sender($this->platform, $this->userId, $settings)
+            ?? new FacebookWebhookService($settings);
 
         $bubble = array_shift($this->bubbles);
 
@@ -312,7 +314,8 @@ class SendFortuneBubbleJob implements ShouldQueue
                 return;
             }
 
-            $fb = new FacebookWebhookService($settings);
+            $fb = \App\Services\Fortune\FortuneMessengerFactory::sender($this->platform, $this->userId, $settings)
+                ?? new FacebookWebhookService($settings);
 
             if ($rest !== '') {
                 $fb->sendMessage($this->userId, $rest, [

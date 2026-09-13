@@ -17,7 +17,7 @@
                 ช่องทางรับส่งข้อความ 📱
             </h1>
             <p class="tp-muted" style="font-size:12.5px; margin:6px 0 0;">
-                เชื่อมต่อช่องทางต่างๆ เพื่อรับคำถามดูดวงจากผู้ใช้ — รองรับ Facebook Messenger และ LINE Official Account
+                เชื่อมต่อช่องทางต่างๆ เพื่อรับคำถามดูดวงจากผู้ใช้ — รองรับ Facebook Messenger, LINE Official Account และ Telegram
             </p>
         </div>
         <div style="display:flex; align-items:center; gap:9px;">
@@ -143,6 +143,190 @@
                 รองรับ Flex Message สวยงาม
             </div>
         </div>
+
+        {{-- ---------- ✈️ Telegram Bot (2026-09-13) ---------- --}}
+        <div class="tp-card" style="padding:22px; border-left:4px solid #4a9fd0;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="tp-tile" style="width:46px; height:46px; display:flex; align-items:center; justify-content:center; font-size:22px; color:#4a9fd0;">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:16px; font-weight:800; color:var(--ink);">Telegram Bot</div>
+                        @if($telegram['enabled'] && $telegram['configured'])
+                            <span class="tp-pill" style="margin-top:4px; color:#5aa07e; background:rgba(90,160,126,.12);">
+                                <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#5aa07e; margin-right:5px;"></span>
+                                เปิดใช้งาน
+                            </span>
+                        @elseif($telegram['configured'])
+                            <span class="tp-pill" style="margin-top:4px; color:#e0a52e; background:rgba(224,165,46,.12);">
+                                <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#e0a52e; margin-right:5px;"></span>
+                                ตั้งค่าแล้ว (ยังไม่เปิด)
+                            </span>
+                        @else
+                            <span class="tp-pill" style="margin-top:4px; color:#9a8f7c; background:rgba(154,143,124,.14);">
+                                <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#9a8f7c; margin-right:5px;"></span>
+                                ยังไม่ได้ตั้งค่า
+                            </span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            {{-- สถิติ Telegram --}}
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+                <div class="tp-inset-sm" style="padding:12px 8px; text-align:center; border-radius:12px;">
+                    <div class="tp-num" style="font-size:20px; font-weight:800; color:var(--ink);">{{ number_format($stats['telegram']['total']) }}</div>
+                    <div class="tp-muted" style="font-size:11px; margin-top:2px;">คำทำนาย</div>
+                </div>
+                <div class="tp-inset-sm" style="padding:12px 8px; text-align:center; border-radius:12px;">
+                    <div class="tp-num" style="font-size:20px; font-weight:800; color:var(--ink);">{{ number_format($stats['telegram']['unique_users']) }}</div>
+                    <div class="tp-muted" style="font-size:11px; margin-top:2px;">ผู้ใช้</div>
+                </div>
+                <div class="tp-inset-sm" style="padding:12px 8px; text-align:center; border-radius:12px;">
+                    <div class="tp-num" style="font-size:20px; font-weight:800; color:#5aa07e;">฿{{ number_format($stats['telegram']['total_revenue'], 0) }}</div>
+                    <div class="tp-muted" style="font-size:11px; margin-top:2px;">รายได้</div>
+                </div>
+            </div>
+
+            <div class="tp-divider" style="margin:16px 0 14px;"></div>
+            <div class="tp-muted" style="font-size:12.5px;">
+                @if($telegram['username'])
+                    <i class="fas fa-link" style="color:#4a9fd0; margin-right:5px;"></i>
+                    <a href="https://t.me/{{ $telegram['username'] }}" target="_blank" rel="noopener" style="color:var(--deep1); text-decoration:underline;">t.me/{{ $telegram['username'] }}</a>
+                @else
+                    <i class="fas fa-wand-magic-sparkles" style="color:var(--deep1); margin-right:5px;"></i>
+                    ปุ่มกดสวยงาม · ส่งหาลูกค้าได้ไม่จำกัด
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- ===== ✈️ ตั้งค่า Telegram Bot (ฟอร์มแยก — ไม่ยุ่งกับฟอร์ม LINE) ===== --}}
+    <div class="tp-card" style="padding:24px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; font-size:19px; color:#4a9fd0;">
+                    <i class="fab fa-telegram"></i>
+                </div>
+                <div>
+                    <div style="font-size:16px; font-weight:800; color:var(--ink);">Telegram Bot</div>
+                    <p class="tp-muted" style="font-size:12px; margin:4px 0 0;">
+                        แม่หมอตัวเดียวกับ Facebook / LINE — จ่ายเงินด้วย QR พร้อมเพย์ + ตัดบิลอัตโนมัติด้วย SMS Checker เหมือนเดิม
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form action="{{ route('admin.fortune.channels.telegram.update') }}" method="POST" style="display:flex; flex-direction:column; gap:16px;">
+            @csrf
+            @method('PUT')
+
+            {{-- สวิตช์เปิด/ปิด --}}
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+                <span style="position:relative; display:inline-flex; align-items:center;">
+                    <input type="checkbox" name="telegram_enabled" value="1"
+                           {{ $telegram['enabled'] ? 'checked' : '' }}
+                           x-model="telegramEnabled"
+                           style="position:absolute; opacity:0; width:0; height:0;">
+                    <span style="width:52px; height:28px; border-radius:999px; display:inline-block; position:relative; transition:.25s;"
+                          :style="telegramEnabled ? 'background:#4a9fd0;' : 'background:var(--inset);'">
+                        <span style="position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:.25s;"
+                              :style="telegramEnabled ? 'transform:translateX(24px);' : ''"></span>
+                    </span>
+                </span>
+                <span style="font-size:13.5px; font-weight:700; color:var(--ink);">เปิดรับข้อความจาก Telegram</span>
+            </label>
+
+            {{-- Bot Token — ไม่แสดงค่าจริงบนหน้าเว็บ (แสดงแบบปิดบัง) · เว้นว่าง = ใช้ค่าเดิม --}}
+            <div>
+                <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink2); margin-bottom:7px;">
+                    Bot Token จาก @BotFather
+                </label>
+                <div class="tp-well tp-input">
+                    <input type="password" name="telegram_bot_token" autocomplete="new-password"
+                           placeholder="{{ $telegram['configured'] ? 'บันทึกไว้แล้ว: '.$telegram['masked_token'].' (เว้นว่าง = ใช้ค่าเดิม)' : '123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }}"
+                           style="width:100%; background:transparent; border:none; outline:none; color:var(--ink); font-size:14px; font-family:ui-monospace,monospace;">
+                </div>
+                @error('telegram_bot_token')
+                    <p style="margin:6px 2px 0; font-size:11.5px; color:#d9534f;">{{ $message }}</p>
+                @enderror
+                <p class="tp-muted" style="margin:6px 2px 0; font-size:11.5px;">
+                    ระบบจะทดสอบกับ Telegram ก่อนบันทึก — กรอกผิดจะไม่ถูกบันทึก · token ถูกเข้ารหัสในฐานข้อมูล
+                </p>
+            </div>
+
+            {{-- Webhook URL --}}
+            <div class="tp-inset" style="padding:16px; border-radius:12px; border-left:4px solid #4a9fd0;">
+                <div style="display:flex; align-items:flex-start; gap:11px;">
+                    <i class="fas fa-link" style="color:#4a9fd0; margin-top:3px;"></i>
+                    <div style="flex:1; min-width:0;">
+                        <p style="font-size:12.5px; font-weight:600; color:var(--ink); margin:0 0 7px;">
+                            Webhook URL (ระบบตั้งให้เองเมื่อกดปุ่ม "ตั้งค่า Webhook")
+                        </p>
+                        <code style="display:block; overflow-x:auto; white-space:nowrap; background:var(--surf); padding:9px 12px; border-radius:9px; font-size:12.5px; color:var(--ink);">{{ $telegram['webhook_url'] }}</code>
+                        <p class="tp-muted" style="margin:7px 0 0; font-size:11.5px;">
+                            @if($telegram['webhook_set_at'])
+                                <i class="fas fa-circle-check" style="color:#5aa07e;"></i> ตั้งค่าล่าสุดเมื่อ {{ $telegram['webhook_set_at'] }}
+                            @else
+                                <i class="fas fa-circle-exclamation" style="color:#e0a52e;"></i> ยังไม่ได้ตั้งค่า Webhook
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ผลทดสอบ --}}
+            <template x-if="telegramResult">
+                <div class="tp-inset" style="padding:14px 16px; border-radius:12px; font-size:12.5px;"
+                     :style="telegramResult.success ? 'border-left:4px solid #5aa07e;' : 'border-left:4px solid #d9534f;'">
+                    <div style="font-weight:700; color:var(--ink);" x-text="telegramResult.message"></div>
+                    <template x-if="telegramResult.data">
+                        <div class="tp-muted" style="margin-top:6px; line-height:1.7;">
+                            <div>Webhook ชี้มาที่ระบบเรา: <strong x-text="telegramResult.data.webhook_matches ? 'ใช่' : 'ยังไม่ใช่ — กดตั้งค่า Webhook'"></strong></div>
+                            <div>ข้อความค้างรอส่ง: <strong x-text="telegramResult.data.pending_update_count"></strong></div>
+                            <div x-show="telegramResult.data.last_error_message">ข้อผิดพลาดล่าสุด: <span x-text="telegramResult.data.last_error_message"></span></div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            {{-- ปุ่ม --}}
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-save"></i>&nbsp; บันทึก Telegram
+                </button>
+                <button type="button" @click="testTelegram()" :disabled="telegramBusy" class="tp-btn"
+                        :style="telegramBusy ? 'opacity:.55; cursor:not-allowed;' : ''">
+                    <i class="fas fa-plug"></i>&nbsp; ทดสอบการเชื่อมต่อ
+                </button>
+                <button type="button" @click="setupTelegramWebhook()" :disabled="telegramBusy || !{{ $telegram['configured'] ? 'true' : 'false' }}" class="tp-btn"
+                        :style="(telegramBusy || !{{ $telegram['configured'] ? 'true' : 'false' }}) ? 'opacity:.55; cursor:not-allowed;' : ''">
+                    <i class="fas" :class="telegramBusy ? 'fa-spinner fa-spin' : 'fa-satellite-dish'"></i>&nbsp; ตั้งค่า Webhook
+                </button>
+                @if($telegram['configured'])
+                    {{-- ลบ token = ปิดบอททันที → ต้องยืนยันก่อน --}}
+                    <button type="submit" name="telegram_clear_token" value="1" class="tp-btn"
+                            style="color:#d9534f;"
+                            onclick="return confirm('ลบ Bot Token และปิด Telegram ทันที?\nลูกค้าที่คุยค้างอยู่จะไม่ได้รับคำตอบจนกว่าจะกรอก token ใหม่');">
+                        <i class="fas fa-trash"></i>&nbsp; ลบ Token
+                    </button>
+                @endif
+            </div>
+
+            {{-- วิธีตั้งค่า --}}
+            <div class="tp-inset" style="padding:16px; border-radius:12px;">
+                <div style="font-size:13px; font-weight:800; color:var(--ink); margin-bottom:8px;">
+                    <i class="fas fa-book" style="color:var(--deep1);"></i>&nbsp; วิธีตั้งค่า (ทำครั้งเดียว)
+                </div>
+                <ol class="tp-muted" style="margin:0; padding-left:20px; font-size:12.5px; line-height:1.9;">
+                    <li>เปิด Telegram ค้นหา <strong>@BotFather</strong> → พิมพ์ <code>/newbot</code> → ตั้งชื่อบอทและ username (ต้องลงท้ายด้วย bot)</li>
+                    <li>คัดลอก Token ที่ BotFather ให้มา วางในช่องด้านบน แล้วกด "บันทึก Telegram"</li>
+                    <li>กด "ตั้งค่า Webhook" → เปิดสวิตช์ "เปิดรับข้อความ" แล้วกดบันทึกอีกครั้ง</li>
+                    <li>ลองทักบอทจากมือถือ (กด Start) — แม่หมอจะทักกลับทันที</li>
+                </ol>
+            </div>
+        </form>
     </div>
 
     {{-- ===== Cloudflare Workers AI (เจนภาพดวงประจำวัน) ===== --}}
@@ -571,6 +755,41 @@ function fortuneChannels() {
         facebookSetupResult: null,
         testingCloudflare: false,
         cloudflareTestResult: null,
+        telegramEnabled: {{ $telegram['enabled'] ? 'true' : 'false' }},
+        telegramBusy: false,
+        telegramResult: null,
+
+        async telegramPost(url) {
+            this.telegramBusy = true;
+            this.telegramResult = null;
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    },
+                });
+                this.telegramResult = await response.json();
+            } catch (error) {
+                this.telegramResult = { success: false, message: 'เชื่อมต่อไม่สำเร็จ: ' + error.message };
+            } finally {
+                this.telegramBusy = false;
+            }
+        },
+
+        testTelegram() {
+            return this.telegramPost('{{ route('admin.fortune.channels.telegram.test') }}');
+        },
+
+        async setupTelegramWebhook() {
+            await this.telegramPost('{{ route('admin.fortune.channels.telegram.webhook') }}');
+            if (this.telegramResult && this.telegramResult.success) {
+                // อัปเดตเวลาตั้งค่าล่าสุดบนหน้า
+                setTimeout(() => window.location.reload(), 1500);
+            }
+        },
 
         init() {
             // เฝ้าฟัง color input เพื่ออัพเดทพรีวิวสด

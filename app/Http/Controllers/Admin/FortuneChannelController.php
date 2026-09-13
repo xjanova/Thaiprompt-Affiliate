@@ -39,8 +39,223 @@ class FortuneChannelController extends Controller
             'settings' => $settings,
             'stats' => $stats,
             'cloudflareAi' => $cloudflareAi,
+            'telegram' => $this->getTelegramStatus($settings),
             'pageTitle' => 'จัดการช่องทาง',
         ]);
+    }
+
+    /**
+     * ✈️ สถานะบอท Telegram สำหรับหน้าจัดการช่องทาง — ห้ามส่ง token จริงออกไปที่หน้าเว็บ
+     *
+     * @return array{configured:bool,enabled:bool,masked_token:string,username:?string,webhook_url:string,webhook_set_at:?string}
+     */
+    protected function getTelegramStatus(FortuneTellingSetting $settings): array
+    {
+        $token = '';
+        try {
+            $token = (string) $settings->telegram_bot_token;
+        } catch (\Throwable $e) {
+            $token = ''; // ถอดรหัสไม่ได้ (APP_KEY เปลี่ยน) = ต้องกรอกใหม่
+        }
+
+        return [
+            'configured' => $token !== '',
+            'enabled' => (bool) $settings->telegram_enabled,
+            'masked_token' => $this->maskToken($token),
+            'username' => $settings->telegram_bot_username ?: null,
+            'webhook_url' => route('webhook.telegram.fortune'),
+            'webhook_set_at' => $settings->telegram_webhook_set_at?->timezone('Asia/Bangkok')->format('d/m/Y H:i'),
+        ];
+    }
+
+    /**
+     * ✈️ บันทึกค่าตั้ง Telegram (สวิตช์ + token)
+     *
+     * - ช่อง token ว่าง = ใช้ token เดิม (หน้าเว็บไม่เคยได้ token จริงไป จึงส่งกลับมาไม่ได้)
+     * - token ใหม่ → ทดสอบกับ Telegram (getMe) ก่อนบันทึก — กรอกผิดจะไม่ถูกบันทึก
+     * - เปลี่ยนบอท → ล้างสถานะ webhook (ต้องกดตั้ง webhook ใหม่กับบอทตัวใหม่)
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateTelegram(Request $request)
+    {
+        $validated = $request->validate([
+            'telegram_enabled' => 'nullable|boolean',
+            'telegram_bot_token' => ['nullable', 'string', 'max:120', 'regex:/^\d{5,20}:[A-Za-z0-9_-]{20,100}$/'],
+            'telegram_clear_token' => 'nullable|boolean',
+        ], [
+            'telegram_bot_token.regex' => 'รูปแบบ Bot Token ไม่ถูกต้อง — ต้องเป็นแบบ 123456789:AAxxxx… ที่ได้จาก @BotFather',
+        ]);
+
+        $settings = FortuneTellingSetting::getSettings();
+        $enable = $request->boolean('telegram_enabled');
+        $newToken = trim((string) ($validated['telegram_bot_token'] ?? ''));
+        $updates = [];
+
+        // ลบ token (ยืนยันจากหน้าเว็บแล้ว) → ปิดบอทด้วย
+        if ($request->boolean('telegram_clear_token')) {
+            $settings->update([
+                'telegram_enabled' => false,
+                'telegram_bot_token' => null,
+                'telegram_bot_username' => null,
+                'telegram_webhook_set_at' => null,
+            ]);
+            FortuneTellingSetting::clearSettingsCache();
+
+            Log::info('Telegram: แอดมินลบ bot token + ปิดช่องทาง', ['admin_id' => auth()->id()]);
+
+            return redirect()
+                ->route('admin.fortune.channels.index')
+                ->with('success', 'ลบ Bot Token และปิด Telegram แล้ว');
+        }
+
+        if ($newToken !== '') {
+            // ทดสอบก่อนบันทึก — ใช้ settings ชั่วคราว ไม่แตะแถวจริง
+            $probe = $settings->replicate();
+            $probe->telegram_bot_token = $newToken;
+            $test = (new \App\Services\TelegramFortuneService($probe))->testConnection();
+
+            if (empty($test['success'])) {
+                return redirect()
+                    ->route('admin.fortune.channels.index')
+                    ->with('error', 'Telegram: '.$test['message']);
+            }
+
+            $updates['telegram_bot_token'] = $newToken;
+            $updates['telegram_bot_username'] = $test['data']['username'] ?? null;
+            // บอทใหม่ยังไม่มี webhook — ต้องกด "ตั้งค่า Webhook" อีกครั้ง
+            $updates['telegram_webhook_set_at'] = null;
+        }
+
+        $hasToken = $newToken !== '' || $settings->hasTelegramConfigured();
+        if ($enable && ! $hasToken) {
+            return redirect()
+                ->route('admin.fortune.channels.index')
+                ->with('error', 'กรุณากรอก Bot Token จาก @BotFather ก่อนเปิดใช้งาน Telegram');
+        }
+
+        $updates['telegram_enabled'] = $enable;
+
+        $settings->update($updates);
+        FortuneTellingSetting::clearSettingsCache();
+
+        Log::info('Telegram: บันทึกค่าตั้ง', [
+            'admin_id' => auth()->id(),
+            'enabled' => $enable,
+            'token_changed' => $newToken !== '',
+        ]);
+
+        $message = 'บันทึกการตั้งค่า Telegram สำเร็จ';
+        if ($newToken !== '') {
+            $message .= ' — เชื่อมต่อบอท @'.($updates['telegram_bot_username'] ?? '?').' แล้ว กด "ตั้งค่า Webhook" ต่อได้เลย';
+        }
+
+        return redirect()
+            ->route('admin.fortune.channels.index')
+            ->with('success', $message);
+    }
+
+    /**
+     * ✈️ ทดสอบบอท Telegram + ดูสถานะ webhook ปัจจุบัน
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testTelegram()
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $service = new \App\Services\TelegramFortuneService($settings);
+            $result = $service->testConnection();
+
+            if (empty($result['success'])) {
+                return response()->json(['success' => false, 'message' => $result['message']]);
+            }
+
+            $info = $service->getWebhookInfo();
+            $ourUrl = route('webhook.telegram.fortune');
+
+            return response()->json([
+                'success' => true,
+                'message' => $result['message'],
+                'data' => [
+                    'bot' => $result['data'] ?? null,
+                    'webhook_matches' => ($info['url'] ?? '') === $ourUrl,
+                    'webhook_url' => $info['url'] ?? '',
+                    'pending_update_count' => (int) ($info['pending_update_count'] ?? 0),
+                    // ข้อความ error จาก Telegram ไม่มี token ติดมา แต่ redact กันไว้อีกชั้น
+                    'last_error_message' => $service->redact((string) ($info['last_error_message'] ?? '')),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Telegram connection test failed', ['error' => $e->getMessage()]);
+
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาดในการทดสอบ Telegram']);
+        }
+    }
+
+    /**
+     * ✈️ ตั้ง webhook ให้ Telegram ส่งข้อความมาที่ระบบเรา + ตั้งเมนูคำสั่งของบอท
+     *
+     * ค่าลับ (secret_token) ใช้ตัวเดิมถ้ามีแล้ว — สร้างใหม่เฉพาะครั้งแรก
+     * (สร้างใหม่ทุกครั้ง = ถ้า setWebhook ล้มกลางทาง Telegram ยังส่งค่าลับเก่ามา → โดน 403 ทั้งหมด)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function setupTelegramWebhook()
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            if (! $settings->hasTelegramConfigured()) {
+                return response()->json(['success' => false, 'message' => 'กรุณาบันทึก Bot Token ก่อนตั้งค่า Webhook']);
+            }
+
+            $url = route('webhook.telegram.fortune');
+            if (! str_starts_with($url, 'https://')) {
+                return response()->json(['success' => false, 'message' => 'Telegram รับเฉพาะ Webhook ที่เป็น https — ตรวจ APP_URL ของระบบ']);
+            }
+
+            $secret = '';
+            try {
+                $secret = (string) $settings->telegram_webhook_secret;
+            } catch (\Throwable $e) {
+                $secret = '';
+            }
+
+            if ($secret === '') {
+                $secret = \Illuminate\Support\Str::random(48);
+                $settings->update(['telegram_webhook_secret' => $secret]);
+                FortuneTellingSetting::clearSettingsCache();
+                $settings = FortuneTellingSetting::getSettings();
+            }
+
+            $service = new \App\Services\TelegramFortuneService($settings);
+            $result = $service->setWebhook($url, $secret);
+
+            if (empty($result['ok'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ตั้ง Webhook ไม่สำเร็จ: '.$service->redact((string) ($result['description'] ?? 'ไม่ทราบสาเหตุ')),
+                ]);
+            }
+
+            $service->setupBotProfile($settings->getFortuneBrandName());
+
+            $settings->update(['telegram_webhook_set_at' => now()]);
+            FortuneTellingSetting::clearSettingsCache();
+
+            Log::info('Telegram: ตั้ง webhook สำเร็จ', ['admin_id' => auth()->id()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ตั้งค่า Webhook สำเร็จ — ลูกค้าทักบอทแล้วระบบจะได้รับข้อความทันที'
+                    .($settings->telegram_enabled ? '' : ' (อย่าลืมเปิดสวิตช์ Telegram และกดบันทึก)'),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Telegram webhook setup failed', ['error' => $e->getMessage()]);
+
+            return response()->json(['success' => false, 'message' => 'เกิดข้อผิดพลาดในการตั้งค่า Webhook']);
+        }
     }
 
     /**
@@ -231,6 +446,16 @@ class FortuneChannelController extends Controller
             ')
             ->first();
 
+        // ✈️ สถิติ Telegram
+        $telegramStats = FortuneReading::where('platform', 'telegram')
+            ->selectRaw('
+                COUNT(*) as total,
+                COUNT(CASE WHEN is_paid = 1 THEN 1 END) as paid_count,
+                SUM(CASE WHEN is_paid = 1 THEN amount_paid ELSE 0 END) as total_revenue,
+                COUNT(DISTINCT platform_user_id) as unique_users
+            ')
+            ->first();
+
         // สถิติ 7 วันล่าสุด
         $last7DaysStats = FortuneReading::where('created_at', '>=', now()->subDays(7))
             ->selectRaw('
@@ -257,6 +482,12 @@ class FortuneChannelController extends Controller
                 'paid_count' => (int) ($lineStats->paid_count ?? 0),
                 'total_revenue' => (float) ($lineStats->total_revenue ?? 0),
                 'unique_users' => (int) ($lineStats->unique_users ?? 0),
+            ],
+            'telegram' => [
+                'total' => (int) ($telegramStats->total ?? 0),
+                'paid_count' => (int) ($telegramStats->paid_count ?? 0),
+                'total_revenue' => (float) ($telegramStats->total_revenue ?? 0),
+                'unique_users' => (int) ($telegramStats->unique_users ?? 0),
             ],
             'daily' => $last7DaysStats,
         ];

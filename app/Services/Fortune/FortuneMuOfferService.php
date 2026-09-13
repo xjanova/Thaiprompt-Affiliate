@@ -712,7 +712,7 @@ class FortuneMuOfferService
 
         return $platform === 'line'
             ? $this->dispatchLine($userId, $items, $lead, $tail, $options)
-            : $this->dispatchFacebook($userId, $items, $lead, $tail);
+            : $this->dispatchFacebook($userId, $items, $lead, $tail, $platform);
     }
 
     /**
@@ -720,9 +720,10 @@ class FortuneMuOfferService
      *
      * @param  array<int,array{product:MarketplaceProduct,slot:string}>  $items
      */
-    private function dispatchFacebook(string $userId, array $items, string $lead, string $tail): bool
+    private function dispatchFacebook(string $userId, array $items, string $lead, string $tail, string $platform = 'facebook'): bool
     {
-        $fb = new FacebookWebhookService;
+        // ✈️ (2026-09-13) Telegram ใช้เส้นเดียวกับ FB (การ์ด template → ปุ่ม inline) — ห้ามยิง Graph API ด้วย id 'tg_…'
+        $fb = \App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId) ?? new FacebookWebhookService;
 
         if ($lead !== '') {
             $fb->sendMessage($userId, $lead);

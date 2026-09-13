@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\URL;
  * - Webhook signature verification
  * - Quick replies buttons
  */
-class FacebookWebhookService implements MessagingPlatformInterface
+class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, MessagingPlatformInterface
 {
     /**
      * 🏷️ MESSAGE_TAG ยังใช้ส่งนอกกรอบ 24 ชม. ได้ไหม
