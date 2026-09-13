@@ -6486,9 +6486,18 @@ class FortuneConversationService
 
                 if ($menuReading->transitionStatusIf(FortuneReading::STATUS_TIER_CHOICE, $initialStatus, $claim)) {
                     $reading = $menuReading;
-                    // ธงโหมดคุณไสยล้างให้เหมือนแถวใหม่ — startCelticCrossFlow ตั้งใหม่เองจาก carrier ถ้ากดปุ่มคุณไสย
-                    if ($reading->getConversationState('black_magic_mode')) {
-                        $reading->setConversationState('black_magic_mode', null);
+
+                    // ล้าง state ของขั้นเมนูที่แถวใหม่ไม่เคยมี (เขียนครั้งเดียว)
+                    //   - black_magic_mode: startCelticCrossFlow ตั้งใหม่เองจาก carrier ถ้ากดปุ่มคุณไสย
+                    //   - consent_* / flow_nudge_sent_at: ถ้าค้าง FortuneFlowNudge กลุ่มกล่องกติกาจะส่งกล่องกติกา
+                    //     ของแพคเกจเดิมซ้ำ แล้วตั้งธงรับกติกาด้วยแพคเกจเก่า = ข้อความถัดไปกลายเป็นสั่งแพคเกจที่ไม่ได้เลือก
+                    $state = (array) ($reading->conversation_state ?? []);
+                    $stale = array_filter(
+                        array_keys($state),
+                        fn ($k) => in_array($k, ['black_magic_mode', 'flow_nudge_sent_at'], true) || str_starts_with((string) $k, 'consent_')
+                    );
+                    if ($stale !== []) {
+                        $reading->update(['conversation_state' => array_diff_key($state, array_flip($stale))]);
                     }
                 } else {
                     $menuReading = null;

@@ -284,7 +284,11 @@ class FortuneFlowNudge extends Command
             //   ลูกค้าจ่ายแล้ว) — โควตาต่ำกว่ากันชน → สละ nudge นี้ (mark ว่าใช้สิทธิ์แล้ว กันวนกลับมา)
             if ($platform === 'line'
                 && ! app(\App\Services\LineFortuneService::class)->canSpendNonCriticalPush()) {
-                $reading->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
+                // 🔒 (2026-09-14) เช็คโควตาอาจยิง LINE API — อ่านแถวสดก่อนเขียนธง (เหตุผลเดียวกับทางส่งด้านล่าง)
+                $latest = $reading->fresh();
+                if ($latest !== null && (string) $latest->conversation_status === $loadedStatus) {
+                    $latest->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
+                }
                 $stats['skip']++;
                 Log::info('FortuneFlowNudge: ข้าม nudge LINE — กันโควตา push ไว้ให้ของลูกค้าจ่ายแล้ว', [
                     'reading_id' => $reading->id,
@@ -300,8 +304,12 @@ class FortuneFlowNudge extends Command
                     // 🔒 (2026-09-14) ส่งข้อความกินเวลา — อ่านแถวสดอีกรอบก่อนเขียนธง
                     //   setConversationState เขียน state ทั้งก้อนจากสำเนาในมือ ถ้าแถวกลายเป็นบิลไปแล้ว
                     //   สำเนาเก่าจะลบ state ที่ขั้นออกบิลเพิ่งเขียน (pay_first_mode ฯลฯ) ⇒ ข้ามการเขียนธงแทน
+                    //   ธง/ความจำด้านล่าง (offer · consent) ทำเฉพาะตอนแถวยังอยู่ขั้นเดิมเหมือนกัน
+                    //   ไม่งั้นลูกค้าที่เพิ่งได้บิลจะถูกตั้งธงรับกติกา → ข้อความถัดไป ("โอนแล้ว") กลายเป็นกดรับกติกา
+                    //   → เริ่ม flow ใหม่ → ปิดบิลที่เพิ่งออกทิ้ง
                     $latest = $reading->fresh();
-                    if ($latest !== null && (string) $latest->conversation_status === $loadedStatus) {
+                    $stillSameStep = $latest !== null && (string) $latest->conversation_status === $loadedStatus;
+                    if ($stillSameStep) {
                         $latest->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
                     }
 
@@ -310,7 +318,7 @@ class FortuneFlowNudge extends Command
                     //   ถ้าไม่ต่ออายุ ปุ่มที่เพิ่งส่งจะกลายเป็นปุ่มตายทันทีที่ reading ปิด
                     //   ⇒ เคสจริง Bunphon r12479: กดปุ่มคุณไสยช้าไป 3 ชม. แล้วบอทปฏิเสธ
                     //   ⚠️ ต้องอยู่ "หลังส่งสำเร็จ" — ส่งไม่ออก = ลูกค้าไม่เคยเห็นปุ่ม ห้ามติดธง
-                    if ($step === 'tier_choice') {
+                    if ($stillSameStep && $step === 'tier_choice') {
                         // ⚠️ เงื่อนไขต้องตรงกับ buildBox() เป๊ะ ๆ — ติดธงแพคเกจที่ไม่ได้ส่งปุ่มไป
                         //    = รับคำตอบของปุ่มที่ลูกค้าไม่เคยเห็น
                         $offerTiers = [];
@@ -331,7 +339,7 @@ class FortuneFlowNudge extends Command
                     //   ตั้ง fortune:consent_pending → ถ้า flag เดิมหมดอายุ/หาย ลูกค้ากด "พร้อมบูชาครูแล้ว"
                     //   → handleConsentAcceptIfPending เห็น Cache ว่าง → fall-through → สร้าง reading ใหม่
                     //   วน tier_choice ไม่ออก QR. แก้: re-arm flag (tier จาก marker) ให้ consent accept ทำงาน
-                    if ($step === 'consent_gate') {
+                    if ($stillSameStep && $step === 'consent_gate') {
                         $tier = (string) ($reading->getConversationState('consent_gate_tier')
                             ?: ($reading->reading_type === FortuneReading::READING_TYPE_DEEP ? 'deep' : 'celtic'));
                         Cache::put(self::CONSENT_PENDING_PREFIX.$userId, $tier, 600); // 600s = FortuneConsentGateTrait::CONSENT_TTL

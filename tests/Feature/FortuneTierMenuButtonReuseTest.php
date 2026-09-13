@@ -141,16 +141,28 @@ class FortuneTierMenuButtonReuseTest extends TestCase
     }
 
     #[Test]
-    public function pressing_99_reuses_the_menu_row_and_drops_a_stale_black_magic_flag(): void
+    public function pressing_99_reuses_the_menu_row_and_drops_menu_stage_state(): void
     {
-        $menu = $this->menuRow([], ['tier_choice_shown_at' => now()->toIso8601String(), 'black_magic_mode' => true]);
+        // ลูกค้าเคยเห็นกล่องกติกาของแพคเกจอื่น + โดน nudge ไปแล้ว ก่อนกดปุ่มนี้
+        $menu = $this->menuRow([], [
+            'tier_choice_shown_at' => now()->toIso8601String(),
+            'black_magic_mode' => true,
+            'consent_gate_shown_at' => now()->toIso8601String(),
+            'consent_gate_tier' => 'deep',
+            'flow_nudge_sent_at' => now()->toIso8601String(),
+        ]);
         $svc = $this->service();
 
         $svc->pressTier(self::PSID, 'celtic');
 
         $this->assertSame([['celtic', $menu->id]], $svc->billedOn);
         $this->assertSame(1, FortuneReading::count());
-        $this->assertEmpty($menu->fresh()->getConversationState('black_magic_mode'), 'แถวใหม่ไม่เคยมีธงนี้ แถวที่ใช้ต่อก็ต้องไม่มี');
+        $fresh = $menu->fresh();
+        // แถวใหม่ไม่เคยมี state พวกนี้ แถวที่ใช้ต่อก็ต้องไม่มี — ไม่งั้น cron ส่งกล่องกติกาของแพคเกจเดิมซ้ำ
+        foreach (['black_magic_mode', 'consent_gate_shown_at', 'consent_gate_tier', 'flow_nudge_sent_at'] as $key) {
+            $this->assertEmpty($fresh->getConversationState($key), "ต้องล้าง {$key}");
+        }
+        $this->assertNotEmpty($fresh->getConversationState('tier_choice_shown_at'));
     }
 
     #[Test]
