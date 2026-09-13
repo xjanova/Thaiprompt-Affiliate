@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use App\Services\Fortune\AstroAspects;
 use App\Services\Fortune\PlanetEphemeris;
+use App\Services\Fortune\ThaiAstrologyService;
 use Carbon\Carbon;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -135,9 +136,14 @@ class PlanetEphemerisAccuracyTest extends TestCase
     }
 
     /**
-     * ปฏิทินโหรสุริยยาตร์ (myhora.com) — เวลาไทยที่เกตุยกเข้าราศี (เดินถอยหลัง)
+     * ปฏิทินโหรสุริยยาตร์ (myhora.com) — เวลาที่เกตุยกเข้าราศี (เดินถอยหลัง)
      *
      * สะกดตามคลาสนี้ (มกร→มังกร · มิถุน→เมถุน · ตุล→ตุลย์)
+     *
+     * 🔧 (2026-09-13) เวลาในตารางคือ **ตามที่ปฏิทินพิมพ์** = เวลาท้องถิ่นกรุงเทพฯ (UTC+06:42)
+     *    ไม่ใช่เวลาไทย (UTC+7) — เดิมเราอ่านตรง ๆ จุดอ้างอิงเกตุเลยเร็วไป 18 นาทีทั้งระบบ
+     *    ⇒ แปลงเป็นเวลาไทยด้วย +18 นาทีตรงนี้ (ได้นาที :04 ตรงกับหน้ารายการยกราศีแบบลาหิรีของ myhora ที่พิมพ์เวลาไทย)
+     *    เก็บตัวเลขดิบตามแหล่งไว้ ไม่แปลงมือ — คนตรวจทีหลังจะเทียบกับหน้าปฏิทินได้ตรง ๆ
      *
      * @return array<string, array{0:string, 1:string}>
      */
@@ -154,8 +160,10 @@ class PlanetEphemerisAccuracyTest extends TestCase
         ];
 
         $out = [];
-        foreach ($rows as [$at, $sign]) {
-            $out["{$at} เข้า{$sign}"] = [$at, $sign];
+        foreach ($rows as [$printedBangkokLocal, $sign]) {
+            // เวลาท้องถิ่นกรุงเทพฯ (UTC+06:42) → เวลาไทย (UTC+7) = +18 นาที
+            $thai = Carbon::parse($printedBangkokLocal)->addMinutes(18)->format('Y-m-d H:i');
+            $out["{$thai} เข้า{$sign}"] = [$thai, $sign];
         }
 
         return $out;
@@ -255,6 +263,72 @@ class PlanetEphemerisAccuracyTest extends TestCase
         }
         $this->assertLessThan(20.0, min($seps), 'ต้องมีช่วงที่ราหูกับเกตุเข้าใกล้กัน');
         $this->assertGreaterThan(160.0, max($seps), 'และมีช่วงที่ห่างเกือบตรงข้าม');
+    }
+
+    /**
+     * หน้า "เปรียบเทียบปฏิทินโหราศาสตร์ สมผุสดาว ลัคนา" ของ myhora.com — ละเอียดระดับฟิลิปดา (″)
+     * 12 ดวง ปี 2493–2593 · ทั่วประเทศ (กรุงเทพฯ เชียงใหม่ เชียงราย ภูเก็ต หาดใหญ่ อุบลฯ ขอนแก่น โคราช)
+     * ดึงเมื่อ 2026-09-12 ตอน GenLotto ตรวจ (ชุดเดียวกับ GenLotto tests/verify_myhora.mjs)
+     *
+     * คอลัมน์: [เวลาไทย, ละติจูด, ลองจิจูด, ลัคนา″ (วิธีเวลานักษัตร), ราหู″ (ลาหิรี · ราหูเฉลี่ย)]
+     *
+     * @return array<string, array{0:string, 1:float, 2:float, 3:int, 4:int}>
+     */
+    public static function myhoraCharts(): array
+    {
+        $rows = [
+            ['2026-09-12 07:00', 13.752555, 100.494066, 566125, 1096160],
+            ['1990-05-15 08:30', 18.7883, 98.9853, 246796, 1035491],
+            ['2026-09-16 15:30', 13.8612, 100.512, 1014872, 1095329],
+            ['2000-06-21 04:00', 7.8804, 98.3923, 122418, 331581],
+            ['2015-12-01 22:10', 19.9105, 99.8406, 386813, 551296],
+            ['1950-01-01 12:00', 13.752555, 100.494066, 1237955, 1256196],
+            ['1975-11-07 18:30', 15.2287, 104.8564, 136171, 751072],
+            ['2010-03-01 00:05', 7.0086, 100.4747, 793432, 952282],
+            ['2024-02-29 23:59', 13.752555, 100.494066, 781073, 1272679],
+            ['2035-06-15 06:30', 16.4419, 102.836, 255310, 486078],
+            ['2050-12-31 12:00', 13.752555, 100.494066, 1230881, 698836],
+            ['1985-04-05 05:00', 14.9799, 102.0978, 1189820, 95498],
+        ];
+
+        $out = [];
+        foreach ($rows as $row) {
+            $out["{$row[0]} @ {$row[1]},{$row[2]}"] = $row;
+        }
+
+        return $out;
+    }
+
+    /**
+     * ⬆️ ลัคนาต้องตรง myhora ไม่เกิน 10″ (GenLotto สูตรเดียวกันวัดได้ ≤5″)
+     *
+     * 🔧 (2026-09-13) ก่อนแก้อายนางศเป็นแบบเฉลี่ย ลัคนาเร็วไปราว 15″ ทุกดวง ⇒ เทสต์นี้ตก
+     *    ใครเปลี่ยนอายนางศกลับเป็นค่าเดิม (23.85292472) เทสต์นี้จะจับได้ทันที
+     *    ⚠️ 10″ ≈ เวลาเกิดคลาดไม่ถึง 1 วินาที — เทียบวิธีเวลานักษัตรเท่านั้น ไม่ใช่อันโตนาที (ต่างได้ถึง ~5°)
+     */
+    #[Test]
+    #[DataProvider('myhoraCharts')]
+    public function lagna_matches_myhora_within_ten_arcseconds(string $thaiTime, float $lat, float $lon, int $lagnaArcsec, int $rahuArcsec): void
+    {
+        $ours = (new ThaiAstrologyService)->siderealLagnaLongitude(Carbon::parse($thaiTime), $lat, $lon);
+        $this->assertNotNull($ours);
+
+        $errArcsec = $this->angDiff($ours, $lagnaArcsec / 3600.0) * 3600.0;
+        $this->assertLessThanOrEqual(10.0, abs($errArcsec), sprintf('ลัคนา @ %s คลาดจาก myhora %+.1f″', $thaiTime, $errArcsec));
+    }
+
+    /**
+     * ☊ ราหู (ราหูเฉลี่ย สูตร Meeus เดียวกับ myhora) ต้องตรง ≤3″ — ตัวแยกค่าอายนางศออกมาดูได้ชัดที่สุด
+     *    เพราะสูตรราหูเหมือนกันทุกตัวอักษร ส่วนต่างที่เหลือ = อายนางศล้วน ๆ (ค่าเดิมคลาดคงที่ +15″)
+     */
+    #[Test]
+    #[DataProvider('myhoraCharts')]
+    public function rahu_matches_myhora_lahiri_within_three_arcseconds(string $thaiTime, float $lat, float $lon, int $lagnaArcsec, int $rahuArcsec): void
+    {
+        $rahu = (new PlanetEphemeris)->positions(Carbon::parse($thaiTime))['Rahu']['lon'];
+
+        $errArcsec = $this->angDiff($rahu, $rahuArcsec / 3600.0) * 3600.0;
+        $this->assertLessThanOrEqual(3.0, abs($errArcsec), sprintf('ราหู @ %s คลาดจาก myhora %+.1f″', $thaiTime, $errArcsec));
     }
 
     /** ผลต่างมุม a−b → ช่วง [-180, 180) */
