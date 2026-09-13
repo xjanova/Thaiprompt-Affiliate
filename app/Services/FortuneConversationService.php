@@ -14420,9 +14420,11 @@ class FortuneConversationService
      * รองรับทั้งคำพิมพ์เองและ payload จากปุ่ม Quick Reply
      *
      * @param  string  $text  ข้อความผู้ใช้
+     * @param  bool  $allowLoose  รับสำนวนหลวม ("โอนให้แล้ว") ด้วยไหม — true สำหรับผู้เรียกที่มีบิลรอจ่ายอยู่แล้ว
+     *                            false สำหรับทางไม่มีบิล (กันเรื่องเล่า "พ่อจ่ายให้แล้ว" ถูกทวงสลิป)
      * @return bool true ถ้าเป็นคำขอเช็คสถานะการชำระ
      */
-    protected function isPaymentClaimRequest(string $text): bool
+    protected function isPaymentClaimRequest(string $text, bool $allowLoose = true): bool
     {
         $normalized = $this->normalizeUserInput($text);
         $noSpace = str_replace(' ', '', $normalized);
@@ -14469,24 +14471,21 @@ class FortuneConversationService
             $noSpace
         );
         //
-        // 🩹 (2026-09-13 Pantaree Donpar FTU-260913-S0328) รับคำบอกทิศ/ผู้รับที่คั่นกลางด้วย —
-        //   "หนูโอนให้แล้วนะคะ" / "โอนมาแล้ว" / "จ่ายให้แล้ว" / "โอนให้แม่หมอแล้ว" / "โอนเข้าไปแล้ว"
-        //   เดิมยอมให้คั่นได้แค่ "ไป" → สำนวนที่คนไทยพูดกันบ่อยที่สุดตกหมด 8/8 (รันกับโค้ดจริง)
-        //   → เคลมไม่ติด = สลิปที่เก็บไว้ไม่ถูกดึงไปตรวจ + ข้อความไหลไป AI แชท (ตอบผิดแพคเกจ) → แอดมินตัดมือ
-        //   ⚠️ คำบอกเวลา "อนาคต" เช็คเฉพาะส่วน *ก่อน* คำกริยา — เจอจริงใน log:
+        // 🩹 (2026-09-13 Pantaree Donpar FTU-260913-S0328) สำนวน "หลวม" — มีคำบอกผู้รับคั่นกลาง
+        //   "หนูโอนให้แล้วนะคะ" / "จ่ายให้แล้ว" / "โอนให้แม่หมอแล้ว" / "โอนเข้าไปแล้ว" / "โอนไปให้แล้ว"
+        //   เดิมยอมให้คั่นได้แค่ "ไป" → สำนวนที่คนไทยพูดกันบ่อยตกหมด → สลิปที่เก็บไว้ไม่ถูกดึงไปตรวจ → แอดมินตัดมือ
+        //   ⚠️ ไม่รับ "มา" / "เข้า" เปล่า ๆ — เป็นทิศเงิน *เข้าหาผู้พูด* ("แฟนโอนมาแล้ว" / "เงินเดือนโอนเข้าแล้ว")
+        //   ⚠️ สำนวนหลวมยังกำกวมกับเรื่องเล่า ("พ่อจ่ายให้แล้ว" = พ่อจ่ายค่าเทอมให้) → เปิดเฉพาะผู้เรียก
+        //      ที่ "มีบริบทการจ่ายเงินอยู่แล้ว" ($allowLoose): มีบิลรอจ่าย หรือทาง cold path ที่เช็คประวัติก่อน
+        //      (tryReturningPaidSlipCheck → hasRecentPaymentContext) — ห้ามใช้กับลูกค้าที่ไม่มีบิลเลย
+        //   ⚠️ คำบอกเวลา "อนาคต" ดูเฉพาะช่วงสั้น ๆ *ก่อน* คำกริยา (hasFutureWordBeforeClaim) — เจอจริงใน log:
         //     "คะขอเป็นพรุ่งนี้โอนให้แล้วดู…" = ยังไม่โอน · แต่ "โอนให้แล้ว พรุ่งนี้ค่อยดู" = โอนแล้วจริง
-        //     ถ้าเช็คทั้งประโยคจะกลืนเคสหลังทิ้ง จึงดูแค่ข้างหน้าจุดที่ regex เจอ
+        $claimPattern = $allowLoose
+            ? '/(โอน|จ่าย|ชำระ)(เงิน)?(ค่า(ครู|ดูดวง|ทำนาย|หมอ|บริการ)?)?(เข้าไป|ไป)?(ให้(แม่หมอ|หมอ|ครู|แอดมิน|ทางเพจ|เพจ)?)?(ไป)?(เรียบร้อย)?(แล้ว|เรียบร้อย)/u'
+            : '/(โอน|จ่าย|ชำระ)(เงิน)?(ค่า(ครู|ดูดวง|ทำนาย|หมอ|บริการ)?)?(ไป)?(แล้ว|เรียบร้อย)/u';
         if (! $looksLikeQuestionOrIntent
-            && preg_match(
-                '/(โอน|จ่าย|ชำระ)(เงิน)?(ค่า(ครู|ดูดวง|ทำนาย|หมอ|บริการ)?)?(เข้าไป|ไป|มา|เข้า)?(ให้(แม่หมอ|หมอ|ครู|แอดมิน|ทางเพจ|เพจ)?)?(ไป)?(เรียบร้อย)?(แล้ว|เรียบร้อย)/u',
-                $noSpace,
-                $claimMatch,
-                PREG_OFFSET_CAPTURE
-            )
-            && ! preg_match(
-                '/(พรุ่งนี้|ทีหลัง|วันหลัง|ขอเป็น|คืนนี้|เย็นนี้|สิ้นเดือน|เงินเดือนออก)/u',
-                substr($noSpace, 0, $claimMatch[0][1])
-            )) {
+            && preg_match($claimPattern, $noSpace, $claimMatch, PREG_OFFSET_CAPTURE)
+            && ! $this->hasFutureWordBeforeClaim($noSpace, $claimMatch[0][1])) {
             return true;
         }
 
@@ -14502,6 +14501,22 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * 🗓️ (2026-09-13) มีคำบอกเวลา "อนาคต" อยู่ชิดหน้าคำกริยาโอน/จ่ายไหม
+     *
+     *   ดูแค่ 15 ตัวอักษรก่อนจุดที่ regex เจอ — ประโยคยาวที่พูดเรื่องอื่นก่อนแล้วค่อยบอกว่าโอน
+     *   ("พรุ่งนี้หนูมีสอบ แต่หนูโอนให้แล้วนะคะ") ต้องยังนับเป็นเคลม ถ้าดูทั้งก้อนจะกลืนทิ้ง
+     *
+     * @param  string  $noSpace  ข้อความที่ normalize + ตัดช่องว่างแล้ว
+     * @param  int  $byteOffset  ตำแหน่ง (ไบต์) ที่ regex เคลมเริ่ม match — จาก PREG_OFFSET_CAPTURE
+     */
+    protected function hasFutureWordBeforeClaim(string $noSpace, int $byteOffset): bool
+    {
+        $window = mb_substr(substr($noSpace, 0, $byteOffset), -15);
+
+        return (bool) preg_match('/(พรุ่งนี้|ทีหลัง|วันหลัง|ขอเป็น|คืนนี้|เย็นนี้|สิ้นเดือน|เงินเดือนออก)/u', $window);
     }
 
     /**
@@ -15436,10 +15451,13 @@ class FortuneConversationService
 
     /**
      * 🔎 (2026-05-31) ลูกค้าพิมพ์ทำนอง "โอนแล้ว / ยังไม่ได้ดู / ยังไม่ได้รับ"
+     *
+     *   ⚠️ (2026-09-13) ใช้สำนวนเคลมแบบ "เข้ม" เท่านั้น — ถูกเรียกจากทางที่ลูกค้าไม่มีบิล
+     *     สำนวนหลวม ("โอนให้แล้ว") ต้องผ่าน hasRecentPaymentContext ก่อน (ดู tryReturningPaidSlipCheck)
      */
     public function looksLikePaidNotReceived(string $text): bool
     {
-        if ($this->isPaymentClaimRequest($text)) {
+        if ($this->isPaymentClaimRequest($text, false)) {
             return true;
         }
         $n = str_replace(' ', '', $this->normalizeUserInput($text));
@@ -15559,22 +15577,19 @@ class FortuneConversationService
     }
 
     /**
-     * 🧾 (2026-09-13) บิลดูดวง 39 ที่ "ออก QR ไปแล้วแต่ยังไม่จ่าย" ภายใน 3 วัน และยังไม่มีบิลไหนจ่ายตามมา
-     *   = สัญญาณว่าลูกค้าคนนี้อาจโอนตามมาทีหลัง → รูปที่ส่งมาควรถูกตรวจว่าเป็นสลิปไหม
+     * 🧾 (2026-09-13) บิลดูดวง 39 ที่ "ออก QR ไปแล้วแต่ยังไม่จ่าย" ภายใน 3 วัน และยังไม่มีการจ่ายตามมา
+     *   = บริบทว่าลูกค้าคนนี้ "มีเงินที่อาจโอนตามมา" — ใช้ยืนยันคำเคลมสำนวนหลวม ("โอนให้แล้ว")
+     *     ในทางไม่มีบิลค้าง (ดู hasRecentPaymentContext)
      *
      *   เคสจริง Pantaree Donpar (FB 26273302092329161, FTU-260912-Q1090 → FTU-260913-S0328):
      *     20:58 เปิดบิล 39.16 → "หนูไม่มีระบบโอนในโทรศัพท์ ต้องรอเช้า ไปโอนร้านค้าแถวบ้าน"
-     *     → บิลหมดเวลา 3 ชม. ถูกปิด → วันถัดไปส่งรูปสลิป → ไม่มีบิลค้าง + ไม่มีธงรอสลิป
-     *     → รูปถูกเก็บเงียบ ไม่มีใครตรวจ → แอดมินต้องสั่งเปิดบิลใหม่ + กดอนุมัติเอง
+     *     → บิลหมดเวลา 3 ชม. ถูกปิด → วันถัดไปส่งรูปสลิป + "หนูโอนให้แล้วนะคะ"
      *
-     *   ฝั่ง Celtic มีด่านแบบนี้มาตั้งแต่ 2026-06-01 (findRecoverableCelticReading 3 วัน) — Deep ตกหล่นมาตลอด
-     *   แยกด้วย "ประวัติบิล" ไม่ใช่การสะกดคำของลูกค้า ([[rule_route_by_history_not_by_spelling]])
-     *
-     *   "ยังไม่มีบิลไหนจ่ายตามมา" — จ่ายบิลใหม่ไปแล้ว บิลเก่าก็หมดความหมาย
-     *     ไม่งั้นรูปทุกใบที่ส่งมาหลังได้ดวงแล้ว (ภายใน 3 วัน) จะถูกส่งเข้าตัวตรวจสลิปโดยใช่เหตุ
+     *   "ยังไม่มีการจ่ายตามมา" — นับจาก paid_at ≥ เวลาสร้างบิลนี้ (ไม่ใช่ลำดับ id)
+     *     เคสบิลซ้อน: จ่ายใบแรก (id ต่ำ) แล้วใบที่สองถูกยกเลิก → ใบที่สองต้องไม่ถูกนับว่าค้าง
      *
      * @param  string  $userId  facebook_user_id (LINE เก็บ field เดียวกัน ขึ้นต้น U)
-     * @return FortuneReading|null บิลที่ค้างจ่าย หรือ null = ไม่มี/มีบิลจ่ายตามมาแล้ว
+     * @return FortuneReading|null บิลที่ค้างจ่าย หรือ null = ไม่มี/มีการจ่ายตามมาแล้ว
      */
     public function findAbandonedUnpaidDeepBill(string $userId): ?FortuneReading
     {
@@ -15583,7 +15598,11 @@ class FortuneConversationService
         }
 
         try {
-            $bill = FortuneReading::where('facebook_user_id', $userId)
+            $ofUser = function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)->orWhere('platform_user_id', $userId);
+            };
+
+            $bill = FortuneReading::where($ofUser)
                 ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
                 ->where('is_paid', false)
                 // ออกยอด/QR จริงแล้วเท่านั้น — แค่นั่งหน้าเมนูเลือกแพคเกจไม่นับ
@@ -15595,20 +15614,41 @@ class FortuneConversationService
                 return null;
             }
 
-            $paidSince = FortuneReading::where('facebook_user_id', $userId)
-                ->where('id', '>', $bill->id)
+            $paidSince = FortuneReading::where($ofUser)
                 ->where('is_paid', true)
+                ->where('paid_at', '>=', $bill->created_at)
                 ->exists();
 
             return $paidSince ? null : $bill;
         } catch (\Throwable $e) {
-            // ถูกเรียกจากประตูรับรูปของ webhook — พังที่นี่ต้องไม่ลากทั้ง webhook ล้ม (กลับไปพฤติกรรมเดิม = เก็บรูปเงียบ)
+            // ใช้เป็นแค่ "บริบทประกอบ" — พังที่นี่ต้องไม่ลากทั้งเส้นล้ม (กลับไปพฤติกรรมเดิม)
             Log::warning('SlipOK: findAbandonedUnpaidDeepBill ล้มเหลว (non-blocking)', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * 🧾 (2026-09-13) ลูกค้าคนนี้มี "ร่องรอยการจ่ายเงิน" ใกล้ ๆ นี้ไหม — ใช้ยืนยันคำเคลมสำนวนหลวม
+     *
+     *   นับอย่างใดอย่างหนึ่ง:
+     *     • รูปที่เพิ่งส่งมาแล้วถูกเก็บไว้รอ (fortune:pending_slip — 30 นาที)
+     *     • ธงรอสลิป (บอทเพิ่งบอกวิธีจ่าย/ขอสลิป)
+     *     • บิลดูดวง 39 ออก QR แล้วยังไม่จ่าย ภายใน 3 วัน (findAbandonedUnpaidDeepBill)
+     *     • บิล Celtic ที่ยังกู้ได้ ภายใน 3 วัน (findRecoverableCelticReading)
+     */
+    protected function hasRecentPaymentContext(string $platform, string $userId): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\Cache::has('fortune:pending_slip:'.$platform.':'.$userId)
+                || \Illuminate\Support\Facades\Cache::has('fortune:returning_slip_ask:'.$userId)
+                || $this->findAbandonedUnpaidDeepBill($userId) !== null
+                || $this->findRecoverableCelticReading($userId) !== null;
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 
@@ -15658,8 +15698,27 @@ class FortuneConversationService
     {
         try {
             $svc = new \App\Services\Fortune\SlipOkService($this->settings);
-            if (! $svc->isEnabled() || empty($userId) || ! $this->looksLikePaidNotReceived($messageText)) {
+            if (! $svc->isEnabled() || empty($userId)) {
                 return null;
+            }
+
+            // 🧾 (2026-09-13 Pantaree Donpar) สำนวนหลวม "หนูโอนให้แล้วนะคะ" — รับเฉพาะเมื่อมีร่องรอยการจ่ายจริง
+            //   (รูปที่เพิ่งส่งมา / บิลที่ออก QR ไปแล้วยังไม่จ่าย / ธงรอสลิป) ไม่งั้นเรื่องเล่า
+            //   "พ่อจ่ายให้แล้วค่ะ" จะโดนทวงสลิป + ข้อความถูกกลืน (บั๊กตระกูลเดียวกับ Aphichat / W7476)
+            //   แยกด้วยประวัติ ไม่ใช่การสะกด ([[rule_route_by_history_not_by_spelling]])
+            $strictClaim = $this->looksLikePaidNotReceived($messageText);
+            $looseClaim = ! $strictClaim
+                && $this->isPaymentClaimRequest($messageText, true)
+                && $this->hasRecentPaymentContext($platform, $userId);
+            if (! $strictClaim && ! $looseClaim) {
+                return null;
+            }
+            if ($looseClaim) {
+                Log::info('🧾 SlipOK: เคลมสำนวนหลวม + มีร่องรอยการจ่าย → นับเป็นแจ้งโอน', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'text_preview' => mb_substr($messageText, 0, 80),
+                ]);
             }
 
             // 🛡️ (2026-06-17) กัน false-positive — ลูกค้า "เล่าเรื่อง" ที่บังเอิญมีคำว่าโอน/จ่าย
@@ -15811,25 +15870,6 @@ class FortuneConversationService
 
                     // toggle ปิด → ตรวจสลิปจริง + แจ้งแอดมิน (พฤติกรรมเดิม)
                     return $this->verifyNoBillSlipForAdmin($platform, $userId, $url, $base64);
-                }
-
-                // 🧾 (2026-09-13) ไม่มีธง แต่มีบิลดูดวง 39 ที่ออก QR ไปแล้วยังไม่จ่าย (หมดเวลา/ปิดไป) ภายใน 3 วัน
-                //   → รูปนี้อาจเป็นสลิปของบิลนั้น (ลูกค้าจ่ายช้ากว่าเวลาบิล) → ทางเดียวกับ "พิมพ์โอนแล้ว"
-                //   ต่างกันแค่: รูปที่ไม่ใช่สลิป → เงียบ (คืน null ให้ webhook เก็บรูปไว้ตามเดิม) ไม่ทวงสลิป
-                //   เพราะลูกค้ายังไม่ได้บอกว่าโอน — ห้ามทวงเงินจากรูปเล่น ๆ
-                //   ยอดที่โอนมาจะถูกแยกแพคเกจเองใน routePrepaySlipByAmount (39–40 → ดูดวง 39)
-                if ($this->isSlipAutoProvisionEnabled()) {
-                    $abandonedDeep = $this->findAbandonedUnpaidDeepBill($userId);
-                    if ($abandonedDeep) {
-                        Log::info('🧾 SlipOK: รูปจากลูกค้าที่มีบิลดูดวง 39 ค้างจ่าย (ปิดไปแล้ว) → ตรวจว่าเป็นสลิปไหม', [
-                            'platform' => $platform,
-                            'user_id' => $userId,
-                            'abandoned_reading_id' => $abandonedDeep->id,
-                            'bill_reference' => $abandonedDeep->bill_reference,
-                        ]);
-
-                        return $this->autoProvisionCelticFromSlip($platform, $userId, $url, $base64, true);
-                    }
                 }
 
                 return null;
@@ -16695,13 +16735,10 @@ class FortuneConversationService
      *   🛡️ guard เดิมทั้งหมดทำงานครบ (transRef dedup / receiver / amount / staleness / flood / classifier)
      *   🔒 ใช้ celtic_create_lock เดียวกับ startCelticCrossFlow → กันสร้างบิลซ้อนจาก 2 สลิป/2 webhook พร้อมกัน
      *   ⚠️ เรียกเฉพาะตอนลูกค้าพิมพ์ว่าโอนแล้ว (ask-flag set) — เคารพ enable_image_vision=false (ไม่สแกนรูปสุ่ม)
-     *      🧾 (2026-09-13) + ลูกค้าที่มีบิลดูดวง 39 ค้างจ่ายภายใน 3 วัน (findAbandonedUnpaidDeepBill) — แคบพอ ๆ กับด่าน Celtic
      *
-     * @param  bool  $quietIfNotSlip  true = รูปไม่ใช่สลิป → คืน null เงียบ ๆ (ไม่ทวงสลิป)
-     *                                ใช้ตอนเรียกจากประวัติบิล ที่ลูกค้ายังไม่ได้บอกเองว่าโอน
      * @return array|null response หรือ null = ปล่อยให้ handler อื่นจัดการ
      */
-    protected function autoProvisionCelticFromSlip(string $platform, string $userId, ?string $url, ?string $base64, bool $quietIfNotSlip = false): ?array
+    protected function autoProvisionCelticFromSlip(string $platform, string $userId, ?string $url, ?string $base64): ?array
     {
         // 🔒 serialize กับการสร้างบิล (กัน double-provision เมื่อมี 2 สลิป/2 webhook พร้อมกัน)
         $lockKey = 'fortune:celtic_create_lock:'.$userId;
@@ -16761,13 +16798,8 @@ class FortuneConversationService
             // 🛡️ classifier pre-check (ถูก/ฟรีกว่า SlipOK quota) — ลูกค้าบอกว่าโอนแล้วแต่รูปไม่ใช่สลิป → ขอสลิปจริง
             if (! $this->returningImageLooksLikeSlip($url, $base64)) {
                 Log::info('💎 SlipOK auto-provision: รูปไม่ใช่สลิป (classifier) → ขอสลิป ไม่สร้างบิล', [
-                    'platform' => $platform, 'user_id' => $userId, 'quiet' => $quietIfNotSlip,
+                    'platform' => $platform, 'user_id' => $userId,
                 ]);
-
-                // 🧾 (2026-09-13) มาจากประวัติบิล (ลูกค้ายังไม่ได้บอกว่าโอน) → เงียบ ให้ webhook เก็บรูปไว้ตามเดิม
-                if ($quietIfNotSlip) {
-                    return null;
-                }
 
                 return $this->askForSlipMessage(null);
             }

@@ -11,16 +11,20 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * 🧾 (2026-09-13) ลูกค้าจ่ายช้ากว่าเวลาบิล — สลิปต้องไม่ถูกเก็บเงียบ
+ * 🧾 (2026-09-13) ลูกค้าจ่ายช้ากว่าเวลาบิล แล้วแจ้งโอนด้วยสำนวน "โอนให้แล้ว"
  *
  * เคสจริง Pantaree Donpar (FB 26273302092329161):
  *   12 ก.ย. 20:58 เปิดบิลดูดวง 39 (39.16) → "หนูไม่มีระบบโอนในโทรศัพท์ ต้องรอเช้าไปโอนร้านค้า"
  *   → บิลหมดเวลา 3 ชม. ถูกปิด (completed + is_paid=0)
- *   13 ก.ย. 12:35 ส่งรูปสลิป → ไม่มีบิลค้าง + ไม่มีธงรอสลิป → รูปถูกเก็บเงียบ ไม่มีใครตรวจ
+ *   13 ก.ย. 12:35 ส่งรูปสลิป (เก็บเงียบ) + พิมพ์ "หนูโอนให้แล้วนะคะ" → ตัวจับไม่ติด → แอดมินตัดมือ
  *
- * ฝั่ง Celtic มีด่านนี้มาตั้งแต่ 2026-06-01 — ดูดวง 39 ตกหล่นมาตลอด
- * เทสต์นี้ตรึงตัวตัดสิน findAbandonedUnpaidDeepBill() ที่ประตูรับรูปของ FB/LINE ใช้
- * + cache "มีบิลค้างไหม" ที่ต้องล้างทันทีเมื่อสถานะบิลเปลี่ยน
+ * สำนวนหลวมรับเฉพาะเมื่อมี "ร่องรอยการจ่าย" (hasRecentPaymentContext) — เรื่องเล่า
+ * "พ่อจ่ายให้แล้วค่ะ" จากคนที่ไม่มีบิลเลย ต้องไม่โดนทวงสลิป
+ *
+ * เทสต์นี้ตรึง:
+ *   1. findAbandonedUnpaidDeepBill() — ตัวบอก "มีบิล 39 ออก QR แล้วยังไม่จ่าย"
+ *   2. tryReturningPaidSlipCheck() — สำนวนหลวม + ร่องรอย = แจ้งโอน · ไม่มีร่องรอย = ปล่อยคุยปกติ
+ *   3. cache "มีบิลค้างไหม" ต้องล้างทันทีเมื่อสถานะบิลเปลี่ยน
  *
  * @group fortune-slip
  */
@@ -37,6 +41,19 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
         parent::setUp();
         Cache::flush();
         $this->service = new FortuneConversationService(FortuneTellingSetting::getSettings());
+    }
+
+    /** เปิด SlipOK (ทาง cold path คืน null ทันทีถ้าปิด) */
+    private function enableSlipOk(): void
+    {
+        $settings = FortuneTellingSetting::getSettings();
+        $settings->enable_slipok_verify = true;
+        $settings->slipok_branch_id = 'test-branch';
+        $settings->slipok_api_key = 'test-key';
+        $settings->save();
+        Cache::flush();
+
+        $this->service = new FortuneConversationService($settings->fresh());
     }
 
     /**
@@ -62,6 +79,8 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
         ], $overrides));
     }
 
+    // ── 1. ตัวบอกบิลค้างจ่าย ─────────────────────────────────────────────
+
     public function test_expired_unpaid_deep_bill_is_found(): void
     {
         $bill = $this->makeDeepBill();
@@ -72,10 +91,7 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
         $this->assertSame($bill->id, $found->id);
     }
 
-    /**
-     * จ่ายบิลใหม่ไปแล้ว → บิลเก่าหมดความหมาย
-     * ไม่งั้นรูปทุกใบหลังได้ดวงแล้วจะถูกส่งเข้าตัวตรวจสลิปโดยใช่เหตุ
-     */
+    /** จ่ายบิลใหม่ไปแล้ว → บิลเก่าหมดความหมาย */
     public function test_bill_paid_afterwards_cancels_the_signal(): void
     {
         $this->makeDeepBill();
@@ -84,6 +100,19 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
             'paid_at' => now(),
             'amount_paid' => 39.60,
         ]);
+
+        $this->assertNull($this->service->findAbandonedUnpaidDeepBill(self::PSID));
+    }
+
+    /**
+     * บิลซ้อน: จ่ายใบแรก (id ต่ำกว่า) แล้วใบที่สองถูกยกเลิก
+     * → ใบที่สองต้องไม่ถูกนับว่าค้าง (นับการจ่ายจากเวลา ไม่ใช่ลำดับ id)
+     */
+    public function test_earlier_bill_paid_after_this_one_was_opened_cancels_the_signal(): void
+    {
+        $this->makeDeepBill(['is_paid' => true, 'paid_at' => now(), 'amount_paid' => 39.30]);
+        $second = $this->makeDeepBill();
+        DB::table('fortune_readings')->where('id', $second->id)->update(['created_at' => now()->subMinutes(10)]);
 
         $this->assertNull($this->service->findAbandonedUnpaidDeepBill(self::PSID));
     }
@@ -99,9 +128,7 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
         $this->assertNull($this->service->findAbandonedUnpaidDeepBill(self::PSID));
     }
 
-    /**
-     * เกิน 3 วัน = สลิปเก่าเกินที่ SlipOK รับอยู่แล้ว (MAX_SLIP_AGE_DAYS) → ไม่นับ
-     */
+    /** เกิน 3 วัน = สลิปเก่าเกินที่ SlipOK รับอยู่แล้ว (MAX_SLIP_AGE_DAYS) → ไม่นับ */
     public function test_bill_older_than_three_days_is_ignored(): void
     {
         $bill = $this->makeDeepBill();
@@ -110,10 +137,8 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
         $this->assertNull($this->service->findAbandonedUnpaidDeepBill(self::PSID));
     }
 
-    /**
-     * Celtic มีทางของตัวเองอยู่แล้ว (findRecoverableCelticReading) — ตัวนี้ดูเฉพาะดูดวง 39
-     */
-    public function test_celtic_bill_is_left_to_its_own_path(): void
+    /** Celtic มีตัวของตัวเอง (findRecoverableCelticReading) — ตัวนี้ดูเฉพาะดูดวง 39 */
+    public function test_celtic_bill_is_left_to_its_own_helper(): void
     {
         $this->makeDeepBill(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS]);
 
@@ -127,8 +152,56 @@ class FortuneAbandonedDeepBillSlipTest extends TestCase
         $this->assertNull($this->service->findAbandonedUnpaidDeepBill(self::PSID));
     }
 
+    // ── 2. แจ้งโอนสำนวนหลวม ต้องมีร่องรอยการจ่าย ──────────────────────────
+
+    /** เคสจริง: บิล 39 เมื่อวานหมดเวลา + "หนูโอนให้แล้วนะคะ" → ต้องเข้าเส้นตรวจสลิป ไม่ไหลไป AI แชท */
+    public function test_loose_claim_with_expired_bill_reaches_slip_check(): void
+    {
+        $this->enableSlipOk();
+        $this->makeDeepBill();
+
+        $resp = $this->service->tryReturningPaidSlipCheck('facebook', self::PSID, 'หนูโอนให้แล้วนะคะ');
+
+        $this->assertNotNull($resp, 'มีบิลค้างจ่าย + บอกว่าโอนให้แล้ว ต้องไม่ถูกปล่อยไป AI แชท');
+        $this->assertSame('slipok_ask_slip', $resp['action'] ?? null);
+    }
+
+    /** รูปที่เพิ่งส่งมาแล้วถูกเก็บไว้ = ร่องรอยการจ่ายด้วย (ลำดับเดียวกับเคสจริง: รูปก่อน ข้อความทีหลัง) */
+    public function test_loose_claim_with_stashed_image_reaches_slip_check(): void
+    {
+        $this->enableSlipOk();
+        Cache::put('fortune:pending_slip:facebook:'.self::PSID, 'fortune/slips/pend_test_missing.jpg', now()->addMinutes(30));
+
+        $this->assertNotNull(
+            $this->service->tryReturningPaidSlipCheck('facebook', self::PSID, 'หนูโอนให้แล้วนะคะ'),
+            'เพิ่งส่งรูปมา + บอกว่าโอนให้แล้ว ต้องเข้าเส้นตรวจสลิป'
+        );
+    }
+
+    /** ไม่มีบิล ไม่มีรูป ไม่มีธง → สำนวนหลวมอย่างเดียวไม่พอ ปล่อยคุยปกติ */
+    public function test_loose_claim_without_any_payment_trace_is_left_alone(): void
+    {
+        $this->enableSlipOk();
+
+        $this->assertNull($this->service->tryReturningPaidSlipCheck('facebook', self::PSID, 'หนูโอนให้แล้วนะคะ'));
+        $this->assertNull(
+            $this->service->tryReturningPaidSlipCheck('facebook', self::PSID, 'พ่อจ่ายให้แล้วค่ะ'),
+            'เรื่องเล่า (พ่อจ่ายค่าเทอมให้) จากคนที่ไม่มีบิลเลย ต้องไม่โดนทวงสลิป'
+        );
+    }
+
+    /** ตัวควบคุม: สำนวนเข้มเดิม ("โอนแล้ว") ยังทำงานเหมือนเดิมแม้ไม่มีร่องรอย */
+    public function test_strict_claim_still_works_without_trace(): void
+    {
+        $this->enableSlipOk();
+
+        $this->assertNotNull($this->service->tryReturningPaidSlipCheck('facebook', self::PSID, 'โอนแล้วค่ะ'));
+    }
+
+    // ── 3. cache "มีบิลค้างไหม" ─────────────────────────────────────────
+
     /**
-     * 💳 cache "มีบิลค้างจ่ายไหม" (30 วิ) ต้องล้างทันทีที่บิลเข้าสถานะรอจ่าย
+     * 💳 cache (30 วิ) ต้องล้างทันทีที่บิลเข้าสถานะรอจ่าย
      *
      * เคสเดียวกัน 12:40:03 → 12:40:20: ค่าถูกคำนวณเป็น false ตอนข้อความ "เปิดบิล 39" เข้ามา
      * (ก่อนสร้างบิล) → 17 วิต่อมา "สาธุๆๆ" ยังอ่าน false ค้าง → ได้คำอวยพรลาก่อนทั้งที่มีบิลรอจ่าย
