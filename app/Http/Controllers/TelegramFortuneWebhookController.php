@@ -501,10 +501,16 @@ class TelegramFortuneWebhookController extends Controller
     {
         $callbackId = (string) ($callback['id'] ?? '');
         $message = (array) ($callback['message'] ?? []);
+        $data = (string) ($callback['data'] ?? '');
+        $title = $this->buttonTitleFor($message, $data);
 
         // ปิดวงกลมหมุนบนปุ่มของลูกค้าก่อนเสมอ (ไม่งั้นค้าง ~15 วิ ดูเหมือนบอทพัง)
+        //    ปุ่มที่ไม่มีอยู่แล้ว (กดซ้ำ/ข้อความเก่า) → ขึ้นป้ายเล็ก ๆ บอกลูกค้า แทนการเงียบ
         if ($callbackId !== '') {
-            $this->telegram->answerCallbackQuery($callbackId);
+            $this->telegram->answerCallbackQuery(
+                $callbackId,
+                $title === '' ? 'ปุ่มนี้ใช้ไม่ได้แล้วค่ะ พิมพ์บอกแม่หมอได้เลยนะคะ ✨' : null
+            );
         }
 
         if (($message['chat']['type'] ?? '') !== 'private' || ! empty($callback['from']['is_bot'])) {
@@ -519,9 +525,6 @@ class TelegramFortuneWebhookController extends Controller
 
         $this->telegram->rememberProfile($userId, (array) ($callback['from'] ?? []));
         $this->telegram->clearBlocked($userId);
-
-        $data = (string) ($callback['data'] ?? '');
-        $title = $this->buttonTitleFor($message, $data);
 
         // 🔐 ปุ่มที่กดต้อง "มีอยู่จริง" บนข้อความนั้น — client ดัดแปลง (MTProto) ยิง callback_data อะไรก็ได้
         //    ถ้าไม่ตรวจ ข้อความใดก็ได้จะวิ่งเข้าสมองแบบ "กดปุ่ม" = ข้ามด่าน /aistop + ด่านสแปม

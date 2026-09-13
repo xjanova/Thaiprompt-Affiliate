@@ -46,6 +46,7 @@ class FortuneCelticPickVoiceNudge extends Command
 
         $dry = (bool) $this->option('dry-run');
         $sent = 0;
+        $senders = [];
 
         $readings = FortuneReading::where('conversation_status', FortuneReading::STATUS_CELTIC_PICKING)
             // ✈️ (2026-09-13) + Telegram (เสียงขึ้นเป็นข้อความเสียง) · LINE ไม่ส่ง (โควตา push)
@@ -87,7 +88,11 @@ class FortuneCelticPickVoiceNudge extends Command
                     continue;
                 }
 
-                $fb = \App\Services\Fortune\FortuneMessengerFactory::sender((string) $reading->platform, (string) $userId, $settings);
+                // ผู้ส่งตัวเดียวต่อช่องทางทั้งลูป (ท่าเดิมของ FB: app() ตัวเดียว) — ไม่ส่ง $settings ของเพจหลักเข้าไป
+                //    ให้ FB service ผูกเพจของลูกค้าเองตามปกติ (ระบบหลายเพจ)
+                $channel = \App\Services\Fortune\FortuneMessengerFactory::resolvePlatform((string) $reading->platform, (string) $userId);
+                $senders[$channel] ??= \App\Services\Fortune\FortuneMessengerFactory::sender($channel, (string) $userId);
+                $fb = $senders[$channel];
                 if ($fb !== null && $fb->sendAudio($userId, $voiceUrl)) {
                     $reading->setConversationState('pick_voice_nudged_count', $picked);
                     $sent++;

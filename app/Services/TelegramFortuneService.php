@@ -709,7 +709,6 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
 
         $chunks = $this->splitMessage($message);
         $lastIndex = count($chunks) - 1;
-        $delivered = 0;
 
         foreach ($chunks as $i => $chunk) {
             $params = [
@@ -723,30 +722,21 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
                 $params['reply_markup'] = ['inline_keyboard' => $keyboard];
             }
 
+            // call() ลองซ้ำให้แล้ว (exception 1 ครั้ง · 429 รอได้ถึง 15 วิ) — ไม่ซ้อน retry อีกชั้น
             $result = $this->call('sendMessage', $params);
 
-            // ท่อนที่ล้มชั่วคราว (เน็ต/เซิร์ฟเวอร์) → ลองซ้ำอีกครั้งเดียว ไม่งั้นคำทำนายขาดกลางเรื่อง
-            if (empty($result['ok']) && ! in_array((int) ($result['error_code'] ?? 0), [400, 403], true)) {
-                usleep(800000);
-                $result = $this->call('sendMessage', $params);
-            }
-
             if (empty($result['ok'])) {
-                // บล็อกบอท → ท่อนที่เหลือก็ส่งไม่ได้
-                if ((int) ($result['error_code'] ?? 0) === 403) {
-                    return $delivered > 0;
-                }
-
-                Log::warning('Telegram: ส่งท่อนข้อความไม่สำเร็จ', [
+                // ⚠️ หยุดทันทีแล้วคืน false (แบบเดียวกับ FB) — ห้ามข้ามไปส่งท่อนถัดไปแล้วรายงานว่าส่งแล้ว
+                //    ไม่งั้นคำทำนายที่จ่ายเงินแล้วขาดกลางเรื่องถาวร เพราะผู้เรียก mark delivered
+                //    คืน false = ผู้เรียก/cron redeliver ส่งซ้ำได้ (ซ้ำบางท่อน ดีกว่าหายบางท่อน)
+                Log::warning('Telegram: ส่งท่อนข้อความไม่สำเร็จ — หยุดส่งท่อนที่เหลือ', [
                     'user_id' => $recipientId,
                     'chunk' => ($i + 1).'/'.count($chunks),
                     'error_code' => $result['error_code'] ?? null,
                 ]);
 
-                continue;
+                return false;
             }
-
-            $delivered++;
 
             if ($i === $lastIndex && $ephemeral && isset($params['reply_markup'])) {
                 $this->rememberEphemeralKeyboard($recipientId, $chatId, (int) ($result['result']['message_id'] ?? 0));
@@ -757,9 +747,7 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
             }
         }
 
-        // ถึงลูกค้าแล้วอย่างน้อยหนึ่งท่อน = ส่งแล้ว (ผู้เรียกบางเส้นส่งซ้ำทั้งก้อนเมื่อได้ false → ลูกค้าได้ซ้ำ)
-        //    ท่อนที่หายถูก log ไว้ข้างบนแล้ว
-        return $delivered > 0;
+        return true;
     }
 
     /**
