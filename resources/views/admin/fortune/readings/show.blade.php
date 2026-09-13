@@ -15,20 +15,14 @@
     $dangColor = '#d9534f'; // แดง/อันตราย
     $infoColor = '#5689b8'; // ฟ้า/info
 
-    // 🔄 ลำดับสถานะ conversation (timeline)
-    $statuses = [
-        'new'                   => ['label' => 'ใหม่',        'icon' => 'fa-star'],
-        'awaiting_confirmation' => ['label' => 'รอยืนยัน',    'icon' => 'fa-hourglass-half'],
-        'basic_done'            => ['label' => 'Basic เสร็จ', 'icon' => 'fa-wand-magic-sparkles'],
-        'collecting_birthdate'  => ['label' => 'รับวันเกิด',  'icon' => 'fa-calendar-day'],
-        'collecting_questions'  => ['label' => 'รับคำถาม',    'icon' => 'fa-circle-question'],
-        'pending_payment'       => ['label' => 'รอชำระ',      'icon' => 'fa-credit-card'],
-        'paid'                  => ['label' => 'ชำระแล้ว',    'icon' => 'fa-circle-check'],
-        'completed'             => ['label' => 'เสร็จสิ้น',   'icon' => 'fa-flag-checkered'],
-    ];
-    $currentStatus = $reading->conversation_status ?? 'new';
-    $statusOrder   = array_keys($statuses);
-    $currentIndex  = array_search($currentStatus, $statusOrder);
+    // 🔄 (2026-09-13) สถานะ Conversation = ขั้นในกรวยชุดเดียวกับ Warroom (App\Support\FortuneFunnelStage)
+    //    เดิมเป็น 8 ขั้นเขียนตายตัว — สถานะ Celtic/เลือกแพ็กเกจ/ไพ่ฟรี ไม่มีขั้นไหนติด "ปัจจุบัน"
+    //    และบิลยกเลิก (completed + ไม่จ่าย) โดนติ๊ก "ชำระแล้ว" ✓
+    $funnelStage  = \App\Support\FortuneFunnelStage::of($reading);
+    $funnelMeta   = \App\Support\FortuneFunnelStage::meta($funnelStage);
+    $funnelDetail = \App\Support\FortuneFunnelStage::detail($reading);
+    $funnelPath   = \App\Support\FortuneFunnelStage::path($reading);
+    $funnelIndex  = array_search($funnelStage, $funnelPath, true);
 
     // 💳 จัดการบล็อก manual action (deep reading)
     $showDeepActions = $reading->reading_type === 'deep'
@@ -110,11 +104,8 @@
                 <div>
                     <div class="tp-muted" style="font-size:12px;">ประเภทคำทำนาย</div>
                     <div style="margin-top:4px;">
-                        @if($reading->reading_type === 'deep')
-                            <span class="tp-pill tp-pill-gold"><i class="fas fa-star"></i> เชิงลึก</span>
-                        @else
-                            <span class="tp-pill tp-pill-soft"><i class="fas fa-wand-magic-sparkles"></i> พื้นฐาน</span>
-                        @endif
+                        {{-- 🏷️ (2026-09-13) ใช้ป้ายจากโมเดล — เดิมบิล Celtic 99 / ไพ่ฟรี ขึ้นว่า "พื้นฐาน" --}}
+                        <span class="tp-pill {{ in_array($reading->reading_type, ['deep', 'celtic_cross', 'free_card'], true) ? 'tp-pill-gold' : 'tp-pill-soft' }}">{{ $reading->getReadingTypeLabel() }}</span>
                     </div>
                 </div>
                 @if($reading->birth_date)
@@ -173,27 +164,45 @@
                     <i class="fas fa-arrows-rotate"></i>
                 </span>
                 <span class="tp-num" style="font-weight:800; font-size:16px;">สถานะ Conversation</span>
+                <span class="tp-muted" style="margin-left:auto; font-size:11px;">ชุดเดียวกับ Warroom</span>
             </div>
+
+            {{-- ขั้นปัจจุบัน — ป้าย ไอคอน สี และบรรทัดรายละเอียดเดียวกับการ์ดใน Warroom --}}
+            <div class="tp-well" style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:14px; margin-bottom:14px;">
+                <span style="width:40px; height:40px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; background:{{ $funnelMeta['color'] }};">{{ $funnelMeta['icon'] }}</span>
+                <div style="min-width:0;">
+                    <div style="font-weight:800; font-size:15px; color:var(--ink);">{{ $funnelMeta['label'] }}</div>
+                    @if($funnelDetail)
+                        <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">{{ $funnelDetail }}</div>
+                    @endif
+                    <div style="font-family:monospace; font-size:11px; color:var(--ink2); opacity:.75; margin-top:3px;">{{ $reading->conversation_status ?? '—' }}</div>
+                </div>
+            </div>
+
             <div style="display:flex; flex-direction:column; gap:10px;">
-                @foreach($statuses as $key => $status)
+                @foreach($funnelPath as $i => $stepKey)
                     @php
-                        $index     = array_search($key, $statusOrder);
-                        $isPast    = $index < $currentIndex;
-                        $isCurrent = $key === $currentStatus;
-                        // 🎨 สีไอคอนวงกลม: ปัจจุบัน=ทอง / ผ่านแล้ว=เขียว / ยังไม่ถึง=จาง
+                        $stepMeta  = \App\Support\FortuneFunnelStage::meta($stepKey);
+                        $isCurrent = $i === $funnelIndex;
+                        $isPast    = $funnelIndex !== false && $i < $funnelIndex;
+                        // 🎨 วงกลม: ปัจจุบัน=สีของขั้น (เดียวกับ Warroom) / ผ่านแล้ว=เขียว / ยังไม่ถึง=จาง
                         $circleStyle = $isCurrent
-                            ? 'background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:#fff; box-shadow:var(--raise);'
+                            ? 'background:'.$stepMeta['color'].'; color:#fff; box-shadow:var(--raise);'
                             : ($isPast
                                 ? 'background:transparent; color:'.$okColor.'; box-shadow:var(--inset-sm);'
                                 : 'background:transparent; color:var(--ink2); box-shadow:var(--inset-sm); opacity:.6;');
                         $textColor = $isCurrent ? 'var(--ink)' : ($isPast ? $okColor : 'var(--ink2)');
                     @endphp
                     <div style="display:flex; align-items:center; gap:11px;">
-                        <span style="width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; {{ $circleStyle }}">
-                            <i class="fas {{ $isPast ? 'fa-check' : $status['icon'] }}"></i>
+                        <span style="width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; {{ $circleStyle }}">
+                            @if($isPast)
+                                <i class="fas fa-check"></i>
+                            @else
+                                {{ $stepMeta['icon'] }}
+                            @endif
                         </span>
                         <span style="font-size:13.5px; color:{{ $textColor }}; {{ $isCurrent ? 'font-weight:800;' : 'font-weight:500;' }}">
-                            {{ $status['label'] }}
+                            {{ $stepMeta['label'] }}
                         </span>
                         @if($isCurrent)
                             <span class="tp-pill tp-pill-gold" style="margin-left:auto; font-size:10.5px;">ปัจจุบัน</span>

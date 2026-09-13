@@ -176,7 +176,16 @@
                 <div style="display:flex; flex-direction:column; gap:10px; font-size:14px;">
                     <div style="display:flex; justify-content:space-between; gap:10px;">
                         <span class="tp-muted">สถานะ Conversation</span>
-                        <span style="font-weight:600; color:var(--ink);">{{ $reading->conversation_status }}</span>
+                        {{-- (2026-09-13) ป้ายชุดเดียวกับ Warroom — รหัสดิบอยู่ใน title --}}
+                        @php
+                            $takeoverStageDetail = \App\Support\FortuneFunnelStage::detail($reading);
+                        @endphp
+                        <span style="font-weight:600; color:var(--ink); text-align:right;" title="{{ $reading->conversation_status }}">
+                            {{ \App\Support\FortuneFunnelStage::label($reading) }}
+                            @if($takeoverStageDetail)
+                                <span class="tp-muted" style="display:block; font-weight:500; font-size:12px;">{{ $takeoverStageDetail }}</span>
+                            @endif
+                        </span>
                     </div>
                     @if($reading->birth_date)
                     <div style="display:flex; justify-content:space-between; gap:10px;">

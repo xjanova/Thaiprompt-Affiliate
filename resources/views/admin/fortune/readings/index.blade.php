@@ -403,11 +403,17 @@
                                         </span>
                                     </div>
                                 @elseif($reading->conversation_status && $reading->conversation_status !== 'completed')
-                                    {{-- Conversation status badge (เคสอื่นๆ) --}}
+                                    {{-- Conversation status badge (เคสอื่นๆ) — (2026-09-13) ป้ายชุดเดียวกับ Warroom แทนรหัสดิบ --}}
+                                    @php
+                                        $rowStageDetail = \App\Support\FortuneFunnelStage::detail($reading);
+                                    @endphp
                                     <div style="margin-top:5px;">
-                                        <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;">
-                                            {{ $reading->conversation_status }}
+                                        <span class="tp-pill" style="background:rgba(224,165,46,.18); color:#a87d1e;" title="{{ $reading->conversation_status }}">
+                                            {{ \App\Support\FortuneFunnelStage::label($reading) }}
                                         </span>
+                                        @if($rowStageDetail)
+                                            <div class="tp-muted" style="font-size:11.5px; margin-top:3px;">{{ $rowStageDetail }}</div>
+                                        @endif
                                     </div>
                                 @endif
                             </td>
