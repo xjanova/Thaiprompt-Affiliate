@@ -3571,6 +3571,12 @@ class FortuneReading extends Model
             foreach ($uids as $uid) {
                 self::clearActiveReadingCache('facebook', $uid);
                 self::clearActiveReadingCache('line', $uid);
+
+                // 💳 (2026-09-13) cache "มีบิลค้างจ่ายไหม" 30 วิ (FortuneConversationService::hasPendingUnpaidBill)
+                //   ต้องล้างตามสถานะด้วย — เคส Pantaree FTU-260913-S0328: ค่าถูกคำนวณเป็น false ตอนข้อความ
+                //   "เปิดบิล 39" เข้ามา (ก่อนสร้างบิล) → 17 วิต่อมาลูกค้าพิมพ์ "สาธุๆๆ" ยังอ่าน false ค้าง
+                //   → ด่านคำลาทำงานทั้งที่มีบิลรอจ่าย (กฎ 2026-06-03: มีบิลค้าง = ห้าม farewell)
+                \Illuminate\Support\Facades\Cache::forget("fortune:has_pending_bill:{$uid}");
             }
         });
     }

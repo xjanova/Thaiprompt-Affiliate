@@ -3258,6 +3258,9 @@ class FacebookWebhookController extends Controller
                                     ->orWhere('celtic_questions_used', '<=', 0);
                             })
                             ->exists()
+                        // 🧾 (2026-09-13) บิลดูดวง 39 ออก QR แล้วยังไม่จ่าย ภายใน 3 วัน — ลูกค้าจ่ายช้ากว่าเวลาบิล
+                        //   (เคส Pantaree Donpar: บิลหมดเวลาเมื่อคืน → ไปโอนที่ร้านตอนเช้า → สลิปถูกเก็บเงียบ)
+                        || $this->conversationService?->findAbandonedUnpaidDeepBill($senderId) !== null
                     );
 
                 if ($hasRecoverableCeltic) {

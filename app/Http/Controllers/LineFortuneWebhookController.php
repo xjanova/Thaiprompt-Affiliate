@@ -420,6 +420,8 @@ class LineFortuneWebhookController extends Controller
                                     ->orWhere('celtic_questions_used', '<=', 0);
                             })
                             ->exists()
+                        // 🧾 (2026-09-13) บิลดูดวง 39 ออก QR แล้วยังไม่จ่าย ภายใน 3 วัน — parity กับ FB
+                        || $this->conversationService?->findAbandonedUnpaidDeepBill($userId) !== null
                     );
 
                 if ($hasRecoverableCeltic) {
