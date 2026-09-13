@@ -644,6 +644,10 @@ class FortuneChannelManager
         //    หลังลูกค้าจ่ายเงิน + 8 จุดอื่นที่มี markdown ใน FortuneConversationService)
         $message = $this->stripMessengerMarkdown($message);
 
+        // 📏 (2026-09-13) เส้นคั่นยาวเกิน 10 ตัว (เมนูราคา ━ 17 / บิล ═ 23 ฯลฯ) → ย่อเหลือ 10 ที่ทางออก FB จุดเดียว
+        //    จอมือถือแคบตกบรรทัด เส้นขาดสองท่อน · แตะเฉพาะบรรทัดที่เป็นเส้นล้วน · LINE ไม่ผ่านจุดนี้
+        $message = \App\Services\Fortune\FortuneMessengerFormatter::shortenDividers((string) $message);
+
         Log::info('Facebook sendFacebookResponse: เริ่มจัดการ action', [
             'action' => $action,
             'user_id' => $userId,

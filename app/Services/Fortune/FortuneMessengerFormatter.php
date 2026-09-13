@@ -13,6 +13,7 @@ namespace App\Services\Fortune;
  *   2. ติดหัวข้อไว้กับเนื้อหา (ตัดบรรทัดว่างระหว่างหัวข้อกับเนื้อ)
  *      เดิมหัวข้อเป็นย่อหน้าเดี่ยว ⇒ FortuneBubbleSplitter เคยปล่อยหัวข้อค้างท้ายกล่อง แล้วเนื้อไปอยู่กล่องถัดไป
  *   3. คั่นเซคชั่นด้วยเส้นประสั้น "┈┈┈┈┈┈┈┈┈┈" (10 ตัว — ยาวกว่านี้จอมือถือแคบตกบรรทัด)
+ *   4. ⭐ (2026-09-13 · แบบ ข) บล็อกคะแนน "ความรัก: 4/5" ท้ายพื้นดวง Celtic → "★★★★☆  ความรัก" (renderScores)
  *
  * ⚠️ ทำไม Messenger ทำตารางไม่ได้: ฟอนต์กว้างไม่เท่ากัน + สระบน-ล่าง/วรรณยุกต์ไทยไม่กินที่ ⇒ ขอบขวาไม่มีวันตรง
  *
@@ -45,7 +46,18 @@ class FortuneMessengerFormatter
     private const MIN_HEADERS = 2;
 
     /**
-     * แต่งข้อความทั้งก้อน — ไม่มีโครงเซคชั่นคืนต้นฉบับทุกตัวอักษร
+     * ⭐ (2026-09-13) ชื่อด้านในบล็อกคะแนนดวง — ต้องตรงกับ CelticCrossService::scoreSummarySpec() ทุกคำ
+     */
+    public const SCORE_AREAS = ['ความรัก', 'การงาน', 'การเงิน', 'โชคลาภ', 'สุขภาพ'];
+
+    /** หัวบล็อกคะแนนหลังแปลงเป็นดาว */
+    public const SCORE_TITLE = '【 ⭐ สรุปดวงรอบนี้ 】';
+
+    /** บรรทัดคะแนนติดกันอย่างน้อยเท่านี้ถึงจะนับเป็นบล็อกคะแนน (กันประโยคเดี่ยว "การเงิน: 3/5" กลางเนื้อ) */
+    private const MIN_SCORE_LINES = 3;
+
+    /**
+     * แต่งข้อความทั้งก้อน — หัวข้อเซคชั่น + บล็อกคะแนนดาว · ไม่มีทั้งสองอย่าง = คืนต้นฉบับทุกตัวอักษร
      */
     public function format(string $text): string
     {
@@ -53,6 +65,119 @@ class FortuneMessengerFormatter
             return $text;
         }
 
+        return $this->renderScores($this->formatSections($text));
+    }
+
+    /**
+     * 📏 (2026-09-13) ย่อ "บรรทัดที่เป็นเส้นล้วน" ที่ยาวเกิน 10 ตัว ให้เหลือ 10 ตัว (ตัวอักษรเดิม)
+     *
+     * ข้อความแม่หมอหลายสิบจุดใช้เส้น ━ 13-17 ตัว / ═ 23 ตัว / ─ 21-22 ตัว (เมนูราคา บิล ข้อความขาย ฯลฯ)
+     * บนจอมือถือแคบ ตัวอักษรชุดเส้นกว้างราว 1 ช่องเต็ม ⇒ เกิน ~14 ตัวตกบรรทัด เส้นขาดเป็นสองท่อน
+     * ย่อที่ทางออก FB จุดเดียวแทนไล่แก้ทุก literal (บางตัวอยู่ในพรอมต์ AI ที่ลูกค้าไม่เห็น — ห้ามแตะ)
+     *
+     * แตะเฉพาะบรรทัดที่มีแต่ตัวเส้นซ้ำตัวเดียวกัน — บรรทัดที่มีข้อความปน ("── หัวข้อ ────") ไม่แตะ
+     */
+    public static function shortenDividers(string $text): string
+    {
+        if ($text === '') {
+            return $text;
+        }
+
+        $out = preg_replace_callback(
+            '/^[ \t]*([━─═┈])\1{10,}[ \t]*$/mu',
+            fn (array $m) => str_repeat($m[1], 10),
+            $text
+        );
+
+        return is_string($out) ? $out : $text;
+    }
+
+    /**
+     * ⭐ แปลงบล็อก "⭐ สรุปคะแนนดวง / ความรัก: 4/5 / …" เป็น "【 ⭐ สรุปดวงรอบนี้ 】 / ★★★★☆  ความรัก / …"
+     *
+     * ดาวอยู่ต้นบรรทัดเสมอ — Messenger ตัวอักษรกว้างไม่เท่ากัน ต้นบรรทัดตรงกันได้ ท้ายบรรทัดไม่มีวันตรง
+     * รูปแบบไม่ตรงเป๊ะ (คะแนนนอก 1-5 · ชื่อด้านแปลก · ไม่ถึง 3 บรรทัด) = ไม่แตะ ปล่อยตัวเลขไว้ตามเดิม
+     */
+    public function renderScores(string $text): string
+    {
+        $lines = preg_split('/\R/u', $text);
+        if ($lines === false) {
+            return $text;
+        }
+
+        $count = count($lines);
+        for ($i = 0; $i < $count; $i++) {
+            if ($this->scoreOf($lines[$i]) === null) {
+                continue;
+            }
+
+            $j = $i;
+            while ($j < $count && $this->scoreOf($lines[$j]) !== null) {
+                $j++;
+            }
+            if ($j - $i < self::MIN_SCORE_LINES) {
+                $i = $j;
+
+                continue;
+            }
+
+            // หัวบล็อก "⭐ …" ที่อยู่เหนือบรรทัดคะแนน (ข้ามบรรทัดว่างได้) → แทนด้วยหัวใหม่ ไม่ให้ค้างซ้ำสองหัว
+            $h = $i - 1;
+            while ($h >= 0 && trim($lines[$h]) === '') {
+                $h--;
+            }
+            $start = ($h >= 0 && str_starts_with(trim($lines[$h]), '⭐')) ? $h : $i;
+
+            $block = [self::SCORE_TITLE];
+            for ($k = $i; $k < $j; $k++) {
+                [$area, $score] = $this->scoreOf($lines[$k]);
+                $block[] = str_repeat('★', $score).str_repeat('☆', 5 - $score).'  '.$area;
+            }
+
+            $before = array_slice($lines, 0, $start);
+            $this->trimTrailingBlank($before);
+            $after = array_slice($lines, $j);
+            while ($after !== [] && trim($after[0]) === '') {
+                array_shift($after);
+            }
+
+            $out = $before;
+            if ($before !== []) {
+                array_push($out, '', self::DIVIDER, '');
+            }
+            array_push($out, ...$block);
+            if ($after !== []) {
+                array_push($out, '', ...$after);
+            }
+
+            return rtrim(implode("\n", $out)); // บล็อกเดียวต่อข้อความ
+        }
+
+        return $text;
+    }
+
+    /**
+     * บรรทัดนี้เป็นบรรทัดคะแนนไหม — "ความรัก: 4/5" → ['ความรัก', 4] · ไม่ใช่ = null
+     *
+     * @return array{0: string, 1: int}|null
+     */
+    private function scoreOf(string $line): ?array
+    {
+        $areas = implode('|', array_map(fn ($a) => preg_quote($a, '/'), self::SCORE_AREAS));
+
+        // โคลอนเป็นทางเลือก ("ความรัก 4/5" ก็รับ) · ต้องทั้งบรรทัด — ประโยคที่มีคำอื่นปนไม่นับ
+        if (preg_match('/^\s*('.$areas.')\s*[:：]?\s*([1-5])\s*\/\s*5\s*$/u', $line, $m) === 1) {
+            return [$m[1], (int) $m[2]];
+        }
+
+        return null;
+    }
+
+    /**
+     * แต่งหัวข้อเซคชั่น — ไม่มีโครงเซคชั่น (หัวข้อไม่ถึง 2) คืนต้นฉบับทุกตัวอักษร
+     */
+    private function formatSections(string $text): string
+    {
         $lines = preg_split('/\R/u', $text);
         if ($lines === false) {
             return $text;

@@ -154,6 +154,96 @@ class FortuneMessengerFormatterTest extends TestCase
         $this->assertSame($strip($f->format($this->q1Answer(true))), $strip(implode("\n\n", $bubbles)));
     }
 
+    /**
+     * ⭐ แบบ ข — บล็อกคะแนน "ความรัก: 4/5" ท้ายพื้นดวง → ดาวต้นบรรทัด + หัวใหม่ + เส้นคั่นก่อนบล็อก
+     *    บรรทัดชวนถามที่ปิดท้ายต้องยังอยู่หลังบล็อก
+     */
+    #[Test]
+    public function score_block_becomes_stars_with_its_own_header(): void
+    {
+        $text = $this->q1Answer()
+            ."\n\n⭐ สรุปคะแนนดวง\nความรัก: 4/5\nการงาน: 3/5\nการเงิน: 5/5\nโชคลาภ: 2/5\nสุขภาพ: 1/5"
+            ."\n\nอยากรู้เรื่องไหนลึก ๆ พิมพ์ถามแม่หมอได้เลยนะลูก";
+        $out = (new FortuneMessengerFormatter)->format($text);
+
+        $this->assertStringContainsString(
+            FortuneMessengerFormatter::DIVIDER."\n\n".FortuneMessengerFormatter::SCORE_TITLE
+            ."\n★★★★☆  ความรัก\n★★★☆☆  การงาน\n★★★★★  การเงิน\n★★☆☆☆  โชคลาภ\n★☆☆☆☆  สุขภาพ"
+            ."\n\nอยากรู้เรื่องไหนลึก ๆ พิมพ์ถามแม่หมอได้เลยนะลูก",
+            $out
+        );
+        $this->assertStringNotContainsString('⭐ สรุปคะแนนดวง', $out, 'หัวเดิมต้องถูกแทน ไม่ค้างสองหัว');
+        $this->assertStringNotContainsString('/5', $out);
+        $this->assertSame($out, (new FortuneMessengerFormatter)->format($out), 'แต่งซ้ำไม่เปลี่ยน');
+
+        // ผ่ากล่องแล้วหัวบล็อกคะแนนต้องติดกับดาว ไม่ค้างท้ายกล่อง
+        $f = new FortuneMessengerFormatter;
+        foreach ($f->trimBubbleEdges((new FortuneBubbleSplitter)->split($out, 4)) as $bubble) {
+            $lines = preg_split('/\R/u', $bubble);
+            $this->assertNotSame(FortuneMessengerFormatter::SCORE_TITLE, trim(end($lines)));
+        }
+    }
+
+    /**
+     * รูปแบบไม่ตรงเป๊ะ = ไม่แตะคะแนน (ปล่อยตัวเลขไว้ ดีกว่าวาดดาวผิด)
+     */
+    #[Test]
+    public function malformed_score_lines_are_left_alone(): void
+    {
+        $f = new FortuneMessengerFormatter;
+
+        $outOfRange = "⭐ สรุปคะแนนดวง\nความรัก: 7/5\nการงาน: 3/5\nการเงิน: 0/5";
+        $this->assertSame($outOfRange, $f->format($outOfRange));
+
+        $tooFew = "⭐ สรุปคะแนนดวง\nความรัก: 4/5\nการงาน: 3/5";
+        $this->assertSame($tooFew, $f->format($tooFew));
+
+        $withNotes = "ความรัก: 4/5 เพราะเขาชอบลูก\nการงาน: 3/5 งานหนัก\nการเงิน: 4/5 มีเงินเข้า";
+        $this->assertSame($withNotes, $f->format($withNotes));
+
+        // ไม่มีโคลอน / เว้นวรรครอบ "/" ก็ยังเป็นบรรทัดคะแนน
+        $loose = "ความรัก 4/5\nการงาน : 3 / 5\nการเงิน：5/5";
+        $this->assertSame(FortuneMessengerFormatter::SCORE_TITLE."\n★★★★☆  ความรัก\n★★★☆☆  การงาน\n★★★★★  การเงิน", $f->format($loose));
+
+        // หัว ⭐ เว้นบรรทัดก่อนคะแนน → ยังถูกแทน ไม่ค้างสองหัว
+        $spaced = "⭐ สรุปคะแนนดวง\n\nความรัก: 4/5\nการงาน: 3/5\nการเงิน: 4/5";
+        $this->assertSame(FortuneMessengerFormatter::SCORE_TITLE."\n★★★★☆  ความรัก\n★★★☆☆  การงาน\n★★★★☆  การเงิน", $f->format($spaced));
+    }
+
+    /**
+     * 🔒 สเปกบล็อกคะแนนในพรอมต์ Celtic ต้องใช้ชื่อด้านชุดเดียวกับตัวแปลง และห้ามมีอีโมจิหัวข้ออื่น
+     *    (ด่าน must เช็ค str_contains ทั้งก้อน — อีโมจิที่โมเดลลอกจากสเปกทำให้ด่านผ่านทั้งที่เซคชั่นหาย)
+     */
+    #[Test]
+    public function celtic_score_spec_matches_formatter_and_carries_no_section_emoji(): void
+    {
+        $spec = \App\Services\CelticCrossService::scoreSummarySpec();
+
+        foreach (FortuneMessengerFormatter::SCORE_AREAS as $area) {
+            $this->assertStringContainsString("{$area}: N/5", $spec);
+        }
+        foreach (FortuneMessengerFormatter::HEADER_EMOJI as $emoji) {
+            $this->assertStringNotContainsString($emoji, $spec, "สเปกคะแนนห้ามมี {$emoji}");
+        }
+    }
+
+    /**
+     * 📏 เส้นล้วนยาวเกิน 10 ตัว → 10 ตัว (ตัวอักษรเดิม) · บรรทัดที่มีข้อความปน / เส้นสั้นอยู่แล้ว ไม่แตะ
+     */
+    #[Test]
+    public function long_divider_lines_are_shortened_to_ten(): void
+    {
+        $menu = "💎 อัตราค่าดูดวงกับแม่หมอจันทรา 💎\n\n━━━━━━━━━━━━━━━━━\n🔹 แพ็คเกจ 39 บาท\n═══════════════════════\nบิล\n  ──────────────────────  \n── หัวข้อ ──────────────\n┈┈┈┈┈┈┈┈┈┈";
+        $out = FortuneMessengerFormatter::shortenDividers($menu);
+
+        $this->assertSame(
+            "💎 อัตราค่าดูดวงกับแม่หมอจันทรา 💎\n\n━━━━━━━━━━\n🔹 แพ็คเกจ 39 บาท\n══════════\nบิล\n──────────\n── หัวข้อ ──────────────\n┈┈┈┈┈┈┈┈┈┈",
+            $out
+        );
+        $this->assertSame('', FortuneMessengerFormatter::shortenDividers(''));
+        $this->assertSame('ไม่มีเส้น', FortuneMessengerFormatter::shortenDividers('ไม่มีเส้น'));
+    }
+
     #[Test]
     public function trim_bubble_edges_drops_edge_dividers_and_empty_bubbles(): void
     {
