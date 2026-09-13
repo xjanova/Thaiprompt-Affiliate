@@ -6077,6 +6077,28 @@ class FortuneChannelManager
         }
     }
 
+    /**
+     * ✦ (2026-09-13) แต่งหัวข้อคำทำนายสำหรับ Messenger — ดู FortuneMessengerFormatter
+     *
+     * สวิตช์หลังบ้าน `fortune_messenger_format_fb` (default เปิด) · แต่งไม่ได้ = ส่งต้นฉบับ ห้ามทำคำทำนายหาย
+     */
+    protected function formatForMessenger(string $message): string
+    {
+        if (! ($this->settings->fortune_messenger_format_fb ?? true)) {
+            return $message;
+        }
+
+        try {
+            return app(\App\Services\Fortune\FortuneMessengerFormatter::class)->format($message);
+        } catch (\Throwable $e) {
+            Log::warning('✦ Messenger: แต่งหัวข้อคำทำนายล้มเหลว — ส่งต้นฉบับ', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $message;
+        }
+    }
+
     /** ระยะห่างระหว่างกล่อง (วินาที) — สุ่มในกรอบที่แอดมินตั้ง */
     protected function bubbleGap(): array
     {
@@ -6113,7 +6135,17 @@ class FortuneChannelManager
         array $tailQuickReplies = [],
         ?int $readingId = null,
     ): bool {
+        // ✦ (2026-09-13) แต่งหัวข้อคำทำนายแบบ "【 หัวข้อ 】 + เส้นคั่นสั้น" — FB เท่านั้น
+        //    จุดนี้อยู่หลังด่านตรวจทุกตัว + หลังบันทึกแชทหลังบ้าน (sendResponse เก็บต้นฉบับไว้แล้ว)
+        //    ⇒ ด่านที่นับอีโมจิหัวข้อไม่เห็นการแต่ง · ไม่มีหัวข้อ = ต้นฉบับทุกตัวอักษร · ปิดได้ที่หลังบ้าน
+        $message = $this->formatForMessenger($message);
+
         $bubbles = $this->bubblesFor('facebook', $userId, $message);
+
+        // เส้นคั่นที่ตัวผ่ากล่องปล่อยไว้ขอบกล่อง = ซ้ำกับขอบกล่องแชทเอง → ตัดทิ้ง (ตัดแล้วเหลือกล่องเดียวก็ไปเส้นเดิม)
+        if ($bubbles !== [] && str_contains($message, \App\Services\Fortune\FortuneMessengerFormatter::DIVIDER)) {
+            $bubbles = app(\App\Services\Fortune\FortuneMessengerFormatter::class)->trimBubbleEdges($bubbles);
+        }
 
         // ผ่าไม่ได้/ปิดอยู่/ได้กล่องเดียว → เส้นเดิมทั้งดุ้น (รวมกล่องปิดท้าย)
         if (count($bubbles) < 2) {

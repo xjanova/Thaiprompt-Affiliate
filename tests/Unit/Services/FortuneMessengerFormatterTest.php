@@ -1,0 +1,161 @@
+<?php
+
+namespace Tests\Unit\Services;
+
+use App\Services\Fortune\FortuneBubbleSplitter;
+use App\Services\Fortune\FortuneMessengerFormatter;
+use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
+
+/**
+ * ✦ แต่งหัวข้อคำทำนายบน Messenger (2026-09-13) — แบบ ก "【 หัวข้อ 】 + เส้นคั่นสั้น"
+ *
+ * รูปทรงข้อความทดสอบเลียนคำตอบข้อแรกของ Celtic 99 บน prod (ตรวจ 12 ใบล่าสุด):
+ *   หัวข้อขึ้นต้นด้วยอีโมจิประจำเซคชั่น แล้ว "เว้นบรรทัดว่าง" ก่อนเนื้อทุกครั้ง
+ *   ⇒ ตัวผ่ากล่องเดิมมองหัวข้อเป็นย่อหน้าเดี่ยว = หัวข้อค้างท้ายกล่องได้
+ * คำตอบข้อ 2 เป็นต้นไปไม่มีหัวข้อ ⇒ ต้องผ่านไปแบบเดิมทุกตัวอักษร
+ *
+ * ไม่ boot แอป — คลาสที่ทดสอบไม่แตะ config/DB
+ */
+class FortuneMessengerFormatterTest extends TestCase
+{
+    private function q1Answer(bool $withPreamble = false): string
+    {
+        $sections = [
+            '🎯 เรื่องเด่นรอบนี้' => 'ไพ่ The Tower ขึ้นตำแหน่งอนาคตอันใกล้ แม่หมอฟันธงเลยนะลูก งานที่ทำอยู่จะเปลี่ยนกะทันหันก่อนสิ้นเดือนตุลาคม แต่ปลายทางได้เงินดีกว่าเดิม',
+            '🌟 พื้นฐานดวง' => "ลูกเกิดวันพุธกลางวัน ดาวพุธเป็นเจ้าชะตา ใจเร็ว คิดไว พูดเก่ง\n\nจุดอ่อนคือใจอ่อนกับคนใกล้ตัว ยอมคนง่ายเกินไป",
+            '🔮 ภาพรวมชีวิตช่วงนี้' => 'ช่วงนี้อยู่ปลายวงจรเก่า เรื่องที่ค้างคาจะจบลงภายในสองเดือน',
+            '🕛 จันทร์ลัคน์ & เรือนชะตา' => 'จันทร์ลัคน์ราศีกรกฎ ใจข้างในอ่อนไหว ต้องการความมั่นคง',
+            '💞 ความรัก' => 'คนที่ลูกคุยอยู่เป็นผู้ชายอายุมากกว่า 3-5 ปี ใจจริงเขาชอบ',
+            '💼 การงาน' => 'หัวหน้าผู้หญิงวัย 40 กว่ากำลังจับตาผลงานลูกอยู่',
+            '💰 การเงิน' => 'เงินเข้าเป็นก้อนจากงานพิเศษ ช่วงสัปดาห์ที่สองของเดือนหน้า',
+            '🍀 โชคลาภ' => 'โชคมาจากผู้ใหญ่ฝ่ายหญิง ไม่ใช่จากการเสี่ยงดวง',
+            '🌿 สุขภาพ' => 'ระวังกระเพาะกับการนอนดึก',
+            '🕉️ องค์เทพ/สิ่งศักดิ์สิทธิ์คุ้มครอง' => 'องค์พระพิฆเนศคุ้มครองเรื่องงาน บูชาวันพุธด้วยดอกไม้สีเหลือง',
+        ];
+
+        $parts = $withPreamble ? ['ลูกเอ๋ย แม่หมอเปิดไพ่ครบ 10 ใบแล้ว ฟังให้ดีนะ'] : [];
+        foreach ($sections as $header => $body) {
+            $parts[] = $header;
+            $parts[] = $body;
+        }
+
+        return implode("\n\n", $parts);
+    }
+
+    #[Test]
+    public function headers_are_bracketed_glued_to_body_and_sections_are_divided(): void
+    {
+        $out = (new FortuneMessengerFormatter)->format($this->q1Answer());
+
+        $this->assertStringStartsWith("【 🎯 เรื่องเด่นรอบนี้ 】\nไพ่ The Tower", $out, 'หัวข้อแรกไม่มีเส้นนำหน้า + ติดกับเนื้อ');
+        $this->assertStringContainsString("\n\n".FortuneMessengerFormatter::DIVIDER."\n\n【 💞 ความรัก 】\nคนที่ลูกคุยอยู่", $out);
+        $this->assertStringContainsString("【 🕉️ องค์เทพ/สิ่งศักดิ์สิทธิ์คุ้มครอง 】\n", $out, 'อีโมจิที่มี VS16 ต้องจับได้');
+        $this->assertSame(10, substr_count($out, '【'));
+        $this->assertSame(9, substr_count($out, FortuneMessengerFormatter::DIVIDER));
+
+        // ย่อหน้าที่ 2 ในเซคชั่นเดียวกันยังเว้นบรรทัดเหมือนเดิม (ไม่ถูกบีบ)
+        $this->assertStringContainsString("พูดเก่ง\n\nจุดอ่อนคือ", $out);
+    }
+
+    /**
+     * 🔒 ด่านตรวจนับอีโมจิหัวข้อด้วย str_contains — แต่งแล้วอีโมจิทุกตัวต้องยังอยู่
+     */
+    #[Test]
+    public function every_gate_emoji_survives_formatting(): void
+    {
+        $out = (new FortuneMessengerFormatter)->format($this->q1Answer());
+
+        foreach (['🎯', '🌟', '🔮', '🕛', '💞', '💼', '💰', '🍀', '🌿'] as $emoji) {
+            $this->assertStringContainsString($emoji, $out);
+        }
+    }
+
+    #[Test]
+    public function preamble_gets_a_divider_before_the_first_header(): void
+    {
+        $out = (new FortuneMessengerFormatter)->format($this->q1Answer(true));
+
+        $this->assertStringStartsWith('ลูกเอ๋ย แม่หมอเปิดไพ่ครบ 10 ใบแล้ว ฟังให้ดีนะ'."\n\n".FortuneMessengerFormatter::DIVIDER."\n\n【 🎯 เรื่องเด่นรอบนี้ 】", $out);
+    }
+
+    /**
+     * คำตอบข้อ 2+ ไม่มีโครงหัวข้อ / มีบรรทัดอีโมจิแค่บรรทัดเดียว / ประโยคยาวขึ้นต้นด้วยอีโมจิ → ห้ามแตะ
+     */
+    #[Test]
+    public function text_without_a_section_structure_is_untouched(): void
+    {
+        $f = new FortuneMessengerFormatter;
+
+        $plain = "ลูกถามว่าเขาจะกลับมาไหม แม่หมอเห็นว่าเขาจะทักมาก่อนสิ้นเดือนนี้\n\nแต่ลูกต้องไม่ง้อก่อน";
+        $this->assertSame($plain, $f->format($plain));
+
+        $oneHeader = "💞 ความรัก\n\nเขาจะทักมาก่อนสิ้นเดือน";
+        $this->assertSame($oneHeader, $f->format($oneHeader));
+
+        $sentences = "💰 เงินก้อนนี้จะเข้ามาช่วงกลางเดือน แต่ห้ามให้ญาติยืมเด็ดขาดเพราะยืมแล้วไม่ได้คืนแน่นอนนะลูก จำไว้\n\n"
+            .'💞 ส่วนเรื่องความรักนั้นเขาชอบลูกจริง แต่ยังไม่พร้อมเปิดตัวเพราะติดเรื่องทางบ้านของเขาอยู่ ใจเย็นก่อน';
+        $this->assertSame($sentences, $f->format($sentences));
+
+        $this->assertSame('', $f->format(''));
+    }
+
+    #[Test]
+    public function formatting_twice_changes_nothing(): void
+    {
+        $f = new FortuneMessengerFormatter;
+        $once = $f->format($this->q1Answer(true));
+
+        $this->assertSame($once, $f->format($once));
+    }
+
+    /**
+     * 🇹🇭 หัวข้อลงท้ายด้วย "บ" + โคลอน — rtrim(":：") จะตัดไบต์ท้ายของ บ ทิ้ง (0x9A) ต้องไม่เกิด
+     */
+    #[Test]
+    public function trailing_colon_is_removed_without_breaking_thai(): void
+    {
+        $text = "💼 งานและระบบ:\n\nงานเข้าเยอะ\n\n💰 เงินทอง：\n\nเงินเข้าเป็นก้อน";
+        $out = (new FortuneMessengerFormatter)->format($text);
+
+        $this->assertStringContainsString('【 💼 งานและระบบ 】', $out);
+        $this->assertStringContainsString('【 💰 เงินทอง 】', $out);
+        $this->assertTrue(mb_check_encoding($out, 'UTF-8'));
+    }
+
+    /**
+     * ผ่ากล่องจริงด้วย FortuneBubbleSplitter แล้วตัดขอบ — กล่องต้องไม่ขึ้นต้น/ลงท้ายด้วยเส้นคั่น
+     * และหัวข้อต้องไม่ค้างเป็นบรรทัดสุดท้ายของกล่อง (อาการเดิมที่หัวข้อเป็นย่อหน้าเดี่ยว)
+     */
+    #[Test]
+    public function split_bubbles_never_start_or_end_with_a_divider_or_a_lonely_header(): void
+    {
+        $f = new FortuneMessengerFormatter;
+        $bubbles = $f->trimBubbleEdges((new FortuneBubbleSplitter)->split($f->format($this->q1Answer(true)), 4));
+
+        $this->assertGreaterThanOrEqual(2, count($bubbles));
+        foreach ($bubbles as $bubble) {
+            $lines = preg_split('/\R/u', $bubble);
+            $this->assertNotSame(FortuneMessengerFormatter::DIVIDER, trim($lines[0]));
+            $this->assertNotSame(FortuneMessengerFormatter::DIVIDER, trim(end($lines)));
+            $this->assertStringStartsNotWith('【', trim(end($lines)), 'หัวข้อค้างท้ายกล่อง: '.end($lines));
+        }
+
+        // ไม่มีเนื้อหาหาย — ตัดเส้นคั่นออกทั้งสองฝั่งแล้วต้องเท่ากัน
+        $strip = fn (string $s) => preg_replace('/\s+/u', '', str_replace(FortuneMessengerFormatter::DIVIDER, '', $s));
+        $this->assertSame($strip($f->format($this->q1Answer(true))), $strip(implode("\n\n", $bubbles)));
+    }
+
+    #[Test]
+    public function trim_bubble_edges_drops_edge_dividers_and_empty_bubbles(): void
+    {
+        $d = FortuneMessengerFormatter::DIVIDER;
+        $out = (new FortuneMessengerFormatter)->trimBubbleEdges([
+            "เนื้อหาแรก\n\n{$d}",
+            "{$d}\n\n【 💞 ความรัก 】\nเขาชอบ\n\n{$d}\n\n【 💼 การงาน 】\nงานดี",
+            "\n{$d}\n",
+        ]);
+
+        $this->assertSame(['เนื้อหาแรก', "【 💞 ความรัก 】\nเขาชอบ\n\n{$d}\n\n【 💼 การงาน 】\nงานดี"], $out);
+    }
+}

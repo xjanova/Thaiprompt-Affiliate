@@ -262,6 +262,8 @@ class FortuneTellingSetting extends Model
         'fortune_chat_bubble_gap_min',
         'fortune_chat_bubble_gap_max',
         'fortune_chat_bubble_max',
+        // ✦ (2026-09-13) แต่งหัวข้อคำทำนายบน FB เป็น 【 หัวข้อ 】 + เส้นคั่นสั้น
+        'fortune_messenger_format_fb',
         // 📜 Consent Gate — กติกาก่อนจองคิว (2026-06-06)
         'fortune_consent_enabled',
         'fortune_consent_pick_strategy',
@@ -619,6 +621,8 @@ class FortuneTellingSetting extends Model
         'fortune_chat_bubble_gap_min' => 'integer',
         'fortune_chat_bubble_gap_max' => 'integer',
         'fortune_chat_bubble_max' => 'integer',
+        // ✦ แต่งหัวข้อคำทำนาย FB (2026-09-13)
+        'fortune_messenger_format_fb' => 'boolean',
         // 📜 Consent Gate (2026-06-06)
         'fortune_consent_enabled' => 'boolean',
         'fortune_consent_cancel_enabled' => 'boolean',
@@ -875,6 +879,8 @@ class FortuneTellingSetting extends Model
         'fortune_chat_bubble_gap_min' => 5,
         'fortune_chat_bubble_gap_max' => 10,
         'fortune_chat_bubble_max' => 4,
+        // ✦ (2026-09-13) แต่งหัวข้อคำทำนาย FB — เจ้าของสั่ง "แก้ให้หมดแล้วพุชพร้อมกัน" ⇒ เปิด
+        'fortune_messenger_format_fb' => true,
         // 📜 Consent Gate — กติกาก่อนจองคิว (default เปิด)
         'fortune_consent_enabled' => true,
         'fortune_consent_pick_strategy' => 'random',
