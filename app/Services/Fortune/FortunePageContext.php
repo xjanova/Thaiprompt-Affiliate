@@ -33,11 +33,12 @@ class FortunePageContext
      * ไม่ใช่เจ้าของงาน (webhook / job / cron) ตั้งเอง
      *
      * ทำไมต้องเก็บเป็น static ไม่ใช่ธงของ instance:
-     *   cron / queue worker สร้าง FacebookWebhookService ใหม่ต่อผู้รับหนึ่งคน
+     *   cron (หรือโค้ดใดที่วนส่งหลายคนในโปรเซสเดียว) สร้าง FacebookWebhookService ใหม่ต่อผู้รับหนึ่งคน
      *   ตัวแรก bind เพจ A ไว้ (static) → ตัวที่สองเห็นว่า "มี context แล้ว + ตัวเองไม่ได้ bind"
      *   → เข้าใจผิดว่าเจ้าของงานตั้งไว้ → ไม่เดาใหม่ → ส่งหาลูกค้าเพจ B ด้วย token เพจ A
      *   → Graph 400 → คำตอบที่ลูกค้าจ่ายเงินแล้วหายเงียบ
-     *   (queue worker เป็นโปรเซสรันยาว static ค้างข้าม job — job ถัดไปโดนแบบเดียวกัน)
+     *   (ข้าม job ปลอดภัยอยู่แล้ว — Queue::after ใน AppServiceProvider forget() ทุกครั้งที่ job จบ
+     *    แต่ job ที่ dispatch ตอน context เป็นของเดา ต้องพกธงนี้ไปด้วย — ดู fortune_page_lazy ใน payload)
      *
      * set() จากเจ้าของงานล้างธงนี้เสมอ → ของจริงชนะของเดา
      */

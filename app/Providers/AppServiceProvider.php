@@ -127,8 +127,15 @@ class AppServiceProvider extends ServiceProvider
         //   ปัญหา: webhook รู้ว่าเพจไหน แต่ queue worker เป็นคนละโปรเซส — context หายทันที
         //          job ที่ส่งคำทำนายกลับจะหยิบ token ของสาขาหลักไปส่งให้ลูกค้าสาขาอื่น
         //   แก้รวมศูนย์ที่ payload: ไม่ต้องไปแก้ job ทีละตัว (มี 30+ ตัว ลืมแน่)
+        //   🏬 (2026-09-13) + fortune_page_lazy: สาขาที่ FB service "เดา" จากผู้รับคนก่อน (ไม่ใช่เจ้าของงานตั้ง)
+        //   ต้องไปเป็น "ของเดา" ใน job ด้วย — ไม่งั้น cron ที่ส่งหาลูกค้าเพจ A แล้ว dispatch งานของลูกค้าเพจ B
+        //   จะตรึงเพจ A เป็นของจริงใน job → ส่งหาลูกค้าเพจ B ด้วย token เพจ A → Graph 400 → ของที่จ่ายแล้วหาย
+        //   (job เก่าที่ค้างคิวไม่มีคีย์นี้ = ของจริงเหมือนเดิม)
         Queue::createPayloadUsing(function () {
-            return ['fortune_page_id' => \App\Services\Fortune\FortunePageContext::currentId()];
+            return [
+                'fortune_page_id' => \App\Services\Fortune\FortunePageContext::currentId(),
+                'fortune_page_lazy' => \App\Services\Fortune\FortunePageContext::isLazilyBound(),
+            ];
         });
 
         Queue::before(function ($event) {
@@ -140,8 +147,15 @@ class AppServiceProvider extends ServiceProvider
 
             // 🏬 คืนค่า context ของสาขาจาก payload (null = งานที่ไม่ผูกสาขา)
             try {
-                $pageId = $event->job->payload()['fortune_page_id'] ?? null;
-                \App\Services\Fortune\FortunePageContext::bindFromId($pageId ? (int) $pageId : null);
+                $payload = $event->job->payload();
+                $pageId = ($payload['fortune_page_id'] ?? null) ? (int) $payload['fortune_page_id'] : null;
+
+                if (! empty($payload['fortune_page_lazy'])) {
+                    // ของเดา → FB service ใน job หาเพจของผู้รับตัวเองใหม่ได้
+                    \App\Services\Fortune\FortunePageContext::bindLazilyFromId($pageId);
+                } else {
+                    \App\Services\Fortune\FortunePageContext::bindFromId($pageId);
+                }
             } catch (\Throwable $e) {
                 \App\Services\Fortune\FortunePageContext::forget();
             }
