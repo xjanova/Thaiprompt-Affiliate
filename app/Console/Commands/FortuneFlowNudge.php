@@ -132,6 +132,17 @@ class FortuneFlowNudge extends Command
      */
     private function processReading(FortuneReading $reading, string $step, string $anchorKey, FortuneTellingSetting $settings, bool $dry, array &$stats): void
     {
+        // 🔒 (2026-09-14) อ่านแถวสดก่อนทำอะไร — ชุดที่โหลดตอนต้นรอบอาจเก่าไปหลายวินาที (ส่งข้อความทีละแถว)
+        //   ระหว่างนั้นลูกค้าอาจกดแพคเกจจนแถวเมนูกลายเป็นบิลแล้ว (ปุ่ม 39/99 ใช้แถวเมนูต่อ · พิมพ์ "39" ก็เหมือนกัน)
+        //   ถ้าทำงานบนสำเนาเก่า = ส่งกล่องเลือกแพคเกจใส่คนที่เพิ่งได้บิล หรือเขียนทับ state/สถานะของบิลที่เพิ่งออก
+        $loadedStatus = (string) $reading->conversation_status;
+        $reading = $reading->fresh();
+        if ($reading === null || (string) $reading->conversation_status !== $loadedStatus || $reading->is_paid) {
+            $stats['skip']++;
+
+            return;
+        }
+
         // marker ต้องมี (กัน reading เก่าก่อนมีฟีเจอร์ — ไม่แตะ)
         $shownAtRaw = $reading->getConversationState($anchorKey);
         if (empty($shownAtRaw)) {
@@ -181,7 +192,13 @@ class FortuneFlowNudge extends Command
         //   → query group A/B กรอง status + is_paid ไว้แล้ว ที่นี่ปิดได้เลย
         if ($silenceSec >= self::EXIT_AFTER_SEC) {
             if (! $dry) {
-                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                // 🔒 (2026-09-14) ปิดแบบมีเงื่อนไข — ลูกค้ากดแพคเกจจนแถวนี้เป็นบิลในจังหวะเดียวกันพอดี
+                //   update ธรรมดาจะพลิกบิลที่เพิ่งออกเป็น completed = SMS ตัดบิลไม่เจอ ⇒ ถอยแทน
+                if (! $reading->transitionStatusIf($loadedStatus, FortuneReading::STATUS_COMPLETED)) {
+                    $stats['skip']++;
+
+                    return;
+                }
                 $reading->setConversationState('flow_exit_at', now()->toIso8601String());
                 Cache::forget(self::CONSENT_PENDING_PREFIX.$userId);
                 Log::info('🔕 FortuneFlowNudge: auto-exit (เงียบ 30 นาที, ยังไม่สร้างบิล)', [
@@ -280,7 +297,13 @@ class FortuneFlowNudge extends Command
             try {
                 $ok = $service->sendQuickReplies($userId, $message, $buttons);
                 if ($ok) {
-                    $reading->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
+                    // 🔒 (2026-09-14) ส่งข้อความกินเวลา — อ่านแถวสดอีกรอบก่อนเขียนธง
+                    //   setConversationState เขียน state ทั้งก้อนจากสำเนาในมือ ถ้าแถวกลายเป็นบิลไปแล้ว
+                    //   สำเนาเก่าจะลบ state ที่ขั้นออกบิลเพิ่งเขียน (pay_first_mode ฯลฯ) ⇒ ข้ามการเขียนธงแทน
+                    $latest = $reading->fresh();
+                    if ($latest !== null && (string) $latest->conversation_status === $loadedStatus) {
+                        $latest->setConversationState('flow_nudge_sent_at', now()->toIso8601String());
+                    }
 
                     // 🛒 (2026-09-06) ต่ออายุความจำ "เรากำลังขายอยู่กับคนนี้" ให้ยาวกว่าตัว reading
                     //   กล่องนี้ส่งตอนลูกค้าเงียบ แล้วอีก ~27 นาที reading จะถูกปิดเอง (EXIT_AFTER_SEC)

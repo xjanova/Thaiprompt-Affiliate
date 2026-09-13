@@ -3634,27 +3634,65 @@ class FortuneReading extends Model
                 return;
             }
 
-            // 🩹 (2026-09-07) เดิมสาขา LINE อ่าน `$reading->line_user_id` ซึ่ง
-            //   **ไม่มีคอลัมน์นี้ในตาราง** ⇒ null เสมอ ⇒ คีย์ 'line' ไม่เคยถูกล้าง
-            //   = hasActiveReading('line', ...) ค้างค่าเก่านานถึง 30 วิ หลังสถานะเปลี่ยน
-            //   LINE userId อยู่ในคอลัมน์ชื่อ `facebook_user_id` ⇒ ล้างทั้งสองป้าย
-            //   ด้วย id จริงที่มี (ป้าย platform บนแถวเก่าเชื่อไม่ได้ 100%)
-            $uids = array_unique(array_filter([
-                $reading->facebook_user_id,
-                $reading->platform_user_id,
-            ]));
-
-            foreach ($uids as $uid) {
-                self::clearActiveReadingCache('facebook', $uid);
-                self::clearActiveReadingCache('line', $uid);
-
-                // 💳 (2026-09-13) cache "มีบิลค้างจ่ายไหม" 30 วิ (FortuneConversationService::hasPendingUnpaidBill)
-                //   ต้องล้างตามสถานะด้วย — เคส Pantaree FTU-260913-S0328: ค่าถูกคำนวณเป็น false ตอนข้อความ
-                //   "เปิดบิล 39" เข้ามา (ก่อนสร้างบิล) → 17 วิต่อมาลูกค้าพิมพ์ "สาธุๆๆ" ยังอ่าน false ค้าง
-                //   → ด่านคำลาทำงานทั้งที่มีบิลรอจ่าย (กฎ 2026-06-03: มีบิลค้าง = ห้าม farewell)
-                \Illuminate\Support\Facades\Cache::forget("fortune:has_pending_bill:{$uid}");
-            }
+            $reading->forgetStatusCaches();
         });
+    }
+
+    /**
+     * 🚦 ล้าง cache ที่ขึ้นกับสถานะของแถวนี้ — saved hook เรียกเมื่อ conversation_status เปลี่ยน
+     *
+     * แยกออกมา (2026-09-14) ให้ transitionStatusIf() ที่เขียนแบบ query (ไม่ยิง hook) ใช้ชุดเดียวกัน
+     */
+    public function forgetStatusCaches(): void
+    {
+        // 🩹 (2026-09-07) เดิมสาขา LINE อ่าน `$reading->line_user_id` ซึ่ง
+        //   **ไม่มีคอลัมน์นี้ในตาราง** ⇒ null เสมอ ⇒ คีย์ 'line' ไม่เคยถูกล้าง
+        //   = hasActiveReading('line', ...) ค้างค่าเก่านานถึง 30 วิ หลังสถานะเปลี่ยน
+        //   LINE userId อยู่ในคอลัมน์ชื่อ `facebook_user_id` ⇒ ล้างทั้งสองป้าย
+        //   ด้วย id จริงที่มี (ป้าย platform บนแถวเก่าเชื่อไม่ได้ 100%)
+        $uids = array_unique(array_filter([
+            $this->facebook_user_id,
+            $this->platform_user_id,
+        ]));
+
+        foreach ($uids as $uid) {
+            self::clearActiveReadingCache('facebook', $uid);
+            self::clearActiveReadingCache('line', $uid);
+
+            // 💳 (2026-09-13) cache "มีบิลค้างจ่ายไหม" 30 วิ (FortuneConversationService::hasPendingUnpaidBill)
+            //   ต้องล้างตามสถานะด้วย — เคส Pantaree FTU-260913-S0328: ค่าถูกคำนวณเป็น false ตอนข้อความ
+            //   "เปิดบิล 39" เข้ามา (ก่อนสร้างบิล) → 17 วิต่อมาลูกค้าพิมพ์ "สาธุๆๆ" ยังอ่าน false ค้าง
+            //   → ด่านคำลาทำงานทั้งที่มีบิลรอจ่าย (กฎ 2026-06-03: มีบิลค้าง = ห้าม farewell)
+            \Illuminate\Support\Facades\Cache::forget("fortune:has_pending_bill:{$uid}");
+        }
+    }
+
+    /**
+     * 🔒 (2026-09-14) เปลี่ยนสถานะแบบมีเงื่อนไข — เขียนเฉพาะตอนแถวยังอยู่ในสถานะ $from จริงใน DB
+     *
+     * กันงานสองทางแย่งแถวเดียวกัน: ลูกค้ากดปุ่มแพคเกจจนแถวเมนูกลายเป็นบิล (startDeepReadingFlow)
+     * กับ cron ปิดเมนูที่เงียบ 30 นาที (FortuneFlowNudge) — ใครเขียนก่อนได้แถวไป อีกฝั่งได้ false แล้วต้องถอย
+     * ⚠️ update ผ่านโมเดลปกติเทียบกับสำเนาในหน่วยความจำ ⇒ สำเนาเก่าเขียนทับบิลที่เพิ่งออกได้
+     *
+     * @param  array<string, mixed>  $extra  คอลัมน์อื่นที่เขียนพร้อมกันในคำสั่งเดียว
+     * @return bool true = เปลี่ยนแล้ว (โมเดลนี้ถูก refresh เป็นค่าล่าสุด)
+     */
+    public function transitionStatusIf(string $from, string $to, array $extra = []): bool
+    {
+        $changed = static::query()
+            ->whereKey($this->getKey())
+            ->where('conversation_status', $from)
+            ->update(array_merge($extra, ['conversation_status' => $to]));
+
+        if ($changed !== 1) {
+            return false;
+        }
+
+        $this->refresh();
+        // update แบบ query ไม่ยิง saved hook — ล้าง cache ชุดเดียวกันเอง
+        $this->forgetStatusCaches();
+
+        return true;
     }
 
     /**

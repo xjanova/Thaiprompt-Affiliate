@@ -18,11 +18,13 @@ use Tests\TestCase;
  *   กดปุ่ม TIER_DEEP_39 22:36:10 → ระบบปิดแถวเมนู แล้วสร้างแถวใหม่ FTU-260913-E7850 เป็นบิล
  *   ⇒ ลูกค้าคนเดียว 2 แถว แถวแรกค้างในหน้าบิลเป็น "คุยแล้วหายไป (ไม่เคยออกบิล)" — prod มี 2,060 แถวแบบนี้
  *
- * ล็อกไว้:
- *   1. กด 39/99 จากเมนูที่ยังเปิด → ออกบิลบนแถวเมนูเดิม จำนวนแถวไม่เพิ่ม
+ * ล็อกไว้ (เรียกผ่าน startTierFromButton = เส้นเดียวกับบล็อกปุ่มใน processMessage):
+ *   1. กด 39/99 จากเมนูที่ยังเปิด → ออกบิลบนแถวเมนูเดิม จำนวนแถวไม่เพิ่ม · created_at เริ่มนับใหม่ (ตัวเตือนจ่ายนับจากค่านี้)
  *   2. แถวอื่นที่ค้างยังถูกปิดเหมือนเดิม (ยกเว้นแถวเมนูที่ใช้ต่อ)
- *   3. ไม่มีเมนู / เมนูหมดเวลา / คนละช่องทาง / มีร่องรอยบิล → สร้างแถวใหม่แบบเดิม
- *   4. แย่งแถวไม่ทัน (กด 39 กับ 99 พร้อมกัน) → สร้างแถวใหม่ ไม่เขียนทับบิลของอีกคำขอ
+ *   3. ไม่มีเมนู / เมนูหมดเวลา / คนละช่องทาง / มีร่องรอยบิล / มีข้อความอื่นกำลังประมวลผล → สร้างแถวใหม่แบบเดิม
+ *   4. แย่งแถวไม่ทัน → สร้างแถวใหม่ ไม่เขียนทับบิลของอีกคำขอ
+ *   5. flow ถอยกลางทาง (ด่านปฏิเสธ) → แถวเมนูที่เว้นไว้ถูกปิดแบบเดิม
+ *   6. transitionStatusIf() เขียนเฉพาะตอนสถานะยังตรง (ตัวที่ cron ปิดเมนูใช้ด้วย)
  *
  * ขั้นออกบิลจริง (UPA / QR / รูป) ถูกแทนด้วยตัวจด — เทสต์แค่ "ออกบิลบนแถวไหน"
  */
@@ -40,7 +42,10 @@ class FortuneTierMenuButtonReuseTest extends TestCase
         FortuneTellingSetting::clearSettingsCache();
     }
 
-    private function service(bool $stealAfterFind = false): object
+    /**
+     * @param  int  $stealOnCall  ครั้งที่ findTierMenuReadingToReuse() จะจำลองว่าอีกคำขอจองแถวเมนูไปก่อน (0 = ไม่จำลอง)
+     */
+    private function service(int $stealOnCall = 0): object
     {
         $settings = FortuneTellingSetting::getSettings();
         $settings->enable_deep_reading = true;
@@ -49,19 +54,21 @@ class FortuneTierMenuButtonReuseTest extends TestCase
         Cache::flush();
         FortuneTellingSetting::clearSettingsCache();
 
-        $svc = new class(FortuneTellingSetting::getSettings(), $stealAfterFind) extends FortuneConversationService
+        $svc = new class(FortuneTellingSetting::getSettings(), $stealOnCall) extends FortuneConversationService
         {
             /** @var array<int, array{0: string, 1: int}> */
             public array $billedOn = [];
 
-            public function __construct(FortuneTellingSetting $settings, public bool $stealAfterFind)
+            private int $findCalls = 0;
+
+            public function __construct(FortuneTellingSetting $settings, public int $stealOnCall)
             {
                 parent::__construct($settings);
             }
 
             public function pressTier(string $uid, string $tier): array
             {
-                return $this->startDeepReadingFlow($uid, ['name' => 'ทดสอบ', 'id' => $uid], $tier);
+                return $this->startTierFromButton($uid, ['name' => 'ทดสอบ', 'id' => $uid], $tier);
             }
 
             protected function findTierMenuReadingToReuse(string $userId): ?FortuneReading
@@ -69,7 +76,7 @@ class FortuneTierMenuButtonReuseTest extends TestCase
                 $menu = parent::findTierMenuReadingToReuse($userId);
 
                 // จำลองอีกคำขอ (กดอีกแพคเกจพร้อมกัน) จองแถวเมนูไปก่อน ระหว่าง "หาเจอ" กับ "จอง"
-                if ($menu !== null && $this->stealAfterFind) {
+                if ($menu !== null && ++$this->findCalls === $this->stealOnCall) {
                     FortuneReading::whereKey($menu->id)->update(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT]);
                 }
 
@@ -119,6 +126,8 @@ class FortuneTierMenuButtonReuseTest extends TestCase
     public function pressing_39_on_the_menu_turns_the_menu_row_into_the_bill(): void
     {
         $menu = $this->menuRow();
+        // เมนูโชว์ไว้ 10 นาทีก่อนกด — อายุบิลต้องนับจากตอนกด ไม่ใช่ตอนโชว์เมนู
+        DB::table('fortune_readings')->where('id', $menu->id)->update(['created_at' => now()->subMinutes(10)]);
         $svc = $this->service();
 
         $svc->pressTier(self::PSID, 'deep');
@@ -128,6 +137,7 @@ class FortuneTierMenuButtonReuseTest extends TestCase
         $fresh = $menu->fresh();
         $this->assertSame(FortuneReading::STATUS_COLLECTING_BIRTHDATE, $fresh->conversation_status);
         $this->assertSame($menu->bill_reference, $fresh->bill_reference, 'เลข FTU เดิม');
+        $this->assertTrue($fresh->created_at->gte(now()->subMinute()), 'created_at ต้องเริ่มนับตอนกดปุ่ม');
     }
 
     #[Test]
@@ -212,10 +222,25 @@ class FortuneTierMenuButtonReuseTest extends TestCase
     }
 
     #[Test]
+    public function another_message_being_processed_means_no_reuse(): void
+    {
+        // ทางพิมพ์ "เอา 99" ที่เมนูกำลังออกบิลบนแถวนี้อยู่ (ถือ mutex ของ processMessage) — ห้ามแย่งแถว
+        $menu = $this->menuRow();
+        $svc = $this->service();
+        Cache::put('fortune:processing:'.self::PSID, true, 30);
+
+        $svc->pressTier(self::PSID, 'celtic');
+
+        $this->assertSame(2, FortuneReading::count());
+        $this->assertNotSame($menu->id, $svc->billedOn[0][1]);
+    }
+
+    #[Test]
     public function losing_the_claim_falls_back_to_a_new_row_without_touching_the_other_bill(): void
     {
         $menu = $this->menuRow();
-        $svc = $this->service(stealAfterFind: true);
+        // ครั้งที่ 1 = startTierFromButton · ครั้งที่ 2 = ใน startDeepReadingFlow ก่อนจอง → อีกคำขอจองตัดหน้า
+        $svc = $this->service(stealOnCall: 2);
 
         $svc->pressTier(self::PSID, 'celtic');
 
@@ -223,5 +248,37 @@ class FortuneTierMenuButtonReuseTest extends TestCase
         $this->assertNotSame($menu->id, $svc->billedOn[0][1]);
         // แถวที่อีกคำขอจองไปแล้ว ต้องไม่ถูกเขียนทับหรือปิดทิ้ง
         $this->assertSame(FortuneReading::STATUS_PENDING_PAYMENT, $menu->fresh()->conversation_status);
+    }
+
+    #[Test]
+    public function when_the_flow_backs_out_the_spared_menu_row_is_closed_like_before(): void
+    {
+        // กำลังทำนายบิลอื่นอยู่ → startDeepReadingFlow ถอย (silent_skip_in_prediction) ก่อนถึงขั้นจอง
+        $paid = $this->menuRow(['is_paid' => true, 'conversation_status' => FortuneReading::STATUS_PAID]);
+        $menu = $this->menuRow();
+        $svc = $this->service();
+
+        $result = $svc->pressTier(self::PSID, 'deep');
+
+        $this->assertSame('silent_skip_in_prediction', $result['action']);
+        $this->assertSame([], $svc->billedOn);
+        $this->assertSame(FortuneReading::STATUS_COMPLETED, $menu->fresh()->conversation_status, 'ไม่งั้น cron กระตุ้นเมนูส่งกล่องแพคเกจตามไป');
+        $this->assertSame(FortuneReading::STATUS_PAID, $paid->fresh()->conversation_status);
+    }
+
+    #[Test]
+    public function transition_status_if_only_writes_while_the_status_still_matches(): void
+    {
+        $row = $this->menuRow();
+        Cache::put('fortune:has_pending_bill:'.self::PSID, true, 30);
+
+        // สถานะไม่ตรง (เช่น cron ถือสำเนาเก่าที่ยังเป็นเมนู แต่แถวกลายเป็นบิลไปแล้ว) → ไม่เขียน
+        $this->assertFalse($row->transitionStatusIf(FortuneReading::STATUS_PENDING_PAYMENT, FortuneReading::STATUS_COMPLETED));
+        $this->assertSame(FortuneReading::STATUS_TIER_CHOICE, $row->fresh()->conversation_status);
+
+        // สถานะตรง → เขียน + ล้าง cache ชุดเดียวกับ saved hook
+        $this->assertTrue($row->transitionStatusIf(FortuneReading::STATUS_TIER_CHOICE, FortuneReading::STATUS_COMPLETED));
+        $this->assertSame(FortuneReading::STATUS_COMPLETED, $row->conversation_status, 'โมเดลต้องถูก refresh');
+        $this->assertFalse(Cache::has('fortune:has_pending_bill:'.self::PSID));
     }
 }

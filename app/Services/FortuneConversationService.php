@@ -1339,11 +1339,9 @@ class FortuneConversationService
                     }
 
                     // ปิด conversation เก่าก่อนเริ่ม flow ใหม่ (กันค้าง)
-                    // ♻️ (2026-09-14) เว้นแถวเมนูที่ลูกค้าเพิ่งกดปุ่มจากมัน — startDeepReadingFlow จะใช้แถวนั้นต่อเป็นบิล
+                    // ♻️ (2026-09-14) เว้นแถวเมนูที่ลูกค้าเพิ่งกดปุ่มจากมัน — ออกบิลบนแถวนั้นแทนการสร้างแถวใหม่
                     //   ไม่งั้นแถวเมนูถูกปิดตรงนี้ก่อน แล้วกลายเป็นแถว "ไม่เคยออกบิล" ค้างในหน้าบิล
-                    $this->closeAllActiveConversations($facebookUserId, null, $this->findTierMenuReadingToReuse($facebookUserId)?->id);
-
-                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTier);
+                    return $this->startTierFromButton($facebookUserId, $userProfile, $forceTier);
                 } finally {
                     if ($lockAcquired) {
                         Cache::forget($lockKey);
@@ -4475,6 +4473,14 @@ class FortuneConversationService
      */
     protected function findTierMenuReadingToReuse(string $userId): ?FortuneReading
     {
+        // 🔒 มีข้อความอื่นของลูกค้าคนนี้กำลังประมวลผลอยู่ (mutex ของ processMessage) → ไม่แตะแถวเมนู
+        //   เช่นพิมพ์ "เอา 99" ที่เมนูพร้อมกดปุ่ม — ทางพิมพ์ (handleTierChoice) ออกบิลบนแถวเมนูโดยไม่จอง
+        //   ถ้าทางปุ่มจองแถวเดียวกันด้วย = 2 บิลบนแถวเดียว เขียนทับกัน ยอดหนึ่งกลายเป็นเงินไม่มีเจ้าของ
+        //   บล็อกปุ่มอยู่ก่อน mutex จึงไม่ถือ key นี้เอง · ผู้เรียกที่ถือ mutex อยู่แล้ว = สร้างแถวใหม่แบบเดิม
+        if (Cache::has("fortune:processing:{$userId}")) {
+            return null;
+        }
+
         $menu = FortuneReading::where(function ($q) use ($userId) {
             $q->where('facebook_user_id', $userId)
                 ->orWhere('platform_user_id', $userId);
@@ -4499,6 +4505,30 @@ class FortuneConversationService
         }
 
         return $menu;
+    }
+
+    /**
+     * ♻️ (2026-09-14) เริ่มแพคเกจจากปุ่ม 39/99 (บล็อก "Single-click tier bypass" ใน processMessage)
+     *
+     * ปิดแถวเก่าที่ค้าง "ยกเว้นแถวเมนูที่จะใช้ต่อ" แล้วส่งให้ startDeepReadingFlow() ออกบิลบนแถวนั้น
+     * ถ้า flow ถอยกลางทาง (ด่านใน startDeepReadingFlow ปฏิเสธ เช่นกำลังทำนาย/ลูกค้าต่างประเทศ)
+     * แถวเมนูที่เว้นไว้ยังเปิดอยู่ → ปิดแบบเดิม ไม่งั้น FortuneFlowNudge ส่งกล่องแพคเกจตามไปหาคนที่เพิ่งถูกปฏิเสธ
+     */
+    protected function startTierFromButton(string $facebookUserId, ?array $userProfile, string $forceTier): array
+    {
+        $menu = $this->findTierMenuReadingToReuse($facebookUserId);
+
+        // ปิด conversation เก่าก่อนเริ่ม flow ใหม่ (กันค้าง) — เว้นแถวเมนูที่จะใช้ต่อเป็นบิล
+        $this->closeAllActiveConversations($facebookUserId, null, $menu?->id);
+
+        $result = $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTier);
+
+        if ($menu !== null) {
+            // ถูกจองไปเป็นบิลแล้ว = สถานะไม่ใช่ tier_choice → คำสั่งนี้ไม่มีผล
+            $menu->transitionStatusIf(FortuneReading::STATUS_TIER_CHOICE, FortuneReading::STATUS_COMPLETED);
+        }
+
+        return $result;
     }
 
     /**
@@ -6436,20 +6466,26 @@ class FortuneConversationService
                 // ♻️ แถวเมนูสร้างโดยโค้ดด้านล่างนี้เองเมื่อไม่กี่นาทีก่อน (ชื่อ/โปรไฟล์/ช่องทางชุดเดียวกัน)
                 //   ตั้งแค่สถานะให้เหมือนแถวใหม่ — บิลจริง (ยอด/UPA/QR) ถูกออกในขั้นถัดไปตามปกติ
                 //
-                //   🔒 จองแถวแบบ atomic (update เฉพาะตอนยังเป็นเมนู) — lock ด้านบนแยกตามแพคเกจ
+                //   🔒 จองแถวแบบ atomic (เขียนเฉพาะตอนยังเป็นเมนู) — lock ด้านบนแยกตามแพคเกจ
                 //     กด 39 กับ 99 เกือบพร้อมกัน = 2 คำขอคนละ lock อาจแย่งแถวเดียวแล้วเขียนบิลทับกัน
-                //     จองไม่ทัน → สร้างแถวใหม่แบบเดิม
-                //   (update แบบ query ไม่ยิง saved hook — ขั้นออกบิลถัดไปเปลี่ยนสถานะผ่านโมเดลอีกรอบ cache ถูกล้างตรงนั้น)
-                $claimed = FortuneReading::whereKey($menuReading->id)
-                    ->where('conversation_status', FortuneReading::STATUS_TIER_CHOICE)
-                    ->update([
-                        'reading_type' => 'deep',
-                        'conversation_status' => $initialStatus,
-                        'updated_at' => now(),
-                    ]);
+                //     cron ปิดเมนูที่เงียบ 30 นาทีก็จองด้วยวิธีเดียวกัน · จองไม่ทัน → สร้างแถวใหม่แบบเดิม
+                $claim = [
+                    'reading_type' => 'deep',
+                    // ⏱️ ตัวเตือนจ่ายเงิน (FortuneSendBillReminder) + หน้าต่างจับคู่ SMS นับอายุบิลจาก created_at
+                    //   ต้องเริ่มนับตอนนี้ ไม่ใช่ตอนโชว์เมนู — ไม่งั้นเตือนจ่ายหลังส่ง QR แค่นาทีเดียว (LINE = กินโควตา push)
+                    'created_at' => now(),
+                ];
+                // แถวใหม่ได้ช่องทาง/สาขาจากข้อความนี้ — แถวเมนูที่ยังไม่มีค่าก็ต้องได้เหมือนกัน
+                if (empty($menuReading->platform) && ! empty($this->currentPlatform)) {
+                    $claim['platform'] = $this->currentPlatform;
+                }
+                $pageId = \App\Services\Fortune\FortunePageContext::currentId();
+                if ($pageId !== null && array_key_exists('fortune_page_id', $menuReading->getAttributes()) && $menuReading->fortune_page_id === null) {
+                    $claim['fortune_page_id'] = $pageId;
+                }
 
-                if ($claimed === 1) {
-                    $reading = $menuReading->fresh();
+                if ($menuReading->transitionStatusIf(FortuneReading::STATUS_TIER_CHOICE, $initialStatus, $claim)) {
+                    $reading = $menuReading;
                     // ธงโหมดคุณไสยล้างให้เหมือนแถวใหม่ — startCelticCrossFlow ตั้งใหม่เองจาก carrier ถ้ากดปุ่มคุณไสย
                     if ($reading->getConversationState('black_magic_mode')) {
                         $reading->setConversationState('black_magic_mode', null);
