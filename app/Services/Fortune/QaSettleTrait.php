@@ -280,7 +280,7 @@ trait QaSettleTrait
             $platform = $reading->platform;
             $candidate = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
             if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
-                $platform = preg_match('/^U[a-f0-9]{32}$/i', $candidate) ? 'line' : 'facebook';
+                $platform = \App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($candidate));
             }
 
             if ($platform === 'line') {
@@ -299,6 +299,14 @@ trait QaSettleTrait
             if ($psid === '') {
                 return;
             }
+
+            // ✈️ (2026-09-13) Telegram — "กำลังพิมพ์" ของ Telegram (ห้ามยิง Graph API ด้วย id 'tg_…')
+            if ($platform === 'telegram' || \App\Services\Fortune\FortuneRecipient::looksLikeTelegramUserId($psid)) {
+                (new \App\Services\TelegramFortuneService)->sendTypingIndicator($psid, true);
+
+                return;
+            }
+
             app(\App\Services\FacebookWebhookService::class)->sendTypingIndicator($psid, true);
         } catch (\Throwable $e) {
             // non-blocking — จุดสามจุดส่งไม่ออกต้องไม่ทำให้คำตอบลูกค้าหาย

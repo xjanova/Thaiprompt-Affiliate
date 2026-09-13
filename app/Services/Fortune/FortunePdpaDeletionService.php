@@ -43,7 +43,9 @@ class FortunePdpaDeletionService
      */
     public function deleteForCustomer(string $platform, string $platformUserId): array
     {
-        $platform = $platform === 'line' ? 'line' : 'facebook';
+        // ✈️ (2026-09-13) + telegram — เดิมค่าอื่นกลายเป็น facebook ⇒ ตารางที่คีย์ด้วย platform (persona/credits/
+        //    สัญญาณติดต่อ/ภาษา/บทสนทนา) หาแถว 'telegram' ไม่เจอ = ลบไม่ครบ (ผิด PDPA)
+        $platform = in_array($platform, ['line', 'telegram'], true) ? $platform : 'facebook';
         $platformUserId = trim($platformUserId);
 
         $counts = [];
@@ -111,8 +113,8 @@ class FortunePdpaDeletionService
         $userIds = [];
         $filePaths = [];
 
-        // ถ้าเป็น FB → platformUserId เองคือ PSID
-        if ($platform === 'facebook') {
+        // ถ้าเป็น FB → platformUserId เองคือ PSID · Telegram ก็เก็บ 'tg_…' ในคอลัมน์ facebook_user_id เช่นกัน
+        if ($platform === 'facebook' || $platform === 'telegram') {
             $facebookIds[] = $platformUserId;
         }
 

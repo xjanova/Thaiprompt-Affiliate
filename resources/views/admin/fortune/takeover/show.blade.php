@@ -35,6 +35,8 @@
             <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-top:8px;">
                 @if($reading->platform === 'line')
                     <span class="tp-pill" style="color:#5aa07e;">💚 LINE</span>
+                @elseif($reading->platform === 'telegram')
+                    <span class="tp-pill" style="color:#4a9fd0;">✈️ Telegram</span>
                 @else
                     <span class="tp-pill" style="color:#5689b8;">🔵 Facebook</span>
                 @endif
@@ -318,7 +320,7 @@
                     💬 ส่งข้อความถึงลูกค้า
                 </div>
                 <p class="tp-muted" style="font-size:12px; margin:0 0 12px; line-height:1.6;">
-                    ข้อความจะส่งผ่าน {{ $reading->platform === 'line' ? 'LINE' : 'Facebook Messenger' }} —
+                    ข้อความจะส่งผ่าน {{ $reading->platform === 'line' ? 'LINE' : ($reading->platform === 'telegram' ? 'Telegram' : 'Facebook Messenger') }} —
                     ถ้ายังไม่ได้เทคโอเวอร์ ระบบจะเทคโอเวอร์ให้อัตโนมัติก่อนส่ง
                 </p>
                 <div class="tp-well tp-input" style="padding:0;">

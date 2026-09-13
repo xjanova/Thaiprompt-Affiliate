@@ -63,7 +63,7 @@ class FortuneTakeoverController extends Controller
         }
 
         // Filter by platform
-        if ($platform && in_array($platform, ['line', 'facebook'])) {
+        if ($platform && in_array($platform, ['line', 'facebook', 'telegram'], true)) {
             $query->where('platform', $platform);
         }
 
@@ -394,6 +394,11 @@ class FortuneTakeoverController extends Controller
                 $service = new LineFortuneService($settings);
 
                 return $service->sendMessageWithReplyFallback($userId, $message, null);
+            }
+
+            // ✈️ (2026-09-13) Telegram — ส่งตรง (ไม่มีกรอบ 24 ชม. / ไม่ต้องใช้แท็ก)
+            if ($platform === 'telegram' || \App\Services\Fortune\FortuneRecipient::looksLikeTelegramUserId((string) $userId)) {
+                return (new \App\Services\TelegramFortuneService($settings))->sendMessage($userId, $message);
             }
 
             // Facebook (default) — admin manual send ใช้ HUMAN_AGENT tag เป็น fallback

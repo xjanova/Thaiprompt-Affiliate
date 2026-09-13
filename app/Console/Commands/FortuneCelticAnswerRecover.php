@@ -115,7 +115,7 @@ class FortuneCelticAnswerRecover extends Command
             $buf = $buffer->peek('celtic_q', $userId);
 
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
             $preview = mb_substr(implode(' | ', array_map(fn ($t) => (string) $t, $pending)), 0, 80);
             $bufState = empty($buf) ? 'cache หาย' : 'cache ยังอยู่ '.count($buf).' msg';
 
@@ -161,7 +161,7 @@ class FortuneCelticAnswerRecover extends Command
                 continue;
             }
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
 
             $stuckMin = (int) $reading->updated_at?->diffInMinutes(now());
             $this->warn("  B #{$reading->id} generating ค้าง {$stuckMin} นาที → revert awaiting + nudge");

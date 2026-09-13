@@ -211,7 +211,7 @@ class ModerationController extends Controller
     public function banStatus(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'platform' => 'required|in:facebook,line',
+            'platform' => 'required|in:facebook,line,telegram',
             'platform_user_id' => 'required|string|max:255',
         ]);
 
@@ -262,7 +262,7 @@ class ModerationController extends Controller
     public function ban(Request $request, FortuneBanService $banService): JsonResponse
     {
         $data = $request->validate([
-            'platform' => 'required|in:facebook,line',
+            'platform' => 'required|in:facebook,line,telegram',
             'platform_user_id' => 'required|string|max:255',
             'display_name' => 'nullable|string|max:255',
             'reason' => 'nullable|string|max:500',

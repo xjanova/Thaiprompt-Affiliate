@@ -189,6 +189,15 @@ class FortuneAiPingJob implements ShouldQueue
                 ->showLoadingAnimation($userId, 60);
         }
 
+        // ✈️ (2026-09-13) Telegram ไม่มีโควตาข้อความ แต่ "กำลังพิมพ์" อยู่ได้แค่ ~5 วิ
+        //    → ส่งกล่องบอกความคืบหน้าแบบ FB (ลูกค้าจ่ายแล้วรอ AI นาน ต้องรู้ว่าบอทยังทำงาน)
+        if ($platform === FortuneRecipient::PLATFORM_TELEGRAM) {
+            $telegram = new \App\Services\TelegramFortuneService;
+            $telegram->sendTypingIndicator($userId);
+
+            return (bool) $telegram->sendMessage($userId, $message);
+        }
+
         Log::warning('FortuneAiPingJob: platform ไม่รู้จัก', [
             'reading_id' => $this->readingId,
             'platform' => $platform,

@@ -106,7 +106,7 @@ class FortuneCheckPendingReadings extends Command
             $waitMinutes = (int) $reading->paid_at->diffInMinutes(now());
             $billRef = $reading->bill_reference ?? "#{$reading->id}";
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-            $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+            $platform = $reading->platform ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId ?? '')));
 
             // 🔒 (2026-06-10) มี process กำลัง generate/ส่งอยู่ → ข้ามรอบนี้ (กัน dispatch ซ้อน)
             //   เคสจริง (R5604): Pay-First ลูกค้าให้วันเกิด "หลัง" จ่าย → paid_at เก่ากว่า
@@ -345,7 +345,7 @@ class FortuneCheckPendingReadings extends Command
 
             if (! $notificationSent && ! $readingSentDirectly && $notifyRetryCount < 2 && ! $isDryRun) {
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-                $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+                $platform = $reading->platform ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId ?? '')));
 
                 // 🔒 (2026-06-10) Atomic delivery lock — key เดียวกับ fortune:process-deep + Job
                 //   เคสจริง (R5644): fortune:process-deep กำลัง push อยู่ (~18s) → Phase 2 รอบนาทีนั้น

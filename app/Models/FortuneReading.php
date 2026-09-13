@@ -1201,7 +1201,7 @@ class FortuneReading extends Model
     public static function hasReachedFreeLimit(string $facebookUserId, int $maxFreeReadings): bool
     {
         // ปัจจุบัน: ใช้สิทธิ์ฟรีหรือยัง? (per platform หา auto)
-        $platform = (preg_match('/^U[0-9a-f]{32}$/i', $facebookUserId)) ? 'line' : 'facebook';
+        $platform = \App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($facebookUserId));
 
         return self::hasUsedFreeCard($platform, $facebookUserId);
     }
@@ -3325,7 +3325,7 @@ class FortuneReading extends Model
         try {
             $silenceUid = $this->platform_user_id ?: $this->facebook_user_id;
             $silencePlatform = $this->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $silenceUid) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $silenceUid));
             if (! empty($silenceUid)) {
                 app(\App\Services\Fortune\CustomerPersonaService::class)
                     ->clearSilenceOnPaid($silencePlatform, (string) $silenceUid);

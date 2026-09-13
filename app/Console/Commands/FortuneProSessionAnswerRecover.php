@@ -136,7 +136,7 @@ class FortuneProSessionAnswerRecover extends Command
             }
 
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
             $preview = mb_substr(implode(' | ', array_map(fn ($t) => (string) $t, $pending)), 0, 80);
             $bufState = empty($buf) ? 'cache หาย' : 'cache ยังอยู่ '.count($buf).' msg';
 

@@ -437,7 +437,7 @@ class SmsPaymentController extends Controller
         // 📱 (2026-06-11) ช่องทางที่ลูกค้าทักมา (facebook / line) — ให้ SMS Checker app
         //    แสดง badge โลโก้ FB/LINE บนการ์ดบิล (logic เดียวกับ approveOrder delivery routing)
         $platform = $reading->platform
-            ?: ((preg_match('/^U[0-9a-f]{32}$/i', $reading->facebook_user_id ?? '')) ? 'line' : 'facebook');
+            ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($reading->facebook_user_id ?? '')));
 
         // 🏬 (2026-08-15) บิลนี้มาจากสาขาไหน — เจ้าของสั่ง "แอพต้องระบุด้วยว่าบิลเป็นของเพจไหน"
         //    ส่ง 2 ทาง:
@@ -1270,7 +1270,7 @@ class SmsPaymentController extends Controller
             if ($alreadyDelivered) {
                 try {
                     $platform = $model->platform
-                        ?: ((preg_match('/^U[0-9a-f]{32}$/i', $model->facebook_user_id ?? '')) ? 'line' : 'facebook');
+                        ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($model->facebook_user_id ?? '')));
                     $userId = $model->platform_user_id ?? $model->facebook_user_id;
 
                     if ($userId) {
@@ -1494,7 +1494,7 @@ class SmsPaymentController extends Controller
                     $reading->update(['conversation_status' => FortuneReading::STATUS_PAID]);
                 }
 
-                $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+                $platform = $reading->platform ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId ?? '')));
 
                 ProcessDeepFortuneReadingJob::dispatchSmart(
                     $reading->id, null, $platform, $userId
@@ -1543,7 +1543,7 @@ class SmsPaymentController extends Controller
         }
 
         $platform = $reading->platform
-            ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+            ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId ?? '')));
 
         // 🔮 Celtic Cross — push เริ่มเปิดไพ่ + transition CELTIC_PICKING (ไม่ dispatch deep job)
         if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {

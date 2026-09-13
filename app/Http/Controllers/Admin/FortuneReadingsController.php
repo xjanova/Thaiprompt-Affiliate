@@ -382,7 +382,7 @@ class FortuneReadingsController extends Controller
         }
 
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-        $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+        $platform = $reading->platform ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId ?? '')));
 
         if (empty($userId)) {
             return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');
@@ -474,7 +474,7 @@ class FortuneReadingsController extends Controller
         }
 
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-        $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+        $platform = $reading->platform ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId ?? '')));
 
         if (empty($userId)) {
             return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');

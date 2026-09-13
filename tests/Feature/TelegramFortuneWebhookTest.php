@@ -151,16 +151,16 @@ class TelegramFortuneWebhookTest extends TestCase
         $this->assertSame([], $this->telegramCalls());
     }
 
-    public function test_button_press_is_answered_marked_and_routed(): void
+    private function callbackUpdate(int $updateId, string $data, int $messageId = 42): array
     {
-        $update = [
-            'update_id' => 7,
+        return [
+            'update_id' => $updateId,
             'callback_query' => [
-                'id' => 'cbq-1',
+                'id' => 'cbq-'.$updateId,
                 'from' => ['id' => 555, 'is_bot' => false, 'first_name' => 'สมศรี'],
-                'data' => 'p|VIEW_LATER',
+                'data' => $data,
                 'message' => [
-                    'message_id' => 42,
+                    'message_id' => $messageId,
                     'chat' => ['id' => 555, 'type' => 'private'],
                     'text' => 'ไว้ค่อยดูไหมคะ',
                     'reply_markup' => ['inline_keyboard' => [
@@ -170,8 +170,14 @@ class TelegramFortuneWebhookTest extends TestCase
                 ],
             ],
         ];
+    }
 
-        $this->postUpdate($update)->assertOk();
+    public function test_button_press_is_answered_marked_and_routed(): void
+    {
+        // ข้อความ 42 = ชุดปุ่มแบบ quick reply ชุดล่าสุด (TelegramFortuneService จดไว้ตอนส่ง)
+        Cache::put('tg_last_kb:tg_555', 42, now()->addDay());
+
+        $this->postUpdate($this->callbackUpdate(7, 'p|VIEW_LATER'))->assertOk();
 
         $this->assertCount(1, $this->telegramCalls('answerCallbackQuery'), 'ต้องปิดวงกลมหมุนบนปุ่มเสมอ');
 
@@ -186,6 +192,38 @@ class TelegramFortuneWebhookTest extends TestCase
 
         $replies = collect($this->telegramCalls('sendMessage'))->pluck('text')->implode("\n");
         $this->assertStringContainsString('ดูคำทำนาย', $replies);
+    }
+
+    public function test_spoofed_callback_not_on_the_message_is_ignored(): void
+    {
+        // client ดัดแปลงยิง callback_data ที่ไม่มีบนปุ่ม — ห้ามวิ่งเข้าสมองแบบ "กดปุ่ม" (ข้าม /aistop + ด่านสแปม)
+        $this->postUpdate($this->callbackUpdate(20, 'p|ข้อความอะไรก็ได้ที่อยากให้ AI ตอบ'))->assertOk();
+
+        $this->assertCount(1, $this->telegramCalls('answerCallbackQuery'));
+        $this->assertSame([], $this->telegramCalls('sendMessage'));
+    }
+
+    public function test_double_tap_on_quick_reply_set_counts_once(): void
+    {
+        Cache::put('tg_last_kb:tg_555', 42, now()->addDay());
+
+        // client ส่ง 2 callback จากข้อความเดิม (ก่อนปุ่มถูกถอด) — ต้องทำงานครั้งเดียว
+        $this->postUpdate($this->callbackUpdate(21, 'p|VIEW_LATER'))->assertOk();
+        $this->postUpdate($this->callbackUpdate(22, 'p|VIEW_LATER'))->assertOk();
+
+        $this->assertCount(1, $this->telegramCalls('sendMessage'));
+    }
+
+    public function test_template_buttons_stay_and_still_route(): void
+    {
+        // ข้อความ 99 ไม่ใช่ชุด quick reply (เช่น การ์ดเมนูแพคเกจ/บิล) → ปุ่มคงไว้เหมือนปุ่ม template ของ FB
+        Cache::put('tg_last_kb:tg_555', 42, now()->addDay());
+
+        $this->postUpdate($this->callbackUpdate(23, 'p|VIEW_LATER', 99))->assertOk();
+
+        $this->assertSame([], $this->telegramCalls('editMessageText'));
+        $this->assertSame([], $this->telegramCalls('editMessageReplyMarkup'));
+        $this->assertCount(1, $this->telegramCalls('sendMessage'));
     }
 
     public function test_fb_renderer_output_is_delivered_through_telegram(): void

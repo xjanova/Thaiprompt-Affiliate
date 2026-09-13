@@ -210,6 +210,7 @@
                         <option value="">— ทุก platform —</option>
                         <option value="facebook" @selected($platform === 'facebook')>Facebook</option>
                         <option value="line" @selected($platform === 'line')>LINE</option>
+                        <option value="telegram" @selected($platform === 'telegram')>Telegram</option>
                         <option value="manual" @selected($platform === 'manual')>Manual</option>
                     </select>
                 </div>

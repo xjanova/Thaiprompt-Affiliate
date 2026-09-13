@@ -191,7 +191,7 @@ class FortuneDebugToolsController extends Controller
                         throw new \Exception('reading ไม่มี user_id');
                     }
                     $platform = $reading->platform
-                        ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                        ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
                     $channelManager = new FortuneChannelManager(FortuneTellingSetting::getSettings());
                     $sent = $channelManager->sendResponse($platform, (string) $userId, [

@@ -13741,7 +13741,7 @@ class FortuneConversationService
         }
 
         // ใหม่: free_card 1 ใบ/platform — เช็คว่าใช้สิทธิ์แล้วยัง
-        $platform = (preg_match('/^U[0-9a-f]{32}$/i', $userId)) ? 'line' : 'facebook';
+        $platform = \App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId));
         if (FortuneReading::hasUsedFreeCard($platform, $userId)) {
             return 0;
         }
@@ -14926,6 +14926,51 @@ class FortuneConversationService
      *
      * @return array|null result หรือ null = ไม่มี pending / ไม่ใช่ yes/no
      */
+    /**
+     * 🚨 (2026-09-13 จับผี) ตัดสินคำตอบ "ยอดโอนนี้ใช่ของคุณไหม" — true = ใช่ · false = ไม่ใช่ · null = ไม่ชัด (ปล่อย flow อื่น)
+     *
+     * ตัวเดิมอนุมัติบิลผิดได้ 2 ทาง (ฝั่งนี้คือเงินลูกค้า ต้องเอียงไปทาง "ไม่อนุมัติ"):
+     *   1) ปุ่ม "❌ ไม่ใช่" ส่ง payload ดิบ `FUZZY_CONFIRM_NO` (FB default ส่ง payload เข้าสมอง)
+     *      → มีตัว 'y' (ใน fuzzy) + คำ 'confirm' → ถูกนับเป็น "ใช่" → approve() SMS ที่ลูกค้าบอกว่าไม่ใช่ของตัวเอง
+     *   2) คำใช่ใช้ str_contains แต่คำไม่ใช้ str_starts_with → "ยังไม่ได้โอนเลย" มีคำว่า "โอน" = ใช่ · ไม่ขึ้นต้นด้วย "ไม่" = ไม่ติด
+     *
+     * กติกาใหม่: รหัสปุ่มก่อน → มีคำปฏิเสธที่ไหนก็ได้ = ไม่ใช่ → คำใช่ตัวสั้นต้องตรงเป๊ะ / วลียาวที่ชัดเจนค่อย contains
+     *
+     * @param  string  $normalized  ข้อความหลัง normalizeUserInput() (ตัวเล็ก ตัดอีโมจิแล้ว)
+     */
+    protected static function fuzzyConfirmationDecision(string $normalized): ?bool
+    {
+        $noSpace = str_replace(' ', '', $normalized);
+
+        if ($noSpace === 'fuzzy_confirm_no') {
+            return false;
+        }
+        if ($noSpace === 'fuzzy_confirm_yes') {
+            return true;
+        }
+
+        $hasNegation = (bool) preg_match('/ไม่|ยัง|ผิด|ปฏิเสธ|ยกเลิก/u', $normalized)
+            || (bool) preg_match('/\b(no|not|nope|cancel|wrong)\b/i', $normalized)
+            || in_array($noSpace, ['n', 'no'], true);
+
+        if ($hasNegation) {
+            return false;
+        }
+
+        $exactYes = ['ใช่', 'ใช', 'ครับ', 'ค่ะ', 'คะ', 'yes', 'y', 'ok', 'โอเค', 'confirm', 'ยืนยัน', 'รับ', 'ถูก', 'ถูกต้อง'];
+        if (in_array($noSpace, $exactYes, true)) {
+            return true;
+        }
+
+        foreach (['ใช่', 'ยืนยัน', 'ของฉัน', 'ของหนู', 'ของผม', 'ของเรา', 'โอนแล้ว', 'โอนเอง', 'confirm'] as $phrase) {
+            if (str_contains($noSpace, $phrase)) {
+                return true;
+            }
+        }
+
+        return null;
+    }
+
     protected function tryHandleFuzzyConfirmation(string $platform, string $userId, string $messageText): ?array
     {
         try {
@@ -14935,29 +14980,10 @@ class FortuneConversationService
                 return null;
             }
 
-            $normalized = $this->normalizeUserInput($messageText);
-            $noSpace = str_replace(' ', '', $normalized);
-
-            $yesKeywords = ['ใช่', 'ใช', 'ครับ', 'ค่ะ', 'yes', 'y', 'confirm', 'ยืนยัน', 'รับ', 'โอน', 'ใช่ของฉัน', 'ใช่ยืนยัน', 'ใช่ยืนยันการโอน'];
-            $noKeywords = ['ไม่ใช่', 'ไม่', 'no', 'n', 'cancel', 'ปฏิเสธ', 'ไม่ใช่ของฉัน', 'ผิด'];
-
-            $isYes = false;
-            $isNo = false;
-            foreach ($yesKeywords as $kw) {
-                $kwNorm = mb_strtolower($kw);
-                if ($normalized === $kwNorm || $noSpace === str_replace(' ', '', $kwNorm) || str_contains($normalized, $kwNorm)) {
-                    $isYes = true;
-                    break;
-                }
-            }
-            foreach ($noKeywords as $kw) {
-                $kwNorm = mb_strtolower($kw);
-                if ($normalized === $kwNorm || $noSpace === str_replace(' ', '', $kwNorm) || str_starts_with($normalized, $kwNorm)) {
-                    $isNo = true;
-                    $isYes = false; // "ไม่ใช่" ต้อง win เพราะมี "ใช่" อยู่
-                    break;
-                }
-            }
+            // 🚨 (2026-09-13 จับผี) ตัวตัดสินเดิมเคยอนุมัติบิลผิด — ดูเหตุผลที่ fuzzyConfirmationDecision()
+            $decision = self::fuzzyConfirmationDecision($this->normalizeUserInput($messageText));
+            $isYes = $decision === true;
+            $isNo = $decision === false;
 
             if (! $isYes && ! $isNo) {
                 return null; // ปล่อย flow อื่นจัดการ
@@ -15232,7 +15258,7 @@ class FortuneConversationService
         // 🗂️ (2026-05-31) เก็บ candidate ใน cache (look-back ย้อน 10) — keyed by user, TTL วันนี้
         $pUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
         if (! empty($pUserId)) {
-            $pPlatform = $reading->platform ?? (preg_match('/^U[0-9a-f]{32}$/i', (string) $pUserId) ? 'line' : 'facebook');
+            $pPlatform = $reading->platform ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($pUserId)));
             $this->pushSlipCandidate($pPlatform, $pUserId, $relPath);
         }
 
@@ -22789,7 +22815,7 @@ PROMPT;
             // ใช้เมื่อ admin ตั้ง sensitive_ai_mode = 'all' (ทั่วบอท)
             //   - 'paid_only' → ไม่ trigger ในแชทธรรมดา (ต้องใน paid prediction/celtic)
             //   - 'off' → ปิดสนิท
-            $platform = $this->currentPlatform ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+            $platform = $this->currentPlatform ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
             // 🙏 (2026-05-07 Phase 2) Satisfaction detector — ทำงานก่อนเสมอ (heuristic เร็ว)
             //   ถ้าลูกค้าพอใจ + อยากจบ → flag ไว้ ใช้กับ Pro mode prompts
@@ -27268,12 +27294,18 @@ PROMPT;
                         'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(48)),
                     ];
 
+                    // ✈️ (2026-09-13) id บอกช่องทางชัดกว่าคอลัมน์ platform (Telegram 'tg_…' ต้องไม่ตกสาขา LINE)
+                    $platform = \App\Services\Fortune\FortuneRecipient::normalize((string) $platform, $facebookUserId)['platform'];
+
                     if ($platform === 'facebook') {
                         $userData['email'] = 'fb_'.$facebookUserId.'@thaiprompt.local';
                         // PSID เป็นตัวเลขล้วน — กัน id แปลกปลอมหลุดเข้า unique column
                         if (ctype_digit($facebookUserId) && \Illuminate\Support\Facades\Schema::hasColumn('users', 'facebook_psid')) {
                             $userData['facebook_psid'] = $facebookUserId;
                         }
+                    } elseif ($platform === 'telegram') {
+                        // Telegram — ไม่มีคอลัมน์เฉพาะใน users: ผูกด้วยอีเมลภายใน tg_… อย่างเดียว (ห้ามยัดลง line_user_id)
+                        $userData['email'] = \App\Services\Fortune\FortuneRecipient::localEmailFor('telegram', $facebookUserId);
                     } else {
                         $userData['email'] = 'line_'.$facebookUserId.'@thaiprompt.local';
                         $userData['line_user_id'] = $facebookUserId;
@@ -27939,6 +27971,14 @@ PROMPT;
         $user = \App\Models\User::findByMessengerPsid($platformUserId);
         if ($user) {
             return $user;
+        }
+
+        // ✈️ (2026-09-13) Telegram — บัญชีที่บอทสมัครให้ผูกด้วยอีเมล tg_…@thaiprompt.local
+        if (\App\Services\Fortune\FortuneRecipient::looksLikeTelegramUserId($platformUserId)) {
+            $user = \App\Models\User::where('email', \App\Services\Fortune\FortuneRecipient::localEmailFor('telegram', $platformUserId))->first();
+            if ($user) {
+                return $user;
+            }
         }
 
         // Fallback: ค้นหาจาก email pattern ฝั่ง LINE
@@ -28906,7 +28946,7 @@ PROMPT;
 
         // 🩹 C3 fix — ถ้า platform เป็น default/empty ลอง derive จาก userId pattern
         if (empty($platform) || $platform === 'unknown') {
-            $platform = preg_match('/^U[0-9a-f]{32}$/i', $platformUserId) ? 'line' : 'facebook';
+            $platform = \App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($platformUserId));
         }
 
         $billDetector = new \App\Services\Fortune\FortuneBillContextDetector($this->settings);

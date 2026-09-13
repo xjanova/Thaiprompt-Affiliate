@@ -165,6 +165,7 @@
                             <option value="">ทั้งหมด</option>
                             <option value="facebook" {{ $filters['platform'] === 'facebook' ? 'selected' : '' }}>📘 Facebook</option>
                             <option value="line" {{ $filters['platform'] === 'line' ? 'selected' : '' }}>🟢 LINE</option>
+                            <option value="telegram" {{ $filters['platform'] === 'telegram' ? 'selected' : '' }}>✈️ Telegram</option>
                         </select>
                     </div>
                 </div>
@@ -284,6 +285,10 @@
                     $rkey   = $p->getRarity();                       // common|rare|epic|legendary
                     $rcfg   = $rarityV4[$rkey] ?? $rarityV4['common'];
                     $plat   = $p->getPlatformConfig();              // icon/label (ใช้แค่ icon)
+                    // ✈️ (2026-09-13) โมเดลยังไม่รู้จัก telegram (ตกไป 🌐) — ใส่ไอคอนให้ตรงช่องทางที่หน้านี้
+                    if ($p->platform === 'telegram') {
+                        $plat['icon'] = '✈️';
+                    }
                     $level  = $p->getLevel();
                     $xp     = $p->getXpProgress();
                     $traitsTop = array_slice($p->traits ?? [], -3);

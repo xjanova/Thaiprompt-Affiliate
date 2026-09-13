@@ -323,7 +323,7 @@ class BillTrollGuardService
         }
 
         $platform = $reading->platform
-            ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+            ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
         // 📋 (2026-07-11) เส้นทาง "แบบสอบถามยืนยันเจตนา" — ลูกค้ายอมรับกติกา 5 ข้อ
         //   (รวมข้อ "ถ้าไม่จ่าย = งดใช้งานเพจ N วัน") แล้วบิลนี้ยังไม่ถูกชำระ

@@ -260,6 +260,8 @@
                                     <option value="all" {{ old('target_platform', $campaign?->target_platform) === 'all' ? 'selected' : '' }}>ทุก Platform</option>
                                     <option value="facebook" {{ old('target_platform', $campaign?->target_platform) === 'facebook' ? 'selected' : '' }}>Facebook</option>
                                     <option value="line" {{ old('target_platform', $campaign?->target_platform) === 'line' ? 'selected' : '' }}>LINE</option>
+                                    {{-- ✈️ (2026-09-13) ตัวส่งแคมเปญเรียก FortuneChannelManager::getPlatform() ซึ่งรู้จัก telegram แล้ว --}}
+                                    <option value="telegram" {{ old('target_platform', $campaign?->target_platform) === 'telegram' ? 'selected' : '' }}>Telegram</option>
                                 </select>
                             </div>
                             @error('target_platform')

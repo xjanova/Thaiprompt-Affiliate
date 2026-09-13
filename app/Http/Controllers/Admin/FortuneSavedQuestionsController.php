@@ -34,7 +34,7 @@ class FortuneSavedQuestionsController extends Controller
         }
 
         // กรองตาม platform
-        if ($request->filled('platform') && in_array($request->platform, ['line', 'facebook'])) {
+        if ($request->filled('platform') && in_array($request->platform, ['line', 'facebook', 'telegram'], true)) {
             $query->where('platform', $request->platform);
         }
 
@@ -57,6 +57,8 @@ class FortuneSavedQuestionsController extends Controller
             'replied' => FortuneSavedQuestion::replied()->count(),
             'line' => FortuneSavedQuestion::where('platform', 'line')->count(),
             'facebook' => FortuneSavedQuestion::where('platform', 'facebook')->count(),
+            // ✈️ (2026-09-13) ช่องทางที่ 3
+            'telegram' => FortuneSavedQuestion::where('platform', 'telegram')->count(),
         ];
 
         return view('admin.fortune.saved-questions.index', [
@@ -87,7 +89,7 @@ class FortuneSavedQuestionsController extends Controller
         // ส่งคำตอบกลับหาผู้ใช้ (อัตโนมัติแยก platform)
         $result = $this->sendReplyToUser($question, $validated['admin_reply']);
 
-        $platformLabel = $question->platform === 'facebook' ? 'Facebook' : 'LINE';
+        $platformLabel = match ($question->platform) { 'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE' };
 
         if ($result['sent']) {
             $message = "ส่งคำตอบกลับหาผู้ใช้ผ่าน {$platformLabel} สำเร็จ ✅";
@@ -192,6 +194,9 @@ class FortuneSavedQuestionsController extends Controller
             // ✅ แยก platform ส่งข้อความ
             if ($platform === 'facebook') {
                 $sent = $this->sendViaFacebook($userId, $message, $question);
+            } elseif ($platform === 'telegram') {
+                // ✈️ (2026-09-13) Telegram — ส่งตรงได้ไม่จำกัดเวลา
+                $sent = (new \App\Services\TelegramFortuneService)->sendMessage($userId, $message);
             } elseif ($platform === 'line') {
                 $sent = $this->sendViaLine($userId, $message, $question);
             } else {
@@ -218,7 +223,7 @@ class FortuneSavedQuestionsController extends Controller
                 ]);
             }
 
-            $platformLabel = $platform === 'facebook' ? 'Facebook' : 'LINE';
+            $platformLabel = match ($platform) { 'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE' };
 
             return [
                 'sent' => $sent,
@@ -301,7 +306,7 @@ class FortuneSavedQuestionsController extends Controller
         }
 
         $result = $this->sendReplyToUser($question, $question->admin_reply);
-        $platformLabel = $question->platform === 'facebook' ? 'Facebook' : 'LINE';
+        $platformLabel = match ($question->platform) { 'facebook' => 'Facebook', 'telegram' => 'Telegram', default => 'LINE' };
 
         if ($result['sent']) {
             return redirect()
@@ -341,6 +346,11 @@ class FortuneSavedQuestionsController extends Controller
         // LINE user ID: ขึ้นต้นด้วย U + hex 32 ตัว
         if (preg_match('/^U[0-9a-fA-F]{32}$/', $userId)) {
             return 'line';
+        }
+
+        // ✈️ (2026-09-13) Telegram: 'tg_' + เลข chat id
+        if (\App\Services\Fortune\FortuneRecipient::looksLikeTelegramUserId($userId)) {
+            return 'telegram';
         }
 
         // Facebook PSID: ตัวเลขล้วน 10+ หลัก

@@ -158,7 +158,8 @@
                                         <span class="tp-pill tp-pill-soft" style="font-size:10px; font-weight:700;">⭐ สาขาหลัก</span>
                                     @endif
                                 </td>
-                                <td style="padding:11px 12px; white-space:nowrap;">{{ $p->platform === 'line' ? 'LINE' : 'Facebook' }}</td>
+                                {{-- ✈️ ป้ายอย่างเดียว — สาขาสร้างได้แค่ facebook/line (Telegram ตั้งที่หน้า "ช่องทางรับข้อความ") --}}
+                                <td style="padding:11px 12px; white-space:nowrap;">{{ $p->platform === 'line' ? 'LINE' : ($p->platform === 'telegram' ? 'Telegram' : 'Facebook') }}</td>
                                 <td style="padding:11px 12px; font-family:monospace; font-size:11px;">{{ $p->external_page_id }}</td>
                                 <td style="padding:11px 12px;">{{ number_format((int) ($s->customers ?? 0)) }}</td>
                                 <td style="padding:11px 12px;">{{ number_format((int) ($s->total_bills ?? 0)) }}</td>

@@ -142,15 +142,8 @@ class FortuneCelticSummaryRedeliver extends Command
             //   `fortune_readings` **ไม่มีคอลัมน์ line_user_id** — LINE userId เก็บใน
             //   platform_user_id / facebook_user_id ⇒ ห้ามใช้ "มี facebook_user_id ไหม"
             //   ตัดสินว่าเป็นลูกค้า FB (บั๊กเดิมของ sendCelticThinkingAck)
-            $platform = $reading->platform;
-            if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
-                $candidateId = $reading->platform_user_id ?: $reading->facebook_user_id ?: '';
-                $platform = preg_match('/^U[a-f0-9]{32}$/i', (string) $candidateId) ? 'line' : 'facebook';
-            }
-
-            $userId = $platform === 'line'
-                ? (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '')
-                : (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+            // ✈️ (2026-09-13) แหล่งเดียว FortuneRecipient — เดิม whitelist แค่ facebook/line (Telegram ตกเป็น FB)
+            ['platform' => $platform, 'user_id' => $userId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
 
             if ($userId === '') {
                 $this->warn("  {$tag} ข้าม — ไม่มี user id");
@@ -268,7 +261,8 @@ class FortuneCelticSummaryRedeliver extends Command
      */
     protected function sendFacebook(string $userId, string $text, FortuneReading $reading): bool
     {
-        $fbService = app(FacebookWebhookService::class);
+        // ✈️ (2026-09-13) ลูกค้า Telegram ('tg_…') ใช้เส้นนี้ด้วย — ผู้ส่งเลือกตามรูปทรง id
+        $fbService = \App\Services\Fortune\FortuneMessengerFactory::forUserId($userId) ?? app(FacebookWebhookService::class);
 
         $ok = (bool) $fbService->sendMessage($userId, $text, [
             'from_admin' => true,

@@ -79,7 +79,7 @@ class VerifySlipFallbackJob implements ShouldQueue
                 return;
             }
             $platform = $reading->platform
-                ?? (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
 
             $result = $conversationService->trySlipOkVerifyForReading($reading, $platform, $userId);
 

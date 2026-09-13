@@ -316,7 +316,8 @@ class FortuneFlowNudge extends Command
 
                     // 🎧 (2026-06-21) เสียงระบบ: อ่านกล่องกระตุ้นให้ฟัง (FB only) — best-effort
                     //   instanceof guard: sendAudio ไม่อยู่ใน MessagingPlatformInterface (LINE signature ต่าง)
-                    if ($platform === 'facebook' && $service instanceof \App\Services\FacebookWebhookService) {
+                    //   ✈️ (2026-09-13) + Telegram (ข้อความเสียง) — ผู้ส่งทรง Messenger ทำ sendAudio ได้
+                    if (in_array($platform, ['facebook', 'telegram'], true) && $service instanceof \App\Contracts\FortuneMessengerSender) {
                         try {
                             $clipKey = $step === 'tier_choice' ? 'sales_nudge_tier' : 'sales_nudge_consent';
                             $voiceUrl = (new \App\Services\FortuneSystemVoiceService($settings))->urlFor($clipKey);

@@ -124,6 +124,22 @@ class TelegramFortuneWebhookController extends Controller
         // เมนูลัด /menu /help
         'HELP' => 'เมนู',
         'MENU_HELP' => 'เมนู',
+        'FORTUNE_FREE' => 'ดูดวง',
+        // 🚨 ยืนยันยอดโอนที่ไม่ตรงเป๊ะ (fuzzy) — แปลงเป็นคำชัด ๆ เสมอ (ห้ามส่งรหัสดิบ: 'fuzzy_confirm_no'
+        //    เคยถูกตัวจับคำนับเป็น "ใช่" เพราะมีตัว y + คำ confirm → ตัดบิลที่ลูกค้าบอกว่าไม่ใช่)
+        'FUZZY_CONFIRM_YES' => 'ใช่',
+        'FUZZY_CONFIRM_NO' => 'ไม่ใช่',
+    ];
+
+    /**
+     * รหัสปุ่มที่ FB มี handler เฉพาะ (ไม่เคยส่งรหัสดิบเข้าสมอง) แต่ Telegram ไม่มี → ใช้ป้ายบนปุ่มแทน
+     *
+     * @var array<int, string>
+     */
+    protected const TITLE_PAYLOADS = [
+        'MENU_ABOUT_US', 'ICEBREAKER_ABOUT', 'MENU_REFERRAL', 'ICEBREAKER_REFERRAL', 'ICEBREAKER_REGISTER',
+        'AFFILIATE_RECRUIT_YES', 'AFFILIATE_RECRUIT_NO', 'INVITE_FREE_WEB', 'FOLLOW_CONFIRMED',
+        'TRANSFER_STAY_FB', 'TRANSFER_STAY_FB_CONFIRM', 'FORTUNE_EARN_INFO', 'SHARE_PAGE',
     ];
 
     /**
@@ -187,11 +203,14 @@ class TelegramFortuneWebhookController extends Controller
         $given = (string) $request->header('X-Telegram-Bot-Api-Secret-Token', '');
 
         if ($expected === '' || ! hash_equals($expected, $given)) {
-            Log::warning('Telegram Webhook: secret ไม่ตรง — ปฏิเสธ', [
-                'has_secret_configured' => $expected !== '',
-                'has_header' => $given !== '',
-                'ip' => $request->ip(),
-            ]);
+            // log นาทีละครั้งต่อ IP — กันคนยิงถล่มจน log บวม (endpoint นี้ไม่มี throttle โดยตั้งใจ)
+            if (Cache::add('tg_webhook_reject_log:'.$request->ip(), true, 60)) {
+                Log::warning('Telegram Webhook: secret ไม่ตรง — ปฏิเสธ', [
+                    'has_secret_configured' => $expected !== '',
+                    'has_header' => $given !== '',
+                    'ip' => $request->ip(),
+                ]);
+            }
 
             return response('forbidden', 403);
         }
@@ -434,23 +453,29 @@ class TelegramFortuneWebhookController extends Controller
             return null;
         }
 
-        // ลิงก์ t.me/<บอท>?start=<payload> ที่พาปุ่ม FB มาด้วย (เช่น MENU_FORTUNE) → ทำเหมือนกดปุ่ม
-        if ($payload !== '' && preg_match('/^[A-Z][A-Z0-9_]{2,40}$/', $payload)) {
-            $this->routePayload($userId, $payload, '');
-
-            return null;
-        }
-
-        // กด /start รัว → ทักครั้งเดียวต่อ 30 วิ (คำสั่งมาก่อนด่านสแปม จึงต้องกันเอง)
+        // กด /start รัว → ทำงานครั้งเดียวต่อ 30 วิ (คำสั่งมาก่อนด่านสแปม จึงต้องกันเอง — รวมทางลิงก์ start=<payload>)
         if (! Cache::add('tg_start:'.$userId, true, 30)) {
             return null;
         }
 
-        $hasActiveFlow = FortuneReading::hasActiveReading(FortuneRecipient::PLATFORM_TELEGRAM, $userId);
+        // ลิงก์ t.me/<บอท>?start=<payload> ที่พาปุ่ม FB มาด้วย (เช่น MENU_FORTUNE) → ทำเหมือนกดปุ่ม
+        //    เฉพาะรหัสที่อยู่ในตารางของเราเท่านั้น (ลิงก์ start ใครก็สร้างได้ — ห้ามส่งรหัสแปลกเข้าสมอง)
+        if ($payload !== '') {
+            if (isset(self::PAYLOAD_TEXT[$payload]) || isset(self::TIER_PAYLOADS[$payload])) {
+                $this->routePayload($userId, $payload, '');
 
-        if (! $hasActiveFlow) {
-            $this->sendWelcomeBannerOnce($userId);
+                return null;
+            }
         }
+
+        // มี flow ค้างอยู่ (บิล/เปิดไพ่/รอคำทำนาย) → ห้ามยื่นเมนูดูดวงใหม่ทับ — ทักสั้น ๆ ให้คุยต่อจากเดิม
+        if (FortuneReading::hasActiveReading(FortuneRecipient::PLATFORM_TELEGRAM, $userId)) {
+            $this->telegram->sendMessage($userId, "🌙 ยินดีต้อนรับกลับค่ะ\nเรื่องที่คุยค้างไว้ยังอยู่ครบ พิมพ์ต่อได้เลยนะคะ ✨");
+
+            return null;
+        }
+
+        $this->sendWelcomeBannerOnce($userId);
 
         $profile = $this->telegram->getUserProfile($userId);
         $first = trim((string) ($profile['first_name'] ?? ''));
@@ -497,18 +522,18 @@ class TelegramFortuneWebhookController extends Controller
 
         $data = (string) ($callback['data'] ?? '');
         $title = $this->buttonTitleFor($message, $data);
-        $payload = $this->telegram->decodeCallback($data);
 
-        // ปุ่ม hash ที่ cache หายไป (ข้าม deploy) → ใช้ป้ายบนปุ่มแทน (เหมือน FB ที่ป้ายปุ่มไหลมาเป็นข้อความ)
-        if ($payload === null) {
-            if ($title === '') {
-                return;
-            }
-            $payload = $title;
+        // 🔐 ปุ่มที่กดต้อง "มีอยู่จริง" บนข้อความนั้น — client ดัดแปลง (MTProto) ยิง callback_data อะไรก็ได้
+        //    ถ้าไม่ตรวจ ข้อความใดก็ได้จะวิ่งเข้าสมองแบบ "กดปุ่ม" = ข้ามด่าน /aistop + ด่านสแปม
+        //    ผลพลอยได้: กดซ้ำหลังปุ่มถูกถอดแล้ว (double-tap) → ไม่เจอปุ่ม → ไม่ประมวลผลซ้ำ
+        if ($title === '') {
+            Log::info('Telegram: callback ไม่ตรงกับปุ่มบนข้อความ — ข้าม (กดซ้ำ/ปุ่มถูกถอด/ปลอม)', ['user_id' => $userId]);
+
+            return;
         }
 
-        // ✅ ปุ่มที่กดแล้ว → ถอดปุ่ม callback ออก (กันกดซ้ำ/กดปุ่มเก่า) + โชว์ว่าเลือกอะไร
-        $this->markChoice($chatId, $message, $title);
+        // ปุ่ม hash ที่ cache หายไป (ข้าม deploy) → ใช้ป้ายบนปุ่มแทน (เหมือน FB ที่ป้ายปุ่มไหลมาเป็นข้อความ)
+        $payload = $this->telegram->decodeCallback($data) ?? $title;
 
         // 1️⃣ คำทำนายจ่ายแล้วรอส่ง → ส่งก่อน
         if ($this->deliverPendingPrediction($userId, '')) {
@@ -523,6 +548,29 @@ class TelegramFortuneWebhookController extends Controller
         // 3️⃣ กดปุ่มรัว
         if ($this->blockedByNavFlood($userId, $payload)) {
             return;
+        }
+
+        // ✅ ผ่านด่านแล้วค่อยจัดการปุ่ม (ถ้าด่านกลืนคลิก ลูกค้ายังมีปุ่มให้กดใหม่)
+        //    ชุดปุ่มแบบ quick reply (ชุดล่าสุดที่ TelegramFortuneService จดไว้) = ใช้ได้ครั้งเดียวเหมือน FB
+        //    → กดซ้ำเร็ว ๆ (double-tap) นับครั้งเดียว + ถอดปุ่มออกพร้อมโชว์ว่าเลือกอะไร
+        //    ปุ่มใน template (เมนูแพคเกจ/บิล) = คงไว้เหมือนปุ่ม template ของ FB
+        $messageId = (int) ($message['message_id'] ?? 0);
+        $tappedKey = 'tg_kb_tapped:'.$userId.':'.$messageId;
+
+        // ชุด quick reply นี้ถูกกดไปแล้ว (ตัวจดชุดล่าสุดถูกล้างไปแล้ว — ต้องเช็คธงนี้ก่อน ไม่งั้นกดซ้ำหลุดเป็นปุ่ม template)
+        if ($messageId > 0 && Cache::has($tappedKey)) {
+            return;
+        }
+
+        $isQuickReplySet = $messageId > 0 && (int) Cache::get('tg_last_kb:'.$userId, 0) === $messageId;
+
+        if ($isQuickReplySet) {
+            if (! Cache::add($tappedKey, true, 300)) {
+                return;
+            }
+
+            Cache::forget('tg_last_kb:'.$userId);
+            $this->markChoice($chatId, $message, $title);
         }
 
         $this->routePayload($userId, $payload, $title);
@@ -640,6 +688,8 @@ class TelegramFortuneWebhookController extends Controller
             'QUESTION_CUSTOM' => $this->telegram->sendMessage($userId, "✍️ พิมพ์คำถามที่อยากรู้มาได้เลยค่ะ\nเล่ารายละเอียดมาได้เต็มที่ แม่หมอจะอ่านให้ตรงเรื่องที่สุดนะคะ 🔮"),
             'VIEW_LATER' => $this->telegram->sendMessage($userId, "✨ ได้เลย! เมื่อพร้อมดูแล้ว พิมพ์ 'ดูคำทำนาย' ได้ทุกเมื่อ 🔮"),
             'SUBSCRIBE' => $this->telegram->sendMessage($userId, (string) $this->settings->getSubscriptionMessage()),
+            'INVITE_SNOOZE_7D' => $this->handleInviteSnooze($userId),
+            'INVITE_OPTOUT' => $this->handleInviteOptOut($userId),
             // ภาษาลาวถูกปิดถาวร ([[rule_fortune_lao_dead_kill_switch]]) — ปุ่มเก่า = เข้าเมนูปกติ
             'LANG_PICKER', 'LANG_TH', 'LANG_LO', 'GET_STARTED', 'get_started' => $this->handleStart($userId, ''),
             default => $this->processText($userId, $this->payloadAsText($payload, $title), true),
@@ -647,20 +697,34 @@ class TelegramFortuneWebhookController extends Controller
     }
 
     /**
-     * payload ที่ไม่มีในตาราง → ข้อความ (FB default ส่ง payload ตรง ๆ)
+     * payload ที่ไม่มีในตาราง → ข้อความ — **ส่ง payload ดิบเหมือน FB default** (สมองอ่านรหัสบางตัวแบบดิบ
+     * เช่น PAY_METHOD_BACK → 'pay_method_back' · STRIPE_OPEN_CHECKOUT) ถ้าเอาป้ายไปแทน ปุ่มพวกนี้ตาย
      *
-     * ยกเว้นทรงรหัสตัวใหญ่ที่เราไม่รู้จัก (เช่น MENU_ABOUT_US) → ป้ายบนปุ่มมีความหมายกว่ารหัสดิบ
-     * รหัสที่สมองรู้จักเอง (STRIPE_OPEN_CHECKOUT / STRIPE_RESUME / __DEEP_…__) ปล่อยผ่านตามเดิม
+     * ยกเว้นรหัสที่ FB มี handler เฉพาะซึ่งฝั่ง Telegram ไม่มี (TITLE_PAYLOADS) → ใช้ป้ายบนปุ่ม
+     * เพราะรหัสดิบพวกนั้นสมองไม่รู้จัก (FB ไม่เคยส่งเข้าสมอง) ถ้าส่งไปจะกลายเป็นแชท AI ตอบมั่ว
      */
     protected function payloadAsText(string $payload, string $title): string
     {
-        $passthrough = ['STRIPE_OPEN_CHECKOUT', 'STRIPE_RESUME'];
-
-        if (preg_match('/^[A-Z][A-Z0-9_]+$/', $payload) && ! in_array($payload, $passthrough, true) && $title !== '') {
+        if (in_array($payload, self::TITLE_PAYLOADS, true) && $title !== '') {
             return $title;
         }
 
         return $payload;
+    }
+
+    /**
+     * ปุ่มชวน (invite) — "พัก 7 วัน" / "ไม่ต้องส่งอีก" · เหมือน FB handleInviteSnooze/handleInviteOptOut
+     */
+    protected function handleInviteSnooze(string $userId): void
+    {
+        \App\Models\FortuneUserCredit::snoozeOutbound($userId, FortuneRecipient::PLATFORM_TELEGRAM, 7);
+        $this->telegram->sendMessage($userId, "🔕 รับทราบค่ะ แม่หมอจะพักการทักไปหา 7 วันนะคะ\n\nถ้าช่วงไหนอยากดูดวง ทักมาหาแม่หมอได้เสมอเลยค่ะ ✨");
+    }
+
+    protected function handleInviteOptOut(string $userId): void
+    {
+        \App\Models\FortuneUserCredit::optOutOutbound($userId, FortuneRecipient::PLATFORM_TELEGRAM);
+        $this->telegram->sendMessage($userId, "🙏 รับทราบค่ะ แม่หมอจะไม่ทักไปรบกวนอีกนะคะ\n\nแต่ถ้าวันไหนเปลี่ยนใจอยากดูดวง ทักมาได้ตลอดเลยค่ะ แม่หมอยินดีเสมอ 🌙");
     }
 
     /**
@@ -894,12 +958,14 @@ class TelegramFortuneWebhookController extends Controller
             }
 
             // 🌊 ข้อความรัวผิดปกติ (>10 ใน 10 วิ) — กันบอทสแปม ไม่เรียก AI
-            $floodKey = 'telegram_flood:'.$userId;
-            $floodCount = (int) Cache::get($floodKey, 0);
-            Cache::put($floodKey, $floodCount + 1, 10);
-            if ($floodCount >= 10) {
+            //    หน้าต่างเวลาคงที่ (นับจากช่วง 10 วิ ไม่ต่ออายุทุกข้อความ) — [[rule_chat_debounce_fixed_window]]
+            //    ลูกค้าจ่ายแล้วไม่โดน (กดเปิดไพ่ Celtic รัว ๆ แล้วถามทันที = ปกติ) — [[rule_paid_customer_bypass_all_guards]]
+            $floodKey = 'telegram_flood:'.$userId.':'.intdiv(time(), 10);
+            Cache::add($floodKey, 0, 30);
+            $floodCount = (int) Cache::increment($floodKey);
+            if ($floodCount > 10 && ! $this->conversationService->hasPaidActiveReading($userId)) {
                 Log::warning('Telegram Webhook: flood detected', ['user_id' => $userId, 'count' => $floodCount]);
-                if ($floodCount === 10) {
+                if ($floodCount === 11) {
                     $this->telegram->sendMessage($userId, "🌙 แม่หมอกำลังพิมพ์อยู่ค่ะ ✨\n\nพิมพ์ทีละข้อความนะคะ 💫");
                 }
 

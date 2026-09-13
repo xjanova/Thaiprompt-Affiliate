@@ -41,6 +41,7 @@
             ['label' => 'ตอบแล้ว',   'value' => $stats['replied'],  'icon' => 'fa-circle-check', 'color' => '#5aa07e'],
             ['label' => 'LINE',      'value' => $stats['line'],     'icon' => 'fa-comment-dots', 'color' => '#5aa07e'],
             ['label' => 'Facebook',  'value' => $stats['facebook'], 'icon' => 'fa-facebook-messenger', 'color' => '#5689b8', 'brand' => true],
+            ['label' => 'Telegram',  'value' => $stats['telegram'] ?? 0, 'icon' => 'fa-telegram', 'color' => '#4a9fd0', 'brand' => true],
         ];
     @endphp
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;">
@@ -85,6 +86,7 @@
                     <option value="">ทุก Platform</option>
                     <option value="line" {{ request('platform') === 'line' ? 'selected' : '' }}>💬 LINE</option>
                     <option value="facebook" {{ request('platform') === 'facebook' ? 'selected' : '' }}>👥 Facebook</option>
+                    <option value="telegram" {{ request('platform') === 'telegram' ? 'selected' : '' }}>✈️ Telegram</option>
                 </select>
             </div>
 
@@ -109,6 +111,7 @@
                 // สีแถบซ้าย + meta ตามสถานะ
                 $accentBar = $q->is_replied ? '#5aa07e' : '#e0a52e';
                 $isFb      = $q->platform === 'facebook';
+                $isTg      = $q->platform === 'telegram';
             @endphp
             <div class="tp-card tp-card-hover" style="position:relative; overflow:hidden; padding-left:22px;">
                 {{-- แถบสถานะด้านซ้าย --}}
@@ -123,6 +126,10 @@
                             @if($isFb)
                                 <span class="tp-pill" style="background:rgba(86,137,184,.16); color:#5689b8;">
                                     👥 Facebook
+                                </span>
+                            @elseif($isTg)
+                                <span class="tp-pill" style="background:rgba(74,159,208,.16); color:#4a9fd0;">
+                                    ✈️ Telegram
                                 </span>
                             @else
                                 <span class="tp-pill" style="background:rgba(90,160,126,.16); color:#5aa07e;">
@@ -215,7 +222,7 @@
                             <form method="POST" action="{{ route('admin.fortune.saved-questions.resend', $q) }}" style="margin:0;">
                                 @csrf
                                 <button type="submit" class="tp-btn tp-btn-sm" style="width:100%; justify-content:center; background:#5aa07e; color:#fff;">
-                                    <i class="fas fa-paper-plane"></i> ส่งซ้ำ ({{ $isFb ? 'FB' : 'LINE' }})
+                                    <i class="fas fa-paper-plane"></i> ส่งซ้ำ ({{ $isFb ? 'FB' : ($isTg ? 'Telegram' : 'LINE') }})
                                 </button>
                             </form>
                         @endif
@@ -263,6 +270,9 @@
                 <span x-show="replyPlatform === 'facebook'" x-cloak class="tp-pill" style="background:rgba(86,137,184,.16); color:#5689b8;">
                     👥 Facebook
                 </span>
+                <span x-show="replyPlatform === 'telegram'" x-cloak class="tp-pill" style="background:rgba(74,159,208,.16); color:#4a9fd0;">
+                    ✈️ Telegram
+                </span>
                 <span x-show="replyPlatform === 'line' || !replyPlatform" class="tp-pill" style="background:rgba(90,160,126,.16); color:#5aa07e;">
                     💬 LINE
                 </span>
@@ -281,7 +291,7 @@
                 <span style="font-size:13px; color:var(--ink2);">
                     <i class="fas fa-paper-plane" style="color:#e0a52e;"></i>
                     คำตอบจะถูกส่งกลับหาผู้ใช้ผ่าน
-                    <strong x-text="replyPlatform === 'facebook' ? 'Facebook Messenger' : 'LINE'" style="color:var(--ink);"></strong>
+                    <strong x-text="replyPlatform === 'facebook' ? 'Facebook Messenger' : (replyPlatform === 'telegram' ? 'Telegram' : 'LINE')" style="color:var(--ink);"></strong>
                     อัตโนมัติ
                 </span>
             </div>

@@ -38,8 +38,8 @@ class FortuneBan extends Command
         $platform = strtolower(trim($this->argument('platform')));
         $userId = trim($this->argument('user_id'));
 
-        if (! in_array($platform, ['facebook', 'line'], true)) {
-            $this->error("Platform ต้องเป็น 'facebook' หรือ 'line' (ได้รับ: {$platform})");
+        if (! in_array($platform, ['facebook', 'line', 'telegram'], true)) {
+            $this->error("Platform ต้องเป็น 'facebook', 'line' หรือ 'telegram' (ได้รับ: {$platform})");
 
             return self::FAILURE;
         }

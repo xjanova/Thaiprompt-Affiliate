@@ -87,7 +87,7 @@ class FortuneMarketingController extends Controller
             'use_ai_generate' => 'boolean',
             'target_audience' => 'required|in:all,paid,recent,new',
             'target_limit' => 'nullable|integer|min:1|max:10000',
-            'target_platform' => 'required|in:all,facebook,line',
+            'target_platform' => 'required|in:all,facebook,line,telegram',
             'schedule_type' => 'required|in:once,daily,weekly',
             'scheduled_at' => 'nullable|date',
         ]);
@@ -133,7 +133,7 @@ class FortuneMarketingController extends Controller
             'use_ai_generate' => 'boolean',
             'target_audience' => 'required|in:all,paid,recent,new',
             'target_limit' => 'nullable|integer|min:1|max:10000',
-            'target_platform' => 'required|in:all,facebook,line',
+            'target_platform' => 'required|in:all,facebook,line,telegram',
             'schedule_type' => 'required|in:once,daily,weekly',
             'scheduled_at' => 'nullable|date',
         ]);

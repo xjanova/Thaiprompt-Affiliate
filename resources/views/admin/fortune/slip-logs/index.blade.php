@@ -161,6 +161,7 @@
                             <option value="">— ทุก platform —</option>
                             <option value="line" @selected($filters['platform'] === 'line')>LINE</option>
                             <option value="facebook" @selected($filters['platform'] === 'facebook')>Facebook</option>
+                            <option value="telegram" @selected($filters['platform'] === 'telegram')>Telegram</option>
                         </select>
                     </div>
                 </div>

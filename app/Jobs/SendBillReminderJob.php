@@ -95,7 +95,7 @@ class SendBillReminderJob implements ShouldQueue
             return;
         }
         $platform = $reading->platform
-            ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+            ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
 
         // 🚦 (2026-09-01) ทวงบิลฝั่ง LINE = push ไม่วิกฤต (นโยบายเจ้าของ 2026-08-31: push สงวนไว้
         //   ให้ของลูกค้าจ่ายแล้ว) — โควตาต่ำกว่ากันชน → "สละ" การทวง stage นี้ไปเลย ไม่เลื่อน
@@ -251,7 +251,7 @@ class SendBillReminderJob implements ShouldQueue
             //   ⇒ platform='facebook' ตลอด → query history ผิด platform → RAG ลูกค้า LINE จืดเป็น generic
             $userId = $reading->facebook_user_id ?: $reading->platform_user_id;
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
             if (! empty($userId)) {
                 $conv = \App\Models\LineBotConversation::where('line_user_id', $userId)
                     ->where('platform', $platform)
@@ -422,8 +422,11 @@ EOT;
 
     private function sendMessage(string $platform, string $userId, string $message): void
     {
-        if ($platform === 'facebook') {
-            $fbService = app(\App\Services\FacebookWebhookService::class);
+        // ✈️ (2026-09-13) Telegram ใช้เส้นเดียวกับ FB (ข้อความ + เสียงกระตุ้น) — เดิมตกไป "platform ไม่รู้จัก"
+        if (in_array($platform, ['facebook', 'telegram'], true)) {
+            $fbService = $platform === 'telegram'
+                ? new \App\Services\TelegramFortuneService
+                : app(\App\Services\FacebookWebhookService::class);
             // ลูกค้าเพิ่งสร้างบิล < 30 นาที → ยังใน 24hr window — ไม่ต้องใช้ message_tag
             $fbService->sendMessage($userId, $message);
 

@@ -85,7 +85,7 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
     /**
      * เรียก Bot API หนึ่งเมธอด
      *
-     * - 429 → รอตาม retry_after (ไม่เกิน 5 วิ) แล้วลองซ้ำ 1 ครั้ง
+     * - 429 → รอตาม retry_after (ไม่เกิน 15 วิ) แล้วลองซ้ำ 1 ครั้ง
      * - 403 (ลูกค้าบล็อกบอท) → จดไว้ 1 วัน ไม่ถือเป็น error
      *
      * @param  array<string, mixed>  $params
@@ -110,6 +110,12 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
                     foreach ($files as $field => $file) {
                         $handle = fopen($file['path'], 'r');
                         if ($handle === false) {
+                            foreach ($handles as $opened) {
+                                if (is_resource($opened)) {
+                                    fclose($opened);
+                                }
+                            }
+
                             return ['ok' => false, 'error_code' => 0, 'description' => 'file_open_failed'];
                         }
                         $handles[] = $handle;
@@ -145,7 +151,9 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
                 $code = (int) ($data['error_code'] ?? $response->status());
                 $retryAfter = (int) ($data['parameters']['retry_after'] ?? 0);
 
-                if ($code === 429 && $attempt === 1 && $retryAfter > 0 && $retryAfter <= 5) {
+                // 429 = ยิงถี่เกิน (~1 ข้อความ/วิ/ห้อง) → รอตามที่ Telegram บอกแล้วลองอีกครั้ง
+                //    เพดาน 15 วิ — นานกว่านั้นให้ผู้เรียกจัดการ (คิวจะ retry เอง) ไม่แช่ worker ทิ้ง
+                if ($code === 429 && $attempt === 1 && $retryAfter > 0 && $retryAfter <= 15) {
                     sleep($retryAfter);
 
                     continue;
@@ -483,9 +491,12 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
      */
     public function rememberProfile(string $userId, array $from): array
     {
-        $first = trim((string) ($from['first_name'] ?? ''));
-        $last = trim((string) ($from['last_name'] ?? ''));
-        $username = trim((string) ($from['username'] ?? ''));
+        // ชื่อ Telegram ตั้งเองได้ยาว/มีขึ้นบรรทัดใหม่ และไหลเข้า prompt ของ AI ในฐานะ "ชื่อลูกค้า"
+        //    → ตัดอักขระควบคุม/ขึ้นบรรทัด + จำกัดความยาว (กันแอบฝังคำสั่งในชื่อ)
+        $clean = static fn ($v): string => mb_substr(trim((string) preg_replace('/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]+/u', ' ', (string) $v)), 0, 40);
+        $first = $clean($from['first_name'] ?? '');
+        $last = $clean($from['last_name'] ?? '');
+        $username = $clean($from['username'] ?? '');
         $name = trim($first.' '.$last);
 
         $profile = [
@@ -698,7 +709,7 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
 
         $chunks = $this->splitMessage($message);
         $lastIndex = count($chunks) - 1;
-        $allOk = true;
+        $delivered = 0;
 
         foreach ($chunks as $i => $chunk) {
             $params = [
@@ -714,16 +725,28 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
 
             $result = $this->call('sendMessage', $params);
 
-            if (empty($result['ok'])) {
-                $allOk = false;
+            // ท่อนที่ล้มชั่วคราว (เน็ต/เซิร์ฟเวอร์) → ลองซ้ำอีกครั้งเดียว ไม่งั้นคำทำนายขาดกลางเรื่อง
+            if (empty($result['ok']) && ! in_array((int) ($result['error_code'] ?? 0), [400, 403], true)) {
+                usleep(800000);
+                $result = $this->call('sendMessage', $params);
+            }
 
+            if (empty($result['ok'])) {
                 // บล็อกบอท → ท่อนที่เหลือก็ส่งไม่ได้
                 if ((int) ($result['error_code'] ?? 0) === 403) {
-                    return false;
+                    return $delivered > 0;
                 }
+
+                Log::warning('Telegram: ส่งท่อนข้อความไม่สำเร็จ', [
+                    'user_id' => $recipientId,
+                    'chunk' => ($i + 1).'/'.count($chunks),
+                    'error_code' => $result['error_code'] ?? null,
+                ]);
 
                 continue;
             }
+
+            $delivered++;
 
             if ($i === $lastIndex && $ephemeral && isset($params['reply_markup'])) {
                 $this->rememberEphemeralKeyboard($recipientId, $chatId, (int) ($result['result']['message_id'] ?? 0));
@@ -734,7 +757,9 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
             }
         }
 
-        return $allOk;
+        // ถึงลูกค้าแล้วอย่างน้อยหนึ่งท่อน = ส่งแล้ว (ผู้เรียกบางเส้นส่งซ้ำทั้งก้อนเมื่อได้ false → ลูกค้าได้ซ้ำ)
+        //    ท่อนที่หายถูก log ไว้ข้างบนแล้ว
+        return $delivered > 0;
     }
 
     /**
@@ -950,11 +975,15 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
         $current = '';
         preg_match_all('/\X/u', $text, $graphemes);
         foreach ($graphemes[0] as $g) {
-            if ($this->utf16Length($current.$g) > $maxUnits) {
-                $parts[] = $current;
-                $current = '';
+            // PCRE บางรุ่นนับอีโมจิเรียงติดกันยาว ๆ เป็น grapheme เดียว → ยาวเกินเพดานเอง ต้องผ่าเป็นตัวอักษร
+            $pieces = $this->utf16Length($g) > $maxUnits ? mb_str_split($g) : [$g];
+            foreach ($pieces as $piece) {
+                if ($current !== '' && $this->utf16Length($current.$piece) > $maxUnits) {
+                    $parts[] = $current;
+                    $current = '';
+                }
+                $current .= $piece;
             }
-            $current .= $g;
         }
         if ($current !== '') {
             $parts[] = $current;
@@ -1134,7 +1163,7 @@ class TelegramFortuneService implements FortuneMessengerSender, MessagingPlatfor
         return $this->call('setWebhook', [
             'url' => $url,
             'secret_token' => $secret,
-            'allowed_updates' => ['message', 'edited_message', 'callback_query', 'my_chat_member'],
+            'allowed_updates' => ['message', 'callback_query', 'my_chat_member'],
             'max_connections' => 40,
             'drop_pending_updates' => false,
         ], [], 15);

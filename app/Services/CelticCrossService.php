@@ -694,7 +694,7 @@ class CelticCrossService
             //   ⇒ ห้ามเดา platform จาก !empty(facebook_user_id) — ใช้คอลัมน์ platform + U-regex fallback
             $uid = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', $uid) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($uid)));
             if ($uid !== '') {
                 $personaBlock = (string) app(\App\Services\Fortune\CustomerPersonaService::class)
                     // withPastRecall=false → เส้นนี้เป็น "พื้นดวงเปิดตัว" คำถามเป็น boilerplate ของระบบ
@@ -1705,7 +1705,7 @@ class CelticCrossService
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
             if (! empty($userId)) {
                 $platform = $reading->platform
-                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                    ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
                 // 🌙 (2026-05-23 v3) admin push — บอกกติกาให้ชัด (5 คำถาม / 15 นาที)
                 $remainingMin = $reading->getCelticQaRemainingMinutes();
@@ -2729,7 +2729,7 @@ class CelticCrossService
         // 🧭 (2026-09-01) LINE id อยู่ในคอลัมน์ facebook_user_id — ใช้คอลัมน์ platform + U-regex เท่านั้น
         $celticUserId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
         $celticPlatform = $reading->platform
-            ?: (preg_match('/^U[0-9a-f]{32}$/i', $celticUserId) ? 'line' : 'facebook');
+            ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($celticUserId)));
         try {
             if ($celticUserId !== '') {
                 $personaService = app(CustomerPersonaService::class);
@@ -3430,7 +3430,7 @@ class CelticCrossService
         try {
             $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
             if (! empty($userId)) {
                 $personaBlock = app(\App\Services\Fortune\CustomerPersonaService::class)
                     // withPastRecall=false → $systemPrompt ด้านล่างเรียก buildPastCaseBlock() เอง
@@ -3951,7 +3951,7 @@ class CelticCrossService
             //   ⇒ Celtic ของลูกค้า LINE ถูก bridge ลง log ในนาม platform='facebook' ทุกใบ
             //   → แชทปกติหลังจบ Celtic (อ่าน history ด้วย platform='line') มองไม่เห็นประวัติเลย
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId));
 
             $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
                 $userId,
@@ -4137,7 +4137,7 @@ class CelticCrossService
         try {
             $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
             if (! empty($userId)) {
                 $persona = app(CustomerPersonaService::class)->getCached($platform, (string) $userId);
                 if ($persona) {
@@ -4216,7 +4216,7 @@ class CelticCrossService
         try {
             $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
             if (! empty($userId)) {
                 $persona = app(CustomerPersonaService::class)->getCached($platform, (string) $userId);
                 if ($persona) {

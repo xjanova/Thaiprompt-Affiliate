@@ -75,6 +75,8 @@ class FortuneUsersController extends Controller
             'total_users' => FortuneReading::select('facebook_user_id')->distinct()->count(),
             'facebook_users' => FortuneReading::where('platform', 'facebook')->select('facebook_user_id')->distinct()->count(),
             'line_users' => FortuneReading::where('platform', 'line')->select('facebook_user_id')->distinct()->count(),
+            // ✈️ (2026-09-13) ช่องทางที่ 3
+            'telegram_users' => FortuneReading::where('platform', 'telegram')->select('facebook_user_id')->distinct()->count(),
             'paying_users' => FortuneReading::where('is_paid', true)->select('facebook_user_id')->distinct()->count(),
             'total_revenue' => FortuneReading::where('is_paid', true)->sum('amount_paid'),
         ];
@@ -153,7 +155,7 @@ class FortuneUsersController extends Controller
     public function sendMessage(Request $request)
     {
         $validated = $request->validate([
-            'platform' => 'required|in:facebook,line',
+            'platform' => 'required|in:facebook,line,telegram',
             'facebook_user_id' => 'required|string|max:255',
             'message' => 'required|string|max:2000',
         ]);
@@ -203,7 +205,7 @@ class FortuneUsersController extends Controller
     public function broadcastMessage(Request $request)
     {
         $validated = $request->validate([
-            'platform' => 'required|in:facebook,line,all',
+            'platform' => 'required|in:facebook,line,telegram,all',
             'message' => 'required|string|max:2000',
             'target' => 'required|in:all,paid,recent',
         ]);

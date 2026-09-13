@@ -129,7 +129,8 @@ class FortuneBubbleRecover extends Command
                         $line->sendMessage($userId, (string) $tail, ['quick_replies' => $tailQr]);
                     }
                 } else {
-                    $fb = new FacebookWebhookService($settings);
+                    // ✈️ (2026-09-13) FB / Telegram — ผู้ส่งตามช่องทางของบิล
+                    $fb = \App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId, $settings) ?? new FacebookWebhookService($settings);
 
                     if ($rest !== '') {
                         $fb->sendMessage($userId, $rest, [

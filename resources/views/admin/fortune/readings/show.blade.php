@@ -84,7 +84,8 @@
                     <div style="font-weight:700; color:var(--ink); margin-top:2px;">{{ $reading->facebook_user_name ?? 'ไม่ระบุ' }}</div>
                 </div>
                 <div>
-                    <div class="tp-muted" style="font-size:12px;">Facebook ID</div>
+                    {{-- ✈️ (2026-09-13) คอลัมน์ชื่อ facebook_user_id แต่เก็บ id ของทุกช่องทาง — ป้ายต้องบอกช่องทางจริง --}}
+                    <div class="tp-muted" style="font-size:12px;">{{ $reading->platform === 'telegram' ? 'Telegram ID' : ($reading->platform === 'line' ? 'LINE ID' : 'Facebook ID') }}</div>
                     <div style="font-family:monospace; font-size:13px; color:var(--ink); margin-top:2px; word-break:break-all;">{{ $reading->facebook_user_id }}</div>
                 </div>
                 <div>

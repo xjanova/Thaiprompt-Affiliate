@@ -141,14 +141,8 @@ class FortuneCelticRedeliver extends Command
             }
 
             // resolve platform + userId (pattern เดียวกับทั้งระบบ — platform field ก่อน แล้ว ID pattern)
-            $platform = $reading->platform;
-            if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
-                $candidateId = $reading->facebook_user_id ?: $reading->platform_user_id ?: '';
-                $platform = preg_match('/^U[a-f0-9]{32}$/i', $candidateId) ? 'line' : 'facebook';
-            }
-            $userId = $platform === 'line'
-                ? (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '')
-                : (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+            // ✈️ (2026-09-13) แหล่งเดียว FortuneRecipient — เดิม whitelist แค่ facebook/line (Telegram ตกเป็น FB)
+            ['platform' => $platform, 'user_id' => $userId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
 
             if ($userId === '') {
                 $this->warn("  Q#{$q->id} (reading {$reading->id}) skip — no user_id");
@@ -257,8 +251,9 @@ class FortuneCelticRedeliver extends Command
      */
     protected function pushAnswer(string $platform, string $userId, string $message): bool
     {
-        if ($platform === 'facebook') {
-            return app(FacebookWebhookService::class)->sendMessage(
+        // ✈️ (2026-09-13) Telegram ใช้เส้นเดียวกับ FB
+        if (in_array($platform, ['facebook', 'telegram'], true)) {
+            return (\App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId) ?? app(FacebookWebhookService::class))->sendMessage(
                 $userId,
                 $message,
                 [

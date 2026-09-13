@@ -139,11 +139,8 @@ trait CelticCrossConversationTrait
         //   ราคาที่จ่ายจริง (reading 11901): ลูกค้าเจอความเงียบ → พิมพ์ "หนูต้องกดตรงไหนนะคะ"
         //   → "อันนี้ต้องรอไพ่ขึ้นใช่มั้ยคะ" → กด "สับใหม่" **ทิ้งไพ่ที่เปิดไปแล้ว 4 ใบ**
         //   สาขา `elseif ($reading->line_user_id)` เดิม = DEAD CODE (คอลัมน์ไม่มีอยู่จริง)
-        $platform = $reading->platform;
-        if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
-            $candidateId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
-            $platform = preg_match('/^U[a-f0-9]{32}$/i', $candidateId) ? 'line' : 'facebook';
-        }
+        // ✈️ (2026-09-13) แหล่งเดียว FortuneRecipient — เดิม whitelist facebook/line ทำให้ Telegram ตกเป็น FB
+        $platform = \App\Services\Fortune\FortuneRecipient::platformOf($reading);
 
         try {
             if ($platform === 'line') {
@@ -165,6 +162,13 @@ trait CelticCrossConversationTrait
 
             $psid = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
             if ($psid === '') {
+                return;
+            }
+
+            // ✈️ (2026-09-13) Telegram — ไม่มีโควตาเหมือน FB → ส่งกล่อง "กำลังคิด" แบบเดียวกัน
+            if ($platform === 'telegram') {
+                (new \App\Services\TelegramFortuneService)->sendMessage($psid, $ackMessage);
+
                 return;
             }
 
@@ -817,7 +821,7 @@ trait CelticCrossConversationTrait
         try {
             if (! empty($userId)) {
                 $platformForPitch = $reading->platform
-                    ?? (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                    ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
                 app(\App\Services\Fortune\CustomerPersonaService::class)
                     ->recordPitch($platformForPitch, $userId, $reading->facebook_user_name ?? null);
             }
@@ -1294,7 +1298,7 @@ trait CelticCrossConversationTrait
 
         if ($shouldTriggerAi && method_exists($this, 'tryBillPsychologyResponse')) {
             try {
-                $platform = $reading->platform ?? (preg_match('/^U[0-9a-f]{32}$/i', $reading->facebook_user_id ?? '') ? 'line' : 'facebook');
+                $platform = $reading->platform ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($reading->facebook_user_id ?? '')));
                 $platformUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
 
                 if (! empty($platformUserId)) {
@@ -3411,14 +3415,8 @@ trait CelticCrossConversationTrait
         //     (TYPE/quota machinery คงไว้ — ไม่ทำงานเมื่อ maxQ=0 เท่านั้น ไม่ต้องรื้อ)
 
         // ดึง platform + user ID สำหรับ logging
-        $platform = $reading->platform;
-        if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
-            $candidateId = $reading->platform_user_id ?: $reading->facebook_user_id ?: '';
-            $platform = preg_match('/^U[a-f0-9]{32}$/i', $candidateId) ? 'line' : 'facebook';
-        }
-        $sendUserId = $platform === 'line'
-            ? ($reading->platform_user_id ?: $reading->facebook_user_id)
-            : ($reading->facebook_user_id ?: $reading->platform_user_id);
+        // ✈️ (2026-09-13) แหล่งเดียว FortuneRecipient (รู้จัก telegram)
+        ['platform' => $platform, 'user_id' => $sendUserId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
 
         // นับ counter หลัง AI ตอบ + markCelticAnswered() (refresh ก่อน)
         $reading->refresh();
