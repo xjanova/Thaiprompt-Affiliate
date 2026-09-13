@@ -6104,6 +6104,10 @@ class FortuneChannelManager
      * ✦ (2026-09-13) แต่งหัวข้อคำทำนายสำหรับ Messenger — ดู FortuneMessengerFormatter
      *
      * สวิตช์หลังบ้าน `fortune_messenger_format_fb` (default เปิด) · แต่งไม่ได้ = ส่งต้นฉบับ ห้ามทำคำทำนายหาย
+     *
+     * ✈️ Telegram ใช้ตัวเรนเดอร์นี้ร่วม → ได้หน้าตาเดียวกันโดยตั้งใจ (ข้อความล้วน อ่านดีบนฟอนต์มือถือเหมือนกัน)
+     *    จงใจไม่เปิด parse_mode (HTML/MarkdownV2) ของ Telegram: ข้อความจาก AI มีอักขระพิเศษได้ทุกเมื่อ
+     *    หลบไม่ครบตัวเดียว = Telegram ปฏิเสธทั้งข้อความ (คำทำนายที่จ่ายแล้วหาย) — สวิตช์นี้คุมทั้ง FB และ Telegram
      */
     protected function formatForMessenger(string $message): string
     {
