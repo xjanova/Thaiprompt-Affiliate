@@ -333,7 +333,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
         // 🔒 มีคนข้างนอก (webhook/queue) bind สาขาไว้แล้ว → เขาถูกกว่าเรา ห้ามแตะ
         //    เช็ค $lazyBoundContext ด้วย ไม่งั้นจะติดกับดักข้อถัดไป 👇
-        if (FortunePageContext::current() && ! $this->lazyBoundContext) {
+        //
+        // 🏬 (2026-09-13) + isLazilyBound(): context ที่ FB service "ตัวอื่น" เดามาจากผู้รับคนก่อน ไม่ใช่ของเจ้าของงาน
+        //    cron/queue worker สร้าง instance ใหม่ต่อผู้รับ — ธงของ instance ($lazyBoundContext) ใหม่เป็น false เสมอ
+        //    ถ้าเช็คแค่ธงนั้น ผู้รับคนที่ 2+ ของเพจสาขาจะได้ token ของเพจคนแรก (Graph 400 → คำตอบที่จ่ายแล้วหาย)
+        if (FortunePageContext::current() && ! $this->lazyBoundContext && ! FortunePageContext::isLazilyBound()) {
             return;
         }
 
@@ -355,7 +359,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             // ลูกค้าใหม่ที่ยังไม่มีบิล → กลับไปใช้ค่ากลาง
             // (ห้ามค้างสาขาของคนก่อนหน้าไว้ ไม่งั้นส่งด้วย token ผิดเพจอยู่ดี)
-            FortunePageContext::bindFromId($pageId ? (int) $pageId : null);
+            FortunePageContext::bindLazilyFromId($pageId ? (int) $pageId : null);
             $this->lazyBoundContext = true;
 
             // ⚠️ ต้องดึง settings ใหม่ — ตัวเดิมถูกจับไว้ตั้งแต่ตอน construct (ค่ากลาง)
