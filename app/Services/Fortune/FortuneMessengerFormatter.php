@@ -19,7 +19,8 @@ namespace App\Services\Fortune;
  * 🔒 กติกาความปลอดภัย:
  *   - ใช้ **ตอนส่งเข้า FB เท่านั้น หลังด่านตรวจผ่านแล้ว** — must-gate `str_contains` อีโมจิหัวข้อ
  *     ⇒ ต้องเก็บอีโมจิเดิมไว้ในหัวข้อเสมอ (บันทึกแชทหลังบ้านเก็บข้อความต้นฉบับก่อนถึงจุดนี้)
- *   - แตะเฉพาะบรรทัดที่ขึ้นต้นด้วยอีโมจิในรายการ + สั้น + มีเนื้อตามหลัง และต้องมี ≥ 2 หัวข้อ
+ *   - แตะเฉพาะบรรทัดที่ขึ้นต้นด้วยอีโมจิในรายการ + สั้น + ยืนเป็นย่อหน้าเดี่ยว + ไม่ใช่ "หัวข้อ: ค่า"
+ *     + มีเนื้อตามหลัง และต้องมี ≥ 2 หัวข้อ
  *     คำตอบข้อ 2 เป็นต้นไป (ไม่มีหัวข้อ) จึงผ่านไปแบบเดิมทุกตัวอักษร
  *   - แต่งซ้ำไม่เปลี่ยนผล (idempotent) — ข้อความที่มี "【" แล้วไม่แตะอีก
  *   - คลาสนี้ไม่โยน exception ออกไปเอง แต่ผู้เรียกยังต้อง try/catch แล้วส่งต้นฉบับ (ห้ามทำคำทำนายหาย)
@@ -59,7 +60,7 @@ class FortuneMessengerFormatter
 
         $headerIdx = [];
         foreach ($lines as $i => $line) {
-            if ($this->isHeader($line) && $this->hasBodyAfter($lines, $i)) {
+            if ($this->isHeader($line) && $this->standsAlone($lines, $i) && $this->hasBodyAfter($lines, $i)) {
                 $headerIdx[$i] = true;
             }
         }
@@ -143,6 +144,11 @@ class FortuneMessengerFormatter
             return false;
         }
 
+        // "🍀 เลขนำโชค: 3, 7" = รายการ "หัวข้อ: ค่า" ไม่ใช่หัวเซคชั่น (โคลอนท้ายเปล่า ๆ ยังนับ เช่น "💞 ความรัก:")
+        if (preg_match('/[:：]\s*\S/u', $t) === 1) {
+            return false;
+        }
+
         foreach (self::HEADER_EMOJI as $emoji) {
             if (str_starts_with($t, $emoji)) {
                 return true;
@@ -150,6 +156,22 @@ class FortuneMessengerFormatter
         }
 
         return false;
+    }
+
+    /**
+     * หัวข้อต้องยืนเป็นย่อหน้าเดี่ยว — บรรทัดก่อนหน้าว่าง (หรือเป็นบรรทัดแรก) และบรรทัดถัดไปว่าง
+     *
+     * ตรงกับคำตอบข้อแรก Celtic 99 บน prod ทุกใบที่ตรวจ (หัวข้อ + บรรทัดว่าง + เนื้อ)
+     * กันรายการสั้น ๆ ที่เรียงติดกัน ("🍀 เลขนำโชค …\n🌿 สีมงคล …") ถูกยกเป็นหัวข้อ + มีเส้นคั่นแทรกกลางรายการ
+     *
+     * @param  array<int, string>  $lines
+     */
+    private function standsAlone(array $lines, int $i): bool
+    {
+        $prevBlank = $i === 0 || trim($lines[$i - 1]) === '';
+        $nextBlank = isset($lines[$i + 1]) && trim($lines[$i + 1]) === '';
+
+        return $prevBlank && $nextBlank;
     }
 
     /**
