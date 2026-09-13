@@ -122,9 +122,17 @@ final class FortuneFunnelStage
      * @var array<string, string>
      */
     public const CANCELLED_FILTERS = [
-        'cancelled' => 'บิลยกเลิกทั้งหมด',
-        'expired' => 'หมดเวลา · ระบบยกเลิก',
+        'cancelled' => 'บิลยกเลิกทั้งหมด (รวมที่ปฏิเสธจากแอป)',
+        'expired' => 'หมดเวลา (ระบบปิดบิล)',
     ];
+
+    /**
+     * สถานะดิบ "cancelled" — แอป SMS Checker กดปฏิเสธบิล (SmsPaymentController) ยังเขียนอยู่จริง · prod มี 45 ใบ
+     *
+     * ไม่อยู่ใน FortuneReading::STATUS_* และ isCancelled() ไม่นับ (เช็คแค่ completed) ⇒ เดิมตกไปเดาจากรูปบิล
+     * ได้ "รอชำระเงิน" ทั้งที่แอดมินปฏิเสธบิลไปแล้ว — ⚠️ Warroom (chat.ts CS_STAGE) ยังไม่มีสถานะนี้ ต้องเพิ่มคู่กัน
+     */
+    public const REJECTED_STATUS = 'cancelled';
 
     /** ลำดับกลุ่มในตัวกรอง = ลำดับของกรวย (ไม่ใช่ลำดับความสำคัญแบบการ์ด Warroom) */
     private const FILTER_GROUP_ORDER = ['intake', 'choosing', 'collecting', 'deciding', 'waiting', 'celtic', 'predicting', 'upsell', 'delivered', 'declined'];
@@ -162,6 +170,10 @@ final class FortuneFunnelStage
 
         // 2. สถานะจริงจากฐานข้อมูล
         $status = strtolower((string) $reading->conversation_status);
+        // บิลที่แอดมินกดปฏิเสธจากแอป SMS Checker = ยกเลิก ห้ามตกไปเดาเป็น "รอชำระเงิน" (ดู REJECTED_STATUS)
+        if ($status === self::REJECTED_STATUS && ! $reading->is_paid) {
+            return 'cancelled_system';
+        }
         if ($status !== '' && isset(self::STATUS_TO_STAGE[$status])) {
             return self::STATUS_TO_STAGE[$status];
         }
@@ -206,6 +218,10 @@ final class FortuneFunnelStage
             return in_array($reason, ['auto_expired', 'auto_expired_grace', 'user_cancelled'], true)
                 ? null
                 : $reading->getCancellationReasonLabelOrNull();
+        }
+
+        if (self::of($reading) === 'cancelled_system' && strtolower((string) $reading->conversation_status) === self::REJECTED_STATUS) {
+            return 'ปฏิเสธบิลจากแอป SMS Checker';
         }
 
         $usedQ = (int) ($reading->celtic_questions_used ?? 0);
