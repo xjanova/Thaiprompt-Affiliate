@@ -423,7 +423,8 @@
                                 <td style="padding:10px 12px; box-shadow:var(--inset-sm);">
                                     <span class="tp-pill" style="background:{{ $typeMap[1] }}22; color:{{ $typeMap[1] }}; border-color:{{ $typeMap[1] }}44; font-size:11px;">{{ $typeMap[0] }}</span>
                                 </td>
-                                <td style="padding:10px 12px; box-shadow:var(--inset-sm); color:var(--ink2); font-size:12px;">{{ $r->conversation_status }}</td>
+                                {{-- 🔲 (2026-09-13) ป้ายขั้นชุดเดียวกับ Warroom — รหัสดิบอยู่ใน title --}}
+                                <td style="padding:10px 12px; box-shadow:var(--inset-sm); color:var(--ink2); font-size:12px;" title="{{ $r->conversation_status }}">{{ \App\Support\FortuneFunnelStage::label($r) }}</td>
                                 <td class="tp-num" style="padding:10px 12px; box-shadow:var(--inset-sm); text-align:right; font-size:12px; color:{{ $r->is_paid ? '#5aa07e' : 'var(--ink2)' }};">
                                     @if($r->is_paid)
                                         ฿{{ number_format($r->amount_paid, 0) }}

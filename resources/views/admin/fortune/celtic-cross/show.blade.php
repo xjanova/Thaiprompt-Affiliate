@@ -268,8 +268,16 @@
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
         {{-- สถานะ --}}
         <div class="tp-card" style="padding:18px;">
+            {{-- 🔲 (2026-09-13) ป้ายขั้นชุดเดียวกับ Warroom แทนรหัสดิบ (App\Support\FortuneFunnelStage) --}}
+            @php
+                $celticStageDetail = \App\Support\FortuneFunnelStage::detail($reading);
+            @endphp
             <div style="font-size:12px; color:var(--ink2);">สถานะ</div>
-            <div class="tp-num" style="font-size:18px; font-weight:800; margin-top:4px;">{{ $reading->conversation_status }}</div>
+            <div class="tp-num" style="font-size:18px; font-weight:800; margin-top:4px;" title="{{ $reading->conversation_status }}">{{ \App\Support\FortuneFunnelStage::label($reading) }}</div>
+            @if($celticStageDetail)
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">{{ $celticStageDetail }}</div>
+            @endif
+            <div style="font-family:monospace; font-size:11px; color:var(--ink2); opacity:.75; margin-top:3px;">{{ $reading->conversation_status }}</div>
         </div>
         {{-- ค่าครู --}}
         <div class="tp-card" style="padding:18px;">
