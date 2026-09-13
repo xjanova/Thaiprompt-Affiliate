@@ -48,8 +48,22 @@ class FortuneReadingsController extends Controller
         }
 
         // กรองตามสถานะ Conversation
+        // 🏷️ (2026-09-13) บิลยกเลิกไม่มีสถานะของตัวเอง (= completed + ไม่จ่าย + มีเหตุผลยกเลิก)
+        //    เดิมตัวเลือก "cancelled" / "expired" ค้นคอลัมน์ตรง ๆ ⇒ ได้ 0 แถวเสมอ ทั้งที่ prod มีบิลยกเลิกกว่า 1,400 ใบ
+        //    และ "completed" ปนบิลยกเลิกมาด้วย ⇒ ตอนนี้ completed = ส่งคำทำนายแล้วเท่านั้น (ป้ายเดียวกับ Warroom)
         if ($request->filled('conversation_status')) {
-            $query->where('conversation_status', $request->conversation_status);
+            $status = (string) $request->conversation_status;
+
+            if ($status === 'cancelled') {
+                $query->cancelled();
+            } elseif ($status === 'expired') {
+                // หมดเวลา = ระบบยกเลิกเพราะไม่จ่ายในเวลา (cron 30 นาที + ช่วงผ่อน 90 นาทีของ SmsPaymentService)
+                $query->cancelled(['auto_expired', 'auto_expired_grace']);
+            } elseif ($status === FortuneReading::STATUS_COMPLETED) {
+                $query->where('conversation_status', FortuneReading::STATUS_COMPLETED)->notCancelled();
+            } else {
+                $query->where('conversation_status', $status);
+            }
         }
 
         // กรองตามสถานะชำระเงิน
