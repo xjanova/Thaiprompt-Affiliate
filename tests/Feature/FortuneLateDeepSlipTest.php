@@ -120,6 +120,8 @@ class FortuneLateDeepSlipTest extends TestCase
                     throw new \RuntimeException('finalize พังกลางทาง (จำลอง)');
                 }
                 $this->calls[] = 'finalize:'.$reading->id;
+                // ลำดับเดียวกับของจริง: จด transRef ก่อน confirmPayment
+                $reading->forceFill(['slipok_trans_ref' => $verify['transRef'] ?? null])->save();
                 $reading->confirmPayment(null);
                 if ($this->opts['throw_after_pay'] ?? false) {
                     throw new \RuntimeException('พังหลังตัดบิลแล้ว (จำลอง)');

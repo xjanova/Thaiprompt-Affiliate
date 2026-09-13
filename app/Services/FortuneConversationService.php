@@ -15802,7 +15802,7 @@ class FortuneConversationService
                 ]);
 
                 // พังหลังตัดบิลไปแล้ว = ได้เงินแล้ว ห้ามบอกว่า "ยังยืนยันไม่ได้" · ยังไม่ตัด = ห้ามขอส่งซ้ำ (จะได้ "ซ้ำ")
-                return $this->userPaidJustNow($userId)
+                return $this->slipPaidABill($verify)
                     ? $this->lateSlipPaidMessage($bill)
                     : $this->lateSlipReceivedPendingMessage($bill, false);
             }
@@ -16055,16 +16055,26 @@ class FortuneConversationService
         }
     }
 
-    /** 🧾 ลูกค้าคนนี้มีบิลที่เพิ่งจ่ายสำเร็จ (2 นาทีล่าสุด) ไหม — ใช้ตอบให้ถูกเมื่อพังหลังตัดบิล */
-    protected function userPaidJustNow(string $userId): bool
+    /**
+     * 🧾 สลิปใบนี้ (transRef) ตัดบิลไปสำเร็จแล้วหรือยัง — ใช้ตอบให้ถูกเมื่อพังกลางทาง
+     *   ดูที่ "สลิปใบนี้" ไม่ใช่ "ลูกค้าเพิ่งจ่ายอะไรสักใบ" (บิลอื่นที่เพิ่งจ่ายจะทำให้ตอบว่าได้เงินแล้วผิด ๆ)
+     *   finalizeSlipOkApproved เขียน slipok_trans_ref + SlipVerification ก่อน confirmPayment
+     */
+    protected function slipPaidABill(array $verify): bool
     {
+        $ref = (string) ($verify['transRef'] ?? '');
+        if ($ref === '') {
+            return false;
+        }
+
         try {
-            return FortuneReading::where(function ($q) use ($userId) {
-                $q->where('facebook_user_id', $userId)->orWhere('platform_user_id', $userId);
-            })
-                ->where('is_paid', true)
-                ->where('paid_at', '>=', now()->subMinutes(2))
-                ->exists();
+            if (FortuneReading::where('slipok_trans_ref', $ref)->where('is_paid', true)->exists()) {
+                return true;
+            }
+            $readingId = \App\Models\SlipVerification::where('trans_ref', $ref)->value('fortune_reading_id');
+
+            return $readingId !== null
+                && FortuneReading::whereKey($readingId)->where('is_paid', true)->exists();
         } catch (\Throwable $e) {
             return false;
         }
@@ -16098,8 +16108,11 @@ class FortuneConversationService
             'message' => "🙏 แม่หมอได้รับสลิปของเจ้าชะตาแล้วนะคะ\n\n"
                 .($canResend
                     ? "⏳ ตอนนี้ระบบธนาคารยังยืนยันยอดให้ไม่ทัน — รบกวนส่งสลิปใบเดิมมาอีกครั้งในอีกสักครู่นะคะ\n"
-                    : "⏳ แม่หมอกำลังตรวจสอบยอดให้อยู่นะคะ ไม่ต้องส่งสลิปซ้ำค่ะ\n")
-                .'💬 ถ้ารอนานผิดปกติ พิมพ์ "คุยกับแม่หมอ" ได้เลยค่ะ 🌙',
+                        .'💬 ถ้ารอนานผิดปกติ พิมพ์ "คุยกับแม่หมอ" ได้เลยค่ะ 🌙'
+                    // ⚠️ ห้ามบอกว่า "แม่หมอกำลังตรวจให้" — ไม่มีโค้ดตามตรวจต่อ (มีแค่ log) → ให้ลูกค้าเรียกแอดมินเอง
+                    //   ("คุยกับแม่หมอ" = TALK_ADMIN handover มีโค้ดรองรับจริง)
+                    : "⏳ ตอนนี้ระบบตรวจสลิปอัตโนมัติขัดข้องชั่วคราว — ไม่ต้องส่งสลิปซ้ำนะคะ\n"
+                        .'💬 พิมพ์ "คุยกับแม่หมอ" ให้แอดมินช่วยตรวจยอดให้ได้เลยค่ะ 🌙'),
             'reading' => $bill,
         ];
     }
@@ -17278,8 +17291,10 @@ class FortuneConversationService
     protected function autoProvisionCelticFromSlip(string $platform, string $userId, ?string $url, ?string $base64): ?array
     {
         // 🔒 serialize กับการสร้างบิล (กัน double-provision เมื่อมี 2 สลิป/2 webhook พร้อมกัน)
+        //   🧾 (2026-09-13) TTL 15 → 90 วิ: respondReturningSlip อาจเลี้ยวไปตัดบิลยอดตรง (payOriginalBill)
+        //   ซึ่งรอล็อก SMS ได้ถึง 8 วิ + SlipOK — 15 วิหมดอายุกลางทาง = อีกสายสร้างบิลซ้อนได้
         $lockKey = 'fortune:celtic_create_lock:'.$userId;
-        $haveLock = \Illuminate\Support\Facades\Cache::add($lockKey, 1, 15);
+        $haveLock = \Illuminate\Support\Facades\Cache::add($lockKey, 1, 90);
         if (! $haveLock) {
             // มี request กำลังสร้าง/กู้บิลอยู่ → รอ commit แล้วเช็คว่ามีบิลให้กู้แล้วหรือยัง
             usleep(700000); // 700ms
