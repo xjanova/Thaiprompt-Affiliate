@@ -3943,6 +3943,10 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/channels', [FortuneChannelController::class, 'update'])->name('channels.update');
     Route::post('/channels/test-line', [FortuneChannelController::class, 'testLine'])->name('channels.test-line');
     Route::post('/channels/test-facebook', [FortuneChannelController::class, 'testFacebook'])->name('channels.test-facebook');
+    // ✈️ (2026-09-13) Telegram Bot — token เจ้าของกรอกเอง · ทดสอบ · ตั้ง webhook
+    Route::put('/channels/telegram', [FortuneChannelController::class, 'updateTelegram'])->name('channels.telegram.update');
+    Route::post('/channels/telegram/test', [FortuneChannelController::class, 'testTelegram'])->name('channels.telegram.test');
+    Route::post('/channels/telegram/webhook', [FortuneChannelController::class, 'setupTelegramWebhook'])->name('channels.telegram.webhook');
     Route::post('/channels/setup-facebook-messenger', [FortuneChannelController::class, 'setupFacebookMessenger'])->name('channels.setup-facebook-messenger');
     Route::get('/channels/facebook-messenger-profile', [FortuneChannelController::class, 'getFacebookMessengerProfile'])->name('channels.facebook-messenger-profile');
     Route::get('/channels/stats', [FortuneChannelController::class, 'statsApi'])->name('channels.stats');

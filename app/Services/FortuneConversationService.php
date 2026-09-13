@@ -318,7 +318,9 @@ class FortuneConversationService
      */
     public function setPlatform(string $platform): self
     {
-        $this->currentPlatform = in_array($platform, ['line', 'facebook']) ? $platform : 'line';
+        // ✈️ (2026-09-13) + telegram — เดิมค่าอื่นตกเป็น 'line' → บิลลูกค้า Telegram จะถูกสร้างเป็น platform=line
+        //    แล้ว cron/job ยิง LINE push ใส่ id 'tg_…' (บั๊กตระกูลเดียวกับ reading 10179)
+        $this->currentPlatform = in_array($platform, ['line', 'facebook', 'telegram'], true) ? $platform : 'line';
 
         return $this;
     }
@@ -22441,10 +22443,16 @@ PROMPT;
                             $debounceSeconds
                         )->delay(now()->addSeconds($debounceSeconds + 1));
 
-                        // ส่ง typing indicator (FB เท่านั้น)
+                        // ส่ง typing indicator (FB / Telegram — LINE ใช้ loading animation ที่ webhook แล้ว)
                         if ($platformForSilence === 'facebook') {
                             try {
                                 app(\App\Services\FacebookWebhookService::class)->sendTypingOn($userId);
+                            } catch (\Throwable $typingErr) {
+                                // ignore
+                            }
+                        } elseif ($platformForSilence === 'telegram') {
+                            try {
+                                (new \App\Services\TelegramFortuneService($this->settings))->sendTypingIndicator($userId);
                             } catch (\Throwable $typingErr) {
                                 // ignore
                             }
@@ -23301,7 +23309,8 @@ PROMPT;
      */
     protected function detectPlatformFromUserId(string $userId): string
     {
-        return preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook';
+        // ✈️ (2026-09-13) รวม Telegram ('tg_…') — แหล่งเดียวกับ FortuneRecipient
+        return \App\Services\Fortune\FortuneRecipient::platformFromUserId($userId);
     }
 
     /**

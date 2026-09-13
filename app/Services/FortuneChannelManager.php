@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\FortuneMessengerSender;
 use App\Contracts\MessagingPlatformInterface;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
@@ -45,6 +46,11 @@ class FortuneChannelManager
     public const PLATFORM_FACEBOOK = 'facebook';
 
     public const PLATFORM_LINE = 'line';
+
+    /**
+     * ✈️ (2026-09-13) Telegram — ใช้ตัวเรนเดอร์ของ Facebook ทั้งก้อนผ่าน FortuneMessengerSender
+     */
+    public const PLATFORM_TELEGRAM = 'telegram';
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
@@ -90,6 +96,7 @@ class FortuneChannelManager
         $instance = match ($platform) {
             self::PLATFORM_FACEBOOK => new FacebookWebhookService($this->settings),
             self::PLATFORM_LINE => new LineFortuneService($this->settings),
+            self::PLATFORM_TELEGRAM => new TelegramFortuneService($this->settings),
             default => null,
         };
 
@@ -570,6 +577,13 @@ class FortuneChannelManager
             return $this->sendFacebookResponse($platformService, $userId, $result, $extra);
         }
 
+        // ✈️ (2026-09-13) Telegram ใช้ตัวเรนเดอร์ของ FB ทั้งก้อน (action ~230 แบบ: บิล QR / เมนูราคา / Celtic / เสียง)
+        //    TelegramFortuneService แปลง quick reply / template เป็นปุ่ม inline ของ Telegram เอง
+        //    ⚠️ ห้ามตกไป generic fallback ข้างล่าง — ตรงนั้นไม่มีปุ่มเลือกแพคเกจ/ปุ่มจ่ายเงิน
+        if ($platform === self::PLATFORM_TELEGRAM && $platformService instanceof TelegramFortuneService) {
+            return $this->sendFacebookResponse($platformService, $userId, $result, $extra);
+        }
+
         // สำหรับ platform อื่นๆ ส่งข้อความธรรมดา
         $options = [];
 
@@ -629,7 +643,7 @@ class FortuneChannelManager
      * ⚠️ ไม่แตะ SMS Payment / UniquePaymentAmount / confirmPayment()
      * เปลี่ยนแค่วิธี display ข้อมูล (จาก text → Button Template)
      */
-    protected function sendFacebookResponse(FacebookWebhookService $fbService, string $userId, array $result, array $extra = []): bool
+    protected function sendFacebookResponse(FortuneMessengerSender $fbService, string $userId, array $result, array $extra = []): bool
     {
         $action = $result['action'] ?? 'unknown';
         $message = $result['message'] ?? '';
@@ -1113,7 +1127,7 @@ class FortuneChannelManager
                     // 🙏 (2026-05-14) AI follow-up — แม่หมออธิบาย "ค่าครู" แบบสนทนา ปรับ tone ตาม persona
                     // Delay 4s ให้กล่องราคาขึ้นก่อน — graceful degradation ถ้า queue ไม่รัน
                     try {
-                        \App\Jobs\SendPricingFollowUpJob::dispatch('facebook', $userId, $pricing)
+                        \App\Jobs\SendPricingFollowUpJob::dispatch($fbService->getPlatformName(), $userId, $pricing)
                             ->delay(now()->addSeconds(4));
                     } catch (\Throwable $e) {
                         \Illuminate\Support\Facades\Log::warning('Pricing followup dispatch fail', ['err' => $e->getMessage()]);
@@ -1606,7 +1620,7 @@ class FortuneChannelManager
                     // 🎧 (2026-06-21 owner spec) บทสรุป = ส่งเสียงอัตโนมัติ ไม่ต้องกดเอง
                     //   ปุ่มด้านบนยังอยู่เป็น replay. ลูกค้า active ตอนจบ = อยู่ใน 24 ชม. = ส่งฟรี
                     if (! empty($result['voice_on_demand_ready'])) {
-                        $this->autoDispatchSummaryVoice($result['reading'] ?? null, $userId);
+                        $this->autoDispatchSummaryVoice($result['reading'] ?? null, $userId, $fbService->getPlatformName());
                     }
 
                     // 📦 (2026-08-26) parity กับ LINE — บันทึกว่า Grand Finale ถึงลูกค้าจริงหรือไม่
@@ -1617,7 +1631,7 @@ class FortuneChannelManager
                     $this->sendReviewInviteFacebook($fbService, $userId, $result, $extra);
 
                     // 🛒 (2026-08-23) ของเสริมดวงต่อท้ายบทสรุป — ต้องอยู่หลัง $sent เสมอ
-                    $this->offerProductsAfterReading('facebook', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_CELTIC_END);
+                    $this->offerProductsAfterReading($fbService->getPlatformName(), $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_CELTIC_END);
 
                     return $sent;
                 })(),
@@ -1647,7 +1661,7 @@ class FortuneChannelManager
 
                     // 🛒 (2026-08-23) Deep 39 จบจริงตรงนี้ (ไม่ใช่ตอนส่งคำทำนาย) —
                     //   ตอนส่งคำทำนายเสร็จ ลูกค้ายังมีสิทธิ์ถามต่อ 7 นาที ยิงตอนนั้น = แทรกกลางบทสนทนาที่จ่ายเงินแล้ว
-                    $this->offerProductsAfterReading('facebook', $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DEEP_END);
+                    $this->offerProductsAfterReading($fbService->getPlatformName(), $userId, $result, \App\Models\FortuneProductOffer::TRIGGER_DEEP_END);
 
                     return $sent;
                 })(),
@@ -1755,7 +1769,7 @@ class FortuneChannelManager
                     //     ที่ต้องครบทุกครั้ง — แตะข้างในเมื่อไหร่ ชิ้นใดชิ้นหนึ่งหายเงียบทันที
                     //   ⚠️ และห้ามไปแตะ quick_replies เดิม — ที่นั่นตั้งใจไม่มีปุ่มแพคเกจเกาะดวงฟรี
                     if ($sent) {
-                        $this->offerProductsLater('facebook', $userId, $result);
+                        $this->offerProductsLater($fbService->getPlatformName(), $userId, $result);
                     }
 
                     return $sent;
@@ -1798,7 +1812,7 @@ class FortuneChannelManager
     /**
      * Facebook: ส่งคำทำนายพื้นฐาน + Upsell + LINE invite
      */
-    protected function sendFacebookBasicDoneResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookBasicDoneResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
         $reading = $result['reading'] ?? null;
@@ -1885,7 +1899,7 @@ class FortuneChannelManager
         return [];
     }
 
-    protected function sendFacebookPaymentResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookPaymentResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $reading = $result['reading'] ?? null;
         $message = $result['message'] ?? '';
@@ -1964,7 +1978,7 @@ class FortuneChannelManager
     /**
      * Facebook: ส่งคำทำนายละเอียดเสร็จ + LINE invite + affiliate
      */
-    protected function sendFacebookCompletedResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookCompletedResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
 
@@ -2015,7 +2029,7 @@ class FortuneChannelManager
     /**
      * Facebook: ส่งรูปไพ่ยิปซีก่อน + Quick Replies เลือกคำถาม
      */
-    protected function sendFacebookQuestionWithTarotImage(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result): bool
+    protected function sendFacebookQuestionWithTarotImage(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result): bool
     {
         // ✅ ส่งรูปไพ่ยิปซีก่อน (ถ้ามี)
         $tarotImageUrl = $result['tarot_image_url'] ?? null;
@@ -2033,7 +2047,7 @@ class FortuneChannelManager
         return $this->sendFacebookWithQuickReplies($fbService, $richService, $userId, $message, $action);
     }
 
-    protected function sendFacebookWithQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action): bool
+    protected function sendFacebookWithQuickReplies(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action): bool
     {
         $quickReplies = $richService->getQuickRepliesForAction($action);
 
@@ -2047,7 +2061,7 @@ class FortuneChannelManager
     /**
      * Facebook: ขอวันเกิด
      */
-    protected function sendFacebookBirthdateResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookBirthdateResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         // 🌙 (2026-06-08) ถ้ามีข้อความ (เช่น "✅ ตัดบิลเรียบร้อยแล้ว ... 🪄 ขอวันเกิด" จาก pay-first / recover)
         //   → ส่งเป็นข้อความ text ที่เห็นชัด แทน Button Template (การ์ดสีเทา)
@@ -2068,7 +2082,7 @@ class FortuneChannelManager
     /**
      * Facebook: เช็คสิทธิ์ดูดวง
      */
-    protected function sendFacebookCheckRemainingResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookCheckRemainingResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         // ดึงข้อมูลจาก result
         $remaining = $result['remaining'] ?? 0;
@@ -2083,7 +2097,7 @@ class FortuneChannelManager
     /**
      * Facebook: หมดสิทธิ์ฟรี
      */
-    protected function sendFacebookAiLimitResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookAiLimitResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
 
@@ -2101,7 +2115,7 @@ class FortuneChannelManager
     /**
      * Facebook: บิลหมดอายุ
      */
-    protected function sendFacebookPaymentExpiredResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookPaymentExpiredResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
 
@@ -2118,7 +2132,7 @@ class FortuneChannelManager
     /**
      * Facebook: ปฏิเสธ/ยกเลิก
      */
-    protected function sendFacebookDeclinedResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookDeclinedResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
 
@@ -2135,16 +2149,16 @@ class FortuneChannelManager
     /**
      * Facebook: Help / Welcome
      */
-    protected function sendFacebookHelpResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookHelpResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         // 🤐 (2026-09-08) ถูกด่านสแปมปิดปาก → ตอบได้ครั้งเดียวต่อคูลดาวน์ แล้วเงียบ
-        if ($this->shouldMuteFilteredReply(self::PLATFORM_FACEBOOK, $userId, $result)) {
+        if ($this->shouldMuteFilteredReply($fbService->getPlatformName(), $userId, $result)) {
             return true;
         }
 
         // 🔒 Guard: ถ้าลูกค้ามีบิลค้าง / กำลังประมวลผล / มีคำทำนายเสร็จแล้ว
         //   → ห้ามแสดง welcome bubble — ตอบ contextual message แทน
-        $contextual = $this->buildActiveBillContextMessage(self::PLATFORM_FACEBOOK, $userId);
+        $contextual = $this->buildActiveBillContextMessage($fbService->getPlatformName(), $userId);
         if ($contextual !== null) {
             return $fbService->sendQuickReplies($userId, $contextual['message'], $contextual['quick_replies'] ?? []);
         }
@@ -2159,7 +2173,7 @@ class FortuneChannelManager
     /**
      * Facebook: เตือนชำระเงิน
      */
-    protected function sendFacebookWaitingPaymentResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookWaitingPaymentResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
 
@@ -2174,7 +2188,7 @@ class FortuneChannelManager
     /**
      * Facebook: ยืนยันชำระเงินสำเร็จ
      */
-    protected function sendFacebookPaymentConfirmedResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookPaymentConfirmedResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $template = $richService->buildPaymentConfirmedTemplate();
 
@@ -2184,7 +2198,7 @@ class FortuneChannelManager
     /**
      * Facebook: แชร์ลิงก์เชิญเพื่อน
      */
-    protected function sendFacebookShareResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookShareResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         // 🌙 (2026-06-18, user) เลิกใช้ buildAffiliateShareTemplate (FB referral link เดิม = บัค/กล่องไม่สวย)
         //   → ส่งทุกคนที่อยากทำการตลาด/แนะนำเพื่อน ไปทำผ่าน LINE (Flex สวย + ระบบ referral ครบ)
@@ -2203,7 +2217,7 @@ class FortuneChannelManager
      * ใช้กับ actions ที่ไม่ต้องการ Button Template เช่น:
      * keyword_matched, ai_chat_response, error, ฯลฯ
      */
-    protected function sendFacebookTextWithOptionalQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result, array $extra = []): bool
+    protected function sendFacebookTextWithOptionalQuickReplies(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result, array $extra = []): bool
     {
         if (empty($message)) {
             $message = 'ระบบกำลังดำเนินการ 🙏';
@@ -2291,7 +2305,7 @@ class FortuneChannelManager
         //    (buildTransferQuickReplies) แต่ไม่มีใครเรียก = ลูกค้าที่คุยเรื่อยเปื่อย
         //    ไม่มีทางไปเว็บ/LINE เลยจนกว่าจะพิมพ์คำที่เข้าเกณฑ์ "ขอดูดวง"
         //    ทับของเดิมโดยตั้งใจ — ในโหมดนี้ปุ่มเดิมชวนดูดวงในแชท = พูดสวนกล่อง
-        $transferQr = $this->buildTransferQuickRepliesFor($action, $userId, $richService);
+        $transferQr = $this->buildTransferQuickRepliesFor($action, $userId, $richService, $fbService->getPlatformName());
         if ($transferQr !== null) {
             $quickReplies = $transferQr;
         }
@@ -2320,10 +2334,15 @@ class FortuneChannelManager
      * @param  string  $userId  PSID
      * @return array<int,array<string,string>>|null
      */
-    protected function buildTransferQuickRepliesFor(string $action, string $userId, FacebookRichMessageService $richService): ?array
+    protected function buildTransferQuickRepliesFor(string $action, string $userId, FacebookRichMessageService $richService, string $platform = self::PLATFORM_FACEBOOK): ?array
     {
         // เฉพาะข้อความคุยทั่วไป — ห้ามแตะ action ที่เป็นเงิน/โฟลที่ทำอยู่
         if (! in_array($action, ['ai_chat_response', 'keyword_matched'], true)) {
+            return null;
+        }
+
+        // ✈️ (2026-09-13) โหมดชวนย้ายช่องทางเป็นของลูกค้า FB เท่านั้น — ลูกค้า Telegram ห้ามได้ปุ่มชวนย้าย
+        if ($platform !== self::PLATFORM_FACEBOOK) {
             return null;
         }
 
@@ -2352,7 +2371,7 @@ class FortuneChannelManager
      * แจ้งลูกค้าให้รู้ว่ามี window 10 นาที สำหรับถามต่อ
      */
     protected function sendFacebookProSessionFollowUp(
-        FacebookWebhookService $fbService,
+        FortuneMessengerSender $fbService,
         string $userId,
         array $result,
         array $extra = []
@@ -2389,7 +2408,7 @@ class FortuneChannelManager
                 $fbService->sendQuickReplies($userId, $followUp, $this->voiceReadQuickReplies(), $extra);
                 // 🎧 (2026-06-21 owner spec) บทสรุป Deep = ส่งเสียงอัตโนมัติด้วย (ปุ่ม = replay)
                 //   ลูกค้า active ตอนนี้ = อยู่ใน 24 ชม. = ส่งฟรี (ถ้า cron-delivered ตอน offline → best-effort)
-                $this->autoDispatchSummaryVoice($reading, $userId);
+                $this->autoDispatchSummaryVoice($reading, $userId, $fbService->getPlatformName());
             } else {
                 $fbService->sendMessage($userId, $followUp, $extra);
             }
@@ -2432,7 +2451,7 @@ class FortuneChannelManager
      *
      * @param  array<string, mixed>  $extra
      */
-    protected function attachSystemVoiceFb(FacebookWebhookService $fbService, string $userId, string $clipKey, array $extra = []): void
+    protected function attachSystemVoiceFb(FortuneMessengerSender $fbService, string $userId, string $clipKey, array $extra = []): void
     {
         try {
             $url = (new \App\Services\FortuneSystemVoiceService($this->settings))->urlFor($clipKey);
@@ -2490,7 +2509,7 @@ class FortuneChannelManager
      *
      * @param  \App\Models\FortuneReading|null  $reading
      */
-    protected function autoDispatchSummaryVoice($reading, string $userId): void
+    protected function autoDispatchSummaryVoice($reading, string $userId, string $platform = self::PLATFORM_FACEBOOK): void
     {
         try {
             // 🎚️ (2026-06-21) ส่งอัตโนมัติเฉพาะแพคเกจที่ตั้งโหมด = auto (on_demand = รอกดปุ่ม)
@@ -2513,11 +2532,11 @@ class FortuneChannelManager
 
             \App\Jobs\ProcessVoiceSummaryJob::dispatchSmart(
                 $reading->id,
-                'facebook',
+                $platform,
                 $reading->facebook_user_id ?: ($reading->platform_user_id ?: $userId)
             );
 
-            \Log::info('🎧 auto summary voice dispatched (FB)', ['reading_id' => $reading->id]);
+            \Log::info('🎧 auto summary voice dispatched', ['reading_id' => $reading->id, 'platform' => $platform]);
         } catch (\Throwable $e) {
             \Log::debug('auto summary voice dispatch fail (non-blocking)', ['error' => $e->getMessage()]);
         }
@@ -5938,7 +5957,7 @@ class FortuneChannelManager
      *
      * @param  array  $extra  forward from_admin/message_tag (cron ส่งนอก 24 ชม. ผ่าน POST_PURCHASE_UPDATE)
      */
-    protected function sendReviewInviteFacebook(FacebookWebhookService $fbService, string $userId, array $result, array $extra = []): void
+    protected function sendReviewInviteFacebook(FortuneMessengerSender $fbService, string $userId, array $result, array $extra = []): void
     {
         $invite = $result['review_invite'] ?? null;
         if (empty($invite) || empty($invite['url'])) {
@@ -6131,7 +6150,7 @@ class FortuneChannelManager
      * @return bool ผลของ **กล่องแรก** เท่านั้น (คงความหมายเดิมของผู้เรียก)
      */
     protected function sendFacebookBubbles(
-        FacebookWebhookService $fbService,
+        FortuneMessengerSender $fbService,
         string $userId,
         string $message,
         array $extra = [],
@@ -6144,7 +6163,7 @@ class FortuneChannelManager
         //    ⇒ ด่านที่นับอีโมจิหัวข้อไม่เห็นการแต่ง · ไม่มีหัวข้อ = ต้นฉบับทุกตัวอักษร · ปิดได้ที่หลังบ้าน
         $message = $this->formatForMessenger($message);
 
-        $bubbles = $this->bubblesFor('facebook', $userId, $message);
+        $bubbles = $this->bubblesFor($fbService->getPlatformName(), $userId, $message);
 
         // เส้นคั่นที่ตัวผ่ากล่องปล่อยไว้ขอบกล่อง = ซ้ำกับขอบกล่องแชทเอง → ตัดทิ้ง (ตัดแล้วเหลือกล่องเดียวก็ไปเส้นเดิม)
         if ($bubbles !== [] && str_contains($message, \App\Services\Fortune\FortuneMessengerFormatter::DIVIDER)) {
@@ -6206,7 +6225,7 @@ class FortuneChannelManager
         //   (กล่องแรกถึงลูกค้าแล้ว + markDelivered ทำงานแล้ว ⇒ redeliver เดิมมองว่าครบ)
         \App\Jobs\SendFortuneBubbleJob::rememberPending(
             $readingId,
-            'facebook',
+            $fbService->getPlatformName(),
             $userId,
             $bubbles,
             $tailMessage,
@@ -6215,7 +6234,7 @@ class FortuneChannelManager
 
         try {
             \App\Jobs\SendFortuneBubbleJob::dispatch(
-                'facebook',
+                $fbService->getPlatformName(),
                 $userId,
                 $bubbles,
                 $tailMessage,
@@ -6524,7 +6543,7 @@ class FortuneChannelManager
      *
      * สำหรับ downline_info, earnings_info — แสดงข้อความ + ปุ่มกดไปเว็บ
      */
-    protected function sendFacebookButtonLinkResponse(FacebookWebhookService $fbService, string $userId, string $message, array $result): bool
+    protected function sendFacebookButtonLinkResponse(FortuneMessengerSender $fbService, string $userId, string $message, array $result): bool
     {
         $buttons = $result['buttons'] ?? [];
 
@@ -6581,7 +6600,7 @@ class FortuneChannelManager
      * ใช้ Button Template เพื่อให้ลูกค้ากดปุ่มเพียงครั้งเดียวเปิดคำทำนายได้
      * ไม่ใช่ quick replies (ที่ Messenger อาจซ่อนหลังส่งข้อความใหม่)
      */
-    protected function sendFacebookFortuneReadyNotification(FacebookWebhookService $fbService, string $userId, string $message, array $result): bool
+    protected function sendFacebookFortuneReadyNotification(FortuneMessengerSender $fbService, string $userId, string $message, array $result): bool
     {
         $defaultMessage = "🔮✨ คำทำนายเชิงลึกพร้อมแล้ว!\n\nกดปุ่มด้านล่างเพื่ออ่านคำทำนายได้เลย";
         $text = $message ?: $defaultMessage;
@@ -6635,7 +6654,7 @@ class FortuneChannelManager
         return '✨ ขอให้โชคดี สุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ';
     }
 
-    protected function sendFacebookReadingCompleteResponse(FacebookWebhookService $fbService, string $userId, array $result): bool
+    protected function sendFacebookReadingCompleteResponse(FortuneMessengerSender $fbService, string $userId, array $result): bool
     {
         $reading = $result['reading'] ?? null;
         $rawName = $reading?->facebook_user_name ?? $result['user_name'] ?? '';
@@ -6691,7 +6710,7 @@ class FortuneChannelManager
      * ส่งข้อความ AI ตอบก่อน (แนะนำบริการ) แล้วเรียก startDeepReadingFlow()
      * ส่ง birthdate collection response ตามหลัง (เป็น 2 ข้อความต่อกัน)
      */
-    protected function sendFacebookDeepReadingRedirect(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    protected function sendFacebookDeepReadingRedirect(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
 
@@ -6844,7 +6863,7 @@ class FortuneChannelManager
      */
     public function isPlatformSupported(string $platform): bool
     {
-        return in_array($platform, [self::PLATFORM_FACEBOOK, self::PLATFORM_LINE]);
+        return in_array($platform, [self::PLATFORM_FACEBOOK, self::PLATFORM_LINE, self::PLATFORM_TELEGRAM], true);
     }
 
     /**
@@ -6865,6 +6884,12 @@ class FortuneChannelManager
                 'color' => '#00B900',
                 'supports_rich' => true,
             ],
+            self::PLATFORM_TELEGRAM => [
+                'name' => 'Telegram Bot',
+                'icon' => 'fab fa-telegram',
+                'color' => '#229ED9',
+                'supports_rich' => true,
+            ],
         ];
     }
 
@@ -6880,7 +6905,7 @@ class FortuneChannelManager
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
         $platform = $reading->platform;
         if (! $platform) {
-            $platform = (preg_match('/^U[0-9a-f]{32}$/i', $userId)) ? self::PLATFORM_LINE : self::PLATFORM_FACEBOOK;
+            $platform = \App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $userId);
         }
 
         // Dispatch background job → ไม่ติด web server timeout / webhook 5s timeout
@@ -6986,8 +7011,15 @@ class FortuneChannelManager
      * จุดประสงค์: ทำให้บอทดูเป็นมนุษย์ ไม่ตอบเร็วผิดธรรมชาติ
      * Note: LINE ไม่ delay (per user spec — LINE ช้าอยู่แล้ว)
      */
-    protected function humanLikeDelayFb(FacebookWebhookService $fbService, string $userId, int $seconds = 15): void
+    protected function humanLikeDelayFb(FortuneMessengerSender $fbService, string $userId, int $seconds = 15): void
     {
+        // ✈️ (2026-09-13) Telegram ไม่หน่วง (แนวเดียวกับ LINE) — "กำลังพิมพ์..." ของ Telegram อยู่ได้แค่ ~5 วิ
+        //    หน่วง 15 วิ = ลูกค้าเห็นความเงียบ 10 วิหลังจุดไข่ปลาหาย ดูเหมือนบอทค้าง
+        //    (แชทผ่าน settle-buffer รอ ~30 วิอยู่แล้ว) · spec เดิมของเจ้าของระบุ "เฉพาะ chitchat บน FB"
+        if ($fbService->getPlatformName() !== self::PLATFORM_FACEBOOK) {
+            return;
+        }
+
         try {
             // Refresh typing indicator — กัน FB hide ก่อน message มา
             $fbService->sendTypingIndicator($userId, true);

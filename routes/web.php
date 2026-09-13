@@ -1321,6 +1321,26 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \App\Http\Middleware\TrackPageView::class,
         ]);
 
+    // ✈️ (2026-09-13) Telegram Fortune Webhook — ช่องทางที่ 3 ของบอทแม่หมอ
+    //   ตัดชุด middleware เดียวกับ LINE (session/cookie/CSRF ทำให้ webhook 500 — ดูเหตุผลข้างบน)
+    //   ยืนยันตัวตนด้วย header X-Telegram-Bot-Api-Secret-Token ใน controller (hash_equals)
+    //   ⚠️ ไม่ใส่ throttle (กติกาหัวไฟล์นี้) — Telegram ยิงมาจาก IP ไม่กี่ตัว ถ้าโดน 429 ช่วงคนเยอะ
+    //      = ข้อความลูกค้าจริงหาย · คนนอกที่ไม่มีค่าลับโดน 403 ทันทีอยู่แล้ว (ไม่แตะ DB)
+    Route::post('/telegram/fortune', [\App\Http\Controllers\TelegramFortuneWebhookController::class, 'handle'])
+        ->name('telegram.fortune')
+        ->withoutMiddleware([
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\TrackVendorStoreVisit::class,
+            \App\Http\Middleware\TrackRequestMetrics::class,
+            \App\Http\Middleware\TrackPageView::class,
+        ]);
+
     // 💳 (2026-05-09) Stripe Checkout webhook — Fortune chat payment
     //   ⚠️ ห้ามมี middleware ที่อ่าน body / parse JSON ก่อน controller (ทำให้ signature verify fail)
     //   $except ใน VerifyCsrfToken (webhook/* wildcard) ครอบ /webhook/fortune-stripe แล้ว

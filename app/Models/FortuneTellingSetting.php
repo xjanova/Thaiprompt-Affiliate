@@ -137,6 +137,12 @@ class FortuneTellingSetting extends Model
         'line_bot_basic_id',
         'line_channel_secret',
         'line_channel_access_token',
+        // ✈️ (2026-09-13) Telegram Bot — ช่องทางที่ 3 (token เจ้าของกรอกเองในหลังบ้าน)
+        'telegram_enabled',
+        'telegram_bot_token',
+        'telegram_bot_username',
+        'telegram_webhook_secret',
+        'telegram_webhook_set_at',
         'enabled_platforms',
         'line_flex_primary_color',
         'line_welcome_image_url',
@@ -550,6 +556,11 @@ class FortuneTellingSetting extends Model
         'customer_handoff_keywords' => 'array',
         'takeover_notify_customer' => 'boolean',
         'line_enabled' => 'boolean',
+        // ✈️ (2026-09-13) Telegram — token/secret เข้ารหัสใน DB (ห้ามเก็บ plaintext)
+        'telegram_enabled' => 'boolean',
+        'telegram_bot_token' => 'encrypted',
+        'telegram_webhook_secret' => 'encrypted',
+        'telegram_webhook_set_at' => 'datetime',
         'enabled_platforms' => 'array',
         'fortune_bank_account_ids' => 'array',
         'max_free_readings' => 'integer',
@@ -822,6 +833,7 @@ class FortuneTellingSetting extends Model
         'enable_image_vision' => false,
         // LINE Settings
         'line_enabled' => false,
+        'telegram_enabled' => false,
         'line_flex_primary_color' => '#6B46C1',
         'fortune_brand_name' => 'แม่หมอจันทรา',
         'enabled_platforms' => '["facebook"]',
@@ -1110,6 +1122,9 @@ class FortuneTellingSetting extends Model
         'chat_ai_api_key',
         'line_channel_secret',
         'line_channel_access_token',
+        // ✈️ (2026-09-13) Telegram secrets — ห้าม serialize ออกไป
+        'telegram_bot_token',
+        'telegram_webhook_secret',
         'tavily_api_key',
         'brave_search_api_key',
         // 🏦 (2026-07-14) KBank secrets — ห้าม serialize ออกไป
@@ -2397,7 +2412,36 @@ PROMPT;
             $result[] = 'line';
         }
 
+        // ✈️ Telegram ใช้สวิตช์ของตัวเอง (telegram_enabled) ไม่ผูกกับ enabled_platforms
+        //    กันพลาดแบบ "ติ๊กช่องแล้วแต่สวิตช์ปิด" — ต้นทางเดียวคือ isTelegramActive()
+        if ($this->isTelegramActive()) {
+            $result[] = 'telegram';
+        }
+
         return $result;
+    }
+
+    /**
+     * ✈️ มี token บอท Telegram แล้วหรือยัง (ยังไม่นับว่าเปิดใช้งาน)
+     *
+     * อ่านผ่าน try/catch: ถ้า APP_KEY เปลี่ยน cast 'encrypted' จะ throw ตอนถอดรหัส
+     * → ถือว่ายังไม่ได้ตั้งค่า (ให้เจ้าของกรอกใหม่) แทนที่จะทำหน้าหลังบ้านล่ม
+     */
+    public function hasTelegramConfigured(): bool
+    {
+        try {
+            return trim((string) $this->telegram_bot_token) !== '';
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * ✈️ บอท Telegram พร้อมรับ-ส่งข้อความจริงไหม (สวิตช์เปิด + มี token)
+     */
+    public function isTelegramActive(): bool
+    {
+        return (bool) $this->telegram_enabled && $this->hasTelegramConfigured();
     }
 
     /**

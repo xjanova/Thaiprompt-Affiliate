@@ -1687,11 +1687,8 @@ trait ProSessionTrait
         if (! $skipSettle && $settleSec > 0) {
             $this->qaTrackRamble($reading);
             $settleSec = $this->qaSettleWindow($reading, $settleSec);
-            $dUserId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
-            $dPlatform = $reading->platform;
-            if (! $dPlatform || ! in_array($dPlatform, ['facebook', 'line'], true)) {
-                $dPlatform = preg_match('/^U[a-f0-9]{32}$/i', $dUserId) ? 'line' : 'facebook';
-            }
+            // ✈️ (2026-09-13) ใช้ FortuneRecipient — เดิม whitelist แค่ facebook/line แล้ว regex ตี 'tg_…' เป็น facebook
+            ['platform' => $dPlatform, 'user_id' => $dUserId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
 
             // 🛟 (2026-09-05) $settleSec = 0 → เหลือเวลาไม่พอจะรอ (qaClampToRemainingWindow หดจนหมด)
             //   ⇒ ห้าม buffer ต้องตกไปตอบทันทีข้างล่าง ไม่งั้น job ตื่นมาเจอ session หมดอายุ

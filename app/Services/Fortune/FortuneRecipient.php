@@ -40,12 +40,28 @@ class FortuneRecipient
 
     public const PLATFORM_LINE = 'line';
 
+    public const PLATFORM_TELEGRAM = 'telegram';
+
     /**
      * LINE userId = 'U' + hex 32 ตัว
      *
      * PSID ของ Facebook เป็นตัวเลขล้วน ⇒ ชนกันไม่ได้ ใช้แยกช่องทางจาก id ล้วน ๆ ได้อย่างปลอดภัย
      */
     public const LINE_USER_ID_PATTERN = '/^U[0-9a-f]{32}$/i';
+
+    /**
+     * ✈️ (2026-09-13) id ลูกค้า Telegram ในระบบเรา = 'tg_' + เลข chat id ของ Telegram
+     *
+     * ⚠️ ทำไมต้องมีคำนำหน้า: id ของ Telegram เป็น "ตัวเลขล้วน" เหมือน PSID ของ Facebook
+     *    ถ้าเก็บเลขเปล่า ๆ โค้ด ~112 จุดที่แยกช่องทางด้วยรูปทรง id จะตีเป็น facebook ทั้งหมด
+     *    → ยิง Facebook Send API ด้วยเลข Telegram = ข้อความหายเงียบ (บั๊กตระกูลเดียวกับ reading 12537)
+     *    และเลขสองระบบชนกันได้จริง (คนละ namespace) — คำนำหน้าทำให้ชนกันไม่ได้อีก
+     *
+     *    ตัวเลขจริงที่ส่งเข้า Telegram Bot API ต้องตัดคำนำหน้าออกก่อนเสมอ → telegramChatId()
+     */
+    public const TELEGRAM_ID_PREFIX = 'tg_';
+
+    public const TELEGRAM_USER_ID_PATTERN = '/^tg_\d{1,20}$/';
 
     /**
      * id ตัวนี้เป็น LINE userId หรือไม่ (ใช้เป็นด่านกันยิงผิดช่องทางด้วย)
@@ -58,17 +74,78 @@ class FortuneRecipient
     }
 
     /**
-     * ช่องทางของบิลใบนี้ — 'line' หรือ 'facebook' (ไม่มีค่าอื่น)
+     * id ตัวนี้เป็นลูกค้า Telegram หรือไม่ ('tg_' + ตัวเลข)
      */
-    public static function platformOf(FortuneReading $reading): string
+    public static function looksLikeTelegramUserId(?string $id): bool
     {
-        // รูปทรงของ id ชนะคอลัมน์ platform เสมอ — LINE uid ยิงเข้า FB ไม่ได้อยู่แล้ว
-        $candidate = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
-        if (self::looksLikeLineUserId($candidate)) {
+        $id = trim((string) $id);
+
+        return $id !== '' && (bool) preg_match(self::TELEGRAM_USER_ID_PATTERN, $id);
+    }
+
+    /**
+     * แปลง chat id ของ Telegram (ตัวเลข) → id ในระบบเรา ('tg_123')
+     *
+     * รับได้ทั้งเลขเปล่าและค่าที่มีคำนำหน้าอยู่แล้ว (idempotent) · ค่าที่ไม่ใช่ตัวเลขบวก → ''
+     */
+    public static function telegramUserId(int|string|null $chatId): string
+    {
+        $raw = trim((string) $chatId);
+        if (str_starts_with($raw, self::TELEGRAM_ID_PREFIX)) {
+            $raw = substr($raw, strlen(self::TELEGRAM_ID_PREFIX));
+        }
+
+        return preg_match('/^\d{1,20}$/', $raw) ? self::TELEGRAM_ID_PREFIX.$raw : '';
+    }
+
+    /**
+     * id ในระบบเรา ('tg_123') → chat id ที่ส่งเข้า Telegram Bot API ('123')
+     *
+     * ไม่ใช่ id ของ Telegram → '' (caller ต้องข้าม ห้ามยิง API)
+     */
+    public static function telegramChatId(?string $userId): string
+    {
+        $userId = trim((string) $userId);
+
+        return self::looksLikeTelegramUserId($userId)
+            ? substr($userId, strlen(self::TELEGRAM_ID_PREFIX))
+            : '';
+    }
+
+    /**
+     * ช่องทางจาก "รูปทรงของ id" ล้วน ๆ — LINE / Telegram / อื่น ๆ = facebook
+     *
+     * ใช้แทน regex `^U[0-9a-f]{32}$ ? 'line' : 'facebook'` ที่ก็อปกันไปทั่ว (ซึ่งตีลูกค้า Telegram เป็น FB)
+     */
+    public static function platformFromUserId(?string $userId): string
+    {
+        if (self::looksLikeLineUserId($userId)) {
             return self::PLATFORM_LINE;
         }
 
+        if (self::looksLikeTelegramUserId($userId)) {
+            return self::PLATFORM_TELEGRAM;
+        }
+
+        return self::PLATFORM_FACEBOOK;
+    }
+
+    /**
+     * ช่องทางของบิลใบนี้ — 'line' / 'telegram' / 'facebook' (ไม่มีค่าอื่น)
+     */
+    public static function platformOf(FortuneReading $reading): string
+    {
+        // รูปทรงของ id ชนะคอลัมน์ platform เสมอ — LINE uid / Telegram id ยิงเข้า FB ไม่ได้อยู่แล้ว
+        // (ตัวที่ใช้ดูรูปทรง = platform_user_id ก่อน แล้วค่อย facebook_user_id — ลำดับเดิม)
+        $candidate = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
+        $byShape = self::platformFromUserId($candidate);
+        if ($byShape !== self::PLATFORM_FACEBOOK) {
+            return $byShape;
+        }
+
         $platform = strtolower(trim((string) $reading->platform));
+        // ⚠️ platform='telegram' แต่ id ไม่ใช่ทรง 'tg_' = ข้อมูลเพี้ยน → ห้ามเชื่อ (ยิงไปก็ไม่ถึง)
+        //    ตกลงไปค่าเริ่มต้นเดิม (facebook) เหมือนแถวที่ platform ว่าง
         if (in_array($platform, [self::PLATFORM_LINE, self::PLATFORM_FACEBOOK], true)) {
             return $platform;
         }
@@ -82,9 +159,14 @@ class FortuneRecipient
      */
     public static function userIdOf(FortuneReading $reading): string
     {
-        return self::platformOf($reading) === self::PLATFORM_LINE
-            ? (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '')
-            : (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
+        return match (self::platformOf($reading)) {
+            self::PLATFORM_LINE => (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: ''),
+            // Telegram: เอาเฉพาะคอลัมน์ที่เป็นทรง 'tg_' จริง (กันหยิบเลขอื่นที่ค้างในอีกคอลัมน์)
+            self::PLATFORM_TELEGRAM => self::looksLikeTelegramUserId((string) $reading->facebook_user_id)
+                ? (string) $reading->facebook_user_id
+                : (self::looksLikeTelegramUserId((string) $reading->platform_user_id) ? (string) $reading->platform_user_id : ''),
+            default => (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: ''),
+        };
     }
 
     /**
@@ -113,9 +195,13 @@ class FortuneRecipient
         $userId = trim((string) $userId);
         $platform = strtolower(trim((string) $platform));
 
-        if (self::looksLikeLineUserId($userId)) {
-            $platform = self::PLATFORM_LINE;
+        $byShape = self::platformFromUserId($userId);
+
+        if ($byShape !== self::PLATFORM_FACEBOOK) {
+            // id บอกช่องทางชัด (LINE / Telegram) → เชื่อ id เสมอ
+            $platform = $byShape;
         } elseif (! in_array($platform, [self::PLATFORM_LINE, self::PLATFORM_FACEBOOK], true)) {
+            // รวม platform='telegram' ที่ id ไม่ใช่ทรง 'tg_' — ยิงไป Telegram ไม่ถึงแน่นอน
             $platform = self::PLATFORM_FACEBOOK;
         }
 
