@@ -81,6 +81,19 @@ class FortuneRecipientTelegramTest extends TestCase
         $this->assertSame('facebook', FortuneRecipient::platformOf($broken));
     }
 
+    public function test_local_email_for_auto_registered_accounts(): void
+    {
+        // บัญชีที่บอทสมัครให้ — สร้างกับค้นหาต้องได้สูตรเดียวกัน · Telegram ห้ามกลายเป็น fb_tg_ / line_tg_
+        $this->assertSame('tg_42@thaiprompt.local', FortuneRecipient::localEmailFor('telegram', 'tg_42'));
+        $this->assertSame('tg_42@thaiprompt.local', FortuneRecipient::localEmailFor('telegram', '42'));
+        $this->assertSame('tg_42@thaiprompt.local', FortuneRecipient::localEmailFor('facebook', 'tg_42'), 'id ทรง tg_ ชนะ platform ที่ผิด');
+
+        // FB / LINE คงสูตรเดิมเป๊ะ (บัญชีเดิมหลายพันใบใช้สูตรนี้)
+        $this->assertSame('fb_26273302092329161@thaiprompt.local', FortuneRecipient::localEmailFor('facebook', '26273302092329161'));
+        $uid = 'U'.str_repeat('a', 32);
+        $this->assertSame('line_'.$uid.'@thaiprompt.local', FortuneRecipient::localEmailFor('line', $uid));
+    }
+
     public function test_line_and_facebook_behaviour_unchanged(): void
     {
         $line = new FortuneReading;

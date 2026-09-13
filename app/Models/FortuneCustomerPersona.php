@@ -1030,6 +1030,12 @@ class FortuneCustomerPersona extends Model
                 'label' => 'Facebook',
                 'color' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
             ],
+            // ✈️ (2026-09-13) ช่องทางที่ 3
+            'telegram' => [
+                'icon' => '✈️',
+                'label' => 'Telegram',
+                'color' => 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300',
+            ],
             default => [
                 'icon' => '🌐',
                 'label' => ucfirst($this->platform ?? 'unknown'),

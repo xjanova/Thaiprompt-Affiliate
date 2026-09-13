@@ -460,7 +460,7 @@ trait BirthdateCorrectionTrait
         try {
             $platformUserId = $reading->platform_user_id ?: $reading->facebook_user_id;
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $platformUserId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) $platformUserId));
 
             ProcessDeepFortuneReadingJob::dispatchSmart($reading->id, null, $platform, $platformUserId);
         } catch (\Throwable $e) {

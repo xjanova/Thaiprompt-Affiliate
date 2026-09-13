@@ -47,6 +47,8 @@ class FortuneBillsController extends Controller
     public const PLATFORMS = [
         'facebook' => ['Facebook', '#1877f2', 'fab fa-facebook-f'],
         'line' => ['LINE', '#06c755', 'fab fa-line'],
+        // ✈️ (2026-09-13) ช่องทางที่ 3 — ไม่มีแถวนี้ = บิล Telegram ถูกเหมาไปอยู่ "อื่น ๆ / เว็บ"
+        'telegram' => ['Telegram', '#4a9fd0', 'fab fa-telegram'],
         'other' => ['อื่น ๆ / เว็บ', '#8c8c96', 'fas fa-globe'],
     ];
 
@@ -181,12 +183,14 @@ class FortuneBillsController extends Controller
             $query->where('reading_type', self::PACKAGES[$filters['package']][1]);
         }
 
-        // 📱 แพลตฟอร์ม — 'other' = ไม่ใช่ facebook/line (รวม null)
+        // 📱 แพลตฟอร์ม — 'other' = ไม่ใช่ช่องทางที่รู้จักใน PLATFORMS (รวม null)
+        //    ดึงรายชื่อจาก PLATFORMS ตัวเดียว — เพิ่มช่องทางใหม่แล้วตัวกรองตามมาเอง ไม่ต้องแก้ 2 ที่
+        $knownPlatforms = array_values(array_diff(array_keys(self::PLATFORMS), ['other']));
         if ($filters['platform'] === 'other') {
-            $query->where(function ($q) {
-                $q->whereNull('platform')->orWhereNotIn('platform', ['facebook', 'line']);
+            $query->where(function ($q) use ($knownPlatforms) {
+                $q->whereNull('platform')->orWhereNotIn('platform', $knownPlatforms);
             });
-        } elseif (in_array($filters['platform'], ['facebook', 'line'], true)) {
+        } elseif (in_array($filters['platform'], $knownPlatforms, true)) {
             $query->where('platform', $filters['platform']);
         }
 

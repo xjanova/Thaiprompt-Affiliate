@@ -59,8 +59,8 @@ class FortuneCelticKick extends Command
         // 🆕 (2026-05-21) รองรับทั้ง FB + LINE
         //   เคสจริง: บิล FTU-260520-Y0148 LINE — replyMessage timeout/push fail
         //   ลูกค้าเปิดไพ่ใน DB แล้ว แต่ไม่เห็นใน LINE
-        if (! in_array($platform, ['facebook', 'line'], true)) {
-            $this->warn("⚠️ รองรับเฉพาะ facebook/line (reading platform: {$platform})");
+        if (! in_array($platform, ['facebook', 'line', 'telegram'], true)) {
+            $this->warn("⚠️ รองรับเฉพาะ facebook/line/telegram (reading platform: {$platform})");
 
             return 1;
         }
@@ -208,13 +208,15 @@ class FortuneCelticKick extends Command
             return 1;
         }
 
-        $fb = new FacebookWebhookService($settings);
+        // ✈️ (2026-09-13) ลูกค้า Telegram ใช้เส้นนี้ด้วย — ผู้ส่งเลือกตามรูปทรง id
+        $fb = \App\Services\Fortune\FortuneMessengerFactory::forUserId($uid, $settings) ?? new FacebookWebhookService($settings);
         $sendOpts = ['message_tag' => $tag, 'from_admin' => true];
 
         if (! $noImage && $imageUrl) {
             $this->info("Sending image with tag={$tag}...");
             try {
-                $imgOk = $fb->sendImageMessage($uid, $imageUrl, $sendOpts);
+                // 🐛 (2026-09-13) เดิมเรียก sendImageMessage ซึ่ง FacebookWebhookService ไม่มี → Error ทุกครั้ง (รูปไม่เคยออก)
+                $imgOk = $fb->sendImage($uid, $imageUrl, null, $sendOpts);
                 $this->info('Image: ' . ($imgOk ? '✅' : '❌'));
             } catch (\Throwable $e) {
                 $this->warn('Image error: ' . $e->getMessage());

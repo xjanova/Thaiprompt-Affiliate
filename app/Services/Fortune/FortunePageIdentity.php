@@ -55,7 +55,11 @@ class FortunePageIdentity
                 'page_id' => (int) $page->id,
                 'label' => $label,
                 'platform' => $platform,
-                'channel_word' => $platform === 'line' ? 'LINE OA' : 'เพจเฟซบุ๊ก',
+                'channel_word' => match ($platform) {
+                    'line' => 'LINE OA',
+                    'telegram' => 'บอท Telegram',
+                    default => 'เพจเฟซบุ๊ก',
+                },
                 // LINE ไม่มี URL สาธารณะที่ derive จาก channel id ได้ → null
                 'url' => ($platform === 'facebook' && $externalId !== '')
                     ? "https://www.facebook.com/{$externalId}"

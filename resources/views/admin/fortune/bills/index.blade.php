@@ -140,7 +140,7 @@
             <input type="hidden" name="fortune_page" value="{{ $filters['fortune_page'] ?? '' }}">
 
             <div style="grid-column:span 2; min-width:0;">
-                <label style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">🔍 ค้นหา (ชื่อ / เลขบิล / PSID / LINE id / #id)</label>
+                <label style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">🔍 ค้นหา (ชื่อ / เลขบิล / PSID / LINE id / tg_ id / #id)</label>
                 <div class="tp-well tp-input" style="padding:0;">
                     <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
                            placeholder="เช่น FTU-260806-G4674 หรือ ชื่อลูกค้า"
@@ -241,7 +241,8 @@
                                 $isPaid = (bool) $bill->is_paid;
                                 $cStatus = (string) $bill->conversation_status;
 
-                                $pfKey = in_array($bill->platform, ['facebook', 'line'], true) ? $bill->platform : 'other';
+                                // ✈️ (2026-09-13) + telegram — ไม่งั้นบิล Telegram ขึ้นป้าย "อื่น ๆ / เว็บ"
+                                $pfKey = in_array($bill->platform, ['facebook', 'line', 'telegram'], true) ? $bill->platform : 'other';
                                 $pf = $platforms[$pfKey];
 
                                 if ($bill->is_floating) {

@@ -113,6 +113,34 @@ class FortuneRecipient
     }
 
     /**
+     * อีเมลภายในของบัญชีที่บอทสมัครให้ลูกค้าอัตโนมัติ (ใช้ทั้งตอนสร้างและตอนค้นหา — ต้องสูตรเดียวกัน)
+     *
+     *   line     → line_{uid}@thaiprompt.local
+     *   telegram → tg_{chat id}@thaiprompt.local   (id ในระบบมี 'tg_' อยู่แล้ว — ไม่เติมซ้ำ)
+     *   facebook → fb_{psid}@thaiprompt.local
+     *
+     * ⚠️ (2026-09-13) เดิมแต่ละที่เขียน `line ? 'line_' : 'fb_'` เอง → ลูกค้า Telegram ได้อีเมล fb_tg_…
+     *    หรือถูกยัด id ลงคอลัมน์ line_user_id (identity ปนกันข้ามช่องทาง)
+     */
+    public static function localEmailFor(string $platform, string $platformUserId): string
+    {
+        $platformUserId = trim($platformUserId);
+
+        if ($platform === self::PLATFORM_LINE) {
+            return 'line_'.$platformUserId.'@thaiprompt.local';
+        }
+
+        if ($platform === self::PLATFORM_TELEGRAM || self::looksLikeTelegramUserId($platformUserId)) {
+            // ถอด 'tg_' ออกก่อน (ถ้ามี) แล้วเติมกลับครั้งเดียว
+            $chatId = (string) preg_replace('/^'.self::TELEGRAM_ID_PREFIX.'/', '', $platformUserId);
+
+            return self::TELEGRAM_ID_PREFIX.$chatId.'@thaiprompt.local';
+        }
+
+        return 'fb_'.$platformUserId.'@thaiprompt.local';
+    }
+
+    /**
      * ช่องทางจาก "รูปทรงของ id" ล้วน ๆ — LINE / Telegram / อื่น ๆ = facebook
      *
      * ใช้แทน regex `^U[0-9a-f]{32}$ ? 'line' : 'facebook'` ที่ก็อปกันไปทั่ว (ซึ่งตีลูกค้า Telegram เป็น FB)

@@ -51,7 +51,7 @@ class FortuneBanController extends Controller
         }
 
         // Filter by platform
-        if ($platform && in_array($platform, ['facebook', 'line'], true)) {
+        if ($platform && in_array($platform, ['facebook', 'line', 'telegram'], true)) {
             $query->forPlatform($platform);
         }
 
@@ -90,7 +90,7 @@ class FortuneBanController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'platform' => 'required|in:facebook,line',
+            'platform' => 'required|in:facebook,line,telegram',
             'platform_user_id' => 'required|string|max:100',
             'duration_type' => 'required|in:permanent,minutes,hours,days',
             'duration_value' => 'nullable|integer|min:1|max:100000',

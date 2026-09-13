@@ -308,7 +308,11 @@ trait FortunePersonalDataTrait
             if ($firstSeen) {
                 $lines[] = '🌙 รู้จักกันตั้งแต่: '.$firstSeen->format('d/m/Y');
             }
-            $lines[] = '📱 ช่องทาง: '.($platform === 'line' ? 'LINE' : 'Facebook');
+            $lines[] = '📱 ช่องทาง: '.match ($platform) {
+                'line' => 'LINE',
+                'telegram' => 'Telegram',
+                default => 'Facebook',
+            };
 
             $lines[] = "\n_ข้อมูลบัญชีและการเงิน (ยอดเงิน ค่าแนะนำ อีเมล) ดูได้บนเว็บที่ล็อกอินแล้วเท่านั้น เพื่อความปลอดภัยค่ะ_";
             $lines[] = "\n👇 แก้ไขหรือลบข้อมูลได้จากปุ่มด้านล่างเลยค่ะ";

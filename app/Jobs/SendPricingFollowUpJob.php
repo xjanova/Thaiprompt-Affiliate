@@ -279,6 +279,9 @@ EOT;
         } elseif ($this->platform === 'line') {
             $lineService = app(\App\Services\LineFortuneService::class);
             $lineService->sendMessage($this->userId, $message);
+        } elseif ($this->platform === 'telegram') {
+            // ✈️ (2026-09-13) Telegram — ส่งได้ไม่จำกัด ไม่มีกรอบ 24 ชม.
+            (new \App\Services\TelegramFortuneService)->sendMessage($this->userId, $message);
         } else {
             Log::warning('SendPricingFollowUpJob: platform ไม่รู้จัก', [
                 'platform' => $this->platform,

@@ -21,6 +21,8 @@
                 {{ $userInfo['facebook_user_name'] }}
                 @if($userInfo['platform'] === 'line')
                     <span class="tp-pill" style="color:#fff; background:#5aa07e; font-size:11px;">🟢 LINE</span>
+                @elseif($userInfo['platform'] === 'telegram')
+                    <span class="tp-pill" style="color:#fff; background:#4a9fd0; font-size:11px;">✈️ Telegram</span>
                 @else
                     <span class="tp-pill" style="color:#fff; background:#5689b8; font-size:11px;">📘 Facebook</span>
                 @endif

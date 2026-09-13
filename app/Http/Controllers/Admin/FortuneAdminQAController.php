@@ -40,7 +40,7 @@ class FortuneAdminQAController extends Controller
 
         // กรองตาม platform
         $platform = $request->input('platform');
-        if (in_array($platform, ['facebook', 'line', 'manual'], true)) {
+        if (in_array($platform, ['facebook', 'line', 'telegram', 'manual'], true)) {
             $query->where('source_platform', $platform);
         }
 

@@ -35,7 +35,7 @@ class FortunePersonasController extends Controller
         }
 
         // กรอง platform
-        if ($request->filled('platform') && in_array($request->platform, ['facebook', 'line'])) {
+        if ($request->filled('platform') && in_array($request->platform, ['facebook', 'line', 'telegram'], true)) {
             $query->where('platform', $request->platform);
         }
 

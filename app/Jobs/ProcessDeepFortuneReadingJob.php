@@ -713,7 +713,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             .'🔮 ขอเวลาสักครู่นะคะ — คำทำนายของคุณไม่หายไปไหนค่ะ';
 
         // ตรวจ platform ที่รู้จัก (กันกรณี queue payload พัง)
-        if (! in_array($this->platform, ['line', 'facebook'], true)) {
+        // ✈️ (2026-09-13) + telegram (เส้นเดียวกับ FB)
+        if (! in_array($this->platform, ['line', 'facebook', 'telegram'], true)) {
             Log::warning('ProcessDeepFortuneReadingJob: platform ไม่รู้จัก ข้าม failure notification', [
                 'reading_id' => $this->readingId,
                 'platform' => $this->platform,
@@ -759,9 +760,10 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
 
                 $lineService->sendRichMessage($this->userId, $richContent);
             } else {
-                // Facebook — ส่งข้อความธรรมดา
+                // Facebook / Telegram — ส่งข้อความธรรมดา
                 $settings = FortuneTellingSetting::getSettings();
-                $fbService = new \App\Services\FacebookWebhookService($settings);
+                $fbService = \App\Services\Fortune\FortuneMessengerFactory::sender($this->platform, $this->userId, $settings)
+                    ?? new \App\Services\FacebookWebhookService($settings);
                 $fbService->sendMessage($this->userId, $message);
             }
 

@@ -152,7 +152,7 @@ class FortuneChatLogService
         }
         try {
             $conn = Redis::connection();
-            $p = $platform === 'line' ? 'line' : 'facebook';
+            $p = $this->platformKey($platform, $userId);
             $deleted = 0;
 
             foreach ([Carbon::now(self::TZ)->toDateString(), Carbon::yesterday(self::TZ)->toDateString()] as $date) {
@@ -190,10 +190,29 @@ class FortuneChatLogService
 
     private function key(string $platform, string $userId): string
     {
-        $p = $platform === 'line' ? 'line' : 'facebook';
+        $p = $this->platformKey($platform, $userId);
         $date = Carbon::now(self::TZ)->toDateString();
 
         return self::KEY_PREFIX.":{$date}:{$p}:{$userId}";
+    }
+
+    /**
+     * ชื่อช่องทางใน key — line / telegram / facebook
+     *
+     * ✈️ (2026-09-13) + telegram: เดิมทุกอย่างที่ไม่ใช่ line กลายเป็น facebook → แชท Telegram ไปปนกองเดียวกับ FB
+     *    Telegram ดูจากรูปทรง id ด้วย ('tg_…') — ผู้อ่านที่ส่ง platform ผิดมา (เช่นแถวเก่า) ยังเจอ key เดียวกัน
+     */
+    private function platformKey(string $platform, string $userId): string
+    {
+        if ($platform === 'line') {
+            return 'line';
+        }
+
+        if ($platform === 'telegram' || FortuneRecipient::looksLikeTelegramUserId($userId)) {
+            return 'telegram';
+        }
+
+        return 'facebook';
     }
 
     private function indexKey(string $date): string

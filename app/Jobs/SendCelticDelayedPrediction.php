@@ -77,8 +77,11 @@ class SendCelticDelayedPrediction implements ShouldQueue
         $settings = FortuneTellingSetting::getSettings();
 
         try {
-            if ($this->platform === 'facebook') {
-                $fb = new FacebookWebhookService($settings);
+            // ✈️ (2026-09-13) Telegram ใช้เส้นเดียวกับ FB — เดิม else = LINE ⇒ คำทำนาย Celtic ที่ลูกค้า Telegram
+            //    จ่าย 99฿ จะถูกยิงเข้า LINE push ด้วย id 'tg_…' แล้วหายเงียบ
+            if (in_array($this->platform, ['facebook', 'telegram'], true)) {
+                $fb = \App\Services\Fortune\FortuneMessengerFactory::sender($this->platform, $this->userId, $settings)
+                    ?? new FacebookWebhookService($settings);
 
                 // typing_off ก่อนส่งข้อความจริง
                 $fb->sendTypingIndicator($this->userId, false);

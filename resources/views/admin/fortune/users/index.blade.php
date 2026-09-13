@@ -59,6 +59,14 @@
                 <div class="tp-num" style="font-size:24px; font-weight:800;">{{ number_format($stats['line_users']) }}</div>
             </div>
         </div>
+        {{-- Telegram (ช่องทางที่ 3 — 2026-09-13) --}}
+        <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
+            <div class="tp-tile" style="color:#4a9fd0;"><i class="fab fa-telegram"></i></div>
+            <div>
+                <div class="tp-muted" style="font-size:12px;">Telegram</div>
+                <div class="tp-num" style="font-size:24px; font-weight:800;">{{ number_format($stats['telegram_users'] ?? 0) }}</div>
+            </div>
+        </div>
         {{-- ลูกค้าจ่ายเงิน --}}
         <div class="tp-card tp-card-hover" style="display:flex; align-items:center; gap:14px;">
             <div class="tp-tile" style="color:#d6824a;"><i class="fas fa-hand-holding-dollar"></i></div>
@@ -94,6 +102,7 @@
                                 style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
                             <option value="facebook">Facebook Messenger</option>
                             <option value="line">LINE</option>
+                            <option value="telegram">Telegram</option>
                         </select>
                     </div>
                 </div>
@@ -102,7 +111,7 @@
                     <label class="tp-muted" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">User ID *</label>
                     <div class="tp-well tp-input">
                         <input type="text" name="facebook_user_id" x-model="sendUserId" required
-                               placeholder="Facebook/LINE User ID"
+                               placeholder="Facebook/LINE User ID หรือ Telegram tg_…"
                                style="width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:14px;">
                     </div>
                 </div>
@@ -145,6 +154,7 @@
                             <option value="all">ทุกช่องทาง</option>
                             <option value="facebook">Facebook เท่านั้น</option>
                             <option value="line">LINE เท่านั้น</option>
+                            <option value="telegram">Telegram เท่านั้น</option>
                         </select>
                     </div>
                 </div>
@@ -203,6 +213,7 @@
                         <option value="">ทุก Platform</option>
                         <option value="facebook" {{ request('platform') === 'facebook' ? 'selected' : '' }}>Facebook</option>
                         <option value="line" {{ request('platform') === 'line' ? 'selected' : '' }}>LINE</option>
+                        <option value="telegram" {{ request('platform') === 'telegram' ? 'selected' : '' }}>Telegram</option>
                     </select>
                 </div>
             </div>
@@ -271,6 +282,8 @@
                         <td style="padding:12px; text-align:center;">
                             @if(($user->platform ?? 'facebook') === 'line')
                                 <span class="tp-pill" style="color:#5aa07e;"><i class="fab fa-line"></i> LINE</span>
+                            @elseif($user->platform === 'telegram')
+                                <span class="tp-pill" style="color:#4a9fd0;"><i class="fab fa-telegram"></i> Telegram</span>
                             @else
                                 <span class="tp-pill" style="color:#5689b8;"><i class="fab fa-facebook-f"></i> Facebook</span>
                             @endif

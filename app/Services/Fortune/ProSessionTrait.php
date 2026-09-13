@@ -1790,11 +1790,8 @@ trait ProSessionTrait
             return $result;
         }
 
-        $userId = (string) ($reading->platform_user_id ?: $reading->facebook_user_id ?: '');
-        $platform = $reading->platform;
-        if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
-            $platform = preg_match('/^U[a-f0-9]{32}$/i', $userId) ? 'line' : 'facebook';
-        }
+        // ✈️ (2026-09-13) แหล่งเดียว FortuneRecipient (รู้จัก telegram)
+        ['platform' => $platform, 'user_id' => $userId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
         $result['platform'] = $platform;
 
         // ให้พรอมต์รู้ว่าเป็นเลนไหน (deep = ค่าเริ่มต้นเมื่อไม่เคยเปิด session)

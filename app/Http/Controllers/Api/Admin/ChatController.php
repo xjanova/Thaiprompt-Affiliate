@@ -24,7 +24,7 @@ class ChatController extends Controller
     {
         $data = $request->validate([
             'reading_id' => 'nullable|integer|exists:fortune_readings,id',
-            'platform' => 'nullable|in:facebook,line',
+            'platform' => 'nullable|in:facebook,line,telegram',
             'platform_user_id' => 'nullable|string|max:255',
             'text' => 'required|string|min:1|max:2000',
         ]);
@@ -38,8 +38,9 @@ class ChatController extends Controller
                 // Use the reading's CANONICAL identity — was hardcoded to
                 // 'facebook' + facebook_user_id, which broke admin replies to
                 // LINE customers (facebook_user_id is null for LINE).
-                $platform = $reading->platform ?: ($reading->facebook_user_id ? 'facebook' : ($platform ?? 'facebook'));
-                $userId = $reading->platform_user_id ?: ($reading->facebook_user_id ?: $userId);
+                // ✈️ (2026-09-13) แหล่งเดียว FortuneRecipient — รู้จัก line / telegram / facebook ครบ
+                ['platform' => $platform, 'user_id' => $resolvedId] = \App\Services\Fortune\FortuneRecipient::resolve($reading);
+                $userId = $resolvedId !== '' ? $resolvedId : $userId;
             }
         }
 
@@ -51,9 +52,12 @@ class ChatController extends Controller
         }
 
         try {
-            $ok = $platform === 'line'
-                ? $this->lineService->sendMessage($userId, $data['text'])
-                : $this->fbService->sendMessage($userId, $data['text']);
+            // ✈️ (2026-09-13) Telegram → TelegramFortuneService (เดิมทุกอย่างที่ไม่ใช่ line ยิงเข้า Facebook)
+            $ok = match ($platform) {
+                'line' => $this->lineService->sendMessage($userId, $data['text']),
+                'telegram' => (new \App\Services\TelegramFortuneService)->sendMessage($userId, $data['text']),
+                default => $this->fbService->sendMessage($userId, $data['text']),
+            };
 
             Log::info('AdminChat: operator message sent', [
                 'admin_id' => $request->user()?->id,

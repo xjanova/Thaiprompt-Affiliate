@@ -6,7 +6,7 @@
     - $bans     : paginator ของ FortuneUserBan (with bannedBy)
     - $stats    : ['total_active','permanent','temporary','total_expired']
     - $filter   : 'active'|'expired'|'all'
-    - $platform : 'facebook'|'line'|null
+    - $platform : 'facebook'|'line'|'telegram'|null
     - $search   : string
 
     คงฟังก์ชันเดิม 100%:
@@ -136,6 +136,7 @@
                                 style="width:100%; background:transparent; border:0; outline:0; padding:11px 14px; color:var(--ink); font-size:14px; cursor:pointer;">
                             <option value="facebook">🔵 Facebook</option>
                             <option value="line">💚 LINE</option>
+                            <option value="telegram">✈️ Telegram</option>
                         </select>
                     </div>
                 </div>
@@ -144,7 +145,7 @@
                 <div>
                     <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
                         User ID <span style="color:#d9534f;">*</span>
-                        <span class="tp-muted" style="font-weight:400;">(PSID หรือ LINE userId)</span>
+                        <span class="tp-muted" style="font-weight:400;">(PSID, LINE userId หรือ Telegram tg_…)</span>
                     </label>
                     <input type="text" name="platform_user_id" required
                         value="{{ old('platform_user_id') }}"
@@ -241,6 +242,7 @@
                             <option value="">ทุก Platform</option>
                             <option value="facebook" @selected($platform === 'facebook')>🔵 Facebook</option>
                             <option value="line" @selected($platform === 'line')>💚 LINE</option>
+                            <option value="telegram" @selected($platform === 'telegram')>✈️ Telegram</option>
                         </select>
                     </div>
                 </div>
@@ -305,6 +307,9 @@
                                 <td style="padding:14px 16px; vertical-align:top;">
                                     @if($ban->platform === 'facebook')
                                         <span class="tp-pill" style="background:rgba(86,137,184,.16); color:#5689b8;">🔵 Facebook</span>
+                                    @elseif($ban->platform === 'telegram')
+                                        {{-- ✈️ (2026-09-13) ช่องทางที่ 3 — เดิมทุกอย่างที่ไม่ใช่ facebook ตกเป็นป้าย LINE --}}
+                                        <span class="tp-pill" style="background:rgba(74,159,208,.16); color:#4a9fd0;">✈️ Telegram</span>
                                     @else
                                         <span class="tp-pill" style="background:rgba(90,160,126,.16); color:#5aa07e;">💚 LINE</span>
                                     @endif

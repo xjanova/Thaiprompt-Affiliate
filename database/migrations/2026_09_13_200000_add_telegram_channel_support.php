@@ -56,8 +56,8 @@ return new class extends Migration
             }
         });
 
-        // enum เปลี่ยนด้วย Schema builder ไม่ได้ (ต้องมี doctrine) → ALTER ตรง เฉพาะ MySQL
-        if (DB::getDriverName() !== 'mysql') {
+        // enum เปลี่ยนด้วย Schema builder ไม่ได้ (ต้องมี doctrine) → ALTER ตรง เฉพาะ MySQL/MariaDB
+        if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
             return;
         }
 
@@ -66,7 +66,8 @@ return new class extends Migration
         }
 
         if (Schema::hasTable('fortune_admin_qa') && Schema::hasColumn('fortune_admin_qa', 'source_platform')) {
-            DB::statement("ALTER TABLE `fortune_admin_qa` MODIFY `source_platform` ENUM('facebook','line','telegram','manual') NOT NULL DEFAULT 'facebook'");
+            // ⚠️ ต่อค่าใหม่ไว้ "ท้ายสุด" เท่านั้น — แทรกกลาง enum = MySQL ต้อง copy ทั้งตาราง (ล็อกการเขียนตอน deploy)
+            DB::statement("ALTER TABLE `fortune_admin_qa` MODIFY `source_platform` ENUM('facebook','line','manual','telegram') NOT NULL DEFAULT 'facebook'");
         }
     }
 
@@ -78,7 +79,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (DB::getDriverName() === 'mysql') {
+        if (in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
             if (Schema::hasTable('fortune_user_bans')
                 && ! DB::table('fortune_user_bans')->where('platform', 'telegram')->exists()) {
                 DB::statement("ALTER TABLE `fortune_user_bans` MODIFY `platform` ENUM('facebook','line') NOT NULL COMMENT 'แพลตฟอร์มที่ถูกแบน'");

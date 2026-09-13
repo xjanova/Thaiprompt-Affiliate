@@ -963,7 +963,7 @@ class SmsPaymentService
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
         $platform = $reading->platform;
         if (! $platform) {
-            $platform = (preg_match('/^U[0-9a-f]{32}$/i', $userId)) ? 'line' : 'facebook';
+            $platform = \App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId));
         }
 
         Log::info('SMS Payment: พบ Fortune Reading ที่รอชำระ', [

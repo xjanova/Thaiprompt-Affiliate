@@ -243,8 +243,8 @@ class FortuneAffiliateService
         }
 
         // 2. ค้นหาจาก email pattern (line_{id}@thaiprompt.local หรือ fb_{id}@thaiprompt.local)
-        $emailPrefix = $platform === 'line' ? 'line_' : 'fb_';
-        $user = User::where('email', $emailPrefix.$platformUserId.'@thaiprompt.local')->first();
+        // ✈️ (2026-09-13) สูตรอีเมลกลาง — รู้จัก telegram ('tg_…') ด้วย (เดิมได้ fb_tg_…)
+        $user = User::where('email', \App\Services\Fortune\FortuneRecipient::localEmailFor($platform, $platformUserId))->first();
         if ($user) {
             return $user;
         }
@@ -315,8 +315,8 @@ class FortuneAffiliateService
         ?FortuneReading $reading = null
     ): User {
         // กำหนด email ตาม platform
-        $emailPrefix = $platform === 'line' ? 'line_' : 'fb_';
-        $email = $emailPrefix.$platformUserId.'@thaiprompt.local';
+        // ✈️ (2026-09-13) สูตรอีเมลกลาง (line_ / tg_ / fb_) — ต้องตรงกับ findExistingUser()
+        $email = \App\Services\Fortune\FortuneRecipient::localEmailFor($platform, $platformUserId);
 
         // เตรียมข้อมูล base
         // 🔒 (2026-07-16) เดิม Hash::make('12345678') — บัญชีที่บอทสมัครให้ทุกใบรหัสเดียวกัน

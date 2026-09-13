@@ -126,5 +126,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\CheckBlockedIp::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // 🔐 (2026-09-13) ห้าม flash ความลับกลับลง session ตอน validation ไม่ผ่าน
+        //    (ค่าเริ่มต้นกันแค่ password — token บอท Telegram ที่เจ้าของกรอกในหน้าช่องทาง จะถูกเก็บ plaintext ใน session)
+        $exceptions->dontFlash(['telegram_bot_token']);
     })->create();

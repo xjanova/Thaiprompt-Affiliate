@@ -168,7 +168,8 @@ class FortuneAiFailureRecovery
      */
     protected function pushCustomerNotification(int $readingId, string $platform, ?string $userId): void
     {
-        if (empty($userId) || ! in_array($platform, ['line', 'facebook'], true)) {
+        // ✈️ (2026-09-13) + telegram (เส้นเดียวกับ FB)
+        if (empty($userId) || ! in_array($platform, ['line', 'facebook', 'telegram'], true)) {
             return;
         }
 
@@ -229,7 +230,8 @@ class FortuneAiFailureRecovery
                 // 🩹 (self-review H3) ต้องมี force_tag=true เพื่อ FB sendMessage บังคับ
                 //    messaging_type=MESSAGE_TAG ทันที (ไม่ลอง RESPONSE first ที่ fail past 24h)
                 //    เคสจริง: Job retry หลายชั่วโมง → ลูกค้าออกจาก 24h window → ต้อง MESSAGE_TAG
-                $fbService = new FacebookWebhookService($settings);
+                $fbService = \App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId, $settings)
+                    ?? new FacebookWebhookService($settings);
                 $fbService->sendMessage($userId, $message, [
                     'message_tag' => 'POST_PURCHASE_UPDATE',
                     'force_tag' => true,

@@ -253,7 +253,7 @@ class FortuneCelticCrossController extends Controller
             // 4. แจ้งลูกค้า (optional)
             if ($notify) {
                 $platform = $reading->platform
-                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $reading->platform_user_id ?? $reading->facebook_user_id) ? 'line' : 'facebook');
+                    ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($reading->platform_user_id ?? $reading->facebook_user_id)));
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
                 if (! empty($userId)) {
@@ -341,7 +341,7 @@ class FortuneCelticCrossController extends Controller
             // 3. แจ้งลูกค้า (optional)
             if ($notify) {
                 $platform = $reading->platform
-                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $reading->platform_user_id ?? $reading->facebook_user_id) ? 'line' : 'facebook');
+                    ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($reading->platform_user_id ?? $reading->facebook_user_id)));
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
                 if (! empty($userId)) {
@@ -423,7 +423,7 @@ class FortuneCelticCrossController extends Controller
         }
 
         $platform = $reading->platform
-            ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+            ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
         try {
             // 🧹 (2026-09-07) ลองผูก SMS ที่ค้างคิว admin ให้บิลนี้ก่อน โดยใช้ยอดที่ admin กรอกเป็นตัวตั้ง
@@ -604,7 +604,7 @@ class FortuneCelticCrossController extends Controller
             // แจ้งลูกค้า
             if ($notify) {
                 $platform = $reading->platform
-                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                    ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
                 $channelManager = new FortuneChannelManager($settings);
                 $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
@@ -763,7 +763,7 @@ class FortuneCelticCrossController extends Controller
                     $pushNote = ' (push ไม่ได้ — ไม่มี user_id)';
                 } else {
                     $platform = $reading->platform
-                        ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                        ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ((string) $userId)));
                     $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
                     $channelManager = new FortuneChannelManager($settings);
 
@@ -881,7 +881,7 @@ class FortuneCelticCrossController extends Controller
         }
 
         $platform = $reading->platform
-            ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+            ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
         Log::info('Celtic admin ask AI: เริ่ม (AJAX sync)', [
             'reading_id' => $reading->id,
@@ -1054,7 +1054,7 @@ class FortuneCelticCrossController extends Controller
 
             try {
                 $platform = $r->platform
-                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $r->platform_user_id ?? $r->facebook_user_id ?? '') ? 'line' : 'facebook');
+                    ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($r->platform_user_id ?? $r->facebook_user_id ?? '')));
                 $userId = $r->platform_user_id ?? $r->facebook_user_id;
 
                 if (empty($userId)) {

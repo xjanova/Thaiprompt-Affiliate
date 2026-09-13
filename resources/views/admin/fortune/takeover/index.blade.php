@@ -30,7 +30,7 @@
                 เทคโอเวอร์ — แม่หมอคุยแทน AI 🎯
             </h1>
             <p class="tp-muted" style="font-size:13px; margin:6px 0 0; max-width:560px;">
-                กดเทคโอเวอร์เพื่อให้ AI หยุด แล้วแอดมินคุยเองได้ทั้ง LINE และ Facebook
+                กดเทคโอเวอร์เพื่อให้ AI หยุด แล้วแอดมินคุยเองได้ทั้ง LINE, Facebook และ Telegram
             </p>
         </div>
         <div style="display:flex; align-items:center; gap:9px;">
@@ -137,6 +137,7 @@
                         <option value="">ทุก Platform</option>
                         <option value="line" @selected($platform === 'line')>💚 LINE</option>
                         <option value="facebook" @selected($platform === 'facebook')>🔵 Facebook</option>
+                        <option value="telegram" @selected($platform === 'telegram')>✈️ Telegram</option>
                     </select>
                 </div>
             </div>
@@ -191,6 +192,10 @@
                                 @if($reading->platform === 'line')
                                     <span class="tp-pill" style="color:#5aa07e; background:rgba(90,160,126,.12);">
                                         💚 LINE
+                                    </span>
+                                @elseif($reading->platform === 'telegram')
+                                    <span class="tp-pill" style="color:#4a9fd0; background:rgba(74,159,208,.12);">
+                                        ✈️ Telegram
                                     </span>
                                 @else
                                     <span class="tp-pill" style="color:#5689b8; background:rgba(86,137,184,.12);">
@@ -305,7 +310,7 @@
                     <div class="tp-well" style="padding:14px;">
                         <div style="font-weight:600; color:var(--ink); font-size:14px;" x-text="banForm.name"></div>
                         <div class="tp-num" style="font-size:12px; color:var(--ink2); margin-top:3px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-                            <span x-text="banForm.platform === 'line' ? '💚 LINE' : '🔵 Facebook'"></span>
+                            <span x-text="banForm.platform === 'line' ? '💚 LINE' : (banForm.platform === 'telegram' ? '✈️ Telegram' : '🔵 Facebook')"></span>
                             <span style="opacity:.6;">•</span>
                             <span x-text="banForm.userId"></span>
                         </div>

@@ -109,7 +109,7 @@ class FortuneCelticReset extends Command
             // 5. แจ้งลูกค้า
             if (! $noNotify) {
                 $platform = $reading->platform
-                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $reading->platform_user_id ?? $reading->facebook_user_id) ? 'line' : 'facebook');
+                    ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($reading->platform_user_id ?? $reading->facebook_user_id)));
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
                 if (! empty($userId)) {

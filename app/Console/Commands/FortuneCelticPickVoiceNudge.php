@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
-use App\Services\FacebookWebhookService;
 use App\Services\FortuneSystemVoiceService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -46,11 +45,11 @@ class FortuneCelticPickVoiceNudge extends Command
         }
 
         $dry = (bool) $this->option('dry-run');
-        $fb = app(FacebookWebhookService::class);
         $sent = 0;
 
         $readings = FortuneReading::where('conversation_status', FortuneReading::STATUS_CELTIC_PICKING)
-            ->where('platform', 'facebook')
+            // ✈️ (2026-09-13) + Telegram (เสียงขึ้นเป็นข้อความเสียง) · LINE ไม่ส่ง (โควตา push)
+            ->whereIn('platform', ['facebook', 'telegram'])
             ->where('is_paid', true)
             ->where('updated_at', '>=', now()->subHours(2)) // เฉพาะที่ยัง active
             ->orderBy('id')
@@ -88,7 +87,8 @@ class FortuneCelticPickVoiceNudge extends Command
                     continue;
                 }
 
-                if ($fb->sendAudio($userId, $voiceUrl)) {
+                $fb = \App\Services\Fortune\FortuneMessengerFactory::sender((string) $reading->platform, (string) $userId, $settings);
+                if ($fb !== null && $fb->sendAudio($userId, $voiceUrl)) {
                     $reading->setConversationState('pick_voice_nudged_count', $picked);
                     $sent++;
                     Log::info('🎧 Celtic pick-voice nudge sent', [

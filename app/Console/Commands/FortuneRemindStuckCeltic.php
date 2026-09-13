@@ -109,7 +109,7 @@ class FortuneRemindStuckCeltic extends Command
             //   จาก !empty(facebook_user_id) (LINE id ก็อยู่คอลัมน์นั้น = จริงเสมอ)
             $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id ?: '');
             $platform = $reading->platform
-                ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+                ?: (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
             if ($userId === '') {
                 $this->warn("  #{$reading->id} skip — no user_id");
@@ -218,8 +218,9 @@ class FortuneRemindStuckCeltic extends Command
      */
     protected function sendReminder(string $platform, string $userId, string $message): bool
     {
-        if ($platform === 'facebook') {
-            return app(FacebookWebhookService::class)->sendMessage(
+        // ✈️ (2026-09-13) Telegram ใช้เส้นเดียวกับ FB
+        if (in_array($platform, ['facebook', 'telegram'], true)) {
+            return (\App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId) ?? app(FacebookWebhookService::class))->sendMessage(
                 $userId,
                 $message,
                 [

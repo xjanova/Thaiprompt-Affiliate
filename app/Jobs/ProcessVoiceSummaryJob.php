@@ -296,7 +296,9 @@ class ProcessVoiceSummaryJob implements ShouldQueue
     protected function pushToFacebook(FortuneReading $reading, string $intro, array $result, FortuneTellingSetting $settings): bool
     {
         try {
-            $fbService = new FacebookWebhookService($settings);
+            // ✈️ (2026-09-13) Telegram ใช้เส้นนี้ด้วย (sendAudio → ข้อความเสียง) — ห้ามยิง Graph API ด้วย id 'tg_…'
+            $fbService = \App\Services\Fortune\FortuneMessengerFactory::sender($this->platform, $this->userId, $settings)
+                ?? new FacebookWebhookService($settings);
 
             // intro + audio: sendMessage/sendAudio ลอง RESPONSE ก่อน (อยู่ใน 24 ชม.) → ผ่านชัวร์
             //   ⚠️ ห้าม force MESSAGE_TAG=POST_PURCHASE_UPDATE (FB เลิกแท็กแล้ว subcode 1893061 → audio ตก)

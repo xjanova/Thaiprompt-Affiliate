@@ -286,6 +286,18 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      */
     protected function isMisroutedLineRecipient(?string $recipientId, string $method = ''): bool
     {
+        // ✈️ (2026-09-13) ตาข่ายชั้นสุดท้าย: id ลูกค้า Telegram ('tg_…') หลุดเข้ามาเส้น FB = ต้นทางแยกช่องทางผิด
+        //    ตัดทิ้งพร้อม log ดัง ๆ (ห้ามยิง Graph API ด้วย id ที่ไม่ใช่ PSID) — แก้ต้นทางให้ใช้ FortuneMessengerFactory
+        if (FortuneRecipient::looksLikeTelegramUserId($recipientId)) {
+            Log::error('🛑 ผู้รับเป็นลูกค้า Telegram แต่ถูกส่งเข้า Facebook Send API — ตัดทิ้ง', [
+                'recipient' => $recipientId,
+                'method' => $method,
+                'hint' => 'ใช้ FortuneMessengerFactory::sender($platform, $userId) หรือ FortuneChannelManager::sendResponse()',
+            ]);
+
+            return true;
+        }
+
         if (! FortuneRecipient::looksLikeLineUserId($recipientId)) {
             return false;
         }
