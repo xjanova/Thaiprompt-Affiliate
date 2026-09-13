@@ -17,10 +17,13 @@ use Tests\TestCase;
  * 🏬 (2026-09-13) ระบบหลายเพจ — ผู้รับคนที่ 2+ ต้องได้ token ของเพจตัวเอง
  *
  * บั๊กเดิม: cron (bubble-recover / celtic-redeliver / summary-redeliver / remind-stuck-celtic)
- * และ queue worker สร้าง FacebookWebhookService ใหม่ต่อผู้รับหนึ่งคน
+ * สร้าง FacebookWebhookService ใหม่ต่อผู้รับหนึ่งคน
  *   ตัวแรก bind เพจ A แบบ lazy (static) → ตัวที่สองเห็นว่า "มี context + ตัวเองไม่ได้ bind"
  *   → เข้าใจผิดว่าเจ้าของงานตั้งไว้ → ไม่หาเพจใหม่ → ส่งหาลูกค้าเพจ B ด้วย token ของเพจ A
  *   → Graph 400 → คำตอบ Celtic / คำทำนายที่ลูกค้าจ่ายเงินแล้วหายเงียบ
+ *
+ * ช่องเดียวกันทาง queue: dispatch job ตอน context เป็นของเดา → payload พก fortune_page_id ไป
+ *   → Queue::before bind เป็นของจริง → FB service ใน job ไม่หาเพจของผู้รับตัวเอง
  *
  * @group fortune-multipage
  */
@@ -157,6 +160,41 @@ class FortuneMultiPageRecipientTokenTest extends TestCase
         });
 
         $this->assertTrue(FortunePageContext::isLazilyBound(), 'ออกจาก run() แล้วต้องคืนสถานะ "ของเดา" เดิม');
+    }
+
+    public function test_job_dispatched_under_a_guessed_page_resolves_its_own_recipient(): void
+    {
+        config(['queue.default' => 'sync']);
+
+        // cron ส่งหาลูกค้าเพจ A ก่อน → context เพจ A (ของเดา) ค้างอยู่ตอน dispatch งานของลูกค้าเพจ B
+        (new FacebookWebhookService)->sendMessage(self::PSID_A, 'คำตอบไพ่ของลูกค้าเพจ A');
+        $this->assertTrue(FortunePageContext::isLazilyBound());
+
+        $psidB = self::PSID_B;
+        dispatch(function () use ($psidB) {
+            (new FacebookWebhookService)->sendMessage($psidB, 'คำตอบไพ่ของลูกค้าเพจสาขา B (ใน job)');
+        });
+
+        $this->assertSame(['TOKEN_B'], array_values(array_unique($this->tokensByRecipient()[self::PSID_B] ?? [])),
+            'job ที่ dispatch ตอน context เป็นของเดา ต้องหาเพจของผู้รับตัวเองใหม่ ไม่ตรึงเพจของคนก่อน');
+    }
+
+    public function test_job_dispatched_under_an_owner_set_page_keeps_that_page(): void
+    {
+        config(['queue.default' => 'sync']);
+
+        // webhook ของเพจ B ตั้งสาขาเอง → job ที่ dispatch ต่อต้องได้เพจ B แบบของจริง (พฤติกรรมเดิม)
+        FortunePageContext::set(FortunePage::where('code', 'page-b')->first());
+
+        dispatch(function () {
+            cache()->put('mp_test_job_ctx', [
+                'page' => FortunePageContext::current()?->code,
+                'lazy' => FortunePageContext::isLazilyBound(),
+            ], 60);
+        });
+        $seen = cache()->get('mp_test_job_ctx');
+
+        $this->assertSame(['page' => 'page-b', 'lazy' => false], $seen);
     }
 
     public function test_bubble_recover_cron_sends_second_recipient_with_its_own_page_token(): void
