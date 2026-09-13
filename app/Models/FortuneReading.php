@@ -747,6 +747,62 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🏷️ (2026-09-13) เงื่อนไข SQL ของ isCancelled() — **ต้องตรงกับ isCancelled() ทุกข้อ**
+     *
+     * บิลยกเลิกไม่มีสถานะของตัวเอง = completed + ยังไม่จ่าย + มี cancellation_reason เป็นข้อความใน conversation_state
+     * กับดักที่เจอบน prod (MariaDB 10.6):
+     *   - คีย์ cancellation_reason ที่ค่าเป็น JSON null — JSON_EXTRACT คืนสตริง "null" ไม่ใช่ SQL NULL
+     *     `whereNotNull('conversation_state->cancellation_reason')` จึงนับผิดเป็นบิลยกเลิก ⇒ ต้องเช็ค JSON_TYPE = 'STRING'
+     *   - บิลที่มีเหตุผลยกเลิกแต่จ่ายแล้วทีหลัง (29 ใบ) — isCancelled() ไม่นับ ⇒ ต้องมี is_paid = 0
+     *   - COALESCE ทุกตัว ให้เงื่อนไขเป็นจริง/เท็จเสมอ ไม่งั้น NOT (...) บนแถว state ว่างจะได้ NULL แล้วแถวหาย
+     *
+     * @param  string  $table  ชื่อตาราง (กันชื่อคอลัมน์ชนเวลา join)
+     */
+    public static function cancelledSql(string $table = 'fortune_readings'): string
+    {
+        $reason = "JSON_EXTRACT({$table}.conversation_state, '$.cancellation_reason')";
+
+        return "({$table}.conversation_status = '".self::STATUS_COMPLETED."'"
+            ." AND COALESCE({$table}.is_paid, 0) = 0"
+            ." AND COALESCE(JSON_TYPE({$reason}), '') = 'STRING'"
+            ." AND COALESCE(JSON_UNQUOTE({$reason}), '') <> '')";
+    }
+
+    /**
+     * Scope: เฉพาะบิลที่ถูกยกเลิก (เงื่อนไขเดียวกับ isCancelled())
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  array<int, string>|null  $reasons  กรองเฉพาะเหตุผลยกเลิกที่ระบุ (null = ทุกเหตุผล)
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeCancelled($query, ?array $reasons = null)
+    {
+        $table = $query->getModel()->getTable();
+        $query->whereRaw(self::cancelledSql($table));
+
+        if (! empty($reasons)) {
+            $placeholders = implode(', ', array_fill(0, count($reasons), '?'));
+            $query->whereRaw(
+                "JSON_UNQUOTE(JSON_EXTRACT({$table}.conversation_state, '$.cancellation_reason')) IN ({$placeholders})",
+                array_values($reasons)
+            );
+        }
+
+        return $query;
+    }
+
+    /**
+     * Scope: ตัดบิลที่ถูกยกเลิกออก — ใช้คู่กับ completed เพื่อได้ "ส่งคำทำนายแล้ว" แบบเดียวกับ Warroom
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeNotCancelled($query)
+    {
+        return $query->whereRaw('NOT '.self::cancelledSql($query->getModel()->getTable()));
+    }
+
+    /**
      * Scope: เฉพาะของผู้ใช้ Facebook คนใดคนหนึ่ง
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
@@ -1266,6 +1322,10 @@ class FortuneReading extends Model
             // 🛡️ (2026-08-12) ลูกค้าจ่ายบิลอื่นแทน → reconcile ปิดบิลนี้ (ห้ามอนุมัติซ้ำ = เก็บเงินซ้ำ)
             //   เดิมตกไป default "ไม่ทราบสาเหตุ" → แอดมินไม่รู้ว่ากดไม่ได้เพราะอะไร
             'superseded_by_paid' => '⛔ ลูกค้าจ่ายบิลอื่นแทนแล้ว (ห้ามอนุมัติซ้ำ)',
+            // 🏷️ (2026-09-13) เหตุผลที่ระบบเขียนจริงแต่ตกไป "ไม่ทราบสาเหตุ" — prod มี 12 + 1 ใบ (ดู FortuneConversationService)
+            'user_rejected_question' => 'ลูกค้าปฏิเสธคำถาม (ขอเริ่มใหม่)',
+            'package_switch' => 'ลูกค้าเปลี่ยนแพ็กเกจ (ออกบิลใหม่แทน)',
+            'provisional_replaced_by_deep' => 'บิลชั่วคราว — ลูกค้าจ่ายบิล 39 แทน',
             default => 'ยกเลิก (ไม่ทราบสาเหตุ)',
         };
     }

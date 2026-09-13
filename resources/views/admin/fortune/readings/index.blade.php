@@ -206,27 +206,21 @@
                     สถานะ Conversation
                 </label>
                 <div class="tp-well tp-input" style="padding:0;">
+                    {{-- 🏷️ (2026-09-13) กลุ่มตามขั้นแบบ Warroom (App\Support\FortuneFunnelStage::filterOptions)
+                         ค่าที่ส่งยังเป็นรหัสดิบ · "บิลยกเลิก" เป็นค่าพิเศษที่ตัวควบคุมแปลงเป็นเงื่อนไข isCancelled() --}}
+                    @php
+                        $selectedConversationStatus = (string) request('conversation_status', '');
+                        $conversationStatusGroups = \App\Support\FortuneFunnelStage::filterOptions();
+                    @endphp
                     <select name="conversation_status" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
                         <option value="">ทั้งหมด</option>
-                        <option value="new" {{ request('conversation_status') === 'new' ? 'selected' : '' }}>🆕 New</option>
-                        <option value="basic_done" {{ request('conversation_status') === 'basic_done' ? 'selected' : '' }}>🔮 Basic Done</option>
-                        <option value="collecting_birthdate" {{ request('conversation_status') === 'collecting_birthdate' ? 'selected' : '' }}>📅 Collecting Birthdate</option>
-                        <option value="collecting_questions" {{ request('conversation_status') === 'collecting_questions' ? 'selected' : '' }}>❓ Collecting Questions</option>
-                        <option value="collecting_tarot" {{ request('conversation_status') === 'collecting_tarot' ? 'selected' : '' }}>🃏 Collecting Tarot</option>
-                        <option value="awaiting_payment_method" {{ request('conversation_status') === 'awaiting_payment_method' ? 'selected' : '' }}>💳 Awaiting Payment Method</option>
-                        <option value="pending_payment" {{ request('conversation_status') === 'pending_payment' ? 'selected' : '' }}>⏳ Pending Payment</option>
-                        <option value="pending_stripe_payment" {{ request('conversation_status') === 'pending_stripe_payment' ? 'selected' : '' }}>💳 Pending Stripe</option>
-                        <option value="celtic_pending_payment" {{ request('conversation_status') === 'celtic_pending_payment' ? 'selected' : '' }}>💎 Celtic Pending Payment</option>
-                        <option value="celtic_picking" {{ request('conversation_status') === 'celtic_picking' ? 'selected' : '' }}>💎 Celtic Picking</option>
-                        <option value="celtic_awaiting_question" {{ request('conversation_status') === 'celtic_awaiting_question' ? 'selected' : '' }}>💎 Celtic Awaiting Q</option>
-                        <option value="celtic_generating" {{ request('conversation_status') === 'celtic_generating' ? 'selected' : '' }}>💎 Celtic Generating</option>
-                        <option value="celtic_qa_prompt" {{ request('conversation_status') === 'celtic_qa_prompt' ? 'selected' : '' }}>💎 Celtic Q&A</option>
-                        <option value="free_predicted" {{ request('conversation_status') === 'free_predicted' ? 'selected' : '' }}>🎁 Free Predicted</option>
-                        <option value="free_declined" {{ request('conversation_status') === 'free_declined' ? 'selected' : '' }}>🎁 Free Declined</option>
-                        <option value="paid" {{ request('conversation_status') === 'paid' ? 'selected' : '' }}>✅ Paid</option>
-                        <option value="completed" {{ request('conversation_status') === 'completed' ? 'selected' : '' }}>🏁 Completed</option>
-                        <option value="cancelled" {{ request('conversation_status') === 'cancelled' ? 'selected' : '' }}>❌ Cancelled</option>
-                        <option value="expired" {{ request('conversation_status') === 'expired' ? 'selected' : '' }}>⌛ Expired</option>
+                        @foreach($conversationStatusGroups as $statusGroup)
+                            <optgroup label="{{ $statusGroup['label'] }}">
+                                @foreach($statusGroup['options'] as $statusValue => $statusName)
+                                    <option value="{{ $statusValue }}" {{ $selectedConversationStatus === $statusValue ? 'selected' : '' }}>{{ $statusName }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
                     </select>
                 </div>
             </div>

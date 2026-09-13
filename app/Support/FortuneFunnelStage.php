@@ -85,6 +85,50 @@ final class FortuneFunnelStage
         FortuneReading::STATUS_FREE_DECLINED => 'declined',
     ];
 
+    /**
+     * ชื่อไทยของสถานะดิบแต่ละตัว — ใช้ในตัวกรองหน้ารายการ (ค่าที่ส่งไปยังเป็นรหัสดิบเหมือนเดิม)
+     *
+     * ข้อความตรงกับบรรทัดรายละเอียดของ Warroom (stageDetailOf) เท่าที่มี
+     *
+     * @var array<string, string>
+     */
+    public const STATUS_NAMES = [
+        FortuneReading::STATUS_NEW => 'ทักเข้ามาใหม่',
+        FortuneReading::STATUS_AWAITING_CONFIRMATION => 'รอยืนยัน',
+        FortuneReading::STATUS_TIER_CHOICE => 'กำลังเลือก 39/99',
+        FortuneReading::STATUS_DISCOVERY_CHAT => 'คุยเก็บเรื่อง',
+        FortuneReading::STATUS_DISCOVERY_CONFIRM => 'รอยืนยันเรื่องที่ถาม',
+        FortuneReading::STATUS_COLLECTING_BIRTHDATE => 'กำลังขอวันเกิด',
+        FortuneReading::STATUS_COLLECTING_QUESTIONS => 'กำลังขอคำถาม',
+        FortuneReading::STATUS_COLLECTING_TAROT => 'จั่วไพ่ก่อนจ่าย',
+        FortuneReading::STATUS_AWAITING_PAYMENT_METHOD => 'เลือกวิธีจ่าย (QR/บัตร)',
+        FortuneReading::STATUS_PENDING_PAYMENT => 'รอจ่าย 39 (Deep)',
+        FortuneReading::STATUS_CELTIC_PENDING_PAYMENT => 'รอจ่าย 99 (Celtic)',
+        FortuneReading::STATUS_PENDING_STRIPE_PAYMENT => 'รอจ่ายผ่านบัตร (Stripe)',
+        FortuneReading::STATUS_PAID => 'จ่ายแล้ว · รอส่งคำทำนาย',
+        FortuneReading::STATUS_CELTIC_PICKING => 'กำลังเปิดไพ่',
+        FortuneReading::STATUS_CELTIC_AWAITING_QUESTION => 'เปิดไพ่ครบ · รอคำถาม',
+        FortuneReading::STATUS_CELTIC_QA_PROMPT => 'ตอบแล้ว · ถามต่อไหม',
+        FortuneReading::STATUS_CELTIC_GENERATING => 'กำลังตอบคำถาม',
+        FortuneReading::STATUS_FREE_PREDICTED => 'ดูฟรีแล้ว · รอตัดสินใจซื้อ',
+        FortuneReading::STATUS_BASIC_DONE => 'คำทำนายพื้นฐานเสร็จ',
+        FortuneReading::STATUS_COMPLETED => 'จบแล้ว (ไม่รวมบิลยกเลิก)',
+        FortuneReading::STATUS_FREE_DECLINED => 'ไม่ซื้อต่อหลังดูฟรี',
+    ];
+
+    /**
+     * ค่าตัวกรองพิเศษที่ไม่ใช่สถานะในฐานข้อมูล — FortuneReadingsController แปลงเป็นเงื่อนไขบิลยกเลิก
+     *
+     * @var array<string, string>
+     */
+    public const CANCELLED_FILTERS = [
+        'cancelled' => 'บิลยกเลิกทั้งหมด',
+        'expired' => 'หมดเวลา · ระบบยกเลิก',
+    ];
+
+    /** ลำดับกลุ่มในตัวกรอง = ลำดับของกรวย (ไม่ใช่ลำดับความสำคัญแบบการ์ด Warroom) */
+    private const FILTER_GROUP_ORDER = ['intake', 'choosing', 'collecting', 'deciding', 'waiting', 'celtic', 'predicting', 'upsell', 'delivered', 'declined'];
+
     /** เส้นทางบิล Celtic 99 — ใช้วาด timeline หน้ารายละเอียด */
     private const PATH_CELTIC = ['intake', 'choosing', 'deciding', 'celtic', 'predicting', 'delivered'];
 
@@ -241,6 +285,34 @@ final class FortuneFunnelStage
         }
 
         return $path;
+    }
+
+    /**
+     * ตัวเลือกของตัวกรอง "สถานะ Conversation" หน้ารายการ — จัดกลุ่มตามขั้นแบบ Warroom
+     *
+     * ค่าที่ส่งไป = รหัสสถานะดิบ (ตัวควบคุมค้นคอลัมน์ตรง) ยกเว้นกลุ่มบิลยกเลิกที่เป็นค่าพิเศษ
+     *
+     * @return array<int, array{label: string, options: array<string, string>}>
+     */
+    public static function filterOptions(): array
+    {
+        $groups = [];
+        foreach (self::FILTER_GROUP_ORDER as $stage) {
+            $options = [];
+            foreach (self::STATUS_TO_STAGE as $status => $statusStage) {
+                if ($statusStage === $stage) {
+                    $options[$status] = self::STATUS_NAMES[$status] ?? $status;
+                }
+            }
+            if ($options !== []) {
+                $meta = self::meta($stage);
+                $groups[] = ['label' => $meta['icon'].' '.$meta['label'], 'options' => $options];
+            }
+        }
+
+        $groups[] = ['label' => '❌ บิลยกเลิก', 'options' => self::CANCELLED_FILTERS];
+
+        return $groups;
     }
 
     /**

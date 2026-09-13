@@ -121,6 +121,48 @@ class FortuneFunnelStageTest extends TestCase
     }
 
     /**
+     * 🔎 ตัวกรองหน้ารายการ: ทุกสถานะต้องมีให้เลือกครั้งเดียว มีชื่อไทย + มีตัวเลือกบิลยกเลิก
+     *    (เดิมเป็นลิสต์เขียนมือ ขาด tier_choice / discovery_* / awaiting_confirmation)
+     */
+    #[Test]
+    public function filter_options_cover_every_status_once_with_thai_names(): void
+    {
+        $values = [];
+        foreach (FortuneFunnelStage::filterOptions() as $group) {
+            $this->assertNotEmpty($group['options'], $group['label']);
+            foreach ($group['options'] as $value => $name) {
+                $values[] = $value;
+                $this->assertNotSame($value, $name, "สถานะ {$value} ยังไม่มีชื่อไทย");
+            }
+        }
+
+        $this->assertSame(count($values), count(array_unique($values)), 'ตัวเลือกซ้ำ');
+        $expected = [...array_keys(FortuneFunnelStage::STATUS_TO_STAGE), ...array_keys(FortuneFunnelStage::CANCELLED_FILTERS)];
+        sort($expected);
+        sort($values);
+        $this->assertSame($expected, $values);
+        $this->assertSame([], array_diff(array_keys(FortuneFunnelStage::STATUS_NAMES), array_keys(FortuneFunnelStage::STATUS_TO_STAGE)));
+    }
+
+    /**
+     * เหตุผลยกเลิกที่ระบบเขียนจริง ต้องมีป้ายของตัวเอง ไม่ตกไป "ไม่ทราบสาเหตุ"
+     */
+    #[Test]
+    public function real_cancellation_reasons_have_labels(): void
+    {
+        foreach (['user_rejected_question', 'package_switch', 'provisional_replaced_by_deep'] as $reason) {
+            $this->assertNotSame('ยกเลิก (ไม่ทราบสาเหตุ)', FortuneReading::getCancellationReasonLabel($reason), $reason);
+
+            $r = $this->reading([
+                'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                'amount_paid' => 39,
+                'conversation_state' => ['cancellation_reason' => $reason],
+            ]);
+            $this->assertSame(FortuneReading::getCancellationReasonLabel($reason), FortuneFunnelStage::detail($r));
+        }
+    }
+
+    /**
      * 🃏 สถานะ Celtic ทุกตัวต้องติดขั้นปัจจุบันบน timeline + บรรทัดรายละเอียดเหมือน Warroom
      */
     #[Test]
