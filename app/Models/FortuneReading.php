@@ -803,6 +803,31 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🔎 (2026-09-13) Scope: ตัวกรอง "สถานะ Conversation" ของหน้ารายการแอดมิน
+     *
+     * ค่าพิเศษ (ไม่ใช่สถานะในคอลัมน์ตรง ๆ):
+     *   - 'cancelled' = บิลยกเลิกแบบปัจจุบัน (isCancelled) **+ สถานะดิบ 'cancelled'**
+     *                   ที่แอป SMS Checker เขียนตอนกดปฏิเสธบิล (SmsPaymentController — ยังเขียนอยู่ prod มี 45 ใบ)
+     *   - 'expired'   = ระบบยกเลิกเพราะไม่จ่ายในเวลา (auto_expired / auto_expired_grace)
+     *                   **+ สถานะดิบ 'expired'** จากโค้ดเก่า พ.ค. 2569 (ไม่มีใครเขียนแล้ว prod มี 15 ใบ)
+     *                   เก็บสถานะดิบไว้ด้วย เพราะตัวกรองเดิมค้นเจอแถวพวกนี้ — ตัดทิ้ง = แถวหายจากจอ
+     *   - 'completed' = จบแล้วที่ไม่ใช่บิลยกเลิก (= "ส่งคำทำนายแล้ว" ของ Warroom)
+     *   - อื่น ๆ     = ค้นคอลัมน์ตรง
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFilterConversationStatus($query, string $value)
+    {
+        return match ($value) {
+            'cancelled' => $query->where(fn ($q) => $q->cancelled()->orWhere('conversation_status', 'cancelled')),
+            'expired' => $query->where(fn ($q) => $q->cancelled(['auto_expired', 'auto_expired_grace'])->orWhere('conversation_status', 'expired')),
+            self::STATUS_COMPLETED => $query->where('conversation_status', self::STATUS_COMPLETED)->notCancelled(),
+            default => $query->where('conversation_status', $value),
+        };
+    }
+
+    /**
      * Scope: เฉพาะของผู้ใช้ Facebook คนใดคนหนึ่ง
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query

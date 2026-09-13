@@ -77,4 +77,26 @@ class FortuneReadingCancelledScopeTest extends TestCase
         );
         $this->assertNotContains($otherStatus, $cancelled);
     }
+
+    /**
+     * ตัวกรองหน้ารายการ: บิลยกเลิกแบบ completed + สถานะดิบ 'cancelled' (แอป SMS Checker ปฏิเสธบิล)
+     * + สถานะดิบ 'expired' ของโค้ดเก่า ต้องค้นเจอครบ — ตัวกรองเดิมค้นเจอแถวสถานะดิบ ห้ามทำหาย
+     */
+    #[Test]
+    public function admin_filter_values_find_every_cancelled_shape(): void
+    {
+        $expired = $this->makeReading(FortuneReading::STATUS_COMPLETED, false, ['cancellation_reason' => 'auto_expired']);
+        $byCustomer = $this->makeReading(FortuneReading::STATUS_COMPLETED, false, ['cancellation_reason' => 'user_cancelled']);
+        $rejectedFromApp = $this->makeReading('cancelled', false, null);
+        $legacyExpired = $this->makeReading('expired', true, null);
+        $delivered = $this->makeReading(FortuneReading::STATUS_COMPLETED, true, null);
+        $pending = $this->makeReading(FortuneReading::STATUS_PENDING_PAYMENT, false, null);
+
+        $ids = fn (string $value) => FortuneReading::filterConversationStatus($value)->orderBy('id')->pluck('id')->all();
+
+        $this->assertSame([$expired, $byCustomer, $rejectedFromApp], $ids('cancelled'));
+        $this->assertSame([$expired, $legacyExpired], $ids('expired'));
+        $this->assertSame([$delivered], $ids(FortuneReading::STATUS_COMPLETED));
+        $this->assertSame([$pending], $ids(FortuneReading::STATUS_PENDING_PAYMENT));
+    }
 }

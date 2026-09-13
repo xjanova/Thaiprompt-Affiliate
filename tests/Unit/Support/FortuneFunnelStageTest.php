@@ -213,17 +213,31 @@ class FortuneFunnelStageTest extends TestCase
     }
 
     /**
-     * สถานะที่ระบบไม่ได้ใช้จริง ('cancelled' / 'expired' ที่ฟอร์มแก้ไขตั้งได้) → เดาจากรูปบิลเหมือน Warroom
+     * สถานะที่ไม่อยู่ในตาราง ('expired' ของโค้ดเก่า / ค่าแปลกจากฟอร์มแก้ไข) → เดาจากรูปบิลเหมือน Warroom
      */
     #[Test]
     public function unknown_status_falls_back_to_bill_shape(): void
     {
         $this->assertSame('deciding', FortuneFunnelStage::of($this->reading(['conversation_status' => 'expired', 'amount_paid' => 39])));
-        $this->assertSame('upsell', FortuneFunnelStage::of($this->reading(['conversation_status' => 'cancelled', 'ai_response' => 'ไพ่ฟรี'])));
-        $this->assertSame('waiting', FortuneFunnelStage::of($this->reading(['conversation_status' => 'cancelled', 'is_paid' => true, 'amount_paid' => 39])));
-        $this->assertSame('celtic', FortuneFunnelStage::of($this->reading(['conversation_status' => 'cancelled', 'is_paid' => true, 'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS])));
-        $this->assertSame('delivered', FortuneFunnelStage::of($this->reading(['conversation_status' => 'cancelled', 'is_paid' => true, 'ai_response' => 'คำทำนาย'])));
-        $this->assertSame('intake', FortuneFunnelStage::of($this->reading(['conversation_status' => 'cancelled'])));
+        $this->assertSame('upsell', FortuneFunnelStage::of($this->reading(['conversation_status' => 'mystery', 'ai_response' => 'ไพ่ฟรี'])));
+        $this->assertSame('waiting', FortuneFunnelStage::of($this->reading(['conversation_status' => 'expired', 'is_paid' => true, 'amount_paid' => 39])));
+        $this->assertSame('celtic', FortuneFunnelStage::of($this->reading(['conversation_status' => 'mystery', 'is_paid' => true, 'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS])));
+        $this->assertSame('delivered', FortuneFunnelStage::of($this->reading(['conversation_status' => 'expired', 'is_paid' => true, 'ai_response' => 'คำทำนาย'])));
+        $this->assertSame('intake', FortuneFunnelStage::of($this->reading(['conversation_status' => 'mystery'])));
+    }
+
+    /**
+     * 🚫 แอป SMS Checker กดปฏิเสธบิล → เขียนสถานะดิบ 'cancelled' (ยังเขียนอยู่ prod มี 45 ใบ)
+     *    เดิมตกไปเดาจากรูปบิลได้ "รอชำระเงิน" ทั้งที่แอดมินปฏิเสธไปแล้ว
+     */
+    #[Test]
+    public function bill_rejected_from_sms_checker_is_cancelled(): void
+    {
+        $rejected = $this->reading(['conversation_status' => FortuneFunnelStage::REJECTED_STATUS, 'amount_paid' => 39]);
+
+        $this->assertSame('cancelled_system', FortuneFunnelStage::of($rejected));
+        $this->assertSame('ปฏิเสธบิลจากแอป SMS Checker', FortuneFunnelStage::detail($rejected));
+        $this->assertSame(['intake', 'choosing', 'deciding', 'cancelled_system'], FortuneFunnelStage::path($rejected));
     }
 
     /**
