@@ -130,7 +130,7 @@ final class FortuneFunnelStage
      * สถานะดิบ "cancelled" — แอป SMS Checker กดปฏิเสธบิล (SmsPaymentController) ยังเขียนอยู่จริง · prod มี 45 ใบ
      *
      * ไม่อยู่ใน FortuneReading::STATUS_* และ isCancelled() ไม่นับ (เช็คแค่ completed) ⇒ เดิมตกไปเดาจากรูปบิล
-     * ได้ "รอชำระเงิน" ทั้งที่แอดมินปฏิเสธบิลไปแล้ว — ⚠️ Warroom (chat.ts CS_STAGE) ยังไม่มีสถานะนี้ ต้องเพิ่มคู่กัน
+     * ได้ "รอชำระเงิน" ทั้งที่แอดมินปฏิเสธบิลไปแล้ว — Warroom แก้คู่กันแล้ว (chat.ts isRejectedBill, 2026-09-13)
      */
     public const REJECTED_STATUS = 'cancelled';
 

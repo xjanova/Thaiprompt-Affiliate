@@ -217,6 +217,31 @@
                 </p>
             </div>
 
+            {{-- ───── ✦ แต่งหัวข้อคำทำนาย (2026-09-13) ───── --}}
+            <div style="margin-top:18px;">
+                <h3 style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px;">
+                    ✦ แต่งหัวข้อคำทำนายบน Facebook
+                </h3>
+
+                <p class="tp-muted" style="font-size:12px;line-height:1.7;margin-bottom:14px;">
+                    หัวข้อ เช่น 💞 ความรัก จะขึ้นเป็น <strong>【 💞 ความรัก 】</strong> ติดกับเนื้อหา
+                    และคั่นแต่ละหัวข้อด้วยเส้นประสั้น ┈┈┈┈┈┈┈┈┈┈ — ใช้กับคำทำนายที่มีหลายหัวข้อเท่านั้น
+                    (คำตอบสั้นที่ไม่มีหัวข้อส่งตามเดิมทุกตัวอักษร · LINE ไม่ถูกแตะ)
+                    <br>
+                    Messenger ทำตารางไม่ได้ (ตัวอักษรกว้างไม่เท่ากัน สระ/วรรณยุกต์ไทยไม่กินที่) จึงแต่งได้แค่หัวข้อกับเส้นคั่น
+                </p>
+
+                <label class="tp-inset-sm" style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:12px;cursor:pointer;max-width:520px;">
+                    <input type="checkbox" name="fortune_messenger_format_fb" value="1"
+                           @checked($settings->fortune_messenger_format_fb ?? true)
+                           style="width:16px;height:16px;accent-color:var(--accent1);cursor:pointer;flex-shrink:0;margin-top:2px;">
+                    <span>
+                        <span style="display:block;font-size:13px;color:var(--ink);">✦ เปิดการแต่งหัวข้อฝั่ง Facebook</span>
+                        <span class="tp-muted" style="font-size:11.5px;">ปิดแล้วมีผลทันที ไม่ต้อง deploy · ด่านตรวจคำทำนายไม่ได้รับผลกระทบ</span>
+                    </span>
+                </label>
+            </div>
+
             <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm">
                 <i class="fas fa-floppy-disk"></i>
                 บันทึกการตั้งค่า
