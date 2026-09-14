@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ChatbotAutoContentPost extends Model
 {
+    /** processing ค้างนานเกินนี้ถือว่ารอบก่อนตายกลางทาง — จองใหม่ได้ */
+    public const PROCESSING_STALE_MINUTES = 10;
+
     protected $fillable = [
         'bot_profile_id',
         'topic',
@@ -106,13 +109,46 @@ class ChatbotAutoContentPost extends Model
 
     /**
      * Mark as failed
+     *
+     * @param  array<string, array<string, mixed>>  $results  ผลรายแพลตฟอร์ม — เก็บไว้ให้เห็นว่าแพลตฟอร์มไหนโพสต์ไปแล้ว
      */
-    public function markAsFailed(string $error): void
+    public function markAsFailed(string $error, array $results = []): void
     {
-        $this->update([
+        $changes = [
             'status' => 'failed',
             'error_message' => $error,
-        ]);
+        ];
+
+        if ($results !== []) {
+            $changes['post_results'] = $results;
+        }
+
+        $this->update($changes);
+    }
+
+    /**
+     * จองโพสต์ไว้ส่ง (status → processing) แบบ atomic
+     *
+     * กดโพสต์ซ้ำระหว่างรอบก่อนยังส่งไม่เสร็จ หรือรอบตั้งเวลาซ้อนกัน = ส่งซ้ำทุกแพลตฟอร์ม
+     * คืน false ถ้ามีรอบอื่นจองอยู่ — ยกเว้นค้าง processing เกิน PROCESSING_STALE_MINUTES (รอบก่อนตายกลางทาง)
+     */
+    public function claimForPosting(): bool
+    {
+        $claimed = static::query()
+            ->whereKey($this->getKey())
+            ->where(function ($query) {
+                $query->where('status', '!=', 'processing')
+                    ->orWhere('updated_at', '<', now()->subMinutes(self::PROCESSING_STALE_MINUTES));
+            })
+            ->update(['status' => 'processing', 'updated_at' => now()]);
+
+        if ($claimed !== 1) {
+            return false;
+        }
+
+        $this->refresh();
+
+        return true;
     }
 
     /**

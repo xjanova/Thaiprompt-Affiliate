@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Chatbot;
 use App\Http\Controllers\Controller;
 use App\Models\AiBotProfile;
 use App\Models\ChatbotPlatformIntegration;
+use App\Services\Chatbot\AutoContentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -61,7 +62,8 @@ class PlatformIntegrationController extends Controller
             'access_token' => 'required_if:platform_type,facebook,instagram',
             'telegram_bot_token' => 'required_if:platform_type,telegram',
             'discord_bot_token' => 'required_if:platform_type,discord',
-        ]);
+            ...$this->postTargetRules(),
+        ], $this->postTargetMessages());
 
         if ($validator->fails()) {
             return response()->json([
@@ -100,6 +102,7 @@ class PlatformIntegrationController extends Controller
             'telegram_username' => $request->telegram_username,
             'discord_bot_token' => $request->discord_bot_token,
             'discord_client_id' => $request->discord_client_id,
+            'platform_settings' => $request->platform_settings,
             'auto_reply_enabled' => $request->auto_reply_enabled ?? true,
             'keyword_matching_enabled' => $request->keyword_matching_enabled ?? true,
             'ai_fallback_enabled' => $request->ai_fallback_enabled ?? true,
@@ -133,6 +136,15 @@ class PlatformIntegrationController extends Controller
 
         $integration = ChatbotPlatformIntegration::where('bot_profile_id', $botId)
             ->findOrFail($id);
+
+        $validator = Validator::make($request->all(), $this->postTargetRules(), $this->postTargetMessages());
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
         $integration->update($request->only([
             'platform_name',
@@ -209,6 +221,28 @@ class PlatformIntegrationController extends Controller
             'success' => false,
             'message' => 'ไม่สามารถยืนยันการเชื่อมต่อได้ กรุณาตรวจสอบข้อมูลการเชื่อมต่อ',
         ], 422);
+    }
+
+    /**
+     * ปลายทางที่โพสต์คอนเทนต์อัตโนมัติจะส่งไป (อ่านใน AutoContentService::postTarget)
+     * - Telegram: platform_settings.post_chat_id
+     * - Discord : platform_settings.post_channel_id
+     */
+    private function postTargetRules(): array
+    {
+        return [
+            'platform_settings' => 'nullable|array',
+            'platform_settings.post_chat_id' => ['nullable', 'string', 'regex:'.AutoContentService::TELEGRAM_CHAT_PATTERN],
+            'platform_settings.post_channel_id' => ['nullable', 'string', 'regex:'.AutoContentService::DISCORD_CHANNEL_PATTERN],
+        ];
+    }
+
+    private function postTargetMessages(): array
+    {
+        return [
+            'platform_settings.post_chat_id.regex' => 'chat_id ของ Telegram ไม่ถูกต้อง — ใช้ตัวเลข เช่น -1001234567890 หรือ @ชื่อแชนแนล',
+            'platform_settings.post_channel_id.regex' => 'channel_id ของ Discord ต้องเป็นตัวเลข 17-20 หลัก (คลิกขวาที่ห้อง → Copy Channel ID)',
+        ];
     }
 
     /**

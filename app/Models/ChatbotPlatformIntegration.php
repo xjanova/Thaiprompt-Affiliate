@@ -51,6 +51,16 @@ class ChatbotPlatformIntegration extends Model
     ];
 
     protected $casts = [
+        // ค่าลับเข้ารหัสในฐานข้อมูลด้วย APP_KEY — อ่านผ่านโมเดลได้ค่าจริงเหมือนเดิม
+        // (คอลัมน์เตรียมไว้ใน migration 2026_09_14_100000_encrypt_chatbot_platform_integration_secrets)
+        'access_token' => 'encrypted',
+        'refresh_token' => 'encrypted',
+        'webhook_secret' => 'encrypted',
+        'line_channel_secret' => 'encrypted',
+        'line_channel_access_token' => 'encrypted',
+        'fb_app_secret' => 'encrypted',
+        'telegram_bot_token' => 'encrypted',
+        'discord_bot_token' => 'encrypted',
         'platform_credentials' => 'array',
         'enabled_features' => 'array',
         'platform_settings' => 'array',
