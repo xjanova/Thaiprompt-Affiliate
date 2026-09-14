@@ -57,6 +57,7 @@ class AutoContentController extends Controller
             'content_prompt' => 'required|string',
             'content_guidelines' => 'nullable|array',
             'target_platforms' => 'required|array|min:1',
+            'target_platforms.*' => 'in:'.implode(',', array_keys(AutoContentService::PLATFORM_LABELS)),
             'scheduled_at' => 'nullable|date',
             'frequency' => 'required|in:once,daily,weekly,monthly',
             'post_time' => 'nullable|date_format:H:i',
@@ -164,11 +165,21 @@ class AutoContentController extends Controller
         $post = ChatbotAutoContentPost::where('bot_profile_id', $botId)
             ->findOrFail($id);
 
+        // กดซ้ำระหว่างรอบก่อนยังส่งไม่เสร็จ = โพสต์ซ้ำทุกแพลตฟอร์ม (และสร้างคอนเทนต์ซ้ำ) → จองก่อนทำอะไร
+        if (! $post->claimForPosting()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'โพสต์นี้กำลังถูกส่งอยู่ กรุณารอสักครู่แล้วดูผลอีกครั้ง',
+            ], 409);
+        }
+
         // Generate content if not generated
         if (empty($post->generated_content)) {
             $result = $this->autoContentService->generateContent($post);
 
             if (! $result['success']) {
+                $post->markAsFailed($result['error']);
+
                 return response()->json([
                     'success' => false,
                     'message' => $result['error'],
@@ -181,35 +192,17 @@ class AutoContentController extends Controller
             ]);
         }
 
-        // Post to platforms
-        $post->update(['status' => 'processing']);
-        $results = $this->autoContentService->postToPlatforms($post);
-
-        $allSuccess = collect($results)->every(fn ($r) => $r['success'] ?? false);
-
-        if ($allSuccess) {
-            $post->markAsPosted($results);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'โพสต์คอนเทนต์สำเร็จ',
-                'data' => [
-                    'post' => $post,
-                    'results' => $results,
-                ],
-            ]);
-        }
-
-        $post->markAsFailed('Some platforms failed to post');
+        // Post to platforms — มาร์ก posted เฉพาะเมื่อทุกแพลตฟอร์มส่งสำเร็จจริง
+        $outcome = $this->autoContentService->publish($post);
 
         return response()->json([
-            'success' => false,
-            'message' => 'โพสต์คอนเทนต์ไม่สำเร็จบางแพลตฟอร์ม',
+            'success' => $outcome['success'],
+            'message' => $outcome['message'],
             'data' => [
-                'post' => $post,
-                'results' => $results,
+                'post' => $post->fresh(),
+                'results' => $outcome['results'],
             ],
-        ], 422);
+        ], $outcome['success'] ? 200 : 422);
     }
 
     /**
