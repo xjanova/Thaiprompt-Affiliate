@@ -42,6 +42,8 @@ class ChatController extends Controller
             'name' => 'nullable|string|max:80',
             'session_id' => 'required|string|uuid',
             'text' => 'required|string|min:1|max:1000',
+            // ห้องที่ลูกค้าเพิ่งจ่ายเปิดไพ่ไปแล้ว — คุยต่อจากไพ่ชุดนั้นได้เต็มที่ ไม่ต้องชวนเปิดไพ่ซ้ำ
+            'grounded' => 'sometimes|boolean',
         ]);
 
         try {
@@ -52,7 +54,7 @@ class ChatController extends Controller
                 // ป้ายใน log การใช้ AI — ห้ามใส่ user_id: คอลัมน์เป็นตัวเลขของ users ฝั่ง Thaiprompt
                 // ลูกค้าเว็บไม่มีแถวในนั้น (ใส่ id ฝั่งเว็บไปจะชี้ผิดคน หรือ insert พังบน MySQL strict)
                 ['customer_name' => 'เว็บจันทรา #'.$data['user_ref'].(! empty($data['name']) ? ' '.$data['name'] : '')],
-                webOffers: true,
+                webOffers: ! $request->boolean('grounded'),
                 fillerOnEmpty: false,
             );
         } catch (Throwable $e) {

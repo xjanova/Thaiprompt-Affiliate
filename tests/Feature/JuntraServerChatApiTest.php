@@ -100,6 +100,20 @@ class JuntraServerChatApiTest extends TestCase
         $this->assertStringNotContainsString('OFFER', $res->json('data.reply'));
     }
 
+    public function test_a_room_grounded_on_a_paid_reading_talks_freely_about_the_cards(): void
+    {
+        $session = $this->start();
+        $this->aiReply = 'ไพ่ถ้วยสองบอกว่าความรักของลูกกำลังไปได้ดีค่ะ [[OFFER:love]]';
+
+        $res = $this->withToken('server-token')->postJson('/api/v1/juntra/server/chat/send', [
+            'user_ref' => '42', 'session_id' => $session, 'text' => 'ความรักจากไพ่ชุดนี้เป็นยังไงคะ', 'grounded' => true,
+        ])->assertOk();
+
+        $res->assertJsonPath('data.kind', 'reply')->assertJsonPath('data.offer_topic', null);
+        $this->assertStringNotContainsString('[[', $res->json('data.reply'));
+        $this->assertStringNotContainsString('[[OFFER:', end($this->aiCalls)['system']);
+    }
+
     public function test_unknown_offer_topic_falls_back_to_general(): void
     {
         $session = $this->start();
