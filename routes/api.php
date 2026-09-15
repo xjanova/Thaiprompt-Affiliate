@@ -1716,29 +1716,49 @@ Route::prefix('v1/juntra')->middleware(['juntra.user'])->name('api.juntra.')->gr
 //    'juntra.server' = Passport client_credentials ของ client จันทราเท่านั้น (token ผู้ใช้ = 403)
 //    - slips/*   : สลิปใบเดียวใช้ได้ครั้งเดียวข้ามบอท + วอลเลตจันทรา (SlipOK ก้อนเดียวกับบอท)
 //    - amounts/* : Thaiprompt จองยอดทศนิยมให้ทั้งสองเว็บ (บัญชี + มือถือ SMS เดียวกัน ห้ามชน)
+//
+// ⚠️ throttle ทุกตัวในกลุ่มนี้ต้องมี prefix (อาร์กิวเมนต์ที่ 3) — ทุกคำขอมาจาก IP เดียว (เซิร์ฟเวอร์เว็บ)
+//    throttle ที่ไม่มี prefix ใช้ key เดียวกันหมด: ซ้อนกันสองชั้น = นับคำขอเดียวสองครั้ง และแชทของ
+//    ลูกค้าทั้งเว็บจะไปแย่งถังเดียวกับการตรวจสลิป (เดิมคิดเป็นแชทได้ราว 45 ข้อความ/นาทีทั้งเว็บ)
+//    เพดานต่อลูกค้าอยู่ฝั่งเว็บ (throttle:chat-send / throttle:reading ต่อ user) — ที่นี่คือด่านกันรั่วรวม
 Route::prefix('v1/juntra/server')
-    ->middleware(['juntra.server', 'throttle:120,1'])
+    ->middleware(['juntra.server', 'throttle:600,1,jwsrv'])
     ->name('api.juntra.server.')
     ->group(function () {
-        Route::post('/slips/verify', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'verify'])
-            ->name('slips.verify');
-        Route::post('/slips/check', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'check'])
-            ->name('slips.check');
-        Route::post('/slips/claim', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'claim'])
-            ->name('slips.claim');
+        Route::middleware('throttle:120,1,jwpay')->group(function () {
+            Route::post('/slips/verify', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'verify'])
+                ->name('slips.verify');
+            Route::post('/slips/check', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'check'])
+                ->name('slips.check');
+            Route::post('/slips/claim', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'claim'])
+                ->name('slips.claim');
 
-        Route::post('/amounts/reserve', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'reserve'])
-            ->name('amounts.reserve');
-        Route::post('/amounts/release', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'release'])
-            ->name('amounts.release');
+            Route::post('/amounts/reserve', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'reserve'])
+                ->name('amounts.reserve');
+            Route::post('/amounts/release', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'release'])
+                ->name('amounts.release');
+        });
 
         // - chat/*    : แชทแม่หมอให้ลูกค้าเว็บทุกคน (ไม่ต้องมี token Thaiprompt) คุยฟรี ทำนาย = ชวนเปิดไพ่
-        //   throttle ต่อ user_ref อยู่ฝั่งเว็บ + ต่อ client ที่นี่ (ยิง AI ทุกข้อความ)
-        Route::post('/chat/start', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'start'])
-            ->name('chat.start');
-        Route::post('/chat/send', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'send'])
-            ->middleware('throttle:90,1')
-            ->name('chat.send');
+        Route::middleware('throttle:300,1,jwchat')->group(function () {
+            Route::post('/chat/start', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'start'])
+                ->name('chat.start');
+            Route::post('/chat/send', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'send'])
+                ->name('chat.send');
+        });
+
+        // - fortune/* : คำทำนายที่ลูกค้าเว็บจ่ายแล้ว — controller ตัวเดียวกับทาง token ของลูกค้า
+        //   🔴 (2026-09-15) เดิมมีแต่ทาง token → ลูกค้าที่สมัครด้วยเบอร์/อีเมล (ส่วนใหญ่) จ่ายเปิดไพ่
+        //      แล้วได้ข้อความประกอบจากความหมายไพ่แทนคำทำนายจริง ส่วนดูดวงเชิงลึกถูกคืนเงินทุกครั้ง
+        //   juntraweb หักเครดิตก่อนเรียกแล้ว ที่นี่ไม่คิดเงินซ้ำ (เหมือนทางเดิม)
+        Route::middleware('throttle:60,1,jwread')->prefix('fortune')->name('fortune.')->group(function () {
+            Route::post('/tarot/interpret', \App\Http\Controllers\Api\Juntra\TarotInterpretController::class)
+                ->name('tarot.interpret');
+            Route::post('/tarot/free', \App\Http\Controllers\Api\Juntra\FreeTarotController::class)
+                ->name('tarot.free');
+            Route::post('/deep', \App\Http\Controllers\Api\Juntra\DeepReadingController::class)
+                ->name('deep');
+        });
     });
 
 // ─── Public tarot-card catalog for the จันทรา.online (juntraweb) importer ──────
