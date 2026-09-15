@@ -202,6 +202,30 @@ class JuntraExternalAmountMatchingTest extends TestCase
         $this->assertNull($fresh->matched_at);
     }
 
+    public function test_bot_treats_a_slip_for_web_wallet_money_as_already_used(): void
+    {
+        // A customer tops up the web wallet by QR — the bank SMS is the web's (external here, no
+        // transRef anywhere) — then sends the same slip to แม่หมอ on LINE for a reading.
+        $this->juntraReservation(['created_at' => now()->subMinutes(5)]);
+        $result = $this->processSms(100.37);
+        $this->assertSame('external', $result['data']['status']);
+
+        $sms = SmsPaymentNotification::findOrFail($result['data']['notification_id']);
+        $verify = [
+            'amount' => 100.37,
+            'trans_timestamp' => Carbon::parse($sms->sms_timestamp, 'Asia/Bangkok')->utc()->toIso8601String(),
+        ];
+        $slipok = app(\App\Services\Fortune\SlipOkService::class);
+
+        // The bot's paths count web money as spent…
+        $this->assertTrue($slipok->slipMatchesUsedSmsPayment($verify, 999, includeExternal: true));
+        $this->assertTrue($slipok->slipMatchesUsedSmsPayment($verify, null, includeExternal: true));
+        // …the web's own verify path does not (the web checks its own SMS, and this may be the very
+        // top-up the slip belongs to), and the old default behaviour is unchanged.
+        $this->assertFalse($slipok->slipMatchesUsedSmsPayment($verify));
+        $this->assertFalse($slipok->slipMatchesUsedSmsPayment($verify, 999));
+    }
+
     public function test_recently_expired_or_released_juntraweb_amounts_are_still_external(): void
     {
         // หมดอายุไป 2 ชม. — ลูกค้าจันทราโอนช้า

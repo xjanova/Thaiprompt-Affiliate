@@ -684,7 +684,7 @@ class SlipOkService
         //   ปิดช่อง cross-platform reuse: บิลที่ตัดด้วย SMS ไม่ได้ record transRef → ด่าน 4 จับไม่ได้
         //   user idea: SMS มี "ยอด+เวลา" → match สลิป (ยอดตรง + เวลา ±2 นาที) กับ SMS ที่ matched บิลอื่นแล้ว
         //   (ระบบใช้ยอดทศนิยม unique ต่อบิล → ยอด+เวลา แม่นพอ + ไม่เปลือง SlipOK quota)
-        if ($this->slipMatchesUsedSmsPayment($verify, $reading->id)) {
+        if ($this->slipMatchesUsedSmsPayment($verify, $reading->id, includeExternal: true)) {
             return ['decision' => self::DECISION_DUPLICATE, 'reason' => 'สลิปนี้เคยใช้ตัดบิลด้วย SMS ไปแล้ว (ยอด+เวลาตรง)', 'verify' => $verify];
         }
 
@@ -727,7 +727,13 @@ class SlipOkService
      * @param  int|null  $excludeReadingId  บิลปัจจุบัน — ไม่นับ (เคส SMS ตัดบิลนี้ + ลูกค้าส่งสลิปบิลเดียวกัน)
      * @return bool true = สลิปเคยตัดบิลด้วย SMS ไปแล้ว (= ซ้ำ)
      */
-    public function slipMatchesUsedSmsPayment(array $verify, ?int $excludeReadingId = null): bool
+    /**
+     * @param  bool  $includeExternal  (2026-09-15) นับ SMS ที่เป็นเงินของเว็บ จันทรา.online (status 'external')
+     *                                 ด้วย — ใช้ในเส้นของบอท: ลูกค้าเติมวอลเลตเว็บผ่าน QR (SMS ยืนยันที่เว็บ
+     *                                 ไม่มี transRef) แล้วเอาสลิปใบเดิมมาส่งให้บอท = ใช้ซ้ำ ต้องจับได้
+     *                                 เส้นตรวจสลิปของเว็บเอง (SlipUsageRegistry) ไม่นับ — เว็บเช็ค SMS ของตัวเองอยู่แล้ว
+     */
+    public function slipMatchesUsedSmsPayment(array $verify, ?int $excludeReadingId = null, bool $includeExternal = false): bool
     {
         $amount = $verify['amount'] ?? null;
         $ts = $verify['trans_timestamp'] ?? null;
@@ -741,17 +747,24 @@ class SlipOkService
             $amt = (float) $amount;
 
             $q = \Illuminate\Support\Facades\DB::table('sms_payment_notifications')
-                ->whereNotNull('matched_transaction_id')               // ตัดบิลไปแล้ว
                 ->whereBetween('amount', [$amt - 0.001, $amt + 0.001])  // ยอดตรงเป๊ะ
                 ->whereBetween('sms_timestamp', [
                     $slipTime->copy()->subMinutes(2)->toDateTimeString(),
                     $slipTime->copy()->addMinutes(2)->toDateTimeString(),
-                ]);
-
-            // ไม่นับบิลปัจจุบัน (SMS ตัดบิลนี้ + ลูกค้าส่งสลิปบิลเดียวกัน = ไม่ใช่ reuse)
-            if ($excludeReadingId !== null) {
-                $q->where('matched_transaction_id', '!=', $excludeReadingId);
-            }
+                ])
+                ->where(function ($w) use ($excludeReadingId, $includeExternal) {
+                    $w->where(function ($m) use ($excludeReadingId) {
+                        $m->whereNotNull('matched_transaction_id');     // ตัดบิลไปแล้ว
+                        // ไม่นับบิลปัจจุบัน (SMS ตัดบิลนี้ + ลูกค้าส่งสลิปบิลเดียวกัน = ไม่ใช่ reuse)
+                        if ($excludeReadingId !== null) {
+                            $m->where('matched_transaction_id', '!=', $excludeReadingId);
+                        }
+                    });
+                    // 🌙 เงินของเติมวอลเลตเว็บจันทรา — ไม่ใช่เงินของบิลบอท
+                    if ($includeExternal) {
+                        $w->orWhere('status', 'external');
+                    }
+                });
 
             return $q->exists();
         } catch (\Throwable $e) {

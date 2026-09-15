@@ -17710,7 +17710,7 @@ class FortuneConversationService
         $dupTransRef = (string) ($verify['transRef'] ?? '');
         $isDup = $ok && (
             ($dupTransRef !== '' && \App\Models\SlipVerification::where('trans_ref', $dupTransRef)->exists())
-            || $svc->slipMatchesUsedSmsPayment($verify, null)
+            || $svc->slipMatchesUsedSmsPayment($verify, null, includeExternal: true)
         );
 
         // 🧾 (2026-06-01) audit log — no-bill verify (ทุกผล)
