@@ -1731,6 +1731,14 @@ Route::prefix('v1/juntra/server')
             ->name('amounts.reserve');
         Route::post('/amounts/release', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'release'])
             ->name('amounts.release');
+
+        // - chat/*    : แชทแม่หมอให้ลูกค้าเว็บทุกคน (ไม่ต้องมี token Thaiprompt) คุยฟรี ทำนาย = ชวนเปิดไพ่
+        //   throttle ต่อ user_ref อยู่ฝั่งเว็บ + ต่อ client ที่นี่ (ยิง AI ทุกข้อความ)
+        Route::post('/chat/start', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'start'])
+            ->name('chat.start');
+        Route::post('/chat/send', [\App\Http\Controllers\Api\Juntra\Server\ChatController::class, 'send'])
+            ->middleware('throttle:90,1')
+            ->name('chat.send');
     });
 
 // ─── Public tarot-card catalog for the จันทรา.online (juntraweb) importer ──────
