@@ -39,6 +39,9 @@ class FortuneConversationService
     use \App\Services\Fortune\FortunePersonalDataTrait;
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
+
+    // 👂 (2026-09-15) ฟังลูกค้าระหว่างรอโอน — ใช้ร่วมกันทั้งบิล 39 และ Celtic 99
+    use \App\Services\Fortune\PendingPaymentListenerTrait;
     use \App\Services\Fortune\ProSessionTrait;
 
     // ⏳ (2026-09-02) รอลูกค้าเล่าจบก่อนรวบตอบ — ต้องอยู่หลัง Celtic/ProSession (ทั้งคู่เรียกใช้)
@@ -9728,6 +9731,9 @@ class FortuneConversationService
      */
     protected function handlePendingPayment(FortuneReading $reading, string $messageText): array
     {
+        // 👂 (2026-09-15) จดว่าลูกค้ากำลังคุยอยู่ — ตัวเตือนบิลอัตโนมัติจะหลบ ไม่ทวงแทรกกลางบทสนทนา
+        $this->notePendingPaymentActivity($reading);
+
         // 💚 (2026-05-16) ลูกค้ารอจ่ายแต่ถามหา LINE → ตอบ URL ทันที ไม่ปิดบิล
         if ($lineInfo = $this->maybePresentLineAddFriend($messageText)) {
             return $lineInfo;
@@ -9874,92 +9880,26 @@ class FortuneConversationService
         //   เจ้าของสั่ง: "ถ้าลูกค้าสร้างบิลใหม่ขณะบิลเก่ายังไม่หมดอายุ ให้ระบบพาไปจ่ายบิลเก่าก่อน"
         $isRestartRequest = $this->looksLikeFortuneRestartRequest($messageText);
 
-        // 🎯 AI Pre-Cancel Nudge — ถ้าลูกค้าพูดอะไรที่ไม่ใช่คำแจ้งชำระ
-        //    → AI persona "นักปราชญ์" soft-encourage ด้วยปรัชญาค่าครู (ไม่ฮาร์ดเซล)
-        //    จำกัด 3 รอบต่อบิล (กัน loop) — ถ้าเกินรอบ → ใช้แค่ payment details
-        //
-        // 🌧️ (2026-05-22) เพิ่ม looksLikeCustomerExcuseOrLifeUpdate —
-        //    จับ "ไฟดับ/รอแป๊บ/ไม่มีเงิน/แบตหมด/ป่วย/ไปหมด" ที่ chitchat detector เดิมพลาด
-        //    เคสจริง: ลูกค้าพิมพ์ "ไฟดิดขัด" → บอทตอบ payment reminder เดิมซ้ำ 3 รอบ
-        //
-        // 💬 (2026-06-12) ขยาย: ข้อความยาว ≥ 10 ตัวอักษรที่ไม่ใช่คำสั่ง → ถือว่าลูกค้าคุย
-        //    (บิลอายุ 3 ชม.แล้ว — "ลูกค้าไม่ได้จ่ายแล้วคุยก็ต้องคุยก่อน" ไม่ใช่ยัดกล่องบิลใส่)
-        $aiPrefix = '';
-        if (! $isRestartRequest
-            && ($this->looksLikeMetaOrChitchat($messageText)
-                || $this->looksLikeCustomerExcuseOrLifeUpdate($messageText)
-                || mb_strlen(trim($messageText)) >= 10)) {
-            // 💳 (2026-05-07 Phase 2) Bill Psychology ก่อน — Pro model + bill-aware
-            //   ถ้า sensitive key + budget OK → ตอบแบบจิตวิทยาขั้นสูง (replace nudge เดิม)
-            //   ถ้าไม่มี Pro → fallback เป็น nudge เดิม
-            $platform = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
-            $platformUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
-
-            if (! empty($platformUserId)) {
-                try {
-                    $billProResponse = $this->tryBillPsychologyResponse(
-                        $platform,
-                        $platformUserId,
-                        $messageText,
-                        $reading,
-                        $remainingMinutes
-                    );
-                    if (! empty($billProResponse)) {
-                        $aiPrefix = $billProResponse."\n\n";
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('Fortune: Bill Psychology in handlePendingPayment ล้มเหลว', [
-                        'error' => $e->getMessage(),
-                        'reading_id' => $reading->id,
-                    ]);
-                }
-            }
-
-            // Fallback: ใช้ legacy nudge ถ้า Bill Psychology ไม่ทำงาน
-            if (empty($aiPrefix)) {
-                $aiPrefix = $this->buildPendingPaymentNudge($reading, $messageText, $remainingMinutes);
-            }
-        }
-
-        // 💬 (2026-06-12) มี AI ตอบ (ลูกค้าคุย) → ตอบบทสนทนา + ท้ายบิลสั้น 1 บรรทัด
-        //   ไม่แนบรายการบัญชี + QR ซ้ำ — เจ้าของสั่ง "อย่าเอาแต่ส่งกล่องข้อความเดิมๆ"
-        //   (ลูกค้าขอดู QR/บัญชีเมื่อไหร่ maybePresentPaymentInfo ด้านบนจัดให้ทันที)
         // 💰 (2026-08-29, owner) บิลที่โอนมาแล้วบางส่วน — ทุกกล่องต้องบอก "รับแล้วเท่าไร ขาดอีกเท่าไร"
         //   ไม่งั้นลูกค้าเห็นแต่ยอดเต็มซ้ำๆ นึกว่าเงินที่โอนไปหายไปเฉยๆ (เคส FTU-260828-E2328)
         $partialLine = $this->partialCreditNote($reading, true);
 
-        if (! empty($aiPrefix)) {
-            return [
-                'action' => 'waiting_payment',
-                'message' => rtrim($aiPrefix)."\n\n"
-                    .($partialLine !== '' ? $partialLine."\n" : '')
-                    ."💎 _บิล {$billRef} ฿{$payAmount} ยังรออยู่ (เหลือ {$remainLabel})_\n"
+        // 👂 (2026-09-15) ลูกค้าพูดอะไรก็ตามที่ไม่ใช่ "ดูดวง/เริ่มใหม่" → ฟังก่อนเสมอ (PendingPaymentListenerTrait)
+        //   เดิม: AI ถูกเรียกเฉพาะข้อความที่ยาว ≥ 10 ตัว/อยู่ในลิสต์คำ และมีเพดาน 3 รอบต่อบิล
+        //   ที่เหลือได้กล่องบิลซ้ำ (ย่อ/เต็ม) ทุกข้อความ — "ไม่มีบัญชี" / "ให้ญาติโอน" / "พรุ่งนี้นะ"
+        //   ก็ได้กล่องทวงเงินเหมือนกันหมด (เคส FTU-260915-D0350 ฝั่งบิล 99 อาการเดียวกัน)
+        //   ⚠️ action แยก 'waiting_payment_reply' — บน LINE 'waiting_payment' ทิ้งข้อความทิ้งทั้งก้อน
+        //     แล้วส่งการ์ดยอดเงินแทน (คำตอบที่ฟังลูกค้าจะไม่เคยถึงมือลูกค้า LINE)
+        if (! $isRestartRequest) {
+            return $this->respondWhilePendingPayment($reading, $messageText, [
+                'action' => 'waiting_payment_reply',
+                'pay_amount' => $payAmount,
+                'expires_at' => $uniqueAmount->expires_at,
+                'remaining_minutes' => $remainingMinutes,
+                'partial_line' => $partialLine,
+                'footer' => "💎 _บิล {$billRef} ฿{$payAmount} ยังรออยู่ (เหลือ {$remainLabel})_\n"
                     .'_พิมพ์ "บัญชี" ดูช่องทางโอน • "โอนแล้ว" เช็คสถานะ • "ช่วยหน่อย" ติดปัญหา_',
-                'reading' => $reading,
-            ];
-        }
-
-        // 🔇 (2026-06-12) Throttle กล่องบิลเต็ม (บัญชี+QR) — ส่งซ้ำได้ทุก 10 นาที
-        //   ยกเว้น: ลูกค้าขอดูดวง/เริ่มใหม่ (พาไปจ่ายบิลเดิม) → ส่งเต็มเสมอ
-        $lastBoxAt = $reading->getConversationState('last_payment_box_at');
-        $boxRecently = false;
-        if (! empty($lastBoxAt)) {
-            try {
-                $boxRecently = \Illuminate\Support\Carbon::parse($lastBoxAt)->gt(now()->subMinutes(10));
-            } catch (\Throwable $e) {
-                $boxRecently = false;
-            }
-        }
-
-        if ($boxRecently && ! $isRestartRequest) {
-            return [
-                'action' => 'waiting_payment',
-                'message' => "💎 บิล {$billRef} รอค่าครู *฿{$payAmount}* (ทศนิยมต้องตรง)\n"
-                    .($partialLine !== '' ? $partialLine."\n" : '')
-                    ."⏰ เหลืออีก {$remainLabel}\n\n"
-                    .'_พิมพ์ "บัญชี" ดูช่องทางโอนอีกครั้ง • "โอนแล้ว" เช็คสถานะ • "ช่วยหน่อย" ติดปัญหา_',
-                'reading' => $reading,
-            ];
+            ]);
         }
 
         // 🩹 (2026-05-15 v2) Ultra-short reminder — user feedback: "บล๊อกแจ้งยอดเยอะไป คนกลัว"
@@ -19704,6 +19644,14 @@ class FortuneConversationService
             return false;
         }
 
+        // 🩹 (2026-09-15) คำปฏิเสธติด "ยกเลิก" = ขอให้ *ไม่* ยกเลิก — ข้อความสั้นก็ต้องกัน
+        //   เดิมกันเฉพาะข้อความยาว > 30 ตัว → "ไม่ยกเลิกค่ะ" (ขอให้เปิดบิลไว้) ถูกอ่านเป็นสั่งยกเลิก
+        //   → บอทถาม "ก่อนยกเลิก เกิดอะไรขึ้น?" ใส่คนที่เพิ่งบอกว่าไม่ยกเลิก (ลูกค้าจริงพิมพ์ "ไม่ยกเลือกค่ะ" 2026-09-14)
+        //   ⚠️ "ทำไมยังไม่ยกเลิกให้" ยังเป็นคำสั่งยกเลิก — ดูกติกาใน pendingListenOnlyNegatedCancel()
+        if ($this->pendingListenOnlyNegatedCancel($normalized)) {
+            return false;
+        }
+
         // คำสั่งยกเลิกชัดเจน → ใช้ str_contains (ข้อความยาวก็ match)
         $strongKeywords = ['ยกเลิก', 'cancel', 'stop'];
         foreach ($strongKeywords as $keyword) {
@@ -22117,24 +22065,40 @@ PROMPT;
     }
 
     /**
-     * 🎯 AI Pre-Cancel Nudge — กระตุ้นการโอนแบบนักปราชญ์ ก่อนบิลถูกยกเลิก
+     * 👂 AI ฟังลูกค้าระหว่างรอโอน (เดิมชื่อ "Pre-Cancel Nudge")
      *
-     * ใช้ตอนผู้ใช้พูดอะไรระหว่างรอชำระเงิน (PENDING_PAYMENT) แต่ยังไม่โอน
-     * persona "แม่หมอจันทรา" ที่มีปัญญา ใช้ปรัชญาค่าครู / ดาวเจ้าชนะ / ไพ่ที่จิตเลือก
-     * → soft-encourage โอน (ไม่ฮาร์ดเซล) แทนที่จะแค่ ack 1 ประโยค
+     * ใช้ตอนลูกค้าพูดอะไรระหว่างรอชำระเงิน (บิล 39 / Celtic 99) แต่ยังไม่โอน
      *
-     * จำกัด nudge_count = 3 รอบต่อบิล (กัน loop)
-     * ถ้าเกิน → fallback ใช้ chitchat AI 1-line ack แบบเดิม
+     * 🔄 (2026-09-15) เปลี่ยนหน้าที่จาก "soft encourage ให้โอน" → "ฟังและตอบสิ่งที่ลูกค้าพูดก่อน"
+     *   เจ้าของ: "พอตอนจะชำระ ถ้าลูกค้าพูด หรือติดปัญหา บอทจะส่งแต่ให้โอนเงิน ไม่ฟังลูกค้า"
+     *   พรอมต์เดิมสั่งทุกข้อความให้เทศน์ปรัชญาค่าครูแล้วชวนโอน — ลูกค้าบอก "ไม่มีบัญชี"
+     *   ก็ได้คำตอบเรื่อง "ค่าครูคือการแลกเปลี่ยนกับจักรวาล" (ไม่ได้ฟังเหมือนกัน แค่สุภาพกว่า)
+     *   ตอนนี้: เรื่องราคา/ขอฟรี ยังใช้แนวถ่อมตน+อ้างครูของเจ้าของ (2026-05-16) ผ่าน classifyPendingPaymentIntent
+     *   เรื่องอื่นต้องตอบตรงเรื่อง + เห็นบทสนทนาล่าสุด (เดิมไม่ส่งประวัติเลย)
+     *
+     * เพดาน 10 รอบต่อบิล (เดิม 3 — ครบแล้วตกไปกล่องเดิมตลอดอายุบิล 3 ชม.)
+     * เกินเพดาน/AI ล้ม → คืนค่าว่าง → PendingPaymentListenerTrait ตอบตามเจตนาแบบตายตัว
      *
      * @param  string  $messageText  ข้อความผู้ใช้
      * @param  int  $remainingMinutes  เวลาเหลือก่อนบิลหมดอายุ
-     * @return string ข้อความ AI nudge (จะถูกใส่ก่อน payment details) หรือ empty string ถ้าข้าม
+     * @param  string|null  $listenIntent  เจตนาที่ classifyPendingPaymentListening จับได้ (คำใบ้ให้ AI)
+     * @param  array<int, array{role?: string, content?: string}>  $history  ประวัติสนทนาล่าสุด
+     * @return string ข้อความ AI หรือ empty string ถ้าข้าม
      */
-    protected function buildPendingPaymentNudge(FortuneReading $reading, string $messageText, int $remainingMinutes): string
-    {
-        // ตรวจรอบ nudge — เกิน 3 รอบ → return empty (ให้ flow ใช้ default ack)
-        $nudgeCount = (int) ($reading->getConversationState('nudge_count') ?? 0);
-        if ($nudgeCount >= 3) {
+    protected function buildPendingPaymentNudge(
+        FortuneReading $reading,
+        string $messageText,
+        int $remainingMinutes,
+        ?string $listenIntent = null,
+        array $history = []
+    ): string {
+        // ตรวจรอบ — เกินเพดาน → return empty (ให้ตัวฟังตอบตามเจตนาแทน)
+        // 🩹 (2026-09-15 จับผี) ตัวนับย้ายไป Cache — เดิมเขียน conversation_state หลัง AI ตอบ (หลายวินาที)
+        //   จาก $reading ที่โหลดไว้ก่อน = เขียนทับ JSON ทั้งก้อน → ถ้าเงินเข้าระหว่าง AI คิด
+        //   key ของเส้นจ่ายเงิน (pay_first_mode / sms_match_processed) หาย → บิล 39 ที่จ่ายแล้วถูกออกบิลใหม่
+        $nudgeKey = 'fortune:pending_nudge_count:'.(int) $reading->id;
+        $nudgeCount = (int) Cache::get($nudgeKey, 0);
+        if ($nudgeCount >= 10) {
             return '';
         }
 
@@ -22159,36 +22123,79 @@ PROMPT;
                 ?? $reading->amount_paid
                 ?? 39;
             $payAmount = number_format((float) $rawAmount, 2);
-            $userName = $reading->facebook_user_name ?? 'เจ้าชะตา';
+
+            // เวลาบิลยังเปิดอยู่ — AI ต้องบอกได้ตรงเมื่อลูกค้าจะโอนทีหลัง
+            $remainHours = intdiv(max(0, $remainingMinutes), 60);
+            $remainLabel = $remainHours > 0
+                ? "{$remainHours} ชม.".($remainingMinutes % 60 > 0 ? ' '.($remainingMinutes % 60).' นาที' : '')
+                : max(0, $remainingMinutes).' นาที';
+            $expiryLabel = $this->pendingListenExpiryLabel($reading->uniquePaymentAmount?->expires_at);
 
             // จำแนก intent คร่าว ๆ จากข้อความ → ช่วยให้ AI ตอบตรงประเด็น
-            $intentHint = $this->classifyPendingPaymentIntent($messageText);
+            //   pendingListenIntentHint     = อุปสรรคการโอน (ไม่มีบัญชี/ให้ญาติโอน/พรุ่งนี้ ฯลฯ) — ใช้ก่อน
+            //   classifyPendingPaymentIntent = ราคา/ขอดูก่อน/ทำไมต้องจ่าย (แนวถ่อมตนของเจ้าของ 2026-05-16)
+            // 🩹 (2026-09-15 จับผี) ตัวเดิมใช้เฉพาะเมื่อตัวใหม่จับอะไรไม่ได้ — สองตัวสั่งขัดกันแล้วโมเดลทิ้งข้างหนึ่ง
+            //   ("ไม่มีเงิน" → ตัวเดิม=wants_free พูดเรื่องค่าครู vs ตัวใหม่=ห้ามชวนโอน · "พรุ่งนี้" → ชวนตัดสินใจ vs ห้ามเร่ง)
+            //   + ตัดป้ายภาษาอังกฤษนำหน้า ("price_objection — ") กันหลุดไปถึงลูกค้า
+            $obstacleHint = $this->pendingListenIntentHint($listenIntent);
+            $intentHint = $listenIntent === null ? $this->classifyPendingPaymentIntent($messageText) : '';
+            $intentHint = trim(preg_replace('/^[a-z_]+\s*—\s*/u', '', $intentHint) ?? $intentHint);
+
+            // บทสนทนาล่าสุด (ไม่เกิน 6 ข้อความ) — ลูกค้าเล่าเป็นท่อน ๆ "ไม่มีบัญชี" → "จะให้ญาติโอน"
+            $recentLines = [];
+            foreach (array_slice($history, -6) as $turn) {
+                $content = trim((string) ($turn['content'] ?? ''));
+                if ($content === '') {
+                    continue;
+                }
+                $who = ($turn['role'] ?? '') === 'assistant' ? 'แม่หมอ' : 'ลูกค้า';
+                $recentLines[] = "{$who}: ".mb_substr(preg_replace('/\s+/u', ' ', $content) ?? $content, 0, 160);
+            }
+
+            $cardLine = '';
+            try {
+                $platformUserId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
+                if ($platformUserId !== '' && $this->isKnownForeignCustomer($platformUserId) && $this->isStripeForeignFallbackAvailable()) {
+                    $cardLine = "- ลูกค้าอยู่ต่างประเทศ → จ่ายด้วยบัตรได้ ให้พิมพ์คำว่า \"จ่ายบัตร\"\n";
+                }
+            } catch (\Throwable $e) {
+                // เช็คเลนบัตรไม่ได้ → ไม่พูดถึงบัตร
+            }
 
             $aiService = new FortuneAIService($this->settings);
 
-            $promptForAI = "บทบาท: คุณคือ \"แม่หมอจันทรา\" — หมอดูที่มีปัญญา ใช้ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n"
-                ."ไม่ใช่หมอดูงมงาย — มีระบบ มีศาสตร์ ไม่ยกเมฆ ไม่ขายของรุนแรง\n\n"
-                ."สถานการณ์: ลูกค้า \"คุณ{$userName}\" สร้างบิล {$payAmount} บาท แล้วยังไม่ได้โอน เหลืออีก {$remainingMinutes} นาทีบิลจะหมดอายุ\n"
-                ."ลูกค้าพิมพ์มาว่า: \"{$messageText}\"\n";
+            $promptForAI = "บทบาท: คุณคือ \"แม่หมอจันทรา\" กำลังตอบแชทลูกค้าที่เปิดบิลค่าครูไว้แล้วแต่ยังไม่ได้โอน\n"
+                ."ข้อมูลบิล: ยอด {$payAmount} บาท (ต้องโอนตรงทศนิยม ระบบจับคู่บิลด้วยทศนิยม ใครโอนก็ได้)"
+                ." · บิลยังเปิดอยู่อีก {$remainLabel}".($expiryLabel !== '' ? " (หมดอายุ {$expiryLabel})" : '')."\n";
 
+            if ($recentLines !== []) {
+                $promptForAI .= "บทสนทนาล่าสุด:\n".implode("\n", $recentLines)."\n";
+            }
+
+            $promptForAI .= "ข้อความล่าสุดของลูกค้า: \"{$messageText}\"\n";
+
+            if ($obstacleHint !== '') {
+                $promptForAI .= "สิ่งที่ระบบจับได้: {$obstacleHint}\n";
+            }
             if ($intentHint !== '') {
                 $promptForAI .= "บริบท intent: {$intentHint}\n";
             }
 
-            $promptForAI .= "\nหน้าที่: ตอบสั้น 2 ประโยค ภาษาคนมีความรู้ — soft encourage ให้โอน ไม่ใช่ฮาร์ดเซล\n"
-                ."ใช้คำพูดเชิงปรัชญา ยกตัวอย่างเปรียบเทียบที่ฉลาด เลือกใช้ตามความเหมาะสม:\n"
-                ."  - ค่าครู คือเครื่องบ่งชี้ความตั้งใจของจิต (จิตจริง จึงเปิดทางคำตอบ)\n"
-                ."  - แม่หมอใช้ \"พลัง\" ในการประมวลผล — เปิดดาวเจ้าชนะ + เรียงไพ่ที่จิตเจ้าชะตาเลือก ไม่ได้เกิดเองฟรี\n"
-                ."  - ค่าครูคือการแลกเปลี่ยนกับจักรวาล จิตจ่ายจริง ดาวจึงส่งสัญญาณตรง\n"
-                ."  - ของฟรีไม่มีน้ำหนัก — ทุกศาสตร์โบราณรู้ว่าการลงทุนคือการยืนยันความตั้งใจ\n"
-                ."  - ดาวเจ้าชนะของเจ้าชะตา ไพ่ที่พลังจิตของเจ้าชะตาเลือกเอง — ไม่ใช่คำตอบทั่วไป\n"
-                ."  - {$payAmount} บาท น้อยกว่ากาแฟ 1 แก้ว แต่ผลคุ้มค่ากว่ามาก\n"
-                ."  - คนสำเร็จลงทุนกับความรู้ คนพนันลงทุนกับความหวัง\n"
-                ."  - ทุกคำถามใหม่ = เปิดดวงใหม่ = จ่ายค่าครูใหม่ (ดาวเรียงไม่เหมือนกัน ไพ่ที่จิตเลือกก็คนละชุด)\n"
-                ."  - ไม่ได้บังคับ — แต่ถ้าจิตยังลังเล คำตอบก็จะลังเลตามไปด้วย\n\n"
-                ."กฎ: ห้ามอธิบายยอดเงิน/บัญชีธนาคาร (ระบบจะเติมเอง)\n"
-                ."ห้ามด่า ห้ามทำให้ลูกค้าอาย ห้ามใส่ลิสต์ ห้ามใส่ [OFFER_FORTUNE]\n"
-                .'ตอบเป็นข้อความบรรยายธรรมดา 2 ประโยคพอดี';
+            $promptForAI .= "\nหน้าที่: *ฟังและตอบสิ่งที่ลูกค้าเพิ่งพูดก่อนเสมอ* เหมือนแอดมินตัวจริงตอบแชท\n"
+                .'- ลูกค้าบอกปัญหาการโอน → ช่วยแก้ปัญหานั้นตรงๆ (ไม่มีบัญชี/แอป → ให้ญาติหรือคนใกล้ตัวโอนแทนได้'
+                ." · คนอื่นโอนแทน → ได้เลย · โอนแล้วส่งรูปสลิปมาในแชทได้)\n"
+                ."- ลูกค้าขอเวลา/จะโอนทีหลัง → รับทราบ ไม่เร่ง ถ้าเลยเวลาบิลหมดอายุ บอกว่าทักมาพิมพ์ \"ดูดวง\" ออกบิลใหม่ได้\n"
+                ."- ลูกค้าติดขัดเรื่องเงิน → เห็นใจ ห้ามชวนหรือเร่งให้โอน\n"
+                ."- ลูกค้าเล่าเรื่อง/ถามเรื่องอื่น → ตอบเรื่องนั้น ไม่ต้องวกกลับมาเรื่องโอน\n"
+                ."- พิมพ์ผิดเยอะ → เดาความหมายจากบทสนทนา ถ้าไม่แน่ใจให้ถามกลับสั้นๆ ว่าหมายถึงอะไร\n"
+                ."- ถามเรื่องราคา/ขอฟรี/ทำไมต้องจ่าย → ใช้แนวทางใน \"บริบท intent\" พูดสั้นๆ ไม่เทศน์\n"
+                ."- ลูกค้าขอเลขบัญชี/QR ใหม่ → บอกให้พิมพ์คำว่า \"บัญชี\" ระบบจะส่งช่องทางโอน + QR ให้ทันที\n"
+                .$cardLine
+                .'ห้าม: ทวงหรือเร่งให้โอนเมื่อลูกค้าไม่ได้ถาม · เทศน์เรื่องค่าครูเมื่อลูกค้าไม่ได้ถาม'
+                .' · แต่งวิธีจ่ายเงินที่ไม่มีจริง (มีแค่พร้อมเพย์/โอนเข้าบัญชีตามบิล) · พิมพ์เลขบัญชีเอง'
+                .' · สัญญาสิ่งที่ระบบไม่มี (ให้ดูก่อนจ่าย / ขยายเวลาบิล / ลดราคา / ยกเว้นค่าครู)'
+                .' · พูดชื่อป้ายหรือคำภาษาอังกฤษจากข้อมูลระบบข้างบน · ใส่ลิสต์ · ใส่ [OFFER_FORTUNE]'."\n"
+                .'ตอบภาษาแชทธรรมดา 1-3 ประโยค';
 
             // 🩹 (2026-06-27) $promptForAI = พรอมต์ที่ระบบสร้าง (มี "ห้ามใส่ [OFFER_FORTUNE]") →
             //   ส่ง guardText=ข้อความดิบลูกค้า ให้ guard ตรวจ input จริง ไม่ใช่คำสั่งในพรอมต์
@@ -22201,14 +22208,15 @@ PROMPT;
                 return '';
             }
 
-            // อัพเดท nudge_count
-            $reading->setConversationState('nudge_count', $nudgeCount + 1);
-            $reading->setConversationState('last_nudge_at', now()->toIso8601String());
+            // นับรอบ (Cache — ห้ามเขียน conversation_state ตรงนี้ ดูเหตุผลที่หัวฟังก์ชัน)
+            Cache::put($nudgeKey, $nudgeCount + 1, now()->addMinutes(FortuneReading::billTimeoutMinutes() + 60));
 
             Log::info('Fortune: AI pre-cancel nudge ส่งให้ผู้ใช้ระหว่าง PENDING_PAYMENT', [
                 'reading_id' => $reading->id,
                 'bill_reference' => $reading->bill_reference,
                 'nudge_round' => $nudgeCount + 1,
+                'listen_intent' => $listenIntent,
+                'history_turns' => count($recentLines),
                 'intent' => $intentHint,
                 'remaining_minutes' => $remainingMinutes,
                 'user_text_preview' => mb_substr($messageText, 0, 50),

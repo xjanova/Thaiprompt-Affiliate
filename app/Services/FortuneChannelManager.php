@@ -722,7 +722,9 @@ class FortuneChannelManager
                     : $fbService->sendMessage($userId, $message ?: '🌙 แม่หมอย้ายไปดูให้ที่เว็บกับ LINE แล้วนะคะ'),
 
                 // รอชำระเงิน (เตือนซ้ำ) → Waiting Payment Template
-                'waiting_payment' => $this->sendFacebookWaitingPaymentResponse($fbService, $richService, $userId, $result),
+                // 👂 (2026-09-15) waiting_payment_reply = คำตอบที่ "ฟังลูกค้า" ระหว่างรอโอนบิล 39 (PendingPaymentListenerTrait)
+                //   ฝั่ง FB เรนเดอร์เหมือนกัน (ข้อความ + ปุ่มเช็คสถานะ/ยกเลิก) — แยกชื่อไว้เพราะฝั่ง LINE ต่างกัน
+                'waiting_payment', 'waiting_payment_reply' => $this->sendFacebookWaitingPaymentResponse($fbService, $richService, $userId, $result),
 
                 // ยืนยันชำระเงินสำเร็จ → Payment Confirmed Template
                 'payment_confirmed_wait' => $this->sendFacebookPaymentConfirmedResponse($fbService, $richService, $userId, $result),
@@ -2722,6 +2724,14 @@ class FortuneChannelManager
 
                 // รอชำระเงิน (เตือนซ้ำ) → Flex ยอดเงิน + เวลาเหลือ
                 'waiting_payment' => $this->sendLineWaitingPaymentResponse($lineService, $userId, $result, $replyToken),
+
+                // 👂 (2026-09-15) คำตอบที่ "ฟังลูกค้า" ระหว่างรอโอนบิล 39 → ข้อความจริง + ปุ่ม (reply ก่อน ฟรี)
+                //   ⚠️ ห้ามส่งเข้า sendLineWaitingPaymentResponse — ตัวนั้นทิ้งข้อความทั้งก้อนแล้วส่งการ์ดยอดเงินแทน
+                //   = ลูกค้า LINE จะเห็นแต่การ์ดทวงเงิน ไม่ว่าจะพิมพ์อะไรมา
+                'waiting_payment_reply' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔍 เช็คสถานะ', 'text' => 'เช็คสถานะ'],
+                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
 
                 // 🔍 เช็คสถานะบิล (ผู้ใช้กด "เช็คสถานะ") — ตอบสถานะจริง + ปุ่มเช็คอีกครั้ง
                 'payment_check_processing' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
@@ -6953,7 +6963,7 @@ class FortuneChannelManager
         // ⛔ Actions ที่ไม่ apply warning (เกี่ยวกับ payment โดยตรง — ลูกค้ารู้อยู่แล้ว)
         $skipActions = [
             'pending_payment', 'celtic_pending_payment', 'celtic_pending_payment_reuse',
-            'waiting_payment',
+            'waiting_payment', 'waiting_payment_reply',
             'payment_check_processing', 'payment_check_pending', 'payment_check_expired',
             'payment_confirmed_wait',
             'view_reading_celtic_pending', 'view_reading_deep_pending',

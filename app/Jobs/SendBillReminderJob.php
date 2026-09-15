@@ -57,6 +57,20 @@ class SendBillReminderJob implements ShouldQueue
             return;
         }
 
+        // 👂 (2026-09-15) ลูกค้ากำลังพิมพ์คุยกับบอทอยู่ → อย่าแทรกข้อความทวง
+        //   ตัวเตือนมีไว้ปลุกคน "เงียบหาย" ไม่ใช่คนที่กำลังเล่าปัญหาการโอน
+        //   เคส FTU-260915-D0350: ลูกค้าพิมพ์ "คือไม่มีบัญชี" 23:15:00 → ตัวเตือนยิง
+        //   "แม่หมอเห็นว่าบิล... ยังไม่ได้โอนเลยนะคะ" 23:15:14 (14 วินาทีต่อมา)
+        //   ⚠️ ไม่ mark stage — cron ทุกนาทีจะลองใหม่เองเมื่อลูกค้าเงียบไปแล้ว (ถ้ายังอยู่ในหน้าต่าง stage)
+        if ($this->customerIsTalking($reading)) {
+            Log::info('SendBillReminderJob: ลูกค้าเพิ่งพิมพ์คุยอยู่ — เลื่อนการเตือน', [
+                'reading_id' => $reading->id,
+                'stage' => $this->stage,
+            ]);
+
+            return;
+        }
+
         // 🌙 (2026-05-24) Branch ตาม state:
         //   - AWAITING_PAYMENT_METHOD → ยังไม่มี UPA — nudge ให้กดปุ่มเลือกวิธีจ่าย
         //   - PENDING_PAYMENT / CELTIC_PENDING_PAYMENT → require UPA reserved ยังไม่หมดอายุ
@@ -141,6 +155,30 @@ class SendBillReminderJob implements ShouldQueue
                 'platform' => $platform,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * 👂 (2026-09-15) ลูกค้าพิมพ์ระหว่างรอโอนภายใน N นาทีล่าสุดหรือไม่
+     *
+     * อ่านเครื่องหมายที่ตัวจัดการบิลรอโอน (บิล 39 + Celtic 99) จดไว้ทุกข้อความ
+     * — PendingPaymentListenerTrait::notePendingPaymentActivity()
+     */
+    private function customerIsTalking(FortuneReading $reading): bool
+    {
+        try {
+            $at = \Illuminate\Support\Facades\Cache::get(
+                \App\Services\FortuneConversationService::pendingCustomerActiveKey((int) $reading->id)
+            );
+            if (empty($at)) {
+                return false;
+            }
+
+            return \Illuminate\Support\Carbon::parse($at)->gt(
+                now()->subMinutes(\App\Services\FortuneConversationService::pendingCustomerActiveMinutes())
+            );
+        } catch (\Throwable $e) {
+            return false; // อ่านไม่ได้ = เตือนตามปกติ (พฤติกรรมเดิม)
         }
     }
 

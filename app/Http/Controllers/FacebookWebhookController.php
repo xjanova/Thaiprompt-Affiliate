@@ -5364,7 +5364,7 @@ class FacebookWebhookController extends Controller
                 'awaiting_confirmation', 'basic_done', 'check_remaining',
                 'collecting_questions', 'need_more_questions', 'retry_question',
                 'awaiting_question', 'invalid_birthdate', 'collecting_birthdate',
-                'pending_payment', 'waiting_payment',
+                'pending_payment', 'waiting_payment', 'waiting_payment_reply',
                 'ai_limit', 'declined', 'payment_expired', 'completed',
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
                 // 🎯 Phase C — ตรวจพบวันเกิดจากข้อความแรก
@@ -5529,7 +5529,7 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
             ],
             // 🎯 Phase E — เอาปุ่ม "วิธีใช้งาน" ออก
-            'pending_payment', 'waiting_payment' => [
+            'pending_payment', 'waiting_payment', 'waiting_payment_reply' => [
                 ['content_type' => 'text', 'title' => '❌ ยกเลิกบิล', 'payload' => 'CANCEL_PAYMENT'],
             ],
             // 🎯 Phase C — ลูกค้าพิมพ์วันเกิดมาก่อน → ถาม "ดูดวงเชิงลึกไหม?"
