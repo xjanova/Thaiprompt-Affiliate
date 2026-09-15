@@ -229,6 +229,9 @@
                                 @case('expired')
                                     <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300 rounded-full">⏰ หมดอายุ</span>
                                     @break
+                                @case('external')
+                                    <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 rounded-full">ของ จันทรา.online</span>
+                                    @break
                             @endswitch
                         </td>
                     </tr>

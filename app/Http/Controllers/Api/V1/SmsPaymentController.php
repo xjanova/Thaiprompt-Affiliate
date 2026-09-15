@@ -2078,6 +2078,24 @@ class SmsPaymentController extends Controller
         }
 
         $amount = (float) $amount;
+
+        // 🌙 (2026-09-15) ยอดของเว็บ จันทรา.online — ห้ามทุกด่านข้างล่าง (รวมทางลัดยอดดิบ Fallback 3)
+        //   หยิบไปตัดบิลของเรา · ตอบ external_site ให้แอพรู้ว่าเงินก้อนนี้เป็นของเว็บไหน
+        //   (endpoint นี้ไม่มีเวลาใน SMS → เช็คแค่ช่วงอ้างสิทธิ์ของยอด)
+        if (UniquePaymentAmount::findJuntrawebClaim($amount) !== null) {
+            $device->update(['last_active_at' => now()]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'matched' => false,
+                    'order' => null,
+                    'external_site' => UniquePaymentAmount::EXTERNAL_SITE_JUNTRAWEB,
+                    'message' => 'Amount '.number_format($amount, 2).' belongs to '.UniquePaymentAmount::EXTERNAL_SITE_JUNTRAWEB,
+                ],
+            ]);
+        }
+
         $graceMinutes = (int) config('smschecker.orphan.match_window_minutes', 60);
         $deviceStoreId = $this->resolveDeviceStoreId($device);
 
@@ -2215,9 +2233,11 @@ class SmsPaymentController extends Controller
                 if ($autoConfirm && ! $fortuneReading->is_paid) {
                     try {
                         // 🔮 หา notification ที่เพิ่งส่ง (จาก /match endpoint)
+                        //   🌙 ไม่หยิบ SMS ที่เป็นเงินของจันทรา.online (status external) มาผูกบิลเรา
                         $notification = SmsPaymentNotification::where('amount', $amount)
                             ->where('type', 'credit')
                             ->whereNull('matched_transaction_id')
+                            ->where('status', '!=', 'external')
                             ->orderBy('sms_timestamp', 'desc')
                             ->first();
 
@@ -3288,6 +3308,19 @@ class SmsPaymentController extends Controller
         $smsTimestamp = \Carbon\Carbon::parse($request->input('sms_timestamp'));
         $windowHours = (int) $request->input('window_hours', 24);
 
+        // 🌙 (2026-09-15) เงินของเว็บ จันทรา.online ไม่ใช่ SMS กำพร้าของเรา — ห้ามเสนอบิลเรา
+        //   (โหมด SMART AUTO ของแอพกดยืนยันตัวแรกให้เองโดยไม่มีแอดมิน = เงินจันทราถูกตัดบิลเรา)
+        if (UniquePaymentAmount::findJuntrawebClaim($amount, $smsTimestamp) !== null) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'candidates' => [],
+                    'count' => 0,
+                    'external_site' => UniquePaymentAmount::EXTERNAL_SITE_JUNTRAWEB,
+                ],
+            ]);
+        }
+
         $matcher = app(\App\Services\Fortune\FortunePaymentFuzzyMatcher::class);
         $candidates = $matcher->findBillCandidatesForOrphan(
             $amount,
@@ -3383,6 +3416,24 @@ class SmsPaymentController extends Controller
         $sms = $smsId
             ? SmsPaymentNotification::find((int) $smsId)
             : null;
+
+        // 🌙 (2026-09-15) SMS ใบนี้เป็นเงินของเว็บ จันทรา.online — ห้ามผูกเข้าบิลของเรา
+        //   (จันทราเครดิตเงินก้อนนี้ไปแล้ว/กำลังเครดิต ผูกซ้ำ = เงินก้อนเดียวตัดสองเว็บ)
+        if ($sms !== null && $sms->status === 'external') {
+            Log::warning('🌙 SMS Payment: ปฏิเสธผูก SMS ของจันทรา.online เข้าบิลเรา', [
+                'device_id' => $device->device_id,
+                'bill_reference' => $billRef,
+                'sms_id' => $sms->id,
+                'auto_smart' => $autoSmart,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'SMS นี้เป็นเงินของ '.UniquePaymentAmount::EXTERNAL_SITE_JUNTRAWEB.' — ผูกกับบิลนี้ไม่ได้',
+                'reason_code' => 'external_site',
+                'external_site' => UniquePaymentAmount::EXTERNAL_SITE_JUNTRAWEB,
+            ], 409);
+        }
 
         $matcher = app(\App\Services\Fortune\FortunePaymentFuzzyMatcher::class);
         $contextLabel = $autoSmart

@@ -125,6 +125,22 @@ class SmsPaymentService
                 ];
             }
 
+            // 🌙 (2026-09-15) ขั้นที่ 0: ยอดนี้เป็นของเว็บ จันทรา.online ไหม (Thaiprompt จองยอดให้ทั้งสองเว็บ)
+            //   บัญชีเดียวกัน + มือถือ SMS เครื่องเดียวกัน → SMS ยอดของจันทราก็วิ่งมาที่นี่ด้วย
+            //   ต้องเช็ค "ก่อน" ทุกด่านจับคู่ของเรา (fortune / อีคอมเมิร์ซ / โอนขาด / ยอดพิเศษ / orphan)
+            //   ไม่งั้นเงินก้อนเดียวถูกตัดบิลทั้งสองเว็บ หรือถูกเตือนว่าเป็นเงินกำพร้าทั้งที่มีเจ้าของ
+            //   ✅ ไม่ชนบิลเรา: generate() ไม่แจกยอดที่จันทรายังอ้างสิทธิ์อยู่ให้บิลของเรา (เงื่อนไขเดียวกัน)
+            if ($notification->type === 'credit') {
+                $externalClaim = UniquePaymentAmount::findJuntrawebClaim(
+                    (float) $notification->amount,
+                    $notification->sms_timestamp
+                );
+
+                if ($externalClaim !== null) {
+                    return $this->recordExternalSitePayment($notification, $externalClaim);
+                }
+            }
+
             if ($notification->type === 'credit') {
                 // ขั้นที่ 1: ตรวจสอบว่าเป็นยอดดูดวง (unique amount ที่สร้างจาก conversation)
                 $fortuneReadingHandled = $this->handleFortuneReadingPayment($notification);
@@ -240,6 +256,55 @@ class SmsPaymentService
                 'matched_model_type' => $matchedModelType,
             ];
         });
+    }
+
+    /**
+     * 🌙 (2026-09-15) SMS ยอดนี้เป็นเงินของเว็บ จันทรา.online — บันทึกไว้ แต่ไม่จับคู่บิลของเรา
+     *
+     *   - status = 'external' → ทุกเส้นที่ไล่หา SMS ค้าง (pending / requires_admin_review) ข้ามเอง
+     *     = ไม่มีการเตือน "เงินเข้าแต่หาบิลไม่เจอ" และแอดมินอนุมัติมือก็จะไม่หยิบไปผูกบิลเรา
+     *   - ตอบแอพ SmsChecker ว่า matched:false + external_site ให้แอพจำไว้ว่าเงินก้อนนี้เป็นของเว็บไหน
+     *
+     * ⚠️ enum ของ status ต้องมี 'external' (migration 2026_09_15_100100) — ถ้ายังไม่ migrate
+     *    ถอยไปใช้ 'rejected' (= "ไม่ใช่เงินของระบบนี้") ห้ามปล่อยค้าง 'pending' ให้เส้นอื่นหยิบไปตัดบิล
+     */
+    protected function recordExternalSitePayment(SmsPaymentNotification $notification, UniquePaymentAmount $claim): array
+    {
+        try {
+            $notification->forceFill(['status' => 'external'])->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error("SMS Payment: enum status ยังไม่มี 'external' — ถอยไปใช้ 'rejected'", [
+                'notification_id' => $notification->id,
+                'hint' => 'ต้องรัน migration 2026_09_15_100100_add_external_status_to_sms_payment_notifications',
+                'sql_error' => $e->getMessage(),
+            ]);
+            $notification->forceFill(['status' => 'rejected'])->save();
+        }
+
+        Log::info('🌙 SMS Payment: ยอดนี้เป็นของจันทรา.online — บันทึกไว้ ไม่จับคู่บิลของเรา', [
+            'notification_id' => $notification->id,
+            'amount' => $notification->amount,
+            'reservation_id' => $claim->id,
+            'reservation_ref' => $claim->external_ref,
+            'reservation_status' => $claim->status,
+            'bank' => $notification->bank,
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Payment belongs to '.UniquePaymentAmount::EXTERNAL_SITE_JUNTRAWEB.' — recorded, not matched',
+            'data' => [
+                'notification_id' => $notification->id,
+                'status' => $notification->status,
+                'matched' => false,
+                'fortune_reading' => false,
+                'special_amount' => false,
+                'matched_transaction_id' => null,
+                'external_site' => UniquePaymentAmount::EXTERNAL_SITE_JUNTRAWEB,
+            ],
+            'matched_model' => null,
+            'matched_model_type' => null,
+        ];
     }
 
     /**

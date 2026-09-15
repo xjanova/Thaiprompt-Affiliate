@@ -22,7 +22,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Carbon\Carbon $sms_timestamp เวลาที่ได้รับ SMS
  * @property string $device_id รหัสอุปกรณ์
  * @property string $nonce nonce สำหรับป้องกัน replay attack
- * @property string $status สถานะ (pending/matched/confirmed/rejected/expired)
+ * @property string $status สถานะ (pending/matched/confirmed/rejected/expired/requires_admin_review/
+ *                           external = เงินของเว็บ จันทรา.online ไม่ใช่ของเรา)
  * @property int|null $matched_transaction_id ID ของ transaction ที่จับคู่ได้
  * @property string|null $raw_payload ข้อมูล payload ดิบ (JSON)
  * @property string|null $ip_address IP address ของอุปกรณ์
@@ -154,6 +155,18 @@ class SmsPaymentNotification extends Model
         // 🔒 SMS timestamp — ใช้กัน SMS ที่มาก่อนบิลถูกสร้าง
         $smsTimestamp = $this->sms_timestamp ?? $this->created_at;
 
+        // 🌙 (2026-09-15) เงินของเว็บ จันทรา.online — ห้ามตัดบิลของเรา (รวมทางลัดยอดดิบ/เลขอ้างอิงด้านล่าง)
+        //   เส้น /notify กันไว้ก่อนแล้ว — ด่านนี้กันเส้นอื่นที่เรียกตรง เช่น แอดมินกด re-match (PaymentReconController)
+        if ($this->status === 'external'
+            || UniquePaymentAmount::findJuntrawebClaim((float) $this->amount, $smsTimestamp) !== null) {
+            \Illuminate\Support\Facades\Log::info('🌙 SMS Payment: ยอดนี้เป็นของจันทรา.online — ไม่จับคู่บิลอีคอมเมิร์ซ', [
+                'notification_id' => $this->id,
+                'amount' => $this->amount,
+            ]);
+
+            return false;
+        }
+
         // ใช้ DB transaction + lock ป้องกัน race condition ในการจับคู่
         return \Illuminate\Support\Facades\DB::transaction(function () use ($autoConfirm, $smsTimestamp) {
             // ดึง store_id ของ device เพื่อ filter เฉพาะ transactions ของร้านตัวเอง
@@ -168,10 +181,12 @@ class SmsPaymentNotification extends Model
             // กรองเฉพาะบิลอีคอมเมิร์ซ (order, order_payment, topup, tarot_reading)
             // ไม่รวมบิลดูดวง (fortune_reading) เพราะจัดการแยกใน handleFortuneReadingPayment()
             // ⭐ (2026-04-28) เพิ่ม temporal check + FIFO order
+            // 🌙 (2026-09-15) ไม่รวมยอดของจันทรา.online (juntraweb_topup) — ไม่ใช่บิลของเรา
+            //   (NULL ถูกตัดทิ้งเหมือนเดิม: whereNotIn กับ != ให้ผลกับ NULL เท่ากัน)
             $uniqueAmountQuery = UniquePaymentAmount::where('unique_amount', $this->amount)
                 ->where('status', 'reserved')
                 ->where('expires_at', '>', now())
-                ->where('transaction_type', '!=', 'fortune_reading')
+                ->whereNotIn('transaction_type', ['fortune_reading', UniquePaymentAmount::TYPE_JUNTRAWEB_TOPUP])
                 ->where('created_at', '<=', $smsTimestamp)  // 🔒 SMS หลัง bill
                 ->orderBy('created_at', 'asc')              // FIFO — bill เก่าสุด
                 ->lockForUpdate();
