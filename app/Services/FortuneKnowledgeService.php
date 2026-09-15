@@ -1407,6 +1407,70 @@ class FortuneKnowledgeService
     }
 
     /**
+     * 🔮 (2026-09-15) ตาชั่ง Yes/No สำหรับสำรับกี่ใบก็ได้ (ไพ่เว็บจันทรา 1/3/5/10 ใบ)
+     *
+     * yesNoVerdict() ผูกกับ Celtic 10 ใบ (ครบ 10 ถึงจะคำนวณ + เกณฑ์ ±5/±2 ตั้งจากผลรวมตัวคูณของ 10 ตำแหน่ง)
+     * ที่นี่ใช้คะแนนรายไพ่ชุดเดียวกัน แต่ **ย่อเกณฑ์ตามสัดส่วนผลรวมตัวคูณ** ของสำรับจริง
+     * — ไม่ย่อ = ไพ่ 3 ใบแทบไม่มีทางถึง "ใช่ชัด" เลย ตาชั่งจะเอียงไปทาง "ก้ำกึ่ง" ตลอด
+     *
+     * @param  array<int, array>  $cards  key = ตำแหน่ง 1..N (card_name_en / card_name_th / is_reversed)
+     * @param  array<int, float>  $multipliers  ตำแหน่ง => ตัวคูณ (ไม่ระบุ = 1.0)
+     * @return string ว่าง = ใช้ไม่ได้ (ไม่มีไพ่ที่รู้จักน้ำหนักเลย)
+     */
+    public function yesNoVerdictFor(array $cards, array $multipliers): string
+    {
+        $cfg = (array) config('fortune_yes_no_weights', []);
+        $weights = (array) ($cfg['card_weights'] ?? []);
+        $verdicts = (array) ($cfg['verdicts'] ?? []);
+        $celticSum = array_sum(array_map('floatval', (array) ($cfg['position_multiplier'] ?? []))) ?: 10.0;
+
+        if (empty($weights)) {
+            return '';
+        }
+
+        $total = 0.0;
+        $multSum = 0.0;
+        $lines = [];
+        ksort($cards);
+        foreach ($cards as $pos => $card) {
+            $nameEn = (string) ($card['card_name_en'] ?? '');
+            if ($nameEn === '' || ! array_key_exists($nameEn, $weights)) {
+                continue;
+            }
+            $raw = (int) $weights[$nameEn];
+            if (! empty($card['is_reversed'])) {
+                $raw = -$raw;
+            }
+            $mult = (float) ($multipliers[$pos] ?? 1.0);
+            $total += $raw * $mult;
+            $multSum += $mult;
+
+            $th = ((string) ($card['card_name_th'] ?? '')) ?: $nameEn;
+            $rev = ! empty($card['is_reversed']) ? '(กลับหัว)' : '';
+            $lines[] = "   ต.{$pos} {$th}{$rev}: ".($raw > 0 ? '+' : '')."{$raw} × {$mult} = ".number_format($raw * $mult, 1);
+        }
+
+        if ($multSum <= 0) {
+            return '';
+        }
+
+        $scale = $multSum / $celticSum;
+        $verdictKey = 'strong_no';
+        foreach (['strong_yes', 'lean_yes', 'unclear', 'lean_no'] as $k) {
+            if ($total >= (float) ($verdicts[$k]['threshold'] ?? 0) * $scale) {
+                $verdictKey = $k;
+                break;
+            }
+        }
+        $verdict = (array) ($verdicts[$verdictKey] ?? []);
+
+        return '📊 คะแนนรวม: '.number_format($total, 1).' (จาก '.count($lines)." ใบ)\n"
+            .($verdict['icon'] ?? '').' ผลฟันธง: '.($verdict['text'] ?? '')."\n\n"
+            ."🔍 รายละเอียดต่อใบ (คะแนน × ตัวคูณตำแหน่ง):\n"
+            .implode("\n", $lines);
+    }
+
+    /**
      * จำแนกไพ่จาก name_en → arcana/suit/rank/isCourt/isAce/number
      *
      * @return array{arcana:string, suit:?string, rank:?string, isCourt:bool, isAce:bool, number:?int}

@@ -81,6 +81,18 @@ class FortuneAIService
     protected ?array $chartInputs = null;
 
     /**
+     * 🔮 (2026-09-15) บล็อกคำสั่งที่ต่อท้าย system role ของ "การทำนาย" สำหรับ call ถัดไป — ตั้งผ่าน
+     * withReadingOverride() · ONE-SHOT ล้างใน finally ของ generateWithRetryAndFallback()
+     *
+     * ใช้กับไพ่ที่ลูกค้าเปิดเองบนเว็บจันทรา: SYSTEM_MESSAGE ของเลนทำนายสั่ง "สุ่มจับไพ่ 1 ใบ" + โครง
+     * คำตอบของบอท — ไพ่เว็บมีไพ่ของลูกค้าแล้ว ถ้าไม่ลบล้างจะได้ไพ่ผีใบเกิน (บทเรียนเดียวกับ Celtic R4393)
+     */
+    protected ?string $readingOverride = null;
+
+    /** 🔮 (2026-09-15) ONE-SHOT — ดู withConfigOverride() · ล้างใน finally ของ generateWithRetryAndFallback() */
+    protected ?array $configOverride = null;
+
+    /**
      * 🆕 (2026-05-07) constructor รับ $purpose เพื่อเลือก key ที่ตรง purpose ตั้งแต่แรก
      *   เดิม: acquire key โดยไม่รู้ purpose → ได้ key ทั่วไป (ละเลย purpose enum)
      *   ใหม่: caller ระบุ purpose ('prediction'/'chat'/'free_card') → key ตรงประเภทถูกเลือก
@@ -4922,7 +4934,33 @@ PROMPT;
             $this->callContext = null;
             $this->chartBirthProvince = null;
             $this->chartInputs = null;
+            $this->readingOverride = null;
+            $this->configOverride = null;
         }
+    }
+
+    /**
+     * 🔮 (2026-09-15) ต่อบล็อกคำสั่งท้าย system role ของการทำนาย **เฉพาะ call ถัดไป** (ดู $readingOverride)
+     */
+    public function withReadingOverride(?string $block): self
+    {
+        $this->readingOverride = ($block !== null && trim($block) !== '') ? $block : null;
+
+        return $this;
+    }
+
+    /**
+     * 🔮 (2026-09-15) ความยาว/อุณหภูมิ/เพดานเวลา **เฉพาะ call ถัดไป** ของ generateWithRetryAndFallback()
+     *
+     * คีย์ที่รับ: max_tokens · temperature · reasoning_effort · budget_sec (เพดานเวลาวนลอง key)
+     * ⚠️ เป็น property แบบ ONE-SHOT ไม่ใช่พารามิเตอร์ใหม่ — เทสต์หลายไฟล์ subclass
+     *    generateWithRetryAndFallbackInner() ด้วย signature เดิม เพิ่มพารามิเตอร์ = fatal ทั้งชุด
+     */
+    public function withConfigOverride(?array $config): self
+    {
+        $this->configOverride = $config ?: null;
+
+        return $this;
     }
 
     /**
@@ -4944,6 +4982,13 @@ PROMPT;
         $errors = [];
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
         $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
+        // 🔮 (2026-09-15) ความยาว/อุณหภูมิเฉพาะงาน (เช่น ไพ่เว็บ 1 ใบสั้น · 12 เดือนยาว) — รับเฉพาะคีย์ที่รู้จัก
+        $configOverride = $this->configOverride;
+        if (! empty($configOverride)) {
+            $config = array_merge($config, array_intersect_key($configOverride, array_flip(['max_tokens', 'temperature', 'reasoning_effort'])));
+        }
+        // เพดานเวลารวมของการวนลอง key — ผู้เรียกที่มีคนรอหน้าเว็บ (ตัดที่ ~55 วิ) ตั้งให้สั้นกว่า 150 วิของบอทได้
+        $budgetSec = (float) ($configOverride['budget_sec'] ?? self::DEEP_TOTAL_BUDGET_SEC);
         $startTime = microtime(true);
 
         // 🎯 Phase H — ใช้ smart load-balanced ordering ตาม user context
@@ -4997,10 +5042,10 @@ PROMPT;
         foreach ($allKeys as $index => $keyInfo) {
             // ⏱️ Total budget check — เกิน 90s แล้วหยุด ไม่งั้นลูกค้ารอนานเกินไป
             $elapsedSec = microtime(true) - $startTime;
-            if ($elapsedSec >= self::DEEP_TOTAL_BUDGET_SEC) {
+            if ($elapsedSec >= $budgetSec) {
                 Log::warning('FortuneAI: เกิน total budget — หยุด fallback loop', [
                     'elapsed_sec' => round($elapsedSec, 1),
-                    'budget_sec' => self::DEEP_TOTAL_BUDGET_SEC,
+                    'budget_sec' => $budgetSec,
                     'tried_keys' => $index,
                     'remaining_keys' => count($allKeys) - $index,
                 ]);
@@ -5118,7 +5163,7 @@ PROMPT;
             ['prediction_deep', 'prediction_celtic', 'prediction', 'free_card'],
             true
         );
-        $stillHaveBudget = (microtime(true) - $startTime) < self::DEEP_TOTAL_BUDGET_SEC;
+        $stillHaveBudget = (microtime(true) - $startTime) < $budgetSec;
 
         if ($isEmergencyEligible && $stillHaveBudget && ! empty($errors)) {
             // ID ของ keys ที่ลองไปแล้วใน main loop
@@ -5148,7 +5193,7 @@ PROMPT;
             ]);
 
             foreach ($emergencyKeys as $emKey) {
-                if ((microtime(true) - $startTime) >= self::DEEP_TOTAL_BUDGET_SEC) {
+                if ((microtime(true) - $startTime) >= $budgetSec) {
                     Log::warning('FortuneAI: emergency expand เกิน budget — หยุด');
                     break;
                 }
@@ -5903,6 +5948,12 @@ PROMPT;
                 ."• ❌ ยกเลิกกฎ \"สุ่มจับไพ่ทาโร่ 1 ใบทุกครั้ง\" และบรรทัด \"🃏 ไพ่ที่จับได้\" — ห้ามสุ่ม/จับ/เพิ่มไพ่ใบใหม่นอกเหนือ 10 ใบเด็ดขาด\n"
                 ."• ✅ ทำนายจากไพ่ 10 ใบที่ระบุ × ตำแหน่งของมัน 100% ตามโครงสร้างใน user message\n"
                 .'• เคล็ด/มู/ธรรมะ "ไม่บังคับทุกครั้ง" — ใส่เฉพาะเมื่อสัมพันธ์กับไพ่/คำถามจริง (ไม่ต้องมี ✨เคล็ด/🙏ธรรมะ ติดทุกคำตอบ)';
+        }
+
+        // 🔮 (2026-09-15) ไพ่ที่ลูกค้าเปิดเองบนเว็บจันทรา — ผู้เรียกส่งบล็อกลบล้างมาเอง (ONE-SHOT)
+        //   วางท้ายสุด: ต้องชนะทั้งกฎ "สุ่มจับไพ่ 1 ใบ" และ [โครงสร้างคำตอบ] ของบอทด้านบน
+        if ($this->readingOverride !== null) {
+            $base .= "\n\n".$this->readingOverride;
         }
 
         return $base;

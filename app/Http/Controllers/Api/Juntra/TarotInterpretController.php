@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api\Juntra;
 
 use App\Http\Controllers\Controller;
+use App\Services\Fortune\FortuneModelRouter;
+use App\Services\Fortune\JuntraSpreadProfiles;
+use App\Services\Fortune\ThaiAstrologyService;
 use App\Services\FortuneAIService;
 use App\Services\FortuneKnowledgeService;
 use Illuminate\Http\JsonResponse;
@@ -50,6 +53,13 @@ class TarotInterpretController extends Controller
             'cards.*.position_name' => 'nullable|string|max:128',
             'cards.*.position_description' => 'nullable|string|max:500',
             'cards.*.asks' => 'nullable|string|max:500',
+            // juntraweb รุ่นก่อน 2026-09-15 ส่งชื่อนี้ — เดิมไม่อยู่ใน validate จึงหล่นหายเงียบ ๆ
+            'cards.*.position_asks' => 'nullable|string|max:500',
+            // 🔮 (2026-09-15) โปรไฟล์ต่อแพ็กเกจ — ชื่อเดือนจริงของ 12 เดือน / วันเกิด (ไม่บังคับ) / ชื่อที่ใช้ใน log
+            'months' => 'nullable|array|max:'.self::MAX_CARDS,
+            'months.*' => 'nullable|string|max:40',
+            'birth_date' => 'nullable|date_format:Y-m-d|before:today|after:1900-01-01',
+            'customer_name' => 'nullable|string|max:80',
             'cards.*.name_th' => 'nullable|string|max:128',
             'cards.*.card_name_th' => 'nullable|string|max:128',
             'cards.*.name_en' => 'nullable|string|max:128',
@@ -62,6 +72,13 @@ class TarotInterpretController extends Controller
         $cards = $this->normaliseCards($data['cards']);
         if (empty($cards)) {
             return response()->json(['message' => 'ไพ่ที่ส่งมาไม่ครบข้อมูล'], 422);
+        }
+
+        // 🔮 (2026-09-15) แพ็กเกจที่มีโปรไฟล์ → อ่านตามวิธีของแพ็กเกจนั้น บนเลนทำนายเดียวกับบอท 39/99
+        //    (แพ็กเกจที่ไม่รู้จัก / juntraweb รุ่นเก่า → ทางเดิมด้านล่าง ไม่พัง)
+        $profile = JuntraSpreadProfiles::get($data['spread_key'] ?? null);
+        if ($profile !== null) {
+            return $this->profileReading($profile, $data, $cards, $ai, $kb);
         }
 
         $knowledge = $this->knowledgeBlock($kb, $cards, (string) ($data['question'] ?? ''));
@@ -106,6 +123,137 @@ class TarotInterpretController extends Controller
     }
 
     /**
+     * 🔮 (2026-09-15) ทำนายตามโปรไฟล์ของแพ็กเกจ — เลนทำนายเดียวกับบอท (system role ของ 39/99 + override ไพ่เว็บ)
+     *
+     * @param  array<string,mixed>  $profile  JuntraSpreadProfiles::get()
+     * @param  array<int,array<string,mixed>>  $cards
+     */
+    private function profileReading(array $profile, array $data, array $cards, FortuneAIService $ai, FortuneKnowledgeService $kb): JsonResponse
+    {
+        $question = trim((string) ($data['question'] ?? ''));
+
+        // ด่านกันเจลเบรค — ทางนี้ไม่ผ่าน chatWithCustomSystemPrompt จึงต้องตรวจเอง (เฉพาะคำถามดิบของลูกค้า)
+        //   ปฏิเสธ (ไม่ใช่คำตอบสำเร็จรูป) — juntraweb จะคืนเงิน ลูกค้าไม่ต้องจ่ายเพื่อได้ข้อความปัด
+        if ($question !== '' && ($attack = FortuneAIService::detectAdversarialInput($question)) !== null) {
+            Log::warning('Juntra tarot profile: question rejected by adversarial guard', ['attack' => $attack, 'profile' => $profile['key']]);
+
+            return response()->json(['message' => 'คำถามนี้แม่หมอทำนายให้ไม่ได้', 'reason_code' => 'question_rejected'], 422);
+        }
+
+        $blocks = ['knowledge' => $this->knowledgeBlock($kb, $cards, $question)];
+
+        if (in_array('black_magic', $profile['knowledge'], true)) {
+            $bm = '';
+            try {
+                $bm = trim((string) $kb->blackMagicSignalLinesForCards($cards));
+            } catch (\Throwable $e) {
+                Log::debug('Juntra tarot profile: black magic signals skipped', ['err' => $e->getMessage()]);
+            }
+            // ว่าง = ไม่มีใบไหนชี้ว่ามีของ — ต้องบอกโมเดลตรง ๆ ไม่งั้นมันปั้นเอง (fear-anchoring)
+            $blocks['knowledge'] = trim($blocks['knowledge']."\n\n🪬 คลังสัญญาณไสยศาสตร์ (เฉพาะใบที่ส่งสัญญาณจริงตามทิศที่เปิด):\n"
+                .($bm !== '' ? $bm : 'ไม่มีไพ่ใบไหนในสำรับนี้ส่งสัญญาณของ/คุณไสย์ → ผลวินิจฉัยต้องเป็น "พบของ: ไม่ใช่" หรือ "ไม่ชัด" ห้ามปั้น'));
+        }
+
+        $multipliers = JuntraSpreadProfiles::yesNoMultipliers($profile);
+        if ($multipliers !== null && $question !== '' && self::looksYesNo($question)) {
+            $yn = $kb->yesNoVerdictFor($cards, $multipliers);
+            if ($yn !== '') {
+                $blocks['yes_no'] = "🎯 ตาชั่งใช่/ไม่ใช่ (น้ำหนักไพ่ × ตำแหน่ง — เข็มทิศสำหรับบรรทัด \"ผล:\" ❌ ห้ามพิมพ์ตัวเลขให้ลูกเห็น):\n".$yn;
+            }
+        }
+
+        if ($profile['birth'] && ! empty($data['birth_date'])) {
+            [$y, $m, $d] = array_map('intval', explode('-', $data['birth_date']));
+            try {
+                $birth = trim((new ThaiAstrologyService)->buildCelticBirthAstrologyBlock("เกิด {$d}/{$m}/{$y}"));
+            } catch (\Throwable $e) {
+                $birth = '';
+                Log::info('Juntra tarot profile: birth chart skipped', ['err' => $e->getMessage()]);
+            }
+            if ($birth !== '') {
+                $blocks['birth'] = "🌠 ดวงดาวจากวันเกิดของลูก (ใช้เสริมจังหวะเวลา/จุดแข็ง-จุดอ่อน ห้ามให้ดวงกลบคำตอบของไพ่):\n".$birth;
+            }
+        }
+
+        $months = $profile['key'] === 'year'
+            ? array_values(array_filter(array_map(fn ($m) => trim((string) $m), (array) ($data['months'] ?? [])), fn ($m) => $m !== ''))
+            : [];
+        if ($profile['key'] === 'year' && count($months) !== count($cards)) {
+            // ไม่มีชื่อเดือนจริงมาครบ — ใช้ "เดือนที่ N" ดีกว่าเดาปฏิทินเอง
+            $months = array_map(fn ($i) => 'เดือนที่ '.$i, range(1, count($cards)));
+        }
+
+        $prompt = JuntraSpreadProfiles::userPrompt($profile, $cards, $question, $months, $blocks);
+
+        try {
+            $ai->withReadingOverride(JuntraSpreadProfiles::systemOverride($profile, count($cards)))
+                // หน้าเว็บรอได้ ~55 วิ — หยุดวนลอง key ก่อนนั้น (บอทรอได้ 150 วิ)
+                ->withConfigOverride(['max_tokens' => $profile['max_tokens'], 'temperature' => 0.6, 'budget_sec' => 50])
+                ->withCustomerContext(array_filter(['customer_name' => $data['customer_name'] ?? null]));
+
+            $result = $ai->generateWithRetryAndFallback(
+                questions: [$prompt],
+                userProfile: null,
+                userPosts: null,
+                promptTemplate: '{questions}',
+                readingType: 'deep',
+                birthDate: null,
+                userContext: 'jw_tarot:'.$profile['key'],
+                purpose: $profile['purpose'],
+                // 🪬 คุณไสย์ → โมเดลตัวแรงทุกครั้ง (นโยบายเดียวกับบอท — FortuneModelRouter)
+                modelOverrides: $profile['strong_model'] ? ['openai' => FortuneModelRouter::MODEL_STRONG] : null,
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Juntra tarot profile reading failed', ['profile' => $profile['key'], 'err' => $e->getMessage()]);
+
+            return response()->json(['message' => 'ระบบคำทำนายไม่พร้อมชั่วคราว'], 503);
+        }
+
+        $text = self::cleanReading((string) ($result['response'] ?? ''));
+        if ($text === '') {
+            return response()->json(['message' => 'คำทำนายว่างเปล่า'], 503);
+        }
+
+        return response()->json(['data' => [
+            'interpretation' => $text,
+            'ai_provider' => $result['provider'] ?? null,
+            'ai_model' => $result['model'] ?? null,
+            'tokens_used' => $result['tokens_used'] ?? null,
+            'knowledge_used' => trim($blocks['knowledge']) !== '',
+            'profile' => $profile['key'],
+            // หัวข้อครบตามสัญญาไหม — เว็บใช้จัดการ์ด (ไม่ครบ = เว็บแสดงเป็นข้อความธรรมดา)
+            'format_ok' => str_contains($text, '## '.JuntraSpreadProfiles::HEADINGS[$profile['key'] === 'kunsai' ? 'diagnosis' : 'verdict']),
+        ]]);
+    }
+
+    /** คำถามใช่/ไม่ใช่ไหม — คำชี้ชุดเดียวกับ CelticCrossService::buildYesNoDirective */
+    private static function looksYesNo(string $q): bool
+    {
+        foreach (['หรือเปล่า', 'รึเปล่า', 'หรือไม่', 'ใช่ไหม', 'ใช่มั้ย', 'ได้ไหม', 'ได้มั้ย', 'ดีไหม', 'ดีมั้ย', 'ควรไหม', 'ควรมั้ย',
+            'เขาจะ', 'เค้าจะ', 'เธอจะ', 'จะกลับ', 'จะรัก', 'จะแต่ง', 'จะเลิก', 'จะได้', 'จะรวย', 'จะติด', 'จะผ่าน', 'ไหม', 'มั้ย'] as $kw) {
+            if (mb_strpos($q, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตัดของที่โมเดลชอบแถมมา: ป้าย [TYPE:x] และคำเกริ่นก่อนหัวข้อแรก (ถ้าสั้น — ยาวอาจเป็นเนื้อหาจริง ไม่ตัด)
+     */
+    private static function cleanReading(string $text): string
+    {
+        $text = trim((string) preg_replace('/[`*]{0,3}[\[\【\［]?\s*TYPE\s*[:：]\s*[A-E]\s*[\]\】\］]?[`*]{0,3}/iu', '', $text));
+        $first = mb_strpos($text, '## ');
+        if ($first !== false && $first > 0 && $first < 300) {
+            $text = mb_substr($text, $first);
+        }
+
+        return trim($text);
+    }
+
+    /**
      * แปลงไพ่จาก juntraweb ให้อยู่ในรูปที่ FortuneKnowledgeService อ่านได้
      * (key = ตำแหน่ง 1..N, ค่าใช้ชื่อฟิลด์เดียวกับที่บอทเก็บใน celtic_cards)
      *
@@ -131,7 +279,7 @@ class TarotInterpretController extends Controller
 
             $cards[$pos] = [
                 'position_name' => (string) ($c['position_name'] ?? $c['position_label'] ?? "ใบที่ {$pos}"),
-                'position_description' => (string) ($c['position_description'] ?? $c['asks'] ?? ''),
+                'position_description' => (string) ($c['position_description'] ?? $c['asks'] ?? $c['position_asks'] ?? ''),
                 'card_name_en' => $nameEn,
                 'card_name_th' => $nameTh !== '' ? $nameTh : $nameEn,
                 'is_reversed' => (bool) ($c['is_reversed'] ?? $c['reversed'] ?? false),

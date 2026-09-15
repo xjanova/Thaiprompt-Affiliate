@@ -27,11 +27,16 @@ class JuntraTarotInterpretTest extends TestCase
 
     private const URL = '/api/v1/juntra/fortune/tarot/interpret';
 
+    /**
+     * ไฟล์นี้ตรึง "ทางเดิม" (system prompt กลาง + chatWithCustomSystemPrompt) ซึ่งยังใช้กับแพ็กเกจที่ไม่มีโปรไฟล์
+     * 🔮 (2026-09-15) แพ็กเกจที่มีโปรไฟล์ (single/three/love/career/decision/celtic/year/kunsai) ไปเลนทำนาย
+     *    ของบอทแทน — ตรึงไว้ที่ JuntraTarotProfilesTest · ที่นี่จึงใช้ชื่อแพ็กเกจที่ไม่มีโปรไฟล์
+     */
     private function payload(array $override = []): array
     {
         return array_merge([
-            'spread'      => 'tarot_celtic',
-            'spread_key'  => 'celtic',
+            'spread'      => 'tarot_custom',
+            'spread_key'  => 'custom_without_profile',
             'spread_name' => 'เซลติกครอส',
             'question'    => 'ความรักของหนูจะเป็นอย่างไรคะ',
             'prompt'      => 'อ่านไพ่ชุดนี้ให้เจ้าชะตาแบบฟันธง',
