@@ -1711,6 +1711,28 @@ Route::prefix('v1/juntra')->middleware(['juntra.user'])->name('api.juntra.')->gr
     });
 });
 
+// ─── Juntra (จันทรา.online) server-to-server — slips + cross-site unique amounts ──
+// 🔐 (2026-09-15) เซิร์ฟเวอร์ของจันทรายิงเอง ไม่มีผู้ใช้ปลายทาง → ไม่อยู่ในกลุ่ม 'juntra.user'
+//    'juntra.server' = Passport client_credentials ของ client จันทราเท่านั้น (token ผู้ใช้ = 403)
+//    - slips/*   : สลิปใบเดียวใช้ได้ครั้งเดียวข้ามบอท + วอลเลตจันทรา (SlipOK ก้อนเดียวกับบอท)
+//    - amounts/* : Thaiprompt จองยอดทศนิยมให้ทั้งสองเว็บ (บัญชี + มือถือ SMS เดียวกัน ห้ามชน)
+Route::prefix('v1/juntra/server')
+    ->middleware(['juntra.server', 'throttle:120,1'])
+    ->name('api.juntra.server.')
+    ->group(function () {
+        Route::post('/slips/verify', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'verify'])
+            ->name('slips.verify');
+        Route::post('/slips/check', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'check'])
+            ->name('slips.check');
+        Route::post('/slips/claim', [\App\Http\Controllers\Api\Juntra\Server\SlipController::class, 'claim'])
+            ->name('slips.claim');
+
+        Route::post('/amounts/reserve', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'reserve'])
+            ->name('amounts.reserve');
+        Route::post('/amounts/release', [\App\Http\Controllers\Api\Juntra\Server\AmountController::class, 'release'])
+            ->name('amounts.release');
+    });
+
 // ─── Public tarot-card catalog for the จันทรา.online (juntraweb) importer ──────
 // Rotation-proof {name_en, image_url} source for all active cards. Intentionally
 // PUBLIC (card art is already public; the importer carries no user token) and

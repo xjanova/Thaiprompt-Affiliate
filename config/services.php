@@ -210,4 +210,22 @@ return [
         'dhl_key' => env('TRACKING_DHL_KEY', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Juntra (จันทรา.online) server-to-server API
+    |--------------------------------------------------------------------------
+    |
+    | server_client_ids: Passport client ids allowed to call /api/v1/juntra/server/*
+    | with a client_credentials token (comma-separated env). Empty = accept only a
+    | client whose redirect URI points at จันทรา.online (the SSO client).
+    |
+    */
+
+    'juntra' => [
+        'server_client_ids' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('JUNTRA_SERVER_CLIENT_IDS', ''))
+        ), fn ($id) => $id !== '')),
+    ],
+
 ];

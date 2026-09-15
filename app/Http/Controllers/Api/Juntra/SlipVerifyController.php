@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Juntra;
 
 use App\Http\Controllers\Controller;
 use App\Services\Fortune\SlipOkService;
+use App\Services\Fortune\SlipUsageRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -22,13 +23,20 @@ use Illuminate\Support\Facades\Log;
  * ที่นี่ "ตรวจอย่างเดียว" — ไม่ตัดสินใจเรื่องเงินให้ juntraweb เพราะบิลของ
  * เว็บอยู่ในวอลเลตของเว็บเอง (คนละระบบกับ FortuneReading ของบอท)
  * juntraweb เป็นคนเทียบยอด/กันสลิปซ้ำ/เครดิตเข้ากระเป๋าเอง
+ *
+ * 🧾 (2026-09-15) ตอบเพิ่ม (ของเดิมอยู่ครบ): slip_age_ok, used, used_source, used_by,
+ *    sending_bank, receiving_bank และ receiver_matches ใช้กฎ "เลขบัญชี หรือ ชื่อผู้รับ"
+ *    เหมือนด่าน 2 ของบอท — คำนวณผ่าน SlipUsageRegistry ตัวเดียวกับเส้น /server/slips/verify
  */
 class SlipVerifyController extends Controller
 {
-    public function __invoke(Request $request, SlipOkService $slipok): JsonResponse
+    public function __invoke(Request $request, SlipOkService $slipok, SlipUsageRegistry $registry): JsonResponse
     {
         if (! $slipok->isEnabled()) {
-            return response()->json(['message' => 'ระบบตรวจสลิปปิดใช้งานอยู่'], 503);
+            return response()->json([
+                'message' => 'ระบบตรวจสลิปปิดใช้งานอยู่',
+                'reason_code' => 'slipok_disabled',
+            ], 503);
         }
 
         $request->validate([
@@ -58,22 +66,14 @@ class SlipVerifyController extends Controller
         } catch (\Throwable $e) {
             Log::warning('Juntra slip verify threw', ['err' => $e->getMessage()]);
 
-            return response()->json(['message' => 'ตรวจสลิปไม่สำเร็จชั่วคราว'], 503);
+            return response()->json([
+                'message' => 'ตรวจสลิปไม่สำเร็จชั่วคราว',
+                'reason_code' => 'slipok_error',
+            ], 503);
         }
 
-        return response()->json(['data' => [
-            'ok'               => (bool) ($verify['ok'] ?? false),
-            'message'          => (string) ($verify['message'] ?? ''),
-            'error_code'       => $verify['error_code'] ?? null,
-            'trans_ref'        => $verify['transRef'] ?? null,
-            'amount'           => $verify['amount'] ?? null,
-            'receiver_account' => $verify['receiver_account'] ?? null,
-            'receiver_name'    => $verify['receiver_name'] ?? null,
-            'sender_name'      => $verify['sender_name'] ?? null,
-            'trans_timestamp'  => $verify['trans_timestamp'] ?? null,
-            // เข้าบัญชีร้านเราจริงไหม — juntraweb ต้องเช็คข้อนี้ก่อนเครดิต
-            // ไม่งั้นสลิปโอนให้คนอื่นก็ผ่านได้
-            'receiver_matches' => $slipok->receiverMatchesOurAccounts($verify['receiver_account'] ?? null),
-        ]]);
+        // เข้าบัญชีร้านเราจริงไหม (receiver_matches) — juntraweb ต้องเช็คข้อนี้ก่อนเครดิต
+        // ไม่งั้นสลิปโอนให้คนอื่นก็ผ่านได้ · used = หลักฐานว่าสลิปถูกใช้ใน Thaiprompt แล้ว
+        return response()->json(['data' => $registry->describe($verify)]);
     }
 }

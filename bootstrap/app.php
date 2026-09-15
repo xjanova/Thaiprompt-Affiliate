@@ -120,6 +120,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // 🌐 (2026-07-26) normalize ผู้ใช้ของ /api/v1/juntra/* ให้เป็น App\Models\User
             //    เสมอ ไม่ว่าจะเข้ามาด้วย Sanctum (แอป) หรือ Passport (SSO เว็บจันทรา)
             'juntra.user' => \App\Http\Middleware\ResolveJuntraUser::class,
+            // 🔐 (2026-09-15) /api/v1/juntra/server/* — เซิร์ฟเวอร์ของจันทรา.online เท่านั้น
+            //    (Passport client_credentials ของ client SSO ตัวเดิม ไม่ใช่ token ผู้ใช้)
+            'juntra.server' => \App\Http\Middleware\AuthenticateJuntraServer::class,
         ]);
 
         // Global middleware for IP blocking

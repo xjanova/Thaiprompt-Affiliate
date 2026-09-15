@@ -764,6 +764,26 @@ class SlipOkService
     }
 
     /**
+     * 📅 (2026-09-15) เวอร์ชัน public ของด่าน 5 — ให้ API ฝั่งจันทรา.online ใช้กฎอายุสลิปเดียวกับบอท
+     *   (ไม่มี timestamp = ผ่าน เหมือนเดิม)
+     */
+    public function slipAgeOk(array $verify): bool
+    {
+        return $this->isTransWithinAllowedWindow($verify);
+    }
+
+    /**
+     * 🔎 (2026-09-15) ผลนี้มาจากด่าน "ถอด QR เองแล้วเจอว่าเคยใช้" (localDuplicateFromQr) ไหม
+     *   — ผลแบบนี้ไม่ได้ยิง SlipOK จริง แต่เป็นหลักฐานเชิงบวกว่าสลิปถูกใช้ไปแล้ว
+     */
+    public static function isLocalQrDuplicate(array $verify): bool
+    {
+        return (int) ($verify['error_code'] ?? 0) === 1012
+            && is_array($verify['raw'] ?? null)
+            && ($verify['raw']['local_qr_duplicate'] ?? false) === true;
+    }
+
+    /**
      * 📅 สลิปอยู่ในช่วงที่อนุโลมไหม (โซนเวลาไทย) — user directive 2026-06-01: รับย้อนหลังไม่เกิน 3 วัน
      *   เดิมรับเฉพาะวันนี้ — ผ่อนเป็น MAX_SLIP_AGE_DAYS วัน (กันลูกค้าโอนเมื่อวาน/2-3 วันก่อนเพิ่งกลับมา)
      *   ไม่มี timestamp → ไม่บล็อก (เชื่อว่า SlipOK verify แล้ว)
