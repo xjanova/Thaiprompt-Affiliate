@@ -801,7 +801,6 @@ class FortuneChannelManager
                 'payment_lock_admin', // 🔒 (2026-05-03) reach revive limit — admin only
                 'view_later',
                 'invalid_birthdate', 'retry_birthdate',
-                'restart_from_birthdate',
                 'error',
                 'ai_ask_save_question',
                 'send_chart', 'deep_reading_result', 'reading_ready' => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
@@ -832,12 +831,12 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '✨ เลือกไพ่ 2', 'payload' => 'DRAW_TAROT_2'],
                 ], $extra),
 
-                // 🧘 ตั้งจิตเลือกไพ่ → Quick Reply ปุ่ม "พร้อม" / "ยกเลิก"
+                // 🧘 ตั้งจิตเลือกไพ่ → Quick Reply ปุ่ม "พร้อม" อย่างเดียว
                 //    title คือสิ่งที่ส่งกลับเป็น message text → ใช้คำสั้น (ไม่มี emoji ในคำหลัก) เพื่อให้ระบบเข้าใจง่าย
+                //    🔒 (2026-09-16 FTU-260916-C5482) ถอดปุ่ม "ยกเลิก" — ขั้นนี้คือกลางการทำนาย (จ่ายแล้ว)
                 'awaiting_tarot_intention' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     $sent = $fbService->sendQuickReplies($userId, $message, [
                         ['content_type' => 'text', 'title' => 'พร้อม', 'payload' => 'TAROT_READY'],
-                        ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                     ], $extra);
 
                     // 🎧 (2026-06-21) 39 ตั้งจิตเปิดไพ่ (พื้นดวงรวม) → เสียง deep39_draw — เฉพาะ Deep (แยกจาก 99)
@@ -860,10 +859,9 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '❌ ไม่ตรงคำถาม', 'payload' => 'QUESTION_CONFIRM_NO'],
                 ], $extra),
 
-                // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
+                // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว) — 🔒 (2026-09-16) ไม่มีปุ่ม "ยกเลิก" กลางการทำนาย
                 'awaiting_tarot_draw' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => 'เปิดไพ่', 'payload' => 'DRAW_TAROT'],
-                    ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                 ], $extra),
 
                 // 📜 บิลถูกยกเลิก / AI rebuttal → ข้อความ + ปุ่มเริ่มใหม่
@@ -2583,19 +2581,11 @@ class FortuneChannelManager
                 ]
                 : [],
 
-            // ยูสเซ่อร์ขอเริ่มใหม่ระหว่างกรอกวันเกิด
-            'restart_from_birthdate' => [
-                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
-                // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
-            ],
-
-            // วันเกิดผิดรูปแบบ
-            'invalid_birthdate', 'retry_birthdate' => [
-                ['content_type' => 'text', 'title' => '🔄 เริ่มใหม่', 'payload' => 'RESTART'],
-                ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
-                // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
-            ],
+            // วันเกิดผิดรูปแบบ — ไม่มีปุ่ม
+            //   🔒 (2026-09-16 FTU-260916-C5482) ถึงขั้นขอวันเกิด = ลูกค้าจ่ายแล้ว (Pay-First)
+            //   เดิมแนบ "🔄 เริ่มใหม่ / ❌ ยกเลิก" → กดแล้วบิลที่จ่ายถูกปิด + ออกบิลใหม่ซ้อน
+            //   owner: "ระหว่างการทำนายต้องไม่มีปุ่ม หรือขั้นตอนอื่นมาขัดจังหวะ"
+            'invalid_birthdate', 'retry_birthdate' => [],
 
             default => [],
         };
@@ -2658,11 +2648,11 @@ class FortuneChannelManager
                 // สุ่มไพ่ยิปซี → ส่งรูปไพ่ (ถ้ามี) + text + quick reply
                 'draw_tarot_card' => $this->sendLineTarotCardResponse($lineService, $userId, $result, $replyToken),
 
-                // 🧘 ตั้งจิตเลือกไพ่ — ส่ง text + quick reply "พร้อม" / "ยกเลิก"
+                // 🧘 ตั้งจิตเลือกไพ่ — ส่ง text + quick reply "พร้อม" อย่างเดียว
                 //    LINE: label มี emoji ได้ (โชว์ในปุ่ม), text คือข้อความที่ระบบรับ → ใช้คำสะอาด
+                //    🔒 (2026-09-16 FTU-260916-C5482) ถอดปุ่ม "ยกเลิก" — ขั้นนี้คือกลางการทำนาย (จ่ายแล้ว)
                 'awaiting_tarot_intention' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🧘 พร้อมแล้ว', 'text' => 'พร้อม'],
-                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
                 ]),
 
                 // 📅 (2026-05-01) ทวนวันเกิด → quick reply ใช่/ไม่ใช่ (LINE)
@@ -2677,10 +2667,9 @@ class FortuneChannelManager
                     ['label' => '❌ ไม่ตรงคำถาม', 'text' => 'ไม่ตรงคำถาม'],
                 ]),
 
-                // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
+                // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว) — 🔒 (2026-09-16) ไม่มีปุ่ม "ยกเลิก" กลางการทำนาย
                 'awaiting_tarot_draw' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🃏 เปิดไพ่', 'text' => 'เปิดไพ่'],
-                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
                 ]),
 
                 // 📜 AI rebuttal หลังบิลถูกยกเลิก
@@ -2696,16 +2685,6 @@ class FortuneChannelManager
 
                 // วันเกิดผิดรูปแบบ → Flex แจ้ง error + ตัวอย่าง
                 'invalid_birthdate', 'retry_birthdate' => $this->sendLineInvalidBirthdateResponse($lineService, $userId, $result, $replyToken),
-
-                // 🔄 ยูสเซ่อร์ขอเริ่มใหม่ระหว่างกรอกวันเกิด → ส่ง text + quick reply เริ่มใหม่
-                'restart_from_birthdate' => $this->sendLineMessageWithQuickReply(
-                    $lineService, $userId, $message ?: '🔄 ยกเลิกการดูดวงรอบก่อนแล้ว — พิมพ์ "ดูดวง" เพื่อเริ่มใหม่',
-                    $replyToken,
-                    [
-                        ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
-                        ['label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
-                    ]
-                ),
 
                 // หมดสิทธิ์ฟรี → Flex แนะนำดูดวงละเอียดพร้อมราคา
                 'ai_limit' => $this->sendLineAiLimitResponse($lineService, $userId, $result, $replyToken),
@@ -4899,14 +4878,11 @@ class FortuneChannelManager
      */
     protected function sendLineInvalidBirthdateResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
-        // ⬅️ ใช้ text + quick replies แทน Flex เดิม เพื่อให้มีปุ่ม escape
         $message = $result['message'] ?? "ไม่เข้าใจรูปแบบวันเกิด ลองใหม่:\n\n📅 วัน/เดือน/ปี เช่น 15/08/1990";
 
-        return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-            ['label' => '🔄 เริ่มใหม่', 'text' => 'เริ่มใหม่'],
-            ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-            // 🧹 (2026-07-25, owner) ลบปุ่ม "คุยกับแม่หมอ" ทุกจุด — ใช้ keyword detection แทน
-        ]);
+        // 🔒 (2026-09-16 FTU-260916-C5482) ข้อความเปล่า ไม่มีปุ่ม — ถึงขั้นขอวันเกิด = ลูกค้าจ่ายแล้ว
+        //   เดิมแนบ "🔄 เริ่มใหม่ / ❌ ยกเลิก" → กดแล้วบิลที่จ่ายถูกปิด + ออกบิลใหม่ซ้อน
+        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
     }
 
     /**
@@ -6856,9 +6832,8 @@ class FortuneChannelManager
                     ['label' => 'ไม่ต้องการ', 'text' => 'ไม่ต้องการ'],
                 ]
                 : [],
-            'collecting_birthdate' => [
-                ['label' => 'ยกเลิก', 'text' => 'ยกเลิก'],
-            ],
+            // 🔒 (2026-09-16 FTU-260916-C5482) ขั้นวันเกิด = จ่ายแล้ว → ไม่มีปุ่ม "ยกเลิก"
+            'collecting_birthdate' => [],
             'pending_payment' => [
                 ['label' => '🏦 ดูบัญชี', 'text' => 'บัญชี'],
                 ['label' => 'ยกเลิก', 'text' => 'ยกเลิก'],

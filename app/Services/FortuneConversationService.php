@@ -1174,6 +1174,20 @@ class FortuneConversationService
             // กัน sticky: Cache::pull = consume once
             $forceTier = Cache::pull("fortune:force_tier:{$facebookUserId}");
 
+            // 🔒 (2026-09-16 FTU-260916-C5482) ปุ่มแพคเกจเก่าค้างในแชท (TIER_*) กดระหว่างทำนาย 39 ที่จ่ายแล้ว
+            //   เดิม: ธง force_tier ไม่เช็คการจ่าย → startTierFromButton ปิดบิลที่จ่าย + ออกบิลใหม่
+            //   (เส้นพิมพ์ "39/99" ด้านล่างมีด่าน paid อยู่แล้ว — ปุ่มยังไม่มี)
+            if ($forceTier !== null
+                && ($hold = $this->paidDeepStepHoldReply(FortuneReading::findActiveConversation($facebookUserId))) !== null) {
+                Log::info('Fortune: กดปุ่มแพคเกจระหว่างทำนาย (จ่ายแล้ว) → ไม่เปิดบิลใหม่ พากลับขั้นเดิม', [
+                    'facebook_user_id' => $facebookUserId,
+                    'force_tier' => $forceTier,
+                    'reading_id' => $hold['reading']->id,
+                ]);
+
+                return $hold;
+            }
+
             // 🐛 (2026-05-10) Bug fix — "พิมพ์ 39/99 บอทสับสน บางครั้ง"
             //   ROOT CAUSE: เดิมเช็ค `if (! $hasActive)` → ถ้ามี active reading (เช่น TIER_CHOICE,
             //   COLLECTING_BIRTHDATE, COLLECTING_QUESTIONS) → ไม่ trigger tier-direct
@@ -2241,7 +2255,10 @@ class FortuneConversationService
                 //   🩹 (2026-06-19 FTU-260619-A1282) อย่าให้ "เคลมว่าโอนแล้ว" โดน pricing gate แย่ง —
                 //     "โอนค่าครูไปแล้ว" มีคำว่า "ค่าครู" → looksLikePricingQuestion จับ → เด้งเมนูราคา
                 //     ทับ paid-claim/auto-provision. paid-claim ต้องชนะ → ปล่อยไหลไป cold-path สลิป
+                //   🔒 (2026-09-16 FTU-260916-C5482) ดูดวง 39 จ่ายแล้วกลางขั้นตอน (วันเกิด/ตั้งจิต/เปิดไพ่)
+                //     ห้ามเด้งเมนูแพคเกจ (ปุ่มเปิดบิลใหม่) ทับ — ให้ตัวจัดการขั้นนั้นตอบ+ย้ำขั้นตอนเอง
                 if (! $earlyStatusBlocking
+                    && $this->paidDeepStepHoldReply($earlyActiveCheck) === null
                     && ! $this->isPaymentClaimRequest($messageText)
                     && $this->looksLikePricingQuestion($messageText)) {
                     Log::info('Fortune: pricing menu trigger (early-gate, any state)', [
@@ -2519,6 +2536,19 @@ class FortuneConversationService
                             ];
                         }
 
+                        // 🔒 (2026-09-16 FTU-260916-C5482) ดูดวง 39 จ่ายแล้วกลางขั้นตอน — "ยกเลิก" ไม่มีผล
+                        //   เดิม: ปิดบิลที่จ่ายแล้ว + ตอบ "ยกเลิกแล้ว พิมพ์ดูดวง" → ลูกค้าเปิดบิลใหม่ซ้อน
+                        //   ใหม่: บิลอยู่ที่เดิม พากลับไปขั้นที่ค้างอยู่
+                        if (($hold = $this->paidDeepStepHoldReply($activeReading)) !== null) {
+                            Log::info('Fortune: ขอยกเลิกระหว่างทำนาย (จ่ายแล้ว) → คงบิล พากลับขั้นเดิม', [
+                                'reading_id' => $activeReading->id,
+                                'status' => $activeReading->conversation_status,
+                                'text_preview' => mb_substr($messageText, 0, 40),
+                            ]);
+
+                            return $hold;
+                        }
+
                         // 📜 (2026-06-06) ส่ง messageText → sendCancelConsentOrWakeup แยกเจตนา (เบี้ยว vs สุดวิสัย)
                         $this->closeAllActiveConversations($facebookUserId, $messageText);
 
@@ -2552,6 +2582,16 @@ class FortuneConversationService
                             FortuneReading::STATUS_CELTIC_GENERATING,
                             FortuneReading::STATUS_CELTIC_QA_PROMPT,
                         ])) {
+                        // 🔒 (2026-09-16 FTU-260916-C5482) จ่ายแล้วกลางขั้นตอน (ตั้งจิต/เปิดไพ่) → ห้ามปิดไปเปิดบิลใหม่
+                        if (($hold = $this->paidDeepStepHoldReply($activeReading)) !== null) {
+                            Log::info('Fortune: ขอดูดวงละเอียดระหว่างทำนาย (จ่ายแล้ว) → คงบิล พากลับขั้นเดิม', [
+                                'reading_id' => $activeReading->id,
+                                'status' => $activeReading->conversation_status,
+                            ]);
+
+                            return $hold;
+                        }
+
                         Log::info('Fortune processMessage: คำขอดูดวงละเอียดขณะมี active conversation → ปิดเก่า + เริ่ม deep reading ใหม่', [
                             'facebook_user_id' => $facebookUserId,
                             'old_status' => $activeReading->conversation_status,
@@ -4612,6 +4652,11 @@ class FortuneConversationService
                 FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
                 FortuneReading::STATUS_NEW,
             ])
+            // 🔒 (2026-09-16 FTU-260916-C5482) ตาข่ายชั้นสุดท้าย — บิลที่จ่ายแล้วห้ามถูกปิดจากที่นี่
+            //   เดิม: collecting_birthdate/tarot ที่จ่ายแล้วโดนปิดทิ้งเป็น completed ทุกครั้งที่มีคนเรียก
+            //   (ยกเลิก / กดปุ่มแพคเกจ / เริ่ม flow ใหม่) → บิลจ่ายแล้วกำพร้า + ลูกค้าได้บิลใหม่ซ้อน
+            //   กฎ owner: จ่ายแล้วต้องกู้ต่อจากจุดที่ค้างเสมอ ห้ามสร้างบิลใหม่ทับ
+            ->where('is_paid', false)
             ->when($exceptReadingId !== null, fn ($q) => $q->where('id', '!=', $exceptReadingId))
             ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
@@ -5900,6 +5945,16 @@ class FortuneConversationService
                 }
             }
 
+            // 🔒 (2026-09-16 FTU-260916-C5482) ดูดวง 39 จ่ายแล้วกลางขั้นตอน — "ยกเลิก" ไม่มีผล (คู่กับด่านใน processMessage)
+            if (($hold = $this->paidDeepStepHoldReply($reading)) !== null) {
+                Log::info('Fortune continueConversation: ขอยกเลิกระหว่างทำนาย (จ่ายแล้ว) → คงบิล พากลับขั้นเดิม', [
+                    'reading_id' => $reading->id,
+                    'status' => $status,
+                ]);
+
+                return $hold;
+            }
+
             $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
             if (! empty($userId)) {
                 $this->closeAllActiveConversations($userId);
@@ -6780,6 +6835,86 @@ class FortuneConversationService
     }
 
     /**
+     * ข้อความ "บิลเดิมยังอยู่ ไม่ต้องเริ่มใหม่ — รอวันเกิดอยู่" สำหรับลูกค้าที่มีเงินเข้าแล้ว
+     *
+     * บอกว่า "ชำระแล้ว" เฉพาะ is_paid จริง — โอนมาบางส่วนยังไม่ใช่จ่ายครบ (ธง ≠ หลักฐานการจ่าย)
+     */
+    protected function paidBillAwaitingBirthdateMessage(FortuneReading $reading): string
+    {
+        $billLine = $reading->is_paid
+            ? '✅ บิลของเจ้าชะตาชำระแล้ว — ไม่ต้องเริ่มใหม่นะคะ'
+            : '📋 บิลเดิมของเจ้าชะตายังอยู่ครบ — ไม่ต้องเริ่มใหม่นะคะ';
+
+        return $billLine."\n\n"
+            ."🪄 *ตอนนี้แม่หมอรอ วันเดือนปีเกิด ของเจ้าชะตาอยู่ค่ะ*\n"
+            ."พิมพ์บอกได้เลย เช่น:\n"
+            ."  • 15 มีนาคม 2538\n"
+            .'  • 15/3/2538';
+    }
+
+    /**
+     * 🔒 (2026-09-16 FTU-260916-C5482) บิลที่มีเงินเข้าแล้ว + ยังอยู่กลางขั้นตอนทำนาย
+     *    → คืน "ข้อความพากลับไปขั้นที่ค้างอยู่" ใช้แทนการยกเลิก / เริ่มใหม่ / เปิดบิลใหม่ ทุกทาง
+     *
+     * owner: "ระหว่างการทำนายต้องไม่มีปุ่ม หรือขั้นตอนอื่นมาขัดจังหวะ"
+     *        "พิมพ์ ยกเลิก เริ่มใหม่เองก็ต้องไม่มีผล เพราะต้องไปตามขั้นตอนขณะทำนาย"
+     *
+     * ครอบเฉพาะสถานะกลางทางของดูดวง 39 — Celtic 99 มี Hard Guard ของตัวเองอยู่แล้ว
+     *
+     * @return array|null null = ไม่ใช่บิลจ่ายแล้วกลางขั้นตอน → ให้ด่านเดิมทำงานตามปกติ
+     */
+    protected function paidDeepStepHoldReply(?FortuneReading $reading): ?array
+    {
+        if ($reading === null
+            || (! $reading->is_paid && (float) ($reading->partial_paid_total ?? 0) <= 0)) {
+            return null;
+        }
+
+        $billLine = $reading->is_paid
+            ? '✅ บิลของเจ้าชะตาชำระแล้ว — ไม่ต้องเริ่มใหม่นะคะ'
+            : '📋 บิลเดิมของเจ้าชะตายังอยู่ครบ — ไม่ต้องเริ่มใหม่นะคะ';
+
+        return match ($reading->conversation_status) {
+            FortuneReading::STATUS_COLLECTING_BIRTHDATE => [
+                'action' => 'collecting_birthdate',
+                'message' => $this->paidBillAwaitingBirthdateMessage($reading),
+                'reading' => $reading,
+            ],
+
+            FortuneReading::STATUS_COLLECTING_TAROT => $reading->getConversationState('tarot_intention_confirmed', false)
+                ? [
+                    'action' => 'awaiting_tarot_draw',
+                    'message' => $billLine."\n\n"
+                        .'🃏 แม่หมอกำลังจะเปิดไพ่ให้ค่ะ — พิมพ์ *"เปิดไพ่"* ได้เลย',
+                    'reading' => $reading,
+                ]
+                : [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => $billLine."\n\n"
+                        ."🧘 ตอนนี้อยู่ขั้น *ตั้งจิตเลือกไพ่* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
+                        .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ค่ะ',
+                    'reading' => $reading,
+                ],
+
+            FortuneReading::STATUS_COLLECTING_QUESTIONS => [
+                'action' => 'awaiting_question',
+                'message' => $billLine."\n\n"
+                    .'🔮 ตอนนี้แม่หมอรอ *คำถาม* ที่เจ้าชะตาอยากรู้ค่ะ — พิมพ์มาได้เลย',
+                'reading' => $reading,
+            ],
+
+            FortuneReading::STATUS_PAID => [
+                'action' => 'processing',
+                'message' => $billLine."\n\n"
+                    .'🔮 แม่หมอกำลังทำนายให้อยู่ค่ะ รอสักครู่นะคะ ✨',
+                'reading' => $reading,
+            ],
+
+            default => null,
+        };
+    }
+
+    /**
      * จัดการ input วันเกิด
      *
      * @param  array|null  $userProfile  ใช้ประกอบ AI acknowledgement เมื่อ user พิมพ์นอกสเตป
@@ -6827,26 +6962,31 @@ class FortuneConversationService
             );
         }
 
-        // 🔓 Escape hatch — ถ้ายูสเซ่อร์อยากเริ่มใหม่/ยกเลิก/คุยกับคน
-        // 🧹 ใช้ matchesExactKeyword (normalize ก่อน compare) เพื่อรองรับ
-        //    "ยกเลิก ค่ะ", "ยกเลิก.", "YKLK " ฯลฯ — ก่อนหน้านี้พลาดเพราะ exact match
+        // 🔒 (2026-09-16 FTU-260916-C5482) "เริ่มใหม่ / ยกเลิก / ดูดวง" ระหว่างรอวันเกิด — ห้ามปิดบิล
+        //   มาถึงบรรทัดนี้ได้ = มีเงินเข้าแล้ว (ด่านกำพร้าข้างบนพาบิลที่ยังไม่จ่ายออกไปหมดแล้ว)
+        //   เดิม: ปิดบิลที่จ่ายแล้วเป็น completed + แนบปุ่ม "ดูดวง" → ลูกค้ากดต่อ = ออกบิลใหม่ซ้อน
+        //   owner: "ระหว่างการทำนายต้องไม่มีปุ่ม หรือขั้นตอนอื่นมาขัดจังหวะ"
+        //   ใหม่: บิลอยู่ที่เดิม — ล้างวันเกิดที่กรอกค้าง (= เริ่มกรอกวันเกิดใหม่) แล้วขอวันเกิดอีกครั้ง
         $restartKeywords = [
             'ดูดวง', 'เริ่มใหม่', 'restart', 'เปลี่ยนเรื่อง',
             'ยกเลิก', 'cancel', 'stop', '/reset', 'reset',
         ];
         if ($this->matchesExactKeyword($messageText, $restartKeywords)) {
-            // ปิด conversation นี้ → ให้ processMessage สร้างใหม่
-            // รีเซ็ต state ของ step-by-step mode ด้วย
             $reading->setConversationState('birthdate_step_mode', false);
             $reading->setConversationState('birthdate_partial', []);
             $reading->setConversationState('birthdate_attempts', 0);
             $reading->setConversationState('awaiting_birthdate_confirmation', false);
             $reading->setConversationState('pending_birthdate', null);
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            Log::info('Fortune: ลูกค้าขอเริ่มใหม่/ยกเลิก ระหว่างรอวันเกิด — บิลมีเงินเข้าแล้ว คงบิลเดิม ขอวันเกิดซ้ำ', [
+                'reading_id' => $reading->id,
+                'is_paid' => (bool) $reading->is_paid,
+                'text_preview' => mb_substr($messageText, 0, 40),
+            ]);
 
             return [
-                'action' => 'restart_from_birthdate',
-                'message' => "🔄 ยกเลิกการดูดวงรอบก่อนแล้ว\n\nพิมพ์ 'ดูดวง' หรือเรื่องที่อยากรู้ เพื่อเริ่มใหม่",
+                'action' => 'collecting_birthdate',
+                'message' => $this->paidBillAwaitingBirthdateMessage($reading),
                 'reading' => $reading,
             ];
         }
@@ -6885,11 +7025,7 @@ class FortuneConversationService
         if (preg_match('/เริ่ม\s*(ดูดวง\s*)?(39|99)|ดูดวง\s*39|39\s*บาท|TIER_/iu', $messageText)) {
             return [
                 'action' => 'collecting_birthdate',
-                'message' => "✅ บิลของเจ้าชะตาชำระแล้ว — ไม่ต้องเริ่มใหม่นะคะ\n\n"
-                    ."🪄 *ตอนนี้แม่หมอรอ วันเดือนปีเกิด ของเจ้าชะตาอยู่ค่ะ*\n"
-                    ."พิมพ์บอกได้เลย เช่น:\n"
-                    ."  • 15 มีนาคม 2538\n"
-                    .'  • 15/3/2538',
+                'message' => $this->paidBillAwaitingBirthdateMessage($reading),
                 'reading' => $reading,
             ];
         }
@@ -7800,8 +7936,7 @@ class FortuneConversationService
                     ."ลองถามเรื่องที่อยากรู้มาได้เลย เช่น:\n"
                     ."• ความรักปีนี้จะเป็นยังไง\n"
                     ."• ดวงการเงินช่วงนี้\n"
-                    ."• การงานจะก้าวหน้าไหม\n\n"
-                    ."💡 พิมพ์ 'ยกเลิก' หากอยากเริ่มใหม่";
+                    .'• การงานจะก้าวหน้าไหม';
                 $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'question');
 
                 return [
@@ -8009,6 +8144,12 @@ class FortuneConversationService
 
                 // ปิด conversation นี้
                 $reading->setConversationState('awaiting_question_confirmation', false);
+
+                // 🔒 (2026-09-16 FTU-260916-C5482) จ่ายแล้ว → ไม่ปิดบิล แค่ขอคำถามใหม่ในบิลเดิม
+                if (($hold = $this->paidDeepStepHoldReply($reading)) !== null) {
+                    return $hold;
+                }
+
                 $reading->setConversationState('cancelled_at', now()->toIso8601String());
                 $reading->setConversationState('cancellation_reason', 'user_rejected_question');
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -8057,6 +8198,12 @@ class FortuneConversationService
     {
         // 🔓 Escape — ถ้าลูกค้ายกเลิก/เริ่มใหม่ → ปิด conversation ให้ flow หลักจัดการ
         if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop', 'เริ่มใหม่', 'restart'])) {
+            // 🔒 (2026-09-16 FTU-260916-C5482) จ่ายแล้ว = ไม่มีผล พากลับขั้นตั้งจิต/เปิดไพ่
+            //   เช็ค is_paid ไม่ใช่สถานะ — ยังมีเส้น legacy ที่ยังไม่จ่ายเดินมาถึง collecting_tarot
+            if (($hold = $this->paidDeepStepHoldReply($reading)) !== null) {
+                return $hold;
+            }
+
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             return [
@@ -8202,10 +8349,10 @@ class FortuneConversationService
         if (! $intentionConfirmed && $promptedAt) {
             // ถ้าเป็น chitchat (เช่น "ราคาเท่าไร", "ดี") → ให้ AI รับฟัง + ย้ำขั้นตอน
             if ($this->looksLikeMetaOrChitchat($messageText)) {
+                // 🔒 (2026-09-16) เลิกชวน "พิมพ์ยกเลิก" — ขั้นนี้คือกลางการทำนาย
                 $stepHint = "🧘 ตอนนี้อยู่ขั้น *ตั้งจิตเลือกไพ่*\n"
                     ."หลับตา หายใจลึกๆ นึกถึงคำถามของเจ้าชะตา\n"
-                    ."เมื่อพร้อมแล้วพิมพ์อะไรก็ได้มาบอกหมอ เช่น \"พร้อม\" หรือ \"เปิดไพ่\"\n\n"
-                    ."💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่";
+                    .'เมื่อพร้อมแล้วพิมพ์อะไรก็ได้มาบอกหมอ เช่น "พร้อม" หรือ "เปิดไพ่"';
                 $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'tarot_intention');
 
                 return [
@@ -8223,8 +8370,7 @@ class FortuneConversationService
         //   ในช่วงรอเปิดไพ่ → ให้ AI รับฟังและย้ำขั้นตอน ไม่เปิดไพ่ทันที
         if ($this->looksLikeMetaOrChitchat($messageText)) {
             $stepHint = "🃏 หมอกำลังจะเปิดไพ่ยิปซีให้คะ\n"
-                ."เจ้าชะตาแค่พิมพ์อะไรก็ได้ เช่น \"เปิดเลย\" หรือ \"ดู\" แล้วหมอจะสุ่มไพ่ให้\n\n"
-                ."💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่";
+                .'เจ้าชะตาแค่พิมพ์อะไรก็ได้ เช่น "เปิดเลย" หรือ "ดู" แล้วหมอจะสุ่มไพ่ให้';
             $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'tarot_draw');
 
             return [
