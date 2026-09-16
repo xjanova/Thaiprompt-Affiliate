@@ -81,6 +81,16 @@ class FortuneConversationService
     public const PAID_SLIP_CAP_MULTIPLIER = 2;
 
     /**
+     * 🛡️ (2026-09-16) บิลจ่ายแล้ว (นับจาก paid_at) เก่าเกินกี่วัน ถึงไม่นับว่า "กำลังทำนาย" ใน hasPaidActiveReading()
+     *
+     * ต้องเท่ากับ `--max-age-days` ของ fortune:expire-stuck-paid (30) — cron ตัวนั้นติดธง
+     * admin_review_alerted ให้บิลที่ paid_at เกิน 24 ชม. แต่ไม่แตะบิลที่ paid_at เก่ากว่า 30 วัน
+     * ⇒ บิลค้างประวัติศาสตร์ (prod 2026-09-16: 15 ใบ) ไม่มีวันได้ธง
+     *    ถ้าไม่มีเพดานนี้ ลูกค้ากลุ่มนั้นจะถูกมองว่า "กำลังทำนาย" ตลอดไป (ข้ามดวงฟรี/ข้ามด่านแบน)
+     */
+    public const PAID_ACTIVE_MAX_AGE_DAYS = 30;
+
+    /**
      * ราคาดูดวงละเอียด (บาท) — ค่า fallback สุดท้ายเมื่อ admin ไม่ได้ตั้งราคา
      *
      * 🎯 (2026-04-29) แพคเกจปัจจุบัน:
@@ -13530,20 +13540,37 @@ class FortuneConversationService
                     ->orWhere('platform_user_id', $userId);
             })
                 ->where('is_paid', true)
-                ->where('updated_at', '>=', now()->subHours(2))
                 ->where(function ($s) {
                     // ปกติ: ยังไม่จบ session
-                    $s->whereNotIn('conversation_status', [
-                        FortuneReading::STATUS_COMPLETED,
-                        'cancelled',
-                        'expired',
-                        'celtic_qa_window_expired',
-                    ])
+                    // 🛡️ (2026-09-16 FTU-260916-C5482) เลิกตัดที่ updated_at 2 ชม. — กฎ "จ่ายแล้วต้องกู้ต่อเสมอ"
+                    //   เดิม: จ่ายแล้วค้างขอวันเกิด/เปิดไพ่ แล้วลูกค้าเงียบไป > 2 ชม. → เมธอดนี้ตอบ false
+                    //   ทั้งที่ findActiveConversation ยังเห็นบิลนั้นอยู่ → ด่านเสนอแพคเกจ/ขายของ/แชทฟรี/สแปม
+                    //   ที่อาศัยเมธอดนี้ ปฏิบัติกับคนจ่ายเงินเหมือนคนทั่วไป (สองตัวเห็นบิลเดียวกันไม่ตรงกัน)
+                    //   ใหม่: เกณฑ์เดียวกับ scopeActiveConversation / isInPrediction — ธง admin_review_alerted
+                    //   + เพดาน PAID_ACTIVE_MAX_AGE_DAYS กันบิลค้างประวัติศาสตร์ที่ cron แจ้งแอดมินไม่กวาดแล้ว
+                    //   ⚠️ วัดจาก paid_at ไม่ใช่ updated_at — updated_at โดนงานกวาดข้อมูลแตะทั้งตาราง
+                    //      (prod: บิล celtic_picking ที่จ่าย มิ.ย./ก.ค. มี updated_at = 2026-09-01 06:00:07 พร้อมกัน)
+                    $s->where(function ($open) {
+                        $open->whereNotIn('conversation_status', [
+                            FortuneReading::STATUS_COMPLETED,
+                            'cancelled',
+                            'expired',
+                            'celtic_qa_window_expired',
+                        ])
+                            ->where('paid_at', '>=', now()->subDays(self::PAID_ACTIVE_MAX_AGE_DAYS))
+                            ->where(function ($flag) {
+                                $flag->whereNull('conversation_state')
+                                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') IS NULL")
+                                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
+                            });
+                    })
                         // 🛡️ (2026-06-22 FTU-260622-R1626) หรือ: จบ main flow แล้ว (completed)
                         //   แต่ Pro Session ยังเปิด (Celtic Q&A 15 นาที) → ยังถือว่า "ทำนายอยู่"
                         //   กัน early-gate สร้างบิลใหม่ระหว่าง linger window (double-charge)
+                        //   ⚠️ คงเพดาน 2 ชม. ไว้เฉพาะสาขานี้ — ธง pro_session_active ค้างได้ (เหตุ 82 ลูกค้า 2026-07-08)
                         ->orWhere(function ($s2) {
                             $s2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->where('updated_at', '>=', now()->subHours(2))
                                 ->whereRaw("JSON_EXTRACT(conversation_state, '$.pro_session_active') = true");
                         });
                 })

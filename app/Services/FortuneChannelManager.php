@@ -1899,10 +1899,51 @@ class FortuneChannelManager
         return [];
     }
 
+    /**
+     * 🧾 (2026-09-16 FTU-260916-C5482) กล่องจ่ายเงินส่งทีละชิ้น — บิลถูกปิด/ถูกจ่ายไประหว่างส่งหรือยัง
+     *
+     * เคสจริง: webhook กำลังส่งกล่องบิลซ้อน C5482 (ข้อความ → เลขบัญชี → QR → หมายเหตุบิล ~12 วิ)
+     *   ระหว่างนั้นอีกโปรเซสกู้บิลที่จ่ายแล้ว Z0948 + reconcile ปิดบิลซ้อนเป็น completed (19:06:37)
+     *   แต่ QR (19:06:40) และหมายเหตุบิล (19:06:44) ยังส่งตามออกไป = ทวงเงินบิลที่ยกเลิกแล้ว
+     *
+     * เช็คสดจาก DB (อ่านคีย์หลัก 3 คอลัมน์) · หยุดเมื่อ completed หรือ is_paid เท่านั้น
+     * อ่าน DB ไม่ได้ = ส่งต่อ (fail-open — กล่องจ่ายเงินหายแพงกว่าส่งเกินหนึ่งชิ้น)
+     */
+    protected function paymentBoxBillClosedMidSend(FortuneReading $reading, string $nextPart): bool
+    {
+        try {
+            $fresh = FortuneReading::query()->whereKey($reading->id)->first(['id', 'conversation_status', 'is_paid']);
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        if ($fresh === null
+            || (! $fresh->is_paid && $fresh->conversation_status !== FortuneReading::STATUS_COMPLETED)) {
+            return false;
+        }
+
+        Log::info('Facebook: บิลถูกปิด/จ่ายระหว่างส่งกล่องจ่ายเงิน → หยุดส่งชิ้นที่เหลือ', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'status' => $fresh->conversation_status,
+            'is_paid' => (bool) $fresh->is_paid,
+            'skipped_from' => $nextPart,
+        ]);
+
+        return true;
+    }
+
     protected function sendFacebookPaymentResponse(FortuneMessengerSender $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $reading = $result['reading'] ?? null;
         $message = $result['message'] ?? '';
+
+        // 🧾 (2026-09-16) จำไว้ว่าเริ่มส่งตอนบิลยังเปิดอยู่ — ถ้าระหว่างทางถูกปิด/ถูกจ่าย ให้หยุดชิ้นที่เหลือ
+        //   เส้นเก่าที่ส่งกล่องนี้กับบิลที่ปิดอยู่แล้วตั้งแต่ต้น (deliver_with_qr) ไม่ถูกแตะ
+        $watchBill = $reading instanceof FortuneReading
+            && ! $reading->is_paid
+            && $reading->conversation_status !== FortuneReading::STATUS_COMPLETED;
+        $billClosed = fn (string $part): bool => $watchBill && $this->paymentBoxBillClosedMidSend($reading, $part);
 
         // 🃏 ส่งรูปไพ่ยิปซีก่อน (ถ้ามี) — รองรับทั้ง single (tarot_image_url) และ array (tarot_image_urls)
         //    draw_tarot_card action: tarot_image_url (single — สำหรับเคส single card pick)
@@ -1935,6 +1976,9 @@ class FortuneChannelManager
         // ✅ ส่งข้อมูลบิล + QR เป็นชุดเดียว (ไม่ซ้ำกับ Payment Template)
         // ส่งเฉพาะ text ข้อมูลบิล (ไม่ส่ง Payment Template อีก เพราะข้อมูลซ้ำ)
         if (! empty($message)) {
+            if ($billClosed('bill_text')) {
+                return true;
+            }
             $fbService->sendMessage($userId, $message);
             usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
@@ -1943,6 +1987,9 @@ class FortuneChannelManager
         //   (เลขใส่ dash แล้วจาก getCopyableAccountNumber → กัน FB auto-QR, banking app ตัด dash เอง)
         $copyableAccount = $result['copyable_account'] ?? null;
         if (! empty($copyableAccount)) {
+            if ($billClosed('copyable_account')) {
+                return true;
+            }
             try {
                 $fbService->sendMessage($userId, $copyableAccount);
                 usleep(500000); // 0.5s กัน LINE/FB rate limit
@@ -1954,6 +2001,9 @@ class FortuneChannelManager
         // ส่งภาพ QR Code โอนเงิน (ถ้ามี) — ส่งครั้งเดียว
         $paymentQrUrl = $result['payment_qr_url'] ?? null;
         if ($paymentQrUrl) {
+            if ($billClosed('qr_image')) {
+                return true;
+            }
             try {
                 $fbService->sendImage($userId, $paymentQrUrl);
                 usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
@@ -1966,6 +2016,9 @@ class FortuneChannelManager
         //   เดิมเป็น button template [✅ แจ้งโอนแล้ว][❌ ยกเลิก] → เอาปุ่มออก (คนแก่สับสน)
         //   แจ้งโอน = SMS auto-match เปิดไพ่ให้เอง / ยกเลิก = ลูกค้าพิมพ์ "ยกเลิก" ได้
         if ($reading) {
+            if ($billClosed('payment_note')) {
+                return true;
+            }
             $paymentNote = $richService->buildPaymentInstructionText($reading);
             if (! empty($paymentNote)) {
                 return $fbService->sendMessage($userId, $paymentNote);
