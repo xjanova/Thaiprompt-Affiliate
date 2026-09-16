@@ -23,8 +23,12 @@ use Tests\TestCase;
  *
  * เกณฑ์ที่ถูก: **`is_paid` อย่างเดียว** — จ่ายแล้วคือจ่ายแล้ว ไม่ว่าเงินจะเข้ามาทางไหน
  *
- * วิธีเทสต์: จอง dispatch lock ไว้ก่อน → สาขา "จ่ายแล้ว" จะ return 'processing' ทันที
- *   (ไม่แตะ Job/AI/เน็ต) ส่วนสาขา legacy pay-after จะไปสร้างบิล — แยกสองเส้นได้ชัดโดยไม่ยิงอะไรจริง
+ * 🔧 วิธีเทสต์โดยไม่ยิงอะไรจริง (AI / Job / ธนาคาร / เน็ต) — สองเส้นแยกกันคนละกลไก:
+ *   • เส้น "จ่ายแล้ว" → จอง dispatch lock ไว้ก่อน ⇒ return 'processing' ทันที ไม่ dispatch Job
+ *     ⚠️ ต้องจอง **หลัง** สร้าง service เสมอ — service() เรียก Cache::flush() (ล้าง lock ที่จองไว้)
+ *        รอบแรกจองก่อน → lock โดนล้าง → ไหลไป dispatch จริง ได้ 'deep_card_announced' (CI แดง)
+ *   • เส้น legacy pay-after → override getActivePaymentMode()='both' ⇒ แค่ถามวิธีจ่าย
+ *     (เก็บคำถาม + status=awaiting_payment_method) ยังไม่สร้างบิล/QR
  *
  * @group fortune-billing
  */
@@ -42,7 +46,10 @@ class FortunePaidReadingNeverRebilledTest extends TestCase
         FortuneTellingSetting::clearSettingsCache();
     }
 
-    private function service(): object
+    /**
+     * @param  string|null  $forcePaymentMode  บังคับโหมดจ่ายเงิน ('both' = ถามวิธีจ่าย ไม่สร้างบิลจริง)
+     */
+    private function service(?string $forcePaymentMode = null): object
     {
         $settings = FortuneTellingSetting::getSettings();
         $settings->deep_reading_price = 39;
@@ -50,14 +57,31 @@ class FortunePaidReadingNeverRebilledTest extends TestCase
         Cache::flush();
         FortuneTellingSetting::clearSettingsCache();
 
-        return new class(FortuneTellingSetting::getSettings()) extends FortuneConversationService
+        return new class(FortuneTellingSetting::getSettings(), $forcePaymentMode) extends FortuneConversationService
         {
+            public function __construct(FortuneTellingSetting $settings, private ?string $forcedMode)
+            {
+                parent::__construct($settings);
+            }
+
             /** เปิดเมธอด protected ให้เทสต์เรียกตรง */
             public function callAfterTarotCardDrawn(FortuneReading $reading): array
             {
                 return $this->afterTarotCardDrawn($reading, $reading->getCollectedQuestions(), 1);
             }
+
+            /** กันเส้น legacy ไปสร้างบิล/QR จริงตอนเทสต์ */
+            protected function getActivePaymentMode(): string
+            {
+                return $this->forcedMode ?? parent::getActivePaymentMode();
+            }
         };
+    }
+
+    /** จองคิวทำนาย → เส้น "จ่ายแล้ว" จะคืน processing ทันที (ต้องเรียกหลังสร้าง service) */
+    private function armDispatchLock(FortuneReading $reading): void
+    {
+        Cache::add("fortune:deep_dispatch:{$reading->id}", 1, 600);
     }
 
     /**
@@ -105,10 +129,10 @@ class FortunePaidReadingNeverRebilledTest extends TestCase
         ]);
         $this->assertFalse((bool) $reading->getConversationState('pay_first_mode', false));
 
-        // จองคิวทำนายไว้ก่อน → สาขา "จ่ายแล้ว" จะคืน processing ทันที ไม่แตะ Job จริง
-        Cache::add("fortune:deep_dispatch:{$reading->id}", 1, 600);
+        $svc = $this->service();
+        $this->armDispatchLock($reading);
 
-        $result = $this->service()->callAfterTarotCardDrawn($reading);
+        $result = $svc->callAfterTarotCardDrawn($reading);
 
         $this->assertSame('processing', $result['action'], 'บิลจ่ายแล้วต้องเข้าเส้นทำนาย ไม่ใช่เส้นออกบิล');
 
@@ -127,27 +151,38 @@ class FortunePaidReadingNeverRebilledTest extends TestCase
     public function test_บิลpayfirstเดิม_ยังเข้าเส้นทำนายเหมือนเดิม(): void
     {
         $reading = $this->paidReadyReading(['pay_first_mode' => true]);
-        Cache::add("fortune:deep_dispatch:{$reading->id}", 1, 600);
 
-        $result = $this->service()->callAfterTarotCardDrawn($reading);
+        $svc = $this->service();
+        $this->armDispatchLock($reading);
+
+        $result = $svc->callAfterTarotCardDrawn($reading);
 
         $this->assertSame('processing', $result['action']);
         $this->assertNull($reading->fresh()->unique_payment_amount_id);
     }
 
-    /** 3️⃣ บิลที่ยังไม่จ่ายจริง ต้องยังออกบิลตามเดิม (ไม่ได้เปิดให้ทำนายฟรี) */
-    public function test_บิลยังไม่จ่าย_ยังต้องออกบิลตามเดิม(): void
+    /** 3️⃣ บิลที่ยังไม่จ่ายจริง ต้องยังไปเส้นเก็บเงินตามเดิม (ไม่ได้เปิดให้ทำนายฟรี) */
+    public function test_บิลยังไม่จ่าย_ยังต้องไปเส้นเก็บเงินตามเดิม(): void
     {
         $reading = $this->paidReadyReading();
-        $reading->forceFill(['is_paid' => false, 'paid_at' => null, 'amount_paid' => null])->save();
-        Cache::add("fortune:deep_dispatch:{$reading->id}", 1, 600);
+        // ⚠️ amount_paid เป็น NOT NULL ในสคีมา → ใช้ 0 ไม่ใช่ null
+        $reading->forceFill(['is_paid' => false, 'paid_at' => null, 'amount_paid' => 0])->save();
 
-        $result = $this->service()->callAfterTarotCardDrawn($reading->fresh());
+        // mode=both → เส้น legacy หยุดที่ "ถามวิธีจ่าย" ไม่ไปสร้างบิล/QR จริง
+        $svc = $this->service('both');
+        $this->armDispatchLock($reading);
+
+        $result = $svc->callAfterTarotCardDrawn($reading->fresh());
 
         $this->assertNotSame(
             'processing',
             $result['action'],
             'ยังไม่จ่าย = ต้องไม่หลุดเข้าเส้นทำนาย (ไม่งั้นแจกดวงฟรี)'
+        );
+        $this->assertSame(
+            FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            $reading->fresh()->conversation_status,
+            'บิลที่ยังไม่จ่ายต้องเดินเข้าเส้นเก็บเงินตามเดิม'
         );
     }
 }
