@@ -8368,10 +8368,34 @@ class FortuneConversationService
         // 💰 (2026-05-10) Pay-First flow — ลูกค้าจ่ายไปแล้วตั้งแต่กดปุ่ม "39"
         //   ถึงตอนนี้มีข้อมูลครบ (birthdate + question + tarot) → trigger AI ทำนายตรงเลย
         //   ไม่ต้องสร้างบิลใหม่ (เงินจ่ายแล้ว)
+        //
+        // 🚨 (2026-09-16, owner "ทำไมไปทวงเงินเขาอีกทั้งๆที่อยู่ในการทำนาย")
+        //   เดิมด่านนี้เป็น `$payFirstMode && $isPaid` — ต้องติดธง `pay_first_mode` ด้วยถึงจะผ่าน
+        //   แต่ธงนั้นตั้งโดย routePayFirstDeep() เส้นเดียว: บิลที่เกิดจาก**สลิปโอนก่อนบิล**
+        //   (auto-provision → routePrepaySlipByAmount/routePrepayPartialByTotal →
+        //    provisionDeepFromVerifiedSlip) จ่ายจริง is_paid=1 แต่ไม่เคยมีธง
+        //   ⇒ ตกลงมาสาขา legacy pay-after ข้างล่าง → **ออกบิลใหม่ทับแถวที่จ่ายแล้ว** +
+        //     status เด้งกลับ pending_payment → บอททวงเงินคนที่จ่ายไปแล้ว
+        //   เคสจริง Patitta Nathamploy (FTU-260916-D8561 / R13284): โอน 39 + ส่งสลิป 11:35
+        //     → ระบบตัดบิลให้ → 12:07 พิมพ์วันเกิดกลับมา → เปิดไพ่ → ออกบิล ฿39.42 + QR ซ้ำ
+        //     → ลูกค้าถาม "ต้องจ่ายอีกรึค่ะ" → AI ยืนยันว่า "ใช่ค่ะ จ่ายค่าครูใหม่" (ผิด เธอจ่ายแล้ว)
+        //     เจ้าของต้องเข้าไปพิมพ์ "ไม่ต้องค่ะ" เอง และคำทำนายไม่เคยถูกสร้าง
+        //
+        //   เกณฑ์ที่ถูกคือ **`is_paid` อย่างเดียว** — จ่ายแล้วคือจ่ายแล้ว ไม่ว่าเงินจะเข้ามาทางไหน
+        //   (`pay_first_mode` เป็นแค่*ทางหนึ่ง*ที่พาไปถึงจุดจ่าย ไม่ใช่เงื่อนไขของการจ่าย)
+        //   ธงยังอ่านไว้เพื่อ log — จะได้เห็นว่าเส้นไหนพาบิลมาถึงตรงนี้
         $payFirstMode = (bool) $reading->getConversationState('pay_first_mode', false);
         $isPaid = (bool) $reading->is_paid;
 
-        if ($payFirstMode && $isPaid) {
+        if ($isPaid) {
+            if (! $payFirstMode) {
+                Log::warning('Fortune: บิลจ่ายแล้วแต่ไม่มีธง pay_first_mode → ทำนายต่อ (ห้ามออกบิลซ้ำ)', [
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference,
+                    'prepay_provisional' => (bool) $reading->getConversationState('prepay_provisional', false),
+                    'amount_paid' => $reading->amount_paid,
+                ]);
+            }
             // 🛡️ (2026-06-08) Dispatch idempotency lock — กัน "ส่งคำทำนายซ้ำหลายครั้ง"
             //   เคสจริง FTU-260608-A3995 (retry=2): ลูกค้าพิมพ์ "พร้อม" ซ้ำ / FB ส่ง webhook ซ้ำ →
             //   idempotent card-draw guard (handleTarotCardDraw) คืน afterTarotCardDrawn อีกรอบ →
@@ -16783,9 +16807,18 @@ class FortuneConversationService
             }
             $fill['unique_payment_amount_id'] = null;
         }
+        // 💰 (2026-09-16) amount_paid = เงินจริงที่รับ — เดิมตั้งเฉพาะตอนมี "ยอดสะสม" (partial)
+        //   สลิป**ใบแรก**ที่วิ่งผ่าน routePrepaySlipByAmount ไม่เคยผ่านเลน partial ⇒ partial_paid_total = 0
+        //   ⇒ amount_paid ค้างที่ 0.00 ⇒ processAffiliateAndCommissions ตัดทิ้ง
+        //     ("FortuneCommission: บิลยังไม่ชำระเงินหรือจำนวน 0 ข้าม {is_paid:true, amount_paid:'0.00'}")
+        //   ⇒ **ค่าแนะนำไม่ถูกจ่ายให้ผู้แนะนำเลย** ทั้งที่ลูกค้าจ่ายจริง (R13284, 39.00)
+        //   fallback เป็นยอดสลิปที่ verify แล้ว (ยอดที่เข้าบัญชีจริง ไม่ใช่ยอดบิล)
         $paidTotal = (float) ($provisional->partial_paid_total ?? 0);
+        if ($paidTotal <= 0) {
+            $paidTotal = (float) ($verify['amount'] ?? 0);
+        }
         if ($paidTotal > 0) {
-            $fill['amount_paid'] = $paidTotal;
+            $fill['amount_paid'] = round($paidTotal, 2);
         }
 
         // 🔒 (2026-09-16) ลูกค้าเลือก Deep เองทั้งที่เงินถึงมือแล้ว = เจตนาชัด ห้ามด่านอัปเกรด
