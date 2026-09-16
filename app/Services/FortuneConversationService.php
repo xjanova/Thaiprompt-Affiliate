@@ -16788,6 +16788,11 @@ class FortuneConversationService
             $fill['amount_paid'] = $paidTotal;
         }
 
+        // 🔒 (2026-09-16) ลูกค้าเลือก Deep เองทั้งที่เงินถึงมือแล้ว = เจตนาชัด ห้ามด่านอัปเกรด
+        //   (tryUpgradeDeepToCelticFromOverpaidSlip) เปลี่ยนเป็น Celtic ทับ — สลิปโอนก่อนบิลมักยอด ≥ 99
+        //   mirror ธงฝั่ง Celtic ที่ handlePrepayPackageChoice ติดไว้แล้ว
+        $provisional->setConversationState('prepay_package_locked', 'deep');
+
         $provisional->forceFill($fill)->save();
         $resp = $this->finalizeSlipOkApproved($provisional, $verify, $platform, $userId);
         $this->clearPrepayChoice($userId, $provisional);
@@ -18923,6 +18928,117 @@ class FortuneConversationService
     }
 
     /**
+     * 💎 (2026-09-16, owner) ลูกค้าเปลี่ยนใจกลางคัน — เปิดบิล 39 แต่โอนมาเต็มราคา 99
+     *
+     * เคสจริง ศศิธร ศรีวงษา (FTU-260916-F3828 / reading 13277):
+     *   09:27 พิมพ์ "ถ้าดูแบบ39ได้ประมานใหนคะ" → fast-track เปิดบิล Deep ฿39.92 + QR
+     *   09:27 "แล้วถ้าดูแบบ99ดูได้ประมานใหนคะ" ← เป็น*คำถาม* → detectTierSwitchRequest ไม่ยิง (ถูกแล้ว
+     *         ตามด่านกันยกเลิกบิลจากคำถาม) → AI ฟังแล้วตอบ
+     *   09:31 "ถ้าดูแบบ99จะโอนยังไงคะ"         ← ยังเป็นคำถาม → ได้การ์ดวิธีโอน
+     *   09:33 ส่งสลิป ฿99.00 → SlipOK ผ่าน (ด่านยอดของ evaluateForReading เช็คแค่ "≥ ขั้นต่ำ"
+     *         โอนเกินเท่าไรก็ APPROVE) → ตัดบิล 39 เป็นจ่ายแล้ว
+     *   ผล: จ่าย 99 ได้ของ 39 (amount_received=99.00 แต่ amount_paid=39.92 reading_type=deep)
+     *
+     * หลักการที่ใช้ตัดสิน — **ลูกค้าเลือกแพคเกจ "ก่อน" เงินถึง ⇒ เงินคือคำตอบสุดท้าย**
+     *   บิลบอกให้โอน ฿39.92 "ทศนิยมตรงเป๊ะ" การโอน ฿99.00 จึงไม่ใช่การให้ทิป/ปัดเศษ
+     *   แต่คือการเลือกอีกแพคเกจ (ส่วนต่าง +59 บาท เกินเพดาน fuzzy_overpay_max_baht ~11 ไปไกล)
+     *   กลับกัน ลูกค้าเลือก "หลัง" เงินถึงแล้ว (prepay choice — บอทถาม 39/99 ตอนถือเงินอยู่)
+     *   ⇒ คำพูดชนะ ห้ามอัปเกรดทับ (ดูธง prepay_package_locked ที่ provisionDeepFromVerifiedSlip ติดไว้)
+     *
+     * แปลงบิลเดิมในที่ (in-place) ไม่เปิดแถวใหม่ — mirror adminSwitchPackage()/provisionDeepFromVerifiedSlip():
+     *   คืน UPA ยอด 39.92 (ไม่มีใครจ่ายยอดนั้นแล้ว) → reading_type=celtic_cross → amount_paid=ยอดสลิปจริง
+     *   แล้วปล่อยให้ finalizeSlipOkApproved เดินต่อตามปกติ (confirmPayment + คอมมิชชั่นเรต Celtic +
+     *   route เข้า onCelticPaymentConfirmed) — เงิน/สลิป/คอมมิชชั่นอยู่แถวเดียว ไม่นับซ้ำ
+     *
+     * @return bool true = อัปเกรดแล้ว (ให้ผู้เรียกแจ้งลูกค้าว่าเปลี่ยนแพคเกจให้)
+     */
+    protected function tryUpgradeDeepToCelticFromOverpaidSlip(FortuneReading $reading, array $verify): bool
+    {
+        try {
+            // ── บิลต้องเป็น Deep ที่ยัง "ไม่จ่าย" ──────────────────────
+            //   is_paid=true = ตัดบิลไปแล้ว (finalize ถูกเรียกซ้ำ/สลิปใบที่สอง) → ห้ามแปลงทับของที่ส่งไปแล้ว
+            if ($reading->reading_type !== FortuneReading::READING_TYPE_DEEP || $reading->is_paid) {
+                return false;
+            }
+
+            // ── มีคำทำนาย Deep ออกไปแล้ว → ห้ามแปลง (mirror guard ของ adminSwitchPackage) ──
+            if (! empty($reading->deep_response) || ! empty($reading->ai_response)) {
+                return false;
+            }
+
+            // ── ลูกค้าเลือกแพคเกจเองหลังเงินถึงแล้ว → คำพูดชนะ ──────────
+            if (! empty($reading->getConversationState('prepay_package_locked'))) {
+                return false;
+            }
+
+            // ── Celtic ต้องเปิดขายอยู่ (ปิดอยู่ = ไม่มีของให้อัปเกรด) ────
+            if (! (bool) ($this->settings->enable_celtic_cross ?? false)) {
+                return false;
+            }
+
+            // ── มียอดโอนสะสมค้างอยู่ → ปล่อยเลน top-up เดิมจัดการ (มี state machine ของตัวเอง) ──
+            if ((float) ($reading->partial_paid_total ?? 0) > 0) {
+                return false;
+            }
+
+            $amount = (float) ($verify['amount'] ?? 0);
+            $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
+            $deepExpected = (float) ($reading->uniquePaymentAmount?->base_amount
+                ?? ($this->settings->deep_reading_price ?? 39));
+
+            // ── เงินต้องครอบราคา Celtic เต็มจำนวน + Celtic ต้องแพงกว่า Deep จริง ──
+            if ($amount <= 0 || $celticPrice <= 0
+                || $celticPrice <= $deepExpected
+                || $amount + 0.001 < $celticPrice) {
+                return false;
+            }
+
+            Log::warning('💎 SlipOK: บิล 39 แต่โอนเต็มราคา 99 → อัปเกรดเป็น Celtic (ลูกค้าเปลี่ยนใจกลางคัน)', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'slip_amount' => $amount,
+                'deep_expected' => $deepExpected,
+                'celtic_price' => $celticPrice,
+                'transRef' => $verify['transRef'] ?? null,
+            ]);
+
+            // ── คืน UPA ยอด Deep (คืน suffix เข้าพูล — ยอดนั้นไม่มีใครจ่ายแล้ว) ──
+            $fill = [
+                'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+                'amount_paid' => round($amount, 2),   // เงินจริงที่รับ ไม่ใช่ยอดบิลเดิม 39.92
+            ];
+            if (! empty($reading->unique_payment_amount_id)) {
+                try {
+                    $reading->uniquePaymentAmount?->cancel();
+                } catch (\Throwable $e) {
+                    // non-blocking — UPA ค้าง reserved ไม่ขวางการเปิดไพ่
+                }
+                $fill['unique_payment_amount_id'] = null;
+            }
+
+            // ร่องรอยให้แอดมิน/ตอนสอบย้อนหลังรู้ว่าแถวนี้ถูกอัปเกรดอัตโนมัติ ไม่ใช่บิล Celtic แต่แรก
+            //   (เขียนรวมรอบเดียวกับ $fill — เส้นตัดบิลไม่ควรยิง UPDATE ทีละคีย์)
+            $fill['conversation_state'] = array_merge($reading->conversation_state ?? [], [
+                'tier_upgraded_from' => 'deep',
+                'tier_upgraded_reason' => 'overpaid_slip',
+                'tier_upgraded_at' => now()->toIso8601String(),
+            ]);
+
+            $reading->forceFill($fill)->save();
+
+            return true;
+        } catch (\Throwable $e) {
+            // ล้มเหลว = ปล่อยตัดบิล Deep ตามเดิม (ลูกค้าได้ของแน่ๆ ดีกว่าค้างกลางทาง)
+            Log::warning('SlipOK: tryUpgradeDeepToCelticFromOverpaidSlip ล้มเหลว (ตัดบิลเดิมต่อ)', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * ✅ (2026-05-31) กู้บิล Celtic ของลูกค้าที่กลับมา (สลิปผ่าน SlipOK) → ตัดบิล + เปิดไพ่
      *   reuse reading เดิม — mark paid + reset cards + onCelticPaymentConfirmed (flow ที่พิสูจน์แล้ว)
      */
@@ -19312,6 +19428,11 @@ class FortuneConversationService
     {
         $transRef = (string) $verify['transRef'];
 
+        // 💎 (2026-09-16, owner) เปิดบิล 39 แต่โอนมา 99 = ลูกค้าเปลี่ยนใจกลางคัน → อัปเกรดเป็น Celtic
+        //   ⚠️ ต้องทำ "ก่อน" ทุกอย่างข้างล่าง เพราะ confirmPayment / คอมมิชชั่น / route ปลายทาง
+        //     อ่าน reading_type ทั้งหมด (กฎ: ค่าแนะนำแยกตามแพคเกจด้วย reading_type ห้ามใช้ยอดเงิน)
+        $upgradedToCeltic = $this->tryUpgradeDeepToCelticFromOverpaidSlip($reading, $verify);
+
         // 💎 (2026-07-02 จับผี) มีสลิป "ค้างรอเลือก 39/99" ที่ยังไม่เคยเครดิต + ใบที่กำลัง finalize เป็นคนละใบ
         //   (เช่นลูกค้าไม่ตอบคำถาม แต่ส่งสลิป ≥99 มาทาง active_bill → เข้า finalize ตรง ไม่ผ่าน partial)
         //   → เก็บเข้ายอดสะสมก่อนปิดบิล — เงินไม่หายเงียบ แอดมินเห็น partial_paid_total เกินราคา ตัดสินคืน/เครดิตได้
@@ -19409,6 +19530,17 @@ class FortuneConversationService
         if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
             $resp = $this->onCelticPaymentConfirmed($reading->fresh());
             $resp['action'] = 'slipok_approved_celtic';
+
+            // 💎 (2026-09-16) บิลนี้เพิ่งถูกอัปเกรดจาก 39 → บอกลูกค้าให้รู้ตัวว่าได้ของใหญ่กว่าที่เปิดบิลไว้
+            //   ไม่งั้นลูกค้าที่เปิดบิล 39 ไว้จะงงว่าทำไมบอทให้เปิดไพ่ 10 ใบ (flow คนละแบบกับ 39)
+            if ($upgradedToCeltic && ! empty($resp['message'])) {
+                $celticPrice = (float) ($this->settings->celtic_cross_price ?? 99);
+                $resp['message'] = '🔄 แม่หมอเห็นว่าเจ้าชะตาโอนมา *฿'
+                    .number_format((float) ($verify['amount'] ?? $celticPrice), 2)
+                    .'* ซึ่งเป็นค่าครูของ *ไพ่ยิปซีเต็มสำรับ 10 ใบ ('.number_format($celticPrice, 0)."฿)*\n"
+                    ."แม่หมอยกเลิกบิลเชิงลึก 39 ให้แล้ว และเปลี่ยนเป็นแพคเกจนี้ให้เรียบร้อยค่ะ ✨\n\n"
+                    .$resp['message'];
+            }
 
             return $resp;
         }
