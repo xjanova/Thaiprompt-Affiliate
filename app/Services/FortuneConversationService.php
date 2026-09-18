@@ -21702,8 +21702,14 @@ PROMPT;
      * @param  string|null  $userId  platform user id (FB PSID / LINE uid) — null = ไม่ตั้งธง (พฤติกรรมเดิม)
      * @param  FortuneReading|null  $reading  บิลที่ค้างอยู่ — มีแล้วจะระบุยอดที่ต้องโอนให้ชัด
      *                                        แทนคำลอย ๆ ว่า "โอนตามยอดให้ตรงเป๊ะ" (owner 2026-08-29)
+     * @param  bool  $amountPicksPackage  true = ยังไม่มีบิล/ยังไม่เลือกแพคเกจ → บอกกฎ "โอนยอดไหน ได้แพคเกจนั้น"
+     *                                    แทนบรรทัด "โอนตามยอดให้ตรงเป๊ะ (ทศนิยมด้วย)" ที่ไร้ความหมายเมื่อไม่มีบิล
+     *                                    ⚠️ ถ้อยคำต้องตรงกับเพดานจริงใน routePrepaySlipByAmount:
+     *                                    39.00–40.00 = เปิด Deep เอง · ≥99 = เปิด Celtic เอง
+     *                                    40.01–98.xx = ถามก่อน · <39 = โอนขาด ขอเติม
+     *                                    ดู [[rule_bot_promise_needs_code_behind_it]] — เปลี่ยนเพดานต้องแก้คู่
      */
-    public function presentPaymentInfo(?string $userId = null, ?FortuneReading $reading = null): array
+    public function presentPaymentInfo(?string $userId = null, ?FortuneReading $reading = null, bool $amountPicksPackage = false): array
     {
         $accounts = $this->settings->getFortuneBankAccounts();
         $qrUrl = $this->getPaymentQrImageUrl();
@@ -21763,7 +21769,28 @@ PROMPT;
         }
 
         $msg .= "🙏 หลังโอนแล้ว ระบบจะตรวจสอบให้อัตโนมัติค่ะ\n";
-        $msg .= "💡 *โอนตามยอดให้ตรงเป๊ะ ๆ นะคะ* (ทศนิยมด้วย)\n";
+
+        // 💰 (2026-09-19) ยังไม่มีบิล → "โอนตามยอดให้ตรงเป๊ะ (ทศนิยมด้วย)" ไม่มียอดให้ตรงกับอะไร
+        //   เคสจริง Wanpen Pen: ขอเลขบัญชีตอนยังไม่เลือกแพคเกจ → ต้องบอกว่าโอนเท่าไรได้อะไร
+        //   ยอดเป็นตัวตัดสินแพคเกจจริงที่ routePrepaySlipByAmount (ไม่ใช่คำโฆษณา)
+        if ($amountPicksPackage) {
+            $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
+            $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+            $deepOn = $this->settings->isDeepReadingEnabled();
+            $celticOn = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+            $msg .= "\n💡 *โอนยอดไหน = ได้แบบนั้นเลยค่ะ*\n";
+            if ($deepOn) {
+                $msg .= "   🔹 โอน *{$deepPrice}* — ดูพื้นดวง\n";
+            }
+            if ($celticOn) {
+                $msg .= "   🔮 โอน *{$celticPrice}* — VIP ส่วนตัว ไพ่ยิปซีเต็มสำรับ\n";
+            }
+            $msg .= "\n📸 โอนแล้ว *ส่งสลิปมาได้เลย* แม่หมอเปิดให้ทันทีค่ะ\n";
+        } else {
+            $msg .= "💡 *โอนตามยอดให้ตรงเป๊ะ ๆ นะคะ* (ทศนิยมด้วย)\n";
+        }
+
         $msg .= '✨ ถ้ามีปัญหา ทักได้เลยค่ะ แม่หมอช่วยดูให้';
 
         return [

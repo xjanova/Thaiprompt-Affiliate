@@ -613,6 +613,28 @@ trait CelticCrossConversationTrait
             'vip ส่วนตัว', 'ดู vip',
             'tier_celtic', 'tier_celtic_99',  // payload จาก FB button
         ];
+
+        // 🗣️ (2026-09-19) ป้ายปุ่มจริงคือ "ดู vip ส่วนตัว 99บาท" แต่คีย์เวิร์ดข้างบนบังคับให้มีคำว่า "vip"
+        //   → ลูกค้าที่พิมพ์ตามป้ายแบบย่อ ("ส่วนตัวค่ะ") ไม่ติดสักตัว
+        //   เคสจริง Wanpen Pen (FB PSID 27219605077706175, 22:27 น. 2026-09-18 · FTU-260918-R9957):
+        //     "ส่วนตัวค่ะ ชื่อธนาคารด้วยค่ะ..." = เลือก 99 แล้ว + ขอเลขบัญชี
+        //     แต่หลุดไปกล่อง "เลือกแพคเกจก่อน" วนซ้ำ 2 รอบ จนหมดเวลา — ไม่เคยได้บิล ไม่เคยได้จ่าย
+        //   ดู [[rule_fb_quickreply_label_arrives_as_text]] — ป้ายปุ่มกลับมาเป็นข้อความ และมักไม่ครบคำ
+        //   ⚠️ ห้ามใส่ 'ส่วนตัว' ตรง ๆ ในลิสต์ด้านบน — วลีที่ "ส่วนตัว" ไม่ได้แปลว่าชื่อแพคเกจ
+        //      ("เรื่องส่วนตัวค่ะ" / "ขอถามส่วนตัวได้ไหม") จะกลายเป็นการซื้อ 99 ทันที
+        //      บิลที่ลูกค้าไม่ได้สั่ง = เสี่ยงโดนนับ strike บิลไม่จ่าย ([[rule_bill_timeout_3hr_troll_ban]])
+        $selfPrivacyPhrases = ['เรื่องส่วนตัว', 'ถามส่วนตัว'];
+        $meansPrivateMatter = false;
+        foreach ($selfPrivacyPhrases as $pp) {
+            if (mb_strpos($textLower, $pp) !== false) {
+                $meansPrivateMatter = true;
+                break;
+            }
+        }
+        if (! $meansPrivateMatter) {
+            $celticKeywords[] = 'ส่วนตัว';
+        }
+
         foreach ($celticKeywords as $kw) {
             if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
                 // ⚡ (2026-08-03) พิมพ์/กด "99" หรือ "celtic" = เลือกแพคเกจแล้ว รู้ราคาแล้ว
@@ -676,7 +698,54 @@ trait CelticCrossConversationTrait
                     return $this->startCelticCrossFlow($reading);
                 }
 
-                // เปิดทั้งคู่ → เลือกแพคเกจไม่ได้แทน ขอให้เลือก (payment-positive ไม่ใช่ "ผิด")
+                // 💳 (2026-09-19) เปิดทั้งคู่ → **ส่งเลขบัญชี + QR จริง** ไม่ใช่ขอให้เลือกแพคเกจก่อน
+                //
+                //   เดิมกล่องนี้เขียนว่า "แม่หมอส่ง QR ให้ได้เลย — เลือกแพคเกจก่อนนะคะ แล้ว QR จะตามมาทันที"
+                //   แล้วไม่ส่งอะไรตามมาเลย = สัญญาแล้วไม่ทำ ([[rule_bot_promise_needs_code_behind_it]])
+                //   เคสจริง Wanpen Pen (FB PSID 27219605077706175, 2026-09-18 · FTU-260918-R9957):
+                //     22:24 "ขอหมายเลขธนาคารด้วยค่ะ"          → กล่องนี้ (205 ตัว)
+                //     22:27 "ส่วนตัวค่ะ ชื่อธนาคารด้วยค่ะ..."  → กล่องนี้ซ้ำเป๊ะ
+                //     22:53 หมดเวลา · is_paid=0 — ลูกค้าอยากจ่าย แต่ไม่เคยได้เลขบัญชี
+                //   ⇒ ลูกค้าถามหาเลขบัญชี = ต้องได้เลขบัญชี. ยอดเป็นตัวบอกแพคเกจเอง
+                //     (routePrepaySlipByAmount: 39-40 เปิด Deep · ≥99 เปิด Celtic · 40.01-98 ถามก่อน)
+                //   ⚠️ ต้องส่ง $userId เข้าไปด้วย — presentPaymentInfo จะตั้งธงรอสลิป (markAwaitingPaymentSlip)
+                //      ไม่งั้นลูกค้าโอนแล้วส่งสลิปมาเฉย ๆ จะตกร่องเงียบ (ไม่มีบิลให้จับ)
+                //      ดู [[rule_pay_intent_must_arm_slip_flag]]
+                //   💡 ปุ่มเลือกแพคเกจยังอยู่ครบ — renderer ของ payment_info ไม่มีปุ่ม จึงต่อท้ายทางเลือกในข้อความ
+                $payUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+
+                // 🌍 ลูกค้าต่างประเทศ — ห้ามยื่นเลขบัญชีไทย/พร้อมเพย์ให้เด็ดขาด ([[rule_foreign_customer_needs_card_lane_routing]])
+                //   โอนเข้าพร้อมเพย์จากนอกประเทศไม่ได้ → ต้องกลับไปเลือกแพคเกจ แล้วให้เลนบัตรของ
+                //   routePayFirstDeep / startCelticCrossFlow จัดการต่อ (Stripe gate อยู่ตรงนั้น)
+                // 🏦 ยังไม่ได้ตั้งบัญชี/QR เลย — กล่องจ่ายเงินจะกลายเป็น "ทักทีมงาน" ซึ่งทำให้ flow ตัน
+                //   กว่าเดิม → คงกล่องเลือกแพคเกจไว้ ลูกค้ายังเดินต่อได้
+                //   ⚠️ กับดัก: 'พร้อมเพย์' อยู่ในลิสต์ $paymentIntentNoTier ด้านบน ⇒ ประโยค
+                //      **"ไม่มีพร้อมเพย์"** ก็ match ด้วย — ถ้าไม่กัน บอทจะยื่นพร้อมเพย์ใส่คนที่เพิ่ง
+                //      บอกว่าไม่มีพร้อมเพย์ (กับดักเดียวกับที่ FortuneConversationService:9065 เตือนไว้)
+                //      looksLikeForeignPaymentSignal จับวลีชุดนี้ให้แล้ว ใช้ร่วมกันจะได้ไม่มี 2 คลังคำ
+                $hasPayChannel = $this->settings->getFortuneBankAccounts()->isNotEmpty()
+                    || ! empty($this->getPaymentQrImageUrl());
+                $isForeign = (! empty($payUserId) && $this->isKnownForeignCustomer($payUserId))
+                    || $this->looksLikeForeignPaymentSignal($messageText);
+
+                if ($hasPayChannel && ! $isForeign) {
+                    $payInfo = $this->presentPaymentInfo($payUserId, null, amountPicksPackage: true);
+                    $payInfo['reading'] = $reading;
+
+                    Log::info('handleTierChoice: ลูกค้าขอช่องทางจ่ายก่อนเลือกแพคเกจ → ส่งเลขบัญชี+QR (ยอดตัดสินแพคเกจ)', [
+                        'reading_id' => $reading->id,
+                        'matched_keyword' => $kw,
+                    ]);
+
+                    return $payInfo;
+                }
+
+                Log::info('handleTierChoice: ขอช่องทางจ่าย แต่ยื่นเลขบัญชีไทยไม่ได้ → คงกล่องเลือกแพคเกจ', [
+                    'reading_id' => $reading->id,
+                    'has_pay_channel' => $hasPayChannel,
+                    'is_foreign' => $isForeign,
+                ]);
+
                 return [
                     'action' => 'tier_choice_invalid',
                     'message' => "🙏 ยินดีค่ะ! แม่หมอส่ง QR ให้ได้เลย — เลือกแพคเกจก่อนนะคะ แล้ว QR จะตามมาทันที 👇\n\n"
