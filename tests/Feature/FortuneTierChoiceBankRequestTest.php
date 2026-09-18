@@ -46,6 +46,8 @@ class FortuneTierChoiceBankRequestTest extends TestCase
     private function bankAccount(): PaymentBankAccount
     {
         return PaymentBankAccount::create([
+            // ⚠️ bank_code ไม่มี default ใน schema — ไม่ใส่ = 1364 Field doesn't have a default value
+            'bank_code' => 'KBANK',
             'bank_name' => 'ธนาคารกสิกรไทย',
             'account_number' => '2323775349',
             'account_name' => 'จันทราพยากรณ์',
