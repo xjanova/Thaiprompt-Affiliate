@@ -209,6 +209,49 @@ class FortuneTierChoiceBankRequestTest extends TestCase
         }
     }
 
+    /**
+     * 🛑 ประโยค "ยังจ่ายไม่ได้" ที่บังเอิญมีคำจ่ายเงินอยู่ข้างใน
+     *
+     * ทั้งสามมาจาก log จริง 12–18 ก.ย. 2026 — กล่อง pay-intent ยิงไป 4 คน
+     * มีแค่ Wanpen คนเดียวที่ขอเลขบัญชีจริง อีก 3 คนคือ substring ชนโดยบังเอิญ
+     * ตอนกล่องนี้ตอบแค่ "เลือกแพคเกจ" มันแค่ไม่ตรงคำถาม แต่พอเปลี่ยนเป็นยื่นเลขบัญชี
+     * มันกลายเป็นไล่เก็บเงินคนที่เพิ่งบอกว่าไม่มีเงิน
+     */
+    #[Test]
+    public function a_sentence_about_not_being_able_to_pay_yet_never_gets_the_account(): void
+    {
+        $cases = [
+            'ไมมีบัญชีแม่',                      // คำว่า 'บัญชี'
+            'ยังไม่พร้อมโอนค่ะโอนสิ้นเดือนนะคะ',   // คำว่า 'พร้อมโอน'
+            'ค่ะแม่หมอลูกมีเงินในบัญชีก่อนค่ะ',    // คำว่า 'บัญชี'
+            'ยังไม่มีเงินเลยค่ะ ไว้มีเงินก่อน',    // คำว่า 'เงิน' + ผัดเวลา
+        ];
+
+        foreach ($cases as $text) {
+            $svc = $this->service();
+            $reading = $this->menuRow();
+
+            $result = $svc->tierChoice($reading, $text);
+
+            $this->assertNotSame('payment_info', $result['action'], "ห้ามยื่นเลขบัญชีใส่ \"{$text}\"");
+            $this->assertStringNotContainsString('2323775349', (string) $result['message']);
+            $this->assertSame([], $svc->billedTier, "ห้ามออกบิลจาก \"{$text}\"");
+        }
+    }
+
+    #[Test]
+    public function an_explicit_request_still_wins_over_a_deferral_word_in_the_same_sentence(): void
+    {
+        $svc = $this->service();
+        $reading = $this->menuRow();
+
+        // ขอเลขบัญชีตรง ๆ แต่บอกด้วยว่ายังไม่ได้โอน — เจตนาชัดว่าอยากได้เลขบัญชี
+        $result = $svc->tierChoice($reading, 'ขอเลขบัญชีค่ะ ยังไม่ได้โอนเลย');
+
+        $this->assertSame('payment_info', $result['action']);
+        $this->assertStringContainsString('2323775349', $result['message']);
+    }
+
     #[Test]
     public function saying_you_have_no_promptpay_never_gets_thai_bank_details_back(): void
     {
