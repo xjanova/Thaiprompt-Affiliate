@@ -12597,6 +12597,41 @@ class FortuneConversationService
     }
 
     /**
+     * 🛡️ (2026-09-19) Format เลข PromptPay ให้ใส่ dash — กัน Facebook auto-QR overlay
+     *
+     * ปัญหาเดียวกับ formatAccountNumberForFb แต่ **ตรงตัวกว่า**: เบอร์พร้อมเพย์คือเลข 10 หลัก
+     * ขึ้นต้น 0 ซึ่งเป็นรูปที่ FB จับแล้ว render QR ทับให้เองเป๊ะ ๆ (QR ตัวนั้น format ผิด สแกนไม่ได้)
+     * ⇒ ลูกค้า โดยเฉพาะผู้สูงอายุ สแกนแล้วไม่ขึ้น นึกว่าร้านมีปัญหา
+     *
+     * ⚠️ ห้ามใช้ formatAccountNumberForFb กับเบอร์โทร — มันใช้รูปเลขบัญชีธนาคาร (3-1-5-1)
+     *    จะได้ `090-9-33596-3` ซึ่งคนไทยอ่านไม่ออกว่าเป็นเบอร์มือถือ
+     *
+     * รูปแบบที่คืน:
+     * - 10 หลัก (เบอร์มือถือ)        → 090-933-5963      (3-3-4)
+     * - 13 หลัก (บัตร ปชช./ผู้เสียภาษี) → 1-2345-67890-12-3 (1-4-5-2-1)
+     * - อื่น ๆ                        → chunk 3 ตัว
+     *
+     * @param  string|null  $promptpayId  เลขพร้อมเพย์ (มี dash มาแล้วก็ได้ — normalize ให้)
+     */
+    protected function formatPromptpayForFb(?string $promptpayId): string
+    {
+        if ($promptpayId === null || $promptpayId === '') {
+            return '';
+        }
+
+        $digits = preg_replace('/\D+/', '', $promptpayId);
+        if ($digits === '' || $digits === null) {
+            return $promptpayId;
+        }
+
+        return match (strlen($digits)) {
+            10 => substr($digits, 0, 3).'-'.substr($digits, 3, 3).'-'.substr($digits, 6, 4),
+            13 => substr($digits, 0, 1).'-'.substr($digits, 1, 4).'-'.substr($digits, 5, 5).'-'.substr($digits, 10, 2).'-'.substr($digits, 12, 1),
+            default => trim(chunk_split($digits, 3, '-'), '-'),
+        };
+    }
+
+    /**
      * สร้างข้อความบัญชีธนาคาร (สำหรับขอดูซ้ำ)
      */
     protected function getBankAccountsMessage(FortuneReading $reading): string
@@ -21750,14 +21785,20 @@ PROMPT;
         if ($showBank && $accounts->isNotEmpty()) {
             $msg .= "━━━━━━━━━━━━━━━━━\n";
             foreach ($accounts as $acc) {
+                // 🛡️ (2026-09-19) ใส่ dash ทั้งเลขบัญชีและพร้อมเพย์ — กล่องนี้เป็นเส้นเดียว
+                //   ที่ยังพิมพ์เลขดิบให้ลูกค้าเห็นบน Messenger ⇒ FB จับเลข 10-13 หลักขึ้นต้น 0
+                //   ไป render QR ทับให้เอง (format ผิด สแกนไม่ได้) ลูกค้าสแกนแล้วงงว่าทำไมไม่ขึ้น
+                //   เพื่อนบ้าน getBankAccountsListMessage() ใส่ dash มาตั้งแต่ 2026-05-14 แล้ว
+                //   ตัวนี้ตกหล่น — และเพิ่งมาโผล่ถี่ขึ้นมากเพราะไปใช้ที่ด่าน tier_choice ด้วย
+                //   ⚠️ banking app ตัด dash ให้เองตอน paste — ลูกค้ายังก๊อปไปใช้ได้ปกติ
                 $msg .= "🏦 *{$acc->bank_name}*\n";
-                $msg .= "   📋 เลขที่: {$acc->account_number}\n";
+                $msg .= '   📋 เลขที่: '.$this->formatAccountNumberForFb($acc->account_number)."\n";
                 $msg .= "   👤 ชื่อ: {$acc->account_name}\n";
                 if (! empty($acc->branch)) {
                     $msg .= "   📍 สาขา: {$acc->branch}\n";
                 }
                 if (! empty($acc->promptpay_id)) {
-                    $msg .= "   📱 PromptPay: {$acc->promptpay_id}\n";
+                    $msg .= '   📱 PromptPay: '.$this->formatPromptpayForFb($acc->promptpay_id)."\n";
                 }
                 $msg .= "\n";
             }

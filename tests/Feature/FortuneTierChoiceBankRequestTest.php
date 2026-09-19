@@ -145,7 +145,10 @@ class FortuneTierChoiceBankRequestTest extends TestCase
         $result = $svc->tierChoice($reading, 'ขอหมายเลขธนาคารด้วยค่ะ');
 
         $this->assertSame('payment_info', $result['action'], 'ต้องส่งกล่องช่องทางจ่าย ไม่ใช่กล่องเลือกแพคเกจ');
-        $this->assertStringContainsString('2323775349', $result['message'], 'ต้องมีเลขบัญชีจริงในข้อความ');
+        // ⚠️ เลขต้องมี dash — กัน FB render QR ปลอมทับ (formatAccountNumberForFb)
+        $this->assertStringContainsString('232-3-77534-9', $result['message'], 'ต้องมีเลขบัญชีจริงในข้อความ');
+        $this->assertStringContainsString('090-933-5963', $result['message'], 'พร้อมเพย์ต้องมี dash เป็นรูปเบอร์มือถือ');
+        $this->assertStringNotContainsString('0909335963', $result['message'], 'ห้ามมีเบอร์พร้อมเพย์แบบเลขติดกัน');
         $this->assertStringContainsString('จันทราพยากรณ์', $result['message'], 'ต้องมีชื่อบัญชี');
         $this->assertSame([], $svc->billedTier, 'ยังไม่เลือกแพคเกจ = ยังไม่ออกบิล');
     }
@@ -234,7 +237,7 @@ class FortuneTierChoiceBankRequestTest extends TestCase
             $result = $svc->tierChoice($reading, $text);
 
             $this->assertNotSame('payment_info', $result['action'], "ห้ามยื่นเลขบัญชีใส่ \"{$text}\"");
-            $this->assertStringNotContainsString('2323775349', (string) $result['message']);
+            $this->assertStringNotContainsString('232-3-77534-9', (string) $result['message']);
             $this->assertSame([], $svc->billedTier, "ห้ามออกบิลจาก \"{$text}\"");
         }
     }
@@ -249,7 +252,7 @@ class FortuneTierChoiceBankRequestTest extends TestCase
         $result = $svc->tierChoice($reading, 'ขอเลขบัญชีค่ะ ยังไม่ได้โอนเลย');
 
         $this->assertSame('payment_info', $result['action']);
-        $this->assertStringContainsString('2323775349', $result['message']);
+        $this->assertStringContainsString('232-3-77534-9', $result['message']);
     }
 
     #[Test]
@@ -261,7 +264,7 @@ class FortuneTierChoiceBankRequestTest extends TestCase
         $result = $svc->tierChoice($reading, 'ไม่มีพร้อมเพย์ค่ะ');
 
         $this->assertNotSame('payment_info', $result['action']);
-        $this->assertStringNotContainsString('2323775349', $result['message']);
+        $this->assertStringNotContainsString('232-3-77534-9', $result['message']);
     }
 
     #[Test]
