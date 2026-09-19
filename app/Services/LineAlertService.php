@@ -155,6 +155,41 @@ class LineAlertService
      */
     private function sendAdminAlert(string $title, string $message): void
     {
+        // 🔔 (2026-09-19, owner: "แจ้งเตือนทุกเรื่องที่สำคัญ ๆ") Telegram มาก่อนเสมอ
+        //
+        //   เมธอดนี้คือ **ท่อรวมของทุกการแจ้งเตือนแอดมินในระบบ** — alertSystemError()
+        //   ถูกเรียกจาก 9 จุด (AI ค้างหลังลูกค้าจ่าย · บิลจ่ายแล้วค้าง · คำทำนายล้ม ·
+        //   คีย์ AI พัง/กลับมา · ดวงรายวันไม่พร้อม · persona ล้ม) ⇒ ต่อที่นี่จุดเดียว
+        //   ได้ครบทุกเรื่องโดยไม่ต้องไล่แก้ 9 ไฟล์
+        //
+        //   ทำไม Telegram ต้องมาก่อน LINE:
+        //   LINE OA มีโควตา push แค่ 300 ครั้ง/เดือน และสงวนไว้ให้ของลูกค้าที่จ่ายเงินแล้ว
+        //   ([[rule_line_push_is_emergency_reserve_only]]) — เตือนระบบด้วย push = เผาโควตานั้น
+        //   ⇒ Telegram ส่งสำเร็จเมื่อไหร่ **ข้าม LINE** ไปเลย (Telegram ฟรี ไม่จำกัด)
+        //   ยังไม่ได้ตั้ง Telegram / ส่งไม่ออก → ตกกลับไปใช้ LINE แบบเดิมเป๊ะ ๆ
+        $telegramSent = false;
+        try {
+            $telegramSent = app(TelegramAlertService::class)->send(
+                "📢 {$title}\n\n{$message}",
+                // กันรัว: เรื่องเดียวกัน (ข้อความเหมือนกันเป๊ะ) เตือนซ้ำได้ทุก 30 นาที
+                //   เคส 6 ก.ย. error เดียวกันยิง 161 ครั้งใน 13 ชม. — ถ้าเตือนทุกครั้ง
+                //   เจ้าของจะปิดแจ้งเตือนทิ้ง แล้วก็กลับไปไม่มีใครรู้เหมือนเดิม
+                'admin_alert:'.$title.':'.$message,
+                30
+            );
+        } catch (\Throwable $e) {
+            Log::warning('sendAdminAlert: Telegram ล้มเหลว — ใช้ LINE ต่อ', [
+                'title' => $title,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        if ($telegramSent) {
+            Log::channel('line')->warning($title, ['message' => $message, 'via' => 'telegram']);
+
+            return;
+        }
+
         // Get admin users with LINE connected
         $admins = \App\Models\User::whereIn('role', ['admin', 'super_admin'])
             ->whereNotNull('line_user_id')

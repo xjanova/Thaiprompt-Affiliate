@@ -31,6 +31,16 @@ use Illuminate\Support\Str;
 class FortuneHoroscopeService
 {
     /**
+     * 🔔 (2026-09-19) ใบที่สร้างรูปไม่สำเร็จในรอบนี้ — สรุปแจ้งเตือนท้าย generateDailyContent()
+     *
+     * เก็บเป็น state ของ instance เพราะ generateImage() อยู่ลึกลงไป 2 ชั้นและคืน null เฉย ๆ
+     * (ชั้นบนแยกไม่ออกว่า "ไม่มีรูปเพราะปิดใช้" กับ "ยิง provider แล้วล้ม")
+     *
+     * @var array<int, array{day: string, error: string}>
+     */
+    protected array $imageFailures = [];
+
+    /**
      * 🔢 วันที่ที่ "แจกเลขนำโชค" ได้เท่านั้น
      *
      * เจ้าของสั่ง (2026-08-02): "งดเลขนำโชค สีมงคล — เลขนำโชคจะให้ในวันที่ 29
@@ -99,6 +109,9 @@ class FortuneHoroscopeService
         $failed = 0;
         $contents = collect();
 
+        // 🔔 (2026-09-19) รีเซ็ตต่อรอบ — service ตัวเดียวถูกใช้ซ้ำได้ในโปรเซสเดียว
+        $this->imageFailures = [];
+
         Log::info('FortuneHoroscope: เริ่มสร้างเนื้อหาดวงรายวัน', [
             'campaign_id' => $campaign->id,
             'campaign_name' => $campaign->name,
@@ -160,13 +173,69 @@ class FortuneHoroscopeService
             'campaign_id' => $campaign->id,
             'success' => $success,
             'failed' => $failed,
+            'image_failed' => count($this->imageFailures),
         ]);
+
+        $this->alertOnImageFailures($campaign, $targetDate);
 
         return [
             'success' => $success,
             'failed' => $failed,
             'contents' => $contents,
         ];
+    }
+
+    /**
+     * 🔔 (2026-09-19) รูปสร้างไม่ได้ → เตือนแอดมินทาง Telegram
+     *
+     * ## ทำไมต้องเตือน
+     * เคสจริง 18-19 ก.ย.: เครดิต Pollinations หมด → รูปล้มวันละ 8 ใบ
+     * แต่ **โพสยังออกตามปกติโดยไม่มีรูป** และมีแค่ Log::warning
+     * ⇒ เงียบ 2 วันเต็ม กว่าเจ้าของจะเห็นก็ต้องไปเปิดเพจดูเอง
+     *
+     * ## ทำไมสรุปทีเดียว ไม่เตือนรายใบ
+     * ล้มทีก็ล้มพร้อมกันทั้ง 8 ใบ (เหตุผลเดียวกันหมด — เครดิตหมด/คีย์ผิด/schema เปลี่ยน)
+     * เตือนรายใบ = 8 ข้อความติดกันทุกวัน แล้วเจ้าของก็ปิดแจ้งเตือนทิ้ง
+     *
+     * ## กันรัว
+     * คีย์ผูกกับ "วันที่ + จำนวนที่ล้ม" ⇒ วันละครั้ง แม้ cron จะ retry หลายรอบใน 30 นาที
+     * ถ้าพรุ่งนี้ยังพังอยู่ก็เตือนใหม่ (คีย์เปลี่ยนตามวันที่) — เรื่องนี้ต้องดังทุกวันจนกว่าจะแก้
+     */
+    protected function alertOnImageFailures(FortuneHoroscopeCampaign $campaign, Carbon $targetDate): void
+    {
+        if ($this->imageFailures === []) {
+            return;
+        }
+
+        try {
+            $n = count($this->imageFailures);
+            $days = implode(', ', array_column($this->imageFailures, 'day'));
+
+            // เหตุผลเดียวกันหมดเป็นปกติ — เอาใบแรกพอ แล้วบอกว่ามีกี่แบบ
+            $reasons = array_unique(array_column($this->imageFailures, 'error'));
+            $reason = mb_substr((string) reset($reasons), 0, 400);
+            $more = count($reasons) > 1 ? ' (+อีก '.(count($reasons) - 1).' สาเหตุ)' : '';
+
+            $text = "🖼️ ดวงรายวัน: สร้างรูปไม่ได้ {$n} ใบ\n\n"
+                ."📅 วันที่: {$targetDate->toDateString()}\n"
+                ."🎯 แคมเปญ: {$campaign->name}\n"
+                ."🗓️ วันเกิดที่ล้ม: {$days}\n"
+                .'🖌️ provider: '.($campaign->ai_image_provider ?: '-').' / '.($campaign->ai_image_model ?: '-')."\n\n"
+                ."❗ สาเหตุ: {$reason}{$more}\n\n"
+                .'⚠️ โพสจะยังออกตามเวลาแต่ไม่มีรูป';
+
+            app(\App\Services\TelegramAlertService::class)->send(
+                $text,
+                'horoscope_image_fail:'.$targetDate->toDateString().':'.$n,
+                // 12 ชม. — รอบสร้างของวันเดียวกัน retry ได้หลายครั้งในหน้าต่าง 30 นาที
+                720
+            );
+        } catch (\Throwable $e) {
+            // ตัวเตือนพังต้องไม่ทำให้รอบสร้างดวงพัง
+            Log::warning('FortuneHoroscope: แจ้งเตือนรูปล้มเหลวไม่สำเร็จ (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -515,9 +584,14 @@ class FortuneHoroscopeService
             $result = $provider->generateImage($imagePrompt, $options);
 
             if (! ($result['success'] ?? false) || empty($result['images'])) {
+                $reason = (string) ($result['error'] ?? 'ไม่ทราบสาเหตุ');
+
                 Log::warning("FortuneHoroscope: สร้างรูปล้มเหลวสำหรับวัน{$dayName}", [
-                    'error' => $result['error'] ?? 'ไม่ทราบสาเหตุ',
+                    'error' => $reason,
                 ]);
+
+                // 🔔 (2026-09-19) เก็บไว้สรุปแจ้งเตือนท้ายรอบ — ดูเหตุผลที่ generateDailyContent()
+                $this->imageFailures[] = ['day' => $dayName, 'error' => $reason];
 
                 return null;
             }

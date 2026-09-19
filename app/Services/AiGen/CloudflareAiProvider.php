@@ -31,8 +31,8 @@ class CloudflareAiProvider extends BaseAiGenProvider
      * Cloudflare ใช้ REST API ที่แตกต่างจาก OpenAI format
      * ส่ง binary image กลับมาโดยตรง
      *
-     * @param string $prompt คำอธิบายภาพที่ต้องการเจน
-     * @param array $parameters พารามิเตอร์เพิ่มเติม (size, style, model, steps, num_images)
+     * @param  string  $prompt  คำอธิบายภาพที่ต้องการเจน
+     * @param  array  $parameters  พารามิเตอร์เพิ่มเติม (size, style, model, steps, num_images)
      * @return array ผลลัพธ์การเจนภาพ
      */
     public function generateImage(string $prompt, array $parameters = []): array
@@ -56,26 +56,37 @@ class CloudflareAiProvider extends BaseAiGenProvider
         // กำหนดขนาดภาพ
         $size = $this->parseSize($parameters['size'] ?? '1024x1024');
 
-        // เตรียมข้อมูลส่ง API
+        // 🔧 (2026-09-19) Cloudflare รัดกุม schema ขาเข้าแล้ว — ส่งคีย์ที่โมเดลไม่รู้จัก
+        //   **ตีกลับทั้งคำขอ** ไม่ใช่เมินคีย์นั้นทิ้ง:
+        //     "Bad input: Additional or unevaluated properties '/num_steps, /width, /height, /seed' not allowed"
+        //   โค้ดเดิมส่ง num_steps ให้ทุกโมเดล + width/height ให้ flux + seed ให้ทุกตัว
+        //   ⇒ flux ตาย 400 ทุกครั้ง (ยืนยันกับ API จริง 2026-09-19)
+        //   ชุดที่ยิงจริงแล้วผ่าน:
+        //     flux-1-schnell            {prompt, steps}                                    → 200 JSON base64
+        //     stable-diffusion-xl-*     {prompt, num_steps, width, height, seed, negative}  → 200 image/png
+        //   ⚠️ flux **ไม่รับ seed** ⇒ ตัวกันรูปซ้ำฝั่ง FortuneHoroscopeService ใช้ seed ไม่ได้กับโมเดลนี้
+        //      แต่ flux สุ่มใหม่ทุกครั้งอยู่แล้ว และด่านเทียบ md5 ยังทำงาน — ไม่ทำให้รูปซ้ำ
+        $isFlux = str_contains($model, 'flux');
+
         $data = [
             'prompt' => $this->enhancePrompt($prompt, $parameters['style'] ?? null),
-            'num_steps' => $parameters['steps'] ?? 4,
         ];
 
-        // FLUX รองรับ width/height, SDXL ไม่รองรับ (ใช้ค่าเริ่มต้น)
-        if (str_contains($model, 'flux')) {
+        if ($isFlux) {
+            // steps ของ flux-1-schnell รับ 1-8 เท่านั้น — เกินช่วงก็ 400 เหมือนกัน
+            $data['steps'] = max(1, min(8, (int) ($parameters['steps'] ?? 4)));
+        } else {
+            $data['num_steps'] = (int) ($parameters['steps'] ?? 4);
             $data['width'] = $size['width'];
             $data['height'] = $size['height'];
-        }
 
-        // เพิ่ม negative prompt ถ้ามี (SDXL รองรับ)
-        if (! empty($parameters['negative_prompt']) && str_contains($model, 'stable-diffusion')) {
-            $data['negative_prompt'] = $parameters['negative_prompt'];
-        }
+            if (! empty($parameters['negative_prompt'])) {
+                $data['negative_prompt'] = $parameters['negative_prompt'];
+            }
 
-        // เพิ่ม seed ถ้ามี
-        if (isset($parameters['seed'])) {
-            $data['seed'] = (int) $parameters['seed'];
+            if (isset($parameters['seed'])) {
+                $data['seed'] = (int) $parameters['seed'];
+            }
         }
 
         $baseUrl = "https://api.cloudflare.com/client/v4/accounts/{$accountId}/ai/run/{$model}";
@@ -170,10 +181,6 @@ class CloudflareAiProvider extends BaseAiGenProvider
 
     /**
      * Cloudflare AI ไม่รองรับ video generation โดยตรง
-     *
-     * @param string $prompt
-     * @param array $parameters
-     * @return array
      */
     public function generateVideo(string $prompt, array $parameters = []): array
     {
@@ -185,9 +192,6 @@ class CloudflareAiProvider extends BaseAiGenProvider
 
     /**
      * เช็คสถานะการเจน (Cloudflare AI เจนเสร็จทันทีไม่ต้อง poll)
-     *
-     * @param string $generationId
-     * @return array
      */
     public function checkStatus(string $generationId): array
     {
@@ -203,9 +207,6 @@ class CloudflareAiProvider extends BaseAiGenProvider
 
     /**
      * ดึงผลลัพธ์ตาม ID
-     *
-     * @param string $generationId
-     * @return array
      */
     public function getResult(string $generationId): array
     {
@@ -214,8 +215,6 @@ class CloudflareAiProvider extends BaseAiGenProvider
 
     /**
      * ตรวจสอบว่า provider ตั้งค่าเรียบร้อยหรือยัง
-     *
-     * @return bool
      */
     public function isConfigured(): bool
     {
@@ -228,8 +227,6 @@ class CloudflareAiProvider extends BaseAiGenProvider
 
     /**
      * ทดสอบการเชื่อมต่อ API
-     *
-     * @return array
      */
     public function testConnection(): array
     {
@@ -270,7 +267,7 @@ class CloudflareAiProvider extends BaseAiGenProvider
     /**
      * แปลงขนาดภาพจาก string เป็น array
      *
-     * @param string $size เช่น "1024x1024"
+     * @param  string  $size  เช่น "1024x1024"
      * @return array ['width' => int, 'height' => int]
      */
     protected function parseSize(string $size): array
@@ -293,10 +290,6 @@ class CloudflareAiProvider extends BaseAiGenProvider
 
     /**
      * ปรับปรุง prompt ตาม style ที่เลือก
-     *
-     * @param string $prompt
-     * @param string|null $style
-     * @return string
      */
     protected function enhancePrompt(string $prompt, ?string $style = null): string
     {
@@ -319,9 +312,9 @@ class CloudflareAiProvider extends BaseAiGenProvider
     /**
      * บันทึก binary image เป็นไฟล์
      *
-     * @param string $binaryData ข้อมูลภาพ binary
-     * @param string $providerName ชื่อ provider
-     * @param int $index ลำดับภาพ
+     * @param  string  $binaryData  ข้อมูลภาพ binary
+     * @param  string  $providerName  ชื่อ provider
+     * @param  int  $index  ลำดับภาพ
      * @return array|null ข้อมูลไฟล์ที่บันทึก
      */
     protected function saveBinaryImage(string $binaryData, string $providerName, int $index = 0): ?array
@@ -349,9 +342,9 @@ class CloudflareAiProvider extends BaseAiGenProvider
     /**
      * บันทึก base64 image เป็นไฟล์
      *
-     * @param string $base64Data ข้อมูลภาพ base64
-     * @param string $providerName ชื่อ provider
-     * @param int $index ลำดับภาพ
+     * @param  string  $base64Data  ข้อมูลภาพ base64
+     * @param  string  $providerName  ชื่อ provider
+     * @param  int  $index  ลำดับภาพ
      * @return array|null ข้อมูลไฟล์ที่บันทึก
      */
     protected function saveBase64Image(string $base64Data, string $providerName, int $index = 0): ?array
