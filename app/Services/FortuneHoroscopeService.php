@@ -290,7 +290,24 @@ class FortuneHoroscopeService
             // ขั้นที่ 3: สร้างรูปภาพ (ถ้าเปิดใช้)
             //   ⚠️ ต้องส่ง $targetDate ด้วย — seed/สไตล์ของรูปผูกกับ "วันที่" ไม่ใช่แค่วันเกิด
             //   (ไม่ส่ง = prompt เดิมทุกวัน = ภาพเดิมไบต์ต่อไบต์ ดู IMAGE_STYLE_ROTATION)
-            if ($campaign->include_image) {
+            //
+            // 🎯 (2026-09-19, owner: "รูปสร้างใช้ประกอบการโพส แค่รูปเดียวพอสิ สร้างทำไม 8 ใบ")
+            //    เจ้าของถูก — โพสใช้รูปเดียวจริง:
+            //      FortuneHoroscopePublishService::publishToFacebook()  ใช้ $imageUrls[0]
+            //      FortuneHoroscopePublishService::publishToLine()      ใช้ $imageUrls[0]
+            //    เดิมเจน 8 ใบ (7 วันเกิด + พุธกลางคืน) แล้ว **ทิ้ง 7 ใบทุกวัน** = ~2,900 ใบ/ปี
+            //    เผาโควตา provider + เวลา + พื้นที่ดิสก์ โดยไม่มีใครได้เห็น
+            //
+            //    ใบที่ถูกใช้จริงคือใบของ "วันในสัปดาห์ที่โพสวันนั้น" — orderImagesForToday()
+            //    เอาใบนั้นขึ้นหัวแถว (แก้ไว้ 2026-09-08 ตอนรูปหน้าฟีดเป็นโทนวันอาทิตย์ทุกวัน)
+            //    ⇒ เจนเฉพาะใบนั้นใบเดียว ผลลัพธ์หน้าเพจเหมือนเดิมเป๊ะ
+            //
+            //    birth_day 7 (พุธกลางคืน/ราหู) ไม่มีวันตรงกับ dayOfWeek → ไม่เคยเป็นรูปหน้าโพส
+            //    ⚠️ ถ้าวันไหนอยากให้ทุกใบมีรูป (เช่นทำการ์ดรายวันเกิดส่ง DM) ต้องแก้ที่นี่
+            //       พร้อมกับดูโควตา provider ด้วย — ไม่ใช่แค่ปลดเงื่อนไขทิ้ง
+            $isCoverImageDay = $birthDay === (int) $targetDate->dayOfWeek;
+
+            if ($campaign->include_image && $isCoverImageDay) {
                 $imageResult = $this->generateImage($campaign, $birthDay, $astrologyData, $targetDate);
                 if ($imageResult) {
                     $content->update([
