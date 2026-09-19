@@ -3947,6 +3947,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/channels/telegram', [FortuneChannelController::class, 'updateTelegram'])->name('channels.telegram.update');
     Route::post('/channels/telegram/test', [FortuneChannelController::class, 'testTelegram'])->name('channels.telegram.test');
     Route::post('/channels/telegram/webhook', [FortuneChannelController::class, 'setupTelegramWebhook'])->name('channels.telegram.webhook');
+    // 🔔 (2026-09-19) บอทแจ้งเตือนแอดมิน — คนละตัวกับบอทแม่หมอข้างบน
+    Route::put('/channels/telegram-alert', [FortuneChannelController::class, 'updateTelegramAlert'])->name('channels.telegram-alert.update');
     Route::post('/channels/setup-facebook-messenger', [FortuneChannelController::class, 'setupFacebookMessenger'])->name('channels.setup-facebook-messenger');
     Route::get('/channels/facebook-messenger-profile', [FortuneChannelController::class, 'getFacebookMessengerProfile'])->name('channels.facebook-messenger-profile');
     Route::get('/channels/stats', [FortuneChannelController::class, 'statsApi'])->name('channels.stats');

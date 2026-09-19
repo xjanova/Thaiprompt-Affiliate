@@ -21,12 +21,20 @@ use Illuminate\Support\Facades\Log;
  * - FCM ต้องมีแอปมือถือติดตั้งและเปิดสิทธิ์ไว้
  * - Telegram ฟรี ไม่จำกัด และเจ้าของใช้กับโปรเจกต์อื่นอยู่แล้ว
  *
- * ## ตั้งค่า (ทั้งคู่ต้องมี ไม่งั้นบริการนี้เงียบสนิท)
- *   TELEGRAM_ALERT_BOT_TOKEN=123456:ABC...     ← จาก @BotFather
- *   TELEGRAM_ALERT_CHAT_ID=123456789           ← chat id ของเจ้าของ (ทักบอทก่อน 1 ครั้ง)
+ * ## 🚨 เป็นบอทคนละตัวกับแม่หมอ
+ * เจ้าของยืนยัน (2026-09-19): **"bot แจ้งเตือน กับบอท แม่หมอ คนละตัวกันนะ"**
+ * ⇒ ห้ามยืม `telegram_bot_token` ของแม่หมอมาส่งแจ้งเตือนเด็ดขาด
+ *   บอทแม่หมอ = คุยกับลูกค้า · บอทตัวนี้ = คุยกับแอดมินเท่านั้น
+ *   (ยืม token กัน = ข้อความระบบจะไปโผล่ในบอทที่ลูกค้าทักอยู่ และ log/ประวัติปนกัน)
  *
- * ไม่ได้ตั้ง `TELEGRAM_ALERT_BOT_TOKEN` → ตกไปใช้ token ของบอทแม่หมอใน DB ให้อัตโนมัติ
- * (ยังต้องมี chat id เสมอ — บอทส่งหาคนที่ไม่เคยทักมันไม่ได้)
+ * ## ตั้งค่า — กรอกที่หลังบ้าน `/admin/fortune/channels` การ์ด "แจ้งเตือนแอดมิน"
+ *   telegram_alert_bot_token  ← จาก @BotFather (คนละบอทกับแม่หมอ)
+ *   telegram_alert_chat_id    ← chat id ของเจ้าของ (ทักบอทตัวนั้นก่อน 1 ครั้ง)
+ *
+ * `.env` ใช้ได้ในฐานะ **ตัวสำรอง** (`TELEGRAM_ALERT_BOT_TOKEN` / `TELEGRAM_ALERT_CHAT_ID`)
+ * — ค่าใน DB ชนะเสมอ เพราะเจ้าของแก้เองได้โดยไม่ต้องแตะเซิร์ฟเวอร์
+ *
+ * ⚠️ **ต้องมีทั้งคู่** — บอทส่งหาคนที่ไม่เคยทักมันไม่ได้ ขาด chat id = ส่งไม่ออก
  *
  * ## ข้อบังคับของคลาสนี้
  * 1. **ห้ามโยน exception ออกไป** — ตัวเตือนพังต้องไม่ทำให้งานที่มันเฝ้าพังตาม
@@ -118,6 +126,44 @@ class TelegramAlertService
     }
 
     /**
+     * 🧪 ทดสอบคู่ token+chat id ที่แอดมิน "กำลังจะบันทึก" — ยังไม่แตะค่าใน DB
+     *
+     * ใช้ตอนบันทึกในหลังบ้าน: ยิงจริงก่อน ถ้าไม่ถึงมือก็ไม่ต้องบันทึก
+     * (ตั้งค่าเสร็จแล้วเห็นข้อความบนมือถือทันที = รู้แน่ว่าใช้ได้ ไม่ต้องรอของพังจริงถึงจะรู้ว่าเตือนไม่ออก)
+     *
+     * @return array{success:bool, message:string}
+     */
+    public function probe(string $token, string $chatId, string $text): array
+    {
+        $token = trim($token);
+        $chatId = trim($chatId);
+
+        if ($token === '' || $chatId === '') {
+            return ['success' => false, 'message' => 'ต้องมีทั้ง Bot Token และ Chat ID'];
+        }
+
+        try {
+            $response = Http::timeout(self::TIMEOUT)
+                ->post(self::API_BASE.'/bot'.$token.'/sendMessage', [
+                    'chat_id' => $chatId,
+                    'text' => mb_substr($text, 0, 4000),
+                    'disable_web_page_preview' => true,
+                ]);
+
+            if ($response->successful()) {
+                return ['success' => true, 'message' => 'ส่งข้อความทดสอบสำเร็จ'];
+            }
+
+            // Telegram บอกสาเหตุมาชัดเจน (chat not found / unauthorized) — ส่งต่อให้แอดมินอ่าน
+            $why = (string) ($response->json('description') ?? 'HTTP '.$response->status());
+
+            return ['success' => false, 'message' => str_replace($token, '***', $why)];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => str_replace($token, '***', $e->getMessage())];
+        }
+    }
+
+    /**
      * อ่าน token + chat id ครั้งเดียวต่อ instance
      */
     private function resolve(): void
@@ -127,20 +173,27 @@ class TelegramAlertService
         }
         $this->resolved = true;
 
-        $this->token = trim((string) config('services.telegram_alert.token', ''));
-        $this->chatId = trim((string) config('services.telegram_alert.chat_id', ''));
-
-        if ($this->token !== '') {
-            return;
-        }
-
-        // ตกมาใช้ token ของบอทแม่หมอ (คอลัมน์เข้ารหัสไว้ — ถอดไม่ได้ = ถือว่าไม่มี)
+        // 1) ค่าในหลังบ้านชนะก่อน — เจ้าของแก้เองได้ ไม่ต้องแตะ .env บนเซิร์ฟเวอร์
+        //    (คอลัมน์ token เข้ารหัสไว้ — APP_KEY เปลี่ยนแล้วถอดไม่ได้ = ถือว่ายังไม่ได้ตั้ง)
         try {
             $settings = FortuneTellingSetting::getSettings();
-            $this->token = trim((string) ($settings->telegram_bot_token ?? ''));
+            $this->token = trim((string) ($settings->telegram_alert_bot_token ?? ''));
+            $this->chatId = trim((string) ($settings->telegram_alert_chat_id ?? ''));
         } catch (\Throwable $e) {
             $this->token = '';
+            $this->chatId = '';
         }
+
+        // 2) .env เป็นตัวสำรอง — เติมเฉพาะช่องที่หลังบ้านยังว่าง
+        if ($this->token === '') {
+            $this->token = trim((string) config('services.telegram_alert.token', ''));
+        }
+        if ($this->chatId === '') {
+            $this->chatId = trim((string) config('services.telegram_alert.chat_id', ''));
+        }
+
+        // 🚫 จงใจ **ไม่** ตกไปใช้ `telegram_bot_token` ของบอทแม่หมอ
+        //    เจ้าของสั่งไว้ว่าเป็นคนละบอท — ยืมกัน = ข้อความระบบไปโผล่ในบอทที่ลูกค้าทักอยู่
     }
 
     /**

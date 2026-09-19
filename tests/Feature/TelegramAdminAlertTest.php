@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\FortuneTellingSetting;
 use App\Services\TelegramAlertService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -28,6 +29,8 @@ class TelegramAdminAlertTest extends TestCase
     {
         parent::setUp();
         Cache::flush();
+        // ⚠️ getSettings() มี static memo ข้ามเทสต์ใน process เดียวกัน
+        FortuneTellingSetting::clearSettingsCache();
     }
 
     private function configure(): void
@@ -112,6 +115,48 @@ class TelegramAdminAlertTest extends TestCase
         $this->assertTrue($svc->send('รูปล้ม', 'horoscope_image_fail:2026-09-20:8', 720));
 
         Http::assertSentCount(2);
+    }
+
+    #[Test]
+    public function the_admin_panel_values_win_over_env(): void
+    {
+        // .env เป็นตัวสำรอง — เจ้าของแก้ในหลังบ้านได้โดยไม่ต้องแตะเซิร์ฟเวอร์
+        config([
+            'services.telegram_alert.token' => '111:ENV-TOKEN',
+            'services.telegram_alert.chat_id' => '111111',
+        ]);
+        FortuneTellingSetting::getSettings()->update([
+            'telegram_alert_bot_token' => '222:DB-TOKEN',
+            'telegram_alert_chat_id' => '222222',
+        ]);
+        FortuneTellingSetting::clearSettingsCache();
+
+        Http::fake(['api.telegram.org/*' => Http::response(['ok' => true], 200)]);
+
+        (new TelegramAlertService)->send('ทดสอบ');
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/bot222:DB-TOKEN/')
+            && ($request->data()['chat_id'] ?? null) === '222222');
+    }
+
+    #[Test]
+    public function it_never_borrows_the_fortune_bots_token(): void
+    {
+        // 🚨 เจ้าของสั่ง: "bot แจ้งเตือน กับบอท แม่หมอ คนละตัวกันนะ"
+        //    ยืม token กัน = ข้อความระบบไปโผล่ในบอทที่ลูกค้าทักอยู่
+        config(['services.telegram_alert.token' => '', 'services.telegram_alert.chat_id' => '']);
+        FortuneTellingSetting::getSettings()->update([
+            'telegram_bot_token' => '999:MAE-MOR-TOKEN',
+            'telegram_alert_bot_token' => null,
+            'telegram_alert_chat_id' => '555555',
+        ]);
+        FortuneTellingSetting::clearSettingsCache();
+
+        Http::fake();
+
+        $this->assertFalse((new TelegramAlertService)->isConfigured(), 'ไม่มี token ของตัวเอง = ยังไม่พร้อม');
+        $this->assertFalse((new TelegramAlertService)->send('ทดสอบ'));
+        Http::assertNothingSent();
     }
 
     #[Test]

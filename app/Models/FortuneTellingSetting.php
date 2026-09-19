@@ -143,6 +143,9 @@ class FortuneTellingSetting extends Model
         'telegram_bot_username',
         'telegram_webhook_secret',
         'telegram_webhook_set_at',
+        // 🔔 (2026-09-19) บอทแจ้งเตือนแอดมิน — คนละตัวกับบอทแม่หมอข้างบน
+        'telegram_alert_bot_token',
+        'telegram_alert_chat_id',
         'enabled_platforms',
         'line_flex_primary_color',
         'line_welcome_image_url',
@@ -561,6 +564,8 @@ class FortuneTellingSetting extends Model
         'telegram_bot_token' => 'encrypted',
         'telegram_webhook_secret' => 'encrypted',
         'telegram_webhook_set_at' => 'datetime',
+        // 🔔 (2026-09-19) token บอทแจ้งเตือน — เข้ารหัสเหมือนกัน (chat id ไม่ใช่ความลับ ไม่ต้องเข้ารหัส)
+        'telegram_alert_bot_token' => 'encrypted',
         'enabled_platforms' => 'array',
         'fortune_bank_account_ids' => 'array',
         'max_free_readings' => 'integer',
@@ -1125,6 +1130,7 @@ class FortuneTellingSetting extends Model
         // ✈️ (2026-09-13) Telegram secrets — ห้าม serialize ออกไป
         'telegram_bot_token',
         'telegram_webhook_secret',
+        'telegram_alert_bot_token',
         'tavily_api_key',
         'brave_search_api_key',
         // 🏦 (2026-07-14) KBank secrets — ห้าม serialize ออกไป

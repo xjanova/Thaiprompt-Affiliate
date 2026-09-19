@@ -40,6 +40,8 @@ class FortuneChannelController extends Controller
             'stats' => $stats,
             'cloudflareAi' => $cloudflareAi,
             'telegram' => $this->getTelegramStatus($settings),
+            // 🔔 (2026-09-19) บอทแจ้งเตือนแอดมิน — คนละตัวกับแม่หมอ · ห้ามส่ง token จริงออกหน้าเว็บ
+            'telegramAlert' => $this->getTelegramAlertStatus($settings),
             'pageTitle' => 'จัดการช่องทาง',
         ]);
     }
@@ -153,6 +155,112 @@ class FortuneChannelController extends Controller
         return redirect()
             ->route('admin.fortune.channels.index')
             ->with('success', $message);
+    }
+
+    /**
+     * 🔔 สถานะบอทแจ้งเตือนแอดมิน — ห้ามส่ง token จริงออกไปที่หน้าเว็บ
+     *
+     * ⚠️ cast 'encrypted' จะ throw ตอนถอดรหัสถ้า APP_KEY เปลี่ยน และคอลัมน์อาจยังไม่มี
+     *    ถ้า deploy ยังไม่รัน migration ⇒ ต้องห่อ try/catch ไม่งั้นหน้าจัดการช่องทางพังทั้งหน้า
+     *
+     * @return array{configured:bool, chat_id:?string}
+     */
+    private function getTelegramAlertStatus(FortuneTellingSetting $settings): array
+    {
+        try {
+            $token = trim((string) ($settings->telegram_alert_bot_token ?? ''));
+            $chatId = trim((string) ($settings->telegram_alert_chat_id ?? ''));
+
+            return [
+                'configured' => $token !== '' && $chatId !== '',
+                'chat_id' => $chatId !== '' ? $chatId : null,
+            ];
+        } catch (\Throwable $e) {
+            return ['configured' => false, 'chat_id' => null];
+        }
+    }
+
+    /**
+     * 🔔 บันทึกบอท "แจ้งเตือนแอดมิน" — คนละตัวกับบอทแม่หมอ
+     *
+     * เจ้าของยืนยัน (2026-09-19): "bot แจ้งเตือน กับบอท แม่หมอ คนละตัวกันนะ"
+     * ⇒ เก็บคนละคอลัมน์ ไม่ยืม token กัน
+     *
+     * ยิงข้อความทดสอบจริงก่อนบันทึกเสมอ — ถ้าไม่ถึงมือก็ไม่บันทึก
+     * (ช่องแจ้งเตือนที่ "ตั้งไว้แล้วแต่ส่งไม่ออก" อันตรายกว่าไม่มีเลย เพราะเข้าใจผิดว่ามีคนเฝ้าอยู่)
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateTelegramAlert(Request $request)
+    {
+        $validated = $request->validate([
+            'telegram_alert_bot_token' => ['nullable', 'string', 'max:120', 'regex:/^\d{5,20}:[A-Za-z0-9_-]{20,100}$/'],
+            'telegram_alert_chat_id' => ['nullable', 'string', 'max:64', 'regex:/^-?\d{1,20}$/'],
+            'telegram_alert_clear' => 'nullable|boolean',
+        ], [
+            'telegram_alert_bot_token.regex' => 'รูปแบบ Bot Token ไม่ถูกต้อง — ต้องเป็นแบบ 123456789:AAxxxx… ที่ได้จาก @BotFather',
+            'telegram_alert_chat_id.regex' => 'Chat ID ต้องเป็นตัวเลขล้วน (กลุ่มขึ้นต้นด้วย -)',
+        ]);
+
+        $settings = FortuneTellingSetting::getSettings();
+
+        if ($request->boolean('telegram_alert_clear')) {
+            $settings->update([
+                'telegram_alert_bot_token' => null,
+                'telegram_alert_chat_id' => null,
+            ]);
+            FortuneTellingSetting::clearSettingsCache();
+
+            Log::info('TelegramAlert: แอดมินลบค่าตั้งบอทแจ้งเตือน', ['admin_id' => auth()->id()]);
+
+            return redirect()
+                ->route('admin.fortune.channels.index')
+                ->with('success', 'ลบบอทแจ้งเตือนแล้ว — ระบบจะกลับไปเตือนผ่าน LINE OA ตามเดิม');
+        }
+
+        // ช่อง token ว่าง = ไม่เปลี่ยน token เดิม (หน้าเว็บไม่เคยแสดง token จริงออกมา)
+        $newToken = trim((string) ($validated['telegram_alert_bot_token'] ?? ''));
+        $chatId = trim((string) ($validated['telegram_alert_chat_id'] ?? ''));
+
+        $effectiveToken = $newToken !== ''
+            ? $newToken
+            : trim((string) ($settings->telegram_alert_bot_token ?? ''));
+
+        if ($effectiveToken === '' || $chatId === '') {
+            return redirect()
+                ->route('admin.fortune.channels.index')
+                ->with('error', 'ต้องมีทั้ง Bot Token และ Chat ID — บอทส่งหาคนที่ไม่เคยทักมันไม่ได้');
+        }
+
+        $probe = app(\App\Services\TelegramAlertService::class)->probe(
+            $effectiveToken,
+            $chatId,
+            "🔔 ทดสอบการแจ้งเตือน — ระบบดูดวงแม่หมอจันทรา\n\n"
+                ."ถ้าเห็นข้อความนี้ แปลว่าตั้งค่าถูกต้องแล้วค่ะ\n"
+                .'ตั้งแต่นี้ไป เรื่องสำคัญทุกเรื่องจะส่งมาที่นี่'
+        );
+
+        if (empty($probe['success'])) {
+            return redirect()
+                ->route('admin.fortune.channels.index')
+                ->with('error', 'ส่งข้อความทดสอบไม่สำเร็จ: '.$probe['message']
+                    .' — ตรวจว่าทักบอทตัวนี้อย่างน้อย 1 ครั้งแล้ว และ Chat ID ถูกต้อง');
+        }
+
+        $settings->update([
+            'telegram_alert_bot_token' => $effectiveToken,
+            'telegram_alert_chat_id' => $chatId,
+        ]);
+        FortuneTellingSetting::clearSettingsCache();
+
+        Log::info('TelegramAlert: บันทึกค่าตั้งบอทแจ้งเตือน', [
+            'admin_id' => auth()->id(),
+            'token_changed' => $newToken !== '',
+        ]);
+
+        return redirect()
+            ->route('admin.fortune.channels.index')
+            ->with('success', 'บันทึกบอทแจ้งเตือนแล้ว — ส่งข้อความทดสอบไปที่ Telegram ของคุณเรียบร้อย ✈️');
     }
 
     /**

@@ -329,6 +329,99 @@
         </form>
     </div>
 
+    {{-- ===== 🔔 บอทแจ้งเตือนแอดมิน — คนละตัวกับบอทแม่หมอ (2026-09-19) ===== --}}
+    {{-- เจ้าของยืนยัน: "bot แจ้งเตือน กับบอท แม่หมอ คนละตัวกันนะ" ⇒ คนละ token คนละการ์ด --}}
+    <div class="tp-card" style="padding:24px;">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; display:flex; align-items:center; justify-content:center; font-size:19px; color:#e0a52e;">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div>
+                    <div style="font-size:16px; font-weight:800; color:var(--ink);">แจ้งเตือนแอดมิน (Telegram)</div>
+                    <p class="tp-muted" style="font-size:12px; margin:4px 0 0;">
+                        <strong style="color:#d9534f;">คนละบอทกับแม่หมอ</strong> — ตัวนี้ส่งหาแอดมินเท่านั้น ลูกค้าไม่เห็น
+                    </p>
+                </div>
+            </div>
+            <div>
+                @if($telegramAlert['configured'])
+                    <span class="tp-pill" style="background:rgba(90,160,126,.14); color:#5aa07e; font-weight:700;">
+                        <i class="fas fa-circle-check"></i>&nbsp; เปิดใช้งานอยู่
+                    </span>
+                @else
+                    <span class="tp-pill" style="background:rgba(224,165,46,.14); color:#e0a52e; font-weight:700;">
+                        <i class="fas fa-circle-exclamation"></i>&nbsp; ยังไม่ได้ตั้งค่า — เตือนผ่าน LINE OA อยู่
+                    </span>
+                @endif
+            </div>
+        </div>
+
+        <form action="{{ route('admin.fortune.channels.telegram-alert.update') }}" method="POST" style="display:flex; flex-direction:column; gap:16px;">
+            @csrf
+            @method('PUT')
+
+            <div>
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">
+                    Bot Token ของบอทแจ้งเตือน
+                </label>
+                <input type="password" name="telegram_alert_bot_token" autocomplete="new-password"
+                       placeholder="{{ $telegramAlert['configured'] ? 'บันทึกไว้แล้ว — เว้นว่างไว้ถ้าไม่เปลี่ยน' : '123456789:AAxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' }}"
+                       class="tp-input" style="width:100%;">
+                <p class="tp-muted" style="margin:7px 0 0; font-size:11.5px;">
+                    สร้างบอทใหม่ที่ @BotFather — <strong>ห้ามใช้ token เดียวกับบอทแม่หมอ</strong> · token ถูกเข้ารหัสในฐานข้อมูล
+                </p>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">
+                    Chat ID ของคนที่จะรับแจ้งเตือน
+                </label>
+                <input type="text" name="telegram_alert_chat_id" inputmode="numeric"
+                       value="{{ $telegramAlert['chat_id'] }}"
+                       placeholder="123456789"
+                       class="tp-input" style="width:100%;">
+                <p class="tp-muted" style="margin:7px 0 0; font-size:11.5px;">
+                    ต้อง <strong>ทักบอทตัวนี้ก่อน 1 ครั้ง</strong> แล้วเปิด
+                    <code>api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> → อ่าน <code>result[0].message.chat.id</code>
+                </p>
+            </div>
+
+            <div class="tp-inset" style="padding:16px; border-radius:12px; border-left:4px solid #e0a52e;">
+                <div style="font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;">
+                    <i class="fas fa-triangle-exclamation" style="color:#e0a52e;"></i>&nbsp; เรื่องที่จะถูกส่งมาที่นี่
+                </div>
+                <ul class="tp-muted" style="margin:0; padding-left:20px; font-size:12px; line-height:1.85;">
+                    <li>AI ค้างหลังลูกค้าจ่ายเงินแล้ว</li>
+                    <li>บิลจ่ายแล้วแต่คำทำนายไม่ออก</li>
+                    <li>คีย์ AI พัง / กลับมาใช้ได้</li>
+                    <li>ดวงรายวันไม่ถูกสร้าง หรือสร้างรูปไม่ได้</li>
+                </ul>
+                <p class="tp-muted" style="margin:8px 0 0; font-size:11.5px;">
+                    ตั้งค่าแล้วจะ <strong>เลิกกินโควตา LINE push (300 ครั้ง/เดือน)</strong> ที่สงวนไว้ให้ลูกค้าที่จ่ายเงิน
+                </p>
+            </div>
+
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <button type="submit" class="tp-btn tp-btn-primary">
+                    <i class="fas fa-paper-plane"></i>&nbsp; บันทึก + ส่งข้อความทดสอบ
+                </button>
+                @if($telegramAlert['configured'])
+                    <button type="submit" name="telegram_alert_clear" value="1" class="tp-btn"
+                            style="color:#d9534f;"
+                            onclick="return confirm('ลบบอทแจ้งเตือน?
+ระบบจะกลับไปเตือนผ่าน LINE OA ซึ่งกินโควตา push');">
+                        <i class="fas fa-trash"></i>&nbsp; ลบ
+                    </button>
+                @endif
+            </div>
+            <p class="tp-muted" style="margin:0; font-size:11.5px;">
+                กดบันทึกแล้วระบบจะ <strong>ยิงข้อความทดสอบจริงทันที</strong> — ถ้าไม่ถึงมือ จะไม่บันทึกให้
+            </p>
+        </form>
+    </div>
+
+
     {{-- ===== Cloudflare Workers AI (เจนภาพดวงประจำวัน) ===== --}}
     <div class="tp-card" style="padding:24px;">
         <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;">
