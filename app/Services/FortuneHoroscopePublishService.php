@@ -370,10 +370,15 @@ class FortuneHoroscopePublishService
 
         // ส่งรูปก่อน (ถ้ามี)
         if (! empty($imageUrls)) {
+            // 🛡️ (2026-09-19) เส้นนี้ยิง LINE API เองไม่ผ่าน LineFortuneService::pushMessage
+            //   จึงต้องทาเกราะกัน Hotlink ของ Cloudflare เอง ไม่งั้นรูปดวงรายวันหาย
+            //   บนเว็บ LINE OA เหมือนรูปไพ่ (ดู LineFortuneService::lineSafeImageUrl)
+            $imageUrl = app(LineFortuneService::class)->lineSafeImageUrl((string) $imageUrls[0]);
+
             $messages[] = [
                 'type' => 'image',
-                'originalContentUrl' => $imageUrls[0],
-                'previewImageUrl' => $imageUrls[0],
+                'originalContentUrl' => $imageUrl,
+                'previewImageUrl' => $imageUrl,
             ];
         }
 
