@@ -782,7 +782,10 @@ return [
                 ['label' => '⚙️ ตั้งค่าระบบดูดวง', 'route' => 'admin.fortune.settings.index', 'description' => 'ตั้งค่า Facebook, AI, ระบบ Freemium'],
                 ['label' => '⚙️ ตั้งค่า Celtic Cross (99฿)', 'route' => 'admin.fortune.celtic-cross.index', 'description' => 'toggle, ราคา, prompt, กติกา/รหัสเสียง — รายการบิลย้ายไปศูนย์รวมบิลแล้ว'],
                 ['label' => '🏬 สาขา / เพจแม่หมอ', 'route' => 'admin.fortune.pages.index', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-amber-500 to-orange-500', 'description' => 'เพิ่มเพจแม่หมอหลายเพจแบบระบบสาขา — แต่ละเพจมี token/แบรนด์/ราคาของตัวเอง และบิลจะรู้ว่ามาจากเพจไหน'],
-                ['label' => '⚙️ ช่องทางรับข้อความ', 'route' => 'admin.fortune.channels.index', 'description' => 'Facebook Messenger, LINE Official Account'],
+                // 🔎 (2026-09-19) เจ้าของหาหน้าตั้งค่า Telegram ไม่เจอ — หน้ามีมาตั้งแต่ v4.0.486
+                //    แต่ป้าย/คำอธิบายยังเขียนแค่ FB+LINE ⇒ กวาดสายตาหาเท่าไหร่ก็ไม่เจอ
+                //    บทเรียน: เพิ่มช่องทางใหม่ในหน้าเดิม ต้องแก้ป้ายเมนูด้วย ไม่งั้นของที่ทำเสร็จแล้วเหมือนไม่มี
+                ['label' => '⚙️ ช่องทางรับข้อความ (FB / LINE / Telegram)', 'route' => 'admin.fortune.channels.index', 'description' => 'Facebook Messenger, LINE Official Account, Telegram — ใส่ Bot Token, ตั้ง Webhook, ทดสอบส่ง'],
                 ['label' => '⚙️ หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
                 ['label' => '⚙️ กติกาก่อนจองคิว', 'route' => 'admin.fortune.consent.index', 'description' => 'แก้ข้อความกติกา + คลังรูปเตือน เด้งให้ลูกค้ายืนยันก่อนออก QR ค่าครู'],
                 ['label' => '⚙️ เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
