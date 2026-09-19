@@ -927,89 +927,209 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
-     * 🖼️ (2026-07-25) แปลง URL รูปให้ LINE แสดงได้ (WebP → JPEG + cache)
+     * 🖼️ (2026-09-19) แปลง URL รูปให้รอดด่าน Hotlink Protection ของ Cloudflare
      *
-     * 🐛 เคสจริงที่เจ้าของรายงาน: "รูปไพ่ที่เลือกไม่ขึ้นสำหรับ LINE แต่ FB ขึ้น"
-     *   ROOT CAUSE: ไพ่ทั้ง 78 ใบบน prod เก็บเป็น .webp (/storage/tarot/cards/*.webp)
-     *   → **LINE ไม่รองรับ WebP เลย** (image message + Flex image รับแค่ JPEG/PNG)
-     *   → ลูกค้า LINE ที่จ่าย 99฿ ไม่เห็นหน้าไพ่มาตลอด ส่วน FB รองรับ webp เลยขึ้นปกติ
+     * 🐛 เคสจริงที่เจ้าของรายงาน: "รูปไพ่ และอื่นๆ ใน LINE ไม่ขึ้นอีกแล้ว"
+     *   แล้วตามด้วยเบาะแสสองข้อที่ปิดคดีได้ทันที:
+     *     • "รูปในแอพ LINE OA Business เห็น แต่บนเว็บไม่เห็น"
+     *     • "ส่วนรูปไพ่ของ 39 บนเว็บเห็นนะ"
      *
-     * วิธีแก้: แปลงเป็น JPEG ครั้งแรกที่ใช้ แล้ว cache ถาวร (ไพ่ซ้ำ ๆ = แปลงครั้งเดียว)
-     *   - รับเฉพาะไฟล์ใน /storage/ (public disk) — URL ภายนอกไม่แตะ
-     *   - ทุก failure path คืน URL เดิม (ไม่มีทางทำให้ flow พังกว่าเดิม)
+     *   ROOT CAUSE: **Cloudflare Hotlink Protection** (error code 1011) เปิดอยู่ที่โซน
+     *     - แอพ LINE ดึงรูปโดยไม่มี Referer  → 200 (เห็น)
+     *     - เว็บ OA ดึงผ่านเบราว์เซอร์ที่แนบ Referer: chat.line.biz → **403** (ไม่เห็น)
+     *     - Cloudflare กันเฉพาะนามสกุล jpg/jpeg/png/gif/ico — **ไม่กิน .webp**
+     *       ⇒ ไพ่บิล 39 ส่ง .webp ตรง ๆ จึงรอด
+     *       ⇒ Celtic 99 วิ่งผ่านตัวแปลง WebP→JPEG (ใส่ไว้ 2026-07-25) จึงกลายเป็น
+     *          .jpg แล้วโดนบล็อก — ตัวแปลงที่เคยเป็นเกราะ กลายเป็นตัวปัญหาเอง
+     *
+     *   ยืนยันแล้วว่า LINE แสดง .webp ได้ทั้งในแอพและบนเว็บ OA (ไพ่ 39 เป็นพยาน)
+     *   จึงกลับทิศ: แปลง jpg/png/gif ที่เราโฮสต์เอง → **.webp** แล้ว cache ถาวร
+     *   ⇒ ผังดวง PNG · QR · การ์ดแพคเกจ รอดด่านเหมือนไพ่
+     *
+     * ⚠️ นี่คือทางอ้อม ต้นเหตุอยู่ที่ Cloudflare (Scrape Shield → Hotlink Protection)
+     *   แก้ที่นั่นแล้วปิดเกราะนี้ได้ด้วย LINE_WEBP_SHIELD=false
+     *
+     * กติกาเดิมที่คงไว้: ทุก failure path คืน URL เดิมเสมอ — ห้ามทำให้แย่กว่าเดิม
      *
      * @param  string  $url  URL รูปต้นทาง
-     * @return string URL ที่ LINE แสดงได้ (หรือ URL เดิมถ้าแปลงไม่ได้)
+     * @return string URL ที่ LINE โหลดได้ (หรือ URL เดิมถ้าแปลงไม่ได้)
      */
     public function lineSafeImageUrl(string $url): string
     {
         $https = $this->ensureHttps($url);
 
-        $path = (string) (parse_url($https, PHP_URL_PATH) ?? '');
-        // ไม่ใช่ webp → ใช้ได้อยู่แล้ว (jpg/png/chart/spread)
-        if (! preg_match('/\.webp$/i', $path)) {
-            return $https;
-        }
-        // เฉพาะไฟล์ที่เราโฮสต์เองใน public disk
-        if (! str_starts_with($path, '/storage/')) {
+        // สวิตช์ปิดเกราะ — ใช้เมื่อ Cloudflare แก้ต้นเหตุแล้ว
+        if (! config('line_media.webp_shield', true)) {
             return $https;
         }
 
-        $relative = rawurldecode(substr($path, strlen('/storage/')));
-        $cacheRelative = 'line-jpg/'.sha1($relative).'.jpg';
+        $parts = parse_url($https);
+        if ($parts === false) {
+            return $https;
+        }
+
+        $path = (string) ($parts['path'] ?? '');
+        // คง query string เดิมไว้ (การ์ดแพคเกจแนบ ?v={mtime} มากับ URL)
+        $query = ($parts['query'] ?? '') !== '' ? '?'.$parts['query'] : '';
+
+        // .webp รอดด่าน Hotlink อยู่แล้ว — ปล่อยผ่าน ไม่ต้องแตะ
+        if (preg_match('/\.webp$/i', $path)) {
+            return $https;
+        }
+
+        // นามสกุลที่ Cloudflare กัน และ GD อ่านได้ (ico อ่านไม่ได้ จึงไม่รวม)
+        if (! preg_match('/\.(jpe?g|png|gif)$/i', $path)) {
+            return $https;
+        }
+
+        // เฉพาะรูปที่เราโฮสต์เอง — URL ภายนอกไม่แตะ
+        $ourHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+        if ($ourHost && ($parts['host'] ?? '') !== $ourHost) {
+            return $https;
+        }
 
         try {
+            $relative = rawurldecode(ltrim($path, '/'));
+
+            // รูปอยู่ได้ 2 ที่: public disk (/storage/...) และ public/ ตรง ๆ (การ์ดแพคเกจ)
+            $source = str_starts_with($relative, 'storage/')
+                ? storage_path('app/public/'.substr($relative, strlen('storage/')))
+                : public_path($relative);
+
+            $real = realpath($source);
+            if ($real === false || ! is_file($real)) {
+                return $https;
+            }
+
+            // 🔒 กัน path traversal — ไฟล์ต้องอยู่ใต้ public/ หรือ storage/app/public เท่านั้น
+            if (! $this->pathIsInsidePublicRoots($real)) {
+                return $https;
+            }
+
             $disk = \Illuminate\Support\Facades\Storage::disk('public');
 
-            // แปลงแล้ว → ใช้ของเดิม
+            // ไฟล์เปลี่ยน = hash เปลี่ยน = URL ใหม่ (LINE proxy ถูกบังคับให้ดึงใหม่)
+            $cacheRelative = 'line-webp/'.sha1($relative.'|'.(filemtime($real) ?: 0)).'.webp';
+
+            // แปลงแล้ว → ใช้ของเดิม (ไพ่ใบเดิมแปลงครั้งเดียวตลอดกาล)
             if ($disk->exists($cacheRelative)) {
-                return $this->ensureHttps(asset('storage/'.$cacheRelative));
+                return $this->ensureHttps(asset('storage/'.$cacheRelative)).$query;
             }
 
-            if (! $disk->exists($relative) || ! function_exists('imagecreatefromwebp')) {
+            if (! function_exists('imagewebp')) {
                 return $https;
             }
 
-            $src = @imagecreatefromwebp($disk->path($relative));
-            if ($src === false) {
+            $src = match (strtolower((string) pathinfo($real, PATHINFO_EXTENSION))) {
+                'png' => @imagecreatefrompng($real),
+                'gif' => @imagecreatefromgif($real),
+                default => @imagecreatefromjpeg($real),
+            };
+            if (! $src) {
                 return $https;
             }
 
-            // JPEG ไม่มี alpha → วางบนพื้นขาวก่อน (กันขอบดำในไพ่ที่มีความโปร่งใส)
-            $w = imagesx($src);
-            $h = imagesy($src);
-            $canvas = imagecreatetruecolor($w, $h);
-            imagefill($canvas, 0, 0, imagecolorallocate($canvas, 255, 255, 255));
-            imagecopy($canvas, $src, 0, 0, 0, 0, $w, $h);
+            // WebP เก็บ alpha ได้ — ผังดวง/การ์ดที่มีพื้นโปร่งใสจึงไม่ต้องแบนลงพื้นขาว
+            @imagepalettetotruecolor($src);
+            imagealphablending($src, false);
+            imagesavealpha($src, true);
 
             ob_start();
-            imagejpeg($canvas, null, 88);
-            $jpeg = (string) ob_get_clean();
+            $ok = imagewebp($src, null, max(1, min(100, (int) config('line_media.webp_quality', 90))));
+            $binary = (string) ob_get_clean();
+            imagedestroy($src);   // ⚠️ ต้อง destroy ก่อน return ทุกทาง (เดิมมีทางที่หลุด)
 
-            imagedestroy($src);
-            imagedestroy($canvas);
-
-            if ($jpeg === '') {
+            if (! $ok || $binary === '') {
                 return $https;
             }
 
-            $disk->put($cacheRelative, $jpeg);
+            $disk->put($cacheRelative, $binary);
 
-            Log::info('LINE: แปลงรูป WebP → JPEG สำเร็จ (cache ถาวร)', [
+            Log::info('LINE: แปลงรูป → WebP สำเร็จ (เกราะ Hotlink, cache ถาวร)', [
                 'source' => $relative,
                 'cache' => $cacheRelative,
-                'size_kb' => (int) (strlen($jpeg) / 1024),
+                'size_kb' => (int) (strlen($binary) / 1024),
             ]);
 
-            return $this->ensureHttps(asset('storage/'.$cacheRelative));
+            return $this->ensureHttps(asset('storage/'.$cacheRelative)).$query;
         } catch (\Throwable $e) {
-            Log::warning('LINE: แปลง WebP → JPEG ล้มเหลว (ใช้ URL เดิม)', [
+            Log::warning('LINE: แปลงรูป → WebP ล้มเหลว (ใช้ URL เดิม)', [
                 'url' => $https,
                 'error' => $e->getMessage(),
             ]);
 
             return $https;
         }
+    }
+
+    /**
+     * 🔒 ไฟล์ต้นทางต้องอยู่ใต้ public/ หรือ storage/app/public เท่านั้น
+     *
+     * กัน path traversal เผื่อวันหน้ามีเส้นที่ URL มาจากข้อมูลที่ลูกค้าป้อนได้
+     */
+    protected function pathIsInsidePublicRoots(string $realPath): bool
+    {
+        foreach ([public_path(), storage_path('app/public')] as $root) {
+            $realRoot = realpath($root);
+            if ($realRoot && str_starts_with($realPath, $realRoot.DIRECTORY_SEPARATOR)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🛡️ (2026-09-19) ทา lineSafeImageUrl() ให้ทุก URL รูปในชุดข้อความ ก่อนยิงออก LINE
+     *
+     * ทำไมต้องดักที่นี่ ไม่ไล่แก้ทีละจุด:
+     *   โค้ดประกอบ message object ที่มีรูปกระจายอยู่ **เกิน 15 จุด** (ผังดวง QR ไพ่
+     *   การ์ดแพคเกจ การ์ดทางเข้า สรุป Celtic ดวงรายวัน) หลายจุดสร้าง array เองดิบ ๆ
+     *   ไล่ wire ทีละที่ = จุดที่เขียนเพิ่มวันหน้าจะตกหล่นอีก ([[rule_feature_built_but_never_wired]])
+     *   pushMessage / pushMessagePriority / replyMessage คือคอขวดจริงที่ทุกข้อความต้องผ่าน
+     *
+     * แตะเฉพาะ field ที่เป็น "รูป" จริง ๆ:
+     *   - previewImageUrl / previewUrl → รูปตัวอย่าง (ของ video ก็เป็นรูป) แตะได้เสมอ
+     *   - originalContentUrl / url → แตะเฉพาะเมื่อ node นั้น type = image
+     *     ⚠️ ห้ามแตะของ video/audio (เป็นไฟล์ mp4/m4a — แปลงเป็นรูปคือทำพัง)
+     *   - baseUrl ของ imagemap ไม่แตะ (ไม่มีนามสกุล LINE ต่อเอง)
+     *
+     * idempotent — เรียกซ้ำกับ URL ที่ทาแล้วได้ (.webp เจอแล้วคืนทันที)
+     *
+     * @param  array  $messages  ชุด LINE message objects
+     * @param  int  $depth  กันวนลึกเกินจริง (Flex ซ้อนลึกสุดราว 10 ชั้น)
+     */
+    protected function shieldLineImageUrls(array $messages, int $depth = 0): array
+    {
+        if ($depth > 12) {
+            return $messages;
+        }
+
+        $isImageNode = ($messages['type'] ?? null) === 'image';
+
+        foreach ($messages as $key => $value) {
+            if (is_array($value)) {
+                $messages[$key] = $this->shieldLineImageUrls($value, $depth + 1);
+
+                continue;
+            }
+
+            if (! is_string($value) || $value === '') {
+                continue;
+            }
+
+            $isImageField = match ($key) {
+                'previewImageUrl', 'previewUrl' => true,
+                'originalContentUrl', 'url' => $isImageNode,
+                default => false,
+            };
+
+            if ($isImageField) {
+                $messages[$key] = $this->lineSafeImageUrl($value);
+            }
+        }
+
+        return $messages;
     }
 
     /**
@@ -4339,6 +4459,10 @@ class LineFortuneService implements MessagingPlatformInterface
             }
         }
 
+        // 🛡️ (2026-09-19) ทารูปให้รอดด่าน Hotlink ของ Cloudflare ก่อนยิงออก
+        //   ทำครั้งเดียวนอกลูป retry — แปลงแล้ว cache ถาวร ไม่ต้องทำซ้ำทุก attempt
+        $messages = $this->shieldLineImageUrls($messages);
+
         // ✅ Priority push: retry แค่ 2 ครั้ง ด้วย delay สั้น (ไม่ block นาน)
         $maxRetries = 2;
 
@@ -4460,6 +4584,9 @@ class LineFortuneService implements MessagingPlatformInterface
             }
         }
 
+        // 🛡️ (2026-09-19) ทารูปให้รอดด่าน Hotlink ของ Cloudflare ก่อนยิงออก
+        $messages = $this->shieldLineImageUrls($messages);
+
         // ✅ V2: ส่งทันที ไม่ block ไม่ retry (เพื่อไม่ให้ webhook ช้า)
         // ถ้าโดน 429 → return false → fortune:check-pending จะ retry ทีหลัง
         LineGatekeeperService::recordLinePush();
@@ -4553,6 +4680,10 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         // ⚠️ ไม่มี circuit breaker สำหรับ reply — reply ฟรี ไม่นับ quota
         // ต้องลองส่งทุกครั้ง เพราะ timeout ครั้งก่อนไม่ได้หมายความว่าครั้งนี้จะ timeout
+
+        // 🛡️ (2026-09-19) ทารูปให้รอดด่าน Hotlink ของ Cloudflare ก่อนยิงออก
+        $messages = $this->shieldLineImageUrls($messages);
+
         try {
             // ⚡ (2026-05-16) Fail-fast timeout — replyToken หมดอายุ 60s
             //   เดิม timeout=12s + connect=8s → รอ 12s ก่อน fallback → "ดีเลย์" ชัดเจน
