@@ -91,6 +91,14 @@ Schedule::command('fortune:chatlog:purge')
     ->name('fortune-chatlog-purge')
     ->runInBackground();
 
+// 🌙 (2026-09-21) รวมบัญชีลูกค้าจันทรา — บิลที่แจกค่าแนะนำชนจังหวะรวมบัญชีอาจลงผู้ใช้เงา
+//   รอบนี้ย้ายที่ค้างไปบัญชี Thaiprompt (เรียกซ้ำได้ ไม่มีของค้าง = ไม่ทำอะไร)
+Schedule::command('juntra:sweep-merged-accounts')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🚨 (2026-05-13) Deep 39฿ Pay-First Auto-Recovery
 // ════════════════════════════════════════════════════════════════

@@ -68,8 +68,11 @@ class JuntraServerAffiliateAdminApiTest extends TestCase
             ->assertOk();
 
         $this->postJson("/api/v1/juntra/server/affiliate/admin/commissions/{$pending->id}/adjust", [
-            'amount' => 50, 'actor' => self::ACTOR,
+            'amount' => 20, 'actor' => self::ACTOR,
         ])->assertStatus(422)->assertJsonPath('reason_code', 'not_adjustable');
+        $this->postJson("/api/v1/juntra/server/affiliate/admin/commissions/{$pending->id}/adjust", [
+            'amount' => 40, 'actor' => self::ACTOR, // บิล 39฿
+        ])->assertStatus(422)->assertJsonPath('reason_code', 'amount_over_bill');
 
         $this->assertEquals(7.0, (float) $pending->fresh()->amount);
         $this->assertEquals(7.0, (float) Wallet::where('user_id', $pending->user_id)->value('balance'));
@@ -157,38 +160,90 @@ class JuntraServerAffiliateAdminApiTest extends TestCase
         $this->assertSame(FortuneCommission::STATUS_PENDING, $botCommission->fresh()->status);
     }
 
-    /** สร้างรายการเอง: แอดมินจันทราใส่เลขบิลจันทราได้เลย · บิลบอทสร้างจากที่นี่ไม่ได้ */
-    public function test_manual_commission_takes_a_juntra_bill_number_and_refuses_bot_bills(): void
+    /**
+     * สร้างรายการเอง = ซ่อมค่าแนะนำที่ตกหล่นของบิลจันทรา ไม่ใช่ช่องสร้างเงินให้ใครก็ได้
+     *   ใส่เลขบิลจันทราได้ · ผู้รับต้องเป็นผู้แนะนำชั้นนั้นของเจ้าของบิล · ไม่เกินยอดบิล · บิลที่คืนเงินแล้วไม่ได้
+     */
+    public function test_manual_commission_is_limited_to_the_bills_real_upline(): void
     {
-        [$recipient] = $this->activeMember('RCPT0001', $this->rootMember);
-        $this->bill(9103, 703, 99)->assertStatus(201);
+        [$inviter, $inviterMember] = $this->activeMember('INVITE01', $this->rootMember);
+        [$stranger] = $this->activeMember('STRG0001', $this->rootMember);
+        $this->bill(9103, 703, 99, referral: 'INVITE01')->assertStatus(201);
         $buyerId = \App\Models\FortuneReading::where('bill_reference', 'JW-9103')->value('user_id');
+        FortuneCommission::where('fortune_reading_id', $this->readingId(9103))->forceDelete(); // ค่าแนะนำหายไป ต้องซ่อม
 
-        $id = $this->postJson('/api/v1/juntra/server/affiliate/admin/commissions/manual', [
-            'user_id' => $recipient->id,
-            'bill_id' => 9103,
-            'level' => 1,
-            'amount' => 4.5,
-            'actor' => self::ACTOR,
-        ])->assertStatus(201)->json('data.id');
+        $manual = fn (array $body) => $this->postJson('/api/v1/juntra/server/affiliate/admin/commissions/manual', $body + [
+            'bill_id' => 9103, 'level' => 1, 'amount' => 9.9, 'actor' => self::ACTOR,
+        ]);
+
+        $manual(['user_id' => $stranger->id])->assertStatus(422)->assertJsonPath('reason_code', 'not_upline');
+        $manual(['user_id' => $inviter->id, 'amount' => 100])->assertStatus(422)->assertJsonPath('reason_code', 'amount_over_bill');
+        $manual(['user_id' => $this->rootMember->user_id, 'level' => 2])->assertStatus(201); // หลาน = ผู้แนะนำของ INVITE01
+        $id = $manual(['user_id' => $inviter->id, 'from_user_id' => $stranger->id])->assertStatus(201)->json('data.id');
+        $manual(['user_id' => $inviter->id])->assertStatus(422)->assertJsonPath('reason_code', 'duplicate');
 
         $this->assertDatabaseHas('fortune_commissions', [
             'id' => $id,
             'fortune_reading_id' => $this->readingId(9103),
-            'from_user_id' => $buyerId,
-            'user_id' => $recipient->id,
+            'from_user_id' => $buyerId, // เจ้าของบิลเสมอ — ไม่รับจากคำขอ
+            'mlm_member_id' => $inviterMember->id,
             'status' => FortuneCommission::STATUS_PENDING,
         ]);
 
         $botReadingId = $this->pendingCommission(1, juntra: false)->fortune_reading_id;
-        foreach ([['bill_id' => 999999], ['fortune_reading_id' => $botReadingId]] as $which) {
-            $this->postJson('/api/v1/juntra/server/affiliate/admin/commissions/manual', $which + [
-                'user_id' => $recipient->id,
-                'level' => 1,
-                'amount' => 4.5,
-                'actor' => self::ACTOR,
+        foreach ([['bill_id' => 999999], ['fortune_reading_id' => $botReadingId, 'bill_id' => null]] as $which) {
+            $this->postJson('/api/v1/juntra/server/affiliate/admin/commissions/manual', array_filter($which) + [
+                'user_id' => $inviter->id, 'level' => 1, 'amount' => 4.5, 'actor' => self::ACTOR,
             ])->assertStatus(422)->assertJsonPath('reason_code', 'not_juntra');
         }
+
+        $this->postJson('/api/v1/juntra/server/affiliate/bills/9103/void', ['reason' => 'คืนเงิน'])->assertOk();
+        $manual(['user_id' => $inviter->id, 'level' => 2, 'amount' => 1])->assertStatus(422)->assertJsonPath('reason_code', 'bill_voided');
+    }
+
+    /** คืนเงินบิลแล้ว ค่าแนะนำที่ยังรอ/อนุมัติของบิลนั้นถูกปิด — กดจ่ายไม่ได้อีก */
+    public function test_refund_closes_open_commissions_so_they_can_never_be_paid(): void
+    {
+        $pending = $this->pendingCommission(5);
+        $approved = $this->pendingCommission(6);
+        $approved->update(['status' => FortuneCommission::STATUS_APPROVED]);
+        $billIds = array_map(
+            fn ($c) => (int) substr($c->reading->bill_reference, 3),
+            [$pending->fresh('reading'), $approved->fresh('reading')],
+        );
+
+        foreach ($billIds as $billId) {
+            $this->postJson("/api/v1/juntra/server/affiliate/bills/{$billId}/void", ['reason' => 'ลูกค้าขอคืน'])->assertOk();
+        }
+
+        $this->assertSame(FortuneCommission::STATUS_REJECTED, $pending->fresh()->status);
+        $this->assertSame(FortuneCommission::STATUS_REJECTED, $approved->fresh()->status);
+        $this->postJson('/api/v1/juntra/server/affiliate/admin/commissions/pay', ['ids' => [$pending->id, $approved->id], 'actor' => self::ACTOR])
+            ->assertOk()->assertJsonPath('data.count', 0);
+        $this->assertEquals(0.0, (float) Wallet::where('user_id', $pending->user_id)->value('balance'));
+    }
+
+    /** หลังบ้านจันทราดูข้อมูลรายคนได้เฉพาะลูกค้าจันทรา — ไม่เปิดรายชื่อ/อีเมลลูกค้าบอท */
+    public function test_per_person_reads_are_limited_to_juntra_customers(): void
+    {
+        [$botUser] = $this->activeMember('BOTU0001', $this->rootMember);
+        $this->bill(9104, 704, 39)->assertStatus(201);
+        $juntraUserId = \App\Models\JuntraAccount::where('juntra_user_id', 704)->value('user_id');
+
+        $list = $this->getJson('/api/v1/juntra/server/affiliate/admin/users')->assertOk();
+        $this->assertSame([$juntraUserId], array_column($list->json('data'), 'id'));
+        $list->assertJsonPath('data.0.juntra_user_id', 704);
+
+        foreach (['stats', 'tree', 'commissions'] as $what) {
+            $this->getJson("/api/v1/juntra/server/affiliate/admin/users/{$botUser->id}/{$what}")
+                ->assertStatus(404)->assertJsonPath('reason_code', 'not_juntra');
+            $this->getJson("/api/v1/juntra/server/affiliate/admin/users/{$juntraUserId}/{$what}")->assertOk();
+        }
+
+        $this->getJson('/api/v1/juntra/server/affiliate/admin/members/search?q=BOTU')
+            ->assertOk()
+            ->assertJsonPath('data.0.member_code', 'BOTU0001')
+            ->assertJsonMissingPath('data.0.email');
     }
 
     public function test_move_member_carries_the_whole_team(): void
@@ -197,6 +252,7 @@ class JuntraServerAffiliateAdminApiTest extends TestCase
         [, $b] = $this->activeMember('BBBB0001', $this->rootMember);
         [, $child] = $this->activeMember('CHLD0001', $a);
         $this->makeJuntraCustomer($a, 801);
+        $this->makeJuntraCustomer($b, 803);
 
         $this->postJson("/api/v1/juntra/server/affiliate/admin/members/{$a->id}/move", [
             'new_sponsor_member_id' => $b->id,
@@ -228,22 +284,36 @@ class JuntraServerAffiliateAdminApiTest extends TestCase
         $this->assertSame($this->rootMember->id, $a->fresh()->unilevel_sponsor_id);
     }
 
-    public function test_members_who_are_not_juntra_customers_cannot_be_moved_from_juntra(): void
+    /**
+     * ย้ายได้เฉพาะตำแหน่งที่จันทราสร้าง — สมาชิกแม่หมอทั่วไป และตำแหน่งเดิมของบัญชี Thaiprompt
+     * ที่ลูกค้าจันทราผูกเข้ามา (อาจมีทีมบอทอยู่ใต้) จัดการที่หลังบ้านแม่หมอ
+     */
+    public function test_only_positions_juntra_created_can_be_moved_from_juntra(): void
     {
         [, $a] = $this->activeMember('AAAA0001', $this->rootMember);
+        [$linked, $linkedMember] = $this->activeMember('LINK0001', $this->rootMember);
         [, $b] = $this->activeMember('BBBB0001', $this->rootMember);
+        // ลูกค้าจันทราที่ผูกบัญชี Thaiprompt ซึ่งมีตำแหน่งอยู่ก่อนแล้ว
+        \App\Models\JuntraAccount::create(['juntra_user_id' => 805, 'user_id' => $linked->id, 'linked_via' => 'sso']);
 
-        $this->postJson("/api/v1/juntra/server/affiliate/admin/members/{$a->id}/move", [
-            'new_sponsor_member_id' => $b->id,
-            'actor' => self::ACTOR,
-        ])->assertStatus(422)->assertJsonPath('reason_code', 'not_juntra');
+        foreach ([$a, $linkedMember] as $member) {
+            $this->postJson("/api/v1/juntra/server/affiliate/admin/members/{$member->id}/move", [
+                'new_sponsor_member_id' => $b->id,
+                'actor' => self::ACTOR,
+            ])->assertStatus(422)->assertJsonPath('reason_code', 'not_juntra');
 
-        $this->assertSame($this->rootMember->id, $a->fresh()->unilevel_sponsor_id);
+            $this->assertSame($this->rootMember->id, $member->fresh()->unilevel_sponsor_id);
+        }
     }
 
     private function makeJuntraCustomer(MlmMember $member, int $juntraUserId): void
     {
-        \App\Models\JuntraAccount::create(['juntra_user_id' => $juntraUserId, 'user_id' => $member->user_id, 'linked_via' => 'auto']);
+        \App\Models\JuntraAccount::create([
+            'juntra_user_id' => $juntraUserId,
+            'user_id' => $member->user_id,
+            'linked_via' => 'auto',
+            'enrolled_member_id' => $member->id, // ตำแหน่งที่จันทราสร้าง
+        ]);
     }
 
     private function pendingCommission(float $amount, bool $juntra = true): FortuneCommission

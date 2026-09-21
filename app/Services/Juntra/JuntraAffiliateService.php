@@ -98,6 +98,8 @@ class JuntraAffiliateService
             if (! $member) {
                 throw new JuntraAffiliateException('enrollment_failed', 'ต่อสายงานไม่สำเร็จ กรุณาลองใหม่', 503);
             }
+            // ตำแหน่งนี้จันทราสร้าง — หลังบ้านจันทราย้ายสายได้ (ตำแหน่งเดิมของบัญชี Thaiprompt ไม่ได้)
+            $account->update(['enrolled_member_id' => $member->id]);
 
             $this->reads->forgetCachesForUpline($member);
 
@@ -262,11 +264,22 @@ class JuntraAffiliateService
 
             $recipientIds = FortuneCommission::where('fortune_reading_id', $reading->id)->pluck('user_id')->all();
 
-            $result = $reading->voidApproval(
-                'จันทราคืนเงินลูกค้า'.($reason ? ': '.Str::limit($reason, 200, '') : ''),
-                null,
-                juntraRefund: true,
-            );
+            $note = 'จันทราคืนเงินลูกค้า'.($reason ? ': '.Str::limit($reason, 200, '') : '');
+            $result = $reading->voidApproval($note, null, juntraRefund: true);
+
+            // voidApproval ดึงคืนเฉพาะรายการที่จ่ายเข้ากระเป๋าแล้ว — รายการที่ยังรอ/อนุมัติ (เช่นสร้างด้วยมือ)
+            //   ต้องปิดด้วย ไม่งั้นแอดมินยังกดจ่ายค่าแนะนำของบิลที่คืนเงินไปแล้วได้
+            DB::transaction(function () use ($reading, $note) {
+                FortuneCommission::where('fortune_reading_id', $reading->id)
+                    ->whereIn('status', [FortuneCommission::STATUS_PENDING, FortuneCommission::STATUS_APPROVED])
+                    ->lockForUpdate() // ชนกับการกดจ่ายพร้อมกัน — payOut ล็อกแถวเดียวกันแล้วตรวจสถานะซ้ำ
+                    ->get()
+                    ->each(fn (FortuneCommission $c) => $c->forceFill([
+                        'status' => FortuneCommission::STATUS_REJECTED,
+                        'rejected_at' => now(),
+                        'notes' => trim(($c->notes ?? '').' · ยกเลิก: '.$note),
+                    ])->save());
+            });
         } finally {
             $lock->release();
         }
@@ -379,6 +392,12 @@ class JuntraAffiliateService
 
         if ($code !== null) {
             $sponsor = MlmMember::with('user:id,name')->where('member_code', $code)->first();
+            // ลิงก์เชิญเดิมของบัญชีเงาที่รวมเข้าบัญชี Thaiprompt แล้ว → ต่อใต้ตำแหน่งของบัญชีจริง
+            //   (ตำแหน่งเงาถูกปิด แต่ลิงก์ที่ลูกค้าแจกไปแล้วยังต้องใช้ได้)
+            if ($sponsor && $sponsor->status !== 'active'
+                && ($merged = JuntraAccount::where('merged_from_user_id', $sponsor->user_id)->first())) {
+                $sponsor = MlmMember::with('user:id,name')->where('user_id', $merged->user_id)->first() ?? $sponsor;
+            }
             if (! $sponsor) {
                 $reason = 'invalid_code';
             } elseif ((int) $sponsor->user_id === (int) $user->id) {

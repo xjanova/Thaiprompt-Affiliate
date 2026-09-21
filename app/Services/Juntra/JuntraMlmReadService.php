@@ -3,6 +3,7 @@
 namespace App\Services\Juntra;
 
 use App\Models\FortuneCommission;
+use App\Models\FortuneReading;
 use App\Models\JuntraAccount;
 use App\Models\MlmMember;
 use App\Models\User;
@@ -63,7 +64,7 @@ class JuntraMlmReadService
     /**
      * ประวัติค่าแนะนำ — ไม่ cache (เปิดหน้าไหนต้องได้ของสด)
      *
-     * @param  array{status?: ?string, from?: ?string, to?: ?string}  $filters
+     * @param  array{status?: ?string, from?: ?string, to?: ?string, juntra_only?: bool}  $filters
      */
     public function commissions(int $userId, array $filters = [], int $page = 1, int $perPage = 25): array
     {
@@ -76,6 +77,10 @@ class JuntraMlmReadService
 
         if (! empty($filters['status'])) {
             $q->where('status', $filters['status']);
+        }
+        if (! empty($filters['juntra_only'])) {
+            // หลังบ้านจันทราเห็นเฉพาะค่าแนะนำจากบิลจันทรา (เว็บใครเว็บมัน)
+            $q->whereHas('reading', fn ($r) => $r->where('reading_type', FortuneReading::READING_TYPE_JUNTRA));
         }
         if (! empty($filters['from'])) {
             $q->whereDate('created_at', '>=', $filters['from']);
@@ -133,18 +138,26 @@ class JuntraMlmReadService
         ];
     }
 
-    /** ผู้ใช้ที่มีกิจกรรมดูดวง (เคยได้ค่าแนะนำ หรือมีบิล) — ตัวเลือก "ดูข้อมูลของใคร" ของแอดมิน */
-    public function users(string $search = '', int $page = 1, int $perPage = 50): array
+    /**
+     * ผู้ใช้ที่มีกิจกรรมดูดวง (เคยได้ค่าแนะนำ หรือมีบิล) — ตัวเลือก "ดูข้อมูลของใคร" ของแอดมิน
+     *
+     * @param  bool  $juntraOnly  หลังบ้านจันทรา = เฉพาะลูกค้าจันทรา (ไม่เปิดรายชื่อลูกค้าบอท)
+     */
+    public function users(string $search = '', int $page = 1, int $perPage = 50, bool $juntraOnly = false): array
     {
         $perPage = max(10, min($perPage, 200));
 
         $q = User::query()
-            ->whereIn('id', function ($sub) {
-                $sub->select('user_id')->from('fortune_commissions')
-                    ->union(
-                        DB::table('fortune_readings')->select('user_id')->whereNotNull('user_id')
-                    );
-            })
+            ->when(
+                $juntraOnly,
+                fn ($q) => $q->whereIn('id', JuntraAccount::select('user_id')),
+                fn ($q) => $q->whereIn('id', function ($sub) {
+                    $sub->select('user_id')->from('fortune_commissions')
+                        ->union(
+                            DB::table('fortune_readings')->select('user_id')->whereNotNull('user_id')
+                        );
+                }),
+            )
             ->select(['id', 'name', 'email']);
 
         if ($search !== '') {
@@ -155,12 +168,14 @@ class JuntraMlmReadService
         }
 
         $paginator = $q->orderBy('name')->paginate($perPage, ['*'], 'page', max(1, $page));
+        $juntraIds = JuntraAccount::whereIn('user_id', $paginator->getCollection()->pluck('id'))->pluck('juntra_user_id', 'user_id');
 
         return [
             'data' => $paginator->getCollection()->map(fn (User $u) => [
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
+                'juntra_user_id' => isset($juntraIds[$u->id]) ? (int) $juntraIds[$u->id] : null,
             ])->all(),
             'meta' => [
                 'current_page' => $paginator->currentPage(),
@@ -260,12 +275,12 @@ class JuntraMlmReadService
             ->groupBy('mlm_member_id')
             ->pluck('total', 'mlm_member_id');
 
-        // ลูกค้าจันทรา = ย้ายสายจากหลังบ้านจันทราได้ (คนอื่นจัดการที่หลังบ้านแม่หมอ — เว็บใครเว็บมัน)
-        $juntraUserIds = JuntraAccount::whereIn('user_id', $members->pluck('user_id')->all())->pluck('user_id')->flip();
+        // ตำแหน่งที่จันทราสร้างให้ลูกค้าจันทรา = ย้ายสายจากหลังบ้านจันทราได้ (คนอื่นจัดการที่หลังบ้านแม่หมอ)
+        $juntraMemberIds = JuntraAccount::whereIn('enrolled_member_id', $members->pluck('id')->all())->pluck('enrolled_member_id')->flip();
 
         $bySponsor = $members->groupBy('unilevel_sponsor_id');
 
-        $build = function (MlmMember $node, int $level) use (&$build, $bySponsor, $fortuneSums, $teamSizes, $directCounts, $depth, $juntraUserIds) {
+        $build = function (MlmMember $node, int $level) use (&$build, $bySponsor, $fortuneSums, $teamSizes, $directCounts, $depth, $juntraMemberIds) {
             $children = $level < $depth ? $bySponsor->get($node->id, collect()) : collect();
 
             return [
@@ -274,7 +289,7 @@ class JuntraMlmReadService
                 'name' => $node->user?->name ?? "Member #{$node->id}",
                 'level' => $level,
                 'status' => $node->status,
-                'is_juntra' => $juntraUserIds->has($node->user_id),
+                'is_juntra' => $juntraMemberIds->has($node->id),
                 'personal_volume' => (float) $node->total_pv,
                 'team_volume' => (float) $node->total_team_pv,
                 'fortune_commission' => (float) ($fortuneSums[$node->id] ?? 0),

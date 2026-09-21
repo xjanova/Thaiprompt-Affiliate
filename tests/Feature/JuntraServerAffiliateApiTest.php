@@ -178,6 +178,79 @@ class JuntraServerAffiliateApiTest extends TestCase
         ]);
     }
 
+    /** คงตำแหน่งบัญชีจริง → ตำแหน่งนั้นไม่ใช่ของที่จันทราสร้าง · ลิงก์เชิญเดิมของเงายังพามาหาบัญชีจริง */
+    public function test_after_merge_the_old_invite_link_leads_to_the_thaiprompt_position(): void
+    {
+        [$real, $realMember] = $this->activeMember('REAL0001', $this->rootMember);
+        $shadowCode = $this->bill(9026, 626, 99)->json('data.member_code');
+        $this->assertNotNull(JuntraAccount::where('juntra_user_id', 626)->value('enrolled_member_id'));
+
+        $this->ensure(626, 'ลูกค้าผูกแล้ว', thaipromptUserId: $real->id)->assertOk();
+        $this->assertNull(JuntraAccount::where('juntra_user_id', 626)->value('enrolled_member_id'));
+
+        // เพื่อนกดลิงก์เดิมที่ลูกค้าแจกไว้ก่อนผูก
+        $this->bill(9027, 627, 39, referral: $shadowCode)->assertStatus(201);
+        $friend = MlmMember::where('user_id', JuntraAccount::where('juntra_user_id', 627)->value('user_id'))->firstOrFail();
+        $this->assertSame($realMember->id, $friend->unilevel_sponsor_id);
+        $this->assertCommission(9027, $real->id, 1, '3.90', '10.00');
+    }
+
+    /**
+     * บิลของลูกทีมที่แจกค่าแนะนำชนจังหวะรวมบัญชี อาจลงผู้ใช้เงาหลังรวมเสร็จ (ต่างล็อกกัน)
+     * รอบเก็บตกต้องย้ายตามไปบัญชีจริง — รวมยอดติดลบ (ค่าแนะนำที่ถูกดึงคืนหลังรวม หนี้ต้องตามคน)
+     */
+    public function test_sweep_moves_what_landed_on_the_shadow_after_the_merge(): void
+    {
+        $this->bill(9028, 628, 99)->assertStatus(201);
+        $shadowId = JuntraAccount::where('juntra_user_id', 628)->value('user_id');
+        $real = User::factory()->create();
+        $this->ensure(628, 'ลูกค้าผูกแล้ว', thaipromptUserId: $real->id)->assertOk();
+
+        // จำลองบิลที่ชนจังหวะ: ค่าแนะนำ + เงินเข้ากระเป๋าเงาหลังรวม
+        $late = FortuneCommission::create([
+            'user_id' => $shadowId, 'from_user_id' => $shadowId, 'fortune_reading_id' => $this->readingId(9028),
+            'level' => 2, 'commission_type' => 'percent', 'commission_rate' => 5, 'amount' => 4.95,
+            'reading_price' => 99, 'status' => FortuneCommission::STATUS_PAID,
+        ]);
+        Wallet::updateOrCreate(['user_id' => $shadowId], ['balance' => 4.95, 'total_income' => 4.95, 'currency' => 'THB', 'status' => 'active']);
+
+        $this->artisan('juntra:sweep-merged-accounts')->assertSuccessful();
+
+        $this->assertSame($real->id, $late->fresh()->user_id);
+        $this->assertSame($real->id, $late->fresh()->from_user_id);
+        $this->assertEquals(4.95, (float) Wallet::where('user_id', $real->id)->value('balance'));
+        $this->assertEquals(0.0, (float) Wallet::where('user_id', $shadowId)->value('balance'));
+
+        // ค่าแนะนำถูกดึงคืนจากกระเป๋าเงาหลังรวม → ยอดติดลบย้ายตามคน
+        Wallet::where('user_id', $shadowId)->update(['balance' => -2]);
+        $this->artisan('juntra:sweep-merged-accounts')->assertSuccessful();
+        $this->assertEquals(2.95, (float) Wallet::where('user_id', $real->id)->value('balance'));
+        $this->assertEquals(0.0, (float) Wallet::where('user_id', $shadowId)->value('balance'));
+
+        // ไม่มีอะไรค้าง = ไม่ทำอะไร
+        $this->artisan('juntra:sweep-merged-accounts')->expectsOutput('เก็บตก 0 บัญชี')->assertSuccessful();
+    }
+
+    /** บัญชีจริงอยู่ใต้ผังของเงา = รวมไม่ได้ ห้ามลองซ้ำทุกบิล (ล็อกผังแล้ว rollback) — เว้น 1 วัน */
+    public function test_a_merge_that_cannot_happen_backs_off_for_a_day(): void
+    {
+        $this->bill(9029, 629, 99)->assertStatus(201);
+        $shadowMember = MlmMember::where('user_id', JuntraAccount::where('juntra_user_id', 629)->value('user_id'))->firstOrFail();
+        [$real] = $this->activeMember('REAL0001', $shadowMember);
+
+        $this->ensure(629, 'ลูกค้า', thaipromptUserId: $real->id)->assertOk()->assertJsonPath('data.linked_via', 'auto');
+        $failedAt = JuntraAccount::where('juntra_user_id', 629)->value('merge_failed_at');
+        $this->assertNotNull($failedAt);
+
+        $this->travel(2)->hours();
+        $this->ensure(629, 'ลูกค้า', thaipromptUserId: $real->id)->assertOk();
+        $this->assertEquals($failedAt, JuntraAccount::where('juntra_user_id', 629)->value('merge_failed_at'), 'ยังไม่ถึงรอบ ห้ามลองใหม่');
+
+        $this->travel(23)->hours();
+        $this->ensure(629, 'ลูกค้า', thaipromptUserId: $real->id)->assertOk();
+        $this->assertNotEquals($failedAt, JuntraAccount::where('juntra_user_id', 629)->value('merge_failed_at'), 'ครบวันแล้วลองใหม่');
+    }
+
     public function test_no_merge_when_the_thaiprompt_account_belongs_to_another_juntra_customer(): void
     {
         [$real] = $this->activeMember('REAL0001', $this->rootMember);

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneCommission;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\JuntraAccount;
 use App\Models\MlmMember;
 use App\Models\User;
 use App\Services\FortuneCommissionAdminService;
 use App\Services\Juntra\JuntraMlmReadService;
 use App\Services\MlmTeamTransferService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -25,7 +27,8 @@ use Illuminate\Support\Facades\Log;
  *
  * ขอบเขต (เจ้าของสั่ง 2026-09-21 "บิลแม่หมอ แยกกันทำรายการเว็บใครเว็บมัน แต่ค่าคอมคิดที่ thaiprompt"):
  *   - ค่าแนะนำ: จันทราดู/จัดการได้เฉพาะรายการที่มาจากบิลจันทรา — ของบิลบอทจัดการที่หลังบ้านแม่หมอ
- *   - ย้ายสาย: เฉพาะสมาชิกที่เป็นลูกค้าจันทรา
+ *   - ย้ายสาย: เฉพาะตำแหน่งที่จันทราสร้างให้ลูกค้าจันทรา (ตำแหน่งเดิมของบัญชี Thaiprompt จัดการที่หลังบ้านแม่หมอ)
+ *   - ดูข้อมูลรายคน: เฉพาะลูกค้าจันทรา — ไม่เปิดรายชื่อ/อีเมลลูกค้าบอทให้หลังบ้านจันทรา
  *   - อัตราค่าแนะนำ: ดูได้อย่างเดียว ตั้งที่หน้าคอมแม่หมอของ Thaiprompt ที่เดียว
  *
  * สิทธิ์: ตัวตนของเซิร์ฟเวอร์จันทรา ('juntra.server') — จันทราเป็นผู้ตรวจว่าเป็นแอดมินจริง
@@ -62,7 +65,7 @@ class AffiliateAdminController extends Controller
                     'paid_amount' => (float) (clone $juntraBills)->where('is_paid', true)->sum('amount_paid'),
                     'voided_count' => (clone $juntraBills)->where('is_paid', false)->count(),
                 ],
-                'members_total' => MlmMember::count(),
+                'juntra_customers' => JuntraAccount::count(),
             ],
         ]);
     }
@@ -148,6 +151,9 @@ class AffiliateAdminController extends Controller
         if ($refused = $this->refuseNonJuntra([$commission->id])) {
             return $refused;
         }
+        if ((float) $data['amount'] > (float) ($commission->reading?->amount_paid ?? 0)) {
+            return $this->refuse('amount_over_bill', 'ค่าแนะนำต้องไม่เกินยอดบิล (฿'.number_format((float) ($commission->reading?->amount_paid ?? 0), 2).')');
+        }
 
         $error = $this->admin->adjust($commission, (float) $data['amount'], $data['reason'] ?? null);
         if ($error !== null) {
@@ -179,7 +185,13 @@ class AffiliateAdminController extends Controller
         return response()->json(['data' => $result]);
     }
 
-    /** POST /affiliate/admin/commissions/manual {user_id, from_user_id, fortune_reading_id, level, amount, notes, actor} */
+    /**
+     * POST /affiliate/admin/commissions/manual {bill_id | fortune_reading_id, user_id, level, amount, notes, actor}
+     *
+     * ใช้ซ่อมค่าแนะนำของบิลจันทราที่ตกหล่น — ไม่ใช่ช่องสร้างเงินให้ใครก็ได้:
+     *   บิลต้องยังจ่ายอยู่ · ผู้รับต้องเป็นผู้แนะนำชั้นนั้นของเจ้าของบิลในผังตอนนี้ · ยอดไม่เกินยอดบิล
+     *   ลูกค้าเจ้าของบิล = เจ้าของบิลเสมอ (ไม่รับจากคำขอ)
+     */
     public function createManual(Request $request): JsonResponse
     {
         // ระบุบิลได้สองแบบ: เลขบิลจันทรา (bill_id — แอดมินจันทรารู้เลขนี้) หรือ id บิลดูดวงฝั่งแม่หมอ
@@ -187,7 +199,6 @@ class AffiliateAdminController extends Controller
             'user_id' => 'required|integer|exists:users,id',
             'bill_id' => 'required_without:fortune_reading_id|integer|min:1',
             'fortune_reading_id' => 'required_without:bill_id|integer|min:1',
-            'from_user_id' => 'nullable|integer|exists:users,id',
             'level' => 'required|in:1,2',
             'amount' => 'required|numeric|min:0.01|max:100000',
             'notes' => 'nullable|string|max:500',
@@ -201,17 +212,32 @@ class AffiliateAdminController extends Controller
             )
             ->first();
         if (! $reading) {
-            return response()->json([
-                'reason_code' => 'not_juntra',
-                'message' => 'ไม่พบบิลนี้ในบิลของเว็บจันทรา — สร้างค่าแนะนำจากหลังบ้านจันทราได้เฉพาะบิลจันทรา (บิลบอทจัดการที่หลังบ้านแม่หมอ)',
-            ], 422);
+            return $this->refuse('not_juntra', 'ไม่พบบิลนี้ในบิลของเว็บจันทรา — สร้างค่าแนะนำจากหลังบ้านจันทราได้เฉพาะบิลจันทรา (บิลบอทจัดการที่หลังบ้านแม่หมอ)');
+        }
+        if (! $reading->is_paid) {
+            return $this->refuse('bill_voided', "บิล {$reading->bill_reference} คืนเงินลูกค้าไปแล้ว — สร้างค่าแนะนำไม่ได้");
+        }
+        if ((float) $data['amount'] > (float) $reading->amount_paid) {
+            return $this->refuse('amount_over_bill', 'ค่าแนะนำต้องไม่เกินยอดบิล (฿'.number_format((float) $reading->amount_paid, 2).')');
+        }
+
+        $upline = $this->uplineOf((int) $reading->user_id, (int) $data['level']);
+        if (! $upline || (int) $upline->user_id !== (int) $data['user_id']) {
+            return $this->refuse('not_upline', $upline
+                ? "ผู้รับชั้นนี้ของบิล {$reading->bill_reference} คือ {$upline->member_code} ({$upline->user?->name}) · ผู้ใช้ #{$upline->user_id}"
+                : "เจ้าของบิล {$reading->bill_reference} ไม่มีผู้แนะนำชั้นที่ {$data['level']} ในผังตอนนี้");
         }
 
         $data['fortune_reading_id'] = $reading->id;
-        $data['from_user_id'] ??= $reading->user_id;
+        $data['from_user_id'] = $reading->user_id;
         unset($data['bill_id']);
         $data['notes'] = trim(($data['notes'] ?? '').' · สั่งจากหลังบ้านจันทราโดย '.$data['actor']['name']);
-        $commission = $this->admin->createManual($data);
+
+        try {
+            $commission = $this->admin->createManual($data);
+        } catch (UniqueConstraintViolationException $e) {
+            return $this->refuse('duplicate', 'ผู้รับคนนี้มีค่าแนะนำชั้นนี้ของบิลนี้อยู่แล้ว — ใช้ปรับยอดแทน');
+        }
         $this->audit('manual', $data, ['commission_id' => $commission->id]);
         $this->reads->forgetCachesFor((int) $commission->user_id);
 
@@ -233,7 +259,7 @@ class AffiliateAdminController extends Controller
         ])]);
     }
 
-    /** GET /affiliate/admin/users?q=&page= — ผู้ใช้ที่มีกิจกรรมดูดวง */
+    /** GET /affiliate/admin/users?q=&page= — ลูกค้าจันทรา (ไม่เปิดรายชื่อลูกค้าบอทให้หลังบ้านจันทรา) */
     public function users(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -246,12 +272,17 @@ class AffiliateAdminController extends Controller
             trim((string) ($data['q'] ?? '')),
             (int) ($data['page'] ?? 1),
             (int) ($data['per_page'] ?? 50),
+            juntraOnly: true,
         ));
     }
 
     /** GET /affiliate/admin/users/{userId}/stats */
     public function userStats(int $userId): JsonResponse
     {
+        if ($refused = $this->refuseNonJuntraCustomer($userId)) {
+            return $refused;
+        }
+
         return response()->json($this->reads->stats($userId));
     }
 
@@ -259,6 +290,9 @@ class AffiliateAdminController extends Controller
     public function userTree(Request $request, int $userId): JsonResponse
     {
         $data = $request->validate(['depth' => 'nullable|integer|min:1|max:'.JuntraMlmReadService::MAX_TREE_DEPTH]);
+        if ($refused = $this->refuseNonJuntraCustomer($userId)) {
+            return $refused;
+        }
 
         return response()->json($this->reads->tree($userId, (int) ($data['depth'] ?? JuntraMlmReadService::DEFAULT_TREE_DEPTH)));
     }
@@ -271,10 +305,13 @@ class AffiliateAdminController extends Controller
             'per_page' => 'nullable|integer|min:5|max:100',
             'status' => 'nullable|in:pending,approved,paid,rejected',
         ]);
+        if ($refused = $this->refuseNonJuntraCustomer($userId)) {
+            return $refused;
+        }
 
         return response()->json($this->reads->commissions(
             $userId,
-            ['status' => $data['status'] ?? null],
+            ['status' => $data['status'] ?? null, 'juntra_only' => true],
             (int) ($data['page'] ?? 1),
             (int) ($data['per_page'] ?? 25),
         ));
@@ -295,8 +332,7 @@ class AffiliateAdminController extends Controller
                 'id' => $m->id,
                 'member_code' => $m->member_code,
                 'user_id' => $m->user_id,
-                'name' => $m->user?->name,
-                'email' => $m->user?->email,
+                'name' => $m->user?->name, // ไม่ส่งอีเมล — ผู้แนะนำปลายทางอาจเป็นลูกค้าบอท
             ])->values()->all(),
         ]);
     }
@@ -314,11 +350,8 @@ class AffiliateAdminController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        if (! \App\Models\JuntraAccount::where('user_id', $member->user_id)->exists()) {
-            return response()->json([
-                'reason_code' => 'not_juntra',
-                'message' => 'ย้ายสายจากหลังบ้านจันทราได้เฉพาะลูกค้าเว็บจันทรา — สมาชิกคนอื่นจัดการที่หลังบ้านแม่หมอ',
-            ], 422);
+        if (! JuntraAccount::managesMember($member->id)) {
+            return $this->refuse('not_juntra', 'ย้ายสายจากหลังบ้านจันทราได้เฉพาะตำแหน่งที่จันทราสร้างให้ลูกค้าจันทรา — สมาชิกคนอื่นจัดการที่หลังบ้านแม่หมอ');
         }
 
         $oldSponsorId = $member->unilevel_sponsor_id;
@@ -366,6 +399,30 @@ class AffiliateAdminController extends Controller
             'reason_code' => 'not_juntra',
             'message' => 'จัดการได้เฉพาะค่าแนะนำจากบิลเว็บจันทรา — ของบิลบอทจัดการที่หลังบ้านแม่หมอ',
         ], 422);
+    }
+
+    /** ดูข้อมูลรายคนได้เฉพาะลูกค้าจันทรา */
+    private function refuseNonJuntraCustomer(int $userId): ?JsonResponse
+    {
+        return JuntraAccount::where('user_id', $userId)->exists()
+            ? null
+            : response()->json(['reason_code' => 'not_juntra', 'message' => 'ผู้ใช้นี้ไม่ใช่ลูกค้าเว็บจันทรา — ดูที่หลังบ้านแม่หมอ'], 404);
+    }
+
+    /** ผู้แนะนำชั้นที่ $level ของผู้ใช้นี้ในผังตอนนี้ (1 = ผู้แนะนำตรง · 2 = ผู้แนะนำของผู้แนะนำ) */
+    private function uplineOf(int $userId, int $level): ?MlmMember
+    {
+        $member = MlmMember::where('user_id', $userId)->first();
+        for ($i = 0; $member && $i < $level; $i++) {
+            $member = $member->unilevel_sponsor_id ? MlmMember::with('user:id,name')->find($member->unilevel_sponsor_id) : null;
+        }
+
+        return $member;
+    }
+
+    private function refuse(string $reasonCode, string $message): JsonResponse
+    {
+        return response()->json(['reason_code' => $reasonCode, 'message' => $message], 422);
     }
 
     private function actorRules(): array

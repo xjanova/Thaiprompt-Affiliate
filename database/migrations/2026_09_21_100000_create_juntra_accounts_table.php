@@ -29,9 +29,15 @@ return new class extends Migration
             $table->unsignedBigInteger('juntra_user_id')->unique();
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->string('linked_via', 10)->default('auto');
+            // ตำแหน่งในผังที่จันทราสร้างให้ลูกค้าคนนี้ (null = ตำแหน่งมีอยู่ก่อนแล้วในบัญชี Thaiprompt)
+            //   หลังบ้านจันทราย้ายสายได้เฉพาะตำแหน่งนี้ — ตำแหน่งเดิมของบัญชี Thaiprompt จัดการที่หลังบ้านแม่หมอ
+            $table->unsignedBigInteger('enrolled_member_id')->nullable()->index();
             // รวมบัญชี (เจ้าของสั่ง: Thaiprompt เป็นตัวหลัก) — ผู้ใช้ที่ระบบเคยสร้างให้ก่อนลูกค้าผูก Thaiprompt
-            $table->unsignedBigInteger('merged_from_user_id')->nullable();
+            $table->unsignedBigInteger('merged_from_user_id')->nullable()->index();
             $table->timestamp('merged_at')->nullable();
+            // รวมไม่สำเร็จ (เช่นบัญชี Thaiprompt อยู่ใต้ผังของบัญชีเงา) — เว้น 1 วันก่อนลองใหม่ ไม่ลองทุกบิล
+            $table->timestamp('merge_failed_at')->nullable();
+            $table->string('merge_error', 255)->nullable();
             $table->timestamps();
         });
     }

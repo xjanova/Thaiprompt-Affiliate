@@ -196,6 +196,12 @@ class FortuneCommissionAdminService
                         return false;
                     }
 
+                    // บิลจันทราที่คืนเงินลูกค้าแล้ว — ห้ามจ่ายค่าแนะนำ (บิลบอทคงกติกาเดิม)
+                    $reading = $commission->reading;
+                    if ($reading && $reading->isJuntraBill() && ! $reading->is_paid) {
+                        throw new \RuntimeException("บิล {$reading->bill_reference} คืนเงินลูกค้าแล้ว — จ่ายค่าแนะนำไม่ได้");
+                    }
+
                     $wallet = Wallet::where('user_id', $commission->user_id)->lockForUpdate()->first();
                     if (! $wallet) {
                         $wallet = Wallet::create([
