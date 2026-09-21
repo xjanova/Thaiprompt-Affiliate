@@ -1395,78 +1395,29 @@ class FortuneKnowledgeService
     // ════════════════════════════════════════════════════════════════
 
     /**
-     * คำนวณคะแนน Yes/No พร้อมรายละเอียดต่อใบ + ตัดสินผลลัพธ์
+     * คำนวณคะแนน Yes/No พร้อมรายละเอียดต่อใบ + ตัดสินผลลัพธ์ (บอท Celtic 99 — ตำแหน่ง 1..10 ลำดับ Waite)
      *
      * @param  array<int, array>  $cards
-     * @return string ว่าง = สำรับไม่ครบ
+     * @return string ว่าง = ไม่มีไพ่ตั้งตรงที่รู้น้ำหนักเลย (เช่น กลับหัวทุกใบ)
      */
     public function yesNoVerdict(array $cards): string
     {
-        $cfg = (array) config('fortune_yes_no_weights', []);
-        $weights = (array) ($cfg['card_weights'] ?? []);
-        $multipliers = (array) ($cfg['position_multiplier'] ?? []);
-        $verdicts = (array) ($cfg['verdicts'] ?? []);
+        // 🔮 (2026-09-21) บอท Celtic 99 ใช้ตาชั่งตัวเดียวกับไพ่เว็บ (yesNoVerdictFor) — ตัวคูณตำแหน่งลำดับ Waite ของบอทเอง
+        //   เดิมที่นี่พลิกเครื่องหมายไพ่กลับหัวทุกใบ → หอคอย/ดาบสิบกลับหัวที่ ต.10 (×2.5) ได้ +7.5 ดันผลเป็น "ใช่ชัด"
+        //   ตำรา yes/no ให้ไพ่กลับหัวไม่ตรงกัน (ไม่ใช่ / ล่าช้า / ก้ำกึ่ง) จึงไม่นับคะแนน ให้แม่หมออ่านความหมายกลับหัวเอง
+        //   และเดิมต้องมีน้ำหนักครบ 10 ใบถึงจะคิด — ตอนนี้มีไพ่ตั้งตรงที่รู้น้ำหนักสักใบก็คิดได้ (เกณฑ์ย่อตามตัวคูณของใบตั้งตรง)
+        //   สำรับตั้งตรงครบ 10 ใบ: ตัวคูณรวมเท่าเดิม เกณฑ์ ±5/±2 เท่าเดิม ผลฟันธงเหมือนเดิมทุกกรณี
+        $multipliers = array_map('floatval', (array) config('fortune_yes_no_weights.position_multiplier', []));
+        $celtic = array_filter($cards, fn ($pos) => is_int($pos) && $pos >= 1 && $pos <= 10, ARRAY_FILTER_USE_KEY);
 
-        if (empty($weights)) {
-            return '';
-        }
-
-        $total = 0.0;
-        $contributions = [];
-        $present = 0;
-
-        for ($pos = 1; $pos <= 10; $pos++) {
-            $card = $cards[$pos] ?? null;
-            if (! $card) {
-                continue;
-            }
-            $nameEn = (string) ($card['card_name_en'] ?? '');
-            if ($nameEn === '' || ! array_key_exists($nameEn, $weights)) {
-                continue;
-            }
-            $present++;
-            $rawScore = (int) $weights[$nameEn];
-            // กลับหัว = พลิกสัญลักษณ์ (Tower กลับหัวกลายเป็นน้อยร้าย, Sun กลับหัวอ่อนลง ฯลฯ)
-            if (! empty($card['is_reversed'])) {
-                $rawScore = -$rawScore;
-            }
-            $mult = (float) ($multipliers[$pos] ?? 1.0);
-            $weighted = $rawScore * $mult;
-            $total += $weighted;
-
-            $th = ((string) ($card['card_name_th'] ?? '')) ?: $nameEn;
-            $rev = ! empty($card['is_reversed']) ? '(กลับหัว)' : '';
-            $sign = $rawScore > 0 ? '+' : '';
-            $contributions[] = "   ต.{$pos} {$th}{$rev}: {$sign}{$rawScore} × {$mult} = "
-                .number_format($weighted, 1);
-        }
-
-        if ($present < 10) {
-            return '';
-        }
-
-        // ตัดสินผลลัพธ์
-        $verdictKey = 'strong_no';
-        foreach (['strong_yes', 'lean_yes', 'unclear', 'lean_no'] as $k) {
-            $threshold = (float) ($verdicts[$k]['threshold'] ?? 0);
-            if ($total >= $threshold) {
-                $verdictKey = $k;
-                break;
-            }
-        }
-        $verdict = (array) ($verdicts[$verdictKey] ?? []);
-
-        return '📊 คะแนนรวม: '.number_format($total, 1)." (จาก 10 ใบ)\n"
-            .($verdict['icon'] ?? '').' ผลฟันธง: '.($verdict['text'] ?? '')."\n\n"
-            ."🔍 รายละเอียดต่อใบ (คะแนน × ตัวคูณตำแหน่ง):\n"
-            .implode("\n", $contributions);
+        return $this->yesNoVerdictFor($celtic, $multipliers);
     }
 
     /**
      * 🔮 (2026-09-15) ตาชั่ง Yes/No สำหรับสำรับกี่ใบก็ได้ (ไพ่เว็บจันทรา 1/3/5/10 ใบ)
      *
-     * yesNoVerdict() ผูกกับ Celtic 10 ใบ (ครบ 10 ถึงจะคำนวณ + เกณฑ์ ±5/±2 ตั้งจากผลรวมตัวคูณของ 10 ตำแหน่ง)
-     * ที่นี่ใช้คะแนนรายไพ่ชุดเดียวกัน แต่ **ย่อเกณฑ์ตามสัดส่วนผลรวมตัวคูณ** ของสำรับจริง
+     * เกณฑ์ ±5/±2 ใน config ตั้งจากผลรวมตัวคูณของ Celtic 10 ตำแหน่ง
+     * ที่นี่ **ย่อเกณฑ์ตามสัดส่วนผลรวมตัวคูณ** ของไพ่ที่นับคะแนนจริง (บอท Celtic 99 ก็เรียกผ่าน yesNoVerdict())
      * — ไม่ย่อ = ไพ่ 3 ใบแทบไม่มีทางถึง "ใช่ชัด" เลย ตาชั่งจะเอียงไปทาง "ก้ำกึ่ง" ตลอด
      *
      * 🔮 (2026-09-21) แก้สองจุดที่ทำให้ตาชั่งฟันธงผิดตำรา:
