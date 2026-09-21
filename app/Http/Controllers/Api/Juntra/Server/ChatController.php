@@ -21,6 +21,7 @@ use Throwable;
  *   - เจ้าของห้อง = ลูกค้าฝั่งเว็บ (user_ref) — ประวัติแยกต่อคน ไม่ปนกัน
  *   - แม่หมอไม่ทำนายเองในแชท ชวนเลือกแพ็กเกจเปิดไพ่แทน (kind=offer + offer_topic)
  *   - AI เงียบ = 503 ai_unavailable (ไม่ส่งข้อความรองรับที่หน้าตาเหมือนคำตอบจริง)
+ *   - 💬 (2026-09-21) `context` (ไม่บังคับ) = คำพยากรณ์ที่ห้องนี้คุยต่อ — อยู่ใน system message ทุกรอบ
  */
 class ChatController extends Controller
 {
@@ -30,9 +31,13 @@ class ChatController extends Controller
     {
         $data = $request->validate([
             'user_ref' => 'required|string|max:64|regex:/^[A-Za-z0-9_-]+$/',
+            // 💬 (2026-09-21) ห้องที่คุยต่อจากคำพยากรณ์ที่ลูกค้าจ่ายแล้ว — ไพ่ทุกใบ + คำพยากรณ์ฉบับเต็ม
+            //    ไม่ส่ง = ห้องคุยทั่วไปแบบเดิม (เว็บรุ่นก่อนหน้าไม่รู้จักฟิลด์นี้)
+            //    รับเฉพาะทางเซิร์ฟเวอร์ของเว็บ — ทาง token ของลูกค้าไม่รับ เพราะบริบทนี้ไปอยู่ใน system message
+            'context' => 'sometimes|nullable|string|max:'.JuntraChatService::MAX_CONTEXT_CHARS,
         ]);
 
-        return response()->json(['data' => $this->chat->start($this->owner($data['user_ref']))], 201);
+        return response()->json(['data' => $this->chat->start($this->owner($data['user_ref']), $data['context'] ?? null)], 201);
     }
 
     public function send(Request $request): JsonResponse
@@ -44,6 +49,8 @@ class ChatController extends Controller
             'text' => 'required|string|min:1|max:1000',
             // ห้องที่ลูกค้าเพิ่งจ่ายเปิดไพ่ไปแล้ว — คุยต่อจากไพ่ชุดนั้นได้เต็มที่ ไม่ต้องชวนเปิดไพ่ซ้ำ
             'grounded' => 'sometimes|boolean',
+            // 💬 (2026-09-21) ส่งซ้ำได้ทุกรอบ — ห้องหมดอายุ (6 ชม.) / cache ถูกล้าง แม่หมอก็ยังเห็นคำพยากรณ์ครบ
+            'context' => 'sometimes|nullable|string|max:'.JuntraChatService::MAX_CONTEXT_CHARS,
         ]);
 
         try {
@@ -56,6 +63,7 @@ class ChatController extends Controller
                 ['customer_name' => 'เว็บจันทรา #'.$data['user_ref'].(! empty($data['name']) ? ' '.$data['name'] : '')],
                 webOffers: ! $request->boolean('grounded'),
                 fillerOnEmpty: false,
+                context: $data['context'] ?? null,
             );
         } catch (Throwable $e) {
             Log::warning('Juntra server chat send failed', [

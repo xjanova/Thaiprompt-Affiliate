@@ -358,7 +358,7 @@ class FortuneKnowledgeService
         }
 
         $lines = [];
-        for ($pos = 1; $pos <= 10; $pos++) {
+        foreach ($this->positionsOf($cards) as $pos) {
             // จำกัดตำแหน่ง (ถ้าผู้เรียกระบุ) — ว่าง = เอาครบเหมือนเดิม
             if (! empty($onlyPositions) && ! in_array($pos, $onlyPositions, true)) {
                 continue;
@@ -389,6 +389,57 @@ class FortuneKnowledgeService
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * 🔮 (2026-09-21) ตำแหน่งที่มีไพ่อยู่จริง เรียงน้อยไปมาก (เฉพาะเลข ≥ 1)
+     *
+     * เดิมลูปรายไพ่เขียนตายตัว `for ($pos = 1; $pos <= 10; ...)` ตามสำรับ Celtic ของบอท
+     * → ไพ่ 12 เดือนของเว็บ เดือนที่ 11-12 ไม่เคยได้ตำราสุขภาพ/มู/คู่ไพ่เลย
+     * สำรับ 10 ใบของบอท (เลข 1..10) ได้ลำดับเดิมทุกอย่าง
+     *
+     * @param  array<int|string, mixed>  $cards
+     * @return array<int, int>
+     */
+    protected function positionsOf(array $cards): array
+    {
+        $positions = array_values(array_filter(array_keys($cards), fn ($k) => is_int($k) && $k >= 1));
+        sort($positions);
+
+        return $positions;
+    }
+
+    /**
+     * 🩺 (2026-09-21) คำถามนี้เกี่ยวกับสุขภาพไหม — ตำราสุขภาพรายไพ่ใส่เฉพาะเมื่อ "ถูกถาม"
+     *
+     * ต้นเรื่อง: เลนไพ่เว็บเคยแนบตำราสุขภาพทุกคำทำนาย — ถามเรื่องความรัก ได้หอคอยตั้งตรง
+     * แล้วแม่หมอเห็นบรรทัด "สโตรก — ต้องไปโรงพยาบาล" ติดไปด้วย · บอท Celtic 99 ใส่เฉพาะคำถามสุขภาพ
+     * มาตลอด (คำชี้ชุดเดียวกับที่เขียนไว้ในเมธอด CelticCrossService::buildHealthDirective)
+     */
+    public const HEALTH_QUESTION_KEYWORDS = [
+        'สุขภาพ', 'ป่วย', 'ไม่สบาย', 'เจ็บป่วย', 'โรค', 'อาการ', 'รักษา', 'หมอ', 'แพทย์',
+        'โรงพยาบาล', 'ผ่าตัด', 'ตรวจสุขภาพ', 'ตรวจร่างกาย', 'มะเร็ง', 'เนื้องอก', 'เบาหวาน',
+        'ความดัน', 'หัวใจ', 'ตับ', 'ไต', 'ปอด', 'กระเพาะ', 'ลำไส้', 'ไทรอยด์', 'ไมเกรน',
+        'ปวดหัว', 'ปวดท้อง', 'ปวดหลัง', 'ปวดข้อ', 'นอนไม่หลับ', 'เครียด', 'ซึมเศร้า',
+        'วิตกกังวล', 'แพนิค', 'ภูมิแพ้', 'ภูมิคุ้มกัน', 'ติดเชื้อ', 'อักเสบ', 'เป็นไข้',
+        'เลือดจาง', 'โลหิตจาง', 'กระดูก', 'อ่อนเพลีย', 'ฮอร์โมน', 'ประจำเดือน', 'ตั้งครรภ์',
+        'มีลูกยาก', 'มีบุตรยาก', 'ซีสต์', 'แผล', 'บาดเจ็บ', 'อัมพาต', 'สโตรก', 'สุขภาพจิต',
+        'จิตเวช', 'กินยา', 'เสพติด', 'หายป่วย', 'พักฟื้น',
+    ];
+
+    public static function looksLikeHealthQuestion(string $question): bool
+    {
+        $q = mb_strtolower(trim($question));
+        if ($q === '') {
+            return false;
+        }
+        foreach (self::HEALTH_QUESTION_KEYWORDS as $kw) {
+            if (mb_strpos($q, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -834,7 +885,7 @@ class FortuneKnowledgeService
         }
 
         $lines = [];
-        for ($pos = 1; $pos <= 10; $pos++) {
+        foreach ($this->positionsOf($cards) as $pos) {
             $card = $cards[$pos] ?? null;
             if (! $card) {
                 continue;
@@ -932,7 +983,7 @@ class FortuneKnowledgeService
 
         // รวบรวมไพ่ที่เปิด (name_en => meta ใบแรกที่เจอ)
         $present = [];
-        for ($pos = 1; $pos <= 10; $pos++) {
+        foreach ($this->positionsOf($cards) as $pos) {
             $card = $cards[$pos] ?? null;
             if (! $card) {
                 continue;
@@ -1283,9 +1334,12 @@ class FortuneKnowledgeService
     /**
      * สร้างบล็อก "ความสัมพันธ์คู่ตำแหน่ง" ตามคู่ที่ตำราหมอดูใช้วิเคราะห์
      *
-     * @param  array<int, array>  $cards
+     * @param  array<int, array>  $cards  key = ตำแหน่ง canonical 1..10 (ลำดับ Waite ของบอท)
+     * @param  array<int, int>  $displayPos  🔮 (2026-09-21) ตำแหน่ง canonical => เลขที่จะพิมพ์ — ใช้ตอนไพ่มาจาก
+     *                                        ผังอื่น (Celtic ของเว็บ, JuntraSpreadProfiles::celticToCanonical) ให้บรรทัดที่พิมพ์
+     *                                        ตรงกับ "ใบที่ N" ที่ลูกค้าเห็น · ว่าง = พิมพ์เลข canonical (บอทเหมือนเดิม)
      */
-    public function positionDynamicLines(array $cards): string
+    public function positionDynamicLines(array $cards, array $displayPos = []): string
     {
         $cfg = (array) config('fortune_position_dynamics', []);
         $dynamics = (array) ($cfg['dynamics'] ?? []);
@@ -1324,9 +1378,11 @@ class FortuneKnowledgeService
             $question = (string) ($dyn['question'] ?? '');
             $tip = (string) ($dyn['tip'] ?? '');
 
+            $na = $displayPos[$a] ?? $a;
+            $nb = $displayPos[$b] ?? $b;
             $lines[] = "▸ {$label}\n"
-                ."   ต.{$a} ({$posLabel[$a]}): {$byPos[$a]['th']}{$oa}\n"
-                ."   ต.{$b} ({$posLabel[$b]}): {$byPos[$b]['th']}{$ob}\n"
+                ."   ต.{$na} ({$posLabel[$a]}): {$byPos[$a]['th']}{$oa}\n"
+                ."   ต.{$nb} ({$posLabel[$b]}): {$byPos[$b]['th']}{$ob}\n"
                 ."   ❓ ถามตัวเอง: {$question}\n"
                 ."   💡 {$tip}";
         }
@@ -1413,9 +1469,18 @@ class FortuneKnowledgeService
      * ที่นี่ใช้คะแนนรายไพ่ชุดเดียวกัน แต่ **ย่อเกณฑ์ตามสัดส่วนผลรวมตัวคูณ** ของสำรับจริง
      * — ไม่ย่อ = ไพ่ 3 ใบแทบไม่มีทางถึง "ใช่ชัด" เลย ตาชั่งจะเอียงไปทาง "ก้ำกึ่ง" ตลอด
      *
+     * 🔮 (2026-09-21) แก้สองจุดที่ทำให้ตาชั่งฟันธงผิดตำรา:
+     *   1. เดิมพลิกเครื่องหมายไพ่กลับหัวทุกใบ → หอคอย/ดาบสิบ/ดาบสาม/ห้าเหรียญกลับหัวได้ +3 "ใช่ชัด"
+     *      ตำรา yes/no แต่ละเจ้าให้ไพ่กลับหัวไม่ตรงกัน (ไม่ใช่ / ล่าช้า / ก้ำกึ่ง) — ตามกฎ "แหล่งขัดกัน = ไม่เดา"
+     *      ไพ่กลับหัวจึง **ไม่นับคะแนน** ให้แม่หมออ่านจากความหมายกลับหัวของใบนั้นเอง (card_weights ด้านตั้งตรง
+     *      ตรงกับตาราง yes/no ทั่วไปอยู่แล้ว จึงยังใช้ต่อ)
+     *   2. เกณฑ์ที่ย่อตามสัดส่วนทำให้ไพ่ใบเดียวที่ +1 ("ใช่แบบเบา" เช่น The Fool, Temperance) กลายเป็น "ใช่ชัด"
+     *      → เพิ่มด่านขั้นต่ำเป็นหน่วยคะแนนจริง: ชัด ต้อง |รวม| ≥ 2 · เอียง ต้อง |รวม| ≥ 1
+     *      ไพ่ใบเดียวจึงตรงกับชั้นของไพ่เอง (±2/±3 ชัด · ±1 เอียง · 0 ก้ำกึ่ง) ส่วน 10 ใบ (ย่อ ×1) เกณฑ์เดิมทุกอย่าง
+     *
      * @param  array<int, array>  $cards  key = ตำแหน่ง 1..N (card_name_en / card_name_th / is_reversed)
      * @param  array<int, float>  $multipliers  ตำแหน่ง => ตัวคูณ (ไม่ระบุ = 1.0)
-     * @return string ว่าง = ใช้ไม่ได้ (ไม่มีไพ่ที่รู้จักน้ำหนักเลย)
+     * @return string ว่าง = ใช้ไม่ได้ (ไม่มีไพ่ตั้งตรงที่รู้จักน้ำหนักเลย)
      */
     public function yesNoVerdictFor(array $cards, array $multipliers): string
     {
@@ -1431,43 +1496,49 @@ class FortuneKnowledgeService
         $total = 0.0;
         $multSum = 0.0;
         $lines = [];
+        $reversedLines = [];
         ksort($cards);
         foreach ($cards as $pos => $card) {
             $nameEn = (string) ($card['card_name_en'] ?? '');
             if ($nameEn === '' || ! array_key_exists($nameEn, $weights)) {
                 continue;
             }
-            $raw = (int) $weights[$nameEn];
+            $th = ((string) ($card['card_name_th'] ?? '')) ?: $nameEn;
             if (! empty($card['is_reversed'])) {
-                $raw = -$raw;
+                $reversedLines[] = "   ต.{$pos} {$th}(กลับหัว): ไม่นับคะแนน — อ่านตามความหมายกลับหัวของไพ่ใบนี้ (มักเป็นติดขัด/ยังไม่ใช่ตอนนี้)";
+
+                continue;
             }
+            $raw = (int) $weights[$nameEn];
             $mult = (float) ($multipliers[$pos] ?? 1.0);
             $total += $raw * $mult;
             $multSum += $mult;
 
-            $th = ((string) ($card['card_name_th'] ?? '')) ?: $nameEn;
-            $rev = ! empty($card['is_reversed']) ? '(กลับหัว)' : '';
-            $lines[] = "   ต.{$pos} {$th}{$rev}: ".($raw > 0 ? '+' : '')."{$raw} × {$mult} = ".number_format($raw * $mult, 1);
+            $lines[] = "   ต.{$pos} {$th}: ".($raw > 0 ? '+' : '')."{$raw} × {$mult} = ".number_format($raw * $mult, 1);
         }
 
         if ($multSum <= 0) {
             return '';
         }
 
+        // เกณฑ์ "รวม ≥ threshold → ผลนี้" — ด่านขั้นต่ำ: ใช่ชัด ≥ 2 · ใช่ ≥ 1 · ก้ำกึ่ง > −1 · ยังไม่ใช่ > −2
         $scale = $multSum / $celticSum;
+        $floors = ['strong_yes' => 2.0, 'lean_yes' => 1.0, 'unclear' => -0.999, 'lean_no' => -1.999];
         $verdictKey = 'strong_no';
         foreach (['strong_yes', 'lean_yes', 'unclear', 'lean_no'] as $k) {
-            if ($total >= (float) ($verdicts[$k]['threshold'] ?? 0) * $scale) {
+            $t = (float) ($verdicts[$k]['threshold'] ?? 0) * $scale;
+            $t = $floors[$k] > 0 ? max($t, $floors[$k]) : min($t, $floors[$k]);
+            if ($total >= $t) {
                 $verdictKey = $k;
                 break;
             }
         }
         $verdict = (array) ($verdicts[$verdictKey] ?? []);
 
-        return '📊 คะแนนรวม: '.number_format($total, 1).' (จาก '.count($lines)." ใบ)\n"
+        return '📊 คะแนนรวม: '.number_format($total, 1).' (จาก '.count($lines)." ใบตั้งตรง)\n"
             .($verdict['icon'] ?? '').' ผลฟันธง: '.($verdict['text'] ?? '')."\n\n"
             ."🔍 รายละเอียดต่อใบ (คะแนน × ตัวคูณตำแหน่ง):\n"
-            .implode("\n", $lines);
+            .implode("\n", array_merge($lines, $reversedLines));
     }
 
     /**

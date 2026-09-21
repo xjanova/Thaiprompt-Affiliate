@@ -219,8 +219,149 @@ class JuntraTarotProfilesTest extends TestCase
         $kb = app(FortuneKnowledgeService::class);
         $strong = [1 => ['card_name_en' => 'The Sun', 'card_name_th' => 'อาทิตย์'], 2 => ['card_name_en' => 'The Star', 'card_name_th' => 'ดาว'], 3 => ['card_name_en' => 'The World', 'card_name_th' => 'โลก']];
 
-        $this->assertStringContainsString('(จาก 3 ใบ)', $kb->yesNoVerdictFor($strong, [1 => 0.5, 2 => 1.0, 3 => 2.0]));
+        $this->assertStringContainsString('(จาก 3 ใบตั้งตรง)', $kb->yesNoVerdictFor($strong, [1 => 0.5, 2 => 1.0, 3 => 2.0]));
         $this->assertStringContainsString('✅', $kb->yesNoVerdictFor($strong, [1 => 0.5, 2 => 1.0, 3 => 2.0]));
         $this->assertSame('', $kb->yesNoVerdictFor([1 => ['card_name_en' => 'Not A Card']], [1 => 1.0]));
+    }
+
+    /* ───────────── 🔮 (2026-09-21) คลังความรู้ต้องตรงกับแพ็กเกจและตำรา ───────────── */
+
+    /** ไพ่ 10/12 ใบชื่อไม่ซ้ำ — ชื่อ en ต้องอยู่ในคลังจริง (เทียบคู่ไพ่/ธาตุได้) */
+    private const DECK = [
+        ['The Magician', 'นักมายากล'], ['Five of Wands', 'ห้าไม้เท้า'], ['Four of Pentacles', 'สี่เหรียญ'],
+        ['Five of Cups', 'ห้าถ้วย'], ['The Star', 'ดวงดาว'], ['Six of Wands', 'หกไม้เท้า'],
+        ['The Hermit', 'ฤๅษี'], ['Knight of Cups', 'อัศวินถ้วย'], ['The Moon', 'พระจันทร์'],
+        ['The World', 'โลก'], ['The Lovers', 'คนรัก'], ['Two of Cups', 'สองถ้วย'],
+    ];
+
+    private function deck(int $n, string $label = 'ตำแหน่ง'): array
+    {
+        $cards = [];
+        foreach (array_slice(self::DECK, 0, $n) as $i => [$en, $th]) {
+            $cards[] = $this->card($i + 1, "{$label} ".($i + 1), $en, $th);
+        }
+
+        return $cards;
+    }
+
+    public function test_the_12_month_reading_gets_no_celtic_position_knowledge_and_months_11_12_are_read(): void
+    {
+        // บั๊กบน prod: คำทำนาย 12 เดือนเรียกเดือนที่ 1-2 ว่า "ตำแหน่งปัจจุบัน / ตำแหน่งอุปสรรค"
+        $this->read(['spread_key' => 'year', 'cards' => $this->deck(12, 'เดือนที่')])->assertOk();
+        $prompt = $this->calls[0]['prompt'];
+
+        $this->assertStringNotContainsString('× ครอส', $prompt);
+        $this->assertStringNotContainsString('(Present)', $prompt);
+        $this->assertStringNotContainsString('คู่ตำแหน่งสำคัญ', $prompt);
+        $this->assertStringNotContainsString('/10)', $prompt, 'the 10-card deck statistics do not describe 12 months');
+        // เดือน 11-12 (คนรัก + สองถ้วย ตั้งตรง) เคยหลุดจากลูปที่หยุดที่ใบ 10
+        $this->assertStringContainsString('[ต.11] + สองถ้วย [ต.12]', $prompt);
+    }
+
+    public function test_celtic_position_knowledge_speaks_in_the_webs_card_numbers(): void
+    {
+        // เว็บ: 3 = รากฐาน (ล่าง) · 4 = อดีต · 5 = เป้าหมาย (บน) — คลังของบอทเรียง Waite: 3 เป้าหมาย · 4 รากฐาน · 5 อดีต
+        $this->read(['spread_key' => 'celtic', 'cards' => $this->deck(10)])->assertOk();
+        $prompt = $this->calls[0]['prompt'];
+
+        $this->assertStringContainsString('ต.3 (จิตใต้สำนึก/รากฐาน (Foundation)): สี่เหรียญ', $prompt);
+        $this->assertStringContainsString('ต.5 (จิตสำนึก/เป้าหมาย (Conscious/Goal)): ดวงดาว', $prompt);
+        $this->assertStringContainsString('ต.4 (อดีต (Past)): ห้าถ้วย', $prompt);
+        $this->assertStringNotContainsString('(Past)): ดวงดาว', $prompt);
+
+        // ตาชั่งของ Celtic: น้ำหนักตามบทบาท ไม่ใช่ตามเลข
+        $canon = array_map('floatval', (array) config('fortune_yes_no_weights.position_multiplier'));
+        $web = JuntraSpreadProfiles::yesNoMultipliers(JuntraSpreadProfiles::get('celtic'));
+        $this->assertSame($canon[3], $web[5], 'web card 5 is the goal');
+        $this->assertSame($canon[4], $web[3], 'web card 3 is the foundation');
+        $this->assertSame($canon[5], $web[4], 'web card 4 is the past');
+    }
+
+    public function test_kunsai_keeps_its_own_positions_without_celtic_labels(): void
+    {
+        $this->reply = "## 🪬 ผลวินิจฉัย\nพบของ: ไม่ใช่";
+        $this->read(['spread_key' => 'kunsai', 'question' => 'โดนของไหม', 'cards' => $this->deck(10)])->assertOk();
+        $prompt = $this->calls[0]['prompt'];
+
+        $this->assertStringNotContainsString('(Hopes & Fears)', $prompt, 'kunsai card 9 is protection, not hopes & fears');
+        $this->assertStringNotContainsString('× ครอส', $prompt);
+    }
+
+    public function test_card_pairs_are_read_only_from_upright_cards(): void
+    {
+        $cards = $this->loveCards();   // คนรัก + สองถ้วย ตั้งตรง = "เนื้อคู่ยืนยัน"
+        $this->read(['spread_key' => 'love', 'cards' => $cards])->assertOk();
+
+        $cards[0]['reversed'] = true;
+        $cards[1]['reversed'] = true;
+        $this->read(['spread_key' => 'love', 'cards' => $cards])->assertOk();
+
+        $this->assertStringContainsString('เนื้อคู่/รักแท้ยืนยัน', $this->calls[0]['prompt']);
+        $this->assertStringNotContainsString('เนื้อคู่/รักแท้ยืนยัน', $this->calls[1]['prompt'], 'no verified meaning for the reversed pair');
+    }
+
+    public function test_health_notes_come_only_with_a_health_question(): void
+    {
+        $health = trim(app(FortuneKnowledgeService::class)->healthLinesForCards([
+            1 => ['card_name_en' => 'The Lovers', 'card_name_th' => 'คนรัก', 'is_reversed' => false, 'position_name' => 'ตัวคุณ'],
+        ]));
+        $this->assertNotSame('', $health, 'fixture: the health tome knows The Lovers');
+        // บรรทัดเนื้อความ (บรรทัดหัว "• ตำแหน่ง 1 [ตัวคุณ] — คนรัก" ซ้ำกับหมวดความรักได้ จึงไม่ใช้เป็นตัวชี้)
+        $firstLine = trim(explode("\n", $health)[1] ?? '');
+        $this->assertNotSame('', $firstLine);
+
+        $this->read(['spread_key' => 'love', 'question' => 'ความรักครั้งนี้จะไปต่อไหม', 'cards' => $this->loveCards()])->assertOk();
+        $this->read(['spread_key' => 'love', 'question' => 'ช่วงนี้สุขภาพของเราเป็นอย่างไร', 'cards' => $this->loveCards()])->assertOk();
+
+        $this->assertStringNotContainsString($firstLine, $this->calls[0]['prompt']);
+        $this->assertStringContainsString($firstLine, $this->calls[1]['prompt']);
+    }
+
+    public function test_the_yes_no_scale_never_turns_a_reversed_hard_card_into_a_yes(): void
+    {
+        $kb = app(FortuneKnowledgeService::class);
+        $c = fn (string $en, bool $rev = false) => ['card_name_en' => $en, 'card_name_th' => $en, 'is_reversed' => $rev];
+
+        // เดิม: หอคอยกลับหัว = +3 "ใช่ชัด"
+        $this->assertSame('', $kb->yesNoVerdictFor([1 => $c('The Tower', true)], [1 => 1.0]), 'a lone reversed card has no score — read its reversed meaning');
+        $mixed = $kb->yesNoVerdictFor([1 => $c('Ten of Swords', true), 2 => $c('Four of Cups')], [1 => 1.0, 2 => 1.0]);
+        $this->assertStringContainsString('ไม่นับคะแนน', $mixed);
+        $this->assertStringContainsString('📊 คะแนนรวม: -1.0', $mixed);
+
+        // ไพ่ใบเดียว = ชั้นของไพ่เอง: ±1 เอียง · ±3 ชัด (เดิม +1 ก็ "ใช่ชัด")
+        $this->assertStringContainsString('🟢', $kb->yesNoVerdictFor([1 => $c('The Fool')], [1 => 1.0]));
+        $this->assertStringContainsString('✅', $kb->yesNoVerdictFor([1 => $c('The Sun')], [1 => 1.0]));
+        $this->assertStringContainsString('🔶', $kb->yesNoVerdictFor([1 => $c('Five of Wands')], [1 => 1.0]));
+        $this->assertStringContainsString('🔴', $kb->yesNoVerdictFor([1 => $c('Ten of Swords')], [1 => 1.0]));
+    }
+
+    public function test_the_single_card_rule_reads_the_cards_nature_not_just_its_orientation(): void
+    {
+        $rules = implode("\n", JuntraSpreadProfiles::get('single')['rules']);
+
+        $this->assertStringNotContainsString('ตั้งตรง = ไพ่หนุน ·', $rules);
+        $this->assertStringContainsString('หอคอย', $rules);
+    }
+
+    public function test_the_apps_legacy_path_gets_the_package_rules_and_the_same_knowledge_gates(): void
+    {
+        $messages = [];
+        $ai = Mockery::mock(FortuneAIService::class);
+        $ai->shouldReceive('chatWithCustomSystemPrompt')->andReturnUsing(function (...$args) use (&$messages) {
+            $messages[] = ['system' => $args[0], 'user' => $args[1]];
+
+            return ['response' => 'คำทำนาย', 'provider' => 'openai', 'model' => 'gpt'];
+        });
+        $this->app->instance(FortuneAIService::class, $ai);
+
+        // แอพ: ไม่มี spread_key มีแต่ spread = tarot_year
+        $this->read(['spread' => 'tarot_year', 'cards' => $this->deck(12, 'เดือนที่')])->assertOk();
+        $this->read(['spread' => 'tarot_celtic', 'cards' => $this->deck(10)])->assertOk();
+
+        $this->assertStringContainsString('── วิธีอ่านของแพ็กเกจนี้ ──', $messages[0]['user']);
+        $this->assertStringContainsString(JuntraSpreadProfiles::get('year')['role'], $messages[0]['user']);
+        $this->assertStringNotContainsString('× ครอส', $messages[0]['user']);
+        $this->assertStringContainsString('ต.5 (จิตสำนึก/เป้าหมาย (Conscious/Goal)): ดวงดาว', $messages[1]['user']);
+        $this->assertStringNotContainsString('ไม่ใช่แค่ "อ่อนลง"', $messages[0]['system']);
     }
 }

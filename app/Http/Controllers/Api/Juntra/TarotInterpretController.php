@@ -81,10 +81,18 @@ class TarotInterpretController extends Controller
             return $this->profileReading($profile, $data, $cards, $ai, $kb);
         }
 
-        $knowledge = $this->knowledgeBlock($kb, $cards, (string) ($data['question'] ?? ''));
+        // 🔮 (2026-09-21) ทางเดิม (แอพมือถือ) ไม่ส่ง spread_key แต่ส่ง spread = "tarot_<แพ็กเกจ>" มาเสมอ
+        //    ใช้ชื่อแพ็กเกจนี้คุมคลังความรู้ (คลังตำแหน่ง Celtic เฉพาะ Celtic) และต่อกฎการอ่านของแพ็กเกจ
+        //    — เดิมแอพไม่เคยได้กฎของแพ็กเกจเลย (Celtic ใบ 2 = พลังขวาง · ทางแยกต้องเลือก 1 ทาง · 12 เดือนห้าม "ดี" ทุกเดือน)
+        $legacyKey = self::spreadKeyFrom($data);
+        $legacyProfile = JuntraSpreadProfiles::get($legacyKey);
+        $knowledge = $this->knowledgeBlock($kb, $cards, (string) ($data['question'] ?? ''), $legacyKey);
 
         $spreadName = $data['spread_name'] ?? 'ไพ่ยิปซี';
         $userMessage = trim($data['prompt']);
+        if ($legacyProfile !== null) {
+            $userMessage .= "\n\n".JuntraSpreadProfiles::readingRules($legacyProfile);
+        }
         if ($knowledge !== '') {
             $userMessage .= "\n\n".$knowledge;
         }
@@ -140,7 +148,7 @@ class TarotInterpretController extends Controller
             return response()->json(['message' => 'คำถามนี้แม่หมอทำนายให้ไม่ได้', 'reason_code' => 'question_rejected'], 422);
         }
 
-        $blocks = ['knowledge' => $this->knowledgeBlock($kb, $cards, $question)];
+        $blocks = ['knowledge' => $this->knowledgeBlock($kb, $cards, $question, $profile['key'])];
 
         if (in_array('black_magic', $profile['knowledge'], true)) {
             $bm = '';
@@ -292,32 +300,57 @@ class TarotInterpretController extends Controller
         return $cards;
     }
 
+    /** "tarot_celtic" / spread_key "celtic" → "celtic" (null = ไม่ใช่แพ็กเกจที่รู้จัก) */
+    private static function spreadKeyFrom(array $data): ?string
+    {
+        $key = $data['spread_key'] ?? null;
+        if (! $key && is_string($data['spread'] ?? null) && str_starts_with($data['spread'], 'tarot_')) {
+            $key = substr($data['spread'], strlen('tarot_'));
+        }
+
+        return JuntraSpreadProfiles::has($key) ? $key : null;
+    }
+
     /**
      * ประกอบคลังความรู้ตามไพ่ที่เปิดจริง + หมวดที่ตรวจจับได้จากคำถาม
      *
-     * ส่วนที่ผูกกับ "ไพ่" ใส่เสมอ (โครงสำรับ ธาตุ ตำแหน่ง ไพ่คู่)
      * ส่วนที่ผูกกับ "เรื่องที่ถาม" ใส่เฉพาะหมวดที่ตรวจเจอ — ไม่งั้นเปลือง
      * token และเจือจางประเด็นที่ลูกค้าถามจริง
+     *
+     * 🔮 (2026-09-21) ส่วนที่ผูกกับ "ไพ่" ต้องดูแพ็กเกจก่อน — เดิมใส่ทุกอย่างทุกแพ็กเกจ:
+     *   - คลังตำแหน่ง Celtic (คู่ตำแหน่ง/ธาตุเสริม-ขัด) เช็คแค่ว่ามีไพ่ตำแหน่ง 1..10 → ไพ่ 12 เดือนโดนป้าย
+     *     "ปัจจุบัน × ครอส" จนคำทำนายจริงบน prod เรียกเดือนที่ 1-2 ว่า "ตำแหน่งปัจจุบัน / ตำแหน่งอุปสรรค"
+     *     และคุณไสยโดนป้าย "หวัง & กลัว" ที่ใบ 9 (ของคุณไสยคือ "สิ่งคุ้มครอง") → ใส่เฉพาะแพ็กเกจ Celtic
+     *     โดยแปลงเลขใบของเว็บเป็นลำดับ canonical ก่อน (JuntraSpreadProfiles::CELTIC_WEB_TO_CANONICAL)
+     *   - ภาพรวมสำรับ: เกณฑ์ตั้งไว้สำหรับ 10 ใบพอดี → เฉพาะสำรับ 10 ใบ
+     *   - คู่ไพ่: ความหมายในคลังเขียนไว้สำหรับไพ่ตั้งตรง (คนรัก + ถ้วยสอง "เนื้อคู่ยืนยัน" ออกแม้กลับหัวทั้งคู่)
+     *     และไม่มีตำราที่ยืนยันความหมายคู่กลับหัว → ส่งเฉพาะใบที่ตั้งตรง
+     *   - สุขภาพ: เฉพาะคำถามเรื่องสุขภาพ (ถามความรักแล้วได้ "สโตรก — ต้องไปโรงพยาบาล" ไม่ใช่คำทำนาย)
      */
-    private function knowledgeBlock(FortuneKnowledgeService $kb, array $cards, string $question): string
+    private function knowledgeBlock(FortuneKnowledgeService $kb, array $cards, string $question, ?string $spreadKey = null): string
     {
         $blocks = [];
-
-        foreach ([
-            'spreadPatternLines',
-            'elementalDignityLines',
-            'positionDynamicLines',
-            'comboLinesForCards',
-            'healthLinesForCards',
-        ] as $method) {
+        $add = function (string $name, callable $build) use (&$blocks): void {
             try {
-                $line = trim((string) $kb->{$method}($cards));
+                $line = trim((string) $build());
                 if ($line !== '') {
                     $blocks[] = $line;
                 }
             } catch (\Throwable $e) {
-                Log::debug("Juntra interpret: knowledge {$method} skipped", ['err' => $e->getMessage()]);
+                Log::debug("Juntra interpret: knowledge {$name} skipped", ['err' => $e->getMessage()]);
             }
+        };
+
+        if (count($cards) === 10) {
+            $add('spreadPatternLines', fn () => $kb->spreadPatternLines($cards));
+        }
+        if ($spreadKey === 'celtic' && ($canon = JuntraSpreadProfiles::celticToCanonical($cards)) !== null) {
+            $add('elementalDignityLines', fn () => $kb->elementalDignityLines($canon['cards']));
+            $add('positionDynamicLines', fn () => $kb->positionDynamicLines($canon['cards'], $canon['display']));
+        }
+        $add('comboLinesForCards', fn () => $kb->comboLinesForCards(array_filter($cards, fn ($c) => empty($c['is_reversed']))));
+        if (FortuneKnowledgeService::looksLikeHealthQuestion($question)) {
+            $add('healthLinesForCards', fn () => $kb->healthLinesForCards($cards));
         }
 
         // หมวดตามเรื่องที่ถาม (ความรัก/การเงิน/ฤกษ์/เลข/ของมงคล/ใจ/ครอบครัว/
@@ -362,7 +395,7 @@ class TarotInterpretController extends Controller
 1. อ่านจาก "หน้าไพ่ที่เปิดได้จริง × ตำแหน่ง" เท่านั้น — ห้ามทำนายลอย ๆ แบบที่ใช้กับไพ่ชุดไหนก็ได้
 2. ฟันธงให้ชัด บอกว่าจะเกิดอะไร ควรทำอะไร ช่วงไหน — ห้ามเซฟตัวด้วยคำว่า "อาจจะ/แล้วแต่ตัวคุณ" ทั้งบท
 3. อ้างชื่อไพ่และตำแหน่งเวลาสรุปประเด็นสำคัญ เพื่อให้เจ้าชะตาเห็นที่มา
-4. ไพ่กลับหัวให้อ่านเป็นด้านกลับจริง ๆ ไม่ใช่แค่ "อ่อนลง"
+4. ไพ่กลับหัว: อ่านตาม "ความหมายพื้นฐาน" ของด้านกลับหัวที่ให้ไว้กับไพ่ใบนั้น ห้ามอ่านเหมือนตั้งตรง
 5. ปิดท้ายด้วยคำแนะนำที่ลงมือทำได้จริง 2-3 ข้อ และกำลังใจอย่างอบอุ่น
 6. ห้ามทำนายเรื่องความตาย การฆ่าตัวตาย หรือโรคร้ายแบบชี้ชัด — ให้แนะนำให้ดูแลตัวเอง/พบแพทย์แทน
 7. ห้ามขายบริการอื่นต่อท้าย เจ้าชะตาจ่ายแล้ว

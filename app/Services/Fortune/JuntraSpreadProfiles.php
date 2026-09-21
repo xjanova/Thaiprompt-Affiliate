@@ -47,6 +47,32 @@ final class JuntraSpreadProfiles
     private const CELTIC = 'celtic';
 
     /**
+     * 🔮 (2026-09-21) เลขใบ Celtic ของเว็บ → เลขตำแหน่ง "canonical" ของคลังความรู้ Thaiprompt
+     *
+     * ทำไม: คลังความรู้ตำแหน่งของบอท (config/fortune_position_dynamics.php position_label,
+     *   config/fortune_elemental_dignities.php celtic_pairs, config/fortune_yes_no_weights.php
+     *   position_multiplier, FortuneReading::CELTIC_POSITIONS) ใช้ลำดับของ Waite:
+     *     1 ปัจจุบัน · 2 ครอส · 3 "crowns him" = เป้าหมาย/สิ่งที่ดีที่สุดที่ไปถึงได้ (บน)
+     *     · 4 "beneath him" = รากฐาน/สิ่งที่เป็นของเขาแล้ว (ล่าง) · 5 "behind him" = อิทธิพลที่เพิ่งผ่านไป
+     *     · 6 before = อนาคตอันใกล้ · 7-10 ไม้เท้า (ตัวเอง/สิ่งแวดล้อม/หวัง-กลัว/ผลลัพธ์)
+     *     — A. E. Waite, The Pictorial Key to the Tarot (1910), "An Ancient Celtic Method of Divination"
+     *       (ยกข้อความไว้ที่ https://rider-waite.com/symbolism/pictorial-key-3-7/ และ
+     *        https://www.tarotforum.net/threads/key-to-the-tarot-question-text-of-what-became-the-celtic-cross.164215/)
+     *   แต่แพ็กเกจ Celtic ของเว็บ (juntraweb config/tarot_spreads.php 'celtic' + ผังวาง
+     *   resources/css/app.css .celtic-cross: ใบ 5 บนสุด · ใบ 3 ล่างสุด · ใบ 4 ซ้าย · ใบ 6 ขวา)
+     *   ใช้ลำดับตระกูล Joan Bunning (https://www.learntarot.com/chcc.htm , /ccross.htm):
+     *     3 = รากเหง้า/จิตใต้สำนึก (ล่าง) · 4 = อดีต/สิ่งที่กำลังจางไป · 5 = เป้าหมาย/สิ่งที่อาจเกิด (บน) · 6 = อนาคต
+     *   ตำราต่างสำนักต่างกันหลัก ๆ แค่สลับใบ 3↔5 (บางเจ้าสลับ 4↔6 ด้วย) — จึงแปลงตาม "บทบาท + ที่วางจริง"
+     *   ไม่ใช่ตามเลข: เว็บ 3 → canonical 4 · เว็บ 4 → canonical 5 · เว็บ 5 → canonical 3 · ที่เหลือเลขเดิม
+     *
+     * บั๊กที่เจอบน prod ก่อนมีตัวนี้: คำทำนาย 12 เดือนพูดว่า "สิบเหรียญกลับหัวในตำแหน่งปัจจุบันประกบกับ
+     *   ไพ่ปีศาจในตำแหน่งอุปสรรค" — ที่จริงคือเดือนที่ 1 กับเดือนที่ 2 (คลัง Celtic ถูกเทใส่ทุกแพ็กเกจ)
+     *
+     * @var array<int,int> เลขใบของเว็บ => เลขตำแหน่ง canonical
+     */
+    public const CELTIC_WEB_TO_CANONICAL = [1 => 1, 2 => 2, 3 => 4, 4 => 5, 5 => 3, 6 => 6, 7 => 7, 8 => 8, 9 => 9, 10 => 10];
+
+    /**
      * @var array<string, array{
      *   title:string, purpose:string, strong_model:bool, max_tokens:int, birth:bool,
      *   yes_no:array<int,float>|string|null, knowledge:array<int,string>, role:string,
@@ -64,7 +90,8 @@ final class JuntraSpreadProfiles
             'knowledge' => [],
             'role' => 'ลูกถามเรื่องเดียวและต้องการ "คำตอบเดียวที่ชัด" — อ่านไพ่ใบนี้เป็นคำตอบของคำถามโดยตรง',
             'rules' => [
-                'ถามใช่/ไม่ใช่ → ตอบใช่หรือไม่ใช่ตั้งแต่คำแรก (ตั้งตรง = ไพ่หนุน · กลับหัว = ยังไม่ใช่/ติดขัดตรงไหน)',
+                // 🔮 (2026-09-21) เดิม "ตั้งตรง = ไพ่หนุน" — ผิดกับไพ่หนัก: หอคอย/ดาบสิบ/ดาบสามตั้งตรงคือ "ไม่ใช่" ในตาราง yes/no ทุกเจ้า
+                'ถามใช่/ไม่ใช่ → ตอบใช่หรือไม่ใช่ตั้งแต่คำแรก ตัดสินจาก "ธรรมชาติของไพ่ใบนี้ × ทิศที่เปิด": ไพ่ดีตั้งตรง = หนุน (ใช่) · ไพ่หนัก (เช่น หอคอย ดาบสิบ ดาบสาม) แม้ตั้งตรงก็คือ "ไม่ใช่/คำเตือน" · กลับหัว = อ่านตามความหมายกลับหัวที่ให้ไว้กับไพ่ใบนี้ (มักเป็นติดขัด/ยังไม่ใช่ตอนนี้)',
                 'ไม่มีคำถาม → บอกพลังหลักของช่วงนี้ของลูกเพียง 1 เรื่องที่เด่นที่สุด',
                 'สั้น คม ไม่อธิบายความหมายไพ่แบบตำรา — พูดเป็นคำตอบของลูกคนนี้',
             ],
@@ -239,10 +266,67 @@ final class JuntraSpreadProfiles
     {
         $yn = $profile['yes_no'] ?? null;
         if ($yn === self::CELTIC) {
-            return array_map('floatval', (array) config('fortune_yes_no_weights.position_multiplier', []));
+            // 🔮 (2026-09-21) ตัวคูณของบอทผูกเลข canonical (3 เป้าหมาย 1.0 · 4 รากฐาน 0.8 · 5 อดีต 0.5)
+            //    แต่ไพ่เว็บมาในเลขของเว็บ — เดิมใบรากฐานของเว็บ (3) ได้น้ำหนักเป้าหมาย และใบเป้าหมาย (5) ได้น้ำหนักอดีต
+            $canonical = array_map('floatval', (array) config('fortune_yes_no_weights.position_multiplier', []));
+            $web = [];
+            foreach (self::CELTIC_WEB_TO_CANONICAL as $webPos => $canonPos) {
+                if (isset($canonical[$canonPos])) {
+                    $web[$webPos] = $canonical[$canonPos];
+                }
+            }
+
+            return $web;
         }
 
         return is_array($yn) ? $yn : null;
+    }
+
+    /**
+     * 🔮 (2026-09-21) ไพ่ Celtic ของเว็บ → เรียงใหม่เป็นเลข canonical ให้คลังตำแหน่งของบอทอ่านได้ถูกบทบาท
+     *
+     * ใช้กับ FortuneKnowledgeService::positionDynamicLines()/elementalDignityLines() เท่านั้น
+     * ('display' ส่งเข้าไปด้วยเพื่อให้บรรทัดที่พิมพ์ออกมายังเป็น "เลขใบของเว็บ" ที่ลูกเห็นใน user message)
+     *
+     * @param  array<int,array<string,mixed>>  $cards  key = เลขใบของเว็บ 1..10
+     * @return array{cards:array<int,array<string,mixed>>, display:array<int,int>}|null
+     *                                                                                 null = ไม่ใช่ 10 ใบเลข 1..10 ครบ (แปลงไม่ได้ → ห้ามใช้คลังตำแหน่ง)
+     */
+    public static function celticToCanonical(array $cards): ?array
+    {
+        $keys = array_keys($cards);
+        sort($keys);
+        if ($keys !== array_keys(self::CELTIC_WEB_TO_CANONICAL)) {
+            return null;
+        }
+
+        $canonical = [];
+        $display = [];
+        foreach (self::CELTIC_WEB_TO_CANONICAL as $webPos => $canonPos) {
+            $canonical[$canonPos] = $cards[$webPos];
+            $display[$canonPos] = $webPos;
+        }
+        ksort($canonical);
+        ksort($display);
+
+        return ['cards' => $canonical, 'display' => $display];
+    }
+
+    /**
+     * บล็อก "วิธีอ่านของแพ็กเกจนี้" (role + rules) — ใช้ทั้งทางโปรไฟล์ (userPrompt) และทางเดิมของแอพ
+     *
+     * 🔮 (2026-09-21) แอพมือถือยิงทางเดิม (ไม่มี spread_key) จึงไม่เคยได้กฎของแพ็กเกจเลย
+     *   (Celtic ใบ 2 = พลังขวางเสมอ · ทางแยกต้องเลือก 1 ทาง · 12 เดือนห้าม "ดี" ทุกเดือน ฯลฯ)
+     *   — แยกออกมาให้ทางเดิมต่อท้ายได้ โดยไม่เอาสเปกหัวข้อ ## (แอพแสดงเป็นข้อความธรรมดา)
+     */
+    public static function readingRules(array $profile): string
+    {
+        $out = ['── วิธีอ่านของแพ็กเกจนี้ ──', $profile['role']];
+        foreach ($profile['rules'] as $r) {
+            $out[] = "• {$r}";
+        }
+
+        return implode("\n", $out);
     }
 
     /**
@@ -302,11 +386,7 @@ final class JuntraSpreadProfiles
         }
 
         $out[] = '';
-        $out[] = '── วิธีอ่านของแพ็กเกจนี้ ──';
-        $out[] = $profile['role'];
-        foreach ($profile['rules'] as $r) {
-            $out[] = "• {$r}";
-        }
+        $out[] = self::readingRules($profile);
 
         foreach (['yes_no', 'birth', 'knowledge'] as $b) {
             if (! empty($blocks[$b])) {
