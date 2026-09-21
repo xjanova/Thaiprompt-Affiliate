@@ -22,25 +22,14 @@ use Illuminate\Support\Facades\Log;
  *   3. `config/thai_astrology_knowledge.php` — กำลังพระเคราะห์ (`period_years`),
  *      จุดเด่นรายดาว (`trait`), ศักดิ์ดาวเกษตร/อุจ/นิจ (`planet_dignity`)
  *
- * แล้วคำนวณเพิ่มอีก 1 ชั้นที่ต้องใช้ตำแหน่งจริงเท่านั้น: **มุมสัมพันธ์** (กุม/เล็ง/ตรีโกณ/จตุโกณ)
+ * แล้วคำนวณเพิ่มอีก 1 ชั้นที่ต้องใช้ตำแหน่งจริงเท่านั้น: **มุมสัมพันธ์** (กุม/โยค/จตุโกณ/ตรีโกณ/เล็ง)
+ *   — หลักมุมตาม GenLotto (นับตามราศี) ผ่าน [[AstroAspects]] ตั้งแต่ 2026-09-21
  *
  * 🎯 ผลลัพธ์ = บล็อกข้อความที่ยัดเข้า prompt ให้ AI "ทำนายจากข้อเท็จจริงชุดนี้เท่านั้น"
  *    ไม่ใช่ให้ AI นึกเอาว่าวันนี้ดาวอะไรเด่น
  */
 class DailyAstroBrief
 {
-    /**
-     * มุมสัมพันธ์ที่ใช้ + ระยะคลาดเคลื่อนที่ยอมรับ (orb องศา)
-     *
-     * ใช้ศัพท์ไทยตามตำรา — กุม/เล็ง/ตรีโกณ/จตุโกณ
-     * orb กว้างกว่าโหรสากลเล็กน้อยเพราะ ephemeris ของเราแม่นระดับราศี (~±0.3°)
-     * และดวงรายวันไม่ต้องการความละเอียดระดับลิปดา
-     *
-     * 🔗 (2026-09-09) ย้ายตารางจริงไป [[AstroAspects]] แล้ว — ที่นี่เหลือแค่ alias
-     *    เพราะเลนที่ลูกค้าจ่ายเงิน (39/99) ต้องใช้ตารางชุดเดียวกันเป๊ะ ไม่ใช่ก๊อปไปอีกชุด
-     */
-    private const ASPECTS = AstroAspects::ASPECTS;
-
     /**
      * ชื่อวันในสัปดาห์ index 0=อาทิตย์ … 6=เสาร์
      *
@@ -321,10 +310,12 @@ class DailyAstroBrief
     {
         $d = config("thai_astrology_knowledge.planet_dignity.{$thName}", []);
 
+        // 🇹🇭 (2026-09-21) + "ประ" ตามตำรา GenLotto — ลำดับ เกษตร → อุจ → นิจ → ประ
         $key = match (true) {
             in_array($sign, $d['rules'] ?? [], true) => 'rules',
             ($d['exalted'] ?? null) === $sign => 'exalted',
             ($d['debilitated'] ?? null) === $sign => 'debilitated',
+            in_array($sign, $d['detriment'] ?? [], true) => 'detriment',
             default => 'neutral',
         };
 
@@ -363,49 +354,38 @@ class DailyAstroBrief
                 continue;
             }
 
-            $diff = abs($this->angleDiff($lordPos['lon'], $positions[$ephKey]['lon']));
-
-            foreach (self::ASPECTS as $aspect) {
-                if (abs($diff - $aspect['angle']) > $aspect['orb']) {
-                    continue;
-                }
-
-                $relation = match (true) {
-                    in_array($key, $friends, true) => 'มิตร',
-                    in_array($key, $enemies, true) => 'ศัตรู',
-                    default => 'กลาง',
-                };
-
-                $out[] = [
-                    'other' => FortuneChartService::PLANETS[$key]['name'] ?? $key,
-                    'other_key' => $key,
-                    'aspect' => $aspect['name'],
-                    'nature' => $aspect['nature'],
-                    'relation' => $relation,
-                    'orb' => round(abs($diff - $aspect['angle']), 1),
-                    'benefic' => $this->isBenefic($aspect['name'], $relation),
-                ];
-                break;   // ดาวคู่หนึ่งจับได้มุมเดียว (มุมใกล้ที่สุดที่เข้าเกณฑ์)
+            // 🇹🇭 (2026-09-21) หลักมุมของ GenLotto ผ่าน AstroAspects — นับตามราศี · 60° = โยค · กุมดี/ร้ายตามศุภเคราะห์
+            //   ดวงรายวันเอาเฉพาะมุม "แน่น" (คลาด ≤ 8°) = แรงกระแทกของวันนั้น — แบบเดียวกับที่ GenLotto
+            //   ใช้เฉพาะมุมแน่นในการให้คะแนนดวง (Horoscope::forSign) · มุมหลวม ๆ ไม่ใช่ข่าวของวัน
+            $hit = AstroAspects::between(
+                (float) $lordPos['lon'],
+                (float) $positions[$ephKey]['lon'],
+                $lordPos['num'] ?? null,
+                $positions[$ephKey]['num'] ?? null
+            );
+            if ($hit === null || ! $hit['tight']) {
+                continue;
             }
+
+            $relation = match (true) {
+                in_array($key, $friends, true) => 'มิตร',
+                in_array($key, $enemies, true) => 'ศัตรู',
+                default => 'กลาง',
+            };
+
+            $out[] = [
+                'other' => FortuneChartService::PLANETS[$key]['name'] ?? $key,
+                'other_key' => $key,
+                'aspect' => $hit['name'],
+                'nature' => $hit['nature'],
+                'relation' => $relation,
+                'orb' => $hit['orb'],
+                'tone' => $hit['tone'],
+                'benefic' => $hit['tone'] === 'ดี',
+            ];
         }
 
         return $out;
-    }
-
-    /**
-     * มุมนี้ให้คุณหรือให้โทษ — ตัดสินจาก "ชนิดมุม × ความสัมพันธ์มิตร/ศัตรู"
-     *
-     * ตรีโกณ/สัมพันธ์ = ให้คุณเสมอ · จตุโกณ/เล็ง = ให้โทษเสมอ
-     * กุม = ขึ้นกับว่าดาวที่มากุมเป็นมิตรหรือศัตรู (กุมมิตรดี กุมศัตรูหนัก)
-     */
-    protected function isBenefic(string $aspectName, string $relation): bool
-    {
-        return match ($aspectName) {
-            'ตรีโกณ', 'สัมพันธ์' => true,
-            'จตุโกณ', 'เล็ง' => false,
-            'กุม' => $relation !== 'ศัตรู',
-            default => true,
-        };
     }
 
     /** ดาวที่พักรอยู่วันนั้น (ชื่อไทย) */
@@ -435,9 +415,11 @@ class DailyAstroBrief
     {
         $score = 3;
 
+        // น้ำหนักเรียงตามตำรา GenLotto (อุจ 1.6 > เกษตร 1.4 > กลาง 1.0 > ประ 0.75 > นิจ 0.5)
         $score += match ($brief['lord']['dignity']['key'] ?? 'neutral') {
             'exalted' => 2,
             'rules' => 1,
+            'detriment' => -1,
             'debilitated' => -2,
             default => 0,
         };
@@ -446,8 +428,13 @@ class DailyAstroBrief
             $score--;
         }
 
+        // มุมดี +1 · มุมร้าย −1 · กุมศุภปนบาป (ผสม) = 0 ตามตำรา GenLotto
         foreach ($brief['aspects'] as $a) {
-            $score += $a['benefic'] ? 1 : -1;
+            $score += match ($a['tone'] ?? ($a['benefic'] ? 'ดี' : 'ร้าย')) {
+                'ดี' => 1,
+                'ร้าย' => -1,
+                default => 0,
+            };
         }
 
         return max(1, min(5, $score));
@@ -585,13 +572,5 @@ class DailyAstroBrief
             'score_hint' => 3,
             'text' => '',
         ];
-    }
-
-    /** ผลต่างมุม 2 ลองจิจูด → ช่วง [-180, 180] */
-    protected function angleDiff(float $a, float $b): float
-    {
-        $diff = fmod($a - $b + 540.0, 360.0) - 180.0;
-
-        return $diff;
     }
 }

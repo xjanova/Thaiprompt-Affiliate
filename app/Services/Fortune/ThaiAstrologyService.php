@@ -1247,9 +1247,10 @@ class ThaiAstrologyService
             return '';
         }
 
-        $out = "   🎯 ดาวจรกระทบดวงกำเนิด (ตัวชี้ *ช่วงเวลา* ตัวจริง — ห้ามอ้างมุมนอกรายการนี้):\n";
+        // 🇹🇭 (2026-09-21) มุมนับตามราศีตามตำรา GenLotto (AstroAspects) · บอกดี/ร้ายตามตำราด้วย
+        $out = "   🎯 ดาวจรกระทบดวงกำเนิด (มุมนับตามราศี — ตัวชี้ *ช่วงเวลา* ตัวจริง — ห้ามอ้างมุมนอกรายการนี้):\n";
         foreach (array_slice($hits, 0, $limit) as $h) {
-            $out .= "      {$h['transit']}(จร) {$h['name']} {$h['natal']}(กำเนิด) คลาด {$h['orb']}° — {$h['nature']}\n";
+            $out .= "      {$h['transit']}(จร) {$h['name']} {$h['natal']}(กำเนิด) คลาด {$h['orb']}° — {$h['nature']} ({$h['tone']})\n";
         }
 
         return $out;
@@ -1275,9 +1276,10 @@ class ThaiAstrologyService
             return '';
         }
 
-        $out = "   📐 มุมสัมพันธ์ในดวงกำเนิด (ใช้อ่านนิสัย/แรงปะทะภายใน — คำนวณจริง):\n";
+        // 🇹🇭 (2026-09-21) มุมนับตามราศีตามตำรา GenLotto — 60° = โยค · กุมดี/ร้ายตามศุภ-บาปเคราะห์
+        $out = "   📐 มุมสัมพันธ์ในดวงกำเนิด (นับตามราศี ใช้อ่านนิสัย/แรงปะทะภายใน — คำนวณจริง):\n";
         foreach (array_slice($aspects, 0, $limit) as $a) {
-            $out .= "      {$a['a']} {$a['name']} {$a['b']} (คลาด {$a['orb']}°) — {$a['nature']}\n";
+            $out .= "      {$a['a']} {$a['name']} {$a['b']} (คลาด {$a['orb']}°) — {$a['nature']} ({$a['tone']})\n";
         }
 
         return $out;
@@ -1638,7 +1640,22 @@ class ThaiAstrologyService
     public function siderealLagnaLongitude(\Carbon\Carbon $dt, float $lat = self::DEFAULT_LAT, float $lon = self::DEFAULT_LON): ?float
     {
         $eph = new PlanetEphemeris;
-        $jdUT = $eph->julianDay($dt) - 7.0 / 24.0; // Thai → UT
+
+        return $this->siderealLagnaAtJd($eph->julianDay($dt) - 7.0 / 24.0, $lat, $lon, $eph); // Thai → UT
+    }
+
+    /**
+     * 🌀 ลองจิจูดลัคนานิรายนะจาก JD (UT) ตรง ๆ — สูตรเดียวกับ siderealLagnaLongitude()
+     *
+     * แยกออกมา (2026-09-21) ให้ตัวหาฤกษ์ ThaiRuekYam ไล่หาเวลาลัคนาเปลี่ยนราศีทุก 10 นาทีได้
+     * โดยไม่ต้องสร้าง Carbon ทุกจุด · สูตรมีที่นี่ที่เดียว (ห้ามก็อปไปเขียนซ้ำในคลาสอื่น)
+     *
+     * @param  float  $jdUT  Julian Day (UT)
+     * @param  PlanetEphemeris|null  $eph  ส่งตัวเดิมมาใช้ซ้ำได้ (ไล่หลายร้อยจุดต่อวัน)
+     */
+    public function siderealLagnaAtJd(float $jdUT, float $lat = self::DEFAULT_LAT, float $lon = self::DEFAULT_LON, ?PlanetEphemeris $eph = null): float
+    {
+        $eph ??= new PlanetEphemeris;
 
         // Greenwich Mean Sidereal Time (Meeus ch.12 eq. 12.4 — แม่นแม้วันที่ห่าง J2000)
         // แยก integer day + fractional hour เพื่อกัน float precision loss
@@ -1719,7 +1736,10 @@ class ThaiAstrologyService
     }
 
     /**
-     * 🌟 ระดับกำลังของดาวในราศี (เกษตร/อุจ/นิจ/กลาง)
+     * 🌟 ระดับกำลังของดาวในราศี (เกษตร/อุจ/นิจ/ประ/กลาง)
+     *
+     * 🇹🇭 (2026-09-21) เพิ่ม "ประ" ตามตำรา GenLotto `ThaiTables::dignity()` — ลำดับเดียวกัน:
+     *    เกษตร → อุจ → นิจ → ประ (พุธในมีนเป็นทั้งนิจและประ ⇒ นิจชนะ)
      */
     public function dignityOf(string $planet, string $sign): string
     {
@@ -1736,6 +1756,9 @@ class ThaiAstrologyService
         }
         if ($sign === ($dig['debilitated'] ?? '')) {
             return (string) ($label['debilitated'] ?? '');
+        }
+        if (in_array($sign, (array) ($dig['detriment'] ?? []), true)) {
+            return (string) ($label['detriment'] ?? '');
         }
 
         return (string) ($label['neutral'] ?? '');
@@ -2769,6 +2792,8 @@ class ThaiAstrologyService
      * คำนวณดาวเคราะห์ประจำวันเกิดตามหลักโหราศาสตร์ไทย (เจ้าชนะ)
      *
      * ⚠️ sync กับ FortuneAIService::getPlanetByDayOfWeek (ดู class doc)
+     * 🇹🇭 (2026-09-21) ธาตุ + สีหลักยึดตำรา GenLotto `ThaiTables::CHAOCHANA`:
+     *    พฤหัสบดี = ลม (เดิมน้ำ) · เสาร์ = ดิน (เดิมไฟ) · จันทร์สีหลักเหลือง (เดิมขาว)
      *
      * @param  int  $dayOfWeek  0=อาทิตย์, 1=จันทร์, ...6=เสาร์
      * @return array{planet:string, element:string, friends:string, enemies:string, lucky_color:string, unlucky_color:string, lucky_number:string, lucky_days:string, unlucky_days:string, personality:string}
@@ -2793,7 +2818,7 @@ class ThaiAstrologyService
                 'element' => 'ธาตุน้ำ',
                 'friends' => 'ดาวพุธ, ดาวศุกร์',
                 'enemies' => 'ราหู, ดาวเสาร์',
-                'lucky_color' => 'ขาว, ครีม, เงิน',
+                'lucky_color' => 'เหลือง, ครีม, ขาว',
                 'unlucky_color' => 'ดำ, น้ำเงินเข้ม',
                 'lucky_number' => '2, 5, 7',
                 'lucky_days' => 'วันพุธ, วันศุกร์',
@@ -2826,7 +2851,7 @@ class ThaiAstrologyService
             ],
             4 => [ // พฤหัสบดี
                 'planet' => 'ดาวพฤหัสบดี (♃)',
-                'element' => 'ธาตุน้ำ',
+                'element' => 'ธาตุลม',
                 'friends' => 'ดาวอาทิตย์, ดาวอังคาร',
                 'enemies' => 'ราหู, ดาวเสาร์',
                 'lucky_color' => 'ส้ม, เหลือง, ทอง',
@@ -2850,7 +2875,7 @@ class ThaiAstrologyService
             ],
             6 => [ // เสาร์
                 'planet' => 'ดาวเสาร์ (♄)',
-                'element' => 'ธาตุไฟ',
+                'element' => 'ธาตุดิน',
                 // 🔯 (2026-09-03) เดิม 'ราหู, ดาวพฤหัสบดี' → ขัดกับแถววันพฤหัสบดีที่ระบุ
                 //    เสาร์เป็น "ศัตรู" · คู่เดียวในตารางที่ฝั่งหนึ่งว่ามิตร อีกฝั่งว่าศัตรู
                 //    แก้เป็นศุกร์ (ศุกร์เป็นกลางกับเสาร์อยู่แล้ว จึงไม่สร้างข้อขัดแย้งใหม่)

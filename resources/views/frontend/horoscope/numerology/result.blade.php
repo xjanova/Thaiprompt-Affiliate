@@ -33,13 +33,18 @@
             <div class="text-purple-300/60 text-sm mt-1">{{ $numberMeaning['meaning'] }}</div>
 
             {{-- ธาตุ + สี --}}
+            {{-- เลข 9 (เกตุ) ไม่มีธาตุ/สีตามตำรา → ไม่แสดงป้ายว่าง --}}
             <div class="flex justify-center gap-3 mt-4">
-                <span class="px-3 py-1 bg-white/10 rounded-full text-xs text-purple-200/80">
-                    ธาตุ{{ $numberMeaning['element'] }}
-                </span>
-                <span class="px-3 py-1 bg-white/10 rounded-full text-xs text-purple-200/80">
-                    สี{{ $numberMeaning['color'] }}
-                </span>
+                @if(($numberMeaning['element'] ?? '') !== '')
+                    <span class="px-3 py-1 bg-white/10 rounded-full text-xs text-purple-200/80">
+                        ธาตุ{{ $numberMeaning['element'] }}
+                    </span>
+                @endif
+                @if(($numberMeaning['color'] ?? '') !== '')
+                    <span class="px-3 py-1 bg-white/10 rounded-full text-xs text-purple-200/80">
+                        สี{{ $numberMeaning['color'] }}
+                    </span>
+                @endif
             </div>
         </div>
 

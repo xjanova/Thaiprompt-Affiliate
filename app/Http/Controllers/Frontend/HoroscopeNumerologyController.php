@@ -60,6 +60,11 @@ class HoroscopeNumerologyController extends Controller
             'question' => 'nullable|string|max:500',
         ]);
 
+        // ชื่อต้องมีตัวอักษรที่ตำราเลขศาสตร์ให้ค่า (ไทย/อังกฤษ) — "123" ผลรวมเป็น 0 แล้วได้เลข 9 มั่ว ๆ
+        if (\App\Services\Fortune\ThaiNumerology::name((string) $request->name)['digits'] === []) {
+            return response()->json(['success' => false, 'message' => 'กรุณาใส่ชื่อเป็นตัวอักษรไทยหรืออังกฤษ'], 422);
+        }
+
         try {
             $reading = $this->numerologyService->analyzeName(
                 $request->name,
@@ -185,7 +190,8 @@ class HoroscopeNumerologyController extends Controller
                     str_pad(($rootNumber * 7) % 100, 2, '0', STR_PAD_LEFT),
                     str_pad(($rootNumber * 11 + rand(1, 9)) % 100, 2, '0', STR_PAD_LEFT),
                 ],
-                'lucky_colors' => [$numberMeaning['color']],
+                // เลข 9 (เกตุ) ไม่มีสีตามตำรา → ไม่เก็บสีว่าง
+                'lucky_colors' => array_values(array_filter([$numberMeaning['color']])),
                 'session_id' => session()->getId(),
                 'ip_address' => request()->ip(),
                 'status' => 'generated',

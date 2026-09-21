@@ -1406,6 +1406,37 @@ trait ProSessionTrait
     }
 
     /**
+     * 📅 (2026-09-21) บล็อกปฏิทินโหรไทยเมื่อลูกค้าถามฤกษ์ในห้องคุยต่อ (บิล 39 + คุยต่อหลังบทสรุป 99)
+     *
+     * ตัดสินจาก "ข้อความลูกค้าเทิร์นนี้" เท่านั้น · หางานที่คุยค้างจากข้อความลูกค้า 2 เทิร์นก่อน
+     * (เช่น เทิร์นก่อน "จะออกรถเดือนหน้า" → เทิร์นนี้ "วันไหนดีคะ") — ห้ามใช้คำตอบ AI เป็นตัวตรวจ
+     *
+     * @return string '' = ไม่ได้ถามฤกษ์ / คำนวณไม่ได้
+     */
+    protected function proSessionAuspiciousBlock(FortuneReading $reading, string $messageText): string
+    {
+        try {
+            $userTurns = [];
+            $history = $reading->getConversationState('pro_session_history', []) ?: [];
+            foreach (array_slice(is_array($history) ? $history : [], -6) as $turn) {
+                if (($turn['role'] ?? '') === 'user') {
+                    $userTurns[] = (string) ($turn['content'] ?? '');
+                }
+            }
+            $recentText = implode(' ', array_slice($userTurns, -2));
+
+            $hour = $reading->birthTimeIsKnown() ? (float) $reading->birthHourFloat() : null;
+            $person = AuspiciousTimingDirective::personFromBirth($reading->birth_date, $hour);
+
+            return (new AuspiciousTimingDirective)->forCustomerText($messageText, $recentText, $person);
+        } catch (\Throwable $e) {
+            Log::warning('ProSession: ปฏิทินโหรไทยล้ม', ['reading_id' => $reading->id, 'error' => $e->getMessage()]);
+
+            return '';
+        }
+    }
+
+    /**
      * AI ตอบใน Pro Session — ใช้ Pro key (sensitive purpose) + custom system prompt
      */
     protected function generateProSessionAnswer(FortuneReading $reading, string $messageText, ?array $userProfile): ?array
@@ -1457,6 +1488,10 @@ trait ProSessionTrait
 
             // 🤫 (2026-09-02) เจ้าชะตากำลังเล่ายาว ยังไม่จบ → ตอบสั้นแบบรับฟัง ('' = ไม่เข้าเกณฑ์)
             $systemPrompt .= $this->qaBriefReplyDirective($reading);
+
+            // 📅 (2026-09-21) ลูกค้าถามฤกษ์ ("ออกรถวันไหนดี") → ป้อนปฏิทินโหรไทยที่คำนวณจริง ('' = ไม่ได้ถาม)
+            //   ต้องต่อก่อนสร้าง $systemPromptRag ด้านล่าง — เส้น fallback จะได้เห็นบล็อกเดียวกัน
+            $systemPrompt .= $this->proSessionAuspiciousBlock($reading, $messageText);
 
             // Build history
             $history = $reading->getConversationState('pro_session_history', []) ?: [];

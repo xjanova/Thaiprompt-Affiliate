@@ -54,7 +54,7 @@
                 {{-- ชื่อ --}}
                 <div x-show="activeTab === 'name'" x-transition>
                     <h2 class="text-white text-xl font-bold mb-1 flex items-center gap-2">📝 วิเคราะห์ชื่อ</h2>
-                    <p class="text-purple-300/50 text-sm mb-5">ใส่ชื่อภาษาไทย จะแปลงพยัญชนะเป็นตัวเลขตามหลักเลขศาสตร์</p>
+                    <p class="text-purple-300/50 text-sm mb-5">ใส่ชื่อภาษาไทย จะแปลงพยัญชนะ สระ และวรรณยุกต์เป็นตัวเลขตามหลักเลขศาสตร์</p>
                     <input type="text" x-model="formData.name"
                            placeholder="เช่น สมชาย สุขใจ"
                            class="w-full px-5 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-purple-300/30 text-lg focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all">
@@ -142,9 +142,12 @@
 
                     {{-- ธาตุ + สี --}}
                     <div class="flex justify-center gap-3 mt-4">
+                        {{-- เลข 9 (เกตุ) ไม่มีธาตุ/สีตามตำรา → ไม่แสดงป้ายว่าง --}}
                         <span class="px-3 py-1 bg-white/10 rounded-full text-xs text-purple-200/80"
+                              x-show="result?.number_meaning?.element"
                               x-text="'ธาตุ' + result?.number_meaning?.element"></span>
                         <span class="px-3 py-1 bg-white/10 rounded-full text-xs text-purple-200/80"
+                              x-show="result?.number_meaning?.color"
                               x-text="'สี' + result?.number_meaning?.color"></span>
                     </div>
                 </div>
@@ -218,7 +221,9 @@
                     <div class="text-3xl font-black text-emerald-400 mb-1">{{ $num }}</div>
                     <div class="text-white text-xs font-bold mb-1">{{ $info['name'] }}</div>
                     <div class="text-purple-300/40 text-[10px] leading-tight">{{ Str::limit($info['meaning'], 20) }}</div>
-                    <div class="mt-1.5 px-1.5 py-0.5 bg-white/5 rounded text-[9px] text-purple-300/50">สี{{ $info['color'] }}</div>
+                    @if(($info['color'] ?? '') !== '')
+                        <div class="mt-1.5 px-1.5 py-0.5 bg-white/5 rounded text-[9px] text-purple-300/50">สี{{ $info['color'] }}</div>
+                    @endif
                 </div>
             @endforeach
         </div>
@@ -230,7 +235,7 @@
             <h2 class="text-lg font-bold text-white/60 mb-3">เลขศาสตร์ — วิเคราะห์ตัวเลขดวงชะตา</h2>
             <p class="text-purple-300/40 text-xs leading-relaxed">
                 เลขศาสตร์ออนไลน์{{ ($freeFortuneEnabled ?? true) ? 'ฟรี ' : ' ' }}วิเคราะห์ชื่อ เบอร์โทรศัพท์ ทะเบียนรถ เลขบัตรประชาชน วันเกิด
-                ด้วยหลักเลขศาสตร์ไทย แปลงพยัญชนะเป็นตัวเลข คำนวณเลขชะตา ดาวประจำตัว ธาตุ สีมงคล เลขมงคล
+                ด้วยหลักเลขศาสตร์ไทย แปลงพยัญชนะ สระ และวรรณยุกต์เป็นตัวเลข คำนวณเลขชะตา ดาวประจำตัว ธาตุ สีมงคล เลขมงคล
                 พร้อมคำวิเคราะห์เชิงลึกจาก AI ครอบคลุมทุกด้านของชีวิต
             </p>
         </div>
