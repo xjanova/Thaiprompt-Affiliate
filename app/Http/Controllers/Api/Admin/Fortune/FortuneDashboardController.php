@@ -109,7 +109,7 @@ class FortuneDashboardController extends Controller
         ];
 
         try {
-            $stats['monthly_revenue_thb'] = (float) FortuneReading::where('is_paid', true)
+            $stats['monthly_revenue_thb'] = (float) FortuneReading::withoutJuntra()->where('is_paid', true)
                 ->where('created_at', '>=', $start)
                 ->sum('amount_paid');
 

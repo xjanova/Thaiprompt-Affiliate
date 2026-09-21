@@ -244,11 +244,7 @@ class FortuneCommission extends Model
      */
     public function approve(): bool
     {
-        if ($this->status !== self::STATUS_PENDING) {
-            return false;
-        }
-
-        return $this->update([
+        return $this->transitionFromPending([
             'status' => self::STATUS_APPROVED,
             'approved_at' => now(),
         ]);
@@ -257,7 +253,7 @@ class FortuneCommission extends Model
     /**
      * ปฏิเสธคอมมิชชั่น (pending → rejected)
      *
-     * @param string|null $reason เหตุผลที่ปฏิเสธ
+     * @param  string|null  $reason  เหตุผลที่ปฏิเสธ
      * @return bool สำเร็จหรือไม่
      */
     public function reject(?string $reason = null): bool
@@ -275,13 +271,35 @@ class FortuneCommission extends Model
             $data['notes'] = $reason;
         }
 
-        return $this->update($data);
+        return $this->transitionFromPending($data);
+    }
+
+    /**
+     * 🔒 (2026-09-21) เปลี่ยนสถานะเฉพาะตอนแถวยังเป็น pending จริงใน DB
+     *
+     * เดิมเช็คสถานะจากสำเนาในหน่วยความจำแล้วค่อย update — ชนกับการกดจ่าย (payOut) จาก
+     * หลังบ้านอีกที่ (แม่หมอ/จันทรา) แล้วพลิกแถวที่จ่ายแล้วกลับเป็น approved (จ่ายซ้ำได้)
+     * หรือเป็น rejected ทั้งที่เงินอยู่ในกระเป๋า → ให้ UPDATE ... WHERE status = pending ตัดสินแทน
+     */
+    protected function transitionFromPending(array $data): bool
+    {
+        $changed = static::whereKey($this->getKey())
+            ->where('status', self::STATUS_PENDING)
+            ->update($data);
+
+        if ($changed !== 1) {
+            return false;
+        }
+
+        $this->refresh();
+
+        return true;
     }
 
     /**
      * จ่ายคอมมิชชั่นแล้ว (approved/pending → paid)
      *
-     * @param int|null $walletTransactionId ID ของ wallet transaction
+     * @param  int|null  $walletTransactionId  ID ของ wallet transaction
      * @return bool สำเร็จหรือไม่
      */
     public function markPaid(?int $walletTransactionId = null): bool
@@ -307,7 +325,7 @@ class FortuneCommission extends Model
     /**
      * คำนวณสถิติคอมมิชชั่นดูดวง
      *
-     * @param array $filters ตัวกรอง (date_from, date_to, status, level)
+     * @param  array  $filters  ตัวกรอง (date_from, date_to, status, level)
      * @return array สถิติรวม
      */
     public static function getStats(array $filters = []): array

@@ -165,6 +165,10 @@ class FortuneBillingController extends Controller
             return back()->with('error', 'บิลนี้ชำระเงินแล้ว');
         }
 
+        if ($reading->isJuntraBill()) {
+            return back()->with('error', FortuneReading::JUNTRA_PAID_ELSEWHERE);
+        }
+
         // อัพเดท amount_paid + sender_info ก่อน (processPaymentConfirmed จะเรียก confirmPayment เอง)
         $reading->update([
             'amount_paid' => $request->amount,
@@ -294,6 +298,7 @@ class FortuneBillingController extends Controller
         $dateTo = $request->input('date_to');
 
         $readings = FortuneReading::with(['user', 'smsNotification'])
+            ->withoutJuntra() // 🌙 จันทราเก็บเงินเอง — ไม่ใช่รายได้ของแม่หมอ
             ->where('is_paid', true)
             ->when($dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $dateFrom))
             ->when($dateTo, fn ($q) => $q->whereDate('created_at', '<=', $dateTo))
@@ -383,35 +388,35 @@ class FortuneBillingController extends Controller
             ->when($dateTo, fn ($qq) => $qq->whereDate('created_at', '<=', $dateTo));
 
         // รายได้ในช่วงที่เลือก
-        $periodRevenue = $inPeriod(FortuneReading::where('is_paid', true))
+        $periodRevenue = $inPeriod(FortuneReading::withoutJuntra()->where('is_paid', true))
             ->sum('amount_paid');
 
-        $periodCount = $inPeriod(FortuneReading::where('is_paid', true))
+        $periodCount = $inPeriod(FortuneReading::withoutJuntra()->where('is_paid', true))
             ->count();
 
         // รายได้วันนี้
-        $todayRevenue = FortuneReading::where('is_paid', true)
+        $todayRevenue = FortuneReading::withoutJuntra()->where('is_paid', true)
             ->whereDate('paid_at', today())
             ->sum('amount_paid');
 
-        $todayCount = FortuneReading::where('is_paid', true)
+        $todayCount = FortuneReading::withoutJuntra()->where('is_paid', true)
             ->whereDate('paid_at', today())
             ->count();
 
         // รายได้เดือนนี้
-        $monthRevenue = FortuneReading::where('is_paid', true)
+        $monthRevenue = FortuneReading::withoutJuntra()->where('is_paid', true)
             ->whereMonth('paid_at', now()->month)
             ->whereYear('paid_at', now()->year)
             ->sum('amount_paid');
 
-        $monthCount = FortuneReading::where('is_paid', true)
+        $monthCount = FortuneReading::withoutJuntra()->where('is_paid', true)
             ->whereMonth('paid_at', now()->month)
             ->whereYear('paid_at', now()->year)
             ->count();
 
         // รายได้ทั้งหมด
-        $totalRevenue = FortuneReading::where('is_paid', true)->sum('amount_paid');
-        $totalCount = FortuneReading::where('is_paid', true)->count();
+        $totalRevenue = FortuneReading::withoutJuntra()->where('is_paid', true)->sum('amount_paid');
+        $totalCount = FortuneReading::withoutJuntra()->where('is_paid', true)->count();
 
         // บิลลอย
         $floatingCount = FortuneReading::where('is_floating', true)->count();
@@ -424,7 +429,7 @@ class FortuneBillingController extends Controller
 
         // อัตราส่วน paid vs free
         $totalReadings = $inPeriod(FortuneReading::query())->count();
-        $paidReadings = $inPeriod(FortuneReading::where('is_paid', true))->count();
+        $paidReadings = $inPeriod(FortuneReading::withoutJuntra()->where('is_paid', true))->count();
         $conversionRate = $totalReadings > 0 ? round(($paidReadings / $totalReadings) * 100, 1) : 0;
 
         // เฉลี่ยต่อบิล
@@ -472,11 +477,11 @@ class FortuneBillingController extends Controller
             $date = $startDate->copy()->addDays($i);
             $dateStr = $date->format('Y-m-d');
 
-            $revenue = FortuneReading::where('is_paid', true)
+            $revenue = FortuneReading::withoutJuntra()->where('is_paid', true)
                 ->whereDate('paid_at', $dateStr)
                 ->sum('amount_paid');
 
-            $count = FortuneReading::where('is_paid', true)
+            $count = FortuneReading::withoutJuntra()->where('is_paid', true)
                 ->whereDate('paid_at', $dateStr)
                 ->count();
 

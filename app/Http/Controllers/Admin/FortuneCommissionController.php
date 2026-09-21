@@ -7,11 +7,9 @@ use App\Models\FortuneCommission;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\User;
-use App\Models\Wallet;
-use App\Models\WalletTransaction;
+use App\Services\FortuneCommissionAdminService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -140,19 +138,7 @@ class FortuneCommissionController extends Controller
             'commission_ids.*' => 'exists:fortune_commissions,id',
         ]);
 
-        $count = 0;
-        $commissions = FortuneCommission::whereIn('id', $validated['commission_ids'])->get();
-
-        foreach ($commissions as $commission) {
-            if ($commission->approve()) {
-                $count++;
-            }
-        }
-
-        Log::info('FortuneCommission Admin: อนุมัติ bulk', [
-            'count' => $count,
-            'ids' => $validated['commission_ids'],
-        ]);
+        $count = app(FortuneCommissionAdminService::class)->approve($validated['commission_ids']);
 
         return response()->json([
             'success' => true,
@@ -170,7 +156,7 @@ class FortuneCommissionController extends Controller
             'reason' => 'nullable|string|max:500',
         ]);
 
-        $result = $commission->reject($validated['reason'] ?? null);
+        $result = app(FortuneCommissionAdminService::class)->reject($commission, $validated['reason'] ?? null);
 
         if (! $result) {
             return response()->json([
@@ -179,11 +165,6 @@ class FortuneCommissionController extends Controller
             ], 422);
         }
 
-        Log::info('FortuneCommission Admin: ปฏิเสธ', [
-            'commission_id' => $commission->id,
-            'reason' => $validated['reason'] ?? '-',
-        ]);
-
         return response()->json([
             'success' => true,
             'message' => 'ปฏิเสธคอมมิชชั่นสำเร็จ',
@@ -191,7 +172,7 @@ class FortuneCommissionController extends Controller
     }
 
     /**
-     * ปรับจำนวนเงินคอมมิชชั่น
+     * ปรับจำนวนเงินคอมมิชชั่น — เฉพาะรายการที่ยังไม่จ่าย (ดู FortuneCommissionAdminService::adjust)
      */
     public function adjustAmount(Request $request, FortuneCommission $commission): JsonResponse
     {
@@ -203,19 +184,10 @@ class FortuneCommissionController extends Controller
         $oldAmount = $commission->amount;
         $newAmount = (float) $validated['amount'];
 
-        $commission->update([
-            'amount' => $newAmount,
-            'notes' => ($commission->notes ? $commission->notes."\n" : '')
-                ."[ปรับจำนวน] {$oldAmount} → {$newAmount} บาท"
-                .($validated['reason'] ? " เหตุผล: {$validated['reason']}" : ''),
-        ]);
-
-        Log::info('FortuneCommission Admin: ปรับจำนวนเงิน', [
-            'commission_id' => $commission->id,
-            'old_amount' => $oldAmount,
-            'new_amount' => $newAmount,
-            'reason' => $validated['reason'] ?? '-',
-        ]);
+        $error = app(FortuneCommissionAdminService::class)->adjust($commission, $newAmount, $validated['reason'] ?? null);
+        if ($error !== null) {
+            return response()->json(['success' => false, 'message' => $error], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -224,10 +196,7 @@ class FortuneCommissionController extends Controller
     }
 
     /**
-     * จ่ายคอมมิชชั่นเข้า wallet (bulk)
-     *
-     * ใช้ pattern เดียวกับ FortuneCommissionService::depositToWallet()
-     * (bypass WalletService, สร้าง Wallet + WalletTransaction ตรง)
+     * จ่ายคอมมิชชั่นเข้า wallet (bulk) — ล็อกแถว+กระเป๋า (ดู FortuneCommissionAdminService::payOut)
      */
     public function payOut(Request $request): JsonResponse
     {
@@ -236,88 +205,8 @@ class FortuneCommissionController extends Controller
             'commission_ids.*' => 'exists:fortune_commissions,id',
         ]);
 
-        $count = 0;
-        $errors = [];
-
-        $commissions = FortuneCommission::with('user')
-            ->whereIn('id', $validated['commission_ids'])
-            ->whereIn('status', [FortuneCommission::STATUS_PENDING, FortuneCommission::STATUS_APPROVED])
-            ->get();
-
-        foreach ($commissions as $commission) {
-            try {
-                DB::transaction(function () use ($commission, &$count) {
-                    $userId = $commission->user_id;
-                    $amount = (float) $commission->amount;
-
-                    if ($amount <= 0) {
-                        return;
-                    }
-
-                    // หา wallet หรือสร้างใหม่ (bypass WalletService)
-                    $wallet = Wallet::where('user_id', $userId)->first();
-                    if (! $wallet) {
-                        $wallet = Wallet::create([
-                            'user_id' => $userId,
-                            'balance' => 0,
-                            'currency' => 'THB',
-                            'status' => 'active',
-                        ]);
-                        $wallet->refresh();
-                    }
-
-                    if ($wallet->status !== 'active') {
-                        throw new \Exception("Wallet ไม่ active สำหรับ user {$userId}");
-                    }
-
-                    $balanceBefore = (float) $wallet->balance;
-                    $balanceAfter = $balanceBefore + $amount;
-
-                    // สร้าง WalletTransaction
-                    $transaction = WalletTransaction::create([
-                        'wallet_id' => $wallet->id,
-                        'user_id' => $wallet->user_id,
-                        'type' => 'deposit',
-                        'amount' => $amount,
-                        'balance_before' => $balanceBefore,
-                        'balance_after' => $balanceAfter,
-                        'currency' => $wallet->currency,
-                        'description' => "จ่ายคอมมิชชั่นดูดวง L{$commission->level} #{$commission->id} (Admin)",
-                        'reference_type' => FortuneCommission::class,
-                        'reference_id' => $commission->id,
-                        'status' => 'completed',
-                        'metadata' => [
-                            'commission_id' => $commission->id,
-                            'level' => $commission->level,
-                            'mode' => 'fortune_commission_admin_payout',
-                        ],
-                        'completed_at' => now(),
-                    ]);
-
-                    // อัพเดท wallet balance
-                    $wallet->update([
-                        'balance' => $balanceAfter,
-                        'total_income' => (float) ($wallet->total_income ?? 0) + $amount,
-                        'last_transaction_at' => now(),
-                    ]);
-
-                    // อัพเดท commission status
-                    $commission->update([
-                        'status' => FortuneCommission::STATUS_PAID,
-                        'paid_at' => now(),
-                        'wallet_transaction_id' => $transaction->id,
-                    ]);
-
-                    $count++;
-                });
-            } catch (\Exception $e) {
-                $errors[] = "Commission #{$commission->id}: {$e->getMessage()}";
-                Log::error('FortuneCommission Admin: จ่ายล้มเหลว', [
-                    'commission_id' => $commission->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        ['count' => $count, 'errors' => $errors] = app(FortuneCommissionAdminService::class)
+            ->payOut($validated['commission_ids']);
 
         $message = "จ่ายเงิน {$count} รายการสำเร็จ";
         if (count($errors) > 0) {
@@ -412,6 +301,10 @@ class FortuneCommissionController extends Controller
             'fortune_level2_enabled' => 'required|boolean',
             'fortune_level2_commission_type' => 'required|in:fixed,percent',
             'fortune_level2_commission_amount' => 'required|numeric|min:0',
+            // 🌙 บิลจากเว็บ/แอพจันทรา — % ของยอดบิล
+            'fortune_juntra_l1_percent' => 'sometimes|numeric|min:0|max:100',
+            'fortune_juntra_l2_enabled' => 'sometimes|boolean',
+            'fortune_juntra_l2_percent' => 'sometimes|numeric|min:0|max:100',
         ]);
 
         $settings = FortuneTellingSetting::first();
@@ -422,9 +315,7 @@ class FortuneCommissionController extends Controller
             ], 404);
         }
 
-        $settings->update($validated);
-
-        Log::info('FortuneCommission Admin: อัพเดทการตั้งค่า', $validated);
+        app(FortuneCommissionAdminService::class)->updateRates($settings, $validated);
 
         return response()->json([
             'success' => true,
@@ -434,42 +325,22 @@ class FortuneCommissionController extends Controller
 
     /**
      * สร้างคอมมิชชั่นด้วยตนเอง (Manual)
+     *
+     * 🔧 (2026-09-21) บิลบังคับ — fortune_commissions.fortune_reading_id เป็น NOT NULL
+     *   เดิมปล่อยว่างได้แล้วไปพังตอน insert (strict mode)
      */
     public function createManual(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'from_user_id' => 'required|exists:users,id',
-            'fortune_reading_id' => 'nullable|exists:fortune_readings,id',
+            'fortune_reading_id' => 'required|exists:fortune_readings,id',
             'level' => 'required|in:1,2',
             'amount' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string|max:500',
         ]);
 
-        // หา MLM member IDs (ถ้ามี)
-        $mlmMemberId = MlmMember::where('user_id', $validated['user_id'])->value('id');
-        $fromMlmMemberId = MlmMember::where('user_id', $validated['from_user_id'])->value('id');
-
-        $commission = FortuneCommission::create([
-            'user_id' => $validated['user_id'],
-            'from_user_id' => $validated['from_user_id'],
-            'fortune_reading_id' => $validated['fortune_reading_id'] ?? null,
-            'mlm_member_id' => $mlmMemberId,
-            'from_mlm_member_id' => $fromMlmMemberId,
-            'level' => (int) $validated['level'],
-            'commission_type' => 'fixed',
-            'commission_rate' => (float) $validated['amount'],
-            'amount' => (float) $validated['amount'],
-            'reading_price' => 0,
-            'status' => FortuneCommission::STATUS_PENDING,
-            'notes' => '[สร้างด้วยมือ] '.($validated['notes'] ?? 'สร้างโดย Admin'),
-        ]);
-
-        Log::info('FortuneCommission Admin: สร้างด้วยมือ', [
-            'commission_id' => $commission->id,
-            'user_id' => $validated['user_id'],
-            'amount' => $validated['amount'],
-        ]);
+        $commission = app(FortuneCommissionAdminService::class)->createManual($validated);
 
         return response()->json([
             'success' => true,
@@ -626,46 +497,6 @@ class FortuneCommissionController extends Controller
      */
     private function buildQuery(Request $request)
     {
-        $query = FortuneCommission::query();
-
-        // กรองตามสถานะ
-        $status = $request->input('status');
-        if ($status && $status !== 'all') {
-            $query->where('status', $status);
-        }
-
-        // กรองตามชั้น
-        $level = $request->input('level');
-        if ($level && $level !== 'all') {
-            $query->where('level', (int) $level);
-        }
-
-        // กรองตามวันที่
-        $dateFrom = $request->input('date_from');
-        if ($dateFrom) {
-            $query->whereDate('created_at', '>=', $dateFrom);
-        }
-
-        $dateTo = $request->input('date_to');
-        if ($dateTo) {
-            $query->whereDate('created_at', '<=', $dateTo);
-        }
-
-        // ค้นหาชื่อ/email
-        $search = $request->input('search');
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('user', function ($userQ) use ($search) {
-                    $userQ->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                })
-                    ->orWhereHas('fromUser', function ($userQ) use ($search) {
-                        $userQ->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        return $query;
+        return app(FortuneCommissionAdminService::class)->query($this->getFilters($request));
     }
 }

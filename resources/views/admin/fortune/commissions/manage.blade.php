@@ -126,6 +126,35 @@
                         Level 2 ปิดอยู่ — ไม่จ่ายคอมมิชชั่นชั้นหลาน
                     </div>
                 </div>
+
+                {{-- 🌙 บิลจากเว็บ/แอพจันทรา — % ของยอดบิล (ราคา 9-129฿ อัตราคงที่จะจ่ายเกินราคาไพ่ถูก) --}}
+                <div class="tp-tile" style="padding:16px;">
+                    <h4 style="font-weight:700;font-size:14px;margin:0 0 4px;color:var(--ink);">
+                        <i class="fas fa-moon" style="color:#e0b85c;margin-right:6px;"></i>บิลเว็บ/แอพจันทรา
+                    </h4>
+                    <div class="tp-muted" style="font-size:12px;margin-bottom:12px;">คิดเป็น % ของยอดบิล — บิล 99฿ ที่ 10% = 9.90฿</div>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div>
+                            <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">สายตรง (%)</label>
+                            <div class="tp-well tp-input">
+                                <input type="number" step="0.01" min="0" max="100"
+                                       x-model="settingsForm.fortune_juntra_l1_percent"
+                                       style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                            </div>
+                        </div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer;">
+                            <input type="checkbox" x-model="settingsForm.fortune_juntra_l2_enabled"> จ่ายชั้นหลานด้วย
+                        </label>
+                        <div x-show="settingsForm.fortune_juntra_l2_enabled">
+                            <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">ชั้นหลาน (%)</label>
+                            <div class="tp-well tp-input">
+                                <input type="number" step="0.01" min="0" max="100"
+                                       x-model="settingsForm.fortune_juntra_l2_percent"
+                                       style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div style="padding:0 20px 20px;display:flex;justify-content:flex-end;">
                 <button @click="saveSettings()" :disabled="savingSettings" class="tp-btn tp-btn-primary">
@@ -487,11 +516,11 @@
                     </div>
                 </div>
                 <div>
-                    <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">บิลดูดวง # (ไม่บังคับ)</label>
+                    <label class="tp-muted" style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;">บิลดูดวง # (บังคับ — ค่าแนะนำต้องผูกกับบิล)</label>
                     <div class="tp-well tp-input">
                         <input type="number" x-model="createForm.fortune_reading_id"
                                style="width:100%;background:transparent;border:0;outline:0;color:var(--ink);font-size:14px;"
-                               placeholder="ID บิลดูดวง (ถ้ามี)">
+                               placeholder="ID บิลดูดวง">
                     </div>
                 </div>
                 <div>
@@ -556,6 +585,9 @@ function commissionManager() {
             fortune_level2_enabled: {{ ($settings?->isFortuneLevel2Enabled() ?? true) ? 'true' : 'false' }},
             fortune_level2_commission_type: '{{ $settings->fortune_level2_commission_type ?? "fixed" }}',
             fortune_level2_commission_amount: '{{ $settings->fortune_level2_commission_amount ?? 5 }}',
+            fortune_juntra_l1_percent: '{{ $settings->fortune_juntra_l1_percent ?? 10 }}',
+            fortune_juntra_l2_enabled: {{ ($settings->fortune_juntra_l2_enabled ?? true) ? 'true' : 'false' }},
+            fortune_juntra_l2_percent: '{{ $settings->fortune_juntra_l2_percent ?? 5 }}',
         },
 
         /**
@@ -763,8 +795,8 @@ function commissionManager() {
          * สร้างคอมมิชชั่นด้วยมือ
          */
         async confirmCreate() {
-            if (!this.createForm.user_id || !this.createForm.from_user_id || !this.createForm.amount) {
-                this.showToast('กรุณากรอก User ID ผู้รับ, ผู้จ่าย, และจำนวนเงิน', 'error');
+            if (!this.createForm.user_id || !this.createForm.from_user_id || !this.createForm.fortune_reading_id || !this.createForm.amount) {
+                this.showToast('กรุณากรอก User ID ผู้รับ, ผู้จ่าย, เลขบิล และจำนวนเงิน', 'error');
                 return;
             }
 

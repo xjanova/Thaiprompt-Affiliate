@@ -1759,6 +1759,39 @@ Route::prefix('v1/juntra/server')
             Route::post('/deep', \App\Http\Controllers\Api\Juntra\DeepReadingController::class)
                 ->name('deep');
         });
+
+        // - affiliate/* : 🌙 (2026-09-21) ผังแม่หมอของลูกค้าจันทราทุกคน — จันทราไม่คำนวณค่าแนะนำเอง
+        //   บิลเว็บ+แอพจันทราส่งมาที่นี่ แจกค่าแนะนำ % ของยอดบิล · คืนเงินที่จันทรา = ดึงค่าแนะนำคืน
+        Route::middleware('throttle:300,1,jwaff')->prefix('affiliate')->name('affiliate.')->group(function () {
+            $affiliate = \App\Http\Controllers\Api\Juntra\Server\AffiliateController::class;
+
+            Route::post('/accounts', [$affiliate, 'ensureAccount'])->name('accounts');
+            Route::post('/bills', [$affiliate, 'recordBill'])->name('bills');
+            Route::post('/bills/{billId}/void', [$affiliate, 'voidBill'])->whereNumber('billId')->name('bills.void');
+            Route::get('/members/{userRef}/stats', [$affiliate, 'stats'])->whereNumber('userRef')->name('members.stats');
+            Route::get('/members/{userRef}/tree', [$affiliate, 'tree'])->whereNumber('userRef')->name('members.tree');
+            Route::get('/members/{userRef}/commissions', [$affiliate, 'commissions'])->whereNumber('userRef')->name('members.commissions');
+
+            // หลังบ้านจันทรา — จัดการค่าแนะนำเฉพาะของบิลจันทรา (เว็บใครเว็บมัน) · อัตราดูได้อย่างเดียว
+            //   จันทราตรวจสิทธิ์แอดมินเอง + ส่ง actor มาทุกคำสั่งที่เปลี่ยนข้อมูล
+            $admin = \App\Http\Controllers\Api\Juntra\Server\AffiliateAdminController::class;
+            Route::prefix('admin')->name('admin.')->group(function () use ($admin) {
+                Route::get('/overview', [$admin, 'overview'])->name('overview');
+                Route::get('/commissions', [$admin, 'commissions'])->name('commissions');
+                Route::post('/commissions/approve', [$admin, 'approve'])->name('commissions.approve');
+                Route::post('/commissions/pay', [$admin, 'pay'])->name('commissions.pay');
+                Route::post('/commissions/manual', [$admin, 'createManual'])->name('commissions.manual');
+                Route::post('/commissions/{commission}/reject', [$admin, 'reject'])->whereNumber('commission')->name('commissions.reject');
+                Route::post('/commissions/{commission}/adjust', [$admin, 'adjust'])->whereNumber('commission')->name('commissions.adjust');
+                Route::get('/settings', [$admin, 'settings'])->name('settings');
+                Route::get('/users', [$admin, 'users'])->name('users');
+                Route::get('/users/{userId}/stats', [$admin, 'userStats'])->whereNumber('userId')->name('users.stats');
+                Route::get('/users/{userId}/tree', [$admin, 'userTree'])->whereNumber('userId')->name('users.tree');
+                Route::get('/users/{userId}/commissions', [$admin, 'userCommissions'])->whereNumber('userId')->name('users.commissions');
+                Route::get('/members/search', [$admin, 'searchMembers'])->name('members.search');
+                Route::post('/members/{member}/move', [$admin, 'moveMember'])->whereNumber('member')->name('members.move');
+            });
+        });
     });
 
 // ─── Public tarot-card catalog for the จันทรา.online (juntraweb) importer ──────

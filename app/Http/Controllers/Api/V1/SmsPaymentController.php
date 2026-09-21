@@ -465,7 +465,8 @@ class SmsPaymentController extends Controller
             'branch' => $branch,
             // 🚫 (2026-07-27) บิลดูดวงยกเลิกการอนุมัติได้จากแอพ (voidApproval engine)
             //    แอพจะโชว์ปุ่ม "ยกเลิกการอนุมัติ" เฉพาะบิลที่ค่านี้ = true และอนุมัติแล้ว
-            'can_void' => true,
+            //    🌙 บิลเว็บจันทรายกเลิกได้ที่หลังบ้านจันทราเท่านั้น
+            'can_void' => ! $reading->isJuntraBill(),
         ];
 
         // 🧾 (2026-07-27) สลิปที่ทำให้บิลนี้ผ่าน — ส่ง metadata + path รูปให้แอพเปิดดูตรวจซ้ำได้
@@ -995,7 +996,8 @@ class SmsPaymentController extends Controller
         // → ใช้ conversation_status เป็นหลักในการกรอง ไม่ต้องบังคับว่าต้องมี unique_payment_amount_id
         $fortuneReadings = collect();
         if ($this->deviceCanAccessFortuneReading($device)) {
-            $fortuneQuery = FortuneReading::query();
+            // 🌙 บิลเว็บจันทราไม่ใช่งานของแอพนี้ (จันทราเก็บเงินเอง) — ห้ามโผล่ให้กดอนุมัติ/ผูก SMS
+            $fortuneQuery = FortuneReading::query()->withoutJuntra();
 
             if ($status === 'waiting') {
                 // 'waiting' รวม:
@@ -1531,6 +1533,10 @@ class SmsPaymentController extends Controller
         FortuneReading $reading,
         ?SmsPaymentNotification $notification
     ): bool {
+        if ($reading->isJuntraBill()) {
+            return false; // 🌙 จันทราทำนายและเก็บเงินเอง — ไม่มีอะไรให้บอททำ
+        }
+
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
         if (empty($userId)) {
             Log::warning('SMS Payment: dispatchFortuneApprovalFlow — ไม่มี userId', [
@@ -1594,6 +1600,19 @@ class SmsPaymentController extends Controller
      * @return array{model: Model, type: string}|null
      */
     private function resolveOrderByIdentifier($identifier): ?array
+    {
+        $resolved = $this->resolveAnyOrderByIdentifier($identifier);
+
+        // 🌙 บิลเว็บจันทรา = ไม่พบ สำหรับแอพนี้ — อนุมัติ/บังคับอนุมัติ/ยกเลิก/ผูก SMS กำพร้า
+        //   ทุกปุ่มเริ่มที่นี่ ถ้าหลุดไป จะผูก SMS ของลูกค้าจริงเข้าบิลจันทรา แล้วสั่งบอทรัน AI ให้แถวที่ไม่มีช่องทางแชท
+        if (($resolved['type'] ?? null) === 'fortune' && $resolved['model']->isJuntraBill()) {
+            return null;
+        }
+
+        return $resolved;
+    }
+
+    private function resolveAnyOrderByIdentifier($identifier): ?array
     {
         // Numeric ID → legacy compat
         if (is_numeric($identifier)) {
@@ -1981,6 +2000,7 @@ class SmsPaymentController extends Controller
         $allOrders = $orders;
         if ($this->deviceCanAccessFortuneReading($device)) {
             $fortuneQuery = FortuneReading::query()
+                ->withoutJuntra()
                 ->whereNotNull('bill_reference')
                 ->whereIn('conversation_status', [
                     FortuneReading::STATUS_PENDING_PAYMENT,

@@ -1018,8 +1018,11 @@ class MlmTeamTransferService
                 'admin_notes' => $transferData['admin_notes'] ?? null,
             ]);
 
-            // ส่งการแจ้งเตือน
-            $this->sendAdminDirectTransferNotifications($member, $results, $admin);
+            // ส่งการแจ้งเตือน — ปิดได้เมื่อระบบย้ายเอง (รวมบัญชีจันทรา) ไม่ใช่แอดมินย้าย
+            //   ลูกค้าได้ LINE "ย้ายทีมโดย Admin" ทั้งที่ไม่มีใครย้ายจะงง
+            if ($transferData['notify'] ?? true) {
+                $this->sendAdminDirectTransferNotifications($member, $results, $admin);
+            }
 
             return $results;
         });

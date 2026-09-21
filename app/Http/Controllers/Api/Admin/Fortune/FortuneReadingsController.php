@@ -143,6 +143,13 @@ class FortuneReadingsController extends Controller
             ], 422);
         }
 
+        if ($reading->isJuntraBill()) {
+            return response()->json([
+                'success' => false,
+                'message' => FortuneReading::JUNTRA_PAID_ELSEWHERE,
+            ], 422);
+        }
+
         $reading->is_paid = true;
         $reading->amount_paid = $data['amount'] ?? ($reading->amount_paid > 0 ? $reading->amount_paid : 49);
         $reading->paid_at = $reading->paid_at ?? now();
@@ -191,6 +198,7 @@ class FortuneReadingsController extends Controller
                 'reading_id' => $reading->id,
                 'status' => $reading->conversation_status,
             ]);
+
             return;
         }
 
@@ -249,6 +257,14 @@ class FortuneReadingsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'บิลที่ยังไม่จ่ายไม่ต้องคืนเงิน',
+            ], 422);
+        }
+
+        // 🌙 บิลจันทรา: คืนเงินที่จันทรา (คืนเครดิตลูกค้า + ดึงค่าแนะนำคืน) — ที่นี่แค่พลิกธง
+        if ($reading->isJuntraBill()) {
+            return response()->json([
+                'success' => false,
+                'message' => FortuneReading::JUNTRA_VOID_ELSEWHERE,
             ], 422);
         }
 
@@ -377,7 +393,7 @@ class FortuneReadingsController extends Controller
             ], $extra);
         };
 
-        $add(0, 'system', 'เริ่มสนทนา · ' . $created, $created);
+        $add(0, 'system', 'เริ่มสนทนา · '.$created, $created);
 
         foreach ($this->normalizeQuestions($reading->questions) as $q) {
             $add(1, 'user', (string) $q, $created);
@@ -394,7 +410,7 @@ class FortuneReadingsController extends Controller
         // Payment confirmation.
         if ($reading->is_paid && $reading->amount_paid > 0 && $reading->paid_at) {
             $paidTs = optional($reading->paid_at)->toIso8601String();
-            $add(3, 'system', '✓ รับชำระ ฿' . number_format((float) $reading->amount_paid, 2), $paidTs);
+            $add(3, 'system', '✓ รับชำระ ฿'.number_format((float) $reading->amount_paid, 2), $paidTs);
         }
 
         // 🃏 Celtic Cross — the cards as they were opened (1..10), the birthdate,
@@ -403,10 +419,12 @@ class FortuneReadingsController extends Controller
         if (is_array($celticCards) && count($celticCards) > 0) {
             ksort($celticCards);
             foreach ($celticCards as $pos => $card) {
-                if (! is_array($card)) continue;
+                if (! is_array($card)) {
+                    continue;
+                }
                 $name = $card['card_name_th'] ?? $card['card_name_en'] ?? '?';
                 $rev = ! empty($card['is_reversed']) ? ' (ไพ่กลับหัว)' : '';
-                $posName = $card['position_name'] ?? ('ใบที่ ' . $pos);
+                $posName = $card['position_name'] ?? ('ใบที่ '.$pos);
                 $add(4, 'system', "🃏 เปิดไพ่ใบที่ {$pos} · {$posName} → {$name}{$rev}", $card['picked_at'] ?? null);
             }
         }
@@ -414,7 +432,7 @@ class FortuneReadingsController extends Controller
         // 🎂 Birthdate the customer provided for the base chart (พื้นดวง).
         $birthdate = $reading->getConversationState('celtic_birthdate_text');
         if (! empty($birthdate) && ! $reading->getConversationState('celtic_birthdate_from_prior')) {
-            $add(5, 'user', '🎂 ' . (string) $birthdate, null);
+            $add(5, 'user', '🎂 '.(string) $birthdate, null);
         }
 
         // 🔮 Celtic Q&A turns (question + AI answer per row). The reading row's
@@ -464,7 +482,7 @@ class FortuneReadingsController extends Controller
                 }
                 if (! empty($row->a_text)) {
                     $add(8, 'admin', (string) $row->a_text, $ts, [
-                        'by' => $row->admin_user_id ? ('admin#' . $row->admin_user_id) : 'admin',
+                        'by' => $row->admin_user_id ? ('admin#'.$row->admin_user_id) : 'admin',
                     ]);
                 }
             }
@@ -494,7 +512,9 @@ class FortuneReadingsController extends Controller
 
     private function normalizeQuestions($raw): array
     {
-        if (is_array($raw)) return array_values(array_filter($raw, fn ($x) => $x !== '' && $x !== null));
+        if (is_array($raw)) {
+            return array_values(array_filter($raw, fn ($x) => $x !== '' && $x !== null));
+        }
         if (is_string($raw) && $raw !== '') {
             $trimmed = trim($raw);
             if (str_starts_with($trimmed, '[')) {
@@ -503,10 +523,13 @@ class FortuneReadingsController extends Controller
                     if (is_array($decoded)) {
                         return array_values(array_filter($decoded, fn ($x) => $x !== '' && $x !== null));
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
+
             return [$trimmed];
         }
+
         return [];
     }
 }

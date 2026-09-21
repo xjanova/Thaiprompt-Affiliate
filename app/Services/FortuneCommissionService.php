@@ -164,11 +164,7 @@ class FortuneCommissionService
 
         $commissionType = $settings->getFortuneLevel1CommissionType($readingType);
         // commission_rate = ตัวเลขที่ตั้งไว้ (บันทึกลง DB ไว้ตรวจย้อนหลัง)
-        // โหมดแยกแพคเกจจ่ายเป็นบาทคงที่ → rate = amount
-        $commissionRate = $commissionAmount;
-        if (! $settings->isFortunePackageRatesEnabled()) {
-            $commissionRate = (float) ($settings->fortune_level1_commission_amount ?? 10);
-        }
+        $commissionRate = $settings->getFortuneCommissionRateForRecord(1, $readingType, $commissionAmount);
 
         // หา sponsor (ผู้แนะนำตรง)
         if (! $mlmMember->unilevel_sponsor_id) {
@@ -272,10 +268,7 @@ class FortuneCommissionService
         }
 
         $commissionType = $settings->getFortuneLevel2CommissionType($readingType);
-        $commissionRate = $commissionAmount;
-        if (! $settings->isFortunePackageRatesEnabled()) {
-            $commissionRate = (float) ($settings->fortune_level2_commission_amount ?? 5);
-        }
+        $commissionRate = $settings->getFortuneCommissionRateForRecord(2, $readingType, $commissionAmount);
 
         // helper closure สำหรับ fallback
         $fallback = function (string $reason) use (

@@ -199,6 +199,10 @@ class FortuneTellingSetting extends Model
         'fortune_celtic_l1_amount',
         'fortune_celtic_l2_enabled',
         'fortune_celtic_l2_amount',
+        // ค่าแนะนำบิลจากเว็บ/แอพจันทรา — เปอร์เซ็นต์ของยอดบิล
+        'fortune_juntra_l1_percent',
+        'fortune_juntra_l2_enabled',
+        'fortune_juntra_l2_percent',
         // คลิปบรรยายแผน (โฮสต์ที่ จันทรา.online)
         'plan_video_enabled',
         'plan_video_url',
@@ -591,6 +595,9 @@ class FortuneTellingSetting extends Model
         'fortune_celtic_l1_amount' => 'decimal:2',
         'fortune_celtic_l2_enabled' => 'boolean',
         'fortune_celtic_l2_amount' => 'decimal:2',
+        'fortune_juntra_l1_percent' => 'decimal:2',
+        'fortune_juntra_l2_enabled' => 'boolean',
+        'fortune_juntra_l2_percent' => 'decimal:2',
         'plan_video_enabled' => 'boolean',
         'plan_video_send_on_welcome' => 'boolean',
         'fortune_central_user_id' => 'integer',
@@ -857,6 +864,10 @@ class FortuneTellingSetting extends Model
         'fortune_celtic_l1_amount' => 10,     // Celtic 99฿ → สายตรง 10฿
         'fortune_celtic_l2_enabled' => true,
         'fortune_celtic_l2_amount' => 2,      // Celtic 99฿ → ชั้นหลาน 2฿
+        // บิลจากเว็บ/แอพจันทรา — % ของยอดบิล (ราคา 9-129฿ อัตราคงที่จะจ่ายเกินราคาไพ่ถูก)
+        'fortune_juntra_l1_percent' => 10,
+        'fortune_juntra_l2_enabled' => true,
+        'fortune_juntra_l2_percent' => 5,
         // คลิปบรรยายแผน — ปิดไว้ก่อน เปิดเมื่ออัปคลิปขึ้น จันทรา.online แล้ว
         'plan_video_enabled' => false,
         'plan_video_send_on_welcome' => false,
@@ -2517,6 +2528,50 @@ PROMPT;
     // ===== Level 1/Level 2 Fortune Commission =====
 
     /**
+     * 🌙 (2026-09-21) อัตราค่าแนะนำของบิลจากเว็บ/แอพจันทรา — เป็นเปอร์เซ็นต์ของยอดบิล
+     *
+     * เจ้าของเลือก % แทนอัตราคงที่ต่อบิล: ราคาจันทรามีตั้งแต่ 9฿ ถึง 129฿
+     *   อัตราคงที่ของบอท (สายตรง 10฿ + หลาน 5฿) จะจ่ายค่าแนะนำ 15฿ ให้ไพ่ 9฿
+     *   ยอดบิลจันทราเป็นราคาตัดกระเป๋าจริง (ไม่มีเศษสตางค์สุ่ม) คิด % จึงได้เท่ากันทุกบิล
+     *
+     * คืน null เมื่อไม่ใช่บิลจันทรา → ตกไปใช้อัตราแพคเกจ/อัตราเดียวแบบเดิม
+     *
+     * @return array{l1: float, l2_enabled: bool, l2: float}|null ค่าเป็นเปอร์เซ็นต์
+     */
+    protected function juntraCommissionPercent(?string $readingType): ?array
+    {
+        if ($readingType !== FortuneReading::READING_TYPE_JUNTRA) {
+            return null;
+        }
+
+        return [
+            'l1' => (float) ($this->fortune_juntra_l1_percent ?? 10),
+            'l2_enabled' => (bool) ($this->fortune_juntra_l2_enabled ?? true),
+            'l2' => (float) ($this->fortune_juntra_l2_percent ?? 5),
+        ];
+    }
+
+    /**
+     * ตัวเลขอัตราที่บันทึกลง fortune_commissions.commission_rate (ไว้ตรวจย้อนหลัง)
+     *
+     * บิลจันทรา = เปอร์เซ็นต์ที่ตั้งไว้ · โหมดแยกแพคเกจ = จำนวนบาทที่จ่าย · อัตราเดียว = ค่าที่ตั้งไว้
+     */
+    public function getFortuneCommissionRateForRecord(int $level, ?string $readingType, float $amount): float
+    {
+        if ($pct = $this->juntraCommissionPercent($readingType)) {
+            return $level === 1 ? $pct['l1'] : $pct['l2'];
+        }
+
+        if ($this->isFortunePackageRatesEnabled()) {
+            return $amount;
+        }
+
+        return $level === 1
+            ? (float) ($this->fortune_level1_commission_amount ?? 10)
+            : (float) ($this->fortune_level2_commission_amount ?? 5);
+    }
+
+    /**
      * ดึงอัตราค่าแนะนำเฉพาะแพคเกจ (ถ้าเปิดใช้ + รู้จักแพคเกจนั้น)
      *
      * คืน null เมื่อ:
@@ -2561,6 +2616,10 @@ PROMPT;
      */
     public function getFortuneLevel1Amount(float $readingPrice, ?string $readingType = null): float
     {
+        if ($pct = $this->juntraCommissionPercent($readingType)) {
+            return round($readingPrice * $pct['l1'] / 100, 2);
+        }
+
         if ($pkg = $this->packageCommissionRate($readingType)) {
             return round($pkg['l1'], 2);
         }
@@ -2584,6 +2643,10 @@ PROMPT;
      */
     public function getFortuneLevel2Amount(float $readingPrice, ?string $readingType = null): float
     {
+        if ($pct = $this->juntraCommissionPercent($readingType)) {
+            return $pct['l2_enabled'] ? round($readingPrice * $pct['l2'] / 100, 2) : 0.0;
+        }
+
         if ($pkg = $this->packageCommissionRate($readingType)) {
             return $pkg['l2_enabled'] ? round($pkg['l2'], 2) : 0.0;
         }
@@ -2605,6 +2668,10 @@ PROMPT;
      */
     public function isFortuneLevel2Enabled(?string $readingType = null): bool
     {
+        if ($pct = $this->juntraCommissionPercent($readingType)) {
+            return $pct['l2_enabled'];
+        }
+
         if ($pkg = $this->packageCommissionRate($readingType)) {
             return $pkg['l2_enabled'];
         }
@@ -2619,6 +2686,10 @@ PROMPT;
      */
     public function getFortuneLevel1CommissionType(?string $readingType = null): string
     {
+        if ($this->juntraCommissionPercent($readingType)) {
+            return 'percent';
+        }
+
         if ($this->packageCommissionRate($readingType)) {
             return 'fixed';
         }
@@ -2631,6 +2702,10 @@ PROMPT;
      */
     public function getFortuneLevel2CommissionType(?string $readingType = null): string
     {
+        if ($this->juntraCommissionPercent($readingType)) {
+            return 'percent';
+        }
+
         if ($this->packageCommissionRate($readingType)) {
             return 'fixed';
         }

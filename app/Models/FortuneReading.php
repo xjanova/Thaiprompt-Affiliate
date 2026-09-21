@@ -143,6 +143,26 @@ class FortuneReading extends Model
      */
     public const READING_TYPE_FREE_CARD = 'free_card';
 
+    /**
+     * 🌙 (2026-09-21) บิลที่ขายบนเว็บ/แอพจันทรา — ส่งมาให้ผังแม่หมอคำนวณปันผลอย่างเดียว
+     *
+     * จันทราทำนายและเก็บเงินเอง แถวนี้จึงเป็น "บิลที่จ่ายแล้วและจบแล้ว" เสมอ: ไม่มีคำถาม
+     *   ไม่มีคำทำนาย ไม่มีช่องทางแชท ห้ามใช้ 'deep' — เส้นกู้บิล deep ที่ไม่มีคำทำนาย
+     *   (แอพ SMS Checker, fortune:check-pending, expire-stuck-paid) จะหยิบไปรัน AI ใหม่
+     * เลขบิล = 'JW-{id ของรายการตัดเงินฝั่งจันทรา}' (unique — กันส่งซ้ำ)
+     * ยกเลิก/คืนเงินต้องเริ่มที่จันทรา (คืนเครดิตลูกค้า) — หลังบ้านเราห้าม void เอง
+     */
+    public const READING_TYPE_JUNTRA = 'juntra';
+
+    /** คำนำหน้าเลขบิลของบิลจันทรา */
+    public const JUNTRA_BILL_PREFIX = 'JW-';
+
+    /** ข้อความเมื่อแอดมินกดยกเลิก/คืนเงินบิลจันทราจากหลังบ้านนี้ */
+    public const JUNTRA_VOID_ELSEWHERE = 'บิลนี้มาจากเว็บจันทรา — ยกเลิก/คืนเงินที่หลังบ้านจันทรา ลูกค้าจะได้เครดิตคืนและค่าแนะนำถูกดึงคืนพร้อมกัน';
+
+    /** ข้อความเมื่อแอดมินกดยืนยันจ่าย/มาร์คจ่ายบิลจันทราจากหลังบ้านนี้ */
+    public const JUNTRA_PAID_ELSEWHERE = 'บิลนี้มาจากเว็บจันทรา — สถานะจ่ายเงินมาจากจันทราเท่านั้น (จันทราเป็นผู้เก็บเงินลูกค้า)';
+
     // ───────────────────────────────────────────────────────────
     // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรกครั้งเดียว
     // ───────────────────────────────────────────────────────────
@@ -1372,8 +1392,28 @@ class FortuneReading extends Model
             self::READING_TYPE_DEEP => '🌟 เชิงลึก',
             self::READING_TYPE_CELTIC_CROSS => '💎 Celtic 99',
             self::READING_TYPE_FREE_CARD => '🎁 ไพ่ฟรี',
+            self::READING_TYPE_JUNTRA => '🌙 เว็บจันทรา',
             default => '🔮 พื้นฐาน',
         };
+    }
+
+    /**
+     * 🌙 บิลที่ส่งมาจากเว็บ/แอพจันทรา — ยกเลิก/คืนเงินต้องทำที่หลังบ้านจันทรา (คืนเครดิตลูกค้าด้วย)
+     */
+    public function isJuntraBill(): bool
+    {
+        return $this->reading_type === self::READING_TYPE_JUNTRA;
+    }
+
+    /**
+     * 🌙 ตัดบิลจากเว็บจันทราออก — ใช้กับทุกรายการที่เป็นงานของบอท (รายการในแอพ SMS Checker,
+     *   ผู้รับแคมเปญ, ตัวกู้ข้อความ, ยอดรายได้ของแม่หมอ) — บิลจันทราไม่มีช่องทางแชท
+     *   และจันทราเป็นผู้เก็บเงิน (null-safe: แถวเก่าที่ reading_type ว่างยังอยู่ครบ)
+     */
+    public function scopeWithoutJuntra($query)
+    {
+        return $query->where(fn ($q) => $q->whereNull('reading_type')
+            ->orWhere('reading_type', '!=', self::READING_TYPE_JUNTRA));
     }
 
     /**
@@ -3328,6 +3368,17 @@ class FortuneReading extends Model
      */
     public function confirmPayment(?SmsPaymentNotification $notification = null): void
     {
+        // 🌙 บิลเว็บจันทรา: จันทราเก็บเงินเอง — ยืนยันจ่ายที่นี่ = พลิกสถานะโดยไม่มีเงินเข้า
+        //   และปลุกเส้นทำนาย/ส่งข้อความของบอทให้แถวที่ไม่มีช่องทางแชท
+        if ($this->isJuntraBill()) {
+            \Illuminate\Support\Facades\Log::warning('FortuneReading::confirmPayment ปฏิเสธบิลจันทรา', [
+                'reading_id' => $this->id,
+                'bill_reference' => $this->bill_reference,
+            ]);
+
+            return;
+        }
+
         // ✅ Idempotent: ถ้าชำระแล้ว ไม่ต้องทำซ้ำ (ป้องกัน paid_at ถูก reset)
         if ($this->is_paid) {
             // อัพเดทเฉพาะ SMS notification info ถ้ายังไม่มี
@@ -3436,7 +3487,37 @@ class FortuneReading extends Model
      * @param  int|null  $adminId  id ของแอดมินที่กดยกเลิก
      * @return array{ok: bool, message?: string, reverted: array, warnings: array}
      */
-    public function voidApproval(?string $reason = null, ?int $adminId = null): array
+    public function voidApproval(?string $reason = null, ?int $adminId = null, bool $juntraRefund = false): array
+    {
+        // 🌙 บิลจากเว็บจันทรา: ยกเลิกได้ทางเดียวคือจันทราสั่ง (คืนเครดิตลูกค้าที่จันทราด้วย)
+        //   ปุ่มหลังบ้าน/แอพ SMS Checker/คำสั่ง CLI ทุกตัวเรียกเมธอดนี้ → ด่านเดียวกันครอบทุกทาง
+        if ($this->isJuntraBill() && ! $juntraRefund) {
+            return [
+                'ok' => false,
+                'message' => self::JUNTRA_VOID_ELSEWHERE,
+                'reverted' => [],
+                'warnings' => [],
+            ];
+        }
+
+        // 🔒 (2026-09-21) ตัดสินจากแถวที่ล็อกไว้ ไม่ใช่สำเนาในหน่วยความจำ
+        //   เดิมสองคำขอพร้อมกัน (ปุ่มหลังบ้าน + จันทราสั่งคืนเงิน) ผ่านด่าน is_paid ทั้งคู่
+        //   แล้วดึงคอมคืนซ้ำสองรอบ — คำขอที่สองต้องรอล็อก แล้วเห็นว่าบิลถูกยกเลิกไปแล้ว
+        //   (การดึงคอมคืนรายแถวข้างในเป็น savepoint — แถวหนึ่งพังไม่ลากแถวอื่น)
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($reason, $adminId) {
+            $locked = static::whereKey($this->getKey())->lockForUpdate()->first();
+            if ($locked) {
+                $this->setRawAttributes($locked->getAttributes(), true);
+            }
+
+            return $this->voidApprovalLocked($reason, $adminId);
+        });
+    }
+
+    /**
+     * ตัวทำงานของ voidApproval — เรียกหลังล็อกแถวแล้วเท่านั้น
+     */
+    protected function voidApprovalLocked(?string $reason, ?int $adminId): array
     {
         // Idempotent guard — ยังไม่จ่าย = ไม่มีอะไรให้ถอย
         if (! $this->is_paid) {
@@ -3455,12 +3536,24 @@ class FortuneReading extends Model
         $commissions = FortuneCommission::where('fortune_reading_id', $this->id)
             ->where('status', FortuneCommission::STATUS_PAID)
             ->get();
+
+        // 🔒 (2026-09-21) ล็อกกระเป๋าทุกใบที่จะดึงคืนตามลำดับ id ตั้งแต่ต้น — void สองบิลพร้อมกัน
+        //   ที่ผู้รับซ้อนกัน (เช่นกระเป๋ากลาง) จะต่อคิวกันแทนที่จะ deadlock กลางทาง
+        $walletUserIds = $commissions->pluck('user_id')->unique()->values()->all();
+        if ($walletUserIds !== []) {
+            Wallet::whereIn('user_id', $walletUserIds)->orderBy('id')->lockForUpdate()->get();
+        }
+
         foreach ($commissions as $comm) {
             try {
                 \Illuminate\Support\Facades\DB::transaction(function () use ($comm) {
                     $this->reverseCommissionRow($comm);
                 });
                 $reverted[] = "commission#{$comm->id} (-{$comm->amount})";
+            } catch (\Illuminate\Database\DeadlockException $e) {
+                // deadlock/รอล็อกนาน = MySQL ย้อนทั้ง transaction แล้ว (ไม่ใช่แค่แถวนี้) — กลืนไว้จะรายงานว่า
+                // ดึงคืนแล้วทั้งที่ไม่ได้ดึง แล้วบิลกลายเป็น "ยกเลิกแล้ว" ดึงซ้ำไม่ได้อีก → โยนให้ผู้เรียกลองใหม่ทั้งก้อน
+                throw $e;
             } catch (\Throwable $e) {
                 $warnings[] = "commission#{$comm->id} ดึงคืนไม่สำเร็จ — ต้องแก้มือ";
                 \Illuminate\Support\Facades\Log::error('FortuneReading::voidApproval — commission reverse failed', [
@@ -3484,10 +3577,14 @@ class FortuneReading extends Model
             }
 
             // 2.2 ปลด SMS notification ที่ผูกกับบิลนี้ (ให้เงินจริงไป match บิลถูกได้)
-            $notifAffected = SmsPaymentNotification::where('matched_transaction_id', $this->id)
-                ->update(['status' => 'pending', 'matched_transaction_id' => null]);
-            if ($notifAffected) {
-                $reverted[] = "ปลด SMS notification {$notifAffected} รายการ";
+            //   🌙 บิลจันทราไม่เคยจับคู่ SMS ฝั่งเรา — และ matched_transaction_id ใช้เก็บ id ของ
+            //   PaymentTransaction ด้วย ถ้าไม่ข้าม จะไปปลด SMS ของรายการอื่นที่บังเอิญเลขตรงกัน
+            if (! $this->isJuntraBill()) {
+                $notifAffected = SmsPaymentNotification::where('matched_transaction_id', $this->id)
+                    ->update(['status' => 'pending', 'matched_transaction_id' => null]);
+                if ($notifAffected) {
+                    $reverted[] = "ปลด SMS notification {$notifAffected} รายการ";
+                }
             }
 
             // 2.3 พลิกบิลกลับเป็น "ยังไม่จ่าย" + ปิด conversation
@@ -3536,7 +3633,9 @@ class FortuneReading extends Model
     protected function reverseCommissionRow(FortuneCommission $comm): void
     {
         // ดึงเงินคืนจาก wallet (ถ้าเคยจ่ายเข้า wallet จริง)
-        $wallet = Wallet::where('user_id', $comm->user_id)->first();
+        // 🔒 (2026-09-21) lockForUpdate แบบเดียวกับฝั่งจ่าย (depositToWallet) — เดิมอ่านยอดโดยไม่ล็อก
+        //   คอมเข้ากระเป๋าเดียวกันพร้อมกับการดึงคืน = ยอดหนึ่งในสองหายไป
+        $wallet = Wallet::where('user_id', $comm->user_id)->lockForUpdate()->first();
         if ($wallet) {
             $before = (float) ($wallet->balance ?? 0);
             $after = $before - (float) $comm->amount;

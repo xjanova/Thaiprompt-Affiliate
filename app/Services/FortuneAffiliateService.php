@@ -425,10 +425,7 @@ class FortuneAffiliateService
 
             // Fallback: Super Admin (user_id = 1)
             if (! $sponsor) {
-                $superAdmin = User::find(1);
-                if ($superAdmin) {
-                    $sponsor = MlmMember::where('user_id', $superAdmin->id)->first();
-                }
+                $sponsor = $this->defaultSponsor();
 
                 if (! $sponsor) {
                     Log::warning('Fortune Affiliate: ไม่พบ Super Admin MlmMember — ข้าม MLM enrollment');
@@ -464,6 +461,18 @@ class FortuneAffiliateService
 
             return null;
         }
+    }
+
+    /**
+     * ผู้แนะนำเริ่มต้นของลูกค้าที่ไม่มีคนเชิญ = สมาชิกของ Super Admin (user_id = 1)
+     *
+     * ค่าแนะนำชั้นนี้ไม่ roll up — FortuneCommissionService ตัดสินเอง (ไม่ active → กระเป๋ากลาง)
+     */
+    public function defaultSponsor(): ?MlmMember
+    {
+        $superAdmin = User::find(1);
+
+        return $superAdmin ? MlmMember::where('user_id', $superAdmin->id)->first() : null;
     }
 
     /**

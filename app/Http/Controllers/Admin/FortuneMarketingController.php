@@ -454,7 +454,9 @@ PROMPT;
                 DB::raw('MAX(facebook_user_name) as facebook_user_name'),
                 DB::raw('MAX(birth_date) as birth_date')
             )
-            ->groupBy('facebook_user_id', 'platform');
+            ->groupBy('facebook_user_id', 'platform')
+            // 🌙 บิลเว็บจันทราไม่มีช่องทางแชท — ส่งไม่ถึงอยู่แล้ว แต่จะกินโควตา target_limit ของลูกค้าจริง
+            ->withoutJuntra();
 
         // กรอง platform
         if ($campaign->target_platform !== 'all') {

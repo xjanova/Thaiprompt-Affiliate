@@ -648,6 +648,15 @@ class FortunePaymentFuzzyMatcher
                     return false;
                 }
 
+                // 🌙 บิลเว็บจันทราไม่รับเงินจาก SMS ฝั่งนี้ — ห้ามผูก SMS ของลูกค้าจริงเข้าไป
+                if ($readingLocked->isJuntraBill()) {
+                    Log::warning('FortunePaymentFuzzyMatcher::confirmMatchByAdmin: ปฏิเสธบิลจันทรา', [
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    return false;
+                }
+
                 // กัน race — ถ้าจ่ายไปแล้ว → idempotent success
                 if ($readingLocked->is_paid) {
                     Log::info('FortunePaymentFuzzyMatcher::confirmMatchByAdmin: already paid', [

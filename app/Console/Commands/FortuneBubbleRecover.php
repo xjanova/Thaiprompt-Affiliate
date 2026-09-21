@@ -63,6 +63,7 @@ class FortuneBubbleRecover extends Command
         // ผู้สมัคร: reading ที่เพิ่งขยับ (rememberPending เขียน conversation_state → updated_at เด้ง)
         //   หน้าต่าง 2 ชม. กว้างพอสำหรับทุกเคสจริง และแคบพอให้ query ไม่กวาดทั้งตาราง
         $candidates = FortuneReading::query()
+            ->withoutJuntra() // 🌙 บิลเว็บจันทราไม่มีข้อความให้กู้ — ห้ามแย่งช่อง limit ของลูกค้าจริง
             ->where('updated_at', '>=', now()->subHours(2))
             ->orderBy('updated_at', 'asc')
             ->limit($limit)

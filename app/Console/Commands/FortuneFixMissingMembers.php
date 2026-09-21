@@ -116,8 +116,11 @@ class FortuneFixMissingMembers extends Command
     private function findUsersWithoutMlmMember()
     {
         // หา user_id ทั้งหมดจาก FortuneReading ที่จ่ายเงินแล้ว
+        // 🌙 บิลเว็บจันทราไม่นับ — ลูกค้าจันทราเข้าผังผ่าน /juntra/server/affiliate (ใต้ผู้เชิญ)
+        //   ก่อนบิลถูกสร้างเสมอ ถ้าหลุดมาที่นี่จะถูกวางใต้แอดมินผิดสาย
         $userIds = FortuneReading::whereNotNull('user_id')
             ->where('is_paid', true)
+            ->withoutJuntra()
             ->distinct()
             ->pluck('user_id');
 
@@ -368,8 +371,11 @@ class FortuneFixMissingMembers extends Command
         }
 
         // หา readings ที่จ่ายเงินแล้ว มี user_id แต่ยังไม่มี FortuneCommission
+        // 🌙 บิลเว็บจันทราไม่นับ — ที่นี่จ่ายฐาน 39฿ คงที่และข้ามเช็ค active (ผิดกติกา % ของบิลจันทรา)
+        //   บิลจันทราที่ค่าแนะนำค้างซ่อมได้ด้วยการให้จันทราส่งบิลซ้ำ (จ่ายเฉพาะชั้นที่ขาด)
         $readings = FortuneReading::whereNotNull('user_id')
             ->where('is_paid', true)
+            ->withoutJuntra()
             ->where(function ($q) {
                 $q->where('amount_paid', '>', 0);
             })
