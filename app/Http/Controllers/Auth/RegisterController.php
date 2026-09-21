@@ -11,6 +11,7 @@ use App\Models\MlmMember;
 use App\Models\RecruitCustomization;
 use App\Models\Setting;
 use App\Models\User;
+use App\Rules\NotReservedEmailDomain;
 use App\Services\LineService;
 use App\Services\LineTokenService;
 use App\Services\MlmBinaryService;
@@ -91,7 +92,7 @@ class RegisterController extends Controller
         // Validate basic fields
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users', new NotReservedEmailDomain],
             'password' => ['required', 'confirmed', Password::defaults()],
             'referral_code' => ['nullable', 'string', 'exists:mlm_members,member_code'],
         ];

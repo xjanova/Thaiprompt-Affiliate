@@ -704,7 +704,11 @@ class FortuneDashboardController extends Controller
                 $missing = array_values(array_diff($psids, array_keys($userMap)));
                 if (! empty($missing)) {
                     $emails = array_map(fn ($p) => 'fb_'.$p.'@thaiprompt.local', $missing);
-                    foreach (DB::table('users')->whereIn('email', $emails)->get(['id', 'name', 'email']) as $u) {
+                    $byEmail = DB::table('users')->whereIn('email', $emails);
+                    if (\App\Models\User::hasBotProvisionedColumn()) {
+                        $byEmail->where('bot_provisioned', true); // 🔒 อีเมลรูปแบบนี้เดาได้ — เชื่อเฉพาะบัญชีที่ระบบสร้าง
+                    }
+                    foreach ($byEmail->get(['id', 'name', 'email']) as $u) {
                         if (preg_match('/^fb_(.+)@thaiprompt\.local$/', (string) $u->email, $m)) {
                             $userMap[$m[1]] = ['id' => $u->id, 'name' => $u->name];
                         }

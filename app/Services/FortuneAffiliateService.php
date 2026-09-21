@@ -244,7 +244,8 @@ class FortuneAffiliateService
 
         // 2. ค้นหาจาก email pattern (line_{id}@thaiprompt.local หรือ fb_{id}@thaiprompt.local)
         // ✈️ (2026-09-13) สูตรอีเมลกลาง — รู้จัก telegram ('tg_…') ด้วย (เดิมได้ fb_tg_…)
-        $user = User::where('email', \App\Services\Fortune\FortuneRecipient::localEmailFor($platform, $platformUserId))->first();
+        // 🔒 (2026-09-21) เฉพาะบัญชีที่ระบบสร้าง (bot_provisioned) — อีเมลรูปแบบนี้เดาได้ ใครจองไว้ก่อนจะยึดบัญชีลูกค้าได้
+        $user = User::findBotAccountByLocalEmail(\App\Services\Fortune\FortuneRecipient::localEmailFor($platform, $platformUserId));
         if ($user) {
             return $user;
         }
@@ -353,7 +354,7 @@ class FortuneAffiliateService
             $userData['facebook_psid'] = $platformUserId;
         }
 
-        $user = User::create($userData);
+        $user = User::createBotProvisioned($userData);
 
         // ดึง birth_date จาก FortuneReading (ถ้ามี)
         if ($reading?->birth_date && Schema::hasColumn('users', 'date_of_birth')) {

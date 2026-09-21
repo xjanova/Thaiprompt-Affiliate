@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Hotel;
 use App\Models\User;
+use App\Rules\NotReservedEmailDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -178,7 +179,7 @@ class HotelOwnerController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'email' => ['required', 'email', 'unique:users,email', new NotReservedEmailDomain],
             'phone' => 'nullable|string|max:50',
             'password' => 'required|string|min:8',
             'managed_hotel_id' => 'nullable|exists:hotels,id',
@@ -213,7 +214,7 @@ class HotelOwnerController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('users')->ignore($hotelOwner->id)],
+            'email' => ['required', 'email', Rule::unique('users')->ignore($hotelOwner->id), new NotReservedEmailDomain],
             'phone' => 'nullable|string|max:50',
             'password' => 'nullable|string|min:8',
             'managed_hotel_id' => 'nullable|exists:hotels,id',

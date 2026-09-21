@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
+use App\Rules\NotReservedEmailDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -60,7 +61,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users', new NotReservedEmailDomain],
             'password' => ['required', 'confirmed', Password::defaults()],
             'role_id' => ['required', 'exists:roles,id'],
         ]);
@@ -117,7 +118,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain],
             'role_id' => ['required', 'exists:roles,id'],
             'menu_theme_preference' => ['nullable', 'string', 'in:millennium,classic_x'],
         ]);

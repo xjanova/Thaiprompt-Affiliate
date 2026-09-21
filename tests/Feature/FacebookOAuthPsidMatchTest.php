@@ -517,7 +517,8 @@ class FacebookOAuthPsidMatchTest extends TestCase
      */
     private function createBotUser(bool $withPsidColumn = true): User
     {
-        return User::create([
+        // บัญชีที่บอทสร้างจริงมีป้าย bot_provisioned เสมอ (ช่องทางเดียวที่เส้นหาจากอีเมลเชื่อ)
+        return User::createBotProvisioned([
             'name' => 'ลูกค้าบอท',
             'email' => 'fb_'.self::PSID.'@thaiprompt.local',
             'password' => bcrypt(str()->random(20)),

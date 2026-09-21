@@ -10,6 +10,7 @@ use App\Models\PosTransaction;
 use App\Models\PosTransactionItem;
 use App\Models\Product;
 use App\Models\User;
+use App\Rules\NotReservedEmailDomain;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -442,7 +443,8 @@ class PosApiController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'phone' => 'nullable|string|max:20',
-                'email' => 'nullable|email|max:255',
+                // ต้องไม่ชนบัญชีเดิม (เดิมไม่เช็ค → ชน unique ได้ 500) และห้ามโดเมนสงวนของระบบ
+                'email' => ['nullable', 'email', 'max:255', 'unique:users,email', new NotReservedEmailDomain],
             ]);
 
             if ($validator->fails()) {

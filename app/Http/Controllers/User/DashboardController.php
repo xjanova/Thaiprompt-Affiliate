@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Helpers\MlmRetentionHelper;
 use App\Http\Controllers\Controller;
+use App\Rules\NotReservedEmailDomain;
 use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -194,11 +195,11 @@ class DashboardController extends Controller
             ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(commission_amount) as total')
             ->groupByRaw('YEAR(created_at), MONTH(created_at)')
             ->get()
-            ->keyBy(fn ($item) => $item->year . '-' . $item->month);
+            ->keyBy(fn ($item) => $item->year.'-'.$item->month);
 
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $key = $date->year . '-' . $date->month;
+            $key = $date->year.'-'.$date->month;
             $monthName = $date->locale('th')->translatedFormat('M Y');
 
             $chartLabels[] = $monthName;
@@ -541,7 +542,7 @@ class DashboardController extends Controller
         $rules = [
             // ข้อมูลส่วนตัว
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain],
             'phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:male,female,other,prefer_not_to_say'],

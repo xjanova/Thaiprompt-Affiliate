@@ -318,7 +318,7 @@ class FreshMarketChannelManager
         try {
             return DB::transaction(function () use ($lineUserId, $displayName, $pictureUrl) {
                 // 1. สร้าง User
-                $user = User::create([
+                $user = User::createBotProvisioned([
                     'name' => $displayName,
                     'email' => "line_{$lineUserId}@thaiprompt.local",
                     'password' => Hash::make(Str::random(16)),

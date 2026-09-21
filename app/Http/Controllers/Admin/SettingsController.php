@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Rules\NotReservedEmailDomain;
 use App\Services\ImageUploadService;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.auth()->id()],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.auth()->id(), new NotReservedEmailDomain],
             'phone' => ['nullable', 'string', 'max:20'],
             'position' => ['nullable', 'string', 'max:255'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max

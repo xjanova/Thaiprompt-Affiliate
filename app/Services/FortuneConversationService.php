@@ -27918,7 +27918,7 @@ PROMPT;
                         $userData['line_user_id'] = $facebookUserId;
                     }
 
-                    $user = \App\Models\User::create($userData);
+                    $user = \App\Models\User::createBotProvisioned($userData);
 
                     // Link reading กับ user
                     $paidReading->update(['user_id' => $user->id]);
@@ -28582,14 +28582,15 @@ PROMPT;
 
         // ✈️ (2026-09-13) Telegram — บัญชีที่บอทสมัครให้ผูกด้วยอีเมล tg_…@thaiprompt.local
         if (\App\Services\Fortune\FortuneRecipient::looksLikeTelegramUserId($platformUserId)) {
-            $user = \App\Models\User::where('email', \App\Services\Fortune\FortuneRecipient::localEmailFor('telegram', $platformUserId))->first();
+            $user = \App\Models\User::findBotAccountByLocalEmail(\App\Services\Fortune\FortuneRecipient::localEmailFor('telegram', $platformUserId));
             if ($user) {
                 return $user;
             }
         }
 
         // Fallback: ค้นหาจาก email pattern ฝั่ง LINE
-        $user = \App\Models\User::where('email', 'line_'.$platformUserId.'@thaiprompt.local')->first();
+        // 🔒 เฉพาะบัญชีที่ระบบสร้าง — อีเมลรูปแบบนี้เดาได้
+        $user = \App\Models\User::findBotAccountByLocalEmail('line_'.$platformUserId.'@thaiprompt.local');
         if ($user) {
             return $user;
         }

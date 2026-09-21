@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Position;
 use App\Models\User;
+use App\Rules\NotReservedEmailDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -92,7 +93,8 @@ class EmployeeController extends Controller
             'hire_date' => 'required|date',
             'employment_type' => 'required|in:full_time,part_time,contract,intern,freelance',
             'employment_status' => 'required|in:active,probation,notice_period,resigned,terminated,retired',
-            'work_email' => 'required|email|unique:employees,work_email',
+            // work_email กลายเป็น users.email ของพนักงาน (ดู store) — ห้ามโดเมนสงวนของระบบ
+            'work_email' => ['required', 'email', 'unique:employees,work_email', new NotReservedEmailDomain],
             'personal_email' => 'nullable|email',
             'mobile_phone' => 'required|string',
             'basic_salary' => 'required|numeric|min:0',

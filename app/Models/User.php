@@ -209,6 +209,7 @@ class User extends Authenticatable
             'rank_updated_at' => 'datetime',
             'line_linked_at' => 'datetime',
             'line_verified' => 'boolean',
+            'bot_provisioned' => 'boolean',
             'facebook_linked_at' => 'datetime',
             'facebook_verified' => 'boolean',
             'phone_verified' => 'boolean',
@@ -273,9 +274,73 @@ class User extends Authenticatable
             }
         }
 
-        return static::where('email', 'fb_'.$psid.'@thaiprompt.local')
+        return static::botAccountsByLocalEmail('fb_'.$psid.'@thaiprompt.local')
             ->whereNull('facebook_user_id')
             ->first();
+    }
+
+    /**
+     * 🔒 (2026-09-21) หาบัญชีที่ระบบสร้างให้ลูกค้าบอท จากอีเมลสังเคราะห์ (fb_/line_/tg_…@thaiprompt.local)
+     *
+     * เชื่ออีเมลอย่างเดียวไม่ได้: อีเมลรูปแบบนี้เดาได้ — ต้องเป็นบัญชีที่มีป้าย bot_provisioned
+     *   (ตั้งโดย createBotProvisioned เท่านั้น) ไม่งั้นใครจองอีเมลไว้ก่อนจะยึดบัญชีลูกค้าจริงได้
+     */
+    public static function findBotAccountByLocalEmail(string $email): ?self
+    {
+        return static::botAccountsByLocalEmail($email)->first();
+    }
+
+    /** query ของ findBotAccountByLocalEmail — ให้ผู้เรียกเติมเงื่อนไขเพิ่มได้ */
+    public static function botAccountsByLocalEmail(string $email): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = static::where('email', $email);
+
+        // ช่วง deploy ก่อน migrate เสร็จ ยังไม่มีคอลัมน์ → ใช้พฤติกรรมเดิมชั่วคราว
+        //   (บัญชีที่สร้างช่วงนั้นได้ป้ายจาก backfill ของ migration ที่รันตามมา)
+        if (static::hasBotProvisionedColumn()) {
+            $query->where('bot_provisioned', true);
+        }
+
+        return $query;
+    }
+
+    /**
+     * 🔒 สร้างบัญชีให้ลูกค้าบอท (FB/LINE/Telegram) พร้อมป้าย bot_provisioned — ทางเดียวที่ตั้งป้ายนี้
+     *
+     * ป้ายไม่อยู่ใน $fillable โดยตั้งใจ: ฟอร์ม/API ที่ส่ง request ทั้งก้อนเข้า fill() ต้องตั้งป้ายนี้ไม่ได้
+     */
+    public static function createBotProvisioned(array $attributes): self
+    {
+        // อีเมลสังเคราะห์ถูกบัญชีอื่นถือไว้แล้ว (บัญชีบอทตัวจริงถูกหาเจอก่อนมาถึงที่นี่เสมอ —
+        //   เหลือแต่บัญชีที่ไม่ใช่บอท) → ห้ามผูกลูกค้ากับบัญชีนั้น และห้ามล้มการสมัคร: ใช้อีเมลสำรอง
+        //   (ลูกค้าถูกหาเจอครั้งหน้าผ่าน facebook_psid / line_user_id / บิลที่ผูกไว้)
+        $email = $attributes['email'] ?? null;
+        if (is_string($email) && str_contains($email, '@') && static::query()->where('email', $email)->exists()) {
+            [$local, $domain] = explode('@', $email, 2);
+            $attributes['email'] = $local.'.'.\Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)).'@'.$domain;
+
+            \Illuminate\Support\Facades\Log::warning('🔒 อีเมลสังเคราะห์ของลูกค้าบอทถูกบัญชีอื่นถือไว้ — สร้างบัญชีด้วยอีเมลสำรอง', [
+                'reserved_email_holder_id' => static::query()->where('email', $email)->value('id'),
+                'fallback_email' => $attributes['email'],
+            ]);
+        }
+
+        $user = new static;
+        $user->fill($attributes);
+        if (static::hasBotProvisionedColumn()) {
+            $user->forceFill(['bot_provisioned' => true]);
+        }
+        $user->save();
+
+        return $user;
+    }
+
+    /** คอลัมน์ bot_provisioned มีแล้วหรือยัง — จำเฉพาะ "มีแล้ว" (ยังไม่มีเช็คใหม่ทุกครั้ง จนกว่า migrate เสร็จ) */
+    public static function hasBotProvisionedColumn(): bool
+    {
+        static $has = false;
+
+        return $has = $has || \Illuminate\Support\Facades\Schema::hasColumn('users', 'bot_provisioned');
     }
 
     /**

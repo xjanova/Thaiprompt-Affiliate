@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Slogan;
 use App\Models\VendorStore;
 use App\Models\WithdrawalRequest;
+use App\Rules\NotReservedEmailDomain;
 use App\Services\ImageUploadService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -203,7 +204,7 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id, new NotReservedEmailDomain],
             'phone' => ['nullable', 'string', 'max:20'],
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
             'current_password' => ['nullable', 'string'],

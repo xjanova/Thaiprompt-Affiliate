@@ -8,6 +8,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Rules\NotReservedEmailDomain;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAffiliateService;
 use Exception;
@@ -194,6 +195,11 @@ class FacebookLoginController extends Controller
     {
         $fbId = $fbUser->getId();
         $fbEmail = $fbUser->getEmail();
+        // 🔒 อีเมลจากผู้ให้บริการในโดเมนสงวนของระบบ = ห้ามใช้ทั้งผูกบัญชีเดิมและตั้งเป็นอีเมลบัญชีใหม่
+        //   (ไม่งั้นผูก FB เข้ากับบัญชีบอทของคนอื่นได้ด้วยการตั้งอีเมลให้ตรงสูตร)
+        if (NotReservedEmailDomain::isReserved($fbEmail)) {
+            $fbEmail = null;
+        }
 
         // 1. หา by facebook_user_id (linked แล้ว)
         $user = User::where('facebook_user_id', $fbId)->first();
@@ -453,7 +459,10 @@ class FacebookLoginController extends Controller
         // (suffix @thaiprompt.local คงไว้ — เป็น marker "บัญชีสังเคราะห์" ที่
         // ระบบ PDPA/rotate-passwords ใช้แยกแยะ และลูกค้าเปลี่ยนเป็นอีเมลจริง
         // ได้เองที่หน้าโปรไฟล์)
-        $email = $fbUser->getEmail() ?: 'fboauth_'.$fbUser->getId().'@thaiprompt.local';
+        $providerEmail = $fbUser->getEmail();
+        $email = $providerEmail && ! NotReservedEmailDomain::isReserved($providerEmail)
+            ? $providerEmail
+            : 'fboauth_'.$fbUser->getId().'@thaiprompt.local';
 
         return DB::transaction(function () use ($fbUser, $email, $psid) {
             $userData = [

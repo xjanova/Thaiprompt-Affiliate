@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Rules\NotReservedEmailDomain;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -354,7 +355,7 @@ class SetupController extends Controller
         // ตรวจสอบข้อมูลที่ส่งมา
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users', new NotReservedEmailDomain],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
             'name.required' => 'กรุณากรอกชื่อ',

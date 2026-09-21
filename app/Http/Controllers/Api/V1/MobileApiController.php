@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\User;
+use App\Rules\NotReservedEmailDomain;
 use App\Services\ImageUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -81,7 +82,7 @@ class MobileApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users', new NotReservedEmailDomain],
             'password' => 'required|string|min:8|confirmed',
             'phone' => 'nullable|string|max:20',
             'referral_code' => 'nullable|string|exists:users,referral_code',
