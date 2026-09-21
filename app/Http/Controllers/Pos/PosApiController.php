@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 /**
  * POS API Controller
@@ -456,12 +457,18 @@ class PosApiController extends Controller
             }
 
             // สร้างลูกค้าใหม่
+            // 🔧 (2026-09-21) users.email เป็น NOT NULL (+ MySQL strict) → ลูกค้าหน้าร้านที่ไม่ให้อีเมล
+            //   เดิมได้ 500 ทุกครั้ง · ใส่อีเมลแทนที่สุ่มให้เดาไม่ได้ ในโดเมนสงวนที่ผู้ใช้จองเองไม่ได้
+            //   (NotReservedEmailDomain กันทั้ง thaiprompt.local และ subdomain) — แยก subdomain pos.
+            //   ไว้ ไม่ปนกับบัญชีสังเคราะห์ของบอท (@thaiprompt.local ที่งาน PDPA/หมุนรหัสผ่านบอทจับ)
+            // (member_code เดิมถูกตัดทิ้งเงียบ ๆ — ไม่มีทั้งใน fillable และในตาราง users)
             $customer = User::create([
                 'name' => $request->input('name'),
                 'phone' => $request->input('phone'),
-                'email' => $request->input('email'),
+                'email' => $request->filled('email')
+                    ? $request->input('email')
+                    : self::walkInEmail(),
                 'password' => bcrypt(str()->random(16)),
-                'member_code' => 'M'.str_pad(User::max('id') + 1, 8, '0', STR_PAD_LEFT),
             ]);
 
             return response()->json([
@@ -471,11 +478,21 @@ class PosApiController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('POS createCustomer failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถสร้างลูกค้าได้',
             ], 500);
         }
+    }
+
+    /** อีเมลแทนของลูกค้าหน้าร้านที่ไม่ให้อีเมล — ส่งเมลไม่ถึงโดยตั้งใจ และผู้ใช้สมัครซ้อนไม่ได้ */
+    public const WALK_IN_EMAIL_DOMAIN = 'pos.thaiprompt.local';
+
+    private static function walkInEmail(): string
+    {
+        return 'walkin_'.Str::lower(Str::random(20)).'@'.self::WALK_IN_EMAIL_DOMAIN;
     }
 
     // ============================================

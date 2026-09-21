@@ -769,8 +769,12 @@ Route::prefix('pos')->name('pos.')->group(function () {
     Route::get('/api/health', [\App\Http\Controllers\Pos\PosApiController::class, 'health'])->name('api.health');
 });
 
-// POS Routes (Protected by auth middleware)
-Route::middleware('auth')->prefix('pos')->name('pos.')->group(function () {
+// POS Routes (เจ้าของร้าน/แอดมินเท่านั้น — role เดียวกับหลังบ้านร้าน /seller/*)
+// 🔒 (2026-09-21) เดิมหุ้มแค่ 'auth' → ลูกค้าทั่วไปที่ล็อกอินเรียก /pos/api/* ได้ทั้งหมด
+//   (สร้างบัญชีผู้ใช้ใหม่, ค้น/ดึงรายชื่อ-อีเมล-เบอร์ของผู้ใช้ทั้งระบบ, ส่งรายการขาย/สต็อก)
+//   พนักงานขายของร้านไม่ได้ล็อกอินเว็บเอง (PosStaffAssignment ไม่มี user_id — ใช้รหัส+PIN บนเครื่อง)
+//   ส่วนแอป POS (MAUI) ใช้ /api/v1/pos-terminal/* ด้วย API key แยกต่างหาก ไม่ผ่านกลุ่มนี้
+Route::middleware(['auth', 'role:seller,super_admin'])->prefix('pos')->name('pos.')->group(function () {
     require __DIR__.'/pos.php';
 });
 

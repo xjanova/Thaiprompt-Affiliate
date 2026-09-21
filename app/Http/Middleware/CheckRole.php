@@ -81,6 +81,12 @@ class CheckRole
             }
         }
 
+        // 🔒 (2026-09-21) คำขอ API/AJAX ตอบ 403 ตรง ๆ — redirect ไปหน้าแดชบอร์ด (HTML 200)
+        //   ทำให้ fetch() ฝั่งแอปเข้าใจว่าสำเร็จ (ใช้กับ /pos/api/* และทุก route ที่หุ้ม role:)
+        if ($request->expectsJson()) {
+            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        }
+
         // User doesn't have permission, redirect to their appropriate dashboard
         return $this->redirectToDashboard($request, $user);
     }

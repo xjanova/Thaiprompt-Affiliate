@@ -185,9 +185,11 @@ class User extends Authenticatable
         }
 
         // Priority 3: Return default avatar based on first letter of name
-        $initial = strtoupper(substr($this->name, 0, 1));
+        // 🔧 (2026-09-21) ตัดตามตัวอักษร ไม่ใช่ไบต์ — substr() เดิมได้ไบต์แรกของอักษรไทย (UTF-8 ขาดครึ่ง)
+        //   → ผู้ใช้ชื่อไทยที่ไม่มีรูป แปลงเป็น JSON ไม่ได้ ("Malformed UTF-8") เช่น POS สร้างลูกค้าได้ 500
+        $initial = mb_strtoupper(mb_substr(trim((string) $this->name), 0, 1)) ?: 'U';
 
-        return "https://ui-avatars.com/api/?name={$initial}&background=random&color=fff&size=200";
+        return 'https://ui-avatars.com/api/?name='.rawurlencode($initial).'&background=random&color=fff&size=200';
     }
 
     /**

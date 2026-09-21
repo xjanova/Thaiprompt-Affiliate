@@ -131,7 +131,8 @@ class ReservedEmailDomainTest extends TestCase
 
     public function test_pos_customer_creation_refuses_the_reserved_domain(): void
     {
-        $this->actingAs(User::factory()->create())
+        // /pos/* เปิดเฉพาะเจ้าของร้าน/แอดมิน (ดู PosCustomerApiTest)
+        $this->actingAs(User::factory()->create(['role' => 'seller']))
             ->postJson('/pos/api/customers', ['name' => 'ลูกค้า POS', 'email' => 'x@sub.thaiprompt.local'])
             ->assertStatus(422)
             ->assertJsonValidationErrors('email');
