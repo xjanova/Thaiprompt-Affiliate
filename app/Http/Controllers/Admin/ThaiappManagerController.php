@@ -47,7 +47,7 @@ class ThaiappManagerController extends Controller
             'menus_total'      => DB::table('app_menus')->count(),
             'configs_total'    => DB::table('app_configs')->where('environment', $env)->count(),
             'releases_total'   => DB::table('app_releases')->count(),
-            'hf_token_set'     => (bool) (env('HF_TOKEN') ?: env('HUGGING_FACE_TOKEN') ?: env('HUGGINGFACE_TOKEN')),
+            'hf_token_set'     => (bool) config('services.huggingface.token'),
         ];
 
         return view('admin.thaiapp.hub', compact('stats'));
@@ -208,7 +208,7 @@ class ThaiappManagerController extends Controller
             ];
         }
         $diskFree = @disk_free_space(public_path()) ?: null;
-        $hfTokenSet = (bool) (env('HF_TOKEN') ?: env('HUGGING_FACE_TOKEN') ?: env('HUGGINGFACE_TOKEN'));
+        $hfTokenSet = (bool) config('services.huggingface.token');
         return view('admin.thaiapp.ai-models', compact('items', 'diskFree', 'hfTokenSet'));
     }
 

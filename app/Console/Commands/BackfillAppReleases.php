@@ -44,7 +44,7 @@ class BackfillAppReleases extends Command
 
         // Use a GitHub token if one is in env (raises 60/hr → 5000/hr rate limit
         // and lets us read private-repo releases). Public repos work fine without.
-        if ($token = env('GITHUB_TOKEN')) {
+        if ($token = config('services.github.token')) {
             $req = $req->withToken($token);
         }
 

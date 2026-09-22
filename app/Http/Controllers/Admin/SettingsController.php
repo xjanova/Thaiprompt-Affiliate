@@ -318,6 +318,9 @@ class SettingsController extends Controller
         }
 
         file_put_contents($envPath, $envContent);
+
+        // ลบ config cache ไม่งั้นค่าใหม่ไม่มีผลจนกว่า deploy รอบหน้า
+        \App\Support\EnvFileConfigCache::forget();
     }
 
     /**
@@ -894,6 +897,9 @@ class SettingsController extends Controller
         }
 
         file_put_contents($envPath, $envContent);
+
+        // ลบ config cache ไม่งั้นค่าใหม่ไม่มีผลจนกว่า deploy รอบหน้า
+        \App\Support\EnvFileConfigCache::forget();
     }
 
     /**

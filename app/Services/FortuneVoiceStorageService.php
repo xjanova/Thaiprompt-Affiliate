@@ -68,38 +68,16 @@ class FortuneVoiceStorageService
     /**
      * Env defaults — ถ้า admin ไม่ตั้งใน DB ให้ใช้ค่าจาก .env
      *
+     * อ่านผ่าน config('services.fortune_voice_storage') — ห้ามเรียก env() ตรงนี้
+     * prod รัน config:cache แล้ว env() นอกไฟล์ config คืน null ทุกตัว
+     *
      * @return array<string, mixed>
      */
     protected function envDefaults(string $driver): array
     {
-        return match ($driver) {
-            'r2' => [
-                'account_id' => env('FORTUNE_VOICE_R2_ACCOUNT_ID'),
-                'access_key_id' => env('FORTUNE_VOICE_R2_ACCESS_KEY_ID'),
-                'secret_access_key' => env('FORTUNE_VOICE_R2_SECRET_ACCESS_KEY'),
-                'bucket' => env('FORTUNE_VOICE_R2_BUCKET'),
-                'public_url' => env('FORTUNE_VOICE_R2_PUBLIC_URL'),
-            ],
-            's3' => [
-                'access_key_id' => env('FORTUNE_VOICE_S3_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
-                'secret_access_key' => env('FORTUNE_VOICE_S3_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
-                'region' => env('FORTUNE_VOICE_S3_REGION', env('AWS_DEFAULT_REGION', 'ap-southeast-1')),
-                'bucket' => env('FORTUNE_VOICE_S3_BUCKET', env('AWS_BUCKET')),
-                'endpoint' => env('FORTUNE_VOICE_S3_ENDPOINT', env('AWS_ENDPOINT')),
-                'public_url' => env('FORTUNE_VOICE_S3_PUBLIC_URL', env('AWS_URL')),
-            ],
-            'gcs' => [
-                'credentials_path' => env('FORTUNE_VOICE_GCS_CREDENTIALS', env('GOOGLE_APPLICATION_CREDENTIALS', storage_path('app/firebase-credentials.json'))),
-                'bucket' => env('FORTUNE_VOICE_GCS_BUCKET'),
-                'public_url' => env('FORTUNE_VOICE_GCS_PUBLIC_URL'),
-            ],
-            'firebase' => [
-                'credentials_path' => env('FORTUNE_VOICE_FIREBASE_CREDENTIALS', env('GOOGLE_APPLICATION_CREDENTIALS', storage_path('app/firebase-credentials.json'))),
-                'bucket' => env('FORTUNE_VOICE_FIREBASE_BUCKET'),
-                'public_url' => null,
-            ],
-            default => [],
-        };
+        $defaults = config("services.fortune_voice_storage.{$driver}");
+
+        return is_array($defaults) ? $defaults : [];
     }
 
     /**

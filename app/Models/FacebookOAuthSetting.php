@@ -76,11 +76,11 @@ class FacebookOAuthSetting extends Model
                 $setting = self::first();
 
                 // Auto-create row จาก .env ถ้ายังไม่มีใน DB (migration smooth)
-                if (! $setting && env('FACEBOOK_CLIENT_ID')) {
+                if (! $setting && config('services.facebook.client_id')) {
                     $setting = self::create([
-                        'app_id' => env('FACEBOOK_CLIENT_ID'),
-                        'app_secret' => env('FACEBOOK_CLIENT_SECRET'),
-                        'redirect_uri' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
+                        'app_id' => config('services.facebook.client_id'),
+                        'app_secret' => config('services.facebook.client_secret'),
+                        'redirect_uri' => config('services.facebook.redirect') ?: '/auth/facebook/callback',
                         'is_enabled' => true,
                     ]);
                 }

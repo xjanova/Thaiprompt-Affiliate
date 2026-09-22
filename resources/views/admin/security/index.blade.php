@@ -1214,7 +1214,7 @@
                                             AbuseIPDB API Key
                                         </label>
                                         <input type="text" name="abuseipdb_api_key" id="abuseipdb_api_key"
-                                               value="{{ old('abuseipdb_api_key', env('ABUSEIPDB_API_KEY', '')) }}"
+                                               value="{{ old('abuseipdb_api_key', config('services.abuseipdb.api_key', '')) }}"
                                                placeholder="Your AbuseIPDB API Key"
                                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500">
                                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -1227,7 +1227,7 @@
                                             IPQualityScore API Key
                                         </label>
                                         <input type="text" name="ipqualityscore_api_key" id="ipqualityscore_api_key"
-                                               value="{{ old('ipqualityscore_api_key', env('IPQUALITYSCORE_API_KEY', '')) }}"
+                                               value="{{ old('ipqualityscore_api_key', config('services.ipqualityscore.api_key', '')) }}"
                                                placeholder="Your IPQualityScore API Key"
                                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500">
                                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">

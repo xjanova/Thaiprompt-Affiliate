@@ -240,6 +240,6 @@ class AiModelAdminController extends Controller
 
     private function hfToken(): ?string
     {
-        return env('HF_TOKEN') ?: env('HUGGING_FACE_TOKEN') ?: env('HUGGINGFACE_TOKEN') ?: null;
+        return config('services.huggingface.token') ?: null;
     }
 }

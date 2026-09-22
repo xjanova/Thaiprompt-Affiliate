@@ -179,7 +179,7 @@ class NongYingAIService
             $voiceKey = 'th-premwadee';
         }
         $geminiVoice = self::FEMALE_VOICES[$voiceKey];
-        $geminiTtsModel = env('AI_TTS_MODEL', 'gemini-2.5-flash-preview-tts');
+        $geminiTtsModel = config('services.gemini.tts_model') ?: 'gemini-2.5-flash-preview-tts';
 
         // Collect only Gemini keys — other providers don't speak.
         $allKeys = array_values(array_filter(

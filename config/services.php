@@ -31,6 +31,9 @@ return [
 
     'google' => [
         'api_key' => env('GOOGLE_API_KEY', ''),
+        // คีย์เฉพาะ Cloud Text-to-Speech (ว่าง = ใช้คีย์ Translate/ทั่วไปแทน ดู GoogleCloudTtsProvider)
+        'tts_api_key' => env('GOOGLE_TTS_API_KEY', ''),
+        'cloud_project_id' => env('GOOGLE_CLOUD_PROJECT_ID', ''),
         'credentials_path' => env('GOOGLE_APPLICATION_CREDENTIALS', storage_path('app/google-credentials.json')),
         'translate' => [
             'enabled' => env('GOOGLE_TRANSLATE_ENABLED', false),
@@ -159,6 +162,55 @@ return [
 
     'anthropic' => [
         'api_key' => env('ANTHROPIC_API_KEY', ''),
+        'model' => env('AI_MODEL_CLAUDE', 'claude-haiku-4-5-20251001'),
+    ],
+
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY', ''),
+        'model' => env('AI_MODEL_OPENAI', 'gpt-4o-mini'),
+    ],
+
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY', ''),
+        'model' => env('AI_MODEL_GEMINI', 'gemini-2.5-flash'),
+        'tts_model' => env('AI_TTS_MODEL', 'gemini-2.5-flash-preview-tts'),
+    ],
+
+    // แชทน้องหญิงในแอพ (Api\V1\AiChatApiController) — gemini / claude / openai
+    'nongying_chat' => [
+        'provider' => env('AI_PROVIDER', 'gemini'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Web search (เครื่องมือค้นเว็บของ AI)
+    |--------------------------------------------------------------------------
+    |
+    | ค่าใน FortuneTellingSetting (หลังบ้าน) มาก่อนเสมอ ค่าตรงนี้เป็นแค่ fallback
+    |
+    */
+
+    'tavily' => [
+        'api_key' => env('TAVILY_API_KEY', ''),
+    ],
+
+    'brave_search' => [
+        'api_key' => env('BRAVE_SEARCH_API_KEY', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | GitHub
+    |--------------------------------------------------------------------------
+    |
+    | token: อ่าน release ของ repo (app:backfill-releases) — ว่างได้ถ้า repo เป็น public
+    | webhook_secret: ตรวจลายเซ็น webhook — ว่าง = ปฏิเสธ webhook ทั้งหมด
+    |
+    */
+
+    'github' => [
+        'token' => env('GITHUB_TOKEN', ''),
+        'webhook_secret' => env('GITHUB_WEBHOOK_SECRET', ''),
     ],
 
     /*
@@ -183,10 +235,54 @@ return [
     |--------------------------------------------------------------------------
     | Huggingface
     |--------------------------------------------------------------------------
+    |
+    | token ดาวน์โหลดโมเดล AI ของแอพ thaiapp — รับได้ 3 ชื่อ env ตามที่เคยใช้กันมา
+    |
     */
+
+    'huggingface' => [
+        'token' => env('HF_TOKEN') ?: env('HUGGING_FACE_TOKEN') ?: env('HUGGINGFACE_TOKEN') ?: '',
+    ],
 
     'google_cloud' => [
         'translate_api_key' => env('GOOGLE_CLOUD_TRANSLATE_API_KEY', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | ที่เก็บไฟล์เสียงคำทำนาย (FortuneVoiceStorageService)
+    |--------------------------------------------------------------------------
+    |
+    | เป็นค่าตั้งต้นเท่านั้น — ค่าที่แอดมินบันทึกในหลังบ้าน (DB) ทับค่าตรงนี้เสมอ
+    |
+    */
+
+    'fortune_voice_storage' => [
+        'r2' => [
+            'account_id' => env('FORTUNE_VOICE_R2_ACCOUNT_ID'),
+            'access_key_id' => env('FORTUNE_VOICE_R2_ACCESS_KEY_ID'),
+            'secret_access_key' => env('FORTUNE_VOICE_R2_SECRET_ACCESS_KEY'),
+            'bucket' => env('FORTUNE_VOICE_R2_BUCKET'),
+            'public_url' => env('FORTUNE_VOICE_R2_PUBLIC_URL'),
+        ],
+        's3' => [
+            'access_key_id' => env('FORTUNE_VOICE_S3_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret_access_key' => env('FORTUNE_VOICE_S3_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('FORTUNE_VOICE_S3_REGION', env('AWS_DEFAULT_REGION', 'ap-southeast-1')),
+            'bucket' => env('FORTUNE_VOICE_S3_BUCKET', env('AWS_BUCKET')),
+            'endpoint' => env('FORTUNE_VOICE_S3_ENDPOINT', env('AWS_ENDPOINT')),
+            'public_url' => env('FORTUNE_VOICE_S3_PUBLIC_URL', env('AWS_URL')),
+        ],
+        'gcs' => [
+            'credentials_path' => env('FORTUNE_VOICE_GCS_CREDENTIALS', env('GOOGLE_APPLICATION_CREDENTIALS', storage_path('app/firebase-credentials.json'))),
+            'bucket' => env('FORTUNE_VOICE_GCS_BUCKET'),
+            'public_url' => env('FORTUNE_VOICE_GCS_PUBLIC_URL'),
+        ],
+        'firebase' => [
+            'credentials_path' => env('FORTUNE_VOICE_FIREBASE_CREDENTIALS', env('GOOGLE_APPLICATION_CREDENTIALS', storage_path('app/firebase-credentials.json'))),
+            'bucket' => env('FORTUNE_VOICE_FIREBASE_BUCKET'),
+            'public_url' => null,
+        ],
     ],
 
     /*

@@ -226,7 +226,7 @@ class WebSearchService
             // settings ไม่พร้อม — ลอง config ต่อ
         }
 
-        return config('services.tavily.api_key', env('TAVILY_API_KEY')) ?: null;
+        return config('services.tavily.api_key') ?: null;
     }
 
     /**
@@ -244,6 +244,6 @@ class WebSearchService
             //
         }
 
-        return config('services.brave_search.api_key', env('BRAVE_SEARCH_API_KEY')) ?: null;
+        return config('services.brave_search.api_key') ?: null;
     }
 }

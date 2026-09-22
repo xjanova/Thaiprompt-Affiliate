@@ -137,7 +137,7 @@
             <p class="text-lg text-green-100 mb-8">
                 กดเพิ่มเพื่อน LINE ตลาดสดไทยพร๊อม เริ่มช๊อปปิ้งได้ทันที!
             </p>
-            <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}"
+            <a href="{{ config('services.line.fresh_market_add_friend_url') ?: '#' }}"
                target="_blank"
                rel="noopener noreferrer"
                class="inline-flex items-center gap-3 px-10 py-5 bg-[#06C755] hover:bg-[#05b34d] text-white font-bold text-xl rounded-2xl shadow-2xl shadow-black/20 hover:shadow-black/30 transition-all hover:-translate-y-1">

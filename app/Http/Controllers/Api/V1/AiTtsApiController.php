@@ -55,7 +55,7 @@ class AiTtsApiController extends Controller
         $geminiVoice = self::THAI_VOICES[$voiceKey] ?? self::THAI_VOICES['th-premwadee'];
         $format = $data['format'] ?? 'mp3';
 
-        $apiKey = env('GEMINI_API_KEY');
+        $apiKey = config('services.gemini.api_key');
         if (! $apiKey) {
             return response()->json([
                 'error'   => 'tts_unavailable',
@@ -63,7 +63,7 @@ class AiTtsApiController extends Controller
             ], 503);
         }
 
-        $model = env('AI_TTS_MODEL', 'gemini-2.5-flash-preview-tts');
+        $model = config('services.gemini.tts_model') ?: 'gemini-2.5-flash-preview-tts';
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
         try {

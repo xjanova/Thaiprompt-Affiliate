@@ -54,14 +54,11 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
      */
     protected function resolveApiKey(): ?string
     {
+        // อ่านผ่าน config() เท่านั้น — prod รัน config:cache แล้ว env() นอกไฟล์ config คืน null
         return config('services.google.tts_api_key')
-            ?: env('GOOGLE_TTS_API_KEY')
             ?: config('services.google.translate.api_key')
-            ?: env('GOOGLE_TRANSLATE_API_KEY')
             ?: config('services.google_cloud.translate_api_key')
-            ?: env('GOOGLE_CLOUD_TRANSLATE_API_KEY')
             ?: config('services.google.api_key')
-            ?: env('GOOGLE_API_KEY')
             ?: null;
     }
 
@@ -78,10 +75,10 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
     public static function diagnoseCredentials(): array
     {
         $checks = [
-            'GOOGLE_TTS_API_KEY' => ! empty(env('GOOGLE_TTS_API_KEY')) || ! empty(config('services.google.tts_api_key')),
-            'GOOGLE_TRANSLATE_API_KEY' => ! empty(env('GOOGLE_TRANSLATE_API_KEY')) || ! empty(config('services.google.translate.api_key')),
-            'GOOGLE_CLOUD_TRANSLATE_API_KEY' => ! empty(env('GOOGLE_CLOUD_TRANSLATE_API_KEY')) || ! empty(config('services.google_cloud.translate_api_key')),
-            'GOOGLE_API_KEY' => ! empty(env('GOOGLE_API_KEY')) || ! empty(config('services.google.api_key')),
+            'GOOGLE_TTS_API_KEY' => ! empty(config('services.google.tts_api_key')),
+            'GOOGLE_TRANSLATE_API_KEY' => ! empty(config('services.google.translate.api_key')),
+            'GOOGLE_CLOUD_TRANSLATE_API_KEY' => ! empty(config('services.google_cloud.translate_api_key')),
+            'GOOGLE_API_KEY' => ! empty(config('services.google.api_key')),
         ];
 
         $resolved = null;
@@ -93,14 +90,14 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
         }
 
         // Service account JSON (Speech-to-Text ใช้อยู่)
-        $saPath = env('GOOGLE_APPLICATION_CREDENTIALS') ?: config('services.google.credentials_path');
+        $saPath = config('services.google.credentials_path');
         $saExists = $saPath && file_exists($saPath);
 
         return [
             'resolved_key_source' => $resolved,
             'keys_found' => $checks,
             'service_account_path' => $saExists ? $saPath : null,
-            'project_id' => env('GOOGLE_TRANSLATE_PROJECT_ID') ?: env('GOOGLE_CLOUD_PROJECT_ID') ?: null,
+            'project_id' => config('services.google.translate.project_id') ?: config('services.google.cloud_project_id') ?: null,
         ];
     }
 

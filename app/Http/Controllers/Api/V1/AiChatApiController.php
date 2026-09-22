@@ -44,7 +44,7 @@ class AiChatApiController extends Controller
         ]);
 
         $systemPrompt = $this->systemPrompt($data['context'] ?? []);
-        $provider = env('AI_PROVIDER', 'gemini');
+        $provider = config('services.nongying_chat.provider') ?: 'gemini';
 
         try {
             return match ($provider) {
@@ -103,8 +103,8 @@ TXT;
 
     private function chatGemini(string $system, array $messages): JsonResponse
     {
-        $model = env('AI_MODEL_GEMINI', 'gemini-2.5-flash');
-        $key = env('GEMINI_API_KEY');
+        $model = config('services.gemini.model') ?: 'gemini-2.5-flash';
+        $key = config('services.gemini.api_key');
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}";
 
         $contents = array_map(fn ($m) => [
@@ -132,8 +132,8 @@ TXT;
 
     private function chatClaude(string $system, array $messages): JsonResponse
     {
-        $model = env('AI_MODEL_CLAUDE', 'claude-haiku-4-5-20251001');
-        $key = env('ANTHROPIC_API_KEY');
+        $model = config('services.anthropic.model') ?: 'claude-haiku-4-5-20251001';
+        $key = config('services.anthropic.api_key');
         $filtered = array_values(array_filter($messages, fn ($m) => $m['role'] !== 'system'));
 
         $resp = Http::withHeaders([
@@ -158,8 +158,8 @@ TXT;
 
     private function chatOpenAI(string $system, array $messages): JsonResponse
     {
-        $model = env('AI_MODEL_OPENAI', 'gpt-4o-mini');
-        $key = env('OPENAI_API_KEY');
+        $model = config('services.openai.model') ?: 'gpt-4o-mini';
+        $key = config('services.openai.api_key');
 
         $all = [['role' => 'system', 'content' => $system], ...$messages];
         $resp = Http::withToken($key)->timeout(30)->post('https://api.openai.com/v1/chat/completions', [

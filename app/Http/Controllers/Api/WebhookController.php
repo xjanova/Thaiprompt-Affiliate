@@ -130,7 +130,7 @@ class WebhookController extends Controller
      */
     protected function verifyGitHubSignature(Request $request): bool
     {
-        $secret = config('services.github.webhook_secret', env('GITHUB_WEBHOOK_SECRET'));
+        $secret = config('services.github.webhook_secret');
 
         // ถ้าไม่มี secret ที่ตั้งค่าไว้ ให้ปฏิเสธ webhook ทั้งหมด
         if (empty($secret)) {

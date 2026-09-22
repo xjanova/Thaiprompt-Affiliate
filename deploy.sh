@@ -2009,6 +2009,25 @@ print_step 18 22 "Optimizing Autoloader"
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
+# ⭐ (2026-09-22) cache config ซ้ำหลัง dump-autoload
+#   hook post-autoload-dump ของ Laravel (ComposerScripts::clearCompiled) ลบ bootstrap/cache/config.php
+#   ที่ STEP 15 เพิ่งสร้าง ⇒ prod ไม่เคยมี config cache เลย ทุกคำขอเสีย ~100ms อ่าน .env + config ใหม่
+#   ต้องอยู่ "ก่อน" hard-restart worker ข้างล่าง ให้ worker อ่าน cache ตัวสุดท้าย
+#   cache ไม่ผ่าน/DB user เป็น placeholder → config:clear กลับไปทำงานแบบไม่มี cache เหมือนเดิม (ไม่บล็อก deploy)
+print_info "→ Cache config ซ้ำ (dump-autoload เพิ่งลบของ STEP 15)..."
+if php artisan config:cache >/dev/null 2>&1 && [ -f bootstrap/cache/config.php ]; then
+    RECACHED_DB_USER=$(php artisan tinker --execute="echo config('database.connections.mysql.username');" 2>/dev/null | tail -1 | tr -d '[:space:]')
+    if [ -z "$RECACHED_DB_USER" ] || echo "$RECACHED_DB_USER" | grep -qiE "your_username|your-db-user|changeme"; then
+        php artisan config:clear >/dev/null 2>&1 || true
+        print_warning "⚠ config cache รอบสองได้ DB user ผิด ('$RECACHED_DB_USER') — ล้างทิ้ง ทำงานแบบไม่มี cache"
+    else
+        print_success "✓ Config cached (user: $RECACHED_DB_USER)"
+    fi
+else
+    php artisan config:clear >/dev/null 2>&1 || true
+    print_warning "⚠ config:cache รอบสองไม่สำเร็จ — ทำงานแบบไม่มี cache"
+fi
+
 # ⭐ Hard-restart Fortune Queue Worker (FIX 2026-05-29) — ต้องทำ "หลัง" config:cache เสมอ
 # ปัญหาเดิม: queue:restart (Step ก่อนหน้า) ยิง signal ก่อน config:cache → worker (comment→DM
 # funnel) respawn อ่าน config ตอนยังไม่นิ่ง → ค้าง DB creds เก่า/พิษในหน่วยความจำ จน respawn

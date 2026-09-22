@@ -67,7 +67,7 @@ class AiModelProxyController extends Controller
         //   path works even before admin has synced, but it costs a
         //   full PHP-worker roundtrip per download and hits our HF
         //   rate limit. First-time install only.
-        $hfToken = env('HF_TOKEN') ?: env('HUGGING_FACE_TOKEN') ?: env('HUGGINGFACE_TOKEN');
+        $hfToken = config('services.huggingface.token');
         if (! $hfToken) {
             return response()->json([
                 'error'   => 'server_not_configured',
@@ -181,7 +181,7 @@ class AiModelProxyController extends Controller
             ]);
         }
 
-        $hfToken = env('HF_TOKEN') ?: env('HUGGING_FACE_TOKEN') ?: env('HUGGINGFACE_TOKEN');
+        $hfToken = config('services.huggingface.token');
         if (! $hfToken) {
             return response()->json(['error' => 'server_not_configured'], 503);
         }

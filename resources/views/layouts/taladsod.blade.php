@@ -355,7 +355,7 @@
                         <a href="{{ config('services.social.facebook_url', 'https://facebook.com/thaiprompt') }}" target="_blank" rel="noopener" aria-label="Facebook" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
                             <i class="fab fa-facebook-f text-sm"></i>
                         </a>
-                        <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}" target="_blank" rel="noopener" aria-label="LINE" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
+                        <a href="{{ config('services.line.fresh_market_add_friend_url') ?: '#' }}" target="_blank" rel="noopener" aria-label="LINE" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
                             <i class="fab fa-line text-sm"></i>
                         </a>
                         <a href="{{ config('services.social.instagram_url', 'https://instagram.com/thaiprompt') }}" target="_blank" rel="noopener" aria-label="Instagram" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
@@ -426,7 +426,7 @@
                             <i class="fab fa-line text-green-400 mt-0.5"></i>
                             <div>
                                 <div class="text-gray-400">LINE Official</div>
-                                <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}" target="_blank" rel="noopener" class="text-green-400 hover:text-green-300 font-medium">@taladsod-thaiprompt</a>
+                                <a href="{{ config('services.line.fresh_market_add_friend_url') ?: '#' }}" target="_blank" rel="noopener" class="text-green-400 hover:text-green-300 font-medium">@taladsod-thaiprompt</a>
                             </div>
                         </li>
                         <li class="flex items-start gap-2">
@@ -446,7 +446,7 @@
                     </ul>
 
                     {{-- ปุ่มเพิ่มเพื่อน LINE --}}
-                    <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}" target="_blank" rel="noopener"
+                    <a href="{{ config('services.line.fresh_market_add_friend_url') ?: '#' }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors">
                         <i class="fab fa-line text-lg"></i> เพิ่มเพื่อน LINE
                     </a>

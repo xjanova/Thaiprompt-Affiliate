@@ -546,7 +546,7 @@
                            class="w-full sm:w-auto lg:w-full text-center px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2">
                             <i class="fas fa-store"></i> ขายของกับเรา
                         </a>
-                        <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}"
+                        <a href="{{ config('services.line.fresh_market_add_friend_url') ?: '#' }}"
                            target="_blank"
                            rel="noopener noreferrer"
                            class="w-full sm:w-auto lg:w-full text-center px-8 py-4 bg-[#06C755] hover:bg-[#05b34d] text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
