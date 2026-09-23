@@ -277,6 +277,9 @@ class FortunePackageCommissionTest extends TestCase
             'joined_at' => now(),
         ]);
 
+        // 🌙 (2026-09-23) สิทธิ์รับค่าแนะนำ = เคยมีบิลที่ชำระแล้ว — ให้บิลเก่าหนึ่งใบ
+        $this->createPaidReading($user->id, 39, FortuneReading::READING_TYPE_DEEP)->update(['paid_at' => now()->subDays(400)]);
+
         return [$user, $member];
     }
 

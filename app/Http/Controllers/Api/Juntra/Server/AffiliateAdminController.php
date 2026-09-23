@@ -217,6 +217,10 @@ class AffiliateAdminController extends Controller
         if (! $reading->is_paid) {
             return $this->refuse('bill_voided', "บิล {$reading->bill_reference} คืนเงินลูกค้าไปแล้ว — สร้างค่าแนะนำไม่ได้");
         }
+        // เจ้าของสั่ง (2026-09-21): ไม่จ่ายค่าแนะนำย้อนหลังให้บิลก่อนเปิดระบบ — บิลกลุ่มนี้มีไว้นับสิทธิ์เท่านั้น
+        if ($reading->isJuntraHistoryBill()) {
+            return $this->refuse('history_bill', "บิล {$reading->bill_reference} จ่ายก่อนเปิดระบบค่าแนะนำ — ไม่มีค่าแนะนำย้อนหลัง");
+        }
         if ((float) $data['amount'] > (float) $reading->amount_paid) {
             return $this->refuse('amount_over_bill', 'ค่าแนะนำต้องไม่เกินยอดบิล (฿'.number_format((float) $reading->amount_paid, 2).')');
         }

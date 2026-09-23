@@ -82,6 +82,8 @@ class AffiliateController extends Controller
             'paid_at' => 'nullable|date',
             'thaiprompt_user_id' => 'nullable|integer|min:1',
             'referral_code' => 'nullable|string|max:64',
+            // บิลก่อนเปิดระบบค่าแนะนำ — นับสิทธิ์ "เคยมีบิลที่ชำระแล้ว" แต่ไม่แจกค่าแนะนำ
+            'history_only' => 'sometimes|boolean',
         ]);
 
         try {
@@ -95,6 +97,7 @@ class AffiliateController extends Controller
                 'bill_reference' => $result['bill_reference'],
                 'reading_id' => $result['reading']?->id,
                 'status' => $result['status'],
+                'history_only' => (bool) $result['reading']?->isJuntraHistoryBill(),
                 'duplicate' => $result['duplicate'],
                 'member_code' => $result['member']?->member_code,
                 'commissions' => array_map(fn (FortuneCommission $c) => [

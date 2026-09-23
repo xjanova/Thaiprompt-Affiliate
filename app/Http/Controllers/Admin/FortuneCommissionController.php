@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneCommission;
+use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\User;
@@ -339,6 +340,14 @@ class FortuneCommissionController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'notes' => 'nullable|string|max:500',
         ]);
+
+        // 🌙 (2026-09-23) บิลจันทราก่อนเปิดระบบค่าแนะนำมีไว้นับสิทธิ์เท่านั้น — เจ้าของสั่งไม่จ่ายย้อนหลัง
+        if (FortuneReading::find($validated['fortune_reading_id'])?->isJuntraHistoryBill()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'บิลนี้จ่ายก่อนเปิดระบบค่าแนะนำของจันทรา — ไม่มีค่าแนะนำย้อนหลัง',
+            ], 422);
+        }
 
         $commission = app(FortuneCommissionAdminService::class)->createManual($validated);
 

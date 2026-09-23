@@ -1406,6 +1406,14 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🌙 (2026-09-23) บิลจันทราที่จ่ายก่อนเปิดระบบค่าแนะนำ — นับเป็น "เคยมีบิลที่ชำระแล้ว" แต่ไม่มีค่าแนะนำ
+     */
+    public function isJuntraHistoryBill(): bool
+    {
+        return $this->isJuntraBill() && (bool) data_get($this->conversation_state, 'history_only', false);
+    }
+
+    /**
      * 🌙 ตัดบิลจากเว็บจันทราออก — ใช้กับทุกรายการที่เป็นงานของบอท (รายการในแอพ SMS Checker,
      *   ผู้รับแคมเปญ, ตัวกู้ข้อความ, ยอดรายได้ของแม่หมอ) — บิลจันทราไม่มีช่องทางแชท
      *   และจันทราเป็นผู้เก็บเงิน (null-safe: แถวเก่าที่ reading_type ว่างยังอยู่ครบ)

@@ -24,6 +24,13 @@ use Illuminate\Support\Facades\Log;
 class FortuneCommissionService
 {
     /**
+     * บิลที่นับเป็น "เคยมีบิลที่ชำระแล้ว" ต้องมียอดอย่างน้อยเท่านี้ — กันแถวยอดเศษสตางค์/0 ที่ is_paid ค้าง
+     *   ถูกนับเป็นสิทธิ์ถาวร (กฎยกเว้นทุกตัวต้องมี de-minimis — ดูบทเรียน MIN_REAL_MONEY_EXEMPT 2026-09-01)
+     *   ราคาต่ำสุดจริงคือไพ่ 9฿ บนจันทรา
+     */
+    public const MIN_PAID_BILL = 1.0;
+
+    /**
      * จ่ายคอมมิชชั่นดูดวงให้ Level 1 + Level 2
      *
      * Flow:
@@ -133,6 +140,41 @@ class FortuneCommissionService
     }
 
     /**
+     * 🌙 (2026-09-23) ผู้รับค่าแนะนำต้อง "เคยมีบิลที่ชำระแล้ว" อย่างน้อย 1 บิล — ทุกช่องทาง
+     *
+     * เจ้าของสั่ง: "ผู้เชิญต้องเคยเปิดบิลที่ชำระบิลแล้ว จึงจะได้รับค่าคอมทุกช่องทาง"
+     *   - แทนเกณฑ์รักษายอดรายเดือน (MlmRetentionHelper) — เดิมผู้เชิญต้องมีบิล/PV ในเดือนนั้นหรือ 7 วันล่าสุด
+     *     prod 2026-09-23 ผ่านเกณฑ์เดิมแค่ 195 จาก 1,112 คน ค่าแนะนำที่เหลือเข้ากระเป๋ากลางหมด
+     *     (MlmRetentionHelper ยังใช้กับค่าคอมร้านค้า/ไบนารีตามเดิม — ที่นี่เลิกใช้กับค่าแนะนำดูดวงเท่านั้น)
+     *   - บิลช่องทางไหนก็นับ: บอท FB/LINE และเว็บ/แอพจันทรา (บิลจันทราก็เป็นแถว fortune_readings)
+     *   - เคยครั้งเดียวพอ ไม่หมดอายุ · บิลที่ยกเลิก/คืนเงินแล้ว (is_paid = false) หรือยอดต่ำกว่า MIN_PAID_BILL ไม่นับ
+     *   - ตำแหน่งที่ถูกปิด (status ≠ active เช่นบัญชีเงาที่รวมแล้ว) หรือแอดมินตัดสิทธิ์ (is_qualified) ไม่ได้รับ
+     */
+    public function isEligibleRecipient(MlmMember $member): bool
+    {
+        return $this->ineligibleReason($member, 'sponsor') === null;
+    }
+
+    /**
+     * เหตุที่ไม่ได้รับ (ใช้เป็นเหตุผลของกระเป๋ากลาง) — null = มีสิทธิ์รับ
+     *
+     * @param  string  $role  'sponsor' (สายตรง) | 'grandparent' (ชั้นหลาน)
+     */
+    protected function ineligibleReason(MlmMember $member, string $role): ?string
+    {
+        if ($member->status !== 'active' || ! $member->is_qualified || ! $member->user_id) {
+            return "{$role}_inactive";
+        }
+
+        $hasPaidBill = FortuneReading::where('user_id', $member->user_id)
+            ->where('is_paid', true)
+            ->where('amount_paid', '>=', self::MIN_PAID_BILL)
+            ->exists();
+
+        return $hasPaidBill ? null : "{$role}_no_paid_bill";
+    }
+
+    /**
      * ตรวจว่าบิลนี้จ่ายคอมมิชชั่น level นี้ไปแล้วหรือยัง (กันจ่ายซ้ำราย level)
      */
     protected function levelAlreadyPaid(FortuneReading $reading, int $level): bool
@@ -145,7 +187,7 @@ class FortuneCommissionService
     /**
      * จ่ายคอมมิชชั่น Level 1 (สายตรง)
      *
-     * ถ้าหา sponsor ไม่ได้ (ไม่มีผู้แนะนำ / ไม่ active / user หาย):
+     * ถ้าหา sponsor ไม่ได้ (ไม่มีผู้แนะนำ / ไม่มีสิทธิ์รับ — ดู isEligibleRecipient / user หาย):
      *   → fallback เข้ากระเป๋ากลาง (ถ้าเปิด isFortuneCentralFallbackEnabled)
      */
     protected function payLevel1(
@@ -204,12 +246,13 @@ class FortuneCommissionService
             return;
         }
 
-        // เช็ค active: ผู้แนะนำต้อง active (ไม่ roll up — กฎดูดวง)
-        $isActive = \App\Helpers\MlmRetentionHelper::isMemberActive($sponsor);
-        if (! $isActive) {
-            Log::info('FortuneCommission [L1]: ผู้แนะนำไม่ active → fallback กระเป๋ากลาง (ไม่ roll up)', [
+        // ผู้แนะนำต้องมีสิทธิ์รับ — เคยมีบิลที่ชำระแล้ว (ไม่ roll up — กฎดูดวง)
+        $ineligible = $this->ineligibleReason($sponsor, 'sponsor');
+        if ($ineligible !== null) {
+            Log::info('FortuneCommission [L1]: ผู้แนะนำไม่มีสิทธิ์รับ → fallback กระเป๋ากลาง (ไม่ roll up)', [
                 'reading_id' => $reading->id,
                 'sponsor_id' => $sponsor->id,
+                'reason' => $ineligible,
             ]);
             $this->payToCentralWallet(
                 $reading, $mlmMember, $settings,
@@ -218,7 +261,7 @@ class FortuneCommissionService
                 commissionRate: $commissionRate,
                 amount: $commissionAmount,
                 readingPrice: $readingPrice,
-                reason: 'sponsor_inactive',
+                reason: $ineligible,
             );
 
             return;
@@ -250,7 +293,7 @@ class FortuneCommissionService
     /**
      * จ่ายคอมมิชชั่น Level 2 (ชั้นหลาน)
      *
-     * ถ้าหา grandparent ไม่ได้ (ไม่มี / ไม่ active / user หาย):
+     * ถ้าหา grandparent ไม่ได้ (ไม่มี / ไม่มีสิทธิ์รับ — ดู isEligibleRecipient / user หาย):
      *   → fallback เข้ากระเป๋ากลาง (ถ้าเปิด isFortuneCentralFallbackEnabled)
      */
     protected function payLevel2(
@@ -317,14 +360,15 @@ class FortuneCommissionService
             return;
         }
 
-        // เช็ค active
-        $isActive = \App\Helpers\MlmRetentionHelper::isMemberActive($grandparent);
-        if (! $isActive) {
-            Log::info('FortuneCommission [L2]: grandparent ไม่ active → fallback กระเป๋ากลาง', [
+        // ชั้นหลานก็ต้องเคยมีบิลที่ชำระแล้ว — กติกาเดียวกับสายตรง
+        $ineligible = $this->ineligibleReason($grandparent, 'grandparent');
+        if ($ineligible !== null) {
+            Log::info('FortuneCommission [L2]: grandparent ไม่มีสิทธิ์รับ → fallback กระเป๋ากลาง', [
                 'reading_id' => $reading->id,
                 'grandparent_id' => $grandparent->id,
+                'reason' => $ineligible,
             ]);
-            $fallback('grandparent_inactive');
+            $fallback($ineligible);
 
             return;
         }
@@ -562,10 +606,12 @@ class FortuneCommissionService
         return match ($reason) {
             'no_referrer' => 'ลูกค้าไม่มีผู้แนะนำ',
             'sponsor_missing' => 'ผู้แนะนำหายจากระบบ',
-            'sponsor_inactive' => 'ผู้แนะนำไม่ active (ไม่ roll up)',
+            'sponsor_inactive' => 'ตำแหน่งผู้แนะนำถูกปิด/ตัดสิทธิ์ (ไม่ roll up)',
+            'sponsor_no_paid_bill' => 'ผู้แนะนำยังไม่เคยมีบิลที่ชำระแล้ว (ไม่ roll up)',
             'no_grandparent' => 'ไม่มี grandparent (ผู้แนะนำของผู้แนะนำ)',
             'grandparent_missing' => 'grandparent หายจากระบบ',
-            'grandparent_inactive' => 'grandparent ไม่ active',
+            'grandparent_inactive' => 'ตำแหน่ง grandparent ถูกปิด/ตัดสิทธิ์',
+            'grandparent_no_paid_bill' => 'grandparent ยังไม่เคยมีบิลที่ชำระแล้ว',
             default => "เหตุผล: {$reason}",
         };
     }

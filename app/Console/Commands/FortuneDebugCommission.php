@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Helpers\MlmRetentionHelper;
 use App\Models\FortuneCommission;
 use App\Models\FortuneReading;
 use App\Models\FortuneReferral;
@@ -12,6 +11,7 @@ use App\Models\MlmMember;
 use App\Models\MlmProspect;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use App\Services\FortuneCommissionService;
 use Illuminate\Console\Command;
 
 /**
@@ -146,14 +146,11 @@ class FortuneDebugCommission extends Command
             $basicId ? "✅ @{$basicId}" : '❌ ยังไม่ตั้งค่า!',
         ];
 
-        // MLM retention
-        $retentionEnabled = MlmGlobalSetting::get('volume_retention_enabled', true);
-        $requiredPv = MlmGlobalSetting::get('volume_retention_monthly_pv', 100);
-        $graceDays = MlmGlobalSetting::get('volume_retention_grace_days', 7);
+        // 🌙 (2026-09-23) ค่าแนะนำดูดวงไม่ใช้เกณฑ์รักษายอด (volume_retention_*) แล้ว — ใช้กับร้านค้า/ไบนารีเท่านั้น
         $checks[] = [
-            'volume_retention_enabled',
-            $retentionEnabled ? "true (PV={$requiredPv}, grace={$graceDays}d)" : 'false',
-            $retentionEnabled ? "⚠️ เปิด! Sponsor ต้องมี PV >= {$requiredPv}/เดือน" : '✅ ปิด (ทุกคน active)',
+            'สิทธิ์รับค่าแนะนำดูดวง',
+            'เคยมีบิลที่ชำระแล้ว ≥ '.FortuneCommissionService::MIN_PAID_BILL.'฿',
+            '✅ ไม่ต้องซื้อทุกเดือน (เกณฑ์รักษายอดใช้กับร้านค้าเท่านั้น)',
         ];
 
         $this->table(['Setting', 'ค่า', 'สถานะ'], $checks);
@@ -191,16 +188,12 @@ class FortuneDebugCommission extends Command
 
         $this->info("  MLM Member ID: {$member->id} | Status: {$member->status} | Qualified: ".($member->is_qualified ? 'Yes' : 'No'));
 
-        // ตรวจ Active Status
-        $isActive = MlmRetentionHelper::isMemberActive($member);
-        $retentionStatus = MlmRetentionHelper::getRetentionStatus($member);
-
-        if ($isActive) {
-            $this->info("  ✅ Active — PV เดือนนี้: {$retentionStatus['monthly_pv']}/{$retentionStatus['required_pv']}");
+        // 🌙 (2026-09-23) สิทธิ์รับค่าแนะนำดูดวง = เคยมีบิลที่ชำระแล้ว (กติกาเดียวกับตอนแจกจริง)
+        if (app(FortuneCommissionService::class)->isEligibleRecipient($member)) {
+            $this->info('  ✅ มีสิทธิ์รับค่าแนะนำ — เคยมีบิลที่ชำระแล้ว');
         } else {
-            $this->error("  ❌ ไม่ Active! — PV เดือนนี้: {$retentionStatus['monthly_pv']}/{$retentionStatus['required_pv']}");
-            $this->error("     สถานะ: {$retentionStatus['status']} | วันนับจากเคลื่อนไหวล่าสุด: {$retentionStatus['days_since_last_purchase']} วัน (grace: {$retentionStatus['grace_days']} วัน)");
-            $this->warn('  ⚠️ นี่อาจเป็นสาเหตุที่คอมมิชชั่นไม่เข้า!');
+            $this->error('  ❌ ยังไม่มีสิทธิ์รับค่าแนะนำ — ยังไม่เคยมีบิลที่ชำระแล้ว หรือตำแหน่งถูกปิด/ตัดสิทธิ์');
+            $this->warn('  ⚠️ ค่าแนะนำที่ควรได้จะเข้ากระเป๋ากลางแทน');
         }
 
         // ตรวจ Sponsor ของ Member นี้
@@ -451,9 +444,8 @@ class FortuneDebugCommission extends Command
                 } else {
                     $sponsor = MlmMember::find($mlmMember->unilevel_sponsor_id);
                     if ($sponsor) {
-                        $isActive = MlmRetentionHelper::isMemberActive($sponsor);
-                        if (! $isActive) {
-                            $this->error("  ❌ Reading #{$r->id}: Sponsor (Member #{$sponsor->id}) ไม่ Active → คอมถูกข้าม");
+                        if (! app(FortuneCommissionService::class)->isEligibleRecipient($sponsor)) {
+                            $this->error("  ❌ Reading #{$r->id}: Sponsor (Member #{$sponsor->id}) ยังไม่มีสิทธิ์รับ (ไม่เคยมีบิลที่ชำระแล้ว) → เข้ากระเป๋ากลาง");
                         } else {
                             $this->warn("  ⚠️ Reading #{$r->id}: ทุกอย่างดูปกติ แต่ไม่มี commission — ตรวจ log เพิ่มเติม");
                         }

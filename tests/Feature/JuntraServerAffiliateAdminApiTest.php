@@ -201,6 +201,22 @@ class JuntraServerAffiliateAdminApiTest extends TestCase
         $manual(['user_id' => $inviter->id, 'level' => 2, 'amount' => 1])->assertStatus(422)->assertJsonPath('reason_code', 'bill_voided');
     }
 
+    /** 🌙 (2026-09-23) บิลก่อนเปิดระบบมีไว้นับสิทธิ์ — สร้างค่าแนะนำย้อนหลังด้วยมือไม่ได้ (เจ้าของสั่งไม่จ่ายย้อนหลัง) */
+    public function test_manual_commission_is_refused_on_a_history_bill(): void
+    {
+        [$inviter] = $this->activeMember('INVITE01', $this->rootMember);
+        $this->postJson('/api/v1/juntra/server/affiliate/bills', [
+            'bill_id' => 9110, 'user_ref' => 710, 'name' => 'ลูกค้าเก่า', 'amount' => 99, 'product' => 'tarot_celtic',
+            'referral_code' => 'INVITE01', 'history_only' => true,
+        ])->assertStatus(201);
+
+        $this->postJson('/api/v1/juntra/server/affiliate/admin/commissions/manual', [
+            'bill_id' => 9110, 'user_id' => $inviter->id, 'level' => 1, 'amount' => 9.9, 'actor' => self::ACTOR,
+        ])->assertStatus(422)->assertJsonPath('reason_code', 'history_bill');
+
+        $this->assertSame(0, FortuneCommission::where('fortune_reading_id', $this->readingId(9110))->count());
+    }
+
     /** คืนเงินบิลแล้ว ค่าแนะนำที่ยังรอ/อนุมัติของบิลนั้นถูกปิด — กดจ่ายไม่ได้อีก */
     public function test_refund_closes_open_commissions_so_they_can_never_be_paid(): void
     {

@@ -129,8 +129,12 @@ class JuntraAffiliateService
      * บิลเลขเดียวกันทำทีละคำขอ (ล็อกรายบิล — ตัวเดียวกับ voidBill) และบิลที่ถูกสั่งยกเลิกไว้ก่อน
      * (juntra_voided_bills) จะไม่แจกค่าแนะนำอีก
      *
+     * 🌙 (2026-09-23) history_only = บิลที่จ่ายก่อนเปิดระบบค่าแนะนำ (ก่อน 2026-09-21) — บันทึกไว้ว่า
+     *   ลูกค้า "เคยมีบิลที่ชำระแล้ว" (สิทธิ์รับค่าแนะนำ ดู FortuneCommissionService::isEligibleRecipient)
+     *   แต่ไม่แจกค่าแนะนำจากบิลนั้น (เจ้าของสั่ง: ไม่จ่ายย้อนหลัง) ส่งซ้ำมาก็ไม่แจก
+     *
      * @param  array{bill_id: int, user_ref: int, name: string, amount: float|string, product: string,
-     *               paid_at?: ?string, thaiprompt_user_id?: ?int, referral_code?: ?string}  $bill
+     *               paid_at?: ?string, thaiprompt_user_id?: ?int, referral_code?: ?string, history_only?: bool}  $bill
      * @return array{reading: ?FortuneReading, bill_reference: string, status: 'paid'|'voided', member: ?MlmMember,
      *               duplicate: bool, commissions: array<int, FortuneCommission>}
      *
@@ -187,11 +191,12 @@ class JuntraAffiliateService
                     'questions' => [],
                     'reading_type' => FortuneReading::READING_TYPE_JUNTRA,
                     'conversation_status' => FortuneReading::STATUS_COMPLETED,
-                    'conversation_state' => [
+                    'conversation_state' => array_filter([
                         'source' => 'juntra',
                         'juntra_bill_id' => $billId,
                         'juntra_product' => Str::limit((string) $bill['product'], 60, ''),
-                    ],
+                        'history_only' => ! empty($bill['history_only']) ? true : null,
+                    ], fn ($v) => $v !== null),
                     'is_paid' => true,
                     'amount_paid' => $amount,
                     'amount_received' => $amount,
@@ -202,7 +207,8 @@ class JuntraAffiliateService
             }
 
             // บิลที่ถูกยกเลิกไปแล้วห้ามจ่ายค่าแนะนำซ้ำ — ส่งซ้ำมาก็แค่รายงานสถานะ
-            if ($reading->is_paid && $member) {
+            //   บิลประวัติก่อนเปิดระบบไม่แจกเลย (ตัดสินจากแถวที่บันทึกไว้ ไม่ใช่จากคำขอรอบนี้)
+            if ($reading->is_paid && $member && ! $reading->isJuntraHistoryBill()) {
                 $settings = FortuneTellingSetting::getSettings();
                 if ($settings->isFortuneAffiliateEnabled()) {
                     // เรียกซ้ำได้ปลอดภัย: กันจ่ายซ้ำรายชั้นอยู่ในตัว (ซ่อมชั้นที่เคยจ่ายไม่สำเร็จด้วย)

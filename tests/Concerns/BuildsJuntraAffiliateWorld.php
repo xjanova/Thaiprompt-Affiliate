@@ -45,6 +45,8 @@ trait BuildsJuntraAffiliateWorld
 
         $admin = User::factory()->create(['id' => 1, 'name' => 'แอดมิน']);
         $this->rootMember = $this->member($admin, null, 'ROOT0001');
+        // ผู้แนะนำเริ่มต้นมีสิทธิ์รับค่าแนะนำ (เคยมีบิลที่ชำระแล้ว) — เทสต์ที่อยากได้คนไม่มีสิทธิ์สร้างเองด้วย member()
+        $this->paidBill($admin);
 
         FortuneTellingSetting::create([
             'facebook_app_id' => 'test-app-'.uniqid(),
@@ -96,12 +98,34 @@ trait BuildsJuntraAffiliateWorld
         return (int) FortuneReading::where('bill_reference', 'JW-'.$billId)->value('id');
     }
 
-    /** @return array{0: User, 1: MlmMember} */
+    /**
+     * สมาชิกที่มีสิทธิ์รับค่าแนะนำ — เคยมีบิลบอทที่ชำระแล้วหนึ่งใบ (FortuneCommissionService::isEligibleRecipient)
+     *
+     * @return array{0: User, 1: MlmMember}
+     */
     protected function activeMember(string $code, ?MlmMember $sponsor = null): array
     {
         $user = User::factory()->create();
+        $member = $this->member($user, $sponsor ?? $this->rootMember, $code);
+        $this->paidBill($user);
 
-        return [$user, $this->member($user, $sponsor ?? $this->rootMember, $code)];
+        return [$user, $member];
+    }
+
+    /** บิลดูดวงของบอทที่ชำระแล้ว (นานแล้ว) — ทำให้ผู้ใช้คนนี้ "เคยมีบิลที่ชำระแล้ว" */
+    protected function paidBill(User $user, float $amount = 39, string $type = 'deep', bool $paid = true): FortuneReading
+    {
+        return FortuneReading::create([
+            'user_id' => $user->id,
+            'facebook_user_id' => 'paid-before-'.uniqid(),
+            'platform' => 'facebook',
+            'reading_type' => $type,
+            'questions' => [],
+            'conversation_status' => FortuneReading::STATUS_COMPLETED,
+            'is_paid' => $paid,
+            'amount_paid' => $amount,
+            'paid_at' => $paid ? now()->subDays(400) : null,
+        ]);
     }
 
     protected function member(User $user, ?MlmMember $sponsor, string $code): MlmMember

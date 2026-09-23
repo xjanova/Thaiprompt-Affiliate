@@ -505,6 +505,53 @@ class JuntraServerAffiliateApiTest extends TestCase
         }
     }
 
+    /**
+     * 🌙 (2026-09-23) บิลที่จ่ายก่อนเปิดระบบค่าแนะนำ — นับว่าลูกค้า "เคยมีบิลที่ชำระแล้ว" แต่ไม่แจกค่าแนะนำ
+     *   (เจ้าของสั่ง: ไม่จ่ายย้อนหลัง) ส่งซ้ำก็ไม่แจก · ลูกค้าคนนั้นได้สิทธิ์รับค่าแนะนำจากทีมตัวเอง
+     */
+    public function test_history_bill_makes_the_customer_eligible_but_pays_nothing(): void
+    {
+        $this->activeMember('INVITE01', $this->rootMember);
+        $history = [
+            'bill_id' => 9101, 'user_ref' => 901, 'name' => 'ลูกค้าเก่า', 'amount' => 129, 'product' => 'tarot_year',
+            'paid_at' => now()->subMonth()->toIso8601String(), 'referral_code' => 'INVITE01', 'history_only' => true,
+        ];
+
+        $this->postJson('/api/v1/juntra/server/affiliate/bills', $history)->assertStatus(201)
+            ->assertJsonPath('data.history_only', true)
+            ->assertJsonCount(0, 'data.commissions');
+        $this->postJson('/api/v1/juntra/server/affiliate/bills', $history)->assertOk()
+            ->assertJsonCount(0, 'data.commissions');
+        $this->assertSame(0, FortuneCommission::where('fortune_reading_id', $this->readingId(9101))->count());
+
+        // ลูกค้าเก่าคนนี้ชวนเพื่อน → บิลปกติของเพื่อนจ่ายสายตรงให้เขา 10%
+        $oldCustomer = JuntraAccount::where('juntra_user_id', 901)->value('user_id');
+        $code = MlmMember::where('user_id', $oldCustomer)->value('member_code');
+        $this->bill(9102, 902, 99, referral: $code)->assertStatus(201);
+        $this->assertCommission(9102, $oldCustomer, 1, '9.90', '10.00');
+
+        $this->getJson('/api/v1/juntra/server/affiliate/members/901/stats')->assertOk()
+            ->assertJsonPath('mlm.commission_eligible', true)
+            ->assertJsonPath('wallet.balance', 9.9);
+    }
+
+    /** ลูกค้าที่ยังไม่เคยมีบิลที่ชำระแล้ว — สถิติบอกว่ายังไม่มีสิทธิ์ และค่าแนะนำจากทีมไม่ถึงเขา */
+    public function test_customer_without_a_paid_bill_is_not_eligible_yet(): void
+    {
+        $this->ensure(903, 'ยังไม่เคยซื้อ')->assertStatus(201);
+        $code = MlmMember::where('user_id', JuntraAccount::where('juntra_user_id', 903)->value('user_id'))->value('member_code');
+
+        $this->getJson('/api/v1/juntra/server/affiliate/members/903/stats')->assertOk()
+            ->assertJsonPath('mlm.commission_eligible', false)
+            ->assertJsonPath('wallet.balance', 0);
+
+        $this->bill(9103, 904, 99, referral: $code)->assertStatus(201);
+        $this->assertDatabaseMissing('fortune_commissions', [
+            'fortune_reading_id' => $this->readingId(9103),
+            'user_id' => JuntraAccount::where('juntra_user_id', 903)->value('user_id'),
+        ]);
+    }
+
     public function test_server_routes_need_the_juntra_server_token(): void
     {
         $this->withoutToken()->postJson('/api/v1/juntra/server/affiliate/accounts', ['user_ref' => 1, 'name' => 'x'])

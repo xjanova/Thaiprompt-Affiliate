@@ -7,6 +7,8 @@ use App\Models\FortuneReading;
 use App\Models\JuntraAccount;
 use App\Models\MlmMember;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Services\FortuneCommissionService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -388,6 +390,21 @@ class JuntraMlmReadService
             ],
             'monthly_series' => $this->monthlyEarnings($userId, 12),
             'mlm' => $this->memberSummary($userId),
+            'wallet' => $this->walletSummary($userId),
+        ];
+    }
+
+    /**
+     * 🌙 (2026-09-23) ยอดในกระเป๋า Thaiprompt — ค่าแนะนำเข้ากระเป๋านี้ และถอนได้ที่เว็บ Thaiprompt ที่เดียว
+     *   (เจ้าของสั่ง: "รับทางเว็บถอนค่าคอมของเว็บไทยพร้อม") จันทราแสดงยอดนี้พร้อมทางไปถอน
+     */
+    private function walletSummary(int $userId): array
+    {
+        $wallet = Wallet::where('user_id', $userId)->first(['balance', 'currency']);
+
+        return [
+            'balance' => (float) ($wallet?->balance ?? 0),
+            'currency' => $wallet?->currency ?: 'THB',
         ];
     }
 
@@ -434,6 +451,8 @@ class JuntraMlmReadService
             'total_pv' => (float) $m->total_pv,
             'total_team_pv' => (float) $m->total_team_pv,
             'status' => $m->status,
+            // มีสิทธิ์รับค่าแนะนำไหม — กติกาเดียวกับตอนแจกจริง (เคยมีบิลที่ชำระแล้ว) จันทราแสดงอย่างเดียว ไม่คำนวณเอง
+            'commission_eligible' => app(FortuneCommissionService::class)->isEligibleRecipient($m),
         ];
     }
 

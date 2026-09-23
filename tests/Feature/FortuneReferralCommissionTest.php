@@ -356,6 +356,89 @@ class FortuneReferralCommissionTest extends TestCase
         ]);
     }
 
+    // ===========================================================
+    // 🌙 (2026-09-23) สิทธิ์รับ = เคยมีบิลที่ชำระแล้ว (เจ้าของสั่ง) — ทุกช่องทาง ไม่ต้องซื้อทุกเดือน
+    // ===========================================================
+
+    /**
+     * บิลเดียวเมื่อปีก่อนก็พอ — เกณฑ์รักษายอดรายเดือนเปิดอยู่ก็ไม่เกี่ยวกับค่าแนะนำดูดวงแล้ว
+     *   (เกณฑ์เดิม: ไม่มีบิล/PV เดือนนี้หรือ 7 วันล่าสุด → เข้ากระเป๋ากลาง)
+     */
+    public function test_one_paid_bill_long_ago_is_enough_even_with_monthly_retention_on(): void
+    {
+        MlmGlobalSetting::updateOrCreate(
+            ['key' => 'volume_retention_enabled'],
+            ['value' => '1', 'type' => 'boolean', 'group' => 'retention']
+        );
+        \Illuminate\Support\Facades\Cache::flush();
+
+        [$sponsor, $sMember] = $this->createActiveMlmMember(); // บิลเดียว 400 วันก่อน
+        [$buyer, $bMember] = $this->createActiveMlmMember(sponsorId: $sMember->id);
+        $reading = $this->createPaidReading($buyer->id, 99);
+
+        $this->service->distributeCommissions($reading, $bMember, $this->settings);
+
+        $this->assertDatabaseHas('fortune_commissions', [
+            'fortune_reading_id' => $reading->id, 'user_id' => $sponsor->id, 'level' => 1, 'status' => FortuneCommission::STATUS_PAID,
+        ]);
+    }
+
+    /** ผู้เชิญที่ไม่เคยมีบิลที่ชำระแล้ว → ส่วนนั้นเข้ากระเป๋ากลาง พร้อมเหตุผล (ไม่ roll up) */
+    public function test_sponsor_who_never_paid_a_bill_sends_the_commission_to_the_central_wallet(): void
+    {
+        [$central, $centralMember] = $this->createActiveMlmMember(paidBefore: false);
+        $this->settings->update(['fortune_central_fallback_enabled' => true, 'fortune_central_user_id' => $central->id]);
+
+        [$sponsor, $sMember] = $this->createActiveMlmMember(sponsorId: $centralMember->id, paidBefore: false);
+        [$buyer, $bMember] = $this->createActiveMlmMember(sponsorId: $sMember->id);
+        $reading = $this->createPaidReading($buyer->id, 99);
+
+        $this->service->distributeCommissions($reading, $bMember, $this->settings->fresh());
+
+        $this->assertDatabaseMissing('fortune_commissions', ['fortune_reading_id' => $reading->id, 'user_id' => $sponsor->id]);
+        $l1 = FortuneCommission::where('fortune_reading_id', $reading->id)->where('level', 1)->firstOrFail();
+        $this->assertSame($central->id, (int) $l1->user_id);
+        $this->assertStringContainsString('[CENTRAL_FALLBACK:sponsor_no_paid_bill]', $l1->notes);
+    }
+
+    /** บิลที่คืนเงินแล้ว (is_paid = false) หรือยอดต่ำกว่า 1 บาท ไม่นับเป็น "เคยมีบิลที่ชำระแล้ว" */
+    public function test_refunded_and_near_zero_bills_do_not_count(): void
+    {
+        [$sponsor, $sMember] = $this->createActiveMlmMember(paidBefore: false);
+        $this->createPaidReading($sponsor->id, 99)->update(['is_paid' => false]);
+        $this->createPaidReading($sponsor->id, 0.5);
+
+        $this->assertFalse($this->service->isEligibleRecipient($sMember));
+
+        $this->createPaidReading($sponsor->id, 9);
+        $this->assertTrue($this->service->isEligibleRecipient($sMember->fresh()));
+    }
+
+    /** ทุกช่องทาง: บิลจากเว็บ/แอพจันทรานับเหมือนบิลบอท */
+    public function test_a_juntra_web_bill_counts_as_a_paid_bill(): void
+    {
+        [$sponsor, $sMember] = $this->createActiveMlmMember(paidBefore: false);
+        $this->assertFalse($this->service->isEligibleRecipient($sMember));
+
+        $this->createPaidReading($sponsor->id, 9)->update(['reading_type' => FortuneReading::READING_TYPE_JUNTRA]);
+
+        $this->assertTrue($this->service->isEligibleRecipient($sMember->fresh()));
+    }
+
+    /** ชั้นหลานใช้กติกาเดียวกัน — ไม่เคยจ่ายก็ไม่ได้ (สายตรงยังได้ตามปกติ) */
+    public function test_grandparent_who_never_paid_gets_no_level2(): void
+    {
+        [$grand, $gMember] = $this->createActiveMlmMember(paidBefore: false);
+        [$sponsor, $sMember] = $this->createActiveMlmMember(sponsorId: $gMember->id);
+        [$buyer, $bMember] = $this->createActiveMlmMember(sponsorId: $sMember->id);
+        $reading = $this->createPaidReading($buyer->id, 99);
+
+        $this->service->distributeCommissions($reading, $bMember, $this->settings);
+
+        $this->assertDatabaseHas('fortune_commissions', ['fortune_reading_id' => $reading->id, 'user_id' => $sponsor->id, 'level' => 1]);
+        $this->assertDatabaseMissing('fortune_commissions', ['fortune_reading_id' => $reading->id, 'user_id' => $grand->id]);
+    }
+
     /**
      * ทดสอบ reading ไม่ได้จ่ายเงิน (amount = 0) → ไม่จ่ายคอมมิชชั่น
      */
@@ -526,11 +609,13 @@ class FortuneReferralCommissionTest extends TestCase
     // ===========================================================
 
     /**
-     * สร้าง MlmMember + User ที่ active
+     * สร้าง MlmMember + User ที่มีสิทธิ์รับค่าแนะนำ
+     *
+     * 🌙 (2026-09-23) สิทธิ์รับ = เคยมีบิลที่ชำระแล้ว → $paidBefore = true สร้างบิลเก่าที่จ่ายแล้วให้หนึ่งใบ
      *
      * @return array{0: User, 1: MlmMember}
      */
-    private function createActiveMlmMember(?int $sponsorId = null): array
+    private function createActiveMlmMember(?int $sponsorId = null, bool $paidBefore = true): array
     {
         $user = User::factory()->create();
 
@@ -543,6 +628,10 @@ class FortuneReferralCommissionTest extends TestCase
             'is_qualified' => true,
             'joined_at' => now(),
         ]);
+
+        if ($paidBefore) {
+            $this->createPaidReading($user->id, 39)->update(['paid_at' => now()->subDays(400)]);
+        }
 
         return [$user, $member];
     }
