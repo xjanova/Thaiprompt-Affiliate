@@ -707,34 +707,23 @@ class CloudflareService
     // ========================================
 
     /**
-     * One-Click Optimization - ตั้งค่าทั้งหมดให้เหมาะสมที่สุด
+     * รายการที่ปุ่ม One-Click Optimization จะตั้งค่า
      *
-     * รวมการตั้งค่า:
-     * - Performance (Speed)
-     * - SEO (Search Engine Optimization)
-     * - Security
-     * - Caching
-     * - SSL/TLS
+     * ⚠️ (2026-09-23) เดิมปุ่มนี้ "เปิด" Rocket Loader + Hotlink Protection และลด SSL เป็น full
+     *    ซึ่งพังของจริงมาแล้ว — กดเมื่อไหร่ระบบพังซ้ำ:
+     *    - Hotlink Protection = ต้นเหตุรูปใน LINE หาย (2026-09-19, error 1011) → ตั้งเป็น off
+     *    - Rocket Loader เลื่อนการโหลด JS → ชนกับ Alpine.js ที่ทั้งเว็บใช้ → ตั้งเป็น off
+     *    - Auto Minify ถูก Cloudflare เลิกใช้แล้ว (API ตอบ error ทุกครั้ง) → เอาออก
+     *    - SSL: ขยับขึ้นเท่านั้น ห้ามลด strict → full (ดู only_upgrade_from)
+     *
+     * @return array<int, array<string, mixed>>
      */
-    public function oneClickOptimization(?string $zoneId = null): array
+    public function oneClickOptimizationPlan(): array
     {
-        $zoneId = $zoneId ?? $this->zoneId;
-        $results = [];
-        $successCount = 0;
-        $failCount = 0;
-
-        // รายการ settings ที่จะตั้งค่า
-        $optimizations = [
+        return [
             // ========================================
             // PERFORMANCE SETTINGS
             // ========================================
-            [
-                'name' => 'Auto Minify (JS)',
-                'category' => 'performance',
-                'setting' => 'minify',
-                'value' => ['js' => 'on', 'css' => 'on', 'html' => 'on'],
-                'description' => 'บีบอัด JavaScript, CSS, HTML เพื่อลดขนาดไฟล์',
-            ],
             [
                 'name' => 'Brotli Compression',
                 'category' => 'performance',
@@ -771,11 +760,11 @@ class CloudflareService
                 'description' => 'ลด latency สำหรับผู้เยี่ยมชมที่กลับมา',
             ],
             [
-                'name' => 'Rocket Loader',
+                'name' => 'Rocket Loader (ปิด)',
                 'category' => 'performance',
                 'setting' => 'rocket_loader',
-                'value' => 'on',
-                'description' => 'เร่งความเร็ว paint time โดย async load JavaScript',
+                'value' => 'off',
+                'description' => 'ปิดไว้ — Rocket Loader เลื่อนการโหลด JS จน Alpine.js ทำงานผิด',
             ],
 
             // ========================================
@@ -821,11 +810,11 @@ class CloudflareService
                 'description' => 'ซ่อน email จาก spammers/scrapers',
             ],
             [
-                'name' => 'Hotlink Protection',
+                'name' => 'Hotlink Protection (ปิด)',
                 'category' => 'security',
                 'setting' => 'hotlink_protection',
-                'value' => 'on',
-                'description' => 'ป้องกันเว็บอื่นขโมย bandwidth ของคุณ',
+                'value' => 'off',
+                'description' => 'ปิดไว้ — Hotlink Protection ทำให้รูปที่ส่งเข้า LINE ไม่ขึ้น (error 1011)',
             ],
             [
                 'name' => 'Opportunistic Encryption',
@@ -843,7 +832,9 @@ class CloudflareService
                 'category' => 'ssl',
                 'setting' => 'ssl',
                 'value' => 'full',
-                'description' => 'Full SSL encryption ระหว่าง Cloudflare และ Origin',
+                // ตั้งเฉพาะตอนค่าปัจจุบันต่ำกว่า full — โซนที่เป็น strict อยู่แล้วต้องไม่ถูกลดลง
+                'only_upgrade_from' => ['off', 'flexible'],
+                'description' => 'Full SSL encryption ระหว่าง Cloudflare และ Origin (ไม่ลดโซนที่เป็น strict)',
             ],
             [
                 'name' => 'Always Use HTTPS',
@@ -860,7 +851,7 @@ class CloudflareService
                 'description' => 'แก้ mixed content โดยเปลี่ยน http:// เป็น https://',
             ],
             [
-                'name' => 'TLS 1.3',
+                'name' => 'Minimum TLS 1.2',
                 'category' => 'ssl',
                 'setting' => 'min_tls_version',
                 'value' => '1.2',
@@ -885,9 +876,47 @@ class CloudflareService
                 'description' => 'Cache ในเบราว์เซอร์ 4 ชั่วโมง',
             ],
         ];
+    }
+
+    /**
+     * One-Click Optimization - ตั้งค่าทั้งหมดตาม oneClickOptimizationPlan()
+     *
+     * รวมการตั้งค่า:
+     * - Performance (Speed)
+     * - SEO (Search Engine Optimization)
+     * - Security
+     * - Caching
+     * - SSL/TLS
+     */
+    public function oneClickOptimization(?string $zoneId = null): array
+    {
+        $zoneId = $zoneId ?? $this->zoneId;
+        $results = [];
+        $successCount = 0;
+        $failCount = 0;
 
         // วนลูปตั้งค่าทั้งหมด
-        foreach ($optimizations as $opt) {
+        foreach ($this->oneClickOptimizationPlan() as $opt) {
+            // ค่าที่ห้ามลด (เช่น SSL strict) — ตั้งเฉพาะตอนค่าปัจจุบันอยู่ในรายการที่ต่ำกว่า
+            // อ่านค่าปัจจุบันไม่ได้ = ข้าม ไม่เดา
+            if (isset($opt['only_upgrade_from'])) {
+                $current = $this->getSetting($opt['setting'], $zoneId);
+                $currentValue = $current['success'] ? ($current['data']['value'] ?? null) : null;
+
+                if (! in_array($currentValue, $opt['only_upgrade_from'], true)) {
+                    $results[] = [
+                        'name' => $opt['name'],
+                        'category' => $opt['category'],
+                        'description' => $opt['description'],
+                        'success' => true,
+                        'message' => 'ข้าม — ค่าปัจจุบัน ('.($currentValue ?? 'อ่านไม่ได้').') ไม่ต้องปรับ',
+                    ];
+                    $successCount++;
+
+                    continue;
+                }
+            }
+
             $result = $this->setSetting($opt['setting'], $opt['value'], $zoneId);
 
             $results[] = [
@@ -1085,8 +1114,8 @@ class CloudflareService
             'rocket_loader' => [
                 'name' => 'Rocket Loader',
                 'category' => 'performance',
-                'optimal' => 'on',
-                'description' => 'Async load JavaScript',
+                'optimal' => 'off',
+                'description' => 'ต้องปิด — ชนกับ Alpine.js',
                 'free_plan' => true,
             ],
             'always_online' => [
@@ -1120,8 +1149,8 @@ class CloudflareService
             'hotlink_protection' => [
                 'name' => 'Hotlink Protection',
                 'category' => 'security',
-                'optimal' => 'on',
-                'description' => 'ป้องกันขโมย bandwidth',
+                'optimal' => 'off',
+                'description' => 'ต้องปิด — ทำให้รูปที่ส่งเข้า LINE ไม่ขึ้น',
                 'free_plan' => true,
             ],
             'opportunistic_encryption' => [
@@ -1135,7 +1164,16 @@ class CloudflareService
                 'name' => 'SSL Mode',
                 'category' => 'ssl',
                 'optimal' => 'full',
-                'description' => 'Full SSL encryption',
+                'acceptable' => ['full', 'strict'],
+                'description' => 'Full SSL encryption (strict ดีกว่า ถือว่าผ่าน)',
+                'free_plan' => true,
+            ],
+            'min_tls_version' => [
+                'name' => 'Minimum TLS Version',
+                'category' => 'ssl',
+                'optimal' => '1.2',
+                'acceptable' => ['1.2', '1.3'],
+                'description' => 'ไม่รับ TLS 1.0/1.1 ที่เลิกใช้แล้ว',
                 'free_plan' => true,
             ],
             'always_use_https' => [
@@ -1167,7 +1205,7 @@ class CloudflareService
         foreach ($optimizedSettings as $key => $setting) {
             $currentValue = $current[$key] ?? null;
             $expectedValue = $setting['optimal'];
-            $isOptimized = ($currentValue === $expectedValue);
+            $isOptimized = in_array($currentValue, $setting['acceptable'] ?? [$expectedValue], true);
 
             if ($isOptimized) {
                 $optimizedCount++;
