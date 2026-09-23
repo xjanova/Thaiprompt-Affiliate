@@ -1532,12 +1532,15 @@ trait ProSessionTrait
                     );
                 }
 
+                // 📦 (2026-09-23) jsonReply=false — ตัวช่วยนี้เดิมสั่งโมเดล "ตอบ JSON" (ของด่านคัดเจตนา)
+                //   AI ตัวหลักค้างเมื่อไหร่ ลูกค้าได้ `{ "response": "…" }` ดิบ (FTU-260922-G4552 · 2 ครั้ง)
                 if (empty($result['response'] ?? null) && method_exists($aiService, 'chatWithCustomSystemPromptHistory')) {
                     if (! empty($this->settings->getChatAIApiKey())) {
                         $result = $aiService->chatWithCustomSystemPromptHistory(
                             $systemPromptRag,
                             $historyMessages,
-                            ['temperature' => 0.7, 'max_tokens' => 1200]
+                            ['temperature' => 0.7, 'max_tokens' => 1200],
+                            false
                         );
                     }
                 }
@@ -1551,12 +1554,14 @@ trait ProSessionTrait
                     $result = $aiService->chatWithCustomSystemPromptHistory(
                         $systemPromptRag,
                         $historyMessages,
-                        ['temperature' => 0.7, 'max_tokens' => 1200]
+                        ['temperature' => 0.7, 'max_tokens' => 1200],
+                        false
                     );
                 }
             }
 
-            $response = trim((string) ($result['response'] ?? ''));
+            // 📦 (2026-09-23) ตาข่ายชั้นสุดท้าย — โมเดลตัวไหนเผลอห่อคำตอบเป็น JSON ก็ไม่ถึงลูกค้า (ข้อความธรรมดา = ไม่แตะ)
+            $response = trim(ChatTextCleaner::unwrapJsonReply((string) ($result['response'] ?? '')));
             if ($response === '') {
                 return null;
             }

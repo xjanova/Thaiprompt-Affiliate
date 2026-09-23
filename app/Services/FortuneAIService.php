@@ -1655,8 +1655,16 @@ PROMPT;
 
     /**
      * Helper: chat ด้วย custom system prompt + messages history
+     *
+     * 📦 (2026-09-23) $jsonReply — เดิมต่อท้ายว่า "ตอบ JSON สำหรับข้อความล่าสุดของลูกค้า:" เสมอ
+     *    ซึ่งเขียนมาให้ discoverIntent (ด่านคัดเจตนา ต้องการ JSON) แต่ทางสำรองของคุยต่อหลังบิล 39
+     *    (ProSessionTrait · post-reading) หยิบไปใช้ด้วย ⇒ AI ตัวหลักค้างเมื่อไหร่ ลูกค้าได้
+     *    `{ "response": "…\n\n…" }` ดิบทั้งก้อน (FTU-260922-G4552 · 2 ครั้ง)
+     *    ⇒ ผู้เรียกที่ต้องการข้อความธรรมดาส่ง false: คำสั่งท้ายเป็นข้อความธรรมดา + แกะ JSON ถ้ายังหลุดมา
+     *
+     * @param  bool  $jsonReply  true = ขอคำตอบเป็น JSON (discoverIntent) · false = ข้อความธรรมดาส่งถึงลูกค้าได้ทันที
      */
-    public function chatWithCustomSystemPromptHistory(string $systemMessage, array $messages, array $config = []): array
+    public function chatWithCustomSystemPromptHistory(string $systemMessage, array $messages, array $config = [], bool $jsonReply = true): array
     {
         $chatProvider = $this->settings->getChatAIProvider();
         $chatModel = $this->settings->getChatAIModel();
@@ -1688,13 +1696,21 @@ PROMPT;
         $combinedContext = implode("\n", $contextParts);
 
         // ใช้ context เต็ม + ส่ง user message ล่าสุดเป็น input
-        $userInput = empty($combinedContext) ? $lastUserMessage : "ประวัติการสนทนา:\n{$combinedContext}\n\nตอบ JSON สำหรับข้อความล่าสุดของลูกค้า:";
+        $replyInstruction = $jsonReply
+            ? 'ตอบ JSON สำหรับข้อความล่าสุดของลูกค้า:'
+            : 'ตอบข้อความล่าสุดของลูกค้า เป็นข้อความธรรมดาที่ส่งถึงลูกค้าได้ทันที (ห้ามตอบเป็น JSON · ห้ามขึ้นต้นด้วยป้ายชื่อผู้พูด):';
+        $userInput = empty($combinedContext) ? $lastUserMessage : "ประวัติการสนทนา:\n{$combinedContext}\n\n{$replyInstruction}";
 
         $rawResult = match ($chatProvider) {
             'gemini' => $this->callChatGemini($userInput, $systemMessage, $chatApiKey, $chatModel, $config),
             'anthropic' => $this->callChatAnthropic($userInput, $systemMessage, $chatApiKey, $chatModel, $config),
             default => $this->callChatOpenAICompatible($userInput, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
         };
+
+        // คำสั่งในพรอมต์เป็นความน่าจะเป็น — แกะ JSON/ป้ายชื่อที่ยังหลุดมา ก่อนเข้าตัวกรองตามปกติ
+        if (! $jsonReply && is_string($rawResult['response'] ?? null)) {
+            $rawResult['response'] = \App\Services\Fortune\ChatTextCleaner::plainReply($rawResult['response']);
+        }
 
         return $this->sanitizeChatResult($rawResult);
     }
@@ -2769,11 +2785,14 @@ PROMPT;
 
             return $this->sanitizeChatResult($result);
         } catch (Exception $e) {
-            $sensitiveKey->recordError($e->getMessage(), $sensitiveModel, $this->callContext);
+            // 🔎 (2026-09-23) บันทึกโมเดลที่เรียกจริง — เดิมใช้ $sensitiveModel (ค่าตั้งต้นใน settings)
+            //   log จึงขึ้น "gemini-2.5-pro timeout" ทั้งที่ตัวที่ค้างคือ gpt-5.6 ที่ router เลือก (FTU-260922-G4552)
+            $sensitiveKey->recordError($e->getMessage(), $resolvedModel ?? $sensitiveModel, $this->callContext);
 
             Log::warning("FortuneAIService: Pro {$requestType} ล้มเหลว — caller fallback", [
                 'error' => $e->getMessage(),
                 'request_type' => $requestType,
+                'model' => $resolvedModel ?? $sensitiveModel,
             ]);
 
             throw $e;

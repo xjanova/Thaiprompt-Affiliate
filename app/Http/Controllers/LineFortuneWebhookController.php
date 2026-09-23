@@ -3113,9 +3113,10 @@ class LineFortuneWebhookController extends Controller
                     ? '↩️ ตอบคำถาม: «'.mb_substr($asked, 0, 60).(mb_strlen($asked) > 60 ? '…' : '')."»\n\n"
                     : '';
 
+                // 🧹 (2026-09-23) คำตอบจาก DB ตรง ไม่ผ่าน sendLineResponse — ล้าง "## / ** / Section A" ก่อน
                 $messages[] = [
                     'type' => 'text',
-                    'text' => mb_substr($label.trim((string) $q->response), 0, 4900),
+                    'text' => mb_substr($label.trim($this->lineService->cleanForChat((string) $q->response)), 0, 4900),
                 ];
             }
 
@@ -3131,7 +3132,7 @@ class LineFortuneWebhookController extends Controller
                 //   (ต้องมีคอลัมน์เก็บก่อน — migration 2026_08_31_000100)
                 $lastBox = trim((string) ($pending->last()->suggestion_box ?? ''));
                 if ($lastBox !== '') {
-                    $messages[] = ['type' => 'text', 'text' => mb_substr($lastBox, 0, 4900)];
+                    $messages[] = ['type' => 'text', 'text' => mb_substr($this->lineService->cleanForChat($lastBox), 0, 4900)];
                 }
             }
 

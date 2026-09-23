@@ -2454,6 +2454,9 @@ class FortuneChannelManager
             $voiceCta = $this->settings->buildVoiceCtaSnippet($reading);
             $followUp .= $voiceCta;
 
+            // 🧹 (2026-09-23) กล่องนี้ส่งตรง ไม่ผ่าน sendFacebookResponse — *…* / _…_ ของเทมเพลตโชว์ดิบ
+            $followUp = (string) $this->stripMessengerMarkdown($followUp);
+
             usleep(800000); // 0.8s delay กัน race กับ chunks ของคำทำนาย (ห้ามต่ำกว่า 0.5s)
 
             // มี CTA เสียง → แนบปุ่มกดแทนพิมพ์ (FB quick reply หายหลังกด = กันกดซ้ำ)
@@ -4478,9 +4481,9 @@ class FortuneChannelManager
                         'contents' => $msg['contents'],
                     ]);
                     if (! $sent && ! empty($meta['answer'])) {
-                        // Fallback: ส่งเป็น text
+                        // Fallback: ส่งเป็น text — 🧹 (2026-09-23) คำตอบดิบจาก AI ล้าง markdown ก่อน (Flex ล้างเองแล้ว)
                         $qNum = $meta['question_num'] ?? '?';
-                        $textMsg = "🔮 คำทำนายข้อที่ {$qNum}/{$totalQuestions}\n❓ {$meta['question']}\n\n{$meta['answer']}";
+                        $textMsg = "🔮 คำทำนายข้อที่ {$qNum}/{$totalQuestions}\n❓ {$meta['question']}\n\n".$lineService->cleanForChat((string) $meta['answer']);
                         $lineService->sendMessage($userId, mb_substr($textMsg, 0, 5000));
                     }
                 }
@@ -5310,8 +5313,11 @@ class FortuneChannelManager
                         ."💬 สงสัยตรงไหน หรืออยากให้ขยายความ — ถามได้เลยค่ะ\n"
                         .'🔚 พอใจแล้วพิมพ์ *"พอแค่นี้"* แม่หมอจะปิดให้ค่ะ';
                     $voiceCta = $this->settings->buildVoiceCtaSnippet($reading);
+                    // 🧹 (2026-09-23) ต่อท้ายคำทำนาย 39 ทุกใบบน LINE — ส่งตรง ไม่ผ่าน sendLineResponse
+                    //   ลูกค้าเห็น "*แม่หมอจันทราอยู่ตอบเพิ่ม…*" / "_เป็นเสียงผู้ช่วย AI…_" ดิบ
+                    $followUp = $lineService->cleanForChat($followUp.$voiceCta);
                     $trailing[] = $voiceCta !== ''
-                        ? $lineService->buildTextObject($followUp.$voiceCta, [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']])
+                        ? $lineService->buildTextObject($followUp, [['label' => '🎧 อ่านให้ฟัง', 'text' => 'อ่านให้ฟัง']])
                         : $lineService->buildTextObject($followUp);
                 } else {
                     $trailing[] = [
@@ -7022,6 +7028,10 @@ class FortuneChannelManager
      * แก้ที่ layer ส่งข้อความแทนที่จะไล่แก้ source 8+ จุด — minimize blast radius
      * + กัน regression ในอนาคต (ถ้า dev ใส่ markdown ใหม่ใน FCS ก็จะถูก strip อัตโนมัติ)
      *
+     * 🧹 (2026-09-23) ย้ายไปใช้ ChatTextCleaner — เดิมลบได้แค่ *ดอกจันเดี่ยว* ⇒ "**ตัวหนา**" จาก AI
+     *    เหลือ "*ตัวหนา*" และหัวข้อ "## …" / ป้าย "Section A" หลุดถึงลูกค้าทั้ง FB และ LINE
+     *    กติกา *x* / _x_ เดิมยังอยู่ครบใน ChatTextCleaner::stripMarkdown()
+     *
      * @param  string|null  $message  ข้อความดิบที่อาจมี markdown
      * @return string|null ข้อความสะอาดที่พร้อมส่งให้ลูกค้า
      */
@@ -7031,17 +7041,7 @@ class FortuneChannelManager
             return $message;
         }
 
-        // *bold* → bold
-        // - non-greedy เพื่อกัน "*foo* and *bar*" รวมกัน
-        // - [^*\n] กัน double asterisk + ห้ามข้ามบรรทัด (กัน multi-line bold ที่ไม่ตั้งใจ)
-        $message = preg_replace('/\*([^*\n]+?)\*/u', '$1', $message);
-
-        // _italic_ → italic
-        // - lookbehind/lookahead กัน snake_case identifier (e.g. user_id, snake_case)
-        // - \p{L}\p{N}_ ครอบคลุม Thai/Latin/digit + underscore เอง
-        $message = preg_replace('/(?<![\p{L}\p{N}_])_([^_\n]+?)_(?![\p{L}\p{N}_])/u', '$1', $message);
-
-        return $message;
+        return \App\Services\Fortune\ChatTextCleaner::stripMarkdown($message);
     }
 
     /**

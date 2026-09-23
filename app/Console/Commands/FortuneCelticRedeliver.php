@@ -258,6 +258,9 @@ class FortuneCelticRedeliver extends Command
      */
     protected function pushAnswer(string $platform, string $userId, string $message): bool
     {
+        // 🧹 (2026-09-23) คำตอบจาก DB + ท้าย *"เลิกทำนายและสรุปผล"* ส่งตรง ไม่ผ่าน sendResponse — แชทไม่ render markdown
+        $message = \App\Services\Fortune\ChatTextCleaner::stripMarkdown($message);
+
         // ✈️ (2026-09-13) Telegram ใช้เส้นเดียวกับ FB
         if (in_array($platform, ['facebook', 'telegram'], true)) {
             return (\App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId) ?? app(FacebookWebhookService::class))->sendMessage(

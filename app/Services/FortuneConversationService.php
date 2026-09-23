@@ -26907,7 +26907,9 @@ PROMPT;
      */
     protected function splitLongMessageForFacebook(string $header, string $body, int $maxLen = 1800): array
     {
-        $body = trim($body);
+        // 🧹 (2026-09-23) ล้าง markdown ก่อนผ่า — ก้อนต่อถูกเติม "(ต่อ) " หน้าย่อหน้า
+        //   "(ต่อ) ## Section B" = ป้ายไม่อยู่ต้นบรรทัดแล้ว ตัวล้างที่ทางออก (sendResponse) จับไม่ได้
+        $body = trim(\App\Services\Fortune\ChatTextCleaner::stripMarkdown($body));
         $headerLen = mb_strlen($header);
 
         // ถ้าทั้งหมดสั้นพอ → ส่ง chunk เดียว
@@ -28964,13 +28966,15 @@ PROMPT;
                     $result = $proResult;
                 } else {
                     // ไม่มี sensitive key → fallback chat ปกติ
+                    //   📦 (2026-09-23) jsonReply=false — ไม่งั้นตัวช่วยสั่งโมเดล "ตอบ JSON" แล้วลูกค้าได้ JSON ดิบ
                     if (empty($this->settings->getChatAIApiKey())) {
                         return null;
                     }
                     $result = $aiService->chatWithCustomSystemPromptHistory(
                         $systemMessageRag,
                         $historyMessages,
-                        ['temperature' => 0.7, 'max_tokens' => 1200]
+                        ['temperature' => 0.7, 'max_tokens' => 1200],
+                        false
                     );
                 }
             } catch (\Throwable $proErr) {
@@ -28984,11 +28988,13 @@ PROMPT;
                 $result = $aiService->chatWithCustomSystemPromptHistory(
                     $systemMessageRag,
                     $historyMessages,
-                    ['temperature' => 0.7, 'max_tokens' => 1200]
+                    ['temperature' => 0.7, 'max_tokens' => 1200],
+                    false
                 );
             }
 
-            $response = trim($result['response'] ?? '');
+            // 📦 (2026-09-23) ตาข่ายชั้นสุดท้ายเหมือน ProSession — โมเดลตัวไหนห่อคำตอบเป็น JSON ก็ไม่ถึงลูกค้า
+            $response = trim(\App\Services\Fortune\ChatTextCleaner::unwrapJsonReply((string) ($result['response'] ?? '')));
             if (empty($response)) {
                 return null;
             }

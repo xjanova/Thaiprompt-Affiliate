@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\MessagingPlatformInterface;
 use App\Models\FortuneTellingSetting;
+use App\Services\Fortune\ChatTextCleaner;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -1265,6 +1266,9 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildFortuneFlexMessage(string $prediction, string $userName, ?string $billRef = null, ?string $paidAt = null): array
     {
+        // 🧹 (2026-09-23) Flex ไม่ render markdown — "## หัวข้อ" / "**ตัวหนา**" / "Section A" โชว์ดิบ
+        $prediction = $this->cleanForChat($prediction);
+
         $bodyContents = [
             // ชื่อผู้ใช้
             [
@@ -1462,6 +1466,10 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildSplitFortuneMessages(string $prediction, string $userName, ?string $billRef = null, ?string $paidAt = null): array
     {
+        // 🧹 (2026-09-23) คำทำนาย 39 บน LINE มาทางนี้ตรงจาก deep_response — ไม่ผ่านตัวล้างของ sendLineResponse
+        //   ลูกค้าเห็น "## Section A" / "**ตัวหนา**" ดิบทุกตัว (FTU-260922-Z3061) · ล้างก่อนนับความยาวผ่ากล่อง
+        $prediction = $this->cleanForChat($prediction);
+
         $maxCharsPerBubble = 800;
 
         // ถ้าสั้นพอ → ส่ง bubble เดียว
@@ -2185,6 +2193,9 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildDeepReadingFlexMessage(int $questionNum, string $question, string $answer, int $totalQuestions = 3): array
     {
+        // 🧹 (2026-09-23) คำทำนายจาก AI ลง Flex ตรง ๆ — ล้าง markdown ก่อน (คำถามของลูกค้าไม่แตะ)
+        $answer = $this->cleanForChat($answer);
+
         // กำหนดสี + icon ตามหมวดคำถาม
         $category = $this->detectQuestionCategory($question);
         $theme = $this->getCategoryTheme($category);
@@ -2352,6 +2363,11 @@ class LineFortuneService implements MessagingPlatformInterface
         // ตัดข้อความยาวมากกว่า 10000 ตัวอักษร (ป้องกัน AI ตอบยาวเกิน)
         $answer = mb_substr($answer, 0, 10000);
 
+        // 🧹 (2026-09-23) ล้าง markdown "ก่อนผ่าก้อน" — ผ่าก่อนแล้วค่อยล้างทีละก้อน ก้อนที่มีแค่ "## Section A"
+        //   จะกลายเป็น Flex text ว่าง → LINE ปฏิเสธทั้ง carousel → ถอยไปส่งทีละกล่อง (เปลือง push หลายครั้ง)
+        //   ล้างตรงนี้ครอบ text fallback ท้ายเมธอดด้วย
+        $answer = $this->cleanForChat($answer);
+
         // ถ้าข้อความสั้น → ใช้ bubble เดียวตามปกติ (เร็วที่สุด)
         $answerLen = mb_strlen($answer);
         if ($answerLen <= 1500) {
@@ -2477,10 +2493,27 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     /**
      * Public wrapper สำหรับ splitTextForFlex — ใช้จาก FortuneChannelManager
+     *
+     * 🧹 (2026-09-23) ผู้เรียกทุกจุดส่งข้อความจาก AI เข้า LINE (คำตอบ Celtic · บทสรุป · ส่งคำทำนายซ้ำ)
+     *    บางจุดอ่านจากฐานข้อมูลตรง (celtic_finale_text / deep_response) ไม่ผ่านตัวล้างของ sendLineResponse
+     *    ⇒ ล้าง markdown ที่นี่จุดเดียว ครอบทุกเส้น
      */
     public function splitTextForFlexPublic(string $text, int $maxChars = 1200): array
     {
-        return $this->splitTextForFlex($text, $maxChars);
+        return $this->splitTextForFlex($this->cleanForChat($text), $maxChars);
+    }
+
+    /**
+     * 🧹 (2026-09-23) ล้าง markdown ก่อนข้อความจาก AI เข้า LINE — ดู ChatTextCleaner
+     *
+     * ล้างแล้วเหลือว่าง (ทั้งก้อนเป็นป้ายล้วน เช่น "## Section A") → คืนต้นฉบับ
+     *   ข้อความ/Flex text ว่าง = LINE ปฏิเสธทั้งข้อความ ⇒ ยอมให้เห็นป้าย ดีกว่าลูกค้าไม่ได้อะไรเลย
+     */
+    public function cleanForChat(string $text): string
+    {
+        $clean = ChatTextCleaner::stripMarkdown($text);
+
+        return trim($clean) === '' ? $text : $clean;
     }
 
     protected function splitTextForFlex(string $text, int $maxChars = 1200): array
