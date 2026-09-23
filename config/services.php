@@ -20,8 +20,12 @@ return [
             'verify_url' => 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
         ],
         // Cloudflare API (Cache Purge, DNS, Security, etc.)
-        'zone_id' => env('CLOUDFLARE_ZONE_ID', 'd552b4a77bf4783bf6cbfd6a07d3f349'),
-        'api_token' => env('CLOUDFLARE_API_TOKEN', '3fc13fcba9b6add1ee59f2504f092bddec540'),
+        // ⚠️ ห้ามใส่ค่า default เป็นคีย์จริง — repo นี้เป็น public (2026-09-23 เคยมี Global API Key
+        //    ฝังไว้ตรงนี้ตั้งแต่ 2025-12-01 ต้องหมุนคีย์ทิ้ง) · ใส่ใน .env หรือหน้า Admin → Cloudflare CDN
+        //    ว่าง = ยังไม่ได้ตั้งค่า ทุกจุดที่ใช้เช็ค empty() แล้วข้ามเอง
+        //    token ต้องเป็น API Token (ส่งแบบ Bearer) — Global API Key ใช้กับโค้ดนี้ไม่ได้
+        'zone_id' => env('CLOUDFLARE_ZONE_ID', ''),
+        'api_token' => env('CLOUDFLARE_API_TOKEN', ''),
 
         // Cloudflare Account ID (สำหรับ Workers AI - เจนภาพ FLUX)
         // หาได้จาก dash.cloudflare.com → sidebar ขวา → Account ID
