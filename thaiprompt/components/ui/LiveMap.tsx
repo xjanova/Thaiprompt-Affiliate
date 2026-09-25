@@ -19,12 +19,15 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import type { WebView as WebViewType, WebViewMessageEvent } from 'react-native-webview';
 import * as WebBrowser from 'expo-web-browser';
 import { APP_INFO } from '@/config/appConfig';
 import { useTheme, radii, spacing, typography, clayShadowStyle, palette } from '@/theme';
 import { Button3D } from './Button3D';
+import { Icon, type IconName } from './Icon';
+import { ICON_PATHS } from './iconPaths';
 import { tapHaptic } from './haptics';
 
 export type LiveMapMarkerKind = 'shop' | 'rider' | 'me' | 'home' | 'pin';
@@ -73,12 +76,27 @@ const MAP_BASE_URL = `${APP_INFO.WEBSITE}/`;
 const READY_TIMEOUT_MS = 15000;
 const EXTERNAL_LINK_HOSTS = ['www.openstreetmap.org', 'openstreetmap.org', 'leafletjs.com', 'osmfoundation.org', 'wiki.osmfoundation.org'];
 
-const MARKER_EMOJI: Record<LiveMapMarkerKind, string> = {
-  shop: '🏪',
-  rider: '🛵',
-  me: '🧍',
-  home: '🏠',
-  pin: '📍',
+/** ไอคอนของหมุดแต่ละชนิด (หมุดวาดเป็นวงน้ำเงินกรมท่า + ไอคอนทอง — ไม่ใช้อีโมจิ) */
+const MARKER_ICON: Record<LiveMapMarkerKind, IconName> = {
+  shop: 'storefront',
+  rider: 'moped',
+  me: 'user',
+  home: 'house',
+  pin: 'map-pin',
+};
+
+/** SVG ของไอคอนหมุด ส่งเข้า HTML ของแผนที่ (path จากชุดไอคอนเดียวกับแอป) */
+const markerSvg = (name: IconName, color: string): string =>
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="19" height="19">${(ICON_PATHS[name].fill as readonly string[])
+    .map((d) => `<path d="${d}" fill="${color}"/>`)
+    .join('')}</svg>`;
+
+const MARKER_SVGS: Record<LiveMapMarkerKind, string> = {
+  shop: markerSvg(MARKER_ICON.shop, '#F3DC9B'),
+  rider: markerSvg(MARKER_ICON.rider, '#F3DC9B'),
+  me: markerSvg(MARKER_ICON.me, '#FFFFFF'),
+  home: markerSvg(MARKER_ICON.home, '#F3DC9B'),
+  pin: markerSvg(MARKER_ICON.pin, '#F3DC9B'),
 };
 
 const MARKER_NAME: Record<LiveMapMarkerKind, string> = {
@@ -116,16 +134,18 @@ export const openInGoogleMaps = async (
 // หน้า HTML ของแผนที่ (คงที่ — ไม่ขึ้นกับหมุด เพื่อไม่ต้องโหลดใหม่)
 // =====================================================
 
-const buildHtml = (background: string, gold: string, success: string, info: string): string => `<!DOCTYPE html>
+const buildHtml = (background: string, gold: string, success: string, info: string, iconsJson: string): string => `<!DOCTYPE html>
 <html><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
 <link id="lcss" rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous"/>
 <style>
 html,body,#map{margin:0;padding:0;height:100%;width:100%;background:${background};}
 body{-webkit-tap-highlight-color:transparent;font-family:-apple-system,Roboto,sans-serif;}
-.lm{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;background:#fffdf7;border:3px solid ${gold};box-shadow:0 3px 8px rgba(0,0,0,.35);font-size:19px;line-height:1;}
+.lm{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:18px;background:#0C1A33;border:3px solid ${gold};box-shadow:0 4px 10px rgba(6,13,27,.45);}
+.lm svg{display:block;}
 .lm-rider{border-color:${success};}
-.lm-me,.lm-home{border-color:${info};}
+.lm-me{background:${info};border-color:#FFFFFF;}
+.lm-home{border-color:#FFFFFF;}
 .lm-rider:after{content:'';position:absolute;width:36px;height:36px;border-radius:18px;border:2px solid ${success};animation:p 1.8s ease-out infinite;}
 @keyframes p{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.9);opacity:0}}
 .leaflet-tooltip{font-size:12px;font-weight:600;padding:2px 6px;border-radius:8px;}
@@ -141,11 +161,11 @@ body.dark .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92)
   var JS_SRI='sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
   var CSS_ALT='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
   var CSS_SRI='sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-  var EMOJI={shop:'\\uD83C\\uDFEA',rider:'\\uD83D\\uDEF5',me:'\\uD83E\\uDDCD',home:'\\uD83C\\uDFE0',pin:'\\uD83D\\uDCCD'};
+  var ICONS=${iconsJson};
   var map=null,layers={},targets={},fitted=false,opts={},pending=null;
   function icon(kind){
-    var k=EMOJI[kind]?kind:'pin';
-    return L.divIcon({className:'',html:'<div class="lm lm-'+k+'">'+EMOJI[k]+'</div>',iconSize:[36,36],iconAnchor:[18,18],tooltipAnchor:[0,-18]});
+    var k=ICONS[kind]?kind:'pin';
+    return L.divIcon({className:'',html:'<div class="lm lm-'+k+'">'+ICONS[k]+'</div>',iconSize:[36,36],iconAnchor:[18,18],tooltipAnchor:[0,-18]});
   }
   function textEl(s){var el=document.createElement('span');el.textContent=String(s);return el;}
   function moveTo(m,lat,lng){
@@ -272,7 +292,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 
   // หน้า HTML สร้างครั้งเดียวต่อ WebView (เปลี่ยนธีมใช้ class ใน payload แทนการโหลดใหม่)
   const html = useMemo(
-    () => buildHtml(isDark ? palette.clayDark : palette.clayLight, palette.gold400, palette.green500, palette.blue500),
+    () => buildHtml(isDark ? palette.clayDark : palette.clayLight, palette.gold400, palette.green500, palette.blue500, JSON.stringify(MARKER_SVGS)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [webKey]
   );
@@ -384,17 +404,17 @@ export const LiveMap: React.FC<LiveMapProps> = ({
         style={[
           styles.frame,
           { height, backgroundColor: colors.inset, borderColor: colors.border },
-          clayShadowStyle('sm', colors.shadowDark, colors.shadowLight),
+          clayShadowStyle('md', colors.shadowDark, colors.shadowLight),
         ]}
       >
         {failed || !WebView ? (
           <View style={styles.fallback}>
             <View style={styles.fallbackInfo} accessible accessibilityLabel={`${a11y} · แผนที่โหลดไม่ขึ้นตอนนี้`}>
-              <Text style={styles.fallbackIcon}>🗺️</Text>
+              <Icon name="map-trifold" size={34} color={colors.textFaint} style={styles.fallbackIconSvg} />
               <Text style={[typography.bodyStrong, styles.center, { color: colors.textStrong }]}>แผนที่โหลดไม่ขึ้นตอนนี้</Text>
               {validMarkers.slice(0, 3).map((m) => (
                 <Text key={m.id} numberOfLines={1} style={[typography.caption, styles.center, { color: colors.textMuted }]}>
-                  {MARKER_EMOJI[m.kind]} {m.label || MARKER_NAME[m.kind]}
+                  {m.label || MARKER_NAME[m.kind]}
                 </Text>
               ))}
             </View>
@@ -456,7 +476,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
                   clayShadowStyle('sm', colors.shadowDark, colors.shadowLight),
                 ]}
               >
-                <Text style={styles.recenterIcon}>🎯</Text>
+                <Icon name="crosshair" size={20} color={colors.navy} />
               </Pressable>
             )}
             {validMarkers.length === 0 && ready && (
@@ -478,7 +498,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({
           {target && (
             <Button3D
               title="เปิดใน Google Maps"
-              icon="🧭"
+              icon="navigation-arrow"
               size="sm"
               variant="secondary"
               onPress={() => openInGoogleMaps(target.latitude, target.longitude)}
@@ -493,6 +513,10 @@ export const LiveMap: React.FC<LiveMapProps> = ({
 };
 
 const styles = StyleSheet.create({
+  fallbackIconSvg: {
+    alignSelf: 'center',
+    marginBottom: 4,
+  },
   frame: {
     borderRadius: radii.lg,
     overflow: 'hidden',

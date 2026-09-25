@@ -1,17 +1,22 @@
 /**
- * Button3D — ปุ่มมีมิติแบบดินเหนียวทองคำ
+ * Button3D — ปุ่มหลักของแอป ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
- * โครงเลเยอร์ (ล่าง → บน):
- *   1. เงาตกนุ่มๆ (boxShadow สีเดียวกับปุ่ม) — หดลงตอนกด
- *   2. ขอบล่างสีเข้ม = ความหนาของปุ่ม
- *   3. ตัวปุ่ม: LinearGradient + เส้นไฮไลต์ 1px ด้านบน + ประกายครึ่งบน
- * ตอนกด: ย่อ 0.97 + ตัวปุ่มจมลงบนขอบ + เงาหด (reanimated) + สั่นเบา (expo-haptics)
+ * variant
+ *   primary   = ทองแชมเปญ ตัวอักษรน้ำตาลเข้ม (การกระทำหลักของหน้า: สั่งเลย ใส่ตะกร้า รับงาน)
+ *   navy      = น้ำเงินกรมท่า ตัวอักษรทอง (การกระทำเด่นรอง: ดูตะกร้า ติดตาม)
+ *   secondary = ขาว/กระจก มีเส้นขอบ (ทางเลือก: ยกเลิก ข้าม)
+ *   success / danger = ยืนยัน / ลบ
+ *   ghost     = ตัวอักษรทอง ไม่มีพื้น
  *
+ * มิติ: ไล่เฉด + ประกายครึ่งบน + เส้นไฮไลต์ 1px + ขอบล่างบาง 2px + เงาเรืองสีปุ่ม
+ * ตอนกด: ย่อ 0.97 + จมลงบนขอบ + เงาหด (reanimated) + สั่นเบา
  * กันกดซ้ำในตัว: ถ้า onPress คืน Promise ปุ่มจะหมุนโหลดและล็อกจนเสร็จเอง
  *
+ * icon / iconRight: ชื่อไอคอน (เช่น "plus") · อีโมจิเดิม (แปลงเป็นไอคอนให้) · หรือ element
+ *
  * @example
- * <Button3D title="ยืนยันคำสั่งซื้อ" icon="✅" onPress={async () => { await submit(); }} />
- * <Button3D title="ยกเลิก" variant="ghost" size="sm" onPress={close} />
+ * <Button3D title="ใส่ตะกร้า · ฿60" icon="shopping-bag-open" onPress={async () => { await add(); }} />
+ * <Button3D title="ดูตะกร้า" variant="navy" iconRight="arrow-right" onPress={openCart} />
  */
 
 import React, { useMemo } from 'react';
@@ -19,7 +24,6 @@ import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
-  Text,
   View,
   type StyleProp,
   type TextStyle,
@@ -32,11 +36,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme, shadowStyle, type GradientTuple } from '@/theme';
+import { useTheme, withAlpha, type GradientTuple } from '@/theme';
+import { Text } from './Text';
+import { IconSlot } from './Icon';
 import { tapHaptic } from './haptics';
 import { usePressGuard } from './usePressGuard';
+import { useOnHeader } from './RoyalHeader';
 
-export type Button3DVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'ghost';
+export type Button3DVariant = 'primary' | 'navy' | 'secondary' | 'success' | 'danger' | 'ghost';
 export type Button3DSize = 'sm' | 'md' | 'lg';
 
 export interface Button3DProps {
@@ -46,7 +53,7 @@ export interface Button3DProps {
   onPress?: () => unknown;
   variant?: Button3DVariant;
   size?: Button3DSize;
-  /** ไอคอนด้านซ้าย: emoji (string) หรือ element */
+  /** ไอคอนด้านซ้าย: ชื่อไอคอน / อีโมจิเดิม / element */
   icon?: React.ReactNode;
   /** ไอคอนด้านขวา */
   iconRight?: React.ReactNode;
@@ -68,9 +75,9 @@ export interface Button3DProps {
 }
 
 const SIZE_SPEC: Record<Button3DSize, { height: number; padX: number; font: number; radius: number; edge: number; icon: number; gap: number }> = {
-  sm: { height: 38, padX: 14, font: 13, radius: 12, edge: 3, icon: 15, gap: 6 },
-  md: { height: 48, padX: 18, font: 15, radius: 14, edge: 4, icon: 18, gap: 8 },
-  lg: { height: 56, padX: 22, font: 16, radius: 16, edge: 5, icon: 20, gap: 10 },
+  sm: { height: 38, padX: 14, font: 13.5, radius: 12, edge: 2, icon: 16, gap: 6 },
+  md: { height: 50, padX: 18, font: 15.5, radius: 16, edge: 2, icon: 19, gap: 8 },
+  lg: { height: 56, padX: 22, font: 16.5, radius: 18, edge: 3, icon: 21, gap: 10 },
 };
 
 export const Button3D: React.FC<Button3DProps> = ({
@@ -97,24 +104,29 @@ export const Button3D: React.FC<Button3DProps> = ({
 
   const isBusy = loading || busy;
   const isDisabled = disabled || isBusy || !onPress;
-  const isGhost = variant === 'ghost';
+  // ปุ่มรอง/ghost ที่วางบนหัวน้ำเงิน → ปุ่มกระจกตัวอักษรสว่าง
+  const onHeader = useOnHeader();
+  const glass = onHeader && (variant === 'ghost' || variant === 'secondary');
+  const isGhost = variant === 'ghost' && !glass;
+  const isSecondary = variant === 'secondary' && !glass;
 
   const pressed = useSharedValue(0);
 
   // ---------- สีตาม variant ----------
   const look = useMemo(() => {
-    const byVariant: Record<Button3DVariant, { gradient: GradientTuple; edge: string; glow: string; text: string }> = {
-      // ทอง → ตัวอักษรเข้ม (ขาวบนทองอ่านไม่ออกกลางแดด) · เขียว/แดง → ตัวอักษรขาว
-      primary: { gradient: gradients.primary, edge: buttonEdges.primary, glow: colors.amber, text: colors.textOnGold },
-      secondary: { gradient: gradients.secondary, edge: buttonEdges.secondary, glow: colors.shadowDark, text: colors.textStrong },
-      success: { gradient: gradients.success, edge: buttonEdges.success, glow: colors.success, text: colors.textOnAccent },
-      danger: { gradient: gradients.danger, edge: buttonEdges.danger, glow: colors.danger, text: colors.textOnAccent },
-      ghost: { gradient: ['transparent', 'transparent'], edge: 'transparent', glow: 'transparent', text: colors.goldDeep },
+    const byVariant: Record<Button3DVariant, { gradient: GradientTuple; edge: string; glow: string; glowAlpha: number; text: string }> = {
+      primary: { gradient: gradients.primary, edge: buttonEdges.primary, glow: '#C99A3E', glowAlpha: 0.85, text: colors.textOnGold },
+      navy: { gradient: gradients.navy, edge: buttonEdges.navy, glow: isDark ? '#000000' : '#0C1A33', glowAlpha: 0.8, text: colors.goldLight },
+      secondary: { gradient: gradients.secondary, edge: buttonEdges.secondary, glow: colors.shadowDark, glowAlpha: 0.35, text: colors.textStrong },
+      success: { gradient: gradients.success, edge: buttonEdges.success, glow: colors.success, glowAlpha: 0.7, text: colors.textOnAccent },
+      danger: { gradient: gradients.danger, edge: buttonEdges.danger, glow: colors.danger, glowAlpha: 0.7, text: colors.textOnAccent },
+      ghost: { gradient: ['transparent', 'transparent'], edge: 'transparent', glow: 'transparent', glowAlpha: 0, text: colors.goldDeep },
     };
+    if (glass) {
+      return { gradient: ['transparent', 'transparent'] as GradientTuple, edge: 'transparent', glow: 'transparent', glowAlpha: 0, text: colors.onHeader };
+    }
     return byVariant[variant];
-  }, [variant, gradients, buttonEdges, colors]);
-
-  const lightText = variant === 'success' || variant === 'danger';
+  }, [variant, gradients, buttonEdges, colors, isDark, glass]);
 
   // ---------- แอนิเมชันตอนกด ----------
   const wrapperAnim = useAnimatedStyle(() => ({
@@ -122,12 +134,11 @@ export const Button3D: React.FC<Button3DProps> = ({
   }));
 
   const bodyAnim = useAnimatedStyle(() => ({
-    transform: [{ translateY: spec.edge * 0.7 * pressed.value }],
+    transform: [{ translateY: spec.edge * pressed.value }],
   }));
 
   const shadowAnim = useAnimatedStyle(() => ({
-    opacity: 1 - 0.65 * pressed.value,
-    transform: [{ scaleX: 1 - 0.08 * pressed.value }, { translateY: -3 * pressed.value }],
+    opacity: 1 - 0.7 * pressed.value,
   }));
 
   const handlePressIn = () => {
@@ -142,15 +153,8 @@ export const Button3D: React.FC<Button3DProps> = ({
     pressed.value = withSpring(0, { damping: 14, stiffness: 260 });
   };
 
-  const renderIcon = (node: React.ReactNode) => {
-    if (node === null || node === undefined || node === false) return null;
-    if (typeof node === 'string' || typeof node === 'number') {
-      return <Text style={{ fontSize: spec.icon }}>{node}</Text>;
-    }
-    return node;
-  };
-
   const label = isBusy && loadingText ? loadingText : title;
+  const iconWeight = variant === 'secondary' || variant === 'ghost' ? 'regular' : 'bold';
 
   return (
     <Pressable
@@ -168,24 +172,26 @@ export const Button3D: React.FC<Button3DProps> = ({
     >
       <Animated.View
         style={[
-          { paddingBottom: isGhost ? 0 : spec.edge },
+          { paddingBottom: isGhost || glass ? 0 : spec.edge },
           wrapperAnim,
           (disabled || !onPress) && !isBusy && styles.disabled,
         ]}
       >
-        {!isGhost && (
+        {!isGhost && !glass && (
           <>
-            {/* 1) เงาตกนุ่มๆ */}
+            {/* 1) เงาเรืองสีปุ่ม */}
             <Animated.View
               pointerEvents="none"
               style={[
-                styles.shadowLayer,
-                { borderRadius: spec.radius, top: spec.edge + 2 },
-                shadowStyle(isDark ? 'md' : 'md', look.glow),
+                StyleSheet.absoluteFill,
+                {
+                  borderRadius: spec.radius,
+                  boxShadow: `0px 12px 22px -12px ${withAlpha(look.glow, look.glowAlpha)}`,
+                },
                 shadowAnim,
               ]}
             />
-            {/* 2) ขอบล่าง = ความหนา */}
+            {/* 2) ขอบล่างบาง = ความหนา */}
             <View
               pointerEvents="none"
               style={[
@@ -205,30 +211,34 @@ export const Button3D: React.FC<Button3DProps> = ({
               borderRadius: spec.radius,
               paddingHorizontal: spec.padX,
             },
+            isSecondary && { borderWidth: 1, borderColor: colors.border },
+            glass && { borderWidth: 1, borderColor: colors.headerGlassBorder, backgroundColor: colors.headerGlass },
             isGhost && {
               borderWidth: 1.5,
-              borderColor: colors.border,
+              borderColor: withAlpha(colors.gold.startsWith('#') ? colors.gold : '#CFA349', 0.45),
               backgroundColor: 'transparent',
             },
             bodyAnim,
           ]}
         >
-          {!isGhost && (
+          {!isGhost && !glass && (
             <>
               <LinearGradient
                 colors={look.gradient}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 0.35, y: 1 }}
+                end={{ x: 0.25, y: 1 }}
                 style={StyleSheet.absoluteFill}
               />
               {/* ประกายครึ่งบน */}
-              <LinearGradient
-                colors={['rgba(255,255,255,0.28)', 'rgba(255,255,255,0)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={[styles.sheen, { borderTopLeftRadius: spec.radius, borderTopRightRadius: spec.radius }]}
-                pointerEvents="none"
-              />
+              {!isSecondary && (
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.26)', 'rgba(255,255,255,0)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={[styles.sheen, { borderTopLeftRadius: spec.radius, borderTopRightRadius: spec.radius }]}
+                  pointerEvents="none"
+                />
+              )}
               {/* เส้นไฮไลต์ 1px ด้านบน */}
               <View
                 pointerEvents="none"
@@ -237,7 +247,11 @@ export const Button3D: React.FC<Button3DProps> = ({
                   {
                     left: spec.radius * 0.6,
                     right: spec.radius * 0.6,
-                    backgroundColor: variant === 'secondary' ? colors.shadowLight : 'rgba(255,255,255,0.65)',
+                    backgroundColor: isSecondary
+                      ? colors.shadowLight
+                      : variant === 'navy'
+                        ? 'rgba(255,255,255,0.16)'
+                        : 'rgba(255,255,255,0.6)',
                   },
                 ]}
               />
@@ -248,20 +262,12 @@ export const Button3D: React.FC<Button3DProps> = ({
             {isBusy ? (
               <ActivityIndicator size="small" color={look.text} />
             ) : (
-              renderIcon(icon)
+              <IconSlot icon={icon} size={spec.icon} color={look.text} weight={iconWeight} />
             )}
-            <Text
-              numberOfLines={1}
-              style={[
-                styles.label,
-                { fontSize: spec.font, color: look.text },
-                lightText && styles.labelShadow,
-                textStyle,
-              ]}
-            >
+            <Text numberOfLines={1} style={[styles.label, { fontSize: spec.font, color: look.text }, textStyle]}>
               {label}
             </Text>
-            {!isBusy && renderIcon(iconRight)}
+            {!isBusy && <IconSlot icon={iconRight} size={spec.icon} color={look.text} weight={iconWeight} />}
           </View>
         </Animated.View>
       </Animated.View>
@@ -274,13 +280,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   disabled: {
-    opacity: 0.5,
-  },
-  shadowLayer: {
-    position: 'absolute',
-    left: 6,
-    right: 6,
-    bottom: 0,
+    opacity: 0.45,
   },
   edgeLayer: {
     position: 'absolute',
@@ -313,11 +313,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     flexShrink: 1,
-  },
-  labelShadow: {
-    textShadowColor: 'rgba(0,0,0,0.18)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
 });
 

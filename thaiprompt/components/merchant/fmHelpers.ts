@@ -1,8 +1,11 @@
 /**
  * ตัวช่วยของโหมดคนขายตลาดสด — ป้าย/สีสถานะออเดอร์, ปุ่มการกระทำ, เวลาแบบไทย
+ *
+ * ไอคอนเป็นชื่อไอคอนเส้น (components/ui/iconPaths.ts) — ห้ามใช้อีโมจิ
  */
 
 import type { Tone } from '@/theme';
+import type { IconName } from '@/components/ui/iconPaths';
 import type { FmOrderStatus, FmSellerAction, FmOrderFilter, FmListingStatus } from '@/services/api/taladsodSellerApi';
 
 // =====================================================
@@ -34,16 +37,17 @@ export const FM_STATUS_TONE: Record<FmOrderStatus, Tone> = {
   delivery_failed: 'danger',
 };
 
-export const FM_STATUS_ICON: Record<FmOrderStatus, string> = {
-  pending: '🔔',
-  accepted: '👍',
-  preparing: '🍳',
-  ready: '✅',
-  delivering: '🛵',
-  delivered: '📦',
-  completed: '🎉',
-  cancelled: '✖️',
-  delivery_failed: '⚠️',
+/** ไอคอนประจำสถานะ (ชื่อไอคอนเส้น) */
+export const FM_STATUS_ICON: Record<FmOrderStatus, IconName> = {
+  pending: 'bell-ringing',
+  accepted: 'thumbs-up',
+  preparing: 'cooking-pot',
+  ready: 'check-circle',
+  delivering: 'moped',
+  delivered: 'package',
+  completed: 'seal-check',
+  cancelled: 'x-circle',
+  delivery_failed: 'warning',
 };
 
 /** สถานะที่ยังทำไม่เสร็จ (ใช้เตือนก่อนปิดร้าน) */
@@ -70,27 +74,29 @@ export const isFmOrderFilter = (value: unknown): value is FmOrderFilter =>
 
 export interface FmActionLook {
   label: string;
-  icon: string;
+  /** ชื่อไอคอนเส้นบนปุ่ม */
+  icon: IconName;
   variant: 'primary' | 'success' | 'danger' | 'secondary';
   /** ข้อความหลังทำสำเร็จ */
   done: string;
 }
 
+/** ขั้นถัดไปของออเดอร์ = ปุ่มทอง (การกระทำหลักตามระบบดีไซน์) · ยกเลิก = แดง */
 export const fmActionLook = (action: FmSellerAction, deliveryType: 'pickup' | 'rider'): FmActionLook => {
   switch (action) {
     case 'accept':
-      return { label: 'รับออเดอร์', icon: '👍', variant: 'success', done: 'รับออเดอร์แล้ว ลูกค้าได้รับแจ้งเตือน' };
+      return { label: 'รับออเดอร์', icon: 'hand-tap', variant: 'primary', done: 'รับออเดอร์แล้ว ลูกค้าได้รับแจ้งเตือน' };
     case 'prepare':
-      return { label: 'เริ่มเตรียม', icon: '🍳', variant: 'primary', done: 'เริ่มเตรียมแล้ว' };
+      return { label: 'เริ่มเตรียม', icon: 'cooking-pot', variant: 'primary', done: 'เริ่มเตรียมแล้ว' };
     case 'ready':
       return deliveryType === 'rider'
-        ? { label: 'พร้อมให้ไรเดอร์รับ', icon: '✅', variant: 'success', done: 'แจ้งไรเดอร์แล้วว่าของพร้อม' }
-        : { label: 'พร้อมให้มารับ', icon: '✅', variant: 'success', done: 'แจ้งลูกค้าแล้วว่าของพร้อมรับ' };
+        ? { label: 'พร้อมให้ไรเดอร์รับ', icon: 'check-circle', variant: 'primary', done: 'แจ้งไรเดอร์แล้วว่าของพร้อม' }
+        : { label: 'พร้อมให้มารับ', icon: 'check-circle', variant: 'primary', done: 'แจ้งลูกค้าแล้วว่าของพร้อมรับ' };
     case 'handover':
-      return { label: 'ส่งมอบให้ลูกค้าแล้ว', icon: '🤝', variant: 'primary', done: 'บันทึกการส่งมอบแล้ว' };
+      return { label: 'ส่งมอบให้ลูกค้าแล้ว', icon: 'handshake', variant: 'primary', done: 'บันทึกการส่งมอบแล้ว' };
     case 'cancel':
     default:
-      return { label: 'ยกเลิก', icon: '✖️', variant: 'danger', done: 'ยกเลิกออเดอร์แล้ว' };
+      return { label: 'ยกเลิก', icon: 'x-circle', variant: 'danger', done: 'ยกเลิกออเดอร์แล้ว' };
   }
 };
 

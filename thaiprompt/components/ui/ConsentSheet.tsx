@@ -20,7 +20,9 @@
  */
 
 import React from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
+import { Icon, IconSlot } from './Icon';
 import Animated, { SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, spacing, radii, typography, shadowStyle } from '@/theme';
@@ -114,7 +116,7 @@ export const ConsentSheet: React.FC<ConsentSheetProps> = ({
           >
             {!!icon && (
               <View style={[styles.iconCircle, { backgroundColor: colors.goldSoft }]}>
-                <Text style={styles.icon}>{icon}</Text>
+                <IconSlot icon={icon} size={34} color={colors.goldDeep} weight="fill" />
               </View>
             )}
 
@@ -134,7 +136,11 @@ export const ConsentSheet: React.FC<ConsentSheetProps> = ({
                   const item = typeof reason === 'string' ? { text: reason } : reason;
                   return (
                     <View key={`${index}-${item.text}`} style={styles.reasonRow}>
-                      <Text style={styles.reasonIcon}>{item.icon || '•'}</Text>
+                      {item.icon ? (
+                        <IconSlot icon={item.icon} size={18} color={colors.goldDeep} />
+                      ) : (
+                        <Icon name="check-circle" size={18} color={colors.success} weight="fill" />
+                      )}
                       <Text style={[typography.body, styles.reasonText, { color: colors.text }]}>{item.text}</Text>
                     </View>
                   );

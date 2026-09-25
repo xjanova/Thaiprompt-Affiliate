@@ -29,6 +29,7 @@ export const isHttpsUrl = (url: unknown): url is string =>
 
 /**
  * เปิดลิงก์ https ในเบราว์เซอร์ในแอป (ติดตามพัสดุ / ติดตามไรเดอร์)
+ * แถบบนเป็นน้ำเงินกรมท่า + ปุ่มทองอ่อน ให้เข้ากับหัวหน้าจอรอยัลของแอป
  * ลิงก์ไม่ปลอดภัยหรือเปิดไม่ได้ → แจ้งข้อความไทย ไม่โยน error
  */
 export const openHttpsLink = async (url: unknown, title: string = 'เปิดลิงก์'): Promise<void> => {
@@ -38,8 +39,8 @@ export const openHttpsLink = async (url: unknown, title: string = 'เปิด�
   }
   try {
     await WebBrowser.openBrowserAsync(url, {
-      toolbarColor: palette.clayLight,
-      controlsColor: palette.gold600,
+      toolbarColor: palette.navy800,
+      controlsColor: palette.gold300,
       showTitle: true,
     });
   } catch {

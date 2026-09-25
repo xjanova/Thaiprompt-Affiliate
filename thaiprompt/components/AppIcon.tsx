@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Text } from '@/components/ui/Text';
 
 // Emoji mapping สำหรับ fallback
 const EMOJI_MAP: Record<string, string> = {

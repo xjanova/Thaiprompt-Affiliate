@@ -7,10 +7,13 @@
  * - ยังไม่บันทึกแล้วจะออกจากหน้า → ถามก่อนทิ้งการแก้ไข (usePreventRemove — ครอบการปัดขอบจอกลับบน iOS ด้วย
  *   เพราะตั้ง preventNativeDismiss ให้ native-stack · ส่วน listener 'beforeRemove' เปล่าๆ กันการปัดแบบ native ไม่ได้)
  * - แก้รายละเอียดอื่น (ชื่อ คำอธิบาย หมวดหมู่) บนเว็บไซต์
+ *
+ * หน้าตา: ชื่อสินค้าตัวมีเชิง + ป้ายสถานะ → แถบรูป (รูปหลักขอบทอง) → การ์ดราคา/เปิดขาย → การ์ดฟอร์มตัวเลือก → ลิงก์เว็บ
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
@@ -32,6 +35,7 @@ import {
   Button3D,
   Card3D,
   EmptyState,
+  Icon,
   Pill,
   PriceText,
   Screen,
@@ -42,6 +46,8 @@ import {
 import { Field } from '@/components/shop';
 import {
   FM_LISTING_STATUS,
+  IconTile,
+  NoticeBanner,
   OptionGroupsEditor,
   fromDraft,
   toDraft,
@@ -324,7 +330,7 @@ export default function TaladsodListingEditorScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="แก้สินค้า" scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState art="cart" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -363,29 +369,26 @@ export default function TaladsodListingEditorScreen() {
       subtitle={listing.title}
       right={dirty ? <Pill label="ยังไม่บันทึก" tone="warning" /> : undefined}
     >
-      {!!notice && (
-        <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-          <Text accessibilityLiveRegion="polite" style={[typography.bodySm, { color: colors.success }]}>
-            ✅ {notice}
-          </Text>
-        </Card3D>
-      )}
+      {!!notice && <NoticeBanner tone="success" text={notice} style={styles.block} />}
 
       {/* ---------- หัว ---------- */}
       <View style={styles.headRow}>
-        <Text style={[typography.h2, styles.flex, { color: colors.textStrong }]} numberOfLines={2}>
+        <Text style={[typography.serif, styles.flex, { color: colors.textStrong }]} numberOfLines={2}>
           {listing.title}
         </Text>
         <Pill label={st.label} tone={st.tone} size="md" />
       </View>
       {listing.status === 'suspended' && (
-        <Text style={[typography.bodySm, styles.block, { color: colors.danger }]}>
-          สินค้านี้ถูกระงับโดยทีมงาน เปิดขายเองไม่ได้ ติดต่อทีมงานได้ที่หน้าช่วยเหลือ
-        </Text>
+        <View style={[styles.suspended, { backgroundColor: colors.dangerSoft }]}>
+          <Icon name="prohibit" size={18} color={colors.danger} />
+          <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>
+            สินค้านี้ถูกระงับโดยทีมงาน เปิดขายเองไม่ได้ ติดต่อทีมงานได้ที่หน้าช่วยเหลือ
+          </Text>
+        </View>
       )}
 
       {/* ---------- รูป ---------- */}
-      <SectionHeader title="รูปสินค้า" icon="📷" subtitle={`${listing.images.length}/${FM_LIMITS.MAX_IMAGES} รูป · แตะรูปเพื่อตั้งรูปหลักหรือลบ`} style={styles.section} />
+      <SectionHeader title="รูปสินค้า" subtitle={`${listing.images.length}/${FM_LIMITS.MAX_IMAGES} รูป · แตะรูปเพื่อตั้งรูปหลักหรือลบ`} style={styles.section} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.images}>
         {listing.images.map((path) => {
           const url = fmImageUrl(path);
@@ -402,8 +405,12 @@ export default function TaladsodListingEditorScreen() {
                 { backgroundColor: colors.inset, borderColor: isMain ? colors.gold : colors.border, opacity: pressed ? 0.75 : 1 },
               ]}
             >
-              {url ? <Image source={{ uri: url }} style={styles.image} contentFit="cover" transition={150} /> : <Text>🖼️</Text>}
-              {isMain && <Pill label="รูปหลัก" solid style={styles.mainBadge} />}
+              {url ? (
+                <Image source={{ uri: url }} style={styles.image} contentFit="cover" transition={150} />
+              ) : (
+                <Icon name="image" size={30} color={colors.textFaint} />
+              )}
+              {isMain && <Pill label="รูปหลัก" icon="star" solid style={styles.mainBadge} />}
             </Pressable>
           );
         })}
@@ -423,7 +430,9 @@ export default function TaladsodListingEditorScreen() {
               <ActivityIndicator color={colors.goldDeep} />
             ) : (
               <>
-                <Text style={styles.addIcon}>＋</Text>
+                <View style={[styles.addCircle, { backgroundColor: colors.card }]}>
+                  <Icon name="plus" size={20} color={colors.goldDeep} weight="bold" />
+                </View>
                 <Text style={[typography.caption, { color: colors.goldDeep }]}>เพิ่มรูป</Text>
               </>
             )}
@@ -432,7 +441,7 @@ export default function TaladsodListingEditorScreen() {
       </ScrollView>
 
       {/* ---------- ราคา / จำนวน / เปิดขาย ---------- */}
-      <SectionHeader title="ราคาและการขาย" icon="💰" style={styles.section} />
+      <SectionHeader title="ราคาและการขาย" style={styles.section} />
       <Card3D padding={spacing.lg}>
         <Field
           label={`ราคาขาย (บาท${listing.unit ? ` ต่อ${listing.unit}` : ''})`}
@@ -457,11 +466,15 @@ export default function TaladsodListingEditorScreen() {
             hint="เติมจำนวนแล้วสินค้าที่ของหมดจะกลับมาขายเอง"
           />
         ) : (
-          <Text style={[typography.caption, styles.gapTop, { color: colors.textMuted }]}>
-            🍳 ทำตามสั่ง — ไม่ต้องนับจำนวนคงเหลือ
-          </Text>
+          <View style={[styles.madeRow, { backgroundColor: colors.infoSoft }]}>
+            <Icon name="cooking-pot" size={16} color={colors.info} />
+            <Text style={[typography.caption, styles.flex, { color: colors.text }]}>
+              ทำตามสั่ง — ไม่ต้องนับจำนวนคงเหลือ
+            </Text>
+          </View>
         )}
-        <View style={styles.switchRow}>
+        <View style={[styles.switchRow, { borderTopColor: colors.divider }]}>
+          <IconTile icon={available ? 'eye' : 'eye-slash'} tone={available ? 'success' : 'neutral'} size={40} />
           <View style={styles.flex}>
             <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>เปิดขาย</Text>
             <Text style={[typography.caption, { color: colors.textMuted }]}>
@@ -484,7 +497,7 @@ export default function TaladsodListingEditorScreen() {
         )}
         <Button3D
           title="บันทึกราคาและสถานะ"
-          icon="💾"
+          icon="check-circle"
           fullWidth
           disabled={!basicPatch || parsePriceText(priceText) === null}
           onPress={saveBasic}
@@ -495,21 +508,21 @@ export default function TaladsodListingEditorScreen() {
       {/* ---------- ตัวเลือก ---------- */}
       <SectionHeader
         title="ตัวเลือกสินค้า"
-        icon="🧩"
         subtitle="เช่น เลือกเนื้อสัตว์ หมู/ไก่ +0 กุ้ง +20 · เพิ่มไข่ดาว +10"
         style={styles.section}
       />
       <OptionGroupsEditor value={draft} onChange={(next) => { setDraft(next); setGroupsError(null); }} basePrice={previewPrice} disabled={groupsSaving} />
       {!!groupsError && (
-        <Card3D variant="inset" padding={spacing.md} style={styles.gapTop}>
-          <Text style={[typography.bodySm, { color: colors.danger }]} accessibilityRole="alert">
+        <View style={[styles.errorBox, { backgroundColor: colors.dangerSoft }]}>
+          <Icon name="warning-circle" size={20} color={colors.danger} weight="fill" />
+          <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]} accessibilityRole="alert">
             {groupsError}
           </Text>
-        </Card3D>
+        </View>
       )}
       <Button3D
         title={groupsDirty ? 'บันทึกตัวเลือก' : 'ตัวเลือกบันทึกแล้ว'}
-        icon="💾"
+        icon={groupsDirty ? 'check-circle' : 'seal-check'}
         variant={groupsDirty ? 'success' : 'secondary'}
         size="lg"
         fullWidth
@@ -530,13 +543,22 @@ export default function TaladsodListingEditorScreen() {
 
       {/* ---------- เว็บ ---------- */}
       <Card3D variant="flat" padding={spacing.lg} style={styles.section}>
-        <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-          แก้ชื่อ คำอธิบาย หมวดหมู่ หรือรูปของแต่ละตัวเลือก ได้บนเว็บไซต์
-        </Text>
-        <WebsiteButton path={`/taladsod/listings/${listing.id}/edit`} label="แก้ไขละเอียดบนเว็บ" size="sm" style={styles.gapTop} />
-        <View style={styles.statsRow}>
-          <Text style={[typography.caption, { color: colors.textFaint }]}>👀 เข้าชม {listing.view_count.toLocaleString('th-TH')}</Text>
-          <Text style={[typography.caption, { color: colors.textFaint }]}>🧾 สั่งแล้ว {listing.order_count.toLocaleString('th-TH')}</Text>
+        <View style={styles.webRow}>
+          <IconTile icon="globe" size={40} />
+          <Text style={[typography.bodySm, styles.flex, { color: colors.textMuted }]}>
+            แก้ชื่อ คำอธิบาย หมวดหมู่ หรือรูปของแต่ละตัวเลือก ได้บนเว็บไซต์
+          </Text>
+        </View>
+        <WebsiteButton path={`/taladsod/listings/${listing.id}/edit`} label="แก้ไขละเอียดบนเว็บ" size="sm" style={styles.webButton} />
+        <View style={[styles.statsRow, { borderTopColor: colors.divider }]}>
+          <View style={styles.stat}>
+            <Icon name="eye" size={14} color={colors.textFaint} />
+            <Text style={[typography.caption, { color: colors.textFaint }]}>เข้าชม {listing.view_count.toLocaleString('th-TH')}</Text>
+          </View>
+          <View style={styles.stat}>
+            <Icon name="receipt" size={14} color={colors.textFaint} />
+            <Text style={[typography.caption, { color: colors.textFaint }]}>สั่งแล้ว {listing.order_count.toLocaleString('th-TH')}</Text>
+          </View>
           <PriceText amount={previewPrice} size="xs" tone="muted" suffix="ราคาปกติ" />
         </View>
       </Card3D>
@@ -559,17 +581,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  suspended: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
   section: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
   },
   images: {
     gap: spacing.sm,
     paddingVertical: spacing.xs,
   },
   imageTile: {
-    width: 104,
-    height: 104,
-    borderRadius: radii.md,
+    width: 112,
+    height: 112,
+    borderRadius: 18,
     borderWidth: 2,
     overflow: 'hidden',
     alignItems: 'center',
@@ -586,10 +616,14 @@ const styles = StyleSheet.create({
   },
   addTile: {
     borderStyle: 'dashed',
+    gap: spacing.xs,
   },
-  addIcon: {
-    fontSize: 28,
-    lineHeight: 32,
+  addCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   noTop: {
     marginTop: 0,
@@ -597,11 +631,30 @@ const styles = StyleSheet.create({
   gapTop: {
     marginTop: spacing.sm,
   },
-  switchRow: {
+  madeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: spacing.md,
+    borderRadius: radii.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+  },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    borderRadius: radii.md,
+    padding: spacing.md,
   },
   saveButton: {
     marginTop: spacing.lg,
@@ -610,11 +663,27 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginTop: spacing.sm,
   },
+  webRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  webButton: {
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
+  },
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+  },
+  stat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 });

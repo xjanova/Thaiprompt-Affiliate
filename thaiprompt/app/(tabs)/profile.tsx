@@ -1,66 +1,32 @@
 /**
- * Profile Screen - Premium Full Featured Version
- * ใช้ StyleSheet แทน NativeWind
+ * โปรไฟล์ — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
- * Features:
- * - แสดงรูปโปรไฟล์จาก API (sync กับเว็บ)
- * - เปลี่ยนรูปโปรไฟล์ได้
- * - เปลี่ยนรหัสผ่านได้
- * - โหมดมืด/สว่างใช้งานได้
- * - รหัสแนะนำ = รหัสสมาชิก
+ * - หัวน้ำเงินลายกนก: รูปโปรไฟล์ในวงแหวนทอง (แตะเปลี่ยนรูป) · ชื่อฟอนต์มีเชิง · บทบาท · รหัสแนะนำ (แตะคัดลอก)
+ *   + บัตรสมาชิกกระจก (รหัสสมาชิก · คัดลอก · แชร์)
+ * - เนื้อหาบนแผ่นงาช้าง: เมนูเป็นการ์ดกลุ่ม (บัญชี · บริการของฉัน · ชวนเพื่อน · เว็บไซต์ · ตั้งค่า · ช่วยเหลือ)
+ * - รูปโปรไฟล์ sync กับเว็บ · เปลี่ยนรหัสผ่านในแผ่นล่าง · สวิตช์โหมดมืด (บันทึกใน useAppStore.themeMode)
+ * - รหัสแนะนำ = referralCode ของผู้ใช้ (ไม่มี = รหัสสมาชิก) · ชวนเพื่อนแบบชั้นเดียว ไม่มีทีม/สายงาน
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   Alert,
-  Switch,
   RefreshControl,
   StyleSheet,
   StatusBar,
-  Image,
   Modal,
-  TextInput,
-  ActivityIndicator,
+  KeyboardAvoidingView,
   Share,
 } from 'react-native';
+import { Text, TextInput } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-
-// Emoji icons map - ใช้ emoji แทน Ionicons ทั้งหมด
-const EMOJI_ICONS: Record<string, string> = {
-  'person-circle-outline': '👤',
-  'camera': '📷',
-  'copy-outline': '📋',
-  'id-card-outline': '🪪',
-  'share-social-outline': '📤',
-  'person-outline': '👤',
-  'key-outline': '🔑',
-  'shield-checkmark-outline': '🛡️',
-  'qr-code-outline': '📱',
-  'people-outline': '👥',
-  'moon-outline': '🌙',
-  'notifications-outline': '🔔',
-  'language-outline': '🌐',
-  'help-circle-outline': '❓',
-  'chatbubble-outline': '💬',
-  'document-text-outline': '📄',
-  'information-circle-outline': 'ℹ️',
-  'log-out-outline': '🚪',
-  'chevron-forward': '›',
-  'close': '✕',
-  'eye-outline': '👁️',
-  'eye-off-outline': '👁️‍🗨️',
-  'receipt-outline': '🧾',
-  'bicycle-outline': '🛵',
-  'storefront-outline': '🏪',
-  'globe-outline': '🌐',
-  'settings-outline': '⚙️',
-};
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
@@ -68,88 +34,142 @@ import { uploadAvatar, changePassword } from '@/services/api';
 import { APP_INFO, isFeatureEnabled } from '@/config/appConfig';
 import { openWebsite } from '@/components/ui/WebsiteButton';
 import { getAvatarUrl, getAvatarInitial, formatMemberId } from '@/utils/user';
+import { isTrustedWebUrl } from '@/utils/linking';
+import {
+  BrandArt,
+  Button3D,
+  EmptyState,
+  GlassIconButton,
+  Icon,
+  IconButton,
+  OnHeaderProvider,
+  Pill,
+  RoyalHeader,
+  Screen,
+  tapHaptic,
+  type IconName,
+} from '@/components/ui';
+import { AvatarRing, IconTile, MenuGroup, MenuRow, ThemedSwitch } from '@/components/profile';
+import { useTheme, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
 
-// Menu Item Component - ใช้ emoji icons
-const MenuItem = ({
+/** ความโค้งของแผ่นเนื้อหาใต้หัวน้ำเงิน (เท่ากับ <Screen>) */
+const SHEET_RADIUS = 26;
+
+/** ชื่อบทบาทภาษาไทย (server ส่งเป็นคีย์ภาษาอังกฤษ) — ไม่รู้จัก = แสดงตามที่ได้มา */
+const ROLE_LABEL: Record<string, string> = {
+  user: 'สมาชิก',
+  member: 'สมาชิก',
+  seller: 'ร้านค้า',
+  merchant: 'ร้านค้า',
+  rider: 'ไรเดอร์',
+  admin: 'ผู้ดูแลระบบ',
+  super_admin: 'ผู้ดูแลระบบ',
+};
+
+const roleLabel = (role?: string): string => (role ? ROLE_LABEL[role] || role : 'สมาชิก');
+
+// =====================================================
+// ปุ่มกระจกในบัตรสมาชิก (ไอคอนทอง + ข้อความ)
+// =====================================================
+
+const GlassAction = ({
   icon,
   label,
-  value,
   onPress,
-  showArrow = true,
-  danger = false,
-  isDark = true,
+  accessibilityLabel,
 }: {
-  icon: string;
+  icon: IconName;
   label: string;
-  value?: string;
   onPress: () => void;
-  showArrow?: boolean;
-  danger?: boolean;
-  isDark?: boolean;
-}) => (
-  <Pressable
-    onPress={onPress}
-    style={({ pressed }) => [
-      styles.menuItem,
-      isDark ? styles.menuItemDark : styles.menuItemLight,
-      { opacity: pressed ? 0.7 : 1 },
-    ]}
-  >
-    <View style={[styles.menuIcon, danger && styles.menuIconDanger]}>
-      <Text style={{ fontSize: 18 }}>
-        {EMOJI_ICONS[icon] || '📌'}
-      </Text>
-    </View>
-    <Text style={[
-      styles.menuLabel,
-      danger && styles.menuLabelDanger,
-      !isDark && styles.menuLabelLight,
-    ]}>
-      {label}
-    </Text>
-    {value && (
-      <Text style={[styles.menuValue, !isDark && styles.menuValueLight]}>
-        {value}
-      </Text>
-    )}
-    {showArrow && (
-      <Text style={{ fontSize: 18, color: '#9CA3AF' }}>›</Text>
-    )}
-  </Pressable>
-);
+  accessibilityLabel?: string;
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        tapHaptic();
+        onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      style={({ pressed }) => [
+        styles.glassAction,
+        {
+          backgroundColor: colors.headerGlass,
+          borderColor: colors.headerGlassBorder,
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      <Icon name={icon} size={18} color={colors.goldLight} />
+      <Text style={[typography.bodyStrong, { color: colors.onHeader }]}>{label}</Text>
+    </Pressable>
+  );
+};
 
-// Toggle Item Component - ใช้ emoji icons
-const ToggleItem = ({
-  icon,
+// =====================================================
+// ช่องรหัสผ่าน (พื้นยุบ + ขอบทองตอนโฟกัส + ปุ่มแสดง/ซ่อน)
+// =====================================================
+
+const PasswordField = ({
   label,
   value,
-  onValueChange,
-  isDark = true,
+  onChangeText,
+  placeholder,
+  visible,
+  onToggleVisible,
 }: {
-  icon: string;
   label: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-  isDark?: boolean;
-}) => (
-  <View style={[styles.menuItem, isDark ? styles.menuItemDark : styles.menuItemLight]}>
-    <View style={styles.menuIcon}>
-      <Text style={{ fontSize: 18 }}>{EMOJI_ICONS[icon] || '📌'}</Text>
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder: string;
+  visible: boolean;
+  /** ไม่ส่ง = ไม่มีปุ่มแสดง/ซ่อน */
+  onToggleVisible?: () => void;
+}) => {
+  const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={styles.inputGroup}>
+      <Text style={[typography.caption, styles.inputLabel, { color: colors.textMuted }]}>{label}</Text>
+      <View
+        style={[
+          styles.inputBox,
+          { backgroundColor: colors.inset, borderColor: focused ? colors.gold : colors.border },
+        ]}
+      >
+        <Icon name="lock" size={18} color={focused ? colors.goldDeep : colors.textFaint} />
+        <TextInput
+          style={[typography.body, styles.input, { color: colors.textStrong }]}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textFaint}
+          secureTextEntry={!visible}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        />
+        {!!onToggleVisible && (
+          <Pressable
+            onPress={onToggleVisible}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={visible ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+          >
+            <Icon name={visible ? 'eye-slash' : 'eye'} size={20} color={colors.textMuted} />
+          </Pressable>
+        )}
+      </View>
     </View>
-    <Text style={[styles.menuLabel, !isDark && styles.menuLabelLight]}>{label}</Text>
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      trackColor={{ false: '#374151', true: '#3B82F6' }}
-      thumbColor="#FFFFFF"
-    />
-  </View>
-);
+  );
+};
 
 export default function ProfileScreen() {
   const { user, isAuthenticated, logout, refreshUser, updateUser } = useAuthStore();
-  const { resolvedTheme, themeMode, setThemeMode } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
+  const themeMode = useAppStore((state) => state.themeMode);
+  const setThemeMode = useAppStore((state) => state.setThemeMode);
+  const { colors, gradients, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -159,6 +179,14 @@ export default function ProfileScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  /** ปิดแผ่นเปลี่ยนรหัสผ่าน + ล้างค่าที่พิมพ์ ไม่ให้รหัสผ่านค้างอยู่เมื่อเปิดใหม่ */
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -167,8 +195,15 @@ export default function ProfileScreen() {
   const memberCode = user?.id ? formatMemberId(user.id) : '';
   // ใช้ referralCode จาก user ถ้ามี หรือใช้ memberCode
   const referralCode = user?.referralCode || memberCode;
+  /** มีรหัสแนะนำของตัวเองจาก server (คนละค่ากับรหัสสมาชิก) — บัตรต้องโชว์รหัสเดียวกับที่คัดลอก/แชร์ */
+  const hasOwnReferralCode = !!user?.referralCode && user.referralCode !== memberCode;
+  /** ลิงก์สมัคร: ใช้ลิงก์จาก server ก่อน (ตรงกับหน้าชวนเพื่อน) ไม่มีค่อยสร้างจากรหัส */
+  const referralLink =
+    user?.referralLink && isTrustedWebUrl(user.referralLink)
+      ? user.referralLink
+      : `${APP_INFO.WEBSITE}/register?ref=${encodeURIComponent(referralCode)}`;
 
-  // ⭐ ใช้ utility function แทน
+  // แปลง path รูปจาก API เป็น URL เต็มด้วยฟังก์ชันกลาง
   const avatarUrl = getAvatarUrl(user?.avatar);
 
   const onRefresh = async () => {
@@ -180,16 +215,8 @@ export default function ProfileScreen() {
   // Handle pick image
   const handlePickImage = async () => {
     try {
-      // ขอ permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log('🖼️ Media library permission:', status);
-      if (status !== 'granted') {
-        Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้เข้าถึงรูปภาพในการตั้งค่า');
-        return;
-      }
-
-      // เลือกรูป
-      console.log('🖼️ Launching image library...');
+      // เลือกรูปผ่านตัวเลือกรูปของระบบ — ไม่ต้องขอสิทธิ์อ่านรูปทั้งเครื่อง (เหมือนหน้าแก้ไขโปรไฟล์/KYC)
+      console.log('Launching image library...');
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
         allowsEditing: true,
@@ -229,13 +256,13 @@ export default function ProfileScreen() {
   const handleTakePhoto = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      console.log('📷 Camera permission:', status);
+      console.log('Camera permission:', status);
       if (status !== 'granted') {
         Alert.alert('ต้องการสิทธิ์', 'กรุณาอนุญาตให้ใช้กล้องในการตั้งค่า');
         return;
       }
 
-      console.log('📷 Launching camera...');
+      console.log('Launching camera...');
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'], // ใช้ syntax ใหม่ของ expo-image-picker v16
         allowsEditing: true,
@@ -310,10 +337,7 @@ export default function ProfileScreen() {
 
       if (response.success) {
         Alert.alert('สำเร็จ', 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว');
-        setShowPasswordModal(false);
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+        closePasswordModal();
       } else {
         Alert.alert('ผิดพลาด', response.message || 'ไม่สามารถเปลี่ยนรหัสผ่านได้');
       }
@@ -332,7 +356,7 @@ export default function ProfileScreen() {
   // Handle share referral
   const handleShareReferral = async () => {
     try {
-      const message = `มาใช้ ThaiPrompt สั่งของจากตลาดสดและร้านใกล้บ้านกัน ใช้รหัสแนะนำ ${referralCode} ตอนสมัครนะ\n${APP_INFO.WEBSITE}/register?ref=${encodeURIComponent(referralCode)}`;
+      const message = `มาใช้ ThaiPrompt สั่งของจากตลาดสดและร้านใกล้บ้านกัน ใช้รหัสแนะนำ ${referralCode} ตอนสมัครนะ\n${referralLink}`;
       await Share.share({ message });
     } catch (error) {
       console.error('Share error:', error);
@@ -362,727 +386,571 @@ export default function ProfileScreen() {
   // ถ้ายังไม่ login
   if (!isAuthenticated || !user) {
     return (
-      <View style={[styles.container, !isDark && styles.containerLight]}>
-        <StatusBar
-          barStyle={isDark ? 'light-content' : 'dark-content'}
-          backgroundColor={isDark ? '#0F0F23' : '#FFFFFF'}
+      <Screen title="โปรไฟล์" showBack={false} scroll={false}>
+        <EmptyState
+          icon="user-circle"
+          title="โปรไฟล์ของคุณ"
+          message="เข้าสู่ระบบเพื่อจัดการโปรไฟล์และตั้งค่า"
+          actionLabel="เข้าสู่ระบบ"
+          onAction={() => router.push('/login')}
         />
-        <View style={styles.notLoggedIn}>
-          <Text style={{ fontSize: 80 }}>👤</Text>
-          <Text style={[styles.notLoggedInTitle, !isDark && styles.textDark]}>
-            โปรไฟล์ของคุณ
-          </Text>
-          <Text style={styles.notLoggedInText}>
-            เข้าสู่ระบบเพื่อจัดการโปรไฟล์และตั้งค่า
-          </Text>
-          <Pressable style={styles.loginButton} onPress={() => router.push('/login')}>
-            <Text style={styles.loginButtonText}>เข้าสู่ระบบ</Text>
-          </Pressable>
-        </View>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <View style={[styles.container, !isDark && styles.containerLight]}>
-      <StatusBar
-        barStyle={isDark ? 'light-content' : 'dark-content'}
-        backgroundColor={isDark ? '#0F0F23' : '#FFFFFF'}
-      />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      {/* พื้นน้ำเงินครึ่งบน — ดึงหน้าลงเกินขอบจะเห็นน้ำเงินต่อจากหัว ไม่เห็นพื้นงาช้างโผล่ */}
+      <View pointerEvents="none" style={[styles.topFill, { backgroundColor: gradients.hero[0] }]} />
 
       <ScrollView
-        style={styles.scrollView}
+        style={styles.flex}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#3B82F6"
-            colors={['#3B82F6']}
+            tintColor={colors.goldLight}
+            colors={[colors.gold]}
+            progressBackgroundColor={colors.card}
+            progressViewOffset={insets.top}
           />
         }
       >
-        {/* Profile Header */}
-        <LinearGradient
-          colors={['#3B82F6', '#2563EB']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.profileHeader}
+        {/* ---------- หัวน้ำเงินกรมท่า ---------- */}
+        <RoyalHeader
+          ornamentTop={insets.top - 16}
+          ornamentWidth={230}
+          style={{ paddingTop: insets.top + spacing.xs, paddingBottom: SHEET_RADIUS + spacing.xl }}
         >
-          <Text style={styles.headerTitle}>โปรไฟล์</Text>
+          <View style={styles.topBar}>
+            <Text accessibilityRole="header" style={[typography.serif, { color: colors.onHeader }]}>
+              โปรไฟล์
+            </Text>
+            <GlassIconButton icon="gear-six" accessibilityLabel="ตั้งค่า" onPress={() => router.push('/settings')} />
+          </View>
 
-          <View style={styles.profileRow}>
-            {/* Avatar - Pressable to change */}
-            <Pressable onPress={showImageOptions} disabled={isUploading}>
-              <View style={styles.avatarContainer}>
-                {isUploading ? (
-                  <View style={styles.avatar}>
-                    <ActivityIndicator size="small" color="#3B82F6" />
-                  </View>
-                ) : avatarUrl ? (
-                  <Image
-                    source={{ uri: avatarUrl }}
-                    style={styles.avatarImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {getAvatarInitial(user?.name)}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.avatarEditBadge}>
-                  <Text style={{ fontSize: 10 }}>📷</Text>
-                </View>
-              </View>
+          {/* รูป + ชื่อ + บทบาท */}
+          <View style={styles.identity}>
+            <Pressable
+              onPress={showImageOptions}
+              disabled={isUploading}
+              accessibilityRole="button"
+              accessibilityLabel="เปลี่ยนรูปโปรไฟล์"
+              hitSlop={4}
+              style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+            >
+              <AvatarRing
+                uri={avatarUrl}
+                initial={getAvatarInitial(user?.name)}
+                size={86}
+                uploading={isUploading}
+                showCamera
+                gapColor={colors.navyDeep}
+              />
             </Pressable>
 
-            {/* Info */}
-            <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.name}</Text>
-              <Text style={styles.profileEmail}>{user?.email}</Text>
-              <View style={styles.profileBadges}>
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{user?.role || 'Member'}</Text>
+            <View style={styles.identityText}>
+              <Text numberOfLines={1} style={[typography.serifLg, { color: colors.onHeader }]}>
+                {user?.name}
+              </Text>
+              {!!user?.email && (
+                <Text numberOfLines={1} style={[typography.bodySm, styles.email, { color: colors.onHeaderMuted }]}>
+                  {user.email}
+                </Text>
+              )}
+              <OnHeaderProvider value>
+                <View style={styles.badges}>
+                  <Pill label={roleLabel(user?.role)} tone="gold" icon="crown-simple" />
+                  {!!referralCode && (
+                    <Pressable
+                      onPress={handleCopyReferral}
+                      accessibilityRole="button"
+                      accessibilityLabel={`คัดลอกรหัสแนะนำ ${referralCode}`}
+                      hitSlop={6}
+                      style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+                    >
+                      <Pill label={referralCode} tone="neutral" icon="copy" />
+                    </Pressable>
+                  )}
                 </View>
-                <Pressable
-                  style={[styles.badge, { backgroundColor: 'rgba(16,185,129,0.3)' }]}
-                  onPress={handleCopyReferral}
-                >
-                  <Text style={{ fontSize: 10 }}>📋</Text>
-                  <Text style={[styles.badgeText, { marginLeft: 4 }]}>
-                    {referralCode}
-                  </Text>
-                </Pressable>
-              </View>
+              </OnHeaderProvider>
             </View>
           </View>
-        </LinearGradient>
 
-        {/* Member ID Card */}
-        <View style={[styles.memberCard, !isDark && styles.memberCardLight]}>
-          <View style={styles.memberCardHeader}>
-            <Text style={{ fontSize: 20 }}>🪪</Text>
-            <Text style={[styles.memberCardTitle, !isDark && styles.textDark]}>
-              รหัสสมาชิก
+          {/* บัตรสมาชิกกระจก */}
+          <LinearGradient
+            colors={gradients.glass}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.memberCard, { borderColor: colors.headerGlassBorder }]}
+          >
+            <View style={styles.memberHead}>
+              <Icon name="identification-card" size={18} color={colors.goldLight} />
+              <Text style={[typography.bodySm, styles.flex, { color: colors.onHeaderMuted }]}>
+                {hasOwnReferralCode ? 'รหัสแนะนำ' : 'รหัสสมาชิก'}
+              </Text>
+            </View>
+            {/* โชว์รหัสเดียวกับที่ปุ่มคัดลอก/แชร์ส่งออกไป */}
+            <Text
+              selectable
+              accessibilityLabel={`${hasOwnReferralCode ? 'รหัสแนะนำ' : 'รหัสสมาชิก'} ${referralCode}`}
+              style={[styles.memberCode, { color: colors.goldLight }]}
+            >
+              {referralCode}
             </Text>
-          </View>
-          <Text style={styles.memberCodeLarge}>{memberCode}</Text>
-          <Text style={[styles.memberCardHint, !isDark && { color: '#6B7280' }]}>
-            ใช้รหัสนี้ชวนเพื่อนมาสมัครใช้งาน
-          </Text>
-          <View style={styles.memberCardActions}>
-            <Pressable style={styles.memberCardBtn} onPress={handleCopyReferral}>
-              <Text style={{ fontSize: 16 }}>📋</Text>
-              <Text style={styles.memberCardBtnText}>คัดลอก</Text>
-            </Pressable>
-            <Pressable style={styles.memberCardBtn} onPress={handleShareReferral}>
-              <Text style={{ fontSize: 16 }}>📤</Text>
-              <Text style={styles.memberCardBtnText}>แชร์</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Menu Sections */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
-            บัญชี
-          </Text>
-          <MenuItem
-            icon="person-outline"
-            label="แก้ไขโปรไฟล์"
-            onPress={() => router.push('/edit-profile')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="key-outline"
-            label="เปลี่ยนรหัสผ่าน"
-            onPress={() => setShowPasswordModal(true)}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="shield-checkmark-outline"
-            label="ยืนยันตัวตน (KYC)"
-            onPress={() => router.push('/kyc')}
-            isDark={isDark}
-          />
-        </View>
-
-        {/* SHOP-24: ทางเข้าคำสั่งซื้อ + บริการของฉัน */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
-            บริการของฉัน
-          </Text>
-          <MenuItem
-            icon="receipt-outline"
-            label="คำสั่งซื้อของฉัน"
-            onPress={() => router.push('/(tabs)/orders' as never)}
-            isDark={isDark}
-          />
-          {/* SHOP-08: จัดการที่อยู่จัดส่ง (ปักหมุดสำหรับส่งด้วยไรเดอร์) */}
-          <MenuItem
-            icon="location-outline"
-            label="ที่อยู่จัดส่ง"
-            onPress={() => router.push('/addresses' as never)}
-            isDark={isDark}
-          />
-          {isFeatureEnabled('RIDER_ENABLED') && (
-            <MenuItem
-              icon="bicycle-outline"
-              label="ไรเดอร์"
-              onPress={() => router.push('/rider')}
-              isDark={isDark}
-            />
-          )}
-          {isFeatureEnabled('MERCHANT_ENABLED') && (
-            <MenuItem
-              icon="storefront-outline"
-              label="ร้านของฉัน"
-              onPress={() => router.push('/merchant' as never)}
-              isDark={isDark}
-            />
-          )}
-        </View>
-
-        {/* PLAY-08: ชวนเพื่อนแบบชั้นเดียว (ไม่มีทีม/สายงาน) */}
-        {isFeatureEnabled('REFERRAL_ENABLED') && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
-              ชวนเพื่อน
+            <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>
+              {hasOwnReferralCode
+                ? `ใช้รหัสนี้ชวนเพื่อนมาสมัคร · รหัสสมาชิก ${memberCode}`
+                : 'ใช้รหัสนี้ชวนเพื่อนมาสมัครใช้งาน'}
             </Text>
-            <MenuItem
-              icon="share-social-outline"
-              label="ชวนเพื่อน (รหัส / QR / ลิงก์)"
-              value={referralCode}
-              onPress={() => router.push('/referral')}
-              isDark={isDark}
+            <View style={[styles.memberDivider, { backgroundColor: colors.headerGlassBorder }]} />
+            <View style={styles.memberActions}>
+              <GlassAction icon="copy" label="คัดลอก" accessibilityLabel="คัดลอกรหัสแนะนำ" onPress={handleCopyReferral} />
+              <GlassAction icon="share-network" label="แชร์" accessibilityLabel="แชร์รหัสแนะนำ" onPress={handleShareReferral} />
+            </View>
+          </LinearGradient>
+        </RoyalHeader>
+
+        {/* ---------- แผ่นงาช้าง: เมนู ---------- */}
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          <MenuGroup title="บัญชี">
+            <MenuRow
+              icon="user"
+              title="แก้ไขโปรไฟล์"
+              subtitle="ชื่อ เบอร์โทร รูป และบัญชีรับเงิน"
+              onPress={() => router.push('/edit-profile')}
             />
-          </View>
-        )}
+            <MenuRow
+              icon="key"
+              title="เปลี่ยนรหัสผ่าน"
+              subtitle="ตั้งรหัสใหม่อย่างน้อย 8 ตัวอักษร"
+              onPress={() => setShowPasswordModal(true)}
+            />
+            <MenuRow
+              icon="shield-check"
+              title="ยืนยันตัวตน (KYC)"
+              subtitle="ยืนยันก่อนถอนเงินเข้าบัญชี"
+              onPress={() => router.push('/kyc')}
+            />
+          </MenuGroup>
 
-        {/* PLAY-17: จัดการบัญชีบนเว็บไซต์ (ล็อกอินให้อัตโนมัติ) */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
-            เว็บไซต์
-          </Text>
-          <MenuItem
-            icon="globe-outline"
-            label="จัดการบนเว็บไซต์"
-            onPress={() => {
-              openWebsite('/user').catch(() => {});
-            }}
-            isDark={isDark}
-          />
-        </View>
+          {/* SHOP-24: ทางเข้าคำสั่งซื้อ + บริการของฉัน */}
+          <MenuGroup title="บริการของฉัน">
+            <MenuRow
+              icon="receipt"
+              title="คำสั่งซื้อของฉัน"
+              subtitle="ติดตามสถานะและประวัติการสั่งซื้อ"
+              onPress={() => router.push('/(tabs)/orders' as never)}
+            />
+            {/* SHOP-08: จัดการที่อยู่จัดส่ง (ปักหมุดสำหรับส่งด้วยไรเดอร์) */}
+            <MenuRow
+              icon="map-pin"
+              title="ที่อยู่จัดส่ง"
+              subtitle="ปักหมุดให้ไรเดอร์ส่งถึงหน้าบ้าน"
+              onPress={() => router.push('/addresses' as never)}
+            />
+            {isFeatureEnabled('RIDER_ENABLED') && (
+              <MenuRow
+                icon="moped"
+                title="ไรเดอร์"
+                subtitle="รับงานส่งของใกล้บ้าน"
+                onPress={() => router.push('/rider')}
+              />
+            )}
+            {isFeatureEnabled('MERCHANT_ENABLED') && (
+              <MenuRow
+                icon="storefront"
+                title="ร้านของฉัน"
+                subtitle="ออเดอร์ใหม่และการจัดส่ง"
+                onPress={() => router.push('/merchant' as never)}
+              />
+            )}
+          </MenuGroup>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
-            ตั้งค่า
-          </Text>
-          <ToggleItem
-            icon="moon-outline"
-            label="โหมดมืด"
-            value={resolvedTheme === 'dark'}
-            onValueChange={handleThemeToggle}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="language-outline"
-            label="ภาษา"
-            value="ไทย"
-            onPress={() => Alert.alert('ภาษา', 'ขณะนี้รองรับเฉพาะภาษาไทย')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="notifications-outline"
-            label="การแจ้งเตือน"
-            onPress={() => router.push('/notification-settings')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="settings-outline"
-            label="ตั้งค่าเพิ่มเติม และลบบัญชี"
-            onPress={() => router.push('/settings')}
-            isDark={isDark}
-          />
-        </View>
+          {/* PLAY-08: ชวนเพื่อนแบบชั้นเดียว (ไม่มีทีม/สายงาน) */}
+          {isFeatureEnabled('REFERRAL_ENABLED') && (
+            <MenuGroup title="ชวนเพื่อน">
+              <Pressable
+                onPress={() => router.push('/referral')}
+                accessibilityRole="button"
+                accessibilityLabel={`ชวนเพื่อน (รหัส / QR / ลิงก์) ${referralCode}`}
+                style={({ pressed }) => [styles.promo, pressed && { backgroundColor: colors.inset }]}
+              >
+                <View style={[styles.promoArt, { backgroundColor: colors.goldSoft }]}>
+                  <BrandArt name="gift" size={56} />
+                </View>
+                <View style={styles.flex}>
+                  <Text numberOfLines={2} style={[typography.bodyStrong, { color: colors.textStrong }]}>
+                    ชวนเพื่อน (รหัส / QR / ลิงก์)
+                  </Text>
+                  {!!referralCode && (
+                    <View style={[styles.codeChip, { borderColor: colors.gold, backgroundColor: colors.goldSoft }]}>
+                      <Text numberOfLines={1} style={[styles.codeChipText, { color: colors.goldDeep }]}>
+                        {referralCode}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Icon name="caret-right" size={16} color={colors.textFaint} weight="bold" />
+              </Pressable>
+            </MenuGroup>
+          )}
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
-            ช่วยเหลือ
-          </Text>
-          <MenuItem
-            icon="help-circle-outline"
-            label="Wiki คู่มือการใช้งาน"
-            onPress={() => router.push('/wiki')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="chatbubble-outline"
-            label="ติดต่อเรา"
-            onPress={() => router.push('/support')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="document-text-outline"
-            label="เงื่อนไขการใช้งาน"
-            onPress={() => router.push('/terms')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="document-text-outline"
-            label="ข้อตกลงการใช้งาน"
-            onPress={() => router.push('/agreement')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="shield-checkmark-outline"
-            label="นโยบายความเป็นส่วนตัว"
-            onPress={() => router.push('/privacy')}
-            isDark={isDark}
-          />
-          <MenuItem
-            icon="information-circle-outline"
-            label="เกี่ยวกับแอพ"
-            value={`v${APP_INFO.VERSION}`}
-            onPress={() =>
-              Alert.alert(
-                APP_INFO.NAME,
-                `Version ${APP_INFO.VERSION} (Build ${APP_INFO.BUILD_NUMBER})\n\n© 2024 Thaiprompt`
-              )
-            }
-            isDark={isDark}
-          />
-        </View>
+          {/* PLAY-17: จัดการบัญชีบนเว็บไซต์ (ล็อกอินให้อัตโนมัติ) */}
+          <MenuGroup title="เว็บไซต์">
+            <MenuRow
+              icon="globe"
+              title="จัดการบนเว็บไซต์"
+              subtitle="เปิดเว็บไซต์ เข้าสู่ระบบให้อัตโนมัติ"
+              onPress={() => {
+                openWebsite('/user').catch(() => {});
+              }}
+            />
+          </MenuGroup>
 
-        <View style={[styles.section, { marginBottom: 100 }]}>
-          <MenuItem
-            icon="log-out-outline"
-            label="ออกจากระบบ"
+          <MenuGroup title="ตั้งค่า">
+            <MenuRow
+              icon="moon"
+              title="โหมดมืด"
+              subtitle={themeMode === 'system' ? 'ตอนนี้ตามการตั้งค่าของเครื่อง' : 'ถนอมสายตาตอนกลางคืน'}
+              right={<ThemedSwitch value={isDark} onValueChange={handleThemeToggle} accessibilityLabel="โหมดมืด" />}
+            />
+            <MenuRow
+              icon="translate"
+              title="ภาษา"
+              value="ไทย"
+              onPress={() => Alert.alert('ภาษา', 'ขณะนี้รองรับเฉพาะภาษาไทย')}
+            />
+            <MenuRow
+              icon="bell"
+              title="การแจ้งเตือน"
+              subtitle="เลือกเรื่องที่อยากได้รับแจ้ง"
+              onPress={() => router.push('/notification-settings')}
+            />
+            <MenuRow
+              icon="gear-six"
+              title="ตั้งค่าเพิ่มเติม และลบบัญชี"
+              subtitle="ธีม ความเป็นส่วนตัว และจัดการบัญชี"
+              onPress={() => router.push('/settings')}
+            />
+          </MenuGroup>
+
+          <MenuGroup title="ช่วยเหลือ">
+            <MenuRow
+              icon="book-open"
+              title="Wiki คู่มือการใช้งาน"
+              subtitle="วิธีใช้งานทุกบริการในแอป"
+              onPress={() => router.push('/wiki')}
+            />
+            <MenuRow
+              icon="headset"
+              title="ติดต่อเรา"
+              subtitle="แจ้งปัญหาหรือสอบถามทีมงาน"
+              onPress={() => router.push('/support')}
+            />
+            <MenuRow icon="file-text" title="เงื่อนไขการใช้งาน" onPress={() => router.push('/terms')} />
+            <MenuRow icon="handshake" title="ข้อตกลงการใช้งาน" onPress={() => router.push('/agreement')} />
+            <MenuRow icon="lock-key" title="นโยบายความเป็นส่วนตัว" onPress={() => router.push('/privacy')} />
+            <MenuRow
+              icon="info"
+              title="เกี่ยวกับแอพ"
+              value={`v${APP_INFO.VERSION}`}
+              onPress={() =>
+                Alert.alert(
+                  APP_INFO.NAME,
+                  `Version ${APP_INFO.VERSION} (Build ${APP_INFO.BUILD_NUMBER})\n\n© ${new Date().getFullYear()} Thaiprompt`
+                )
+              }
+            />
+          </MenuGroup>
+
+          {/* ออกจากระบบ — ปุ่มขอบแดง (ถามยืนยันก่อนเสมอ) */}
+          <Pressable
             onPress={handleLogout}
-            showArrow={false}
-            danger
-            isDark={isDark}
-          />
+            accessibilityRole="button"
+            accessibilityLabel="ออกจากระบบ"
+            style={({ pressed }) => [
+              styles.logout,
+              {
+                borderColor: withAlpha(colors.danger, 0.4),
+                backgroundColor: pressed ? colors.dangerSoft : 'transparent',
+              },
+            ]}
+          >
+            <Icon name="sign-out" size={20} color={colors.danger} />
+            <Text style={[typography.bodyStrong, { color: colors.danger }]}>ออกจากระบบ</Text>
+          </Pressable>
+
+          <Text style={[typography.micro, styles.version, { color: colors.textFaint }]}>
+            {APP_INFO.NAME} · v{APP_INFO.VERSION}
+          </Text>
         </View>
       </ScrollView>
 
-      {/* Change Password Modal */}
+      {/* ---------- แผ่นเปลี่ยนรหัสผ่าน ---------- */}
       <Modal
         visible={showPasswordModal}
         transparent
-        animationType="slide"
-        onRequestClose={() => setShowPasswordModal(false)}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => closePasswordModal()}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, !isDark && styles.modalContentLight]}>
+        <KeyboardAvoidingView style={styles.modalRoot} behavior="padding">
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} />
+          <Animated.View
+            entering={SlideInDown.springify().damping(18)}
+            accessibilityViewIsModal
+            style={[
+              styles.modalSheet,
+              {
+                backgroundColor: colors.card,
+                paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.sm,
+              },
+              shadowStyle('lg', colors.shadowDark),
+            ]}
+          >
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
+
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, !isDark && styles.textDark]}>
-                เปลี่ยนรหัสผ่าน
-              </Text>
-              <Pressable onPress={() => setShowPasswordModal(false)}>
-                <Text style={{ fontSize: 24, color: isDark ? '#FFFFFF' : '#1F2937' }}>✕</Text>
-              </Pressable>
-            </View>
-
-            {/* Current Password */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, !isDark && { color: '#374151' }]}>
-                รหัสผ่านปัจจุบัน
-              </Text>
-              <View style={[styles.inputContainer, !isDark && styles.inputContainerLight]}>
-                <TextInput
-                  style={[styles.input, !isDark && styles.inputLight]}
-                  placeholder="กรอกรหัสผ่านปัจจุบัน"
-                  placeholderTextColor="#9CA3AF"
-                  secureTextEntry={!showCurrentPassword}
-                  value={currentPassword}
-                  onChangeText={setCurrentPassword}
-                />
-                <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
-                  <Text style={{ fontSize: 18 }}>{showCurrentPassword ? '🙈' : '👁️'}</Text>
-                </Pressable>
+              <IconTile icon="key" tone="gold" />
+              <View style={styles.flex}>
+                <Text accessibilityRole="header" style={[typography.h2, { color: colors.textStrong }]}>
+                  เปลี่ยนรหัสผ่าน
+                </Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  ตั้งรหัสใหม่อย่างน้อย 8 ตัวอักษร
+                </Text>
               </View>
+              <IconButton icon="x" label="ปิด" size={38} onPress={() => closePasswordModal()} />
             </View>
 
-            {/* New Password */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, !isDark && { color: '#374151' }]}>
-                รหัสผ่านใหม่
-              </Text>
-              <View style={[styles.inputContainer, !isDark && styles.inputContainerLight]}>
-                <TextInput
-                  style={[styles.input, !isDark && styles.inputLight]}
-                  placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)"
-                  placeholderTextColor="#9CA3AF"
-                  secureTextEntry={!showNewPassword}
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                />
-                <Pressable onPress={() => setShowNewPassword(!showNewPassword)}>
-                  <Text style={{ fontSize: 18 }}>{showNewPassword ? '🙈' : '👁️'}</Text>
-                </Pressable>
-              </View>
-            </View>
+            <ScrollView bounces={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.modalScroll}>
+              <PasswordField
+                label="รหัสผ่านปัจจุบัน"
+                placeholder="กรอกรหัสผ่านปัจจุบัน"
+                value={currentPassword}
+                onChangeText={setCurrentPassword}
+                visible={showCurrentPassword}
+                onToggleVisible={() => setShowCurrentPassword(!showCurrentPassword)}
+              />
+              <PasswordField
+                label="รหัสผ่านใหม่"
+                placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 8 ตัว)"
+                value={newPassword}
+                onChangeText={setNewPassword}
+                visible={showNewPassword}
+                onToggleVisible={() => setShowNewPassword(!showNewPassword)}
+              />
+              <PasswordField
+                label="ยืนยันรหัสผ่านใหม่"
+                placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                visible={showNewPassword}
+              />
+            </ScrollView>
 
-            {/* Confirm Password */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, !isDark && { color: '#374151' }]}>
-                ยืนยันรหัสผ่านใหม่
-              </Text>
-              <View style={[styles.inputContainer, !isDark && styles.inputContainerLight]}>
-                <TextInput
-                  style={[styles.input, !isDark && styles.inputLight]}
-                  placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-                  placeholderTextColor="#9CA3AF"
-                  secureTextEntry={!showNewPassword}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                />
-              </View>
-            </View>
-
-            {/* Submit Button */}
-            <Pressable
-              style={[
-                styles.submitButton,
-                isChangingPassword && styles.submitButtonDisabled,
-              ]}
+            <Button3D
+              title="เปลี่ยนรหัสผ่าน"
+              icon="check"
+              size="lg"
+              fullWidth
+              loading={isChangingPassword}
               onPress={handleChangePassword}
-              disabled={isChangingPassword}
-            >
-              {isChangingPassword ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.submitButtonText}>เปลี่ยนรหัสผ่าน</Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
+            />
+          </Animated.View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F0F23',
-  },
-  containerLight: {
-    backgroundColor: '#F9FAFB',
-  },
-  scrollView: {
+  root: {
     flex: 1,
   },
-  notLoggedIn: {
+  flex: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
   },
-  notLoggedInTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 16,
-  },
-  notLoggedInText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  textDark: {
-    color: '#1F2937',
-  },
-  loginButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 24,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  profileHeader: {
-    paddingHorizontal: 24,
-    paddingTop: 56,
-    paddingBottom: 32,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 20,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-  },
-  avatarImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    marginRight: 16,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#3B82F6',
-  },
-  avatarEditBadge: {
+  topFill: {
     position: 'absolute',
-    bottom: 0,
-    right: 12,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#3B82F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
   },
-  profileInfo: {
+  scrollContent: {
+    flexGrow: 1,
+  },
+
+  // ---------- หัว ----------
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.sm,
+  },
+  identity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.screen,
+    marginTop: spacing.lg,
+  },
+  identityText: {
     flex: 1,
   },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  email: {
+    marginTop: -2,
   },
-  profileEmail: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
-  },
-  profileBadges: {
+  badges: {
     flexDirection: 'row',
-    marginTop: 8,
     flexWrap: 'wrap',
-  },
-  badge: {
-    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginRight: 8,
-    marginBottom: 4,
+    gap: spacing.xs + 2,
+    marginTop: spacing.sm,
   },
-  badgeText: {
-    fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-
-  // Member Card
   memberCard: {
-    marginHorizontal: 20,
-    marginTop: -16,
-    backgroundColor: 'rgba(59,130,246,0.1)',
-    borderRadius: 16,
-    padding: 16,
+    marginHorizontal: spacing.screen,
+    marginTop: spacing.xl,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.3)',
+    padding: spacing.lg,
+    overflow: 'hidden',
   },
-  memberCardLight: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
-  },
-  memberCardHeader: {
+  memberHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: spacing.sm,
   },
-  memberCardTitle: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginLeft: 8,
-    fontWeight: '500',
-  },
-  memberCodeLarge: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#3B82F6',
+  memberCode: {
+    ...typography.money,
+    fontSize: 30,
+    lineHeight: 40,
     letterSpacing: 2,
+    marginTop: spacing.xs,
   },
-  memberCardHint: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 4,
+  memberDivider: {
+    height: 1,
+    marginVertical: spacing.md,
   },
-  memberCardActions: {
+  memberActions: {
     flexDirection: 'row',
-    marginTop: 12,
+    gap: spacing.md,
   },
-  memberCardBtn: {
+  glassAction: {
+    flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(59,130,246,0.1)',
-    marginRight: 12,
-  },
-  memberCardBtnText: {
-    fontSize: 14,
-    color: '#3B82F6',
-    marginLeft: 6,
-    fontWeight: '500',
-  },
-
-  // Section
-  section: {
-    marginTop: 20,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
-    paddingHorizontal: 20,
-    marginBottom: 8,
-  },
-  sectionTitleLight: {
-    color: '#6B7280',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 1,
-  },
-  menuItemDark: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-  },
-  menuItemLight: {
-    backgroundColor: '#FFFFFF',
-  },
-  menuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-  },
-  menuIconDanger: {
-    backgroundColor: 'rgba(239,68,68,0.15)',
-  },
-  menuLabel: {
-    flex: 1,
-    fontSize: 15,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  menuLabelLight: {
-    color: '#1F2937',
-  },
-  menuLabelDanger: {
-    color: '#EF4444',
-  },
-  menuValue: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginRight: 8,
-  },
-  menuValueLight: {
-    color: '#6B7280',
+    gap: spacing.sm,
+    height: 46,
+    borderRadius: radii.md,
+    borderWidth: 1,
   },
 
-  // Modal
-  modalOverlay: {
+  // ---------- แผ่นงาช้าง ----------
+  sheet: {
+    flexGrow: 1,
+    marginTop: -SHEET_RADIUS,
+    borderTopLeftRadius: SHEET_RADIUS,
+    borderTopRightRadius: SHEET_RADIUS,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.xxl,
+    // แท็บบาร์ไม่ได้ลอยทับเนื้อหา — เว้นท้ายพอให้ปุ่มสุดท้ายไม่ชิดแท็บ
+    paddingBottom: spacing.xxxl + spacing.lg,
+  },
+  promo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md + 2,
+  },
+  promoArt: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  codeChip: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.xs + 2,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+    borderWidth: 1.2,
+    borderStyle: 'dashed',
+  },
+  codeChipText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+  },
+  logout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    height: 54,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+  },
+  version: {
+    textAlign: 'center',
+    marginTop: spacing.lg,
+  },
+
+  // ---------- แผ่นเปลี่ยนรหัสผ่าน ----------
+  modalRoot: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: '#1A1A2E',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '80%',
+  modalSheet: {
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    maxHeight: '90%',
   },
-  modalContentLight: {
-    backgroundColor: '#FFFFFF',
+  handle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    marginBottom: spacing.lg,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    gap: spacing.md,
+    marginBottom: spacing.sm,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  modalScroll: {
+    paddingBottom: spacing.md,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginTop: spacing.md,
   },
   inputLabel: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginBottom: 8,
+    marginBottom: spacing.xs,
   },
-  inputContainer: {
+  inputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    minHeight: 52,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  inputContainerLight: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#E5E7EB',
+    paddingHorizontal: spacing.md,
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  inputLight: {
-    color: '#1F2937',
-  },
-  submitButton: {
-    backgroundColor: '#3B82F6',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  submitButtonDisabled: {
-    opacity: 0.6,
-  },
-  submitButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    paddingVertical: spacing.md,
   },
 });

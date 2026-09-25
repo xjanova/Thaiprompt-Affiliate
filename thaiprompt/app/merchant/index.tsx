@@ -7,10 +7,14 @@
  * - ยังไม่มีร้าน (403 NOT_A_SELLER) → ชวนเปิดร้านบนเว็บ · ร้านถูกระงับ (STORE_SUSPENDED) → แจ้งเหตุผล
  * - รีเฟรชเงียบๆ ทุก 30 วินาทีระหว่างเปิดหน้านี้ (ไม่มีสปินเนอร์เต็มจอ)
  * - ปุ่มสลับด้านบน → ร้านตลาดสด (/merchant/taladsod) ซึ่งเป็นอีกระบบ (รถเข็น/ตลาดนัด/ร้านอาหาร)
+ *
+ * หน้าตา: การ์ดน้ำเงินกรมท่าลายกนก (ชื่อร้านตัวมีเชิง + ยอดขายวันนี้ตัวเลขทอง) → งานค้าง (StatTile)
+ *         → ออเดอร์ใหม่ → ปุ่มทองจัดการออเดอร์ → งานบนเว็บ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,9 +27,11 @@ import {
 } from '@/services/api/merchantApi';
 import {
   BannerSlider,
+  BrandArt,
   Button3D,
   Card3D,
   EmptyState,
+  Icon,
   Pill,
   PriceText,
   Screen,
@@ -34,9 +40,9 @@ import {
   WebsiteButton,
 } from '@/components/ui';
 import { ORDER_STATUS_TONE, formatThaiDateTime, toNumber } from '@/components/shop';
-import { MerchantModeSwitch } from '@/components/merchant';
+import { HeroCard, IconTile, MerchantModeSwitch } from '@/components/merchant';
 import { checkIsFreshMarketSeller } from '@/services/api/taladsodSellerApi';
-import { useTheme, radii, spacing, typography } from '@/theme';
+import { DARK_THEME, useTheme, radii, spacing, typography } from '@/theme';
 
 const POLL_MS = 30000;
 
@@ -67,11 +73,12 @@ const normalizeSummary = (d: SellerSummary): SellerSummary => ({
 
 const NewOrderRow: React.FC<{ order: SellerOrderListItem }> = ({ order }) => {
   const { colors } = useTheme();
+  const isRider = order.delivery_method === 'rider';
   return (
     <Card3D
       onPress={() => router.push(`/merchant/order/${order.id}` as never)}
       padding={spacing.md}
-      radius={radii.lg}
+      radius={radii.xl}
       shadow="sm"
       style={styles.orderCard}
       accessibilityLabel={`ออเดอร์ ${order.order_number} ของ ${order.customer_name}`}
@@ -80,21 +87,22 @@ const NewOrderRow: React.FC<{ order: SellerOrderListItem }> = ({ order }) => {
         {order.first_item?.product_image ? (
           <Image source={{ uri: order.first_item.product_image }} style={[styles.thumb, { backgroundColor: colors.inset }]} contentFit="cover" />
         ) : (
-          <View style={[styles.thumb, styles.center, { backgroundColor: colors.inset }]}>
-            <Text>📦</Text>
-          </View>
+          <IconTile icon="package" size={52} />
         )}
         <View style={styles.flex}>
           <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
             {order.first_item?.product_name || 'คำสั่งซื้อ'}
             {order.items_count > 1 ? ` +${order.items_count - 1}` : ''}
           </Text>
-          <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
-            {order.customer_name} · {order.delivery_method === 'rider' ? '🛵 ไรเดอร์' : '📦 พัสดุ'} · {formatThaiDateTime(order.created_at)}
-          </Text>
+          <View style={styles.metaLine}>
+            <Icon name={isRider ? 'moped' : 'package'} size={14} color={colors.textMuted} />
+            <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+              {order.customer_name} · {isRider ? 'ไรเดอร์' : 'พัสดุ'} · {formatThaiDateTime(order.created_at)}
+            </Text>
+          </View>
         </View>
         <View style={styles.orderRight}>
-          <PriceText amount={order.seller_total} size="sm" tone="gold" />
+          <PriceText amount={order.seller_total} size="md" tone="gold" />
           <Pill label={order.status_label} tone={ORDER_STATUS_TONE[order.status] || 'neutral'} />
         </View>
       </View>
@@ -186,7 +194,7 @@ export default function MerchantScreen() {
     return (
       <Screen title="ร้านของฉัน" scroll={false}>
         <EmptyState
-          icon="🔐"
+          art="store"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อดูออเดอร์และยอดขายของร้าน"
           actionLabel="เข้าสู่ระบบ"
@@ -210,30 +218,37 @@ export default function MerchantScreen() {
                 padding={spacing.lg}
                 style={styles.fmCard}
               >
-                <Text style={[typography.h3, { color: colors.textStrong }]}>🥬 คุณมีร้านในตลาดสด</Text>
-                <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-                  เปิดร้าน รับออเดอร์ และจัดการสินค้าตลาดสดได้ที่ "ร้านตลาดสด"
-                </Text>
+                <View style={styles.fmRow}>
+                  <BrandArt name="basket" size={64} />
+                  <View style={styles.flex}>
+                    <Text style={[typography.h3, { color: colors.textStrong }]}>คุณมีร้านในตลาดสด</Text>
+                    <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+                      เปิดร้าน รับออเดอร์ และจัดการสินค้าตลาดสดได้ที่ "ร้านตลาดสด"
+                    </Text>
+                  </View>
+                </View>
                 <Button3D
                   title="ไปที่ร้านตลาดสด"
-                  icon="🛒"
+                  icon="basket"
+                  iconRight="arrow-right"
                   variant="success"
                   size="md"
                   fullWidth
                   onPress={() => router.replace('/merchant/taladsod' as never)}
-                  style={styles.warningCta}
+                  style={styles.fmCta}
                 />
               </Card3D>
             )}
-            <Card3D gradientBorder padding={spacing.xl}>
-              <Text style={[typography.h2, { color: colors.textStrong }]}>ยังไม่มีร้านค้า</Text>
-              <Text style={[typography.body, styles.lead, { color: colors.textMuted }]}>
+            <Card3D gradientBorder padding={spacing.xl} contentStyle={styles.centerBox}>
+              <BrandArt name="store" size={128} />
+              <Text style={[typography.serif, styles.centerText, { color: colors.textStrong }]}>ยังไม่มีร้านค้า</Text>
+              <Text style={[typography.body, styles.lead, styles.centerText, { color: colors.textMuted }]}>
                 เปิดร้านบนเว็บไซต์ได้เลย เมื่อร้านพร้อมขาย ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปนี้ และจัดการออเดอร์ในแอปได้ทันที
               </Text>
               <WebsiteButton
                 path="/user/seller-apply"
                 label="เปิดร้านบนเว็บไซต์"
-                icon="🏪"
+                icon="storefront"
                 variant="primary"
                 size="lg"
                 fullWidth
@@ -248,7 +263,7 @@ export default function MerchantScreen() {
           <EmptyState
             compact
             variant="error"
-            icon="⛔"
+            icon="prohibit"
             title="ร้านถูกระงับชั่วคราว"
             message={state.reason ? `${state.message}\nเหตุผล: ${state.reason}` : state.message}
             actionLabel="ติดต่อทีมงาน"
@@ -263,27 +278,31 @@ export default function MerchantScreen() {
         const { store, counts, sales } = state.summary;
         return (
           <>
-            {/* ร้าน + ยอดขาย */}
-            <Card3D gradientBorder padding={spacing.lg}>
+            {/* ร้าน + ยอดขาย (การ์ดน้ำเงินกรมท่า ตัวเลขเงินสีทอง) */}
+            <HeroCard>
               <View style={styles.storeRow}>
                 {store?.logo ? (
-                  <Image source={{ uri: store.logo }} style={[styles.logo, { backgroundColor: colors.inset }]} contentFit="cover" />
+                  <Image
+                    source={{ uri: store.logo }}
+                    style={[styles.logo, { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder }]}
+                    contentFit="cover"
+                  />
                 ) : (
-                  <View style={[styles.logo, styles.center, { backgroundColor: colors.goldSoft }]}>
-                    <Text style={styles.logoIcon}>🏪</Text>
+                  <View style={[styles.logo, styles.center, { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder }]}>
+                    <BrandArt name="store" size={46} />
                   </View>
                 )}
                 <View style={styles.flex}>
-                  <Text numberOfLines={1} style={[typography.h2, { color: colors.textStrong }]}>
+                  <Text numberOfLines={1} style={[typography.serif, { color: colors.onHeader }]}>
                     {store?.name || 'ร้านของฉัน'}
                   </Text>
                   <View style={styles.pills}>
-                    {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="✔" />}
+                    {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="seal-check" />}
                     {store && (
                       <Pill
                         label={store.rider_delivery ? 'ส่งด้วยไรเดอร์ได้' : 'ส่งพัสดุ'}
                         tone={store.rider_delivery ? 'gold' : 'neutral'}
-                        icon={store.rider_delivery ? '🛵' : '📦'}
+                        icon={store.rider_delivery ? 'moped' : 'package'}
                       />
                     )}
                     {store && !store.is_active && <Pill label="ปิดร้านอยู่" tone="danger" />}
@@ -291,36 +310,42 @@ export default function MerchantScreen() {
                 </View>
               </View>
 
-              <View style={styles.salesRow}>
+              <View style={[styles.todayBox, { borderTopColor: colors.headerGlassBorder }]}>
+                <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>ยอดขายวันนี้</Text>
+                <PriceText amount={sales.today} size="xl" style={[typography.moneyLg, { color: colors.goldLight }]} />
+              </View>
+
+              <View style={[styles.kpiRow, { borderTopColor: colors.headerGlassBorder }]}>
                 <View style={styles.flex}>
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดขายวันนี้</Text>
-                  <PriceText amount={sales.today} size="lg" tone="gold" />
+                  <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>ยอดขายเดือนนี้</Text>
+                  <PriceText amount={sales.month} size="md" style={{ color: colors.onHeader }} />
                 </View>
+                <View style={[styles.kpiDivider, { backgroundColor: colors.headerGlassBorder }]} />
+                {/* เงินเข้าใช้เขียวสว่างของชุดสีโหมดมืด — การ์ดน้ำเงินนี้มืดเสมอทั้งสองโหมด */}
                 <View style={styles.flex}>
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดขายเดือนนี้</Text>
-                  <PriceText amount={sales.month} size="lg" tone="strong" />
+                  <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>รายรับสุทธิเดือนนี้</Text>
+                  <PriceText amount={sales.month_net_earning} size="md" style={{ color: DARK_THEME.colors.success }} />
                 </View>
               </View>
-              <View style={[styles.netBox, { backgroundColor: colors.inset }]}>
-                <View style={styles.flex}>
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>รายรับสุทธิเดือนนี้</Text>
-                  <PriceText amount={sales.month_net_earning} size="md" tone="success" />
-                </View>
-                <View style={styles.flex}>
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>ค่าธรรมเนียม GP เดือนนี้</Text>
-                  <PriceText amount={sales.month_gp} size="md" tone="default" />
-                </View>
+              <View style={[styles.gpRow, { backgroundColor: colors.headerGlass }]}>
+                <Icon name="percent" size={15} color={colors.goldLight} />
+                <Text style={[typography.caption, styles.flex, { color: colors.onHeaderMuted }]}>ค่าธรรมเนียม GP เดือนนี้</Text>
+                <PriceText amount={sales.month_gp} size="sm" style={{ color: colors.onHeader }} />
               </View>
-            </Card3D>
+            </HeroCard>
 
             {store?.rider_delivery_enabled && !store.has_pickup_location && (
-              <Card3D variant="flat" padding={spacing.md} style={styles.warning}>
-                <Text style={[typography.bodySm, { color: colors.warning }]}>
-                  📍 ยังไม่ได้ปักหมุดจุดรับสินค้า ไรเดอร์จะยังรับงานของร้านไม่ได้
-                </Text>
+              <Card3D padding={spacing.md} shadow="sm" style={styles.warning}>
+                <View style={styles.warningRow}>
+                  <IconTile icon="map-pin" tone="warning" />
+                  <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>
+                    ยังไม่ได้ปักหมุดจุดรับสินค้า ไรเดอร์จะยังรับงานของร้านไม่ได้
+                  </Text>
+                </View>
                 <WebsiteButton
                   path="/seller/store/settings"
                   label="ปักหมุดบนเว็บไซต์"
+                  icon="map-pin"
                   size="sm"
                   variant="secondary"
                   style={styles.warningCta}
@@ -329,15 +354,15 @@ export default function MerchantScreen() {
             )}
 
             {/* งานค้าง */}
-            <SectionHeader title="ออเดอร์ที่ต้องจัดการ" icon="🧾" actionLabel="ดูทั้งหมด" onAction={() => openOrders('all')} style={styles.sectionHeader} />
+            <SectionHeader title="ออเดอร์ที่ต้องจัดการ" actionLabel="ดูทั้งหมด" onAction={() => openOrders('all')} style={styles.sectionHeader} />
             <View style={styles.grid}>
-              <StatTile label="รอยืนยัน" value={counts.to_confirm} icon="🔔" tone="warning" style={styles.tile} onPress={() => openOrders('to_confirm')} />
-              <StatTile label="รอจัดส่ง" value={counts.to_ship} icon="📦" tone="gold" style={styles.tile} onPress={() => openOrders('to_ship')} />
-              <StatTile label="กำลังจัดส่ง" value={counts.shipping} icon="🚚" tone="info" style={styles.tile} onPress={() => openOrders('shipping')} />
+              <StatTile label="รอยืนยัน" value={counts.to_confirm} icon="bell-ringing" tone="warning" style={styles.tile} onPress={() => openOrders('to_confirm')} />
+              <StatTile label="รอจัดส่ง" value={counts.to_ship} icon="package" tone="gold" style={styles.tile} onPress={() => openOrders('to_ship')} />
+              <StatTile label="กำลังจัดส่ง" value={counts.shipping} icon="truck" tone="info" style={styles.tile} onPress={() => openOrders('shipping')} />
               <StatTile
                 label="รอลูกค้าชำระ"
                 value={counts.awaiting_payment}
-                icon="⏳"
+                icon="hourglass"
                 tone="neutral"
                 caption={counts.rider_active > 0 ? `ไรเดอร์กำลังวิ่ง ${counts.rider_active} งาน` : undefined}
                 style={styles.tile}
@@ -348,16 +373,18 @@ export default function MerchantScreen() {
             {/* ออเดอร์ใหม่ */}
             <SectionHeader
               title="ออเดอร์ใหม่รอยืนยัน"
-              icon="🆕"
               actionLabel={newOrders.length > 0 ? 'ทั้งหมด' : undefined}
               onAction={() => openOrders('to_confirm')}
               style={styles.sectionHeader}
             />
             {newOrders.length === 0 ? (
               <Card3D variant="flat" padding={spacing.lg}>
-                <Text style={[typography.bodySm, styles.centerText, { color: colors.textMuted }]}>
-                  ยังไม่มีออเดอร์ใหม่ เมื่อมีออเดอร์เข้า แอปจะแจ้งเตือนทันที 🔔
-                </Text>
+                <View style={styles.emptyRow}>
+                  <IconTile icon="bell-ringing" tone="gold" />
+                  <Text style={[typography.bodySm, styles.flex, { color: colors.textMuted }]}>
+                    ยังไม่มีออเดอร์ใหม่ เมื่อมีออเดอร์เข้า แอปจะแจ้งเตือนทันที
+                  </Text>
+                </View>
               </Card3D>
             ) : (
               newOrders.map((o) => <NewOrderRow key={o.id} order={o} />)
@@ -365,7 +392,8 @@ export default function MerchantScreen() {
 
             <Button3D
               title="จัดการออเดอร์ทั้งหมด"
-              icon="🧾"
+              icon="receipt"
+              iconRight="arrow-right"
               size="lg"
               fullWidth
               onPress={() => openOrders('all')}
@@ -373,22 +401,25 @@ export default function MerchantScreen() {
             />
 
             {/* งานบนเว็บ */}
-            <SectionHeader title="จัดการร้านบนเว็บไซต์" icon="🌐" subtitle="สินค้า ราคา และกลยุทธ์ GP อยู่บนเว็บ" style={styles.sectionHeader} />
+            <SectionHeader title="จัดการร้านบนเว็บไซต์" subtitle="สินค้า ราคา และกลยุทธ์ GP อยู่บนเว็บ" style={styles.sectionHeader} />
             <Card3D padding={spacing.lg}>
               <WebsiteButton
                 path="/seller/products"
                 label="จัดการสินค้า ตั้งราคา & วางกลยุทธ์ GP"
-                icon="🛠️"
-                variant="primary"
+                icon="sliders-horizontal"
+                variant="navy"
                 fullWidth
               />
               <View style={styles.webRow}>
-                <WebsiteButton path="/seller/pricing/planner" label="วางแผนราคา" icon="📊" size="sm" style={styles.flex} />
-                <WebsiteButton path="/seller/store/settings" label="ตั้งค่าร้าน" icon="⚙️" size="sm" style={styles.flex} />
+                <WebsiteButton path="/seller/pricing/planner" label="วางแผนราคา" icon="chart-bar" size="sm" style={styles.flex} />
+                <WebsiteButton path="/seller/store/settings" label="ตั้งค่าร้าน" icon="gear-six" size="sm" style={styles.flex} />
               </View>
-              <Text style={[typography.caption, styles.webNote, { color: colors.textMuted }]}>
-                เปิดในเบราว์เซอร์และเข้าสู่ระบบให้อัตโนมัติ
-              </Text>
+              <View style={styles.webNoteRow}>
+                <Icon name="lock" size={13} color={colors.textFaint} />
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  เปิดในเบราว์เซอร์และเข้าสู่ระบบให้อัตโนมัติ
+                </Text>
+              </View>
             </Card3D>
           </>
         );
@@ -406,7 +437,7 @@ export default function MerchantScreen() {
       </View>
       {renderBody()}
       {state.kind !== 'loading' && state.kind !== 'not_seller' && (
-        <Button3D title="ช่วยเหลือร้านค้า" variant="ghost" size="sm" onPress={() => router.push('/support')} style={styles.help} />
+        <Button3D title="ช่วยเหลือร้านค้า" icon="lifebuoy" variant="ghost" size="sm" onPress={() => router.push('/support')} style={styles.help} />
       )}
     </Screen>
   );
@@ -423,6 +454,9 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: 'center',
   },
+  centerBox: {
+    alignItems: 'center',
+  },
   loader: {
     marginTop: spacing.xxxl,
   },
@@ -436,18 +470,25 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: spacing.xl,
   },
+  fmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  fmCta: {
+    marginTop: spacing.md,
+  },
+  // ---------- การ์ดน้ำเงิน ----------
   storeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
   logo: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-  },
-  logoIcon: {
-    fontSize: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    borderWidth: 1,
   },
   pills: {
     flexDirection: 'row',
@@ -455,27 +496,47 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.xs,
   },
-  salesRow: {
-    flexDirection: 'row',
+  todayBox: {
     marginTop: spacing.lg,
-    gap: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
   },
-  netBox: {
+  kpiRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.md,
-    borderRadius: radii.md,
-    padding: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
   },
+  kpiDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+  },
+  gpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    borderRadius: radii.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  // ---------- เนื้อหา ----------
   warning: {
     marginTop: spacing.md,
   },
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
   warningCta: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     alignSelf: 'flex-start',
   },
   sectionHeader: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
   },
   grid: {
     flexDirection: 'row',
@@ -485,6 +546,11 @@ const styles = StyleSheet.create({
   },
   tile: {
     width: '48%',
+  },
+  emptyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   orderCard: {
     marginBottom: spacing.sm,
@@ -498,19 +564,28 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: spacing.xs,
   },
+  metaLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
   thumb: {
-    width: 48,
-    height: 48,
-    borderRadius: radii.sm,
+    width: 52,
+    height: 52,
+    borderRadius: 15,
   },
   webRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  webNote: {
-    marginTop: spacing.sm,
-    textAlign: 'center',
+  webNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: spacing.md,
   },
   help: {
     marginTop: spacing.lg,

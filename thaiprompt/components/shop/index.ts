@@ -2,6 +2,7 @@
  * คอมโพเนนต์ของหน้าช้อป / ตะกร้า / ชำระเงิน / ร้านค้า
  *
  * import { ProductCard, CartButton, QuantityStepper, PromptPayQR, StatusTimeline, FormSheet, Field } from '@/components/shop';
+ * import { IconTile, SearchField, StickyBar, NoticeBanner, StoreLogo, ThumbImage } from '@/components/shop';
  */
 
 export { ProductCard } from './ProductCard';
@@ -20,5 +21,26 @@ export type { TimelineStep } from './StatusTimeline';
 
 export { FormSheet, Field } from './FormSheet';
 export type { FormSheetProps, FieldProps } from './FormSheet';
+
+export {
+  IconTile,
+  MetaItem,
+  NoticeBanner,
+  RadioMark,
+  SearchField,
+  StepBadge,
+  StickyBar,
+  StoreLogo,
+  ThumbImage,
+  useTileColors,
+} from './ShopKit';
+export type {
+  IconTileProps,
+  IconTileTone,
+  NoticeBannerProps,
+  SearchFieldProps,
+  StoreLogoProps,
+  ThumbImageProps,
+} from './ShopKit';
 
 export * from './helpers';

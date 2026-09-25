@@ -3,7 +3,8 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, TextInputProps } from 'react-native';
+import { View, Pressable, TextInputProps } from 'react-native';
+import { Text, TextInput } from '@/components/ui/Text';
 
 interface InputProps extends TextInputProps {
   label?: string;

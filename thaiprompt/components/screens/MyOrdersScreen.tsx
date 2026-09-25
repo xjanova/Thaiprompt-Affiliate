@@ -1,6 +1,7 @@
 /**
  * MyOrdersScreen — คำสั่งซื้อของฉัน (ใช้ทั้งแท็บ "คำสั่งซื้อ" และหน้า /orders)
  *
+ * - หน้าตา: สวิตช์ "ร้านค้า | ตลาดสด" + ชิปสถานะ · การ์ดขาวต่อคำสั่งซื้อ (รูปมุมมน ป้ายสถานะ ยอดทอง)
  * - แท็บสถานะตรงกับ enum ของ orders บน server (SHOP-24) และแสดง status_label จาก server
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลลัพธ์เก่า (requestId) กันรายการสลับแท็บ
  * - รีเฟรช = pull-to-refresh (ไม่เอาสปินเนอร์เต็มจอมาบัง)
@@ -8,14 +9,15 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { getMyOrders, type ShopOrderListItem, type ShopOrderStatus } from '@/services/api/shopApi';
-import { useTheme, spacing, radii, typography, type Tone } from '@/theme';
-import { Card3D, Chip, EmptyState, Pill, PriceText, Screen } from '@/components/ui';
+import { useTheme, spacing, typography, type Tone } from '@/theme';
+import { Card3D, Chip, EmptyState, Icon, Pill, PriceText, Screen } from '@/components/ui';
 import { FreshOrdersList, OrderSourceSwitch, type OrderSource } from '@/components/taladsod';
+import { MetaItem, ThumbImage } from '@/components/shop';
 
 type Filter = 'all' | ShopOrderStatus;
 
@@ -43,8 +45,11 @@ const STATUS_TONE: Record<string, Tone> = {
 };
 
 const formatDate = (iso: string): string => {
+  // วันที่ผิดรูปแบบ → ไม่แสดง (ไม่ขึ้นคำว่า Invalid Date)
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
   try {
-    return new Date(iso).toLocaleDateString('th-TH', {
+    return date.toLocaleDateString('th-TH', {
       day: 'numeric',
       month: 'short',
       year: '2-digit',
@@ -62,36 +67,28 @@ const OrderRow: React.FC<{ order: ShopOrderListItem }> = ({ order }) => {
   return (
     <Card3D
       onPress={() => router.push(`/order/${order.id}` as never)}
-      padding={spacing.md}
-      radius={radii.lg}
+      padding={spacing.lg}
+      radius={20}
       shadow="sm"
       style={styles.card}
       accessibilityLabel={`คำสั่งซื้อ ${order.order_number} ${order.status_label}`}
     >
       <View style={styles.rowTop}>
         <View style={styles.flex}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>{order.order_number}</Text>
-          <Text style={[typography.micro, { color: colors.textFaint }]}>{formatDate(order.created_at)}</Text>
+          <MetaItem icon="receipt" text={order.order_number} color={colors.text} />
+          <Text style={[typography.micro, styles.date, { color: colors.textFaint }]}>{formatDate(order.created_at)}</Text>
         </View>
         {order.has_unread_messages && (
-          <View style={[styles.unread, { backgroundColor: colors.danger }]} accessibilityLabel="มีข้อความใหม่" />
+          <View style={[styles.unread, { backgroundColor: colors.dangerSoft }]} accessibilityLabel="มีข้อความใหม่">
+            <Icon name="chat-circle-dots" size={13} color={colors.danger} weight="fill" />
+            <View style={[styles.unreadDot, { backgroundColor: colors.danger, borderColor: colors.card }]} />
+          </View>
         )}
         <Pill label={order.status_label} tone={STATUS_TONE[order.status] || 'neutral'} />
       </View>
 
       <View style={styles.rowItem}>
-        {order.first_item?.product_image ? (
-          <Image
-            source={{ uri: order.first_item.product_image }}
-            style={[styles.thumb, { backgroundColor: colors.inset }]}
-            contentFit="cover"
-            transition={150}
-          />
-        ) : (
-          <View style={[styles.thumb, styles.thumbEmpty, { backgroundColor: colors.inset }]}>
-            <Text style={styles.thumbIcon}>📦</Text>
-          </View>
-        )}
+        <ThumbImage uri={order.first_item?.product_image} size={64} radius={16} transition={150} />
         <View style={styles.flex}>
           <Text numberOfLines={2} style={[typography.bodyStrong, { color: colors.textStrong }]}>
             {order.first_item?.product_name || 'คำสั่งซื้อ'}
@@ -105,9 +102,11 @@ const OrderRow: React.FC<{ order: ShopOrderListItem }> = ({ order }) => {
       </View>
 
       <View style={[styles.rowBottom, { borderTopColor: colors.divider }]}>
-        <Text style={[typography.caption, { color: colors.textMuted }]}>
-          {order.delivery_method === 'rider' ? '🛵 ส่งด้วยไรเดอร์' : '📦 ส่งพัสดุ'} · {order.items_count} ชิ้น
-        </Text>
+        <MetaItem
+          icon={order.delivery_method === 'rider' ? 'moped' : 'package'}
+          text={`${order.delivery_method === 'rider' ? 'ส่งด้วยไรเดอร์' : 'ส่งพัสดุ'} · ${order.items_count} ชิ้น`}
+          style={styles.flex}
+        />
         <PriceText amount={order.total_amount} size="md" tone="gold" />
       </View>
     </Card3D>
@@ -242,7 +241,7 @@ export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false
     if (!isAuthenticated) {
       return (
         <EmptyState
-          icon="🔐"
+          icon="lock-key"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อดูและติดตามคำสั่งซื้อของคุณ"
           actionLabel="เข้าสู่ระบบ"
@@ -282,7 +281,7 @@ export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false
         ListEmptyComponent={
           <EmptyState
             compact
-            icon="🧾"
+            art="bag"
             title={filter === 'all' ? 'ยังไม่มีคำสั่งซื้อ' : 'ไม่มีคำสั่งซื้อในสถานะนี้'}
             message="ลองเลือกของดีจากร้านค้าหรือตลาดสดดูไหม"
             actionLabel="ไปช้อปเลย"
@@ -333,6 +332,7 @@ const styles = StyleSheet.create({
   },
   switchWrap: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
   list: {
@@ -344,38 +344,42 @@ const styles = StyleSheet.create({
   },
   rowTop: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  date: {
+    marginTop: 2,
+    marginLeft: 19,
   },
   unread: {
-    width: 10,
-    height: 10,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: -1,
+    right: -1,
+    width: 9,
+    height: 9,
     borderRadius: 5,
+    borderWidth: 1.5,
   },
   rowItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  thumb: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.sm,
-  },
-  thumbEmpty: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thumbIcon: {
-    fontSize: 24,
-  },
   rowBottom: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
     marginTop: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
   },
   footerLoader: {

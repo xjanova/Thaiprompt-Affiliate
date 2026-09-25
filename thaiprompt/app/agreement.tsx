@@ -1,5 +1,5 @@
 /**
- * ข้อตกลงผู้ใช้บริการ — ธีมนวลทองคำ (จัดหน้าด้วย LegalDocument)
+ * ข้อตกลงผู้ใช้บริการ — ธีมรอยัล น้ำเงินกรมท่า-ทอง (จัดหน้าด้วย LegalDocument)
  */
 
 import React from 'react';
@@ -9,14 +9,14 @@ import { LegalDocument, type LegalSection } from '@/components/legal/LegalDocume
 const AGREEMENT_SECTIONS: LegalSection[] = [
   {
     title: 'ข้อตกลงทั่วไป',
-    icon: '📝',
+    icon: 'note-pencil',
     content: `ข้อตกลงนี้เป็นสัญญาระหว่างผู้ใช้งาน ("ท่าน") และ บริษัท ไทยพรอมท์ จำกัด ("บริษัท") ซึ่งเป็นเจ้าของและผู้ให้บริการแอปพลิเคชัน Thaiprompt
 
 การใช้งานแอปพลิเคชันนี้ ท่านตกลงผูกพันตามข้อตกลงทั้งหมดที่ระบุไว้ในเอกสารนี้`,
   },
   {
     title: 'สิทธิ์และหน้าที่ของผู้ใช้',
-    icon: '👤',
+    icon: 'user',
     content: `ผู้ใช้มีสิทธิ์:
 • ใช้งานฟีเจอร์ทั้งหมดตามสิทธิ์ที่ได้รับ
 • เข้าถึงข้อมูลส่วนตัวและแก้ไขได้
@@ -30,7 +30,7 @@ const AGREEMENT_SECTIONS: LegalSection[] = [
   },
   {
     title: 'สิทธิ์และหน้าที่ของบริษัท',
-    icon: '🏢',
+    icon: 'buildings',
     content: `บริษัทมีสิทธิ์:
 • แก้ไขเปลี่ยนแปลงข้อตกลงได้ตลอดเวลา
 • ระงับหรือยกเลิกบัญชีที่ละเมิดข้อตกลง
@@ -45,7 +45,7 @@ const AGREEMENT_SECTIONS: LegalSection[] = [
   },
   {
     title: 'กระเป๋าเงินและการถอนเงิน',
-    icon: '👛',
+    icon: 'wallet',
     content: `• กระเป๋าเงินใช้ชำระค่าสินค้าและค่าจัดส่งภายในแอป
 • ค่าส่งของไรเดอร์และยอดขายของร้านค้าจะเข้ากระเป๋าเงินหลังงานเสร็จ
 • การถอนเงินต้องผ่านการยืนยันตัวตน (KYC) และใช้รหัส PIN
@@ -54,7 +54,7 @@ const AGREEMENT_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การรับประกันและข้อจำกัด',
-    icon: '⚖️',
+    icon: 'shield',
     content: `บริษัทให้บริการตาม "สภาพที่เป็นอยู่" (As Is) โดย:
 • ไม่รับประกันว่าบริการจะไม่มีข้อผิดพลาด
 • ไม่รับผิดชอบต่อความเสียหายทางอ้อม
@@ -63,7 +63,7 @@ const AGREEMENT_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การยกเลิกและระงับบัญชี',
-    icon: '🚫',
+    icon: 'prohibit',
     content: `ผู้ใช้อาจถูกระงับบัญชีหาก:
 • ให้ข้อมูลเท็จในการสมัคร
 • ใช้วิธีการฉ้อโกงหรือผิดกฎหมาย
@@ -77,7 +77,7 @@ const AGREEMENT_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การระงับข้อพิพาท',
-    icon: '🤝',
+    icon: 'handshake',
     content: `• ข้อพิพาทจะถูกระงับโดยการเจรจาก่อน
 • หากไม่สามารถตกลงกันได้ ให้ใช้กระบวนการอนุญาโตตุลาการ
 • กฎหมายที่ใช้บังคับคือกฎหมายไทย
@@ -85,7 +85,7 @@ const AGREEMENT_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การยินยอม',
-    icon: '✅',
+    icon: 'check-circle',
     content: `โดยการใช้งานแอปพลิเคชัน ท่านยืนยันว่า:
 • ท่านมีอายุ 18 ปีบริบูรณ์ขึ้นไป
 • ท่านได้อ่านและเข้าใจข้อตกลงนี้แล้ว
@@ -98,7 +98,7 @@ export default function AgreementScreen() {
   return (
     <LegalDocument
       title="ข้อตกลงผู้ใช้"
-      icon="🤝"
+      icon="handshake"
       heading="ข้อตกลงผู้ใช้บริการ"
       dateLabel="มีผลบังคับใช้: 1 มกราคม 2568"
       sections={AGREEMENT_SECTIONS}

@@ -1,5 +1,5 @@
 /**
- * แก้ไขโปรไฟล์ — ธีมนวลทองคำ
+ * แก้ไขโปรไฟล์ — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * - PUT /profile · POST /profile/avatar (multipart ช่อง avatar) ผ่าน client กลาง → ข้อความผิดพลาดภาษาไทยเสมอ
  * - กรอกข้อมูลเดิมไว้ให้แล้ว · ตรวจชื่อ/เบอร์ก่อนส่ง (บอกผิดใต้ช่อง) · กันกดบันทึกซ้ำ
@@ -8,8 +8,8 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
+import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import * as Clipboard from 'expo-clipboard';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useNavigation } from 'expo-router';
@@ -17,9 +17,10 @@ import { useAuthStore } from '@/stores/authStore';
 import { API_ENDPOINTS } from '@/constants';
 import { apiPut, apiUpload, fileFromUri, type ApiResult } from '@/services/api/client';
 import { getAvatarInitial, getAvatarUrl } from '@/utils/user';
-import { Button3D, Card3D, EmptyState, Screen, SectionHeader, resultHaptic } from '@/components/ui';
+import { Button3D, Card3D, EmptyState, Icon, Screen, resultHaptic } from '@/components/ui';
 import { Field } from '@/components/shop';
-import { useTheme, clayShadowStyle, spacing, typography } from '@/theme';
+import { AvatarRing, GroupLabel, IconTile } from '@/components/profile';
+import { useTheme, radii, shadowStyle, spacing, typography } from '@/theme';
 
 interface ProfileUpdateBody {
   name?: string;
@@ -49,7 +50,7 @@ type FormState = Required<ProfileUpdateBody>;
 const PHONE_RE = /^0\d{8,9}$/;
 
 export default function EditProfileScreen() {
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
   const navigation = useNavigation();
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -172,8 +173,8 @@ export default function EditProfileScreen() {
   const changeAvatar = () => {
     if (uploadingRef.current) return;
     Alert.alert('เปลี่ยนรูปโปรไฟล์', undefined, [
-      { text: '📷 ถ่ายรูป', onPress: takeAvatar },
-      { text: '🖼️ เลือกจากคลังรูป', onPress: pickAvatar },
+      { text: 'ถ่ายรูป', onPress: takeAvatar },
+      { text: 'เลือกจากคลังรูป', onPress: pickAvatar },
       { text: 'ยกเลิก', style: 'cancel' },
     ]);
   };
@@ -227,7 +228,7 @@ export default function EditProfileScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="แก้ไขโปรไฟล์" scroll={false}>
-        <EmptyState icon="👤" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState icon="user-circle" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -240,7 +241,7 @@ export default function EditProfileScreen() {
       title="แก้ไขโปรไฟล์"
       right={<Button3D title="บันทึก" size="sm" disabled={!dirty} loading={saving} onPress={save} />}
     >
-      {/* ---------- รูปโปรไฟล์ ---------- */}
+      {/* ---------- รูปโปรไฟล์ (วงแหวนทอง + ป้ายกล้อง) ---------- */}
       <View style={styles.avatarSection}>
         <Pressable
           onPress={changeAvatar}
@@ -249,28 +250,25 @@ export default function EditProfileScreen() {
           accessibilityLabel="เปลี่ยนรูปโปรไฟล์"
           style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1 }]}
         >
-          <View style={[styles.avatarRing, { backgroundColor: gradients.gold[1] }, clayShadowStyle('md', colors.shadowDark, colors.shadowLight)]}>
-            {uploading ? (
-              <View style={[styles.avatar, styles.center, { backgroundColor: colors.inset }]}>
-                <ActivityIndicator color={colors.gold} />
-              </View>
-            ) : avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" transition={150} />
-            ) : (
-              <View style={[styles.avatar, styles.center, { backgroundColor: colors.goldSoft }]}>
-                <Text style={[styles.initial, { color: colors.goldDeep }]}>{getAvatarInitial(user?.name)}</Text>
-              </View>
-            )}
-            <View style={[styles.camera, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={styles.cameraIcon}>📷</Text>
-            </View>
+          <View style={[styles.avatarShadow, shadowStyle('md', colors.shadowDark)]}>
+            <AvatarRing
+              uri={avatarUrl}
+              initial={getAvatarInitial(user?.name)}
+              size={116}
+              uploading={uploading}
+              showCamera
+              gapColor={colors.background}
+            />
           </View>
         </Pressable>
-        <Text style={[typography.caption, styles.hint, { color: colors.textMuted }]}>แตะรูปเพื่อเปลี่ยน</Text>
+        <View style={styles.hintRow}>
+          <Icon name="hand-tap" size={14} color={colors.textMuted} />
+          <Text style={[typography.caption, { color: colors.textMuted }]}>แตะรูปเพื่อเปลี่ยน</Text>
+        </View>
       </View>
 
       {/* ---------- ข้อมูลส่วนตัว ---------- */}
-      <SectionHeader title="ข้อมูลส่วนตัว" icon="👤" />
+      <GroupLabel title="ข้อมูลส่วนตัว" />
       <Card3D padding={spacing.lg}>
         <Field label="ชื่อ-นามสกุล" required value={form.name} onChangeText={set('name')} placeholder="ชื่อที่ร้านและไรเดอร์จะเห็น" error={errors.name} maxLength={100} containerStyle={styles.noTop} />
         <Field label="อีเมล" value={user?.email || ''} editable={false} hint="เปลี่ยนอีเมลได้ที่เว็บไซต์" style={{ color: colors.textMuted }} />
@@ -280,40 +278,39 @@ export default function EditProfileScreen() {
       </Card3D>
 
       {/* ---------- บัญชีธนาคาร ---------- */}
-      <SectionHeader title="บัญชีรับเงิน" icon="🏦" subtitle="ใช้ตอนถอนเงิน ชื่อบัญชีต้องตรงกับชื่อจริง" style={styles.section} />
+      <GroupLabel title="บัญชีรับเงิน" subtitle="ใช้ตอนถอนเงิน ชื่อบัญชีต้องตรงกับชื่อจริง" style={styles.section} />
       <Card3D padding={spacing.lg}>
         <Field label="ธนาคาร" value={form.bank_name} onChangeText={set('bank_name')} placeholder="เช่น กสิกรไทย" maxLength={100} containerStyle={styles.noTop} />
         <Field label="เลขบัญชี" value={form.bank_account} onChangeText={set('bank_account')} placeholder="ตัวเลขเท่านั้น" keyboardType="number-pad" error={errors.bank_account} maxLength={20} />
         <Field label="ชื่อบัญชี" value={form.bank_account_name} onChangeText={set('bank_account_name')} placeholder="ชื่อเจ้าของบัญชี" maxLength={100} />
       </Card3D>
 
-      {/* ---------- รหัสชวนเพื่อน ---------- */}
+      {/* ---------- รหัสชวนเพื่อน (กรอบทองเส้นประ) ---------- */}
       {!!referral && (
         <>
-          <SectionHeader title="รหัสชวนเพื่อน" icon="🤝" style={styles.section} />
-          <Card3D variant="inset" padding={spacing.lg}>
-            <View style={styles.referralRow}>
-              <Text style={[typography.h2, styles.flex, { color: colors.goldDeep }]} selectable>
-                {referral}
-              </Text>
-              <Button3D
-                title="คัดลอก"
-                icon="📋"
-                size="sm"
-                variant="secondary"
-                onPress={async () => {
-                  await Clipboard.setStringAsync(referral);
-                  resultHaptic('success');
-                }}
-              />
-            </View>
-          </Card3D>
+          <GroupLabel title="รหัสชวนเพื่อน" style={styles.section} />
+          <View style={[styles.referralCard, { backgroundColor: colors.goldSoft, borderColor: colors.gold }]}>
+            <IconTile icon="gift" tone="gold" size={40} />
+            <Text style={[typography.h2, styles.referralCode, { color: colors.goldDeep }]} selectable>
+              {referral}
+            </Text>
+            <Button3D
+              title="คัดลอก"
+              icon="copy"
+              size="sm"
+              variant="secondary"
+              onPress={async () => {
+                await Clipboard.setStringAsync(referral);
+                resultHaptic('success');
+              }}
+            />
+          </View>
         </>
       )}
 
       <Button3D
         title={dirty ? 'บันทึกการเปลี่ยนแปลง' : 'ยังไม่มีการเปลี่ยนแปลง'}
-        icon="💾"
+        icon="check"
         size="lg"
         fullWidth
         disabled={!dirty}
@@ -330,56 +327,38 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   avatarSection: {
     alignItems: 'center',
-    marginVertical: spacing.lg,
-  },
-  avatarRing: {
-    width: 116,
-    height: 116,
-    borderRadius: 58,
-    padding: 4,
-  },
-  avatar: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-  },
-  initial: {
-    fontSize: 42,
-    fontWeight: '800',
-  },
-  camera: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cameraIcon: {
-    fontSize: 16,
-  },
-  hint: {
     marginTop: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  avatarShadow: {
+    borderRadius: 58,
+  },
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
   },
   noTop: {
     marginTop: 0,
   },
   section: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
   },
-  referralRow: {
+  referralCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+  },
+  referralCode: {
+    flex: 1,
+    letterSpacing: 1.5,
   },
   saveButton: {
     marginTop: spacing.xxl,

@@ -10,6 +10,9 @@
  *   เน็ตหลุด/ตอบช้า/CART_EMPTY หลังกดไปแล้ว → เช็คออเดอร์ล่าสุดของร้านนี้ก่อน ถ้าสร้างแล้วถือว่าสำเร็จ
  *   ไม่เจอ → ห้ามบอกว่า "ยังไม่ตัดเงิน" (server อาจยังทำธุรกรรมอยู่) ให้เช็คออเดอร์ของฉันก่อนกดใหม่
  * - SHOP_CLOSED / OUT_OF_DELIVERY_AREA / INSUFFICIENT_BALANCE ฯลฯ → ข้อความไทย + ทางไปต่อ
+ *
+ * หน้าตา (ธีมรอยัล): การ์ดขั้นตอน 1 วิธีรับของ · 2 จุดส่ง/รับที่ร้าน (แผนที่ + หมุด) · 3 วิธีจ่าย
+ *   → การ์ดสรุปยอด → แถบขาวลอยท้ายจอ (ยอดรวมทอง + ปุ่มทองยืนยันสั่ง)
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -18,12 +21,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
@@ -33,6 +36,7 @@ import {
   Card3D,
   Chip,
   EmptyState,
+  Icon,
   LiveMap,
   PriceText,
   Screen,
@@ -40,10 +44,12 @@ import {
   formatBaht,
   resultHaptic,
   selectionHaptic,
+  type IconName,
   type LiveMapMarker,
 } from '@/components/ui';
 import { Field } from '@/components/shop';
 import { useBuyerLocation, useMountedRef } from '@/components/taladsod';
+import { IconTile, Notice, floatBarShadow, useInk } from '@/components/taladsod/BuyerParts';
 import {
   getFmCartQuote,
   getFmOrders,
@@ -59,7 +65,7 @@ import {
 } from '@/services/api/taladsodApi';
 import { getAddresses, type Address } from '@/services/api/shopApi';
 import { formatDistance, formatDuration } from '@/services/location';
-import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
+import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Pin = { latitude: number; longitude: number; source: 'gps' | 'saved' | 'map' };
 type QuoteState = { state: 'idle' } | { state: 'loading' } | { state: 'ready'; quote: FmQuote } | { state: 'error'; message: string };
@@ -74,6 +80,7 @@ export default function TaladsodCheckoutScreen() {
   const params = useLocalSearchParams<{ seller_id?: string }>();
   const sellerId = /^\d+$/.test(String(params.seller_id || '')) ? Number(params.seller_id) : 0;
   const { colors } = useTheme();
+  const ink = useInk();
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const shopCart = useTaladsodCartStore((s) => s.cart?.shops.find((x) => x.seller_id === sellerId) || null);
@@ -400,7 +407,7 @@ export default function TaladsodCheckoutScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="ยืนยันคำสั่งซื้อ" scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState icon="lock-key" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -417,7 +424,7 @@ export default function TaladsodCheckoutScreen() {
     return (
       <Screen title="ยืนยันคำสั่งซื้อ" scroll={false}>
         <EmptyState
-          icon="🧺"
+          art="basket"
           title="ไม่มีรายการของร้านนี้ในตะกร้า"
           message="อาจสั่งไปแล้วหรือเอาออกจากตะกร้าแล้ว"
           actionLabel="ไปที่ตะกร้า"
@@ -439,7 +446,8 @@ export default function TaladsodCheckoutScreen() {
 
   const shopName = shopCart.seller?.shop_name || shop?.shop_name || 'ร้านตลาดสด';
   const shopLoc = shop?.presence.location || null;
-  const barHeight = 96 + insets.bottom;
+  // ความสูงแถบล่าง (แถวสรุป + ปุ่มใหญ่) — ใช้เว้นที่ท้ายเนื้อหาไม่ให้ถูกบัง
+  const barHeight = 124 + insets.bottom;
   const riderEnabled = config?.rider_enabled !== false;
 
   const markers: LiveMapMarker[] = [];
@@ -452,7 +460,7 @@ export default function TaladsodCheckoutScreen() {
     if (deliveryType !== 'rider' || !pin) return null;
     if (quote.state === 'loading' || quote.state === 'idle') {
       return (
-        <View style={styles.quoteRow}>
+        <View style={[styles.quoteRow, { backgroundColor: colors.inset, borderColor: colors.border }]}>
           <ActivityIndicator size="small" color={colors.gold} />
           <Text style={[typography.caption, { color: colors.textMuted }]}>กำลังคำนวณค่าส่ง…</Text>
         </View>
@@ -460,30 +468,64 @@ export default function TaladsodCheckoutScreen() {
     }
     if (quote.state === 'error') {
       return (
-        <View style={[styles.quoteWarn, { backgroundColor: colors.dangerSoft }]}>
-          <Text style={[typography.bodySm, { color: colors.danger }]}>⚠️ คำนวณค่าส่งไม่สำเร็จ · {quote.message}</Text>
-          <Button3D title="คำนวณค่าส่งใหม่" icon="🔄" size="sm" variant="secondary" onPress={retryQuote} style={styles.gapTopSm} />
-        </View>
+        <Notice
+          tone="danger"
+          style={styles.gapTop}
+          action={
+            <Button3D
+              title="คำนวณค่าส่งใหม่"
+              icon="arrows-clockwise"
+              size="sm"
+              variant="secondary"
+              onPress={retryQuote}
+              style={[styles.gapTopSm, styles.selfStart]}
+            />
+          }
+        >
+          {`คำนวณค่าส่งไม่สำเร็จ · ${quote.message}`}
+        </Notice>
       );
     }
     const q = quote.quote;
     if (!q.available) {
       return (
-        <View style={[styles.quoteWarn, { backgroundColor: colors.warningSoft }]}>
-          <Text style={[typography.bodySm, { color: colors.warning }]}>⚠️ {q.message || 'จุดนี้อยู่นอกระยะส่งของร้าน'}</Text>
-          {q.code !== 'SHOP_CLOSED' && (
-            <Button3D title="นัดรับที่ร้านแทน" icon="🛍️" size="sm" variant="secondary" onPress={() => setDeliveryType('pickup')} style={styles.gapTopSm} />
-          )}
-        </View>
+        <Notice
+          tone="warning"
+          style={styles.gapTop}
+          action={
+            q.code !== 'SHOP_CLOSED' ? (
+              <Button3D
+                title="นัดรับที่ร้านแทน"
+                icon="shopping-bag-open"
+                size="sm"
+                variant="secondary"
+                onPress={() => setDeliveryType('pickup')}
+                style={[styles.gapTopSm, styles.selfStart]}
+              />
+            ) : undefined
+          }
+        >
+          {q.message || 'จุดนี้อยู่นอกระยะส่งของร้าน'}
+        </Notice>
       );
     }
     return (
       <View style={[styles.quoteOk, { backgroundColor: colors.successSoft }]}>
-        <Text style={[typography.bodySm, styles.flex, { color: colors.success }]}>
-          🛵 ส่งได้{q.distance_km !== null ? ` · ${formatDistance(q.distance_km)}` : ''}
-          {q.estimated_duration_minutes ? ` · ~${formatDuration(q.estimated_duration_minutes)}` : ''}
-        </Text>
-        <PriceText amount={q.total_fee} size="sm" tone="success" />
+        <IconTile icon="moped" tone="success" size={36} weight="fill" />
+        <View style={styles.flex}>
+          <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งได้</Text>
+          {(q.distance_km !== null || !!q.estimated_duration_minutes) && (
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {[
+                q.distance_km !== null ? formatDistance(q.distance_km) : null,
+                q.estimated_duration_minutes ? `~${formatDuration(q.estimated_duration_minutes)}` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          )}
+        </View>
+        <PriceText amount={q.total_fee} size="md" tone="success" />
       </View>
     );
   };
@@ -498,231 +540,254 @@ export default function TaladsodCheckoutScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ---------- วิธีรับของ ---------- */}
-          <SectionHeader title="รับของยังไงดี" icon="📦" />
-          <View style={styles.choiceRow}>
-            <Card3D
-              onPress={() => riderEnabled && setDeliveryType('rider')}
-              disabled={!riderEnabled}
-              gradientBorder={deliveryType === 'rider'}
-              variant={deliveryType === 'rider' ? 'raised' : 'flat'}
-              padding={spacing.md}
-              radius={radii.lg}
-              style={styles.flex}
-              accessibilityLabel="ให้ไรเดอร์ส่ง"
-              accessibilityRole="radio"
-              accessibilityState={{ checked: deliveryType === 'rider' }}
-            >
-              <Text style={styles.choiceIcon}>🛵</Text>
-              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ไรเดอร์ส่ง</Text>
-              <Text style={[typography.micro, { color: colors.textMuted }]}>{riderEnabled ? 'ส่งถึงหมุดของคุณ' : 'ยังไม่เปิดบริการ'}</Text>
-            </Card3D>
-            <Card3D
-              onPress={() => setDeliveryType('pickup')}
-              gradientBorder={deliveryType === 'pickup'}
-              variant={deliveryType === 'pickup' ? 'raised' : 'flat'}
-              padding={spacing.md}
-              radius={radii.lg}
-              style={styles.flex}
-              accessibilityLabel="นัดรับที่ร้าน"
-              accessibilityRole="radio"
-              accessibilityState={{ checked: deliveryType === 'pickup' }}
-            >
-              <Text style={styles.choiceIcon}>🛍️</Text>
-              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>นัดรับที่ร้าน</Text>
-              <Text style={[typography.micro, { color: colors.textMuted }]}>ไม่มีค่าส่ง</Text>
-            </Card3D>
-          </View>
-
-          {deliveryType === 'rider' ? (
-            <Card3D padding={spacing.lg} style={styles.block}>
-              <Text style={[typography.h3, { color: colors.textStrong }]}>📍 จุดส่ง</Text>
-              {pinnedAddresses.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.addrChips} style={styles.addrScroll}>
-                  {pinnedAddresses.map((a) => (
-                    <Chip
-                      key={a.id}
-                      label={`${a.recipient_name || 'ที่อยู่'} · ${a.address_line_1}`.slice(0, 36)}
-                      icon={a.is_default ? '🏠' : '📌'}
-                      size="sm"
-                      selected={selectedAddressId === a.id}
-                      onPress={() => chooseAddress(a)}
-                    />
-                  ))}
-                </ScrollView>
-              )}
-              <Button3D
-                title={pin?.source === 'gps' ? 'อัปเดตตำแหน่งตอนนี้' : 'ใช้ตำแหน่งตอนนี้ (GPS)'}
-                icon="🧭"
-                size="md"
-                variant={pin ? 'secondary' : 'primary'}
-                fullWidth
-                loading={location.locating}
-                loadingText="กำลังหาตำแหน่ง…"
-                onPress={pinFromGps}
-                style={styles.gapTop}
+          {/* ---------- 1 · วิธีรับของ ---------- */}
+          <Card3D padding={spacing.lg}>
+            <StepHead step={1} title="รับของยังไงดี" />
+            <View style={[styles.choiceRow, styles.gapTop]}>
+              <ChoiceTile
+                icon="moped"
+                title="ไรเดอร์ส่ง"
+                caption={riderEnabled ? 'ส่งถึงหมุดของคุณ' : 'ยังไม่เปิดบริการ'}
+                selected={deliveryType === 'rider'}
+                disabled={!riderEnabled}
+                onPress={() => riderEnabled && setDeliveryType('rider')}
+                accessibilityLabel="ให้ไรเดอร์ส่ง"
               />
-              {pin ? (
-                <LiveMap
-                  markers={markers}
-                  height={200}
-                  draggableId="pin"
-                  onPick={(c) => {
-                    setPin({ ...c, source: 'map' });
-                    setSelectedAddressId(null);
-                  }}
-                  openTargetId={null}
-                  caption="แตะแผนที่หรือลากหมุด 🏠 เพื่อปรับจุดส่งให้ตรง"
+              <ChoiceTile
+                icon="shopping-bag-open"
+                title="นัดรับที่ร้าน"
+                caption="ไม่มีค่าส่ง"
+                selected={deliveryType === 'pickup'}
+                onPress={() => setDeliveryType('pickup')}
+                accessibilityLabel="นัดรับที่ร้าน"
+              />
+            </View>
+          </Card3D>
+
+          {/* ---------- 2 · จุดส่ง / รับที่ร้าน ---------- */}
+          <Card3D padding={spacing.lg} style={styles.block}>
+            {deliveryType === 'rider' ? (
+              <>
+                <StepHead
+                  step={2}
+                  title="จุดส่ง"
+                  subtitle="ปักหมุดให้ไรเดอร์มาส่งถูกที่"
+                  right={<IconTile icon="map-pin" tone="gold" size={36} weight="fill" />}
+                />
+                {pinnedAddresses.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.addrChips} style={styles.addrScroll}>
+                    {pinnedAddresses.map((a) => (
+                      <Chip
+                        key={a.id}
+                        label={`${a.recipient_name || 'ที่อยู่'} · ${a.address_line_1}`.slice(0, 36)}
+                        icon={a.is_default ? 'house' : 'map-pin'}
+                        size="sm"
+                        selected={selectedAddressId === a.id}
+                        onPress={() => chooseAddress(a)}
+                      />
+                    ))}
+                  </ScrollView>
+                )}
+                <Button3D
+                  title={pin?.source === 'gps' ? 'อัปเดตตำแหน่งตอนนี้' : 'ใช้ตำแหน่งตอนนี้ (GPS)'}
+                  icon="crosshair"
+                  size="md"
+                  variant={pin ? 'secondary' : 'primary'}
+                  fullWidth
+                  loading={location.locating}
+                  loadingText="กำลังหาตำแหน่ง…"
+                  onPress={pinFromGps}
                   style={styles.gapTop}
                 />
-              ) : (
-                <Text style={[typography.caption, styles.gapTopSm, { color: colors.textMuted }]}>
-                  ยังไม่มีหมุดจุดส่ง ใช้ GPS หรือเลือกที่อยู่ที่ปักหมุดไว้
-                </Text>
-              )}
-              {quoteBlock()}
-              <Field
-                label="ที่อยู่ / จุดสังเกตให้ไรเดอร์"
-                required
-                placeholder="เช่น บ้านเลขที่ 12 ซอย 5 ประตูรั้วสีเขียว"
-                value={addressText}
-                onChangeText={(t) => {
-                  setAddressText(t.slice(0, 500));
-                  if (addressError) setAddressError(null);
-                }}
-                maxLength={500}
-                multiline
-                error={addressError}
-                containerStyle={styles.gapTop}
-              />
-            </Card3D>
-          ) : (
-            <Card3D padding={spacing.lg} style={styles.block}>
-              <Text style={[typography.h3, { color: colors.textStrong }]}>🛍️ รับที่ร้าน</Text>
-              <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-                {shopLoc?.label || shop?.presence.location_label || 'ร้านจะแจ้งเมื่อพร้อมให้มารับ'}
-              </Text>
-              {shop?.is_mobile && (
-                <Text style={[typography.caption, styles.gapTopSm, { color: colors.warning }]}>
-                  🛺 ร้านเป็นรถเข็น อาจย้ายจุด เช็คตำแหน่งล่าสุดในหน้าออเดอร์ก่อนออกไปรับนะ
-                </Text>
-              )}
-              {shopLoc && <LiveMap markers={markers} height={180} openTargetId="shop" style={styles.gapTop} />}
-            </Card3D>
-          )}
+                {pin ? (
+                  <LiveMap
+                    markers={markers}
+                    height={200}
+                    draggableId="pin"
+                    onPick={(c) => {
+                      setPin({ ...c, source: 'map' });
+                      setSelectedAddressId(null);
+                    }}
+                    openTargetId={null}
+                    caption='แตะแผนที่หรือลากหมุด "จุดส่ง" เพื่อปรับจุดส่งให้ตรง'
+                    style={styles.gapTop}
+                  />
+                ) : (
+                  <View style={[styles.mapPlaceholder, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+                    <IconTile icon="map-trifold" size={40} />
+                    <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>
+                      ยังไม่มีหมุดจุดส่ง ใช้ GPS หรือเลือกที่อยู่ที่ปักหมุดไว้
+                    </Text>
+                  </View>
+                )}
+                {quoteBlock()}
+                <Field
+                  label="ที่อยู่ / จุดสังเกตให้ไรเดอร์"
+                  required
+                  placeholder="เช่น บ้านเลขที่ 12 ซอย 5 ประตูรั้วสีเขียว"
+                  value={addressText}
+                  onChangeText={(t) => {
+                    setAddressText(t.slice(0, 500));
+                    if (addressError) setAddressError(null);
+                  }}
+                  maxLength={500}
+                  multiline
+                  error={addressError}
+                  containerStyle={styles.gapTop}
+                />
+              </>
+            ) : (
+              <>
+                <StepHead
+                  step={2}
+                  title="รับที่ร้าน"
+                  subtitle={shopName}
+                  right={<IconTile icon="storefront" tone="gold" size={36} weight="fill" />}
+                />
+                <View style={[styles.inlineRow, styles.gapTop]}>
+                  <Icon name="map-pin" size={16} color={ink} weight="fill" />
+                  <Text style={[typography.bodySm, styles.flex, { color: colors.textMuted }]}>
+                    {shopLoc?.label || shop?.presence.location_label || 'ร้านจะแจ้งเมื่อพร้อมให้มารับ'}
+                  </Text>
+                </View>
+                {shop?.is_mobile && (
+                  <Notice tone="warning" icon="navigation-arrow" style={styles.gapTop}>
+                    ร้านเป็นรถเข็น อาจย้ายจุด เช็คตำแหน่งล่าสุดในหน้าออเดอร์ก่อนออกไปรับนะ
+                  </Notice>
+                )}
+                {shopLoc && <LiveMap markers={markers} height={180} openTargetId="shop" style={styles.gapTop} />}
+              </>
+            )}
 
-          <Field
-            label={deliveryType === 'rider' ? 'ฝากถึงร้าน/ไรเดอร์ (ไม่บังคับ)' : 'ฝากถึงร้าน (ไม่บังคับ)'}
-            placeholder={deliveryType === 'rider' ? 'เช่น โทรก่อนถึง ฝากไว้ที่ป้อม' : 'เช่น จะไปรับประมาณ 12 โมง'}
-            value={notes}
-            onChangeText={(t) => setNotes(t.slice(0, NOTES_MAX))}
-            maxLength={NOTES_MAX}
-            multiline
-            containerStyle={styles.block}
-          />
+            <Field
+              label={deliveryType === 'rider' ? 'ฝากถึงร้าน/ไรเดอร์ (ไม่บังคับ)' : 'ฝากถึงร้าน (ไม่บังคับ)'}
+              placeholder={deliveryType === 'rider' ? 'เช่น โทรก่อนถึง ฝากไว้ที่ป้อม' : 'เช่น จะไปรับประมาณ 12 โมง'}
+              value={notes}
+              onChangeText={(t) => setNotes(t.slice(0, NOTES_MAX))}
+              maxLength={NOTES_MAX}
+              multiline
+              containerStyle={styles.gapTop}
+            />
+          </Card3D>
 
-          {/* ---------- ชำระเงิน ---------- */}
-          <SectionHeader title="จ่ายเงินยังไง" icon="💳" style={styles.section} />
-          {configError && !config && (
-            <Text style={[typography.caption, { color: colors.danger }]}>{configError}</Text>
-          )}
-          <View style={styles.choiceRow}>
-            {methods.map((m) => (
-              <Card3D
-                key={m}
-                onPress={() => setPayment(m)}
-                gradientBorder={payment === m}
-                variant={payment === m ? 'raised' : 'flat'}
-                padding={spacing.md}
-                radius={radii.lg}
-                style={styles.flex}
-                accessibilityLabel={m === 'wallet' ? 'จ่ายด้วยกระเป๋าเงิน' : 'เก็บเงินปลายทาง'}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: payment === m }}
-              >
-                <Text style={styles.choiceIcon}>{m === 'wallet' ? '👛' : '💵'}</Text>
-                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{m === 'wallet' ? 'กระเป๋าเงิน' : deliveryType === 'rider' ? 'เงินสดปลายทาง' : 'จ่ายสดที่ร้าน'}</Text>
-                <Text style={[typography.micro, { color: colors.textMuted }]}>
-                  {m === 'wallet' ? 'ตัดเงินทันที ยกเลิกได้คืนเงิน' : deliveryType === 'rider' ? 'จ่ายไรเดอร์ตอนรับของ' : 'จ่ายตอนไปรับของ'}
-                </Text>
-              </Card3D>
-            ))}
-          </View>
+          {/* ---------- 3 · ชำระเงิน ---------- */}
+          <Card3D padding={spacing.lg} style={styles.block}>
+            <StepHead step={3} title="จ่ายเงินยังไง" />
+            {configError && !config && (
+              <Notice tone="danger" style={styles.gapTop}>
+                {configError}
+              </Notice>
+            )}
+            <View style={[styles.choiceRow, styles.gapTop]}>
+              {methods.map((m) => (
+                <ChoiceTile
+                  key={m}
+                  icon={m === 'wallet' ? 'wallet' : 'money'}
+                  title={m === 'wallet' ? 'กระเป๋าเงิน' : deliveryType === 'rider' ? 'เงินสดปลายทาง' : 'จ่ายสดที่ร้าน'}
+                  caption={m === 'wallet' ? 'ตัดเงินทันที ยกเลิกได้คืนเงิน' : deliveryType === 'rider' ? 'จ่ายไรเดอร์ตอนรับของ' : 'จ่ายตอนไปรับของ'}
+                  selected={payment === m}
+                  onPress={() => setPayment(m)}
+                  accessibilityLabel={m === 'wallet' ? 'จ่ายด้วยกระเป๋าเงิน' : 'เก็บเงินปลายทาง'}
+                />
+              ))}
+            </View>
+          </Card3D>
 
           {/* ---------- สรุป ---------- */}
-          <SectionHeader title="สรุปรายการ" icon="🧾" style={styles.section} />
-          <Card3D variant="inset" padding={spacing.lg}>
-            {shopCart.items.map((line) => (
-              <View key={line.id} style={styles.itemRow}>
-                <Text style={[typography.bodySm, styles.qty, { color: colors.goldDeep }]}>{line.quantity}×</Text>
-                <View style={styles.flex}>
-                  <Text numberOfLines={2} style={[typography.bodySm, { color: colors.textStrong }]}>
-                    {line.title}
-                  </Text>
-                  {!!line.options_label && (
-                    <Text numberOfLines={1} style={[typography.micro, { color: colors.textMuted }]}>
-                      {line.options_label}
+          <SectionHeader title="สรุปรายการ" icon="receipt" style={styles.section} />
+          <Card3D padding={spacing.lg}>
+            <View style={styles.shopRow}>
+              <IconTile icon="storefront" size={36} />
+              <Text numberOfLines={1} style={[typography.serifSm, styles.flex, { color: colors.textStrong }]}>
+                {shopName}
+              </Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>{shopCart.items_count} ชิ้น</Text>
+            </View>
+            <View style={[styles.itemsBox, { borderTopColor: colors.divider }]}>
+              {shopCart.items.map((line) => (
+                <View key={line.id} style={styles.itemRow}>
+                  <View style={[styles.qtyBadge, { backgroundColor: colors.goldSoft }]}>
+                    <Text style={[typography.caption, styles.qtyText, { color: colors.goldDeep }]}>{line.quantity}×</Text>
+                  </View>
+                  <View style={styles.flex}>
+                    <Text numberOfLines={2} style={[typography.bodySm, styles.itemTitle, { color: colors.textStrong }]}>
+                      {line.title}
                     </Text>
-                  )}
-                  {!!line.note && (
-                    <Text numberOfLines={1} style={[typography.micro, { color: colors.textMuted }]}>
-                      📝 {line.note}
-                    </Text>
+                    {!!line.options_label && (
+                      <Text numberOfLines={1} style={[typography.micro, { color: colors.textMuted }]}>
+                        {line.options_label}
+                      </Text>
+                    )}
+                    {!!line.note && (
+                      <View style={styles.inlineRow}>
+                        <Icon name="note-pencil" size={12} color={colors.textMuted} />
+                        <Text numberOfLines={1} style={[typography.micro, styles.flex, { color: colors.textMuted }]}>
+                          {line.note}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <PriceText amount={line.line_total} size="sm" tone="strong" />
+                </View>
+              ))}
+            </View>
+            <View style={[styles.totals, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+              <View style={styles.sumRow}>
+                <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าอาหาร</Text>
+                <PriceText amount={subtotal} size="sm" tone="strong" />
+              </View>
+              {deliveryType === 'rider' && (
+                <View style={styles.sumRow}>
+                  <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าส่งไรเดอร์</Text>
+                  {quote.state === 'ready' && quote.quote.available ? (
+                    <PriceText amount={fee} size="sm" tone="strong" />
+                  ) : (
+                    <Text style={[typography.caption, { color: colors.textFaint }]}>{pin ? '—' : 'ปักหมุดก่อน'}</Text>
                   )}
                 </View>
-                <PriceText amount={line.line_total} size="sm" tone="strong" />
+              )}
+              <View style={[styles.sumRow, styles.grandRow, { borderTopColor: colors.divider }]}>
+                <Text style={[typography.h3, { color: colors.textStrong }]}>รวมทั้งหมด</Text>
+                <PriceText amount={total} size="lg" tone="gold" />
               </View>
-            ))}
-            <View style={[styles.sumRow, styles.sumFirst, { borderTopColor: colors.divider }]}>
-              <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าอาหาร</Text>
-              <PriceText amount={subtotal} size="sm" tone="strong" />
-            </View>
-            {deliveryType === 'rider' && (
-              <View style={styles.sumRow}>
-                <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าส่งไรเดอร์</Text>
-                {quote.state === 'ready' && quote.quote.available ? (
-                  <PriceText amount={fee} size="sm" tone="strong" />
-                ) : (
-                  <Text style={[typography.caption, { color: colors.textFaint }]}>{pin ? '—' : 'ปักหมุดก่อน'}</Text>
-                )}
-              </View>
-            )}
-            <View style={styles.sumRow}>
-              <Text style={[typography.h3, { color: colors.textStrong }]}>รวมทั้งหมด</Text>
-              <PriceText amount={total} size="lg" tone="gold" />
             </View>
           </Card3D>
 
           {!shopCart.can_checkout && (
-            <Pressable onPress={() => router.replace('/taladsod/cart' as never)} style={[styles.warnBox, { backgroundColor: colors.warningSoft }]}>
-              <Text style={[typography.bodySm, { color: colors.warning }]}>
-                {shopCart.is_open ? 'มีรายการที่สั่งไม่ได้ แตะเพื่อกลับไปแก้ในตะกร้า' : 'ร้านปิดอยู่ตอนนี้ สั่งได้เมื่อร้านเปิด'}
-              </Text>
-            </Pressable>
+            <Notice tone="warning" onPress={() => router.replace('/taladsod/cart' as never)} style={styles.gapTop}>
+              {shopCart.is_open ? 'มีรายการที่สั่งไม่ได้ แตะเพื่อกลับไปแก้ในตะกร้า' : 'ร้านปิดอยู่ตอนนี้ สั่งได้เมื่อร้านเปิด'}
+            </Notice>
           )}
         </ScrollView>
 
+        {/* ---------- แถบล่าง: ยอดรวม + ปุ่มสั่ง ---------- */}
         <View
           style={[
             styles.bar,
-            { paddingBottom: Math.max(insets.bottom, spacing.md), backgroundColor: colors.card, borderTopColor: colors.border },
-            clayShadowStyle('md', colors.shadowDark, colors.shadowLight),
+            { paddingBottom: Math.max(insets.bottom, spacing.md), backgroundColor: colors.card, borderTopColor: colors.divider },
+            floatBarShadow(colors.shadowDark),
           ]}
         >
           <View style={styles.barTotal}>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>
-              {deliveryType === 'rider' ? '🛵 ไรเดอร์ส่ง' : '🛍️ นัดรับ'} · {payment === 'wallet' ? '👛 กระเป๋าเงิน' : '💵 เงินสด'}
-              {feePending ? ' · ยังไม่รวมค่าส่ง' : ''}
-            </Text>
-            <PriceText amount={total} size="md" tone="gold" />
+            <View style={styles.flex}>
+              <View style={styles.barMeta}>
+                <Icon name={deliveryType === 'rider' ? 'moped' : 'shopping-bag-open'} size={14} color={colors.textMuted} />
+                <Text style={[typography.caption, { color: colors.textMuted }]}>{deliveryType === 'rider' ? 'ไรเดอร์ส่ง' : 'นัดรับ'}</Text>
+                <View style={[styles.metaDot, { backgroundColor: colors.textFaint }]} />
+                <Icon name={payment === 'wallet' ? 'wallet' : 'money'} size={14} color={colors.textMuted} />
+                <Text style={[typography.caption, { color: colors.textMuted }]}>{payment === 'wallet' ? 'กระเป๋าเงิน' : 'เงินสด'}</Text>
+              </View>
+              {feePending && <Text style={[typography.micro, { color: colors.warning }]}>ยังไม่รวมค่าส่ง</Text>}
+            </View>
+            <PriceText amount={total} size="lg" tone="gold" />
           </View>
           {quoteFailed && !placing ? (
             // คำนวณค่าส่งไม่สำเร็จ → ปุ่มหลักกลายเป็นคำนวณใหม่ (ห้ามสั่งด้วยยอดที่ยังไม่รวมค่าส่ง)
-            <Button3D title="คำนวณค่าส่งใหม่" icon="🔄" size="lg" variant="secondary" fullWidth onPress={retryQuote} />
+            <Button3D title="คำนวณค่าส่งใหม่" icon="arrows-clockwise" size="lg" variant="secondary" fullWidth onPress={retryQuote} />
           ) : (
             <Button3D
               title={placing ? 'กำลังสั่ง…' : quotePending ? 'กำลังคำนวณค่าส่ง…' : `ยืนยันสั่ง ${formatBaht(total)}`}
-              icon="✅"
+              icon="check-circle"
               size="lg"
               fullWidth
               loading={placing}
@@ -736,21 +801,103 @@ export default function TaladsodCheckoutScreen() {
   );
 }
 
+// =====================================================
+// ชิ้นส่วนหน้าตาของหน้าชำระเงิน
+// =====================================================
+
+/** หัวการ์ดขั้นตอน: เลขขั้นในเหรียญน้ำเงิน-ทอง + ชื่อขั้น (+ คำอธิบาย/ไอคอนขวา) */
+const StepHead: React.FC<{ step: number; title: string; subtitle?: string; right?: React.ReactNode }> = ({
+  step,
+  title,
+  subtitle,
+  right,
+}) => {
+  const { colors, gradients } = useTheme();
+  return (
+    <View style={styles.stepHead}>
+      <LinearGradient colors={gradients.navy} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.stepBadge}>
+        <Text style={[styles.stepNum, { color: colors.goldLight }]}>{step}</Text>
+      </LinearGradient>
+      <View style={styles.flex}>
+        <Text accessibilityRole="header" style={[typography.h3, { color: colors.textStrong }]}>
+          {title}
+        </Text>
+        {!!subtitle && (
+          <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      {right}
+    </View>
+  );
+};
+
+/** การ์ดตัวเลือกแบบเลือกได้อย่างเดียว (วิธีรับของ / วิธีจ่าย) — เลือกอยู่ = ขอบทอง + วงถูก */
+const ChoiceTile: React.FC<{
+  icon: IconName;
+  title: string;
+  caption: string;
+  selected: boolean;
+  disabled?: boolean;
+  onPress: () => unknown;
+  accessibilityLabel: string;
+}> = ({ icon, title, caption, selected, disabled = false, onPress, accessibilityLabel }) => {
+  const { colors, isDark } = useTheme();
+  const ink = isDark ? colors.gold : colors.navy;
+  return (
+    <Card3D
+      onPress={onPress}
+      disabled={disabled}
+      gradientBorder={selected}
+      variant={selected ? 'raised' : 'flat'}
+      shadow="sm"
+      padding={spacing.md}
+      radius={radii.lg}
+      style={styles.flex}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: selected }}
+    >
+      <View style={styles.choiceTop}>
+        <IconTile icon={icon} tone={selected ? 'gold' : 'navy'} size={40} weight={selected ? 'fill' : 'regular'} />
+        <View
+          style={[
+            styles.radio,
+            selected ? { backgroundColor: ink, borderColor: ink } : { borderColor: colors.textFaint, backgroundColor: colors.card },
+          ]}
+        >
+          {selected && <Icon name="check" size={12} color={isDark ? colors.textOnGold : colors.goldLight} weight="bold" />}
+        </View>
+      </View>
+      <Text style={[typography.bodyStrong, styles.choiceTitle, { color: colors.textStrong }]}>{title}</Text>
+      <Text style={[typography.micro, { color: colors.textMuted }]}>{caption}</Text>
+    </Card3D>
+  );
+};
+
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  center: {
+    textAlign: 'center',
+  },
+  selfStart: {
+    alignSelf: 'flex-start',
   },
   loader: {
     marginTop: spacing.xxxl,
   },
   content: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
   },
   block: {
     marginTop: spacing.md,
   },
   section: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
   },
   gapTop: {
     marginTop: spacing.md,
@@ -758,13 +905,46 @@ const styles = StyleSheet.create({
   gapTopSm: {
     marginTop: spacing.sm,
   },
+  inlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  stepBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNum: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
   choiceRow: {
     flexDirection: 'row',
     gap: spacing.md,
   },
-  choiceIcon: {
-    fontSize: 24,
-    marginBottom: spacing.xs,
+  choiceTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  choiceTitle: {
+    marginTop: spacing.md - 2,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addrScroll: {
     marginTop: spacing.md,
@@ -774,34 +954,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
   },
+  mapPlaceholder: {
+    marginTop: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
   quoteRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
-  },
-  quoteWarn: {
-    marginTop: spacing.md,
     borderRadius: radii.md,
+    borderWidth: 1,
     padding: spacing.md,
   },
   quoteOk: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     marginTop: spacing.md,
     borderRadius: radii.md,
     padding: spacing.md,
   },
+  shopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  itemsBox: {
+    marginTop: spacing.md,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+  },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  qty: {
-    fontWeight: '800',
-    minWidth: 28,
+  qtyBadge: {
+    minWidth: 34,
+    height: 26,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyText: {
+    fontWeight: '700',
+  },
+  itemTitle: {
+    fontWeight: '600',
+  },
+  totals: {
+    marginTop: spacing.sm,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   sumRow: {
     flexDirection: 'row',
@@ -809,15 +1024,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 4,
   },
-  sumFirst: {
-    marginTop: spacing.sm,
-    paddingTop: spacing.md,
+  grandRow: {
+    marginTop: spacing.xs,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-  },
-  warnBox: {
-    marginTop: spacing.md,
-    borderRadius: radii.md,
-    padding: spacing.md,
   },
   bar: {
     position: 'absolute',
@@ -825,15 +1035,27 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: spacing.screen,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    gap: spacing.xs,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    gap: spacing.sm,
   },
   barTotal: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  barMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    marginHorizontal: 3,
   },
 });

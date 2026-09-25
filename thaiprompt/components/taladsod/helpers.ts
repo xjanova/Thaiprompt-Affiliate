@@ -1,5 +1,7 @@
 /**
  * ตัวช่วยของหน้าตลาดสด — เวลาไทย, ระยะทาง, ป้ายสถานะ, ไทม์ไลน์ออเดอร์
+ *
+ * ไอคอนในไทม์ไลน์เป็น "ชื่อไอคอน" ของชุด Phosphor (components/ui/iconPaths.ts) — วาดด้วย <Icon/> ไม่ใช่อีโมจิ
  */
 
 import type { Tone } from '@/theme';
@@ -70,12 +72,12 @@ export const buildFmTimeline = (order: FmOrder): TimelineStep[] => {
 
   if (status === 'cancelled' || status === 'delivery_failed') {
     return [
-      { key: 'placed', label: 'สั่งแล้ว', caption: formatThaiDateTime(order.created_at), icon: '🧾', state: 'done' },
+      { key: 'placed', label: 'สั่งแล้ว', caption: formatThaiDateTime(order.created_at), icon: 'receipt', state: 'done' },
       {
         key: 'end',
         label: status === 'cancelled' ? 'ยกเลิกแล้ว' : 'ส่งไม่สำเร็จ',
         caption: [formatThaiDateTime(order.cancelled_at), order.cancel_reason].filter(Boolean).join(' · '),
-        icon: status === 'cancelled' ? '✖️' : '⚠️',
+        icon: status === 'cancelled' ? 'x-circle' : 'warning',
         state: 'failed',
       },
     ];
@@ -91,23 +93,23 @@ export const buildFmTimeline = (order: FmOrder): TimelineStep[] => {
     i < idx || status === 'completed' ? 'done' : i === idx ? 'current' : 'todo';
 
   const labels: Record<string, { label: string; icon: string; caption?: string }> = {
-    pending: { label: idx === 0 ? 'รอร้านรับออเดอร์' : 'สั่งแล้ว', icon: '🧾', caption: formatThaiDateTime(order.created_at) },
-    accepted: { label: 'ร้านรับออเดอร์แล้ว', icon: '👍', caption: formatThaiDateTime(order.accepted_at) },
-    preparing: { label: idx === 2 ? 'ร้านกำลังทำให้อยู่' : 'ทำเสร็จแล้ว', icon: '🍳' },
+    pending: { label: idx === 0 ? 'รอร้านรับออเดอร์' : 'สั่งแล้ว', icon: 'receipt', caption: formatThaiDateTime(order.created_at) },
+    accepted: { label: 'ร้านรับออเดอร์แล้ว', icon: 'thumbs-up', caption: formatThaiDateTime(order.accepted_at) },
+    preparing: { label: idx === 2 ? 'ร้านกำลังทำให้อยู่' : 'ทำเสร็จแล้ว', icon: 'cooking-pot' },
     ready: {
       label: isRider ? (idx === 3 ? 'รอไรเดอร์มารับ' : 'ไรเดอร์รับของแล้ว') : idx === 3 ? 'พร้อมแล้ว มารับได้เลย' : 'รับของแล้ว',
-      icon: isRider ? '🛵' : '🛍️',
+      icon: isRider ? 'moped' : 'shopping-bag-open',
       caption: formatThaiDateTime(order.ready_at),
     },
-    delivering: { label: idx === 4 ? 'ไรเดอร์กำลังไปส่ง' : 'ไรเดอร์ออกส่งแล้ว', icon: '🛵' },
+    delivering: { label: idx === 4 ? 'ไรเดอร์กำลังไปส่ง' : 'ไรเดอร์ออกส่งแล้ว', icon: 'navigation-arrow' },
     delivered: {
       label: isRider ? 'ส่งถึงแล้ว' : 'ร้านส่งมอบแล้ว',
-      icon: '📍',
+      icon: 'map-pin',
       caption: formatThaiDateTime(order.delivered_at),
     },
     completed: {
       label: status === 'completed' ? 'สำเร็จ ขอบคุณที่อุดหนุน' : 'ยืนยันรับของ',
-      icon: '🎉',
+      icon: 'seal-check',
       caption: formatThaiDateTime(order.completed_at),
     },
   };

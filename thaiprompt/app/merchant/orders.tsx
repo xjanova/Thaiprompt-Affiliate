@@ -6,16 +6,20 @@
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลเก่า (requestId)
  * - หน้าแรกรีเฟรชเงียบๆ ทุก 30 วินาทีระหว่างเปิดหน้า + ดึงลงเพื่อรีเฟรช + เลื่อนโหลดเพิ่ม
  * - แสดงเฉพาะสินค้า/ยอดของร้านนี้ (ออเดอร์หลายร้านแยกให้แล้วที่ server)
+ *
+ * หน้าตา: การ์ดออเดอร์ขาว — หัว (เลขออเดอร์ + ป้ายสถานะ) · สินค้า · แถบล่างวิธีส่ง + ยอดทอง/รับสุทธิเขียว
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { getSellerOrders, type SellerOrderFilter, type SellerOrderListItem } from '@/services/api/merchantApi';
-import { Card3D, Chip, EmptyState, Pill, PriceText, Screen, formatBaht } from '@/components/ui';
+import { Card3D, Chip, EmptyState, Icon, Pill, PriceText, Screen, formatBaht } from '@/components/ui';
 import { ORDER_STATUS_TONE, formatThaiDateTime, toNumber } from '@/components/shop';
+import { IconTile } from '@/components/merchant';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const FILTERS: Array<{ key: SellerOrderFilter; label: string; countKey?: string }> = [
@@ -35,47 +39,55 @@ const PER_PAGE = 20;
 
 const OrderRow: React.FC<{ order: SellerOrderListItem }> = ({ order }) => {
   const { colors } = useTheme();
+  const isRider = order.delivery_method === 'rider';
   return (
     <Card3D
       onPress={() => router.push(`/merchant/order/${order.id}` as never)}
-      padding={spacing.md}
-      radius={radii.lg}
+      padding={spacing.lg}
+      radius={radii.xl}
       shadow="sm"
       style={styles.card}
       accessibilityLabel={`ออเดอร์ ${order.order_number} ${order.status_label}`}
     >
       <View style={styles.rowTop}>
         <View style={styles.flex}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>{order.order_number}</Text>
-          <Text style={[typography.micro, { color: colors.textFaint }]}>{formatThaiDateTime(order.created_at)}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[typography.bodyStrong, { color: colors.textStrong }]}>
+            {order.order_number}
+          </Text>
+          <Text style={[typography.caption, { color: colors.textFaint }]}>{formatThaiDateTime(order.created_at)}</Text>
         </View>
-        <Pill label={order.status_label} tone={ORDER_STATUS_TONE[order.status] || 'neutral'} />
+        <Pill label={order.status_label} tone={ORDER_STATUS_TONE[order.status] || 'neutral'} size="md" />
       </View>
 
       <View style={styles.rowItem}>
         {order.first_item?.product_image ? (
           <Image source={{ uri: order.first_item.product_image }} style={[styles.thumb, { backgroundColor: colors.inset }]} contentFit="cover" />
         ) : (
-          <View style={[styles.thumb, styles.center, { backgroundColor: colors.inset }]}>
-            <Text style={styles.thumbIcon}>📦</Text>
-          </View>
+          <IconTile icon="package" size={56} />
         )}
         <View style={styles.flex}>
           <Text numberOfLines={2} style={[typography.bodyStrong, { color: colors.textStrong }]}>
             {order.first_item?.product_name || 'คำสั่งซื้อ'}
           </Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>
-            👤 {order.customer_name} · {toNumber(order.items_count)} ชิ้น
-          </Text>
+          <View style={styles.metaLine}>
+            <Icon name="user" size={14} color={colors.textMuted} />
+            <Text numberOfLines={1} style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+              {order.customer_name} · {toNumber(order.items_count)} ชิ้น
+            </Text>
+          </View>
           {order.is_multi_seller && (
-            <Text style={[typography.micro, { color: colors.info }]}>ออเดอร์รวมหลายร้าน แสดงเฉพาะของร้านคุณ</Text>
+            <View style={styles.metaLine}>
+              <Icon name="info" size={13} color={colors.info} />
+              <Text style={[typography.micro, styles.flex, { color: colors.info }]}>ออเดอร์รวมหลายร้าน แสดงเฉพาะของร้านคุณ</Text>
+            </View>
           )}
         </View>
       </View>
 
-      <View style={[styles.rowBottom, { borderTopColor: colors.divider }]}>
-        <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
-          {order.delivery_method === 'rider' ? '🛵 ไรเดอร์' : '📦 พัสดุ'} · {order.payment_method_label}
+      <View style={[styles.rowBottom, { backgroundColor: colors.inset }]}>
+        <Icon name={isRider ? 'moped' : 'package'} size={16} color={colors.textMuted} />
+        <Text numberOfLines={2} style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+          {isRider ? 'ไรเดอร์' : 'พัสดุ'} · {order.payment_method_label}
         </Text>
         <View style={styles.amounts}>
           <PriceText amount={order.seller_total} size="md" tone="gold" />
@@ -193,13 +205,13 @@ export default function MerchantOrdersScreen() {
   const renderBody = () => {
     if (!isAuthenticated) {
       return (
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState art="store" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       );
     }
     if (blocked?.kind === 'not_seller') {
       return (
         <EmptyState
-          icon="🏪"
+          art="store"
           title="บัญชีนี้ยังไม่ได้เปิดร้าน"
           message="เปิดร้านบนเว็บไซต์ก่อน แล้วจัดการออเดอร์ในแอปได้เลย"
           actionLabel="ไปหน้าร้านของฉัน"
@@ -211,7 +223,7 @@ export default function MerchantOrdersScreen() {
       return (
         <EmptyState
           variant="error"
-          icon="⛔"
+          icon="prohibit"
           title="ร้านถูกระงับชั่วคราว"
           message={blocked.message}
           actionLabel="ติดต่อทีมงาน"
@@ -234,7 +246,7 @@ export default function MerchantOrdersScreen() {
           ) : (
             <EmptyState
               compact
-              icon="🧾"
+              art="bag"
               title="ไม่มีออเดอร์ในสถานะนี้"
               message={filter === 'to_confirm' ? 'ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปทันที' : 'ลองดูแท็บอื่นนะ'}
             />
@@ -271,16 +283,13 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   loader: {
     marginTop: spacing.xxxl,
   },
   filters: {
     gap: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.lg,
     paddingRight: spacing.sm,
   },
   list: {
@@ -292,9 +301,9 @@ const styles = StyleSheet.create({
   },
   rowTop: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   rowItem: {
     flexDirection: 'row',
@@ -304,19 +313,22 @@ const styles = StyleSheet.create({
   thumb: {
     width: 56,
     height: 56,
-    borderRadius: radii.sm,
+    borderRadius: 15,
   },
-  thumbIcon: {
-    fontSize: 24,
+  metaLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
   },
   rowBottom: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.sm,
     marginTop: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
+    borderRadius: radii.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   amounts: {
     alignItems: 'flex-end',

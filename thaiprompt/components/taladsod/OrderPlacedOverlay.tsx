@@ -1,50 +1,70 @@
 /**
- * OrderPlacedOverlay — ฉลองสั่งซื้อสำเร็จ (วงทองเด้ง + เครื่องหมายถูก + ของกระจาย + สั่นแจ้งสำเร็จ)
+ * OrderPlacedOverlay — ฉลองสั่งซื้อสำเร็จ
+ *
+ * การ์ดรอยัลน้ำเงิน-ทอง (ลายกนก + ขอบทอง) · ตะกร้าผักสด 3D เด้งขึ้นกลางวงแสงทอง
+ * · เหรียญถูกสีทองเด้งตาม · ประกายทองกระจายออกรอบภาพ · สั่นแจ้งสำเร็จ
  *
  * แสดงครั้งเดียวตอนเข้าหน้าออเดอร์หลังสั่งเสร็จ · ปิดเองใน ~2.6 วินาที หรือแตะเพื่อปิด
  */
 
 import React, { useEffect, useRef } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import Animated, {
   Easing,
   FadeIn,
   FadeInDown,
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withRepeat,
   withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
-import { resultHaptic } from '@/components/ui';
-import { useTheme, spacing, typography, shadowStyle } from '@/theme';
+import { BrandArt, Icon, RoyalHeader, resultHaptic } from '@/components/ui';
+import { useTheme, glowStyle, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
 
-const CONFETTI = ['🌿', '🍛', '✨', '🌶️', '🍳', '💛', '✨', '🥢', '🌿', '💛'];
+const SPARKS = 10;
 const AUTO_CLOSE_MS = 2600;
+/** ขนาดวงแสงรอบภาพ */
+const HALO = 156;
+const SPARK_BOX = 22;
 
-const Confetti: React.FC<{ index: number; width: number }> = ({ index, width }) => {
-  const fall = useSharedValue(0);
-  const spin = useSharedValue(0);
-  const startX = ((index + 0.5) / CONFETTI.length) * width - width / 2 + (index % 2 === 0 ? 14 : -14);
+/** ประกายทองหนึ่งดวง — พุ่งออกจากกลางภาพ หมุน แล้วจางหาย */
+const Spark: React.FC<{ index: number; color: string }> = ({ index, color }) => {
+  const t = useSharedValue(0);
+  const angle = (index / SPARKS) * Math.PI * 2 - Math.PI / 2 + (index % 2 === 0 ? 0.18 : -0.18);
+  const dist = 78 + (index % 3) * 14;
+  const dx = Math.cos(angle) * dist;
+  const dy = Math.sin(angle) * dist;
+  const size = 11 + (index % 3) * 4;
+  const spin = index % 2 === 0 ? 150 : -150;
 
   useEffect(() => {
-    fall.value = withDelay(index * 60, withTiming(1, { duration: 1500 + (index % 3) * 250, easing: Easing.out(Easing.quad) }));
-    spin.value = withRepeat(withTiming(1, { duration: 900 + index * 40 }), -1, false);
-  }, [fall, spin, index]);
+    t.value = withDelay(
+      200 + index * 45,
+      withTiming(1, { duration: 1150 + (index % 3) * 200, easing: Easing.out(Easing.cubic) })
+    );
+    return () => cancelAnimation(t);
+  }, [t, index]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: 1 - fall.value * 0.85,
+    opacity: t.value < 0.2 ? t.value * 5 : 1 - (t.value - 0.2) / 0.8,
     transform: [
-      { translateX: startX * (0.4 + fall.value * 0.6) },
-      { translateY: -40 + fall.value * 260 },
-      { rotate: `${spin.value * (index % 2 === 0 ? 360 : -360)}deg` },
+      { translateX: dx * t.value },
+      { translateY: dy * t.value },
+      { rotate: `${spin * t.value}deg` },
+      { scale: 0.5 + t.value * 0.7 },
     ],
   }));
 
-  return <Animated.Text style={[styles.confetti, style]}>{CONFETTI[index]}</Animated.Text>;
+  return (
+    <Animated.View pointerEvents="none" style={[styles.spark, style]}>
+      <Icon name="sparkle" size={size} color={color} weight="fill" />
+    </Animated.View>
+  );
 };
 
 export const OrderPlacedOverlay: React.FC<{
@@ -71,10 +91,17 @@ export const OrderPlacedOverlay: React.FC<{
     return () => clearTimeout(timer);
   }, [visible, pop, check]);
 
-  const circleStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
+  // การ์ดขยายเบาๆ · ภาพเด้งเต็ม · เหรียญถูกเด้งตามทีหลัง
+  const cardStyle = useAnimatedStyle(() => ({
+    opacity: Math.min(1, pop.value * 1.6),
+    transform: [{ scale: 0.88 + 0.12 * pop.value }],
+  }));
+  const artStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
   const checkStyle = useAnimatedStyle(() => ({ transform: [{ scale: check.value }], opacity: Math.min(1, check.value) }));
 
   if (!visible) return null;
+
+  const cardWidth = Math.min(340, width - spacing.xxl * 2);
 
   return (
     <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
@@ -84,26 +111,45 @@ export const OrderPlacedOverlay: React.FC<{
         accessibilityRole="button"
         accessibilityLabel={`${title} ${message} แตะเพื่อปิด`}
       >
-        <View style={styles.confettiLayer} pointerEvents="none">
-          {CONFETTI.map((_, i) => (
-            <Confetti key={i} index={i} width={width} />
-          ))}
-        </View>
+        <Animated.View style={[{ width: cardWidth, borderRadius: radii.xxl }, shadowStyle('lg', colors.shadowDark), cardStyle]}>
+          {/* ขอบทองบาง */}
+          <LinearGradient colors={gradients.goldBorder} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.border}>
+            <RoyalHeader ornamentWidth={170} ornamentTop={-40} style={styles.card}>
+              {/* ---------- ภาพ + วงแสง + ประกาย ---------- */}
+              <View style={styles.haloBox}>
+                <View style={[styles.haloOuter, { backgroundColor: withAlpha(colors.gold, 0.1) }]} />
+                <View
+                  style={[
+                    styles.haloInner,
+                    { backgroundColor: withAlpha(colors.gold, 0.16), borderColor: withAlpha(colors.goldLight, 0.35) },
+                  ]}
+                />
+                {Array.from({ length: SPARKS }).map((_, i) => (
+                  <Spark key={i} index={i} color={i % 3 === 0 ? colors.goldLight : colors.gold} />
+                ))}
+                <Animated.View style={artStyle}>
+                  <BrandArt name="basket" size={124} />
+                </Animated.View>
+                <Animated.View style={[styles.badge, glowStyle(colors.gold, 0.9), checkStyle]}>
+                  <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 0.3, y: 1 }} style={styles.badgeInner}>
+                    <Icon name="check" size={24} color={colors.textOnGold} weight="bold" />
+                  </LinearGradient>
+                </Animated.View>
+              </View>
 
-        <Animated.View style={[styles.circleWrap, circleStyle, shadowStyle('lg', colors.amber)]}>
-          <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.circle}>
-            <Animated.Text style={[styles.check, { color: colors.textOnGold }, checkStyle]}>✓</Animated.Text>
+              {/* ---------- ข้อความ ---------- */}
+              <Animated.View entering={FadeInDown.delay(260).springify().damping(16)} style={styles.texts}>
+                <Text style={[typography.serifLg, styles.center, { color: colors.onHeader }]}>{title}</Text>
+                <Text style={[typography.body, styles.center, { color: colors.onHeaderMuted }]}>{message}</Text>
+              </Animated.View>
+
+              <Animated.View entering={FadeIn.delay(900)} style={[styles.hint, { borderColor: colors.headerGlassBorder, backgroundColor: colors.headerGlass }]}>
+                <Text style={[typography.caption, { color: colors.goldLight }]}>แตะเพื่อดูสถานะออเดอร์</Text>
+                <Icon name="caret-right" size={13} color={colors.goldLight} weight="bold" />
+              </Animated.View>
+            </RoyalHeader>
           </LinearGradient>
         </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(260).springify().damping(16)} style={styles.texts}>
-          <Text style={[typography.display, styles.center, { color: colors.textOnAccent }]}>{title}</Text>
-          <Text style={[typography.body, styles.center, { color: colors.textOnAccent }]}>{message}</Text>
-        </Animated.View>
-
-        <Animated.Text entering={FadeIn.delay(900)} style={[typography.caption, styles.hint, { color: colors.textOnAccent }]}>
-          แตะเพื่อดูสถานะออเดอร์
-        </Animated.Text>
       </Pressable>
     </Modal>
   );
@@ -116,44 +162,74 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xxl,
   },
-  confettiLayer: {
-    position: 'absolute',
-    top: '28%',
-    left: 0,
-    right: 0,
+  border: {
+    borderRadius: radii.xxl,
+    padding: 1.5,
+  },
+  card: {
+    borderRadius: radii.xxl - 1.5,
     alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xl,
   },
-  confetti: {
-    position: 'absolute',
-    fontSize: 26,
-  },
-  circleWrap: {
-    borderRadius: 64,
-  },
-  circle: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+  haloBox: {
+    width: HALO,
+    height: HALO,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.7)',
   },
-  check: {
-    fontSize: 64,
-    fontWeight: '900',
-    lineHeight: 72,
+  haloOuter: {
+    position: 'absolute',
+    width: HALO,
+    height: HALO,
+    borderRadius: HALO / 2,
+  },
+  haloInner: {
+    position: 'absolute',
+    width: HALO - 34,
+    height: HALO - 34,
+    borderRadius: (HALO - 34) / 2,
+    borderWidth: 1,
+  },
+  spark: {
+    position: 'absolute',
+    top: HALO / 2 - SPARK_BOX / 2,
+    left: HALO / 2 - SPARK_BOX / 2,
+    width: SPARK_BOX,
+    height: SPARK_BOX,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    right: 10,
+    bottom: 12,
+    borderRadius: 22,
+  },
+  badgeInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   texts: {
-    marginTop: spacing.xxl,
-    gap: spacing.sm,
+    marginTop: spacing.lg,
+    gap: spacing.xs,
   },
   center: {
     textAlign: 'center',
   },
   hint: {
-    marginTop: spacing.xxl,
-    opacity: 0.8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+    borderWidth: 1,
   },
 });
 

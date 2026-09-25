@@ -1,10 +1,13 @@
 /**
- * ถอนเงิน — ใช้ API ถอนเงินชุดเดียวกับเว็บ (E2: WithdrawalService + PIN)
+ * ถอนเงิน — ใช้ API ถอนเงินชุดเดียวกับเว็บ (E2: WithdrawalService + PIN) · ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * ลำดับ: GET /wallet/withdraw/info → (ยังไม่ยืนยันตัวตน: ไป KYC) → (ยังไม่มี PIN: ตั้ง PIN)
  *        → (ยังไม่มีบัญชี: เพิ่มบัญชี) → กรอกยอด (preview จาก server) → ใส่ PIN → POST /wallet/withdraw
  *
  * ค่าธรรมเนียม / ภาษี / ขั้นต่ำ มาจาก server ทั้งหมด — ห้ามฮาร์ดโค้ดในแอป
+ *
+ * หน้าตา: การ์ดยอดเงินน้ำเงินแบบบัตรโลหะ · บัญชีรับเงินเป็นแถวในการ์ดเดียว (เลือกแบบวิทยุ)
+ *         ตัวเลขถอนตัวใหญ่ · ฟอร์ม PIN/บัญชีเป็นการ์ดขาวหัวไอคอน · ธนาคารเลือกเป็นแถว
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -15,10 +18,9 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@/components/ui/Text';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -41,13 +43,18 @@ import {
   Chip,
   ConsentSheet,
   EmptyState,
+  Icon,
+  OnHeaderProvider,
   Pill,
   PriceText,
   Screen,
   SectionHeader,
   formatBaht,
   resultHaptic,
+  selectionHaptic,
+  type IconName,
 } from '@/components/ui';
+import { IconTile, InfoRow, MoneyInput, MoneyText, NavyCard, type TileTone } from '@/components/wallet/WalletKit';
 import { useTheme, spacing, radii, typography, type Tone } from '@/theme';
 
 const BANKS = ['กสิกรไทย', 'ไทยพาณิชย์', 'กรุงเทพ', 'กรุงไทย', 'กรุงศรีอยุธยา', 'ทหารไทยธนชาต', 'ออมสิน', 'ธ.ก.ส.'];
@@ -61,6 +68,16 @@ const WITHDRAWAL_TONE: Record<string, Tone> = {
   cancelled: 'neutral',
 };
 
+/** โทนป้าย → โทนกล่องไอคอน (neutral = น้ำเงิน) */
+const TILE_TONE: Record<Tone, TileTone> = {
+  neutral: 'navy',
+  gold: 'gold',
+  success: 'success',
+  danger: 'danger',
+  info: 'info',
+  warning: 'warning',
+};
+
 /** เก็บเฉพาะตัวเลข + ทศนิยม 2 ตำแหน่ง */
 const sanitizeAmount = (text: string): string => {
   const cleaned = text.replace(/[^0-9.]/g, '');
@@ -72,29 +89,83 @@ const sanitizeAmount = (text: string): string => {
 const onlyDigits = (text: string, max: number) => text.replace(/\D/g, '').slice(0, max);
 
 // =====================================================
-// ช่องกรอกแบบธีม
+// ช่องกรอกแบบธีม (พื้นยุบ มุม 14 · โฟกัส = ขอบทอง)
 // =====================================================
 
 const Field = ({
   label,
   hint,
+  icon,
+  onFocus,
+  onBlur,
   ...inputProps
-}: React.ComponentProps<typeof TextInput> & { label: string; hint?: string }) => {
+}: React.ComponentProps<typeof TextInput> & { label: string; hint?: string; icon?: IconName }) => {
   const { colors } = useTheme();
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.field}>
-      <Text style={[typography.caption, { color: colors.textMuted }]}>{label}</Text>
-      <TextInput
-        placeholderTextColor={colors.textFaint}
-        {...inputProps}
+      <Text style={[typography.caption, styles.fieldLabel, { color: colors.textMuted }]}>{label}</Text>
+      <View
         style={[
-          styles.input,
-          { backgroundColor: colors.inset, borderColor: colors.border, color: colors.textStrong },
-          inputProps.style,
+          styles.inputBox,
+          { backgroundColor: colors.inset, borderColor: focused ? colors.gold : colors.border },
         ]}
-        accessibilityLabel={label}
-      />
+      >
+        {!!icon && <Icon name={icon} size={19} color={focused ? colors.goldDeep : colors.textFaint} />}
+        <TextInput
+          placeholderTextColor={colors.textFaint}
+          selectionColor={colors.gold}
+          {...inputProps}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            onBlur?.(e);
+          }}
+          style={[styles.input, { color: colors.textStrong }, inputProps.style]}
+          accessibilityLabel={label}
+        />
+      </View>
       {!!hint && <Text style={[typography.micro, { color: colors.textFaint }]}>{hint}</Text>}
+    </View>
+  );
+};
+
+/** ข้อความผิดพลาดใต้ฟอร์ม (กล่องแดงอ่อน + ไอคอน) */
+const ErrorNote = ({ text }: { text: string }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.errorNote, { backgroundColor: colors.dangerSoft }]} accessibilityRole="alert">
+      <Icon name="warning-circle" size={18} color={colors.danger} />
+      <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>{text}</Text>
+    </View>
+  );
+};
+
+/** วงเลือกแบบวิทยุ (เลือก = วงทองติ๊ก) */
+const Radio = ({ checked }: { checked: boolean }) => {
+  const { colors } = useTheme();
+  return checked ? (
+    <View style={[styles.radio, { backgroundColor: colors.gold, borderColor: colors.gold }]}>
+      <Icon name="check" size={13} color={colors.textOnGold} weight="bold" />
+    </View>
+  ) : (
+    <View style={[styles.radio, { borderColor: colors.border, backgroundColor: colors.card }]} />
+  );
+};
+
+/** หัวการ์ดฟอร์ม: กล่องไอคอนทอง + หัวข้อ + คำอธิบาย */
+const FormHead = ({ icon, title, lead }: { icon: IconName; title: string; lead?: string }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.formHead}>
+      <IconTile icon={icon} tone="gold" size={48} weight="fill" />
+      <View style={styles.flex}>
+        <Text style={[typography.h2, { color: colors.textStrong }]}>{title}</Text>
+        {!!lead && <Text style={[typography.bodySm, { color: colors.textMuted }]}>{lead}</Text>}
+      </View>
     </View>
   );
 };
@@ -104,7 +175,6 @@ const Field = ({
 // =====================================================
 
 const PinSetupCard = ({ onDone }: { onDone: () => void }) => {
-  const { colors } = useTheme();
   const [pin, setPin] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -130,15 +200,16 @@ const PinSetupCard = ({ onDone }: { onDone: () => void }) => {
   };
 
   return (
-    <Card3D gradientBorder padding={spacing.xl}>
-      <Text style={[typography.h2, { color: colors.textStrong }]}>🔐 ตั้งรหัส PIN กระเป๋าเงิน</Text>
-      <Text style={[typography.bodySm, styles.lead, { color: colors.textMuted }]}>
-        ใช้ PIN 6 หลักยืนยันทุกครั้งที่ถอนเงินหรือแก้ไขบัญชีรับเงิน
-      </Text>
-      <Field label="PIN 6 หลัก" value={pin} onChangeText={(t) => setPin(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" />
-      <Field label="ยืนยัน PIN อีกครั้ง" value={confirm} onChangeText={(t) => setConfirm(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" />
-      {!!error && <Text style={[typography.bodySm, styles.error, { color: colors.danger }]}>{error}</Text>}
-      <Button3D title="บันทึก PIN" icon="✅" size="lg" fullWidth onPress={submit} style={styles.cta} />
+    <Card3D padding={spacing.xl}>
+      <FormHead
+        icon="lock-key"
+        title="ตั้งรหัส PIN กระเป๋าเงิน"
+        lead="ใช้ PIN 6 หลักยืนยันทุกครั้งที่ถอนเงินหรือแก้ไขบัญชีรับเงิน"
+      />
+      <Field label="PIN 6 หลัก" value={pin} onChangeText={(t) => setPin(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" style={styles.pinInput} />
+      <Field label="ยืนยัน PIN อีกครั้ง" value={confirm} onChangeText={(t) => setConfirm(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" style={styles.pinInput} />
+      {!!error && <ErrorNote text={error} />}
+      <Button3D title="บันทึก PIN" icon="check-circle" size="lg" fullWidth onPress={submit} style={styles.cta} />
     </Card3D>
   );
 };
@@ -192,36 +263,67 @@ const AddAccountCard = ({ onDone, onCancel }: { onDone: () => void; onCancel?: (
   };
 
   return (
-    <Card3D gradientBorder padding={spacing.xl}>
-      <Text style={[typography.h2, { color: colors.textStrong }]}>🏦 เพิ่มบัญชีรับเงิน</Text>
+    <Card3D padding={spacing.xl}>
+      <FormHead icon="bank" title="เพิ่มบัญชีรับเงิน" />
       <View style={styles.chipRow}>
-        <Chip label="บัญชีธนาคาร" icon="🏦" selected={type === 'bank_transfer'} onPress={() => setType('bank_transfer')} />
-        <Chip label="PromptPay" icon="📱" selected={type === 'promptpay'} onPress={() => setType('promptpay')} />
+        <Chip label="บัญชีธนาคาร" icon="bank" selected={type === 'bank_transfer'} onPress={() => setType('bank_transfer')} />
+        <Chip label="PromptPay" icon="device-mobile" selected={type === 'promptpay'} onPress={() => setType('promptpay')} />
       </View>
 
       {type === 'bank_transfer' && (
         <View style={styles.field}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>ธนาคาร</Text>
-          <View style={styles.bankWrap}>
-            {BANKS.map((bank) => (
-              <Chip key={bank} label={bank} size="sm" selected={bankName === bank} onPress={() => setBankName(bank)} />
-            ))}
+          <Text style={[typography.caption, styles.fieldLabel, { color: colors.textMuted }]}>ธนาคาร</Text>
+          <View style={[styles.bankList, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+            {BANKS.map((bank, index) => {
+              const selected = bankName === bank;
+              return (
+                <Pressable
+                  key={bank}
+                  onPress={() => {
+                    selectionHaptic();
+                    setBankName(bank);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={bank}
+                  style={({ pressed }) => [
+                    styles.bankRow,
+                    index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+                    selected && { backgroundColor: colors.goldSoft },
+                    pressed && styles.pressedDim,
+                  ]}
+                >
+                  <Icon name="bank" size={18} color={selected ? colors.goldDeep : colors.textFaint} weight={selected ? 'fill' : 'regular'} />
+                  <Text
+                    style={[
+                      typography.body,
+                      styles.flex,
+                      { color: colors.textStrong, fontWeight: selected ? '700' : '400' },
+                    ]}
+                  >
+                    {bank}
+                  </Text>
+                  <Radio checked={selected} />
+                </Pressable>
+              );
+            })}
           </View>
         </View>
       )}
 
-      <Field label="ชื่อบัญชี" value={accountName} onChangeText={setAccountName} placeholder="ชื่อ-นามสกุล ตามบัญชี" maxLength={100} />
+      <Field label="ชื่อบัญชี" icon="user" value={accountName} onChangeText={setAccountName} placeholder="ชื่อ-นามสกุล ตามบัญชี" maxLength={100} />
       <Field
         label={type === 'promptpay' ? 'เบอร์โทร / เลขบัตรประชาชน (PromptPay)' : 'เลขบัญชี'}
+        icon={type === 'promptpay' ? 'device-mobile' : 'credit-card'}
         value={accountNumber}
         onChangeText={(t) => setAccountNumber(t.replace(/[^0-9-]/g, '').slice(0, 30))}
         keyboardType="number-pad"
         placeholder={type === 'promptpay' ? '08x-xxx-xxxx' : 'xxx-x-xxxxx-x'}
       />
-      <Field label="PIN กระเป๋าเงิน" value={pin} onChangeText={(t) => setPin(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" />
+      <Field label="PIN กระเป๋าเงิน" icon="lock" value={pin} onChangeText={(t) => setPin(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" />
 
-      {!!error && <Text style={[typography.bodySm, styles.error, { color: colors.danger }]}>{error}</Text>}
-      <Button3D title="บันทึกบัญชี" icon="✅" size="lg" fullWidth onPress={submit} style={styles.cta} />
+      {!!error && <ErrorNote text={error} />}
+      <Button3D title="บันทึกบัญชี" icon="check-circle" size="lg" fullWidth onPress={submit} style={styles.cta} />
       {onCancel && <Button3D title="ยกเลิก" variant="ghost" size="sm" onPress={onCancel} style={styles.secondary} />}
     </Card3D>
   );
@@ -475,7 +577,7 @@ export default function WalletWithdrawScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="ถอนเงิน" scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState art="wallet" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -492,7 +594,7 @@ export default function WalletWithdrawScreen() {
       return (
         <EmptyState
           compact
-          icon="🪪"
+          icon="identification-card"
           title="ยืนยันตัวตนก่อนถอนเงิน"
           message="เพื่อความปลอดภัย ต้องยืนยันตัวตน (KYC) ก่อนถอนเงินครั้งแรก"
           actionLabel="ไปยืนยันตัวตน"
@@ -506,7 +608,7 @@ export default function WalletWithdrawScreen() {
         <EmptyState
           compact
           variant="error"
-          icon="🔒"
+          icon="lock"
           title="กระเป๋าเงินถูกล็อกชั่วคราว"
           message="ใส่ PIN ผิดหลายครั้ง ลองใหม่อีกครั้งภายหลังนะ"
           actionLabel="ลองใหม่"
@@ -537,19 +639,30 @@ export default function WalletWithdrawScreen() {
 
     return (
       <>
-        {/* ยอดที่ถอนได้ */}
-        <Card3D gradientBorder padding={spacing.lg}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดในกระเป๋าเงิน</Text>
-          <PriceText amount={info.balance} size="xl" tone="strong" decimals={2} />
+        {/* ยอดที่ถอนได้ — การ์ดน้ำเงินแบบบัตรโลหะ */}
+        <NavyCard>
+          <View style={styles.cardHeadRow}>
+            <Icon name="wallet" size={18} color={colors.goldLight} weight="fill" />
+            <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>ยอดในกระเป๋าเงิน</Text>
+          </View>
+          <MoneyText text={formatBaht(info.balance, { decimals: 2 })} color={colors.goldLight} size={36} style={styles.balance} />
           {info.pending_withdrawal_amount > 0 && (
-            <Text style={[typography.caption, { color: colors.warning }]}>
-              รอโอน {formatBaht(info.pending_withdrawal_amount, { decimals: 2 })}
-            </Text>
+            <OnHeaderProvider value>
+              <Pill
+                label={`รอโอน ${formatBaht(info.pending_withdrawal_amount, { decimals: 2 })}`}
+                tone="warning"
+                icon="hourglass"
+                style={styles.pendingPill}
+              />
+            </OnHeaderProvider>
           )}
-          <Text style={[typography.micro, styles.limits, { color: colors.textFaint }]}>
-            ถอนได้ครั้งละ {formatBaht(info.limits.min_amount)} – {formatBaht(info.limits.max_amount)}
-          </Text>
-        </Card3D>
+          <View style={[styles.limitsRow, { borderTopColor: colors.headerGlassBorder }]}>
+            <Icon name="info" size={14} color={colors.onHeaderMuted} />
+            <Text style={[typography.micro, styles.flex, { color: colors.onHeaderMuted }]}>
+              ถอนได้ครั้งละ {formatBaht(info.limits.min_amount)} – {formatBaht(info.limits.max_amount)}
+            </Text>
+          </View>
+        </NavyCard>
 
         {/* บัญชีรับเงิน */}
         <SectionHeader
@@ -558,53 +671,52 @@ export default function WalletWithdrawScreen() {
           onAction={() => setShowAddAccount(true)}
           style={styles.sectionHeader}
         />
-        {info.payment_methods.map((m) => {
-          const selected = m.id === accountId;
-          return (
-            <Card3D
-              key={m.id}
-              onPress={() => setAccountId(m.id)}
-              gradientBorder={selected}
-              padding={spacing.md}
-              radius={radii.lg}
-              shadow="sm"
-              style={styles.accountCard}
-              accessibilityLabel={`${m.bank_name || 'PromptPay'} ${m.account_name} ลงท้าย ${m.account_last4}`}
-            >
-              <View style={styles.accountRow}>
-                <Text style={styles.accountIcon}>{m.type === 'promptpay' ? '📱' : '🏦'}</Text>
+        <Card3D padding={0} contentStyle={styles.listCard}>
+          {info.payment_methods.map((m, index) => {
+            const selected = m.id === accountId;
+            return (
+              <Pressable
+                key={m.id}
+                onPress={() => {
+                  selectionHaptic();
+                  setAccountId(m.id);
+                }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={`${m.bank_name || 'PromptPay'} ${m.account_name} ลงท้าย ${m.account_last4}`}
+                style={({ pressed }) => [
+                  styles.accountRow,
+                  index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+                  selected && { backgroundColor: colors.goldSoft },
+                  pressed && styles.pressedDim,
+                ]}
+              >
+                <IconTile icon={m.type === 'promptpay' ? 'device-mobile' : 'bank'} tone={selected ? 'gold' : 'navy'} />
                 <View style={styles.flex}>
-                  <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+                  <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
                     {m.type === 'promptpay' ? 'PromptPay' : m.bank_name || 'บัญชีธนาคาร'}
                   </Text>
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
                     {m.account_name} · {m.account_number_masked}
                   </Text>
                 </View>
                 {m.is_default && <Pill label="หลัก" tone="gold" />}
-                <Text style={[styles.radio, { color: selected ? colors.goldDeep : colors.textFaint }]}>
-                  {selected ? '◉' : '○'}
-                </Text>
-              </View>
-            </Card3D>
-          );
-        })}
+                <Radio checked={selected} />
+              </Pressable>
+            );
+          })}
+        </Card3D>
 
         {/* จำนวนเงิน */}
         <SectionHeader title="จำนวนเงิน" style={styles.sectionHeader} />
         <Card3D padding={spacing.lg}>
-          <View style={[styles.amountBox, { backgroundColor: colors.inset, borderColor: colors.border }]}>
-            <Text style={[typography.h1, { color: colors.goldDeep }]}>฿</Text>
-            <TextInput
-              value={amount}
-              onChangeText={(t) => setAmount(sanitizeAmount(t))}
-              keyboardType="decimal-pad"
-              placeholder="0"
-              placeholderTextColor={colors.textFaint}
-              style={[styles.amountInput, { color: colors.textStrong }]}
-              accessibilityLabel="จำนวนเงินที่ต้องการถอน"
-            />
-          </View>
+          <MoneyInput
+            value={amount}
+            onChangeText={(t) => setAmount(sanitizeAmount(t))}
+            keyboardType="decimal-pad"
+            placeholder="0"
+            accessibilityLabel="จำนวนเงินที่ต้องการถอน"
+          />
           {quickAmounts.length > 0 && (
             <View style={styles.chipRow}>
               {quickAmounts.map((v) => (
@@ -619,32 +731,32 @@ export default function WalletWithdrawScreen() {
             </View>
           )}
 
-          <Field label="หมายเหตุ (ไม่บังคับ)" value={note} onChangeText={setNote} maxLength={200} placeholder="เช่น ถอนค่าส่งของสัปดาห์นี้" />
+          <Field label="หมายเหตุ (ไม่บังคับ)" icon="note-pencil" value={note} onChangeText={setNote} maxLength={200} placeholder="เช่น ถอนค่าส่งของสัปดาห์นี้" />
 
           {amountNum > 0 && (
-            <View style={[styles.previewBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.previewBox, { backgroundColor: colors.inset, borderColor: colors.border }]}>
               {previewLoading || !preview ? (
                 <ActivityIndicator color={colors.gold} />
               ) : preview.errors.length > 0 ? (
                 preview.errors.map((e) => (
-                  <Text key={e} style={[typography.bodySm, { color: colors.danger }]}>• {e}</Text>
+                  <View key={e} style={styles.previewError}>
+                    <Icon name="warning-circle" size={16} color={colors.danger} />
+                    <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>{e}</Text>
+                  </View>
                 ))
               ) : (
                 <>
-                  <View style={styles.previewRow}>
-                    <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าธรรมเนียม</Text>
+                  <InfoRow label="ค่าธรรมเนียม">
                     <PriceText amount={preview.fee} size="sm" decimals={2} bold={false} />
-                  </View>
+                  </InfoRow>
                   {preview.tax > 0 && (
-                    <View style={styles.previewRow}>
-                      <Text style={[typography.bodySm, { color: colors.textMuted }]}>หักภาษี ณ ที่จ่าย</Text>
+                    <InfoRow label="หักภาษี ณ ที่จ่าย">
                       <PriceText amount={preview.tax} size="sm" decimals={2} bold={false} />
-                    </View>
+                    </InfoRow>
                   )}
-                  <View style={[styles.previewRow, styles.previewTotal, { borderTopColor: colors.divider }]}>
-                    <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ยอดที่จะได้รับ</Text>
+                  <InfoRow label="ยอดที่จะได้รับ" strong style={[styles.previewTotal, { borderTopColor: colors.divider }]}>
                     <PriceText amount={preview.net_amount} size="lg" tone="success" decimals={2} />
-                  </View>
+                  </InfoRow>
                 </>
               )}
             </View>
@@ -652,7 +764,7 @@ export default function WalletWithdrawScreen() {
 
           <Button3D
             title="ถอนเงิน"
-            icon="🏦"
+            icon="bank"
             size="lg"
             fullWidth
             disabled={!canContinue}
@@ -669,33 +781,46 @@ export default function WalletWithdrawScreen() {
         {history.length > 0 && (
           <>
             <SectionHeader title="คำขอล่าสุด" style={styles.sectionHeader} />
-            {history.map((w) => (
-              <Card3D key={w.id} variant="flat" padding={spacing.md} radius={radii.md} style={styles.historyCard}>
-                <View style={styles.accountRow}>
-                  <View style={styles.flex}>
-                    <PriceText amount={w.amount} size="md" tone="strong" decimals={2} />
-                    <Text style={[typography.micro, { color: colors.textFaint }]}>
-                      {new Date(w.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      {w.payment_method ? ` · ${w.payment_method.bank_name || 'PromptPay'} ••${w.payment_method.account_last4}` : ''}
-                    </Text>
-                    {!!w.rejection_reason && (
-                      <Text style={[typography.micro, { color: colors.danger }]}>{w.rejection_reason}</Text>
+            <Card3D padding={0} contentStyle={styles.listCard}>
+              {history.map((w, index) => {
+                const tone = WITHDRAWAL_TONE[w.status] || 'neutral';
+                return (
+                  <View
+                    key={w.id}
+                    style={[
+                      styles.historyRow,
+                      index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+                    ]}
+                  >
+                    <View style={styles.historyTop}>
+                      <IconTile icon="bank" tone={TILE_TONE[tone]} />
+                      <View style={styles.flex}>
+                        <PriceText amount={w.amount} size="md" tone="strong" decimals={2} />
+                        <Text numberOfLines={1} style={[typography.micro, { color: colors.textFaint }]}>
+                          {new Date(w.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          {w.payment_method ? ` · ${w.payment_method.bank_name || 'PromptPay'} ••${w.payment_method.account_last4}` : ''}
+                        </Text>
+                        {!!w.rejection_reason && (
+                          <Text style={[typography.micro, { color: colors.danger }]}>{w.rejection_reason}</Text>
+                        )}
+                      </View>
+                      <Pill label={w.status_label} tone={tone} />
+                    </View>
+                    {w.can_cancel && (
+                      <Pressable
+                        onPress={() => handleCancelWithdrawal(w)}
+                        accessibilityRole="button"
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.cancelLink, pressed && styles.pressedDim]}
+                      >
+                        <Icon name="x-circle" size={15} color={colors.danger} />
+                        <Text style={[typography.caption, styles.cancelText, { color: colors.danger }]}>ยกเลิกคำขอ</Text>
+                      </Pressable>
                     )}
                   </View>
-                  <Pill label={w.status_label} tone={WITHDRAWAL_TONE[w.status] || 'neutral'} />
-                </View>
-                {w.can_cancel && (
-                  <Pressable
-                    onPress={() => handleCancelWithdrawal(w)}
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    style={styles.cancelLink}
-                  >
-                    <Text style={[typography.caption, { color: colors.danger, fontWeight: '700' }]}>ยกเลิกคำขอ</Text>
-                  </Pressable>
-                )}
-              </Card3D>
-            ))}
+                );
+              })}
+            </Card3D>
           </>
         )}
       </>
@@ -718,7 +843,7 @@ export default function WalletWithdrawScreen() {
 
       <ConsentSheet
         visible={pinSheet}
-        icon="🔐"
+        icon="lock-key"
         title="ยืนยันด้วย PIN"
         description={
           selectedAccount && preview
@@ -743,8 +868,9 @@ export default function WalletWithdrawScreen() {
           maxLength={6}
           placeholder="••••••"
           autoFocus
+          style={styles.pinInput}
         />
-        {!!pinError && <Text style={[typography.bodySm, styles.error, { color: colors.danger }]}>{pinError}</Text>}
+        {!!pinError && <ErrorNote text={pinError} />}
       </ConsentSheet>
     </KeyboardAvoidingView>
   );
@@ -757,21 +883,39 @@ const styles = StyleSheet.create({
   loader: {
     marginTop: spacing.xxxl,
   },
-  lead: {
-    marginTop: spacing.xs,
-  },
   field: {
     marginTop: spacing.md,
     gap: spacing.xs,
   },
-  input: {
+  fieldLabel: {
+    fontWeight: '600',
+  },
+  inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     borderWidth: 1,
-    borderRadius: radii.md,
+    borderRadius: 14,
     paddingHorizontal: spacing.md,
+    minHeight: 50,
+  },
+  input: {
+    flex: 1,
     paddingVertical: spacing.md,
     fontSize: 16,
   },
-  error: {
+  pinInput: {
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: 8,
+    textAlign: 'center',
+  },
+  errorNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    borderRadius: radii.sm,
+    padding: spacing.md,
     marginTop: spacing.md,
   },
   cta: {
@@ -781,74 +925,109 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     alignSelf: 'center',
   },
+  formHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.xs,
+  },
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  bankWrap: {
+  bankList: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    overflow: 'hidden',
+  },
+  bankRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: 50,
+    paddingHorizontal: spacing.md,
+  },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressedDim: {
+    opacity: 0.7,
+  },
+
+  // การ์ดยอดเงิน
+  cardHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
+  },
+  balance: {
     marginTop: spacing.xs,
   },
-  limits: {
+  pendingPill: {
     marginTop: spacing.xs,
+  },
+  limitsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   sectionHeader: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
   },
-  accountCard: {
-    marginBottom: spacing.sm,
+
+  // แถวในการ์ด
+  listCard: {
+    overflow: 'hidden',
   },
   accountRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  accountIcon: {
-    fontSize: 24,
-  },
-  radio: {
-    fontSize: 20,
-  },
-  amountBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 30,
-    fontWeight: '800',
-    paddingVertical: spacing.md,
+    padding: 14,
   },
   previewBox: {
     marginTop: spacing.lg,
     borderWidth: 1,
     borderRadius: radii.md,
     padding: spacing.md,
+    gap: spacing.xxs,
+  },
+  previewError: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: spacing.xs,
   },
-  previewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
   previewTotal: {
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: spacing.sm,
     marginTop: spacing.xs,
   },
-  historyCard: {
-    marginBottom: spacing.sm,
+  historyRow: {
+    padding: 14,
+  },
+  historyTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   cancelLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: spacing.sm,
     alignSelf: 'flex-end',
+  },
+  cancelText: {
+    fontWeight: '700',
   },
 });

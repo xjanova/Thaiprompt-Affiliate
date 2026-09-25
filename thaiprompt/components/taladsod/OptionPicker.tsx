@@ -1,19 +1,22 @@
 /**
  * OptionPicker — เลือกตัวเลือกเมนู (เช่น เนื้อสัตว์ บังคับเลือก 1 · เพิ่มไข่ดาว ไม่บังคับ)
  *
+ * หน้าตา (ธีมรอยัล): แต่ละกลุ่มเป็นการ์ดขาว หัวกลุ่ม + ป้ายต้องเลือก/เลือกแล้ว/ไม่บังคับ
+ * ตัวเลือกเป็นแถว: วงเลือก (radio/checkbox น้ำเงิน) · รูปย่อ (ถ้ามี) · ชื่อ · ราคาเพิ่ม
+ *
  * - single: แตะเลือก 1 อย่าง (บังคับ = เลือกแล้วยกเลิกไม่ได้ ต้องเปลี่ยนเป็นอย่างอื่น)
  * - multi: แตะเลือก/เอาออก ไม่เกิน max_select (max 1 = สลับแทนกันได้)
  * - ตัวเลือกที่หมดชั่วคราว (is_available=false) แสดงแต่กดไม่ได้
- * - กลุ่มที่มีรูป ≥ 2 ตัวเลือก → การ์ดรูป 2 คอลัมน์ · นอกนั้นเป็นแถว
  *
  * ราคาที่แสดงเป็นพรีวิวเท่านั้น (server คำนวณจริงตอนใส่ตะกร้า/สั่งซื้อ)
  */
 
 import React from 'react';
-import { StyleSheet, Text, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { Image } from 'expo-image';
-import { Card3D, Pill, resultHaptic, selectionHaptic } from '@/components/ui';
-import { useTheme, radii, spacing, typography } from '@/theme';
+import { Text } from '@/components/ui/Text';
+import { Icon, Pill, resultHaptic, selectionHaptic } from '@/components/ui';
+import { useTheme, spacing, typography } from '@/theme';
 import { fmImageUri, type FmOption, type FmOptionGroup } from '@/services/api/taladsodApi';
 import { optionDeltaText } from './helpers';
 import type { OptionSelection } from './optionSelection';
@@ -48,8 +51,6 @@ export const OptionPicker: React.FC<OptionPickerProps> = ({
   disabled = false,
 }) => {
   const { colors } = useTheme();
-  const { width } = useWindowDimensions();
-  const cardWidth = Math.floor((Math.min(width, 640) - spacing.screen * 2 - spacing.md) / 2);
 
   const toggle = (group: FmOptionGroup, option: FmOption) => {
     if (disabled || !option.is_available) return;
@@ -86,7 +87,6 @@ export const OptionPicker: React.FC<OptionPickerProps> = ({
     <View style={styles.root}>
       {groups.map((group) => {
         const chosen = new Set(value[group.id] || []);
-        const withImages = group.options.length >= 2 && group.options.some((o) => !!o.image_url);
         const warn = highlightGroupId === group.id;
         const isSingle = group.selection_type === 'single';
 
@@ -96,8 +96,10 @@ export const OptionPicker: React.FC<OptionPickerProps> = ({
             onLayout={(e: LayoutChangeEvent) => onGroupLayout?.(group.id, e.nativeEvent.layout.y)}
             style={[
               styles.group,
-              warn && { borderColor: colors.warning, backgroundColor: colors.warningSoft },
-              !warn && { borderColor: 'transparent' },
+              {
+                backgroundColor: warn ? colors.warningSoft : colors.card,
+                borderColor: warn ? colors.warning : colors.border,
+              },
             ]}
           >
             <View style={styles.groupHead}>
@@ -111,7 +113,7 @@ export const OptionPicker: React.FC<OptionPickerProps> = ({
               </View>
               {group.is_required ? (
                 chosen.size > 0 ? (
-                  <Pill label="เลือกแล้ว" tone="success" icon="✓" />
+                  <Pill label="เลือกแล้ว" tone="success" icon="check" />
                 ) : (
                   <Pill label="ต้องเลือก" tone={warn ? 'danger' : 'warning'} />
                 )
@@ -120,122 +122,79 @@ export const OptionPicker: React.FC<OptionPickerProps> = ({
               )}
             </View>
 
-            <View style={withImages ? styles.grid : styles.list}>
-              {group.options.map((option) => {
-                const selected = chosen.has(option.id);
-                const soldOut = !option.is_available;
-                const uri = fmImageUri(option.image_url);
-                const deltaText = optionDeltaText(option.price_delta);
-                const a11y = `${option.name} ${option.price_delta > 0 ? `เพิ่ม ${option.price_delta} บาท` : 'ไม่บวกเพิ่ม'}${
-                  soldOut ? ' หมดชั่วคราว' : ''
-                }`;
-                const indicator = (
-                  <View
+            {group.options.map((option, index) => {
+              const selected = chosen.has(option.id);
+              const soldOut = !option.is_available;
+              const uri = fmImageUri(option.image_url);
+              const deltaText = optionDeltaText(option.price_delta);
+              const a11y = `${option.name} ${option.price_delta > 0 ? `เพิ่ม ${option.price_delta} บาท` : 'ไม่บวกเพิ่ม'}${
+                soldOut ? ' หมดชั่วคราว' : ''
+              }`;
+              const last = index === group.options.length - 1;
+
+              return (
+                <Pressable
+                  key={option.id}
+                  onPress={() => toggle(group, option)}
+                  disabled={disabled || soldOut}
+                  accessibilityLabel={a11y}
+                  accessibilityRole={isSingle ? 'radio' : 'checkbox'}
+                  accessibilityState={{ checked: selected, disabled: disabled || soldOut }}
+                  style={({ pressed }) => [
+                    styles.optRow,
+                    !last && { borderBottomWidth: 1, borderBottomColor: colors.divider },
+                    selected && { backgroundColor: colors.navySoft },
+                    { opacity: soldOut || disabled ? 0.5 : pressed ? 0.75 : 1 },
+                  ]}
+                >
+                  {/* วงเลือก */}
+                  {isSingle ? (
+                    <View
+                      style={[
+                        styles.radio,
+                        { borderColor: selected ? colors.navy : colors.textFaint, borderWidth: selected ? 7 : 2 },
+                      ]}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.check,
+                        selected
+                          ? { backgroundColor: colors.navy, borderColor: colors.navy }
+                          : { backgroundColor: 'transparent', borderColor: colors.textFaint },
+                      ]}
+                    >
+                      {selected && <Icon name="check" size={14} color={colors.card} weight="bold" />}
+                    </View>
+                  )}
+                  {uri && (
+                    <Image
+                      source={{ uri }}
+                      style={[styles.optThumb, { backgroundColor: colors.inset }]}
+                      contentFit="cover"
+                      transition={120}
+                    />
+                  )}
+                  <View style={styles.flex}>
+                    <Text
+                      numberOfLines={1}
+                      style={[typography.body, { color: colors.textStrong, fontWeight: selected ? '600' : '400' }]}
+                    >
+                      {option.name}
+                    </Text>
+                    {soldOut && <Text style={[typography.micro, { color: colors.danger }]}>หมดชั่วคราว</Text>}
+                  </View>
+                  <Text
                     style={[
-                      isSingle ? styles.radio : styles.check,
-                      {
-                        borderColor: selected ? colors.goldDeep : colors.border,
-                        backgroundColor: selected ? colors.gold : colors.card,
-                      },
+                      typography.bodySm,
+                      { color: option.price_delta > 0 ? colors.textStrong : colors.textMuted, fontWeight: option.price_delta > 0 ? '600' : '400' },
                     ]}
                   >
-                    {selected && <Text style={[styles.checkMark, { color: colors.textOnGold }]}>✓</Text>}
-                  </View>
-                );
-
-                if (withImages) {
-                  return (
-                    <Card3D
-                      key={option.id}
-                      onPress={() => toggle(group, option)}
-                      disabled={disabled || soldOut}
-                      gradientBorder={selected}
-                      shadow="sm"
-                      padding={0}
-                      radius={radii.lg}
-                      haptic={false}
-                      style={{ width: cardWidth }}
-                      accessibilityLabel={a11y}
-                      accessibilityRole={isSingle ? 'radio' : 'checkbox'}
-                      accessibilityState={{ checked: selected }}
-                    >
-                      <View style={[styles.optImageWrap, { height: cardWidth * 0.72, backgroundColor: colors.inset }]}>
-                        {uri ? (
-                          <Image
-                            source={{ uri }}
-                            style={[StyleSheet.absoluteFill, soldOut && styles.dim]}
-                            contentFit="cover"
-                            transition={140}
-                          />
-                        ) : (
-                          <Text style={styles.optEmoji}>🍽️</Text>
-                        )}
-                        <View style={styles.optIndicator}>{indicator}</View>
-                        {soldOut && (
-                          <View style={[styles.soldOut, { backgroundColor: colors.overlay }]}>
-                            <Text style={[typography.micro, { color: colors.textOnAccent }]}>หมดชั่วคราว</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={styles.optBody}>
-                        <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
-                          {option.name}
-                        </Text>
-                        <Text
-                          style={[
-                            typography.caption,
-                            { color: option.price_delta > 0 ? colors.goldDeep : colors.textMuted, fontWeight: '700' },
-                          ]}
-                        >
-                          {deltaText}
-                        </Text>
-                      </View>
-                    </Card3D>
-                  );
-                }
-
-                return (
-                  <Card3D
-                    key={option.id}
-                    onPress={() => toggle(group, option)}
-                    disabled={disabled || soldOut}
-                    gradientBorder={selected}
-                    variant={selected ? 'raised' : 'flat'}
-                    shadow="sm"
-                    padding={spacing.md}
-                    radius={radii.md}
-                    haptic={false}
-                    accessibilityLabel={a11y}
-                    accessibilityRole={isSingle ? 'radio' : 'checkbox'}
-                    accessibilityState={{ checked: selected }}
-                  >
-                    <View style={styles.optRow}>
-                      {indicator}
-                      {uri && (
-                        <Image
-                          source={{ uri }}
-                          style={[styles.optThumb, { backgroundColor: colors.inset }, soldOut && styles.dim]}
-                          contentFit="cover"
-                          transition={120}
-                        />
-                      )}
-                      <Text numberOfLines={1} style={[typography.bodyStrong, styles.flex, { color: colors.textStrong }]}>
-                        {option.name}
-                        {soldOut ? '  · หมดชั่วคราว' : ''}
-                      </Text>
-                      <Text
-                        style={[
-                          typography.bodySm,
-                          { color: option.price_delta > 0 ? colors.goldDeep : colors.textMuted, fontWeight: '700' },
-                        ]}
-                      >
-                        {deltaText}
-                      </Text>
-                    </View>
-                  </Card3D>
-                );
-              })}
-            </View>
+                    {deltaText}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         );
       })}
@@ -251,84 +210,44 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   group: {
-    borderWidth: 1.5,
-    borderRadius: radii.lg,
-    padding: spacing.xs,
-    marginHorizontal: -spacing.xs,
+    borderWidth: 1,
+    borderRadius: 22,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md + 2,
+    paddingBottom: spacing.xs,
   },
   groupHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  list: {
-    gap: spacing.sm,
-  },
-  optImageWrap: {
-    borderTopLeftRadius: radii.lg,
-    borderTopRightRadius: radii.lg,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  optEmoji: {
-    fontSize: 32,
-  },
-  optIndicator: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-  },
-  soldOut: {
-    position: 'absolute',
-    left: spacing.sm,
-    bottom: spacing.sm,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  optBody: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing.xs,
   },
   optRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  optThumb: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.sm,
+    minHeight: 56,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: 14,
   },
   radio: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
   },
   check: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 7,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkMark: {
-    fontSize: 13,
-    fontWeight: '900',
-    lineHeight: 16,
-  },
-  dim: {
-    opacity: 0.45,
+  optThumb: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
   },
 });

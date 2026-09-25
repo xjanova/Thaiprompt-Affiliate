@@ -7,6 +7,7 @@
  *   - ปฏิเสธถาวร → sheet เสนอปุ่ม "เปิดการตั้งค่า"
  *
  * ใช้ตำแหน่ง "ขณะใช้แอป" เท่านั้น (ไม่ขอเบื้องหลัง)
+ * ไอคอนใน sheet เป็นชื่อไอคอนเส้น (ConsentSheet วาดด้วย <Icon/>) — ห้ามใช้อีโมจิ
  *
  * @example
  * const location = useBuyerLocation();
@@ -17,13 +18,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 import * as Location from 'expo-location';
-import { ConsentSheet, resultHaptic, type ConsentReason } from '@/components/ui';
+import { ConsentSheet, resultHaptic, type ConsentReason, type IconName } from '@/components/ui';
 import { getCurrentCoords, isLocationServiceEnabled, type Coords } from '@/services/location';
 
 export type BuyerLocationReason = 'nearby' | 'delivery' | 'share';
 
 interface SheetCopy {
-  icon: string;
+  icon: IconName;
   title: string;
   description: string;
   reasons: ConsentReason[];
@@ -33,35 +34,35 @@ interface SheetCopy {
 
 const COPY: Record<BuyerLocationReason, SheetCopy> = {
   nearby: {
-    icon: '📍',
+    icon: 'map-pin',
     title: 'หาร้านที่เปิดอยู่ใกล้คุณ',
     description: 'ขอใช้ตำแหน่งตอนนี้ เพื่อบอกว่าร้านไหนเปิดอยู่ใกล้ๆ และอยู่ห่างแค่ไหน',
     reasons: [
-      { icon: '🏪', text: 'แสดงร้านและรถเข็นที่เปิดอยู่รอบตัวคุณ พร้อมระยะทาง' },
-      { icon: '🔒', text: 'ใช้เฉพาะตอนเปิดหน้านี้ ไม่ติดตามเบื้องหลัง และไม่ส่งให้ร้าน' },
-      { icon: '🙂', text: 'ไม่อนุญาตก็ได้ เลือกจังหวัดเองแทนได้เลย' },
+      { icon: 'storefront', text: 'แสดงร้านและรถเข็นที่เปิดอยู่รอบตัวคุณ พร้อมระยะทาง' },
+      { icon: 'lock', text: 'ใช้เฉพาะตอนเปิดหน้านี้ ไม่ติดตามเบื้องหลัง และไม่ส่งให้ร้าน' },
+      { icon: 'smiley', text: 'ไม่อนุญาตก็ได้ เลือกจังหวัดเองแทนได้เลย' },
     ],
     acceptLabel: 'อนุญาตใช้ตำแหน่ง',
   },
   delivery: {
-    icon: '🛵',
+    icon: 'moped',
     title: 'ปักหมุดจุดส่งด้วย GPS',
     description: 'ขอใช้ตำแหน่งตอนนี้เป็นจุดส่งของ เพื่อคำนวณค่าส่งและให้ไรเดอร์มาถูกที่',
     reasons: [
-      { icon: '📦', text: 'ไรเดอร์ของออเดอร์นี้จะเห็นหมุดจุดส่งเพื่อนำของมาส่ง' },
-      { icon: '🔒', text: 'อ่านตำแหน่งครั้งเดียวตอนนี้ ไม่ติดตามเบื้องหลัง' },
-      { icon: '🙂', text: 'ไม่อนุญาตก็ได้ ใช้ที่อยู่ที่บันทึกไว้ หรือแตะแผนที่ปักหมุดเอง' },
+      { icon: 'package', text: 'ไรเดอร์ของออเดอร์นี้จะเห็นหมุดจุดส่งเพื่อนำของมาส่ง' },
+      { icon: 'lock', text: 'อ่านตำแหน่งครั้งเดียวตอนนี้ ไม่ติดตามเบื้องหลัง' },
+      { icon: 'smiley', text: 'ไม่อนุญาตก็ได้ ใช้ที่อยู่ที่บันทึกไว้ หรือแตะแผนที่ปักหมุดเอง' },
     ],
     acceptLabel: 'ใช้ตำแหน่งตอนนี้',
   },
   share: {
-    icon: '🤝',
+    icon: 'handshake',
     title: 'แชร์ตำแหน่งของคุณให้ไรเดอร์',
     description: 'ช่วยให้ไรเดอร์หาคุณเจอเร็วขึ้น โดยเฉพาะตอนนัดรับหน้าซอยหรือจุดที่หายาก',
     reasons: [
-      { icon: '🛵', text: 'เห็นได้เฉพาะไรเดอร์ที่กำลังส่งออเดอร์นี้เท่านั้น' },
-      { icon: '⏱️', text: 'ส่งตำแหน่งทุก 30 วินาที เฉพาะตอนเปิดหน้านี้อยู่' },
-      { icon: '✅', text: 'หยุดเองเมื่อส่งของเสร็จ และปิดได้ทุกเมื่อ' },
+      { icon: 'moped', text: 'เห็นได้เฉพาะไรเดอร์ที่กำลังส่งออเดอร์นี้เท่านั้น' },
+      { icon: 'timer', text: 'ส่งตำแหน่งทุก 30 วินาที เฉพาะตอนเปิดหน้านี้อยู่' },
+      { icon: 'check-circle', text: 'หยุดเองเมื่อส่งของเสร็จ และปิดได้ทุกเมื่อ' },
     ],
     acceptLabel: 'ยอมรับและแชร์ตำแหน่ง',
     footnote: 'ปิดสวิตช์เมื่อไหร่ ระบบลบตำแหน่งที่แชร์ไว้ทันที',

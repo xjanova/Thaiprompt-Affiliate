@@ -27,7 +27,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0F0F23"
+        "backgroundColor": "#0C1A33"
       },
       "package": "com.thaiprompt.affiliate",
       "versionCode": 41,
@@ -68,7 +68,7 @@
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
           "imageWidth": 200,
-          "backgroundColor": "#0F0F23"
+          "backgroundColor": "#0C1A33"
         }
       ],
       [

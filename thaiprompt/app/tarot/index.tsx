@@ -1,24 +1,27 @@
 /**
  * Tarot Home Screen - หน้าหลักดูดวงไพ่ทาโรต์
  * พร้อม 78 ไพ่ครบ, 5 หมวด, 5 โหมด, ระบบตรวจสอบ Wallet
+ *
+ * หน้าตา: ธีมรอยัล "มิดไนท์-ทอง" ทั้งโหมดสว่างและมืด — พื้นน้ำเงินกรมท่า ลายกนกทอง ดาวระยิบ
+ * การ์ดหมวดเป็นแผงกระจก + เหรียญตราทอง · ไม่แสดงอีโมจิจากข้อมูลไพ่ (ใช้ไอคอนเส้นแทน)
  */
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   StyleSheet,
-  Dimensions,
   Animated,
   StatusBar,
   ActivityIndicator,
   Alert,
   Modal,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
 import {
   TAROT_CATEGORIES,
@@ -26,62 +29,23 @@ import {
   TarotCategory,
   SpreadType,
 } from '@/data/tarotData';
+import { BrandArt, Button3D, GlassIconButton, Icon, OnHeaderProvider, Pill } from '@/components/ui';
+import { useTheme, radii, spacing, typography, withAlpha } from '@/theme';
+import { GlassPanel, GlowHalo, GoldDivider, Medallion, MysticBackground } from '@/components/tarot/MysticUI';
+import { categoryIcon, spreadIcon } from '@/components/tarot/tarotVisuals';
 
-const { width } = Dimensions.get('window');
+/** ขั้นตอนการใช้งาน (แสดงเป็นรายการมีเลขกำกับ) */
+const HOW_TO_STEPS = [
+  'เลือกหมวดหมู่ที่ต้องการดู',
+  'เลือกโหมดการเปิดไพ่ (1-10 ใบ)',
+  'สัมผัสไพ่จาก 78 ใบเพื่อเลือก',
+  'ดูความหมายและคำแนะนำ',
+];
 
-// Animated Star Component
-const AnimatedStar = ({ delay, style }: { delay: number; style: object }) => {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
+/** ป้ายราคา: ฟรี / ฿ราคา */
+const priceLabel = (price: number): string => (price === 0 ? 'ฟรี' : `฿${price}`);
 
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 0.3,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 0.5,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-    animation.start();
-    return () => animation.stop();
-  }, [delay, opacity, scale]);
-
-  return (
-    <Animated.Text
-      style={[
-        styles.star,
-        style,
-        { opacity, transform: [{ scale }] },
-      ]}
-    >
-      ✦
-    </Animated.Text>
-  );
-};
-
-// Category Card Component
+// Category Card Component — แผงกระจก + เหรียญตราทอง + ป้ายราคา
 const CategoryCard = ({
   category,
   index,
@@ -91,6 +55,7 @@ const CategoryCard = ({
   index: number;
   onPress: () => void;
 }) => {
+  const { colors } = useTheme();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(50)).current;
 
@@ -123,49 +88,40 @@ const CategoryCard = ({
     >
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [
-          styles.card,
-          pressed && styles.cardPressed,
-        ]}
+        accessibilityRole="button"
+        accessibilityLabel={`${category.name_th} ${priceLabel(category.price)}`}
+        style={({ pressed }) => [pressed && styles.cardPressed]}
       >
-        <LinearGradient
-          colors={[category.gradientStart, category.gradientEnd]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.cardGradient}
-        >
-          {/* Decorative Circle */}
-          <View style={styles.decorativeCircle} />
+        <GlassPanel padding={spacing.lg} radius={radii.xl}>
+          <View style={styles.cardRow}>
+            {/* เหรียญตราประจำหมวด */}
+            <Medallion icon={categoryIcon(category.slug)} size={54} />
 
-          {/* Icon */}
-          <Text style={styles.cardIcon}>{category.icon}</Text>
+            <View style={styles.cardBody}>
+              <Text numberOfLines={1} style={[typography.serifSm, { color: colors.onHeader }]}>
+                {category.name_th}
+              </Text>
+              <Text numberOfLines={2} style={[typography.bodySm, { color: colors.onHeaderMuted }]}>
+                {category.description_th}
+              </Text>
+            </View>
 
-          {/* Title */}
-          <Text style={styles.cardTitle}>{category.name_th}</Text>
-
-          {/* Description */}
-          <Text style={styles.cardDescription} numberOfLines={2}>
-            {category.description_th}
-          </Text>
-
-          {/* Price Badge */}
-          <View style={styles.priceBadge}>
-            <Text style={styles.priceText}>
-              {category.price === 0 ? 'ฟรี' : `฿${category.price}`}
-            </Text>
+            <View style={styles.cardSide}>
+              {/* Price Badge */}
+              <Pill label={priceLabel(category.price)} tone={category.price === 0 ? 'success' : 'gold'} />
+              {/* Arrow */}
+              <View style={[styles.arrowCircle, { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder }]}>
+                <Icon name="arrow-right" size={15} color={colors.goldLight} weight="bold" />
+              </View>
+            </View>
           </View>
-
-          {/* Arrow */}
-          <View style={styles.arrowContainer}>
-            <Text style={{ fontSize: 20, color: 'rgba(255,255,255,0.8)' }}>→</Text>
-          </View>
-        </LinearGradient>
+        </GlassPanel>
       </Pressable>
     </Animated.View>
   );
 };
 
-// Spread Type Card Component
+// Spread Type Card Component — แถวตัวเลือกโหมด (เลือกอยู่ = ขอบทอง + วงติ๊กทอง)
 const SpreadCard = ({
   spread,
   isSelected,
@@ -174,26 +130,42 @@ const SpreadCard = ({
   spread: SpreadType;
   isSelected: boolean;
   onPress: () => void;
-}) => (
-  <Pressable
-    onPress={onPress}
-    style={[
-      styles.spreadCard,
-      isSelected && { borderColor: spread.color, borderWidth: 2 },
-    ]}
-  >
-    <Text style={styles.spreadIcon}>{spread.icon}</Text>
-    <Text style={styles.spreadName}>{spread.name_th}</Text>
-    <Text style={styles.spreadCount}>{spread.card_count} ใบ</Text>
-    {isSelected && (
-      <View style={[styles.spreadSelected, { backgroundColor: spread.color }]}>
-        <Text style={{ fontSize: 14, color: '#fff' }}>✓</Text>
-      </View>
-    )}
-  </Pressable>
-);
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: isSelected }}
+      accessibilityLabel={`${spread.name_th} ${spread.card_count} ใบ`}
+      style={({ pressed }) => [styles.spreadCard, pressed && styles.spreadPressed]}
+    >
+      <GlassPanel highlight={isSelected} padding={spacing.md} radius={radii.lg}>
+        <View style={styles.spreadRow}>
+          <Medallion icon={spreadIcon(spread.slug)} size={40} tone={isSelected ? 'gold' : 'navy'} />
+          <Text numberOfLines={1} style={[typography.bodyStrong, styles.flex, { color: colors.onHeader }]}>
+            {spread.name_th}
+          </Text>
+          <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>{spread.card_count} ใบ</Text>
+          <View
+            style={[
+              styles.spreadSelected,
+              isSelected
+                ? { backgroundColor: colors.gold, borderColor: colors.gold }
+                : { borderColor: colors.headerGlassBorder },
+            ]}
+          >
+            {isSelected && <Icon name="check" size={13} color={colors.textOnGold} weight="bold" />}
+          </View>
+        </View>
+      </GlassPanel>
+    </Pressable>
+  );
+};
 
 export default function TarotHomeScreen() {
+  const { colors, gradients } = useTheme();
+  const insets = useSafeAreaInsets();
   const { isAuthenticated, user } = useAuthStore();
   const [loading, setLoading] = useState(false);
   // PLAY-12: ไม่มีการใช้ยอดกระเป๋าเงินในหน้าดูดวงแล้ว (modal ชำระเงินด้านล่างเปิดไม่ได้)
@@ -278,755 +250,493 @@ export default function TarotHomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <OnHeaderProvider value>
+      <View style={[styles.container, { backgroundColor: gradients.hero[gradients.hero.length - 1] }]}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Background */}
-      <LinearGradient
-        colors={['#0F0F23', '#1A1A2E', '#16213E']}
-        style={StyleSheet.absoluteFill}
-      />
+        {/* พื้นน้ำเงินกรมท่า + ลายกนก + ดาวระยิบ */}
+        <MysticBackground stars="twinkle" />
 
-      {/* Animated Stars */}
-      <AnimatedStar delay={0} style={{ top: 60, left: 30 }} />
-      <AnimatedStar delay={500} style={{ top: 120, right: 40 }} />
-      <AnimatedStar delay={1000} style={{ top: 200, left: 60 }} />
-      <AnimatedStar delay={300} style={{ top: 80, right: 80 }} />
-      <AnimatedStar delay={700} style={{ top: 160, left: 100 }} />
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <Animated.View
-          style={[
-            styles.header,
-            {
-              opacity: headerOpacity,
-              transform: [{ translateY: headerTranslateY }],
-            },
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.xxxl },
           ]}
+          showsVerticalScrollIndicator={false}
         >
-          {/* Back Button */}
-          <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
+          {/* Header */}
+          <Animated.View
+            style={[
+              styles.header,
+              {
+                opacity: headerOpacity,
+                transform: [{ translateY: headerTranslateY }],
+              },
+            ]}
           >
-            <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
-          </Pressable>
+            <View style={styles.topBar}>
+              {/* Back Button */}
+              <GlassIconButton icon="caret-left" weight="bold" accessibilityLabel="ย้อนกลับ" onPress={() => router.back()} />
 
-          {/* Title */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.titleIcon}>🔮</Text>
-            <Text style={styles.title}>ดูดวงไพ่ทาโรต์</Text>
-            <Text style={styles.subtitle}>
-              ไพ่ 78 ใบ • 5 หมวดหมู่ • 5 โหมดการเปิด
-            </Text>
-          </View>
-
-          {/* PLAY-12: ดูดวงในแอปฟรี — ไม่แสดงยอดกระเป๋าเงิน/ไม่มีการหักเงิน */}
-          <View style={styles.walletBadge}>
-            <Text style={styles.walletAmount}>ดูฟรีทุกหมวด</Text>
-          </View>
-
-          {/* Mystical Orb */}
-          <View style={styles.orbContainer}>
-            <LinearGradient
-              colors={['#8B5CF6', '#EC4899', '#F59E0B']}
-              style={styles.orb}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            />
-            <View style={styles.orbGlow} />
-          </View>
-        </Animated.View>
-
-        {/* Categories Section */}
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>เลือกหมวดหมู่</Text>
-          <Text style={styles.sectionSubtitle}>
-            แต่ละหมวดจะให้ความหมายที่แตกต่างกัน
-          </Text>
-
-          {TAROT_CATEGORIES.map((category, index) => (
-            <CategoryCard
-              key={category.id}
-              category={category}
-              index={index}
-              onPress={() => handleCategoryPress(category)}
-            />
-          ))}
-        </View>
-
-        {/* Info Section */}
-        <View style={styles.infoSection}>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoIcon}>✨</Text>
-            <Text style={styles.infoTitle}>วิธีใช้งาน</Text>
-            <Text style={styles.infoText}>
-              1. เลือกหมวดหมู่ที่ต้องการดู{'\n'}
-              2. เลือกโหมดการเปิดไพ่ (1-10 ใบ){'\n'}
-              3. สัมผัสไพ่จาก 78 ใบเพื่อเลือก{'\n'}
-              4. ดูความหมายและคำแนะนำ
-            </Text>
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            🌙 ผลการทำนายเป็นเพียงแนวทางเท่านั้น
-          </Text>
-        </View>
-      </ScrollView>
-
-      {/* Spread Selection Modal */}
-      <Modal
-        visible={showSpreadModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowSpreadModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>เลือกโหมดการเปิดไพ่</Text>
-              <Pressable
-                style={styles.modalClose}
-                onPress={() => setShowSpreadModal(false)}
-              >
-                <Text style={{ fontSize: 24, color: '#fff' }}>✕</Text>
-              </Pressable>
+              {/* PLAY-12: ดูดวงในแอปฟรี — ไม่แสดงยอดกระเป๋าเงิน/ไม่มีการหักเงิน */}
+              <Pill label="ดูฟรีทุกหมวด" tone="success" icon="seal-check" size="md" />
             </View>
 
-            {/* Selected Category Info */}
-            {selectedCategory && (
-              <View style={styles.selectedCategoryInfo}>
-                <Text style={styles.selectedCategoryIcon}>
-                  {selectedCategory.icon}
-                </Text>
-                <Text style={styles.selectedCategoryName}>
-                  {selectedCategory.name_th}
-                </Text>
-                <View style={[
-                  styles.categoryPriceBadge,
-                  { backgroundColor: selectedCategory.price === 0 ? '#10B981' : '#F59E0B' }
-                ]}>
-                  <Text style={styles.categoryPriceText}>
-                    {selectedCategory.price === 0 ? 'ฟรี' : `฿${selectedCategory.price}`}
-                  </Text>
-                </View>
-              </View>
-            )}
+            {/* ภาพไพ่ 3D ประจำแบรนด์ + รัศมีทอง */}
+            <View style={styles.heroArt}>
+              <GlowHalo size={176} />
+              <BrandArt name="tarot" size={150} />
+            </View>
 
-            {/* Spread Types */}
-            <ScrollView style={styles.spreadList}>
-              {SPREAD_TYPES.map((spread) => (
-                <SpreadCard
-                  key={spread.id}
-                  spread={spread}
-                  isSelected={selectedSpread.id === spread.id}
-                  onPress={() => handleSpreadSelect(spread)}
-                />
+            {/* Title */}
+            <Text accessibilityRole="header" style={[typography.serifLg, styles.center, { color: colors.onHeader }]}>
+              ดูดวงไพ่ทาโรต์
+            </Text>
+            <Text style={[typography.bodySm, styles.center, styles.subtitle, { color: colors.onHeaderMuted }]}>
+              ไพ่ 78 ใบ · 5 หมวดหมู่ · 5 โหมดการเปิด
+            </Text>
+            <GoldDivider style={styles.heroDivider} />
+          </Animated.View>
+
+          {/* Categories Section */}
+          <View style={styles.section}>
+            <Text accessibilityRole="header" style={[typography.serif, { color: colors.onHeader }]}>
+              เลือกหมวดหมู่
+            </Text>
+            <Text style={[typography.bodySm, styles.sectionSubtitle, { color: colors.onHeaderMuted }]}>
+              แต่ละหมวดจะให้ความหมายที่แตกต่างกัน
+            </Text>
+
+            {TAROT_CATEGORIES.map((category, index) => (
+              <CategoryCard
+                key={category.id}
+                category={category}
+                index={index}
+                onPress={() => handleCategoryPress(category)}
+              />
+            ))}
+          </View>
+
+          {/* Info Section — วิธีใช้งาน */}
+          <View style={styles.section}>
+            <GlassPanel padding={spacing.xl}>
+              <View style={styles.infoHead}>
+                <Icon name="sparkle" size={20} color={colors.goldLight} weight="fill" />
+                <Text style={[typography.h3, { color: colors.onHeader }]}>วิธีใช้งาน</Text>
+              </View>
+              {HOW_TO_STEPS.map((step, i) => (
+                <View key={step} style={styles.stepRow}>
+                  <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.stepNum}>
+                    <Text style={[styles.stepNumText, { color: colors.textOnGold }]}>{i + 1}</Text>
+                  </LinearGradient>
+                  <Text style={[typography.body, styles.flex, { color: colors.onHeaderMuted }]}>{step}</Text>
+                </View>
               ))}
-            </ScrollView>
+            </GlassPanel>
+          </View>
 
-            {/* Selected Spread Details */}
-            <View style={styles.spreadDetails}>
-              <Text style={styles.spreadDetailsTitle}>
-                {selectedSpread.name_th} - {selectedSpread.card_count} ใบ
-              </Text>
-              <Text style={styles.spreadDetailsDesc}>
-                {selectedSpread.description_th}
-              </Text>
-              <View style={styles.positionsPreview}>
-                {selectedSpread.positions.map((pos, idx) => (
-                  <View key={idx} style={styles.positionBadge}>
-                    <Text style={styles.positionText}>{pos.name_th}</Text>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Icon name="moon" size={14} color={colors.onHeaderMuted} />
+            <Text style={[typography.caption, styles.footerText, { color: colors.onHeaderMuted }]}>
+              ผลการทำนายเป็นเพียงแนวทางเท่านั้น
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* Spread Selection Modal — แผ่นล่างน้ำเงินกรมท่าขอบทอง */}
+        <Modal
+          visible={showSpreadModal}
+          transparent
+          animationType="slide"
+          statusBarTranslucent
+          onRequestClose={() => setShowSpreadModal(false)}
+        >
+          <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+            <View
+              style={[
+                styles.modalContent,
+                { paddingBottom: insets.bottom + spacing.xl, borderColor: withAlpha(colors.gold, 0.4) },
+              ]}
+            >
+              <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
+              <View style={[styles.grabber, { backgroundColor: colors.headerGlassBorder }]} />
+
+              <View style={styles.modalHeader}>
+                <Text accessibilityRole="header" style={[typography.serif, styles.flex, { color: colors.onHeader }]}>
+                  เลือกโหมดการเปิดไพ่
+                </Text>
+                <GlassIconButton icon="x" size={36} accessibilityLabel="ปิด" onPress={() => setShowSpreadModal(false)} />
+              </View>
+
+              {/* Selected Category Info */}
+              {selectedCategory && (
+                <GlassPanel padding={spacing.md} radius={radii.lg} style={styles.selectedCategoryInfo}>
+                  <View style={styles.spreadRow}>
+                    <Medallion icon={categoryIcon(selectedCategory.slug)} size={38} />
+                    <Text numberOfLines={1} style={[typography.bodyStrong, styles.flex, { color: colors.onHeader }]}>
+                      {selectedCategory.name_th}
+                    </Text>
+                    <Pill
+                      label={priceLabel(selectedCategory.price)}
+                      tone={selectedCategory.price === 0 ? 'success' : 'gold'}
+                    />
                   </View>
+                </GlassPanel>
+              )}
+
+              {/* Spread Types */}
+              <ScrollView style={styles.spreadList} contentContainerStyle={styles.spreadListContent}>
+                {SPREAD_TYPES.map((spread) => (
+                  <SpreadCard
+                    key={spread.id}
+                    spread={spread}
+                    isSelected={selectedSpread.id === spread.id}
+                    onPress={() => handleSpreadSelect(spread)}
+                  />
                 ))}
+              </ScrollView>
+
+              {/* Selected Spread Details */}
+              <GlassPanel padding={spacing.lg} radius={radii.lg} style={styles.spreadDetails}>
+                <Text style={[typography.h3, { color: colors.goldLight }]}>
+                  {selectedSpread.name_th} - {selectedSpread.card_count} ใบ
+                </Text>
+                <Text style={[typography.bodySm, styles.spreadDetailsDesc, { color: colors.onHeaderMuted }]}>
+                  {selectedSpread.description_th}
+                </Text>
+                <View style={styles.positionsPreview}>
+                  {selectedSpread.positions.map((pos, idx) => (
+                    <Pill key={idx} label={pos.name_th} tone="neutral" />
+                  ))}
+                </View>
+              </GlassPanel>
+
+              {/* Confirm Button */}
+              <Button3D
+                title="เริ่มเปิดไพ่"
+                icon="sparkle"
+                iconRight="arrow-right"
+                size="lg"
+                fullWidth
+                onPress={handleConfirmSpread}
+                style={styles.confirmButton}
+              />
+            </View>
+          </View>
+        </Modal>
+
+        {/* Payment Confirmation Modal */}
+        <Modal
+          visible={showPaymentModal}
+          transparent
+          animationType="fade"
+          statusBarTranslucent
+          onRequestClose={() => setShowPaymentModal(false)}
+        >
+          <View style={[styles.modalOverlay, styles.modalCenter, { backgroundColor: colors.overlay }]}>
+            <View style={[styles.paymentModal, { borderColor: withAlpha(colors.gold, 0.4) }]}>
+              <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
+
+              <Medallion icon="coins" size={72} style={styles.paymentIcon} />
+
+              <Text style={[typography.serif, styles.center, { color: colors.onHeader }]}>ยืนยันการชำระเงิน</Text>
+
+              {selectedCategory && (
+                <>
+                  <View style={styles.paymentCategory}>
+                    <Icon name={categoryIcon(selectedCategory.slug)} size={18} color={colors.goldLight} />
+                    <Text style={[typography.h3, { color: colors.onHeader }]}>{selectedCategory.name_th}</Text>
+                  </View>
+                  <Text style={[typography.bodySm, styles.center, styles.paymentSpread, { color: colors.onHeaderMuted }]}>
+                    โหมด: {selectedSpread.name_th} ({selectedSpread.card_count} ใบ)
+                  </Text>
+
+                  <GlassPanel padding={spacing.lg} radius={radii.md} style={styles.paymentDetails}>
+                    <View style={styles.paymentRow}>
+                      <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]}>ค่าบริการ</Text>
+                      <Text style={[typography.bodyStrong, { color: colors.goldLight }]}>฿{selectedCategory.price}</Text>
+                    </View>
+                    <View style={styles.paymentRow}>
+                      <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]}>ยอดเงินในกระเป๋า</Text>
+                      <Text style={[typography.bodyStrong, { color: colors.onHeader }]}>฿{walletBalance.toLocaleString()}</Text>
+                    </View>
+                    <View style={[styles.paymentRow, styles.paymentRowTotal, { borderTopColor: colors.headerGlassBorder }]}>
+                      <Text style={[typography.bodyStrong, { color: colors.onHeader }]}>ยอดคงเหลือหลังหัก</Text>
+                      <Text style={[typography.h3, { color: colors.goldLight }]}>
+                        ฿{(walletBalance - selectedCategory.price).toLocaleString()}
+                      </Text>
+                    </View>
+                  </GlassPanel>
+                </>
+              )}
+
+              <View style={styles.paymentButtons}>
+                <Button3D
+                  title="ยกเลิก"
+                  variant="secondary"
+                  onPress={() => setShowPaymentModal(false)}
+                  style={styles.flex}
+                />
+                <Button3D
+                  title="ยืนยันหักเงิน"
+                  variant="success"
+                  icon="check-circle"
+                  onPress={handleConfirmPayment}
+                  style={styles.flex}
+                />
               </View>
             </View>
-
-            {/* Confirm Button */}
-            <Pressable style={styles.confirmButton} onPress={handleConfirmSpread}>
-              <LinearGradient
-                colors={['#8B5CF6', '#EC4899']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.confirmGradient}
-              >
-                <Text style={styles.confirmText}>🔮 เริ่มเปิดไพ่</Text>
-                <Text style={{ fontSize: 20, color: '#fff' }}>→</Text>
-              </LinearGradient>
-            </Pressable>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      {/* Payment Confirmation Modal */}
-      <Modal
-        visible={showPaymentModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPaymentModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.paymentModal}>
-            <View style={styles.paymentIcon}>
-              <Text style={{ fontSize: 48, color: '#F59E0B' }}>💰</Text>
-            </View>
-
-            <Text style={styles.paymentTitle}>ยืนยันการชำระเงิน</Text>
-
-            {selectedCategory && (
-              <>
-                <Text style={styles.paymentCategory}>
-                  {selectedCategory.icon} {selectedCategory.name_th}
-                </Text>
-                <Text style={styles.paymentSpread}>
-                  โหมด: {selectedSpread.name_th} ({selectedSpread.card_count} ใบ)
-                </Text>
-
-                <View style={styles.paymentDetails}>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>ค่าบริการ</Text>
-                    <Text style={styles.paymentValue}>฿{selectedCategory.price}</Text>
-                  </View>
-                  <View style={styles.paymentRow}>
-                    <Text style={styles.paymentLabel}>ยอดเงินในกระเป๋า</Text>
-                    <Text style={styles.paymentBalance}>฿{walletBalance.toLocaleString()}</Text>
-                  </View>
-                  <View style={[styles.paymentRow, styles.paymentRowTotal]}>
-                    <Text style={styles.paymentLabelBold}>ยอดคงเหลือหลังหัก</Text>
-                    <Text style={styles.paymentValueBold}>
-                      ฿{(walletBalance - selectedCategory.price).toLocaleString()}
-                    </Text>
-                  </View>
-                </View>
-              </>
-            )}
-
-            <View style={styles.paymentButtons}>
-              <Pressable
-                style={styles.cancelButton}
-                onPress={() => setShowPaymentModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>ยกเลิก</Text>
-              </Pressable>
-              <Pressable
-                style={styles.payButton}
-                onPress={handleConfirmPayment}
-              >
-                <LinearGradient
-                  colors={['#10B981', '#059669']}
-                  style={styles.payButtonGradient}
-                >
-                  <Text style={{ fontSize: 20, color: '#fff' }}>✅</Text>
-                  <Text style={styles.payButtonText}>ยืนยันหักเงิน</Text>
-                </LinearGradient>
-              </Pressable>
-            </View>
+        {/* Loading Overlay */}
+        {loading && (
+          <View style={[styles.loadingOverlay, { backgroundColor: withAlpha(gradients.hero[0], 0.92) }]}>
+            <ActivityIndicator size="large" color={colors.gold} />
+            <Text style={[typography.body, styles.loadingText, { color: colors.onHeader }]}>กำลังโหลด...</Text>
           </View>
-        </View>
-      </Modal>
-
-      {/* Loading Overlay */}
-      {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#8B5CF6" />
-          <Text style={styles.loadingText}>กำลังโหลด...</Text>
-        </View>
-      )}
-    </View>
+        )}
+      </View>
+    </OnHeaderProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F23',
+  },
+  flex: {
+    flex: 1,
+  },
+  center: {
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40,
-  },
-  star: {
-    position: 'absolute',
-    fontSize: 16,
-    color: '#FFD700',
+    paddingHorizontal: spacing.screen,
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
     alignItems: 'center',
+    paddingBottom: spacing.sm,
   },
-  backButton: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  walletBadge: {
-    position: 'absolute',
-    top: 60,
-    right: 20,
+  topBar: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
+    justifyContent: 'space-between',
   },
-  walletAmount: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#10B981',
-  },
-  titleContainer: {
+  heroArt: {
+    width: 190,
+    height: 190,
     alignItems: 'center',
-    marginTop: 20,
-  },
-  titleIcon: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(139, 92, 246, 0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 8,
+    marginTop: spacing.xs,
   },
-  orbContainer: {
-    marginTop: 20,
-    position: 'relative',
+  heroDivider: {
+    marginTop: spacing.lg,
   },
-  orb: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  orbGlow: {
-    position: 'absolute',
-    top: -10,
-    left: -10,
-    right: -10,
-    bottom: -10,
-    borderRadius: 50,
-    backgroundColor: 'rgba(139, 92, 246, 0.3)',
-  },
-  categoriesSection: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
+  section: {
+    marginTop: spacing.xxl,
   },
   sectionSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 20,
+    marginTop: 2,
+    marginBottom: spacing.lg,
   },
   cardContainer: {
-    marginBottom: 16,
-  },
-  card: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    marginBottom: spacing.md,
   },
   cardPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
-  cardGradient: {
-    padding: 20,
-    minHeight: 140,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  decorativeCircle: {
-    position: 'absolute',
-    top: -30,
-    right: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  cardIcon: {
-    fontSize: 36,
-    marginBottom: 8,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 8,
-    maxWidth: '80%',
-  },
-  priceBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  priceText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  arrowContainer: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
+  cardRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
   },
-  infoSection: {
-    paddingHorizontal: 20,
-    marginTop: 30,
+  cardBody: {
+    flex: 1,
+    gap: 2,
   },
-  infoCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 20,
+  cardSide: {
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+  },
+  arrowCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  infoIcon: {
-    fontSize: 32,
-    marginBottom: 12,
+  infoHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
-  infoTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 12,
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: 6,
   },
-  infoText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    lineHeight: 24,
+  stepNum: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumText: {
+    fontSize: 12.5,
+    fontWeight: '700',
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.xxxl,
   },
   footerText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
     textAlign: 'center',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(15, 15, 35, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#FFFFFF',
+    marginTop: spacing.lg,
   },
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'flex-end',
   },
+  modalCenter: {
+    justifyContent: 'center',
+  },
   modalContent: {
-    backgroundColor: '#1A1A2E',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
-    maxHeight: '85%',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    overflow: 'hidden',
+    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    maxHeight: '88%',
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 42,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: spacing.md,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  modalClose: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   selectedCategoryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginHorizontal: 20,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  selectedCategoryIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  selectedCategoryName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  categoryPriceBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  categoryPriceText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    marginBottom: spacing.lg,
   },
   spreadList: {
-    paddingHorizontal: 20,
-    maxHeight: 200,
+    maxHeight: 236,
+    // จอเตี้ย: รายการหดลงเอง ปุ่ม "เริ่มเปิดไพ่" ไม่ถูกดันล้นแผ่น
+    flexShrink: 1,
+  },
+  spreadListContent: {
+    paddingBottom: spacing.xs,
   },
   spreadCard: {
+    marginBottom: spacing.sm,
+  },
+  spreadPressed: {
+    opacity: 0.85,
+  },
+  spreadRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  spreadIcon: {
-    fontSize: 24,
-    marginRight: 12,
-  },
-  spreadName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  spreadCount: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-    marginRight: 10,
+    gap: spacing.md,
   },
   spreadSelected: {
     width: 24,
     height: 24,
     borderRadius: 12,
+    borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   spreadDetails: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    marginHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 10,
-  },
-  spreadDetailsTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
+    marginTop: spacing.md,
   },
   spreadDetailsDesc: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: 12,
+    marginTop: 2,
+    marginBottom: spacing.md,
   },
   positionsPreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-  },
-  positionBadge: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  positionText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    gap: spacing.sm,
   },
   confirmButton: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  confirmGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 10,
-  },
-  confirmText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    marginTop: spacing.xl,
   },
   // Payment Modal
   paymentModal: {
-    backgroundColor: '#1A1A2E',
-    marginHorizontal: 20,
-    borderRadius: 24,
-    padding: 24,
+    marginHorizontal: spacing.xl,
+    borderRadius: radii.xxl,
+    borderWidth: 1,
+    overflow: 'hidden',
+    padding: spacing.xxl,
     alignItems: 'center',
-    marginTop: 'auto',
-    marginBottom: 'auto',
   },
   paymentIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(245, 158, 11, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  paymentTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    marginBottom: spacing.lg,
   },
   paymentCategory: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    marginBottom: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   paymentSpread: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: 20,
+    marginTop: 2,
+    marginBottom: spacing.xl,
   },
   paymentDetails: {
-    width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
+    alignSelf: 'stretch',
+    marginBottom: spacing.xxl,
   },
   paymentRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    alignItems: 'center',
+    paddingVertical: 6,
   },
   paymentRowTotal: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    marginTop: 8,
-    paddingTop: 16,
-  },
-  paymentLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  paymentLabelBold: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  paymentValue: {
-    fontSize: 14,
-    color: '#F59E0B',
-    fontWeight: '600',
-  },
-  paymentBalance: {
-    fontSize: 14,
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  paymentValueBold: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#10B981',
+    marginTop: spacing.sm,
+    paddingTop: spacing.md,
   },
   paymentButtons: {
     flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  payButton: {
-    flex: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  payButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 8,
-  },
-  payButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    gap: spacing.md,
+    alignSelf: 'stretch',
   },
 });

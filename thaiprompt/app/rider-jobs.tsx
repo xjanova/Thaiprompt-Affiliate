@@ -5,13 +5,28 @@
  * - ออฟไลน์/มีงานค้าง/ไม่มีตำแหน่ง = การ์ดบอกเหตุผลพร้อมปุ่มแก้ (ไม่ใช่ error — RIDER-APP-15)
  * - ปุ่มรับงานกันกดซ้ำ + ข้อความไทยชัดทุกกรณี (RIDER-APP-16) แล้วพาไปหน้างานทันที
  * - ตัวเลขทุกตัวมาจาก server (ค่าส่ง/รายได้/ระยะทาง) — RIDER-APP-02
+ *
+ * หน้าตา: การ์ดงานแบบม็อกอัป — แถบแผนที่ประกอบ + เส้นทองจากจุดรับ (ทอง) ไปจุดส่ง (น้ำเงิน)
+ *         ค่าส่งตัวใหญ่ + ปุ่มทอง "รับงานนี้" · สถานะออฟไลน์/มีงานค้าง = การ์ดน้ำเงินลายกนก
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme, spacing, radii, typography } from '@/theme';
-import { Button3D, Card3D, EmptyState, Pill, PriceText, Screen, formatBaht } from '@/components/ui';
+import {
+  BrandArt,
+  Button3D,
+  Card3D,
+  EmptyState,
+  Icon,
+  Pill,
+  PriceText,
+  Screen,
+  SectionHeader,
+  formatBaht,
+} from '@/components/ui';
 import {
   getAvailableJobs,
   getRiderStatus,
@@ -25,12 +40,39 @@ import { useRiderPermissionFlow } from '@/components/rider/useRiderPermissionFlo
 import { useRiderAvailability } from '@/components/rider/useRiderAvailability';
 import { useAcceptJob } from '@/components/rider/useAcceptJob';
 import { formatKm, formatMinutes, formatTime } from '@/components/rider/riderHelpers';
+import {
+  LiveDot,
+  MapRouteStrip,
+  MapTag,
+  NavyCard,
+  NoticeCard,
+  RouteStops,
+  jobTypeIcon,
+  useRiderTones,
+} from '@/components/rider/RiderVisuals';
 
 const POLL_MS = 15_000;
 
 // =====================================================
 // การ์ดงาน
 // =====================================================
+
+/** ชื่อจุดรับ/ส่ง: "รับที่ ร้าน…" (คำนำหน้าสีจาง) — ไม่มีชื่อ = ข้อความสำรอง */
+const StopTitle: React.FC<{ prefix: string; name?: string | null; fallback: string }> = ({ prefix, name, fallback }) => {
+  const { colors } = useTheme();
+  return (
+    <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
+      {name ? (
+        <>
+          <Text style={[styles.stopPrefix, { color: colors.textMuted }]}>{prefix} </Text>
+          {name}
+        </>
+      ) : (
+        fallback
+      )}
+    </Text>
+  );
+};
 
 const JobCard: React.FC<{
   job: RiderJobSummary;
@@ -40,108 +82,100 @@ const JobCard: React.FC<{
   onSkip: () => Promise<void>;
   onOpen: () => void;
 }> = ({ job, accepting, disabled, onAccept, onSkip, onOpen }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const tones = useRiderTones();
   const toPickup = formatKm(job.distance_to_pickup_km);
   const tripKm = formatKm(job.distance_km);
   const eta = formatMinutes(job.estimated_duration_minutes);
+  const highlight = job.rider_earnings >= 60;
+  // มุมแผนที่ต้องเล็กกว่าการ์ดเท่าความหนาขอบ (ขอบทอง 1.5 / ขอบกระจกโหมดมืด 1)
+  const mapRadius = radii.xl - (highlight ? 1.5 : isDark ? 1 : 0);
 
   return (
     <Card3D
       onPress={onOpen}
       style={styles.card}
-      padding={spacing.lg}
+      padding={0}
       radius={radii.xl}
-      gradientBorder={job.rider_earnings >= 60}
+      gradientBorder={highlight}
       accessibilityLabel={`งาน ${job.title} ได้รับ ${job.rider_earnings} บาท`}
       accessibilityHint="แตะเพื่อดูรายละเอียดงาน"
     >
-      <View style={styles.cardTop}>
-        <View style={styles.pills}>
-          <Pill label={job.job_type_text || 'งานส่ง'} tone="info" />
-          {job.is_cod && <Pill label="เก็บเงินปลายทาง" tone="warning" icon="💵" />}
+      <MapRouteStrip from={job.pickup} to={job.dropoff} seed={job.id} radius={mapRadius}>
+        <View style={styles.mapTags}>
+          <MapTag icon={jobTypeIcon(job.job_type)} label={job.job_type_text || 'งานส่ง'} />
+          {!!job.created_at && (
+            <MapTag icon="clock" label={formatTime(job.created_at)} iconColor={colors.textMuted} />
+          )}
         </View>
-        {!!job.created_at && (
-          <Text style={[typography.micro, { color: colors.textFaint }]}>{formatTime(job.created_at)}</Text>
+      </MapRouteStrip>
+
+      <View style={styles.cardBody}>
+        <View style={styles.routeRow}>
+          <RouteStops
+            style={styles.flex}
+            stops={[
+              {
+                kind: 'pickup',
+                title: <StopTitle prefix="รับที่" name={job.pickup?.name} fallback="จุดรับของ" />,
+                meta: [toPickup ? `ห่าง ${toPickup}` : null, job.pickup?.address],
+              },
+              {
+                kind: 'dropoff',
+                title: (
+                  <StopTitle prefix="ส่งที่" name={job.dropoff?.area || job.dropoff?.address} fallback="จุดส่ง" />
+                ),
+                meta: [tripKm ? `ระยะส่ง ${tripKm}` : null, eta],
+                note: job.dropoff?.is_approximate ? 'ที่อยู่เต็มจะแสดงหลังรับงาน' : null,
+              },
+            ]}
+          />
+          <View style={styles.feeBox}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>คุณได้รับ</Text>
+            <PriceText amount={job.rider_earnings} size="xl" style={[styles.fee, { color: tones.money }]} />
+            {job.is_cod && <Pill label="เก็บเงินปลายทาง" tone="warning" icon="money" />}
+          </View>
+        </View>
+
+        {!!job.items_summary && (
+          <View style={[styles.itemsRow, { borderTopColor: colors.divider }]}>
+            <Icon name="receipt" size={16} color={colors.textMuted} />
+            <Text style={[typography.bodySm, styles.flex, { color: colors.text }]} numberOfLines={2}>
+              {job.items_summary}
+            </Text>
+          </View>
         )}
-      </View>
-
-      <View style={styles.earnRow}>
-        <View style={styles.flex}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>คุณได้รับ</Text>
-          <PriceText amount={job.rider_earnings} size="xl" tone="gold" />
-        </View>
-        <View style={styles.metaBox}>
-          {!!toPickup && (
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>🛵 ห่าง {toPickup}</Text>
-          )}
-          {!!tripKm && (
-            <Text style={[typography.caption, { color: colors.textMuted }]}>
-              ระยะส่ง {tripKm}
-              {eta ? ` · ${eta}` : ''}
+        {job.is_cod && (
+          <View style={[styles.codRow, { backgroundColor: colors.warningSoft }]}>
+            <Icon name="money" size={17} color={colors.warning} weight="fill" />
+            <Text style={[typography.caption, styles.codText, { color: colors.text }]}>
+              ต้องเก็บเงินสดจากลูกค้า {formatBaht(job.cod_amount)}
             </Text>
-          )}
-        </View>
-      </View>
-
-      <View style={[styles.route, { backgroundColor: colors.inset }]}>
-        <View style={styles.routeRow}>
-          <Text style={styles.routeIcon}>📦</Text>
-          <View style={styles.flex}>
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]} numberOfLines={1}>
-              {job.pickup?.name || 'จุดรับของ'}
-            </Text>
-            {!!job.pickup?.address && (
-              <Text style={[typography.caption, { color: colors.textMuted }]} numberOfLines={2}>
-                {job.pickup.address}
-              </Text>
-            )}
           </View>
-        </View>
-        <View style={[styles.routeLine, { backgroundColor: colors.border }]} />
-        <View style={styles.routeRow}>
-          <Text style={styles.routeIcon}>🏠</Text>
-          <View style={styles.flex}>
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]} numberOfLines={1}>
-              {job.dropoff?.area || job.dropoff?.address || 'จุดส่ง'}
-            </Text>
-            {job.dropoff?.is_approximate && (
-              <Text style={[typography.caption, { color: colors.textMuted }]}>ที่อยู่เต็มจะแสดงหลังรับงาน</Text>
-            )}
-          </View>
-        </View>
-      </View>
+        )}
 
-      {!!job.items_summary && (
-        <Text style={[typography.bodySm, styles.items, { color: colors.text }]} numberOfLines={2}>
-          🧾 {job.items_summary}
-        </Text>
-      )}
-      {job.is_cod && (
-        <Text style={[typography.caption, { color: colors.warning }]}>
-          💵 ต้องเก็บเงินสดจากลูกค้า {formatBaht(job.cod_amount)}
-        </Text>
-      )}
-
-      <View style={styles.cardActions}>
-        <Button3D
-          title="ไม่สนใจ"
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onPress={onSkip}
-          accessibilityHint="ซ่อนงานนี้"
-        />
-        <Button3D
-          title="รับงานนี้"
-          icon="⚡"
-          variant="success"
-          size="lg"
-          disabled={disabled && !accepting}
-          loading={accepting}
-          loadingText="กำลังรับงาน..."
-          onPress={onAccept}
-          style={styles.flex}
-        />
+        <View style={styles.cardActions}>
+          <Button3D
+            title="ไม่สนใจ"
+            variant="secondary"
+            size="lg"
+            disabled={disabled}
+            onPress={onSkip}
+            accessibilityHint="ซ่อนงานนี้"
+            style={styles.skip}
+          />
+          <Button3D
+            title="รับงานนี้"
+            icon="hand-tap"
+            variant="primary"
+            size="lg"
+            disabled={disabled && !accepting}
+            loading={accepting}
+            loadingText="กำลังรับงาน..."
+            onPress={onAccept}
+            style={styles.accept}
+          />
+        </View>
       </View>
     </Card3D>
   );
@@ -280,7 +314,7 @@ export default function RiderJobsScreen() {
   if (initialLoading && !data) {
     return (
       <Screen title="งานใกล้ฉัน">
-        <EmptyState icon="🔍" title="กำลังหางานใกล้คุณ..." message="รอสักครู่นะ" />
+        <EmptyState art="scooter" title="กำลังหางานใกล้คุณ..." message="รอสักครู่นะ" />
       </Screen>
     );
   }
@@ -291,7 +325,7 @@ export default function RiderJobsScreen() {
       <Screen title="งานใกล้ฉัน" onRefresh={() => load('refresh')} refreshing={refreshing}>
         {notApproved ? (
           <EmptyState
-            icon="🛵"
+            art="scooter"
             title="ยังรับงานไม่ได้"
             message={error?.message || 'บัญชีไรเดอร์ยังไม่พร้อมใช้งาน'}
             actionLabel="ไปหน้าไรเดอร์"
@@ -308,40 +342,49 @@ export default function RiderJobsScreen() {
   const jobs = data.jobs.filter((j) => !hidden.has(j.id));
   const block = data.block_reason;
   const showConsentBanner = data.reason === null && (block?.code === 'CONSENT_REQUIRED' || !hasConsent);
+  const searching = data.reason === null;
 
   const header = (
     <View>
       {/* แถบสถานะ live */}
-      <View style={styles.liveRow}>
-        <View style={[styles.liveDot, { backgroundColor: data.reason === null ? colors.success : colors.textFaint }]} />
-        <Text style={[typography.caption, { color: colors.textMuted }]}>
-          {data.reason === null
+      <View style={[styles.liveRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <LiveDot live={searching} color={searching ? colors.success : colors.textFaint} />
+        <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]} numberOfLines={1}>
+          {searching
             ? `อัปเดตอัตโนมัติทุก 15 วินาที${updatedAt ? ` · ล่าสุด ${formatTime(updatedAt.toISOString())}` : ''}`
             : 'ยังไม่ได้ค้นหางาน'}
         </Text>
       </View>
 
       {data.reason === 'offline' && (
-        <Card3D gradientBorder style={styles.card} padding={spacing.lg}>
-          <Text style={styles.reasonIcon}>☕</Text>
-          <Text style={[typography.h3, { color: colors.textStrong }]}>คุณยังปิดรับงานอยู่</Text>
-          <Text style={[typography.bodySm, styles.reasonText, { color: colors.textMuted }]}>
-            กดเริ่มรับงานเพื่อดูงานใกล้คุณ และรับแจ้งเตือนงานใหม่ทันที
-          </Text>
-          <Button3D title="เริ่มรับงาน" icon="🟢" variant="success" size="lg" fullWidth onPress={handleGoOnline} />
-        </Card3D>
+        <NavyCard goldBorder style={styles.block}>
+          <View style={styles.heroRow}>
+            <View style={styles.flex}>
+              <Text style={[typography.h2, { color: colors.onHeader }]}>คุณยังปิดรับงานอยู่</Text>
+              <Text style={[typography.bodySm, styles.heroText, { color: colors.onHeaderMuted }]}>
+                กดเริ่มรับงานเพื่อดูงานใกล้คุณ และรับแจ้งเตือนงานใหม่ทันที
+              </Text>
+            </View>
+            <BrandArt name="scooter" size={92} style={styles.heroArt} />
+          </View>
+          <Button3D title="เริ่มรับงาน" icon="power" size="lg" fullWidth onPress={handleGoOnline} />
+        </NavyCard>
       )}
 
       {data.reason === 'busy' && (
-        <Card3D gradientBorder style={styles.card} padding={spacing.lg}>
-          <Text style={styles.reasonIcon}>🛵</Text>
-          <Text style={[typography.h3, { color: colors.textStrong }]}>คุณมีงานที่กำลังส่งอยู่</Text>
-          <Text style={[typography.bodySm, styles.reasonText, { color: colors.textMuted }]}>
-            ส่งงานนี้ให้เสร็จก่อน แล้วค่อยรับงานถัดไปนะ
-          </Text>
+        <NavyCard goldBorder style={styles.block}>
+          <View style={styles.heroRow}>
+            <View style={styles.flex}>
+              <Text style={[typography.h2, { color: colors.onHeader }]}>คุณมีงานที่กำลังส่งอยู่</Text>
+              <Text style={[typography.bodySm, styles.heroText, { color: colors.onHeaderMuted }]}>
+                ส่งงานนี้ให้เสร็จก่อน แล้วค่อยรับงานถัดไปนะ
+              </Text>
+            </View>
+            <BrandArt name="scooter" size={92} style={styles.heroArt} />
+          </View>
           <Button3D
             title="ไปที่งานปัจจุบัน"
-            icon="🧭"
+            icon="navigation-arrow"
             size="lg"
             fullWidth
             onPress={() =>
@@ -350,19 +393,20 @@ export default function RiderJobsScreen() {
               )
             }
           />
-        </Card3D>
+        </NavyCard>
       )}
 
       {data.reason === 'no_location' && (
-        <Card3D style={styles.card} padding={spacing.lg}>
-          <Text style={styles.reasonIcon}>📍</Text>
-          <Text style={[typography.h3, { color: colors.textStrong }]}>ยังไม่รู้ตำแหน่งของคุณ</Text>
-          <Text style={[typography.bodySm, styles.reasonText, { color: colors.textMuted }]}>
-            เปิด GPS และอนุญาตตำแหน่ง เพื่อหางานที่ใกล้คุณที่สุด
-          </Text>
+        <NoticeCard
+          icon="map-pin"
+          tone="gold"
+          title="ยังไม่รู้ตำแหน่งของคุณ"
+          message="เปิด GPS และอนุญาตตำแหน่ง เพื่อหางานที่ใกล้คุณที่สุด"
+          style={styles.block}
+        >
           <Button3D
             title="เปิดตำแหน่ง"
-            icon="📍"
+            icon="crosshair"
             fullWidth
             onPress={async () => {
               if (await flow.ensureForeground()) {
@@ -371,43 +415,49 @@ export default function RiderJobsScreen() {
               }
             }}
           />
-        </Card3D>
+        </NoticeCard>
       )}
 
       {showConsentBanner && (
-        <Card3D variant="inset" style={styles.card} padding={spacing.md}>
-          <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>🤝 ยอมรับการแชร์ตำแหน่งก่อนรับงานแรก</Text>
-          <Text style={[typography.caption, styles.reasonText, { color: colors.textMuted }]}>
-            ลูกค้าเห็นตำแหน่งคุณเฉพาะออเดอร์ที่กำลังส่ง และหยุดเองเมื่อจบงาน
-          </Text>
-          <Button3D title="ยอมรับ" size="sm" variant="success" onPress={() => flow.requestConsent()} />
-        </Card3D>
+        <NoticeCard
+          icon="handshake"
+          tone="gold"
+          title="ยอมรับการแชร์ตำแหน่งก่อนรับงานแรก"
+          message="ลูกค้าเห็นตำแหน่งคุณเฉพาะออเดอร์ที่กำลังส่ง และหยุดเองเมื่อจบงาน"
+          style={styles.block}
+        >
+          <Button3D
+            title="ยอมรับ"
+            size="sm"
+            variant="navy"
+            icon="check"
+            onPress={() => flow.requestConsent()}
+            style={styles.alignStart}
+          />
+        </NoticeCard>
       )}
 
       {data.reason === null && block && block.code !== 'CONSENT_REQUIRED' && (
-        <Card3D variant="inset" style={styles.card} padding={spacing.md}>
-          <Text style={[typography.bodySm, { color: colors.text }]}>⚠️ {block.message}</Text>
-          {block.code === 'LOCATION_STALE' && (
+        <NoticeCard icon="warning" tone="warning" message={block.message} style={styles.block}>
+          {block.code === 'LOCATION_STALE' ? (
             <Button3D
               title="ส่งตำแหน่งตอนนี้"
               size="sm"
-              icon="📍"
+              icon="crosshair"
               onPress={async () => {
                 if (await flow.ensureForeground()) {
                   await pingRiderLocation({ force: true });
                   await load('refresh');
                 }
               }}
-              style={styles.gapTop}
+              style={styles.alignStart}
             />
-          )}
-        </Card3D>
+          ) : null}
+        </NoticeCard>
       )}
 
       {data.reason === null && jobs.length > 0 && (
-        <Text style={[typography.bodyStrong, styles.countText, { color: colors.textStrong }]}>
-          มี {jobs.length} งานรอคุณอยู่ 🔥
-        </Text>
+        <SectionHeader title={`มี ${jobs.length} งานรอคุณอยู่`} icon="fire" style={styles.countHeader} />
       )}
     </View>
   );
@@ -417,7 +467,15 @@ export default function RiderJobsScreen() {
       title="งานใกล้ฉัน"
       subtitle="เลือกงานที่ใช่ แล้วกดรับได้เลย"
       scroll={false}
-      right={<Button3D title="รายได้" icon="📊" size="sm" variant="secondary" onPress={() => router.push('/rider-earnings' as never)} />}
+      right={
+        <Button3D
+          title="รายได้"
+          icon="chart-bar"
+          size="sm"
+          variant="secondary"
+          onPress={() => router.push('/rider-earnings' as never)}
+        />
+      }
     >
       <FlatList
         data={data.reason === null ? jobs : []}
@@ -436,7 +494,7 @@ export default function RiderJobsScreen() {
         ListEmptyComponent={
           data.reason === null ? (
             <EmptyState
-              icon="🛵"
+              art="scooter"
               title="ยังไม่มีงานใกล้คุณตอนนี้"
               message="เปิดหน้านี้ค้างไว้ได้เลย งานใหม่จะเด้งขึ้นมาเอง และมีแจ้งเตือนทันที"
               compact
@@ -466,84 +524,107 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxxl * 2,
   },
+  block: {
+    marginBottom: spacing.lg,
+  },
   card: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
-  cardTop: {
+  mapTags: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    alignItems: 'flex-start',
+    gap: spacing.sm,
   },
-  pills: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    flex: 1,
-  },
-  earnRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  metaBox: {
-    alignItems: 'flex-end',
-  },
-  route: {
-    borderRadius: radii.md,
-    padding: spacing.md,
+  cardBody: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   routeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  stopPrefix: {
+    fontWeight: '500',
+  },
+  feeBox: {
+    alignItems: 'flex-end',
+    gap: 2,
+    maxWidth: '42%',
+  },
+  fee: {
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: -0.5,
+  },
+  itemsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
   },
-  routeIcon: {
-    fontSize: 18,
-    width: 24,
-    textAlign: 'center',
-  },
-  routeLine: {
-    width: 2,
-    height: 14,
-    marginLeft: 11,
-    marginVertical: 2,
-  },
-  items: {
-    marginTop: spacing.sm,
-  },
-  cardActions: {
+  codRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.sm + 1,
+  },
+  codText: {
+    flex: 1,
+    fontWeight: '600',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    marginTop: spacing.lg,
+  },
+  skip: {
+    flex: 1,
+    minWidth: 100,
+  },
+  accept: {
+    flex: 1.8,
   },
   liveRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    paddingLeft: spacing.xs,
+    paddingRight: spacing.md,
+    paddingVertical: 3,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    marginBottom: spacing.lg,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  reasonIcon: {
-    fontSize: 36,
-    marginBottom: spacing.xs,
-  },
-  reasonText: {
+  heroText: {
     marginTop: spacing.xs,
-    marginBottom: spacing.md,
   },
-  countText: {
-    marginBottom: spacing.md,
+  heroArt: {
+    marginRight: -spacing.xs,
   },
-  gapTop: {
-    marginTop: spacing.sm,
+  alignStart: {
+    alignSelf: 'flex-start',
+  },
+  countHeader: {
+    marginTop: spacing.xs,
   },
 });

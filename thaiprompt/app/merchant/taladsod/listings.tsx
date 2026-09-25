@@ -4,10 +4,24 @@
  * - เปิด/ปิดขายด้วยสวิตช์ (เปลี่ยนทันทีบนจอ ล้มเหลว = คืนค่าเดิม + แจ้งเหตุผล)
  * - แก้ราคาเร็วๆ ในแผ่นล่าง · แตะการ์ด = แก้รูป ราคา และกลุ่มตัวเลือก
  * - ลงขายสินค้าใหม่ → เว็บไซต์ (ฟอร์มเต็ม: หมวดหมู่ รูป สต็อก)
+ *
+ * หน้าตา: กริดสองคอลัมน์ รูปสินค้าเด่น + ป้ายสถานะบนรูป · ราคาทอง · แถวเปิดขาย · ปุ่มแก้ราคา
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -18,10 +32,26 @@ import {
   type FmListingStatus,
   type FmOwnerListing,
 } from '@/services/api/taladsodSellerApi';
-import { Button3D, Card3D, Chip, EmptyState, Pill, PriceText, Screen, WebsiteButton, resultHaptic, tapHaptic } from '@/components/ui';
+import {
+  BrandArt,
+  Button3D,
+  Card3D,
+  Chip,
+  EmptyState,
+  Icon,
+  Pill,
+  PriceText,
+  Screen,
+  WebsiteButton,
+  resultHaptic,
+  tapHaptic,
+} from '@/components/ui';
 import { FormSheet, Field } from '@/components/shop';
 import { FM_LISTING_FILTERS, FM_LISTING_STATUS } from '@/components/merchant';
-import { useTheme, radii, spacing, typography } from '@/theme';
+import { DARK_THEME, useTheme, radii, spacing, toneColors, typography } from '@/theme';
+
+/** ระยะห่างระหว่างคอลัมน์ของกริด */
+const GRID_GAP = spacing.md;
 
 type Filter = FmListingStatus | 'all';
 
@@ -34,6 +64,9 @@ const parseBaht = (text: string): number | null => {
 
 export default function TaladsodListingsScreen() {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  // ความกว้างการ์ดในกริดสองคอลัมน์ (หักขอบจอซ้ายขวาและช่องว่างกลาง)
+  const cardWidth = Math.floor((width - spacing.screen * 2 - GRID_GAP) / 2);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [filter, setFilter] = useState<Filter>('all');
@@ -186,33 +219,58 @@ export default function TaladsodListingsScreen() {
     const img = fmImageUrl(item.main_image_url || item.images[0]);
     const st = FM_LISTING_STATUS[item.status] || { label: item.status, tone: 'neutral' as const };
     const groups = item.option_groups.length;
+    // ป้ายบนรูป = พื้นม่านมืดเสมอ → จุดสถานะใช้สีสว่างของชุดสีโหมดมืด
+    const statusDot = toneColors(st.tone, DARK_THEME.colors).fg;
     return (
-      <Card3D padding={spacing.md} radius={radii.lg} shadow="sm" style={styles.card}>
+      <Card3D
+        padding={0}
+        radius={radii.xl}
+        shadow="sm"
+        style={[styles.card, { width: cardWidth }]}
+        contentStyle={styles.clip}
+      >
         <Pressable
           onPress={() => openEditor(item)}
           accessibilityRole="button"
           accessibilityLabel={`${item.title} ราคา ${item.price} บาท ${item.is_available ? 'เปิดขาย' : 'ปิดขาย'}`}
           accessibilityHint="แตะเพื่อแก้รูป ราคา และตัวเลือก"
-          style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+          style={({ pressed }) => [pressed && styles.pressed]}
         >
-          {img ? (
-            <Image source={{ uri: img }} style={[styles.thumb, { backgroundColor: colors.inset }]} contentFit="cover" />
-          ) : (
-            <View style={[styles.thumb, styles.center, { backgroundColor: colors.inset }]}>
-              <Text style={styles.thumbIcon}>🥬</Text>
+          <View style={[styles.photo, { height: Math.round(cardWidth * 0.8), backgroundColor: colors.inset }]}>
+            {img ? (
+              <Image
+                source={{ uri: img }}
+                style={[styles.photoImage, !item.is_available && styles.photoOff]}
+                contentFit="cover"
+                transition={120}
+              />
+            ) : (
+              <BrandArt name="basket" size={Math.round(cardWidth * 0.46)} style={!item.is_available && styles.photoOff} />
+            )}
+            <View style={[styles.photoTag, styles.tagTop, { backgroundColor: colors.overlay }]}>
+              <View style={[styles.tagDot, { backgroundColor: statusDot }]} />
+              <Text numberOfLines={1} style={[typography.micro, { color: colors.textOnAccent }]}>
+                {st.label}
+              </Text>
             </View>
-          )}
-          <View style={styles.flex}>
-            <Text numberOfLines={2} style={[typography.bodyStrong, { color: colors.textStrong }]}>
+            {groups > 0 && (
+              <View style={[styles.photoTag, styles.tagBottom, { backgroundColor: colors.overlay }]}>
+                <Icon name="list" size={12} color={DARK_THEME.colors.goldLight} weight="bold" />
+                <Text numberOfLines={1} style={[typography.micro, { color: colors.textOnAccent }]}>
+                  ตัวเลือก {groups} กลุ่ม
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.info}>
+            <Text numberOfLines={2} style={[typography.bodyStrong, styles.title, { color: colors.textStrong }]}>
               {item.title}
             </Text>
             <View style={styles.pills}>
-              <Pill label={st.label} tone={st.tone} />
-              {groups > 0 && <Pill label={`ตัวเลือก ${groups} กลุ่ม`} tone="gold" icon="🧩" />}
               {item.track_stock ? (
                 <Pill label={`เหลือ ${item.quantity_available.toLocaleString('th-TH')}`} tone={item.quantity_available > 0 ? 'neutral' : 'danger'} />
               ) : (
-                <Pill label="ทำตามสั่ง" tone="info" />
+                <Pill label="ทำตามสั่ง" tone="info" icon="cooking-pot" />
               )}
             </View>
           </View>
@@ -221,15 +279,17 @@ export default function TaladsodListingsScreen() {
           {/* ราคาแตะแล้วเปิดหน้าแก้เหมือนเดิม — ซ่อนจาก screen reader เพราะปุ่มด้านบนอ่านราคาแล้ว */}
           <Pressable
             onPress={() => openEditor(item)}
-            style={({ pressed }) => [styles.flex, pressed && styles.pressed]}
+            style={({ pressed }) => [pressed && styles.pressed]}
             accessible={false}
             importantForAccessibility="no-hide-descendants"
             accessibilityElementsHidden
           >
             <PriceText amount={item.price} size="lg" tone="gold" suffix={item.unit ? `/${item.unit}` : undefined} />
           </Pressable>
-          <Button3D title="แก้ราคา" icon="✏️" size="sm" variant="secondary" onPress={() => openPrice(item)} />
-          <View style={styles.switchBox}>
+          <View style={styles.switchRow}>
+            <Text style={[typography.caption, styles.flex, { color: item.is_available ? colors.success : colors.textMuted }]}>
+              {item.is_available ? 'เปิดขาย' : 'ปิดขาย'}
+            </Text>
             <Switch
               value={item.is_available}
               onValueChange={(next) => toggleAvailable(item, next)}
@@ -238,10 +298,8 @@ export default function TaladsodListingsScreen() {
               thumbColor={colors.card}
               accessibilityLabel={`${item.title} เปิดขาย`}
             />
-            <Text style={[typography.micro, { color: item.is_available ? colors.success : colors.textMuted }]}>
-              {item.is_available ? 'เปิดขาย' : 'ปิดขาย'}
-            </Text>
           </View>
+          <Button3D title="แก้ราคา" icon="pencil-simple" size="sm" variant="secondary" fullWidth onPress={() => openPrice(item)} />
         </View>
       </Card3D>
     );
@@ -250,7 +308,7 @@ export default function TaladsodListingsScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="สินค้าของร้าน" scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState art="cart" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -258,8 +316,8 @@ export default function TaladsodListingsScreen() {
   if (notSeller) {
     return (
       <Screen title="สินค้าของร้าน" scroll={false} contentStyle={styles.pad}>
-        <EmptyState icon="🥬" title="ยังไม่มีร้านในตลาดสด" message="สมัครขายบนเว็บไซต์ แล้วกลับมาจัดการสินค้าในแอปได้เลย" />
-        <WebsiteButton path="/taladsod/register-seller" label="สมัครขายในตลาดสด" variant="primary" fullWidth />
+        <EmptyState art="cart" title="ยังไม่มีร้านในตลาดสด" message="สมัครขายบนเว็บไซต์ แล้วกลับมาจัดการสินค้าในแอปได้เลย" />
+        <WebsiteButton path="/taladsod/register-seller" label="สมัครขายในตลาดสด" icon="basket" variant="primary" fullWidth style={styles.notSellerCta} />
       </Screen>
     );
   }
@@ -269,7 +327,7 @@ export default function TaladsodListingsScreen() {
       <WebsiteButton
         path="/taladsod/create-listing"
         label="ลงขายสินค้าใหม่ (บนเว็บ)"
-        icon="➕"
+        icon="plus"
         variant="primary"
         fullWidth
         style={styles.create}
@@ -288,6 +346,8 @@ export default function TaladsodListingsScreen() {
         data={listings}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderItem}
+        numColumns={2}
+        columnWrapperStyle={styles.column}
         ListHeaderComponent={header}
         ListEmptyComponent={
           initialLoading ? (
@@ -295,7 +355,7 @@ export default function TaladsodListingsScreen() {
           ) : error ? (
             <EmptyState compact variant="error" message={error} onAction={() => load('refresh', filter, 1)} />
           ) : (
-            <EmptyState compact icon="🧺" title="ยังไม่มีสินค้าในแท็บนี้" message="ลงขายสินค้าใหม่บนเว็บ แล้วกลับมาแก้ราคาและตัวเลือกในแอปได้" />
+            <EmptyState compact art="basket" title="ยังไม่มีสินค้าในแท็บนี้" message="ลงขายสินค้าใหม่บนเว็บ แล้วกลับมาแก้ราคาและตัวเลือกในแอปได้" />
           )
         }
         contentContainerStyle={styles.list}
@@ -318,7 +378,7 @@ export default function TaladsodListingsScreen() {
 
       <FormSheet
         visible={!!priceTarget}
-        icon="✏️"
+        icon="pencil-simple"
         title="แก้ราคา"
         description={priceTarget ? `${priceTarget.title}${priceTarget.unit ? ` (ต่อ${priceTarget.unit})` : ''}` : undefined}
         submitLabel="บันทึกราคา"
@@ -349,41 +409,78 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   pad: {
     paddingHorizontal: spacing.screen,
+  },
+  notSellerCta: {
+    marginBottom: spacing.xxl,
   },
   list: {
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.xxxl * 2,
   },
+  column: {
+    gap: GRID_GAP,
+  },
   create: {
+    marginTop: spacing.xs,
     marginBottom: spacing.md,
   },
   filters: {
     gap: spacing.xs,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
   },
   card: {
-    marginBottom: spacing.md,
+    marginBottom: GRID_GAP,
   },
-  row: {
-    flexDirection: 'row',
-    gap: spacing.md,
+  clip: {
+    overflow: 'hidden',
   },
   pressed: {
     opacity: 0.7,
   },
-  thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: radii.md,
+  // ---------- รูป ----------
+  photo: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  thumbIcon: {
-    fontSize: 26,
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  photoOff: {
+    opacity: 0.45,
+  },
+  photoTag: {
+    position: 'absolute',
+    left: spacing.sm,
+    maxWidth: '86%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 9,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  tagTop: {
+    top: spacing.sm,
+  },
+  tagBottom: {
+    bottom: spacing.sm,
+  },
+  tagDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  // ---------- เนื้อหา ----------
+  info: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+  },
+  title: {
+    minHeight: 44,
   },
   pills: {
     flexDirection: 'row',
@@ -392,15 +489,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   bottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
+    marginHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingBottom: spacing.md,
+    borderTopWidth: 1,
   },
-  switchBox: {
+  switchRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
   },
   loader: {
     marginTop: spacing.xxxl,

@@ -1,18 +1,19 @@
 /**
- * Design tokens — ธีม "นวลทองคำ" (Nuan Gold Clay) สำหรับแอป
+ * Design tokens — ธีม "รอยัล น้ำเงินกรมท่า-ทอง" (เจ้าของเลือกแบบ A + โหมดมืดแบบ B, 2026-09-26)
  *
- * ถอดค่ามาจากเว็บ Theme V4 (resources/css/theme-v4.css + layouts/admin-v4 applyTheme)
- *   light: bg #f3eee4 · surf #ece5d8 · sd #cdc1ad · sl #fffdf7 · ink #544c40 · ink2 #9a8f7c
- *   dark : bg #1d1912 · surf #272118 · sd #100d08 · sl #352b1d · ink #ece3d2 · ink2 #a89c84
- *   ทอง : accent1 #e6b347 · accent2 #d98e3f · deep1 #b8892a · deep2 #b06f2f
+ * ต่อยอดจากไอคอนแอป TP UltraApp (น้ำเงินกรมท่า + ทองลายกนก)
+ *   โหมดสว่าง : หัวหน้าจอน้ำเงินกรมท่า · เนื้อหาพื้นงาช้าง #F4F0E7 · การ์ดขาว · ทองแชมเปญเป็นจุดเน้น
+ *   โหมดมืด   : มิดไนท์ #05070C · การ์ดกระจกทึบ · ทองเรือง
  *
  * หลักการ
- *   - หน้าจอใหม่ทุกหน้าอ่านสีจาก useTheme().colors เท่านั้น ห้ามฮาร์ดโค้ดสี
- *   - เงาใช้ shadowStyle() (boxShadow ของ New Architecture) — Android รุ่นเก่ากว่า API 28 ใช้ elevation แทน
- *   - gradient ส่งให้ expo-linear-gradient ได้ตรงๆ (tuple อย่างน้อย 2 สี)
+ *   - หน้าจอทุกหน้าอ่านสีจาก useTheme().colors เท่านั้น ห้ามฮาร์ดโค้ดสี
+ *   - ทองใช้ "น้อยแต่ชัด": ปุ่มหลัก ตัวเลขเงิน ไอคอนเน้น — พื้นที่ส่วนใหญ่เป็นกลาง
+ *   - เงาเป็นเงานุ่มหลายชั้นโทนน้ำเงิน (boxShadow ของ New Architecture) — Android ต่ำกว่า API 28 ใช้ elevation
+ *   - ฟอนต์: Anuphan เลือกน้ำหนักอัตโนมัติผ่าน components/ui/Text · หัวเรื่องรอยัลใช้ typography.serif*
  */
 
 import { Platform, type ViewStyle } from 'react-native';
+import { FONT } from './fonts';
 
 // =====================================================
 // ชนิดข้อมูล
@@ -25,17 +26,17 @@ export type GradientTuple = readonly [string, string, ...string[]];
 export type Tone = 'neutral' | 'gold' | 'success' | 'danger' | 'info' | 'warning';
 
 export interface ThemeColors {
-  /** พื้นหลังหน้าจอ */
+  /** พื้นหลังหน้าจอ (งาช้าง / มิดไนท์) */
   background: string;
-  /** พื้นผิวดินเหนียว (การ์ด/แท็บบาร์) */
+  /** พื้นผิวรอง (แท็บบาร์ ชิปปกติ แถบเครื่องมือ) */
   surface: string;
-  /** การ์ดที่ยกขึ้นจากพื้น (สว่างกว่าพื้นเล็กน้อย) */
+  /** การ์ดที่ยกขึ้นจากพื้น */
   card: string;
-  /** พื้นช่องกด/ช่องกรอก (ยุบลง) */
+  /** พื้นช่องกรอก/ช่องที่ยุบลง */
   inset: string;
-  /** เงาด้านมืดของดินเหนียว */
+  /** สีเงาตก (น้ำเงินในโหมดสว่าง · ดำในโหมดมืด) */
   shadowDark: string;
-  /** เงาด้านสว่างของดินเหนียว */
+  /** ไฮไลต์ขอบบนของการ์ด */
   shadowLight: string;
   /** เส้นขอบบางๆ */
   border: string;
@@ -50,26 +51,46 @@ export interface ThemeColors {
   textMuted: string;
   /** ตัวอักษรจาง (placeholder) */
   textFaint: string;
-  /** ตัวอักษรบนพื้นสีเข้ม (ปุ่มเขียว/แดง, ป้ายแจ้งเตือน) — ขาว */
+  /** ตัวอักษรบนพื้นสีเข้ม (ปุ่มเขียว/แดง/น้ำเงิน) — ขาว */
   textOnAccent: string;
-  /**
-   * ตัวอักษรบนพื้นทอง (ปุ่มหลัก, ชิปที่เลือก, ป้ายทอง) — น้ำตาลเข้ม
-   * ขาวบนทองได้ contrast แค่ 1.6–2.8:1 (อ่านไม่ออกกลางแดด) · สีนี้ได้ ≥ 4.9:1 ทุกจุดของไล่เฉด
-   */
+  /** ตัวอักษรบนพื้นทอง (ปุ่มหลัก ชิปทอง) — น้ำตาลเข้ม ได้ contrast ≥ 7:1 */
   textOnGold: string;
 
-  /** ทองหลัก */
+  /** ทองหลัก (ไอคอนเน้น เส้นทอง) */
   gold: string;
-  /** ทองเข้ม (ขอบล่างปุ่ม/ตัวอักษรเน้น) */
+  /** ทองสำหรับตัวอักษร/ลิงก์ (อ่านออกบนพื้นของโหมดนั้น ≥ 4.5:1) */
   goldDeep: string;
-  /** อำพัน */
+  /** ทองอ่อนสว่าง (ตัวเลขเงินบนพื้นน้ำเงิน ไอคอนบนหัวน้ำเงิน) */
+  goldLight: string;
+  /** อำพัน (จุดเน้นรอง) */
   amber: string;
-  /** อำพันเข้ม */
   amberDeep: string;
   /** ทองอ่อน (พื้นป้าย) */
   goldSoft: string;
-  /** อำพันอ่อน */
   amberSoft: string;
+
+  /**
+   * น้ำเงินกรมท่าสำหรับ "ไอคอน/ตัวอักษร/เส้น" เน้น (โหมดมืดเป็นน้ำเงินอ่อนให้อ่านออก)
+   * พื้นสีน้ำเงิน (ปุ่ม เม็ดแท็บ แถบตะกร้า) ให้ใช้ gradients.navy แทน
+   */
+  navy: string;
+  /**
+   * พื้นน้ำเงินกรมท่าแบบสีเดียว ใต้ตัวอักษรขาว/ทอง — เข้มทั้งสองโหมด
+   * (ฟองแชทของฉัน toast ป้ายตัวเลขขั้นตอน) ห้ามใช้ navy เป็นพื้นเพราะโหมดมืด navy เป็นฟ้าอ่อน
+   */
+  navyFill: string;
+  /** น้ำเงินเข้มสุด (ขอบล่างหัวหน้าจอ) */
+  navyDeep: string;
+  /** พื้นอ่อนโทนน้ำเงิน (ไอคอนในวงกลม) */
+  navySoft: string;
+  /** ตัวอักษรบนหัวหน้าจอน้ำเงิน */
+  onHeader: string;
+  /** ตัวอักษรรองบนหัวหน้าจอน้ำเงิน */
+  onHeaderMuted: string;
+  /** พื้นปุ่มกระจกบนหัวหน้าจอ */
+  headerGlass: string;
+  /** ขอบปุ่มกระจกบนหัวหน้าจอ */
+  headerGlassBorder: string;
 
   success: string;
   successSoft: string;
@@ -87,16 +108,24 @@ export interface ThemeColors {
 }
 
 export interface ThemeGradients {
+  /** ปุ่มหลัก (ทองแชมเปญ) */
   primary: GradientTuple;
+  /** ปุ่มรอง (ขาว/กระจก) */
   secondary: GradientTuple;
+  /** ปุ่มน้ำเงินกรมท่า (ตัวอักษรทอง) */
+  navy: GradientTuple;
   success: GradientTuple;
   danger: GradientTuple;
+  /** ทองฟอยล์ (ตัวเลขเงิน ขอบบัตร) */
   gold: GradientTuple;
   goldBorder: GradientTuple;
   surface: GradientTuple;
   /** ม่านไล่เฉดจากใสลงมามืด สำหรับ banner */
   bannerScrim: GradientTuple;
+  /** หัวหน้าจอ (น้ำเงินกรมท่า / มิดไนท์) */
   hero: GradientTuple;
+  /** การ์ดกระจกบนหัวหน้าจอ */
+  glass: GradientTuple;
 }
 
 // =====================================================
@@ -104,59 +133,84 @@ export interface ThemeGradients {
 // =====================================================
 
 export const palette = {
-  gold50: '#FBF6E6',
-  gold100: '#F6ECCF',
-  gold200: '#F0DCA3',
-  gold300: '#EDC76E',
-  gold400: '#E6B347',
-  gold500: '#D9A038',
-  gold600: '#B8892A',
-  gold700: '#936B1E',
-  /** ทองเข้มสำหรับตัวอักษรบนพื้นสว่าง (≥ 4.5:1 บนพื้นดินเหนียวทุกระดับ) */
+  navy950: '#060D1B',
+  navy900: '#081224',
+  navy800: '#0C1A33',
+  navy700: '#10223F',
+  navy600: '#173059',
+  navy500: '#22427A',
+  navy400: '#3A5C96',
+  navy100: '#E3E9F3',
+  navy50: '#EEF1F6',
+
+  gold50: '#FDF9EE',
+  gold100: '#FBF3DD',
+  gold200: '#F6E6B8',
+  gold300: '#F3DC9B',
+  gold400: '#E4C06B',
+  gold500: '#CFA349',
+  gold600: '#A87E2C',
+  /** ทองเข้มสำหรับตัวอักษรบนพื้นสว่าง (≥ 4.5:1 บนขาว/งาช้าง) */
+  gold700: '#8A6420',
   gold750: '#7F5C18',
   gold800: '#6E4F15',
   gold900: '#46320C',
 
-  amber100: '#F4E3CC',
+  amber100: '#F7E4CC',
   amber300: '#E8AE6A',
   amber400: '#D98E3F',
   amber600: '#B06F2F',
   amber800: '#7A4A1C',
 
-  clayLight: '#F3EEE4',
-  clayLightSurface: '#ECE5D8',
-  clayLightCard: '#F8F4EC',
-  clayLightShadow: '#CDC1AD',
-  clayLightHighlight: '#FFFDF7',
+  ivory: '#F4F0E7',
+  ivoryDeep: '#ECE6D9',
+  paper: '#FFFFFF',
+  paperWarm: '#FBF8F2',
 
-  clayDark: '#1D1912',
-  clayDarkSurface: '#272118',
-  clayDarkCard: '#2D261C',
-  clayDarkShadow: '#100D08',
-  clayDarkHighlight: '#352B1D',
+  midnight950: '#05070C',
+  midnight900: '#0A0D14',
+  midnight800: '#0F131C',
+  midnight700: '#141925',
+  midnight600: '#1B2130',
 
-  inkLight: '#544C40',
-  inkLightStrong: '#3A342B',
-  inkLightMuted: '#857A67',
-  inkLightFaint: '#A89E8B',
-  /** ไอคอน/ป้ายแท็บที่ไม่ได้เลือก (≥ 4.5:1 บนการ์ด) */
-  inkLightTab: '#756A58',
+  ink900: '#0E1626',
+  ink800: '#1A2233',
+  ink600: '#5E6778',
+  ink400: '#8A93A3',
+  ink300: '#B9BFCA',
 
-  inkDark: '#ECE3D2',
-  inkDarkStrong: '#FBF5EA',
-  inkDarkMuted: '#A89C84',
-  inkDarkFaint: '#7D7260',
-
-  green400: '#5CC98A',
-  green500: '#34A96A',
-  green700: '#1F7A48',
-  red400: '#F07A6A',
-  red500: '#D9483B',
+  green400: '#3DDC84',
+  green500: '#23996A',
+  green600: '#1F8A5B',
+  green700: '#177A50',
+  red400: '#FF7A6B',
+  red500: '#D6493A',
   red700: '#A8322A',
-  blue400: '#5B9BD8',
-  blue500: '#3A7BC0',
-  orange400: '#F0A24A',
-  orange500: '#D98324',
+  blue400: '#6FA3FF',
+  blue500: '#2F5FA8',
+  orange400: '#F5B454',
+  orange500: '#C77A12',
+
+  // ชื่อเดิมจากธีมดินเหนียว (ยังมีไฟล์อ้างถึง) — ชี้ไปสีชุดใหม่
+  clayLight: '#F4F0E7',
+  clayLightSurface: '#FBF8F2',
+  clayLightCard: '#FFFFFF',
+  clayLightShadow: '#10223F',
+  clayLightHighlight: '#FFFFFF',
+  clayDark: '#0A0D14',
+  clayDarkSurface: '#0F131C',
+  clayDarkCard: '#141925',
+  clayDarkShadow: '#000000',
+  clayDarkHighlight: '#1B2130',
+  inkLight: '#1A2233',
+  inkLightStrong: '#0E1626',
+  inkLightMuted: '#5E6778',
+  inkLightFaint: '#8A93A3',
+  inkLightTab: '#8A93A3',
+  inkDark: '#E8E3D8',
+  inkDarkStrong: '#F7F3EA',
+  inkDarkMuted: '#9AA3B5',
+  inkDarkFaint: '#6B7385',
 
   white: '#FFFFFF',
   black: '#000000',
@@ -167,118 +221,143 @@ export const palette = {
 // =====================================================
 
 export const lightColors: ThemeColors = {
-  background: palette.clayLight,
-  surface: palette.clayLightSurface,
-  card: palette.clayLightCard,
-  inset: '#E6DECF',
-  shadowDark: palette.clayLightShadow,
-  shadowLight: palette.clayLightHighlight,
-  border: 'rgba(84, 76, 64, 0.12)',
-  divider: 'rgba(84, 76, 64, 0.08)',
+  background: palette.ivory,
+  surface: palette.paperWarm,
+  card: palette.paper,
+  inset: '#F1ECE2',
+  shadowDark: palette.navy700,
+  shadowLight: palette.white,
+  border: 'rgba(16, 24, 42, 0.09)',
+  divider: 'rgba(16, 24, 42, 0.07)',
 
-  text: palette.inkLight,
-  textStrong: palette.inkLightStrong,
-  textMuted: palette.inkLightMuted,
-  textFaint: palette.inkLightFaint,
-  textOnAccent: palette.white,
-  textOnGold: '#3A2A0C',
-
-  gold: palette.gold400,
-  // ใช้เป็นสีตัวอักษรเน้น (ปุ่ม ghost / แท็บที่เลือก / ลิงก์) → ต้องอ่านออกบนพื้นสว่าง
-  goldDeep: palette.gold750,
-  amber: palette.amber400,
-  amberDeep: palette.amber600,
-  goldSoft: palette.gold100,
-  amberSoft: palette.amber100,
-
-  success: palette.green500,
-  successSoft: '#DDF1E3',
-  danger: palette.red500,
-  dangerSoft: '#F8DFDA',
-  info: palette.blue500,
-  infoSoft: '#DCE9F5',
-  warning: palette.orange500,
-  warningSoft: '#F7E6CF',
-
-  overlay: 'rgba(29, 25, 18, 0.55)',
-  tabInactive: palette.inkLightTab,
-};
-
-export const darkColors: ThemeColors = {
-  background: palette.clayDark,
-  surface: palette.clayDarkSurface,
-  card: palette.clayDarkCard,
-  inset: '#1A160F',
-  shadowDark: palette.clayDarkShadow,
-  shadowLight: palette.clayDarkHighlight,
-  border: 'rgba(236, 227, 210, 0.10)',
-  divider: 'rgba(236, 227, 210, 0.06)',
-
-  text: palette.inkDark,
-  textStrong: palette.inkDarkStrong,
-  textMuted: palette.inkDarkMuted,
-  textFaint: palette.inkDarkFaint,
+  text: palette.ink800,
+  textStrong: palette.ink900,
+  textMuted: palette.ink600,
+  textFaint: palette.ink400,
   textOnAccent: palette.white,
   textOnGold: '#2A1D06',
 
-  gold: palette.gold300,
-  goldDeep: palette.gold500,
+  gold: palette.gold500,
+  goldDeep: palette.gold700,
+  goldLight: palette.gold300,
+  amber: palette.amber400,
+  amberDeep: palette.amber600,
+  goldSoft: '#F6EBCF',
+  amberSoft: palette.amber100,
+
+  navy: palette.navy800,
+  navyFill: palette.navy800,
+  navyDeep: palette.navy900,
+  navySoft: palette.navy50,
+  onHeader: palette.white,
+  onHeaderMuted: 'rgba(214, 222, 238, 0.74)',
+  headerGlass: 'rgba(255, 255, 255, 0.08)',
+  headerGlassBorder: 'rgba(255, 255, 255, 0.12)',
+
+  success: palette.green600,
+  successSoft: '#E4F4EA',
+  danger: palette.red500,
+  dangerSoft: '#FBE7E3',
+  info: palette.blue500,
+  infoSoft: '#E3ECF8',
+  warning: palette.orange500,
+  warningSoft: '#FBF0D6',
+
+  overlay: 'rgba(6, 13, 27, 0.55)',
+  tabInactive: palette.ink400,
+};
+
+export const darkColors: ThemeColors = {
+  background: palette.midnight900,
+  surface: palette.midnight800,
+  card: palette.midnight700,
+  inset: '#0C1018',
+  shadowDark: palette.black,
+  shadowLight: 'rgba(255, 255, 255, 0.10)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  divider: 'rgba(255, 255, 255, 0.06)',
+
+  text: '#E8E3D8',
+  textStrong: '#F7F3EA',
+  textMuted: '#9AA3B5',
+  textFaint: '#6B7385',
+  textOnAccent: palette.white,
+  textOnGold: '#2A1D06',
+
+  gold: '#F0C96A',
+  goldDeep: '#F0C96A',
+  goldLight: '#FFE7A3',
   amber: palette.amber300,
   amberDeep: palette.amber400,
-  goldSoft: 'rgba(230, 179, 71, 0.16)',
-  amberSoft: 'rgba(217, 142, 63, 0.16)',
+  goldSoft: 'rgba(240, 201, 106, 0.14)',
+  amberSoft: 'rgba(232, 174, 106, 0.14)',
+
+  // โหมดมืด: navy ใช้เป็นสีไอคอน/ตัวอักษรเน้นบนพื้นเข้ม → ต้องสว่าง (≥ 7:1 บนการ์ด) · พื้นน้ำเงินใช้ gradients.navy
+  navy: '#A9C1F2',
+  navyFill: '#22427A',
+  navyDeep: palette.midnight950,
+  navySoft: 'rgba(111, 163, 255, 0.13)',
+  onHeader: '#F7F3EA',
+  onHeaderMuted: 'rgba(235, 230, 220, 0.66)',
+  headerGlass: 'rgba(255, 255, 255, 0.06)',
+  headerGlassBorder: 'rgba(255, 255, 255, 0.10)',
 
   success: palette.green400,
-  successSoft: 'rgba(92, 201, 138, 0.16)',
+  successSoft: 'rgba(61, 220, 132, 0.14)',
   danger: palette.red400,
-  dangerSoft: 'rgba(240, 122, 106, 0.16)',
+  dangerSoft: 'rgba(255, 122, 107, 0.14)',
   info: palette.blue400,
-  infoSoft: 'rgba(91, 155, 216, 0.16)',
+  infoSoft: 'rgba(111, 163, 255, 0.14)',
   warning: palette.orange400,
-  warningSoft: 'rgba(240, 162, 74, 0.16)',
+  warningSoft: 'rgba(245, 180, 84, 0.14)',
 
-  overlay: 'rgba(0, 0, 0, 0.65)',
-  tabInactive: palette.inkDarkMuted,
+  overlay: 'rgba(0, 0, 0, 0.66)',
+  tabInactive: 'rgba(235, 230, 220, 0.5)',
 };
 
 export const lightGradients: ThemeGradients = {
-  // primary ใช้ตัวอักษร textOnGold (เข้ม) · success/danger ใช้ตัวอักษรขาว → ไล่เฉดเข้มพอให้ได้ ≥ 4.5:1
-  primary: ['#EFC25A', '#E3A948', '#D48A3A'],
-  secondary: ['#FBF8F1', '#EDE6D8'],
-  success: ['#27844F', '#1A6B3E'],
-  danger: ['#C8483C', '#A8322A'],
-  gold: ['#F6DC8E', '#E6B347', '#C98A2E'],
-  goldBorder: ['#F3D27A', '#D98E3F', '#F3D27A'],
-  surface: ['#FAF6EE', '#EFE8DB'],
-  bannerScrim: ['rgba(20, 16, 10, 0)', 'rgba(20, 16, 10, 0.35)', 'rgba(20, 16, 10, 0.82)'],
-  hero: ['#F7E7BE', '#EFD49A', '#E7BD74'],
+  primary: ['#F7E1A0', '#E4BE66', '#D4A447'],
+  secondary: ['#FFFFFF', '#F7F4EE'],
+  navy: ['#1B3766', '#0C1A33'],
+  success: ['#23996A', '#177A50'],
+  danger: ['#E0553F', '#B83A2B'],
+  gold: ['#FFF3CC', '#F0D08A', '#C9973A'],
+  goldBorder: ['#F3DC9B', '#CFA349', '#F3DC9B'],
+  surface: ['#FFFFFF', '#FBF8F2'],
+  bannerScrim: ['rgba(7, 14, 28, 0)', 'rgba(7, 14, 28, 0.35)', 'rgba(7, 14, 28, 0.86)'],
+  hero: ['#081224', '#0C1A33', '#10223F'],
+  glass: ['rgba(255, 255, 255, 0.11)', 'rgba(255, 255, 255, 0.03)'],
 };
 
 export const darkGradients: ThemeGradients = {
-  primary: ['#EDC76E', '#DDA544', '#C9812F'],
-  secondary: ['#3A3124', '#2B241A'],
-  success: ['#27844F', '#1A5C38'],
-  danger: ['#C44236', '#8E2B23'],
-  gold: ['#EDC76E', '#D9A038', '#A8741F'],
-  goldBorder: ['#EDC76E', '#B06F2F', '#EDC76E'],
-  surface: ['#322A1F', '#272118'],
+  primary: ['#F6DE9A', '#E4BC62', '#CF9E42'],
+  secondary: ['#1E2433', '#151A26'],
+  navy: ['#22427A', '#10223F'],
+  success: ['#23996A', '#146843'],
+  danger: ['#E0553F', '#A8322A'],
+  gold: ['#FFF3CC', '#F0D08A', '#C9973A'],
+  goldBorder: ['#F0C96A', '#8A6420', '#F0C96A'],
+  surface: ['#161B27', '#10141D'],
   bannerScrim: ['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.4)', 'rgba(0, 0, 0, 0.88)'],
-  hero: ['#3B2F1C', '#2E2517', '#221C12'],
+  hero: ['#05070C', '#0A1020', '#0E1628'],
+  glass: ['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.025)'],
 };
 
-/** สีขอบล่าง (ความหนา) ของปุ่ม 3D แต่ละแบบ */
+/** สีขอบล่างของปุ่ม (ความหนาบางๆ ให้ปุ่มดูกดได้) */
 export const buttonEdgeColors = {
   light: {
-    primary: '#A8741F',
-    secondary: '#CDC1AD',
-    success: '#145233',
+    primary: '#B8862B',
+    secondary: 'rgba(16, 24, 42, 0.12)',
+    navy: '#060D1B',
+    success: '#0F5A39',
     danger: '#7E2620',
     ghost: 'transparent',
   },
   dark: {
-    primary: '#7A5416',
-    secondary: '#100D08',
-    success: '#103D25',
+    primary: '#8A6420',
+    secondary: 'rgba(0, 0, 0, 0.6)',
+    navy: '#060D1B',
+    success: '#0B3F27',
     danger: '#5E1C18',
     ghost: 'transparent',
   },
@@ -302,44 +381,48 @@ export const spacing = {
 } as const;
 
 export const radii = {
-  xs: 6,
-  sm: 10,
-  md: 14,
-  lg: 18,
+  xs: 7,
+  sm: 11,
+  md: 15,
+  lg: 19,
   xl: 22,
   xxl: 28,
   pill: 999,
 } as const;
 
-/** ขนาดตัวอักษร (ไม่กำหนด fontFamily — ใช้ฟอนต์ระบบที่รองรับภาษาไทย) */
+/**
+ * ขนาดตัวอักษร — ข้อความทั่วไปใช้ Anuphan (Text ของแอปเลือกน้ำหนักให้จาก fontWeight)
+ * serif* = Noto Serif Thai สำหรับชื่อหน้า/ชื่อร้าน/คำทักทาย (บุคลิกรอยัล ตรงกับไอคอนแอป)
+ * line-height ราว 1.4–1.5 เท่า เผื่อสระบน-ล่างและวรรณยุกต์ซ้อนของภาษาไทย
+ */
 export const typography = {
-  display: { fontSize: 28, lineHeight: 36, fontWeight: '800' as const },
-  h1: { fontSize: 22, lineHeight: 30, fontWeight: '800' as const },
-  h2: { fontSize: 18, lineHeight: 26, fontWeight: '700' as const },
-  h3: { fontSize: 16, lineHeight: 23, fontWeight: '700' as const },
+  display: { fontFamily: FONT.serif, fontSize: 28, lineHeight: 40, fontWeight: '700' as const },
+  serifLg: { fontFamily: FONT.serif, fontSize: 26, lineHeight: 37, fontWeight: '700' as const },
+  serif: { fontFamily: FONT.serif, fontSize: 21, lineHeight: 31, fontWeight: '700' as const },
+  serifSm: { fontFamily: FONT.serifSemibold, fontSize: 17, lineHeight: 26, fontWeight: '600' as const },
+  h1: { fontSize: 22, lineHeight: 31, fontWeight: '700' as const },
+  h2: { fontSize: 18.5, lineHeight: 26, fontWeight: '700' as const },
+  h3: { fontSize: 16, lineHeight: 23, fontWeight: '600' as const },
   body: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
   bodyStrong: { fontSize: 15, lineHeight: 22, fontWeight: '600' as const },
   bodySm: { fontSize: 13, lineHeight: 19, fontWeight: '400' as const },
   caption: { fontSize: 12, lineHeight: 17, fontWeight: '500' as const },
   micro: { fontSize: 11, lineHeight: 15, fontWeight: '600' as const },
+  /** ป้ายหัวข้อเล็ก (เช่น "คืนนี้ 18:00") */
+  overline: { fontSize: 11.5, lineHeight: 16, fontWeight: '600' as const, letterSpacing: 0.4 },
   /** ตัวเลขเงิน */
-  money: { fontSize: 24, lineHeight: 30, fontWeight: '800' as const },
+  money: { fontSize: 24, lineHeight: 31, fontWeight: '700' as const, fontVariant: ['tabular-nums'] as ('tabular-nums')[] },
+  moneyLg: { fontSize: 36, lineHeight: 44, fontWeight: '700' as const, letterSpacing: -0.6, fontVariant: ['tabular-nums'] as ('tabular-nums')[] },
 } as const;
 
 /** ขนาดขั้นต่ำของจุดกด (Material/Apple = 44-48) */
 export const MIN_TOUCH = 44;
 
 // =====================================================
-// เงาดินเหนียว
+// เงา
 // =====================================================
 
 export type ShadowLevel = 'none' | 'sm' | 'md' | 'lg';
-
-const SHADOW_SPEC: Record<Exclude<ShadowLevel, 'none'>, { y: number; blur: number; opacity: number; elevation: number }> = {
-  sm: { y: 3, blur: 8, opacity: 0.18, elevation: 3 },
-  md: { y: 6, blur: 16, opacity: 0.22, elevation: 6 },
-  lg: { y: 12, blur: 26, opacity: 0.28, elevation: 12 },
-};
 
 /** แปลง hex (#RRGGBB) เป็น rgba() — ค่าอื่นคืนตามเดิม */
 export const withAlpha = (color: string, alpha: number): string => {
@@ -354,49 +437,46 @@ export const withAlpha = (color: string, alpha: number): string => {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 };
 
+const ELEVATION: Record<Exclude<ShadowLevel, 'none'>, number> = { sm: 2, md: 5, lg: 10 };
+
+const legacyAndroid = (): boolean =>
+  Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version < 28;
+
 /**
- * เงาตกแบบนุ่ม (drop shadow)
- *
- * - New Architecture (SDK 57) รองรับ boxShadow ทั้ง iOS และ Android API 28+
- * - Android ต่ำกว่า API 28 วาด boxShadow ไม่ได้ → ใช้ elevation แทน
+ * เงาตกนุ่มสองชั้น (เงาไกลจาง + เงาใกล้คม) แบบการ์ดพรีเมียม
  *
  * @param level ระดับความลึก
- * @param color สีเงา (ปกติใช้ shadowDark ของธีม หรือสีปุ่มเพื่อให้เงาเรืองสี)
+ * @param color สีเงา (ปกติใช้ colors.shadowDark ของธีม หรือสีปุ่มเพื่อให้เงาเรืองสี)
  */
-export const shadowStyle = (level: ShadowLevel, color: string = palette.black): ViewStyle => {
+export const shadowStyle = (level: ShadowLevel, color: string = palette.navy700): ViewStyle => {
   if (level === 'none') {
     return {};
   }
-  const spec = SHADOW_SPEC[level];
-
-  if (Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version < 28) {
-    return { elevation: spec.elevation, shadowColor: color };
+  if (legacyAndroid()) {
+    return { elevation: ELEVATION[level], shadowColor: color };
   }
-
-  return {
-    boxShadow: `0px ${spec.y}px ${spec.blur}px ${withAlpha(color, spec.opacity)}`,
-  };
+  const css = {
+    sm: `0px 6px 14px -8px ${withAlpha(color, 0.38)}, 0px 1px 2px ${withAlpha(color, 0.06)}`,
+    md: `0px 14px 28px -18px ${withAlpha(color, 0.5)}, 0px 1px 3px ${withAlpha(color, 0.07)}`,
+    lg: `0px 24px 44px -24px ${withAlpha(color, 0.62)}, 0px 2px 6px ${withAlpha(color, 0.08)}`,
+  }[level];
+  return { boxShadow: css };
 };
 
 /**
- * เงาดินเหนียวสองทาง (มืดขวาล่าง + สว่างซ้ายบน) แบบการ์ดบนเว็บ V4
- * ใช้กับพื้นผิวสีเดียวกับพื้นหลังเท่านั้น (ถ้าพื้นต่างสี เงาสว่างจะดูหลอก)
+ * (ชื่อเดิมจากธีมดินเหนียว) — ตอนนี้คืนเงานุ่มแบบเดียวกับ shadowStyle
+ * คงลายเซ็นเดิมไว้ให้หน้าที่ยังเรียกอยู่ไม่ต้องแก้
  */
 export const clayShadowStyle = (
   level: Exclude<ShadowLevel, 'none'>,
   dark: string,
-  light: string
-): ViewStyle => {
-  const d = { sm: 4, md: 7, lg: 9 }[level];
-  const blur = { sm: 9, md: 16, lg: 20 }[level];
+  _light?: string
+): ViewStyle => shadowStyle(level, dark);
 
-  if (Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version < 28) {
-    return { elevation: SHADOW_SPEC[level].elevation, shadowColor: dark };
-  }
-
-  return {
-    boxShadow: `${d}px ${d}px ${blur}px ${dark}, -${d}px -${d}px ${blur}px ${light}`,
-  };
+/** เรืองแสงสี (ปุ่มทอง/ป้ายสด) */
+export const glowStyle = (color: string, strength: number = 0.8): ViewStyle => {
+  if (legacyAndroid()) return {};
+  return { boxShadow: `0px 12px 22px -12px ${withAlpha(color, strength)}` };
 };
 
 // =====================================================
@@ -413,7 +493,7 @@ export interface ToneColors {
 export const toneColors = (tone: Tone, colors: ThemeColors): ToneColors => {
   switch (tone) {
     case 'gold':
-      return { fg: colors.goldDeep, bg: colors.goldSoft, border: withAlpha(palette.gold400, 0.35) };
+      return { fg: colors.goldDeep, bg: colors.goldSoft, border: withAlpha(palette.gold500, 0.35) };
     case 'success':
       return { fg: colors.success, bg: colors.successSoft, border: withAlpha(palette.green500, 0.3) };
     case 'danger':

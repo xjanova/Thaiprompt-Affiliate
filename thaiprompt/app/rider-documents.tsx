@@ -4,14 +4,18 @@
  * - สถานะรายเอกสาร: ยังไม่มี / กำลังอัปโหลด / อัปโหลดแล้ว / อัปโหลดไม่สำเร็จ (ลองใหม่ได้)
  * - ถ่ายรูปหรือเลือกจากคลัง → อัปโหลดทันที · อัปซ้ำ = แทนไฟล์เดิม (ไม่มีปุ่มลบ)
  * - รูปจาก server เป็น signed URL อายุ 30 นาที → เข้าหน้านี้ใหม่จะได้ลิงก์ใหม่
+ *
+ * หน้าตา: การ์ดน้ำเงินลายกนก + วงแหวนความคืบหน้าเอกสารจำเป็น
+ *         → การ์ดเช็กลิสต์รายเอกสาร (รูปย่อ + ป้ายสถานะ + จุดสถานะมุมรูป)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme, spacing, radii, typography } from '@/theme';
-import { Button3D, Card3D, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
+import { Button3D, Card3D, EmptyState, Icon, Pill, Screen, resultHaptic, type IconName } from '@/components/ui';
 import {
   getRiderDocuments,
   uploadRiderDocument,
@@ -19,20 +23,22 @@ import {
   type RiderDocumentsResponse,
 } from '@/services/api/riderApi';
 import { pickFromGallery, takePhoto } from '@/components/rider/photo';
+import { NavyCard, ProgressRing, useRiderTones } from '@/components/rider/RiderVisuals';
 
 type UploadState = { status: 'idle' | 'uploading' | 'error'; localUri?: string; error?: string };
 
-const DOC_INFO: Record<RiderDocumentType, { icon: string; label: string; hint: string }> = {
-  id_card: { icon: '🪪', label: 'บัตรประชาชน', hint: 'ถ่ายด้านหน้าให้เห็นชื่อและเลขบัตรชัดเจน' },
-  driver_license: { icon: '🚦', label: 'ใบขับขี่', hint: 'ใบขับขี่ที่ยังไม่หมดอายุ ตรงกับประเภทรถ' },
-  vehicle_registration: { icon: '📘', label: 'เล่มทะเบียนรถ', hint: 'หน้าที่มีเลขทะเบียนและชื่อเจ้าของ' },
-  profile: { icon: '🙂', label: 'รูปหน้าตรง', hint: 'หน้าตรง ไม่สวมหมวก/แว่นดำ แสงสว่างพอ' },
+const DOC_INFO: Record<RiderDocumentType, { icon: IconName; label: string; hint: string }> = {
+  id_card: { icon: 'identification-card', label: 'บัตรประชาชน', hint: 'ถ่ายด้านหน้าให้เห็นชื่อและเลขบัตรชัดเจน' },
+  driver_license: { icon: 'road-horizon', label: 'ใบขับขี่', hint: 'ใบขับขี่ที่ยังไม่หมดอายุ ตรงกับประเภทรถ' },
+  vehicle_registration: { icon: 'book-open', label: 'เล่มทะเบียนรถ', hint: 'หน้าที่มีเลขทะเบียนและชื่อเจ้าของ' },
+  profile: { icon: 'user-circle', label: 'รูปหน้าตรง', hint: 'หน้าตรง ไม่สวมหมวก/แว่นดำ แสงสว่างพอ' },
 };
 
 const DOC_ORDER: RiderDocumentType[] = ['id_card', 'driver_license', 'vehicle_registration', 'profile'];
 
 export default function RiderDocumentsScreen() {
   const { colors } = useTheme();
+  const tones = useRiderTones();
 
   const [data, setData] = useState<RiderDocumentsResponse | null>(null);
   const [uploads, setUploads] = useState<Partial<Record<RiderDocumentType, UploadState>>>({});
@@ -123,7 +129,7 @@ export default function RiderDocumentsScreen() {
   if (initialLoading && !data) {
     return (
       <Screen title="เอกสารไรเดอร์">
-        <EmptyState icon="⏳" title="กำลังโหลด..." message="รอสักครู่นะ" />
+        <EmptyState icon="hourglass" title="กำลังโหลด..." message="รอสักครู่นะ" />
       </Screen>
     );
   }
@@ -134,7 +140,7 @@ export default function RiderDocumentsScreen() {
       <Screen title="เอกสารไรเดอร์" onRefresh={() => load('refresh')} refreshing={refreshing}>
         {notRider ? (
           <EmptyState
-            icon="🛵"
+            art="scooter"
             title="สมัครไรเดอร์ก่อนนะ"
             message="กรอกใบสมัครก่อน แล้วค่อยกลับมาอัปโหลดเอกสาร"
             actionLabel="ไปหน้าสมัคร"
@@ -154,12 +160,12 @@ export default function RiderDocumentsScreen() {
   const requiredDone = requiredDocs.filter((d) => d.uploaded).length;
   const progress = requiredDocs.length > 0 ? requiredDone / requiredDocs.length : 1;
 
-  const summary = data.complete
+  const summary: { icon: IconName; title: string; text: string } = data.complete
     ? data.pending_review
-      ? { icon: '🔎', title: 'ครบแล้ว! ทีมงานกำลังตรวจ', text: 'ปกติใช้เวลา 1-3 วันทำการ ระบบจะแจ้งเตือนเมื่อตรวจเสร็จ' }
-      : { icon: '✅', title: 'เอกสารครบแล้ว', text: 'อัปโหลดใหม่ได้ทุกเมื่อถ้าเอกสารเปลี่ยน' }
+      ? { icon: 'magnifying-glass', title: 'ครบแล้ว! ทีมงานกำลังตรวจ', text: 'ปกติใช้เวลา 1-3 วันทำการ ระบบจะแจ้งเตือนเมื่อตรวจเสร็จ' }
+      : { icon: 'seal-check', title: 'เอกสารครบแล้ว', text: 'อัปโหลดใหม่ได้ทุกเมื่อถ้าเอกสารเปลี่ยน' }
     : {
-        icon: '📄',
+        icon: 'file-text',
         title: `ยังขาดอีก ${data.missing.length} รายการ`,
         text: 'ถ่ายรูปให้ชัด ไม่เบลอ ไม่มีแสงสะท้อน ทีมงานจะตรวจได้เร็วขึ้น',
       };
@@ -171,26 +177,34 @@ export default function RiderDocumentsScreen() {
       onRefresh={() => load('refresh')}
       refreshing={refreshing}
     >
-      <Card3D gradientBorder style={styles.block} padding={spacing.lg}>
+      {/* ---------- สรุปความคืบหน้า ---------- */}
+      <NavyCard goldBorder style={styles.block}>
         <View style={styles.row}>
-          <Text style={styles.summaryIcon}>{summary.icon}</Text>
+          <ProgressRing
+            progress={progress}
+            size={76}
+            stroke={7}
+            color={data.complete ? colors.success : colors.gold}
+            track={colors.headerGlassBorder}
+          >
+            <Text style={[typography.h3, { color: colors.onHeader }]}>
+              {requiredDone}/{requiredDocs.length}
+            </Text>
+            <Text style={[typography.micro, { color: colors.onHeaderMuted }]}>จำเป็น</Text>
+          </ProgressRing>
           <View style={styles.flex}>
-            <Text style={[typography.h3, { color: colors.textStrong }]}>{summary.title}</Text>
-            <Text style={[typography.bodySm, { color: colors.textMuted }]}>{summary.text}</Text>
+            <View style={styles.summaryTitle}>
+              <Icon name={summary.icon} size={18} color={data.complete ? colors.success : colors.goldLight} weight="fill" />
+              <Text style={[typography.h3, styles.flex, { color: colors.onHeader }]}>{summary.title}</Text>
+            </View>
+            <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]}>{summary.text}</Text>
           </View>
         </View>
-        <View style={[styles.progressTrack, { backgroundColor: colors.inset }]}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${Math.round(progress * 100)}%`, backgroundColor: data.complete ? colors.success : colors.gold },
-            ]}
-          />
-        </View>
-      </Card3D>
+      </NavyCard>
 
+      {/* ---------- เช็กลิสต์เอกสาร ---------- */}
       {docs.map((doc) => {
-        const info = DOC_INFO[doc.type] || { icon: '📄', label: doc.label, hint: '' };
+        const info = DOC_INFO[doc.type] || { icon: 'file-text' as IconName, label: doc.label, hint: '' };
         const state = uploads[doc.type];
         const uploading = state?.status === 'uploading';
         const failed = state?.status === 'error';
@@ -206,22 +220,40 @@ export default function RiderDocumentsScreen() {
                 ? { label: 'ยังไม่มี', tone: 'warning' as const }
                 : { label: 'ไม่บังคับ', tone: 'neutral' as const };
 
+        // จุดสถานะมุมรูป (หน้าตาเท่านั้น — อิงสถานะเดียวกับป้าย)
+        const badge: { icon: IconName; color: string } | null = uploading
+          ? { icon: 'upload-simple', color: colors.info }
+          : failed
+            ? { icon: 'x', color: colors.danger }
+            : doc.uploaded
+              ? { icon: 'check', color: colors.success }
+              : doc.required
+                ? { icon: 'warning', color: colors.warning }
+                : null;
+
         return (
-          <Card3D key={doc.type} style={styles.block} padding={spacing.md} radius={radii.lg}>
+          <Card3D key={doc.type} style={styles.block} padding={spacing.md + 2} radius={radii.lg + 1}>
             <View style={styles.row}>
-              {preview ? (
-                <Image
-                  source={{ uri: preview }}
-                  style={[styles.thumb, { backgroundColor: colors.inset }]}
-                  contentFit="cover"
-                  transition={150}
-                  accessibilityLabel={`รูป${info.label}`}
-                />
-              ) : (
-                <View style={[styles.thumb, styles.thumbEmpty, { backgroundColor: colors.inset }]}>
-                  <Text style={styles.thumbIcon}>{info.icon}</Text>
-                </View>
-              )}
+              <View>
+                {preview ? (
+                  <Image
+                    source={{ uri: preview }}
+                    style={[styles.thumb, { backgroundColor: colors.inset, borderColor: colors.border }]}
+                    contentFit="cover"
+                    transition={150}
+                    accessibilityLabel={`รูป${info.label}`}
+                  />
+                ) : (
+                  <View style={[styles.thumb, styles.thumbEmpty, { backgroundColor: colors.navySoft, borderColor: colors.border }]}>
+                    <Icon name={info.icon} size={30} color={tones.accent} />
+                  </View>
+                )}
+                {!!badge && (
+                  <View style={[styles.badge, { backgroundColor: badge.color, borderColor: colors.card }]}>
+                    <Icon name={badge.icon} size={12} color={colors.textOnAccent} weight="bold" />
+                  </View>
+                )}
+              </View>
               <View style={styles.flex}>
                 <View style={styles.titleRow}>
                   <Text style={[typography.bodyStrong, styles.flex, { color: colors.textStrong }]} numberOfLines={1}>
@@ -231,10 +263,13 @@ export default function RiderDocumentsScreen() {
                 </View>
                 <Text style={[typography.caption, { color: colors.textMuted }]}>{info.hint}</Text>
                 {doc.required && !doc.uploaded && !uploading && (
-                  <Text style={[typography.micro, { color: colors.warning }]}>จำเป็นต้องมี</Text>
+                  <Text style={[typography.micro, styles.requiredText, { color: colors.warning }]}>จำเป็นต้องมี</Text>
                 )}
                 {failed && !!state?.error && (
-                  <Text style={[typography.caption, { color: colors.danger }]}>{state.error}</Text>
+                  <View style={styles.errorRow}>
+                    <Icon name="warning-circle" size={14} color={colors.danger} weight="fill" />
+                    <Text style={[typography.caption, styles.flex, { color: colors.danger }]}>{state.error}</Text>
+                  </View>
                 )}
               </View>
             </View>
@@ -242,7 +277,7 @@ export default function RiderDocumentsScreen() {
             <View style={styles.actions}>
               <Button3D
                 title={doc.uploaded ? 'ถ่ายใหม่' : 'ถ่ายรูป'}
-                icon="📷"
+                icon="camera"
                 size="sm"
                 variant={doc.uploaded ? 'secondary' : 'primary'}
                 disabled={uploading}
@@ -253,7 +288,7 @@ export default function RiderDocumentsScreen() {
               />
               <Button3D
                 title="เลือกจากคลัง"
-                icon="🖼️"
+                icon="image"
                 size="sm"
                 variant="secondary"
                 disabled={uploading}
@@ -265,11 +300,14 @@ export default function RiderDocumentsScreen() {
         );
       })}
 
-      <Text style={[typography.caption, styles.note, { color: colors.textMuted }]}>
-        🔒 เอกสารเก็บแบบส่วนตัว ทีมงานที่ตรวจใบสมัครเท่านั้นที่เปิดดูได้
-      </Text>
+      <View style={styles.note}>
+        <Icon name="lock" size={15} color={colors.textMuted} weight="fill" />
+        <Text style={[typography.caption, styles.noteText, { color: colors.textMuted }]}>
+          เอกสารเก็บแบบส่วนตัว ทีมงานที่ตรวจใบสมัครเท่านั้นที่เปิดดูได้
+        </Text>
+      </View>
 
-      <Button3D title="กลับหน้าไรเดอร์" variant="ghost" onPress={() => router.back()} style={styles.back} />
+      <Button3D title="กลับหน้าไรเดอร์" variant="ghost" icon="caret-left" onPress={() => router.back()} style={styles.back} />
     </Screen>
   );
 }
@@ -279,12 +317,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   block: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.md + 2,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.md + 2,
+  },
+  summaryTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: 2,
   },
   titleRow: {
     flexDirection: 'row',
@@ -292,42 +336,55 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xxs,
   },
-  summaryIcon: {
-    fontSize: 32,
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 5,
-    overflow: 'hidden',
-    marginTop: spacing.md,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 5,
-  },
   thumb: {
     width: 72,
     height: 72,
-    borderRadius: radii.md,
+    borderRadius: radii.md + 1,
+    borderWidth: 1,
   },
   thumbEmpty: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  thumbIcon: {
-    fontSize: 30,
+  badge: {
+    position: 'absolute',
+    right: -5,
+    bottom: -5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  requiredText: {
+    marginTop: 2,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+    marginTop: 2,
   },
   actions: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: spacing.md + 2,
   },
   note: {
-    textAlign: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  noteText: {
+    flexShrink: 1,
+    textAlign: 'center',
   },
   back: {
     alignSelf: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
 });

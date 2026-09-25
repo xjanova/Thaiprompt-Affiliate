@@ -92,7 +92,7 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
   refreshKey = 0,
   style,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width: windowWidth } = useWindowDimensions();
   const itemWidth = Math.max(240, windowWidth - spacing.screen * 2);
   const snap = itemWidth + GAP;
@@ -229,7 +229,7 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
         onMomentumScrollEnd={onMomentumEnd}
         getItemLayout={(_, i) => ({ length: snap, offset: snap * i, index: i })}
         renderItem={({ item }) => (
-          <View style={{ width: itemWidth, paddingBottom: spacing.sm }}>
+          <View style={{ width: itemWidth, paddingTop: spacing.xs, paddingBottom: spacing.lg }}>
             <BannerCard
               image={item.image}
               title={item.title}
@@ -251,7 +251,14 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
                 styles.dot,
                 {
                   width: i === index ? 18 : 6,
-                  backgroundColor: i === index ? colors.gold : colors.border,
+                  backgroundColor:
+                    i === index
+                      ? isDark
+                        ? colors.gold
+                        : colors.navy
+                      : isDark
+                        ? 'rgba(255,255,255,0.2)'
+                        : 'rgba(16,24,42,0.16)',
                 },
               ]}
             />
@@ -268,7 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    marginTop: spacing.xs,
+    marginTop: -spacing.xs,
   },
   dot: {
     height: 6,

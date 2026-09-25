@@ -1,6 +1,8 @@
 /**
- * ช้อป — รายการสินค้าจริงจาก GET /products (ธีมนวลทองคำ)
+ * ช้อป — รายการสินค้าจริงจาก GET /products (ธีมรอยัล น้ำเงินกรมท่า-ทอง)
  *
+ * หน้าตา: ช่องค้นหาการ์ดขาว · แบนเนอร์ตลาดสด · ร้านแนะนำแบบวงกลมโลโก้ · ชิปหมวดหมู่ · แถบเรียงลำดับ
+ *         · ตารางการ์ดสินค้า 2 คอลัมน์ (รูปมุมมน + ปุ่ม "+" น้ำเงิน)
  * - ค้นหา (หน่วง 400ms) · หมวดหมู่ · เรียงลำดับ · เลื่อนโหลดเพิ่ม · ดึงลงเพื่อรีเฟรช
  * - ร้านแนะนำจาก /mobile/stores/featured (ว่าง → ร้านทางการ) · ทางเข้าตลาดสด
  * - ไม่มี PV / คอมมิชชั่น / ข้อมูลสมมติ (SHOP-16/17, นโยบาย Google Play)
@@ -15,12 +17,10 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Image } from 'expo-image';
+import { Text } from '@/components/ui/Text';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -34,9 +34,9 @@ import {
   type StoreListItem,
 } from '@/services/api/shopApi';
 import { isFeatureEnabled } from '@/config/appConfig';
-import { BannerCard, Card3D, Chip, EmptyState, Screen, SectionHeader } from '@/components/ui';
-import { CartButton, ProductCard } from '@/components/shop';
-import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
+import { BannerCard, Chip, EmptyState, Icon, Screen, SectionHeader, tapHaptic, usePressGuard } from '@/components/ui';
+import { CartButton, ProductCard, SearchField, StoreLogo } from '@/components/shop';
+import { useTheme, shadowStyle, spacing, typography } from '@/theme';
 
 const PER_PAGE = 20;
 const BANNER_MARKET = require('@/assets/images/taladsod/banner-market.webp');
@@ -46,37 +46,50 @@ type SortKey = 'newest' | 'popular' | 'price_asc' | 'price_desc';
 const SORTS: Array<{ key: SortKey; label: string; params: Pick<ProductListParams, 'sort' | 'order'> }> = [
   { key: 'newest', label: 'มาใหม่', params: { sort: 'newest', order: 'desc' } },
   { key: 'popular', label: 'ขายดี', params: { sort: 'popular', order: 'desc' } },
-  { key: 'price_asc', label: 'ราคาต่ำ → สูง', params: { sort: 'price', order: 'asc' } },
-  { key: 'price_desc', label: 'ราคาสูง → ต่ำ', params: { sort: 'price', order: 'desc' } },
+  { key: 'price_asc', label: 'ราคาต่ำไปสูง', params: { sort: 'price', order: 'asc' } },
+  { key: 'price_desc', label: 'ราคาสูงไปต่ำ', params: { sort: 'price', order: 'desc' } },
 ];
 
-/** ร้านในแถวแนะนำ */
+/** ร้านในแถวแนะนำ — วงกลมโลโก้ (ขอบทอง = ร้านยืนยันแล้ว) + ชื่อ + สถานะ */
 const StoreBubble: React.FC<{ store: StoreListItem }> = ({ store }) => {
   const { colors } = useTheme();
+  // กันแตะรัวจนเปิดหน้าร้านซ้อน (แบบเดียวกับการ์ดกดได้ทั้งแอป)
+  const { run: openStore } = usePressGuard(() => router.push(`/store/${store.id}` as never));
   return (
-    <Card3D
-      onPress={() => router.push(`/store/${store.id}` as never)}
-      padding={spacing.md}
-      radius={radii.lg}
-      shadow="sm"
-      style={styles.storeCard}
+    <Pressable
+      onPress={openStore}
+      onPressIn={() => tapHaptic()}
+      accessibilityRole="button"
       accessibilityLabel={`ร้าน ${store.name}`}
+      style={({ pressed }) => [styles.storeBubble, { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
-      {store.logo ? (
-        <Image source={{ uri: store.logo }} style={[styles.storeLogo, { backgroundColor: colors.inset }]} contentFit="cover" />
-      ) : (
-        <View style={[styles.storeLogo, styles.center, { backgroundColor: colors.goldSoft }]}>
-          <Text style={styles.storeLogoIcon}>🏪</Text>
-        </View>
-      )}
+      <View
+        style={[
+          styles.storeRing,
+          { borderColor: store.isOfficial ? colors.gold : colors.border, backgroundColor: colors.card },
+          shadowStyle('sm', colors.shadowDark),
+        ]}
+      >
+        <StoreLogo uri={store.logo} size={60} radius={30} />
+        {store.isOfficial && (
+          <View style={[styles.verified, { backgroundColor: colors.card }]}>
+            <Icon name="seal-check" size={18} color={colors.goldDeep} weight="fill" />
+          </View>
+        )}
+      </View>
       <Text numberOfLines={1} style={[typography.caption, styles.storeName, { color: colors.textStrong }]}>
         {store.name}
       </Text>
-      <Text numberOfLines={1} style={[typography.micro, { color: colors.textMuted }]}>
-        {store.isOfficial ? '✔ ร้านยืนยันแล้ว' : `${Number(store.productCount) || 0} สินค้า`}
+      <Text numberOfLines={1} style={[typography.micro, styles.storeSub, { color: colors.textMuted }]}>
+        {store.isOfficial ? 'ร้านยืนยันแล้ว' : `${Number(store.productCount) || 0} สินค้า`}
       </Text>
-      {store.rider_delivery && <Text style={[typography.micro, { color: colors.success }]}>🛵 ไรเดอร์ส่ง</Text>}
-    </Card3D>
+      {store.rider_delivery && (
+        <View style={styles.storeRider}>
+          <Icon name="moped" size={12} color={colors.success} weight="fill" />
+          <Text style={[typography.micro, { color: colors.success }]}>ไรเดอร์ส่ง</Text>
+        </View>
+      )}
+    </Pressable>
   );
 };
 
@@ -207,31 +220,16 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
   // ---------- ส่วนหัวของรายการ ----------
   const header = (
     <View>
-      <View
-        style={[
-          styles.searchBox,
-          { backgroundColor: colors.card },
-          clayShadowStyle('sm', colors.shadowDark, colors.shadowLight),
-        ]}
-      >
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          value={searchInput}
-          onChangeText={setSearchInput}
-          placeholder="ค้นหาสินค้า แบรนด์"
-          placeholderTextColor={colors.textFaint}
-          returnKeyType="search"
-          onSubmitEditing={() => setSearch(searchInput.trim())}
-          style={[typography.body, styles.searchInput, { color: colors.textStrong }]}
-          accessibilityLabel="ค้นหาสินค้า"
-          maxLength={100}
-        />
-        {searchInput.length > 0 && (
-          <Pressable onPress={() => setSearchInput('')} accessibilityRole="button" accessibilityLabel="ล้างคำค้นหา" hitSlop={10}>
-            <Text style={[typography.h3, { color: colors.textFaint }]}>✕</Text>
-          </Pressable>
-        )}
-      </View>
+      <SearchField
+        value={searchInput}
+        onChangeText={setSearchInput}
+        placeholder="ค้นหาสินค้า แบรนด์"
+        returnKeyType="search"
+        onSubmitEditing={() => setSearch(searchInput.trim())}
+        accessibilityLabel="ค้นหาสินค้า"
+        maxLength={100}
+        style={styles.search}
+      />
 
       {!search && isFeatureEnabled('TALADSOD_ENABLED') && (
         <BannerCard
@@ -239,7 +237,7 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
           title="ตลาดสดใกล้บ้าน"
           subtitle="ของสด อาหารร้อนๆ ไรเดอร์ส่งถึงหน้าบ้าน"
           ctaLabel="ไปตลาดสด"
-          height={132}
+          height={140}
           onPress={() => router.push('/taladsod' as never)}
           style={styles.banner}
         />
@@ -249,12 +247,17 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
         <>
           <SectionHeader
             title="ร้านแนะนำ"
-            icon="🏪"
+            subtitle="ร้านเด่นที่คัดมาให้"
             actionLabel="ดูทั้งหมด"
             onAction={() => router.push('/stores' as never)}
             style={styles.section}
           />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storeRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.storeRow}
+            style={styles.bleed}
+          >
             {stores.slice(0, 12).map((s) => (
               <StoreBubble key={s.id} store={s} />
             ))}
@@ -263,14 +266,17 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
       )}
 
       {categories.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          <Chip label="ทั้งหมด" size="sm" selected={categoryId === null} onPress={() => setCategoryId(null)} />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chips}
+          style={[styles.bleed, styles.categoryRow]}
+        >
+          <Chip label="ทั้งหมด" selected={categoryId === null} onPress={() => setCategoryId(null)} />
           {categories.map((c) => (
             <Chip
               key={c.id}
               label={c.name}
-              icon={c.icon && c.icon.length <= 4 ? c.icon : undefined}
-              size="sm"
               selected={categoryId === c.id}
               onPress={() => setCategoryId(categoryId === c.id ? null : c.id)}
             />
@@ -278,16 +284,22 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
         </ScrollView>
       )}
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {SORTS.map((s) => (
-          <Chip key={s.key} label={s.label} size="sm" tone="gold" selected={sort === s.key} onPress={() => setSort(s.key)} />
-        ))}
-      </ScrollView>
-
       <SectionHeader
         title={search ? `ผลการค้นหา "${search}"` : selectedCategory ? selectedCategory.name : 'สินค้าทั้งหมด'}
         style={styles.section}
       />
+
+      {/* เรียงลำดับ */}
+      <View style={styles.sortRow}>
+        <View style={[styles.sortIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Icon name="sliders-horizontal" size={16} color={colors.goldDeep} weight="bold" />
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortChips}>
+          {SORTS.map((s) => (
+            <Chip key={s.key} label={s.label} size="sm" selected={sort === s.key} onPress={() => setSort(s.key)} />
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 
@@ -295,7 +307,7 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
     if (!isAuthenticated) {
       return (
         <EmptyState
-          icon="🔐"
+          icon="lock-key"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อดูสินค้าและสั่งซื้อ"
           actionLabel="เข้าสู่ระบบ"
@@ -320,7 +332,7 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
           ) : (
             <EmptyState
               compact
-              icon="🛍️"
+              art="bag"
               title={search ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้าในหมวดนี้'}
               message={search ? 'ลองใช้คำค้นอื่น หรือดูหมวดอื่นนะ' : 'ลองดูหมวดอื่นก่อนนะ'}
               actionLabel={search || categoryId ? 'ดูสินค้าทั้งหมด' : undefined}
@@ -369,67 +381,98 @@ export default function ShoppingScreen({ embedded = false }: { embedded?: boolea
 }
 
 const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
   },
   listTab: {
-    paddingBottom: 96,
+    paddingBottom: spacing.xl,
   },
   column: {
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.md,
-    minHeight: 48,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  searchIcon: {
-    fontSize: 16,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: spacing.sm,
+  search: {
+    marginBottom: spacing.lg,
   },
   banner: {
     marginBottom: spacing.sm,
   },
   section: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
+  },
+  /** แถวเลื่อนแนวนอนชิดขอบจอ (ล้นระยะขอบของรายการ) */
+  bleed: {
+    marginHorizontal: -spacing.screen,
   },
   storeRow: {
-    gap: spacing.md,
-    paddingVertical: spacing.xs,
-    paddingRight: spacing.sm,
+    gap: spacing.lg,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
   },
-  storeCard: {
-    width: 112,
+  storeBubble: {
+    width: 84,
+    alignItems: 'center',
   },
-  storeLogo: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    alignSelf: 'center',
+  storeRing: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  storeLogoIcon: {
-    fontSize: 24,
+  verified: {
+    position: 'absolute',
+    right: -3,
+    bottom: -3,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   storeName: {
     marginTop: spacing.sm,
     textAlign: 'center',
+    fontWeight: '600',
+  },
+  storeSub: {
+    textAlign: 'center',
+  },
+  storeRider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 1,
+  },
+  categoryRow: {
+    marginTop: spacing.lg,
   },
   chips: {
     gap: spacing.sm,
-    paddingTop: spacing.md,
-    paddingRight: spacing.sm,
+    paddingHorizontal: spacing.screen,
+    paddingVertical: spacing.xxs,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    marginRight: -spacing.screen,
+  },
+  sortIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sortChips: {
+    gap: spacing.sm,
+    paddingRight: spacing.screen,
   },
   loader: {
     marginTop: spacing.xxxl,

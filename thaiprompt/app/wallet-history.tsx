@@ -1,22 +1,26 @@
 /**
- * ประวัติธุรกรรมกระเป๋าเงิน — ธีมนวลทองคำ
+ * ประวัติธุรกรรมกระเป๋าเงิน — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * - GET /wallet/transactions?page&type&per_page (กรองได้แค่ รายรับ/รายจ่าย — server ยังไม่รับช่วงวันที่
  *   จึงไม่มีตัวกรองวันที่ที่กดแล้วไม่มีผล)
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลเก่า (requestId) · เลื่อนโหลดเพิ่ม · ดึงลงรีเฟรช
  * - แตะรายการ = รายละเอียด · ชื่อรายการผ่าน storePolicy (ไม่มีคำเครือข่าย/คอมมิชชั่นตามนโยบาย Google Play)
  * - สรุปรายรับ/รายจ่ายแสดงเฉพาะเมื่อ server ส่งยอดสรุปมา (ไม่แสดง ฿0 หลอกๆ)
+ * - หน้าตา: จัดกลุ่มตามวัน (วันนี้ / เมื่อวาน / วันที่) · แต่ละวันเป็นการ์ดขาวใบเดียว แถวคั่นเส้นบาง
+ *   ไอคอนในกล่องสีอ่อนตามประเภท · เงินเข้า = +เขียว · เงินออก = -สีเข้ม · ยังไม่สำเร็จ = ป้ายสถานะ
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { getWalletTransactions } from '@/services/api';
 import { hasRestrictedText, walletReferenceLabel, walletTransactionTitle } from '@/utils/storePolicy';
-import { Card3D, Chip, EmptyState, Pill, PriceText, Screen, StatTile } from '@/components/ui';
+import { Card3D, Chip, EmptyState, Pill, PriceText, Screen, StatTile, type IconName } from '@/components/ui';
 import { FormSheet } from '@/components/shop';
-import { useTheme, radii, spacing, toneColors, typography, type Tone } from '@/theme';
+import { IconTile, type TileTone } from '@/components/wallet/WalletKit';
+import { useTheme, radii, shadowStyle, spacing, typography, type Tone } from '@/theme';
 
 interface Transaction {
   id: number;
@@ -34,10 +38,10 @@ type FilterType = 'all' | 'in' | 'out';
 
 const PER_PAGE = 20;
 
-const FILTERS: Array<{ key: FilterType; label: string; icon: string }> = [
-  { key: 'all', label: 'ทั้งหมด', icon: '📋' },
-  { key: 'in', label: 'รายรับ', icon: '⬇️' },
-  { key: 'out', label: 'รายจ่าย', icon: '⬆️' },
+const FILTERS: Array<{ key: FilterType; label: string; icon: IconName }> = [
+  { key: 'all', label: 'ทั้งหมด', icon: 'list' },
+  { key: 'in', label: 'รายรับ', icon: 'arrow-down-left' },
+  { key: 'out', label: 'รายจ่าย', icon: 'arrow-up-right' },
 ];
 
 const STATUS: Record<string, { label: string; tone: Tone }> = {
@@ -48,17 +52,65 @@ const STATUS: Record<string, { label: string; tone: Tone }> = {
   cancelled: { label: 'ยกเลิก', tone: 'neutral' },
 };
 
-const emojiFor = (type: 'in' | 'out', referenceType?: string): string => {
+/** ไอคอน + โทนกล่องของแต่ละประเภทรายการ (ตาม referenceType จาก server) */
+const visualFor = (type: 'in' | 'out', referenceType?: string): { icon: IconName; tone: TileTone } => {
   const ref = (referenceType || '').toLowerCase();
-  if (ref.includes('withdraw')) return '🏦';
-  if (ref.includes('topup') || ref.includes('deposit')) return '➕';
-  if (ref.includes('refund')) return '↩️';
-  if (ref.includes('transfer')) return '🔄';
-  if (ref.includes('rider') || ref.includes('delivery')) return '🛵';
-  if (ref.includes('fresh')) return '🥬';
-  if (ref.includes('order') || ref.includes('purchase') || ref.includes('payment')) return '🛒';
-  return type === 'in' ? '⬇️' : '⬆️';
+  if (ref.includes('withdraw')) return { icon: 'bank', tone: 'navy' };
+  if (ref.includes('topup') || ref.includes('deposit')) return { icon: 'arrow-down-left', tone: 'success' };
+  if (ref.includes('refund')) return { icon: 'arrow-counter-clockwise', tone: 'success' };
+  if (ref.includes('transfer')) return { icon: 'paper-plane-tilt', tone: 'navy' };
+  if (ref.includes('rider') || ref.includes('delivery')) return { icon: 'moped', tone: type === 'in' ? 'success' : 'gold' };
+  if (ref.includes('fresh')) return { icon: 'basket', tone: 'gold' };
+  if (ref.includes('order') || ref.includes('purchase') || ref.includes('payment')) return { icon: 'shopping-bag-open', tone: 'gold' };
+  return type === 'in' ? { icon: 'arrow-down-left', tone: 'success' } : { icon: 'arrow-up-right', tone: 'navy' };
 };
+
+// =====================================================
+// จัดกลุ่มตามวัน — server ส่ง date เป็น "26 Sep 2026 19:12"
+// =====================================================
+
+const EN_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const TH_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+interface TxDay {
+  key: string;
+  y: number;
+  m: number;
+  d: number;
+  time: string;
+}
+
+/** แยกวัน/เวลาจากข้อความวันที่ (อ่านไม่ออก = null → ไม่จัดกลุ่ม แสดงวันที่เดิม) */
+const parseTxDate = (raw: string): TxDay | null => {
+  const match = /^(\d{1,2})\s+([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{4})(?:\s+(\d{1,2}:\d{2}))?/.exec((raw || '').trim());
+  if (!match) return null;
+  const m = EN_MONTHS.indexOf(match[2].toLowerCase());
+  if (m < 0) return null;
+  const d = Number(match[1]);
+  const y = Number(match[3]);
+  return { key: `${y}-${m}-${d}`, y, m, d, time: match[4] || '' };
+};
+
+/** ป้ายหัวกลุ่ม: วันนี้ / เมื่อวาน / 26 ก.ย. 2569 */
+const dayLabel = (day: TxDay): string => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const diff = Math.round((today - new Date(day.y, day.m, day.d).getTime()) / 86400000);
+  if (diff === 0) return 'วันนี้';
+  if (diff === 1) return 'เมื่อวาน';
+  return `${day.d} ${TH_MONTHS[day.m]} ${day.y + 543}`;
+};
+
+interface RowMeta {
+  /** แถวแรกของวัน (มุมบนโค้ง + หัวกลุ่ม) */
+  first: boolean;
+  /** แถวสุดท้ายของวัน (มุมล่างโค้ง) */
+  last: boolean;
+  /** ป้ายวันเหนือกลุ่ม (null = ไม่มีป้าย) */
+  header: string | null;
+  /** เวลา HH:mm (ว่าง = อ่านไม่ออก) */
+  time: string;
+}
 
 const toTransaction = (tx: any): Transaction => {
   const isIncome = tx?.type === 'in';
@@ -77,37 +129,58 @@ const toTransaction = (tx: any): Transaction => {
   };
 };
 
-const TransactionRow: React.FC<{ tx: Transaction; onPress: () => void }> = ({ tx, onPress }) => {
-  const { colors } = useTheme();
+/** แถวรายการ = หนึ่งช่วงของการ์ดวันนั้น (แถวแรกโค้งบน แถวท้ายโค้งล่าง) */
+const TransactionRow: React.FC<{ tx: Transaction; meta: RowMeta; onPress: () => void }> = ({ tx, meta, onPress }) => {
+  const { colors, isDark } = useTheme();
   const income = tx.type === 'in';
-  const t = toneColors(income ? 'success' : 'danger', colors);
   const st = STATUS[tx.status] || STATUS.pending;
+  const visual = visualFor(tx.type, tx.referenceType);
+  const subtitle = [tx.description, meta.time || tx.dateRelative || tx.date].filter(Boolean).join(' · ');
 
   return (
-    <Card3D
-      onPress={onPress}
-      padding={spacing.md}
-      radius={radii.lg}
-      shadow="sm"
-      style={styles.card}
-      accessibilityLabel={`${tx.title} ${income ? 'รับ' : 'จ่าย'} ${tx.amount} บาท ${st.label} ${tx.dateRelative || tx.date}`}
-    >
-      <View style={styles.row}>
-        <View style={[styles.icon, { backgroundColor: t.bg }]}>
-          <Text style={styles.emoji}>{emojiFor(tx.type, tx.referenceType)}</Text>
-        </View>
+    <View>
+      {meta.header !== null ? (
+        <Text style={[typography.caption, styles.dayLabel, { color: colors.textMuted }]}>{meta.header}</Text>
+      ) : meta.first ? (
+        // อ่านวันที่ไม่ออก → ไม่มีป้ายวัน แต่ยังเว้นระยะก่อนการ์ด
+        <View style={styles.groupGap} />
+      ) : null}
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${tx.title} ${income ? 'รับ' : 'จ่าย'} ${tx.amount} บาท ${st.label} ${tx.dateRelative || tx.date}`}
+        style={({ pressed }) => [
+          styles.segment,
+          { backgroundColor: pressed ? colors.surface : colors.card },
+          meta.first && styles.segmentFirst,
+          meta.last && styles.segmentLast,
+          // โหมดมืด: การ์ดกระจก = ขอบบางรอบกลุ่ม
+          isDark && {
+            borderColor: colors.border,
+            borderLeftWidth: 1,
+            borderRightWidth: 1,
+            borderTopWidth: meta.first ? 1 : 0,
+            borderBottomWidth: meta.last ? 1 : 0,
+          },
+          shadowStyle('sm', colors.shadowDark),
+        ]}
+      >
+        {!meta.first && <View style={[styles.segmentDivider, { backgroundColor: colors.divider }]} />}
+        <IconTile icon={visual.icon} tone={visual.tone} />
         <View style={styles.flex}>
           <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
             {tx.title}
           </Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>{tx.dateRelative || tx.date}</Text>
+          <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
+            {subtitle}
+          </Text>
         </View>
         <View style={styles.right}>
-          <PriceText amount={income ? tx.amount : -tx.amount} signed size="md" tone={income ? 'success' : 'danger'} />
+          <PriceText amount={income ? tx.amount : -tx.amount} signed size="md" tone={income ? 'success' : 'strong'} />
           {tx.status !== 'completed' && <Pill label={st.label} tone={st.tone} />}
         </View>
-      </View>
-    </Card3D>
+      </Pressable>
+    </View>
   );
 };
 
@@ -188,11 +261,23 @@ export default function WalletHistoryScreen() {
     load('initial', filter, 1);
   }, [filter, load]);
 
+  // ข้อมูลจัดกลุ่มตามวันของแต่ละแถว (คำนวณใหม่เมื่อรายการเปลี่ยน)
+  const rowMeta = useMemo<RowMeta[]>(() => {
+    const days = items.map((t) => parseTxDate(t.date));
+    const keyOf = (i: number) => days[i]?.key ?? '?';
+    return items.map((_, i) => {
+      const first = i === 0 || keyOf(i - 1) !== keyOf(i);
+      const last = i === items.length - 1 || keyOf(i + 1) !== keyOf(i);
+      const day = days[i];
+      return { first, last, header: first && day ? dayLabel(day) : null, time: day?.time ?? '' };
+    });
+  }, [items]);
+
   if (!isAuthenticated) {
     return (
       <Screen title="ประวัติธุรกรรม" scroll={false}>
         <EmptyState
-          icon="📋"
+          art="wallet"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อดูรายการเงินเข้าออกของกระเป๋า"
           actionLabel="เข้าสู่ระบบ"
@@ -208,14 +293,14 @@ export default function WalletHistoryScreen() {
         <View style={styles.summary}>
           <StatTile
             label="รายรับ"
-            icon="📈"
+            icon="arrow-down-left"
             tone="success"
             value={<PriceText amount={summary.income} size="lg" tone="success" />}
             style={styles.flex}
           />
           <StatTile
             label="รายจ่าย"
-            icon="📉"
+            icon="arrow-up-right"
             tone="danger"
             value={<PriceText amount={summary.expense} size="lg" tone="danger" />}
             style={styles.flex}
@@ -231,13 +316,21 @@ export default function WalletHistoryScreen() {
   );
 
   const st = selected ? STATUS[selected.status] || STATUS.pending : null;
+  const selectedVisual = selected ? visualFor(selected.type, selected.referenceType) : null;
 
   return (
     <Screen title="ประวัติธุรกรรม" subtitle="เงินเข้า-ออกของกระเป๋า" scroll={false}>
       <FlatList
         data={items}
+        extraData={rowMeta}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <TransactionRow tx={item} onPress={() => setSelected(item)} />}
+        renderItem={({ item, index }) => (
+          <TransactionRow
+            tx={item}
+            meta={rowMeta[index] || { first: true, last: true, header: null, time: '' }}
+            onPress={() => setSelected(item)}
+          />
+        )}
         ListHeaderComponent={header}
         ListEmptyComponent={
           loading ? (
@@ -247,7 +340,7 @@ export default function WalletHistoryScreen() {
           ) : (
             <EmptyState
               compact
-              icon="📭"
+              art="wallet"
               title={filter === 'all' ? 'ยังไม่มีรายการ' : filter === 'in' ? 'ยังไม่มีรายรับ' : 'ยังไม่มีรายจ่าย'}
               message="เติมเงิน ซื้อของ หรือรับค่าส่ง รายการจะขึ้นที่นี่"
             />
@@ -280,7 +373,6 @@ export default function WalletHistoryScreen() {
 
       <FormSheet
         visible={!!selected}
-        icon={selected ? emojiFor(selected.type, selected.referenceType) : undefined}
         title={selected?.title || 'รายละเอียด'}
         cancelLabel="ปิด"
         onClose={() => setSelected(null)}
@@ -288,11 +380,12 @@ export default function WalletHistoryScreen() {
         {!!selected && !!st && (
           <View>
             <View style={styles.detailAmount}>
+              {!!selectedVisual && <IconTile icon={selectedVisual.icon} tone={selectedVisual.tone} size={56} />}
               <PriceText
                 amount={selected.type === 'in' ? selected.amount : -selected.amount}
                 signed
                 size="xl"
-                tone={selected.type === 'in' ? 'success' : 'danger'}
+                tone={selected.type === 'in' ? 'success' : 'strong'}
               />
               <Pill label={st.label} tone={st.tone} size="md" />
             </View>
@@ -302,8 +395,14 @@ export default function WalletHistoryScreen() {
                 ...(selected.description ? [{ label: 'รายละเอียด', value: selected.description }] : []),
                 { label: 'วันที่', value: selected.date || selected.dateRelative || '-' },
                 { label: 'เลขอ้างอิง', value: `#${selected.id}` },
-              ].map((row) => (
-                <View key={row.label} style={styles.detailRow}>
+              ].map((row, index) => (
+                <View
+                  key={row.label}
+                  style={[
+                    styles.detailRow,
+                    index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+                  ]}
+                >
                   <Text style={[typography.bodySm, { color: colors.textMuted }]}>{row.label}</Text>
                   <Text style={[typography.bodyStrong, styles.detailValue, { color: colors.textStrong }]}>{row.value}</Text>
                 </View>
@@ -325,39 +424,54 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxxl * 2,
   },
   summary: {
     flexDirection: 'row',
     gap: spacing.md,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   filters: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginBottom: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
   loader: {
     marginTop: spacing.xxxl,
   },
-  card: {
+  dayLabel: {
+    fontWeight: '600',
+    marginTop: spacing.xl,
     marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
   },
-  row: {
+  groupGap: {
+    height: spacing.lg,
+  },
+  segment: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
   },
-  icon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+  segmentFirst: {
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
   },
-  emoji: {
-    fontSize: 20,
+  segmentLast: {
+    borderBottomLeftRadius: radii.xl,
+    borderBottomRightRadius: radii.xl,
+  },
+  segmentDivider: {
+    position: 'absolute',
+    top: 0,
+    // เริ่มเส้นหลังกล่องไอคอน (padding 16 + ไอคอน 44 + ระยะ 12)
+    left: spacing.lg + 44 + spacing.md,
+    right: spacing.lg,
+    height: StyleSheet.hairlineWidth,
   },
   right: {
     alignItems: 'flex-end',
@@ -377,7 +491,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
   },
   detailValue: {
     flex: 1,

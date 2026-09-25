@@ -3,7 +3,8 @@
  */
 
 import React from 'react';
-import { Pressable, Text, ActivityIndicator, View, ViewStyle } from 'react-native';
+import { Pressable, ActivityIndicator, View, ViewStyle } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface ButtonProps {

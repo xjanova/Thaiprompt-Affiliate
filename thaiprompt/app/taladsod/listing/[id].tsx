@@ -19,13 +19,14 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
-  Text,
   View,
   useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,6 +37,9 @@ import {
   Button3D,
   Card3D,
   EmptyState,
+  GlassIconButton,
+  Icon,
+  OnHeaderProvider,
   PriceText,
   Screen,
   SectionHeader,
@@ -64,7 +68,7 @@ import {
   type FmListingDetail,
   type FmRelatedListing,
 } from '@/services/api/taladsodApi';
-import { useTheme, clayShadowStyle, palette, radii, spacing, typography } from '@/theme';
+import { useTheme, shadowStyle, palette, radii, spacing, typography } from '@/theme';
 
 const FALLBACK_FOOD = require('@/assets/images/taladsod/krapao-hero.webp');
 const ADD_COOLDOWN_MS = 900;
@@ -303,7 +307,7 @@ export default function TaladsodListingScreen() {
       <Screen title="เมนู" scroll={false}>
         <EmptyState
           variant={error?.notFound ? 'empty' : 'error'}
-          icon={error?.notFound ? '🍽️' : undefined}
+          art={error?.notFound ? 'basket' : undefined}
           title={error?.notFound ? 'ไม่พบเมนูนี้' : undefined}
           message={error?.notFound ? 'เมนูนี้อาจปิดขายไปแล้ว' : error?.message}
           actionLabel={error?.notFound ? 'กลับไปตลาดสด' : 'ลองใหม่'}
@@ -314,7 +318,7 @@ export default function TaladsodListingScreen() {
   }
 
   const seller = listing.seller;
-  const galleryHeight = Math.round(width * 0.72);
+  const galleryHeight = Math.round(width * 0.78) + insets.top;
   const hasDiscount = listing.compare_at_price !== null && listing.compare_at_price > listing.price;
   const description = stripHtml(listing.description);
   const barHeight = 88 + insets.bottom;
@@ -334,9 +338,9 @@ export default function TaladsodListingScreen() {
             </Text>
           </View>
           {following ? (
-            <Button3D title="ดูร้าน" icon="🏪" size="md" variant="secondary" onPress={() => seller && router.push(`/taladsod/shop/${seller.id}` as never)} />
+            <Button3D title="ดูร้าน" icon="storefront" size="md" variant="secondary" onPress={() => seller && router.push(`/taladsod/shop/${seller.id}` as never)} />
           ) : (
-            <Button3D title="ติดตามร้าน" icon="🔔" size="md" onPress={followFromClosed} />
+            <Button3D title="ติดตามร้าน" icon="bell" size="md" onPress={followFromClosed} />
           )}
         </View>
       );
@@ -345,12 +349,12 @@ export default function TaladsodListingScreen() {
       return <Button3D title="เมนูนี้หมดชั่วคราว" size="lg" fullWidth disabled variant="secondary" />;
     }
     if (!isAuthenticated) {
-      return <Button3D title="เข้าสู่ระบบเพื่อสั่ง" icon="🔓" size="lg" fullWidth onPress={() => router.push('/login')} />;
+      return <Button3D title="เข้าสู่ระบบเพื่อสั่ง" icon="sign-in" size="lg" fullWidth onPress={() => router.push('/login')} />;
     }
     return (
       <Button3D
-        title={`ใส่ตะกร้า ${formatBaht(total)}`}
-        icon="🧺"
+        title={`ใส่ตะกร้า · ${formatBaht(total)}`}
+        icon="shopping-bag-open"
         size="lg"
         fullWidth
         onPress={addToCart}
@@ -361,7 +365,8 @@ export default function TaladsodListingScreen() {
   };
 
   return (
-    <Screen title={listing.title} subtitle={seller?.shop_name} scroll={false} right={<TaladsodCartButton />}>
+    <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           ref={scrollRef}
@@ -370,7 +375,7 @@ export default function TaladsodListingScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* ---------- แกลเลอรี ---------- */}
+          {/* ---------- แกลเลอรี (เต็มจอ ใต้แถบสถานะ) ---------- */}
           <View style={{ height: galleryHeight }}>
             {gallery.length > 0 ? (
               <FlatList
@@ -396,6 +401,19 @@ export default function TaladsodListingScreen() {
             ) : (
               <Image source={FALLBACK_FOOD} style={{ width, height: galleryHeight }} contentFit="cover" />
             )}
+            <View style={styles.galleryShade} pointerEvents="none" />
+            <OnHeaderProvider value>
+              <View style={[styles.topBar, { top: insets.top + spacing.sm }]}>
+                <GlassIconButton
+                  icon="caret-left"
+                  weight="bold"
+                  accessibilityLabel="ย้อนกลับ"
+                  onPress={() => (router.canGoBack() ? router.back() : router.replace('/taladsod' as never))}
+                />
+                <View style={styles.flex} />
+                <TaladsodCartButton />
+              </View>
+            </OnHeaderProvider>
             {gallery.length > 1 && (
               <View style={styles.dots} pointerEvents="none">
                 {gallery.map((u, i) => (
@@ -403,7 +421,7 @@ export default function TaladsodListingScreen() {
                     key={u}
                     style={[
                       styles.dot,
-                      { backgroundColor: i === galleryIndex ? colors.gold : 'rgba(255,255,255,0.7)' },
+                      { backgroundColor: i === galleryIndex ? '#FFFFFF' : 'rgba(255,255,255,0.55)' },
                       i === galleryIndex && styles.dotActive,
                     ]}
                   />
@@ -414,10 +432,10 @@ export default function TaladsodListingScreen() {
 
           <View style={styles.body}>
             {/* ---------- ข้อมูลเมนู ---------- */}
-            <Card3D gradientBorder padding={spacing.lg} style={styles.infoCard}>
-              <Text style={[typography.h1, { color: colors.textStrong }]}>{listing.title}</Text>
+            <Card3D padding={spacing.lg + 2} radius={26} shadow="lg" style={styles.infoCard}>
+              <Text style={[typography.serif, { color: colors.textStrong }]}>{listing.title}</Text>
               <View style={styles.priceRow}>
-                <PriceText amount={listing.price} size="lg" tone="gold" suffix={groups.length > 0 ? 'เริ่มต้น' : listing.unit ? `/${listing.unit}` : undefined} />
+                <PriceText amount={listing.price} size="lg" tone="strong" suffix={groups.length > 0 ? 'เริ่มต้น' : listing.unit ? `/${listing.unit}` : undefined} />
                 {hasDiscount && <PriceText amount={listing.compare_at_price} size="sm" tone="muted" strike bold={false} />}
               </View>
               {!!description && (
@@ -446,12 +464,18 @@ export default function TaladsodListingScreen() {
                     </Text>
                     <ShopStatusRow isOpen={!shopClosed} isMobile={seller.is_mobile} />
                     {!shopClosed && !!seller.location_label && (
-                      <Text numberOfLines={1} style={[typography.micro, { color: colors.textMuted }]}>
-                        📍 {seller.location_label}
-                      </Text>
+                      <View style={styles.locRow}>
+                        <Icon name="map-pin" size={12} color={colors.textMuted} weight="fill" />
+                        <Text numberOfLines={1} style={[typography.micro, styles.flex, { color: colors.textMuted }]}>
+                          {seller.location_label}
+                        </Text>
+                      </View>
                     )}
                   </View>
-                  <Text style={[typography.caption, { color: colors.goldDeep }]}>ดูร้าน ›</Text>
+                  <View style={styles.shopLink}>
+                    <Text style={[typography.caption, { color: colors.goldDeep, fontWeight: '600' }]}>ดูร้าน</Text>
+                    <Icon name="caret-right" size={13} color={colors.goldDeep} weight="bold" />
+                  </View>
                 </Pressable>
               )}
             </Card3D>
@@ -475,16 +499,19 @@ export default function TaladsodListingScreen() {
                   disabled={blocked}
                 />
                 {!!problem && (
-                  <Text accessibilityLiveRegion="polite" style={[typography.bodyStrong, styles.problem, { color: colors.danger }]}>
-                    ⚠️ {problem}
-                  </Text>
+                  <View style={styles.problemRow}>
+                    <Icon name="warning-circle" size={18} color={colors.danger} weight="fill" />
+                    <Text accessibilityLiveRegion="polite" style={[typography.bodyStrong, styles.flex, { color: colors.danger }]}>
+                      {problem}
+                    </Text>
+                  </View>
                 )}
               </View>
             )}
 
             {/* ---------- จำนวน + หมายเหตุ ---------- */}
             {!blocked && (
-              <Card3D padding={spacing.lg} style={styles.section}>
+              <Card3D padding={spacing.lg} radius={22} style={styles.section}>
                 <View style={styles.qtyRow}>
                   <View style={styles.flex}>
                     <Text style={[typography.h3, { color: colors.textStrong }]}>จำนวน</Text>
@@ -507,7 +534,7 @@ export default function TaladsodListingScreen() {
                 />
                 <View style={[styles.totalRow, { borderTopColor: colors.divider }]}>
                   <Text style={[typography.bodyStrong, { color: colors.text }]}>รวม</Text>
-                  <PriceText amount={total} size="lg" tone="gold" />
+                  <PriceText amount={total} size="lg" tone="strong" />
                 </View>
               </Card3D>
             )}
@@ -515,7 +542,7 @@ export default function TaladsodListingScreen() {
             {/* ---------- เมนูอื่น ---------- */}
             {related.length > 0 && (
               <>
-                <SectionHeader title="เมนูอื่นที่น่าลอง" icon="✨" style={styles.section} />
+                <SectionHeader title="เมนูอื่นในร้านนี้" style={styles.section} />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedList} style={styles.bleed}>
                   {related.map((r) => {
                     const uri = fmImageUri(r.main_image_url);
@@ -539,7 +566,7 @@ export default function TaladsodListingScreen() {
                           <Text numberOfLines={1} style={[typography.caption, { color: colors.textStrong }]}>
                             {r.title}
                           </Text>
-                          <PriceText amount={r.price} size="sm" tone="gold" />
+                          <PriceText amount={r.price} size="sm" tone="strong" />
                         </View>
                       </Card3D>
                     );
@@ -555,9 +582,10 @@ export default function TaladsodListingScreen() {
           <Animated.View
             entering={FadeInDown.springify().damping(16)}
             exiting={FadeOutDown}
-            style={[styles.toast, { bottom: barHeight + spacing.sm, backgroundColor: colors.textStrong }, clayShadowStyle('md', colors.shadowDark, colors.shadowLight)]}
+            style={[styles.toast, { bottom: barHeight + spacing.sm, backgroundColor: colors.navyFill }, shadowStyle('lg', colors.shadowDark)]}
           >
-            <Text style={[typography.bodyStrong, styles.flex, { color: colors.background }]}>✅ {toast.message}</Text>
+            <Icon name="check-circle" size={20} color={colors.success === '#1F8A5B' ? '#3DDC84' : colors.success} weight="fill" />
+            <Text style={[typography.bodyStrong, styles.flex, { color: '#FFFFFF' }]}>{toast.message}</Text>
             {toast.cartLink && (
               <Pressable
                 onPress={() => router.push('/taladsod/cart' as never)}
@@ -565,8 +593,8 @@ export default function TaladsodListingScreen() {
                 hitSlop={8}
                 style={styles.toastAction}
               >
-                {/* พื้น toast = สีกลับด้าน (โหมดมืดเป็นครีม) → ทองเข้มในโหมดมืดให้อ่านออก (≈5.6:1) */}
-                <Text style={[typography.bodyStrong, { color: isDark ? palette.gold750 : colors.gold }]}>ดูตะกร้า ›</Text>
+                {/* พื้น toast = น้ำเงินกรมท่าทั้งสองโหมด → ทองอ่อนอ่านออกเสมอ */}
+                <Text style={[typography.bodyStrong, { color: palette.gold300 }]}>ดูตะกร้า ›</Text>
               </Pressable>
             )}
           </Animated.View>
@@ -581,13 +609,13 @@ export default function TaladsodListingScreen() {
               backgroundColor: colors.card,
               borderTopColor: colors.border,
             },
-            clayShadowStyle('md', colors.shadowDark, colors.shadowLight),
+            shadowStyle('lg', colors.shadowDark),
           ]}
         >
           {renderBar()}
         </View>
       </KeyboardAvoidingView>
-    </Screen>
+    </View>
   );
 }
 
@@ -600,7 +628,7 @@ const styles = StyleSheet.create({
   },
   dots: {
     position: 'absolute',
-    bottom: spacing.md,
+    bottom: spacing.xxl + spacing.lg,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -619,7 +647,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
   },
   infoCard: {
-    marginTop: -spacing.xl,
+    marginTop: -spacing.xxl - 4,
+  },
+  galleryShade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 120,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  topBar: {
+    position: 'absolute',
+    left: spacing.screen,
+    right: spacing.screen,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  shopLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  problemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
   priceRow: {
     flexDirection: 'row',

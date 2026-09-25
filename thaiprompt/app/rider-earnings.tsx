@@ -5,16 +5,20 @@
  * - ประวัติงานแบ่งหน้า → GET /rider/jobs/history (โหลดเพิ่มเมื่อเลื่อนถึงท้าย)
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลลัพธ์เก่า (requestId)
  * - ถอนเงินทำที่แท็บกระเป๋าเงิน · รายงานละเอียดดูบนเว็บไซต์
+ *
+ * หน้าตา: การ์ดน้ำเงินลายกนก (ตัวเลือกช่วงเวลาแบบกระจก + ยอดทอง + กราฟแท่งรายวัน)
+ *         → ตัวเลขสรุป 4 ช่อง → ประวัติงานเป็นการ์ดขาวใบเดียวแบ่งแถว
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme, spacing, radii, typography } from '@/theme';
+import { useTheme, spacing, radii, typography, shadowStyle, withAlpha } from '@/theme';
 import {
+  BrandArt,
   Button3D,
-  Card3D,
   Chip,
   EmptyState,
   Pill,
@@ -24,6 +28,10 @@ import {
   StatTile,
   WebsiteButton,
   formatBaht,
+  selectionHaptic,
+  tapHaptic,
+  usePressGuard,
+  type IconName,
 } from '@/components/ui';
 import { num } from '@/services/api/client';
 import {
@@ -34,6 +42,7 @@ import {
   type RiderJobSummary,
 } from '@/services/api/riderApi';
 import { JOB_STATUS_LABEL, JOB_STATUS_TONE, formatThaiDateTime } from '@/components/rider/riderHelpers';
+import { IconTile, NavyCard, type TileTone } from '@/components/rider/RiderVisuals';
 
 const PERIODS: Array<{ key: EarningsPeriod; label: string; heading: string }> = [
   { key: 'today', label: 'วันนี้', heading: 'รายได้วันนี้' },
@@ -61,77 +70,171 @@ const DAY_LABEL = (iso: string): string => {
   }
 };
 
-/** กราฟแท่งรายวันแบบเบาๆ (ไม่ต้องใช้ไลบรารีกราฟ) */
+const BAR_HEIGHT = 92;
+
+/** ตัวเลือกช่วงเวลาแบบกระจกบนการ์ดน้ำเงิน (ที่เลือก = เม็ดทอง) */
+const PeriodSwitch: React.FC<{ value: EarningsPeriod; onChange: (period: EarningsPeriod) => void }> = ({
+  value,
+  onChange,
+}) => {
+  const { colors, gradients } = useTheme();
+  return (
+    <View style={[styles.segment, { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder }]}>
+      {PERIODS.map((p) => {
+        const selected = value === p.key;
+        return (
+          <Pressable
+            key={p.key}
+            onPress={() => {
+              selectionHaptic();
+              onChange(p.key);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={p.label}
+            accessibilityState={{ selected }}
+            hitSlop={4}
+            style={({ pressed }) => [styles.segmentItem, { opacity: pressed && !selected ? 0.7 : 1 }]}
+          >
+            {selected ? (
+              <LinearGradient
+                colors={gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={[styles.segmentPill, shadowStyle('sm', colors.shadowDark)]}
+              >
+                <Text numberOfLines={1} style={[styles.segmentText, { color: colors.textOnGold }]}>
+                  {p.label}
+                </Text>
+              </LinearGradient>
+            ) : (
+              <View style={styles.segmentPill}>
+                <Text numberOfLines={1} style={[styles.segmentText, { color: colors.onHeaderMuted }]}>
+                  {p.label}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+};
+
+/** กราฟแท่งรายวันบนการ์ดน้ำเงิน (วันที่ได้มากที่สุด = แท่งทองพร้อมยอด) — ไม่ต้องใช้ไลบรารีกราฟ */
 const DailyBars: React.FC<{ daily: RiderEarningsResponse['daily'] }> = ({ daily }) => {
   const { colors, gradients } = useTheme();
   const items = daily.slice(-14);
   const max = Math.max(1, ...items.map((d) => num(d.earnings)));
   if (items.length < 2) return null;
+  const bestIndex = items.reduce((best, d, i) => (num(d.earnings) > num(items[best].earnings) ? i : best), 0);
+  const hasBest = num(items[bestIndex].earnings) > 0;
 
   return (
-    <Card3D style={styles.block} padding={spacing.lg}>
-      <Text style={[typography.h3, styles.cardTitle, { color: colors.textStrong }]}>รายได้รายวัน</Text>
+    <View style={[styles.chart, { borderTopColor: colors.headerGlassBorder }]}>
+      <View style={styles.chartHead}>
+        <Text style={[typography.overline, { color: colors.onHeaderMuted }]}>รายได้รายวัน</Text>
+        {hasBest && (
+          <Text style={[typography.caption, { color: colors.onHeaderMuted }]} numberOfLines={1}>
+            สูงสุด {DAY_LABEL(items[bestIndex].date)} ·{' '}
+            <Text style={[styles.bestValue, { color: colors.goldLight }]}>{formatBaht(max)}</Text>
+          </Text>
+        )}
+      </View>
       <View style={styles.bars} accessibilityLabel="กราฟรายได้รายวัน">
-        {items.map((d) => {
+        {items.map((d, index) => {
           const value = num(d.earnings);
-          const height = Math.max(4, Math.round((value / max) * 96));
+          const height = Math.max(4, Math.round((value / max) * BAR_HEIGHT));
+          const best = hasBest && index === bestIndex;
           return (
             <View key={d.date} style={styles.barCol} accessibilityLabel={`${DAY_LABEL(d.date)} ${formatBaht(value)}`}>
-              <View style={[styles.barTrack, { backgroundColor: colors.inset }]}>
-                <LinearGradient
-                  colors={value > 0 ? gradients.primary : [colors.border, colors.border]}
-                  style={[styles.barFill, { height }]}
-                />
+              <View style={styles.barTrack}>
+                {best ? (
+                  <LinearGradient colors={gradients.primary} style={[styles.barFill, { height }]} />
+                ) : (
+                  <View
+                    style={[
+                      styles.barFill,
+                      { height, backgroundColor: value > 0 ? withAlpha(colors.goldLight, 0.3) : colors.headerGlassBorder },
+                    ]}
+                  />
+                )}
               </View>
-              <Text style={[typography.micro, { color: colors.textFaint }]} numberOfLines={1}>
+              <Text
+                style={[typography.micro, styles.barLabel, { color: best ? colors.goldLight : colors.onHeaderMuted }]}
+                numberOfLines={1}
+              >
                 {DAY_LABEL(d.date).split(' ')[0]}
               </Text>
             </View>
           );
         })}
       </View>
-    </Card3D>
+    </View>
   );
 };
 
-const HistoryRow: React.FC<{ job: RiderJobSummary }> = ({ job }) => {
-  const { colors } = useTheme();
+/** แถวประวัติงาน — แถวติดกันเป็นการ์ดขาวใบเดียว (แถวแรกมุมบนโค้ง · แถวสุดท้ายมุมล่างโค้ง + เงา) */
+const HistoryRow: React.FC<{ job: RiderJobSummary; first: boolean; last: boolean }> = ({ job, first, last }) => {
+  const { colors, isDark } = useTheme();
   const completed = job.status === 'completed' || job.status === 'delivered';
+  const { run } = usePressGuard(() => router.push(`/rider-job-detail?id=${job.id}` as never));
+  const tile: { icon: IconName; tone: TileTone } = completed
+    ? { icon: 'coins', tone: 'success' }
+    : job.status === 'failed'
+      ? { icon: 'x-circle', tone: 'danger' }
+      : job.status === 'cancelled'
+        ? { icon: 'prohibit', tone: 'neutral' }
+        : { icon: 'moped', tone: 'navy' };
+
   return (
-    <Card3D
-      onPress={() => router.push(`/rider-job-detail?id=${job.id}` as never)}
-      style={styles.historyCard}
-      padding={spacing.md}
-      radius={radii.lg}
-      shadow="sm"
+    <Pressable
+      onPress={() => {
+        tapHaptic();
+        run();
+      }}
+      accessibilityRole="button"
       accessibilityLabel={`งาน ${job.job_number} ${job.status_text}`}
+      style={({ pressed }) => [
+        styles.historyItem,
+        { backgroundColor: pressed ? colors.surface : colors.card },
+        first && styles.historyFirst,
+        last && styles.historyLast,
+        isDark && {
+          borderColor: colors.border,
+          borderLeftWidth: 1,
+          borderRightWidth: 1,
+          borderTopWidth: first ? 1 : 0,
+          borderBottomWidth: last ? 1 : 0,
+        },
+        last && shadowStyle('md', colors.shadowDark),
+      ]}
     >
-      <View style={styles.historyRow}>
-        <View style={styles.flex}>
-          <Text style={[typography.bodyStrong, { color: colors.textStrong }]} numberOfLines={1}>
-            {job.title || job.job_type_text}
-          </Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
-            {job.job_number} · {formatThaiDateTime(job.completed_at || job.accepted_at || job.created_at)}
-          </Text>
-        </View>
-        <View style={styles.historyRight}>
-          <PriceText
-            amount={job.rider_earnings}
-            size="md"
-            tone={completed ? 'success' : 'muted'}
-            strike={!completed}
-            signed={completed}
-          />
-          <Pill label={job.status_text || JOB_STATUS_LABEL[job.status]} tone={JOB_STATUS_TONE[job.status] || 'neutral'} />
-        </View>
+      {!first && <View style={[styles.historyDivider, { backgroundColor: colors.divider }]} />}
+      <IconTile icon={tile.icon} tone={tile.tone} />
+      <View style={styles.flex}>
+        <Text style={[typography.bodyStrong, { color: colors.textStrong }]} numberOfLines={1}>
+          {job.title || job.job_type_text}
+        </Text>
+        <Text style={[typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
+          {job.job_number} · {formatThaiDateTime(job.completed_at || job.accepted_at || job.created_at)}
+        </Text>
       </View>
-    </Card3D>
+      <View style={styles.historyRight}>
+        <PriceText
+          amount={job.rider_earnings}
+          size="md"
+          tone={completed ? 'success' : 'muted'}
+          strike={!completed}
+          signed={completed}
+        />
+        <Pill label={job.status_text || JOB_STATUS_LABEL[job.status]} tone={JOB_STATUS_TONE[job.status] || 'neutral'} />
+      </View>
+    </Pressable>
   );
 };
 
 export default function RiderEarningsScreen() {
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
 
   const [period, setPeriod] = useState<EarningsPeriod>('today');
   const [summary, setSummary] = useState<RiderEarningsResponse | null>(null);
@@ -239,7 +342,7 @@ export default function RiderEarningsScreen() {
     return (
       <Screen title="รายได้ไรเดอร์">
         <EmptyState
-          icon="🛵"
+          art="scooter"
           title="ยังไม่ได้เป็นไรเดอร์"
           message="สมัครไรเดอร์ก่อน แล้วรายได้จากการส่งงานจะแสดงที่นี่"
           actionLabel="ไปหน้าสมัคร"
@@ -249,58 +352,77 @@ export default function RiderEarningsScreen() {
     );
   }
 
+  // ---------- หน้าตาเท่านั้น ----------
+  const completedJobs = num(summary?.completed_jobs);
+  /** กราฟรายวันแสดงเมื่อไม่ใช่ "วันนี้" และมีข้อมูลอย่างน้อย 2 วัน (เหมือนเดิม) */
+  const showChart = !!summary && period !== 'today' && Array.isArray(summary.daily) && summary.daily.length >= 2;
+  const listData = historyLoading && jobs.length === 0 ? [] : jobs;
+
   const header = (
     <View>
-      <View style={styles.chips}>
-        {PERIODS.map((p) => (
-          <Chip key={p.key} label={p.label} selected={period === p.key} tone="gold" onPress={() => setPeriod(p.key)} />
-        ))}
-      </View>
-
       {/* ---------- ยอดรวม ---------- */}
-      <Card3D gradientBorder padding={0} style={styles.block}>
-        <LinearGradient colors={gradients.hero} style={styles.hero}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>{heading}</Text>
-          {summaryLoading && !summary ? (
-            <ActivityIndicator color={colors.gold} style={styles.heroLoader} />
-          ) : summaryError && !summary ? (
-            <View style={styles.heroError}>
-              <Text style={[typography.bodySm, { color: colors.danger }]}>{summaryError.message}</Text>
-              <Button3D title="ลองใหม่" size="sm" variant="secondary" onPress={() => loadSummary(period)} />
+      <NavyCard goldBorder padding={0} style={styles.block}>
+        <View style={styles.heroBody}>
+          <PeriodSwitch value={period} onChange={setPeriod} />
+          <View style={styles.heroMain}>
+            <View style={styles.flex}>
+              <View style={styles.heroLabelRow}>
+                <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>{heading}</Text>
+                {summaryLoading && !!summary && <ActivityIndicator size="small" color={colors.goldLight} />}
+              </View>
+              {summaryLoading && !summary ? (
+                <ActivityIndicator color={colors.goldLight} style={styles.heroLoader} />
+              ) : summaryError && !summary ? (
+                <View style={styles.heroError}>
+                  <Text style={[typography.bodySm, { color: colors.onHeader }]}>{summaryError.message}</Text>
+                  <Button3D
+                    title="ลองใหม่"
+                    size="sm"
+                    variant="secondary"
+                    icon="arrows-clockwise"
+                    onPress={() => loadSummary(period)}
+                  />
+                </View>
+              ) : (
+                <>
+                  <PriceText
+                    amount={summary?.gross_earnings ?? 0}
+                    size="xl"
+                    style={[typography.moneyLg, { color: colors.goldLight }]}
+                  />
+                  <Text style={[typography.bodySm, { color: colors.onHeader }]}>
+                    ส่งสำเร็จ {completedJobs.toLocaleString('th-TH')} งาน
+                    {completedJobs > 0 ? ' — เก่งมาก!' : ''}
+                  </Text>
+                </>
+              )}
             </View>
-          ) : (
-            <>
-              <PriceText amount={summary?.gross_earnings ?? 0} size="xl" tone="gold" />
-              <Text style={[typography.bodySm, { color: colors.text }]}>
-                ส่งสำเร็จ {num(summary?.completed_jobs).toLocaleString('th-TH')} งาน
-                {num(summary?.completed_jobs) > 0 ? ' — เก่งมาก! 💪' : ''}
-              </Text>
-            </>
-          )}
-          {summaryLoading && !!summary && <ActivityIndicator size="small" color={colors.gold} style={styles.inlineLoader} />}
-        </LinearGradient>
-      </Card3D>
+            {!showChart && <BrandArt name="wallet" size={84} style={styles.heroArt} />}
+          </View>
+        </View>
+        {showChart && !!summary && <DailyBars daily={summary.daily} />}
+      </NavyCard>
 
       {!!summary && (
         <View style={styles.grid}>
           <StatTile
             label="ยอดในกระเป๋า"
-            icon="👛"
+            icon="wallet"
             tone="info"
-            value={<PriceText amount={summary.wallet_balance} size="lg" />}
+            value={<PriceText amount={summary.wallet_balance} size="lg" tone="strong" />}
             onPress={() => router.push('/(tabs)/wallet' as never)}
             style={styles.gridItem}
           />
           <StatTile
             label="รายได้สะสมทั้งหมด"
-            icon="🏆"
+            icon="trophy"
             tone="gold"
-            value={<PriceText amount={summary.total_earnings_all_time} size="lg" />}
+            value={<PriceText amount={summary.total_earnings_all_time} size="lg" tone="strong" />}
             style={styles.gridItem}
           />
           <StatTile
             label="งานเก็บเงินปลายทาง"
-            icon="💵"
+            icon="money"
             tone="warning"
             value={num(summary.cod_jobs)}
             caption={`เงินสดที่เก็บ ${formatBaht(summary.cod_collected)}`}
@@ -308,7 +430,7 @@ export default function RiderEarningsScreen() {
           />
           <StatTile
             label="รอโอนเข้ากระเป๋า"
-            icon="⏳"
+            icon="hourglass"
             tone={num(summary.unsettled_jobs) > 0 ? 'warning' : 'success'}
             value={num(summary.unsettled_jobs)}
             caption="งาน"
@@ -317,20 +439,18 @@ export default function RiderEarningsScreen() {
         </View>
       )}
 
-      {!!summary && period !== 'today' && Array.isArray(summary.daily) && <DailyBars daily={summary.daily} />}
-
       <View style={styles.links}>
         <Button3D
           title="ถอนเงินที่กระเป๋าเงิน"
-          icon="🏦"
-          variant="secondary"
+          icon="bank"
+          variant="navy"
           fullWidth
           onPress={() => router.push('/(tabs)/wallet' as never)}
         />
         <WebsiteButton path="/user/rider/earnings" label="ดูรายงานรายได้แบบละเอียดบนเว็บไซต์" variant="ghost" fullWidth />
       </View>
 
-      <SectionHeader title="ประวัติงาน" icon="🗂️" style={styles.section} />
+      <SectionHeader title="ประวัติงาน" icon="clock-counter-clockwise" style={styles.section} />
       <View style={styles.chips}>
         {HISTORY_FILTERS.map((f) => (
           <Chip key={f.key} label={f.label} size="sm" selected={filter === f.key} onPress={() => setFilter(f.key)} />
@@ -342,9 +462,12 @@ export default function RiderEarningsScreen() {
   return (
     <Screen title="รายได้ไรเดอร์" subtitle="ทุกงานที่ส่งสำเร็จคือรายได้ของคุณ" scroll={false}>
       <FlatList
-        data={historyLoading && jobs.length === 0 ? [] : jobs}
+        data={listData}
+        extraData={listData.length}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <HistoryRow job={item} />}
+        renderItem={({ item, index }) => (
+          <HistoryRow job={item} first={index === 0} last={index === listData.length - 1} />
+        )}
         ListHeaderComponent={header}
         ListEmptyComponent={
           historyLoading ? (
@@ -353,7 +476,7 @@ export default function RiderEarningsScreen() {
             <EmptyState variant="error" message={historyError} onAction={() => loadHistory(filter, 1, 'reset')} compact />
           ) : (
             <EmptyState
-              icon="🛵"
+              art="scooter"
               title="ยังไม่มีประวัติงาน"
               message="รับงานแรกแล้วรายได้จะมาแสดงที่นี่"
               actionLabel="ดูงานใกล้ฉัน"
@@ -370,6 +493,7 @@ export default function RiderEarningsScreen() {
               title="ดูเพิ่ม"
               variant="ghost"
               size="sm"
+              iconRight="caret-down"
               onPress={() => loadHistory(filter, page + 1, 'more')}
               style={styles.more}
             />
@@ -399,17 +523,15 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxxl * 2,
   },
   block: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   section: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
     marginBottom: spacing.sm,
-  },
-  cardTitle: {
-    marginBottom: spacing.md,
   },
   chips: {
     flexDirection: 'row',
@@ -417,40 +539,76 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  hero: {
-    padding: spacing.xl,
-    gap: spacing.xs,
-    borderRadius: radii.xl,
-    minHeight: 120,
+  // ---------- ฮีโร่ ----------
+  heroBody: {
+    padding: spacing.lg,
+    paddingBottom: spacing.lg + 2,
+  },
+  heroMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    minHeight: 84,
+  },
+  heroLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   heroLoader: {
     marginVertical: spacing.lg,
     alignSelf: 'flex-start',
   },
-  inlineLoader: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-  },
   heroError: {
     gap: spacing.sm,
     alignItems: 'flex-start',
+    marginTop: spacing.xs,
   },
-  grid: {
+  heroArt: {
+    marginRight: -spacing.xs,
+  },
+  segment: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    padding: 3,
+  },
+  segmentItem: {
+    flex: 1,
+  },
+  segmentPill: {
+    height: 34,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  segmentText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  // ---------- กราฟรายวัน ----------
+  chart: {
+    borderTopWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+  },
+  chartHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
     marginBottom: spacing.md,
   },
-  gridItem: {
-    flexBasis: '47%',
-    flexGrow: 1,
+  bestValue: {
+    fontWeight: '700',
   },
   bars: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 4,
-    height: 120,
   },
   barCol: {
     flex: 1,
@@ -459,26 +617,54 @@ const styles = StyleSheet.create({
   },
   barTrack: {
     width: '100%',
-    height: 96,
-    borderRadius: 6,
+    height: BAR_HEIGHT,
     justifyContent: 'flex-end',
-    overflow: 'hidden',
   },
   barFill: {
     width: '100%',
-    borderRadius: 6,
+    borderRadius: 5,
+  },
+  barLabel: {
+    fontVariant: ['tabular-nums'],
+  },
+  // ---------- ตัวเลขสรุป ----------
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  gridItem: {
+    flexBasis: '47%',
+    flexGrow: 1,
   },
   links: {
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-  historyCard: {
-    marginBottom: spacing.sm,
-  },
-  historyRow: {
+  // ---------- ประวัติงาน ----------
+  historyItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md + 2,
+  },
+  historyFirst: {
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+  },
+  historyLast: {
+    borderBottomLeftRadius: radii.xl,
+    borderBottomRightRadius: radii.xl,
+    marginBottom: spacing.md,
+  },
+  historyDivider: {
+    position: 'absolute',
+    top: 0,
+    left: spacing.lg + 44 + spacing.md,
+    right: spacing.lg,
+    height: 1,
   },
   historyRight: {
     alignItems: 'flex-end',
@@ -489,6 +675,6 @@ const styles = StyleSheet.create({
   },
   more: {
     alignSelf: 'center',
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
 });

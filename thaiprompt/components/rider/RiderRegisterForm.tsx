@@ -8,10 +8,12 @@
  */
 
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View, type KeyboardTypeOptions } from 'react-native';
+import { Alert, StyleSheet, View, type KeyboardTypeOptions } from 'react-native';
+import { Text, TextInput } from '@/components/ui/Text';
 import { router } from 'expo-router';
-import { useTheme, spacing, radii, typography } from '@/theme';
-import { Button3D, Card3D, Chip, resultHaptic } from '@/components/ui';
+import { useTheme, spacing, typography } from '@/theme';
+import { Button3D, Card3D, Chip, Icon, resultHaptic, type IconName } from '@/components/ui';
+import { FocusInput, IconTile } from './RiderVisuals';
 import {
   registerRider,
   type RiderRegisterBody,
@@ -98,35 +100,42 @@ const Field: React.FC<{
   const { colors } = useTheme();
   return (
     <View style={styles.field}>
-      <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+      <Text style={[typography.bodySm, styles.label, { color: colors.textStrong }]}>
         {label}
         {required ? <Text style={{ color: colors.danger }}> *</Text> : null}
       </Text>
-      <TextInput
+      <FocusInput
         ref={inputRef}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.textFaint}
         keyboardType={keyboardType}
         maxLength={maxLength}
         multiline={multiline}
         autoCapitalize={autoCapitalize}
         onSubmitEditing={onSubmitEditing}
         accessibilityLabel={label}
-        style={[
-          typography.body,
-          styles.input,
-          multiline && styles.inputMultiline,
-          {
-            color: colors.text,
-            backgroundColor: colors.inset,
-            borderColor: error ? colors.danger : colors.border,
-          },
-        ]}
+        invalid={!!error}
       />
-      {!!error && <Text style={[typography.caption, { color: colors.danger }]}>{error}</Text>}
+      {!!error && (
+        <View style={styles.messageRow}>
+          <Icon name="warning-circle" size={14} color={colors.danger} weight="fill" />
+          <Text style={[typography.caption, styles.flex, { color: colors.danger }]}>{error}</Text>
+        </View>
+      )}
       {!error && !!hint && <Text style={[typography.caption, { color: colors.textMuted }]}>{hint}</Text>}
+    </View>
+  );
+};
+
+/** หัวข้อกลุ่มในฟอร์ม (ไอคอนทอง + ชื่อกลุ่ม + เส้นบาง) */
+const FormSection: React.FC<{ icon: IconName; title: string }> = ({ icon, title }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.section}>
+      <Icon name={icon} size={16} color={colors.goldDeep} weight="fill" />
+      <Text style={[typography.overline, { color: colors.textMuted }]}>{title}</Text>
+      <View style={[styles.sectionLine, { backgroundColor: colors.divider }]} />
     </View>
   );
 };
@@ -243,14 +252,20 @@ export const RiderRegisterForm: React.FC<RiderRegisterFormProps> = ({
   };
 
   return (
-    <Card3D style={styles.card} padding={spacing.lg}>
-      <Text style={[typography.h2, { color: colors.textStrong }]}>
-        {isReapply ? 'แก้ไขใบสมัครไรเดอร์' : 'กรอกข้อมูลสมัครไรเดอร์'}
-      </Text>
-      <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-        ใช้ข้อมูลจริงตามบัตรประชาชน ทีมงานจะตรวจสอบก่อนเปิดให้รับงาน
-      </Text>
+    <Card3D style={styles.card} padding={spacing.lg + 2}>
+      <View style={styles.header}>
+        <IconTile icon="identification-card" tone="gold" size={48} />
+        <View style={styles.flex}>
+          <Text style={[typography.h2, { color: colors.textStrong }]}>
+            {isReapply ? 'แก้ไขใบสมัครไรเดอร์' : 'กรอกข้อมูลสมัครไรเดอร์'}
+          </Text>
+          <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+            ใช้ข้อมูลจริงตามบัตรประชาชน ทีมงานจะตรวจสอบก่อนเปิดให้รับงาน
+          </Text>
+        </View>
+      </View>
 
+      <FormSection icon="user" title="ข้อมูลส่วนตัว" />
       <Field
         label="ชื่อ-นามสกุล"
         required
@@ -295,6 +310,7 @@ export const RiderRegisterForm: React.FC<RiderRegisterFormProps> = ({
         error={errors.birth_date}
         hint="ต้องมีอายุ 18 ปีขึ้นไป"
       />
+      <FormSection icon="map-pin" title="ที่อยู่" />
       <Field
         label="ที่อยู่ปัจจุบัน"
         required
@@ -328,8 +344,9 @@ export const RiderRegisterForm: React.FC<RiderRegisterFormProps> = ({
         </View>
       </View>
 
+      <FormSection icon="moped" title="การเดินทาง" />
       <View style={styles.field}>
-        <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+        <Text style={[typography.bodySm, styles.label, { color: colors.textStrong }]}>
           ยานพาหนะ<Text style={{ color: colors.danger }}> *</Text>
         </Text>
         <View style={styles.chips}>
@@ -382,16 +399,23 @@ export const RiderRegisterForm: React.FC<RiderRegisterFormProps> = ({
         </View>
       )}
 
-      <Text style={[typography.caption, { color: colors.textMuted }]}>
-        กดส่งใบสมัคร = ยอมรับให้ทีมงานใช้ข้อมูลนี้ตรวจสอบตัวตนตาม{' '}
-        <Text style={{ color: colors.goldDeep }} onPress={() => router.push('/privacy' as never)} suppressHighlighting>
-          นโยบายความเป็นส่วนตัว
+      <View style={[styles.privacy, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+        <Icon name="shield-check" size={18} color={colors.goldDeep} weight="fill" />
+        <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+          กดส่งใบสมัคร = ยอมรับให้ทีมงานใช้ข้อมูลนี้ตรวจสอบตัวตนตาม{' '}
+          <Text
+            style={[styles.link, { color: colors.goldDeep }]}
+            onPress={() => router.push('/privacy' as never)}
+            suppressHighlighting
+          >
+            นโยบายความเป็นส่วนตัว
+          </Text>
         </Text>
-      </Text>
+      </View>
 
       <Button3D
         title={isReapply ? 'ส่งใบสมัครอีกครั้ง' : 'ส่งใบสมัคร'}
-        icon="📨"
+        icon="paper-plane-tilt"
         size="lg"
         fullWidth
         onPress={submit}
@@ -407,20 +431,46 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: spacing.lg,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  section: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    marginBottom: spacing.xxs,
+  },
+  sectionLine: {
+    flex: 1,
+    height: 1,
+  },
   field: {
-    gap: spacing.xs,
+    gap: 6,
     marginTop: spacing.md,
   },
-  input: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md - 2,
-    minHeight: 48,
+  label: {
+    fontWeight: '600',
   },
-  inputMultiline: {
-    minHeight: 84,
-    textAlignVertical: 'top',
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+  },
+  privacy: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    padding: spacing.md,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  link: {
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   row: {
     flexDirection: 'row',

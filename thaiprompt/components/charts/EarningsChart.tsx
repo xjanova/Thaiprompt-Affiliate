@@ -7,9 +7,9 @@
 import React from 'react';
 import {
   View,
-  Text,
   Dimensions,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, {
   Path,

@@ -87,7 +87,7 @@ export const WebsiteButton: React.FC<WebsiteButtonProps> = ({
   queryParams,
   variant = 'secondary',
   size = 'md',
-  icon = '🌐',
+  icon = 'globe',
   fullWidth = false,
   style,
   onResult,

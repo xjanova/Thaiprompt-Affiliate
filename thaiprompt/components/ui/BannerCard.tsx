@@ -1,12 +1,13 @@
 /**
- * BannerCard — รูปแคมเปญ + ม่านไล่เฉดมืด + ข้อความไทยวางทับ + ปุ่ม CTA
+ * BannerCard — รูปแคมเปญ + ม่านน้ำเงินกรมท่าจากซ้าย + หัวข้อฟอนต์มีเชิง + ปุ่มทอง
  *
  * รูปไม่มีตัวหนังสือ (ตามแนวทางแบนเนอร์) → ข้อความทั้งหมดมาจาก props
+ * ตัวหนังสือวางซ้าย รูปเด่นควรอยู่ครึ่งขวา (ภาพที่สร้างให้แบรนด์เว้นที่ซ้ายไว้แล้ว)
  * image รับได้ทั้ง URL (string) และรูปในแอป (require)
  *
  * @example
  * <BannerCard
- *   image={require('@/assets/images/taladsod/banner-market.webp')}
+ *   image={require('@/assets/images/brand/night-market.webp')}
  *   title="ตลาดสดใกล้บ้าน"
  *   subtitle="ของสด อาหารร้อนๆ ส่งถึงหน้าบ้าน"
  *   ctaLabel="สั่งเลย"
@@ -15,10 +16,11 @@
  */
 
 import React from 'react';
-import { StyleSheet, Text, View, type ImageSourcePropType, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type ImageSourcePropType, type StyleProp, type ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme, radii, spacing, typography } from '@/theme';
+import { Text } from '@/components/ui/Text';
+import { useTheme, spacing, typography } from '@/theme';
 import { Card3D } from './Card3D';
 import { Button3D } from './Button3D';
 import { Pill } from './Chip';
@@ -30,9 +32,9 @@ export interface BannerCardProps {
   subtitle?: string | null;
   ctaLabel?: string | null;
   onPress?: () => unknown;
-  /** ความสูง (ค่าเริ่มต้น 168) */
+  /** ความสูง (ค่าเริ่มต้น 172) */
   height?: number;
-  /** ป้ายมุมซ้ายบน เช่น "ใหม่" */
+  /** ป้ายเหนือหัวข้อ เช่น "ใหม่" */
   badge?: string;
   radius?: number;
   style?: StyleProp<ViewStyle>;
@@ -45,13 +47,13 @@ export const BannerCard: React.FC<BannerCardProps> = ({
   subtitle,
   ctaLabel,
   onPress,
-  height = 168,
+  height = 172,
   badge,
-  radius = radii.xl,
+  radius = 24,
   style,
   accessibilityLabel,
 }) => {
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
   const source = typeof image === 'string' ? { uri: image } : image || null;
 
   return (
@@ -59,11 +61,11 @@ export const BannerCard: React.FC<BannerCardProps> = ({
       onPress={onPress}
       padding={0}
       radius={radius}
-      shadow="md"
+      shadow="lg"
       style={style}
       accessibilityLabel={accessibilityLabel || [title, subtitle].filter(Boolean).join(' — ') || 'แบนเนอร์'}
     >
-      <View style={[styles.frame, { height, borderRadius: radius, backgroundColor: colors.goldSoft }]}>
+      <View style={[styles.frame, { height, borderRadius: radius, backgroundColor: '#0C1A33' }]}>
         {source ? (
           <Image
             source={source}
@@ -74,21 +76,19 @@ export const BannerCard: React.FC<BannerCardProps> = ({
             accessibilityIgnoresInvertColors
           />
         ) : null}
-
+        {/* ม่านน้ำเงินกรมท่าจากซ้าย ให้ตัวหนังสืออ่านง่ายทุกภาพ */}
         <LinearGradient
-          colors={gradients.bannerScrim}
-          locations={[0.2, 0.55, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
+          colors={['rgba(7,14,28,0.94)', 'rgba(7,14,28,0.68)', 'rgba(7,14,28,0)']}
+          locations={[0, 0.46, 0.88]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
-
-        {!!badge && <Pill label={badge} solid style={styles.badge} />}
-
         <View style={styles.textBlock}>
+          {!!badge && <Pill label={badge} solid style={styles.badge} />}
           {!!title && (
-            <Text numberOfLines={2} style={[typography.h1, styles.title]}>
+            <Text numberOfLines={2} style={[typography.serif, styles.title]}>
               {title}
             </Text>
           )}
@@ -98,7 +98,15 @@ export const BannerCard: React.FC<BannerCardProps> = ({
             </Text>
           )}
           {!!ctaLabel && !!onPress && (
-            <Button3D title={ctaLabel} onPress={onPress} size="sm" variant="primary" style={styles.cta} haptic />
+            <Button3D
+              title={ctaLabel}
+              onPress={onPress}
+              size="sm"
+              variant="primary"
+              iconRight="arrow-right"
+              style={styles.cta}
+              haptic
+            />
           )}
         </View>
       </View>
@@ -109,29 +117,22 @@ export const BannerCard: React.FC<BannerCardProps> = ({
 const styles = StyleSheet.create({
   frame: {
     overflow: 'hidden',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   badge: {
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
+    marginBottom: spacing.xs + 2,
   },
   textBlock: {
-    padding: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    maxWidth: '70%',
   },
   title: {
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0,0,0,0.35)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
   },
   subtitle: {
-    color: 'rgba(255,255,255,0.92)',
+    color: 'rgba(235,238,245,0.86)',
     marginTop: 2,
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
   cta: {
     alignSelf: 'flex-start',

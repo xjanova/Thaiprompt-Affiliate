@@ -1,9 +1,10 @@
 /**
- * ช่วยเหลือ / ติดต่อทีมงาน — ระบบ Ticket (ธีมนวลทองคำ)
+ * ช่วยเหลือ / ติดต่อทีมงาน — ระบบ Ticket (ธีมรอยัล น้ำเงินกรมท่า-ทอง)
  *
- * - รายการเรื่องที่แจ้ง + สถานะ + ป้าย "มีข้อความใหม่จากทีมงาน"
+ * - รายการเรื่องที่แจ้ง (ไอคอนตามหมวด) + สถานะ + ป้าย "มีข้อความใหม่จากทีมงาน"
  * - แจ้งเรื่องใหม่ในแผ่นล่าง (หัวข้อ · หมวด · รายละเอียด) · ตรวจช่องว่างก่อนส่ง
- * - เปิดเรื่อง = ดูบทสนทนา + ตอบกลับ (กันกดส่งซ้ำ) · เรื่องที่แก้ไขแล้ว = ให้คะแนนได้
+ * - เปิดเรื่อง = หัวน้ำเงิน + บทสนทนา (ข้อความเรา = ฟองน้ำเงิน · ทีมงาน = ฟองขาว) + ตอบกลับ (กันกดส่งซ้ำ)
+ *   เรื่องที่แก้ไขแล้ว = ให้คะแนนดาวได้
  * - ข้อความผิดพลาดเป็นภาษาไทยเสมอ (ข้อความจาก server ที่ไม่ใช่ภาษาไทยจะไม่แสดง)
  */
 
@@ -18,10 +19,9 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
+import { Text, TextInput } from '@/components/ui/Text';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -36,20 +36,40 @@ import {
   type TicketMessage,
 } from '@/services/api';
 import { isThaiText } from '@/services/api/client';
-import { Button3D, Card3D, Chip, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
+import {
+  Button3D,
+  Card3D,
+  Chip,
+  EmptyState,
+  GlassIconButton,
+  Icon,
+  Pill,
+  RoyalHeader,
+  Screen,
+  resultHaptic,
+  type IconName,
+} from '@/components/ui';
 import { FormSheet, Field } from '@/components/shop';
+import { IconTile } from '@/components/profile';
 import { useTheme, radii, spacing, typography, type Tone } from '@/theme';
 
-const CATEGORIES = [
-  { value: 'general', label: 'ทั่วไป', icon: '💬' },
-  { value: 'account', label: 'บัญชี', icon: '👤' },
-  { value: 'payment', label: 'การชำระเงิน', icon: '💳' },
-  { value: 'order', label: 'คำสั่งซื้อ', icon: '🧾' },
-  { value: 'rider', label: 'ไรเดอร์', icon: '🛵' },
-  { value: 'technical', label: 'แอปใช้งานไม่ได้', icon: '🐛' },
-  { value: 'complaint', label: 'ร้องเรียน', icon: '⚠️' },
-  { value: 'suggestion', label: 'ข้อเสนอแนะ', icon: '💡' },
+/** ความโค้งของแผ่นเนื้อหาใต้หัวน้ำเงิน (เท่ากับ <Screen>) */
+const SHEET_RADIUS = 26;
+
+const CATEGORIES: Array<{ value: string; label: string; icon: IconName }> = [
+  { value: 'general', label: 'ทั่วไป', icon: 'chat-circle-dots' },
+  { value: 'account', label: 'บัญชี', icon: 'user' },
+  { value: 'payment', label: 'การชำระเงิน', icon: 'credit-card' },
+  { value: 'order', label: 'คำสั่งซื้อ', icon: 'receipt' },
+  { value: 'rider', label: 'ไรเดอร์', icon: 'moped' },
+  { value: 'technical', label: 'แอปใช้งานไม่ได้', icon: 'device-mobile' },
+  { value: 'complaint', label: 'ร้องเรียน', icon: 'warning' },
+  { value: 'suggestion', label: 'ข้อเสนอแนะ', icon: 'lightning' },
 ];
+
+/** ไอคอนของหมวด (ไม่รู้จัก = ไอคอนแชท) */
+const categoryIcon = (value: string): IconName =>
+  CATEGORIES.find((c) => c.value === value)?.icon ?? 'chat-circle-dots';
 
 const STATUS_TONE: Record<string, Tone> = {
   open: 'info',
@@ -83,7 +103,7 @@ const TicketDetailModal: React.FC<{
   onClose: () => void;
   onChanged: () => void;
 }> = ({ ticketId, onClose, onChanged }) => {
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const [detail, setDetail] = useState<TicketDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -164,103 +184,138 @@ const TicketDetailModal: React.FC<{
 
   return (
     <Modal visible={ticketId !== null} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.background }]} behavior="padding">
-        <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm, borderBottomColor: colors.divider }]}>
-          <View style={styles.flex}>
-            <Text style={[typography.h2, { color: colors.textStrong }]} numberOfLines={1}>
-              {t ? `#${t.ticketNumber}` : 'กำลังเปิด...'}
-            </Text>
-            {!!t && (
-              <Text style={[typography.bodySm, { color: colors.textMuted }]} numberOfLines={1}>
-                {t.subject}
+      <KeyboardAvoidingView
+        style={[styles.flex, { backgroundColor: gradients.hero[gradients.hero.length - 1] }]}
+        behavior="padding"
+      >
+        {/* ---------- หัวน้ำเงิน ---------- */}
+        <RoyalHeader
+          ornamentTop={insets.top - 18}
+          ornamentWidth={200}
+          style={{ paddingTop: insets.top + spacing.xs, paddingBottom: SHEET_RADIUS + spacing.md }}
+        >
+          <View style={styles.modalHeader}>
+            <View style={styles.flex}>
+              <Text style={[typography.serif, { color: colors.onHeader }]} numberOfLines={1}>
+                {t ? `#${t.ticketNumber}` : 'กำลังเปิด...'}
               </Text>
-            )}
+              {!!t && (
+                <Text style={[typography.bodySm, { color: colors.onHeaderMuted, marginTop: -2 }]} numberOfLines={1}>
+                  {t.subject}
+                </Text>
+              )}
+            </View>
+            <GlassIconButton icon="x" weight="bold" accessibilityLabel="ปิด" onPress={onClose} />
           </View>
-          <Button3D title="ปิด" size="sm" variant="secondary" onPress={onClose} />
-        </View>
+        </RoyalHeader>
 
-        {loading && !detail ? (
-          <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
-        ) : error && !detail ? (
-          <EmptyState compact variant="error" message={error} onAction={() => ticketId && load(ticketId)} />
-        ) : (
-          <>
-            {!!t && (
-              <View style={styles.metaRow}>
-                <Pill label={t.statusText} tone={STATUS_TONE[t.status] || 'neutral'} size="md" />
-                {!!t.categoryText && <Pill label={t.categoryText} tone="neutral" />}
-              </View>
-            )}
-            <FlatList
-              ref={listRef}
-              data={detail?.messages || []}
-              keyExtractor={(item) => String(item.id)}
-              contentContainerStyle={styles.messages}
-              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
-              renderItem={({ item }) => {
-                const mine = !item.isFromAdmin;
-                return (
-                  <View
-                    style={[
-                      styles.bubble,
-                      mine
-                        ? [styles.bubbleMine, { backgroundColor: colors.goldSoft, borderColor: colors.border }]
-                        : [styles.bubbleTeam, { backgroundColor: colors.card, borderColor: colors.border }],
-                    ]}
-                  >
-                    <Text style={[typography.micro, { color: mine ? colors.goldDeep : colors.info }]}>
-                      {mine ? 'คุณ' : '🛡️ ทีมงาน'}
-                    </Text>
-                    <Text style={[typography.body, { color: colors.textStrong }]}>{item.message}</Text>
-                    <Text style={[typography.micro, styles.bubbleTime, { color: colors.textFaint }]}>{item.createdAt}</Text>
-                  </View>
-                );
-              }}
-              ListFooterComponent={
-                canRate ? (
-                  <Card3D padding={spacing.lg} style={styles.rateCard} contentStyle={styles.rateContent}>
-                    <Text style={[typography.h3, { color: colors.textStrong }]}>ทีมงานช่วยได้ดีแค่ไหน?</Text>
-                    <View style={styles.stars}>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Pressable
-                          key={n}
-                          onPress={() => setRating(n)}
-                          hitSlop={6}
-                          accessibilityRole="button"
-                          accessibilityLabel={`ให้ ${n} ดาว`}
-                          accessibilityState={{ selected: rating >= n }}
-                        >
-                          <Text style={[styles.star, { opacity: rating >= n ? 1 : 0.3 }]}>⭐</Text>
-                        </Pressable>
-                      ))}
+        {/* ---------- แผ่นงาช้าง: บทสนทนา ---------- */}
+        <View style={[styles.modalSheet, { backgroundColor: colors.background }]}>
+          {loading && !detail ? (
+            <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+          ) : error && !detail ? (
+            <EmptyState compact variant="error" message={error} onAction={() => ticketId && load(ticketId)} />
+          ) : (
+            <>
+              {!!t && (
+                <View style={styles.metaRow}>
+                  <Pill label={t.statusText} tone={STATUS_TONE[t.status] || 'neutral'} size="md" />
+                  {!!t.categoryText && <Pill label={t.categoryText} tone="neutral" size="md" />}
+                </View>
+              )}
+              <FlatList
+                ref={listRef}
+                data={detail?.messages || []}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={styles.messages}
+                onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+                renderItem={({ item }) => {
+                  const mine = !item.isFromAdmin;
+                  return (
+                    <View
+                      style={[
+                        styles.bubble,
+                        mine
+                          ? [styles.bubbleMine, { backgroundColor: colors.navyFill }]
+                          : [styles.bubbleTeam, { backgroundColor: colors.card, borderColor: colors.border }],
+                      ]}
+                    >
+                      <View style={styles.bubbleHead}>
+                        {!mine && <Icon name="shield-check" size={13} color={colors.goldDeep} weight="fill" />}
+                        <Text style={[typography.micro, { color: mine ? colors.goldLight : colors.goldDeep }]}>
+                          {mine ? 'คุณ' : 'ทีมงาน'}
+                        </Text>
+                      </View>
+                      <Text style={[typography.body, { color: mine ? colors.onHeader : colors.textStrong }]}>
+                        {item.message}
+                      </Text>
+                      <Text
+                        style={[
+                          typography.micro,
+                          styles.bubbleTime,
+                          { color: mine ? colors.onHeaderMuted : colors.textFaint },
+                        ]}
+                      >
+                        {item.createdAt}
+                      </Text>
                     </View>
-                    <Button3D title="ส่งคะแนน" size="sm" disabled={rating < 1} onPress={submitRating} />
-                  </Card3D>
-                ) : null
-              }
-            />
-            {!closed && (
-              <View
-                style={[
-                  styles.replyBar,
-                  { borderTopColor: colors.divider, backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, spacing.sm) },
-                ]}
-              >
-                <TextInput
-                  value={reply}
-                  onChangeText={setReply}
-                  placeholder="พิมพ์ข้อความถึงทีมงาน..."
-                  placeholderTextColor={colors.textFaint}
-                  multiline
-                  maxLength={2000}
-                  accessibilityLabel="ข้อความตอบกลับ"
-                  style={[typography.body, styles.replyInput, { backgroundColor: colors.inset, color: colors.textStrong, borderColor: colors.border }]}
-                />
-                <Button3D title="ส่ง" icon="📤" size="md" disabled={!reply.trim()} loading={sending} onPress={send} />
-              </View>
-            )}
-          </>
-        )}
+                  );
+                }}
+                ListFooterComponent={
+                  canRate ? (
+                    <Card3D gradientBorder padding={spacing.lg} style={styles.rateCard} contentStyle={styles.rateContent}>
+                      <Text style={[typography.h3, { color: colors.textStrong }]}>ทีมงานช่วยได้ดีแค่ไหน?</Text>
+                      <View style={styles.stars}>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <Pressable
+                            key={n}
+                            onPress={() => setRating(n)}
+                            hitSlop={6}
+                            accessibilityRole="button"
+                            accessibilityLabel={`ให้ ${n} ดาว`}
+                            accessibilityState={{ selected: rating >= n }}
+                          >
+                            <Icon
+                              name="star"
+                              size={34}
+                              color={rating >= n ? colors.gold : colors.textFaint}
+                              weight={rating >= n ? 'fill' : 'regular'}
+                            />
+                          </Pressable>
+                        ))}
+                      </View>
+                      <Button3D title="ส่งคะแนน" size="sm" disabled={rating < 1} onPress={submitRating} />
+                    </Card3D>
+                  ) : null
+                }
+              />
+              {!closed && (
+                <View
+                  style={[
+                    styles.replyBar,
+                    {
+                      borderTopColor: colors.divider,
+                      backgroundColor: colors.card,
+                      paddingBottom: Math.max(insets.bottom, spacing.sm) + spacing.xs,
+                    },
+                  ]}
+                >
+                  <TextInput
+                    value={reply}
+                    onChangeText={setReply}
+                    placeholder="พิมพ์ข้อความถึงทีมงาน..."
+                    placeholderTextColor={colors.textFaint}
+                    multiline
+                    maxLength={2000}
+                    accessibilityLabel="ข้อความตอบกลับ"
+                    style={[typography.body, styles.replyInput, { backgroundColor: colors.inset, color: colors.textStrong, borderColor: colors.border }]}
+                  />
+                  <Button3D title="ส่ง" icon="paper-plane-tilt" size="md" disabled={!reply.trim()} loading={sending} onPress={send} />
+                </View>
+              )}
+            </>
+          )}
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -365,7 +420,7 @@ export default function SupportScreen() {
     return (
       <Screen title="ช่วยเหลือ" scroll={false}>
         <EmptyState
-          icon="💬"
+          icon="headset"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อแจ้งปัญหาหรือสอบถามทีมงาน"
           actionLabel="เข้าสู่ระบบ"
@@ -386,18 +441,29 @@ export default function SupportScreen() {
         style={styles.card}
         accessibilityLabel={`เรื่อง ${item.subject} สถานะ ${item.statusText}${item.hasUnreadAdminMessage ? ' มีข้อความใหม่จากทีมงาน' : ''}`}
       >
-        <View style={styles.rowBetween}>
-          <Text style={[typography.caption, { color: colors.goldDeep }]}>#{item.ticketNumber}</Text>
-          <Pill label={item.statusText} tone={STATUS_TONE[item.status] || 'neutral'} />
-        </View>
-        <Text style={[typography.bodyStrong, styles.subject, { color: colors.textStrong }]} numberOfLines={2}>
-          {item.subject}
-        </Text>
-        <View style={styles.rowBetween}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>
-            {item.categoryText} · {item.messageCount.toLocaleString('th-TH')} ข้อความ
-          </Text>
-          {item.hasUnreadAdminMessage && <Pill label="ข้อความใหม่" tone="danger" icon="🔴" />}
+        <View style={styles.ticketRow}>
+          <IconTile icon={categoryIcon(item.category)} />
+          <View style={styles.flex}>
+            <View style={styles.rowBetween}>
+              <Text style={[typography.caption, { color: colors.goldDeep }]}>#{item.ticketNumber}</Text>
+              <Pill label={item.statusText} tone={STATUS_TONE[item.status] || 'neutral'} />
+            </View>
+            <Text style={[typography.bodyStrong, styles.subject, { color: colors.textStrong }]} numberOfLines={2}>
+              {item.subject}
+            </Text>
+            <View style={styles.rowBetween}>
+              <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]} numberOfLines={1}>
+                {item.categoryText} · {item.messageCount.toLocaleString('th-TH')} ข้อความ
+              </Text>
+              {item.hasUnreadAdminMessage && (
+                <Pill
+                  label="ข้อความใหม่"
+                  tone="danger"
+                  icon={<View style={[styles.newDot, { backgroundColor: colors.danger }]} />}
+                />
+              )}
+            </View>
+          </View>
         </View>
       </Card3D>
     </Animated.View>
@@ -408,7 +474,7 @@ export default function SupportScreen() {
       title="ช่วยเหลือ"
       subtitle="แจ้งปัญหาหรือสอบถามทีมงาน"
       scroll={false}
-      right={<Button3D title="แจ้งเรื่อง" icon="➕" size="sm" onPress={openCreate} />}
+      right={<Button3D title="แจ้งเรื่อง" icon="plus" size="sm" onPress={openCreate} />}
     >
       <FlatList
         data={tickets}
@@ -417,10 +483,13 @@ export default function SupportScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <Card3D variant="flat" padding={spacing.md} style={styles.intro}>
-            <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-              🕘 ทีมงานตอบกลับในเวลาทำการ เรื่องด่วนเกี่ยวกับออเดอร์หรือการเงินจะได้รับการดูแลก่อน
-            </Text>
+          <Card3D padding={spacing.md} shadow="sm" style={styles.intro}>
+            <View style={styles.introRow}>
+              <IconTile icon="clock" tone="gold" size={40} />
+              <Text style={[typography.bodySm, styles.flex, { color: colors.textMuted }]}>
+                ทีมงานตอบกลับในเวลาทำการ เรื่องด่วนเกี่ยวกับออเดอร์หรือการเงินจะได้รับการดูแลก่อน
+              </Text>
+            </View>
           </Card3D>
         }
         ListEmptyComponent={
@@ -431,7 +500,7 @@ export default function SupportScreen() {
           ) : (
             <EmptyState
               compact
-              icon="💬"
+              icon="chat-circle-dots"
               title="ยังไม่เคยแจ้งเรื่อง"
               message="มีปัญหาหรืออยากถามอะไร แจ้งทีมงานได้เลย"
               actionLabel="แจ้งเรื่องใหม่"
@@ -450,9 +519,9 @@ export default function SupportScreen() {
         }
       />
 
+      {/* FormSheet วาด prop icon เป็นตัวอักษร — ไม่ส่งไอคอน (แอปเลิกใช้อีโมจิเป็นไอคอน) */}
       <FormSheet
         visible={createOpen}
-        icon="💬"
         title="แจ้งเรื่องใหม่"
         description="เล่าให้ละเอียดหน่อย เช่น เลขออเดอร์ เวลาที่เกิดปัญหา"
         submitLabel="ส่งเรื่อง"
@@ -504,16 +573,26 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxxl * 2,
   },
   intro: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  introRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   loader: {
     marginTop: spacing.xxxl,
   },
   card: {
     marginBottom: spacing.sm,
+  },
+  ticketRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
   rowBetween: {
     flexDirection: 'row',
@@ -523,6 +602,11 @@ const styles = StyleSheet.create({
   },
   subject: {
     marginVertical: spacing.xs,
+  },
+  newDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   catLabel: {
     marginTop: spacing.md,
@@ -536,15 +620,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.screen,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingTop: spacing.sm,
+  },
+  modalSheet: {
+    flex: 1,
+    marginTop: -SHEET_RADIUS,
+    borderTopLeftRadius: SHEET_RADIUS,
+    borderTopRightRadius: SHEET_RADIUS,
+    overflow: 'hidden',
   },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
     paddingHorizontal: spacing.screen,
-    paddingTop: spacing.md,
+    paddingTop: spacing.lg,
   },
   messages: {
     padding: spacing.screen,
@@ -553,7 +643,6 @@ const styles = StyleSheet.create({
   bubble: {
     maxWidth: '86%',
     borderRadius: radii.lg,
-    borderWidth: 1,
     padding: spacing.md,
   },
   bubbleMine: {
@@ -562,7 +651,14 @@ const styles = StyleSheet.create({
   },
   bubbleTeam: {
     alignSelf: 'flex-start',
+    borderWidth: 1,
     borderBottomLeftRadius: radii.xs,
+  },
+  bubbleHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 2,
   },
   bubbleTime: {
     marginTop: spacing.xs,
@@ -578,16 +674,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
-  star: {
-    fontSize: 30,
-  },
   replyBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.sm,
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
   },
   replyInput: {
     flex: 1,

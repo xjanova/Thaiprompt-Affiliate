@@ -1,5 +1,5 @@
 /**
- * เงื่อนไขการใช้งาน — ธีมนวลทองคำ (จัดหน้าด้วย LegalDocument)
+ * เงื่อนไขการใช้งาน — ธีมรอยัล น้ำเงินกรมท่า-ทอง (จัดหน้าด้วย LegalDocument)
  * ฉบับทางการอยู่บนเว็บไซต์ (APP_INFO.TERMS_URL)
  */
 
@@ -80,7 +80,7 @@ export default function TermsScreen() {
   return (
     <LegalDocument
       title="เงื่อนไขการใช้งาน"
-      icon="📋"
+      icon="clipboard-text"
       heading="เงื่อนไขและข้อกำหนด"
       dateLabel="อัปเดตล่าสุด: 1 มกราคม 2568"
       sections={TERMS_SECTIONS}

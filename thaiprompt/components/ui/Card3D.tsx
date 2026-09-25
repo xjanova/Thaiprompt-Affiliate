@@ -1,14 +1,15 @@
 /**
- * Card3D — การ์ดดินเหนียวยกขึ้นจากพื้น (เงาสองทางแบบเว็บ V4)
+ * Card3D — การ์ดของแอป ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
- * - variant raised (ค่าเริ่มต้น) = ยกขึ้น · flat = เรียบไม่มีเงา · inset = ยุบลง (กล่องกรอก/สรุปยอด)
- * - gradientBorder = ขอบไล่เฉดทอง (true) หรือส่ง gradient เอง
- * - ส่ง onPress = การ์ดกดได้ (ย่อเล็กน้อย + เงาหด + สั่นเบา + กันกดซ้ำ)
+ * - variant raised (ค่าเริ่มต้น) = การ์ดขาวลอยด้วยเงานุ่มสองชั้น (โหมดมืด = การ์ดกระจกทึบ + ขอบบาง)
+ *   flat = เรียบไม่มีเงา · inset = ยุบลง (กล่องกรอก/สรุปยอด)
+ * - gradientBorder = ขอบไล่เฉดทอง (true) หรือส่ง gradient เอง — ใช้กับการ์ดสำคัญเท่านั้น
+ * - ส่ง onPress = การ์ดกดได้ (ย่อเล็กน้อย + สั่นเบา + กันกดซ้ำ)
  * - การ์ดที่เป็นตัวเลือก: ส่ง accessibilityRole="radio" (เลือกได้อย่างเดียว) / "checkbox" (หลายอย่าง)
- *   + accessibilityState={{ checked }} ให้ screen reader บอกว่าเลือกอยู่หรือไม่ (ขอบทองอย่างเดียวคนตาบอดไม่รู้)
+ *   + accessibilityState={{ checked }} ให้ screen reader บอกว่าเลือกอยู่หรือไม่
  *
  * @example
- * <Card3D onPress={() => router.push('/orders')} gradientBorder>
+ * <Card3D onPress={() => router.push('/orders')}>
  *   <Text>คำสั่งซื้อของฉัน</Text>
  * </Card3D>
  */
@@ -32,7 +33,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   useTheme,
-  clayShadowStyle,
+  shadowStyle,
   radii,
   spacing,
   type GradientTuple,
@@ -99,8 +100,8 @@ export const Card3D: React.FC<Card3DProps> = ({
   const pressable = !!onPress || !!onLongPress;
 
   const anim = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 - 0.02 * pressed.value }],
-    opacity: 1 - 0.06 * pressed.value,
+    transform: [{ scale: 1 - 0.018 * pressed.value }],
+    opacity: 1 - 0.05 * pressed.value,
   }));
 
   const borderColors: GradientTuple | null = gradientBorder
@@ -109,7 +110,7 @@ export const Card3D: React.FC<Card3DProps> = ({
       : gradientBorder
     : null;
 
-  // ---------- พื้นผิว + เงา ----------
+  // ---------- พื้นผิว ----------
   const surfaceStyle: ViewStyle =
     variant === 'inset'
       ? {
@@ -117,15 +118,21 @@ export const Card3D: React.FC<Card3DProps> = ({
           borderWidth: 1,
           borderColor: colors.border,
         }
-      : {
-          backgroundColor: variant === 'flat' ? colors.surface : colors.card,
-          // ไฮไลต์ขอบบนแบบดินเหนียว (โหมดสว่างเท่านั้น)
-          borderTopWidth: variant === 'raised' && !isDark && !borderColors ? 1 : 0,
-          borderTopColor: colors.shadowLight,
-        };
+      : variant === 'flat'
+        ? {
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }
+        : {
+            backgroundColor: colors.card,
+            // โหมดมืด: การ์ดกระจก = ขอบบาง + เส้นไฮไลต์บน
+            borderWidth: isDark && !borderColors ? 1 : 0,
+            borderColor: colors.border,
+            borderTopColor: isDark && !borderColors ? colors.shadowLight : undefined,
+          };
 
-  const outerShadow: ViewStyle =
-    variant === 'raised' ? clayShadowStyle(shadow, colors.shadowDark, colors.shadowLight) : {};
+  const outerShadow: ViewStyle = variant === 'raised' ? shadowStyle(shadow, colors.shadowDark) : {};
 
   const content = (
     <View

@@ -10,7 +10,8 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/stores/authStore';
@@ -27,6 +28,9 @@ import {
   StatTile,
   WebsiteButton,
   resultHaptic,
+  BrandArt,
+  Icon,
+  IconSlot,
 } from '@/components/ui';
 import {
   getRiderEarnings,
@@ -73,14 +77,14 @@ const PermissionRow: React.FC<{
   return (
     <View style={[styles.permRow, { borderBottomColor: colors.divider }]}>
       <View style={[styles.permIcon, { backgroundColor: t.bg }]}>
-        <Text style={styles.permEmoji}>{icon}</Text>
+        <IconSlot icon={icon} size={20} color={t.fg} />
       </View>
       <View style={styles.flex}>
         <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{title}</Text>
         <Text style={[typography.caption, { color: colors.textMuted }]}>{description}</Text>
       </View>
       {granted ? (
-        <Pill label="พร้อม" tone="success" icon="✓" />
+        <Pill label="พร้อม" tone="success" icon="check" />
       ) : onPress ? (
         <Button3D title={actionLabel} size="sm" variant={optional ? 'secondary' : 'primary'} onPress={onPress} />
       ) : (
@@ -108,7 +112,9 @@ const ActionTile: React.FC<{ icon: string; title: string; caption: string; onPre
       gradientBorder={highlight}
       accessibilityLabel={title}
     >
-      <Text style={styles.tileIcon}>{icon}</Text>
+      <View style={[styles.tileIconBox, { backgroundColor: highlight ? colors.goldSoft : colors.navySoft }]}>
+        <IconSlot icon={icon} size={21} color={highlight ? colors.goldDeep : colors.navy} />
+      </View>
       <Text style={[typography.bodyStrong, { color: colors.textStrong }]} numberOfLines={1}>
         {title}
       </Text>
@@ -272,7 +278,7 @@ export default function RiderScreen() {
       // รอ sheet ขอสิทธิ์ปิดสนิทก่อน (iOS)
       setTimeout(() => {
         if (!mountedRef.current) return;
-        Alert.alert('พร้อมรับทรัพย์แล้ว! 🟢', 'ระบบจะแจ้งเตือนทันทีเมื่อมีงานใกล้คุณ', [
+        Alert.alert('พร้อมรับทรัพย์แล้ว!', 'ระบบจะแจ้งเตือนทันทีเมื่อมีงานใกล้คุณ', [
           { text: 'อยู่หน้านี้', style: 'cancel' },
           { text: 'ดูงานใกล้ฉัน', onPress: () => router.push('/rider-jobs' as never) },
         ]);
@@ -333,7 +339,7 @@ export default function RiderScreen() {
       load('silent');
       const needDocs = (result.rider?.documents_missing || []).length > 0;
       Alert.alert(
-        result.outcome === 'created' ? 'สมัครสำเร็จ! 🎉' : 'ส่งใบสมัครแล้ว',
+        result.outcome === 'created' ? 'สมัครสำเร็จ!' : 'ส่งใบสมัครแล้ว',
         needDocs ? `${message || 'บันทึกใบสมัครแล้ว'}\nขั้นต่อไป อัปโหลดเอกสารให้ครบนะ` : message || 'ทีมงานจะตรวจสอบโดยเร็ว',
         needDocs
           ? [
@@ -359,7 +365,7 @@ export default function RiderScreen() {
     return (
       <Screen title="ไรเดอร์">
         <EmptyState
-          icon="🛵"
+          art="scooter"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อสมัครเป็นไรเดอร์และเริ่มรับงานส่งใกล้บ้าน"
           actionLabel="เข้าสู่ระบบ"
@@ -372,7 +378,7 @@ export default function RiderScreen() {
   if (initialLoading && !data) {
     return (
       <Screen title="ไรเดอร์">
-        <EmptyState icon="⏳" title="กำลังโหลด..." message="รอสักครู่นะ" />
+        <EmptyState art="scooter" title="กำลังโหลด..." message="รอสักครู่นะ" />
       </Screen>
     );
   }
@@ -398,21 +404,23 @@ export default function RiderScreen() {
       <Screen title="มาเป็นไรเดอร์" subtitle="รับงานส่งใกล้บ้าน เลือกเวลาได้เอง" onRefresh={onRefresh} refreshing={refreshing}>
         <Card3D gradientBorder padding={0} style={styles.block}>
           <LinearGradient colors={gradients.hero} style={styles.heroInner}>
-            <Text style={styles.heroEmoji}>🛵</Text>
-            <Text style={[typography.h1, { color: colors.textStrong }]}>ขับไป รับทรัพย์ไป</Text>
-            <Text style={[typography.body, { color: colors.text }]}>
+            <BrandArt name="scooter" size={120} style={styles.heroArt} />
+            <Text style={[typography.serifLg, styles.heroText, { color: colors.onHeader }]}>ขับไป รับทรัพย์ไป</Text>
+            <Text style={[typography.body, styles.heroText, { color: colors.onHeaderMuted }]}>
               เห็นค่าส่งก่อนกดรับทุกงาน ส่งเสร็จเงินเข้ากระเป๋าทันที
             </Text>
           </LinearGradient>
           <View style={styles.benefits}>
             {[
-              { icon: '💰', text: 'ค่าส่งแสดงชัดก่อนรับงาน ไม่มีหักแอบแฝง' },
-              { icon: '⏰', text: 'ออนไลน์เมื่อไหร่ก็ได้ พักเมื่อไหร่ก็ได้' },
-              { icon: '📍', text: 'รับงานใกล้ตัว วิ่งไม่ไกล' },
-              { icon: '👛', text: 'รายได้เข้ากระเป๋าเงินในแอปทันทีที่ส่งสำเร็จ' },
+              { icon: 'coins', text: 'ค่าส่งแสดงชัดก่อนรับงาน ไม่มีหักแอบแฝง' },
+              { icon: 'clock', text: 'ออนไลน์เมื่อไหร่ก็ได้ พักเมื่อไหร่ก็ได้' },
+              { icon: 'map-pin', text: 'รับงานใกล้ตัว วิ่งไม่ไกล' },
+              { icon: 'wallet', text: 'รายได้เข้ากระเป๋าเงินในแอปทันทีที่ส่งสำเร็จ' },
             ].map((b) => (
               <View key={b.text} style={styles.benefitRow}>
-                <Text style={styles.benefitIcon}>{b.icon}</Text>
+                <View style={[styles.benefitIcon, { backgroundColor: colors.goldSoft }]}>
+                  <IconSlot icon={b.icon} size={19} color={colors.goldDeep} />
+                </View>
                 <Text style={[typography.body, styles.flex, { color: colors.text }]}>{b.text}</Text>
               </View>
             ))}
@@ -437,7 +445,7 @@ export default function RiderScreen() {
             onCancel={() => setShowForm(false)}
           />
         ) : (
-          <Button3D title="สมัครเลย" icon="🚀" size="lg" fullWidth onPress={() => setShowForm(true)} />
+          <Button3D title="สมัครเลย" iconRight="arrow-right" size="lg" fullWidth onPress={() => setShowForm(true)} />
         )}
       </Screen>
     );
@@ -456,17 +464,17 @@ export default function RiderScreen() {
   const statusLook = (() => {
     switch (rider.status) {
       case 'pending':
-        return { icon: '⏳', title: 'รอตรวจใบสมัคร', tone: 'warning' as Tone, gradient: gradients.hero };
+        return { icon: 'hourglass', title: 'รอตรวจใบสมัคร', tone: 'warning' as Tone, gradient: gradients.surface };
       case 'rejected':
-        return { icon: '📝', title: 'ใบสมัครยังไม่ผ่าน', tone: 'danger' as Tone, gradient: gradients.secondary };
+        return { icon: 'note-pencil', title: 'ใบสมัครยังไม่ผ่าน', tone: 'danger' as Tone, gradient: gradients.surface };
       case 'suspended':
-        return { icon: '🚫', title: 'บัญชีถูกระงับชั่วคราว', tone: 'danger' as Tone, gradient: gradients.secondary };
+        return { icon: 'prohibit', title: 'บัญชีถูกระงับชั่วคราว', tone: 'danger' as Tone, gradient: gradients.surface };
       case 'inactive':
-        return { icon: '💤', title: 'บัญชีไม่ได้ใช้งาน', tone: 'neutral' as Tone, gradient: gradients.secondary };
+        return { icon: 'moon', title: 'บัญชีไม่ได้ใช้งาน', tone: 'neutral' as Tone, gradient: gradients.surface };
       default:
-        if (isBusy) return { icon: '🛵', title: 'กำลังส่งงาน', tone: 'gold' as Tone, gradient: gradients.primary };
-        if (isOnline) return { icon: '🟢', title: 'ออนไลน์ รอรับงาน', tone: 'success' as Tone, gradient: gradients.success };
-        return { icon: '☕', title: 'พักอยู่ (ออฟไลน์)', tone: 'neutral' as Tone, gradient: gradients.surface };
+        if (isBusy) return { icon: 'moped', title: 'กำลังส่งงาน', tone: 'gold' as Tone, gradient: gradients.primary };
+        if (isOnline) return { icon: 'broadcast', title: 'ออนไลน์ รอรับงาน', tone: 'success' as Tone, gradient: gradients.success };
+        return { icon: 'coffee', title: 'พักอยู่ (ออฟไลน์)', tone: 'neutral' as Tone, gradient: gradients.surface };
     }
   })();
   const heroOnAccent = isApproved && (isBusy || isOnline);
@@ -491,18 +499,29 @@ export default function RiderScreen() {
           <Pill
             label={isBusy ? 'กำลังส่งงาน' : isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
             tone={isBusy ? 'gold' : isOnline ? 'success' : 'neutral'}
-            icon={isBusy ? '🛵' : isOnline ? '●' : '○'}
+            icon={isBusy ? 'moped' : isOnline ? 'broadcast' : 'moon'}
           />
         ) : null
       }
     >
       {/* ---------- การ์ดสถานะ ---------- */}
-      <Card3D padding={0} style={styles.block} gradientBorder={isApproved}>
-        <LinearGradient colors={statusLook.gradient} style={styles.statusInner}>
+      <Card3D padding={0} radius={24} shadow="lg" style={styles.block}>
+        <LinearGradient colors={statusLook.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statusInner}>
           <View style={styles.statusRow}>
-            <Text style={styles.statusEmoji}>{statusLook.icon}</Text>
+            <View
+              style={[
+                styles.statusIcon,
+                { backgroundColor: heroOnAccent ? 'rgba(255,255,255,0.22)' : toneColors(statusLook.tone, colors).bg },
+              ]}
+            >
+              {heroOnAccent ? (
+                <BrandArt name="scooter" size={50} />
+              ) : (
+                <Icon name={statusLook.icon as never} size={26} color={toneColors(statusLook.tone, colors).fg} weight="fill" />
+              )}
+            </View>
             <View style={styles.flex}>
-              <Text style={[typography.h2, { color: heroText }]}>{statusLook.title}</Text>
+              <Text style={[typography.serif, { color: heroText }]}>{statusLook.title}</Text>
               <Text style={[typography.caption, { color: heroSub }]}>
                 {rider.vehicle_type_text}
                 {rider.vehicle_plate ? ` · ${rider.vehicle_plate}` : ''}
@@ -541,7 +560,8 @@ export default function RiderScreen() {
           )}
           {isApproved && !!onlineBlock && !isBusy && (
             <View style={[styles.blockNote, { backgroundColor: colors.warningSoft }]}>
-              <Text style={[typography.bodySm, { color: colors.text }]}>⚠️ {onlineBlock.message}</Text>
+              <Icon name="warning" size={16} color={colors.warning} weight="fill" />
+              <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>{onlineBlock.message}</Text>
             </View>
           )}
         </LinearGradient>
@@ -549,14 +569,14 @@ export default function RiderScreen() {
 
       {/* ---------- ปุ่มหลักตามสถานะ ---------- */}
       {isApproved && isBusy && (
-        <Button3D title="ไปที่งานที่กำลังส่ง" icon="🧭" size="lg" fullWidth onPress={openJob} style={styles.block} />
+        <Button3D title="ไปที่งานที่กำลังส่ง" icon="navigation-arrow" size="lg" fullWidth onPress={openJob} style={styles.block} />
       )}
       {isApproved && !isBusy && isOnline && (
         <View style={styles.block}>
-          <Button3D title="ดูงานใกล้ฉัน" icon="📋" size="lg" fullWidth onPress={() => router.push('/rider-jobs' as never)} />
+          <Button3D title="ดูงานใกล้ฉัน" icon="list" size="lg" fullWidth onPress={() => router.push('/rider-jobs' as never)} />
           <Button3D
             title="หยุดรับงาน"
-            icon="⏸️"
+            icon="power"
             variant="secondary"
             fullWidth
             onPress={handleGoOffline}
@@ -567,7 +587,7 @@ export default function RiderScreen() {
       {isApproved && !isBusy && !isOnline && (
         <Button3D
           title="เริ่มรับงาน"
-          icon="🟢"
+          icon="power"
           variant="success"
           size="lg"
           fullWidth
@@ -580,7 +600,7 @@ export default function RiderScreen() {
       {(rider.status === 'pending' || canReapply) && docsMissing > 0 && (
         <Button3D
           title={`อัปโหลดเอกสาร (${docsDone}/${docsRequired})`}
-          icon="📄"
+          icon="upload-simple"
           size="lg"
           fullWidth
           onPress={() => router.push('/rider-documents' as never)}
@@ -590,7 +610,7 @@ export default function RiderScreen() {
       {(canReapply || rider.status === 'pending') && !showForm && (
         <Button3D
           title={canReapply ? 'แก้ไขแล้วส่งใบสมัครใหม่' : 'แก้ไขใบสมัคร'}
-          icon="✏️"
+          icon="pencil-simple"
           variant="secondary"
           fullWidth
           onPress={() => setShowForm(true)}
@@ -609,7 +629,7 @@ export default function RiderScreen() {
       {rider.status === 'suspended' && (
         <Button3D
           title="ติดต่อทีมงาน"
-          icon="💬"
+          icon="chat-circle-dots"
           variant="secondary"
           fullWidth
           onPress={() => router.push('/support' as never)}
@@ -629,7 +649,6 @@ export default function RiderScreen() {
         <>
           <SectionHeader
             title="รายได้วันนี้"
-            icon="💰"
             actionLabel="ดูทั้งหมด"
             onAction={() => router.push('/rider-earnings' as never)}
             style={styles.section}
@@ -637,7 +656,7 @@ export default function RiderScreen() {
           <View style={styles.grid}>
             <StatTile
               label="รายได้วันนี้"
-              icon="💸"
+              icon="money"
               tone="gold"
               loading={earningsLoading && !earnings}
               value={<PriceText amount={earnings?.gross_earnings ?? 0} size="lg" tone="gold" />}
@@ -646,7 +665,7 @@ export default function RiderScreen() {
             />
             <StatTile
               label="ส่งสำเร็จวันนี้"
-              icon="📦"
+              icon="package"
               tone="success"
               loading={earningsLoading && !earnings}
               value={earnings?.completed_jobs ?? 0}
@@ -655,7 +674,7 @@ export default function RiderScreen() {
             />
             <StatTile
               label="ยอดในกระเป๋า"
-              icon="👛"
+              icon="wallet"
               tone="info"
               value={<PriceText amount={rider.wallet_balance} size="lg" />}
               onPress={() => router.push('/(tabs)/wallet' as never)}
@@ -663,7 +682,7 @@ export default function RiderScreen() {
             />
             <StatTile
               label="วงเงินรับงานเก็บเงินปลายทาง"
-              icon="💵"
+              icon="coins"
               tone="warning"
               value={<PriceText amount={rider.cod_credit_available} size="lg" />}
               style={styles.gridItem}
@@ -673,19 +692,19 @@ export default function RiderScreen() {
       )}
 
       {/* ---------- เมนูลัด ---------- */}
-      <SectionHeader title="เมนูไรเดอร์" icon="🧰" style={styles.section} />
+      <SectionHeader title="เมนูไรเดอร์" style={styles.section} />
       <View style={styles.grid}>
         {isApproved && (
-          <ActionTile icon="📋" title="งานใกล้ฉัน" caption="ดูงานที่รอคนรับ" onPress={() => router.push('/rider-jobs' as never)} />
+          <ActionTile icon="list" title="งานใกล้ฉัน" caption="ดูงานที่รอคนรับ" onPress={() => router.push('/rider-jobs' as never)} />
         )}
         {isApproved && isBusy && (
-          <ActionTile icon="🧭" title="งานปัจจุบัน" caption="ขั้นตอนและนำทาง" onPress={openJob} highlight />
+          <ActionTile icon="navigation-arrow" title="งานปัจจุบัน" caption="ขั้นตอนและนำทาง" onPress={openJob} highlight />
         )}
         {isApproved && (
-          <ActionTile icon="📊" title="รายได้ & ประวัติ" caption="สรุปรายวัน รายเดือน" onPress={() => router.push('/rider-earnings' as never)} />
+          <ActionTile icon="chart-bar" title="รายได้ & ประวัติ" caption="สรุปรายวัน รายเดือน" onPress={() => router.push('/rider-earnings' as never)} />
         )}
         <ActionTile
-          icon="📄"
+          icon="identification-card"
           title="เอกสาร"
           caption={docsMissing > 0 ? `ยังขาด ${docsMissing} รายการ` : rider.documents_pending_review ? 'รอทีมงานตรวจ' : 'ครบแล้ว'}
           onPress={() => router.push('/rider-documents' as never)}
@@ -697,7 +716,6 @@ export default function RiderScreen() {
       <SectionHeader
         title="ตำแหน่ง & ความเป็นส่วนตัว"
         subtitle="ใช้ตำแหน่งเฉพาะตอนออนไลน์หรือกำลังส่งงาน"
-        icon="📍"
         style={styles.section}
       />
       <Card3D padding={spacing.md} style={styles.block}>
@@ -707,18 +725,19 @@ export default function RiderScreen() {
             style={[styles.gpsOff, { backgroundColor: colors.dangerSoft }]}
             accessibilityRole="button"
           >
-            <Text style={[typography.bodySm, { color: colors.danger }]}>⚠️ GPS ของเครื่องปิดอยู่ — แตะเพื่อเปิดในตั้งค่า</Text>
+            <Icon name="warning" size={16} color={colors.danger} weight="fill" />
+            <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>GPS ของเครื่องปิดอยู่ — แตะเพื่อเปิดในตั้งค่า</Text>
           </Pressable>
         )}
         <PermissionRow
-          icon="📍"
+          icon="map-pin"
           title="ตำแหน่งขณะใช้แอป"
           description="จำเป็นสำหรับเริ่มรับงานและนำทาง"
           granted={fgGranted}
           onPress={() => flow.ensureForeground().then(() => load('silent'))}
         />
         <PermissionRow
-          icon="🤝"
+          icon="handshake"
           title="แชร์ตำแหน่งให้ลูกค้าระหว่างส่ง"
           description="ลูกค้าเห็นเฉพาะออเดอร์ที่คุณกำลังส่ง ต้องยอมรับก่อนรับงานแรก"
           granted={consentGiven}
@@ -738,7 +757,7 @@ export default function RiderScreen() {
           />
         )}
         <PermissionRow
-          icon="🛰️"
+          icon="broadcast"
           title="ติดตามต่อแม้ปิดหน้าจอ"
           description={
             bgGranted
@@ -757,10 +776,10 @@ export default function RiderScreen() {
         {isBusy && (
           <Text style={[typography.caption, styles.trackingNote, { color: colors.textMuted }]}>
             {trackingMode === 'background'
-              ? '📡 กำลังแชร์ตำแหน่งงานปัจจุบัน (ทำงานแม้ปิดหน้าจอ)'
+              ? 'กำลังแชร์ตำแหน่งงานปัจจุบัน (ทำงานแม้ปิดหน้าจอ)'
               : trackingMode === 'foreground'
-                ? '📡 กำลังแชร์ตำแหน่งงานปัจจุบัน (เฉพาะตอนเปิดแอป)'
-                : '⚠️ ยังไม่ได้แชร์ตำแหน่งงานปัจจุบัน — เปิดสิทธิ์ตำแหน่งก่อนนะ'}
+                ? 'กำลังแชร์ตำแหน่งงานปัจจุบัน (เฉพาะตอนเปิดแอป)'
+                : 'ยังไม่ได้แชร์ตำแหน่งงานปัจจุบัน — เปิดสิทธิ์ตำแหน่งก่อนนะ'}
           </Text>
         )}
       </Card3D>
@@ -768,11 +787,11 @@ export default function RiderScreen() {
       {/* ---------- ข้อมูลบัญชี ---------- */}
       {isApproved && (
         <>
-          <SectionHeader title="ผลงานของฉัน" icon="⭐" style={styles.section} />
+          <SectionHeader title="ผลงานของฉัน" style={styles.section} />
           <View style={styles.grid}>
             <StatTile
               label="คะแนน"
-              icon="⭐"
+              icon="star"
               tone="gold"
               value={rider.rating_count > 0 ? num(rider.rating).toFixed(1) : '-'}
               caption={rider.rating_count > 0 ? `จาก ${rider.rating_count} รีวิว` : 'ยังไม่มีรีวิว'}
@@ -780,7 +799,7 @@ export default function RiderScreen() {
             />
             <StatTile
               label="ส่งสำเร็จทั้งหมด"
-              icon="🏁"
+              icon="flag"
               tone="success"
               value={rider.completed_jobs}
               caption={rider.total_jobs > 0 ? `สำเร็จ ${Math.round(num(rider.completion_rate))}%` : undefined}
@@ -827,13 +846,19 @@ const styles = StyleSheet.create({
   },
   heroInner: {
     padding: spacing.xl,
+    paddingTop: spacing.xxl,
     gap: spacing.xs,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
+    overflow: 'hidden',
   },
-  heroEmoji: {
-    fontSize: 44,
-    marginBottom: spacing.xs,
+  heroArt: {
+    position: 'absolute',
+    right: -6,
+    top: -4,
+  },
+  heroText: {
+    maxWidth: '72%',
   },
   benefits: {
     padding: spacing.lg,
@@ -845,26 +870,35 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   benefitIcon: {
-    fontSize: 22,
-    width: 30,
-    textAlign: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusInner: {
-    padding: spacing.lg,
+    padding: spacing.lg + 2,
     gap: spacing.sm,
-    borderRadius: radii.xl,
+    borderRadius: 24,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  statusEmoji: {
-    fontSize: 36,
+  statusIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   blockNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     borderRadius: radii.md,
-    padding: spacing.sm,
+    padding: spacing.sm + 2,
   },
   grid: {
     flexDirection: 'row',
@@ -881,9 +915,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minHeight: 112,
   },
-  tileIcon: {
-    fontSize: 28,
-    marginBottom: spacing.xs,
+  tileIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   permRow: {
     flexDirection: 'row',
@@ -893,18 +931,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   permIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  permEmoji: {
-    fontSize: 20,
-  },
   gpsOff: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     borderRadius: radii.md,
-    padding: spacing.sm,
+    padding: spacing.sm + 2,
     marginBottom: spacing.xs,
   },
   trackingNote: {

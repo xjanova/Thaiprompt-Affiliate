@@ -1,5 +1,5 @@
 /**
- * หน้าโอนเงิน (Transfer) - ตรงกับเว็บ
+ * หน้าโอนเงิน (Transfer) - ตรงกับเว็บ · ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * Features:
  * - สแกน QR Code หรือกรอก Wallet Address
@@ -8,17 +8,16 @@
  * - คำนวณค่าธรรมเนียม (ผู้โอนจ่าย)
  * - แสดงยอดคงเหลือหลังโอน
  * - ใส่ PIN ยืนยัน
+ *
+ * หมายเหตุ: ปิดอยู่หลัง FEATURES.P2P_TRANSFER_ENABLED (PLAY-18) — ปรับหน้าตาให้เข้าธีมแบบเบาๆ ไว้ก่อน
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   ScrollView,
-  TouchableOpacity,
-  TextInput,
+  Pressable,
   StyleSheet,
-  StatusBar,
   Alert,
   ActivityIndicator,
   Modal,
@@ -26,14 +25,18 @@ import {
   Platform,
   Image,
 } from 'react-native';
+import { Text, TextInput } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isFeatureEnabled } from '@/config/appConfig';
-import { useColorScheme } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuthStore } from '@/stores/authStore';
 import { getWallet, lookupWalletAddress, transferMoney } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import { Button3D, Card3D, GlassIconButton, Icon, IconButton, Screen, type IconName } from '@/components/ui';
+import { ActionBar, InfoRow, MoneyInput, MoneyText, NavyCard } from '@/components/wallet/WalletKit';
+import { useTheme, DARK_THEME, radii, shadowStyle, spacing, typography } from '@/theme';
 
 // ค่าธรรมเนียมโอน (ตัวอย่าง - ควรดึงจาก API)
 const TRANSFER_FEE_RATE = 0.01; // 1%
@@ -59,10 +62,35 @@ export default function WalletTransferScreen() {
   return <WalletTransferContent />;
 }
 
+/** แถวสรุปในแผ่น PIN: ไอคอน + ป้าย + ค่า */
+const SummaryLine: React.FC<{ icon: IconName; label: string; strong?: boolean; children: React.ReactNode }> = ({
+  icon,
+  label,
+  strong = false,
+  children,
+}) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.summaryLine}>
+      <Icon name={icon} size={16} color={strong ? colors.goldDeep : colors.textFaint} />
+      <Text
+        style={[
+          strong ? typography.bodyStrong : typography.bodySm,
+          styles.flex,
+          { color: strong ? colors.textStrong : colors.textMuted },
+        ]}
+      >
+        {label}
+      </Text>
+      {children}
+    </View>
+  );
+};
+
 function WalletTransferContent() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { colors, gradients } = useTheme();
+  const insets = useSafeAreaInsets();
   const { isAuthenticated, user } = useAuthStore();
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -197,19 +225,15 @@ function WalletTransferContent() {
 
     // แสดง confirmation dialog ก่อนเปิด PIN modal
     Alert.alert(
-      '📤 ยืนยันการโอนเงิน',
-      `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `👤 ผู้รับ: ${recipient.name}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `💵 จำนวนเงินที่โอน: ${formatCurrency(amountNum)}\n` +
-      `📋 ค่าธรรมเนียม (${(TRANSFER_FEE_RATE * 100).toFixed(0)}%): ${formatCurrency(fee)}\n\n` +
-      `━━━━━━━━━━━━━━━━━━━━━\n` +
-      `💰 รวมหักจากกระเป๋า: ${formatCurrency(totalDeduction)}\n` +
-      `💳 ยอดคงเหลือหลังโอน: ${formatCurrency(remainingBalance)}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━`,
+      'ยืนยันการโอนเงิน',
+      `ผู้รับ: ${recipient.name}\n\n` +
+      `จำนวนเงินที่โอน: ${formatCurrency(amountNum)}\n` +
+      `ค่าธรรมเนียม (${(TRANSFER_FEE_RATE * 100).toFixed(0)}%): ${formatCurrency(fee)}\n\n` +
+      `รวมหักจากกระเป๋า: ${formatCurrency(totalDeduction)}\n` +
+      `ยอดคงเหลือหลังโอน: ${formatCurrency(remainingBalance)}`,
       [
         { text: 'ยกเลิก', style: 'cancel' },
-        { text: '✓ ดำเนินการต่อ', onPress: () => setShowPinModal(true) },
+        { text: 'ดำเนินการต่อ', onPress: () => setShowPinModal(true) },
       ]
     );
   };
@@ -234,7 +258,7 @@ function WalletTransferContent() {
       if (response?.success) {
         setShowPinModal(false);
         Alert.alert(
-          'โอนเงินสำเร็จ! ✓',
+          'โอนเงินสำเร็จ!',
           `โอน ${formatCurrency(amountNum)} ให้ ${recipient!.name}\nค่าธรรมเนียม ${formatCurrency(fee)}\nยอดคงเหลือ ${formatCurrency(remainingBalance)}`,
           [{ text: 'ตกลง', onPress: () => router.back() }]
         );
@@ -248,45 +272,42 @@ function WalletTransferContent() {
     }
   };
 
+  const feeLabel = `ค่าธรรมเนียม (${(TRANSFER_FEE_RATE * 100).toFixed(0)}%)`;
+
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-
-      {/* Header */}
-      <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.headerIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>โอนเงิน</Text>
-        <TouchableOpacity style={styles.scanButton} onPress={openScanner}>
-          <Text style={styles.headerIcon}>📷</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-
+    <Screen
+      title="โอนเงิน"
+      onBack={() => router.back()}
+      scroll={false}
+      right={<IconButton icon="scan" label="สแกน QR Code" onPress={openScanner} />}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
+        style={styles.flex}
       >
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* ยอดเงินคงเหลือ */}
-          <View style={[styles.balanceCard, isDark && styles.cardDark]}>
-            <Text style={[styles.balanceLabel, isDark && styles.textMuted]}>
-              ยอดเงินคงเหลือ
-            </Text>
-            <Text style={[styles.balanceAmount, isDark && styles.textLight]}>
-              {isLoading ? '...' : formatCurrency(walletBalance)}
-            </Text>
-          </View>
+          <NavyCard contentStyle={styles.balanceHero}>
+            <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>ยอดเงินคงเหลือ</Text>
+            {isLoading ? (
+              <Text style={[typography.moneyLg, { color: colors.goldLight }]}>...</Text>
+            ) : (
+              <MoneyText text={formatCurrency(walletBalance)} color={colors.goldLight} size={34} />
+            )}
+          </NavyCard>
 
           {/* กรอก Wallet Address */}
-          <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-            Wallet Address ผู้รับ
-          </Text>
+          <Text style={[typography.h3, styles.sectionTitle, { color: colors.textStrong }]}>Wallet Address ผู้รับ</Text>
 
-          <View style={[styles.inputRow, isDark && styles.inputRowDark]}>
-            <Text style={styles.inputEmoji}>💰</Text>
+          <View style={[styles.inputRow, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+            <Icon name="wallet" size={20} color={colors.goldDeep} />
             <TextInput
-              style={[styles.addressInput, isDark && styles.textLight]}
+              style={[styles.addressInput, { color: colors.textStrong }]}
               value={walletAddress}
               onChangeText={(text) => {
                 setWalletAddress(text);
@@ -298,162 +319,130 @@ function WalletTransferContent() {
                 }
               }}
               placeholder="กรอก Wallet Address หรือสแกน QR"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textFaint}
+              selectionColor={colors.gold}
               autoCapitalize="none"
             />
-            {isLookingUp && <ActivityIndicator size="small" color="#8B5CF6" />}
+            {isLookingUp && <ActivityIndicator size="small" color={colors.gold} />}
           </View>
 
           {/* แสดงข้อผิดพลาด */}
           {lookupError && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorEmoji}>⚠️</Text>
-              <Text style={styles.errorText}>{lookupError}</Text>
+            <View style={[styles.noteBox, { backgroundColor: colors.dangerSoft }]}>
+              <Icon name="warning-circle" size={18} color={colors.danger} />
+              <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>{lookupError}</Text>
             </View>
           )}
 
-          {/* แสดงข้อมูลผู้รับ */}
-          {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
+          {/* แสดงข้อมูลผู้รับ (เช็ค null กัน crash) */}
           {recipient && (
-            <View style={[styles.recipientCard, isDark && styles.cardDark]}>
+            <Card3D
+              style={styles.recipientCard}
+              padding={spacing.lg}
+              contentStyle={[styles.recipientRow, { borderWidth: 1.5, borderColor: colors.success }]}
+            >
               <View style={styles.recipientAvatar}>
                 {recipient.avatar ? (
                   <Image source={{ uri: recipient.avatar }} style={styles.avatarImage} />
                 ) : (
-                  <LinearGradient colors={['#8B5CF6', '#EC4899']} style={styles.avatarPlaceholder}>
-                    <Text style={styles.avatarText}>
+                  <LinearGradient colors={gradients.navy} style={styles.avatarPlaceholder}>
+                    <Text style={[styles.avatarText, { color: colors.goldLight }]}>
                       {(recipient.name || 'U').charAt(0).toUpperCase()}
                     </Text>
                   </LinearGradient>
                 )}
               </View>
-              <View style={styles.recipientInfo}>
-                <Text style={[styles.recipientName, isDark && styles.textLight]}>
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
                   {recipient.name || 'ไม่ระบุชื่อ'}
                 </Text>
-                <Text style={[styles.recipientAddress, isDark && styles.textMuted]}>
+                <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
                   {recipient.walletAddress}
                 </Text>
               </View>
-              <Text style={styles.checkIcon}>✓</Text>
-            </View>
+              <Icon name="check-circle" size={26} color={colors.success} weight="fill" />
+            </Card3D>
           )}
 
           {/* กรอกจำนวนเงิน */}
-          <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-            จำนวนเงินที่ต้องการโอน
+          <Text style={[typography.h3, styles.sectionTitle, { color: colors.textStrong }]}>จำนวนเงินที่ต้องการโอน</Text>
+
+          <MoneyInput
+            value={amount}
+            onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
+            placeholder="0"
+            keyboardType="numeric"
+            maxLength={7}
+          />
+
+          <Text style={[typography.caption, styles.inputHint, { color: colors.textFaint }]}>
+            โอนขั้นต่ำ {formatCurrency(MIN_TRANSFER)}
           </Text>
-
-          <View style={[styles.amountContainer, isDark && styles.amountContainerDark]}>
-            <Text style={[styles.amountPrefix, isDark && styles.textMuted]}>฿</Text>
-            <TextInput
-              style={[styles.amountInput, isDark && styles.textLight]}
-              value={amount}
-              onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
-              placeholder="0"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="numeric"
-              maxLength={7}
-            />
-          </View>
-
-          <Text style={styles.inputHint}>โอนขั้นต่ำ {formatCurrency(MIN_TRANSFER)}</Text>
 
           {/* หมายเหตุ */}
-          <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-            หมายเหตุ (ไม่บังคับ)
-          </Text>
+          <Text style={[typography.h3, styles.sectionTitle, { color: colors.textStrong }]}>หมายเหตุ (ไม่บังคับ)</Text>
 
           <TextInput
-            style={[styles.noteInput, isDark && styles.noteInputDark, isDark && styles.textLight]}
+            style={[styles.noteInput, { backgroundColor: colors.inset, borderColor: colors.border, color: colors.textStrong }]}
             value={note}
             onChangeText={setNote}
             placeholder="ระบุหมายเหตุ..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.textFaint}
+            selectionColor={colors.gold}
             maxLength={100}
           />
 
           {/* สรุปการโอน */}
           {amountNum > 0 && (
-            <View style={[styles.summaryCard, isDark && styles.cardDark]}>
-              <Text style={[styles.summaryTitle, isDark && styles.textLight]}>
-                สรุปการโอนเงิน
-              </Text>
+            <Card3D padding={spacing.lg} style={styles.summaryCard}>
+              <Text style={[typography.h3, styles.summaryTitle, { color: colors.textStrong }]}>สรุปการโอนเงิน</Text>
 
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-                  จำนวนเงินที่โอน
-                </Text>
-                <Text style={[styles.summaryValue, isDark && styles.textLight]}>
-                  {formatCurrency(amountNum)}
-                </Text>
-              </View>
+              <InfoRow label="จำนวนเงินที่โอน" value={formatCurrency(amountNum)} />
+              <InfoRow label={feeLabel}>
+                <Text style={[typography.bodyStrong, { color: colors.warning }]}>+{formatCurrency(fee)}</Text>
+              </InfoRow>
 
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-                  ค่าธรรมเนียม ({(TRANSFER_FEE_RATE * 100).toFixed(0)}%)
-                </Text>
-                <Text style={styles.feeText}>+{formatCurrency(fee)}</Text>
-              </View>
+              <View style={[styles.divider, { backgroundColor: colors.divider }]} />
 
-              <View style={styles.divider} />
-
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabelBold, isDark && styles.textLight]}>
-                  รวมที่หักจากกระเป๋า
-                </Text>
-                <Text style={styles.totalAmount}>{formatCurrency(totalDeduction)}</Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-                  ยอดคงเหลือหลังโอน
-                </Text>
-                <Text
-                  style={[
-                    styles.summaryValue,
-                    remainingBalance < 0 && styles.errorTextRed,
-                    isDark && styles.textLight,
-                  ]}
-                >
+              <InfoRow label="รวมที่หักจากกระเป๋า" strong>
+                <Text style={[typography.h2, styles.tabular, { color: colors.goldDeep }]}>{formatCurrency(totalDeduction)}</Text>
+              </InfoRow>
+              <InfoRow label="ยอดคงเหลือหลังโอน">
+                <Text style={[typography.bodyStrong, { color: remainingBalance < 0 ? colors.danger : colors.textStrong }]}>
                   {formatCurrency(remainingBalance)}
                 </Text>
-              </View>
+              </InfoRow>
 
               {remainingBalance < 0 && (
-                <View style={styles.warningBox}>
-                  <Text style={styles.warningEmoji}>⚠️</Text>
-                  <Text style={styles.warningText}>ยอดเงินไม่เพียงพอ</Text>
+                <View style={[styles.noteBox, styles.warningBox, { backgroundColor: colors.warningSoft }]}>
+                  <Icon name="warning" size={18} color={colors.warning} />
+                  <Text style={[typography.bodySm, styles.warningText, { color: colors.warning }]}>ยอดเงินไม่เพียงพอ</Text>
                 </View>
               )}
-            </View>
+            </Card3D>
           )}
-
-          <View style={styles.bottomPadding} />
         </ScrollView>
 
         {/* ปุ่มดำเนินการ */}
-        <View style={[styles.footer, isDark && styles.footerDark]}>
-          <TouchableOpacity
-            style={[styles.submitButton, !canTransfer && styles.submitButtonDisabled]}
-            onPress={handleContinue}
+        <ActionBar>
+          <Button3D
+            title="โอนเงิน"
+            icon="paper-plane-tilt"
+            size="lg"
+            fullWidth
             disabled={!canTransfer}
-          >
-            <Text style={styles.buttonIcon}>📤</Text>
-            <Text style={styles.submitButtonText}>โอนเงิน</Text>
-          </TouchableOpacity>
-        </View>
+            onPress={handleContinue}
+          />
+        </ActionBar>
       </KeyboardAvoidingView>
 
-      {/* QR Scanner Modal */}
+      {/* QR Scanner Modal — พื้นกล้องมืดเสมอทั้งสองโหมด */}
       <Modal visible={showScanner} animationType="slide" onRequestClose={() => setShowScanner(false)}>
-        <View style={styles.scannerContainer}>
-          <View style={styles.scannerHeader}>
-            <TouchableOpacity onPress={() => setShowScanner(false)}>
-              <Text style={styles.scannerIcon}>✕</Text>
-            </TouchableOpacity>
-            <Text style={styles.scannerTitle}>สแกน QR Code</Text>
-            <View style={{ width: 28 }} />
+        <View style={[styles.scannerContainer, { backgroundColor: DARK_THEME.colors.background }]}>
+          <View style={[styles.scannerHeader, { paddingTop: insets.top + spacing.md }]}>
+            <GlassIconButton icon="x" weight="bold" accessibilityLabel="ปิด" onPress={() => setShowScanner(false)} />
+            <Text style={[typography.h2, { color: DARK_THEME.colors.textStrong }]}>สแกน QR Code</Text>
+            <View style={styles.scannerSpacer} />
           </View>
 
           <CameraView
@@ -462,13 +451,13 @@ function WalletTransferContent() {
             barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
             onBarcodeScanned={handleBarCodeScanned}
           >
-            <View style={styles.scannerOverlay}>
-              <View style={styles.scannerFrame} />
+            <View style={[styles.scannerOverlay, { backgroundColor: colors.overlay }]}>
+              <View style={[styles.scannerFrame, { borderColor: colors.gold }]} />
             </View>
           </CameraView>
 
-          <View style={styles.scannerFooter}>
-            <Text style={styles.scannerHint}>วาง QR Code ในกรอบเพื่อสแกน</Text>
+          <View style={[styles.scannerFooter, { paddingBottom: insets.bottom + spacing.xl }]}>
+            <Text style={[typography.body, { color: DARK_THEME.colors.text }]}>วาง QR Code ในกรอบเพื่อสแกน</Text>
           </View>
         </View>
       </Modal>
@@ -480,257 +469,143 @@ function WalletTransferContent() {
         animationType="slide"
         onRequestClose={() => setShowPinModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.sm },
+              shadowStyle('lg', colors.shadowDark),
+            ]}
+          >
+            <View style={[styles.handle, { backgroundColor: colors.border }]} />
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, isDark && styles.textLight]}>
-                ยืนยันด้วย PIN
-              </Text>
-              <TouchableOpacity onPress={() => setShowPinModal(false)}>
-                <Text style={[styles.modalIcon, isDark && styles.textLight]}>✕</Text>
-              </TouchableOpacity>
+              <Text style={[typography.h1, { color: colors.textStrong }]}>ยืนยันด้วย PIN</Text>
+              <Pressable
+                onPress={() => setShowPinModal(false)}
+                accessibilityRole="button"
+                accessibilityLabel="ปิด"
+                hitSlop={10}
+                style={({ pressed }) => [styles.closeBtn, { backgroundColor: colors.inset, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Icon name="x" size={18} color={colors.textMuted} weight="bold" />
+              </Pressable>
             </View>
 
-            <Text style={[styles.modalDesc, isDark && styles.textMuted]}>
+            <Text style={[typography.bodySm, styles.modalDesc, { color: colors.textMuted }]}>
               กรอก PIN 6 หลักเพื่อยืนยันการโอนเงิน
             </Text>
 
-            <View style={styles.pinContainer}>
-              <TextInput
-                style={[styles.pinInput, isDark && styles.pinInputDark]}
-                value={pin}
-                onChangeText={(text) => setPin(text.replace(/[^0-9]/g, '').slice(0, 6))}
-                placeholder="● ● ● ● ● ●"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={6}
-                textAlign="center"
-              />
-            </View>
+            <TextInput
+              style={[styles.pinInput, { backgroundColor: colors.inset, borderColor: colors.border, color: colors.textStrong }]}
+              value={pin}
+              onChangeText={(text) => setPin(text.replace(/[^0-9]/g, '').slice(0, 6))}
+              placeholder="••••••"
+              placeholderTextColor={colors.textFaint}
+              selectionColor={colors.gold}
+              keyboardType="numeric"
+              secureTextEntry
+              maxLength={6}
+              textAlign="center"
+            />
 
             {/* สรุปใน Modal */}
-            <View style={[styles.modalSummary, isDark && styles.modalSummaryDark]}>
-              <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>👤 ผู้รับ</Text>
-                <Text style={[styles.modalSummaryValue, isDark && styles.textLight]}>
-                  {recipient?.name}
-                </Text>
-              </View>
-              <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>💵 จำนวนเงิน</Text>
-                <Text style={styles.modalAmountText}>{formatCurrency(amountNum)}</Text>
-              </View>
-              <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>📋 ค่าธรรมเนียม ({(TRANSFER_FEE_RATE * 100).toFixed(0)}%)</Text>
-                <Text style={[styles.feeTextOrange, isDark && styles.textMuted]}>
-                  +{formatCurrency(fee)}
-                </Text>
-              </View>
-              <View style={styles.modalDivider} />
-              <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabelBold, isDark && styles.textLight]}>💰 รวมหักจากกระเป๋า</Text>
-                <Text style={styles.modalTotalText}>{formatCurrency(totalDeduction)}</Text>
-              </View>
-              <View style={styles.modalDivider} />
-              <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>💳 ยอดปัจจุบัน</Text>
-                <Text style={[styles.modalSummaryValue, isDark && styles.textLight]}>
-                  {formatCurrency(walletBalance)}
-                </Text>
-              </View>
-              <View style={styles.modalSummaryRow}>
-                <Text style={[styles.modalSummaryLabelBold, { color: '#10B981' }]}>✓ ยอดคงเหลือหลังโอน</Text>
-                <Text style={styles.remainingBalanceText}>{formatCurrency(remainingBalance)}</Text>
-              </View>
+            <View style={[styles.modalSummary, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+              <SummaryLine icon="user" label="ผู้รับ">
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{recipient?.name}</Text>
+              </SummaryLine>
+              <SummaryLine icon="money" label="จำนวนเงิน">
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{formatCurrency(amountNum)}</Text>
+              </SummaryLine>
+              <SummaryLine icon="receipt" label={feeLabel}>
+                <Text style={[typography.bodyStrong, { color: colors.warning }]}>+{formatCurrency(fee)}</Text>
+              </SummaryLine>
+              <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+              <SummaryLine icon="coins" label="รวมหักจากกระเป๋า" strong>
+                <Text style={[typography.h3, { color: colors.goldDeep }]}>{formatCurrency(totalDeduction)}</Text>
+              </SummaryLine>
+              <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+              <SummaryLine icon="wallet" label="ยอดปัจจุบัน">
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{formatCurrency(walletBalance)}</Text>
+              </SummaryLine>
+              <SummaryLine icon="check-circle" label="ยอดคงเหลือหลังโอน" strong>
+                <Text style={[typography.bodyStrong, { color: colors.success }]}>{formatCurrency(remainingBalance)}</Text>
+              </SummaryLine>
             </View>
 
-            <TouchableOpacity
-              style={[styles.modalButton, pin.length !== 6 && styles.modalButtonDisabled]}
+            <Button3D
+              title="ยืนยันการโอน"
+              icon="paper-plane-tilt"
+              size="lg"
+              fullWidth
+              disabled={pin.length !== 6}
+              loading={isSubmitting}
               onPress={handleSubmit}
-              disabled={pin.length !== 6 || isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <>
-                  <Text style={styles.buttonIcon}>📤</Text>
-                  <Text style={styles.modalButtonText}>ยืนยันการโอน</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </Modal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  containerDark: {
-    backgroundColor: '#111827',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFF',
-    textAlign: 'center',
-  },
-  scanButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  keyboardView: {
+  flex: {
     flex: 1,
   },
   content: {
-    flex: 1,
-    padding: 16,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxl,
   },
-  textLight: {
-    color: '#F3F4F6',
+  tabular: {
+    fontVariant: ['tabular-nums'],
   },
-  textMuted: {
-    color: '#9CA3AF',
-  },
-  headerIcon: {
-    fontSize: 24,
-    color: '#FFF',
-    fontWeight: 'bold',
-  },
-  inputEmoji: {
-    fontSize: 20,
-  },
-  errorEmoji: {
-    fontSize: 16,
-  },
-  checkIcon: {
-    fontSize: 24,
-    color: '#10B981',
-    fontWeight: 'bold',
-  },
-  warningEmoji: {
-    fontSize: 16,
-  },
-  buttonIcon: {
-    fontSize: 20,
-  },
-  scannerIcon: {
-    fontSize: 28,
-    color: '#FFF',
-    fontWeight: 'bold',
-  },
-  modalIcon: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-
-  // Balance Card
-  balanceCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+  balanceHero: {
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  cardDark: {
-    backgroundColor: '#1F2937',
-  },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  balanceAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-
-  // Section
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
   },
-
-  // Input Row
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    marginBottom: 8,
-    gap: 12,
-  },
-  inputRowDark: {
-    backgroundColor: '#1F2937',
-    borderColor: '#374151',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    minHeight: 52,
+    gap: spacing.md,
   },
   addressInput: {
     flex: 1,
     fontSize: 14,
-    color: '#1F2937',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
-
-  // Error Box
-  errorBox: {
+  noteBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
+    gap: spacing.sm,
+    borderRadius: radii.sm,
+    padding: spacing.md,
+    marginTop: spacing.sm,
   },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 14,
+  warningBox: {
+    marginTop: spacing.md,
   },
-  errorTextRed: {
-    color: '#EF4444',
+  warningText: {
+    fontWeight: '600',
   },
-
-  // Recipient Card
   recipientCard: {
+    marginTop: spacing.md,
+  },
+  recipientRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: '#10B981',
+    gap: spacing.md,
   },
   recipientAvatar: {
-    marginRight: 12,
+    borderRadius: 24,
   },
   avatarImage: {
     width: 48,
@@ -746,195 +621,43 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  recipientInfo: {
-    flex: 1,
-  },
-  recipientName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  recipientAddress: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-
-  // Amount Input
-  amountContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  amountContainerDark: {
-    backgroundColor: '#1F2937',
-    borderColor: '#374151',
-  },
-  amountPrefix: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#6B7280',
-    marginRight: 8,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    paddingVertical: 16,
+    fontWeight: '700',
   },
   inputHint: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 16,
+    marginTop: spacing.sm,
   },
-
-  // Note Input
   noteInput: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    padding: 16,
-    fontSize: 14,
-    color: '#1F2937',
-    marginBottom: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    fontSize: 15,
+    minHeight: 50,
   },
-  noteInputDark: {
-    backgroundColor: '#1F2937',
-    borderColor: '#374151',
-  },
-
-  // Summary
   summaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
+    marginTop: spacing.xl,
   },
   summaryTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  summaryLabelBold: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  feeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#F59E0B',
-  },
-  feeTextOrange: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#F59E0B',
-  },
-  remainingBalanceText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#10B981',
-  },
-  totalAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#8B5CF6',
+    marginBottom: spacing.sm,
   },
   divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 12,
-  },
-  warningBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  warningText: {
-    color: '#F59E0B',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-
-  bottomPadding: {
-    height: 100,
-  },
-
-  // Footer
-  footer: {
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  footerDark: {
-    backgroundColor: '#1F2937',
-    borderTopColor: '#374151',
-  },
-  submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#8B5CF6',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
-  },
-  submitButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
+    height: StyleSheet.hairlineWidth,
+    marginVertical: spacing.sm,
   },
 
   // Scanner
   scannerContainer: {
     flex: 1,
-    backgroundColor: '#000',
   },
   scannerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.lg,
   },
-  scannerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFF',
+  scannerSpacer: {
+    width: 40,
   },
   camera: {
     flex: 1,
@@ -943,131 +666,73 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   scannerFrame: {
     width: 250,
     height: 250,
     borderWidth: 3,
-    borderColor: '#8B5CF6',
-    borderRadius: 16,
+    borderRadius: 24,
     backgroundColor: 'transparent',
   },
   scannerFooter: {
-    padding: 24,
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.xl,
     alignItems: 'center',
-  },
-  scannerHint: {
-    color: '#FFF',
-    fontSize: 14,
   },
 
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
+    borderTopLeftRadius: radii.xxl,
+    borderTopRightRadius: radii.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
   },
-  modalContentDark: {
-    backgroundColor: '#1F2937',
+  handle: {
+    alignSelf: 'center',
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    marginBottom: spacing.lg,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#374151',
-  },
-  modalDesc: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
-  },
-  pinContainer: {
-    marginBottom: 24,
-  },
-  pinInput: {
-    backgroundColor: '#F3F4F6',
+  closeBtn: {
+    width: 36,
+    height: 36,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#374151',
-    letterSpacing: 8,
-  },
-  pinInputDark: {
-    backgroundColor: '#374151',
-    color: '#FFF',
-  },
-  modalSummary: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-  },
-  modalSummaryDark: {
-    backgroundColor: '#374151',
-  },
-  modalSummaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  modalSummaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  modalSummaryLabelBold: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  modalSummaryValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-  modalAmountText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#8B5CF6',
-  },
-  modalDivider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 8,
-  },
-  modalTotalText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#8B5CF6',
-  },
-  modalButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#8B5CF6',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
   },
-  modalButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+  modalDesc: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
   },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
+  pinInput: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: spacing.md,
+    fontSize: 28,
+    fontWeight: '700',
+    letterSpacing: 10,
+    marginBottom: spacing.lg,
+  },
+  modalSummary: {
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    padding: spacing.lg,
+    gap: spacing.xs,
+    marginBottom: spacing.xl,
+  },
+  summaryLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 });

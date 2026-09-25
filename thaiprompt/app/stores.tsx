@@ -1,19 +1,20 @@
 /**
- * รายชื่อร้านค้า — /stores?type=featured|official
+ * รายชื่อร้านค้า — /stores?type=featured|official (ธีมรอยัล)
  *
+ * หน้าตา: ชิปสลับ "ร้านแนะนำ | ร้านยืนยันแล้ว" · การ์ดขาวต่อร้าน (โลโก้มุมมน ชื่อ ดาว ป้ายสถานะ ลูกศร)
  * - featured = ร้านแนะนำที่แอดมินเลือก · official = ร้านที่ยืนยันตัวตนแล้ว
  * - ตัวเลขจริงจาก server (จำนวนสินค้า/เรตติ้ง) ไม่มีค่าสมมติ (SHOP-17)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { getFeaturedStores, getOfficialStores, type StoreListItem } from '@/services/api/shopApi';
-import { Card3D, Chip, EmptyState, Pill, Screen } from '@/components/ui';
-import { CartButton } from '@/components/shop';
-import { useTheme, radii, spacing, typography } from '@/theme';
+import { Card3D, Chip, EmptyState, Icon, Pill, Screen } from '@/components/ui';
+import { CartButton, StoreLogo } from '@/components/shop';
+import { useTheme, spacing, typography } from '@/theme';
 
 type StoreTab = 'featured' | 'official';
 
@@ -26,33 +27,41 @@ const StoreRow: React.FC<{ store: StoreListItem }> = ({ store }) => {
     <Card3D
       onPress={() => router.push(`/store/${store.id}` as never)}
       padding={spacing.md}
-      radius={radii.lg}
+      radius={20}
       shadow="sm"
       style={styles.card}
       accessibilityLabel={`ร้าน ${store.name}`}
     >
       <View style={styles.row}>
-        {store.logo ? (
-          <Image source={{ uri: store.logo }} style={[styles.logo, { backgroundColor: colors.inset }]} contentFit="cover" />
-        ) : (
-          <View style={[styles.logo, styles.center, { backgroundColor: colors.goldSoft }]}>
-            <Text style={styles.logoIcon}>🏪</Text>
-          </View>
-        )}
+        <StoreLogo uri={store.logo} size={60} radius={18} />
         <View style={styles.flex}>
-          <Text numberOfLines={1} style={[typography.h3, { color: colors.textStrong }]}>
-            {store.name}
-          </Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>
-            {Number(store.productCount) || 0} สินค้า
-            {ratingCount > 0 ? ` · ⭐ ${rating.toFixed(1)} (${ratingCount})` : ''}
-          </Text>
-          <View style={styles.pills}>
-            {store.isOfficial && <Pill label="ยืนยันแล้ว" tone="success" icon="✔" />}
-            {store.rider_delivery && <Pill label="ไรเดอร์ส่ง" tone="gold" icon="🛵" />}
+          <View style={styles.nameRow}>
+            <Text numberOfLines={1} style={[typography.serifSm, styles.name, { color: colors.textStrong }]}>
+              {store.name}
+            </Text>
+            {store.isOfficial && <Icon name="seal-check" size={17} color={colors.goldDeep} weight="fill" />}
           </View>
+          <View style={styles.metaRow}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>{Number(store.productCount) || 0} สินค้า</Text>
+            {ratingCount > 0 && (
+              <>
+                <Text style={[typography.caption, { color: colors.textFaint }]}>·</Text>
+                <Icon name="star" size={13} color={colors.gold} weight="fill" />
+                <Text style={[typography.caption, styles.rating, { color: colors.text }]}>{rating.toFixed(1)}</Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>({ratingCount})</Text>
+              </>
+            )}
+          </View>
+          {(store.isOfficial || store.rider_delivery) && (
+            <View style={styles.pills}>
+              {store.isOfficial && <Pill label="ยืนยันแล้ว" tone="success" icon="seal-check" />}
+              {store.rider_delivery && <Pill label="ไรเดอร์ส่ง" tone="gold" icon="moped" />}
+            </View>
+          )}
         </View>
-        <Text style={[typography.h2, { color: colors.textFaint }]}>›</Text>
+        <View style={[styles.chevron, { backgroundColor: colors.navySoft }]}>
+          <Icon name="caret-right" size={16} color={colors.textMuted} weight="bold" />
+        </View>
       </View>
     </Card3D>
   );
@@ -110,8 +119,8 @@ export default function StoresScreen() {
 
   const header = (
     <View style={styles.tabs}>
-      <Chip label="ร้านแนะนำ" icon="⭐" selected={tab === 'featured'} onPress={() => setTab('featured')} />
-      <Chip label="ร้านยืนยันแล้ว" icon="✔" selected={tab === 'official'} onPress={() => setTab('official')} />
+      <Chip label="ร้านแนะนำ" icon="star" selected={tab === 'featured'} onPress={() => setTab('featured')} />
+      <Chip label="ร้านยืนยันแล้ว" icon="seal-check" selected={tab === 'official'} onPress={() => setTab('official')} />
     </View>
   );
 
@@ -119,7 +128,7 @@ export default function StoresScreen() {
     if (!isAuthenticated) {
       return (
         <EmptyState
-          icon="🔐"
+          icon="lock-key"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อดูร้านค้าและสั่งซื้อ"
           actionLabel="เข้าสู่ระบบ"
@@ -142,7 +151,7 @@ export default function StoresScreen() {
           ) : (
             <EmptyState
               compact
-              icon="🏪"
+              art="store"
               title="ยังไม่มีร้านในหมวดนี้"
               message="ลองดูสินค้าทั้งหมดในหน้าช้อปก่อนนะ"
               actionLabel="ไปหน้าช้อป"
@@ -176,18 +185,15 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxxl,
   },
   tabs: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   card: {
     marginBottom: spacing.md,
@@ -197,19 +203,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
-  logoIcon: {
-    fontSize: 26,
+  name: {
+    flexShrink: 1,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 1,
+  },
+  rating: {
+    fontWeight: '700',
   },
   pills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  chevron: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loader: {
     marginTop: spacing.xxxl,

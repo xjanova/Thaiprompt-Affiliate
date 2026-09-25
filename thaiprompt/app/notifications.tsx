@@ -1,14 +1,16 @@
 /**
- * การแจ้งเตือน — ธีมนวลทองคำ
+ * การแจ้งเตือน — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * - แท็บ "ทั้งหมด / ยังไม่อ่าน" · แตะ = อ่านแล้ว + เปิดหน้าที่เกี่ยวข้อง (ผ่าน allowlist เดียวกับ push)
  * - กดค้าง = ลบ (ถามก่อน) · "อ่านทั้งหมด" ด้านบน
+ * - รายการยังไม่อ่าน = การ์ดขอบทอง + จุดทอง · ไอคอนเส้นในช่องสี่เหลี่ยมมนตามประเภท
  * - แจ้งเตือนระบบเครือข่าย (คอมมิชชั่น/สายงาน/rank) ไม่แสดงในแอป (นโยบาย Google Play) — ดูได้บนเว็บ
  * - โหลดไม่สำเร็จ = หน้าลองใหม่ (ไม่ค้างหน้าว่าง) · ออกจากหน้าระหว่างโหลดไม่ setState
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,24 +23,26 @@ import {
 } from '@/services/api';
 import { isRestrictedNotification } from '@/utils/storePolicy';
 import { routeForNotification } from '@/utils/notificationRouting';
-import { Button3D, Card3D, Chip, EmptyState, Screen, resultHaptic } from '@/components/ui';
-import { useTheme, radii, spacing, toneColors, typography, type Tone } from '@/theme';
+import { Button3D, Card3D, Chip, EmptyState, Icon, Screen, resultHaptic, type IconName } from '@/components/ui';
+import { IconTile, type MenuTone } from '@/components/profile';
+import { useTheme, radii, spacing, typography } from '@/theme';
 
-const TYPE_LOOK: Record<string, { emoji: string; tone: Tone }> = {
-  general: { emoji: '🔔', tone: 'gold' },
-  order: { emoji: '🧾', tone: 'success' },
-  shop_order: { emoji: '🧾', tone: 'success' },
-  fresh_market_order: { emoji: '🥬', tone: 'success' },
-  fresh_market_shop: { emoji: '🛒', tone: 'warning' },
-  fresh_market_shop_open: { emoji: '🛒', tone: 'success' },
-  delivery_update: { emoji: '🛵', tone: 'info' },
-  rider: { emoji: '🛵', tone: 'info' },
-  rider_job_offer: { emoji: '🛵', tone: 'info' },
-  rider_job_update: { emoji: '🛵', tone: 'info' },
-  wallet: { emoji: '👛', tone: 'gold' },
-  promotion: { emoji: '🎁', tone: 'warning' },
-  system: { emoji: '⚙️', tone: 'neutral' },
-  ticket: { emoji: '💬', tone: 'info' },
+/** หน้าตาตามประเภท: ไอคอนเส้น + โทนสีของช่องไอคอน */
+const TYPE_LOOK: Record<string, { icon: IconName; tone: MenuTone }> = {
+  general: { icon: 'bell', tone: 'gold' },
+  order: { icon: 'receipt', tone: 'success' },
+  shop_order: { icon: 'receipt', tone: 'success' },
+  fresh_market_order: { icon: 'basket', tone: 'success' },
+  fresh_market_shop: { icon: 'storefront', tone: 'warning' },
+  fresh_market_shop_open: { icon: 'storefront', tone: 'success' },
+  delivery_update: { icon: 'moped', tone: 'info' },
+  rider: { icon: 'moped', tone: 'info' },
+  rider_job_offer: { icon: 'moped', tone: 'info' },
+  rider_job_update: { icon: 'moped', tone: 'info' },
+  wallet: { icon: 'wallet', tone: 'gold' },
+  promotion: { icon: 'gift', tone: 'warning' },
+  system: { icon: 'gear-six', tone: 'navy' },
+  ticket: { icon: 'chat-circle-dots', tone: 'info' },
 };
 
 type Filter = 'all' | 'unread';
@@ -59,7 +63,6 @@ const NotificationRow: React.FC<{
 }> = ({ item, onPress, onLongPress }) => {
   const { colors } = useTheme();
   const look = TYPE_LOOK[item.type] || TYPE_LOOK.general;
-  const t = toneColors(look.tone, colors);
   const unread = !item.isRead;
 
   return (
@@ -75,9 +78,7 @@ const NotificationRow: React.FC<{
       accessibilityHint="แตะเพื่อเปิด กดค้างเพื่อลบ"
     >
       <View style={styles.row}>
-        <View style={[styles.icon, { backgroundColor: t.bg }]}>
-          <Text style={styles.emoji}>{look.emoji}</Text>
-        </View>
+        <IconTile icon={look.icon} tone={look.tone} />
         <View style={styles.flex}>
           <View style={styles.titleRow}>
             <Text
@@ -93,9 +94,12 @@ const NotificationRow: React.FC<{
               {item.body}
             </Text>
           )}
-          <Text style={[typography.micro, styles.time, { color: colors.textFaint }]}>
-            {item.timeAgo || item.typeText || ''}
-          </Text>
+          {!!(item.timeAgo || item.typeText) && (
+            <View style={styles.time}>
+              <Icon name="clock" size={12} color={colors.textFaint} />
+              <Text style={[typography.micro, { color: colors.textFaint }]}>{item.timeAgo || item.typeText}</Text>
+            </View>
+          )}
         </View>
       </View>
     </Card3D>
@@ -212,7 +216,7 @@ export default function NotificationsScreen() {
     return (
       <Screen title="การแจ้งเตือน" scroll={false}>
         <EmptyState
-          icon="🔔"
+          icon="bell"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อดูการแจ้งเตือนออเดอร์ งานส่ง และกระเป๋าเงิน"
           actionLabel="เข้าสู่ระบบ"
@@ -256,7 +260,7 @@ export default function NotificationsScreen() {
           ) : (
             <EmptyState
               compact
-              icon={filter === 'unread' ? '✅' : '🔕'}
+              icon={filter === 'unread' ? 'check-circle' : 'bell-simple'}
               title={filter === 'unread' ? 'อ่านครบทุกรายการแล้ว' : 'ยังไม่มีการแจ้งเตือน'}
               message="ออเดอร์ งานส่ง และความเคลื่อนไหวของกระเป๋าเงินจะแจ้งที่นี่"
             />
@@ -269,7 +273,10 @@ export default function NotificationsScreen() {
         )}
         ListFooterComponent={
           items.length > 0 ? (
-            <Text style={[typography.caption, styles.footer, { color: colors.textFaint }]}>กดค้างที่รายการเพื่อลบ</Text>
+            <View style={styles.footer}>
+              <Icon name="hand-tap" size={14} color={colors.textFaint} />
+              <Text style={[typography.caption, { color: colors.textFaint }]}>กดค้างที่รายการเพื่อลบ</Text>
+            </View>
           ) : null
         }
         refreshControl={
@@ -292,6 +299,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xxxl * 2,
   },
   filters: {
@@ -309,16 +317,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
-  icon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emoji: {
-    fontSize: 22,
-  },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -330,10 +328,16 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   time: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     marginTop: spacing.xs,
   },
   footer: {
-    textAlign: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
     marginTop: spacing.md,
   },
 });

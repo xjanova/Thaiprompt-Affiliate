@@ -6,16 +6,20 @@
  * - "ใช้ตำแหน่งปัจจุบัน": แจ้งเหตุผลก่อนขอสิทธิ์ตำแหน่ง (ConsentSheet) → ปักหมุด + เติมจังหวัด/เขต/รหัสไปรษณีย์ที่ยังว่าง
  * - ส่งด้วยไรเดอร์ต้องปักหมุด (latitude/longitude ส่งคู่กันเสมอ)
  * - ออกจากหน้าโดยยังไม่บันทึก → ถามก่อน
+ *
+ * หน้าตา (ธีมรอยัล): การ์ดปักหมุดขอบทอง (สถานะหมุด + ปุ่มตำแหน่ง/แผนที่) · การ์ดผู้รับ · การ์ดที่อยู่
+ *   หัวการ์ดมีกล่องไอคอน · ช่องกรอกพื้นยุบขอบทองตอนโฟกัส · ปุ่มทอง "บันทึกที่อยู่"
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Switch, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import * as Location from 'expo-location';
 import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { createAddress, getAddresses, updateAddress, type AddressInput } from '@/services/api/shopApi';
 import { Button3D, Card3D, ConsentSheet, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
-import { Field, openHttpsLink } from '@/components/shop';
+import { Field, IconTile, NoticeBanner, openHttpsLink } from '@/components/shop';
 import { useTheme, spacing, typography } from '@/theme';
 
 type FormKey =
@@ -281,7 +285,7 @@ export default function AddressEditScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title={title} scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState icon="lock-key" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -307,7 +311,7 @@ export default function AddressEditScreen() {
       {/* ปักหมุด */}
       <Card3D gradientBorder padding={spacing.lg} style={styles.card}>
         <View style={styles.pinHeader}>
-          <Text style={styles.pinIcon}>📍</Text>
+          <IconTile icon="map-pin" tone="gold" size={48} weight="fill" />
           <View style={styles.flex}>
             <Text style={[typography.h3, { color: colors.textStrong }]}>ปักหมุดตำแหน่ง</Text>
             <Text style={[typography.caption, { color: colors.textMuted }]}>
@@ -316,19 +320,19 @@ export default function AddressEditScreen() {
           </View>
         </View>
         {coords ? (
-          <View style={styles.pinRow}>
-            <Pill label="ปักหมุดแล้ว" tone="success" icon="✅" />
-            <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+          <View style={[styles.pinRow, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+            <Pill label="ปักหมุดแล้ว" tone="success" icon="check-circle" />
+            <Text style={[typography.caption, styles.coords, { color: colors.textMuted }]}>
               {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
             </Text>
           </View>
         ) : (
-          <Text style={[typography.bodySm, styles.pinHint, { color: colors.warning }]}>ยังไม่ได้ปักหมุด (ส่งพัสดุได้ แต่ส่งด้วยไรเดอร์ไม่ได้)</Text>
+          <NoticeBanner tone="warning" text="ยังไม่ได้ปักหมุด (ส่งพัสดุได้ แต่ส่งด้วยไรเดอร์ไม่ได้)" style={styles.pinHint} />
         )}
         <View style={styles.row}>
           <Button3D
             title={coords ? 'ปักหมุดใหม่ที่นี่' : 'ใช้ตำแหน่งปัจจุบัน'}
-            icon="🎯"
+            icon="crosshair"
             size="sm"
             loading={locating}
             loadingText="กำลังหาตำแหน่ง..."
@@ -338,7 +342,7 @@ export default function AddressEditScreen() {
           {coords && (
             <Button3D
               title="ดูบนแผนที่"
-              icon="🗺️"
+              icon="map-trifold"
               variant="secondary"
               size="sm"
               onPress={() =>
@@ -366,8 +370,11 @@ export default function AddressEditScreen() {
       </Card3D>
 
       {/* ข้อมูลผู้รับ */}
-      <Card3D padding={spacing.lg} style={styles.card}>
-        <Text style={[typography.h3, { color: colors.textStrong }]}>ผู้รับ</Text>
+      <Card3D padding={spacing.lg} radius={20} style={styles.card}>
+        <View style={styles.cardHead}>
+          <IconTile icon="user" size={38} />
+          <Text style={[typography.h3, { color: colors.textStrong }]}>ผู้รับ</Text>
+        </View>
         <Field
           label="ชื่อผู้รับ"
           required
@@ -392,8 +399,11 @@ export default function AddressEditScreen() {
       </Card3D>
 
       {/* ที่อยู่ */}
-      <Card3D padding={spacing.lg} style={styles.card}>
-        <Text style={[typography.h3, { color: colors.textStrong }]}>ที่อยู่</Text>
+      <Card3D padding={spacing.lg} radius={20} style={styles.card}>
+        <View style={styles.cardHead}>
+          <IconTile icon="house" size={38} />
+          <Text style={[typography.h3, { color: colors.textStrong }]}>ที่อยู่</Text>
+        </View>
         <Field
           label="บ้านเลขที่ / หมู่บ้าน / ถนน"
           required
@@ -455,7 +465,8 @@ export default function AddressEditScreen() {
           multiline
           maxLength={500}
         />
-        <View style={styles.defaultRow}>
+        <View style={[styles.defaultRow, { backgroundColor: colors.inset, borderColor: isDefault ? colors.gold : colors.border }]}>
+          <IconTile icon="star" tone="gold" size={38} weight={isDefault ? 'fill' : 'regular'} />
           <View style={styles.flex}>
             <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ตั้งเป็นที่อยู่หลัก</Text>
             <Text style={[typography.caption, { color: colors.textMuted }]}>ใช้ที่อยู่นี้เป็นค่าเริ่มต้นตอนสั่งซื้อ</Text>
@@ -478,17 +489,17 @@ export default function AddressEditScreen() {
         </View>
       </Card3D>
 
-      <Button3D title="บันทึกที่อยู่" icon="💾" size="lg" fullWidth onPress={save} loadingText="กำลังบันทึก..." />
+      <Button3D title="บันทึกที่อยู่" icon="check-circle" size="lg" fullWidth onPress={save} loadingText="กำลังบันทึก..." />
 
       <ConsentSheet
         visible={consentVisible}
-        icon="📍"
+        icon="map-pin"
         title="ขอใช้ตำแหน่งเพื่อปักหมุดที่อยู่"
         description="แอปจะอ่านตำแหน่งครั้งเดียวตอนคุณกดปุ่มนี้ เพื่อปักหมุดที่อยู่จัดส่ง"
         reasons={[
-          { icon: '🛵', text: 'ไรเดอร์ใช้หมุดนี้ไปส่งของถึงหน้าบ้าน และคำนวณค่าส่งตามระยะทางจริง' },
-          { icon: '🔒', text: 'ไม่ติดตามตำแหน่งเบื้องหลัง และไม่แชร์ให้ใครนอกจากร้านและไรเดอร์ของออเดอร์คุณ' },
-          { icon: '✍️', text: 'ไม่อยากให้สิทธิ์ก็กรอกที่อยู่เองได้ (แต่จะส่งด้วยไรเดอร์ไม่ได้)' },
+          { icon: 'moped', text: 'ไรเดอร์ใช้หมุดนี้ไปส่งของถึงหน้าบ้าน และคำนวณค่าส่งตามระยะทางจริง' },
+          { icon: 'lock', text: 'ไม่ติดตามตำแหน่งเบื้องหลัง และไม่แชร์ให้ใครนอกจากร้านและไรเดอร์ของออเดอร์คุณ' },
+          { icon: 'pencil-simple', text: 'ไม่อยากให้สิทธิ์ก็กรอกที่อยู่เองได้ (แต่จะส่งด้วยไรเดอร์ไม่ได้)' },
         ]}
         acceptLabel="อนุญาตและปักหมุด"
         declineLabel="กรอกเองดีกว่า"
@@ -512,19 +523,30 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: spacing.md,
   },
+  cardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   pinHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  pinIcon: {
-    fontSize: 28,
   },
   pinRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  coords: {
+    flex: 1,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
   },
   pinHint: {
     marginTop: spacing.md,
@@ -550,5 +572,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.lg,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: spacing.md,
   },
 });

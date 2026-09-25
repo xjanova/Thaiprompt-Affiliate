@@ -9,9 +9,11 @@
  */
 
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { useTheme, spacing, radii, toneColors, typography, type Tone } from '@/theme';
 import { Card3D } from './Card3D';
+import { IconSlot } from './Icon';
 import { formatBaht } from './PriceText';
 
 export interface StatTileProps {
@@ -95,7 +97,7 @@ export const StatTile: React.FC<StatTileProps> = ({
       <View style={styles.top}>
         {icon !== undefined && icon !== null && (
           <View style={[styles.iconBox, { backgroundColor: t.bg }]}>
-            {typeof icon === 'string' ? <Text style={styles.icon}>{icon}</Text> : icon}
+            <IconSlot icon={icon} size={18} color={t.fg} weight="fill" />
           </View>
         )}
         <Text numberOfLines={2} style={[typography.caption, styles.label, { color: colors.textMuted }]}>
@@ -119,9 +121,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,12 +1,14 @@
 /**
  * Root Layout
- * โหลด Fonts และ Initialize App
+ * โหลดฟอนต์ (Anuphan + Noto Serif Thai) และ Initialize App
+ * หน้าโหลด = ธีมรอยัล น้ำเงินกรมท่า-ทอง ตรงกับไอคอนแอป
  */
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Alert } from 'react-native';
+import { View, StyleSheet, AppState, AppStateStatus, Image, Animated, Easing, Alert, Text as RNText } from 'react-native';
+import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '@/stores/authStore';
@@ -24,78 +26,63 @@ import { stopJobTracking, stopLegacyGpsSharing, syncJobTrackingWithServer } from
 import { routeForNotification } from '@/utils/notificationRouting';
 import { isRestrictedNotification } from '@/utils/storePolicy';
 import { router } from 'expo-router';
+import { FONT_ASSETS, setFontsEnabled, useTheme } from '@/theme';
 
 // ซ่อน native splash screen ทันทีเพื่อให้เห็น custom loading screen
 SplashScreen.hideAsync().catch(() => {});
 
-// Premium Loading Screen with Logo + Animation
+// หน้าโหลดตอนเปิดแอป — น้ำเงินกรมท่า + ลายกนกทอง + โลโก้ TP UltraApp (ตรงกับไอคอนแอป)
+// ใช้ Text ของ react-native ตรงๆ เพราะฟอนต์ Anuphan อาจยังโหลดไม่เสร็จ
+const KANOK = require('@/assets/images/brand/kanok-gold.webp');
+
 const LoadingScreen = () => {
-  // Animations
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0.2)).current;
+  const glowAnim = useRef(new Animated.Value(0.35)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const barAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Fade in animation
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 450, useNativeDriver: true }).start();
 
-    // Pulse animation for logo
-    const pulseAnimation = Animated.loop(
+    const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1.05,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
+        Animated.timing(pulseAnim, { toValue: 1.04, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
-
-    // Glow animation
-    const glowAnimation = Animated.loop(
+    const glow = Animated.loop(
       Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 0.5,
-          duration: 1200,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0.2,
-          duration: 1200,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
+        Animated.timing(glowAnim, { toValue: 0.7, duration: 1300, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0.35, duration: 1300, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     );
-
-    pulseAnimation.start();
-    glowAnimation.start();
-
+    const bar = Animated.loop(
+      Animated.timing(barAnim, { toValue: 1, duration: 1400, easing: Easing.inOut(Easing.ease), useNativeDriver: true })
+    );
+    pulse.start();
+    glow.start();
+    bar.start();
     return () => {
-      pulseAnimation.stop();
-      glowAnimation.stop();
+      pulse.stop();
+      glow.stop();
+      bar.stop();
     };
-  }, []);
+  }, [barAnim, fadeAnim, glowAnim, pulseAnim]);
+
+  const barX = barAnim.interpolate({ inputRange: [0, 1], outputRange: [-70, 160] });
 
   return (
     <Animated.View style={[loadingStyles.container, { opacity: fadeAnim }]}>
+      <LinearGradient colors={['#081224', '#0C1A33', '#10223F']} style={StyleSheet.absoluteFill} />
       <LinearGradient
-        colors={['#0F0F23', '#1a1a2e', '#16213e']}
+        colors={['rgba(46,84,150,0.5)', 'rgba(46,84,150,0)']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0.3, y: 0.6 }}
         style={StyleSheet.absoluteFill}
       />
+      <Image source={KANOK} style={loadingStyles.kanokTop} resizeMode="contain" />
+      <Image source={KANOK} style={loadingStyles.kanokBottom} resizeMode="contain" />
 
-      {/* Logo with pulse animation */}
       <View style={loadingStyles.logoContainer}>
         <Animated.View style={[loadingStyles.logoGlow, { opacity: glowAnim }]} />
         <Animated.Image
@@ -105,18 +92,14 @@ const LoadingScreen = () => {
         />
       </View>
 
-      {/* App Name */}
-      <Text style={loadingStyles.appName}>{APP_INFO.NAME}</Text>
-      <Text style={loadingStyles.tagline}>ช้อป · ตลาดสด · ส่งของใกล้บ้าน</Text>
+      <RNText style={loadingStyles.appName}>{APP_INFO.NAME}</RNText>
+      <RNText style={loadingStyles.tagline}>ตลาดสด · ช้อป · ส่งของใกล้บ้าน</RNText>
 
-      {/* Loading Indicator */}
-      <View style={loadingStyles.loadingBox}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={loadingStyles.loadingText}>กำลังโหลด...</Text>
+      <View style={loadingStyles.track}>
+        <Animated.View style={[loadingStyles.bar, { transform: [{ translateX: barX }] }]} />
       </View>
 
-      {/* Version */}
-      <Text style={loadingStyles.version}>v{APP_INFO.VERSION}</Text>
+      <RNText style={loadingStyles.version}>v{APP_INFO.VERSION}</RNText>
     </Animated.View>
   );
 };
@@ -124,57 +107,76 @@ const LoadingScreen = () => {
 const loadingStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F23',
+    backgroundColor: '#0C1A33',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  kanokTop: {
+    position: 'absolute',
+    top: 24,
+    right: -60,
+    width: 300,
+    height: 264,
+    opacity: 0.5,
+  },
+  kanokBottom: {
+    position: 'absolute',
+    bottom: 10,
+    left: -60,
+    width: 260,
+    height: 229,
+    opacity: 0.28,
+    transform: [{ rotate: '180deg' }],
   },
   logoContainer: {
-    position: 'relative',
-    marginBottom: 24,
-    width: 120,
-    height: 120,
+    width: 128,
+    height: 128,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 30,
-    zIndex: 1,
+    marginBottom: 26,
   },
   logoGlow: {
     position: 'absolute',
-    top: -15,
-    left: -15,
-    right: -15,
-    bottom: -15,
-    borderRadius: 45,
-    backgroundColor: '#3B82F6',
-    // opacity controlled by animation
+    width: 190,
+    height: 190,
+    borderRadius: 95,
+    backgroundColor: 'rgba(228,192,107,0.16)',
+    boxShadow: '0px 0px 60px 20px rgba(228,192,107,0.25)',
+  },
+  logo: {
+    width: 128,
+    height: 128,
+    borderRadius: 30,
   },
   appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#F3DC9B',
+    letterSpacing: 0.4,
+    marginBottom: 6,
   },
   tagline: {
     fontSize: 14,
-    color: '#9CA3AF',
-    marginBottom: 40,
+    color: 'rgba(214,222,238,0.72)',
+    marginBottom: 34,
   },
-  loadingBox: {
-    alignItems: 'center',
+  track: {
+    width: 160,
+    height: 3,
+    borderRadius: 2,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.10)',
   },
-  loadingText: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginTop: 12,
+  bar: {
+    width: 70,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: '#E4C06B',
   },
   version: {
     position: 'absolute',
-    bottom: 40,
-    color: '#6B7280',
+    bottom: 36,
+    color: 'rgba(214,222,238,0.45)',
     fontSize: 12,
   },
 });
@@ -188,6 +190,30 @@ export default function RootLayout() {
   const prevAuthenticatedRef = useRef<boolean | null>(null);
   const { loadSettings, gpsSharing, setGpsSharing } = useAppStore();
   const [appIsReady, setAppIsReady] = useState(false);
+  // ฟอนต์ Anuphan / Noto Serif Thai — โหลดไม่สำเร็จหรือช้าเกิน 4 วิ ให้กลับไปใช้ฟอนต์ระบบ (ข้อความไม่หาย)
+  const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
+  const [fontsTimedOut, setFontsTimedOut] = useState(false);
+  const { colors, isDark } = useTheme();
+
+  useEffect(() => {
+    if (fontError) {
+      console.warn('Font load failed, using system font:', fontError);
+      setFontsEnabled(false);
+    }
+  }, [fontError]);
+
+  useEffect(() => {
+    if (fontsLoaded) return;
+    const t = setTimeout(() => {
+      setFontsEnabled(false);
+      setFontsTimedOut(true);
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [fontsLoaded]);
+
+  useEffect(() => {
+    if (fontsLoaded) setFontsEnabled(true);
+  }, [fontsLoaded]);
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
@@ -199,7 +225,7 @@ export default function RootLayout() {
       const MIN_LOADING_TIME = 1500; // แสดง loading อย่างน้อย 1.5 วินาที
 
       try {
-        console.log('✅ App initialization started (no icon fonts needed - using emojis)');
+        console.log('App initialization started');
 
         // Initialize auth พร้อม timeout 5 วินาที
         await Promise.race([
@@ -233,7 +259,7 @@ export default function RootLayout() {
 
     prepareApp();
 
-    // Force ready หลัง 3 วินาที (ลดเวลาลงเพราะไม่ต้องโหลด fonts แล้ว)
+    // Force ready หลัง 3 วินาที (ฟอนต์มีตัวจับเวลาของตัวเองด้านบน)
     const forceTimeout = setTimeout(() => {
       if (isMounted) {
         console.log('⏱️ Force timeout - showing app');
@@ -397,20 +423,20 @@ export default function RootLayout() {
     registerForPushNotifications().catch(() => {});
   }, [appIsReady, isAuthenticated, userId]);
 
-  // รอ app พร้อม
-  if (!appIsReady) {
+  // รอ app + ฟอนต์พร้อม
+  if (!appIsReady || !(fontsLoaded || fontError || fontsTimedOut)) {
     return <LoadingScreen />;
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-      <StatusBar style="dark" />
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
           contentStyle: {
-            backgroundColor: '#F9FAFB',
+            backgroundColor: colors.background,
           },
         }}
       >

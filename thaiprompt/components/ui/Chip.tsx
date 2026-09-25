@@ -1,8 +1,9 @@
 /**
- * Chip / Pill
+ * Chip / Pill — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
- * - Chip = ปุ่มเลือกตัวกรอง (กดได้, มีสถานะ selected เป็นทองไล่เฉด)
- * - Pill = ป้ายสถานะเล็กๆ (กดไม่ได้) เช่น "รอชำระ", "ส่งแล้ว"
+ * - Chip = ปุ่มเลือกตัวกรอง (กดได้) · เลือกอยู่ = พื้นน้ำเงินกรมท่า ตัวอักษรทอง
+ * - Pill = ป้ายสถานะเล็กๆ (กดไม่ได้) เช่น "รอชำระ", "ส่งแล้ว" · solid = ป้ายทองเด่น (เช่น "ใหม่")
+ * - icon: ชื่อไอคอน / อีโมจิเดิม (แปลงเป็นไอคอนเส้นให้) / element
  *
  * @example
  * <Chip label="ทั้งหมด" selected={tab === 'all'} onPress={() => setTab('all')} />
@@ -10,24 +11,29 @@
  */
 
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, radii, toneColors, shadowStyle, type Tone } from '@/theme';
+import { Text } from './Text';
+import { IconSlot } from './Icon';
 import { selectionHaptic } from './haptics';
+import { useOnHeader } from './RoyalHeader';
+
+/** สีตัวอักษรป้ายเมื่อวางบนหัวน้ำเงิน (พื้นกระจก) */
+const ON_HEADER_FG: Record<Tone, string> = {
+  neutral: '#F4F1EA',
+  gold: '#F3DC9B',
+  success: '#7EE2A8',
+  danger: '#FF9C8F',
+  info: '#9CC2FF',
+  warning: '#F5C77A',
+};
 
 type ChipSize = 'sm' | 'md';
 
 const SIZE: Record<ChipSize, { height: number; padX: number; font: number; icon: number }> = {
-  sm: { height: 30, padX: 12, font: 12, icon: 13 },
-  md: { height: 38, padX: 16, font: 14, icon: 16 },
-};
-
-const renderIcon = (icon: React.ReactNode, size: number) => {
-  if (icon === null || icon === undefined || icon === false) return null;
-  if (typeof icon === 'string' || typeof icon === 'number') {
-    return <Text style={{ fontSize: size }}>{icon}</Text>;
-  }
-  return icon;
+  sm: { height: 32, padX: 12, font: 12.5, icon: 14 },
+  md: { height: 40, padX: 16, font: 14, icon: 17 },
 };
 
 // =====================================================
@@ -61,14 +67,15 @@ export const Chip: React.FC<ChipProps> = ({
   accessibilityLabel,
   style,
 }) => {
-  const { colors, gradients } = useTheme();
+  const { colors, gradients, isDark } = useTheme();
   const spec = SIZE[size];
   const t = toneColors(tone, colors);
-  const fg = selected ? colors.textOnGold : t.fg;
+  const neutral = tone === 'neutral';
+  const fg = selected ? colors.goldLight : neutral ? colors.text : t.fg;
 
   const inner = (
     <View style={[styles.row, { height: spec.height, paddingHorizontal: spec.padX }]}>
-      {renderIcon(icon, spec.icon)}
+      <IconSlot icon={icon} size={spec.icon} color={selected ? colors.goldLight : neutral ? colors.goldDeep : t.fg} weight={selected ? 'fill' : 'regular'} />
       <Text numberOfLines={1} style={[styles.label, { fontSize: spec.font, color: fg }]}>
         {label}
       </Text>
@@ -76,10 +83,10 @@ export const Chip: React.FC<ChipProps> = ({
         <View
           style={[
             styles.count,
-            { backgroundColor: selected ? 'rgba(255,255,255,0.3)' : colors.goldSoft },
+            { backgroundColor: selected ? 'rgba(243,220,155,0.22)' : colors.goldSoft },
           ]}
         >
-          <Text style={[styles.countText, { color: selected ? colors.textOnGold : colors.goldDeep }]}>
+          <Text style={[styles.countText, { color: selected ? colors.goldLight : colors.goldDeep }]}>
             {count > 99 ? '99+' : count}
           </Text>
         </View>
@@ -89,15 +96,24 @@ export const Chip: React.FC<ChipProps> = ({
 
   const body = selected ? (
     <LinearGradient
-      colors={gradients.primary}
+      colors={gradients.navy}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.shape, shadowStyle('sm', colors.amber)]}
+      end={{ x: 0, y: 1 }}
+      style={[styles.shape, shadowStyle('sm', isDark ? '#000000' : '#0C1A33')]}
     >
       {inner}
     </LinearGradient>
   ) : (
-    <View style={[styles.shape, { backgroundColor: t.bg, borderWidth: 1, borderColor: t.border }]}>{inner}</View>
+    <View
+      style={[
+        styles.shape,
+        neutral
+          ? { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }
+          : { backgroundColor: t.bg, borderWidth: 1, borderColor: t.border },
+      ]}
+    >
+      {inner}
+    </View>
   );
 
   if (!onPress) {
@@ -138,15 +154,17 @@ export interface PillProps {
 
 export const Pill: React.FC<PillProps> = ({ label, tone = 'neutral', icon, size = 'sm', solid = false, style }) => {
   const { colors, gradients } = useTheme();
+  const onHeader = useOnHeader();
   const t = toneColors(tone, colors);
-  const font = size === 'sm' ? 11 : 13;
+  const font = size === 'sm' ? 11.5 : 13;
   const padY = size === 'sm' ? 3 : 5;
   const padX = size === 'sm' ? 8 : 12;
+  const fg = solid ? colors.textOnGold : onHeader ? ON_HEADER_FG[tone] : t.fg;
 
   const content = (
     <View style={[styles.pillRow, { paddingVertical: padY, paddingHorizontal: padX }]}>
-      {renderIcon(icon, font + 1)}
-      <Text numberOfLines={1} style={[styles.pillText, { fontSize: font, color: solid ? colors.textOnGold : t.fg }]}>
+      <IconSlot icon={icon} size={font + 2} color={fg} weight="fill" />
+      <Text numberOfLines={1} style={[styles.pillText, { fontSize: font, color: fg }]}>
         {label}
       </Text>
     </View>
@@ -157,7 +175,7 @@ export const Pill: React.FC<PillProps> = ({ label, tone = 'neutral', icon, size 
       <LinearGradient
         colors={gradients.primary}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 0, y: 1 }}
         style={[styles.pill, style]}
       >
         {content}
@@ -166,7 +184,15 @@ export const Pill: React.FC<PillProps> = ({ label, tone = 'neutral', icon, size 
   }
 
   return (
-    <View style={[styles.pill, { backgroundColor: t.bg, borderColor: t.border, borderWidth: 1 }, style]}>
+    <View
+      style={[
+        styles.pill,
+        onHeader
+          ? { backgroundColor: colors.headerGlass, borderWidth: 1, borderColor: colors.headerGlassBorder }
+          : { backgroundColor: t.bg },
+        style,
+      ]}
+    >
       {content}
     </View>
   );
@@ -197,7 +223,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   pill: {
-    borderRadius: radii.pill,
+    borderRadius: 8,
     alignSelf: 'flex-start',
     overflow: 'hidden',
   },

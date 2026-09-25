@@ -1,6 +1,10 @@
 /**
  * ชำระเงิน — POST /cart/checkout (SHOP-03 / 07 / 08 / 11 / 23)
  *
+ * หน้าตา (ธีมรอยัล): การ์ดขั้นตอนมีเลขในวงกลมน้ำเงิน (ที่อยู่ → วิธีส่ง → วิธีจ่าย → โค้ด → สรุป)
+ *   · ตัวเลือกเป็นการ์ดขาว (วงเลือก + กล่องไอคอน) ที่เลือกอยู่ = ขอบทอง · แถบล่างลอยยอดทอง + ปุ่มทองยืนยัน
+ *   · ขั้นจ่ายพร้อมเพย์ = การ์ด QR ขอบทอง · สำเร็จ = เหรียญเครื่องหมายถูก + ยอดทอง
+ *
  * ขั้นตอน
  *   1. form     เลือกที่อยู่ · วิธีส่ง (พัสดุ | ไรเดอร์ เมื่อร้านรองรับ + ค่าส่งจาก server)
  *               · วิธีจ่าย (กระเป๋าเงิน | พร้อมเพย์ | เก็บเงินปลายทาง เฉพาะส่งด้วยไรเดอร์) · คูปอง (server ตรวจ) · หมายเหตุ
@@ -15,7 +19,9 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
@@ -41,6 +47,7 @@ import {
   Button3D,
   Card3D,
   EmptyState,
+  Icon,
   Pill,
   PriceText,
   Screen,
@@ -48,8 +55,18 @@ import {
   formatBaht,
   resultHaptic,
 } from '@/components/ui';
-import { Field, FormSheet, PromptPayQR, type PromptPayState } from '@/components/shop';
-import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
+import {
+  Field,
+  FormSheet,
+  IconTile,
+  NoticeBanner,
+  PromptPayQR,
+  RadioMark,
+  StepBadge,
+  StickyBar,
+  type PromptPayState,
+} from '@/components/shop';
+import { useTheme, spacing, typography } from '@/theme';
 
 type Step = 'form' | 'payment' | 'done';
 
@@ -67,6 +84,7 @@ const PAYMENT_LABEL: Record<CheckoutPaymentMethod, string> = {
 // =====================================================
 
 interface OptionCardProps {
+  /** ชื่อไอคอน */
   icon: string;
   title: string;
   subtitle?: string;
@@ -77,6 +95,7 @@ interface OptionCardProps {
   onPress: () => void;
 }
 
+/** การ์ดตัวเลือก: วงเลือก + กล่องไอคอน + ชื่อ/คำอธิบาย + ค่าด้านขวา · เลือกอยู่ = ขอบทอง */
 const OptionCard: React.FC<OptionCardProps> = ({ icon, title, subtitle, right, selected, disabled, disabledReason, onPress }) => {
   const { colors } = useTheme();
   return (
@@ -86,20 +105,21 @@ const OptionCard: React.FC<OptionCardProps> = ({ icon, title, subtitle, right, s
       variant={disabled ? 'flat' : 'raised'}
       shadow="sm"
       padding={spacing.md}
-      radius={radii.lg}
+      radius={20}
       style={[styles.option, disabled && styles.dimmed]}
       accessibilityLabel={`${title}${selected ? ' เลือกอยู่' : ''}${disabled && disabledReason ? ` ใช้ไม่ได้: ${disabledReason}` : ''}`}
     >
       <View style={styles.optionRow}>
-        <View style={[styles.radio, { borderColor: selected ? colors.gold : colors.border }]}>
-          {selected && <View style={[styles.radioDot, { backgroundColor: colors.gold }]} />}
-        </View>
-        <Text style={styles.optionIcon}>{icon}</Text>
+        <RadioMark selected={selected} disabled={disabled} />
+        <IconTile icon={icon} tone={selected ? 'gold' : 'navy'} size={42} weight={selected ? 'fill' : 'regular'} />
         <View style={styles.flex}>
           <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{title}</Text>
           {!!subtitle && <Text style={[typography.caption, { color: colors.textMuted }]}>{subtitle}</Text>}
           {disabled && !!disabledReason && (
-            <Text style={[typography.caption, { color: colors.warning }]}>{disabledReason}</Text>
+            <View style={styles.disabledRow}>
+              <Icon name="info" size={13} color={colors.warning} style={styles.disabledIcon} />
+              <Text style={[typography.caption, styles.flex, { color: colors.warning }]}>{disabledReason}</Text>
+            </View>
           )}
         </View>
         {right}
@@ -113,7 +133,7 @@ const OptionCard: React.FC<OptionCardProps> = ({ icon, title, subtitle, right, s
 // =====================================================
 
 export default function CheckoutScreen() {
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -665,7 +685,7 @@ export default function CheckoutScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="ชำระเงิน" scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState icon="lock-key" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -681,16 +701,23 @@ export default function CheckoutScreen() {
         : 'ร้านได้รับคำสั่งซื้อแล้ว ติดตามสถานะได้ที่หน้าคำสั่งซื้อ';
     return (
       <Screen title="สั่งซื้อสำเร็จ" onBack={goOrders}>
-        <Card3D gradientBorder padding={spacing.xl} style={styles.block}>
-          <Text style={styles.bigIcon}>🎉</Text>
-          <Text style={[typography.h1, styles.centerText, { color: colors.textStrong }]}>{title}</Text>
-          <Text style={[typography.body, styles.centerText, styles.gapTop, { color: colors.textMuted }]}>{message}</Text>
-          <PriceText amount={result.total_amount} decimals={2} size="xl" tone="gold" style={[styles.centerText, styles.gapTop]} />
-          {typeof result.wallet_balance === 'number' && (
-            <Text style={[typography.caption, styles.centerText, { color: colors.textMuted }]}>
-              ยอดคงเหลือในกระเป๋า {formatBaht(result.wallet_balance, { decimals: 2 })}
-            </Text>
-          )}
+        <Card3D gradientBorder shadow="lg" padding={spacing.xl} style={styles.block}>
+          <View style={[styles.medalOuter, { backgroundColor: colors.successSoft }]}>
+            <LinearGradient colors={gradients.success} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.medalInner}>
+              <Icon name="check" size={34} color={colors.textOnAccent} weight="bold" />
+            </LinearGradient>
+          </View>
+          <Text style={[typography.serif, styles.centerText, { color: colors.textStrong }]}>{title}</Text>
+          <Text style={[typography.body, styles.centerText, styles.gapTopSm, { color: colors.textMuted }]}>{message}</Text>
+          <View style={[styles.doneTotal, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+            <Text style={[typography.caption, styles.centerText, { color: colors.textMuted }]}>ยอดรวมคำสั่งซื้อ</Text>
+            <PriceText amount={result.total_amount} decimals={2} size="xl" tone="gold" style={styles.centerText} />
+            {typeof result.wallet_balance === 'number' && (
+              <Text style={[typography.caption, styles.centerText, { color: colors.textMuted }]}>
+                ยอดคงเหลือในกระเป๋า {formatBaht(result.wallet_balance, { decimals: 2 })}
+              </Text>
+            )}
+          </View>
         </Card3D>
 
         {result.orders.map((order) => (
@@ -701,25 +728,27 @@ export default function CheckoutScreen() {
               router.replace(`/order/${order.id}` as never);
             }}
             padding={spacing.md}
-            radius={radii.lg}
+            radius={20}
             shadow="sm"
-            style={styles.block}
+            style={styles.blockSm}
             accessibilityLabel={`ดูคำสั่งซื้อ ${order.order_number}`}
           >
             <View style={styles.rowBetween}>
+              <IconTile icon="storefront" size={42} />
               <View style={styles.flex}>
-                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{order.store?.name || 'คำสั่งซื้อ'}</Text>
+                <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>{order.store?.name || 'คำสั่งซื้อ'}</Text>
                 <Text style={[typography.caption, { color: colors.textMuted }]}>{order.order_number}</Text>
               </View>
               <PriceText amount={order.total_amount} size="md" tone="strong" />
-              <Text style={[typography.h2, { color: colors.textFaint }]}> ›</Text>
+              <Icon name="caret-right" size={16} color={colors.textFaint} weight="bold" />
             </View>
           </Card3D>
         ))}
 
-        <Button3D title="ดูคำสั่งซื้อ" icon="🧾" size="lg" fullWidth onPress={goOrders} style={styles.gapTop} />
+        <Button3D title="ดูคำสั่งซื้อ" icon="receipt" size="lg" fullWidth onPress={goOrders} style={styles.gapTop} />
         <Button3D
           title="ช้อปต่อ"
+          icon="shopping-bag-open"
           variant="secondary"
           size="lg"
           fullWidth
@@ -738,11 +767,12 @@ export default function CheckoutScreen() {
     return (
       <Screen title="สแกนจ่ายพร้อมเพย์" subtitle={`${payments.length} รายการที่ต้องชำระ`} onBack={() => navigation.goBack()}>
         {payments.length > 1 && (
-          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-            <Text style={[typography.bodySm, { color: colors.text }]}>
-              สั่งจากหลายร้าน แต่ละร้านมี QR ของตัวเอง โอนให้ครบทุก QR นะ
-            </Text>
-          </Card3D>
+          <NoticeBanner
+            tone="info"
+            icon="storefront"
+            text="สั่งจากหลายร้าน แต่ละร้านมี QR ของตัวเอง โอนให้ครบทุก QR นะ"
+            style={styles.block}
+          />
         )}
         {payments.map((p, index) => {
           const key = paymentKey(p, index);
@@ -759,7 +789,7 @@ export default function CheckoutScreen() {
               {state !== 'paid' && (
                 <Button3D
                   title="จ่ายด้วยกระเป๋าเงินแทน"
-                  icon="👛"
+                  icon="wallet"
                   variant="ghost"
                   size="sm"
                   onPress={() => payWithWallet(index)}
@@ -771,32 +801,43 @@ export default function CheckoutScreen() {
         })}
 
         {pollTimedOut && anyWaiting && (
-          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-            <Text style={[typography.bodySm, { color: colors.warning }]}>
-              ยังไม่พบยอดโอน ถ้าโอนแล้วกดตรวจสอบอีกครั้งได้เลย
-            </Text>
-            <Button3D
-              title="ตรวจสอบอีกครั้ง"
-              icon="🔄"
-              size="sm"
-              onPress={async () => {
-                pollStartedAtRef.current = Date.now();
-                setPollTimedOut(false);
-                await pollOnce();
-              }}
-              style={styles.gapTop}
-            />
-          </Card3D>
+          <NoticeBanner
+            tone="warning"
+            icon="hourglass"
+            text="ยังไม่พบยอดโอน ถ้าโอนแล้วกดตรวจสอบอีกครั้งได้เลย"
+            actionBelow
+            action={
+              <Button3D
+                title="ตรวจสอบอีกครั้ง"
+                icon="arrows-clockwise"
+                size="sm"
+                onPress={async () => {
+                  pollStartedAtRef.current = Date.now();
+                  setPollTimedOut(false);
+                  await pollOnce();
+                }}
+              />
+            }
+            style={styles.block}
+          />
         )}
 
         {anyWaiting && (
-          <View style={styles.waitingRow}>
+          <View style={[styles.waitingRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <ActivityIndicator color={colors.gold} />
             <Text style={[typography.caption, { color: colors.textMuted }]}>กำลังรอยืนยันยอดโอนอัตโนมัติ...</Text>
           </View>
         )}
 
-        <Button3D title="ชำระภายหลัง / ดูคำสั่งซื้อ" variant="secondary" size="md" fullWidth onPress={goOrders} style={styles.gapTop} />
+        <Button3D
+          title="ชำระภายหลัง / ดูคำสั่งซื้อ"
+          icon="receipt"
+          variant="secondary"
+          size="md"
+          fullWidth
+          onPress={goOrders}
+          style={styles.gapTop}
+        />
       </Screen>
     );
   }
@@ -818,7 +859,7 @@ export default function CheckoutScreen() {
     return (
       <Screen title="ชำระเงิน" scroll={false}>
         <EmptyState
-          icon="🛒"
+          art="cart"
           title="ตะกร้ายังว่างอยู่"
           message="เลือกสินค้าก่อนแล้วค่อยมาชำระเงินนะ"
           actionLabel="ไปช้อปเลย"
@@ -833,61 +874,75 @@ export default function CheckoutScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <Screen title="ชำระเงิน" subtitle={`${summary.available_items_count} ชิ้น`} contentStyle={{ paddingBottom: 150 + insets.bottom }}>
-        {!!notice && (
-          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-            <View style={styles.rowBetween}>
-              <Text style={[typography.bodySm, styles.flex, { color: colors.info }]}>ℹ️ {notice}</Text>
-              <Pressable onPress={() => setNotice(null)} accessibilityRole="button" accessibilityLabel="ปิดข้อความ" hitSlop={10}>
-                <Text style={[typography.h3, { color: colors.textFaint }]}>✕</Text>
-              </Pressable>
-            </View>
-          </Card3D>
-        )}
+      <Screen
+        title="ชำระเงิน"
+        subtitle={`${summary.available_items_count} ชิ้น`}
+        contentStyle={{ paddingBottom: 130 + Math.max(insets.bottom, spacing.md) }}
+      >
+        {!!notice && <NoticeBanner tone="info" text={notice} onClose={() => setNotice(null)} style={styles.block} />}
 
-        {/* ---------- ที่อยู่ ---------- */}
-        <SectionHeader title="ที่อยู่จัดส่ง" icon="📍" actionLabel={addresses.length > 0 ? 'เปลี่ยน' : undefined} onAction={() => setAddressSheet(true)} />
+        {/* ---------- 1 ที่อยู่ ---------- */}
+        <SectionHeader
+          title="ที่อยู่จัดส่ง"
+          icon={<StepBadge n={1} />}
+          actionLabel={addresses.length > 0 ? 'เปลี่ยน' : undefined}
+          onAction={() => setAddressSheet(true)}
+        />
         {selectedAddress ? (
-          <Card3D onPress={() => setAddressSheet(true)} padding={spacing.lg} style={styles.block} accessibilityLabel="เปลี่ยนที่อยู่จัดส่ง">
-            <View style={styles.rowBetween}>
-              <Text style={[typography.bodyStrong, styles.flex, { color: colors.textStrong }]}>
-                {selectedAddress.recipient_name} · {selectedAddress.phone_number}
-              </Text>
-              {selectedAddress.is_default && <Pill label="หลัก" tone="gold" />}
-            </View>
-            <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.text }]}>{selectedAddress.full_address}</Text>
-            {!selectedAddress.has_location && (
-              <View style={styles.pinWarn}>
-                <Text style={[typography.caption, styles.flex, { color: colors.warning }]}>
-                  📍 ยังไม่ปักหมุด — ปักหมุดแล้วเลือกส่งด้วยไรเดอร์ได้
-                </Text>
-                <Button3D
-                  title="ปักหมุด"
-                  size="sm"
-                  variant="secondary"
-                  onPress={() => router.push(`/addresses/edit?id=${selectedAddress.id}` as never)}
-                />
+          <Card3D onPress={() => setAddressSheet(true)} padding={spacing.lg} radius={20} style={styles.block} accessibilityLabel="เปลี่ยนที่อยู่จัดส่ง">
+            <View style={styles.addressRow}>
+              <IconTile icon="map-pin" tone="gold" weight="fill" />
+              <View style={styles.flex}>
+                <View style={styles.rowBetween}>
+                  <Text style={[typography.bodyStrong, styles.flex, { color: colors.textStrong }]}>
+                    {selectedAddress.recipient_name} · {selectedAddress.phone_number}
+                  </Text>
+                  {selectedAddress.is_default && <Pill label="หลัก" tone="gold" />}
+                </View>
+                <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.text }]}>{selectedAddress.full_address}</Text>
               </View>
+            </View>
+            {!selectedAddress.has_location && (
+              <NoticeBanner
+                tone="warning"
+                icon="map-pin"
+                text="ยังไม่ปักหมุด — ปักหมุดแล้วเลือกส่งด้วยไรเดอร์ได้"
+                action={
+                  <Button3D
+                    title="ปักหมุด"
+                    size="sm"
+                    variant="secondary"
+                    onPress={() => router.push(`/addresses/edit?id=${selectedAddress.id}` as never)}
+                  />
+                }
+                style={styles.pinWarn}
+              />
             )}
           </Card3D>
         ) : (
           <Card3D gradientBorder padding={spacing.lg} style={styles.block}>
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ยังไม่มีที่อยู่จัดส่ง</Text>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>เพิ่มที่อยู่ครั้งเดียว ใช้ได้ทุกครั้งที่สั่ง</Text>
+            <View style={styles.addressRow}>
+              <IconTile icon="map-pin" tone="gold" weight="fill" />
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ยังไม่มีที่อยู่จัดส่ง</Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>เพิ่มที่อยู่ครั้งเดียว ใช้ได้ทุกครั้งที่สั่ง</Text>
+              </View>
+            </View>
             <Button3D
               title="เพิ่มที่อยู่"
-              icon="➕"
+              icon="plus"
               size="md"
+              fullWidth
               onPress={() => router.push('/addresses/edit' as never)}
               style={styles.gapTop}
             />
           </Card3D>
         )}
 
-        {/* ---------- วิธีจัดส่ง ---------- */}
-        <SectionHeader title="วิธีจัดส่ง" icon="🚚" style={styles.section} />
+        {/* ---------- 2 วิธีจัดส่ง ---------- */}
+        <SectionHeader title="วิธีจัดส่ง" icon={<StepBadge n={2} />} style={styles.section} />
         <OptionCard
-          icon="📦"
+          icon="package"
           title="ส่งพัสดุ"
           subtitle="ร้านแพ็กส่งผ่านบริษัทขนส่ง พร้อมเลขติดตาม"
           selected={delivery === 'parcel'}
@@ -896,12 +951,12 @@ export default function CheckoutScreen() {
             riderInfo.parcelFee > 0 ? (
               <PriceText amount={riderInfo.parcelFee} size="sm" tone="strong" />
             ) : (
-              <Text style={[typography.caption, { color: colors.success }]}>ส่งฟรี</Text>
+              <Text style={[typography.caption, styles.free, { color: colors.success }]}>ส่งฟรี</Text>
             )
           }
         />
         <OptionCard
-          icon="🛵"
+          icon="moped"
           title="ส่งด้วยไรเดอร์"
           subtitle={
             riderInfo.available
@@ -915,10 +970,10 @@ export default function CheckoutScreen() {
           right={riderInfo.available ? <PriceText amount={riderInfo.fee} size="sm" tone="strong" /> : null}
         />
 
-        {/* ---------- วิธีชำระเงิน ---------- */}
-        <SectionHeader title="วิธีชำระเงิน" icon="💳" style={styles.section} />
+        {/* ---------- 3 วิธีชำระเงิน ---------- */}
+        <SectionHeader title="วิธีชำระเงิน" icon={<StepBadge n={3} />} style={styles.section} />
         <OptionCard
-          icon="👛"
+          icon="wallet"
           title="กระเป๋าเงิน"
           subtitle={walletBalance !== null ? `ยอดคงเหลือ ${formatBaht(walletBalance, { decimals: 2 })}` : 'ตัดเงินจากกระเป๋าทันที'}
           selected={payment === 'wallet'}
@@ -928,7 +983,7 @@ export default function CheckoutScreen() {
         {walletShort && (
           <Button3D
             title="เติมเงินเข้ากระเป๋า"
-            icon="➕"
+            icon="plus"
             variant="secondary"
             size="sm"
             onPress={() => router.push('/wallet-topup' as never)}
@@ -936,7 +991,7 @@ export default function CheckoutScreen() {
           />
         )}
         <OptionCard
-          icon="📱"
+          icon="qr-code"
           title="พร้อมเพย์ (สแกน QR)"
           subtitle="โอนผ่านแอปธนาคาร ระบบยืนยันให้อัตโนมัติ"
           selected={payment === 'promptpay'}
@@ -945,7 +1000,7 @@ export default function CheckoutScreen() {
           onPress={() => setPayment('promptpay')}
         />
         <OptionCard
-          icon="💵"
+          icon="money"
           title="เก็บเงินปลายทาง"
           subtitle="จ่ายเงินสดกับไรเดอร์ตอนรับของ"
           selected={payment === 'cod'}
@@ -954,13 +1009,14 @@ export default function CheckoutScreen() {
           onPress={() => setPayment('cod')}
         />
 
-        {/* ---------- คูปอง ---------- */}
-        <SectionHeader title="โค้ดส่วนลด" icon="🎟️" style={styles.section} />
-        <Card3D padding={spacing.lg} style={styles.block}>
+        {/* ---------- 4 คูปอง ---------- */}
+        <SectionHeader title="โค้ดส่วนลด" icon={<StepBadge n={4} />} style={styles.section} />
+        <Card3D padding={spacing.lg} radius={20} style={styles.block}>
           {appliedCoupon ? (
             <View style={styles.rowBetween}>
+              <IconTile icon="ticket" tone="success" weight="fill" />
               <View style={styles.flex}>
-                <Text style={[typography.bodyStrong, { color: colors.success }]}>✅ ใช้โค้ด {appliedCoupon}</Text>
+                <Text style={[typography.bodyStrong, { color: colors.success }]}>ใช้โค้ด {appliedCoupon}</Text>
                 {quote.coupon && quote.coupon.discount > 0 && (
                   <Text style={[typography.caption, { color: colors.textMuted }]}>
                     ลด {formatBaht(quote.coupon.discount, { decimals: 2 })}
@@ -982,7 +1038,7 @@ export default function CheckoutScreen() {
                 autoCapitalize="characters"
                 autoCorrect={false}
                 error={couponError}
-                containerStyle={styles.flex}
+                containerStyle={[styles.flex, styles.noTop]}
                 returnKeyType="done"
                 onSubmitEditing={applyCoupon}
               />
@@ -991,13 +1047,18 @@ export default function CheckoutScreen() {
           )}
         </Card3D>
 
-        {/* ---------- รายการตามร้าน ---------- */}
-        <SectionHeader title="สรุปคำสั่งซื้อ" icon="🧾" style={styles.section} />
+        {/* ---------- 5 รายการตามร้าน ---------- */}
+        <SectionHeader title="สรุปคำสั่งซื้อ" icon={<StepBadge n={5} />} style={styles.section} />
         {quote.stores.map((store) => {
           const items = availableItems.filter((i) => (i.store?.id ?? null) === store.store_id);
           return (
-            <Card3D key={store.key} padding={spacing.lg} style={styles.block}>
-              <Text style={[typography.h3, { color: colors.textStrong }]}>🏪 {store.store_name}</Text>
+            <Card3D key={store.key} padding={spacing.lg} radius={20} style={styles.block}>
+              <View style={styles.storeHead}>
+                <IconTile icon="storefront" size={36} />
+                <Text numberOfLines={1} style={[typography.h3, styles.flex, { color: colors.textStrong }]}>
+                  {store.store_name}
+                </Text>
+              </View>
               {items.map((item) => (
                 <View key={item.id} style={styles.itemLine}>
                   <Text numberOfLines={2} style={[typography.bodySm, styles.flex, { color: colors.text }]}>
@@ -1032,16 +1093,17 @@ export default function CheckoutScreen() {
           );
         })}
         {summary.unavailable_count > 0 && (
-          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-            <Text style={[typography.bodySm, { color: colors.danger }]}>
-              ⚠️ มีสินค้า {summary.unavailable_count} รายการที่สั่งไม่ได้ เอาออกจากตะกร้าก่อนนะ
-            </Text>
-            <Button3D title="ไปที่ตะกร้า" size="sm" variant="secondary" onPress={() => router.replace('/cart')} style={styles.gapTopSm} />
-          </Card3D>
+          <NoticeBanner
+            tone="danger"
+            text={`มีสินค้า ${summary.unavailable_count} รายการที่สั่งไม่ได้ เอาออกจากตะกร้าก่อนนะ`}
+            actionBelow
+            action={<Button3D title="ไปที่ตะกร้า" icon="shopping-cart-simple" size="sm" variant="secondary" onPress={() => router.replace('/cart')} />}
+            style={styles.block}
+          />
         )}
 
         {/* ---------- หมายเหตุ ---------- */}
-        <Card3D padding={spacing.lg} style={styles.block}>
+        <Card3D padding={spacing.lg} radius={20} style={styles.block}>
           <Field
             label="หมายเหตุถึงร้าน (ถ้ามี)"
             value={note}
@@ -1054,7 +1116,7 @@ export default function CheckoutScreen() {
         </Card3D>
 
         {/* ---------- ยอดรวม ---------- */}
-        <Card3D variant="inset" padding={spacing.lg} style={styles.block}>
+        <Card3D variant="inset" padding={spacing.lg} radius={20} style={styles.block}>
           <View style={styles.rowBetween}>
             <Text style={[typography.body, { color: colors.text }]}>ค่าสินค้า</Text>
             <PriceText amount={summary.subtotal} size="sm" tone="strong" />
@@ -1064,7 +1126,7 @@ export default function CheckoutScreen() {
             {summary.shipping_fee > 0 ? (
               <PriceText amount={summary.shipping_fee} size="sm" tone="strong" />
             ) : (
-              <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งฟรี</Text>
+              <Pill label="ส่งฟรี" tone="success" icon="truck" />
             )}
           </View>
           {summary.discount > 0 && (
@@ -1081,13 +1143,7 @@ export default function CheckoutScreen() {
       </Screen>
 
       {/* ---------- แถบยืนยัน ---------- */}
-      <View
-        style={[
-          styles.bottomBar,
-          { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, spacing.md) },
-          clayShadowStyle('md', colors.shadowDark, colors.shadowLight),
-        ]}
-      >
+      <StickyBar style={styles.bottomBar}>
         <View style={styles.flex}>
           <Text style={[typography.caption, { color: colors.textMuted }]}>
             {quoteLoading ? 'กำลังคำนวณยอด...' : `จ่ายด้วย${PAYMENT_LABEL[payment]}`}
@@ -1100,7 +1156,7 @@ export default function CheckoutScreen() {
         </View>
         <Button3D
           title="ยืนยันสั่งซื้อ"
-          icon="✅"
+          icon="check-circle"
           size="lg"
           loading={submitting}
           loadingText="กำลังสั่งซื้อ..."
@@ -1108,33 +1164,35 @@ export default function CheckoutScreen() {
           onPress={confirmAndSubmit}
           style={styles.submit}
         />
-      </View>
+      </StickyBar>
 
       {/* ---------- เลือกที่อยู่ ---------- */}
       <FormSheet
         visible={addressSheet}
-        icon="📍"
+        icon="map-pin"
         title="เลือกที่อยู่จัดส่ง"
         onClose={() => setAddressSheet(false)}
         cancelLabel="ปิด"
       >
-        {addresses.map((a) => (
-          <OptionCard
-            key={a.id}
-            icon={a.has_location ? '📍' : '🏠'}
-            title={`${a.recipient_name}${a.is_default ? ' (หลัก)' : ''}`}
-            subtitle={a.full_address}
-            selected={a.id === selectedAddressId}
-            onPress={() => {
-              setSelectedAddressId(a.id);
-              setAddressSheet(false);
-            }}
-          />
-        ))}
+        <View style={styles.sheetList}>
+          {addresses.map((a) => (
+            <OptionCard
+              key={a.id}
+              icon={a.has_location ? 'map-pin' : 'house'}
+              title={`${a.recipient_name}${a.is_default ? ' (หลัก)' : ''}`}
+              subtitle={a.full_address}
+              selected={a.id === selectedAddressId}
+              onPress={() => {
+                setSelectedAddressId(a.id);
+                setAddressSheet(false);
+              }}
+            />
+          ))}
+        </View>
         <View style={styles.sheetButtons}>
           <Button3D
             title="เพิ่มที่อยู่ใหม่"
-            icon="➕"
+            icon="plus"
             size="md"
             onPress={() => {
               setAddressSheet(false);
@@ -1171,8 +1229,11 @@ const styles = StyleSheet.create({
   block: {
     marginBottom: spacing.md,
   },
+  blockSm: {
+    marginBottom: spacing.sm,
+  },
   section: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
   rowBetween: {
     flexDirection: 'row',
@@ -1190,10 +1251,29 @@ const styles = StyleSheet.create({
   gapTopSm: {
     marginTop: spacing.xs,
   },
-  bigIcon: {
-    fontSize: 56,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
+  medalOuter: {
+    alignSelf: 'center',
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+  },
+  medalInner: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneTotal: {
+    marginTop: spacing.lg,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    gap: 2,
   },
   option: {
     marginBottom: spacing.sm,
@@ -1206,31 +1286,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+  disabledRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 4,
+    marginTop: 2,
   },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  disabledIcon: {
+    marginTop: 2,
   },
-  optionIcon: {
-    fontSize: 22,
+  free: {
+    fontWeight: '700',
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
   pinWarn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
     marginTop: spacing.md,
   },
   topup: {
     alignSelf: 'flex-start',
     marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
   },
   couponRow: {
     flexDirection: 'row',
@@ -1242,6 +1321,12 @@ const styles = StyleSheet.create({
   },
   noTop: {
     marginTop: 0,
+  },
+  storeHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
   itemLine: {
     flexDirection: 'row',
@@ -1263,27 +1348,24 @@ const styles = StyleSheet.create({
   walletAlt: {
     alignSelf: 'center',
     marginTop: -spacing.xs,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   waitingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     gap: spacing.sm,
     marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.screen,
-    paddingTop: spacing.md,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
   },
   totalLoader: {
     alignSelf: 'flex-start',
@@ -1291,6 +1373,9 @@ const styles = StyleSheet.create({
   },
   submit: {
     minWidth: 170,
+  },
+  sheetList: {
+    marginTop: spacing.md,
   },
   sheetButtons: {
     flexDirection: 'row',

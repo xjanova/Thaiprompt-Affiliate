@@ -16,7 +16,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
-  Text,
   Image,
   Pressable,
   Dimensions,
@@ -25,6 +24,7 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router } from 'expo-router';
 // ⭐ ลบ react-native-reanimated เพราะอาจทำให้ crash
 // import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';

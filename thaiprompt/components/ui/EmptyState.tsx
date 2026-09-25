@@ -14,18 +14,23 @@
  */
 
 import React from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { useTheme, spacing, typography, clayShadowStyle } from '@/theme';
+import { useTheme, spacing, typography, shadowStyle } from '@/theme';
 import { Button3D } from './Button3D';
+import { IconSlot } from './Icon';
+import { BrandArt, type BrandArtName } from './BrandArt';
 
 export type EmptyStateVariant = 'empty' | 'error' | 'offline';
 
 export interface EmptyStateProps {
   title?: string;
   message?: string;
-  /** emoji ในวงกลม (ใช้เมื่อไม่ส่ง illustration) */
+  /** ชื่อไอคอนในวงกลม (อีโมจิเดิมจะถูกแปลงเป็นไอคอนเส้น) — ใช้เมื่อไม่ส่ง art/illustration */
   icon?: string;
+  /** ภาพ 3D ประจำแบรนด์ (เช่น scooter สำหรับยังไม่มีงาน, bag สำหรับยังไม่มีออเดอร์) */
+  art?: BrandArtName;
   /** ช่องใส่ภาพประกอบเอง (Image / SVG) */
   illustration?: React.ReactNode;
   variant?: EmptyStateVariant;
@@ -41,19 +46,19 @@ export interface EmptyStateProps {
 
 const DEFAULTS: Record<EmptyStateVariant, { icon: string; title: string; message: string; action: string }> = {
   empty: {
-    icon: '🗂️',
+    icon: 'squares-four',
     title: 'ยังไม่มีข้อมูล',
     message: 'เมื่อมีรายการใหม่ จะแสดงที่นี่',
     action: 'รีเฟรช',
   },
   error: {
-    icon: '😵',
+    icon: 'warning-circle',
     title: 'โหลดข้อมูลไม่สำเร็จ',
     message: 'ระบบขัดข้องชั่วคราว ลองใหม่อีกครั้งนะ',
     action: 'ลองใหม่',
   },
   offline: {
-    icon: '📡',
+    icon: 'wifi-slash',
     title: 'ไม่มีอินเทอร์เน็ต',
     message: 'ตรวจสอบการเชื่อมต่อ แล้วลองใหม่อีกครั้ง',
     action: 'ลองใหม่',
@@ -64,6 +69,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   message,
   icon,
+  art,
   illustration,
   variant = 'empty',
   actionLabel,
@@ -85,6 +91,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     >
       {illustration ? (
         <View style={styles.illustration}>{illustration}</View>
+      ) : art ? (
+        <View style={styles.illustration}>
+          <BrandArt name={art} size={compact ? 84 : 128} />
+        </View>
       ) : (
         <View
           style={[
@@ -93,12 +103,18 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
               width: circle,
               height: circle,
               borderRadius: circle / 2,
-              backgroundColor: variant === 'error' ? colors.dangerSoft : colors.goldSoft,
+              backgroundColor: variant === 'error' ? colors.dangerSoft : colors.card,
+              borderWidth: 1,
+              borderColor: variant === 'error' ? 'transparent' : colors.border,
             },
-            clayShadowStyle('sm', colors.shadowDark, colors.shadowLight),
+            shadowStyle('sm', colors.shadowDark),
           ]}
         >
-          <Text style={{ fontSize: compact ? 30 : 46 }}>{icon || d.icon}</Text>
+          <IconSlot
+            icon={icon || d.icon}
+            size={compact ? 28 : 42}
+            color={variant === 'error' ? colors.danger : colors.goldDeep}
+          />
         </View>
       )}
 
@@ -118,7 +134,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           onPress={onAction}
           variant={variant === 'empty' ? 'primary' : 'secondary'}
           size={compact ? 'sm' : 'md'}
-          icon={variant === 'empty' ? undefined : '🔄'}
+          icon={variant === 'empty' ? undefined : 'arrows-clockwise'}
           style={styles.action}
         />
       )}

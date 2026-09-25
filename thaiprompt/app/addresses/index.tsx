@@ -1,17 +1,21 @@
 /**
  * ที่อยู่จัดส่งของฉัน — GET/DELETE /addresses, POST /addresses/{id}/default (SHOP-08)
  *
+ * หน้าตา (ธีมรอยัล): การ์ดขาวต่อที่อยู่ (ที่อยู่หลัก = ขอบทอง) · กล่องไอคอนหมุด · ป้ายสถานะปักหมุด
+ *   · แถวปุ่มแก้ไข/ตั้งเป็นหลัก/ลบ คั่นเส้นด้านล่าง · ปุ่มทอง "เพิ่มที่อยู่ใหม่"
  * - เพิ่ม/แก้ไขที่หน้า /addresses/edit (ปักหมุดด้วย GPS ได้)
  * - ลบต้องยืนยันก่อน · ลบที่อยู่หลัก → server ตั้งที่อยู่อื่นเป็นหลักให้เอง
  * - ส่งด้วยไรเดอร์ได้เฉพาะที่อยู่ที่ปักหมุดแล้ว (has_location)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { deleteAddress, getAddresses, setDefaultAddress, type Address } from '@/services/api/shopApi';
 import { Button3D, Card3D, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
+import { IconTile, MetaItem } from '@/components/shop';
 import { useTheme, spacing, typography } from '@/theme';
 
 const MAX_ADDRESSES = 20;
@@ -114,7 +118,7 @@ export default function AddressesScreen() {
     return (
       <Screen title="ที่อยู่จัดส่ง" scroll={false}>
         <EmptyState
-          icon="🔐"
+          icon="lock-key"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อจัดการที่อยู่จัดส่ง"
           actionLabel="เข้าสู่ระบบ"
@@ -138,7 +142,7 @@ export default function AddressesScreen() {
       ) : addresses.length === 0 ? (
         <EmptyState
           compact
-          icon="📍"
+          art="scooter"
           title="ยังไม่มีที่อยู่จัดส่ง"
           message="เพิ่มที่อยู่ไว้ครั้งเดียว สั่งของครั้งต่อไปเร็วขึ้น"
           actionLabel="เพิ่มที่อยู่"
@@ -150,32 +154,40 @@ export default function AddressesScreen() {
             <Card3D
               key={address.id}
               padding={spacing.lg}
+              radius={20}
               gradientBorder={address.is_default}
               style={styles.card}
               accessibilityLabel={`ที่อยู่ ${address.recipient_name}`}
             >
               <View style={styles.headRow}>
-                <Text numberOfLines={1} style={[typography.h3, styles.flex, { color: colors.textStrong }]}>
-                  {address.recipient_name}
-                </Text>
-                {address.is_default && <Pill label="ที่อยู่หลัก" tone="gold" icon="⭐" />}
+                <IconTile icon={address.has_location ? 'map-pin' : 'house'} tone={address.is_default ? 'gold' : 'navy'} weight="fill" />
+                <View style={styles.flex}>
+                  <View style={styles.nameRow}>
+                    <Text numberOfLines={1} style={[typography.h3, styles.name, { color: colors.textStrong }]}>
+                      {address.recipient_name}
+                    </Text>
+                    {address.is_default && <Pill label="ที่อยู่หลัก" tone="gold" icon="star" />}
+                  </View>
+                  <MetaItem icon="phone" text={address.phone_number} style={styles.phone} />
+                </View>
               </View>
-              <Text style={[typography.bodySm, { color: colors.textMuted }]}>📞 {address.phone_number}</Text>
               <Text style={[typography.body, styles.address, { color: colors.text }]}>{address.full_address}</Text>
               {!!address.notes && (
-                <Text style={[typography.caption, { color: colors.textMuted }]}>หมายเหตุ: {address.notes}</Text>
+                <View style={[styles.noteBox, { backgroundColor: colors.inset, borderLeftColor: colors.gold }]}>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>หมายเหตุ: {address.notes}</Text>
+                </View>
               )}
               <View style={styles.pills}>
                 {address.has_location ? (
-                  <Pill label="ปักหมุดแล้ว ส่งด้วยไรเดอร์ได้" tone="success" icon="📍" />
+                  <Pill label="ปักหมุดแล้ว ส่งด้วยไรเดอร์ได้" tone="success" icon="map-pin" />
                 ) : (
-                  <Pill label="ยังไม่ปักหมุด" tone="warning" icon="📍" />
+                  <Pill label="ยังไม่ปักหมุด" tone="warning" icon="map-pin" />
                 )}
               </View>
-              <View style={styles.actions}>
+              <View style={[styles.actions, { borderTopColor: colors.divider }]}>
                 <Button3D
                   title="แก้ไข"
-                  icon="✏️"
+                  icon="pencil-simple"
                   variant="secondary"
                   size="sm"
                   disabled={busyId !== null}
@@ -204,7 +216,7 @@ export default function AddressesScreen() {
               </View>
             </Card3D>
           ))}
-          <Button3D title="เพิ่มที่อยู่ใหม่" icon="➕" size="lg" fullWidth onPress={addNew} style={styles.addButton} />
+          <Button3D title="เพิ่มที่อยู่ใหม่" icon="plus" size="lg" fullWidth onPress={addNew} style={styles.addButton} />
         </>
       )}
     </Screen>
@@ -224,23 +236,42 @@ const styles = StyleSheet.create({
   headRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.xxs,
+  },
+  name: {
+    flexShrink: 1,
+  },
+  phone: {
+    marginTop: 2,
   },
   address: {
-    marginTop: spacing.xs,
+    marginTop: spacing.md,
+  },
+  noteBox: {
+    marginTop: spacing.sm,
+    borderRadius: 12,
+    borderLeftWidth: 3,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   pills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
   },
   addButton: {
     marginTop: spacing.sm,

@@ -1,75 +1,80 @@
 /**
- * Tab Layout — แท็บล่าง 5 แท็บ ธีมนวลทองคำ
+ * Tab Layout — แท็บล่าง 5 แท็บ ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * หน้าแรก | ช้อป | คำสั่งซื้อ | กระเป๋าเงิน | โปรไฟล์
  * (แท็บ "สายงาน" ถูกถอดออก — นโยบาย Google Play: ไม่มี MLM ในแอป)
  *
- * ไอคอนแท็บที่เลือก = ปุ่มทองนูนแบบ Button3D ย่อส่วน (ไล่เฉด + ขอบล่างเข้ม + ไฮไลต์บน)
- * การแจ้งเตือนย้ายไปเป็นกระดิ่งที่หัวหน้าแรก
+ * แท็บที่เลือก = เม็ดน้ำเงินกรมท่า + ไอคอนทองแบบทึบ (สปริงเบาๆ) · ไม่เลือก = ไอคอนเส้นสีเทา
+ * แท็บโปรไฟล์ใช้รูปโปรไฟล์ถ้ามี (วงทองเมื่อเลือก)
+ * การแจ้งเตือนอยู่ที่กระดิ่งบนหัวหน้าแรก
  */
 
 import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text } from '@/components/ui/Text';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { useAuthStore } from '@/stores/authStore';
 import { useSyncStore, initSyncMonitor } from '@/stores/syncStore';
 import { ErrorBoundary } from '@/components';
 import { isFeatureEnabled } from '@/config/appConfig';
-import { getAvatarUrl, getAvatarInitial } from '@/utils/user';
-import { useTheme, withAlpha, radii, spacing } from '@/theme';
+import { getAvatarUrl } from '@/utils/user';
+import { useTheme, withAlpha, radii, spacing, FONT } from '@/theme';
 import { selectionHaptic } from '@/components/ui/haptics';
 
-const ICON_W = 46;
-const ICON_H = 32;
-const EDGE = 3;
+const PILL_W = 56;
+const PILL_H = 34;
 
-/** ไอคอนแท็บ — เลือกอยู่ = ทองนูน, ไม่เลือก = จางลง */
-const TabIcon = ({ focused, emoji, avatarUrl, initial }: {
-  focused: boolean;
-  emoji?: string;
-  avatarUrl?: string | null;
-  initial?: string;
-}) => {
-  const { colors, gradients, buttonEdges } = useTheme();
-  const scale = useSharedValue(focused ? 1 : 0.92);
+/** ไอคอนแท็บ — เลือกอยู่ = เม็ดน้ำเงินไอคอนทอง, ไม่เลือก = ไอคอนเส้นจาง */
+const TabIcon = ({ focused, icon, avatarUrl }: { focused: boolean; icon: IconName; avatarUrl?: string | null }) => {
+  const { colors, gradients, isDark } = useTheme();
+  const scale = useSharedValue(focused ? 1 : 0.9);
 
   useEffect(() => {
-    scale.value = withSpring(focused ? 1 : 0.92, { damping: 14, stiffness: 220 });
+    scale.value = withSpring(focused ? 1 : 0.9, { damping: 14, stiffness: 240 });
   }, [focused, scale]);
 
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
-  const content = avatarUrl ? (
-    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-  ) : emoji ? (
-    <Text style={[styles.emoji, !focused && styles.emojiInactive]}>{emoji}</Text>
-  ) : (
-    <Text style={[styles.initial, { color: focused ? colors.textOnGold : colors.textMuted }]}>{initial || 'U'}</Text>
-  );
+  if (avatarUrl) {
+    return (
+      <Animated.View style={[styles.pillBox, anim]}>
+        <View
+          style={[
+            styles.avatarRing,
+            { borderColor: focused ? colors.gold : 'transparent', backgroundColor: focused ? colors.goldSoft : 'transparent' },
+          ]}
+        >
+          <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+        </View>
+      </Animated.View>
+    );
+  }
 
   if (!focused) {
     return (
-      <Animated.View style={[styles.iconBox, anim]}>
-        {content}
+      <Animated.View style={[styles.pillBox, anim]}>
+        <Icon name={icon} size={24} color={colors.tabInactive} />
       </Animated.View>
     );
   }
 
   return (
-    <Animated.View style={[styles.iconWrap, anim]}>
-      {/* ขอบล่าง = ความหนา */}
-      <View style={[styles.iconEdge, { backgroundColor: buttonEdges.primary }]} />
+    <Animated.View style={[styles.pillBox, anim]}>
       <LinearGradient
-        colors={gradients.primary}
+        colors={gradients.navy}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0.4, y: 1 }}
-        style={[styles.iconBody, { boxShadow: `0px 4px 10px ${withAlpha(colors.amber, 0.35)}` }]}
+        end={{ x: 0, y: 1 }}
+        style={[
+          styles.pill,
+          { boxShadow: `0px 8px 16px -8px ${withAlpha(isDark ? '#000000' : '#0C1A33', 0.85)}` },
+        ]}
       >
-        <View style={styles.iconHighlight} />
-        {content}
+        <View style={styles.pillHighlight} />
+        <Icon name={icon} size={22} color={colors.goldLight} weight="fill" />
       </LinearGradient>
     </Animated.View>
   );
@@ -90,7 +95,8 @@ const OfflinePill = () => {
       style={[styles.offline, { top: insets.top + spacing.xs, backgroundColor: colors.danger }]}
       accessibilityLiveRegion="polite"
     >
-      <Text style={styles.offlineText}>ออฟไลน์ — แสดงข้อมูลล่าสุดที่บันทึกไว้</Text>
+      <Icon name="wifi-slash" size={14} color={colors.textOnAccent} />
+      <Text style={[styles.offlineText, { color: colors.textOnAccent }]}>ออฟไลน์ — แสดงข้อมูลล่าสุดที่บันทึกไว้</Text>
     </View>
   );
 };
@@ -107,15 +113,13 @@ export default function TabLayout() {
   }, []);
 
   let avatarUrl: string | null = null;
-  let initial = 'U';
   try {
     avatarUrl = getAvatarUrl(user?.avatar);
-    initial = getAvatarInitial(user?.name);
   } catch {
     avatarUrl = null;
   }
 
-  const barHeight = 62 + Math.max(insets.bottom, spacing.sm);
+  const barHeight = 66 + Math.max(insets.bottom, spacing.sm);
 
   return (
     <ErrorBoundary>
@@ -126,17 +130,17 @@ export default function TabLayout() {
           }}
           screenOptions={{
             headerShown: false,
-            tabBarActiveTintColor: colors.goldDeep,
+            tabBarActiveTintColor: isDark ? colors.gold : colors.navy,
             tabBarInactiveTintColor: colors.tabInactive,
             tabBarLabelStyle: styles.label,
             tabBarStyle: {
               height: barHeight,
               paddingTop: spacing.sm,
               paddingBottom: Math.max(insets.bottom, spacing.sm),
-              backgroundColor: colors.card,
+              backgroundColor: isDark ? 'rgba(15,19,28,0.98)' : 'rgba(255,255,255,0.97)',
               borderTopWidth: 1,
-              borderTopColor: isDark ? colors.shadowLight : colors.shadowLight,
-              boxShadow: `0px -6px 18px ${withAlpha(isDark ? '#000000' : '#8A7555', isDark ? 0.45 : 0.16)}`,
+              borderTopColor: colors.divider,
+              boxShadow: `0px -18px 30px -24px ${withAlpha(isDark ? '#000000' : '#10223F', isDark ? 0.9 : 0.4)}`,
             },
             tabBarItemStyle: styles.item,
           }}
@@ -146,7 +150,7 @@ export default function TabLayout() {
             options={{
               title: 'หน้าแรก',
               tabBarAccessibilityLabel: 'หน้าแรก',
-              tabBarIcon: ({ focused }) => <TabIcon focused={focused} emoji="🏠" />,
+              tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="house" />,
             }}
           />
           <Tabs.Screen
@@ -155,7 +159,7 @@ export default function TabLayout() {
               title: 'ช้อป',
               tabBarAccessibilityLabel: 'ช้อป',
               href: isFeatureEnabled('SHOPPING_ENABLED') ? undefined : null,
-              tabBarIcon: ({ focused }) => <TabIcon focused={focused} emoji="🛍️" />,
+              tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="storefront" />,
             }}
           />
           <Tabs.Screen
@@ -163,7 +167,7 @@ export default function TabLayout() {
             options={{
               title: 'คำสั่งซื้อ',
               tabBarAccessibilityLabel: 'คำสั่งซื้อ',
-              tabBarIcon: ({ focused }) => <TabIcon focused={focused} emoji="🧾" />,
+              tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="receipt" />,
             }}
           />
           <Tabs.Screen
@@ -172,7 +176,7 @@ export default function TabLayout() {
               title: 'กระเป๋าเงิน',
               tabBarAccessibilityLabel: 'กระเป๋าเงิน',
               href: isFeatureEnabled('WALLET_ENABLED') ? undefined : null,
-              tabBarIcon: ({ focused }) => <TabIcon focused={focused} emoji="👛" />,
+              tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="wallet" />,
             }}
           />
           <Tabs.Screen
@@ -180,9 +184,7 @@ export default function TabLayout() {
             options={{
               title: 'โปรไฟล์',
               tabBarAccessibilityLabel: 'โปรไฟล์',
-              tabBarIcon: ({ focused }) => (
-                <TabIcon focused={focused} avatarUrl={avatarUrl} initial={initial} emoji={avatarUrl ? undefined : '👤'} />
-              ),
+              tabBarIcon: ({ focused }) => <TabIcon focused={focused} icon="user-circle" avatarUrl={avatarUrl} />,
             }}
           />
         </Tabs>
@@ -198,73 +200,59 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   item: {
-    paddingTop: 2,
+    paddingTop: 0,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '700',
-    marginTop: 4,
+    fontFamily: FONT.semibold,
+    fontSize: 11.5,
+    marginTop: 3,
   },
-  iconBox: {
-    width: ICON_W,
-    height: ICON_H,
+  pillBox: {
+    width: PILL_W,
+    height: PILL_H,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconWrap: {
-    width: ICON_W,
-    height: ICON_H + EDGE,
-  },
-  iconEdge: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: EDGE,
-    height: ICON_H,
-    borderRadius: radii.md,
-  },
-  iconBody: {
-    width: ICON_W,
-    height: ICON_H,
-    borderRadius: radii.md,
+  pill: {
+    width: PILL_W,
+    height: PILL_H,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  iconHighlight: {
+  pillHighlight: {
     position: 'absolute',
     top: 0,
-    left: 8,
-    right: 8,
+    left: 10,
+    right: 10,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
   },
-  emoji: {
-    fontSize: 18,
-  },
-  emojiInactive: {
-    opacity: 0.55,
-  },
-  initial: {
-    fontSize: 15,
-    fontWeight: '800',
+  avatarRing: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatar: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.85)',
   },
   offline: {
     position: 'absolute',
     alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radii.pill,
   },
   offlineText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
   },

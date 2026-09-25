@@ -38,10 +38,11 @@ export interface AppBanner {
 // แบนเนอร์สำรองในแอป
 // =====================================================
 
-const IMG_MARKET = require('@/assets/images/taladsod/banner-market.webp');
 const IMG_RIDER = require('@/assets/images/taladsod/banner-rider.webp');
 const IMG_MERCHANT = require('@/assets/images/taladsod/banner-merchant.webp');
 const IMG_KRAPAO = require('@/assets/images/taladsod/krapao-hero.webp');
+/** ตลาดกลางคืน (ภาพชุดแบรนด์ใหม่ — วัตถุอยู่ขวา เว้นที่ซ้ายให้ตัวหนังสือ) */
+const IMG_NIGHT_MARKET = require('@/assets/images/brand/night-market.webp');
 
 const fallback = (
   id: string,
@@ -65,13 +66,13 @@ const fallback = (
 
 export const FALLBACK_BANNERS: Record<BannerPlacement, AppBanner[]> = {
   home: [
-    fallback('fb-home-market', 'home', IMG_MARKET, 'ตลาดสดใกล้บ้าน', 'ของสด อาหารร้อนๆ ส่งถึงหน้าบ้าน', 'สั่งเลย', '/taladsod'),
+    fallback('fb-home-market', 'home', IMG_NIGHT_MARKET, 'ตลาดสดใกล้บ้าน', 'ของสด อาหารร้อนๆ ส่งถึงหน้าบ้าน', 'สั่งเลย', '/taladsod'),
     fallback('fb-home-rider', 'home', IMG_RIDER, 'มาเป็นไรเดอร์กับเรา', 'รับงานส่งใกล้บ้าน เลือกเวลาได้เอง', 'ดูรายละเอียด', '/rider'),
     fallback('fb-home-merchant', 'home', IMG_MERCHANT, 'เปิดร้านออนไลน์', 'ขายของง่าย มีไรเดอร์ช่วยส่ง', 'เริ่มต้นขาย', '/merchant'),
   ],
   taladsod: [
     fallback('fb-taladsod-krapao', 'taladsod', IMG_KRAPAO, 'ผัดกะเพราราดข้าว', 'เลือกเนื้อสัตว์ได้ เพิ่มไข่ดาวได้', 'สั่งเลย', '/taladsod'),
-    fallback('fb-taladsod-market', 'taladsod', IMG_MARKET, 'ตลาดสดใกล้บ้าน', 'ของสดทุกวันจากร้านในชุมชน', 'เลือกร้าน', '/taladsod'),
+    fallback('fb-taladsod-market', 'taladsod', IMG_NIGHT_MARKET, 'ตลาดสดใกล้บ้าน', 'ของสดทุกวันจากร้านในชุมชน', 'เลือกร้าน', '/taladsod'),
   ],
   rider: [
     fallback('fb-rider', 'rider', IMG_RIDER, 'พร้อมออกวิ่งหรือยัง', 'เปิดรับงานแล้วรอออเดอร์ใกล้คุณ', 'ดูงาน', '/rider'),

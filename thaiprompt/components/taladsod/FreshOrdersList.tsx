@@ -1,18 +1,20 @@
 /**
  * FreshOrdersList — รายการออเดอร์ตลาดสดของฉัน (ใช้ในแท็บคำสั่งซื้อ + /taladsod/orders)
  *
+ * - การ์ดขาวต่อออเดอร์: ร้าน + เลขออเดอร์ + ป้ายสถานะ · รูปอาหารมุมมน · วิธีรับของ + ยอดทอง
  * - เปลี่ยนตัวกรองระหว่างโหลด → ทิ้งผลเก่า (requestId)
  * - กลับเข้าหน้า → รีเฟรชเงียบ · ดึงลง = รีเฟรช (ไม่บังจอ)
  * - ออเดอร์ที่ยังวิ่งอยู่ในหน้าแรก → รีเฟรชเงียบทุก 30 วินาทีระหว่างเปิดหน้า
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { Card3D, Chip, EmptyState, Pill, PriceText } from '@/components/ui';
-import { formatThaiDateTime } from '@/components/shop';
-import { useTheme, radii, spacing, typography } from '@/theme';
+import { MetaItem, formatThaiDateTime } from '@/components/shop';
+import { useTheme, spacing, typography } from '@/theme';
 import {
   FM_ORDER_ACTIVE_STATUSES,
   fmImageUri,
@@ -48,18 +50,16 @@ export const FmOrderRow: React.FC<{ order: FmOrder }> = ({ order }) => {
   return (
     <Card3D
       onPress={() => router.push(`/taladsod/order/${order.id}` as never)}
-      padding={spacing.md}
-      radius={radii.lg}
+      padding={spacing.lg}
+      radius={20}
       shadow="sm"
       style={styles.card}
       accessibilityLabel={`ออเดอร์ตลาดสด ${order.order_number} ${fmOrderLabel(order)}`}
     >
       <View style={styles.rowTop}>
         <View style={styles.flex}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>
-            🥬 {order.seller?.shop_name || 'ตลาดสด'} · {order.order_number}
-          </Text>
-          <Text style={[typography.micro, { color: colors.textFaint }]}>{formatThaiDateTime(order.created_at)}</Text>
+          <MetaItem icon="basket" text={`${order.seller?.shop_name || 'ตลาดสด'} · ${order.order_number}`} color={colors.text} />
+          <Text style={[typography.micro, styles.date, { color: colors.textFaint }]}>{formatThaiDateTime(order.created_at)}</Text>
         </View>
         <Pill label={fmOrderLabel(order)} tone={FM_ORDER_TONE[order.order_status] || 'neutral'} />
       </View>
@@ -84,9 +84,11 @@ export const FmOrderRow: React.FC<{ order: FmOrder }> = ({ order }) => {
       </View>
 
       <View style={[styles.rowBottom, { borderTopColor: colors.divider }]}>
-        <Text style={[typography.caption, { color: colors.textMuted }]}>
-          {order.delivery_type === 'rider' ? '🛵 ไรเดอร์ส่ง' : '🛍️ นัดรับที่ร้าน'} · {order.items_count} ชิ้น
-        </Text>
+        <MetaItem
+          icon={order.delivery_type === 'rider' ? 'moped' : 'shopping-bag-open'}
+          text={`${order.delivery_type === 'rider' ? 'ไรเดอร์ส่ง' : 'นัดรับที่ร้าน'} · ${order.items_count} ชิ้น`}
+          style={styles.flex}
+        />
         <PriceText amount={order.grand_total} size="md" tone="gold" />
       </View>
     </Card3D>
@@ -193,7 +195,7 @@ export const FreshOrdersList: React.FC<FreshOrdersListProps> = ({ header }) => {
       ListEmptyComponent={
         <EmptyState
           compact
-          icon="🥬"
+          art="basket"
           title={filter === 'all' ? 'ยังไม่มีออเดอร์ตลาดสด' : 'ไม่มีออเดอร์ในสถานะนี้'}
           message="ผัดกะเพราร้อนๆ จากร้านใกล้บ้านรออยู่นะ"
           actionLabel="ไปตลาดสด"
@@ -233,6 +235,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   list: {
+    paddingTop: spacing.xs,
     paddingBottom: spacing.xxxl,
   },
   card: {
@@ -241,9 +244,13 @@ const styles = StyleSheet.create({
   },
   rowTop: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  date: {
+    marginTop: 2,
+    marginLeft: 19,
   },
   rowItem: {
     flexDirection: 'row',
@@ -251,16 +258,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   thumb: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.sm,
+    width: 64,
+    height: 64,
+    borderRadius: 16,
   },
   rowBottom: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
     marginTop: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
   },
   footerLoader: {

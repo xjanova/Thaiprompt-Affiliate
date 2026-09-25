@@ -1,5 +1,5 @@
 /**
- * นโยบายความเป็นส่วนตัว — ธีมนวลทองคำ (จัดหน้าด้วย LegalDocument)
+ * นโยบายความเป็นส่วนตัว — ธีมรอยัล น้ำเงินกรมท่า-ทอง (จัดหน้าด้วย LegalDocument)
  * ฉบับทางการอยู่บนเว็บไซต์ (APP_INFO.PRIVACY_URL)
  */
 
@@ -10,14 +10,14 @@ import { LegalDocument, type LegalSection } from '@/components/legal/LegalDocume
 const PRIVACY_SECTIONS: LegalSection[] = [
   {
     title: 'บทนำ',
-    icon: '📖',
+    icon: 'book-open',
     content: `บริษัท ไทยพรอมท์ จำกัด ("บริษัท" หรือ "เรา") เคารพในความเป็นส่วนตัวของท่าน และมุ่งมั่นที่จะปกป้องข้อมูลส่วนบุคคลของท่าน นโยบายนี้อธิบายถึงวิธีการที่เราเก็บรวบรวม ใช้ เปิดเผย และปกป้องข้อมูลของท่าน
 
 นโยบายนี้สอดคล้องกับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)`,
   },
   {
     title: 'ข้อมูลที่เราเก็บรวบรวม',
-    icon: '📋',
+    icon: 'clipboard-text',
     content: `เราเก็บรวบรวมข้อมูลดังต่อไปนี้:
 
 ข้อมูลที่ท่านให้โดยตรง:
@@ -39,7 +39,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'วัตถุประสงค์ในการใช้ข้อมูล',
-    icon: '🎯',
+    icon: 'target',
     content: `เราใช้ข้อมูลของท่านเพื่อ:
 
 • ให้บริการและดำเนินการตามคำร้องขอ
@@ -53,7 +53,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การแชร์ข้อมูล',
-    icon: '🔄',
+    icon: 'share-network',
     content: `เราอาจแชร์ข้อมูลกับ:
 
 • บริษัทในเครือและพันธมิตรทางธุรกิจ
@@ -65,7 +65,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การรักษาความปลอดภัย',
-    icon: '🔒',
+    icon: 'lock',
     content: `เราใช้มาตรการรักษาความปลอดภัยดังนี้:
 
 • การเข้ารหัสข้อมูล (SSL/TLS Encryption)
@@ -77,7 +77,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'สิทธิ์ของเจ้าของข้อมูล',
-    icon: '⚖️',
+    icon: 'shield-check',
     content: `ท่านมีสิทธิ์ดังนี้ตาม PDPA:
 
 • สิทธิ์ในการเข้าถึงข้อมูล
@@ -93,7 +93,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'Cookies และ Tracking',
-    icon: '🍪',
+    icon: 'eye',
     content: `เราใช้ Cookies เพื่อ:
 
 • จดจำการเข้าสู่ระบบ
@@ -105,7 +105,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การเก็บรักษาข้อมูล',
-    icon: '📦',
+    icon: 'clock-counter-clockwise',
     content: `เราเก็บรักษาข้อมูลตามระยะเวลาดังนี้:
 
 • ข้อมูลบัญชี: ตลอดระยะเวลาที่ใช้บริการ + 5 ปี
@@ -117,7 +117,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'การเปลี่ยนแปลงนโยบาย',
-    icon: '📝',
+    icon: 'note-pencil',
     content: `เราอาจปรับปรุงนโยบายนี้เป็นครั้งคราว โดยจะแจ้งให้ท่านทราบผ่าน:
 
 • การแจ้งเตือนในแอป
@@ -128,7 +128,7 @@ const PRIVACY_SECTIONS: LegalSection[] = [
   },
   {
     title: 'ติดต่อเรา',
-    icon: '📞',
+    icon: 'phone',
     content: `หากมีคำถามเกี่ยวกับนโยบายนี้ ติดต่อ:
 
 ไทยพร้อม (Thaiprompt)
@@ -144,10 +144,10 @@ export default function PrivacyScreen() {
   return (
     <LegalDocument
       title="ความเป็นส่วนตัว"
-      icon="🔐"
+      icon="lock-key"
       heading="นโยบายความเป็นส่วนตัว"
       dateLabel="อัปเดตล่าสุด: 1 มกราคม 2568"
-      badge={{ icon: '🛡️', text: 'สอดคล้องกับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)' }}
+      badge={{ icon: 'shield-check', text: 'สอดคล้องกับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)' }}
       sections={PRIVACY_SECTIONS}
       footer={'ความเป็นส่วนตัวของท่านเป็นสิ่งสำคัญสำหรับเรา\n© Thaiprompt Co., Ltd.'}
       webUrl={APP_INFO.PRIVACY_URL}

@@ -1,6 +1,8 @@
 /**
  * หน้าร้าน — GET /mobile/stores/{id} + /mobile/stores/{id}/products (SHOP-18)
  *
+ * หน้าตา (ธีมรอยัล): การ์ดหน้าร้านขอบทอง — ปก (รูปร้าน หรือพื้นน้ำเงินลายกนก) · โลโก้ลอยทับปก
+ *   · ชื่อร้านฟอนต์มีเชิง · ป้ายสถานะ · แถวสถิติ 3 ช่องคั่นเส้น · ช่องค้นหาในร้าน · ตารางสินค้า 2 คอลัมน์
  * - อ่าน data[] + pagination.has_more ตาม contract ใหม่ (เดิมอ่าน .items จึงว่างเสมอ)
  * - ค้นหาในร้าน (หน่วง 400ms) · เรียงลำดับ · เลื่อนโหลดเพิ่ม · ดึงลงเพื่อรีเฟรช
  * - ตัวเลขร้านเป็นค่าจริงทั้งหมด (ไม่มีอัตราตอบกลับสมมติ)
@@ -10,23 +12,21 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { getStore, getStoreProducts, type ShopProduct, type StoreDetail } from '@/services/api/shopApi';
-import { Card3D, Chip, EmptyState, Pill, Screen, SectionHeader } from '@/components/ui';
-import { CartButton, ProductCard, formatThaiDateTime } from '@/components/shop';
-import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
+import { Card3D, Chip, EmptyState, Icon, Pill, RoyalHeader, Screen, SectionHeader } from '@/components/ui';
+import { CartButton, MetaItem, ProductCard, SearchField, StoreLogo, formatThaiDateTime } from '@/components/shop';
+import { useTheme, shadowStyle, spacing, typography } from '@/theme';
 
 const PER_PAGE = 20;
 
@@ -34,9 +34,12 @@ type SortKey = 'newest' | 'popular' | 'price_asc' | 'price_desc';
 const SORTS: Array<{ key: SortKey; label: string; sort: string; order: 'asc' | 'desc' }> = [
   { key: 'newest', label: 'มาใหม่', sort: 'newest', order: 'desc' },
   { key: 'popular', label: 'ขายดี', sort: 'popular', order: 'desc' },
-  { key: 'price_asc', label: 'ราคาต่ำ → สูง', sort: 'price', order: 'asc' },
-  { key: 'price_desc', label: 'ราคาสูง → ต่ำ', sort: 'price', order: 'desc' },
+  { key: 'price_asc', label: 'ราคาต่ำไปสูง', sort: 'price', order: 'asc' },
+  { key: 'price_desc', label: 'ราคาสูงไปต่ำ', sort: 'price', order: 'desc' },
 ];
+
+/** มุมการ์ดหน้าร้าน */
+const HERO_RADIUS = 22;
 
 export default function StoreDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -148,7 +151,7 @@ export default function StoreDetailScreen() {
     return (
       <Screen title="ร้านค้า" scroll={false}>
         <EmptyState
-          icon="🔐"
+          icon="lock-key"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อดูสินค้าของร้าน"
           actionLabel="เข้าสู่ระบบ"
@@ -163,7 +166,7 @@ export default function StoreDetailScreen() {
       <Screen title="ร้านค้า" scroll={false}>
         <EmptyState
           variant={storeError.notFound ? 'empty' : 'error'}
-          icon={storeError.notFound ? '🏚️' : undefined}
+          art={storeError.notFound ? 'store' : undefined}
           title={storeError.notFound ? 'ไม่พบร้านค้านี้' : undefined}
           message={storeError.notFound ? 'ร้านอาจปิดให้บริการแล้ว ลองดูร้านอื่นนะ' : storeError.message}
           actionLabel={storeError.notFound ? 'ดูร้านอื่น' : 'ลองใหม่'}
@@ -179,88 +182,102 @@ export default function StoreDetailScreen() {
   const header = (
     <View>
       {/* หัวร้าน */}
-      <Card3D padding={0} radius={radii.xl} gradientBorder style={styles.hero}>
+      <Card3D padding={0} radius={HERO_RADIUS} gradientBorder shadow="lg" style={styles.hero}>
         <View style={styles.bannerBox}>
           {store?.banner ? (
-            <Image source={{ uri: store.banner }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+            <>
+              <Image source={{ uri: store.banner }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
+              <LinearGradient colors={gradients.bannerScrim} style={StyleSheet.absoluteFill} />
+            </>
           ) : (
-            <LinearGradient colors={gradients.hero} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
+            // ไม่มีรูปปก → พื้นน้ำเงินกรมท่าลายกนกทอง (ตัวตนแบรนด์)
+            <RoyalHeader ornamentWidth={190} ornamentTop={-26} style={StyleSheet.absoluteFill} />
           )}
-          <LinearGradient colors={gradients.bannerScrim} style={StyleSheet.absoluteFill} />
         </View>
         <View style={styles.heroBody}>
           <View style={styles.heroRow}>
-            {store?.logo ? (
-              <Image source={{ uri: store.logo }} style={[styles.logo, { backgroundColor: colors.inset, borderColor: colors.card }]} contentFit="cover" />
-            ) : (
-              <View style={[styles.logo, styles.center, { backgroundColor: colors.goldSoft, borderColor: colors.card }]}>
-                <Text style={styles.logoIcon}>🏪</Text>
-              </View>
+            <View style={[styles.logoFrame, { backgroundColor: colors.card }, shadowStyle('md', colors.shadowDark)]}>
+              <StoreLogo uri={store?.logo} size={72} radius={20} />
+            </View>
+            {!!store?.joinedAt && (
+              <MetaItem
+                icon="calendar-blank"
+                text={`เปิดร้านเมื่อ ${formatThaiDateTime(store.joinedAt, false)}`}
+                color={colors.textFaint}
+                style={styles.joined}
+              />
             )}
-            <View style={styles.flex}>
-              <Text numberOfLines={2} style={[typography.h2, { color: colors.textStrong }]}>
-                {store?.name || 'ร้านค้า'}
-              </Text>
-              <View style={styles.pills}>
-                {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="✔" />}
-                {store?.rider_delivery && <Pill label="ไรเดอร์ส่ง" tone="gold" icon="🛵" />}
-                {store?.cod_available && <Pill label="เก็บเงินปลายทาง" tone="info" />}
-              </View>
-            </View>
           </View>
-          <View style={[styles.stats, { borderTopColor: colors.divider }]}>
-            <View style={styles.stat}>
-              <Text style={[typography.h3, { color: colors.textStrong }]}>{Number(store?.product_count) || 0}</Text>
-              <Text style={[typography.micro, { color: colors.textMuted }]}>สินค้า</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={[typography.h3, { color: colors.textStrong }]}>{ratingCount > 0 ? `⭐ ${rating.toFixed(1)}` : '—'}</Text>
-              <Text style={[typography.micro, { color: colors.textMuted }]}>{ratingCount > 0 ? `${ratingCount} รีวิว` : 'ยังไม่มีรีวิว'}</Text>
-            </View>
-            <View style={styles.stat}>
-              <Text style={[typography.h3, { color: colors.textStrong }]}>{Number(store?.follower_count) || 0}</Text>
-              <Text style={[typography.micro, { color: colors.textMuted }]}>ผู้ติดตาม</Text>
-            </View>
+
+          <View style={styles.nameRow}>
+            <Text numberOfLines={2} style={[typography.serif, styles.name, { color: colors.textStrong }]}>
+              {store?.name || 'ร้านค้า'}
+            </Text>
+            {store?.is_verified && <Icon name="seal-check" size={20} color={colors.goldDeep} weight="fill" />}
           </View>
+
+          {(store?.is_verified || store?.rider_delivery || store?.cod_available) && (
+            <View style={styles.pills}>
+              {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="seal-check" />}
+              {store?.rider_delivery && <Pill label="ไรเดอร์ส่ง" tone="gold" icon="moped" />}
+              {store?.cod_available && <Pill label="เก็บเงินปลายทาง" tone="info" icon="money" />}
+            </View>
+          )}
+
           {!!store?.description && (
-            <Text numberOfLines={4} style={[typography.bodySm, styles.description, { color: colors.text }]}>
+            <Text numberOfLines={4} style={[typography.bodySm, styles.description, { color: colors.textMuted }]}>
               {store.description}
             </Text>
           )}
-          {!!store?.joinedAt && (
-            <Text style={[typography.micro, { color: colors.textFaint }]}>เปิดร้านเมื่อ {formatThaiDateTime(store.joinedAt, false)}</Text>
-          )}
+
+          <View style={[styles.stats, { borderTopColor: colors.divider }]}>
+            <View style={styles.stat}>
+              <Text style={[typography.h3, styles.statValue, { color: colors.textStrong }]}>{Number(store?.product_count) || 0}</Text>
+              <Text style={[typography.micro, { color: colors.textMuted }]}>สินค้า</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
+            <View style={styles.stat}>
+              <View style={styles.statValueRow}>
+                {ratingCount > 0 && <Icon name="star" size={16} color={colors.gold} weight="fill" />}
+                <Text style={[typography.h3, styles.statValue, { color: colors.textStrong }]}>
+                  {ratingCount > 0 ? rating.toFixed(1) : '—'}
+                </Text>
+              </View>
+              <Text style={[typography.micro, { color: colors.textMuted }]}>{ratingCount > 0 ? `${ratingCount} รีวิว` : 'ยังไม่มีรีวิว'}</Text>
+            </View>
+            <View style={[styles.statDivider, { backgroundColor: colors.divider }]} />
+            <View style={styles.stat}>
+              <Text style={[typography.h3, styles.statValue, { color: colors.textStrong }]}>{Number(store?.follower_count) || 0}</Text>
+              <Text style={[typography.micro, { color: colors.textMuted }]}>ผู้ติดตาม</Text>
+            </View>
+          </View>
         </View>
       </Card3D>
 
       {/* ค้นหาในร้าน */}
-      <View style={[styles.searchBox, { backgroundColor: colors.card }, clayShadowStyle('sm', colors.shadowDark, colors.shadowLight)]}>
-        <Text>🔍</Text>
-        <TextInput
-          value={searchInput}
-          onChangeText={setSearchInput}
-          placeholder="ค้นหาสินค้าในร้านนี้"
-          placeholderTextColor={colors.textFaint}
-          returnKeyType="search"
-          onSubmitEditing={() => setSearch(searchInput.trim())}
-          style={[typography.body, styles.searchInput, { color: colors.textStrong }]}
-          accessibilityLabel="ค้นหาสินค้าในร้าน"
-          maxLength={100}
-        />
-        {searchInput.length > 0 && (
-          <Pressable onPress={() => setSearchInput('')} accessibilityRole="button" accessibilityLabel="ล้างคำค้นหา" hitSlop={10}>
-            <Text style={[typography.h3, { color: colors.textFaint }]}>✕</Text>
-          </Pressable>
-        )}
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {SORTS.map((s) => (
-          <Chip key={s.key} label={s.label} size="sm" tone="gold" selected={sort === s.key} onPress={() => setSort(s.key)} />
-        ))}
-      </ScrollView>
+      <SearchField
+        value={searchInput}
+        onChangeText={setSearchInput}
+        placeholder="ค้นหาสินค้าในร้านนี้"
+        returnKeyType="search"
+        onSubmitEditing={() => setSearch(searchInput.trim())}
+        accessibilityLabel="ค้นหาสินค้าในร้าน"
+        maxLength={100}
+      />
 
       <SectionHeader title={search ? `ผลการค้นหา "${search}"` : 'สินค้าในร้าน'} style={styles.section} />
+
+      {/* เรียงลำดับ */}
+      <View style={styles.sortRow}>
+        <View style={[styles.sortIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Icon name="sliders-horizontal" size={16} color={colors.goldDeep} weight="bold" />
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {SORTS.map((s) => (
+            <Chip key={s.key} label={s.label} size="sm" selected={sort === s.key} onPress={() => setSort(s.key)} />
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 
@@ -281,7 +298,7 @@ export default function StoreDetailScreen() {
           ) : (
             <EmptyState
               compact
-              icon="📦"
+              art="bag"
               title={search ? 'ไม่พบสินค้าที่ค้นหา' : 'ร้านนี้ยังไม่มีสินค้า'}
               message={search ? 'ลองใช้คำค้นอื่นนะ' : 'แวะมาดูใหม่เร็วๆ นี้นะ'}
             />
@@ -310,27 +327,22 @@ export default function StoreDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   list: {
     paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
   },
   column: {
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
   hero: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   bannerBox: {
-    height: 110,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
+    height: 128,
+    // ขอบทองของการ์ดหนา 1.5 → มุมปกเล็กกว่ามุมการ์ดเท่านั้น ให้ชิดขอบพอดี
+    borderTopLeftRadius: HERO_RADIUS - 1.5,
+    borderTopRightRadius: HERO_RADIUS - 1.5,
     overflow: 'hidden',
   },
   heroBody: {
@@ -341,16 +353,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.md,
-    marginTop: -28,
+    marginTop: -38,
   },
-  logo: {
-    width: 68,
-    height: 68,
-    borderRadius: 20,
-    borderWidth: 3,
+  logoFrame: {
+    padding: 3,
+    borderRadius: 23,
   },
-  logoIcon: {
-    fontSize: 30,
+  joined: {
+    flex: 1,
+    marginBottom: spacing.xs,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.md,
+  },
+  name: {
+    flexShrink: 1,
   },
   pills: {
     flexDirection: 'row',
@@ -358,9 +378,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.xs,
   },
+  description: {
+    marginTop: spacing.sm,
+  },
   stats: {
     flexDirection: 'row',
-    marginTop: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.lg,
     paddingTop: spacing.md,
     borderTopWidth: 1,
   },
@@ -368,29 +392,40 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  description: {
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  searchBox: {
+  statValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.md,
-    minHeight: 48,
-    gap: spacing.sm,
+    gap: 4,
   },
-  searchInput: {
-    flex: 1,
-    paddingVertical: spacing.sm,
+  statValue: {
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+  },
+  section: {
+    marginTop: spacing.xl,
+  },
+  sortRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    marginRight: -spacing.screen,
+  },
+  sortIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chips: {
     gap: spacing.sm,
-    paddingTop: spacing.md,
-    paddingRight: spacing.sm,
-  },
-  section: {
-    marginTop: spacing.md,
+    paddingRight: spacing.screen,
   },
   loader: {
     marginTop: spacing.xxxl,

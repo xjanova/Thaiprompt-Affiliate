@@ -1,9 +1,13 @@
 /**
- * Screen + ScreenHeader — โครงหน้าจอมาตรฐานธีมนวลทองคำ
+ * Screen + ScreenHeader — โครงหน้าจอมาตรฐาน ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
- * - พื้นหลังตามธีม + safe area + หัวหน้าจอพร้อมปุ่มย้อนกลับ
+ * มี title = หัวน้ำเงินกรมท่าลายกนก (ปุ่มย้อนกลับกระจก + ชื่อหน้าฟอนต์มีเชิง)
+ *            แล้วเนื้อหาอยู่บน "แผ่นงาช้าง" มุมบนโค้ง ซ้อนขึ้นมาบนหัว
+ * ไม่มี title = พื้นหลังตามธีมล้วน + safe area
+ *
  * - scroll (ค่าเริ่มต้น true) พร้อม pull-to-refresh ถ้าส่ง onRefresh
  * - ใช้ scroll={false} เมื่อหน้ามี FlatList ของตัวเอง
+ * - right = ปุ่มด้านขวาของหัว (Button3D ghost/secondary, Pill, ปุ่มตะกร้า จะเป็นแบบกระจกให้เอง)
  *
  * @example
  * <Screen title="คำสั่งซื้อของฉัน" onRefresh={reload} refreshing={refreshing}>
@@ -13,19 +17,22 @@
 
 import React from 'react';
 import {
-  Pressable,
   RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useTheme, spacing, typography, radii, clayShadowStyle } from '@/theme';
+import { useTheme, spacing, typography } from '@/theme';
+import { Text } from './Text';
+import { RoyalHeader, GlassIconButton, OnHeaderProvider } from './RoyalHeader';
+
+/** ความโค้งของแผ่นเนื้อหาใต้หัวน้ำเงิน */
+const SHEET_RADIUS = 26;
 
 export interface ScreenHeaderProps {
   title: string;
@@ -38,6 +45,7 @@ export interface ScreenHeaderProps {
   style?: StyleProp<ViewStyle>;
 }
 
+/** หัวน้ำเงินกรมท่า (รวม safe area ด้านบนแล้ว) */
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   title,
   subtitle,
@@ -47,6 +55,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   style,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const goBack = () => {
     if (onBack) {
@@ -61,34 +70,34 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   };
 
   return (
-    <View style={[styles.header, style]}>
-      {showBack && (
-        <Pressable
-          onPress={goBack}
-          accessibilityRole="button"
-          accessibilityLabel="ย้อนกลับ"
-          hitSlop={10}
-          style={({ pressed }) => [
-            styles.backButton,
-            { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
-            clayShadowStyle('sm', colors.shadowDark, colors.shadowLight),
-          ]}
-        >
-          <Text style={[styles.backIcon, { color: colors.textStrong }]}>‹</Text>
-        </Pressable>
-      )}
-      <View style={styles.titleBox}>
-        <Text accessibilityRole="header" numberOfLines={1} style={[typography.h1, { color: colors.textStrong }]}>
-          {title}
-        </Text>
-        {!!subtitle && (
-          <Text numberOfLines={1} style={[typography.bodySm, { color: colors.textMuted }]}>
-            {subtitle}
+    <RoyalHeader
+      ornamentTop={insets.top - 18}
+      ornamentWidth={210}
+      style={[{ paddingTop: insets.top + spacing.xs, paddingBottom: SHEET_RADIUS + spacing.md }, style]}
+    >
+      <View style={styles.header}>
+        {showBack && <GlassIconButton icon="caret-left" weight="bold" accessibilityLabel="ย้อนกลับ" onPress={goBack} />}
+        <View style={[styles.titleBox, !showBack && styles.titleNoBack]}>
+          <Text
+            accessibilityRole="header"
+            numberOfLines={1}
+            style={[typography.serif, { color: colors.onHeader }]}
+          >
+            {title}
           </Text>
-        )}
+          {!!subtitle && (
+            <Text numberOfLines={1} style={[typography.bodySm, { color: colors.onHeaderMuted, marginTop: -2 }]}>
+              {subtitle}
+            </Text>
+          )}
+        </View>
+        {right ? (
+          <OnHeaderProvider value>
+            <View style={styles.right}>{right}</View>
+          </OnHeaderProvider>
+        ) : null}
       </View>
-      {right ? <View style={styles.right}>{right}</View> : null}
-    </View>
+    </RoyalHeader>
   );
 };
 
@@ -119,41 +128,52 @@ export const Screen: React.FC<ScreenProps> = ({
   contentStyle,
   withTabBarPadding = false,
 }) => {
-  const { colors, isDark } = useTheme();
+  const { colors, gradients, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const bottomPad = (withTabBarPadding ? 96 : spacing.xxl) + insets.bottom;
+  const bottomPad = (withTabBarPadding ? 104 : spacing.xxl) + insets.bottom;
+  const hasHeader = !!title;
 
-  const header = title ? (
-    <ScreenHeader title={title} subtitle={subtitle} showBack={showBack} onBack={onBack} right={right} />
-  ) : null;
+  const body = scroll ? (
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={[
+        { paddingHorizontal: spacing.screen, paddingTop: hasHeader ? spacing.xl : spacing.sm, paddingBottom: bottomPad },
+        contentStyle,
+      ]}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+            progressBackgroundColor={colors.card}
+          />
+        ) : undefined
+      }
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={[styles.flex, hasHeader && { paddingTop: spacing.sm }, contentStyle]}>{children}</View>
+  );
+
+  if (!hasHeader) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+        {body}
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
-      {header}
-      {scroll ? (
-        <ScrollView
-          style={styles.flex}
-          contentContainerStyle={[{ paddingHorizontal: spacing.screen, paddingBottom: bottomPad }, contentStyle]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.gold}
-                colors={[colors.gold]}
-                progressBackgroundColor={colors.card}
-              />
-            ) : undefined
-          }
-        >
-          {children}
-        </ScrollView>
-      ) : (
-        <View style={[styles.flex, contentStyle]}>{children}</View>
-      )}
+    <View style={[styles.root, { backgroundColor: gradients.hero[gradients.hero.length - 1] }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <ScreenHeader title={title} subtitle={subtitle} showBack={showBack} onBack={onBack} right={right} />
+      <View style={[styles.sheet, { backgroundColor: colors.background }]}>{body}</View>
     </View>
   );
 };
@@ -170,29 +190,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
     gap: spacing.md,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backIcon: {
-    fontSize: 28,
-    lineHeight: 30,
-    fontWeight: '600',
-    marginTop: -2,
   },
   titleBox: {
     flex: 1,
+  },
+  titleNoBack: {
+    paddingLeft: spacing.xs,
   },
   right: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  sheet: {
+    flex: 1,
+    marginTop: -SHEET_RADIUS,
+    borderTopLeftRadius: SHEET_RADIUS,
+    borderTopRightRadius: SHEET_RADIUS,
+    overflow: 'hidden',
   },
 });
 

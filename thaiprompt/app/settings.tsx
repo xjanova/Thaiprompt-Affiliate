@@ -1,20 +1,22 @@
 /**
- * ตั้งค่า — ธีมนวลทองคำ
+ * ตั้งค่า — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
- * - ธีม (สว่าง / มืด / ตามเครื่อง) · ยืนยันตัวตน · การแจ้งเตือน · เว็บไซต์ · เกี่ยวกับแอป
+ * - การ์ดโปรไฟล์น้ำเงินลายกนก · เลือกธีม (สว่าง / มืด / ตามเครื่อง) เป็นการ์ดตัวอย่างหน้าจอจริงของแต่ละโหมด
+ * - ยืนยันตัวตน · การแจ้งเตือน · เว็บไซต์ · เกี่ยวกับแอป (เมนูการ์ดกลุ่ม)
  * - ออกจากระบบ (ถามก่อน) · ลบบัญชีในแอป (PLAY-05: เช็คเงื่อนไข → คำเตือน → พิมพ์ยืนยัน → DELETE /account)
  * - ลิงก์นโยบายชี้ไปหน้าที่มีอยู่จริงบนเว็บ (PLAY-06) · อีเมลติดต่อชุดเดียวกับเว็บ (PLAY-25)
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text, TextInput } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
 import { openUrl } from '@/utils/navigation';
-import { getAvatarInitial } from '@/utils/user';
+import { getAvatarInitial, getAvatarUrl } from '@/utils/user';
 import {
   deleteAccount,
   getAccountDeletionCheck,
@@ -24,72 +26,69 @@ import {
   Button3D,
   Card3D,
   ConsentSheet,
+  Icon,
+  OnHeaderProvider,
+  RoyalHeader,
   Screen,
-  SectionHeader,
   openWebsite,
   resultHaptic,
   selectionHaptic,
 } from '@/components/ui';
-import { useTheme, radii, spacing, toneColors, typography, type Tone } from '@/theme';
+import { AvatarRing, MenuGroup, MenuRow } from '@/components/profile';
+import {
+  useTheme,
+  DARK_THEME,
+  LIGHT_THEME,
+  radii,
+  spacing,
+  typography,
+  type AppTheme,
+} from '@/theme';
 
 // =====================================================
-// แถวตั้งค่า (อยู่ในการ์ดกลุ่มเดียวกัน คั่นด้วยเส้นบาง)
+// ตัวเลือกธีม — การ์ดตัวอย่างหน้าจอ (ใช้สีจริงของแต่ละโหมด ไม่ขึ้นกับโหมดปัจจุบัน)
 // =====================================================
 
-const SettingRow = ({
-  icon,
-  tone = 'gold',
-  title,
-  subtitle,
-  onPress,
-  right,
-  danger = false,
-  last = false,
-}: {
-  icon: string;
-  tone?: Tone;
-  title: string;
-  subtitle?: string;
-  onPress?: () => void;
-  /** undefined = ลูกศร (ถ้ากดได้) · null = ไม่มีอะไรด้านขวา */
-  right?: React.ReactNode;
-  danger?: boolean;
-  last?: boolean;
-}) => {
-  const { colors } = useTheme();
-  const t = toneColors(danger ? 'danger' : tone, colors);
-  const body = (
-    <View style={[styles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider }]}>
-      <View style={[styles.rowIcon, { backgroundColor: t.bg }]}>
-        <Text style={styles.rowEmoji}>{icon}</Text>
-      </View>
-      <View style={styles.flex}>
-        <Text style={[typography.bodyStrong, { color: danger ? colors.danger : colors.textStrong }]}>{title}</Text>
-        {!!subtitle && <Text style={[typography.caption, { color: colors.textMuted }]}>{subtitle}</Text>}
-      </View>
-      {right !== undefined ? right : onPress ? <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text> : null}
-    </View>
-  );
-  if (!onPress) return body;
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={subtitle ? `${title} ${subtitle}` : title}
-      style={({ pressed }) => [{ opacity: pressed ? 0.65 : 1 }]}
-    >
-      {body}
-    </Pressable>
-  );
-};
+type ThemeChoice = 'light' | 'dark' | 'system';
 
-const THEME_OPTIONS: Array<{ mode: 'light' | 'dark' | 'system'; icon: string; title: string; desc: string }> = [
-  { mode: 'light', icon: '☀️', title: 'สว่าง', desc: 'อ่านง่ายกลางแดด' },
-  { mode: 'dark', icon: '🌙', title: 'มืด', desc: 'ถนอมสายตาตอนกลางคืน' },
-  { mode: 'system', icon: '📱', title: 'ตามเครื่อง', desc: 'เปลี่ยนตามการตั้งค่าของเครื่อง' },
+const THEME_OPTIONS: Array<{ mode: ThemeChoice; title: string; desc: string }> = [
+  { mode: 'light', title: 'สว่าง', desc: 'อ่านง่ายกลางแดด' },
+  { mode: 'dark', title: 'มืด', desc: 'ถนอมสายตาตอนกลางคืน' },
+  { mode: 'system', title: 'ตามเครื่อง', desc: 'เปลี่ยนตามการตั้งค่าของเครื่อง' },
 ];
 
-const ThemePicker = ({ current, onChange }: { current: string; onChange: (m: 'light' | 'dark' | 'system') => void }) => {
+/** หน้าจอจำลองขนาดเล็ก: หัวน้ำเงิน + แผ่นเนื้อหา + การ์ด 2 ใบ */
+const MiniScreen = ({ theme, style }: { theme: AppTheme; style?: StyleProp<ViewStyle> }) => (
+  <View style={[styles.mini, { backgroundColor: theme.colors.background }, style]}>
+    <LinearGradient colors={theme.gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.miniHead}>
+      <View style={[styles.miniDot, { backgroundColor: theme.colors.gold }]} />
+      <View style={[styles.miniLine, { backgroundColor: theme.colors.onHeaderMuted }]} />
+    </LinearGradient>
+    <View style={[styles.miniSheet, { backgroundColor: theme.colors.background }]}>
+      {[theme.colors.navySoft, theme.colors.goldSoft].map((tile) => (
+        <View key={tile} style={[styles.miniCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <View style={[styles.miniTile, { backgroundColor: tile }]} />
+          <View style={[styles.miniText, { backgroundColor: theme.colors.textFaint }]} />
+        </View>
+      ))}
+    </View>
+  </View>
+);
+
+const ThemePreview = ({ mode }: { mode: ThemeChoice }) => {
+  if (mode === 'system') {
+    // ตามเครื่อง = ครึ่งสว่าง ครึ่งมืด
+    return (
+      <View style={[styles.mini, styles.split]}>
+        <MiniScreen theme={LIGHT_THEME} style={styles.half} />
+        <MiniScreen theme={DARK_THEME} style={styles.half} />
+      </View>
+    );
+  }
+  return <MiniScreen theme={mode === 'dark' ? DARK_THEME : LIGHT_THEME} />;
+};
+
+const ThemePicker = ({ current, onChange }: { current: string; onChange: (m: ThemeChoice) => void }) => {
   const { colors, gradients } = useTheme();
   return (
     <View style={styles.themeRow} accessibilityRole="radiogroup">
@@ -103,21 +102,34 @@ const ThemePicker = ({ current, onChange }: { current: string; onChange: (m: 'li
               onChange(opt.mode);
             }}
             accessibilityRole="radio"
-            accessibilityState={{ selected }}
+            accessibilityState={{ checked: selected }}
             accessibilityLabel={`ธีม${opt.title}`}
-            style={({ pressed }) => [styles.themeOption, { opacity: pressed ? 0.8 : 1 }]}
+            style={({ pressed }) => [styles.themeOption, { opacity: pressed ? 0.85 : 1 }]}
           >
-            {selected ? (
-              <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.themeInner}>
-                <Text style={styles.themeIcon}>{opt.icon}</Text>
-                <Text style={[typography.bodyStrong, { color: colors.textOnGold }]}>{opt.title}</Text>
-              </LinearGradient>
-            ) : (
-              <View style={[styles.themeInner, { backgroundColor: colors.inset, borderColor: colors.border, borderWidth: 1 }]}>
-                <Text style={styles.themeIcon}>{opt.icon}</Text>
-                <Text style={[typography.bodyStrong, { color: colors.text }]}>{opt.title}</Text>
-              </View>
-            )}
+            <View
+              style={[
+                styles.themeCard,
+                {
+                  backgroundColor: selected ? colors.goldSoft : colors.inset,
+                  borderColor: selected ? colors.gold : colors.border,
+                  borderWidth: selected ? 1.5 : 1,
+                },
+              ]}
+            >
+              <ThemePreview mode={opt.mode} />
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.themeTitle, { color: selected ? colors.goldDeep : colors.text }]}
+              >
+                {opt.title}
+              </Text>
+              {selected && (
+                <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.themeCheck}>
+                  <Icon name="check" size={12} color={colors.textOnGold} weight="bold" />
+                </LinearGradient>
+              )}
+            </View>
           </Pressable>
         );
       })}
@@ -145,6 +157,7 @@ const DeleteConfirmFields = ({
 }) => {
   const { colors } = useTheme();
   const inputStyle = [
+    typography.body,
     deleteStyles.input,
     { backgroundColor: colors.inset, borderColor: colors.border, color: colors.textStrong },
   ];
@@ -152,7 +165,7 @@ const DeleteConfirmFields = ({
   return (
     <View style={deleteStyles.fields}>
       <Text style={[typography.bodySm, { color: colors.text }]}>
-        พิมพ์คำว่า <Text style={{ fontWeight: '800', color: colors.danger }}>{check.confirm_text}</Text> เพื่อยืนยัน
+        พิมพ์คำว่า <Text style={{ fontWeight: '700', color: colors.danger }}>{check.confirm_text}</Text> เพื่อยืนยัน
       </Text>
       <TextInput
         value={confirmText}
@@ -180,9 +193,12 @@ const DeleteConfirmFields = ({
         </>
       )}
       {!!errorMessage && (
-        <Text style={[typography.bodySm, deleteStyles.error, { color: colors.danger }]} accessibilityRole="alert">
-          {errorMessage}
-        </Text>
+        <View style={[deleteStyles.errorBox, { backgroundColor: colors.dangerSoft }]}>
+          <Icon name="warning-circle" size={18} color={colors.danger} weight="fill" />
+          <Text style={[typography.bodySm, deleteStyles.errorText, { color: colors.danger }]} accessibilityRole="alert">
+            {errorMessage}
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -197,14 +213,22 @@ const deleteStyles = StyleSheet.create({
   },
   input: {
     marginTop: spacing.xs,
+    minHeight: 48,
     borderWidth: 1,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 16,
+    paddingVertical: spacing.sm,
   },
-  error: {
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
     marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.md,
+  },
+  errorText: {
+    flex: 1,
   },
   blocker: {
     marginTop: spacing.sm,
@@ -217,7 +241,7 @@ export default function SettingsScreen() {
   const themeMode = useAppStore((s) => s.themeMode);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const { user, isAuthenticated, logout, clearSession } = useAuthStore();
-  const { colors, gradients } = useTheme();
+  const { colors } = useTheme();
 
   // ลบบัญชี (PLAY-05)
   const [deleteStep, setDeleteStep] = useState<DeleteStep>('closed');
@@ -236,12 +260,13 @@ export default function SettingsScreen() {
   }, []);
 
   // PLAY-06: ลิงก์นโยบายชี้ไปหน้าที่มีอยู่จริงบนเว็บ (/privacy-policy, /terms-of-service)
+  // (ไม่ส่งไอคอนอีโมจิให้หน้าเปิดเว็บแล้ว — แอปเลิกใช้อีโมจิเป็นไอคอน)
   const handlePrivacyPolicy = () => {
-    openUrl(APP_INFO.PRIVACY_URL, 'นโยบายความเป็นส่วนตัว', '📄');
+    openUrl(APP_INFO.PRIVACY_URL, 'นโยบายความเป็นส่วนตัว');
   };
 
   const handleTermsOfService = () => {
-    openUrl(APP_INFO.TERMS_URL, 'ข้อกำหนดการใช้งาน', '📋');
+    openUrl(APP_INFO.TERMS_URL, 'ข้อกำหนดการใช้งาน');
   };
 
   // PLAY-25: อีเมลติดต่อชุดเดียวกับเว็บ
@@ -336,97 +361,110 @@ export default function SettingsScreen() {
 
   return (
     <Screen title="ตั้งค่า">
-      {/* ---------- โปรไฟล์ ---------- */}
+      {/* ---------- โปรไฟล์ (การ์ดน้ำเงินลายกนก) ---------- */}
       {isAuthenticated && user && (
         <Card3D gradientBorder padding={0} style={styles.block}>
-          <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profile}>
-            <View style={[styles.avatar, { backgroundColor: colors.card }]}>
-              <Text style={[styles.avatarText, { color: colors.goldDeep }]}>{getAvatarInitial(user?.name)}</Text>
-            </View>
+          <RoyalHeader ornamentWidth={150} ornamentTop={-34} style={styles.profile}>
+            <AvatarRing
+              uri={getAvatarUrl(user?.avatar)}
+              initial={getAvatarInitial(user?.name)}
+              size={60}
+              gapColor={colors.navyDeep}
+            />
             <View style={styles.flex}>
-              <Text style={[typography.h2, { color: colors.textStrong }]} numberOfLines={1}>
+              <Text style={[typography.serifSm, { color: colors.onHeader }]} numberOfLines={1}>
                 {user?.name || 'ไม่ระบุชื่อ'}
               </Text>
               {!!user?.email && (
-                <Text style={[typography.bodySm, { color: colors.textMuted }]} numberOfLines={1}>
+                <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]} numberOfLines={1}>
                   {user.email}
                 </Text>
               )}
             </View>
-            <Button3D title="แก้ไข" icon="✏️" size="sm" variant="secondary" onPress={() => router.push('/edit-profile')} />
-          </LinearGradient>
+            <OnHeaderProvider value>
+              <Button3D
+                title="แก้ไข"
+                icon="pencil-simple"
+                size="sm"
+                variant="secondary"
+                onPress={() => router.push('/edit-profile')}
+              />
+            </OnHeaderProvider>
+          </RoyalHeader>
         </Card3D>
       )}
 
       {/* ---------- ธีม ---------- */}
-      <SectionHeader title="ธีมและการแสดงผล" icon="🎨" subtitle={themeDesc} />
-      <Card3D padding={spacing.md} style={styles.block}>
-        <ThemePicker current={themeMode} onChange={setThemeMode} />
-        <SettingRow icon="🇹🇭" title="ภาษา" subtitle="ภาษาไทย" right={null} last />
-      </Card3D>
+      <MenuGroup title="ธีมและการแสดงผล" subtitle={themeDesc}>
+        <View style={styles.themeWrap}>
+          <ThemePicker current={themeMode} onChange={setThemeMode} />
+        </View>
+        <MenuRow icon="translate" title="ภาษา" subtitle="ภาษาไทย" right={null} />
+      </MenuGroup>
 
       {/* ---------- บัญชี / การแจ้งเตือน ---------- */}
-      <SectionHeader title={isAuthenticated ? 'บัญชี' : 'การแจ้งเตือน'} icon={isAuthenticated ? '👤' : '🔔'} />
-      <Card3D padding={spacing.md} style={styles.block}>
+      <MenuGroup title={isAuthenticated ? 'บัญชี' : 'การแจ้งเตือน'}>
         {isAuthenticated && (
-          <SettingRow icon="🛡️" tone="success" title="ยืนยันตัวตน (KYC)" subtitle="ยืนยันก่อนถอนเงินเข้าบัญชี" onPress={() => router.push('/kyc')} />
+          <MenuRow
+            icon="shield-check"
+            title="ยืนยันตัวตน (KYC)"
+            subtitle="ยืนยันก่อนถอนเงินเข้าบัญชี"
+            onPress={() => router.push('/kyc')}
+          />
         )}
-        <SettingRow
-          icon="🔔"
-          tone="warning"
+        <MenuRow
+          icon="bell"
           title="การแจ้งเตือน"
           subtitle="เลือกเรื่องที่อยากได้รับแจ้ง"
           onPress={() => router.push('/notification-settings')}
-          last={!isAuthenticated}
         />
         {isAuthenticated && (
-          <SettingRow
-            icon="🌐"
+          <MenuRow
+            icon="globe"
             title="จัดการบนเว็บไซต์"
             subtitle="เปิดเว็บไซต์ เข้าสู่ระบบให้อัตโนมัติ"
             onPress={() => {
               openWebsite('/user').catch(() => {});
             }}
-            last
           />
         )}
-      </Card3D>
+      </MenuGroup>
 
       {/* ---------- เกี่ยวกับ ---------- */}
-      <SectionHeader title="เกี่ยวกับ" icon="ℹ️" />
-      <Card3D padding={spacing.md} style={styles.block}>
-        <SettingRow icon="📄" tone="info" title="นโยบายความเป็นส่วนตัว" onPress={handlePrivacyPolicy} />
-        <SettingRow icon="📋" tone="info" title="ข้อกำหนดการใช้งาน" onPress={handleTermsOfService} />
-        <SettingRow icon="💬" tone="gold" title="ช่วยเหลือ / แจ้งปัญหา" subtitle="คุยกับทีมงานในแอป" onPress={() => router.push('/support')} />
-        <SettingRow icon="✉️" tone="neutral" title="อีเมลทีมงาน" subtitle={APP_INFO.SUPPORT_EMAIL} onPress={handleContactSupport} />
-        <SettingRow icon="⭐" tone="warning" title="ให้คะแนนแอป" onPress={handleRateApp} />
-        <SettingRow icon="📦" tone="neutral" title="เวอร์ชัน" subtitle={APP_INFO.VERSION || '-'} right={null} last />
-      </Card3D>
+      <MenuGroup title="เกี่ยวกับ">
+        <MenuRow icon="lock-key" title="นโยบายความเป็นส่วนตัว" onPress={handlePrivacyPolicy} />
+        <MenuRow icon="file-text" title="ข้อกำหนดการใช้งาน" onPress={handleTermsOfService} />
+        <MenuRow
+          icon="chat-circle-dots"
+          title="ช่วยเหลือ / แจ้งปัญหา"
+          subtitle="คุยกับทีมงานในแอป"
+          onPress={() => router.push('/support')}
+        />
+        <MenuRow icon="envelope" title="อีเมลทีมงาน" subtitle={APP_INFO.SUPPORT_EMAIL} onPress={handleContactSupport} />
+        <MenuRow icon="star" tone="gold" title="ให้คะแนนแอป" onPress={handleRateApp} />
+        <MenuRow icon="info" title="เวอร์ชัน" subtitle={APP_INFO.VERSION || '-'} right={null} />
+      </MenuGroup>
 
       {/* ---------- จัดการบัญชี ---------- */}
       {isAuthenticated && (
-        <>
-          <SectionHeader title="จัดการบัญชี" icon="⚙️" />
-          <Card3D padding={spacing.md} style={styles.block}>
-            <SettingRow icon="🚪" title="ออกจากระบบ" onPress={handleLogout} danger />
-            <SettingRow
-              icon="🗑️"
-              title="ลบบัญชี"
-              subtitle="ลบบัญชีและข้อมูลส่วนตัวถาวร"
-              onPress={handleDeleteAccount}
-              right={isCheckingDeletion ? <ActivityIndicator size="small" color={colors.danger} /> : undefined}
-              danger
-              last
-            />
-          </Card3D>
-        </>
+        <MenuGroup title="จัดการบัญชี">
+          <MenuRow icon="sign-out" title="ออกจากระบบ" onPress={handleLogout} danger />
+          <MenuRow
+            icon="trash"
+            title="ลบบัญชี"
+            subtitle="ลบบัญชีและข้อมูลส่วนตัวถาวร"
+            onPress={handleDeleteAccount}
+            right={isCheckingDeletion ? <ActivityIndicator size="small" color={colors.danger} /> : undefined}
+            danger
+          />
+        </MenuGroup>
       )}
 
       {/* PLAY-05: ลบบัญชีในแอป — คำเตือน → พิมพ์ยืนยัน */}
       {deletionCheck && (
         <ConsentSheet
           visible={deleteStep !== 'closed'}
-          icon={deleteStep === 'confirm' ? '⚠️' : '🗑️'}
+          icon={deleteStep === 'confirm' ? 'warning' : 'trash'}
           title={
             deleteStep === 'confirm'
               ? 'ยืนยันการลบบัญชี'
@@ -446,12 +484,12 @@ export default function SettingsScreen() {
               ? []
               : deletionCheck.can_delete
                 ? [
-                    { icon: '👤', text: 'ชื่อ อีเมล เบอร์โทร และบัญชีที่เชื่อมไว้จะถูกลบหรือปกปิด' },
-                    { icon: '🔒', text: 'เข้าสู่ระบบด้วยบัญชีนี้ไม่ได้อีก ทุกเครื่องจะออกจากระบบ' },
-                    { icon: '🧾', text: 'ประวัติธุรกรรมการเงินเก็บไว้ตามที่กฎหมายกำหนดเท่านั้น' },
-                    { icon: '↩️', text: 'ยกเลิกไม่ได้หลังยืนยัน' },
+                    { icon: 'user', text: 'ชื่อ อีเมล เบอร์โทร และบัญชีที่เชื่อมไว้จะถูกลบหรือปกปิด' },
+                    { icon: 'lock', text: 'เข้าสู่ระบบด้วยบัญชีนี้ไม่ได้อีก ทุกเครื่องจะออกจากระบบ' },
+                    { icon: 'receipt', text: 'ประวัติธุรกรรมการเงินเก็บไว้ตามที่กฎหมายกำหนดเท่านั้น' },
+                    { icon: 'arrow-counter-clockwise', text: 'ยกเลิกไม่ได้หลังยืนยัน' },
                   ]
-                : deletionCheck.blockers.map((b) => ({ icon: '•', text: b.message }))
+                : deletionCheck.blockers.map((b) => ({ icon: 'warning-circle', text: b.message }))
           }
           acceptLabel={
             deleteStep === 'confirm'
@@ -505,62 +543,109 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   block: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   profile: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     padding: spacing.lg,
-    borderRadius: radii.xl,
+    borderRadius: radii.xl - 1.5,
   },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: '800',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: 56,
-    paddingVertical: spacing.sm,
-  },
-  rowIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rowEmoji: {
-    fontSize: 18,
-  },
-  chevron: {
-    fontSize: 26,
-    lineHeight: 28,
+
+  // ---------- ตัวเลือกธีม ----------
+  themeWrap: {
+    padding: spacing.md,
   },
   themeRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.sm,
   },
   themeOption: {
     flex: 1,
   },
-  themeInner: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: radii.md,
+  themeCard: {
+    borderRadius: radii.lg,
+    padding: spacing.sm,
+    gap: spacing.sm,
   },
-  themeIcon: {
-    fontSize: 22,
+  themeTitle: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingBottom: 2,
+  },
+  themeCheck: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ---------- หน้าจอจำลอง ----------
+  mini: {
+    height: 76,
+    borderRadius: radii.sm,
+    overflow: 'hidden',
+  },
+  split: {
+    flexDirection: 'row',
+  },
+  half: {
+    flex: 1,
+    height: '100%',
+    borderRadius: 0,
+  },
+  miniHead: {
+    height: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingBottom: 5,
+  },
+  miniDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  miniLine: {
+    width: '40%',
+    height: 3,
+    borderRadius: 2,
+  },
+  miniSheet: {
+    flex: 1,
+    marginTop: -6,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    gap: 4,
+  },
+  miniCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 4,
+  },
+  miniTile: {
+    width: 8,
+    height: 8,
+    borderRadius: 2.5,
+  },
+  miniText: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+    opacity: 0.6,
   },
 });

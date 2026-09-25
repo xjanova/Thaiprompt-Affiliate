@@ -7,10 +7,13 @@
  * - 409 ACTION_NOT_ALLOWED → แจ้งแล้วโหลดใหม่ (มีคนกดไปก่อน/สถานะเปลี่ยน)
  * - รีเฟรชอัตโนมัติ (ไรเดอร์กำลังวิ่ง 15 วินาที, ปกติ 30 วินาที) + ดึงลงเพื่อรีเฟรช
  * - ค่าธรรมเนียม GP และรายรับสุทธิของร้านมาจาก server
+ *
+ * หน้าตา: การ์ดสถานะ (ช่องไอคอนสีตามสถานะ) → การ์ดขั้นตอนถัดไป (ปุ่มใหญ่) → ไรเดอร์ → ที่อยู่ → สินค้า → ยอด → เส้นเวลาพัสดุ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -29,22 +32,26 @@ import {
   Card3D,
   Chip,
   EmptyState,
+  Icon,
   Pill,
   PriceText,
   Screen,
   SectionHeader,
   formatBaht,
   resultHaptic,
+  type IconName,
 } from '@/components/ui';
 import {
   ACTIVE_RIDER_STATUSES,
   Field,
   FormSheet,
+  ORDER_STATUS_TONE,
   callPhone,
   formatThaiDateTime,
   openHttpsLink,
   toNumber,
 } from '@/components/shop';
+import { IconTile } from '@/components/merchant';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const CANCEL_REASONS = ['สินค้าหมด', 'ส่งไม่ได้ในพื้นที่นี้', 'ลูกค้าขอยกเลิก', 'ราคา/ข้อมูลสินค้าผิด'];
@@ -58,6 +65,19 @@ const ACTION_SUCCESS: Record<SellerOrderAction, string> = {
   deliver: 'ยืนยันส่งถึงแล้ว',
   cancel: 'ยกเลิกออเดอร์แล้ว',
 };
+
+/** แถวข้อมูลเล็ก: ไอคอนเส้น + ข้อความ */
+const MetaLine: React.FC<{ icon: IconName; color: string; children: React.ReactNode; variant?: 'bodySm' | 'caption' | 'micro' }> = ({
+  icon,
+  color,
+  children,
+  variant = 'caption',
+}) => (
+  <View style={styles.metaLine}>
+    <Icon name={icon} size={variant === 'bodySm' ? 16 : 14} color={color} style={styles.metaIcon} />
+    <Text style={[typography[variant], styles.flex, { color }]}>{children}</Text>
+  </View>
+);
 
 export default function MerchantOrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -224,7 +244,7 @@ export default function MerchantOrderDetailScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="ออเดอร์" scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState art="store" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -243,7 +263,7 @@ export default function MerchantOrderDetailScreen() {
       <Screen title="ออเดอร์" scroll={false}>
         <EmptyState
           variant={notFound ? 'empty' : 'error'}
-          icon={notFound ? '🔍' : error?.code === 'STORE_SUSPENDED' ? '⛔' : undefined}
+          icon={notFound ? 'magnifying-glass' : error?.code === 'STORE_SUSPENDED' ? 'prohibit' : undefined}
           title={notFound ? 'ไม่พบออเดอร์นี้' : undefined}
           message={notFound ? 'ออเดอร์นี้ไม่ใช่ของร้านคุณ หรือถูกลบไปแล้ว' : error?.message}
           actionLabel={notFound ? 'ดูออเดอร์ทั้งหมด' : 'ลองใหม่'}
@@ -266,11 +286,21 @@ export default function MerchantOrderDetailScreen() {
     Number.isFinite(Number(shipping.latitude)) &&
     Number.isFinite(Number(shipping.longitude));
 
+  const statusTone = ORDER_STATUS_TONE[order.status] || 'neutral';
+  // ข้อความรอขั้นตอนถัดไป (ไม่มีปุ่มให้กด)
+  const waiting: { icon: IconName; text: string } =
+    order.payment_status !== 'paid' && order.payment_method !== 'cod'
+      ? { icon: 'hourglass', text: 'รอลูกค้าชำระเงิน ชำระแล้วจะยืนยันออเดอร์ได้' }
+      : riderActive
+        ? { icon: 'moped', text: 'ไรเดอร์กำลังดำเนินการ ติดตามสถานะได้ด้านล่าง' }
+        : { icon: 'hourglass', text: 'รอขั้นตอนถัดไป ระบบจะอัปเดตให้อัตโนมัติ' };
+
   return (
     <Screen title="ออเดอร์" subtitle={order.order_number} refreshing={refreshing} onRefresh={() => load('refresh')}>
       {/* ---------- หัว ---------- */}
       <Card3D gradientBorder padding={spacing.lg} style={styles.block}>
         <View style={styles.rowBetween}>
+          <IconTile icon="receipt" tone={statusTone} />
           <View style={styles.flex}>
             <Text style={[typography.caption, { color: colors.textMuted }]}>สถานะ</Text>
             <Text style={[typography.h2, { color: colors.textStrong }]}>{order.status_label}</Text>
@@ -281,17 +311,25 @@ export default function MerchantOrderDetailScreen() {
           />
         </View>
         <View style={[styles.meta, { borderTopColor: colors.divider }]}>
-          <Text style={[typography.bodySm, { color: colors.text }]}>👤 {detail.customer?.name || 'ลูกค้า'}</Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>
-            {isRider ? '🛵 ส่งด้วยไรเดอร์' : '📦 ส่งพัสดุ'} · {order.payment_method_label || order.payment_method} ·{' '}
+          <MetaLine icon="user" color={colors.text} variant="bodySm">
+            {detail.customer?.name || 'ลูกค้า'}
+          </MetaLine>
+          <MetaLine icon={isRider ? 'moped' : 'package'} color={colors.textMuted}>
+            {isRider ? 'ส่งด้วยไรเดอร์' : 'ส่งพัสดุ'} · {order.payment_method_label || order.payment_method} ·{' '}
             {order.payment_status_label || order.payment_status}
-          </Text>
-          <Text style={[typography.micro, { color: colors.textFaint }]}>สั่งเมื่อ {formatThaiDateTime(order.created_at)}</Text>
+          </MetaLine>
+          <MetaLine icon="clock" color={colors.textFaint}>
+            สั่งเมื่อ {formatThaiDateTime(order.created_at)}
+          </MetaLine>
           {order.is_multi_seller && (
-            <Text style={[typography.caption, { color: colors.info }]}>ออเดอร์นี้มีสินค้าจากหลายร้าน แสดงเฉพาะของร้านคุณ</Text>
+            <MetaLine icon="info" color={colors.info}>
+              ออเดอร์นี้มีสินค้าจากหลายร้าน แสดงเฉพาะของร้านคุณ
+            </MetaLine>
           )}
           {!!order.cancellation_reason && (
-            <Text style={[typography.caption, { color: colors.danger }]}>เหตุผลที่ยกเลิก: {order.cancellation_reason}</Text>
+            <MetaLine icon="x-circle" color={colors.danger}>
+              เหตุผลที่ยกเลิก: {order.cancellation_reason}
+            </MetaLine>
           )}
         </View>
       </Card3D>
@@ -299,27 +337,32 @@ export default function MerchantOrderDetailScreen() {
       {/* ---------- ปุ่มดำเนินการ (ตาม allowed_actions) ---------- */}
       {allowed.size > 0 && (
         <Card3D padding={spacing.lg} style={styles.block}>
-          <Text style={[typography.h3, { color: colors.textStrong }]}>ขั้นตอนถัดไป</Text>
+          <View style={styles.titleRow}>
+            <IconTile icon="hand-tap" tone="gold" size={36} />
+            <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>ขั้นตอนถัดไป</Text>
+          </View>
           <View style={styles.actions}>
             {allowed.has('confirm') && (
-              <Button3D title="ยืนยันรับออเดอร์" icon="✅" size="lg" fullWidth loading={acting === 'confirm'} disabled={!!acting} onPress={confirmOrder} />
+              <Button3D title="ยืนยันรับออเดอร์" icon="check-circle" size="lg" fullWidth loading={acting === 'confirm'} disabled={!!acting} onPress={confirmOrder} />
             )}
             {allowed.has('request_rider') && (
-              <Button3D title="เรียกไรเดอร์" icon="🛵" variant="success" size="lg" fullWidth loading={acting === 'request_rider'} disabled={!!acting} onPress={requestRider} />
+              <Button3D title="เรียกไรเดอร์" icon="moped" variant="success" size="lg" fullWidth loading={acting === 'request_rider'} disabled={!!acting} onPress={requestRider} />
             )}
             {allowed.has('ship') && (
-              <Button3D title="แจ้งจัดส่งพัสดุ" icon="📦" size="lg" fullWidth loading={acting === 'ship'} disabled={!!acting} onPress={openShip} />
+              <Button3D title="แจ้งจัดส่งพัสดุ" icon="package" size="lg" fullWidth loading={acting === 'ship'} disabled={!!acting} onPress={openShip} />
             )}
             {allowed.has('deliver') && (
-              <Button3D title="ยืนยันส่งถึงแล้ว" icon="📬" variant="success" size="md" fullWidth loading={acting === 'deliver'} disabled={!!acting} onPress={markDelivered} />
+              <Button3D title="ยืนยันส่งถึงแล้ว" icon="seal-check" variant="success" size="md" fullWidth loading={acting === 'deliver'} disabled={!!acting} onPress={markDelivered} />
             )}
             {allowed.has('cancel') && (
               <Button3D
                 title="ยกเลิกออเดอร์"
-                variant="ghost"
+                icon={<Icon name="x-circle" size={18} color={colors.danger} />}
+                variant="secondary"
                 size="md"
                 fullWidth
                 disabled={!!acting}
+                textStyle={{ color: colors.danger }}
                 onPress={() => {
                   setCancelReason(null);
                   setCancelOther('');
@@ -332,13 +375,10 @@ export default function MerchantOrderDetailScreen() {
       )}
       {allowed.size === 0 && isOpen && (
         <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-          <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-            {order.payment_status !== 'paid' && order.payment_method !== 'cod'
-              ? '⏳ รอลูกค้าชำระเงิน ชำระแล้วจะยืนยันออเดอร์ได้'
-              : riderActive
-                ? '🛵 ไรเดอร์กำลังดำเนินการ ติดตามสถานะได้ด้านล่าง'
-                : '⏳ รอขั้นตอนถัดไป ระบบจะอัปเดตให้อัตโนมัติ'}
-          </Text>
+          <View style={styles.titleRow}>
+            <IconTile icon={waiting.icon} tone="neutral" size={36} />
+            <Text style={[typography.bodySm, styles.flex, { color: colors.textMuted }]}>{waiting.text}</Text>
+          </View>
         </Card3D>
       )}
 
@@ -346,14 +386,19 @@ export default function MerchantOrderDetailScreen() {
       {isRider && rider && (
         <Card3D padding={spacing.lg} style={styles.block}>
           <View style={styles.rowBetween}>
-            <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>🛵 ไรเดอร์</Text>
+            <IconTile icon="moped" tone={riderActive ? 'gold' : 'navy'} />
+            <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>ไรเดอร์</Text>
             <Pill label={rider.status_label} tone={riderActive ? 'gold' : 'neutral'} />
           </View>
           {rider.status === 'pending' && (
-            <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.textMuted }]}>กำลังหาไรเดอร์ใกล้ร้าน…</Text>
+            <View style={[styles.titleRow, styles.gapTop]}>
+              <ActivityIndicator size="small" color={colors.gold} />
+              <Text style={[typography.bodySm, { color: colors.textMuted }]}>กำลังหาไรเดอร์ใกล้ร้าน…</Text>
+            </View>
           )}
           {!!rider.rider && (
-            <View style={styles.riderRow}>
+            <View style={[styles.riderRow, { backgroundColor: colors.inset }]}>
+              <IconTile icon="user" size={40} />
               <View style={styles.flex}>
                 <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{rider.rider.name || 'ไรเดอร์'}</Text>
                 {!!rider.rider.vehicle_plate && (
@@ -361,14 +406,14 @@ export default function MerchantOrderDetailScreen() {
                 )}
               </View>
               {!!rider.rider.phone && (
-                <Button3D title="โทร" icon="📞" size="sm" variant="secondary" onPress={() => callPhone(rider.rider?.phone)} />
+                <Button3D title="โทร" icon="phone" size="sm" variant="secondary" onPress={() => callPhone(rider.rider?.phone)} />
               )}
             </View>
           )}
           {isTrustedWebUrl(rider.tracking_url) && (
             <Button3D
               title="ดูตำแหน่งไรเดอร์แบบสด"
-              icon="🗺️"
+              icon="map-trifold"
               size="sm"
               variant="secondary"
               onPress={() => openHttpsLink(rider.tracking_url, 'ติดตามไรเดอร์')}
@@ -381,21 +426,26 @@ export default function MerchantOrderDetailScreen() {
       {/* ---------- ที่อยู่ลูกค้า ---------- */}
       {shipping && (
         <>
-          <SectionHeader title="ส่งถึง" icon="📍" style={styles.section} />
+          <SectionHeader title="ส่งถึง" style={styles.section} />
           <Card3D padding={spacing.lg} style={styles.block}>
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{shipping.name}</Text>
-            <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.text }]}>{shipping.full_address}</Text>
-            {!!shipping.notes && (
-              <Text style={[typography.caption, styles.gapTopSm, { color: colors.textMuted }]}>หมายเหตุที่อยู่: {shipping.notes}</Text>
-            )}
+            <View style={styles.addressRow}>
+              <IconTile icon="map-pin" />
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{shipping.name}</Text>
+                <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.text }]}>{shipping.full_address}</Text>
+                {!!shipping.notes && (
+                  <Text style={[typography.caption, styles.gapTopSm, { color: colors.textMuted }]}>หมายเหตุที่อยู่: {shipping.notes}</Text>
+                )}
+              </View>
+            </View>
             <View style={styles.buttonRow}>
               {!!shipping.phone && (
-                <Button3D title="โทรหาลูกค้า" icon="📞" size="sm" variant="secondary" onPress={() => callPhone(shipping.phone)} style={styles.flex} />
+                <Button3D title="โทรหาลูกค้า" icon="phone" size="sm" variant="secondary" onPress={() => callPhone(shipping.phone)} style={styles.flex} />
               )}
               {hasLatLng && (
                 <Button3D
                   title="เปิดแผนที่"
-                  icon="🗺️"
+                  icon="map-trifold"
                   size="sm"
                   variant="secondary"
                   onPress={() =>
@@ -413,21 +463,22 @@ export default function MerchantOrderDetailScreen() {
       )}
       {!!order.note && (
         <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-          <Text style={[typography.bodySm, { color: colors.text }]}>📝 หมายเหตุจากลูกค้า: {order.note}</Text>
+          <View style={styles.titleRow}>
+            <IconTile icon="note-pencil" tone="gold" size={36} />
+            <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>หมายเหตุจากลูกค้า: {order.note}</Text>
+          </View>
         </Card3D>
       )}
 
       {/* ---------- สินค้า ---------- */}
-      <SectionHeader title="สินค้าของร้านคุณ" icon="🛍️" style={styles.section} />
+      <SectionHeader title="สินค้าของร้านคุณ" style={styles.section} />
       <Card3D padding={spacing.lg} style={styles.block}>
         {detail.items.map((item, i) => (
           <View key={item.id} style={[styles.itemRow, i > 0 && { borderTopColor: colors.divider, borderTopWidth: 1 }]}>
             {item.product_image ? (
               <Image source={{ uri: item.product_image }} style={[styles.thumb, { backgroundColor: colors.inset }]} contentFit="cover" />
             ) : (
-              <View style={[styles.thumb, styles.center, { backgroundColor: colors.inset }]}>
-                <Text>📦</Text>
-              </View>
+              <IconTile icon="package" size={56} />
             )}
             <View style={styles.flex}>
               <Text numberOfLines={2} style={[typography.bodyStrong, { color: colors.textStrong }]}>{item.product_name}</Text>
@@ -479,23 +530,38 @@ export default function MerchantOrderDetailScreen() {
       {/* ---------- การจัดส่งพัสดุ ---------- */}
       {!isRider && (!!detail.tracking.tracking_number || detail.tracking_history.length > 0) && (
         <>
-          <SectionHeader title="การจัดส่ง" icon="🚚" style={styles.section} />
+          <SectionHeader title="การจัดส่ง" style={styles.section} />
           <Card3D padding={spacing.lg} style={styles.block}>
             {!!detail.tracking.tracking_number && (
               <View style={[styles.trackBox, { backgroundColor: colors.inset }]}>
-                <Text style={[typography.caption, { color: colors.textMuted }]}>{detail.tracking.shipping_provider || 'เลขพัสดุ'}</Text>
-                <Text selectable style={[typography.h3, { color: colors.textStrong }]}>
-                  {detail.tracking.tracking_number}
-                </Text>
+                <IconTile icon="truck" tone="gold" size={40} />
+                <View style={styles.flex}>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>{detail.tracking.shipping_provider || 'เลขพัสดุ'}</Text>
+                  <Text selectable style={[typography.h3, { color: colors.textStrong }]}>
+                    {detail.tracking.tracking_number}
+                  </Text>
+                </View>
               </View>
             )}
             {detail.tracking_history.map((h, i) => (
-              <View key={h.id} style={[styles.historyRow, i > 0 && { borderTopColor: colors.divider, borderTopWidth: 1 }]}>
-                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{h.title}</Text>
-                {!!h.description && <Text style={[typography.caption, { color: colors.text }]}>{h.description}</Text>}
-                <Text style={[typography.micro, { color: colors.textFaint }]}>
-                  {[formatThaiDateTime(h.tracked_at), h.location].filter(Boolean).join(' · ')}
-                </Text>
+              <View key={h.id} style={styles.historyRow}>
+                {/* เส้นเวลา: จุดทอง = ล่าสุด */}
+                <View style={styles.timeline}>
+                  <View
+                    style={[
+                      styles.timelineDot,
+                      { backgroundColor: i === 0 ? colors.gold : colors.card, borderColor: i === 0 ? colors.gold : colors.border },
+                    ]}
+                  />
+                  {i < detail.tracking_history.length - 1 && <View style={[styles.timelineLine, { backgroundColor: colors.divider }]} />}
+                </View>
+                <View style={[styles.flex, styles.historyBody]}>
+                  <Text style={[typography.bodyStrong, { color: i === 0 ? colors.textStrong : colors.text }]}>{h.title}</Text>
+                  {!!h.description && <Text style={[typography.caption, { color: colors.text }]}>{h.description}</Text>}
+                  <Text style={[typography.micro, { color: colors.textFaint }]}>
+                    {[formatThaiDateTime(h.tracked_at), h.location].filter(Boolean).join(' · ')}
+                  </Text>
+                </View>
               </View>
             ))}
           </Card3D>
@@ -505,7 +571,7 @@ export default function MerchantOrderDetailScreen() {
       {/* ---------- แจ้งจัดส่ง ---------- */}
       <FormSheet
         visible={shipOpen}
-        icon="📦"
+        icon="package"
         title="แจ้งจัดส่งพัสดุ"
         description="เลือกขนส่งและกรอกเลขพัสดุ ลูกค้าจะติดตามพัสดุได้ทันที"
         submitLabel="บันทึกการจัดส่ง"
@@ -544,7 +610,7 @@ export default function MerchantOrderDetailScreen() {
       {/* ---------- ยกเลิก ---------- */}
       <FormSheet
         visible={cancelOpen}
-        icon="🛑"
+        icon="x-circle"
         title="ยกเลิกออเดอร์"
         description={
           order.payment_status === 'paid'
@@ -577,10 +643,6 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   loader: {
     marginTop: spacing.xxxl,
   },
@@ -599,12 +661,25 @@ const styles = StyleSheet.create({
   meta: {
     borderTopWidth: 1,
     marginTop: spacing.md,
-    paddingTop: spacing.sm,
-    gap: spacing.xxs,
+    paddingTop: spacing.md,
+    gap: spacing.xs,
+  },
+  metaLine: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  metaIcon: {
+    marginTop: 2,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   actions: {
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
   gapTop: {
     marginTop: spacing.md,
@@ -617,22 +692,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.md,
+    borderRadius: radii.lg,
+    padding: spacing.sm,
+    paddingRight: spacing.md,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
   buttonRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
   },
   thumb: {
     width: 56,
     height: 56,
-    borderRadius: radii.sm,
+    borderRadius: 15,
   },
   total: {
     borderTopWidth: 1,
@@ -640,12 +723,36 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   trackBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     borderRadius: radii.md,
     padding: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   historyRow: {
-    paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  timeline: {
+    width: 14,
+    alignItems: 'center',
+    paddingTop: 5,
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+  },
+  timelineLine: {
+    flex: 1,
+    width: 2,
+    marginTop: 3,
+    borderRadius: 1,
+  },
+  historyBody: {
+    paddingBottom: spacing.md,
     gap: spacing.xxs,
   },
   chipWrap: {

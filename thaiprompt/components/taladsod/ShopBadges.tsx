@@ -1,5 +1,7 @@
 /**
  * ป้ายสถานะร้านตลาดสด — เปิดอยู่/ปิดอยู่ + รถเข็น (ร้านเคลื่อนที่)
+ *
+ * เปิดอยู่ = จุดเขียวในป้ายเขียว · ปิดอยู่ = จุดเทาในป้ายกลาง · รถเข็น = ป้ายทอง + ไอคอนรถเข็น
  */
 
 import React from 'react';
@@ -26,7 +28,7 @@ export const OpenPill: React.FC<{ isOpen: boolean; size?: 'sm' | 'md'; style?: S
 };
 
 export const MobilePill: React.FC<{ size?: 'sm' | 'md'; style?: StyleProp<ViewStyle> }> = ({ size = 'sm', style }) => (
-  <Pill label="รถเข็น" icon="🛺" tone="gold" size={size} style={style} />
+  <Pill label="รถเข็น" icon="shopping-cart-simple" tone="gold" size={size} style={style} />
 );
 
 /** แถวป้าย: เปิด/ปิด + รถเข็น (ถ้าเป็นร้านเคลื่อนที่) */

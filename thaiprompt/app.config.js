@@ -17,10 +17,35 @@
  *
  * 3. SYSTEM_ALERT_WINDOW — บล็อกใน production แต่ปล่อยไว้ใน development
  *    (React Native ใช้ใน debug build สำหรับ perf overlay)
+ *
+ * 4. usesCleartextTraffic — เปิดเฉพาะตอน build ทดสอบกับ backend ในเครื่อง
+ *    (ตั้ง EXPO_PUBLIC_API_URL=http://10.0.2.2:8765/api/v1) เพราะ release build บล็อก HTTP ธรรมดา
+ *    build ปกติ (ไม่ตั้ง EXPO_PUBLIC_API_URL หรือเป็น https) = ไม่แตะ manifest เลย
  */
 
 const fs = require('fs');
 const path = require('path');
+
+// ต้องเปิด cleartext หรือไม่ — จริงเฉพาะเมื่อชี้ API ไปที่ http:// (QA ในเครื่องเท่านั้น)
+const needsCleartextForLocalQa = /^http:\/\//i.test((process.env.EXPO_PUBLIC_API_URL || '').trim());
+
+/**
+ * config plugin แบบ inline: ใส่ android:usesCleartextTraffic="true" ให้ <application>
+ * ใช้เฉพาะ build QA ที่ชี้ backend แบบ http:// — ห้ามใช้กับ build ที่ขึ้น Store
+ *
+ * @param {object} config ค่าคอนฟิก Expo
+ * @returns {object} ค่าคอนฟิกที่ผ่าน mod ของ AndroidManifest แล้ว
+ */
+function withLocalQaCleartext(config) {
+  const { withAndroidManifest } = require('expo/config-plugins');
+  return withAndroidManifest(config, (modConfig) => {
+    const application = modConfig.modResults.manifest.application?.[0];
+    if (application) {
+      application.$['android:usesCleartextTraffic'] = 'true';
+    }
+    return modConfig;
+  });
+}
 
 // โปรไฟล์ EAS ที่กำลัง build (EAS ตั้งให้อัตโนมัติ) หรือ APP_VARIANT ที่ตั้งใน eas.json
 const buildProfile = process.env.EAS_BUILD_PROFILE || '';
@@ -70,7 +95,7 @@ module.exports = ({ config }) => {
       !(isDevelopmentVariant && permission === 'android.permission.SYSTEM_ALERT_WINDOW')
   );
 
-  return {
+  const finalConfig = {
     ...config,
     plugins,
     android: {
@@ -79,4 +104,11 @@ module.exports = ({ config }) => {
       ...(googleServicesFile ? { googleServicesFile } : {}),
     },
   };
+
+  // build ปกติ: คืนค่าเดิมทันที (no-op) — เปิด cleartext เฉพาะ QA ที่ชี้ http:// เท่านั้น
+  if (!needsCleartextForLocalQa) {
+    return finalConfig;
+  }
+  console.warn('[app.config] EXPO_PUBLIC_API_URL เป็น http:// — เปิด usesCleartextTraffic สำหรับ build ทดสอบในเครื่องเท่านั้น');
+  return withLocalQaCleartext(finalConfig);
 };

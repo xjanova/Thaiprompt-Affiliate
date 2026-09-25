@@ -8,26 +8,32 @@
  * - ตำแหน่งสดของลูกค้าแสดงเฉพาะเมื่อลูกค้าแชร์มา
  * - ส่งสำเร็จ → ฉลอง "รับทรัพย์!" พร้อมยอดที่ได้จริงจาก server
  *
+ * หน้าตา: การ์ดฮีโร่น้ำเงินลายกนก (ค่าส่งทอง + ตัวเลขระยะทาง + แถบขั้นตอน 5 ขั้น)
+ *         → การ์ดเส้นทางจุดรับ/จุดส่ง (จุดหมายตอนนี้เด่นพร้อมปุ่มนำทาง) → รายละเอียด → แถบปุ่มทองท้ายจอ
+ *
  * params: id (ไม่ส่ง = งานปัจจุบัน), accepted=1 (เพิ่งรับงาน)
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, spacing, radii, typography, shadowStyle } from '@/theme';
+import { useTheme, spacing, radii, typography, shadowStyle, withAlpha } from '@/theme';
 import {
   Button3D,
   Card3D,
   Chip,
   EmptyState,
+  Icon,
   Pill,
   PriceText,
   Screen,
   formatBaht,
   resultHaptic,
+  type IconName,
 } from '@/components/ui';
 import { num } from '@/services/api/client';
 import {
@@ -73,6 +79,16 @@ import {
   openNavigation,
   stepIndexForStatus,
 } from '@/components/rider/riderHelpers';
+import {
+  ActionIcon,
+  DottedLine,
+  FocusInput,
+  IconTile,
+  NavyCard,
+  NoticeCard,
+  StopDot,
+  TextAction,
+} from '@/components/rider/RiderVisuals';
 
 const POLL_MS = 20_000;
 
@@ -83,14 +99,15 @@ type SheetKind = 'pickup' | 'deliver' | 'fail' | 'release';
 
 const FLOW_ORDER: RiderJobAction[] = ['accept', 'picking_up', 'picked_up', 'delivering', 'deliver'];
 
-const ACTION_LOOK: Record<RiderJobAction, { title: string; icon: string; variant: 'primary' | 'success' | 'danger' | 'ghost' }> = {
-  accept: { title: 'รับงานนี้', icon: '⚡', variant: 'success' },
-  picking_up: { title: 'กำลังไปรับของ', icon: '🛵', variant: 'primary' },
-  picked_up: { title: 'รับของแล้ว', icon: '📦', variant: 'primary' },
-  delivering: { title: 'เริ่มไปส่ง', icon: '🚀', variant: 'primary' },
-  deliver: { title: 'ส่งสำเร็จ', icon: '✅', variant: 'success' },
-  fail: { title: 'ส่งไม่สำเร็จ', icon: '⚠️', variant: 'ghost' },
-  release: { title: 'คืนงาน', icon: '↩️', variant: 'ghost' },
+/** หน้าตาปุ่มของแต่ละขั้น — การกระทำหลักทุกขั้นเป็นปุ่มทอง (primary) ตามระบบดีไซน์ */
+const ACTION_LOOK: Record<RiderJobAction, { title: string; icon: IconName; variant: 'primary' | 'success' | 'danger' | 'ghost' }> = {
+  accept: { title: 'รับงานนี้', icon: 'hand-tap', variant: 'primary' },
+  picking_up: { title: 'กำลังไปรับของ', icon: 'moped', variant: 'primary' },
+  picked_up: { title: 'รับของแล้ว', icon: 'package', variant: 'primary' },
+  delivering: { title: 'เริ่มไปส่ง', icon: 'navigation-arrow', variant: 'primary' },
+  deliver: { title: 'ส่งสำเร็จ', icon: 'check-circle', variant: 'primary' },
+  fail: { title: 'ส่งไม่สำเร็จ', icon: 'warning', variant: 'ghost' },
+  release: { title: 'คืนงาน', icon: 'arrow-counter-clockwise', variant: 'ghost' },
 };
 
 const STEP_HINT: Record<string, string> = {
@@ -105,7 +122,10 @@ const STEP_HINT: Record<string, string> = {
 // ชิ้นส่วนย่อย
 // =====================================================
 
-const StepTimeline: React.FC<{ job: RiderJobDetail }> = ({ job }) => {
+const STEP_CIRCLE = 34;
+
+/** แถบขั้นตอน 5 ขั้นบนการ์ดน้ำเงิน (เสร็จ = ทอง · ตอนนี้ = วงทองเรือง · ยังไม่ถึง = กระจก) */
+const StepProgress: React.FC<{ job: RiderJobDetail }> = ({ job }) => {
   const { colors, gradients } = useTheme();
   const current = stepIndexForStatus(job.status);
   const failedOrCancelled = job.status === 'failed' || job.status === 'cancelled';
@@ -114,119 +134,185 @@ const StepTimeline: React.FC<{ job: RiderJobDetail }> = ({ job }) => {
     picked_up: job.timeline?.picked_up_at,
     completed: job.timeline?.completed_at ?? job.timeline?.delivered_at ?? job.completed_at,
   };
+  const showCounter = !failedOrCancelled && current >= 0;
 
   return (
-    <Card3D style={styles.block} padding={spacing.lg}>
-      <Text style={[typography.h3, styles.cardTitle, { color: colors.textStrong }]}>ความคืบหน้า</Text>
-      {JOB_STEPS.map((step, index) => {
-        const done = !failedOrCancelled && index < current;
-        const active = !failedOrCancelled && index === current;
-        const isLast = index === JOB_STEPS.length - 1;
-        const complete = active && isLast;
-        const time = times[step.key];
-        return (
-          <View key={step.key} style={styles.stepRow}>
-            <View style={styles.stepRail}>
-              {active || complete ? (
-                <LinearGradient colors={complete ? gradients.success : gradients.primary} style={styles.stepDot}>
-                  <Text style={styles.stepDotText}>{step.icon}</Text>
-                </LinearGradient>
-              ) : (
-                <View
-                  style={[
-                    styles.stepDot,
-                    {
-                      backgroundColor: done ? colors.success : colors.inset,
-                      borderColor: done ? colors.success : colors.border,
-                      borderWidth: 1,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.stepDotSmall, { color: done ? colors.textOnAccent : colors.textFaint }]}>
-                    {done ? '✓' : String(index + 1)}
-                  </Text>
+    <View style={[styles.progress, { borderTopColor: colors.headerGlassBorder }]}>
+      <View style={styles.progressHead}>
+        <Text style={[typography.overline, { color: colors.onHeaderMuted }]}>ความคืบหน้า</Text>
+        {showCounter && (
+          <Text style={[typography.caption, { color: colors.goldLight }]}>
+            ขั้นที่ {Math.min(current + 1, JOB_STEPS.length)}/{JOB_STEPS.length}
+          </Text>
+        )}
+      </View>
+      <View style={styles.stepsRow}>
+        {JOB_STEPS.map((step, index) => {
+          const done = !failedOrCancelled && index < current;
+          const active = !failedOrCancelled && index === current;
+          const isLast = index === JOB_STEPS.length - 1;
+          const complete = active && isLast;
+          const reached = done || active;
+          const nextReached = !failedOrCancelled && index + 1 <= current;
+          const time = times[step.key];
+          const stateText = done || complete ? 'เสร็จแล้ว' : active ? 'ขั้นตอนตอนนี้' : 'ยังไม่ถึง';
+          return (
+            <View
+              key={step.key}
+              style={styles.stepCol}
+              accessible
+              accessibilityLabel={`${step.label} ${stateText}${time && reached ? ` เวลา ${formatTime(time)}` : ''}`}
+            >
+              <View style={styles.stepTrack}>
+                <View style={styles.stepLines} pointerEvents="none">
+                  <View
+                    style={[
+                      styles.flex,
+                      { backgroundColor: index === 0 ? 'transparent' : reached ? colors.gold : colors.headerGlassBorder },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.flex,
+                      { backgroundColor: isLast ? 'transparent' : nextReached ? colors.gold : colors.headerGlassBorder },
+                    ]}
+                  />
                 </View>
-              )}
-              {!isLast && (
-                <View style={[styles.stepLine, { backgroundColor: done ? colors.success : colors.border }]} />
-              )}
-            </View>
-            <View style={styles.stepBody}>
+                {complete ? (
+                  <LinearGradient colors={gradients.success} style={styles.stepCircle}>
+                    <Icon name={step.icon} size={17} color={colors.textOnAccent} weight="fill" />
+                  </LinearGradient>
+                ) : done ? (
+                  <LinearGradient colors={gradients.primary} style={styles.stepCircle}>
+                    <Icon name="check" size={16} color={colors.textOnGold} weight="bold" />
+                  </LinearGradient>
+                ) : active ? (
+                  <View
+                    style={[
+                      styles.stepCircle,
+                      styles.stepCircleActive,
+                      {
+                        borderColor: colors.goldLight,
+                        backgroundColor: colors.navyDeep,
+                        boxShadow: `0px 0px 16px 2px ${withAlpha(colors.gold, 0.55)}`,
+                      },
+                    ]}
+                  >
+                    <Icon name={step.icon} size={17} color={colors.goldLight} weight="fill" />
+                  </View>
+                ) : (
+                  <View
+                    style={[
+                      styles.stepCircle,
+                      styles.stepCircleIdle,
+                      { backgroundColor: colors.navyDeep, borderColor: colors.headerGlassBorder },
+                    ]}
+                  >
+                    <Icon name={step.icon} size={16} color={colors.onHeaderMuted} />
+                  </View>
+                )}
+              </View>
               <Text
+                numberOfLines={2}
                 style={[
-                  active ? typography.h3 : typography.body,
-                  { color: active ? colors.textStrong : done ? colors.text : colors.textFaint },
+                  typography.micro,
+                  styles.stepLabel,
+                  { color: active ? colors.goldLight : done ? colors.onHeader : colors.onHeaderMuted },
                 ]}
               >
                 {step.label}
-                {active && !isLast ? '  · ตอนนี้' : ''}
               </Text>
-              {!!time && (done || active) && (
-                <Text style={[typography.caption, { color: colors.textMuted }]}>{formatTime(time)}</Text>
+              {!!time && reached && (
+                <Text style={[typography.micro, styles.stepTime, { color: colors.onHeaderMuted }]}>{formatTime(time)}</Text>
               )}
             </View>
-          </View>
-        );
-      })}
-    </Card3D>
+          );
+        })}
+      </View>
+    </View>
   );
 };
 
-const PointCard: React.FC<{
+/**
+ * จุดรับ/จุดส่งในการ์ดเส้นทาง
+ * current = จุดหมายตอนนี้ → จุดมีวงแสง + ป้าย + ปุ่มนำทางเต็มความกว้าง (จุดอื่นเป็นปุ่มไอคอน)
+ */
+const StopBlock: React.FC<{
   kind: 'pickup' | 'dropoff';
   point: RiderJobPoint;
   canContact: boolean;
-}> = ({ kind, point, canContact }) => {
+  current: boolean;
+  isLast?: boolean;
+}> = ({ kind, point, canContact, current, isLast = false }) => {
   const { colors } = useTheme();
   const isPickup = kind === 'pickup';
   const title = isPickup ? 'จุดรับของ' : 'จุดส่งของ';
   const name = point?.name || (isPickup ? 'ร้านค้า' : point?.area || 'ลูกค้า');
   const address = point?.address || (!isPickup ? point?.area : null);
+  const showPhone = canContact && !!point?.phone;
 
   return (
-    <Card3D style={styles.block} padding={spacing.lg}>
-      <View style={styles.pointHead}>
-        <Text style={styles.pointIcon}>{isPickup ? '📦' : '🏠'}</Text>
-        <View style={styles.flex}>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>{title}</Text>
-          <Text style={[typography.h3, { color: colors.textStrong }]} numberOfLines={2}>
-            {name}
-          </Text>
-        </View>
+    <View style={styles.stop}>
+      <View style={styles.stopRail}>
+        <StopDot kind={kind} size={13} halo={current} />
+        {!isLast && <DottedLine style={styles.stopLine} />}
       </View>
-      {!!address && <Text style={[typography.body, styles.pointText, { color: colors.text }]}>{address}</Text>}
-      {point?.is_approximate && (
-        <Text style={[typography.caption, styles.pointText, { color: colors.textMuted }]}>
-          📍 แสดงพื้นที่โดยประมาณ — ที่อยู่เต็มและเบอร์โทรจะแสดงหลังรับงาน
-        </Text>
-      )}
-      {!!point?.notes && (
-        <View style={[styles.noteBox, { backgroundColor: colors.warningSoft }]}>
-          <Text style={[typography.bodySm, { color: colors.text }]}>📝 {point.notes}</Text>
+      <View style={[styles.flex, !isLast && styles.stopBodyGap]}>
+        <View style={styles.stopHead}>
+          <View style={styles.flex}>
+            <View style={styles.stopLabelRow}>
+              <Text style={[typography.overline, { color: colors.textMuted }]}>{title}</Text>
+              {current && <Pill label="จุดหมายตอนนี้" tone="gold" icon="target" />}
+            </View>
+            <Text style={[typography.h3, { color: colors.textStrong }]} numberOfLines={2}>
+              {name}
+            </Text>
+          </View>
+          <View style={styles.stopActions}>
+            {showPhone && (
+              <ActionIcon
+                icon="phone"
+                label={`โทรหา${isPickup ? 'ร้าน' : 'ลูกค้า'}`}
+                onPress={() => callPhone(point.phone)}
+              />
+            )}
+            {!current && (
+              <ActionIcon icon="navigation-arrow" label={`นำทางไป${title}`} onPress={() => openNavigation(point)} />
+            )}
+          </View>
         </View>
-      )}
-      <View style={styles.pointActions}>
-        <Button3D
-          title="นำทาง"
-          icon="🧭"
-          size="sm"
-          onPress={() => openNavigation(point)}
-          style={styles.flex}
-          accessibilityLabel={`นำทางไป${title}`}
-        />
-        {canContact && !!point?.phone && (
+
+        {/* ชื่อกับที่อยู่เป็นค่าเดียวกัน (จุดส่งโดยประมาณ = ชื่อย่าน) → แสดงครั้งเดียว */}
+        {!!address && address !== name && (
+          <Text style={[typography.bodySm, styles.stopText, { color: colors.text }]}>{address}</Text>
+        )}
+        {point?.is_approximate && (
+          <View style={styles.inlineRow}>
+            <Icon name="map-pin" size={14} color={colors.textMuted} />
+            <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+              แสดงพื้นที่โดยประมาณ — ที่อยู่เต็มและเบอร์โทรจะแสดงหลังรับงาน
+            </Text>
+          </View>
+        )}
+        {!!point?.notes && (
+          <View style={[styles.noteBox, { backgroundColor: colors.warningSoft }]}>
+            <Icon name="note-pencil" size={16} color={colors.warning} />
+            <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>{point.notes}</Text>
+          </View>
+        )}
+        {current && (
           <Button3D
-            title="โทร"
-            icon="📞"
-            size="sm"
-            variant="secondary"
-            onPress={() => callPhone(point.phone)}
-            style={styles.flex}
-            accessibilityLabel={`โทรหา${isPickup ? 'ร้าน' : 'ลูกค้า'}`}
+            title="นำทาง"
+            icon="navigation-arrow"
+            variant="navy"
+            fullWidth
+            onPress={() => openNavigation(point)}
+            style={styles.navButton}
+            accessibilityLabel={`นำทางไป${title}`}
           />
         )}
       </View>
-    </Card3D>
+    </View>
   );
 };
 
@@ -241,9 +327,14 @@ const PhotoSlot: React.FC<{
   if (uri) {
     return (
       <View style={styles.photoWrap}>
-        <Image source={{ uri }} style={[styles.photo, { backgroundColor: colors.inset }]} contentFit="cover" />
+        <View style={[styles.photoFrame, { backgroundColor: colors.inset }]}>
+          <Image source={{ uri }} style={styles.photo} contentFit="cover" />
+          <View style={[styles.photoBadge, { backgroundColor: colors.success, borderColor: colors.card }]}>
+            <Icon name="check" size={14} color={colors.textOnAccent} weight="bold" />
+          </View>
+        </View>
         <View style={styles.photoActions}>
-          <Button3D title="ถ่ายใหม่" icon="📷" size="sm" variant="secondary" onPress={onTake} style={styles.flex} />
+          <Button3D title="ถ่ายใหม่" icon="camera" size="sm" variant="secondary" onPress={onTake} style={styles.flex} />
           {!!onClear && !required && <Button3D title="ไม่ใช้รูป" size="sm" variant="ghost" onPress={onClear} />}
         </View>
       </View>
@@ -256,15 +347,28 @@ const PhotoSlot: React.FC<{
       accessibilityLabel={label}
       style={({ pressed }) => [
         styles.photoEmpty,
-        { borderColor: required ? colors.gold : colors.border, backgroundColor: colors.inset, opacity: pressed ? 0.8 : 1 },
+        {
+          borderColor: required ? colors.gold : colors.border,
+          backgroundColor: colors.inset,
+          opacity: pressed ? 0.8 : 1,
+        },
       ]}
     >
-      <Text style={styles.photoEmptyIcon}>📷</Text>
+      <IconTile icon="camera" tone={required ? 'gold' : 'navy'} size={52} />
       <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{label}</Text>
-      <Text style={[typography.caption, { color: required ? colors.goldDeep : colors.textMuted }]}>
-        {required ? 'จำเป็น' : 'ไม่บังคับ'}
-      </Text>
+      <Pill label={required ? 'จำเป็น' : 'ไม่บังคับ'} tone={required ? 'gold' : 'neutral'} />
     </Pressable>
+  );
+};
+
+/** หัวการ์ดรายละเอียด: ช่องไอคอน + ชื่อการ์ด */
+const CardHead: React.FC<{ icon: IconName; title: string; tone?: 'navy' | 'gold' }> = ({ icon, title, tone = 'navy' }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.cardHead}>
+      <IconTile icon={icon} tone={tone} size={36} />
+      <Text style={[typography.h3, { color: colors.textStrong }]}>{title}</Text>
+    </View>
   );
 };
 
@@ -691,7 +795,7 @@ export default function RiderJobDetailScreen() {
   if (initialLoading && !job) {
     return (
       <Screen title={screenTitle}>
-        <EmptyState icon="⏳" title="กำลังโหลดงาน..." message="รอสักครู่นะ" />
+        <EmptyState icon="hourglass" title="กำลังโหลดงาน..." message="รอสักครู่นะ" />
       </Screen>
     );
   }
@@ -701,7 +805,7 @@ export default function RiderJobDetailScreen() {
       return (
         <Screen title="งานของฉัน" onRefresh={() => load('refresh')} refreshing={refreshing}>
           <EmptyState
-            icon="🛵"
+            art="scooter"
             title="ยังไม่มีงานที่กำลังส่ง"
             message="ไปดูงานใกล้คุณ แล้วกดรับงานแรกกันเลย"
             actionLabel="ดูงานใกล้ฉัน"
@@ -715,7 +819,7 @@ export default function RiderJobDetailScreen() {
       <Screen title={screenTitle} onRefresh={() => load('refresh')} refreshing={refreshing}>
         {gone ? (
           <EmptyState
-            icon="🏃"
+            icon="prohibit"
             title="งานนี้ไม่ว่างแล้ว"
             message="มีไรเดอร์คนอื่นรับไปแล้ว หรืองานถูกยกเลิก ลองงานอื่นนะ"
             actionLabel="ดูงานอื่น"
@@ -747,6 +851,25 @@ export default function RiderJobDetailScreen() {
   const eta = formatMinutes(job.estimated_duration_minutes);
   const live = active ? job.customer_live_location : null;
 
+  // ---------- หน้าตาเท่านั้น (ไม่กระทบขั้นตอนงาน) ----------
+  /** จุดหมายตอนนี้: ยังไม่ได้ของ = จุดรับ · ได้ของแล้ว = จุดส่ง */
+  const destination: 'pickup' | 'dropoff' | null = active
+    ? job.status === 'accepted' || job.status === 'picking_up'
+      ? 'pickup'
+      : 'dropoff'
+    : null;
+  /** ตัวเลขใต้ค่าส่งบนการ์ดฮีโร่ */
+  const heroStats = [
+    tripKm ? { key: 'trip', value: tripKm, label: 'ระยะส่ง' } : null,
+    toPickup && !finished ? { key: 'pickup', value: toPickup, label: 'ห่างจุดรับ' } : null,
+    eta && !finished ? { key: 'eta', value: eta, label: 'เวลาโดยประมาณ' } : null,
+  ].filter((s): s is { key: string; value: string; label: string } => !!s);
+  const proofPhotos = [
+    { key: 'pickup', label: 'ตอนรับของ', uri: job.photos?.pickup },
+    { key: 'delivery', label: 'ตอนส่งของ', uri: job.photos?.delivery },
+    { key: 'failure', label: 'ส่งไม่สำเร็จ', uri: job.photos?.failure },
+  ].filter((p) => !!p.uri);
+
   return (
     <Screen
       title={screenTitle}
@@ -770,127 +893,167 @@ export default function RiderJobDetailScreen() {
       >
         {/* ---------- ป้ายสถานะพิเศษ ---------- */}
         {params.accepted === '1' && job.status === 'accepted' && isMine && (
-          <Card3D gradientBorder style={styles.block} padding={spacing.md}>
-            <Text style={[typography.h3, { color: colors.textStrong }]}>รับงานสำเร็จ! 🎉</Text>
-            <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-              กดนำทางไปจุดรับของได้เลย ลูกค้ากำลังรออยู่
-            </Text>
-          </Card3D>
+          <NoticeCard
+            icon="check-circle"
+            tone="success"
+            title="รับงานสำเร็จ!"
+            message="กดนำทางไปจุดรับของได้เลย ลูกค้ากำลังรออยู่"
+            gradientBorder
+            style={styles.block}
+          />
         )}
         {goneWhileViewing && (
-          <Card3D variant="inset" style={styles.block} padding={spacing.lg}>
-            <Text style={[typography.h3, { color: colors.textStrong }]}>🏃 งานนี้ไม่ว่างแล้ว</Text>
-            <Text style={[typography.bodySm, { color: colors.textMuted }]}>{error?.message}</Text>
-          </Card3D>
+          <NoticeCard icon="prohibit" tone="neutral" title="งานนี้ไม่ว่างแล้ว" message={error?.message} style={styles.block} />
         )}
         {job.status === 'cancelled' && (
-          <Card3D variant="inset" style={styles.block} padding={spacing.lg}>
-            <Text style={[typography.h3, { color: colors.danger }]}>งานนี้ถูกยกเลิกแล้ว</Text>
-            <Text style={[typography.bodySm, { color: colors.text }]}>
-              {job.cancellation?.reason || 'ไม่ต้องไปรับหรือส่งของแล้ว ระบบหยุดแชร์ตำแหน่งให้เรียบร้อย'}
-            </Text>
-          </Card3D>
+          <NoticeCard
+            icon="x-circle"
+            tone="danger"
+            title="งานนี้ถูกยกเลิกแล้ว"
+            titleColor={colors.danger}
+            message={job.cancellation?.reason || 'ไม่ต้องไปรับหรือส่งของแล้ว ระบบหยุดแชร์ตำแหน่งให้เรียบร้อย'}
+            style={styles.block}
+          />
         )}
         {job.status === 'failed' && (
-          <Card3D variant="inset" style={styles.block} padding={spacing.lg}>
-            <Text style={[typography.h3, { color: colors.danger }]}>ส่งไม่สำเร็จ</Text>
-            <Text style={[typography.bodySm, { color: colors.text }]}>
-              {job.failure?.reason_text || 'บันทึกแล้ว'}
-              {job.failure?.note ? ` — ${job.failure.note}` : ''}
-            </Text>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>ทีมงานจะติดต่อเพื่อจัดการคืนสินค้า</Text>
-          </Card3D>
+          <NoticeCard
+            icon="warning-circle"
+            tone="danger"
+            title="ส่งไม่สำเร็จ"
+            titleColor={colors.danger}
+            message={
+              <>
+                <Text style={[typography.bodySm, { color: colors.text }]}>
+                  {job.failure?.reason_text || 'บันทึกแล้ว'}
+                  {job.failure?.note ? ` — ${job.failure.note}` : ''}
+                </Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>ทีมงานจะติดต่อเพื่อจัดการคืนสินค้า</Text>
+              </>
+            }
+            style={styles.block}
+          />
         )}
         {active && gpsOff && (
-          <Card3D variant="inset" style={styles.block} padding={spacing.md}>
-            <Text style={[typography.bodyStrong, { color: colors.danger }]}>⚠️ GPS ของเครื่องปิดอยู่</Text>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>
-              ลูกค้าจะไม่เห็นตำแหน่งของคุณ เปิด GPS ในแถบด่วนของเครื่องได้เลย
-            </Text>
-          </Card3D>
+          <NoticeCard
+            icon="warning"
+            tone="danger"
+            title="GPS ของเครื่องปิดอยู่"
+            titleColor={colors.danger}
+            message="ลูกค้าจะไม่เห็นตำแหน่งของคุณ เปิด GPS ในแถบด่วนของเครื่องได้เลย"
+            style={styles.block}
+          />
         )}
 
-        {/* ---------- รายได้ของงาน ---------- */}
-        <Card3D gradientBorder padding={0} style={styles.block}>
-          <LinearGradient colors={gradients.hero} style={styles.hero}>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>
-              {job.status === 'completed' ? 'ค่าส่งที่คุณได้รับ' : 'ค่าส่งที่คุณจะได้รับ'}
-            </Text>
-            <PriceText amount={job.rider_earnings} size="xl" tone="gold" />
-            <View style={styles.pills}>
-              {!!tripKm && <Pill label={`ระยะส่ง ${tripKm}`} icon="🛣️" />}
-              {!!toPickup && !finished && <Pill label={`ห่างจุดรับ ${toPickup}`} icon="🛵" />}
-              {!!eta && !finished && <Pill label={eta} icon="⏱️" />}
+        {/* ---------- ฮีโร่: ค่าส่ง + ความคืบหน้า ---------- */}
+        <NavyCard goldBorder padding={0} style={styles.block}>
+          <View style={styles.heroTop}>
+            <View style={styles.heroHead}>
+              <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>
+                {job.status === 'completed' ? 'ค่าส่งที่คุณได้รับ' : 'ค่าส่งที่คุณจะได้รับ'}
+              </Text>
               {job.status === 'completed' && (
                 <Pill
                   label={job.earnings_settled ? 'เข้ากระเป๋าแล้ว' : 'กำลังโอนเข้ากระเป๋า'}
                   tone={job.earnings_settled ? 'success' : 'info'}
-                  icon="👛"
+                  icon="wallet"
                 />
               )}
             </View>
-          </LinearGradient>
+            <PriceText amount={job.rider_earnings} size="xl" style={[typography.moneyLg, { color: colors.goldLight }]} />
+            {heroStats.length > 0 && (
+              <View style={[styles.heroStats, { borderTopColor: colors.headerGlassBorder }]}>
+                {heroStats.map((stat, index) => (
+                  <View
+                    key={stat.key}
+                    style={[
+                      styles.heroStat,
+                      index > 0 && { borderLeftWidth: 1, borderLeftColor: colors.headerGlassBorder },
+                    ]}
+                  >
+                    <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.onHeader }]}>
+                      {stat.value}
+                    </Text>
+                    <Text numberOfLines={1} style={[typography.micro, { color: colors.onHeaderMuted }]}>
+                      {stat.label}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {job.status !== 'pending' && <StepProgress job={job} />}
+
           {job.is_cod && (
             <View style={[styles.codBar, { backgroundColor: colors.warningSoft }]}>
-              <Text style={[typography.bodyStrong, { color: colors.text }]}>💵 เก็บเงินสดจากลูกค้า</Text>
+              <View style={styles.codLeft}>
+                <Icon name="money" size={19} color={colors.warning} weight="fill" />
+                <Text style={[typography.bodyStrong, { color: colors.text }]}>เก็บเงินสดจากลูกค้า</Text>
+              </View>
               <PriceText amount={job.cod_amount} size="lg" tone="strong" />
             </View>
           )}
-        </Card3D>
-
-        {/* ---------- ไทม์ไลน์ ---------- */}
-        {job.status !== 'pending' && <StepTimeline job={job} />}
+        </NavyCard>
 
         {/* ---------- ตำแหน่งสดของลูกค้า (เฉพาะเมื่อแชร์มา) ---------- */}
         {!!live && (
-          <Card3D style={styles.block} padding={spacing.lg} gradientBorder={gradients.success}>
-            <Text style={[typography.h3, { color: colors.textStrong }]}>📍 ลูกค้าแชร์ตำแหน่งสด</Text>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>อัปเดต {formatAgo(live.updated_at)}</Text>
+          <NoticeCard
+            icon="broadcast"
+            tone="success"
+            title="ลูกค้าแชร์ตำแหน่งสด"
+            message={`อัปเดต ${formatAgo(live.updated_at)}`}
+            gradientBorder={gradients.success}
+            style={styles.block}
+          >
             <Button3D
               title="นำทางไปหาลูกค้า"
-              icon="🧭"
+              icon="navigation-arrow"
               variant="success"
               size="sm"
               onPress={() => openNavigation({ latitude: live.latitude, longitude: live.longitude })}
-              style={styles.gapTop}
+              style={styles.alignStart}
             />
-          </Card3D>
+          </NoticeCard>
         )}
 
         {/* ---------- จุดรับ / จุดส่ง ---------- */}
         {pickupMoved && !finished && !['picked_up', 'delivering'].includes(job.status) && (
-          <Card3D variant="inset" style={styles.block} padding={spacing.md}>
-            <View style={styles.movedRow}>
-              <View style={styles.flex}>
-                <Text style={[typography.bodyStrong, { color: colors.warning }]}>📍 ร้านย้ายจุดรับของแล้ว</Text>
-                <Text style={[typography.caption, { color: colors.textMuted }]}>
-                  ร้านรถเข็นขยับไปจุดใหม่ ตำแหน่งจุดรับด้านล่างอัปเดตแล้ว กดนำทางอีกครั้งได้เลย (ค่าส่งเท่าเดิม)
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => setPickupMoved(false)}
-                hitSlop={10}
-                accessibilityRole="button"
-                accessibilityLabel="ปิดข้อความร้านย้ายจุดรับของ"
-              >
-                <Text style={[typography.bodyStrong, { color: colors.textMuted }]}>✕</Text>
-              </Pressable>
-            </View>
-          </Card3D>
+          <NoticeCard
+            icon="map-pin"
+            tone="warning"
+            title="ร้านย้ายจุดรับของแล้ว"
+            message="ร้านรถเข็นขยับไปจุดใหม่ ตำแหน่งจุดรับด้านล่างอัปเดตแล้ว กดนำทางอีกครั้งได้เลย (ค่าส่งเท่าเดิม)"
+            onClose={() => setPickupMoved(false)}
+            closeLabel="ปิดข้อความร้านย้ายจุดรับของ"
+            style={styles.block}
+          />
         )}
-        <PointCard kind="pickup" point={job.pickup} canContact={isMine && !finished} />
-        <PointCard kind="dropoff" point={job.dropoff} canContact={isMine && !finished} />
+        <Card3D style={styles.block} padding={spacing.lg}>
+          <StopBlock
+            kind="pickup"
+            point={job.pickup}
+            canContact={isMine && !finished}
+            current={destination === 'pickup'}
+          />
+          <StopBlock
+            kind="dropoff"
+            point={job.dropoff}
+            canContact={isMine && !finished}
+            current={destination === 'dropoff'}
+            isLast
+          />
+        </Card3D>
 
         {/* ---------- รายการของ / ค่าส่ง ---------- */}
         {(!!job.items_summary || !!job.description) && (
           <Card3D style={styles.block} padding={spacing.lg}>
-            <Text style={[typography.h3, styles.cardTitle, { color: colors.textStrong }]}>🧾 รายการ</Text>
+            <CardHead icon="receipt" title="รายการ" />
             <Text style={[typography.body, { color: colors.text }]}>{job.items_summary || job.description}</Text>
           </Card3D>
         )}
 
         <Card3D variant="inset" style={styles.block} padding={spacing.lg}>
-          <Text style={[typography.h3, styles.cardTitle, { color: colors.textStrong }]}>💰 ค่าส่งงานนี้</Text>
+          <CardHead icon="coins" title="ค่าส่งงานนี้" tone="gold" />
           <View style={styles.feeRow}>
             <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าส่งรวม</Text>
             <PriceText amount={job.total_fee} size="sm" />
@@ -903,51 +1066,51 @@ export default function RiderJobDetailScreen() {
           )}
           <View style={[styles.feeRow, styles.feeTotal, { borderTopColor: colors.divider }]}>
             <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>คุณได้รับ</Text>
-            <PriceText amount={job.rider_earnings} size="md" tone="gold" />
+            <PriceText amount={job.rider_earnings} size="lg" tone="gold" />
           </View>
         </Card3D>
 
         {/* ---------- รูปหลักฐาน ---------- */}
-        {!!(job.photos?.pickup || job.photos?.delivery || job.photos?.failure) && (
+        {proofPhotos.length > 0 && (
           <Card3D style={styles.block} padding={spacing.lg}>
-            <Text style={[typography.h3, styles.cardTitle, { color: colors.textStrong }]}>📸 รูปหลักฐาน</Text>
+            <CardHead icon="camera" title="รูปหลักฐาน" />
             <View style={styles.photoRow}>
-              {[
-                { key: 'pickup', label: 'ตอนรับของ', uri: job.photos?.pickup },
-                { key: 'delivery', label: 'ตอนส่งของ', uri: job.photos?.delivery },
-                { key: 'failure', label: 'ส่งไม่สำเร็จ', uri: job.photos?.failure },
-              ]
-                .filter((p) => !!p.uri)
-                .map((p) => (
-                  <View key={p.key} style={styles.proofItem}>
-                    <Image
-                      source={{ uri: p.uri as string }}
-                      style={[styles.proof, { backgroundColor: colors.inset }]}
-                      contentFit="cover"
-                      accessibilityLabel={`รูป${p.label}`}
-                    />
-                    <Text style={[typography.caption, { color: colors.textMuted }]}>{p.label}</Text>
-                  </View>
-                ))}
+              {proofPhotos.map((p) => (
+                <View key={p.key} style={styles.proofItem}>
+                  <Image
+                    source={{ uri: p.uri as string }}
+                    style={[styles.proof, { backgroundColor: colors.inset, borderColor: colors.border }]}
+                    contentFit="cover"
+                    accessibilityLabel={`รูป${p.label}`}
+                  />
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>{p.label}</Text>
+                </View>
+              ))}
             </View>
           </Card3D>
         )}
 
         {/* ---------- สถานะการแชร์ตำแหน่ง ---------- */}
-        {active && (
+        {active && trackingMode !== null && (
           <Card3D variant="inset" style={styles.block} padding={spacing.md}>
             {trackingMode === 'background' ? (
-              <Text style={[typography.bodySm, { color: colors.text }]}>
-                📡 กำลังแชร์ตำแหน่งให้ลูกค้า (ทำงานแม้ปิดหน้าจอ) · หยุดเองเมื่อจบงาน
-              </Text>
+              <View style={styles.trackRow}>
+                <IconTile icon="broadcast" tone="success" size={36} />
+                <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>
+                  กำลังแชร์ตำแหน่งให้ลูกค้า (ทำงานแม้ปิดหน้าจอ) · หยุดเองเมื่อจบงาน
+                </Text>
+              </View>
             ) : trackingMode === 'foreground' ? (
               <>
-                <Text style={[typography.bodySm, { color: colors.text }]}>
-                  📡 แชร์ตำแหน่งเฉพาะตอนเปิดแอปไว้ — ถ้าปิดหน้าจอ ลูกค้าจะเห็นตำแหน่งล่าสุดเท่านั้น
-                </Text>
+                <View style={styles.trackRow}>
+                  <IconTile icon="broadcast" tone="warning" size={36} />
+                  <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>
+                    แชร์ตำแหน่งเฉพาะตอนเปิดแอปไว้ — ถ้าปิดหน้าจอ ลูกค้าจะเห็นตำแหน่งล่าสุดเท่านั้น
+                  </Text>
+                </View>
                 <Button3D
                   title="ให้ติดตามต่อแม้ปิดหน้าจอ"
-                  icon="🛰️"
+                  icon="broadcast"
                   size="sm"
                   variant="secondary"
                   onPress={upgradeToBackground}
@@ -956,10 +1119,13 @@ export default function RiderJobDetailScreen() {
               </>
             ) : trackingMode === 'none' ? (
               <>
-                <Text style={[typography.bodySm, { color: colors.danger }]}>
-                  ⚠️ ยังไม่ได้แชร์ตำแหน่ง ลูกค้าจะไม่เห็นว่าคุณอยู่ไหน
-                </Text>
-                <Button3D title="อนุญาตตำแหน่ง" icon="📍" size="sm" onPress={enableLocation} style={styles.gapTop} />
+                <View style={styles.trackRow}>
+                  <IconTile icon="warning" tone="danger" size={36} />
+                  <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>
+                    ยังไม่ได้แชร์ตำแหน่ง ลูกค้าจะไม่เห็นว่าคุณอยู่ไหน
+                  </Text>
+                </View>
+                <Button3D title="อนุญาตตำแหน่ง" icon="map-pin" size="sm" onPress={enableLocation} style={styles.gapTop} />
               </>
             ) : null}
           </Card3D>
@@ -977,12 +1143,15 @@ export default function RiderJobDetailScreen() {
         <View
           style={[
             styles.actionBar,
-            { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, spacing.md), borderTopColor: colors.border },
+            { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, spacing.md), borderTopColor: colors.divider },
             shadowStyle('lg', colors.shadowDark),
           ]}
         >
           {!!STEP_HINT[job.status] && flowActions.length > 0 && (
-            <Text style={[typography.caption, styles.hint, { color: colors.textMuted }]}>💡 {STEP_HINT[job.status]}</Text>
+            <View style={styles.hintRow}>
+              <Icon name="info" size={15} color={colors.goldDeep} weight="fill" />
+              <Text style={[typography.caption, styles.hintText, { color: colors.textMuted }]}>{STEP_HINT[job.status]}</Text>
+            </View>
           )}
           {!!primary && (
             <Button3D
@@ -1009,17 +1178,20 @@ export default function RiderJobDetailScreen() {
           {hasSideActions && (
             <View style={styles.sideRow}>
               {allowed.has('release') && (
-                <Button3D title="คืนงาน" icon="↩️" variant="ghost" size="sm" onPress={onAction('release')} />
+                <TextAction icon="arrow-counter-clockwise" title="คืนงาน" onPress={onAction('release')} />
+              )}
+              {allowed.has('release') && allowed.has('fail') && (
+                <View style={[styles.sideDivider, { backgroundColor: colors.divider }]} />
               )}
               {allowed.has('fail') && (
-                <Button3D title="ส่งไม่สำเร็จ" icon="⚠️" variant="ghost" size="sm" onPress={onAction('fail')} />
+                <TextAction icon="warning" title="ส่งไม่สำเร็จ" onPress={onAction('fail')} color={colors.danger} />
               )}
             </View>
           )}
           {isMine && finished && flowActions.length === 0 && (
             <Button3D
               title="หางานต่อ"
-              icon="🛵"
+              icon="moped"
               size="lg"
               fullWidth
               onPress={() => router.replace('/rider-jobs' as never)}
@@ -1036,14 +1208,14 @@ export default function RiderJobDetailScreen() {
       {/* ---------- sheet: รับของแล้ว ---------- */}
       <RiderSheet
         visible={sheet === 'pickup'}
-        icon="📦"
+        icon="package"
         title="ได้ของครบแล้วใช่ไหม?"
         subtitle="ถ่ายรูปของที่รับมาได้ (ไม่บังคับ) ช่วยยืนยันถ้ามีปัญหาภายหลัง"
         busy={sheetBusy}
         onClose={closeSheet}
         footer={
           <>
-            <Button3D title="ยืนยันรับของแล้ว" icon="✅" size="lg" fullWidth onPress={submitPickup} />
+            <Button3D title="ยืนยันรับของแล้ว" icon="check-circle" size="lg" fullWidth onPress={submitPickup} />
             <Button3D title="ยังก่อน" variant="ghost" size="sm" onPress={closeSheet} disabled={sheetBusy} />
           </>
         }
@@ -1054,7 +1226,8 @@ export default function RiderJobDetailScreen() {
       {/* ---------- sheet: ส่งสำเร็จ ---------- */}
       <RiderSheet
         visible={sheet === 'deliver'}
-        icon="✅"
+        icon="check-circle"
+        tone="success"
         title="ส่งของสำเร็จ"
         subtitle="ถ่ายรูปตอนส่งของให้ลูกค้าเป็นหลักฐาน"
         busy={sheetBusy}
@@ -1063,7 +1236,7 @@ export default function RiderJobDetailScreen() {
           <>
             <Button3D
               title="ยืนยันส่งสำเร็จ"
-              icon="🎉"
+              icon="seal-check"
               variant="success"
               size="lg"
               fullWidth
@@ -1083,6 +1256,8 @@ export default function RiderJobDetailScreen() {
             gradientBorder={codConfirmed ? gradients.success : false}
             padding={spacing.md}
             accessibilityLabel={`เก็บเงินสด ${formatBaht(job.cod_amount)} แล้ว`}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: codConfirmed }}
           >
             <View style={styles.checkRow}>
               <View
@@ -1094,7 +1269,7 @@ export default function RiderJobDetailScreen() {
                   },
                 ]}
               >
-                {codConfirmed && <Text style={[styles.checkMark, { color: colors.textOnAccent }]}>✓</Text>}
+                {codConfirmed && <Icon name="check" size={17} color={colors.textOnAccent} weight="bold" />}
               </View>
               <View style={styles.flex}>
                 <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
@@ -1104,25 +1279,25 @@ export default function RiderJobDetailScreen() {
                   ระบบจะหักยอดนำส่งจากกระเป๋าของคุณ พร้อมบันทึกรายได้ให้ทันที
                 </Text>
               </View>
+              <Icon name="money" size={22} color={codConfirmed ? colors.success : colors.warning} weight="fill" />
             </View>
           </Card3D>
         )}
-        <TextInput
+        <FocusInput
           value={note}
           onChangeText={setNote}
           placeholder="หมายเหตุ (ไม่บังคับ) เช่น ฝากไว้กับ รปภ."
-          placeholderTextColor={colors.textFaint}
           maxLength={500}
           multiline
           accessibilityLabel="หมายเหตุการส่ง"
-          style={[typography.body, styles.input, { color: colors.text, backgroundColor: colors.inset, borderColor: colors.border }]}
         />
       </RiderSheet>
 
       {/* ---------- sheet: ส่งไม่สำเร็จ ---------- */}
       <RiderSheet
         visible={sheet === 'fail'}
-        icon="⚠️"
+        icon="warning"
+        tone="danger"
         title="ส่งไม่สำเร็จ"
         subtitle="เลือกเหตุผล ทีมงานจะติดต่อเพื่อจัดการต่อ"
         busy={sheetBusy}
@@ -1153,15 +1328,13 @@ export default function RiderJobDetailScreen() {
             />
           ))}
         </View>
-        <TextInput
+        <FocusInput
           value={note}
           onChangeText={setNote}
           placeholder={failReason === 'other' ? 'เล่ารายละเอียด (จำเป็น)' : 'รายละเอียดเพิ่มเติม (ไม่บังคับ)'}
-          placeholderTextColor={colors.textFaint}
           maxLength={1000}
           multiline
           accessibilityLabel="รายละเอียดที่ส่งไม่สำเร็จ"
-          style={[typography.body, styles.input, { color: colors.text, backgroundColor: colors.inset, borderColor: colors.border }]}
         />
         <PhotoSlot uri={photoUri} label="ถ่ายรูปประกอบ" onTake={shootPhoto} onClear={() => setPhotoUri(null)} />
       </RiderSheet>
@@ -1169,7 +1342,8 @@ export default function RiderJobDetailScreen() {
       {/* ---------- sheet: คืนงาน ---------- */}
       <RiderSheet
         visible={sheet === 'release'}
-        icon="↩️"
+        icon="arrow-counter-clockwise"
+        tone="warning"
         title="คืนงานนี้?"
         subtitle="ระบบจะหาไรเดอร์คนอื่นให้ คืนงานบ่อยอาจมีผลกับการรับงานครั้งถัดไป"
         busy={sheetBusy}
@@ -1194,14 +1368,12 @@ export default function RiderJobDetailScreen() {
           ))}
         </View>
         {releaseReason === 'อื่นๆ' && (
-          <TextInput
+          <FocusInput
             value={note}
             onChangeText={setNote}
             placeholder="บอกเหตุผลสั้นๆ"
-            placeholderTextColor={colors.textFaint}
             maxLength={255}
             accessibilityLabel="เหตุผลที่คืนงาน"
-            style={[typography.body, styles.input, { color: colors.text, backgroundColor: colors.inset, borderColor: colors.border }]}
           />
         )}
       </RiderSheet>
@@ -1235,96 +1407,169 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.screen,
-  },
-  movedRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    paddingTop: spacing.md,
   },
   block: {
-    marginBottom: spacing.md,
-  },
-  cardTitle: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.lg,
   },
   gapTop: {
     marginTop: spacing.sm,
   },
-  hero: {
-    padding: spacing.lg,
-    gap: spacing.xs,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
+  alignStart: {
+    alignSelf: 'flex-start',
   },
-  pills: {
+  // ---------- ฮีโร่ ----------
+  heroTop: {
+    paddingHorizontal: spacing.lg + 2,
+    paddingTop: spacing.lg + 2,
+    paddingBottom: spacing.lg,
+  },
+  heroHead: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  heroStats: {
+    flexDirection: 'row',
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+  },
+  heroStat: {
+    flex: 1,
+    paddingHorizontal: spacing.sm,
+    gap: 1,
+  },
+  progress: {
+    borderTopWidth: 1,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.sm,
+  },
+  progressHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm + 2,
+    marginBottom: spacing.md,
+  },
+  stepsRow: {
+    flexDirection: 'row',
+  },
+  stepCol: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  stepTrack: {
+    alignSelf: 'stretch',
+    height: STEP_CIRCLE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepLines: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: STEP_CIRCLE / 2 - 1,
+    height: 2,
+    flexDirection: 'row',
+  },
+  stepCircle: {
+    width: STEP_CIRCLE,
+    height: STEP_CIRCLE,
+    borderRadius: STEP_CIRCLE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepCircleActive: {
+    borderWidth: 2,
+  },
+  stepCircleIdle: {
+    borderWidth: 1,
+  },
+  stepLabel: {
+    textAlign: 'center',
+    marginTop: 6,
+    paddingHorizontal: 2,
+  },
+  stepTime: {
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
   },
   codBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg + 2,
     paddingVertical: spacing.md,
-    borderBottomLeftRadius: radii.xl,
-    borderBottomRightRadius: radii.xl,
   },
-  stepRow: {
+  codLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
+  // ---------- จุดรับ/ส่ง ----------
+  stop: {
     flexDirection: 'row',
     gap: spacing.md,
   },
-  stepRail: {
+  stopRail: {
+    width: 25,
     alignItems: 'center',
-    width: 36,
+    paddingTop: 2,
   },
-  stepDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepDotText: {
-    fontSize: 18,
-  },
-  stepDotSmall: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  stepLine: {
-    width: 3,
+  stopLine: {
     flex: 1,
-    minHeight: 16,
-    borderRadius: 2,
-    marginVertical: 2,
+    marginTop: spacing.xs,
   },
-  stepBody: {
-    flex: 1,
-    paddingTop: 6,
-    paddingBottom: spacing.md,
+  stopBodyGap: {
+    paddingBottom: spacing.lg,
   },
-  pointHead: {
+  stopHead: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  stopLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: 2,
   },
-  pointIcon: {
-    fontSize: 28,
+  stopActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
-  pointText: {
+  stopText: {
+    marginTop: spacing.xs,
+  },
+  inlineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
     marginTop: spacing.sm,
   },
   noteBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
     borderRadius: radii.md,
-    padding: spacing.sm,
+    padding: spacing.md,
     marginTop: spacing.sm,
   },
-  pointActions: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+  navButton: {
     marginTop: spacing.md,
+  },
+  // ---------- การ์ดรายละเอียด ----------
+  cardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   feeRow: {
     flexDirection: 'row',
@@ -1333,7 +1578,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   feeTotal: {
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     marginTop: spacing.xs,
     paddingTop: spacing.sm,
   },
@@ -1349,12 +1594,19 @@ const styles = StyleSheet.create({
   proof: {
     width: '100%',
     aspectRatio: 1,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+  },
+  trackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
   meta: {
     textAlign: 'center',
     marginTop: spacing.sm,
   },
+  // ---------- แถบปุ่มท้ายจอ ----------
   actionBar: {
     position: 'absolute',
     left: 0,
@@ -1362,9 +1614,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
+  },
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: spacing.sm + 2,
+    paddingHorizontal: spacing.sm,
+  },
+  hintText: {
+    flexShrink: 1,
+    textAlign: 'center',
   },
   hint: {
     textAlign: 'center',
@@ -1372,17 +1636,37 @@ const styles = StyleSheet.create({
   },
   sideRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
     marginTop: spacing.xs,
   },
+  sideDivider: {
+    width: 1,
+    height: 18,
+  },
+  // ---------- sheet ----------
   photoWrap: {
     gap: spacing.sm,
+  },
+  photoFrame: {
+    borderRadius: radii.lg,
+    overflow: 'hidden',
   },
   photo: {
     width: '100%',
     height: 220,
-    borderRadius: radii.lg,
+  },
+  photoBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoActions: {
     flexDirection: 'row',
@@ -1390,16 +1674,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   photoEmpty: {
-    height: 160,
+    height: 176,
     borderRadius: radii.lg,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  photoEmptyIcon: {
-    fontSize: 36,
+    gap: spacing.sm,
   },
   checkRow: {
     flexDirection: 'row',
@@ -1409,22 +1690,10 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 9,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  checkMark: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  input: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: 48,
-    textAlignVertical: 'top',
   },
   chips: {
     flexDirection: 'row',

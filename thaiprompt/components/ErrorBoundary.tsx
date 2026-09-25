@@ -1,20 +1,40 @@
 /**
- * ErrorBoundary Component
+ * ErrorBoundary Component — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  * จับ error ที่เกิดขึ้นใน child components ป้องกัน white screen crash
- * ⭐ แสดงรหัส error เสมอเพื่อช่วยในการ debug
+ * แสดงรหัส error เสมอเพื่อช่วยในการ debug
+ *
+ * หน้าตา: หัวน้ำเงินลายกนก + การ์ดขาวกลางจอ (รหัส error · รายละเอียด · คัดลอก/แชร์ · ปุ่มทอง "ลองใหม่")
+ * เป็น class component ใช้ hook ไม่ได้ → เลือกชุดสีจากธีมที่ผู้ใช้ตั้ง (useAppStore.themeMode)
+ * ถ้าอ่านไม่ได้หรือเป็น "ตามเครื่อง" → ใช้ Appearance.getColorScheme()
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import {
+  Appearance,
   View,
-  Text,
   Pressable,
   StyleSheet,
   ScrollView,
   Share,
+  StatusBar,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
+import { Icon } from '@/components/ui/Icon';
+import { RoyalHeader } from '@/components/ui/RoyalHeader';
+import { useAppStore } from '@/stores/appStore';
+import {
+  DARK_THEME,
+  LIGHT_THEME,
+  radii,
+  shadowStyle,
+  spacing,
+  typography,
+  withAlpha,
+  type AppTheme,
+} from '@/theme';
 
 interface Props {
   children: ReactNode;
@@ -29,6 +49,20 @@ interface State {
   errorCode: string;
   copied: boolean;
 }
+
+/**
+ * เลือกชุดสีตามธีมที่ผู้ใช้ตั้งไว้ (สว่าง/มืด) — "ตามเครื่อง" หรืออ่านค่าไม่ได้ = ตามระบบ
+ */
+const pickTheme = (): AppTheme => {
+  try {
+    const mode = useAppStore.getState().themeMode;
+    if (mode === 'dark') return DARK_THEME;
+    if (mode === 'light') return LIGHT_THEME;
+  } catch {
+    // อ่านค่าธีมไม่ได้ → ใช้ตามระบบ
+  }
+  return Appearance.getColorScheme() === 'dark' ? DARK_THEME : LIGHT_THEME;
+};
 
 /**
  * สร้างรหัส error สั้นๆ จาก error message
@@ -90,8 +124,8 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error
-    console.error('🚨 ErrorBoundary caught an error:', error);
-    console.error('📍 Component Stack:', errorInfo.componentStack);
+    console.error('ErrorBoundary caught an error:', error);
+    console.error('Component Stack:', errorInfo.componentStack);
 
     this.setState({ errorInfo });
 
@@ -115,17 +149,17 @@ class ErrorBoundary extends Component<Props, State> {
     const { error, errorInfo, errorCode } = this.state;
 
     const errorReport = `
-🚨 Error Report
+Error Report
 ================
 รหัส: ${errorCode}
 ข้อผิดพลาด: ${error?.message || 'Unknown'}
 Component: ${getFailedComponent(errorInfo)}
 เวลา: ${new Date().toLocaleString('th-TH')}
 
-📍 Stack Trace:
+Stack Trace:
 ${error?.stack?.substring(0, 500) || 'N/A'}
 
-📦 Component Stack:
+Component Stack:
 ${errorInfo?.componentStack?.substring(0, 500) || 'N/A'}
     `.trim();
 
@@ -142,7 +176,7 @@ ${errorInfo?.componentStack?.substring(0, 500) || 'N/A'}
     const { error, errorInfo, errorCode } = this.state;
 
     const errorReport = `
-🚨 Error Report - ${errorCode}
+Error Report - ${errorCode}
 ข้อผิดพลาด: ${error?.message || 'Unknown'}
 Component: ${getFailedComponent(errorInfo)}
 เวลา: ${new Date().toLocaleString('th-TH')}
@@ -165,76 +199,117 @@ Component: ${getFailedComponent(errorInfo)}
         return this.props.fallback;
       }
 
+      const { colors, gradients } = pickTheme();
+
       // Default error UI
       return (
-        <View style={styles.container}>
-          <LinearGradient
-            colors={['#0F0F23', '#1a1a2e', '#16213e']}
-            style={StyleSheet.absoluteFill}
-          />
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+          {/* หัวน้ำเงินลายกนกด้านบน — การ์ดขาวลอยทับครึ่งหนึ่ง */}
+          <RoyalHeader style={styles.hero} ornamentWidth={240} ornamentTop={10} />
 
-          <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.iconBox}>
-              <Text style={styles.icon}>⚠️</Text>
-            </View>
-
-            <Text style={styles.title}>เกิดข้อผิดพลาด</Text>
-            <Text style={styles.message}>
-              ขออภัย เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง
-            </Text>
-
-            {/* ⭐ Error Code - แสดงเสมอ */}
-            <View style={styles.errorCodeBox}>
-              <Text style={styles.errorCodeLabel}>รหัสข้อผิดพลาด</Text>
-              <Text style={styles.errorCode}>{errorCode}</Text>
-            </View>
-
-            {/* Error Details - แสดงเสมอ */}
-            <View style={styles.errorDetails}>
-              <View style={styles.errorRow}>
-                <Text style={styles.errorLabel}>Component:</Text>
-                <Text style={styles.errorValue}>{failedComponent}</Text>
-              </View>
-              <View style={styles.errorRow}>
-                <Text style={styles.errorLabel}>Error:</Text>
-                <Text style={styles.errorValue} numberOfLines={3}>
-                  {error?.message || 'Unknown error'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Action Buttons */}
-            <View style={styles.buttonRow}>
-              <Pressable style={styles.copyButton} onPress={this.handleCopyError}>
-                <Text style={styles.copyButtonText}>
-                  {copied ? '✅ คัดลอกแล้ว' : '📋 คัดลอก'}
-                </Text>
-              </Pressable>
-
-              <Pressable style={styles.shareButton} onPress={this.handleShareError}>
-                <Text style={styles.shareButtonText}>📤 แชร์</Text>
-              </Pressable>
-            </View>
-
-            <Pressable style={styles.retryButton} onPress={this.handleRetry}>
-              <LinearGradient
-                colors={['#3B82F6', '#2563EB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.retryGradient}
+          <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+              <View
+                style={[
+                  styles.card,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  shadowStyle('lg', colors.shadowDark),
+                ]}
               >
-                <Text style={styles.retryText}>🔄 ลองใหม่</Text>
-              </LinearGradient>
-            </Pressable>
+                <View style={[styles.iconBox, { backgroundColor: colors.dangerSoft }]}>
+                  <Icon name="warning-circle" size={40} color={colors.danger} weight="fill" />
+                </View>
 
-            {/* Hint */}
-            <Text style={styles.hint}>
-              หากปัญหายังคงอยู่ กรุณาแจ้ง รหัส "{errorCode}" ให้ทีมพัฒนา
-            </Text>
-          </ScrollView>
+                <Text style={[typography.serif, styles.center, { color: colors.textStrong }]}>เกิดข้อผิดพลาด</Text>
+                <Text style={[typography.body, styles.center, styles.message, { color: colors.textMuted }]}>
+                  ขออภัย เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่อีกครั้ง
+                </Text>
+
+                {/* Error Code - แสดงเสมอ */}
+                <View
+                  style={[
+                    styles.errorCodeBox,
+                    { backgroundColor: colors.dangerSoft, borderColor: withAlpha(colors.danger, 0.35) },
+                  ]}
+                >
+                  <Text style={[typography.caption, { color: colors.danger }]}>รหัสข้อผิดพลาด</Text>
+                  <Text selectable style={[styles.errorCode, { color: colors.danger }]}>
+                    {errorCode}
+                  </Text>
+                </View>
+
+                {/* Error Details - แสดงเสมอ */}
+                <View style={[styles.errorDetails, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+                  <View style={styles.errorRow}>
+                    <Text style={[styles.errorLabel, { color: colors.textMuted }]}>Component:</Text>
+                    <Text style={[styles.errorValue, { color: colors.textStrong }]}>{failedComponent}</Text>
+                  </View>
+                  <View style={styles.errorRow}>
+                    <Text style={[styles.errorLabel, { color: colors.textMuted }]}>Error:</Text>
+                    <Text style={[styles.errorValue, { color: colors.textStrong }]} numberOfLines={3}>
+                      {error?.message || 'Unknown error'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Action Buttons */}
+                <View style={styles.buttonRow}>
+                  <Pressable
+                    onPress={this.handleCopyError}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.secondaryButton,
+                      { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Icon
+                      name={copied ? 'check-circle' : 'copy'}
+                      size={18}
+                      color={copied ? colors.success : colors.goldDeep}
+                      weight={copied ? 'fill' : 'regular'}
+                    />
+                    <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+                      {copied ? 'คัดลอกแล้ว' : 'คัดลอก'}
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={this.handleShareError}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [
+                      styles.secondaryButton,
+                      { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Icon name="share-network" size={18} color={colors.goldDeep} />
+                    <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>แชร์</Text>
+                  </Pressable>
+                </View>
+
+                <Pressable
+                  onPress={this.handleRetry}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [styles.retryButton, { opacity: pressed ? 0.85 : 1 }]}
+                >
+                  <LinearGradient
+                    colors={gradients.primary}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0.25, y: 1 }}
+                    style={styles.retryGradient}
+                  >
+                    <Icon name="arrows-clockwise" size={20} color={colors.textOnGold} weight="bold" />
+                    <Text style={[styles.retryText, { color: colors.textOnGold }]}>ลองใหม่</Text>
+                  </LinearGradient>
+                </Pressable>
+
+                {/* Hint */}
+                <Text style={[typography.caption, styles.center, { color: colors.textFaint }]}>
+                  หากปัญหายังคงอยู่ กรุณาแจ้ง รหัส "{errorCode}" ให้ทีมพัฒนา
+                </Text>
+              </View>
+            </ScrollView>
+          </SafeAreaView>
         </View>
       );
     }
@@ -246,142 +321,116 @@ Component: ${getFailedComponent(errorInfo)}
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F23',
+  },
+  flex: {
+    flex: 1,
+  },
+  hero: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 300,
   },
   content: {
     flexGrow: 1,
     justifyContent: 'center',
+    padding: spacing.screen,
+    paddingTop: spacing.xxxl * 2,
+  },
+  card: {
     alignItems: 'center',
-    padding: 24,
+    borderRadius: radii.xxl,
+    borderWidth: 1,
+    padding: spacing.xl,
+    gap: spacing.sm,
   },
   iconBox: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.sm,
   },
-  icon: {
-    fontSize: 40,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 12,
+  center: {
     textAlign: 'center',
   },
   message: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: spacing.sm,
   },
   // Error Code Box
   errorCodeBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
+    alignSelf: 'stretch',
     alignItems: 'center',
-  },
-  errorCodeLabel: {
-    fontSize: 11,
-    color: '#F87171',
-    marginBottom: 4,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   errorCode: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#EF4444',
+    lineHeight: 28,
+    fontWeight: '700',
     letterSpacing: 2,
   },
   // Error Details
   errorDetails: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    width: '100%',
+    alignSelf: 'stretch',
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    padding: spacing.lg,
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   errorRow: {
     flexDirection: 'row',
-    marginBottom: 8,
   },
   errorLabel: {
     fontSize: 12,
-    color: '#9CA3AF',
-    width: 80,
+    lineHeight: 18,
     fontWeight: '600',
+    width: 84,
   },
   errorValue: {
-    fontSize: 12,
-    color: '#FFFFFF',
     flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
   },
   // Buttons
   buttonRow: {
+    alignSelf: 'stretch',
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: spacing.md,
+    marginTop: spacing.sm,
   },
-  copyButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
+  secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    height: 46,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  copyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-  },
-  shareButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  shareButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
   },
   retryButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    marginBottom: 20,
+    alignSelf: 'stretch',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   retryGradient: {
-    paddingHorizontal: 48,
-    paddingVertical: 14,
-    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    height: 54,
+    borderRadius: radii.lg,
   },
   retryText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  hint: {
-    fontSize: 11,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 18,
+    fontSize: 16.5,
+    fontWeight: '700',
   },
 });
 

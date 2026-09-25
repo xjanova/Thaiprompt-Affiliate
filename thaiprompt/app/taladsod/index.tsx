@@ -1,19 +1,37 @@
 /**
- * ตลาดสด — หน้าแรกฝั่งผู้ซื้อ
+ * ตลาดสด — หน้าแรกฝั่งผู้ซื้อ (ธีมรอยัล น้ำเงินกรมท่า-ทอง ตามม็อกที่เจ้าของอนุมัติ)
  *
- * - แบนเนอร์ (placement taladsod)
- * - "เปิดอยู่ใกล้คุณ": ร้าน/รถเข็นที่เปิดอยู่ตอนนี้จากตำแหน่งของคุณ (ขอสิทธิ์พร้อมคำอธิบายก่อนเสมอ)
- *   ไม่อนุญาตตำแหน่ง → เลือกจังหวัดแทน (ค้นในรัศมี 50 กม. จากตัวเมือง)
- * - ร้านที่ติดตาม (เปิดอยู่ขึ้นก่อน) · หมวดหมู่ · เมนูแนะนำ (กริด 2 คอลัมน์)
+ * - หัวน้ำเงินลายกนก: ชื่อหน้า + พื้นที่ค้นหาร้าน (แตะเพื่อเปลี่ยน) + ปุ่มออเดอร์/ตะกร้า
+ * - ช่องค้นหาเมนู/ร้าน (ค้นจริงผ่าน q ของ API) · หมวดหมู่ · แบนเนอร์ (placement taladsod)
+ * - "เปิดอยู่ใกล้คุณ": แผนที่ย่อวางหมุดร้านตามทิศ/ระยะจริงจากจุดค้นหา + การ์ดร้านแนวนอน
+ *   (ขอสิทธิ์ตำแหน่งพร้อมคำอธิบายก่อนเสมอ · ไม่อนุญาต → เลือกจังหวัดแทน ค้นในรัศมี 50 กม. จากตัวเมือง)
+ * - ร้านที่ติดตาม · เมนูแนะนำ (กริด 2 คอลัมน์)
  * - ดึงลง = รีเฟรชทุกส่วน (ไม่บังจอ)
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Text, TextInput } from '@/components/ui/Text';
 import { useAuthStore } from '@/stores/authStore';
-import { BannerSlider, Button3D, Card3D, Chip, EmptyState, Screen, SectionHeader, tapHaptic } from '@/components/ui';
+import {
+  BannerSlider,
+  BrandArt,
+  Button3D,
+  Card3D,
+  Chip,
+  EmptyState,
+  GlassIconButton,
+  Icon,
+  OnHeaderProvider,
+  RoyalHeader,
+  SectionHeader,
+  tapHaptic,
+  type IconName,
+} from '@/components/ui';
 import { Field, FormSheet } from '@/components/shop';
 import {
   FollowedShopBubble,
@@ -29,6 +47,7 @@ import {
   type ProvinceCenter,
 } from '@/components/taladsod';
 import {
+  fmImageUri,
   getFollowedShops,
   getListings,
   getNearbyShops,
@@ -39,7 +58,7 @@ import {
   type FmNearbyShop,
 } from '@/services/api/taladsodApi';
 import type { Coords } from '@/services/location';
-import { useTheme, radii, spacing, typography } from '@/theme';
+import { useTheme, radii, spacing, typography, shadowStyle } from '@/theme';
 
 type Area = { kind: 'gps'; coords: Coords } | { kind: 'province'; province: ProvinceCenter };
 
@@ -48,6 +67,7 @@ const GPS_RADIUS_KM = 10;
 const GPS_WIDE_RADIUS_KM = 30;
 const LISTINGS_PER_PAGE = 20;
 const SHEET_SETTLE_MS = 420;
+const MAP_IMAGE = require('@/assets/images/brand/map-light.webp');
 
 const saveArea = (area: Area | null) => {
   try {
@@ -59,8 +79,128 @@ const saveArea = (area: Area | null) => {
   }
 };
 
+/** ไอคอนของหมวดจากชื่อหมวด (หมวดจาก server ส่งอีโมจิมา — แอปไม่แสดงอีโมจิ) */
+const categoryIcon = (name: string): IconName => {
+  if (/เครื่องดื่ม|กาแฟ|ชา|น้ำ/.test(name)) return 'coffee';
+  if (/หวาน|ขนม|เบเกอรี่|เค้ก/.test(name)) return 'cake';
+  if (/ผลไม้/.test(name)) return 'orange-slice';
+  if (/ผัก|สมุนไพร/.test(name)) return 'carrot';
+  if (/ทะเล|ปลา|กุ้ง/.test(name)) return 'fish';
+  if (/ไข่/.test(name)) return 'egg-crack';
+  if (/เนื้อ|หมู|ไก่/.test(name)) return 'cooking-pot';
+  if (/อาหาร|ข้าว|ก๋วยเตี๋ยว|ทาน/.test(name)) return 'bowl-food';
+  return 'basket';
+};
+
+// =====================================================
+// แผนที่ย่อร้านใกล้คุณ
+// =====================================================
+
+/**
+ * วางหมุดร้านตามทิศและระยะจริงจากจุดค้นหา (พื้นแผนที่เป็นภาพตกแต่ง ไม่ใช่ถนนจริง)
+ * ร้านที่ไม่มีพิกัดไม่ถูกวาง · จุดกลาง = ตำแหน่งคุณ (GPS) หรือหมุดตัวเมือง (จังหวัด)
+ */
+const NearbyMapCard: React.FC<{
+  shops: FmNearbyShop[];
+  center: { latitude: number; longitude: number };
+  isGps: boolean;
+  radiusKm: number;
+  onChangeArea: () => void;
+}> = ({ shops, center, isGps, radiusKm, onChangeArea }) => {
+  const { colors, gradients } = useTheme();
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const H = 200;
+
+  const pins = useMemo(() => {
+    const cosLat = Math.cos((center.latitude * Math.PI) / 180);
+    const pts = shops
+      .filter((s) => s.location)
+      .slice(0, 6)
+      .map((s) => ({
+        shop: s,
+        dx: (s.location!.longitude - center.longitude) * cosLat * 111,
+        dy: (s.location!.latitude - center.latitude) * 111,
+      }));
+    const maxD = Math.max(0.4, ...pts.map((p) => Math.max(Math.abs(p.dx), Math.abs(p.dy))));
+    return pts.map((p) => ({ ...p, nx: p.dx / maxD, ny: p.dy / maxD }));
+  }, [shops, center.latitude, center.longitude]);
+
+  const padX = 34;
+  const padTop = 30;
+  const padBottom = 78;
+  const cx = size.w / 2;
+  const cy = padTop + (H - padTop - padBottom) / 2;
+  const rx = size.w / 2 - padX;
+  const ry = (H - padTop - padBottom) / 2;
+
+  return (
+    <View
+      onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+      style={[styles.mapCard, { height: H, backgroundColor: colors.inset }, shadowStyle('md', colors.shadowDark)]}
+    >
+      <Image source={MAP_IMAGE} style={StyleSheet.absoluteFill} contentFit="cover" />
+      {size.w > 0 && (
+        <>
+          {isGps ? (
+            <View style={[styles.meDot, { left: cx - 9, top: cy - 9, borderColor: '#FFFFFF' }]} />
+          ) : (
+            <View style={[styles.centerPin, { left: cx - 13, top: cy - 26 }]}>
+              <Icon name="map-pin" size={26} color={colors.navy} weight="fill" />
+            </View>
+          )}
+          {pins.map(({ shop, nx, ny }) => {
+            const uri = fmImageUri(shop.shop_image) || fmImageUri(shop.top_items[0]?.image_url ?? null);
+            const left = cx + nx * rx - 22;
+            const top = cy - ny * ry - 22;
+            return (
+              <Pressable
+                key={shop.id}
+                onPress={() => router.push(`/taladsod/shop/${shop.id}` as never)}
+                accessibilityRole="button"
+                accessibilityLabel={`${shop.shop_name} บนแผนที่`}
+                style={[styles.pin, { left, top, backgroundColor: colors.goldSoft }]}
+              >
+                {uri ? (
+                  <Image source={{ uri }} style={styles.pinImg} contentFit="cover" />
+                ) : (
+                  <BrandArt name={shop.is_mobile ? 'cart' : 'store'} size={34} />
+                )}
+                <View style={[styles.pinDot, { backgroundColor: shop.is_open ? '#2FBF71' : '#B9BFCA' }]} />
+              </Pressable>
+            );
+          })}
+        </>
+      )}
+      <View style={[styles.mapOverlay, { backgroundColor: colors.card }, shadowStyle('sm', colors.shadowDark)]}>
+        <View style={styles.flex}>
+          <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+            {shops.length.toLocaleString('th-TH')} ร้านเปิดอยู่
+          </Text>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>ในระยะ {radiusKm} กม. จากจุดค้นหา</Text>
+        </View>
+        <Pressable
+          onPress={onChangeArea}
+          accessibilityRole="button"
+          accessibilityLabel="เปลี่ยนพื้นที่ค้นหาร้าน"
+          style={({ pressed }) => [styles.mapButtonWrap, { opacity: pressed ? 0.8 : 1 }]}
+        >
+          <View style={[styles.mapButton, { backgroundColor: gradients.navy[1] }]}>
+            <Icon name="map-trifold" size={16} color={colors.goldLight} />
+            <Text style={[typography.caption, { color: colors.goldLight, fontWeight: '700' }]}>เปลี่ยนพื้นที่</Text>
+          </View>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
+
+// =====================================================
+// หน้าจอ
+// =====================================================
+
 export default function TaladsodHomeScreen() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const mountedRef = useMountedRef();
@@ -75,6 +215,8 @@ export default function TaladsodHomeScreen() {
 
   const [categories, setCategories] = useState<FmCategory[]>([]);
   const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const [listings, setListings] = useState<FmListingSummary[]>([]);
   const [listingsPage, setListingsPage] = useState(1);
   const [listingsHasMore, setListingsHasMore] = useState(false);
@@ -94,7 +236,13 @@ export default function TaladsodHomeScreen() {
 
   const gridGap = spacing.md;
   const cardWidth = Math.floor((width - spacing.screen * 2 - gridGap) / 2);
-  const shopCardWidth = Math.min(300, Math.max(240, width * 0.74));
+  const shopCardWidth = Math.min(290, Math.max(240, width * 0.7));
+
+  // ---------- ค้นหา (หน่วง 400ms) ----------
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput.trim()), 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // ---------- ร้านใกล้คุณ ----------
   const loadNearby = useCallback(
@@ -191,12 +339,13 @@ export default function TaladsodHomeScreen() {
   }, [mountedRef]);
 
   const loadListings = useCallback(
-    async (mode: 'initial' | 'refresh' | 'more', targetCategory: number | null, targetPage: number) => {
+    async (mode: 'initial' | 'refresh' | 'more', targetCategory: number | null, targetPage: number, q: string) => {
       const reqId = ++listingsReqRef.current;
       if (mode === 'initial') setListingsLoading(true);
       if (mode === 'more') setListingsMore(true);
       const res = await getListings({
         category_id: targetCategory ?? undefined,
+        q: q || undefined,
         sort: 'popular',
         page: targetPage,
         per_page: LISTINGS_PER_PAGE,
@@ -227,8 +376,8 @@ export default function TaladsodHomeScreen() {
   }, [loadCategories]);
 
   useEffect(() => {
-    loadListings('initial', categoryId, 1);
-  }, [categoryId, loadListings]);
+    loadListings('initial', categoryId, 1, search);
+  }, [categoryId, search, loadListings]);
 
   // ---------- ร้านที่ติดตาม ----------
   const loadFollowed = useCallback(async () => {
@@ -260,7 +409,7 @@ export default function TaladsodHomeScreen() {
     setRefreshing(true);
     setBannerKey((k) => k + 1);
     await Promise.all([
-      loadListings('refresh', categoryId, 1),
+      loadListings('refresh', categoryId, 1, search),
       loadFollowed(),
       loadCategories(),
       area ? loadNearby(area) : Promise.resolve(),
@@ -276,6 +425,11 @@ export default function TaladsodHomeScreen() {
       ? 'ใกล้ตำแหน่งของคุณ'
       : `จังหวัด${area.province.name.replace(/^กรุงเทพมหานคร$/, 'กรุงเทพฯ')}`;
 
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)' as never);
+  };
+
   // ---------- ส่วนแสดงผล ----------
   const renderNearby = () => {
     if (!areaReady) {
@@ -283,32 +437,39 @@ export default function TaladsodHomeScreen() {
     }
     if (!area) {
       return (
-        <Card3D gradientBorder padding={spacing.lg}>
-          <Text style={styles.promptIcon}>📍</Text>
-          <Text style={[typography.h3, styles.center, { color: colors.textStrong }]}>ดูร้านที่เปิดอยู่ใกล้คุณ</Text>
-          <Text style={[typography.bodySm, styles.center, { color: colors.textMuted }]}>
-            รถเข็นและร้านในชุมชนเปิดไม่ตรงเวลากัน ให้เราช่วยหาร้านที่เปิดอยู่ตอนนี้นะ
-          </Text>
-          <Button3D
-            title="หาร้านใกล้ฉัน"
-            icon="🧭"
-            size="lg"
-            fullWidth
-            loading={location.locating}
-            loadingText="กำลังหาตำแหน่ง…"
-            onPress={locateMe}
-            style={styles.gapTop}
-          />
-          <Button3D
-            title="เลือกจังหวัดเอง"
-            icon="🗺️"
-            variant="ghost"
-            size="md"
-            fullWidth
-            onPress={() => setAreaSheet(true)}
-            style={styles.gapTopSm}
-          />
-        </Card3D>
+        <View style={[styles.promptCard, { backgroundColor: colors.card }, shadowStyle('md', colors.shadowDark)]}>
+          <Image source={MAP_IMAGE} style={styles.promptMap} contentFit="cover" />
+          <View style={styles.promptBody}>
+            <View style={styles.promptHead}>
+              <BrandArt name="cart" size={62} />
+              <View style={styles.flex}>
+                <Text style={[typography.h3, { color: colors.textStrong }]}>ดูร้านที่เปิดอยู่ใกล้คุณ</Text>
+                <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+                  รถเข็นและร้านในชุมชนเปิดไม่ตรงเวลากัน ให้เราช่วยหาร้านที่เปิดอยู่ตอนนี้นะ
+                </Text>
+              </View>
+            </View>
+            <Button3D
+              title="หาร้านใกล้ฉัน"
+              icon="navigation-arrow"
+              size="lg"
+              fullWidth
+              loading={location.locating}
+              loadingText="กำลังหาตำแหน่ง…"
+              onPress={locateMe}
+              style={styles.gapTop}
+            />
+            <Button3D
+              title="เลือกจังหวัดเอง"
+              icon="map-trifold"
+              variant="secondary"
+              size="md"
+              fullWidth
+              onPress={() => setAreaSheet(true)}
+              style={styles.gapTopSm}
+            />
+          </View>
+        </View>
       );
     }
     if (nearbyState === 'loading' && nearby.length === 0) {
@@ -321,16 +482,21 @@ export default function TaladsodHomeScreen() {
     }
     if (nearby.length === 0) {
       return (
-        <Card3D variant="flat" padding={spacing.lg}>
-          <Text style={[typography.bodyStrong, styles.center, { color: colors.textStrong }]}>
-            ตอนนี้ยังไม่มีร้านเปิดใกล้ๆ {area.kind === 'gps' ? `ในระยะ ${nearbyRadius} กม.` : ''}
-          </Text>
-          <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>
-            กดติดตามร้านที่ชอบไว้ ร้านเปิดเมื่อไหร่เราจะแจ้งเตือนทันที
-          </Text>
+        <Card3D padding={spacing.lg}>
+          <View style={styles.promptHead}>
+            <BrandArt name="store" size={60} />
+            <View style={styles.flex}>
+              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+                ตอนนี้ยังไม่มีร้านเปิดใกล้ๆ {area.kind === 'gps' ? `ในระยะ ${nearbyRadius} กม.` : ''}
+              </Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>
+                กดติดตามร้านที่ชอบไว้ ร้านเปิดเมื่อไหร่เราจะแจ้งเตือนทันที
+              </Text>
+            </View>
+          </View>
           <Button3D
             title="เปลี่ยนพื้นที่"
-            icon="🗺️"
+            icon="map-trifold"
             variant="secondary"
             size="sm"
             onPress={() => setAreaSheet(true)}
@@ -339,17 +505,30 @@ export default function TaladsodHomeScreen() {
         </Card3D>
       );
     }
+    const center =
+      area.kind === 'gps'
+        ? { latitude: area.coords.latitude, longitude: area.coords.longitude }
+        : { latitude: area.province.latitude, longitude: area.province.longitude };
     return (
-      <FlatList
-        horizontal
-        data={nearby}
-        keyExtractor={(s) => String(s.id)}
-        renderItem={({ item }) => <NearbyShopCard shop={item} width={shopCardWidth} />}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.hList}
-        style={styles.bleed}
-        ItemSeparatorComponent={() => <View style={{ width: spacing.md }} />}
-      />
+      <>
+        <NearbyMapCard
+          shops={nearby}
+          center={center}
+          isGps={area.kind === 'gps'}
+          radiusKm={nearbyRadius}
+          onChangeArea={() => setAreaSheet(true)}
+        />
+        <FlatList
+          horizontal
+          data={nearby}
+          keyExtractor={(s) => String(s.id)}
+          renderItem={({ item }) => <NearbyShopCard shop={item} width={shopCardWidth} />}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.hList}
+          style={styles.bleed}
+          ItemSeparatorComponent={() => <View style={{ width: spacing.md }} />}
+        />
+      </>
     );
   };
 
@@ -358,17 +537,26 @@ export default function TaladsodHomeScreen() {
       return <ActivityIndicator color={colors.gold} style={styles.inlineLoader} />;
     }
     if (listingsError && listings.length === 0) {
-      return <EmptyState compact variant="error" message={listingsError} onAction={() => loadListings('initial', categoryId, 1)} />;
+      return (
+        <EmptyState compact variant="error" message={listingsError} onAction={() => loadListings('initial', categoryId, 1, search)} />
+      );
     }
     if (listings.length === 0) {
       return (
         <EmptyState
           compact
-          icon="🥬"
-          title="ยังไม่มีเมนูในหมวดนี้"
-          message="ลองดูหมวดอื่น หรือกลับมาใหม่ภายหลังนะ"
-          actionLabel={categoryId ? 'ดูทั้งหมด' : undefined}
-          onAction={categoryId ? () => setCategoryId(null) : undefined}
+          art="basket"
+          title={search ? `ไม่พบ "${search}"` : 'ยังไม่มีเมนูในหมวดนี้'}
+          message={search ? 'ลองค้นด้วยคำอื่น หรือดูหมวดอื่นนะ' : 'ลองดูหมวดอื่น หรือกลับมาใหม่ภายหลังนะ'}
+          actionLabel={categoryId || search ? 'ดูทั้งหมด' : undefined}
+          onAction={
+            categoryId || search
+              ? () => {
+                  setCategoryId(null);
+                  setSearchInput('');
+                }
+              : undefined
+          }
         />
       );
     }
@@ -384,8 +572,9 @@ export default function TaladsodHomeScreen() {
             title="ดูเมนูเพิ่ม"
             variant="secondary"
             size="md"
+            iconRight="caret-down"
             loading={listingsMore}
-            onPress={() => loadListings('more', categoryId, listingsPage + 1)}
+            onPress={() => loadListings('more', categoryId, listingsPage + 1, search)}
             style={styles.moreButton}
           />
         )}
@@ -393,113 +582,151 @@ export default function TaladsodHomeScreen() {
     );
   };
 
+  const listTitle = search
+    ? `ผลการค้นหา "${search}"`
+    : categoryId
+      ? categories.find((c) => c.id === categoryId)?.name || 'เมนู'
+      : 'เมนูแนะนำ';
+
   return (
-    <Screen
-      title="ตลาดสด"
-      subtitle="อาหารร้อนๆ ของสด จากร้านใกล้บ้าน"
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      right={
-        <>
-          <HeaderIconButton
-            icon="🧾"
-            label="ออเดอร์ตลาดสดของฉัน"
-            onPress={() => router.push((isAuthenticated ? '/taladsod/orders' : '/login') as never)}
-          />
-          <TaladsodCartButton />
-        </>
-      }
-    >
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       {location.element}
 
-      <View style={styles.bleed}>
-        <BannerSlider placement="taladsod" height={176} refreshKey={bannerKey} />
-      </View>
-
-      {/* ---------- พื้นที่ค้นหา ---------- */}
-      <Pressable
-        onPress={() => {
-          tapHaptic();
-          setAreaSheet(true);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={`พื้นที่: ${areaLabel} แตะเพื่อเปลี่ยน`}
-        style={({ pressed }) => [
-          styles.areaBar,
-          { backgroundColor: colors.inset, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
-        ]}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: spacing.xxxl + insets.bottom }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+            progressBackgroundColor={colors.card}
+            progressViewOffset={insets.top}
+          />
+        }
       >
-        <Text style={styles.areaIcon}>{area?.kind === 'gps' ? '📍' : '🗺️'}</Text>
-        <View style={styles.flex}>
-          <Text style={[typography.micro, { color: colors.textFaint }]}>ส่งถึง / ค้นหาร้าน</Text>
-          <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
-            {areaLabel}
-          </Text>
-        </View>
-        <Text style={[typography.caption, { color: colors.goldDeep }]}>เปลี่ยน ›</Text>
-      </Pressable>
+        {/* ---------- หัวน้ำเงินกรมท่า ---------- */}
+        <RoyalHeader ornamentTop={insets.top - 16} style={{ paddingTop: insets.top + spacing.xs, paddingBottom: 54 }}>
+          <OnHeaderProvider value>
+            <View style={styles.topRow}>
+              <GlassIconButton icon="caret-left" weight="bold" accessibilityLabel="ย้อนกลับ" onPress={goBack} />
+              <View style={styles.flex} />
+              <HeaderIconButton
+                icon="receipt"
+                label="ออเดอร์ตลาดสดของฉัน"
+                onPress={() => router.push((isAuthenticated ? '/taladsod/orders' : '/login') as never)}
+              />
+              <TaladsodCartButton />
+            </View>
+          </OnHeaderProvider>
 
-      {/* ---------- เปิดอยู่ใกล้คุณ ---------- */}
-      <SectionHeader
-        title="เปิดอยู่ใกล้คุณ"
-        icon="🔥"
-        subtitle={area && nearby.length > 0 ? `${nearby.length} ร้านเปิดอยู่ตอนนี้` : undefined}
-        actionLabel={area && nearby.length > 0 ? 'รีเฟรช' : undefined}
-        onAction={area ? () => loadNearby(area) : undefined}
-        style={styles.section}
-      />
-      {renderNearby()}
+          <View style={styles.hero}>
+            <Text accessibilityRole="header" style={[typography.serifLg, { color: colors.onHeader }]}>
+              ตลาดสด
+            </Text>
+            <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]}>อาหารร้อนๆ ของสด จากร้านใกล้บ้าน</Text>
+            <Pressable
+              onPress={() => {
+                tapHaptic();
+                setAreaSheet(true);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`พื้นที่: ${areaLabel} แตะเพื่อเปลี่ยน`}
+              style={({ pressed }) => [
+                styles.areaPill,
+                { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder, opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              <Icon name={area?.kind === 'gps' ? 'navigation-arrow' : 'map-pin'} size={16} color={colors.gold} weight="fill" />
+              <Text numberOfLines={1} style={[styles.areaText, { color: colors.onHeader }]}>
+                {areaLabel}
+              </Text>
+              <View style={[styles.areaDivider, { backgroundColor: colors.headerGlassBorder }]} />
+              <Text style={[styles.areaChange, { color: colors.goldLight }]}>เปลี่ยน</Text>
+            </Pressable>
+          </View>
+        </RoyalHeader>
 
-      {/* ---------- ร้านที่ติดตาม ---------- */}
-      {followed.length > 0 && (
-        <>
-          <SectionHeader title="ร้านที่ติดตาม" icon="💛" subtitle="ร้านเปิดเมื่อไหร่เราจะแจ้งเตือน" style={styles.section} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.hList}
-            style={styles.bleed}
-          >
-            {followed.map((s) => (
-              <FollowedShopBubble key={s.id} shop={s} />
-            ))}
-          </ScrollView>
-        </>
-      )}
-
-      {/* ---------- หมวดหมู่ ---------- */}
-      {categories.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chips}
-          style={[styles.bleed, styles.section]}
-        >
-          <Chip label="ทั้งหมด" icon="🧺" selected={categoryId === null} onPress={() => setCategoryId(null)} />
-          {categories.map((c) => (
-            <Chip
-              key={c.id}
-              label={c.name}
-              icon={c.icon && c.icon.length <= 4 ? c.icon : undefined}
-              selected={categoryId === c.id}
-              onPress={() => setCategoryId(c.id)}
+        {/* ---------- แผ่นเนื้อหา ---------- */}
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          <View style={[styles.search, { backgroundColor: colors.card, borderColor: colors.border }, shadowStyle('lg', colors.shadowDark)]}>
+            <Icon name="magnifying-glass" size={21} color={colors.navy} />
+            <TextInput
+              value={searchInput}
+              onChangeText={setSearchInput}
+              placeholder="ค้นหาเมนู หรือร้านในตลาด"
+              placeholderTextColor={colors.textFaint}
+              returnKeyType="search"
+              onSubmitEditing={() => setSearch(searchInput.trim())}
+              accessibilityLabel="ค้นหาเมนูในตลาดสด"
+              style={[typography.body, styles.searchInput, { color: colors.textStrong }]}
             />
-          ))}
-        </ScrollView>
-      )}
+            {searchInput.length > 0 && (
+              <Pressable onPress={() => setSearchInput('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="ล้างคำค้นหา">
+                <Icon name="x-circle" size={20} color={colors.textFaint} weight="fill" />
+              </Pressable>
+            )}
+          </View>
 
-      {/* ---------- เมนูแนะนำ ---------- */}
-      <SectionHeader
-        title={categoryId ? categories.find((c) => c.id === categoryId)?.name || 'เมนู' : 'เมนูแนะนำ'}
-        icon="🍛"
-        style={categories.length > 0 ? styles.sectionTight : styles.section}
-      />
-      {renderGrid()}
+          {/* ---------- หมวดหมู่ ---------- */}
+          {categories.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={[styles.bleed, styles.chipsWrap]}>
+              <Chip label="ทั้งหมด" icon="squares-four" selected={categoryId === null} onPress={() => setCategoryId(null)} />
+              {categories.map((c) => (
+                <Chip
+                  key={c.id}
+                  label={c.name}
+                  icon={categoryIcon(c.name)}
+                  selected={categoryId === c.id}
+                  onPress={() => setCategoryId(c.id)}
+                />
+              ))}
+            </ScrollView>
+          )}
+
+          {!search && (
+            <>
+              <View style={[styles.bleed, styles.bannerGap]}>
+                <BannerSlider placement="taladsod" height={170} refreshKey={bannerKey} />
+              </View>
+
+              {/* ---------- เปิดอยู่ใกล้คุณ ---------- */}
+              <SectionHeader
+                title="เปิดอยู่ใกล้คุณตอนนี้"
+                subtitle="ร้านรถเข็นย้ายที่ได้ ตำแหน่งอัปเดตสด"
+                actionLabel={area && nearby.length > 0 ? 'รีเฟรช' : undefined}
+                onAction={area ? () => loadNearby(area) : undefined}
+                style={styles.section}
+              />
+              {renderNearby()}
+
+              {/* ---------- ร้านที่ติดตาม ---------- */}
+              {followed.length > 0 && (
+                <>
+                  <SectionHeader title="ร้านที่ติดตาม" subtitle="ร้านเปิดเมื่อไหร่เราจะแจ้งเตือน" style={styles.section} />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hListBubbles} style={styles.bleed}>
+                    {followed.map((s) => (
+                      <FollowedShopBubble key={s.id} shop={s} />
+                    ))}
+                  </ScrollView>
+                </>
+              )}
+            </>
+          )}
+
+          {/* ---------- เมนู ---------- */}
+          <SectionHeader title={listTitle} style={styles.section} />
+          {renderGrid()}
+        </View>
+      </ScrollView>
 
       {/* ---------- เลือกพื้นที่ ---------- */}
       <FormSheet
         visible={areaSheet}
-        icon="🗺️"
+        icon="map-trifold"
         title="ค้นหาร้านในพื้นที่ไหนดี"
         description="ใช้ตำแหน่งตอนนี้ หรือเลือกจังหวัด (ค้นร้านที่เปิดอยู่รอบตัวเมือง 50 กม.)"
         onClose={() => {
@@ -507,7 +734,7 @@ export default function TaladsodHomeScreen() {
           setProvinceQuery('');
         }}
       >
-        <Button3D title="ใช้ตำแหน่งปัจจุบัน" icon="📍" size="md" fullWidth onPress={locateFromSheet} style={styles.gapTopSm} />
+        <Button3D title="ใช้ตำแหน่งปัจจุบัน" icon="navigation-arrow" size="md" fullWidth onPress={locateFromSheet} style={styles.gapTopSm} />
         <Field
           label="ค้นหาจังหวัด"
           placeholder="เช่น เชียงใหม่"
@@ -538,26 +765,100 @@ export default function TaladsodHomeScreen() {
                   ]}
                 >
                   <Text style={[typography.body, styles.flex, { color: colors.textStrong }]}>{p.name}</Text>
-                  <Text style={[typography.caption, { color: colors.textFaint }]}>{selected ? '✓ เลือกอยู่' : `ภาค${p.region}`}</Text>
+                  {selected ? (
+                    <View style={styles.selectedTag}>
+                      <Icon name="check-circle" size={16} color={colors.goldDeep} weight="fill" />
+                      <Text style={[typography.caption, { color: colors.goldDeep }]}>เลือกอยู่</Text>
+                    </View>
+                  ) : (
+                    <Text style={[typography.caption, { color: colors.textFaint }]}>{`ภาค${p.region}`}</Text>
+                  )}
                 </Pressable>
               );
             })
           )}
         </View>
       </FormSheet>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   flex: {
     flex: 1,
   },
-  center: {
-    textAlign: 'center',
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.sm,
+  },
+  hero: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  areaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.sm,
+    height: 38,
+    maxWidth: '100%',
+    marginTop: spacing.md + 2,
+    paddingHorizontal: spacing.md,
+    borderRadius: 13,
+    borderWidth: 1,
+  },
+  areaText: {
+    fontSize: 13,
+    fontWeight: '600',
+    flexShrink: 1,
+  },
+  areaDivider: {
+    width: 1,
+    height: 16,
+  },
+  areaChange: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sheet: {
+    marginTop: -28,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: spacing.screen,
+  },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    height: 54,
+    marginTop: -24,
+    paddingHorizontal: spacing.lg + 2,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 0,
+  },
+  chipsWrap: {
+    marginTop: spacing.lg,
+  },
+  chips: {
+    paddingHorizontal: spacing.screen,
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   bleed: {
     marginHorizontal: -spacing.screen,
+  },
+  bannerGap: {
+    marginTop: spacing.md,
   },
   gapTop: {
     marginTop: spacing.lg,
@@ -568,43 +869,105 @@ const styles = StyleSheet.create({
   section: {
     marginTop: spacing.xl,
   },
-  sectionTight: {
-    marginTop: spacing.md,
-  },
   inlineLoader: {
     marginVertical: spacing.xl,
   },
-  areaBar: {
+  promptCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  promptMap: {
+    height: 92,
+    width: '100%',
+  },
+  promptBody: {
+    padding: spacing.lg,
+  },
+  promptHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginTop: spacing.lg,
-    minHeight: 56,
-  },
-  areaIcon: {
-    fontSize: 22,
-  },
-  promptIcon: {
-    fontSize: 36,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
   },
   centerButton: {
     alignSelf: 'center',
     marginTop: spacing.md,
   },
+  mapCard: {
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  meDot: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 3,
+    backgroundColor: '#2C6BE0',
+    boxShadow: '0px 0px 0px 10px rgba(44,107,224,0.18)',
+  },
+  centerPin: {
+    position: 'absolute',
+  },
+  pin: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0px 8px 14px -6px rgba(0,0,0,0.45)',
+  },
+  pinImg: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
+  pinDot: {
+    position: 'absolute',
+    right: -3,
+    top: -3,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  mapOverlay: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm + 2,
+    paddingLeft: spacing.md + 2,
+    paddingRight: spacing.sm + 2,
+    borderRadius: 16,
+  },
+  mapButtonWrap: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+  },
   hList: {
     paddingHorizontal: spacing.screen,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
-  chips: {
+  hListBubbles: {
     paddingHorizontal: spacing.screen,
     gap: spacing.sm,
-    paddingBottom: spacing.xs,
+    paddingVertical: spacing.xs,
   },
   grid: {
     flexDirection: 'row',
@@ -624,5 +987,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderBottomWidth: 1,
     borderRadius: radii.xs,
+  },
+  selectedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 });

@@ -5,7 +5,8 @@
  */
 
 import React, { useEffect, useRef, useMemo } from 'react';
-import { View, Text, Animated, Easing, StyleSheet, Dimensions } from 'react-native';
+import { View, Animated, Easing, StyleSheet, Dimensions } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import { APP_INFO } from '@/config/appConfig';
 

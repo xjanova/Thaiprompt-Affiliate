@@ -6,11 +6,16 @@
  * - สวิตช์ "แชร์ตำแหน่งของฉันให้ไรเดอร์": ConsentSheet ก่อนเสมอ → ขอสิทธิ์ → POST share-location
  *   แล้วส่งตำแหน่งทุก ~30 วินาทีระหว่างเปิดหน้านี้ · ปิดสวิตช์ = share:false (server ลบตำแหน่งทันที)
  *   · 409 JOB_NOT_ACTIVE = ไรเดอร์ยังไม่มา/ส่งเสร็จแล้ว → หยุดส่ง
+ *
+ * หน้าตา (ธีมรอยัล): แถวสถานะ + ช่องไอคอนสกู๊ตเตอร์ · การ์ดไรเดอร์ (อักษรย่อบนเหรียญน้ำเงิน + ดาว + ปุ่มโทร)
+ *   · แผนที่สด · แถวสวิตช์แชร์ตำแหน่ง — ไม่มีการ์ดครอบเอง (หน้าแม่วางใน Card3D)
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Switch, Text, View } from 'react-native';
-import { Button3D, LiveMap, Pill, resultHaptic, type LiveMapMarker } from '@/components/ui';
+import { ActivityIndicator, Alert, StyleSheet, Switch, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Text } from '@/components/ui/Text';
+import { Button3D, Icon, LiveMap, Pill, resultHaptic, type LiveMapMarker } from '@/components/ui';
 import { callPhone } from '@/components/shop';
 import { useTheme, radii, spacing, typography } from '@/theme';
 import { getCurrentCoords } from '@/services/location';
@@ -23,6 +28,7 @@ import {
 import { useFocusedInterval, useMountedRef } from './hooks';
 import { distanceText, timeAgoText } from './helpers';
 import { useBuyerLocation } from './useBuyerLocation';
+import { IconTile, LiveDot, TileButton } from './BuyerParts';
 
 export interface RiderTrackerProps {
   source: DeliverySource;
@@ -40,6 +46,16 @@ export interface RiderTrackerProps {
 }
 
 const DEFAULT_POLL_MS = 15000;
+
+/** อักษรย่อของชื่อไรเดอร์บนเหรียญ (ข้ามสระหน้า เ แ โ ใ ไ และวรรณยุกต์) — ไม่มีชื่อ = null */
+const initialOf = (name: string | null | undefined): string | null => {
+  for (const ch of String(name || '').trim()) {
+    if (/\s/.test(ch)) break;
+    if (/[\u0E40-\u0E44\u0E31\u0E34-\u0E3A\u0E47-\u0E4E]/.test(ch)) continue;
+    return ch.toUpperCase();
+  }
+  return null;
+};
 
 /** ข้อความสำหรับผู้ซื้อ (อ่านง่ายกว่าข้อความระบบ) */
 const REASON_TEXT: Record<string, string> = {
@@ -60,7 +76,7 @@ export const RiderTracker: React.FC<RiderTrackerProps> = ({
   dropoffFallback,
   onJobStatusChange,
 }) => {
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
   const mountedRef = useMountedRef();
   const location = useBuyerLocation();
 
@@ -215,8 +231,9 @@ export const RiderTracker: React.FC<RiderTrackerProps> = ({
   if (!info) {
     return error ? (
       <View style={styles.loadingRow}>
+        <Icon name="warning-circle" size={18} color={colors.warning} weight="fill" />
         <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]}>{error}</Text>
-        <Button3D title="ลองใหม่" size="sm" variant="secondary" onPress={load} />
+        <Button3D title="ลองใหม่" icon="arrows-clockwise" size="sm" variant="secondary" onPress={load} />
       </View>
     ) : null;
   }
@@ -230,43 +247,59 @@ export const RiderTracker: React.FC<RiderTrackerProps> = ({
       ? reasonText || 'กำลังติดตามสถานะ'
       : info.job?.status_text || reasonText || 'กำลังติดตามสถานะ';
   const caption = loc
-    ? `${loc.is_stale ? '⚠️ ตำแหน่งไรเดอร์ไม่อัปเดตสักพัก · ' : ''}อัปเดต${timeAgoText(loc.updated_at) || 'ล่าสุด'}${
+    ? `${loc.is_stale ? 'ตำแหน่งไรเดอร์ไม่อัปเดตสักพัก · ' : ''}อัปเดต ${timeAgoText(loc.updated_at) || 'ล่าสุด'}${
         riderToDrop ? ` · ห่างจุดส่ง ~${riderToDrop}` : ''
       }`
-    : reasonText;
+    : reasonText && reasonText !== statusText
+      ? reasonText
+      : undefined; // ข้อความเดียวกับหัวสถานะ → ไม่ต้องพูดซ้ำใต้แผนที่
   const showMap = markers.length > 0 && (info.has_rider_job || !!loc);
+  const initial = rider ? initialOf(rider.name) : null;
+  const live = !!info.job?.is_active;
 
   return (
     <View style={styles.root}>
       {location.element}
 
+      {/* ---------- สถานะงานส่ง ---------- */}
       <View style={styles.statusRow}>
-        <Text style={styles.statusIcon}>🛵</Text>
+        <IconTile icon="moped" tone={live ? 'success' : 'navy'} weight="fill" />
         <Text style={[typography.bodyStrong, styles.flex, { color: colors.textStrong }]}>{statusText}</Text>
-        {info.job?.is_active && <Pill label="สด" tone="success" icon="●" />}
+        {live && <Pill label="สด" tone="success" icon={<LiveDot size={6} />} />}
       </View>
 
+      {/* ---------- การ์ดไรเดอร์ ---------- */}
       {showRiderInfo && rider && (
-        <View style={[styles.riderRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={[styles.riderAvatar, { backgroundColor: colors.goldSoft }]}>
-            <Text style={styles.riderAvatarIcon}>🧑‍✈️</Text>
-          </View>
+        <View style={[styles.riderCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <LinearGradient colors={gradients.navy} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatar}>
+            {initial ? (
+              <Text style={[typography.serifSm, styles.avatarText, { color: colors.goldLight }]}>{initial}</Text>
+            ) : (
+              <Icon name="user" size={22} color={colors.goldLight} weight="fill" />
+            )}
+          </LinearGradient>
           <View style={styles.flex}>
-            <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
-              {rider.name || 'ไรเดอร์'}
-              {rider.rating ? `  ⭐ ${rider.rating.toFixed(1)}` : ''}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text numberOfLines={1} style={[typography.bodyStrong, styles.name, { color: colors.textStrong }]}>
+                {rider.name || 'ไรเดอร์'}
+              </Text>
+              {!!rider.rating && (
+                <View style={[styles.rating, { backgroundColor: colors.goldSoft }]}>
+                  <Icon name="star" size={12} color={colors.gold} weight="fill" />
+                  <Text style={[typography.micro, { color: colors.goldDeep }]}>{rider.rating.toFixed(1)}</Text>
+                </View>
+              )}
+            </View>
             <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
               {[rider.vehicle_type_text, rider.vehicle_plate ? `ทะเบียน ${rider.vehicle_plate}` : null].filter(Boolean).join(' · ') ||
                 'ไรเดอร์ในชุมชน'}
             </Text>
           </View>
-          {!!rider.phone && (
-            <Button3D title="โทร" icon="📞" size="sm" variant="secondary" onPress={() => callPhone(rider.phone)} />
-          )}
+          {!!rider.phone && <TileButton icon="phone" label="โทร" tone="success" onPress={() => callPhone(rider.phone)} />}
         </View>
       )}
 
+      {/* ---------- แผนที่สด ---------- */}
       {showMap && (
         <LiveMap
           markers={markers}
@@ -281,14 +314,21 @@ export const RiderTracker: React.FC<RiderTrackerProps> = ({
         <Text style={[typography.caption, { color: colors.textMuted }]}>{reasonText}</Text>
       )}
 
+      {/* ---------- แชร์ตำแหน่งของฉัน ---------- */}
       {canShare && (
-        <View style={[styles.shareRow, { backgroundColor: sharing ? colors.successSoft : colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.shareRow,
+            { backgroundColor: sharing ? colors.successSoft : colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <IconTile icon="broadcast" tone={sharing ? 'success' : 'navy'} size={40} />
           <View style={styles.flex}>
             <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>แชร์ตำแหน่งของฉันให้ไรเดอร์</Text>
             <Text style={[typography.caption, { color: colors.textMuted }]}>
               {sharing
                 ? lastSentAt
-                  ? `กำลังแชร์ · ส่งล่าสุด${timeAgoText(new Date(lastSentAt).toISOString())} · ต้องเปิดหน้านี้ไว้`
+                  ? `กำลังแชร์ · ส่งล่าสุด ${timeAgoText(new Date(lastSentAt).toISOString())} · ต้องเปิดหน้านี้ไว้`
                   : 'กำลังแชร์ · ส่งตำแหน่งทุก 30 วินาทีระหว่างเปิดหน้านี้'
                 : 'ช่วยให้ไรเดอร์หาคุณเจอง่ายขึ้น เห็นเฉพาะออเดอร์นี้'}
             </Text>
@@ -327,12 +367,9 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  statusIcon: {
-    fontSize: 20,
-  },
-  riderRow: {
+  riderCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -340,15 +377,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.md,
   },
-  riderAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  riderAvatarIcon: {
-    fontSize: 22,
+  avatarText: {
+    fontSize: 20,
+    lineHeight: 28,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  name: {
+    flexShrink: 1,
+  },
+  rating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    borderRadius: 7,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
   },
   shareRow: {
     flexDirection: 'row',

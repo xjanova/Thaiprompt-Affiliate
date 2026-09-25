@@ -56,13 +56,21 @@ export const getAvatarUrl = (avatarPath: string | null | undefined): string | nu
 /**
  * สร้างตัวอักษรย่อจากชื่อผู้ใช้ (สำหรับแสดงเป็น avatar placeholder)
  *
+ * ชื่อไทยที่ขึ้นต้นด้วยสระหน้า (เ แ โ ใ ไ) ข้ามไปใช้พยัญชนะตัวแรกแทน
+ * เช่น "ไรเดอร์ทดสอบ" → "ร" (เดิมได้ "ไ" ซึ่งอ่านไม่ออกว่าเป็นใคร)
+ *
  * @param name ชื่อผู้ใช้
  * @returns ตัวอักษรตัวแรกเป็นตัวพิมพ์ใหญ่
  */
 export const getAvatarInitial = (name: string | null | undefined): string => {
   try {
     if (!name || typeof name !== 'string') return 'U';
-    return name.charAt(0).toUpperCase();
+    // Array.from แยกตามอักขระจริง (ไม่ตัดอีโมจิ/อักษรคู่ครึ่งตัว)
+    const chars = Array.from(name.trim());
+    if (chars.length === 0) return 'U';
+    let i = 0;
+    while (i < chars.length - 1 && /[เ-ไ]/.test(chars[i])) i++;
+    return chars[i].toUpperCase();
   } catch {
     return 'U';
   }

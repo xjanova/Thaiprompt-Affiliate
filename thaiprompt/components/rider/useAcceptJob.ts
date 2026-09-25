@@ -86,7 +86,7 @@ export const useAcceptJob = ({ flow, onGone, onAccepted }: UseAcceptJobOptions) 
 
       switch (reason) {
         case 'JOB_TAKEN':
-          Alert.alert('ช้าไปนิดเดียว!', 'งานนี้มีไรเดอร์คนอื่นรับไปแล้ว ลองงานถัดไปนะ 💪');
+          Alert.alert('ช้าไปนิดเดียว!', 'งานนี้มีไรเดอร์คนอื่นรับไปแล้ว ลองงานถัดไปนะ');
           onGoneRef.current?.(jobId);
           return;
         case 'JOB_NOT_FOUND':

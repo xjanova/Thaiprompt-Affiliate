@@ -10,14 +10,20 @@
  * - ตัวเลขรายได้/ออเดอร์ + ทางไปหน้าออเดอร์และสินค้า + ปุ่มเปิดเว็บสำหรับงานละเอียด
  * - รีเฟรชเงียบๆ ทุก 30 วินาทีเฉพาะตอนเปิดหน้านี้ + รีเฟรชทันทีเมื่อมีแจ้งเตือนออเดอร์/ร้านปิดอัตโนมัติ
  * - ยังไม่มีร้านตลาดสด (403 NOT_SELLER) → ชวนสมัครบนเว็บ
+ *
+ * หน้าตา: หัวร้าน (รูปร้าน + ชื่อตัวมีเชิง) → การ์ดสถานะร้านแบบการ์ด "ออนไลน์" (PresenceCard)
+ *         → สรุปตัวเลข (StatTile) → ทางลัดออเดอร์/สินค้า (การ์ดช่องไอคอน) → งานบนเว็บ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
+import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import {
   closeFmShop,
+  fmImageUrl,
   getFmSellerDashboard,
   getFmSellerPresence,
   openFmShop,
@@ -38,9 +44,11 @@ import { getCurrentCoords } from '@/services/location';
 import { addNotificationReceivedListener } from '@/services/notifications';
 import {
   BannerSlider,
+  BrandArt,
   Button3D,
   Card3D,
   EmptyState,
+  Icon,
   Pill,
   PriceText,
   Screen,
@@ -52,13 +60,15 @@ import {
 } from '@/components/ui';
 import {
   FM_ACTIVE_STATUSES,
+  IconTile,
   MerchantModeSwitch,
+  NoticeBanner,
   OpenShopSheet,
   PresenceCard,
   hasShopLocationConsent,
   useShopLocationConsent,
 } from '@/components/merchant';
-import { useTheme, radii, spacing, typography, type Tone } from '@/theme';
+import { useTheme, palette, radii, spacing, typography, type Tone } from '@/theme';
 
 const POLL_MS = 30_000;
 const NOTICE_MS = 5_000;
@@ -412,7 +422,7 @@ export default function TaladsodSellerScreen() {
     return (
       <Screen title="ร้านตลาดสดของฉัน" scroll={false}>
         <EmptyState
-          icon="🔐"
+          art="cart"
           title="เข้าสู่ระบบก่อนนะ"
           message="เข้าสู่ระบบเพื่อเปิดร้านและดูออเดอร์ตลาดสด"
           actionLabel="เข้าสู่ระบบ"
@@ -429,21 +439,30 @@ export default function TaladsodSellerScreen() {
 
       case 'not_seller':
         return (
-          <Card3D gradientBorder padding={spacing.xl}>
-            <Text style={[typography.h2, { color: colors.textStrong }]}>ยังไม่มีร้านในตลาดสด</Text>
-            <Text style={[typography.body, styles.lead, { color: colors.textMuted }]}>
+          <Card3D gradientBorder padding={spacing.xl} contentStyle={styles.centerBox}>
+            <BrandArt name="cart" size={128} />
+            <Text style={[typography.serif, styles.centerText, { color: colors.textStrong }]}>ยังไม่มีร้านในตลาดสด</Text>
+            <Text style={[typography.body, styles.lead, styles.centerText, { color: colors.textMuted }]}>
               ขายของสด อาหารทำตามสั่ง รถเข็น หรือร้านตลาดนัดก็ได้ สมัครบนเว็บไซต์ไม่กี่นาที แล้วกลับมาเปิดร้านและรับออเดอร์ในแอปนี้
             </Text>
             <WebsiteButton
               path="/taladsod/register-seller"
               label="สมัครขายในตลาดสด"
-              icon="🥬"
+              icon="basket"
               variant="primary"
               size="lg"
               fullWidth
               style={styles.cta}
             />
-            <WebsiteButton path="/taladsod/start/seller" label="อ่านรายละเอียดก่อน" variant="ghost" size="md" fullWidth style={styles.gapTop} />
+            <WebsiteButton
+              path="/taladsod/start/seller"
+              label="อ่านรายละเอียดก่อน"
+              icon="book-open"
+              variant="ghost"
+              size="md"
+              fullWidth
+              style={styles.gapTop}
+            />
           </Card3D>
         );
 
@@ -453,40 +472,41 @@ export default function TaladsodSellerScreen() {
       case 'ready': {
         const { dashboard, presence: p } = state;
         const stats = dashboard.stats;
+        const shopImage = fmImageUrl(dashboard.shop_image);
         return (
           <>
             {/* ---------- ร้าน ---------- */}
             <View style={styles.shopRow}>
+              <View style={[styles.avatar, { backgroundColor: colors.goldSoft, borderColor: colors.border }]}>
+                {shopImage ? (
+                  <Image source={{ uri: shopImage }} style={styles.avatarImage} contentFit="cover" transition={120} />
+                ) : (
+                  <BrandArt name={p.is_mobile ? 'cart' : 'store'} size={48} />
+                )}
+                <View
+                  style={[
+                    styles.avatarDot,
+                    { backgroundColor: p.is_open ? colors.success : colors.textFaint, borderColor: colors.background },
+                  ]}
+                />
+              </View>
               <View style={styles.flex}>
-                <Text style={[typography.h2, { color: colors.textStrong }]} numberOfLines={1}>
+                <Text style={[typography.serif, { color: colors.textStrong }]} numberOfLines={1}>
                   {dashboard.shop_name}
                 </Text>
                 <View style={styles.pills}>
-                  {dashboard.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="✔" />}
+                  {dashboard.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="seal-check" />}
                   {!!dashboard.status_label && <Pill label={dashboard.status_label} tone="neutral" />}
                 </View>
               </View>
             </View>
 
             {!!notice && (
-              <Card3D variant="flat" padding={spacing.md} style={styles.notice}>
-                <Text
-                  accessibilityLiveRegion="polite"
-                  style={[
-                    typography.bodySm,
-                    {
-                      color:
-                        notice.tone === 'danger'
-                          ? colors.danger
-                          : notice.tone === 'warning'
-                            ? colors.warning
-                            : colors.success,
-                    },
-                  ]}
-                >
-                  {notice.text}
-                </Text>
-              </Card3D>
+              <NoticeBanner
+                tone={notice.tone === 'danger' ? 'danger' : notice.tone === 'warning' ? 'warning' : 'success'}
+                text={notice.text}
+                style={styles.notice}
+              />
             )}
 
             <PresenceCard
@@ -504,31 +524,41 @@ export default function TaladsodSellerScreen() {
             />
 
             {!dashboard.is_visible_to_buyers && (
-              <Card3D variant="inset" padding={spacing.md} style={styles.warning} contentStyle={styles.warningContent}>
-                <Text style={[typography.bodyStrong, { color: colors.warning }]}>⚠️ ลูกค้ายังมองไม่เห็นร้าน</Text>
-                <Text style={[typography.bodySm, { color: colors.text }]}>
-                  สถานะร้าน: {dashboard.status_label || '-'} ดูรายละเอียดและสิ่งที่ต้องทำบนเว็บไซต์ได้เลย
-                </Text>
+              <Card3D padding={spacing.md} shadow="sm" style={styles.warning}>
+                <View style={styles.warningRow}>
+                  <IconTile icon="eye-slash" tone="warning" />
+                  <View style={[styles.flex, styles.warningContent]}>
+                    <Text style={[typography.bodyStrong, { color: colors.warning }]}>ลูกค้ายังมองไม่เห็นร้าน</Text>
+                    <Text style={[typography.bodySm, { color: colors.text }]}>
+                      สถานะร้าน: {dashboard.status_label || '-'} ดูรายละเอียดและสิ่งที่ต้องทำบนเว็บไซต์ได้เลย
+                    </Text>
+                  </View>
+                </View>
                 <WebsiteButton path="/taladsod/seller/profile" label="ดูบนเว็บไซต์" size="sm" style={styles.warningCta} />
               </Card3D>
             )}
             {dashboard.outstanding_gp_debt > 0 && (
-              <Card3D variant="inset" padding={spacing.md} style={styles.warning} contentStyle={styles.warningContent}>
-                <Text style={[typography.bodyStrong, { color: colors.warning }]}>ค่าธรรมเนียม GP ค้างชำระ</Text>
-                <PriceText amount={dashboard.outstanding_gp_debt} size="md" tone="strong" />
-                <Text style={[typography.caption, { color: colors.textMuted }]}>
-                  จากออเดอร์เก็บเงินปลายทาง ระบบหักจากกระเป๋าเงินเมื่อมียอดเพียงพอ
-                </Text>
+              <Card3D padding={spacing.md} shadow="sm" style={styles.warning}>
+                <View style={styles.warningRow}>
+                  <IconTile icon="coins" tone="gold" />
+                  <View style={[styles.flex, styles.warningContent]}>
+                    <Text style={[typography.bodyStrong, { color: colors.warning }]}>ค่าธรรมเนียม GP ค้างชำระ</Text>
+                    <PriceText amount={dashboard.outstanding_gp_debt} size="lg" tone="strong" />
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>
+                      จากออเดอร์เก็บเงินปลายทาง ระบบหักจากกระเป๋าเงินเมื่อมียอดเพียงพอ
+                    </Text>
+                  </View>
+                </View>
               </Card3D>
             )}
 
             {/* ---------- ตัวเลข ---------- */}
-            <SectionHeader title="สรุปร้าน" icon="📊" style={styles.section} />
+            <SectionHeader title="สรุปร้าน" style={styles.section} />
             <View style={styles.grid}>
               <StatTile
                 label="ออเดอร์ใหม่รอรับ"
                 value={stats.pending_orders}
-                icon="🔔"
+                icon="bell-ringing"
                 tone={stats.pending_orders > 0 ? 'warning' : 'neutral'}
                 caption={stats.pending_orders > 0 ? 'แตะเพื่อรับออเดอร์' : undefined}
                 style={styles.tile}
@@ -537,7 +567,7 @@ export default function TaladsodSellerScreen() {
               <StatTile
                 label="กำลังทำ"
                 value={activeOrders - stats.pending_orders > 0 ? activeOrders - stats.pending_orders : 0}
-                icon="🍳"
+                icon="cooking-pot"
                 tone="gold"
                 style={styles.tile}
                 onPress={() => router.push('/merchant/taladsod/orders' as never)}
@@ -545,15 +575,24 @@ export default function TaladsodSellerScreen() {
               <StatTile
                 label="รายรับสุทธิสะสม"
                 value={<PriceText amount={stats.total_revenue} size="lg" tone="success" />}
-                icon="💰"
+                icon="coins"
                 tone="success"
                 caption={`จาก ${stats.total_sales.toLocaleString('th-TH')} ออเดอร์ที่สำเร็จ`}
                 style={styles.tile}
               />
               <StatTile
                 label="คะแนนร้าน"
-                value={stats.rating_count > 0 ? `${stats.rating_average.toFixed(1)} ⭐` : '-'}
-                icon="🏅"
+                value={
+                  stats.rating_count > 0 ? (
+                    <View style={styles.ratingRow}>
+                      <Text style={[typography.h1, { color: colors.textStrong }]}>{stats.rating_average.toFixed(1)}</Text>
+                      <Icon name="star" size={20} color={colors.gold} weight="fill" />
+                    </View>
+                  ) : (
+                    '-'
+                  )
+                }
+                icon="medal"
                 tone="info"
                 caption={stats.rating_count > 0 ? `${stats.rating_count.toLocaleString('th-TH')} รีวิว` : 'ยังไม่มีรีวิว'}
                 style={styles.tile}
@@ -564,26 +603,39 @@ export default function TaladsodSellerScreen() {
             <View style={styles.navRow}>
               <Card3D
                 onPress={() => router.push('/merchant/taladsod/orders' as never)}
-                padding={spacing.md}
-                radius={radii.lg}
+                padding={spacing.lg}
+                radius={radii.xl}
+                shadow="sm"
                 style={styles.flex}
                 accessibilityLabel={`ออเดอร์ร้าน ${stats.pending_orders > 0 ? `มีออเดอร์ใหม่ ${stats.pending_orders} รายการ` : ''}`}
               >
-                <Text style={styles.navIcon}>🧾</Text>
-                <Text style={[typography.h3, { color: colors.textStrong }]}>ออเดอร์</Text>
+                <View style={styles.navTop}>
+                  <IconTile icon="receipt" />
+                  {stats.pending_orders > 0 && (
+                    <View style={[styles.navBadge, { backgroundColor: palette.orange500 }]}>
+                      <Text style={[typography.micro, { color: colors.textOnAccent }]}>
+                        {stats.pending_orders > 99 ? '99+' : stats.pending_orders}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[typography.h3, styles.navTitle, { color: colors.textStrong }]}>ออเดอร์</Text>
                 <Text style={[typography.caption, { color: stats.pending_orders > 0 ? colors.warning : colors.textMuted }]}>
                   {stats.pending_orders > 0 ? `ใหม่ ${stats.pending_orders} รายการ` : 'รับ เตรียม ส่งของ'}
                 </Text>
               </Card3D>
               <Card3D
                 onPress={() => router.push('/merchant/taladsod/listings' as never)}
-                padding={spacing.md}
-                radius={radii.lg}
+                padding={spacing.lg}
+                radius={radii.xl}
+                shadow="sm"
                 style={styles.flex}
                 accessibilityLabel="สินค้าของร้าน"
               >
-                <Text style={styles.navIcon}>🥬</Text>
-                <Text style={[typography.h3, { color: colors.textStrong }]}>สินค้า</Text>
+                <View style={styles.navTop}>
+                  <IconTile icon="basket" />
+                </View>
+                <Text style={[typography.h3, styles.navTitle, { color: colors.textStrong }]}>สินค้า</Text>
                 <Text style={[typography.caption, { color: colors.textMuted }]}>
                   {stats.total_listings.toLocaleString('th-TH')} รายการ · ราคา ตัวเลือก
                 </Text>
@@ -591,16 +643,19 @@ export default function TaladsodSellerScreen() {
             </View>
 
             {/* ---------- เว็บ ---------- */}
-            <SectionHeader title="จัดการละเอียดบนเว็บไซต์" icon="🌐" subtitle="ลงขายสินค้าใหม่ ดูรายได้ย้อนหลัง ตั้งค่าร้าน" style={styles.section} />
+            <SectionHeader title="จัดการละเอียดบนเว็บไซต์" subtitle="ลงขายสินค้าใหม่ ดูรายได้ย้อนหลัง ตั้งค่าร้าน" style={styles.section} />
             <Card3D padding={spacing.lg}>
-              <WebsiteButton path="/taladsod/seller-dashboard" label="เปิดหน้าร้านบนเว็บไซต์" icon="🛠️" variant="primary" fullWidth />
+              <WebsiteButton path="/taladsod/seller-dashboard" label="เปิดหน้าร้านบนเว็บไซต์" icon="storefront" variant="navy" fullWidth />
               <View style={styles.webRow}>
-                <WebsiteButton path="/taladsod/create-listing" label="ลงขายสินค้าใหม่" icon="➕" size="sm" style={styles.flex} />
-                <WebsiteButton path="/taladsod/seller/earnings" label="ดูรายได้" icon="📈" size="sm" style={styles.flex} />
+                <WebsiteButton path="/taladsod/create-listing" label="ลงขายสินค้าใหม่" icon="plus" size="sm" style={styles.flex} />
+                <WebsiteButton path="/taladsod/seller/earnings" label="ดูรายได้" icon="chart-line-up" size="sm" style={styles.flex} />
               </View>
-              <Text style={[typography.caption, styles.webNote, { color: colors.textMuted }]}>
-                เปิดในเบราว์เซอร์และเข้าสู่ระบบให้อัตโนมัติ
-              </Text>
+              <View style={styles.webNoteRow}>
+                <Icon name="lock" size={13} color={colors.textFaint} />
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  เปิดในเบราว์เซอร์และเข้าสู่ระบบให้อัตโนมัติ
+                </Text>
+              </View>
             </Card3D>
           </>
         );
@@ -621,7 +676,7 @@ export default function TaladsodSellerScreen() {
       </View>
       {renderBody()}
       {state.kind === 'ready' && (
-        <Button3D title="ช่วยเหลือร้านค้า" variant="ghost" size="sm" onPress={() => router.push('/support')} style={styles.help} />
+        <Button3D title="ช่วยเหลือร้านค้า" icon="lifebuoy" variant="ghost" size="sm" onPress={() => router.push('/support')} style={styles.help} />
       )}
 
       {presence && (
@@ -650,6 +705,12 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.screen,
     marginBottom: spacing.lg,
   },
+  centerBox: {
+    alignItems: 'center',
+  },
+  centerText: {
+    textAlign: 'center',
+  },
   lead: {
     marginTop: spacing.sm,
   },
@@ -659,10 +720,34 @@ const styles = StyleSheet.create({
   gapTop: {
     marginTop: spacing.sm,
   },
+  // ---------- หัวร้าน ----------
   shopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 19,
+  },
+  avatarDot: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 3,
   },
   pills: {
     flexDirection: 'row',
@@ -673,18 +758,24 @@ const styles = StyleSheet.create({
   notice: {
     marginBottom: spacing.md,
   },
+  // ---------- การ์ดเตือน ----------
   warning: {
     marginTop: spacing.md,
+  },
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
   warningContent: {
     gap: spacing.xs,
   },
   warningCta: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     alignSelf: 'flex-start',
   },
   section: {
-    marginTop: spacing.xl,
+    marginTop: spacing.xxl,
   },
   grid: {
     flexDirection: 'row',
@@ -695,23 +786,44 @@ const styles = StyleSheet.create({
   tile: {
     width: '48%',
   },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  // ---------- ทางลัด ----------
   navRow: {
     flexDirection: 'row',
     gap: spacing.md,
     marginTop: spacing.md,
   },
-  navIcon: {
-    fontSize: 26,
-    marginBottom: spacing.xs,
+  navTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  navBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navTitle: {
+    marginTop: spacing.md,
   },
   webRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  webNote: {
-    marginTop: spacing.sm,
-    textAlign: 'center',
+  webNoteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: spacing.md,
   },
   help: {
     marginTop: spacing.lg,

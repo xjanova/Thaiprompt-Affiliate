@@ -1,36 +1,80 @@
 /**
- * Index Screen - Premium Landing Page V3
- * ออกแบบใหม่ให้สวยงาม มี Animated Effects
+ * หน้าต้อนรับ (ก่อนเข้าสู่ระบบ) — ธีมรอยัล น้ำเงินกรมท่า-ทอง
+ *
+ * - หัวน้ำเงินกรมท่า + ลายกนกทองสองมุม + ไอคอนแอปกรอบทองเรืองแสง + คำโปรยฟอนต์มีเชิง
+ * - โชว์บริการด้วยภาพ 3D ประจำแบรนด์ (ตลาดสด · ร้านรถเข็น · ช้อป · ไรเดอร์) บนการ์ดขาว
+ * - แบนเนอร์ตลาดกลางคืน + จุดเด่น 3 ข้อ
+ * - ปุ่มเข้าสู่ระบบ (ทอง) / สมัครสมาชิกใหม่ ลอยท้ายจอ
+ * - ล็อกอินอยู่แล้ว → ไปแท็บหลักทันที
+ * - หน้านี้ค้างอยู่ใต้แท็บได้ → StatusBar/แอนิเมชันวนทำงานเฉพาะตอนหน้านี้แสดงอยู่
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
-  Pressable,
   StyleSheet,
   StatusBar,
   Dimensions,
   ScrollView,
   Animated,
   Easing,
-  Image,
+  useWindowDimensions,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, Redirect } from 'expo-router';
+import { router, Redirect, useIsFocused } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
+import {
+  BrandArt,
+  Button3D,
+  Card3D,
+  Icon,
+  RoyalHeader,
+  type BrandArtName,
+  type IconName,
+} from '@/components/ui';
+import { useTheme, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
 
 const { width, height } = Dimensions.get('window');
+
+const APP_ICON = require('@/assets/images/icon.png');
+const KANOK = require('@/assets/images/brand/kanok-gold.webp');
+const NIGHT_MARKET = require('@/assets/images/brand/night-market.webp');
+/** สัดส่วนภาพลายกนก (กว้าง 900 × สูง 791) */
+const KANOK_RATIO = 791 / 900;
+/** ความโค้งของแผ่นเนื้อหาใต้หัวน้ำเงิน (เท่ากับ Screen) */
+const SHEET_RADIUS = 26;
+/** ความกว้างเนื้อหาสูงสุด (แท็บเล็ตไม่ยืดจนเกินงาม) */
+const CONTENT_MAX = 560;
+/** ขนาดไอคอนแอปตรงกลางหัว */
+const LOGO_SIZE = 104;
+
+/** บริการที่โชว์ด้วยภาพ 3D */
+const SERVICES: Array<{ art: BrandArtName; label: string }> = [
+  { art: 'basket', label: 'ตลาดสด' },
+  { art: 'cart', label: 'ร้านรถเข็น' },
+  { art: 'bag', label: 'ช้อป' },
+  { art: 'scooter', label: 'ไรเดอร์' },
+];
+
+/** จุดเด่นของแอป (money = โทนทองเรื่องเงิน) */
+const FEATURES: Array<{ icon: IconName; text: string; money?: boolean }> = [
+  { icon: 'basket', text: 'ตลาดสดและร้านอาหารใกล้บ้าน' },
+  { icon: 'moped', text: 'ไรเดอร์ในชุมชนส่งไว ติดตามได้' },
+  { icon: 'shield-check', text: 'จ่ายปลอดภัย ด้วย PromptPay หรือกระเป๋าเงิน', money: true },
+];
 
 // =====================================================
 // Animated Components
 // =====================================================
 
 /**
- * Floating Particle - อนุภาคลอยเลื่อนสวยๆ
+ * ประกายทอง — จุดทองเล็กๆ ลอยขึ้นช้าๆ ในหัวน้ำเงิน
  */
-const FloatingParticle = ({ delay, size, color, startX, startY }: {
+const GoldMote = ({ delay, size, color, startX, startY }: {
   delay: number;
   size: number;
   color: string;
@@ -43,19 +87,24 @@ const FloatingParticle = ({ delay, size, color, startX, startY }: {
   const scale = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
+    // หยุดวนเมื่อ component ถูกถอด (เดิมวนต่อไม่รู้จบแม้หน้านี้ถูกซ่อน/ถอดแล้ว — กินแบตและ JS thread)
+    let cancelled = false;
+    let current: Animated.CompositeAnimation | null = null;
+
     const animate = () => {
+      if (cancelled) return;
       // Reset values
       translateY.setValue(0);
       translateX.setValue(0);
       opacity.setValue(0);
       scale.setValue(0.5);
 
-      Animated.sequence([
+      current = Animated.sequence([
         Animated.delay(delay),
         Animated.parallel([
           // Fade in and scale up
           Animated.timing(opacity, {
-            toValue: 0.8,
+            toValue: 0.9,
             duration: 800,
             useNativeDriver: true,
           }),
@@ -68,13 +117,13 @@ const FloatingParticle = ({ delay, size, color, startX, startY }: {
         // Float animation
         Animated.parallel([
           Animated.timing(translateY, {
-            toValue: -height * 0.3,
+            toValue: -height * 0.22,
             duration: 4000 + Math.random() * 2000,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.timing(translateX, {
-            toValue: (Math.random() - 0.5) * 100,
+            toValue: (Math.random() - 0.5) * 60,
             duration: 4000 + Math.random() * 2000,
             easing: Easing.inOut(Easing.sin),
             useNativeDriver: true,
@@ -89,16 +138,24 @@ const FloatingParticle = ({ delay, size, color, startX, startY }: {
             }),
           ]),
         ]),
-      ]).start(() => animate());
+      ]);
+      current.start(({ finished }) => {
+        if (finished && !cancelled) animate();
+      });
     };
 
     animate();
+    return () => {
+      cancelled = true;
+      current?.stop();
+    };
   }, []);
 
   return (
     <Animated.View
+      pointerEvents="none"
       style={[
-        styles.particle,
+        styles.mote,
         {
           left: startX,
           top: startY,
@@ -106,6 +163,7 @@ const FloatingParticle = ({ delay, size, color, startX, startY }: {
           height: size,
           borderRadius: size / 2,
           backgroundColor: color,
+          boxShadow: `0px 0px 6px 1px ${withAlpha(color, 0.7)}`,
           opacity,
           transform: [{ translateX }, { translateY }, { scale }],
         },
@@ -115,79 +173,35 @@ const FloatingParticle = ({ delay, size, color, startX, startY }: {
 };
 
 /**
- * Glowing Orb - วงกลมเรืองแสงลอยขึ้นลง
+ * รัศมีทองหลังโลโก้ — หายใจเข้าออกช้าๆ
  */
-const GlowingOrb = ({ delay, size, color, position }: {
-  delay: number;
-  size: number;
-  color: string;
-  position: { top?: number; bottom?: number; left?: number; right?: number };
-}) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0.2)).current;
-  const scale = useRef(new Animated.Value(1)).current;
+const LogoHalo = ({ size, color }: { size: number; color: string }) => {
+  const pulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const floatAnimation = Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: -25,
-            duration: 3000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0.5,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1.1,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 3000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0.2,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-        ]),
+        Animated.timing(pulse, { toValue: 1, duration: 2600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 2600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
       ])
     );
-
-    const timeout = setTimeout(() => floatAnimation.start(), delay);
-    return () => {
-      clearTimeout(timeout);
-      floatAnimation.stop();
-    };
-  }, []);
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
 
   return (
     <Animated.View
+      pointerEvents="none"
       style={[
-        styles.orb,
+        styles.halo,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: color,
-          ...position,
-          opacity,
-          transform: [{ translateY }, { scale }],
+          backgroundColor: withAlpha(color, 0.12),
+          boxShadow: `0px 0px 60px 18px ${withAlpha(color, 0.26)}`,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }),
+          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1.06] }) }],
         },
       ]}
     />
@@ -195,9 +209,9 @@ const GlowingOrb = ({ delay, size, color, position }: {
 };
 
 /**
- * Pulsing Ring - วงแหวนพัลส์รอบโลโก้
+ * Pulsing Ring - วงแหวนทองกระเพื่อมรอบโลโก้
  */
-const PulsingRing = ({ delay, size }: { delay: number; size: number }) => {
+const PulsingRing = ({ delay, size, color }: { delay: number; size: number; color: string }) => {
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(0.6)).current;
 
@@ -207,14 +221,14 @@ const PulsingRing = ({ delay, size }: { delay: number; size: number }) => {
         Animated.delay(delay),
         Animated.parallel([
           Animated.timing(scale, {
-            toValue: 1.5,
-            duration: 2000,
+            toValue: 1.45,
+            duration: 2400,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.timing(opacity, {
             toValue: 0,
-            duration: 2000,
+            duration: 2400,
             useNativeDriver: true,
           }),
         ]),
@@ -239,12 +253,14 @@ const PulsingRing = ({ delay, size }: { delay: number; size: number }) => {
 
   return (
     <Animated.View
+      pointerEvents="none"
       style={[
         styles.pulsingRing,
         {
           width: size,
           height: size,
-          borderRadius: size / 2,
+          borderRadius: size * 0.3,
+          borderColor: withAlpha(color, 0.55),
           opacity,
           transform: [{ scale }],
         },
@@ -260,6 +276,25 @@ const PulsingRing = ({ delay, size }: { delay: number; size: number }) => {
 export default function IndexScreen() {
   const { isAuthenticated, isInitialized } = useAuthStore();
   const [logoError, setLogoError] = useState(false);
+  // หน้านี้ค้างอยู่ใต้แท็บหลังล็อกอิน/ออกจากระบบได้ → แสดง StatusBar/แอนิเมชันเฉพาะตอนเห็นอยู่จริง
+  // (เดิม StatusBar สีขาวของหน้านี้ไปทับหน้าแรกโทนสว่างหลังออกจากระบบ ไอคอนแถบบนมองไม่เห็น)
+  const isFocused = useIsFocused();
+  const { colors, gradients, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
+
+  // ประกายทองในหัว — สร้างครั้งเดียว (สุ่มใหม่ทุก render จุดจะกระโดด)
+  const motes = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => ({
+        id: i,
+        delay: i * 420,
+        size: 3 + Math.random() * 3.5,
+        startX: Math.random() * width,
+        startY: 150 + Math.random() * 260,
+      })),
+    []
+  );
 
   // Animations
   const logoScale = useRef(new Animated.Value(0.5)).current;
@@ -315,176 +350,231 @@ export default function IndexScreen() {
   const goToLogin = () => router.push('/login');
   const goToRegister = () => router.push('/register');
 
-  // สร้าง particles
-  const particles = Array.from({ length: 15 }, (_, i) => ({
-    id: i,
-    delay: i * 400,
-    size: 4 + Math.random() * 8,
-    color: ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B'][Math.floor(Math.random() * 5)],
-    startX: Math.random() * width,
-    startY: height * 0.5 + Math.random() * (height * 0.5),
-  }));
+  // ขนาดการ์ดบริการ: 4 ใบเต็มแถว (แท็บเล็ตจำกัดความกว้างเนื้อหา)
+  const contentWidth = Math.min(screenWidth, CONTENT_MAX) - spacing.screen * 2;
+  const tileGap = 10;
+  const tileSize = Math.floor((contentWidth - tileGap * 3) / 4);
+  // สี่เหลี่ยมไอคอน: สว่าง = น้ำเงินอ่อน/ไอคอนน้ำเงิน · มืด = ทองจาง/ไอคอนทอง (น้ำเงินบนพื้นมืดอ่านไม่ออก)
+  const tileBg = isDark ? colors.goldSoft : colors.navySoft;
+  const tileInk = isDark ? colors.gold : colors.navy;
+  const kanokWidth = 250;
 
   return (
-    <View style={styles.container}>
-      {/* Premium Gradient Background */}
-      <LinearGradient
-        colors={['#0F0F23', '#1a1a2e', '#16213e', '#0F0F23']}
-        locations={[0, 0.3, 0.7, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {/* Glowing Orbs Background */}
-      <GlowingOrb delay={0} size={200} color="rgba(59,130,246,0.15)" position={{ top: -50, left: -80 }} />
-      <GlowingOrb delay={500} size={150} color="rgba(139,92,246,0.12)" position={{ top: 150, right: -60 }} />
-      <GlowingOrb delay={1000} size={120} color="rgba(236,72,153,0.1)" position={{ bottom: 200, left: -40 }} />
-      <GlowingOrb delay={1500} size={180} color="rgba(16,185,129,0.08)" position={{ bottom: 50, right: -70 }} />
-
-      {/* Floating Particles */}
-      {particles.map((p) => (
-        <FloatingParticle key={p.id} {...p} />
-      ))}
-
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isFocused && <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />}
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Animated Logo Section */}
-        <Animated.View
-          style={[
-            styles.logoSection,
-            {
-              opacity: logoOpacity,
-              transform: [{ scale: logoScale }],
-            },
-          ]}
+        {/* พื้นน้ำเงินเหนือหัว (ตอนดึงเลื่อนเกินขอบบนจะไม่เห็นพื้นงาช้าง) */}
+        <View pointerEvents="none" style={[styles.overscroll, { backgroundColor: gradients.hero[0] }]} />
+
+        {/* ---------- หัวน้ำเงินกรมท่า ---------- */}
+        <RoyalHeader
+          ornamentTop={insets.top - 8}
+          ornamentWidth={270}
+          style={{ paddingTop: insets.top + spacing.xl, paddingBottom: SHEET_RADIUS + spacing.xxxl + spacing.sm }}
         >
-          {/* Pulsing Rings */}
-          <View style={styles.logoWrapper}>
-            <PulsingRing delay={0} size={130} />
-            <PulsingRing delay={700} size={130} />
-            <PulsingRing delay={1400} size={130} />
+          {/* ลายกนกกลับหัว มุมซ้ายล่าง — ล้อกับกรอบไอคอนแอป */}
+          <Image
+            source={KANOK}
+            contentFit="contain"
+            accessible={false}
+            style={[
+              styles.kanokBottom,
+              { width: kanokWidth, height: kanokWidth * KANOK_RATIO, opacity: isDark ? 0.14 : 0.22 },
+            ]}
+          />
 
-            {/* Logo Container with Gradient Border */}
-            <LinearGradient
-              colors={['#3B82F6', '#8B5CF6', '#EC4899', '#3B82F6']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logoBorder}
-            >
-              <View style={styles.logoInner}>
-                {!logoError ? (
-                  <Image
-                    source={require('@/assets/images/icon.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                    onError={() => setLogoError(true)}
-                  />
-                ) : (
-                  <Text style={styles.logoEmoji}>💎</Text>
-                )}
-              </View>
-            </LinearGradient>
-          </View>
+          {/* ประกายทองลอย — เฉพาะตอนหน้านี้แสดงอยู่ (ถูกซ่อนใต้แท็บ = ไม่ต้องวนแอนิเมชัน) */}
+          {isFocused && motes.map((m) => <GoldMote key={m.id} {...m} color={colors.goldLight} />)}
 
-          <Text style={styles.appName}>{APP_INFO.NAME}</Text>
-          <View style={styles.subtitleRow}>
-            <View style={styles.subtitleLine} />
-            <Text style={styles.appSubtitle}>ช้อป · ตลาดสด · ส่งของ</Text>
-            <View style={styles.subtitleLine} />
-          </View>
-        </Animated.View>
+          {/* Animated Logo Section */}
+          <Animated.View
+            style={[
+              styles.logoSection,
+              {
+                opacity: logoOpacity,
+                transform: [{ scale: logoScale }],
+              },
+            ]}
+          >
+            <View style={styles.logoWrapper}>
+              {isFocused && (
+                <>
+                  <LogoHalo size={LOGO_SIZE + 78} color={colors.gold} />
+                  <PulsingRing delay={0} size={LOGO_SIZE + 12} color={colors.goldLight} />
+                  <PulsingRing delay={1200} size={LOGO_SIZE + 12} color={colors.goldLight} />
+                </>
+              )}
 
-        {/* Animated Content */}
-        <Animated.View
-          style={[
-            styles.contentSection,
-            {
-              opacity: contentOpacity,
-              transform: [{ translateY: contentSlide }],
-            },
-          ]}
-        >
+              {/* กรอบทองฟอยล์รอบไอคอนแอป */}
+              <LinearGradient
+                colors={gradients.goldBorder}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.logoFrame, shadowStyle('lg', colors.shadowDark)]}
+              >
+                <View style={[styles.logoInner, { backgroundColor: colors.navyDeep }]}>
+                  {!logoError ? (
+                    <Image
+                      source={APP_ICON}
+                      style={styles.logo}
+                      contentFit="cover"
+                      onError={() => setLogoError(true)}
+                    />
+                  ) : (
+                    <Text style={[typography.serifLg, { color: colors.goldLight }]}>TP</Text>
+                  )}
+                </View>
+              </LinearGradient>
+            </View>
+
+            <Text style={[typography.serifSm, styles.appName, { color: colors.goldLight }]}>{APP_INFO.NAME}</Text>
+            <View style={styles.subtitleRow}>
+              <LinearGradient
+                colors={[withAlpha(colors.gold, 0), colors.gold]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.subtitleLine}
+              />
+              <Text style={[typography.overline, { color: colors.onHeaderMuted }]}>ช้อป · ตลาดสด · ส่งของ</Text>
+              <LinearGradient
+                colors={[colors.gold, withAlpha(colors.gold, 0)]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.subtitleLine}
+              />
+            </View>
+          </Animated.View>
+
           {/* Tagline */}
-          <View style={styles.taglineSection}>
-            <Text style={styles.tagline}>ของดีใกล้บ้าน</Text>
-            <Text style={styles.taglineHighlight}>ส่งถึงมือ</Text>
-            <Text style={styles.taglineDesc}>
-              สั่งของจากตลาดสดและร้านค้าในชุมชน{'\n'}มีไรเดอร์ใกล้คุณช่วยส่ง
+          <Animated.View
+            style={[
+              styles.taglineSection,
+              {
+                opacity: contentOpacity,
+                transform: [{ translateY: contentSlide }],
+              },
+            ]}
+          >
+            <Text accessibilityRole="header" style={[typography.serifLg, styles.center, { color: colors.onHeader }]}>
+              ของดีใกล้บ้าน
             </Text>
-          </View>
+            <Text style={[typography.serifLg, styles.center, { color: colors.goldLight }]}>ส่งถึงมือ</Text>
+          </Animated.View>
+        </RoyalHeader>
 
-          {/* Features with Glassmorphism */}
-          <View style={styles.featuresSection}>
-            {[
-              { icon: '🥬', text: 'ตลาดสดและร้านอาหารใกล้บ้าน', color: '#10B981' },
-              { icon: '🛵', text: 'ไรเดอร์ในชุมชนส่งไว ติดตามได้', color: '#F59E0B' },
-              { icon: '🛡️', text: 'จ่ายปลอดภัย ด้วย PromptPay หรือกระเป๋าเงิน', color: '#8B5CF6' },
-            ].map((feature, index) => (
-              <View key={index} style={styles.featureRow}>
+        {/* ---------- แผ่นงาช้าง ---------- */}
+        <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          <Animated.View
+            style={[
+              styles.sheetInner,
+              {
+                opacity: contentOpacity,
+                transform: [{ translateY: contentSlide }],
+              },
+            ]}
+          >
+            {/* บริการ — ภาพ 3D บนการ์ดขาว */}
+            <View style={[styles.serviceRow, { gap: tileGap }]}>
+              {SERVICES.map((service) => (
+                <View key={service.art} style={[styles.serviceItem, { width: tileSize }]}>
+                  <Card3D
+                    padding={0}
+                    radius={radii.xl}
+                    shadow="md"
+                    contentStyle={[styles.serviceTile, { width: tileSize, height: tileSize }]}
+                  >
+                    <BrandArt name={service.art} size={tileSize - 12} />
+                  </Card3D>
+                  <Text numberOfLines={1} style={[typography.caption, styles.serviceLabel, { color: colors.textStrong }]}>
+                    {service.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            {/* แบนเนอร์ตลาดกลางคืน */}
+            <View style={[styles.banner, shadowStyle('md', colors.shadowDark)]}>
+              <View style={styles.bannerClip}>
+                <Image source={NIGHT_MARKET} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
                 <LinearGradient
-                  colors={[`${feature.color}30`, `${feature.color}10`]}
-                  style={styles.featureIconBg}
-                >
-                  <Text style={styles.featureIconText}>{feature.icon}</Text>
-                </LinearGradient>
-                <Text style={styles.featureText}>{feature.text}</Text>
-                <View style={[styles.featureAccent, { backgroundColor: feature.color }]} />
+                  colors={gradients.bannerScrim}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <LinearGradient
+                  colors={[withAlpha(gradients.hero[1], 0.92), withAlpha(gradients.hero[1], 0)]}
+                  start={{ x: 0, y: 0.5 }}
+                  end={{ x: 0.85, y: 0.5 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.bannerBody}>
+                  <View style={[styles.bannerTag, { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder }]}>
+                    <Icon name="moon-stars" size={13} color={colors.goldLight} />
+                    <Text style={[typography.micro, { color: colors.goldLight }]}>ตลาดสด · ร้านรถเข็น</Text>
+                  </View>
+                  <Text style={[typography.serif, styles.bannerTitle, { color: colors.onHeader }]}>
+                    สั่งของจากตลาดสด{'\n'}และร้านค้าในชุมชน
+                  </Text>
+                  <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]}>มีไรเดอร์ใกล้คุณช่วยส่ง</Text>
+                </View>
               </View>
-            ))}
-          </View>
-        </Animated.View>
+            </View>
 
-        {/* Animated Buttons */}
-        <Animated.View
-          style={[
-            styles.buttonSection,
-            {
-              opacity: contentOpacity,
-              transform: [{ scale: buttonScale }],
-            },
-          ]}
-        >
-          <Pressable
-            onPress={goToLogin}
-            style={({ pressed }) => [
-              styles.primaryButtonWrapper,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <LinearGradient
-              colors={['#3B82F6', '#2563EB', '#1D4ED8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.primaryButton}
-            >
-              <Text style={styles.buttonIcon}>🔓</Text>
-              <Text style={styles.primaryButtonText}>เข้าสู่ระบบ</Text>
-            </LinearGradient>
-          </Pressable>
+            {/* Features */}
+            <Text style={[typography.overline, styles.featuresLabel, { color: colors.goldDeep }]}>
+              ทุกอย่างใกล้บ้าน ในแอปเดียว
+            </Text>
+            <Card3D padding={0}>
+              {FEATURES.map((feature, index) => (
+                <View
+                  key={feature.text}
+                  style={[
+                    styles.featureRow,
+                    index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+                  ]}
+                >
+                  <View style={[styles.featureIcon, { backgroundColor: feature.money ? colors.goldSoft : tileBg }]}>
+                    <Icon name={feature.icon} size={22} color={feature.money ? colors.goldDeep : tileInk} />
+                  </View>
+                  <Text style={[typography.bodyStrong, styles.featureText, { color: colors.textStrong }]}>
+                    {feature.text}
+                  </Text>
+                  <Icon name="seal-check" size={20} color={colors.gold} weight="fill" />
+                </View>
+              ))}
+            </Card3D>
 
-          <Pressable
-            onPress={goToRegister}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.buttonIcon}>✨</Text>
-            <Text style={styles.secondaryButtonText}>สมัครสมาชิกใหม่</Text>
-          </Pressable>
-        </Animated.View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
-          </Text>
+            {/* Footer */}
+            <Text style={[typography.micro, styles.footerText, { color: colors.textFaint }]}>
+              v{APP_INFO.VERSION} ({APP_INFO.BUILD_DATE})
+            </Text>
+          </Animated.View>
         </View>
       </ScrollView>
+
+      {/* ---------- ปุ่มท้ายจอ ---------- */}
+      <Animated.View
+        style={[
+          styles.ctaBar,
+          {
+            paddingBottom: insets.bottom + spacing.md,
+            backgroundColor: colors.card,
+            borderTopColor: colors.divider,
+            opacity: contentOpacity,
+          },
+        ]}
+      >
+        <Animated.View style={[styles.ctaInner, { transform: [{ scale: buttonScale }] }]}>
+          <Button3D title="เข้าสู่ระบบ" icon="sign-in" size="lg" fullWidth onPress={goToLogin} />
+          <Button3D title="สมัครสมาชิกใหม่" icon="user-plus" variant="secondary" fullWidth onPress={goToRegister} />
+        </Animated.View>
+      </Animated.View>
     </View>
   );
 }
@@ -496,230 +586,188 @@ export default function IndexScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F23',
     overflow: 'hidden',
+  },
+  center: {
+    textAlign: 'center',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: height * 0.08,
-    paddingBottom: 40,
-    minHeight: height,
+    flexGrow: 1,
+  },
+  overscroll: {
+    position: 'absolute',
+    top: -1000,
+    left: 0,
+    right: 0,
+    height: 1000,
   },
 
-  // Particles & Orbs
-  particle: {
+  // หัว
+  kanokBottom: {
     position: 'absolute',
-    shadowColor: '#FFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
-    elevation: 4,
+    bottom: SHEET_RADIUS - 30,
+    left: -70,
+    transform: [{ rotate: '180deg' }],
   },
-  orb: {
+  mote: {
     position: 'absolute',
   },
-
-  // Logo Section
-  logoSection: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  logoWrapper: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    width: 130,
-    height: 130,
+  halo: {
+    position: 'absolute',
   },
   pulsingRing: {
     position: 'absolute',
-    borderWidth: 2,
-    borderColor: 'rgba(59,130,246,0.4)',
+    borderWidth: 1.5,
   },
-  logoBorder: {
-    padding: 4,
-    borderRadius: 32,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
+  logoSection: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxl,
+  },
+  logoWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: LOGO_SIZE + 40,
+    height: LOGO_SIZE + 40,
+    marginBottom: spacing.md,
+  },
+  logoFrame: {
+    padding: 2.5,
+    borderRadius: 31,
   },
   logoInner: {
-    backgroundColor: '#0F0F23',
-    borderRadius: 28,
-    padding: 4,
+    borderRadius: 29,
+    overflow: 'hidden',
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logo: {
-    width: 90,
-    height: 90,
-    borderRadius: 24,
-  },
-  logoEmoji: {
-    fontSize: 50,
+    width: LOGO_SIZE,
+    height: LOGO_SIZE,
   },
   appName: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-    textShadowColor: 'rgba(59,130,246,0.5)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
+    letterSpacing: 0.6,
   },
   subtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: spacing.xs,
+    gap: spacing.md,
   },
   subtitleLine: {
-    width: 30,
+    width: 34,
     height: 1,
-    backgroundColor: 'rgba(59,130,246,0.5)',
-    marginHorizontal: 12,
-  },
-  appSubtitle: {
-    fontSize: 14,
-    color: '#E6B347',
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-
-  // Content Section
-  contentSection: {
-    flex: 1,
   },
   taglineSection: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  tagline: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    fontWeight: '300',
-  },
-  taglineHighlight: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#3B82F6',
-    marginBottom: 8,
-    textShadowColor: 'rgba(59,130,246,0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 10,
-  },
-  taglineDesc: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 22,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.xxl,
   },
 
-  // Features Section
-  featuresSection: {
-    marginBottom: 32,
+  // แผ่นเนื้อหา
+  sheet: {
+    flexGrow: 1,
+    marginTop: -SHEET_RADIUS,
+    borderTopLeftRadius: SHEET_RADIUS,
+    borderTopRightRadius: SHEET_RADIUS,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+  },
+  sheetInner: {
+    width: '100%',
+    maxWidth: CONTENT_MAX,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.screen,
+  },
+  serviceRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  serviceItem: {
+    alignItems: 'center',
+  },
+  serviceTile: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serviceLabel: {
+    marginTop: spacing.sm,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // แบนเนอร์
+  banner: {
+    marginTop: spacing.xxl,
+    borderRadius: radii.xl,
+  },
+  bannerClip: {
+    height: 178,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  bannerBody: {
+    padding: spacing.lg,
+    paddingRight: spacing.xxxl * 2,
+  },
+  bannerTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
+  },
+  bannerTitle: {
+    marginBottom: 2,
+  },
+
+  // จุดเด่น
+  featuresLabel: {
+    marginTop: spacing.xxl,
+    marginBottom: spacing.md,
+    marginLeft: spacing.xs,
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
+    gap: spacing.md,
+    padding: 14,
   },
-  featureIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+  featureIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
-  },
-  featureIconText: {
-    fontSize: 20,
   },
   featureText: {
     flex: 1,
-    fontSize: 15,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  featureAccent: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 16,
-  },
-
-  // Button Section
-  buttonSection: {
-    marginTop: 'auto',
-    gap: 12,
-  },
-  primaryButtonWrapper: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    gap: 10,
-  },
-  primaryButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    gap: 10,
-  },
-  secondaryButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  buttonIcon: {
-    fontSize: 20,
-  },
-  buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
   },
 
   // Footer
-  footer: {
-    alignItems: 'center',
-    marginTop: 24,
-  },
   footerText: {
-    fontSize: 11,
-    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: spacing.xl,
+  },
+
+  // ปุ่มท้ายจอ
+  ctaBar: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing.screen,
+  },
+  ctaInner: {
+    width: '100%',
+    maxWidth: CONTENT_MAX - spacing.screen * 2,
+    alignSelf: 'center',
+    gap: spacing.md,
   },
 });

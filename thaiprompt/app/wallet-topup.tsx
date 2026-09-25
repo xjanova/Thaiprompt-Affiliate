@@ -1,35 +1,36 @@
 /**
- * หน้าเติมเงิน (Top-up) - Native Payment Flow
+ * หน้าเติมเงิน (Top-up) — Native Payment Flow · ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * Features:
  * - ปุ่มจำนวนเงินด่วน: 100, 300, 500, 1000, 2000, 5000, 10000
- * - กรอกจำนวนเงินเอง (100-100,000 บาท)
- * - เลือกวิธีชำระเงิน (PromptPay, บัตรเครดิต, โอนธนาคาร, TrueMoney)
+ * - กรอกจำนวนเงินเอง (100-100,000 บาท) ตัวเลขใหญ่
+ * - เลือกวิธีชำระเงิน (PLAY-18: ในแอปเหลือ PromptPay/QR เท่านั้น)
  * - ชำระเงินผ่าน API โดยตรง (ไม่ต้องเปิดเว็บ)
- * - แสดง QR Code / ข้อมูลโอนเงิน ภายในแอพ
+ * - แสดง QR Code (การ์ดขาวกรอบน้ำเงิน-ทอง) / ข้อมูลโอนเงิน ภายในแอพ
+ * - แถบขั้นตอน: จำนวนเงิน → วิธีชำระ → ชำระเงิน → เสร็จสิ้น · ปุ่มหลักลอยท้ายจอ
  */
 
+import { SvgXml } from 'react-native-svg';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
-  TouchableOpacity,
-  TextInput,
+  Pressable,
   StyleSheet,
-  StatusBar,
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Image,
   Linking,
-  Clipboard,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image as BrandImage } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
+import { resolveQrSource } from '@/utils/qrSource';
 import {
   getWallet,
   getDepositMethods,
@@ -39,6 +40,27 @@ import {
   PaymentTransaction,
 } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import {
+  Button3D,
+  Card3D,
+  Icon,
+  Pill,
+  Screen,
+  SectionHeader,
+  usePressGuard,
+  type IconName,
+} from '@/components/ui';
+import {
+  ActionBar,
+  IconTile,
+  InfoRow,
+  MoneyInput,
+  MoneyText,
+  NavyCard,
+  StepTrack,
+  type TileTone,
+} from '@/components/wallet/WalletKit';
+import { useTheme, LIGHT_THEME, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
 
 // จำนวนเงินด่วน
 const QUICK_AMOUNTS = [100, 300, 500, 1000, 2000, 5000, 10000];
@@ -50,18 +72,31 @@ const MAX_AMOUNT = 100000;
 // Payment Steps
 type PaymentStep = 'amount' | 'method' | 'processing' | 'result';
 
-// Emoji icons สำหรับวิธีชำระเงิน
-const PAYMENT_ICONS: Record<string, string> = {
-  promptpay: '📲',
-  qr: '📲',
-  credit_card: '💳',
-  card: '💳',
-  bank_transfer: '🏦',
-  bank: '🏦',
-  truemoney: '📱',
-  wallet: '👛',
-  default: '💰',
+/** ลำดับขั้นบนแถบขั้นตอน (ตรงกับ PaymentStep) */
+const STEP_ORDER: PaymentStep[] = ['amount', 'method', 'processing', 'result'];
+const STEP_LABELS = ['จำนวนเงิน', 'วิธีชำระ', 'ชำระเงิน', 'เสร็จสิ้น'];
+
+// ไอคอนเส้นสำหรับวิธีชำระเงิน (ตาม category ที่ server ส่งมา)
+const PAYMENT_ICONS: Record<string, IconName> = {
+  promptpay: 'qr-code',
+  qr: 'qr-code',
+  credit_card: 'credit-card',
+  card: 'credit-card',
+  bank_transfer: 'bank',
+  bank: 'bank',
+  truemoney: 'device-mobile',
+  wallet: 'wallet',
+  default: 'coins',
 };
+
+/** จุดเด่นความปลอดภัยใต้ฟอร์มเติมเงิน */
+const TRUST_POINTS: Array<{ icon: IconName; tone: TileTone; text: string }> = [
+  { icon: 'shield-check', tone: 'success', text: 'ชำระเงินผ่านระบบที่ปลอดภัย' },
+  { icon: 'lightning', tone: 'gold', text: 'ยอดเงินเข้าทันทีหลังชำระ' },
+  { icon: 'qr-code', tone: 'navy', text: 'ชำระด้วย PromptPay สแกนจ่ายได้ทุกแอปธนาคาร' },
+];
+
+const KANOK = require('@/assets/images/brand/kanok-gold.webp');
 
 /**
  * วิธีชำระเงินนี้ใช้ได้หรือไม่ — backend ส่ง `enabled` (บางรุ่นส่ง `is_available`)
@@ -72,10 +107,106 @@ const isMethodAvailable = (method: PaymentMethod): boolean => {
   return flags.enabled !== false && flags.is_available !== false;
 };
 
+// =====================================================
+// การ์ดวิธีชำระเงิน
+// =====================================================
+
+interface MethodCardProps {
+  method: PaymentMethod;
+  selected: boolean;
+  /** กำลังสร้างรายการด้วยวิธีนี้ */
+  busy: boolean;
+  /** อีกวิธีกำลังสร้างรายการอยู่ → จางลง */
+  dimmed: boolean;
+  disabled: boolean;
+  onPress: () => unknown;
+}
+
+const MethodCard: React.FC<MethodCardProps> = ({ method, selected, busy, dimmed, disabled, onPress }) => {
+  const { colors } = useTheme();
+  const available = isMethodAvailable(method);
+  const { run } = usePressGuard(onPress, { disabled });
+
+  return (
+    <Pressable
+      onPress={run}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled, selected, busy }}
+      style={({ pressed }) => [
+        styles.methodCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: selected ? colors.gold : colors.border,
+          borderWidth: selected ? 1.5 : 1,
+        },
+        shadowStyle('sm', colors.shadowDark),
+        !available && styles.methodUnavailable,
+        dimmed && styles.methodDimmed,
+        pressed && styles.pressed,
+      ]}
+    >
+      <IconTile icon={PAYMENT_ICONS[method.category] || PAYMENT_ICONS.default} tone="gold" size={48} />
+      <View style={styles.flex}>
+        <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{method.name}</Text>
+        {!!method.description && (
+          <Text style={[typography.caption, styles.methodDesc, { color: colors.textMuted }]}>{method.description}</Text>
+        )}
+        {!available && <Pill label="ไม่พร้อมใช้งาน" tone="danger" style={styles.methodPill} />}
+      </View>
+      {busy ? (
+        <ActivityIndicator color={colors.gold} />
+      ) : (
+        <Icon name="caret-right" size={18} color={selected ? colors.goldDeep : colors.textFaint} weight="bold" />
+      )}
+    </Pressable>
+  );
+};
+
+// =====================================================
+// แถวข้อมูลบัญชีโอน (มีปุ่มคัดลอก)
+// =====================================================
+
+const BankInfoLine: React.FC<{ label: string; value: string; money?: boolean; onCopy?: () => void }> = ({
+  label,
+  value,
+  money = false,
+  onCopy,
+}) => {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.bankLine, { borderTopColor: colors.divider }]}>
+      <View style={styles.flex}>
+        <Text style={[typography.caption, { color: colors.textMuted }]}>{label}</Text>
+        <Text
+          style={[
+            money ? typography.h2 : typography.bodyStrong,
+            money && styles.tabular,
+            { color: money ? colors.goldDeep : colors.textStrong },
+          ]}
+        >
+          {value}
+        </Text>
+      </View>
+      {!!onCopy && (
+        <Pressable
+          onPress={onCopy}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`คัดลอก${label}`}
+          style={({ pressed }) => [styles.copyBtn, { backgroundColor: colors.goldSoft, opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Icon name="copy" size={14} color={colors.goldDeep} weight="bold" />
+          <Text style={[typography.caption, styles.copyText, { color: colors.goldDeep }]}>คัดลอก</Text>
+        </Pressable>
+      )}
+    </View>
+  );
+};
+
 export default function WalletTopupScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { colors, gradients, isDark } = useTheme();
   const { isAuthenticated } = useAuthStore();
 
   // State - ข้อมูลพื้นฐาน
@@ -247,7 +378,12 @@ export default function WalletTopupScreen() {
         console.log('🔄 Status check:', response.data?.status);
 
         if (response.success && response.data) {
-          setTransaction(response.data);
+          // /payment/{id}/status ไม่ส่ง qr_code/bank_info กลับมา → รวมกับค่าเดิม ไม่ทับทั้งก้อน (QR ไม่หายหลัง 3 วินาที)
+          const fresh = Object.fromEntries(
+            Object.entries(response.data).filter(([, v]) => v !== null && v !== undefined)
+          ) as Partial<PaymentTransaction>;
+          const latest = response.data;
+          setTransaction((prev) => (prev ? { ...prev, ...fresh } : latest));
 
           // Stop polling if completed or failed
           if (['completed', 'failed', 'cancelled', 'expired'].includes(response.data.status)) {
@@ -278,14 +414,17 @@ export default function WalletTopupScreen() {
   };
 
   // Copy to clipboard
-  const handleCopy = (text: string, label: string) => {
-    Clipboard.setString(text);
+  const handleCopy = async (text: string, label: string) => {
+    await Clipboard.setStringAsync(text);
     Alert.alert('คัดลอกแล้ว', `${label} ถูกคัดลอกแล้ว`);
   };
 
   // กลับไปขั้นตอนก่อนหน้า
   const handleBack = () => {
-    stopPolling();
+    // ระหว่างรอชำระ: หยุดเช็คสถานะเฉพาะเมื่อผู้ใช้ยืนยันยกเลิกจริง (กด "ไม่ยกเลิก" = ยังรอผลต่อ)
+    if (currentStep !== 'processing') {
+      stopPolling();
+    }
 
     if (currentStep === 'method') {
       setCurrentStep('amount');
@@ -300,6 +439,7 @@ export default function WalletTopupScreen() {
             text: 'ยกเลิก',
             style: 'destructive',
             onPress: () => {
+              stopPolling();
               setCurrentStep('amount');
               setTransaction(null);
               setSelectedMethod(null);
@@ -335,119 +475,116 @@ export default function WalletTopupScreen() {
   // Render Step 1: เลือกจำนวนเงิน
   const renderAmountStep = () => (
     <>
-      {/* ยอดเงินปัจจุบัน */}
-      <View style={[styles.balanceCard, isDark && styles.cardDark]}>
-        <View style={styles.balanceRow}>
-          <Text style={styles.emojiIcon}>💰</Text>
-          <Text style={[styles.balanceLabel, isDark && styles.textLight]}>
-            ยอดเงินปัจจุบัน
-          </Text>
+      {/* ยอดเงินปัจจุบัน — การ์ดน้ำเงินแบบบัตรโลหะ */}
+      <NavyCard>
+        <View style={styles.cardHeadRow}>
+          <Icon name="wallet" size={18} color={colors.goldLight} weight="fill" />
+          <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>ยอดเงินปัจจุบัน</Text>
         </View>
-        <Text style={[styles.balanceAmount, isDark && styles.textLight]}>
-          {isLoading ? '...' : formatCurrency(walletBalance)}
-        </Text>
+        <View style={styles.balanceLine}>
+          {isLoading ? (
+            <ActivityIndicator color={colors.goldLight} />
+          ) : (
+            <MoneyText text={formatCurrency(walletBalance)} color={colors.goldLight} size={34} />
+          )}
+        </View>
         {/* PLAY-18: กระเป๋าเงินแบบใช้ในระบบ — สำหรับสินค้าจริงและค่าจัดส่งเท่านั้น */}
-        <Text style={[styles.topupPurpose, isDark && styles.textLight]}>
+        <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>
           ยอดเติมใช้ชำระค่าสินค้าและค่าจัดส่งในแอป
         </Text>
-      </View>
+      </NavyCard>
 
       {/* เลือกจำนวนเงิน */}
-      <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-        เลือกจำนวนเงินที่ต้องการเติม
-      </Text>
+      <Card3D style={styles.block} padding={spacing.lg}>
+        <Text style={[typography.h3, { color: colors.textStrong }]}>เลือกจำนวนเงินที่ต้องการเติม</Text>
 
-      {/* ปุ่มจำนวนเงินด่วน */}
-      <View style={styles.quickAmountGrid}>
-        {QUICK_AMOUNTS.map((amt) => (
-          <TouchableOpacity
-            key={amt}
-            style={[
-              styles.quickAmountBtn,
-              isDark && styles.quickAmountBtnDark,
-              selectedAmount === amt && styles.quickAmountBtnSelected,
-            ]}
-            onPress={() => handleQuickAmount(amt)}
-          >
-            <Text
-              style={[
-                styles.quickAmountText,
-                isDark && styles.textMuted,
-                selectedAmount === amt && styles.quickAmountTextSelected,
-              ]}
-            >
-              ฿{amt.toLocaleString()}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+        {/* ปุ่มจำนวนเงินด่วน */}
+        <View style={styles.quickGrid}>
+          {QUICK_AMOUNTS.map((amt) => {
+            const selected = selectedAmount === amt;
+            return (
+              <Pressable
+                key={amt}
+                onPress={() => handleQuickAmount(amt)}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                style={({ pressed }) => [styles.quickItem, pressed && styles.pressed]}
+              >
+                {selected ? (
+                  <LinearGradient
+                    colors={gradients.navy}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={[
+                      styles.quickTile,
+                      { borderColor: withAlpha(colors.gold, 0.6) },
+                      shadowStyle('sm', colors.shadowDark),
+                    ]}
+                  >
+                    <Text style={[styles.quickText, { color: colors.goldLight }]}>฿{amt.toLocaleString()}</Text>
+                  </LinearGradient>
+                ) : (
+                  <View style={[styles.quickTile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={[styles.quickText, { color: colors.textStrong }]}>฿{amt.toLocaleString()}</Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
 
-      {/* กรอกจำนวนเงินเอง */}
-      <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-        หรือกรอกจำนวนเงินเอง
-      </Text>
+        {/* กรอกจำนวนเงินเอง */}
+        <View style={styles.orRow}>
+          <View style={[styles.orLine, { backgroundColor: colors.divider }]} />
+          <Text style={[typography.caption, { color: colors.textMuted }]}>หรือกรอกจำนวนเงินเอง</Text>
+          <View style={[styles.orLine, { backgroundColor: colors.divider }]} />
+        </View>
 
-      <View style={[styles.inputContainer, isDark && styles.inputContainerDark]}>
-        <Text style={[styles.inputPrefix, isDark && styles.textMuted]}>฿</Text>
-        <TextInput
-          style={[styles.input, isDark && styles.textLight]}
+        <MoneyInput
           value={customAmount}
           onChangeText={handleCustomAmount}
           placeholder="0"
-          placeholderTextColor="#9CA3AF"
           keyboardType="numeric"
           maxLength={7}
+          accessibilityLabel="กรอกจำนวนเงินเอง"
         />
-      </View>
 
-      <Text style={styles.inputHint}>
-        ขั้นต่ำ {formatCurrency(MIN_AMOUNT)} - สูงสุด {formatCurrency(MAX_AMOUNT)}
-      </Text>
+        <View style={styles.hintRow}>
+          <Icon name="info" size={14} color={colors.textFaint} />
+          <Text style={[typography.caption, styles.flex, { color: colors.textFaint }]}>
+            ขั้นต่ำ {formatCurrency(MIN_AMOUNT)} - สูงสุด {formatCurrency(MAX_AMOUNT)}
+          </Text>
+        </View>
+      </Card3D>
 
       {/* สรุปการเติมเงิน */}
       {amount > 0 && (
-        <View style={[styles.summaryCard, isDark && styles.cardDark]}>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-              จำนวนเงินที่จะเติม
-            </Text>
-            <Text style={[styles.summaryValue, isDark && styles.textLight]}>
-              {formatCurrency(amount)}
-            </Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.summaryRow}>
-            <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-              ยอดเงินหลังเติม
-            </Text>
-            <Text style={styles.summaryTotal}>
+        <Card3D variant="inset" style={styles.block} padding={spacing.lg}>
+          <InfoRow label="จำนวนเงินที่จะเติม" value={formatCurrency(amount)} />
+          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+          <InfoRow label="ยอดเงินหลังเติม" strong>
+            <Text style={[typography.h2, styles.tabular, { color: colors.success }]}>
               {formatCurrency(walletBalance + amount)}
             </Text>
-          </View>
-        </View>
+          </InfoRow>
+        </Card3D>
       )}
 
       {/* ข้อมูลการชำระเงิน */}
-      <View style={[styles.infoCard, isDark && styles.cardDark]}>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoEmoji}>🛡️</Text>
-          <Text style={[styles.infoText, isDark && styles.textMuted]}>
-            ชำระเงินผ่านระบบที่ปลอดภัย
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoEmoji}>⚡</Text>
-          <Text style={[styles.infoText, isDark && styles.textMuted]}>
-            ยอดเงินเข้าทันทีหลังชำระ
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoEmoji}>💳</Text>
-          <Text style={[styles.infoText, isDark && styles.textMuted]}>
-            รองรับ PromptPay, บัตรเครดิต, โอนธนาคาร
-          </Text>
-        </View>
-      </View>
+      <Card3D style={styles.block} padding={spacing.md}>
+        {TRUST_POINTS.map((point, index) => (
+          <View
+            key={point.text}
+            style={[
+              styles.trustRow,
+              index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
+            ]}
+          >
+            <IconTile icon={point.icon} tone={point.tone} size={36} />
+            <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>{point.text}</Text>
+          </View>
+        ))}
+      </Card3D>
     </>
   );
 
@@ -455,72 +592,43 @@ export default function WalletTopupScreen() {
   const renderMethodStep = () => (
     <>
       {/* แสดงจำนวนเงิน */}
-      <View style={[styles.amountDisplay, isDark && styles.cardDark]}>
-        <Text style={[styles.amountDisplayLabel, isDark && styles.textMuted]}>
-          จำนวนเงินที่จะเติม
-        </Text>
-        <Text style={[styles.amountDisplayValue, isDark && styles.textLight]}>
-          {formatCurrency(amount)}
-        </Text>
-      </View>
+      <NavyCard contentStyle={styles.amountHero}>
+        <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>จำนวนเงินที่จะเติม</Text>
+        <MoneyText text={formatCurrency(amount)} color={colors.goldLight} size={38} />
+      </NavyCard>
 
-      <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-        เลือกวิธีชำระเงิน
-      </Text>
+      <SectionHeader title="เลือกวิธีชำระเงิน" style={styles.sectionHeader} />
 
       {loadingMethods ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={[styles.loadingText, isDark && styles.textMuted]}>
+        <View style={styles.centerBox}>
+          <ActivityIndicator size="large" color={colors.gold} />
+          <Text style={[typography.bodySm, styles.centerText, { color: colors.textMuted }]}>
             กำลังโหลดวิธีชำระเงิน...
           </Text>
         </View>
       ) : paymentMethods.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, isDark && styles.textMuted]}>
+        <Card3D variant="flat" padding={spacing.xl} contentStyle={styles.centerBox}>
+          <IconTile icon="qr-code" tone="gold" size={56} />
+          <Text style={[typography.body, styles.centerText, { color: colors.textMuted }]}>
             ตอนนี้ยังเติมเงินผ่าน PromptPay ไม่ได้ ลองใหม่ภายหลังนะ
           </Text>
-        </View>
+        </Card3D>
       ) : (
         <View style={styles.methodList}>
-          {paymentMethods.map((method) => (
-            <TouchableOpacity
-              key={method.id}
-              style={[
-                styles.methodCard,
-                isDark && styles.cardDark,
-                selectedMethod?.id === method.id && styles.methodCardSelected,
-                !isMethodAvailable(method) && styles.methodCardDisabled,
-              ]}
-              onPress={() => isMethodAvailable(method) && handleSelectPaymentMethod(method)}
-              disabled={!isMethodAvailable(method) || isSubmitting}
-            >
-              <View
-                style={[
-                  styles.methodIconContainer,
-                  { backgroundColor: method.color || '#3B82F6' + '20' },
-                ]}
-              >
-                <Text style={styles.methodIcon}>
-                  {PAYMENT_ICONS[method.category] || PAYMENT_ICONS.default}
-                </Text>
-              </View>
-              <View style={styles.methodInfo}>
-                <Text style={[styles.methodName, isDark && styles.textLight]}>
-                  {method.name}
-                </Text>
-                {method.description && (
-                  <Text style={[styles.methodDesc, isDark && styles.textMuted]}>
-                    {method.description}
-                  </Text>
-                )}
-                {!isMethodAvailable(method) && (
-                  <Text style={styles.methodUnavailable}>ไม่พร้อมใช้งาน</Text>
-                )}
-              </View>
-              <Text style={styles.methodArrow}>→</Text>
-            </TouchableOpacity>
-          ))}
+          {paymentMethods.map((method) => {
+            const selected = selectedMethod?.id === method.id;
+            return (
+              <MethodCard
+                key={method.id}
+                method={method}
+                selected={selected}
+                busy={isSubmitting && selected}
+                dimmed={isSubmitting && !selected}
+                disabled={!isMethodAvailable(method) || isSubmitting}
+                onPress={() => isMethodAvailable(method) && handleSelectPaymentMethod(method)}
+              />
+            );
+          })}
         </View>
       )}
     </>
@@ -528,113 +636,117 @@ export default function WalletTopupScreen() {
 
   // Render Step 3: กำลังชำระเงิน
   const renderProcessingStep = () => (
-    <View style={styles.processingContainer}>
-      {/* QR Code สำหรับ PromptPay */}
+    <View>
+      {/* QR Code สำหรับ PromptPay — การ์ดขาว แถบน้ำเงิน กรอบทอง */}
       {transaction?.qr_code && (
-        <View style={[styles.qrContainer, isDark && styles.cardDark]}>
-          <Text style={[styles.qrTitle, isDark && styles.textLight]}>
-            สแกน QR Code เพื่อชำระเงิน
-          </Text>
-          <View style={styles.qrImageContainer}>
-            <Image
-              source={{ uri: transaction.qr_code_url || `data:image/png;base64,${transaction.qr_code}` }}
-              style={styles.qrImage}
-              resizeMode="contain"
-            />
+        <View
+          style={[
+            styles.qrCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+            shadowStyle('md', colors.shadowDark),
+          ]}
+        >
+          <View style={styles.qrClip}>
+            <LinearGradient colors={gradients.navy} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.qrBand}>
+              <BrandImage
+                source={KANOK}
+                contentFit="contain"
+                accessible={false}
+                pointerEvents="none"
+                style={[styles.qrKanok, { opacity: isDark ? 0.3 : 0.42 }]}
+              />
+              <View style={styles.qrTitleRow}>
+                <Icon name="qr-code" size={20} color={colors.goldLight} />
+                <Text style={[typography.serifSm, { color: colors.onHeader }]}>สแกน QR Code เพื่อชำระเงิน</Text>
+              </View>
+            </LinearGradient>
+
+            <View style={styles.qrBody}>
+              {/* QR ต้องอยู่บนพื้นขาวเสมอ (สแกนติดทั้งโหมดมืด/สว่าง) → ใช้สีการ์ดของธีมสว่าง */}
+              <LinearGradient
+                colors={gradients.goldBorder}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.qrFrame, shadowStyle('md', colors.shadowDark)]}
+              >
+                <View style={[styles.qrPlate, { backgroundColor: LIGHT_THEME.colors.card }]}>
+                  {(() => {
+                    // qr_code จาก server ส่วนใหญ่เป็น data:image/svg+xml → ต้องวาดด้วย SvgXml (Image วาด SVG ไม่ได้)
+                    const qr = resolveQrSource(transaction.qr_code, transaction.qr_code_url);
+                    if (qr?.kind === 'svg') {
+                      return <SvgXml xml={qr.xml} width={styles.qrImage.width} height={styles.qrImage.height} />;
+                    }
+                    if (qr?.kind === 'image') {
+                      return <Image source={{ uri: qr.uri }} style={styles.qrImage} resizeMode="contain" />;
+                    }
+                    return (
+                      <Text style={[typography.bodySm, styles.centerText, { color: LIGHT_THEME.colors.textMuted }]}>
+                        แสดง QR ไม่ได้ กรุณาใช้ข้อมูลบัญชีด้านล่าง หรือลองใหม่อีกครั้ง
+                      </Text>
+                    );
+                  })()}
+                </View>
+              </LinearGradient>
+
+              <MoneyText text={formatCurrency(transaction.amount)} color={colors.goldDeep} size={32} style={styles.qrAmount} />
+              <Text style={[typography.bodySm, styles.centerText, { color: colors.textMuted }]}>
+                เปิดแอพธนาคารแล้วสแกน QR Code นี้
+              </Text>
+            </View>
           </View>
-          <Text style={[styles.qrAmount, isDark && styles.textLight]}>
-            {formatCurrency(transaction.amount)}
-          </Text>
-          <Text style={[styles.qrHint, isDark && styles.textMuted]}>
-            เปิดแอพธนาคารแล้วสแกน QR Code นี้
-          </Text>
         </View>
       )}
 
       {/* Bank Transfer Info */}
       {transaction?.bank_info && (
-        <View style={[styles.bankInfoCard, isDark && styles.cardDark]}>
-          <Text style={[styles.bankInfoTitle, isDark && styles.textLight]}>
-            โอนเงินไปยังบัญชีนี้
-          </Text>
-
-          <View style={styles.bankInfoRow}>
-            <Text style={[styles.bankInfoLabel, isDark && styles.textMuted]}>ธนาคาร</Text>
-            <Text style={[styles.bankInfoValue, isDark && styles.textLight]}>
-              {transaction.bank_info.bank_name}
-            </Text>
+        <Card3D style={styles.block} padding={spacing.lg}>
+          <View style={styles.cardTitleRow}>
+            <IconTile icon="bank" tone="navy" size={40} />
+            <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>โอนเงินไปยังบัญชีนี้</Text>
           </View>
 
-          <View style={styles.bankInfoRow}>
-            <Text style={[styles.bankInfoLabel, isDark && styles.textMuted]}>ชื่อบัญชี</Text>
-            <Text style={[styles.bankInfoValue, isDark && styles.textLight]}>
-              {transaction.bank_info.account_name}
-            </Text>
-          </View>
-
-          <View style={styles.bankInfoRow}>
-            <Text style={[styles.bankInfoLabel, isDark && styles.textMuted]}>เลขบัญชี</Text>
-            <View style={styles.copyRow}>
-              <Text style={[styles.bankInfoValue, isDark && styles.textLight]}>
-                {transaction.bank_info.account_number}
-              </Text>
-              <TouchableOpacity
-                style={styles.copyBtn}
-                onPress={() => handleCopy(transaction.bank_info!.account_number, 'เลขบัญชี')}
-              >
-                <Text style={styles.copyBtnText}>คัดลอก</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.bankInfoRow}>
-            <Text style={[styles.bankInfoLabel, isDark && styles.textMuted]}>จำนวนเงิน</Text>
-            <View style={styles.copyRow}>
-              <Text style={styles.bankInfoAmount}>
-                {formatCurrency(transaction.amount)}
-              </Text>
-              <TouchableOpacity
-                style={styles.copyBtn}
-                onPress={() => handleCopy(transaction.amount.toString(), 'จำนวนเงิน')}
-              >
-                <Text style={styles.copyBtnText}>คัดลอก</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
+          <BankInfoLine label="ธนาคาร" value={transaction.bank_info.bank_name} />
+          <BankInfoLine label="ชื่อบัญชี" value={transaction.bank_info.account_name} />
+          <BankInfoLine
+            label="เลขบัญชี"
+            value={transaction.bank_info.account_number}
+            onCopy={() => handleCopy(transaction.bank_info!.account_number, 'เลขบัญชี')}
+          />
+          <BankInfoLine
+            label="จำนวนเงิน"
+            value={formatCurrency(transaction.amount)}
+            money
+            onCopy={() => handleCopy(transaction.amount.toString(), 'จำนวนเงิน')}
+          />
           {transaction.bank_info.ref_no && (
-            <View style={styles.bankInfoRow}>
-              <Text style={[styles.bankInfoLabel, isDark && styles.textMuted]}>อ้างอิง</Text>
-              <View style={styles.copyRow}>
-                <Text style={[styles.bankInfoValue, isDark && styles.textLight]}>
-                  {transaction.bank_info.ref_no}
-                </Text>
-                <TouchableOpacity
-                  style={styles.copyBtn}
-                  onPress={() => handleCopy(transaction.bank_info!.ref_no!, 'เลขอ้างอิง')}
-                >
-                  <Text style={styles.copyBtnText}>คัดลอก</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <BankInfoLine
+              label="อ้างอิง"
+              value={transaction.bank_info.ref_no}
+              onCopy={() => handleCopy(transaction.bank_info!.ref_no!, 'เลขอ้างอิง')}
+            />
           )}
-        </View>
+        </Card3D>
       )}
 
       {/* Status */}
-      <View style={[styles.statusCard, isDark && styles.cardDark]}>
-        <ActivityIndicator size="small" color="#3B82F6" />
-        <Text style={[styles.statusText, isDark && styles.textMuted]}>
-          รอการชำระเงิน...
-        </Text>
-        <Text style={[styles.statusHint, isDark && styles.textMuted]}>
-          ระบบจะอัพเดทอัตโนมัติเมื่อชำระสำเร็จ
-        </Text>
-      </View>
+      <Card3D style={styles.block} padding={spacing.lg}>
+        <View style={styles.statusRow}>
+          <View style={[styles.statusSpinner, { backgroundColor: colors.goldSoft }]}>
+            <ActivityIndicator size="small" color={colors.goldDeep} />
+          </View>
+          <View style={styles.flex}>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>รอการชำระเงิน...</Text>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              ระบบจะอัพเดทอัตโนมัติเมื่อชำระสำเร็จ
+            </Text>
+          </View>
+        </View>
+      </Card3D>
 
       {/* Transaction ID */}
-      <View style={styles.transactionIdContainer}>
-        <Text style={[styles.transactionIdLabel, isDark && styles.textMuted]}>
+      <View style={styles.txIdRow}>
+        <Icon name="receipt" size={14} color={colors.textFaint} />
+        <Text style={[typography.caption, { color: colors.textFaint }]}>
           รหัสรายการ: {transaction?.transaction_id}
         </Text>
       </View>
@@ -646,25 +758,33 @@ export default function WalletTopupScreen() {
     const isSuccess = transaction?.status === 'completed';
 
     return (
-      <View style={styles.resultContainer}>
-        <View style={[styles.resultCard, isDark && styles.cardDark]}>
-          <View style={[styles.resultIcon, isSuccess ? styles.resultIconSuccess : styles.resultIconFail]}>
-            <Text style={styles.resultEmoji}>{isSuccess ? '✅' : '❌'}</Text>
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.resultScroll}
+        showsVerticalScrollIndicator={false}
+      >
+        <StepTrack steps={STEP_LABELS} current={STEP_ORDER.indexOf('result')} style={styles.steps} />
+
+        <Card3D padding={spacing.xl} contentStyle={styles.resultCard}>
+          <View style={[styles.resultHalo, { backgroundColor: isSuccess ? colors.successSoft : colors.dangerSoft }]}>
+            <View style={[styles.resultIcon, { backgroundColor: isSuccess ? colors.success : colors.danger }]}>
+              <Icon name={isSuccess ? 'check' : 'x'} size={34} color={colors.textOnAccent} weight="bold" />
+            </View>
           </View>
 
-          <Text style={[styles.resultTitle, isDark && styles.textLight]}>
+          <Text style={[typography.serif, styles.centerText, { color: colors.textStrong }]}>
             {isSuccess ? 'เติมเงินสำเร็จ!' : 'การชำระเงินไม่สำเร็จ'}
           </Text>
 
           {isSuccess ? (
             <>
-              <Text style={styles.resultAmount}>+{formatCurrency(transaction?.amount || 0)}</Text>
-              <Text style={[styles.resultHint, isDark && styles.textMuted]}>
+              <MoneyText text={`+${formatCurrency(transaction?.amount || 0)}`} color={colors.success} size={34} />
+              <Text style={[typography.bodySm, styles.centerText, { color: colors.textMuted }]}>
                 ยอดเงินได้รับการอัพเดทแล้ว
               </Text>
             </>
           ) : (
-            <Text style={[styles.resultHint, isDark && styles.textMuted]}>
+            <Text style={[typography.body, styles.centerText, { color: colors.textMuted }]}>
               {transaction?.status === 'expired' ? 'รายการหมดเวลา' :
                 transaction?.status === 'cancelled' ? 'รายการถูกยกเลิก' :
                   'กรุณาลองใหม่อีกครั้ง'}
@@ -673,84 +793,58 @@ export default function WalletTopupScreen() {
 
           {/* New Balance */}
           {isSuccess && (
-            <View style={styles.newBalanceContainer}>
-              <Text style={[styles.newBalanceLabel, isDark && styles.textMuted]}>
-                ยอดเงินใหม่
-              </Text>
-              <Text style={[styles.newBalanceValue, isDark && styles.textLight]}>
-                {formatCurrency(walletBalance)}
-              </Text>
+            <View style={[styles.newBalance, { borderTopColor: colors.divider }]}>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดเงินใหม่</Text>
+              <MoneyText text={formatCurrency(walletBalance)} color={colors.textStrong} size={28} />
             </View>
           )}
-        </View>
+        </Card3D>
 
         {/* Actions */}
         <View style={styles.resultActions}>
-          <TouchableOpacity
-            style={[styles.resultBtn, styles.resultBtnPrimary]}
+          <Button3D
+            title={isSuccess ? 'เติมเงินอีก' : 'ลองใหม่'}
+            icon={isSuccess ? 'plus' : 'arrows-clockwise'}
+            size="lg"
+            fullWidth
             onPress={handleNewTransaction}
-          >
-            <Text style={styles.resultBtnText}>
-              {isSuccess ? 'เติมเงินอีก' : 'ลองใหม่'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.resultBtn, styles.resultBtnSecondary]}
-            onPress={() => router.back()}
-          >
-            <Text style={[styles.resultBtnTextSecondary, isDark && styles.textLight]}>
-              กลับหน้าหลัก
-            </Text>
-          </TouchableOpacity>
+          />
+          <Button3D title="กลับหน้าหลัก" variant="secondary" size="lg" fullWidth onPress={() => router.back()} />
         </View>
-      </View>
+      </ScrollView>
     );
   };
 
-  // Render footer button
+  // Render footer button (แถบลอยท้ายจอ)
   const renderFooter = () => {
     if (currentStep === 'amount') {
       return (
-        <View style={[styles.footer, isDark && styles.footerDark]}>
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              !isValidAmount && styles.submitButtonDisabled,
-            ]}
-            onPress={handleProceedToMethod}
+        <ActionBar>
+          <Button3D
+            title={`เลือกวิธีชำระเงิน ${amount > 0 ? formatCurrency(amount) : ''}`}
+            icon="credit-card"
+            size="lg"
+            fullWidth
             disabled={!isValidAmount || isSubmitting}
-          >
-            <Text style={styles.buttonIcon}>💳</Text>
-            <Text style={styles.submitButtonText}>
-              เลือกวิธีชำระเงิน {amount > 0 ? formatCurrency(amount) : ''}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            onPress={handleProceedToMethod}
+          />
+        </ActionBar>
       );
     }
 
     if (currentStep === 'method' && isSubmitting) {
       return (
-        <View style={[styles.footer, isDark && styles.footerDark]}>
-          <View style={styles.submitButton}>
-            <ActivityIndicator color="#FFF" />
-            <Text style={styles.submitButtonText}>กำลังสร้างรายการ...</Text>
-          </View>
-        </View>
+        <ActionBar>
+          <Button3D title="กำลังสร้างรายการ..." size="lg" fullWidth loading />
+        </ActionBar>
       );
     }
 
     if (currentStep === 'processing') {
       return (
-        <View style={[styles.footer, isDark && styles.footerDark]}>
-          <TouchableOpacity
-            style={[styles.submitButton, styles.submitButtonCancel]}
-            onPress={handleBack}
-          >
-            <Text style={styles.submitButtonText}>ยกเลิก</Text>
-          </TouchableOpacity>
-        </View>
+        <ActionBar>
+          <Button3D title="ยกเลิก" icon="x" variant="secondary" size="lg" fullWidth onPress={handleBack} />
+        </ActionBar>
       );
     }
 
@@ -774,586 +868,294 @@ export default function WalletTopupScreen() {
   };
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-
-      {/* Header */}
-      <LinearGradient
-        colors={['#3B82F6', '#2563EB']}
-        style={styles.header}
-      >
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Text style={styles.headerIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
-        <View style={styles.headerSpacer} />
-      </LinearGradient>
-
+    <Screen title={getHeaderTitle()} onBack={handleBack} scroll={false}>
       {currentStep === 'result' ? (
-        // Result step ไม่มี scroll
+        // Result step ไม่มีช่องกรอก → ไม่ต้องหลบคีย์บอร์ด
         renderResultStep()
       ) : (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
+          style={styles.flex}
         >
           <ScrollView
-            style={styles.content}
+            style={styles.flex}
+            contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            <StepTrack steps={STEP_LABELS} current={STEP_ORDER.indexOf(currentStep)} style={styles.steps} />
+
             {currentStep === 'amount' && renderAmountStep()}
             {currentStep === 'method' && renderMethodStep()}
             {currentStep === 'processing' && renderProcessingStep()}
-
-            <View style={styles.bottomPadding} />
           </ScrollView>
 
           {renderFooter()}
         </KeyboardAvoidingView>
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  topupPurpose: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 6,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  containerDark: {
-    backgroundColor: '#111827',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFF',
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  keyboardView: {
+  flex: {
     flex: 1,
   },
   content: {
-    flex: 1,
-    padding: 16,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxl,
   },
-  textLight: {
-    color: '#F3F4F6',
+  steps: {
+    marginBottom: spacing.xl,
   },
-  textMuted: {
-    color: '#9CA3AF',
+  block: {
+    marginTop: spacing.lg,
   },
-  headerIcon: {
-    fontSize: 24,
-    color: '#FFF',
-    fontWeight: 'bold',
+  sectionHeader: {
+    marginTop: spacing.xxl,
   },
-  emojiIcon: {
-    fontSize: 24,
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
-  infoEmoji: {
-    fontSize: 20,
+  tabular: {
+    fontVariant: ['tabular-nums'],
   },
-  buttonIcon: {
-    fontSize: 20,
-  },
-
-  // Balance Card
-  balanceCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  cardDark: {
-    backgroundColor: '#1F2937',
-  },
-  balanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  balanceAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-
-  // Section Title
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-  },
-
-  // Quick Amount Grid
-  quickAmountGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 24,
-  },
-  quickAmountBtn: {
-    width: '31%',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-  },
-  quickAmountBtnDark: {
-    backgroundColor: '#1F2937',
-    borderColor: '#374151',
-  },
-  quickAmountBtnSelected: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  quickAmountText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  quickAmountTextSelected: {
-    color: '#3B82F6',
-  },
-
-  // Input
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  inputContainerDark: {
-    backgroundColor: '#1F2937',
-    borderColor: '#374151',
-  },
-  inputPrefix: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#6B7280',
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    paddingVertical: 16,
-  },
-  inputHint: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 24,
-  },
-
-  // Summary
-  summaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  summaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  summaryTotal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#10B981',
+  centerText: {
+    textAlign: 'center',
   },
   divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 12,
+    height: StyleSheet.hairlineWidth,
+    marginVertical: spacing.sm,
   },
 
-  // Info Card
-  infoCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-  },
-  infoRow: {
+  // การ์ดยอดเงิน
+  cardHeadRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 8,
+    gap: spacing.xs,
   },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#6B7280',
+  balanceLine: {
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  amountHero: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xxl,
   },
 
-  bottomPadding: {
-    height: 100,
-  },
-
-  // Footer
-  footer: {
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  footerDark: {
-    backgroundColor: '#1F2937',
-    borderTopColor: '#374151',
-  },
-  submitButton: {
+  // จำนวนเงินด่วน — 4 ช่องแถวแรก 3 ช่องแถวสอง (ยืดเต็มแถว)
+  quickGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  quickItem: {
+    flexGrow: 1,
+    flexBasis: '22%',
+  },
+  quickTile: {
+    height: 50,
+    borderRadius: 16,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    paddingHorizontal: spacing.xs,
   },
-  submitButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+  quickText: {
+    fontSize: 15,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
-  submitButtonCancel: {
-    backgroundColor: '#EF4444',
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
   },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
+  orLine: {
+    flex: 1,
+    height: 1,
+  },
+  hintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
 
-  // Step 2: Payment Methods
-  amountDisplay: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+  // วิธีชำระเงิน
+  centerBox: {
     alignItems: 'center',
-  },
-  amountDisplayLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 8,
-  },
-  amountDisplayValue: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#6B7280',
+    gap: spacing.md,
+    paddingVertical: spacing.xxl,
   },
   methodList: {
-    gap: 12,
+    gap: spacing.md,
   },
   methodCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-  },
-  methodCardSelected: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
-  methodCardDisabled: {
-    opacity: 0.5,
-  },
-  methodIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  methodIcon: {
-    fontSize: 24,
-  },
-  methodInfo: {
-    flex: 1,
-  },
-  methodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
+    gap: spacing.md,
+    borderRadius: 20,
+    padding: spacing.lg,
   },
   methodDesc: {
-    fontSize: 12,
-    color: '#6B7280',
     marginTop: 2,
+  },
+  methodPill: {
+    marginTop: spacing.xs,
   },
   methodUnavailable: {
-    fontSize: 12,
-    color: '#EF4444',
-    marginTop: 2,
+    opacity: 0.5,
   },
-  methodArrow: {
-    fontSize: 20,
-    color: '#9CA3AF',
+  methodDimmed: {
+    opacity: 0.6,
   },
 
-  // Step 3: Processing
-  processingContainer: {
-    flex: 1,
+  // QR
+  qrCard: {
+    borderRadius: radii.xl,
+    borderWidth: 1,
   },
-  qrContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    marginBottom: 16,
+  qrClip: {
+    // เส้นขอบ 1px ของการ์ดดันเนื้อหาเข้ามา → มุมด้านในเล็กกว่ามุมนอก 1
+    borderRadius: radii.xl - 1,
+    overflow: 'hidden',
   },
-  qrTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
+  qrBand: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: 52,
   },
-  qrImageContainer: {
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+  qrKanok: {
+    position: 'absolute',
+    top: -12,
+    right: -34,
+    width: 150,
+    height: 132,
   },
-  qrImage: {
-    width: 200,
-    height: 200,
-  },
-  qrAmount: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  qrHint: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  bankInfoCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  bankInfoTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  bankInfoRow: {
-    marginBottom: 12,
-  },
-  bankInfoLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  bankInfoValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1F2937',
-  },
-  bankInfoAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#10B981',
-  },
-  copyRow: {
+  qrTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  copyBtn: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  copyBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  statusCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
+  qrBody: {
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
   },
-  statusText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#374151',
-    marginTop: 12,
+  qrFrame: {
+    marginTop: -38,
+    borderRadius: 24,
+    padding: 2,
   },
-  statusHint: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
+  qrPlate: {
+    borderRadius: 22,
+    padding: spacing.lg,
   },
-  transactionIdContainer: {
-    alignItems: 'center',
-    paddingVertical: 8,
+  qrImage: {
+    width: 216,
+    height: 216,
   },
-  transactionIdLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
+  qrAmount: {
+    marginTop: spacing.lg,
   },
 
-  // Step 4: Result
-  resultContainer: {
-    flex: 1,
-    padding: 16,
+  // ข้อมูลโอนเงิน
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  bankLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radii.pill,
+  },
+  copyText: {
+    fontWeight: '700',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  statusSpinner: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  txIdRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.lg,
+  },
+
+  // ผลลัพธ์
+  resultScroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxxl,
   },
   resultCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 32,
     alignItems: 'center',
-    marginBottom: 24,
+    gap: spacing.sm,
+  },
+  resultHalo: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   resultIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  newBalance: {
+    alignSelf: 'stretch',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  resultIconSuccess: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-  },
-  resultIconFail: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  resultEmoji: {
-    fontSize: 40,
-  },
-  resultTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    marginBottom: 8,
-  },
-  resultAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#10B981',
-    marginBottom: 8,
-  },
-  resultHint: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  newBalanceContainer: {
-    marginTop: 24,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    alignItems: 'center',
-    width: '100%',
-  },
-  newBalanceLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  newBalanceValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1F2937',
+    marginTop: spacing.md,
+    paddingTop: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   resultActions: {
-    gap: 12,
-  },
-  resultBtn: {
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  resultBtnPrimary: {
-    backgroundColor: '#3B82F6',
-  },
-  resultBtnSecondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-  },
-  resultBtnText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-  resultBtnTextSecondary: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    gap: spacing.md,
+    marginTop: spacing.xl,
   },
 });

@@ -9,9 +9,10 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Switch, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import * as Location from 'expo-location';
-import { Button3D, Chip, resultHaptic } from '@/components/ui';
+import { Button3D, Chip, Icon, resultHaptic } from '@/components/ui';
 import { FormSheet, Field } from '@/components/shop';
 import { getCurrentCoords, type Coords } from '@/services/location';
 import {
@@ -22,6 +23,7 @@ import {
 } from '@/services/api/taladsodSellerApi';
 import { useTheme, radii, spacing, typography } from '@/theme';
 import { clockTh, toHHMM } from './fmHelpers';
+import { IconTile } from './MerchantUi';
 
 export interface OpenShopSheetProps {
   visible: boolean;
@@ -211,7 +213,7 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
   return (
     <FormSheet
       visible={visible}
-      icon={mode === 'update' ? '📍' : '🛒'}
+      icon={mode === 'update' ? 'map-pin' : 'storefront'}
       title={title}
       description={
         needsGps
@@ -232,26 +234,31 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
           <Text style={[typography.caption, { color: colors.textMuted }]}>ตำแหน่งร้านวันนี้</Text>
           {locating ? (
             <View style={styles.row}>
-              <ActivityIndicator color={colors.gold} />
+              <View style={[styles.spinnerTile, { backgroundColor: colors.goldSoft }]}>
+                <ActivityIndicator color={colors.gold} />
+              </View>
               <Text style={[typography.body, { color: colors.text }]}>กำลังหาตำแหน่ง...</Text>
             </View>
           ) : coords ? (
             <View style={styles.row}>
-              <Text style={styles.pin}>📍</Text>
+              <IconTile icon="map-pin" tone="success" size={40} />
               <View style={styles.flex}>
                 <Text style={[typography.bodyStrong, { color: colors.success }]}>ได้ตำแหน่งแล้ว</Text>
                 <Text style={[typography.caption, { color: colors.textMuted }]}>
                   {typeof coords.accuracy === 'number' ? `แม่นยำประมาณ ±${Math.round(coords.accuracy)} เมตร` : 'จากตำแหน่งของเครื่องตอนนี้'}
                 </Text>
               </View>
-              <Button3D title="หาใหม่" size="sm" variant="secondary" onPress={locate} />
+              <Button3D title="หาใหม่" icon="arrows-clockwise" size="sm" variant="secondary" onPress={locate} />
             </View>
           ) : (
             <>
-              <Text style={[typography.bodySm, styles.gapTop, { color: colors.danger }]}>
-                {locateError || 'ยังไม่ได้ตำแหน่ง'}
-              </Text>
-              <Button3D title="หาตำแหน่งอีกครั้ง" icon="🔄" size="sm" variant="secondary" onPress={locate} style={styles.gapTop} />
+              <View style={[styles.row, styles.gapTop]}>
+                <Icon name="warning-circle" size={20} color={colors.danger} weight="fill" />
+                <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>
+                  {locateError || 'ยังไม่ได้ตำแหน่ง'}
+                </Text>
+              </View>
+              <Button3D title="หาตำแหน่งอีกครั้ง" icon="arrows-clockwise" size="sm" variant="secondary" onPress={locate} style={styles.gapTop} />
             </>
           )}
         </View>
@@ -275,7 +282,7 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
       {needsGps && !!suggested && suggested !== label.trim() && (
         <Chip
           label={`ใช้: ${suggested}`}
-          icon="📍"
+          icon="map-pin"
           size="sm"
           onPress={() => {
             labelEditedRef.current = true;
@@ -286,7 +293,10 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
       )}
 
       {/* ---------- เวลาปิด ---------- */}
-      <Text style={[typography.caption, styles.sectionLabel, { color: colors.textMuted }]}>ปิดร้านอัตโนมัติ</Text>
+      <View style={[styles.sectionRow, styles.sectionLabel]}>
+        <Icon name="clock" size={16} color={colors.goldDeep} />
+        <Text style={[typography.caption, { color: colors.textMuted }]}>ปิดร้านอัตโนมัติ</Text>
+      </View>
       <View style={styles.chips}>
         {PRESETS.map((p) => (
           <Chip key={p.key} label={p.label} size="sm" selected={preset === p.key} onPress={() => choosePreset(p.key, p.hours)} />
@@ -295,10 +305,10 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
       <View style={[styles.stepper, { backgroundColor: colors.inset, borderColor: colors.border }]}>
         <Button3D title="−30 นาที" size="sm" variant="secondary" onPress={() => stepClose(-STEP_MIN)} />
         <View style={styles.clock}>
-          <Text style={[typography.h1, { color: colors.textStrong }]} accessibilityLabel={`ปิดร้านเวลา ${toHHMM(closeAt)} น.`}>
+          <Text style={[typography.money, { color: colors.textStrong }]} accessibilityLabel={`ปิดร้านเวลา ${toHHMM(closeAt)} น.`}>
             {toHHMM(closeAt)}
           </Text>
-          <Text style={[typography.micro, { color: colors.textMuted }]}>
+          <Text style={[typography.micro, { color: colors.goldDeep }]}>
             {closeAt.toDateString() === new Date().toDateString() ? 'วันนี้' : 'พรุ่งนี้'}
           </Text>
         </View>
@@ -312,8 +322,9 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
       {needsGps && (
         <View style={[styles.box, styles.liveBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.row}>
+            <IconTile icon="broadcast" tone={liveSharing ? 'success' : 'navy'} size={40} />
             <View style={styles.flex}>
-              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>📡 แชร์ตำแหน่งสด</Text>
+              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>แชร์ตำแหน่งสด</Text>
               <Text style={[typography.caption, { color: colors.textMuted }]}>
                 เหมาะกับรถเข็นที่ขยับไปเรื่อยๆ แอปส่งตำแหน่งทุก 30 วินาที เฉพาะตอนเปิดแอปไว้
               </Text>
@@ -334,7 +345,8 @@ export const OpenShopSheet: React.FC<OpenShopSheetProps> = ({
 
       {!!error && (
         <View style={[styles.errorBox, { backgroundColor: colors.dangerSoft }]} accessibilityRole="alert">
-          <Text style={[typography.bodySm, { color: colors.danger }]}>{error}</Text>
+          <Icon name="warning-circle" size={20} color={colors.danger} weight="fill" />
+          <Text style={[typography.bodySm, styles.flex, { color: colors.danger }]}>{error}</Text>
         </View>
       )}
     </FormSheet>
@@ -357,11 +369,15 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
+    gap: spacing.md,
+    marginTop: spacing.sm,
   },
-  pin: {
-    fontSize: 22,
+  spinnerTile: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   gapTop: {
     marginTop: spacing.sm,
@@ -370,9 +386,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     alignSelf: 'flex-start',
   },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   sectionLabel: {
     marginTop: spacing.lg,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   chips: {
     flexDirection: 'row',
@@ -392,6 +413,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
     marginTop: spacing.md,
     borderRadius: radii.md,
     padding: spacing.md,

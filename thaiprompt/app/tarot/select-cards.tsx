@@ -1,71 +1,90 @@
 /**
  * Tarot Card Selection Screen - หน้าเลือกไพ่ทาโรต์
  * รองรับ 78 ใบ และจำนวนไพ่ตามโหมดที่เลือก
+ *
+ * หน้าตา: ธีมรอยัล "มิดไนท์-ทอง" — หลังไพ่น้ำเงินกรมท่ากรอบทอง (วาดด้วย SVG)
+ * ไพ่ที่เลือกพลิกเป็นหน้าทองฟอยล์ + เลขลำดับ · แถบความคืบหน้าสีทอง · ถาดไพ่ที่เลือกด้านล่าง
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   Pressable,
   StyleSheet,
-  Dimensions,
   Animated,
   StatusBar,
   Alert,
   FlatList,
+  useWindowDimensions,
 } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ALL_TAROT_CARDS,
   getSpreadBySlug,
   TarotCard,
   SpreadType,
 } from '@/data/tarotData';
+import { Button3D, GlassIconButton, Icon, OnHeaderProvider } from '@/components/ui';
+import { useTheme, spacing, typography, withAlpha } from '@/theme';
+import { MysticBackground } from '@/components/tarot/MysticUI';
+import { TAROT_CARD_RATIO, TarotCardBack, TarotCardFace } from '@/components/tarot/TarotCardArt';
 
-const { width, height } = Dimensions.get('window');
-const CARD_SIZE = (width - 60) / 6; // 6 cards per row
+/** จำนวนไพ่ต่อแถว */
+const COLUMNS = 6;
+/** ระยะขอบซ้ายขวาของกองไพ่ */
+const GRID_PAD = 12;
+/** ช่องว่างรอบไพ่แต่ละใบ */
+const CARD_GAP = 2.5;
+/** ความกว้างไพ่ในถาดไพ่ที่เลือก */
+const TRAY_CARD_WIDTH = 46;
 
-// Card Component
+// Card Component — หลังไพ่ (ยังไม่เลือก) / หน้าไพ่ทอง + เลขลำดับ (เลือกแล้ว)
 const TarotCardItem = ({
   card,
+  cellWidth,
   isSelected,
   selectionOrder,
   onSelect,
   disabled,
 }: {
   card: TarotCard;
+  cellWidth: number;
   isSelected: boolean;
   selectionOrder: number | null;
   onSelect: () => void;
   disabled: boolean;
 }) => {
+  const { colors, gradients } = useTheme();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (isSelected) {
-      // Glow animation
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(glowAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowAnim, {
-            toValue: 0.5,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    } else {
+    if (!isSelected) {
       glowAnim.setValue(0);
+      return undefined;
     }
+    // Glow animation — กรอบทองกะพริบช้าๆ (หยุดเมื่อยกเลิกเลือก/ออกจากหน้า)
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowAnim, {
+          toValue: 0.5,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    glowLoop.start();
+    return () => glowLoop.stop();
   }, [isSelected, glowAnim]);
 
   const handlePress = () => {
@@ -93,11 +112,16 @@ const TarotCardItem = ({
     outputRange: [0, 0.8],
   });
 
+  const cardWidth = cellWidth - CARD_GAP * 2;
+
   return (
     <Pressable
       onPress={handlePress}
       disabled={disabled && !isSelected}
-      style={styles.cardWrapper}
+      accessibilityRole="button"
+      accessibilityLabel={isSelected ? `ไพ่ที่เลือก ลำดับ ${selectionOrder}` : 'ไพ่คว่ำ แตะเพื่อเลือก'}
+      accessibilityState={{ selected: isSelected, disabled: disabled && !isSelected }}
+      style={[styles.cardWrapper, { width: cellWidth, height: cardWidth * TAROT_CARD_RATIO + CARD_GAP * 2 }]}
     >
       <Animated.View
         style={[
@@ -105,108 +129,43 @@ const TarotCardItem = ({
           { transform: [{ scale: scaleAnim }] },
         ]}
       >
-        {/* Glow Effect */}
-        {isSelected && (
-          <Animated.View
-            style={[
-              styles.cardGlow,
-              { opacity: glowOpacity },
-            ]}
-          />
+        {isSelected ? (
+          // Selected - หน้าไพ่ทอง + เลขลำดับ
+          <>
+            <TarotCardFace card={card} width={cardWidth} radius={6} detailed={false} />
+            {/* Glow Effect */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.cardGlow,
+                { borderColor: colors.goldLight, opacity: glowOpacity },
+              ]}
+            />
+            <LinearGradient
+              colors={gradients.navy}
+              style={[styles.selectionBadge, { borderColor: withAlpha(colors.gold, 0.8) }]}
+            >
+              <Text style={[styles.selectionNumber, { color: colors.goldLight }]}>{selectionOrder}</Text>
+            </LinearGradient>
+          </>
+        ) : (
+          // Not selected - Show card back
+          <TarotCardBack width={cardWidth} radius={6} />
         )}
-
-        <LinearGradient
-          colors={
-            isSelected
-              ? ['#8B5CF6', '#EC4899']
-              : ['#4C1D95', '#7C3AED', '#4C1D95']
-          }
-          style={styles.cardGradient}
-        >
-          {isSelected ? (
-            // Selected - Show order number and icon
-            <>
-              <View style={styles.selectionBadge}>
-                <Text style={styles.selectionNumber}>{selectionOrder}</Text>
-              </View>
-              <Text style={styles.cardIconSelected}>{card.icon}</Text>
-            </>
-          ) : (
-            // Not selected - Show card back
-            <View style={styles.cardBackPattern}>
-              <Text style={styles.cardBackSymbol}>✦</Text>
-              <View style={styles.cardBackBorder}>
-                <Text style={styles.cardBackCenter}>☽</Text>
-              </View>
-              <Text style={styles.cardBackSymbol}>✦</Text>
-            </View>
-          )}
-        </LinearGradient>
 
         {/* Disabled overlay */}
         {disabled && !isSelected && (
-          <View style={styles.disabledOverlay} />
+          <View style={[styles.disabledOverlay, { backgroundColor: withAlpha(gradients.hero[0], 0.6) }]} />
         )}
       </Animated.View>
     </Pressable>
   );
 };
 
-// Floating Particle Component
-const FloatingParticle = ({ delay }: { delay: number }) => {
-  const translateY = useRef(new Animated.Value(height)).current;
-  const translateX = useRef(new Animated.Value(Math.random() * width)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animate = () => {
-      translateY.setValue(height);
-      translateX.setValue(Math.random() * width);
-      opacity.setValue(0);
-
-      Animated.parallel([
-        Animated.timing(translateY, {
-          toValue: -50,
-          duration: 8000 + Math.random() * 4000,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(opacity, {
-            toValue: 0.8,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.delay(5000),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start(() => animate());
-    };
-
-    const timer = setTimeout(animate, delay);
-    return () => clearTimeout(timer);
-  }, [delay, translateY, translateX, opacity]);
-
-  return (
-    <Animated.Text
-      style={[
-        styles.particle,
-        {
-          transform: [{ translateX }, { translateY }],
-          opacity,
-        },
-      ]}
-    >
-      ✦
-    </Animated.Text>
-  );
-};
-
 export default function SelectCardsScreen() {
+  const { colors, gradients } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const params = useLocalSearchParams();
   const {
     categoryName,
@@ -301,229 +260,236 @@ export default function SelectCardsScreen() {
     return index !== -1 ? index + 1 : null;
   };
 
+  // ความกว้างช่องไพ่ = แบ่งความกว้างจอ (หักขอบซ้ายขวา) เท่าๆ กัน 6 ช่อง — กองไพ่อยู่กึ่งกลางพอดีทุกขนาดจอ
+  const cellWidth = Math.floor(((width - GRID_PAD * 2) / COLUMNS) * 100) / 100;
+  const nothingSelected = selectedCards.length === 0;
+  const trayBackground = withAlpha(gradients.hero[0], 0.78);
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <OnHeaderProvider value>
+      <View style={[styles.container, { backgroundColor: gradients.hero[gradients.hero.length - 1] }]}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      {/* Background */}
-      <LinearGradient
-        colors={['#0F0F23', '#1A1A2E', '#0F0F23']}
-        style={StyleSheet.absoluteFill}
-      />
+        {/* Background + Floating Sparkles */}
+        <MysticBackground stars="rise" />
 
-      {/* Floating Particles */}
-      {[...Array(10)].map((_, i) => (
-        <FloatingParticle key={i} delay={i * 300} />
-      ))}
+        {/* Header */}
+        <Animated.View style={[styles.header, { paddingTop: insets.top + spacing.sm, opacity: headerOpacity }]}>
+          <GlassIconButton icon="caret-left" weight="bold" accessibilityLabel="ย้อนกลับ" onPress={() => router.back()} />
 
-      {/* Header */}
-      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <Text style={{ fontSize: 24, color: '#fff' }}>←</Text>
-        </Pressable>
+          <View style={styles.headerContent}>
+            <Text numberOfLines={1} style={[typography.serifSm, styles.center, { color: colors.onHeader }]}>
+              {categoryName}
+            </Text>
+            <Text numberOfLines={1} style={[typography.caption, styles.center, { color: colors.onHeaderMuted }]}>
+              {spreadName} · เลือก {cardCount} ใบ ({selectedCards.length}/{cardCount})
+            </Text>
+          </View>
 
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>{categoryName}</Text>
-          <Text style={styles.headerSubtitle}>
-            {spreadName} • เลือก {cardCount} ใบ ({selectedCards.length}/{cardCount})
-          </Text>
-        </View>
-
-        <Pressable
-          style={styles.resetButton}
-          onPress={handleReset}
-          disabled={selectedCards.length === 0}
-        >
-          <Text
-            style={{
-              fontSize: 24,
-              color: selectedCards.length === 0 ? 'rgba(255,255,255,0.3)' : '#fff'
-            }}
-          >
-            🔄
-          </Text>
-        </Pressable>
-      </Animated.View>
-
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBackground}>
-          <Animated.View
-            style={[styles.progressFill, { width: progressWidth }]}
-          >
-            <LinearGradient
-              colors={['#8B5CF6', '#EC4899']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        </View>
-        <View style={styles.progressDots}>
-          {[...Array(cardCount)].map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.progressDot,
-                selectedCards.length > i && styles.progressDotFilled,
-              ]}
-            />
-          ))}
-        </View>
-      </View>
-
-      {/* Card Count Info */}
-      <View style={styles.cardCountInfo}>
-        <Text style={styles.cardCountText}>
-          🃏 ไพ่ทั้งหมด 78 ใบ (22 Major + 56 Minor Arcana)
-        </Text>
-      </View>
-
-      {/* Instructions */}
-      <View style={styles.instructionContainer}>
-        <Text style={styles.instruction}>
-          {isComplete
-            ? '✨ เลือกครบแล้ว! กดดูผลด้านล่าง'
-            : '👆 แตะไพ่เพื่อเลือก'}
-        </Text>
-      </View>
-
-      {/* Cards Grid */}
-      <FlatList
-        data={shuffledCards}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={6}
-        contentContainerStyle={styles.cardsGrid}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <TarotCardItem
-            card={item}
-            isSelected={selectedCards.includes(item.id)}
-            selectionOrder={getSelectionOrder(item.id)}
-            onSelect={() => handleCardSelect(item.id)}
-            disabled={selectedCards.length >= cardCount}
+          <GlassIconButton
+            icon="arrows-clockwise"
+            accessibilityLabel="เลือกไพ่ใหม่"
+            onPress={nothingSelected ? undefined : handleReset}
+            style={nothingSelected && styles.dimmed}
           />
-        )}
-      />
+        </Animated.View>
 
-      {/* Selected Cards Display */}
-      {selectedCards.length > 0 && (
-        <View style={styles.selectedCardsContainer}>
-          <Text style={styles.selectedLabel}>ไพ่ที่เลือก:</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.selectedCardsRow}
-          >
-            {spread?.positions.map((pos, i) => {
-              const selectedCardId = selectedCards[i];
-              const card = selectedCardId
-                ? ALL_TAROT_CARDS.find((c) => c.id === selectedCardId)
-                : null;
-
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={[styles.progressBackground, { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder }]}>
+            <Animated.View
+              style={[styles.progressFill, { width: progressWidth }]}
+            >
+              <LinearGradient
+                colors={gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          </View>
+          <View style={styles.progressDots}>
+            {[...Array(cardCount)].map((_, i) => {
+              const filled = selectedCards.length > i;
               return (
-                <View key={i} style={styles.selectedCardSlot}>
-                  <View
-                    style={[
-                      styles.selectedCardBox,
-                      card && styles.selectedCardBoxFilled,
-                    ]}
-                  >
-                    {card ? (
-                      <>
-                        <Text style={styles.selectedCardIcon}>{card.icon}</Text>
-                        <View style={styles.selectedOrderBadge}>
-                          <Text style={styles.selectedOrderText}>{i + 1}</Text>
-                        </View>
-                      </>
-                    ) : (
-                      <Text style={styles.selectedCardEmpty}>?</Text>
-                    )}
-                  </View>
-                  <Text style={styles.positionLabel} numberOfLines={1}>
-                    {pos.name_th}
-                  </Text>
-                </View>
+                <View
+                  key={i}
+                  style={[
+                    styles.progressDot,
+                    filled
+                      ? { backgroundColor: colors.gold, borderColor: colors.goldLight }
+                      : { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder },
+                  ]}
+                />
               );
             })}
-          </ScrollView>
+          </View>
         </View>
-      )}
 
-      {/* Continue Button */}
-      {isComplete && (
-        <Animated.View style={styles.continueContainer}>
-          <Pressable
-            style={styles.continueButton}
-            onPress={handleContinue}
+        {/* Card Count Info */}
+        <View style={styles.cardCountInfo}>
+          <Icon name="cards" size={14} color={colors.goldLight} />
+          <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>
+            ไพ่ทั้งหมด 78 ใบ (22 Major + 56 Minor Arcana)
+          </Text>
+        </View>
+
+        {/* Instructions */}
+        <View style={styles.instructionContainer}>
+          <View
+            style={[
+              styles.instructionPill,
+              isComplete
+                ? { backgroundColor: withAlpha(colors.gold, 0.16), borderColor: withAlpha(colors.gold, 0.55) }
+                : { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder },
+            ]}
           >
-            <LinearGradient
-              colors={['#8B5CF6', '#EC4899']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.continueGradient}
+            <Icon
+              name={isComplete ? 'sparkle' : 'hand-tap'}
+              size={16}
+              color={colors.goldLight}
+              weight={isComplete ? 'fill' : 'regular'}
+            />
+            <Text style={[typography.bodySm, styles.instruction, { color: colors.onHeader }]}>
+              {isComplete
+                ? 'เลือกครบแล้ว! กดดูผลด้านล่าง'
+                : 'แตะไพ่เพื่อเลือก'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Cards Grid */}
+        <FlatList
+          data={shuffledCards}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={COLUMNS}
+          style={styles.grid}
+          contentContainerStyle={[
+            styles.cardsGrid,
+            { paddingBottom: nothingSelected ? insets.bottom + spacing.xl : spacing.xl },
+          ]}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <TarotCardItem
+              card={item}
+              cellWidth={cellWidth}
+              isSelected={selectedCards.includes(item.id)}
+              selectionOrder={getSelectionOrder(item.id)}
+              onSelect={() => handleCardSelect(item.id)}
+              disabled={selectedCards.length >= cardCount}
+            />
+          )}
+        />
+
+        {/* Selected Cards Display */}
+        {selectedCards.length > 0 && (
+          <View
+            style={[
+              styles.selectedCardsContainer,
+              {
+                backgroundColor: trayBackground,
+                borderTopColor: colors.headerGlassBorder,
+                paddingBottom: isComplete ? spacing.sm : insets.bottom + spacing.md,
+              },
+            ]}
+          >
+            <Text style={[typography.caption, styles.selectedLabel, { color: colors.onHeaderMuted }]}>ไพ่ที่เลือก:</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.selectedCardsRow}
             >
-              <Text style={styles.continueText}>🔮 ดูผลทำนาย</Text>
-              <Text style={{ fontSize: 24, color: '#fff' }}>→</Text>
-            </LinearGradient>
-          </Pressable>
-        </Animated.View>
-      )}
-    </View>
+              {spread?.positions.map((pos, i) => {
+                const selectedCardId = selectedCards[i];
+                const card = selectedCardId
+                  ? ALL_TAROT_CARDS.find((c) => c.id === selectedCardId)
+                  : null;
+
+                return (
+                  <View key={i} style={styles.selectedCardSlot}>
+                    {card ? (
+                      <View>
+                        <TarotCardFace card={card} width={TRAY_CARD_WIDTH} radius={7} detailed={false} />
+                        <LinearGradient
+                          colors={gradients.navy}
+                          style={[styles.selectedOrderBadge, { borderColor: withAlpha(colors.gold, 0.8) }]}
+                        >
+                          <Text style={[styles.selectedOrderText, { color: colors.goldLight }]}>{i + 1}</Text>
+                        </LinearGradient>
+                      </View>
+                    ) : (
+                      <View
+                        style={[
+                          styles.selectedCardBox,
+                          { borderColor: colors.headerGlassBorder, backgroundColor: colors.headerGlass },
+                        ]}
+                      >
+                        <Text style={[typography.h3, { color: colors.onHeaderMuted }]}>?</Text>
+                      </View>
+                    )}
+                    <Text style={[typography.micro, styles.positionLabel, { color: colors.onHeaderMuted }]} numberOfLines={1}>
+                      {pos.name_th}
+                    </Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Continue Button */}
+        {isComplete && (
+          <Animated.View
+            style={[
+              styles.continueContainer,
+              { backgroundColor: trayBackground, paddingBottom: insets.bottom + spacing.lg },
+            ]}
+          >
+            <Button3D
+              title="ดูผลทำนาย"
+              icon="sparkle"
+              iconRight="arrow-right"
+              size="lg"
+              fullWidth
+              onPress={handleContinue}
+            />
+          </Animated.View>
+        )}
+      </View>
+    </OnHeaderProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F0F23',
+  },
+  center: {
+    textAlign: 'center',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.sm,
+    gap: spacing.md,
   },
   headerContent: {
     flex: 1,
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: 2,
-  },
-  resetButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  dimmed: {
+    opacity: 0.4,
   },
   progressContainer: {
     paddingHorizontal: 30,
-    marginTop: 10,
+    marginTop: spacing.sm,
   },
   progressBackground: {
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 3,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
   progressFill: {
@@ -541,38 +507,40 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  progressDotFilled: {
-    backgroundColor: '#8B5CF6',
-    borderColor: '#EC4899',
   },
   cardCountInfo: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-  },
-  cardCountText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   instructionContainer: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingBottom: spacing.md,
+  },
+  instructionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   instruction: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '600',
+  },
+  grid: {
+    flex: 1,
   },
   cardsGrid: {
-    paddingHorizontal: 10,
-    paddingBottom: 20,
+    paddingHorizontal: GRID_PAD,
   },
   cardWrapper: {
-    width: CARD_SIZE,
-    height: CARD_SIZE * 1.4,
-    padding: 2,
+    padding: CARD_GAP,
   },
   cardItem: {
     flex: 1,
@@ -581,162 +549,77 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   cardGlow: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: 10,
-    backgroundColor: '#8B5CF6',
-    zIndex: -1,
-  },
-  cardGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(157, 78, 221, 0.5)',
+    ...StyleSheet.absoluteFill,
     borderRadius: 6,
-  },
-  cardBackPattern: {
-    alignItems: 'center',
-  },
-  cardBackSymbol: {
-    fontSize: 8,
-    color: '#FFD700',
-  },
-  cardBackBorder: {
-    width: 24,
-    height: 30,
-    borderWidth: 1,
-    borderColor: '#FFD700',
-    borderRadius: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 2,
-  },
-  cardBackCenter: {
-    fontSize: 12,
-    color: '#FFD700',
+    borderWidth: 2,
   },
   selectionBadge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#10B981',
+    top: 3,
+    right: 3,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectionNumber: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  cardIconSelected: {
-    fontSize: 20,
   },
   disabledOverlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 6,
   },
-  particle: {
-    position: 'absolute',
-    fontSize: 12,
-    color: '#FFD700',
-  },
   selectedCardsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   selectedLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   selectedCardsRow: {
     flexDirection: 'row',
-    gap: 12,
-    paddingRight: 20,
+    gap: spacing.md,
+    paddingTop: 6,
+    paddingRight: spacing.xl,
   },
   selectedCardSlot: {
     alignItems: 'center',
   },
   selectedCardBox: {
-    width: 50,
-    height: 70,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.2)',
+    width: TRAY_CARD_WIDTH,
+    height: TRAY_CARD_WIDTH * TAROT_CARD_RATIO,
+    borderRadius: 7,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    position: 'relative',
-  },
-  selectedCardBoxFilled: {
-    borderStyle: 'solid',
-    borderColor: '#8B5CF6',
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-  },
-  selectedCardIcon: {
-    fontSize: 24,
   },
   selectedOrderBadge: {
     position: 'absolute',
     top: -6,
     right: -6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#EC4899',
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   selectedOrderText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  selectedCardEmpty: {
-    fontSize: 20,
-    color: 'rgba(255,255,255,0.3)',
   },
   positionLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
     marginTop: 4,
-    maxWidth: 50,
+    maxWidth: 56,
     textAlign: 'center',
   },
   continueContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-    paddingTop: 10,
-  },
-  continueButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  continueGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 12,
-  },
-  continueText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
   },
 });

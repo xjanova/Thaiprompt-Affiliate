@@ -1,18 +1,23 @@
 /**
  * SectionHeader — หัวข้อส่วน + ลิงก์ "ดูทั้งหมด" ด้านขวา
  *
+ * หัวข้อแบบเรียบหรู: ตัวหนา Anuphan + คำอธิบายสีรอง + ลิงก์ทองพร้อมลูกศร
+ * icon: ส่งชื่อไอคอนได้ (เช่น "storefront") — อีโมจิเดิมจะถูกแปลงเป็นไอคอนเส้นสีทอง
+ *
  * @example
  * <SectionHeader title="ร้านใกล้คุณ" subtitle="ส่งไวภายใน 30 นาที" actionLabel="ดูทั้งหมด" onAction={openAll} />
  */
 
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme, spacing, typography } from '@/theme';
+import { Text } from './Text';
+import { Icon, IconSlot } from './Icon';
 
 export interface SectionHeaderProps {
   title: string;
   subtitle?: string;
-  /** emoji หรือ element หน้าหัวข้อ */
+  /** ชื่อไอคอน / อีโมจิเดิม / element หน้าหัวข้อ */
   icon?: React.ReactNode;
   actionLabel?: string;
   onAction?: () => void;
@@ -32,9 +37,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   return (
     <View style={[styles.row, style]}>
       <View style={styles.left}>
-        {icon !== undefined && icon !== null && (
-          typeof icon === 'string' ? <Text style={styles.icon}>{icon}</Text> : icon
-        )}
+        <IconSlot icon={icon} size={19} color={colors.goldDeep} weight="fill" />
         <View style={styles.texts}>
           <Text
             accessibilityRole="header"
@@ -44,7 +47,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
             {title}
           </Text>
           {!!subtitle && (
-            <Text numberOfLines={2} style={[typography.bodySm, { color: colors.textMuted }]}>
+            <Text numberOfLines={2} style={[typography.bodySm, { color: colors.textMuted, marginTop: 1 }]}>
               {subtitle}
             </Text>
           )}
@@ -59,9 +62,8 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
           hitSlop={10}
           style={({ pressed }) => [styles.action, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Text style={[typography.caption, styles.actionText, { color: colors.goldDeep }]}>
-            {actionLabel} ›
-          </Text>
+          <Text style={[typography.caption, styles.actionText, { color: colors.goldDeep }]}>{actionLabel}</Text>
+          <Icon name="caret-right" size={14} color={colors.goldDeep} weight="bold" />
         </Pressable>
       )}
     </View>
@@ -71,7 +73,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
@@ -84,15 +86,16 @@ const styles = StyleSheet.create({
   texts: {
     flex: 1,
   },
-  icon: {
-    fontSize: 20,
-  },
   action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
     paddingLeft: spacing.md,
     paddingVertical: spacing.xs,
   },
   actionText: {
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
 

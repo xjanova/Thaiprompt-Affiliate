@@ -1,24 +1,37 @@
 /**
- * ยืนยันตัวตน (KYC) — ธีมนวลทองคำ
+ * ยืนยันตัวตน (KYC) — ธีมรอยัล น้ำเงินกรมท่า-ทอง
  *
  * API (MobileApiController): GET /kyc/status · POST /kyc/upload (multipart image + type) · POST /kyc/confirm
  * - เรียกผ่าน client กลาง → ข้อความผิดพลาดเป็นภาษาไทยเสมอ (ไม่แสดง error ดิบ)
- * - ขั้นตอน: รูปบัตรประชาชน → เซลฟี่ถือบัตร → ส่งตรวจ (ถามยืนยันก่อน, กันกดซ้ำ)
+ * - ขั้นตอน: รูปบัตรประชาชน → เซลฟี่ถือบัตร → ส่งตรวจ (ถามยืนยันก่อน, กันกดซ้ำ) · แถบขั้นตอนด้านบนบอกว่าถึงไหนแล้ว
  * - กล้อง: ขอสิทธิ์ตอนกด "ถ่ายรูป" เท่านั้น · ปฏิเสธถาวร → พาไปตั้งค่าเครื่อง
  * - คลังรูป: ใช้ตัวเลือกรูปของระบบ (ไม่ต้องขอสิทธิ์อ่านรูปทั้งเครื่อง)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
 import { apiGet, apiPost, apiUpload, fileFromUri, type ApiResult } from '@/services/api/client';
-import { Button3D, Card3D, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
-import { useTheme, palette, radii, spacing, typography } from '@/theme';
+import {
+  Button3D,
+  Card3D,
+  EmptyState,
+  Icon,
+  OnHeaderProvider,
+  Pill,
+  Screen,
+  resultHaptic,
+  type IconName,
+} from '@/components/ui';
+import { IconTile } from '@/components/profile';
+import { useTheme, DARK_THEME, radii, spacing, typography } from '@/theme';
 
 type KycStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
 type ImageType = 'id_card' | 'selfie';
@@ -40,9 +53,59 @@ const uploadKycImage = (uri: string, type: ImageType): Promise<ApiResult<unknown
 const confirmKyc = (): Promise<ApiResult<unknown>> =>
   apiPost('/kyc/confirm', undefined, { fallbackMessage: 'ส่งเอกสารไม่สำเร็จ ลองใหม่อีกครั้งนะ' });
 
-const COPY: Record<ImageType, { title: string; hint: string; icon: string; frame: string }> = {
-  id_card: { title: 'รูปบัตรประชาชน', hint: 'ด้านหน้า เห็นตัวอักษรชัด ไม่มีแสงสะท้อน', icon: '🪪', frame: 'วางบัตรให้อยู่ในกรอบ ให้เห็นข้อมูลชัดเจน' },
-  selfie: { title: 'เซลฟี่ถือบัตร', hint: 'เห็นหน้าคุณและบัตรในรูปเดียวกัน', icon: '🤳', frame: 'ถือบัตรข้างใบหน้า ให้เห็นทั้งหน้าและบัตร' },
+const COPY: Record<ImageType, { title: string; hint: string; icon: IconName; frame: string }> = {
+  id_card: { title: 'รูปบัตรประชาชน', hint: 'ด้านหน้า เห็นตัวอักษรชัด ไม่มีแสงสะท้อน', icon: 'identification-card', frame: 'วางบัตรให้อยู่ในกรอบ ให้เห็นข้อมูลชัดเจน' },
+  selfie: { title: 'เซลฟี่ถือบัตร', hint: 'เห็นหน้าคุณและบัตรในรูปเดียวกัน', icon: 'user-circle', frame: 'ถือบัตรข้างใบหน้า ให้เห็นทั้งหน้าและบัตร' },
+};
+
+/** กล้องใช้โทนมืดเสมอ (ไม่ขึ้นกับโหมดของแอป) ให้ภาพจากกล้องเด่นและกรอบทองชัด */
+const CAM = DARK_THEME.colors;
+
+// =====================================================
+// แถบขั้นตอน (บัตร → เซลฟี่ → ส่งตรวจ)
+// =====================================================
+
+const STEPS = ['บัตรประชาชน', 'เซลฟี่ถือบัตร', 'ส่งตรวจ'];
+
+const StepBar: React.FC<{ done: boolean[] }> = ({ done }) => {
+  const { colors, gradients } = useTheme();
+  const current = done.findIndex((d) => !d);
+  return (
+    <View style={styles.stepBar} accessibilityRole="progressbar" accessibilityLabel={`ขั้นตอนที่ ${current + 1} จาก ${STEPS.length}`}>
+      {STEPS.map((label, index) => {
+        const isDone = done[index];
+        const isCurrent = index === current;
+        return (
+          <React.Fragment key={label}>
+            {index > 0 && (
+              <View style={[styles.stepLine, { backgroundColor: done[index - 1] ? colors.success : colors.border }]} />
+            )}
+            <View style={styles.stepItem}>
+              {isDone ? (
+                <View style={[styles.stepDot, { backgroundColor: colors.success }]}>
+                  <Icon name="check" size={14} color={colors.textOnAccent} weight="bold" />
+                </View>
+              ) : isCurrent ? (
+                <LinearGradient colors={gradients.navy} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.stepDot}>
+                  <Text style={[styles.stepNum, { color: colors.goldLight }]}>{index + 1}</Text>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.stepDot, { backgroundColor: colors.inset, borderWidth: 1, borderColor: colors.border }]}>
+                  <Text style={[styles.stepNum, { color: colors.textFaint }]}>{index + 1}</Text>
+                </View>
+              )}
+              <Text
+                numberOfLines={1}
+                style={[typography.micro, styles.stepLabel, { color: isDone || isCurrent ? colors.textStrong : colors.textFaint }]}
+              >
+                {label}
+              </Text>
+            </View>
+          </React.Fragment>
+        );
+      })}
+    </View>
+  );
 };
 
 // =====================================================
@@ -63,9 +126,15 @@ const UploadCard: React.FC<{
   return (
     <Card3D padding={spacing.lg} gradientBorder={done ? gradients.success : false} style={styles.block}>
       <View style={styles.cardHead}>
-        <View style={[styles.stepBadge, { backgroundColor: done ? colors.successSoft : colors.goldSoft }]}>
-          <Text style={[typography.bodyStrong, { color: done ? colors.success : colors.goldDeep }]}>{done ? '✓' : step}</Text>
-        </View>
+        {done ? (
+          <View style={[styles.stepBadge, { backgroundColor: colors.successSoft }]}>
+            <Icon name="check" size={16} color={colors.success} weight="bold" />
+          </View>
+        ) : (
+          <LinearGradient colors={gradients.navy} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={styles.stepBadge}>
+            <Text style={[typography.bodyStrong, { color: colors.goldLight }]}>{step}</Text>
+          </LinearGradient>
+        )}
         <View style={styles.flex}>
           <Text style={[typography.h3, { color: colors.textStrong }]}>{copy.title}</Text>
           <Text style={[typography.caption, { color: colors.textMuted }]}>{copy.hint}</Text>
@@ -73,7 +142,17 @@ const UploadCard: React.FC<{
         {done && <Pill label="อัปโหลดแล้ว" tone="success" />}
       </View>
 
-      <View style={[styles.preview, type === 'selfie' && styles.previewTall, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.preview,
+          type === 'selfie' && styles.previewTall,
+          {
+            backgroundColor: colors.inset,
+            borderColor: uri ? colors.border : done ? colors.success : colors.gold,
+            borderStyle: uri ? 'solid' : 'dashed',
+          },
+        ]}
+      >
         {uploading ? (
           <>
             <ActivityIndicator size="large" color={colors.gold} />
@@ -83,15 +162,22 @@ const UploadCard: React.FC<{
           <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" />
         ) : (
           <>
-            <Text style={styles.previewIcon}>{done ? '✅' : copy.icon}</Text>
+            <View style={[styles.previewIcon, { backgroundColor: done ? colors.successSoft : colors.goldSoft }]}>
+              <Icon
+                name={done ? 'check-circle' : copy.icon}
+                size={34}
+                color={done ? colors.success : colors.goldDeep}
+                weight={done ? 'fill' : 'regular'}
+              />
+            </View>
             <Text style={[typography.caption, { color: colors.textMuted }]}>{done ? 'ส่งรูปนี้แล้ว ถ่ายใหม่ได้' : 'ยังไม่มีรูป'}</Text>
           </>
         )}
       </View>
 
       <View style={styles.actions}>
-        <Button3D title="ถ่ายรูป" icon="📷" variant="primary" size="md" disabled={uploading} onPress={onCamera} style={styles.flex} />
-        <Button3D title="เลือกจากคลัง" icon="🖼️" variant="secondary" size="md" disabled={uploading} onPress={onGallery} style={styles.flex} />
+        <Button3D title="ถ่ายรูป" icon="camera" variant="navy" size="md" disabled={uploading} onPress={onCamera} style={styles.flex} />
+        <Button3D title="เลือกจากคลัง" icon="images" variant="secondary" size="md" disabled={uploading} onPress={onGallery} style={styles.flex} />
       </View>
     </Card3D>
   );
@@ -256,7 +342,7 @@ export default function KycScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="ยืนยันตัวตน" scroll={false}>
-        <EmptyState icon="🛡️" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState icon="shield-check" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -281,7 +367,7 @@ export default function KycScreen() {
     return (
       <Screen title="ยืนยันตัวตน" scroll={false}>
         <EmptyState
-          icon="✅"
+          icon="seal-check"
           title="ยืนยันตัวตนแล้ว"
           message="ถอนเงินเข้าบัญชีธนาคาร สมัครไรเดอร์ และเปิดร้านได้เต็มที่"
           actionLabel="กลับ"
@@ -295,7 +381,7 @@ export default function KycScreen() {
     return (
       <Screen title="ยืนยันตัวตน" scroll={false}>
         <EmptyState
-          icon="⏳"
+          icon="hourglass"
           title="กำลังตรวจเอกสาร"
           message="ทีมงานจะตรวจภายใน 24–48 ชั่วโมง ผลจะแจ้งเตือนมาที่แอป"
           actionLabel="กลับ"
@@ -310,21 +396,26 @@ export default function KycScreen() {
   if (status === 'rejected') {
     return (
       <Screen title="ยืนยันตัวตน">
-        <Card3D padding={spacing.xl} style={styles.block}>
-          <Text style={styles.bigIcon}>📝</Text>
-          <Text style={[typography.h2, styles.center, { color: colors.textStrong }]}>เอกสารยังไม่ผ่าน</Text>
-          <Text style={[typography.body, styles.center, styles.gapTop, { color: colors.textMuted }]}>
+        <Card3D padding={spacing.xl} style={styles.block} contentStyle={styles.rejected}>
+          <View style={[styles.bigIcon, { backgroundColor: colors.dangerSoft }]}>
+            <Icon name="note-pencil" size={36} color={colors.danger} />
+          </View>
+          <Text style={[typography.serif, styles.center, { color: colors.textStrong }]}>เอกสารยังไม่ผ่าน</Text>
+          <Text style={[typography.body, styles.center, { color: colors.textMuted }]}>
             ไม่เป็นไร แก้ตามนี้แล้วส่งใหม่ได้เลย
           </Text>
           {!!rejectionReason && (
-            <Card3D variant="inset" padding={spacing.md} style={styles.gapTopLg}>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>เหตุผลจากทีมงาน</Text>
-              <Text style={[typography.bodyStrong, { color: colors.danger }]}>{rejectionReason}</Text>
-            </Card3D>
+            <View style={[styles.reason, { backgroundColor: colors.dangerSoft }]}>
+              <Icon name="warning-circle" size={20} color={colors.danger} weight="fill" />
+              <View style={styles.flex}>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>เหตุผลจากทีมงาน</Text>
+                <Text style={[typography.bodyStrong, { color: colors.danger }]}>{rejectionReason}</Text>
+              </View>
+            </View>
           )}
           <Button3D
             title="ส่งเอกสารใหม่"
-            icon="🔁"
+            icon="arrows-clockwise"
             size="lg"
             fullWidth
             style={styles.gapTopLg}
@@ -343,11 +434,18 @@ export default function KycScreen() {
 
   return (
     <Screen title="ยืนยันตัวตน" subtitle="ใช้เวลาไม่ถึง 2 นาที">
-      <Card3D variant="flat" padding={spacing.md} style={styles.block}>
-        <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>🔒 ข้อมูลของคุณปลอดภัย</Text>
-        <Text style={[typography.bodySm, { color: colors.textMuted }]}>
-          รูปใช้ยืนยันตัวตนเพื่อความปลอดภัยของการถอนเงินเท่านั้น ทีมงานที่ได้รับอนุญาตเท่านั้นที่เห็น
-        </Text>
+      <StepBar done={[has.id_card, has.selfie, false]} />
+
+      <Card3D padding={spacing.md} shadow="sm" style={styles.block}>
+        <View style={styles.safeRow}>
+          <IconTile icon="lock-key" tone="success" />
+          <View style={styles.flex}>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ข้อมูลของคุณปลอดภัย</Text>
+            <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+              รูปใช้ยืนยันตัวตนเพื่อความปลอดภัยของการถอนเงินเท่านั้น ทีมงานที่ได้รับอนุญาตเท่านั้นที่เห็น
+            </Text>
+          </View>
+        </View>
       </Card3D>
 
       <UploadCard
@@ -371,8 +469,8 @@ export default function KycScreen() {
 
       <Button3D
         title={ready ? 'ส่งเอกสารให้ตรวจ' : 'อัปโหลดให้ครบ 2 รูปก่อนนะ'}
-        icon="🛡️"
-        variant="success"
+        icon="shield-check"
+        variant="primary"
         size="lg"
         fullWidth
         disabled={!ready || uploading.id_card || uploading.selfie}
@@ -381,39 +479,51 @@ export default function KycScreen() {
         onPress={submit}
         style={styles.gapTopLg}
       />
-      <Text style={[typography.caption, styles.center, styles.gapTop, { color: colors.textFaint }]}>
-        ตรวจภายใน 24–48 ชั่วโมง ผลจะแจ้งเตือนมาที่แอป
-      </Text>
+      <View style={styles.footRow}>
+        <Icon name="clock" size={14} color={colors.textFaint} />
+        <Text style={[typography.caption, { color: colors.textFaint }]}>ตรวจภายใน 24–48 ชั่วโมง ผลจะแจ้งเตือนมาที่แอป</Text>
+      </View>
 
-      {/* ---------- กล้อง ---------- */}
+      {/* ---------- กล้อง (โทนมืดเสมอ) ---------- */}
       <Modal visible={cameraFor !== null} animationType="slide" onRequestClose={() => setCameraFor(null)} statusBarTranslucent>
-        <View style={[styles.cameraRoot, { backgroundColor: palette.black }]}>
+        <View style={[styles.cameraRoot, { backgroundColor: CAM.navyDeep }]}>
           <View style={[styles.cameraHeader, { paddingTop: insets.top + spacing.sm }]}>
-            <Button3D title="ปิด" size="sm" variant="secondary" onPress={() => setCameraFor(null)} />
-            <Text style={[typography.h3, styles.cameraTitle]}>{cameraFor ? COPY[cameraFor].title : ''}</Text>
+            <OnHeaderProvider value>
+              <Button3D title="ปิด" icon="x" size="sm" variant="secondary" onPress={() => setCameraFor(null)} />
+            </OnHeaderProvider>
+            <Text style={[typography.serifSm, styles.cameraTitle, { color: CAM.onHeader }]}>
+              {cameraFor ? COPY[cameraFor].title : ''}
+            </Text>
             <View style={styles.headerSpacer} />
           </View>
           {cameraFor && cameraPermission?.granted ? (
             <CameraView ref={cameraRef} style={styles.flex} facing={cameraFor === 'selfie' ? 'front' : 'back'}>
               <View style={styles.overlay} pointerEvents="none">
-                <View style={cameraFor === 'id_card' ? styles.cardFrame : styles.selfieFrame} />
+                <View style={[cameraFor === 'id_card' ? styles.cardFrame : styles.selfieFrame, { borderColor: CAM.gold }]} />
               </View>
             </CameraView>
           ) : (
             <View style={[styles.flex, styles.centerBox]}>
-              <Text style={[typography.body, styles.cameraTitle]}>ยังใช้กล้องไม่ได้</Text>
+              <Icon name="camera" size={40} color={CAM.onHeaderMuted} />
+              <Text style={[typography.body, styles.cameraTitle, { color: CAM.onHeader }]}>ยังใช้กล้องไม่ได้</Text>
             </View>
           )}
           <View style={[styles.cameraFooter, { paddingBottom: insets.bottom + spacing.lg }]}>
-            <Text style={[typography.bodySm, styles.cameraHint]}>{cameraFor ? COPY[cameraFor].frame : ''}</Text>
+            <Text style={[typography.bodySm, styles.cameraHint, { color: CAM.onHeaderMuted }]}>
+              {cameraFor ? COPY[cameraFor].frame : ''}
+            </Text>
             <Pressable
               onPress={capture}
               disabled={capturing}
               accessibilityRole="button"
               accessibilityLabel="ถ่ายรูป"
-              style={({ pressed }) => [styles.shutter, { opacity: pressed || capturing ? 0.6 : 1 }]}
+              style={({ pressed }) => [styles.shutter, { borderColor: CAM.gold, opacity: pressed || capturing ? 0.6 : 1 }]}
             >
-              {capturing ? <ActivityIndicator color={palette.gold600} /> : <View style={styles.shutterInner} />}
+              {capturing ? (
+                <ActivityIndicator color={CAM.gold} />
+              ) : (
+                <View style={[styles.shutterInner, { backgroundColor: CAM.onHeader }]} />
+              )}
             </Pressable>
           </View>
         </View>
@@ -432,6 +542,7 @@ const styles = StyleSheet.create({
   centerBox: {
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
   },
   loader: {
     marginTop: spacing.xxxl,
@@ -445,10 +556,67 @@ const styles = StyleSheet.create({
   gapTopLg: {
     marginTop: spacing.lg,
   },
-  bigIcon: {
-    fontSize: 52,
+
+  // ---------- แถบขั้นตอน ----------
+  stepBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.xs,
+  },
+  stepItem: {
+    alignItems: 'center',
+    width: 84,
+  },
+  stepDot: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNum: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  stepLabel: {
+    marginTop: spacing.xs,
     textAlign: 'center',
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    borderRadius: 1,
+    marginTop: 14,
+    marginHorizontal: -spacing.lg,
+  },
+
+  // ---------- การ์ด ----------
+  safeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  rejected: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bigIcon: {
+    width: 76,
+    height: 76,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.sm,
+  },
+  reason: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginTop: spacing.md,
   },
   cardHead: {
     flexDirection: 'row',
@@ -466,7 +634,7 @@ const styles = StyleSheet.create({
     height: 180,
     marginTop: spacing.md,
     borderRadius: radii.lg,
-    borderWidth: 1,
+    borderWidth: 1.5,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -475,14 +643,27 @@ const styles = StyleSheet.create({
     height: 240,
   },
   previewIcon: {
-    fontSize: 44,
-    marginBottom: spacing.xs,
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   actions: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
+  footRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+  },
+
+  // ---------- กล้อง ----------
   cameraRoot: {
     flex: 1,
   },
@@ -494,10 +675,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   headerSpacer: {
-    width: 56,
+    width: 72,
   },
   cameraTitle: {
-    color: palette.white,
     textAlign: 'center',
   },
   overlay: {
@@ -510,14 +690,12 @@ const styles = StyleSheet.create({
     aspectRatio: 1.6,
     borderRadius: radii.lg,
     borderWidth: 3,
-    borderColor: palette.gold300,
   },
   selfieFrame: {
     width: '70%',
     aspectRatio: 0.8,
     borderRadius: 999,
     borderWidth: 3,
-    borderColor: palette.gold300,
   },
   cameraFooter: {
     alignItems: 'center',
@@ -525,7 +703,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   cameraHint: {
-    color: 'rgba(255,255,255,0.85)',
     textAlign: 'center',
     paddingHorizontal: spacing.xl,
   },
@@ -534,7 +711,6 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 38,
     borderWidth: 4,
-    borderColor: palette.gold300,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -542,6 +718,5 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: palette.white,
   },
 });

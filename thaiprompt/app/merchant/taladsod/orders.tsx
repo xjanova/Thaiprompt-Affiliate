@@ -5,10 +5,13 @@
  * - ปุ่มตาม allowed_actions: รับออเดอร์ → เริ่มเตรียม → พร้อมส่ง/พร้อมรับ → ส่งมอบ (มารับเอง) · ยกเลิกต้องใส่เหตุผล
  * - กันกดซ้ำต่อออเดอร์ (กดสองปุ่มของออเดอร์เดียวกันพร้อมกันไม่ได้)
  * - ?status= เลือกแท็บ · ?focus=<id> ไฮไลต์ออเดอร์ที่มาจากแจ้งเตือน
+ *
+ * หน้าตา: แถบสลับร้าน + ชิปสถานะ (ใหม่ = ส้มเตือน) → คิวการ์ดออเดอร์ (FmOrderCard) ปุ่มขั้นถัดไปสีทอง
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import {
@@ -21,13 +24,14 @@ import {
   type FmSellerOrder,
 } from '@/services/api/taladsodSellerApi';
 import { addNotificationReceivedListener } from '@/services/notifications';
-import { Card3D, Chip, EmptyState, Screen, WebsiteButton, formatBaht, resultHaptic } from '@/components/ui';
+import { Chip, EmptyState, Icon, Screen, WebsiteButton, formatBaht, resultHaptic } from '@/components/ui';
 import { FormSheet, Field } from '@/components/shop';
 import {
   FM_CANCEL_REASONS,
   FM_ORDER_FILTERS,
   FmOrderCard,
   MerchantModeSwitch,
+  NoticeBanner,
   fmActionLook,
   isFmOrderFilter,
 } from '@/components/merchant';
@@ -279,18 +283,14 @@ export default function TaladsodSellerOrdersScreen() {
         ))}
       </ScrollView>
       {!!notice && (
-        <Card3D variant="flat" padding={spacing.md} style={styles.notice}>
-          <Text
-            accessibilityLiveRegion="polite"
-            style={[typography.bodySm, { color: notice.tone === 'success' ? colors.success : colors.warning }]}
-          >
-            {notice.text}
-          </Text>
-        </Card3D>
+        <NoticeBanner tone={notice.tone === 'success' ? 'success' : 'warning'} text={notice.text} style={styles.notice} />
       )}
       {!!focusOrder && !focusInList && (
         <View>
-          <Text style={[typography.caption, styles.focusLabel, { color: colors.textMuted }]}>ออเดอร์จากแจ้งเตือน</Text>
+          <View style={styles.focusLabel}>
+            <Icon name="bell-ringing" size={15} color={colors.goldDeep} weight="fill" />
+            <Text style={[typography.caption, { color: colors.textMuted }]}>ออเดอร์จากแจ้งเตือน</Text>
+          </View>
           <FmOrderCard order={focusOrder} onAction={handleAction} highlighted now={now} />
         </View>
       )}
@@ -303,7 +303,7 @@ export default function TaladsodSellerOrdersScreen() {
     return (
       <EmptyState
         compact
-        icon={filter === 'pending' ? '🔔' : '🧾'}
+        art="cart"
         title={filter === 'pending' ? 'ยังไม่มีออเดอร์ใหม่' : 'ยังไม่มีออเดอร์ในแท็บนี้'}
         message="ออเดอร์ใหม่จะเด้งแจ้งเตือน และหน้านี้อัปเดตเองทุก 15 วินาที"
       />
@@ -313,7 +313,7 @@ export default function TaladsodSellerOrdersScreen() {
   if (!isAuthenticated) {
     return (
       <Screen title="ออเดอร์ตลาดสด" scroll={false}>
-        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+        <EmptyState art="cart" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
       </Screen>
     );
   }
@@ -321,8 +321,8 @@ export default function TaladsodSellerOrdersScreen() {
   if (notSeller) {
     return (
       <Screen title="ออเดอร์ตลาดสด" scroll={false} contentStyle={styles.pad}>
-        <EmptyState icon="🥬" title="ยังไม่มีร้านในตลาดสด" message="สมัครขายบนเว็บไซต์ แล้วกลับมารับออเดอร์ในแอปได้เลย" />
-        <WebsiteButton path="/taladsod/register-seller" label="สมัครขายในตลาดสด" variant="primary" fullWidth />
+        <EmptyState art="cart" title="ยังไม่มีร้านในตลาดสด" message="สมัครขายบนเว็บไซต์ แล้วกลับมารับออเดอร์ในแอปได้เลย" />
+        <WebsiteButton path="/taladsod/register-seller" label="สมัครขายในตลาดสด" icon="basket" variant="primary" fullWidth style={styles.notSellerCta} />
       </Screen>
     );
   }
@@ -357,7 +357,7 @@ export default function TaladsodSellerOrdersScreen() {
 
       <FormSheet
         visible={!!cancelTarget}
-        icon="✖️"
+        icon="x-circle"
         title="ยกเลิกออเดอร์นี้?"
         description={
           cancelTarget
@@ -401,18 +401,25 @@ const styles = StyleSheet.create({
   pad: {
     paddingHorizontal: spacing.screen,
   },
+  notSellerCta: {
+    marginBottom: spacing.xxl,
+  },
   mode: {
+    marginTop: spacing.xs,
     marginBottom: spacing.md,
   },
   filters: {
     gap: spacing.xs,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
   },
   notice: {
     marginBottom: spacing.md,
   },
   focusLabel: {
-    marginBottom: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: spacing.sm,
   },
   loader: {
     marginTop: spacing.xxxl,

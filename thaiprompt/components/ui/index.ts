@@ -1,10 +1,28 @@
 /**
- * UI kit ธีม "นวลทองคำ" — import จากที่นี่ที่เดียว
+ * UI kit ธีม "รอยัล น้ำเงินกรมท่า-ทอง" — import จากที่นี่ที่เดียว
  *
- * import { Button3D, Card3D, Chip, Pill, SectionHeader, StatTile, EmptyState,
+ * import { Text, Icon, BrandArt, RoyalHeader, GlassIconButton, IconButton,
+ *          Button3D, Card3D, Chip, Pill, SectionHeader, StatTile, EmptyState,
  *          BannerCard, BannerSlider, ConsentSheet, WebsiteButton, openWebsite,
  *          PriceText, formatBaht, Screen, ScreenHeader } from '@/components/ui';
+ *
+ * กติกา: ห้ามใช้อีโมจิเป็นไอคอน (ใช้ <Icon name=.../> หรือส่งชื่อไอคอนให้ prop icon)
+ *        Text/TextInput ต้อง import จาก '@/components/ui/Text' (ฟอนต์ Anuphan อัตโนมัติ)
  */
+
+export { Text, TextInput } from './Text';
+
+export { Icon, IconSlot, isIconName, iconFromLegacy } from './Icon';
+export type { IconName, IconProps, IconWeight, IconSlotProps } from './Icon';
+
+export { BrandArt, BRAND_ART } from './BrandArt';
+export type { BrandArtName, BrandArtProps } from './BrandArt';
+
+export { RoyalHeader, GlassIconButton, OnHeaderProvider, useOnHeader } from './RoyalHeader';
+export type { RoyalHeaderProps, GlassIconButtonProps } from './RoyalHeader';
+
+export { IconButton } from './IconButton';
+export type { IconButtonProps } from './IconButton';
 
 export { Button3D } from './Button3D';
 export type { Button3DProps, Button3DVariant, Button3DSize } from './Button3D';

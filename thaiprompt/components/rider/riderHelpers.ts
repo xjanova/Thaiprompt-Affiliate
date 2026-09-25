@@ -14,6 +14,7 @@ import type {
   RiderVehicleType,
 } from '@/services/api/riderApi';
 import type { Tone } from '@/theme';
+import type { IconName } from '@/components/ui/Icon';
 
 // =====================================================
 // สถานะงาน
@@ -43,13 +44,13 @@ export const JOB_STATUS_LABEL: Record<RiderJobStatus, string> = {
   failed: 'ส่งไม่สำเร็จ',
 };
 
-/** ขั้นตอนบนไทม์ไลน์ (ตรงกับ state machine ของ server) */
-export const JOB_STEPS: Array<{ key: string; label: string; icon: string }> = [
-  { key: 'accepted', label: 'รับงาน', icon: '✅' },
-  { key: 'picking_up', label: 'ไปรับของ', icon: '🛵' },
-  { key: 'picked_up', label: 'รับของแล้ว', icon: '📦' },
-  { key: 'delivering', label: 'ไปส่ง', icon: '🚀' },
-  { key: 'completed', label: 'ส่งสำเร็จ', icon: '🎉' },
+/** ขั้นตอนบนไทม์ไลน์ (ตรงกับ state machine ของ server) · icon = ชื่อไอคอนเส้น */
+export const JOB_STEPS: Array<{ key: string; label: string; icon: IconName }> = [
+  { key: 'accepted', label: 'รับงาน', icon: 'check-circle' },
+  { key: 'picking_up', label: 'ไปรับของ', icon: 'moped' },
+  { key: 'picked_up', label: 'รับของแล้ว', icon: 'package' },
+  { key: 'delivering', label: 'ไปส่ง', icon: 'navigation-arrow' },
+  { key: 'completed', label: 'ส่งสำเร็จ', icon: 'seal-check' },
 ];
 
 /** ขั้นปัจจุบันบนไทม์ไลน์ (-1 = ยังไม่รับงาน) */
@@ -81,12 +82,12 @@ export const isFinishedJobStatus = (status: string | null | undefined): boolean 
 // เหตุผลส่งไม่สำเร็จ / คืนงาน
 // =====================================================
 
-export const FAIL_REASONS: Array<{ code: RiderFailReason; label: string; icon: string }> = [
-  { code: 'customer_unreachable', label: 'ติดต่อลูกค้าไม่ได้', icon: '📵' },
-  { code: 'wrong_address', label: 'ที่อยู่ไม่ถูกต้อง', icon: '🗺️' },
-  { code: 'customer_refused', label: 'ลูกค้าไม่รับของ', icon: '🙅' },
-  { code: 'item_damaged', label: 'สินค้าเสียหาย', icon: '💔' },
-  { code: 'other', label: 'อื่นๆ', icon: '✏️' },
+export const FAIL_REASONS: Array<{ code: RiderFailReason; label: string; icon: IconName }> = [
+  { code: 'customer_unreachable', label: 'ติดต่อลูกค้าไม่ได้', icon: 'phone' },
+  { code: 'wrong_address', label: 'ที่อยู่ไม่ถูกต้อง', icon: 'map-trifold' },
+  { code: 'customer_refused', label: 'ลูกค้าไม่รับของ', icon: 'prohibit' },
+  { code: 'item_damaged', label: 'สินค้าเสียหาย', icon: 'package' },
+  { code: 'other', label: 'อื่นๆ', icon: 'pencil-simple' },
 ];
 
 export const RELEASE_REASONS: string[] = ['ติดธุระด่วน', 'รถเสีย / ยางแตก', 'ร้านยังไม่พร้อม', 'ไกลเกินไป'];
@@ -95,11 +96,15 @@ export const RELEASE_REASONS: string[] = ['ติดธุระด่วน', '
 // ยานพาหนะ
 // =====================================================
 
-export const VEHICLES: Array<{ value: RiderVehicleType; label: string; icon: string; needsPlate: boolean }> = [
-  { value: 'motorcycle', label: 'มอเตอร์ไซค์', icon: '🏍️', needsPlate: true },
-  { value: 'car', label: 'รถยนต์', icon: '🚗', needsPlate: true },
-  { value: 'bicycle', label: 'จักรยาน', icon: '🚲', needsPlate: false },
-  { value: 'walk', label: 'เดินเท้า', icon: '🚶', needsPlate: false },
+/**
+ * icon = ชื่อไอคอนเส้น — ชุดไอคอนยังไม่มีรถยนต์/จักรยาน/คนเดิน จึงใช้ตัวที่ใกล้ที่สุดไปก่อน
+ * (เพิ่ม car / bicycle / person-simple-walk ใน components/ui/iconPaths.ts แล้วค่อยเปลี่ยนตรงนี้)
+ */
+export const VEHICLES: Array<{ value: RiderVehicleType; label: string; icon: IconName; needsPlate: boolean }> = [
+  { value: 'motorcycle', label: 'มอเตอร์ไซค์', icon: 'motorcycle', needsPlate: true },
+  { value: 'car', label: 'รถยนต์', icon: 'truck', needsPlate: true },
+  { value: 'bicycle', label: 'จักรยาน', icon: 'road-horizon', needsPlate: false },
+  { value: 'walk', label: 'เดินเท้า', icon: 'path', needsPlate: false },
 ];
 
 // =====================================================

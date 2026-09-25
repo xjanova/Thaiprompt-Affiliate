@@ -28,4 +28,7 @@ export type { DraftGroup, DraftOption, OptionGroupsEditorProps } from './OptionG
 
 export { useShopLocationConsent, hasShopLocationConsent } from './useShopLocationConsent';
 
+export { IconTile, HeroCard, NoticeBanner } from './MerchantUi';
+export type { IconTileProps, IconTileTone, HeroCardProps, NoticeBannerProps } from './MerchantUi';
+
 export * from './fmHelpers';
