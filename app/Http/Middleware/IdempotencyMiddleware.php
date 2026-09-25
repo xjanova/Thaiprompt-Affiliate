@@ -34,7 +34,9 @@ class IdempotencyMiddleware
             $idempotencyKey = $this->generateIdempotencyKey($request);
         }
 
-        $cacheKey = "idempotency:{$idempotencyKey}";
+        // ผูก key กับผู้ใช้เสมอ — กันคนอื่นส่ง key ซ้ำแล้วได้ response ของเราไป
+        $owner = $request->user()?->id ?? 'guest';
+        $cacheKey = "idempotency:{$owner}:{$idempotencyKey}";
 
         // Check if this request was already processed
         if (Cache::has($cacheKey)) {
@@ -50,7 +52,9 @@ class IdempotencyMiddleware
 
         if (! $lock->get()) {
             return response()->json([
-                'message' => 'Duplicate request in progress. Please wait.',
+                'success' => false,
+                'code' => 'DUPLICATE_REQUEST',
+                'message' => 'รายการนี้กำลังดำเนินการอยู่ กรุณารอสักครู่',
             ], 409); // Conflict
         }
 

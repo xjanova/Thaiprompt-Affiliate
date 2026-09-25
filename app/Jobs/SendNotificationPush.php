@@ -101,7 +101,29 @@ class SendNotificationPush implements ShouldQueue
             return false;
         }
 
+        // เรื่องสายงาน/คอมมิชชั่น/rank อยู่บนเว็บเท่านั้น (นโยบาย Google Play) → ไม่ push และไม่คัดลอกเข้ากล่องแจ้งเตือนแอป
+        if (self::isWebOnlyType((string) $notification->type)) {
+            return false;
+        }
+
         return ! $notification->push_sent;
+    }
+
+    /**
+     * ประเภทแจ้งเตือนที่ต้องอยู่บนเว็บเท่านั้น ห้ามโผล่ในแอปมือถือ
+     * (แอปบน Google Play ต้องไม่มีเนื้อหา MLM / สายงาน / คอมมิชชั่นหลายชั้น / rank)
+     */
+    public static function isWebOnlyType(string $type): bool
+    {
+        $type = strtolower($type);
+
+        foreach (['commission', 'mlm', 'rank', 'team', 'downline', 'upline', 'binary', 'matrix', 'pv_', 'sponsor'] as $needle) {
+            if (str_contains($type, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function handle(ExpoPushService $expo): void
