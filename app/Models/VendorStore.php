@@ -270,9 +270,15 @@ class VendorStore extends Model
      */
     public static function getPlatformStore(): self
     {
+        // vendor_stores.user_id เป็น NOT NULL — ร้าน Platform ผูกกับแอดมินคนแรก
+        // (เดิมไม่ใส่ user_id → ติดตั้งระบบใหม่บน DB ว่างแล้ว seeder ล้มทันที)
+        $ownerId = User::query()->whereIn('role', ['super_admin', 'admin'])->orderBy('id')->value('id')
+            ?? User::query()->orderBy('id')->value('id');
+
         return static::firstOrCreate(
             ['store_slug' => self::PLATFORM_STORE_SLUG],
             [
+                'user_id' => $ownerId,
                 'store_name' => config('app.name', 'Thaiprompt').' Official',
                 'store_description' => 'ร้านค้าอย่างเป็นทางการของ Platform',
                 'is_active' => true,
