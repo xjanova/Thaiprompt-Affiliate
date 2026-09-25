@@ -44,6 +44,29 @@ class EnsureHasVendorStore
                 ->with('info', 'กรุณาตั้งค่าร้านค้าของคุณก่อน');
         }
 
+        // 🔒 (2026-09-25) SELLER-20: ร้านที่ถูกระงับ/ปิด เข้าแผงผู้ขายไม่ได้ (เดิมเช็คแค่ว่ามีร้าน)
+        if (! $store->is_active || in_array($store->status, ['suspended', 'closed'], true)) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'STORE_SUSPENDED',
+                    'message' => 'ร้านค้าของคุณถูกระงับการใช้งาน',
+                    'data' => ['reason' => $store->suspension_reason],
+                ], 403);
+            }
+
+            // หน้า 403 มาตรฐานแสดงข้อความนี้ให้ผู้ขาย
+            abort(403, trim('ร้าน '.$store->store_name.' ถูกระงับการใช้งานชั่วคราว'
+                .($store->suspension_reason ? ' — '.$store->suspension_reason : '')
+                .' · กรุณาติดต่อเจ้าหน้าที่'));
+        }
+
+        // 💳 (2026-09-25) audit SELLER-08: ร้านที่ยังไม่มีแพ็กเกจใช้งานต้องเข้าหน้าเลือก/ชำระค่าแพ็กเกจได้
+        //    (เดิมหน้าชำระเงินอยู่หลัง middleware นี้ → เด้งกลับ onboarding วนไม่จบ)
+        if ($request->routeIs('seller.packages', 'seller.packages.subscribe', 'seller.packages.payment', 'seller.packages.process-payment')) {
+            return $next($request);
+        }
+
         // ตรวจสอบว่ามี active subscription หรือ trial หรือยัง
         if (! $this->hasActiveSubscription($store)) {
             return redirect()->route('seller.onboarding.index')
@@ -71,8 +94,8 @@ class EnsureHasVendorStore
             }
         }
 
-        // ตรวจสอบว่ามี package ที่เป็น Free
-        if ($store->package && $store->package->price == 0) {
+        // ตรวจสอบว่ามี package ที่เป็น Free จริง — แพ็กเกจราคาพิเศษ (Enterprise ราคา 0) ไม่ใช่ฟรี (audit SELLER-06)
+        if ($store->package && app(\App\Services\VendorSubscriptionService::class)->isFree($store->package)) {
             return true;
         }
 

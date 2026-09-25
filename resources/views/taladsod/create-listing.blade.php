@@ -147,17 +147,18 @@
 
                 {{-- จำนวนสินค้า --}}
                 <div>
-                    <label for="quantity" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        จำนวนสินค้าที่มี
+                    <label for="quantity_available" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        จำนวนสินค้าที่มี <span class="text-red-500">*</span>
                     </label>
                     <input type="number"
-                           id="quantity"
-                           name="quantity"
-                           value="{{ old('quantity') }}"
-                           min="0"
+                           id="quantity_available"
+                           name="quantity_available"
+                           value="{{ old('quantity_available') }}"
+                           min="1"
+                           required
                            placeholder="เช่น 50"
                            class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
-                    @error('quantity')
+                    @error('quantity_available')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                     @enderror
                 </div>

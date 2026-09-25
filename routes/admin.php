@@ -322,6 +322,16 @@ Route::get('users/{user}/permissions', [UserController::class, 'permissions'])->
 Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
 Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->name('users.dashboard');
 Route::post('users/{user}/generate-member-number', [UserController::class, 'generateMemberNumber'])->name('users.generate-member-number');
+// 🔒 (2026-09-25) ระงับ/ยกเลิกระงับบัญชี (users.blocked_at) — ใช้แทนการลบเมื่อต้องการหยุดการใช้งาน
+Route::post('users/{user}/suspend', [UserController::class, 'suspend'])->name('users.suspend');
+Route::post('users/{user}/unsuspend', [UserController::class, 'unsuspend'])->name('users.unsuspend');
+
+// 🏪 (2026-09-25) คำขอเปิดร้านค้าจากสมาชิกทั่วไป (SELLER-07) — อนุมัติแล้วผู้ใช้กลายเป็น seller
+Route::prefix('seller-applications')->name('seller-applications.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\SellerApplicationController::class, 'index'])->name('index');
+    Route::post('/{store}/approve', [\App\Http\Controllers\Admin\SellerApplicationController::class, 'approve'])->name('approve');
+    Route::post('/{store}/reject', [\App\Http\Controllers\Admin\SellerApplicationController::class, 'reject'])->name('reject');
+});
 
 // Role Management
 Route::resource('roles', RoleController::class);
@@ -2952,8 +2962,23 @@ Route::prefix('riders')->name('riders.')->group(function () {
     // API: ดึงข้อมูล GPS ของไรเดอร์ทั้งหมด
     Route::get('/gps-data', [RiderController::class, 'getGpsData'])->name('gps-data');
 
+    // API: จอติดตามการกระจายงานสด (งานรอไรเดอร์ + ไรเดอร์ออนไลน์) — JSON
+    Route::get('/dispatch-monitor', [RiderController::class, 'dispatchMonitor'])->name('dispatch-monitor');
+
+    // ตั้งค่าระบบไรเดอร์ (Setting rider.*)
+    Route::get('/settings', [RiderController::class, 'settings'])->name('settings');
+    Route::post('/settings', [RiderController::class, 'updateSettings'])->name('settings.update');
+
     // รายละเอียดไรเดอร์
     Route::get('/{rider}', [RiderController::class, 'show'])->name('show');
+
+    // 🔐 เปิดไฟล์เอกสารไรเดอร์จาก private disk (แอดมินเท่านั้น)
+    Route::get('/{rider}/document/{type}', [RiderController::class, 'document'])
+        ->where('type', 'id_card|driver_license|vehicle_registration|profile')
+        ->name('document');
+
+    // ตรวจเอกสารที่ไรเดอร์เปลี่ยนหลังอนุมัติแล้ว
+    Route::post('/{rider}/documents-reviewed', [RiderController::class, 'markDocumentsReviewed'])->name('documents-reviewed');
 
     // อนุมัติไรเดอร์
     Route::post('/{rider}/approve', [RiderController::class, 'approve'])->name('approve');
@@ -2998,6 +3023,9 @@ Route::prefix('rider-jobs')->name('rider-jobs.')->group(function () {
 
     // เปลี่ยนไรเดอร์
     Route::post('/{job}/reassign', [RiderJobController::class, 'reassign'])->name('reassign');
+
+    // สร้างงานใหม่ให้ออเดอร์ของงานที่ยกเลิก/ส่งไม่สำเร็จ
+    Route::post('/{job}/redispatch', [RiderJobController::class, 'redispatch'])->name('redispatch');
 });
 
 // Service Providers Management (Admin)
@@ -4443,6 +4471,7 @@ Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
     Route::post('/categories', [FreshMarketController::class, 'storeCategory'])->name('categories.store');
     Route::put('/categories/{category}', [FreshMarketController::class, 'updateCategory'])->name('categories.update');
     Route::delete('/categories/{category}', [FreshMarketController::class, 'destroyCategory'])->name('categories.destroy');
+    Route::patch('/categories/{category}/toggle', [FreshMarketController::class, 'toggleCategory'])->name('categories.toggle');
     Route::post('/categories/reorder', [FreshMarketController::class, 'reorderCategories'])->name('categories.reorder');
 
     // ผู้ขาย
@@ -4461,6 +4490,9 @@ Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
     // ออเดอร์
     Route::get('/orders', [FreshMarketController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [FreshMarketController::class, 'showOrder'])->name('orders.show');
+    Route::post('/orders/{order}/cancel', [FreshMarketController::class, 'cancelOrder'])->name('orders.cancel');
+    Route::post('/orders/{order}/complete', [FreshMarketController::class, 'completeOrder'])->name('orders.complete');
+    Route::post('/orders/{order}/redispatch', [FreshMarketController::class, 'redispatchRider'])->name('orders.redispatch');
 
     // คอมมิชชั่น & แคชแบ็ค
     Route::get('/commissions', [FreshMarketController::class, 'commissions'])->name('commissions');

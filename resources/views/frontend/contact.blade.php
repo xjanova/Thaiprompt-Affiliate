@@ -20,14 +20,15 @@
         {{-- การ์ดช่องทางติดต่อ (glass card สอดคล้องกับธีม) --}}
         <div class="grid md:grid-cols-2 gap-6">
             {{-- Email --}}
-            <a href="mailto:support@thaiprompt.com"
+            {{-- 📬 (2026-09-25) PLAY-25: อีเมลชุดเดียวกับแอป/นโยบายความเป็นส่วนตัว (เดิม .com ไม่ตรงกับแอป) --}}
+            <a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}"
                class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-amber-400/40 transition-all">
                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-4">
                     <i class="fas fa-envelope text-white text-xl"></i>
                 </div>
                 <div class="text-sm font-semibold uppercase tracking-wider text-amber-400 mb-1">EMAIL</div>
                 <h3 class="text-lg font-bold text-white mb-2">ส่งอีเมลถึงเรา</h3>
-                <p class="text-slate-300 group-hover:text-white transition-colors">support@thaiprompt.com</p>
+                <p class="text-slate-300 group-hover:text-white transition-colors">{{ \App\Support\ContactInfo::supportEmail() }}</p>
             </a>
 
             {{-- GitHub --}}

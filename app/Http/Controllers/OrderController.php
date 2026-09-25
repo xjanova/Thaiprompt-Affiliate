@@ -93,16 +93,16 @@ class OrderController extends Controller
             return back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อนี้ได้');
         }
 
-        $wasPaid = in_array($order->status, ['paid', 'processing']);
-
         $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
-        $order->cancel($request->reason);
+        // 🐛 (2026-09-25) SHOP-06: คืนเงินเฉพาะออเดอร์ที่จ่ายแล้วจริง (Order::cancel ตัดสินจาก payment_status)
+        //    คืนเงินล้มเหลว → ShopException แสดงข้อความไทยกลับหน้าเดิม (ออเดอร์ไม่ถูกยกเลิก)
+        $result = $order->cancel($request->reason, null, 'buyer');
 
         // แสดงข้อความที่เหมาะสม
-        if ($wasPaid) {
+        if ($result['refunded']) {
             return back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว — ระบบดำเนินการคืนเงินเข้า Wallet ให้แล้ว');
         }
 

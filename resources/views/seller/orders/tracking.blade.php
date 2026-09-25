@@ -196,9 +196,7 @@
                     </label>
                     <select name="status" required
                             class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="pending">รอดำเนินการ</option>
-                        <option value="processing">กำลังเตรียมสินค้า</option>
-                        <option value="shipped">จัดส่งแล้ว</option>
+                        {{-- 🛒 (2026-09-25) ยืนยัน/จัดส่ง ใช้ปุ่มในหน้ารายละเอียด — ตรงนี้เฉพาะความคืบหน้าหลังส่งแล้ว --}}
                         <option value="in_transit">กำลังจัดส่ง</option>
                         <option value="out_for_delivery">กำลังนำส่ง</option>
                         <option value="delivered">ส่งถึงแล้ว</option>

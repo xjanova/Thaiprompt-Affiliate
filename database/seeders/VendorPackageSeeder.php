@@ -23,6 +23,23 @@ class VendorPackageSeeder extends Seeder
         } else {
             $this->freshInstallMode();
         }
+
+        $this->markCustomPricingPackages();
+    }
+
+    /**
+     * Enterprise ราคา 0 = ราคาพิเศษตามตกลง (ติดต่อทีมงาน) ไม่ใช่แพ็กเกจฟรี — audit SELLER-06
+     * ใช้ query builder เพราะคอลัมน์ is_custom_pricing ไม่อยู่ใน $fillable ของโมเดล (แอดมินกำหนดเท่านั้น)
+     */
+    private function markCustomPricingPackages(): void
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('vendor_packages', 'is_custom_pricing')) {
+            return;
+        }
+
+        VendorPackage::where('package_slug', 'enterprise')
+            ->where('price', '<=', 0)
+            ->update(['is_custom_pricing' => true]);
     }
 
     /**
@@ -80,7 +97,7 @@ class VendorPackageSeeder extends Seeder
             ->update(['allow_direct_payment' => true]);
 
         if ($updated > 0) {
-            $this->command->info("   🔄 อัพเดท allow_direct_payment = true สำหรับ Enterprise package");
+            $this->command->info('   🔄 อัพเดท allow_direct_payment = true สำหรับ Enterprise package');
         }
     }
 

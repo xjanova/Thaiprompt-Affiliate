@@ -362,7 +362,8 @@ class SystemResetController extends Controller
 
                 // Special handling for users_auth - don't delete super admins
                 if ($option === 'users_auth') {
-                    $deletedCount = User::where('is_super_admin', false)->delete();
+                    // forceDelete: User ใช้ SoftDeletes แล้ว (2026-09-25) — รีเซ็ตระบบตั้งใจล้างถาวรเหมือนเดิม
+                    $deletedCount = User::where('is_super_admin', false)->forceDelete();
 
                     // Delete from other auth-related tables
                     foreach ($optionData['tables'] as $table) {
@@ -511,7 +512,8 @@ class SystemResetController extends Controller
         $totalDeleted = 0;
 
         // Delete users first (except super admin)
-        $usersDeleted = User::where('is_super_admin', false)->delete();
+        // forceDelete: User ใช้ SoftDeletes แล้ว (2026-09-25) — full reset ตั้งใจล้างถาวรเหมือนเดิม
+        $usersDeleted = User::where('is_super_admin', false)->forceDelete();
         $totalDeleted += $usersDeleted;
 
         // Delete all transactional data

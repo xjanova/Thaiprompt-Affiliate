@@ -625,17 +625,17 @@ class ECommerceController extends Controller
         // จัดการ "ยกเลิก" อย่างถูกต้อง
         if ($newStatus === 'cancelled') {
             if (! $order->canBeCancelled()) {
-                return redirect()->back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: ' . $order->status_label . ')');
+                return redirect()->back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: '.$order->status_label.')');
             }
-            $order->cancel($adminNotes ?? 'ยกเลิกโดย Admin', auth()->id());
+            $order->cancel($adminNotes ?? 'ยกเลิกโดย Admin', auth()->id(), 'admin');
 
-            return redirect()->back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว' . (in_array($order->fresh()->status, ['refunded']) ? ' (คืนเงินแล้ว)' : ''));
+            return redirect()->back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว'.(in_array($order->fresh()->status, ['refunded']) ? ' (คืนเงินแล้ว)' : ''));
         }
 
         // จัดการ "คืนเงิน" อย่างถูกต้อง
         if ($newStatus === 'refunded') {
             if (! $order->canBeRefunded()) {
-                return redirect()->back()->with('error', 'ไม่สามารถคืนเงินคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: ' . $order->status_label . ')');
+                return redirect()->back()->with('error', 'ไม่สามารถคืนเงินคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: '.$order->status_label.')');
             }
 
             try {
@@ -643,13 +643,16 @@ class ECommerceController extends Controller
                 $refundService->processFullRefund($order, auth()->id(), $adminNotes ?? 'คืนเงินโดย Admin');
 
                 return redirect()->back()->with('success', 'คืนเงินคำสั่งซื้อเรียบร้อยแล้ว');
-            } catch (\Exception $e) {
+            } catch (\DomainException $e) {
+                // ข้อความไทยจาก RefundService (ยังไม่จ่ายเงิน / กระเป๋าลูกค้าถูกระงับ ฯลฯ)
+                return redirect()->back()->with('error', $e->getMessage());
+            } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::error('Admin refund failed', [
                     'order_id' => $order->id,
                     'error' => $e->getMessage(),
                 ]);
 
-                return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการคืนเงิน: ' . $e->getMessage());
+                return redirect()->back()->with('error', 'คืนเงินไม่สำเร็จ ระบบยกเลิกรายการทั้งหมดแล้ว (ยังไม่มีเงินเคลื่อนไหว) กรุณาลองใหม่หรือแจ้งผู้ดูแลระบบ');
             }
         }
 
@@ -668,22 +671,156 @@ class ECommerceController extends Controller
     }
 
     /**
-     * Update payment status
+     * เปลี่ยนสถานะการชำระเงินด้วยมือ (แอดมิน)
+     *
+     * 🔒 (2026-09-25) audit CC-17: เดิมเปลี่ยนได้อิสระโดยไม่มีเหตุผล/หลักฐาน/บันทึก —
+     *    ตั้ง 'paid' = แบ่งเงินให้ผู้ขาย (เงินจริง) / 'refunded' แค่เปลี่ยนป้ายไม่คืนเงินจริง
+     * ตอนนี้:
+     *  - ต้องใส่เหตุผลทุกครั้ง, ตั้ง 'paid' ต้องมีเลขอ้างอิง (สลิป/ธุรกรรม) และต้องเป็น super admin
+     *  - 'refunded' วิ่งผ่าน RefundService (คืนเงินจริง + ดึงคอม/รายได้ผู้ขายคืน) และต้องเป็น super admin
+     *  - ห้ามย้อน paid → pending/failed (เงินถูกแบ่งแล้ว ต้องคืนเงินผ่านระบบคืนเงินเท่านั้น)
+     *  - บันทึก audit ลง accounting_activity_logs + log + admin_notes ของออเดอร์
      */
     public function updatePaymentStatus(Request $request, Order $order)
     {
         $validated = $request->validate([
             'payment_status' => 'required|in:pending,paid,failed,refunded',
+            'reason' => 'required|string|min:5|max:1000',
+            'payment_reference' => 'nullable|string|max:255|required_if:payment_status,paid',
+        ], [
+            'payment_status.required' => 'กรุณาเลือกสถานะการชำระเงิน',
+            'payment_status.in' => 'สถานะการชำระเงินไม่ถูกต้อง',
+            'reason.required' => 'กรุณาระบุเหตุผลในการเปลี่ยนสถานะการชำระเงิน',
+            'reason.min' => 'เหตุผลต้องมีอย่างน้อย 5 ตัวอักษร',
+            'payment_reference.required_if' => 'การยืนยันว่าชำระแล้วต้องระบุเลขอ้างอิงสลิปหรือธุรกรรม',
         ]);
 
-        $order->update($validated);
+        $admin = auth()->user();
+        $newStatus = $validated['payment_status'];
+        $reason = trim($validated['reason']);
+        $reference = isset($validated['payment_reference']) ? trim((string) $validated['payment_reference']) : null;
+        $oldStatus = (string) $order->payment_status;
+        $isSuperAdmin = (bool) ($admin->is_super_admin ?? false) || ($admin->role ?? null) === 'super_admin';
 
-        // If payment is marked as paid, update paid_at timestamp
-        if ($validated['payment_status'] === 'paid' && ! $order->paid_at) {
-            $order->update(['paid_at' => now()]);
+        if ($oldStatus === $newStatus) {
+            return redirect()->back()->with('info', 'สถานะการชำระเงินเป็นค่านี้อยู่แล้ว');
         }
 
-        return redirect()->back()->with('success', 'อัพเดทสถานะการชำระเงินเรียบร้อยแล้ว');
+        if (in_array($newStatus, ['paid', 'refunded'], true) && ! $isSuperAdmin) {
+            return redirect()->back()->with('error', 'การยืนยันรับเงินหรือคืนเงินด้วยมือทำได้เฉพาะผู้ดูแลระบบสูงสุด (Super Admin)');
+        }
+
+        if (in_array($oldStatus, ['paid', 'refunded'], true) && in_array($newStatus, ['pending', 'failed'], true)) {
+            return redirect()->back()->with('error', 'ออเดอร์นี้ชำระเงิน/คืนเงินไปแล้ว ย้อนสถานะไม่ได้ ถ้าต้องการคืนเงินให้เลือก "คืนเงินแล้ว"');
+        }
+
+        if ($oldStatus === 'refunded') {
+            return redirect()->back()->with('error', 'ออเดอร์นี้คืนเงินไปแล้ว เปลี่ยนสถานะการชำระเงินไม่ได้');
+        }
+
+        // 'refunded' → คืนเงินจริงผ่าน RefundService (ต้องจ่ายแล้วเท่านั้น)
+        if ($newStatus === 'refunded') {
+            if ($oldStatus !== 'paid') {
+                return redirect()->back()->with('error', 'คืนเงินได้เฉพาะออเดอร์ที่ชำระเงินแล้ว');
+            }
+
+            try {
+                app(RefundService::class)->processFullRefund($order, (int) $admin->id, $reason);
+            } catch (\DomainException $e) {
+                return redirect()->back()->with('error', $e->getMessage());
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Admin payment-status refund failed', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect()->back()->with('error', 'คืนเงินไม่สำเร็จ ระบบยกเลิกรายการทั้งหมดแล้ว กรุณาลองใหม่หรือแจ้งผู้ดูแลระบบ');
+            }
+
+            $this->auditPaymentStatusChange($order, $oldStatus, 'refunded', $reason, $reference);
+
+            return redirect()->back()->with('success', 'คืนเงินคำสั่งซื้อเข้ากระเป๋าลูกค้าเรียบร้อยแล้ว');
+        }
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $newStatus, $reference, $oldStatus) {
+                $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                if ((string) $locked->payment_status !== $oldStatus) {
+                    throw new \DomainException('สถานะการชำระเงินถูกเปลี่ยนโดยผู้อื่นระหว่างนี้ กรุณารีเฟรชหน้าแล้วลองใหม่');
+                }
+
+                $locked->payment_status = $newStatus;
+                if ($newStatus === 'paid') {
+                    $locked->paid_at = $locked->paid_at ?? now();
+                    $locked->payment_reference = $reference;
+                    if ($locked->status === 'pending') {
+                        $locked->status = 'paid';
+                    }
+                }
+                // save() → OrderObserver: 'paid' = จ่ายเงินคืนลูกค้า + แบ่งเงินผู้ขาย (ทำครั้งเดียว)
+                $locked->save();
+                $order->setRawAttributes($locked->getAttributes(), true);
+            });
+        } catch (\DomainException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Admin payment-status update failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'อัปเดตสถานะการชำระเงินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
+
+        $this->auditPaymentStatusChange($order, $oldStatus, $newStatus, $reason, $reference);
+
+        return redirect()->back()->with('success', 'อัพเดทสถานะการชำระเงินเรียบร้อยแล้ว (บันทึกเหตุผลไว้แล้ว)');
+    }
+
+    /**
+     * บันทึก audit การเปลี่ยนสถานะการชำระเงินด้วยมือ: accounting_activity_logs + log + admin_notes
+     */
+    private function auditPaymentStatusChange(Order $order, string $from, string $to, string $reason, ?string $reference): void
+    {
+        $admin = auth()->user();
+        $context = [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'admin_id' => $admin?->id,
+            'from' => $from,
+            'to' => $to,
+            'reason' => $reason,
+            'payment_reference' => $reference,
+            'ip' => request()->ip(),
+        ];
+
+        \Illuminate\Support\Facades\Log::warning('Admin changed order payment status manually', $context);
+
+        try {
+            \App\Models\AccountingActivityLog::create([
+                'user_id' => $admin?->id,
+                'loggable_type' => Order::class,
+                'loggable_id' => $order->id,
+                'action' => 'order.payment_status_changed',
+                'description' => mb_substr("เปลี่ยนสถานะการชำระเงิน {$from} → {$to}: {$reason}", 0, 2000),
+                'old_values' => ['payment_status' => $from],
+                'new_values' => ['payment_status' => $to, 'payment_reference' => $reference],
+                'ip_address' => request()->ip(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Payment status audit log write failed', $context + ['error' => $e->getMessage()]);
+        }
+
+        try {
+            $note = '['.now()->format('Y-m-d H:i').'] แอดมิน #'.($admin?->id ?? '-')
+                ." เปลี่ยนสถานะชำระเงิน {$from} → {$to}: {$reason}"
+                .($reference ? " (อ้างอิง: {$reference})" : '');
+            Order::whereKey($order->id)->update([
+                'admin_notes' => trim(((string) Order::whereKey($order->id)->value('admin_notes'))."\n".$note),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Payment status admin note write failed', $context + ['error' => $e->getMessage()]);
+        }
     }
 
     /**

@@ -91,4 +91,61 @@ class FreshMarketCategory extends Model
     {
         return $query->whereNull('parent_id');
     }
+
+    /**
+     * แปลงค่าหมวดหมู่จาก request (id หรือ slug) เป็นรายการ id ที่ต้องกรอง
+     * รวมหมวดหมู่ลูกด้วย — เลือก "ผัก" ต้องเห็นสินค้าใน "ผักใบ", "ผักกินหัว" ด้วย
+     *
+     * @return array<int> ว่าง = ไม่พบหมวดหมู่
+     */
+    public static function resolveIds(int|string|null $category): array
+    {
+        if ($category === null || $category === '') {
+            return [];
+        }
+
+        $found = is_numeric($category)
+            ? static::find((int) $category)
+            : static::where('slug', (string) $category)->first();
+
+        if (! $found) {
+            return [];
+        }
+
+        $childIds = static::where('parent_id', $found->id)->pluck('id')->all();
+
+        return array_values(array_unique(array_merge([(int) $found->id], array_map('intval', $childIds))));
+    }
+
+    /**
+     * เดาหมวดหมู่จากคำใบ้ (เช่นที่ AI สกัดจากแชท LINE: "ผักสด", "ผลไม้")
+     *
+     * @return int|null id หมวดหมู่ที่ใกล้ที่สุด หรือ null ถ้าไม่เจอ
+     */
+    public static function guessIdFromHint(?string $hint): ?int
+    {
+        $hint = trim((string) $hint);
+
+        if ($hint === '') {
+            return null;
+        }
+
+        $exact = static::active()
+            ->where(fn ($q) => $q->where('name', $hint)->orWhere('slug', $hint))
+            ->value('id');
+
+        if ($exact) {
+            return (int) $exact;
+        }
+
+        // ชื่อหมวดหมู่อยู่ในคำใบ้ หรือคำใบ้อยู่ในชื่อหมวดหมู่
+        foreach (static::active()->orderBy('sort_order')->get(['id', 'name']) as $category) {
+            $name = trim((string) $category->name);
+            if ($name !== '' && (mb_stripos($hint, $name) !== false || mb_stripos($name, $hint) !== false)) {
+                return (int) $category->id;
+            }
+        }
+
+        return null;
+    }
 }

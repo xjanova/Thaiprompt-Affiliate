@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\VendorPackage;
 use App\Models\VendorStore;
 use App\Models\VendorSubscription;
+use App\Services\VendorSubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -121,8 +123,8 @@ class OnboardingController extends Controller
             }
         }
 
-        // ตรวจสอบว่ามี package ที่เป็น Free
-        if ($store->package && $store->package->price == 0) {
+        // ตรวจสอบว่ามี package ที่เป็น Free จริง (Enterprise ราคา 0 = ราคาพิเศษ ไม่ใช่ฟรี)
+        if ($store->package && app(VendorSubscriptionService::class)->isFree($store->package)) {
             return true;
         }
 
@@ -133,6 +135,12 @@ class OnboardingController extends Controller
      * สร้างร้านค้าและเลือกแพ็คเกจ
      *
      * เมื่อ user ผ่าน KYC แล้ว สามารถสร้างร้านและเลือก package ได้
+     *
+     * 🔒 (2026-09-25) audit SELLER-06/08:
+     *  - แพ็กเกจราคาพิเศษ (Enterprise) สมัครเองไม่ได้
+     *  - แพ็กเกจเสียเงินที่ไม่มีทดลองใช้: ร้านเปิดด้วยแพ็กเกจฟรีก่อน + subscription รอชำระ
+     *    (เดิมผูกแพ็กเกจเสียเงินให้ร้านทันที = ได้อัตรา GP ต่ำโดยไม่จ่าย และติดหน้าชำระเงินที่เข้าไม่ได้)
+     *  - กดซ้ำไม่สร้างร้านซ้ำ (lock แถวผู้ใช้ + ใช้ร้านเดิม)
      */
     public function createStore(Request $request)
     {
@@ -155,87 +163,122 @@ class OnboardingController extends Controller
             'package_id.exists' => 'แพ็คเกจที่เลือกไม่ถูกต้อง',
         ]);
 
-        $package = VendorPackage::findOrFail($validated['package_id']);
+        $package = VendorPackage::where('is_active', true)->find($validated['package_id']);
+        if (! $package) {
+            return redirect()->back()->with('error', 'แพ็คเกจที่เลือกไม่เปิดให้สมัครแล้ว')->withInput();
+        }
 
-        DB::beginTransaction();
-        try {
-            // สร้าง store
-            $store = VendorStore::create([
-                'user_id' => $user->id,
-                'package_id' => $package->id,
-                'store_name' => $validated['store_name'],
-                'store_slug' => Str::slug($validated['store_name'].'-'.$user->id),
-                'is_active' => true,
-                'status' => 'active',
-                'store_email' => $user->email,
-                'store_phone' => $user->phone,
-                'commission_rate' => $package->commission_rate,
-            ]);
-
-            // ถ้าเป็น Free package หรือมี trial
-            if ($package->price == 0) {
-                // Free package - ไม่ต้อง subscription
-                $store->update([
-                    'subscription_status' => 'active',
-                    'subscription_started_at' => now(),
-                ]);
-            } elseif ($package->trial_days > 0) {
-                // มี trial period
-                $store->update([
-                    'subscription_status' => 'trial',
-                    'trial_ends_at' => now()->addDays($package->trial_days),
-                    'subscription_started_at' => now(),
-                ]);
-
-                // สร้าง trial subscription record
-                VendorSubscription::create([
-                    'store_id' => $store->id,
-                    'package_id' => $package->id,
-                    'subscription_type' => 'trial',
-                    'amount' => 0,
-                    'currency' => 'THB',
-                    'status' => 'active',
-                    'started_at' => now(),
-                    'expires_at' => now()->addDays($package->trial_days),
-                    'auto_renew' => false,
-                ]);
-            } else {
-                // Paid package - redirect ไปหน้าชำระเงิน
-                $subscriptionType = $validated['subscription_type'] ?? 'monthly';
-                $amount = $subscriptionType === 'yearly' ? $package->yearly_price : $package->price;
-
-                // สร้าง pending subscription
-                $subscription = VendorSubscription::create([
-                    'store_id' => $store->id,
-                    'package_id' => $package->id,
-                    'subscription_type' => $subscriptionType,
-                    'amount' => $amount,
-                    'currency' => 'THB',
-                    'status' => 'pending',
-                    'payment_status' => 'pending',
-                    'started_at' => now(),
-                    'auto_renew' => true,
-                ]);
-
-                DB::commit();
-
-                // Redirect ไปหน้าชำระเงิน
-                return redirect()->route('seller.packages.payment', $subscription->id)
-                    ->with('success', 'สร้างร้านค้าสำเร็จ! กรุณาชำระเงินเพื่อเปิดใช้งานแพ็คเกจ');
-            }
-
-            DB::commit();
-
-            return redirect()->route('seller.dashboard')
-                ->with('success', 'ยินดีต้อนรับสู่ระบบร้านค้า! ร้านของคุณพร้อมใช้งานแล้ว');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
+        $subscriptions = app(VendorSubscriptionService::class);
+        if ($subscriptions->isCustomPricing($package)) {
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
+                ->with('error', 'แพ็คเกจนี้เป็นแพ็คเกจราคาพิเศษ กรุณาติดต่อทีมงานเพื่อสมัคร หรือเลือกแพ็คเกจอื่นก่อน')
                 ->withInput();
         }
+
+        $freePackage = VendorPackage::where('is_active', true)
+            ->where('price', '<=', 0)
+            ->orderByDesc('is_default')
+            ->orderBy('sort_order')
+            ->get()
+            ->first(fn (VendorPackage $p) => $subscriptions->isFree($p));
+
+        try {
+            $outcome = DB::transaction(function () use ($user, $validated, $package, $freePackage, $subscriptions) {
+                // lock แถวผู้ใช้ → กดสร้างร้านซ้ำ/พร้อมกันได้ร้านเดียว
+                User::whereKey($user->id)->lockForUpdate()->first();
+
+                $store = VendorStore::where('user_id', $user->id)->orderBy('id')->first();
+                $isPaid = ! $subscriptions->isFree($package);
+                $withTrial = $isPaid && (int) $package->trial_days > 0;
+
+                // แพ็กเกจที่ร้านใช้ได้ทันที: ฟรี/ทดลองใช้ = แพ็กเกจที่เลือก, เสียเงินไม่มีทดลอง = แพ็กเกจฟรี
+                $activePackage = (! $isPaid || $withTrial) ? $package : $freePackage;
+
+                $storeData = [
+                    'package_id' => $activePackage?->id,
+                    'commission_rate' => $activePackage ? $activePackage->commission_rate : $package->commission_rate,
+                ];
+
+                if (! $isPaid || ! $withTrial) {
+                    $storeData += [
+                        'subscription_status' => $activePackage ? 'active' : 'trial',
+                        'subscription_started_at' => now(),
+                        'subscription_expires_at' => null,
+                        'trial_ends_at' => null,
+                    ];
+                } else {
+                    $storeData += [
+                        'subscription_status' => 'trial',
+                        'trial_ends_at' => now()->addDays((int) $package->trial_days),
+                        'subscription_started_at' => now(),
+                    ];
+                }
+
+                if ($store) {
+                    // มีร้านอยู่แล้ว (เช่น กดส่งฟอร์มซ้ำ) → อัปเดตร้านเดิม ไม่สร้างใหม่
+                    $store->update($storeData);
+                } else {
+                    $store = VendorStore::create(array_merge([
+                        'user_id' => $user->id,
+                        'store_name' => $validated['store_name'],
+                        'store_slug' => Str::slug($validated['store_name'].'-'.$user->id) ?: 'store-'.$user->id,
+                        'is_active' => true,
+                        'status' => 'active',
+                        'store_email' => $user->email,
+                        'store_phone' => $user->phone,
+                    ], $storeData));
+                }
+
+                if ($withTrial) {
+                    VendorSubscription::create([
+                        'store_id' => $store->id,
+                        'package_id' => $package->id,
+                        'subscription_type' => 'trial',
+                        'amount' => 0,
+                        'currency' => $package->currency ?: 'THB',
+                        'status' => 'active',
+                        'payment_status' => 'pending',
+                        'started_at' => now(),
+                        'expires_at' => now()->addDays((int) $package->trial_days),
+                        'auto_renew' => false,
+                    ]);
+
+                    return ['store' => $store, 'subscription' => null];
+                }
+
+                if ($isPaid) {
+                    $subscription = $subscriptions->createPendingSubscription(
+                        $store,
+                        $package,
+                        $validated['subscription_type'] ?? 'monthly'
+                    );
+
+                    return ['store' => $store, 'subscription' => $subscription];
+                }
+
+                return ['store' => $store, 'subscription' => null];
+            });
+        } catch (\DomainException $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Seller onboarding create store failed', [
+                'user_id' => $user->id,
+                'package_id' => $package->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'สร้างร้านค้าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+                ->withInput();
+        }
+
+        if ($outcome['subscription']) {
+            return redirect()->route('seller.packages.payment', $outcome['subscription']->id)
+                ->with('success', 'สร้างร้านค้าสำเร็จ! กรุณาชำระเงินเพื่อเปิดใช้งานแพ็คเกจ '.$package->display_name);
+        }
+
+        return redirect()->route('seller.dashboard')
+            ->with('success', 'ยินดีต้อนรับสู่ระบบร้านค้า! ร้านของคุณพร้อมใช้งานแล้ว');
     }
 
     /**
@@ -251,35 +294,44 @@ class OnboardingController extends Controller
             'subscription_type' => 'nullable|in:monthly,yearly',
         ]);
 
-        $package = VendorPackage::findOrFail($validated['package_id']);
-        $subscriptionType = $validated['subscription_type'] ?? 'monthly';
-        $amount = $subscriptionType === 'yearly' ? $package->yearly_price : $package->price;
-
-        // ถ้าเป็น Free package
-        if ($package->price == 0) {
-            $store->update([
-                'package_id' => $package->id,
-                'subscription_status' => 'active',
-                'subscription_started_at' => now(),
-                'commission_rate' => $package->commission_rate,
-            ]);
-
-            return redirect()->route('seller.dashboard')
-                ->with('success', 'เปลี่ยนเป็นแพ็คเกจฟรีสำเร็จ!');
+        $package = VendorPackage::where('is_active', true)->find($validated['package_id']);
+        if (! $package) {
+            return redirect()->back()->with('error', 'แพ็คเกจที่เลือกไม่เปิดให้สมัครแล้ว');
         }
 
-        // สร้าง subscription ใหม่
-        $subscription = VendorSubscription::create([
-            'store_id' => $store->id,
-            'package_id' => $package->id,
-            'subscription_type' => $subscriptionType,
-            'amount' => $amount,
-            'currency' => 'THB',
-            'status' => 'pending',
-            'payment_status' => 'pending',
-            'started_at' => now(),
-            'auto_renew' => true,
-        ]);
+        $subscriptions = app(VendorSubscriptionService::class);
+
+        // แพ็กเกจราคาพิเศษ (Enterprise) → ให้ทีมงานกำหนด ไม่ใช่ "ฟรี"
+        if ($subscriptions->isCustomPricing($package)) {
+            return redirect()->back()
+                ->with('error', 'แพ็คเกจนี้เป็นแพ็คเกจราคาพิเศษ กรุณาติดต่อทีมงานเพื่อสมัคร');
+        }
+
+        try {
+            if ($subscriptions->isFree($package)) {
+                $subscriptions->activateFree($store, $package);
+
+                return redirect()->route('seller.dashboard')
+                    ->with('success', 'เปลี่ยนเป็นแพ็คเกจฟรีสำเร็จ!');
+            }
+
+            // แพ็กเกจเสียเงิน → ร้านยังใช้แพ็กเกจเดิมจนกว่าจะชำระเงินจริง
+            $subscription = $subscriptions->createPendingSubscription(
+                $store,
+                $package,
+                $validated['subscription_type'] ?? 'monthly'
+            );
+        } catch (\DomainException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Seller change package failed', [
+                'store_id' => $store->id,
+                'package_id' => $package->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'เปลี่ยนแพ็คเกจไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
 
         return redirect()->route('seller.packages.payment', $subscription->id)
             ->with('info', 'กรุณาชำระเงินเพื่อเปลี่ยนแพ็คเกจ');
@@ -342,11 +394,15 @@ class OnboardingController extends Controller
             return redirect()->route('seller.dashboard')
                 ->with('success', 'ยินดีต้อนรับสู่ระบบร้านค้า! คุณใช้แพ็คเกจฟรี');
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Seller onboarding skip package failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
 
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'เปิดร้านด้วยแพ็คเกจฟรีไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
         }
     }
 }

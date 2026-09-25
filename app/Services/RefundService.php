@@ -3,754 +3,569 @@
 namespace App\Services;
 
 use App\Models\EarningsLedger;
-use App\Models\MlmCommission;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\PlatformTransaction;
 use App\Models\PlatformWallet;
+use App\Models\RiderJob;
 use App\Models\User;
 use App\Models\WalletDebt;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * RefundService
+ * RefundService — คืนเงินเต็มจำนวนของออเดอร์ e-commerce
  *
- * ระบบ Refund รวมศูนย์ - ใช้ Order/Bill เป็นตัวอ้างอิงหลัก
+ * ย้อนทุกเส้นทางเงินของออเดอร์ในครั้งเดียว (transaction เดียว, lock แถวออเดอร์, ทำซ้ำไม่คืนเงินซ้ำ):
+ *  0. งานไรเดอร์: ยกเลิก/ปิดงานที่ยังวิ่ง · ส่งสำเร็จแล้ว = หักค่าส่ง (จ่ายไรเดอร์ไปแล้ว) ออกจากยอดคืน
+ *  1. คืนเงินลูกค้าเข้า wallet (type = refund) — สร้าง wallet ให้ถ้ายังไม่มี
+ *  2. เรียกเงินคืน (cashback) กลับจาก wallet ลูกค้า ไม่พอ = สร้างหนี้ และคืนรายจ่ายโปรให้แพลตฟอร์ม
+ *  3. รายได้ผู้ขาย: ยังไม่จ่าย = ยกเลิก + ดึงเงินพักออกจาก seller_escrow / จ่ายแล้ว = หักคืนจาก wallet ผู้ขาย ไม่พอ = หนี้
+ *  4. คอม MLM: ยังไม่จ่าย = ยกเลิก / จ่ายแล้ว = หักคืน (เงินที่หักคืนกลับเข้ากองทุน MLM)
+ *  5. ย้อนรายการเงินเข้ากระเป๋าแพลตฟอร์มของออเดอร์ (GP, VAT, กองทุน MLM, ร้านทางการ, ส่วนลดคูปอง)
+ *  6. ออเดอร์ → status = refunded, payment_status = refunded
  *
- * ครอบคลุม:
- * - คืนเงินลูกค้า
- * - เรียกคืน Cashback ที่จ่ายไปแล้ว (ใหม่!)
- * - เรียกคืนเงินจากผู้ขาย (Seller/Admin Shop)
- * - เรียกคืน MLM Commission ทั้งสายงาน
- * - เรียกคืน Affiliate Commission
- * - เรียกคืนค่า Fee, VAT จาก Platform Wallets
- *
- * หลักการ: ติดตามทุก Transaction ที่เกี่ยวข้องกับ Order
- * แล้วย้อนกลับทั้งหมด (Reverse all transactions)
+ * ถ้าขั้นใดล้ม ทั้งหมด rollback — ออเดอร์จะไม่ถูกเปลี่ยนเป็นคืนเงินโดยที่ลูกค้าไม่ได้เงิน (audit G4)
+ * กระเป๋าแพลตฟอร์มที่เงินไม่พอให้ย้อน → บันทึกเป็น shortfall ในรายงาน (แพลตฟอร์มรับภาระ) ไม่ทำให้การคืนเงินล้ม
  */
 class RefundService
 {
     protected MlmCommissionClawbackService $mlmClawbackService;
 
-    protected DebtCollectionService $debtService;
+    protected WalletService $wallets;
 
-    public function __construct()
-    {
-        $this->mlmClawbackService = new MlmCommissionClawbackService;
-        $this->debtService = new DebtCollectionService;
+    protected SellerPayoutService $payouts;
+
+    protected PlatformExpenseService $expenses;
+
+    public function __construct(
+        ?MlmCommissionClawbackService $mlmClawbackService = null,
+        ?WalletService $wallets = null,
+        ?SellerPayoutService $payouts = null,
+        ?PlatformExpenseService $expenses = null
+    ) {
+        $this->mlmClawbackService = $mlmClawbackService ?? new MlmCommissionClawbackService;
+        $this->wallets = $wallets ?? app(WalletService::class);
+        $this->payouts = $payouts ?? new SellerPayoutService($this->wallets);
+        $this->expenses = $expenses ?? new PlatformExpenseService;
     }
 
     /**
-     * ดำเนินการ Full Refund สำหรับ Order
+     * คืนเงินเต็มจำนวนของออเดอร์
+     *
+     * @throws \DomainException ข้อความภาษาไทยที่แสดงให้แอดมินเห็นได้ (ยังไม่จ่ายเงิน / ไม่พบลูกค้า / กระเป๋าถูกระงับ)
      */
     public function processFullRefund(Order $order, ?int $adminId = null, string $reason = ''): array
     {
-        return DB::transaction(function () use ($order, $adminId, $reason) {
-            $refundReport = [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'order_total' => $order->total_amount,
-                'refund_reason' => $reason,
-                'refunded_by' => $adminId,
-                'refunded_at' => now()->toIso8601String(),
+        $reason = trim($reason) !== '' ? trim($reason) : 'คืนเงินคำสั่งซื้อ';
+        $notifyCustomer = null;
 
-                // 1. Customer Refund
-                'customer_refund' => null,
-
-                // 2. Cashback Clawback (ใหม่!)
-                'cashback_clawback' => null,
-
-                // 3. Seller/Admin Shop Clawback
-                'seller_clawback' => [],
-
-                // 4. MLM Commission Clawback
-                'mlm_clawback' => null,
-
-                // 5. Platform Wallet Adjustments
-                'platform_adjustments' => [],
-
-                // 6. Debts Created
-                'debts_created' => [],
-
-                // Summary
-                'summary' => [
-                    'total_customer_refund' => 0,
-                    'total_cashback_clawback' => 0,
-                    'total_seller_clawback' => 0,
-                    'total_mlm_clawback' => 0,
-                    'total_debts_created' => 0,
-                ],
-            ];
-
-            // ===== 1. คืนเงินให้ลูกค้า =====
-            $refundReport['customer_refund'] = $this->refundToCustomer($order, $adminId, $reason);
-            $refundReport['summary']['total_customer_refund'] = $refundReport['customer_refund']['amount'] ?? 0;
-
-            // ===== 2. เรียกคืน Cashback ที่จ่ายไปแล้ว =====
-            $refundReport['cashback_clawback'] = $this->clawbackCashback($order, $adminId, $reason);
-            $refundReport['summary']['total_cashback_clawback'] = $refundReport['cashback_clawback']['clawback_amount'] ?? 0;
-
-            // ===== 3. เรียกคืนเงินจากผู้ขาย/ร้านแอดมิน =====
-            $refundReport['seller_clawback'] = $this->clawbackFromSellers($order, $adminId, $reason);
-            $refundReport['summary']['total_seller_clawback'] = collect($refundReport['seller_clawback'])
-                ->sum('clawback_amount');
-
-            // ===== 4. เรียกคืน MLM Commission ทั้งสายงาน =====
-            $refundReport['mlm_clawback'] = $this->mlmClawbackService->clawbackOrderCommissions($order, $adminId);
-            $refundReport['summary']['total_mlm_clawback'] = $refundReport['mlm_clawback']['total_clawback_amount'] ?? 0;
-
-            // ===== 5. ปรับยอด Platform Wallets =====
-            $refundReport['platform_adjustments'] = $this->adjustPlatformWallets($order, $reason);
-
-            // ===== 6. รวบรวม Debts ที่สร้าง =====
-            $allDebts = [];
-
-            // จาก Cashback clawback
-            if (! empty($refundReport['cashback_clawback']['debt_id'])) {
-                $allDebts[] = $refundReport['cashback_clawback']['debt_id'];
+        $report = DB::transaction(function () use ($order, $adminId, $reason, &$notifyCustomer) {
+            /** @var Order|null $locked */
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+            if (! $locked) {
+                throw new \DomainException('ไม่พบคำสั่งซื้อนี้');
             }
 
-            // จาก Seller clawback
-            foreach ($refundReport['seller_clawback'] as $seller) {
-                if (! empty($seller['debt_id'])) {
-                    $allDebts[] = $seller['debt_id'];
+            // คืนเงินไปแล้ว → คืนรายงานเดิม ไม่คืนซ้ำ
+            if ($locked->payment_status === 'refunded') {
+                return $this->emptyReport($locked, $reason, $adminId) + ['already_refunded' => true];
+            }
+
+            if ($locked->payment_status !== 'paid') {
+                throw new \DomainException('คำสั่งซื้อนี้ยังไม่ได้ชำระเงิน จึงไม่มีเงินให้คืน');
+            }
+
+            $report = $this->emptyReport($locked, $reason, $adminId);
+
+            // 0. งานไรเดอร์ของออเดอร์ (ภายใต้ lock ออเดอร์เดียวกัน — กันไรเดอร์ส่งของต่อหลังคืนเงิน)
+            //    ยังไม่รับของ → ยกเลิก · รับของแล้ว → ส่งไม่สำเร็จ + ให้นำของคืนร้าน (ไม่ได้ค่าส่ง)
+            //    ส่งสำเร็จไปแล้ว → ค่าส่งถูกจ่ายให้ไรเดอร์/แพลตฟอร์มแล้ว ไม่คืนส่วนนั้น
+            $report['rider_fee_withheld'] = $this->settleRiderJobsBeforeRefund($locked, $reason);
+
+            // 1. คืนเงินลูกค้า
+            $report['customer_refund'] = $this->refundToCustomer($locked, $reason, (float) $report['rider_fee_withheld']);
+            $report['summary']['total_customer_refund'] = $report['customer_refund']['amount'];
+
+            // 2. เรียกเงินคืน (cashback) กลับ
+            $report['cashback_clawback'] = $this->clawbackCashback($locked, $adminId, $reason);
+            $report['summary']['total_cashback_clawback'] = $report['cashback_clawback']['clawback_amount'];
+
+            // 3. รายได้ผู้ขาย
+            $report['seller_clawback'] = $this->clawbackFromSellers($locked, $adminId, $reason);
+            $report['summary']['total_seller_clawback'] = round(collect($report['seller_clawback'])->sum('clawback_amount'), 2);
+
+            // 4. คอม MLM (ก่อนย้อนกองทุน — เงินที่หักคืนจะเติมกองทุนกลับก่อน)
+            $report['mlm_clawback'] = $this->mlmClawbackService->clawbackOrderCommissions($locked, $adminId);
+            $report['summary']['total_mlm_clawback'] = (float) ($report['mlm_clawback']['total_clawback_amount'] ?? 0);
+            $this->returnMlmClawbackToPool($locked, $report['mlm_clawback']);
+
+            // 5. ย้อนรายการเงินเข้ากระเป๋าแพลตฟอร์ม + คืนรายจ่ายส่วนลดคูปอง
+            //    คืนรายจ่ายเท่าที่เคยลงไว้จริงเท่านั้น (คูปองของร้านไม่เคยเป็นรายจ่ายแพลตฟอร์ม → ไม่มีอะไรให้คืน)
+            $report['platform_adjustments'] = $this->adjustPlatformWallets($locked, $reason);
+            $discountExpense = $this->expenses->findExpense('fee', 'order_discount', 'Order', (int) $locked->id);
+            if ($discountExpense && (float) $discountExpense->amount > 0) {
+                $this->expenses->reverseExpense('fee', (float) $discountExpense->amount, 'order_discount', 'Order', (int) $locked->id,
+                    "คืนรายจ่ายส่วนลดคูปอง (ออเดอร์ถูกคืนเงิน) #{$locked->order_number}");
+            }
+
+            // 6. รวมหนี้ที่เกิดขึ้น
+            $debts = [];
+            if (! empty($report['cashback_clawback']['debt_id'])) {
+                $debts[] = $report['cashback_clawback']['debt_id'];
+            }
+            foreach ($report['seller_clawback'] as $row) {
+                if (! empty($row['debt_id'])) {
+                    $debts[] = $row['debt_id'];
                 }
             }
+            $debts = array_merge($debts, $report['mlm_clawback']['debts_created'] ?? []);
+            $report['debts_created'] = array_values(array_unique($debts));
+            $report['summary']['total_debts_created'] = count($report['debts_created']);
 
-            // จาก MLM clawback
-            if (! empty($refundReport['mlm_clawback']['debts_created'])) {
-                $allDebts = array_merge($allDebts, $refundReport['mlm_clawback']['debts_created']);
-            }
-
-            $refundReport['debts_created'] = $allDebts;
-            $refundReport['summary']['total_debts_created'] = count($allDebts);
-
-            // อัพเดทสถานะ Order
-            $order->update([
+            // 7. สถานะออเดอร์
+            $locked->forceFill([
                 'status' => 'refunded',
+                'payment_status' => 'refunded',
                 'refund_reason' => $reason,
                 'refunded_at' => now(),
                 'refunded_by' => $adminId,
-            ]);
+            ])->save();
+            $order->setRawAttributes($locked->getAttributes(), true);
 
-            // บันทึก Log
             Log::info('Full refund processed', [
-                'order_id' => $order->id,
-                'summary' => $refundReport['summary'],
+                'order_id' => $locked->id,
+                'admin_id' => $adminId,
+                'summary' => $report['summary'],
             ]);
 
-            return $refundReport;
-        });
-    }
-
-    /**
-     * Partial Refund - คืนเงินบางส่วน (เฉพาะบาง Item)
-     *
-     * @param  array  $itemIds  รายการ OrderItem IDs ที่จะ refund
-     */
-    public function processPartialRefund(
-        Order $order,
-        array $itemIds,
-        ?int $adminId = null,
-        string $reason = ''
-    ): array {
-        return DB::transaction(function () use ($order, $itemIds, $adminId, $reason) {
-            $refundReport = [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'refund_type' => 'partial',
-                'refunded_items' => [],
-                'total_refund' => 0,
-                'debts_created' => [],
-            ];
-
-            $items = OrderItem::whereIn('id', $itemIds)
-                ->where('order_id', $order->id)
-                ->get();
-
-            foreach ($items as $item) {
-                $itemRefund = $this->refundOrderItem($item, $order, $adminId, $reason);
-                $refundReport['refunded_items'][] = $itemRefund;
-                $refundReport['total_refund'] += $itemRefund['customer_refund'];
-
-                if (! empty($itemRefund['debts'])) {
-                    $refundReport['debts_created'] = array_merge(
-                        $refundReport['debts_created'],
-                        $itemRefund['debts']
-                    );
-                }
+            if (($report['customer_refund']['amount'] ?? 0) > 0) {
+                $notifyCustomer = [(int) $locked->user_id, (float) $report['customer_refund']['amount'], (string) $locked->order_number];
             }
 
-            // อัพเดทสถานะ Order เป็น partially_refunded
-            $order->update([
-                'status' => 'partially_refunded',
-                'notes' => ($order->notes ?? '')."\nPartial refund: ".$reason,
-            ]);
-
-            Log::info('Partial refund processed', $refundReport);
-
-            return $refundReport;
+            return $report;
         });
+
+        if ($notifyCustomer !== null) {
+            $this->notifyCustomerRefunded(...$notifyCustomer);
+        }
+
+        return $report;
     }
 
     /**
-     * คืนเงินให้ลูกค้า
+     * จัดการงานไรเดอร์ของออเดอร์ก่อนคืนเงิน (เรียกภายใต้ lock ออเดอร์)
+     *
+     * - งานที่ยังวิ่งอยู่: ยกเลิก (ยังไม่รับของ) / ส่งไม่สำเร็จ + นำของคืนร้าน (รับของแล้ว) — ไม่เรียก hook กลับออเดอร์
+     * - งานที่ส่งสำเร็จแล้ว: ค่าส่ง (rider_earnings + platform_fee = total_fee) ถูกจ่ายออกไปแล้ว → คืนผู้ซื้อไม่ได้
+     *
+     * @return float ค่าส่งที่หักออกจากยอดคืน (0 = ไม่มีงานที่ส่งสำเร็จ)
      */
-    protected function refundToCustomer(Order $order, ?int $adminId, string $reason): array
+    protected function settleRiderJobsBeforeRefund(Order $order, string $reason): float
     {
+        try {
+            app(RiderDispatchService::class)->cancelJobsForSource($order, 'admin', mb_substr('คืนเงินคำสั่งซื้อ: '.$reason, 0, 500));
+        } catch (\Throwable $e) {
+            Log::warning('Refund: cancel rider jobs failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+
+        $completedFee = (float) RiderJob::forSource($order)
+            ->where('status', 'completed')
+            ->latest('id')
+            ->value('total_fee');
+
+        return round(min(max(0.0, $completedFee), max(0.0, (float) $order->total_amount)), 2);
+    }
+
+    /**
+     * คืนเงินลูกค้าเข้า wallet (ครั้งเดียวต่อออเดอร์)
+     *
+     * @param  float  $withheld  ส่วนที่คืนไม่ได้ (ค่าส่งที่จ่ายไรเดอร์ไปแล้ว)
+     */
+    protected function refundToCustomer(Order $order, string $reason, float $withheld = 0.0): array
+    {
+        $amount = round(max(0.0, (float) $order->total_amount - max(0.0, $withheld)), 2);
         $result = [
-            'customer_id' => $order->user_id,
-            'amount' => $order->total_amount,
-            'method' => 'wallet', // หรือ original_payment_method
+            'customer_id' => (int) $order->user_id,
+            'amount' => $amount,
+            'withheld_rider_fee' => round(max(0.0, $withheld), 2),
+            'method' => 'wallet',
             'status' => 'completed',
+            'wallet_transaction_id' => null,
         ];
 
-        $customer = User::find($order->user_id);
-        if (! $customer) {
-            $result['status'] = 'failed';
-            $result['error'] = 'Customer not found';
+        if ($amount <= 0) {
+            $result['status'] = 'nothing_to_refund';
 
             return $result;
         }
 
-        // ดึงเงินจาก Refund Pool
-        $refundPool = PlatformWallet::where('slug', 'refund_pool')->first();
-        if ($refundPool && $refundPool->balance >= $order->total_amount) {
-            $refundPool->deductFunds(
-                $order->total_amount,
-                'refund',
-                "Refund to customer - Order #{$order->order_number}",
-                'Order',
-                $order->id
-            );
+        $customer = User::withTrashed()->find($order->user_id);
+        if (! $customer) {
+            throw new \DomainException('ไม่พบบัญชีลูกค้าของคำสั่งซื้อนี้ จึงคืนเงินเข้ากระเป๋าไม่ได้');
         }
 
-        // เพิ่มเงินเข้า Wallet ลูกค้า
-        if ($customer->wallet) {
-            $customer->wallet->increment('balance', $order->total_amount);
+        $existing = WalletTransaction::where('reference_type', 'Order')
+            ->where('reference_id', $order->id)
+            ->where('user_id', $customer->id)
+            ->where('type', 'refund')
+            ->first();
+        if ($existing) {
+            $result['status'] = 'already_refunded';
+            $result['wallet_transaction_id'] = $existing->id;
 
-            if (method_exists($customer->wallet, 'transactions')) {
-                $customer->wallet->transactions()->create([
-                    'user_id' => $customer->id,
-                    'type' => 'refund',
-                    'amount' => $order->total_amount,
-                    'balance_after' => $customer->wallet->fresh()->balance,
-                    'description' => "คืนเงิน Order #{$order->order_number}: {$reason}",
-                    'reference_type' => 'Order',
-                    'reference_id' => $order->id,
-                ]);
-            }
+            return $result;
         }
+
+        $wallet = $this->wallets->getOrCreateWallet($customer);
+        if (! $wallet->isActive()) {
+            throw new \DomainException('กระเป๋าเงินของลูกค้าถูกระงับอยู่ กรุณาปลดระงับก่อนคืนเงิน');
+        }
+
+        $tx = $this->wallets->deposit(
+            $wallet,
+            $amount,
+            mb_substr("คืนเงินคำสั่งซื้อ #{$order->order_number}: {$reason}", 0, 500),
+            'Order',
+            (int) $order->id,
+            ['order_number' => $order->order_number, 'reason' => $reason],
+            'refund'
+        );
+
+        $result['wallet_transaction_id'] = $tx->id;
 
         return $result;
     }
 
     /**
-     * เรียกคืน Cashback ที่จ่ายไปแล้วให้ลูกค้า
-     *
-     * หัก cashback ออกจาก wallet ลูกค้า
-     * ถ้าเงินไม่พอ → สร้างเป็นหนี้
+     * เรียกเงินคืน (cashback) ที่จ่ายไปแล้วกลับจาก wallet ลูกค้า — ไม่พอ = สร้างหนี้
      */
     protected function clawbackCashback(Order $order, ?int $adminId, string $reason): array
     {
+        $cashback = round((float) ($order->cashback_amount ?? 0), 2);
         $result = [
-            'customer_id' => $order->user_id,
-            'cashback_amount' => $order->cashback_amount ?? 0,
-            'clawback_amount' => 0,
-            'deducted_from_wallet' => 0,
+            'customer_id' => (int) $order->user_id,
+            'cashback_amount' => $cashback,
+            'clawback_amount' => 0.0,
+            'deducted_from_wallet' => 0.0,
             'debt_id' => null,
             'status' => 'skipped',
-            'reason' => null,
         ];
 
-        // ตรวจสอบว่ามี cashback ที่ต้องเรียกคืนหรือไม่
-        if (! $order->cashback_processed || ($order->cashback_amount ?? 0) <= 0) {
-            $result['reason'] = 'No cashback to clawback';
-
+        if (! $order->cashback_processed || $cashback <= 0) {
             return $result;
         }
 
-        $cashbackAmount = $order->cashback_amount;
-        $result['clawback_amount'] = $cashbackAmount;
+        $result['clawback_amount'] = $cashback;
+        $clawed = $this->deductOrDebt(
+            (int) $order->user_id,
+            $cashback,
+            'OrderCashbackClawback',
+            (int) $order->id,
+            "เรียกคืนเงินคืน (Cash Back) — คืนเงินออเดอร์ #{$order->order_number}",
+            'CashbackClawback',
+            (int) $order->id,
+            "เรียกคืน Cash Back จากออเดอร์ #{$order->order_number}: {$reason}",
+            $adminId,
+            2,
+            ['order_number' => $order->order_number, 'original_cashback' => $cashback]
+        );
 
-        $customer = User::find($order->user_id);
-        if (! $customer) {
-            $result['status'] = 'failed';
-            $result['reason'] = 'Customer not found';
+        $result['deducted_from_wallet'] = $clawed['deducted'];
+        $result['debt_id'] = $clawed['debt_id'];
+        $result['status'] = $clawed['debt_id'] ? ($clawed['deducted'] > 0 ? 'partial_debt' : 'full_debt') : 'deducted';
 
-            return $result;
+        // เงินที่เรียกคืนได้จริง → คืนรายจ่ายโปรให้กระเป๋า fee
+        if ($clawed['deducted'] > 0) {
+            $this->expenses->reverseExpense('fee', $clawed['deducted'], 'cashback_expense', 'Order', (int) $order->id,
+                "เรียกคืน Cash Back ได้จากลูกค้า ออเดอร์ #{$order->order_number}");
         }
-
-        // ตรวจสอบยอดเงินใน Wallet
-        $walletBalance = $customer->wallet?->balance ?? 0;
-
-        if ($walletBalance >= $cashbackAmount) {
-            // มีเงินพอ → หักทันที
-            $customer->wallet->decrement('balance', $cashbackAmount);
-            $this->createWalletTransaction(
-                $customer,
-                -$cashbackAmount,
-                'cashback_clawback',
-                $order,
-                "เรียกคืน Cashback - Refund Order #{$order->order_number}"
-            );
-
-            $result['deducted_from_wallet'] = $cashbackAmount;
-            $result['status'] = 'deducted';
-
-        } elseif ($walletBalance > 0) {
-            // มีบางส่วน → หักเท่าที่มี + สร้างหนี้
-            $customer->wallet->decrement('balance', $walletBalance);
-            $this->createWalletTransaction(
-                $customer,
-                -$walletBalance,
-                'cashback_clawback',
-                $order,
-                "เรียกคืน Cashback (บางส่วน) - Refund Order #{$order->order_number}"
-            );
-
-            $result['deducted_from_wallet'] = $walletBalance;
-
-            // สร้างหนี้ส่วนที่เหลือ
-            $debtAmount = $cashbackAmount - $walletBalance;
-            $debt = WalletDebt::createDebt(
-                $order->user_id,
-                $debtAmount,
-                'CashbackClawback',
-                $order->id,
-                "เรียกคืน Cashback ส่วนที่เหลือจาก Order #{$order->order_number}: {$reason}",
-                $adminId,
-                2, // Priority 2 (ต่ำกว่า Seller/MLM)
-                [
-                    'order_number' => $order->order_number,
-                    'original_cashback' => $cashbackAmount,
-                    'partial_deducted' => $walletBalance,
-                ]
-            );
-
-            $result['debt_id'] = $debt->id;
-            $result['status'] = 'partial_debt';
-            $this->notifyDebtCreated($order->user_id, $debt);
-
-        } else {
-            // ไม่มีเงินเลย → สร้างหนี้ทั้งหมด
-            $debt = WalletDebt::createDebt(
-                $order->user_id,
-                $cashbackAmount,
-                'CashbackClawback',
-                $order->id,
-                "เรียกคืน Cashback จาก Order #{$order->order_number}: {$reason}",
-                $adminId,
-                2,
-                [
-                    'order_number' => $order->order_number,
-                    'original_cashback' => $cashbackAmount,
-                ]
-            );
-
-            $result['debt_id'] = $debt->id;
-            $result['status'] = 'full_debt';
-            $this->notifyDebtCreated($order->user_id, $debt);
-        }
-
-        // อัพเดทสถานะ cashback ใน Order
-        $order->update([
-            'cashback_clawback_at' => now(),
-            'cashback_clawback_reason' => $reason,
-        ]);
-
-        Log::info('Cashback clawback processed', [
-            'order_id' => $order->id,
-            'customer_id' => $order->user_id,
-            'cashback_amount' => $cashbackAmount,
-            'deducted' => $result['deducted_from_wallet'],
-            'debt_id' => $result['debt_id'],
-        ]);
 
         return $result;
     }
 
     /**
-     * เรียกคืนเงินจากผู้ขาย/ร้านแอดมิน
+     * รายได้ผู้ขายของออเดอร์: ยังไม่จ่าย = ยกเลิก + ดึงเงินพักคืน / จ่ายแล้ว = หักคืนจากผู้ขาย
      */
     protected function clawbackFromSellers(Order $order, ?int $adminId, string $reason): array
     {
         $results = [];
 
-        // ดึง Earnings ทั้งหมดที่เกี่ยวกับ Order นี้
-        $earnings = EarningsLedger::where('source_type', 'Order')
+        $ledgers = EarningsLedger::where('source_type', 'Order')
             ->where('source_id', $order->id)
-            ->whereIn('earning_type', ['seller_sale', 'admin_shop', 'admin_services'])
+            ->where('earning_type', EarningsLedger::TYPE_SELLER_SALE)
+            ->orderBy('id')
+            ->lockForUpdate()
             ->get();
 
-        foreach ($earnings as $earning) {
-            $result = [
-                'earning_id' => $earning->id,
-                'user_id' => $earning->user_id,
-                'earning_type' => $earning->earning_type,
-                'gross_amount' => $earning->gross_amount,
-                'net_amount' => $earning->net_amount,
-                'clawback_amount' => 0,
-                'deducted_from_wallet' => 0,
+        foreach ($ledgers as $ledger) {
+            $row = [
+                'earning_id' => $ledger->id,
+                'user_id' => (int) $ledger->user_id,
+                'status_before' => $ledger->status,
+                'net_amount' => round((float) $ledger->net_amount, 2),
+                'clawback_amount' => 0.0,
+                'deducted_from_wallet' => 0.0,
+                'escrow_reversed' => 0.0,
                 'debt_id' => null,
                 'action' => 'none',
             ];
 
-            // ตรวจสอบสถานะ Earning
-            if ($earning->status === EarningsLedger::STATUS_PENDING) {
-                // ยังไม่ available → ยกเลิกได้เลย
-                $earning->update([
-                    'status' => EarningsLedger::STATUS_CANCELLED,
-                    'cancelled_at' => now(),
-                    'cancel_reason' => "Refund Order #{$order->order_number}: {$reason}",
-                ]);
-                $result['action'] = 'cancelled';
+            if (in_array($ledger->status, [EarningsLedger::STATUS_PENDING, EarningsLedger::STATUS_AVAILABLE, EarningsLedger::STATUS_HELD], true)) {
+                $reverse = $this->payouts->reverseUnpaidLedger($ledger, $order, $reason);
+                $row['action'] = $reverse['action'];
+                $row['escrow_reversed'] = $reverse['escrow_reversed'];
+            } elseif (in_array($ledger->status, [EarningsLedger::STATUS_PAID, EarningsLedger::STATUS_PROCESSING], true)) {
+                $amount = round((float) $ledger->net_amount, 2);
+                $row['clawback_amount'] = $amount;
 
-            } elseif ($earning->status === EarningsLedger::STATUS_AVAILABLE) {
-                // Available แต่ยังไม่ถอน → ยกเลิก + คืนเงินเข้า Platform
-                $earning->update([
-                    'status' => EarningsLedger::STATUS_CANCELLED,
-                    'cancelled_at' => now(),
-                    'cancel_reason' => "Refund Order #{$order->order_number}: {$reason}",
-                ]);
-                $result['action'] = 'cancelled_available';
-
-            } elseif (in_array($earning->status, [EarningsLedger::STATUS_PROCESSING, EarningsLedger::STATUS_PAID])) {
-                // จ่ายไปแล้ว → ต้องเรียกคืน
-                $result['clawback_amount'] = $earning->net_amount;
-
-                // สำหรับ Admin Shop/Services → คืนเข้า Platform Wallet โดยตรง
-                if (in_array($earning->earning_type, ['admin_shop', 'admin_services'])) {
-                    $walletSlug = $earning->earning_type === 'admin_shop' ? 'admin_shop' : 'admin_services';
-                    $wallet = PlatformWallet::where('slug', $walletSlug)->first();
-
-                    if ($wallet) {
-                        // หักจาก Admin Wallet
-                        $wallet->deductFunds(
-                            $earning->net_amount,
-                            'refund_clawback',
-                            "Clawback - Order #{$order->order_number}",
-                            'Order',
-                            $order->id
-                        );
-                        $result['action'] = 'clawback_from_admin_wallet';
-                        $result['deducted_from_wallet'] = $earning->net_amount;
-                    }
-
-                } else {
-                    // สำหรับ Seller ทั่วไป → ตรวจสอบ Wallet และสร้างหนี้ถ้าจำเป็น
-                    $clawbackResult = $this->clawbackFromUser(
-                        $earning->user_id,
-                        $earning->net_amount,
-                        $order,
+                if ($amount > 0) {
+                    $clawed = $this->deductOrDebt(
+                        (int) $ledger->user_id,
+                        $amount,
+                        'EarningsLedgerClawback',
+                        (int) $ledger->id,
+                        "หักคืนรายได้ผู้ขาย — คืนเงินออเดอร์ #{$order->order_number}",
+                        'SellerClawback',
+                        (int) $order->id,
+                        "หักคืนรายได้จากออเดอร์ #{$order->order_number} (ลูกค้าได้รับเงินคืน): {$reason}",
                         $adminId,
-                        "Seller clawback - {$reason}"
+                        1,
+                        ['order_number' => $order->order_number, 'ledger_id' => $ledger->id]
                     );
-
-                    $result['deducted_from_wallet'] = $clawbackResult['deducted'];
-                    $result['debt_id'] = $clawbackResult['debt_id'];
-                    $result['action'] = $clawbackResult['debt_id'] ? 'debt_created' : 'deducted';
+                    $row['deducted_from_wallet'] = $clawed['deducted'];
+                    $row['debt_id'] = $clawed['debt_id'];
                 }
 
-                $earning->update([
-                    'status' => 'clawback',
-                    'cancel_reason' => "Clawback - Order #{$order->order_number}",
+                $breakdown = is_array($ledger->breakdown) ? $ledger->breakdown : [];
+                $breakdown['clawback'] = [
+                    'at' => now()->toIso8601String(),
+                    'amount' => $amount,
+                    'deducted_from_wallet' => $row['deducted_from_wallet'],
+                    'debt_id' => $row['debt_id'],
+                ];
+                $ledger->update([
+                    'status' => EarningsLedger::STATUS_CANCELLED,
+                    'cancelled_at' => now(),
+                    'cancel_reason' => mb_substr("หักคืนหลังจ่ายแล้ว — คืนเงินออเดอร์ #{$order->order_number}", 0, 255),
+                    'breakdown' => $breakdown,
                 ]);
+                $row['action'] = $row['debt_id'] ? 'debt_created' : 'deducted';
             }
 
-            $results[] = $result;
+            $results[] = $row;
         }
 
         return $results;
     }
 
     /**
-     * เรียกคืนเงินจาก User
-     */
-    protected function clawbackFromUser(
-        int $userId,
-        float $amount,
-        Order $order,
-        ?int $adminId,
-        string $reason
-    ): array {
-        $result = [
-            'deducted' => 0,
-            'debt_id' => null,
-        ];
-
-        $user = User::find($userId);
-        if (! $user || ! $user->wallet) {
-            // ไม่มี wallet → สร้างหนี้ทั้งหมด
-            $debt = WalletDebt::createDebt(
-                $userId,
-                $amount,
-                'SellerClawback',
-                $order->id,
-                $reason,
-                $adminId,
-                1,
-                ['order_number' => $order->order_number]
-            );
-            $result['debt_id'] = $debt->id;
-            $this->notifyDebtCreated($userId, $debt);
-
-            return $result;
-        }
-
-        $walletBalance = $user->wallet?->balance ?? 0;
-
-        if ($walletBalance >= $amount) {
-            // มีเงินพอ → หักทันที
-            $user->wallet->decrement('balance', $amount);
-            $this->createWalletTransaction($user, -$amount, 'seller_clawback', $order, $reason);
-            $result['deducted'] = $amount;
-
-        } elseif ($walletBalance > 0) {
-            // มีบางส่วน → หักเท่าที่มี + สร้างหนี้
-            $user->wallet->decrement('balance', $walletBalance);
-            $this->createWalletTransaction($user, -$walletBalance, 'seller_clawback', $order, $reason);
-            $result['deducted'] = $walletBalance;
-
-            $debtAmount = $amount - $walletBalance;
-            $debt = WalletDebt::createDebt(
-                $userId,
-                $debtAmount,
-                'SellerClawback',
-                $order->id,
-                $reason,
-                $adminId,
-                1,
-                ['order_number' => $order->order_number, 'partial_deducted' => $walletBalance]
-            );
-            $result['debt_id'] = $debt->id;
-            $this->notifyDebtCreated($userId, $debt);
-
-        } else {
-            // ไม่มีเงินเลย → สร้างหนี้ทั้งหมด
-            $debt = WalletDebt::createDebt(
-                $userId,
-                $amount,
-                'SellerClawback',
-                $order->id,
-                $reason,
-                $adminId,
-                1,
-                ['order_number' => $order->order_number]
-            );
-            $result['debt_id'] = $debt->id;
-            $this->notifyDebtCreated($userId, $debt);
-        }
-
-        return $result;
-    }
-
-    /**
-     * ปรับยอด Platform Wallets
+     * ย้อนรายการเงินเข้ากระเป๋าแพลตฟอร์มของออเดอร์ (ยกเว้นเงินพักผู้ขาย ซึ่งย้อนราย ledger แล้ว)
      */
     protected function adjustPlatformWallets(Order $order, string $reason): array
     {
         $adjustments = [];
 
-        // หา transactions ที่เกี่ยวกับ Order นี้
-        $transactions = PlatformTransaction::where('reference_type', 'Order')
-            ->where('reference_id', $order->id)
-            ->where('type', 'income')
+        // เฉพาะรายการที่เกิดจากการแบ่งเงิน (GP, VAT, กองทุน MLM, ร้านทางการ) — ไม่รวมเงินพักผู้ขาย
+        // (ย้อนราย ledger แล้ว) และไม่รวมรายการคืนรายจ่ายโปรที่เพิ่งสร้างในการคืนเงินครั้งนี้
+        $subTypes = array_values(array_diff(
+            OrderDistributionService::DISTRIBUTION_SUB_TYPES,
+            [SellerPayoutService::ESCROW_HOLD_SUB_TYPE]
+        ));
+
+        $incomes = PlatformTransaction::where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->where('type', PlatformTransaction::TYPE_INCOME)
+            ->where('status', 'completed')
+            ->whereIn('sub_type', $subTypes)
+            ->orderBy('id')
             ->get();
 
-        foreach ($transactions as $tx) {
-            $wallet = PlatformWallet::find($tx->wallet_id);
+        foreach ($incomes as $tx) {
+            $amount = round((float) $tx->amount, 2);
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $wallet = PlatformWallet::find($tx->platform_wallet_id);
             if (! $wallet) {
                 continue;
             }
 
-            // สร้าง reverse transaction
-            $wallet->deductFunds(
-                $tx->amount,
-                'refund_reversal',
-                "Reverse: {$tx->description} - Refund Order #{$order->order_number}",
-                'Order',
-                $order->id
-            );
+            $alreadyReversed = PlatformTransaction::where('platform_wallet_id', $wallet->id)
+                ->where('sub_type', 'refund_reversal')
+                ->where('source_type', 'Order')
+                ->where('source_id', $order->id)
+                ->where('metadata->original_tx_id', $tx->id)
+                ->exists();
+            if ($alreadyReversed) {
+                continue;
+            }
 
-            $adjustments[] = [
+            $row = [
                 'wallet_id' => $wallet->id,
-                'wallet_name' => $wallet->name,
+                'wallet_slug' => $wallet->slug,
                 'original_tx_id' => $tx->id,
-                'reversed_amount' => $tx->amount,
+                'original_sub_type' => $tx->sub_type,
+                'reversed_amount' => 0.0,
+                'shortfall' => 0.0,
             ];
+
+            try {
+                $reversal = $wallet->deductFunds($amount, 'refund_reversal', 'Order', (int) $order->id, [
+                    'original_tx_id' => $tx->id,
+                    'original_sub_type' => $tx->sub_type,
+                    'order_number' => $order->order_number,
+                    'reason' => $reason,
+                ]);
+                $reversal->update([
+                    'related_user_id' => $tx->related_user_id,
+                    'description' => mb_substr("ย้อนรายการ ({$tx->sub_type}) — คืนเงินออเดอร์ #{$order->order_number}", 0, 255),
+                ]);
+                $row['reversed_amount'] = $amount;
+            } catch (\Throwable $e) {
+                // เงินในกระเป๋าถูกใช้ไปแล้ว → แพลตฟอร์มรับภาระส่วนต่าง (ลูกค้ายังได้เงินคืนครบ)
+                $row['shortfall'] = $amount;
+                Log::warning('Refund: platform wallet reversal shortfall', [
+                    'order_id' => $order->id,
+                    'wallet' => $wallet->slug,
+                    'amount' => $amount,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            $adjustments[] = $row;
         }
 
         return $adjustments;
     }
 
     /**
-     * Refund สำหรับ OrderItem เดียว
+     * เงินคอม MLM ที่หักคืนจากผู้รับได้จริง → เติมกลับกองทุน MLM (กองทุนเคยจ่ายก้อนนี้ออกไป)
      */
-    protected function refundOrderItem(
-        OrderItem $item,
-        Order $order,
-        ?int $adminId,
-        string $reason
-    ): array {
-        $result = [
-            'item_id' => $item->id,
-            'product_name' => $item->product_name ?? 'Item #'.$item->id,
-            'item_total' => $item->total_price,
-            'customer_refund' => $item->total_price,
-            'seller_clawback' => 0,
-            'mlm_clawback' => 0,
-            'debts' => [],
-        ];
-
-        // คืนเงินลูกค้า
-        $customer = User::find($order->user_id);
-        if ($customer && $customer->wallet) {
-            $customer->wallet->increment('balance', $item->total_price);
-            $this->createWalletTransaction(
-                $customer,
-                $item->total_price,
-                'partial_refund',
-                $order,
-                "คืนเงิน: {$item->product_name}"
-            );
-        }
-
-        // เรียกคืนจาก Seller
-        $sellerEarning = EarningsLedger::where('source_type', 'OrderItem')
-            ->where('source_id', $item->id)
-            ->where('earning_type', 'seller_sale')
-            ->first();
-
-        if ($sellerEarning && in_array($sellerEarning->status, ['available', 'paid'])) {
-            $clawback = $this->clawbackFromUser(
-                $sellerEarning->user_id,
-                $sellerEarning->net_amount,
-                $order,
-                $adminId,
-                $reason
-            );
-
-            $result['seller_clawback'] = $sellerEarning->net_amount;
-            if ($clawback['debt_id']) {
-                $result['debts'][] = $clawback['debt_id'];
-            }
-        }
-
-        // เรียกคืน MLM Commission ที่เกี่ยวกับ Item นี้
-        // ⚠️ ปัจจุบันระบบบันทึก MLM commission เป็นระดับ Order (FQCN) เท่านั้น ไม่มีระดับ OrderItem
-        //    query นี้จึงเจอเฉพาะกรณีที่มีการบันทึก per-item ในอนาคต — การเรียกคืนระดับ Order
-        //    ทำที่ MlmCommissionClawbackService::clawbackOrderCommissions (full refund)
-        $mlmCommissions = MlmCommission::whereIn('source_type', [\App\Models\OrderItem::class, 'OrderItem'])
-            ->where('source_id', $item->id)
-            ->where('status', 'paid')
-            ->get();
-
-        foreach ($mlmCommissions as $commission) {
-            $clawback = $this->clawbackFromUser(
-                $commission->user_id,
-                $commission->commission_amount,
-                $order,
-                $adminId,
-                "MLM Clawback - {$reason}"
-            );
-
-            $result['mlm_clawback'] += $commission->commission_amount;
-            if ($clawback['debt_id']) {
-                $result['debts'][] = $clawback['debt_id'];
-            }
-
-            $commission->update(['status' => 'clawback']);
-        }
-
-        // อัพเดทสถานะ Item
-        $item->update([
-            'status' => 'refunded',
-            'refund_reason' => $reason,
-        ]);
-
-        return $result;
-    }
-
-    /**
-     * สร้าง Wallet Transaction
-     */
-    protected function createWalletTransaction(
-        User $user,
-        float $amount,
-        string $type,
-        Order $order,
-        string $description
-    ): void {
-        if (! $user->wallet || ! method_exists($user->wallet, 'transactions')) {
+    protected function returnMlmClawbackToPool(Order $order, array $mlmReport): void
+    {
+        $returned = round(collect($mlmReport['deducted_from_wallets'] ?? [])->sum('amount'), 2);
+        if ($returned <= 0) {
             return;
         }
 
-        $user->wallet->transactions()->create([
-            'user_id' => $user->id,
-            'type' => $type,
-            'amount' => $amount,
-            'balance_after' => $user->wallet->fresh()->balance,
-            'description' => $description,
-            'reference_type' => 'Order',
-            'reference_id' => $order->id,
+        $tx = PlatformWallet::getMlmPoolWallet()->addFunds($returned, 'mlm_clawback_return', 'OrderRefund', (int) $order->id, [
+            'order_number' => $order->order_number,
         ]);
+        $tx->update(['description' => "คอม MLM ที่หักคืน (คืนเงินออเดอร์ #{$order->order_number})"]);
     }
 
     /**
-     * ดึงรายงาน Refund ของ Order
+     * หักเงินจาก wallet เท่าที่มี ส่วนที่เหลือสร้างเป็นหนี้
+     *
+     * @return array{deducted: float, debt_id: ?int}
+     */
+    protected function deductOrDebt(
+        int $userId,
+        float $amount,
+        string $walletRefType,
+        int $walletRefId,
+        string $walletDescription,
+        string $debtSourceType,
+        int $debtSourceId,
+        string $debtReason,
+        ?int $adminId,
+        int $priority,
+        array $metadata
+    ): array {
+        $amount = round($amount, 2);
+        $deducted = 0.0;
+        $debtId = null;
+
+        $user = User::withTrashed()->find($userId);
+        $wallet = $user ? $this->wallets->getOrCreateWallet($user) : null;
+
+        if ($wallet && $wallet->isActive()) {
+            $balance = round((float) $wallet->fresh()->balance, 2);
+            $take = round(min($balance, $amount), 2);
+
+            if ($take > 0) {
+                try {
+                    $this->wallets->deductForService($wallet, $take, $walletDescription, $walletRefType, $walletRefId, $metadata);
+                    $deducted = $take;
+                } catch (\Throwable $e) {
+                    Log::warning('Refund clawback: wallet deduction failed, converting to debt', [
+                        'user_id' => $userId,
+                        'amount' => $take,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        $remaining = round($amount - $deducted, 2);
+        if ($remaining > 0) {
+            $debt = WalletDebt::createDebt(
+                $userId,
+                $remaining,
+                $debtSourceType,
+                $debtSourceId,
+                mb_substr($debtReason, 0, 1000),
+                $adminId,
+                $priority,
+                array_merge($metadata, ['partial_deducted' => $deducted])
+            );
+            $debtId = $debt->id;
+            $this->notifyDebtCreated($userId, $debt);
+        }
+
+        return ['deducted' => $deducted, 'debt_id' => $debtId];
+    }
+
+    /**
+     * รายงานการคืนเงินของออเดอร์
      */
     public function getRefundReport(Order $order): array
     {
-        // ดึงหนี้ทั้งหมดที่เกี่ยวกับ Order
-        $debts = WalletDebt::where(function ($q) use ($order) {
-            $q->where('source_type', 'SellerClawback')
-                ->where('source_id', $order->id);
-        })->orWhere(function ($q) use ($order) {
-            $q->where('source_type', 'MlmClawback')
-                ->where('source_id', $order->id);
-        })->get();
+        $debts = WalletDebt::whereIn('source_type', ['SellerClawback', 'MlmClawback', 'CashbackClawback'])
+            ->where('source_id', $order->id)
+            ->get();
 
-        // ดึง Platform Transaction reversals
-        $reversals = PlatformTransaction::where('reference_type', 'Order')
-            ->where('reference_id', $order->id)
-            ->where('type', 'refund_reversal')
+        $reversals = PlatformTransaction::where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->where('sub_type', 'refund_reversal')
             ->get();
 
         return [
             'order_id' => $order->id,
             'order_number' => $order->order_number,
             'order_status' => $order->status,
-            'refund_status' => $order->status === 'refunded' ? 'completed' : 'partial',
+            'payment_status' => $order->payment_status,
+            'refund_status' => $order->payment_status === 'refunded' ? 'completed' : 'not_refunded',
             'debts' => [
                 'total' => $debts->count(),
-                'total_amount' => $debts->sum('original_amount'),
-                'collected' => $debts->sum('deducted_amount'),
-                'pending' => $debts->where('status', 'active')->sum('remaining_amount'),
+                'total_amount' => round((float) $debts->sum('original_amount'), 2),
+                'collected' => round((float) $debts->sum('deducted_amount'), 2),
+                'pending' => round((float) $debts->where('status', 'active')->sum('remaining_amount'), 2),
                 'items' => $debts->map(fn ($d) => [
                     'id' => $d->id,
                     'user_id' => $d->user_id,
                     'type' => $d->source_type,
-                    'amount' => $d->original_amount,
-                    'remaining' => $d->remaining_amount,
+                    'amount' => (float) $d->original_amount,
+                    'remaining' => (float) $d->remaining_amount,
                     'status' => $d->status,
-                ]),
+                ])->values(),
             ],
             'platform_adjustments' => $reversals->map(fn ($r) => [
-                'wallet_id' => $r->wallet_id,
-                'amount' => $r->amount,
+                'wallet_id' => $r->platform_wallet_id,
+                'amount' => (float) $r->amount,
                 'description' => $r->description,
-            ]),
+            ])->values(),
         ];
     }
 
     /**
-     * ดึงสถิติ Refund
+     * สถิติการคืนเงิน
      */
     public function getRefundStats(array $filters = []): array
     {
-        $query = Order::where('status', 'refunded');
+        $query = Order::where('payment_status', 'refunded');
 
         if (isset($filters['date_from'])) {
             $query->whereDate('refunded_at', '>=', $filters['date_from']);
@@ -761,22 +576,62 @@ class RefundService
         }
 
         $refundedOrders = $query->get();
+        $debtTypes = ['SellerClawback', 'MlmClawback', 'CashbackClawback'];
 
         return [
             'total_refunds' => $refundedOrders->count(),
-            'total_amount' => $refundedOrders->sum('total_amount'),
-            'debts_created' => WalletDebt::whereIn('source_type', ['SellerClawback', 'MlmClawback'])->count(),
-            'debts_pending' => WalletDebt::whereIn('source_type', ['SellerClawback', 'MlmClawback'])
-                ->where('status', 'active')
-                ->sum('remaining_amount'),
-            'debts_collected' => WalletDebt::whereIn('source_type', ['SellerClawback', 'MlmClawback'])
-                ->sum('deducted_amount'),
+            'total_amount' => round((float) $refundedOrders->sum('total_amount'), 2),
+            'debts_created' => WalletDebt::whereIn('source_type', $debtTypes)->count(),
+            'debts_pending' => round((float) WalletDebt::whereIn('source_type', $debtTypes)->where('status', 'active')->sum('remaining_amount'), 2),
+            'debts_collected' => round((float) WalletDebt::whereIn('source_type', $debtTypes)->sum('deducted_amount'), 2),
         ];
     }
 
-    /**
-     * ส่ง Notification แจ้งหนี้ใหม่ (helper method)
-     */
+    private function emptyReport(Order $order, string $reason, ?int $adminId): array
+    {
+        return [
+            'order_id' => (int) $order->id,
+            'order_number' => $order->order_number,
+            'order_total' => round((float) $order->total_amount, 2),
+            'refund_reason' => $reason,
+            'refunded_by' => $adminId,
+            'refunded_at' => now()->toIso8601String(),
+            'rider_fee_withheld' => 0.0,
+            'customer_refund' => null,
+            'cashback_clawback' => null,
+            'seller_clawback' => [],
+            'mlm_clawback' => null,
+            'platform_adjustments' => [],
+            'debts_created' => [],
+            'summary' => [
+                'total_customer_refund' => 0.0,
+                'total_cashback_clawback' => 0.0,
+                'total_seller_clawback' => 0.0,
+                'total_mlm_clawback' => 0.0,
+                'total_debts_created' => 0,
+            ],
+        ];
+    }
+
+    protected function notifyCustomerRefunded(int $userId, float $amount, string $orderNumber): void
+    {
+        try {
+            $user = User::find($userId);
+            if ($user) {
+                app(NotificationService::class)->create(
+                    $user,
+                    'order_refunded',
+                    'คืนเงินคำสั่งซื้อแล้ว',
+                    'คืนเงิน '.number_format($amount, 2)." บาท ของคำสั่งซื้อ #{$orderNumber} เข้ากระเป๋าเงินของคุณแล้ว",
+                    ['order_number' => $orderNumber, 'amount' => $amount],
+                    '/user/wallet'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Refund: notify customer failed', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
+    }
+
     protected function notifyDebtCreated(int $userId, WalletDebt $debt): void
     {
         try {
@@ -784,7 +639,7 @@ class RefundService
             if ($user) {
                 app(NotificationService::class)->notifyDebtCreated($user, $debt);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::warning('ส่ง Notification หนี้ใหม่ล้มเหลว', ['debt_id' => $debt->id, 'error' => $e->getMessage()]);
         }
     }

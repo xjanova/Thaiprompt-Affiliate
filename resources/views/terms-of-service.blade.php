@@ -242,13 +242,16 @@
         <p>เราสงวนสิทธิ์ในการแก้ไขข้อกำหนดการใช้งานนี้เมื่อใดก็ได้ การเปลี่ยนแปลงจะมีผลทันทีเมื่อเผยแพร่บนเว็บไซต์ การใช้บริการต่อเนื่องหลังจากมีการเปลี่ยนแปลง ถือว่าคุณยอมรับข้อกำหนดที่แก้ไขแล้ว</p>
     </div>
 
+        @endverbatim
+    {{-- หัวข้อ 14 อยู่นอกบล็อก verbatim เพื่อใช้อีเมลติดต่อชุดเดียวกับแอป/นโยบายความเป็นส่วนตัว (PLAY-25) --}}
     <!-- 14 -->
     <div class="section" id="contact">
         <h2><span class="icon">📬</span> 14. ติดต่อเรา</h2>
         <p>หากมีคำถามเกี่ยวกับข้อกำหนดการใช้งาน:</p>
         <ul>
-            <li>อีเมล: <strong>xjanovax@gmail.com</strong></li>
+            <li>อีเมล: <strong><a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}">{{ \App\Support\ContactInfo::supportEmail() }}</a></strong></li>
             <li>เว็บไซต์: <strong>main.thaiprompt.online</strong></li>
+            <li>ลบบัญชี: <a href="{{ route('account.delete') }}">{{ route('account.delete') }}</a></li>
         </ul>
     </div>
 
@@ -260,7 +263,6 @@
         </p>
     </div>
 </div>
-        @endverbatim
     </div>
 
     <div style="text-align:center; margin-top:28px;">

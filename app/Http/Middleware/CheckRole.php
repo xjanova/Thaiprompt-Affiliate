@@ -38,7 +38,11 @@ class CheckRole
      * ⚠️ เพิ่ม role ใหม่ในระบบ → เพิ่มที่นี่ที่เดียว (routes/web.php อ่านค่าจากตรงนี้)
      *
      * หมายเหตุ: admin / super_admin ผ่านทุก route อยู่แล้ว (เช็คแยกใน handle())
-     *          ส่วน seller มีพื้นที่ของตัวเองที่ /seller/* จึงไม่อยู่ในลิสต์นี้
+     *
+     * 🏪 (2026-09-25) เพิ่ม seller (audit SELLER-07): เดิม seller เข้า /user/* ไม่ได้ แต่หน้า
+     *    /seller/onboarding ส่งผู้ขายไปทำ KYC ที่ user.kyc.* → โดนเด้งกลับวนลูป ทำ KYC ไม่ได้เลย
+     *    และผู้ขายก็ต้องใช้กระเป๋าเงิน/โปรไฟล์/แจ้งเตือนของตัวเองเหมือนสมาชิกคนอื่น
+     *    (หลังบ้านร้านยังอยู่ที่ /seller/* ตามเดิม — LoginController ยังพา seller ไป seller.dashboard)
      *
      * @var array<string>
      */
@@ -48,6 +52,7 @@ class CheckRole
         'provider',
         'manager',
         'instructor',
+        'seller',
     ];
 
     /**

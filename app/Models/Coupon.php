@@ -29,26 +29,48 @@ class Coupon extends Model
 {
     use SoftDeletes;
 
+    /**
+     * 🐛 (2026-09-25) เดิมขาด store_id/name/description/starts_at/is_public ฯลฯ → คูปองที่ร้านสร้าง
+     *    ผ่าน Seller\CouponController ถูกตัด store_id ทิ้งเงียบๆ กลายเป็นคูปองไม่มีเจ้าของ
+     *    (ตาราง coupons ได้คอลัมน์ deleted_at จาก migration 2026_09_25_170000 ให้ตรงกับ SoftDeletes แล้ว)
+     */
     protected $fillable = [
         'code',
         'user_id',
         'template_id',
+        'store_id',
         'discount_type',
         'discount_value',
         'min_purchase',
         'max_discount',
         'usage_limit',
         'used_count',
+        'applicable_products',
+        'applicable_categories',
+        'excluded_products',
+        'starts_at',
         'expires_at',
         'is_active',
+        'is_public',
+        'name',
+        'description',
+        'badge_color',
+        'badge_icon',
     ];
 
     protected $casts = [
+        'starts_at' => 'datetime',
         'expires_at' => 'datetime',
         'is_active' => 'boolean',
+        'is_public' => 'boolean',
         'discount_value' => 'decimal:2',
         'min_purchase' => 'decimal:2',
         'max_discount' => 'decimal:2',
+        'usage_limit' => 'integer',
+        'used_count' => 'integer',
+        'applicable_products' => 'array',
+        'applicable_categories' => 'array',
+        'excluded_products' => 'array',
     ];
 
     /**
@@ -92,11 +114,16 @@ class Coupon extends Model
             return false;
         }
 
+        if ($this->starts_at && now()->lt($this->starts_at)) {
+            return false;
+        }
+
         if ($this->expires_at && now()->gt($this->expires_at)) {
             return false;
         }
 
-        if ($this->used_count >= $this->usage_limit) {
+        // usage_limit = null หมายถึงไม่จำกัดจำนวนครั้ง (เดิมเทียบกับ null แล้วได้ false ทุกครั้ง)
+        if ($this->usage_limit !== null && (int) $this->used_count >= (int) $this->usage_limit) {
             return false;
         }
 

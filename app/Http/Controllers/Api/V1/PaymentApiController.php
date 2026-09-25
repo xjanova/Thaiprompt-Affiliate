@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\PaymentTransaction;
-use App\Models\User;
 use App\Services\Payment\PaymentService;
+use App\Services\Shop\ShopPresenter;
+use App\Support\Shop\PaymentMethod;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,9 @@ use Illuminate\Support\Facades\Validator;
  */
 class PaymentApiController extends Controller
 {
+    /** วิธีชำระที่แอปใช้กับออเดอร์ร้านค้าที่ค้างจ่ายได้ */
+    private const APP_PAYMENT_METHODS = [PaymentMethod::WALLET, PaymentMethod::PROMPTPAY, PaymentMethod::BANK_TRANSFER];
+
     protected PaymentService $paymentService;
 
     public function __construct(PaymentService $paymentService)
@@ -108,114 +112,154 @@ class PaymentApiController extends Controller
     // =====================================================
 
     /**
-     * เริ่มต้นการชำระเงินสำหรับ Order
+     * เริ่มต้น/ชำระใหม่สำหรับ Order ที่ยังค้างจ่าย
+     *
+     * 🛒 (2026-09-25) SHOP-07: แอปเรียกเส้นนี้เมื่อต้องการ QR พร้อมเพย์ใหม่ (หมดอายุ/สร้างไม่สำเร็จตอน checkout)
+     *    หรือเปลี่ยนไปจ่ายด้วยกระเป๋าเงิน — รับเฉพาะ wallet | promptpay | bank_transfer
+     *    ออเดอร์ที่ยกเลิก/จ่ายแล้ว/เก็บเงินปลายทาง ชำระผ่านเส้นนี้ไม่ได้
      */
     public function initializeOrderPayment(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'order_id' => 'required|integer|exists:orders,id',
-            'payment_method' => 'required|string',
+            'order_id' => 'required|integer|min:1',
+            'payment_method' => 'required|string|max:30',
         ], [
-            'order_id.required' => 'กรุณาระบุ order',
-            'order_id.exists' => 'ไม่พบ order',
+            'order_id.required' => 'กรุณาระบุคำสั่งซื้อ',
             'payment_method.required' => 'กรุณาเลือกวิธีการชำระเงิน',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
+                'code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first() ?: 'ข้อมูลไม่ถูกต้อง',
                 'errors' => $validator->errors(),
             ], 422);
         }
 
+        $method = PaymentMethod::normalize((string) $request->input('payment_method'));
+
         try {
             $user = Auth::user();
-            $order = Order::findOrFail($request->order_id);
 
-            // ตรวจสอบว่า order เป็นของ user นี้
-            if ($order->user_id !== $user->id) {
+            // ไม่พบ/ไม่ใช่ของผู้ใช้ → 404 เหมือนกัน (ไม่บอกว่ามีออเดอร์ของคนอื่น)
+            $order = Order::where('user_id', $user->id)->find((int) $request->input('order_id'));
+            if (! $order) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'คุณไม่มีสิทธิ์ชำระเงินสำหรับ order นี้',
-                ], 403);
+                    'code' => 'ORDER_NOT_FOUND',
+                    'message' => 'ไม่พบคำสั่งซื้อ',
+                ], 404);
             }
 
-            // ตรวจสอบสถานะ order
             if ($order->payment_status === 'paid') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Order นี้ชำระเงินแล้ว',
-                ], 400);
+                    'code' => 'ALREADY_PAID',
+                    'message' => 'คำสั่งซื้อนี้ชำระเงินแล้ว',
+                ], 409);
             }
 
-            // ตรวจสอบว่า payment method พร้อมใช้งาน
-            if (! $this->paymentService->hasProvider($request->payment_method)) {
+            if ($order->isCod()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'วิธีการชำระเงินไม่พร้อมใช้งาน',
-                ], 400);
+                    'code' => 'COD_ORDER',
+                    'message' => 'คำสั่งซื้อนี้เก็บเงินปลายทาง ชำระกับไรเดอร์เมื่อได้รับสินค้า',
+                ], 409);
             }
 
-            // Idempotency: ตรวจสอบว่ามี pending payment transaction อยู่แล้วหรือไม่
+            if (! $order->canRetryPayment()) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'ORDER_NOT_PAYABLE',
+                    'message' => 'คำสั่งซื้อนี้ชำระเงินไม่ได้แล้ว',
+                ], 409);
+            }
+
+            if (! in_array($method, self::APP_PAYMENT_METHODS, true) || ! $this->paymentService->hasProvider(PaymentMethod::providerKey($method))) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'PAYMENT_METHOD_UNAVAILABLE',
+                    'message' => 'วิธีการชำระเงินนี้ไม่พร้อมใช้งานในแอป',
+                ], 422);
+            }
+
+            $providerKey = PaymentMethod::providerKey($method);
+
+            // Idempotency: มีรายการรอชำระที่ยังไม่หมดอายุ → คืนรายการเดิม (พร้อม QR)
             $existingTransaction = PaymentTransaction::where('type', 'order_payment')
                 ->where('user_id', $user->id)
-                ->whereHas('order', fn ($q) => $q->where('id', $order->id))
+                ->where('order_id', $order->id)
                 ->whereIn('status', ['pending', 'processing'])
-                ->where('payment_method', $request->payment_method)
-                ->latest()
+                ->where('payment_method', $providerKey)
+                ->latest('id')
                 ->first();
 
-            if ($existingTransaction) {
-                // ถ้า transaction ยังไม่หมดอายุ → คืน transaction เดิม
-                if (! $existingTransaction->isExpired()) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'มี payment transaction ที่รอชำระอยู่แล้ว',
-                        'data' => [
-                            'transaction_id' => $existingTransaction->transaction_id,
-                            'amount' => $existingTransaction->amount,
-                            'status' => $existingTransaction->status,
-                            'payment_method' => $existingTransaction->payment_method,
-                        ],
-                    ]);
-                }
+            if ($existingTransaction && ! $existingTransaction->isExpired() && $method !== PaymentMethod::WALLET) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'มีรายการรอชำระอยู่แล้ว',
+                    'data' => ShopPresenter::payment($existingTransaction),
+                ]);
+            }
+
+            // เปลี่ยนวิธีชำระของออเดอร์ให้ตรงกับที่ผู้ซื้อเลือกจริง
+            if (PaymentMethod::normalize($order->payment_method) !== $method) {
+                $order->suppressStatusNotification = true;
+                $order->update(['payment_method' => $method]);
             }
 
             // สร้าง payment transaction ใหม่
             $transaction = $this->paymentService->createOrderPayment(
                 $order,
-                $request->payment_method,
+                $providerKey,
                 [
                     'metadata' => [
                         'source' => 'mobile_app',
-                        'device' => $request->header('User-Agent'),
                     ],
                 ]
             );
 
-            // ประมวลผล payment
-            $result = $this->paymentService->processPayment($transaction, $request->all());
+            // ประมวลผล payment (ส่งเฉพาะข้อมูลที่ provider ต้องใช้ — ไม่ส่ง request ทั้งก้อน)
+            $result = $this->paymentService->processPayment($transaction, []);
 
             if (! $result['success']) {
+                $failure = (string) ($result['message'] ?? '');
+
+                Log::warning('Order payment init failed', [
+                    'order_id' => $order->id,
+                    'method' => $method,
+                    'message' => $failure,
+                ]);
+
                 return response()->json([
                     'success' => false,
-                    'message' => $result['message'] ?? 'การชำระเงินล้มเหลว',
-                ], 400);
+                    'code' => str_contains($failure, 'Insufficient') ? 'INSUFFICIENT_BALANCE' : 'PAYMENT_FAILED',
+                    'message' => str_contains($failure, 'Insufficient')
+                        ? 'ยอดเงินในกระเป๋าไม่เพียงพอ'
+                        : 'เริ่มการชำระเงินไม่สำเร็จ กรุณาลองใหม่',
+                ], 422);
             }
 
             // สร้าง response สำหรับ mobile app
             $responseData = $this->buildPaymentResponse($result['transaction'], $result['data'] ?? []);
 
+            $order->refresh();
+            $responseData['order'] = [
+                'id' => (int) $order->id,
+                'status' => (string) $order->status,
+                'payment_status' => (string) $order->payment_status,
+            ];
+
             return response()->json([
                 'success' => true,
-                'message' => 'เริ่มต้นการชำระเงินสำเร็จ',
+                'message' => $order->payment_status === 'paid' ? 'ชำระเงินสำเร็จ' : 'เริ่มต้นการชำระเงินสำเร็จ',
                 'data' => $responseData,
             ]);
         } catch (Exception $e) {
             Log::error('Failed to initialize order payment', [
                 'error' => $e->getMessage(),
-                'order_id' => $request->order_id,
+                'order_id' => $request->input('order_id'),
             ]);
 
             return response()->json([
@@ -356,6 +400,13 @@ class PaymentApiController extends Controller
                     'payment_method' => $transaction->payment_method,
                     'type' => $transaction->type,
                     'order_id' => $transaction->order_id,
+                    // สถานะออเดอร์ ให้แอป poll แล้วรู้ทันทีว่าร้านได้รับออเดอร์ที่จ่ายแล้ว
+                    'order' => $transaction->order_id && ($order = Order::where('user_id', $user->id)->find($transaction->order_id)) ? [
+                        'id' => (int) $order->id,
+                        'order_number' => $order->order_number,
+                        'status' => (string) $order->status,
+                        'payment_status' => (string) $order->payment_status,
+                    ] : null,
                     'created_at' => $transaction->created_at->toISOString(),
                     'completed_at' => $transaction->completed_at?->toISOString(),
                     'expired_at' => $transaction->expired_at?->toISOString(),
@@ -438,6 +489,11 @@ class PaymentApiController extends Controller
      */
     protected function buildPaymentResponse(PaymentTransaction $transaction, array $paymentData): array
     {
+        // ออเดอร์ร้านค้าใช้รูปแบบกลางเดียวกับ checkout (App\Services\Shop\ShopPresenter::payment)
+        if ($transaction->type === 'order_payment') {
+            return ShopPresenter::payment($transaction, $paymentData);
+        }
+
         $response = [
             'transaction_id' => $transaction->transaction_id,
             'status' => $transaction->status,

@@ -9,23 +9,18 @@
     - ส่งพิกัด GPS ไปเซิร์ฟเวอร์ทุก N วินาที
 
     ตัวแปรจาก Controller:
-    - $job (RiderJob), $rider (Rider)
+    - $job (RiderJob), $rider (Rider), $orderNumber (?string)
     - $customerLocation, $pickupLocation (array: latitude, longitude, address, contact_name, contact_phone)
-    - $googleMapsApiKey, $gpsUpdateInterval, $gpsLostTimeout, $maxWarnings
+    - $googleMapsApiKey, $gpsUpdateInterval, $gpsLostTimeout (ms), $maxWarnings, $codAmount (float)
+    - $endpoints (array URL ของ route session user.rider.*: location, status, deliver, fail, gps_lost, gps_off, job_detail, jobs)
+
+    🔐 (2026-09-25) เลิกสร้าง Sanctum token ใส่หน้าเว็บทุกครั้งที่เปิด (audit FM-23)
+       ทุกปุ่มเรียก route session + CSRF (meta csrf-token ของ layout) แทน
 --}}
 
 @extends('layouts.taladsod')
 
-@section('title', 'งานจัดส่ง #' . $job->id . ' - ตลาดสดไทยพร๊อม')
-
-@section('meta')
-    @php
-        $user = auth()->user();
-        $user->tokens()->where('name', 'rider-gps')->delete();
-        $token = $user->createToken('rider-gps')->plainTextToken;
-    @endphp
-    <meta name="api-token" content="{{ $token }}">
-@endsection
+@section('title', 'งานจัดส่ง #' . $job->job_number . ' - ตลาดสดไทยพร๊อม')
 
 @section('content')
 <div class="min-h-screen pb-32"
@@ -171,11 +166,19 @@
 
             {{-- รายละเอียดงาน --}}
             <dl class="space-y-3 text-sm">
-                @if($job->freshMarketOrder)
+                @if($orderNumber ?? null)
                 <div class="flex justify-between">
                     <dt class="text-gray-500 dark:text-gray-400">เลขออเดอร์</dt>
                     <dd class="text-gray-900 dark:text-white font-medium">
-                        #{{ $job->freshMarketOrder->order_number ?? '-' }}
+                        #{{ $orderNumber }}
+                    </dd>
+                </div>
+                @endif
+                @if(($codAmount ?? 0) > 0)
+                <div class="flex justify-between">
+                    <dt class="text-gray-500 dark:text-gray-400">เก็บเงินปลายทาง</dt>
+                    <dd class="text-amber-600 dark:text-amber-400 font-bold">
+                        &#3647;{{ number_format($codAmount, 2) }}
                     </dd>
                 </div>
                 @endif
@@ -394,7 +397,7 @@
                     <div class="flex items-center gap-3">
                         <label class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                             <i class="fas fa-camera"></i>
-                            <span x-text="deliveryPhotoName || 'ถ่ายรูปส่งของ (ไม่บังคับ)'"></span>
+                            <span x-text="deliveryPhotoName || 'ถ่ายรูปส่งของ (บังคับ)'"></span>
                             <input type="file" accept="image/*" capture="environment" class="hidden"
                                    @change="deliveryPhotoName = $event.target.files[0]?.name || ''; deliveryPhoto = $event.target.files[0] || null">
                         </label>
@@ -494,7 +497,8 @@ function riderActiveJob() {
         gpsUpdateInterval: {{ $gpsUpdateInterval ?? 30 }},
         gpsLostTimeout: {{ $gpsLostTimeout ?? 120 }},
         maxWarnings: {{ $maxWarnings ?? 3 }},
-        apiToken: '',
+        codAmount: {{ (float) ($codAmount ?? 0) }},
+        endpoints: @json($endpoints ?? []),
         csrfToken: document.querySelector('meta[name="csrf-token"]')?.content || '',
 
         // === สถานะ GPS ===
@@ -551,10 +555,6 @@ function riderActiveJob() {
          * ขอสิทธิ์ GPS และเริ่ม tracking
          */
         init() {
-            // ดึง API token
-            const tokenMeta = document.querySelector('meta[name="api-token"]');
-            this.apiToken = tokenMeta ? tokenMeta.content : '';
-
             // รอ Google Maps โหลดเสร็จ
             this.waitForGoogleMaps();
 
@@ -841,14 +841,15 @@ function riderActiveJob() {
             if (!this.riderLat || !this.riderLng) return;
 
             try {
-                const response = await fetch('/api/v1/fresh-market/rider/gps/update', {
+                // ค่า speed/heading ติดลบหรือ null = ไม่ทราบ (เซิร์ฟเวอร์เก็บเป็น null ให้เอง)
+                const response = await fetch(this.endpoints.location, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': this.csrfToken,
-                        'Authorization': this.apiToken ? `Bearer ${this.apiToken}` : '',
                     },
+                    credentials: 'same-origin',
                     body: JSON.stringify({
                         job_id: this.jobId,
                         latitude: this.riderLat,
@@ -872,23 +873,21 @@ function riderActiveJob() {
          */
         async reportGpsLost() {
             try {
-                const response = await fetch('/api/v1/fresh-market/rider/gps/lost', {
+                const response = await fetch(this.endpoints.gps_lost, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': this.csrfToken,
-                        'Authorization': this.apiToken ? `Bearer ${this.apiToken}` : '',
                     },
-                    body: JSON.stringify({
-                        job_id: this.jobId,
-                    }),
+                    credentials: 'same-origin',
+                    body: JSON.stringify({}),
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.warning_count !== undefined) {
-                        this.warningCount = data.warning_count;
+                    if (data.data && data.data.warning_count !== undefined) {
+                        this.warningCount = data.data.warning_count;
                     }
                 }
             } catch (error) {
@@ -926,24 +925,21 @@ function riderActiveJob() {
             }
 
             try {
-                const response = await fetch('/api/v1/fresh-market/rider/gps/confirm-off', {
+                const response = await fetch(this.endpoints.gps_off, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': this.csrfToken,
-                        'Authorization': this.apiToken ? `Bearer ${this.apiToken}` : '',
                     },
-                    body: JSON.stringify({
-                        job_id: this.jobId,
-                        warning_count: this.warningCount,
-                    }),
+                    credentials: 'same-origin',
+                    body: JSON.stringify({}),
                 });
 
                 if (response.ok) {
                     // หยุด GPS tracking ทั้งหมด
                     this.stopTracking();
-                    window.location.href = '{{ route("taladsod.home") }}';
+                    window.location.href = this.endpoints.job_detail || '{{ route("taladsod.home") }}';
                 } else {
                     this.showToast('ไม่สามารถหยุดงานได้ กรุณาลองใหม่', 'error');
                 }
@@ -975,34 +971,51 @@ function riderActiveJob() {
          */
         async updateJobStatus(newStatus) {
             if (this.updatingStatus) return;
+
+            const isDeliver = newStatus === 'delivered';
+
+            // ส่งสำเร็จต้องมีรูปยืนยันเสมอ
+            if (isDeliver && !this.deliveryPhoto) {
+                this.showToast('กรุณาถ่ายรูปยืนยันการส่งของก่อน', 'error');
+                return;
+            }
+
+            // งานเก็บเงินปลายทาง → ต้องยืนยันว่าเก็บเงินจากลูกค้าแล้ว
+            if (isDeliver && this.codAmount > 0
+                && !confirm(`ยืนยันว่าเก็บเงินปลายทางจากลูกค้าแล้ว ฿${this.codAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`)) {
+                return;
+            }
+
             this.updatingStatus = true;
 
             try {
                 // เตรียม FormData สำหรับส่งรูป
                 const formData = new FormData();
-                formData.append('status', newStatus);
-                formData.append('job_id', this.jobId);
 
                 if (this.riderLat) {
                     formData.append('latitude', this.riderLat);
                     formData.append('longitude', this.riderLng);
                 }
 
-                // แนบรูปถ้ามี
-                if (newStatus === 'picked_up' && this.pickupPhoto) {
-                    formData.append('proof_photo', this.pickupPhoto);
-                }
-                if (newStatus === 'delivered' && this.deliveryPhoto) {
-                    formData.append('proof_photo', this.deliveryPhoto);
+                if (isDeliver) {
+                    formData.append('photo', this.deliveryPhoto);
+                    if (this.codAmount > 0) {
+                        formData.append('cod_collected', '1');
+                    }
+                } else {
+                    formData.append('status', newStatus);
+                    if (newStatus === 'picked_up' && this.pickupPhoto) {
+                        formData.append('photo', this.pickupPhoto);
+                    }
                 }
 
-                const response = await fetch('/api/v1/fresh-market/rider/job/update-status', {
+                const response = await fetch(isDeliver ? this.endpoints.deliver : this.endpoints.status, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': this.csrfToken,
-                        'Authorization': this.apiToken ? `Bearer ${this.apiToken}` : '',
                     },
+                    credentials: 'same-origin',
                     body: formData,
                 });
 

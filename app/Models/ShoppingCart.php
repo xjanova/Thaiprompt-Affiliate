@@ -46,11 +46,20 @@ class ShoppingCart extends Model
     }
 
     /**
-     * Check if product is available
+     * สินค้านี้ยังสั่งซื้อได้หรือไม่
+     *
+     * 🔒 (2026-09-25) SELLER-20: เดิมเช็คแค่ is_active + สต็อก → สินค้าที่ถูกบล็อก/ซ่อน หรือร้านที่ถูกระงับ
+     *    ที่อยู่ในตะกร้าก่อนหน้ายัง checkout ได้ ตอนนี้ใช้กฎเดียวกับตะกร้าแอป (Product::purchaseBlockReason)
      */
     public function isAvailable(): bool
     {
-        return $this->product->isInStock() && $this->product->is_active;
+        $product = $this->product;
+
+        if (! $product) {
+            return false;
+        }
+
+        return $product->purchaseBlockReason() === null && $product->isInStock();
     }
 
     /**
@@ -58,6 +67,10 @@ class ShoppingCart extends Model
      */
     public function hasEnoughStock(): bool
     {
+        if (! $this->product) {
+            return false;
+        }
+
         if (! $this->product->track_inventory) {
             return true;
         }

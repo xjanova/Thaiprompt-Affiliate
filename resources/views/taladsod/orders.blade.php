@@ -63,8 +63,8 @@
                                         'completed' => ['สำเร็จ', 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', 'fas fa-check-double'],
                                         'cancelled' => ['ยกเลิก', 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', 'fas fa-times'],
                                     ];
-                                    $orderStatus = $order->status ?? 'pending';
-                                    $config = $statusConfig[$orderStatus] ?? ['ไม่ทราบ', 'bg-gray-100 text-gray-800', 'fas fa-question'];
+                                    $orderStatus = $order->order_status ?? 'pending';
+                                    $config = $statusConfig[$orderStatus] ?? [$order->status_label, 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', 'fas fa-box'];
                                 @endphp
                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $config[1] }}">
                                     <i class="{{ $config[2] }}"></i> {{ $config[0] }}
@@ -103,17 +103,22 @@
                                     </div>
                                 @endforeach
                             @else
-                                {{-- กรณีข้อมูล items ไม่ได้ load เข้ามา แสดงแบบสรุป --}}
+                                {{-- ออเดอร์ตลาดสด = สินค้า 1 รายการ (listing) --}}
                                 <div class="flex items-center gap-4">
-                                    <div class="w-16 h-16 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                                        <i class="fas fa-box text-green-500 text-xl"></i>
+                                    <div class="w-16 h-16 rounded-xl overflow-hidden bg-green-50 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                        @if($order->listing?->primary_image)
+                                            <img src="{{ $order->listing->primary_image }}" alt="{{ $order->listing->title }}" class="w-full h-full object-cover">
+                                        @else
+                                            <i class="fas fa-box text-green-500 text-xl"></i>
+                                        @endif
                                     </div>
                                     <div class="flex-1">
                                         <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ $order->items_count ?? 1 }} รายการ
+                                            {{ $order->listing->title ?? 'สินค้า' }} x{{ $order->quantity }} {{ $order->listing->unit ?? '' }}
                                         </p>
                                         <p class="text-xs text-gray-500 dark:text-gray-400">
                                             จาก {{ $order->seller->shop_name ?? 'ร้านค้า' }}
+                                            • {{ $order->delivery_type === 'rider' ? 'ส่งด้วยไรเดอร์' : 'รับเองที่ร้าน' }}
                                         </p>
                                     </div>
                                 </div>
@@ -125,14 +130,19 @@
                             <div>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">ยอดรวม</span>
                                 <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-                                    ฿{{ number_format($order->total ?? 0, 0) }}
+                                    ฿{{ number_format($order->grand_total, 0) }}
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
-                                @if(($order->status ?? 'pending') === 'pending')
-                                    <button class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                                        ยกเลิก
-                                    </button>
+                                @if($order->canBeCancelled('buyer'))
+                                    <form method="POST" action="{{ route('taladsod.orders.cancel', $order) }}"
+                                          onsubmit="return confirm('ยืนยันยกเลิกออเดอร์นี้? ถ้าชำระผ่าน Wallet แล้ว ระบบจะคืนเงินให้อัตโนมัติ');">
+                                        @csrf
+                                        @method('PUT')
+                                        <button type="submit" class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
+                                            ยกเลิก
+                                        </button>
+                                    </form>
                                 @endif
                                 <a href="{{ route('taladsod.orders.show', $order->id) }}"
                                    class="px-4 py-2 text-sm font-medium bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">

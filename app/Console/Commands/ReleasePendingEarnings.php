@@ -3,140 +3,108 @@
 namespace App\Console\Commands;
 
 use App\Models\EarningsLedger;
+use App\Services\SellerPayoutService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * ReleasePendingEarnings Command
+ * ReleasePendingEarnings — จ่ายรายได้ที่ถึงเวลาเข้ากระเป๋าผู้รับ
  *
- * ปล่อย Earnings ที่ pending และถึงเวลา available แล้ว
+ * รายได้ผู้ขาย (seller_sale จากออเดอร์):
+ *   ปล่อยเฉพาะออเดอร์ที่ "ส่งถึงแล้ว" (delivered/completed) + ครบ holding_days
+ *   หรือส่งพัสดุแล้วเกิน money.shipped_auto_release_days วันโดยลูกค้าไม่กดยืนยัน
+ *   หรือสินค้าดิจิทัลล้วนที่จ่ายแล้วครบ holding_days
+ *   แล้วโอนเข้า wallet ผู้ขายทันที (SellerPayoutService — ครั้งเดียวต่อ ledger)
+ *   (เดิมปล่อยตามเวลาอย่างเดียวและไม่เคยโอนเงินจริง — audit G18 / SELLER-01)
  *
- * EarningsLedger มี available_at ที่กำหนดว่าเมื่อไหร่จะปล่อยให้ถอนได้
- * Command นี้จะเปลี่ยนสถานะจาก pending → available เมื่อถึงเวลา
+ * รายได้ประเภทอื่น: เปลี่ยน pending → available เมื่อถึง available_at (พฤติกรรมเดิม)
  */
 class ReleasePendingEarnings extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'earnings:release-pending
                             {--limit=100 : จำนวน earnings สูงสุดที่จะประมวลผล}
                             {--dry-run : แสดงรายการที่จะถูกปล่อยโดยไม่ทำจริง}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'ปล่อย Earnings ที่ pending และถึงเวลา available แล้ว';
+    protected $description = 'จ่ายรายได้ผู้ขายที่ส่งของถึงและครบระยะพักเงินเข้ากระเป๋า + ปล่อย earnings ประเภทอื่นที่ถึงเวลา';
 
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function handle(SellerPayoutService $payouts): int
     {
-        $this->info('🔄 เริ่มปล่อย Pending Earnings...');
-        $this->newLine();
+        $limit = max(1, (int) $this->option('limit'));
+        $dryRun = (bool) $this->option('dry-run');
 
-        $limit = (int) $this->option('limit');
-        $dryRun = $this->option('dry-run');
+        $this->info('🔄 เริ่มจ่ายรายได้ที่ถึงเวลา...');
 
-        // ดึง earnings ที่ pending และถึงเวลาแล้ว
-        $query = EarningsLedger::where('status', EarningsLedger::STATUS_PENDING)
+        // ===== 1) รายได้ผู้ขายจากออเดอร์ =====
+        if ($dryRun) {
+            $eligible = $payouts->eligibleQuery()->limit($limit)->get();
+            $this->warn('📋 [DRY RUN] รายได้ผู้ขายที่จะถูกโอนเข้ากระเป๋า: '.$eligible->count().' รายการ');
+            if ($eligible->isNotEmpty()) {
+                $this->table(
+                    ['ID', 'ผู้ขาย', 'ออเดอร์', 'ยอดสุทธิ', 'สถานะ'],
+                    $eligible->map(fn ($e) => [
+                        $e->id,
+                        $e->user_id,
+                        $e->source_id,
+                        number_format((float) $e->net_amount, 2),
+                        $e->status,
+                    ])->toArray()
+                );
+            }
+        } else {
+            $sellerResult = $payouts->releaseEligible($limit);
+
+            $this->table(['รายได้ผู้ขาย', 'จำนวน'], [
+                ['ตรวจ', $sellerResult['checked']],
+                ['✅ โอนเข้ากระเป๋า', $sellerResult['credited']],
+                ['⏭️ ข้าม', $sellerResult['skipped']],
+                ['❌ ผิดพลาด', $sellerResult['failed']],
+                ['ยอดที่โอน (บาท)', number_format($sellerResult['total_credited'], 2)],
+            ]);
+
+            foreach ($sellerResult['errors'] as $error) {
+                $this->line("  - Ledger #{$error['id']}: {$error['reason']}");
+            }
+
+            if ($sellerResult['checked'] > 0) {
+                Log::info('Seller earnings released', $sellerResult);
+            }
+        }
+
+        // ===== 2) รายได้ประเภทอื่น (ปล่อยตามเวลา) =====
+        $others = EarningsLedger::where('status', EarningsLedger::STATUS_PENDING)
+            ->where('earning_type', '!=', EarningsLedger::TYPE_SELLER_SALE)
             ->where(function ($q) {
-                $q->whereNull('available_at')
-                    ->orWhere('available_at', '<=', now());
+                $q->whereNull('available_at')->orWhere('available_at', '<=', now());
             })
-            ->limit($limit);
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
 
-        $earnings = $query->get();
-
-        if ($earnings->isEmpty()) {
-            $this->info('ℹ️ ไม่มี Earnings ที่ต้องปล่อย');
+        if ($others->isEmpty()) {
+            $this->info('✅ ประมวลผลเสร็จสิ้น');
 
             return Command::SUCCESS;
         }
 
-        $this->info("📋 พบ {$earnings->count()} รายการที่ต้องปล่อย");
-        $this->newLine();
-
         if ($dryRun) {
-            $this->warn('📋 [DRY RUN] รายการที่จะถูกปล่อย:');
-            $this->table(
-                ['ID', 'User ID', 'Type', 'Net Amount', 'Available At'],
-                $earnings->map(fn ($e) => [
-                    $e->id,
-                    $e->user_id,
-                    $e->earning_type,
-                    number_format($e->net_amount, 2),
-                    $e->available_at?->format('Y-m-d H:i') ?? 'ทันที',
-                ])->toArray()
-            );
+            $this->warn('📋 [DRY RUN] รายได้ประเภทอื่นที่จะเปลี่ยนเป็นพร้อมจ่าย: '.$others->count().' รายการ');
 
             return Command::SUCCESS;
         }
 
         $released = 0;
-        $failed = 0;
-        $errors = [];
-
-        $bar = $this->output->createProgressBar($earnings->count());
-        $bar->start();
-
-        foreach ($earnings as $earning) {
+        foreach ($others as $earning) {
             try {
-                $earning->update([
-                    'status' => EarningsLedger::STATUS_AVAILABLE,
-                    'available_at' => now(),
-                ]);
-                $released++;
-
-            } catch (\Exception $e) {
-                $failed++;
-                $errors[] = [
-                    'id' => $earning->id,
-                    'error' => $e->getMessage(),
-                ];
-
-                Log::error('Failed to release earning', [
-                    'earning_id' => $earning->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            $bar->advance();
-        }
-
-        $bar->finish();
-        $this->newLine(2);
-
-        // แสดงผลลัพธ์
-        $this->info('📊 ผลการประมวลผล:');
-        $this->table(
-            ['รายการ', 'จำนวน'],
-            [
-                ['✅ ปล่อยสำเร็จ', $released],
-                ['❌ ผิดพลาด', $failed],
-            ]
-        );
-
-        if (! empty($errors)) {
-            $this->newLine();
-            $this->error('❗ รายการที่ผิดพลาด:');
-            foreach ($errors as $error) {
-                $this->line("  - Earning #{$error['id']}: {$error['error']}");
+                // อัปเดตแบบมีเงื่อนไขสถานะ → รันซ้อนกัน 2 process ก็ไม่ทับกัน
+                $released += EarningsLedger::whereKey($earning->id)
+                    ->where('status', EarningsLedger::STATUS_PENDING)
+                    ->update(['status' => EarningsLedger::STATUS_AVAILABLE, 'available_at' => now()]);
+            } catch (\Throwable $e) {
+                Log::error('Failed to release earning', ['earning_id' => $earning->id, 'error' => $e->getMessage()]);
             }
         }
 
-        Log::info('Pending earnings released', [
-            'released' => $released,
-            'failed' => $failed,
-        ]);
-
-        $this->newLine();
-        $this->info('✅ ประมวลผลเสร็จสิ้น!');
+        $this->info("✅ ปล่อยรายได้ประเภทอื่น {$released} รายการ");
 
         return Command::SUCCESS;
     }

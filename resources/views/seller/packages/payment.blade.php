@@ -72,7 +72,7 @@
                     <div class="border-t border-purple-400/30 pt-4 flex justify-between items-center">
                         <span class="text-lg font-bold text-white">ยอดรวม:</span>
                         <span class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            ฿{{ number_format($subscription->amount + ($subscription->package->setup_fee ?? 0), 2) }}
+                            ฿{{ number_format($totalDue ?? ($subscription->amount + ($subscription->package->setup_fee ?? 0)), 2) }}
                         </span>
                     </div>
                 </div>
@@ -90,11 +90,15 @@
 
                     <div class="space-y-4">
                         {{-- QR Code Payment --}}
-                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl cursor-pointer hover:border-purple-500/50 hover:bg-white/10 transition group">
-                            <input type="radio" name="payment_method" value="promptpay_qr" class="w-5 h-5 mr-4 text-purple-600" checked>
+                        {{-- (2026-09-25) ชำระค่าแพ็กเกจได้ผ่านกระเป๋าเงินเท่านั้น — PromptPay/โอน ใช้เติมเงินเข้ากระเป๋าก่อน --}}
+                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl opacity-50 cursor-not-allowed">
+                            <input type="radio" name="payment_method" value="promptpay_qr" class="w-5 h-5 mr-4 text-purple-600" disabled>
                             <div class="flex-1">
-                                <div class="font-semibold text-white group-hover:text-purple-300 transition">PromptPay QR Code</div>
-                                <div class="text-sm text-gray-400">สแกน QR Code ผ่านแอปธนาคาร</div>
+                                <div class="font-semibold text-gray-400">PromptPay QR Code</div>
+                                <div class="text-sm text-gray-500">
+                                    ใช้เติมเงินเข้ากระเป๋าก่อน
+                                    <a href="{{ route('user.wallet.topup') }}" class="text-purple-400 hover:underline">เติมเงิน</a>
+                                </div>
                             </div>
                             <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
                                 <i class="fas fa-qrcode text-2xl text-purple-400"></i>
@@ -102,11 +106,11 @@
                         </label>
 
                         {{-- Bank Transfer --}}
-                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl cursor-pointer hover:border-purple-500/50 hover:bg-white/10 transition group">
-                            <input type="radio" name="payment_method" value="bank_transfer" class="w-5 h-5 mr-4 text-purple-600">
+                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl opacity-50 cursor-not-allowed">
+                            <input type="radio" name="payment_method" value="bank_transfer" class="w-5 h-5 mr-4 text-purple-600" disabled>
                             <div class="flex-1">
-                                <div class="font-semibold text-white group-hover:text-purple-300 transition">โอนเงินผ่านธนาคาร</div>
-                                <div class="text-sm text-gray-400">โอนเงินเข้าบัญชีธนาคาร</div>
+                                <div class="font-semibold text-gray-400">โอนเงินผ่านธนาคาร</div>
+                                <div class="text-sm text-gray-500">ใช้เติมเงินเข้ากระเป๋าก่อน แล้วชำระด้วยกระเป๋าเงิน</div>
                             </div>
                             <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
                                 <i class="fas fa-university text-2xl text-blue-400"></i>
@@ -129,15 +133,29 @@
 
                         {{-- Wallet (If available) --}}
                         <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl cursor-pointer hover:border-purple-500/50 hover:bg-white/10 transition group">
-                            <input type="radio" name="payment_method" value="wallet" class="w-5 h-5 mr-4 text-purple-600">
+                            <input type="radio" name="payment_method" value="wallet" class="w-5 h-5 mr-4 text-purple-600" checked>
                             <div class="flex-1">
                                 <div class="font-semibold text-white group-hover:text-purple-300 transition">ใช้ยอดเงินในกระเป๋า</div>
-                                <div class="text-sm text-gray-400">ตัดจากยอดคงเหลือในกระเป๋าเงิน</div>
+                                <div class="text-sm text-gray-400">
+                                    ตัดจากยอดคงเหลือในกระเป๋าเงิน
+                                    @isset($walletBalance)
+                                        (คงเหลือ ฿{{ number_format($walletBalance, 2) }})
+                                    @endisset
+                                </div>
                             </div>
                             <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
                                 <i class="fas fa-wallet text-2xl text-green-400"></i>
                             </div>
                         </label>
+
+                        @if(!empty($walletHasPin))
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">PIN กระเป๋าเงิน</label>
+                                <input type="password" name="pin" inputmode="numeric" autocomplete="off" maxlength="20" required
+                                       class="w-full px-4 py-3 bg-white/5 border-2 border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
+                                       placeholder="กรอก PIN เพื่อยืนยันการชำระเงิน">
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Terms --}}

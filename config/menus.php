@@ -61,6 +61,8 @@ return [
             'submenu' => [
                 ['label' => 'รายชื่อผู้ใช้', 'route' => 'admin.users.index', 'icon' => 'fas fa-list'],
                 ['label' => 'บทบาท (Roles)', 'route' => 'admin.roles.index', 'icon' => 'fas fa-user-shield'],
+                // 🏪 (2026-09-25) SELLER-07: คิวอนุมัติคำขอเปิดร้านจากสมาชิกทั่วไป
+                ['label' => 'คำขอเปิดร้านค้า', 'route' => 'admin.seller-applications.index', 'icon' => 'fas fa-store'],
             ],
         ],
 
@@ -1087,7 +1089,7 @@ return [
                 ['label' => '👥 Customer Segments', 'route' => 'seller.analytics.segmentation'],
                 ['label' => '📈 Cohort Analysis', 'route' => 'seller.analytics.cohort'],
                 ['label' => '🏆 Products Ranking', 'route' => 'seller.analytics.products'],
-                ['label' => '🖥️ System Monitoring', 'route' => 'seller.analytics.system-monitoring'],
+                // 🔒 (2026-09-25) SELLER-24: เอา System Monitoring ออก — ข้อมูลเซิร์ฟเวอร์ทั้งระบบ ให้เฉพาะแอดมิน
                 ['label' => '📤 Export Data', 'route' => 'seller.analytics.export'],
                 ['label' => '⚙️ Settings', 'route' => 'seller.analytics.settings'],
             ],
@@ -1275,7 +1277,19 @@ return [
             'submenu' => [
                 ['label' => 'ตั้งค่า 2FA', 'route' => 'user.two-factor.setup'],
                 ['label' => 'การตั้งค่าอีเมล', 'route' => 'user.email.preferences'],
+                // 🗑️ (2026-09-25) PLAY-05: ลบบัญชี (หน้าเดียวกับที่ใช้ใน Play Console)
+                ['label' => 'ลบบัญชี', 'route' => 'account.delete'],
             ],
+        ],
+
+        // 🏪 (2026-09-25) SELLER-07: สมาชิกทั่วไปสมัครเปิดร้านเองได้ (เดิมไม่มีทางเข้า /seller/* เลย)
+        [
+            'id' => 'seller-apply',
+            'label' => 'เปิดร้านค้า',
+            'icon' => '🏪',
+            'route' => 'user.seller-apply.index',
+            'order' => 13.8,
+            'permissions' => [],
         ],
 
         [

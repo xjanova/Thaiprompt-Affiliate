@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Exceptions\ShopException;
 use App\Http\Controllers\Controller;
-use App\Models\Cart;
-use App\Models\CartItem;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\OrderMessage;
-use App\Models\Product;
+use App\Models\ProductReview;
 use App\Models\ShippingProvider;
-use App\Models\UserAddress;
-use App\Services\ShippingService;
+use App\Services\Shop\ShopPresenter;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,191 +16,41 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 /**
- * OrderApiController
+ * OrderApiController — คำสั่งซื้อฝั่งผู้ซื้อในแอป
  *
- * API endpoints สำหรับ Order ใน Mobile App
- * รองรับ: Create order, List orders, Order details
+ * 🛒 (2026-09-25) Workstream D:
+ *   - SHOP-28: ลบ POST /orders (สร้างออเดอร์เส้นที่สองที่พังและไม่มีใครใช้) — สร้างออเดอร์ผ่าน
+ *     POST /cart/checkout (App\Services\Shop\ShopCheckoutService) เส้นเดียว
+ *   - SHOP-20: รายละเอียดออเดอร์อ่านคอลัมน์จริง (discount_amount, customer_notes, snapshot ที่อยู่, unit_price)
+ *   - SHOP-14: ติดตามพัสดุใช้ relation ที่มีจริง
+ *   - CC-20: ยืนยันรับสินค้า + รีวิวสินค้าจากแอป (ตรรกะเดียวกับเว็บ)
  */
 class OrderApiController extends Controller
 {
-    // =====================================================
-    // Order Creation
-    // =====================================================
-
-    /**
-     * สร้าง Order ใหม่จากตะกร้าสินค้า
-     */
-    public function store(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'shipping_address_id' => 'nullable|integer|exists:user_addresses,id',
-            'shipping_address' => 'required_without:shipping_address_id|array',
-            'shipping_address.name' => 'required_with:shipping_address|string|max:255',
-            'shipping_address.phone' => 'required_with:shipping_address|string|max:20',
-            'shipping_address.address' => 'required_with:shipping_address|string',
-            'shipping_address.province' => 'required_with:shipping_address|string',
-            'shipping_address.district' => 'required_with:shipping_address|string',
-            'shipping_address.subdistrict' => 'required_with:shipping_address|string',
-            'shipping_address.postal_code' => 'required_with:shipping_address|string',
-            'payment_method' => 'nullable|string',
-            'note' => 'nullable|string|max:500',
-            'items' => 'nullable|array',
-            'items.*.product_id' => 'required_with:items|integer|exists:products,id',
-            'items.*.quantity' => 'required_with:items|integer|min:1',
-        ], [
-            'shipping_address.required_without' => 'กรุณาระบุที่อยู่จัดส่ง',
-            'shipping_address.name.required_with' => 'กรุณาระบุชื่อผู้รับ',
-            'shipping_address.phone.required_with' => 'กรุณาระบุเบอร์โทรศัพท์',
-            'shipping_address.address.required_with' => 'กรุณาระบุที่อยู่',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ข้อมูลไม่ถูกต้อง',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        try {
-            DB::beginTransaction();
-
-            $user = Auth::user();
-
-            // ดึงสินค้าจาก items หรือ cart
-            $items = $this->getOrderItems($user, $request->items);
-
-            if (empty($items)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่มีสินค้าในตะกร้า',
-                ], 400);
-            }
-
-            // ตรวจสอบ stock
-            foreach ($items as $item) {
-                if ($item['product']->track_inventory && $item['product']->stock_quantity < $item['quantity']) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "สินค้า {$item['product']->name} มีไม่เพียงพอ (คงเหลือ {$item['product']->stock_quantity})",
-                    ], 400);
-                }
-            }
-
-            // คำนวณราคา
-            $subtotal = 0;
-            foreach ($items as $item) {
-                $subtotal += $item['price'] * $item['quantity'];
-            }
-
-            // ค่าจัดส่ง - ใช้ ShippingService คำนวณตามสินค้า
-            $shippingService = new ShippingService;
-            // แปลง array items เป็น objects เพื่อให้ ShippingService อ่าน ->product ได้
-            $cartItemObjects = collect($items)->map(fn ($item) => (object) $item);
-            $shippingResult = $shippingService->calculateForCart($cartItemObjects);
-            $shippingFee = $shippingResult['total_shipping'];
-
-            // ส่วนลด (ถ้ามี coupon)
-            $discount = 0;
-
-            $totalAmount = $subtotal + $shippingFee - $discount;
-
-            // ดึงหรือสร้างที่อยู่จัดส่ง
-            $shippingAddress = $this->getShippingAddress($user, $request);
-
-            // สร้าง Order
-            $order = Order::create([
-                'user_id' => $user->id,
-                'order_number' => $this->generateOrderNumber(),
-                'status' => 'pending',
-                'payment_status' => 'pending',
-                'payment_method' => $request->payment_method,
-                'subtotal' => $subtotal,
-                'shipping_fee' => $shippingFee,
-                'discount' => $discount,
-                'total_amount' => $totalAmount,
-                'currency' => 'THB',
-                'shipping_name' => $shippingAddress['name'],
-                'shipping_phone' => $shippingAddress['phone'],
-                'shipping_address' => $shippingAddress['address'],
-                'shipping_province' => $shippingAddress['province'],
-                'shipping_district' => $shippingAddress['district'],
-                'shipping_subdistrict' => $shippingAddress['subdistrict'],
-                'shipping_postal_code' => $shippingAddress['postal_code'],
-                'note' => $request->note,
-                'metadata' => [
-                    'source' => 'mobile_app',
-                    'device' => $request->header('User-Agent'),
-                ],
-            ]);
-
-            // สร้าง Order Items
-            foreach ($items as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['product']->id,
-                    'seller_id' => $item['product']->seller_id ?? \App\Models\Product::getOfficialSellerId(),
-                    'product_name' => $item['product']->name,
-                    'product_sku' => $item['product']->sku,
-                    'quantity' => $item['quantity'],
-                    'price' => $item['price'],
-                    'total' => $item['price'] * $item['quantity'],
-                    'metadata' => [
-                        'product_image' => $item['product']->image,
-                    ],
-                ]);
-            }
-
-            // ลบสินค้าออกจากตะกร้า (ถ้าใช้ตะกร้า)
-            if (! $request->items) {
-                $this->clearCart($user);
-            }
-
-            DB::commit();
-
-            // โหลด order พร้อม items
-            $order->load('items.product');
-
-            return response()->json([
-                'success' => true,
-                'message' => 'สร้างคำสั่งซื้อสำเร็จ',
-                'data' => $this->formatOrder($order),
-            ], 201);
-        } catch (Exception $e) {
-            DB::rollBack();
-            Log::error('Failed to create order', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการสร้างคำสั่งซื้อ',
-            ], 500);
-        }
-    }
+    private const STATUS_FILTERS = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded'];
 
     // =====================================================
     // Order List & Details
     // =====================================================
 
     /**
-     * ดึงรายการคำสั่งซื้อ
+     * GET /api/v1/orders?status=&page=&per_page=
      */
     public function index(Request $request): JsonResponse
     {
         try {
             $user = Auth::user();
-            $perPage = $request->input('per_page', 15);
+            $perPage = max(1, min(50, (int) $request->input('per_page', 15)));
             $status = $request->input('status');
 
             $query = Order::where('user_id', $user->id)
-                ->with(['items' => function ($q) {
-                    $q->limit(3); // แสดงแค่ 3 items แรก
-                }])
-                ->orderBy('created_at', 'desc');
+                ->with(['items' => fn ($q) => $q->orderBy('id')])
+                ->withCount('items')
+                ->orderByDesc('created_at');
 
-            if ($status) {
+            if (is_string($status) && in_array($status, self::STATUS_FILTERS, true)) {
                 $query->where('status', $status);
             }
 
@@ -212,7 +59,7 @@ class OrderApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'orders' => $orders->map(fn ($order) => $this->formatOrderSummary($order)),
+                    'orders' => $orders->getCollection()->map(fn (Order $order) => ShopPresenter::orderSummary($order))->values(),
                     'pagination' => [
                         'current_page' => $orders->currentPage(),
                         'last_page' => $orders->lastPage(),
@@ -222,6 +69,8 @@ class OrderApiController extends Controller
                 ],
             ]);
         } catch (Exception $e) {
+            Log::error('Order API index failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถดึงรายการคำสั่งซื้อได้',
@@ -230,29 +79,32 @@ class OrderApiController extends Controller
     }
 
     /**
-     * ดึงรายละเอียดคำสั่งซื้อ
+     * GET /api/v1/orders/{id}
      */
     public function show(int $id): JsonResponse
     {
         try {
-            $user = Auth::user();
-
-            $order = Order::where('user_id', $user->id)
-                ->with(['items.product', 'paymentTransaction'])
+            $order = Order::where('user_id', Auth::id())
+                ->with(['items.reviews', 'store', 'paymentTransaction'])
                 ->find($id);
 
             if (! $order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่พบคำสั่งซื้อ',
-                ], 404);
+                return $this->notFound();
             }
+
+            $data = ShopPresenter::order($order);
+            $transaction = $order->paymentTransaction;
+            $data['payment'] = $transaction && in_array($transaction->status, ['pending', 'processing'], true) && ! $transaction->isExpired()
+                ? ShopPresenter::payment($transaction)
+                : null;
 
             return response()->json([
                 'success' => true,
-                'data' => $this->formatOrder($order),
+                'data' => $data,
             ]);
         } catch (Exception $e) {
+            Log::error('Order API show failed', ['order_id' => $id, 'error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถดึงรายละเอียดคำสั่งซื้อได้',
@@ -261,260 +113,210 @@ class OrderApiController extends Controller
     }
 
     /**
-     * ยกเลิกคำสั่งซื้อ
+     * POST /api/v1/orders/{id}/cancel {reason?}
+     *
+     * คืนเงินเฉพาะออเดอร์ที่จ่ายแล้ว (Order::cancel ตัดสินจาก payment_status) · คืนสต็อกเฉพาะที่ตัดไปแล้ว
      */
     public function cancel(Request $request, int $id): JsonResponse
     {
-        try {
-            $user = Auth::user();
+        $validator = Validator::make($request->all(), [
+            'reason' => 'nullable|string|max:500',
+        ], [
+            'reason.max' => 'เหตุผลยาวเกิน 500 ตัวอักษร',
+        ]);
 
-            $order = Order::where('user_id', $user->id)->find($id);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        try {
+            $order = Order::where('user_id', Auth::id())->find($id);
 
             if (! $order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่พบคำสั่งซื้อ',
-                ], 404);
+                return $this->notFound();
             }
 
-            // ตรวจสอบสถานะที่ยกเลิกได้ (ใช้ canBeCancelled() ให้ตรงกับ Web Controller)
             if (! $order->canBeCancelled()) {
                 return response()->json([
                     'success' => false,
+                    'code' => ShopException::ACTION_NOT_ALLOWED,
                     'message' => 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้',
-                ], 400);
+                ], 409);
             }
 
-            // ใช้ cancel() method ของ Model — จะ restore stock + refund อัตโนมัติ (ถ้าจ่ายแล้ว)
-            $wasPaid = in_array($order->status, ['paid', 'processing']);
-            $reason = $request->input('reason', 'ยกเลิกโดยลูกค้า');
-            $order->cancel($reason);
+            $result = $order->cancel($request->input('reason') ?: 'ยกเลิกโดยลูกค้า', null, 'buyer');
 
             return response()->json([
                 'success' => true,
-                'message' => $wasPaid
-                    ? 'ยกเลิกคำสั่งซื้อสำเร็จ — ระบบดำเนินการคืนเงินเข้า Wallet ให้แล้ว'
+                'message' => $result['refunded']
+                    ? 'ยกเลิกคำสั่งซื้อสำเร็จ — คืนเงินเข้ากระเป๋าเงินให้แล้ว'
                     : 'ยกเลิกคำสั่งซื้อสำเร็จ',
-                'refunded' => $wasPaid,
+                'refunded' => (bool) $result['refunded'],
+                'data' => ShopPresenter::order($order->fresh(['items', 'store'])),
             ]);
+        } catch (ShopException $e) {
+            return $e->toJsonResponse();
         } catch (Exception $e) {
             Log::error('Failed to cancel order', ['order_id' => $id, 'error' => $e->getMessage()]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'ไม่สามารถยกเลิกคำสั่งซื้อได้',
+                'message' => 'ไม่สามารถยกเลิกคำสั่งซื้อได้ กรุณาลองใหม่',
             ], 500);
         }
     }
 
-    // =====================================================
-    // Helper Methods
-    // =====================================================
-
     /**
-     * ดึงสินค้าสำหรับสร้าง order
+     * POST /api/v1/orders/{id}/confirm-received — ผู้ซื้อยืนยันรับสินค้า (delivered → completed)
      */
-    protected function getOrderItems($user, ?array $requestItems): array
+    public function confirmReceived(int $id): JsonResponse
     {
-        $items = [];
+        try {
+            $completed = DB::transaction(function () use ($id) {
+                $order = Order::where('user_id', Auth::id())->whereKey($id)->lockForUpdate()->first();
 
-        if ($requestItems) {
-            // ใช้ items จาก request
-            foreach ($requestItems as $item) {
-                $product = Product::find($item['product_id']);
-                if ($product && $product->is_active) {
-                    $items[] = [
-                        'product' => $product,
-                        'quantity' => $item['quantity'],
-                        'price' => $product->sale_price ?? $product->price,
-                    ];
+                if (! $order) {
+                    return null;
                 }
-            }
-        } else {
-            // ใช้ items จาก cart
-            $cart = Cart::where('user_id', $user->id)->first();
-            if ($cart) {
-                $cartItems = CartItem::where('cart_id', $cart->id)
-                    ->with('product')
-                    ->get();
 
-                foreach ($cartItems as $cartItem) {
-                    if ($cartItem->product && $cartItem->product->is_active) {
-                        $items[] = [
-                            'product' => $cartItem->product,
-                            'quantity' => $cartItem->quantity,
-                            'price' => $cartItem->product->sale_price ?? $cartItem->product->price,
-                        ];
-                    }
+                if ($order->status === 'completed') {
+                    return $order;
                 }
+
+                if ($order->status !== 'delivered') {
+                    throw ShopException::make(ShopException::ACTION_NOT_ALLOWED, 'ยืนยันรับสินค้าได้เมื่อสินค้าส่งถึงแล้วเท่านั้น', 409);
+                }
+
+                // ผู้ซื้อกดเอง ไม่ต้องแจ้งเตือนตัวเอง
+                $order->suppressStatusNotification = true;
+                $order->markAsCompleted();
+
+                return $order;
+            });
+
+            if (! $completed) {
+                return $this->notFound();
             }
-        }
 
-        return $items;
+            return response()->json([
+                'success' => true,
+                'message' => 'ยืนยันการรับสินค้าเรียบร้อยแล้ว',
+                'data' => ShopPresenter::order($completed->fresh(['items.reviews', 'store'])),
+            ]);
+        } catch (ShopException $e) {
+            return $e->toJsonResponse();
+        } catch (Exception $e) {
+            Log::error('Order confirm received failed', ['order_id' => $id, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถยืนยันการรับสินค้าได้ กรุณาลองใหม่',
+            ], 500);
+        }
     }
 
     /**
-     * คำนวณค่าจัดส่ง (Fallback สำหรับกรณีที่ไม่มี cart items)
-     *
-     * @param  float  $subtotal  ยอดรวมสินค้า
-     * @param  array  $items  รายการสินค้า
-     * @return float ค่าจัดส่ง
+     * POST /api/v1/orders/{orderId}/items/{itemId}/review (multipart)
+     * body: {rating: 1-5, comment, title?, images[]?}
      */
-    protected function calculateShippingFee(float $subtotal, array $items): float
+    public function review(Request $request, int $orderId, int $itemId): JsonResponse
     {
-        // ใช้ค่าเริ่มต้นจาก ShippingService
-        if ($subtotal >= ShippingService::DEFAULT_FREE_SHIPPING_THRESHOLD) {
-            return 0;
+        $validator = Validator::make($request->all(), [
+            'rating' => 'required|integer|min:1|max:5',
+            'title' => 'nullable|string|max:200',
+            'comment' => 'required|string|min:2|max:1000',
+            'images' => 'nullable|array|max:5',
+            'images.*' => 'image|max:2048',
+        ], [
+            'rating.required' => 'กรุณาให้คะแนนสินค้า',
+            'rating.min' => 'คะแนนต้องอยู่ระหว่าง 1-5',
+            'rating.max' => 'คะแนนต้องอยู่ระหว่าง 1-5',
+            'comment.required' => 'กรุณาเขียนรีวิว',
+            'images.max' => 'แนบรูปได้ไม่เกิน 5 รูป',
+            'images.*.image' => 'ไฟล์แนบต้องเป็นรูปภาพ',
+            'images.*.max' => 'รูปภาพต้องไม่เกิน 2MB',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        return ShippingService::DEFAULT_SHIPPING_FEE;
-    }
+        $order = Order::where('user_id', Auth::id())
+            ->whereIn('status', ['delivered', 'completed'])
+            ->find($orderId);
 
-    /**
-     * ดึงหรือสร้างที่อยู่จัดส่ง
-     */
-    protected function getShippingAddress($user, Request $request): array
-    {
-        if ($request->shipping_address_id) {
-            $address = UserAddress::where('user_id', $user->id)
-                ->find($request->shipping_address_id);
+        if (! $order) {
+            return $this->notFound('ไม่พบคำสั่งซื้อ หรือยังรีวิวไม่ได้เพราะสินค้ายังไม่ถึง');
+        }
 
-            if ($address) {
-                return [
-                    'name' => $address->name,
-                    'phone' => $address->phone,
-                    'address' => $address->address,
-                    'province' => $address->province,
-                    'district' => $address->district,
-                    'subdistrict' => $address->subdistrict,
-                    'postal_code' => $address->postal_code,
-                ];
+        $item = $order->items()->find($itemId);
+        if (! $item) {
+            return $this->notFound('ไม่พบสินค้านี้ในคำสั่งซื้อ');
+        }
+
+        if ($item->hasReview()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'ALREADY_REVIEWED',
+                'message' => 'คุณรีวิวสินค้านี้แล้ว',
+            ], 409);
+        }
+
+        try {
+            $paths = [];
+            foreach ((array) $request->file('images', []) as $image) {
+                $paths[] = $image->store('reviews', 'public');
             }
-        }
 
-        return $request->shipping_address;
-    }
-
-    /**
-     * สร้าง order number
-     */
-    protected function generateOrderNumber(): string
-    {
-        $prefix = 'ORD';
-        $date = now()->format('Ymd');
-        $random = strtoupper(Str::random(6));
-
-        return "{$prefix}{$date}{$random}";
-    }
-
-    /**
-     * ล้างตะกร้า
-     */
-    protected function clearCart($user): void
-    {
-        $cart = Cart::where('user_id', $user->id)->first();
-        if ($cart) {
-            CartItem::where('cart_id', $cart->id)->delete();
-        }
-    }
-
-    /**
-     * Format order สำหรับ response
-     */
-    protected function formatOrder(Order $order): array
-    {
-        return [
-            'id' => $order->id,
-            'order_number' => $order->order_number,
-            'status' => $order->status,
-            'status_label' => $this->getStatusLabel($order->status),
-            'payment_status' => $order->payment_status,
-            'payment_status_label' => $this->getPaymentStatusLabel($order->payment_status),
-            'payment_method' => $order->payment_method,
-            'subtotal' => $order->subtotal,
-            'shipping_fee' => $order->shipping_fee,
-            'discount' => $order->discount,
-            'total_amount' => $order->total_amount,
-            'currency' => $order->currency,
-            'shipping' => [
-                'name' => $order->shipping_name,
-                'phone' => $order->shipping_phone,
-                'address' => $order->shipping_address,
-                'province' => $order->shipping_province,
-                'district' => $order->shipping_district,
-                'subdistrict' => $order->shipping_subdistrict,
-                'postal_code' => $order->shipping_postal_code,
-            ],
-            'items' => $order->items->map(fn ($item) => [
-                'id' => $item->id,
+            $review = ProductReview::create([
                 'product_id' => $item->product_id,
-                'product_name' => $item->product_name,
-                'product_image' => $item->metadata['product_image'] ?? null,
-                'quantity' => $item->quantity,
-                'price' => $item->price,
-                'total' => $item->total,
-            ]),
-            'note' => $order->note,
-            'created_at' => $order->created_at->toISOString(),
-            'paid_at' => $order->paid_at?->toISOString(),
-            'shipped_at' => $order->shipped_at?->toISOString(),
-            'delivered_at' => $order->delivered_at?->toISOString(),
-        ];
-    }
+                'user_id' => Auth::id(),
+                'order_item_id' => $item->id,
+                'rating' => (int) $request->input('rating'),
+                'title' => $request->input('title'),
+                'comment' => $request->input('comment'),
+                'images' => $paths,
+                'is_verified_purchase' => true,
+                'is_approved' => true,
+            ]);
 
-    /**
-     * Format order summary สำหรับ list
-     */
-    protected function formatOrderSummary(Order $order): array
-    {
-        return [
-            'id' => $order->id,
-            'order_number' => $order->order_number,
-            'status' => $order->status,
-            'status_label' => $this->getStatusLabel($order->status),
-            'payment_status' => $order->payment_status,
-            'total_amount' => $order->total_amount,
-            'items_count' => $order->items->count(),
-            'first_item' => $order->items->first() ? [
-                'product_name' => $order->items->first()->product_name,
-                'product_image' => $order->items->first()->metadata['product_image'] ?? null,
-            ] : null,
-            'has_unread_messages' => (bool) $order->has_unread_messages,
-            'last_message_at' => $order->last_message_at?->toISOString(),
-            'created_at' => $order->created_at->toISOString(),
-        ];
-    }
+            $item->product?->updateRating();
 
-    /**
-     * แปลง status เป็น label ภาษาไทย
-     */
-    protected function getStatusLabel(string $status): string
-    {
-        return match ($status) {
-            'pending' => 'รอดำเนินการ',
-            'confirmed' => 'ยืนยันแล้ว',
-            'processing' => 'กำลังเตรียมสินค้า',
-            'shipped' => 'จัดส่งแล้ว',
-            'delivered' => 'ส่งถึงแล้ว',
-            'completed' => 'เสร็จสิ้น',
-            'cancelled' => 'ยกเลิก',
-            'refunded' => 'คืนเงินแล้ว',
-            default => $status,
-        };
-    }
+            return response()->json([
+                'success' => true,
+                'message' => 'ขอบคุณสำหรับรีวิวของคุณ',
+                'data' => [
+                    'id' => (int) $review->id,
+                    'rating' => (int) $review->rating,
+                    'comment' => $review->comment,
+                ],
+            ], 201);
+        } catch (Exception $e) {
+            // กดส่งซ้ำพร้อมกัน → unique(user_id, order_item_id) ละเมิด (SQLSTATE 23000)
+            if ($e instanceof \Illuminate\Database\QueryException && (string) $e->getCode() === '23000') {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'ALREADY_REVIEWED',
+                    'message' => 'คุณรีวิวสินค้านี้แล้ว',
+                ], 409);
+            }
 
-    /**
-     * แปลง payment status เป็น label ภาษาไทย
-     */
-    protected function getPaymentStatusLabel(string $status): string
-    {
-        return match ($status) {
-            'pending' => 'รอชำระเงิน',
-            'paid' => 'ชำระเงินแล้ว',
-            'failed' => 'ชำระเงินล้มเหลว',
-            'refunded' => 'คืนเงินแล้ว',
-            default => $status,
-        };
+            Log::error('Order item review failed', ['order_id' => $orderId, 'item_id' => $itemId, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ส่งรีวิวไม่สำเร็จ กรุณาลองใหม่',
+            ], 500);
+        }
     }
 
     // =====================================================
@@ -552,56 +354,51 @@ class OrderApiController extends Controller
     }
 
     /**
-     * ดึงข้อมูล Tracking ของคำสั่งซื้อ
+     * GET /api/v1/orders/{id}/tracking (SHOP-14: ใช้ relation ที่มีจริง)
      */
     public function getTracking(int $id): JsonResponse
     {
         try {
-            $user = Auth::user();
-
-            $order = Order::where('user_id', $user->id)
-                ->with(['shippingProvider', 'trackingHistory.user'])
+            $order = Order::where('user_id', Auth::id())
+                ->with(['shippingProviderRelation', 'trackingHistory'])
                 ->find($id);
 
             if (! $order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่พบคำสั่งซื้อ',
-                ], 404);
+                return $this->notFound();
             }
 
-            // สร้าง tracking URL
-            $trackingUrl = null;
-            if ($order->tracking_number && $order->shippingProvider) {
-                $trackingUrl = $order->shippingProvider->getTrackingLink($order->tracking_number);
-            }
+            $provider = $order->shippingProviderRelation;
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'order_number' => $order->order_number,
                     'status' => $order->status,
-                    'status_label' => $this->getStatusLabel($order->status),
+                    'status_label' => $order->status_label,
+                    'delivery_method' => $order->delivery_method ?? Order::DELIVERY_PARCEL,
                     'tracking_number' => $order->tracking_number,
-                    'tracking_url' => $trackingUrl,
-                    'shipping_provider' => $order->shippingProvider ? [
-                        'id' => $order->shippingProvider->id,
-                        'code' => $order->shippingProvider->code,
-                        'name' => $order->shippingProvider->name,
-                        'logo' => $order->shippingProvider->logo_url,
-                        'hotline' => $order->shippingProvider->hotline,
-                    ] : null,
+                    'tracking_url' => $order->tracking_url,
+                    'shipping_provider' => $provider ? [
+                        'id' => $provider->id,
+                        'code' => $provider->code,
+                        'name' => $provider->name,
+                        'logo' => $provider->logo_url,
+                        'hotline' => $provider->hotline,
+                    ] : ($order->shipping_provider ? ['id' => null, 'code' => null, 'name' => $order->shipping_provider, 'logo' => null, 'hotline' => null] : null),
+                    'rider' => ShopPresenter::riderSummary($order),
                     'estimated_delivery_at' => $order->estimated_delivery_at?->toISOString(),
                     'shipped_at' => $order->shipped_at?->toISOString(),
                     'delivered_at' => $order->delivered_at?->toISOString(),
                     'history' => $order->trackingHistory->map(fn ($history) => [
                         'id' => $history->id,
                         'status' => $history->status,
-                        'status_label' => $this->getStatusLabel($history->status),
+                        'title' => $history->title,
                         'description' => $history->description,
                         'location' => $history->location,
-                        'created_at' => $history->created_at->toISOString(),
-                    ]),
+                        'tracking_number' => $history->tracking_number,
+                        'shipping_provider' => $history->shipping_provider,
+                        'tracked_at' => $history->tracked_at?->toISOString(),
+                    ])->values(),
                 ],
             ]);
         } catch (Exception $e) {
@@ -629,13 +426,10 @@ class OrderApiController extends Controller
             $order = Order::where('user_id', $user->id)->find($id);
 
             if (! $order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่พบคำสั่งซื้อ',
-                ], 404);
+                return $this->notFound();
             }
 
-            $perPage = $request->input('per_page', 50);
+            $perPage = max(1, min(100, (int) $request->input('per_page', 50)));
 
             // ดึงข้อความ
             $messages = OrderMessage::where('order_id', $order->id)
@@ -720,10 +514,7 @@ class OrderApiController extends Controller
             $order = Order::where('user_id', $user->id)->find($id);
 
             if (! $order) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ไม่พบคำสั่งซื้อ',
-                ], 404);
+                return $this->notFound();
             }
 
             // ตรวจสอบว่า order สามารถแชทได้
@@ -819,5 +610,14 @@ class OrderApiController extends Controller
             $mimeType === 'application/pdf' => 'pdf',
             default => 'file',
         };
+    }
+
+    private function notFound(string $message = 'ไม่พบคำสั่งซื้อ'): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'code' => ShopException::ORDER_NOT_FOUND,
+            'message' => $message,
+        ], 404);
     }
 }

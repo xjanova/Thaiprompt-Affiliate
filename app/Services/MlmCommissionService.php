@@ -748,7 +748,17 @@ class MlmCommissionService
             // ดังนั้นเราไม่ wrap อีกชั้น
 
             // 1. คำนวณค่าแนะนำตรง (Direct Referral Bonus)
-            $result['direct_referral'] = $this->calculateDirectReferralBonus($order);
+            // 🐛 (2026-09-25) audit G12: แยก try ของค่าแนะนำออกมา — เดิมถ้าค่าแนะนำ insert ล้ม
+            //    (type 'direct_referral' ไม่อยู่ใน enum) จะกระโดดไป catch ด้านล่าง ทำให้ unilevel/binary ไม่ถูกคำนวณเลย
+            try {
+                $result['direct_referral'] = $this->calculateDirectReferralBonus($order);
+            } catch (\Throwable $referralError) {
+                Log::error('Direct referral bonus failed, continuing with PV commissions', [
+                    'order_id' => $order->id,
+                    'error' => $referralError->getMessage(),
+                ]);
+                $result['direct_referral'] = null;
+            }
 
             // 2. คำนวณ Unilevel + Binary Commission (ถ้ามี PV)
             if (($pvData['total_pv'] ?? 0) > 0) {
@@ -820,7 +830,7 @@ class MlmCommissionService
                 'binary_count' => count($result['binary']),
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to process order commissions', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),

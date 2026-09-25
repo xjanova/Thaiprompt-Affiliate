@@ -364,48 +364,17 @@ Route::prefix('mobile-login')->name('mobile-login.')->group(function () {
 });
 
 // Mobile Web Session (เปิดหน้าเว็บจากแอพพร้อม authentication)
-// ใช้สำหรับ: Wallet topup, Payment pages, Settings
-Route::get('/mobile-web-session', function (\Illuminate\Http\Request $request) {
-    $token = $request->get('token');
-
-    if (! $token) {
-        return redirect('/login')->with('error', 'ลิงก์ไม่ถูกต้อง');
-    }
-
-    // ตรวจสอบ token
-    $tokenHash = hash('sha256', $token);
-    $cacheKey = 'web_session_token:'.$tokenHash;
-    $sessionData = \Cache::get($cacheKey);
-
-    if (! $sessionData) {
-        return redirect('/login')->with('error', 'ลิงก์หมดอายุหรือไม่ถูกต้อง กรุณาลองใหม่จากแอพ');
-    }
-
-    // ลบ token (ใช้ได้ครั้งเดียว)
-    \Cache::forget($cacheKey);
-
-    // ค้นหา user
-    $user = \App\Models\User::find($sessionData['user_id']);
-    if (! $user) {
-        return redirect('/login')->with('error', 'ไม่พบบัญชีผู้ใช้');
-    }
-
-    // Login user
-    \Auth::login($user);
-    $request->session()->regenerate();
-
-    // รับ query params เพิ่มเติม (เช่น amount)
-    $queryParams = $request->except(['token']);
-    $redirectPath = $sessionData['redirect_path'] ?? '/user/wallet/topup';
-
-    // เพิ่ม query params ลงใน redirect path
-    if (! empty($queryParams)) {
-        $redirectPath .= (strpos($redirectPath, '?') !== false ? '&' : '?').http_build_query($queryParams);
-    }
-
-    // Redirect ไปหน้าที่ต้องการ
-    return redirect($redirectPath);
-})->name('mobile-web-session');
+// ใช้สำหรับ: Wallet topup, Payment pages, Settings, หน้าร้าน/เครือข่ายบนเว็บ
+// 🔐 (2026-09-25) PLAY-16/SHOP-15: เดิมเป็น closure ที่ GET ครั้งเดียว = ล็อกอิน + redirect ไปไหนก็ได้
+//    (open redirect + login CSRF) → ย้ายไป MobileWebSessionController:
+//    GET แสดงหน้ายืนยัน (ไม่เผา token) · POST (มี CSRF) ใช้ token ครั้งเดียวแล้วล็อกอิน
+//    ปลายทางผ่าน App\Support\WebSessionRedirect เท่านั้น
+Route::get('/mobile-web-session', [\App\Http\Controllers\Auth\MobileWebSessionController::class, 'show'])
+    ->middleware('throttle:30,1,web-mobile-session-show')
+    ->name('mobile-web-session');
+Route::post('/mobile-web-session', [\App\Http\Controllers\Auth\MobileWebSessionController::class, 'consume'])
+    ->middleware('throttle:10,1,web-mobile-session-consume')
+    ->name('mobile-web-session.consume');
 
 // Language Switcher (Public - no auth required)
 Route::prefix('language')->name('language.')->group(function () {
@@ -943,6 +912,21 @@ Route::match(['GET', 'HEAD'], '/terms-of-service.html', function () {
 Route::match(['GET', 'HEAD'], '/privacy-policy.html', function () {
     return view('privacy-policy');
 })->name('privacy-policy.html');
+
+// 🔗 (2026-09-25) PLAY-06: แอปเปิด /privacy และ /terms (thaiprompt/config/appConfig.ts) — เดิม 404
+Route::permanentRedirect('/privacy', '/privacy-policy')->name('privacy');
+Route::permanentRedirect('/terms', '/terms-of-service')->name('terms');
+
+// 🗑️ (2026-09-25) PLAY-05: ลบบัญชี — หน้าสาธารณะอธิบายวิธีลบ (ใช้เป็น "Delete account URL" ใน Play Console)
+//    + ฟอร์มลบสำหรับคนที่ล็อกอินอยู่ (POST ต้อง auth)
+Route::match(['GET', 'HEAD'], '/account/delete', [\App\Http\Controllers\AccountDeletionController::class, 'show'])
+    ->name('account.delete');
+Route::get('/account/delete/login', [\App\Http\Controllers\AccountDeletionController::class, 'login'])
+    ->middleware('auth')
+    ->name('account.delete.login');
+Route::post('/account/delete', [\App\Http\Controllers\AccountDeletionController::class, 'destroy'])
+    ->middleware(['auth', 'throttle:5,1,web-account-delete'])
+    ->name('account.delete.destroy');
 
 // การรับประกันซอฟต์แวร์ (รับประกันโดย บริษัท เอ็กซ์แมน เอ็นเตอร์ไพรส์ จำกัด)
 Route::match(['GET', 'HEAD'], '/software-warranty', function () {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureAccountActive;
 use App\Services\TwoFactorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,10 +37,22 @@ class LoginController extends Controller
         ]);
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
-            $request->session()->regenerate();
-
             // Get authenticated user
             $user = Auth::user();
+
+            // 🔒 (2026-09-25) บัญชีที่ถูกระงับ → ออกจากระบบทันที ไม่ให้ผ่านเข้าไป
+            //    (เช็คหลังรหัสผ่านถูกเท่านั้น — คนเดารหัสจะไม่รู้ว่าบัญชีถูกระงับ)
+            if ($user && $user->isSuspended()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                throw ValidationException::withMessages([
+                    'email' => EnsureAccountActive::SUSPENDED_MESSAGE,
+                ]);
+            }
+
+            $request->session()->regenerate();
 
             // ตรวจสอบว่าต้องการ 2FA สำหรับการ login หรือไม่
             // หากผู้ใช้ยังไม่ได้ตั้งค่า 2FA จะข้ามการตรวจสอบ
@@ -67,7 +80,7 @@ class LoginController extends Controller
         }
 
         throw ValidationException::withMessages([
-            'email' => __('The provided credentials do not match our records.'),
+            'email' => 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
         ]);
     }
 

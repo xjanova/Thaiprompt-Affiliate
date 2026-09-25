@@ -48,7 +48,7 @@
                     <div class="flex items-center gap-4 mb-4">
                         <div class="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
                             @if($rider->profile_image)
-                                <img src="{{ asset('storage/' . $rider->profile_image) }}" alt="{{ $rider->full_name }}" class="w-full h-full rounded-full object-cover">
+                                <img src="{{ route('admin.riders.document', [$rider, 'profile']) }}" alt="{{ $rider->full_name }}" class="w-full h-full rounded-full object-cover">
                             @else
                                 <i class="fas fa-user text-white text-2xl"></i>
                             @endif
@@ -90,19 +90,19 @@
                     {{-- Documents --}}
                     <div class="flex gap-2 mb-4">
                         @if($rider->id_card_image)
-                            <a href="{{ asset('storage/' . $rider->id_card_image) }}" target="_blank"
+                            <a href="{{ route('admin.riders.document', [$rider, 'id_card']) }}" target="_blank" rel="noopener"
                                class="flex-1 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-center rounded-lg text-sm transition">
                                 <i class="fas fa-id-card mr-1"></i> บัตรปชช.
                             </a>
                         @endif
-                        @if($rider->driving_license_image)
-                            <a href="{{ asset('storage/' . $rider->driving_license_image) }}" target="_blank"
+                        @if($rider->driver_license_image)
+                            <a href="{{ route('admin.riders.document', [$rider, 'driver_license']) }}" target="_blank" rel="noopener"
                                class="flex-1 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-center rounded-lg text-sm transition">
                                 <i class="fas fa-car mr-1"></i> ใบขับขี่
                             </a>
                         @endif
                         @if($rider->vehicle_registration_image)
-                            <a href="{{ asset('storage/' . $rider->vehicle_registration_image) }}" target="_blank"
+                            <a href="{{ route('admin.riders.document', [$rider, 'vehicle_registration']) }}" target="_blank" rel="noopener"
                                class="flex-1 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-center rounded-lg text-sm transition">
                                 <i class="fas fa-file-alt mr-1"></i> เล่มทะเบียน
                             </a>

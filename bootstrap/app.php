@@ -63,6 +63,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackPageView::class, // Track page views for analytics
             \App\Http\Middleware\CheckMaintenanceMode::class, // Maintenance mode check
             // \App\Http\Middleware\LoadTheme::class, // Theme System v2 - Disabled
+            // 🔒 (2026-09-25) บัญชีที่ถูกระงับ (users.blocked_at) → ออกจากระบบทันทีทุกหน้า
+            \App\Http\Middleware\EnsureAccountActive::class,
+        ]);
+
+        // 🔒 (2026-09-25) กลุ่ม api: บัญชีที่ถูกระงับ → เพิกถอน token + ตอบ 403 ACCOUNT_SUSPENDED
+        //    ครอบทุก route ที่ใช้ Bearer token (ทุกกลุ่ม auth:sanctum ใน api.php + admin_api.php)
+        $middleware->api(append: [
+            \App\Http\Middleware\EnsureAccountActive::class,
         ]);
 
         $middleware->alias([
@@ -123,6 +131,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // 🔐 (2026-09-15) /api/v1/juntra/server/* — เซิร์ฟเวอร์ของจันทรา.online เท่านั้น
             //    (Passport client_credentials ของ client SSO ตัวเดิม ไม่ใช่ token ผู้ใช้)
             'juntra.server' => \App\Http\Middleware\AuthenticateJuntraServer::class,
+            // 🔒 (2026-09-25) บัญชีถูกระงับ → 403 / ออกจากระบบ (ต่อท้ายกลุ่ม web+api อยู่แล้ว
+            //    alias นี้ไว้ใช้กับ route ที่อยู่นอกสองกลุ่มนั้น)
+            'account.active' => \App\Http\Middleware\EnsureAccountActive::class,
         ]);
 
         // Global middleware for IP blocking
@@ -132,4 +143,62 @@ return Application::configure(basePath: dirname(__DIR__))
         // 🔐 (2026-09-13) ห้าม flash ความลับกลับลง session ตอน validation ไม่ผ่าน
         //    (ค่าเริ่มต้นกันแค่ password — token บอท Telegram ที่เจ้าของกรอกในหน้าช่องทาง จะถูกเก็บ plaintext ใน session)
         $exceptions->dontFlash(['telegram_bot_token']);
-    })->create();
+
+        // 🚦 (2026-09-25) throttle แบบตัวเลข (throttle:N,M,prefix) ตอบ 429 เป็น JSON ภาษาไทยตามรูปแบบ API กลาง
+        //    (ค่าเริ่มต้นของ Laravel คือข้อความอังกฤษ "Too Many Attempts.") — หน้าเว็บปกติใช้หน้า 429 เดิม
+        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, \Illuminate\Http\Request $request) {
+            if (! $request->expectsJson() && ! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'code' => 'TOO_MANY_REQUESTS',
+                'message' => 'มีการเรียกใช้งานถี่เกินไป กรุณารอสักครู่แล้วลองใหม่',
+            ], 429, $e->getHeaders());
+        });
+    })
+    ->booted(function () {
+        // 🚦 (2026-09-25) rate limiter 'api' สำหรับ throttle:api ที่หุ้มกลุ่ม /api/v1
+        //    ⚠️ ห้ามใช้ throttle:api โดยไม่มีตัวนี้ — ThrottleRequests จะแปลง 'api' เป็นเลข 0
+        //       = บล็อกทุก request ทันที
+        //    - ล็อกอินแล้ว: นับต่อผู้ใช้ (config ratelimit.api.authenticated, ค่าเริ่มต้น 120/นาที)
+        //    - ยังไม่ล็อกอิน: นับต่อ IP — เขียน (POST/PUT/DELETE) ตาม ratelimit.api.default (60/นาที)
+        //      ส่วน GET ให้ 3 เท่า เพราะมือถือไทยใช้ CGNAT (หลายคนใช้ IP เดียว) และแอปยิง
+        //      /app/config, /app/flags, /app/menus ... พร้อมกันตอนเปิดแอป
+        \Illuminate\Support\Facades\RateLimiter::for('api', function (\Illuminate\Http\Request $request) {
+            $thaiResponse = function (\Illuminate\Http\Request $request, array $headers) {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'TOO_MANY_REQUESTS',
+                    'message' => 'มีการเรียกใช้งานถี่เกินไป กรุณารอสักครู่แล้วลองใหม่',
+                ], 429, $headers);
+            };
+
+            $user = $request->user();
+            if (! $user && $request->bearerToken()) {
+                // route สาธารณะที่แอปแนบ token มาด้วย — นับเป็นรายผู้ใช้ (guard cache ผู้ใช้ไว้แล้วจาก EnsureAccountActive)
+                try {
+                    $user = \Illuminate\Support\Facades\Auth::guard('sanctum')->user();
+                } catch (\Throwable $e) {
+                    $user = null;
+                }
+            }
+
+            if ($user) {
+                return \Illuminate\Cache\RateLimiting\Limit::perMinute((int) config('ratelimit.api.authenticated', 120))
+                    ->by('api-user:'.$user->getAuthIdentifier())
+                    ->response($thaiResponse);
+            }
+
+            $guestLimit = (int) config('ratelimit.api.default', 60);
+            if ($request->isMethodSafe()) {
+                $guestLimit *= 3;
+            }
+
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute($guestLimit)
+                ->by('api-ip:'.$request->ip().':'.($request->isMethodSafe() ? 'r' : 'w'))
+                ->response($thaiResponse);
+        });
+    })
+    ->create();

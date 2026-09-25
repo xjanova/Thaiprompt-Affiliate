@@ -121,7 +121,7 @@
                         </button>
 
                         @if($walletBalance < $order->total_amount)
-                        <a href="{{ route('wallet.topup') }}" class="block w-full py-3 px-4 rounded-lg font-semibold text-center text-white bg-green-600 hover:bg-green-700 transition">
+                        <a href="{{ route('user.wallet.topup') }}" class="block w-full py-3 px-4 rounded-lg font-semibold text-center text-white bg-green-600 hover:bg-green-700 transition">
                             เติมเงิน Wallet
                         </a>
                         @endif

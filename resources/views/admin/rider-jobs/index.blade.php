@@ -179,7 +179,7 @@
                                 <p class="text-gray-300 text-sm line-clamp-1 max-w-[150px]">{{ $job->pickup_address ?? '-' }}</p>
                             </td>
                             <td class="px-6 py-4">
-                                <p class="text-gray-300 text-sm line-clamp-1 max-w-[150px]">{{ $job->dropoff_address ?? '-' }}</p>
+                                <p class="text-gray-300 text-sm line-clamp-1 max-w-[150px]">{{ $job->delivery_address ?? '-' }}</p>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-purple-400 font-medium">{{ number_format($job->total_fee ?? 0, 2) }}</span>

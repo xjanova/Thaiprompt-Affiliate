@@ -129,7 +129,7 @@
                 <div>
                     <p class="font-medium text-gray-900 dark:text-white">สถานะ: {{ $order->riderJob->status }}</p>
                     @if($order->riderJob->rider)
-                        <p class="text-sm text-gray-500 dark:text-gray-400">ไรเดอร์: {{ $order->riderJob->rider->name }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">ไรเดอร์: {{ $order->riderJob->rider->full_name }}</p>
                     @endif
                 </div>
             </div>
@@ -144,13 +144,26 @@
         </div>
     @endif
 
-    <!-- Actions: ยืนยันรับสินค้า -->
-    @if($order->order_status === 'delivered' && !$order->buyer_confirmed_at)
+    <!-- Actions: ยืนยันรับสินค้า / ยกเลิก (ตามสิทธิ์จาก state machine) -->
+    @php $buyerActions = $allowedActions ?? $order->allowedActions('buyer'); @endphp
+    @if(in_array('confirm', $buyerActions, true))
         <div class="text-center mb-6">
-            <form action="{{ route('taladsod.orders.confirm', $order) }}" method="POST" class="inline">
+            <form action="{{ route('taladsod.orders.confirm', $order) }}" method="POST" class="inline"
+                  onsubmit="return confirm('ยืนยันว่าได้รับสินค้าครบแล้ว? ระบบจะโอนเงินให้ร้านทันที');">
                 @csrf @method('PUT')
                 <button type="submit" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition shadow-lg">
                     ✅ ยืนยันรับสินค้าแล้ว
+                </button>
+            </form>
+        </div>
+    @endif
+    @if(in_array('cancel', $buyerActions, true))
+        <div class="text-center mb-6">
+            <form action="{{ route('taladsod.orders.cancel', $order) }}" method="POST" class="inline"
+                  onsubmit="return confirm('ยืนยันยกเลิกออเดอร์นี้? ถ้าชำระผ่าน Wallet แล้ว ระบบจะคืนเงินให้อัตโนมัติ');">
+                @csrf @method('PUT')
+                <button type="submit" class="px-6 py-2 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded-xl font-medium">
+                    ยกเลิกออเดอร์
                 </button>
             </form>
         </div>
@@ -178,6 +191,19 @@
                     </span>
                 </div>
                 <input type="hidden" name="buyer_rating" :value="rating">
+
+                @if($order->delivery_type === 'rider' && $order->riderJob?->rider)
+                    {{-- ให้คะแนนไรเดอร์ (ไม่บังคับ) --}}
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-600 dark:text-gray-300 mb-1">ให้คะแนนไรเดอร์ {{ $order->riderJob->rider->full_name }}</label>
+                        <select name="rider_rating" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">
+                            <option value="">ไม่ให้คะแนน</option>
+                            @for($i = 5; $i >= 1; $i--)
+                                <option value="{{ $i }}">{{ $i }} ดาว</option>
+                            @endfor
+                        </select>
+                    </div>
+                @endif
 
                 {{-- เขียนรีวิว --}}
                 <div class="mb-4">

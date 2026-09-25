@@ -45,6 +45,10 @@ class SendScheduledNotifications extends Command
                 $notification->markAsSent();
                 $count++;
 
+                // 🔔 (2026-09-25) CC-07: ถึงเวลาแล้ว → ส่งต่อเข้ากล่องแจ้งเตือนของแอป + Expo push
+                //    (broadcast ถูกข้ามใน dispatchFor — ใช้ระบบ push campaign ของแอดมินแทน)
+                \App\Jobs\SendNotificationPush::dispatchFor($notification->fresh() ?? $notification);
+
                 $this->info("Sent notification ID {$notification->id} to user {$notification->user_id}");
             } catch (\Exception $e) {
                 Log::error("Failed to send scheduled notification {$notification->id}: ".$e->getMessage());

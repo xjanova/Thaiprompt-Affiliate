@@ -66,6 +66,12 @@ class VendorStore extends Model
         'shipping_fee',
         'free_shipping_threshold',
         'enable_cod',
+        // 🛵 (2026-09-25) ส่งด้วยไรเดอร์ของแพลตฟอร์ม + จุดรับของ (migration 2026_09_25_170000)
+        'rider_delivery_enabled',
+        'pickup_latitude',
+        'pickup_longitude',
+        'pickup_address',
+        'vat_registered',
         'enable_reviews',
         'auto_approve_orders',
         'total_products',
@@ -96,6 +102,10 @@ class VendorStore extends Model
         'shipping_fee' => 'decimal:2',
         'free_shipping_threshold' => 'decimal:2',
         'enable_cod' => 'boolean',
+        'rider_delivery_enabled' => 'boolean',
+        'pickup_latitude' => 'float',
+        'pickup_longitude' => 'float',
+        'vat_registered' => 'boolean',
         'enable_reviews' => 'boolean',
         'auto_approve_orders' => 'boolean',
         'total_products' => 'integer',
@@ -123,7 +133,8 @@ class VendorStore extends Model
 
         static::creating(function ($store) {
             if (empty($store->store_slug)) {
-                $store->store_slug = Str::slug($store->store_name);
+                // 🔗 (2026-09-25) SELLER-18: ชื่อร้านภาษาไทยได้ slug ว่าง → ชน unique
+                $store->store_slug = static::generateUniqueSlug((string) $store->store_name);
             }
         });
 
@@ -140,6 +151,113 @@ class VendorStore extends Model
 
         static::saved($forgetFeatured);
         static::deleted($forgetFeatured);
+    }
+
+    // ========================================
+    // Slug / ส่งด้วยไรเดอร์
+    // ========================================
+
+    /**
+     * สร้าง store_slug ที่ไม่ซ้ำ (รองรับชื่อร้านภาษาไทย — Str::slug คืนค่าว่าง)
+     *
+     * @param  int|null  $ignoreId  id ร้านที่กำลังแก้ (ไม่นับว่าซ้ำกับตัวเอง)
+     */
+    public static function generateUniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name);
+
+        if ($base === '') {
+            $base = preg_replace('/\s+/u', '-', trim($name)) ?? '';
+            $base = preg_replace('/[^\p{L}\p{M}\p{N}\-]/u', '', $base) ?? '';
+            $base = mb_strtolower(trim($base, '-'));
+        }
+
+        $base = mb_substr($base, 0, 200);
+        if ($base === '') {
+            $base = 'store';
+        }
+
+        $exists = function (string $slug) use ($ignoreId): bool {
+            return static::withTrashed()
+                ->where('store_slug', $slug)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists();
+        };
+
+        $slug = $base;
+        for ($i = 2; $exists($slug); $i++) {
+            $slug = $i <= 20 ? "{$base}-{$i}" : $base.'-'.strtolower(Str::random(6));
+            if ($i > 40) {
+                break;
+            }
+        }
+
+        return $slug;
+    }
+
+    /**
+     * ร้านตั้งพิกัดจุดรับของไว้แล้วหรือยัง
+     */
+    public function hasPickupLocation(): bool
+    {
+        $lat = $this->pickup_latitude;
+        $lng = $this->pickup_longitude;
+
+        if ($lat === null || $lng === null) {
+            return false;
+        }
+
+        $lat = (float) $lat;
+        $lng = (float) $lng;
+
+        if (abs($lat) < 0.000001 && abs($lng) < 0.000001) {
+            return false;
+        }
+
+        return $lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180;
+    }
+
+    /**
+     * ร้านถูกระงับ/ปิด/ปิดใช้งานอยู่หรือไม่ (เงื่อนไขเดียวกับ EnsureHasVendorStore — ใช้ทั้งเว็บและ API แอป)
+     */
+    public function isBlockedFromSelling(): bool
+    {
+        return ! (bool) $this->is_active || in_array($this->status, ['suspended', 'closed'], true);
+    }
+
+    /**
+     * ร้านนี้รับส่งด้วยไรเดอร์ได้จริงหรือไม่ (เปิดตัวเลือก + มีพิกัดจุดรับของ + ร้านเปิดอยู่)
+     */
+    public function canUseRiderDelivery(): bool
+    {
+        return (bool) $this->rider_delivery_enabled
+            && $this->hasPickupLocation()
+            && (bool) $this->is_active
+            && ! in_array($this->status, ['suspended', 'closed'], true);
+    }
+
+    /**
+     * จุดรับของสำหรับงานไรเดอร์ (รูปแบบเดียวกับ App\Contracts\RiderDeliverable::riderPickupPoint)
+     *
+     * @return array{name: string, address: string, latitude: float, longitude: float, phone: ?string, notes: ?string}
+     */
+    public function riderPickupPoint(?string $notes = null): array
+    {
+        $address = trim((string) ($this->pickup_address ?: implode(' ', array_filter([
+            $this->store_address,
+            $this->store_city,
+            $this->store_state,
+            $this->store_postal_code,
+        ]))));
+
+        return [
+            'name' => (string) $this->store_name,
+            'address' => $address !== '' ? $address : (string) $this->store_name,
+            'latitude' => (float) ($this->pickup_latitude ?? 0),
+            'longitude' => (float) ($this->pickup_longitude ?? 0),
+            'phone' => $this->store_phone ?: null,
+            'notes' => $notes,
+        ];
     }
 
     // ========================================

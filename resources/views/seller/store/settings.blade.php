@@ -236,9 +236,13 @@
                     <label for="business_type" class="block text-sm font-semibold text-gray-700 mb-2">
                         ประเภทธุรกิจ
                     </label>
-                    <input type="text" name="business_type" id="business_type"
-                           value="{{ old('business_type', $store->business_type) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('business_type') border-red-500 @enderror">
+                    {{-- 🐛 (2026-09-25) SELLER-19: คอลัมน์รับแค่ individual/company — เดิมเป็นช่องพิมพ์อิสระแล้วบันทึกไม่ได้ --}}
+                    @php($businessType = old('business_type', $store->business_type ?: 'individual'))
+                    <select name="business_type" id="business_type" required
+                            class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('business_type') border-red-500 @enderror">
+                        <option value="individual" @selected($businessType === 'individual')>บุคคลธรรมดา</option>
+                        <option value="company" @selected($businessType === 'company')>นิติบุคคล (บริษัท/ห้างหุ้นส่วน)</option>
+                    </select>
                     @error('business_type')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -452,6 +456,76 @@
                             เปิดให้ลูกค้ารีวิวสินค้า
                         </label>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 🛵 (2026-09-25) ส่งด้วยไรเดอร์ของแพลตฟอร์ม — ลูกค้าเลือกได้เมื่อเปิด + ปักหมุดจุดรับของแล้ว --}}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
+             x-data="{ enabled: {{ old('rider_delivery_enabled', $store->rider_delivery_enabled) ? 'true' : 'false' }}, locating: false, error: '' }">
+            <h2 class="text-2xl font-bold mb-2 text-gray-800 dark:text-white flex items-center gap-2">
+                🛵 ส่งด้วยไรเดอร์
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                ลูกค้าเลือก "ส่งด้วยไรเดอร์" ได้ และเก็บเงินปลายทางผ่านไรเดอร์ได้ เมื่อสินค้าพร้อมให้กด "เรียกไรเดอร์" ในหน้าคำสั่งซื้อ
+            </p>
+
+            <div class="flex items-center mb-6">
+                <input type="checkbox" name="rider_delivery_enabled" id="rider_delivery_enabled" value="1" x-model="enabled"
+                       class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                <label for="rider_delivery_enabled" class="ml-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                    เปิดให้ลูกค้าเลือกส่งด้วยไรเดอร์
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label for="pickup_address" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
+                        ที่อยู่จุดรับของ (ว่าง = ใช้ที่อยู่ร้าน)
+                    </label>
+                    <input type="text" name="pickup_address" id="pickup_address" maxlength="500"
+                           value="{{ old('pickup_address', $store->pickup_address) }}"
+                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('pickup_address') border-red-500 @enderror">
+                    @error('pickup_address')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="pickup_latitude" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">ละติจูด</label>
+                    <input type="number" step="0.0000001" name="pickup_latitude" id="pickup_latitude" x-ref="lat"
+                           value="{{ old('pickup_latitude', $store->pickup_latitude) }}"
+                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('pickup_latitude') border-red-500 @enderror">
+                    @error('pickup_latitude')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label for="pickup_longitude" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">ลองจิจูด</label>
+                    <input type="number" step="0.0000001" name="pickup_longitude" id="pickup_longitude" x-ref="lng"
+                           value="{{ old('pickup_longitude', $store->pickup_longitude) }}"
+                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('pickup_longitude') border-red-500 @enderror">
+                    @error('pickup_longitude')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="md:col-span-2">
+                    <button type="button"
+                            class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition disabled:opacity-50"
+                            :disabled="locating"
+                            @click="if (!navigator.geolocation) { error = 'เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง'; return; }
+                                    locating = true; error = '';
+                                    navigator.geolocation.getCurrentPosition(
+                                        (p) => { $refs.lat.value = p.coords.latitude.toFixed(7); $refs.lng.value = p.coords.longitude.toFixed(7); locating = false; },
+                                        () => { error = 'ระบุตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่งหรือกรอกพิกัดเอง'; locating = false; },
+                                        { enableHighAccuracy: true, timeout: 15000 }
+                                    );">
+                        <span x-show="!locating">📍 ใช้ตำแหน่งปัจจุบันเป็นจุดรับของ</span>
+                        <span x-show="locating">กำลังระบุตำแหน่ง...</span>
+                    </button>
+                    <p class="mt-2 text-sm text-red-600" x-show="error" x-text="error"></p>
+                    <p class="mt-2 text-sm text-amber-600" x-show="enabled && (!$refs.lat.value || !$refs.lng.value)">
+                        ต้องปักหมุดจุดรับของก่อน ลูกค้าจึงจะเลือกส่งด้วยไรเดอร์ได้
+                    </p>
                 </div>
             </div>
         </div>

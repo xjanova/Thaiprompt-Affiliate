@@ -348,41 +348,27 @@ class PaymentService
         $order = $transaction->order;
 
         if ($order) {
+            // 🛒 (2026-09-25) ออเดอร์ที่ถูกยกเลิกแล้วห้ามเปิดกลับเป็น "จ่ายแล้ว" — เงินที่เข้ามาหลังยกเลิกต้องให้แอดมินคืน
+            if (in_array($order->status, ['cancelled', 'refunded'], true)) {
+                Log::critical('PaymentService: payment completed for a cancelled order — manual refund needed', [
+                    'order_id' => $order->id,
+                    'transaction_id' => $transaction->id,
+                    'amount' => $transaction->amount,
+                ]);
+
+                return;
+            }
+
             $order->update([
                 'payment_status' => 'paid',
                 'paid_at' => now(),
                 'status' => 'processing', // Move to processing after payment
             ]);
 
-            // Reduce product stock (ป้องกัน stock ติดลบ)
-            foreach ($order->items as $item) {
-                $product = $item->product;
-                if ($product && $product->track_inventory) {
-                    // ใช้ DB query ป้องกัน stock ติดลบ (atomic decrement with floor 0)
-                    // ใช้ (int) cast ป้องกัน SQL Injection ใน DB::raw()
-                    $qty = (int) $item->quantity;
-                    Product::where('id', $product->id)
-                        ->where('stock_quantity', '>=', $qty)
-                        ->update([
-                            'stock_quantity' => DB::raw('stock_quantity - '.$qty),
-                            'sales_count' => DB::raw('sales_count + '.$qty),
-                        ]);
-
-                    // ถ้า stock ไม่พอ (race condition) → log แต่ไม่ block payment
-                    $product->refresh();
-                    if ($product->stock_quantity < 0) {
-                        Log::warning('PaymentService: stock ติดลบหลัง decrement (race condition)', [
-                            'product_id' => $product->id,
-                            'ordered_qty' => $item->quantity,
-                            'remaining_stock' => $product->stock_quantity,
-                            'order_id' => $order->id,
-                        ]);
-                    }
-                } elseif ($product) {
-                    // ไม่ track inventory → แค่เพิ่ม sales_count
-                    $product->increment('sales_count', $item->quantity);
-                }
-            }
+            // 🛒 (2026-09-25) CC-05: ตัดสต็อกผ่านจุดเดียว (ครั้งเดียวต่อออเดอร์ บันทึก stock_deducted_at)
+            //    รับเงินแล้วห้ามล้ม → strict=false (สต็อกไม่พอ = ตัดเหลือ 0 + log ให้ร้าน/แอดมินตามต่อ)
+            //    ออเดอร์ COD ที่ตัดไปแล้วตอนสั่ง จะไม่ถูกตัดซ้ำ
+            $order->deductStockOnce(false);
         }
     }
 

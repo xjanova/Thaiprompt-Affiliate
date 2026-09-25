@@ -368,13 +368,19 @@ class PayoutService
                 }
 
                 // หักเงินจาก Platform Wallet
-                $wallet->deductFunds(
-                    $payoutRequest->net_amount,
+                // 🐛 (2026-09-25) เดิมส่ง description เป็น sourceType และ 'PayoutRequest' เข้า ?int $sourceId
+                //    → TypeError ทุกครั้ง (catch \Exception จับไม่ได้) ตอนนี้เรียงตาม signature จริง
+                $payoutTx = $wallet->deductFunds(
+                    (float) $payoutRequest->net_amount,
                     'payout',
-                    "จ่ายเงินให้ User #{$payoutRequest->user_id}",
                     'PayoutRequest',
-                    $payoutRequest->id
+                    (int) $payoutRequest->id,
+                    ['user_id' => $payoutRequest->user_id, 'earning_type' => $payoutRequest->earning_type]
                 );
+                $payoutTx->update([
+                    'related_user_id' => $payoutRequest->user_id,
+                    'description' => "จ่ายเงินให้ User #{$payoutRequest->user_id}",
+                ]);
 
                 // โอนเงินเข้า User Wallet
                 $this->transferToUserWallet($payoutRequest);
@@ -440,7 +446,8 @@ class PayoutService
     protected function getSourceWallet(string $earningType): string
     {
         return match ($earningType) {
-            EarningsLedger::TYPE_SELLER_SALE => 'fee', // จ่ายจากกองทุนค่า Fee
+            // เงินผู้ขายถูกพักไว้ที่ seller_escrow ตอนแบ่งเงินออเดอร์ (ไม่ใช่กระเป๋า fee ซึ่งเป็นรายได้แพลตฟอร์ม)
+            EarningsLedger::TYPE_SELLER_SALE => SellerPayoutService::ESCROW_WALLET_SLUG,
             EarningsLedger::TYPE_MLM_COMMISSION,
             EarningsLedger::TYPE_AFFILIATE_COMMISSION => 'mlm_pool',
             default => 'fee',

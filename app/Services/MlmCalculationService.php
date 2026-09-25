@@ -158,90 +158,107 @@ class MlmCalculationService
      */
     public function payApprovedCommissions($commissionIds = null)
     {
-        DB::beginTransaction();
+        // 🐛 (2026-09-25) audit G5: เดิม insert wallet_transactions เองโดยไม่มี balance_before (NOT NULL)
+        //    → QueryException ทุกครั้ง + ไม่มี lock ทำให้แอดมินกดซ้ำ/2 request พร้อมกันจ่ายซ้ำได้
+        //    ตอนนี้: จ่ายทีละรายการใน transaction ของตัวเอง, lock แถวคอมแล้วตรวจสถานะซ้ำ,
+        //    หักกองทุน MLM + ฝากเข้า wallet ผ่าน WalletService (type = commission) → รายการที่ล้มไม่ลากรายการอื่น
+        $query = MlmCommission::where('status', 'approved')->orderBy('id');
 
-        try {
-            $query = MlmCommission::where('status', 'approved')
-                ->with(['user', 'user.wallet', 'member']);
+        if ($commissionIds) {
+            $query->whereIn('id', (array) $commissionIds);
+        }
 
-            if ($commissionIds) {
-                $query->whereIn('id', $commissionIds);
-            }
+        $ids = $query->pluck('id');
+        $paidCount = 0;
+        $walletService = app(WalletService::class);
+        $revenueService = new PlatformRevenueService;
 
-            $commissions = $query->get();
-            $paidCount = 0;
-            $revenueService = new PlatformRevenueService;
+        foreach ($ids as $commissionId) {
+            try {
+                $paid = DB::transaction(function () use ($commissionId, $walletService, $revenueService) {
+                    /** @var MlmCommission|null $commission */
+                    $commission = MlmCommission::whereKey($commissionId)->lockForUpdate()->first();
 
-            foreach ($commissions as $commission) {
-                $user = $commission->user;
+                    // ถูกจ่าย/ยกเลิกไปแล้วโดย request อื่น → ข้าม
+                    if (! $commission || $commission->status !== 'approved') {
+                        return false;
+                    }
 
-                if (! $user || ! $user->wallet) {
-                    continue;
-                }
+                    $amount = round((float) $commission->commission_amount, 2);
+                    $user = $commission->user_id ? \App\Models\User::withTrashed()->find($commission->user_id) : null;
 
-                // แก้ Bug DIST-1: หักเงินจาก MLM Pool wallet ก่อนจ่ายให้ user
-                try {
-                    $revenueService->payMlmCommission(
-                        $commission->commission_amount,
-                        $user->id,
-                        'MlmCommission',
-                        $commission->id,
-                        [
-                            'commission_type' => $commission->type,
-                            'from_member_id' => $commission->from_member_id,
-                        ]
-                    );
-                } catch (\Exception $e) {
-                    // ถ้า MLM Pool ไม่พอจ่าย → ข้ามรายการนี้
-                    Log::warning('MLM Pool insufficient for commission payout', [
-                        'commission_id' => $commission->id,
-                        'amount' => $commission->commission_amount,
-                        'error' => $e->getMessage(),
+                    if (! $user || $amount <= 0) {
+                        Log::warning('MLM commission payout skipped: no user or zero amount', [
+                            'commission_id' => $commission->id,
+                        ]);
+
+                        return false;
+                    }
+
+                    // กันจ่ายซ้ำ: เคยมีรายการ wallet ของคอมนี้แล้ว → แค่ปิดสถานะ
+                    $existingTx = WalletTransaction::where('reference_type', MlmCommission::class)
+                        ->where('reference_id', $commission->id)
+                        ->where('type', 'commission')
+                        ->first();
+                    if ($existingTx) {
+                        $commission->markAsPaid($existingTx->id);
+
+                        return false;
+                    }
+
+                    $wallet = $walletService->getOrCreateWallet($user);
+                    if (! $wallet->isActive()) {
+                        Log::warning('MLM commission payout skipped: wallet inactive', [
+                            'commission_id' => $commission->id,
+                            'user_id' => $user->id,
+                        ]);
+
+                        return false;
+                    }
+
+                    // หักกองทุน MLM ก่อน (ไม่พอ = throw → ข้ามรายการนี้ทั้งก้อน)
+                    $revenueService->payMlmCommission($amount, $user->id, 'MlmCommission', $commission->id, [
+                        'commission_type' => $commission->type,
+                        'from_member_id' => $commission->from_member_id,
                     ]);
 
-                    continue;
+                    $walletTransaction = $walletService->deposit(
+                        $wallet,
+                        $amount,
+                        'คอมมิชชัน MLM: '.($commission->type ?? 'commission'),
+                        MlmCommission::class,
+                        (int) $commission->id,
+                        [
+                            'mlm_commission_id' => $commission->id,
+                            'commission_type' => $commission->type,
+                        ],
+                        'commission'
+                    );
+
+                    $commission->markAsPaid($walletTransaction->id);
+
+                    if ($commission->mlm_member_id) {
+                        MlmMember::whereKey($commission->mlm_member_id)->increment('total_earnings', $amount);
+                    }
+
+                    return true;
+                });
+
+                if ($paid) {
+                    $paidCount++;
                 }
-
-                // แก้ Bug DIST-2: ใช้ increment ก่อน แล้วค่อยอ่าน balance ที่ถูกต้อง
-                $user->wallet->increment('balance', $commission->commission_amount);
-                $user->wallet->refresh();
-
-                // Create wallet transaction (ใช้ balance หลัง increment เพื่อให้ balance_after ถูกต้อง)
-                $walletTransaction = WalletTransaction::create([
-                    'wallet_id' => $user->wallet->id,
-                    'user_id' => $user->id,
-                    'type' => 'commission',
-                    'amount' => $commission->commission_amount,
-                    'balance_after' => $user->wallet->balance,
-                    'description' => 'MLM Commission: '.$commission->type,
-                    'status' => 'completed',
-                    'metadata' => json_encode([
-                        'mlm_commission_id' => $commission->id,
-                        'commission_type' => $commission->type,
-                    ]),
+            } catch (\Throwable $e) {
+                // กองทุนไม่พอ/wallet มีปัญหา → ข้ามรายการนี้ รายการอื่นจ่ายต่อได้
+                Log::warning('MLM commission payout failed', [
+                    'commission_id' => $commissionId,
+                    'error' => $e->getMessage(),
                 ]);
-
-                // Mark commission as paid
-                $commission->markAsPaid($walletTransaction->id);
-
-                // Update member earnings
-                if ($commission->member) {
-                    $commission->member->increment('total_earnings', $commission->commission_amount);
-                }
-
-                $paidCount++;
             }
-
-            DB::commit();
-            Log::info('MLM commissions paid', ['count' => $paidCount]);
-
-            return $paidCount;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error paying MLM commissions', ['error' => $e->getMessage()]);
-
-            throw $e;
         }
+
+        Log::info('MLM commissions paid', ['count' => $paidCount, 'requested' => $ids->count()]);
+
+        return $paidCount;
     }
 
     /**

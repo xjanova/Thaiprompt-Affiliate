@@ -29,9 +29,16 @@
                    class="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center gap-2">
                     <i class="fas fa-plus"></i> ลงขายสินค้าใหม่
                 </a>
-                <a href="{{ route('taladsod.orders') }}"
+                <a href="{{ route('taladsod.seller.orders') }}"
                    class="px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-600 flex items-center gap-2">
-                    <i class="fas fa-box"></i> ดูออเดอร์ทั้งหมด
+                    <i class="fas fa-box"></i> ออเดอร์ร้าน
+                    @if (($pendingOrders ?? 0) > 0)
+                        <span class="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs">{{ $pendingOrders }}</span>
+                    @endif
+                </a>
+                <a href="{{ route('taladsod.seller.profile') }}"
+                   class="px-5 py-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-600 flex items-center gap-2">
+                    <i class="fas fa-store"></i> ตั้งค่าร้าน
                 </a>
             </div>
         </div>
@@ -134,8 +141,8 @@
                             <div class="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 {{-- รูปสินค้า --}}
                                 <div class="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                                    @if($listing->image_url ?? false)
-                                        <img src="{{ $listing->image_url }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
+                                    @if($listing->primary_image)
+                                        <img src="{{ $listing->primary_image }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
                                     @else
                                         <div class="w-full h-full flex items-center justify-center text-2xl">🥬</div>
                                     @endif
@@ -145,9 +152,11 @@
                                     <h3 class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $listing->title }}</h3>
                                     <div class="flex items-center gap-3 mt-0.5">
                                         <span class="text-sm font-bold text-green-600 dark:text-green-400">฿{{ number_format($listing->price, 0) }}/{{ $listing->unit ?? 'กก.' }}</span>
-                                        <span class="text-xs px-2 py-0.5 rounded-full {{ $listing->is_active ?? true ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' }}">
-                                            {{ $listing->is_active ?? true ? 'เปิดขาย' : 'ปิดขาย' }}
+                                        @php $listingOpen = $listing->status === 'active' && $listing->is_available; @endphp
+                                        <span class="text-xs px-2 py-0.5 rounded-full {{ $listingOpen ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' }}">
+                                            {{ $listingOpen ? 'เปิดขาย' : ($listing->status === 'sold_out' ? 'ของหมด' : ($listing->status === 'suspended' ? 'ถูกระงับ' : 'ปิดขาย')) }}
                                         </span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">เหลือ {{ number_format((int) $listing->quantity_available) }}</span>
                                     </div>
                                 </div>
                                 {{-- ปุ่มจัดการ --}}
@@ -188,7 +197,7 @@
                     <h2 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <i class="fas fa-clipboard-list text-orange-500"></i> ออเดอร์ล่าสุด
                     </h2>
-                    <a href="{{ route('taladsod.orders') }}"
+                    <a href="{{ route('taladsod.seller.orders') }}"
                        class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
                         ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
                     </a>
@@ -197,10 +206,10 @@
                 @if(isset($recentOrders) && $recentOrders->count() > 0)
                     <div class="divide-y divide-gray-100 dark:divide-gray-700">
                         @foreach($recentOrders->take(5) as $order)
-                            <div class="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <a href="{{ route('taladsod.seller.orders.show', $order) }}" class="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 {{-- ไอคอนสถานะ --}}
                                 <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0
-                                    @switch($order->status ?? 'pending')
+                                    @switch($order->order_status ?? 'pending')
                                         @case('pending')
                                             bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600
                                             @break
@@ -216,7 +225,7 @@
                                         @default
                                             bg-gray-50 dark:bg-gray-700 text-gray-600
                                     @endswitch">
-                                    @switch($order->status ?? 'pending')
+                                    @switch($order->order_status ?? 'pending')
                                         @case('pending')
                                             <i class="fas fa-clock"></i>
                                             @break
@@ -244,8 +253,8 @@
                                                 'completed' => ['สำเร็จ', 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400'],
                                                 'cancelled' => ['ยกเลิก', 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'],
                                             ];
-                                            $status = $order->status ?? 'pending';
-                                            $label = $statusLabels[$status] ?? ['ไม่ทราบ', 'bg-gray-50 text-gray-700'];
+                                            $status = $order->order_status ?? 'pending';
+                                            $label = $statusLabels[$status] ?? [$order->status_label, 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300'];
                                         @endphp
                                         <span class="text-xs px-2 py-0.5 rounded-full font-medium {{ $label[1] }}">
                                             {{ $label[0] }}
@@ -258,10 +267,10 @@
                                 {{-- จำนวนเงิน --}}
                                 <div class="text-right flex-shrink-0">
                                     <div class="text-sm font-bold text-green-600 dark:text-green-400">
-                                        ฿{{ number_format($order->total ?? 0, 0) }}
+                                        ฿{{ number_format((float) ($order->total_amount ?? 0), 0) }}
                                     </div>
                                 </div>
-                            </div>
+                            </a>
                         @endforeach
                     </div>
                 @else

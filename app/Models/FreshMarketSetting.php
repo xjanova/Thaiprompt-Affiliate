@@ -230,4 +230,52 @@ class FreshMarketSetting extends Model
             && ! empty($this->line_channel_secret)
             && ! empty($this->line_channel_access_token);
     }
+
+    /**
+     * บันทึก LINE Channel Secret / Access Token (ฟิลด์ guarded — ต้องผ่าน method นี้เท่านั้น)
+     *
+     * ค่าว่าง/null = คงค่าเดิมไว้ (ฟอร์มแอดมินไม่แสดงค่าจริง ช่องจึงว่างเป็นปกติ)
+     *
+     * @return bool true = มีการเปลี่ยนค่าอย่างน้อยหนึ่งช่อง
+     */
+    public function setLineCredentials(?string $secret, ?string $accessToken): bool
+    {
+        $changes = [];
+
+        $secret = $secret !== null ? trim($secret) : null;
+        $accessToken = $accessToken !== null ? trim($accessToken) : null;
+
+        if ($secret !== null && $secret !== '' && $secret !== $this->line_channel_secret) {
+            $changes['line_channel_secret'] = $secret;
+        }
+
+        if ($accessToken !== null && $accessToken !== '' && $accessToken !== $this->line_channel_access_token) {
+            $changes['line_channel_access_token'] = $accessToken;
+        }
+
+        if (empty($changes)) {
+            return false;
+        }
+
+        $this->forceFill($changes)->save();
+        static::clearCache();
+
+        return true;
+    }
+
+    /**
+     * ข้อความแทนค่าลับสำหรับแสดงในหน้าแอดมิน (ห้ามแสดงค่าจริงใน HTML)
+     *
+     * @example FreshMarketSetting::maskSecret('abcd1234efgh') // "•••• efgh (ตั้งค่าแล้ว)"
+     */
+    public static function maskSecret(?string $value): string
+    {
+        $value = (string) $value;
+
+        if ($value === '') {
+            return 'ยังไม่ได้ตั้งค่า';
+        }
+
+        return '•••• '.mb_substr($value, -4).' (ตั้งค่าแล้ว)';
+    }
 }

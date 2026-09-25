@@ -890,6 +890,67 @@ Schedule::command('fortune:backfill-fb-names --limit=30 --days=14 --paid-first -
     ->name('fortune-backfill-fb-names');
 
 // ════════════════════════════════════════════════════════════════
+// 🥬 (2026-09-25) ตลาดสด: SLA ออเดอร์
+// ════════════════════════════════════════════════════════════════
+// - pending ที่ร้านไม่รับเกิน fresh_market.pending_expiry_minutes (30) → ยกเลิก + คืนสต็อก + คืนเงิน
+// - delivered ที่ผู้ซื้อไม่ยืนยันเกิน fresh_market.auto_complete_hours (24) → ปิดออเดอร์ + ปล่อยเงินให้ร้าน
+// รันซ้ำ/ชนกันได้ปลอดภัย (lock + ตรวจสถานะรายออเดอร์ใน FreshMarketService)
+Schedule::command('fresh-market:sweep-orders --limit=100')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fresh-market-sweep-orders');
+
+// ════════════════════════════════════════════════════════════════
+// 🏍️ (2026-09-25) ระบบไรเดอร์: กระจายงาน / ไรเดอร์ผี / GPS หาย / ลบตำแหน่งเก่า
+// ════════════════════════════════════════════════════════════════
+// - rider:sweep-pending  ทุกนาที: งานไม่มีคนรับ → ขยายรัศมีแจ้งเพิ่ม, เกิน rider.pending_timeout_minutes
+//                        → manual_needed + แจ้งแอดมิน, และเคลียร์เงินไรเดอร์ที่ค้าง (idempotent)
+// - rider:gps-watch      ทุกนาที: ไรเดอร์มีงานแต่ GPS เงียบเกินกำหนด → หยุดติดตามชั่วคราว + แจ้งในแอป
+// - rider:auto-offline   ทุก 5 นาที: online แต่ไม่ส่งตำแหน่งเกิน 15 นาที (ไม่มีงานค้าง) → offline
+// - rider:purge-locations ทุกวัน: ลบ rider_locations เก่ากว่า rider.location_retention_days (30)
+// แจ้งเตือนทั้งหมดเป็น in-app + Expo push — ห้าม LINE push
+Schedule::command('rider:sweep-pending --limit=100')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('rider-sweep-pending')
+    ->runInBackground();
+
+Schedule::command('rider:gps-watch')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('rider-gps-watch')
+    ->runInBackground();
+
+Schedule::command('rider:auto-offline')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('rider-auto-offline')
+    ->runInBackground();
+
+Schedule::command('rider:purge-locations')
+    ->dailyAt('03:40')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('rider-purge-locations')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
+// 🔔 (2026-09-25) แจ้งเตือนตั้งเวลา (notifications.is_scheduled) — CC-07
+// ════════════════════════════════════════════════════════════════
+// เดิม command มีแต่ไม่เคยถูกตั้งเวลา → แจ้งเตือนตั้งเวลาค้าง is_sent=0 ตลอดไป
+// ถึงเวลาแล้ว → markAsSent + ส่งต่อเข้ามือถือผ่าน App\Jobs\SendNotificationPush (ไม่ใช่ LINE push)
+Schedule::command('notifications:send-scheduled')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('notifications-send-scheduled')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // ⚠️ DROPPED (commands ไม่อยู่ใน artisan list)
 //   - snake-game:spawn-items     — command file ไม่พบ
 //   - line:cleanup-conversations — command file ไม่พบ

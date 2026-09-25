@@ -6,11 +6,23 @@ use App\Http\Controllers\Controller;
 use App\Models\VendorPackage;
 use App\Models\VendorStore;
 use App\Models\VendorSubscription;
+use App\Services\VendorSubscriptionService;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
+/**
+ * แพ็กเกจร้านค้า
+ *
+ * 🔒 (2026-09-25) audit SELLER-06: เดิมกดสมัครแล้วร้านได้แพ็กเกจเสียเงินทันที (ก่อนจ่าย)
+ *    และหน้าชำระเงินแค่ตั้ง paid เอง (TODO) — ตอนนี้แพ็กเกจเปลี่ยนหลังหักเงินจากกระเป๋าจริงเท่านั้น
+ *    แพ็กเกจราคาพิเศษ (Enterprise) ต้องให้ทีมงานกำหนด
+ */
 class PackageController extends Controller
 {
+    public function __construct(protected VendorSubscriptionService $subscriptions) {}
+
     /**
      * Display available packages
      */
@@ -27,53 +39,45 @@ class PackageController extends Controller
     }
 
     /**
-     * Subscribe to a package
+     * สมัคร/เปลี่ยนแพ็กเกจ
      */
     public function subscribe(Request $request, $packageId)
     {
         $request->validate([
             'subscription_type' => 'required|in:monthly,yearly',
+        ], [
+            'subscription_type.required' => 'กรุณาเลือกรอบการชำระเงิน',
+            'subscription_type.in' => 'รอบการชำระเงินไม่ถูกต้อง',
         ]);
 
         $user = Auth::user();
         $store = VendorStore::where('user_id', $user->id)->firstOrFail();
         $package = VendorPackage::active()->findOrFail($packageId);
 
-        // Calculate amount based on subscription type
-        $amount = $request->subscription_type === 'yearly'
-            ? $package->yearly_price
-            : $package->price;
+        if ($this->subscriptions->isCustomPricing($package)) {
+            return back()->with('error', 'แพ็กเกจนี้เป็นแพ็กเกจราคาพิเศษ กรุณาติดต่อทีมงานเพื่อสมัคร');
+        }
 
-        // Create subscription
-        $subscription = VendorSubscription::create([
-            'store_id' => $store->id,
-            'package_id' => $package->id,
-            'subscription_type' => $request->subscription_type,
-            'amount' => $amount,
-            'currency' => $package->currency,
-            'started_at' => now(),
-            'expires_at' => $request->subscription_type === 'yearly'
-                ? now()->addYear()
-                : now()->addMonth(),
-            'payment_status' => 'pending',
-            'status' => 'active',
-            'auto_renew' => true,
-            'next_billing_date' => $request->subscription_type === 'yearly'
-                ? now()->addYear()
-                : now()->addMonth(),
-        ]);
+        try {
+            if ($this->subscriptions->isFree($package)) {
+                $this->subscriptions->activateFree($store, $package);
 
-        // Update store
-        $store->update([
-            'package_id' => $package->id,
-            'subscription_status' => 'active',
-            'subscription_started_at' => now(),
-            'subscription_expires_at' => $subscription->expires_at,
-        ]);
+                return redirect()->route('seller.dashboard')
+                    ->with('success', 'เปลี่ยนเป็นแพ็กเกจ '.$package->display_name.' เรียบร้อยแล้ว');
+            }
 
-        return redirect()
-            ->route('seller.packages.payment', $subscription->id)
-            ->with('success', 'กรุณาชำระเงินเพื่อเริ่มใช้งานแพ็คเกจ');
+            $subscription = $this->subscriptions->createPendingSubscription($store, $package, $request->input('subscription_type'));
+
+            return redirect()
+                ->route('seller.packages.payment', $subscription->id)
+                ->with('success', 'กรุณาชำระเงินเพื่อเริ่มใช้งานแพ็กเกจ');
+        } catch (\DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Seller subscribe package failed', ['store_id' => $store->id, 'package_id' => $package->id, 'error' => $e->getMessage()]);
+
+            return back()->with('error', 'สมัครแพ็กเกจไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
     }
 
     /**
@@ -89,11 +93,18 @@ class PackageController extends Controller
             ->with('package')
             ->firstOrFail();
 
-        return view('seller.packages.payment', compact('subscription', 'store'));
+        $wallet = app(WalletService::class)->getOrCreateWallet($user);
+        $walletBalance = (float) $wallet->balance;
+        $walletHasPin = $wallet->hasPIN();
+        $totalDue = $this->subscriptions->totalDue($subscription);
+
+        return view('seller.packages.payment', compact('subscription', 'store', 'walletBalance', 'walletHasPin', 'totalDue'));
     }
 
     /**
-     * Process payment (placeholder - integrate with actual payment gateway)
+     * ชำระค่าแพ็กเกจ — รองรับการชำระด้วยกระเป๋าเงิน (หักเงินจริงแล้วเปิดใช้แพ็กเกจ)
+     *
+     * เติมเงินเข้ากระเป๋าผ่าน PromptPay/โอน (ระบบตรวจสลิปอัตโนมัติ) แล้วกลับมาชำระที่หน้านี้
      */
     public function processPayment(Request $request, $subscriptionId)
     {
@@ -104,17 +115,33 @@ class PackageController extends Controller
             ->where('id', $subscriptionId)
             ->firstOrFail();
 
-        // TODO: Integrate with actual payment gateway
-        // For now, we'll mark it as paid
-        $subscription->update([
-            'payment_status' => 'paid',
-            'paid_at' => now(),
-            'payment_method' => $request->payment_method ?? 'manual',
+        $wallet = app(WalletService::class)->getOrCreateWallet($user);
+
+        $request->validate([
+            'payment_method' => 'required|in:wallet,promptpay_qr,bank_transfer,credit_card',
+            'pin' => $wallet->hasPIN() ? 'required|string|max:20' : 'nullable|string|max:20',
+        ], [
+            'payment_method.required' => 'กรุณาเลือกช่องทางชำระเงิน',
+            'pin.required' => 'กรุณากรอก PIN กระเป๋าเงิน',
         ]);
 
-        return redirect()
-            ->route('seller.dashboard')
-            ->with('success', 'ชำระเงินสำเร็จ! เริ่มใช้งานแพ็คเกจของคุณได้เลย');
+        if ($request->input('payment_method') !== 'wallet') {
+            return back()->with('error', 'ตอนนี้ชำระค่าแพ็กเกจได้ผ่านกระเป๋าเงินเท่านั้น กรุณาเติมเงินเข้ากระเป๋า (PromptPay/โอน) แล้วเลือกชำระด้วยกระเป๋าเงิน');
+        }
+
+        try {
+            $paid = $this->subscriptions->payWithWallet($subscription, $user, $request->input('pin'));
+
+            return redirect()
+                ->route('seller.dashboard')
+                ->with('success', 'ชำระเงินสำเร็จ! เริ่มใช้งานแพ็กเกจ '.($paid->package?->display_name ?? '').' ได้เลย');
+        } catch (\DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Seller package payment failed', ['subscription_id' => $subscription->id, 'error' => $e->getMessage()]);
+
+            return back()->with('error', 'ชำระค่าแพ็กเกจไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
     }
 
     /**

@@ -3,121 +3,223 @@
 namespace App\Services;
 
 use App\Models\EarningsLedger;
-use App\Models\MlmGlobalSetting;
-use App\Models\MlmProductPv;
+use App\Models\MlmMember;
 use App\Models\Order;
-use App\Models\PayoutSetting;
+use App\Models\OrderItem;
+use App\Models\PlatformTransaction;
 use App\Models\Product;
+use App\Models\Setting;
 use App\Models\User;
-use App\Models\WalletDebt;
+use App\Models\VendorStore;
+use App\Services\Pricing\PriceBreakdown;
+use App\Services\Pricing\PricingEngine;
+use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * OrderDistributionService
+ * OrderDistributionService — แบ่งเงินออเดอร์ e-commerce ที่ชำระแล้ว
  *
- * จัดการการแบ่งเงินจาก Order - หักค่า Fee, VAT, MLM Commission แล้วโอนให้ Seller
+ * ใช้สูตรเดียวของระบบคือ PricingEngine (ตัวเดียวกับตัวจำลองราคาที่ผู้ขายเห็น):
+ *  - GP: อัตราที่แพลตฟอร์มกำหนด (admin_gp_rate → แพ็กเกจร้าน → ค่ากลาง ไม่ต่ำกว่าขั้นต่ำ)
+ *    products.commission_rate ที่ผู้ขายส่งมาเองไม่ถูกใช้คิดเงิน
+ *  - VAT 7/107 เฉพาะร้านที่จด VAT (vendor_stores.vat_registered)
+ *  - ค่าแนะนำ (MLM pool) เฉพาะเมื่อเปิดระบบ MLM และสินค้าตั้ง PV ไว้ — ไม่มี PV = 0 บาท
+ *    (เดิม fallback ราคา × global_pv_rate ทำให้หัก 100% ของยอดขาย — audit G2/SELLER-04)
  *
- * ⚠️ BUSINESS LOGIC:
- * - Seller เห็นระบบจำลองคำนวณ PV/Commission ครบแล้ว → ตั้งราคาขายให้ครอบคลุม
- * - MLM Commission คำนวณจาก PV เป็นหลัก (ค่าการตลาดที่ Seller รู้ล่วงหน้า)
- * - Platform Fee เป็นของเว็บ 100% → ไปจ่าย Pool Bonus, All Sale Rank Bonus ภายหลัง
- * - Fee กับ MLM เป็นคนละก้อน แยกจากกัน
+ * ผลการแบ่งเงินต่อผู้ขาย 1 ราย:
+ *  - GP → กระเป๋า fee, VAT → กระเป๋า vat, ค่าแนะนำ → กระเป๋า mlm_pool
+ *  - เงินสุทธิผู้ขาย + ค่าส่งส่วนของร้าน → พักใน seller_escrow + EarningsLedger (pending)
+ *    แล้วจ่ายเข้า wallet ผู้ขายหลังส่งของถึง + ครบ holding days (SellerPayoutService)
+ * ร้านทางการ (Official Shop) ไม่มี GP — รายได้สุทธิเข้ากระเป๋า admin_shop
  *
- * Flow การคำนวณ:
- * 1. หัก Platform Fee → platform_fee wallet (ของเว็บ ไปจ่าย pool/rank bonus)
- * 2. หัก VAT → vat wallet
- * 3. หัก MLM Commission (PV-based) → mlm_pool wallet (ไปจ่ายค่าแนะนำ/คอมมิชชั่น)
- * 4. Seller ได้รับ: grossAmount - platformFee - VAT - mlmCommission
- * 5. คำนวณและสร้าง Commission ให้ uplines:
- *    - Direct Referral Bonus → original_sponsor (ผู้แนะนำตรงจริงๆ)
- *    - Unilevel Commission → unilevel_sponsor (สายงาน)
- *    - Binary Commission → binary_sponsor (ตำแหน่ง binary)
+ * ความปลอดภัย: lock แถวออเดอร์ก่อนตรวจว่าแบ่งแล้วหรือยัง → เรียกซ้ำ/พร้อมกันก็แบ่งครั้งเดียว
+ * unique key ของ earnings_ledger รวม user_id แล้ว → ออเดอร์หลายผู้ขายแบ่งได้ครบ (audit G3)
  */
 class OrderDistributionService
 {
+    /**
+     * sub_type ของรายการเงินเข้า (income) ที่เกิดจากการแบ่งเงิน — ใช้ตัดสินว่าออเดอร์ถูกแบ่งแล้ว
+     * (ไม่นับรายจ่ายโปรโมชัน/คืนเงิน ที่ใช้ source Order เหมือนกัน)
+     */
+    public const DISTRIBUTION_SUB_TYPES = [
+        'order_fee',
+        'vat_collection',
+        'mlm_commission_pool',
+        'admin_shop_sale',
+        SellerPayoutService::ESCROW_HOLD_SUB_TYPE,
+    ];
+
+    /** Setting: cron แบ่งเงินย้อนหลังหยิบเฉพาะออเดอร์ที่ชำระตั้งแต่เวลานี้ */
+    public const SETTING_BACKFILL_FROM = 'money.distribution_backfill_from';
+
     protected PlatformRevenueService $revenueService;
 
     protected MlmCommissionService $mlmCommissionService;
 
-    public function __construct()
-    {
-        $this->revenueService = new PlatformRevenueService;
-        $this->mlmCommissionService = new MlmCommissionService;
+    protected SellerPayoutService $payoutService;
+
+    protected PlatformExpenseService $expenseService;
+
+    public function __construct(
+        ?PlatformRevenueService $revenueService = null,
+        ?MlmCommissionService $mlmCommissionService = null,
+        ?SellerPayoutService $payoutService = null,
+        ?PlatformExpenseService $expenseService = null
+    ) {
+        $this->revenueService = $revenueService ?? new PlatformRevenueService;
+        $this->mlmCommissionService = $mlmCommissionService ?? new MlmCommissionService;
+        $this->payoutService = $payoutService ?? new SellerPayoutService;
+        $this->expenseService = $expenseService ?? new PlatformExpenseService;
     }
 
     /**
-     * ประมวลผลการแบ่งเงินจาก Order ที่ชำระเงินแล้ว
+     * แบ่งเงินออเดอร์ที่ชำระแล้ว (idempotent)
      *
-     * @return array ผลลัพธ์การแบ่งเงิน
+     * @return array{order_id: int, total_amount: float, distributions: array, platform_collections: array, seller_earnings: array, mlm_commissions: array, skipped?: bool, reason?: string, summary?: array}
+     *
+     * @throws \DomainException เมื่อออเดอร์ยังไม่ชำระเงิน
      */
     public function processOrderDistribution(Order $order): array
     {
-        // ตรวจสอบว่าชำระเงินแล้ว
         if ($order->payment_status !== 'paid') {
-            throw new \Exception('Order ยังไม่ได้ชำระเงิน');
+            throw new \DomainException('Order ยังไม่ได้ชำระเงิน');
         }
 
-        return DB::transaction(function () use ($order) {
-            // ⚠️ แก้ Race Condition: ตรวจสอบซ้ำภายใน transaction (atomic)
-            // ป้องกัน 2 request พร้อมกันผ่าน check ด้านนอก แล้วมา process ซ้ำ
-            if ($this->isOrderDistributed($order)) {
-                Log::info('Order already distributed (inside transaction), skipping', [
-                    'order_id' => $order->id,
-                ]);
+        // สร้าง engine ใหม่ทุกออเดอร์ → ค่าตั้งล่าสุดมีผลทันทีแม้ใน process ที่รันนาน (queue/cron)
+        $engine = app(PricingEngine::class);
 
-                return [
-                    'order_id' => $order->id,
-                    'total_amount' => $order->total_amount,
-                    'distributions' => [],
-                    'platform_collections' => [],
-                    'seller_earnings' => [],
-                    'mlm_commissions' => [],
-                    'skipped' => true,
-                ];
+        return DB::transaction(function () use ($order, $engine) {
+            /** @var Order|null $locked */
+            $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+
+            if (! $locked || $locked->payment_status !== 'paid') {
+                throw new \DomainException('Order ยังไม่ได้ชำระเงิน');
             }
 
+            if (in_array($locked->status, ['cancelled', 'refunded'], true)) {
+                return $this->skippedResult($locked, 'order_cancelled_or_refunded');
+            }
+
+            if ($this->isOrderDistributed($locked)) {
+                Log::info('Order already distributed, skipping', ['order_id' => $locked->id]);
+
+                return $this->skippedResult($locked, 'already_distributed');
+            }
+
+            $items = OrderItem::where('order_id', $locked->id)
+                ->with(['product' => fn ($q) => $q->withTrashed()])
+                ->orderBy('id')
+                ->get();
+
+            if ($items->isEmpty()) {
+                // OrderItems อาจยังไม่ถูกสร้าง (ถูกเรียกกลาง transaction ของ checkout) → ไม่บันทึกอะไร ให้ cron ลองใหม่
+                Log::warning('Order distribution: order has no items yet', ['order_id' => $locked->id]);
+
+                return $this->skippedResult($locked, 'no_items');
+            }
+
+            $officialSellerId = $this->officialSellerId();
+
+            // คำนวณทีละรายการด้วย PricingEngine
+            $computed = $items->map(fn (OrderItem $item) => $this->computeItem($engine, $item, $officialSellerId));
+            $groups = $computed->groupBy(fn (array $row) => (int) $row['item']->seller_id);
+
+            // ส่วนลดของออเดอร์: ใครออกเงิน (คูปองร้าน = ร้านรับภาระ / คูปองแพลตฟอร์ม = แพลตฟอร์มรับภาระ)
+            $discount = self::splitDiscount(
+                (float) $locked->discount_amount,
+                (float) $locked->shipping_fee,
+                (float) $items->sum(fn (OrderItem $item) => (float) $item->discount_amount),
+                $locked->product_discount !== null ? (float) $locked->product_discount : null,
+                $locked->shipping_discount !== null ? (float) $locked->shipping_discount : null,
+                (float) $locked->discount_amount > 0 ? $this->discountFundedBy($locked) : 'platform'
+            );
+
+            // แบ่งค่าส่งให้ร้านที่ส่งของ — คูปองส่งฟรีของร้าน: ร้านได้เฉพาะค่าส่งที่ผู้ซื้อจ่ายจริง
+            $shippingShares = $this->allocateShippingShares(
+                $discount['seller_shipping_base'],
+                $this->shippingWeights($groups)
+            );
+
+            // ส่วนลดของร้านที่ยังไม่ถูกหักใน order_items.total (ข้อมูลเก่า/ไม่ครบ) → หักจากรายได้ร้านตามสัดส่วนยอดขาย
+            $discountDeductions = $this->allocateShippingShares(
+                $discount['seller_deduction'],
+                $groups->map(fn ($rows) => round($rows->sum(fn ($r) => $r['breakdown']->gross), 2))->all()
+            );
+
             $results = [
-                'order_id' => $order->id,
-                'total_amount' => $order->total_amount,
+                'order_id' => (int) $locked->id,
+                'total_amount' => (float) $locked->total_amount,
                 'distributions' => [],
                 'platform_collections' => [],
                 'seller_earnings' => [],
                 'mlm_commissions' => [],
             ];
 
-            // แยกรายการตาม Seller
-            $itemsBySeller = $order->items->groupBy('seller_id');
+            $summary = ['gp' => 0.0, 'vat' => 0.0, 'pool' => 0.0, 'pv' => 0.0, 'seller_net' => 0.0];
 
-            foreach ($itemsBySeller as $sellerId => $items) {
-                // ถ้า seller_id = Official Shop Seller ID → สินค้าของ Admin (Official Shop)
-                if ($this->isOfficialShopSeller($sellerId)) {
-                    $adminResult = $this->processAdminShopItems($order, $items);
-                    $results['distributions'][] = $adminResult;
+            foreach ($groups as $sellerId => $rows) {
+                $share = (float) ($shippingShares[(int) $sellerId] ?? 0.0);
+                $deduction = (float) ($discountDeductions[(int) $sellerId] ?? 0.0);
 
-                    continue;
+                $groupResult = ($officialSellerId !== null && (int) $sellerId === $officialSellerId)
+                    ? $this->processAdminShopItems($locked, $rows, $share, $deduction)
+                    : $this->processSellerItems($locked, (int) $sellerId, $rows, $share, $engine, $deduction);
+
+                $results['distributions'][] = $groupResult;
+                if (($groupResult['type'] ?? '') === 'seller') {
+                    $results['seller_earnings'][] = $groupResult;
                 }
 
-                $sellerResult = $this->processSellerItems($order, $sellerId, $items);
-                $results['distributions'][] = $sellerResult;
+                $summary['gp'] += (float) ($groupResult['platform_fee'] ?? 0);
+                $summary['vat'] += (float) ($groupResult['vat_amount'] ?? 0);
+                $summary['pool'] += (float) ($groupResult['mlm_commission'] ?? 0);
+                $summary['pv'] += (float) ($groupResult['pv_total'] ?? 0);
+                $summary['seller_net'] += (float) ($groupResult['net_amount'] ?? 0);
             }
 
-            // ตรวจสอบบริการของ Admin (ค่าสมัคร, ค่าบริการ, etc.)
-            $adminServices = $order->items->filter(fn ($item) => $item->item_type === 'admin_service');
-            if ($adminServices->isNotEmpty()) {
-                $serviceResult = $this->processAdminServices($order, $adminServices);
-                $results['distributions'][] = $serviceResult;
+            // ส่วนลดที่แพลตฟอร์มออกเงินจริง (คูปองแพลตฟอร์มเท่านั้น) → รายจ่ายโปรฯ กระเป๋า fee
+            // คูปองของร้าน: ร้านรับภาระแล้ว (หักใน order_items.total / ค่าส่งส่วนของร้าน) → ไม่ลงรายจ่ายแพลตฟอร์ม
+            $platformDiscount = $discount['platform_expense'];
+            if ($platformDiscount > 0) {
+                $this->expenseService->recordPromoExpense(
+                    'fee',
+                    $platformDiscount,
+                    'order_discount',
+                    'Order',
+                    (int) $locked->id,
+                    "ส่วนลดคูปองที่แพลตฟอร์มออกให้ ออเดอร์ #{$locked->order_number}",
+                    [
+                        'order_number' => $locked->order_number,
+                        'product_discount' => $discount['product_discount'],
+                        'shipping_discount' => $discount['shipping_discount'],
+                    ],
+                    (int) $locked->user_id
+                );
+                $results['platform_collections'][] = ['type' => 'order_discount_expense', 'amount' => $platformDiscount];
+            }
+            $results['discount'] = $discount;
+
+            // ค่าคอมแนะนำ (เฉพาะเมื่อเปิดระบบ MLM)
+            if ($engine->mlmEnabled()) {
+                $results['mlm_commissions'] = $this->processMlmCommissions($locked, $this->pvData($computed));
             }
 
-            // คำนวณ MLM Commission (ถ้าเปิดใช้งาน)
-            if (MlmGlobalSetting::get('mlm_enabled', false)) {
-                $mlmResult = $this->processMlmCommissions($order);
-                $results['mlm_commissions'] = $mlmResult;
-            }
+            // เขียนค่าสรุปกลับลงออเดอร์ (ใช้ query builder → ไม่ยิง OrderObserver ซ้ำ)
+            $summary = array_map(fn ($v) => round($v, 2), $summary);
+            Order::whereKey($locked->id)->update([
+                'vat_amount' => $summary['vat'],
+                'mlm_pv_total' => $summary['pv'],
+                'mlm_commission_total' => $summary['pool'],
+                'seller_net_earnings' => $summary['seller_net'],
+            ]);
+            $results['summary'] = $summary;
 
             Log::info('Order distribution processed', [
-                'order_id' => $order->id,
-                'results' => $results,
+                'order_id' => $locked->id,
+                'sellers' => $groups->count(),
+                'summary' => $summary,
             ]);
 
             return $results;
@@ -125,274 +227,245 @@ class OrderDistributionService
     }
 
     /**
-     * ประมวลผลรายการของ Seller
+     * คำนวณการแบ่งเงินของ 1 รายการสินค้าด้วย PricingEngine
      *
-     * @param  \Illuminate\Support\Collection  $items
+     * @return array{item: OrderItem, breakdown: PriceBreakdown, gp_source: string, snapshot_gp_rate: float, pv_per_unit: float, official: bool}
      */
-    protected function processSellerItems(Order $order, int $sellerId, $items): array
+    protected function computeItem(PricingEngine $engine, OrderItem $item, ?int $officialSellerId): array
     {
-        $seller = User::find($sellerId);
-        if (! $seller) {
-            return ['error' => "Seller #{$sellerId} not found"];
+        $gross = max(0.0, round((float) $item->total, 2));
+        $qty = max(1, (int) $item->quantity);
+        $official = $officialSellerId !== null && (int) $item->seller_id === $officialSellerId;
+        $product = $item->product;
+
+        if ($product instanceof Product) {
+            $opts = $engine->optionsForProduct($product);
+            $gpInfo = $engine->gpRateInfoForProduct($product);
+            $gpSource = $gpInfo['source'];
+        } else {
+            // สินค้าถูกลบถาวร → ใช้อัตรา GP ตอนซื้อ (ไม่ต่ำกว่าขั้นต่ำ) และสถานะ VAT ของร้านผู้ขาย
+            $store = VendorStore::where('user_id', $item->seller_id)->orderBy('id')->first();
+            $opts = [
+                'gp_rate' => $official ? 0.0 : max($engine->minGpRate(), (float) $item->commission_rate),
+                'pv' => 0,
+                'vat_registered' => $official ? $engine->officialShopVatRegistered() : $engine->storeVatRegistered($store),
+            ];
+            $gpSource = 'order_item_snapshot';
         }
 
-        // คำนวณยอดรวม
-        $grossAmount = $items->sum('total');
-        $platformFee = $items->sum('commission_amount');
-        $vatAmount = $this->calculateVat($items);
-        $mlmCommission = $this->calculateMlmCommissionFromItems($items);
-
-        // ยอดสุทธิที่ Seller จะได้รับ
-        // Seller รู้ค่าเหล่านี้ล่วงหน้าจากระบบจำลอง → ตั้งราคาให้ครอบคลุม
-        // - Platform Fee: ค่าใช้แพลตฟอร์ม (ไปจ่าย pool/rank bonus ภายหลัง)
-        // - VAT: ภาษีมูลค่าเพิ่ม
-        // - MLM Commission: ค่าการตลาด PV (ไปจ่ายคอมมิชชั่น uplines)
-        $netAmount = $grossAmount - $platformFee - $vatAmount - $mlmCommission;
-
-        // ป้องกันยอดสุทธิติดลบ (ระบบจำลองควรแจ้ง Seller ก่อนตั้งราคา)
-        if ($netAmount < 0) {
-            Log::warning('Seller net amount ติดลบ - ราคาสินค้าอาจตั้งต่ำเกินไป', [
-                'order_id' => $order->id,
-                'seller_id' => $sellerId,
-                'gross_amount' => $grossAmount,
-                'platform_fee' => $platformFee,
-                'vat_amount' => $vatAmount,
-                'mlm_commission' => $mlmCommission,
-                'net_amount' => $netAmount,
-            ]);
-            $netAmount = 0;
-        }
-
-        // ตรวจสอบหนี้
-        $debtDeduction = 0;
-        $totalDebt = WalletDebt::getTotalDebtForUser($sellerId);
-        if ($totalDebt > 0 && $netAmount > 0) {
-            $debtResult = WalletDebt::deductAllDebts($sellerId, $netAmount);
-            $debtDeduction = $debtResult['total_deducted'];
-            $netAmount = $debtResult['remaining'];
-        }
-
-        // เก็บค่า Platform Fee เข้า Platform Wallet (ของเว็บ 100% - ไปจ่าย pool/rank bonus)
-        if ($platformFee > 0) {
-            $this->revenueService->collectPlatformFee(
-                $platformFee,
-                'Order',
-                $order->id,
-                $sellerId,
-                [
-                    'order_number' => $order->order_number,
-                    'items_count' => $items->count(),
-                    'gross_amount' => $grossAmount,
-                ]
-            );
-        }
-
-        // เก็บ VAT เข้า Platform Wallet
-        if ($vatAmount > 0) {
-            $this->revenueService->collectVat(
-                $vatAmount,
-                'Order',
-                $order->id,
-                [
-                    'order_number' => $order->order_number,
-                    'seller_id' => $sellerId,
-                ]
-            );
-        }
-
-        // เก็บ MLM Commission เข้า MLM Pool (คนละก้อนกับ Platform Fee)
-        if ($mlmCommission > 0) {
-            $this->revenueService->collectMlmPool(
-                $mlmCommission,
-                'Order',
-                $order->id,
-                [
-                    'order_number' => $order->order_number,
-                    'seller_id' => $sellerId,
-                ]
-            );
-        }
-
-        // สร้างบันทึกรายได้ใน Earnings Ledger
-        $payoutSetting = PayoutSetting::getSellerSetting();
-        $availableAt = now()->addDays($payoutSetting->holding_days ?? 0);
-
-        $earningEntry = EarningsLedger::create([
-            'user_id' => $sellerId,
-            'earning_type' => EarningsLedger::TYPE_SELLER_SALE,
-            'source_type' => 'Order',
-            'source_id' => $order->id,
-            'gross_amount' => $grossAmount,
-            'platform_fee' => $platformFee,
-            'vat_amount' => $vatAmount,
-            'mlm_commission' => $mlmCommission,
-            'debt_deduction' => $debtDeduction,
-            'net_amount' => $netAmount,
-            'status' => EarningsLedger::STATUS_PENDING,
-            'available_at' => $availableAt,
-            'description' => "รายได้จากการขาย Order #{$order->order_number}",
-            'breakdown' => [
-                'items' => $items->map(fn ($item) => [
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product_name,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price,
-                    'total' => $item->total,
-                    'commission_amount' => $item->commission_amount,
-                    'pv_value' => $item->pv_value ?? 0,
-                ])->toArray(),
-                'calculations' => [
-                    'gross_amount' => $grossAmount,
-                    'platform_fee_rate' => $items->first()->commission_rate ?? 0,
-                    'platform_fee' => $platformFee,
-                    'vat_rate' => 7,
-                    'vat_amount' => $vatAmount,
-                    'mlm_commission' => $mlmCommission,
-                    'debt_deduction' => $debtDeduction,
-                    'net_amount' => $netAmount,
-                ],
-            ],
-        ]);
+        // คิดทั้งบรรทัดเป็นก้อนเดียว (ยอดหลังส่วนลดรายการ) → PV ต้องเป็นยอดรวมของบรรทัด
+        unset($opts['cost_per_unit']);
+        $pvPerUnit = max(0.0, (float) ($opts['pv'] ?? 0));
+        $opts['pv'] = $pvPerUnit * $qty;
 
         return [
-            'seller_id' => $sellerId,
-            'seller_name' => $seller->name,
-            'gross_amount' => $grossAmount,
-            'platform_fee' => $platformFee,
-            'vat_amount' => $vatAmount,
-            'mlm_commission' => $mlmCommission,
-            'debt_deduction' => $debtDeduction,
-            'net_amount' => $netAmount,
-            'earning_entry_id' => $earningEntry->id,
-            'available_at' => $availableAt->toDateTimeString(),
+            'item' => $item,
+            'breakdown' => $engine->breakdown($gross, 1, $opts),
+            'gp_source' => $gpSource,
+            'snapshot_gp_rate' => (float) $item->commission_rate,
+            'pv_per_unit' => $pvPerUnit,
+            'official' => $official,
         ];
     }
 
     /**
-     * คำนวณ VAT
+     * แบ่งเงินส่วนของผู้ขาย 1 ราย
      *
-     * @param  \Illuminate\Support\Collection  $items
+     * @param  Collection<int, array>  $rows  ผลจาก computeItem ของผู้ขายรายนี้
      */
-    protected function calculateVat($items): float
+    protected function processSellerItems(Order $order, int $sellerId, Collection $rows, float $shippingShare, PricingEngine $engine, float $discountDeduction = 0.0): array
     {
-        $vatRate = MlmGlobalSetting::get('vat_percentage', 7) / 100;
-        $vatableAmount = $items->sum('total');
+        $seller = User::withTrashed()->find($sellerId);
+        if (! $seller) {
+            // order_items.seller_id มี FK cascade → ไม่ควรเกิด ถ้าเกิดให้ rollback ทั้งออเดอร์แล้วให้แอดมินตรวจ
+            throw new \RuntimeException("Seller #{$sellerId} not found for order #{$order->id}");
+        }
 
-        // VAT = ยอดรวม * 7 / 107 (สำหรับราคารวม VAT แล้ว)
-        return round($vatableAmount * $vatRate / (1 + $vatRate), 4);
+        $gross = round($rows->sum(fn ($r) => $r['breakdown']->gross), 2);
+        $gp = round($rows->sum(fn ($r) => $r['breakdown']->gp_amount), 2);
+        $vat = round($rows->sum(fn ($r) => $r['breakdown']->vat_amount), 2);
+        $pool = round($rows->sum(fn ($r) => $r['breakdown']->referral_pool_amount), 2);
+        $pv = round($rows->sum(fn ($r) => $r['breakdown']->pv_total), 2);
+        $net = round($gross - $gp - $vat - $pool, 2);
+
+        if ($net < 0) {
+            // GP+VAT เกินยอดขาย (อัตราผิดปกติ) → ลด GP ลงให้ผู้ขายไม่ติดลบ และบัญชีรวมยังเท่ายอดขาย
+            Log::warning('Order distribution: seller net negative, GP reduced', [
+                'order_id' => $order->id,
+                'seller_id' => $sellerId,
+                'gross' => $gross,
+                'gp' => $gp,
+                'vat' => $vat,
+                'pool' => $pool,
+            ]);
+            $gp = round(max(0.0, $gp + $net), 2);
+            $net = 0.0;
+        }
+
+        $shippingShare = round(max(0.0, $shippingShare), 2);
+        $ledgerGross = round($gross + $shippingShare, 2);
+        // ส่วนลดของร้านที่ยังไม่ถูกหักในยอดสินค้า → หักจากรายได้ร้าน (ไม่ให้ติดลบ)
+        $discountDeduction = round(min(max(0.0, $discountDeduction), $net + $shippingShare), 2);
+        $ledgerNet = round($net + $shippingShare - $discountDeduction, 2);
+
+        $meta = [
+            'order_number' => $order->order_number,
+            'seller_id' => $sellerId,
+            'items_count' => $rows->count(),
+            'gross_amount' => $gross,
+        ];
+
+        if ($gp > 0) {
+            $this->revenueService->collectPlatformFee($gp, 'Order', (int) $order->id, $sellerId, $meta);
+        }
+        if ($vat > 0) {
+            $this->revenueService->collectVat($vat, 'Order', (int) $order->id, $meta);
+        }
+        if ($pool > 0) {
+            $this->revenueService->collectMlmPool($pool, 'Order', (int) $order->id, $meta);
+        }
+        if ($ledgerNet > 0) {
+            $this->payoutService->holdInEscrow($ledgerNet, $order, $sellerId, ['shipping_share' => $shippingShare]);
+        }
+
+        $availableAt = $this->payoutService->availableAtFor($order);
+        $vatRegistered = $rows->contains(fn ($r) => $r['breakdown']->vat_rate > 0);
+
+        $ledger = EarningsLedger::create([
+            'user_id' => $sellerId,
+            'earning_type' => EarningsLedger::TYPE_SELLER_SALE,
+            'source_type' => 'Order',
+            'source_id' => $order->id,
+            'gross_amount' => $ledgerGross,
+            'platform_fee' => $gp,
+            'vat_amount' => $vat,
+            'mlm_commission' => $pool,
+            'other_deductions' => $discountDeduction,
+            'debt_deduction' => 0,
+            'net_amount' => $ledgerNet,
+            'status' => EarningsLedger::STATUS_PENDING,
+            'available_at' => $availableAt,
+            'description' => mb_substr("รายได้จากการขาย ออเดอร์ #{$order->order_number}", 0, 255),
+            'breakdown' => [
+                'version' => 2,
+                'formula' => 'pricing_engine',
+                'items' => $rows->map(fn ($r) => $this->itemBreakdownRow($r))->values()->all(),
+                'calculations' => [
+                    'items_gross' => $gross,
+                    'shipping_share' => $shippingShare,
+                    'store_discount_deduction' => $discountDeduction,
+                    'gross_amount' => $ledgerGross,
+                    'platform_fee' => $gp,
+                    'vat_amount' => $vat,
+                    'mlm_commission' => $pool,
+                    'pv_total' => $pv,
+                    'net_amount' => $ledgerNet,
+                    'vat_registered' => $vatRegistered,
+                    'mlm_enabled' => $engine->mlmEnabled(),
+                ],
+                'shipping_share' => $shippingShare,
+                'release_rule' => 'after_delivery_plus_holding_days',
+                'holding_days' => $this->payoutService->holdingDays(),
+            ],
+        ]);
+
+        return [
+            'type' => 'seller',
+            'seller_id' => $sellerId,
+            'seller_name' => $seller->name,
+            'gross_amount' => $ledgerGross,
+            'items_gross' => $gross,
+            'shipping_share' => $shippingShare,
+            'platform_fee' => $gp,
+            'vat_amount' => $vat,
+            'mlm_commission' => $pool,
+            'pv_total' => $pv,
+            'net_amount' => $ledgerNet,
+            'earning_entry_id' => $ledger->id,
+            'available_at' => $availableAt?->toDateTimeString(),
+        ];
     }
 
     /**
-     * คำนวณ MLM Commission (ค่าการตลาด/PV) จากรายการสินค้า
+     * สินค้าร้านทางการ (แพลตฟอร์มขายเอง) — ไม่มี GP, VAT ตามการจดทะเบียนของร้านทางการ
      *
-     * แก้ Bug: ใช้ค่าจากแอดมิน (MlmProductPv / MlmGlobalSetting) เป็นหลัก
-     * แทนการใช้ item.pv_value เป็น percentage ตรงๆ
-     *
-     * สูตรคำนวณ: PV points × commission_per_pv = จำนวนเงิน THB ที่หัก
-     * - PV จาก MlmProductPv (absolute) หรือ price × global_pv_rate
-     * - commission_per_pv จาก MlmGlobalSetting (อัตราแปลง PV→บาท)
-     *
-     * @param  \Illuminate\Support\Collection  $items
-     * @return float จำนวนเงิน (THB) ที่หักเป็นค่าการตลาด PV
+     * @param  Collection<int, array>  $rows
      */
-    protected function calculateMlmCommissionFromItems($items): float
+    protected function processAdminShopItems(Order $order, Collection $rows, float $shippingShare, float $discountDeduction = 0.0): array
     {
-        // ดึงค่าจาก Global Settings (แอดมินตั้งค่า)
-        $globalPvRate = (float) MlmGlobalSetting::get('global_pv_rate', 1);
-        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
-        $defaultPlanId = (int) MlmGlobalSetting::get('default_mlm_plan_id', 1);
+        $gross = round($rows->sum(fn ($r) => $r['breakdown']->gross), 2);
+        $vat = round($rows->sum(fn ($r) => $r['breakdown']->vat_amount), 2);
+        $pool = round($rows->sum(fn ($r) => $r['breakdown']->referral_pool_amount), 2);
+        $pv = round($rows->sum(fn ($r) => $r['breakdown']->pv_total), 2);
+        $shippingShare = round(max(0.0, $shippingShare), 2);
+        $net = round(max(0.0, $gross - $vat - $pool) + $shippingShare, 2);
+        $discountDeduction = round(min(max(0.0, $discountDeduction), $net), 2);
+        $net = round($net - $discountDeduction, 2);
 
-        $totalPvAmount = 0;
+        $meta = ['order_number' => $order->order_number, 'source' => 'admin_shop'];
 
-        foreach ($items as $item) {
-            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (resolver ทนทานต่อ plan-key ไม่ตรง)
-            $productPv = MlmProductPv::resolveForProduct($item->product_id, $defaultPlanId);
-
-            $itemPv = 0;
-
-            if ($productPv && $productPv->pv_value > 0) {
-                // ใช้ค่าจากแอดมิน: PV absolute × จำนวน
-                $itemPv = $productPv->pv_value * ($item->quantity ?? 1);
-            } elseif ($globalPvRate > 0) {
-                // ลำดับ 2: ใช้ global_pv_rate × ราคาสินค้า
-                $itemPv = $item->total * $globalPvRate;
-            }
-
-            // คำนวณจำนวนเงิน THB ที่หัก: PV × commission_per_pv
-            if ($itemPv > 0) {
-                $totalPvAmount += $itemPv * $commissionPerPv;
-            }
+        if ($vat > 0) {
+            $this->revenueService->collectVat($vat, 'Order', (int) $order->id, $meta);
+        }
+        if ($pool > 0) {
+            $this->revenueService->collectMlmPool($pool, 'Order', (int) $order->id, $meta);
         }
 
-        if ($totalPvAmount <= 0) {
-            return 0;
-        }
+        // บันทึกเสมอแม้เป็น 0 → เป็นหลักฐานว่าแบ่งแล้ว (cron จะไม่หยิบซ้ำ)
+        $this->revenueService->recordIncome(
+            'admin_shop',
+            $net,
+            'admin_shop_sale',
+            "รายได้ร้านทางการ ออเดอร์ #{$order->order_number}",
+            'Order',
+            (int) $order->id,
+            null,
+            [
+                'items_count' => $rows->count(),
+                'gross_amount' => $gross,
+                'shipping_share' => $shippingShare,
+                'store_discount_deduction' => $discountDeduction,
+                'vat_amount' => $vat,
+                'mlm_commission' => $pool,
+                'items' => $rows->map(fn ($r) => $this->itemBreakdownRow($r))->values()->all(),
+            ]
+        );
 
-        return round($totalPvAmount, 4);
+        return [
+            'type' => 'admin_shop',
+            'gross_amount' => round($gross + $shippingShare, 2),
+            'items_gross' => $gross,
+            'shipping_share' => $shippingShare,
+            'platform_fee' => 0.0,
+            'vat_amount' => $vat,
+            'mlm_commission' => $pool,
+            'pv_total' => $pv,
+            'net_amount' => $net,
+            'items_count' => $rows->count(),
+        ];
     }
 
     /**
-     * ประมวลผล MLM Commissions
+     * ค่าคอมแนะนำ/MLM ของออเดอร์ (เรียกเมื่อเปิดระบบ MLM เท่านั้น)
      *
-     * คำนวณและสร้าง commission ให้ uplines ตามประเภท:
-     * - Direct Referral Bonus: จ่ายให้ original_sponsor (ผู้แนะนำตรงจริงๆ)
-     * - Unilevel Commission: จ่ายให้ unilevel_sponsor หลายชั้น (พร้อม rollup ถ้า inactive)
-     * - Binary Commission: จ่ายให้ binary_sponsor (ตาม matching/pairing)
-     *
-     * @return array ผลลัพธ์การคำนวณ commission
+     * @param  array{total_pv: float, pv_amount_thb: float, items: array}  $pvData
      */
-    protected function processMlmCommissions(Order $order): array
+    protected function processMlmCommissions(Order $order, array $pvData): array
     {
         try {
-            // คำนวณ PV รวมจาก Order items
-            $pvData = $this->calculateTotalPvFromOrder($order);
-
-            // ตรวจสอบว่ามีการเปิดใช้ระบบ Genealogy หรือไม่
-            $genealogyEnabled = MlmGlobalSetting::get('genealogy_enabled', true);
-
-            if (! $genealogyEnabled && $pvData['total_pv'] <= 0) {
-                Log::debug('MLM Commission skipped: genealogy disabled and no PV', [
-                    'order_id' => $order->id,
-                ]);
-
-                return [
-                    'success' => true,
-                    'direct_referral' => null,
-                    'unilevel' => [],
-                    'binary' => [],
-                    'total_pv' => 0,
-                    'message' => 'ไม่มี PV และระบบ Genealogy ปิดอยู่',
-                ];
-            }
-
-            // แก้ Bug PV-2: บันทึก PV Transaction + อัพเดท member PV
-            // (ย้ายมาจาก MlmCalculationService ที่เคยเรียกซ้ำ)
             if ($pvData['total_pv'] > 0) {
-                $buyerMember = \App\Models\MlmMember::where('user_id', $order->user_id)
+                $buyerMember = MlmMember::where('user_id', $order->user_id)
                     ->where('status', 'active')
                     ->first();
 
                 if ($buyerMember) {
-                    $pvService = new MlmPvService;
-                    $pvService->recordPvTransaction($buyerMember, $order, $pvData);
+                    (new MlmPvService)->recordPvTransaction($buyerMember, $order, $pvData);
                     $buyerMember->increment('total_pv', $pvData['total_pv']);
                     $buyerMember->update(['last_purchase_at' => now()]);
                 }
             }
 
-            // เรียกใช้ MlmCommissionService เพื่อคำนวณ commission ทั้งหมด
             $result = $this->mlmCommissionService->processOrderCommissions($order, $pvData);
-
-            // Log ผลลัพธ์
-            Log::info('MLM Commissions processed for order', [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'total_pv' => $pvData['total_pv'],
-                'pv_amount_thb' => $pvData['pv_amount_thb'],
-                'has_direct_referral' => $result['direct_referral'] !== null,
-                'unilevel_count' => count($result['unilevel']),
-                'binary_count' => count($result['binary']),
-            ]);
 
             return [
                 'success' => true,
@@ -402,17 +475,15 @@ class OrderDistributionService
                 'total_pv' => $pvData['total_pv'],
                 'pv_amount_thb' => $pvData['pv_amount_thb'],
             ];
-
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // คอม MLM ล้มต้องไม่ทำให้เงินผู้ขายไม่ถูกแบ่ง — log ไว้ให้แอดมินตรวจ
             Log::error('MLM Commission processing failed', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
                 'direct_referral' => null,
                 'unilevel' => [],
                 'binary' => [],
@@ -421,318 +492,312 @@ class OrderDistributionService
     }
 
     /**
-     * คำนวณ PV รวมจาก Order items
+     * ข้อมูล PV ของออเดอร์ (จาก PricingEngine — PV ที่ตั้งไว้จริงเท่านั้น)
      *
-     * แก้ Bug: ใช้ค่าจากแอดมิน (MlmProductPv / MlmGlobalSetting) เป็นหลัก
-     * แทนการใช้ item.pv_value เป็น percentage ตรงๆ
-     *
-     * ลำดับการดึงค่า PV:
-     * 1. MlmProductPv (แอดมินกำหนดต่อสินค้า) → ค่า absolute PV (เช่น 50 PV)
-     * 2. MlmGlobalSetting.global_pv_rate (อัตราส่วนกลาง) → เช่น 0.1 = 10% ของราคา
-     *
-     * สูตรคำนวณ:
-     * - PV points: จาก MlmProductPv.pv_value × quantity, หรือ item.total × global_pv_rate
-     * - PV amount THB: PV points × commission_per_pv (อัตราแปลง PV→บาท)
-     *
-     * @return array ['total_pv' => float, 'pv_amount_thb' => float, 'items' => array]
+     * @param  Collection<int, array>  $computed
+     * @return array{total_pv: float, pv_amount_thb: float, items: array}
      */
-    protected function calculateTotalPvFromOrder(Order $order): array
+    protected function pvData(Collection $computed): array
     {
-        // ดึงค่าจาก Global Settings (แอดมินตั้งค่า)
-        $globalPvRate = (float) MlmGlobalSetting::get('global_pv_rate', 1);
-        $commissionPerPv = (float) MlmGlobalSetting::get('commission_per_pv', 1);
-        $defaultPlanId = (int) MlmGlobalSetting::get('default_mlm_plan_id', 1);
+        $items = [];
+        $totalPv = 0.0;
+        $amount = 0.0;
 
-        $totalPv = 0;
-        $pvAmountThb = 0;
-        $itemsDetail = [];
-
-        foreach ($order->items as $item) {
-            // ลำดับ 1: ดึงค่า PV จาก MlmProductPv (resolver ทนทานต่อ plan-key ไม่ตรง)
-            $productPv = MlmProductPv::resolveForProduct($item->product_id, $defaultPlanId);
-
-            $pvSource = 'none';
-            $itemPv = 0;
-
-            if ($productPv && $productPv->pv_value > 0) {
-                // ใช้ค่าจากแอดมิน: PV absolute × จำนวน
-                $itemPv = $productPv->pv_value * ($item->quantity ?? 1);
-                $pvSource = 'admin_product_pv';
-            } elseif ($globalPvRate > 0) {
-                // ลำดับ 2: ใช้ global_pv_rate × ราคาสินค้า
-                $itemPv = $item->total * $globalPvRate;
-                $pvSource = 'global_pv_rate';
+        foreach ($computed as $row) {
+            /** @var PriceBreakdown $b */
+            $b = $row['breakdown'];
+            if ($b->pv_total <= 0) {
+                continue;
             }
 
-            if ($itemPv > 0) {
-                $totalPv += $itemPv;
-
-                // คำนวณค่า PV เป็นจำนวนเงิน THB (ใช้ commission_per_pv จาก Global Settings)
-                $itemPvThb = $itemPv * $commissionPerPv;
-                $pvAmountThb += $itemPvThb;
-
-                $itemsDetail[] = [
-                    'product_id' => $item->product_id,
-                    'product_name' => $item->product_name,
-                    'quantity' => $item->quantity,
-                    'total' => $item->total,
-                    'pv_source' => $pvSource,
-                    'pv_points' => round($itemPv, 2),
-                    'pv_amount_thb' => round($itemPvThb, 2),
-                ];
-            }
+            $totalPv += $b->pv_total;
+            $amount += $b->referral_pool_amount;
+            $items[] = [
+                'product_id' => $row['item']->product_id,
+                'product_name' => $row['item']->product_name,
+                'quantity' => (int) $row['item']->quantity,
+                'total' => (float) $row['item']->total,
+                'pv_source' => 'pricing_engine',
+                'pv_points' => round($b->pv_total, 2),
+                'pv_amount_thb' => round($b->referral_pool_amount, 2),
+            ];
         }
 
         return [
             'total_pv' => round($totalPv, 2),
-            'pv_amount_thb' => round($pvAmountThb, 2),
-            'items' => $itemsDetail,
+            'pv_amount_thb' => round($amount, 2),
+            'items' => $items,
         ];
     }
 
     /**
-     * ประมวลผลรายการสินค้าของ Admin Shop (Official Shop)
-     * สินค้าที่ seller_id = Official Seller ID คือสินค้าของ Admin
+     * น้ำหนักสำหรับแบ่งค่าส่งต่อร้าน = ค่าส่งตามตั้งค่าสินค้าของแต่ละร้าน (สินค้าดิจิทัล = 0)
+     * ถ้าคำนวณไม่ได้หรือเป็น 0 ทั้งหมด → ใช้ยอดขายของสินค้าที่ต้องส่ง
      *
-     * @param  \Illuminate\Support\Collection  $items
+     * @param  Collection<int, Collection<int, array>>  $groups
+     * @return array<int, float>
      */
-    protected function processAdminShopItems(Order $order, $items): array
+    protected function shippingWeights(Collection $groups): array
     {
-        // คำนวณยอดรวม
-        $grossAmount = $items->sum('total');
-        $vatAmount = $this->calculateVat($items);
-        $mlmCommission = $this->calculateMlmCommissionFromItems($items);
+        $byFee = [];
+        $byGross = [];
+        $shipping = new ShippingService;
 
-        // Admin Shop ไม่มี Platform Fee (ขายเอง)
-        // ยอดสุทธิ = ยอดรวม - VAT - MLM Commission
-        $netAmount = $grossAmount - $vatAmount - $mlmCommission;
+        foreach ($groups as $sellerId => $rows) {
+            $fee = 0.0;
+            $gross = 0.0;
 
-        // เก็บ VAT เข้า Platform Wallet
-        if ($vatAmount > 0) {
-            $this->revenueService->collectVat(
-                $vatAmount,
-                'Order',
-                $order->id,
-                [
-                    'order_number' => $order->order_number,
-                    'source' => 'admin_shop',
-                ]
-            );
-        }
+            foreach ($rows as $row) {
+                $product = $row['item']->product;
+                if ($product instanceof Product && $product->is_virtual) {
+                    continue;
+                }
 
-        // เก็บ MLM Commission เข้า Pool
-        if ($mlmCommission > 0) {
-            $this->revenueService->collectMlmPool(
-                $mlmCommission,
-                'Order',
-                $order->id,
-                [
-                    'order_number' => $order->order_number,
-                    'source' => 'admin_shop',
-                ]
-            );
-        }
+                $gross += (float) $row['breakdown']->gross;
 
-        // เก็บรายได้สุทธิเข้า Admin Shop Wallet
-        if ($netAmount > 0) {
-            $this->revenueService->recordIncome(
-                'admin_shop',
-                $netAmount,
-                'admin_shop_sale',
-                "รายได้ขายสินค้า Order #{$order->order_number}",
-                'Order',
-                $order->id,
-                null,
-                [
-                    'items_count' => $items->count(),
-                    'gross_amount' => $grossAmount,
-                    'vat_amount' => $vatAmount,
-                    'mlm_commission' => $mlmCommission,
-                    'items' => $items->map(fn ($item) => [
-                        'product_id' => $item->product_id,
-                        'product_name' => $item->product_name,
-                        'quantity' => $item->quantity,
-                        'total' => $item->total,
-                    ])->toArray(),
-                ]
-            );
-        }
-
-        Log::info('Admin shop items processed', [
-            'order_id' => $order->id,
-            'gross_amount' => $grossAmount,
-            'net_amount' => $netAmount,
-        ]);
-
-        return [
-            'type' => 'admin_shop',
-            'gross_amount' => $grossAmount,
-            'vat_amount' => $vatAmount,
-            'mlm_commission' => $mlmCommission,
-            'net_amount' => $netAmount,
-            'items_count' => $items->count(),
-        ];
-    }
-
-    /**
-     * ประมวลผลบริการของ Admin (ค่าสมัคร, ค่าบริการ, ค่าอัพเกรด, etc.)
-     *
-     * @param  \Illuminate\Support\Collection  $items
-     */
-    protected function processAdminServices(Order $order, $items): array
-    {
-        // คำนวณยอดรวม
-        $grossAmount = $items->sum('total');
-        $vatAmount = $this->calculateVat($items);
-
-        // บริการของ Admin ไม่มี MLM Commission (ยกเว้นกำหนดเป็นพิเศษ)
-        $mlmCommission = 0;
-
-        // ตรวจสอบว่ามี PV หรือไม่ (บางบริการอาจให้ PV)
-        foreach ($items as $item) {
-            if (isset($item->pv_value) && $item->pv_value > 0) {
-                $mlmCommission += $this->calculateMlmCommissionFromItems(collect([$item]));
+                if ($product instanceof Product) {
+                    try {
+                        $fee += (float) $shipping->calculateForProduct($product, max(1, (int) $row['item']->quantity));
+                    } catch (\Throwable $e) {
+                        Log::debug('Order distribution: shipping weight fallback', ['product_id' => $product->id]);
+                    }
+                }
             }
+
+            $byFee[(int) $sellerId] = round($fee, 2);
+            $byGross[(int) $sellerId] = round($gross, 2);
         }
 
-        // ยอดสุทธิ = ยอดรวม - VAT - MLM Commission
-        $netAmount = $grossAmount - $vatAmount - $mlmCommission;
+        return array_sum($byFee) > 0 ? $byFee : $byGross;
+    }
 
-        // เก็บ VAT เข้า Platform Wallet
-        if ($vatAmount > 0) {
-            $this->revenueService->collectVat(
-                $vatAmount,
-                'Order',
-                $order->id,
-                [
-                    'order_number' => $order->order_number,
-                    'source' => 'admin_services',
-                ]
-            );
+    /**
+     * แบ่งค่าส่งของออเดอร์ตามน้ำหนัก (ปัดเป็นสตางค์ ผลรวมเท่าค่าส่งพอดี — เศษไปอยู่ร้านสุดท้ายที่มีน้ำหนัก)
+     *
+     * ฟังก์ชันบริสุทธิ์ (ไม่แตะฐานข้อมูล) — ทดสอบได้โดยตรง
+     *
+     * @param  array<int, float>  $weights  seller_id => น้ำหนัก
+     * @return array<int, float> seller_id => ค่าส่งที่ได้
+     */
+    public static function allocateShippingShares(float $shippingFee, array $weights): array
+    {
+        $shares = array_fill_keys(array_keys($weights), 0.0);
+        $shippingFee = round(max(0.0, $shippingFee), 2);
+
+        if ($shippingFee <= 0 || $weights === []) {
+            return $shares;
         }
 
-        // เก็บ MLM Commission เข้า Pool (ถ้ามี)
-        if ($mlmCommission > 0) {
-            $this->revenueService->collectMlmPool(
-                $mlmCommission,
-                'Order',
-                $order->id,
-                [
-                    'order_number' => $order->order_number,
-                    'source' => 'admin_services',
-                ]
-            );
+        $positive = array_filter($weights, fn ($w) => is_numeric($w) && (float) $w > 0);
+        if ($positive === []) {
+            // ไม่มีน้ำหนักเลย (เช่น ทุกร้านเป็นสินค้าดิจิทัล) → แบ่งเท่าๆ กัน
+            $positive = array_fill_keys(array_keys($weights), 1.0);
         }
 
-        // เก็บรายได้สุทธิเข้า Admin Services Wallet
-        if ($netAmount > 0) {
-            $this->revenueService->recordIncome(
-                'admin_services',
-                $netAmount,
-                'admin_service_fee',
-                "รายได้บริการ Order #{$order->order_number}",
-                'Order',
-                $order->id,
-                null,
-                [
-                    'items_count' => $items->count(),
-                    'gross_amount' => $grossAmount,
-                    'vat_amount' => $vatAmount,
-                    'mlm_commission' => $mlmCommission,
-                    'service_types' => $items->pluck('service_type')->unique()->toArray(),
-                    'items' => $items->map(fn ($item) => [
-                        'service_type' => $item->service_type ?? 'general',
-                        'service_name' => $item->product_name,
-                        'quantity' => $item->quantity,
-                        'total' => $item->total,
-                    ])->toArray(),
-                ]
-            );
+        $totalWeight = array_sum($positive);
+        $remaining = $shippingFee;
+        $keys = array_keys($positive);
+        $lastKey = end($keys);
+
+        foreach ($positive as $sellerId => $weight) {
+            if ($sellerId === $lastKey) {
+                $shares[$sellerId] = round($remaining, 2);
+                break;
+            }
+
+            $part = round($shippingFee * (float) $weight / $totalWeight, 2);
+            $part = min($part, $remaining);
+            $shares[$sellerId] = $part;
+            $remaining = round($remaining - $part, 2);
         }
 
-        Log::info('Admin services processed', [
-            'order_id' => $order->id,
-            'gross_amount' => $grossAmount,
-            'net_amount' => $netAmount,
-        ]);
+        return $shares;
+    }
+
+    /**
+     * แยกส่วนลดของออเดอร์ว่าใครออกเงิน และผลต่อการแบ่งเงิน
+     *
+     * - คูปองของร้าน (store): ร้านรับภาระทั้งหมด
+     *     · ส่วนลดสินค้าถูกหักใน order_items.total แล้ว (item_discount_absorbed) — ส่วนที่ยังไม่หัก → seller_deduction
+     *     · ส่วนลดค่าส่ง → ร้านได้ค่าส่งเฉพาะที่ผู้ซื้อจ่ายจริง (seller_shipping_base = ค่าส่ง − ส่วนลดค่าส่ง)
+     *     · แพลตฟอร์มไม่ลงรายจ่าย (platform_expense = 0)
+     * - คูปองของแพลตฟอร์ม (platform): ร้านได้ราคาเต็ม + ค่าส่งเต็ม แพลตฟอร์มลงรายจ่ายเท่าส่วนลดที่ร้านไม่ได้รับภาระ
+     *
+     * ฟังก์ชันบริสุทธิ์ (ไม่แตะฐานข้อมูล) — ทดสอบได้โดยตรง · ผลรวมเงินทุกฝ่ายเท่ายอดที่ผู้ซื้อจ่ายเสมอ
+     *
+     * @param  float|null  $productDiscount  orders.product_discount (null = ออเดอร์เก่า → คำนวณย้อน)
+     * @param  float|null  $shippingDiscount  orders.shipping_discount (null = ออเดอร์เก่า → คำนวณย้อน)
+     * @param  string  $fundedBy  store | platform
+     * @return array{funded_by: string, product_discount: float, shipping_discount: float, item_discount_absorbed: float, seller_shipping_base: float, seller_deduction: float, platform_expense: float}
+     */
+    public static function splitDiscount(
+        float $discountAmount,
+        float $shippingFee,
+        float $itemDiscountAbsorbed,
+        ?float $productDiscount,
+        ?float $shippingDiscount,
+        string $fundedBy
+    ): array {
+        $discountAmount = round(max(0.0, $discountAmount), 2);
+        $shippingFee = round(max(0.0, $shippingFee), 2);
+        $absorbed = round(max(0.0, $itemDiscountAbsorbed), 2);
+
+        if ($shippingDiscount !== null) {
+            $shipping = round(min(max(0.0, $shippingDiscount), $shippingFee), 2);
+        } else {
+            // ออเดอร์เก่า: ส่วนที่เกินส่วนลดสินค้า = ส่วนลดค่าส่ง (ไม่เกินค่าส่ง)
+            $knownProduct = $productDiscount !== null ? max(0.0, $productDiscount) : $absorbed;
+            $shipping = round(min(max(0.0, $discountAmount - $knownProduct), $shippingFee), 2);
+        }
+
+        $product = $productDiscount !== null
+            ? round(max(0.0, $productDiscount), 2)
+            : round(max(0.0, $discountAmount - $shipping), 2);
+
+        // ส่วนลดสินค้าที่ยังไม่ถูกหักใน order_items.total
+        $unabsorbed = round(max(0.0, $product - $absorbed), 2);
+        $fundedBy = $fundedBy === 'store' ? 'store' : 'platform';
+
+        if ($fundedBy === 'store') {
+            return [
+                'funded_by' => 'store',
+                'product_discount' => $product,
+                'shipping_discount' => $shipping,
+                'item_discount_absorbed' => $absorbed,
+                'seller_shipping_base' => round($shippingFee - $shipping, 2),
+                'seller_deduction' => $unabsorbed,
+                'platform_expense' => 0.0,
+            ];
+        }
 
         return [
-            'type' => 'admin_services',
-            'gross_amount' => $grossAmount,
-            'vat_amount' => $vatAmount,
-            'mlm_commission' => $mlmCommission,
-            'net_amount' => $netAmount,
-            'items_count' => $items->count(),
-            'service_types' => $items->pluck('service_type')->unique()->toArray(),
+            'funded_by' => 'platform',
+            'product_discount' => $product,
+            'shipping_discount' => $shipping,
+            'item_discount_absorbed' => $absorbed,
+            'seller_shipping_base' => $shippingFee,
+            'seller_deduction' => 0.0,
+            'platform_expense' => round($unabsorbed + $shipping, 2),
         ];
     }
 
     /**
-     * ตรวจสอบว่า Order ถูก distribute แล้วหรือยัง
+     * ผู้ออกเงินส่วนลดของออเดอร์: store | platform
      *
-     * 🐛 Fix 2026-07-24: ออเดอร์ที่มีแต่สินค้า Official Shop ไม่สร้าง EarningsLedger
-     * (รายได้เข้า PlatformTransaction แทน) → เช็คแค่ ledger ทำให้คืน false ตลอด
-     * → batch ทุก 5 นาทีเก็บ VAT/MLM Pool/รายได้ admin ซ้ำเรื่อยๆ
-     * ต้องเช็ค PlatformTransaction ของออเดอร์ด้วย
+     * orders.discount_funded_by (ออเดอร์ใหม่) → ไม่มีให้ดูคูปองที่ใช้ (coupons.store_id ไม่ว่าง = คูปองร้าน)
+     * → ไม่พบคูปอง = ส่วนลดเก่าของแพลตฟอร์ม (โค้ดส่วนลดระบบเดิม)
+     */
+    protected function discountFundedBy(Order $order): string
+    {
+        $stored = $order->getAttribute('discount_funded_by');
+        if (in_array($stored, ['store', 'platform'], true)) {
+            return $stored;
+        }
+
+        try {
+            $storeIds = DB::table('coupon_usages')
+                ->join('coupons', 'coupons.id', '=', 'coupon_usages.coupon_id')
+                ->where('coupon_usages.order_id', $order->id)
+                ->pluck('coupons.store_id');
+
+            if ($storeIds->isNotEmpty()) {
+                return $storeIds->contains(fn ($id) => $id !== null) ? 'store' : 'platform';
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Order distribution: resolve coupon owner failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+
+        return 'platform';
+    }
+
+    /**
+     * ออเดอร์นี้แบ่งเงินแล้วหรือยัง
+     *
+     * มี EarningsLedger ของออเดอร์ หรือมีรายการเงินเข้ากระเป๋าแพลตฟอร์มจากการแบ่งเงิน
+     * (ออเดอร์ร้านทางการล้วนไม่มี ledger — ดูจาก admin_shop_sale)
      */
     public function isOrderDistributed(Order $order): bool
     {
-        // ออเดอร์ที่มี seller → มี EarningsLedger
-        if (EarningsLedger::where('source_type', 'Order')
+        if (EarningsLedger::withTrashed()
+            ->where('source_type', 'Order')
             ->where('source_id', $order->id)
             ->exists()) {
             return true;
         }
 
-        // ออเดอร์ Official-Shop-only → รายได้ถูกบันทึกเป็น PlatformTransaction
-        return \App\Models\PlatformTransaction::where('source_type', 'Order')
+        return PlatformTransaction::where('source_type', 'Order')
             ->where('source_id', $order->id)
+            ->where('type', PlatformTransaction::TYPE_INCOME)
+            ->whereIn('sub_type', self::DISTRIBUTION_SUB_TYPES)
             ->exists();
     }
 
     /**
-     * ดึงรายการ Order ที่รอ distribute
+     * ออเดอร์ที่ชำระแล้วแต่ยังไม่ถูกแบ่งเงิน
      *
-     * @return \Illuminate\Support\Collection
+     * @param  bool  $respectCutoff  true = ข้ามออเดอร์ที่ชำระก่อน money.distribution_backfill_from
      */
-    public function getPendingOrders(int $limit = 100)
+    public function pendingOrdersQuery(bool $respectCutoff = true)
     {
-        return Order::where('payment_status', 'paid')
-            ->whereDoesntHave('earningsLedger')
-            // 🐛 Fix 2026-07-24: กันหยิบออเดอร์ Official-Shop-only ที่ distribute แล้วมาซ้ำ
-            ->whereNotExists(function ($query) {
-                $query->selectRaw('1')
+        $query = Order::query()
+            ->where('payment_status', 'paid')
+            ->whereNotIn('status', ['cancelled', 'refunded'])
+            ->whereNotExists(function ($q) {
+                $q->selectRaw('1')
+                    ->from('earnings_ledger')
+                    ->whereColumn('earnings_ledger.source_id', 'orders.id')
+                    ->where('earnings_ledger.source_type', 'Order');
+            })
+            ->whereNotExists(function ($q) {
+                $q->selectRaw('1')
                     ->from('platform_transactions')
                     ->whereColumn('platform_transactions.source_id', 'orders.id')
-                    ->where('platform_transactions.source_type', 'Order');
-            })
-            ->latest('paid_at')
-            ->limit($limit)
-            ->get();
+                    ->where('platform_transactions.source_type', 'Order')
+                    ->where('platform_transactions.type', PlatformTransaction::TYPE_INCOME)
+                    ->whereIn('platform_transactions.sub_type', self::DISTRIBUTION_SUB_TYPES);
+            });
+
+        $cutoff = $respectCutoff ? $this->backfillCutoff() : null;
+        if ($cutoff !== null) {
+            $query->where(function ($q) use ($cutoff) {
+                $q->where('paid_at', '>=', $cutoff)
+                    ->orWhere(function ($q2) use ($cutoff) {
+                        $q2->whereNull('paid_at')->where('created_at', '>=', $cutoff);
+                    });
+            });
+        }
+
+        return $query->orderBy('id');
     }
 
     /**
-     * Batch process pending orders
+     * @return Collection<int, Order>
      */
-    public function processPendingOrders(int $limit = 100): array
+    public function getPendingOrders(int $limit = 100, bool $respectCutoff = true)
     {
-        $orders = $this->getPendingOrders($limit);
-        $results = [
-            'processed' => 0,
-            'failed' => 0,
-            'errors' => [],
-        ];
+        return $this->pendingOrdersQuery($respectCutoff)->limit(max(1, $limit))->get();
+    }
 
-        foreach ($orders as $order) {
+    /**
+     * แบ่งเงินออเดอร์ที่ค้าง (cron)
+     *
+     * @return array{processed: int, skipped: int, failed: int, errors: array<int, array{order_id: int, error: string}>}
+     */
+    public function processPendingOrders(int $limit = 100, bool $respectCutoff = true): array
+    {
+        $results = ['processed' => 0, 'skipped' => 0, 'failed' => 0, 'errors' => []];
+
+        foreach ($this->getPendingOrders($limit, $respectCutoff) as $order) {
             try {
-                $this->processOrderDistribution($order);
-                $results['processed']++;
-            } catch (\Exception $e) {
+                $outcome = $this->processOrderDistribution($order);
+                if (! empty($outcome['skipped'])) {
+                    $results['skipped']++;
+                } else {
+                    $results['processed']++;
+                }
+            } catch (\Throwable $e) {
                 $results['failed']++;
-                $results['errors'][] = [
-                    'order_id' => $order->id,
-                    'error' => $e->getMessage(),
-                ];
+                $results['errors'][] = ['order_id' => (int) $order->id, 'error' => $e->getMessage()];
 
                 Log::error('Order distribution failed', [
                     'order_id' => $order->id,
@@ -745,16 +810,71 @@ class OrderDistributionService
     }
 
     /**
-     * ตรวจสอบว่า seller_id เป็นของ Official Shop หรือไม่
-     *
-     * @param  int|null  $sellerId
+     * เวลาเริ่มต้นของการแบ่งเงินย้อนหลัง (null = ไม่จำกัด)
      */
-    protected function isOfficialShopSeller($sellerId): bool
+    public function backfillCutoff(): ?Carbon
     {
-        if (! $sellerId) {
-            return false;
-        }
+        try {
+            $value = Setting::get(self::SETTING_BACKFILL_FROM);
 
-        return $sellerId === Product::getOfficialSellerId();
+            return $value ? Carbon::parse((string) $value) : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * แถวสรุปของ 1 รายการสินค้า (เก็บใน breakdown ของ ledger)
+     */
+    protected function itemBreakdownRow(array $row): array
+    {
+        /** @var PriceBreakdown $b */
+        $b = $row['breakdown'];
+        $item = $row['item'];
+
+        return [
+            'order_item_id' => $item->id,
+            'product_id' => $item->product_id,
+            'product_name' => $item->product_name,
+            'quantity' => (int) $item->quantity,
+            'unit_price' => (float) $item->unit_price,
+            'total' => $b->gross,
+            'gp_rate' => $b->gp_rate,
+            'gp_source' => $row['gp_source'],
+            'snapshot_gp_rate' => $row['snapshot_gp_rate'],
+            'gp_amount' => $b->gp_amount,
+            'vat_amount' => $b->vat_amount,
+            'pv_per_unit' => $row['pv_per_unit'],
+            'pv_total' => $b->pv_total,
+            'referral_pool_amount' => $b->referral_pool_amount,
+            'seller_net' => $b->seller_net,
+        ];
+    }
+
+    protected function skippedResult(Order $order, string $reason): array
+    {
+        return [
+            'order_id' => (int) $order->id,
+            'total_amount' => (float) $order->total_amount,
+            'distributions' => [],
+            'platform_collections' => [],
+            'seller_earnings' => [],
+            'mlm_commissions' => [],
+            'skipped' => true,
+            'reason' => $reason,
+        ];
+    }
+
+    protected function officialSellerId(): ?int
+    {
+        try {
+            $id = Product::getOfficialSellerId();
+
+            return $id > 0 ? (int) $id : null;
+        } catch (\Throwable $e) {
+            Log::warning('Order distribution: resolve official seller failed', ['error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 }

@@ -183,6 +183,14 @@ class ExpoPushService
 
         $results = $this->send($tokens, $title, $body, $data);
 
+        // 🔔 (2026-09-25) จดไว้ว่าเพิ่งส่งหัวข้อ+ข้อความนี้ให้ผู้ใช้นี้แล้ว — ให้สะพาน
+        //    NotificationService → push (App\Jobs\SendNotificationPush) ไม่ยิงซ้ำ
+        //    เมื่อโค้ดต้นทางทั้งสร้างแจ้งเตือนในระบบและยิง push เองในเหตุการณ์เดียวกัน
+        //    (จดอย่างเดียว ไม่เปลี่ยนพฤติกรรมการส่งของผู้เรียกเดิม)
+        if ($results['success'] > 0) {
+            self::rememberPushed($userId, $title, $body);
+        }
+
         // Log ผลลัพธ์
         if ($results['success'] > 0) {
             Log::info('ExpoPushService: Push sent successfully', [
@@ -198,6 +206,35 @@ class ExpoPushService
         }
 
         return $results;
+    }
+
+    /** อายุของบันทึก "เพิ่งส่งไป" (วินาที) */
+    private const RECENT_PUSH_TTL = 120;
+
+    /**
+     * ผู้ใช้นี้เพิ่งได้รับ push หัวข้อ+ข้อความนี้ (ผ่าน sendToUser) ภายใน 2 นาทีหรือไม่
+     */
+    public static function wasRecentlyPushed(int $userId, string $title, string $body): bool
+    {
+        try {
+            return \Illuminate\Support\Facades\Cache::has(self::recentPushKey($userId, $title, $body));
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private static function rememberPushed(int $userId, string $title, string $body): void
+    {
+        try {
+            \Illuminate\Support\Facades\Cache::put(self::recentPushKey($userId, $title, $body), true, self::RECENT_PUSH_TTL);
+        } catch (\Throwable $e) {
+            // cache ใช้ไม่ได้ → อย่างมากเด้งซ้ำ 1 ครั้ง ห้ามทำให้การส่ง push ล้ม
+        }
+    }
+
+    private static function recentPushKey(int $userId, string $title, string $body): string
+    {
+        return 'expo_push_recent:'.$userId.':'.sha1(trim($title)."\n".trim($body));
     }
 
     /**

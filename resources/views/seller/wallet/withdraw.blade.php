@@ -112,6 +112,16 @@
                               placeholder="หมายเหตุเพิ่มเติม (ไม่เกิน 500 ตัวอักษร)">{{ old('user_note') }}</textarea>
                 </div>
 
+                @if(!empty($withdrawalSettings['requires_pin']))
+                    {{-- PIN กระเป๋าเงิน (บังคับเมื่อกระเป๋าตั้ง PIN ไว้ — ตรวจจริงใน WithdrawalService) --}}
+                    <div>
+                        <label style="display:block; font-size:13px; font-weight:700; color:var(--ink); margin-bottom:7px;">PIN กระเป๋าเงิน</label>
+                        <input type="password" name="pin" inputmode="numeric" autocomplete="off" maxlength="20" required
+                               style="width:100%; padding:12px 14px; border-radius:12px; background:var(--surf); box-shadow:var(--inset-sm); border:1px solid transparent; color:var(--ink); font-size:14px; letter-spacing:4px;"
+                               placeholder="กรอก PIN เพื่อยืนยันการถอน">
+                    </div>
+                @endif
+
                 <div class="tp-card" style="padding:16px 18px; box-shadow:var(--inset-sm);">
                     <h4 style="font-weight:800; color:var(--ink); margin:0 0 8px; font-size:14px;">📋 เงื่อนไขการถอนเงิน</h4>
                     <ul style="margin:0; padding-left:16px; color:var(--ink2); font-size:13px; display:flex; flex-direction:column; gap:4px;">

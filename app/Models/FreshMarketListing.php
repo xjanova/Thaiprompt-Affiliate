@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -101,14 +102,33 @@ class FreshMarketListing extends Model
     ];
 
     /**
-     * สร้าง slug อัตโนมัติ
+     * สร้าง slug อัตโนมัติ + จัดสถานะตามสต็อก
      */
     protected static function booted(): void
     {
         static::creating(function (self $listing) {
             if (empty($listing->slug)) {
                 $base = Str::slug($listing->title) ?: Str::random(8);
-                $listing->slug = $base . '-' . Str::random(5);
+                $listing->slug = $base.'-'.Str::random(5);
+            }
+        });
+
+        // ทุกทางที่แก้จำนวนสต็อก (เว็บ, API, LINE, แอดมิน) ผ่านจุดนี้:
+        // เติมสต็อกแล้ว → sold_out กลับเป็น active / สต็อกหมด → sold_out
+        static::saving(function (self $listing) {
+            if (! $listing->isDirty('quantity_available')) {
+                return;
+            }
+
+            $qty = (int) $listing->quantity_available;
+
+            if ($qty > 0 && $listing->status === 'sold_out') {
+                $listing->status = 'active';
+                $listing->is_available = true;
+            } elseif ($qty <= 0 && $listing->status === 'active') {
+                $listing->quantity_available = 0;
+                $listing->status = 'sold_out';
+                $listing->is_available = false;
             }
         });
     }
@@ -158,17 +178,46 @@ class FreshMarketListing extends Model
     }
 
     /**
+     * Scope: สินค้าที่ผู้ซื้อเห็นได้ (หน้าร้าน, ค้นหา, API, LINE)
+     *
+     * - สินค้าเปิดขาย (active + is_available)
+     * - ร้านเปิดอยู่ ไม่ถูกระงับ
+     * - ถ้าปิดอนุมัติร้านอัตโนมัติ (Setting fresh_market.auto_approve_sellers = false)
+     *   ต้องเป็นร้านที่แอดมินยืนยันแล้วเท่านั้น
+     */
+    public function scopeVisibleToBuyers($query)
+    {
+        $requireVerified = ! static::autoApproveSellers();
+
+        return $query->active()->whereHas('seller', function ($seller) use ($requireVerified) {
+            $seller->where('is_active', true)->where('is_suspended', false);
+
+            if ($requireVerified) {
+                $seller->where('is_verified', true);
+            }
+        });
+    }
+
+    /**
+     * อนุมัติร้านอัตโนมัติหรือไม่ (ค่าเริ่มต้น: เปิด)
+     */
+    public static function autoApproveSellers(): bool
+    {
+        return (bool) Setting::get('fresh_market.auto_approve_sellers', true);
+    }
+
+    /**
      * Scope: ค้นหาสินค้าใกล้พิกัด (Haversine formula)
      */
     public function scopeNearby($query, float $lat, float $lng, float $radiusKm = 10)
     {
-        return $query->selectRaw("fresh_market_listings.*, (
+        return $query->selectRaw('fresh_market_listings.*, (
             6371 * acos(
                 cos(radians(?)) * cos(radians(latitude))
                 * cos(radians(longitude) - radians(?))
                 + sin(radians(?)) * sin(radians(latitude))
             )
-        ) AS distance_km", [$lat, $lng, $lat])
+        ) AS distance_km', [$lat, $lng, $lat])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->having('distance_km', '<=', $radiusKm)
@@ -187,11 +236,18 @@ class FreshMarketListing extends Model
     }
 
     /**
-     * Scope: กรองตามหมวดหมู่
+     * Scope: กรองตามหมวดหมู่ (รับ id หรือ slug, รวมหมวดหมู่ลูก)
+     * ไม่พบหมวดหมู่ = ผลลัพธ์ว่าง (ไม่ใช่ TypeError แบบเดิม)
      */
-    public function scopeInCategory($query, int $categoryId)
+    public function scopeInCategory($query, int|string $category)
     {
-        return $query->where('category_id', $categoryId);
+        $ids = FreshMarketCategory::resolveIds($category);
+
+        if (empty($ids)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('category_id', $ids);
     }
 
     /**
@@ -223,6 +279,32 @@ class FreshMarketListing extends Model
         $images = $this->images;
 
         return $images[0] ?? null;
+    }
+
+    /**
+     * ชื่อเดิมที่หน้าเว็บเก่าเรียก (image_url) → รูปหลัก
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->primary_image;
+    }
+
+    /**
+     * ชื่อเดิมที่หน้าแอดมินเก่าเรียก (original_price) → ราคาก่อนลด
+     */
+    public function getOriginalPriceAttribute(): ?float
+    {
+        return $this->compare_at_price !== null ? (float) $this->compare_at_price : null;
+    }
+
+    /**
+     * ชื่อเดิมที่หน้าเว็บเก่าเรียก (cashback_percent) → เปอร์เซ็นต์แคชแบ็ค (0 = ไม่มี → null ซ่อนป้าย)
+     */
+    public function getCashbackPercentAttribute(): ?float
+    {
+        $percent = (float) $this->cashback_percentage;
+
+        return $percent > 0 ? $percent : null;
     }
 
     /**
@@ -258,18 +340,86 @@ class FreshMarketListing extends Model
     }
 
     /**
-     * ลดจำนวนสินค้า
+     * ร้านของสินค้านี้เปิดให้ผู้ซื้อเห็นอยู่หรือไม่ (เปิด, ไม่ถูกระงับ, ยืนยันแล้วถ้าบังคับ)
+     */
+    public function sellerIsVisible(): bool
+    {
+        $seller = $this->seller;
+
+        if (! $seller || ! $seller->is_active || $seller->is_suspended) {
+            return false;
+        }
+
+        return static::autoApproveSellers() || (bool) $seller->is_verified;
+    }
+
+    /**
+     * จองสต็อกแบบ atomic (ต้องเรียกใน transaction)
+     *
+     * ลดจำนวนเฉพาะเมื่อยังมีพอ (conditional update) — สองคนสั่งชิ้นสุดท้ายพร้อมกัน
+     * จะสำเร็จแค่คนเดียว ไม่มีทางติดลบ
+     *
+     * @return bool true = จองสำเร็จ
+     */
+    public static function reserveStock(int $listingId, int $quantity): bool
+    {
+        if ($quantity < 1) {
+            return false;
+        }
+
+        $affected = static::whereKey($listingId)
+            ->where('quantity_available', '>=', $quantity)
+            ->update([
+                'quantity_available' => DB::raw('quantity_available - '.(int) $quantity),
+                'order_count' => DB::raw('order_count + 1'),
+                'updated_at' => now(),
+            ]);
+
+        if ($affected !== 1) {
+            return false;
+        }
+
+        // ของหมดพอดี → ปิดการขายอัตโนมัติ
+        static::whereKey($listingId)
+            ->where('quantity_available', '<=', 0)
+            ->where('status', 'active')
+            ->update(['status' => 'sold_out', 'is_available' => false]);
+
+        return true;
+    }
+
+    /**
+     * คืนสต็อก (ยกเลิกออเดอร์ก่อนส่งมอบ) — sold_out ที่กลับมามีของจะเปิดขายอีกครั้ง
+     */
+    public static function releaseStock(int $listingId, int $quantity): void
+    {
+        if ($quantity < 1) {
+            return;
+        }
+
+        static::withTrashed()->whereKey($listingId)->update([
+            'quantity_available' => DB::raw('quantity_available + '.(int) $quantity),
+            'order_count' => DB::raw('CASE WHEN order_count > 0 THEN order_count - 1 ELSE 0 END'),
+            'updated_at' => now(),
+        ]);
+
+        static::whereKey($listingId)
+            ->where('status', 'sold_out')
+            ->where('quantity_available', '>', 0)
+            ->update(['status' => 'active', 'is_available' => true]);
+    }
+
+    /**
+     * ลดจำนวนสินค้า (คงไว้เพื่อความเข้ากันได้ — ใช้ reserveStock แทน)
+     *
+     * @deprecated ใช้ FreshMarketListing::reserveStock() ภายใน transaction
      */
     public function decrementStock(int $quantity = 1): void
     {
-        $this->decrement('quantity_available', $quantity);
-        $this->increment('order_count');
-
-        // refresh เพื่อให้ได้ค่าล่าสุดหลัง decrement
-        $this->refresh();
-
-        if ($this->quantity_available <= 0) {
-            $this->update(['status' => 'sold_out', 'is_available' => false]);
+        if (! static::reserveStock((int) $this->id, $quantity)) {
+            throw new \App\Exceptions\FreshMarketException('สินค้าไม่เพียงพอ', 'OUT_OF_STOCK', 409);
         }
+
+        $this->refresh();
     }
 }

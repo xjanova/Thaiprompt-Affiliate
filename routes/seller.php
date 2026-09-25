@@ -110,9 +110,13 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
         Route::get('/api/insights', [AnalyticsController::class, 'apiInsights'])->name('api.insights');
 
         // System Monitoring (Real-time)
-        Route::get('/system-monitoring', [SystemMonitoringController::class, 'index'])->name('system-monitoring');
-        Route::get('/system-monitoring/api-metrics', [SystemMonitoringController::class, 'apiMetrics'])->name('system-monitoring.api-metrics');
-        Route::get('/system-monitoring/api-info', [SystemMonitoringController::class, 'apiApplicationInfo'])->name('system-monitoring.api-info');
+        // 🔒 (2026-09-25) SELLER-24: ข้อมูลเซิร์ฟเวอร์ทั้งระบบ (debug mode, เวอร์ชัน, driver) + ทุก poll
+        //    เขียน history → เปิดให้เฉพาะแอดมิน ผู้ขายทั่วไปถูกเด้งกลับแดชบอร์ดร้าน (เมนูผู้ขายเอาออกแล้ว)
+        Route::middleware('role:admin,super_admin')->group(function () {
+            Route::get('/system-monitoring', [SystemMonitoringController::class, 'index'])->name('system-monitoring');
+            Route::get('/system-monitoring/api-metrics', [SystemMonitoringController::class, 'apiMetrics'])->name('system-monitoring.api-metrics');
+            Route::get('/system-monitoring/api-info', [SystemMonitoringController::class, 'apiApplicationInfo'])->name('system-monitoring.api-info');
+        });
     });
 
     // ========================================
@@ -254,6 +258,9 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
         Route::get('/{id}', [OrderManagementController::class, 'show'])->name('show');
         Route::put('/{orderId}/items/{itemId}/status', [OrderManagementController::class, 'updateItemStatus'])->name('update-item-status');
         Route::post('/{orderId}/tracking', [OrderManagementController::class, 'addTracking'])->name('add-tracking');
+        // 🛒 (2026-09-25) ปุ่มร้าน: confirm | request_rider | ship | deliver | cancel (SellerOrderService เดียวกับแอป)
+        Route::post('/{orderId}/action', [OrderManagementController::class, 'action'])
+            ->whereNumber('orderId')->middleware('throttle:30,1,web-seller-order-action')->name('action');
         Route::get('/{id}/print', [OrderManagementController::class, 'print'])->name('print');
         // Order Tracking & Chat (V2)
         Route::get('/{orderId}/tracking-manage', [OrderManagementController::class, 'tracking'])->name('tracking');

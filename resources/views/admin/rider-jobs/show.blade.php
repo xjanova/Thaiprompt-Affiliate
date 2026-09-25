@@ -236,7 +236,7 @@
                     <div class="flex items-center gap-4 mb-4">
                         <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
                             @if($job->rider->profile_image)
-                                <img src="{{ asset('storage/' . $job->rider->profile_image) }}"
+                                <img src="{{ route('admin.riders.document', [$job->rider, 'profile']) }}"
                                      class="w-full h-full rounded-xl object-cover">
                             @else
                                 <i class="fas fa-user text-white text-2xl"></i>

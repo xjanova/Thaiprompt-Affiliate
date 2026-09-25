@@ -33,8 +33,9 @@
                     <div class="space-y-4">
                         @foreach($sellerItems as $item)
                             <div class="flex gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                @if($item->product && $item->product->main_image_url)
-                                    <img src="{{ Storage::url($item->product->main_image_url) }}"
+                                @php($itemImage = \App\Services\Shop\ShopPresenter::imageUrl($item->product_image ?: $item->product?->main_image_url))
+                                @if($itemImage)
+                                    <img src="{{ $itemImage }}"
                                          alt="{{ $item->product_name }}"
                                          class="w-20 h-20 object-cover rounded-lg">
                                 @else
@@ -48,7 +49,7 @@
                                         <p class="text-sm text-gray-500 dark:text-gray-400">SKU: {{ $item->product_sku }}</p>
                                     @endif
                                     <div class="mt-2 flex items-center gap-4">
-                                        <span class="text-sm text-gray-600 dark:text-gray-300">ราคา: ฿{{ number_format($item->price, 2) }}</span>
+                                        <span class="text-sm text-gray-600 dark:text-gray-300">ราคา: ฿{{ number_format((float) $item->unit_price, 2) }}</span>
                                         <span class="text-sm text-gray-600 dark:text-gray-300">จำนวน: {{ $item->quantity }}</span>
                                         <span class="text-sm font-semibold text-gray-800 dark:text-white">รวม: ฿{{ number_format($item->total, 2) }}</span>
                                     </div>
@@ -74,24 +75,6 @@
                                         </span>
                                     </div>
 
-                                    <!-- Update Status Form -->
-                                    @if($item->status !== 'completed' && $item->status !== 'cancelled')
-                                        <form action="{{ route('seller.orders.update-item-status', [$order->id, $item->id]) }}" method="POST" class="mt-3">
-                                            @csrf
-                                            @method('PUT')
-                                            <div class="flex gap-2">
-                                                <select name="status" class="text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
-                                                    <option value="processing" {{ $item->status === 'processing' ? 'selected' : '' }}>กำลังดำเนินการ</option>
-                                                    <option value="shipped" {{ $item->status === 'shipped' ? 'selected' : '' }}>จัดส่งแล้ว</option>
-                                                    <option value="delivered" {{ $item->status === 'delivered' ? 'selected' : '' }}>ส่งสำเร็จ</option>
-                                                    <option value="completed" {{ $item->status === 'completed' ? 'selected' : '' }}>เสร็จสิ้น</option>
-                                                </select>
-                                                <button type="submit" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition">
-                                                    อัพเดตสถานะ
-                                                </button>
-                                            </div>
-                                        </form>
-                                    @endif
                                 </div>
                             </div>
                         @endforeach
@@ -105,7 +88,7 @@
                                 <span class="text-gray-800 dark:text-white font-medium">฿{{ number_format($sellerTotal, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-600 dark:text-gray-400">ค่าคอมมิชชั่น</span>
+                                <span class="text-gray-600 dark:text-gray-400">ค่า GP แพลตฟอร์ม</span>
                                 <span class="text-red-600 font-medium">-฿{{ number_format($sellerCommission, 2) }}</span>
                             </div>
                             <div class="flex justify-between text-lg font-bold border-t pt-2">
@@ -117,34 +100,105 @@
                 </div>
             </div>
 
-            <!-- Tracking Info -->
-            @if($order->status === 'pending' || $order->status === 'processing')
+            <!-- 🛒 (2026-09-25) ปุ่มจัดการออเดอร์ของร้าน (SELLER-03/14) — แสดงเฉพาะปุ่มที่ทำได้จริงตามสถานะ -->
+            @if(! empty($allowedActions))
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">เพิ่มเลขพัสดุ</h2>
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white">จัดการคำสั่งซื้อ</h2>
                     </div>
-                    <div class="p-6">
-                        <form action="{{ route('seller.orders.add-tracking', $order->id) }}" method="POST" class="space-y-4">
-                            @csrf
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">บริษัทขนส่ง</label>
-                                <input type="text" name="shipping_provider" required
+                    <div class="p-6 space-y-4">
+                        <div class="flex flex-wrap gap-2">
+                            @if(in_array('confirm', $allowedActions, true))
+                                <form action="{{ route('seller.orders.action', $order->id) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="action" value="confirm">
+                                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                                        ✅ ยืนยันรับคำสั่งซื้อ
+                                    </button>
+                                </form>
+                            @endif
+                            @if(in_array('request_rider', $allowedActions, true))
+                                <form action="{{ route('seller.orders.action', $order->id) }}" method="POST"
+                                      onsubmit="return confirm('เรียกไรเดอร์มารับสินค้าตอนนี้?');">
+                                    @csrf
+                                    <input type="hidden" name="action" value="request_rider">
+                                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition">
+                                        🛵 เรียกไรเดอร์มารับของ
+                                    </button>
+                                </form>
+                            @endif
+                            @if(in_array('deliver', $allowedActions, true))
+                                <form action="{{ route('seller.orders.action', $order->id) }}" method="POST"
+                                      onsubmit="return confirm('ยืนยันว่าลูกค้าได้รับสินค้าแล้ว?');">
+                                    @csrf
+                                    <input type="hidden" name="action" value="deliver">
+                                    <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition">
+                                        📦 ยืนยันส่งถึงแล้ว
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+
+                        @if(in_array('ship', $allowedActions, true))
+                            <form action="{{ route('seller.orders.action', $order->id) }}" method="POST" class="space-y-4 pt-2">
+                                @csrf
+                                <input type="hidden" name="action" value="ship">
+                                <div>
+                                    <label for="shipping_provider_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">บริษัทขนส่ง</label>
+                                    <select name="shipping_provider_id" id="shipping_provider_id" required
+                                            class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                                        <option value="">— เลือกบริษัทขนส่ง —</option>
+                                        @foreach($shippingProviders as $provider)
+                                            <option value="{{ $provider->id }}" @selected(old('shipping_provider_id') == $provider->id)>{{ $provider->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="tracking_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เลขพัสดุ</label>
+                                    <input type="text" name="tracking_number" id="tracking_number" required maxlength="100"
+                                           value="{{ old('tracking_number') }}"
+                                           class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
+                                           placeholder="กรอกเลขพัสดุ">
+                                </div>
+                                <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
+                                    บันทึกเลขพัสดุและอัพเดตสถานะเป็น "จัดส่งแล้ว"
+                                </button>
+                            </form>
+                        @endif
+
+                        @if(in_array('cancel', $allowedActions, true))
+                            <form action="{{ route('seller.orders.action', $order->id) }}" method="POST" class="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700"
+                                  onsubmit="return confirm('ยืนยันยกเลิกคำสั่งซื้อนี้? ถ้าลูกค้าจ่ายแล้วระบบจะคืนเงินให้ลูกค้าทันที');">
+                                @csrf
+                                <input type="hidden" name="action" value="cancel">
+                                <label for="cancel_reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ยกเลิกคำสั่งซื้อ (เช่น สินค้าหมด)</label>
+                                <input type="text" name="reason" id="cancel_reason" required minlength="3" maxlength="500"
                                        class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
-                                       placeholder="เช่น Kerry, Flash Express, Thailand Post">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เลขพัสดุ</label>
-                                <input type="text" name="tracking_number" required
-                                       class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg"
-                                       placeholder="กรอกเลขพัสดุ">
-                            </div>
-                            <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition">
-                                บันทึกเลขพัสดุและอัพเดตสถานะเป็น "จัดส่งแล้ว"
-                            </button>
-                        </form>
+                                       placeholder="ระบุเหตุผลที่ยกเลิก">
+                                <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition">
+                                    ยกเลิกคำสั่งซื้อ
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
-            @elseif($order->tracking_number)
+            @elseif(! in_array($order->status, ['cancelled', 'refunded', 'completed', 'delivered', 'shipped'], true) && $order->payment_status !== 'paid' && ! $order->isCod())
+                <div class="bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-xl p-4">
+                    คำสั่งซื้อนี้ยังไม่ได้ชำระเงิน — รอลูกค้าชำระก่อนจึงเตรียม/จัดส่งสินค้าได้
+                </div>
+            @endif
+
+            @if($riderSummary)
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">ส่งด้วยไรเดอร์</h2>
+                    <p class="text-gray-700 dark:text-gray-300">สถานะ: {{ $riderSummary['status_label'] ?? '-' }}</p>
+                    @if(! empty($riderSummary['rider']['name']))
+                        <p class="text-gray-700 dark:text-gray-300">ไรเดอร์: {{ $riderSummary['rider']['name'] }}</p>
+                    @endif
+                </div>
+            @endif
+
+            @if($order->tracking_number)
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <h2 class="text-xl font-semibold text-gray-800 dark:text-white">ข้อมูลการจัดส่ง</h2>
@@ -196,24 +250,27 @@
                 </div>
             </div>
 
-            <!-- Shipping Address -->
-            @if($order->shippingAddress)
+            <!-- Shipping Address (จาก snapshot ณ เวลาสั่ง — ที่อยู่ที่ลูกค้าแก้ทีหลังไม่กระทบออเดอร์นี้) -->
+            @php($ship = \App\Services\Shop\ShopPresenter::shipping($order))
+            @if($ship)
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow">
                     <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                         <h2 class="text-xl font-semibold text-gray-800 dark:text-white">ที่อยู่จัดส่ง</h2>
                     </div>
                     <div class="p-6">
-                        <p class="text-gray-800 dark:text-white">{{ $order->shippingAddress->full_name }}</p>
-                        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">{{ $order->shippingAddress->phone }}</p>
+                        <p class="text-gray-800 dark:text-white">{{ $ship['name'] }}</p>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">{{ $ship['phone'] }}</p>
                         <p class="text-gray-600 dark:text-gray-400 text-sm mt-2">
-                            {{ $order->shippingAddress->address_line1 }}<br>
-                            @if($order->shippingAddress->address_line2)
-                                {{ $order->shippingAddress->address_line2 }}<br>
+                            {{ $ship['address'] }}<br>
+                            @if($ship['address_line_2'])
+                                {{ $ship['address_line_2'] }}<br>
                             @endif
-                            {{ $order->shippingAddress->district }}, {{ $order->shippingAddress->city }}<br>
-                            {{ $order->shippingAddress->province }} {{ $order->shippingAddress->postal_code }}<br>
-                            {{ $order->shippingAddress->country }}
+                            {{ trim(($ship['subdistrict'] ?? '').' '.($ship['district'] ?? '')) }}<br>
+                            {{ $ship['province'] }} {{ $ship['postal_code'] }}
                         </p>
+                        @if($ship['notes'])
+                            <p class="text-gray-500 dark:text-gray-400 text-xs mt-2">หมายเหตุ: {{ $ship['notes'] }}</p>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -243,7 +300,7 @@
                         ];
                     @endphp
                     <span class="px-3 py-2 inline-flex text-sm leading-5 font-semibold rounded-full {{ $statusColors[$order->status] ?? 'bg-gray-100 text-gray-800' }}">
-                        {{ $statusNames[$order->status] ?? $order->status }}
+                        {{ $order->status_label }}
                     </span>
 
                     <div class="mt-4 space-y-2 text-sm">
@@ -251,10 +308,23 @@
                             <span class="text-gray-500 dark:text-gray-400">วันที่สั่งซื้อ</span>
                             <span class="text-gray-800 dark:text-white">{{ $order->created_at->format('d/m/Y H:i') }}</span>
                         </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">วิธีชำระเงิน</span>
+                            <span class="text-gray-800 dark:text-white">{{ $paymentMethodLabel }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-500 dark:text-gray-400">การจัดส่ง</span>
+                            <span class="text-gray-800 dark:text-white">{{ $order->isRiderDelivery() ? 'ไรเดอร์' : 'พัสดุ' }}</span>
+                        </div>
                         @if($order->payment_status === 'paid')
                             <div class="flex justify-between">
                                 <span class="text-gray-500 dark:text-gray-400">ชำระเงินแล้ว</span>
                                 <span class="text-green-600 font-medium">✓</span>
+                            </div>
+                        @elseif($order->isCod())
+                            <div class="flex justify-between">
+                                <span class="text-gray-500 dark:text-gray-400">ชำระเงิน</span>
+                                <span class="text-yellow-600 font-medium">เก็บเงินปลายทาง</span>
                             </div>
                         @endif
                     </div>

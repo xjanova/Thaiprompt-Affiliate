@@ -231,8 +231,6 @@ Alpine.data('distanceHelper', () => ({
     },
 }));
 
-// เริ่มต้น Alpine.js (ถ้ายังไม่ได้เริ่ม)
-if (!window.Alpine) {
-    window.Alpine = Alpine;
-    Alpine.start();
-}
+// ⚠️ ไฟล์นี้ต้องโหลด "ก่อน" resources/js/app.js (ดู layouts/taladsod.blade.php)
+// Alpine.data ข้างบนจึงลงทะเบียนเสร็จก่อน app.js เรียก Alpine.start() — ไม่ต้อง start ซ้ำที่นี่
+// (เดิมโหลดทีหลัง → x-data="listingForm()" ถูกประเมินก่อนลงทะเบียน = component พัง)

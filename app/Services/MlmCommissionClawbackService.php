@@ -189,33 +189,23 @@ class MlmCommissionClawbackService
             'debt_id' => null,
         ];
 
-        $user = User::find($userId);
+        $user = User::withTrashed()->find($userId);
         if (! $user) {
             return $result;
         }
 
-        // ตรวจสอบยอดเงินใน Wallet (null safety)
-        $walletBalance = $user->wallet?->balance ?? 0;
+        $amount = round($amount, 2);
 
-        if ($walletBalance >= $amount) {
-            // มีเงินพอ → หักทันที
-            $this->deductFromWallet($user, $amount, $order);
-            $result['deducted_from_wallet'] = $amount;
+        // 🐛 (2026-09-25) เดิม decrement ยอดตรงๆ แล้ว insert wallet_transactions เองด้วย type 'mlm_clawback'
+        //    (ไม่อยู่ใน enum) และไม่มี balance_before (NOT NULL) → QueryException ทุกครั้ง การคืนเงินล้มทั้งก้อน
+        //    ตอนนี้หักผ่าน WalletService (lock + balance_before/after ครบ) เท่าที่มีเงิน ส่วนที่เหลือเป็นหนี้
+        $deducted = $this->deductFromWallet($user, $amount, $order);
+        $result['deducted_from_wallet'] = $deducted;
 
-        } elseif ($walletBalance > 0) {
-            // มีเงินบางส่วน → หักเท่าที่มี + สร้างหนี้ส่วนที่เหลือ
-            $this->deductFromWallet($user, $walletBalance, $order);
-            $result['deducted_from_wallet'] = $walletBalance;
-
-            $debtAmount = $amount - $walletBalance;
+        $debtAmount = round($amount - $deducted, 2);
+        if ($debtAmount > 0) {
             $debt = $this->createClawbackDebt($userId, $debtAmount, $order, $adminId);
             $result['debt_amount'] = $debtAmount;
-            $result['debt_id'] = $debt->id;
-
-        } else {
-            // ไม่มีเงินเลย → สร้างหนี้ทั้งหมด
-            $debt = $this->createClawbackDebt($userId, $amount, $order, $adminId);
-            $result['debt_amount'] = $amount;
             $result['debt_id'] = $debt->id;
         }
 
@@ -223,34 +213,50 @@ class MlmCommissionClawbackService
     }
 
     /**
-     * หักเงินจาก Wallet
+     * หักเงินจาก Wallet เท่าที่มี (ไม่เกิน $amount)
+     *
+     * @return float จำนวนที่หักได้จริง
      */
-    protected function deductFromWallet(User $user, float $amount, Order $order): void
+    protected function deductFromWallet(User $user, float $amount, Order $order): float
     {
-        if (! $user->wallet) {
-            return;
+        $walletService = app(WalletService::class);
+        $wallet = $walletService->getOrCreateWallet($user);
+
+        if (! $wallet->isActive()) {
+            return 0.0;
         }
 
-        $user->wallet->decrement('balance', $amount);
+        $take = round(min((float) $wallet->fresh()->balance, $amount), 2);
+        if ($take <= 0) {
+            return 0.0;
+        }
 
-        // บันทึก Transaction
-        if (method_exists($user->wallet, 'transactions')) {
-            $user->wallet->transactions()->create([
+        try {
+            $walletService->deductForService(
+                $wallet,
+                $take,
+                "หักคืนคอมมิชชัน MLM — คืนเงินออเดอร์ #{$order->order_number}",
+                'MlmCommissionClawback',
+                (int) $order->id,
+                ['order_number' => $order->order_number]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('MLM clawback: wallet deduction failed, converting to debt', [
                 'user_id' => $user->id,
-                'type' => 'mlm_clawback',
-                'amount' => -$amount,
-                'balance_after' => $user->wallet->fresh()->balance,
-                'description' => "Clawback MLM Commission - Order #{$order->order_number}",
-                'reference_type' => 'Order',
-                'reference_id' => $order->id,
+                'amount' => $take,
+                'error' => $e->getMessage(),
             ]);
+
+            return 0.0;
         }
 
         Log::info('MLM Commission deducted from wallet', [
             'user_id' => $user->id,
-            'amount' => $amount,
+            'amount' => $take,
             'order_id' => $order->id,
         ]);
+
+        return $take;
     }
 
     /**

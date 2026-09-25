@@ -89,6 +89,14 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
     Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
 });
 
+// 🏪 (2026-09-25) สมัครเปิดร้านค้า (SELLER-07) — ยื่นคำขอ → แอดมินอนุมัติที่ admin.seller-applications.*
+Route::prefix('seller-apply')->name('seller-apply.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\SellerApplicationController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\User\SellerApplicationController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('store');
+});
+
 // Wallet Management (User) - รองรับทั้ง LINE และ Facebook user
 // 'require.line.uid:soft' = แสดง warning ให้ link LINE แต่ไม่บล็อก
 // (FB users ที่ login ผ่าน OAuth สามารถเข้าได้ — KYC จะถูกเช็คตอน withdraw)
@@ -699,31 +707,50 @@ Route::prefix('academy')->name('academy.')->group(function () {
 // ============================================
 // Rider System Routes (ระบบไรเดอร์)
 // ============================================
-Route::prefix('rider')->name('rider.')->group(function () {
+// 🏍️ (2026-09-25) ปุ่มงานทั้งหมดเรียก RiderJobService ผ่าน User\RiderController (session + CSRF)
+//    หน้า taladsod.rider.active-job ใช้ route ชุดนี้แทน API sanctum เดิมที่เรียกจากเว็บไม่ได้
+Route::prefix('rider')->name('rider.')->controller(\App\Http\Controllers\User\RiderController::class)->group(function () {
     // หน้า Dashboard ไรเดอร์
-    Route::get('/', [\App\Http\Controllers\User\RiderController::class, 'index'])->name('dashboard');
+    Route::get('/', 'index')->name('dashboard');
 
-    // สมัครเป็นไรเดอร์
-    Route::get('/register', [\App\Http\Controllers\User\RiderController::class, 'register'])->name('register');
-    Route::post('/register', [\App\Http\Controllers\User\RiderController::class, 'submitRegistration'])->name('register.submit');
+    // สมัครเป็นไรเดอร์ / ส่งใบสมัครใหม่
+    Route::get('/register', 'register')->name('register');
+    // 🚦 throttle แบบตัวเลขมี prefix ต่อ route (ไม่งั้นทุก route ใช้ตัวนับเดียวกันต่อผู้ใช้ → GPS ส่งถี่แล้วกดปุ่มงานไม่ได้)
+    Route::post('/register', 'submitRegistration')->middleware('throttle:6,1,web-rider-register')->name('register.submit');
 
     // ติดตามสถานะการสมัคร
-    Route::get('/status', [\App\Http\Controllers\User\RiderController::class, 'status'])->name('status');
+    Route::get('/status', 'status')->name('status');
 
-    // อัพโหลดเอกสาร
-    Route::get('/documents', [\App\Http\Controllers\User\RiderController::class, 'documents'])->name('documents');
-    Route::post('/documents', [\App\Http\Controllers\User\RiderController::class, 'uploadDocument'])->name('documents.upload');
+    // เอกสาร (private disk — เปิดดูได้เฉพาะเจ้าของผ่าน route นี้)
+    Route::get('/documents', 'documents')->name('documents');
+    Route::post('/documents', 'uploadDocument')->middleware('throttle:20,1,web-rider-document')->name('documents.upload');
+    Route::get('/documents/{type}/file', 'documentFile')
+        ->where('type', 'id_card|driver_license|vehicle_registration|profile')
+        ->name('documents.file');
 
-    // งานของฉัน
-    Route::get('/jobs', [\App\Http\Controllers\User\RiderController::class, 'jobs'])->name('jobs');
-    Route::get('/jobs/{job}', [\App\Http\Controllers\User\RiderController::class, 'showJob'])->name('jobs.show');
+    // เปิด/ปิดรับงาน, ความยินยอมแชร์ตำแหน่ง, ส่งตำแหน่งจากเบราว์เซอร์
+    Route::post('/availability', 'setAvailability')->middleware('throttle:20,1,web-rider-availability')->name('availability');
+    Route::post('/consent', 'updateConsent')->middleware('throttle:20,1,web-rider-consent')->name('consent');
+    Route::post('/location', 'updateLocation')->middleware('throttle:40,1,web-rider-location')->name('location');
+
+    // งาน
+    Route::get('/jobs', 'jobs')->name('jobs');
+    Route::get('/jobs/{job}', 'showJob')->whereNumber('job')->name('jobs.show');
+    Route::post('/jobs/{job}/accept', 'acceptJob')->whereNumber('job')->middleware('throttle:30,1,web-rider-accept')->name('jobs.accept');
+    Route::post('/jobs/{job}/reject', 'rejectJob')->whereNumber('job')->middleware('throttle:30,1,web-rider-reject')->name('jobs.reject');
+    Route::post('/jobs/{job}/release', 'releaseJob')->whereNumber('job')->middleware('throttle:10,1,web-rider-release')->name('jobs.release');
+    Route::post('/jobs/{job}/status', 'updateJobStatus')->whereNumber('job')->middleware('throttle:30,1,web-rider-status')->name('jobs.status');
+    Route::post('/jobs/{job}/deliver', 'deliverJob')->whereNumber('job')->middleware('throttle:20,1,web-rider-deliver')->name('jobs.deliver');
+    Route::post('/jobs/{job}/fail', 'failJob')->whereNumber('job')->middleware('throttle:10,1,web-rider-fail')->name('jobs.fail');
+    Route::post('/jobs/{job}/gps-lost', 'reportGpsLost')->whereNumber('job')->middleware('throttle:20,1,web-rider-gps-lost')->name('jobs.gps-lost');
+    Route::post('/jobs/{job}/gps-off', 'confirmGpsOff')->whereNumber('job')->middleware('throttle:10,1,web-rider-gps-off')->name('jobs.gps-off');
 
     // รายได้
-    Route::get('/earnings', [\App\Http\Controllers\User\RiderController::class, 'earnings'])->name('earnings');
+    Route::get('/earnings', 'earnings')->name('earnings');
 
     // ตั้งค่า
-    Route::get('/settings', [\App\Http\Controllers\User\RiderController::class, 'settings'])->name('settings');
-    Route::post('/settings', [\App\Http\Controllers\User\RiderController::class, 'updateSettings'])->name('settings.update');
+    Route::get('/settings', 'settings')->name('settings');
+    Route::post('/settings', 'updateSettings')->name('settings.update');
 });
 
 // ========================================

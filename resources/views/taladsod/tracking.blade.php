@@ -3,7 +3,8 @@
     ลูกค้าเปิดหน้านี้เพื่อดูตำแหน่งไรเดอร์และสถานะงาน
 
     ข้อมูลที่ส่งมาจาก RiderTrackingController@show:
-    - $job, $rider, $order, $location, $customerLocation, $pickupLocation
+    - $job, $rider (null = ยังไม่มีไรเดอร์รับงาน), $order, $location, $customerLocation, $pickupLocation
+    - $orderNumber (?string), $riderPhotoUrl (?string URL เต็ม), $riderPhone (?string เฉพาะงานยังวิ่ง), $isActive (bool)
     - $token, $googleMapsApiKey, $pollInterval, $customerPollInterval
 --}}
 @extends('layouts.taladsod')
@@ -167,13 +168,19 @@
         </div>
     </div>
 
-    {{-- ===== การ์ดข้อมูลไรเดอร์ ===== --}}
+    {{-- ===== การ์ดข้อมูลไรเดอร์ (ยังไม่มีไรเดอร์รับงาน → แสดงข้อความรอ) ===== --}}
+    @if(! $rider)
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-4 flex items-center gap-3">
+        <i class="fas fa-hourglass-half text-amber-500 text-xl"></i>
+        <p class="text-sm text-gray-600 dark:text-gray-300">กำลังหาไรเดอร์ใกล้ร้านให้คุณ ระบบจะแจ้งเมื่อมีไรเดอร์รับงาน</p>
+    </div>
+    @else
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-4">
         <div class="flex items-start gap-4">
-            {{-- รูปโปรไฟล์ไรเดอร์ --}}
+            {{-- รูปโปรไฟล์ไรเดอร์ (URL เต็มผ่าน route ของ token — รูปอยู่บน private disk) --}}
             <div class="flex-shrink-0">
-                @if($rider->profile_image)
-                    <img src="{{ $rider->profile_image }}"
+                @if($riderPhotoUrl ?? null)
+                    <img src="{{ $riderPhotoUrl }}"
                          alt="{{ $rider->full_name }}"
                          class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover ring-2 ring-green-200 dark:ring-green-800">
                 @else
@@ -211,9 +218,9 @@
                 </div>
             </div>
 
-            {{-- ปุ่มโทรหาไรเดอร์ --}}
-            @if($rider->phone)
-                <a href="tel:{{ $rider->phone }}"
+            {{-- ปุ่มโทรหาไรเดอร์ (เฉพาะช่วงงานยังวิ่งอยู่) --}}
+            @if($riderPhone ?? null)
+                <a href="tel:{{ $riderPhone }}"
                    class="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl flex items-center justify-center shadow-lg shadow-green-500/25 transition-all hover:scale-105 active:scale-95">
                     <i class="fas fa-phone text-lg sm:text-xl"></i>
                 </a>
@@ -221,14 +228,15 @@
         </div>
 
         {{-- ปุ่มโทรเต็มความกว้าง (แสดงเฉพาะ mobile) --}}
-        @if($rider->phone)
-            <a href="tel:{{ $rider->phone }}"
+        @if($riderPhone ?? null)
+            <a href="tel:{{ $riderPhone }}"
                class="sm:hidden mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl font-medium text-sm hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors">
                 <i class="fas fa-phone"></i>
-                โทรหาไรเดอร์ {{ $rider->phone }}
+                โทรหาไรเดอร์ {{ $riderPhone }}
             </a>
         @endif
     </div>
+    @endif
 
     {{-- ===== ข้อมูลจุดรับ-ส่ง ===== --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -270,10 +278,10 @@
                 <dt class="text-gray-500 dark:text-gray-400">หมายเลขงาน</dt>
                 <dd class="font-mono font-medium text-gray-900 dark:text-white">{{ $job->job_number }}</dd>
             </div>
-            @if($order)
+            @if($orderNumber ?? null)
                 <div class="flex justify-between items-center">
                     <dt class="text-gray-500 dark:text-gray-400">หมายเลขออเดอร์</dt>
-                    <dd class="font-mono font-medium text-gray-900 dark:text-white">{{ $order->order_number }}</dd>
+                    <dd class="font-mono font-medium text-gray-900 dark:text-white">{{ $orderNumber }}</dd>
                 </div>
             @endif
             <div class="flex justify-between items-center">
@@ -364,6 +372,17 @@
             customerLng: {{ $customerLocation['longitude'] ?? 'null' }},
             pickupLat: {{ $pickupLocation['latitude'] ?? 'null' }},
             pickupLng: {{ $pickupLocation['longitude'] ?? 'null' }},
+
+            /**
+             * ข้อความที่ผู้ใช้กรอกเอง (ชื่อร้าน ที่อยู่ ชื่อไรเดอร์) — ส่งเข้า JS ด้วย Js::from เท่านั้น
+             * แล้วสร้าง DOM ด้วย textContent ❗ ห้ามพิมพ์ลง template literal (`...${}...`) ตรงๆ = Stored XSS
+             */
+            labels: {{ \Illuminate\Support\Js::from([
+                'pickupName' => (string) ($pickupLocation['contact_name'] ?? 'จุดรับสินค้า'),
+                'pickupAddress' => (string) \Illuminate\Support\Str::limit((string) ($pickupLocation['address'] ?? ''), 60),
+                'customerAddress' => (string) \Illuminate\Support\Str::limit((string) ($customerLocation['address'] ?? ''), 60),
+                'riderName' => (string) ($rider?->full_name ?? 'ไรเดอร์'),
+            ]) }},
 
             /* ===== สถานะ Steps ===== */
 
@@ -497,7 +516,7 @@
                     this.pickupMarker = new google.maps.Marker({
                         position: { lat: this.pickupLat, lng: this.pickupLng },
                         map: this.map,
-                        title: '{{ addslashes($pickupLocation['contact_name'] ?? 'จุดรับสินค้า') }}',
+                        title: this.labels.pickupName,
                         icon: {
                             url: 'data:image/svg+xml,' + encodeURIComponent(`
                                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
@@ -514,10 +533,7 @@
 
                     /* Info window สำหรับจุดรับสินค้า */
                     const pickupInfo = new google.maps.InfoWindow({
-                        content: `<div style="font-family: 'Kanit', sans-serif; padding: 8px;">
-                            <p style="font-weight: 600; margin: 0 0 4px;">{{ addslashes($pickupLocation['contact_name'] ?? 'จุดรับสินค้า') }}</p>
-                            <p style="font-size: 12px; color: #666; margin: 0;">{{ addslashes(Str::limit($pickupLocation['address'] ?? '', 60)) }}</p>
-                        </div>`,
+                        content: this.infoContent(this.labels.pickupName, this.labels.pickupAddress, '#666'),
                     });
                     this.pickupMarker.addListener('click', () => pickupInfo.open(this.map, this.pickupMarker));
                 }
@@ -543,10 +559,7 @@
                     });
 
                     const customerInfo = new google.maps.InfoWindow({
-                        content: `<div style="font-family: 'Kanit', sans-serif; padding: 8px;">
-                            <p style="font-weight: 600; margin: 0 0 4px;">ตำแหน่งของคุณ</p>
-                            <p style="font-size: 12px; color: #666; margin: 0;">{{ addslashes(Str::limit($customerLocation['address'] ?? '', 60)) }}</p>
-                        </div>`,
+                        content: this.infoContent('ตำแหน่งของคุณ', this.labels.customerAddress, '#666'),
                     });
                     this.customerMarker.addListener('click', () => customerInfo.open(this.map, this.customerMarker));
                 }
@@ -579,7 +592,7 @@
                 this.riderMarker = new google.maps.Marker({
                     position: { lat: this.riderLat, lng: this.riderLng },
                     map: this.map,
-                    title: '{{ addslashes($rider->full_name) }}',
+                    title: this.labels.riderName,
                     icon: {
                         url: 'data:image/svg+xml,' + encodeURIComponent(`
                             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
@@ -595,12 +608,40 @@
                 });
 
                 const riderInfo = new google.maps.InfoWindow({
-                    content: `<div style="font-family: 'Kanit', sans-serif; padding: 8px;">
-                        <p style="font-weight: 600; margin: 0;">{{ addslashes($rider->full_name) }}</p>
-                        <p style="font-size: 12px; color: #22C55E; margin: 4px 0 0;">ไรเดอร์ของคุณ</p>
-                    </div>`,
+                    content: this.infoContent(this.labels.riderName, 'ไรเดอร์ของคุณ', '#22C55E'),
                 });
                 this.riderMarker.addListener('click', () => riderInfo.open(this.map, this.riderMarker));
+            },
+
+            /**
+             * กล่องข้อความใน InfoWindow — สร้างด้วย DOM + textContent (ข้อความผู้ใช้ไม่ถูกตีความเป็น HTML/JS)
+             *
+             * @param {string} title หัวข้อ (ตัวหนา)
+             * @param {string} subtitle บรรทัดรอง (ว่างได้)
+             * @param {string} subtitleColor สีบรรทัดรอง
+             * @returns {HTMLDivElement}
+             */
+            infoContent(title, subtitle, subtitleColor) {
+                const box = document.createElement('div');
+                box.style.fontFamily = "'Kanit', sans-serif";
+                box.style.padding = '8px';
+
+                const heading = document.createElement('p');
+                heading.style.fontWeight = '600';
+                heading.style.margin = '0 0 4px';
+                heading.textContent = String(title ?? '');
+                box.appendChild(heading);
+
+                if (subtitle) {
+                    const line = document.createElement('p');
+                    line.style.fontSize = '12px';
+                    line.style.color = subtitleColor || '#666';
+                    line.style.margin = '0';
+                    line.textContent = String(subtitle);
+                    box.appendChild(line);
+                }
+
+                return box;
             },
 
             /**

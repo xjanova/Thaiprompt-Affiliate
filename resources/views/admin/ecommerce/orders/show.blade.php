@@ -227,6 +227,20 @@
                         @endforeach
                     </select>
                 </div>
+                {{-- (2026-09-25) ต้องระบุเหตุผลทุกครั้ง + เลขอ้างอิงเมื่อยืนยันรับเงิน (บันทึก audit) --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เหตุผล <span class="text-red-500">*</span></label>
+                    <textarea name="reason" rows="2" required minlength="5" maxlength="1000"
+                              class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
+                              placeholder="เช่น ตรวจสลิปโอนเงินแล้ว ยอดตรง">{{ old('reason') }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เลขอ้างอิงสลิป/ธุรกรรม (บังคับเมื่อเลือก "ชำระแล้ว")</label>
+                    <input type="text" name="payment_reference" maxlength="255" value="{{ old('payment_reference') }}"
+                           class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:ring-emerald-500 focus:border-emerald-500"
+                           placeholder="เลขที่รายการจากสลิป">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">"ชำระแล้ว" และ "คืนเงินแล้ว" ทำได้เฉพาะ Super Admin — "คืนเงินแล้ว" จะคืนเงินเข้ากระเป๋าลูกค้าจริง</p>
+                </div>
                 <div class="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-sm space-y-1">
                     <p class="text-gray-600 dark:text-gray-400"><span class="font-semibold" data-translate>ยอดรวม:</span> <span class="text-gray-900 dark:text-white font-bold">฿{{ number_format($order->total_amount, 2) }}</span></p>
                     <p class="text-gray-600 dark:text-gray-400"><span class="font-semibold" data-translate>วิธีชำระเงิน:</span> <span class="text-gray-900 dark:text-white">{{ $order->payment_method ?? 'ไม่ระบุ' }}</span></p>

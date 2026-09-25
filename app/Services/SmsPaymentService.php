@@ -488,41 +488,59 @@ class SmsPaymentService
             ->get();
 
         foreach ($expiredUniqueAmounts as $uniqueAmount) {
-            // ยกเลิก PaymentTransaction ถ้ายังเป็น pending/processing
-            if ($uniqueAmount->transaction && in_array($uniqueAmount->transaction->status, ['pending', 'processing'])) {
-                $uniqueAmount->transaction->update([
-                    'status' => 'expired',
-                    'notes' => 'หมดเวลาชำระเงิน (30 นาที) - ยกเลิกโดยระบบอัตโนมัติ',
+            // 🐛 (2026-09-25) audit CC-02: เดิมเขียน 'expired' ลง payment_transactions.status และ orders.payment_status
+            //    ซึ่งไม่อยู่ใน enum ของทั้ง 2 ตาราง → strict mode โยน SQLSTATE 1265 ทุก 5 นาที
+            //    แถวที่พังทำให้ unique amount ไม่ถูกปล่อย (สล็อตทศนิยมเต็ม) และขั้นถัดไปไม่ถูกทำ
+            //    ตอนนี้ใช้ค่าที่มีใน enum (transaction = cancelled, order.payment_status = failed)
+            //    และครอบทีละแถว → แถวที่มีปัญหาไม่ลากแถวอื่น/ขั้นอื่นพังตาม
+            try {
+                DB::transaction(function () use ($uniqueAmount, &$stats) {
+                    $transaction = $uniqueAmount->transaction;
+
+                    // ยกเลิก PaymentTransaction ถ้ายังเป็น pending/processing
+                    if ($transaction && in_array($transaction->status, ['pending', 'processing'], true)) {
+                        $transaction->update([
+                            'status' => 'cancelled',
+                            'notes' => 'หมดเวลาชำระเงิน (30 นาที) - ยกเลิกโดยระบบอัตโนมัติ',
+                        ]);
+                        $stats['cancelled_transactions']++;
+
+                        Log::info('SMS Payment: ยกเลิก PaymentTransaction หมดเวลา', [
+                            'transaction_id' => $transaction->id,
+                            'amount' => $uniqueAmount->unique_amount,
+                        ]);
+
+                        // ยกเลิก Order ถ้ายังเป็น pending และยังไม่ได้ชำระ (lock กันชนกับการยืนยันสลิปพร้อมกัน)
+                        $order = $transaction->order_id
+                            ? \App\Models\Order::whereKey($transaction->order_id)->lockForUpdate()->first()
+                            : null;
+
+                        if ($order && $order->status === 'pending' && $order->payment_status === 'pending') {
+                            $order->update([
+                                'status' => 'cancelled',
+                                'payment_status' => 'failed',
+                                'cancelled_at' => now(),
+                                'cancellation_reason' => 'หมดเวลาชำระเงิน (30 นาที) - ระบบยกเลิกอัตโนมัติ',
+                            ]);
+                            $stats['cancelled_orders']++;
+
+                            Log::info('SMS Payment: ยกเลิก Order หมดเวลา', [
+                                'order_id' => $order->id,
+                                'order_number' => $order->order_number,
+                            ]);
+                        }
+                    }
+
+                    // อัปเดต unique amount เป็น expired (enum ของ unique_payment_amounts มีค่านี้)
+                    $uniqueAmount->update(['status' => 'expired']);
+                    $stats['expired_amounts']++;
+                });
+            } catch (\Throwable $e) {
+                Log::error('SMS Payment cleanup: expire unique amount failed', [
+                    'unique_amount_id' => $uniqueAmount->id,
+                    'error' => $e->getMessage(),
                 ]);
-                $stats['cancelled_transactions']++;
-
-                Log::info('SMS Payment: ยกเลิก PaymentTransaction หมดเวลา', [
-                    'transaction_id' => $uniqueAmount->transaction->id,
-                    'amount' => $uniqueAmount->unique_amount,
-                ]);
-
-                // ยกเลิก Order ถ้ายังเป็น pending และยังไม่ได้ชำระ
-                if ($uniqueAmount->transaction->order &&
-                    $uniqueAmount->transaction->order->status === 'pending' &&
-                    $uniqueAmount->transaction->order->payment_status !== 'paid') {
-
-                    $uniqueAmount->transaction->order->update([
-                        'status' => 'cancelled',
-                        'payment_status' => 'expired',
-                        'cancellation_reason' => 'หมดเวลาชำระเงิน (30 นาที) - ระบบยกเลิกอัตโนมัติ',
-                    ]);
-                    $stats['cancelled_orders']++;
-
-                    Log::info('SMS Payment: ยกเลิก Order หมดเวลา', [
-                        'order_id' => $uniqueAmount->transaction->order->id,
-                        'order_number' => $uniqueAmount->transaction->order->order_number,
-                    ]);
-                }
             }
-
-            // อัปเดต unique amount เป็น expired
-            $uniqueAmount->update(['status' => 'expired']);
-            $stats['expired_amounts']++;
         }
 
         // ========================================

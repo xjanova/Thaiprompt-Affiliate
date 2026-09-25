@@ -211,6 +211,13 @@ class WithdrawalService
         }
 
         DB::transaction(function () use ($request, $admin, $reason) {
+            // 🔒 (2026-09-25) lock + ตรวจสถานะซ้ำ — กดปฏิเสธซ้ำ/พร้อมกันต้องคืนเงินครั้งเดียว
+            $locked = WithdrawalRequest::whereKey($request->id)->lockForUpdate()->first();
+            if (! $locked || (! $locked->isPending() && ! $locked->isProcessing())) {
+                throw new Exception('คำขอถอนเงินนี้ไม่สามารถปฏิเสธได้');
+            }
+            $request->setRawAttributes($locked->getAttributes(), true);
+
             $request->update([
                 'status' => 'rejected',
                 'rejected_by' => $admin->id,
@@ -293,11 +300,18 @@ class WithdrawalService
             throw new Exception('ไม่สามารถยกเลิกคำขอถอนเงินนี้ได้');
         }
 
-        if ($request->user_id !== $user->id) {
+        if ((int) $request->user_id !== (int) $user->id) {
             throw new Exception('คุณไม่มีสิทธิ์ยกเลิกคำขอถอนเงินนี้');
         }
 
         DB::transaction(function () use ($request) {
+            // 🔒 (2026-09-25) lock + ตรวจสถานะซ้ำ — เดิมกดยกเลิก 2 ครั้งพร้อมกันได้เงินคืน 2 เท่า
+            $locked = WithdrawalRequest::whereKey($request->id)->lockForUpdate()->first();
+            if (! $locked || ! $locked->isPending()) {
+                throw new Exception('ไม่สามารถยกเลิกคำขอถอนเงินนี้ได้');
+            }
+            $request->setRawAttributes($locked->getAttributes(), true);
+
             $request->update([
                 'status' => 'cancelled',
             ]);

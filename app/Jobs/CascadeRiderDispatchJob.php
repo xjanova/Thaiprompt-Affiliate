@@ -14,8 +14,10 @@ use Illuminate\Support\Facades\Log;
 /**
  * Cascade Rider Dispatch Job
  *
- * เมื่อเสนองานให้ไรเดอร์ ถ้าไม่ตอบรับภายใน timeout (2 นาที)
- * จะเสนอให้ไรเดอร์คนถัดไปในคิวอัตโนมัติ
+ * โหมด cascade (rider.dispatch_mode = cascade): เสนองานให้ไรเดอร์ทีละคน
+ * ถ้าไม่ตอบรับภายใน rider.offer_timeout_seconds จะเสนอคนถัดไปอัตโนมัติ
+ *
+ * ถ้าคิวไม่ได้รัน คำสั่ง rider:sweep-pending (ทุกนาที) จะเลื่อน offer ที่หมดเวลาให้แทน
  */
 class CascadeRiderDispatchJob implements ShouldQueue
 {
@@ -47,27 +49,21 @@ class CascadeRiderDispatchJob implements ShouldQueue
     /**
      * ตรวจสอบว่า offer หมดเวลาหรือยัง แล้วเสนอให้คนถัดไป
      */
-    public function handle(): void
+    public function handle(RiderDispatchService $dispatchService): void
     {
         $riderJob = RiderJob::find($this->jobId);
 
         if (! $riderJob) {
-            Log::debug('CascadeDispatch: ไม่พบ RiderJob', ['job_id' => $this->jobId]);
+            Log::debug('CascadeDispatch: RiderJob not found', ['job_id' => $this->jobId]);
 
             return;
         }
 
-        // ถ้างานถูกรับแล้ว ไม่ต้องทำอะไร
-        if ($riderJob->status !== 'pending') {
-            Log::debug('CascadeDispatch: งานไม่ได้อยู่ในสถานะ pending', [
-                'job_id' => $this->jobId,
-                'status' => $riderJob->status,
-            ]);
-
+        // ถ้างานถูกรับแล้ว/ถูกยกเลิก ไม่ต้องทำอะไร
+        if (! $riderJob->isOpen()) {
             return;
         }
 
-        $dispatchService = new RiderDispatchService();
         $dispatchService->handleOfferTimeout($riderJob);
     }
 }

@@ -49,7 +49,20 @@ class WalletService
     }
 
     /**
+     * ประเภทรายการที่ใช้กับ "เงินเข้า" ได้ (ตรงกับ enum wallet_transactions.type)
+     */
+    public const CREDIT_TYPES = ['deposit', 'commission', 'refund', 'bonus', 'transfer_in'];
+
+    /**
+     * ประเภทรายการที่ใช้กับ "เงินออกโดยระบบ" ได้ (ตรงกับ enum wallet_transactions.type)
+     */
+    public const DEBIT_TYPES = ['fee', 'withdrawal', 'transfer_out'];
+
+    /**
      * Deposit money to wallet
+     *
+     * @param  string  $type  ประเภทรายการ (deposit|commission|refund|bonus|transfer_in) — ค่าเริ่มต้น deposit
+     *                        (2026-09-25) เพิ่มเพื่อให้คืนเงิน/จ่ายคอมบันทึกประเภทถูกต้องโดยไม่ต้อง insert เอง
      */
     public function deposit(
         Wallet $wallet,
@@ -57,27 +70,32 @@ class WalletService
         string $description = 'Deposit',
         ?string $referenceType = null,
         ?int $referenceId = null,
-        array $metadata = []
+        array $metadata = [],
+        string $type = 'deposit'
     ): WalletTransaction {
         if ($amount <= 0) {
             throw new Exception('Amount must be greater than 0');
+        }
+
+        if (! in_array($type, self::CREDIT_TYPES, true)) {
+            throw new Exception('Invalid credit transaction type');
         }
 
         if (! $wallet->isActive()) {
             throw new Exception('Wallet is not active');
         }
 
-        return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata) {
+        return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata, $type) {
             // Lock wallet เพื่อป้องกัน race condition: อ่าน balance ล่าสุดจาก DB
             $wallet = Wallet::lockForUpdate()->find($wallet->id);
             $balanceBefore = $wallet->balance;
-            $balanceAfter = $balanceBefore + $amount;
+            $balanceAfter = round((float) $balanceBefore + $amount, 2);
 
             // Create transaction
             $transaction = WalletTransaction::create([
                 'wallet_id' => $wallet->id,
                 'user_id' => $wallet->user_id,
-                'type' => 'deposit',
+                'type' => $type,
                 'amount' => $amount,
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
@@ -93,7 +111,7 @@ class WalletService
             // Update wallet balance
             $wallet->update([
                 'balance' => $balanceAfter,
-                'total_income' => ($wallet->total_income ?? 0) + $amount,
+                'total_income' => round((float) ($wallet->total_income ?? 0) + $amount, 2),
                 'last_transaction_at' => now(),
             ]);
 
@@ -153,8 +171,11 @@ class WalletService
                 throw new Exception('ยอดเงินไม่เพียงพอ (ถูกใช้ไประหว่างรอ)');
             }
 
+            // ไรเดอร์ที่ถือเงินสด COD อยู่ ถอนออกได้เฉพาะส่วนที่ไม่ติดภาระนำส่ง
+            $this->assertCodReserveAllows($wallet, $amount);
+
             $balanceBefore = $wallet->balance;
-            $balanceAfter = $balanceBefore - $amount;
+            $balanceAfter = round((float) $balanceBefore - $amount, 2);
 
             // Create transaction
             $transaction = WalletTransaction::create([
@@ -176,7 +197,7 @@ class WalletService
             // Update wallet balance
             $wallet->update([
                 'balance' => $balanceAfter,
-                'total_expense' => ($wallet->total_expense ?? 0) + $amount,
+                'total_expense' => round((float) ($wallet->total_expense ?? 0) + $amount, 2),
                 'last_transaction_at' => now(),
             ]);
 
@@ -198,13 +219,12 @@ class WalletService
      *
      * ใช้สำหรับ: AI Gen, Service Booking ฯลฯ ที่ผู้ใช้ยืนยันแล้วผ่านหน้า UI
      *
-     * @param Wallet $wallet กระเป๋าเงิน
-     * @param float $amount จำนวนเงิน
-     * @param string $description คำอธิบาย
-     * @param string|null $referenceType ประเภทอ้างอิง (เช่น ai_gen, service_booking)
-     * @param int|null $referenceId ID อ้างอิง
-     * @param array $metadata ข้อมูลเพิ่มเติม
-     * @return WalletTransaction
+     * @param  Wallet  $wallet  กระเป๋าเงิน
+     * @param  float  $amount  จำนวนเงิน
+     * @param  string  $description  คำอธิบาย
+     * @param  string|null  $referenceType  ประเภทอ้างอิง (เช่น ai_gen, service_booking)
+     * @param  int|null  $referenceId  ID อ้างอิง
+     * @param  array  $metadata  ข้อมูลเพิ่มเติม
      *
      * @throws Exception
      */
@@ -214,10 +234,15 @@ class WalletService
         string $description = 'Service payment',
         ?string $referenceType = null,
         ?int $referenceId = null,
-        array $metadata = []
+        array $metadata = [],
+        string $type = 'fee'
     ): WalletTransaction {
         if ($amount <= 0) {
             throw new Exception('Amount must be greater than 0');
+        }
+
+        if (! in_array($type, self::DEBIT_TYPES, true)) {
+            throw new Exception('Invalid debit transaction type');
         }
 
         if (! $wallet->isActive()) {
@@ -228,7 +253,7 @@ class WalletService
             throw new Exception('Insufficient balance');
         }
 
-        return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata) {
+        return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata, $type) {
             // Lock wallet เพื่อป้องกัน race condition
             $wallet = Wallet::lockForUpdate()->find($wallet->id);
 
@@ -237,13 +262,13 @@ class WalletService
             }
 
             $balanceBefore = $wallet->balance;
-            $balanceAfter = $balanceBefore - $amount;
+            $balanceAfter = round((float) $balanceBefore - $amount, 2);
 
             // สร้างรายการธุรกรรม
             $transaction = WalletTransaction::create([
                 'wallet_id' => $wallet->id,
                 'user_id' => $wallet->user_id,
-                'type' => 'fee',
+                'type' => $type,
                 'amount' => $amount,
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
@@ -259,7 +284,7 @@ class WalletService
             // อัพเดทยอดเงินใน wallet
             $wallet->update([
                 'balance' => $balanceAfter,
-                'total_expense' => ($wallet->total_expense ?? 0) + $amount,
+                'total_expense' => round((float) ($wallet->total_expense ?? 0) + $amount, 2),
                 'last_transaction_at' => now(),
             ]);
 
@@ -324,6 +349,9 @@ class WalletService
                 throw new Exception('ยอดเงินไม่เพียงพอ (ถูกใช้ไประหว่างรอ)');
             }
 
+            // ไรเดอร์ที่ถือเงินสด COD อยู่ โอนออกได้เฉพาะส่วนที่ไม่ติดภาระนำส่ง
+            $this->assertCodReserveAllows($fromWallet, $amount);
+
             // Deduct from sender
             $fromBalanceBefore = $fromWallet->balance;
             $fromBalanceAfter = $fromBalanceBefore - $amount;
@@ -381,6 +409,35 @@ class WalletService
                 'in_transaction' => $inTransaction,
             ];
         });
+    }
+
+    /**
+     * ไรเดอร์ที่ถือเงินเก็บปลายทาง (COD) ของลูกค้าอยู่ ถอน/โอนออกได้ไม่เกินยอดที่ไม่ติดภาระนำส่ง
+     *
+     * ภาระ = RiderJob::codReserveForUser() (งาน COD ที่ยังวิ่งอยู่ + ส่งแล้วแต่ยังหักไม่ได้)
+     * ผู้ใช้ที่ไม่ใช่ไรเดอร์ได้ภาระ 0 → ไม่กระทบ · ต้องเรียกหลังล็อกแถววอลเลตแล้วเท่านั้น
+     *
+     * @throws Exception ข้อความภาษาไทยบอกยอดที่ถอน/โอนได้
+     */
+    protected function assertCodReserveAllows(Wallet $wallet, float $amount): void
+    {
+        $reserve = \App\Models\RiderJob::codReserveForUser((int) $wallet->user_id);
+        if ($reserve <= 0) {
+            return;
+        }
+
+        $free = round((float) $wallet->balance - $reserve, 2);
+        if (round($amount, 2) > $free) {
+            $this->logAction($wallet, 'transaction_failed', 'Blocked by rider COD reserve', 'warning', [
+                'reserve' => $reserve,
+                'amount' => round($amount, 2),
+            ]);
+
+            throw new Exception(
+                'ยอด '.number_format($reserve, 2).' บาท ถูกกันไว้สำหรับนำส่งเงินเก็บปลายทางของงานไรเดอร์ '
+                .'ตอนนี้ถอน/โอนได้สูงสุด '.number_format(max(0.0, $free), 2).' บาท'
+            );
+        }
     }
 
     /**

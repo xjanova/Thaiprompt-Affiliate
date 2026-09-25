@@ -98,17 +98,16 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel Secret</label>
-                        <input type="password" name="line_channel_secret"
-                               value="{{ $settings->line_channel_secret ?? '' }}"
+                        {{-- ไม่แสดงค่าจริงใน HTML: เว้นว่าง = ใช้ค่าเดิม --}}
+                        <input type="password" name="line_channel_secret" value="" autocomplete="new-password"
                                class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                               placeholder="กรอก Channel Secret">
+                               placeholder="{{ $lineSecretMasked ?? 'กรอก Channel Secret' }} — เว้นว่างเพื่อใช้ค่าเดิม">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel Access Token</label>
-                        <input type="password" name="line_channel_access_token"
-                               value="{{ $settings->line_channel_access_token ?? '' }}"
+                        <input type="password" name="line_channel_access_token" value="" autocomplete="new-password"
                                class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                               placeholder="กรอก Channel Access Token">
+                               placeholder="{{ $lineTokenMasked ?? 'กรอก Channel Access Token' }} — เว้นว่างเพื่อใช้ค่าเดิม">
                     </div>
                 </div>
 

@@ -163,6 +163,8 @@ class FreshMarketWebhookController extends Controller
             case 'location':
                 $lat = $event['message']['latitude'] ?? 0;
                 $lng = $event['message']['longitude'] ?? 0;
+                // ที่อยู่ข้อความที่ LINE แนบมากับพิกัด (ใช้เป็นที่อยู่จัดส่งไรเดอร์)
+                $extra['address'] = $event['message']['address'] ?? null;
                 $this->getChannelManager()->processLocation($userId, $lat, $lng, $extra);
                 break;
 

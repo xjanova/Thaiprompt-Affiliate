@@ -3,13 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    // 🗑️ (2026-09-25) SoftDeletes — ห้ามลบผู้ใช้ถาวร (FK ของออเดอร์/wallet/ledger/งานไรเดอร์
+    //    ตั้ง ON DELETE CASCADE ไว้ ลบถาวร 1 คน = ประวัติการเงินของคู่ค้าหายตาม)
+    //    การลบบัญชีทุกทางต้องผ่าน App\Services\AccountDeletionService (ปกปิด PII แล้วค่อย soft delete)
+    //    งานล้างข้อมูลทดสอบ/รีเซ็ตระบบที่ตั้งใจลบถาวรจริง ต้องเรียก forceDelete() เอง
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * ฟิลด์ที่อนุญาตให้ mass assignment (ปลอดภัย)
@@ -99,6 +104,8 @@ class User extends Authenticatable
         'is_super_admin',    // ป้องกัน privilege escalation
         'is_hotel_admin',    // ป้องกัน privilege escalation
         'blocked_at',        // เฉพาะ admin เท่านั้น
+        'blocked_reason',    // เฉพาะ admin เท่านั้น
+        'blocked_by',        // เฉพาะ admin เท่านั้น
         'permissions',       // ป้องกัน permission bypass
         'kyc_status',        // เฉพาะ admin/system เท่านั้น
         'kyc_verified_at',   // เฉพาะ admin/system เท่านั้น
@@ -120,6 +127,8 @@ class User extends Authenticatable
         'id_card_number',        // เลขบัตรประชาชน (PII)
         'kyc_verified_at',       // ข้อมูล KYC ภายใน
         'blocked_at',            // ข้อมูล moderation ภายใน
+        'blocked_reason',        // ข้อมูล moderation ภายใน
+        'blocked_by',            // ข้อมูล moderation ภายใน
     ];
 
     /**
@@ -202,6 +211,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'blocked_at' => 'datetime',
+            'blocked_by' => 'integer',
+            'pdpa_deleted_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
             'is_hotel_admin' => 'boolean',
@@ -254,6 +265,91 @@ class User extends Authenticatable
     public function isHotelAdmin(): bool
     {
         return $this->is_hotel_admin === true && $this->managed_hotel_id !== null;
+    }
+
+    /**
+     * บัญชีถูกแอดมินระงับการใช้งานอยู่หรือไม่ (users.blocked_at)
+     *
+     * เช็คที่: เว็บล็อกอิน, API ล็อกอิน และ middleware EnsureAccountActive ทุก request
+     */
+    public function isSuspended(): bool
+    {
+        return $this->blocked_at !== null;
+    }
+
+    /**
+     * ระงับบัญชี + เพิกถอน API token ทั้งหมด (แอปจะถูกเด้งออกทันทีใน request ถัดไป)
+     *
+     * blocked_* อยู่ใน $guarded จึงต้องตั้งผ่าน forceFill เท่านั้น
+     *
+     * @param  User|null  $admin  แอดมินที่สั่งระงับ
+     * @param  string|null  $reason  เหตุผล (สำหรับทีมงาน)
+     */
+    public function suspend(?User $admin = null, ?string $reason = null): void
+    {
+        $attributes = ['blocked_at' => now()];
+
+        // คอลัมน์ใหม่ (migration 2026_09_25_160000) — กันช่วง deploy ก่อน migrate เสร็จ
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'blocked_reason')) {
+            $attributes['blocked_reason'] = $reason !== null ? mb_substr(trim($reason), 0, 500) : null;
+            $attributes['blocked_by'] = $admin?->id;
+        }
+
+        $this->forceFill($attributes)->save();
+
+        // เพิกถอน token ของแอปทั้งหมด (Sanctum)
+        $this->tokens()->delete();
+
+        // ผู้ใช้ที่เป็นไรเดอร์: ปิดรับงาน + คืนงานที่ยังไม่รับของเข้าคิว / แจ้งแอดมินถ้าถือของอยู่
+        // (ไม่งั้นงานค้างกับไรเดอร์ที่ใช้แอปไม่ได้แล้ว ผู้ซื้อรอไม่มีกำหนด)
+        $this->releaseRiderWorkAfterSuspension();
+    }
+
+    /**
+     * จัดการงานไรเดอร์ของบัญชีที่เพิ่งถูกระงับ (ล้มเหลวต้องไม่ทำให้การระงับบัญชีล้ม)
+     */
+    protected function releaseRiderWorkAfterSuspension(): void
+    {
+        try {
+            $rider = Rider::where('user_id', $this->id)->first();
+            if (! $rider) {
+                return;
+            }
+
+            if ($rider->availability === 'online') {
+                $rider->forceFill(['availability' => 'offline'])->save();
+            }
+
+            app(\App\Services\RiderJobService::class)->handleRiderSuspended($rider);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('User suspend: release rider jobs failed', [
+                'user_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ยกเลิกการระงับบัญชี
+     */
+    public function unsuspend(): void
+    {
+        $attributes = ['blocked_at' => null];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'blocked_reason')) {
+            $attributes['blocked_reason'] = null;
+            $attributes['blocked_by'] = null;
+        }
+
+        $this->forceFill($attributes)->save();
+    }
+
+    /**
+     * บัญชีนี้ถูกลบ/ปกปิดข้อมูลตาม PDPA แล้วหรือยัง
+     */
+    public function isAnonymized(): bool
+    {
+        return $this->pdpa_deleted_at !== null;
     }
 
     /**

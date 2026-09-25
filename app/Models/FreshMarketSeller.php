@@ -101,7 +101,7 @@ class FreshMarketSeller extends Model
     {
         static::creating(function (self $seller) {
             if (empty($seller->referral_code)) {
-                $seller->referral_code = 'TSD' . strtoupper(Str::random(7));
+                $seller->referral_code = 'TSD'.strtoupper(Str::random(7));
             }
         });
     }
@@ -163,13 +163,13 @@ class FreshMarketSeller extends Model
      */
     public function scopeNearby($query, float $lat, float $lng, float $radiusKm = 10)
     {
-        return $query->selectRaw("*, (
+        return $query->selectRaw('*, (
             6371 * acos(
                 cos(radians(?)) * cos(radians(latitude))
                 * cos(radians(longitude) - radians(?))
                 + sin(radians(?)) * sin(radians(latitude))
             )
-        ) AS distance_km", [$lat, $lng, $lat])
+        ) AS distance_km', [$lat, $lng, $lat])
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->having('distance_km', '<=', $radiusKm)
@@ -191,6 +191,16 @@ class FreshMarketSeller extends Model
     }
 
     /**
+     * เป็นสมาชิกแบบเสียเงิน (หรือช่วงทดลองใช้) ที่ยังไม่หมดอายุหรือไม่
+     */
+    public function hasPaidSubscription(): bool
+    {
+        return $this->subscription_type !== 'free'
+            && $this->subscription_expires_at
+            && $this->subscription_expires_at->isFuture();
+    }
+
+    /**
      * ตรวจสอบว่าลงขายได้อีกหรือไม่
      */
     public function canCreateListing(): bool
@@ -201,13 +211,106 @@ class FreshMarketSeller extends Model
 
         $settings = FreshMarketSetting::getSettings();
 
-        if ($this->hasActiveSubscription() && $this->subscription_type !== 'free') {
-            $max = $settings->max_listings_subscribed;
+        // เก็บเฉพาะ GP (ไม่มีแพ็กเกจสมาชิก) → ไม่จำกัดจำนวนลงขาย
+        if ($settings->fee_mode === 'percentage') {
+            return true;
+        }
+
+        // สมาชิกรายเดือน/ช่วงทดลอง (ยังไม่หมดอายุ) → โควต้าสมาชิก (0 = ไม่จำกัด)
+        if ($this->hasPaidSubscription()) {
+            $max = (int) $settings->max_listings_subscribed;
 
             return $max === 0 || $this->total_listings < $max;
         }
 
-        return $this->total_listings < $settings->max_listings_free;
+        return $this->total_listings < (int) $settings->max_listings_free;
+    }
+
+    /**
+     * สถานะร้านแบบคีย์เดียว (ใช้แสดงป้าย/ปุ่มในหน้าแอดมิน)
+     *
+     * @return string suspended|inactive|unverified|active
+     */
+    public function getStatusKeyAttribute(): string
+    {
+        if ($this->is_suspended) {
+            return 'suspended';
+        }
+
+        if (! $this->is_active) {
+            return 'inactive';
+        }
+
+        if (! $this->is_verified) {
+            return 'unverified';
+        }
+
+        return 'active';
+    }
+
+    /**
+     * ชื่อเดิมที่หน้าแอดมินเก่าเรียก ($seller->status) → คีย์สถานะ (อ่านอย่างเดียว ไม่มีคอลัมน์จริง)
+     */
+    public function getStatusAttribute(): string
+    {
+        return $this->status_key;
+    }
+
+    /**
+     * ชื่อเดิมที่หน้าแอดมินเก่าเรียก ($seller->rating) → คะแนนเฉลี่ย
+     */
+    public function getRatingAttribute(): float
+    {
+        return (float) $this->rating_average;
+    }
+
+    /**
+     * ป้ายสถานะร้านภาษาไทย
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status_key) {
+            'suspended' => 'ถูกระงับ',
+            'inactive' => 'ปิดร้าน',
+            'unverified' => 'รอยืนยัน',
+            default => 'เปิดขาย',
+        };
+    }
+
+    /**
+     * ผู้ซื้อมองเห็นร้านนี้หรือไม่
+     */
+    public function isVisibleToBuyers(): bool
+    {
+        if (! $this->is_active || $this->is_suspended) {
+            return false;
+        }
+
+        return FreshMarketListing::autoApproveSellers() || (bool) $this->is_verified;
+    }
+
+    /**
+     * ร้านมีพิกัดสำหรับเรียกไรเดอร์หรือไม่
+     */
+    public function hasPickupLocation(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null
+            && (float) $this->latitude != 0.0 && (float) $this->longitude != 0.0;
+    }
+
+    /**
+     * ยอดค่า GP ค้างชำระของร้าน (จากออเดอร์เก็บเงินปลายทางที่หักจาก wallet ไม่ได้)
+     */
+    public function outstandingGpDebt(): float
+    {
+        if (! $this->user_id) {
+            return 0.0;
+        }
+
+        return round((float) WalletDebt::active()
+            ->forUser((int) $this->user_id)
+            ->where('source_type', \App\Services\FreshMarketService::DEBT_SOURCE_GP)
+            ->sum('remaining_amount'), 2);
     }
 
     /**
@@ -216,7 +319,8 @@ class FreshMarketSeller extends Model
     public function refreshStats(): void
     {
         $this->update([
-            'total_listings' => $this->listings()->where('status', 'active')->count(),
+            // นับสินค้าที่ยังไม่ถูกลบ (ขายอยู่ + ของหมดชั่วคราว) — ใช้คุมโควต้าลงขาย
+            'total_listings' => $this->listings()->whereIn('status', ['active', 'sold_out', 'draft'])->count(),
             'total_sales' => $this->orders()->where('order_status', 'completed')->count(),
             'total_revenue' => $this->orders()->where('order_status', 'completed')->sum('seller_earning'),
         ]);

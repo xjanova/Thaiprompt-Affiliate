@@ -50,7 +50,8 @@ class StoreController extends Controller
             'store_state' => 'nullable|string|max:100',
             'store_postal_code' => 'nullable|string|max:20',
             'store_country' => 'nullable|string|max:100',
-            'business_type' => 'nullable|string|max:100',
+            // 🐛 (2026-09-25) SELLER-19: คอลัมน์เป็น enum('individual','company') — เดิมรับข้อความอิสระแล้ว 500
+            'business_type' => 'required|in:individual,company',
             'tax_id' => 'nullable|string|max:50',
             'company_name' => 'nullable|string|max:255',
             'facebook_url' => 'nullable|url|max:255',
@@ -66,11 +67,28 @@ class StoreController extends Controller
             'minimum_order_amount' => 'nullable|numeric|min:0',
             'shipping_fee' => 'nullable|numeric|min:0',
             'free_shipping_threshold' => 'nullable|numeric|min:0',
+            // 🛵 (2026-09-25) ส่งด้วยไรเดอร์ของแพลตฟอร์ม: ต้องปักหมุดจุดรับของก่อนเปิด
+            'rider_delivery_enabled' => 'nullable|boolean',
+            'pickup_address' => 'nullable|string|max:500',
+            'pickup_latitude' => 'nullable|numeric|between:-90,90|required_with:pickup_longitude|required_if:rider_delivery_enabled,1',
+            'pickup_longitude' => 'nullable|numeric|between:-180,180|required_with:pickup_latitude|required_if:rider_delivery_enabled,1',
+        ], [
+            'business_type.required' => 'กรุณาเลือกประเภทธุรกิจ',
+            'business_type.in' => 'ประเภทธุรกิจไม่ถูกต้อง',
+            'pickup_latitude.required_if' => 'เปิดส่งด้วยไรเดอร์ต้องปักหมุดจุดรับของก่อน',
+            'pickup_longitude.required_if' => 'เปิดส่งด้วยไรเดอร์ต้องปักหมุดจุดรับของก่อน',
+            'pickup_latitude.required_with' => 'กรุณาปักหมุดจุดรับของให้ครบ',
+            'pickup_longitude.required_with' => 'กรุณาปักหมุดจุดรับของให้ครบ',
+            'pickup_latitude.between' => 'พิกัดจุดรับของไม่ถูกต้อง',
+            'pickup_longitude.between' => 'พิกัดจุดรับของไม่ถูกต้อง',
         ]);
 
         // Handle boolean fields (checkboxes send '1' when checked, nothing when unchecked)
         $validated['enable_cod'] = $request->has('enable_cod');
         $validated['enable_reviews'] = $request->has('enable_reviews');
+        $validated['rider_delivery_enabled'] = $request->boolean('rider_delivery_enabled');
+        $validated['pickup_latitude'] = is_numeric($request->input('pickup_latitude')) ? round((float) $request->input('pickup_latitude'), 7) : null;
+        $validated['pickup_longitude'] = is_numeric($request->input('pickup_longitude')) ? round((float) $request->input('pickup_longitude'), 7) : null;
 
         // Handle logo upload with WebP conversion
         if ($request->hasFile('store_logo')) {
@@ -105,8 +123,9 @@ class StoreController extends Controller
         }
 
         // Update store slug if store name changed
+        // 🔗 (2026-09-25) SELLER-18: ชื่อไทยได้ slug ว่าง/ชนร้านอื่น → ตัวสร้าง slug กลางที่ไม่ซ้ำ
         if ($validated['store_name'] !== $store->store_name) {
-            $validated['store_slug'] = Str::slug($validated['store_name']);
+            $validated['store_slug'] = VendorStore::generateUniqueSlug($validated['store_name'], $store->id);
         }
 
         $store->update($validated);

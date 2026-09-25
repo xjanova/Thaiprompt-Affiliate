@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\AiApiKey;
 use App\Models\FreshMarketSetting;
-use App\Services\LineGatekeeperService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -68,9 +67,9 @@ class FreshMarketAIService
     /**
      * สร้างคำตอบจาก AI (state-aware)
      *
-     * @param string $userMessage ข้อความจากผู้ใช้
-     * @param array $conversationHistory ประวัติสนทนา
-     * @param array $context บริบท (role, conversation_state, nearby_listings, etc.)
+     * @param  string  $userMessage  ข้อความจากผู้ใช้
+     * @param  array  $conversationHistory  ประวัติสนทนา
+     * @param  array  $context  บริบท (role, conversation_state, nearby_listings, etc.)
      * @return array{response: string, tokens_used: int, provider: string, model: string}
      */
     public function generateResponse(string $userMessage, array $conversationHistory = [], array $context = []): array
@@ -123,8 +122,8 @@ class FreshMarketAIService
     /**
      * สกัดข้อมูลสินค้าจากข้อความเดียว (สำหรับ listing_details state)
      *
-     * @param string $message ข้อความจากผู้ขาย
-     * @param array $existingData ข้อมูลที่มีอยู่แล้ว (จาก context)
+     * @param  string  $message  ข้อความจากผู้ขาย
+     * @param  array  $existingData  ข้อมูลที่มีอยู่แล้ว (จาก context)
      * @return array|null {title, price, unit, description, category_hint, is_organic, complete}
      */
     public function parseListingDetailsFromText(string $message, array $existingData = []): ?array
@@ -154,12 +153,14 @@ class FreshMarketAIService
   "unit": "หน่วย (กก./ถุง/กำ/ชิ้น/ลูก/แพ็ค/กล่อง/ขวด)",
   "description": "คำอธิบายสั้นๆ (ถ้ามี)",
   "category_hint": "หมวดหมู่ (ผักสด/ผลไม้/เนื้อสัตว์/อาหารทะเล/ของแห้ง/ขนม/เครื่องดื่ม/อาหารปรุงสำเร็จ)",
-  "is_organic": false
+  "is_organic": false,
+  "quantity": null
 }
 
 กฎ:
 - ราคา: ถ้าผู้ขายพิมพ์ "กิโลละ 120" → price=120, unit="กก."
 - ถ้าพิมพ์ "ถุงละ 50" → price=50, unit="ถุง"
+- quantity = จำนวนสินค้าที่มีขาย (ตัวเลข) เช่น "มี 20 กำ" → 20 ถ้าไม่ได้บอกให้เป็น null ห้ามเดา
 - ถ้าพิมพ์ "ออแกนิก" หรือ "ปลอดสาร" → is_organic=true
 - ถ้าข้อมูลไม่พอ (ไม่มีชื่อหรือราคา) ตอบ null
 - ตอบเฉพาะ JSON เท่านั้น ห้ามมีข้อความอื่น
@@ -399,19 +400,19 @@ PROMPT;
 
             'seller_otp' => "สถานะ: รอรหัส OTP\n- ห้ามตอบเรื่องอื่น\n- พิมพ์ \"ส่งใหม่\" ได้ถ้าไม่ได้รับ",
 
-            'listing_photos' => 'สถานะ: รับรูปสินค้า (มีแล้ว ' . ($context['listing_data']['image_count'] ?? 0) . " รูป)\n- แนะนำให้ \"ส่งรูป\" หรือพิมพ์ \"เสร็จ\"\n- ตอบสั้น 1-2 บรรทัด",
+            'listing_photos' => 'สถานะ: รับรูปสินค้า (มีแล้ว '.($context['listing_data']['image_count'] ?? 0)." รูป)\n- แนะนำให้ \"ส่งรูป\" หรือพิมพ์ \"เสร็จ\"\n- ตอบสั้น 1-2 บรรทัด",
 
             'listing_details' => "สถานะ: รอข้อมูลสินค้า\n- ผู้ใช้จะพิมพ์ชื่อ ราคา หน่วย\n- ตอบไทยปกติ ไม่ต้อง JSON\n- ถ้าข้อมูลไม่ครบ ถามเพิ่มอย่างเป็นมิตร",
 
             'listing_location' => "สถานะ: รอพิกัดร้าน\n- แนะนำกด + → ส่งตำแหน่ง\n- พิมพ์ \"ข้าม\" ใช้พิกัดเดิม",
 
-            'listing_review' => 'สถานะ: ตรวจสอบก่อนลงขาย ' . json_encode($context['listing_data'] ?? [], JSON_UNESCAPED_UNICODE) . "\n- ถามว่า \"ยืนยัน\" หรือ \"แก้ไข\"",
+            'listing_review' => 'สถานะ: ตรวจสอบก่อนลงขาย '.json_encode($context['listing_data'] ?? [], JSON_UNESCAPED_UNICODE)."\n- ถามว่า \"ยืนยัน\" หรือ \"แก้ไข\"",
 
             'search_location' => "สถานะ: รอตำแหน่งผู้ซื้อ\n- แนะนำกด + → ส่งตำแหน่ง\n- ถ้ามีพิกัดเดิม → พิมพ์ชื่อสินค้าค้นหาได้เลย",
 
-            'search_browsing' => "สถานะ: แสดงผลค้นหา\n- ช่วยแนะนำสินค้าจากผลค้นหา\n- ถ้าผู้ใช้บอกชื่อสินค้า → ค้นหาใหม่" . (! empty($context['nearby_listings']) ? "\n\nสินค้าใกล้ตัว:\n{$context['nearby_listings']}" : ''),
+            'search_browsing' => "สถานะ: แสดงผลค้นหา\n- ช่วยแนะนำสินค้าจากผลค้นหา\n- ถ้าผู้ใช้บอกชื่อสินค้า → ค้นหาใหม่".(! empty($context['nearby_listings']) ? "\n\nสินค้าใกล้ตัว:\n{$context['nearby_listings']}" : ''),
 
-            'order_quantity' => 'สถานะ: รอจำนวนสั่งซื้อ ' . ($context['order_data']['listing_title'] ?? '') . ' ฿' . ($context['order_data']['listing_price'] ?? 0) . '/' . ($context['order_data']['listing_unit'] ?? '') . "\n- ผู้ใช้จะบอกจำนวนและวิธีรับ\n- ตอบไทยปกติ",
+            'order_quantity' => 'สถานะ: รอจำนวนสั่งซื้อ '.($context['order_data']['listing_title'] ?? '').' ฿'.($context['order_data']['listing_price'] ?? 0).'/'.($context['order_data']['listing_unit'] ?? '')."\n- ผู้ใช้จะบอกจำนวนและวิธีรับ\n- ตอบไทยปกติ",
 
             'order_review' => "สถานะ: ยืนยันคำสั่งซื้อ\n- ถาม \"ยืนยัน\" หรือ \"ยกเลิก\"",
 

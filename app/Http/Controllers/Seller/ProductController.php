@@ -7,12 +7,19 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductImage;
 use App\Services\ImageUploadService;
+use App\Services\Pricing\PricingEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    /**
+     * เพดานค่าส่งต่อสินค้าที่ผู้ขายตั้งเองได้ (บาท) — กันตั้งค่าส่งสูงผิดปกติ (เช่น 10,000 บาท)
+     * ร่วมกับคูปองส่งฟรีเพื่อดึงเงินจากระบบ (รีวิว Wave-1) · ค่าส่งเกินนี้ให้แอดมินตั้งแทน
+     */
+    public const MAX_SHIPPING_FEE = 5000;
+
     protected ImageUploadService $imageUploadService;
 
     public function __construct(ImageUploadService $imageUploadService)
@@ -99,7 +106,8 @@ class ProductController extends Controller
             'dimensions' => 'nullable|string|max:100',
             'sku' => 'nullable|string|unique:products,sku',
             'track_inventory' => 'boolean',
-            'commission_rate' => 'nullable|numeric|min:0|max:100',
+            // 🔒 (2026-09-25) audit G8/SELLER-05: ไม่รับ commission_rate จากผู้ขายแล้ว —
+            //    อัตรา GP มาจากแพลตฟอร์ม (PricingEngine) เท่านั้น
             'pv_value' => 'nullable|numeric|min:0',
             'customer_cashback' => 'nullable|numeric|min:0',
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
@@ -107,7 +115,7 @@ class ProductController extends Controller
             'images.*' => 'nullable|image|max:5120',
             // Shipping validation
             'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
-            'shipping_fee' => 'nullable|numeric|min:0',
+            'shipping_fee' => 'nullable|numeric|min:0|max:'.self::MAX_SHIPPING_FEE,
             'shipping_weight_kg' => 'nullable|numeric|min:0',
             'free_shipping_min_amount' => 'nullable|numeric|min:0',
         ]);
@@ -130,9 +138,11 @@ class ProductController extends Controller
             // Create product
             $product = Product::create([
                 'seller_id' => auth()->id(),
+                // 🏪 (2026-09-25) SELLER-09/18: ผูกร้าน (หน้าร้านแอป/POS ค้นด้วย store_id) + slug ไม่ซ้ำ (ชื่อไทยได้)
+                'store_id' => \App\Models\VendorStore::where('user_id', auth()->id())->orderBy('id')->value('id'),
                 'category_id' => $request->category_id,
                 'name' => $request->name,
-                'slug' => Str::slug($request->name),
+                'slug' => Product::generateUniqueSlug((string) $request->name),
                 'sku' => $request->sku ?: 'PRD-'.strtoupper(Str::random(8)),
                 'description' => $request->description,
                 'short_description' => $request->short_description,
@@ -145,7 +155,6 @@ class ProductController extends Controller
                 'brand' => $request->brand,
                 'weight' => $request->weight,
                 'dimensions' => $request->dimensions,
-                'commission_rate' => $request->commission_rate ?? 10.00,
                 'customer_cashback' => $request->customer_cashback ?? 0,
                 'cashback_percentage' => $request->cashback_percentage ?? 0,
                 'main_image_url' => $mainImageUrl,
@@ -158,6 +167,10 @@ class ProductController extends Controller
                 'is_active' => true,
                 'published_at' => now(),
             ]);
+
+            // commission_rate เก็บเป็น "ค่าแสดงผล" = อัตรา GP ที่แพลตฟอร์มคิดจริง ณ ตอนนี้
+            // (เงินจริงคิดจาก PricingEngine ตอนแบ่งเงินเสมอ ไม่อ่านคอลัมน์นี้)
+            $this->syncDisplayedGpRate($product);
 
             // Create PV for default MLM plan if specified
             if ($request->filled('pv_value') && $request->pv_value > 0) {
@@ -249,7 +262,6 @@ class ProductController extends Controller
             'dimensions' => 'nullable|string|max:100',
             'sku' => 'nullable|string|unique:products,sku,'.$product->id,
             'track_inventory' => 'boolean',
-            'commission_rate' => 'nullable|numeric|min:0|max:100',
             'pv_value' => 'nullable|numeric|min:0',
             'customer_cashback' => 'nullable|numeric|min:0',
             'cashback_percentage' => 'nullable|numeric|min:0|max:100',
@@ -257,7 +269,7 @@ class ProductController extends Controller
             'images.*' => 'nullable|image|max:5120',
             // Shipping validation
             'shipping_method' => 'nullable|in:free,flat_rate,weight_based,store_default',
-            'shipping_fee' => 'nullable|numeric|min:0',
+            'shipping_fee' => 'nullable|numeric|min:0|max:'.self::MAX_SHIPPING_FEE,
             'shipping_weight_kg' => 'nullable|numeric|min:0',
             'free_shipping_min_amount' => 'nullable|numeric|min:0',
         ]);
@@ -284,7 +296,10 @@ class ProductController extends Controller
             $product->update([
                 'category_id' => $request->category_id,
                 'name' => $request->name,
-                'slug' => Str::slug($request->name),
+                // 🔗 (2026-09-25) SELLER-18: สร้าง slug ใหม่เฉพาะเมื่อเปลี่ยนชื่อ (Str::slug ชื่อไทย = ค่าว่าง → ชน unique)
+                'slug' => $request->name !== $product->name || blank($product->slug)
+                    ? Product::generateUniqueSlug((string) $request->name, $product->id)
+                    : $product->slug,
                 'sku' => $request->sku ?: $product->sku,
                 'description' => $request->description,
                 'short_description' => $request->short_description,
@@ -297,7 +312,6 @@ class ProductController extends Controller
                 'brand' => $request->brand,
                 'weight' => $request->weight,
                 'dimensions' => $request->dimensions,
-                'commission_rate' => $request->commission_rate ?? $product->commission_rate,
                 'customer_cashback' => $request->customer_cashback ?? 0,
                 'cashback_percentage' => $request->cashback_percentage ?? 0,
                 // Shipping fields
@@ -308,6 +322,9 @@ class ProductController extends Controller
                     ?? $request->free_shipping_min_amount_weight
                     ?? $product->free_shipping_min_amount,
             ]);
+
+            // อัปเดตค่าแสดงผล GP ให้ตรงกับอัตราที่แพลตฟอร์มคิดจริง
+            $this->syncDisplayedGpRate($product);
 
             // Update or create PV for default MLM plan if specified
             // 🐛 Fix 2026-07-24: ใช้ default plan (settings/is_default) ให้ตรงกับที่ checkout
@@ -478,5 +495,24 @@ class ProductController extends Controller
             'success' => true,
             'message' => 'อัพเดตสต็อกเรียบร้อยแล้ว',
         ]);
+    }
+
+    /**
+     * เขียนอัตรา GP ที่แพลตฟอร์มคิดจริงลง products.commission_rate (ค่าแสดงผลเท่านั้น)
+     *
+     * ผู้ขายกำหนด GP เองไม่ได้ — อัตรามาจาก PricingEngine (admin_gp_rate → แพ็กเกจร้าน → ค่ากลาง)
+     * อ่านไม่ได้ให้คงค่าเดิมไว้ (ไม่ทำให้การบันทึกสินค้าล้ม)
+     */
+    private function syncDisplayedGpRate(Product $product): void
+    {
+        try {
+            $rate = app(PricingEngine::class)->gpRateForProduct($product);
+            $product->forceFill(['commission_rate' => round($rate, 2)])->saveQuietly();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Seller product: sync displayed GP rate failed', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

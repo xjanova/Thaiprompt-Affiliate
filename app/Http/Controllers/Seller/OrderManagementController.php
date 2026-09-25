@@ -2,17 +2,28 @@
 
 namespace App\Http\Controllers\Seller;
 
+use App\Exceptions\ShopException;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderMessage;
 use App\Models\OrderTrackingHistory;
 use App\Models\ShippingProvider;
+use App\Services\Shop\SellerOrderService;
+use App\Services\Shop\ShopPresenter;
+use App\Support\Shop\PaymentMethod;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
+/**
+ * จัดการคำสั่งซื้อฝั่งร้าน (เว็บ /seller/orders)
+ *
+ * 🛒 (2026-09-25) SELLER-03/13/14: การยืนยัน/ส่งของ/ส่งถึง/ยกเลิก/เรียกไรเดอร์ ใช้ SellerOrderService
+ *    ตัวเดียวกับแอป — ส่งของได้เฉพาะออเดอร์ที่จ่ายแล้วหรือ COD · ออเดอร์หลายร้านไม่เขียนทับกัน
+ */
 class OrderManagementController extends Controller
 {
+    public function __construct(private readonly SellerOrderService $sellerOrders) {}
+
     /**
      * Display seller's orders
      */
@@ -77,48 +88,104 @@ class OrderManagementController extends Controller
         $sellerCommission = $sellerItems->sum('commission_amount');
         $sellerEarning = $sellerItems->sum('seller_earning');
 
+        // ปุ่มที่ร้านกดได้ + บริษัทขนส่ง (ฟอร์มเลขพัสดุใช้ shipping_provider_id) + สถานะไรเดอร์
+        $fullOrder = Order::with('items')->find($order->id);
+        $allowedActions = $fullOrder ? $this->sellerOrders->allowedActions($fullOrder, (int) auth()->id()) : [];
+        $shippingProviders = ShippingProvider::active()->ordered()->get();
+        $riderSummary = ShopPresenter::riderSummary($order);
+        $paymentMethodLabel = PaymentMethod::labelTh($order->payment_method);
+
         return view('seller.orders.show', compact(
             'order',
             'sellerItems',
             'sellerTotal',
             'sellerCommission',
-            'sellerEarning'
+            'sellerEarning',
+            'allowedActions',
+            'shippingProviders',
+            'riderSummary',
+            'paymentMethodLabel'
         ));
     }
 
     /**
-     * Update order item status
+     * ทำตามปุ่มของร้าน: confirm | request_rider | ship | deliver | cancel
+     * (POST /seller/orders/{orderId}/action — ตรรกะเดียวกับ API แอป)
+     */
+    public function action(Request $request, $orderId)
+    {
+        $request->validate([
+            'action' => 'required|in:'.implode(',', SellerOrderService::ACTIONS),
+            'tracking_number' => 'required_if:action,ship|nullable|string|max:100',
+            'shipping_provider_id' => 'nullable|integer|exists:shipping_providers,id',
+            'estimated_delivery_at' => 'nullable|date|after_or_equal:today',
+            'reason' => 'required_if:action,cancel|nullable|string|max:500',
+        ], [
+            'action.in' => 'คำสั่งไม่ถูกต้อง',
+            'tracking_number.required_if' => 'กรุณากรอกหมายเลขพัสดุ',
+            'shipping_provider_id.exists' => 'ไม่พบบริษัทขนส่งที่เลือก',
+            'reason.required_if' => 'กรุณาระบุเหตุผลในการยกเลิก',
+        ]);
+
+        $order = Order::forSeller((int) auth()->id())->with('items')->findOrFail($orderId);
+
+        try {
+            $this->sellerOrders->perform($order, $request->user(), (string) $request->input('action'), $request->only([
+                'tracking_number', 'shipping_provider_id', 'estimated_delivery_at', 'reason',
+            ]));
+        } catch (ShopException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('Seller web order action failed', [
+                'order_id' => $order->id,
+                'action' => $request->input('action'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'ทำรายการไม่สำเร็จ กรุณาลองใหม่');
+        }
+
+        return back()->with('success', match ((string) $request->input('action')) {
+            'confirm' => 'ยืนยันคำสั่งซื้อแล้ว',
+            'request_rider' => 'เรียกไรเดอร์แล้ว ระบบกำลังหาไรเดอร์ใกล้ร้าน',
+            'ship' => 'บันทึกเลขพัสดุและเปลี่ยนสถานะเป็นจัดส่งแล้ว',
+            'deliver' => 'ยืนยันส่งถึงแล้ว',
+            'cancel' => 'ยกเลิกคำสั่งซื้อแล้ว',
+            default => 'ดำเนินการแล้ว',
+        });
+    }
+
+    /**
+     * Update order item status (ฟอร์มเดิมในหน้ารายละเอียด)
+     *
+     * 🛒 (2026-09-25) SELLER-14: เดิมเปลี่ยนสถานะได้แม้ยังไม่จ่าย และเปลี่ยนเป็น completed เองได้
+     *    ตอนนี้: processing = ยืนยัน · delivered = ส่งถึง (ต้องจัดส่งก่อน) · shipped ต้องกรอกเลขพัสดุ
      */
     public function updateItemStatus(Request $request, $orderId, $itemId)
     {
         $request->validate([
-            'status' => 'required|in:processing,shipped,delivered,completed',
+            'status' => 'required|in:processing,shipped,delivered',
+        ], [
+            'status.in' => 'สถานะไม่ถูกต้อง',
         ]);
 
-        $orderItem = OrderItem::where('id', $itemId)
+        OrderItem::where('id', $itemId)
             ->where('seller_id', auth()->id())
-            ->whereHas('order', function ($q) use ($orderId) {
-                $q->where('id', $orderId);
-            })
+            ->where('order_id', $orderId)
             ->firstOrFail();
 
-        $orderItem->status = $request->status;
-        $orderItem->save();
+        if ($request->status === 'shipped') {
+            return redirect()->route('seller.orders.tracking', $orderId)
+                ->with('error', 'กรุณากรอกเลขพัสดุเพื่อเปลี่ยนสถานะเป็นจัดส่งแล้ว');
+        }
 
-        // Update order status if all items are in same status
-        $order = $orderItem->order;
-        $allItems = $order->items;
+        $order = Order::forSeller((int) auth()->id())->with('items')->findOrFail($orderId);
+        $action = $request->status === 'processing' ? 'confirm' : 'deliver';
 
-        if ($allItems->every(fn ($item) => $item->status === $request->status)) {
-            $order->status = $request->status;
-
-            if ($request->status === 'shipped') {
-                $order->shipped_at = now();
-            } elseif ($request->status === 'delivered') {
-                $order->delivered_at = now();
-            }
-
-            $order->save();
+        try {
+            $this->sellerOrders->perform($order, $request->user(), $action);
+        } catch (ShopException $e) {
+            return back()->with('error', $e->getMessage());
         }
 
         return back()->with('success', 'อัพเดตสถานะเรียบร้อยแล้ว');
@@ -138,7 +205,7 @@ class OrderManagementController extends Controller
             },
             'user',
             'shippingProvider',
-            'trackingHistory.user',
+            'trackingHistory.creator',
             'messages.sender',
         ])
             ->whereHas('items', function ($q) {
@@ -153,59 +220,43 @@ class OrderManagementController extends Controller
 
     /**
      * Add tracking number (V2 - ใช้ ShippingProvider model)
+     *
+     * 🐛 (2026-09-25) SELLER-03/14: เดิมเรียก createEntry ผิด signature (TypeError 500), ไม่เช็คว่าจ่ายแล้ว
+     *    และเขียนทับเลขพัสดุ/สถานะของทั้งออเดอร์แม้มีสินค้าร้านอื่น → ใช้ action ship ของ SellerOrderService
      */
     public function addTracking(Request $request, $orderId)
     {
         $request->validate([
             'shipping_provider_id' => 'required|exists:shipping_providers,id',
             'tracking_number' => 'required|string|max:100',
-            'estimated_delivery_at' => 'nullable|date',
+            'estimated_delivery_at' => 'nullable|date|after_or_equal:today',
         ], [
             'shipping_provider_id.required' => 'กรุณาเลือกบริษัทขนส่ง',
+            'shipping_provider_id.exists' => 'ไม่พบบริษัทขนส่งที่เลือก',
             'tracking_number.required' => 'กรุณากรอกหมายเลขพัสดุ',
         ]);
 
-        $order = Order::whereHas('items', function ($q) {
-            $q->where('seller_id', auth()->id());
-        })->findOrFail($orderId);
-
-        DB::beginTransaction();
+        $order = Order::forSeller((int) auth()->id())->with('items')->findOrFail($orderId);
 
         try {
-            // อัพเดทข้อมูล Order
-            $order->shipping_provider_id = $request->shipping_provider_id;
-            $order->tracking_number = $request->tracking_number;
-            $order->estimated_delivery_at = $request->estimated_delivery_at;
-            $order->status = 'shipped';
-            $order->shipped_at = now();
-            $order->save();
+            $this->sellerOrders->perform($order, $request->user(), 'ship', $request->only([
+                'shipping_provider_id', 'tracking_number', 'estimated_delivery_at',
+            ]));
+        } catch (ShopException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('Seller add tracking failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
 
-            // Update all seller's items in this order
-            OrderItem::where('order_id', $orderId)
-                ->where('seller_id', auth()->id())
-                ->update(['status' => 'shipped']);
-
-            // สร้าง tracking history
-            OrderTrackingHistory::createEntry(
-                $order,
-                'shipped',
-                'ส่งสินค้าแล้ว - หมายเลขพัสดุ: '.$request->tracking_number,
-                auth()->id()
-            );
-
-            DB::commit();
-
-            return back()->with('success', 'เพิ่มเลขพัสดุเรียบร้อยแล้ว');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', 'บันทึกเลขพัสดุไม่สำเร็จ กรุณาลองใหม่');
         }
+
+        return back()->with('success', 'เพิ่มเลขพัสดุเรียบร้อยแล้ว');
     }
 
     /**
      * เพิ่ม Tracking History
+     *
+     * in_transit / out_for_delivery = บันทึกความคืบหน้า · delivered = ยืนยันส่งถึง (ผ่าน SellerOrderService)
      *
      * @param  int  $orderId
      * @return \Illuminate\Http\RedirectResponse
@@ -213,38 +264,36 @@ class OrderManagementController extends Controller
     public function addTrackingHistory(Request $request, $orderId)
     {
         $request->validate([
-            'status' => 'required|string|max:50',
+            'status' => 'required|in:in_transit,out_for_delivery,delivered',
             'description' => 'required|string|max:500',
             'location' => 'nullable|string|max:255',
         ], [
             'status.required' => 'กรุณาเลือกสถานะ',
+            'status.in' => 'สถานะไม่ถูกต้อง',
             'description.required' => 'กรุณากรอกรายละเอียด',
         ]);
 
-        $order = Order::whereHas('items', function ($q) {
-            $q->where('seller_id', auth()->id());
-        })->findOrFail($orderId);
+        $order = Order::forSeller((int) auth()->id())->with('items')->findOrFail($orderId);
 
-        OrderTrackingHistory::createEntry(
-            $order,
-            $request->status,
-            $request->description,
-            auth()->id(),
-            $request->location
-        );
-
-        // อัพเดทสถานะ Order ตาม tracking status
         if ($request->status === 'delivered') {
-            $order->update([
-                'status' => 'delivered',
-                'delivered_at' => now(),
-            ]);
+            try {
+                $this->sellerOrders->perform($order, $request->user(), 'deliver');
+            } catch (ShopException $e) {
+                return back()->with('error', $e->getMessage());
+            }
 
-            // Update all seller's items
-            OrderItem::where('order_id', $orderId)
-                ->where('seller_id', auth()->id())
-                ->update(['status' => 'delivered']);
+            return back()->with('success', 'ยืนยันส่งถึงเรียบร้อยแล้ว');
         }
+
+        $labels = ['in_transit' => 'อยู่ระหว่างขนส่ง', 'out_for_delivery' => 'กำลังนำส่ง'];
+
+        OrderTrackingHistory::createEntry($order, $request->status, $labels[$request->status], [
+            'description' => $request->description,
+            'location' => $request->location,
+            'created_by' => auth()->id(),
+            'created_by_type' => 'seller',
+            'meta_data' => ['seller_id' => (int) auth()->id()],
+        ]);
 
         return back()->with('success', 'เพิ่มประวัติการจัดส่งเรียบร้อยแล้ว');
     }
@@ -368,8 +417,10 @@ class OrderManagementController extends Controller
             ->whereHas('items', function ($q) {
                 $q->where('seller_id', auth()->id());
             })
-            ->where('payment_status', 'paid')
-            ->whereIn('status', ['pending', 'confirmed', 'processing'])
+            // 🛒 (2026-09-25) SELLER-13: รวมออเดอร์เก็บเงินปลายทาง (ยังไม่จ่ายแต่ต้องส่ง) ด้วย
+            ->where(fn ($q) => $q->where('payment_status', 'paid')
+                ->orWhere(fn ($cod) => $cod->where('payment_method', PaymentMethod::COD)->where('payment_status', 'pending')))
+            ->whereIn('status', ['pending', 'paid', 'processing'])
             ->whereNull('tracking_number')
             ->latest();
 
@@ -381,8 +432,9 @@ class OrderManagementController extends Controller
             'total_amount' => Order::whereHas('items', function ($q) {
                 $q->where('seller_id', auth()->id());
             })
-                ->where('payment_status', 'paid')
-                ->whereIn('status', ['pending', 'confirmed', 'processing'])
+                ->where(fn ($q) => $q->where('payment_status', 'paid')
+                    ->orWhere(fn ($cod) => $cod->where('payment_method', PaymentMethod::COD)->where('payment_status', 'pending')))
+                ->whereIn('status', ['pending', 'paid', 'processing'])
                 ->whereNull('tracking_number')
                 ->sum('total_amount'),
         ];

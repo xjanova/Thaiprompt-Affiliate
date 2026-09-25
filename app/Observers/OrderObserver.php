@@ -4,98 +4,80 @@ namespace App\Observers;
 
 use App\Models\Order;
 use App\Services\CashbackService;
-use App\Services\MlmCalculationService;
 use App\Services\OrderDistributionService;
+use App\Services\SellerPayoutService;
 use App\Services\WalletService;
 use Illuminate\Support\Facades\Log;
 
 /**
- * OrderObserver
+ * OrderObserver — ผูกเงินของออเดอร์กับสถานะออเดอร์
  *
- * จัดการ events ของ Order:
- * - เมื่อชำระเงินสำเร็จ (payment_status = 'paid')
- *   → คำนวณ MLM Commission
- *   → จ่าย Cashback
- *   → แบ่งเงินให้ Seller + เก็บ Fee/VAT
+ * - payment_status เปลี่ยนเป็น 'paid' (ได้รับเงินจริงแล้ว ทั้งโอน/wallet/COD ที่เก็บเงินแล้ว)
+ *   → จ่ายเงินคืนลูกค้า (cashback) + แบ่งเงินผู้ขาย/แพลตฟอร์ม (OrderDistributionService)
+ * - status เปลี่ยนเป็น delivered/completed
+ *   → เริ่มนับวันพักเงินของผู้ขาย (รายได้โอนเข้ากระเป๋าหลังส่งของถึง + holding days)
+ *   → ถ้าจ่ายแล้วแต่ยังไม่ถูกแบ่ง (เช่น COD ที่บันทึกรับเงินก่อน) แบ่งเงินตอนนี้
+ *   → COD ที่ส่งถึงแต่ยังไม่บันทึกรับเงิน (payment_status ยังไม่ใช่ paid) จะยังไม่แบ่งเงิน
+ *     (สถานะส่งถึง ≠ หลักฐานว่าเก็บเงินได้) รอผู้เก็บเงิน (ไรเดอร์/แอดมิน) บันทึก payment_status = paid
  *
- * - เมื่อ COD ส่งสำเร็จ (status = 'delivered')
- *   → จ่าย Cashback
+ * ทุกขั้นกันทำซ้ำอยู่ใน service แล้ว (lock แถวออเดอร์) — observer จับ \Throwable เพื่อไม่ให้การอัปเดต
+ * สถานะออเดอร์ล้มเพราะงานเงิน (cron orders:process-distribution จะเก็บตกให้)
  */
 class OrderObserver
 {
-    protected $mlmService;
+    protected CashbackService $cashbackService;
 
-    protected $cashbackService;
+    protected OrderDistributionService $distributionService;
 
-    protected $distributionService;
+    protected SellerPayoutService $payoutService;
 
     public function __construct()
     {
-        $this->mlmService = new MlmCalculationService;
         $this->cashbackService = new CashbackService(new WalletService);
         $this->distributionService = new OrderDistributionService;
+        $this->payoutService = new SellerPayoutService;
     }
 
     /**
-     * ⚠️ หมายเหตุ: ห้ามใส่ handler 'created' เพื่อจับออเดอร์ที่สร้างเป็น paid
+     * ⚠️ ห้ามใส่ handler 'created' เพื่อจับออเดอร์ที่สร้างเป็น paid
      * เพราะ event ยิงกลาง DB transaction ก่อน OrderItems ถูกสร้าง
-     * → distribution จะเห็น 0 items แล้ว mark ว่า distribute แล้วอย่างผิดๆ
-     * flow ที่สร้างออเดอร์เป็น paid (เช่น mobile wallet checkout) ต้องเรียก
-     * OrderDistributionService เองหลัง DB::commit() — ดู MobileApiController::checkout
-     */
-
-    /**
-     * Handle the Order "updated" event.
-     *
-     * เมื่อ Order ถูกอัพเดท จะตรวจสอบและประมวลผล:
-     * 1. ถ้า payment_status เปลี่ยนเป็น 'paid' → ประมวลผลทั้งหมด
-     * 2. ถ้า COD และ status เปลี่ยนเป็น 'delivered' → จ่าย cashback
+     * flow ที่สร้างออเดอร์เป็น paid (เช่น wallet checkout) ต้องเรียก OrderDistributionService เองหลัง commit
      */
     public function updated(Order $order): void
     {
-        // ประมวลผลเมื่อชำระเงินสำเร็จ (ไม่ใช่ COD)
-        if ($order->wasChanged('payment_status') && $order->payment_status === 'paid') {
-            // แก้ Bug PV-1: ลบ processMlmCommissions() ออกเพราะ processOrderDistribution()
-            // มีการคำนวณ MLM Commission อยู่ภายในแล้ว (ผ่าน OrderDistributionService)
-            // การเรียกซ้ำ 2 ทาง ทำให้เกิด duplicate commission
+        $becamePaid = $order->wasChanged('payment_status') && $order->payment_status === 'paid';
+        $becameDelivered = $order->wasChanged('status')
+            && in_array($order->status, SellerPayoutService::DELIVERED_STATUSES, true);
 
-            // 1. จ่าย Cashback ให้ลูกค้า
+        if ($becamePaid) {
             $this->processCashback($order);
-
-            // 2. แบ่งเงินให้ Seller + เก็บ Fee/VAT/MLM Pool + คำนวณ MLM Commission
             $this->processOrderDistribution($order);
         }
 
-        // สำหรับ COD: จ่าย cashback + distribution เมื่อส่งสำเร็จ
-        if ($order->wasChanged('status') && $order->status === 'delivered' && $order->payment_method === 'cod') {
-            $this->processCashback($order);
+        if ($becameDelivered) {
+            if ($order->payment_status === 'paid') {
+                // COD: เงินคืนลูกค้าจ่ายหลังส่งถึง (CashbackService ข้าม COD ที่ยังไม่ delivered)
+                if ($order->payment_method === 'cod') {
+                    $this->processCashback($order);
+                }
 
-            // สำหรับ COD ต้อง distribute เมื่อส่งของสำเร็จด้วย
-            if (! $this->distributionService->isOrderDistributed($order)) {
-                $this->processOrderDistribution($order);
+                if (! $becamePaid) {
+                    $this->processOrderDistribution($order);
+                }
+            } elseif ($order->payment_method === 'cod') {
+                Log::info('COD order delivered but payment not recorded yet, distribution waits', [
+                    'order_id' => $order->id,
+                    'payment_status' => $order->payment_status,
+                ]);
             }
+
+            $this->startHoldingClock($order);
+        } elseif ($order->wasChanged('status') && $order->status === 'shipped' && $order->payment_status === 'paid') {
+            // ส่งพัสดุแล้ว: ตั้งวันที่คาดว่าจะปล่อยเงิน (ถ้าลูกค้าไม่กดยืนยันรับของภายในกำหนด)
+            $this->startHoldingClock($order);
         }
     }
 
-    /**
-     * ประมวลผล MLM Commission สำหรับ Order
-     */
-    protected function processMlmCommissions(Order $order): void
-    {
-        try {
-            $this->mlmService->processOrderCommissions($order);
-            Log::info('MLM commissions processed for order', ['order_id' => $order->id]);
-        } catch (\Exception $e) {
-            Log::error('Failed to process MLM commissions', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * ประมวลผล Cashback สำหรับ Order
-     */
     protected function processCashback(Order $order): void
     {
         try {
@@ -106,7 +88,7 @@ class OrderObserver
                     'cashback_amount' => $transaction->amount,
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to process cashback', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
@@ -115,32 +97,39 @@ class OrderObserver
     }
 
     /**
-     * ประมวลผลการแบ่งเงิน Order
-     *
-     * หักค่า Fee, VAT, MLM Pool แล้วบันทึกรายได้ให้ Seller
+     * แบ่งเงินออเดอร์ (idempotent ใน service)
      */
     protected function processOrderDistribution(Order $order): void
     {
         try {
-            // ตรวจสอบว่า distribute ไปแล้วหรือยัง
             if ($this->distributionService->isOrderDistributed($order)) {
-                Log::info('Order already distributed, skipping', ['order_id' => $order->id]);
-
                 return;
             }
 
             $result = $this->distributionService->processOrderDistribution($order);
 
-            Log::info('Order distribution processed', [
+            Log::info('Order distribution processed (observer)', [
                 'order_id' => $order->id,
-                'total_amount' => $result['total_amount'] ?? 0,
+                'skipped' => $result['skipped'] ?? false,
+                'reason' => $result['reason'] ?? null,
                 'distributions_count' => count($result['distributions'] ?? []),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Failed to process order distribution', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    protected function startHoldingClock(Order $order): void
+    {
+        try {
+            $this->payoutService->startHoldingClock($order);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to start seller holding clock', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
             ]);
         }
     }

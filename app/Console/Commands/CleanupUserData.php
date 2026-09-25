@@ -461,8 +461,9 @@ class CleanupUserData extends Command
 
         $count = User::whereIn('id', $userIds)->count();
 
-        // ลบ users (ใช้ delete ปกติ)
-        User::whereIn('id', $userIds)->delete();
+        // ลบ users ถาวร — User ใช้ SoftDeletes แล้ว (2026-09-25) ต้อง forceDelete
+        //   ไม่งั้นอีเมลเดิมค้าง unique และ FK cascade ของข้อมูลทดสอบไม่ทำงาน (คงพฤติกรรมเดิมของ command นี้)
+        User::whereIn('id', $userIds)->forceDelete();
 
         $this->info("   ✓ ลบ Users: {$count} คน");
     }

@@ -2,22 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ShopException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShippingAddress;
 use App\Models\ShoppingCart;
 use App\Models\UniquePaymentAmount;
 use App\Models\Wallet;
-use App\Notifications\NewOrderNotification;
 use App\Services\CashbackService;
 use App\Services\Payment\OrderStripeService;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\PromptPayProvider;
+use App\Services\Pricing\PricingEngine;
 use App\Services\ShippingService;
+use App\Services\Shop\ShopOrderNotifier;
 use App\Services\WalletService;
+use App\Support\Shop\PaymentMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 
 class CheckoutController extends Controller
 {
@@ -130,8 +132,9 @@ class CheckoutController extends Controller
         });
 
         // ✅ Validation: shipping_address_id required เฉพาะเมื่อมีสินค้าที่ต้องส่ง
+        // 💳 (2026-09-25) G7: รับ cash_on_delivery จากฟอร์มเดิมได้ แต่บันทึกเป็น 'cod' (enum ของ orders)
         $validationRules = [
-            'payment_method' => 'required|in:wallet,promptpay,bank_transfer,credit_card,cash_on_delivery,paysolutions',
+            'payment_method' => 'required|in:wallet,promptpay,bank_transfer,credit_card,cash_on_delivery,cod,paysolutions',
             'customer_notes' => 'nullable|string|max:1000',
         ];
 
@@ -146,6 +149,8 @@ class CheckoutController extends Controller
 
         $request->validate($validationRules);
 
+        $paymentMethod = PaymentMethod::normalize($request->payment_method);
+
         // Check stock availability again
         foreach ($cartItems as $item) {
             if (! $item->isAvailable() || ! $item->hasEnoughStock()) {
@@ -156,6 +161,10 @@ class CheckoutController extends Controller
         DB::beginTransaction();
 
         try {
+            // 🏪 ร้านของออเดอร์ (เมื่อสินค้าทั้งหมดมาจากร้านเดียว) — ให้หน้าร้าน/สถิติร้านนับออเดอร์ได้ (SELLER-09)
+            $storeIds = $cartItems->map(fn ($item) => $item->product->resolveStore()?->id)->unique()->values();
+            $storeId = $storeIds->count() === 1 ? $storeIds->first() : null;
+
             // ✅ Get shipping address (เฉพาะสินค้าที่ต้องส่ง, ตรวจสอบ user_id ด้วย)
             $shippingAddress = $hasPhysicalProducts && $request->shipping_address_id
                 ? ShippingAddress::where('user_id', auth()->id())
@@ -183,11 +192,13 @@ class CheckoutController extends Controller
             // Create order (don't decrease stock yet - will be done after payment)
             $order = Order::create([
                 'user_id' => auth()->id(),
+                'store_id' => $storeId,
                 // ✅ Virtual products ไม่ต้องมี shipping address
                 'shipping_address_id' => $shippingAddress ? $request->shipping_address_id : null,
                 'status' => 'pending',
-                'payment_method' => $request->payment_method,
+                'payment_method' => $paymentMethod,
                 'payment_status' => 'pending',
+                'delivery_method' => Order::DELIVERY_PARCEL,
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shippingFee,
                 'total_amount' => $total,
@@ -195,81 +206,74 @@ class CheckoutController extends Controller
                 'cashback_processed' => false,
                 'customer_notes' => $request->customer_notes,
                 // ✅ Virtual products ไม่ต้องมี shipping address snapshot
-                'shipping_address_snapshot' => $shippingAddress ? $shippingAddress->toArray() : null,
+                'shipping_address_snapshot' => $shippingAddress ? $shippingAddress->toSnapshot() : null,
             ]);
 
             // Create order items
+            // 💰 (2026-09-25) GP/รายได้ร้าน ณ เวลาซื้อจาก PricingEngine (อัตรา GP ที่แอดมิน/แพ็กเกจกำหนด)
+            //    ไม่ใช้ products.commission_rate ที่ผู้ขายกรอกเองอีกต่อไป
+            $pricing = app(PricingEngine::class);
             foreach ($cartItems as $cartItem) {
                 $product = $cartItem->product;
-                $itemSubtotal = $product->price * $cartItem->quantity;
-                $commissionAmount = $product->calculateCommission($itemSubtotal);
-                $itemSellerEarning = $product->calculateSellerEarning($itemSubtotal);
+                $snapshot = $pricing->itemSnapshot($product, (int) $cartItem->quantity, (float) $product->price);
 
-                OrderItem::create([
+                OrderItem::create(array_merge($snapshot, [
                     'order_id' => $order->id,
                     'product_id' => $product->id,
                     'seller_id' => $product->seller_id ?? \App\Models\Product::getOfficialSellerId(),
                     'product_name' => $product->name,
-                    'product_sku' => $product->sku,
+                    'product_sku' => $product->sku ?: 'PRD-'.$product->id,
                     'product_image' => $product->main_image_url,
                     'product_attributes' => $cartItem->selected_attributes,
-                    'unit_price' => $product->price,
-                    'quantity' => $cartItem->quantity,
-                    'subtotal' => $itemSubtotal,
-                    'total' => $itemSubtotal,
-                    'commission_rate' => $product->commission_rate,
-                    'commission_amount' => $commissionAmount,
-                    'seller_earning' => $itemSellerEarning,
                     'status' => 'pending',
-                ]);
+                ]));
 
-                $platformCommission += $commissionAmount;
-                $sellerEarning += $itemSellerEarning;
+                $platformCommission += (float) $snapshot['commission_amount'];
+                $sellerEarning += (float) $snapshot['seller_earning'];
             }
 
             // Update order commission
             $order->update([
-                'platform_commission' => $platformCommission,
-                'seller_earning' => $sellerEarning,
+                'platform_commission' => round($platformCommission, 2),
+                'seller_earning' => round($sellerEarning, 2),
             ]);
 
-            // Create payment transaction
+            // COD: ร้านส่งของก่อนได้เงิน → จองสต็อกทันที (ยกเลิกแล้วคืนสต็อกให้ — Order::cancel)
+            if ($paymentMethod === PaymentMethod::COD) {
+                $order->deductStockOnce(true);
+            }
+
+            // Create payment transaction (COD ใช้ provider ชื่อ cash_on_delivery)
             $paymentTransaction = $this->paymentService->createOrderPayment(
                 $order,
-                $request->payment_method
+                PaymentMethod::providerKey($paymentMethod)
             );
 
             // Clear cart
             ShoppingCart::where('user_id', auth()->id())->delete();
 
-            // Send notification to customer
-            try {
-                $order->user->notify(new NewOrderNotification($order));
-            } catch (\Exception $e) {
-                \Log::error('Failed to send order notification: '.$e->getMessage());
-            }
-
-            // Send notification to sellers
-            foreach ($order->items->groupBy('seller_id') as $sellerId => $items) {
-                try {
-                    $seller = \App\Models\User::find($sellerId);
-                    if ($seller) {
-                        $seller->notify(new NewOrderNotification($order));
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Failed to send seller notification: '.$e->getMessage());
-                }
-            }
-
             DB::commit();
+
+            // แจ้งผู้ซื้อ (กล่องแจ้งเตือน) + ร้าน (เมื่อออเดอร์พร้อมให้ร้านทำ: จ่ายแล้ว/COD)
+            // ออเดอร์ที่รอชำระ ร้านจะได้แจ้งเตือนตอนระบบยืนยันเงินเข้า (Order::updated → ShopOrderNotifier)
+            app(ShopOrderNotifier::class)->orderPlaced($order->fresh(['items']));
 
             // Redirect to payment page
             return redirect()->route('checkout.payment', $order->id);
 
+        } catch (ShopException $e) {
+            DB::rollBack();
+
+            return redirect()->route('cart.index')->with('error', $e->getMessage());
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            \Log::error('Web checkout failed', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่อีกครั้ง');
         }
     }
 
@@ -296,7 +300,7 @@ class CheckoutController extends Controller
             if ($order->canRetryPayment()) {
                 $transaction = $this->paymentService->createOrderPayment(
                     $order,
-                    $order->payment_method
+                    PaymentMethod::providerKey((string) $order->payment_method)
                 );
             } else {
                 return redirect()->route('orders.show', $order->id)
@@ -314,7 +318,7 @@ class CheckoutController extends Controller
                 // สร้าง transaction ใหม่
                 $transaction = $this->paymentService->createOrderPayment(
                     $order,
-                    $order->payment_method
+                    PaymentMethod::providerKey((string) $order->payment_method)
                 );
             } else {
                 return redirect()->route('orders.show', $order->id)
@@ -441,7 +445,7 @@ class CheckoutController extends Controller
                 }
                 $transaction = $this->paymentService->createOrderPayment(
                     $order,
-                    $order->payment_method
+                    PaymentMethod::providerKey((string) $order->payment_method)
                 );
                 // Process payment ใหม่เพื่อสร้าง unique amount + QR Code
                 $result = $this->paymentService->processPayment($transaction, []);

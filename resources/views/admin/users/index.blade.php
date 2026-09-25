@@ -36,6 +36,9 @@
             'permUrl'      => $hasPerm ? route('admin.users.permissions', $u) : null,
             'dashUrl'      => $hasDash ? route('admin.users.dashboard', $u) : null,
             'deleteUrl'    => route('admin.users.destroy', $u),
+            // 🔒 (2026-09-25) ระงับ/ยกเลิกระงับบัญชี (CC-01)
+            'suspendUrl'   => route('admin.users.suspend', $u),
+            'unsuspendUrl' => route('admin.users.unsuspend', $u),
             'genUrl'       => route('admin.users.generate-member-number', $u),
         ];
     })->values();
@@ -155,7 +158,15 @@
                 <a :href="sel.editUrl" class="tp-btn tp-btn-sm"><i class="fas fa-pen"></i> แก้ไข</a>
                 <template x-if="sel.permUrl"><a :href="sel.permUrl" class="tp-btn tp-btn-sm"><i class="fas fa-key"></i> สิทธิ์</a></template>
                 <template x-if="sel.dashUrl"><a :href="sel.dashUrl" class="tp-btn tp-btn-sm"><i class="fas fa-gauge"></i> แดชบอร์ด</a></template>
-                <form :action="sel.deleteUrl" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบผู้ใช้นี้?');" x-show="!sel.isSuperAdmin" style="display:inline;">
+                {{-- 🔒 ระงับ (ย้อนกลับได้ — เด้งออกจากแอป/เว็บทันที) / ยกเลิกระงับ --}}
+                <form :action="sel.status === 'active' ? sel.suspendUrl : sel.unsuspendUrl" method="POST" x-show="!sel.isSuperAdmin" style="display:inline;"
+                      @submit="if (sel.status === 'active') { const r = prompt('เหตุผลที่ระงับบัญชี (ทีมงานเห็นเท่านั้น)', ''); if (r === null) { $event.preventDefault(); return; } $el.querySelector('input[name=reason]').value = r; } else if (!confirm('ยกเลิกการระงับบัญชีนี้?')) { $event.preventDefault(); }">
+                    @csrf
+                    <input type="hidden" name="reason" value="">
+                    <button type="submit" class="tp-btn tp-btn-sm"><i class="fas" :class="sel.status === 'active' ? 'fa-ban' : 'fa-unlock'"></i> <span x-text="sel.status === 'active' ? 'ระงับ' : 'ยกเลิกระงับ'"></span></button>
+                </form>
+                {{-- 🗑️ ลบ = ปกปิดข้อมูลส่วนบุคคล + soft delete (ไม่ลบประวัติออเดอร์/การเงิน) บล็อกถ้ายังมีเงิน/ออเดอร์ค้าง --}}
+                <form :action="sel.deleteUrl" method="POST" onsubmit="return confirm('ลบบัญชีนี้? ข้อมูลส่วนบุคคลจะถูกปกปิดถาวร (ประวัติออเดอร์/การเงินยังเก็บไว้) — หากแค่ต้องการหยุดการใช้งาน ให้ใช้ปุ่มระงับ');" x-show="!sel.isSuperAdmin" style="display:inline;">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="tp-btn tp-btn-sm" style="color:#d9534f;"><i class="fas fa-trash"></i> ลบ</button>

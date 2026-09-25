@@ -72,7 +72,7 @@
                 <div class="flex items-center gap-4 mb-6">
                     <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
                         @if($rider->profile_image)
-                            <img src="{{ asset('storage/' . $rider->profile_image) }}" alt="{{ $rider->full_name }}" class="w-full h-full rounded-full object-cover">
+                            <img src="{{ route('admin.riders.document', [$rider, 'profile']) }}" alt="{{ $rider->full_name }}" class="w-full h-full rounded-full object-cover">
                         @else
                             <i class="fas fa-user text-white text-3xl"></i>
                         @endif
@@ -157,7 +157,7 @@
                     <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                         <span class="text-gray-300">บัตรประชาชน</span>
                         @if($rider->id_card_image)
-                            <a href="{{ asset('storage/' . $rider->id_card_image) }}" target="_blank" class="text-blue-400 hover:text-blue-300">
+                            <a href="{{ route('admin.riders.document', [$rider, 'id_card']) }}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300">
                                 <i class="fas fa-eye"></i> ดู
                             </a>
                         @else
@@ -166,8 +166,8 @@
                     </div>
                     <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                         <span class="text-gray-300">ใบขับขี่</span>
-                        @if($rider->driving_license_image)
-                            <a href="{{ asset('storage/' . $rider->driving_license_image) }}" target="_blank" class="text-blue-400 hover:text-blue-300">
+                        @if($rider->driver_license_image)
+                            <a href="{{ route('admin.riders.document', [$rider, 'driver_license']) }}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300">
                                 <i class="fas fa-eye"></i> ดู
                             </a>
                         @else
@@ -177,7 +177,7 @@
                     <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg">
                         <span class="text-gray-300">เล่มทะเบียนรถ</span>
                         @if($rider->vehicle_registration_image)
-                            <a href="{{ asset('storage/' . $rider->vehicle_registration_image) }}" target="_blank" class="text-blue-400 hover:text-blue-300">
+                            <a href="{{ route('admin.riders.document', [$rider, 'vehicle_registration']) }}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300">
                                 <i class="fas fa-eye"></i> ดู
                             </a>
                         @else
@@ -234,13 +234,13 @@
             </div>
 
             {{-- GPS Location --}}
-            @if($rider->current_latitude && $rider->current_longitude)
+            @if($rider->last_latitude && $rider->last_longitude)
                 <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
                     <h4 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
                         <i class="fas fa-map-marker-alt text-green-400"></i>
                         ตำแหน่งปัจจุบัน
                         <span class="text-xs text-gray-400 ml-2">
-                            อัพเดท: {{ $rider->location_updated_at ? $rider->location_updated_at->diffForHumans() : 'ไม่ทราบ' }}
+                            อัพเดท: {{ $rider->last_location_update ? $rider->last_location_update->diffForHumans() : 'ไม่ทราบ' }}
                         </span>
                     </h4>
                     <div id="mini-map" class="w-full h-48 rounded-xl overflow-hidden mb-4"></div>
@@ -290,7 +290,7 @@
                                 </p>
                                 <p class="flex items-start gap-2">
                                     <i class="fas fa-flag-checkered text-green-400 mt-0.5"></i>
-                                    <span class="line-clamp-1">{{ $job->dropoff_address ?? 'ไม่ระบุ' }}</span>
+                                    <span class="line-clamp-1">{{ $job->delivery_address ?? 'ไม่ระบุ' }}</span>
                                 </p>
                                 @if($job->rider_earnings)
                                     <p class="flex items-center gap-2 text-purple-400">
@@ -366,8 +366,12 @@ function approveRider() {
 
 // Suspend rider
 function suspendRider() {
-    const reason = prompt('เหตุผลในการระงับ (ไม่บังคับ):');
+    const reason = prompt('เหตุผลในการระงับ (บังคับ):');
     if (reason === null) return;
+    if (!reason.trim()) {
+        alert('กรุณาระบุเหตุผลที่ระงับ');
+        return;
+    }
 
     fetch('{{ route('admin.riders.suspend', $rider) }}', {
         method: 'POST',
@@ -425,7 +429,7 @@ function closeRejectModal() {
 }
 
 // Mini map
-@if($rider->current_latitude && $rider->current_longitude)
+@if($rider->last_latitude && $rider->last_longitude)
 function initMiniMap() {
     const darkStyle = [
         { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
@@ -435,14 +439,14 @@ function initMiniMap() {
     ];
 
     const map = new google.maps.Map(document.getElementById('mini-map'), {
-        center: { lat: {{ $rider->current_latitude }}, lng: {{ $rider->current_longitude }} },
+        center: { lat: {{ (float) $rider->last_latitude }}, lng: {{ (float) $rider->last_longitude }} },
         zoom: 15,
         styles: darkStyle,
         disableDefaultUI: true,
     });
 
     new google.maps.Marker({
-        position: { lat: {{ $rider->current_latitude }}, lng: {{ $rider->current_longitude }} },
+        position: { lat: {{ (float) $rider->last_latitude }}, lng: {{ (float) $rider->last_longitude }} },
         map: map,
         icon: {
             url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`

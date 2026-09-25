@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exceptions\AccountDeletionBlockedException;
 use App\Http\Controllers\Controller;
 use App\Models\Role;
 use App\Models\User;
 use App\Rules\NotReservedEmailDomain;
+use App\Services\AccountDeletionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
@@ -154,17 +157,98 @@ class UserController extends Controller
      * ลบ user
      *
      * ⚠️ SECURITY: ป้องกัน unauthorized delete
+     *
+     * 🗑️ (2026-09-25) CC-01: เดิม $user->delete() = ลบถาวร → FK CASCADE ลากออเดอร์/order_items ของ
+     *    ผู้ซื้อทุกคนที่เคยซื้อจากร้านนั้น, wallet, ledger, งานไรเดอร์ หายตามไปหมด
+     *    ตอนนี้ผ่าน AccountDeletionService: ปกปิด PII + soft delete และบล็อกถ้ายังมีเงิน/ออเดอร์ค้าง
+     *    (ถ้าแค่ต้องการหยุดการใช้งาน ให้ใช้ "ระงับบัญชี" แทน — ย้อนกลับได้)
      */
     public function destroy(User $user)
     {
         // ✅ ตรวจสอบสิทธิ์ก่อนลบ
         $this->authorize('delete', $user);
 
-        // Policy จะ block การลบตัวเองและ super admin อยู่แล้ว
-        $user->delete();
+        // Policy::before ปล่อย super admin ผ่านทุกอย่าง → กันลบตัวเอง/ลบ super admin ซ้ำที่นี่
+        if (auth()->id() === $user->id) {
+            return back()->with('error', 'ไม่สามารถลบบัญชีของตัวเองได้');
+        }
+        if ($user->is_super_admin) {
+            return back()->with('error', 'ไม่สามารถลบผู้ดูแลระบบสูงสุดได้');
+        }
+
+        try {
+            $ref = app(AccountDeletionService::class)->delete($user, 'admin', auth()->user());
+        } catch (AccountDeletionBlockedException $e) {
+            $reasons = collect($e->blockers())->pluck('message')->implode(' · ');
+
+            return back()->with('error', 'ยังลบบัญชีนี้ไม่ได้: '.$reasons.' (หากต้องการหยุดการใช้งานทันที ให้ใช้ "ระงับบัญชี")');
+        } catch (\Throwable $e) {
+            Log::error('Admin delete user failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+            return back()->with('error', 'ลบผู้ใช้ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
 
         return redirect()->route('admin.users.index')
-            ->with('success', 'ลบผู้ใช้สำเร็จ');
+            ->with('success', 'ลบบัญชีผู้ใช้และปกปิดข้อมูลส่วนบุคคลเรียบร้อย (อ้างอิง '.$ref.')');
+    }
+
+    /**
+     * ระงับบัญชีผู้ใช้ (ย้อนกลับได้) — เพิกถอน token แอปทั้งหมด + เว็บจะถูกออกจากระบบใน request ถัดไป
+     *
+     * POST admin/users/{user}/suspend  body: reason (ไม่บังคับ, สูงสุด 500 ตัวอักษร)
+     */
+    public function suspend(Request $request, User $user)
+    {
+        $this->authorize('block', $user);
+
+        if (auth()->id() === $user->id) {
+            return back()->with('error', 'ไม่สามารถระงับบัญชีของตัวเองได้');
+        }
+        if ($user->is_super_admin) {
+            return back()->with('error', 'ไม่สามารถระงับผู้ดูแลระบบสูงสุดได้');
+        }
+
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:500'],
+        ], [
+            'reason.max' => 'เหตุผลต้องไม่เกิน 500 ตัวอักษร',
+        ]);
+
+        if ($user->isSuspended()) {
+            return back()->with('info', 'บัญชีนี้ถูกระงับอยู่แล้ว');
+        }
+
+        $user->suspend(auth()->user(), $validated['reason'] ?? null);
+
+        Log::info('Admin suspended user', [
+            'user_id' => $user->id,
+            'admin_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'ระงับบัญชี '.$user->name.' เรียบร้อย');
+    }
+
+    /**
+     * ยกเลิกการระงับบัญชี
+     *
+     * POST admin/users/{user}/unsuspend
+     */
+    public function unsuspend(User $user)
+    {
+        $this->authorize('block', $user);
+
+        if (! $user->isSuspended()) {
+            return back()->with('info', 'บัญชีนี้ไม่ได้ถูกระงับ');
+        }
+
+        $user->unsuspend();
+
+        Log::info('Admin unsuspended user', [
+            'user_id' => $user->id,
+            'admin_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'ยกเลิกการระงับบัญชี '.$user->name.' เรียบร้อย');
     }
 
     /**

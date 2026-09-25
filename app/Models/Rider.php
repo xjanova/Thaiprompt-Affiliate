@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Exceptions\RiderJobException;
+use App\Services\DeliveryFeeCalculator;
+use App\Services\RiderNotificationService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Rider Model
@@ -19,13 +23,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $phone
  * @property string|null $id_card_number
  * @property string|null $vehicle_type
- * @property string $status
- * @property string $availability
+ * @property string $status pending|approved|rejected|suspended|inactive
+ * @property string $availability online|offline|busy
  * @property bool $gps_permission_granted
  * @property bool $camera_permission_granted
  * @property bool $microphone_permission_granted
- * @property decimal $last_latitude
- * @property decimal $last_longitude
+ * @property string|null $last_latitude
+ * @property string|null $last_longitude
+ * @property \Carbon\Carbon|null $last_location_update
+ * @property \Carbon\Carbon|null $share_location_consent_at
+ * @property \Carbon\Carbon|null $suspended_at
+ * @property string|null $suspension_reason
  */
 class Rider extends Model
 {
@@ -68,11 +76,17 @@ class Rider extends Model
         'service_provider_id',
         'availability',
         'rejection_reason',
+        'rejected_at',
+        'rejected_by',
+        'suspension_reason',
+        'suspended_at',
+        'suspended_by',
         'gps_permission_granted',
         'camera_permission_granted',
         'microphone_permission_granted',
         'notification_permission_granted',
         'permissions_granted_at',
+        'share_location_consent_at',
         'total_jobs',
         'completed_jobs',
         'cancelled_jobs',
@@ -105,10 +119,13 @@ class Rider extends Model
         'microphone_permission_granted' => 'boolean',
         'notification_permission_granted' => 'boolean',
         'permissions_granted_at' => 'datetime',
+        'share_location_consent_at' => 'datetime',
         'last_latitude' => 'decimal:8',
         'last_longitude' => 'decimal:8',
         'last_location_update' => 'datetime',
         'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
+        'suspended_at' => 'datetime',
         'rating' => 'decimal:2',
         'total_earnings' => 'decimal:2',
         'deposit_amount' => 'decimal:2',
@@ -242,14 +259,29 @@ class Rider extends Model
     }
 
     /**
-     * Scope สำหรับไรเดอร์ที่พร้อมรับงานส่งของ (approved + online + deposit paid)
+     * Scope ไรเดอร์ที่พร้อมรับงานส่งของจริงตอนนี้
+     *
+     * approved + ไม่ถูกระงับ + online + ส่งพิกัดล่าสุดไม่เกิน rider.location_fresh_minutes
+     * + ประเภทส่งของ + ยินยอมแชร์ตำแหน่งแล้ว + (จ่ายมัดจำแล้ว เฉพาะเมื่อเปิด rider.require_deposit)
      */
-    public function scopeAvailableForDelivery($query)
+    public function scopeAvailableForDelivery($query, ?DeliveryFeeCalculator $config = null)
     {
-        return $query->approved()
+        $config ??= app(DeliveryFeeCalculator::class);
+
+        $query->approved()
+            ->whereNull('suspended_at')
             ->where('availability', 'online')
-            ->where('deposit_status', 'paid')
-            ->whereIn('rider_type', ['delivery', 'both']);
+            ->whereNotNull('share_location_consent_at')
+            ->where('last_location_update', '>=', now()->subMinutes(max(1, $config->intSetting('rider.location_fresh_minutes'))))
+            ->where(function ($q) {
+                $q->whereIn('rider_type', ['delivery', 'both'])->orWhereNull('rider_type');
+            });
+
+        if ($config->boolSetting('rider.require_deposit')) {
+            $query->where('deposit_status', 'paid');
+        }
+
+        return $query;
     }
 
     /**
@@ -269,7 +301,7 @@ class Rider extends Model
     }
 
     /**
-     * Scope สำหรับไรเดอร์ที่อยู่ใกล้พิกัดที่กำหนด
+     * Scope สำหรับไรเดอร์ที่อยู่ใกล้พิกัดที่กำหนด (MySQL เท่านั้น — ใช้ acos)
      */
     public function scopeNearby($query, $latitude, $longitude, $radiusKm = 5)
     {
@@ -286,6 +318,14 @@ class Rider extends Model
     // =====================================================
     // Accessors
     // =====================================================
+
+    /**
+     * ชื่อไรเดอร์ (alias ของ full_name — โค้ด/วิวเก่าเรียก ->name)
+     */
+    public function getNameAttribute(): string
+    {
+        return (string) ($this->attributes['full_name'] ?? '');
+    }
 
     /**
      * ตรวจสอบว่าได้รับสิทธิ์ทั้งหมดหรือยัง
@@ -353,6 +393,202 @@ class Rider extends Model
     }
 
     // =====================================================
+    // สถานะงาน / สิทธิ์รับงาน
+    // =====================================================
+
+    /**
+     * งานที่กำลังทำอยู่ (accepted → delivering) ถ้ามี
+     */
+    public function activeJob(): ?RiderJob
+    {
+        return RiderJob::where('rider_id', $this->id)
+            ->whereIn('status', RiderJob::ACTIVE_STATUSES)
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * มีงานที่กำลังทำอยู่หรือไม่
+     */
+    public function hasActiveJob(): bool
+    {
+        return RiderJob::where('rider_id', $this->id)
+            ->whereIn('status', RiderJob::ACTIVE_STATUSES)
+            ->exists();
+    }
+
+    /**
+     * ส่งพิกัดล่าสุดภายใน N นาทีหรือไม่ (ค่าเริ่มต้น rider.location_fresh_minutes = 15)
+     */
+    public function hasFreshLocation(?int $minutes = null): bool
+    {
+        $minutes ??= app(DeliveryFeeCalculator::class)->intSetting('rider.location_fresh_minutes');
+
+        return $this->last_location_update !== null
+            && $this->last_latitude !== null
+            && $this->last_longitude !== null
+            && $this->last_location_update->greaterThanOrEqualTo(now()->subMinutes(max(1, $minutes)));
+    }
+
+    /**
+     * ยินยอมแชร์ตำแหน่งให้ลูกค้าระหว่างงานแล้วหรือยัง
+     */
+    public function hasLocationConsent(): bool
+    {
+        return $this->share_location_consent_at !== null;
+    }
+
+    /**
+     * บันทึกความยินยอมแชร์ตำแหน่ง (ครั้งเดียวพอ)
+     */
+    public function grantLocationConsent(): void
+    {
+        if (! $this->share_location_consent_at) {
+            $this->forceFill(['share_location_consent_at' => now()])->save();
+        }
+    }
+
+    /**
+     * ยอดเงินในวอลเลตของไรเดอร์ (ใช้เป็นวงเงิน COD)
+     */
+    public function walletBalance(): float
+    {
+        $balance = Wallet::where('user_id', $this->user_id)->value('balance');
+
+        return round((float) ($balance ?? 0), 2);
+    }
+
+    /**
+     * วงเงิน COD ที่รับได้ตอนนี้ = ยอดวอลเลต
+     * (รับงาน COD ได้เมื่อ ยอดวอลเลต ≥ cod_amount − rider_earnings ของงาน)
+     */
+    public function codCreditAvailable(): float
+    {
+        return max(0.0, $this->walletBalance());
+    }
+
+    /**
+     * เหตุผลที่ "เปิดรับงาน (online)" ไม่ได้ — null = เปิดได้
+     *
+     * @return array{code: string, message: string}|null
+     */
+    public function onlineBlockReason(): ?array
+    {
+        if ($this->status === 'suspended' || $this->suspended_at !== null) {
+            return ['code' => 'SUSPENDED', 'message' => 'บัญชีไรเดอร์ถูกระงับ'.($this->suspension_reason ? ': '.$this->suspension_reason : '')];
+        }
+
+        if ($this->status === 'pending') {
+            return ['code' => 'PENDING_REVIEW', 'message' => 'ใบสมัครไรเดอร์อยู่ระหว่างตรวจสอบ'];
+        }
+
+        if ($this->status === 'rejected') {
+            return ['code' => 'REJECTED', 'message' => 'ใบสมัครไรเดอร์ไม่ผ่านการอนุมัติ'.($this->rejection_reason ? ': '.$this->rejection_reason : '')];
+        }
+
+        if ($this->status !== 'approved') {
+            return ['code' => 'NOT_APPROVED', 'message' => 'บัญชีไรเดอร์ยังไม่พร้อมใช้งาน'];
+        }
+
+        if ($this->user && $this->user->blocked_at) {
+            return ['code' => 'USER_BLOCKED', 'message' => 'บัญชีผู้ใช้ถูกระงับ'];
+        }
+
+        // เปลี่ยนยานพาหนะ/บัตรประชาชน/ใบขับขี่/ทะเบียนรถหลังอนุมัติ → รอแอดมินตรวจก่อนรับงานต่อ
+        // (กันเปลี่ยนเป็นมอเตอร์ไซค์โดยไม่มีใบขับขี่ หรือเปลี่ยนรูปบัตรเป็นของคนอื่นแล้ววิ่งงานต่อ)
+        if ($this->getAttribute('documents_changed_at') !== null) {
+            return ['code' => 'DOCUMENTS_REVIEW_PENDING', 'message' => 'เอกสารหรือยานพาหนะที่เปลี่ยนใหม่รอทีมงานตรวจสอบ ระหว่างนี้ยังรับงานไม่ได้'];
+        }
+
+        if (app(DeliveryFeeCalculator::class)->boolSetting('rider.require_deposit') && ! $this->hasDeposit()) {
+            return ['code' => 'DEPOSIT_REQUIRED', 'message' => 'กรุณาวางเงินประกันไรเดอร์ก่อนเริ่มรับงาน'];
+        }
+
+        return null;
+    }
+
+    /**
+     * เหตุผลที่ "รับงาน" ไม่ได้ตอนนี้ — null = รับได้
+     *
+     * @return array{code: string, message: string}|null
+     */
+    public function acceptBlockReason(): ?array
+    {
+        if ($reason = $this->onlineBlockReason()) {
+            return $reason;
+        }
+
+        if (! $this->hasLocationConsent()) {
+            return ['code' => 'CONSENT_REQUIRED', 'message' => 'กรุณายินยอมให้ลูกค้าเห็นตำแหน่งของคุณระหว่างส่งงานก่อนรับงานแรก'];
+        }
+
+        if ($this->availability === 'busy' || $this->hasActiveJob()) {
+            return ['code' => 'HAS_ACTIVE_JOB', 'message' => 'คุณมีงานที่ยังไม่เสร็จอยู่'];
+        }
+
+        if ($this->availability !== 'online') {
+            return ['code' => 'OFFLINE', 'message' => 'กรุณาเปิดรับงานก่อน'];
+        }
+
+        if (! $this->hasFreshLocation()) {
+            return ['code' => 'LOCATION_STALE', 'message' => 'ยังไม่ได้รับตำแหน่ง GPS ล่าสุด กรุณาเปิด GPS แล้วลองใหม่'];
+        }
+
+        return null;
+    }
+
+    /**
+     * ตรวจสอบว่าไรเดอร์สามารถรับงานได้ตอนนี้
+     */
+    public function canAcceptJobs(): bool
+    {
+        return $this->acceptBlockReason() === null;
+    }
+
+    /**
+     * เปลี่ยนสถานะการรับงาน online|offline (จากปุ่มในแอป)
+     *
+     * - มีงานค้างอยู่ → เปลี่ยนไม่ได้ (สถานะเป็น busy จนงานจบ)
+     * - online ต้องผ่าน onlineBlockReason()
+     *
+     * @throws RiderJobException
+     */
+    public function setAvailability(string $availability): void
+    {
+        if (! in_array($availability, ['online', 'offline'], true)) {
+            throw RiderJobException::invalidAvailability();
+        }
+
+        if ($active = $this->activeJob()) {
+            throw RiderJobException::hasActiveJob($active->id);
+        }
+
+        if ($availability === 'online' && ($reason = $this->onlineBlockReason())) {
+            throw RiderJobException::notEligible($reason['message'], $reason['code']);
+        }
+
+        $this->forceFill(['availability' => $availability])->save();
+    }
+
+    /**
+     * ตั้งสถานะหลังจบงาน (ไม่ throw): กลับไป online ถ้ายังมีสิทธิ์ ไม่งั้น offline
+     */
+    public function refreshAvailabilityAfterJob(): void
+    {
+        $this->refresh();
+
+        if ($this->hasActiveJob()) {
+            $availability = 'busy';
+        } else {
+            $availability = $this->onlineBlockReason() === null ? 'online' : 'offline';
+        }
+
+        if ($this->availability !== $availability) {
+            $this->forceFill(['availability' => $availability])->save();
+        }
+    }
+
+    // =====================================================
     // Methods
     // =====================================================
 
@@ -370,22 +606,20 @@ class Rider extends Model
 
     /**
      * ตั้งค่าสถานะออนไลน์
+     *
+     * @throws RiderJobException เมื่อยังไม่มีสิทธิ์รับงาน
      */
     public function goOnline(): void
     {
-        if ($this->status !== 'approved') {
-            throw new \Exception('ไรเดอร์ยังไม่ได้รับการอนุมัติ');
-        }
-
-        $this->update(['availability' => 'online']);
+        $this->setAvailability('online');
     }
 
     /**
-     * ตั้งค่าสถานะออฟไลน์
+     * ตั้งค่าสถานะออฟไลน์ (ใช้โดยระบบ เช่น auto-offline / ระงับบัญชี — ไม่เช็คงานค้าง)
      */
     public function goOffline(): void
     {
-        $this->update(['availability' => 'offline']);
+        $this->forceFill(['availability' => 'offline'])->save();
     }
 
     /**
@@ -393,7 +627,7 @@ class Rider extends Model
      */
     public function setBusy(): void
     {
-        $this->update(['availability' => 'busy']);
+        $this->forceFill(['availability' => 'busy'])->save();
     }
 
     /**
@@ -423,6 +657,109 @@ class Rider extends Model
     }
 
     // =====================================================
+    // อนุมัติ / ปฏิเสธ / ระงับ (แอดมิน)
+    // =====================================================
+
+    /**
+     * อนุมัติไรเดอร์ + แจ้งในแอป
+     */
+    public function approve(User $admin): void
+    {
+        $this->forceFill([
+            'status' => 'approved',
+            'approved_at' => now(),
+            'approved_by' => $admin->id,
+            'rejection_reason' => null,
+            'rejected_at' => null,
+            'rejected_by' => null,
+            'suspension_reason' => null,
+            'suspended_at' => null,
+            'suspended_by' => null,
+        ])->save();
+
+        app(RiderNotificationService::class)->notifyUser(
+            (int) $this->user_id,
+            'rider_account',
+            'อนุมัติเป็นไรเดอร์แล้ว',
+            'ยินดีด้วย! บัญชีไรเดอร์ของคุณได้รับการอนุมัติ เปิดแอปแล้วกด "เริ่มรับงาน" ได้เลย',
+            ['type' => 'rider_account', 'event' => 'approved', 'screen' => 'rider'],
+        );
+    }
+
+    /**
+     * ปฏิเสธใบสมัคร + แจ้งในแอป
+     */
+    public function reject(User $admin, string $reason): void
+    {
+        $this->forceFill([
+            'status' => 'rejected',
+            'availability' => 'offline',
+            'rejection_reason' => $reason,
+            'rejected_at' => now(),
+            'rejected_by' => $admin->id,
+        ])->save();
+
+        app(RiderNotificationService::class)->notifyUser(
+            (int) $this->user_id,
+            'rider_account',
+            'ใบสมัครไรเดอร์ไม่ผ่าน',
+            'เหตุผล: '.$reason.' — แก้ไขข้อมูลแล้วส่งใหม่ได้ในแอป',
+            ['type' => 'rider_account', 'event' => 'rejected', 'screen' => 'rider'],
+        );
+    }
+
+    /**
+     * ระงับไรเดอร์: บังคับออฟไลน์ทันที + บันทึกเหตุผล
+     *
+     * งานที่ค้างอยู่ต้องจัดการต่อด้วย RiderJobService::handleRiderSuspended()
+     * (งานก่อนรับของ → คืนเข้าคิว, งานที่รับของแล้ว → แจ้งแอดมินให้มอบหมายใหม่)
+     */
+    public function suspend(User $admin, string $reason): void
+    {
+        DB::transaction(function () use ($admin, $reason) {
+            $this->forceFill([
+                'status' => 'suspended',
+                'availability' => $this->hasActiveJob() ? 'busy' : 'offline',
+                'suspension_reason' => $reason,
+                'suspended_at' => now(),
+                'suspended_by' => $admin->id,
+            ])->save();
+        });
+
+        app(RiderNotificationService::class)->notifyUser(
+            (int) $this->user_id,
+            'rider_account',
+            'บัญชีไรเดอร์ถูกระงับ',
+            'เหตุผล: '.$reason.' — ติดต่อทีมงานหากมีข้อสงสัย',
+            ['type' => 'rider_account', 'event' => 'suspended', 'screen' => 'rider'],
+            null,
+            'high',
+        );
+    }
+
+    /**
+     * ยกเลิกการระงับ (กลับเป็น approved แต่ยังออฟไลน์ ให้ไรเดอร์กดเปิดเอง)
+     */
+    public function unsuspend(User $admin): void
+    {
+        $this->forceFill([
+            'status' => 'approved',
+            'availability' => 'offline',
+            'suspension_reason' => null,
+            'suspended_at' => null,
+            'suspended_by' => null,
+        ])->save();
+
+        app(RiderNotificationService::class)->notifyUser(
+            (int) $this->user_id,
+            'rider_account',
+            'ยกเลิกการระงับบัญชีไรเดอร์แล้ว',
+            'บัญชีไรเดอร์กลับมาใช้งานได้แล้ว กด "เริ่มรับงาน" เพื่อรับงานต่อ',
+            ['type' => 'rider_account', 'event' => 'unsuspended', 'screen' => 'rider'],
+        );
+    }
+
+    // =====================================================
     // Deposit & Integration Methods
     // =====================================================
 
@@ -432,16 +769,6 @@ class Rider extends Model
     public function hasDeposit(): bool
     {
         return $this->deposit_status === 'paid';
-    }
-
-    /**
-     * ตรวจสอบว่าไรเดอร์สามารถรับงานได้
-     */
-    public function canAcceptJobs(): bool
-    {
-        return $this->status === 'approved'
-            && $this->availability === 'online'
-            && $this->hasDeposit();
     }
 
     /**
@@ -457,7 +784,7 @@ class Rider extends Model
      */
     public function isDeliveryRider(): bool
     {
-        return in_array($this->rider_type, ['delivery', 'both']);
+        return $this->rider_type === null || in_array($this->rider_type, ['delivery', 'both']);
     }
 
     /**
@@ -539,6 +866,11 @@ class Rider extends Model
     {
         // ถ้าไม่ได้ตั้งค่า = รับทุกงาน
         if (empty($this->preferred_job_types)) {
+            return true;
+        }
+
+        // 'delivery' = ส่งของทั่วไป → รับงานส่งของทุกประเภท
+        if (in_array('delivery', $this->preferred_job_types, true)) {
             return true;
         }
 

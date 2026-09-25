@@ -96,12 +96,20 @@ Route::prefix('webhook')->name('api.webhook.')->group(function () {
 });
 
 // API v1
-Route::prefix('v1')->group(function () {
+// 🚦 (2026-09-25) CC-03: throttle:api ทั้งกลุ่ม (limiter 'api' นิยามใน bootstrap/app.php →booted())
+//    ล็อกอินแล้วนับต่อผู้ใช้ · ยังไม่ล็อกอินนับต่อ IP — ห้ามย้าย webhook เข้ามาในกลุ่มนี้
+Route::prefix('v1')->middleware('throttle:api')->group(function () {
     // Public routes
-    Route::post('/login', [AuthController::class, 'login']);
+    // 🔒 (2026-09-25) เดิมไม่มี throttle เลย = ทางเลี่ยง brute force ของหน้าเว็บ
+    //    throttle.login (ล็อก IP/อีเมลหลังผิด 5 ครั้ง ตาม config/ratelimit.php) + ไม่เกิน 6 ครั้ง/นาที/IP
+    // 🚦 throttle แบบตัวเลขต้องมี prefix (พารามิเตอร์ที่ 3) เสมอ — ไม่งั้นทุก route ใช้ตัวนับเดียวกันต่อผู้ใช้/IP
+    //    (ThrottleRequests ใช้ key = prefix + sha1(user id หรือ IP)) → เรียก route หนึ่งแล้วอีก route โดน 429
+    Route::post('/login', [AuthController::class, 'login'])
+        ->middleware(['throttle.login', 'throttle:6,1,api-login']);
 
     // Register (public - for mobile app)
-    Route::post('/register', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'register']);
+    Route::post('/register', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'register'])
+        ->middleware('throttle:6,1,api-register');
 
     // LINE Login สำหรับ Mobile App (public)
     Route::prefix('auth/line')->group(function () {
@@ -157,12 +165,12 @@ Route::prefix('v1')->group(function () {
     // in git so they survive. See session_handoff_v1.0.21.
     Route::get('/ai/nong-ying/persona',
         [\App\Http\Controllers\Api\V1\NongYingController::class, 'persona'])
-        ->middleware('throttle:60,1')
+        ->middleware('throttle:60,1,api-nongying-persona')
         ->name('api.v1.ai.nong-ying.persona');
 
     Route::get('/ai/nong-ying/knowledge',
         [\App\Http\Controllers\Api\V1\NongYingController::class, 'knowledgeSearch'])
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,api-nongying-knowledge')
         ->name('api.v1.ai.nong-ying.knowledge');
 
     // On-device Gemma .task download proxy. Local-first: Nginx serves
@@ -171,7 +179,7 @@ Route::prefix('v1')->group(function () {
     Route::match(['get', 'head'], '/ai/models/{tier}',
         [\App\Http\Controllers\Api\AiModelProxyController::class, 'download'])
         ->where('tier', 'gemma4_e2b|gemma4_e4b')
-        ->middleware('throttle:30,1')
+        ->middleware('throttle:30,1,api-ai-model-download')
         ->name('api.v1.ai.models.download');
 
     // Metadata (size, modified, HF URL) — guardAdmin() inside controller.
@@ -181,21 +189,39 @@ Route::prefix('v1')->group(function () {
         ->name('api.v1.ai.models.info');
     // ======= END THAIPROMPT_APP_AI_PUBLIC (v1.0.21 recovery) =======
 
+    // 🔐 (2026-09-25) ไฟล์เอกสารไรเดอร์ของตัวเอง — เปิดได้เฉพาะ signed URL อายุ 30 นาที
+    //    (สร้างจาก GET /rider/status และ /rider/documents เท่านั้น — ไฟล์อยู่บน private disk)
+    Route::get('/rider/documents/file/{rider}/{type}', [\App\Http\Controllers\Api\V1\RiderApiController::class, 'documentFile'])
+        ->middleware(['signed', 'throttle:60,1,api-rider-doc-file'])
+        ->whereNumber('rider')
+        ->where('type', 'id_card|driver_license|vehicle_registration|profile')
+        ->name('api.v1.rider.documents.file');
+
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         // Auth
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
 
+        // 🗑️ (2026-09-25) PLAY-05: ลบบัญชีจากแอป (ปกปิด PII + soft delete + เพิกถอน token)
+        Route::get('/account/deletion-check', [\App\Http\Controllers\Api\V1\AccountController::class, 'deletionCheck'])
+            ->name('api.v1.account.deletion-check');
+        Route::delete('/account', [\App\Http\Controllers\Api\V1\AccountController::class, 'destroy'])
+            ->middleware('throttle:5,1,api-account-delete')
+            ->name('api.v1.account.destroy');
+        Route::post('/account/delete', [\App\Http\Controllers\Api\V1\AccountController::class, 'destroy'])
+            ->middleware('throttle:5,1,api-account-delete')
+            ->name('api.v1.account.delete');
+
         // Mobile app analytics ingestion + AI fallback (protected + rate-limited)
         Route::post('/events/batch', [\App\Http\Controllers\Api\V1\AnalyticsApiController::class, 'batch'])
-            ->middleware('throttle:60,1')
+            ->middleware('throttle:60,1,api-events-batch')
             ->name('api.v1.events.batch');
         Route::post('/ai/chat', [\App\Http\Controllers\Api\V1\AiChatApiController::class, 'chat'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:20,1,api-ai-chat')
             ->name('api.v1.ai.chat');
         Route::post('/ai/tts', [\App\Http\Controllers\Api\V1\AiTtsApiController::class, 'speak'])
-            ->middleware('throttle:20,1')
+            ->middleware('throttle:20,1,api-ai-tts')
             ->name('api.v1.ai.tts');
 
         // Admin-only model sync (gated by controller's guardAdmin()).
@@ -222,22 +248,36 @@ Route::prefix('v1')->group(function () {
             Route::delete('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteAvatar']);
         });
 
+        // 🛒 (2026-09-25) Workstream D: สินค้า/ตะกร้า/checkout ย้ายไป MobileShopController
+        //    ตะกร้าใน DB = แหล่งข้อมูลเดียวของแอป · checkout เส้นเดียว (ShopCheckoutService)
         // Products (Mobile App E-commerce)
         Route::prefix('products')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProducts']);
-            Route::get('/categories', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProductCategories']);
-            Route::get('/{id}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProduct']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'products'])->name('api.v1.products.index');
+            Route::get('/categories', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'categories'])->name('api.v1.products.categories');
+            Route::get('/{id}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'product'])->whereNumber('id')->name('api.v1.products.show');
         });
 
         // Cart (Mobile App) - คำนวณทุกอย่างที่ server
         Route::prefix('cart')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCart']);
-            Route::post('/add', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'addToCart']);
-            Route::put('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateCartItem']);
-            Route::delete('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removeFromCart']);
-            Route::delete('/clear', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'clearCart']);
-            Route::post('/promo', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'applyPromoCode']);
-            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'checkout']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'cart'])->name('api.v1.cart.show');
+            Route::delete('/', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'clear'])->name('api.v1.cart.clear');
+            Route::post('/items', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'addItem'])->middleware('throttle:60,1,api-cart-add')->name('api.v1.cart.items.store');
+            Route::put('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'updateItem'])->whereNumber('itemId')->name('api.v1.cart.items.update');
+            Route::delete('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'removeItem'])->whereNumber('itemId')->name('api.v1.cart.items.destroy');
+            Route::post('/promo', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'applyPromo'])->middleware('throttle:20,1,api-cart-promo')->name('api.v1.cart.promo');
+            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'checkout'])->middleware('throttle:10,1,api-cart-checkout')->name('api.v1.cart.checkout');
+            // เส้นทางเดิมของแอปรุ่นก่อน (ชี้ไปตัวเดียวกัน — ใช้ตัวนับเดียวกับ /items)
+            Route::post('/add', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'addItem'])->middleware('throttle:60,1,api-cart-add')->name('api.v1.cart.add');
+            Route::delete('/clear', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'clear'])->name('api.v1.cart.clear-legacy');
+        });
+
+        // 📍 ที่อยู่จัดส่ง (Mobile App) — SHOP-08
+        Route::prefix('addresses')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\AddressApiController::class, 'index'])->name('api.v1.addresses.index');
+            Route::post('/', [\App\Http\Controllers\Api\V1\AddressApiController::class, 'store'])->middleware('throttle:20,1,api-address-store')->name('api.v1.addresses.store');
+            Route::put('/{id}', [\App\Http\Controllers\Api\V1\AddressApiController::class, 'update'])->whereNumber('id')->name('api.v1.addresses.update');
+            Route::delete('/{id}', [\App\Http\Controllers\Api\V1\AddressApiController::class, 'destroy'])->whereNumber('id')->name('api.v1.addresses.destroy');
+            Route::post('/{id}/default', [\App\Http\Controllers\Api\V1\AddressApiController::class, 'setDefault'])->whereNumber('id')->name('api.v1.addresses.default');
         });
 
         // Wallet (Mobile App)
@@ -250,20 +290,61 @@ Route::prefix('v1')->group(function () {
             Route::get('/lookup', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lookupWalletAddress']);
             // โอนเงินระหว่างกระเป๋า (ต้องใช้ PIN)
             Route::post('/transfer', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'transferMoney']);
+
+            // 💸 (2026-09-25) CC-06: ถอนเงิน + บัญชีรับเงิน + PIN กระเป๋า (WithdrawalService ตัวเดียวกับเว็บ)
+            Route::get('/withdraw/info', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'info'])
+                ->name('api.v1.wallet.withdraw.info');
+            Route::get('/withdraw/preview', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'preview'])
+                ->middleware('throttle:30,1,api-withdraw-preview')
+                ->name('api.v1.wallet.withdraw.preview');
+            Route::post('/withdraw', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'withdraw'])
+                ->middleware('throttle:5,1,api-withdraw')
+                ->name('api.v1.wallet.withdraw');
+            Route::get('/withdrawals', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'history'])
+                ->name('api.v1.wallet.withdrawals');
+            Route::post('/withdrawals/{id}/cancel', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'cancel'])
+                ->whereNumber('id')
+                ->middleware('throttle:10,1,api-withdraw-cancel')
+                ->name('api.v1.wallet.withdrawals.cancel');
+            Route::get('/bank-accounts', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'bankAccounts'])
+                ->name('api.v1.wallet.bank-accounts');
+            Route::post('/bank-accounts', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'storeBankAccount'])
+                ->middleware('throttle:10,1,api-bank-account-store')
+                ->name('api.v1.wallet.bank-accounts.store');
+            Route::delete('/bank-accounts/{id}', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'destroyBankAccount'])
+                ->whereNumber('id')
+                ->middleware('throttle:10,1,api-bank-account-delete')
+                ->name('api.v1.wallet.bank-accounts.destroy');
+            Route::post('/bank-accounts/{id}/delete', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'destroyBankAccount'])
+                ->whereNumber('id')
+                ->middleware('throttle:10,1,api-bank-account-delete')
+                ->name('api.v1.wallet.bank-accounts.delete');
+            Route::post('/bank-accounts/{id}/default', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'setDefaultBankAccount'])
+                ->whereNumber('id')
+                ->middleware('throttle:20,1,api-bank-account-default')
+                ->name('api.v1.wallet.bank-accounts.default');
+            Route::post('/pin', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'setPin'])
+                ->middleware('throttle:5,1,api-wallet-pin')
+                ->name('api.v1.wallet.pin');
         });
 
         // Orders (Mobile App)
+        // 🛒 (2026-09-25) SHOP-28: ลบ POST /orders (สร้างออเดอร์เส้นที่สอง) — สร้างผ่าน POST /cart/checkout เท่านั้น
         Route::prefix('orders')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'index']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'store']);
             Route::get('/unread-messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getUnreadMessageCount']);
-            Route::get('/{id}', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'show']);
-            Route::post('/{id}/cancel', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'cancel']);
+            Route::get('/{id}', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'show'])->whereNumber('id');
+            Route::post('/{id}/cancel', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'cancel'])->whereNumber('id')->middleware('throttle:10,1,api-order-cancel');
+            // CC-20: ยืนยันรับสินค้า + รีวิวสินค้าในออเดอร์
+            Route::post('/{id}/confirm-received', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'confirmReceived'])
+                ->whereNumber('id')->name('api.v1.orders.confirm-received');
+            Route::post('/{orderId}/items/{itemId}/review', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'review'])
+                ->whereNumber('orderId')->whereNumber('itemId')->middleware('throttle:10,1,api-order-review')->name('api.v1.orders.items.review');
             // Order Tracking
-            Route::get('/{id}/tracking', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getTracking']);
+            Route::get('/{id}/tracking', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getTracking'])->whereNumber('id');
             // Order Chat
-            Route::get('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getMessages']);
-            Route::post('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'sendMessage']);
+            Route::get('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getMessages'])->whereNumber('id');
+            Route::post('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'sendMessage'])->whereNumber('id');
         });
 
         // Shipping Providers (Mobile App)
@@ -286,22 +367,38 @@ Route::prefix('v1')->group(function () {
             Route::post('/confirm', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'confirmKycSubmission']);
         });
 
-        // Rider (Mobile App)
-        Route::prefix('rider')->group(function () {
-            Route::get('/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getRiderStatus']);
-            Route::post('/register', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'registerRider']);
-            Route::post('/document', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadRiderDocument']);
-            Route::post('/permissions', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateRiderPermissions']);
-            Route::post('/availability', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'setRiderAvailability']);
-            Route::post('/location', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateRiderLocation']);
-            Route::get('/jobs/available', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getAvailableJobs']);
-            Route::get('/jobs/current', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getCurrentJob']);
-            Route::post('/jobs/{jobId}/accept', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'acceptJob']);
-            Route::post('/jobs/{jobId}/status', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateJobStatus']);
+        // Rider (Mobile App) — 🏍️ (2026-09-25) ย้ายทั้งชุดไป RiderApiController
+        //    ทุกการเปลี่ยนสถานะงานผ่าน RiderJobService (race-safe + state machine)
+        //    throttle เฉพาะเส้นที่เขียนข้อมูล (ทั้งกลุ่มมี throttle:api อยู่แล้ว)
+        Route::prefix('rider')->name('api.v1.rider.')->controller(\App\Http\Controllers\Api\V1\RiderApiController::class)->group(function () {
+            Route::get('/status', 'status')->name('status');
+            Route::post('/register', 'register')->middleware('throttle:6,1,api-rider-register')->name('register');
+            Route::post('/document', 'uploadDocument')->middleware('throttle:20,1,api-rider-document')->name('document');
+            Route::get('/documents', 'documents')->name('documents');
+            Route::post('/permissions', 'permissions')->middleware('throttle:30,1,api-rider-permissions')->name('permissions');
+            Route::put('/profile', 'updateProfile')->middleware('throttle:20,1,api-rider-profile')->name('profile');
+            Route::post('/availability', 'availability')->middleware('throttle:20,1,api-rider-availability')->name('availability');
+            Route::post('/location', 'location')->middleware('throttle:40,1,api-rider-location')->name('location');
+            Route::get('/earnings', 'earnings')->name('earnings');
+
+            Route::get('/jobs/available', 'availableJobs')->name('jobs.available');
+            Route::get('/jobs/current', 'currentJob')->name('jobs.current');
+            Route::get('/jobs/history', 'history')->name('jobs.history');
+            Route::get('/jobs/{id}', 'showJob')->whereNumber('id')->name('jobs.show');
+            Route::post('/jobs/{id}/accept', 'accept')->whereNumber('id')->middleware('throttle:30,1,api-rider-accept')->name('jobs.accept');
+            Route::post('/jobs/{id}/reject', 'reject')->whereNumber('id')->middleware('throttle:30,1,api-rider-reject')->name('jobs.reject');
+            Route::post('/jobs/{id}/release', 'release')->whereNumber('id')->middleware('throttle:10,1,api-rider-release')->name('jobs.release');
+            Route::post('/jobs/{id}/status', 'updateStatus')->whereNumber('id')->middleware('throttle:30,1,api-rider-status')->name('jobs.status');
+            Route::post('/jobs/{id}/deliver', 'deliver')->whereNumber('id')->middleware('throttle:20,1,api-rider-deliver')->name('jobs.deliver');
+            Route::post('/jobs/{id}/fail', 'fail')->whereNumber('id')->middleware('throttle:10,1,api-rider-fail')->name('jobs.fail');
+            Route::post('/jobs/{id}/gps-lost', 'gpsLost')->whereNumber('id')->middleware('throttle:20,1,api-rider-gps-lost')->name('jobs.gps-lost');
+            Route::post('/jobs/{id}/gps-off', 'gpsOff')->whereNumber('id')->middleware('throttle:10,1,api-rider-gps-off')->name('jobs.gps-off');
         });
 
         // Web Session (สำหรับเปิดหน้าเว็บจาก Mobile App พร้อม authentication)
-        Route::post('/web-session', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'generateWebSessionToken']);
+        Route::post('/web-session', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'generateWebSessionToken'])
+            ->middleware('throttle:20,1,api-web-session')
+            ->name('api.v1.web-session');
 
         // Support Tickets (Mobile App)
         Route::prefix('tickets')->group(function () {
@@ -325,6 +422,9 @@ Route::prefix('v1')->group(function () {
         Route::prefix('push')->group(function () {
             Route::post('/token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'registerPushToken']);
             Route::delete('/token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removePushToken']);
+            // 🔔 (2026-09-25) CC-21: ถอด token ตอน logout แบบ POST (client ที่ส่ง body กับ DELETE ไม่ได้)
+            Route::post('/token/remove', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removePushToken'])
+                ->name('api.v1.push.token.remove');
         });
 
         // GPS Sharing (Mobile App) - แชร์ตำแหน่งให้ Admin ดู GPS Monitor
@@ -333,18 +433,18 @@ Route::prefix('v1')->group(function () {
             Route::post('/stop', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'stopGpsSharing']);
         });
 
-        // Store Listing (Mobile App) - รายการร้านค้า
+        // Store Listing (Mobile App) - รายการร้านค้า (ตัวเลขจริง ไม่มีเรตติ้ง/อัตราตอบกลับสมมติ — SHOP-17/18)
         Route::prefix('mobile/stores')->group(function () {
-            Route::get('/official', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getOfficialStores']);
-            Route::get('/featured', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getFeaturedStores']);
-            Route::get('/{storeId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getStoreDetail']);
-            Route::get('/{storeId}/products', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getStoreProducts']);
+            Route::get('/official', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'officialStores']);
+            Route::get('/featured', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'featuredStores']);
+            Route::get('/{storeId}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'store'])->whereNumber('storeId');
+            Route::get('/{storeId}/products', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'storeProducts'])->whereNumber('storeId');
         });
 
         // Premium Store (Mobile App) - ร้านพรีเมี่ยม (Official Shop)
         Route::prefix('mobile/premium-store')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getPremiumStore']);
-            Route::get('/products', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getPremiumStoreProducts']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'premiumStore']);
+            Route::get('/products', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'premiumStoreProducts']);
         });
 
         // Academy (Mobile App) - ระบบการเรียนรู้
@@ -362,15 +462,19 @@ Route::prefix('v1')->group(function () {
         });
 
         // Seller Order Management (Mobile App) - จัดการ Orders สำหรับผู้ขาย
+        // 🛒 (2026-09-25) SHOP-13 / SELLER-14: ร้านเห็น/แก้ได้เฉพาะออเดอร์ที่มีสินค้าของตัวเอง
+        Route::get('/seller/summary', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'summary'])->name('api.v1.seller.summary');
         Route::prefix('seller/orders')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getSellerOrders']);
-            Route::get('/{orderId}', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getSellerOrderDetail']);
-            Route::post('/{orderId}/tracking', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'updateOrderTracking']);
-            Route::post('/{orderId}/tracking-history', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'addOrderTrackingHistory']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'index'])->name('api.v1.seller.orders.index');
+            Route::get('/{orderId}', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'show'])->whereNumber('orderId')->name('api.v1.seller.orders.show');
+            Route::post('/{orderId}/action', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'action'])
+                ->whereNumber('orderId')->middleware('throttle:30,1,api-seller-order-action')->name('api.v1.seller.orders.action');
+            Route::post('/{orderId}/tracking', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'updateTracking'])->whereNumber('orderId');
+            Route::post('/{orderId}/tracking-history', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'addTrackingHistory'])->whereNumber('orderId');
         });
 
         // Shipping Providers (Mobile App) - รายการบริษัทขนส่ง
-        Route::get('/seller/shipping-providers', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getShippingProviders']);
+        Route::get('/seller/shipping-providers', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'shippingProviders']);
 
         // Rank System (Mobile App)
         Route::prefix('mobile/ranks')->group(function () {
@@ -422,6 +526,10 @@ Route::prefix('v1')->group(function () {
 
         // Push Token
         Route::post('mobile/push-token', [\App\Http\Controllers\Api\V1\MobileDeviceController::class, 'registerPushToken']);
+        // 🔔 (2026-09-25) CC-21: แอปเรียก DELETE /mobile/push-token ตอน logout มานานแล้วแต่ไม่มี route (404)
+        //    → ใช้ตัวเดียวกับ DELETE /push/token (ถอดทั้ง mobile_devices + user_notification_tokens)
+        Route::delete('mobile/push-token', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'removePushToken'])
+            ->name('api.v1.mobile.push-token.remove');
 
         // Push Notification Delivery Tracking (สำหรับ retry mechanism)
         Route::prefix('mobile/push')->group(function () {
@@ -647,32 +755,42 @@ Route::prefix('v1')->group(function () {
     // ===== Fresh Market API (ตลาดสดไทยพร๊อม) =====
     Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
         // Public endpoints
+        Route::get('/config', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'config'])->name('config');
         Route::get('/categories', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'categories'])->name('categories');
         Route::get('/listings', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'listings'])->name('listings');
-        Route::get('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showListing'])->name('listings.show');
+        Route::get('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showListing'])->whereNumber('id')->name('listings.show');
         Route::get('/nearby', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'nearby'])->name('nearby');
-        Route::get('/sellers/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showSeller'])->name('sellers.show');
+        Route::get('/sellers/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showSeller'])->whereNumber('id')->name('sellers.show');
 
         // Auth endpoints
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/listings', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeListing'])->name('listings.store');
-            Route::put('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateListing'])->name('listings.update');
-            Route::post('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeOrder'])->name('orders.store');
+            Route::put('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateListing'])->whereNumber('id')->name('listings.update');
+            Route::get('/delivery-quote', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'deliveryQuote'])->middleware('throttle:30,1,api-fm-delivery-quote')->name('delivery-quote');
+
+            // ผู้ซื้อ
+            Route::post('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeOrder'])->middleware('throttle:10,1,api-fm-order-store')->name('orders.store');
             Route::get('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'orders'])->name('orders');
-            Route::get('/orders/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showOrder'])->name('orders.show');
-            Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateOrderStatus'])->name('orders.status');
+            Route::get('/orders/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showOrder'])->whereNumber('id')->name('orders.show');
+            Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateOrderStatus'])->whereNumber('id')->name('orders.status');
+            Route::post('/orders/{id}/cancel', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'cancelOrder'])->whereNumber('id')->name('orders.cancel');
+            Route::post('/orders/{id}/confirm', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'confirmOrder'])->whereNumber('id')->name('orders.confirm');
+            Route::post('/orders/{id}/review', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'reviewOrder'])->whereNumber('id')->name('orders.review');
+
+            // ผู้ขาย
+            Route::post('/seller/register', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'registerSeller'])->name('seller.register');
+            Route::get('/seller/profile', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerProfile'])->name('seller.profile');
+            Route::put('/seller/profile', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateSellerProfile'])->name('seller.profile.update');
+            Route::post('/seller/subscribe', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'subscribe'])->name('seller.subscribe');
             Route::get('/seller/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerOrders'])->name('seller.orders');
+            Route::get('/seller/orders/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerOrderShow'])->whereNumber('id')->name('seller.orders.show');
+            Route::post('/seller/orders/{id}/action', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerOrderAction'])->whereNumber('id')->name('seller.orders.action');
             Route::get('/seller/dashboard', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerDashboard'])->name('seller.dashboard');
 
-            // ===== Rider GPS API =====
-            Route::prefix('rider/gps')->group(function () {
-                Route::post('/update', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'updateLocation']);
-                Route::post('/lost', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'reportGpsLost']);
-                Route::post('/confirm-off', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'confirmGpsOff']);
-                Route::post('/resume', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'resumeGps']);
-                Route::get('/customer/{jobId}', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'getCustomerLocation']);
-                Route::get('/tracking/{jobId}', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'getTrackingInfo']);
-            });
+            // (2026-09-25) Rider GPS API เดิม /fresh-market/rider/gps/* ถูกรวมเข้า /api/v1/rider/* แล้ว:
+            //    update → POST /rider/location · lost → POST /rider/jobs/{id}/gps-lost
+            //    confirm-off → POST /rider/jobs/{id}/gps-off · resume = อัตโนมัติเมื่อส่งตำแหน่งใหม่
+            //    customer/tracking → GET /rider/jobs/{id} (dropoff + customer_live_location)
         });
     });
 });
@@ -1456,7 +1574,8 @@ Route::get('/games/config', function () {
 // Google Maps API (V1)
 // ============================================
 
-Route::prefix('v1/maps')->middleware('auth:sanctum')->name('api.maps.')->group(function () {
+// 🚦 (2026-09-25) CC-03: geocode ยิง Google Maps API (มีค่าใช้จ่าย) → หุ้ม throttle:api ด้วย
+Route::prefix('v1/maps')->middleware(['auth:sanctum', 'throttle:api'])->name('api.maps.')->group(function () {
     // Reverse Geocode: พิกัด → ที่อยู่
     Route::post('/reverse-geocode', [\App\Http\Controllers\Api\GoogleMapsController::class, 'reverseGeocode'])
         ->name('reverse-geocode');
@@ -1490,7 +1609,7 @@ Route::prefix('v1/maps')->middleware('auth:sanctum')->name('api.maps.')->group(f
 // Service Booking System API (V1)
 // ============================================
 
-Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+Route::prefix('v1')->middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Service Categories & Services (Public with auth)
     Route::get('/service-categories', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'categories']);
     Route::get('/service-categories/{category}/services', [\App\Http\Controllers\Api\V1\ServiceBookingController::class, 'categoryServices']);

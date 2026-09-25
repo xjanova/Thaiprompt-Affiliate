@@ -175,23 +175,109 @@ class Product extends Model
 
         static::creating(function ($product) {
             if (empty($product->slug)) {
-                $slug = Str::slug($product->name);
-                // Str::slug ไม่รองรับภาษาไทย — ถ้าผลลัพธ์ว่าง ใช้ชื่อสินค้าแปลงเป็น URL-safe แทน
-                if (empty($slug)) {
-                    $slug = preg_replace('/\s+/', '-', trim($product->name));
-                    $slug = preg_replace('/[^\p{L}\p{N}\-]/u', '', $slug);
-                    $slug = mb_strtolower($slug);
-                }
-                // ถ้ายังว่างอยู่ ใช้ random string
-                if (empty($slug)) {
-                    $slug = 'product-'.Str::random(8);
-                }
-                $product->slug = $slug;
+                // 🔗 (2026-09-25) SELLER-18: ใช้ตัวสร้าง slug กลาง (รองรับชื่อไทย + ไม่ชน unique)
+                $product->slug = static::generateUniqueSlug((string) $product->name);
             }
             if (empty($product->sku)) {
                 $product->sku = 'PRD-'.strtoupper(Str::random(8));
             }
         });
+    }
+
+    /**
+     * สร้าง slug ที่ไม่ซ้ำ (products.slug มี unique index)
+     *
+     * - Str::slug คืนค่าว่างกับชื่อภาษาไทย → ใช้ตัวอักษร/ตัวเลขทุกภาษา (Unicode) แทน
+     * - ซ้ำกับสินค้าอื่น (รวมที่ถูก soft delete เพราะ unique index ยังนับ) → ต่อท้าย -2, -3 ... แล้วสุ่ม
+     *
+     * @param  int|null  $ignoreId  id ของสินค้าที่กำลังแก้ (ไม่นับว่าซ้ำกับตัวเอง)
+     */
+    public static function generateUniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $base = Str::slug($name);
+
+        if ($base === '') {
+            $base = preg_replace('/\s+/u', '-', trim($name)) ?? '';
+            $base = preg_replace('/[^\p{L}\p{M}\p{N}\-]/u', '', $base) ?? '';
+            $base = mb_strtolower(trim($base, '-'));
+        }
+
+        // เผื่อที่ให้คำต่อท้าย (คอลัมน์ยาว 255)
+        $base = mb_substr($base, 0, 200);
+        if ($base === '') {
+            $base = 'product';
+        }
+
+        $exists = function (string $slug) use ($ignoreId): bool {
+            return static::withTrashed()
+                ->where('slug', $slug)
+                ->when($ignoreId, fn ($q) => $q->where('id', '!=', $ignoreId))
+                ->exists();
+        };
+
+        $slug = $base;
+        for ($i = 2; $exists($slug); $i++) {
+            $slug = $i <= 20 ? "{$base}-{$i}" : $base.'-'.strtolower(Str::random(6));
+            if ($i > 40) {
+                break;
+            }
+        }
+
+        return $slug;
+    }
+
+    /**
+     * เหตุผลที่สินค้านี้สั่งซื้อไม่ได้ในตอนนี้ (null = สั่งได้)
+     *
+     * ใช้ร่วมกันทั้งตะกร้าเว็บ ตะกร้าแอป และ checkout — กันสินค้าที่ถูกซ่อน/ถูกบล็อก/ยังไม่เปิดขาย
+     * หรือร้านที่ถูกระงับ หลุดเข้าออเดอร์ (SELLER-20, SHOP-19)
+     */
+    public function purchaseBlockReason(): ?string
+    {
+        if (method_exists($this, 'trashed') && $this->trashed()) {
+            return 'สินค้านี้ถูกลบแล้ว';
+        }
+        if (! $this->is_active) {
+            return 'สินค้านี้ปิดการขายแล้ว';
+        }
+        if ($this->is_blocked) {
+            return 'สินค้านี้ถูกระงับการขาย';
+        }
+        if ($this->is_hidden) {
+            return 'สินค้านี้ไม่เปิดขายในขณะนี้';
+        }
+        if ($this->published_at === null || $this->published_at->isFuture()) {
+            return 'สินค้านี้ยังไม่เปิดขาย';
+        }
+        if ($this->is_affiliate) {
+            return 'สินค้านี้ต้องสั่งซื้อที่ร้านต้นทาง';
+        }
+
+        $store = $this->resolveStore();
+        if ($store && (! $store->is_active || in_array($store->status, ['suspended', 'closed'], true))) {
+            return 'ร้านค้านี้ปิดให้บริการชั่วคราว';
+        }
+
+        return null;
+    }
+
+    /**
+     * ร้านของสินค้า: products.store_id → ร้าน (ร้านแรก) ของผู้ขาย
+     */
+    public function resolveStore(): ?VendorStore
+    {
+        if ($this->store_id) {
+            $store = $this->relationLoaded('store') ? $this->getRelation('store') : $this->store;
+            if ($store instanceof VendorStore) {
+                return $store;
+            }
+        }
+
+        if (! $this->seller_id) {
+            return null;
+        }
+
+        return VendorStore::where('user_id', $this->seller_id)->orderBy('id')->first();
     }
 
     /**

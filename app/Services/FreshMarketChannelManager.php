@@ -2,14 +2,14 @@
 
 namespace App\Services;
 
+use App\Exceptions\RiderJobException;
 use App\Models\FreshMarketConversation;
 use App\Models\FreshMarketListing;
 use App\Models\FreshMarketOrder;
 use App\Models\FreshMarketReferral;
 use App\Models\FreshMarketSeller;
+use App\Exceptions\FreshMarketException;
 use App\Models\FreshMarketSetting;
-use App\Models\MlmMember;
-use App\Models\MlmPlan;
 use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\User;
@@ -225,10 +225,11 @@ class FreshMarketChannelManager
     }
 
     /**
-     * ผู้ใช้เพิ่มเพื่อน (Follow) → Auto-Register ทันที
+     * ผู้ใช้เพิ่มเพื่อน (Follow) → สร้างบัญชีผู้ใช้ (ผู้ซื้อ) อัตโนมัติ
      *
-     * สร้าง User + MlmMember + FreshMarketSeller อัตโนมัติ
-     * ไม่ต้อง signup 8 ขั้นตอนอีกต่อไป
+     * (2026-09-25) ไม่สร้างร้านค้า/สมาชิก MLM ให้ทุกคนที่เพิ่มเพื่อนอีกแล้ว
+     * - ร้านค้าสร้างเมื่อผู้ใช้เลือก "ลงขาย" เอง (หรือสมัครผู้ขายบนเว็บ/แอป)
+     * - ระบบแนะนำเพื่อนใช้ค่าแนะนำคงที่แทนสายงาน MLM
      */
     public function handleFollow(string $lineUserId, array $extra = []): void
     {
@@ -239,7 +240,7 @@ class FreshMarketChannelManager
         $displayName = $profile['displayName'] ?? $profile['name'] ?? 'ผู้ใช้ใหม่';
         $pictureUrl = $profile['pictureUrl'] ?? $profile['picture_url'] ?? null;
 
-        // 2. Auto-register (User + MLM + Seller)
+        // 2. สร้าง/อัปเดตบัญชีผู้ใช้ (ไม่สร้างร้าน ไม่สร้าง MLM)
         $result = $this->autoRegisterUser($lineUserId, $displayName, $pictureUrl);
 
         // 3. สร้าง/อัพเดท conversation
@@ -256,12 +257,12 @@ class FreshMarketChannelManager
             ]);
         }
 
-        // 4. ตรวจสอบ referral → mark converted
+        // 4. มาจากลิงก์แนะนำ (ส่ง token มาก่อนเพิ่มเพื่อน) → ผูกบัญชีผู้ใช้ (ค่าแนะนำจ่ายตอนสั่งซื้อสำเร็จครั้งแรก)
         $referral = FreshMarketReferral::findByReferredLineUser($lineUserId);
-        if ($referral && in_array($referral->status, ['pending', 'followed'])) {
+        if ($referral && $result['user'] && (int) $referral->referrer_user_id !== (int) $result['user']->id) {
             $referral->update([
-                'referred_user_id' => $result['user']?->id,
-                'status' => 'converted',
+                'referred_user_id' => $referral->referred_user_id ?? $result['user']->id,
+                'status' => 'followed',
             ]);
         }
 
@@ -283,15 +284,14 @@ class FreshMarketChannelManager
             'display_name' => $displayName,
             'user_id' => $result['user']?->id,
             'seller_id' => $result['seller']?->id,
-            'mlm_member_id' => $result['mlm_member']?->id,
             'is_new' => $result['is_new'],
         ]);
     }
 
     /**
-     * Auto-register: สร้าง User + MlmMember + Seller อัตโนมัติ
+     * Auto-register: สร้างบัญชีผู้ใช้จาก LINE (ผู้ซื้อ) — ร้านเดิม (ถ้ามี) แค่ดึงมาผูก ไม่สร้างใหม่
      *
-     * @return array{user: ?User, seller: ?FreshMarketSeller, mlm_member: ?MlmMember, is_new: bool}
+     * @return array{user: ?User, seller: ?FreshMarketSeller, is_new: bool}
      */
     protected function autoRegisterUser(string $lineUserId, string $displayName, ?string $pictureUrl): array
     {
@@ -304,133 +304,41 @@ class FreshMarketChannelManager
                 'line_picture_url' => $pictureUrl,
             ]));
 
-            $seller = FreshMarketSeller::findByLineUserId($lineUserId);
+            $seller = FreshMarketSeller::where('user_id', $existingUser->id)->first()
+                ?? FreshMarketSeller::findByLineUserId($lineUserId);
 
             return [
                 'user' => $existingUser,
                 'seller' => $seller,
-                'mlm_member' => null,
                 'is_new' => false,
             ];
         }
 
-        // สร้างใหม่ทั้งหมดใน transaction
         try {
-            return DB::transaction(function () use ($lineUserId, $displayName, $pictureUrl) {
-                // 1. สร้าง User
-                $user = User::createBotProvisioned([
-                    'name' => $displayName,
-                    'email' => "line_{$lineUserId}@thaiprompt.local",
-                    'password' => Hash::make(Str::random(16)),
-                    'line_user_id' => $lineUserId,
-                    'line_display_name' => $displayName,
-                    'line_picture_url' => $pictureUrl,
-                    'line_verified' => true,
-                    'line_linked_at' => now(),
-                ]);
+            // สร้างเฉพาะบัญชีผู้ใช้ (ผู้ซื้อ) — ร้านค้าสร้างเมื่อเลือก "ลงขาย" เอง
+            $user = User::createBotProvisioned([
+                'name' => $displayName,
+                'email' => "line_{$lineUserId}@thaiprompt.local",
+                'password' => Hash::make(Str::random(16)),
+                'line_user_id' => $lineUserId,
+                'line_display_name' => $displayName,
+                'line_picture_url' => $pictureUrl,
+                'line_verified' => true,
+                'line_linked_at' => now(),
+            ]);
 
-                // 2. สร้าง MlmMember (binary tree)
-                $mlmMember = $this->createMlmMember($user, $lineUserId);
-
-                // 3. สร้าง FreshMarketSeller
-                $seller = FreshMarketSeller::create([
-                    'user_id' => $user->id,
-                    'line_user_id' => $lineUserId,
-                    'shop_name' => $displayName,
-                    'line_display_name' => $displayName,
-                    'shop_image' => $pictureUrl,
-                    'mlm_member_id' => $mlmMember?->id,
-                    'is_active' => true,
-                    'subscription_type' => 'free',
-                ]);
-
-                return [
-                    'user' => $user,
-                    'seller' => $seller,
-                    'mlm_member' => $mlmMember,
-                    'is_new' => true,
-                ];
-            });
+            return [
+                'user' => $user,
+                'seller' => null,
+                'is_new' => true,
+            ];
         } catch (\Exception $e) {
             Log::error('FreshMarket: Auto-register failed', [
                 'line_user_id' => $lineUserId,
                 'error' => $e->getMessage(),
             ]);
 
-            return ['user' => null, 'seller' => null, 'mlm_member' => null, 'is_new' => false];
-        }
-    }
-
-    /**
-     * สร้าง MlmMember (binary tree) สำหรับผู้ใช้ใหม่
-     */
-    protected function createMlmMember(User $user, string $lineUserId): ?MlmMember
-    {
-        try {
-            // หา sponsor จาก referral (ถ้ามี)
-            $sponsor = null;
-            $referral = FreshMarketReferral::findByReferredLineUser($lineUserId);
-
-            if ($referral && $referral->referrer_user_id) {
-                $sponsor = MlmMember::where('user_id', $referral->referrer_user_id)
-                    ->where('status', 'active')
-                    ->first();
-            }
-
-            // Fallback: Super Admin
-            if (! $sponsor) {
-                $superAdmin = User::find(1);
-                $sponsor = $superAdmin ? MlmMember::where('user_id', $superAdmin->id)->first() : null;
-            }
-
-            if (! $sponsor) {
-                Log::warning('FreshMarket: ไม่มี sponsor สำหรับ MLM', ['user_id' => $user->id]);
-
-                return null;
-            }
-
-            // หา default MLM plan
-            $defaultPlan = MlmPlan::where('is_default', true)->first();
-
-            // สร้าง member ก่อน (ยังไม่วาง binary — placeNewMember จะจัดการ)
-            // 🐛 Fix 2026-07-24: เพิ่ม original_sponsor_id (เดิมหาย → ค่าแนะนำตรงไม่จ่าย
-            // เพราะ MlmReferralBonusService ใช้ originalSponsor) + ใช้ placeNewMember
-            // ศูนย์กลางแทน findBinaryPlacement เดิม (fallback วางใต้ sponsor ซ้ำ slot ได้)
-            $member = MlmMember::create([
-                'user_id' => $user->id,
-                'mlm_plan_id' => $defaultPlan?->id,
-                'original_sponsor_id' => $sponsor->id,
-                'unilevel_sponsor_id' => $sponsor->id,
-                'unilevel_level' => ($sponsor->unilevel_level ?? 0) + 1,
-                'unilevel_path' => ($sponsor->unilevel_path ?? '').'/'.$sponsor->id,
-                'binary_sponsor_id' => $sponsor->id,
-                'status' => 'active',
-                'joined_at' => now(),
-                'member_code' => MlmMember::generateMemberCode(),
-                'is_qualified' => true,
-            ]);
-
-            // อัพเดทสถิติ sponsor
-            $sponsor->increment('total_direct_referrals');
-
-            // วาง binary ผ่านศูนย์กลาง (fallback BFS + retry กัน race + อัพเดทสถิติครบ)
-            $placementResult = app(\App\Services\MlmBinaryService::class)->placeNewMember($member, $sponsor);
-
-            if (! $placementResult) {
-                Log::warning('FreshMarket: วาง binary ไม่สำเร็จ (member ยังอยู่ใน unilevel ปกติ)', [
-                    'member_id' => $member->id,
-                    'sponsor_id' => $sponsor->id,
-                ]);
-            }
-
-            return $member;
-        } catch (\Exception $e) {
-            Log::error('FreshMarket: MLM member creation failed', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
+            return ['user' => null, 'seller' => null, 'is_new' => false];
         }
     }
 
@@ -463,6 +371,8 @@ class FreshMarketChannelManager
             'edit_order' => $this->handleEditOrderPostback($conversation),
             'track_order' => $this->handleTrackOrderPostback($lineUserId, $params, $conversation),
             'sell_more' => $this->handleSellMorePostback($conversation),
+            'seller_orders' => $this->buildSellerOrdersReply($conversation),
+            'seller_order' => $this->handleSellerOrderPostback($params, $conversation),
             'rider_accept_job' => $this->handleRiderAcceptJobPostback($lineUserId, $params),
             'rider_reject_job' => $this->handleRiderRejectJobPostback($lineUserId, $params),
             default => $this->buildGreetingWithButtons($conversation),
@@ -1062,6 +972,17 @@ class FreshMarketChannelManager
     {
         $ctx = $conversation->getFlowContext('listing');
 
+        // ได้ชื่อ+ราคาแล้ว รอแค่จำนวนสต็อก → รับตัวเลขตรงๆ ได้เลย (ไม่ต้องเรียก AI)
+        if (! empty($ctx['title']) && ! empty($ctx['price']) && empty($ctx['quantity'])) {
+            $stock = $this->parseStockFromText($message, true);
+
+            if ($stock !== null) {
+                $conversation->setFlowContext('listing', ['quantity' => $stock]);
+
+                return $this->goToListingLocation($conversation);
+            }
+        }
+
         // ใช้ AI สกัดข้อมูลจากข้อความ
         try {
             $parsed = $this->aiService->parseListingDetailsFromText($message, $ctx);
@@ -1071,27 +992,32 @@ class FreshMarketChannelManager
 
         // ถ้า parse ได้
         if ($parsed && ! empty($parsed['title']) && ! empty($parsed['price'])) {
+            $stock = isset($parsed['quantity']) && (int) $parsed['quantity'] > 0
+                ? (int) $parsed['quantity']
+                : ($this->parseStockFromText($message, false) ?? (! empty($ctx['quantity']) ? (int) $ctx['quantity'] : null));
+
             // Merge ข้อมูลที่ได้เข้า context
-            $conversation->setFlowContext('listing', [
+            $conversation->setFlowContext('listing', array_filter([
                 'title' => $parsed['title'],
                 'price' => (float) $parsed['price'],
                 'unit' => $parsed['unit'] ?? 'ชิ้น',
                 'description' => $parsed['description'] ?? '',
                 'category_hint' => $parsed['category_hint'] ?? null,
                 'is_organic' => $parsed['is_organic'] ?? false,
-            ]);
+                'quantity' => $stock,
+            ], fn ($v) => $v !== null));
 
-            // ไปขั้นตอนพิกัด
-            $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_LOCATION);
-            $progress = $conversation->getProgressText();
+            // ยังไม่รู้ว่ามีของกี่ชิ้น → ถามก่อน (สต็อก 0 = สินค้าไม่แสดง/สั่งไม่ได้)
+            if (! $stock) {
+                $unit = $parsed['unit'] ?? 'ชิ้น';
+                $progress = $conversation->getProgressText();
 
-            $title = $parsed['title'];
-            $price = number_format($parsed['price'], 0);
-            $unit = $parsed['unit'] ?? 'ชิ้น';
+                return [
+                    'text' => "{$progress}\n\n✅ {$parsed['title']} ฿".number_format((float) $parsed['price'], 0)."/{$unit}\n\n📦 มีสินค้าพร้อมขายกี่ {$unit} คะ?\nพิมพ์ตัวเลขได้เลย เช่น \"20\"",
+                ];
+            }
 
-            return [
-                'text' => "{$progress}\n\n✅ ข้อมูลสินค้า:\n• ชื่อ: {$title}\n• ราคา: ฿{$price}/{$unit}\n\n📍 กดปุ่ม \"ส่งตำแหน่ง\" เพื่อระบุพิกัดร้านค่ะ\n\nหรือพิมพ์ \"ข้าม\" ถ้าจะใช้พิกัดเดิม",
-            ];
+            return $this->goToListingLocation($conversation);
         }
 
         // ถ้า parse ไม่สำเร็จ → ถามเพิ่ม
@@ -1123,8 +1049,55 @@ class FreshMarketChannelManager
         $missingText = ! empty($missing) ? "\n\nยังขาด:\n".implode("\n", $missing) : '';
 
         return [
-            'text' => "{$progress}\n\nพี่ตลาดต้องการข้อมูลเพิ่มค่ะ{$missingText}\n\nพิมพ์มาได้เลยค่ะ เช่น \"ผักบุ้งจีน 25 บาท/กำ\"",
+            'text' => "{$progress}\n\nพี่ตลาดต้องการข้อมูลเพิ่มค่ะ{$missingText}\n\nพิมพ์มาได้เลยค่ะ เช่น \"ผักบุ้งจีน 25 บาท/กำ มี 20 กำ\"",
         ];
+    }
+
+    /**
+     * ข้อมูลสินค้าครบ → ไปขั้นตอนระบุพิกัดร้าน
+     */
+    protected function goToListingLocation(FreshMarketConversation $conversation): array
+    {
+        $ctx = $conversation->getFlowContext('listing');
+        $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_LOCATION);
+        $progress = $conversation->getProgressText();
+
+        $title = $ctx['title'] ?? 'สินค้า';
+        $price = number_format((float) ($ctx['price'] ?? 0), 0);
+        $unit = $ctx['unit'] ?? 'ชิ้น';
+        $stock = (int) ($ctx['quantity'] ?? 0);
+
+        return [
+            'text' => "{$progress}\n\n✅ ข้อมูลสินค้า:\n• ชื่อ: {$title}\n• ราคา: ฿{$price}/{$unit}\n• มีขาย: {$stock} {$unit}\n\n📍 กดปุ่ม \"ส่งตำแหน่ง\" เพื่อระบุพิกัดร้านค่ะ\n\nหรือพิมพ์ \"ข้าม\" ถ้าจะใช้พิกัดเดิม",
+        ];
+    }
+
+    /**
+     * อ่านจำนวนสต็อกจากข้อความ
+     *
+     * @param  bool  $bareNumberAllowed  true = ข้อความที่เป็นตัวเลขล้วน (ตอบคำถาม "มีกี่ชิ้น") ถือเป็นจำนวน
+     * @return int|null จำนวน (1-100000) หรือ null ถ้าไม่พบ
+     *
+     * @example parseStockFromText('ผักบุ้ง 25 บาท มี 20 กำ', false) // 20
+     * @example parseStockFromText('15', true) // 15
+     */
+    protected function parseStockFromText(string $message, bool $bareNumberAllowed): ?int
+    {
+        $text = trim($message);
+
+        if ($bareNumberAllowed && preg_match('/^(\d{1,6})\s*\S{0,10}$/u', $text, $m)) {
+            $qty = (int) $m[1];
+
+            return $qty > 0 && $qty <= 100000 ? $qty : null;
+        }
+
+        if (preg_match('/(?:มี|สต็อก|สต๊อก|stock|จำนวน|เหลือ|ทั้งหมด)\s*(\d{1,6})/iu', $text, $m)) {
+            $qty = (int) $m[1];
+
+            return $qty > 0 && $qty <= 100000 ? $qty : null;
+        }
+
+        return null;
     }
 
     /**
@@ -1338,24 +1311,41 @@ class FreshMarketChannelManager
         if ($parsed && ! empty($parsed['quantity'])) {
             $quantity = (int) $parsed['quantity'];
             $deliveryType = $parsed['delivery_type'] ?? 'pickup';
-            $unitPrice = $ctx['listing_price'] ?? 0;
-            $totalAmount = $unitPrice * $quantity;
+            $unitPrice = (float) ($ctx['listing_price'] ?? 0);
+            $totalAmount = round($unitPrice * $quantity, 2);
 
-            // คำนวณค่าจัดส่งจาก settings (ไม่ hardcode)
+            // ค่าส่งไรเดอร์คำนวณฝั่งเซิร์ฟเวอร์จากร้าน → ตำแหน่งผู้ซื้อ (ตัวเลขเดียวกับตอนสร้างออเดอร์)
             $deliveryFee = 0;
             if ($deliveryType === 'rider') {
                 $buyerLat = $ctx['buyer_latitude'] ?? $conversation->last_search_latitude;
                 $buyerLng = $ctx['buyer_longitude'] ?? $conversation->last_search_longitude;
-                if ($buyerLat && $buyerLng) {
-                    $deliveryFee = $this->marketService->calculateDeliveryFee(
-                        $conversation->last_search_latitude ?? 0,
-                        $conversation->last_search_longitude ?? 0,
-                        (float) $buyerLat, (float) $buyerLng
-                    );
-                } else {
-                    // ใช้ base fee เมื่อไม่มีพิกัด
-                    $deliveryFee = $this->settings->delivery_base_fee ?? 30.0;
+
+                if (! $buyerLat || ! $buyerLng) {
+                    $conversation->setFlowContext('order', ['quantity' => $quantity, 'delivery_type' => 'rider']);
+
+                    return [
+                        'text' => "📍 ให้ไรเดอร์ไปส่งที่ไหนคะ?\n\nกดปุ่ม \"+\" → \"ส่งตำแหน่ง\" เพื่อปักหมุดจุดส่งของค่ะ",
+                    ];
                 }
+
+                $listing = FreshMarketListing::with('seller')->find($ctx['listing_id'] ?? 0);
+                $quote = $listing
+                    ? $this->marketService->quoteDelivery($listing, (float) $buyerLat, (float) $buyerLng)
+                    : ['available' => false, 'message' => 'ไม่พบสินค้านี้แล้วค่ะ'];
+
+                if (! $quote['available']) {
+                    $conversation->setFlowContext('order', ['quantity' => $quantity, 'delivery_type' => 'pickup']);
+
+                    return [
+                        'text' => '⚠️ '.($quote['message'] ?? 'ส่งด้วยไรเดอร์ไม่ได้ในขณะนี้')."\n\nพิมพ์ \"{$quantity} นัดรับ\" เพื่อไปรับเองที่ร้านได้ค่ะ",
+                    ];
+                }
+
+                $deliveryFee = (float) $quote['total_fee'];
+                $conversation->setFlowContext('order', [
+                    'buyer_latitude' => (float) $buyerLat,
+                    'buyer_longitude' => (float) $buyerLng,
+                ]);
             }
 
             $conversation->setFlowContext('order', [
@@ -1386,14 +1376,21 @@ class FreshMarketChannelManager
      */
     protected function handleOrderQuantity_Location(FreshMarketConversation $conversation, float $lat, float $lng, array $extra): array
     {
-        $conversation->setFlowContext('order', [
+        $conversation->setFlowContext('order', array_filter([
             'buyer_latitude' => $lat,
             'buyer_longitude' => $lng,
+            'buyer_address' => ! empty($extra['address']) ? mb_substr((string) $extra['address'], 0, 500) : null,
             'delivery_type' => 'rider',
-        ]);
+        ], fn ($v) => $v !== null));
+
+        $ctx = $conversation->getFlowContext('order');
+
+        // บอกจำนวนไว้แล้ว (รอแค่พิกัด) → คำนวณค่าส่งแล้วไปหน้าสรุปเลย
+        if (! empty($ctx['quantity'])) {
+            return $this->handleOrderQuantity_Text($conversation, $ctx['quantity'].' ส่ง', $extra);
+        }
 
         $progress = $conversation->getProgressText();
-        $ctx = $conversation->getFlowContext('order');
         $title = $ctx['listing_title'] ?? 'สินค้า';
         $unit = $ctx['listing_unit'] ?? 'ชิ้น';
 
@@ -1462,6 +1459,7 @@ class FreshMarketChannelManager
             'delivered' => '🎉 ส่งถึงแล้ว',
             'completed' => '✅ สำเร็จ',
             'cancelled' => '❌ ยกเลิกแล้ว',
+            'delivery_failed' => '⚠️ จัดส่งไม่สำเร็จ ทีมงานกำลังติดต่อกลับ',
         ];
 
         $statusText = $statusLabels[$orderStatus] ?? $orderStatus;
@@ -1614,6 +1612,7 @@ class FreshMarketChannelManager
                     'delivered' => '✅ ส่งถึงแล้ว',
                     'completed' => '🎉 เสร็จสมบูรณ์',
                     'cancelled' => '❌ ถูกยกเลิก',
+                    'delivery_failed' => '⚠️ จัดส่งไม่สำเร็จ ทีมงานกำลังติดต่อกลับ',
                 ];
                 $statusText = $statusLabels[$order->order_status] ?? "📋 สถานะ: {$order->order_status}";
 
@@ -1663,215 +1662,206 @@ class FreshMarketChannelManager
     }
 
     // ╔══════════════════════════════════════════╗
-    // ║  RIDER REGISTRATION FLOW HANDLERS         ║
+    // ║  SELLER ORDER MANAGEMENT (reply เท่านั้น) ║
     // ╚══════════════════════════════════════════╝
 
     /**
-     * rider_register + text → ผู้ใช้เลือกประเภทไรเดอร์ (delivery / service / both)
+     * รายการออเดอร์ร้านที่ต้องจัดการ + ปุ่มขั้นถัดไป (ตอบกลับใน event ที่ผู้ขายทักมา — ไม่ใช้ push)
      */
-    protected function handleRiderRegister_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    protected function buildSellerOrdersReply(FreshMarketConversation $conversation, ?string $notice = null): array
     {
-        $msg = mb_strtolower(trim($message));
-        $progress = $conversation->getProgressText();
+        $seller = $conversation->seller_id
+            ? FreshMarketSeller::find($conversation->seller_id)
+            : FreshMarketSeller::findByLineUserId($conversation->line_user_id);
 
-        // ตรวจจับตัวเลือก
-        $riderType = null;
-        if (in_array($msg, ['1', 'ส่งของ', 'delivery', 'ไรเดอร์ส่งของ'])) {
-            $riderType = 'delivery';
-        } elseif (in_array($msg, ['2', 'บริการ', 'service', 'ช่าง', 'ไรเดอร์บริการ'])) {
-            $riderType = 'service';
-        } elseif (in_array($msg, ['3', 'ทั้งสอง', 'both', 'ทั้งหมด', 'ส่งของและบริการ'])) {
-            $riderType = 'both';
-        }
-
-        if (! $riderType) {
+        if (! $seller) {
             return [
-                'text' => "{$progress}\n\n🏍️ กรุณาเลือกประเภทไรเดอร์ค่ะ:\n\n"
-                    ."1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
-                    ."2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
-                    ."3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
-                    ."พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
-                    .'พิมพ์ "ยกเลิก" ถ้าต้องการเริ่มใหม่',
+                'text' => "🏪 คุณยังไม่มีร้านในตลาดสดค่ะ\n\nพิมพ์ \"ลงขาย\" เพื่อเปิดร้านได้เลย",
                 'quick_replies' => [
-                    ['label' => '🚚 ส่งของ', 'postback' => 'action=menu&choice=rider_type_delivery', 'display_text' => '1'],
-                    ['label' => '🔧 บริการ', 'postback' => 'action=menu&choice=rider_type_service', 'display_text' => '2'],
-                    ['label' => '🚚🔧 ทั้งสอง', 'postback' => 'action=menu&choice=rider_type_both', 'display_text' => '3'],
-                    ['label' => '❌ ยกเลิก', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'ยกเลิก'],
+                    ['label' => '🏷️ ลงขาย', 'postback' => 'action=menu&choice=sell', 'display_text' => 'ลงขาย'],
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
                 ],
             ];
         }
 
-        // บันทึกประเภทไรเดอร์ใน context
-        $conversation->setFlowContext('rider', [
-            'rider_type' => $riderType,
-            'started_at' => now()->toIso8601String(),
-        ]);
+        $orders = FreshMarketOrder::where('seller_id', $seller->id)
+            ->whereIn('order_status', [
+                FreshMarketOrder::STATUS_PENDING, FreshMarketOrder::STATUS_ACCEPTED,
+                FreshMarketOrder::STATUS_PREPARING, FreshMarketOrder::STATUS_READY,
+            ])
+            ->with('listing:id,title,unit')
+            ->orderByRaw("CASE WHEN order_status = 'pending' THEN 0 ELSE 1 END")
+            ->oldest()
+            ->limit(4)
+            ->get();
 
-        // ไปเลือกหมวดหมู่บริการ
-        $conversation->transitionTo(FreshMarketConversation::STATE_RIDER_CATEGORY);
-        $newProgress = $conversation->getProgressText();
+        $webUrl = url('/taladsod/seller/orders');
+        $header = $notice ? "{$notice}\n\n" : '';
 
-        $riderTypeLabel = match ($riderType) {
-            'delivery' => '🚚 ส่งของ',
-            'service' => '🔧 บริการ',
-            'both' => '🚚🔧 ส่งของ + บริการ',
-        };
+        if ($orders->isEmpty()) {
+            return [
+                'text' => "{$header}🏪 ตอนนี้ไม่มีออเดอร์ที่ต้องจัดการค่ะ\n\nดูออเดอร์ทั้งหมด: {$webUrl}",
+                'quick_replies' => [
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ],
+            ];
+        }
+
+        $lines = [];
+        $quickReplies = [];
+
+        foreach ($orders as $order) {
+            $short = mb_substr((string) $order->order_number, -5);
+            $pay = $order->payment_method === 'cod' ? 'เก็บปลายทาง' : 'จ่ายแล้ว';
+            $ship = $order->delivery_type === 'rider' ? 'ไรเดอร์' : 'มารับเอง';
+            $lines[] = "#{$short} {$order->riderItemsSummary()}\n   ฿".number_format((float) $order->total_amount, 0)
+                ." • {$pay} • {$ship} • {$order->status_label}";
+
+            // ปุ่มขั้นถัดไปของแต่ละออเดอร์
+            $next = match ($order->order_status) {
+                FreshMarketOrder::STATUS_PENDING => ['accept' => "✅ รับ {$short}", 'cancel' => "❌ ปฏิเสธ {$short}"],
+                FreshMarketOrder::STATUS_ACCEPTED, FreshMarketOrder::STATUS_PREPARING => ['ready' => "📦 พร้อม {$short}"],
+                FreshMarketOrder::STATUS_READY => $order->delivery_type === 'pickup' ? ['handover' => "🤝 ส่งมอบ {$short}"] : [],
+                default => [],
+            };
+
+            foreach ($next as $op => $label) {
+                $quickReplies[] = [
+                    'label' => mb_substr($label, 0, 20),
+                    'postback' => "action=seller_order&op={$op}&order_id={$order->id}",
+                    'display_text' => $label,
+                ];
+            }
+        }
+
+        $quickReplies = array_slice($quickReplies, 0, 12);
+        $quickReplies[] = ['label' => '🔄 รีเฟรช', 'postback' => 'action=seller_orders', 'display_text' => 'ออเดอร์ร้าน'];
 
         return [
-            'text' => "{$newProgress}\n\n✅ เลือก: {$riderTypeLabel}\n\n"
-                ."📋 กรุณาเลือกหมวดหมู่ที่ต้องการรับงาน:\n\n"
-                ."1️⃣ ตลาดสด — ส่งสินค้าจากตลาด\n"
-                ."2️⃣ อาหาร — ส่งอาหาร\n"
-                ."3️⃣ เอกสาร — ส่งเอกสาร\n"
-                ."4️⃣ ทั่วไป — ทุกประเภท\n\n"
-                .'พิมพ์ตัวเลข หรือชื่อหมวดหมู่ค่ะ',
+            'text' => $header."🏪 ออเดอร์ที่ต้องจัดการ\n\n".implode("\n\n", $lines)."\n\nจัดการทั้งหมดบนเว็บ: {$webUrl}",
+            'quick_replies' => $quickReplies,
+        ];
+    }
+
+    /**
+     * ผู้ขายกดปุ่มจัดการออเดอร์ใน LINE (รับ / พร้อม / ส่งมอบ / ปฏิเสธ)
+     */
+    protected function handleSellerOrderPostback(array $params, FreshMarketConversation $conversation): array
+    {
+        $op = (string) ($params['op'] ?? '');
+        $orderId = (int) ($params['order_id'] ?? 0);
+
+        if (! in_array($op, ['accept', 'prepare', 'ready', 'handover', 'cancel'], true) || $orderId <= 0) {
+            return $this->buildSellerOrdersReply($conversation);
+        }
+
+        $seller = $conversation->seller_id
+            ? FreshMarketSeller::find($conversation->seller_id)
+            : FreshMarketSeller::findByLineUserId($conversation->line_user_id);
+        $order = FreshMarketOrder::find($orderId);
+
+        if (! $seller || ! $order || (int) $order->seller_id !== (int) $seller->id) {
+            return ['text' => '⚠️ ไม่พบออเดอร์นี้ในร้านของคุณค่ะ'];
+        }
+
+        $actor = $seller->user;
+
+        try {
+            $this->marketService->applyAction($order, $op, 'seller', $actor, [
+                'reason' => 'ร้านไม่สะดวกรับออเดอร์ (ปฏิเสธผ่าน LINE)',
+            ]);
+
+            $notice = '✅ '.FreshMarketOrder::actionLabel($op).' #'.mb_substr((string) $order->order_number, -5).' เรียบร้อยค่ะ';
+        } catch (FreshMarketException $e) {
+            $notice = '⚠️ '.$e->getMessage();
+        } catch (\Throwable $e) {
+            Log::error('FreshMarket LINE: จัดการออเดอร์ร้านล้มเหลว', ['order_id' => $orderId, 'op' => $op, 'error' => $e->getMessage()]);
+            $notice = '⚠️ ทำรายการไม่สำเร็จ กรุณาลองใหม่อีกครั้งค่ะ';
+        }
+
+        return $this->buildSellerOrdersReply($conversation, $notice);
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  RIDER REGISTRATION FLOW HANDLERS         ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * rider_register + text → ส่งลิงก์สมัครไรเดอร์บนเว็บ/แอป
+     *
+     * (2026-09-25) เลิกสร้าง Rider ในแชท LINE — แถวที่สร้างจากแชทไม่มีชื่อจริง/เบอร์/เอกสาร
+     * (เดิม insert พังทุกครั้งเพราะ full_name/phone เป็น NOT NULL) → ให้สมัครครบที่หน้าเว็บหรือแอปที่เดียว
+     * ผู้ใช้ที่ค้างอยู่ใน state เก่าจะได้ลิงก์เดียวกันแล้วกลับเมนูหลัก
+     */
+    protected function handleRiderRegister_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        return $this->buildRiderSignupReply($conversation);
+    }
+
+    /**
+     * ข้อความ "สมัครไรเดอร์" (reply เท่านั้น — ไม่ใช้ push)
+     *
+     * มี Rider อยู่แล้ว → บอกสถานะ + ลิงก์หน้าสถานะ / ยังไม่มี → ลิงก์หน้าสมัคร
+     */
+    protected function buildRiderSignupReply(FreshMarketConversation $conversation): array
+    {
+        $conversation->clearFlowContext('rider');
+        $conversation->resetToIdle();
+
+        $user = $conversation->user_id ? User::find($conversation->user_id) : null;
+        $user ??= User::where('line_user_id', $conversation->line_user_id)->first();
+        $rider = $user ? Rider::where('user_id', $user->id)->first() : null;
+
+        $registerUrl = $this->riderWebUrl('user.rider.register', '/user/rider/register');
+        $statusUrl = $this->riderWebUrl('user.rider.status', '/user/rider/status');
+
+        if ($rider) {
+            $statusLine = match ($rider->status) {
+                'approved' => '✅ บัญชีไรเดอร์ของคุณอนุมัติแล้ว เปิดแอปไทยพร้อมแล้วกด "เริ่มรับงาน" ได้เลยค่ะ',
+                'pending' => '⏳ ใบสมัครไรเดอร์ของคุณอยู่ระหว่างตรวจสอบค่ะ',
+                'rejected' => '⚠️ ใบสมัครไม่ผ่าน'.($rider->rejection_reason ? " ({$rider->rejection_reason})" : '').' แก้ไขข้อมูลแล้วส่งใหม่ได้ค่ะ',
+                'suspended' => '⛔ บัญชีไรเดอร์ถูกระงับชั่วคราว กรุณาติดต่อทีมงานค่ะ',
+                default => 'ℹ️ สถานะบัญชีไรเดอร์: '.$rider->status_text,
+            };
+
+            return [
+                'text' => "🏍️ ไรเดอร์ไทยพร้อม\n\n{$statusLine}\n\n📋 ดูสถานะ/เอกสาร: {$statusUrl}",
+                'quick_replies' => [
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ],
+            ];
+        }
+
+        return [
+            'text' => "🏍️ สมัครเป็นไรเดอร์ไทยพร้อม\n\n"
+                ."กรอกข้อมูลและอัปโหลดเอกสาร (บัตรประชาชน, ใบขับขี่, ทะเบียนรถ) ได้ที่ลิงก์นี้ค่ะ\n"
+                ."👉 {$registerUrl}\n\n"
+                ."หรือสมัครในแอปไทยพร้อม เมนู \"ไรเดอร์\"\n"
+                .'ทีมงานตรวจเอกสารแล้วจะแจ้งผลในแอปค่ะ 🙏',
             'quick_replies' => [
-                ['label' => '🥬 ตลาดสด', 'postback' => 'action=menu&choice=rider_cat_fresh', 'display_text' => '1'],
-                ['label' => '🍜 อาหาร', 'postback' => 'action=menu&choice=rider_cat_food', 'display_text' => '2'],
-                ['label' => '📄 เอกสาร', 'postback' => 'action=menu&choice=rider_cat_doc', 'display_text' => '3'],
-                ['label' => '📦 ทั่วไป', 'postback' => 'action=menu&choice=rider_cat_all', 'display_text' => '4'],
+                ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
             ],
         ];
     }
 
     /**
-     * rider_category + text → เลือกหมวดหมู่ → ลงทะเบียนไรเดอร์สำเร็จ
+     * URL หน้าเว็บระบบไรเดอร์ (fallback เป็น path ถ้า route ยังไม่ถูกโหลด)
      */
-    protected function handleRiderCategory_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    protected function riderWebUrl(string $routeName, string $fallbackPath): string
     {
-        $msg = mb_strtolower(trim($message));
-
-        // ตรวจจับหมวดหมู่
-        $categories = [];
-        if (in_array($msg, ['1', 'ตลาดสด', 'fresh', 'fresh_market'])) {
-            $categories = ['fresh_market'];
-        } elseif (in_array($msg, ['2', 'อาหาร', 'food'])) {
-            $categories = ['food'];
-        } elseif (in_array($msg, ['3', 'เอกสาร', 'document', 'doc'])) {
-            $categories = ['document'];
-        } elseif (in_array($msg, ['4', 'ทั่วไป', 'all', 'ทุกประเภท', 'ทั้งหมด'])) {
-            $categories = ['fresh_market', 'food', 'document', 'delivery'];
-        }
-
-        if (empty($categories)) {
-            $progress = $conversation->getProgressText();
-
-            return [
-                'text' => "{$progress}\n\n"
-                    ."กรุณาเลือกหมวดหมู่ค่ะ:\n"
-                    ."1️⃣ ตลาดสด  2️⃣ อาหาร  3️⃣ เอกสาร  4️⃣ ทั่วไป\n\n"
-                    .'พิมพ์ตัวเลขค่ะ',
-            ];
-        }
-
-        $riderCtx = $conversation->getFlowContext('rider');
-        $riderType = $riderCtx['rider_type'] ?? 'delivery';
-
-        // สร้างหรืออัพเดท Rider
         try {
-            $rider = $this->registerRider($conversation, $riderType, $categories);
-
-            // รีเซ็ตกลับ idle
-            $conversation->clearFlowContext('rider');
-            $conversation->resetToIdle();
-
-            if ($rider) {
-                $categoryLabels = array_map(fn ($c) => match ($c) {
-                    'fresh_market' => '🥬 ตลาดสด',
-                    'food' => '🍜 อาหาร',
-                    'document' => '📄 เอกสาร',
-                    'delivery' => '🚚 ส่งของทั่วไป',
-                    default => $c,
-                }, $categories);
-
-                return [
-                    'text' => "🎉 ลงทะเบียนไรเดอร์สำเร็จค่ะ!\n\n"
-                        ."📋 ข้อมูลไรเดอร์:\n"
-                        ."━━━━━━━━━━━━━━━\n"
-                        .'🏍️ ประเภท: '.match ($riderType) {
-                            'delivery' => 'ส่งของ',
-                            'service' => 'บริการ',
-                            'both' => 'ส่งของ + บริการ',
-                        }."\n"
-                        .'📦 หมวดหมู่: '.implode(', ', $categoryLabels)."\n"
-                        ."━━━━━━━━━━━━━━━\n\n"
-                        ."⚠️ ต้องรอ Admin อนุมัติและวางมัดจำก่อนรับงานนะคะ\n"
-                        .'ระบบจะแจ้งเตือนเมื่อพร้อมค่ะ 🙏',
-                    'quick_replies' => [
-                        ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
-                    ],
-                ];
-            }
-
-            return [
-                'text' => '⚠️ ไม่สามารถลงทะเบียนไรเดอร์ได้ค่ะ กรุณาลองใหม่',
-                'quick_replies' => [
-                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
-                ],
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('FreshMarket: Rider registration failed', [
-                'error' => $e->getMessage(),
-                'line_user_id' => $conversation->line_user_id,
-            ]);
-
-            $conversation->resetToIdle();
-
-            return [
-                'text' => "⚠️ เกิดข้อผิดพลาดในการลงทะเบียนค่ะ\n\nกรุณาลองใหม่อีกครั้ง",
-                'quick_replies' => [
-                    ['label' => '🏍️ ลองใหม่', 'postback' => 'action=menu&choice=rider', 'display_text' => 'สมัครไรเดอร์'],
-                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
-                ],
-            ];
+            return route($routeName);
+        } catch (\Throwable) {
+            return url($fallbackPath);
         }
     }
 
     /**
-     * สร้างหรืออัพเดท Rider จากข้อมูล conversation
+     * rider_category + text → (flow เก่า) ส่งลิงก์สมัครบนเว็บ/แอปแทนการสร้าง Rider ในแชท
      */
-    protected function registerRider(FreshMarketConversation $conversation, string $riderType, array $categories): ?Rider
+    protected function handleRiderCategory_Text(FreshMarketConversation $conversation, string $message, array $extra): array
     {
-        // หา User จาก conversation
-        $user = null;
-        if ($conversation->user_id) {
-            $user = User::find($conversation->user_id);
-        }
-
-        if (! $user) {
-            $user = User::where('line_user_id', $conversation->line_user_id)->first();
-        }
-
-        if (! $user) {
-            return null;
-        }
-
-        // เช็คว่ามี Rider อยู่แล้วหรือไม่
-        $rider = Rider::where('user_id', $user->id)->first();
-
-        if ($rider) {
-            // อัพเดทข้อมูล
-            $rider->update([
-                'rider_type' => $riderType,
-                'service_categories' => $categories,
-                'preferred_job_types' => $categories,
-                'line_user_id' => $conversation->line_user_id,
-            ]);
-        } else {
-            // สร้างใหม่
-            $rider = Rider::create([
-                'user_id' => $user->id,
-                'line_user_id' => $conversation->line_user_id,
-                'rider_type' => $riderType,
-                'service_categories' => $categories,
-                'preferred_job_types' => $categories,
-                'status' => 'pending', // ต้อง admin approve
-                'is_online' => false,
-            ]);
-        }
-
-        return $rider;
+        return $this->buildRiderSignupReply($conversation);
     }
 
     // ╔══════════════════════════════════════════╗
@@ -1879,20 +1869,23 @@ class FreshMarketChannelManager
     // ╚══════════════════════════════════════════╝
 
     /**
-     * Postback: ไรเดอร์กดรับงาน
+     * Postback: ไรเดอร์กดรับงาน (ตอบด้วย reply เท่านั้น)
+     *
+     * ผ่าน RiderJobService::accept ตัวเดียวกับแอป → ตรวจสิทธิ์ครบ (อนุมัติ/ระงับ/online/GPS สด/
+     * งานค้าง/ออเดอร์ตัวเอง/วงเงิน COD/offer ของ cascade) + รับงานแบบ race-safe
      */
     protected function handleRiderAcceptJobPostback(string $lineUserId, array $params): ?array
     {
-        $jobId = $params['job_id'] ?? null;
+        $jobId = (int) ($params['job_id'] ?? 0);
 
-        if (! $jobId) {
+        if ($jobId <= 0) {
             return ['text' => '❌ ไม่พบข้อมูลงาน'];
         }
 
         $rider = Rider::where('line_user_id', $lineUserId)->first();
 
         if (! $rider) {
-            return ['text' => '❌ ไม่พบข้อมูลไรเดอร์ กรุณาลงทะเบียนก่อน'];
+            return ['text' => '❌ ไม่พบข้อมูลไรเดอร์ กรุณาสมัครไรเดอร์ในแอปไทยพร้อมก่อนค่ะ'];
         }
 
         $job = RiderJob::find($jobId);
@@ -1901,27 +1894,28 @@ class FreshMarketChannelManager
             return ['text' => '❌ ไม่พบงานนี้ในระบบ'];
         }
 
-        if ($job->status !== 'pending') {
-            return ['text' => '⚠️ งานนี้มีไรเดอร์รับไปแล้ว ขอบคุณที่สนใจค่ะ!'];
+        try {
+            $job = app(RiderJobService::class)->accept($job, $rider);
+        } catch (RiderJobException $e) {
+            return ['text' => '⚠️ '.$e->getMessage()];
+        } catch (\Throwable $e) {
+            Log::error('FreshMarket: rider accept via LINE failed', [
+                'job_id' => $jobId,
+                'rider_id' => $rider->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['text' => '⚠️ รับงานไม่สำเร็จ กรุณาลองใหม่ในแอปไทยพร้อมค่ะ'];
         }
-
-        $dispatchService = new RiderDispatchService;
-        $accepted = $dispatchService->handleRiderAccept($job, $rider);
-
-        if (! $accepted) {
-            return ['text' => '⚠️ งานนี้มีไรเดอร์อื่นรับไปแล้ว ขอบคุณที่สนใจค่ะ!'];
-        }
-
-        // แจ้งไรเดอร์อื่นว่างานถูกรับแล้ว (broadcast)
-        $dispatchService->notifyOtherRidersJobTaken($job->fresh());
 
         return [
             'text' => "✅ รับงานสำเร็จ!\n\n"
                 ."📦 งาน: {$job->title}\n"
-                .'📍 รับ: '.mb_substr($job->pickup_address, 0, 30)."\n"
-                .'📦 ส่ง: '.mb_substr($job->delivery_address, 0, 30)."\n"
-                .'💰 รายได้: ฿'.number_format($job->rider_earnings)."\n\n"
-                .'🗺️ กรุณาเดินทางไปรับสินค้าที่ร้านค้า',
+                .'📍 รับ: '.mb_substr((string) $job->pickup_address, 0, 60)."\n"
+                .'📦 ส่ง: '.mb_substr((string) $job->delivery_address, 0, 60)."\n"
+                .'💰 รายได้: ฿'.number_format((float) $job->rider_earnings, 2)."\n"
+                .((float) $job->cod_amount > 0 ? '💵 เก็บเงินปลายทาง: ฿'.number_format((float) $job->cod_amount, 2)."\n" : '')
+                ."\n🗺️ เปิดแอปไทยพร้อมเพื่อนำทางและอัปเดตสถานะงานค่ะ",
         ];
     }
 
@@ -1949,14 +1943,13 @@ class FreshMarketChannelManager
         }
 
         // Cascade: ตรวจสอบว่าเป็นไรเดอร์ที่กำลังได้รับ offer อยู่
-        if ($job->dispatch_type === 'auto'
+        if ($job->dispatch_type === 'cascade'
             && $job->current_offer_rider_id
-            && $job->current_offer_rider_id !== $rider->id) {
+            && (int) $job->current_offer_rider_id !== (int) $rider->id) {
             return ['text' => 'ℹ️ งานนี้ถูกเสนอให้ไรเดอร์คนอื่นแล้ว'];
         }
 
-        $dispatchService = new RiderDispatchService;
-        $dispatchService->handleRiderReject($job, $rider);
+        app(RiderDispatchService::class)->handleRiderReject($job, $rider);
 
         return [
             'text' => "ℹ️ ปฏิเสธงาน {$job->job_number} แล้ว\n\nงานจะถูกส่งต่อให้ไรเดอร์คนอื่น",
@@ -2055,7 +2048,12 @@ class FreshMarketChannelManager
                 return ['text' => '⚠️ ไม่สามารถสร้างร้านค้าได้ กรุณาลองใหม่ค่ะ'];
             }
 
-            // สร้าง listing ผ่าน service
+            // ร้านยังไม่มีพิกัด → ใช้พิกัดที่ส่งมาตอนลงขายเป็นพิกัดร้าน (ใช้เรียกไรเดอร์)
+            if (! $seller->hasPickupLocation() && ! empty($ctx['latitude']) && ! empty($ctx['longitude'])) {
+                $seller->update(['latitude' => $ctx['latitude'], 'longitude' => $ctx['longitude']]);
+            }
+
+            // สร้าง listing ผ่าน service (created_via: คอลัมน์ varchar(10) → 'line')
             $listing = $this->marketService->createListing($seller, [
                 'title' => $ctx['title'],
                 'price' => $ctx['price'],
@@ -2066,8 +2064,9 @@ class FreshMarketChannelManager
                 'latitude' => $ctx['latitude'] ?? $seller->latitude,
                 'longitude' => $ctx['longitude'] ?? $seller->longitude,
                 'category_hint' => $ctx['category_hint'] ?? null,
+                'quantity_available' => (int) ($ctx['quantity'] ?? 0),
                 'is_organic' => $ctx['is_organic'] ?? false,
-                'created_via' => 'line_chat',
+                'created_via' => 'line',
             ]);
 
             // Transition ไป complete
@@ -2089,6 +2088,16 @@ class FreshMarketChannelManager
                 ],
             ];
 
+        } catch (FreshMarketException $e) {
+            // ข้อผิดพลาดที่ผู้ขายต้องรู้ (ลงขายเต็มโควต้า / ร้านถูกระงับ) → บอกตรงๆ
+            $conversation->resetToIdle();
+
+            return [
+                'text' => '⚠️ '.$e->getMessage(),
+                'quick_replies' => [
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ],
+            ];
         } catch (\Exception $e) {
             Log::error('FreshMarket: สร้าง listing ล้มเหลว', [
                 'error' => $e->getMessage(),
@@ -2109,36 +2118,63 @@ class FreshMarketChannelManager
     }
 
     /**
-     * หรือสร้าง seller จาก LINE profile
+     * หา/สร้างร้านของผู้ใช้ LINE — เรียกเมื่อผู้ใช้เลือก "ลงขาย" เองเท่านั้น (ไม่สร้างตอนเพิ่มเพื่อน)
+     *
+     * ต้องมีบัญชีผู้ใช้ก่อน (fresh_market_sellers.user_id เป็น NOT NULL)
      */
     protected function resolveOrCreateSeller(FreshMarketConversation $conversation): ?FreshMarketSeller
     {
-        // ถ้ามี seller_id แล้ว
         if ($conversation->seller_id) {
-            return FreshMarketSeller::find($conversation->seller_id);
+            $existing = FreshMarketSeller::find($conversation->seller_id);
+
+            if ($existing) {
+                return $existing;
+            }
         }
 
-        // หาจาก line_user_id
-        $seller = FreshMarketSeller::where('line_user_id', $conversation->line_user_id)->first();
+        $user = $conversation->user_id
+            ? User::find($conversation->user_id)
+            : User::where('line_user_id', $conversation->line_user_id)->first();
+
+        if (! $user) {
+            Log::warning('FreshMarket: ลงขายผ่าน LINE แต่ยังไม่มีบัญชีผู้ใช้', ['line_user_id' => $conversation->line_user_id]);
+
+            return null;
+        }
+
+        $seller = FreshMarketSeller::where('user_id', $user->id)->first()
+            ?? FreshMarketSeller::where('line_user_id', $conversation->line_user_id)->first();
 
         if (! $seller) {
-            // สร้างใหม่จาก LINE profile
             $profile = $this->lineService->getUserProfile($conversation->line_user_id);
-            $displayName = $profile['displayName'] ?? 'ร้านค้า';
+            $displayName = $profile['displayName'] ?? $user->line_display_name ?? $user->name ?? 'ร้านค้า';
 
-            $seller = FreshMarketSeller::create([
-                'user_id' => $conversation->user_id,
-                'line_user_id' => $conversation->line_user_id,
-                'shop_name' => "ร้าน {$displayName}",
-                'description' => "ร้านค้าของ {$displayName}",
-                'status' => 'active',
-                'latitude' => $conversation->last_search_latitude,
-                'longitude' => $conversation->last_search_longitude,
-            ]);
+            try {
+                $seller = $this->marketService->registerSeller($user, [
+                    'shop_name' => "ร้าน {$displayName}",
+                    'shop_description' => "ร้านค้าของ {$displayName}",
+                    'shop_image' => $profile['pictureUrl'] ?? null,
+                    'line_user_id' => $conversation->line_user_id,
+                    'line_display_name' => $displayName,
+                    'latitude' => $conversation->last_search_latitude,
+                    'longitude' => $conversation->last_search_longitude,
+                ]);
+            } catch (FreshMarketException $e) {
+                // สมัครพร้อมกันจากอีกช่องทาง → ใช้ร้านที่มีอยู่
+                $seller = FreshMarketSeller::where('user_id', $user->id)->first();
+            }
         }
 
-        // บันทึก seller_id ใน conversation
-        $conversation->update(['seller_id' => $seller->id, 'role' => 'seller']);
+        if (! $seller) {
+            return null;
+        }
+
+        // ร้านที่สมัครผ่านเว็บ/แอปยังไม่ผูก LINE → ผูกไว้ (ขั้นยืนยันเบอร์/ลงขายในแชทหาร้านจาก line_user_id)
+        if (empty($seller->line_user_id)) {
+            $seller->update(['line_user_id' => $conversation->line_user_id]);
+        }
+
+        $conversation->update(['user_id' => $user->id, 'seller_id' => $seller->id, 'role' => 'seller']);
 
         return $seller;
     }
@@ -2215,7 +2251,6 @@ class FreshMarketChannelManager
 
             $quantity = max(1, min((int) ($ctx['quantity'] ?? 1), 999));
             $deliveryType = in_array($ctx['delivery_type'] ?? '', ['pickup', 'rider']) ? $ctx['delivery_type'] : 'pickup';
-            $totalAmount = $ctx['total_amount'] ?? ($listing->price * $quantity);
 
             // ดึง buyer จาก user_id หรือสร้างจาก LINE user ID
             $buyer = $conversation->user_id
@@ -2226,14 +2261,22 @@ class FreshMarketChannelManager
                 return ['text' => '⚠️ กรุณาลงทะเบียนก่อนสั่งซื้อค่ะ'];
             }
 
+            $buyerLat = $ctx['buyer_latitude'] ?? $conversation->last_search_latitude;
+            $buyerLng = $ctx['buyer_longitude'] ?? $conversation->last_search_longitude;
+
+            // LINE ยังไม่มีขั้นเลือกวิธีจ่าย → เก็บเงินปลายทาง (ถ้าปิดอยู่ใช้ Wallet)
             $order = $this->marketService->createOrder($buyer, $listing, [
                 'quantity' => $quantity,
                 'delivery_type' => $deliveryType,
-                'delivery_fee' => $ctx['delivery_fee'] ?? 0,
-                'buyer_latitude' => $ctx['buyer_latitude'] ?? $conversation->last_search_latitude,
-                'buyer_longitude' => $ctx['buyer_longitude'] ?? $conversation->last_search_longitude,
-                'payment_method' => 'cod',
+                'buyer_latitude' => $buyerLat,
+                'buyer_longitude' => $buyerLng,
+                'delivery_address' => $ctx['buyer_address']
+                    ?? ($buyerLat && $buyerLng ? 'พิกัดที่ส่งผ่าน LINE ('.round((float) $buyerLat, 5).', '.round((float) $buyerLng, 5).')' : null),
+                'default_payment_method' => 'cod',
+                'channel' => 'line',
             ]);
+
+            $totalAmount = (float) $order->total_amount;
 
             // Transition ไป order_tracking เพื่อติดตามสถานะ
             $conversation->transitionTo(FreshMarketConversation::STATE_ORDER_TRACKING, [
@@ -2246,7 +2289,7 @@ class FreshMarketChannelManager
 
             $orderNumber = $order->order_number ?? 'TSD-NEW';
             $deliveryLabel = $deliveryType === 'rider' ? '🏍️ ส่งถึงที่' : '🏪 นัดรับเอง';
-            $deliveryFee = $ctx['delivery_fee'] ?? 0;
+            $deliveryFee = (float) $order->delivery_fee;
             $grandTotal = $totalAmount + $deliveryFee;
 
             // สร้าง Flex สวยงามสำหรับยืนยันออเดอร์
@@ -2260,8 +2303,12 @@ class FreshMarketChannelManager
                 'delivery_type_label' => $deliveryLabel,
             ]);
 
+            $payText = $order->payment_method === 'cod'
+                ? 'ชำระเงินสดตอนรับสินค้า'
+                : 'ชำระผ่าน Wallet แล้ว ระบบถือเงินไว้จนคุณได้รับของ';
+
             return [
-                'text' => "✅ สั่งซื้อสำเร็จค่ะ! หมายเลข: {$orderNumber}\nรอผู้ขายรับออเดอร์นะคะ 😊",
+                'text' => "✅ สั่งซื้อสำเร็จค่ะ! หมายเลข: {$orderNumber}\n💳 {$payText}\nรอผู้ขายรับออเดอร์นะคะ 😊",
                 'flex' => $flex,
                 'flex_alt_text' => "สั่งซื้อสำเร็จ: {$listing->title}",
                 'quick_replies' => [
@@ -2271,6 +2318,17 @@ class FreshMarketChannelManager
                 ],
             ];
 
+        } catch (FreshMarketException $e) {
+            // ข้อผิดพลาดที่ผู้ซื้อต้องรู้ (ของหมด / ซื้อของร้านตัวเอง / เงินไม่พอ / นอกพื้นที่ส่ง)
+            $conversation->resetToIdle();
+
+            return [
+                'text' => '⚠️ '.$e->getMessage(),
+                'quick_replies' => [
+                    ['label' => '🛒 ดูสินค้าอื่น', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ],
+            ];
         } catch (\Exception $e) {
             Log::error('FreshMarket: สร้าง order ล้มเหลว', [
                 'error' => $e->getMessage(),
@@ -2405,6 +2463,9 @@ class FreshMarketChannelManager
             'ออเดอร์' => 'my_orders',
             'คำสั่งซื้อ' => 'my_orders',
             'ดูออเดอร์' => 'my_orders',
+            'ออเดอร์ร้าน' => 'seller_orders',
+            'ออเดอร์ขาย' => 'seller_orders',
+            'จัดการออเดอร์' => 'seller_orders',
             'ช่วยเหลือ' => 'help',
             'help' => 'help',
             'วิธีใช้' => 'help',
@@ -2436,33 +2497,27 @@ class FreshMarketChannelManager
                 return $this->buildGreetingWithButtons($conversation);
 
             case 'rider':
-                // เริ่ม rider registration flow ผ่าน state machine
-                $conversation->transitionTo(FreshMarketConversation::STATE_RIDER_REGISTER, [
-                    'rider' => ['started_at' => now()->toIso8601String()],
-                ]);
+                // สมัครไรเดอร์ = ส่งลิงก์หน้าสมัครบนเว็บ/แอป (ไม่สร้าง Rider ครึ่งๆ กลางๆ ในแชท)
+                return $this->buildRiderSignupReply($conversation);
 
-                $progress = $conversation->getProgressText();
-
-                return [
-                    'text' => "🏍️ สมัครไรเดอร์\n\n{$progress}\n\n"
-                        ."กรุณาเลือกประเภทไรเดอร์ที่ต้องการค่ะ:\n\n"
-                        ."1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
-                        ."2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
-                        ."3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
-                        ."พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
-                        .'พิมพ์ "ยกเลิก" ถ้าต้องการเริ่มใหม่',
-                    'quick_replies' => [
-                        ['label' => '🚚 ส่งของ', 'postback' => 'action=menu&choice=rider_type_delivery', 'display_text' => '1'],
-                        ['label' => '🔧 บริการ', 'postback' => 'action=menu&choice=rider_type_service', 'display_text' => '2'],
-                        ['label' => '🚚🔧 ทั้งสอง', 'postback' => 'action=menu&choice=rider_type_both', 'display_text' => '3'],
-                        ['label' => '❌ ยกเลิก', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'ยกเลิก'],
-                    ],
-                ];
+            case 'seller_orders':
+                return $this->buildSellerOrdersReply($conversation);
 
             case 'sell':
-                // เช็ค phone verified ก่อนเริ่มลงขาย
-                $seller = FreshMarketSeller::findByLineUserId($conversation->line_user_id);
-                if ($seller && $seller->phone_verified_at) {
+                // ผู้ใช้เลือก "ลงขาย" เอง → สร้างร้านให้ตอนนี้ (ไม่สร้างตอนเพิ่มเพื่อน)
+                $seller = $this->resolveOrCreateSeller($conversation);
+
+                if (! $seller) {
+                    return [
+                        'text' => "🏷️ ลงขายสินค้า\n\nกรุณาสมัครเป็นผู้ขายที่หน้าเว็บก่อนนะคะ\n".url('/taladsod/register-seller'),
+                    ];
+                }
+
+                if (! $seller->is_active || $seller->is_suspended) {
+                    return ['text' => '⛔ ร้านของคุณถูกระงับชั่วคราว กรุณาติดต่อทีมงานค่ะ'];
+                }
+
+                if ($seller->phone_verified_at) {
                     // ยืนยันแล้ว → ไปลงขายเลย
                     $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
                         'listing' => [
@@ -2499,9 +2554,19 @@ class FreshMarketChannelManager
                 ];
 
             case 'my_orders':
-                return [
+                $myOrdersReply = [
                     'text' => "📦 ออเดอร์ของคุณ\n\nดูออเดอร์ทั้งหมดได้ที่:\n".url('/taladsod/orders')."\n\nหรือบอกเลขออเดอร์มาได้ค่ะ",
                 ];
+
+                // เป็นเจ้าของร้าน → เพิ่มปุ่มดูออเดอร์ร้าน
+                if (FreshMarketSeller::findByLineUserId($conversation->line_user_id)) {
+                    $myOrdersReply['quick_replies'] = [
+                        ['label' => '🏪 ออเดอร์ร้าน', 'postback' => 'action=seller_orders', 'display_text' => 'ออเดอร์ร้าน'],
+                        ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                    ];
+                }
+
+                return $myOrdersReply;
 
             case 'help':
                 return [
@@ -2653,13 +2718,16 @@ class FreshMarketChannelManager
      */
     protected function handleReferralToken(string $lineUserId, string $token, FreshMarketConversation $conversation): array
     {
-        $referral = FreshMarketReferral::findActiveByToken($token);
+        $user = $conversation->user_id
+            ? User::find($conversation->user_id)
+            : User::where('line_user_id', $lineUserId)->first();
+
+        // ลิงก์ใช้ซ้ำได้ — แต่ละคนได้แถวแนะนำของตัวเอง (ห้ามแนะนำตัวเอง / ถูกแนะนำได้ครั้งเดียว)
+        $referral = FreshMarketReferral::claim($token, $lineUserId, $user);
 
         if (! $referral) {
             return ['text' => 'ลิงก์แนะนำนี้หมดอายุหรือไม่ถูกต้องค่ะ'];
         }
-
-        $referral->markAsFollowed($lineUserId);
 
         $referrerSeller = $referral->referrerSeller;
         $referrerName = $referrerSeller?->shop_name ?? 'เพื่อน';

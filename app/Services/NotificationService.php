@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendNotificationPush;
 use App\Models\Notification;
 use App\Models\User;
 use Exception;
@@ -27,7 +28,7 @@ class NotificationService
         ?string $color = null
     ): Notification {
         try {
-            return Notification::create([
+            $notification = Notification::create([
                 'user_id' => $user->id,
                 'type' => $type,
                 'title' => $title,
@@ -45,6 +46,14 @@ class NotificationService
             Log::error('Failed to create notification: '.$e->getMessage());
             throw $e;
         }
+
+        // 🔔 (2026-09-25) CC-07: ส่งต่อเข้ามือถือ (กล่องแจ้งเตือนของแอป + Expo push) ผ่านคิว
+        //    push เฉพาะ priority normal ขึ้นไป · ตัวงานกันส่งซ้ำเอง · เข้าคิวไม่ได้ก็ไม่ทำให้ตรงนี้ล้ม
+        //    ⚠️ ผู้เรียกไม่ต้องยิง ExpoPushService::sendToUser ซ้ำสำหรับเหตุการณ์เดียวกัน
+        //       (ถ้ายิงไปแล้ว หัวข้อ+ข้อความตรงกัน ตัวงานจะข้าม push ให้เอง)
+        SendNotificationPush::dispatchFor($notification);
+
+        return $notification;
     }
 
     /**

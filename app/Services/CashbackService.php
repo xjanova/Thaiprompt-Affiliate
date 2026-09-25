@@ -44,6 +44,10 @@ class CashbackService
     public function calculateItemCashback(OrderItem $item): float
     {
         $product = $item->product;
+        if (! $product) {
+            // สินค้าถูกลบไปแล้ว → ไม่มีโปรเงินคืนให้อ้างอิง
+            return 0;
+        }
         // ⚠️ แก้ไข: ใช้ unit_price แทน price (OrderItem ไม่มี field price)
         $itemTotal = $item->unit_price * $item->quantity;
 
@@ -131,6 +135,14 @@ class CashbackService
 
         try {
             return DB::transaction(function () use ($order) {
+                // 🔒 (2026-09-25) lock แถวออเดอร์แล้วตรวจซ้ำ — observer, checkout, job อาจเรียกพร้อมกัน
+                //    เดิมเช็ค cashback_processed นอก lock → จ่ายเงินคืนซ้ำได้
+                $locked = Order::whereKey($order->id)->lockForUpdate()->first();
+                if (! $locked || $locked->cashback_processed || $locked->payment_status !== 'paid') {
+                    return null;
+                }
+                $order->setRawAttributes($locked->getAttributes(), true);
+
                 // Calculate cashback
                 $cashbackAmount = $this->calculateOrderCashback($order);
 
@@ -165,6 +177,19 @@ class CashbackService
                         'order_number' => $order->order_number,
                         'type' => 'order_cashback',
                     ]
+                );
+
+                // 💸 (2026-09-25) audit G15: เงินคืนเป็นโปรของแพลตฟอร์ม → บันทึกเป็นรายจ่ายของแพลตฟอร์ม
+                //    (หักจากกระเป๋า fee ถ้ามีเงินพอ ไม่พอ = บันทึกค้างจ่าย) ไม่ใช่เงินที่เกิดขึ้นเองจากอากาศ
+                app(PlatformExpenseService::class)->recordPromoExpense(
+                    'fee',
+                    $cashbackAmount,
+                    'cashback_expense',
+                    'Order',
+                    (int) $order->id,
+                    "เงินคืนลูกค้า (Cash Back) ออเดอร์ #{$order->order_number}",
+                    ['order_number' => $order->order_number, 'wallet_transaction_id' => $transaction->id],
+                    (int) $order->user_id
                 );
 
                 // Update order cashback status

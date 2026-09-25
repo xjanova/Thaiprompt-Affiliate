@@ -2,782 +2,721 @@
 
 namespace App\Services;
 
+use App\Contracts\RiderDeliverable;
+use App\Exceptions\RiderJobException;
 use App\Jobs\CascadeRiderDispatchJob;
-use App\Models\FreshMarketOrder;
-use App\Models\FreshMarketSetting;
 use App\Models\Rider;
 use App\Models\RiderJob;
+use App\Models\User;
+use App\Models\Wallet;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use App\Services\RiderGpsTrackingService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
- * Rider Dispatch Service
+ * Rider Dispatch Service — สร้างงานไรเดอร์จากออเดอร์ และกระจายงานให้ไรเดอร์
  *
- * จัดการการจ่ายงานให้ไรเดอร์ คำนวณค่าส่ง จัดการค่าประกัน
- * รองรับ cascade dispatch (เสนอทีละคน) และ broadcast (เสนอทุกคน)
+ * จุดเข้าเดียวสำหรับทุกระบบ (ตลาดสด, ร้านค้า e-commerce ฯลฯ):
+ *   createJobForSource($order, 'fresh_market' | 'shop_delivery')
+ *   cancelJobsForSource($order, 'buyer' | 'seller' | 'admin' | 'system', $reason)
+ *
+ * โหมดกระจายงาน (Setting rider.dispatch_mode):
+ *   - broadcast (ค่าเริ่มต้น): แจ้งไรเดอร์ที่เข้าเงื่อนไขทุกคนในรัศมี คนแรกที่กดรับได้งาน (race-safe)
+ *   - cascade: เสนอทีละคน รอ rider.offer_timeout_seconds แล้วเลื่อนไปคนถัดไป
+ *
+ * ไรเดอร์ที่เข้าเงื่อนไข: อนุมัติแล้ว + ไม่ถูกระงับ + online + พิกัดสดไม่เกิน 15 นาที + อยู่ในรัศมี
+ * + ไม่มีงานค้าง + ไม่ใช่ผู้ซื้อ/ผู้ขายของออเดอร์ + วงเงิน COD พอ + (มัดจำ ถ้าเปิด rider.require_deposit)
+ *
+ * แจ้งเตือนไรเดอร์ผ่าน Expo push + in-app เท่านั้น ❗ ห้าม LINE push (โควต้า 300/เดือน)
  */
 class RiderDispatchService
 {
-    /**
-     * ค่าส่งพื้นฐาน (บาท)
-     */
-    protected float $baseFee;
+    public function __construct(
+        private readonly DeliveryFeeCalculator $config,
+        private readonly RiderNotificationService $notifier,
+    ) {}
+
+    // =====================================================
+    // สร้าง / ยกเลิกงานจากออเดอร์ต้นทาง
+    // =====================================================
 
     /**
-     * ค่าส่งต่อกิโลเมตร (บาท)
-     */
-    protected float $perKmFee;
-
-    /**
-     * ค่าส่งขั้นต่ำ (บาท)
-     */
-    protected float $minFee;
-
-    /**
-     * อัตราส่วนรายได้ไรเดอร์ (80%)
-     */
-    protected float $riderEarningsRate;
-
-    /**
-     * รัศมีค้นหาเริ่มต้น (กม.)
-     */
-    protected float $defaultSearchRadius;
-
-    /**
-     * เวลาให้ไรเดอร์ตอบรับ (วินาที)
-     */
-    protected int $offerTimeoutSeconds;
-
-    /**
-     * จำนวนครั้งสูงสุดที่เสนองาน cascade
-     */
-    protected int $maxDispatchAttempts;
-
-    /**
-     * รัศมี broadcast สูงสุด (กม.)
-     */
-    protected float $broadcastMaxRadius;
-
-    public function __construct()
-    {
-        // ดึงค่าจาก settings เพื่อให้ admin ปรับได้ หากไม่มีใช้ค่า default
-        $settings = FreshMarketSetting::getSettings();
-        $this->baseFee = $settings->delivery_base_fee ?? 30.0;
-        $this->perKmFee = $settings->delivery_per_km_fee ?? 10.0;
-        $this->minFee = $settings->delivery_min_fee ?? 30.0;
-        $this->riderEarningsRate = $settings->rider_earnings_rate ?? 0.80;
-        $this->defaultSearchRadius = $settings->default_search_radius_km ?? 5.0;
-        $this->offerTimeoutSeconds = $settings->rider_offer_timeout_seconds ?? 120;
-        $this->maxDispatchAttempts = $settings->max_dispatch_attempts ?? 5;
-        $this->broadcastMaxRadius = $settings->broadcast_max_radius_km ?? 10.0;
-    }
-
-    /**
-     * ค้นหาไรเดอร์ที่ใกล้ที่สุดสำหรับ order
+     * สร้างงานไรเดอร์ (pending, ยังไม่มีไรเดอร์) จากออเดอร์ แล้วกระจายงาน
      *
-     * @param FreshMarketOrder $order คำสั่งซื้อ
-     * @param float $radiusKm รัศมีค้นหา (กม.)
-     * @param int $limit จำนวนสูงสุดที่จะแสดง
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function findNearestRiders(
-        FreshMarketOrder $order,
-        float $radiusKm = 0,
-        int $limit = 5
-    ) {
-        if ($radiusKm <= 0) {
-            $radiusKm = $this->defaultSearchRadius;
-        }
-
-        // ดึงพิกัดร้านค้าจาก seller
-        $seller = $order->seller;
-        if (! $seller) {
-            Log::warning('RiderDispatch: order ไม่มี seller', ['order_id' => $order->id]);
-
-            return collect();
-        }
-
-        // ถ้า seller ไม่มีพิกัด ให้ใช้พิกัดจาก listing
-        $latitude = $seller->latitude ?? $order->listing?->latitude;
-        $longitude = $seller->longitude ?? $order->listing?->longitude;
-
-        if (! $latitude || ! $longitude) {
-            Log::warning('RiderDispatch: ไม่มีพิกัดร้านค้า', [
-                'order_id' => $order->id,
-                'seller_id' => $seller->id,
-            ]);
-
-            return collect();
-        }
-
-        // ค้นหาไรเดอร์ที่พร้อมรับงานส่งของ ใกล้ร้านค้า
-        return Rider::availableForDelivery()
-            ->nearby($latitude, $longitude, $radiusKm)
-            ->limit($limit)
-            ->get();
-    }
-
-    /**
-     * จ่ายงานให้ไรเดอร์ (สร้าง job + assign ทันที)
+     * idempotent: ถ้าออเดอร์นี้มีงานที่ยังไม่จบอยู่แล้ว → คืนงานเดิม ไม่สร้างซ้ำ
      *
-     * @param FreshMarketOrder $order คำสั่งซื้อ
-     * @param Rider $rider ไรเดอร์ที่จะรับงาน
-     * @return RiderJob|null งานที่สร้าง
+     * ออเดอร์ต้นทางกำหนดเพิ่มได้ (ไม่บังคับ):
+     *   - riderDeliveryFeeCharged(): ?float  ค่าส่งที่ลูกค้าจ่ายจริง → ใช้เป็น total_fee แทนการคำนวณใหม่
+     *   - riderCustomerUserId(): ?int         user_id ผู้ซื้อ (ไม่มี → ใช้ buyer_id / user_id / customer_id)
+     *   - key 'area' ใน riderDropoffPoint()   พื้นที่หยาบที่โชว์ไรเดอร์ก่อนรับงาน (เช่น "เขตบางรัก กรุงเทพฯ")
+     *   - riderCanDispatch(): bool             ยังเรียกไรเดอร์ได้ไหม (ตรวจซ้ำหลังล็อกแถวออเดอร์ — กันงานของออเดอร์ที่ยกเลิกแล้ว)
+     *   - onRiderCodSettled(RiderJob): void    RiderEarningService เรียกหลังหักเงิน COD จากไรเดอร์เข้าระบบสำเร็จ
+     *
+     * @param  string  $jobType  fresh_market | shop_delivery | delivery ...
+     *
+     * @throws RiderJobException SOURCE_NOT_DISPATCHABLE เมื่อออเดอร์ยกเลิก/คืนเงิน/ส่งถึงแล้ว/ยังไม่จ่าย
+     * @throws RiderJobException INVALID_LOCATION|OUT_OF_SERVICE_AREA|COD_LIMIT_EXCEEDED
      */
-    public function dispatchToRider(FreshMarketOrder $order, Rider $rider): ?RiderJob
+    public function createJobForSource(RiderDeliverable&Model $source, string $jobType): RiderJob
     {
-        if (! $rider->canAcceptJobs()) {
-            Log::warning('RiderDispatch: ไรเดอร์ไม่พร้อมรับงาน', [
-                'rider_id' => $rider->id,
-                'status' => $rider->status,
-                'availability' => $rider->availability,
-                'deposit_status' => $rider->deposit_status,
-            ]);
-
-            return null;
+        $existing = RiderJob::forSource($source)->nonTerminal()->latest('id')->first();
+        if ($existing) {
+            return $existing;
         }
 
-        return DB::transaction(function () use ($order, $rider) {
-            // คำนวณระยะทาง
-            $seller = $order->seller;
-            $sellerLat = $seller->latitude ?? $order->listing?->latitude;
-            $sellerLng = $seller->longitude ?? $order->listing?->longitude;
-            $buyerLat = $order->buyer_latitude;
-            $buyerLng = $order->buyer_longitude;
+        // ตรวจก่อนคำนวณค่าส่ง (ตอบเร็ว) แล้วตรวจซ้ำหลังล็อกแถวออเดอร์ด้านล่าง
+        if (! $this->sourceCanDispatch($source)) {
+            throw RiderJobException::sourceNotDispatchable();
+        }
 
-            $distance = 0;
-            if ($sellerLat && $sellerLng && $buyerLat && $buyerLng) {
-                $distance = $this->calculateDistance($sellerLat, $sellerLng, $buyerLat, $buyerLng);
+        $pickup = $this->normalizePoint($source->riderPickupPoint(), 'จุดรับของ');
+        $dropoff = $this->normalizePoint($source->riderDropoffPoint(), 'จุดส่งของ');
+
+        $quote = $this->config->quote($pickup['latitude'], $pickup['longitude'], $dropoff['latitude'], $dropoff['longitude']);
+
+        if (! $quote['within_service_area']) {
+            throw RiderJobException::outOfServiceArea($quote['distance_km'], $quote['max_distance_km']);
+        }
+
+        $fees = $this->applyChargedFee($source, $quote);
+
+        $cod = round(max(0.0, $source->riderCodAmount()), 2);
+        if ($cod > $this->config->maxCodAmount()) {
+            throw RiderJobException::codLimitExceeded($cod, $this->config->maxCodAmount());
+        }
+
+        $customerId = $this->resolveCustomerId($source);
+        $orderRef = (string) (data_get($source, 'order_number') ?: '#'.$source->getKey());
+        $jobType = trim($jobType) !== '' ? mb_substr(trim($jobType), 0, 30) : 'delivery';
+
+        [$job, $created] = DB::transaction(function () use ($source, $jobType, $pickup, $dropoff, $quote, $fees, $cod, $customerId, $orderRef) {
+            // ล็อกแถวออเดอร์ต้นทาง → คำขอพร้อมกัน 2 ครั้งจะไม่สร้างงานซ้ำ
+            $lockedSource = $source->newQuery()->whereKey($source->getKey())->lockForUpdate()->first();
+
+            $existing = RiderJob::forSource($source)->nonTerminal()->latest('id')->first();
+            if ($existing) {
+                return [$existing, false];
             }
 
-            // คำนวณค่าส่ง
-            $deliveryFee = $this->calculateDeliveryFee($distance);
-            $riderEarnings = round($deliveryFee * $this->riderEarningsRate, 2);
-            $platformFee = round($deliveryFee - $riderEarnings, 2);
+            // ตรวจซ้ำหลังล็อก: ออเดอร์อาจถูกยกเลิก/คืนเงิน/จ่ายเงินระหว่างทาง (race กับคำสั่งยกเลิก)
+            if (! $lockedSource || ! $this->sourceCanDispatch($lockedSource)) {
+                throw RiderJobException::sourceNotDispatchable();
+            }
 
-            // สร้าง RiderJob
-            $job = RiderJob::create([
-                'rider_id' => $rider->id,
-                'job_type' => 'fresh_market',
-                'title' => 'ส่งของตลาดสด #' . $order->order_number,
-                'description' => 'ส่งสินค้าจากร้าน ' . ($seller->shop_name ?? 'ตลาดสด'),
-                'pickup_address' => $seller->address ?? '',
-                'pickup_latitude' => $sellerLat,
-                'pickup_longitude' => $sellerLng,
-                'pickup_contact_name' => $seller->shop_name ?? $seller->name ?? '',
-                'pickup_contact_phone' => $seller->phone ?? '',
-                'delivery_address' => $order->delivery_address ?? '',
-                'delivery_latitude' => $buyerLat,
-                'delivery_longitude' => $buyerLng,
-                'delivery_contact_name' => $order->buyer?->name ?? '',
-                'delivery_contact_phone' => $order->buyer?->phone ?? '',
-                'delivery_notes' => $order->delivery_notes,
-                'distance_km' => $distance,
-                'base_fee' => $this->baseFee,
-                'distance_fee' => max(0, $deliveryFee - $this->baseFee),
-                'total_fee' => $deliveryFee,
-                'rider_earnings' => $riderEarnings,
-                'platform_fee' => $platformFee,
-                'customer_id' => $order->buyer_id,
+            // ยอด COD ล่าสุดหลังล็อก (เช่น ออเดอร์เพิ่งถูกตั้งจ่ายแล้ว → ไม่ต้องเก็บเงินสด)
+            if ($lockedSource instanceof RiderDeliverable) {
+                $cod = round(max(0.0, $lockedSource->riderCodAmount()), 2);
+                if ($cod > $this->config->maxCodAmount()) {
+                    throw RiderJobException::codLimitExceeded($cod, $this->config->maxCodAmount());
+                }
+            }
+
+            $job = new RiderJob;
+            $job->fill([
+                'job_type' => $jobType,
+                'source_type' => $source->getMorphClass(),
+                'source_id' => $source->getKey(),
+                'title' => mb_substr((new RiderJob(['job_type' => $jobType]))->job_type_text.' '.$orderRef, 0, 255),
+                'description' => $source->riderItemsSummary(),
+                'pickup_address' => $pickup['address'],
+                'pickup_latitude' => $pickup['latitude'],
+                'pickup_longitude' => $pickup['longitude'],
+                'pickup_contact_name' => $pickup['name'],
+                'pickup_contact_phone' => $pickup['phone'],
+                'pickup_notes' => $pickup['notes'],
+                'delivery_address' => $dropoff['address'],
+                'delivery_latitude' => $dropoff['latitude'],
+                'delivery_longitude' => $dropoff['longitude'],
+                'delivery_contact_name' => $dropoff['name'],
+                'delivery_contact_phone' => $dropoff['phone'],
+                'delivery_notes' => $dropoff['notes'],
+                'delivery_area' => $dropoff['area'] ?: RiderJob::deriveArea($dropoff['address']),
+                'distance_km' => $quote['distance_km'],
+                'estimated_duration_minutes' => $quote['estimated_duration_minutes'],
+                'base_fee' => $fees['base_fee'],
+                'distance_fee' => $fees['distance_fee'],
+                'extra_fee' => 0,
+                'total_fee' => $fees['total_fee'],
+                'rider_earnings' => $fees['rider_earnings'],
+                'platform_fee' => $fees['platform_fee'],
+                'cod_amount' => $cod,
+                'customer_id' => $customerId,
                 'status' => 'pending',
+                'dispatch_type' => $this->config->dispatchMode(),
+                'dispatch_radius_km' => $this->config->floatSetting('rider.offer_radius_km'),
+                'dispatch_round' => 0,
+                'tracking_token' => Str::random(48),
+                'tracking_expires_at' => now()->addHours(max(1, $this->config->intSetting('rider.tracking_expiry_hours'))),
+                'gps_active' => true,
+                'gps_warning_count' => 0,
             ]);
+            $job->save();
 
-            // อัปเดท order
-            $order->update([
-                'rider_id' => $rider->id,
-                'rider_job_id' => $job->id,
-                'rider_assigned_at' => now(),
-                'delivery_fee' => $deliveryFee,
-                'delivery_distance_km' => $distance,
-            ]);
+            return [$job, true];
+        });
 
-            // สร้าง tracking token และส่ง LINE notification ให้ลูกค้า
+        if (! $created) {
+            return $job;
+        }
+
+        Log::info('RiderDispatch: job created', [
+            'job_id' => $job->id,
+            'source' => $job->source_type.'#'.$job->source_id,
+            'total_fee' => $fees['total_fee'],
+            'cod' => $cod,
+        ]);
+
+        // กระจายงานหลัง commit (ถ้าผู้เรียกเปิด transaction ไว้ จะรอจน commit จริง)
+        $jobId = $job->id;
+        $initialDispatch = function () use ($jobId) {
             try {
-                $gpsService = new RiderGpsTrackingService();
-                $buyerLineUserId = $order->buyer?->line_user_id ?? null;
-                $gpsService->generateTrackingToken($job, $buyerLineUserId);
-                $gpsService->sendTrackingLinkToBuyer($job->fresh());
+                $fresh = RiderJob::find($jobId);
+                if ($fresh) {
+                    $this->dispatch($fresh);
+                }
             } catch (\Throwable $e) {
-                Log::warning('RiderDispatch: ไม่สามารถสร้าง tracking token', [
-                    'job_id' => $job->id,
+                Log::error('RiderDispatch: initial dispatch failed (sweep will retry)', [
+                    'job_id' => $jobId,
                     'error' => $e->getMessage(),
                 ]);
             }
+        };
 
-            // ตั้งสถานะไรเดอร์เป็น busy
-            $rider->setBusy();
-
-            Log::info('RiderDispatch: จ่ายงานสำเร็จ', [
-                'order_id' => $order->id,
-                'rider_id' => $rider->id,
-                'job_id' => $job->id,
-                'distance_km' => $distance,
-                'delivery_fee' => $deliveryFee,
-            ]);
-
-            return $job;
-        });
-    }
-
-    // =====================================================
-    // Cascade Dispatch (เสนอทีละคน รอ 2 นาที)
-    // =====================================================
-
-    /**
-     * Cascade dispatch: สร้าง job ก่อน แล้วเสนอให้ไรเดอร์ทีละคน
-     *
-     * ขั้นตอน:
-     * 1. หาไรเดอร์ใกล้เคียงหลายคน
-     * 2. สร้าง RiderJob (ยังไม่ assign rider)
-     * 3. เสนอให้ไรเดอร์คนแรก
-     * 4. ตั้ง timeout 2 นาที → ถ้าไม่ตอบ ส่งต่อคนถัดไป
-     *
-     * @param FreshMarketOrder $order คำสั่งซื้อ
-     * @return RiderJob|null
-     */
-    public function cascadeDispatch(FreshMarketOrder $order): ?RiderJob
-    {
-        $riders = $this->findNearestRiders($order, $this->defaultSearchRadius, $this->maxDispatchAttempts);
-
-        if ($riders->isEmpty()) {
-            Log::info('RiderDispatch: Cascade - ไม่พบไรเดอร์ใกล้เคียง', ['order_id' => $order->id]);
-
-            return null;
+        try {
+            DB::afterCommit($initialDispatch);
+        } catch (\RuntimeException) {
+            $initialDispatch();
         }
-
-        // คำนวณระยะทางและค่าส่ง
-        $seller = $order->seller;
-        $sellerLat = $seller->latitude ?? $order->listing?->latitude;
-        $sellerLng = $seller->longitude ?? $order->listing?->longitude;
-        $buyerLat = $order->buyer_latitude;
-        $buyerLng = $order->buyer_longitude;
-
-        $distance = 0;
-        if ($sellerLat && $sellerLng && $buyerLat && $buyerLng) {
-            $distance = $this->calculateDistance($sellerLat, $sellerLng, $buyerLat, $buyerLng);
-        }
-
-        $deliveryFee = $this->calculateDeliveryFee($distance);
-        $riderEarnings = round($deliveryFee * $this->riderEarningsRate, 2);
-        $platformFee = round($deliveryFee - $riderEarnings, 2);
-
-        // กรองไรเดอร์ตาม preferences
-        $candidateIds = $riders->filter(function (Rider $rider) use ($distance, $deliveryFee) {
-            return $rider->matchesJob('fresh_market', $distance, $deliveryFee);
-        })->pluck('id')->values()->toArray();
-
-        if (empty($candidateIds)) {
-            Log::info('RiderDispatch: Cascade - ไม่มีไรเดอร์ตรง preferences', ['order_id' => $order->id]);
-
-            return null;
-        }
-
-        // สร้าง RiderJob (ยังไม่มี rider_id)
-        $job = DB::transaction(function () use ($order, $seller, $sellerLat, $sellerLng, $buyerLat, $buyerLng, $distance, $deliveryFee, $riderEarnings, $platformFee, $candidateIds) {
-            $job = RiderJob::create([
-                'job_type' => 'fresh_market',
-                'title' => 'ส่งของตลาดสด #' . $order->order_number,
-                'description' => 'ส่งสินค้าจากร้าน ' . ($seller->shop_name ?? 'ตลาดสด'),
-                'pickup_address' => $seller->address ?? '',
-                'pickup_latitude' => $sellerLat,
-                'pickup_longitude' => $sellerLng,
-                'pickup_contact_name' => $seller->shop_name ?? $seller->name ?? '',
-                'pickup_contact_phone' => $seller->phone ?? '',
-                'delivery_address' => $order->delivery_address ?? '',
-                'delivery_latitude' => $buyerLat,
-                'delivery_longitude' => $buyerLng,
-                'delivery_contact_name' => $order->buyer?->name ?? '',
-                'delivery_contact_phone' => $order->buyer?->phone ?? '',
-                'delivery_notes' => $order->delivery_notes,
-                'distance_km' => $distance,
-                'base_fee' => $this->baseFee,
-                'distance_fee' => max(0, $deliveryFee - $this->baseFee),
-                'total_fee' => $deliveryFee,
-                'rider_earnings' => $riderEarnings,
-                'platform_fee' => $platformFee,
-                'customer_id' => $order->buyer_id,
-                'status' => 'pending',
-                'dispatch_type' => 'auto',
-                'candidate_riders' => $candidateIds,
-            ]);
-
-            // อัปเดท order เชื่อมกับ job
-            $order->update([
-                'rider_job_id' => $job->id,
-                'delivery_fee' => $deliveryFee,
-                'delivery_distance_km' => $distance,
-            ]);
-
-            return $job;
-        });
-
-        // เสนองานให้ไรเดอร์คนแรก
-        $this->offerJobToNextRider($job);
-
-        Log::info('RiderDispatch: Cascade dispatch เริ่มต้น', [
-            'order_id' => $order->id,
-            'job_id' => $job->id,
-            'candidate_count' => count($candidateIds),
-        ]);
 
         return $job;
     }
 
     /**
-     * เสนองานให้ไรเดอร์คนถัดไปใน cascade queue (iterative)
+     * ออเดอร์ต้นทางเรียกไรเดอร์ได้หรือไม่ — ใช้ hook เสริม riderCanDispatch(): bool ของออเดอร์ (ถ้ามี)
+     *
+     * ออเดอร์ที่ไม่ได้กำหนด hook ถือว่าเรียกได้ (เช่น ต้นทางทดสอบ) · ใช้ร่วมกับหน้าแอดมินเพื่อซ่อนปุ่ม "สร้างงานใหม่"
      */
-    public function offerJobToNextRider(RiderJob $job): bool
+    public function sourceCanDispatch(Model $source): bool
     {
-        // วนหาไรเดอร์ที่พร้อมรับงาน (ข้ามคนที่ไม่พร้อม)
-        for ($i = 0; $i < $this->maxDispatchAttempts; $i++) {
-            if ($job->status !== 'pending') {
-                return false;
-            }
-
-            $nextRiderId = $job->getNextCandidateRiderId();
-
-            if (! $nextRiderId) {
-                Log::info('RiderDispatch: Cascade - หมดไรเดอร์ที่จะเสนอ', ['job_id' => $job->id]);
-
-                return false;
-            }
-
-            $rider = Rider::find($nextRiderId);
-
-            if (! $rider || ! $rider->canAcceptJobs()) {
-                // ไรเดอร์ไม่พร้อม → บันทึกและข้ามไปคนถัดไป
-                $job->recordOffer($nextRiderId, $this->offerTimeoutSeconds);
-                $job->recordOfferResponse($nextRiderId, 'skipped');
-                $job->refresh();
-
-                continue;
-            }
-
-            // บันทึก offer
-            $job->recordOffer($nextRiderId, $this->offerTimeoutSeconds);
-
-            // ส่ง LINE Flex Message ให้ไรเดอร์
-            $sent = $this->notifyRiderOfJob($rider, $job);
-
-            if (! $sent) {
-                // ส่ง LINE ไม่สำเร็จ → ข้ามไปคนถัดไป
-                $job->recordOfferResponse($nextRiderId, 'send_failed');
-                $job->refresh();
-
-                continue;
-            }
-
-            // ตั้ง timeout job → ถ้าไม่ตอบ ส่งให้คนถัดไป
-            CascadeRiderDispatchJob::dispatch($job->id)
-                ->delay(now()->addSeconds($this->offerTimeoutSeconds));
-
-            Log::info('RiderDispatch: Cascade - เสนองานให้ไรเดอร์', [
-                'job_id' => $job->id,
-                'rider_id' => $nextRiderId,
-                'timeout_seconds' => $this->offerTimeoutSeconds,
-            ]);
-
-            return true;
+        if (method_exists($source, 'riderCanDispatch')) {
+            return (bool) $source->riderCanDispatch();
         }
 
-        return false;
+        return true;
     }
 
     /**
-     * ไรเดอร์ตอบรับงาน (จาก LINE postback)
+     * ยกเลิกงานไรเดอร์ทั้งหมดของออเดอร์ (เรียกเมื่อออเดอร์ถูกยกเลิก)
      *
-     * ใช้ atomic UPDATE WHERE status='pending' เพื่อป้องกัน race condition
-     * เมื่อมีไรเดอร์หลายคนกดรับพร้อมกัน (broadcast)
+     * - ยังไม่รับของ → cancelled
+     * - รับของแล้ว → failed (order_cancelled) + แจ้งไรเดอร์นำของคืนร้าน + แจ้งแอดมิน
      *
-     * @return bool สำเร็จหรือไม่ (อาจไม่สำเร็จถ้ามีคนอื่นรับก่อน)
+     * ไม่เรียก onRiderJobStatusChanged กลับไปที่ออเดอร์ (ออเดอร์เป็นคนสั่งเอง กันวนซ้ำ)
+     *
+     * @param  string  $cancelledBy  buyer|seller|admin|system|customer
      */
-    public function handleRiderAccept(RiderJob $job, Rider $rider): bool
+    public function cancelJobsForSource(Model $source, string $cancelledBy, string $reason): void
     {
-        return DB::transaction(function () use ($job, $rider) {
-            // อัพเดท dispatch_attempts ก่อนทำ atomic update
-            $attempts = $job->dispatch_attempts ?? [];
-            foreach ($attempts as &$attempt) {
-                if ($attempt['rider_id'] === $rider->id && $attempt['status'] === 'pending') {
-                    $attempt['status'] = 'accepted';
-                    $attempt['responded_at'] = now()->toIso8601String();
-                    break;
+        $jobs = RiderJob::forSource($source)->nonTerminal()->get();
+        $service = app(RiderJobService::class);
+
+        foreach ($jobs as $job) {
+            try {
+                if (in_array($job->status, ['pending', 'accepted', 'picking_up'], true)) {
+                    $service->cancel($job, $cancelledBy, $reason, false);
+                } elseif (in_array($job->status, ['picked_up', 'delivering'], true)) {
+                    $service->failForCancelledSource($job, $reason);
                 }
-            }
-            unset($attempt);
-
-            // Race-safe: atomic UPDATE WHERE status='pending'
-            $updated = RiderJob::where('id', $job->id)
-                ->where('status', 'pending')
-                ->update([
-                    'rider_id' => $rider->id,
-                    'status' => 'accepted',
-                    'accepted_at' => now(),
-                    'current_offer_rider_id' => null,
-                    'offer_expires_at' => null,
-                    'dispatch_attempts' => json_encode($attempts),
+            } catch (RiderJobException $e) {
+                // สถานะเปลี่ยนไประหว่างทาง (เช่น ส่งเสร็จพอดี) → ข้าม ไม่ล้มการยกเลิกออเดอร์
+                Log::warning('RiderDispatch: cannot cancel job for source', [
+                    'job_id' => $job->id,
+                    'code' => $e->errorCode,
                 ]);
+            }
+        }
+    }
 
-            if ($updated === 0) {
-                // งานถูกรับแล้ว (race condition)
+    // =====================================================
+    // กระจายงาน
+    // =====================================================
+
+    /**
+     * กระจายงานตามโหมดของงาน
+     *
+     * @param  bool  $isRedispatch  true = ไรเดอร์คืนงาน/ถูกระงับ → เริ่มรอบใหม่ (ไม่นับรอบเดิม)
+     */
+    public function dispatch(RiderJob $job, bool $isRedispatch = false): int
+    {
+        if (! $job->isOpen()) {
+            return 0;
+        }
+
+        if ($isRedispatch) {
+            RiderJob::whereKey($job->id)->open()->update([
+                'dispatch_round' => 0,
+                'dispatch_radius_km' => $this->config->floatSetting('rider.offer_radius_km'),
+                'current_offer_rider_id' => null,
+                'offer_expires_at' => null,
+            ]);
+            $job->refresh();
+        }
+
+        $mode = $job->dispatch_type === 'cascade' ? 'cascade' : $this->config->dispatchMode();
+
+        if ($mode === 'cascade') {
+            return $this->cascadeOffer($job) ? 1 : 0;
+        }
+
+        return $this->broadcast($job);
+    }
+
+    /**
+     * Broadcast: แจ้งไรเดอร์ที่เข้าเงื่อนไขทุกคนในรัศมี (ข้ามคนที่เคยแจ้งแล้ว)
+     *
+     * @return int จำนวนไรเดอร์ที่แจ้งรอบนี้
+     */
+    public function broadcast(RiderJob $job, ?float $radiusKm = null): int
+    {
+        $radiusKm ??= (float) ($job->dispatch_radius_km ?: $this->config->floatSetting('rider.offer_radius_km'));
+
+        $riders = $this->findEligibleRiders($job, $radiusKm);
+        $already = array_map('intval', $job->candidate_riders ?? []);
+        $newRiders = $riders->reject(fn (Rider $r) => in_array((int) $r->id, $already, true))->values();
+
+        $candidates = array_values(array_unique(array_merge($already, $newRiders->pluck('id')->map(fn ($id) => (int) $id)->all())));
+
+        $updated = RiderJob::whereKey($job->id)->open()->update([
+            'candidate_riders' => json_encode($candidates),
+            'dispatch_radius_km' => round($radiusKm, 2),
+            'dispatch_round' => (int) $job->dispatch_round + 1,
+            'last_dispatched_at' => now(),
+            'dispatch_type' => $job->dispatch_type === 'manual_needed' ? 'manual_needed' : 'broadcast',
+        ]);
+
+        if ($updated === 0) {
+            return 0; // มีคนรับไปแล้วระหว่างค้นหา
+        }
+
+        $job->refresh();
+
+        if ($newRiders->isNotEmpty()) {
+            $this->notifier->notifyRidersNewJob($newRiders, $job);
+        }
+
+        Log::info('RiderDispatch: broadcast', [
+            'job_id' => $job->id,
+            'round' => $job->dispatch_round,
+            'radius_km' => $radiusKm,
+            'notified' => $newRiders->count(),
+        ]);
+
+        return $newRiders->count();
+    }
+
+    /**
+     * Cascade: เสนองานให้ไรเดอร์ที่ใกล้ที่สุดที่ยังไม่เคยเสนอ 1 คน
+     *
+     * @return bool เสนอได้หรือไม่ (false = ไม่มีใครเหลือในรัศมีนี้ — sweep จะขยายรัศมี)
+     */
+    public function cascadeOffer(RiderJob $job, ?float $radiusKm = null): bool
+    {
+        $radiusKm ??= (float) ($job->dispatch_radius_km ?: $this->config->floatSetting('rider.offer_radius_km'));
+        $timeout = max(30, $this->config->intSetting('rider.offer_timeout_seconds'));
+
+        $attempted = $job->notifiedRiderIds();
+        $next = $this->findEligibleRiders($job, $radiusKm)
+            ->first(fn (Rider $r) => ! in_array((int) $r->id, $attempted, true));
+
+        $offered = DB::transaction(function () use ($job, $next, $radiusKm, $timeout) {
+            /** @var RiderJob|null $locked */
+            $locked = RiderJob::whereKey($job->id)->lockForUpdate()->first();
+            if (! $locked || ! $locked->isOpen()) {
                 return false;
             }
 
-            $job->refresh();
-
-            // อัปเดท order
-            $order = $job->freshMarketOrder;
-            if ($order) {
-                $order->update([
-                    'rider_id' => $rider->id,
-                    'rider_assigned_at' => now(),
-                    'rider_accepted_at' => now(),
-                ]);
-            }
-
-            // ตั้งสถานะไรเดอร์เป็น busy
-            $rider->setBusy();
-
-            // สร้าง tracking token
-            try {
-                $gpsService = new RiderGpsTrackingService();
-                $buyerLineUserId = $order?->buyer?->line_user_id ?? null;
-                $gpsService->generateTrackingToken($job, $buyerLineUserId);
-                $gpsService->sendTrackingLinkToBuyer($job->fresh());
-            } catch (\Throwable $e) {
-                Log::warning('RiderDispatch: ไม่สามารถสร้าง tracking', [
-                    'job_id' => $job->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            Log::info('RiderDispatch: ไรเดอร์รับงาน', [
-                'job_id' => $job->id,
-                'rider_id' => $rider->id,
+            $locked->fill([
+                'dispatch_type' => $locked->dispatch_type === 'manual_needed' ? 'manual_needed' : 'cascade',
+                'dispatch_radius_km' => round($radiusKm, 2),
+                'dispatch_round' => (int) $locked->dispatch_round + ($next ? 0 : 1),
+                'last_dispatched_at' => now(),
             ]);
+
+            if (! $next) {
+                $locked->save();
+
+                return false;
+            }
+
+            $attempts = $locked->dispatch_attempts ?? [];
+            $attempts[] = ['rider_id' => (int) $next->id, 'sent_at' => now()->toIso8601String(), 'status' => 'pending'];
+
+            $locked->fill([
+                'current_offer_rider_id' => $next->id,
+                'offer_sent_at' => now(),
+                'offer_expires_at' => now()->addSeconds($timeout),
+                'dispatch_attempts' => $attempts,
+                'candidate_riders' => array_values(array_unique(array_merge(array_map('intval', $locked->candidate_riders ?? []), [(int) $next->id]))),
+            ])->save();
 
             return true;
         });
-    }
 
-    /**
-     * ไรเดอร์ปฏิเสธงาน (จาก LINE postback)
-     */
-    public function handleRiderReject(RiderJob $job, Rider $rider): void
-    {
-        $job->recordOfferResponse($rider->id, 'rejected');
-
-        Log::info('RiderDispatch: ไรเดอร์ปฏิเสธงาน', [
-            'job_id' => $job->id,
-            'rider_id' => $rider->id,
-        ]);
-
-        // ถ้าเป็น cascade → เสนอให้คนถัดไปทันที
-        if ($job->dispatch_type === 'auto') {
-            $this->offerJobToNextRider($job->fresh());
+        if (! $offered || ! $next) {
+            return false;
         }
+
+        $job->refresh();
+        $this->notifier->notifyRidersNewJob([$next], $job);
+
+        CascadeRiderDispatchJob::dispatch($job->id)->delay(now()->addSeconds($timeout + 2));
+
+        Log::info('RiderDispatch: cascade offer', ['job_id' => $job->id, 'rider_id' => $next->id, 'timeout' => $timeout]);
+
+        return true;
     }
 
     /**
-     * จัดการเมื่อ offer หมดเวลา (เรียกจาก CascadeRiderDispatchJob)
+     * offer (cascade) หมดเวลา → บันทึกว่าหมดเวลาแล้วเสนอคนถัดไป
      */
     public function handleOfferTimeout(RiderJob $job): void
     {
-        // ตรวจสอบว่า job ยังรอไรเดอร์อยู่
-        if ($job->status !== 'pending') {
+        $job->refresh();
+
+        if (! $job->isOpen() || $job->dispatch_type !== 'cascade' || ! $job->isOfferExpired()) {
             return;
         }
 
-        // ตรวจสอบว่า offer หมดเวลาจริง
-        if (! $job->isOfferExpired()) {
-            return;
+        if ($job->current_offer_rider_id) {
+            $job->recordOfferResponse((int) $job->current_offer_rider_id, 'expired');
         }
 
-        $expiredRiderId = $job->current_offer_rider_id;
-
-        if ($expiredRiderId) {
-            $job->recordOfferResponse($expiredRiderId, 'expired');
-
-            Log::info('RiderDispatch: Cascade - offer หมดเวลา', [
-                'job_id' => $job->id,
-                'rider_id' => $expiredRiderId,
-            ]);
-        }
-
-        // เสนอให้คนถัดไป
-        $offered = $this->offerJobToNextRider($job->fresh());
-
-        if (! $offered) {
-            Log::warning('RiderDispatch: Cascade - หมดไรเดอร์ทุกคนแล้ว', [
-                'job_id' => $job->id,
-            ]);
-        }
+        $this->cascadeOffer($job->fresh());
     }
 
-    // =====================================================
-    // Broadcast Dispatch (เสนอทุกคนพร้อมกัน)
-    // =====================================================
+    /**
+     * ไรเดอร์ปฏิเสธงาน (จากปุ่มในแอปหรือ LINE postback)
+     */
+    public function handleRiderReject(RiderJob $job, Rider $rider): void
+    {
+        $job->refresh();
+        if (! $job->isOpen()) {
+            return;
+        }
+
+        if ($job->dispatch_type === 'cascade' && (int) $job->current_offer_rider_id === (int) $rider->id) {
+            $job->recordOfferResponse((int) $rider->id, 'rejected');
+            $this->cascadeOffer($job->fresh());
+
+            return;
+        }
+
+        // broadcast: จดไว้ว่าไม่สนใจ (ไม่แจ้งซ้ำรอบขยายรัศมี)
+        $attempts = $job->dispatch_attempts ?? [];
+        $attempts[] = ['rider_id' => (int) $rider->id, 'status' => 'rejected', 'responded_at' => now()->toIso8601String()];
+        RiderJob::whereKey($job->id)->open()->update(['dispatch_attempts' => json_encode($attempts)]);
+
+        Log::info('RiderDispatch: rider rejected job', ['job_id' => $job->id, 'rider_id' => $rider->id]);
+    }
 
     /**
-     * Broadcast dispatch: ส่ง push ให้ไรเดอร์ทุกคนในรัศมี
-     * ใช้เครดิต broadcast ของร้านค้า
-     * คนแรกที่กด "รับงาน" จะได้งาน (race-safe)
+     * งานที่ไรเดอร์คนนี้เห็นในหน้า "งานที่รอรับ" (กรองเงื่อนไขเดียวกับตอนกระจายงาน)
      *
-     * @param FreshMarketOrder $order คำสั่งซื้อ
-     * @return RiderJob|null
+     * @return Collection<int, RiderJob>
      */
-    public function broadcastDispatch(FreshMarketOrder $order): ?RiderJob
+    public function availableJobsFor(Rider $rider, ?float $latitude = null, ?float $longitude = null, int $limit = 20): Collection
     {
-        $seller = $order->seller;
+        $lat = $latitude ?? ($rider->last_latitude !== null ? (float) $rider->last_latitude : null);
+        $lng = $longitude ?? ($rider->last_longitude !== null ? (float) $rider->last_longitude : null);
 
-        if (! $seller || ! $seller->hasBroadcastCredits()) {
-            Log::info('RiderDispatch: Broadcast - ร้านค้าไม่มีเครดิต', [
-                'order_id' => $order->id,
-                'seller_id' => $seller?->id,
-            ]);
-
-            return null;
+        if ($lat === null || $lng === null || ! DeliveryFeeCalculator::isValidCoordinate($lat, $lng)) {
+            return new Collection;
         }
 
-        // ค้นหาไรเดอร์ในรัศมี broadcast
-        $riders = $this->findNearestRiders($order, $this->broadcastMaxRadius, 20);
+        $maxRadius = max(
+            $this->config->floatSetting('rider.max_offer_radius_km'),
+            $this->config->floatSetting('rider.offer_radius_km')
+        );
+        $latDelta = $maxRadius / 111.0;
+        $lngDelta = $maxRadius / (111.0 * max(0.1, cos(deg2rad($lat))));
 
-        if ($riders->isEmpty()) {
-            Log::info('RiderDispatch: Broadcast - ไม่พบไรเดอร์', ['order_id' => $order->id]);
+        $walletBalance = $rider->walletBalance();
 
-            return null;
-        }
+        $jobs = RiderJob::query()
+            ->open()
+            ->whereBetween('pickup_latitude', [$lat - $latDelta, $lat + $latDelta])
+            ->whereBetween('pickup_longitude', [$lng - $lngDelta, $lng + $lngDelta])
+            ->where(function ($q) use ($rider) {
+                // cascade: เห็นเฉพาะงานที่กำลังเสนอให้ตัวเอง
+                $q->where('dispatch_type', '!=', 'cascade')
+                    ->orWhereNull('current_offer_rider_id')
+                    ->orWhere('current_offer_rider_id', $rider->id);
+            })
+            ->orderBy('created_at')
+            ->limit(200)
+            ->get();
 
-        // คำนวณระยะทางและค่าส่ง
-        $sellerLat = $seller->latitude ?? $order->listing?->latitude;
-        $sellerLng = $seller->longitude ?? $order->listing?->longitude;
-        $buyerLat = $order->buyer_latitude;
-        $buyerLng = $order->buyer_longitude;
+        $filtered = $jobs->filter(function (RiderJob $job) use ($rider, $lat, $lng, $walletBalance) {
+            if (in_array((int) $rider->id, $job->releasedRiderIds(), true)) {
+                return false;
+            }
 
-        $distance = 0;
-        if ($sellerLat && $sellerLng && $buyerLat && $buyerLng) {
-            $distance = $this->calculateDistance($sellerLat, $sellerLng, $buyerLat, $buyerLng);
-        }
+            if (in_array((int) $rider->user_id, $job->partyUserIds(), true)) {
+                return false;
+            }
 
-        $deliveryFee = $this->calculateDeliveryFee($distance);
-        $riderEarnings = round($deliveryFee * $this->riderEarningsRate, 2);
-        $platformFee = round($deliveryFee - $riderEarnings, 2);
+            $radius = max((float) ($job->dispatch_radius_km ?? 0), $this->config->floatSetting('rider.offer_radius_km'));
+            $distance = DeliveryFeeCalculator::haversineKm($lat, $lng, (float) $job->pickup_latitude, (float) $job->pickup_longitude);
+            if ($distance > $radius) {
+                return false;
+            }
 
-        // กรองตาม preferences
-        $matchedRiders = $riders->filter(function (Rider $rider) use ($distance, $deliveryFee) {
-            return $rider->matchesJob('fresh_market', $distance, $deliveryFee);
-        });
+            $required = round((float) $job->cod_amount - (float) $job->rider_earnings, 2);
+            if ((float) $job->cod_amount > 0 && $required > 0 && $walletBalance < $required) {
+                return false;
+            }
 
-        if ($matchedRiders->isEmpty()) {
-            Log::info('RiderDispatch: Broadcast - ไม่มีไรเดอร์ตรง preferences', ['order_id' => $order->id]);
-
-            return null;
-        }
-
-        // หักเครดิต broadcast
-        if (! $seller->useBroadcastCredit()) {
-            return null;
-        }
-
-        // สร้าง RiderJob (ยังไม่มี rider)
-        $job = DB::transaction(function () use ($order, $seller, $sellerLat, $sellerLng, $buyerLat, $buyerLng, $distance, $deliveryFee, $riderEarnings, $platformFee, $matchedRiders) {
-            $job = RiderJob::create([
-                'job_type' => 'fresh_market',
-                'title' => '📢 ส่งของตลาดสด #' . $order->order_number,
-                'description' => 'Broadcast จากร้าน ' . ($seller->shop_name ?? 'ตลาดสด'),
-                'pickup_address' => $seller->address ?? '',
-                'pickup_latitude' => $sellerLat,
-                'pickup_longitude' => $sellerLng,
-                'pickup_contact_name' => $seller->shop_name ?? $seller->name ?? '',
-                'pickup_contact_phone' => $seller->phone ?? '',
-                'delivery_address' => $order->delivery_address ?? '',
-                'delivery_latitude' => $buyerLat,
-                'delivery_longitude' => $buyerLng,
-                'delivery_contact_name' => $order->buyer?->name ?? '',
-                'delivery_contact_phone' => $order->buyer?->phone ?? '',
-                'delivery_notes' => $order->delivery_notes,
-                'distance_km' => $distance,
-                'base_fee' => $this->baseFee,
-                'distance_fee' => max(0, $deliveryFee - $this->baseFee),
-                'total_fee' => $deliveryFee,
-                'rider_earnings' => $riderEarnings,
-                'platform_fee' => $platformFee,
-                'customer_id' => $order->buyer_id,
-                'status' => 'pending',
-                'dispatch_type' => 'broadcast',
-                'candidate_riders' => $matchedRiders->pluck('id')->toArray(),
-            ]);
-
-            $order->update([
-                'rider_job_id' => $job->id,
-                'delivery_fee' => $deliveryFee,
-                'delivery_distance_km' => $distance,
-            ]);
-
-            return $job;
-        });
-
-        // Push ให้ทุกไรเดอร์ที่ตรง
-        foreach ($matchedRiders as $rider) {
-            $this->notifyRiderOfJob($rider, $job);
-        }
-
-        Log::info('RiderDispatch: Broadcast dispatch สำเร็จ', [
-            'order_id' => $order->id,
-            'job_id' => $job->id,
-            'riders_notified' => $matchedRiders->count(),
-        ]);
-
-        return $job;
-    }
-
-    // =====================================================
-    // LINE Notification
-    // =====================================================
-
-    /**
-     * ส่ง LINE Flex Message แจ้งงานให้ไรเดอร์
-     */
-    public function notifyRiderOfJob(Rider $rider, RiderJob $job): bool
-    {
-        if (! $rider->line_user_id) {
-            Log::debug('RiderDispatch: ไรเดอร์ไม่มี LINE User ID', ['rider_id' => $rider->id]);
-
-            return false;
-        }
-
-        try {
-            $lineService = new FreshMarketLineService();
-
-            $flex = $lineService->buildRiderJobOfferFlex([
-                'job_id' => $job->id,
-                'job_number' => $job->job_number,
-                'title' => $job->title,
-                'pickup_address' => $job->pickup_address,
-                'delivery_address' => $job->delivery_address,
-                'distance_km' => $job->distance_km,
-                'total_fee' => $job->total_fee,
-                'rider_earnings' => $job->rider_earnings,
-                'dispatch_type' => $job->dispatch_type,
-            ]);
-
-            $lineService->sendFlexMessage(
-                $rider->line_user_id,
-                $flex,
-                "งานใหม่: {$job->title} - รายได้ ฿" . number_format($job->rider_earnings)
-            );
+            $job->setAttribute('distance_to_rider_km', round($distance, 2));
 
             return true;
-        } catch (\Throwable $e) {
-            Log::warning('RiderDispatch: ส่ง LINE ให้ไรเดอร์ล้มเหลว', [
-                'rider_id' => $rider->id,
-                'job_id' => $job->id,
-                'error' => $e->getMessage(),
-            ]);
+        });
 
-            return false;
-        }
+        return $filtered
+            ->sortBy(fn (RiderJob $job) => $job->getAttribute('distance_to_rider_km'))
+            ->take($limit)
+            ->values();
     }
 
     /**
-     * แจ้งไรเดอร์ที่เหลือว่างานถูกรับแล้ว (สำหรับ broadcast)
+     * รอบกวาดงานค้าง (rider:sweep-pending ทุกนาที)
+     *
+     * - งาน cascade ที่ offer หมดเวลา → เสนอคนถัดไป
+     * - ยังไม่มีคนรับ → ทุก rider.rebroadcast_interval_minutes ขยายรัศมี ×1.5 (ไม่เกิน rider.max_offer_radius_km)
+     *   ได้ไม่เกิน rider.max_dispatch_rounds รอบ
+     * - รอเกิน rider.pending_timeout_minutes → dispatch_type = manual_needed + แจ้งแอดมิน/ผู้ซื้อ/ผู้ขาย
+     *
+     * @return array{rebroadcast: int, escalated: int, cascade_moved: int}
      */
-    public function notifyOtherRidersJobTaken(RiderJob $job): void
+    public function sweepPending(int $limit = 100): array
     {
-        if ($job->dispatch_type !== 'broadcast') {
-            return;
-        }
+        $stats = ['rebroadcast' => 0, 'escalated' => 0, 'cascade_moved' => 0];
 
-        $acceptedRiderId = $job->rider_id;
-        $candidateIds = $job->candidate_riders ?? [];
+        $interval = max(1, $this->config->intSetting('rider.rebroadcast_interval_minutes'));
+        $maxRounds = max(1, $this->config->intSetting('rider.max_dispatch_rounds'));
+        $timeout = max(1, $this->config->intSetting('rider.pending_timeout_minutes'));
+        $baseRadius = max(0.5, $this->config->floatSetting('rider.offer_radius_km'));
+        $maxRadius = max($baseRadius, $this->config->floatSetting('rider.max_offer_radius_km'));
 
-        try {
-            $lineService = new FreshMarketLineService();
-            $flex = $lineService->buildJobTakenFlex($job->job_number);
+        $jobs = RiderJob::query()
+            ->open()
+            ->where(function ($q) {
+                $q->whereNull('dispatch_type')->orWhere('dispatch_type', '!=', 'manual_needed');
+            })
+            ->orderBy('id')
+            ->limit($limit)
+            ->get();
 
-            foreach ($candidateIds as $riderId) {
-                if ($riderId === $acceptedRiderId) {
+        foreach ($jobs as $job) {
+            try {
+                if ($job->created_at && $job->created_at->lte(now()->subMinutes($timeout))) {
+                    if ($this->escalateNoRider($job)) {
+                        $stats['escalated']++;
+                    }
+
                     continue;
                 }
 
-                $rider = Rider::find($riderId);
-                if ($rider?->line_user_id) {
-                    $lineService->sendFlexMessage(
-                        $rider->line_user_id,
-                        $flex,
-                        "งาน {$job->job_number} มีไรเดอร์รับแล้ว"
-                    );
+                if ($job->dispatch_type === 'cascade' && $job->current_offer_rider_id && $job->isOfferExpired()) {
+                    $this->handleOfferTimeout($job);
+                    $stats['cascade_moved']++;
+
+                    continue;
                 }
+
+                $due = $job->last_dispatched_at === null || $job->last_dispatched_at->lte(now()->subMinutes($interval));
+                if (! $due || (int) $job->dispatch_round >= $maxRounds) {
+                    continue;
+                }
+
+                // รอบแรก (ยังไม่เคยกระจาย) ใช้รัศมีตั้งต้น รอบถัดไปขยาย ×1.5 (อย่างน้อย +1 กม.)
+                $current = (float) ($job->dispatch_radius_km ?: $baseRadius);
+                $radius = (int) $job->dispatch_round === 0
+                    ? $current
+                    : min($maxRadius, max($current * 1.5, $current + 1.0));
+
+                if ($job->dispatch_type === 'cascade') {
+                    if (! $job->hasPendingOffer()) {
+                        $this->cascadeOffer($job, $radius);
+                    }
+                } else {
+                    $this->broadcast($job, $radius);
+                }
+
+                $stats['rebroadcast']++;
+            } catch (\Throwable $e) {
+                Log::error('RiderDispatch: sweep error', ['job_id' => $job->id, 'error' => $e->getMessage()]);
             }
-        } catch (\Throwable $e) {
-            Log::warning('RiderDispatch: แจ้งไรเดอร์อื่นล้มเหลว', [
-                'job_id' => $job->id,
-                'error' => $e->getMessage(),
-            ]);
         }
+
+        return $stats;
+    }
+
+    /**
+     * หาไรเดอร์ไม่ได้ในเวลาที่กำหนด → ส่งต่อให้แอดมินจัดการเอง (ทำครั้งเดียวต่องาน)
+     */
+    public function escalateNoRider(RiderJob $job): bool
+    {
+        $updated = RiderJob::whereKey($job->id)
+            ->open()
+            ->where(function ($q) {
+                $q->whereNull('dispatch_type')->orWhere('dispatch_type', '!=', 'manual_needed');
+            })
+            ->update([
+                'dispatch_type' => 'manual_needed',
+                'current_offer_rider_id' => null,
+                'offer_expires_at' => null,
+            ]);
+
+        if ($updated === 0) {
+            return false;
+        }
+
+        $job->refresh();
+
+        Log::warning('RiderDispatch: no rider found, escalated to admin', ['job_id' => $job->id]);
+
+        $this->notifier->notifyAdmins(
+            'ไม่มีไรเดอร์รับงาน',
+            "งาน #{$job->job_number} รอเกิน ".$this->config->intSetting('rider.pending_timeout_minutes').' นาที กรุณามอบหมายไรเดอร์',
+            ['job_id' => (int) $job->id]
+        );
+
+        $this->notifier->notifyParties($job->partyUserIds(), $job, 'no_rider');
+
+        return true;
+    }
+
+    /**
+     * ไรเดอร์ที่เข้าเงื่อนไขรับงานนี้ เรียงจากใกล้จุดรับของที่สุด
+     *
+     * @return \Illuminate\Support\Collection<int, Rider>
+     */
+    public function findEligibleRiders(RiderJob $job, float $radiusKm, int $limit = 30)
+    {
+        if ($job->pickup_latitude === null || $job->pickup_longitude === null) {
+            return collect();
+        }
+
+        $lat = (float) $job->pickup_latitude;
+        $lng = (float) $job->pickup_longitude;
+        $radiusKm = max(0.1, $radiusKm);
+
+        // กรองสี่เหลี่ยมคร่าวๆ ด้วย index ก่อน แล้วค่อยคำนวณระยะจริงใน PHP (ไม่ผูกกับ MySQL acos)
+        $latDelta = $radiusKm / 111.0;
+        $lngDelta = $radiusKm / (111.0 * max(0.1, cos(deg2rad($lat))));
+
+        $excludeRiderIds = array_values(array_unique(array_merge(
+            $job->releasedRiderIds(),
+            $this->rejectedRiderIds($job)
+        )));
+        $partyUserIds = $job->partyUserIds();
+
+        $riders = Rider::query()
+            ->availableForDelivery($this->config)
+            ->whereBetween('last_latitude', [$lat - $latDelta, $lat + $latDelta])
+            ->whereBetween('last_longitude', [$lng - $lngDelta, $lng + $lngDelta])
+            ->when($excludeRiderIds !== [], fn ($q) => $q->whereNotIn('id', $excludeRiderIds))
+            ->when($partyUserIds !== [], fn ($q) => $q->whereNotIn('user_id', $partyUserIds))
+            ->whereHas('user', fn ($q) => $q->whereNull('blocked_at'))
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('rider_jobs as active_jobs')
+                    ->whereColumn('active_jobs.rider_id', 'riders.id')
+                    ->whereIn('active_jobs.status', RiderJob::ACTIVE_STATUSES)
+                    ->whereNull('active_jobs.deleted_at');
+            })
+            ->limit(300)
+            ->get();
+
+        if ($riders->isEmpty()) {
+            return collect();
+        }
+
+        // วงเงิน COD
+        $codRequired = round((float) $job->cod_amount - (float) $job->rider_earnings, 2);
+        $balances = [];
+        if ((float) $job->cod_amount > 0 && $codRequired > 0) {
+            $balances = Wallet::whereIn('user_id', $riders->pluck('user_id')->all())
+                ->pluck('balance', 'user_id')
+                ->map(fn ($b) => (float) $b)
+                ->all();
+        }
+
+        return $riders
+            ->map(function (Rider $rider) use ($lat, $lng) {
+                $rider->setAttribute('distance_to_pickup_km', round(DeliveryFeeCalculator::haversineKm(
+                    (float) $rider->last_latitude,
+                    (float) $rider->last_longitude,
+                    $lat,
+                    $lng
+                ), 2));
+
+                return $rider;
+            })
+            ->filter(function (Rider $rider) use ($radiusKm, $job, $codRequired, $balances) {
+                if ($rider->getAttribute('distance_to_pickup_km') > $radiusKm) {
+                    return false;
+                }
+
+                if (! $rider->matchesJob((string) $job->job_type, (float) $job->distance_km, (float) $job->rider_earnings)) {
+                    return false;
+                }
+
+                if ((float) $job->cod_amount > 0 && $codRequired > 0 && ($balances[$rider->user_id] ?? 0.0) < $codRequired) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->sortBy(fn (Rider $rider) => $rider->getAttribute('distance_to_pickup_km'))
+            ->take($limit)
+            ->values();
     }
 
     // =====================================================
-    // Legacy Methods (ยังคงใช้งานได้)
+    // เครื่องมือเดิม (คงไว้ให้โค้ดเก่าเรียกได้)
     // =====================================================
 
     /**
-     * คำนวณค่าส่ง
-     *
-     * @param float $distanceKm ระยะทาง (กม.)
-     * @return float ค่าส่ง (บาท)
+     * คำนวณค่าส่งจากระยะทาง (กม.) — ใช้สูตรเดียวกับ DeliveryFeeCalculator
      */
     public function calculateDeliveryFee(float $distanceKm): float
     {
-        $fee = $this->baseFee + ($distanceKm * $this->perKmFee);
-
-        return max($this->minFee, round($fee, 2));
+        return $this->config->quoteForDistance($distanceKm)['total_fee'];
     }
 
     /**
-     * คำนวณระยะทางด้วย Haversine formula
-     *
-     * @param float $lat1 ละติจูดจุดเริ่ม
-     * @param float $lng1 ลองจิจูดจุดเริ่ม
-     * @param float $lat2 ละติจูดจุดปลาย
-     * @param float $lng2 ลองจิจูดจุดปลาย
-     * @return float ระยะทาง (กม.)
+     * ระยะทางเส้นตรง (กม.) ปัด 2 ตำแหน่ง
      */
     public function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
-        $earthRadius = 6371; // km
-
-        $latDelta = deg2rad($lat2 - $lat1);
-        $lngDelta = deg2rad($lng2 - $lng1);
-
-        $a = sin($latDelta / 2) * sin($latDelta / 2)
-            + cos(deg2rad($lat1)) * cos(deg2rad($lat2))
-            * sin($lngDelta / 2) * sin($lngDelta / 2);
-
-        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
-
-        return round($earthRadius * $c, 2);
+        return round(DeliveryFeeCalculator::haversineKm($lat1, $lng1, $lat2, $lng2), 2);
     }
 
     /**
-     * จัดการค่าประกัน - บันทึกการชำระ
-     *
-     * @param Rider $rider ไรเดอร์
-     * @param float $amount จำนวนเงิน
-     * @param string $transactionId หมายเลขอ้างอิง
-     * @return bool
+     * แอดมินบันทึกการรับเงินประกันไรเดอร์ (ใช้เมื่อเปิด rider.require_deposit)
      */
     public function handleDepositPayment(Rider $rider, float $amount, string $transactionId): bool
     {
         if ($rider->deposit_status === 'paid') {
-            Log::info('RiderDispatch: ไรเดอร์จ่ายค่าประกันแล้ว', ['rider_id' => $rider->id]);
-
             return false;
         }
 
-        $rider->markDepositPaid($transactionId, $amount);
+        $rider->markDepositPaid($transactionId, round($amount, 2));
 
-        Log::info('RiderDispatch: บันทึกค่าประกันสำเร็จ', [
+        Log::info('RiderDispatch: deposit recorded', [
             'rider_id' => $rider->id,
             'amount' => $amount,
             'transaction_id' => $transactionId,
@@ -786,28 +725,118 @@ class RiderDispatchService
         return true;
     }
 
+    // =====================================================
+    // ภายใน
+    // =====================================================
+
     /**
-     * Auto-dispatch: หาไรเดอร์ใกล้สุดแล้วจ่ายงานอัตโนมัติ
-     * (legacy — ใช้ cascadeDispatch() แทนได้)
+     * ตรวจ/จัดรูปจุดรับ-ส่งจาก RiderDeliverable
      *
-     * @param FreshMarketOrder $order คำสั่งซื้อ
-     * @return RiderJob|null
+     * @return array{name: string, address: string, latitude: float, longitude: float, phone: ?string, notes: ?string, area: ?string}
      */
-    public function autoDispatch(FreshMarketOrder $order): ?RiderJob
+    private function normalizePoint(array $point, string $label): array
     {
-        // ค้นหาไรเดอร์ใกล้ที่สุด
-        $riders = $this->findNearestRiders($order, $this->defaultSearchRadius, 1);
+        $lat = $point['latitude'] ?? null;
+        $lng = $point['longitude'] ?? null;
 
-        if ($riders->isEmpty()) {
-            Log::info('RiderDispatch: ไม่พบไรเดอร์ใกล้เคียง', [
-                'order_id' => $order->id,
-            ]);
+        if (! DeliveryFeeCalculator::isValidCoordinate($lat, $lng)) {
+            throw RiderJobException::invalidLocation($label);
+        }
 
+        $address = trim((string) ($point['address'] ?? ''));
+        $phone = trim((string) ($point['phone'] ?? ''));
+        $notes = trim((string) ($point['notes'] ?? ''));
+        $area = trim((string) ($point['area'] ?? ''));
+
+        return [
+            'name' => mb_substr(trim((string) ($point['name'] ?? '')), 0, 255),
+            'address' => $address !== '' ? mb_substr($address, 0, 255) : 'ตามหมุดบนแผนที่',
+            'latitude' => round((float) $lat, 8),
+            'longitude' => round((float) $lng, 8),
+            'phone' => $phone !== '' ? mb_substr($phone, 0, 255) : null,
+            'notes' => $notes !== '' ? $notes : null,
+            'area' => $area !== '' ? mb_substr($area, 0, 255) : null,
+        ];
+    }
+
+    /**
+     * ใช้ค่าส่งที่ลูกค้าจ่ายจริง (ถ้าออเดอร์บอกมา) เพื่อให้ total_fee ตรงกับใบเสร็จ
+     *
+     * @param  array<string, mixed>  $quote
+     * @return array{base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float}
+     */
+    private function applyChargedFee(Model $source, array $quote): array
+    {
+        $charged = null;
+        if (method_exists($source, 'riderDeliveryFeeCharged')) {
+            $value = $source->riderDeliveryFeeCharged();
+            $charged = is_numeric($value) ? round((float) $value, 2) : null;
+        }
+
+        if ($charged === null || $charged <= 0) {
+            return [
+                'base_fee' => (float) $quote['base_fee'],
+                'distance_fee' => (float) $quote['distance_fee'],
+                'total_fee' => (float) $quote['total_fee'],
+                'rider_earnings' => (float) $quote['rider_earnings'],
+                'platform_fee' => (float) $quote['platform_fee'],
+            ];
+        }
+
+        $base = round(min((float) $quote['base_fee'], $charged), 2);
+        $split = $this->config->split($charged);
+
+        return [
+            'base_fee' => $base,
+            'distance_fee' => round($charged - $base, 2),
+            'total_fee' => $charged,
+            'rider_earnings' => $split['rider_earnings'],
+            'platform_fee' => $split['platform_fee'],
+        ];
+    }
+
+    /**
+     * user_id ผู้ซื้อของออเดอร์ (ต้องมีอยู่จริงในตาราง users — FK)
+     */
+    private function resolveCustomerId(Model $source): ?int
+    {
+        $id = null;
+
+        if (method_exists($source, 'riderCustomerUserId')) {
+            $id = $source->riderCustomerUserId();
+        }
+
+        if (! $id) {
+            foreach (['buyer_id', 'user_id', 'customer_id'] as $column) {
+                $value = $source->getAttribute($column);
+                if (is_numeric($value) && (int) $value > 0) {
+                    $id = (int) $value;
+                    break;
+                }
+            }
+        }
+
+        if (! $id) {
             return null;
         }
 
-        $rider = $riders->first();
+        return User::whereKey((int) $id)->exists() ? (int) $id : null;
+    }
 
-        return $this->dispatchToRider($order, $rider);
+    /**
+     * ไรเดอร์ที่กดปฏิเสธงานนี้แล้ว (ไม่แจ้งซ้ำ)
+     *
+     * @return array<int, int>
+     */
+    private function rejectedRiderIds(RiderJob $job): array
+    {
+        $ids = [];
+        foreach ($job->dispatch_attempts ?? [] as $attempt) {
+            if (in_array($attempt['status'] ?? null, ['rejected', 'expired'], true) && isset($attempt['rider_id'])) {
+                $ids[] = (int) $attempt['rider_id'];
+            }
+        }
+
+        return $ids;
     }
 }
