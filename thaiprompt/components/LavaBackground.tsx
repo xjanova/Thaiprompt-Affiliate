@@ -18,6 +18,9 @@ import { useAppStore } from '@/stores/appStore';
 
 const { width, height } = Dimensions.get('window');
 
+/** expo-linear-gradient ต้องการอย่างน้อย 2 สี */
+type GradientColors = readonly [string, string, ...string[]];
+
 // RGB Glow Blob for Dark Mode
 const RGBGlowBlob = ({
   size,
@@ -27,7 +30,7 @@ const RGBGlowBlob = ({
   delay = 0,
 }: {
   size: number;
-  colors: string[];
+  colors: GradientColors;
   startX: number;
   startY: number;
   delay?: number;
@@ -215,7 +218,7 @@ export const LavaBackground: React.FC<LavaBackgroundProps> = ({
   const isDark = resolvedTheme === 'dark';
 
   // Gradient colors
-  const getGradientColors = (): string[] => {
+  const getGradientColors = (): GradientColors => {
     if (isDark) {
       switch (variant) {
         case 'shopping':
@@ -248,7 +251,7 @@ export const LavaBackground: React.FC<LavaBackgroundProps> = ({
   };
 
   // RGB glow colors for dark mode
-  const getRGBGlowColors = (): string[][] => {
+  const getRGBGlowColors = (): GradientColors[] => {
     switch (variant) {
       case 'shopping':
         return [

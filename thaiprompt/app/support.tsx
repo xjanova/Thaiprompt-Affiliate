@@ -1,666 +1,601 @@
 /**
- * Support Ticket Screen - หน้าติดต่อแอดมิน
- * ระบบ Ticket สำหรับติดต่อสอบถามและแจ้งปัญหา
+ * ช่วยเหลือ / ติดต่อทีมงาน — ระบบ Ticket (ธีมนวลทองคำ)
+ *
+ * - รายการเรื่องที่แจ้ง + สถานะ + ป้าย "มีข้อความใหม่จากทีมงาน"
+ * - แจ้งเรื่องใหม่ในแผ่นล่าง (หัวข้อ · หมวด · รายละเอียด) · ตรวจช่องว่างก่อนส่ง
+ * - เปิดเรื่อง = ดูบทสนทนา + ตอบกลับ (กันกดส่งซ้ำ) · เรื่องที่แก้ไขแล้ว = ให้คะแนนได้
+ * - ข้อความผิดพลาดเป็นภาษาไทยเสมอ (ข้อความจาก server ที่ไม่ใช่ภาษาไทยจะไม่แสดง)
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Alert,
-  TextInput,
   ActivityIndicator,
-  Modal,
+  Alert,
   FlatList,
-  RefreshControl,
   KeyboardAvoidingView,
-  Platform,
-  StatusBar,
+  Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
-import { useAppStore } from '@/stores/appStore';
 import {
-  getTickets,
   createTicket,
   getTicket,
-  replyTicket,
+  getTickets,
   rateTicket,
-  Ticket,
-  TicketMessage,
+  replyTicket,
+  type Ticket,
+  type TicketMessage,
 } from '@/services/api';
-
-// =====================================================
-// Category Options
-// =====================================================
+import { isThaiText } from '@/services/api/client';
+import { Button3D, Card3D, Chip, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
+import { FormSheet, Field } from '@/components/shop';
+import { useTheme, radii, spacing, typography, type Tone } from '@/theme';
 
 const CATEGORIES = [
   { value: 'general', label: 'ทั่วไป', icon: '💬' },
   { value: 'account', label: 'บัญชี', icon: '👤' },
   { value: 'payment', label: 'การชำระเงิน', icon: '💳' },
-  { value: 'rider', label: 'ไรเดอร์', icon: '🚴' },
-  { value: 'technical', label: 'ปัญหาเทคนิค', icon: '🐛' },
+  { value: 'order', label: 'คำสั่งซื้อ', icon: '🧾' },
+  { value: 'rider', label: 'ไรเดอร์', icon: '🛵' },
+  { value: 'technical', label: 'แอปใช้งานไม่ได้', icon: '🐛' },
   { value: 'complaint', label: 'ร้องเรียน', icon: '⚠️' },
   { value: 'suggestion', label: 'ข้อเสนอแนะ', icon: '💡' },
-  { value: 'other', label: 'อื่นๆ', icon: '⋯' },
 ];
 
-const PRIORITY_COLORS = {
-  low: '#9CA3AF',
-  medium: '#3B82F6',
-  high: '#F59E0B',
-  urgent: '#EF4444',
+const STATUS_TONE: Record<string, Tone> = {
+  open: 'info',
+  in_progress: 'warning',
+  waiting: 'gold',
+  resolved: 'success',
+  closed: 'neutral',
 };
 
-const STATUS_COLORS = {
-  open: '#3B82F6',
-  in_progress: '#F59E0B',
-  waiting: '#8B5CF6',
-  resolved: '#10B981',
-  closed: '#6B7280',
-};
+const thaiOr = (message: unknown, fallback: string): string => (isThaiText(message) ? (message as string) : fallback);
 
 // =====================================================
-// Create Ticket Modal
+// รายละเอียดเรื่อง (บทสนทนา)
 // =====================================================
 
-interface CreateTicketModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  isDark: boolean;
-}
-
-const CreateTicketModal = ({
-  visible,
-  onClose,
-  onSuccess,
-  isDark,
-}: CreateTicketModalProps) => {
-  const [subject, setSubject] = useState('');
-  const [category, setCategory] = useState('general');
-  const [message, setMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!subject.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกหัวข้อ');
-      return;
-    }
-    if (!message.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกข้อความ');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await createTicket({
-        subject: subject.trim(),
-        category,
-        message: message.trim(),
-      });
-
-      if (response.success) {
-        Alert.alert('สำเร็จ', `สร้าง Ticket #${response.data?.ticketNumber} สำเร็จ`);
-        setSubject('');
-        setCategory('general');
-        setMessage('');
-        onClose();
-        onSuccess();
-      } else {
-        Alert.alert('ข้อผิดพลาด', response.message || 'ไม่สามารถสร้าง Ticket ได้');
-      }
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      setIsSubmitting(false);
-    }
+interface TicketDetail {
+  ticket: {
+    id: number;
+    ticketNumber: string;
+    subject: string;
+    categoryText: string;
+    status: string;
+    statusText: string;
+    satisfactionRating?: number;
   };
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <View className="flex-1 bg-black/50 justify-end">
-          <View
-            className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-t-3xl max-h-[90%]`}
-          >
-            {/* Header */}
-            <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                สร้าง Ticket ใหม่
-              </Text>
-              <Pressable onPress={onClose} className="p-2">
-                <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>✕</Text>
-              </Pressable>
-            </View>
-
-            <ScrollView className="p-4">
-              {/* Subject */}
-              <View className="mb-4">
-                <Text className={`mb-1 font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  หัวข้อ *
-                </Text>
-                <TextInput
-                  value={subject}
-                  onChangeText={setSubject}
-                  placeholder="เช่น มีปัญหาเกี่ยวกับการถอนเงิน"
-                  placeholderTextColor="#9CA3AF"
-                  className={`rounded-xl px-4 py-3 ${
-                    isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'
-                  }`}
-                />
-              </View>
-
-              {/* Category */}
-              <View className="mb-4">
-                <Text className={`mb-2 font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  หมวดหมู่
-                </Text>
-                <View className="flex-row flex-wrap">
-                  {CATEGORIES.map((cat) => (
-                    <Pressable
-                      key={cat.value}
-                      onPress={() => setCategory(cat.value)}
-                      className={`flex-row items-center mr-2 mb-2 px-3 py-2 rounded-xl ${
-                        category === cat.value
-                          ? 'bg-primary-500'
-                          : isDark
-                            ? 'bg-gray-700'
-                            : 'bg-gray-100'
-                      }`}
-                    >
-                      <Text style={{ fontSize: 16 }}>{cat.icon}</Text>
-                      <Text
-                        className={`ml-1 text-sm ${
-                          category === cat.value
-                            ? 'text-white'
-                            : isDark
-                              ? 'text-gray-300'
-                              : 'text-gray-700'
-                        }`}
-                      >
-                        {cat.label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              {/* Message */}
-              <View className="mb-6">
-                <Text className={`mb-1 font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                  รายละเอียด *
-                </Text>
-                <TextInput
-                  value={message}
-                  onChangeText={setMessage}
-                  placeholder="อธิบายปัญหาหรือคำถามของคุณ..."
-                  placeholderTextColor="#9CA3AF"
-                  multiline
-                  numberOfLines={5}
-                  textAlignVertical="top"
-                  className={`rounded-xl px-4 py-3 min-h-[120px] ${
-                    isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'
-                  }`}
-                />
-              </View>
-
-              {/* Submit Button */}
-              <Pressable
-                onPress={handleSubmit}
-                disabled={isSubmitting}
-                className={`bg-primary-500 rounded-xl py-4 mb-6 ${isSubmitting ? 'opacity-60' : ''}`}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-white text-center font-bold text-lg">
-                    ส่ง Ticket
-                  </Text>
-                )}
-              </Pressable>
-            </ScrollView>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-};
-
-// =====================================================
-// Ticket Detail Modal
-// =====================================================
-
-interface TicketDetailModalProps {
-  visible: boolean;
-  onClose: () => void;
-  ticketId: number | null;
-  isDark: boolean;
-  onRefresh: () => void;
+  messages: TicketMessage[];
 }
 
-const TicketDetailModal = ({
-  visible,
-  onClose,
-  ticketId,
-  isDark,
-  onRefresh,
-}: TicketDetailModalProps) => {
-  const [ticket, setTicket] = useState<{
-    ticket: Ticket;
-    messages: TicketMessage[];
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [replyText, setReplyText] = useState('');
-  const [isSending, setIsSending] = useState(false);
-
-  const loadTicket = useCallback(async () => {
-    if (!ticketId) return;
-
-    setIsLoading(true);
-    try {
-      const response = await getTicket(ticketId);
-      if (response?.success && response.data) {
-        setTicket({
-          ticket: response.data.ticket as unknown as Ticket,
-          messages: response.data.messages,
-        });
-      }
-    } catch (error) {
-      console.error('Load ticket error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [ticketId]);
+const TicketDetailModal: React.FC<{
+  ticketId: number | null;
+  onClose: () => void;
+  onChanged: () => void;
+}> = ({ ticketId, onClose, onChanged }) => {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const [detail, setDetail] = useState<TicketDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+  const [rating, setRating] = useState(0);
+  const mountedRef = useRef(true);
+  const sendingRef = useRef(false);
+  const listRef = useRef<FlatList<TicketMessage>>(null);
 
   useEffect(() => {
-    if (visible && ticketId) {
-      loadTicket();
-    }
-  }, [visible, ticketId, loadTicket]);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-  const handleReply = async () => {
-    if (!replyText.trim() || !ticketId) return;
-
-    setIsSending(true);
-    try {
-      const response = await replyTicket(ticketId, replyText.trim());
-      if (response.success) {
-        setReplyText('');
-        await loadTicket();
-        onRefresh();
-      } else {
-        Alert.alert('ข้อผิดพลาด', response.message || 'ไม่สามารถส่งข้อความได้');
-      }
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <View className="flex-1 bg-black/50">
-          <View style={{ flex: 1, paddingTop: 50 }}>
-            <View
-              className={`flex-1 ${isDark ? 'bg-gray-800' : 'bg-white'} rounded-t-3xl mt-10`}
-            >
-              {/* Header */}
-              <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                <View className="flex-1">
-                  <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                    {ticket?.ticket.ticketNumber || 'Loading...'}
-                  </Text>
-                  <Text className="text-gray-500 text-sm" numberOfLines={1}>
-                    {ticket?.ticket.subject || ''}
-                  </Text>
-                </View>
-                <Pressable onPress={onClose} className="p-2">
-                  <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>✕</Text>
-                </Pressable>
-              </View>
-
-              {isLoading ? (
-                <View className="flex-1 justify-center items-center">
-                  <ActivityIndicator size="large" color="#3B82F6" />
-                </View>
-              ) : (
-                <>
-                  {/* Status Badge */}
-                  <View className="px-4 py-2 flex-row items-center">
-                    <View
-                      className="px-3 py-1 rounded-full"
-                      style={{
-                        backgroundColor:
-                          STATUS_COLORS[ticket?.ticket.status as keyof typeof STATUS_COLORS] + '20',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: STATUS_COLORS[ticket?.ticket.status as keyof typeof STATUS_COLORS],
-                        }}
-                        className="text-sm font-medium"
-                      >
-                        {ticket?.ticket.statusText}
-                      </Text>
-                    </View>
-                    <Text className="text-gray-500 text-xs ml-2">
-                      {ticket?.ticket.categoryText}
-                    </Text>
-                  </View>
-
-                  {/* Messages */}
-                  <FlatList
-                    data={ticket?.messages || []}
-                    keyExtractor={(item) => item.id.toString()}
-                    className="flex-1 px-4"
-                    renderItem={({ item }) => (
-                      <View
-                        className={`mb-3 p-4 rounded-2xl ${
-                          item.isFromAdmin
-                            ? 'bg-blue-50 dark:bg-blue-900/30 self-start max-w-[85%]'
-                            : 'bg-gray-100 dark:bg-gray-700 self-end max-w-[85%]'
-                        }`}
-                      >
-                        <View className="flex-row items-center mb-1">
-                          <Text style={{ fontSize: 14 }}>
-                            {item.isFromAdmin ? '🛡️' : '👤'}
-                          </Text>
-                          <Text
-                            className={`text-xs ml-1 ${
-                              item.isFromAdmin
-                                ? 'text-blue-600 dark:text-blue-400'
-                                : 'text-gray-500'
-                            }`}
-                          >
-                            {item.isFromAdmin ? 'Admin' : 'คุณ'}
-                          </Text>
-                        </View>
-                        <Text
-                          className={`${
-                            item.isFromAdmin
-                              ? 'text-blue-800 dark:text-blue-200'
-                              : isDark
-                                ? 'text-white'
-                                : 'text-gray-800'
-                          }`}
-                        >
-                          {item.message}
-                        </Text>
-                        <Text className="text-xs text-gray-400 mt-1">
-                          {item.createdAt}
-                        </Text>
-                      </View>
-                    )}
-                  />
-
-                  {/* Reply Input */}
-                  {ticket?.ticket.status !== 'closed' && (
-                    <View className="p-4 border-t border-gray-200 dark:border-gray-700">
-                      <View className="flex-row items-end">
-                        <TextInput
-                          value={replyText}
-                          onChangeText={setReplyText}
-                          placeholder="พิมพ์ข้อความ..."
-                          placeholderTextColor="#9CA3AF"
-                          multiline
-                          className={`flex-1 rounded-2xl px-4 py-3 mr-2 max-h-24 ${
-                            isDark ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-900'
-                          }`}
-                        />
-                        <Pressable
-                          onPress={handleReply}
-                          disabled={isSending || !replyText.trim()}
-                          className={`w-12 h-12 rounded-full bg-primary-500 items-center justify-center ${
-                            !replyText.trim() ? 'opacity-50' : ''
-                          }`}
-                        >
-                          {isSending ? (
-                            <ActivityIndicator color="white" size="small" />
-                          ) : (
-                            <Text style={{ fontSize: 20 }}>📤</Text>
-                          )}
-                        </Pressable>
-                      </View>
-                    </View>
-                  )}
-                </>
-              )}
-            </View>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
-  );
-};
-
-// =====================================================
-// Main Support Screen
-// =====================================================
-
-export default function SupportScreen() {
-  const { isAuthenticated } = useAuthStore();
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
-
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
-
-  const loadTickets = useCallback(async () => {
-    try {
-      const response = await getTickets();
-      if (response?.success && response.data) {
-        setTickets(response.data.tickets);
-      }
-    } catch (error) {
-      console.error('Load tickets error:', error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+  const load = useCallback(async (id: number, silent = false) => {
+    if (!silent) setLoading(true);
+    const response = await getTicket(id);
+    if (!mountedRef.current) return;
+    setLoading(false);
+    if (response?.success && response.data) {
+      setDetail({ ticket: response.data.ticket, messages: response.data.messages || [] });
+      setError(null);
+    } else if (!silent) {
+      setError(thaiOr(response?.message, 'เปิดเรื่องนี้ไม่สำเร็จ ลองใหม่อีกครั้งนะ'));
     }
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadTickets();
+    if (ticketId) {
+      setDetail(null);
+      setReply('');
+      setRating(0);
+      load(ticketId);
     }
-  }, [isAuthenticated, loadTickets]);
+  }, [ticketId, load]);
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    loadTickets();
+  const send = async () => {
+    const text = reply.trim();
+    if (!ticketId || !text || sendingRef.current) return;
+    sendingRef.current = true;
+    setSending(true);
+    const response = await replyTicket(ticketId, text);
+    sendingRef.current = false;
+    if (!mountedRef.current) return;
+    setSending(false);
+    if (response.success) {
+      resultHaptic('success');
+      setReply('');
+      await load(ticketId, true);
+      onChanged();
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 150);
+    } else {
+      resultHaptic('error');
+      Alert.alert('ส่งข้อความไม่สำเร็จ', thaiOr(response.message, 'ลองใหม่อีกครั้งนะ'));
+    }
   };
 
-  // Not authenticated
+  const submitRating = async () => {
+    if (!ticketId || rating < 1) return;
+    const response = await rateTicket(ticketId, rating);
+    if (!mountedRef.current) return;
+    if (response.success) {
+      resultHaptic('success');
+      await load(ticketId, true);
+      onChanged();
+    } else {
+      Alert.alert('ให้คะแนนไม่สำเร็จ', thaiOr(response.message, 'ลองใหม่อีกครั้งนะ'));
+    }
+  };
+
+  const t = detail?.ticket;
+  const closed = t?.status === 'closed';
+  const canRate = !!t && (t.status === 'resolved' || t.status === 'closed') && !t.satisfactionRating;
+
+  return (
+    <Modal visible={ticketId !== null} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.background }]} behavior="padding">
+        <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm, borderBottomColor: colors.divider }]}>
+          <View style={styles.flex}>
+            <Text style={[typography.h2, { color: colors.textStrong }]} numberOfLines={1}>
+              {t ? `#${t.ticketNumber}` : 'กำลังเปิด...'}
+            </Text>
+            {!!t && (
+              <Text style={[typography.bodySm, { color: colors.textMuted }]} numberOfLines={1}>
+                {t.subject}
+              </Text>
+            )}
+          </View>
+          <Button3D title="ปิด" size="sm" variant="secondary" onPress={onClose} />
+        </View>
+
+        {loading && !detail ? (
+          <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+        ) : error && !detail ? (
+          <EmptyState compact variant="error" message={error} onAction={() => ticketId && load(ticketId)} />
+        ) : (
+          <>
+            {!!t && (
+              <View style={styles.metaRow}>
+                <Pill label={t.statusText} tone={STATUS_TONE[t.status] || 'neutral'} size="md" />
+                {!!t.categoryText && <Pill label={t.categoryText} tone="neutral" />}
+              </View>
+            )}
+            <FlatList
+              ref={listRef}
+              data={detail?.messages || []}
+              keyExtractor={(item) => String(item.id)}
+              contentContainerStyle={styles.messages}
+              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+              renderItem={({ item }) => {
+                const mine = !item.isFromAdmin;
+                return (
+                  <View
+                    style={[
+                      styles.bubble,
+                      mine
+                        ? [styles.bubbleMine, { backgroundColor: colors.goldSoft, borderColor: colors.border }]
+                        : [styles.bubbleTeam, { backgroundColor: colors.card, borderColor: colors.border }],
+                    ]}
+                  >
+                    <Text style={[typography.micro, { color: mine ? colors.goldDeep : colors.info }]}>
+                      {mine ? 'คุณ' : '🛡️ ทีมงาน'}
+                    </Text>
+                    <Text style={[typography.body, { color: colors.textStrong }]}>{item.message}</Text>
+                    <Text style={[typography.micro, styles.bubbleTime, { color: colors.textFaint }]}>{item.createdAt}</Text>
+                  </View>
+                );
+              }}
+              ListFooterComponent={
+                canRate ? (
+                  <Card3D padding={spacing.lg} style={styles.rateCard} contentStyle={styles.rateContent}>
+                    <Text style={[typography.h3, { color: colors.textStrong }]}>ทีมงานช่วยได้ดีแค่ไหน?</Text>
+                    <View style={styles.stars}>
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Pressable
+                          key={n}
+                          onPress={() => setRating(n)}
+                          hitSlop={6}
+                          accessibilityRole="button"
+                          accessibilityLabel={`ให้ ${n} ดาว`}
+                          accessibilityState={{ selected: rating >= n }}
+                        >
+                          <Text style={[styles.star, { opacity: rating >= n ? 1 : 0.3 }]}>⭐</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <Button3D title="ส่งคะแนน" size="sm" disabled={rating < 1} onPress={submitRating} />
+                  </Card3D>
+                ) : null
+              }
+            />
+            {!closed && (
+              <View
+                style={[
+                  styles.replyBar,
+                  { borderTopColor: colors.divider, backgroundColor: colors.surface, paddingBottom: Math.max(insets.bottom, spacing.sm) },
+                ]}
+              >
+                <TextInput
+                  value={reply}
+                  onChangeText={setReply}
+                  placeholder="พิมพ์ข้อความถึงทีมงาน..."
+                  placeholderTextColor={colors.textFaint}
+                  multiline
+                  maxLength={2000}
+                  accessibilityLabel="ข้อความตอบกลับ"
+                  style={[typography.body, styles.replyInput, { backgroundColor: colors.inset, color: colors.textStrong, borderColor: colors.border }]}
+                />
+                <Button3D title="ส่ง" icon="📤" size="md" disabled={!reply.trim()} loading={sending} onPress={send} />
+              </View>
+            )}
+          </>
+        )}
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+};
+
+// =====================================================
+// หน้าหลัก
+// =====================================================
+
+export default function SupportScreen() {
+  const { colors } = useTheme();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [category, setCategory] = useState('general');
+  const [message, setMessage] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const mountedRef = useRef(true);
+  const requestIdRef = useRef(0);
+  const loadedRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const load = useCallback(
+    async (mode: 'initial' | 'refresh' | 'silent') => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        return;
+      }
+      const requestId = ++requestIdRef.current;
+      if (mode === 'refresh') setRefreshing(true);
+      const response = await getTickets();
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
+      if (response?.success && response.data) {
+        setTickets(Array.isArray(response.data.tickets) ? response.data.tickets : []);
+        setError(null);
+      } else if (mode !== 'silent') {
+        setError('โหลดรายการไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่นะ');
+      }
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [isAuthenticated]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      load(loadedRef.current ? 'silent' : 'initial');
+      loadedRef.current = true;
+    }, [load])
+  );
+
+  const openCreate = () => {
+    setFormError(null);
+    setCreateOpen(true);
+  };
+
+  const submitCreate = async () => {
+    if (creating) return;
+    if (subject.trim().length < 3) {
+      setFormError('ใส่หัวข้อสั้นๆ อย่างน้อย 3 ตัวอักษร');
+      return;
+    }
+    if (message.trim().length < 5) {
+      setFormError('เล่ารายละเอียดเพิ่มอีกนิด ทีมงานจะช่วยได้เร็วขึ้น');
+      return;
+    }
+    setCreating(true);
+    setFormError(null);
+    const response = await createTicket({ subject: subject.trim(), category, message: message.trim() });
+    if (!mountedRef.current) return;
+    setCreating(false);
+    if (response.success) {
+      resultHaptic('success');
+      setCreateOpen(false);
+      setSubject('');
+      setMessage('');
+      setCategory('general');
+      Alert.alert('ส่งเรื่องแล้ว', `เลขที่เรื่อง #${response.data?.ticketNumber || '-'} ทีมงานจะตอบกลับโดยเร็ว`);
+      load('silent');
+    } else {
+      resultHaptic('error');
+      setFormError(thaiOr(response.message, 'ส่งเรื่องไม่สำเร็จ ลองใหม่อีกครั้งนะ'));
+    }
+  };
+
   if (!isAuthenticated) {
     return (
-      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
-        <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ fontSize: 80 }}>💬</Text>
-          <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            ติดต่อฝ่ายสนับสนุน
-          </Text>
-          <Text className="text-gray-500 text-center mt-2">
-            เข้าสู่ระบบเพื่อติดต่อแอดมิน
-          </Text>
-          <Pressable
-            onPress={() => router.push('/login')}
-            className="bg-primary-500 px-8 py-3 rounded-xl mt-6"
-          >
-            <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
-          </Pressable>
-        </View>
-      </View>
+      <Screen title="ช่วยเหลือ" scroll={false}>
+        <EmptyState
+          icon="💬"
+          title="เข้าสู่ระบบก่อนนะ"
+          message="เข้าสู่ระบบเพื่อแจ้งปัญหาหรือสอบถามทีมงาน"
+          actionLabel="เข้าสู่ระบบ"
+          onAction={() => router.push('/login')}
+        />
+      </Screen>
     );
   }
 
-  return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
-      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#0F172A' : '#3B82F6'} />
-      <View style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8 }}>
-          <View className="flex-row items-center">
-            <Pressable onPress={() => router.back()} className="mr-4">
-              <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
-            </Pressable>
-            <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-              ติดต่อแอดมิน
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => setShowCreateModal(true)}
-            className="bg-primary-500 px-4 py-2 rounded-xl flex-row items-center"
-          >
-            <Text style={{ fontSize: 20 }}>➕</Text>
-            <Text className="text-white font-medium ml-1">สร้าง</Text>
-          </Pressable>
+  const renderTicket = ({ item, index }: { item: Ticket; index: number }) => (
+    <Animated.View entering={index < 10 ? FadeInDown.delay(index * 30).duration(220) : undefined}>
+      <Card3D
+        onPress={() => setSelectedId(item.id)}
+        padding={spacing.md}
+        radius={radii.lg}
+        shadow="sm"
+        gradientBorder={item.hasUnreadAdminMessage}
+        style={styles.card}
+        accessibilityLabel={`เรื่อง ${item.subject} สถานะ ${item.statusText}${item.hasUnreadAdminMessage ? ' มีข้อความใหม่จากทีมงาน' : ''}`}
+      >
+        <View style={styles.rowBetween}>
+          <Text style={[typography.caption, { color: colors.goldDeep }]}>#{item.ticketNumber}</Text>
+          <Pill label={item.statusText} tone={STATUS_TONE[item.status] || 'neutral'} />
         </View>
+        <Text style={[typography.bodyStrong, styles.subject, { color: colors.textStrong }]} numberOfLines={2}>
+          {item.subject}
+        </Text>
+        <View style={styles.rowBetween}>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>
+            {item.categoryText} · {item.messageCount.toLocaleString('th-TH')} ข้อความ
+          </Text>
+          {item.hasUnreadAdminMessage && <Pill label="ข้อความใหม่" tone="danger" icon="🔴" />}
+        </View>
+      </Card3D>
+    </Animated.View>
+  );
 
-        {/* Content */}
-        {isLoading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#3B82F6" />
-            <Text className="text-gray-500 mt-4">กำลังโหลด...</Text>
-          </View>
-        ) : tickets.length === 0 ? (
-          <View className="flex-1 justify-center items-center px-6">
-            <LinearGradient
-              colors={['#3B82F6', '#8B5CF6']}
-              style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}
-            >
-              <Text style={{ fontSize: 48 }}>💬</Text>
-            </LinearGradient>
-            <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-              ยังไม่มี Ticket
+  return (
+    <Screen
+      title="ช่วยเหลือ"
+      subtitle="แจ้งปัญหาหรือสอบถามทีมงาน"
+      scroll={false}
+      right={<Button3D title="แจ้งเรื่อง" icon="➕" size="sm" onPress={openCreate} />}
+    >
+      <FlatList
+        data={tickets}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderTicket}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <Card3D variant="flat" padding={spacing.md} style={styles.intro}>
+            <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+              🕘 ทีมงานตอบกลับในเวลาทำการ เรื่องด่วนเกี่ยวกับออเดอร์หรือการเงินจะได้รับการดูแลก่อน
             </Text>
-            <Text className="text-gray-500 text-center mt-2 mb-6">
-              สร้าง Ticket เพื่อติดต่อสอบถามหรือแจ้งปัญหา
-            </Text>
-            <Pressable
-              onPress={() => setShowCreateModal(true)}
-              className="bg-primary-500 px-8 py-4 rounded-xl"
-            >
-              <Text className="text-white font-bold text-lg">สร้าง Ticket</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <FlatList
-            data={tickets}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerClassName="px-5 py-4"
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefreshing}
-                onRefresh={handleRefresh}
-                tintColor="#3B82F6"
-              />
-            }
-            renderItem={({ item, index }) => (
-              <Animated.View entering={FadeInDown.delay(index * 50).springify()}>
-                <Pressable
-                  onPress={() => setSelectedTicketId(item.id)}
-                  className={`mb-3 p-4 rounded-2xl ${
-                    isDark ? 'bg-gray-800' : 'bg-white'
-                  } shadow-sm`}
-                >
-                  {/* Header */}
-                  <View className="flex-row items-center justify-between mb-2">
-                    <Text className="text-primary-500 font-medium">
-                      #{item.ticketNumber}
-                    </Text>
-                    <View
-                      className="px-2 py-1 rounded-full"
-                      style={{
-                        backgroundColor:
-                          STATUS_COLORS[item.status as keyof typeof STATUS_COLORS] + '20',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: STATUS_COLORS[item.status as keyof typeof STATUS_COLORS],
-                        }}
-                        className="text-xs font-medium"
-                      >
-                        {item.statusText}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Subject */}
-                  <Text
-                    className={`font-medium mb-1 ${isDark ? 'text-white' : 'text-gray-800'}`}
-                    numberOfLines={2}
-                  >
-                    {item.subject}
-                  </Text>
-
-                  {/* Footer */}
-                  <View className="flex-row items-center justify-between mt-2">
-                    <View className="flex-row items-center">
-                      <View
-                        className="px-2 py-1 rounded-md mr-2"
-                        style={{
-                          backgroundColor:
-                            PRIORITY_COLORS[item.priority as keyof typeof PRIORITY_COLORS] + '20',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: PRIORITY_COLORS[item.priority as keyof typeof PRIORITY_COLORS],
-                          }}
-                          className="text-xs"
-                        >
-                          {item.categoryText}
-                        </Text>
-                      </View>
-                      <Text className="text-gray-400 text-xs">
-                        {item.messageCount} ข้อความ
-                      </Text>
-                    </View>
-                    {item.hasUnreadAdminMessage && (
-                      <View className="w-3 h-3 rounded-full bg-red-500" />
-                    )}
-                  </View>
-                </Pressable>
-              </Animated.View>
-            )}
+          </Card3D>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+          ) : error ? (
+            <EmptyState compact variant="error" message={error} onAction={() => load('initial')} />
+          ) : (
+            <EmptyState
+              compact
+              icon="💬"
+              title="ยังไม่เคยแจ้งเรื่อง"
+              message="มีปัญหาหรืออยากถามอะไร แจ้งทีมงานได้เลย"
+              actionLabel="แจ้งเรื่องใหม่"
+              onAction={openCreate}
+            />
+          )
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load('refresh')}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+            progressBackgroundColor={colors.card}
           />
-        )}
-      </View>
-
-      {/* Create Ticket Modal */}
-      <CreateTicketModal
-        visible={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={loadTickets}
-        isDark={isDark}
+        }
       />
 
-      {/* Ticket Detail Modal */}
-      <TicketDetailModal
-        visible={selectedTicketId !== null}
-        onClose={() => setSelectedTicketId(null)}
-        ticketId={selectedTicketId}
-        isDark={isDark}
-        onRefresh={loadTickets}
-      />
-    </View>
+      <FormSheet
+        visible={createOpen}
+        icon="💬"
+        title="แจ้งเรื่องใหม่"
+        description="เล่าให้ละเอียดหน่อย เช่น เลขออเดอร์ เวลาที่เกิดปัญหา"
+        submitLabel="ส่งเรื่อง"
+        onSubmit={submitCreate}
+        busy={creating}
+        cancelLabel="ยกเลิก"
+        onClose={() => setCreateOpen(false)}
+      >
+        <Field
+          label="หัวข้อ"
+          required
+          value={subject}
+          onChangeText={(v) => {
+            setSubject(v);
+            setFormError(null);
+          }}
+          placeholder="เช่น ถอนเงินแล้วยังไม่เข้าบัญชี"
+          maxLength={150}
+        />
+        <Text style={[typography.caption, styles.catLabel, { color: colors.textMuted }]}>หมวด</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cats}>
+          {CATEGORIES.map((c) => (
+            <Chip key={c.value} label={c.label} icon={c.icon} size="sm" selected={category === c.value} onPress={() => setCategory(c.value)} />
+          ))}
+        </ScrollView>
+        <Field
+          label="รายละเอียด"
+          required
+          value={message}
+          onChangeText={(v) => {
+            setMessage(v);
+            setFormError(null);
+          }}
+          placeholder="อธิบายปัญหาหรือคำถามของคุณ"
+          multiline
+          maxLength={2000}
+          error={formError}
+        />
+      </FormSheet>
+
+      <TicketDetailModal ticketId={selectedId} onClose={() => setSelectedId(null)} onChanged={() => load('silent')} />
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  list: {
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.xxxl * 2,
+  },
+  intro: {
+    marginBottom: spacing.md,
+  },
+  loader: {
+    marginTop: spacing.xxxl,
+  },
+  card: {
+    marginBottom: spacing.sm,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  subject: {
+    marginVertical: spacing.xs,
+  },
+  catLabel: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  cats: {
+    gap: spacing.xs,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
+  },
+  messages: {
+    padding: spacing.screen,
+    gap: spacing.sm,
+  },
+  bubble: {
+    maxWidth: '86%',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  bubbleMine: {
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: radii.xs,
+  },
+  bubbleTeam: {
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: radii.xs,
+  },
+  bubbleTime: {
+    marginTop: spacing.xs,
+  },
+  rateCard: {
+    marginTop: spacing.md,
+  },
+  rateContent: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  stars: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  star: {
+    fontSize: 30,
+  },
+  replyBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  replyInput: {
+    flex: 1,
+    minHeight: 48,
+    maxHeight: 120,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+});

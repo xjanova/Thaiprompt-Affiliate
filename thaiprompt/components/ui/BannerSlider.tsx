@@ -3,6 +3,8 @@
  *
  * - เลื่อนเองทุก interval ms, หยุดเมื่อผู้ใช้ลากหรือออกจากหน้า
  * - กดแบนเนอร์: cta_type screen → เปิดหน้าในแอป (ผ่าน allowlist) · url → เปิดเว็บของเรา (ล็อกอินให้ถ้าได้)
+ * - นับการแสดงผลเฉพาะแบนเนอร์ที่ขึ้นจอจริง ครั้งเดียวต่อการเปิดหน้าจอ (ออกแล้วกลับมา = นับรอบใหม่) + นับการกด
+ *   แบนเนอร์สำรองในแอปไม่ถูกนับ
  *
  * @example
  * <BannerSlider placement="home" />
@@ -22,7 +24,15 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { getBanners, FALLBACK_BANNERS, type AppBanner, type BannerPlacement } from '@/services/api/bannerApi';
+import {
+  getBanners,
+  FALLBACK_BANNERS,
+  bannerServerId,
+  trackBannerClick,
+  trackBannerImpressions,
+  type AppBanner,
+  type BannerPlacement,
+} from '@/services/api/bannerApi';
 import { isAllowedInternalRoute, isTrustedWebUrl, isWebSessionPath } from '@/utils/linking';
 import { useTheme, spacing, radii } from '@/theme';
 import { BannerCard } from './BannerCard';
@@ -70,6 +80,8 @@ export interface BannerSliderProps {
 }
 
 const GAP = spacing.md;
+/** รวม id ที่ขึ้นจอภายในช่วงนี้แล้วส่งทีเดียว */
+const IMPRESSION_FLUSH_MS = 1200;
 
 export const BannerSlider: React.FC<BannerSliderProps> = ({
   placement,
@@ -92,6 +104,47 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
   const listRef = useRef<FlatList<AppBanner>>(null);
   const draggingRef = useRef(false);
   const focusedRef = useRef(true);
+  const bannersRef = useRef<AppBanner[]>(banners);
+  bannersRef.current = banners;
+
+  // ---------- นับการแสดงผล (ต่อการเปิดหน้าจอหนึ่งครั้ง) ----------
+  const seenRef = useRef(new Set<number>());
+  const pendingRef = useRef(new Set<number>());
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushImpressions = useCallback(() => {
+    if (flushTimerRef.current) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+    const ids = Array.from(pendingRef.current);
+    pendingRef.current.clear();
+    if (ids.length > 0) trackBannerImpressions(ids);
+  }, []);
+
+  /** แบนเนอร์ลำดับนี้ขึ้นจอแล้ว */
+  const markShown = useCallback(
+    (i: number) => {
+      if (!focusedRef.current) return;
+      const banner = bannersRef.current[i];
+      const id = banner ? bannerServerId(banner) : null;
+      if (id === null || seenRef.current.has(id)) return;
+      seenRef.current.add(id);
+      pendingRef.current.add(id);
+      if (!flushTimerRef.current) {
+        flushTimerRef.current = setTimeout(flushImpressions, IMPRESSION_FLUSH_MS);
+      }
+    },
+    [flushImpressions]
+  );
+
+  useEffect(
+    () => () => {
+      // ถอดคอมโพเนนต์ → ส่งที่ค้างไว้ (ยิงแล้วลืม ไม่ setState)
+      flushImpressions();
+    },
+    [flushImpressions]
+  );
 
   // ---------- โหลดแบนเนอร์ ----------
   useEffect(() => {
@@ -99,10 +152,12 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
     getBanners(placement, refreshKey > 0)
       .then((items) => {
         if (alive && items.length > 0) {
+          bannersRef.current = items;
           setBanners(items);
           indexRef.current = 0;
           setIndex(0);
           listRef.current?.scrollToOffset({ offset: 0, animated: false });
+          markShown(0);
         }
       })
       .catch(() => {
@@ -111,16 +166,21 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placement, refreshKey]);
 
   // ---------- หยุดเลื่อนเมื่อออกจากหน้า ----------
   useFocusEffect(
     useCallback(() => {
       focusedRef.current = true;
+      // เปิดหน้าจอใหม่ = นับรอบใหม่ (แบนเนอร์ที่อยู่บนจอตอนนี้นับทันที)
+      seenRef.current.clear();
+      markShown(indexRef.current);
       return () => {
         focusedRef.current = false;
+        flushImpressions();
       };
-    }, [])
+    }, [markShown, flushImpressions])
   );
 
   // ---------- เลื่อนอัตโนมัติ ----------
@@ -132,18 +192,21 @@ export const BannerSlider: React.FC<BannerSliderProps> = ({
       indexRef.current = next;
       listRef.current?.scrollToOffset({ offset: next * snap, animated: true });
       setIndex(next);
+      markShown(next);
     }, Math.max(2500, interval));
     return () => clearInterval(timer);
-  }, [autoPlay, banners.length, interval, snap]);
+  }, [autoPlay, banners.length, interval, snap, markShown]);
 
   const onMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     draggingRef.current = false;
     const next = Math.max(0, Math.min(banners.length - 1, Math.round(event.nativeEvent.contentOffset.x / snap)));
     indexRef.current = next;
     setIndex(next);
+    markShown(next);
   };
 
   const handlePress = (banner: AppBanner) => {
+    trackBannerClick(banner);
     if (onBannerPress) return onBannerPress(banner);
     return openBannerTarget(banner);
   };

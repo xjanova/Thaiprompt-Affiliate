@@ -22,6 +22,7 @@ import {
 import { clearAuthToken } from '@/services/api';
 import { setAccountSuspendedHandler } from '@/services/api/client';
 import { resetSellerCache } from '@/services/api/merchantApi';
+import { resetFreshMarketSellerCache } from '@/services/api/taladsodSellerApi';
 import { clearBannerCache } from '@/services/api/bannerApi';
 import { getPushIdentity, clearStoredPushToken } from '@/services/notifications';
 import { STORAGE_KEYS } from '@/constants';
@@ -537,6 +538,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await apiLogout({ push_token: identity.token, device_id: identity.deviceId });
       await clearStoredPushToken();
       resetSellerCache();
+      resetFreshMarketSellerCache();
       clearBannerCache();
 
       // ลบ token แต่เก็บ user data ไว้สำหรับ offline view
@@ -567,6 +569,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // ล้างไม่สำเร็จก็ยังต้องออกจากระบบในแอป
     }
     resetSellerCache();
+    resetFreshMarketSellerCache();
     clearBannerCache();
     set({
       user: null,

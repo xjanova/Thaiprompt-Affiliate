@@ -275,7 +275,7 @@ const PhotoSlot: React.FC<{
 export default function RiderJobDetailScreen() {
   const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string; accepted?: string }>();
+  const params = useLocalSearchParams<{ id?: string; accepted?: string; moved?: string }>();
   const paramId = useMemo(() => {
     const n = Number(params.id);
     return Number.isInteger(n) && n > 0 ? n : null;
@@ -289,6 +289,8 @@ export default function RiderJobDetailScreen() {
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [trackingMode, setTrackingMode] = useState<TrackingMode | 'none' | null>(null);
   const [gpsOff, setGpsOff] = useState(false);
+  /** ร้านเคลื่อนที่ย้ายจุดรับของก่อนไรเดอร์ไปรับ (push rider_job_update event pickup_moved) */
+  const [pickupMoved, setPickupMoved] = useState(params.moved === '1');
 
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const [sheetBusy, setSheetBusy] = useState(false);
@@ -308,6 +310,8 @@ export default function RiderJobDetailScreen() {
   const mountedRef = useRef(true);
   const requestIdRef = useRef(0);
   const actionBusyRef = useRef(false);
+  const jobIdRef = useRef<number | null>(paramId);
+  jobIdRef.current = jobId;
   const bgOfferedRef = useRef(false);
 
   useEffect(() => {
@@ -407,6 +411,16 @@ export default function RiderJobDetailScreen() {
       const sub = addNotificationReceivedListener((notification) => {
         const data = notification?.request?.content?.data as Record<string, unknown> | undefined;
         if (data?.type === 'rider_job_update' || data?.type === 'rider_account') {
+          // ร้านย้ายจุดรับของ (งานนี้) → ดึงพิกัดใหม่ + แจ้งให้เห็นชัดๆ (ค่าส่งไม่เปลี่ยน)
+          const pushedJobId = Number(data?.job_id);
+          if (
+            data?.type === 'rider_job_update' &&
+            data?.event === 'pickup_moved' &&
+            (!Number.isInteger(pushedJobId) || pushedJobId <= 0 || pushedJobId === jobIdRef.current)
+          ) {
+            setPickupMoved(true);
+            resultHaptic('warning');
+          }
           load('poll');
         }
       });
@@ -844,6 +858,26 @@ export default function RiderJobDetailScreen() {
         )}
 
         {/* ---------- จุดรับ / จุดส่ง ---------- */}
+        {pickupMoved && !finished && !['picked_up', 'delivering'].includes(job.status) && (
+          <Card3D variant="inset" style={styles.block} padding={spacing.md}>
+            <View style={styles.movedRow}>
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.warning }]}>📍 ร้านย้ายจุดรับของแล้ว</Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  ร้านรถเข็นขยับไปจุดใหม่ ตำแหน่งจุดรับด้านล่างอัปเดตแล้ว กดนำทางอีกครั้งได้เลย (ค่าส่งเท่าเดิม)
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setPickupMoved(false)}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="ปิดข้อความร้านย้ายจุดรับของ"
+              >
+                <Text style={[typography.bodyStrong, { color: colors.textMuted }]}>✕</Text>
+              </Pressable>
+            </View>
+          </Card3D>
+        )}
         <PointCard kind="pickup" point={job.pickup} canContact={isMine && !finished} />
         <PointCard kind="dropoff" point={job.dropoff} canContact={isMine && !finished} />
 
@@ -1201,6 +1235,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.screen,
+  },
+  movedRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
   },
   block: {
     marginBottom: spacing.md,

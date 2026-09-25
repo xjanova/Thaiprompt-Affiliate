@@ -1,888 +1,390 @@
 /**
- * Login Screen - Premium V3 Design
- * ออกแบบใหม่ให้สวยงาม น่าใช้ สมราคา
+ * เข้าสู่ระบบ — ธีมนวลทองคำ
  *
- * Features:
- * - Animated floating elements
- * - Glassmorphism form card
- * - Premium gradient effects
- * - Smooth animations
+ * - อีเมล + รหัสผ่าน (ตรวจรูปแบบก่อนส่ง บอกผิดใต้ช่อง) · ปุ่มกันกดซ้ำในตัว (Button3D)
+ * - LINE Login แสดงเฉพาะเมื่อ server เปิดใช้งานและตั้งค่าครบ · รับ callback ทั้งจาก deep link และ auth session
+ * - เข้าสู่ระบบอยู่แล้ว → ไปหน้าแรกทันที
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Pressable,
   Alert,
-  ActivityIndicator,
-  TextInput,
-  StyleSheet,
-  StatusBar,
   Image,
-  Animated,
-  Dimensions,
-  Easing,
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { APP_INFO } from '@/config/appConfig';
+import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { APP_INFO } from '@/config/appConfig';
 import { useAuthStore } from '@/stores/authStore';
 import { checkLineLoginStatus } from '@/services/api';
+import { Button3D, Card3D } from '@/components/ui';
+import { AuthField } from '@/components/auth/AuthField';
+import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
 
-const { width, height } = Dimensions.get('window');
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-// Firefly Component - หิ่งห้อย RGB ล่องลอย
-const Firefly = ({ delay, duration }: { delay: number; duration: number }) => {
-  const translateX = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
-
-  // สุ่มตำแหน่งเริ่มต้น
-  const startX = Math.random() * width;
-  const startY = Math.random() * height;
-
-  // สุ่มสี RGB
-  const colors = [
-    '#3B82F6', // Blue
-    '#8B5CF6', // Purple
-    '#EC4899', // Pink
-    '#10B981', // Green
-    '#F59E0B', // Amber
-    '#EF4444', // Red
-    '#06B6D4', // Cyan
-    '#F97316', // Orange
-  ];
-  const color = colors[Math.floor(Math.random() * colors.length)];
-
-  useEffect(() => {
-    // สุ่มเส้นทางการเคลื่อนที่
-    const createPath = () => {
-      const endX = (Math.random() - 0.5) * width * 0.8;
-      const endY = (Math.random() - 0.5) * height * 0.8;
-
-      Animated.sequence([
-        Animated.delay(delay),
-        // Fade in
-        Animated.parallel([
-          Animated.timing(opacity, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scale, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]),
-        // เคลื่อนที่แบบหิ่งห้อย
-        Animated.parallel([
-          Animated.timing(translateX, {
-            toValue: endX,
-            duration: duration,
-            easing: Easing.bezier(0.4, 0, 0.6, 1),
-            useNativeDriver: true,
-          }),
-          Animated.timing(translateY, {
-            toValue: endY,
-            duration: duration,
-            easing: Easing.bezier(0.4, 0, 0.6, 1),
-            useNativeDriver: true,
-          }),
-          // Pulse opacity
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(opacity, {
-                toValue: 0.3,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-              Animated.timing(opacity, {
-                toValue: 1,
-                duration: 1000,
-                useNativeDriver: true,
-              }),
-            ])
-          ),
-          // Pulse scale
-          Animated.loop(
-            Animated.sequence([
-              Animated.timing(scale, {
-                toValue: 0.7,
-                duration: 1200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(scale, {
-                toValue: 1.2,
-                duration: 1200,
-                useNativeDriver: true,
-              }),
-            ])
-          ),
-        ]),
-      ]).start(() => {
-        // Reset และเริ่มใหม่
-        translateX.setValue(0);
-        translateY.setValue(0);
-        opacity.setValue(0);
-        scale.setValue(0.5);
-        createPath();
-      });
-    };
-
-    createPath();
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        styles.firefly,
-        {
-          left: startX,
-          top: startY,
-          opacity,
-          transform: [{ translateX }, { translateY }, { scale }],
-        },
-      ]}
-    >
-      {/* Outer glow */}
-      <View style={[styles.fireflyGlow, { backgroundColor: color, opacity: 0.4 }]} />
-      {/* Inner core */}
-      <View style={[styles.fireflyCore, { backgroundColor: color }]} />
-    </Animated.View>
-  );
-};
-
-// Floating Orb Animation Component
-const FloatingOrb = ({ delay, size, color, position }: {
-  delay: number;
-  size: number;
-  color: string;
-  position: { top?: number; bottom?: number; left?: number; right?: number };
-}) => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(0.3)).current;
-
-  useEffect(() => {
-    const floatAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: -20,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0.6,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(translateY, {
-            toValue: 0,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacity, {
-            toValue: 0.3,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-        ]),
-      ])
-    );
-
-    const timeout = setTimeout(() => floatAnimation.start(), delay);
-    return () => {
-      clearTimeout(timeout);
-      floatAnimation.stop();
-    };
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: color,
-          ...position,
-          transform: [{ translateY }],
-          opacity,
-        },
-      ]}
-    />
-  );
-};
-
-// Email validation
-const isValidEmail = (email: string) => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
+// =====================================================
+// หน้าหลัก
+// =====================================================
 
 export default function LoginScreen() {
-  const {
-    login,
-    loginWithLine,
-    handleLineCallback,
-    isLoading,
-    error,
-    clearError,
-    isAuthenticated
-  } = useAuthStore();
-
+  const { colors, gradients, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { login, loginWithLine, handleLineCallback, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const params = useLocalSearchParams<{ code?: string; state?: string; error?: string }>();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [isLineLoading, setIsLineLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLineLoginEnabled, setIsLineLoginEnabled] = useState(false);
-  const [isCheckingLineStatus, setIsCheckingLineStatus] = useState(true);
+  const [lineEnabled, setLineEnabled] = useState(false);
+  const [lineLoading, setLineLoading] = useState(false);
 
-  // ถ้า login แล้ว ให้ไปหน้า tabs โดยตรง
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated]);
+  const mountedRef = useRef(true);
+  const passwordRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    return () => clearError();
-  }, [clearError]);
-
-  // ตรวจสอบสถานะ LINE Login เมื่อเปิดหน้า
-  useEffect(() => {
-    const checkLineStatus = async () => {
-      setIsCheckingLineStatus(true);
-      try {
-        const status = await checkLineLoginStatus();
-        // แสดงปุ่ม LINE Login เฉพาะเมื่อเปิดใช้งานและตั้งค่าเรียบร้อยแล้ว
-        setIsLineLoginEnabled(status.success && status.enabled && status.configured);
-      } catch (error) {
-        console.error('Check LINE status error:', error);
-        setIsLineLoginEnabled(false);
-      } finally {
-        setIsCheckingLineStatus(false);
-      }
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
     };
-    checkLineStatus();
   }, []);
 
-  // Handle LINE OAuth callback
+  // เข้าสู่ระบบแล้ว → หน้าแรก
   useEffect(() => {
-    const handleCallback = async () => {
+    if (isAuthenticated) router.replace('/(tabs)');
+  }, [isAuthenticated]);
+
+  useEffect(() => () => clearError(), [clearError]);
+
+  // LINE Login เปิดใช้งานไหม
+  useEffect(() => {
+    checkLineLoginStatus()
+      .then((status) => {
+        if (mountedRef.current) setLineEnabled(!!(status.success && status.enabled && status.configured));
+      })
+      .catch(() => {
+        if (mountedRef.current) setLineEnabled(false);
+      });
+  }, []);
+
+  // callback จาก LINE (deep link)
+  useEffect(() => {
+    const run = async () => {
       if (params.code && params.state) {
-        setIsLineLoading(true);
+        setLineLoading(true);
         try {
-          const success = await handleLineCallback(params.code, params.state);
-          if (success) {
-            router.replace('/(tabs)');
-          }
-        } catch (err) {
-          console.error('LINE callback error:', err);
+          const ok = await handleLineCallback(params.code, params.state);
+          if (ok) router.replace('/(tabs)');
         } finally {
-          setIsLineLoading(false);
+          if (mountedRef.current) setLineLoading(false);
         }
       } else if (params.error) {
-        Alert.alert('LINE Login ล้มเหลว', 'ไม่สามารถเข้าสู่ระบบด้วย LINE ได้');
+        Alert.alert('เข้าสู่ระบบด้วย LINE ไม่สำเร็จ', 'ลองใหม่อีกครั้ง หรือใช้อีเมลแทนนะ');
       }
     };
-    handleCallback();
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.code, params.state, params.error]);
 
-  // Handle LINE Login
-  const handleLineLogin = useCallback(async () => {
-    setIsLineLoading(true);
+  const loginLine = useCallback(async () => {
+    if (lineLoading) return;
+    setLineLoading(true);
     try {
       const result = await loginWithLine();
       if (result.success && result.authUrl) {
-        const browserResult = await WebBrowser.openAuthSessionAsync(
-          result.authUrl,
-          'thaiprompt://login'
-        );
+        const browserResult = await WebBrowser.openAuthSessionAsync(result.authUrl, 'thaiprompt://login');
         if (browserResult.type === 'success' && browserResult.url) {
           const url = new URL(browserResult.url);
           const code = url.searchParams.get('code');
           const state = url.searchParams.get('state');
           if (code && state) {
-            const success = await handleLineCallback(code, state);
-            if (success) {
-              router.replace('/(tabs)');
-            }
+            const ok = await handleLineCallback(code, state);
+            if (ok) router.replace('/(tabs)');
           }
         }
       } else {
-        Alert.alert('LINE Login', result.message || 'ไม่สามารถเชื่อมต่อ LINE ได้');
+        Alert.alert('เข้าสู่ระบบด้วย LINE', result.message || 'เชื่อมต่อ LINE ไม่ได้ ลองใหม่อีกครั้งนะ');
       }
-    } catch (err) {
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเข้าสู่ระบบด้วย LINE ได้');
+    } catch {
+      Alert.alert('เข้าสู่ระบบด้วย LINE ไม่สำเร็จ', 'ลองใหม่อีกครั้ง หรือใช้อีเมลแทนนะ');
     } finally {
-      setIsLineLoading(false);
+      if (mountedRef.current) setLineLoading(false);
     }
-  }, [loginWithLine, handleLineCallback]);
+  }, [lineLoading, loginWithLine, handleLineCallback]);
 
-  // Validate form
-  const validateForm = (): boolean => {
-    let isValid = true;
+  const validate = (): boolean => {
+    let ok = true;
     if (!email.trim()) {
-      setEmailError('กรุณากรอกอีเมล');
-      isValid = false;
-    } else if (!isValidEmail(email)) {
-      setEmailError('รูปแบบอีเมลไม่ถูกต้อง');
-      isValid = false;
-    } else {
-      setEmailError('');
+      setEmailError('กรอกอีเมลก่อนนะ');
+      ok = false;
+    } else if (!isValidEmail(email.trim())) {
+      setEmailError('รูปแบบอีเมลยังไม่ถูกต้อง');
+      ok = false;
     }
     if (!password) {
-      setPasswordError('กรุณากรอกรหัสผ่าน');
-      isValid = false;
+      setPasswordError('กรอกรหัสผ่านก่อนนะ');
+      ok = false;
     } else if (password.length < 8) {
-      setPasswordError('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
-      isValid = false;
-    } else {
-      setPasswordError('');
+      setPasswordError('รหัสผ่านมีอย่างน้อย 8 ตัวอักษร');
+      ok = false;
     }
-    return isValid;
+    return ok;
   };
 
-  // Handle login
-  const handleLogin = async () => {
-    if (!validateForm()) return;
-    const success = await login(email.trim(), password);
-    if (success) {
-      router.replace('/(tabs)');
-    }
+  const submit = async () => {
+    if (!validate()) return;
+    const ok = await login(email.trim(), password);
+    if (ok) router.replace('/(tabs)');
   };
 
-  // Logo animation
-  const logoScale = useRef(new Animated.Value(0.8)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const formSlide = useRef(new Animated.Value(50)).current;
-  const formOpacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Logo entrance animation
-    Animated.parallel([
-      Animated.spring(logoScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.timing(logoOpacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Form entrance animation (delayed)
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.spring(formSlide, {
-          toValue: 0,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-        Animated.timing(formOpacity, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, 300);
-  }, []);
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)' as never);
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Premium Gradient Background */}
-      <LinearGradient
-        colors={['#0F0F23', '#1a1a2e', '#16213e', '#0F0F23']}
-        locations={[0, 0.3, 0.7, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
+      <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroBg} />
 
-      {/* Floating Orbs Background */}
-      <FloatingOrb delay={0} size={150} color="rgba(59,130,246,0.15)" position={{ top: 50, left: -50 }} />
-      <FloatingOrb delay={500} size={100} color="rgba(139,92,246,0.15)" position={{ top: 200, right: -30 }} />
-      <FloatingOrb delay={1000} size={80} color="rgba(236,72,153,0.15)" position={{ bottom: 200, left: 30 }} />
-      <FloatingOrb delay={1500} size={120} color="rgba(16,185,129,0.1)" position={{ bottom: 100, right: -40 }} />
-
-      {/* RGB Fireflies - หิ่งห้อยล่องลอย */}
-      <Firefly delay={0} duration={8000} />
-      <Firefly delay={200} duration={9000} />
-      <Firefly delay={400} duration={7500} />
-      <Firefly delay={600} duration={8500} />
-      <Firefly delay={800} duration={9500} />
-      <Firefly delay={1000} duration={7000} />
-      <Firefly delay={1200} duration={8200} />
-      <Firefly delay={1400} duration={9200} />
-      <Firefly delay={1600} duration={7800} />
-      <Firefly delay={1800} duration={8800} />
-      <Firefly delay={2000} duration={9800} />
-      <Firefly delay={2200} duration={7200} />
-      <Firefly delay={2400} duration={8400} />
-      <Firefly delay={2600} duration={9400} />
-      <Firefly delay={2800} duration={7600} />
-      <Firefly delay={3000} duration={8600} />
-      <Firefly delay={3200} duration={9600} />
-      <Firefly delay={3400} duration={7400} />
-      <Firefly delay={3600} duration={8300} />
-      <Firefly delay={3800} duration={9100} />
-
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.xxxl }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.05)']}
-                style={styles.backButtonGradient}
-              >
-                <Text style={{ fontSize: 22, color: '#FFFFFF' }}>←</Text>
-              </LinearGradient>
-            </Pressable>
-          </View>
-
-          {/* Animated Logo */}
-          <Animated.View
-            style={[
-              styles.logoContainer,
-              {
-                transform: [{ scale: logoScale }],
-                opacity: logoOpacity,
-              },
+          <Pressable
+            onPress={goBack}
+            accessibilityRole="button"
+            accessibilityLabel="ย้อนกลับ"
+            hitSlop={10}
+            style={({ pressed }) => [
+              styles.back,
+              { backgroundColor: colors.card, opacity: pressed ? 0.7 : 1 },
+              clayShadowStyle('sm', colors.shadowDark, colors.shadowLight),
             ]}
           >
-            <View style={styles.logoWrapper}>
-              {/* Outer glow */}
-              <View style={styles.logoOuterGlow} />
-              {/* Logo container with gradient border */}
-              <LinearGradient
-                colors={['#3B82F6', '#8B5CF6', '#EC4899']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoBorder}
-              >
-                <View style={styles.logoInner}>
-                  <Image
-                    source={require('@/assets/images/icon.png')}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
+            <Text style={[styles.backIcon, { color: colors.textStrong }]}>‹</Text>
+          </Pressable>
+
+          <Animated.View entering={FadeInDown.duration(420)} style={styles.brand}>
+            <View style={[styles.logoRing, clayShadowStyle('md', colors.shadowDark, colors.shadowLight)]}>
+              <LinearGradient colors={gradients.gold} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logoGradient}>
+                <View style={[styles.logoInner, { backgroundColor: colors.card }]}>
+                  <Image source={require('@/assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
                 </View>
               </LinearGradient>
             </View>
-            <Text style={styles.appName}>{APP_INFO.NAME}</Text>
-            <Text style={styles.title}>เข้าสู่ระบบ</Text>
-            <Text style={styles.subtitle}>ยินดีต้อนรับกลับมา 👋</Text>
+            <Text style={[typography.display, styles.center, { color: colors.textStrong }]}>ยินดีต้อนรับกลับมา</Text>
+            <Text style={[typography.body, styles.center, { color: colors.textMuted }]}>
+              เข้าสู่ระบบ {APP_INFO.NAME} เพื่อช้อป สั่งตลาดสด และรับงานส่ง
+            </Text>
           </Animated.View>
 
-          {/* Animated Form Card */}
-          <Animated.View
-            style={[
-              styles.formCard,
-              {
-                transform: [{ translateY: formSlide }],
-                opacity: formOpacity,
-              },
-            ]}
-          >
-            {/* Glassmorphism shine */}
-            <View style={styles.formShine} />
+          <Animated.View entering={FadeInUp.delay(120).duration(420)}>
+            <Card3D padding={spacing.xl} gradientBorder>
+              {!!error && (
+                <View style={[styles.errorBox, { backgroundColor: colors.dangerSoft }]} accessibilityRole="alert">
+                  <Text style={[typography.bodySm, { color: colors.danger }]}>⚠️ {error}</Text>
+                </View>
+              )}
 
-            {/* Error Message */}
-            {error && (
-              <View style={styles.errorBox}>
-                <Text style={{ fontSize: 18 }}>⚠️</Text>
-                <Text style={styles.errorText}>{error}</Text>
-              </View>
-            )}
+              <AuthField
+                label="อีเมล"
+                icon="📧"
+                value={email}
+                onChangeText={(t) => {
+                  setEmail(t);
+                  setEmailError('');
+                }}
+                placeholder="example@email.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                error={emailError}
+              />
+              <AuthField
+                ref={passwordRef}
+                label="รหัสผ่าน"
+                icon="🔒"
+                value={password}
+                onChangeText={(t) => {
+                  setPassword(t);
+                  setPasswordError('');
+                }}
+                placeholder="อย่างน้อย 8 ตัวอักษร"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoComplete="password"
+                textContentType="password"
+                returnKeyType="go"
+                onSubmitEditing={submit}
+                error={passwordError}
+                right={
+                  <Pressable
+                    onPress={() => setShowPassword((v) => !v)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                    style={styles.eye}
+                  >
+                    <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+                  </Pressable>
+                }
+              />
 
-            {/* Email Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>อีเมล</Text>
-              <View style={[styles.inputContainer, emailError && styles.inputError]}>
-                <Text style={[styles.inputIcon, { fontSize: 18 }]}>📧</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="example@email.com"
-                  placeholderTextColor="#6B7280"
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    setEmailError('');
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              {emailError ? <Text style={styles.errorLabel}>{emailError}</Text> : null}
-            </View>
+              <Button3D
+                title="เข้าสู่ระบบ"
+                icon="🔓"
+                size="lg"
+                fullWidth
+                loading={isLoading}
+                loadingText="กำลังเข้าสู่ระบบ..."
+                onPress={submit}
+                style={styles.submit}
+              />
 
-            {/* Password Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>รหัสผ่าน</Text>
-              <View style={[styles.inputContainer, passwordError && styles.inputError]}>
-                <Text style={[styles.inputIcon, { fontSize: 18 }]}>🔒</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="••••••••"
-                  placeholderTextColor="#6B7280"
-                  value={password}
-                  onChangeText={(text) => {
-                    setPassword(text);
-                    setPasswordError('');
-                  }}
-                  secureTextEntry={!showPassword}
-                />
-                <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
-                  <Text style={{ fontSize: 18 }}>{showPassword ? '🙈' : '👁️'}</Text>
-                </Pressable>
-              </View>
-              {passwordError ? <Text style={styles.errorLabel}>{passwordError}</Text> : null}
-            </View>
-
-            {/* Login Button */}
-            <Pressable
-              style={[styles.loginButton, isLoading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              <LinearGradient
-                colors={['#3B82F6', '#2563EB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.loginGradient}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <>
-                    <Text style={{ fontSize: 20 }}>🔓</Text>
-                    <Text style={styles.loginButtonText}>เข้าสู่ระบบ</Text>
-                  </>
-                )}
-              </LinearGradient>
-            </Pressable>
-
-            {/* Register Link */}
-            <View style={styles.registerRow}>
-              <Text style={styles.registerText}>ยังไม่มีบัญชี? </Text>
-              <Pressable onPress={() => router.push('/register')}>
-                <Text style={styles.registerLink}>สมัครเลย</Text>
-              </Pressable>
-            </View>
+              {lineEnabled && (
+                <>
+                  <View style={styles.dividerRow}>
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>หรือ</Text>
+                    <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  </View>
+                  <Button3D
+                    title="เข้าสู่ระบบด้วย LINE"
+                    icon="💬"
+                    variant="success"
+                    size="lg"
+                    fullWidth
+                    disabled={isLoading}
+                    loading={lineLoading}
+                    onPress={loginLine}
+                  />
+                </>
+              )}
+            </Card3D>
           </Animated.View>
 
-          {/* Social Login Divider - แสดงเฉพาะเมื่อ LINE Login เปิดใช้งาน */}
-          {isLineLoginEnabled && (
-            <>
-              <View style={styles.dividerRow}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>หรือ</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* LINE Login Button */}
-              <Pressable
-                style={[styles.lineButton, (isLoading || isLineLoading) && styles.buttonDisabled]}
-                onPress={handleLineLogin}
-                disabled={isLoading || isLineLoading}
-              >
-                {isLineLoading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <>
-                    <Text style={{ fontSize: 24 }}>💬</Text>
-                    <Text style={styles.lineButtonText}>เข้าสู่ระบบด้วย LINE</Text>
-                  </>
-                )}
-              </Pressable>
-            </>
-          )}
-
-          <View style={styles.bottomSpace} />
-          </ScrollView>
-        </KeyboardAvoidingView>
+          <View style={styles.registerRow}>
+            <Text style={[typography.body, { color: colors.textMuted }]}>ยังไม่มีบัญชี?</Text>
+            <Button3D title="สมัครสมาชิก" variant="ghost" size="sm" onPress={() => router.push('/register')} />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F0F23',
-    overflow: 'hidden',
-  },
-  keyboardView: {
+  root: {
     flex: 1,
   },
-  scrollView: {
+  flex: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-  },
-  header: {
-    paddingTop: 56,
-    paddingBottom: 16,
-  },
-  backButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  backButtonGradient: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  logoWrapper: {
-    position: 'relative',
-    marginBottom: 20,
-  },
-  logoOuterGlow: {
-    position: 'absolute',
-    top: -15,
-    left: -15,
-    right: -15,
-    bottom: -15,
-    borderRadius: 40,
-    backgroundColor: '#3B82F6',
-    opacity: 0.2,
-  },
-  logoBorder: {
-    padding: 4,
-    borderRadius: 28,
-  },
-  logoInner: {
-    backgroundColor: '#0F0F23',
-    borderRadius: 24,
-    padding: 2,
-  },
-  logo: {
-    width: 90,
-    height: 90,
-    borderRadius: 22,
-  },
-  appName: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#3B82F6',
-    marginBottom: 8,
-    letterSpacing: 1,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#9CA3AF',
-    marginTop: 6,
-  },
-  formCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-    // Shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  formShine: {
+  heroBg: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 100,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    height: 300,
+    borderBottomLeftRadius: 48,
+    borderBottomRightRadius: 48,
+    opacity: 0.9,
+  },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+  },
+  back: {
+    width: 42,
+    height: 42,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    fontSize: 28,
+    lineHeight: 30,
+    fontWeight: '600',
+    marginTop: -2,
+  },
+  brand: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  logoRing: {
+    borderRadius: 48,
+    marginBottom: spacing.sm,
+  },
+  logoGradient: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    padding: 4,
+  },
+  logoInner: {
+    flex: 1,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  logo: {
+    width: 64,
+    height: 64,
+  },
+  center: {
+    textAlign: 'center',
   },
   errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(239,68,68,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.3)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
   },
-  errorText: {
-    color: '#EF4444',
-    marginLeft: 8,
-    flex: 1,
+  eye: {
+    padding: spacing.xs,
   },
-  inputGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    color: '#E5E7EB',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-  },
-  inputIcon: {
-    marginLeft: 14,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    color: '#FFFFFF',
-    fontSize: 16,
-  },
-  eyeButton: {
-    padding: 14,
-  },
-  errorLabel: {
-    color: '#EF4444',
-    fontSize: 12,
-    marginTop: 4,
-  },
-  loginButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  loginGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
+  eyeIcon: {
     fontSize: 18,
-    fontWeight: 'bold',
   },
-  registerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  registerText: {
-    color: '#9CA3AF',
-    fontSize: 14,
-  },
-  registerLink: {
-    color: '#3B82F6',
-    fontSize: 14,
-    fontWeight: 'bold',
+  submit: {
+    marginTop: spacing.xl,
   },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    gap: spacing.sm,
+    marginVertical: spacing.lg,
   },
-  dividerLine: {
+  divider: {
     flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    height: StyleSheet.hairlineWidth,
   },
-  dividerText: {
-    color: '#6B7280',
-    marginHorizontal: 16,
-  },
-  lineButton: {
+  registerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#00B900',
-    borderRadius: 14,
-    paddingVertical: 16,
-    gap: 8,
-  },
-  lineButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  bottomSpace: {
-    height: 40,
-  },
-  // Firefly Styles - หิ่งห้อย RGB
-  firefly: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fireflyGlow: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  fireflyCore: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 6,
-    elevation: 10,
+    gap: spacing.xs,
+    marginTop: spacing.xl,
   },
 });

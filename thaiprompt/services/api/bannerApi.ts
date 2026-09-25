@@ -6,11 +6,13 @@
  * - รูปแบนเนอร์ไม่มีตัวหนังสือ แอปวางข้อความไทยทับเอง (title / subtitle / cta_label)
  * - endpoint ยังไม่พร้อม / ล้ม / ไม่มีแบนเนอร์ → ใช้รูปที่แนบมากับแอป (assets/images/taladsod/banner-*.webp)
  * - ไม่ดึง /mobile/banners เดิมมาใช้แทน: ระบบเดิมอาจมีแบนเนอร์เนื้อหา MLM ที่ผิดนโยบาย Google Play
+ * - นับการแสดงผล: POST /banners/impressions {ids} (ครั้งเดียวต่อการเปิดหน้าจอ) · นับการกด: POST /banners/{id}/click
+ *   ยิงแล้วลืม (ไม่รอ ไม่แจ้ง error) และไม่นับแบนเนอร์สำรองในแอป
  */
 
 import type { ImageSourcePropType } from 'react-native';
 import { APP_INFO } from '@/config/appConfig';
-import { apiGet } from './client';
+import { apiGet, apiPost } from './client';
 import { resolveBannerCta, type BannerCtaType } from './bannerCta';
 
 export type { BannerCtaType };
@@ -159,4 +161,33 @@ export const getBanners = async (placement: BannerPlacement, force: boolean = fa
 /** ล้าง cache แบนเนอร์ (เช่น ตอน logout) */
 export const clearBannerCache = (): void => {
   cache.clear();
+};
+
+// =====================================================
+// นับการแสดงผล / การกด (ยิงแล้วลืม)
+// =====================================================
+
+/** id ของแบนเนอร์จาก server (แบนเนอร์สำรองในแอป = null → ไม่นับ) */
+export const bannerServerId = (banner: Pick<AppBanner, 'id' | 'is_fallback'>): number | null => {
+  if (banner.is_fallback) return null;
+  const n = typeof banner.id === 'number' ? banner.id : Number(banner.id);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
+/**
+ * POST /banners/impressions {ids} — ส่ง id ที่แสดงบนจอจริง ครั้งเดียวต่อการเปิดหน้าจอ
+ * (server นับ IP เดิมซ้ำได้ทุก 10 นาทีต่อแบนเนอร์) · ส่งได้ครั้งละ 1–20 id
+ */
+export const trackBannerImpressions = (ids: number[]): void => {
+  if (endpointMissing) return;
+  const unique = Array.from(new Set(ids.filter((id) => Number.isInteger(id) && id > 0))).slice(0, 20);
+  if (unique.length === 0) return;
+  apiPost('/banners/impressions', { ids: unique }, { timeout: 10000 }).catch(() => {});
+};
+
+/** POST /banners/{id}/click — กดแบนเนอร์ (server นับ IP เดิมครั้งเดียวต่อ 60 วินาที) */
+export const trackBannerClick = (banner: Pick<AppBanner, 'id' | 'is_fallback'>): void => {
+  const id = bannerServerId(banner);
+  if (endpointMissing || id === null) return;
+  apiPost(`/banners/${id}/click`, undefined, { timeout: 10000 }).catch(() => {});
 };

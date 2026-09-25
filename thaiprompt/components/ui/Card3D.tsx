@@ -4,6 +4,8 @@
  * - variant raised (ค่าเริ่มต้น) = ยกขึ้น · flat = เรียบไม่มีเงา · inset = ยุบลง (กล่องกรอก/สรุปยอด)
  * - gradientBorder = ขอบไล่เฉดทอง (true) หรือส่ง gradient เอง
  * - ส่ง onPress = การ์ดกดได้ (ย่อเล็กน้อย + เงาหด + สั่นเบา + กันกดซ้ำ)
+ * - การ์ดที่เป็นตัวเลือก: ส่ง accessibilityRole="radio" (เลือกได้อย่างเดียว) / "checkbox" (หลายอย่าง)
+ *   + accessibilityState={{ checked }} ให้ screen reader บอกว่าเลือกอยู่หรือไม่ (ขอบทองอย่างเดียวคนตาบอดไม่รู้)
  *
  * @example
  * <Card3D onPress={() => router.push('/orders')} gradientBorder>
@@ -12,7 +14,15 @@
  */
 
 import React from 'react';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type AccessibilityRole,
+  type AccessibilityState,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -55,6 +65,10 @@ export interface Card3DProps {
   haptic?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  /** บทบาทสำหรับ screen reader (ค่าเริ่มต้น button) — ตัวเลือกใช้ radio / checkbox */
+  accessibilityRole?: AccessibilityRole;
+  /** สถานะเพิ่มเติม เช่น { checked } / { selected } (disabled ใส่ให้เองจาก prop disabled) */
+  accessibilityState?: Omit<AccessibilityState, 'disabled'>;
   testID?: string;
 }
 
@@ -75,6 +89,8 @@ export const Card3D: React.FC<Card3DProps> = ({
   haptic = true,
   accessibilityLabel,
   accessibilityHint,
+  accessibilityRole = 'button',
+  accessibilityState,
   testID,
 }) => {
   const { colors, gradients, isDark } = useTheme();
@@ -160,10 +176,10 @@ export const Card3D: React.FC<Card3DProps> = ({
       onPressOut={() => {
         pressed.value = withSpring(0, { damping: 15, stiffness: 240 });
       }}
-      accessibilityRole="button"
+      accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ ...accessibilityState, disabled }}
       testID={testID}
       style={style}
     >

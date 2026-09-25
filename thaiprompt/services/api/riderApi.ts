@@ -409,9 +409,40 @@ export const getRiderDocuments = (): Promise<ApiResult<RiderDocumentsResponse>> 
 export const updateRiderPermissions = (body: RiderPermissionsBody): Promise<ApiResult<RiderPermissionsResponse>> =>
   apiPost<RiderPermissionsResponse>('/rider/permissions', body);
 
-/** ยอมรับการแชร์ตำแหน่งกับลูกค้าระหว่างส่งงาน (ต้องทำก่อนรับงานแรก — block_code CONSENT_REQUIRED) */
-export const grantLocationConsent = (): Promise<ApiResult<RiderPermissionsResponse>> =>
-  updateRiderPermissions({ location_consent: true });
+export interface RiderConsentResponse {
+  location_consent: boolean;
+  location_consent_at: string | null;
+  can_accept_jobs: boolean;
+  block_reason: RiderBlockReason | null;
+}
+
+/**
+ * POST /rider/consent {location_consent} — ยินยอมให้ลูกค้าเห็นตำแหน่งระหว่างส่งงาน (ครั้งเดียวก่อนรับงานแรก)
+ * ลำดับ: รับงาน → 403 NOT_ELIGIBLE (data.block_code CONSENT_REQUIRED) → ConsentSheet → เรียกอันนี้ → รับงานอีกครั้ง
+ * error: 409 HAS_ACTIVE_JOB (ถอนความยินยอมระหว่างมีงาน) · 403 NOT_RIDER
+ */
+export const setRiderConsent = (grant: boolean): Promise<ApiResult<RiderConsentResponse>> =>
+  apiPost<RiderConsentResponse>('/rider/consent', { location_consent: grant });
+
+/**
+ * ยอมรับการแชร์ตำแหน่งกับลูกค้าระหว่างส่งงาน (ต้องทำก่อนรับงานแรก — block_code CONSENT_REQUIRED)
+ * server รุ่นเก่าที่ยังไม่มี /rider/consent (404) → ใช้ /rider/permissions แทน
+ */
+export const grantLocationConsent = async (): Promise<ApiResult<RiderConsentResponse>> => {
+  const result = await setRiderConsent(true);
+  if (result.success || result.status !== 404 || result.code !== 'NOT_FOUND') return result;
+  const legacy = await updateRiderPermissions({ location_consent: true });
+  if (!legacy.success) return legacy;
+  return {
+    ...legacy,
+    data: {
+      location_consent: true,
+      location_consent_at: legacy.data?.location_consent_at ?? null,
+      can_accept_jobs: !!legacy.data?.can_accept_jobs,
+      block_reason: legacy.data?.block_reason ?? null,
+    },
+  };
+};
 
 /** PUT /rider/profile — เปลี่ยนยานพาหนะระหว่างมีงานได้ 409 HAS_ACTIVE_JOB */
 export const updateRiderProfile = (body: RiderProfileBody): Promise<ApiResult<{ vehicle_changed: boolean; rider: RiderStatus }>> =>

@@ -523,7 +523,7 @@ export const cleanOldFiles = async (
       const filePath = `${directory}${file}`;
       const info = await getFileInfo(filePath);
 
-      if (info && info.modificationTime) {
+      if (info && info.exists && info.modificationTime) {
         const fileAge = now - info.modificationTime * 1000;
         if (fileAge > maxAgeMs) {
           await deleteFile(filePath);
@@ -554,7 +554,7 @@ export const getDirectorySize = async (directory: string): Promise<number> => {
     for (const file of files) {
       const filePath = `${directory}${file}`;
       const info = await getFileInfo(filePath);
-      if (info && info.size) {
+      if (info && info.exists && info.size) {
         totalSize += info.size;
       }
     }

@@ -1,28 +1,15 @@
 /**
- * Settings Screen - หน้าตั้งค่า
- * UI สวยงามแบบ Glassmorphism พร้อม SVG Icons
- * ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
+ * ตั้งค่า — ธีมนวลทองคำ
+ *
+ * - ธีม (สว่าง / มืด / ตามเครื่อง) · ยืนยันตัวตน · การแจ้งเตือน · เว็บไซต์ · เกี่ยวกับแอป
+ * - ออกจากระบบ (ถามก่อน) · ลบบัญชีในแอป (PLAY-05: เช็คเงื่อนไข → คำเตือน → พิมพ์ยืนยัน → DELETE /account)
+ * - ลิงก์นโยบายชี้ไปหน้าที่มีอยู่จริงบนเว็บ (PLAY-06) · อีเมลติดต่อชุดเดียวกับเว็บ (PLAY-25)
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Alert,
-  StatusBar,
-  ActivityIndicator,
-  TextInput,
-  Linking,
-} from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-
-// ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
-// import { AnimatedBackground } from '@/components/AnimatedBackground';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
@@ -33,168 +20,108 @@ import {
   getAccountDeletionCheck,
   type DeletionCheck,
 } from '@/services/api/accountApi';
-import { ConsentSheet, openWebsite, resultHaptic } from '@/components/ui';
-import { useTheme, spacing, radii, typography } from '@/theme';
-
-// Import SVG Icons
 import {
-  Icon,
-  ArrowBackIcon,
-  SunIcon,
-  MoonIcon,
-  PhoneIcon,
-  GlobeIcon,
-  ShieldCheckIcon,
-  BellIcon,
-  MailIcon,
-  FingerprintIcon,
-  LocationIcon,
-  NavigationIcon,
-  FileTextIcon,
-  ShieldIcon,
-  StarIcon,
-  InfoIcon,
-  LogOutIcon,
-  TrashIcon,
-  EditIcon,
-  ChevronRightIcon,
-  CheckCircleIcon,
-  SettingsIcon,
-} from '@/components/icons';
+  Button3D,
+  Card3D,
+  ConsentSheet,
+  Screen,
+  SectionHeader,
+  openWebsite,
+  resultHaptic,
+  selectionHaptic,
+} from '@/components/ui';
+import { useTheme, radii, spacing, toneColors, typography, type Tone } from '@/theme';
 
-// Setting Item Component - ใช้ SVG Icons
-const SettingItem = ({
-  icon: IconComponent,
-  iconColor,
+// =====================================================
+// แถวตั้งค่า (อยู่ในการ์ดกลุ่มเดียวกัน คั่นด้วยเส้นบาง)
+// =====================================================
+
+const SettingRow = ({
+  icon,
+  tone = 'gold',
   title,
   subtitle,
   onPress,
-  rightElement,
-  isDark,
+  right,
+  danger = false,
+  last = false,
 }: {
-  icon?: React.FC<{ size?: number; color?: string }>;
-  iconColor?: string;
+  icon: string;
+  tone?: Tone;
   title: string;
   subtitle?: string;
   onPress?: () => void;
-  rightElement?: React.ReactNode;
-  isDark: boolean;
-}) => (
-  <Pressable
-    onPress={onPress}
-    style={({ pressed }) => [
-      styles.settingItem,
-      {
-        backgroundColor: isDark
-          ? pressed ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'
-          : pressed ? '#F3F4F6' : '#FFFFFF',
-        transform: [{ scale: pressed ? 0.98 : 1 }],
-      },
-    ]}
-  >
-    <LinearGradient
-      colors={iconColor ? [`${iconColor}30`, `${iconColor}10`] : ['rgba(212,175,55,0.2)', 'rgba(212,175,55,0.1)']}
-      style={styles.iconContainer}
-    >
-      {IconComponent && <IconComponent size={22} color={iconColor || '#D4AF37'} />}
-    </LinearGradient>
-    <View style={styles.settingContent}>
-      <Text style={[styles.settingTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
-        {title}
-      </Text>
-      {subtitle && (
-        <Text style={[styles.settingSubtitle, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-          {subtitle}
-        </Text>
-      )}
-    </View>
-    {rightElement || (
-      <ChevronRightIcon size={20} color={isDark ? '#666666' : '#999999'} />
-    )}
-  </Pressable>
-);
-
-// Section Header
-const SectionHeader = ({ title, isDark }: { title: string; isDark: boolean }) => (
-  <Text style={[styles.sectionHeader, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-    {title}
-  </Text>
-);
-
-// Theme Option - ใช้ SVG Icons
-const ThemeOption = ({
-  mode,
-  currentMode,
-  IconComponent,
-  title,
-  description,
-  onPress,
-  isDark,
-}: {
-  mode: 'light' | 'dark' | 'system';
-  currentMode: string;
-  IconComponent: React.FC<{ size?: number; color?: string }>;
-  title: string;
-  description: string;
-  onPress: () => void;
-  isDark: boolean;
+  /** undefined = ลูกศร (ถ้ากดได้) · null = ไม่มีอะไรด้านขวา */
+  right?: React.ReactNode;
+  danger?: boolean;
+  last?: boolean;
 }) => {
-  const isSelected = currentMode === mode;
-
+  const { colors } = useTheme();
+  const t = toneColors(danger ? 'danger' : tone, colors);
+  const body = (
+    <View style={[styles.row, !last && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider }]}>
+      <View style={[styles.rowIcon, { backgroundColor: t.bg }]}>
+        <Text style={styles.rowEmoji}>{icon}</Text>
+      </View>
+      <View style={styles.flex}>
+        <Text style={[typography.bodyStrong, { color: danger ? colors.danger : colors.textStrong }]}>{title}</Text>
+        {!!subtitle && <Text style={[typography.caption, { color: colors.textMuted }]}>{subtitle}</Text>}
+      </View>
+      {right !== undefined ? right : onPress ? <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text> : null}
+    </View>
+  );
+  if (!onPress) return body;
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.themeOption,
-        {
-          backgroundColor: isSelected
-            ? isDark
-              ? 'rgba(59, 130, 246, 0.2)'
-              : 'rgba(59, 130, 246, 0.1)'
-            : isDark
-            ? 'rgba(255,255,255,0.05)'
-            : '#FFF',
-          borderColor: isSelected
-            ? '#3B82F6'
-            : isDark
-            ? 'rgba(255,255,255,0.1)'
-            : '#E5E7EB',
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        },
-      ]}
+      accessibilityRole="button"
+      accessibilityLabel={subtitle ? `${title} ${subtitle}` : title}
+      style={({ pressed }) => [{ opacity: pressed ? 0.65 : 1 }]}
     >
-      <LinearGradient
-        colors={isSelected
-          ? mode === 'dark'
-            ? ['#7B2CBF', '#5B21B6']
-            : mode === 'light'
-            ? ['#FFB300', '#F59E0B']
-            : ['#3B82F6', '#2563EB']
-          : isDark
-          ? ['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']
-          : ['#F3F4F6', '#E5E7EB']
-        }
-        style={styles.themeIconContainer}
-      >
-        <IconComponent size={24} color={isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'} />
-      </LinearGradient>
-      <View style={styles.themeContent}>
-        <Text
-          style={[
-            styles.themeTitle,
-            { color: isSelected ? '#3B82F6' : isDark ? '#FFFFFF' : '#1F2937' },
-          ]}
-        >
-          {title}
-        </Text>
-        <Text style={[styles.themeDescription, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
-          {description}
-        </Text>
-      </View>
-      {isSelected && (
-        <CheckCircleIcon size={22} color="#3B82F6" />
-      )}
+      {body}
     </Pressable>
+  );
+};
+
+const THEME_OPTIONS: Array<{ mode: 'light' | 'dark' | 'system'; icon: string; title: string; desc: string }> = [
+  { mode: 'light', icon: '☀️', title: 'สว่าง', desc: 'อ่านง่ายกลางแดด' },
+  { mode: 'dark', icon: '🌙', title: 'มืด', desc: 'ถนอมสายตาตอนกลางคืน' },
+  { mode: 'system', icon: '📱', title: 'ตามเครื่อง', desc: 'เปลี่ยนตามการตั้งค่าของเครื่อง' },
+];
+
+const ThemePicker = ({ current, onChange }: { current: string; onChange: (m: 'light' | 'dark' | 'system') => void }) => {
+  const { colors, gradients } = useTheme();
+  return (
+    <View style={styles.themeRow} accessibilityRole="radiogroup">
+      {THEME_OPTIONS.map((opt) => {
+        const selected = current === opt.mode;
+        return (
+          <Pressable
+            key={opt.mode}
+            onPress={() => {
+              selectionHaptic();
+              onChange(opt.mode);
+            }}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            accessibilityLabel={`ธีม${opt.title}`}
+            style={({ pressed }) => [styles.themeOption, { opacity: pressed ? 0.8 : 1 }]}
+          >
+            {selected ? (
+              <LinearGradient colors={gradients.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.themeInner}>
+                <Text style={styles.themeIcon}>{opt.icon}</Text>
+                <Text style={[typography.bodyStrong, { color: colors.textOnGold }]}>{opt.title}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={[styles.themeInner, { backgroundColor: colors.inset, borderColor: colors.border, borderWidth: 1 }]}>
+                <Text style={styles.themeIcon}>{opt.icon}</Text>
+                <Text style={[typography.bodyStrong, { color: colors.text }]}>{opt.title}</Text>
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
   );
 };
 
@@ -287,10 +214,10 @@ const deleteStyles = StyleSheet.create({
 type DeleteStep = 'closed' | 'warning' | 'confirm';
 
 export default function SettingsScreen() {
-  const { resolvedTheme, themeMode, setThemeMode } = useAppStore();
+  const themeMode = useAppStore((s) => s.themeMode);
+  const setThemeMode = useAppStore((s) => s.setThemeMode);
   const { user, isAuthenticated, logout, clearSession } = useAuthStore();
-  const isDark = resolvedTheme === 'dark';
-  const { colors } = useTheme();
+  const { colors, gradients } = useTheme();
 
   // ลบบัญชี (PLAY-05)
   const [deleteStep, setDeleteStep] = useState<DeleteStep>('closed');
@@ -307,23 +234,6 @@ export default function SettingsScreen() {
       mountedRef.current = false;
     };
   }, []);
-
-  // Handlers
-  const handleKYC = () => {
-    router.push('/kyc');
-  };
-
-  const handleLanguageChange = () => {
-    Alert.alert(
-      'เลือกภาษา',
-      'ขณะนี้รองรับเฉพาะภาษาไทย',
-      [
-        { text: 'ไทย (เริ่มต้น)', onPress: () => {} },
-        { text: 'English (เร็วๆ นี้)', onPress: () => {} },
-        { text: 'ยกเลิก', style: 'cancel' },
-      ]
-    );
-  };
 
   // PLAY-06: ลิงก์นโยบายชี้ไปหน้าที่มีอยู่จริงบนเว็บ (/privacy-policy, /terms-of-service)
   const handlePrivacyPolicy = () => {
@@ -422,222 +332,95 @@ export default function SettingsScreen() {
     confirmText.trim() === deletionCheck.confirm_text &&
     (!deletionCheck.requires_password || password.length > 0);
 
+  const themeDesc = THEME_OPTIONS.find((o) => o.mode === themeMode)?.desc || '';
+
   return (
-    <View style={styles.container}>
-      {/* Gradient Background แทน AnimatedBackground ชั่วคราว */}
-      <LinearGradient
-        colors={isDark ? ['#0F0F23', '#1a1a2e', '#16213e'] : ['#F9FAFB', '#F3F4F6', '#E5E7EB']}
-        style={StyleSheet.absoluteFill}
-      />
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-
-        {/* Header with Glassmorphism */}
-        <BlurView
-          intensity={isDark ? 40 : 60}
-          tint={isDark ? 'dark' : 'light'}
-          style={[styles.header, { borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#E5E7EB' }]}
-        >
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <ArrowBackIcon size={24} color={isDark ? '#FFF' : '#1F2937'} />
-          </Pressable>
-          <View style={styles.headerTitleRow}>
-            <SettingsIcon size={20} color={isDark ? '#FFF' : '#1F2937'} />
-            <Text style={[styles.headerTitle, { color: isDark ? '#FFF' : '#1F2937' }]}>
-              ตั้งค่า
-            </Text>
-          </View>
-          <View style={styles.placeholder} />
-        </BlurView>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Profile Header */}
-        {isAuthenticated && user && (
-          <View style={styles.profileCard}>
-            <LinearGradient
-              colors={isDark ? ['#7B2CBF', '#3B82F6'] : ['#3B82F6', '#60A5FA']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.profileGradient}
-            >
-              {/* ⭐ เพิ่ม null check เพื่อป้องกัน crash */}
-              <View style={styles.avatarContainer}>
-                <Text style={styles.avatarText}>
-                  {getAvatarInitial(user?.name)}
+    <Screen title="ตั้งค่า">
+      {/* ---------- โปรไฟล์ ---------- */}
+      {isAuthenticated && user && (
+        <Card3D gradientBorder padding={0} style={styles.block}>
+          <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.profile}>
+            <View style={[styles.avatar, { backgroundColor: colors.card }]}>
+              <Text style={[styles.avatarText, { color: colors.goldDeep }]}>{getAvatarInitial(user?.name)}</Text>
+            </View>
+            <View style={styles.flex}>
+              <Text style={[typography.h2, { color: colors.textStrong }]} numberOfLines={1}>
+                {user?.name || 'ไม่ระบุชื่อ'}
+              </Text>
+              {!!user?.email && (
+                <Text style={[typography.bodySm, { color: colors.textMuted }]} numberOfLines={1}>
+                  {user.email}
                 </Text>
-              </View>
-              <Text style={styles.profileName}>{user?.name || 'ไม่ระบุชื่อ'}</Text>
-              <Text style={styles.profileEmail}>{user?.email || ''}</Text>
-              <Pressable
-                onPress={() => router.push('/(tabs)/profile')}
-                style={({ pressed }) => [
-                  styles.editProfileButton,
-                  { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }
-                ]}
-              >
-                <EditIcon size={16} color="#FFFFFF" />
-                <Text style={styles.editProfileText}>แก้ไขโปรไฟล์</Text>
-              </Pressable>
-            </LinearGradient>
-          </View>
+              )}
+            </View>
+            <Button3D title="แก้ไข" icon="✏️" size="sm" variant="secondary" onPress={() => router.push('/edit-profile')} />
+          </LinearGradient>
+        </Card3D>
+      )}
+
+      {/* ---------- ธีม ---------- */}
+      <SectionHeader title="ธีมและการแสดงผล" icon="🎨" subtitle={themeDesc} />
+      <Card3D padding={spacing.md} style={styles.block}>
+        <ThemePicker current={themeMode} onChange={setThemeMode} />
+        <SettingRow icon="🇹🇭" title="ภาษา" subtitle="ภาษาไทย" right={null} last />
+      </Card3D>
+
+      {/* ---------- บัญชี / การแจ้งเตือน ---------- */}
+      <SectionHeader title={isAuthenticated ? 'บัญชี' : 'การแจ้งเตือน'} icon={isAuthenticated ? '👤' : '🔔'} />
+      <Card3D padding={spacing.md} style={styles.block}>
+        {isAuthenticated && (
+          <SettingRow icon="🛡️" tone="success" title="ยืนยันตัวตน (KYC)" subtitle="ยืนยันก่อนถอนเงินเข้าบัญชี" onPress={() => router.push('/kyc')} />
         )}
-
-        {/* Theme Settings */}
-        <SectionHeader title="🎨 ธีมและการแสดงผล" isDark={isDark} />
-        <View style={[styles.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFF' }]}>
-          <Text style={[styles.cardTitle, { color: isDark ? '#FFFFFF' : '#1F2937' }]}>
-            เลือกธีม
-          </Text>
-
-          <ThemeOption
-            mode="light"
-            currentMode={themeMode}
-            IconComponent={SunIcon}
-            title="โหมดสว่าง"
-            description="สีสันสดใส เหมาะสำหรับกลางวัน"
-            onPress={() => setThemeMode('light')}
-            isDark={isDark}
-          />
-
-          <ThemeOption
-            mode="dark"
-            currentMode={themeMode}
-            IconComponent={MoonIcon}
-            title="โหมดมืด"
-            description="ธีมมืดถนอมสายตา"
-            onPress={() => setThemeMode('dark')}
-            isDark={isDark}
-          />
-
-          <ThemeOption
-            mode="system"
-            currentMode={themeMode}
-            IconComponent={PhoneIcon}
-            title="ตามระบบ"
-            description="เปลี่ยนตามการตั้งค่าของอุปกรณ์"
-            onPress={() => setThemeMode('system')}
-            isDark={isDark}
-          />
-        </View>
-
-        <SettingItem
-          icon={GlobeIcon}
-          iconColor="#f093fb"
-          title="ภาษา"
-          subtitle="ไทย"
-          onPress={handleLanguageChange}
-          isDark={isDark}
-        />
-
-        {/* Account Settings */}
-        <SectionHeader title="👤 บัญชี" isDark={isDark} />
-        <SettingItem
-          icon={ShieldCheckIcon}
-          iconColor="#10B981"
-          title="ยืนยันตัวตน (KYC)"
-          subtitle="ยืนยันตัวตนก่อนถอนเงินเข้าบัญชี"
-          onPress={handleKYC}
-          isDark={isDark}
-        />
-
-        {/* Notifications — ตั้งค่าจริงอยู่หน้า notification-settings
-            (PLAY-13: ถอด "แชร์ตำแหน่งให้แอดมิน" ออก — ตำแหน่งใช้เฉพาะไรเดอร์ระหว่างส่งงาน) */}
-        <SectionHeader title="🔔 การแจ้งเตือน" isDark={isDark} />
-        <SettingItem
-          icon={BellIcon}
-          iconColor="#FF6B6B"
-          title="ตั้งค่าการแจ้งเตือน"
-          subtitle="เลือกประเภทการแจ้งเตือนที่อยากได้รับ"
+        <SettingRow
+          icon="🔔"
+          tone="warning"
+          title="การแจ้งเตือน"
+          subtitle="เลือกเรื่องที่อยากได้รับแจ้ง"
           onPress={() => router.push('/notification-settings')}
-          isDark={isDark}
+          last={!isAuthenticated}
         />
-
-        {/* Website */}
         {isAuthenticated && (
-          <>
-            <SectionHeader title="🌐 เว็บไซต์" isDark={isDark} />
-            <SettingItem
-              icon={GlobeIcon}
-              iconColor="#E6B347"
-              title="จัดการบนเว็บไซต์"
-              subtitle="เปิดเว็บไซต์ในเบราว์เซอร์ ล็อกอินให้อัตโนมัติ"
-              onPress={() => {
-                openWebsite('/user').catch(() => {});
-              }}
-              isDark={isDark}
-            />
-          </>
+          <SettingRow
+            icon="🌐"
+            title="จัดการบนเว็บไซต์"
+            subtitle="เปิดเว็บไซต์ เข้าสู่ระบบให้อัตโนมัติ"
+            onPress={() => {
+              openWebsite('/user').catch(() => {});
+            }}
+            last
+          />
         )}
+      </Card3D>
 
-        {/* About */}
-        <SectionHeader title="ℹ️ เกี่ยวกับ" isDark={isDark} />
-        <SettingItem
-          icon={FileTextIcon}
-          iconColor="#3B82F6"
-          title="นโยบายความเป็นส่วนตัว"
-          onPress={handlePrivacyPolicy}
-          isDark={isDark}
-        />
-        <SettingItem
-          icon={ShieldIcon}
-          iconColor="#8B5CF6"
-          title="ข้อกำหนดการใช้งาน"
-          onPress={handleTermsOfService}
-          isDark={isDark}
-        />
-        <SettingItem
-          icon={MailIcon}
-          iconColor="#4ECDC4"
-          title="ติดต่อทีมงาน"
-          subtitle={APP_INFO.SUPPORT_EMAIL}
-          onPress={handleContactSupport}
-          isDark={isDark}
-        />
-        <SettingItem
-          icon={StarIcon}
-          iconColor="#FFD700"
-          title="ให้คะแนนแอพ"
-          onPress={handleRateApp}
-          isDark={isDark}
-        />
-        <SettingItem
-          icon={InfoIcon}
-          iconColor="#6B7280"
-          title="เวอร์ชัน"
-          subtitle={APP_INFO.VERSION || '1.1.0'}
-          isDark={isDark}
-          rightElement={<View />}
-        />
+      {/* ---------- เกี่ยวกับ ---------- */}
+      <SectionHeader title="เกี่ยวกับ" icon="ℹ️" />
+      <Card3D padding={spacing.md} style={styles.block}>
+        <SettingRow icon="📄" tone="info" title="นโยบายความเป็นส่วนตัว" onPress={handlePrivacyPolicy} />
+        <SettingRow icon="📋" tone="info" title="ข้อกำหนดการใช้งาน" onPress={handleTermsOfService} />
+        <SettingRow icon="💬" tone="gold" title="ช่วยเหลือ / แจ้งปัญหา" subtitle="คุยกับทีมงานในแอป" onPress={() => router.push('/support')} />
+        <SettingRow icon="✉️" tone="neutral" title="อีเมลทีมงาน" subtitle={APP_INFO.SUPPORT_EMAIL} onPress={handleContactSupport} />
+        <SettingRow icon="⭐" tone="warning" title="ให้คะแนนแอป" onPress={handleRateApp} />
+        <SettingRow icon="📦" tone="neutral" title="เวอร์ชัน" subtitle={APP_INFO.VERSION || '-'} right={null} last />
+      </Card3D>
 
-        {/* Account Actions */}
-        {isAuthenticated && (
-          <>
-            <SectionHeader title="⚙️ จัดการบัญชี" isDark={isDark} />
-            <SettingItem
-              icon={LogOutIcon}
-              iconColor="#FF6B6B"
-              title="ออกจากระบบ"
-              onPress={handleLogout}
-              isDark={isDark}
-            />
-            <SettingItem
-              icon={TrashIcon}
-              iconColor="#DC143C"
+      {/* ---------- จัดการบัญชี ---------- */}
+      {isAuthenticated && (
+        <>
+          <SectionHeader title="จัดการบัญชี" icon="⚙️" />
+          <Card3D padding={spacing.md} style={styles.block}>
+            <SettingRow icon="🚪" title="ออกจากระบบ" onPress={handleLogout} danger />
+            <SettingRow
+              icon="🗑️"
               title="ลบบัญชี"
-              subtitle="ลบบัญชีและข้อมูลส่วนตัวของคุณอย่างถาวร"
+              subtitle="ลบบัญชีและข้อมูลส่วนตัวถาวร"
               onPress={handleDeleteAccount}
-              rightElement={
-                isCheckingDeletion ? <ActivityIndicator size="small" color="#DC143C" /> : undefined
-              }
-              isDark={isDark}
+              right={isCheckingDeletion ? <ActivityIndicator size="small" color={colors.danger} /> : undefined}
+              danger
+              last
             />
-          </>
-        )}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
+          </Card3D>
+        </>
+      )}
 
       {/* PLAY-05: ลบบัญชีในแอป — คำเตือน → พิมพ์ยืนยัน */}
       {deletionCheck && (
@@ -713,172 +496,71 @@ export default function SettingsScreen() {
           ) : null}
         </ConsentSheet>
       )}
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
     flex: 1,
   },
-  header: {
+  block: {
+    marginBottom: spacing.xl,
+  },
+  profile: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.xl,
   },
-  backButton: {
-    padding: 8,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  placeholder: {
-    width: 40,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  profileCard: {
-    marginBottom: 24,
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  profileGradient: {
-    padding: 24,
-    alignItems: 'center',
-  },
-  avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
   },
-  profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 4,
-  },
-  profileEmail: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 16,
-  },
-  editProfileButton: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-    gap: 6,
+    gap: spacing.md,
+    minHeight: 56,
+    paddingVertical: spacing.sm,
   },
-  editProfileText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 16,
-    marginBottom: 12,
-    marginLeft: 4,
-  },
-  settingItem: {
-    flexDirection: 'row',
+  rowIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
   },
-  settingContent: {
-    flex: 1,
+  rowEmoji: {
+    fontSize: 18,
   },
-  settingTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+  chevron: {
+    fontSize: 26,
+    lineHeight: 28,
   },
-  settingSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  card: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
+  themeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
   themeOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-  },
-  themeIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  themeContent: {
     flex: 1,
   },
-  themeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  themeDescription: {
-    fontSize: 12,
-  },
-  gpsStatusCard: {
-    flexDirection: 'row',
+  themeInner: {
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 8,
+    gap: spacing.xs,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
   },
-  gpsStatusText: {
-    fontSize: 13,
-    fontWeight: '500',
+  themeIcon: {
+    fontSize: 22,
   },
 });

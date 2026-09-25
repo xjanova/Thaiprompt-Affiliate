@@ -9,7 +9,8 @@
  */
 
 import NetInfo from '@react-native-community/netinfo';
-import { api } from './api';
+// services/api.ts ส่งออก axios instance ชื่อ apiClient (ไม่มี export ชื่อ api)
+import { apiClient as api } from './api';
 import { API_ENDPOINTS } from '../constants';
 import * as SecureStore from 'expo-secure-store';
 

@@ -1,23 +1,13 @@
 /**
- * Privacy Policy Screen - นโยบายความเป็นส่วนตัว
- * แสดงนโยบายการเก็บรวบรวมและใช้ข้อมูลส่วนบุคคล
+ * นโยบายความเป็นส่วนตัว — ธีมนวลทองคำ (จัดหน้าด้วย LegalDocument)
+ * ฉบับทางการอยู่บนเว็บไซต์ (APP_INFO.PRIVACY_URL)
  */
 
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  StatusBar,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { useAppStore } from '@/stores/appStore';
+import { APP_INFO } from '@/config/appConfig';
+import { LegalDocument, type LegalSection } from '@/components/legal/LegalDocument';
 
-// เนื้อหานโยบายความเป็นส่วนตัว
-const PRIVACY_SECTIONS = [
+const PRIVACY_SECTIONS: LegalSection[] = [
   {
     title: 'บทนำ',
     icon: '📖',
@@ -151,237 +141,16 @@ https://main.thaiprompt.online/privacy-policy`,
 ];
 
 export default function PrivacyScreen() {
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
-
   return (
-    <View style={[styles.container, !isDark && styles.containerLight]}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={isDark ? '#0F172A' : '#7C3AED'}
-      />
-
-      {/* Header */}
-      <LinearGradient
-        colors={isDark ? ['#5B21B6', '#6D28D9'] : ['#7C3AED', '#8B5CF6']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonText}>‹</Text>
-          </Pressable>
-          <Text style={styles.headerTitle}>นโยบายความเป็นส่วนตัว</Text>
-          <View style={styles.placeholder} />
-        </View>
-      </LinearGradient>
-
-      {/* Content */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Intro */}
-        <View style={[styles.introCard, !isDark && styles.cardLight]}>
-          <Text style={{ fontSize: 32, textAlign: 'center' }}>🔐</Text>
-          <Text style={[styles.introTitle, !isDark && styles.textDark]}>
-            นโยบายความเป็นส่วนตัว
-          </Text>
-          <Text style={[styles.introSubtitle, !isDark && styles.textMuted]}>
-            Privacy Policy
-          </Text>
-          <Text style={[styles.introDate, !isDark && styles.textMuted]}>
-            อัปเดตล่าสุด: 1 มกราคม 2568
-          </Text>
-        </View>
-
-        {/* PDPA Badge */}
-        <View style={[styles.pdpaBadge, !isDark && styles.pdpaBadgeLight]}>
-          <Text style={{ fontSize: 20 }}>🛡️</Text>
-          <Text style={[styles.pdpaText, !isDark && styles.textDark]}>
-            สอดคล้องกับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)
-          </Text>
-        </View>
-
-        {/* Privacy Sections */}
-        {PRIVACY_SECTIONS.map((section, index) => (
-          <View
-            key={index}
-            style={[styles.sectionCard, !isDark && styles.cardLight]}
-          >
-            <View style={styles.sectionHeader}>
-              <Text style={{ fontSize: 24 }}>{section.icon}</Text>
-              <Text style={[styles.sectionTitle, !isDark && styles.textDark]}>
-                {section.title}
-              </Text>
-            </View>
-            <Text style={[styles.sectionContent, !isDark && styles.textMuted]}>
-              {section.content}
-            </Text>
-          </View>
-        ))}
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, !isDark && styles.textMuted]}>
-            ความเป็นส่วนตัวของท่านเป็นสิ่งสำคัญสำหรับเรา
-          </Text>
-          <Text style={[styles.footerSubtext, !isDark && styles.textMuted]}>
-            © 2024-2025 Thaiprompt Co., Ltd. All rights reserved.
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+    <LegalDocument
+      title="ความเป็นส่วนตัว"
+      icon="🔐"
+      heading="นโยบายความเป็นส่วนตัว"
+      dateLabel="อัปเดตล่าสุด: 1 มกราคม 2568"
+      badge={{ icon: '🛡️', text: 'สอดคล้องกับ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)' }}
+      sections={PRIVACY_SECTIONS}
+      footer={'ความเป็นส่วนตัวของท่านเป็นสิ่งสำคัญสำหรับเรา\n© Thaiprompt Co., Ltd.'}
+      webUrl={APP_INFO.PRIVACY_URL}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-  },
-  containerLight: {
-    backgroundColor: '#F8FAFC',
-  },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginTop: -2,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  placeholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  introCard: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.2)',
-  },
-  cardLight: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E2E8F0',
-  },
-  introTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 12,
-  },
-  introSubtitle: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
-  },
-  introDate: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 8,
-  },
-  textDark: {
-    color: '#1E293B',
-  },
-  textMuted: {
-    color: '#64748B',
-  },
-  pdpaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
-  },
-  pdpaBadgeLight: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-  },
-  pdpaText: {
-    fontSize: 13,
-    color: '#10B981',
-    marginLeft: 10,
-    flex: 1,
-    fontWeight: '500',
-  },
-  sectionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 12,
-  },
-  sectionContent: {
-    fontSize: 14,
-    color: '#94A3B8',
-    lineHeight: 22,
-  },
-  footer: {
-    marginTop: 24,
-    padding: 16,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#94A3B8',
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  footerSubtext: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 8,
-  },
-});

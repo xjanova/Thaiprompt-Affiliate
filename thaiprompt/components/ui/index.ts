@@ -44,3 +44,6 @@ export type { ScreenProps, ScreenHeaderProps } from './Screen';
 
 export { usePressGuard } from './usePressGuard';
 export { tapHaptic, selectionHaptic, resultHaptic } from './haptics';
+
+export { LiveMap, openInGoogleMaps } from './LiveMap';
+export type { LiveMapProps, LiveMapMarker, LiveMapMarkerKind } from './LiveMap';

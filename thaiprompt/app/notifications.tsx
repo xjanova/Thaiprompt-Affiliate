@@ -1,136 +1,122 @@
 /**
- * Notifications Screen - หน้าการแจ้งเตือน
- * แสดงรายการการแจ้งเตือนทั้งหมดของผู้ใช้
+ * การแจ้งเตือน — ธีมนวลทองคำ
+ *
+ * - แท็บ "ทั้งหมด / ยังไม่อ่าน" · แตะ = อ่านแล้ว + เปิดหน้าที่เกี่ยวข้อง (ผ่าน allowlist เดียวกับ push)
+ * - กดค้าง = ลบ (ถามก่อน) · "อ่านทั้งหมด" ด้านบน
+ * - แจ้งเตือนระบบเครือข่าย (คอมมิชชั่น/สายงาน/rank) ไม่แสดงในแอป (นโยบาย Google Play) — ดูได้บนเว็บ
+ * - โหลดไม่สำเร็จ = หน้าลองใหม่ (ไม่ค้างหน้าว่าง) · ออกจากหน้าระหว่างโหลดไม่ setState
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  Alert,
-  StatusBar,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
-import { useAppStore } from '@/stores/appStore';
 import {
-  getNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
   deleteNotification,
-  Notification,
+  getNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  type Notification,
 } from '@/services/api';
 import { isRestrictedNotification } from '@/utils/storePolicy';
+import { routeForNotification } from '@/utils/notificationRouting';
+import { Button3D, Card3D, Chip, EmptyState, Screen, resultHaptic } from '@/components/ui';
+import { useTheme, radii, spacing, toneColors, typography, type Tone } from '@/theme';
 
-// =====================================================
-// Type Icons
-// =====================================================
-
-const TYPE_ICONS: Record<string, { emoji: string; color: string }> = {
-  general: { emoji: '🔔', color: '#3B82F6' },
-  order: { emoji: '🧾', color: '#10B981' },
-  rider: { emoji: '🚴', color: '#06B6D4' },
-  wallet: { emoji: '💰', color: '#8B5CF6' },
-  promotion: { emoji: '🎁', color: '#F59E0B' },
-  system: { emoji: '⚙️', color: '#6B7280' },
-  ticket: { emoji: '💬', color: '#EC4899' },
+const TYPE_LOOK: Record<string, { emoji: string; tone: Tone }> = {
+  general: { emoji: '🔔', tone: 'gold' },
+  order: { emoji: '🧾', tone: 'success' },
+  shop_order: { emoji: '🧾', tone: 'success' },
+  fresh_market_order: { emoji: '🥬', tone: 'success' },
+  fresh_market_shop: { emoji: '🛒', tone: 'warning' },
+  fresh_market_shop_open: { emoji: '🛒', tone: 'success' },
+  delivery_update: { emoji: '🛵', tone: 'info' },
+  rider: { emoji: '🛵', tone: 'info' },
+  rider_job_offer: { emoji: '🛵', tone: 'info' },
+  rider_job_update: { emoji: '🛵', tone: 'info' },
+  wallet: { emoji: '👛', tone: 'gold' },
+  promotion: { emoji: '🎁', tone: 'warning' },
+  system: { emoji: '⚙️', tone: 'neutral' },
+  ticket: { emoji: '💬', tone: 'info' },
 };
 
-// =====================================================
-// Notification Item
-// =====================================================
+type Filter = 'all' | 'unread';
 
-interface NotificationItemProps {
+/** path ที่แจ้งเตือนนี้พาไป (null = ไม่มีหน้าเฉพาะ) */
+const targetOf = (n: Notification): string | null => {
+  const data = { ...(n.data || {}) } as Record<string, unknown>;
+  if (!data.type) data.type = n.type;
+  if (!data.url && n.actionUrl) data.url = n.actionUrl;
+  const path = routeForNotification(data);
+  return path === '/notifications' ? null : path;
+};
+
+const NotificationRow: React.FC<{
   item: Notification;
-  isDark: boolean;
-  onPress: () => void;
-  onDelete: () => void;
-}
-
-const NotificationItem = ({ item, isDark, onPress, onDelete }: NotificationItemProps) => {
-  const typeInfo = TYPE_ICONS[item.type] || TYPE_ICONS.general;
+  onPress: () => unknown;
+  onLongPress: () => void;
+}> = ({ item, onPress, onLongPress }) => {
+  const { colors } = useTheme();
+  const look = TYPE_LOOK[item.type] || TYPE_LOOK.general;
+  const t = toneColors(look.tone, colors);
+  const unread = !item.isRead;
 
   return (
-    <Pressable
+    <Card3D
       onPress={onPress}
-      onLongPress={() => {
-        Alert.alert(
-          'ลบการแจ้งเตือน',
-          'คุณต้องการลบการแจ้งเตือนนี้หรือไม่?',
-          [
-            { text: 'ยกเลิก', style: 'cancel' },
-            { text: 'ลบ', style: 'destructive', onPress: onDelete },
-          ]
-        );
-      }}
-      className={`mb-3 p-4 rounded-2xl ${
-        isDark ? 'bg-gray-800' : 'bg-white'
-      } ${!item.isRead ? 'border-l-4 border-primary-500' : ''}`}
+      onLongPress={onLongPress}
+      padding={spacing.md}
+      radius={radii.lg}
+      shadow={unread ? 'md' : 'sm'}
+      gradientBorder={unread}
+      style={styles.card}
+      accessibilityLabel={`${unread ? 'ยังไม่อ่าน ' : ''}${item.title} ${item.body}`}
+      accessibilityHint="แตะเพื่อเปิด กดค้างเพื่อลบ"
     >
-      <View className="flex-row">
-        {/* Icon */}
-        <View
-          className="w-12 h-12 rounded-full items-center justify-center mr-3"
-          style={{ backgroundColor: typeInfo.color + '20' }}
-        >
-          <Text style={{ fontSize: 24 }}>{typeInfo.emoji}</Text>
+      <View style={styles.row}>
+        <View style={[styles.icon, { backgroundColor: t.bg }]}>
+          <Text style={styles.emoji}>{look.emoji}</Text>
         </View>
-
-        {/* Content */}
-        <View className="flex-1">
-          <View className="flex-row items-start justify-between">
+        <View style={styles.flex}>
+          <View style={styles.titleRow}>
             <Text
-              className={`flex-1 font-bold ${isDark ? 'text-white' : 'text-gray-800'} ${
-                !item.isRead ? '' : 'opacity-70'
-              }`}
               numberOfLines={1}
+              style={[typography.bodyStrong, styles.flex, { color: unread ? colors.textStrong : colors.textMuted }]}
             >
               {item.title}
             </Text>
-            {!item.isRead && (
-              <View className="w-2 h-2 rounded-full bg-primary-500 ml-2 mt-2" />
-            )}
+            {unread && <View style={[styles.dot, { backgroundColor: colors.gold }]} />}
           </View>
-
-          <Text
-            className={`mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'} ${
-              !item.isRead ? '' : 'opacity-70'
-            }`}
-            numberOfLines={2}
-          >
-            {item.body}
-          </Text>
-
-          <Text className="text-gray-400 text-xs mt-2">
-            {item.timeAgo}
+          {!!item.body && (
+            <Text numberOfLines={3} style={[typography.bodySm, { color: unread ? colors.text : colors.textMuted }]}>
+              {item.body}
+            </Text>
+          )}
+          <Text style={[typography.micro, styles.time, { color: colors.textFaint }]}>
+            {item.timeAgo || item.typeText || ''}
           </Text>
         </View>
       </View>
-    </Pressable>
+    </Card3D>
   );
 };
 
-// =====================================================
-// Main Notifications Screen
-// =====================================================
-
 export default function NotificationsScreen() {
-  const { isAuthenticated } = useAuthStore();
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
+  const { colors } = useTheme();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [items, setItems] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [filter, setFilter] = useState<Filter>('all');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const mountedRef = useRef(true);
+  const requestIdRef = useRef(0);
+  const markAllBusyRef = useRef(false);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -138,178 +124,216 @@ export default function NotificationsScreen() {
     };
   }, []);
 
-  const loadNotifications = useCallback(async () => {
-    try {
+  const load = useCallback(
+    async (mode: 'initial' | 'refresh' | 'silent') => {
+      if (!isAuthenticated) {
+        setLoading(false);
+        return;
+      }
+      const requestId = ++requestIdRef.current;
+      if (mode === 'refresh') setRefreshing(true);
       const response = await getNotifications();
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
+
       if (response?.success && response.data) {
         const all = Array.isArray(response.data.notifications) ? response.data.notifications : [];
-        // นโยบาย Google Play: แจ้งเตือนระบบเครือข่าย (คอมมิชชั่น/สายงาน/rank) ดูได้บนเว็บเท่านั้น
+        // นโยบาย Google Play: แจ้งเตือนระบบเครือข่ายดูได้บนเว็บเท่านั้น
         const visible = all.filter((n) => !isRestrictedNotification(n));
         const hiddenUnread = all.filter((n) => !n.isRead && isRestrictedNotification(n)).length;
-        setNotifications(visible);
+        setItems(visible);
         setUnreadCount(Math.max(0, (Number(response.data.unreadCount) || 0) - hiddenUnread));
+        setError(null);
+      } else if (mode !== 'silent') {
+        setError('โหลดการแจ้งเตือนไม่สำเร็จ ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่นะ');
       }
-    } catch (error) {
-      console.error('Load notifications error:', error);
-    } finally {
-      if (mountedRef.current) {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    }
-  }, []);
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [isAuthenticated]
+  );
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadNotifications();
-    }
-  }, [isAuthenticated, loadNotifications]);
+  // เปิดหน้า = ดึงใหม่ (ครั้งแรกแสดงตัวโหลด ครั้งต่อไปเงียบๆ)
+  const loadedRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      load(loadedRef.current ? 'silent' : 'initial');
+      loadedRef.current = true;
+    }, [load])
+  );
 
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    loadNotifications();
+  const openItem = async (item: Notification) => {
+    if (!item.isRead) {
+      // อัปเดตบนจอทันที แล้วค่อยบอก server (ล้มเหลวก็ไม่เป็นไร รอบหน้าดึงใหม่)
+      setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n)));
+      setUnreadCount((c) => Math.max(0, c - 1));
+      markNotificationRead(item.id).catch(() => {});
+    }
+    const target = targetOf(item);
+    if (target) router.push(target as never);
   };
 
-  const handleMarkAsRead = async (notification: Notification) => {
-    if (!notification.isRead) {
-      await markNotificationRead(notification.id);
-      if (!mountedRef.current) return;
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
-      );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
-    }
-
-    // Handle action URL if exists
-    if (notification.actionUrl) {
-      // Navigate based on action URL
-      // For example: router.push(notification.actionUrl as any);
-    }
+  const confirmDelete = (item: Notification) => {
+    Alert.alert('ลบการแจ้งเตือนนี้?', item.title, [
+      { text: 'ไม่ลบ', style: 'cancel' },
+      {
+        text: 'ลบ',
+        style: 'destructive',
+        onPress: async () => {
+          const response = await deleteNotification(item.id);
+          if (!mountedRef.current) return;
+          if (response?.success) {
+            resultHaptic('success');
+            setItems((prev) => prev.filter((n) => n.id !== item.id));
+            if (!item.isRead) setUnreadCount((c) => Math.max(0, c - 1));
+          } else {
+            Alert.alert('ลบไม่สำเร็จ', 'ลบการแจ้งเตือนไม่สำเร็จ ลองใหม่อีกครั้งนะ');
+          }
+        },
+      },
+    ]);
   };
 
-  const handleMarkAllRead = async () => {
-    if (unreadCount === 0) return;
-
+  const markAll = async () => {
+    if (unreadCount === 0 || markAllBusyRef.current) return;
+    markAllBusyRef.current = true;
     const response = await markAllNotificationsRead();
+    markAllBusyRef.current = false;
     if (!mountedRef.current) return;
-    if (response.success) {
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    if (response?.success) {
+      resultHaptic('success');
+      setItems((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    const response = await deleteNotification(id);
-    if (!mountedRef.current) return;
-    if (response.success) {
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
     } else {
-      Alert.alert('ลบไม่สำเร็จ', 'ลบการแจ้งเตือนไม่สำเร็จ ลองใหม่อีกครั้งนะ');
+      Alert.alert('ทำรายการไม่สำเร็จ', 'ลองใหม่อีกครั้งนะ');
     }
   };
 
-  // Not authenticated
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#F9FAFB'} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ fontSize: 80 }}>🔔</Text>
-          <Text className={`text-xl font-bold mt-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            การแจ้งเตือน
-          </Text>
-          <Text className="text-gray-500 text-center mt-2">
-            เข้าสู่ระบบเพื่อดูการแจ้งเตือน
-          </Text>
-          <Pressable
-            onPress={() => router.push('/login')}
-            className="bg-primary-500 px-8 py-3 rounded-xl mt-6"
-          >
-            <Text className="text-white font-bold">เข้าสู่ระบบ</Text>
-          </Pressable>
-        </View>
-      </View>
+      <Screen title="การแจ้งเตือน" scroll={false}>
+        <EmptyState
+          icon="🔔"
+          title="เข้าสู่ระบบก่อนนะ"
+          message="เข้าสู่ระบบเพื่อดูการแจ้งเตือนออเดอร์ งานส่ง และกระเป๋าเงิน"
+          actionLabel="เข้าสู่ระบบ"
+          onAction={() => router.push('/login')}
+        />
+      </Screen>
     );
   }
 
-  return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#F9FAFB'} />
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8 }}>
-          <View className="flex-row items-center">
-            <Pressable onPress={() => router.back()} className="mr-4">
-              <Text style={{ fontSize: 24, color: isDark ? '#fff' : '#000' }}>←</Text>
-            </Pressable>
-            <View>
-              <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                การแจ้งเตือน
-              </Text>
-              {unreadCount > 0 && (
-                <Text className="text-primary-500 text-sm">
-                  {unreadCount} ยังไม่อ่าน
-                </Text>
-              )}
-            </View>
-          </View>
-          {unreadCount > 0 && (
-            <Pressable
-              onPress={handleMarkAllRead}
-              className="px-3 py-2 rounded-xl bg-primary-100 dark:bg-primary-900"
-            >
-              <Text className="text-primary-500 font-medium text-sm">
-                อ่านทั้งหมด
-              </Text>
-            </Pressable>
-          )}
-        </View>
+  const shown = filter === 'unread' ? items.filter((n) => !n.isRead) : items;
 
-        {/* Content */}
-        {isLoading ? (
-          <View className="flex-1 justify-center items-center">
-            <ActivityIndicator size="large" color="#3B82F6" />
-            <Text className="text-gray-500 mt-4">กำลังโหลด...</Text>
+  return (
+    <Screen
+      title="การแจ้งเตือน"
+      subtitle={unreadCount > 0 ? `ยังไม่อ่าน ${unreadCount.toLocaleString('th-TH')} รายการ` : 'อ่านครบแล้ว'}
+      scroll={false}
+      right={unreadCount > 0 ? <Button3D title="อ่านทั้งหมด" size="sm" variant="secondary" onPress={markAll} /> : undefined}
+    >
+      <FlatList
+        data={shown}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={styles.filters}>
+            <Chip label="ทั้งหมด" size="sm" selected={filter === 'all'} onPress={() => setFilter('all')} />
+            <Chip
+              label="ยังไม่อ่าน"
+              size="sm"
+              selected={filter === 'unread'}
+              count={unreadCount || undefined}
+              onPress={() => setFilter('unread')}
+            />
           </View>
-        ) : notifications.length === 0 ? (
-          <View className="flex-1 justify-center items-center px-6">
-            <LinearGradient
-              colors={['#3B82F6', '#8B5CF6']}
-              style={{ width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}
-            >
-              <Text style={{ fontSize: 48 }}>🔕</Text>
-            </LinearGradient>
-            <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-              ไม่มีการแจ้งเตือน
-            </Text>
-            <Text className="text-gray-500 text-center mt-2">
-              คุณจะได้รับการแจ้งเตือนที่นี่เมื่อมีข้อมูลใหม่
-            </Text>
-          </View>
-        ) : (
-          <FlatList
-            data={notifications}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16 }}
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefreshing}
-                onRefresh={handleRefresh}
-                tintColor="#3B82F6"
-              />
-            }
-            renderItem={({ item, index }) => (
-              <Animated.View entering={FadeInRight.delay(index * 30).springify()}>
-                <NotificationItem
-                  item={item}
-                  isDark={isDark}
-                  onPress={() => handleMarkAsRead(item)}
-                  onDelete={() => handleDelete(item.id)}
-                />
-              </Animated.View>
-            )}
-          />
+        }
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+          ) : error ? (
+            <EmptyState compact variant="error" message={error} onAction={() => load('initial')} />
+          ) : (
+            <EmptyState
+              compact
+              icon={filter === 'unread' ? '✅' : '🔕'}
+              title={filter === 'unread' ? 'อ่านครบทุกรายการแล้ว' : 'ยังไม่มีการแจ้งเตือน'}
+              message="ออเดอร์ งานส่ง และความเคลื่อนไหวของกระเป๋าเงินจะแจ้งที่นี่"
+            />
+          )
+        }
+        renderItem={({ item, index }) => (
+          <Animated.View entering={index < 12 ? FadeInDown.delay(index * 25).duration(220) : undefined}>
+            <NotificationRow item={item} onPress={() => openItem(item)} onLongPress={() => confirmDelete(item)} />
+          </Animated.View>
         )}
-    </View>
+        ListFooterComponent={
+          items.length > 0 ? (
+            <Text style={[typography.caption, styles.footer, { color: colors.textFaint }]}>กดค้างที่รายการเพื่อลบ</Text>
+          ) : null
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load('refresh')}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+            progressBackgroundColor={colors.card}
+          />
+        }
+      />
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  list: {
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.xxxl * 2,
+  },
+  filters: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  loader: {
+    marginTop: spacing.xxxl,
+  },
+  card: {
+    marginBottom: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  icon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emoji: {
+    fontSize: 22,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  time: {
+    marginTop: spacing.xs,
+  },
+  footer: {
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+});

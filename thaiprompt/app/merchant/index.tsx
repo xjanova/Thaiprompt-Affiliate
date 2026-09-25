@@ -6,6 +6,7 @@
  * - จัดการสินค้า ตั้งราคา และวางกลยุทธ์ GP อยู่บนเว็บไซต์ (WebsiteButton — ล็อกอินให้อัตโนมัติ)
  * - ยังไม่มีร้าน (403 NOT_A_SELLER) → ชวนเปิดร้านบนเว็บ · ร้านถูกระงับ (STORE_SUSPENDED) → แจ้งเหตุผล
  * - รีเฟรชเงียบๆ ทุก 30 วินาทีระหว่างเปิดหน้านี้ (ไม่มีสปินเนอร์เต็มจอ)
+ * - ปุ่มสลับด้านบน → ร้านตลาดสด (/merchant/taladsod) ซึ่งเป็นอีกระบบ (รถเข็น/ตลาดนัด/ร้านอาหาร)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,6 +34,8 @@ import {
   WebsiteButton,
 } from '@/components/ui';
 import { ORDER_STATUS_TONE, formatThaiDateTime, toNumber } from '@/components/shop';
+import { MerchantModeSwitch } from '@/components/merchant';
+import { checkIsFreshMarketSeller } from '@/services/api/taladsodSellerApi';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const POLL_MS = 30000;
@@ -105,6 +108,8 @@ export default function MerchantScreen() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [newOrders, setNewOrders] = useState<SellerOrderListItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasFmShop, setHasFmShop] = useState(false);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
   const mountedRef = useRef(true);
   const busyRef = useRef(false);
 
@@ -155,6 +160,20 @@ export default function MerchantScreen() {
     }, [load])
   );
 
+  // ยังไม่มีร้านออนไลน์ → เช็คว่ามีร้านตลาดสดไหม (ชวนไปหน้าร้านตลาดสดแทน)
+  useEffect(() => {
+    if (state.kind !== 'not_seller' || !userId) return;
+    let alive = true;
+    checkIsFreshMarketSeller(userId)
+      .then((isFm) => {
+        if (alive && mountedRef.current) setHasFmShop(isFm);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [state.kind, userId]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
@@ -184,21 +203,44 @@ export default function MerchantScreen() {
 
       case 'not_seller':
         return (
-          <Card3D gradientBorder padding={spacing.xl}>
-            <Text style={[typography.h2, { color: colors.textStrong }]}>ยังไม่มีร้านค้า</Text>
-            <Text style={[typography.body, styles.lead, { color: colors.textMuted }]}>
-              เปิดร้านบนเว็บไซต์ได้เลย เมื่อร้านพร้อมขาย ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปนี้ และจัดการออเดอร์ในแอปได้ทันที
-            </Text>
-            <WebsiteButton
-              path="/user/seller-apply"
-              label="เปิดร้านบนเว็บไซต์"
-              icon="🏪"
-              variant="primary"
-              size="lg"
-              fullWidth
-              style={styles.cta}
-            />
-          </Card3D>
+          <>
+            {hasFmShop && (
+              <Card3D
+                gradientBorder
+                padding={spacing.lg}
+                style={styles.fmCard}
+              >
+                <Text style={[typography.h3, { color: colors.textStrong }]}>🥬 คุณมีร้านในตลาดสด</Text>
+                <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+                  เปิดร้าน รับออเดอร์ และจัดการสินค้าตลาดสดได้ที่ "ร้านตลาดสด"
+                </Text>
+                <Button3D
+                  title="ไปที่ร้านตลาดสด"
+                  icon="🛒"
+                  variant="success"
+                  size="md"
+                  fullWidth
+                  onPress={() => router.replace('/merchant/taladsod' as never)}
+                  style={styles.warningCta}
+                />
+              </Card3D>
+            )}
+            <Card3D gradientBorder padding={spacing.xl}>
+              <Text style={[typography.h2, { color: colors.textStrong }]}>ยังไม่มีร้านค้า</Text>
+              <Text style={[typography.body, styles.lead, { color: colors.textMuted }]}>
+                เปิดร้านบนเว็บไซต์ได้เลย เมื่อร้านพร้อมขาย ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปนี้ และจัดการออเดอร์ในแอปได้ทันที
+              </Text>
+              <WebsiteButton
+                path="/user/seller-apply"
+                label="เปิดร้านบนเว็บไซต์"
+                icon="🏪"
+                variant="primary"
+                size="lg"
+                fullWidth
+                style={styles.cta}
+              />
+            </Card3D>
+          </>
         );
 
       case 'suspended':
@@ -358,6 +400,7 @@ export default function MerchantScreen() {
 
   return (
     <Screen title="ร้านของฉัน" subtitle="ออเดอร์และยอดขาย" refreshing={refreshing} onRefresh={onRefresh}>
+      <MerchantModeSwitch current="shop" />
       <View style={styles.bannerWrap}>
         <BannerSlider placement="merchant" height={140} autoPlay={false} />
       </View>
@@ -472,5 +515,8 @@ const styles = StyleSheet.create({
   help: {
     marginTop: spacing.lg,
     alignSelf: 'center',
+  },
+  fmCard: {
+    marginBottom: spacing.lg,
   },
 });

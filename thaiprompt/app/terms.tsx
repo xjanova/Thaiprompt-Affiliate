@@ -1,23 +1,13 @@
 /**
- * Terms Screen - เงื่อนไขการใช้งาน
- * แสดงเงื่อนไขและข้อกำหนดในการใช้งานแอพ
+ * เงื่อนไขการใช้งาน — ธีมนวลทองคำ (จัดหน้าด้วย LegalDocument)
+ * ฉบับทางการอยู่บนเว็บไซต์ (APP_INFO.TERMS_URL)
  */
 
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  StatusBar,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import { useAppStore } from '@/stores/appStore';
+import { APP_INFO } from '@/config/appConfig';
+import { LegalDocument, type LegalSection } from '@/components/legal/LegalDocument';
 
-// เนื้อหาเงื่อนไขการใช้งาน
-const TERMS_SECTIONS = [
+const TERMS_SECTIONS: LegalSection[] = [
   {
     title: '1. การยอมรับเงื่อนไข',
     content: `การใช้งานแอปพลิเคชัน Thaiprompt ถือว่าท่านได้อ่านและยอมรับเงื่อนไขการใช้งานทั้งหมดแล้ว หากท่านไม่ยอมรับเงื่อนไขเหล่านี้ กรุณาหยุดใช้งานแอปพลิเคชันทันที
@@ -87,190 +77,15 @@ const TERMS_SECTIONS = [
 ];
 
 export default function TermsScreen() {
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
-
   return (
-    <View style={[styles.container, !isDark && styles.containerLight]}>
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={isDark ? '#0F172A' : '#3B82F6'}
-      />
-
-      {/* Header */}
-      <LinearGradient
-        colors={isDark ? ['#1E3A8A', '#1E40AF'] : ['#3B82F6', '#2563EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backButtonText}>‹</Text>
-          </Pressable>
-          <Text style={styles.headerTitle}>เงื่อนไขการใช้งาน</Text>
-          <View style={styles.placeholder} />
-        </View>
-      </LinearGradient>
-
-      {/* Content */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Intro */}
-        <View style={[styles.introCard, !isDark && styles.cardLight]}>
-          <Text style={{ fontSize: 32, textAlign: 'center' }}>📋</Text>
-          <Text style={[styles.introTitle, !isDark && styles.textDark]}>
-            เงื่อนไขและข้อกำหนด
-          </Text>
-          <Text style={[styles.introSubtitle, !isDark && styles.textMuted]}>
-            Terms and Conditions
-          </Text>
-          <Text style={[styles.introDate, !isDark && styles.textMuted]}>
-            อัปเดตล่าสุด: 1 มกราคม 2568
-          </Text>
-        </View>
-
-        {/* Terms Sections */}
-        {TERMS_SECTIONS.map((section, index) => (
-          <View
-            key={index}
-            style={[styles.sectionCard, !isDark && styles.cardLight]}
-          >
-            <Text style={[styles.sectionTitle, !isDark && styles.textDark]}>
-              {section.title}
-            </Text>
-            <Text style={[styles.sectionContent, !isDark && styles.textMuted]}>
-              {section.content}
-            </Text>
-          </View>
-        ))}
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, !isDark && styles.textMuted]}>
-            การใช้งานแอปพลิเคชันถือว่าท่านยอมรับเงื่อนไขทั้งหมด
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
+    <LegalDocument
+      title="เงื่อนไขการใช้งาน"
+      icon="📋"
+      heading="เงื่อนไขและข้อกำหนด"
+      dateLabel="อัปเดตล่าสุด: 1 มกราคม 2568"
+      sections={TERMS_SECTIONS}
+      footer="การใช้งานแอปพลิเคชันถือว่าท่านยอมรับเงื่อนไขทั้งหมด"
+      webUrl={APP_INFO.TERMS_URL}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-  },
-  containerLight: {
-    backgroundColor: '#F8FAFC',
-  },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButtonText: {
-    fontSize: 28,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginTop: -2,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  placeholder: {
-    width: 40,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  introCard: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
-  },
-  cardLight: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E2E8F0',
-  },
-  introTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 12,
-  },
-  introSubtitle: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
-  },
-  introDate: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 8,
-  },
-  textDark: {
-    color: '#1E293B',
-  },
-  textMuted: {
-    color: '#64748B',
-  },
-  sectionCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  sectionContent: {
-    fontSize: 14,
-    color: '#94A3B8',
-    lineHeight: 22,
-  },
-  footer: {
-    marginTop: 16,
-    padding: 16,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#64748B',
-    textAlign: 'center',
-  },
-});

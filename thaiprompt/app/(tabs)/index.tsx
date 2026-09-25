@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO, isFeatureEnabled } from '@/config/appConfig';
 import { getWallet } from '@/services/api';
 import { checkIsSeller } from '@/services/api/merchantApi';
+import { checkIsFreshMarketSeller } from '@/services/api/taladsodSellerApi';
 import NotificationBell from '@/components/NotificationBell';
 import { ErrorBoundary } from '@/components';
 import {
@@ -80,6 +81,8 @@ export default function HomeScreen() {
   const [balance, setBalance] = useState<number | string | null>(null);
   const [walletState, setWalletState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [isSeller, setIsSeller] = useState(false);
+  /** มีแค่ร้านตลาดสด → ทางเข้า "ร้านของฉัน" พาไปหน้าร้านตลาดสดเลย */
+  const [merchantRoute, setMerchantRoute] = useState('/merchant');
   const [refreshing, setRefreshing] = useState(false);
   const [bannerKey, setBannerKey] = useState(0);
   const mountedRef = useRef(true);
@@ -115,8 +118,14 @@ export default function HomeScreen() {
         return;
       }
       const requestedFor = user.id;
-      const seller = await checkIsSeller(requestedFor, force);
-      if (mountedRef.current && useAuthStore.getState().user?.id === requestedFor) setIsSeller(seller);
+      const [seller, fmSeller] = await Promise.all([
+        checkIsSeller(requestedFor, force),
+        checkIsFreshMarketSeller(requestedFor, force),
+      ]);
+      if (mountedRef.current && useAuthStore.getState().user?.id === requestedFor) {
+        setIsSeller(seller || fmSeller);
+        setMerchantRoute(!seller && fmSeller ? '/merchant/taladsod' : '/merchant');
+      }
     },
     [isAuthenticated, user?.id]
   );
@@ -156,7 +165,7 @@ export default function HomeScreen() {
       id: 'rider', title: 'ไรเดอร์', subtitle: 'รับงานส่งของใกล้บ้าน', icon: '🛵', route: '/rider', requiresLogin: true,
     },
     isFeatureEnabled('MERCHANT_ENABLED') && isSeller && {
-      id: 'merchant', title: 'ร้านของฉัน', subtitle: 'ออเดอร์ใหม่และการจัดส่ง', icon: '🏪', route: '/merchant', requiresLogin: true,
+      id: 'merchant', title: 'ร้านของฉัน', subtitle: 'ออเดอร์ใหม่และการจัดส่ง', icon: '🏪', route: merchantRoute, requiresLogin: true,
     },
     isFeatureEnabled('REFERRAL_ENABLED') && {
       id: 'referral', title: 'ชวนเพื่อน', subtitle: 'แชร์รหัสให้เพื่อนสมัคร', icon: '🤝', route: '/referral', requiresLogin: true,

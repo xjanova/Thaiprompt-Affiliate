@@ -4,6 +4,7 @@
  * - แท็บสถานะตรงกับ enum ของ orders บน server (SHOP-24) และแสดง status_label จาก server
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลลัพธ์เก่า (requestId) กันรายการสลับแท็บ
  * - รีเฟรช = pull-to-refresh (ไม่เอาสปินเนอร์เต็มจอมาบัง)
+ * - สลับ "ร้านค้า | ตลาดสด" ด้านบน → ตลาดสดใช้ FreshOrdersList (GET /fresh-market/orders)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -14,6 +15,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { getMyOrders, type ShopOrderListItem, type ShopOrderStatus } from '@/services/api/shopApi';
 import { useTheme, spacing, radii, typography, type Tone } from '@/theme';
 import { Card3D, Chip, EmptyState, Pill, PriceText, Screen } from '@/components/ui';
+import { FreshOrdersList, OrderSourceSwitch, type OrderSource } from '@/components/taladsod';
 
 type Filter = 'all' | ShopOrderStatus;
 
@@ -115,11 +117,14 @@ const OrderRow: React.FC<{ order: ShopOrderListItem }> = ({ order }) => {
 export interface MyOrdersScreenProps {
   /** true = อยู่ในแท็บ (ไม่มีปุ่มย้อนกลับ) */
   embedded?: boolean;
+  /** เปิดมาที่รายการไหนก่อน (ค่าเริ่มต้น ร้านค้า) */
+  initialSource?: OrderSource;
 }
 
-export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false }) => {
+export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false, initialSource = 'shop' }) => {
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const [source, setSource] = useState<OrderSource>(initialSource);
 
   const [filter, setFilter] = useState<Filter>('all');
   const [orders, setOrders] = useState<ShopOrderListItem[]>([]);
@@ -194,10 +199,10 @@ export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false
   // กลับมาที่หน้านี้ (เช่น หลังชำระเงิน) → รีเฟรชเงียบๆ ตามแท็บสถานะที่เลือกอยู่
   useFocusEffect(
     useCallback(() => {
-      if (isAuthenticated && loadedOnceRef.current) {
+      if (isAuthenticated && loadedOnceRef.current && source === 'shop') {
         load('refresh', filterRef.current, 1);
       }
-    }, [isAuthenticated, load])
+    }, [isAuthenticated, load, source])
   );
 
   const onEndReached = () => {
@@ -206,8 +211,15 @@ export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false
     }
   };
 
+  const sourceSwitch = (
+    <View style={styles.switchWrap}>
+      <OrderSourceSwitch value={source} onChange={setSource} />
+    </View>
+  );
+
   const header = (
     <View>
+      {sourceSwitch}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -223,21 +235,6 @@ export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false
           />
         ))}
       </ScrollView>
-
-      <Card3D
-        variant="flat"
-        padding={spacing.md}
-        radius={radii.md}
-        onPress={() => router.push('/taladsod' as never)}
-        style={styles.freshCard}
-        accessibilityLabel="ดูออเดอร์ตลาดสด"
-      >
-        <View style={styles.freshRow}>
-          <Text style={styles.freshIcon}>🥬</Text>
-          <Text style={[typography.bodySm, styles.flex, { color: colors.text }]}>ออเดอร์ตลาดสด ดูได้ที่หน้าตลาดสด</Text>
-          <Text style={[typography.caption, { color: colors.goldDeep }]}>ไปที่ตลาดสด ›</Text>
-        </View>
-      </Card3D>
     </View>
   );
 
@@ -252,6 +249,10 @@ export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false
           onAction={() => router.push('/login')}
         />
       );
+    }
+
+    if (source === 'fresh') {
+      return <FreshOrdersList header={sourceSwitch} />;
     }
 
     if (initialLoading && orders.length === 0) {
@@ -330,17 +331,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     gap: spacing.sm,
   },
-  freshCard: {
-    marginHorizontal: spacing.screen,
-    marginBottom: spacing.md,
-  },
-  freshRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  freshIcon: {
-    fontSize: 18,
+  switchWrap: {
+    paddingHorizontal: spacing.screen,
+    paddingBottom: spacing.md,
   },
   list: {
     paddingBottom: spacing.xxxl,

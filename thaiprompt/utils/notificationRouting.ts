@@ -3,11 +3,15 @@
  *
  * รองรับ payload จาก wave 1:
  *   - rider_job_offer {job_id}                → /rider-jobs
- *   - rider_job_update {job_id, event}        → /rider-job-detail?id=
+ *   - rider_job_update {job_id, event}        → /rider-job-detail?id= (event pickup_moved → &moved=1)
  *   - rider_account {event}                   → /rider
  *   - delivery_update {source_type, source_id} → ออเดอร์ร้านค้า / ตลาดสด
+ *       (ตลาดสดส่งหาทั้งผู้ซื้อและร้านโดยไม่มี role → /taladsod/order/{id} ซึ่งพาร้านไปหน้าออเดอร์ร้านเองตาม viewer_role)
  *   - shop_order {role, order_id}             → ผู้ซื้อ /order/{id} · ร้าน /merchant/order/{id}
- *   - fresh_market_order {role, order_id}     → /taladsod (ผู้ขาย/ผู้ซื้อ)
+ *   - fresh_market_order {role, order_id}     → ผู้ขาย /merchant/taladsod/orders?focus= · ผู้ซื้อ /taladsod/order/{id}
+ *       event seller_account (อนุมัติ/ระงับร้าน ไม่มี role) → /merchant/taladsod · role อื่น (admin) → ไม่พาไปหน้าผู้ซื้อ
+ *   - fresh_market_shop_open {shop_id}        → หน้าร้าน /taladsod/shop/{id} (ร้านที่ติดตามเปิดแล้ว)
+ *   - fresh_market_shop {event: auto_closed}  → /merchant/taladsod (ร้านถูกปิดอัตโนมัติ)
  *   - order_message {order_id}                → /order/{id}?tab=chat
  *   - ticket                                  → /support
  * นอกนั้นใช้ data.url เฉพาะ path ภายในที่อยู่ใน allowlist (PLAY-23) ไม่งั้นไปหน้าแจ้งเตือน
@@ -40,7 +44,10 @@ export const routeForNotification = (data: PushData | null | undefined): string 
       path = '/rider-jobs';
       break;
     case 'rider_job_update':
-      path = jobId ? `/rider-job-detail?id=${jobId}` : '/rider-job-detail';
+      // pickup_moved = ร้านเคลื่อนที่ย้ายจุดรับของ → หน้างานแสดงป้ายเตือนให้เห็นชัด
+      path = jobId
+        ? `/rider-job-detail?id=${jobId}${data.event === 'pickup_moved' ? '&moved=1' : ''}`
+        : '/rider-job-detail';
       break;
     case 'rider_account':
     case 'rider':
@@ -53,7 +60,7 @@ export const routeForNotification = (data: PushData | null | undefined): string 
       if (sourceType === 'Order' && sourceId) {
         path = `/order/${sourceId}`;
       } else if (sourceType === 'FreshMarketOrder') {
-        path = '/taladsod';
+        path = sourceId ? `/taladsod/order/${sourceId}` : '/taladsod/orders';
       } else {
         path = '/orders';
       }
@@ -67,7 +74,31 @@ export const routeForNotification = (data: PushData | null | undefined): string 
           : orderId ? `/order/${orderId}` : '/orders';
       break;
     case 'fresh_market_order':
-      path = '/taladsod';
+      if (data.event === 'seller_account') {
+        // แอดมินอนุมัติ/ระงับร้าน → หน้าร้านตลาดสดของฉัน
+        path = '/merchant/taladsod';
+      } else if (role === 'seller') {
+        // ร้าน → หน้าออเดอร์ตลาดสดของร้าน (ไฮไลต์ออเดอร์นั้น)
+        path = orderId ? `/merchant/taladsod/orders?focus=${orderId}` : '/merchant/taladsod/orders';
+      } else if (role === 'buyer') {
+        path = orderId ? `/taladsod/order/${orderId}` : '/taladsod/orders';
+      } else if (role === '' && orderId) {
+        // payload เก่าที่ไม่มี role → หน้าออเดอร์พาร้านไปหน้าออเดอร์ร้านเองตาม viewer_role
+        path = `/taladsod/order/${orderId}`;
+      } else {
+        // admin / ไม่รู้บทบาท → ไม่พาไปหน้าของผู้ซื้อ (ใช้ data.url ถ้าปลอดภัย ไม่งั้นหน้าแจ้งเตือน)
+        path = null;
+      }
+      break;
+    case 'fresh_market_shop_open': {
+      // ร้านที่ผู้ซื้อติดตามเพิ่งเปิด → หน้าร้าน
+      const shopId = toId(data.shop_id ?? data.seller_id);
+      path = shopId ? `/taladsod/shop/${shopId}` : '/taladsod';
+      break;
+    }
+    case 'fresh_market_shop':
+      // แจ้งเจ้าของร้าน (เช่น ร้านปิดอัตโนมัติ) → หน้าร้านตลาดสดของฉัน
+      path = '/merchant/taladsod';
       break;
     case 'order_message':
       path = orderId ? `/order/${orderId}?tab=chat` : '/orders';

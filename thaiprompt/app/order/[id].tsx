@@ -3,7 +3,8 @@
  *
  * - ไทม์ไลน์ตาม enum จริงของ orders.status (ไม่มี 'confirmed')
  * - ยังไม่จ่าย: แสดง QR พร้อมเพย์ที่ค้าง + poll สถานะ / ขอ QR ใหม่ / จ่ายด้วยกระเป๋า
- * - ส่งด้วยไรเดอร์: การ์ดไรเดอร์ (ชื่อ ทะเบียน โทร) + ลิงก์ติดตามสด — รีเฟรชทุก 15 วินาทีระหว่างไรเดอร์วิ่ง
+ * - ส่งด้วยไรเดอร์: การ์ดไรเดอร์ (ชื่อ ทะเบียน โทร) + แผนที่ตำแหน่งไรเดอร์สด (GET /orders/shop/{id}/rider-location)
+ *   + แชร์ตำแหน่งของฉันให้ไรเดอร์ + ลิงก์ติดตามบนเว็บ — รีเฟรชทุก 15 วินาทีระหว่างไรเดอร์วิ่ง
  * - ส่งพัสดุ: เลขพัสดุ (คัดลอกได้) + ประวัติการขนส่ง
  * - ยืนยันรับสินค้า · ยกเลิก (เมื่อ server อนุญาต) · รีวิวสินค้า · แชทกับร้าน (?tab=chat)
  */
@@ -69,6 +70,7 @@ import {
   type PromptPayState,
   type TimelineStep,
 } from '@/components/shop';
+import { RiderTracker } from '@/components/taladsod';
 import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
 
 type Tab = 'detail' | 'chat';
@@ -698,11 +700,28 @@ export default function OrderDetailScreen() {
               )}
             </View>
           )}
+          {!!rider.job_id && ACTIVE_RIDER_STATUSES.includes(rider.status) && rider.status !== 'pending' && (
+            <View style={styles.gapTop}>
+              <RiderTracker
+                source="shop"
+                orderId={order.id}
+                enabled={riderActive}
+                showRiderInfo={false}
+                dropoffFallback={
+                  order.shipping?.latitude != null && order.shipping?.longitude != null
+                    ? { latitude: Number(order.shipping.latitude), longitude: Number(order.shipping.longitude) }
+                    : null
+                }
+                onJobStatusChange={() => load('silent')}
+              />
+            </View>
+          )}
           {isTrustedWebUrl(rider.tracking_url) && (
             <Button3D
-              title="ดูตำแหน่งไรเดอร์แบบสด"
-              icon="🗺️"
-              size="md"
+              title="เปิดหน้าติดตามบนเว็บ"
+              icon="🌐"
+              size="sm"
+              variant="secondary"
               fullWidth
               onPress={() => openHttpsLink(rider.tracking_url, 'ติดตามไรเดอร์')}
               style={styles.gapTop}

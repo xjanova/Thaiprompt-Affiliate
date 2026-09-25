@@ -5,6 +5,8 @@
  * (prominent disclosure + ออนไลน์ได้ด้วยสิทธิ์ "ขณะใช้แอป"), RIDER-APP-18 (ปุ่มอัปโหลดเอกสารเมื่อยังไม่ครบ),
  * RIDER-APP-21 (ลิงก์หน้ารายได้), RIDER-APP-22 (busy/suspended/rejected แสดงถูก + สมัครใหม่ได้),
  * RIDER-APP-26 (ไม่มีแถวไมโครโฟน)
+ * ถอนความยินยอมแชร์ตำแหน่งให้ลูกค้าได้เองในแอป (POST /rider/consent {location_consent:false})
+ * — ระหว่างมีงานถอนไม่ได้ (409 HAS_ACTIVE_JOB) · ถอนแล้วต้องยอมรับใหม่ก่อนรับงานถัดไป
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,10 +26,12 @@ import {
   SectionHeader,
   StatTile,
   WebsiteButton,
+  resultHaptic,
 } from '@/components/ui';
 import {
   getRiderEarnings,
   getRiderStatus,
+  setRiderConsent,
   updateRiderPermissions,
   type RiderEarningsResponse,
   type RiderStatus,
@@ -134,10 +138,12 @@ export default function RiderScreen() {
   const [trackingMode, setTrackingMode] = useState<TrackingMode | 'none'>('none');
   const [gpsOff, setGpsOff] = useState(false);
   const [bannerKey, setBannerKey] = useState(0);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const mountedRef = useRef(true);
   const requestIdRef = useRef(0);
   const loadedOnceRef = useRef(false);
+  const withdrawingRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -273,6 +279,47 @@ export default function RiderScreen() {
       }, 450);
     }
   }, [goOnline, load, rider?.permissions?.location_consent]);
+
+  // ---------- ถอนความยินยอมแชร์ตำแหน่งให้ลูกค้า ----------
+  const doWithdrawConsent = useCallback(async () => {
+    if (withdrawingRef.current) return;
+    withdrawingRef.current = true;
+    setWithdrawing(true);
+    try {
+      const result = await setRiderConsent(false);
+      if (!mountedRef.current) return;
+      if (result.success) {
+        resultHaptic('success');
+        Alert.alert('ถอนความยินยอมแล้ว', 'ลูกค้าจะไม่เห็นตำแหน่งของคุณอีก ถ้าจะรับงานใหม่ ต้องกดยอมรับอีกครั้งก่อนนะ');
+      } else if (result.code === 'HAS_ACTIVE_JOB') {
+        resultHaptic('warning');
+        Alert.alert('ตอนนี้ยังถอนไม่ได้', 'คุณกำลังส่งงานอยู่ ลูกค้ายังต้องติดตามของ ส่งงานนี้ให้เสร็จก่อนแล้วค่อยถอนนะ');
+      } else {
+        resultHaptic('error');
+        Alert.alert('ถอนความยินยอมไม่สำเร็จ', result.message);
+      }
+      load('silent');
+    } finally {
+      withdrawingRef.current = false;
+      if (mountedRef.current) setWithdrawing(false);
+    }
+  }, [load]);
+
+  const handleWithdrawConsent = useCallback(() => {
+    if (withdrawingRef.current) return;
+    if (isBusy) {
+      Alert.alert('ตอนนี้ยังถอนไม่ได้', 'คุณกำลังส่งงานอยู่ ลูกค้ายังต้องติดตามของ ส่งงานนี้ให้เสร็จก่อนแล้วค่อยถอนนะ');
+      return;
+    }
+    Alert.alert(
+      'ถอนความยินยอม?',
+      'ลูกค้าจะไม่เห็นตำแหน่งของคุณระหว่างส่งอีก และคุณจะรับงานใหม่ไม่ได้จนกว่าจะกดยอมรับอีกครั้ง',
+      [
+        { text: 'ไม่ถอน', style: 'cancel' },
+        { text: 'ถอนความยินยอม', style: 'destructive', onPress: () => doWithdrawConsent() },
+      ]
+    );
+  }, [isBusy, doWithdrawConsent]);
 
   const handleGoOffline = useCallback(async () => {
     await goOffline();
@@ -678,6 +725,18 @@ export default function RiderScreen() {
           actionLabel="ยอมรับ"
           onPress={() => flow.requestConsent().then(() => load('silent'))}
         />
+        {consentGiven && (
+          <Button3D
+            title="ถอนความยินยอม"
+            size="sm"
+            variant="ghost"
+            loading={withdrawing}
+            loadingText="กำลังถอน…"
+            onPress={handleWithdrawConsent}
+            style={styles.revoke}
+            accessibilityHint="ลูกค้าจะไม่เห็นตำแหน่งของคุณอีก และต้องยอมรับใหม่ก่อนรับงาน"
+          />
+        )}
         <PermissionRow
           icon="🛰️"
           title="ติดตามต่อแม้ปิดหน้าจอ"
@@ -850,6 +909,10 @@ const styles = StyleSheet.create({
   },
   trackingNote: {
     marginTop: spacing.md,
+  },
+  revoke: {
+    alignSelf: 'flex-end',
+    marginTop: spacing.xs,
   },
   webBox: {
     gap: spacing.sm,
