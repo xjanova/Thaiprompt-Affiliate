@@ -446,7 +446,13 @@ class OfficialShopController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            $message = 'เกิดข้อผิดพลาด: '.$e->getMessage();
+            // ไม่ส่งข้อความ exception ดิบให้ผู้ใช้ — บันทึก log แล้วแจ้งข้อความไทย
+            \Illuminate\Support\Facades\Log::error('Official shop coin purchase failed', [
+                'user_id' => $user->id,
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+            $message = 'ซื้อสินค้าด้วย Coins ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 500);
             }

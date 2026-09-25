@@ -1,183 +1,116 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
 @section('title', 'รายการขาย POS')
 
+@php
+    $payLabels = ['cash' => '💵 เงินสด', 'card' => '💳 บัตร', 'qr' => '📱 QR', 'bank_transfer' => '🏦 โอน', 'e-wallet' => '👛 e-Wallet', 'credit' => '🧾 เครดิต', 'multiple' => '🔀 หลายช่องทาง', 'other' => '• อื่น ๆ'];
+    $statusMap = ['completed' => ['สำเร็จ', 'ok'], 'refunded' => ['คืนเงิน', 'bad'], 'void' => ['ยกเลิก', 'muted'], 'pending' => ['รอดำเนินการ', 'warn']];
+    $sum = $summary ?? ['count' => $transactions->total(), 'total' => 0, 'by_method' => []];
+    $by = $sum['by_method'] ?? [];
+    $th = 'padding:11px 14px; text-align:left; font-size:10.5px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink);';
+    $row = 'border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);';
+@endphp
+
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <x-seller-kit.header title="รายการขาย POS" icon="🧾" crumb="ร้านค้า · POS"
+                         subtitle="ประวัติการขายหน้าร้านทั้งหมด ค้นตามอุปกรณ์และช่วงวันที่ได้">
+        <a href="{{ route('seller.pos.terminal') }}" class="tp-btn tp-btn-primary tp-btn-sm">🛒 เปิดหน้าขาย</a>
+    </x-seller-kit.header>
+
+    @include('seller.pos.partials.nav')
+
+    <form method="GET" action="{{ route('seller.pos.transactions') }}" class="tp-card" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; align-items:end;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">💰 รายการขาย POS</h1>
-            <p class="text-gray-500 mt-1">รายการธุรกรรมการขายทั้งหมด</p>
+            <label for="f-device" style="font-size:12px; font-weight:700; color:var(--ink2);">อุปกรณ์</label>
+            <select id="f-device" name="device_id" class="tp-input" style="margin-top:6px;">
+                <option value="">ทั้งหมด</option>
+                @foreach($devices as $dev)
+                    <option value="{{ $dev->id }}" @selected((string) request('device_id') === (string) $dev->id)>{{ $dev->device_name }}</option>
+                @endforeach
+            </select>
         </div>
-        <a href="{{ route('seller.pos.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-            ← กลับ
-        </a>
+        <div>
+            <label for="f-from" style="font-size:12px; font-weight:700; color:var(--ink2);">ตั้งแต่วันที่</label>
+            <input id="f-from" type="date" name="date_from" value="{{ request('date_from') }}" class="tp-input" style="margin-top:6px;">
+        </div>
+        <div>
+            <label for="f-to" style="font-size:12px; font-weight:700; color:var(--ink2);">ถึงวันที่</label>
+            <input id="f-to" type="date" name="date_to" value="{{ request('date_to') }}" class="tp-input" style="margin-top:6px;">
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button type="submit" class="tp-btn tp-btn-primary" style="flex:1;">🔍 ค้นหา</button>
+            <a href="{{ route('seller.pos.transactions') }}" class="tp-btn">ล้าง</a>
+        </div>
+    </form>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;">
+        <x-seller-kit.stat label="จำนวนรายการ" :value="number_format($sum['count'])" icon="🧾" tone="info" hint="ตามตัวกรองปัจจุบัน" />
+        <x-seller-kit.stat label="ยอดขายรวม" :value="'฿'.number_format($sum['total'], 2)" icon="💰" tone="gold" />
+        <x-seller-kit.stat label="เงินสด" :value="'฿'.number_format($by['cash']['total'] ?? 0, 2)" icon="💵" tone="ok" :hint="number_format($by['cash']['count'] ?? 0).' รายการ'" />
+        <x-seller-kit.stat label="บัตร / QR / โอน" :value="'฿'.number_format(($by['card']['total'] ?? 0) + ($by['qr']['total'] ?? 0) + ($by['bank_transfer']['total'] ?? 0), 2)" icon="📱" tone="violet"
+                           :hint="number_format(($by['card']['count'] ?? 0) + ($by['qr']['count'] ?? 0) + ($by['bank_transfer']['count'] ?? 0)).' รายการ'" />
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">อุปกรณ์</label>
-                <select name="device_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option value="">ทั้งหมด</option>
-                    @foreach($devices as $dev)
-                    <option value="{{ $dev->id }}" {{ request('device_id') == $dev->id ? 'selected' : '' }}>
-                        {{ $dev->device_name }}
-                    </option>
-                    @endforeach
-                </select>
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        @if($transactions->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:860px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="{{ $th }}">วันที่</th>
+                            <th style="{{ $th }}">เลขรายการ</th>
+                            <th style="{{ $th }}">อุปกรณ์</th>
+                            <th style="{{ $th }}">ลูกค้า</th>
+                            <th style="{{ $th }}">วิธีชำระ</th>
+                            <th style="{{ $th }} text-align:right;">ยอดเงิน</th>
+                            <th style="{{ $th }} text-align:center;">สถานะ</th>
+                            <th style="{{ $th }}"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($transactions as $transaction)
+                            @php
+                                [$stLabel, $stTone] = $statusMap[$transaction->status] ?? [$transaction->status, 'muted'];
+                            @endphp
+                            <tr style="{{ $row }}">
+                                <td style="{{ $td }} white-space:nowrap;" class="tp-num">{{ optional($transaction->transaction_date)->format('d/m/Y H:i') }}</td>
+                                <td style="{{ $td }}">
+                                    <div class="tp-num" style="font-weight:700;">{{ $transaction->transaction_code }}</div>
+                                    @if($transaction->receipt_number)<div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $transaction->receipt_number }}</div>@endif
+                                </td>
+                                <td style="{{ $td }}">{{ $transaction->posDevice->device_name ?? '-' }}</td>
+                                <td style="{{ $td }}">
+                                    @if($transaction->customer_name)
+                                        <div>{{ $transaction->customer_name }}</div>
+                                        @if($transaction->customer_phone)<div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $transaction->customer_phone }}</div>@endif
+                                    @else
+                                        <span style="color:var(--ink2);">ลูกค้าหน้าร้าน</span>
+                                    @endif
+                                </td>
+                                <td style="{{ $td }} white-space:nowrap;">{{ $payLabels[$transaction->payment_method] ?? $transaction->payment_method }}</td>
+                                <td style="{{ $td }} text-align:right;">
+                                    <div class="tp-num" style="font-weight:800;">฿{{ number_format($transaction->total_amount, 2) }}</div>
+                                    @if($transaction->discount_amount > 0)<div class="tp-num" style="font-size:11px; color:var(--tp-bad, #d9534f);">ส่วนลด −฿{{ number_format($transaction->discount_amount, 2) }}</div>@endif
+                                </td>
+                                <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$stTone">{{ $stLabel }}</x-seller-kit.pill></td>
+                                <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                    <a href="{{ route('seller.pos.transactions.show', $transaction) }}" style="font-weight:700; color:var(--deep1); text-decoration:none;">ดู →</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">วันที่เริ่ม</label>
-                <input type="date" name="date_from" value="{{ request('date_from') }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">วันที่สิ้นสุด</label>
-                <input type="date" name="date_to" value="{{ request('date_to') }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <div class="flex items-end gap-2">
-                <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    ค้นหา
-                </button>
-                <a href="{{ route('seller.pos.transactions') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-                    รีเซ็ต
-                </a>
-            </div>
-        </form>
-    </div>
-
-    <!-- Summary Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="text-3xl mb-2">📊</div>
-            <div class="text-sm text-gray-500">รายการทั้งหมด</div>
-            <div class="text-2xl font-bold text-gray-900">{{ number_format($transactions->total()) }}</div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="text-3xl mb-2">💵</div>
-            <div class="text-sm text-gray-500">เงินสด</div>
-            <div class="text-lg font-bold text-green-600">
-                {{ number_format($transactions->where('payment_method', 'cash')->count()) }}
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="text-3xl mb-2">💳</div>
-            <div class="text-sm text-gray-500">บัตร</div>
-            <div class="text-lg font-bold text-blue-600">
-                {{ number_format($transactions->where('payment_method', 'card')->count()) }}
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="text-3xl mb-2">📱</div>
-            <div class="text-sm text-gray-500">QR Code</div>
-            <div class="text-lg font-bold text-purple-600">
-                {{ number_format($transactions->where('payment_method', 'qr')->count()) }}
-            </div>
-        </div>
-    </div>
-
-    <!-- Transactions List -->
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัส</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อุปกรณ์</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ลูกค้า</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วิธีชำระ</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวนเงิน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">การจัดการ</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($transactions as $transaction)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ $transaction->transaction_date->format('d/m/Y H:i') }}
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">{{ $transaction->transaction_code }}</div>
-                            @if($transaction->receipt_number)
-                            <div class="text-xs text-gray-500">{{ $transaction->receipt_number }}</div>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="text-sm text-gray-900">{{ $transaction->posDevice->device_name ?? 'N/A' }}</div>
-                        </td>
-                        <td class="px-6 py-4">
-                            @if($transaction->customer_name)
-                                <div class="text-sm text-gray-900">{{ $transaction->customer_name }}</div>
-                                @if($transaction->customer_phone)
-                                <div class="text-xs text-gray-500">{{ $transaction->customer_phone }}</div>
-                                @endif
-                            @else
-                                <span class="text-sm text-gray-400">Walk-in</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4">
-                            @if($transaction->payment_method === 'cash')
-                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded">💵 เงินสด</span>
-                            @elseif($transaction->payment_method === 'card')
-                                <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">💳 บัตร</span>
-                            @elseif($transaction->payment_method === 'qr')
-                                <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">📱 QR</span>
-                            @else
-                                <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded">{{ $transaction->payment_method }}</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <div class="text-sm font-bold text-gray-900">฿{{ number_format($transaction->total_amount, 2) }}</div>
-                            @if($transaction->discount_amount > 0)
-                            <div class="text-xs text-red-600">ส่วนลด -฿{{ number_format($transaction->discount_amount, 2) }}</div>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4">
-                            @if($transaction->status === 'completed')
-                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">✅ สำเร็จ</span>
-                            @elseif($transaction->status === 'refunded')
-                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">↩️ คืนเงิน</span>
-                            @elseif($transaction->status === 'void')
-                                <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">❌ ยกเลิก</span>
-                            @else
-                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">{{ $transaction->status }}</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-right text-sm font-medium">
-                            <a href="{{ route('seller.pos.transactions.show', $transaction) }}"
-                               class="text-blue-600 hover:text-blue-900">
-                                ดูรายละเอียด →
-                            </a>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <div class="text-gray-400 text-lg">ไม่พบรายการขาย</div>
-                            <p class="text-gray-500 text-sm mt-2">ลองปรับเปลี่ยนตัวกรองการค้นหา</p>
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if($transactions->hasPages())
-        <div class="px-6 py-4 border-t border-gray-200">
-            {{ $transactions->links() }}
-        </div>
+            @if($transactions->hasPages())
+                <div style="padding:14px 18px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">{{ $transactions->links() }}</div>
+            @endif
+        @else
+            <x-seller-kit.empty icon="🧾" title="ไม่พบรายการขาย" text="ยังไม่มีการขาย หรือลองปรับตัวกรองใหม่">
+                <a href="{{ route('seller.pos.terminal') }}" class="tp-btn tp-btn-primary tp-btn-sm">🛒 เริ่มขาย</a>
+            </x-seller-kit.empty>
         @endif
     </div>
 </div>

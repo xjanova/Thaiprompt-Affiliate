@@ -550,12 +550,28 @@ class StorefrontController extends Controller
         $store->incrementVisitCount();
 
         // ดึงสินค้าของร้าน
-        $products = Product::with(['category', 'mlmProductPv'])
+        // 🛍️ (2026-09-26) ชิปหมวด + ตัวเรียงบนหน้าร้านส่ง ?category= / ?sort_by= มา แต่เดิมไม่ถูกอ่าน (กดแล้วไม่มีอะไรเปลี่ยน)
+        $request = request();
+        $productQuery = Product::with(['category', 'mlmProductPv'])
             ->where('seller_id', $store->user_id)
             ->publicVisible()
-            ->inStock()
-            ->latest()
-            ->paginate(24);
+            ->inStock();
+
+        $categorySlug = $request->get('category');
+        if (is_scalar($categorySlug) && trim((string) $categorySlug) !== '') {
+            $productQuery->whereHas('category', fn ($q) => $q->where('slug', trim((string) $categorySlug)));
+        }
+
+        $sortBy = $request->get('sort_by');
+        match (is_scalar($sortBy) ? (string) $sortBy : 'newest') {
+            'popular' => $productQuery->orderByDesc('sales_count'),
+            'price_low' => $productQuery->orderBy('price'),
+            'price_high' => $productQuery->orderByDesc('price'),
+            'rating' => $productQuery->orderByDesc('rating_average'),
+            default => $productQuery->latest(),
+        };
+
+        $products = $productQuery->paginate(24)->withQueryString();
 
         // ดึงหมวดหมู่ที่มีสินค้าในร้าน
         $storeCategories = ProductCategory::whereHas('products', function ($query) use ($store) {

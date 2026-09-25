@@ -1,379 +1,184 @@
-{{--
-    Admin Storefront Settings - หน้าตั้งค่า Storefront
+@extends('layouts.admin-v4')
 
-    จัดการการตั้งค่าต่างๆ ของหน้า Storefront
-    - Theme Colors (สี Primary, Secondary)
-    - Background Settings (รูปฉากหลัง)
-    - Category Settings (รูปของหมวดหมู่)
-    - Banner Management
+@section('title', 'ตั้งค่าหน้าร้าน (Storefront)')
 
-    รองรับ Dark Mode และ Responsive
---}}
+@php
+    $c = [
+        'ok' => 'var(--tp-ok,#5aa07e)',
+        'mute' => 'var(--ink2)',
+    ];
+    $pill = fn (string $color) => "background:color-mix(in srgb, {$color} 16%, transparent); color:{$color};";
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+    $check = 'display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer; padding:11px 13px; border-radius:12px;';
 
-@extends('layouts.admin-v3')
-
-@section('title', 'ตั้งค่า Storefront')
+    // สีหน้าร้าน (ข้อมูลที่ร้านค้าหน้าบ้านใช้ ไม่ใช่สีของหลังบ้าน V4)
+    $colors = [
+        'primary' => (string) setting('storefront_primary_color', '#F97316'),
+        'secondary' => (string) setting('storefront_secondary_color', '#EF4444'),
+        'accent' => (string) setting('storefront_accent_color', '#EC4899'),
+    ];
+    $perRow = (string) setting('storefront_products_per_row', '6');
+    $toggles = [
+        ['show_flash_deals', 'storefront_show_flash_deals', '1', 'แสดง Flash Deals', 'โซนสินค้าลดราคาจำกัดเวลา'],
+        ['show_featured_stores', 'storefront_show_featured_stores', '1', 'แสดงร้านค้าแนะนำ', 'ร้านที่เลือกในหน้า "ร้านแนะนำ"'],
+        ['show_categories', 'storefront_show_categories', '1', 'แสดงหมวดหมู่', 'แถบหมวดหมู่หลักบนหน้าแรก'],
+        ['show_pv_on_products', 'storefront_show_pv', '1', 'แสดง PV บนสินค้า', 'สำหรับสมาชิกที่ใช้ระบบค่าแนะนำ'],
+        ['show_commission_on_products', 'storefront_show_commission', '0', 'แสดงค่าคอมมิชชั่นบนสินค้า', 'แนะนำให้ปิดสำหรับลูกค้าทั่วไป'],
+    ];
+    $activeTab = in_array(request('tab'), ['theme', 'banners', 'categories', 'layout'], true) ? request('tab') : 'theme';
+@endphp
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    {{-- Page Header --}}
-    <div class="mb-8">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                    <i class="fas fa-store-alt text-orange-500 mr-3"></i>
-                    ตั้งค่า Storefront
-                </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-2">
-                    จัดการหน้าตา สี ธีม และการแสดงผลของหน้าร้านค้า
-                </p>
-            </div>
-            <a href="{{ route('storefront.index') }}"
-               target="_blank"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors">
-                <i class="fas fa-external-link-alt"></i>
-                ดู Storefront
-            </a>
+<div style="display:flex; flex-direction:column; gap:18px;" x-data="{ tab: @js($activeTab) }">
+
+    {{-- ===== หัวหน้า ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ร้านค้า · หน้าร้าน</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ตั้งค่าหน้าร้าน 🏬</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">สี แบนเนอร์ หมวดหมู่ และการจัดวางของหน้าตลาดรวมร้านค้า</div>
+        </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <a href="{{ route('admin.featured-stores.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-award"></i> ร้านแนะนำ</a>
+            <a href="{{ route('admin.storefront.vendor-stores.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-store"></i> ร้านค้า</a>
+            <a href="{{ route('storefront.index') }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-up-right-from-square"></i> ดูหน้าร้าน</a>
         </div>
     </div>
 
-    {{-- Settings Tabs --}}
-    <div x-data="{ activeTab: 'theme' }" class="space-y-6">
-        {{-- Tab Navigation --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-2">
-            <div class="flex flex-wrap gap-2">
-                <button @click="activeTab = 'theme'"
-                        :class="activeTab === 'theme' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-                        class="px-4 py-2 rounded-lg font-medium transition-all">
-                    <i class="fas fa-palette mr-2"></i>
-                    ธีมและสี
-                </button>
-                <button @click="activeTab = 'banners'"
-                        :class="activeTab === 'banners' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-                        class="px-4 py-2 rounded-lg font-medium transition-all">
-                    <i class="fas fa-images mr-2"></i>
-                    แบนเนอร์ ({{ $banners->count() }})
-                </button>
-                <button @click="activeTab = 'categories'"
-                        :class="activeTab === 'categories' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-                        class="px-4 py-2 rounded-lg font-medium transition-all">
-                    <i class="fas fa-th-large mr-2"></i>
-                    หมวดหมู่ ({{ $categories->count() }})
-                </button>
-                <button @click="activeTab = 'layout'"
-                        :class="activeTab === 'layout' ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'"
-                        class="px-4 py-2 rounded-lg font-medium transition-all">
-                    <i class="fas fa-columns mr-2"></i>
-                    เลย์เอาต์
-                </button>
-            </div>
-        </div>
+    {{-- ===== แท็บ ===== --}}
+    <div class="tp-card tp-inset-sm" style="padding:6px; display:flex; gap:6px; flex-wrap:wrap;">
+        @foreach(['theme' => ['fa-palette', 'สีธีม'], 'banners' => ['fa-images', 'แบนเนอร์ ('.$banners->count().')'], 'categories' => ['fa-tags', 'หมวดหมู่'], 'layout' => ['fa-table-cells', 'การจัดวาง']] as $key => [$icon, $label])
+            <button type="button" class="tp-seg" style="min-width:120px;" @click="tab = @js($key)" :style="{ background: tab === @js($key) ? 'var(--card-bg)' : '', boxShadow: tab === @js($key) ? 'var(--raise)' : '' }">
+                <i class="fas {{ $icon }}"></i> {{ $label }}
+            </button>
+        @endforeach
+    </div>
 
-        {{-- Theme & Colors Tab --}}
-        <div x-show="activeTab === 'theme'" x-cloak>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                    <i class="fas fa-palette text-orange-500 mr-2"></i>
-                    ธีมและสี
-                </h2>
-
-                <form action="{{ route('admin.storefront.update-theme') }}" method="POST" class="space-y-6">
-                    @csrf
-                    @method('PUT')
-
-                    {{-- Primary Colors --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                สี Primary
-                            </label>
-                            <div class="flex items-center gap-3">
-                                <input type="color"
-                                       name="primary_color"
-                                       value="{{ setting('storefront_primary_color', '#F97316') }}"
-                                       class="w-12 h-12 rounded-lg cursor-pointer border-0">
-                                <input type="text"
-                                       name="primary_color_hex"
-                                       value="{{ setting('storefront_primary_color', '#F97316') }}"
-                                       class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                       placeholder="#F97316">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                สี Secondary
-                            </label>
-                            <div class="flex items-center gap-3">
-                                <input type="color"
-                                       name="secondary_color"
-                                       value="{{ setting('storefront_secondary_color', '#EF4444') }}"
-                                       class="w-12 h-12 rounded-lg cursor-pointer border-0">
-                                <input type="text"
-                                       name="secondary_color_hex"
-                                       value="{{ setting('storefront_secondary_color', '#EF4444') }}"
-                                       class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                       placeholder="#EF4444">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                สี Accent
-                            </label>
-                            <div class="flex items-center gap-3">
-                                <input type="color"
-                                       name="accent_color"
-                                       value="{{ setting('storefront_accent_color', '#EC4899') }}"
-                                       class="w-12 h-12 rounded-lg cursor-pointer border-0">
-                                <input type="text"
-                                       name="accent_color_hex"
-                                       value="{{ setting('storefront_accent_color', '#EC4899') }}"
-                                       class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                       placeholder="#EC4899">
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Preview --}}
-                    <div class="p-6 rounded-xl bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 text-white">
-                        <h3 class="font-bold text-lg mb-2">ตัวอย่าง Gradient</h3>
-                        <p class="text-white/80">นี่คือตัวอย่างสีที่จะแสดงใน Storefront</p>
-                        <button type="button" class="mt-4 px-4 py-2 bg-white text-orange-600 font-bold rounded-lg">
-                            ปุ่มตัวอย่าง
-                        </button>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button type="submit"
-                                class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors">
-                            <i class="fas fa-save mr-2"></i>
-                            บันทึกการตั้งค่าสี
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        {{-- Banners Tab --}}
-        <div x-show="activeTab === 'banners'" x-cloak>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                        <i class="fas fa-images text-orange-500 mr-2"></i>
-                        จัดการแบนเนอร์
-                    </h2>
-                    <a href="{{ route('admin.storefront.banners.create') }}"
-                       class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors">
-                        <i class="fas fa-plus mr-2"></i>
-                        เพิ่มแบนเนอร์
-                    </a>
-                </div>
-
-                @if($banners->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    @foreach($banners as $banner)
-                    <div class="relative group rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
-                        @if($banner->image_url)
-                        <img src="{{ $banner->image_url }}"
-                             alt="{{ $banner->title }}"
-                             class="w-full h-40 object-cover">
-                        @else
-                        <div class="w-full h-40 bg-gradient-to-r {{ $banner->gradient ?? 'from-orange-400 to-red-400' }} flex items-center justify-center text-white">
-                            <span class="text-lg font-bold">{{ $banner->title ?? 'No Image' }}</span>
-                        </div>
-                        @endif
-
-                        {{-- Overlay Actions --}}
-                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <a href="{{ route('admin.storefront.banners.edit', $banner) }}"
-                               class="px-3 py-2 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-100">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <form action="{{ route('admin.storefront.banners.destroy', $banner) }}" method="POST" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        onclick="return confirm('ยืนยันการลบแบนเนอร์นี้?')"
-                                        class="px-3 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-
-                        {{-- Status Badge --}}
-                        <div class="absolute top-2 right-2">
-                            <span class="px-2 py-1 text-xs font-bold rounded-full {{ $banner->is_active ? 'bg-green-500 text-white' : 'bg-gray-500 text-white' }}">
-                                {{ $banner->is_active ? 'Active' : 'Inactive' }}
-                            </span>
-                        </div>
-
-                        {{-- Info --}}
-                        <div class="p-3 bg-white dark:bg-gray-800">
-                            <h4 class="font-medium text-gray-900 dark:text-white truncate">{{ $banner->title ?? 'No Title' }}</h4>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Order: {{ $banner->sort_order }}</p>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-                @else
-                <div class="text-center py-12">
-                    <i class="fas fa-images text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                    <p class="text-gray-500 dark:text-gray-400">ยังไม่มีแบนเนอร์</p>
-                    <a href="{{ route('admin.storefront.banners.create') }}"
-                       class="inline-block mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg">
-                        เพิ่มแบนเนอร์แรก
-                    </a>
-                </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- Categories Tab --}}
-        <div x-show="activeTab === 'categories'" x-cloak>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">
-                        <i class="fas fa-th-large text-orange-500 mr-2"></i>
-                        จัดการหมวดหมู่
-                    </h2>
-                    <a href="{{ route('admin.ecommerce.categories.index') }}"
-                       class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors">
-                        <i class="fas fa-cog mr-2"></i>
-                        จัดการหมวดหมู่ทั้งหมด
-                    </a>
-                </div>
-
-                <p class="text-gray-600 dark:text-gray-400 mb-6">
-                    ตั้งค่าไอคอนและรูปภาพสำหรับแต่ละหมวดหมู่ที่จะแสดงใน Storefront
-                </p>
-
-                @if($categories->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    @foreach($categories as $category)
-                    <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-500 dark:hover:border-orange-500 transition-colors">
-                        <div class="flex items-center gap-4">
-                            {{-- Icon/Image --}}
-                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-100 to-pink-100 dark:from-orange-900/30 dark:to-pink-900/30 flex items-center justify-center">
-                                @if($category->icon)
-                                <i class="{{ $category->icon }} text-2xl text-orange-600 dark:text-orange-400"></i>
-                                @elseif($category->image_url)
-                                <img src="{{ $category->image_url }}" alt="{{ $category->name }}" class="w-full h-full object-cover rounded-xl">
-                                @else
-                                <i class="fas fa-box text-2xl text-gray-400"></i>
-                                @endif
-                            </div>
-
-                            <div class="flex-1 min-w-0">
-                                <h4 class="font-medium text-gray-900 dark:text-white truncate">{{ $category->name }}</h4>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                    {{ $category->products_count ?? 0 }} สินค้า
-                                </p>
-                            </div>
-
-                            <a href="{{ route('admin.ecommerce.categories.index') }}?highlight={{ $category->id }}"
-                               class="p-2 text-gray-400 hover:text-orange-500 transition-colors"
-                               title="แก้ไขหมวดหมู่">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-                @else
-                <div class="text-center py-12">
-                    <i class="fas fa-th-large text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                    <p class="text-gray-500 dark:text-gray-400">ยังไม่มีหมวดหมู่</p>
-                </div>
-                @endif
-            </div>
-        </div>
-
-        {{-- Layout Tab --}}
-        <div x-show="activeTab === 'layout'" x-cloak>
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                    <i class="fas fa-columns text-orange-500 mr-2"></i>
-                    การตั้งค่าเลย์เอาต์
-                </h2>
-
-                <form action="{{ route('admin.storefront.update-layout') }}" method="POST" class="space-y-6">
-                    @csrf
-                    @method('PUT')
-
-                    {{-- Products per row --}}
+    {{-- ===== สีธีม ===== --}}
+    <div x-show="tab === 'theme'" class="tp-card"
+         x-data="{ primary: @js($colors['primary']), secondary: @js($colors['secondary']), accent: @js($colors['accent']) }">
+        <div class="tp-section-h" style="margin-bottom:4px;">สีของหน้าร้าน</div>
+        <div style="font-size:12px; color:var(--ink2); margin-bottom:14px;">ใช้กับปุ่ม ป้าย และไล่เฉดบนหน้าตลาดรวม (ไม่กระทบธีมหลังบ้าน)</div>
+        <form method="POST" action="{{ route('admin.storefront.update-theme') }}" style="display:flex; flex-direction:column; gap:16px;" x-data="{ busy: false }" @submit="busy = true">
+            @csrf
+            @method('PUT')
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+                @foreach(['primary' => 'สีหลัก (Primary)', 'secondary' => 'สีรอง (Secondary)', 'accent' => 'สีเน้น (Accent)'] as $key => $label)
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            จำนวนสินค้าต่อแถว
-                        </label>
-                        <select name="products_per_row"
-                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="4" {{ setting('storefront_products_per_row', '6') == '4' ? 'selected' : '' }}>4 สินค้า</option>
-                            <option value="5" {{ setting('storefront_products_per_row', '6') == '5' ? 'selected' : '' }}>5 สินค้า</option>
-                            <option value="6" {{ setting('storefront_products_per_row', '6') == '6' ? 'selected' : '' }}>6 สินค้า (แนะนำ)</option>
-                        </select>
+                        <label style="{{ $lbl }}">{{ $label }}</label>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input type="color" name="{{ $key }}_color" x-model="{{ $key }}" style="width:48px; height:44px; border:0; padding:0; background:transparent; cursor:pointer; flex:none;">
+                            <input type="text" name="{{ $key }}_color_hex" x-model="{{ $key }}" maxlength="20" class="tp-input tp-num" pattern="^#?[0-9A-Fa-f]{3,8}$">
+                        </div>
                     </div>
+                @endforeach
+            </div>
+            <div style="border-radius:18px; padding:22px; color:var(--tp-on-accent,#fff);" :style="{ background: 'linear-gradient(120deg,' + primary + ',' + secondary + ',' + accent + ')' }">
+                <div style="font-weight:800; font-size:17px;">ตัวอย่างไล่เฉดหน้าร้าน</div>
+                <div style="font-size:13px; opacity:.85; margin-top:3px;">สีจริงที่ลูกค้าจะเห็นบนหน้าตลาดรวม</div>
+                <span style="display:inline-block; margin-top:12px; padding:8px 16px; border-radius:11px; font-weight:700; font-size:13px; background:var(--tp-on-accent,#fff);" :style="{ color: primary }">ปุ่มตัวอย่าง</span>
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+                <button type="submit" class="tp-btn tp-btn-primary" :disabled="busy"><i class="fas fa-floppy-disk"></i> บันทึกสีธีม</button>
+            </div>
+        </form>
+    </div>
 
-                    {{-- Show sections --}}
-                    <div class="space-y-4">
-                        <h3 class="font-medium text-gray-900 dark:text-white">แสดงส่วนต่างๆ</h3>
-
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox"
-                                   name="show_flash_deals"
-                                   value="1"
-                                   {{ setting('storefront_show_flash_deals', '1') ? 'checked' : '' }}
-                                   class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
-                            <span class="text-gray-700 dark:text-gray-300">แสดง Flash Deals</span>
-                        </label>
-
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox"
-                                   name="show_featured_stores"
-                                   value="1"
-                                   {{ setting('storefront_show_featured_stores', '1') ? 'checked' : '' }}
-                                   class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
-                            <span class="text-gray-700 dark:text-gray-300">แสดงร้านค้าแนะนำ</span>
-                        </label>
-
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox"
-                                   name="show_categories"
-                                   value="1"
-                                   {{ setting('storefront_show_categories', '1') ? 'checked' : '' }}
-                                   class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
-                            <span class="text-gray-700 dark:text-gray-300">แสดงหมวดหมู่</span>
-                        </label>
-
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox"
-                                   name="show_pv_on_products"
-                                   value="1"
-                                   {{ setting('storefront_show_pv', '1') ? 'checked' : '' }}
-                                   class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
-                            <span class="text-gray-700 dark:text-gray-300">แสดง PV ที่สินค้า</span>
-                        </label>
-
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox"
-                                   name="show_commission_on_products"
-                                   value="1"
-                                   {{ setting('storefront_show_commission', '0') ? 'checked' : '' }}
-                                   class="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500">
-                            <span class="text-gray-700 dark:text-gray-300">แสดงคอมมิชชั่นที่สินค้า (เฉพาะผู้ล็อกอิน)</span>
-                        </label>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button type="submit"
-                                class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg transition-colors">
-                            <i class="fas fa-save mr-2"></i>
-                            บันทึกการตั้งค่า
-                        </button>
-                    </div>
-                </form>
+    {{-- ===== แบนเนอร์ ===== --}}
+    <div x-show="tab === 'banners'" x-cloak class="tp-card">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+            <div class="tp-section-h">แบนเนอร์หน้าแรก</div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <a href="{{ route('admin.storefront.banners.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-sort"></i> จัดการ/เรียงลำดับ</a>
+                <a href="{{ route('admin.storefront.banners.create') }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-plus"></i> เพิ่มแบนเนอร์</a>
             </div>
         </div>
+        @if($banners->count() > 0)
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr)); gap:14px;">
+                @foreach($banners as $banner)
+                    <div class="tp-well" style="padding:0; overflow:hidden; border-radius:16px;">
+                        <div style="position:relative; aspect-ratio:16/7; background:linear-gradient(120deg,var(--accent1),var(--accent2));">
+                            @if($banner->image_url)
+                                <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                            @else
+                                <div style="position:absolute; inset:0; display:grid; place-items:center; color:var(--tp-on-accent,#fff); font-weight:800; padding:10px; text-align:center;">{{ $banner->title ?: 'ไม่มีรูป' }}</div>
+                            @endif
+                            <span class="tp-pill" style="position:absolute; top:8px; left:8px; {{ $pill($banner->is_active ? $c['ok'] : $c['mute']) }} background:var(--card-bg);">{{ $banner->is_active ? 'แสดงอยู่' : 'ปิด' }}</span>
+                        </div>
+                        <div style="padding:10px 12px; display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                            <div style="min-width:0;">
+                                <div style="font-weight:700; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $banner->title ?: 'ไม่มีหัวข้อ' }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);">ลำดับ {{ $banner->sort_order }}</div>
+                            </div>
+                            <a href="{{ route('admin.storefront.banners.edit', $banner) }}" class="tp-icon-btn" style="width:34px; height:34px;" title="แก้ไข"><i class="fas fa-pen"></i></a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div style="text-align:center; color:var(--ink2); padding:36px 0; font-size:13px;">
+                <i class="fas fa-image" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                ยังไม่มีแบนเนอร์ — <a href="{{ route('admin.storefront.banners.create') }}" style="color:var(--deep1);">เพิ่มแบนเนอร์แรก</a>
+            </div>
+        @endif
+    </div>
+
+    {{-- ===== หมวดหมู่ ===== --}}
+    <div x-show="tab === 'categories'" x-cloak class="tp-card">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+            <div>
+                <div class="tp-section-h">หมวดหมู่หลักที่แสดงบนหน้าร้าน</div>
+                <div style="font-size:12px; color:var(--ink2); margin-top:3px;">แสดงเฉพาะหมวดที่เปิดใช้งานและไม่มีหมวดแม่</div>
+            </div>
+            <a href="{{ route('admin.ecommerce.categories.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-tags"></i> จัดการหมวดหมู่</a>
+        </div>
+        @if($categories->count() > 0)
+            <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr)); gap:12px;">
+                @foreach($categories as $category)
+                    <a href="{{ route('admin.ecommerce.products.index', ['category' => $category->id]) }}" class="tp-well" style="padding:12px; border-radius:14px; display:flex; gap:10px; align-items:center; text-decoration:none; color:var(--ink);">
+                        @if($category->image_url_full)
+                            <img src="{{ $category->image_url_full }}" alt="" loading="lazy" style="width:38px; height:38px; border-radius:10px; object-fit:cover; flex:none;">
+                        @else
+                            <span class="tp-tile" style="width:38px; height:38px; font-size:15px;"><i class="{{ $category->icon ?: 'fas fa-tag' }}"></i></span>
+                        @endif
+                        <div style="min-width:0;">
+                            <div style="font-weight:700; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $category->name }}</div>
+                            <div style="font-size:11.5px; color:var(--ink2);">{{ number_format((int) ($category->products_count ?? $category->products()->count())) }} สินค้า</div>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        @else
+            <div style="text-align:center; color:var(--ink2); padding:30px 0; font-size:13px;">ยังไม่มีหมวดหมู่หลักที่เปิดใช้งาน</div>
+        @endif
+    </div>
+
+    {{-- ===== การจัดวาง ===== --}}
+    <div x-show="tab === 'layout'" x-cloak class="tp-card">
+        <div class="tp-section-h" style="margin-bottom:14px;">การจัดวางหน้าตลาดรวม</div>
+        <form method="POST" action="{{ route('admin.storefront.update-layout') }}" style="display:flex; flex-direction:column; gap:14px;" x-data="{ busy: false }" @submit="busy = true">
+            @csrf
+            @method('PUT')
+            <div style="max-width:320px;">
+                <label style="{{ $lbl }}">จำนวนสินค้าต่อแถว (จอใหญ่)</label>
+                <select name="products_per_row" class="tp-input">
+                    <option value="4" @selected($perRow === '4')>4 สินค้า</option>
+                    <option value="5" @selected($perRow === '5')>5 สินค้า</option>
+                    <option value="6" @selected($perRow === '6')>6 สินค้า (แนะนำ)</option>
+                </select>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:10px;">
+                @foreach($toggles as [$name, $key, $default, $label, $desc])
+                    <label class="tp-well" style="{{ $check }}">
+                        <input type="checkbox" name="{{ $name }}" value="1" @checked((bool) setting($key, $default)) style="accent-color:var(--accent1); width:18px; height:18px; flex:none;">
+                        <span><span style="font-weight:600;">{{ $label }}</span><br><span style="font-size:11.5px; color:var(--ink2);">{{ $desc }}</span></span>
+                    </label>
+                @endforeach
+            </div>
+            <div style="display:flex; justify-content:flex-end;">
+                <button type="submit" class="tp-btn tp-btn-primary" :disabled="busy"><i class="fas fa-floppy-disk"></i> บันทึกการจัดวาง</button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection

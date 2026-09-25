@@ -25,6 +25,22 @@ class SellerPosController extends Controller
         return VendorStore::where('user_id', auth()->id())->firstOrFail();
     }
 
+    /**
+     * ตรวจว่าข้อมูล POS เป็นของร้านผู้ใช้ปัจจุบัน
+     *
+     * (2026-09-25) เดิมใช้ $this->authorize() แต่ไม่มี Policy ของโมเดล POS เลย
+     * → Gate ปฏิเสธทุกครั้ง หน้าอุปกรณ์/รายการขาย/เซสชัน/ใบเสร็จ/แก้หมวดหมู่ ของผู้ขายเจอ 403 หมด
+     * จึงเปลี่ยนมาเทียบ store_id ตรง ๆ (ซูเปอร์แอดมินยังผ่านได้เหมือนเดิมผ่าน Gate::before)
+     */
+    protected function ensureStoreOwns($storeId): void
+    {
+        if (auth()->user()?->is_super_admin) {
+            return;
+        }
+
+        abort_if((int) $storeId !== (int) $this->getStore()->id, 403, 'ไม่มีสิทธิ์เข้าถึงข้อมูลนี้');
+    }
+
     public function index()
     {
         $store = $this->getStore();
@@ -68,7 +84,7 @@ class SellerPosController extends Controller
 
     public function deviceShow(PosDevice $device)
     {
-        $this->authorize('view', $device);
+        $this->ensureStoreOwns($device->store_id);
 
         $device->load(['sessions.user', 'transactions']);
 
@@ -92,28 +108,41 @@ class SellerPosController extends Controller
             ->with(['posDevice', 'user', 'items'])
             ->latest('transaction_date');
 
-        if ($request->has('device_id')) {
+        // ใช้ filled() — ตัวเลือก "ทั้งหมด" ส่งค่าว่างมา (has() จะกรองเป็น IS NULL จนไม่เจออะไรเลย)
+        if ($request->filled('device_id')) {
             $query->where('pos_device_id', $request->device_id);
         }
 
-        if ($request->has('date_from')) {
+        if ($request->filled('date_from')) {
             $query->whereDate('transaction_date', '>=', $request->date_from);
         }
 
-        if ($request->has('date_to')) {
+        if ($request->filled('date_to')) {
             $query->whereDate('transaction_date', '<=', $request->date_to);
         }
 
-        $transactions = $query->paginate(20);
+        // สรุปยอดตามตัวกรองปัจจุบัน (ทุกหน้า ไม่ใช่เฉพาะหน้าที่แสดง)
+        $summaryRows = (clone $query)->setEagerLoads([])->reorder()
+            ->select('payment_method')
+            ->selectRaw('COUNT(*) as cnt, COALESCE(SUM(total_amount),0) as total')
+            ->groupBy('payment_method')
+            ->get();
+        $summary = [
+            'count' => (int) $summaryRows->sum('cnt'),
+            'total' => round((float) $summaryRows->sum('total'), 2),
+            'by_method' => $summaryRows->mapWithKeys(fn ($r) => [$r->payment_method => ['count' => (int) $r->cnt, 'total' => round((float) $r->total, 2)]])->all(),
+        ];
+
+        $transactions = $query->paginate(20)->withQueryString();
 
         $devices = PosDevice::where('store_id', $store->id)->get();
 
-        return view('seller.pos.transactions.index', compact('transactions', 'devices'));
+        return view('seller.pos.transactions.index', compact('transactions', 'devices', 'summary'));
     }
 
     public function transactionShow(PosTransaction $transaction)
     {
-        $this->authorize('view', $transaction);
+        $this->ensureStoreOwns($transaction->store_id);
 
         $transaction->load(['posDevice', 'posSession', 'user', 'items.product']);
 
@@ -129,15 +158,15 @@ class SellerPosController extends Controller
             ->with(['posDevice', 'user'])
             ->latest('opened_at');
 
-        if ($request->has('device_id')) {
+        if ($request->filled('device_id')) {
             $query->where('pos_device_id', $request->device_id);
         }
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        $sessions = $query->paginate(20);
+        $sessions = $query->paginate(20)->withQueryString();
         $devices = PosDevice::where('store_id', $store->id)->get();
 
         return view('seller.pos.sessions.index', compact('sessions', 'devices'));
@@ -145,7 +174,7 @@ class SellerPosController extends Controller
 
     public function sessionShow(PosSession $session)
     {
-        $this->authorize('view', $session);
+        $this->ensureStoreOwns($session->posDevice?->store_id);
 
         $session->load(['posDevice', 'user', 'transactions']);
 
@@ -183,13 +212,14 @@ class SellerPosController extends Controller
             'require_manager_approval' => 'boolean',
             'manager_approval_threshold' => 'nullable|numeric|min:0|max:100',
             'enabled_payment_methods' => 'nullable|array',
+            'enabled_payment_methods.*' => 'in:cash,card,qr,bank_transfer,other',
             'auto_print_receipt' => 'boolean',
             'receipt_size' => 'nullable|in:58mm,80mm',
             'receipt_copies' => 'nullable|integer|min:1|max:5',
             'dual_screen_enabled' => 'boolean',
             'show_product_images' => 'boolean',
             'show_stock_levels' => 'boolean',
-            'theme_color' => 'nullable|string|max:7',
+            'theme_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'offline_mode_enabled' => 'boolean',
             'real_time_stock_sync' => 'boolean',
             'low_stock_warning' => 'boolean',
@@ -203,7 +233,7 @@ class SellerPosController extends Controller
             $validated
         );
 
-        return back()->with('success', 'POS settings updated successfully!');
+        return back()->with('success', 'บันทึกการตั้งค่า POS เรียบร้อยแล้ว');
     }
 
     // Categories
@@ -227,47 +257,53 @@ class SellerPosController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'icon' => 'nullable|string|max:100',
-            'color' => 'nullable|string|max:7',
+            // สีต้องเป็นรหัส hex จริง (ค่านี้ถูกใส่ลง style ของหน้า)
+            'color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'show_in_pos' => 'boolean',
-            'parent_id' => 'nullable|exists:pos_categories,id',
+            // หมวดแม่ต้องเป็นของร้านนี้เท่านั้น
+            'parent_id' => ['nullable', \Illuminate\Validation\Rule::exists('pos_categories', 'id')->where('store_id', $store->id)],
         ]);
 
         $validated['store_id'] = $store->id;
 
         $category = PosCategory::create($validated);
 
-        return back()->with('success', 'Category created successfully!');
+        return back()->with('success', 'เพิ่มหมวดหมู่เรียบร้อยแล้ว');
     }
 
     public function categoryUpdate(Request $request, PosCategory $category)
     {
-        $this->authorize('update', $category);
+        $this->ensureStoreOwns($category->store_id);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'icon' => 'nullable|string|max:100',
-            'color' => 'nullable|string|max:7',
+            'color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'order' => 'nullable|integer|min:0',
             'is_active' => 'boolean',
             'show_in_pos' => 'boolean',
-            'parent_id' => 'nullable|exists:pos_categories,id',
+            'parent_id' => [
+                'nullable',
+                \Illuminate\Validation\Rule::exists('pos_categories', 'id')->where('store_id', $category->store_id),
+                \Illuminate\Validation\Rule::notIn([$category->id]),
+            ],
         ]);
 
         $category->update($validated);
 
-        return back()->with('success', 'Category updated successfully!');
+        return back()->with('success', 'แก้ไขหมวดหมู่เรียบร้อยแล้ว');
     }
 
     public function categoryDestroy(PosCategory $category)
     {
-        $this->authorize('delete', $category);
+        $this->ensureStoreOwns($category->store_id);
 
         $category->delete();
 
-        return back()->with('success', 'Category deleted successfully!');
+        return back()->with('success', 'ลบหมวดหมู่เรียบร้อยแล้ว');
     }
 
     // Advertisements
@@ -303,15 +339,76 @@ class SellerPosController extends Controller
 
         $advertisement = PosAdvertisement::create($validated);
 
-        return back()->with('success', 'Advertisement created successfully!');
+        return back()->with('success', 'เพิ่มโฆษณาเรียบร้อยแล้ว');
+    }
+
+    /**
+     * แก้ไขโฆษณาจอลูกค้า (GAP-10) — แก้ได้เฉพาะโฆษณาของร้านตัวเอง
+     */
+    public function advertisementUpdate(Request $request, PosAdvertisement $advertisement)
+    {
+        $store = $this->getStore();
+        abort_if((int) $advertisement->store_id !== (int) $store->id, 403, 'ไม่มีสิทธิ์แก้ไขโฆษณานี้');
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'type' => 'required|in:image,video,html,promotion',
+            'image' => 'nullable|image|max:5120',
+            'duration_seconds' => 'required|integer|min:1|max:300',
+            'order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $oldPath = $advertisement->image_url;
+            $validated['image_url'] = $request->file('image')->store('pos/advertisements', 'public');
+
+            // ลบไฟล์รูปเดิม (เฉพาะไฟล์ในดิสก์ของเรา ไม่ใช่ URL ภายนอก)
+            if ($oldPath && ! str_starts_with($oldPath, 'http')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+            }
+        }
+        unset($validated['image']);
+
+        $advertisement->update($validated);
+
+        return back()->with('success', 'แก้ไขโฆษณาเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ลบโฆษณาจอลูกค้า (GAP-10) — soft delete เฉพาะโฆษณาของร้านตัวเอง
+     */
+    public function advertisementDestroy(PosAdvertisement $advertisement)
+    {
+        $store = $this->getStore();
+        abort_if((int) $advertisement->store_id !== (int) $store->id, 403, 'ไม่มีสิทธิ์ลบโฆษณานี้');
+
+        $advertisement->delete();
+
+        return back()->with('success', 'ลบโฆษณาเรียบร้อยแล้ว');
     }
 
     // Analytics
     public function analytics(Request $request)
     {
         $store = $this->getStore();
-        $dateFrom = $request->get('date_from', now()->subDays(30));
-        $dateTo = $request->get('date_to', now());
+
+        // แปลงช่วงวันที่ให้ครอบทั้งวัน (เดิมส่งสตริง Y-m-d ตรง ๆ → ยอดของ "วันสุดท้าย" หายทั้งวัน)
+        try {
+            $dateFrom = $request->filled('date_from')
+                ? \Carbon\Carbon::parse($request->get('date_from'))->startOfDay()
+                : now()->subDays(29)->startOfDay();
+            $dateTo = $request->filled('date_to')
+                ? \Carbon\Carbon::parse($request->get('date_to'))->endOfDay()
+                : now()->endOfDay();
+        } catch (\Throwable $e) {
+            $dateFrom = now()->subDays(29)->startOfDay();
+            $dateTo = now()->endOfDay();
+        }
+        if ($dateFrom->gt($dateTo)) {
+            [$dateFrom, $dateTo] = [$dateTo->copy()->startOfDay(), $dateFrom->copy()->endOfDay()];
+        }
 
         $analytics = [
             'sales_by_device' => $this->getSalesByDevice($store->id, $dateFrom, $dateTo),
@@ -325,7 +422,8 @@ class SellerPosController extends Controller
 
     protected function getSalesByDevice($storeId, $dateFrom, $dateTo)
     {
-        return PosDevice::where('store_id', $storeId)
+        // ระบุชื่อตารางให้ store_id (ทั้ง pos_devices และ pos_transactions มีคอลัมน์นี้ → เดิม SQL ambiguous 500)
+        return PosDevice::where('pos_devices.store_id', $storeId)
             ->select('pos_devices.*')
             ->selectRaw('COUNT(pos_transactions.id) as transaction_count')
             ->selectRaw('SUM(pos_transactions.total_amount) as total_sales')
@@ -437,7 +535,8 @@ class SellerPosController extends Controller
             'session_id' => 'required|exists:pos_sessions,id',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|numeric|min:0.01',
+            // คอลัมน์ pos_transaction_items.quantity เป็น int → รับเฉพาะจำนวนเต็ม
+            'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.discount' => 'nullable|numeric|min:0',
             'subtotal' => 'required|numeric|min:0',
@@ -450,6 +549,23 @@ class SellerPosController extends Controller
             'customer_phone' => 'nullable|string|max:20',
             'notes' => 'nullable|string',
         ]);
+
+        // 🔒 (2026-09-25) กัน IDOR: อุปกรณ์ / เซสชัน / สินค้า ต้องเป็นของร้านนี้เท่านั้น
+        //    (เดิมตรวจแค่ว่า id มีอยู่ในระบบ → ขายสินค้า/ตัดสต็อกของร้านอื่นได้)
+        $deviceOk = PosDevice::where('id', $validated['device_id'])->where('store_id', $store->id)->exists();
+        $sessionOk = PosSession::where('id', $validated['session_id'])
+            ->where('pos_device_id', $validated['device_id'])
+            ->exists();
+        $productIds = collect($validated['items'])->pluck('product_id')->unique();
+        $ownProducts = Product::whereIn('id', $productIds)->where('store_id', $store->id)->count();
+
+        if (! $deviceOk || ! $sessionOk || $ownProducts !== $productIds->count()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'NOT_YOUR_STORE',
+                'message' => 'มีอุปกรณ์หรือสินค้าที่ไม่ใช่ของร้านคุณในรายการขาย',
+            ], 403);
+        }
 
         try {
             DB::beginTransaction();
@@ -468,11 +584,14 @@ class SellerPosController extends Controller
                 'tax_amount' => $validated['tax_amount'] ?? 0,
                 'total_amount' => $validated['total_amount'],
                 'payment_method' => $validated['payment_method'],
-                'payment_amount' => $validated['payment_amount'],
-                'change_amount' => max(0, $validated['payment_amount'] - $validated['total_amount']),
-                'payment_status' => 'paid',
+                // คอลัมน์จริงชื่อ amount_paid (payment_amount ไม่อยู่ใน fillable → เดิมถูกทิ้งเงียบ ๆ)
+                'amount_paid' => $validated['payment_amount'],
+                'change_amount' => max(0, round($validated['payment_amount'] - $validated['total_amount'], 2)),
+                // enum ของ payment_status คือ completed|refunded|partial_refund|void ('paid' ทำให้ insert พังบน MySQL strict)
+                'payment_status' => 'completed',
                 'status' => 'completed',
                 'total_items' => count($validated['items']),
+                'total_quantity' => (int) collect($validated['items'])->sum('quantity'),
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
                 'notes' => $validated['notes'] ?? null,
@@ -480,30 +599,35 @@ class SellerPosController extends Controller
 
             // Create transaction items
             foreach ($validated['items'] as $item) {
-                $product = Product::find($item['product_id']);
+                // ล็อกแถวสินค้าระหว่างตัดสต็อก (กันขายพร้อมกันหลายเครื่องแล้วสต็อกเพี้ยน)
+                $product = Product::whereKey($item['product_id'])->lockForUpdate()->first();
+                $lineSubtotal = round($item['quantity'] * $item['unit_price'], 2);
+                $lineDiscount = round((float) ($item['discount'] ?? 0), 2);
 
                 PosTransactionItem::create([
                     'pos_transaction_id' => $transaction->id,
                     'product_id' => $item['product_id'],
                     'product_name' => $product->name,
                     'product_sku' => $product->sku,
+                    'product_barcode' => $product->barcode,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'discount' => $item['discount'] ?? 0,
-                    'subtotal' => ($item['quantity'] * $item['unit_price']) - ($item['discount'] ?? 0),
-                    'tax' => 0,
-                    'total' => ($item['quantity'] * $item['unit_price']) - ($item['discount'] ?? 0),
+                    // original_price เป็น NOT NULL — เดิมไม่ได้ส่งมา ทำให้บันทึกการขายพังทุกครั้ง
+                    'original_price' => $product->price ?? $item['unit_price'],
+                    // คอลัมน์จริงคือ discount_amount / tax_amount (เดิมใช้ discount / tax ที่ไม่อยู่ใน fillable)
+                    'discount_amount' => $lineDiscount,
+                    'subtotal' => $lineSubtotal,
+                    'tax_amount' => 0,
+                    'total' => round($lineSubtotal - $lineDiscount, 2),
                 ]);
 
                 // Update stock
                 if ($product->track_inventory) {
                     $product->decrement('stock_quantity', $item['quantity']);
 
-                    // Update stock status
+                    // Update stock status — enum มีแค่ in_stock|out_of_stock|on_backorder ('low_stock' ทำให้ insert พัง)
                     if ($product->stock_quantity <= 0) {
                         $product->update(['stock_status' => 'out_of_stock']);
-                    } elseif ($product->stock_quantity <= $product->low_stock_threshold) {
-                        $product->update(['stock_status' => 'low_stock']);
                     }
                 }
             }
@@ -512,7 +636,7 @@ class SellerPosController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Transaction created successfully!',
+                'message' => 'บันทึกการขายสำเร็จ',
                 'transaction' => $transaction->load('items'),
                 'receipt_url' => route('seller.pos.receipt', $transaction),
             ]);
@@ -520,9 +644,17 @@ class SellerPosController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
+            // ไม่ส่งข้อความ exception ดิบกลับไปหน้าเว็บ — เก็บลง log แทน
+            \Illuminate\Support\Facades\Log::error('Seller POS createTransaction failed', [
+                'store_id' => $store->id,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create transaction: '.$e->getMessage(),
+                'code' => 'POS_TRANSACTION_FAILED',
+                'message' => 'บันทึกการขายไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
             ], 500);
         }
     }
@@ -541,13 +673,15 @@ class SellerPosController extends Controller
             $newNumber = 1;
         }
 
-        return 'RCP-'.date('Ymd').'-'.str_pad($newNumber, 6, '0', STR_PAD_LEFT);
+        // receipt_number เป็น unique ทั้งตาราง → ต้องใส่รหัสร้านด้วย
+        // (เดิมร้านที่สองของวันได้เลขซ้ำกับร้านแรก แล้วบันทึกการขายพัง)
+        return 'RCP-'.$storeId.'-'.date('Ymd').'-'.str_pad($newNumber, 6, '0', STR_PAD_LEFT);
     }
 
     // Receipt view
     public function receipt(PosTransaction $transaction)
     {
-        $this->authorize('view', $transaction);
+        $this->ensureStoreOwns($transaction->store_id);
         $transaction->load(['items.product', 'store', 'user']);
 
         return view('seller.pos.receipt', compact('transaction'));
@@ -595,13 +729,14 @@ class SellerPosController extends Controller
             ->latest()
             ->get();
 
-        // สถิติ
+        // สถิติ — ตาราง pos_terminals บน prod มีคอลัมน์ is_active (ไม่มี status/is_online)
+        //    จึงคำนวณ "ใช้งาน" และ "ออนไลน์" ผ่าน helper ที่รองรับทั้งสองแบบ
         $stats = [
             'total_api_keys' => $apiKeys->count(),
             'active_api_keys' => $apiKeys->where('is_active', true)->where('is_blocked', false)->count(),
             'total_terminals' => $terminals->count(),
-            'active_terminals' => $terminals->where('status', 'active')->count(),
-            'online_terminals' => $terminals->where('is_online', true)->count(),
+            'active_terminals' => $terminals->filter(fn ($t) => self::terminalIsActive($t))->count(),
+            'online_terminals' => $terminals->filter(fn ($t) => self::terminalIsOnline($t))->count(),
         ];
 
         return view('seller.pos.terminals.index', compact('apiKeys', 'terminals', 'stats', 'store'));
@@ -622,7 +757,8 @@ class SellerPosController extends Controller
         // สร้าง API Key
         $apiKey = PosApiKey::create([
             'shop_id' => $store->id,
-            'name' => $validated['name'] ?? 'POS Terminal '.($store->apiKeys()->count() + 1),
+            // VendorStore ไม่มี relation apiKeys() → นับจากตารางตรง ๆ (เดิม 500 เมื่อไม่กรอกชื่อ)
+            'name' => $validated['name'] ?? 'POS Terminal '.(PosApiKey::where('shop_id', $store->id)->count() + 1),
             'description' => $validated['description'] ?? null,
             'is_active' => true,
             'is_blocked' => false,
@@ -719,12 +855,45 @@ class SellerPosController extends Controller
             abort(403, 'ไม่มีสิทธิ์');
         }
 
-        $newStatus = $terminal->status === 'active' ? 'inactive' : 'active';
-        $terminal->update(['status' => $newStatus]);
+        $turnOn = ! self::terminalIsActive($terminal);
 
-        $message = $newStatus === 'active' ? 'เปิดใช้งาน Terminal สำเร็จ' : 'ปิดใช้งาน Terminal สำเร็จ';
+        // รองรับทั้งสองโครงสร้างตาราง: status (pending|active|suspended|blocked) หรือ is_active
+        // (เดิมเขียน status='inactive' ซึ่งไม่อยู่ใน enum และบน prod ไม่มีคอลัมน์ status → 500)
+        if (\Illuminate\Support\Facades\Schema::hasColumn('pos_terminals', 'status')) {
+            $terminal->forceFill(['status' => $turnOn ? 'active' : 'suspended'])->save();
+        } else {
+            $terminal->forceFill(['is_active' => $turnOn])->save();
+        }
+
+        $message = $turnOn ? 'เปิดใช้งาน Terminal สำเร็จ' : 'ปิดใช้งาน Terminal สำเร็จ';
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Terminal เปิดใช้งานอยู่หรือไม่ (รองรับตารางที่มี status หรือ is_active)
+     */
+    public static function terminalIsActive(PosTerminal $terminal): bool
+    {
+        $status = $terminal->getAttribute('status');
+        if ($status !== null) {
+            return $status === 'active';
+        }
+
+        return (bool) ($terminal->getAttribute('is_active') ?? false);
+    }
+
+    /**
+     * Terminal ออนไลน์หรือไม่ — ถือว่าออนไลน์ถ้าเห็นเครื่องหรือซิงก์ภายใน 10 นาที
+     */
+    public static function terminalIsOnline(PosTerminal $terminal): bool
+    {
+        $seen = $terminal->getAttribute('last_seen_at') ?? $terminal->getAttribute('last_sync_at');
+        if (! $seen) {
+            return false;
+        }
+
+        return \Illuminate\Support\Carbon::parse($seen)->gt(now()->subMinutes(10));
     }
 
     /**

@@ -1,738 +1,164 @@
-{{-- resources/views/seller/user-guide-v3.blade.php --}}
-{{--
- * หน้าคู่มือการใช้งานสำหรับผู้ขาย (Seller)
- *
- * แสดงคู่มือการใช้งานระบบ TP-Affiliate สำหรับผู้ขาย
- * รวมถึงการจัดการสินค้า, ออเดอร์, และเครื่องมือขาย
- *
- * @author TP-Affiliate Development Team
---}}
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'คู่มือการใช้งาน')
-@section('page-title', 'คู่มือการใช้งาน')
+{{--
+ | คู่มือการใช้งานสำหรับผู้ขาย (Theme V4)
+ | (2026-09-25) เขียนเนื้อหาใหม่ให้ตรงกับระบบจริงตอนเปิดตัว — ตัดตัวเลขสมมติ (40+ บทเรียน / วิดีโอ / 24/7)
+ |   และคำตอบ FAQ เก่าที่ไม่ตรงกับนโยบายปัจจุบัน (ค่าธรรมเนียม / รอบโอนเงิน / จำนวนสินค้า)
+ | ลิงก์ทุกอันผ่าน Route::has() — ถ้าหน้าไหนยังไม่มีจะไม่แสดงลิงก์ (กันหน้า 500)
+ --}}
+
+@section('title', 'คู่มือผู้ขาย')
+
+@php
+    $link = fn (string $name) => \Illuminate\Support\Facades\Route::has($name) ? route($name) : null;
+    $supportEmail = class_exists(\App\Support\ContactInfo::class) ? \App\Support\ContactInfo::supportEmail() : null;
+
+    // [id, ไอคอน, หัวข้อแท็บ, รายการ [หัวข้อ, คำอธิบาย, ชื่อ route (ถ้ามี)]]
+    $sections = [
+        ['start', '🚀', 'เริ่มต้นขาย', [
+            ['ตั้งค่าร้านค้า', 'ใส่ชื่อร้าน โลโก้ ที่อยู่ เบอร์โทร และช่องทางจัดส่ง ให้ลูกค้าเชื่อมั่นตั้งแต่เข้าร้าน', 'seller.store.settings'],
+            ['เลือกแพ็กเกจร้าน', 'แพ็กเกจกำหนดจำนวนสินค้าและเครื่องมือที่ใช้ได้ อัปเกรดได้ทุกเมื่อ', 'seller.packages'],
+            ['เพิ่มสินค้าชิ้นแรก', 'ใส่รูปชัด ๆ ชื่อที่ค้นหาเจอง่าย ราคา สต็อก และน้ำหนักสำหรับคำนวณค่าส่ง', 'seller.products.create'],
+            ['แชร์ลิงก์หน้าร้าน', 'ส่งลิงก์ร้านให้ลูกค้าเก่าและโพสต์ในโซเชียล เพื่อเริ่มมียอดขายและรีวิว', 'seller.dashboard'],
+        ]],
+        ['products', '📦', 'สินค้า', [
+            ['แก้ไขราคาและสต็อก', 'อัปเดตจำนวนคงเหลือให้ตรงเสมอ สินค้าที่สต็อกหมดจะไม่ถูกขายเกิน', 'seller.products.index'],
+            ['ตั้งราคาให้มีกำไร', 'ดูต้นทุน ค่าธรรมเนียม และกำไรต่อชิ้นก่อนตั้งราคา', 'seller.pricing.planner'],
+            ['รูปสินค้าที่ขายดี', 'พื้นหลังสะอาด แสงสว่าง ถ่ายหลายมุม และมีรูปใช้งานจริงอย่างน้อย 1 รูป', null],
+            ['โปรโมทสินค้าใหม่ฟรี', 'ดันสินค้าใหม่ขึ้นหน้า Official Shop ได้ฟรีตามรอบสิทธิ์ของร้าน', 'seller.marketing.select-product'],
+        ]],
+        ['orders', '🚚', 'ออเดอร์และจัดส่ง', [
+            ['รับและยืนยันออเดอร์', 'เมื่อลูกค้าชำระเงินแล้ว ออเดอร์จะเข้าหน้า “คำสั่งซื้อ” ให้ยืนยันและเริ่มแพ็ก', 'seller.orders.index'],
+            ['ใส่เลขพัสดุ', 'จัดส่งแล้วใส่ขนส่งและเลขพัสดุ ลูกค้าจะติดตามสถานะได้เองและได้รับแจ้งเตือน', 'seller.orders.pending-shipping'],
+            ['ส่งด้วยไรเดอร์', 'ร้านที่เปิดส่งด้วยไรเดอร์ เรียกไรเดอร์มารับของที่ร้านได้จากหน้ารายละเอียดออเดอร์', 'seller.store.settings'],
+            ['คุยกับลูกค้า', 'ตอบแชทเร็วช่วยปิดการขายและลดการยกเลิก', 'seller.messages.index'],
+        ]],
+        ['money', '💰', 'รายได้และถอนเงิน', [
+            ['รายได้เข้ากระเป๋าเมื่อไร', 'รายได้จากออเดอร์จะแสดงเป็น “รอโอน” และโอนเข้ากระเป๋าร้านหลังลูกค้าได้รับสินค้าและพ้นระยะรอตามที่ระบบกำหนด', 'seller.wallet.index'],
+            ['ถอนเงินเข้าบัญชี', 'เพิ่มบัญชีรับเงินแล้วกดถอน ระบบแสดงขั้นต่ำและค่าธรรมเนียมก่อนยืนยันทุกครั้ง', 'seller.wallet.withdraw'],
+            ['ค่าธรรมเนียมการขาย (GP)', 'อัตรา GP ขึ้นกับแพ็กเกจร้านและประกาศของแพลตฟอร์ม ดูอัตราที่ใช้กับร้านคุณได้ในหน้าวางแผนราคา', 'seller.pricing.planner'],
+        ]],
+        ['pos', '🏪', 'ขายหน้าร้าน (POS)', [
+            ['เปิดหน้าขาย', 'ขายหน้าร้านผ่านเว็บได้ทันที ค้นหาหรือสแกนบาร์โค้ด แล้วรับเงินสด/QR/โอน', 'seller.pos.terminal'],
+            ['ตั้งค่าใบเสร็จและภาษี', 'ใส่ชื่อร้านบนใบเสร็จ อัตรา VAT และวิธีชำระที่รับ', 'seller.pos.settings'],
+            ['พิมพ์ฉลากบาร์โค้ด', 'พิมพ์ป้ายราคาติดสินค้า เพื่อให้สแกนขายได้เร็วขึ้น', 'seller.pos.labels.index'],
+            ['เชื่อมเครื่อง POS', 'สร้าง API Key เพื่อเชื่อมโปรแกรม POS บนคอมพิวเตอร์หรือแท็บเล็ต', 'seller.pos.terminals'],
+            ['พนักงานและกะ', 'เพิ่มพนักงาน ตั้ง PIN เข้าเครื่อง POS และกำหนดกะการทำงาน', 'seller.staff.index'],
+        ]],
+        ['marketing', '📢', 'การตลาด', [
+            ['คูปองร้าน', 'แจกส่วนลดเป็นเปอร์เซ็นต์ บาท หรือส่งฟรี พร้อมกำหนดยอดขั้นต่ำและจำนวนสิทธิ์', 'seller.coupons.index'],
+            ['ตอบรีวิวลูกค้า', 'รีวิวดีช่วยให้ร้านติดอันดับ ตอบทุกรีวิวอย่างสุภาพ', 'seller.store-rating.index'],
+            ['วิเคราะห์ยอดขาย', 'ดูผู้เข้าชม อัตราการซื้อ สินค้าขายดี และคำแนะนำจาก AI', 'seller.analytics.index'],
+            ['รางวัลและร้าน Premium', 'สะสม Trophy และคะแนนร้านเพื่อปลดล็อกสถานะร้าน Premium', 'seller.achievements.index'],
+        ]],
+    ];
+
+    $faqs = [
+        ['ต้องเสียค่าธรรมเนียมการขายเท่าไร?', 'อัตรา GP ขึ้นกับแพ็กเกจร้านและโปรโมชันของแพลตฟอร์มในช่วงนั้น ระบบแสดงอัตราที่ใช้กับร้านคุณและตัวอย่างการคำนวณ “ขาย − GP = รับจริง” ในหน้าตั้งราคา'],
+        ['ได้รับเงินจากการขายเมื่อไร?', 'หลังลูกค้าได้รับสินค้า รายได้จะอยู่ในสถานะ “รอโอน” ตามระยะรอที่ระบบกำหนด แล้วโอนเข้ากระเป๋าร้านอัตโนมัติ จากนั้นถอนเข้าบัญชีธนาคารได้'],
+        ['ลูกค้ายกเลิกหรือขอคืนเงินทำอย่างไร?', 'ออเดอร์ที่ยังไม่จัดส่งยกเลิกได้จากหน้าออเดอร์ ส่วนการคืนสินค้าหลังจัดส่งให้ติดต่อทีมงานผ่านระบบ Ticket เพื่อความถูกต้องของยอดเงิน'],
+        ['ใช้ระบบ POS ต้องมีเครื่องพิเศษไหม?', 'ไม่จำเป็น เปิดหน้าขายบนมือถือหรือคอมพิวเตอร์ได้ทันที ถ้ามีเครื่องสแกนบาร์โค้ดแบบ USB/บลูทูธก็ใช้ร่วมกันได้'],
+        ['ระบบพนักงานเสียเงินไหม?', 'ฟรีทุกร้าน เพิ่มพนักงาน แผนก ตำแหน่ง กะงาน และรหัส PIN สำหรับเครื่อง POS ได้'],
+    ];
+@endphp
 
 @section('content')
-<div x-data="sellerGuideManager()" class="space-y-6">
-    {{-- Hero Section --}}
-    <div class="glass-fusion rounded-2xl overflow-hidden border border-white/30 shadow-2xl p-8 relative">
-        {{-- Background Pattern --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0 bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500"></div>
-        </div>
+<div x-data="{ tab: 'start', q: '' }" style="display:flex; flex-direction:column; gap:18px;">
 
-        <div class="relative z-10">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h1 class="text-4xl font-bold text-white mb-2 drop-shadow-lg">
-                        <i class="fas fa-store mr-3"></i>
-                        คู่มือสำหรับผู้ขาย
-                    </h1>
-                    <p class="text-white/80 text-lg">
-                        เรียนรู้การใช้งานระบบร้านค้าและเครื่องมือขายครบวงจร
-                    </p>
-                </div>
-                <div class="hidden md:block">
-                    <div class="w-32 h-32 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
-                        <i class="fas fa-store text-6xl text-white drop-shadow-lg"></i>
-                    </div>
-                </div>
-            </div>
+    <x-seller-kit.header title="คู่มือผู้ขาย" icon="📘" crumb="ร้านค้า · ช่วยเหลือ"
+                         subtitle="ขั้นตอนสำคัญตั้งแต่เปิดร้าน ขายของ รับเงิน ไปจนถึงเครื่องมือการตลาด" />
 
-            {{-- Quick Stats --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                    <div class="text-3xl font-bold text-white mb-1">40+</div>
-                    <div class="text-white/70 text-sm">บทเรียน</div>
-                </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                    <div class="text-3xl font-bold text-white mb-1">20+</div>
-                    <div class="text-white/70 text-sm">วิดีโอสอน</div>
-                </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                    <div class="text-3xl font-bold text-white mb-1">80+</div>
-                    <div class="text-white/70 text-sm">FAQ</div>
-                </div>
-                <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                    <div class="text-3xl font-bold text-white mb-1">24/7</div>
-                    <div class="text-white/70 text-sm">Support</div>
-                </div>
-            </div>
+    <div class="tp-card" style="padding:12px;">
+        <div style="position:relative;">
+            <span aria-hidden="true" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--ink2);"><i class="fas fa-magnifying-glass"></i></span>
+            <input type="search" x-model="q" class="tp-input" style="padding-left:40px;" placeholder="ค้นหาในคู่มือ เช่น ถอนเงิน คูปอง เลขพัสดุ" aria-label="ค้นหาในคู่มือ">
         </div>
     </div>
 
-    {{-- Search Bar --}}
-    <div class="glass-fusion rounded-xl border border-white/30 shadow-xl p-4">
-        <div class="relative">
-            <input type="text"
-                   x-model="searchQuery"
-                   @input="filterContent()"
-                   placeholder="ค้นหาคู่มือ, FAQ, วิธีใช้งาน..."
-                   class="w-full px-6 py-4 pl-14 bg-white/10 text-white placeholder-white/60 rounded-xl border border-white/20 focus:border-white/40 focus:ring-2 focus:ring-white/20 transition-all text-lg">
-            <div class="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none">
-                <i class="fas fa-search text-2xl text-white/60 drop-shadow"></i>
-            </div>
-            <template x-if="searchQuery.length > 0">
-                <button @click="searchQuery = ''; filterContent()"
-                        class="absolute right-5 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition">
-                    <i class="fas fa-times text-xl"></i>
+    {{-- แท็บหมวด (ซ่อนเมื่อกำลังค้นหา — แสดงผลลัพธ์ทุกหมวดแทน) --}}
+    <div x-show="q.trim() === ''">
+        <nav class="tp-card" style="padding:6px; display:flex; gap:4px; overflow-x:auto; scrollbar-width:none;" aria-label="หมวดคู่มือ">
+            @foreach($sections as [$sId, $sIcon, $sTitle])
+                <button type="button" @click="tab = @js($sId)"
+                        style="flex:none; border:0; cursor:pointer; font-family:inherit; padding:9px 13px; border-radius:12px; font-size:12.5px; font-weight:700; white-space:nowrap;"
+                        :style="tab === @js($sId) ? { color: 'var(--tp-on-accent, #fff)', background: 'linear-gradient(135deg, var(--accent1), var(--accent2))', boxShadow: 'var(--raise)' } : { color: 'var(--ink2)', background: 'transparent' }">
+                    {{ $sIcon }} {{ $sTitle }}
                 </button>
-            </template>
-        </div>
+            @endforeach
+            <button type="button" @click="tab = 'faq'"
+                    style="flex:none; border:0; cursor:pointer; font-family:inherit; padding:9px 13px; border-radius:12px; font-size:12.5px; font-weight:700; white-space:nowrap;"
+                    :style="tab === 'faq' ? { color: 'var(--tp-on-accent, #fff)', background: 'linear-gradient(135deg, var(--accent1), var(--accent2))', boxShadow: 'var(--raise)' } : { color: 'var(--ink2)', background: 'transparent' }">❓ คำถามพบบ่อย</button>
+            <button type="button" @click="tab = 'support'"
+                    style="flex:none; border:0; cursor:pointer; font-family:inherit; padding:9px 13px; border-radius:12px; font-size:12.5px; font-weight:700; white-space:nowrap;"
+                    :style="tab === 'support' ? { color: 'var(--tp-on-accent, #fff)', background: 'linear-gradient(135deg, var(--accent1), var(--accent2))', boxShadow: 'var(--raise)' } : { color: 'var(--ink2)', background: 'transparent' }">🎧 ติดต่อทีมงาน</button>
+        </nav>
     </div>
 
-    {{-- Tab Navigation --}}
-    <div class="glass-fusion rounded-xl border border-white/30 shadow-xl overflow-hidden">
-        <div class="border-b border-white/20">
-            <nav class="flex overflow-x-auto -mb-px">
-                <template x-for="tab in tabs" :key="tab.id">
-                    <button @click="currentTab = tab.id"
-                            :class="{
-                                'border-b-2 border-green-400 bg-white/10': currentTab === tab.id,
-                                'border-transparent': currentTab !== tab.id
-                            }"
-                            class="px-6 py-4 text-sm font-semibold text-white hover:bg-white/5 transition-all whitespace-nowrap">
-                        <i :class="tab.icon" class="mr-2"></i>
-                        <span x-text="tab.label"></span>
+    {{-- เนื้อหาแต่ละหมวด --}}
+    @foreach($sections as [$sId, $sIcon, $sTitle, $sItems])
+        <section x-show="q.trim() !== '' || tab === @js($sId)" aria-label="{{ $sTitle }}">
+            <div class="tp-section-h" style="margin-bottom:10px;">{{ $sIcon }} {{ $sTitle }}</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
+                @foreach($sItems as $i => [$iTitle, $iText, $iRoute])
+                    @php
+                        $iUrl = $iRoute ? $link($iRoute) : null;
+                        $haystack = mb_strtolower($iTitle.' '.$iText.' '.$sTitle);
+                    @endphp
+                    <div class="tp-card" x-show="q.trim() === '' || @js($haystack).includes(q.trim().toLowerCase())" style="padding:0;">
+                        <div style="display:flex; gap:12px; align-items:flex-start; padding:16px;">
+                            <span class="tp-tile tp-num" style="width:38px; height:38px; font-size:15px; border-radius:12px;" aria-hidden="true">{{ $i + 1 }}</span>
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-weight:800; font-size:14px;">{{ $iTitle }}</div>
+                                <div style="font-size:12.5px; color:var(--ink2); line-height:1.65; margin-top:4px;">{{ $iText }}</div>
+                                @if($iUrl)
+                                    <a href="{{ $iUrl }}" style="display:inline-block; margin-top:8px; font-size:12.5px; font-weight:700; color:var(--deep1); text-decoration:none;">ไปที่หน้านี้ →</a>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endforeach
+
+    {{-- คำถามพบบ่อย --}}
+    <section x-show="q.trim() !== '' || tab === 'faq'" aria-label="คำถามพบบ่อย">
+        <div class="tp-section-h" style="margin-bottom:10px;">❓ คำถามพบบ่อย</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            @foreach($faqs as $fi => [$question, $answer])
+                <div class="tp-card" style="padding:0;" x-data="{ open: {{ $fi === 0 ? 'true' : 'false' }} }"
+                     x-show="q.trim() === '' || @js(mb_strtolower($question.' '.$answer)).includes(q.trim().toLowerCase())">
+                    <button type="button" @click="open = !open" :aria-expanded="open ? 'true' : 'false'"
+                            style="width:100%; display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 16px; border:0; background:none; cursor:pointer; font-family:inherit; color:var(--ink); text-align:left;">
+                        <span style="font-weight:800; font-size:13.5px;">{{ $question }}</span>
+                        <span aria-hidden="true" style="transition:transform .2s ease;" :style="{ transform: open ? 'rotate(180deg)' : 'none' }">⌄</span>
                     </button>
-                </template>
-            </nav>
+                    <div x-show="open" x-transition.opacity style="padding:0 16px 14px; font-size:13px; line-height:1.7; color:var(--ink2);">{{ $answer }}</div>
+                </div>
+            @endforeach
         </div>
+    </section>
 
-        {{-- Tab Contents --}}
-        <div class="p-6">
-            {{-- Getting Started Tab --}}
-            <div x-show="currentTab === 'getting-started'" x-transition class="space-y-6">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-rocket mr-2"></i>
-                    เริ่มต้นขายสินค้า
-                </h2>
-
-                {{-- Step Cards --}}
-                <div class="grid md:grid-cols-2 gap-6">
-                    <template x-for="(step, index) in gettingStartedSteps" :key="index">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-white/40 transition cursor-pointer group">
-                            <div class="flex items-start gap-4">
-                                <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:scale-110 transition">
-                                    <span x-text="index + 1"></span>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-bold text-white mb-2" x-text="step.title"></h3>
-                                    <p class="text-white/70 text-sm" x-text="step.description"></p>
-                                    <button @click="openStepDetail(step)"
-                                            class="mt-3 text-green-400 hover:text-green-300 text-sm font-medium inline-flex items-center gap-2">
-                                        <span>เรียนรู้เพิ่มเติม</span>
-                                        <i class="fas fa-arrow-right"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            {{-- Products Tab --}}
-            <div x-show="currentTab === 'products'" x-transition class="space-y-6">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-box mr-2"></i>
-                    การจัดการสินค้า
-                </h2>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <template x-for="item in productGuide" :key="item.id">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-white/40 transition group">
-                            <div class="flex items-start gap-4">
-                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-lg"
-                                     :class="item.gradient">
-                                    <i :class="item.icon" class="text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-bold text-white mb-2" x-text="item.title"></h3>
-                                    <p class="text-white/70 text-sm" x-text="item.description"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            {{-- Orders Tab --}}
-            <div x-show="currentTab === 'orders'" x-transition class="space-y-6">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-shopping-cart mr-2"></i>
-                    การจัดการออเดอร์
-                </h2>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <template x-for="item in orderGuide" :key="item.id">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-white/40 transition group">
-                            <div class="flex items-start gap-4">
-                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-lg"
-                                     :class="item.gradient">
-                                    <i :class="item.icon" class="text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-bold text-white mb-2" x-text="item.title"></h3>
-                                    <p class="text-white/70 text-sm" x-text="item.description"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            {{-- POS Tab --}}
-            <div x-show="currentTab === 'pos'" x-transition class="space-y-6">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-cash-register mr-2"></i>
-                    ระบบ POS (ขายหน้าร้าน)
-                </h2>
-
-                <div class="grid md:grid-cols-3 gap-6">
-                    <template x-for="feature in posFeatures" :key="feature.id">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-white/40 transition hover:shadow-2xl cursor-pointer group">
-                            <div class="mb-4">
-                                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition"
-                                     :class="feature.gradient">
-                                    <i :class="feature.icon" class="text-white drop-shadow"></i>
-                                </div>
-                            </div>
-                            <h3 class="text-xl font-bold text-white mb-2" x-text="feature.title"></h3>
-                            <p class="text-white/70 text-sm mb-4" x-text="feature.description"></p>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            {{-- Analytics Tab --}}
-            <div x-show="currentTab === 'analytics'" x-transition class="space-y-6">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-chart-bar mr-2"></i>
-                    รายงานและวิเคราะห์
-                </h2>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    <template x-for="item in analyticsGuide" :key="item.id">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20 hover:border-white/40 transition group">
-                            <div class="flex items-start gap-4">
-                                <div class="w-14 h-14 rounded-xl bg-gradient-to-br flex items-center justify-center text-2xl shadow-lg"
-                                     :class="item.gradient">
-                                    <i :class="item.icon" class="text-white"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <h3 class="text-lg font-bold text-white mb-2" x-text="item.title"></h3>
-                                    <p class="text-white/70 text-sm" x-text="item.description"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            {{-- FAQ Tab --}}
-            <div x-show="currentTab === 'faq'" x-transition class="space-y-4">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-question-circle mr-2"></i>
-                    คำถามที่พบบ่อย (FAQ)
-                </h2>
-
-                <div class="space-y-3">
-                    <template x-for="(faq, index) in faqs" :key="index">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/20 overflow-hidden">
-                            <button @click="toggleFaq(index)"
-                                    class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-white/5 transition">
-                                <span class="flex items-center gap-3 flex-1">
-                                    <i class="fas fa-question-circle text-green-400"></i>
-                                    <span class="font-medium text-white" x-text="faq.question"></span>
-                                </span>
-                                <i class="fas fa-chevron-down text-white/60 transition-transform"
-                                   :class="{ 'rotate-180': faq.open }"></i>
-                            </button>
-                            <div x-show="faq.open"
-                                 x-collapse
-                                 class="px-6 pb-4">
-                                <div class="pl-8 text-white/70" x-text="faq.answer"></div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            {{-- Videos Tab --}}
-            <div x-show="currentTab === 'videos'" x-transition class="space-y-6">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-video mr-2"></i>
-                    วิดีโอสอนการใช้งาน
-                </h2>
-
-                {{-- Featured Video - Click to Play --}}
-                <div class="mb-8" x-data="{ playing: false }">
-                    <h3 class="text-lg font-semibold text-white/90 mb-4">
-                        <i class="fas fa-star text-yellow-400 mr-2"></i>
-                        วิดีโอแนะนำสำหรับผู้ขาย
-                    </h3>
-                    <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 group cursor-pointer"
-                         @click="playing = true">
-                        {{-- Thumbnail --}}
-                        <div class="aspect-video" x-show="!playing">
-                            <img src="https://img.youtube.com/vi/-GsrFb2tO1I/maxresdefault.jpg"
-                                 alt="วิดีโอแนะนำ TP-Affiliate สำหรับผู้ขาย"
-                                 class="w-full h-full object-cover">
-
-                            {{-- Overlay --}}
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-center">
-                                {{-- Play Button --}}
-                                <div class="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300 border border-white/30">
-                                    <i class="fas fa-play text-4xl text-white ml-1"></i>
-                                </div>
-                                <h4 class="text-2xl font-bold text-white drop-shadow-lg mb-2">
-                                    เริ่มต้นขายกับ TP-Affiliate
-                                </h4>
-                                <p class="text-white/80 text-sm">
-                                    คู่มือการเปิดร้านค้าและจัดการสินค้า
-                                </p>
-                            </div>
-                        </div>
-
-                        {{-- Video iframe (loads when clicked) --}}
-                        <div class="aspect-video" x-show="playing" x-cloak>
-                            <template x-if="playing">
-                                <iframe
-                                    src="https://www.youtube.com/embed/-GsrFb2tO1I?autoplay=1&rel=0"
-                                    title="TP-Affiliate Seller Introduction"
-                                    class="w-full h-full"
-                                    frameborder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowfullscreen>
-                                </iframe>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Other Videos Grid --}}
-                <h3 class="text-lg font-semibold text-white/90 mb-4">
-                    <i class="fas fa-list text-green-400 mr-2"></i>
-                    วิดีโอทั้งหมด
-                </h3>
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <template x-for="video in videos" :key="video.id">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden border border-white/20 hover:border-white/40 transition hover:shadow-2xl cursor-pointer group"
-                             x-data="{ videoPlaying: false }">
-                            {{-- Thumbnail with Click to Play --}}
-                            <div class="relative aspect-video" @click="videoPlaying = true">
-                                <template x-if="!videoPlaying">
-                                    <div class="w-full h-full">
-                                        <img :src="'https://img.youtube.com/vi/' + video.youtubeId + '/mqdefault.jpg'"
-                                             :alt="video.title"
-                                             class="w-full h-full object-cover bg-gradient-to-br from-gray-800 to-gray-900">
-                                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/20 transition">
-                                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center group-hover:bg-white/30 group-hover:scale-110 transition-all border border-white/30">
-                                                <i class="fas fa-play text-2xl text-white ml-1"></i>
-                                            </div>
-                                        </div>
-                                        <div class="absolute bottom-2 right-2 px-2 py-1 bg-black/70 rounded text-white text-xs" x-text="video.duration"></div>
-                                    </div>
-                                </template>
-                                <template x-if="videoPlaying">
-                                    <iframe
-                                        :src="'https://www.youtube.com/embed/' + video.youtubeId + '?autoplay=1&rel=0'"
-                                        :title="video.title"
-                                        class="w-full h-full"
-                                        frameborder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowfullscreen>
-                                    </iframe>
-                                </template>
-                            </div>
-                            {{-- Info --}}
-                            <div class="p-4">
-                                <h3 class="font-bold text-white mb-2 line-clamp-2" x-text="video.title"></h3>
-                                <p class="text-white/60 text-xs mb-3" x-text="video.description"></p>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </div>
-
-            {{-- Support Tab --}}
-            <div x-show="currentTab === 'support'" x-transition class="space-y-6">
-                <h2 class="text-2xl font-bold text-white mb-4">
-                    <i class="fas fa-headset mr-2"></i>
-                    ติดต่อฝ่ายสนับสนุน
-                </h2>
-
-                <div class="grid md:grid-cols-2 gap-6">
-                    {{-- Contact Methods --}}
-                    <div class="space-y-4">
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                            <div class="flex items-center gap-4 mb-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                                    <i class="fab fa-line text-2xl text-white"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-white">LINE Official (ผู้ขาย)</h3>
-                                    <p class="text-white/60 text-sm">@thaiprompt-seller</p>
-                                </div>
-                            </div>
-                            <button class="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition font-medium">
-                                <i class="fab fa-line mr-2"></i>
-                                เพิ่มเพื่อน
-                            </button>
-                        </div>
-
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                            <div class="flex items-center gap-4 mb-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-envelope text-2xl text-white"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-white">Email Support</h3>
-                                    <p class="text-white/60 text-sm">seller@thaiprompt.com</p>
-                                </div>
-                            </div>
-                            <button class="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition font-medium">
-                                <i class="fas fa-paper-plane mr-2"></i>
-                                ส่งอีเมล
-                            </button>
-                        </div>
-
-                        <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                            <div class="flex items-center gap-4 mb-4">
-                                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
-                                    <i class="fas fa-phone text-2xl text-white"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-white">Hotline ผู้ขาย</h3>
-                                    <p class="text-white/60 text-sm">09:00 - 18:00 น.</p>
-                                </div>
-                            </div>
-                            <button class="w-full px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition font-medium">
-                                <i class="fas fa-phone mr-2"></i>
-                                โทรหาเรา
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- Contact Form --}}
-                    <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                        <h3 class="text-xl font-bold text-white mb-4">ส่งคำถามถึงเรา</h3>
-                        <form @submit.prevent="submitContactForm" class="space-y-4">
-                            <div>
-                                <label class="block text-white text-sm font-medium mb-2">หัวข้อ</label>
-                                <input type="text"
-                                       x-model="contactForm.subject"
-                                       class="w-full px-4 py-2 bg-white/10 text-white placeholder-white/50 rounded-lg border border-white/20 focus:border-white/40 focus:ring-2 focus:ring-white/20"
-                                       placeholder="เรื่องที่ต้องการสอบถาม">
-                            </div>
-                            <div>
-                                <label class="block text-white text-sm font-medium mb-2">ข้อความ</label>
-                                <textarea x-model="contactForm.message"
-                                          rows="4"
-                                          class="w-full px-4 py-2 bg-white/10 text-white placeholder-white/50 rounded-lg border border-white/20 focus:border-white/40 focus:ring-2 focus:ring-white/20"
-                                          placeholder="รายละเอียดคำถาม..."></textarea>
-                            </div>
-                            <button type="submit"
-                                    class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition font-bold shadow-lg">
-                                <i class="fas fa-paper-plane mr-2"></i>
-                                ส่งคำถาม
-                            </button>
-                        </form>
-                    </div>
-                </div>
+    {{-- ติดต่อทีมงาน --}}
+    <section x-show="q.trim() === '' && tab === 'support'" aria-label="ติดต่อทีมงาน">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px;">
+            @if($link('user.tickets.create'))
+                <a href="{{ $link('user.tickets.create') }}" class="tp-card tp-card-hover" style="text-decoration:none; color:var(--ink); display:flex; gap:12px; align-items:center;">
+                    <span class="tp-tile" style="width:46px; height:46px; font-size:21px;" aria-hidden="true">🎫</span>
+                    <span><span style="display:block; font-weight:800;">แจ้งปัญหา / ขอความช่วยเหลือ</span><span style="display:block; font-size:12px; color:var(--ink2);">เปิด Ticket ทีมงานตอบกลับในระบบ</span></span>
+                </a>
+            @endif
+            @if($supportEmail)
+                <a href="mailto:{{ $supportEmail }}" class="tp-card tp-card-hover" style="text-decoration:none; color:var(--ink); display:flex; gap:12px; align-items:center;">
+                    <span class="tp-tile" style="width:46px; height:46px; font-size:21px;" aria-hidden="true">✉️</span>
+                    <span><span style="display:block; font-weight:800;">อีเมลทีมงาน</span><span style="display:block; font-size:12px; color:var(--ink2); overflow-wrap:anywhere;">{{ $supportEmail }}</span></span>
+                </a>
+            @endif
+            <div class="tp-card" style="display:flex; gap:12px; align-items:center;">
+                <span class="tp-tile" style="width:46px; height:46px; font-size:21px;" aria-hidden="true">🤖</span>
+                <span><span style="display:block; font-weight:800;">ถามน้อง Eve</span><span style="display:block; font-size:12px; color:var(--ink2);">กดปุ่มผู้ช่วยมุมจอ ถามยอดขาย ออเดอร์ หรือสต็อกของร้านได้ทันที</span></span>
             </div>
         </div>
-    </div>
+    </section>
 </div>
-
-<script>
-/**
- * Seller Guide Manager - Alpine.js Component สำหรับผู้ขาย
- */
-function sellerGuideManager() {
-    return {
-        currentTab: 'getting-started',
-        searchQuery: '',
-
-        tabs: [
-            { id: 'getting-started', label: 'เริ่มต้นขาย', icon: 'fas fa-rocket' },
-            { id: 'products', label: 'จัดการสินค้า', icon: 'fas fa-box' },
-            { id: 'orders', label: 'จัดการออเดอร์', icon: 'fas fa-shopping-cart' },
-            { id: 'pos', label: 'ระบบ POS', icon: 'fas fa-cash-register' },
-            { id: 'analytics', label: 'รายงาน', icon: 'fas fa-chart-bar' },
-            { id: 'faq', label: 'FAQ', icon: 'fas fa-question-circle' },
-            { id: 'videos', label: 'วิดีโอ', icon: 'fas fa-video' },
-            { id: 'support', label: 'ติดต่อเรา', icon: 'fas fa-headset' }
-        ],
-
-        gettingStartedSteps: [
-            {
-                title: '1. สมัครเป็นผู้ขาย',
-                description: 'ลงทะเบียนเป็นผู้ขายและรอการอนุมัติจากทีมงาน'
-            },
-            {
-                title: '2. ตั้งค่าร้านค้า',
-                description: 'กำหนดชื่อร้าน โลโก้ และข้อมูลร้านค้า'
-            },
-            {
-                title: '3. เพิ่มสินค้าแรก',
-                description: 'เพิ่มสินค้าพร้อมรูปภาพและรายละเอียด'
-            },
-            {
-                title: '4. ตั้งค่าการจัดส่ง',
-                description: 'กำหนดค่าจัดส่งและระยะเวลาจัดส่ง'
-            },
-            {
-                title: '5. เปิดร้านค้า',
-                description: 'เปิดร้านเพื่อเริ่มรับออเดอร์จากลูกค้า'
-            },
-            {
-                title: '6. จัดการและส่งสินค้า',
-                description: 'รับออเดอร์ แพ็คสินค้า และจัดส่งให้ลูกค้า'
-            }
-        ],
-
-        productGuide: [
-            {
-                id: 1,
-                title: 'เพิ่มสินค้าใหม่',
-                description: 'วิธีเพิ่มสินค้าใหม่พร้อมรูปภาพและตัวเลือก',
-                icon: 'fas fa-plus-circle',
-                gradient: 'from-green-500 to-emerald-600'
-            },
-            {
-                id: 2,
-                title: 'แก้ไขข้อมูลสินค้า',
-                description: 'อัพเดทราคา รูปภาพ และรายละเอียดสินค้า',
-                icon: 'fas fa-edit',
-                gradient: 'from-blue-500 to-indigo-600'
-            },
-            {
-                id: 3,
-                title: 'จัดการสต็อก',
-                description: 'ติดตามและอัพเดทจำนวนสินค้าคงคลัง',
-                icon: 'fas fa-warehouse',
-                gradient: 'from-yellow-500 to-orange-600'
-            },
-            {
-                id: 4,
-                title: 'ตัวเลือกสินค้า (Variants)',
-                description: 'สร้างตัวเลือกสี ไซส์ และแบบต่างๆ',
-                icon: 'fas fa-palette',
-                gradient: 'from-purple-500 to-pink-600'
-            }
-        ],
-
-        orderGuide: [
-            {
-                id: 1,
-                title: 'รับออเดอร์ใหม่',
-                description: 'ดูและยืนยันออเดอร์ที่เข้ามาใหม่',
-                icon: 'fas fa-bell',
-                gradient: 'from-green-500 to-emerald-600'
-            },
-            {
-                id: 2,
-                title: 'เตรียมสินค้า',
-                description: 'แพ็คสินค้าและเตรียมจัดส่ง',
-                icon: 'fas fa-box-open',
-                gradient: 'from-blue-500 to-indigo-600'
-            },
-            {
-                id: 3,
-                title: 'ใส่เลขพัสดุ',
-                description: 'อัพเดทเลขพัสดุเพื่อให้ลูกค้าติดตามได้',
-                icon: 'fas fa-shipping-fast',
-                gradient: 'from-yellow-500 to-orange-600'
-            },
-            {
-                id: 4,
-                title: 'จัดการคืนสินค้า',
-                description: 'ดำเนินการกรณีลูกค้าขอคืนสินค้า',
-                icon: 'fas fa-undo',
-                gradient: 'from-red-500 to-pink-600'
-            }
-        ],
-
-        posFeatures: [
-            {
-                id: 1,
-                title: 'ขายหน้าร้าน',
-                description: 'ระบบ POS สำหรับขายหน้าร้านแบบเรียลไทม์',
-                icon: 'fas fa-store',
-                gradient: 'from-green-500 to-emerald-600'
-            },
-            {
-                id: 2,
-                title: 'สแกนบาร์โค้ด',
-                description: 'สแกนสินค้าด้วยบาร์โค้ดหรือ QR Code',
-                icon: 'fas fa-barcode',
-                gradient: 'from-blue-500 to-indigo-600'
-            },
-            {
-                id: 3,
-                title: 'รับชำระเงิน',
-                description: 'รองรับหลายช่องทาง: เงินสด, QR, บัตร',
-                icon: 'fas fa-credit-card',
-                gradient: 'from-yellow-500 to-orange-600'
-            },
-            {
-                id: 4,
-                title: 'พิมพ์ใบเสร็จ',
-                description: 'พิมพ์ใบเสร็จผ่านเครื่องพิมพ์หรือส่งทาง LINE',
-                icon: 'fas fa-print',
-                gradient: 'from-purple-500 to-pink-600'
-            },
-            {
-                id: 5,
-                title: 'จัดการกะ',
-                description: 'เปิด-ปิดกะและสรุปยอดขายประจำวัน',
-                icon: 'fas fa-clock',
-                gradient: 'from-red-500 to-pink-600'
-            },
-            {
-                id: 6,
-                title: 'รายงานขาย',
-                description: 'ดูสรุปยอดขายและสถิติแบบเรียลไทม์',
-                icon: 'fas fa-chart-line',
-                gradient: 'from-indigo-500 to-purple-600'
-            }
-        ],
-
-        analyticsGuide: [
-            {
-                id: 1,
-                title: 'ภาพรวมยอดขาย',
-                description: 'ดูยอดขายรายวัน รายเดือน และรายปี',
-                icon: 'fas fa-chart-line',
-                gradient: 'from-green-500 to-emerald-600'
-            },
-            {
-                id: 2,
-                title: 'สินค้าขายดี',
-                description: 'วิเคราะห์สินค้าที่ขายดีและขายไม่ดี',
-                icon: 'fas fa-fire',
-                gradient: 'from-orange-500 to-red-600'
-            },
-            {
-                id: 3,
-                title: 'ข้อมูลลูกค้า',
-                description: 'เข้าใจพฤติกรรมและกลุ่มลูกค้าของคุณ',
-                icon: 'fas fa-users',
-                gradient: 'from-blue-500 to-indigo-600'
-            },
-            {
-                id: 4,
-                title: 'รายงาน AI',
-                description: 'รับคำแนะนำจาก AI เพื่อเพิ่มยอดขาย',
-                icon: 'fas fa-robot',
-                gradient: 'from-purple-500 to-pink-600'
-            }
-        ],
-
-        faqs: [
-            {
-                question: 'ค่าธรรมเนียมการขายเท่าไหร่?',
-                answer: 'ค่าธรรมเนียมการขายอยู่ที่ 3-5% ของยอดขาย ขึ้นอยู่กับแพ็คเกจที่เลือกใช้งาน',
-                open: false
-            },
-            {
-                question: 'รับเงินจากการขายเมื่อไหร่?',
-                answer: 'เงินจะโอนเข้าบัญชีทุกวันจันทร์ โดยจะเป็นยอดขายของสัปดาห์ก่อนหน้า',
-                open: false
-            },
-            {
-                question: 'เพิ่มสินค้าได้กี่ชิ้น?',
-                answer: 'ขึ้นอยู่กับแพ็คเกจ: Free = 50 ชิ้น, Basic = 500 ชิ้น, Pro = ไม่จำกัด',
-                open: false
-            },
-            {
-                question: 'ใช้ระบบ POS ได้อย่างไร?',
-                answer: 'หลังสมัครแพ็คเกจ Pro ขึ้นไป คุณสามารถเปิดใช้งานระบบ POS ได้ทันทีที่เมนู "ระบบ POS"',
-                open: false
-            },
-            {
-                question: 'มีระบบจัดการพนักงานหรือไม่?',
-                answer: 'มีค่ะ! ในแพ็คเกจ Pro มีระบบ ERP ฟรีสำหรับจัดการพนักงาน, ตำแหน่ง, และกะการทำงาน',
-                open: false
-            }
-        ],
-
-        videos: [
-            {
-                id: 1,
-                title: 'เริ่มต้นเปิดร้านค้า',
-                description: 'สอนการตั้งค่าร้านค้าและเพิ่มสินค้าแรก',
-                duration: '08:30',
-                youtubeId: '-GsrFb2tO1I'
-            },
-            {
-                id: 2,
-                title: 'วิธีจัดการออเดอร์',
-                description: 'ขั้นตอนรับออเดอร์ แพ็คสินค้า จนถึงจัดส่ง',
-                duration: '10:45',
-                youtubeId: '-GsrFb2tO1I'
-            },
-            {
-                id: 3,
-                title: 'การใช้งานระบบ POS',
-                description: 'สอนใช้ระบบขายหน้าร้านแบบละเอียด',
-                duration: '15:20',
-                youtubeId: '-GsrFb2tO1I'
-            },
-            {
-                id: 4,
-                title: 'วิเคราะห์ข้อมูลการขาย',
-                description: 'อ่านและใช้งานรายงานต่างๆ ให้เป็นประโยชน์',
-                duration: '12:15',
-                youtubeId: '-GsrFb2tO1I'
-            },
-            {
-                id: 5,
-                title: 'การใช้งาน AI Insights',
-                description: 'รับคำแนะนำจาก AI เพื่อเพิ่มยอดขาย',
-                duration: '07:50',
-                youtubeId: '-GsrFb2tO1I'
-            },
-            {
-                id: 6,
-                title: 'จัดการพนักงานด้วย ERP',
-                description: 'ใช้งานระบบ ERP ฟรีสำหรับจัดการพนักงาน',
-                duration: '09:30',
-                youtubeId: '-GsrFb2tO1I'
-            }
-        ],
-
-        contactForm: {
-            subject: '',
-            message: ''
-        },
-
-        filterContent() {
-            console.log('Searching for:', this.searchQuery);
-        },
-
-        toggleFaq(index) {
-            this.faqs[index].open = !this.faqs[index].open;
-        },
-
-        openStepDetail(step) {
-            alert('เปิดรายละเอียด: ' + step.title);
-        },
-
-        playVideo(video) {
-            alert('เล่นวิดีโอ: ' + video.title);
-        },
-
-        async submitContactForm() {
-            try {
-                alert('✅ ส่งคำถามสำเร็จ!\n\nทีมงาน Seller Support จะติดต่อกลับภายใน 24 ชั่วโมง');
-                this.contactForm = { subject: '', message: '' };
-            } catch (error) {
-                alert('❌ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง');
-            }
-        }
-    }
-}
-</script>
 @endsection

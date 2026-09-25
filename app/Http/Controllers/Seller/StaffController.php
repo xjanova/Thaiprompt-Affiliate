@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * StaffController
@@ -123,14 +124,16 @@ class StaffController extends Controller
             'nickname' => 'nullable|string|max:100',
             'mobile_phone' => 'nullable|string|max:20',
             'personal_email' => 'nullable|email|max:255',
-            'department_id' => 'nullable|exists:departments,id',
-            'position_id' => 'nullable|exists:positions,id',
+            // 🔒 แผนก/ตำแหน่ง/กะ ต้องเป็นของร้านนี้เท่านั้น (เดิมเช็คแค่ว่ามี id อยู่ในระบบ)
+            'department_id' => ['nullable', Rule::exists('departments', 'id')->where('store_id', $store->id)],
+            'position_id' => ['nullable', Rule::exists('positions', 'id')->where('store_id', $store->id)],
             'hire_date' => 'required|date',
             'employment_type' => 'required|in:full_time,part_time,contract,intern,freelance',
             'basic_salary' => 'nullable|numeric|min:0',
-            'work_shift_id' => 'nullable|exists:work_shifts,id',
-            'pin_code' => 'nullable|string|min:4|max:6',
+            'work_shift_id' => ['nullable', Rule::exists('work_shifts', 'id')->where('store_id', $store->id)],
+            'pin_code' => 'nullable|digits_between:4,6',
             'pos_permissions' => 'nullable|array',
+            'pos_permissions.*' => 'in:sales,refund,discount,reports,inventory,drawer',
         ]);
 
         DB::beginTransaction();
@@ -155,11 +158,12 @@ class StaffController extends Controller
                 'employee_id' => $employeeId,
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
-                'first_name_th' => $validated['first_name_th'],
-                'last_name_th' => $validated['last_name_th'],
-                'nickname' => $validated['nickname'],
-                'mobile_phone' => $validated['mobile_phone'],
-                'personal_email' => $validated['personal_email'],
+                // ช่องไม่บังคับอาจไม่ถูกส่งมา (เช่นเรียกจากแอป) → ใช้ ?? null กัน "Undefined array key"
+                'first_name_th' => $validated['first_name_th'] ?? null,
+                'last_name_th' => $validated['last_name_th'] ?? null,
+                'nickname' => $validated['nickname'] ?? null,
+                'mobile_phone' => $validated['mobile_phone'] ?? null,
+                'personal_email' => $validated['personal_email'] ?? null,
                 'department_id' => $validated['department_id'],
                 'position_id' => $validated['position_id'],
                 'hire_date' => $validated['hire_date'],
@@ -174,7 +178,9 @@ class StaffController extends Controller
                     'store_id' => $store->id,
                     'employee_id' => $employee->id,
                     'staff_code' => $employeeId,
-                    'pin_code' => Hash::make($validated['pin_code']),
+                    // ส่ง PIN ดิบ — PosStaffAssignment::setPinCodeAttribute() hash ให้เอง
+                    // (เดิม Hash::make ที่นี่ + mutator hash ซ้ำอีกรอบ → verifyPin ไม่มีวันผ่าน)
+                    'pin_code' => $validated['pin_code'],
                     'work_shift_id' => $validated['work_shift_id'] ?? null,
                     'pos_permissions' => $validated['pos_permissions'] ?? ['sales'],
                     'is_active' => true,
@@ -189,8 +195,11 @@ class StaffController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
+            // ไม่แสดง exception ดิบให้ผู้ใช้ — เก็บลง log
+            \Illuminate\Support\Facades\Log::error('Seller staff store failed', ['store_id' => $store->id, 'error' => $e->getMessage()]);
+
             return back()->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'เพิ่มพนักงานไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่');
         }
     }
 
@@ -250,14 +259,15 @@ class StaffController extends Controller
             'nickname' => 'nullable|string|max:100',
             'mobile_phone' => 'nullable|string|max:20',
             'personal_email' => 'nullable|email|max:255',
-            'department_id' => 'nullable|exists:departments,id',
-            'position_id' => 'nullable|exists:positions,id',
+            'department_id' => ['required', Rule::exists('departments', 'id')->where('store_id', $store->id)],
+            'position_id' => ['required', Rule::exists('positions', 'id')->where('store_id', $store->id)],
             'employment_type' => 'required|in:full_time,part_time,contract,intern,freelance',
             'employment_status' => 'required|in:active,probation,notice_period,resigned,terminated',
             'basic_salary' => 'nullable|numeric|min:0',
-            'work_shift_id' => 'nullable|exists:work_shifts,id',
-            'pin_code' => 'nullable|string|min:4|max:6',
+            'work_shift_id' => ['nullable', Rule::exists('work_shifts', 'id')->where('store_id', $store->id)],
+            'pin_code' => 'nullable|digits_between:4,6',
             'pos_permissions' => 'nullable|array',
+            'pos_permissions.*' => 'in:sales,refund,discount,reports,inventory,drawer',
         ]);
 
         DB::beginTransaction();
@@ -266,11 +276,11 @@ class StaffController extends Controller
             $employee->update([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
-                'first_name_th' => $validated['first_name_th'],
-                'last_name_th' => $validated['last_name_th'],
-                'nickname' => $validated['nickname'],
-                'mobile_phone' => $validated['mobile_phone'],
-                'personal_email' => $validated['personal_email'],
+                'first_name_th' => $validated['first_name_th'] ?? null,
+                'last_name_th' => $validated['last_name_th'] ?? null,
+                'nickname' => $validated['nickname'] ?? null,
+                'mobile_phone' => $validated['mobile_phone'] ?? null,
+                'personal_email' => $validated['personal_email'] ?? null,
                 'department_id' => $validated['department_id'],
                 'position_id' => $validated['position_id'],
                 'employment_type' => $validated['employment_type'],
@@ -285,11 +295,13 @@ class StaffController extends Controller
                 'staff_code' => $employee->employee_id,
                 'work_shift_id' => $validated['work_shift_id'] ?? null,
                 'pos_permissions' => $validated['pos_permissions'] ?? ['sales'],
-                'is_active' => $validated['employment_status'] === 'active',
+                // พนักงานทดลองงาน / แจ้งลาออก ยังทำงานอยู่ → ยังเข้าเครื่อง POS ได้ (ปิดเฉพาะลาออก/เลิกจ้างแล้ว)
+                'is_active' => in_array($validated['employment_status'], ['active', 'probation', 'notice_period'], true),
             ];
 
             if (! empty($validated['pin_code'])) {
-                $posData['pin_code'] = Hash::make($validated['pin_code']);
+                // PIN ดิบ — mutator ของโมเดล hash ให้ (กัน hash ซ้ำสองชั้น)
+                $posData['pin_code'] = $validated['pin_code'];
             }
 
             PosStaffAssignment::updateOrCreate(
@@ -305,8 +317,10 @@ class StaffController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
+            \Illuminate\Support\Facades\Log::error('Seller staff update failed', ['employee_id' => $employee->id, 'error' => $e->getMessage()]);
+
             return back()->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'บันทึกข้อมูลพนักงานไม่สำเร็จ กรุณาลองใหม่');
         }
     }
 
@@ -371,8 +385,8 @@ class StaffController extends Controller
         Department::create([
             'store_id' => $store->id,
             'name' => $validated['name'],
-            'code' => $validated['code'] ?? Str::upper(Str::slug($validated['name'], '')),
-            'description' => $validated['description'],
+            'code' => $this->makeUniqueCode(Department::class, $store, $validated['code'] ?? $validated['name'], 'DEPT'),
+            'description' => $validated['description'] ?? null,
             'is_active' => true,
         ]);
 
@@ -438,16 +452,19 @@ class StaffController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'code' => 'nullable|string|max:50',
-            'department_id' => 'nullable|exists:departments,id',
+            'department_id' => ['nullable', Rule::exists('departments', 'id')->where('store_id', $store->id)],
             'min_salary' => 'nullable|numeric|min:0',
-            'max_salary' => 'nullable|numeric|min:0',
+            'max_salary' => 'nullable|numeric|min:0|gte:min_salary',
+        ], [
+            'max_salary.gte' => 'เงินเดือนสูงสุดต้องไม่น้อยกว่าเงินเดือนต่ำสุด',
         ]);
 
         Position::create([
             'store_id' => $store->id,
             'title' => $validated['title'],
-            'code' => $validated['code'] ?? Str::upper(Str::slug($validated['title'], '')),
-            'department_id' => $validated['department_id'],
+            'code' => $this->makeUniqueCode(Position::class, $store, $validated['code'] ?? $validated['title'], 'POS'),
+            // positions.department_id เป็น NOT NULL → ไม่เลือกแผนก = ใช้แผนก "ทั่วไป" ของร้าน
+            'department_id' => $validated['department_id'] ?? $this->getOrCreateDefaultDepartment($store)->id,
             'min_salary' => $validated['min_salary'] ?? 0,
             'max_salary' => $validated['max_salary'] ?? 0,
             'is_active' => true,
@@ -520,7 +537,7 @@ class StaffController extends Controller
         WorkShift::create([
             'store_id' => $store->id,
             'name' => $validated['name'],
-            'code' => $validated['code'] ?? Str::upper(Str::slug($validated['name'], '')),
+            'code' => $this->makeUniqueCode(WorkShift::class, $store, $validated['code'] ?? $validated['name'], 'SHIFT'),
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
             'crosses_midnight' => $crossesMidnight,
@@ -558,10 +575,16 @@ class StaffController extends Controller
      */
     protected function generateEmployeeId(VendorStore $store): string
     {
-        $prefix = Str::upper(Str::substr($store->store_slug, 0, 3));
+        // employee_id เป็น unique ทั้งตาราง → ใส่รหัสร้านด้วย (เดิมร้านที่ slug ขึ้นต้นเหมือนกันได้รหัสชนกัน)
+        $prefix = Str::upper(Str::substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $store->store_slug) ?: 'EMP', 0, 3));
         $count = Employee::byStore($store->id)->withTrashed()->count() + 1;
 
-        return $prefix.'-'.str_pad($count, 4, '0', STR_PAD_LEFT);
+        do {
+            $code = $prefix.$store->id.'-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
+            $count++;
+        } while (Employee::withTrashed()->where('employee_id', $code)->exists());
+
+        return $code;
     }
 
     /**
@@ -569,8 +592,9 @@ class StaffController extends Controller
      */
     protected function getOrCreateDefaultDepartment(VendorStore $store): Department
     {
+        // คอลัมน์ code เป็น unique ทั้งตาราง → ผูกรหัสร้านไว้ (เดิมใช้ 'GENERAL' ร่วมกัน ร้านที่สองสร้างไม่ได้)
         return Department::firstOrCreate(
-            ['store_id' => $store->id, 'code' => 'GENERAL'],
+            ['store_id' => $store->id, 'code' => 'S'.$store->id.'-GENERAL'],
             [
                 'name' => 'ทั่วไป',
                 'description' => 'แผนกทั่วไป',
@@ -580,12 +604,32 @@ class StaffController extends Controller
     }
 
     /**
+     * สร้างรหัส (code) ที่ไม่ซ้ำทั้งตาราง โดยขึ้นต้นด้วยรหัสร้าน เช่น S12-SALES
+     * (departments / positions / work_shifts มี unique index ที่ code ข้ามทุกร้าน)
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $modelClass
+     */
+    protected function makeUniqueCode(string $modelClass, VendorStore $store, string $raw, string $fallback): string
+    {
+        $base = Str::upper(Str::substr(preg_replace('/[^A-Za-z0-9]/', '', Str::ascii($raw)) ?: $fallback, 0, 20));
+        $prefix = 'S'.$store->id.'-';
+        $code = $prefix.$base;
+        $n = 2;
+
+        while ($modelClass::withoutGlobalScopes()->where('code', $code)->exists()) {
+            $code = $prefix.$base.'-'.$n++;
+        }
+
+        return $code;
+    }
+
+    /**
      * สร้างตำแหน่งเริ่มต้น (ถ้ายังไม่มี)
      */
     protected function getOrCreateDefaultPosition(VendorStore $store, int $departmentId): Position
     {
         return Position::firstOrCreate(
-            ['store_id' => $store->id, 'code' => 'STAFF'],
+            ['store_id' => $store->id, 'code' => 'S'.$store->id.'-STAFF'],
             [
                 'title' => 'พนักงาน',
                 'department_id' => $departmentId,

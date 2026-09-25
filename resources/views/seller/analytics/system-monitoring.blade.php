@@ -1,500 +1,208 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'Real-time System Monitoring')
+{{--
+ | ตรวจสอบระบบเซิร์ฟเวอร์แบบเรียลไทม์ — เฉพาะแอดมิน (route อยู่ใต้ middleware role:admin,super_admin — SELLER-24)
+ | (2026-09-25) GAP-21: เลิกใช้ grid ของ Bootstrap + <style> 138 บรรทัด + Chart.js CDN
+ |   → การ์ด V4 + แท่งกราฟ CSS (.tp-spark) + Alpine poll ทุก 5 วินาที (หยุดเมื่อแท็บไม่ได้เปิดอยู่)
+ --}}
+
+@section('title', 'ตรวจสอบระบบแบบเรียลไทม์')
+
+@php
+    $initial = [
+        'metrics' => $metrics,
+        'history' => [],
+    ];
+    $statusTone = ['good' => 'ok', 'warning' => 'warn', 'critical' => 'bad', 'danger' => 'bad'];
+@endphp
 
 @section('content')
-<style>
-    .monitoring-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 12px;
-        padding: 24px;
-        color: white;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        margin-bottom: 24px;
-    }
+<div x-data="sysMonitor(@js($initial), @js(route('seller.analytics.system-monitoring.api-metrics')))" style="display:flex; flex-direction:column; gap:18px;">
 
-    .monitoring-card.cpu {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
+    <x-seller-kit.header title="ตรวจสอบระบบแบบเรียลไทม์" icon="🖥️" crumb="เฉพาะผู้ดูแลระบบ · วิเคราะห์"
+                         subtitle="ภาระ CPU หน่วยความจำ ดิสก์ และการเชื่อมต่อของเซิร์ฟเวอร์">
+        <span class="tp-pill" :style="live ? 'color:var(--tp-ok, #4f9a74); background:color-mix(in srgb, var(--tp-ok, #4f9a74) 16%, transparent);' : 'color:var(--ink2); background:color-mix(in srgb, var(--ink2) 14%, transparent);'">
+            <span style="width:7px; height:7px; border-radius:50%; background:currentColor;" :style="{ animation: live ? 'tpPulse 1.4s infinite' : 'none' }"></span>
+            <span x-text="live ? 'LIVE · อัปเดตทุก 5 วินาที' : 'หยุดชั่วคราว'"></span>
+        </span>
+        <button type="button" class="tp-btn tp-btn-sm" @click="toggle()" x-text="live ? '⏸ หยุด' : '▶ เริ่มใหม่'"></button>
+    </x-seller-kit.header>
 
-    .monitoring-card.memory {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-
-    .monitoring-card.disk {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-
-    .monitoring-card.connections {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    }
-
-    .metric-value {
-        font-size: 48px;
-        font-weight: 700;
-        margin: 12px 0;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-    }
-
-    .metric-label {
-        font-size: 14px;
-        opacity: 0.9;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .metric-details {
-        margin-top: 12px;
-        font-size: 13px;
-        opacity: 0.85;
-    }
-
-    .chart-container {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        margin-left: 8px;
-    }
-
-    .status-good {
-        background: rgba(255,255,255,0.3);
-        color: white;
-    }
-
-    .status-warning {
-        background: rgba(255,165,0,0.3);
-        color: #ff6b00;
-    }
-
-    .status-critical {
-        background: rgba(255,0,0,0.3);
-        color: #ff3333;
-    }
-
-    .status-danger {
-        background: rgba(139,0,0,0.4);
-        color: #ff0000;
-        animation: pulse 1s infinite;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
-    }
-
-    .realtime-indicator {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(34, 197, 94, 0.1);
-        padding: 8px 16px;
-        border-radius: 20px;
-        margin-bottom: 16px;
-    }
-
-    .realtime-dot {
-        width: 8px;
-        height: 8px;
-        background: #22c55e;
-        border-radius: 50%;
-        animation: blink 1.5s infinite;
-    }
-
-    @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
-    }
-
-    .info-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-top: 24px;
-    }
-
-    .info-item {
-        background: #f8fafc;
-        padding: 16px;
-        border-radius: 8px;
-        border-left: 4px solid #667eea;
-    }
-
-    .info-label {
-        font-size: 12px;
-        color: #64748b;
-        text-transform: uppercase;
-        margin-bottom: 4px;
-    }
-
-    .info-value {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1e293b;
-    }
-</style>
-
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>🖥️ Real-time System Monitoring</h1>
-        <div class="realtime-indicator">
-            <div class="realtime-dot"></div>
-            <span style="color: #22c55e; font-weight: 600;">LIVE</span>
-            <span style="color: #64748b; font-size: 12px;">Updates every 2s</span>
-        </div>
+    <div class="tp-card" style="border-left:4px solid var(--tp-warn, #e0a52e); padding:12px 16px; font-size:12.5px; color:var(--ink2);">
+        🔒 หน้านี้แสดงข้อมูลเซิร์ฟเวอร์ทั้งระบบ เปิดให้เฉพาะผู้ดูแลระบบเท่านั้น
     </div>
 
-    <!-- Metrics Cards Row -->
-    <div class="row">
-        <!-- CPU Card -->
-        <div class="col-md-3">
-            <div class="monitoring-card cpu">
-                <div class="metric-label">⚡ CPU Usage</div>
-                <div class="metric-value" id="cpu-value">{{ number_format($metrics['cpu']['percentage'], 1) }}%</div>
-                <span class="status-badge status-{{ $metrics['cpu']['status'] }}" id="cpu-status">
-                    {{ strtoupper($metrics['cpu']['status']) }}
-                </span>
-                <div class="metric-details">
-                    <div>Load: <span id="cpu-load">{{ $metrics['cpu']['load_1min'] }}</span></div>
-                    <div>Cores: {{ $metrics['cpu']['cpu_cores'] }}</div>
+    {{-- การ์ดตัวชี้วัดหลัก --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px;">
+        <template x-for="card in cards" :key="card.key">
+            <div class="tp-card" style="display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                    <span style="font-size:12.5px; font-weight:700; color:var(--ink2);" x-text="card.icon + ' ' + card.label"></span>
+                    <span class="tp-pill" :style="pillStyle(card.status)" x-text="statusText(card.status)"></span>
                 </div>
+                <div class="tp-num" style="font-size:30px; font-weight:800;" x-text="card.value"></div>
+                <template x-if="card.pct !== null">
+                    <div class="tp-inset-sm" style="height:8px; border-radius:99px; overflow:hidden;">
+                        <div :style="'height:100%; border-radius:99px; transition:width .5s ease; background:linear-gradient(90deg, var(--accent1), var(--accent2)); width:' + Math.min(100, Math.max(2, card.pct)) + '%'"></div>
+                    </div>
+                </template>
+                <div style="font-size:11.5px; color:var(--ink2);" x-text="card.detail"></div>
             </div>
-        </div>
+        </template>
+    </div>
 
-        <!-- Memory Card -->
-        <div class="col-md-3">
-            <div class="monitoring-card memory">
-                <div class="metric-label">💾 Memory Usage</div>
-                <div class="metric-value" id="memory-value">{{ number_format($metrics['memory']['percentage'], 1) }}%</div>
-                <span class="status-badge status-{{ $metrics['memory']['status'] }}" id="memory-status">
-                    {{ strtoupper($metrics['memory']['status']) }}
-                </span>
-                <div class="metric-details">
-                    <div>Used: <span id="memory-used">{{ $metrics['memory']['used'] }}</span></div>
-                    <div>Total: {{ $metrics['memory']['total'] }}</div>
+    {{-- กราฟย้อนหลัง (แท่ง CSS) --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;">
+        <template x-for="chart in charts" :key="chart.key">
+            <div class="tp-card">
+                <div class="tp-section-h" x-text="chart.title"></div>
+                <div class="tp-spark" style="height:90px; margin-top:12px;">
+                    <template x-for="(v, i) in series(chart.key)" :key="i">
+                        <i :style="'height:' + barHeight(chart.key, v) + '%; animation:none;'" :title="v"></i>
+                    </template>
                 </div>
+                <div style="font-size:11px; color:var(--ink2); margin-top:6px;" x-text="history.length ? ('ล่าสุด ' + history[history.length - 1].timestamp) : 'กำลังเก็บข้อมูล…'"></div>
+            </div>
+        </template>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;">
+        {{-- ฐานข้อมูล + แคช --}}
+        <div class="tp-card">
+            <div class="tp-section-h">🗄️ ฐานข้อมูลและแคช</div>
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px;">
+                @foreach([
+                    ['ขนาดฐานข้อมูล', $metrics['database']['size'] ?? '—'],
+                    ['จำนวนตาราง', number_format((int) ($metrics['database']['tables'] ?? 0))],
+                    ['Cache driver', strtoupper((string) ($metrics['cache']['driver'] ?? '—'))],
+                    ['สถานะแคช', strtoupper((string) ($metrics['cache']['status'] ?? '—'))],
+                ] as [$dLabel, $dValue])
+                    <div class="tp-inset-sm" style="border-radius:12px; padding:10px 12px;">
+                        <div style="font-size:11px; color:var(--ink2);">{{ $dLabel }}</div>
+                        <div class="tp-num" style="font-weight:800; font-size:14px;">{{ $dValue }}</div>
+                    </div>
+                @endforeach
+                @if(isset($metrics['cache']['hit_rate']))
+                    <div class="tp-inset-sm" style="border-radius:12px; padding:10px 12px;"><div style="font-size:11px; color:var(--ink2);">Cache hit rate</div><div class="tp-num" style="font-weight:800; font-size:14px;">{{ $metrics['cache']['hit_rate'] }}%</div></div>
+                @endif
+                @if(isset($metrics['database']['queries_per_second']))
+                    <div class="tp-inset-sm" style="border-radius:12px; padding:10px 12px;"><div style="font-size:11px; color:var(--ink2);">Queries/วินาที</div><div class="tp-num" style="font-weight:800; font-size:14px;">{{ $metrics['database']['queries_per_second'] }}</div></div>
+                @endif
             </div>
         </div>
 
-        <!-- Disk Card -->
-        <div class="col-md-3">
-            <div class="monitoring-card disk">
-                <div class="metric-label">💿 Disk Usage</div>
-                <div class="metric-value" id="disk-value">{{ number_format($metrics['disk']['percentage'], 1) }}%</div>
-                <span class="status-badge status-{{ $metrics['disk']['status'] }}" id="disk-status">
-                    {{ strtoupper($metrics['disk']['status']) }}
-                </span>
-                <div class="metric-details">
-                    <div>Used: <span id="disk-used">{{ $metrics['disk']['used'] }}</span></div>
-                    <div>Total: {{ $metrics['disk']['total'] }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Connections Card -->
-        <div class="col-md-3">
-            <div class="monitoring-card connections">
-                <div class="metric-label">🔌 Active Connections</div>
-                <div class="metric-value" id="connections-value">{{ $metrics['connections']['total'] }}</div>
-                <span class="status-badge status-good">ACTIVE</span>
-                <div class="metric-details">
-                    <div>Sessions: <span id="sessions-count">{{ $metrics['connections']['sessions'] }}</span></div>
-                    <div>Database: <span id="db-connections">{{ $metrics['connections']['database'] }}</span></div>
-                </div>
+        {{-- แอปพลิเคชัน --}}
+        <div class="tp-card">
+            <div class="tp-section-h">🚀 ข้อมูลแอปพลิเคชัน</div>
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:12px;">
+                @foreach([
+                    ['PHP', $appInfo['php_version'] ?? '—'],
+                    ['Laravel', $appInfo['laravel_version'] ?? '—'],
+                    ['Environment', strtoupper((string) ($appInfo['environment'] ?? '—'))],
+                    ['Debug mode', ! empty($appInfo['debug_mode']) ? 'เปิด ⚠️' : 'ปิด'],
+                    ['Session driver', strtoupper((string) ($appInfo['session_driver'] ?? '—'))],
+                    ['Queue driver', strtoupper((string) ($appInfo['queue_driver'] ?? '—'))],
+                ] as [$aLabel, $aValue])
+                    <div class="tp-inset-sm" style="border-radius:12px; padding:10px 12px;">
+                        <div style="font-size:11px; color:var(--ink2);">{{ $aLabel }}</div>
+                        <div class="tp-num" style="font-weight:800; font-size:14px;">{{ $aValue }}</div>
+                    </div>
+                @endforeach
             </div>
         </div>
     </div>
 
-    <!-- Real-time Charts -->
-    <div class="row">
-        <!-- CPU Chart -->
-        <div class="col-md-6">
-            <div class="chart-container">
-                <h4>📈 CPU Usage (Last 60 seconds)</h4>
-                <canvas id="cpuChart" height="80"></canvas>
+    @if(! empty($network))
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            <div class="tp-section-h" style="padding:16px 18px;">🌐 เครือข่าย</div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:480px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            @foreach(['Interface', 'รับ', 'ส่ง', 'รวม'] as $h)
+                                <th style="padding:11px 14px; text-align:left; font-size:10.5px; font-weight:700; color:var(--ink2); text-transform:uppercase;">{{ $h }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($network as $iface)
+                            <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                                <td style="padding:11px 14px; font-weight:700;">{{ $iface['interface'] }}</td>
+                                <td style="padding:11px 14px;" class="tp-num">{{ $iface['received'] }}</td>
+                                <td style="padding:11px 14px;" class="tp-num">{{ $iface['transmitted'] }}</td>
+                                <td style="padding:11px 14px;" class="tp-num">{{ $iface['total'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
-
-        <!-- Memory Chart -->
-        <div class="col-md-6">
-            <div class="chart-container">
-                <h4>📊 Memory Usage (Last 60 seconds)</h4>
-                <canvas id="memoryChart" height="80"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <!-- Connections Chart -->
-        <div class="col-md-6">
-            <div class="chart-container">
-                <h4>🔌 Active Connections (Last 60 seconds)</h4>
-                <canvas id="connectionsChart" height="80"></canvas>
-            </div>
-        </div>
-
-        <!-- Database & Cache Info -->
-        <div class="col-md-6">
-            <div class="chart-container">
-                <h4>🗄️ Database & Cache</h4>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Database Size</div>
-                        <div class="info-value" id="db-size">{{ $metrics['database']['size'] ?? 'N/A' }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Tables</div>
-                        <div class="info-value" id="db-tables">{{ $metrics['database']['tables'] ?? 0 }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Cache Driver</div>
-                        <div class="info-value" id="cache-driver">{{ strtoupper($metrics['cache']['driver'] ?? 'N/A') }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Cache Status</div>
-                        <div class="info-value" id="cache-status">{{ strtoupper($metrics['cache']['status'] ?? 'N/A') }}</div>
-                    </div>
-                    @if(isset($metrics['cache']['hit_rate']))
-                    <div class="info-item">
-                        <div class="info-label">Cache Hit Rate</div>
-                        <div class="info-value" id="cache-hit-rate">{{ $metrics['cache']['hit_rate'] }}%</div>
-                    </div>
-                    @endif
-                    @if(isset($metrics['database']['queries_per_second']))
-                    <div class="info-item">
-                        <div class="info-label">Queries/Second</div>
-                        <div class="info-value" id="queries-per-sec">{{ $metrics['database']['queries_per_second'] }}</div>
-                    </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Application Info -->
-    <div class="chart-container">
-        <h4>🚀 Application Information</h4>
-        <div class="info-grid">
-            <div class="info-item">
-                <div class="info-label">PHP Version</div>
-                <div class="info-value">{{ $appInfo['php_version'] }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Laravel Version</div>
-                <div class="info-value">{{ $appInfo['laravel_version'] }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Environment</div>
-                <div class="info-value">{{ strtoupper($appInfo['environment']) }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Cache Driver</div>
-                <div class="info-value">{{ strtoupper($appInfo['cache_driver']) }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Session Driver</div>
-                <div class="info-value">{{ strtoupper($appInfo['session_driver']) }}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Queue Driver</div>
-                <div class="info-value">{{ strtoupper($appInfo['queue_driver']) }}</div>
-            </div>
-        </div>
-    </div>
-
-    @if(count($network) > 0)
-    <!-- Network Stats -->
-    <div class="chart-container">
-        <h4>🌐 Network Statistics</h4>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Interface</th>
-                        <th>Received</th>
-                        <th>Transmitted</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($network as $iface)
-                    <tr>
-                        <td><strong>{{ $iface['interface'] }}</strong></td>
-                        <td>{{ $iface['received'] }}</td>
-                        <td>{{ $iface['transmitted'] }}</td>
-                        <td>{{ $iface['total'] }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
     @endif
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-    // Initialize charts
-    const cpuChartCtx = document.getElementById('cpuChart').getContext('2d');
-    const memoryChartCtx = document.getElementById('memoryChart').getContext('2d');
-    const connectionsChartCtx = document.getElementById('connectionsChart').getContext('2d');
-
-    // Chart configuration
-    const chartConfig = {
-        type: 'line',
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            animation: {
-                duration: 500
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
-        }
-    };
-
-    // CPU Chart
-    const cpuChart = new Chart(cpuChartCtx, {
-        ...chartConfig,
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'CPU %',
-                data: [],
-                borderColor: 'rgb(245, 87, 108)',
-                backgroundColor: 'rgba(245, 87, 108, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        }
-    });
-
-    // Memory Chart
-    const memoryChart = new Chart(memoryChartCtx, {
-        ...chartConfig,
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Memory %',
-                data: [],
-                borderColor: 'rgb(79, 172, 254)',
-                backgroundColor: 'rgba(79, 172, 254, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        }
-    });
-
-    // Connections Chart
-    const connectionsChart = new Chart(connectionsChartCtx, {
-        ...chartConfig,
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Connections',
-                data: [],
-                borderColor: 'rgb(250, 112, 154)',
-                backgroundColor: 'rgba(250, 112, 154, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            ...chartConfig.options,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            }
-        }
-    });
-
-    // Update metrics
-    function updateMetrics() {
-        fetch('{{ route('seller.analytics.system-monitoring.api-metrics') }}')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const metrics = data.metrics;
-                    const history = data.history;
-
-                    // Update CPU
-                    document.getElementById('cpu-value').textContent = metrics.cpu.percentage.toFixed(1) + '%';
-                    document.getElementById('cpu-load').textContent = metrics.cpu.load_1min;
-                    updateStatusBadge('cpu-status', metrics.cpu.status);
-
-                    // Update Memory
-                    document.getElementById('memory-value').textContent = metrics.memory.percentage.toFixed(1) + '%';
-                    document.getElementById('memory-used').textContent = metrics.memory.used;
-                    updateStatusBadge('memory-status', metrics.memory.status);
-
-                    // Update Disk
-                    document.getElementById('disk-value').textContent = metrics.disk.percentage.toFixed(1) + '%';
-                    document.getElementById('disk-used').textContent = metrics.disk.used;
-                    updateStatusBadge('disk-status', metrics.disk.status);
-
-                    // Update Connections
-                    document.getElementById('connections-value').textContent = metrics.connections.total;
-                    document.getElementById('sessions-count').textContent = metrics.connections.sessions;
-                    document.getElementById('db-connections').textContent = metrics.connections.database;
-
-                    // Update charts with history
-                    if (history && history.length > 0) {
-                        const labels = history.map(h => h.timestamp);
-                        const cpuData = history.map(h => h.cpu);
-                        const memoryData = history.map(h => h.memory);
-                        const connectionsData = history.map(h => h.connections);
-
-                        cpuChart.data.labels = labels;
-                        cpuChart.data.datasets[0].data = cpuData;
-                        cpuChart.update('none');
-
-                        memoryChart.data.labels = labels;
-                        memoryChart.data.datasets[0].data = memoryData;
-                        memoryChart.update('none');
-
-                        connectionsChart.data.labels = labels;
-                        connectionsChart.data.datasets[0].data = connectionsData;
-                        connectionsChart.update('none');
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching metrics:', error);
-            });
-    }
-
-    function updateStatusBadge(elementId, status) {
-        const element = document.getElementById(elementId);
-        element.className = 'status-badge status-' + status;
-        element.textContent = status.toUpperCase();
-    }
-
-    // Update every 2 seconds
-    setInterval(updateMetrics, 2000);
-
-    // Initial update
-    updateMetrics();
-</script>
 @endsection
+
+@push('scripts')
+<script>
+    // ตรวจสอบระบบแบบเรียลไทม์ — poll ทุก 5 วินาที และหยุดเมื่อแท็บถูกซ่อน (กันเขียน history ถี่เกินไป)
+    function sysMonitor(initial, url) {
+        return {
+            metrics: initial.metrics || {},
+            history: initial.history || [],
+            live: true,
+            timer: null,
+            busy: false,
+            charts: [
+                { key: 'cpu', title: '📈 CPU (%)' },
+                { key: 'memory', title: '💾 หน่วยความจำ (%)' },
+                { key: 'connections', title: '🔌 การเชื่อมต่อ' },
+            ],
+            get cards() {
+                const m = this.metrics || {};
+                const cpu = m.cpu || {}, mem = m.memory || {}, disk = m.disk || {}, con = m.connections || {};
+                return [
+                    { key: 'cpu', icon: '⚡', label: 'CPU', value: Number(cpu.percentage || 0).toFixed(1) + '%', pct: Number(cpu.percentage || 0), status: cpu.status || 'good', detail: 'Load ' + (cpu.load_1min ?? '-') + ' · ' + (cpu.cpu_cores ?? '-') + ' cores' },
+                    { key: 'mem', icon: '💾', label: 'หน่วยความจำ', value: Number(mem.percentage || 0).toFixed(1) + '%', pct: Number(mem.percentage || 0), status: mem.status || 'good', detail: 'ใช้ ' + (mem.used ?? '-') + ' / ' + (mem.total ?? '-') },
+                    { key: 'disk', icon: '💿', label: 'ดิสก์', value: Number(disk.percentage || 0).toFixed(1) + '%', pct: Number(disk.percentage || 0), status: disk.status || 'good', detail: 'ใช้ ' + (disk.used ?? '-') + ' / ' + (disk.total ?? '-') },
+                    { key: 'con', icon: '🔌', label: 'การเชื่อมต่อ', value: String(con.total ?? 0), pct: null, status: 'good', detail: 'Session ' + (con.sessions ?? 0) + ' · DB ' + (con.database ?? 0) },
+                ];
+            },
+            init() {
+                this.poll();
+                this.start();
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) { this.stop(); } else if (this.live) { this.poll(); this.start(); }
+                });
+            },
+            start() { this.stop(); this.timer = setInterval(() => this.poll(), 5000); },
+            stop() { if (this.timer) { clearInterval(this.timer); this.timer = null; } },
+            toggle() { this.live = !this.live; if (this.live) { this.poll(); this.start(); } else { this.stop(); } },
+            async poll() {
+                if (this.busy) return;
+                this.busy = true;
+                try {
+                    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                    const data = await res.json();
+                    if (data && data.success) {
+                        this.metrics = data.metrics || this.metrics;
+                        this.history = Array.isArray(data.history) ? data.history.slice(-30) : this.history;
+                    }
+                } catch (e) {
+                    // เงียบไว้ รอบถัดไปจะลองใหม่เอง
+                } finally {
+                    this.busy = false;
+                }
+            },
+            series(key) { return this.history.map((h) => Number(h[key] || 0)); },
+            barHeight(key, v) {
+                const max = key === 'connections' ? Math.max(1, ...this.series(key)) : 100;
+                return Math.max(3, Math.min(100, (v / max) * 100));
+            },
+            statusText(s) { return { good: 'ปกติ', warning: 'เฝ้าระวัง', critical: 'วิกฤต', danger: 'อันตราย' }[s] || s; },
+            pillStyle(s) {
+                const c = { good: 'var(--tp-ok, #4f9a74)', warning: 'var(--tp-warn, #c98a1b)', critical: 'var(--tp-bad, #d9534f)', danger: 'var(--tp-bad, #d9534f)' }[s] || 'var(--ink2)';
+                return 'color:' + c + '; background:color-mix(in srgb, ' + c + ' 16%, transparent);';
+            },
+        };
+    }
+</script>
+@endpush

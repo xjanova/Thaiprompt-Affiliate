@@ -304,6 +304,53 @@ class FreshMarketOrder extends Model implements RiderDeliverable
     }
 
     /**
+     * รายการสินค้าในออเดอร์ (ออเดอร์หลายรายการ — snapshot ชื่อ/ตัวเลือก/ราคาตอนสั่ง)
+     *
+     * คอลัมน์เดิม listing_id/quantity/unit_price ของออเดอร์ = รายการแรก (ให้หน้าเก่ายังแสดงได้)
+     * total_amount = ยอดสินค้ารวมทุกรายการ
+     */
+    public function items(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(FreshMarketOrderItem::class, 'order_id')->orderBy('id');
+    }
+
+    /**
+     * รายการสินค้าแบบรวมออเดอร์เก่า (ก่อนมีตาราง items) — สร้างรายการเสมือนจากคอลัมน์เดิม ไม่บันทึกลงฐานข้อมูล
+     *
+     * @return \Illuminate\Support\Collection<int, FreshMarketOrderItem>
+     */
+    public function lineItems(): \Illuminate\Support\Collection
+    {
+        $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+
+        if ($items->isNotEmpty()) {
+            return $items;
+        }
+
+        $listing = $this->listing;
+        $unitPrice = round((float) $this->unit_price, 2);
+
+        return collect([new FreshMarketOrderItem([
+            'order_id' => $this->id,
+            'listing_id' => $this->listing_id,
+            'title' => $listing?->title ?? 'สินค้าตลาดสด',
+            'unit' => $listing?->unit ?? 'ชิ้น',
+            'image_url' => $listing?->primary_image,
+            'quantity' => (int) $this->quantity,
+            'base_price' => $unitPrice,
+            'options_price' => 0,
+            'unit_price' => $unitPrice,
+            'line_total' => round((float) $this->total_amount, 2),
+            'selected_options' => [],
+            'track_stock' => true,
+            'stock_deducted' => true,
+            'gp_rate' => $this->gp_rate,
+            'platform_fee' => (float) $this->platform_fee,
+            'cashback_amount' => (float) $this->cashback_amount,
+        ])]);
+    }
+
+    /**
      * งาน Rider ล่าสุดของออเดอร์นี้
      */
     public function riderJob(): BelongsTo
@@ -567,13 +614,14 @@ class FreshMarketOrder extends Model implements RiderDeliverable
      */
     public function toApiArray(string $viewerRole = 'buyer'): array
     {
-        $this->loadMissing(['listing', 'seller', 'buyer', 'riderJob.rider']);
+        $this->loadMissing(['listing', 'seller', 'buyer', 'riderJob.rider', 'items']);
 
         $listing = $this->listing;
         $seller = $this->seller;
         $buyer = $this->buyer;
         $job = $this->riderJob;
         $contactVisible = ! in_array($this->order_status, [self::STATUS_PENDING, self::STATUS_CANCELLED], true);
+        $lineItems = $this->lineItems();
 
         $data = [
             'id' => (int) $this->id,
@@ -603,6 +651,15 @@ class FreshMarketOrder extends Model implements RiderDeliverable
             'can_review' => $viewerRole === 'buyer' && $this->canBeReviewed(),
             'allowed_actions' => in_array($viewerRole, ['buyer', 'seller', 'admin'], true)
                 ? $this->allowedActions($viewerRole) : [],
+            // ยอดสินค้ารวม (= total_amount) + รายการทั้งหมด — แอปใหม่ใช้ items แทน listing/quantity/unit_price
+            'subtotal' => (float) $this->total_amount,
+            'items_count' => (int) $lineItems->sum('quantity'),
+            'items' => $lineItems
+                ->map(fn (FreshMarketOrderItem $item) => $item->toApiArray(in_array($viewerRole, ['seller', 'admin'], true)))
+                ->values()
+                ->all(),
+            'items_summary' => $this->riderItemsSummary(),
+            // รายการแรก (คงไว้ให้แอปเวอร์ชันเก่า)
             'listing' => $listing ? [
                 'id' => (int) $listing->id,
                 'slug' => $listing->slug,
@@ -610,14 +667,24 @@ class FreshMarketOrder extends Model implements RiderDeliverable
                 'unit' => $listing->unit,
                 'image' => $listing->primary_image,
             ] : null,
-            'seller' => $seller ? [
-                'id' => (int) $seller->id,
-                'shop_name' => $seller->shop_name,
-                'phone' => ($viewerRole !== 'buyer' || $contactVisible) ? $seller->phone : null,
-                'address' => $seller->address,
-                'latitude' => $seller->latitude !== null ? (float) $seller->latitude : null,
-                'longitude' => $seller->longitude !== null ? (float) $seller->longitude : null,
-            ] : null,
+            // พิกัดร้าน = จุดรับของ (ร้านเคลื่อนที่ = ตำแหน่งที่ร้านอยู่ตอนนี้ ไม่ใช่ที่อยู่ที่ลงทะเบียน)
+            // ผู้ซื้อ: ร้านเคลื่อนที่แสดงพิกัดเฉพาะออเดอร์ที่ยังดำเนินอยู่ + ร้านเปิดอยู่ (ไม่เปิดเผยตำแหน่งล่าสุด/บ้านของร้าน)
+            'seller' => $seller ? (function () use ($seller, $viewerRole, $contactVisible) {
+                $point = in_array($viewerRole, ['seller', 'admin'], true)
+                    ? $seller->pickupPoint()
+                    : $this->buyerPickupPoint();
+
+                return [
+                    'id' => (int) $seller->id,
+                    'shop_name' => $seller->shop_name,
+                    'phone' => ($viewerRole !== 'buyer' || $contactVisible) ? $seller->phone : null,
+                    'address' => $seller->isMobileShop() ? ($point['address'] ?? null) : $seller->address,
+                    'latitude' => $point['latitude'] ?? null,
+                    'longitude' => $point['longitude'] ?? null,
+                    'is_mobile' => $seller->isMobileShop(),
+                    'is_open' => $seller->isOpenNow(),
+                ];
+            })() : null,
             'rider_job' => $job ? [
                 'id' => (int) $job->id,
                 'status' => $job->status,
@@ -656,6 +723,63 @@ class FreshMarketOrder extends Model implements RiderDeliverable
     }
 
     /**
+     * สถานะที่ผู้ซื้อยังต้องรู้จุดรับของ (ออเดอร์ยังดำเนินอยู่ ยังไม่ส่งถึง/จบ)
+     */
+    public const PICKUP_VISIBLE_STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_ACCEPTED,
+        self::STATUS_PREPARING,
+        self::STATUS_READY,
+        self::STATUS_DELIVERING,
+    ];
+
+    /**
+     * จุดรับของที่ผู้ซื้อเห็นได้ (API + หน้าเว็บของผู้ซื้อใช้ตัวนี้เท่านั้น)
+     *
+     * - ร้านประจำ: ที่อยู่/พิกัดร้านที่ลงทะเบียน (ข้อมูลสาธารณะ)
+     * - ร้านเคลื่อนที่: พิกัดเฉพาะตอนออเดอร์ยังดำเนินอยู่ และร้านเปิดอยู่ (จาก publicLocation) เท่านั้น
+     *   ร้านปิดแล้วแต่ออเดอร์ยังค้าง → บอกแค่ชื่อจุด ไม่มีพิกัด · ออเดอร์จบ/ยกเลิก/ส่งถึงแล้ว → null
+     *   (ตำแหน่งล่าสุดตอนปิดร้านอาจเป็นบ้านของร้าน ห้ามเปิดเผย)
+     *
+     * @return array{latitude: ?float, longitude: ?float, address: ?string, is_mobile: bool}|null
+     */
+    public function buyerPickupPoint(): ?array
+    {
+        $seller = $this->seller;
+
+        if (! $seller) {
+            return null;
+        }
+
+        if (! $seller->isMobileShop()) {
+            return $seller->pickupPoint();
+        }
+
+        if (! in_array($this->order_status, self::PICKUP_VISIBLE_STATUSES, true)) {
+            return null;
+        }
+
+        $label = trim((string) $seller->location_label);
+        $public = $seller->publicLocation();
+
+        if ($public) {
+            return [
+                'latitude' => (float) $public['latitude'],
+                'longitude' => (float) $public['longitude'],
+                'address' => $label !== '' ? $label.' (ร้านเคลื่อนที่)' : ($seller->shop_name.' (ร้านเคลื่อนที่)'),
+                'is_mobile' => true,
+            ];
+        }
+
+        return $label !== '' ? [
+            'latitude' => null,
+            'longitude' => null,
+            'address' => $label.' (ร้านปิดแล้ว — โทรนัดจุดรับกับร้าน)',
+            'is_mobile' => true,
+        ] : null;
+    }
+
+    /**
      * ลิงก์ติดตามไรเดอร์ (ไม่ให้ error ของ accessor ทำ API ล้ม)
      */
     protected function safeTrackingUrl(RiderJob $job): ?string
@@ -670,19 +794,24 @@ class FreshMarketOrder extends Model implements RiderDeliverable
     // ===== RiderDeliverable =====
 
     /**
-     * จุดรับของ = ร้านค้า (ถ้าร้านไม่มีพิกัด ใช้พิกัดที่ลงไว้กับสินค้า)
+     * จุดรับของ = ร้านค้า
+     *
+     * ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด) = ตำแหน่งที่ร้านอยู่ตอนนี้ · ร้านประจำ = พิกัดร้าน
+     * ร้านไม่มีพิกัดเลย → ใช้พิกัดที่ลงไว้กับสินค้า
+     * (ร้านเคลื่อนที่ย้ายระหว่างรอไรเดอร์ → FreshMarketShopPresenceService::syncRiderPickups ย้ายจุดรับของให้)
      */
     public function riderPickupPoint(): array
     {
         $seller = $this->seller;
         $listing = $this->listing;
+        $point = $seller?->pickupPoint();
 
-        $lat = $seller?->latitude ?? $listing?->latitude;
-        $lng = $seller?->longitude ?? $listing?->longitude;
+        $lat = $point['latitude'] ?? ($seller?->latitude ?? $listing?->latitude);
+        $lng = $point['longitude'] ?? ($seller?->longitude ?? $listing?->longitude);
 
         return [
             'name' => $seller?->shop_name ?? 'ร้านค้าตลาดสด',
-            'address' => $seller?->address ?: ($seller?->shop_name ?? 'ร้านค้าตลาดสด'),
+            'address' => $point['address'] ?? ($seller?->address ?: ($seller?->shop_name ?? 'ร้านค้าตลาดสด')),
             'latitude' => (float) ($lat ?? 0),
             'longitude' => (float) ($lng ?? 0),
             'phone' => $seller?->phone ?: ($seller?->user?->phone ?? null),
@@ -742,10 +871,19 @@ class FreshMarketOrder extends Model implements RiderDeliverable
      */
     public function riderItemsSummary(): string
     {
-        $title = $this->listing?->title ?? 'สินค้าตลาดสด';
-        $unit = $this->listing?->unit ?? 'ชิ้น';
+        $lines = $this->lineItems()
+            ->map(fn (FreshMarketOrderItem $item) => $item->summaryLine())
+            ->filter()
+            ->values();
 
-        return "{$title} x{$this->quantity} {$unit}";
+        if ($lines->isEmpty()) {
+            return 'สินค้าตลาดสด';
+        }
+
+        $summary = $lines->implode(', ');
+
+        // สั้นพอสำหรับแจ้งเตือน/รายละเอียดงานไรเดอร์
+        return mb_strlen($summary) > 250 ? mb_substr($summary, 0, 247).'...' : $summary;
     }
 
     /**

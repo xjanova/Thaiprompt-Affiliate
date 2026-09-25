@@ -1,91 +1,74 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'จัดการตำแหน่ง - ' . ($store->store_name ?? 'ร้านค้า'))
+@section('title', 'ตำแหน่งงาน')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <div class="flex items-center gap-4">
-        <a href="{{ route('seller.staff.index') }}"
-           class="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-        </a>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">จัดการตำแหน่ง</h1>
-    </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Add Position Form --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">เพิ่มตำแหน่งใหม่</h2>
-            <form method="POST" action="{{ route('seller.staff.positions.store') }}" class="space-y-4">
-                @csrf
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อตำแหน่ง *</label>
-                    <input type="text" name="title" required placeholder="เช่น พนักงานขาย, แคชเชียร์"
-                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">แผนก</label>
-                    <select name="department_id"
-                            class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                        <option value="">-- ไม่ระบุ --</option>
-                        @foreach($departments as $dept)
-                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เงินเดือนต่ำสุด</label>
-                        <input type="number" name="min_salary" min="0"
-                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เงินเดือนสูงสุด</label>
-                        <input type="number" name="max_salary" min="0"
-                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                    </div>
-                </div>
-                <button type="submit"
-                        class="w-full py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition font-medium">
-                    + เพิ่มตำแหน่ง
-                </button>
-            </form>
-        </div>
+    <x-seller-kit.header title="ตำแหน่งงาน" icon="💼" crumb="ร้านค้า · พนักงาน" subtitle="กำหนดตำแหน่งและช่วงเงินเดือน เช่น แคชเชียร์ พนักงานขาย ผู้จัดการร้าน" />
 
-        {{-- Positions List --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">ตำแหน่งทั้งหมด ({{ $positions->count() }})</h2>
-            @if($positions->count() > 0)
-                <div class="space-y-3">
-                    @foreach($positions as $pos)
-                    <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-700">
-                        <div>
-                            <p class="font-medium text-gray-900 dark:text-white">{{ $pos->title }}</p>
-                            <p class="text-sm text-gray-500">
-                                {{ $pos->department?->name ?? '-' }} • {{ $pos->employees_count }} พนักงาน
-                                @if($pos->min_salary || $pos->max_salary)
-                                    • ฿{{ number_format($pos->min_salary) }}-{{ number_format($pos->max_salary) }}
-                                @endif
-                            </p>
-                        </div>
-                        <form method="POST" action="{{ route('seller.staff.positions.destroy', $pos) }}"
-                              onsubmit="return confirm('ลบตำแหน่ง {{ $pos->title }} ?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
-                        </form>
-                    </div>
+    @include('seller.staff.partials.nav')
+
+    <x-seller-kit.errors />
+
+    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
+        <form method="POST" action="{{ route('seller.staff.positions.store') }}" class="tp-card" style="flex:1 1 280px; display:flex; flex-direction:column; gap:12px;"
+              x-data="{ saving: false }" @submit="saving = true">
+            @csrf
+            <div class="tp-section-h">＋ เพิ่มตำแหน่ง</div>
+            <div>
+                <label for="p-title" style="font-size:12.5px; font-weight:700;">ชื่อตำแหน่ง <span style="color:var(--tp-bad, #d9534f);">*</span></label>
+                <input id="p-title" type="text" name="title" required maxlength="255" value="{{ old('title') }}" placeholder="เช่น แคชเชียร์" class="tp-input" style="margin-top:6px;">
+            </div>
+            <div>
+                <label for="p-code" style="font-size:12.5px; font-weight:700;">รหัสตำแหน่ง</label>
+                <input id="p-code" type="text" name="code" maxlength="50" value="{{ old('code') }}" placeholder="CASHIER (เว้นว่างได้)" class="tp-input tp-num" style="margin-top:6px;">
+            </div>
+            <div>
+                <label for="p-dept" style="font-size:12.5px; font-weight:700;">แผนก</label>
+                <select id="p-dept" name="department_id" class="tp-input" style="margin-top:6px;">
+                    <option value="">— แผนก “ทั่วไป” —</option>
+                    @foreach($departments as $dept)
+                        <option value="{{ $dept->id }}" @selected((string) old('department_id') === (string) $dept->id)>{{ $dept->name }}</option>
                     @endforeach
+                </select>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                    <label for="p-min" style="font-size:12.5px; font-weight:700;">เงินเดือนต่ำสุด</label>
+                    <input id="p-min" type="number" name="min_salary" min="0" step="0.01" value="{{ old('min_salary') }}" class="tp-input tp-num" style="margin-top:6px;">
                 </div>
-            @else
-                <p class="text-gray-500 text-center py-8">ยังไม่มีตำแหน่ง</p>
-            @endif
+                <div>
+                    <label for="p-max" style="font-size:12.5px; font-weight:700;">เงินเดือนสูงสุด</label>
+                    <input id="p-max" type="number" name="max_salary" min="0" step="0.01" value="{{ old('max_salary') }}" class="tp-input tp-num" style="margin-top:6px;">
+                </div>
+            </div>
+            <button type="submit" class="tp-btn tp-btn-primary" :disabled="saving" :style="{ opacity: saving ? .6 : 1 }">บันทึกตำแหน่ง</button>
+        </form>
+
+        <div class="tp-card" style="flex:2 1 360px; padding:0; overflow:hidden;">
+            <div class="tp-section-h" style="padding:16px 18px;">💼 ตำแหน่งทั้งหมด ({{ number_format($positions->count()) }})</div>
+            @forelse($positions as $pos)
+                <div style="display:flex; align-items:center; gap:12px; padding:12px 18px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    <span class="tp-tile" style="width:38px; height:38px; font-size:16px;" aria-hidden="true">💼</span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:700;">{{ $pos->title }}</div>
+                        <div style="font-size:11.5px; color:var(--ink2);">
+                            <span class="tp-num">{{ $pos->code }}</span> · {{ $pos->department->name ?? 'ไม่ระบุแผนก' }} · พนักงาน {{ number_format((int) $pos->employees_count) }} คน
+                        </div>
+                        @if((float) $pos->min_salary > 0 || (float) $pos->max_salary > 0)
+                            <div class="tp-num" style="font-size:12px; margin-top:2px;">฿{{ number_format((float) $pos->min_salary, 0) }} – ฿{{ number_format((float) $pos->max_salary, 0) }}</div>
+                        @endif
+                    </div>
+                    <form method="POST" action="{{ route('seller.staff.positions.destroy', $pos) }}" onsubmit="return confirm('ลบตำแหน่ง {{ addslashes($pos->title) }}? (ลบได้เฉพาะตำแหน่งที่ไม่มีพนักงาน)');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="tp-btn tp-btn-sm" style="color:var(--tp-bad, #d9534f);">🗑️</button>
+                    </form>
+                </div>
+            @empty
+                <x-seller-kit.empty icon="💼" title="ยังไม่มีตำแหน่ง" text="เพิ่มตำแหน่งแรกทางซ้าย" />
+            @endforelse
         </div>
     </div>
 </div>

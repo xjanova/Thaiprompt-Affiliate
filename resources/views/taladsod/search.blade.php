@@ -1,287 +1,173 @@
 {{--
-    หน้าค้นหาสินค้า - ตลาดสดไทยพร๊อม
+ | ค้นหาสินค้าตลาดสด (taladsod.search) + สินค้าตามหมวด (taladsod.category) — ธีม V4 (frontend-v4)
+ | Controller: FreshMarket\HomeController@search / @category
+ | ตัวแปร: $listings (Collection หรือ Paginator), $categories, $settings, $currentCategory (FreshMarketCategory|null)
+ | ตัวกรอง (GET): q, category (slug|id), lat, lng, radius, sort (distance|newest|price_asc|price_desc|popular), organic
+ --}}
+@extends('layouts.frontend-v4')
 
-    ตัวแปรที่ใช้:
-    - $listings: สินค้าที่ค้นหาได้ (paginated collection)
-    - $categories: หมวดหมู่สินค้า (collection)
-    - $settings: การตั้งค่าตลาดสด
-    - $currentCategory: หมวดหมู่ปัจจุบัน (optional, object)
---}}
-@extends('layouts.taladsod')
+@php
+    $ui = \App\Support\TaladsodWebUi::class;
+    $q = is_scalar(request('q')) ? trim((string) request('q')) : '';
+    $catParam = is_scalar(request('category')) ? (string) request('category') : ($currentCategory->slug ?? '');
+    $hasLocation = is_numeric(request('lat')) && is_numeric(request('lng'));
+    $radius = is_numeric(request('radius')) ? (float) request('radius') : (float) ($settings->default_search_radius_km ?? 10);
+    $maxRadius = (float) ($settings->max_search_radius_km ?? 50);
+    $sort = is_scalar(request('sort')) ? (string) request('sort') : 'distance';
+    $isPaginator = $listings instanceof \Illuminate\Contracts\Pagination\Paginator;
+    $resultCount = $isPaginator && method_exists($listings, 'total') ? $listings->total() : $listings->count();
+    $searched = $q !== '' || $currentCategory || $hasLocation;
+    $onCategoryRoute = request()->routeIs('taladsod.category');
+    $pageTitle = $currentCategory ? $currentCategory->name : ($q !== '' ? 'ผลการค้นหา "'.$q.'"' : 'ค้นหาของสดและอาหาร');
+    $radiusOptions = array_values(array_filter([2, 5, 10, 20, 50], fn ($r) => $r <= max(2, $maxRadius)));
+@endphp
 
-@section('title', isset($currentCategory) ? $currentCategory->name . ' - ค้นหาสินค้า' : 'ค้นหาสินค้า')
+@section('title', $pageTitle.' · ตลาดสดไทยพร้อม')
+@section('meta_description', $currentCategory ? ('ซื้อ'.$currentCategory->name.'จากร้านและรถเข็นใกล้บ้าน ตลาดสดไทยพร้อม') : 'ค้นหาของสด อาหาร จากร้านและรถเข็นใกล้บ้าน ตลาดสดไทยพร้อม')
 
 @section('content')
+<x-theme-v4.shop-kit />
+@include('taladsod.partials.kit')
+<x-theme-v4.public-header active="taladsod" :search="false" />
 
-    <div x-data="freshMarketSearch()" @location-updated.window="lat = $event.detail.lat; lng = $event.detail.lng" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+<main class="ts-scope" style="flex:1; padding-bottom:44px;">
+    <div class="sf-wrap">
+        @include('taladsod.partials.nav', ['active' => 'search'])
 
-        {{-- ===== หัวข้อหน้า ===== --}}
-        <div class="mb-6">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                @if(isset($currentCategory))
-                    {{ $currentCategory->icon ?? '📦' }} {{ $currentCategory->name }}
-                @elseif(request('q'))
-                    <i class="fas fa-search text-green-500"></i> ผลการค้นหา "{{ request('q') }}"
-                @else
-                    <i class="fas fa-search text-green-500"></i> ค้นหาสินค้า
-                @endif
-            </h1>
-            @if(isset($listings) && method_exists($listings, 'total'))
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    พบ {{ number_format($listings->total()) }} รายการ
-                </p>
-            @endif
-        </div>
+        {{-- ════════ ฟอร์มค้นหา ════════ --}}
+        <section class="tp-card" style="padding:18px; margin-top:4px;"
+                 x-data="{ locating: false, error: '', lat: @js($hasLocation ? (float) request('lat') : null), lng: @js($hasLocation ? (float) request('lng') : null),
+                           nearMe() {
+                               this.locating = true; this.error = '';
+                               window.ts.geo().then((p) => { this.lat = p.lat.toFixed(6); this.lng = p.lng.toFixed(6); this.$nextTick(() => this.$refs.form.submit()); })
+                                   .catch((e) => { this.error = e.message; this.locating = false; });
+                           },
+                           clearNear() { this.lat = null; this.lng = null; this.$nextTick(() => this.$refs.form.submit()); } }">
+            <form method="GET" action="{{ route('taladsod.search') }}" x-ref="form" role="search" class="ts-stack" style="gap:12px;">
+                <div class="ts-row" style="gap:10px; flex-wrap:nowrap;">
+                    <div style="position:relative; flex:1; min-width:0;">
+                        <i class="fas fa-magnifying-glass" aria-hidden="true" style="position:absolute; left:15px; top:50%; transform:translateY(-50%); color:var(--ink2);"></i>
+                        <label for="ts-q" style="position:absolute; left:-9999px;">คำค้นหา</label>
+                        <input id="ts-q" type="search" name="q" value="{{ $q }}" class="tp-input" maxlength="100"
+                               placeholder="เช่น กะเพรา ผักบุ้ง ปลาทู ขนมครก" style="padding-left:42px; height:50px;">
+                    </div>
+                    <button type="submit" class="ts-btn3d ts-tone-gold" style="min-height:50px;"><i class="fas fa-magnifying-glass" aria-hidden="true"></i><span class="sf-hide-sm"> ค้นหา</span></button>
+                </div>
 
-        <div class="flex flex-col lg:flex-row gap-6">
-
-            {{-- ===== แถบกรอง (Sidebar) ===== --}}
-            <aside x-data="{ filterOpen: false }" class="lg:w-72 flex-shrink-0">
-
-                {{-- ปุ่มเปิดฟิลเตอร์บน Mobile --}}
-                <button @click="filterOpen = !filterOpen"
-                        class="lg:hidden w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4">
-                    <span class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                        <i class="fas fa-sliders text-green-500"></i> ตัวกรองสินค้า
-                    </span>
-                    <i class="fas fa-chevron-down text-gray-400 transition-transform" :class="filterOpen ? 'rotate-180' : ''"></i>
-                </button>
-
-                {{-- ฟิลเตอร์ --}}
-                <div :class="filterOpen ? 'block' : 'hidden lg:block'"
-                     class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 p-5 space-y-6">
-
-                    {{-- หมวดหมู่ --}}
+                <div class="ts-grid" style="--ts-min:180px; gap:10px;">
                     <div>
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <i class="fas fa-th-large text-green-500"></i> หมวดหมู่
-                        </h3>
-                        <div class="space-y-1.5 max-h-48 overflow-y-auto">
-                            <a href="{{ route('taladsod.search', array_merge(request()->except('category', 'page'), [])) }}"
-                               class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {{ !request('category') ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
-                                📦 ทั้งหมด
-                            </a>
-                            @if(isset($categories))
-                                @foreach($categories as $cat)
-                                    <a href="{{ route('taladsod.search', array_merge(request()->except('page'), ['category' => $cat->slug])) }}"
-                                       class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {{ request('category') === $cat->slug ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
-                                        {{ $cat->icon ?? '📦' }} {{ $cat->name }}
-                                    </a>
+                        <label class="ts-label" for="ts-cat">หมวดหมู่</label>
+                        <select id="ts-cat" name="category" class="tp-input" x-on:change="$refs.form.submit()">
+                            <option value="">ทุกหมวด</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat->slug }}" @selected($catParam === $cat->slug || $catParam === (string) $cat->id)>{{ $cat->icon }} {{ $cat->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <template x-if="lat !== null">
+                        <div>
+                            <label class="ts-label" for="ts-radius">รัศมีจากตำแหน่งฉัน</label>
+                            <select id="ts-radius" name="radius" class="tp-input" x-on:change="$refs.form.submit()">
+                                @foreach($radiusOptions as $r)
+                                    <option value="{{ $r }}" @selected((float) $r === $radius)>{{ $r }} กม.</option>
                                 @endforeach
-                            @endif
+                            </select>
                         </div>
-                    </div>
-
-                    {{-- ช่วงราคา --}}
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <i class="fas fa-tag text-orange-500"></i> ช่วงราคา
-                        </h3>
-                        <div class="flex items-center gap-2">
-                            <input type="number"
-                                   x-model="minPrice"
-                                   placeholder="ต่ำสุด"
-                                   class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                            <span class="text-gray-400">-</span>
-                            <input type="number"
-                                   x-model="maxPrice"
-                                   placeholder="สูงสุด"
-                                   class="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </template>
+                    <template x-if="lat !== null">
+                        <div>
+                            <label class="ts-label" for="ts-sort">เรียงตาม</label>
+                            <select id="ts-sort" name="sort" class="tp-input" x-on:change="$refs.form.submit()">
+                                <option value="distance" @selected($sort === 'distance')>ใกล้ที่สุด</option>
+                                <option value="newest" @selected($sort === 'newest')>มาใหม่</option>
+                                <option value="popular" @selected($sort === 'popular')>ขายดี</option>
+                                <option value="price_asc" @selected($sort === 'price_asc')>ราคาต่ำ → สูง</option>
+                                <option value="price_desc" @selected($sort === 'price_desc')>ราคาสูง → ต่ำ</option>
+                            </select>
                         </div>
-                    </div>
+                    </template>
+                </div>
 
-                    {{-- รัศมีค้นหา --}}
-                    <div x-data="geolocation()">
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <i class="fas fa-location-crosshairs text-blue-500"></i> รัศมีค้นหา
-                        </h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-gray-500 dark:text-gray-400">ระยะทาง</span>
-                                <span class="font-semibold text-green-600 dark:text-green-400" x-text="radius + ' กม.'">10 กม.</span>
-                            </div>
-                            <input type="range"
-                                   x-model="radius"
-                                   min="1"
-                                   max="50"
-                                   step="1"
-                                   class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-green-500">
-                            <div class="flex justify-between text-xs text-gray-400">
-                                <span>1 กม.</span>
-                                <span>25 กม.</span>
-                                <span>50 กม.</span>
-                            </div>
-                            <button @click="getLocation()"
-                                    :disabled="loading"
-                                    class="w-full px-3 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-medium hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors flex items-center justify-center gap-2">
-                                <i class="fas fa-location-dot"></i>
-                                <span x-text="loading ? 'กำลังค้นหาตำแหน่ง...' : (lat ? 'อัพเดทตำแหน่ง' : 'ใช้ตำแหน่งปัจจุบัน')"></span>
-                            </button>
-                            <template x-if="error">
-                                <p class="text-xs text-red-500" x-text="error"></p>
-                            </template>
-                        </div>
-                    </div>
+                <input type="hidden" name="lat" :value="lat" :disabled="lat === null">
+                <input type="hidden" name="lng" :value="lng" :disabled="lng === null">
 
-                    {{-- สินค้าออร์แกนิค --}}
-                    <div>
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="checkbox"
-                                   class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-green-500 focus:ring-green-500 focus:ring-offset-0">
-                            <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors flex items-center gap-1.5">
-                                <i class="fas fa-leaf text-green-500"></i> เฉพาะสินค้าออร์แกนิค
-                            </span>
-                        </label>
-                    </div>
-
-                    {{-- จัดเรียง --}}
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                            <i class="fas fa-sort text-purple-500"></i> จัดเรียงตาม
-                        </h3>
-                        <select x-model="sortBy"
-                                class="w-full px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
-                            <option value="distance">ใกล้ที่สุด</option>
-                            <option value="latest">ใหม่ล่าสุด</option>
-                            <option value="price_low">ราคาต่ำ - สูง</option>
-                            <option value="price_high">ราคาสูง - ต่ำ</option>
-                            <option value="popular">ยอดนิยม</option>
-                            <option value="rating">คะแนนสูงสุด</option>
-                        </select>
-                    </div>
-
-                    {{-- ปุ่มค้นหา --}}
-                    <button @click="search()"
-                            :disabled="loading"
-                            class="w-full py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
-                        <i class="fas fa-search" x-show="!loading"></i>
-                        <i class="fas fa-spinner fa-spin" x-show="loading" x-cloak></i>
-                        <span x-text="loading ? 'กำลังค้นหา...' : 'ค้นหาสินค้า'"></span>
+                <div class="ts-row" style="gap:8px;">
+                    <button type="button" class="sf-chip" :class="lat !== null ? 'is-on' : ''" x-on:click="lat !== null ? clearNear() : nearMe()" :disabled="locating">
+                        <i class="fas" :class="locating ? 'fa-circle-notch ts-spin' : 'fa-location-crosshairs'" aria-hidden="true"></i>
+                        <span x-text="lat !== null ? 'ใกล้ฉัน (แตะเพื่อยกเลิก)' : 'ค้นหาใกล้ฉัน'">{{ $hasLocation ? 'ใกล้ฉัน (แตะเพื่อยกเลิก)' : 'ค้นหาใกล้ฉัน' }}</span>
                     </button>
+                    <label class="sf-chip" x-show="lat !== null" style="cursor:pointer;">
+                        <input type="checkbox" name="organic" value="1" @checked(request()->boolean('organic')) x-on:change="$refs.form.submit()" style="width:18px; height:18px; accent-color:var(--accent1);">
+                        <i class="fas fa-leaf" aria-hidden="true"></i> อินทรีย์เท่านั้น
+                    </label>
+                    <span class="ts-err" x-show="error" x-text="error" x-cloak></span>
                 </div>
-            </aside>
+            </form>
+        </section>
 
-            {{-- ===== ผลการค้นหา ===== --}}
-            <div class="flex-1 min-w-0">
+        {{-- ════════ หมวดหมู่ ════════ --}}
+        @if($categories->count() > 0)
+            <div class="sf-scroll" style="margin-top:16px;">
+                <a href="{{ route('taladsod.search', array_filter(['q' => $q ?: null])) }}" class="ts-cat {{ ! $currentCategory ? 'is-on' : '' }}">
+                    <span class="ts-cat-ic">🧺</span><span>ทั้งหมด</span>
+                </a>
+                @foreach($categories as $cat)
+                    <a href="{{ route('taladsod.category', $cat->slug) }}" class="ts-cat {{ $currentCategory && (int) $currentCategory->id === (int) $cat->id ? 'is-on' : '' }}">
+                        <span class="ts-cat-ic">
+                            @if($cat->image_url)
+                                <img src="{{ $cat->image_url }}" alt="" loading="lazy">
+                            @else
+                                {{ $cat->icon ?: '🛒' }}
+                            @endif
+                        </span>
+                        <span>{{ $cat->name }}</span>
+                    </a>
+                @endforeach
+            </div>
+        @endif
 
-                {{-- แถบจัดเรียงด้านบน --}}
-                <div class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 px-4 py-3 mb-4">
-                    <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-th-large"></i>
-                        <span class="hidden sm:inline">แสดงผลแบบ</span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <select class="text-sm border-0 bg-transparent text-gray-600 dark:text-gray-300 focus:ring-0 cursor-pointer pr-8">
-                            <option value="distance">ใกล้ที่สุด</option>
-                            <option value="latest">ใหม่ล่าสุด</option>
-                            <option value="price_low">ราคาต่ำ - สูง</option>
-                            <option value="price_high">ราคาสูง - ต่ำ</option>
-                        </select>
-                    </div>
-                </div>
-
-                {{-- ตารางสินค้า --}}
-                @if(isset($listings) && $listings->count() > 0)
-                    <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                        @foreach($listings as $listing)
-                            <a href="{{ route('taladsod.listing', $listing->id) }}"
-                               class="group bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:-translate-y-1">
-
-                                {{-- รูปสินค้า --}}
-                                <div class="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-700">
-                                    @if($listing->image_url ?? false)
-                                        <img src="{{ $listing->image_url }}"
-                                             alt="{{ $listing->title }}"
-                                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                             loading="lazy">
-                                    @else
-                                        <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                                            🥬
-                                        </div>
-                                    @endif
-
-                                    {{-- ป้ายระยะทาง --}}
-                                    @if($listing->distance ?? false)
-                                        <div class="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm text-white text-xs rounded-full flex items-center gap-1">
-                                            <i class="fas fa-location-dot text-green-400"></i>
-                                            {{ number_format($listing->distance, 1) }} กม.
-                                        </div>
-                                    @endif
-
-                                    {{-- ป้ายเงินคืน --}}
-                                    @if($listing->cashback_percent ?? false)
-                                        <div class="absolute top-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
-                                            คืน {{ $listing->cashback_percent }}%
-                                        </div>
-                                    @endif
-
-                                    {{-- ป้ายออร์แกนิค --}}
-                                    @if($listing->is_organic ?? false)
-                                        <div class="absolute bottom-2 left-2 px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                                            <i class="fas fa-leaf"></i> ออร์แกนิค
-                                        </div>
-                                    @endif
-                                </div>
-
-                                {{-- ข้อมูลสินค้า --}}
-                                <div class="p-3 sm:p-4">
-                                    <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                                        {{ $listing->title }}
-                                    </h3>
-                                    <div class="flex items-baseline gap-1.5 mb-2">
-                                        <span class="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                                            ฿{{ number_format($listing->price, 0) }}
-                                        </span>
-                                        <span class="text-xs text-gray-500 dark:text-gray-400">
-                                            /{{ $listing->unit ?? 'กก.' }}
-                                        </span>
-                                    </div>
-                                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                                        <div class="flex items-center gap-1.5 min-w-0">
-                                            <i class="fas fa-store text-green-500"></i>
-                                            <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
-                                        </div>
-                                        @if(($listing->seller->rating_average ?? 0) > 0)
-                                            <div class="flex items-center gap-0.5 flex-shrink-0">
-                                                <i class="fas fa-star text-yellow-400 text-[10px]"></i>
-                                                <span>{{ number_format($listing->seller->rating_average, 1) }}</span>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </a>
-                        @endforeach
-                    </div>
-
-                    {{-- Pagination --}}
-                    @if(method_exists($listings, 'links'))
-                        <div class="mt-8">
-                            {{ $listings->withQueryString()->links() }}
-                        </div>
+        {{-- ════════ ผลลัพธ์ ════════ --}}
+        <section class="sf-section" aria-labelledby="ts-result-h">
+            <div class="sf-section-h">
+                <div>
+                    <div class="sf-kicker">{{ $hasLocation ? 'ใกล้ตำแหน่งของคุณ · รัศมี '.$radius.' กม.' : ($currentCategory ? 'หมวดหมู่' : 'ตลาดสดไทยพร้อม') }}</div>
+                    <h1 id="ts-result-h" class="sf-title">{{ $pageTitle }}</h1>
+                    @if($currentCategory && $currentCategory->description)
+                        <p class="ts-muted" style="margin:6px 0 0; font-size:13.5px;">{{ $currentCategory->description }}</p>
                     @endif
-
-                @else
-                    {{-- ===== สถานะไม่พบสินค้า ===== --}}
-                    <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                        <div class="text-7xl mb-6 animate-float">🔍</div>
-                        <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-3">ไม่พบสินค้า</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
-                            ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่น หรือขยายรัศมีค้นหาให้กว้างขึ้น
-                        </p>
-                        <div class="flex flex-wrap items-center justify-center gap-3">
-                            <a href="{{ route('taladsod.search') }}"
-                               class="px-6 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-medium transition-colors">
-                                <i class="fas fa-redo mr-1"></i> ค้นหาใหม่
-                            </a>
-                            <a href="{{ route('taladsod.home') }}"
-                               class="px-6 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-colors">
-                                <i class="fas fa-home mr-1"></i> กลับหน้าแรก
-                            </a>
-                        </div>
-                    </div>
+                </div>
+                @if($searched)
+                    <span class="ts-pill ts-tone-gold">{{ number_format($resultCount) }} รายการ</span>
                 @endif
             </div>
-        </div>
-    </div>
 
+            @if(! $searched)
+                <div class="tp-card ts-empty">
+                    <span class="em" aria-hidden="true">🔎</span>
+                    <b style="font-size:16px;">อยากกินอะไร หาอะไรดี?</b>
+                    <span class="ts-muted">พิมพ์ชื่อเมนูหรือของสด เลือกหมวด หรือกด "ค้นหาใกล้ฉัน" เพื่อดูร้านรอบตัว</span>
+                    <a href="{{ route('taladsod.home') }}#near-me" class="ts-btn3d ts-tone-gold sm"><i class="fas fa-map-location-dot" aria-hidden="true"></i> ดูร้านที่เปิดอยู่ใกล้ฉัน</a>
+                </div>
+            @elseif($listings->count() === 0)
+                <div class="tp-card ts-empty">
+                    <span class="em" aria-hidden="true">🥲</span>
+                    <b style="font-size:16px;">ยังไม่พบสินค้าที่ตรงกับการค้นหา</b>
+                    <span class="ts-muted">ลองคำอื่น เลือกหมวดอื่น{{ $hasLocation ? ' หรือขยายรัศมีค้นหา' : '' }} — ร้านรถเข็นจะโผล่เมื่อเปิดร้านอยู่เท่านั้น</span>
+                    <a href="{{ route('taladsod.search') }}" class="tp-btn"><i class="fas fa-rotate-left" aria-hidden="true"></i> ล้างการค้นหา</a>
+                </div>
+            @else
+                <div class="sf-grid">
+                    @foreach($listings as $listing)
+                        @include('taladsod.partials.listing-card', ['listing' => $listing])
+                    @endforeach
+                </div>
+                @if($isPaginator && $listings->hasPages())
+                    <div style="margin-top:20px;">{{ $listings->links('vendor.pagination.tp-v4') }}</div>
+                @endif
+            @endif
+        </section>
+    </div>
+</main>
+
+<x-theme-v4.public-footer />
 @endsection

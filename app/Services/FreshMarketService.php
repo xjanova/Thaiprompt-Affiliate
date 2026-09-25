@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Exceptions\FreshMarketException;
 use App\Models\FreshMarketBuyerPreference;
+use App\Models\FreshMarketCartItem;
 use App\Models\FreshMarketCategory;
 use App\Models\FreshMarketListing;
 use App\Models\FreshMarketOrder;
+use App\Models\FreshMarketOrderItem;
 use App\Models\FreshMarketReferral;
 use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
@@ -59,6 +61,9 @@ class FreshMarketService
 
     /** source_type ของหนี้ค่า GP (COD ที่หักจาก wallet ร้านไม่ได้) */
     public const DEBT_SOURCE_GP = 'fresh_market_gp';
+
+    /** จำนวนบรรทัดสินค้าสูงสุดต่อออเดอร์ */
+    public const MAX_ORDER_LINES = 30;
 
     // ===== sub_type ของ platform_transactions =====
     public const PLATFORM_GP = 'fresh_market_gp';
@@ -357,10 +362,12 @@ class FreshMarketService
             (float) $this->settings()->max_search_radius_km
         );
 
+        // ร้านเคลื่อนที่ที่เปิดอยู่ใช้ตำแหน่งปัจจุบัน / ร้านที่ปิดยังแสดง (สั่งไม่ได้) — ดู FreshMarketListing::scopeNearby
         $query = FreshMarketListing::visibleToBuyers()
             ->inStock()
             ->nearby($lat, $lng, $radius)
-            ->with(['seller:id,shop_name,rating_average', 'category:id,name,icon']);
+            ->with(['seller:'.FreshMarketSeller::SUMMARY_COLUMNS, 'category:id,name,icon'])
+            ->withCount('optionGroups');
 
         if (! empty($filters['query'])) {
             $query->search($filters['query']);
@@ -455,8 +462,16 @@ class FreshMarketService
 
         $listing->loadMissing('seller');
         $seller = $listing->seller;
-        $pickupLat = $seller?->hasPickupLocation() ? (float) $seller->latitude : ($listing->latitude !== null ? (float) $listing->latitude : null);
-        $pickupLng = $seller?->hasPickupLocation() ? (float) $seller->longitude : ($listing->longitude !== null ? (float) $listing->longitude : null);
+
+        // ร้านปิดอยู่ (รวมร้านเคลื่อนที่ที่ยังไม่ได้เปิดร้านวันนี้) → ยังไม่รู้จุดรับของ และสั่งไม่ได้
+        if ($seller && ! $seller->isOpenNow()) {
+            return array_merge($result, ['code' => 'SHOP_CLOSED', 'message' => 'ร้าน'.FreshMarketSeller::CLOSED_MESSAGE]);
+        }
+
+        // จุดรับของ: ร้านเคลื่อนที่ = ตำแหน่งที่เปิดร้านตอนนี้ / ร้านประจำ = พิกัดร้าน / ไม่มีทั้งคู่ = พิกัดสินค้า
+        $pickup = $seller?->pickupPoint();
+        $pickupLat = $pickup ? $pickup['latitude'] : ($listing->latitude !== null ? (float) $listing->latitude : null);
+        $pickupLng = $pickup ? $pickup['longitude'] : ($listing->longitude !== null ? (float) $listing->longitude : null);
 
         if (! $pickupLat || ! $pickupLng) {
             return array_merge($result, [
@@ -558,10 +573,11 @@ class FreshMarketService
     }
 
     /**
-     * สร้างคำสั่งซื้อ
+     * สร้างคำสั่งซื้อสินค้าเดียว (ทางเดิมของเว็บ/API/LINE) → ส่งต่อไปทางหลายรายการ
      *
-     * @param  array  $data  quantity, delivery_type (pickup|rider), payment_method (wallet|cod|null),
-     *                       default_payment_method, buyer_latitude, buyer_longitude, delivery_address, delivery_notes
+     * @param  array  $data  quantity, option_ids (ตัวเลือกที่เลือก), item_note, delivery_type (pickup|rider),
+     *                       payment_method (wallet|cod|null), default_payment_method, buyer_latitude, buyer_longitude,
+     *                       delivery_address, delivery_notes, channel
      *
      * @throws FreshMarketException
      */
@@ -573,6 +589,36 @@ class FreshMarketService
             throw FreshMarketException::make('INVALID_QUANTITY', 'จำนวนสินค้าไม่ถูกต้อง', 422);
         }
 
+        $hasOptions = array_key_exists('option_ids', $data) && $data['option_ids'] !== null;
+
+        // LINE ยังไม่มีขั้นเลือกตัวเลือก → กลุ่มที่บังคับใช้ตัวเลือกที่ถูกที่สุดให้อัตโนมัติ
+        if (! array_key_exists('apply_default_options', $data)) {
+            $data['apply_default_options'] = ! $hasOptions && ($data['channel'] ?? null) === 'line';
+        }
+
+        return $this->createOrderFromItems($buyer, (int) $listing->seller_id, [[
+            'listing_id' => (int) $listing->id,
+            'quantity' => $quantity,
+            'option_ids' => $hasOptions ? $data['option_ids'] : [],
+            'note' => $data['item_note'] ?? null,
+        ]], $data);
+    }
+
+    /**
+     * สร้างคำสั่งซื้อหลายรายการจากร้านเดียว (ตะกร้า / แอป / เว็บ) — ราคา ตัวเลือก ค่าส่ง GP คำนวณฝั่งเซิร์ฟเวอร์ทั้งหมด
+     *
+     * @param  int  $sellerId  ร้านของออเดอร์ (ทุกรายการต้องเป็นของร้านนี้)
+     * @param  array<int, array{listing_id: int, quantity: int, option_ids?: array, note?: ?string}>  $items
+     * @param  array  $data  delivery_type, payment_method, default_payment_method, buyer_latitude, buyer_longitude,
+     *                       delivery_address, delivery_notes, channel, apply_default_options (bool),
+     *                       cart_item_ids (รายการตะกร้าที่ต้องลบเมื่อสั่งสำเร็จ — lock + ตรวจครบในธุรกรรมเดียวกัน)
+     *
+     * @throws FreshMarketException
+     */
+    public function createOrderFromItems(User $buyer, int $sellerId, array $items, array $data): FreshMarketOrder
+    {
+        $lines = $this->normalizeOrderLines($items);
+
         $deliveryType = $data['delivery_type'] ?? 'pickup';
 
         if (! in_array($deliveryType, ['pickup', 'rider'], true)) {
@@ -581,17 +627,34 @@ class FreshMarketService
 
         $paymentMethod = $this->resolvePaymentMethod($data['payment_method'] ?? null, $data['default_payment_method'] ?? null);
 
-        $listing->loadMissing('seller');
-        $seller = $listing->seller;
+        $seller = FreshMarketSeller::find($sellerId);
 
-        if (! $seller || ! $listing->sellerIsVisible()) {
-            throw FreshMarketException::make('LISTING_UNAVAILABLE', 'สินค้านี้ไม่พร้อมขาย', 409);
+        if (! $seller || ! $seller->isVisibleToBuyers()) {
+            throw FreshMarketException::make('LISTING_UNAVAILABLE', 'ร้านนี้ไม่พร้อมรับออเดอร์ในขณะนี้', 409);
+        }
+
+        // ร้านปิดอยู่ (กดปิดร้าน / เลยเวลาปิด / ร้านเคลื่อนที่ยังไม่เปิดวันนี้) → เห็นร้านได้แต่สั่งไม่ได้
+        if (! $seller->isOpenNow()) {
+            throw FreshMarketException::make('SHOP_CLOSED', 'ร้าน'.FreshMarketSeller::CLOSED_MESSAGE, 409);
         }
 
         // ห้ามซื้อสินค้าร้านตัวเอง (กันปั่น escrow/แคชแบ็ค)
         if ((int) $seller->user_id === (int) $buyer->id) {
             throw FreshMarketException::make('SELF_PURCHASE', 'ไม่สามารถสั่งซื้อสินค้าของร้านตัวเองได้', 403);
         }
+
+        // รายการแรกใช้เป็นจุดรับของสำรอง (ร้านที่ยังไม่ปักหมุด) และคอลัมน์เดิมของออเดอร์
+        $listing = FreshMarketListing::find($lines[0]['listing_id']);
+
+        if (! $listing) {
+            throw FreshMarketException::make('LISTING_UNAVAILABLE', 'สินค้านี้ไม่พร้อมขาย', 409);
+        }
+
+        if ((int) $listing->seller_id !== (int) $seller->id) {
+            throw FreshMarketException::make('MIXED_SELLERS', 'สั่งได้ทีละร้าน กรุณาแยกออเดอร์ตามร้าน', 422);
+        }
+
+        $listing->setRelation('seller', $seller);
 
         // ร้านค้างค่า GP เกินเพดาน → ไม่รับเก็บเงินปลายทางชั่วคราว (จ่ายผ่าน wallet แล้วระบบหักหนี้ให้อัตโนมัติ)
         if ($paymentMethod === 'cod'
@@ -625,28 +688,101 @@ class FreshMarketService
         }
 
         $order = DB::transaction(function () use (
-            $buyer, $listing, $seller, $quantity, $deliveryType, $paymentMethod,
+            $buyer, $seller, $lines, $deliveryType, $paymentMethod,
             $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data
         ) {
-            // lock สินค้า → อ่านราคา/สต็อกล่าสุด
-            $locked = FreshMarketListing::whereKey($listing->id)->lockForUpdate()->first();
+            // ตะกร้า: lock + ตรวจว่ารายการยังอยู่ครบ (กดชำระซ้ำ/สองแท็บพร้อมกัน → ครั้งที่สองไม่มีของในตะกร้าแล้ว)
+            $cartItemIds = FreshMarketCartItem::normalizeOptionIds($data['cart_item_ids'] ?? []);
 
-            if (! $locked || ! $locked->isAvailableForPurchase()) {
-                throw FreshMarketException::make('LISTING_UNAVAILABLE', 'สินค้านี้ไม่พร้อมขายแล้ว', 409);
+            if (! empty($cartItemIds)) {
+                $cartRows = FreshMarketCartItem::whereIn('id', $cartItemIds)
+                    ->where('user_id', $buyer->id)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($cartRows->count() !== count($cartItemIds)) {
+                    throw FreshMarketException::make('CART_CHANGED', 'ตะกร้ามีการเปลี่ยนแปลง กรุณาตรวจสอบตะกร้าอีกครั้ง', 409);
+                }
             }
 
-            if ($locked->quantity_available < $quantity) {
-                throw FreshMarketException::make(
-                    'OUT_OF_STOCK',
-                    "สินค้าไม่เพียงพอ (เหลือ {$locked->quantity_available} {$locked->unit})",
-                    409
+            // lock สินค้าทุกรายการ (เรียงตาม id กัน deadlock) → อ่านราคา/สต็อก/ตัวเลือกล่าสุด
+            $listingIds = array_values(array_unique(array_column($lines, 'listing_id')));
+            sort($listingIds);
+            $lockedListings = FreshMarketListing::whereIn('id', $listingIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            $qtyByListing = [];
+            foreach ($lines as $line) {
+                $qtyByListing[$line['listing_id']] = ($qtyByListing[$line['listing_id']] ?? 0) + $line['quantity'];
+            }
+
+            foreach ($listingIds as $listingId) {
+                $locked = $lockedListings->get($listingId);
+
+                if (! $locked) {
+                    throw FreshMarketException::make('LISTING_UNAVAILABLE', 'มีสินค้าบางรายการไม่พร้อมขายแล้ว', 409);
+                }
+
+                if ((int) $locked->seller_id !== (int) $seller->id) {
+                    throw FreshMarketException::make('MIXED_SELLERS', 'สั่งได้ทีละร้าน กรุณาแยกออเดอร์ตามร้าน', 422);
+                }
+
+                if (! $locked->isAvailableForPurchase()) {
+                    throw FreshMarketException::make('LISTING_UNAVAILABLE', 'สินค้า "'.$locked->title.'" ไม่พร้อมขายแล้ว', 409);
+                }
+
+                if ($locked->tracksStock() && $locked->quantity_available < $qtyByListing[$listingId]) {
+                    throw FreshMarketException::make(
+                        'OUT_OF_STOCK',
+                        'สินค้า "'.$locked->title.'" ไม่เพียงพอ (เหลือ '.$locked->quantity_available.' '.$locked->unit.')',
+                        409
+                    );
+                }
+
+                $locked->setRelation('seller', $seller);
+            }
+
+            // ราคาต่อบรรทัด = ราคาสินค้า + ตัวเลือก (ตรวจกติกาตัวเลือกทุกบรรทัด) → GP + แคชแบ็คต่อบรรทัด
+            $optionService = app(FreshMarketOptionService::class);
+            $resolved = [];
+            $gpRates = [];
+            $totalAmount = 0.0;
+            $platformFee = 0.0;
+            $cashback = 0.0;
+
+            foreach ($lines as $line) {
+                $locked = $lockedListings->get($line['listing_id']);
+                $priced = $optionService->resolveLine(
+                    $locked,
+                    $line['option_ids'],
+                    $line['quantity'],
+                    $line['note'],
+                    (bool) ($data['apply_default_options'] ?? false)
                 );
+
+                $rate = $gpRates[$locked->id] ??= $this->gpRateFor($locked);
+                $lineGp = round($priced['line_total'] * $rate / 100, 2);
+                $lineCashback = $this->computeCashback($locked, $line['quantity'], $priced['line_total'], $lineGp);
+
+                $resolved[] = $priced + [
+                    'listing' => $locked,
+                    'gp_rate' => $rate,
+                    'platform_fee' => $lineGp,
+                    'cashback_amount' => $lineCashback,
+                ];
+
+                $totalAmount += $priced['line_total'];
+                $platformFee += $lineGp;
+                $cashback += $lineCashback;
             }
 
-            $locked->setRelation('seller', $seller);
-
-            $unitPrice = round((float) $locked->price, 2);
-            $totalAmount = round($unitPrice * $quantity, 2);
+            $totalAmount = round($totalAmount, 2);
+            $platformFee = round($platformFee, 2);
+            $cashback = round(min($cashback, $platformFee), 2);
+            $first = $resolved[0];
 
             // COD ส่งด้วยไรเดอร์: ยอดที่ไรเดอร์ต้องเก็บต้องไม่เกินวงเงิน COD ต่องาน
             // (ตรวจตั้งแต่ตอนสั่ง — ไม่งั้นร้านเตรียมของเสร็จแล้วเรียกไรเดอร์ไม่ได้ ออเดอร์ค้างที่ READY)
@@ -665,17 +801,20 @@ class FreshMarketService
                 }
             }
 
-            $gpRate = $this->gpRateFor($locked);
-            $platformFee = round($totalAmount * $gpRate / 100, 2);
+            // อัตรา GP ของออเดอร์: ทุกรายการอัตราเดียวกัน = อัตรานั้น, ต่างกัน = อัตราเฉลี่ยถ่วงน้ำหนัก
+            $distinctRates = array_values(array_unique(array_map(fn ($r) => (string) $r, $gpRates)));
+            $gpRate = count($distinctRates) === 1
+                ? (float) $distinctRates[0]
+                : ($totalAmount > 0 ? round($platformFee / $totalAmount * 100, 2) : 0.0);
             $sellerEarning = round($totalAmount - $platformFee, 2);
-            $cashback = $this->computeCashback($locked, $quantity, $totalAmount, $platformFee);
 
+            // คอลัมน์เดิม listing_id/quantity/unit_price = รายการแรก (หน้าเก่ายังแสดงได้) · total_amount = ยอดสินค้ารวมทุกรายการ
             $order = new FreshMarketOrder([
                 'buyer_id' => $buyer->id,
                 'seller_id' => $seller->id,
-                'listing_id' => $locked->id,
-                'quantity' => $quantity,
-                'unit_price' => $unitPrice,
+                'listing_id' => $first['listing_id'],
+                'quantity' => $first['quantity'],
+                'unit_price' => $first['unit_price'],
                 'total_amount' => $totalAmount,
                 'platform_fee' => $platformFee,
                 'gp_rate' => $gpRate,
@@ -699,18 +838,63 @@ class FreshMarketService
                 'to' => FreshMarketOrder::STATUS_PENDING,
                 'by' => 'buyer',
                 'user_id' => $buyer->id,
-                'meta' => ['payment_method' => $paymentMethod, 'channel' => $data['channel'] ?? null],
+                'meta' => [
+                    'payment_method' => $paymentMethod,
+                    'channel' => $data['channel'] ?? null,
+                    'lines' => count($resolved),
+                ],
             ]);
             $order->save();
 
-            // ตัดสต็อกแบบมีเงื่อนไข — สองคนแย่งชิ้นสุดท้าย สำเร็จคนเดียว
-            if (! FreshMarketListing::reserveStock((int) $locked->id, $quantity)) {
-                throw FreshMarketException::make('OUT_OF_STOCK', 'สินค้าไม่เพียงพอ', 409);
+            // รายการสินค้า (snapshot ชื่อ/ตัวเลือก/ราคา ณ ตอนสั่ง)
+            $itemModels = [];
+            foreach ($resolved as $row) {
+                /** @var FreshMarketListing $rowListing */
+                $rowListing = $row['listing'];
+
+                $itemModels[] = $order->items()->create([
+                    'listing_id' => $rowListing->id,
+                    'title' => mb_substr((string) $rowListing->title, 0, 255),
+                    'unit' => $rowListing->unit ? mb_substr((string) $rowListing->unit, 0, 30) : null,
+                    'image_url' => $row['image_url'] ?? $rowListing->primary_image,
+                    'quantity' => $row['quantity'],
+                    'base_price' => $row['base_price'],
+                    'options_price' => $row['options_price'],
+                    'unit_price' => $row['unit_price'],
+                    'line_total' => $row['line_total'],
+                    'selected_options' => $row['selected_options'],
+                    'note' => $row['note'],
+                    'track_stock' => $rowListing->tracksStock(),
+                    'stock_deducted' => $rowListing->tracksStock(),
+                    'gp_rate' => $row['gp_rate'],
+                    'platform_fee' => $row['platform_fee'],
+                    'cashback_amount' => $row['cashback_amount'],
+                ]);
+            }
+            $order->setRelation('items', new \Illuminate\Database\Eloquent\Collection($itemModels));
+
+            // ตัดสต็อกแบบมีเงื่อนไข (เฉพาะสินค้าที่ตัดสต็อก) — สองคนแย่งชิ้นสุดท้าย สำเร็จคนเดียว
+            foreach ($qtyByListing as $listingId => $qty) {
+                $locked = $lockedListings->get($listingId);
+
+                if ($locked->tracksStock()) {
+                    if (! FreshMarketListing::reserveStock((int) $listingId, (int) $qty)) {
+                        throw FreshMarketException::make('OUT_OF_STOCK', 'สินค้า "'.$locked->title.'" ไม่เพียงพอ', 409);
+                    }
+                } else {
+                    // ทำตามสั่ง: ไม่แตะสต็อก แค่นับยอดสั่ง (ใช้เรียงสินค้ายอดนิยม)
+                    FreshMarketListing::whereKey($listingId)->increment('order_count');
+                }
             }
 
             // ชำระผ่าน wallet: หักเงินจริงก่อน แล้วค่อยถือว่า escrow
             if ($paymentMethod === 'wallet') {
                 $this->captureWalletPayment($order, $buyer);
+            }
+
+            // สั่งสำเร็จ → ล้างรายการตะกร้าที่ใช้สั่ง (ธุรกรรมเดียวกัน: สั่งไม่สำเร็จ ตะกร้ายังอยู่)
+            if (! empty($cartItemIds)) {
+                FreshMarketCartItem::whereIn('id', $cartItemIds)->where('user_id', $buyer->id)->delete();
             }
 
             return $order;
@@ -720,13 +904,60 @@ class FreshMarketService
             'order_id' => $order->id,
             'order_number' => $order->order_number,
             'buyer_id' => $buyer->id,
-            'listing_id' => $listing->id,
+            'seller_id' => $seller->id,
+            'lines' => count($lines),
             'payment_method' => $order->payment_method,
         ]);
 
         $this->notifier->sellerNewOrder($order);
 
-        return $order->fresh(['listing', 'seller']) ?? $order;
+        return $order->fresh(['listing', 'seller', 'items']) ?? $order;
+    }
+
+    /**
+     * ตรวจ/จัดรูปรายการสั่งซื้อจาก client (ยังไม่ดูราคา — ราคาคำนวณใน transaction)
+     *
+     * @return array<int, array{listing_id: int, quantity: int, option_ids: array<int,int>, note: ?string}>
+     *
+     * @throws FreshMarketException CART_EMPTY | TOO_MANY_ITEMS | INVALID_ITEM | INVALID_QUANTITY
+     */
+    protected function normalizeOrderLines(array $items): array
+    {
+        $items = array_values(array_filter($items, 'is_array'));
+
+        if (empty($items)) {
+            throw FreshMarketException::make('CART_EMPTY', 'ยังไม่มีสินค้าในรายการสั่งซื้อ', 422);
+        }
+
+        if (count($items) > self::MAX_ORDER_LINES) {
+            throw FreshMarketException::make('TOO_MANY_ITEMS', 'สั่งได้สูงสุด '.self::MAX_ORDER_LINES.' รายการต่อออเดอร์', 422);
+        }
+
+        $lines = [];
+
+        foreach ($items as $item) {
+            $listingId = (int) ($item['listing_id'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 0);
+
+            if ($listingId < 1) {
+                throw FreshMarketException::make('INVALID_ITEM', 'รายการสินค้าไม่ถูกต้อง', 422);
+            }
+
+            if ($quantity < 1 || $quantity > 999) {
+                throw FreshMarketException::make('INVALID_QUANTITY', 'จำนวนสินค้าไม่ถูกต้อง (1-999)', 422);
+            }
+
+            $note = isset($item['note']) && is_scalar($item['note']) ? trim((string) $item['note']) : '';
+
+            $lines[] = [
+                'listing_id' => $listingId,
+                'quantity' => $quantity,
+                'option_ids' => FreshMarketCartItem::normalizeOptionIds($item['option_ids'] ?? []),
+                'note' => $note !== '' ? mb_substr($note, 0, 255) : null,
+            ];
+        }
+
+        return $lines;
     }
 
     /**
@@ -949,8 +1180,8 @@ class FreshMarketService
                 FreshMarketOrder::STATUS_PREPARING, FreshMarketOrder::STATUS_READY,
             ], true);
 
-            if ($stillAtShop && $locked->listing_id) {
-                FreshMarketListing::releaseStock((int) $locked->listing_id, (int) $locked->quantity);
+            if ($stillAtShop) {
+                $this->restoreOrderStock($locked);
             }
 
             return [$locked, true, $refunded];
@@ -1710,6 +1941,59 @@ class FreshMarketService
             ->with('children')
             ->orderBy('sort_order')
             ->get();
+    }
+
+    /**
+     * คืนสต็อกของออเดอร์ที่ถูกยกเลิก (เรียกภายใน transaction ที่ lock ออเดอร์แล้ว — สถานะ cancelled กันเรียกซ้ำ)
+     *
+     * - ออเดอร์หลายรายการ: คืนเฉพาะรายการที่ตัดสต็อกไปจริง (stock_deducted) รวมต่อสินค้า
+     * - สินค้าทำตามสั่ง (ไม่ตัดสต็อก): ลดยอดสั่งกลับอย่างเดียว
+     * - ออเดอร์เก่าก่อนมีตาราง items: คืนตามคอลัมน์ listing_id/quantity เดิม
+     */
+    protected function restoreOrderStock(FreshMarketOrder $locked): void
+    {
+        $items = $locked->items()->get();
+
+        if ($items->isEmpty()) {
+            if ($locked->listing_id) {
+                FreshMarketListing::releaseStock((int) $locked->listing_id, (int) $locked->quantity);
+            }
+
+            return;
+        }
+
+        $restore = [];
+        $untracked = [];
+
+        foreach ($items as $item) {
+            if (! $item->listing_id) {
+                continue;
+            }
+
+            if ($item->stock_deducted) {
+                $restore[$item->listing_id] = ($restore[$item->listing_id] ?? 0) + (int) $item->quantity;
+            } else {
+                $untracked[$item->listing_id] = true;
+            }
+        }
+
+        foreach ($restore as $listingId => $qty) {
+            FreshMarketListing::releaseStock((int) $listingId, (int) $qty);
+        }
+
+        foreach (array_keys($untracked) as $listingId) {
+            if (isset($restore[$listingId])) {
+                continue;
+            }
+
+            FreshMarketListing::withTrashed()
+                ->whereKey($listingId)
+                ->where('order_count', '>', 0)
+                ->decrement('order_count');
+        }
+
+        // ตัดสต็อกคืนแล้ว → ไม่คืนซ้ำ
+        FreshMarketOrderItem::where('order_id', $locked->id)->where('stock_deducted', true)->update(['stock_deducted' => false]);
     }
 
     /**

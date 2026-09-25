@@ -19,7 +19,7 @@
 <div x-data="{}">
     {{-- ปุ่มเปิด --}}
     <button type="button" @click="$store.tp.studioOpen = !$store.tp.studioOpen"
-            class="tp-tile"
+            class="tp-tile tp-studio-fab"
             style="position:fixed; right:20px; bottom:20px; z-index:70; width:54px; height:54px; border-radius:18px; font-size:22px; cursor:pointer; border:0;"
             title="ปรับแต่งธีม (Theme Studio)">
         <i class="fas fa-palette"></i>

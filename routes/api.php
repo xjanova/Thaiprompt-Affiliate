@@ -138,6 +138,19 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
     // Ranks (public - for marketing tools)
     Route::get('/ranks', [RankController::class, 'index']);
 
+    // 🖼️ (2026-09-26) แบนเนอร์แคมเปญแอป (public) — แอดมินจัดการที่ /admin/app-banners
+    //    GET ?placement=home|taladsod|rider|merchant|shop&audience=buyer|rider|merchant (cache 5 นาที, รูปเป็น absolute URL)
+    //    ของเดิม /mobile/banners (ต้องล็อกอิน) ยังใช้ได้สำหรับแอปรุ่นเก่า
+    Route::get('/banners', [\App\Http\Controllers\Api\V1\AppBannerApiController::class, 'index'])
+        ->name('api.v1.banners.index');
+    Route::post('/banners/impressions', [\App\Http\Controllers\Api\V1\AppBannerApiController::class, 'impressions'])
+        ->middleware('throttle:30,1,api-banner-impressions')
+        ->name('api.v1.banners.impressions');
+    Route::post('/banners/{id}/click', [\App\Http\Controllers\Api\V1\AppBannerApiController::class, 'click'])
+        ->whereNumber('id')
+        ->middleware('throttle:30,1,api-banner-click')
+        ->name('api.v1.banners.click');
+
     // App Configuration (public)
     Route::prefix('app')->group(function () {
         Route::get('/maintenance-status', [AppConfigController::class, 'maintenanceStatus']);
@@ -298,7 +311,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
                 ->middleware('throttle:30,1,api-withdraw-preview')
                 ->name('api.v1.wallet.withdraw.preview');
             Route::post('/withdraw', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'withdraw'])
-                ->middleware('throttle:5,1,api-withdraw')
+                ->middleware(['throttle:5,1,api-withdraw', 'idempotency'])
                 ->name('api.v1.wallet.withdraw');
             Route::get('/withdrawals', [\App\Http\Controllers\Api\V1\WalletWithdrawalApiController::class, 'history'])
                 ->name('api.v1.wallet.withdrawals');
@@ -347,6 +360,19 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/{id}/messages', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'sendMessage'])->whereNumber('id');
         });
 
+        // 🛵 (2026-09-26) ผู้ซื้อติดตามไรเดอร์ของออเดอร์ตัวเอง + แชร์ตำแหน่งตัวเองให้ไรเดอร์ (ยินยอมทั้งสองฝ่าย)
+        //    source = shop (ร้านค้า) | fresh-market (ตลาดสด) · ออเดอร์คนอื่น = 404 · งานจบแล้วไม่มีพิกัดไรเดอร์
+        Route::get('/orders/{source}/{id}/rider-location', [\App\Http\Controllers\Api\V1\DeliveryTrackingApiController::class, 'riderLocation'])
+            ->where('source', 'shop|fresh-market')
+            ->whereNumber('id')
+            ->middleware('throttle:60,1,api-order-rider-location')
+            ->name('api.v1.orders.rider-location');
+        Route::post('/orders/{source}/{id}/share-location', [\App\Http\Controllers\Api\V1\DeliveryTrackingApiController::class, 'shareLocation'])
+            ->where('source', 'shop|fresh-market')
+            ->whereNumber('id')
+            ->middleware('throttle:20,1,api-order-share-location')
+            ->name('api.v1.orders.share-location');
+
         // Shipping Providers (Mobile App)
         Route::get('/shipping-providers', [\App\Http\Controllers\Api\V1\OrderApiController::class, 'getShippingProviders']);
 
@@ -376,6 +402,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/document', 'uploadDocument')->middleware('throttle:20,1,api-rider-document')->name('document');
             Route::get('/documents', 'documents')->name('documents');
             Route::post('/permissions', 'permissions')->middleware('throttle:30,1,api-rider-permissions')->name('permissions');
+            // (2026-09-26) ยินยอมให้ลูกค้าเห็นตำแหน่งระหว่างส่งงาน — ต้องทำ 1 ครั้งก่อนรับงานแรก
+            Route::post('/consent', 'consent')->middleware('throttle:20,1,api-rider-consent')->name('consent');
             Route::put('/profile', 'updateProfile')->middleware('throttle:20,1,api-rider-profile')->name('profile');
             Route::post('/availability', 'availability')->middleware('throttle:20,1,api-rider-availability')->name('availability');
             Route::post('/location', 'location')->middleware('throttle:40,1,api-rider-location')->name('location');
@@ -761,6 +789,16 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::get('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showListing'])->whereNumber('id')->name('listings.show');
         Route::get('/nearby', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'nearby'])->name('nearby');
         Route::get('/sellers/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showSeller'])->whereNumber('id')->name('sellers.show');
+        // (2026-09-26) หน้าร้าน + สถานะเปิด/ปิด + ตำแหน่งร้านสด (รถเข็น/ตลาดนัด — ตำแหน่งเฉพาะตอนร้านเปิด)
+        // (2026-09-26) ร้านที่เปิดอยู่ใกล้คุณ (รถเข็น/ตลาดนัด = ตำแหน่งตอนนี้) — หน้าแรกตลาดสด
+        Route::get('/shops/nearby', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'nearby'])
+            ->middleware('throttle:60,1,api-fm-shops-nearby')
+            ->name('shops.nearby');
+        Route::get('/shops/{id}', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'show'])->whereNumber('id')->name('shops.show');
+        Route::get('/shops/{id}/location', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'location'])
+            ->whereNumber('id')
+            ->middleware('throttle:120,1,api-fm-shop-location')
+            ->name('shops.location');
 
         // Auth endpoints
         Route::middleware('auth:sanctum')->group(function () {
@@ -786,6 +824,53 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/seller/orders/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerOrderShow'])->whereNumber('id')->name('seller.orders.show');
             Route::post('/seller/orders/{id}/action', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerOrderAction'])->whereNumber('id')->name('seller.orders.action');
             Route::get('/seller/dashboard', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerDashboard'])->name('seller.dashboard');
+
+            // (2026-09-26) ร้านรถเข็น/ตลาดนัด: เปิดร้านที่นี่วันนี้ / ตำแหน่งสด / ปิดร้าน + ผู้ซื้อติดตามร้าน
+            Route::get('/seller/presence', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'sellerPresence'])->name('seller.presence');
+            Route::post('/seller/open', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'open'])
+                ->middleware('throttle:10,1,api-fm-seller-open')
+                ->name('seller.open');
+            Route::post('/seller/location', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'sellerLocation'])
+                ->middleware('throttle:6,1,api-fm-seller-location')
+                ->name('seller.location');
+            Route::post('/seller/close', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'close'])
+                ->middleware('throttle:10,1,api-fm-seller-close')
+                ->name('seller.close');
+            Route::post('/shops/{id}/follow', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'follow'])
+                ->whereNumber('id')
+                ->middleware('throttle:30,1,api-fm-shop-follow')
+                ->name('shops.follow');
+            Route::delete('/shops/{id}/follow', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'unfollow'])
+                ->whereNumber('id')
+                ->middleware('throttle:30,1,api-fm-shop-follow')
+                ->name('shops.unfollow');
+            Route::get('/me/followed-shops', [\App\Http\Controllers\Api\V1\FreshMarketShopApiController::class, 'followedShops'])->name('me.followed-shops');
+
+            // (2026-09-26) ตะกร้าหลายรายการ (แยกตามร้าน) — ชำระผ่าน POST /orders {seller_id}
+            Route::get('/cart', [\App\Http\Controllers\Api\V1\FreshMarketCartApiController::class, 'show'])->name('cart');
+            Route::delete('/cart', [\App\Http\Controllers\Api\V1\FreshMarketCartApiController::class, 'clear'])->name('cart.clear');
+            Route::get('/cart/quote', [\App\Http\Controllers\Api\V1\FreshMarketCartApiController::class, 'quote'])->middleware('throttle:30,1,api-fm-cart-quote')->name('cart.quote');
+            Route::post('/cart/items', [\App\Http\Controllers\Api\V1\FreshMarketCartApiController::class, 'store'])->middleware('throttle:60,1,api-fm-cart-add')->name('cart.items.store');
+            Route::put('/cart/items/{id}', [\App\Http\Controllers\Api\V1\FreshMarketCartApiController::class, 'update'])->whereNumber('id')->name('cart.items.update');
+            Route::delete('/cart/items/{id}', [\App\Http\Controllers\Api\V1\FreshMarketCartApiController::class, 'destroy'])->whereNumber('id')->name('cart.items.destroy');
+
+            // (2026-09-26) ร้านจัดการสินค้า + กลุ่มตัวเลือก/ตัวเลือก + รูป
+            Route::get('/seller/listings', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'index'])->name('seller.listings');
+            Route::get('/seller/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'show'])->whereNumber('id')->name('seller.listings.show');
+            Route::delete('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'destroyListing'])->whereNumber('id')->name('listings.destroy');
+            Route::post('/listings/{id}/images', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'addImages'])->whereNumber('id')->name('listings.images.store');
+            Route::delete('/listings/{id}/images', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'removeImage'])->whereNumber('id')->name('listings.images.destroy');
+            Route::post('/listings/{id}/images/main', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'setMainImage'])->whereNumber('id')->name('listings.images.main');
+            Route::get('/listings/{id}/option-groups', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'optionGroups'])->whereNumber('id')->name('listings.option-groups');
+            Route::put('/listings/{id}/option-groups', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'syncOptionGroups'])->whereNumber('id')->name('listings.option-groups.sync');
+            Route::post('/listings/{id}/option-groups/sync', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'syncOptionGroups'])->whereNumber('id')->name('listings.option-groups.sync-multipart');
+            Route::post('/listings/{id}/option-groups', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'storeOptionGroup'])->whereNumber('id')->name('listings.option-groups.store');
+            Route::put('/option-groups/{groupId}', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'updateOptionGroup'])->whereNumber('groupId')->name('option-groups.update');
+            Route::delete('/option-groups/{groupId}', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'destroyOptionGroup'])->whereNumber('groupId')->name('option-groups.destroy');
+            Route::post('/option-groups/{groupId}/options', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'storeOption'])->whereNumber('groupId')->name('option-groups.options.store');
+            Route::put('/options/{optionId}', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'updateOption'])->whereNumber('optionId')->name('options.update');
+            Route::post('/options/{optionId}/image', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'uploadOptionImage'])->whereNumber('optionId')->name('options.image');
+            Route::delete('/options/{optionId}', [\App\Http\Controllers\Api\V1\FreshMarketSellerListingApiController::class, 'destroyOption'])->whereNumber('optionId')->name('options.destroy');
 
             // (2026-09-25) Rider GPS API เดิม /fresh-market/rider/gps/* ถูกรวมเข้า /api/v1/rider/* แล้ว:
             //    update → POST /rider/location · lost → POST /rider/jobs/{id}/gps-lost

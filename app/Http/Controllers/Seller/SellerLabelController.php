@@ -143,13 +143,13 @@ class SellerLabelController extends Controller
             $query->where('category_id', $request->category_id);
         }
 
-        // Sort
-        $sortBy = $request->input('sort_by', 'name');
-        $sortOrder = $request->input('sort_order', 'asc');
+        // Sort — จำกัดคอลัมน์/ทิศทางที่อนุญาต (เดิมส่งค่าจาก query ตรงเข้า orderBy)
+        $sortBy = in_array($request->input('sort_by'), ['name', 'price', 'sku', 'created_at'], true) ? $request->input('sort_by') : 'name';
+        $sortOrder = strtolower((string) $request->input('sort_order')) === 'desc' ? 'desc' : 'asc';
         $query->orderBy($sortBy, $sortOrder);
 
-        // Paginate
-        $perPage = $request->input('per_page', 20);
+        // Paginate (1–100 รายการต่อหน้า)
+        $perPage = max(1, min(100, (int) $request->input('per_page', 20)));
         $products = $query->paginate($perPage);
 
         return response()->json([
@@ -286,17 +286,17 @@ class SellerLabelController extends Controller
             $storeId = \App\Models\VendorStore::where('user_id', auth()->id())->value('id');
 
             if (! $storeId) {
-                throw new \Exception('ไม่พบร้านค้าของคุณ');
+                throw new \DomainException('ไม่พบร้านค้าของคุณ');
             }
 
             // ✅ ตรวจสอบว่าสินค้าทั้งหมดเป็นของร้านตัวเอง
-            $productIds = collect($validated['products'])->pluck('product_id');
+            $productIds = collect($validated['products'])->pluck('product_id')->unique();
             $ownProductsCount = Product::whereIn('id', $productIds)
                 ->where('store_id', $storeId)
                 ->count();
 
-            if ($ownProductsCount !== count($productIds)) {
-                throw new \Exception('มีสินค้าที่ไม่ใช่ของร้านคุณในรายการ');
+            if ($ownProductsCount !== $productIds->count()) {
+                throw new \DomainException('มีสินค้าที่ไม่ใช่ของร้านคุณในรายการ');
             }
 
             // เตรียมข้อมูลสินค้า
@@ -358,12 +358,25 @@ class SellerLabelController extends Controller
                 ],
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\DomainException $e) {
+            // ข้อผิดพลาดทางธุรกิจที่เราเขียนข้อความไทยไว้เอง — ส่งกลับได้
             DB::rollBack();
 
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'code' => 'LABEL_PRINT_REJECTED',
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            // ไม่ส่ง exception ดิบกลับหน้าเว็บ
+            \Illuminate\Support\Facades\Log::error('Seller label print failed', ['user_id' => auth()->id(), 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'LABEL_PRINT_FAILED',
+                'message' => 'บันทึกการพิมพ์ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
             ], 500);
         }
     }
@@ -586,8 +599,8 @@ class SellerLabelController extends Controller
     public function show(PosLabelPrint $print): View
     {
         // ตรวจสอบสิทธิ์ (ต้องเป็นของ Seller เอง)
-        if ($print->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+        if ((int) $print->user_id !== (int) auth()->id()) {
+            abort(403, 'ไม่มีสิทธิ์ดูรายการพิมพ์นี้');
         }
 
         $print->load(['user', 'template', 'transaction', 'device']);
@@ -601,8 +614,8 @@ class SellerLabelController extends Controller
     public function destroy(PosLabelPrint $print): RedirectResponse
     {
         // ตรวจสอบสิทธิ์ (ต้องเป็นของ Seller เอง)
-        if ($print->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+        if ((int) $print->user_id !== (int) auth()->id()) {
+            abort(403, 'ไม่มีสิทธิ์ลบรายการพิมพ์นี้');
         }
 
         $print->delete();
@@ -610,6 +623,78 @@ class SellerLabelController extends Controller
         return redirect()
             ->route('seller.pos.labels.history')
             ->with('success', 'ลบรายการสำเร็จ');
+    }
+
+    // =========================================================================
+    // Template Management (GAP-09)
+    // =========================================================================
+    // (2026-09-25) routes/seller.php ชี้มาที่ 8 method นี้แต่เดิมไม่มีอยู่ → BadMethodCallException (500)
+    // ตัดสินใจสำหรับเปิดตัว: ยังไม่เปิดให้ผู้ขายออกแบบ Template เอง (หน้า designer ~1,100 บรรทัดยังไม่พร้อม)
+    // ผู้ขายยังพิมพ์ฉลากได้ตามปกติด้วย Template มาตรฐานของระบบ → หน้า GET แสดง "ยังไม่เปิดให้บริการ"
+    // ส่วนคำสั่งแก้ไขข้อมูลเด้งกลับหน้าฉลากพร้อมข้อความแจ้ง (ไม่แตะข้อมูลใด ๆ)
+
+    /**
+     * หน้าแจ้ง "ฟีเจอร์ออกแบบ Template ยังไม่เปิดให้บริการ"
+     */
+    protected function templatesUnavailableView(): View
+    {
+        return view('seller.feature-unavailable', [
+            'feature' => 'การออกแบบ Template ฉลากเอง',
+            'icon' => '🎨',
+            'description' => 'ตอนนี้พิมพ์ฉลากสินค้าและใบปะหน้าได้ด้วย Template มาตรฐานของระบบ ส่วนเครื่องมือออกแบบ Template เองกำลังพัฒนาให้พร้อมใช้งาน',
+            'backUrl' => route('seller.pos.labels.index'),
+            'backLabel' => 'กลับหน้าพิมพ์ฉลาก',
+        ]);
+    }
+
+    /**
+     * เด้งกลับหน้าพิมพ์ฉลากพร้อมข้อความแจ้ง (สำหรับ POST/PUT/DELETE ของ Template)
+     */
+    protected function templatesUnavailableRedirect(): RedirectResponse
+    {
+        return redirect()
+            ->route('seller.pos.labels.index')
+            ->with('info', 'การออกแบบ Template ฉลากเองยังไม่เปิดให้บริการ — ใช้ Template มาตรฐานของระบบได้เลย');
+    }
+
+    public function listTemplates(): View
+    {
+        return $this->templatesUnavailableView();
+    }
+
+    public function createTemplate(): View
+    {
+        return $this->templatesUnavailableView();
+    }
+
+    public function editTemplate($template): View
+    {
+        return $this->templatesUnavailableView();
+    }
+
+    public function designerTemplate($template): View
+    {
+        return $this->templatesUnavailableView();
+    }
+
+    public function storeTemplate(): RedirectResponse
+    {
+        return $this->templatesUnavailableRedirect();
+    }
+
+    public function updateTemplate($template): RedirectResponse
+    {
+        return $this->templatesUnavailableRedirect();
+    }
+
+    public function destroyTemplate($template): RedirectResponse
+    {
+        return $this->templatesUnavailableRedirect();
+    }
+
+    public function duplicateTemplate($template): RedirectResponse
+    {
+        return $this->templatesUnavailableRedirect();
     }
 
     /**

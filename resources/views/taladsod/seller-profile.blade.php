@@ -1,88 +1,82 @@
 {{--
-    ตั้งค่าร้าน (ฝั่งผู้ขาย) - ตลาดสดไทยพร๊อม
+ | ตั้งค่าร้านตลาดสด (taladsod.seller.profile) — ธีม V4 (user-v4)
+ | Controller: FreshMarket\HomeController@sellerProfile
+ | ตัวแปร: $seller
+ | ส่งฟอร์ม PUT taladsod.seller.profile.update: shop_name*, phone*, address*, latitude*, longitude*, shop_description, province, district, sub_district
+ | โหมดร้าน: POST taladsod.seller.mobile-mode {is_mobile} (JSON)
+ --}}
+@extends('layouts.user-v4')
 
-    ตัวแปร: $seller (FreshMarketSeller)
-    ฟอร์ม: PUT taladsod.seller.profile.update
-      shop_name*, shop_description, phone*, address*, province, district, sub_district, latitude*, longitude*
-    หน้านี้เป็นเวอร์ชันใช้งานได้ก่อน — จะถูกสร้างใหม่ในธีม V4
---}}
-@extends('layouts.taladsod')
+@section('title', 'ตั้งค่าร้าน · '.$seller->shop_name)
 
-@section('title', 'ตั้งค่าร้าน - ตลาดสดไทยพร๊อม')
+@php
+    $modeCfg = [
+        'isMobile' => $seller->isMobileShop(),
+        'url' => route('taladsod.seller.mobile-mode'),
+    ];
+@endphp
 
 @section('content')
-    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8"
-         x-data="{
-            lat: '{{ old('latitude', $seller->latitude) }}',
-            lng: '{{ old('longitude', $seller->longitude) }}',
-            locating: false,
-            locError: '',
-            locate() {
-                if (! navigator.geolocation) { this.locError = 'อุปกรณ์นี้ไม่รองรับการระบุตำแหน่ง'; return; }
-                this.locating = true; this.locError = '';
-                navigator.geolocation.getCurrentPosition(
-                    (p) => { this.lat = p.coords.latitude.toFixed(7); this.lng = p.coords.longitude.toFixed(7); this.locating = false; },
-                    () => { this.locError = 'ระบุตำแหน่งไม่สำเร็จ กรุณาอนุญาตการเข้าถึงตำแหน่ง'; this.locating = false; },
-                    { enableHighAccuracy: true, timeout: 15000 }
-                );
-            }
-         }">
-        <a href="{{ route('taladsod.seller.dashboard') }}" class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">← แผงควบคุมผู้ขาย</a>
-        <h1 class="mt-3 mb-5 text-2xl font-bold text-gray-900 dark:text-white">⚙️ ตั้งค่าร้าน</h1>
+<x-theme-v4.shop-kit />
+@include('taladsod.partials.kit')
+<x-theme-v4.leaflet />
 
-        @include('taladsod.partials.flash')
+<div class="ts-scope ts-stack" style="gap:16px; max-width:880px; margin:0 auto;">
+    @include('taladsod.partials.seller-nav', ['seller' => $seller, 'active' => 'profile'])
 
-        <form method="POST" action="{{ route('taladsod.seller.profile.update') }}"
-              class="p-5 bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-100 dark:border-gray-700 space-y-4">
-            @csrf
-            @method('PUT')
-
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อร้าน *</label>
-                <input type="text" name="shop_name" required maxlength="200" value="{{ old('shop_name', $seller->shop_name) }}"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">รายละเอียดร้าน</label>
-                <textarea name="shop_description" rows="3" maxlength="1000"
-                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">{{ old('shop_description', $seller->shop_description) }}</textarea>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เบอร์โทรร้าน *</label>
-                <input type="tel" name="phone" required maxlength="20" value="{{ old('phone', $seller->phone) }}"
-                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ที่อยู่ร้าน (จุดรับของของไรเดอร์) *</label>
-                <textarea name="address" rows="2" required maxlength="500"
-                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">{{ old('address', $seller->address) }}</textarea>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <input type="text" name="sub_district" maxlength="100" placeholder="ตำบล/แขวง" value="{{ old('sub_district', $seller->sub_district) }}"
-                       class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <input type="text" name="district" maxlength="100" placeholder="อำเภอ/เขต" value="{{ old('district', $seller->district) }}"
-                       class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <input type="text" name="province" maxlength="100" placeholder="จังหวัด" value="{{ old('province', $seller->province) }}"
-                       class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-            </div>
-
-            <div class="p-4 rounded-xl bg-green-50 dark:bg-green-900/20">
-                <p class="text-sm font-medium text-green-800 dark:text-green-300 mb-2">📍 พิกัดร้าน * (ใช้ให้ผู้ซื้อค้นหาเจอ และให้ไรเดอร์มารับของ)</p>
-                <div class="grid grid-cols-2 gap-3">
-                    <input type="text" name="latitude" x-model="lat" required placeholder="ละติจูด"
-                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                    <input type="text" name="longitude" x-model="lng" required placeholder="ลองจิจูด"
-                           class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                </div>
-                <button type="button" @click="locate()" :disabled="locating"
-                        class="mt-3 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white text-sm font-semibold">
-                    <span x-show="! locating">ใช้ตำแหน่งปัจจุบันของฉัน</span>
-                    <span x-show="locating">กำลังระบุตำแหน่ง...</span>
-                </button>
-                <p x-show="locError" x-text="locError" class="mt-2 text-sm text-red-600 dark:text-red-400"></p>
-            </div>
-
-            <button type="submit" class="w-full py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold">บันทึกข้อมูลร้าน</button>
-        </form>
+    <div class="ts-row" style="justify-content:space-between;">
+        <div>
+            <h1 class="ts-h1">ตั้งค่าร้าน</h1>
+            <p class="ts-muted" style="margin:6px 0 0; font-size:13.5px;">สถานะร้าน: <b>{{ $seller->status_label }}</b> · รหัสแนะนำร้าน {{ $seller->referral_code }}</p>
+        </div>
+        <a href="{{ route('taladsod.seller', $seller->id) }}" class="tp-btn" target="_blank" rel="noopener"><i class="fas fa-store" aria-hidden="true"></i> ดูหน้าร้าน</a>
     </div>
+
+    {{-- ประเภทร้าน --}}
+    <section class="tp-card ts-stack" x-data="{ isMobile: {{ $modeCfg['isMobile'] ? 'true' : 'false' }}, busy: false,
+            async save(on) {
+                this.busy = true;
+                const r = await window.ts.post(@js($modeCfg['url']), { is_mobile: on ? 1 : 0 });
+                this.busy = false;
+                if (!r.ok) { window.ts.notify(r.message, 'error'); return; }
+                this.isMobile = !!(r.data && r.data.is_mobile);
+                window.ts.notify(r.message, 'success');
+            } }" aria-labelledby="sp-mode-h">
+        <h2 id="sp-mode-h" class="ts-h2"><i class="fas fa-cart-flatbed" style="color:var(--accent2);" aria-hidden="true"></i> ประเภทร้าน</h2>
+        <div class="ts-grid" style="--ts-min:230px; gap:10px;">
+            <button type="button" class="ts-choice" :class="!isMobile ? 'is-on' : ''" x-on:click="isMobile && save(false)" :disabled="busy" :aria-pressed="!isMobile ? 'true' : 'false'">
+                <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
+                <span class="name">ร้านประจำที่<span class="ts-muted ts-small" style="display:block; font-weight:600;">ลูกค้าเห็นร้านตามที่อยู่ด้านล่าง</span></span>
+            </button>
+            <button type="button" class="ts-choice" :class="isMobile ? 'is-on' : ''" x-on:click="!isMobile && save(true)" :disabled="busy" :aria-pressed="isMobile ? 'true' : 'false'">
+                <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
+                <span class="name">ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด)<span class="ts-muted ts-small" style="display:block; font-weight:600;">กด "เปิดร้านที่นี่วันนี้" ทุกครั้งที่ไปขาย</span></span>
+            </button>
+        </div>
+        <p class="ts-help" style="margin:0;" x-show="isMobile">เปลี่ยนเป็นร้านเคลื่อนที่แล้วร้านจะปิดไว้ก่อน ไปเปิดร้านได้ที่ <a href="{{ route('taladsod.seller.dashboard') }}" class="ts-link">หน้าร้านวันนี้</a></p>
+    </section>
+
+    <form method="POST" action="{{ route('taladsod.seller.profile.update') }}" class="ts-stack" style="gap:16px;" x-data="{ sending: false }" x-on:submit="sending = true">
+        @csrf
+        @method('PUT')
+        @if($errors->any())
+            <div class="sf-note sf-note-err" role="alert">
+                <b><i class="fas fa-circle-exclamation" aria-hidden="true"></i> บันทึกไม่สำเร็จ กรุณาตรวจสอบ</b>
+                <ul style="margin:6px 0 0; padding-left:18px;">
+                    @foreach($errors->all() as $message)
+                        <li>{{ $message }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @include('taladsod.partials.shop-form', ['shopData' => $seller])
+
+        <div class="tp-card ts-row" style="justify-content:flex-end; position:sticky; bottom:12px; z-index:20;">
+            <button type="submit" class="ts-btn3d ts-tone-gold" :disabled="sending">
+                <i class="fas" :class="sending ? 'fa-circle-notch ts-spin' : 'fa-floppy-disk'" aria-hidden="true"></i> บันทึกข้อมูลร้าน
+            </button>
+        </div>
+    </form>
+</div>
 @endsection

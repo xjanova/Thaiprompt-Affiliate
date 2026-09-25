@@ -37,7 +37,8 @@ class ECommerceController extends Controller
             'total_products' => Product::count(),
             'active_products' => Product::where('is_active', true)->count(),
             'out_of_stock' => Product::where('stock_status', 'out_of_stock')->count(),
-            'low_stock' => Product::where('stock_status', 'low_stock')->count(),
+            // "ใกล้หมด" = สต็อก <= เกณฑ์ (ไม่มีค่า low_stock ใน enum stock_status)
+            'low_stock' => Product::lowStock()->count(),
 
             'total_orders' => Order::count(),
             'pending_orders' => Order::where('status', 'pending')->count(),
@@ -107,6 +108,25 @@ class ECommerceController extends Controller
             ->limit(10)
             ->get();
 
+        // 💰 เงินที่แบ่งจากออเดอร์ร้านค้า (กระเป๋าแพลตฟอร์ม) — แสดง GP / VAT / กองทุนผู้แนะนำ ให้เห็นชัด
+        $moneySplit = $this->orderMoneySplit();
+
+        // 🏷️ สถานะโปรฯ GP ฟรี + อัตรากลาง (แก้ได้ที่หน้าตั้งค่าส่วนแบ่งรายได้)
+        $gpInfo = null;
+        try {
+            $engine = app(\App\Services\Pricing\PricingEngine::class);
+            $gpInfo = [
+                'promo_active' => $engine->gpPromoActive(),
+                'promo_ends_at' => $engine->gpPromoEndsAt(),
+                'default_rate' => $engine->defaultGpRate(),
+                'min_rate' => $engine->minGpRate(),
+                'referral_pool_percent' => $engine->referralPoolPercent(),
+                'mlm_enabled' => $engine->mlmEnabled(),
+            ];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('E-commerce dashboard GP info failed', ['error' => $e->getMessage()]);
+        }
+
         return view('admin.ecommerce.dashboard', compact(
             'stats',
             'orderGrowth',
@@ -115,8 +135,49 @@ class ECommerceController extends Controller
             'orderStatusData',
             'topProducts',
             'recentOrders',
-            'lowStockProducts'
+            'lowStockProducts',
+            'moneySplit',
+            'gpInfo'
         ));
+    }
+
+    /**
+     * สรุปเงินที่แบ่งจากออเดอร์ร้านค้า (PlatformTransaction source Order) แยกตามประเภท
+     *
+     * @return array{gp: float, vat: float, referral_pool: float, seller_escrow: float, official_shop: float, refunds: float}
+     */
+    private function orderMoneySplit(?string $from = null, ?string $to = null): array
+    {
+        $empty = ['gp' => 0.0, 'vat' => 0.0, 'referral_pool' => 0.0, 'seller_escrow' => 0.0, 'official_shop' => 0.0, 'refunds' => 0.0];
+
+        try {
+            $query = \App\Models\PlatformTransaction::query()
+                ->where('source_type', 'Order')
+                ->selectRaw('sub_type, type, SUM(amount) as total')
+                ->groupBy('sub_type', 'type');
+
+            if ($from && $to) {
+                $query->whereBetween('created_at', [$from, $to.' 23:59:59']);
+            }
+
+            $rows = $query->get();
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Order money split query failed', ['error' => $e->getMessage()]);
+
+            return $empty;
+        }
+
+        $sum = fn (string $subType, string $type = 'income') => round((float) $rows
+            ->where('sub_type', $subType)->where('type', $type)->sum('total'), 2);
+
+        return [
+            'gp' => $sum('order_fee'),
+            'vat' => $sum('vat_collection'),
+            'referral_pool' => $sum('mlm_commission_pool'),
+            'seller_escrow' => $sum(\App\Services\SellerPayoutService::ESCROW_HOLD_SUB_TYPE),
+            'official_shop' => $sum('admin_shop_sale'),
+            'refunds' => round((float) $rows->whereIn('type', ['refund', 'expense'])->sum('total'), 2),
+        ];
     }
 
     /**
@@ -124,7 +185,7 @@ class ECommerceController extends Controller
      */
     public function products(Request $request)
     {
-        $query = Product::with(['category', 'seller', 'images']);
+        $query = Product::with(['category', 'seller', 'images', 'store']);
 
         // Search
         if ($request->filled('search')) {
@@ -146,17 +207,25 @@ class ECommerceController extends Controller
             $query->where('is_active', $request->status === 'active');
         }
 
-        // Filter by stock status
+        // Filter by stock status ("ใกล้หมด" คำนวณจากจำนวนเทียบเกณฑ์ ไม่ได้เก็บในคอลัมน์)
         if ($request->filled('stock_status')) {
-            $query->where('stock_status', $request->stock_status);
+            if ($request->stock_status === 'low_stock') {
+                $query->lowStock();
+            } else {
+                $query->where('stock_status', $request->stock_status);
+            }
         }
 
-        // Sort
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // กรองตามร้าน (ลิงก์จากหน้าร้านค้า)
+        if ($request->filled('store_id')) {
+            $query->where('store_id', (int) $request->store_id);
+        }
+
+        // เรียงลำดับ (whitelist)
+        [$sortBy, $sortOrder] = $this->safeSort($request, ['created_at', 'name', 'price', 'stock_quantity', 'sales_count'], 'created_at');
         $query->orderBy($sortBy, $sortOrder);
 
-        $products = $query->paginate(20);
+        $products = $query->paginate(20)->withQueryString();
         $categories = ProductCategory::orderBy('name')->get();
 
         return view('admin.ecommerce.products.index', compact('products', 'categories'));
@@ -187,12 +256,11 @@ class ECommerceController extends Controller
             $query->where('category_id', $request->category);
         }
 
-        // Sort
-        $sortBy = $request->get('sort_by', 'blocked_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // เรียงลำดับ (whitelist)
+        [$sortBy, $sortOrder] = $this->safeSort($request, ['blocked_at', 'name', 'created_at'], 'blocked_at');
         $query->orderBy($sortBy, $sortOrder);
 
-        $products = $query->paginate(20);
+        $products = $query->paginate(20)->withQueryString();
         $categories = ProductCategory::orderBy('name')->get();
 
         return view('admin.ecommerce.products.blocked', compact('products', 'categories'));
@@ -251,7 +319,8 @@ class ECommerceController extends Controller
 
             // ตั้งค่าการจัดส่ง
             $validated['shipping_method'] = $request->shipping_method ?? 'store_default';
-            $validated['shipping_fee'] = $request->shipping_fee;
+            // products.shipping_fee เป็น NOT NULL DEFAULT 0 — ส่ง null (วิธีส่งแบบอื่นที่ไม่กรอกค่าส่ง) ทำให้บันทึกพัง
+            $validated['shipping_fee'] = $request->filled('shipping_fee') ? round((float) $request->shipping_fee, 2) : 0;
             $validated['shipping_weight_kg'] = $request->shipping_weight_kg;
             $validated['free_shipping_min_amount'] = $request->free_shipping_min_amount
                 ?? $request->free_shipping_min_amount_weight;
@@ -311,7 +380,7 @@ class ECommerceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->withInput()->with('error', $this->failMessage($e));
         }
     }
 
@@ -359,7 +428,9 @@ class ECommerceController extends Controller
             'price' => 'required|numeric|min:0',
             'compare_at_price' => 'nullable|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
-            'stock_quantity' => 'nullable|integer|min:0',
+            // products.stock_quantity / low_stock_threshold เป็น NOT NULL — ว่างแล้วเคยพังเป็น QueryException
+            // พร้อมข้อความกว้าง ๆ · สต็อกต้องกรอก · เกณฑ์ใกล้หมดเว้นว่าง = ใช้ค่าเดิมของสินค้า
+            'stock_quantity' => 'required|integer|min:0',
             'low_stock_threshold' => 'nullable|integer|min:0',
             'track_inventory' => 'boolean',
             'is_active' => 'boolean',
@@ -380,11 +451,32 @@ class ECommerceController extends Controller
             'shipping_weight_kg' => 'nullable|numeric|min:0',
             'free_shipping_min_amount' => 'nullable|numeric|min:0',
             'free_shipping_min_amount_weight' => 'nullable|numeric|min:0',
+            // 🏷️ อัตรา GP ที่แอดมินกำหนดเฉพาะสินค้านี้ (ว่าง = ใช้อัตราตามแพ็กเกจร้าน) — ไม่ mass-assign
+            'admin_gp_rate' => 'nullable|numeric|min:0|max:100',
+        ], [
+            'admin_gp_rate.numeric' => 'อัตรา GP ต้องเป็นตัวเลข',
+            'admin_gp_rate.max' => 'อัตรา GP ต้องไม่เกิน 100%',
+            'stock_quantity.required' => 'กรุณากรอกจำนวนสต็อก (ใส่ 0 ได้ถ้าหมด)',
+            'stock_quantity.integer' => 'จำนวนสต็อกต้องเป็นจำนวนเต็ม',
+            'stock_quantity.min' => 'จำนวนสต็อกต้องไม่ติดลบ',
+            'low_stock_threshold.integer' => 'เกณฑ์แจ้งเตือนสต็อกใกล้หมดต้องเป็นจำนวนเต็ม',
+            'low_stock_threshold.min' => 'เกณฑ์แจ้งเตือนสต็อกใกล้หมดต้องไม่ติดลบ',
         ]);
+        unset($validated['admin_gp_rate']);
+        if (array_key_exists('low_stock_threshold', $validated) && $validated['low_stock_threshold'] === null) {
+            unset($validated['low_stock_threshold']);
+        }
 
         DB::beginTransaction();
 
         try {
+            // อัตรา GP รายสินค้า (เฉพาะเมื่อฟอร์มส่งช่องนี้มา — ฟอร์มอื่นที่ไม่มีช่องนี้จะไม่ล้างค่าเดิม)
+            if ($request->has('admin_gp_rate')) {
+                $product->admin_gp_rate = $request->filled('admin_gp_rate')
+                    ? round((float) $request->input('admin_gp_rate'), 2)
+                    : null;
+            }
+
             // Handle main image upload
             if ($request->hasFile('main_image')) {
                 // Delete old image if exists
@@ -422,17 +514,12 @@ class ECommerceController extends Controller
             }
 
             // Update stock status
+            // 🐛 products.stock_status เป็น enum(in_stock, out_of_stock, on_backorder) — ไม่มี 'low_stock'
+            //    เดิมเขียน 'low_stock' เมื่อสต็อก <= เกณฑ์ → SQL error บันทึกสินค้าไม่ได้เลย
+            //    "ใกล้หมด" ดูจาก stock_quantity เทียบ low_stock_threshold (Product::scopeLowStock) แทน
             if (isset($validated['track_inventory']) && $validated['track_inventory']) {
                 $qty = $validated['stock_quantity'] ?? $product->stock_quantity;
-                $threshold = $validated['low_stock_threshold'] ?? $product->low_stock_threshold ?? 10;
-
-                if ($qty <= 0) {
-                    $validated['stock_status'] = 'out_of_stock';
-                } elseif ($qty <= $threshold) {
-                    $validated['stock_status'] = 'low_stock';
-                } else {
-                    $validated['stock_status'] = 'in_stock';
-                }
+                $validated['stock_status'] = $qty <= 0 ? 'out_of_stock' : 'in_stock';
             }
 
             // Set cashback defaults if not provided
@@ -441,7 +528,8 @@ class ECommerceController extends Controller
 
             // ตั้งค่าการจัดส่ง
             $validated['shipping_method'] = $request->shipping_method ?? 'store_default';
-            $validated['shipping_fee'] = $request->shipping_fee;
+            // products.shipping_fee เป็น NOT NULL DEFAULT 0 — ส่ง null (วิธีส่งแบบอื่นที่ไม่กรอกค่าส่ง) ทำให้บันทึกพัง
+            $validated['shipping_fee'] = $request->filled('shipping_fee') ? round((float) $request->shipping_fee, 2) : 0;
             $validated['shipping_weight_kg'] = $request->shipping_weight_kg;
             $validated['free_shipping_min_amount'] = $request->free_shipping_min_amount
                 ?? $request->free_shipping_min_amount_weight;
@@ -528,7 +616,7 @@ class ECommerceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->withInput()->with('error', $this->failMessage($e));
         }
     }
 
@@ -548,7 +636,7 @@ class ECommerceController extends Controller
      */
     public function orders(Request $request)
     {
-        $query = Order::with(['user', 'items.product']);
+        $query = Order::with(['user', 'items', 'store']);
 
         // Search
         if ($request->filled('search')) {
@@ -580,14 +668,56 @@ class ECommerceController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        // Sort
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // กรองวิธีจัดส่ง (พัสดุ / ไรเดอร์)
+        if (in_array($request->get('delivery_method'), [Order::DELIVERY_PARCEL, Order::DELIVERY_RIDER], true)) {
+            $query->where('delivery_method', $request->get('delivery_method'));
+        }
+
+        // เรียงลำดับ — รับเฉพาะคอลัมน์ที่อนุญาต (ค่าแปลกเคยทำให้หน้า 500)
+        [$sortBy, $sortOrder] = $this->safeSort($request, ['created_at', 'total_amount', 'order_number', 'status', 'payment_status'], 'created_at');
         $query->orderBy($sortBy, $sortOrder);
 
-        $orders = $query->paginate(20);
+        $orders = $query->paginate(20)->withQueryString();
 
-        return view('admin.ecommerce.orders.index', compact('orders'));
+        // ตัวเลขสรุปบนหัวหน้า (นับทั้งระบบ ไม่ขึ้นกับตัวกรอง)
+        $stats = [
+            'total' => Order::count(),
+            'pending' => Order::where('status', 'pending')->count(),
+            'to_fulfil' => Order::whereIn('status', ['paid', 'processing'])->count(),
+            'shipped' => Order::where('status', 'shipped')->count(),
+            'unpaid' => Order::where('payment_status', 'pending')->whereNotIn('status', Order::TERMINAL_STATUSES)->count(),
+            'unread_messages' => Order::where('has_unread_messages', true)->count(),
+        ];
+
+        return view('admin.ecommerce.orders.index', compact('orders', 'stats'));
+    }
+
+    /**
+     * บันทึก error ลง log แล้วคืนข้อความไทยให้ผู้ใช้ (ไม่เปิดเผยข้อความ exception ดิบ)
+     */
+    private function failMessage(\Throwable $e): string
+    {
+        \Illuminate\Support\Facades\Log::error('Admin e-commerce action failed', [
+            'route' => request()->route()?->getName(),
+            'error' => $e->getMessage(),
+            'file' => $e->getFile().':'.$e->getLine(),
+        ]);
+
+        return 'เกิดข้อผิดพลาด ระบบยังไม่ได้บันทึกการเปลี่ยนแปลง กรุณาลองใหม่อีกครั้ง';
+    }
+
+    /**
+     * อ่านคอลัมน์/ทิศทางการเรียงจาก query string แบบปลอดภัย
+     *
+     * @param  array<int, string>  $allowed  คอลัมน์ที่อนุญาต
+     * @return array{0: string, 1: string}
+     */
+    private function safeSort(Request $request, array $allowed, string $default): array
+    {
+        $sortBy = (string) $request->get('sort_by', $default);
+        $sortOrder = strtolower((string) $request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        return [in_array($sortBy, $allowed, true) ? $sortBy : $default, $sortOrder];
     }
 
     /**
@@ -595,9 +725,50 @@ class ECommerceController extends Controller
      */
     public function showOrder(Order $order)
     {
-        $order->load(['user', 'items.product', 'items.product.images', 'shippingAddress']);
+        $order->load(['user', 'items.product', 'items.product.images', 'items.seller', 'shippingAddress', 'store', 'shippingProvider']);
 
-        return view('admin.ecommerce.orders.show', compact('order'));
+        // 💰 การแบ่งเงินของออเดอร์นี้ (GP / VAT / ค่าแนะนำ / สุทธิผู้ขาย) — มีเมื่อออเดอร์ชำระแล้วและแบ่งเงินแล้ว
+        $ledgers = \App\Models\EarningsLedger::withTrashed()
+            ->with('user:id,name,email')
+            ->where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->orderBy('id')
+            ->get();
+
+        $platformTransactions = \App\Models\PlatformTransaction::with('wallet')
+            ->where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->orderBy('id')
+            ->get();
+
+        // 🧾 ประวัติการเปลี่ยนสถานะชำระเงินด้วยมือ (audit CC-17)
+        $paymentAudits = \App\Models\AccountingActivityLog::with('user:id,name')
+            ->where('loggable_type', Order::class)
+            ->where('loggable_id', $order->id)
+            ->where('action', 'order.payment_status_changed')
+            ->latest('id')
+            ->limit(20)
+            ->get();
+
+        // 🛵 งานไรเดอร์ (เฉพาะออเดอร์ส่งด้วยไรเดอร์)
+        $riderSummary = null;
+        try {
+            $riderSummary = \App\Services\Shop\ShopPresenter::riderSummary($order);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Admin order rider summary failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+
+        $admin = auth()->user();
+        $isSuperAdmin = (bool) ($admin->is_super_admin ?? false) || ($admin->role ?? null) === 'super_admin';
+
+        return view('admin.ecommerce.orders.show', compact(
+            'order',
+            'ledgers',
+            'platformTransactions',
+            'paymentAudits',
+            'riderSummary',
+            'isSuperAdmin'
+        ));
     }
 
     /**
@@ -615,12 +786,16 @@ class ECommerceController extends Controller
         ]);
 
         $newStatus = $validated['status'];
-        $adminNotes = $validated['admin_notes'] ?? null;
+        $adminNotes = isset($validated['admin_notes']) ? trim((string) $validated['admin_notes']) : null;
+        $adminNotes = $adminNotes === '' ? null : $adminNotes;
 
-        // บันทึก admin notes ถ้ามี
-        if ($adminNotes) {
-            $order->update(['admin_notes' => $adminNotes]);
-        }
+        // บันทึก admin notes — "ต่อท้าย" ประวัติเดิมพร้อมวันเวลา/ผู้บันทึก หลังทำรายการสำเร็จเท่านั้น
+        // (เดิมเขียนทับทั้งคอลัมน์ก่อนตรวจสิทธิ์ → บรรทัด audit การเปลี่ยนสถานะชำระเงินและโน้ตเก่าหาย)
+        $appendNote = function (string $label) use ($order, $adminNotes): void {
+            if ($adminNotes) {
+                $this->appendAdminNote($order, $label.': '.$adminNotes);
+            }
+        };
 
         // จัดการ "ยกเลิก" อย่างถูกต้อง
         if ($newStatus === 'cancelled') {
@@ -628,6 +803,7 @@ class ECommerceController extends Controller
                 return redirect()->back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: '.$order->status_label.')');
             }
             $order->cancel($adminNotes ?? 'ยกเลิกโดย Admin', auth()->id(), 'admin');
+            $appendNote('ยกเลิกคำสั่งซื้อ');
 
             return redirect()->back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว'.(in_array($order->fresh()->status, ['refunded']) ? ' (คืนเงินแล้ว)' : ''));
         }
@@ -641,6 +817,7 @@ class ECommerceController extends Controller
             try {
                 $refundService = app(RefundService::class);
                 $refundService->processFullRefund($order, auth()->id(), $adminNotes ?? 'คืนเงินโดย Admin');
+                $appendNote('คืนเงินเต็มจำนวน');
 
                 return redirect()->back()->with('success', 'คืนเงินคำสั่งซื้อเรียบร้อยแล้ว');
             } catch (\DomainException $e) {
@@ -657,7 +834,9 @@ class ECommerceController extends Controller
         }
 
         // อัพเดทสถานะปกติ (pending, processing, shipped, completed)
+        $oldStatus = (string) $order->status;
         $order->update(['status' => $newStatus]);
+        $appendNote('สถานะ '.$oldStatus.' → '.$newStatus);
 
         if ($newStatus === 'shipped' && ! $order->shipped_at) {
             $order->update(['shipped_at' => now()]);
@@ -778,6 +957,28 @@ class ECommerceController extends Controller
     }
 
     /**
+     * ต่อท้ายบันทึกของแอดมินในออเดอร์ (ไม่เขียนทับของเดิม)
+     *
+     * รูปแบบบรรทัด: [Y-m-d H:i] แอดมิน #id: ข้อความ — อ่านค่าล่าสุดจาก DB ก่อนต่อ
+     * (กันทับบรรทัดที่ auditPaymentStatusChange หรือแอดมินคนอื่นเพิ่งเขียน) แล้วซิงค์ค่าเข้าโมเดลในหน่วยความจำ
+     */
+    private function appendAdminNote(Order $order, string $note): void
+    {
+        $note = trim($note);
+        if ($note === '') {
+            return;
+        }
+
+        $line = '['.now()->format('Y-m-d H:i').'] แอดมิน #'.(auth()->id() ?? '-').': '.$note;
+        $current = (string) Order::whereKey($order->id)->value('admin_notes');
+        $updated = trim($current."\n".$line);
+
+        Order::whereKey($order->id)->update(['admin_notes' => $updated]);
+        $order->setAttribute('admin_notes', $updated);
+        $order->syncOriginalAttribute('admin_notes');
+    }
+
+    /**
      * บันทึก audit การเปลี่ยนสถานะการชำระเงินด้วยมือ: accounting_activity_logs + log + admin_notes
      */
     private function auditPaymentStatusChange(Order $order, string $from, string $to, string $reason, ?string $reference): void
@@ -836,9 +1037,12 @@ class ECommerceController extends Controller
             $query->where('name', 'like', "%{$search}%");
         }
 
-        $categories = $query->orderBy('name')->paginate(20);
+        $categories = $query->with('parent:id,name')->orderBy('name')->paginate(20)->withQueryString();
 
-        return view('admin.ecommerce.categories.index', compact('categories'));
+        // ทุกหมวด (ไม่แบ่งหน้า) สำหรับเลือกหมวดแม่ในฟอร์ม — เดิมใช้เฉพาะหน้าปัจจุบัน
+        $allCategories = ProductCategory::orderBy('name')->get(['id', 'name', 'parent_id']);
+
+        return view('admin.ecommerce.categories.index', compact('categories', 'allCategories'));
     }
 
     /**
@@ -886,7 +1090,7 @@ class ECommerceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->withInput()->with('error', $this->failMessage($e));
         }
     }
 
@@ -939,7 +1143,7 @@ class ECommerceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->withInput()->with('error', $this->failMessage($e));
         }
     }
 
@@ -986,12 +1190,11 @@ class ECommerceController extends Controller
             $query->where('is_approved', $request->status === 'approved');
         }
 
-        // Sort
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // เรียงลำดับ (whitelist)
+        [$sortBy, $sortOrder] = $this->safeSort($request, ['created_at', 'rating'], 'created_at');
         $query->orderBy($sortBy, $sortOrder);
 
-        $reviews = $query->paginate(20);
+        $reviews = $query->paginate(20)->withQueryString();
 
         return view('admin.ecommerce.reviews.index', compact('reviews'));
     }
@@ -1192,7 +1395,11 @@ class ECommerceController extends Controller
             ? round((($summary['total_orders'] - $prevOrders) / $prevOrders) * 100, 1)
             : 0;
 
+        // 💰 GP / VAT / กองทุนผู้แนะนำ ในช่วงวันที่เลือก
+        $moneySplit = $this->orderMoneySplit($dateFrom, $dateTo);
+
         return view('admin.ecommerce.reports', compact(
+            'moneySplit',
             'salesReport',
             'topProducts',
             'categoryPerformance',
@@ -1287,7 +1494,7 @@ class ECommerceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect()->back()->with('error', $this->failMessage($e));
         }
     }
 
@@ -1330,7 +1537,7 @@ class ECommerceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect()->back()->with('error', $this->failMessage($e));
         }
     }
 
@@ -1343,11 +1550,12 @@ class ECommerceController extends Controller
      */
     public function orderTracking(Order $order)
     {
+        // ⚠️ OrderTrackingHistory มี relation ชื่อ creator (ไม่มี user) — เดิมโหลด trackingHistory.user ทำให้หน้านี้ 500 ทุกครั้ง
         $order->load([
             'user',
             'items.product.images',
             'shippingProvider',
-            'trackingHistory.user',
+            'trackingHistory.creator',
             'messages.sender',
         ]);
 
@@ -1376,26 +1584,32 @@ class ECommerceController extends Controller
         DB::beginTransaction();
 
         try {
-            // อัพเดทข้อมูล Order
+            // อัพเดทข้อมูล Order (บันทึกของแอดมิน "ต่อท้าย" ประวัติเดิม ไม่เขียนทับ)
             $order->update([
                 'shipping_provider_id' => $validated['shipping_provider_id'],
                 'tracking_number' => $validated['tracking_number'],
                 'estimated_delivery_at' => $validated['estimated_delivery_at'] ?? null,
-                'admin_notes' => $validated['admin_notes'] ?? $order->admin_notes,
             ]);
-
-            // ถ้าเพิ่งใส่ tracking ครั้งแรก ให้เปลี่ยนสถานะเป็น shipped
-            if ($order->status === 'processing' || $order->status === 'confirmed') {
-                $order->markAsShipped(auth()->id());
+            if (! empty($validated['admin_notes'])) {
+                $this->appendAdminNote($order, 'จัดส่ง (เลขพัสดุ '.$validated['tracking_number'].'): '.$validated['admin_notes']);
             }
 
-            // สร้าง tracking history
-            OrderTrackingHistory::createEntry(
-                $order,
-                'shipped',
-                'ส่งสินค้าแล้ว - หมายเลขพัสดุ: '.$validated['tracking_number'],
-                auth()->id()
-            );
+            $provider = ShippingProvider::find($validated['shipping_provider_id']);
+
+            // ถ้าเพิ่งใส่ tracking ครั้งแรก ให้เปลี่ยนสถานะเป็น shipped
+            // 🐛 เดิมเรียก markAsShipped(auth()->id()) → เลขพัสดุถูกเขียนทับเป็น id แอดมิน
+            //    และ createEntry(..., auth()->id()) ส่ง int แทน array → TypeError หน้า 500
+            if (in_array($order->status, ['paid', 'processing', 'confirmed'], true)) {
+                $order->markAsShipped($validated['tracking_number'], $provider?->name, $provider?->id);
+            } else {
+                OrderTrackingHistory::createEntry($order, 'shipped', 'อัปเดตเลขพัสดุ', [
+                    'description' => 'หมายเลขพัสดุ: '.$validated['tracking_number'],
+                    'tracking_number' => $validated['tracking_number'],
+                    'shipping_provider' => $provider?->name,
+                    'created_by' => auth()->id(),
+                    'created_by_type' => 'admin',
+                ]);
+            }
 
             DB::commit();
 
@@ -1404,7 +1618,7 @@ class ECommerceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return redirect()->back()->with('error', $this->failMessage($e));
         }
     }
 
@@ -1416,28 +1630,35 @@ class ECommerceController extends Controller
     public function addTrackingHistory(Request $request, Order $order)
     {
         $validated = $request->validate([
-            'status' => 'required|string|max:50',
+            'status' => 'required|in:pending,processing,shipped,in_transit,out_for_delivery,delivered',
             'description' => 'required|string|max:500',
             'location' => 'nullable|string|max:255',
         ], [
             'status.required' => 'กรุณาเลือกสถานะ',
+            'status.in' => 'สถานะการจัดส่งไม่ถูกต้อง',
             'description.required' => 'กรุณากรอกรายละเอียด',
         ]);
 
-        OrderTrackingHistory::createEntry(
-            $order,
-            $validated['status'],
-            $validated['description'],
-            auth()->id(),
-            $validated['location'] ?? null
-        );
+        $labels = [
+            'pending' => 'รอดำเนินการ',
+            'processing' => 'กำลังเตรียมสินค้า',
+            'shipped' => 'จัดส่งแล้ว',
+            'in_transit' => 'อยู่ระหว่างขนส่ง',
+            'out_for_delivery' => 'กำลังนำส่ง',
+            'delivered' => 'ส่งถึงแล้ว',
+        ];
 
-        // อัพเดทสถานะ Order ตาม tracking status
-        if ($validated['status'] === 'delivered') {
-            $order->update([
-                'status' => 'delivered',
-                'delivered_at' => now(),
-            ]);
+        // 🐛 เดิมส่ง (int ผู้ใช้, location) เป็นอาร์กิวเมนต์ที่ 4-5 แต่ createEntry รับ array → TypeError หน้า 500
+        OrderTrackingHistory::createEntry($order, $validated['status'], $labels[$validated['status']] ?? $validated['status'], [
+            'description' => $validated['description'],
+            'location' => $validated['location'] ?? null,
+            'created_by' => auth()->id(),
+            'created_by_type' => 'admin',
+        ]);
+
+        // อัพเดทสถานะ Order ตาม tracking status (ใช้ markAsDelivered ให้รายการสินค้าเปลี่ยนตาม)
+        if ($validated['status'] === 'delivered' && ! in_array($order->status, Order::TERMINAL_STATUSES, true)) {
+            $order->markAsDelivered();
         }
 
         return redirect()->back()->with('success', 'เพิ่มประวัติการจัดส่งเรียบร้อยแล้ว');

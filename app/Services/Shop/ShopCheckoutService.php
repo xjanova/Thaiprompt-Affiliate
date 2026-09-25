@@ -49,16 +49,25 @@ class ShopCheckoutService
         private readonly ShopOrderNotifier $notifier,
     ) {}
 
+    /** ช่องทางที่สั่งซื้อ (บันทึกใน metadata ของรายการเงิน) */
+    private string $source = 'mobile_app';
+
     /**
      * สั่งซื้อจากตะกร้าในระบบ
      *
-     * @param  array{address_id?: int|null, payment_method: string, delivery_method?: string|null, coupon_code?: string|null, note?: string|null}  $input
+     * $lineSource = แหล่งรายการอื่นแทนตะกร้าแอป (เช่นตะกร้าเว็บผ่าน WebCartLines::lockedSource)
+     * ถูกเรียกภายใน transaction และต้องคืน [รายการที่ล็อกแล้ว, ฟังก์ชันล้างตะกร้า]
+     *
+     * @param  array{address_id?: int|null, payment_method: string, delivery_method?: string|null, coupon_code?: string|null, note?: string|null, source?: string|null}  $input
+     * @param  (callable(): array{0: \Illuminate\Support\Collection<int, CartItem>, 1: callable(): void})|null  $lineSource
      * @return array<string, mixed> ข้อมูลตอบกลับ (orders + payment)
      *
      * @throws ShopException
      */
-    public function checkout(User $user, array $input, ?string $idempotencyKey = null): array
+    public function checkout(User $user, array $input, ?string $idempotencyKey = null, ?callable $lineSource = null): array
     {
+        $this->source = ($input['source'] ?? null) === 'web' ? 'web' : 'mobile_app';
+
         $paymentMethod = PaymentMethod::normalize((string) ($input['payment_method'] ?? ''));
         if (! in_array($paymentMethod, PaymentMethod::APP_CHECKOUT_VALUES, true)) {
             throw ShopException::make(ShopException::PAYMENT_METHOD_UNAVAILABLE, 'วิธีชำระเงินนี้ยังไม่รองรับในแอป', 422);
@@ -81,7 +90,7 @@ class ShopCheckoutService
         }
 
         try {
-            $orders = DB::transaction(fn () => $this->createOrders($user, $input, $paymentMethod, $deliveryMethod));
+            $orders = DB::transaction(fn () => $this->createOrders($user, $input, $paymentMethod, $deliveryMethod, $lineSource));
 
             $payments = [];
             if ($paymentMethod === PaymentMethod::PROMPTPAY) {
@@ -111,15 +120,22 @@ class ShopCheckoutService
      *
      * @return array<int, Order>
      */
-    private function createOrders(User $user, array $input, string $paymentMethod, string $deliveryMethod): array
+    private function createOrders(User $user, array $input, string $paymentMethod, string $deliveryMethod, ?callable $lineSource = null): array
     {
         // 1) ล็อกตะกร้า + รายการ + สินค้า (กดสั่งพร้อมกัน 2 ครั้ง → ครั้งที่สองเห็นตะกร้าว่าง)
-        $cart = Cart::where('user_id', $user->id)->orderBy('id')->lockForUpdate()->first();
-        if (! $cart) {
-            throw ShopException::make(ShopException::CART_EMPTY, 'ไม่มีสินค้าในตะกร้า', 409);
+        if ($lineSource !== null) {
+            // ตะกร้าจากแหล่งอื่น (หน้าเว็บ) — แหล่งล็อกแถวให้เองและบอกวิธีล้างตะกร้า
+            [$lines, $clearCart] = $lineSource();
+        } else {
+            $cart = Cart::where('user_id', $user->id)->orderBy('id')->lockForUpdate()->first();
+            if (! $cart) {
+                throw ShopException::make(ShopException::CART_EMPTY, 'ไม่มีสินค้าในตะกร้า', 409);
+            }
+
+            $lines = $this->carts->lines($cart, true);
+            $clearCart = fn () => CartItem::withTrashed()->where('cart_id', $cart->id)->forceDelete();
         }
 
-        $lines = $this->carts->lines($cart, true);
         if ($lines->isEmpty()) {
             throw ShopException::make(ShopException::CART_EMPTY, 'ไม่มีสินค้าในตะกร้า', 409);
         }
@@ -259,8 +275,8 @@ class ShopCheckoutService
             $orders[] = $order;
         }
 
-        // 9) ล้างตะกร้า (ลบจริง กันชน unique ของ soft delete)
-        CartItem::withTrashed()->where('cart_id', $cart->id)->forceDelete();
+        // 9) ล้างตะกร้า (ตะกร้าแอป: ลบจริง กันชน unique ของ soft delete · ตะกร้าเว็บ: ลบแถวที่สั่ง)
+        $clearCart();
 
         return $orders;
     }
@@ -430,7 +446,7 @@ class ShopCheckoutService
                         'order_id' => $order->id,
                         'order_number' => $order->order_number,
                         'checkout_group' => $order->checkout_group,
-                        'source' => 'mobile_app',
+                        'source' => $this->source,
                     ]
                 );
             } catch (\Throwable $e) {
@@ -476,7 +492,7 @@ class ShopCheckoutService
         try {
             $paymentService = app(PaymentService::class);
             $transaction = $paymentService->createOrderPayment($order, PaymentMethod::PROMPTPAY, [
-                'metadata' => ['source' => 'mobile_app', 'checkout_group' => $order->checkout_group],
+                'metadata' => ['source' => $this->source, 'checkout_group' => $order->checkout_group],
             ]);
             $result = $paymentService->processPayment($transaction, []);
 

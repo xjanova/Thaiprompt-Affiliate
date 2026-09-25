@@ -1,369 +1,163 @@
-@extends('layouts.storefront')
+{{--
+ | ชำระเงินของคำสั่งซื้อ (เลือกวิธีไว้แล้ว) — ธีม V4 (frontend-v4)
+ | ข้อมูลจาก CheckoutController@payment: $order (items.product, shippingAddress, paymentTransaction), $transaction, $walletBalance
+ | ฟอร์ม POST checkout.payment.process (ไม่มีฟิลด์อื่น — วิธีจ่ายอ่านจากออเดอร์)
+ --}}
+@extends('layouts.frontend-v4')
 
-@section('title', 'ชำระเงิน')
+@section('title', 'ชำระเงิน #'.$order->order_number)
+
+@php
+    $pmMethod = \App\Support\Shop\PaymentMethod::normalize((string) $order->payment_method);
+    $pmTotal = (float) $order->total_amount;
+    $pmWallet = (float) ($walletBalance ?? 0);
+    $pmShort = $pmMethod === 'wallet' && $pmWallet + 0.0001 < $pmTotal;
+    $pmShipping = \App\Services\Shop\ShopPresenter::shipping($order);
+    $pmExplain = (array) config('smschecker.customer_explanation', []);
+    $pmLabels = [
+        'wallet' => ['กระเป๋าเงินไทยพร๊อมท์', 'fa-wallet'],
+        'promptpay' => ['พร้อมเพย์ (สแกน QR)', 'fa-qrcode'],
+        'credit_card' => ['บัตรเครดิต / เดบิต', 'fa-credit-card'],
+        'bank_transfer' => ['โอนผ่านธนาคาร', 'fa-building-columns'],
+        'cod' => ['เก็บเงินปลายทาง', 'fa-money-bill-wave'],
+        'paysolutions' => ['PaySolutions', 'fa-credit-card'],
+    ];
+    [$pmLabel, $pmIcon] = $pmLabels[$pmMethod] ?? [\App\Support\Shop\PaymentMethod::labelTh($pmMethod), 'fa-money-check'];
+@endphp
 
 @section('content')
-<div class="py-6">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Breadcrumb -->
-        <nav class="mb-8" aria-label="Breadcrumb">
-            <ol class="flex items-center space-x-2 text-sm">
-                <li>
-                    <a href="{{ route('home') }}" class="text-gray-500 hover:text-indigo-600 transition">
-                        หน้าแรก
-                    </a>
-                </li>
-                <li class="text-gray-400">/</li>
-                <li>
-                    <a href="{{ route('storefront.index') }}" class="text-gray-500 hover:text-indigo-600 transition">
-                        ร้านค้า
-                    </a>
-                </li>
-                <li class="text-gray-400">/</li>
-                <li>
-                    <a href="{{ route('orders.show', $order->id) }}" class="text-gray-500 hover:text-indigo-600 transition">
-                        คำสั่งซื้อ #{{ $order->order_number }}
-                    </a>
-                </li>
-                <li class="text-gray-400">/</li>
-                <li class="text-gray-700 dark:text-gray-300 font-medium">ชำระเงิน</li>
-            </ol>
+<x-theme-v4.shop-kit />
+<x-theme-v4.public-header active="orders" />
+
+<main style="flex:1; padding-bottom:40px;">
+    <section class="sf-wrap" style="padding-top:20px; max-width:980px;">
+        <nav class="sf-breadcrumb" aria-label="เส้นทาง">
+            <a href="{{ route('orders.index') }}">คำสั่งซื้อของฉัน</a>
+            <span aria-hidden="true">/</span>
+            <a href="{{ route('orders.show', $order->id) }}">#{{ $order->order_number }}</a>
+            <span aria-hidden="true">/</span>
+            <span style="color:var(--ink); font-weight:600;">ชำระเงิน</span>
         </nav>
+        <h1 class="sf-h1" style="margin-top:8px;">ชำระเงิน</h1>
+        <p class="tp-muted" style="margin:6px 0 0;">คำสั่งซื้อ #{{ $order->order_number }} · ยอดชำระ <strong class="tp-num" style="color:var(--ink);">฿{{ number_format($pmTotal, 2) }}</strong></p>
+    </section>
 
-        <!-- Page Header -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-black text-gray-900 dark:text-white mb-2">💳 ชำระเงิน</h1>
-            <p class="text-gray-600 dark:text-gray-400">คำสั่งซื้อ #{{ $order->order_number }} - ยอดชำระ ฿{{ number_format($order->total_amount, 2) }}</p>
-        </div>
+    @if(session('error'))
+        <section class="sf-wrap" style="padding-top:14px; max-width:980px;">
+            <div class="sf-note sf-note-err" role="alert"><i class="fas fa-circle-exclamation"></i> {{ session('error') }}</div>
+        </section>
+    @endif
 
-        @if(session('error'))
-        <div class="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-lg">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-red-800 dark:text-red-300">{{ session('error') }}</p>
-                </div>
-            </div>
-        </div>
-        @endif
-
-        @if(session('success'))
-        <div class="mb-6 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 rounded-lg">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-green-800 dark:text-green-300">{{ session('success') }}</p>
-                </div>
-            </div>
-        </div>
-        @endif
-
-        <div class="grid grid-cols-1 gap-8">
-            <!-- Payment Method -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">วิธีการชำระเงิน</h2>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $order->payment_method }}</p>
+    <section class="sf-wrap" style="padding-top:16px; max-width:980px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap:16px; align-items:start;">
+            <div class="tp-card sf-stack" style="gap:14px;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="tp-tile" style="width:48px; height:48px; border-radius:16px; font-size:20px;"><i class="fas {{ $pmIcon }}"></i></span>
+                    <div>
+                        <div class="tp-muted" style="font-size:12px;">วิธีชำระเงิน</div>
+                        <div style="font-weight:800; color:var(--ink);">{{ $pmLabel }}</div>
+                    </div>
                 </div>
 
-                <form method="POST" action="{{ route('checkout.payment.process', $order->id) }}" class="p-6">
-                    @csrf
-
-                    <!-- Wallet Payment -->
-                    @if($order->payment_method === 'wallet')
-                    <div class="space-y-4">
-                        <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="flex items-center">
-                                    <span class="text-3xl mr-3">👛</span>
-                                    <div>
-                                        <h3 class="font-semibold text-gray-900 dark:text-white">ชำระด้วย Wallet</h3>
-                                        <p class="text-sm text-gray-600 dark:text-gray-400">ยอดเงินคงเหลือ: <span class="font-semibold text-indigo-600">฿{{ number_format($walletBalance, 2) }}</span></p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @if($walletBalance < $order->total_amount)
-                            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-3">
-                                <p class="text-sm text-red-800 dark:text-red-300">⚠️ ยอดเงินในกระเป๋าไม่เพียงพอ กรุณาเติมเงินก่อนชำระเงิน</p>
-                            </div>
-                            @endif
-
-                            <div class="bg-white dark:bg-gray-900 rounded-lg p-4 mb-3">
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-gray-600 dark:text-gray-400">ยอดที่ต้องชำระ:</span>
-                                    <span class="font-semibold text-gray-900 dark:text-white">฿{{ number_format($order->total_amount, 2) }}</span>
-                                </div>
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-gray-600 dark:text-gray-400">คงเหลือหลังชำระ:</span>
-                                    <span class="font-semibold {{ $walletBalance - $order->total_amount >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                        ฿{{ number_format($walletBalance - $order->total_amount, 2) }}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit"
-                                @if($walletBalance < $order->total_amount) disabled @endif
-                                class="w-full py-3 px-4 rounded-lg font-semibold text-white transition
-                                    {{ $walletBalance >= $order->total_amount
-                                        ? 'bg-indigo-600 hover:bg-indigo-700'
-                                        : 'bg-gray-400 cursor-not-allowed' }}">
-                            {{ $walletBalance >= $order->total_amount ? 'ยืนยันการชำระเงิน' : 'ยอดเงินไม่เพียงพอ' }}
-                        </button>
-
-                        @if($walletBalance < $order->total_amount)
-                        <a href="{{ route('user.wallet.topup') }}" class="block w-full py-3 px-4 rounded-lg font-semibold text-center text-white bg-green-600 hover:bg-green-700 transition">
-                            เติมเงิน Wallet
-                        </a>
-                        @endif
+                @if($pmMethod === 'cod')
+                    <div class="sf-note sf-note-info">
+                        <strong>ชำระเงินสดเมื่อได้รับสินค้า</strong><br>
+                        ยอดที่ต้องจ่ายปลายทาง <strong class="tp-num">฿{{ number_format($pmTotal, 2) }}</strong> — ไม่ต้องทำรายการเพิ่มที่หน้านี้
                     </div>
+                    <a href="{{ route('orders.show', $order->id) }}" class="sf-btn3d is-block">ดูสถานะคำสั่งซื้อ</a>
+                @else
+                    <form method="POST" action="{{ route('checkout.payment.process', $order->id) }}" class="sf-stack" style="gap:12px;"
+                          x-data="{ busy: false }" @submit="if (busy) { $event.preventDefault(); } busy = true">
+                        @csrf
 
-                    <!-- PromptPay Payment -->
-                    @elseif($order->payment_method === 'promptpay')
-                    <div class="space-y-4">
-                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                            <div class="flex items-center mb-3">
-                                <span class="text-3xl mr-3">📱</span>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-white">ชำระด้วย PromptPay</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">สแกน QR Code เพื่อชำระเงิน</p>
-                                </div>
+                        @if($pmMethod === 'wallet')
+                            <div style="padding:14px; border-radius:16px; background:var(--surf); box-shadow:var(--inset-sm);">
+                                <div class="sf-row"><span>ยอดคงเหลือในกระเป๋า</span><strong class="tp-num">฿{{ number_format($pmWallet, 2) }}</strong></div>
+                                <div class="sf-row" style="margin-top:6px;"><span>ยอดที่ต้องชำระ</span><strong class="tp-num">฿{{ number_format($pmTotal, 2) }}</strong></div>
+                                <div class="sf-row" style="margin-top:6px;"><span>คงเหลือหลังชำระ</span><strong class="tp-num" style="color:{{ $pmShort ? 'var(--sf-sale, #e0564f)' : 'var(--sf-ok, #4f9e7e)' }};">฿{{ number_format($pmWallet - $pmTotal, 2) }}</strong></div>
                             </div>
-
-                            <div class="bg-white dark:bg-gray-900 rounded-lg p-4 mb-3 text-center">
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">กดปุ่มด้านล่างเพื่อสร้าง QR Code</p>
-                                <p class="text-2xl font-bold text-indigo-600">฿{{ number_format($order->total_amount, 2) }}</p>
-                            </div>
-
-                            {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
-                            @include('components.sms-payment-explanation', ['compact' => true])
-                        </div>
-
-                        <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition">
-                            สร้าง QR Code PromptPay
-                        </button>
-                    </div>
-
-                    <!-- Credit Card Payment (Stripe) -->
-                    @elseif($order->payment_method === 'credit_card')
-                    <div class="space-y-4">
-                        <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                            <div class="flex items-center mb-3">
-                                <span class="text-3xl mr-3">💳</span>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-white">ชำระด้วยบัตรเครดิต/เดบิต</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Visa · Mastercard · JCB · American Express</p>
-                                </div>
-                            </div>
-                            <div class="bg-white dark:bg-gray-900 rounded-lg p-4 flex items-center justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">ยอดที่ต้องชำระ</span>
-                                <span class="text-2xl font-bold text-purple-600">฿{{ number_format($order->total_amount, 2) }}</span>
-                            </div>
-                            <p class="mt-3 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944z" clip-rule="evenodd"/></svg>
-                                ชำระผ่านหน้าเพย์เมนต์ที่ปลอดภัยของ Stripe — เราไม่เก็บเลขบัตรของคุณ
-                            </p>
-                        </div>
-
-                        <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-purple-600 hover:bg-purple-700 transition">
-                            ไปชำระด้วยบัตรอย่างปลอดภัย →
-                        </button>
-                    </div>
-
-                    <!-- Bank Transfer Payment -->
-                    @elseif($order->payment_method === 'bank_transfer')
-                    <div class="space-y-4">
-                        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                            <div class="flex items-center mb-3">
-                                <span class="text-3xl mr-3">🏦</span>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-white">โอนเงินผ่านธนาคาร</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">โอนเงินไปยังบัญชีธนาคารของเรา</p>
-                                </div>
-                            </div>
-
-                            {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
-                            @include('components.sms-payment-explanation', ['compact' => true])
-                        </div>
-
-                        <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 transition">
-                            ดูรายละเอียดบัญชี
-                        </button>
-                    </div>
-
-                    <!-- Cash on Delivery -->
-                    @elseif($order->payment_method === 'cash_on_delivery')
-                    <div class="space-y-4">
-                        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                            <div class="flex items-center mb-3">
-                                <span class="text-3xl mr-3">💵</span>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-white">เก็บเงินปลายทาง</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">ชำระเงินเมื่อได้รับสินค้า</p>
-                                </div>
-                            </div>
-
-                            <div class="bg-white dark:bg-gray-900 rounded-lg p-4">
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                    คำสั่งซื้อของคุณจะถูกจัดส่ง คุณสามารถชำระเงินเมื่อได้รับสินค้าแล้ว
-                                </p>
-                                <div class="flex justify-between items-center">
-                                    <span class="font-medium text-gray-900 dark:text-white">ยอดที่ต้องชำระปลายทาง:</span>
-                                    <span class="text-2xl font-bold text-yellow-600">฿{{ number_format($order->total_amount, 2) }}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-yellow-600 hover:bg-yellow-700 transition">
-                            ยืนยันคำสั่งซื้อ
-                        </button>
-                    </div>
-
-                    <!-- PaySolutions -->
-                    @elseif($order->payment_method === 'paysolutions')
-                    <div class="space-y-4">
-                        <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
-                            <div class="flex items-center mb-3">
-                                <span class="text-3xl mr-3">💳</span>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-white">PaySolutions</h3>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">QR, Card, E-Wallet, Installment</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition">
-                            ชำระเงินผ่าน PaySolutions
-                        </button>
-                    </div>
-                    @endif
-
-                    <!-- Cancel Link -->
-                    <div class="mt-4 text-center">
-                        <a href="{{ route('orders.show', $order->id) }}" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                            ยกเลิกและกลับไปดูคำสั่งซื้อ
-                        </a>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Order Summary -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">สรุปคำสั่งซื้อ</h2>
-                </div>
-
-                <div class="p-6 space-y-4">
-                    <!-- Items -->
-                    <div class="space-y-3">
-                        @foreach($order->items as $item)
-                        <div class="flex items-center gap-4">
-                            @if($item->product_image)
-                            <img src="{{ Storage::url($item->product_image) }}"
-                                 alt="{{ $item->product_name }}"
-                                 class="w-16 h-16 rounded-lg object-cover">
+                            @if($pmShort)
+                                <div class="sf-note sf-note-err">ยอดเงินในกระเป๋าไม่เพียงพอ กรุณาเติมเงินก่อนชำระ</div>
+                                <a href="{{ route('user.wallet.topup') }}" class="sf-btn3d is-alt is-block"><i class="fas fa-plus"></i> เติมเงินกระเป๋า</a>
+                                <button type="submit" class="sf-btn3d is-block is-disabled" disabled>ยอดเงินไม่เพียงพอ</button>
                             @else
-                            <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                                <span class="text-gray-400">📦</span>
-                            </div>
+                                <button type="submit" class="sf-btn3d is-block" style="min-height:54px;" :disabled="busy"><i class="fas" :class="busy ? 'fa-spinner fa-spin' : 'fa-lock'"></i> ยืนยันชำระ ฿{{ number_format($pmTotal, 2) }}</button>
                             @endif
-                            <div class="flex-1">
-                                <h4 class="font-medium text-gray-900 dark:text-white">{{ $item->product_name }}</h4>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">จำนวน: {{ $item->quantity }}</p>
+                        @elseif($pmMethod === 'promptpay')
+                            <div style="text-align:center; padding:16px; border-radius:16px; background:var(--surf); box-shadow:var(--inset-sm);">
+                                <div class="tp-muted" style="font-size:12.5px;">ยอดที่ต้องชำระ</div>
+                                <div class="tp-num" style="font-size:32px; font-weight:800; color:var(--deep1);">฿{{ number_format($pmTotal, 2) }}</div>
                             </div>
-                            <div class="text-right">
-                                <p class="font-semibold text-gray-900 dark:text-white">฿{{ number_format($item->total, 2) }}</p>
+                            <div class="sf-note sf-note-info" style="font-size:12.5px;">
+                                <strong>💡 {{ $pmExplain['title'] ?? 'ทำไมยอดโอนมีจุดทศนิยม?' }}</strong><br>
+                                {{ $pmExplain['note'] ?? 'กรุณาโอนตามยอดที่แสดงทุกประการ (รวมจุดทศนิยม) เพื่อให้ระบบยืนยันอัตโนมัติ ไม่ต้องรอแอดมิน' }}
                             </div>
-                        </div>
-                        @endforeach
-                    </div>
-
-                    <!-- Totals -->
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-600 dark:text-gray-400">ยอดรวมสินค้า:</span>
-                            <span class="font-medium text-gray-900 dark:text-white">฿{{ number_format($order->subtotal, 2) }}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-gray-600 dark:text-gray-400">ค่าจัดส่ง:</span>
-                            <span class="font-medium text-gray-900 dark:text-white">฿{{ number_format($order->shipping_fee, 2) }}</span>
-                        </div>
-                        @if($order->cashback_amount > 0)
-                        <div class="flex justify-between text-sm">
-                            <span class="text-green-600 dark:text-green-400">💰 Cashback:</span>
-                            <span class="font-medium text-green-600 dark:text-green-400">฿{{ number_format($order->cashback_amount, 2) }}</span>
-                        </div>
-                        @endif
-                        <div class="flex justify-between text-lg font-bold border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <span class="text-gray-900 dark:text-white">รวมทั้งหมด:</span>
-                            <span class="text-indigo-600 dark:text-indigo-400">฿{{ number_format($order->total_amount, 2) }}</span>
-                        </div>
-                    </div>
-
-                    <!-- Shipping Address -->
-                    @php
-                        $address = $order->shipping_address_snapshot ?? $order->shippingAddress;
-                    @endphp
-                    @if($address)
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">ที่อยู่จัดส่ง</h4>
-                        @if(is_array($address))
-                        <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                            <p class="font-medium text-gray-900 dark:text-white">{{ $address['recipient_name'] ?? '' }}</p>
-                            <p>{{ $address['phone'] ?? '' }}</p>
-                            <p>{{ $address['address_line1'] ?? '' }}</p>
-                            @if(isset($address['address_line2']) && $address['address_line2'])
-                            <p>{{ $address['address_line2'] }}</p>
-                            @endif
-                            <p>{{ $address['district'] ?? '' }} {{ $address['city'] ?? '' }} {{ $address['province'] ?? '' }} {{ $address['postal_code'] ?? '' }}</p>
-                        </div>
+                            <button type="submit" class="sf-btn3d is-block" style="min-height:54px;" :disabled="busy"><i class="fas" :class="busy ? 'fa-spinner fa-spin' : 'fa-qrcode'"></i> สร้าง QR พร้อมเพย์</button>
+                        @elseif($pmMethod === 'credit_card')
+                            <div class="sf-row" style="padding:14px; border-radius:16px; background:var(--surf); box-shadow:var(--inset-sm);"><span>ยอดที่ต้องชำระ</span><strong class="tp-num" style="font-size:22px; color:var(--deep1);">฿{{ number_format($pmTotal, 2) }}</strong></div>
+                            <p class="tp-muted" style="margin:0; font-size:12.5px;"><i class="fas fa-shield-halved" style="color:var(--sf-ok, #4f9e7e);"></i> ชำระผ่านหน้าที่ปลอดภัยของ Stripe — เราไม่เก็บเลขบัตรของคุณ · Visa / Mastercard / JCB</p>
+                            <button type="submit" class="sf-btn3d is-block" style="min-height:54px;" :disabled="busy"><i class="fas" :class="busy ? 'fa-spinner fa-spin' : 'fa-credit-card'"></i> ไปชำระด้วยบัตรอย่างปลอดภัย</button>
+                        @elseif($pmMethod === 'bank_transfer')
+                            <div class="sf-note sf-note-info" style="font-size:12.5px;">
+                                <strong>💡 {{ $pmExplain['title'] ?? 'ทำไมยอดโอนมีจุดทศนิยม?' }}</strong><br>
+                                {{ $pmExplain['note'] ?? 'กรุณาโอนตามยอดที่แสดงทุกประการ (รวมจุดทศนิยม) เพื่อให้ระบบยืนยันอัตโนมัติ ไม่ต้องรอแอดมิน' }}
+                            </div>
+                            <button type="submit" class="sf-btn3d is-block" style="min-height:54px;" :disabled="busy"><i class="fas" :class="busy ? 'fa-spinner fa-spin' : 'fa-building-columns'"></i> ดูเลขบัญชีและยอดโอน</button>
                         @else
-                        <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                            <p class="font-medium text-gray-900 dark:text-white">{{ $address->recipient_name }}</p>
-                            <p>{{ $address->phone }}</p>
-                            <p>{{ $address->address_line1 }}</p>
-                            @if($address->address_line2)
-                            <p>{{ $address->address_line2 }}</p>
-                            @endif
-                            <p>{{ $address->district }} {{ $address->city }} {{ $address->province }} {{ $address->postal_code }}</p>
-                        </div>
+                            <button type="submit" class="sf-btn3d is-block" style="min-height:54px;" :disabled="busy"><i class="fas fa-lock"></i> ดำเนินการชำระเงิน</button>
                         @endif
-                    </div>
-                    @else
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <h4 class="font-semibold text-gray-900 dark:text-white mb-2">ที่อยู่จัดส่ง</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-cloud-download-alt mr-1"></i>
-                            สินค้าดิจิทัล — ไม่ต้องจัดส่ง
-                        </p>
-                    </div>
-                    @endif
+                    </form>
+                @endif
 
-                    <!-- Transaction Info -->
-                    @if($transaction)
-                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                            <span>Transaction ID:</span>
-                            <span class="font-mono">{{ $transaction->transaction_id }}</span>
-                        </div>
-                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            <span>หมดอายุ:</span>
-                            <span>{{ $transaction->expired_at->format('d/m/Y H:i') }} น.</span>
-                        </div>
+                <a href="{{ route('orders.show', $order->id) }}" class="tp-btn" style="text-decoration:none; height:46px;"><i class="fas fa-arrow-left"></i> กลับไปดูคำสั่งซื้อ</a>
+            </div>
+
+            <div class="tp-card sf-stack" style="gap:12px;">
+                <div class="tp-section-h">สรุปคำสั่งซื้อ</div>
+                @foreach($order->items as $item)
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <span class="sf-thumb" style="width:52px; height:52px;">
+                            @php $pmImg = \App\Services\Shop\ShopPresenter::imageUrl($item->product_image); @endphp
+                            @if($pmImg)<img src="{{ $pmImg }}" alt="" loading="lazy">@else 📦 @endif
+                        </span>
+                        <span style="flex:1; min-width:0;">
+                            <span style="display:block; font-size:13px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $item->product_name }}</span>
+                            <span class="tp-muted" style="font-size:12px;">× {{ (int) $item->quantity }}</span>
+                        </span>
+                        <span class="tp-num" style="font-weight:700; font-size:13px;">฿{{ number_format((float) $item->total, 2) }}</span>
                     </div>
+                @endforeach
+                <div class="sf-row"><span>ยอดรวมสินค้า</span><strong class="tp-num">฿{{ number_format((float) $order->subtotal, 2) }}</strong></div>
+                <div class="sf-row"><span>ค่าจัดส่ง</span><strong class="tp-num">{{ (float) $order->shipping_fee > 0 ? '฿'.number_format((float) $order->shipping_fee, 2) : 'ฟรี' }}</strong></div>
+                @if((float) $order->discount_amount > 0)
+                    <div class="sf-row"><span>ส่วนลด</span><strong class="tp-num" style="color:var(--sf-ok, #4f9e7e);">-฿{{ number_format((float) $order->discount_amount, 2) }}</strong></div>
+                @endif
+                <div class="sf-total"><span style="font-weight:800; color:var(--ink);">รวมทั้งหมด</span><span class="tp-num">฿{{ number_format($pmTotal, 2) }}</span></div>
+
+                <div style="padding-top:10px; border-top:1px solid color-mix(in srgb, var(--ink2) 20%, transparent);">
+                    <div style="font-weight:700; color:var(--ink); margin-bottom:6px;"><i class="fas fa-location-dot" style="color:var(--deep1);"></i> ที่อยู่จัดส่ง</div>
+                    @if($pmShipping)
+                        <div style="font-size:13px; line-height:1.6; color:var(--ink2);">
+                            <strong style="color:var(--ink);">{{ $pmShipping['name'] }}</strong> · {{ $pmShipping['phone'] }}<br>
+                            {{ $pmShipping['full_address'] ?: trim(implode(' ', array_filter([$pmShipping['address'], $pmShipping['address_line_2'], $pmShipping['subdistrict'], $pmShipping['district'], $pmShipping['province'], $pmShipping['postal_code']]))) }}
+                        </div>
+                    @else
+                        <div class="tp-muted" style="font-size:13px;"><i class="fas fa-cloud-arrow-down"></i> สินค้าดิจิทัล — ไม่ต้องจัดส่ง</div>
                     @endif
                 </div>
+
+                @if($transaction)
+                    <div class="tp-muted" style="font-size:11.5px; display:flex; flex-direction:column; gap:3px;">
+                        <span>เลขรายการ: <span class="tp-num">{{ $transaction->transaction_id }}</span></span>
+                        @if($transaction->expired_at)
+                            <span>หมดอายุ: {{ $transaction->expired_at->timezone('Asia/Bangkok')->format('d/m/Y H:i') }} น.</span>
+                        @endif
+                    </div>
+                @endif
             </div>
         </div>
-    </div>
-</div>
+    </section>
+</main>
+
+<x-theme-v4.public-footer />
 @endsection

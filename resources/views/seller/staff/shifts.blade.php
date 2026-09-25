@@ -1,105 +1,81 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'จัดการกะการทำงาน - ' . ($store->store_name ?? 'ร้านค้า'))
+@section('title', 'กะการทำงาน')
+
+@php
+    // สีกะที่ผู้ขายตั้งเอง — ใช้ได้เฉพาะรหัส hex ที่ถูกต้อง
+    $safeColor = fn ($c) => (is_string($c) && preg_match('/^#[0-9a-fA-F]{3,8}$/', $c)) ? $c : 'var(--accent1)';
+@endphp
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <div class="flex items-center gap-4">
-        <a href="{{ route('seller.staff.index') }}"
-           class="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-            <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-        </a>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">จัดการกะการทำงาน</h1>
-    </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Add Shift Form --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">เพิ่มกะใหม่</h2>
-            <form method="POST" action="{{ route('seller.staff.shifts.store') }}" class="space-y-4">
-                @csrf
+    <x-seller-kit.header title="กะการทำงาน" icon="🕘" crumb="ร้านค้า · พนักงาน" subtitle="กำหนดเวลาเข้า–ออกงาน เวลาพัก และเบี้ยเลี้ยงต่อกะ" />
+
+    @include('seller.staff.partials.nav')
+
+    <x-seller-kit.errors />
+
+    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
+        <form method="POST" action="{{ route('seller.staff.shifts.store') }}" class="tp-card" style="flex:1 1 280px; display:flex; flex-direction:column; gap:12px;"
+              x-data="{ saving: false }" @submit="saving = true">
+            @csrf
+            <div class="tp-section-h">＋ เพิ่มกะ</div>
+            <div>
+                <label for="s-name" style="font-size:12.5px; font-weight:700;">ชื่อกะ <span style="color:var(--tp-bad, #d9534f);">*</span></label>
+                <input id="s-name" type="text" name="name" required maxlength="255" value="{{ old('name') }}" placeholder="เช่น กะเช้า" class="tp-input" style="margin-top:6px;">
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อกะ *</label>
-                    <input type="text" name="name" required placeholder="เช่น กะเช้า, กะบ่าย, กะดึก"
-                           class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เวลาเริ่ม *</label>
-                        <input type="time" name="start_time" required
-                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เวลาสิ้นสุด *</label>
-                        <input type="time" name="end_time" required
-                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เวลาพัก (นาที)</label>
-                        <input type="number" name="break_duration_minutes" value="60" min="0"
-                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เบี้ยเลี้ยง/กะ (บาท)</label>
-                        <input type="number" name="daily_allowance" value="0" min="0" step="0.01"
-                               class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500">
-                    </div>
+                    <label for="s-start" style="font-size:12.5px; font-weight:700;">เริ่ม <span style="color:var(--tp-bad, #d9534f);">*</span></label>
+                    <input id="s-start" type="time" name="start_time" required value="{{ old('start_time', '08:00') }}" class="tp-input tp-num" style="margin-top:6px;">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สี</label>
-                    <input type="color" name="color" value="#3B82F6"
-                           class="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                    <label for="s-end" style="font-size:12.5px; font-weight:700;">เลิก <span style="color:var(--tp-bad, #d9534f);">*</span></label>
+                    <input id="s-end" type="time" name="end_time" required value="{{ old('end_time', '17:00') }}" class="tp-input tp-num" style="margin-top:6px;">
                 </div>
-                <button type="submit"
-                        class="w-full py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition font-medium">
-                    + เพิ่มกะ
-                </button>
-            </form>
-        </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div>
+                    <label for="s-break" style="font-size:12.5px; font-weight:700;">พัก (นาที)</label>
+                    <input id="s-break" type="number" name="break_duration_minutes" min="0" value="{{ old('break_duration_minutes', 60) }}" class="tp-input tp-num" style="margin-top:6px;">
+                </div>
+                <div>
+                    <label for="s-allow" style="font-size:12.5px; font-weight:700;">เบี้ยเลี้ยง/กะ (บาท)</label>
+                    <input id="s-allow" type="number" name="daily_allowance" min="0" step="0.01" value="{{ old('daily_allowance', 0) }}" class="tp-input tp-num" style="margin-top:6px;">
+                </div>
+            </div>
+            <div>
+                <label for="s-color" style="font-size:12.5px; font-weight:700;">สีกะ</label>
+                <input id="s-color" type="color" name="color" value="{{ old('color', '#e6b347') }}" class="tp-input" style="margin-top:6px; height:44px; padding:4px;">
+            </div>
+            <div style="font-size:11.5px; color:var(--ink2);">ถ้าเวลาเลิกน้อยกว่าเวลาเริ่ม ระบบถือว่าเป็นกะข้ามคืนให้อัตโนมัติ</div>
+            <button type="submit" class="tp-btn tp-btn-primary" :disabled="saving" :style="{ opacity: saving ? .6 : 1 }">บันทึกกะ</button>
+        </form>
 
-        {{-- Shifts List --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">กะทั้งหมด ({{ $shifts->count() }})</h2>
-            @if($shifts->count() > 0)
-                <div class="space-y-3">
-                    @foreach($shifts as $shift)
-                    <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-700">
-                        <div class="flex items-center gap-3">
-                            <div class="w-4 h-4 rounded-full" style="background-color: {{ $shift->color }}"></div>
-                            <div>
-                                <p class="font-medium text-gray-900 dark:text-white">{{ $shift->name }}</p>
-                                <p class="text-sm text-gray-500">
-                                    {{ $shift->time_range }}
-                                    @if($shift->crosses_midnight)
-                                        <span class="text-amber-500">(ข้ามวัน)</span>
-                                    @endif
-                                    • {{ $shift->working_hours }} ชม.
-                                    @if($shift->daily_allowance > 0)
-                                        • ฿{{ number_format($shift->daily_allowance) }}/กะ
-                                    @endif
-                                </p>
-                            </div>
+        <div class="tp-card" style="flex:2 1 360px; padding:0; overflow:hidden;">
+            <div class="tp-section-h" style="padding:16px 18px;">🕘 กะทั้งหมด ({{ number_format($shifts->count()) }})</div>
+            @forelse($shifts as $shift)
+                <div style="display:flex; align-items:center; gap:12px; padding:12px 18px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                    <span style="width:14px; height:40px; border-radius:8px; flex:none; background:{{ $safeColor($shift->color) }}; box-shadow:var(--raise);" aria-hidden="true"></span>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:700;">{{ $shift->name }}</div>
+                        <div class="tp-num" style="font-size:12px; color:var(--ink2);">
+                            {{ $shift->time_range }}@if($shift->crosses_midnight) (ข้ามคืน)@endif
+                            · {{ number_format((float) $shift->working_hours, 1) }} ชม.
+                            @if((float) $shift->daily_allowance > 0) · เบี้ยเลี้ยง ฿{{ number_format((float) $shift->daily_allowance, 0) }}@endif
                         </div>
-                        <form method="POST" action="{{ route('seller.staff.shifts.destroy', $shift) }}"
-                              onsubmit="return confirm('ลบกะ {{ $shift->name }} ?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                            </button>
-                        </form>
                     </div>
-                    @endforeach
+                    <x-seller-kit.pill :tone="$shift->is_active ? 'ok' : 'muted'">{{ $shift->is_active ? 'ใช้งาน' : 'ปิด' }}</x-seller-kit.pill>
+                    <form method="POST" action="{{ route('seller.staff.shifts.destroy', $shift) }}" onsubmit="return confirm('ลบกะ {{ addslashes($shift->name) }}?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="tp-btn tp-btn-sm" style="color:var(--tp-bad, #d9534f);">🗑️</button>
+                    </form>
                 </div>
-            @else
-                <p class="text-gray-500 text-center py-8">ยังไม่มีกะ</p>
-            @endif
+            @empty
+                <x-seller-kit.empty icon="🕘" title="ยังไม่มีกะการทำงาน" text="เพิ่มกะ เช่น กะเช้า 08:00–17:00 เพื่อใช้ลงเวลาพนักงาน" />
+            @endforelse
         </div>
     </div>
 </div>

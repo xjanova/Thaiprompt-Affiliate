@@ -1,240 +1,121 @@
-{{--
-  * หน้าสินค้าที่ถูกบล็อก (Blocked Products)
-  * แสดงรายการสินค้าที่ถูกบล็อกพร้อมเหตุผลและตัวเลือกปลดบล็อก
-  * รองรับ Dark Mode และ Responsive Design
-  --}}
-
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'สินค้าที่ถูกบล็อก')
 
+@php
+    $bad = 'var(--tp-bad,#d9534f)';
+    $th = 'padding:12px 14px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); letter-spacing:.3px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); vertical-align:middle;';
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+@endphp
+
 @section('content')
-<div class="space-y-6" x-data="{ selectedProducts: [] }">
-    {{-- Alert Messages --}}
-    @if(session('success'))
-        <div x-data="{ show: true }" x-show="show" x-transition class="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-l-4 border-green-500 rounded-xl shadow-lg p-4" role="alert">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-green-800 dark:text-green-200 font-medium">{{ session('success') }}</span>
-                </div>
-                <button @click="show = false" class="text-green-500 hover:text-green-700 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · อีคอมเมิร์ซ · สินค้า</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">สินค้าที่ถูกบล็อก 🚫</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">สินค้าที่ถูกระงับการขาย — ปลดบล็อกแล้วร้านต้องเปิดขายเอง</div>
         </div>
-    @endif
-
-    @if(session('error'))
-        <div x-data="{ show: true }" x-show="show" x-transition class="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-l-4 border-red-500 rounded-xl shadow-lg p-4" role="alert">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-red-800 dark:text-red-200 font-medium">{{ session('error') }}</span>
-                </div>
-                <button @click="show = false" class="text-red-500 hover:text-red-700 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    @endif
-
-    {{-- Header Section --}}
-    <div class="relative overflow-hidden bg-gradient-to-br from-red-500 to-orange-600 dark:from-red-600 dark:to-orange-700 rounded-2xl shadow-2xl p-8">
-        <div class="absolute inset-0 bg-black/10" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
-
-        <div class="relative flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-            <div class="flex items-center gap-4">
-                <div class="glass-fusion backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                    </svg>
-                </div>
-                <div class="text-white">
-                    <h1 class="text-3xl md:text-4xl font-bold mb-1">สินค้าที่ถูกบล็อก</h1>
-                    <p class="text-white/90 text-sm md:text-base">จัดการสินค้าที่ถูกระงับการขาย</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-                <a href="{{ route('admin.ecommerce.products.index') }}" class="px-6 py-3 glass-fusion backdrop-blur-sm text-white rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/30 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    <span>กลับไปสินค้าทั้งหมด</span>
-                </a>
-            </div>
-        </div>
+        <a href="{{ route('admin.ecommerce.products.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> สินค้าทั้งหมด</a>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
-                    <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                    </svg>
-                </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+        <div class="tp-card" style="padding:16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; font-size:17px; background:{{ $bad }};"><i class="fas fa-ban"></i></div>
                 <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">สินค้าถูกบล็อก</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $products->total() }}</p>
+                    <div class="tp-num" style="font-size:24px; font-weight:800; line-height:1;">{{ number_format($products->total()) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">สินค้าถูกบล็อก</div>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Search & Filter --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
-        <form action="{{ route('admin.ecommerce.products.blocked') }}" method="GET" class="flex flex-col md:flex-row gap-4">
-            <div class="flex-1">
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ค้นหาสินค้า, SKU, เหตุผลการบล็อก..."
-                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition">
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" action="{{ route('admin.ecommerce.products.blocked') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; align-items:end;">
+            <div>
+                <label style="{{ $lbl }}">🔍 ค้นหา</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="tp-input" placeholder="ชื่อ SKU หรือเหตุผล">
             </div>
-            <div class="w-full md:w-48">
-                <select name="category" class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition">
+            <div>
+                <label style="{{ $lbl }}">หมวดหมู่</label>
+                <select name="category" class="tp-input">
                     <option value="">ทุกหมวดหมู่</option>
                     @foreach($categories as $category)
-                        <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                            {{ $category->name }}
-                        </option>
+                        <option value="{{ $category->id }}" @selected((string) request('category') === (string) $category->id)>{{ $category->name }}</option>
                     @endforeach
                 </select>
             </div>
-            <button type="submit" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all duration-200 flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <span>ค้นหา</span>
-            </button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> กรอง</button>
+                <a href="{{ route('admin.ecommerce.products.blocked') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> ล้าง</a>
+            </div>
         </form>
     </div>
 
-    {{-- Products Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700/50">
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:860px; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">สินค้า</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ผู้ขาย</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">เหตุผลการบล็อก</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">บล็อกโดย</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">วันที่บล็อก</th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">จัดการ</th>
+                        <th style="{{ $th }}">สินค้า</th>
+                        <th style="{{ $th }}">ผู้ขาย</th>
+                        <th style="{{ $th }}">เหตุผลที่บล็อก</th>
+                        <th style="{{ $th }}">บล็อกโดย</th>
+                        <th style="{{ $th }} text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                <tbody>
                     @forelse($products as $product)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                                        @if($product->images->first())
-                                            <img src="{{ asset('storage/' . $product->images->first()->image_path) }}"
-                                                 alt="{{ $product->name }}"
-                                                 class="w-full h-full object-cover opacity-50 grayscale">
-                                        @else
-                                            <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                                </svg>
-                                            </div>
-                                        @endif
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-gray-900 dark:text-white line-through">{{ $product->name }}</p>
-                                        <p class="text-sm text-gray-500 dark:text-gray-400">SKU: {{ $product->sku ?? '-' }}</p>
-                                        <p class="text-sm font-medium text-red-600 dark:text-red-400">฿{{ number_format($product->price, 2) }}</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
-                                    @if($product->seller)
-                                        <span class="text-gray-900 dark:text-white">{{ $product->seller->name }}</span>
+                        <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                            <td style="{{ $td }}">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    @if($product->primary_image_url)
+                                        <img src="{{ $product->primary_image_url }}" alt="" loading="lazy" style="width:44px; height:44px; border-radius:11px; object-fit:cover; opacity:.6; flex:none;">
                                     @else
-                                        <span class="text-gray-400">-</span>
+                                        <span class="tp-well" style="width:44px; height:44px; border-radius:11px; display:grid; place-items:center; color:var(--ink2); flex:none;"><i class="fas fa-image"></i></span>
                                     @endif
+                                    <div style="min-width:0;">
+                                        <div style="font-weight:700; text-decoration:line-through; max-width:240px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $product->name }}</div>
+                                        <div style="font-size:11.5px; color:var(--ink2);">SKU: {{ $product->sku ?: '-' }} · <span class="tp-num">฿{{ number_format((float) $product->price, 2) }}</span></div>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="max-w-xs">
-                                    <p class="text-sm text-red-600 dark:text-red-400 font-medium">{{ $product->block_reason ?? 'ไม่ระบุเหตุผล' }}</p>
-                                </div>
+                            <td style="{{ $td }}">{{ $product->seller?->name ?? '-' }}</td>
+                            <td style="{{ $td }} max-width:280px; color:{{ $bad }}; overflow-wrap:anywhere;">{{ $product->block_reason ?: 'ไม่ระบุเหตุผล' }}</td>
+                            <td style="{{ $td }} white-space:nowrap;">
+                                <div>{{ $product->blockedByUser?->name ?? '-' }}</div>
+                                <div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ $product->blocked_at ? $product->blocked_at->format('d/m/Y H:i') : '-' }}</div>
                             </td>
-                            <td class="px-6 py-4">
-                                @if($product->blockedByUser)
-                                    <span class="text-gray-900 dark:text-white">{{ $product->blockedByUser->name }}</span>
-                                @else
-                                    <span class="text-gray-400">ระบบ</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="text-gray-600 dark:text-gray-300">
-                                    {{ $product->blocked_at ? $product->blocked_at->format('d/m/Y H:i') : '-' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center justify-center gap-2">
-                                    <a href="{{ route('admin.ecommerce.products.show', $product) }}"
-                                       class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition"
-                                       title="ดูรายละเอียด">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                    </a>
-                                    <form action="{{ route('admin.ecommerce.products.unblock', $product) }}" method="POST" class="inline">
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:6px;">
+                                    <a href="{{ route('admin.ecommerce.products.show', $product) }}" class="tp-btn tp-btn-sm"><i class="fas fa-eye"></i> ดู</a>
+                                    <form method="POST" action="{{ route('admin.ecommerce.products.unblock', $product) }}"
+                                          @submit="if (!confirm(@js('ปลดบล็อก "'.$product->name.'" ? ร้านค้าจะได้รับแจ้งเตือน'))) $event.preventDefault()">
                                         @csrf
-                                        <button type="submit"
-                                                class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition"
-                                                title="ปลดบล็อก"
-                                                onclick="return confirm('ยืนยันปลดบล็อกสินค้านี้?')">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                            </svg>
-                                        </button>
+                                        <button type="submit" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-lock-open"></i> ปลดบล็อก</button>
                                     </form>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-16 text-center">
-                                <div class="flex flex-col items-center gap-4">
-                                    <div class="p-4 bg-green-100 dark:bg-green-900/30 rounded-full">
-                                        <svg class="w-12 h-12 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p class="text-lg font-semibold text-gray-900 dark:text-white">ไม่มีสินค้าถูกบล็อก</p>
-                                        <p class="text-gray-500 dark:text-gray-400">สินค้าทั้งหมดในระบบพร้อมขาย</p>
-                                    </div>
-                                </div>
+                            <td colspan="5" style="padding:44px 16px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-circle-check" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                                ไม่มีสินค้าที่ถูกบล็อก
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        {{-- Pagination --}}
-        @if($products->hasPages())
-            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
-                {{ $products->links() }}
-            </div>
-        @endif
     </div>
+
+    @if($products->hasPages())
+        <div>{{ $products->links() }}</div>
+    @endif
 </div>
 @endsection

@@ -415,6 +415,8 @@ class RiderAdminWebTest extends TestCase
             'address' => '12/3 ถ.เจริญกรุง เขตบางรัก กรุงเทพมหานคร 10500',
             'vehicle_type' => 'motorcycle',
             'vehicle_plate' => '2กค 5678',
+            // หน้าเว็บบังคับติ๊กยินยอม PDPA ทุกครั้งที่ส่งใบสมัคร (User\RiderController::submitRegistration)
+            'pdpa_consent' => '1',
         ];
     }
 

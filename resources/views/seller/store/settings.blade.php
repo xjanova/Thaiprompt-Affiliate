@@ -1,754 +1,483 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
 @section('title', 'ตั้งค่าร้านค้า - ' . ($store->store_name ?? 'ร้านค้าของคุณ'))
 
+@push('styles')
+    @include('seller.partials.v4-styles')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <style>
+        .ss-banner { position:relative; height:220px; overflow:hidden; border-radius:18px; box-shadow:var(--inset); background:var(--surf); cursor:grab; touch-action:none; user-select:none; }
+        .ss-banner.dragging { cursor:grabbing; }
+        .ss-banner img { position:absolute; top:0; left:0; width:100%; height:auto; pointer-events:none; -webkit-user-drag:none; }
+        .ss-map { height:300px; border-radius:18px; overflow:hidden; box-shadow:var(--inset); background:var(--surf); position:relative; z-index:0; }
+        .ss-anchor { scroll-margin-top:90px; }
+    </style>
+@endpush
+
+@php
+    use App\Support\Seller\SellerUi;
+
+    $primaryColor = SellerUi::colorOr(old('primary_color', $store->primary_color), SellerUi::STORE_PRIMARY_DEFAULT);
+    $secondaryColor = SellerUi::colorOr(old('secondary_color', $store->secondary_color), SellerUi::STORE_SECONDARY_DEFAULT);
+    $riderEnabled = (bool) old('rider_delivery_enabled', $store->rider_delivery_enabled);
+    $vatRegistered = (bool) old('vat_registered', $store->vat_registered);
+    $mapConfig = [
+        'lat' => is_numeric(old('pickup_latitude', $store->pickup_latitude)) ? (float) old('pickup_latitude', $store->pickup_latitude) : null,
+        'lng' => is_numeric(old('pickup_longitude', $store->pickup_longitude)) ? (float) old('pickup_longitude', $store->pickup_longitude) : null,
+        'enabled' => $riderEnabled,
+    ];
+    $bannerY = (int) old('banner_position_y', $store->banner_position_y ?? 0);
+    $sections = [
+        ['basic', '🏪 ข้อมูลร้าน'], ['contact', '📞 ติดต่อ'], ['business', '🏢 ธุรกิจ'], ['tax', '🧾 ภาษี'],
+        ['sales', '💳 การขาย'], ['rider', '🛵 ไรเดอร์'], ['social', '📱 โซเชียล'],
+    ];
+@endphp
+
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    {{-- Header --}}
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/20 flex items-center justify-center text-3xl md:text-4xl shadow-lg border-4 border-white/30">
-                ⚙️
-            </div>
-            <div>
-                <h1 class="text-2xl md:text-4xl font-bold mb-1">ตั้งค่าร้านค้า</h1>
-                <p class="text-indigo-100 text-sm md:text-base">จัดการข้อมูลและการตั้งค่าร้านค้าของคุณ</p>
-            </div>
-        </div>
-    </div>
+<div class="sv4-page">
 
-    {{-- Success Message --}}
-    @if(session('success'))
-        <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
-            <div class="flex items-center">
-                <span class="text-2xl mr-3">✅</span>
-                <p class="text-green-700 font-semibold">{{ session('success') }}</p>
-            </div>
-        </div>
-    @endif
+    <x-seller-v4.header title="ตั้งค่าร้านค้า" subtitle="ข้อมูลร้าน การขาย การจัดส่ง และภาษี" icon="⚙️" :back="route('seller.settings')">
+        <a href="{{ route('seller.store.layout.index') }}" class="tp-btn tp-btn-sm">🎨 ปรับแต่งหน้าร้าน</a>
+        @if($store->store_url ?? null)
+            <a href="{{ $store->store_url }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm">🌐 ดูหน้าร้าน</a>
+        @endif
+    </x-seller-v4.header>
 
-    {{-- Layout Editor Banner --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl p-6">
-        <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
-        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-16 -mb-16"></div>
-        <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">
-                    🎨
-                </div>
-                <div class="text-white">
-                    <h3 class="text-xl font-bold">ปรับแต่ง Layout หน้าร้าน</h3>
-                    <p class="text-purple-100 text-sm">ออกแบบสี, Banner Slider, สินค้าแนะนำ และอื่นๆ ตามสไตล์ของคุณ!</p>
-                </div>
-            </div>
-            <a href="{{ route('seller.store.layout.index') }}"
-               class="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-600 font-bold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition transform">
-                <span>เปิด Layout Editor</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                </svg>
-            </a>
-        </div>
-    </div>
+    <x-seller-v4.errors />
 
-    {{-- Settings Form --}}
-    <form method="POST" action="{{ route('seller.store.update') }}" enctype="multipart/form-data" class="space-y-6">
+    <nav class="sv4-tabs" aria-label="ไปยังหัวข้อ">
+        @foreach($sections as [$anchor, $label])
+            <a href="#{{ $anchor }}" class="sv4-tab">{{ $label }}</a>
+        @endforeach
+    </nav>
+
+    <form method="POST" action="{{ route('seller.store.update') }}" enctype="multipart/form-data"
+          x-data="{ busy: false }" @submit="busy = true" style="display:flex; flex-direction:column; gap:18px;">
         @csrf
         @method('PUT')
 
-        {{-- Basic Information --}}
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <span>🏪</span> ข้อมูลพื้นฐาน
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Store Name --}}
-                <div class="md:col-span-2">
-                    <label for="store_name" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ชื่อร้านค้า <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="store_name" id="store_name"
-                           value="{{ old('store_name', $store->store_name) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_name') border-red-500 @enderror"
-                           required>
-                    @error('store_name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Store Description --}}
-                <div class="md:col-span-2">
-                    <label for="store_description" class="block text-sm font-semibold text-gray-700 mb-2">
-                        คำอธิบายร้านค้า
-                    </label>
-                    <textarea name="store_description" id="store_description" rows="4"
-                              class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_description') border-red-500 @enderror"
-                    >{{ old('store_description', $store->store_description) }}</textarea>
-                    @error('store_description')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Store Logo --}}
+        {{-- ── ข้อมูลร้าน ─────────────────────────────────────── --}}
+        <section id="basic" class="tp-card ss-anchor" style="padding:20px;">
+            <div class="sv4-h2">🏪 ข้อมูลร้าน</div>
+            <div style="display:flex; flex-direction:column; gap:14px; margin-top:14px;">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        โลโก้ร้านค้า
-                    </label>
-                    <div class="mb-3">
-                        <div id="logo-preview-container" class="relative inline-block">
-                            <img id="logo-preview"
-                                 src="{{ $store->logo_url ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'128\' height=\'128\'%3E%3Crect fill=\'%23e5e7eb\' width=\'128\' height=\'128\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E' }}"
-                                 alt="Store Logo Preview"
-                                 class="w-32 h-32 rounded-lg object-cover shadow-md border-2 border-gray-200">
-                            <button type="button" id="remove-logo"
-                                    class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition {{ $store->store_logo ? '' : 'hidden' }}"
-                                    onclick="removeLogo()">
-                                ✕
-                            </button>
-                        </div>
+                    <label for="store_name" class="sv4-label">ชื่อร้านค้า <span class="req">*</span></label>
+                    <input type="text" name="store_name" id="store_name" required maxlength="255" class="tp-input"
+                           value="{{ old('store_name', $store->store_name) }}">
+                    <div class="sv4-hint">เปลี่ยนชื่อร้านแล้วลิงก์หน้าร้านจะเปลี่ยนตาม</div>
+                    @error('store_name')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+                <div>
+                    <label for="store_description" class="sv4-label">คำอธิบายร้านค้า</label>
+                    <textarea name="store_description" id="store_description" rows="4" class="tp-input"
+                              placeholder="เล่าเรื่องร้าน จุดเด่น สินค้าหลัก">{{ old('store_description', $store->store_description) }}</textarea>
+                    @error('store_description')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+
+                <div style="display:flex; flex-wrap:wrap; gap:18px;">
+                    {{-- โลโก้ --}}
+                    <div x-data="{ preview: @js($store->logo_url) }" style="flex:0 0 auto;">
+                        <label for="store_logo" class="sv4-label">โลโก้ร้าน</label>
+                        <label for="store_logo" style="display:grid; place-items:center; width:128px; height:128px; border-radius:22px; overflow:hidden; box-shadow:var(--inset); cursor:pointer; background:var(--surf);">
+                            <img x-show="preview" :src="preview" alt="โลโก้ร้าน" style="width:100%; height:100%; object-fit:cover;">
+                            <span x-show="!preview" style="font-size:12px; color:var(--ink2); text-align:center;"><span style="font-size:28px; display:block;">🏪</span>เลือกโลโก้</span>
+                        </label>
+                        <input type="file" name="store_logo" id="store_logo" accept="image/jpeg,image/png,image/gif,image/webp"
+                               style="margin-top:8px; font-size:12px; max-width:150px; color:var(--ink2);"
+                               @change="const f = $event.target.files[0]; if (f) { if (f.size > 2 * 1024 * 1024) { alert('โลโก้ต้องไม่เกิน 2MB'); $event.target.value = ''; return; } const r = new FileReader(); r.onload = (e) => preview = e.target.result; r.readAsDataURL(f); }">
+                        <div class="sv4-hint">JPG/PNG/WebP ไม่เกิน 2MB (แปลงเป็น WebP ให้อัตโนมัติ)</div>
+                        @error('store_logo')<div class="sv4-err">{{ $message }}</div>@enderror
                     </div>
-                    <input type="file" name="store_logo" id="store_logo" accept="image/*"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_logo') border-red-500 @enderror">
-                    <p class="mt-1 text-xs text-gray-500">รองรับไฟล์: JPG, PNG, GIF (จะถูกแปลงเป็น WebP อัตโนมัติ, สูงสุด 2MB)</p>
-                    @error('store_logo')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
 
-                {{-- Store Banner --}}
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        แบนเนอร์ร้านค้า
-                    </label>
-                    <div class="mb-3 relative">
-                        <div id="banner-preview-container" class="relative overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-100" style="height: 300px; cursor: grab;">
-                            <div class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none z-10" id="banner-drag-hint">
-                                <div class="bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-md">
-                                    📸 คลิกและลากขึ้น-ลง เพื่อปรับตำแหน่งแบนเนอร์
-                                </div>
+                    {{-- แบนเนอร์ + ลากปรับตำแหน่ง --}}
+                    <div x-data="bannerEditor(@js($store->banner_url), {{ $bannerY }})" style="flex:1 1 320px; min-width:0;">
+                        <label for="store_banner" class="sv4-label">แบนเนอร์ร้าน</label>
+                        <div class="ss-banner" x-ref="box" :class="dragging && 'dragging'"
+                             @pointerdown="start($event)" @pointermove.window="move($event)" @pointerup.window="end()" @pointercancel.window="end()">
+                            <img x-show="src" :src="src" x-ref="img" alt="แบนเนอร์ร้าน" :style="{ transform: 'translateY(' + y + 'px)' }" @load="clamp()">
+                            <div x-show="!src" class="grid" style="position:absolute; inset:0; place-items:center; color:var(--ink2); font-size:12.5px;">📸 ยังไม่มีแบนเนอร์</div>
+                            <div x-show="src" style="position:absolute; left:10px; bottom:10px;">
+                                <span class="sv4-pill" style="background:rgba(0,0,0,.45); color:var(--tp-on-accent, #fff);">↕ ลากขึ้น-ลงเพื่อจัดตำแหน่ง</span>
                             </div>
-                            <img id="banner-preview"
-                                 src="{{ $store->banner_url ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'600\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E' }}"
-                                 alt="Store Banner Preview"
-                                 class="select-none"
-                                 style="width: 100%; height: auto; position: absolute; top: 0; left: 0; user-select: none; -webkit-user-drag: none; pointer-events: none;"
-                                 draggable="false">
-                            <button type="button" id="remove-banner"
-                                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition z-20 {{ $store->store_banner ? '' : 'hidden' }}"
-                                    onclick="removeBanner(event)">
-                                ✕
-                            </button>
                         </div>
-                        <div class="mt-2 flex gap-3 items-center justify-center text-xs">
-                            <span id="position-indicator" class="text-gray-600">ตำแหน่ง Y: <span id="position-value" class="font-semibold">0px</span></span>
-                            <button type="button" onclick="resetBannerPosition()" class="text-indigo-600 hover:text-indigo-800 font-semibold underline">
-                                รีเซ็ตตำแหน่ง
-                            </button>
+                        <input type="hidden" name="banner_position_y" :value="Math.round(y)">
+                        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-top:8px;">
+                            <input type="file" name="store_banner" id="store_banner" accept="image/jpeg,image/png,image/gif,image/webp"
+                                   @change="pick($event)" style="font-size:12px; color:var(--ink2); max-width:220px;">
+                            <span class="sv4-hint tp-num" style="margin:0;">ตำแหน่ง Y: <span x-text="Math.round(y) + 'px'"></span></span>
+                            <button type="button" class="tp-btn tp-btn-sm" @click="y = 0">รีเซ็ตตำแหน่ง</button>
                         </div>
-                        <p class="mt-1 text-xs text-gray-500">💡 เคล็ดลับ: ลากในกรอบสีเทาเพื่อปรับตำแหน่งแบนเนอร์แนวตั้ง</p>
+                        <div class="sv4-hint">แนะนำ 1920×600 พิกเซล ไม่เกิน 4MB</div>
+                        @error('store_banner')<div class="sv4-err">{{ $message }}</div>@enderror
                     </div>
-                    <input type="file" name="store_banner" id="store_banner" accept="image/*"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_banner') border-red-500 @enderror">
-                    <input type="hidden" name="banner_position_y" id="banner_position_y" value="{{ old('banner_position_y', $store->banner_position_y ?? 0) }}">
-                    <p class="mt-1 text-xs text-gray-500">รองรับไฟล์: JPG, PNG, GIF (จะถูกแปลงเป็น WebP อัตโนมัติ, สูงสุด 4MB)</p>
-                    @error('store_banner')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Contact Information --}}
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <span>📞</span> ข้อมูลติดต่อ
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Store Email --}}
+        {{-- ── ติดต่อ ─────────────────────────────────────────── --}}
+        <section id="contact" class="tp-card ss-anchor" style="padding:20px;">
+            <div class="sv4-h2">📞 ข้อมูลติดต่อ</div>
+            <div class="sv4-grid" style="margin-top:14px;">
                 <div>
-                    <label for="store_email" class="block text-sm font-semibold text-gray-700 mb-2">
-                        อีเมล
-                    </label>
-                    <input type="email" name="store_email" id="store_email"
-                           value="{{ old('store_email', $store->store_email) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_email') border-red-500 @enderror">
-                    @error('store_email')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <label for="store_email" class="sv4-label">อีเมลร้าน</label>
+                    <input type="email" name="store_email" id="store_email" maxlength="255" class="tp-input" value="{{ old('store_email', $store->store_email) }}">
+                    @error('store_email')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
-
-                {{-- Store Phone --}}
                 <div>
-                    <label for="store_phone" class="block text-sm font-semibold text-gray-700 mb-2">
-                        เบอร์โทรศัพท์
-                    </label>
-                    <input type="text" name="store_phone" id="store_phone"
-                           value="{{ old('store_phone', $store->store_phone) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_phone') border-red-500 @enderror">
-                    @error('store_phone')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Store Address --}}
-                <div class="md:col-span-2">
-                    <label for="store_address" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ที่อยู่
-                    </label>
-                    <textarea name="store_address" id="store_address" rows="3"
-                              class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_address') border-red-500 @enderror"
-                    >{{ old('store_address', $store->store_address) }}</textarea>
-                    @error('store_address')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- ระบบเลือกที่อยู่อัจฉริยะ พร้อมเลือกประเทศ (ถ้าไม่ใช่ไทย → กรอกมือ) --}}
-                <div class="md:col-span-2">
-                    <x-thai-address-picker
-                        province-field="store_state"
-                        district-field="store_city"
-                        sub-district-field=""
-                        postal-code-field="store_postal_code"
-                        country-field="store_country"
-                        :province-value="old('store_state', $store->store_state ?? '')"
-                        :district-value="old('store_city', $store->store_city ?? '')"
-                        :sub-district-value="''"
-                        :postal-code-value="old('store_postal_code', $store->store_postal_code ?? '')"
-                        :country-value="old('store_country', $store->store_country ?? 'TH')"
-                        :show-sub-district="false"
-                    />
+                    <label for="store_phone" class="sv4-label">เบอร์โทรร้าน</label>
+                    <input type="tel" name="store_phone" id="store_phone" maxlength="20" class="tp-input tp-num" value="{{ old('store_phone', $store->store_phone) }}">
+                    @error('store_phone')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
             </div>
-        </div>
+            <div style="margin-top:14px;">
+                <label for="store_address" class="sv4-label">ที่อยู่ร้าน</label>
+                <textarea name="store_address" id="store_address" rows="3" class="tp-input">{{ old('store_address', $store->store_address) }}</textarea>
+                @error('store_address')<div class="sv4-err">{{ $message }}</div>@enderror
+            </div>
+            <div class="sv4-well" style="margin-top:14px;">
+                {{-- ระบบเลือกที่อยู่ไทย (จังหวัด/อำเภอ/รหัสไปรษณีย์) + ประเทศ --}}
+                <x-thai-address-picker
+                    province-field="store_state"
+                    district-field="store_city"
+                    sub-district-field=""
+                    postal-code-field="store_postal_code"
+                    country-field="store_country"
+                    :province-value="old('store_state', $store->store_state ?? '')"
+                    :district-value="old('store_city', $store->store_city ?? '')"
+                    :sub-district-value="''"
+                    :postal-code-value="old('store_postal_code', $store->store_postal_code ?? '')"
+                    :country-value="old('store_country', $store->store_country ?? 'TH')"
+                    :show-sub-district="false"
+                />
+            </div>
+        </section>
 
-        {{-- Business Information --}}
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <span>🏢</span> ข้อมูลธุรกิจ
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Business Type --}}
+        {{-- ── ธุรกิจ ─────────────────────────────────────────── --}}
+        <section id="business" class="tp-card ss-anchor" style="padding:20px;">
+            <div class="sv4-h2">🏢 ข้อมูลธุรกิจ</div>
+            <div class="sv4-grid" style="margin-top:14px;">
                 <div>
-                    <label for="business_type" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ประเภทธุรกิจ
-                    </label>
-                    {{-- 🐛 (2026-09-25) SELLER-19: คอลัมน์รับแค่ individual/company — เดิมเป็นช่องพิมพ์อิสระแล้วบันทึกไม่ได้ --}}
-                    @php($businessType = old('business_type', $store->business_type ?: 'individual'))
-                    <select name="business_type" id="business_type" required
-                            class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('business_type') border-red-500 @enderror">
+                    <label for="business_type" class="sv4-label">ประเภทธุรกิจ <span class="req">*</span></label>
+                    <select name="business_type" id="business_type" required class="tp-input">
+                        @php
+                            $businessType = old('business_type', $store->business_type ?: 'individual');
+                        @endphp
                         <option value="individual" @selected($businessType === 'individual')>บุคคลธรรมดา</option>
                         <option value="company" @selected($businessType === 'company')>นิติบุคคล (บริษัท/ห้างหุ้นส่วน)</option>
                     </select>
-                    @error('business_type')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    @error('business_type')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
-
-                {{-- Company Name --}}
                 <div>
-                    <label for="company_name" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ชื่อบริษัท
-                    </label>
-                    <input type="text" name="company_name" id="company_name"
-                           value="{{ old('company_name', $store->company_name) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('company_name') border-red-500 @enderror">
-                    @error('company_name')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Tax ID --}}
-                <div>
-                    <label for="tax_id" class="block text-sm font-semibold text-gray-700 mb-2">
-                        เลขประจำตัวผู้เสียภาษี
-                    </label>
-                    <input type="text" name="tax_id" id="tax_id"
-                           value="{{ old('tax_id', $store->tax_id) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('tax_id') border-red-500 @enderror">
-                    @error('tax_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <label for="company_name" class="sv4-label">ชื่อบริษัท (ถ้ามี)</label>
+                    <input type="text" name="company_name" id="company_name" maxlength="255" class="tp-input" value="{{ old('company_name', $store->company_name) }}">
+                    @error('company_name')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Social Media --}}
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <span>📱</span> โซเชียลมีเดีย
-            </h2>
+        {{-- ── ภาษี (VAT) ────────────────────────────────────── --}}
+        <section id="tax" class="tp-card ss-anchor" style="padding:20px;" x-data="{ vat: {{ $vatRegistered ? 'true' : 'false' }} }">
+            <div class="sv4-h2">🧾 ภาษีมูลค่าเพิ่ม (VAT)</div>
+            <div class="sv4-sub">มีผลกับเงินที่ร้านได้รับทุกออเดอร์หลังบันทึก</div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Facebook --}}
+            <label class="sv4-well" style="display:flex; align-items:center; gap:12px; margin-top:14px; cursor:pointer;">
+                <input type="hidden" name="vat_registered" value="0">
+                <span class="sv4-switch"><input type="checkbox" name="vat_registered" value="1" x-model="vat" @checked($vatRegistered)><span></span></span>
+                <span style="min-width:0;">
+                    <span style="font-weight:800; font-size:13px;">ร้านจดทะเบียนภาษีมูลค่าเพิ่ม (VAT)</span>
+                    <span class="sv4-hint" style="display:block; margin-top:2px;">เปิด = ระบบถอด VAT 7/107 ออกจากยอดขาย (ราคาสินค้ารวม VAT แล้ว) ก่อนโอนเงินให้ร้าน · ปิด = ไม่หัก VAT</span>
+                </span>
+            </label>
+
+            <div class="sv4-grid" style="margin-top:14px;">
                 <div>
-                    <label for="facebook_url" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Facebook URL
-                    </label>
-                    <input type="url" name="facebook_url" id="facebook_url"
-                           value="{{ old('facebook_url', $store->facebook_url) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('facebook_url') border-red-500 @enderror"
-                           placeholder="https://facebook.com/yourstore">
-                    @error('facebook_url')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- LINE OA ID --}}
-                <div>
-                    <label for="line_oa_id" class="block text-sm font-semibold text-gray-700 mb-2">
-                        LINE OA ID
-                    </label>
-                    <input type="text" name="line_oa_id" id="line_oa_id"
-                           value="{{ old('line_oa_id', $store->line_oa_id) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('line_oa_id') border-red-500 @enderror"
-                           placeholder="@yourstore">
-                    @error('line_oa_id')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Instagram --}}
-                <div>
-                    <label for="instagram_url" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Instagram URL
-                    </label>
-                    <input type="url" name="instagram_url" id="instagram_url"
-                           value="{{ old('instagram_url', $store->instagram_url) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('instagram_url') border-red-500 @enderror"
-                           placeholder="https://instagram.com/yourstore">
-                    @error('instagram_url')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Twitter --}}
-                <div>
-                    <label for="twitter_url" class="block text-sm font-semibold text-gray-700 mb-2">
-                        Twitter/X URL
-                    </label>
-                    <input type="url" name="twitter_url" id="twitter_url"
-                           value="{{ old('twitter_url', $store->twitter_url) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('twitter_url') border-red-500 @enderror"
-                           placeholder="https://twitter.com/yourstore">
-                    @error('twitter_url')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- TikTok --}}
-                <div>
-                    <label for="tiktok_url" class="block text-sm font-semibold text-gray-700 mb-2">
-                        TikTok URL
-                    </label>
-                    <input type="url" name="tiktok_url" id="tiktok_url"
-                           value="{{ old('tiktok_url', $store->tiktok_url) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('tiktok_url') border-red-500 @enderror"
-                           placeholder="https://tiktok.com/@yourstore">
-                    @error('tiktok_url')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <label for="tax_id" class="sv4-label">เลขประจำตัวผู้เสียภาษี <span class="req" x-show="vat">*</span></label>
+                    <input type="text" name="tax_id" id="tax_id" maxlength="50" inputmode="numeric" class="tp-input tp-num"
+                           :required="vat" value="{{ old('tax_id', $store->tax_id) }}" placeholder="13 หลัก">
+                    @error('tax_id')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
             </div>
-        </div>
+            <div class="sv4-note" style="margin-top:14px; --c:{{ SellerUi::INFO }};" x-show="!vat">
+                💡 ร้านที่รายได้ทั้งปีเกิน 1,800,000 บาท ต้องจดทะเบียน VAT ตามกฎหมาย — เมื่อจดแล้วกลับมาเปิดสวิตช์นี้
+            </div>
+            <div class="sv4-note" style="margin-top:14px; --c:{{ SellerUi::WARN }};" x-show="vat" x-cloak>
+                ⚠️ เปิดแล้วรายได้สุทธิต่อออเดอร์จะลดลงราว 6.54% ของยอดขาย (ส่วน VAT) — ดูตัวอย่างตัวเลขได้ที่ <a href="{{ route('seller.pricing.planner') }}" class="sv4-link">วางแผนราคา</a>
+            </div>
+        </section>
 
-        {{-- Store Settings --}}
-        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-            <h2 class="text-2xl font-bold mb-6 text-gray-800 flex items-center gap-2">
-                <span>💳</span> การตั้งค่าการขาย
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Minimum Order Amount --}}
+        {{-- ── การขาย ─────────────────────────────────────────── --}}
+        <section id="sales" class="tp-card ss-anchor" style="padding:20px;">
+            <div class="sv4-h2">💳 การตั้งค่าการขาย</div>
+            <div class="sv4-grid" style="margin-top:14px;">
                 <div>
-                    <label for="minimum_order_amount" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ยอดสั่งซื้อขั้นต่ำ (บาท)
-                    </label>
-                    <input type="number" name="minimum_order_amount" id="minimum_order_amount"
-                           value="{{ old('minimum_order_amount', $store->minimum_order_amount) }}"
-                           min="0" step="0.01"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('minimum_order_amount') border-red-500 @enderror">
-                    @error('minimum_order_amount')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <label for="minimum_order_amount" class="sv4-label">ยอดสั่งซื้อขั้นต่ำ (บาท)</label>
+                    <input type="number" name="minimum_order_amount" id="minimum_order_amount" min="0" step="0.01" class="tp-input tp-num"
+                           value="{{ old('minimum_order_amount', $store->minimum_order_amount) }}">
+                    @error('minimum_order_amount')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
-
-                {{-- Shipping Fee --}}
                 <div>
-                    <label for="shipping_fee" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ค่าจัดส่ง (บาท)
-                    </label>
-                    <input type="number" name="shipping_fee" id="shipping_fee"
-                           value="{{ old('shipping_fee', $store->shipping_fee) }}"
-                           min="0" step="0.01"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('shipping_fee') border-red-500 @enderror">
-                    @error('shipping_fee')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <label for="shipping_fee" class="sv4-label">ค่าจัดส่งพัสดุเริ่มต้น (บาท)</label>
+                    <input type="number" name="shipping_fee" id="shipping_fee" min="0" step="0.01" class="tp-input tp-num"
+                           value="{{ old('shipping_fee', $store->shipping_fee) }}">
+                    @error('shipping_fee')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
-
-                {{-- Free Shipping Threshold --}}
                 <div>
-                    <label for="free_shipping_threshold" class="block text-sm font-semibold text-gray-700 mb-2">
-                        ยอดสั่งซื้อสำหรับจัดส่งฟรี (บาท)
-                    </label>
-                    <input type="number" name="free_shipping_threshold" id="free_shipping_threshold"
-                           value="{{ old('free_shipping_threshold', $store->free_shipping_threshold) }}"
-                           min="0" step="0.01"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('free_shipping_threshold') border-red-500 @enderror">
-                    @error('free_shipping_threshold')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Theme Colors --}}
-                <div>
-                    <label for="primary_color" class="block text-sm font-semibold text-gray-700 mb-2">
-                        สีหลัก
-                    </label>
-                    <div class="flex gap-2">
-                        <input type="color" name="primary_color" id="primary_color"
-                               value="{{ old('primary_color', $store->primary_color ?? '#6366f1') }}"
-                               class="h-12 w-16 rounded-lg border-2 border-gray-200 cursor-pointer">
-                        <input type="text" value="{{ old('primary_color', $store->primary_color ?? '#6366f1') }}"
-                               class="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 bg-gray-50" readonly>
-                    </div>
-                    @error('primary_color')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="secondary_color" class="block text-sm font-semibold text-gray-700 mb-2">
-                        สีรอง
-                    </label>
-                    <div class="flex gap-2">
-                        <input type="color" name="secondary_color" id="secondary_color"
-                               value="{{ old('secondary_color', $store->secondary_color ?? '#8b5cf6') }}"
-                               class="h-12 w-16 rounded-lg border-2 border-gray-200 cursor-pointer">
-                        <input type="text" value="{{ old('secondary_color', $store->secondary_color ?? '#8b5cf6') }}"
-                               class="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 bg-gray-50" readonly>
-                    </div>
-                    @error('secondary_color')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Options --}}
-                <div class="md:col-span-2 space-y-4">
-                    <div class="flex items-center">
-                        <input type="checkbox" name="enable_cod" id="enable_cod" value="1"
-                               {{ old('enable_cod', $store->enable_cod) ? 'checked' : '' }}
-                               class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        <label for="enable_cod" class="ml-3 text-sm font-semibold text-gray-700">
-                            เปิดรับชำระเงินปลายทาง (COD)
-                        </label>
-                    </div>
-
-                    <div class="flex items-center">
-                        <input type="checkbox" name="enable_reviews" id="enable_reviews" value="1"
-                               {{ old('enable_reviews', $store->enable_reviews) ? 'checked' : '' }}
-                               class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        <label for="enable_reviews" class="ml-3 text-sm font-semibold text-gray-700">
-                            เปิดให้ลูกค้ารีวิวสินค้า
-                        </label>
-                    </div>
+                    <label for="free_shipping_threshold" class="sv4-label">ส่งฟรีเมื่อซื้อครบ (บาท)</label>
+                    <input type="number" name="free_shipping_threshold" id="free_shipping_threshold" min="0" step="0.01" class="tp-input tp-num"
+                           value="{{ old('free_shipping_threshold', $store->free_shipping_threshold) }}">
+                    @error('free_shipping_threshold')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
             </div>
-        </div>
 
-        {{-- 🛵 (2026-09-25) ส่งด้วยไรเดอร์ของแพลตฟอร์ม — ลูกค้าเลือกได้เมื่อเปิด + ปักหมุดจุดรับของแล้ว --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6"
-             x-data="{ enabled: {{ old('rider_delivery_enabled', $store->rider_delivery_enabled) ? 'true' : 'false' }}, locating: false, error: '' }">
-            <h2 class="text-2xl font-bold mb-2 text-gray-800 dark:text-white flex items-center gap-2">
-                🛵 ส่งด้วยไรเดอร์
-            </h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                ลูกค้าเลือก "ส่งด้วยไรเดอร์" ได้ และเก็บเงินปลายทางผ่านไรเดอร์ได้ เมื่อสินค้าพร้อมให้กด "เรียกไรเดอร์" ในหน้าคำสั่งซื้อ
-            </p>
+            <div class="sv4-grid" style="margin-top:14px;">
+                <div x-data="{ c: @js($primaryColor) }">
+                    <label for="primary_color" class="sv4-label">สีหลักของหน้าร้าน</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="color" name="primary_color" id="primary_color" x-model="c" value="{{ $primaryColor }}"
+                               style="width:52px; height:42px; border:0; border-radius:12px; background:transparent; cursor:pointer; padding:0;">
+                        <span class="tp-input tp-num" style="flex:1;" x-text="c">{{ $primaryColor }}</span>
+                    </div>
+                    @error('primary_color')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+                <div x-data="{ c: @js($secondaryColor) }">
+                    <label for="secondary_color" class="sv4-label">สีรองของหน้าร้าน</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="color" name="secondary_color" id="secondary_color" x-model="c" value="{{ $secondaryColor }}"
+                               style="width:52px; height:42px; border:0; border-radius:12px; background:transparent; cursor:pointer; padding:0;">
+                        <span class="tp-input tp-num" style="flex:1;" x-text="c">{{ $secondaryColor }}</span>
+                    </div>
+                    @error('secondary_color')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+            </div>
 
-            <div class="flex items-center mb-6">
-                <input type="checkbox" name="rider_delivery_enabled" id="rider_delivery_enabled" value="1" x-model="enabled"
-                       class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                <label for="rider_delivery_enabled" class="ml-3 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                    เปิดให้ลูกค้าเลือกส่งด้วยไรเดอร์
+            <div class="sv4-grid" style="margin-top:14px;">
+                {{-- hidden 0 ก่อน checkbox: ไม่ติ๊ก = ส่ง 0 มา → old() หลัง validation error จำค่า "ปิด" ได้ ไม่เด้งกลับเป็นค่าใน DB --}}
+                <label class="sv4-well" style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+                    <input type="hidden" name="enable_cod" value="0">
+                    <span class="sv4-switch"><input type="checkbox" name="enable_cod" value="1" @checked((bool) old('enable_cod', $store->enable_cod))><span></span></span>
+                    <span><span style="font-weight:800; font-size:13px;">รับชำระเงินปลายทาง (COD)</span>
+                        <span class="sv4-hint" style="display:block; margin-top:1px;">ลูกค้าจ่ายเงินตอนรับของ</span></span>
+                </label>
+                <label class="sv4-well" style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+                    <input type="hidden" name="enable_reviews" value="0">
+                    <span class="sv4-switch"><input type="checkbox" name="enable_reviews" value="1" @checked((bool) old('enable_reviews', $store->enable_reviews))><span></span></span>
+                    <span><span style="font-weight:800; font-size:13px;">เปิดให้ลูกค้ารีวิวสินค้า</span>
+                        <span class="sv4-hint" style="display:block; margin-top:1px;">รีวิวช่วยเพิ่มความน่าเชื่อถือ</span></span>
+                </label>
+            </div>
+        </section>
+
+        {{-- ── ส่งด้วยไรเดอร์ + ปักหมุดจุดรับของ ─────────────────── --}}
+        <section id="rider" class="tp-card ss-anchor" style="padding:20px;" x-data="pickupMap(@js($mapConfig))">
+            <div class="sv4-row" style="flex-wrap:wrap;">
+                <div>
+                    <div class="sv4-h2">🛵 ส่งด้วยไรเดอร์ของแพลตฟอร์ม</div>
+                    <div class="sv4-sub">ลูกค้าเลือก "ส่งด้วยไรเดอร์" ได้ เมื่อสินค้าพร้อมให้กด "เรียกไรเดอร์" ในหน้าคำสั่งซื้อ</div>
+                </div>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <span style="font-size:12.5px; font-weight:700;" x-text="enabled ? 'เปิดอยู่' : 'ปิดอยู่'"></span>
+                    <input type="hidden" name="rider_delivery_enabled" value="0">
+                    <span class="sv4-switch"><input type="checkbox" name="rider_delivery_enabled" value="1" x-model="enabled" @checked($riderEnabled)><span></span></span>
                 </label>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="md:col-span-2">
-                    <label for="pickup_address" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-                        ที่อยู่จุดรับของ (ว่าง = ใช้ที่อยู่ร้าน)
-                    </label>
-                    <input type="text" name="pickup_address" id="pickup_address" maxlength="500"
-                           value="{{ old('pickup_address', $store->pickup_address) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('pickup_address') border-red-500 @enderror">
-                    @error('pickup_address')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="pickup_latitude" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">ละติจูด</label>
-                    <input type="number" step="0.0000001" name="pickup_latitude" id="pickup_latitude" x-ref="lat"
-                           value="{{ old('pickup_latitude', $store->pickup_latitude) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('pickup_latitude') border-red-500 @enderror">
-                    @error('pickup_latitude')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div>
-                    <label for="pickup_longitude" class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">ลองจิจูด</label>
-                    <input type="number" step="0.0000001" name="pickup_longitude" id="pickup_longitude" x-ref="lng"
-                           value="{{ old('pickup_longitude', $store->pickup_longitude) }}"
-                           class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('pickup_longitude') border-red-500 @enderror">
-                    @error('pickup_longitude')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div class="md:col-span-2">
-                    <button type="button"
-                            class="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition disabled:opacity-50"
-                            :disabled="locating"
-                            @click="if (!navigator.geolocation) { error = 'เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง'; return; }
-                                    locating = true; error = '';
-                                    navigator.geolocation.getCurrentPosition(
-                                        (p) => { $refs.lat.value = p.coords.latitude.toFixed(7); $refs.lng.value = p.coords.longitude.toFixed(7); locating = false; },
-                                        () => { error = 'ระบุตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่งหรือกรอกพิกัดเอง'; locating = false; },
-                                        { enableHighAccuracy: true, timeout: 15000 }
-                                    );">
-                        <span x-show="!locating">📍 ใช้ตำแหน่งปัจจุบันเป็นจุดรับของ</span>
-                        <span x-show="locating">กำลังระบุตำแหน่ง...</span>
+            <div style="margin-top:14px;">
+                <label for="pickup_address" class="sv4-label">ที่อยู่จุดรับของ <span style="font-weight:500; color:var(--ink2);">(ว่าง = ใช้ที่อยู่ร้าน)</span></label>
+                <input type="text" name="pickup_address" id="pickup_address" maxlength="500" class="tp-input"
+                       value="{{ old('pickup_address', $store->pickup_address) }}" placeholder="เช่น หน้าร้าน ซอยสุขุมวิท 50 ตึกสีเหลือง">
+                @error('pickup_address')<div class="sv4-err">{{ $message }}</div>@enderror
+            </div>
+
+            <div style="margin-top:14px;">
+                <div class="sv4-row" style="flex-wrap:wrap; margin-bottom:8px;">
+                    <span class="sv4-label" style="margin:0;">📍 ปักหมุดจุดรับของ <span class="req" x-show="enabled">*</span></span>
+                    <button type="button" class="tp-btn tp-btn-sm" @click="locate()" :disabled="locating">
+                        <span x-show="!locating">🎯 ใช้ตำแหน่งปัจจุบัน</span>
+                        <span x-show="locating" x-cloak>กำลังระบุตำแหน่ง…</span>
                     </button>
-                    <p class="mt-2 text-sm text-red-600" x-show="error" x-text="error"></p>
-                    <p class="mt-2 text-sm text-amber-600" x-show="enabled && (!$refs.lat.value || !$refs.lng.value)">
-                        ต้องปักหมุดจุดรับของก่อน ลูกค้าจึงจะเลือกส่งด้วยไรเดอร์ได้
-                    </p>
+                </div>
+                <div class="ss-map" x-ref="map" role="application" aria-label="แผนที่ปักหมุดจุดรับของ">
+                    <div x-show="!ready" class="grid" style="position:absolute; inset:0; place-items:center; color:var(--ink2); font-size:12.5px;" x-text="mapError || 'กำลังโหลดแผนที่…'"></div>
+                </div>
+                <div class="sv4-hint">แตะบนแผนที่หรือลากหมุดไปยังจุดที่ไรเดอร์มารับของ</div>
+                <div class="sv4-grid" style="margin-top:10px; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));">
+                    <div>
+                        <label for="pickup_latitude" class="sv4-label">ละติจูด</label>
+                        <input type="number" step="0.0000001" min="-90" max="90" name="pickup_latitude" id="pickup_latitude" class="tp-input tp-num"
+                               x-model="lat" @change="syncFromInputs()" :required="enabled">
+                        @error('pickup_latitude')<div class="sv4-err">{{ $message }}</div>@enderror
+                    </div>
+                    <div>
+                        <label for="pickup_longitude" class="sv4-label">ลองจิจูด</label>
+                        <input type="number" step="0.0000001" min="-180" max="180" name="pickup_longitude" id="pickup_longitude" class="tp-input tp-num"
+                               x-model="lng" @change="syncFromInputs()" :required="enabled">
+                        @error('pickup_longitude')<div class="sv4-err">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="sv4-err" x-show="locError" x-text="locError"></div>
+                <div class="sv4-note" style="margin-top:10px; --c:{{ SellerUi::WARN }};" x-show="enabled && (!lat || !lng)" x-cloak>
+                    ต้องปักหมุดจุดรับของก่อน ลูกค้าจึงจะเลือกส่งด้วยไรเดอร์ได้
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Action Buttons --}}
-        <div class="flex flex-col sm:flex-row gap-4 justify-end">
-            <a href="{{ route('seller.dashboard') }}"
-               class="px-8 py-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl transition text-center">
-                ยกเลิก
-            </a>
-            <button type="submit"
-                    class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transform hover:scale-105 transition">
-                💾 บันทึกการตั้งค่า
-            </button>
+        {{-- ── โซเชียล ─────────────────────────────────────────── --}}
+        <section id="social" class="tp-card ss-anchor" style="padding:20px;">
+            <div class="sv4-h2">📱 โซเชียลมีเดีย</div>
+            <div class="sv4-grid" style="margin-top:14px;">
+                <div>
+                    <label for="facebook_url" class="sv4-label">Facebook</label>
+                    <input type="url" name="facebook_url" id="facebook_url" maxlength="255" class="tp-input" value="{{ old('facebook_url', $store->facebook_url) }}" placeholder="https://facebook.com/ร้านของคุณ">
+                    @error('facebook_url')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+                <div>
+                    <label for="line_oa_id" class="sv4-label">LINE OA ID</label>
+                    <input type="text" name="line_oa_id" id="line_oa_id" maxlength="255" class="tp-input" value="{{ old('line_oa_id', $store->line_oa_id) }}" placeholder="@ร้านของคุณ">
+                    @error('line_oa_id')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+                <div>
+                    <label for="instagram_url" class="sv4-label">Instagram</label>
+                    <input type="url" name="instagram_url" id="instagram_url" maxlength="255" class="tp-input" value="{{ old('instagram_url', $store->instagram_url) }}" placeholder="https://instagram.com/…">
+                    @error('instagram_url')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+                <div>
+                    <label for="twitter_url" class="sv4-label">X (Twitter)</label>
+                    <input type="url" name="twitter_url" id="twitter_url" maxlength="255" class="tp-input" value="{{ old('twitter_url', $store->twitter_url) }}" placeholder="https://x.com/…">
+                    @error('twitter_url')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+                <div>
+                    <label for="tiktok_url" class="sv4-label">TikTok</label>
+                    <input type="url" name="tiktok_url" id="tiktok_url" maxlength="255" class="tp-input" value="{{ old('tiktok_url', $store->tiktok_url) }}" placeholder="https://tiktok.com/@…">
+                    @error('tiktok_url')<div class="sv4-err">{{ $message }}</div>@enderror
+                </div>
+            </div>
+        </section>
+
+        <div style="position:sticky; bottom:12px; z-index:5;">
+            <div class="tp-card" style="padding:12px 14px; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px;">
+                <a href="{{ route('seller.dashboard') }}" class="tp-btn">ยกเลิก</a>
+                <button type="submit" class="tp-btn tp-btn-primary" style="padding:0 24px;" :disabled="busy">
+                    <span x-show="!busy">💾 บันทึกการตั้งค่า</span>
+                    <span x-show="busy" x-cloak>กำลังบันทึก…</span>
+                </button>
+            </div>
         </div>
     </form>
 </div>
+@endsection
 
 @push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 <script>
-    // Sync color inputs with text display
-    document.getElementById('primary_color').addEventListener('input', function(e) {
-        this.nextElementSibling.value = e.target.value;
-    });
+/**
+ * แบนเนอร์ร้าน: พรีวิวรูปที่เลือก + ลากขึ้น-ลงเพื่อเลือกตำแหน่ง (เก็บใน banner_position_y)
+ */
+function bannerEditor(initialSrc, initialY) {
+    return {
+        src: initialSrc || null,
+        y: Number(initialY) || 0,
+        dragging: false,
+        startY: 0,
+        startPos: 0,
+        pick(e) {
+            const f = e.target.files && e.target.files[0];
+            if (!f) return;
+            if (f.size > 4 * 1024 * 1024) { alert('แบนเนอร์ต้องไม่เกิน 4MB'); e.target.value = ''; return; }
+            const r = new FileReader();
+            r.onload = (ev) => { this.src = ev.target.result; this.y = 0; };
+            r.readAsDataURL(f);
+        },
+        start(e) {
+            if (!this.src) return;
+            this.dragging = true;
+            this.startY = e.clientY;
+            this.startPos = this.y;
+        },
+        move(e) {
+            if (!this.dragging) return;
+            this.y = this.startPos + (e.clientY - this.startY);
+            this.clamp();
+        },
+        end() { this.dragging = false; },
+        clamp() {
+            const box = this.$refs.box, img = this.$refs.img;
+            if (!box || !img) return;
+            const min = Math.min(0, box.offsetHeight - img.offsetHeight);
+            this.y = Math.max(min, Math.min(0, this.y));
+        }
+    };
+}
 
-    document.getElementById('secondary_color').addEventListener('input', function(e) {
-        this.nextElementSibling.value = e.target.value;
-    });
-
-    // === Logo Preview Functionality ===
-    const logoInput = document.getElementById('store_logo');
-    const logoPreview = document.getElementById('logo-preview');
-    const removeLogoBtn = document.getElementById('remove-logo');
-    let logoFile = null;
-
-    logoInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            logoFile = file;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                logoPreview.src = event.target.result;
-                removeLogoBtn.classList.remove('hidden');
+/**
+ * แผนที่ปักหมุดจุดรับของ (Leaflet + OpenStreetMap) — หมุดลากได้ / แตะแผนที่เพื่อย้าย / ใช้ GPS ของเครื่อง
+ */
+function pickupMap(cfg) {
+    const BKK = [13.7563, 100.5018];
+    return {
+        enabled: !!cfg.enabled,
+        lat: cfg.lat !== null ? Number(cfg.lat).toFixed(7) : '',
+        lng: cfg.lng !== null ? Number(cfg.lng).toFixed(7) : '',
+        ready: false,
+        locating: false,
+        locError: '',
+        mapError: '',
+        _map: null,
+        _marker: null,
+        init() {
+            let tries = 0;
+            const boot = () => {
+                if (window.L) return this.setup();
+                if (++tries > 60) { this.mapError = 'โหลดแผนที่ไม่ได้ กรอกพิกัดเองด้านล่างได้'; return; }
+                setTimeout(boot, 150);
             };
-            reader.readAsDataURL(file);
+            boot();
+        },
+        setup() {
+            const has = this.lat !== '' && this.lng !== '';
+            const center = has ? [Number(this.lat), Number(this.lng)] : BKK;
+            this._map = window.L.map(this.$refs.map, { scrollWheelZoom: false }).setView(center, has ? 16 : 11);
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(this._map);
+            if (has) this.placeMarker(center);
+            this._map.on('click', (e) => this.setPoint(e.latlng.lat, e.latlng.lng));
+            this.ready = true;
+            setTimeout(() => this._map && this._map.invalidateSize(), 200);
+        },
+        placeMarker(latlng) {
+            if (!this._map) return;
+            if (!this._marker) {
+                this._marker = window.L.marker(latlng, { draggable: true }).addTo(this._map);
+                this._marker.on('dragend', () => {
+                    const p = this._marker.getLatLng();
+                    this.setPoint(p.lat, p.lng, false);
+                });
+            } else {
+                this._marker.setLatLng(latlng);
+            }
+        },
+        setPoint(lat, lng, move = true) {
+            this.lat = Number(lat).toFixed(7);
+            this.lng = Number(lng).toFixed(7);
+            this.placeMarker([Number(this.lat), Number(this.lng)]);
+            if (move && this._map) this._map.setView([Number(this.lat), Number(this.lng)], Math.max(this._map.getZoom(), 16));
+        },
+        syncFromInputs() {
+            const la = parseFloat(this.lat), ln = parseFloat(this.lng);
+            if (isFinite(la) && isFinite(ln) && Math.abs(la) <= 90 && Math.abs(ln) <= 180) this.setPoint(la, ln);
+        },
+        locate() {
+            if (!navigator.geolocation) { this.locError = 'เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง'; return; }
+            this.locating = true;
+            this.locError = '';
+            navigator.geolocation.getCurrentPosition(
+                (p) => { this.setPoint(p.coords.latitude, p.coords.longitude); this.locating = false; },
+                () => { this.locError = 'ระบุตำแหน่งไม่ได้ กรุณาอนุญาตการเข้าถึงตำแหน่ง หรือแตะบนแผนที่แทน'; this.locating = false; },
+                { enableHighAccuracy: true, timeout: 15000 }
+            );
         }
-    });
-
-    function removeLogo() {
-        logoPreview.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'128\' height=\'128\'%3E%3Crect fill=\'%23e5e7eb\' width=\'128\' height=\'128\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E';
-        logoInput.value = '';
-        logoFile = null;
-        removeLogoBtn.classList.add('hidden');
-    }
-
-    // === Banner Preview & Drag Functionality ===
-    // ตัวแปรสำหรับการจัดการแบนเนอร์และการลาก
-    const bannerInput = document.getElementById('store_banner');
-    const bannerPreview = document.getElementById('banner-preview');
-    const removeBannerBtn = document.getElementById('remove-banner');
-    const bannerContainer = document.getElementById('banner-preview-container');
-    const bannerPositionInput = document.getElementById('banner_position_y');
-    const bannerDragHint = document.getElementById('banner-drag-hint');
-    const positionValue = document.getElementById('position-value');
-    let bannerFile = null;
-    let isDragging = false;
-    let startY = 0;
-    let startPosY = 0;
-    let currentY = {{ old('banner_position_y', $store->banner_position_y ?? 0) }};
-
-    // Check if there's an existing banner
-    @if($store->store_banner)
-        bannerDragHint.style.display = 'none';
-    @endif
-
-    // Update position display
-    function updatePositionDisplay(value) {
-        positionValue.textContent = Math.round(value) + 'px';
-    }
-
-    // Apply transform - ใช้ translateY สำหรับเลื่อนแบนเนอร์แนวตั้ง
-    function applyBannerTransform(yPos) {
-        bannerPreview.style.transform = `translateY(${yPos}px)`;
-    }
-
-    // Initialize banner position on image load
-    bannerPreview.addEventListener('load', function() {
-        console.log('Banner image loaded');
-        if (currentY !== 0) {
-            applyBannerTransform(currentY);
-            updatePositionDisplay(currentY);
-        }
-        // Hide hint if real image is loaded (not placeholder SVG)
-        if (!bannerPreview.src.includes('data:image/svg+xml')) {
-            bannerDragHint.style.display = 'none';
-        }
-    });
-
-    bannerInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            bannerFile = file;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                bannerPreview.src = event.target.result;
-                removeBannerBtn.classList.remove('hidden');
-                bannerDragHint.style.display = 'none';
-                // Reset position on new image
-                currentY = 0;
-                applyBannerTransform(0);
-                bannerPositionInput.value = 0;
-                updatePositionDisplay(0);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    function removeBanner(event) {
-        if (event) {
-            event.stopPropagation();
-            event.preventDefault();
-        }
-        bannerPreview.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'600\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E';
-        bannerInput.value = '';
-        bannerFile = null;
-        removeBannerBtn.classList.add('hidden');
-        bannerDragHint.style.display = 'flex';
-        resetBannerPosition();
-    }
-
-    function resetBannerPosition() {
-        currentY = 0;
-        applyBannerTransform(0);
-        bannerPositionInput.value = 0;
-        updatePositionDisplay(0);
-    }
-
-    // Drag functionality - Listen on container instead of image
-    bannerContainer.addEventListener('mousedown', function(e) {
-        // Don't start dragging if clicking on remove button
-        if (e.target.closest('#remove-banner')) {
-            return;
-        }
-
-        isDragging = true;
-        startY = e.clientY;
-        startPosY = currentY;
-        bannerContainer.style.cursor = 'grabbing';
-        e.preventDefault();
-        console.log('Started dragging from Y:', startY, 'Current position:', currentY);
-    });
-
-    document.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-
-        const deltaY = e.clientY - startY;
-        const newY = startPosY + deltaY;
-
-        const containerHeight = bannerContainer.offsetHeight;
-        const imageHeight = bannerPreview.offsetHeight;
-
-        console.log('Container height:', containerHeight, 'Image height:', imageHeight);
-
-        // Calculate bounds
-        const maxY = 0;
-        const minY = Math.min(0, containerHeight - imageHeight);
-
-        // Constrain the movement
-        currentY = Math.max(minY, Math.min(maxY, newY));
-        applyBannerTransform(currentY);
-        bannerPositionInput.value = Math.round(currentY);
-        updatePositionDisplay(currentY);
-    });
-
-    document.addEventListener('mouseup', function() {
-        if (isDragging) {
-            isDragging = false;
-            bannerContainer.style.cursor = 'grab';
-            console.log('Stopped dragging at position:', currentY);
-        }
-    });
-
-    // Touch support for mobile
-    bannerContainer.addEventListener('touchstart', function(e) {
-        if (e.target.closest('#remove-banner')) {
-            return;
-        }
-
-        isDragging = true;
-        startY = e.touches[0].clientY;
-        startPosY = currentY;
-        e.preventDefault();
-    });
-
-    document.addEventListener('touchmove', function(e) {
-        if (!isDragging) return;
-
-        const deltaY = e.touches[0].clientY - startY;
-        const newY = startPosY + deltaY;
-
-        const containerHeight = bannerContainer.offsetHeight;
-        const imageHeight = bannerPreview.offsetHeight;
-
-        const maxY = 0;
-        const minY = Math.min(0, containerHeight - imageHeight);
-
-        currentY = Math.max(minY, Math.min(maxY, newY));
-        applyBannerTransform(currentY);
-        bannerPositionInput.value = Math.round(currentY);
-        updatePositionDisplay(currentY);
-    });
-
-    document.addEventListener('touchend', function() {
-        if (isDragging) {
-            isDragging = false;
-        }
-    });
-
-    // Initialize position display and transform
-    if (currentY !== 0) {
-        applyBannerTransform(currentY);
-    }
-    updatePositionDisplay(currentY);
+    };
+}
 </script>
 @endpush
-@endsection

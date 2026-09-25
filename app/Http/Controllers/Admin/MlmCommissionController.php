@@ -22,32 +22,32 @@ class MlmCommissionController extends Controller
         $query = MlmCommission::with(['member.user', 'user', 'plan', 'fromMember.user'])
             ->orderBy('created_at', 'desc');
 
-        // Filters
-        if ($request->has('plan_id')) {
+        // ตัวกรอง — ใช้ filled() (เดิม has() ทำให้กดกรองด้วยช่องว่างแล้วได้ where = null → ไม่เจออะไรเลย)
+        if ($request->filled('plan_id')) {
             $query->where('mlm_plan_id', $request->plan_id);
         }
 
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        if ($request->has('type')) {
+        if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
 
-        if ($request->has('member_id')) {
+        if ($request->filled('member_id')) {
             $query->where('mlm_member_id', $request->member_id);
         }
 
-        if ($request->has('date_from')) {
+        if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
 
-        if ($request->has('date_to')) {
+        if ($request->filled('date_to')) {
             $query->whereDate('created_at', '<=', $request->date_to);
         }
 
-        $commissions = $query->paginate(50);
+        $commissions = $query->paginate(50)->withQueryString();
         $plans = MlmPlan::all();
 
         // Statistics
@@ -87,7 +87,7 @@ class MlmCommissionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "{$count} commissions approved",
+            'message' => "อนุมัติคอมมิชชั่นแล้ว {$count} รายการ",
             'count' => $count,
         ]);
     }
@@ -98,7 +98,7 @@ class MlmCommissionController extends Controller
 
         return redirect()
             ->route('admin.mlm.commissions.index')
-            ->with('success', "{$count} commissions approved");
+            ->with('success', "อนุมัติคอมมิชชั่นแล้ว {$count} รายการ");
     }
 
     public function reject(Request $request, MlmCommission $commission)
@@ -109,9 +109,13 @@ class MlmCommissionController extends Controller
 
         $commission->reject($validated['reason']);
 
+        if (! $request->expectsJson()) {
+            return back()->with('success', 'ปฏิเสธคอมมิชชั่นแล้ว');
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Commission rejected',
+            'message' => 'ปฏิเสธคอมมิชชั่นแล้ว',
         ]);
     }
 
@@ -127,13 +131,16 @@ class MlmCommissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "{$count} commissions paid",
+                'message' => "จ่ายคอมมิชชั่นแล้ว {$count} รายการ",
                 'count' => $count,
             ]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Admin MLM commission pay failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Error paying commissions: '.$e->getMessage(),
+                'code' => 'PAY_FAILED',
+                'message' => 'จ่ายคอมมิชชั่นไม่สำเร็จ กรุณาลองใหม่หรือแจ้งผู้ดูแลระบบ',
             ], 500);
         }
     }
@@ -145,11 +152,13 @@ class MlmCommissionController extends Controller
 
             return redirect()
                 ->route('admin.mlm.commissions.index')
-                ->with('success', "{$count} commissions paid successfully");
+                ->with('success', "จ่ายคอมมิชชั่นแล้ว {$count} รายการ");
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Admin MLM commission pay-all failed', ['error' => $e->getMessage()]);
+
             return redirect()
                 ->route('admin.mlm.commissions.index')
-                ->with('error', 'Error paying commissions: '.$e->getMessage());
+                ->with('error', 'จ่ายคอมมิชชั่นไม่สำเร็จ กรุณาลองใหม่หรือแจ้งผู้ดูแลระบบ');
         }
     }
 
@@ -197,7 +206,7 @@ class MlmCommissionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "{$count} commissions processed",
+            'message' => "ดำเนินการแล้ว {$count} รายการ",
             'count' => $count,
         ]);
     }

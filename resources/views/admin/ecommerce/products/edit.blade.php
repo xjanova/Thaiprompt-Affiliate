@@ -1,1102 +1,303 @@
-{{--
-  * หน้าแก้ไขสินค้า (Product Edit)
-  * ฟอร์มสำหรับแก้ไขข้อมูลสินค้า
-  * รองรับ Dark Mode และ Responsive Design
-  --}}
+@extends('layouts.admin-v4')
 
-@extends('layouts.admin-v3')
+@section('title', 'แก้ไขสินค้า - ' . $product->name)
 
-@section('title', 'แก้ไขสินค้า: ' . $product->name)
+@php
+    $c = [
+        'ok' => 'var(--tp-ok,#5aa07e)',
+        'bad' => 'var(--tp-bad,#d9534f)',
+        'warn' => 'var(--tp-warn,#e0a52e)',
+        'info' => 'var(--tp-info,#5689b8)',
+    ];
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+    $hint = 'font-size:11.5px; color:var(--ink2); margin-top:5px; line-height:1.5;';
+    $check = 'display:flex; align-items:center; gap:9px; font-size:13px; cursor:pointer; padding:9px 12px; border-radius:12px;';
+
+    // อัตรา GP ปัจจุบันที่ระบบใช้คิดเงิน (ก่อนแก้)
+    $gpInfo = null;
+    try {
+        $gpInfo = app(\App\Services\Pricing\PricingEngine::class)->gpRateInfoForProduct($product);
+    } catch (\Throwable $e) {
+        $gpInfo = null;
+    }
+    $adminGp = old('admin_gp_rate', $product->admin_gp_rate !== null ? rtrim(rtrim(number_format((float) $product->admin_gp_rate, 2, '.', ''), '0'), '.') : '');
+@endphp
 
 @section('content')
-<div class="space-y-6" x-data="{ language: 'th' }">
-    {{-- Alert Messages --}}
-    @if(session('success'))
-        <div x-data="{ show: true }" x-show="show" x-transition class="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-l-4 border-green-500 dark:border-green-400 rounded-xl shadow-lg p-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-green-800 dark:text-green-200 font-medium">{{ session('success') }}</span>
-                </div>
-                <button @click="show = false" class="text-green-500 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวหน้า ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="min-width:0;">
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · อีคอมเมิร์ซ · แก้ไขสินค้า</div>
+            <h1 style="font-size:clamp(20px,4vw,27px); font-weight:800; margin:4px 0 0; overflow-wrap:anywhere;">{{ $product->name }}</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ร้าน: {{ $product->store?->store_name ?? '-' }} · ผู้ขาย: {{ $product->seller?->name ?? '-' }}</div>
         </div>
-    @endif
-
-    @if(session('error'))
-        <div x-data="{ show: true }" x-show="show" x-transition class="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-l-4 border-red-500 dark:border-red-400 rounded-xl shadow-lg p-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg class="w-6 h-6 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-red-800 dark:text-red-200 font-medium">{{ session('error') }}</span>
-                </div>
-                <button @click="show = false" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    @endif
-
-    {{-- Header Section --}}
-    <div class="relative overflow-hidden bg-gradient-to-br from-orange-500 to-pink-600 dark:from-orange-600 dark:to-pink-700 rounded-2xl shadow-2xl p-8">
-        {{-- Background Pattern --}}
-        <div class="absolute inset-0 bg-black/10 dark:bg-black/20" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
-
-        <div class="relative flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-            <div>
-                <a href="{{ route('admin.ecommerce.products.index') }}" class="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm mb-3 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    <span data-translate>กลับไปรายการสินค้า</span>
-                </a>
-                <div class="flex items-center gap-4">
-                    <div class="glass-fusion dark:glass-fusion backdrop-blur-sm rounded-2xl p-4 border border-white/20 dark:border-white/10">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                    </div>
-                    <div class="text-white">
-                        <h1 class="text-3xl md:text-4xl font-bold mb-1" data-translate>แก้ไขสินค้า</h1>
-                        <p class="text-white/90 text-sm md:text-base">{{ $product->name }}</p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Language Switcher --}}
-            <div class="relative inline-block" x-data="{ open: false }">
-                <button @click="open = !open" class="px-4 py-2 glass-fusion backdrop-blur-sm text-white rounded-xl hover:glass-fusion transition-all duration-200 border border-white/30 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
-                    </svg>
-                    <span data-translate>ภาษา</span>
-                </button>
-
-                <div x-show="open" @click.away="open = false" x-transition
-                     class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50">
-                    <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                        <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
-                    </a>
-                    <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                        <span class="mr-2">🇬🇧</span> English
-                    </a>
-                    <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                        <span class="mr-2">🇨🇳</span> 中文
-                    </a>
-                    <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                        <span class="mr-2">🇯🇵</span> 日本語
-                    </a>
-                </div>
-            </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <a href="{{ route('admin.ecommerce.products.show', $product) }}" class="tp-btn tp-btn-sm"><i class="fas fa-eye"></i> ดูสินค้า</a>
+            <a href="{{ route('admin.ecommerce.products.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> กลับรายการ</a>
         </div>
     </div>
 
-    {{-- Seller Information Card --}}
-    <div class="glass-fusion dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 mb-6 shadow-lg">
-        <div class="flex items-start gap-4">
-            <div class="flex-shrink-0">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                    {{ substr($product->seller->name ?? 'N', 0, 1) }}
-                </div>
-            </div>
-            <div class="flex-1">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">
-                    ข้อมูลร้านค้า/เจ้าของ
-                </h3>
-                <div class="space-y-2 text-sm">
-                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        <span><strong>ชื่อ:</strong> {{ $product->seller->name ?? 'N/A' }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                        <span><strong>Email:</strong> {{ $product->seller->email ?? 'N/A' }}</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                        </svg>
-                        <span><strong>Seller ID:</strong> #{{ $product->seller_id }}</span>
-                    </div>
-                </div>
-            </div>
+    @if($errors->any())
+        <div class="tp-card" style="padding:14px 18px; border-left:4px solid {{ $c['bad'] }};">
+            <div style="font-weight:700; color:{{ $c['bad'] }}; margin-bottom:6px;"><i class="fas fa-circle-exclamation"></i> บันทึกไม่สำเร็จ</div>
+            <ul style="margin:0; padding-left:18px; font-size:13px;">
+                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+            </ul>
         </div>
-    </div>
-
-    {{-- Block Status Alert (ถ้าถูกบล็อก) --}}
-    @if($product->is_blocked)
-    <div class="glass-fusion dark:bg-red-900/20 border border-red-500 dark:border-red-400 rounded-2xl p-6 mb-6 shadow-lg">
-        <div class="flex items-start gap-4">
-            <div class="flex-shrink-0">
-                <svg class="w-12 h-12 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <div class="flex-1">
-                <h3 class="text-lg font-bold text-red-800 dark:text-red-200 mb-2">
-                    ⚠️ สินค้านี้ถูกบล็อกแล้ว
-                </h3>
-                <div class="space-y-2 text-sm text-red-700 dark:text-red-300">
-                    <p><strong>เหตุผล:</strong> {{ $product->block_reason }}</p>
-                    <p><strong>บล็อกเมื่อ:</strong> {{ $product->blocked_at?->format('d/m/Y H:i') ?? 'N/A' }}</p>
-                    <p><strong>บล็อกโดย:</strong> {{ $product->blockedByUser->name ?? 'N/A' }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
     @endif
 
-    {{-- Form --}}
-    <form id="product-edit-form" action="{{ route('admin.ecommerce.products.update', $product) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        @method('PUT')
+    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {{-- Main Content --}}
-            <div class="lg:col-span-2 space-y-6">
-                {{-- Basic Information --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>ข้อมูลพื้นฐาน</h3>
-                        </div>
+        {{-- ===== ฟอร์มหลัก ===== --}}
+        <form id="product-edit-form" method="POST" action="{{ route('admin.ecommerce.products.update', $product) }}" enctype="multipart/form-data"
+              style="flex:2 1 460px; min-width:0; display:flex; flex-direction:column; gap:16px;"
+              x-data="{ busy: false, shipping: @js(old('shipping_method', $product->shipping_method ?? 'store_default')),
+                        mainPreview: null, gallery: [], deleted: [],
+                        pickMain(e) { const f = e.target.files[0]; if (f && f.size > 5 * 1024 * 1024) { alert('ขนาดไฟล์ต้องไม่เกิน 5MB'); e.target.value = ''; return; } this.mainPreview = f ? URL.createObjectURL(f) : null; },
+                        pickGallery(e) { this.gallery = Array.from(e.target.files).slice(0, 10).map(f => URL.createObjectURL(f)); },
+                        toggleDelete(id) { this.deleted.includes(id) ? this.deleted = this.deleted.filter(x => x !== id) : this.deleted.push(id); } }"
+              @submit="busy = true">
+            @csrf
+            @method('PUT')
+
+            {{-- ข้อมูลพื้นฐาน --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-circle-info" style="color:var(--accent1);"></i> ข้อมูลพื้นฐาน</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+                    <div style="grid-column:1 / -1;">
+                        <label style="{{ $lbl }}">ชื่อสินค้า <span style="color:{{ $c['bad'] }};">*</span></label>
+                        <input type="text" name="name" value="{{ old('name', $product->name) }}" required maxlength="255" class="tp-input">
                     </div>
-
-                    <div class="p-6 space-y-5">
-                        {{-- ชื่อสินค้า --}}
-                        <div>
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                </svg>
-                                <span data-translate>ชื่อสินค้า</span> <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" name="name" value="{{ old('name', $product->name) }}" required placeholder="กรอกชื่อสินค้า..." data-translate-placeholder class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all">
-                            @error('name')
-                                <p class="text-red-500 dark:text-red-400 text-sm mt-1 flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
-
-                        {{-- SKU --}}
-                        <div>
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
-                                </svg>
-                                <span data-translate>SKU</span>
-                            </label>
-                            <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" placeholder="รหัสสินค้า" data-translate-placeholder class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all font-mono">
-                            @error('sku')
-                                <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        {{-- คำอธิบายสั้น --}}
-                        <div>
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
-                                </svg>
-                                <span data-translate>คำอธิบายสั้น</span>
-                            </label>
-                            <textarea name="short_description" rows="2" placeholder="คำอธิบายสินค้าแบบย่อ..." data-translate-placeholder class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all resize-none">{{ old('short_description', $product->short_description) }}</textarea>
-                        </div>
-
-                        {{-- คำอธิบายสินค้า --}}
-                        <div>
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
-                                </svg>
-                                <span data-translate>คำอธิบายสินค้า</span>
-                            </label>
-                            <textarea name="description" rows="6" placeholder="รายละเอียดสินค้าแบบครบถ้วน..." data-translate-placeholder class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all resize-none">{{ old('description', $product->description) }}</textarea>
-                        </div>
+                    <div>
+                        <label style="{{ $lbl }}">SKU</label>
+                        <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" maxlength="100" class="tp-input tp-num">
                     </div>
-                </div>
-
-                {{-- Pricing --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>ราคา</h3>
-                        </div>
+                    <div>
+                        <label style="{{ $lbl }}">แบรนด์</label>
+                        <input type="text" name="brand" value="{{ old('brand', $product->brand) }}" maxlength="100" class="tp-input">
                     </div>
-
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {{-- ราคาขาย --}}
-                            <div>
-                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <span data-translate>ราคาขาย</span> <span class="text-red-500">*</span>
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-400 font-semibold">฿</span>
-                                    <input type="number" name="price" value="{{ old('price', $product->price) }}" step="0.01" min="0" required placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900/30 transition-all">
-                                </div>
-                                @error('price')
-                                    <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            {{-- ราคาเปรียบเทียบ --}}
-                            <div>
-                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                                    </svg>
-                                    <span data-translate>ราคาเปรียบเทียบ</span>
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-400 font-semibold">฿</span>
-                                    <input type="number" name="compare_at_price" value="{{ old('compare_at_price', $product->compare_at_price) }}" step="0.01" min="0" placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900/30 transition-all">
-                                </div>
-                            </div>
-
-                            {{-- ราคาทุน --}}
-                            <div>
-                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                    </svg>
-                                    <span data-translate>ราคาทุน</span>
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-400 font-semibold">฿</span>
-                                    <input type="number" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" step="0.01" min="0" placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900/30 transition-all">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Inventory --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-orange-500 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>สต็อกและคลังสินค้า</h3>
-                        </div>
-                    </div>
-
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {{-- จำนวนสต็อก --}}
-                            <div>
-                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                                    </svg>
-                                    <span data-translate>จำนวนสต็อก</span> <span class="text-red-500">*</span>
-                                </label>
-                                <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" min="0" required placeholder="0" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/30 transition-all">
-                            </div>
-
-                            {{-- น้ำหนัก --}}
-                            <div>
-                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
-                                    </svg>
-                                    <span data-translate>น้ำหนัก (กรัม)</span>
-                                </label>
-                                <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" step="0.01" min="0" placeholder="0" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/30 transition-all">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- การจัดส่ง (Shipping) --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
-                     x-data="{ shippingMethod: '{{ old('shipping_method', $product->shipping_method ?? 'store_default') }}' }">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-teal-500 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a2 2 0 104 0m-4 0a2 2 0 11-4 0"/>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>การจัดส่ง</h3>
-                        </div>
-                    </div>
-
-                    <div class="p-6 space-y-4">
-                        {{-- วิธีการจัดส่ง --}}
-                        <div>
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                </svg>
-                                <span data-translate>วิธีการจัดส่ง</span>
-                            </label>
-                            <select name="shipping_method" x-model="shippingMethod" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
-                                <option value="store_default" data-translate>ใช้ค่าเริ่มต้นของร้าน/ระบบ</option>
-                                <option value="free" data-translate>จัดส่งฟรี</option>
-                                <option value="flat_rate" data-translate>อัตราเหมาจ่าย (Flat Rate)</option>
-                                <option value="weight_based" data-translate>คำนวณตามน้ำหนัก (Weight Based)</option>
-                            </select>
-                        </div>
-
-                        {{-- ค่าจัดส่งแบบเหมา (แสดงเมื่อเลือก flat_rate) --}}
-                        <div x-show="shippingMethod === 'flat_rate'" x-transition class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        <span data-translate>ค่าจัดส่ง (บาท)</span>
-                                    </label>
-                                    <div class="relative">
-                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
-                                        <input type="number" name="shipping_fee" value="{{ old('shipping_fee', $product->shipping_fee) }}" step="0.01" min="0" placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        <span data-translate>ยอดขั้นต่ำส่งฟรี (บาท)</span>
-                                    </label>
-                                    <div class="relative">
-                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
-                                        <input type="number" name="free_shipping_min_amount" value="{{ old('free_shipping_min_amount', $product->free_shipping_min_amount) }}" step="0.01" min="0" placeholder="0 = ไม่มี" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-sm text-blue-700 dark:text-blue-300">
-                                <span data-translate>คิดค่าส่งคงที่ต่อออเดอร์ หากยอดถึงขั้นต่ำจะส่งฟรี</span>
-                            </div>
-                        </div>
-
-                        {{-- น้ำหนักจัดส่ง (แสดงเมื่อเลือก weight_based) --}}
-                        <div x-show="shippingMethod === 'weight_based'" x-transition class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        <span data-translate>น้ำหนักจัดส่ง (กก.)</span>
-                                    </label>
-                                    <input type="number" name="shipping_weight_kg" value="{{ old('shipping_weight_kg', $product->shipping_weight_kg) }}" step="0.001" min="0" placeholder="0.000" class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
-                                </div>
-                                <div>
-                                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        <span data-translate>ยอดขั้นต่ำส่งฟรี (บาท)</span>
-                                    </label>
-                                    <div class="relative">
-                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
-                                        <input type="number" name="free_shipping_min_amount_weight" value="{{ old('free_shipping_min_amount_weight', $product->free_shipping_min_amount) }}" step="0.01" min="0" placeholder="0 = ไม่มี" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-teal-500 dark:focus:border-teal-400 focus:ring-2 focus:ring-teal-200 dark:focus:ring-teal-900/30 transition-all">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl text-sm text-purple-700 dark:text-purple-300">
-                                <span data-translate>คำนวณค่าส่งจากน้ำหนักรวม ตามอัตราที่กำหนดในระบบ (ในประเทศ/ต่างประเทศ)</span>
-                            </div>
-                        </div>
-
-                        {{-- ข้อความแจ้งเมื่อเลือก free --}}
-                        <div x-show="shippingMethod === 'free'" x-transition>
-                            <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-sm text-green-700 dark:text-green-300">
-                                <span data-translate>สินค้านี้จัดส่งฟรีทุกออเดอร์</span>
-                            </div>
-                        </div>
-
-                        {{-- ข้อความแจ้งเมื่อเลือก store_default --}}
-                        <div x-show="shippingMethod === 'store_default'" x-transition>
-                            <div class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl text-sm text-gray-600 dark:text-gray-300">
-                                <span data-translate>ใช้การตั้งค่าค่าจัดส่งของร้านค้า หรือค่าเริ่มต้นของระบบ (50 บาท / ส่งฟรีเมื่อยอดถึง 500 บาท)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Images --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
-                     x-data="imageUploadHandler()">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>รูปภาพสินค้า</h3>
-                        </div>
-                    </div>
-
-                    <div class="p-6 space-y-4">
-                        {{-- รูปหลัก --}}
-                        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-2 border-dashed border-blue-200 dark:border-blue-800">
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 cursor-pointer">
-                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <span data-translate>รูปภาพหลัก</span>
-                            </label>
-                            <input type="file"
-                                   name="main_image"
-                                   id="main_image_input"
-                                   accept="image/*"
-                                   @change="previewMainImage($event)"
-                                   class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 transition-all">
-                            <p class="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
-                                <span data-translate>รองรับ JPG, PNG, GIF, WebP (ขนาดไม่เกิน 5MB)</span>
-                            </p>
-
-                            {{-- แสดง Preview รูปใหม่ที่เลือก --}}
-                            <div x-show="mainImagePreview" x-cloak class="mt-3">
-                                <p class="text-xs text-green-600 dark:text-green-400 mb-2 flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                    <span data-translate>รูปภาพใหม่ที่จะอัพโหลด:</span>
-                                </p>
-                                <div class="relative inline-block">
-                                    <img :src="mainImagePreview" alt="Preview" class="w-32 h-32 object-cover rounded-xl ring-2 ring-green-400 dark:ring-green-600">
-                                    <button type="button"
-                                            @click="clearMainImage()"
-                                            class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {{-- แสดงรูปปัจจุบัน (ถ้าไม่มีรูปใหม่) --}}
-                            @if($product->main_image_url ?? $product->primary_image)
-                                <div x-show="!mainImagePreview" class="mt-3">
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2" data-translate>รูปภาพปัจจุบัน:</p>
-                                    <img src="{{ $product->primary_image ?? Storage::url($product->main_image_url) }}" alt="Current image" class="w-32 h-32 object-cover rounded-xl ring-2 ring-blue-200 dark:ring-blue-800">
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- รูปเพิ่มเติม --}}
-                        <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border-2 border-dashed border-purple-200 dark:border-purple-800">
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 cursor-pointer">
-                                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <span data-translate>รูปภาพเพิ่มเติม (สูงสุด 10 ภาพ)</span>
-                            </label>
-                            <input type="file"
-                                   name="images[]"
-                                   id="additional_images_input"
-                                   accept="image/*"
-                                   multiple
-                                   @change="previewAdditionalImages($event)"
-                                   class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400 transition-all">
-                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-2 flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
-                                <span data-translate>สามารถเลือกหลายไฟล์พร้อมกันได้</span>
-                            </p>
-
-                            {{-- แสดง Preview รูปใหม่ที่เลือก --}}
-                            <div x-show="additionalImagePreviews.length > 0" x-cloak class="mt-3">
-                                <p class="text-xs text-green-600 dark:text-green-400 mb-2 flex items-center gap-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                    <span data-translate>รูปภาพใหม่ที่จะอัพโหลด:</span>
-                                    <span class="font-bold" x-text="additionalImagePreviews.length"></span>
-                                    <span data-translate>รูป</span>
-                                </p>
-                                <div class="grid grid-cols-4 gap-2">
-                                    <template x-for="(preview, index) in additionalImagePreviews" :key="index">
-                                        <div class="relative group">
-                                            <img :src="preview" alt="Preview" class="w-full h-20 object-cover rounded-xl ring-2 ring-green-400 dark:ring-green-600">
-                                            <button type="button"
-                                                    @click="removeAdditionalPreview(index)"
-                                                    class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors opacity-0 group-hover:opacity-100">
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-
-                            {{-- แสดงรูปเดิมที่มีอยู่ --}}
-                            @if($product->images && $product->images->count() > 0)
-                                <div class="mt-3">
-                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2" data-translate>รูปภาพเพิ่มเติมปัจจุบัน:</p>
-                                    <div class="grid grid-cols-4 gap-2">
-                                        @foreach($product->images as $image)
-                                            <div class="relative group" x-show="!deletedImageIds.includes({{ $image->id }})">
-                                                <img src="{{ Storage::url($image->image_url) }}" alt="Gallery image" class="w-full h-20 object-cover rounded-xl ring-2 ring-purple-200 dark:ring-purple-800">
-                                                <button type="button"
-                                                        @click="markImageForDeletion({{ $image->id }})"
-                                                        class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors opacity-0 group-hover:opacity-100"
-                                                        title="ลบรูปนี้">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                    {{-- Hidden input สำหรับส่ง IDs ของรูปที่จะลบ --}}
-                                    <template x-for="id in deletedImageIds" :key="id">
-                                        <input type="hidden" name="deleted_images[]" :value="id">
-                                    </template>
-                                    <p x-show="deletedImageIds.length > 0" x-cloak class="mt-2 text-xs text-red-500 dark:text-red-400">
-                                        <span x-text="deletedImageIds.length"></span> รูปจะถูกลบเมื่อบันทึก
-                                    </p>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Sidebar --}}
-            <div class="space-y-6">
-                {{-- Category --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>หมวดหมู่</h3>
-                        </div>
-                    </div>
-
-                    <div class="p-6">
-                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
-                            <span data-translate>เลือกหมวดหมู่</span> <span class="text-red-500">*</span>
-                        </label>
-                        <select name="category_id" required class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/30 transition-all">
-                            <option value="" data-translate>-- เลือกหมวดหมู่ --</option>
+                    <div>
+                        <label style="{{ $lbl }}">หมวดหมู่ <span style="color:{{ $c['bad'] }};">*</span></label>
+                        <select name="category_id" required class="tp-input">
                             @foreach($categories as $category)
-                                <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
-                                    {{ $category->name }}
-                                </option>
+                                <option value="{{ $category->id }}" @selected((string) old('category_id', $product->category_id) === (string) $category->id)>{{ $category->name }}</option>
                             @endforeach
+                            @if($product->category && ! $categories->contains('id', $product->category_id))
+                                <option value="{{ $product->category_id }}" selected>{{ $product->category->name }} (ปิดใช้งาน)</option>
+                            @endif
                         </select>
-                        @error('category_id')
-                            <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ $message }}</p>
-                        @enderror
                     </div>
-                </div>
-
-                {{-- Additional Details --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-pink-500 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-                            </svg>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white" data-translate>รายละเอียดเพิ่มเติม</h3>
-                        </div>
+                    <div style="grid-column:1 / -1;">
+                        <label style="{{ $lbl }}">คำอธิบายย่อ</label>
+                        <textarea name="short_description" rows="2" maxlength="500" class="tp-input">{{ old('short_description', $product->short_description) }}</textarea>
                     </div>
-
-                    <div class="p-6 space-y-4">
-                        {{-- แบรนด์ --}}
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2" data-translate>
-                                แบรนด์
-                            </label>
-                            <input type="text" name="brand" value="{{ old('brand', $product->brand) }}" placeholder="ชื่อแบรนด์" data-translate-placeholder class="w-full px-4 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-900/30 transition-all">
-                        </div>
-
-                        {{-- คอมมิชชั่น --}}
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2" data-translate>
-                                % คอมมิชชั่น
-                            </label>
-                            <div class="relative">
-                                <input type="number" name="commission_rate" value="{{ old('commission_rate', $product->commission_rate) }}" step="0.01" min="0" max="100" placeholder="15" class="w-full pl-4 pr-10 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-900/30 transition-all">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 dark:text-gray-400 font-semibold">%</span>
-                            </div>
-                        </div>
-
-                        {{-- PV Value --}}
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <span class="flex items-center gap-2">
-                                    ⭐ PV (Point Value)
-                                    <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(สำหรับระบบ MLM)</span>
-                                </span>
-                            </label>
-                            <div class="relative">
-                                <input type="number"
-                                       name="pv_value"
-                                       value="{{ old('pv_value', $product->pv_value ?? 0) }}"
-                                       step="0.01"
-                                       min="0"
-                                       placeholder="0"
-                                       class="w-full pl-4 pr-16 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-purple-500 dark:focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:focus:ring-purple-900/30 transition-all">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold text-sm">PV</span>
-                            </div>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                💡 ถ้าไม่กำหนด ระบบจะใช้ราคาสินค้าเป็น PV
-                            </p>
-                        </div>
-
-                        {{-- Cashback Percentage --}}
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                <span class="flex items-center gap-2">
-                                    🎁 Cashback Percentage
-                                    <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(เงินคืนให้ลูกค้า)</span>
-                                </span>
-                            </label>
-                            <div class="relative">
-                                <input type="number"
-                                       name="cashback_percentage"
-                                       value="{{ old('cashback_percentage', $product->cashback_percentage ?? 0) }}"
-                                       step="0.01"
-                                       min="0"
-                                       max="100"
-                                       placeholder="0"
-                                       class="w-full pl-4 pr-10 py-2.5 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900/30 transition-all">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">%</span>
-                            </div>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                💡 เปอร์เซ็นต์เงินคืนที่ลูกค้าจะได้รับ (จากร้านค้า)
-                            </p>
-                        </div>
-
-                        {{-- ตัวเลือก --}}
-                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700 space-y-3">
-                            <label class="inline-flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" name="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 text-green-600 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-all">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors" data-translate>✅ ใช้งาน</span>
-                            </label>
-
-                            <label class="inline-flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 text-yellow-600 focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-400 transition-all">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors" data-translate>⭐ สินค้าแนะนำ</span>
-                            </label>
-
-                            <label class="inline-flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" name="is_hidden" value="1" {{ old('is_hidden', $product->is_hidden ?? false) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 text-purple-600 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 transition-all">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors" data-translate>👁️‍🗨️ ซ่อนจากหน้าร้าน</span>
-                            </label>
-
-                            <label class="inline-flex items-center gap-2 cursor-pointer group">
-                                <input type="checkbox" name="track_inventory" value="1" {{ old('track_inventory', $product->track_inventory) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" data-translate>📊 ติดตามสต็อก</span>
-                            </label>
-                        </div>
-
-                        {{-- Meta Info --}}
-                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700 space-y-2">
-                            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                                </svg>
-                                <span><span data-translate>ยอดขาย:</span> <strong class="text-gray-900 dark:text-white">{{ number_format($product->sales_count ?? 0) }}</strong> <span data-translate>ชิ้น</span></span>
-                            </div>
-                            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span><span data-translate>สร้างเมื่อ:</span> <strong class="text-gray-900 dark:text-white">{{ $product->created_at->format('d/m/Y') }}</strong></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- ปิด form หลักก่อน เพราะ block/unblock section มี form ของตัวเอง (HTML ไม่อนุญาต nested forms) --}}
-                </form>
-
-                {{-- Block/Unblock Section --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
-                            การจัดการสถานะสินค้า (Admin)
-                        </h3>
-                    </div>
-
-                    <div class="p-6">
-                        @if($product->is_blocked)
-                            {{-- Unblock Button --}}
-                            <form action="{{ route('admin.ecommerce.products.unblock', $product) }}" method="POST"
-                                  onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปลดบล็อกสินค้านี้?')">
-                                @csrf
-                                <button type="submit"
-                                        class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-                                    </svg>
-                                    ปลดบล็อกสินค้า
-                                </button>
-                            </form>
-                        @else
-                            {{-- Block Button with Modal --}}
-                            <div x-data="{ showBlockModal: false }">
-                                <button @click="showBlockModal = true"
-                                        type="button"
-                                        class="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
-                                    </svg>
-                                    บล็อกสินค้านี้
-                                </button>
-
-                                {{-- Block Modal --}}
-                                <div x-show="showBlockModal"
-                                     x-transition:enter="transition ease-out duration-300"
-                                     x-transition:enter-start="opacity-0"
-                                     x-transition:enter-end="opacity-100"
-                                     x-transition:leave="transition ease-in duration-200"
-                                     x-transition:leave-start="opacity-100"
-                                     x-transition:leave-end="opacity-0"
-                                     class="fixed inset-0 z-50 overflow-y-auto"
-                                     style="display: none;">
-
-                                    {{-- Backdrop --}}
-                                    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showBlockModal = false"></div>
-
-                                    {{-- Modal Content --}}
-                                    <div class="flex min-h-screen items-center justify-center p-4">
-                                        <div class="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6"
-                                             @click.away="showBlockModal = false">
-
-                                            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                                                🚫 บล็อกสินค้า
-                                            </h3>
-
-                                            <p class="text-gray-600 dark:text-gray-300 mb-4">
-                                                กรุณาระบุเหตุผลในการบล็อกสินค้านี้ ระบบจะส่งการแจ้งเตือนให้ร้านค้าทราบทันที
-                                            </p>
-
-                                            <form action="{{ route('admin.ecommerce.products.block', $product) }}" method="POST">
-                                                @csrf
-
-                                                <div class="mb-4">
-                                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                                        เหตุผล <span class="text-red-500">*</span>
-                                                    </label>
-                                                    <textarea name="block_reason"
-                                                              required
-                                                              rows="4"
-                                                              class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-red-500 dark:focus:border-red-400 focus:ring-2 focus:ring-red-200 dark:focus:ring-red-900/30 transition-all"
-                                                              placeholder="เช่น: สินค้าละเมิดลิขสิทธิ์, รูปภาพไม่เหมาะสม, ข้อมูลไม่ถูกต้อง..."></textarea>
-                                                </div>
-
-                                                <div class="flex gap-3">
-                                                    <button type="button"
-                                                            @click="showBlockModal = false"
-                                                            class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                                                        ยกเลิก
-                                                    </button>
-                                                    <button type="submit"
-                                                            class="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-600 hover:to-orange-700 text-white font-bold rounded-xl transition-all">
-                                                        ยืนยันการบล็อก
-                                                    </button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
-                        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                            ⚠️ <strong>หมายเหตุ:</strong> เมื่อบล็อกสินค้า ระบบจะปิดการแสดงสินค้าอัตโนมัติและแจ้งเตือนร้านค้าทันที
-                        </p>
-                    </div>
-                </div>
-
-                {{-- Actions --}}
-                <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="p-6 space-y-3">
-                        <button type="submit" form="product-edit-form" class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            <span data-translate>บันทึกการเปลี่ยนแปลง</span>
-                        </button>
-
-                        <a href="{{ route('admin.ecommerce.products.index') }}" class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-medium transition-all duration-300">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                            </svg>
-                            <span data-translate>ยกเลิก</span>
-                        </a>
+                    <div style="grid-column:1 / -1;">
+                        <label style="{{ $lbl }}">รายละเอียดสินค้า</label>
+                        <textarea name="description" rows="6" class="tp-input">{{ old('description', $product->description) }}</textarea>
                     </div>
                 </div>
             </div>
+
+            {{-- ราคาและสต็อก --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-tag" style="color:var(--accent1);"></i> ราคาและสต็อก</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
+                    <div>
+                        <label style="{{ $lbl }}">ราคาขาย (฿) <span style="color:{{ $c['bad'] }};">*</span></label>
+                        <input type="number" name="price" step="0.01" min="0" required value="{{ old('price', $product->price) }}" class="tp-input tp-num">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">ราคาก่อนลด (฿)</label>
+                        <input type="number" name="compare_at_price" step="0.01" min="0" value="{{ old('compare_at_price', $product->compare_at_price) }}" class="tp-input tp-num">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">ต้นทุน (฿)</label>
+                        <input type="number" name="cost_price" step="0.01" min="0" value="{{ old('cost_price', $product->cost_price) }}" class="tp-input tp-num">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">จำนวนสต็อก <span style="color:{{ $c['bad'] }};">*</span></label>
+                        <input type="number" name="stock_quantity" min="0" step="1" required value="{{ old('stock_quantity', $product->stock_quantity) }}" class="tp-input tp-num">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">แจ้งเตือนเมื่อเหลือ <span style="color:{{ $c['bad'] }};">*</span></label>
+                        <input type="number" name="low_stock_threshold" min="0" step="1" required value="{{ old('low_stock_threshold', $product->low_stock_threshold ?? 10) }}" class="tp-input tp-num" placeholder="10">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">น้ำหนัก (กรัม)</label>
+                        <input type="number" name="weight" step="0.01" min="0" value="{{ old('weight', $product->weight) }}" class="tp-input tp-num">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">ขนาด (กxยxส)</label>
+                        <input type="text" name="dimensions" maxlength="100" value="{{ old('dimensions', $product->dimensions) }}" class="tp-input" placeholder="เช่น 10x20x5 ซม.">
+                    </div>
+                </div>
+            </div>
+
+            {{-- การจัดส่ง --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-truck" style="color:var(--accent1);"></i> การจัดส่ง</div>
+                <select name="shipping_method" x-model="shipping" class="tp-input">
+                    <option value="store_default">ใช้ค่าตั้งต้นของร้าน</option>
+                    <option value="free">ส่งฟรี</option>
+                    <option value="flat_rate">ค่าส่งคงที่</option>
+                    <option value="weight_based">คิดตามน้ำหนัก</option>
+                </select>
+                <div x-show="shipping === 'flat_rate'" x-cloak class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:12px;">
+                    <div>
+                        <label style="{{ $lbl }}">ค่าส่ง (฿)</label>
+                        <input type="number" name="shipping_fee" step="0.01" min="0" value="{{ old('shipping_fee', $product->shipping_fee) }}" class="tp-input tp-num" :disabled="shipping !== 'flat_rate'">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">ส่งฟรีเมื่อซื้อครบ (฿)</label>
+                        <input type="number" name="free_shipping_min_amount" step="0.01" min="0" value="{{ old('free_shipping_min_amount', $product->free_shipping_min_amount) }}" class="tp-input tp-num" placeholder="0 = ไม่มี" :disabled="shipping !== 'flat_rate'">
+                    </div>
+                </div>
+                <div x-show="shipping === 'weight_based'" x-cloak class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:12px;">
+                    <div>
+                        <label style="{{ $lbl }}">น้ำหนักพัสดุ (กก.)</label>
+                        <input type="number" name="shipping_weight_kg" step="0.001" min="0" value="{{ old('shipping_weight_kg', $product->shipping_weight_kg) }}" class="tp-input tp-num" :disabled="shipping !== 'weight_based'">
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">ส่งฟรีเมื่อซื้อครบ (฿)</label>
+                        <input type="number" name="free_shipping_min_amount_weight" step="0.01" min="0" value="{{ old('free_shipping_min_amount_weight', $product->free_shipping_min_amount) }}" class="tp-input tp-num" placeholder="0 = ไม่มี" :disabled="shipping !== 'weight_based'">
+                    </div>
+                </div>
+            </div>
+
+            {{-- รูปภาพ --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-images" style="color:var(--accent1);"></i> รูปภาพ</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;">
+                    <div>
+                        <label style="{{ $lbl }}">รูปหลัก (ไม่เกิน 5MB)</label>
+                        <div style="display:flex; gap:12px; align-items:center;">
+                            <div class="tp-well" style="width:88px; height:88px; border-radius:14px; overflow:hidden; flex:none; display:grid; place-items:center; color:var(--ink2);">
+                                <template x-if="mainPreview"><img :src="mainPreview" alt="" style="width:100%; height:100%; object-fit:cover;"></template>
+                                <template x-if="!mainPreview">
+                                    @if($product->primary_image_url)
+                                        <img src="{{ $product->primary_image_url }}" alt="" style="width:100%; height:100%; object-fit:cover;">
+                                    @else
+                                        <i class="fas fa-image"></i>
+                                    @endif
+                                </template>
+                            </div>
+                            <input type="file" name="main_image" accept="image/*" class="tp-input" style="padding:9px 12px;" @change="pickMain($event)">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">เพิ่มรูปเพิ่มเติม</label>
+                        <input type="file" name="images[]" accept="image/*" multiple class="tp-input" style="padding:9px 12px;" @change="pickGallery($event)">
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;">
+                            <template x-for="(src, i) in gallery" :key="i"><img :src="src" alt="" style="width:52px; height:52px; object-fit:cover; border-radius:10px; box-shadow:0 0 0 2px var(--tp-ok,#5aa07e);"></template>
+                        </div>
+                    </div>
+                </div>
+                @if($product->images->isNotEmpty())
+                    <div style="margin-top:14px;">
+                        <div style="{{ $lbl }}">รูปเพิ่มเติมปัจจุบัน — แตะเพื่อเลือกลบ</div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            @foreach($product->images as $image)
+                                <button type="button" @click="toggleDelete({{ $image->id }})"
+                                        style="position:relative; width:72px; height:72px; border:0; padding:0; border-radius:12px; overflow:hidden; cursor:pointer;"
+                                        :style="{ opacity: deleted.includes({{ $image->id }}) ? '.35' : '1', boxShadow: deleted.includes({{ $image->id }}) ? '0 0 0 2px var(--tp-bad,#d9534f)' : 'var(--raise)' }">
+                                    <img src="{{ $image->url }}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+                                    <span x-show="deleted.includes({{ $image->id }})" x-cloak class="grid" style="position:absolute; inset:0; place-items:center; color:var(--tp-bad,#d9534f); font-size:22px;"><i class="fas fa-trash"></i></span>
+                                </button>
+                            @endforeach
+                        </div>
+                        <template x-for="id in deleted" :key="id"><input type="hidden" name="deleted_images[]" :value="id"></template>
+                        <div x-show="deleted.length > 0" x-cloak style="font-size:12px; color:{{ $c['bad'] }}; margin-top:6px;"><span x-text="deleted.length"></span> รูปจะถูกลบเมื่อกดบันทึก</div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- GP / PV / เงินคืน --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-percent" style="color:var(--accent1);"></i> ค่า GP และค่าแนะนำ</div>
+                @if($gpInfo)
+                    <div class="tp-well" style="padding:12px 14px; margin-bottom:14px; font-size:13px;">
+                        ตอนนี้ระบบคิด GP สินค้านี้ <strong class="tp-num" style="color:var(--deep1);">{{ rtrim(rtrim(number_format((float) $gpInfo['rate'], 2), '0'), '.') }}%</strong>
+                        <span style="color:var(--ink2);">— {{ $gpInfo['label_th'] }}</span>
+                    </div>
+                @endif
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;">
+                    <div>
+                        <label style="{{ $lbl }}">อัตรา GP เฉพาะสินค้านี้ (%)</label>
+                        <input type="number" name="admin_gp_rate" step="0.01" min="0" max="100" value="{{ $adminGp }}" class="tp-input tp-num" placeholder="ว่าง = ใช้อัตราตามแพ็กเกจร้าน">
+                        <div style="{{ $hint }}">ตั้งค่านี้แล้วจะทับอัตราแพ็กเกจและโปรฯ GP ฟรี · เว้นว่างเพื่อกลับไปใช้อัตราปกติ</div>
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">PV ต่อชิ้น</label>
+                        <input type="number" name="pv_value" step="0.01" min="0" value="{{ old('pv_value', $product->pv_value ?? 0) }}" class="tp-input tp-num">
+                        <div style="{{ $hint }}">ใช้คิดค่าแนะนำ (เมื่อเปิดระบบค่าแนะนำ)</div>
+                    </div>
+                    <div>
+                        <label style="{{ $lbl }}">เงินคืนลูกค้า (%)</label>
+                        <input type="number" name="cashback_percentage" step="0.01" min="0" max="100" value="{{ old('cashback_percentage', $product->cashback_percentage ?? 0) }}" class="tp-input tp-num">
+                    </div>
+                </div>
+            </div>
+
+            {{-- การแสดงผล --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-toggle-on" style="color:var(--accent1);"></i> การแสดงผล</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px;">
+                    <label class="tp-well" style="{{ $check }}"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $product->is_active)) style="accent-color:var(--accent1); width:17px; height:17px;"> เปิดขาย</label>
+                    <label class="tp-well" style="{{ $check }}"><input type="checkbox" name="is_featured" value="1" @checked(old('is_featured', $product->is_featured)) style="accent-color:var(--accent1); width:17px; height:17px;"> ⭐ สินค้าแนะนำ</label>
+                    <label class="tp-well" style="{{ $check }}"><input type="checkbox" name="is_hidden" value="1" @checked(old('is_hidden', $product->is_hidden ?? false)) style="accent-color:var(--accent1); width:17px; height:17px;"> ซ่อนจากหน้าร้าน</label>
+                    <label class="tp-well" style="{{ $check }}"><input type="checkbox" name="track_inventory" value="1" @checked(old('track_inventory', $product->track_inventory)) style="accent-color:var(--accent1); width:17px; height:17px;"> นับสต็อก</label>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+                <a href="{{ route('admin.ecommerce.products.index') }}" class="tp-btn">ยกเลิก</a>
+                <button type="submit" class="tp-btn tp-btn-primary" :disabled="busy">
+                    <i class="fas" :class="busy ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+                    <span x-text="busy ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'"></span>
+                </button>
+            </div>
+        </form>
+
+        {{-- ===== แถบข้าง: บล็อก/ปลดบล็อก (ฟอร์มแยก ไม่ซ้อนในฟอร์มหลัก) ===== --}}
+        <div style="flex:1 1 260px; min-width:0; display:flex; flex-direction:column; gap:16px;">
+            <div class="tp-card" x-data="{ open: false, busy: false }">
+                <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-shield-halved" style="color:var(--accent1);"></i> การบล็อกสินค้า</div>
+                @if($product->is_blocked)
+                    <div style="font-size:13px; margin-bottom:10px;">
+                        <span class="tp-pill" style="background:color-mix(in srgb, {{ $c['bad'] }} 16%, transparent); color:{{ $c['bad'] }};">🚫 ถูกบล็อกอยู่</span>
+                        <div style="margin-top:8px;">เหตุผล: {{ $product->block_reason ?: '-' }}</div>
+                        @if($product->blocked_at)<div style="font-size:12px; color:var(--ink2);">เมื่อ {{ $product->blocked_at->format('d/m/Y H:i') }}{{ $product->blockedByUser ? ' โดย '.$product->blockedByUser->name : '' }}</div>@endif
+                    </div>
+                    <form method="POST" action="{{ route('admin.ecommerce.products.unblock', $product) }}"
+                          @submit="if (!confirm('ปลดบล็อกสินค้านี้? ร้านค้าจะได้รับแจ้งเตือน และต้องเปิดขายเอง')) { $event.preventDefault(); return; } busy = true">
+                        @csrf
+                        <button type="submit" class="tp-btn tp-btn-primary" style="width:100%;" :disabled="busy"><i class="fas fa-lock-open"></i> ปลดบล็อกสินค้า</button>
+                    </form>
+                @else
+                    <div style="font-size:12.5px; color:var(--ink2); margin-bottom:10px;">บล็อกแล้วสินค้าจะถูกปิดขายทันที และร้านค้าได้รับแจ้งเตือนพร้อมเหตุผล</div>
+                    <button type="button" class="tp-btn" style="width:100%; color:{{ $c['bad'] }};" @click="open = !open"><i class="fas fa-ban"></i> บล็อกสินค้านี้</button>
+                    <form x-show="open" x-cloak method="POST" action="{{ route('admin.ecommerce.products.block', $product) }}" style="margin-top:12px;"
+                          @submit="if (!confirm('ยืนยันบล็อกสินค้านี้?')) { $event.preventDefault(); return; } busy = true">
+                        @csrf
+                        <label style="{{ $lbl }}">เหตุผล (ร้านค้าจะเห็น) <span style="color:{{ $c['bad'] }};">*</span></label>
+                        <textarea name="block_reason" rows="3" maxlength="1000" required class="tp-input" placeholder="เช่น ละเมิดลิขสิทธิ์ รูปไม่เหมาะสม ข้อมูลไม่ถูกต้อง"></textarea>
+                        <button type="submit" class="tp-btn" style="width:100%; margin-top:10px; background:{{ $c['bad'] }}; color:var(--tp-on-accent,#fff);" :disabled="busy">ยืนยันการบล็อก</button>
+                    </form>
+                @endif
+            </div>
+
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:8px;"><i class="fas fa-circle-info" style="color:var(--accent1);"></i> ข้อมูลระบบ</div>
+                <div style="font-size:12.5px; color:var(--ink2); line-height:1.8;">
+                    รหัสสินค้า: <span class="tp-num">#{{ $product->id }}</span><br>
+                    สร้างเมื่อ: <span class="tp-num">{{ $product->created_at?->format('d/m/Y H:i') }}</span><br>
+                    แก้ไขล่าสุด: <span class="tp-num">{{ $product->updated_at?->format('d/m/Y H:i') }}</span><br>
+                    ขายแล้ว: <span class="tp-num">{{ number_format((int) ($product->sales_count ?? 0)) }}</span> ชิ้น
+                </div>
+            </div>
         </div>
+    </div>
 </div>
-
-@push('scripts')
-<script>
-/**
- * Alpine.js Component สำหรับจัดการ Image Upload และ Preview
- *
- * ฟังก์ชันนี้ใช้สำหรับ:
- * - แสดง preview รูปภาพหลักที่เลือก
- * - แสดง preview รูปภาพเพิ่มเติมหลายรูป
- * - จัดการการลบรูปที่มีอยู่เดิม
- */
-function imageUploadHandler() {
-    return {
-        // สำหรับรูปหลัก
-        mainImagePreview: null,
-        mainImageFile: null,
-
-        // สำหรับรูปเพิ่มเติม
-        additionalImagePreviews: [],
-        additionalImageFiles: [],
-
-        // สำหรับรูปที่จะลบ
-        deletedImageIds: [],
-
-        /**
-         * Preview รูปหลักที่เลือก
-         *
-         * @param {Event} event - Change event จาก input file
-         */
-        previewMainImage(event) {
-            const file = event.target.files[0];
-            if (file) {
-                // ตรวจสอบขนาดไฟล์ (max 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
-                    event.target.value = '';
-                    return;
-                }
-
-                // ตรวจสอบประเภทไฟล์
-                if (!file.type.startsWith('image/')) {
-                    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-                    event.target.value = '';
-                    return;
-                }
-
-                this.mainImageFile = file;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.mainImagePreview = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        },
-
-        /**
-         * ล้าง preview รูปหลักและ input
-         */
-        clearMainImage() {
-            this.mainImagePreview = null;
-            this.mainImageFile = null;
-            const input = document.getElementById('main_image_input');
-            if (input) {
-                input.value = '';
-            }
-        },
-
-        /**
-         * Preview รูปเพิ่มเติมหลายรูป
-         *
-         * @param {Event} event - Change event จาก input file (multiple)
-         */
-        previewAdditionalImages(event) {
-            const files = Array.from(event.target.files);
-
-            // ตรวจสอบจำนวนไฟล์
-            if (files.length > 10) {
-                alert('สามารถเลือกได้สูงสุด 10 รูป');
-                event.target.value = '';
-                return;
-            }
-
-            // ล้าง previews เดิม
-            this.additionalImagePreviews = [];
-            this.additionalImageFiles = [];
-
-            files.forEach((file, index) => {
-                // ตรวจสอบขนาดไฟล์ (max 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert(`ไฟล์ ${file.name} มีขนาดเกิน 5MB`);
-                    return;
-                }
-
-                // ตรวจสอบประเภทไฟล์
-                if (!file.type.startsWith('image/')) {
-                    alert(`ไฟล์ ${file.name} ไม่ใช่รูปภาพ`);
-                    return;
-                }
-
-                this.additionalImageFiles.push(file);
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.additionalImagePreviews.push(e.target.result);
-                };
-                reader.readAsDataURL(file);
-            });
-        },
-
-        /**
-         * ลบ preview รูปเพิ่มเติมตาม index
-         * หมายเหตุ: การลบ preview จะไม่สามารถลบไฟล์จาก input ได้
-         * แต่จะแสดงให้ผู้ใช้เห็นว่ารูปไหนจะถูกอัพโหลด
-         *
-         * @param {number} index - Index ของ preview ที่จะลบ
-         */
-        removeAdditionalPreview(index) {
-            this.additionalImagePreviews.splice(index, 1);
-            this.additionalImageFiles.splice(index, 1);
-
-            // หมายเหตุ: ไม่สามารถแก้ไข FileList ได้โดยตรง
-            // ดังนั้นถ้าต้องการลบไฟล์จริงๆ ต้อง clear แล้วให้เลือกใหม่
-            if (this.additionalImagePreviews.length === 0) {
-                const input = document.getElementById('additional_images_input');
-                if (input) {
-                    input.value = '';
-                }
-            }
-        },
-
-        /**
-         * Mark รูปเดิมสำหรับการลบ
-         *
-         * @param {number} imageId - ID ของรูปที่จะลบ
-         */
-        markImageForDeletion(imageId) {
-            if (!this.deletedImageIds.includes(imageId)) {
-                this.deletedImageIds.push(imageId);
-            }
-        },
-
-        /**
-         * ยกเลิก mark ลบรูป
-         *
-         * @param {number} imageId - ID ของรูปที่จะยกเลิกการลบ
-         */
-        unmarkImageForDeletion(imageId) {
-            const index = this.deletedImageIds.indexOf(imageId);
-            if (index > -1) {
-                this.deletedImageIds.splice(index, 1);
-            }
-        }
-    };
-}
-
-/**
- * ฟังก์ชันแปลภาษาด้วย Google Translate API
- *
- * @param {string} targetLang - ภาษาปลายทาง (en, zh, ja)
- * @return {Promise<void>}
- */
-async function translatePage(targetLang) {
-    // ถ้าเลือกภาษาไทย ให้ reload หน้าเพื่อกลับไปใช้ค่าเริ่มต้น
-    if (targetLang === 'th') {
-        location.reload();
-        return;
-    }
-
-    // ดึง elements ที่มี data-translate attribute
-    const elements = document.querySelectorAll('[data-translate]');
-    const placeholderElements = document.querySelectorAll('[data-translate-placeholder]');
-
-    try {
-        // เตรียมข้อความที่จะแปล
-        const textsToTranslate = Array.from(elements).map(el => {
-            // เก็บข้อความต้นฉบับไว้ในกรณีที่ต้องการกลับมาใช้
-            if (!el.dataset.originalText) {
-                el.dataset.originalText = el.textContent.trim();
-            }
-            return el.dataset.originalText;
-        });
-
-        // Google Translate API key
-        const apiKey = '{{ config("services.google_translate.key", "") }}';
-
-        if (!apiKey) {
-            console.warn('Google Translate API key not configured');
-            return;
-        }
-
-        // เรียก Google Translate API สำหรับ text content
-        const response = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                q: textsToTranslate,
-                source: 'th',
-                target: targetLang,
-                format: 'text'
-            })
-        });
-
-        const data = await response.json();
-
-        // อัพเดทข้อความที่แปลแล้ว
-        if (data.data && data.data.translations) {
-            data.data.translations.forEach((translation, index) => {
-                if (elements[index]) {
-                    elements[index].textContent = translation.translatedText;
-                }
-            });
-        }
-
-        // แปล placeholders
-        for (const el of placeholderElements) {
-            if (!el.dataset.originalPlaceholder) {
-                el.dataset.originalPlaceholder = el.placeholder;
-            }
-
-            const placeholderResponse = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    q: [el.dataset.originalPlaceholder],
-                    source: 'th',
-                    target: targetLang,
-                    format: 'text'
-                })
-            });
-
-            const placeholderData = await placeholderResponse.json();
-            if (placeholderData.data && placeholderData.data.translations[0]) {
-                el.placeholder = placeholderData.data.translations[0].translatedText;
-            }
-        }
-
-    } catch (error) {
-        console.error('Translation error:', error);
-    }
-}
-
-// ติดตามการเปลี่ยนแปลงของ language variable ใน Alpine.js
-document.addEventListener('alpine:init', () => {
-    Alpine.watch('language', (value) => {
-        if (value !== 'th') {
-            translatePage(value);
-        }
-    });
-});
-</script>
-@endpush
-
 @endsection

@@ -1,191 +1,153 @@
-@extends('layouts.admin-v3')
+{{--
+ | ผู้ขายตลาดสด (admin.fresh-market.sellers) — ธีม V4
+ | ตัวแปรจาก Admin\FreshMarketController@sellers: $sellers (paginator, with user, withCount listings/orders)
+ | ตัวกรอง GET: status (active|suspended|unverified|verified), search
+ | สถานะร้านใช้ $seller->status_key (suspended|inactive|unverified|active) — ไม่มีคอลัมน์ status จริง
+ | การกระทำ: POST sellers.verify / sellers.suspend {reason?} / sellers.activate (ผ่านโมดัลยืนยัน)
+--}}
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการร้านค้า - ตลาดสดไทยพร๊อม')
+@section('title', 'ผู้ขายตลาดสด')
 
 @section('content')
-<div class="space-y-6">
-    {{-- ส่วนหัว --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">จัดการร้านค้า - ตลาดสดไทยพร๊อม</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">จัดการร้านค้าและผู้ขายในระบบตลาดสด</p>
+@include('admin.riders.partials.v4-kit')
+@php
+    $statusFilters = ['' => 'ทั้งหมด', 'active' => 'เปิดขาย', 'unverified' => 'รอยืนยัน', 'verified' => 'ยืนยันแล้ว', 'suspended' => 'ถูกระงับ'];
+    $hasFilter = request()->hasAny(['status', 'search']);
+@endphp
+<div x-data="{}" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.fresh-market.dashboard') }}" class="tp-icon-btn" title="กลับแดชบอร์ดตลาดสด"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ตลาดสด · ผู้ขาย</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ผู้ขายตลาดสด 👨‍🌾</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ยืนยันร้าน ระงับร้านที่ผิดกฎ และดูยอดขาย/ค่า GP ค้างของแต่ละร้าน</div>
+            </div>
         </div>
-        <a href="{{ route('admin.fresh-market.dashboard') }}"
-           class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            <i class="fas fa-arrow-left mr-2"></i> กลับแดชบอร์ด
-        </a>
     </div>
 
-    {{-- แจ้งเตือน --}}
-    @if(session('success'))
-        <div class="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl">
-            {{ session('success') }}
-        </div>
-    @endif
+    @include('admin.riders.partials.flash')
 
-    @if(session('error'))
-        <div class="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl">
-            {{ session('error') }}
+    {{-- ===== ตัวกรอง ===== --}}
+    <div class="tp-card" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            @foreach ($statusFilters as $value => $label)
+                <a href="{{ route('admin.fresh-market.sellers', array_filter(['status' => $value, 'search' => request('search')])) }}"
+                   class="tp-btn tp-btn-sm {{ (string) request('status', '') === (string) $value ? 'tp-btn-primary' : '' }}">{{ $label }}</a>
+            @endforeach
         </div>
-    @endif
-
-    {{-- ตัวกรอง --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <form method="GET" action="{{ route('admin.fresh-market.sellers') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ค้นหา</label>
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ค้นหาชื่อร้านค้า, ชื่อผู้ขาย..."
-                       class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">สถานะ</label>
-                <select name="status"
-                        class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                    <option value="">ทุกสถานะ</option>
-                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>ใช้งาน</option>
-                    <option value="suspended" {{ request('status') === 'suspended' ? 'selected' : '' }}>ระงับ</option>
-                    <option value="unverified" {{ request('status') === 'unverified' ? 'selected' : '' }}>รอยืนยัน</option>
-                </select>
-            </div>
-            <div class="flex items-end gap-2">
-                <button type="submit"
-                        class="inline-flex items-center px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition">
-                    <i class="fas fa-search mr-2"></i> ค้นหา
-                </button>
-                <a href="{{ route('admin.fresh-market.sellers') }}"
-                   class="inline-flex items-center px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                    <i class="fas fa-redo mr-1"></i> ล้าง
-                </a>
-            </div>
+        <form method="GET" action="{{ route('admin.fresh-market.sellers') }}" style="display:flex; flex-wrap:wrap; gap:8px;">
+            @if (request('status'))<input type="hidden" name="status" value="{{ request('status') }}">@endif
+            <input type="search" name="search" value="{{ request('search') }}" class="tp-input" style="flex:1; min-width:200px;" placeholder="ชื่อร้าน เบอร์โทร หรือชื่อเจ้าของ">
+            <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> ค้นหา</button>
+            @if ($hasFilter)
+                <a href="{{ route('admin.fresh-market.sellers') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> ล้าง</a>
+            @endif
         </form>
     </div>
 
-    {{-- ตารางร้านค้า --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ร้านค้า</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">เจ้าของ</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สินค้า</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ยอดขาย</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">คะแนน</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px;">
+            <div class="tp-section-h"><i class="fas fa-store"></i> รายชื่อร้าน</div>
+            <span style="font-size:12px; color:var(--ink2);">ทั้งหมด {{ number_format($sellers->total()) }} ร้าน</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:900px; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="text-align:left; font-size:11px; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">
+                        <th style="padding:10px 18px;">ร้าน</th>
+                        <th style="padding:10px 12px;">เจ้าของ / ติดต่อ</th>
+                        <th style="padding:10px 12px; text-align:right;">สินค้า / ออเดอร์</th>
+                        <th style="padding:10px 12px; text-align:right;">ขายสำเร็จ</th>
+                        <th style="padding:10px 12px; text-align:center;">คะแนน</th>
+                        <th style="padding:10px 12px;">สถานะ</th>
+                        <th style="padding:10px 18px; text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($sellers as $seller)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-4 py-4">
-                                <div class="flex items-center">
-                                    <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-600 dark:text-green-400 font-bold text-sm flex-shrink-0">
-                                        {{ mb_substr($seller->shop_name, 0, 1) }}
-                                    </div>
-                                    <div class="ml-3">
-                                        <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $seller->shop_name }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">สมัครเมื่อ {{ $seller->created_at->diffForHumans() }}</div>
+                <tbody>
+                    @forelse ($sellers as $seller)
+                        <tr class="w1-row" style="box-shadow:inset 0 1px 0 color-mix(in srgb, var(--ink2) 14%, transparent);">
+                            <td style="padding:12px 18px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="tp-tile" style="width:38px; height:38px; border-radius:50%; font-weight:800;">{{ mb_substr($seller->shop_name ?: 'ร', 0, 1) }}</span>
+                                    <div style="min-width:0;">
+                                        <a href="{{ route('admin.fresh-market.sellers.show', $seller) }}" class="w1-link" style="color:var(--ink);">{{ $seller->shop_name }}</a>
+                                        <div style="font-size:11.5px; color:var(--ink2);">#{{ $seller->id }} · สมัคร {{ $seller->created_at?->thaidate('j M Y') }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
-                                {{ $seller->user->name ?? '-' }}
+                            <td style="padding:12px;">
+                                <div>{{ $seller->user?->name ?? '-' }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);">
+                                    @if ($seller->phone)<a href="tel:{{ $seller->phone }}" class="w1-link">{{ $seller->phone }}</a>@else - @endif
+                                    · {{ collect([$seller->district, $seller->province])->filter()->implode(', ') ?: 'ไม่ระบุพื้นที่' }}
+                                </div>
                             </td>
-                            <td class="px-4 py-4 text-center text-sm text-gray-900 dark:text-white font-medium">
-                                {{ number_format($seller->total_listings ?? 0) }}
+                            <td style="padding:12px; text-align:right;" class="tp-num">
+                                <a href="{{ route('admin.fresh-market.listings', ['seller_id' => $seller->id]) }}" class="w1-link">{{ number_format((int) $seller->listings_count) }}</a>
+                                <span style="color:var(--ink2);">/ {{ number_format((int) $seller->orders_count) }}</span>
                             </td>
-                            <td class="px-4 py-4 text-center text-sm text-gray-900 dark:text-white font-medium">
-                                {{ number_format($seller->total_sales ?? 0, 2) }} <span class="text-xs text-gray-500">บาท</span>
+                            <td style="padding:12px; text-align:right;" class="tp-num">
+                                {{ number_format((int) $seller->total_sales) }} ออเดอร์
+                                <div style="font-size:11.5px; color:var(--ink2);">฿{{ number_format((float) $seller->total_revenue, 2) }}</div>
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                @if($seller->rating)
-                                    <div class="flex items-center justify-center gap-1">
-                                        <i class="fas fa-star text-yellow-400 text-xs"></i>
-                                        <span class="text-sm text-gray-900 dark:text-white">{{ number_format($seller->rating, 1) }}</span>
-                                    </div>
+                            <td style="padding:12px; text-align:center; white-space:nowrap;" class="tp-num">
+                                @if ((int) $seller->rating_count > 0)
+                                    <i class="fas fa-star" style="color:var(--accent1);"></i> {{ number_format((float) $seller->rating_average, 1) }}
+                                    <span style="font-size:11px; color:var(--ink2);">({{ number_format((int) $seller->rating_count) }})</span>
                                 @else
-                                    <span class="text-xs text-gray-400">-</span>
+                                    <span style="color:var(--ink2);">-</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                @switch($seller->status)
-                                    @case('active')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            ใช้งาน
-                                        </span>
-                                        @break
-                                    @case('suspended')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                            ระงับ
-                                        </span>
-                                        @break
-                                    @default
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                            รอยืนยัน
-                                        </span>
-                                @endswitch
+                            <td style="padding:12px;">
+                                <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
+                                    @include('admin.riders.partials.status', ['statusKind' => 'seller', 'statusValue' => $seller->status_key, 'statusLabel' => null])
+                                    @if ($seller->is_verified && $seller->status_key !== 'unverified')
+                                        <span style="font-size:11px; color:var(--ink2);"><i class="fas fa-certificate"></i> ยืนยันแล้ว</span>
+                                    @endif
+                                </div>
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                <div class="flex items-center justify-center gap-1">
-                                    @if($seller->status === 'unverified')
-                                        <form method="POST" action="{{ route('admin.fresh-market.sellers.verify', $seller) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit"
-                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40 transition"
-                                                    title="ยืนยันร้านค้า">
-                                                <i class="fas fa-check mr-1"></i> ยืนยัน
-                                            </button>
-                                        </form>
+                            <td style="padding:12px 18px;">
+                                <div style="display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;">
+                                    <a href="{{ route('admin.fresh-market.sellers.show', $seller) }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-eye"></i> ดู</a>
+                                    @if (! $seller->is_verified)
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-ok);" title="ยืนยันร้าน"
+                                                @click="$dispatch('w1-action', @js(['url' => route('admin.fresh-market.sellers.verify', $seller), 'title' => 'ยืนยันร้าน '.$seller->shop_name, 'message' => 'ร้านจะได้รับแจ้งเตือน และสินค้าจะแสดงให้ผู้ซื้อเห็น', 'reason' => 'none', 'confirm' => 'ยืนยันร้าน', 'tone' => 'ok', 'icon' => 'fa-certificate']))">
+                                            <i class="fas fa-check"></i>
+                                        </button>
                                     @endif
-
-                                    @if($seller->status === 'active')
-                                        <form method="POST" action="{{ route('admin.fresh-market.sellers.suspend', $seller) }}"
-                                              onsubmit="return confirm('ยืนยันการระงับร้านค้านี้?')">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit"
-                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition"
-                                                    title="ระงับร้านค้า">
-                                                <i class="fas fa-ban mr-1"></i> ระงับ
-                                            </button>
-                                        </form>
-                                    @endif
-
-                                    @if($seller->status === 'suspended')
-                                        <form method="POST" action="{{ route('admin.fresh-market.sellers.activate', $seller) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit"
-                                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition"
-                                                    title="เปิดใช้งานร้านค้า">
-                                                <i class="fas fa-undo mr-1"></i> เปิดใช้งาน
-                                            </button>
-                                        </form>
+                                    @if ($seller->is_suspended || ! $seller->is_active)
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-ok);" title="เปิดใช้งานร้าน"
+                                                @click="$dispatch('w1-action', @js(['url' => route('admin.fresh-market.sellers.activate', $seller), 'title' => 'เปิดใช้งานร้าน '.$seller->shop_name, 'message' => 'ร้านกลับมาขายได้ตามปกติ ร้านจะได้รับแจ้งเตือน', 'reason' => 'none', 'confirm' => 'เปิดใช้งาน', 'tone' => 'ok', 'icon' => 'fa-store']))">
+                                            <i class="fas fa-rotate-left"></i>
+                                        </button>
+                                    @else
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-bad);" title="ระงับร้าน"
+                                                @click="$dispatch('w1-action', @js(['url' => route('admin.fresh-market.sellers.suspend', $seller), 'title' => 'ระงับร้าน '.$seller->shop_name, 'message' => 'สินค้าของร้านจะถูกซ่อนจากผู้ซื้อทันที ร้านจะเห็นเหตุผลในการแจ้งเตือน', 'reason' => 'optional', 'reasonLabel' => 'เหตุผลที่ระงับ (ร้านจะเห็น)', 'confirm' => 'ระงับร้าน', 'tone' => 'bad', 'icon' => 'fa-ban']))">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
                                     @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-store text-4xl mb-3 block"></i>
-                                ไม่พบร้านค้าที่ตรงกับเงื่อนไข
+                            <td colspan="7" style="padding:44px 18px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-store" style="font-size:30px; opacity:.5; display:block; margin-bottom:10px;"></i>
+                                {{ $hasFilter ? 'ไม่พบร้านตามเงื่อนไขที่เลือก' : 'ยังไม่มีร้านสมัครเข้ามา' }}
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        {{-- Pagination --}}
-        @if($sellers->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                {{ $sellers->withQueryString()->links() }}
-            </div>
-        @endif
     </div>
+
+    @if ($sellers->hasPages())
+        <div>{{ $sellers->links() }}</div>
+    @endif
 </div>
 @endsection

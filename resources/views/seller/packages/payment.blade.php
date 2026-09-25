@@ -1,225 +1,127 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'ชำระเงินแพ็คเกจ')
+@section('title', 'ชำระค่าแพ็กเกจ')
+
+@push('styles')
+    @include('seller.partials.v4-styles')
+@endpush
+
+@php
+    use App\Support\Seller\SellerUi;
+
+    $package = $subscription->package;
+    $due = (float) ($totalDue ?? ((float) $subscription->amount + (float) ($package->setup_fee ?? 0)));
+    $balance = (float) ($walletBalance ?? 0);
+    $enough = $balance + 0.00001 >= $due;
+    $shortfall = max(0, round($due - $balance, 2));
+    $alreadyPaid = ($subscription->payment_status ?? null) === 'paid';
+    $supportEmail = \App\Support\ContactInfo::supportEmail();
+@endphp
 
 @section('content')
-<div class="max-w-4xl mx-auto px-4 py-8 pb-24 lg:pb-8">
-    <div class="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-        {{-- Header --}}
-        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 md:px-8 py-6 text-white">
-            <div class="flex items-center gap-4">
-                <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
-                    <i class="fas fa-credit-card text-3xl"></i>
+<div class="sv4-page" style="max-width:860px; margin-inline:auto; width:100%;">
+
+    <x-seller-v4.header title="ชำระค่าแพ็กเกจ" subtitle="ชำระด้วยยอดเงินในกระเป๋า แพ็กเกจเริ่มใช้งานทันทีหลังชำระสำเร็จ" icon="💳" :back="route('seller.packages')" />
+
+    <x-seller-v4.errors />
+
+    {{-- สรุปรายการ --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="sv4-h2">🧾 สรุปรายการ</div>
+        <div style="margin-top:10px;">
+            <div class="sv4-kv"><span>แพ็กเกจ</span><span>{{ $package->display_name ?? '-' }}</span></div>
+            <div class="sv4-kv"><span>รอบการชำระ</span>
+                <span><span class="sv4-pill" style="{{ SellerUi::pill($subscription->subscription_type === 'yearly' ? SellerUi::OK : SellerUi::INFO) }}">
+                    {{ $subscription->subscription_type === 'yearly' ? '📅 รายปี' : '🗓️ รายเดือน' }}</span></span>
+            </div>
+            @if($subscription->started_at && $subscription->expires_at)
+                <div class="sv4-kv"><span>ระยะเวลา</span><span class="tp-num">{{ $subscription->started_at->format('d/m/Y') }} – {{ $subscription->expires_at->format('d/m/Y') }}</span></div>
+            @endif
+            <div class="sv4-kv"><span>ค่าแพ็กเกจ</span><span class="tp-num">฿{{ number_format((float) $subscription->amount, 2) }}</span></div>
+            @if(($package->setup_fee ?? 0) > 0)
+                <div class="sv4-kv"><span>ค่าแรกเข้า (ครั้งแรกเท่านั้น)</span><span class="tp-num">฿{{ number_format((float) $package->setup_fee, 2) }}</span></div>
+            @endif
+            <hr class="sv4-divider" style="margin:8px 0;">
+            <div class="sv4-kv" style="font-size:15px;"><span style="color:var(--ink); font-weight:800;">ยอดที่ต้องชำระ</span>
+                <span class="tp-num" style="font-size:22px; color:var(--deep1);">฿{{ number_format($due, 2) }}</span>
+            </div>
+        </div>
+    </div>
+
+    @if($alreadyPaid)
+        <div class="sv4-note" style="--c:{{ SellerUi::OK }}; font-size:13px;">✅ รายการนี้ชำระเงินแล้ว — <a href="{{ route('seller.dashboard') }}" class="sv4-link">ไปที่แดชบอร์ด</a></div>
+    @else
+        {{-- ช่องทางชำระเงิน --}}
+        <form action="{{ route('seller.packages.process-payment', $subscription->id) }}" method="POST" id="paymentForm"
+              class="tp-card" style="padding:20px; display:flex; flex-direction:column; gap:14px;"
+              x-data="{ busy: false }" @submit="busy = true">
+            @csrf
+            <div class="sv4-h2">💳 ช่องทางชำระเงิน</div>
+
+            <label class="sv4-choice on">
+                <input type="radio" name="payment_method" value="wallet" checked style="margin-top:3px; accent-color:var(--accent1);">
+                <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-weight:800;">👛 ยอดเงินในกระเป๋า</span>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); margin-top:2px;">
+                        คงเหลือ <b class="tp-num" style="color:{{ $enough ? SellerUi::OK : SellerUi::BAD }};">฿{{ number_format($balance, 2) }}</b>
+                    </span>
+                </span>
+            </label>
+
+            @unless($enough)
+                <div class="sv4-note" style="--c:{{ SellerUi::WARN }};">
+                    ยอดในกระเป๋ายังไม่พอ ขาดอีก <b class="tp-num">฿{{ number_format($shortfall, 2) }}</b> —
+                    เติมเงินด้วย PromptPay หรือโอนเงิน (ระบบตรวจสลิปอัตโนมัติ) แล้วกลับมาชำระที่หน้านี้
+                    <div style="margin-top:8px;"><a href="{{ route('user.wallet.topup') }}" class="tp-btn tp-btn-sm tp-btn-primary">➕ เติมเงินเข้ากระเป๋า</a></div>
                 </div>
+            @endunless
+
+            <div class="sv4-choice off" aria-disabled="true">
+                <span style="font-size:18px;">📱</span>
+                <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-weight:800;">PromptPay / โอนเงิน</span>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2);">ใช้เติมเงินเข้ากระเป๋าก่อน แล้วชำระด้วยกระเป๋าเงิน</span>
+                </span>
+            </div>
+            <div class="sv4-choice off" aria-disabled="true">
+                <span style="font-size:18px;">💳</span>
+                <span style="flex:1; min-width:0;">
+                    <span style="display:block; font-weight:800;">บัตรเครดิต/เดบิต</span>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2);">เร็วๆ นี้</span>
+                </span>
+            </div>
+
+            @if(! empty($walletHasPin))
                 <div>
-                    <h1 class="text-2xl md:text-3xl font-bold">ชำระเงินแพ็คเกจ</h1>
-                    <p class="text-indigo-100 mt-1">กรุณาทำการชำระเงินเพื่อเริ่มใช้งานแพ็คเกจของคุณ</p>
+                    <label for="pin" class="sv4-label">PIN กระเป๋าเงิน <span class="req">*</span></label>
+                    <input type="password" name="pin" id="pin" inputmode="numeric" autocomplete="off" maxlength="20" required
+                           class="tp-input tp-num" style="letter-spacing:4px;" placeholder="กรอก PIN เพื่อยืนยันการชำระเงิน">
+                    @error('pin')<div class="sv4-err">{{ $message }}</div>@enderror
                 </div>
-            </div>
-        </div>
+            @endif
 
-        <div class="p-6 md:p-8">
-            {{-- Package Summary --}}
-            <div class="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-2xl p-6 mb-8 border border-purple-400/30">
-                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fas fa-receipt text-purple-400"></i>
-                    สรุปรายการ
-                </h2>
-
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-300">แพ็คเกจ:</span>
-                        <span class="font-semibold text-white flex items-center gap-2">
-                            @if($subscription->package->badge)
-                                <span class="px-2 py-1 text-xs rounded-lg text-white" style="background-color: {{ $subscription->package->badge_color ?? '#9333EA' }}">
-                                    {{ $subscription->package->badge }}
-                                </span>
-                            @endif
-                            {{ $subscription->package->display_name }}
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-300">ประเภทการชำระ:</span>
-                        <span class="font-semibold text-white">
-                            @if($subscription->subscription_type === 'yearly')
-                                <span class="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-sm">
-                                    <i class="fas fa-calendar-alt mr-1"></i> รายปี (ประหยัด)
-                                </span>
-                            @else
-                                <span class="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-sm">
-                                    <i class="fas fa-calendar-week mr-1"></i> รายเดือน
-                                </span>
-                            @endif
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between items-center">
-                        <span class="text-gray-300">ระยะเวลา:</span>
-                        <span class="font-semibold text-white">
-                            {{ $subscription->started_at->format('d/m/Y') }} - {{ $subscription->expires_at->format('d/m/Y') }}
-                        </span>
-                    </div>
-
-                    @if($subscription->package->setup_fee > 0)
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-300">ค่าติดตั้ง:</span>
-                            <span class="font-semibold text-white">฿{{ number_format($subscription->package->setup_fee, 2) }}</span>
-                        </div>
-                    @endif
-
-                    {{-- Total --}}
-                    <div class="border-t border-purple-400/30 pt-4 flex justify-between items-center">
-                        <span class="text-lg font-bold text-white">ยอดรวม:</span>
-                        <span class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            ฿{{ number_format($totalDue ?? ($subscription->amount + ($subscription->package->setup_fee ?? 0)), 2) }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Payment Methods --}}
-            <div class="mb-8">
-                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fas fa-wallet text-purple-400"></i>
-                    เลือกวิธีการชำระเงิน
-                </h2>
-
-                <form action="{{ route('seller.packages.process-payment', $subscription->id) }}" method="POST" id="paymentForm">
-                    @csrf
-
-                    <div class="space-y-4">
-                        {{-- QR Code Payment --}}
-                        {{-- (2026-09-25) ชำระค่าแพ็กเกจได้ผ่านกระเป๋าเงินเท่านั้น — PromptPay/โอน ใช้เติมเงินเข้ากระเป๋าก่อน --}}
-                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl opacity-50 cursor-not-allowed">
-                            <input type="radio" name="payment_method" value="promptpay_qr" class="w-5 h-5 mr-4 text-purple-600" disabled>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-400">PromptPay QR Code</div>
-                                <div class="text-sm text-gray-500">
-                                    ใช้เติมเงินเข้ากระเป๋าก่อน
-                                    <a href="{{ route('user.wallet.topup') }}" class="text-purple-400 hover:underline">เติมเงิน</a>
-                                </div>
-                            </div>
-                            <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-                                <i class="fas fa-qrcode text-2xl text-purple-400"></i>
-                            </div>
-                        </label>
-
-                        {{-- Bank Transfer --}}
-                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl opacity-50 cursor-not-allowed">
-                            <input type="radio" name="payment_method" value="bank_transfer" class="w-5 h-5 mr-4 text-purple-600" disabled>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-400">โอนเงินผ่านธนาคาร</div>
-                                <div class="text-sm text-gray-500">ใช้เติมเงินเข้ากระเป๋าก่อน แล้วชำระด้วยกระเป๋าเงิน</div>
-                            </div>
-                            <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-                                <i class="fas fa-university text-2xl text-blue-400"></i>
-                            </div>
-                        </label>
-
-                        {{-- Credit Card (Coming Soon) --}}
-                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl opacity-50 cursor-not-allowed">
-                            <input type="radio" name="payment_method" value="credit_card" class="w-5 h-5 mr-4 text-purple-600" disabled>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-400">บัตรเครดิต/เดบิต</div>
-                                <div class="text-sm text-gray-500 flex items-center gap-2">
-                                    <i class="fas fa-clock"></i> เร็วๆ นี้
-                                </div>
-                            </div>
-                            <div class="w-12 h-12 bg-gray-600/20 rounded-xl flex items-center justify-center">
-                                <i class="fas fa-credit-card text-2xl text-gray-500"></i>
-                            </div>
-                        </label>
-
-                        {{-- Wallet (If available) --}}
-                        <label class="flex items-center p-4 bg-white/5 border-2 border-white/10 rounded-2xl cursor-pointer hover:border-purple-500/50 hover:bg-white/10 transition group">
-                            <input type="radio" name="payment_method" value="wallet" class="w-5 h-5 mr-4 text-purple-600" checked>
-                            <div class="flex-1">
-                                <div class="font-semibold text-white group-hover:text-purple-300 transition">ใช้ยอดเงินในกระเป๋า</div>
-                                <div class="text-sm text-gray-400">
-                                    ตัดจากยอดคงเหลือในกระเป๋าเงิน
-                                    @isset($walletBalance)
-                                        (คงเหลือ ฿{{ number_format($walletBalance, 2) }})
-                                    @endisset
-                                </div>
-                            </div>
-                            <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition">
-                                <i class="fas fa-wallet text-2xl text-green-400"></i>
-                            </div>
-                        </label>
-
-                        @if(!empty($walletHasPin))
-                            <div>
-                                <label class="block text-sm font-medium text-gray-300 mb-2">PIN กระเป๋าเงิน</label>
-                                <input type="password" name="pin" inputmode="numeric" autocomplete="off" maxlength="20" required
-                                       class="w-full px-4 py-3 bg-white/5 border-2 border-white/10 rounded-xl text-white focus:border-purple-500 focus:outline-none"
-                                       placeholder="กรอก PIN เพื่อยืนยันการชำระเงิน">
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Terms --}}
-                    <div class="mt-6 p-4 bg-white/5 rounded-xl border border-white/10">
-                        <label class="flex items-start cursor-pointer">
-                            <input type="checkbox" name="accept_terms" class="mt-1 mr-3 w-5 h-5 text-purple-600 rounded" required>
-                            <span class="text-sm text-gray-300">
-                                ฉันยอมรับ
-                                <a href="/terms-of-service.html" target="_blank" class="text-purple-400 hover:text-purple-300 hover:underline transition">ข้อกำหนดและเงื่อนไข</a>
-                                และ
-                                <a href="/privacy-policy.html" target="_blank" class="text-purple-400 hover:text-purple-300 hover:underline transition">นโยบายความเป็นส่วนตัว</a>
-                            </span>
-                        </label>
-                    </div>
-
-                    {{-- Action Buttons --}}
-                    <div class="mt-8 flex flex-col sm:flex-row gap-4">
-                        <a href="{{ route('seller.packages') }}"
-                           class="flex-1 py-4 px-6 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-semibold text-center transition flex items-center justify-center gap-2">
-                            <i class="fas fa-arrow-left"></i>
-                            ย้อนกลับ
-                        </a>
-                        <button type="submit"
-                                class="flex-1 py-4 px-6 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold text-center transition shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2">
-                            <i class="fas fa-check-circle"></i>
-                            ดำเนินการชำระเงิน
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {{-- Payment Info --}}
-            <div class="bg-blue-500/10 border border-blue-400/30 rounded-xl p-4">
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-info-circle text-blue-400"></i>
-                    </div>
-                    <div class="text-sm text-blue-200">
-                        <p class="font-semibold mb-2 text-blue-100">ข้อมูลการชำระเงิน</p>
-                        <ul class="list-disc list-inside space-y-1 text-blue-300">
-                            <li>การชำระเงินจะดำเนินการผ่านระบบที่ปลอดภัย</li>
-                            <li>แพ็คเกจจะเริ่มใช้งานทันทีหลังชำระเงินสำเร็จ</li>
-                            <li>หากมีปัญหาติดต่อทีมงาน support@thaiprompt.online</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Security Badge --}}
-            <div class="mt-6 flex items-center justify-center gap-4 text-gray-400 text-sm">
-                <span class="flex items-center gap-1">
-                    <i class="fas fa-lock text-green-400"></i>
-                    SSL Secured
+            <label style="display:flex; gap:10px; align-items:flex-start; font-size:12.5px; line-height:1.6; cursor:pointer;">
+                <input type="checkbox" name="accept_terms" value="1" required style="margin-top:3px; accent-color:var(--accent1); width:18px; height:18px;">
+                <span>ฉันยอมรับ
+                    <a href="{{ route('terms-of-service') }}" target="_blank" rel="noopener" class="sv4-link">ข้อกำหนดและเงื่อนไข</a>
+                    และ
+                    <a href="{{ route('privacy-policy') }}" target="_blank" rel="noopener" class="sv4-link">นโยบายความเป็นส่วนตัว</a>
                 </span>
-                <span class="flex items-center gap-1">
-                    <i class="fas fa-shield-alt text-blue-400"></i>
-                    PCI Compliant
-                </span>
-                <span class="flex items-center gap-1">
-                    <i class="fas fa-user-shield text-purple-400"></i>
-                    ข้อมูลปลอดภัย
-                </span>
+            </label>
+
+            <div style="display:flex; flex-wrap:wrap; gap:10px;">
+                <a href="{{ route('seller.packages') }}" class="tp-btn" style="flex:1 1 140px;">← ย้อนกลับ</a>
+                <button type="submit" class="tp-btn tp-btn-primary" style="flex:2 1 220px; height:46px; font-size:14px;" :disabled="busy || {{ $enough ? 'false' : 'true' }}">
+                    <span x-show="!busy">✅ ชำระ ฿{{ number_format($due, 2) }}</span>
+                    <span x-show="busy" x-cloak>กำลังชำระเงิน…</span>
+                </button>
             </div>
-        </div>
+        </form>
+    @endif
+
+    <div class="tp-card" style="padding:16px 20px; font-size:12.5px; color:var(--ink2); line-height:1.7;">
+        🔒 หักเงินจากกระเป๋าของคุณครั้งเดียวตามยอดด้านบน แพ็กเกจเริ่มใช้งานทันทีหลังชำระสำเร็จ
+        · มีปัญหาติดต่อทีมงาน <a href="mailto:{{ $supportEmail }}" class="sv4-link">{{ $supportEmail }}</a>
     </div>
 </div>
 @endsection

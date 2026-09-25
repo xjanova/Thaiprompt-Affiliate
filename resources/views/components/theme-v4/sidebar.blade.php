@@ -88,7 +88,7 @@
         : `position:sticky; top:84px; align-self:flex-start; width:${sidebarHidden ? '0px' : 'var(--tp-side-w)'}; ${sidebarHidden ? 'opacity:0; pointer-events:none; overflow:hidden;' : ''} max-height:calc(100vh - 100px); display:flex; flex-direction:column; gap:8px; transition:width .22s ease, opacity .22s ease;`">
 
     {{-- หัว drawer (มือถือ) --}}
-    <div x-show="isMobile" x-cloak style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+    <div x-show="isMobile" x-cloak class="flex" style="align-items:center; justify-content:space-between; margin-bottom:2px;">
         <span style="font-weight:700; font-size:15px;">{{ $tpSideTitle }}</span>
         <button @click="closeDrawer()" type="button" class="tp-icon-btn" style="width:34px; height:34px; border-radius:11px; color:var(--ink2);"><i class="fas fa-xmark"></i></button>
     </div>
@@ -99,8 +99,8 @@
          style="position:relative; flex:1; min-height:0; overflow-y:auto; overflow-x:visible; display:flex; flex-direction:column; gap:7px; padding:2px;">
 
         {{-- ===== 📌 เมนูที่ปักหมุด (ดึงจาก $store.pinnedMenus — localStorage) ===== --}}
-        <div x-show="$store.pinnedMenus.getPinnedMenus(@js($type)).length > 0" x-cloak
-             style="display:flex; flex-direction:column; gap:6px;">
+        <div x-show="$store.pinnedMenus.getPinnedMenus(@js($type)).length > 0" x-cloak class="flex"
+             style="flex-direction:column; gap:6px;">
             <div style="display:flex; align-items:center; gap:7px; padding:2px 6px 2px;">
                 <i class="fas fa-thumbtack" style="color:var(--accent1); font-size:11px;"></i>
                 <span style="font-size:10.5px; font-weight:700; color:var(--ink2); letter-spacing:.3px;">ปักหมุด</span>
@@ -168,8 +168,8 @@
                         <span style="font-size:10px; color:var(--ink2); width:12px; text-align:center; flex:none; transition:transform .2s ease;" :style="{ transform: openId === '{{ $gid }}' ? 'rotate(90deg)' : 'none' }">▸</span>
                     </button>
 
-                    <div x-show="openId === '{{ $gid }}'" x-cloak
-                         style="position:relative; margin:4px 0 6px 22px; padding-left:16px; display:flex; flex-direction:column; gap:3px; overflow:hidden; animation:tpSub .26s cubic-bezier(.2,.8,.3,1) backwards;">
+                    <div x-show="openId === '{{ $gid }}'" x-cloak class="flex"
+                         style="position:relative; margin:4px 0 6px 22px; padding-left:16px; flex-direction:column; gap:3px; overflow:hidden; animation:tpSub .26s cubic-bezier(.2,.8,.3,1) backwards;">
                         {{-- เส้น RGB วิ่ง --}}
                         <span style="position:absolute; left:0; top:5px; bottom:5px; width:3px; border-radius:3px; background:linear-gradient(180deg,#ff5a5a,#ffb24d,#ffe24d,#5ad65a,#4dd2ff,#7a8cff,#c44dff,#ff5a5a); background-size:100% 220%; box-shadow:0 0 7px rgba(120,140,255,.4); animation:tpHue 5s linear infinite, tpFlow 2.6s linear infinite;"></span>
 

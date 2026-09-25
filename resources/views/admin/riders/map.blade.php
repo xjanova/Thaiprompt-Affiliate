@@ -1,443 +1,156 @@
 {{--
-    แผนที่ GPS ไรเดอร์ทั้งหมด
-    ใช้ระบบ GPS Monitoring เดียวกับ ServiceBooking
-    แสดงไรเดอร์ที่ออนไลน์/ไม่ว่าง/ออฟไลน์ บนแผนที่แบบ Real-time
+ | แผนที่ไรเดอร์สด (admin.riders.map) — ธีม V4 + OpenStreetMap/Leaflet (ไม่ใช้ Google Maps / CARTO แล้ว)
+ | ตัวแปรจาก Admin\RiderController@map: $onlineRidersData, $busyRidersData (ข้อมูลเริ่มต้น), $staleAfterSeconds,
+ |   $gpsDataUrl (admin.riders.gps-data JSON), $dispatchMonitorUrl, $pageTitle
+ | JSON: {success, data{riders[{id,name,phone,vehicle_type,vehicle_plate,availability,latitude,longitude,last_location_update,is_stale,url,current_job|null}], stats{total,online,busy,offline,stale}, generated_at}}
 --}}
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'แผนที่ GPS ไรเดอร์')
-
-@push('styles')
-<style>
-    /* Futuristic Radar Animation */
-    @keyframes radar-sweep {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-
-    @keyframes pulse-ring {
-        0% { transform: scale(0.8); opacity: 1; }
-        100% { transform: scale(2); opacity: 0; }
-    }
-
-    @keyframes data-flow {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    .radar-sweep {
-        animation: radar-sweep 4s linear infinite;
-    }
-
-    .pulse-ring {
-        animation: pulse-ring 2s ease-out infinite;
-    }
-
-    .data-flow-bg {
-        background: linear-gradient(270deg, #10b981, #3b82f6, #8b5cf6, #10b981);
-        background-size: 400% 400%;
-        animation: data-flow 8s ease infinite;
-    }
-
-    /* Glassmorphism Panels */
-    .glass-panel {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .dark .glass-panel {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    /* Neon Glow Effects */
-    .neon-green { box-shadow: 0 0 10px #10b981, 0 0 20px rgba(16, 185, 129, 0.5); }
-    .neon-yellow { box-shadow: 0 0 10px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.5); }
-    .neon-gray { box-shadow: 0 0 10px #6b7280, 0 0 20px rgba(107, 114, 128, 0.5); }
-
-    /* Map Container */
-    #rider-map {
-        height: calc(100vh - 200px);
-        min-height: 600px;
-    }
-
-    /* Custom Scrollbar */
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 3px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(139, 92, 246, 0.5);
-        border-radius: 3px;
-    }
-
-    /* Fullscreen Mode */
-    .rider-fullscreen-mode {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        z-index: 9999 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .rider-fullscreen-mode #rider-map {
-        height: 100vh !important;
-        min-height: 100vh !important;
-        border-radius: 0 !important;
-    }
-
-    .rider-fullscreen-mode .map-header {
-        display: none !important;
-    }
-
-    .fullscreen-exit-btn {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10002;
-        padding: 12px 20px;
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        color: white;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
-    }
-
-    .fullscreen-exit-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 30px rgba(239, 68, 68, 0.6);
-    }
-</style>
-@endpush
+@section('title', $pageTitle ?? 'แผนที่ไรเดอร์')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 rider-map-wrapper"
-     x-data="riderGpsMonitor()"
-     :class="{ 'rider-fullscreen-mode': isFullscreen }">
-    {{-- Header --}}
-    <div class="sticky top-0 z-50 data-flow-bg map-header">
-        <div class="bg-black/50 backdrop-blur-xl border-b border-white/10">
-            <div class="max-w-full mx-auto px-6 py-4">
-                <div class="flex items-center justify-between">
-                    {{-- Title --}}
-                    <div class="flex items-center gap-4">
-                        <a href="{{ route('admin.riders.index') }}"
-                           class="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition">
-                            <i class="fas fa-arrow-left text-white"></i>
-                        </a>
-                        <div class="relative">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                                <i class="fas fa-motorcycle text-white text-xl"></i>
-                            </div>
-                            <div class="absolute inset-0 w-12 h-12 rounded-full bg-green-400/50 pulse-ring"></div>
-                        </div>
-                        <div>
-                            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
-                                <span>แผนที่ GPS ไรเดอร์</span>
-                                <span class="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full border border-green-500/30">
-                                    LIVE
-                                </span>
-                            </h1>
-                            <p class="text-gray-400 text-sm">ติดตามตำแหน่งไรเดอร์แบบ Real-time</p>
-                        </div>
-                    </div>
+@include('admin.riders.partials.v4-kit')
+@include('admin.riders.partials.leaflet')
+<div x-data="w1RiderMap()" x-init="boot()" style="display:flex; flex-direction:column; gap:16px;">
 
-                    {{-- Quick Stats --}}
-                    <div class="flex items-center gap-6">
-                        <div class="text-center">
-                            <p class="text-3xl font-bold text-green-400" x-text="stats.online">0</p>
-                            <p class="text-xs text-gray-400">ออนไลน์</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-3xl font-bold text-yellow-400" x-text="stats.busy">0</p>
-                            <p class="text-xs text-gray-400">กำลังส่งงาน</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-3xl font-bold text-gray-400" x-text="stats.offline">0</p>
-                            <p class="text-xs text-gray-400">ออฟไลน์</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-3xl font-bold text-purple-400" x-text="stats.total">0</p>
-                            <p class="text-xs text-gray-400">ทั้งหมด</p>
-                        </div>
-                    </div>
-
-                    {{-- Refresh Control --}}
-                    <div class="flex items-center gap-3">
-                        <span class="text-gray-400 text-sm">
-                            อัพเดทล่าสุด: <span x-text="lastRefresh" class="text-green-400">-</span>
-                        </span>
-                        <button @click="refreshData()"
-                                class="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition"
-                                :class="{ 'animate-spin': loading }">
-                            <i class="fas fa-sync-alt text-white"></i>
-                        </button>
-                    </div>
-                </div>
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.riders.index') }}" class="tp-icon-btn" title="กลับหน้ารายชื่อไรเดอร์"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ไรเดอร์ · แผนที่</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0; display:flex; align-items:center; gap:10px;">
+                    แผนที่ไรเดอร์
+                    <span class="tp-pill" style="background:color-mix(in srgb, var(--w-ok) 18%, transparent); color:color-mix(in srgb, var(--w-ok) 74%, var(--ink));">
+                        <span style="width:7px; height:7px; border-radius:50%; background:var(--w-ok); animation:tpPulse 1.4s infinite;"></span> LIVE
+                    </span>
+                </h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ตำแหน่งล่าสุดของไรเดอร์ที่เปิดรับงานและกำลังส่งงาน</div>
             </div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:9px; align-items:center;">
+            <span style="font-size:12px; color:var(--ink2);">อัปเดต <b class="tp-num" x-text="lastRefresh">-</b></span>
+            <button type="button" class="tp-btn tp-btn-sm" @click="refresh()" :disabled="loading">
+                <i class="fas fa-rotate" :class="loading ? 'fa-spin' : ''"></i> รีเฟรช
+            </button>
+            <a href="{{ route('admin.riders.monitor') }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-satellite-dish"></i> มอนิเตอร์งาน</a>
         </div>
     </div>
 
-    <div class="flex">
-        {{-- Sidebar Filters --}}
-        <div class="w-80 flex-shrink-0 h-[calc(100vh-100px)] overflow-y-auto custom-scrollbar p-4 space-y-4"
-             :class="{ 'hidden': isFullscreen }">
-            {{-- Entity Type Filter --}}
-            <div class="glass-panel rounded-2xl p-4">
-                <h3 class="text-white font-semibold mb-3 flex items-center gap-2">
-                    <i class="fas fa-filter text-purple-400"></i>
-                    สถานะที่แสดง
-                </h3>
-                <div class="space-y-2">
-                    <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition">
-                        <input type="checkbox" x-model="filters.showOnline"
-                               class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-green-500 focus:ring-green-500">
-                        <div class="w-4 h-4 rounded-full bg-green-500 neon-green"></div>
-                        <span class="text-gray-300">ออนไลน์ (พร้อมรับงาน)</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition">
-                        <input type="checkbox" x-model="filters.showBusy"
-                               class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-yellow-500 focus:ring-yellow-500">
-                        <div class="w-4 h-4 rounded-full bg-yellow-500 neon-yellow"></div>
-                        <span class="text-gray-300">กำลังส่งงาน</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition">
-                        <input type="checkbox" x-model="filters.showOffline"
-                               class="w-5 h-5 rounded bg-gray-700 border-gray-600 text-gray-500 focus:ring-gray-500">
-                        <div class="w-4 h-4 rounded-full bg-gray-500 neon-gray"></div>
-                        <span class="text-gray-300">ออฟไลน์</span>
-                    </label>
+    {{-- ===== สรุปตัวเลข ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:12px;">
+        <template x-for="card in statCards" :key="card.key">
+            <div class="tp-card" style="padding:14px 16px; display:flex; align-items:center; gap:11px;">
+                <span class="tp-tile" style="width:38px; height:38px; font-size:15px;"
+                      :style="{ background: 'linear-gradient(135deg, var(' + card.v + '), color-mix(in srgb, var(' + card.v + ') 70%, var(--ink)))' }">
+                    <i class="fas" :class="card.icon"></i>
+                </span>
+                <div>
+                    <div class="tp-num" style="font-size:22px; font-weight:800; line-height:1;" x-text="stats[card.key] ?? 0"></div>
+                    <div style="font-size:11.5px; color:var(--ink2); margin-top:2px;" x-text="card.label"></div>
                 </div>
             </div>
+        </template>
+    </div>
 
-            {{-- Vehicle Type Filter --}}
-            <div class="glass-panel rounded-2xl p-4">
-                <h3 class="text-white font-semibold mb-3 flex items-center gap-2">
-                    <i class="fas fa-car text-blue-400"></i>
-                    ประเภทรถ
-                </h3>
-                <select x-model="filters.vehicleType"
-                        class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500">
-                    <option value="">ทั้งหมด</option>
-                    <option value="motorcycle">มอเตอร์ไซค์</option>
-                    <option value="car">รถยนต์</option>
-                    <option value="pickup">รถกระบะ</option>
-                    <option value="van">รถตู้</option>
-                    <option value="truck">รถบรรทุก</option>
-                </select>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px; align-items:start;">
+
+        {{-- ===== แผนที่ ===== --}}
+        <div class="tp-card" style="padding:0; overflow:hidden; grid-column:1 / -1;"
+             :style="fullscreen ? { position:'fixed', inset:'0', zIndex:'70', borderRadius:'0' } : {}">
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; padding:12px 14px;">
+                <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                    <label class="tp-btn tp-btn-sm" style="cursor:pointer;"><input type="checkbox" x-model="filters.online" @change="refresh()" style="accent-color:var(--w-ok);"> <span style="width:8px; height:8px; border-radius:50%; background:var(--w-ok);"></span> พร้อมรับงาน</label>
+                    <label class="tp-btn tp-btn-sm" style="cursor:pointer;"><input type="checkbox" x-model="filters.busy" @change="refresh()" style="accent-color:var(--w-violet);"> <span style="width:8px; height:8px; border-radius:50%; background:var(--w-violet);"></span> กำลังส่งงาน</label>
+                    <label class="tp-btn tp-btn-sm" style="cursor:pointer;"><input type="checkbox" x-model="filters.offline" @change="refresh()" style="accent-color:var(--ink2);"> <span style="width:8px; height:8px; border-radius:50%; background:var(--ink2);"></span> ออฟไลน์</label>
+                    <select x-model="filters.vehicle" @change="refresh()" class="tp-input" style="width:auto; padding:7px 12px; font-size:12.5px;">
+                        <option value="">ยานพาหนะทั้งหมด</option>
+                        @foreach (\App\Services\RiderAccountService::VEHICLE_TYPES as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <select x-model.number="filters.every" @change="schedule()" class="tp-input" style="width:auto; padding:7px 12px; font-size:12.5px;">
+                        <option value="0">ไม่รีเฟรชอัตโนมัติ</option>
+                        <option value="10">รีเฟรชทุก 10 วินาที</option>
+                        <option value="15">รีเฟรชทุก 15 วินาที</option>
+                        <option value="30">รีเฟรชทุก 30 วินาที</option>
+                        <option value="60">รีเฟรชทุก 1 นาที</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="tp-icon-btn" style="width:36px; height:36px;" @click="fitAll()" title="ซูมให้เห็นทุกคน"><i class="fas fa-expand"></i></button>
+                    <button type="button" class="tp-icon-btn" style="width:36px; height:36px;" @click="toggleFullscreen()" :title="fullscreen ? 'ออกจากเต็มจอ' : 'เต็มจอ'"><i class="fas" :class="fullscreen ? 'fa-compress' : 'fa-maximize'"></i></button>
+                </div>
             </div>
+            <div x-ref="map" :style="{ height: fullscreen ? 'calc(100vh - 64px)' : 'min(68vh, 620px)' }" style="width:100%; min-height:360px;"></div>
+            <div x-show="error" x-cloak style="padding:10px 14px; font-size:12.5px; color:var(--w-bad);"><i class="fas fa-triangle-exclamation"></i> <span x-text="error"></span></div>
+        </div>
 
-            {{-- Auto Refresh --}}
-            <div class="glass-panel rounded-2xl p-4">
-                <h3 class="text-white font-semibold mb-3 flex items-center gap-2">
-                    <i class="fas fa-clock text-yellow-400"></i>
-                    รีเฟรชอัตโนมัติ
-                </h3>
-                <select x-model="filters.refreshInterval"
-                        @change="setupAutoRefresh()"
-                        class="w-full bg-gray-800/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:ring-purple-500 focus:border-purple-500">
-                    <option value="0">ปิด</option>
-                    <option value="5">ทุก 5 วินาที</option>
-                    <option value="10">ทุก 10 วินาที</option>
-                    <option value="30">ทุก 30 วินาที</option>
-                    <option value="60">ทุก 1 นาที</option>
-                </select>
-
-                <button @click="refreshData()"
-                        class="w-full mt-3 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white rounded-xl font-semibold transition">
-                    <i class="fas fa-sync-alt mr-2"></i>
-                    รีเฟรชตอนนี้
-                </button>
+        {{-- ===== รายชื่อ ===== --}}
+        <div class="tp-card" style="padding:16px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px;">
+                <div class="tp-section-h"><i class="fas fa-list"></i> ไรเดอร์บนแผนที่ (<span class="tp-num" x-text="riders.length"></span>)</div>
+                <input type="search" x-model="q" class="tp-input" style="max-width:190px; padding:8px 12px; font-size:12.5px;" placeholder="ค้นหาชื่อ/ทะเบียน">
             </div>
-
-            {{-- Rider List --}}
-            <div class="glass-panel rounded-2xl p-4">
-                <h3 class="text-white font-semibold mb-3 flex items-center gap-2">
-                    <i class="fas fa-list text-green-400"></i>
-                    รายการไรเดอร์
-                </h3>
-                <div class="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
-                    <template x-for="rider in riders" :key="rider.id">
-                        <div @click="focusOnRider(rider)"
-                             class="p-3 bg-white/5 hover:bg-white/10 rounded-xl cursor-pointer transition border border-transparent hover:border-purple-500/30">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-white font-medium text-sm" x-text="rider.name"></span>
-                                <span class="px-2 py-0.5 text-xs rounded-full"
-                                      :class="getAvailabilityBadgeClass(rider.availability)"
-                                      x-text="getAvailabilityLabel(rider.availability)"></span>
-                            </div>
-                            <div class="text-gray-400 text-xs">
-                                <p class="flex items-center gap-1">
-                                    <i class="fas fa-phone text-blue-400"></i>
-                                    <span x-text="rider.phone"></span>
-                                </p>
-                                <p class="flex items-center gap-1 mt-1">
-                                    <i class="fas" :class="getVehicleIcon(rider.vehicle_type)"></i>
-                                    <span x-text="getVehicleLabel(rider.vehicle_type)"></span>
-                                </p>
-                                <p x-show="rider.current_job" class="flex items-center gap-1 mt-1 text-yellow-400">
-                                    <i class="fas fa-shipping-fast"></i>
-                                    <span>กำลังส่งงาน</span>
-                                </p>
-                            </div>
+            <div style="display:flex; flex-direction:column; gap:8px; max-height:420px; overflow-y:auto; padding:2px;">
+                <template x-for="rider in filtered()" :key="rider.id">
+                    <button type="button" @click="focus(rider)" class="tp-card"
+                            style="padding:10px 12px; text-align:left; cursor:pointer; border:0; font-family:inherit; color:var(--ink); box-shadow:var(--raise);"
+                            :style="selected && selected.id === rider.id ? { boxShadow: 'var(--inset-sm)' } : {}">
+                        <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                            <span style="font-weight:700; font-size:13px;" x-text="rider.full_name || rider.name"></span>
+                            <span class="tp-pill" :style="pillStyle(rider)" x-text="availabilityLabel(rider)"></span>
                         </div>
-                    </template>
-                    <div x-show="riders.length === 0" class="text-center text-gray-500 py-4">
-                        <i class="fas fa-motorcycle text-2xl mb-2"></i>
-                        <p class="text-sm">ไม่พบไรเดอร์ที่มีตำแหน่ง GPS</p>
-                    </div>
+                        <div style="font-size:11.5px; color:var(--ink2); margin-top:3px;">
+                            <span x-text="vehicleLabel(rider.vehicle_type)"></span>
+                            <span x-show="rider.vehicle_plate" x-text="' · ' + rider.vehicle_plate"></span>
+                            · <span x-text="ago(rider.last_location_update)"></span>
+                        </div>
+                        <div x-show="rider.current_job" style="font-size:11.5px; margin-top:3px; color:color-mix(in srgb, var(--w-violet) 74%, var(--ink));">
+                            <i class="fas fa-truck-fast"></i> <span x-text="rider.current_job ? ('#' + rider.current_job.job_number + ' · ' + rider.current_job.status_text) : ''"></span>
+                        </div>
+                    </button>
+                </template>
+                <div x-show="filtered().length === 0" style="text-align:center; color:var(--ink2); font-size:13px; padding:26px 8px;">
+                    <i class="fas fa-motorcycle" style="font-size:22px; opacity:.5; display:block; margin-bottom:6px;"></i>
+                    ยังไม่มีไรเดอร์ที่ส่งตำแหน่งตามตัวกรองนี้
                 </div>
             </div>
         </div>
 
-        {{-- Main Map Area --}}
-        <div class="flex-1 relative">
-            {{-- Map --}}
-            <div id="rider-map" class="w-full rounded-l-3xl overflow-hidden border-l border-white/10"></div>
-
-            {{-- Fullscreen Exit Button --}}
-            <button x-show="isFullscreen"
-                    x-cloak
-                    @click="toggleFullscreen()"
-                    class="fullscreen-exit-btn flex items-center gap-2"
-                    x-transition>
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M8 3v3a2 2 0 0 1-2 2H3"/>
-                    <path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
-                    <path d="M3 16h3a2 2 0 0 1 2 2v3"/>
-                    <path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
-                </svg>
-                <span>ออกจากเต็มจอ (ESC)</span>
-            </button>
-
-            {{-- Floating Radar Overlay --}}
-            <div class="absolute top-4 right-4 w-32 h-32 pointer-events-none" :class="{ 'hidden': isFullscreen }">
-                <div class="relative w-full h-full">
-                    <div class="absolute inset-0 rounded-full bg-green-900/30 border border-green-500/30"></div>
-                    <div class="absolute inset-2 rounded-full bg-green-900/20 border border-green-500/20"></div>
-                    <div class="absolute inset-4 rounded-full bg-green-900/10 border border-green-500/10"></div>
-                    <div class="absolute inset-0 rounded-full overflow-hidden">
-                        <div class="radar-sweep absolute inset-0 origin-center"
-                             style="background: conic-gradient(from 0deg, transparent 0deg, rgba(16, 185, 129, 0.3) 30deg, transparent 60deg);"></div>
+        {{-- ===== รายละเอียดที่เลือก ===== --}}
+        <div class="tp-card" style="padding:16px;">
+            <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-circle-info"></i> ไรเดอร์ที่เลือก</div>
+            <template x-if="!selected">
+                <p style="font-size:13px; color:var(--ink2); margin:0;">กดหมุดบนแผนที่หรือรายชื่อด้านซ้ายเพื่อดูรายละเอียด</p>
+            </template>
+            <template x-if="selected">
+                <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span class="tp-tile" style="width:42px; height:42px; border-radius:50%; font-weight:800;" x-text="(selected.full_name || 'R').substring(0, 1)"></span>
+                        <div>
+                            <div style="font-weight:700;" x-text="selected.full_name"></div>
+                            <a class="w1-link" :href="'tel:' + selected.phone" x-text="selected.phone"></a>
+                        </div>
                     </div>
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div class="tp-well" style="padding:10px 12px; display:grid; grid-template-columns:auto 1fr; gap:5px 10px;">
+                        <span style="color:var(--ink2);">สถานะ</span><span x-text="availabilityLabel(selected)"></span>
+                        <span style="color:var(--ink2);">ยานพาหนะ</span><span x-text="vehicleLabel(selected.vehicle_type) + (selected.vehicle_plate ? ' · ' + selected.vehicle_plate : '')"></span>
+                        <span style="color:var(--ink2);">ตำแหน่งล่าสุด</span><span x-text="ago(selected.last_location_update)"></span>
+                    </div>
+                    <template x-if="selected.current_job">
+                        <a :href="selected.current_job.url" class="tp-card tp-card-hover" style="padding:10px 12px; text-decoration:none; color:var(--ink); border-left:3px solid var(--w-violet);">
+                            <div style="font-weight:700;" x-text="'งาน #' + selected.current_job.job_number"></div>
+                            <div style="font-size:12px; color:var(--ink2);" x-text="selected.current_job.status_text"></div>
+                            <div style="font-size:12px; color:var(--ink2); margin-top:3px;" x-text="'ส่งที่: ' + (selected.current_job.delivery_address || '-')"></div>
+                        </a>
+                    </template>
+                    <div style="display:flex; gap:8px;">
+                        <a :href="selected.url" class="tp-btn tp-btn-sm tp-btn-primary" style="flex:1;"><i class="fas fa-eye"></i> โปรไฟล์</a>
+                        <a :href="selected.url + '/locations'" class="tp-btn tp-btn-sm" style="flex:1;"><i class="fas fa-route"></i> เส้นทาง</a>
                     </div>
                 </div>
-            </div>
-
-            {{-- Map Controls --}}
-            <div class="absolute bottom-4 right-4 flex flex-col gap-2">
-                <button @click="toggleFullscreen()"
-                        class="p-3 bg-gray-900/80 hover:bg-gray-800 text-white rounded-xl backdrop-blur-lg transition"
-                        :class="{ 'ring-2 ring-purple-500': isFullscreen }">
-                    <svg x-show="!isFullscreen" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
-                        <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                        <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
-                        <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                    </svg>
-                    <svg x-show="isFullscreen" x-cloak class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3v3a2 2 0 0 1-2 2H3"/>
-                        <path d="M21 8h-3a2 2 0 0 1-2-2V3"/>
-                        <path d="M3 16h3a2 2 0 0 1 2 2v3"/>
-                        <path d="M16 21v-3a2 2 0 0 1 2-2h3"/>
-                    </svg>
-                </button>
-                <div class="h-px bg-white/20 my-1"></div>
-                <button @click="fitAllMarkers()"
-                        class="p-3 bg-gray-900/80 hover:bg-gray-800 text-white rounded-xl backdrop-blur-lg transition"
-                        title="แสดงทั้งหมด">
-                    <i class="fas fa-expand-arrows-alt"></i>
-                </button>
-                <button @click="centerOnBangkok()"
-                        class="p-3 bg-gray-900/80 hover:bg-gray-800 text-white rounded-xl backdrop-blur-lg transition"
-                        title="กรุงเทพฯ">
-                    <i class="fas fa-crosshairs"></i>
-                </button>
-                <a href="{{ route('admin.gps-monitoring.index') }}"
-                   class="p-3 bg-gray-900/80 hover:bg-gray-800 text-white rounded-xl backdrop-blur-lg transition"
-                   title="GPS Monitoring Center">
-                    <i class="fas fa-satellite"></i>
-                </a>
-            </div>
-
-            {{-- Selected Rider Info Panel --}}
-            <div x-show="selectedRider"
-                 x-cloak
-                 x-transition
-                 class="absolute top-4 left-4 w-80 glass-panel rounded-2xl p-4">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="text-white font-bold">รายละเอียดไรเดอร์</h4>
-                    <button @click="selectedRider = null" class="text-gray-400 hover:text-white">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <template x-if="selectedRider">
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-                                <i class="fas fa-user text-white"></i>
-                            </div>
-                            <div>
-                                <p class="text-white font-medium" x-text="selectedRider.name"></p>
-                                <p class="text-gray-400 text-sm" x-text="selectedRider.phone"></p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="bg-white/5 rounded-lg p-3">
-                                <p class="text-gray-400 text-xs mb-1">สถานะ</p>
-                                <span class="px-2 py-0.5 text-xs rounded-full"
-                                      :class="getAvailabilityBadgeClass(selectedRider.availability)"
-                                      x-text="getAvailabilityLabel(selectedRider.availability)"></span>
-                            </div>
-                            <div class="bg-white/5 rounded-lg p-3">
-                                <p class="text-gray-400 text-xs mb-1">ประเภทรถ</p>
-                                <p class="text-white text-sm" x-text="getVehicleLabel(selectedRider.vehicle_type)"></p>
-                            </div>
-                        </div>
-
-                        <div x-show="selectedRider.vehicle_plate" class="bg-white/5 rounded-lg p-3">
-                            <p class="text-gray-400 text-xs mb-1">ทะเบียนรถ</p>
-                            <p class="text-white font-mono" x-text="selectedRider.vehicle_plate"></p>
-                        </div>
-
-                        <div x-show="selectedRider.current_job" class="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-                            <p class="text-yellow-400 text-xs mb-1">
-                                <i class="fas fa-shipping-fast mr-1"></i>
-                                กำลังส่งงาน
-                            </p>
-                            <p class="text-white text-sm" x-text="selectedRider.current_job?.dropoff_address || 'ไม่ระบุ'"></p>
-                        </div>
-
-                        <div class="flex gap-2 pt-2">
-                            <a :href="'/admin/riders/' + selectedRider.id"
-                               class="flex-1 py-2 bg-purple-600 hover:bg-purple-500 text-white text-center rounded-lg transition text-sm">
-                                <i class="fas fa-eye mr-1"></i> ดูรายละเอียด
-                            </a>
-                            <a :href="'/admin/riders/' + selectedRider.id + '/locations'"
-                               class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition text-sm">
-                                <i class="fas fa-history"></i>
-                            </a>
-                        </div>
-                    </div>
-                </template>
-            </div>
+            </template>
         </div>
     </div>
 </div>
@@ -445,251 +158,141 @@
 
 @push('scripts')
 <script>
-function riderGpsMonitor() {
-    return {
-        // State
-        loading: false,
-        lastRefresh: '-',
-        map: null,
-        isFullscreen: false,
-
-        // Data
-        riders: [],
-        riderMarkers: [],
-        selectedRider: null,
-
-        // Stats
-        stats: {
-            total: 0,
-            online: 0,
-            busy: 0,
-            offline: 0,
-        },
-
-        // Filters
-        filters: {
-            showOnline: true,
-            showBusy: true,
-            showOffline: false,
-            vehicleType: '',
-            refreshInterval: '10',
-        },
-
-        refreshIntervalId: null,
-
-        init() {
-            this.loadGoogleMaps();
-            this.setupAutoRefresh();
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && this.isFullscreen) {
-                    this.toggleFullscreen();
-                }
-            });
-        },
-
-        loadGoogleMaps() {
-            if (typeof google !== 'undefined') {
-                this.initMap();
-            } else {
-                const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key') }}&callback=initRiderMap`;
-                script.async = true;
-                script.defer = true;
-                document.head.appendChild(script);
-                window.initRiderMap = () => this.initMap();
-            }
-        },
-
-        initMap() {
-            const darkStyle = [
-                { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
-                { elementType: "labels.text.fill", stylers: [{ color: "#8b5cf6" }] },
-                { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
-                { featureType: "road", elementType: "geometry", stylers: [{ color: "#374151" }] },
-                { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#4a5568" }] },
-                { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f172a" }] },
-            ];
-
-            this.map = new google.maps.Map(document.getElementById('rider-map'), {
-                center: { lat: 13.7563, lng: 100.5018 },
-                zoom: 11,
-                styles: darkStyle,
-                disableDefaultUI: true,
-                zoomControl: true,
-                gestureHandling: 'greedy',
-            });
-
-            this.refreshData();
-        },
-
-        async refreshData() {
-            if (this.loading) return;
-            this.loading = true;
-
-            try {
-                const params = new URLSearchParams({
-                    show_online: this.filters.showOnline ? '1' : '0',
-                    show_busy: this.filters.showBusy ? '1' : '0',
-                    show_offline: this.filters.showOffline ? '1' : '0',
-                    vehicle_type: this.filters.vehicleType,
+    /* แผนที่ไรเดอร์สด: ดึง admin.riders.gps-data ตามรอบ แล้ววาดหมุดตามสถานะ */
+    function w1RiderMap() {
+        return {
+            dataUrl: @js($gpsDataUrl),
+            staleAfter: @js((int) $staleAfterSeconds),
+            vehicles: @js(\App\Services\RiderAccountService::VEHICLE_TYPES),
+            riders: @js(array_values(array_merge($onlineRidersData, $busyRidersData))),
+            stats: { total: 0, online: 0, busy: 0, offline: 0, stale: 0 },
+            statCards: [
+                { key: 'online', label: 'พร้อมรับงาน', icon: 'fa-signal', v: '--w-ok' },
+                { key: 'busy', label: 'กำลังส่งงาน', icon: 'fa-motorcycle', v: '--w-violet' },
+                { key: 'offline', label: 'ออฟไลน์ (ที่แสดง)', icon: 'fa-power-off', v: '--ink2' },
+                { key: 'stale', label: 'สัญญาณเงียบ', icon: 'fa-signal', v: '--w-warn' },
+                { key: 'total', label: 'บนแผนที่', icon: 'fa-map-pin', v: '--accent1' },
+            ],
+            filters: { online: true, busy: true, offline: false, vehicle: '', every: 15 },
+            q: '',
+            selected: null,
+            loading: false,
+            error: '',
+            lastRefresh: '-',
+            fullscreen: false,
+            map: null,
+            layer: null,
+            timer: null,
+            fitted: false,
+            boot() {
+                this.$nextTick(() => {
+                    this.map = W1Map.create(this.$refs.map, { zoom: 11 });
+                    this.layer = L.layerGroup().addTo(this.map);
+                    this.draw();
+                    this.refresh();
+                    this.schedule();
                 });
-
-                const response = await fetch(`/admin/riders/gps-data?${params}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
+                document.addEventListener('visibilitychange', () => { if (!document.hidden) this.refresh(); });
+            },
+            schedule() {
+                clearInterval(this.timer);
+                if (this.filters.every > 0) this.timer = setInterval(() => { if (!document.hidden) this.refresh(); }, this.filters.every * 1000);
+            },
+            async refresh() {
+                if (this.loading) return;
+                this.loading = true;
+                try {
+                    const params = new URLSearchParams({
+                        show_online: this.filters.online ? '1' : '0',
+                        show_busy: this.filters.busy ? '1' : '0',
+                        show_offline: this.filters.offline ? '1' : '0',
+                        vehicle_type: this.filters.vehicle,
+                        limit: 'all',
+                    });
+                    const res = await fetch(this.dataUrl + '?' + params.toString(), { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+                    const json = await res.json();
+                    if (!res.ok || !json.success) throw new Error(json.message || 'โหลดข้อมูลไม่สำเร็จ');
+                    this.riders = json.data.riders || [];
+                    this.stats = json.data.stats || this.stats;
+                    if (this.selected) this.selected = this.riders.find((r) => r.id === this.selected.id) || null;
+                    this.error = '';
+                    this.lastRefresh = new Date().toLocaleTimeString('th-TH');
+                    this.draw();
+                } catch (e) {
+                    this.error = 'โหลดตำแหน่งไรเดอร์ไม่สำเร็จ จะลองใหม่รอบถัดไป';
+                } finally {
+                    this.loading = false;
+                }
+            },
+            draw() {
+                if (!this.layer) return;
+                this.layer.clearLayers();
+                const points = [];
+                this.riders.forEach((rider) => {
+                    const lat = Number(rider.latitude), lng = Number(rider.longitude);
+                    if (!W1Map.validPoint(lat, lng)) return;
+                    const marker = L.marker([lat, lng], {
+                        icon: W1Map.pin(this.tone(rider), this.vehicleIcon(rider.vehicle_type), { pulse: rider.availability === 'online' && !rider.is_stale }),
+                        title: rider.full_name || rider.name,
+                    });
+                    marker.bindPopup('<b>' + W1Map.esc(rider.full_name || rider.name) + '</b><br>' + W1Map.esc(this.availabilityLabel(rider)) + '<br>' + W1Map.esc(this.ago(rider.last_location_update)));
+                    marker.on('click', () => { this.selected = rider; });
+                    marker.addTo(this.layer);
+                    points.push([lat, lng]);
                 });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    this.riders = data.data.riders || [];
-                    this.stats = data.data.stats || this.stats;
-                    this.updateMarkers();
+                if (!this.fitted && points.length) {
+                    this.map.fitBounds(points, { padding: [40, 40], maxZoom: 15 });
+                    this.fitted = true;
                 }
-
-                this.lastRefresh = new Date().toLocaleTimeString('th-TH');
-            } catch (error) {
-                console.error('Failed to refresh rider GPS data:', error);
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        updateMarkers() {
-            // ลบ markers เก่า
-            this.riderMarkers.forEach(m => m.setMap(null));
-            this.riderMarkers = [];
-
-            // เพิ่ม markers ใหม่
-            this.riders.forEach(rider => {
-                const marker = this.createRiderMarker(rider);
-                this.riderMarkers.push(marker);
-            });
-        },
-
-        createRiderMarker(rider) {
-            const color = rider.availability === 'online' ? '#10B981' :
-                         rider.availability === 'busy' ? '#F59E0B' : '#6B7280';
-
-            const iconContent = rider.vehicle_type === 'car' ? 'fa-car' :
-                               rider.vehicle_type === 'pickup' ? 'fa-truck-pickup' :
-                               rider.vehicle_type === 'van' ? 'fa-shuttle-van' :
-                               rider.vehicle_type === 'truck' ? 'fa-truck' : 'fa-motorcycle';
-
-            const marker = new google.maps.Marker({
-                position: { lat: rider.latitude, lng: rider.longitude },
-                map: this.map,
-                icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-                            <circle cx="20" cy="20" r="18" fill="${color}" stroke="#fff" stroke-width="3"/>
-                            <circle cx="20" cy="20" r="8" fill="white"/>
-                            <circle cx="20" cy="20" r="4" fill="${color}"/>
-                        </svg>
-                    `),
-                    anchor: new google.maps.Point(20, 20),
-                    scaledSize: new google.maps.Size(40, 40),
-                },
-                title: rider.name,
-            });
-
-            marker.addListener('click', () => {
-                this.selectedRider = rider;
-                this.map.panTo({ lat: rider.latitude, lng: rider.longitude });
-                this.map.setZoom(16);
-            });
-
-            return marker;
-        },
-
-        focusOnRider(rider) {
-            this.selectedRider = rider;
-            this.map.panTo({ lat: rider.latitude, lng: rider.longitude });
-            this.map.setZoom(16);
-        },
-
-        setupAutoRefresh() {
-            if (this.refreshIntervalId) {
-                clearInterval(this.refreshIntervalId);
-            }
-
-            const interval = parseInt(this.filters.refreshInterval) * 1000;
-            if (interval > 0) {
-                this.refreshIntervalId = setInterval(() => this.refreshData(), interval);
-            }
-        },
-
-        toggleFullscreen() {
-            this.isFullscreen = !this.isFullscreen;
-            setTimeout(() => {
-                if (this.map) {
-                    google.maps.event.trigger(this.map, 'resize');
-                }
-            }, 150);
-        },
-
-        fitAllMarkers() {
-            if (this.riderMarkers.length === 0) return;
-
-            const bounds = new google.maps.LatLngBounds();
-            this.riderMarkers.forEach(marker => bounds.extend(marker.getPosition()));
-            this.map.fitBounds(bounds);
-        },
-
-        centerOnBangkok() {
-            this.map.panTo({ lat: 13.7563, lng: 100.5018 });
-            this.map.setZoom(11);
-        },
-
-        getAvailabilityBadgeClass(availability) {
-            const classes = {
-                online: 'bg-green-500/20 text-green-400 border border-green-500/30',
-                busy: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
-                offline: 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
-            };
-            return classes[availability] || classes.offline;
-        },
-
-        getAvailabilityLabel(availability) {
-            const labels = {
-                online: 'ออนไลน์',
-                busy: 'กำลังส่งงาน',
-                offline: 'ออฟไลน์',
-            };
-            return labels[availability] || 'ไม่ทราบ';
-        },
-
-        getVehicleIcon(type) {
-            const icons = {
-                motorcycle: 'fa-motorcycle',
-                car: 'fa-car',
-                pickup: 'fa-truck-pickup',
-                van: 'fa-shuttle-van',
-                truck: 'fa-truck',
-            };
-            return icons[type] || 'fa-motorcycle';
-        },
-
-        getVehicleLabel(type) {
-            const labels = {
-                motorcycle: 'มอเตอร์ไซค์',
-                car: 'รถยนต์',
-                pickup: 'รถกระบะ',
-                van: 'รถตู้',
-                truck: 'รถบรรทุก',
-            };
-            return labels[type] || 'ไม่ระบุ';
-        },
-
-        destroy() {
-            if (this.refreshIntervalId) {
-                clearInterval(this.refreshIntervalId);
-            }
-        },
+            },
+            fitAll() {
+                const points = this.riders.map((r) => [Number(r.latitude), Number(r.longitude)]).filter((p) => W1Map.validPoint(p[0], p[1]));
+                if (points.length) this.map.fitBounds(points, { padding: [40, 40], maxZoom: 15 });
+            },
+            focus(rider) {
+                this.selected = rider;
+                const lat = Number(rider.latitude), lng = Number(rider.longitude);
+                if (W1Map.validPoint(lat, lng)) this.map.setView([lat, lng], 16);
+            },
+            toggleFullscreen() {
+                this.fullscreen = !this.fullscreen;
+                setTimeout(() => this.map && this.map.invalidateSize(), 200);
+            },
+            filtered() {
+                const q = this.q.trim().toLowerCase();
+                if (!q) return this.riders;
+                return this.riders.filter((r) => ((r.full_name || '') + ' ' + (r.vehicle_plate || '') + ' ' + (r.phone || '')).toLowerCase().includes(q));
+            },
+            tone(rider) {
+                if (rider.is_stale && rider.availability !== 'offline') return 'warn';
+                return { online: 'ok', busy: 'violet' }[rider.availability] || 'mute';
+            },
+            pillStyle(rider) {
+                const v = W1Map.toneVar(this.tone(rider));
+                return { background: 'color-mix(in srgb, var(' + v + ') 17%, transparent)', color: 'color-mix(in srgb, var(' + v + ') 74%, var(--ink))' };
+            },
+            availabilityLabel(rider) {
+                const label = { online: 'พร้อมรับงาน', busy: 'กำลังส่งงาน', offline: 'ออฟไลน์' }[rider.availability] || 'ไม่ทราบ';
+                return rider.is_stale && rider.availability !== 'offline' ? label + ' (สัญญาณเงียบ)' : label;
+            },
+            vehicleLabel(type) {
+                return this.vehicles[type] || 'ไม่ระบุ';
+            },
+            vehicleIcon(type) {
+                return { car: 'fa-car', bicycle: 'fa-bicycle', walk: 'fa-person-walking' }[type] || 'fa-motorcycle';
+            },
+            ago(iso) {
+                if (!iso) return 'ไม่เคยส่งตำแหน่ง';
+                const sec = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+                if (sec < 60) return sec + ' วินาทีที่แล้ว';
+                if (sec < 3600) return Math.floor(sec / 60) + ' นาทีที่แล้ว';
+                if (sec < 86400) return Math.floor(sec / 3600) + ' ชั่วโมงที่แล้ว';
+                return Math.floor(sec / 86400) + ' วันที่แล้ว';
+            },
+            destroy() {
+                clearInterval(this.timer);
+            },
+        };
     }
-}
 </script>
 @endpush

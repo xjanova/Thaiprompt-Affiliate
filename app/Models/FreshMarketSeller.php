@@ -75,7 +75,39 @@ class FreshMarketSeller extends Model
         'broadcast_package_expires_at',
         'mlm_member_id',
         'referral_code',
+        // ร้านเคลื่อนที่ + เปิด/ปิดร้าน (แก้ผ่าน FreshMarketShopPresenceService เท่านั้น)
+        'is_mobile',
+        'current_latitude',
+        'current_longitude',
+        'location_label',
+        'location_updated_at',
+        'is_open',
+        'opened_at',
+        'closes_at',
+        'live_location_sharing',
     ];
+
+    /**
+     * คอลัมน์สถานะหน้าร้าน — ใส่ในรายการ select ของ eager load ทุกครั้งที่ต้องรู้ว่าร้านเปิดอยู่ไหม
+     * เช่น ->with('seller:id,shop_name,rating_average,'.implode(',', FreshMarketSeller::PRESENCE_COLUMNS))
+     */
+    public const PRESENCE_COLUMNS = [
+        'is_mobile', 'is_open', 'opened_at', 'closes_at', 'location_label',
+        'current_latitude', 'current_longitude', 'location_updated_at', 'live_location_sharing',
+    ];
+
+    /**
+     * รายการคอลัมน์สำหรับ eager load ร้านในรายการสินค้า (ชื่อร้าน + คะแนน + สถานะหน้าร้าน + พิกัด)
+     * ใช้: ->with('seller:'.FreshMarketSeller::SUMMARY_COLUMNS)
+     */
+    public const SUMMARY_COLUMNS = 'id,user_id,shop_name,shop_image,rating_average,is_active,is_suspended,is_verified,latitude,longitude,'
+        .'is_mobile,is_open,opened_at,closes_at,location_label,current_latitude,current_longitude,location_updated_at,live_location_sharing';
+
+    /** ข้อความตอนร้านปิด (เว็บ/แอปใช้ข้อความเดียวกัน) */
+    public const CLOSED_MESSAGE = 'ปิดอยู่ — ติดตามร้านเพื่อรับแจ้งเตือนเมื่อเปิด';
+
+    /** ร้านเคลื่อนที่ที่เปิดส่งตำแหน่งสด แต่ตำแหน่งเงียบเกินกี่นาที = ถือว่าปิด (คำสั่งกวาดจะปิดร้านให้) */
+    public const LIVE_LOCATION_STALE_MINUTES = 30;
 
     protected $casts = [
         'phone_verified_at' => 'datetime',
@@ -92,6 +124,14 @@ class FreshMarketSeller extends Model
         'rating_count' => 'integer',
         'broadcast_credits' => 'integer',
         'broadcast_package_expires_at' => 'datetime',
+        'is_mobile' => 'boolean',
+        'current_latitude' => 'decimal:8',
+        'current_longitude' => 'decimal:8',
+        'location_updated_at' => 'datetime',
+        'is_open' => 'boolean',
+        'opened_at' => 'datetime',
+        'closes_at' => 'datetime',
+        'live_location_sharing' => 'boolean',
     ];
 
     /**
@@ -146,6 +186,14 @@ class FreshMarketSeller extends Model
     public function referrals(): HasMany
     {
         return $this->hasMany(FreshMarketReferral::class, 'referrer_seller_id');
+    }
+
+    /**
+     * ผู้ซื้อที่ติดตามร้านนี้
+     */
+    public function followers(): HasMany
+    {
+        return $this->hasMany(FreshMarketShopFollower::class, 'seller_id');
     }
 
     // ===== Scopes =====
@@ -296,6 +344,202 @@ class FreshMarketSeller extends Model
     {
         return $this->latitude !== null && $this->longitude !== null
             && (float) $this->latitude != 0.0 && (float) $this->longitude != 0.0;
+    }
+
+    // ===== ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด) + เปิด/ปิดร้าน =====
+
+    /**
+     * ค่าคอลัมน์ดิบ (null = ไม่ได้โหลดคอลัมน์นี้มา เช่น eager load แบบเลือกคอลัมน์)
+     */
+    protected function rawAttribute(string $key): mixed
+    {
+        $attributes = $this->getAttributes();
+
+        return array_key_exists($key, $attributes) ? $attributes[$key] : null;
+    }
+
+    /**
+     * เป็นร้านเคลื่อนที่หรือไม่ (ตำแหน่งร้าน = จุดที่เปิดร้านวันนี้)
+     */
+    public function isMobileShop(): bool
+    {
+        return (bool) $this->rawAttribute('is_mobile');
+    }
+
+    /**
+     * มีตำแหน่งปัจจุบัน (ร้านเคลื่อนที่) ที่ใช้ได้หรือไม่
+     */
+    public function hasCurrentLocation(): bool
+    {
+        $lat = $this->rawAttribute('current_latitude');
+        $lng = $this->rawAttribute('current_longitude');
+
+        return $lat !== null && $lng !== null
+            && \App\Services\DeliveryFeeCalculator::isValidCoordinate($lat, $lng);
+    }
+
+    /**
+     * เปิดส่งตำแหน่งสดไว้ แต่ตำแหน่งเงียบเกิน 30 นาที (ร้านน่าจะปิดไปแล้วแต่ลืมกดปิด)
+     */
+    public function isLiveLocationStale(): bool
+    {
+        if (! $this->rawAttribute('live_location_sharing')) {
+            return false;
+        }
+
+        return ! $this->location_updated_at
+            || $this->location_updated_at->lt(now()->subMinutes(self::LIVE_LOCATION_STALE_MINUTES));
+    }
+
+    /**
+     * ร้านเปิดรับออเดอร์อยู่ตอนนี้หรือไม่
+     *
+     * - is_open = false → ปิด
+     * - เลยเวลาปิดที่ตั้งไว้ (closes_at) → ปิด (คำสั่งกวาดจะตั้ง is_open = false ให้ภายหลัง)
+     * - ร้านเคลื่อนที่: ต้องมีตำแหน่งปัจจุบัน และถ้าเปิดตำแหน่งสดไว้ ตำแหน่งต้องไม่เงียบเกิน 30 นาที
+     * - ไม่ได้โหลดคอลัมน์ is_open มา (eager load แบบเลือกคอลัมน์ / แถวที่เพิ่งสร้าง) → ถือว่าเปิดตามพฤติกรรมเดิม
+     */
+    public function isOpenNow(): bool
+    {
+        if (! array_key_exists('is_open', $this->getAttributes())) {
+            return true;
+        }
+
+        if (! $this->is_open) {
+            return false;
+        }
+
+        if ($this->closes_at && $this->closes_at->lte(now())) {
+            return false;
+        }
+
+        if ($this->isMobileShop()) {
+            return $this->hasCurrentLocation() && ! $this->isLiveLocationStale();
+        }
+
+        return true;
+    }
+
+    /**
+     * รับออเดอร์ได้ตอนนี้ (ผู้ซื้อเห็นร้าน + ร้านเปิดอยู่)
+     */
+    public function acceptsOrders(): bool
+    {
+        return $this->isVisibleToBuyers() && $this->isOpenNow();
+    }
+
+    /**
+     * ตำแหน่งร้านที่เปิดเผยต่อผู้ซื้อได้ (เฉพาะตอนร้านเปิดเท่านั้น)
+     *
+     * ร้านเคลื่อนที่ = ตำแหน่งที่เปิดร้านวันนี้ / ตำแหน่งสด · ร้านประจำ = ที่อยู่ร้านที่ลงทะเบียน
+     * ร้านปิด → null (ไม่เปิดเผยตำแหน่งล่าสุดของร้านเคลื่อนที่)
+     *
+     * @return array{latitude: float, longitude: float, label: ?string, updated_at: ?string, is_live: bool, source: string}|null
+     */
+    public function publicLocation(): ?array
+    {
+        if (! $this->isOpenNow()) {
+            return null;
+        }
+
+        if ($this->isMobileShop()) {
+            $live = (bool) $this->rawAttribute('live_location_sharing');
+
+            return [
+                'latitude' => (float) $this->current_latitude,
+                'longitude' => (float) $this->current_longitude,
+                'label' => $this->location_label,
+                'updated_at' => $this->location_updated_at?->toIso8601String(),
+                'is_live' => $live,
+                'source' => $live ? 'live' : 'pinned',
+            ];
+        }
+
+        if (! $this->hasPickupLocation()) {
+            return null;
+        }
+
+        return [
+            'latitude' => (float) $this->latitude,
+            'longitude' => (float) $this->longitude,
+            'label' => $this->address,
+            'updated_at' => null,
+            'is_live' => false,
+            'source' => 'fixed',
+        ];
+    }
+
+    /**
+     * จุดรับของ (ไรเดอร์ + คิดค่าส่ง): ร้านเคลื่อนที่ = ตำแหน่งปัจจุบัน, ร้านประจำ = ที่อยู่ร้าน
+     *
+     * ใช้ตำแหน่งปัจจุบันแม้ร้านเพิ่งกดปิด (ออเดอร์ที่รับไว้ก่อนปิดยังต้องให้ไรเดอร์ไปรับที่จุดล่าสุด)
+     *
+     * @return array{latitude: float, longitude: float, address: string, is_mobile: bool}|null
+     */
+    public function pickupPoint(): ?array
+    {
+        if ($this->isMobileShop() && $this->hasCurrentLocation()) {
+            $label = trim((string) $this->location_label);
+
+            return [
+                'latitude' => (float) $this->current_latitude,
+                'longitude' => (float) $this->current_longitude,
+                'address' => $label !== '' ? $label.' (ร้านเคลื่อนที่)' : ($this->address ?: (string) $this->shop_name),
+                'is_mobile' => true,
+            ];
+        }
+
+        if ($this->hasPickupLocation()) {
+            return [
+                'latitude' => (float) $this->latitude,
+                'longitude' => (float) $this->longitude,
+                'address' => $this->address ?: (string) $this->shop_name,
+                'is_mobile' => false,
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * สถานะหน้าร้าน (เปิด/ปิด + ตำแหน่ง) สำหรับ API และหน้าเว็บ
+     *
+     * @param  bool  $forOwner  เจ้าของร้านเห็นตำแหน่ง/ชื่อจุดล่าสุดแม้ร้านปิด
+     * @return array<string, mixed>
+     */
+    public function presencePayload(bool $forOwner = false): array
+    {
+        $open = $this->isOpenNow();
+        $mobile = $this->isMobileShop();
+        $visibilityLoaded = array_key_exists('is_active', $this->getAttributes());
+
+        $location = $this->publicLocation();
+
+        if (! $location && $forOwner && $mobile && $this->hasCurrentLocation()) {
+            $location = [
+                'latitude' => (float) $this->current_latitude,
+                'longitude' => (float) $this->current_longitude,
+                'label' => $this->location_label,
+                'updated_at' => $this->location_updated_at?->toIso8601String(),
+                'is_live' => false,
+                'source' => 'last_known',
+            ];
+        }
+
+        return [
+            'is_mobile' => $mobile,
+            'is_open' => $open,
+            'status' => $open ? 'open' : 'closed',
+            'status_text' => $open ? 'เปิดอยู่' : 'ปิดอยู่',
+            'closed_message' => $open ? null : self::CLOSED_MESSAGE,
+            'can_order' => $open && (! $visibilityLoaded || $this->isVisibleToBuyers()),
+            'opened_at' => $open ? $this->opened_at?->toIso8601String() : null,
+            'closes_at' => $open ? $this->closes_at?->toIso8601String() : null,
+            'location_label' => ($open || $forOwner) ? $this->location_label : null,
+            'live_location_sharing' => $open && (bool) $this->rawAttribute('live_location_sharing'),
+            'location_updated_at' => ($mobile && ($open || $forOwner)) ? $this->location_updated_at?->toIso8601String() : null,
+            'location' => $location,
+        ];
     }
 
     /**

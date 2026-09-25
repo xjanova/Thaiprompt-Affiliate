@@ -182,12 +182,17 @@ class PosCashierController extends Controller
             $session = PosSession::findOrFail($validated['session_id']);
             $settings = PosSetting::where('store_id', $device->store_id)->first();
 
-            // Verify stock availability
+            // ตรวจสต็อก — ล็อกแถวสินค้าไว้จนจบธุรกรรม (กันขายพร้อมกันหลายเครื่องแล้วสต็อกติดลบ)
+            // รวมจำนวนต่อสินค้าก่อน เผื่อสินค้าเดียวกันอยู่หลายบรรทัดในบิลเดียว
+            $requestedQty = [];
             foreach ($validated['items'] as $item) {
-                $product = Product::findOrFail($item['product_id']);
+                $requestedQty[$item['product_id']] = ($requestedQty[$item['product_id']] ?? 0) + (int) $item['quantity'];
+            }
+            foreach ($requestedQty as $productId => $qty) {
+                $product = Product::whereKey($productId)->lockForUpdate()->firstOrFail();
 
-                if ($product->track_inventory && $product->stock_quantity < $item['quantity']) {
-                    throw new \Exception("Insufficient stock for {$product->name}");
+                if ($product->track_inventory && $product->stock_quantity < $qty) {
+                    throw new \Exception("สินค้า {$product->name} มีสต็อกไม่พอ (เหลือ {$product->stock_quantity})");
                 }
             }
 
@@ -282,6 +287,17 @@ class PosCashierController extends Controller
                 $transactionItem->tax_percentage = $taxPercentage;
                 $transactionItem->is_tax_inclusive = $settings?->tax_inclusive ?? true;
                 $transactionItem->save();
+
+                // ตัดสต็อกเองตรงนี้ — PosTransactionItem ไม่มี hook ตัดสต็อกอัตโนมัติแล้ว (เดิมโดนตัด 2 เท่าที่จุดอื่น)
+                // แถวสินค้าถูกล็อกไว้แล้วตอนตรวจสต็อกด้านบน · enum stock_status มีแค่ in_stock|out_of_stock|on_backorder
+                $stockProduct = Product::whereKey($item['product']->id)->lockForUpdate()->first();
+                if ($stockProduct && $stockProduct->track_inventory) {
+                    $stockProduct->decrement('stock_quantity', $item['quantity']);
+
+                    if ($stockProduct->stock_quantity <= 0) {
+                        $stockProduct->update(['stock_status' => 'out_of_stock']);
+                    }
+                }
             }
 
             DB::commit();

@@ -1,210 +1,152 @@
 {{--
-    รายการไรเดอร์ที่รอตรวจสอบ
-    แสดงไรเดอร์ที่สมัครใหม่และรอการอนุมัติ
+ | ไรเดอร์รอตรวจสอบ (admin.riders.pending) — ธีม V4
+ | ตัวแปรจาก Admin\RiderController@pending:
+ |   $riders (paginator, เก่าสุดก่อน), $documentsByRider[rider_id]{documents[{type,label,uploaded,required,url}], missing[], complete}, $pendingCount, $pageTitle
+ | เอกสารเปิดผ่าน admin.riders.document เท่านั้น (private disk) · อนุมัติ/ปฏิเสธ = ฟอร์ม POST ผ่านโมดัลยืนยัน
 --}}
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', $pageTitle)
+@section('title', $pageTitle ?? 'ไรเดอร์รอตรวจสอบ')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-6">
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.riders.index') }}"
-               class="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition backdrop-blur-lg border border-white/10">
-                <i class="fas fa-arrow-left text-white"></i>
-            </a>
+@include('admin.riders.partials.v4-kit')
+@include('admin.riders.partials.doc-viewer')
+<div x-data="{}" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.riders.index') }}" class="tp-icon-btn" title="กลับหน้ารายชื่อไรเดอร์"><i class="fas fa-arrow-left"></i></a>
             <div>
-                <h1 class="text-2xl font-bold text-white flex items-center gap-3">
-                    <span>ไรเดอร์รอตรวจสอบ</span>
-                    @if($pendingCount > 0)
-                        <span class="px-3 py-1 bg-yellow-500/20 text-yellow-400 text-sm rounded-full border border-yellow-500/30 animate-pulse">
-                            {{ $pendingCount }} รายการ
-                        </span>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ไรเดอร์ · รออนุมัติ</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    ใบสมัครรออนุมัติ
+                    @if ($pendingCount > 0)
+                        @include('admin.riders.partials.pill', ['pillTone' => 'warn', 'pillText' => number_format($pendingCount).' รายการ', 'pillIcon' => 'fa-clock', 'pillTitle' => null])
                     @endif
                 </h1>
-                <p class="text-gray-400 text-sm mt-1">ตรวจสอบและอนุมัติไรเดอร์ใหม่</p>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ตรวจรูปบัตร ใบขับขี่ และทะเบียนรถ ก่อนอนุมัติ — เรียงจากสมัครก่อนไปหลัง</div>
             </div>
         </div>
-
-        {{-- Search --}}
-        <form action="" method="GET" class="flex gap-3">
-            <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="ค้นหาชื่อ, เบอร์โทร..."
-                   class="px-4 py-2 bg-white/10 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:ring-purple-500 focus:border-purple-500">
-            <button type="submit" class="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl transition">
-                <i class="fas fa-search"></i>
-            </button>
+        <form method="GET" action="{{ route('admin.riders.pending') }}" style="display:flex; gap:8px; flex-wrap:wrap; width:100%; max-width:420px;">
+            <input type="search" name="search" value="{{ request('search') }}" class="tp-input" style="flex:1; min-width:180px;" placeholder="ค้นหาชื่อ หรือเบอร์โทร">
+            <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> ค้นหา</button>
         </form>
     </div>
 
-    {{-- Rider Cards --}}
-    @if($riders->count() > 0)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($riders as $rider)
-                <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-yellow-500/30 transition">
-                    {{-- Header --}}
-                    <div class="flex items-center gap-4 mb-4">
-                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-                            @if($rider->profile_image)
-                                <img src="{{ route('admin.riders.document', [$rider, 'profile']) }}" alt="{{ $rider->full_name }}" class="w-full h-full rounded-full object-cover">
+    @include('admin.riders.partials.flash')
+
+    @if ($riders->count() > 0)
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr)); gap:16px;">
+            @foreach ($riders as $rider)
+                @php
+                    $docInfo = $documentsByRider[$rider->id] ?? ['documents' => [], 'missing' => [], 'complete' => false];
+                    $viewerItems = collect($docInfo['documents'])
+                        ->filter(fn ($d) => ! empty($d['url']))
+                        ->map(fn ($d) => ['label' => $d['label'], 'url' => $d['url']])
+                        ->values()
+                        ->all();
+                    $waitingDays = $rider->created_at ? (int) $rider->created_at->diffInDays(now()) : 0;
+                    $profileIndex = collect($viewerItems)->search(fn ($d) => str_contains($d['url'], '/document/profile'));
+                    $profileIndex = $profileIndex === false ? 0 : (int) $profileIndex;
+                    $approveStyle = 'flex:1; color:var(--w-on); background:linear-gradient(135deg, var(--w-ok), color-mix(in srgb, var(--w-ok) 72%, var(--ink)));'
+                        .($docInfo['complete'] ? '' : ' opacity:.55; cursor:not-allowed;');
+                @endphp
+                <div class="tp-card" style="padding:18px; display:flex; flex-direction:column; gap:14px;">
+                    {{-- ข้อมูลผู้สมัคร --}}
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        @if ($rider->profile_image)
+                            <button type="button" style="border:0; padding:0; background:none; cursor:zoom-in; flex:none;"
+                                    @click="$dispatch('w1-doc', @js(['items' => $viewerItems, 'index' => $profileIndex]))">
+                                <img src="{{ route('admin.riders.document', [$rider, 'profile']) }}" alt="" loading="lazy"
+                                     style="width:54px; height:54px; border-radius:50%; object-fit:cover; box-shadow:var(--raise);">
+                            </button>
+                        @else
+                            <span class="tp-tile" style="width:54px; height:54px; border-radius:50%; font-size:20px; font-weight:800;">{{ mb_substr($rider->full_name ?: 'R', 0, 1) }}</span>
+                        @endif
+                        <div style="min-width:0; flex:1;">
+                            <div style="font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $rider->full_name }}</div>
+                            <div style="font-size:12.5px; color:var(--ink2);"><a href="tel:{{ $rider->phone }}" class="w1-link">{{ $rider->phone }}</a> · #{{ $rider->id }}</div>
+                        </div>
+                        @if ($waitingDays >= 2)
+                            @include('admin.riders.partials.pill', ['pillTone' => 'bad', 'pillText' => 'รอ '.$waitingDays.' วัน', 'pillIcon' => 'fa-hourglass-end', 'pillTitle' => 'รอตรวจนานแล้ว'])
+                        @endif
+                    </div>
+
+                    <div class="tp-well" style="padding:12px 14px; display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13px;">
+                        <span style="color:var(--ink2);">เลขบัตร</span>
+                        <span class="tp-num">{{ app(\App\Services\RiderAccountService::class)->maskIdCard($rider->id_card_number) ?? '-' }}</span>
+                        <span style="color:var(--ink2);">ยานพาหนะ</span>
+                        <span>{{ $rider->vehicle_type_text }} @if ($rider->vehicle_plate)<span class="tp-num" style="color:var(--ink2);">· {{ $rider->vehicle_plate }}</span>@endif</span>
+                        <span style="color:var(--ink2);">พื้นที่</span>
+                        <span>{{ collect([$rider->district, $rider->province])->filter()->implode(', ') ?: '-' }}</span>
+                        <span style="color:var(--ink2);">สมัครเมื่อ</span>
+                        <span>{{ $rider->created_at?->thaidate('j M Y H:i') }}</span>
+                    </div>
+
+                    {{-- เอกสาร (ดูในหน้าได้ทันที) --}}
+                    <div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px;">
+                            <span style="font-size:12.5px; font-weight:700;"><i class="fas fa-folder-open" style="color:var(--ink2);"></i> เอกสาร</span>
+                            @if ($docInfo['complete'])
+                                @include('admin.riders.partials.pill', ['pillTone' => 'ok', 'pillText' => 'ครบตามที่ต้องใช้', 'pillIcon' => 'fa-circle-check', 'pillTitle' => null])
                             @else
-                                <i class="fas fa-user text-white text-2xl"></i>
+                                @include('admin.riders.partials.pill', ['pillTone' => 'bad', 'pillText' => 'ยังขาด '.count($docInfo['missing']).' รายการ', 'pillIcon' => 'fa-triangle-exclamation', 'pillTitle' => null])
                             @endif
                         </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-white">{{ $rider->full_name }}</h3>
-                            <p class="text-gray-400">{{ $rider->phone }}</p>
+                        <div style="display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px;">
+                            @foreach ($docInfo['documents'] as $doc)
+                                @if ($doc['url'])
+                                    @php $docIndex = (int) collect($viewerItems)->search(fn ($d) => $d['url'] === $doc['url']); @endphp
+                                    <button type="button" title="{{ $doc['label'] }}"
+                                            style="border:0; padding:0; cursor:zoom-in; border-radius:11px; overflow:hidden; box-shadow:var(--inset-sm); background:var(--bg); aspect-ratio:1; position:relative;"
+                                            @click="$dispatch('w1-doc', @js(['items' => $viewerItems, 'index' => $docIndex]))">
+                                        <img src="{{ $doc['url'] }}" alt="{{ $doc['label'] }}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                        <span style="position:absolute; left:0; right:0; bottom:0; font-size:10px; padding:3px 4px; background:linear-gradient(0deg, rgba(0,0,0,.65), transparent); color:var(--w-on); text-align:center;">{{ $doc['label'] }}</span>
+                                    </button>
+                                @else
+                                    <div title="{{ $doc['label'] }}"
+                                         style="border-radius:11px; aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; padding:4px; box-shadow:var(--inset-sm); font-size:10px; color:{{ $doc['required'] ? 'var(--w-bad)' : 'var(--ink2)' }};">
+                                        <i class="fas {{ $doc['required'] ? 'fa-circle-exclamation' : 'fa-minus' }}" style="font-size:15px;"></i>
+                                        <span>{{ $doc['label'] }}{{ $doc['required'] ? ' (บังคับ)' : '' }}</span>
+                                    </div>
+                                @endif
+                            @endforeach
                         </div>
                     </div>
 
-                    {{-- Info --}}
-                    <div class="space-y-3 mb-4">
-                        <div class="flex items-center gap-3 text-gray-300">
-                            <i class="fas fa-id-card text-gray-500 w-5"></i>
-                            <span>{{ substr($rider->id_card_number ?? '', 0, 4) }}***{{ substr($rider->id_card_number ?? '', -4) }}</span>
-                        </div>
-                        <div class="flex items-center gap-3 text-gray-300">
-                            <i class="fas fa-motorcycle text-gray-500 w-5"></i>
-                            @php
-                                $vehicleLabels = [
-                                    'motorcycle' => 'มอเตอร์ไซค์',
-                                    'car' => 'รถยนต์',
-                                    'pickup' => 'รถกระบะ',
-                                    'van' => 'รถตู้',
-                                    'truck' => 'รถบรรทุก',
-                                ];
-                            @endphp
-                            <span>{{ $vehicleLabels[$rider->vehicle_type] ?? $rider->vehicle_type }}</span>
-                            @if($rider->vehicle_plate)
-                                <span class="text-gray-500">| {{ $rider->vehicle_plate }}</span>
-                            @endif
-                        </div>
-                        <div class="flex items-center gap-3 text-gray-300">
-                            <i class="fas fa-calendar text-gray-500 w-5"></i>
-                            <span>สมัคร: {{ $rider->created_at->thaidate('j M Y H:i') }}</span>
-                        </div>
-                    </div>
-
-                    {{-- Documents --}}
-                    <div class="flex gap-2 mb-4">
-                        @if($rider->id_card_image)
-                            <a href="{{ route('admin.riders.document', [$rider, 'id_card']) }}" target="_blank" rel="noopener"
-                               class="flex-1 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 text-center rounded-lg text-sm transition">
-                                <i class="fas fa-id-card mr-1"></i> บัตรปชช.
-                            </a>
-                        @endif
-                        @if($rider->driver_license_image)
-                            <a href="{{ route('admin.riders.document', [$rider, 'driver_license']) }}" target="_blank" rel="noopener"
-                               class="flex-1 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 text-center rounded-lg text-sm transition">
-                                <i class="fas fa-car mr-1"></i> ใบขับขี่
-                            </a>
-                        @endif
-                        @if($rider->vehicle_registration_image)
-                            <a href="{{ route('admin.riders.document', [$rider, 'vehicle_registration']) }}" target="_blank" rel="noopener"
-                               class="flex-1 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 text-center rounded-lg text-sm transition">
-                                <i class="fas fa-file-alt mr-1"></i> เล่มทะเบียน
-                            </a>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="flex gap-2">
-                        <a href="{{ route('admin.riders.show', $rider) }}"
-                           class="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white text-center rounded-xl transition">
-                            <i class="fas fa-eye mr-1"></i> ดูรายละเอียด
-                        </a>
-                        <button onclick="approveRider({{ $rider->id }})"
-                                class="flex-1 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl transition">
-                            <i class="fas fa-check mr-1"></i> อนุมัติ
+                    {{-- ปุ่มจัดการ --}}
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:auto;">
+                        <a href="{{ route('admin.riders.show', $rider) }}" class="tp-btn tp-btn-sm" style="flex:1;"><i class="fas fa-eye"></i> รายละเอียด</a>
+                        <button type="button" class="tp-btn tp-btn-sm" style="{{ $approveStyle }}"
+                                @if (! $docInfo['complete']) disabled title="ยังขาดเอกสารที่บังคับ" @endif
+                                @click="$dispatch('w1-action', @js(['url' => route('admin.riders.approve', $rider), 'title' => 'อนุมัติ '.$rider->full_name, 'message' => 'ตรวจเอกสารครบแล้ว ไรเดอร์จะเริ่มรับงานได้หลังเปิดรับงานในแอป', 'reason' => 'none', 'confirm' => 'อนุมัติ', 'tone' => 'ok', 'icon' => 'fa-circle-check']))">
+                            <i class="fas fa-check"></i> อนุมัติ
                         </button>
-                        <button onclick="rejectRider({{ $rider->id }})"
-                                class="px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl transition">
-                            <i class="fas fa-times"></i>
+                        <button type="button" class="tp-btn tp-btn-sm" style="color:var(--w-bad);"
+                                @click="$dispatch('w1-action', @js(['url' => route('admin.riders.reject', $rider), 'title' => 'ปฏิเสธใบสมัคร '.$rider->full_name, 'message' => 'ไรเดอร์จะเห็นเหตุผลในแอป และแก้ไขแล้วส่งใหม่ได้', 'reason' => 'required', 'reasonLabel' => 'เหตุผลที่ไม่อนุมัติ', 'placeholder' => 'เช่น รูปใบขับขี่ไม่ชัด กรุณาถ่ายใหม่ให้เห็นเลขครบ', 'confirm' => 'ปฏิเสธ', 'tone' => 'bad', 'icon' => 'fa-circle-xmark']))">
+                            <i class="fas fa-xmark"></i> ปฏิเสธ
                         </button>
                     </div>
+                    @if (! $docInfo['complete'])
+                        <div style="font-size:11.5px; color:var(--w-bad);">
+                            <i class="fas fa-circle-info"></i> ยังขาด: {{ app(\App\Services\RiderAccountService::class)->documentLabels($docInfo['missing']) }}
+                        </div>
+                    @endif
                 </div>
             @endforeach
         </div>
 
-        {{-- Pagination --}}
-        <div class="mt-6">
-            {{ $riders->withQueryString()->links() }}
-        </div>
+        @if ($riders->hasPages())
+            <div>{{ $riders->links() }}</div>
+        @endif
     @else
-        <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-12 text-center border border-white/10">
-            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-green-500/20 flex items-center justify-center">
-                <i class="fas fa-check-circle text-green-400 text-4xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-white mb-2">ไม่มีไรเดอร์รอตรวจสอบ</h3>
-            <p class="text-gray-400">ไรเดอร์ทั้งหมดได้รับการตรวจสอบเรียบร้อยแล้ว</p>
-            <a href="{{ route('admin.riders.index') }}" class="inline-block mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl transition">
-                <i class="fas fa-arrow-left mr-2"></i> กลับไปรายการไรเดอร์
-            </a>
+        <div class="tp-card" style="padding:44px 20px; text-align:center;">
+            <span class="tp-tile" style="width:64px; height:64px; border-radius:50%; font-size:26px; margin:0 auto 14px; background:linear-gradient(135deg, var(--w-ok), color-mix(in srgb, var(--w-ok) 70%, var(--ink)));"><i class="fas fa-circle-check"></i></span>
+            <div class="tp-section-h" style="font-size:17px;">{{ request('search') ? 'ไม่พบใบสมัครตามคำค้น' : 'ไม่มีใบสมัครรอตรวจ' }}</div>
+            <p style="color:var(--ink2); font-size:13px; margin:6px 0 16px;">ใบสมัครทั้งหมดได้รับการตรวจเรียบร้อยแล้ว</p>
+            <a href="{{ route('admin.riders.index') }}" class="tp-btn"><i class="fas fa-arrow-left"></i> กลับรายชื่อไรเดอร์</a>
         </div>
     @endif
 </div>
-
-{{-- Reject Modal --}}
-<div id="rejectModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-white/10">
-        <h3 class="text-xl font-bold text-white mb-4">ปฏิเสธไรเดอร์</h3>
-        <form id="rejectForm" method="POST">
-            @csrf
-            <div class="mb-4">
-                <label class="text-gray-300 block mb-2">เหตุผล</label>
-                <textarea name="reason" required
-                          class="w-full bg-gray-800 border border-gray-700 rounded-lg p-3 text-white focus:ring-purple-500 focus:border-purple-500"
-                          rows="4"
-                          placeholder="ระบุเหตุผลในการปฏิเสธ..."></textarea>
-            </div>
-            <div class="flex gap-3">
-                <button type="button" onclick="closeRejectModal()" class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition">
-                    ยกเลิก
-                </button>
-                <button type="submit" class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl transition">
-                    ยืนยันปฏิเสธ
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
 @endsection
-
-@push('scripts')
-<script>
-function approveRider(riderId) {
-    if (!confirm('ยืนยันอนุมัติไรเดอร์นี้?')) return;
-
-    fetch(`/admin/riders/${riderId}/approve`, {
-        method: 'POST',
-        headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-        },
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert(data.message || 'เกิดข้อผิดพลาด');
-        }
-    })
-    .catch(err => alert('เกิดข้อผิดพลาด'));
-}
-
-function rejectRider(riderId) {
-    document.getElementById('rejectForm').action = `/admin/riders/${riderId}/reject`;
-    document.getElementById('rejectModal').classList.remove('hidden');
-    document.getElementById('rejectModal').classList.add('flex');
-}
-
-function closeRejectModal() {
-    document.getElementById('rejectModal').classList.add('hidden');
-    document.getElementById('rejectModal').classList.remove('flex');
-}
-</script>
-@endpush

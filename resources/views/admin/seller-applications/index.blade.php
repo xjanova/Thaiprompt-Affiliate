@@ -65,8 +65,8 @@
                             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
                                 <span class="tp-pill tp-pill-soft">บทบาท: {{ $owner->role }}</span>
                                 <span class="tp-pill {{ $owner->kyc_status === 'approved' ? 'tp-pill-gold' : 'tp-pill-soft' }}">KYC: {{ $owner->kyc_status ?? 'ยังไม่ส่ง' }}</span>
-                                @if($owner->blocked_at)<span class="tp-pill" style="background:#d9534f; color:#fff;">ถูกระงับ</span>@endif
-                                @if($owner->trashed())<span class="tp-pill" style="background:#8a8a8a; color:#fff;">ลบบัญชีแล้ว</span>@endif
+                                @if($owner->blocked_at)<span class="tp-pill" style="background:var(--tp-bad,#d9534f); color:var(--tp-on-accent,#fff);">ถูกระงับ</span>@endif
+                                @if($owner->trashed())<span class="tp-pill" style="background:var(--ink2); color:var(--tp-on-accent,#fff);">ลบบัญชีแล้ว</span>@endif
                             </div>
                             <a href="{{ route('admin.users.show', $owner->id) }}" style="display:inline-block; margin-top:6px; font-size:.8rem; color:var(--deep1);">ดูข้อมูลผู้ใช้</a>
                         @else
@@ -82,15 +82,16 @@
                         <button type="submit" class="tp-btn tp-btn-primary tp-btn-sm" :disabled="busy"><i class="fas fa-check"></i> <span>อนุมัติ</span></button>
                     </form>
                     <button type="button" class="tp-btn tp-btn-sm" @click="showReject = !showReject"><i class="fas fa-xmark"></i> <span>ปฏิเสธ</span></button>
+                    <a href="{{ route('admin.storefront.vendor-stores.show', $store->id) }}" class="tp-btn tp-btn-sm" style="text-decoration:none;"><i class="fas fa-store"></i> <span>รายละเอียดร้าน</span></a>
                 </div>
 
-                <form x-show="showReject" x-cloak method="POST" action="{{ route('admin.seller-applications.reject', $store->id) }}"
-                      style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;"
+                <form x-show="showReject" x-cloak method="POST" action="{{ route('admin.seller-applications.reject', $store->id) }}" class="flex"
+                      style="margin-top:12px; gap:10px; flex-wrap:wrap; align-items:flex-start;"
                       @submit="busy = true">
                     @csrf
                     <textarea name="reason" class="tp-input" rows="2" maxlength="500" required style="flex:1; min-width:240px;"
                               placeholder="เหตุผลที่ปฏิเสธ (ผู้สมัครจะเห็นข้อความนี้)"></textarea>
-                    <button type="submit" class="tp-btn tp-btn-sm" style="background:#d9534f; border-color:#d9534f; color:#fff;" :disabled="busy">
+                    <button type="submit" class="tp-btn tp-btn-sm" style="background:var(--tp-bad,#d9534f); color:var(--tp-on-accent,#fff);" :disabled="busy">
                         <span>ยืนยันปฏิเสธ</span>
                     </button>
                 </form>

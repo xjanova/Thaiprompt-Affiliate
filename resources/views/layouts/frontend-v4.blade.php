@@ -15,6 +15,7 @@
 
     <title>@yield('title', 'ไทยพร๊อมท์ · แพลตฟอร์มเพื่อชีวิตที่ดีกว่า') · {{ config('app.name') }}</title>
     <meta name="description" content="@yield('meta_description', 'ไทยพร๊อมท์ — แพลตฟอร์มคนไทย รวมอีคอมเมิร์ซ ไรเดอร์ ตลาดสด กระเป๋าเงินดิจิทัล และระบบปันผลโปร่งใสด้วย Blockchain')">
+    @yield('meta')
 
     @php
         $tpFavicon = optional(\App\Models\ThemeSetting::active())->favicon_path ?? null;
@@ -172,7 +173,7 @@
         <template x-for="(n, i) in items" :key="i">
             <div x-transition.opacity class="tp-card" style="padding:13px 16px; min-width:280px; display:flex; align-items:center; gap:10px;">
                 <span class="tp-pill"
-                      :style="n.type==='success' ? 'background:#5aa07e;color:#fff' : n.type==='error' ? 'background:#d9534f;color:#fff' : 'background:var(--accent1);color:#fff'"
+                      :style="n.type==='success' ? 'background:var(--sf-ok,#5aa07e);color:var(--on-accent,#fff)' : n.type==='error' ? 'background:var(--sf-sale,#d9534f);color:var(--on-accent,#fff)' : 'background:var(--accent1);color:var(--on-accent,#fff)'"
                       x-text="n.type==='success' ? '✓' : n.type==='error' ? '!' : 'i'"></span>
                 <span style="font-size:13.5px; color:var(--ink);" x-text="n.message"></span>
             </div>
@@ -180,6 +181,8 @@
     </div>
     @if(session('success'))<div x-data x-init="$dispatch('notify',{type:'success',message:@js(session('success'))})"></div>@endif
     @if(session('error'))<div x-data x-init="$dispatch('notify',{type:'error',message:@js(session('error'))})"></div>@endif
+    @if(session('info'))<div x-data x-init="$dispatch('notify',{type:'info',message:@js(session('info'))})"></div>@endif
+    @if(session('warning'))<div x-data x-init="$dispatch('notify',{type:'info',message:@js(session('warning'))})"></div>@endif
 
     @stack('scripts')
 </body>

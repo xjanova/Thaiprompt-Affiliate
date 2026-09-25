@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\ShippingAddress;
 use App\Models\ShoppingCart;
 use App\Models\UniquePaymentAmount;
+use App\Models\User;
 use App\Models\Wallet;
 use App\Services\CashbackService;
 use App\Services\Payment\OrderStripeService;
@@ -15,11 +16,16 @@ use App\Services\Payment\PaymentService;
 use App\Services\Payment\PromptPayProvider;
 use App\Services\Pricing\PricingEngine;
 use App\Services\ShippingService;
+use App\Services\Shop\ShopCartService;
+use App\Services\Shop\ShopCheckoutService;
 use App\Services\Shop\ShopOrderNotifier;
+use App\Services\Shop\WebCartLines;
 use App\Services\WalletService;
 use App\Support\Shop\PaymentMethod;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class CheckoutController extends Controller
 {
@@ -98,6 +104,18 @@ class CheckoutController extends Controller
         $wallet = Wallet::where('user_id', auth()->id())->first();
         $walletBalance = $wallet ? $wallet->balance : 0;
 
+        // 🛵 (2026-09-26) ส่งด้วยไรเดอร์ / เก็บเงินปลายทาง / คูปอง — คิดด้วยกฎชุดเดียวกับแอป (ShopCartService)
+        //    หน้าเว็บขอยอดใหม่ผ่าน checkout.quote ทุกครั้งที่เปลี่ยนที่อยู่/วิธีส่ง/คูปอง
+        $defaultAddress = $addresses->first();
+        $quote = $this->webQuote(auth()->user(), [
+            'address_id' => old('shipping_address_id', $defaultAddress?->id),
+            'delivery_method' => old('delivery_method', 'parcel'),
+            'coupon_code' => old('coupon_code'),
+        ]);
+        $promptpayEnabled = collect($paymentMethods)->contains(
+            fn ($m) => ($m['id'] ?? null) === PaymentMethod::PROMPTPAY && ($m['enabled'] ?? false)
+        );
+
         return view('shop.checkout', compact(
             'cartItems',
             'addresses',
@@ -109,8 +127,197 @@ class CheckoutController extends Controller
             'pvPreview',
             'earningsSummary',
             'paymentMethods',
-            'walletBalance'
+            'walletBalance',
+            'quote',
+            'promptpayEnabled'
         ));
+    }
+
+    /**
+     * ยอดของตะกร้าเว็บตามที่อยู่/วิธีส่ง/คูปองที่เลือก (JSON — หน้า checkout เรียกทุกครั้งที่เปลี่ยนตัวเลือก)
+     *
+     * ตอบ {success, message, data} โดย data = รูปแบบเดียวกับ GET /api/v1/cart (ไม่มี cart_id)
+     */
+    public function quote(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'address_id' => ['nullable', 'integer'],
+            'delivery_method' => ['nullable', 'in:parcel,rider'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $quote = $this->webQuote($request->user(), [
+            'address_id' => $validated['address_id'] ?? null,
+            'delivery_method' => $validated['delivery_method'] ?? 'parcel',
+            'coupon_code' => $validated['coupon_code'] ?? null,
+        ]);
+
+        if ($quote === []) {
+            return response()->json([
+                'success' => false,
+                'code' => 'QUOTE_FAILED',
+                'message' => 'คำนวณยอดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'คำนวณยอดเรียบร้อย',
+            'data' => $quote,
+        ]);
+    }
+
+    /**
+     * ปักหมุดตำแหน่งให้ที่อยู่จัดส่ง (JSON) — ต้องมีพิกัดก่อนเลือกส่งด้วยไรเดอร์
+     */
+    public function saveAddressLocation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'address_id' => ['required', 'integer'],
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
+        ], [
+            'latitude.*' => 'ตำแหน่งไม่ถูกต้อง กรุณาปักหมุดใหม่',
+            'longitude.*' => 'ตำแหน่งไม่ถูกต้อง กรุณาปักหมุดใหม่',
+        ]);
+
+        $lat = round((float) $validated['latitude'], 7);
+        $lng = round((float) $validated['longitude'], 7);
+
+        if (abs($lat) < 0.0001 && abs($lng) < 0.0001) {
+            return response()->json([
+                'success' => false,
+                'code' => 'INVALID_LOCATION',
+                'message' => 'ตำแหน่งไม่ถูกต้อง กรุณาปักหมุดใหม่',
+            ], 422);
+        }
+
+        $address = ShippingAddress::where('user_id', $request->user()->id)->find((int) $validated['address_id']);
+        if (! $address) {
+            return response()->json([
+                'success' => false,
+                'code' => 'ADDRESS_NOT_FOUND',
+                'message' => 'ไม่พบที่อยู่จัดส่งนี้',
+            ], 404);
+        }
+
+        $address->forceFill(['latitude' => $lat, 'longitude' => $lng])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'บันทึกตำแหน่งเรียบร้อยแล้ว',
+            'data' => [
+                'address_id' => (int) $address->id,
+                'has_location' => $address->hasLocation(),
+                'latitude' => (float) $address->latitude,
+                'longitude' => (float) $address->longitude,
+            ],
+        ]);
+    }
+
+    /**
+     * คิดยอดตะกร้าเว็บด้วย ShopCartService (ล้มเหลว = [] แล้วให้หน้าใช้ยอดเดิม)
+     *
+     * @param  array{address_id?: mixed, delivery_method?: string|null, coupon_code?: string|null}  $opts
+     * @return array<string, mixed>
+     */
+    private function webQuote(User $user, array $opts): array
+    {
+        try {
+            return app(ShopCartService::class)->quoteLines(
+                $user,
+                app(WebCartLines::class)->forUser($user),
+                [
+                    'address_id' => is_numeric($opts['address_id'] ?? null) ? (int) $opts['address_id'] : null,
+                    'delivery_method' => ($opts['delivery_method'] ?? 'parcel') === 'rider' ? 'rider' : 'parcel',
+                    'coupon_code' => is_string($opts['coupon_code'] ?? null) ? trim($opts['coupon_code']) : null,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Web checkout quote failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * สั่งซื้อด้วยกฎเดียวกับแอป (กระเป๋าเงิน / พร้อมเพย์ / เก็บเงินปลายทาง)
+     *
+     * - แยกออเดอร์ตามร้าน · ส่งด้วยไรเดอร์ (ต้องปักหมุดที่อยู่) · COD เฉพาะส่งด้วยไรเดอร์ · คูปองตรวจกับตารางจริง
+     * - กระเป๋าเงิน = หักเงินทันทีใน transaction เดียวกับการสร้างออเดอร์
+     * - idempotency_key จากฟอร์ม (สร้างใหม่ทุกครั้งที่เปิดหน้า) กันกดส่งซ้ำ
+     */
+    private function processWithShopCheckout(Request $request, string $paymentMethod)
+    {
+        $validated = $request->validate([
+            'shipping_address_id' => ['nullable', 'integer'],
+            'delivery_method' => ['nullable', 'in:parcel,rider'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
+            'customer_notes' => ['nullable', 'string', 'max:500'],
+            'idempotency_key' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $user = $request->user();
+        $webCart = app(WebCartLines::class);
+
+        try {
+            $result = app(ShopCheckoutService::class)->checkout(
+                $user,
+                [
+                    'address_id' => $validated['shipping_address_id'] ?? null,
+                    'payment_method' => $paymentMethod,
+                    'delivery_method' => $validated['delivery_method'] ?? 'parcel',
+                    'coupon_code' => $validated['coupon_code'] ?? null,
+                    'note' => $validated['customer_notes'] ?? null,
+                    'source' => 'web',
+                ],
+                $validated['idempotency_key'] ?? null,
+                fn () => $webCart->lockedSource($user)
+            );
+        } catch (ShopException $e) {
+            if ($e->errorCode === ShopException::CART_EMPTY) {
+                return redirect()->route('cart.index')->with('error', 'ตะกร้าสินค้าของคุณว่างเปล่า');
+            }
+
+            return redirect()->route('checkout.index')
+                ->withInput($request->except(['idempotency_key']))
+                ->with('error', $e->getMessage())
+                ->with('checkout_error_code', $e->errorCode)
+                ->with('checkout_error_context', $e->context);
+        } catch (\Throwable $e) {
+            Log::error('Web checkout (shop service) failed', [
+                'user_id' => $user->id,
+                'payment_method' => $paymentMethod,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('checkout.index')
+                ->withInput($request->except(['idempotency_key']))
+                ->with('error', 'ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่อีกครั้ง');
+        }
+
+        $orderIds = array_values(array_filter((array) ($result['order_ids'] ?? [])));
+        $firstOrderId = $orderIds[0] ?? null;
+
+        if (! $firstOrderId) {
+            return redirect()->route('orders.index')->with('success', 'สั่งซื้อเรียบร้อยแล้ว');
+        }
+
+        $splitNote = count($orderIds) > 1
+            ? ' (แยกเป็น '.count($orderIds).' คำสั่งซื้อตามร้านค้า)'
+            : '';
+
+        return match ($paymentMethod) {
+            PaymentMethod::WALLET => redirect()->route('checkout.success', $firstOrderId)
+                ->with('success', 'ชำระเงินด้วยกระเป๋าเงินสำเร็จ'.$splitNote),
+            PaymentMethod::COD => redirect()->route('checkout.success', $firstOrderId)
+                ->with('success', 'สั่งซื้อสำเร็จ ชำระเงินกับไรเดอร์เมื่อได้รับสินค้า'.$splitNote),
+            default => redirect()->route('checkout.processing', $firstOrderId)
+                ->with('success', 'สร้างคำสั่งซื้อแล้ว กรุณาสแกน QR เพื่อชำระเงิน'.$splitNote),
+        };
     }
 
     /**
@@ -118,12 +325,25 @@ class CheckoutController extends Controller
      */
     public function process(Request $request)
     {
+        // 🛵 (2026-09-26) กระเป๋าเงิน / พร้อมเพย์ / เก็บเงินปลายทาง → เส้นทางเดียวกับแอป (ไรเดอร์ + คูปอง + แยกออเดอร์ตามร้าน)
+        //    บัตรเครดิต / โอนธนาคาร ยังใช้เส้นทางเดิมด้านล่าง (ส่งพัสดุเท่านั้น ไม่มีคูปอง)
+        $normalizedMethod = PaymentMethod::normalize((string) $request->input('payment_method', ''));
+        if ($normalizedMethod !== null && in_array($normalizedMethod, PaymentMethod::APP_CHECKOUT_VALUES, true)) {
+            return $this->processWithShopCheckout($request, $normalizedMethod);
+        }
+
         $cartItems = ShoppingCart::with(['product.seller'])
             ->where('user_id', auth()->id())
             ->get();
 
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'ตะกร้าสินค้าของคุณว่างเปล่า');
+        }
+
+        if ($request->input('delivery_method') === 'rider' || filled($request->input('coupon_code'))) {
+            return redirect()->route('checkout.index')
+                ->withInput($request->except(['idempotency_key']))
+                ->with('error', 'ส่งด้วยไรเดอร์และคูปองส่วนลด ใช้ได้เมื่อชำระด้วยกระเป๋าเงิน พร้อมเพย์ หรือเก็บเงินปลายทาง');
         }
 
         // ✅ ตรวจสอบว่ามีสินค้าที่ต้องส่งหรือไม่
@@ -409,7 +629,8 @@ class CheckoutController extends Controller
         } catch (\Exception $e) {
             \Log::error('Payment processing failed: '.$e->getMessage());
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            // ไม่ส่งข้อความ exception ดิบให้ลูกค้า (อาจมีรายละเอียดระบบ/SQL) — บันทึก log แล้วแจ้งข้อความไทย
+            return back()->with('error', 'ไม่สามารถดำเนินการชำระเงินได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง');
         }
     }
 

@@ -118,11 +118,10 @@ class PosTransactionItem extends Model
         if ($this->product && $this->product->track_inventory) {
             $this->product->decrement('stock_quantity', $this->quantity);
 
-            // Update stock status
+            // Update stock status — enum ของ products.stock_status มีแค่ in_stock|out_of_stock|on_backorder
+            // (เดิมเขียน 'low_stock' ซึ่งไม่อยู่ใน enum → บันทึกการขายพังเมื่อสต็อกเหลือน้อย)
             if ($this->product->stock_quantity <= 0) {
                 $this->product->update(['stock_status' => 'out_of_stock']);
-            } elseif ($this->product->stock_quantity <= $this->product->low_stock_threshold) {
-                $this->product->update(['stock_status' => 'low_stock']);
             }
         }
     }
@@ -150,9 +149,8 @@ class PosTransactionItem extends Model
             }
         });
 
-        static::created(function ($item) {
-            // Update stock after creating transaction item
-            $item->updateStock();
-        });
+        // (2026-09-25) เอา hook ตัดสต็อกอัตโนมัติตอน created ออก — ทุกจุดที่สร้างรายการ
+        // (SellerPosController, Pos\PosApiController, PosOfflineQueue) ตัดสต็อกเองอยู่แล้ว
+        // เดิมจึงโดนตัดสต็อก 2 เท่าทุกการขาย · ถ้าต้องการให้โมเดลตัดเอง เรียก $item->updateStock() ตรง ๆ
     }
 }

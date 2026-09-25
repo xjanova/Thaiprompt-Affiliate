@@ -29,9 +29,10 @@ class StorefrontSettingsController extends Controller
             ->ordered()
             ->get();
 
-        // ดึงหมวดหมู่สำหรับ dropdown
+        // ดึงหมวดหมู่หลัก (นับสินค้าในคิวรีเดียว กัน N+1 ในหน้า V4)
         $categories = ProductCategory::active()
             ->root()
+            ->withCount('products')
             ->orderBy('name')
             ->get();
 
@@ -170,6 +171,10 @@ class StorefrontSettingsController extends Controller
 
             $path = $request->file('image')->store('banners', 'public');
             $validated['image_url'] = Storage::url($path);
+        } elseif ($request->boolean('remove_image') && $banner->image_url) {
+            // ลบรูปปัจจุบัน (ฟอร์ม V4 มีช่อง remove_image) → ใช้สีพื้นแทน
+            Storage::disk('public')->delete(str_replace('/storage/', '', $banner->image_url));
+            $validated['image_url'] = null;
         }
 
         $banner->update($validated);

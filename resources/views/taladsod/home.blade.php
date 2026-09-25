@@ -1,561 +1,479 @@
 {{--
-    หน้าแรก ตลาดสดไทยพร๊อม
+ | หน้าแรกตลาดสดไทยพร้อม (taladsod.home) — ธีม V4 (frontend-v4)
+ | Controller: FreshMarket\HomeController@index
+ | ตัวแปร: $settings, $categories, $featuredListings, $latestListings, $topSellers, $serviceProviders,
+ |         $banners (MobileBanner::toAppApi + href), $openShops (shopCard + url), $gpFree (bool), $nearbyShopsUrl
+ | "เปิดอยู่ใกล้คุณ": GET taladsod.api.nearby-shops?lat&lng&radius → {data:{shops[], count, radius_km}}
+ --}}
+@extends('layouts.frontend-v4')
 
-    ตัวแปรที่ใช้:
-    - $settings: การตั้งค่าตลาดสด
-    - $categories: หมวดหมู่สินค้า (collection)
-    - $featuredListings: สินค้าแนะนำ (collection)
-    - $latestListings: สินค้าล่าสุด (collection)
-    - $topSellers: ร้านค้ายอดนิยม (collection)
-    - $serviceProviders: ช่างบริการ (collection)
---}}
-@extends('layouts.taladsod')
+@section('title', 'ตลาดสดไทยพร้อม — ของสด อาหาร รถเข็นใกล้บ้าน ส่งถึงมือ')
+@section('meta_description', 'ตลาดสดไทยพร้อม สั่งของสด อาหารร้อนๆ จากร้านและรถเข็นใกล้บ้าน ดูร้านที่เปิดอยู่ตอนนี้บนแผนที่ ไรเดอร์ส่งถึงมือ หรือไปรับเองที่ร้าน')
 
-@section('title', 'หน้าแรก - ตลาดสดใกล้บ้านคุณ')
+@php
+    $ui = \App\Support\TaladsodWebUi::class;
+    $brand = $settings->brand_name ?? 'ตลาดสดไทยพร้อม';
 
-@section('meta_description', 'ตลาดสดออนไลน์ ค้นหาอาหารสดจากผู้ขายใกล้บ้านคุณ ผักสด ผลไม้ เนื้อสัตว์ อาหารทะเล ส่งตรงจากเกษตรกรไทย')
+    // แบนเนอร์จากแอดมิน — ไม่มีเลยใช้ภาพเปิดตัว (ภาพไม่มีตัวหนังสือ เว็บวางข้อความทับ)
+    $slides = collect($banners ?? [])->map(fn ($b) => [
+        'title' => $b['title'] ?? $brand,
+        'subtitle' => $b['subtitle'] ?? null,
+        'image' => $b['image_url'],
+        'cta' => $b['cta_label'] ?? 'ดูเลย',
+        'href' => $b['href'] ?? route('taladsod.home'),
+    ])->values()->all();
+
+    if ($slides === []) {
+        $slides[] = [
+            'title' => 'ตลาดสดใกล้บ้าน ส่งถึงมือ',
+            'subtitle' => 'ของสด อาหารร้อนๆ จากร้านและรถเข็นในชุมชน ดูร้านที่เปิดอยู่ตอนนี้แล้วสั่งได้เลย',
+            'image' => asset('images/taladsod/banner-market.webp'),
+            'cta' => 'หาร้านใกล้ฉัน',
+            'href' => '#near-me',
+        ];
+    }
+
+    $nearCfg = [
+        'url' => $nearbyShopsUrl,
+        'followedUrl' => auth()->check() ? route('taladsod.followed-shops') : null,
+        'shopBaseUrl' => route('taladsod.seller', ['id' => 0]),
+    ];
+@endphp
 
 @section('content')
+<x-theme-v4.shop-kit />
+@include('taladsod.partials.kit')
+<x-theme-v4.leaflet />
+<x-theme-v4.public-header active="taladsod" :search="true" :search-action="route('taladsod.search')" search-name="q"
+                          search-placeholder="ค้นหาของสด อาหาร หรือร้านใกล้บ้าน..." :suggest="false" />
 
-    {{-- ===== Hero Section ===== --}}
-    <section class="relative overflow-hidden bg-gradient-to-br from-green-600 via-green-500 to-teal-500 dark:from-green-800 dark:via-green-700 dark:to-teal-700">
-        {{-- รูปแบบพื้นหลัง --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-10 left-10 text-8xl">🥬</div>
-            <div class="absolute top-20 right-20 text-7xl">🍎</div>
-            <div class="absolute bottom-10 left-1/4 text-6xl">🥩</div>
-            <div class="absolute bottom-20 right-1/3 text-8xl">🦐</div>
-            <div class="absolute top-1/3 left-1/2 text-5xl">🌽</div>
-        </div>
+<main class="ts-scope" style="flex:1; padding-bottom:44px;">
+    <div class="sf-wrap">
+        @include('taladsod.partials.nav', ['active' => 'home'])
 
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
-            <div class="text-center max-w-3xl mx-auto">
-                {{-- หัวข้อหลัก --}}
-                <h1 class="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold text-white leading-tight mb-4 sm:mb-6">
-                    ตลาดสดใกล้บ้านคุณ
-                </h1>
-                <p class="text-lg sm:text-xl text-green-50 mb-8 sm:mb-10 leading-relaxed max-w-2xl mx-auto">
-                    ค้นหาอาหารสดจากผู้ขายในละแวกใกล้เคียง สดใหม่ทุกวัน ส่งตรงจากเกษตรกรและชาวสวนไทย
-                </p>
-
-                {{-- ช่องค้นหาขนาดใหญ่ --}}
-                <div x-data="geolocation()" class="max-w-2xl mx-auto">
-                    <form action="{{ route('taladsod.search') }}" method="GET">
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <div class="flex-1 relative">
-                                <input type="text"
-                                       name="q"
-                                       placeholder="ค้นหาสินค้า... ผักสด ผลไม้ เนื้อหมู กุ้งสด"
-                                       class="w-full pl-12 pr-4 py-4 text-base sm:text-lg rounded-2xl border-0 bg-white/95 dark:bg-gray-800/95 text-gray-900 dark:text-gray-100 shadow-xl focus:ring-4 focus:ring-white/30 placeholder-gray-400 dark:placeholder-gray-500">
-                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <i class="fas fa-search text-green-500 text-lg"></i>
-                                </div>
-                                {{-- ส่งพิกัดที่ซ่อนไว้ --}}
-                                <input type="hidden" name="lat" :value="lat">
-                                <input type="hidden" name="lng" :value="lng">
-                            </div>
-                            <div class="flex gap-3">
-                                <button type="button"
-                                        @click="getLocation()"
-                                        :disabled="loading"
-                                        class="flex-shrink-0 px-5 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-2xl font-medium transition-all border border-white/30 flex items-center gap-2"
-                                        :class="{ 'animate-pulse': loading }">
-                                    <span>📍</span>
-                                    <span class="hidden sm:inline" x-text="loading ? 'กำลังค้นหา...' : 'ค้นหาใกล้ตัว'">ค้นหาใกล้ตัว</span>
-                                    <span class="sm:hidden"><i class="fas fa-location-crosshairs"></i></span>
-                                </button>
-                                <button type="submit"
-                                        class="flex-shrink-0 px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-xl hover:scale-105">
-                                    ค้นหา
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                    {{-- สถานะ GPS --}}
-                    <div class="mt-3 text-sm text-green-100">
-                        <template x-if="lat">
-                            <span><i class="fas fa-check-circle text-green-300"></i> พบตำแหน่งของคุณแล้ว</span>
-                        </template>
-                        <template x-if="error">
-                            <span class="text-yellow-200"><i class="fas fa-exclamation-triangle"></i> <span x-text="error"></span></span>
-                        </template>
-                    </div>
-                </div>
-
-                {{-- สถิติ --}}
-                <div class="mt-10 flex flex-wrap justify-center gap-6 sm:gap-10 text-white/90">
-                    <div class="text-center">
-                        <div class="text-2xl sm:text-3xl font-bold">{{ $settings->total_listings ?? '1,000+' }}</div>
-                        <div class="text-sm text-green-100">สินค้า</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl sm:text-3xl font-bold">{{ $settings->total_sellers ?? '500+' }}</div>
-                        <div class="text-sm text-green-100">ร้านค้า</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl sm:text-3xl font-bold">{{ $settings->total_provinces ?? '77' }}</div>
-                        <div class="text-sm text-green-100">จังหวัด</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- คลื่นด้านล่าง --}}
-        <div class="absolute bottom-0 left-0 right-0">
-            <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
-                <path d="M0 60L60 50C120 40 240 20 360 15C480 10 600 20 720 25C840 30 960 30 1080 25C1200 20 1320 10 1380 5L1440 0V60H0Z"
-                      class="fill-amber-50 dark:fill-gray-900"/>
-            </svg>
-        </div>
-    </section>
-
-    {{-- ===== หมวดหมู่สินค้า ===== --}}
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-green-500">📦</span> หมวดหมู่สินค้า
-            </h2>
-            <a href="{{ route('taladsod.search', ['view' => 'categories']) }}"
-               class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
-                ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
-            </a>
-        </div>
-
-        {{-- การ์ดหมวดหมู่ - เลื่อนแนวนอน --}}
-        <div class="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4">
-            @php
-                // หมวดหมู่เริ่มต้นกรณีไม่มีข้อมูลจาก Database
-                $defaultCategories = collect([
-                    (object)['slug' => 'vegetables', 'name' => 'ผักสด', 'icon' => '🥬', 'color' => 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'],
-                    (object)['slug' => 'fruits', 'name' => 'ผลไม้', 'icon' => '🍎', 'color' => 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'],
-                    (object)['slug' => 'meat', 'name' => 'เนื้อสัตว์', 'icon' => '🥩', 'color' => 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800'],
-                    (object)['slug' => 'seafood', 'name' => 'อาหารทะเล', 'icon' => '🦐', 'color' => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'],
-                    (object)['slug' => 'eggs-dairy', 'name' => 'ไข่และนม', 'icon' => '🥚', 'color' => 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'],
-                    (object)['slug' => 'herbs', 'name' => 'สมุนไพร', 'icon' => '🌿', 'color' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'],
-                    (object)['slug' => 'rice-grains', 'name' => 'ข้าวและธัญพืช', 'icon' => '🌾', 'color' => 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'],
-                    (object)['slug' => 'dried-foods', 'name' => 'ของแห้ง', 'icon' => '🍬', 'color' => 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'],
-                    (object)['slug' => 'ready-to-eat', 'name' => 'อาหารปรุงสำเร็จ', 'icon' => '🍲', 'color' => 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800'],
-                    (object)['slug' => 'beverages', 'name' => 'เครื่องดื่ม', 'icon' => '🧃', 'color' => 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800'],
-                ]);
-                $displayCategories = isset($categories) && $categories->count() > 0 ? $categories : $defaultCategories;
-            @endphp
-
-            @foreach($displayCategories as $category)
-                <a href="{{ route('taladsod.search', ['category' => $category->slug]) }}"
-                   class="flex-shrink-0 w-28 sm:w-32 group">
-                    <div class="flex flex-col items-center gap-2 p-4 rounded-2xl border {{ $category->color ?? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800' }} hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                        <span class="text-4xl sm:text-5xl">{{ $category->icon ?? '📦' }}</span>
-                        <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{{ $category->name }}</span>
-                    </div>
-                </a>
-            @endforeach
-        </div>
-    </section>
-
-    {{-- ===== สินค้าแนะนำ ===== --}}
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-orange-500">⭐</span> สินค้าแนะนำ
-            </h2>
-            <a href="{{ route('taladsod.search', ['sort' => 'featured']) }}"
-               class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
-                ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
-            </a>
-        </div>
-
-        @if(isset($featuredListings) && $featuredListings->count() > 0)
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                @foreach($featuredListings as $listing)
-                    <a href="{{ route('taladsod.listing', $listing->id) }}"
-                       class="group bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:-translate-y-1">
-
-                        {{-- รูปสินค้า --}}
-                        <div class="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-700">
-                            @if($listing->image_url ?? false)
-                                <img src="{{ $listing->image_url }}"
-                                     alt="{{ $listing->title }}"
-                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                     loading="lazy">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                                    🥬
-                                </div>
-                            @endif
-
-                            {{-- ป้ายระยะทาง --}}
-                            @if($listing->distance ?? false)
-                                <div class="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm text-white text-xs rounded-full flex items-center gap-1">
-                                    <i class="fas fa-location-dot text-green-400"></i>
-                                    {{ number_format($listing->distance, 1) }} กม.
-                                </div>
-                            @endif
-
-                            {{-- ป้ายเงินคืน --}}
-                            @if($listing->cashback_percent ?? false)
-                                <div class="absolute top-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
-                                    คืน {{ $listing->cashback_percent }}%
-                                </div>
-                            @endif
-
-                            {{-- ป้ายออร์แกนิค --}}
-                            @if($listing->is_organic ?? false)
-                                <div class="absolute bottom-2 left-2 px-2 py-0.5 bg-green-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                                    <i class="fas fa-leaf"></i> ออร์แกนิค
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- ข้อมูลสินค้า --}}
-                        <div class="p-3 sm:p-4">
-                            <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                                {{ $listing->title }}
-                            </h3>
-                            <div class="flex items-baseline gap-1.5 mb-2">
-                                <span class="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                                    ฿{{ number_format($listing->price, 0) }}
-                                </span>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">
-                                    /{{ $listing->unit ?? 'กก.' }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                                <div class="flex items-center gap-1.5 min-w-0">
-                                    <i class="fas fa-store text-green-500"></i>
-                                    <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
-                                </div>
-                                @if(($listing->seller->rating_average ?? 0) > 0)
-                                    <div class="flex items-center gap-0.5 flex-shrink-0">
-                                        <i class="fas fa-star text-yellow-400 text-[10px]"></i>
-                                        <span>{{ number_format($listing->seller->rating_average, 1) }}</span>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        @else
-            {{-- สถานะว่างเปล่า --}}
-            <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">🌿</div>
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีสินค้าแนะนำ</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">สินค้าแนะนำจะแสดงที่นี่เร็วๆ นี้</p>
-            </div>
-        @endif
-    </section>
-
-    {{-- ===== สินค้าล่าสุด ===== --}}
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-green-500">🌱</span> สินค้าล่าสุด
-            </h2>
-            <a href="{{ route('taladsod.search', ['sort' => 'latest']) }}"
-               class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
-                ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
-            </a>
-        </div>
-
-        @if(isset($latestListings) && $latestListings->count() > 0)
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                @foreach($latestListings as $listing)
-                    <a href="{{ route('taladsod.listing', $listing->id) }}"
-                       class="group bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:-translate-y-1">
-
-                        {{-- รูปสินค้า --}}
-                        <div class="relative aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-700">
-                            @if($listing->image_url ?? false)
-                                <img src="{{ $listing->image_url }}"
-                                     alt="{{ $listing->title }}"
-                                     class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                     loading="lazy">
-                            @else
-                                <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                                    🍎
-                                </div>
-                            @endif
-
-                            {{-- ป้ายสินค้าใหม่ --}}
-                            <div class="absolute top-2 left-2 px-2 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">
-                                ใหม่
-                            </div>
-
-                            {{-- ป้ายระยะทาง --}}
-                            @if($listing->distance ?? false)
-                                <div class="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-sm text-white text-xs rounded-full flex items-center gap-1">
-                                    <i class="fas fa-location-dot text-green-400"></i>
-                                    {{ number_format($listing->distance, 1) }} กม.
-                                </div>
-                            @endif
-
-                            {{-- ป้ายเงินคืน --}}
-                            @if($listing->cashback_percent ?? false)
-                                <div class="absolute bottom-2 right-2 px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
-                                    คืน {{ $listing->cashback_percent }}%
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- ข้อมูลสินค้า --}}
-                        <div class="p-3 sm:p-4">
-                            <h3 class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-                                {{ $listing->title }}
-                            </h3>
-                            <div class="flex items-baseline gap-1.5 mb-2">
-                                <span class="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                                    ฿{{ number_format($listing->price, 0) }}
-                                </span>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">
-                                    /{{ $listing->unit ?? 'กก.' }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                                <div class="flex items-center gap-1.5 min-w-0">
-                                    <i class="fas fa-store text-green-500"></i>
-                                    <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
-                                </div>
-                                @if(($listing->seller->rating_average ?? 0) > 0)
-                                    <div class="flex items-center gap-0.5 flex-shrink-0">
-                                        <i class="fas fa-star text-yellow-400 text-[10px]"></i>
-                                        <span>{{ number_format($listing->seller->rating_average, 1) }}</span>
-                                    </div>
-                                @endif
-                            </div>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        @else
-            {{-- สถานะว่างเปล่า --}}
-            <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">🌾</div>
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีสินค้าล่าสุด</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">สินค้าใหม่จะแสดงที่นี่เร็วๆ นี้</p>
-            </div>
-        @endif
-    </section>
-
-    {{-- ===== ร้านค้ายอดนิยม ===== --}}
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-yellow-500">🏆</span> ร้านค้ายอดนิยม
-            </h2>
-        </div>
-
-        @if(isset($topSellers) && $topSellers->count() > 0)
-            <div class="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4">
-                @foreach($topSellers as $seller)
-                    <div class="flex-shrink-0 w-44 sm:w-52 bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:-translate-y-1 text-center p-5">
-                        {{-- อวาตาร์ --}}
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg ring-4 ring-green-100 dark:ring-green-900/50">
-                            @if($seller->avatar_url ?? false)
-                                <img src="{{ $seller->avatar_url }}" alt="{{ $seller->shop_name }}" class="w-full h-full rounded-full object-cover">
-                            @else
-                                <span class="text-2xl sm:text-3xl text-white font-bold">
-                                    {{ mb_substr($seller->shop_name, 0, 1) }}
-                                </span>
-                            @endif
-                        </div>
-
-                        {{-- ชื่อร้าน --}}
-                        <h3 class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-1 line-clamp-1">
-                            {{ $seller->shop_name }}
-                        </h3>
-
-                        {{-- ดาวรีวิว --}}
-                        <div class="flex items-center justify-center gap-0.5 mb-2">
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($seller->rating_average ?? 0))
-                                    <i class="fas fa-star text-yellow-400 text-xs"></i>
-                                @elseif($i - 0.5 <= ($seller->rating_average ?? 0))
-                                    <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
-                                @else
-                                    <i class="far fa-star text-gray-300 dark:text-gray-600 text-xs"></i>
-                                @endif
-                            @endfor
-                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ number_format($seller->rating_average ?? 0, 1) }}</span>
-                        </div>
-
-                        {{-- ยอดขาย --}}
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-shopping-bag text-green-500 mr-1"></i>
-                            ขายแล้ว {{ number_format($seller->total_sales ?? 0) }} รายการ
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @else
-            {{-- สถานะว่างเปล่า --}}
-            <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">🏪</div>
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีร้านค้ายอดนิยม</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">ร้านค้ายอดนิยมจะแสดงที่นี่เร็วๆ นี้</p>
-            </div>
-        @endif
-    </section>
-
-    {{-- ===== ตลาดช่าง (Service Providers) ===== --}}
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        {{-- หัวข้อ Section --}}
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-blue-500">🔧</span> ตลาดช่าง — บริการถึงบ้าน
-            </h2>
-            <a href="{{ route('taladsod.search', ['type' => 'service']) }}"
-               class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
-                ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
-            </a>
-        </div>
-
-        {{-- หมวดหมู่บริการ --}}
-        <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4 mb-6">
-            @php
-                $serviceCategories = [
-                    (object)['slug' => 'plumbing', 'name' => 'ช่างประปา', 'icon' => '🚰', 'color' => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'],
-                    (object)['slug' => 'electrical', 'name' => 'ช่างไฟฟ้า', 'icon' => '⚡', 'color' => 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'],
-                    (object)['slug' => 'aircon', 'name' => 'ช่างแอร์', 'icon' => '❄️', 'color' => 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800'],
-                    (object)['slug' => 'beauty', 'name' => 'ช่างเสริมสวย', 'icon' => '💇', 'color' => 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800'],
-                    (object)['slug' => 'massage', 'name' => 'นวดแผนไทย', 'icon' => '💆', 'color' => 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800'],
-                    (object)['slug' => 'cleaning', 'name' => 'ทำความสะอาด', 'icon' => '🧹', 'color' => 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'],
-                    (object)['slug' => 'repair', 'name' => 'ซ่อมบำรุง', 'icon' => '🛠️', 'color' => 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'],
-                    (object)['slug' => 'gardening', 'name' => 'จัดสวน', 'icon' => '🌳', 'color' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'],
-                ];
-            @endphp
-
-            @foreach($serviceCategories as $svc)
-                <a href="{{ route('taladsod.search', ['type' => 'service', 'category' => $svc->slug]) }}"
-                   class="flex-shrink-0 w-24 sm:w-28 group">
-                    <div class="flex flex-col items-center gap-2 p-3 rounded-2xl border {{ $svc->color }} hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                        <span class="text-3xl sm:text-4xl">{{ $svc->icon }}</span>
-                        <span class="text-xs font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{{ $svc->name }}</span>
-                    </div>
-                </a>
-            @endforeach
-        </div>
-
-        {{-- รายชื่อช่าง/ผู้ให้บริการ --}}
-        @if(isset($serviceProviders) && $serviceProviders->count() > 0)
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                @foreach($serviceProviders as $provider)
-                    <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:-translate-y-1 p-4 sm:p-5 text-center">
-                        {{-- รูปโปรไฟล์ --}}
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg ring-4 ring-blue-100 dark:ring-blue-900/50">
-                            @if($provider->profile_photo ?? $provider->avatar ?? false)
-                                <img src="{{ $provider->profile_photo ?? $provider->avatar }}"
-                                     alt="{{ $provider->display_name ?? $provider->name }}"
-                                     class="w-full h-full rounded-full object-cover">
-                            @else
-                                <span class="text-2xl sm:text-3xl text-white font-bold">
-                                    {{ mb_substr($provider->display_name ?? $provider->name, 0, 1) }}
-                                </span>
-                            @endif
-                        </div>
-
-                        {{-- ชื่อ --}}
-                        <h3 class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-1 line-clamp-1">
-                            {{ $provider->display_name ?? $provider->name }}
-                        </h3>
-
-                        {{-- หมวดหมู่ --}}
-                        @if($provider->categories && $provider->categories->count() > 0)
-                            <p class="text-xs text-blue-600 dark:text-blue-400 mb-2 line-clamp-1">
-                                {{ $provider->categories->pluck('name')->implode(', ') }}
-                            </p>
+        {{-- ════════ แบนเนอร์แคมเปญ ════════ --}}
+        {{-- ts-hero-stack: ทุกสไลด์ซ้อนอยู่ช่องเดียวกัน (grid) → ตอนเปลี่ยนสไลด์ ความสูงไม่กระโดด
+             หยุดเลื่อนเฉพาะตอนเมาส์ชี้ (จอสัมผัสไม่หยุดค้าง) --}}
+        <section aria-label="แบนเนอร์แคมเปญ" class="ts-hero-stack" style="padding-top:6px; position:relative;"
+                 x-data="tsHeroSlider({{ count($slides) }})"
+                 x-on:pointerenter="if ($event.pointerType === 'mouse') { hover = true; stop(); }"
+                 x-on:pointerleave="if ($event.pointerType === 'mouse') { hover = false; start(); }"
+                 x-on:touchstart.passive="sx = $event.touches[0].clientX" x-on:touchend="swipe($event.changedTouches[0].clientX)">
+            @foreach($slides as $i => $slide)
+                <div class="ts-hero" x-show="i === {{ $i }}" @if($i > 0) x-cloak @endif x-transition.opacity.duration.500ms>
+                    <img class="ts-hero-img" src="{{ $slide['image'] }}" alt="" @if($i > 0) loading="lazy" @endif>
+                    <div class="ts-hero-in">
+                        <span class="ts-pill solid ts-tone-gold" style="align-self:flex-start;"><i class="fas fa-carrot" aria-hidden="true"></i> {{ $brand }}</span>
+                        <h1 class="ts-hero-title">{{ $slide['title'] }}</h1>
+                        @if($slide['subtitle'])
+                            <p class="ts-hero-sub">{{ $slide['subtitle'] }}</p>
                         @endif
-
-                        {{-- ดาวรีวิว --}}
-                        <div class="flex items-center justify-center gap-0.5 mb-2">
-                            @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($provider->rating ?? 0))
-                                    <i class="fas fa-star text-yellow-400 text-xs"></i>
-                                @elseif($i - 0.5 <= ($provider->rating ?? 0))
-                                    <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
-                                @else
-                                    <i class="far fa-star text-gray-300 dark:text-gray-600 text-xs"></i>
-                                @endif
-                            @endfor
-                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ number_format($provider->rating ?? 0, 1) }}</span>
-                        </div>
-
-                        {{-- สถิติ --}}
-                        <div class="flex items-center justify-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                            <span><i class="fas fa-briefcase text-blue-500 mr-1"></i>{{ number_format($provider->total_bookings ?? 0) }} งาน</span>
-                            @if($provider->isAlsoRider())
-                                <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">
-                                    🛵 ส่งของได้
-                                </span>
+                        <div class="ts-row" style="margin-top:6px;">
+                            <a href="{{ $slide['href'] }}" class="ts-btn3d ts-tone-gold"><i class="fas fa-arrow-right" aria-hidden="true"></i> {{ $slide['cta'] }}</a>
+                            @if($i === 0)
+                                <a href="#near-me" class="ts-btn3d soft sf-hide-sm"><i class="fas fa-location-crosshairs" aria-hidden="true"></i> ร้านที่เปิดอยู่ใกล้ฉัน</a>
                             @endif
                         </div>
                     </div>
-                @endforeach
-            </div>
-        @else
-            {{-- สถานะว่างเปล่า --}}
-            <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">🔧</div>
-                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีช่างบริการ</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">ช่างบริการจะแสดงที่นี่เร็วๆ นี้</p>
-                <a href="{{ route('taladsod.landing.rider') }}"
-                   class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-medium">
-                    <i class="fas fa-user-plus"></i> สมัครเป็นช่างบริการ
-                </a>
-            </div>
+                </div>
+            @endforeach
+            @if(count($slides) > 1)
+                <div class="ts-hero-dots" aria-label="เลือกแบนเนอร์">
+                    @foreach($slides as $i => $slide)
+                        <button type="button" x-on:click="go({{ $i }})" :class="i === {{ $i }} ? 'is-on' : ''" aria-label="แบนเนอร์ที่ {{ $i + 1 }}"></button>
+                    @endforeach
+                </div>
+            @endif
+        </section>
+
+        {{-- ════════ หมวดหมู่ ════════ --}}
+        @if($categories->count() > 0)
+            <section class="sf-section" aria-labelledby="ts-cats-h" style="padding-top:22px;">
+                <div class="sf-section-h" style="margin-bottom:10px;">
+                    <h2 id="ts-cats-h" class="ts-h2"><i class="fas fa-layer-group" style="color:var(--accent2);" aria-hidden="true"></i> เลือกตามหมวด</h2>
+                    <a href="{{ route('taladsod.search') }}" class="ts-link ts-small">ค้นหาทั้งหมด <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                <div class="sf-scroll">
+                    @foreach($categories as $category)
+                        <a href="{{ route('taladsod.category', $category->slug) }}" class="ts-cat">
+                            <span class="ts-cat-ic">
+                                @if($category->image_url)
+                                    <img src="{{ $category->image_url }}" alt="" loading="lazy">
+                                @else
+                                    {{ $category->icon ?: '🛒' }}
+                                @endif
+                            </span>
+                            <span>{{ $category->name }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
         @endif
-    </section>
 
-    {{-- ===== CTA Section ===== --}}
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-        <div class="bg-gradient-to-br from-green-500 via-green-600 to-teal-600 dark:from-green-700 dark:via-green-800 dark:to-teal-800 rounded-3xl overflow-hidden shadow-2xl relative">
-            {{-- รูปแบบพื้นหลัง --}}
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-5 right-10 text-7xl">🌽</div>
-                <div class="absolute bottom-5 left-10 text-6xl">🥬</div>
+        {{-- ════════ เปิดอยู่ใกล้คุณ (แผนที่ + รายการร้าน) ════════ --}}
+        <section id="near-me" class="sf-section" aria-labelledby="ts-near-h" x-data="tsNearby({{ \Illuminate\Support\Js::from($nearCfg) }})" style="scroll-margin-top:90px;">
+            <div class="sf-section-h">
+                <div>
+                    <div class="sf-kicker">ร้าน · รถเข็น · ตลาดนัด</div>
+                    <h2 id="ts-near-h" class="sf-title">เปิดอยู่ใกล้คุณ</h2>
+                </div>
+                <div class="ts-row" style="gap:8px;">
+                    <template x-for="r in [2, 5, 10, 20]" :key="r">
+                        <button type="button" class="sf-chip" :class="radius === r ? 'is-on' : ''" x-on:click="setRadius(r)" x-text="r + ' กม.'"></button>
+                    </template>
+                </div>
             </div>
 
-            <div class="relative p-8 sm:p-12 lg:p-16">
-                <div class="grid lg:grid-cols-2 gap-8 items-center">
-                    {{-- ข้อความ --}}
-                    <div class="text-center lg:text-left">
-                        <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white mb-4">
-                            มีของสดขาย? มาขายกับเรา!
-                        </h2>
-                        <p class="text-green-50 text-base sm:text-lg mb-6 leading-relaxed">
-                            เปิดร้านฟรี ไม่มีค่าธรรมเนียมรายเดือน เข้าถึงลูกค้าในละแวกใกล้เคียง เพิ่มยอดขายได้ทันที
-                        </p>
-                        <ul class="text-green-50 text-sm sm:text-base space-y-2 mb-8">
-                            <li class="flex items-center gap-2 justify-center lg:justify-start">
-                                <i class="fas fa-check-circle text-green-300"></i> เปิดร้านฟรี ไม่มีค่าใช้จ่าย
-                            </li>
-                            <li class="flex items-center gap-2 justify-center lg:justify-start">
-                                <i class="fas fa-check-circle text-green-300"></i> ระบบจัดการสินค้าง่ายๆ
-                            </li>
-                            <li class="flex items-center gap-2 justify-center lg:justify-start">
-                                <i class="fas fa-check-circle text-green-300"></i> ลูกค้าค้นหาเจอง่ายด้วย GPS
-                            </li>
-                            <li class="flex items-center gap-2 justify-center lg:justify-start">
-                                <i class="fas fa-check-circle text-green-300"></i> รับเงินคืนจากการแนะนำเพื่อน
-                            </li>
-                        </ul>
+            <div class="tp-card" style="padding:14px;">
+                <div class="ts-grid" style="--ts-min:320px; align-items:start;">
+                    {{-- แผนที่ --}}
+                    <div>
+                        <div class="ts-map" x-ref="map" x-show="located" x-cloak aria-label="แผนที่ร้านที่เปิดอยู่ใกล้คุณ"></div>
+                        <div class="ts-map ts-map-empty" x-show="!located" style="background:linear-gradient(160deg, var(--a1soft), var(--surf));">
+                            <div class="ts-stack" style="align-items:center; max-width:320px;">
+                                <span class="tp-tile" style="width:64px; height:64px; border-radius:22px; font-size:26px;"><i class="fas fa-map-location-dot" aria-hidden="true"></i></span>
+                                <b style="font-size:15px; color:var(--ink);">ดูร้านที่เปิดอยู่รอบตัวคุณบนแผนที่</b>
+                                <span>รวมรถเข็นและร้านตลาดนัดที่เปิดวันนี้ — ตำแหน่งของคุณใช้ค้นหาเท่านั้น ไม่ถูกบันทึก</span>
+                                <button type="button" class="ts-btn3d ts-tone-gold" x-on:click="locate()" :disabled="busy">
+                                    <i class="fas" :class="busy ? 'fa-circle-notch ts-spin' : 'fa-location-crosshairs'" aria-hidden="true"></i>
+                                    <span x-text="busy ? 'กำลังหาตำแหน่ง...' : 'แชร์ตำแหน่งเพื่อค้นหา'">แชร์ตำแหน่งเพื่อค้นหา</span>
+                                </button>
+                                <span class="ts-err" x-show="error" x-text="error" x-cloak></span>
+                            </div>
+                        </div>
                     </div>
 
-                    {{-- ปุ่ม CTA --}}
-                    <div class="flex flex-col sm:flex-row lg:flex-col gap-4 items-center">
-                        <a href="{{ route('taladsod.register-seller') }}"
-                           class="w-full sm:w-auto lg:w-full text-center px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2">
-                            <i class="fas fa-store"></i> ขายของกับเรา
-                        </a>
-                        <a href="{{ config('services.line.fresh_market_add_friend_url') ?: '#' }}"
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           class="w-full sm:w-auto lg:w-full text-center px-8 py-4 bg-[#06C755] hover:bg-[#05b34d] text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                            <i class="fab fa-line text-xl"></i> เพิ่มเพื่อน LINE
-                        </a>
+                    {{-- รายการร้าน --}}
+                    <div class="ts-stack" style="gap:10px;">
+                        {{-- ก่อนแชร์ตำแหน่ง: ร้านที่เปิดอยู่ตอนนี้ --}}
+                        <div class="ts-stack" style="gap:10px;" x-show="!located">
+                            <div class="ts-row" style="justify-content:space-between;">
+                                <b style="font-size:14px;"><span class="ts-dot live ts-tone-ok" style="display:inline-block; margin-right:6px;"></span>เปิดอยู่ตอนนี้</b>
+                                <span class="ts-muted ts-small">{{ count($openShops) }} ร้าน</span>
+                            </div>
+                            @forelse($openShops as $shop)
+                                @include('taladsod.partials.shop-card', ['shop' => $shop])
+                            @empty
+                                <div class="ts-empty tp-inset" style="border-radius:18px;">
+                                    <span class="em" aria-hidden="true">🌙</span>
+                                    <b>ยังไม่มีร้านเปิดตอนนี้</b>
+                                    <span class="ts-muted ts-small">ติดตามร้านที่ชอบ แล้วเราจะแจ้งเตือนเมื่อร้านเปิด</span>
+                                </div>
+                            @endforelse
+                        </div>
+
+                        {{-- หลังแชร์ตำแหน่ง: ร้านใกล้คุณเรียงตามระยะ --}}
+                        <div class="ts-stack" style="gap:10px;" x-show="located" x-cloak>
+                            <div class="ts-row" style="justify-content:space-between;">
+                                <b style="font-size:14px;" x-text="shops.length > 0 ? ('พบ ' + shops.length + ' ร้านในรัศมี ' + radius + ' กม.') : ('ยังไม่มีร้านเปิดในรัศมี ' + radius + ' กม.')"></b>
+                                <button type="button" class="tp-btn tp-btn-sm" x-on:click="locate()" :disabled="busy">
+                                    <i class="fas fa-rotate" :class="busy ? 'ts-spin' : ''" aria-hidden="true"></i> อัปเดต
+                                </button>
+                            </div>
+                            <template x-for="shop in shops" :key="shop.id">
+                                <a :href="shop.url" class="ts-shop" x-on:mouseenter="focusShop(shop)">
+                                    <span class="ts-avatar">
+                                        <template x-if="shop.shop_image"><img :src="shop.shop_image" alt="" loading="lazy"></template>
+                                        <template x-if="!shop.shop_image"><span x-text="(shop.shop_name || 'ร').substring(0, 1)"></span></template>
+                                    </span>
+                                    <span style="flex:1; min-width:0; display:flex; flex-direction:column; gap:6px;">
+                                        <b style="font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" x-text="shop.shop_name"></b>
+                                        <span class="ts-row" style="gap:6px;">
+                                            <span class="ts-pill ts-tone-ok"><span class="ts-dot" :class="shop.location && shop.location.is_live ? 'live' : ''"></span> <span x-text="shop.location && shop.location.is_live ? 'เปิดอยู่ · ตำแหน่งสด' : 'เปิดอยู่'"></span></span>
+                                            <span class="ts-pill ts-tone-deep" x-show="shop.is_mobile"><i class="fas fa-cart-flatbed" aria-hidden="true"></i> รถเข็น/ตลาดนัด</span>
+                                            <span class="ts-pill ts-tone-info"><i class="fas fa-location-dot" aria-hidden="true"></i> <span x-text="window.ts.distance(shop.distance_km)"></span></span>
+                                        </span>
+                                        <span class="ts-muted ts-small" x-show="shop.location && shop.location.label" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                            <i class="fas fa-map-pin" aria-hidden="true"></i> <span x-text="shop.location ? shop.location.label : ''"></span>
+                                        </span>
+                                        <span class="ts-thumbs" x-show="(shop.top_items || []).length > 0" aria-hidden="true">
+                                            <template x-for="item in (shop.top_items || [])" :key="item.id">
+                                                <img :src="item.image_url || ''" alt="" loading="lazy" x-show="item.image_url">
+                                            </template>
+                                        </span>
+                                    </span>
+                                </a>
+                            </template>
+                            <div class="ts-empty tp-inset" style="border-radius:18px;" x-show="shops.length === 0">
+                                <span class="em" aria-hidden="true">🧭</span>
+                                <b>ยังไม่มีร้านเปิดใกล้คุณ</b>
+                                <span class="ts-muted ts-small">ลองขยายรัศมีค้นหา หรือดูสินค้าทั้งหมดด้านล่าง</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
 
+            {{-- ร้านที่ติดตาม (เฉพาะผู้ที่ login) --}}
+            <div x-show="followed.length > 0" x-cloak style="margin-top:16px;">
+                <b style="display:block; font-size:14px; margin-bottom:8px;"><i class="fas fa-heart" style="color:var(--ts-bad);" aria-hidden="true"></i> ร้านที่คุณติดตาม</b>
+                <div class="sf-scroll">
+                    <template x-for="shop in followed" :key="'f' + shop.id">
+                        <a :href="shop.url" class="sf-chip" style="min-height:44px;">
+                            <span class="ts-dot" :class="shop.is_open ? 'ts-tone-ok live' : 'ts-tone-muted'"></span>
+                            <span x-text="shop.shop_name"></span>
+                            <span class="ts-muted ts-small" x-text="shop.is_open ? 'เปิดอยู่' : 'ปิดอยู่'"></span>
+                        </a>
+                    </template>
+                </div>
+            </div>
+        </section>
+
+        {{-- ════════ ชวนเปิดร้าน / เป็นไรเดอร์ ════════ --}}
+        <section class="sf-section" aria-label="ร่วมเป็นส่วนหนึ่งของตลาดสด">
+            <div class="ts-grid" style="--ts-min:300px;">
+                <a href="{{ route('taladsod.landing.seller') }}" class="ts-hero" style="min-height:200px; text-decoration:none;">
+                    <img class="ts-hero-img" src="{{ asset('images/taladsod/banner-merchant.webp') }}" alt="" loading="lazy">
+                    <div class="ts-hero-in" style="min-height:200px;">
+                        @if($gpFree)
+                            <span class="ts-pill solid ts-tone-ok" style="align-self:flex-start;"><i class="fas fa-gift" aria-hidden="true"></i> ฟรี GP ช่วงเปิดตัว</span>
+                        @endif
+                        <h2 class="ts-hero-title" style="font-size:clamp(20px,3.6vw,28px);">เปิดร้านฟรี ขายได้ทันที</h2>
+                        <p class="ts-hero-sub">รถเข็น ตลาดนัด ร้านเล็ก เปิดร้านที่ไหนก็บอกลูกค้าได้ด้วยปุ่มเดียว</p>
+                        <span class="ts-btn3d ts-tone-gold sm" style="align-self:flex-start;">เปิดร้านเลย <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                    </div>
+                </a>
+                <a href="{{ route('taladsod.landing.rider') }}" class="ts-hero" style="min-height:200px; text-decoration:none;">
+                    <img class="ts-hero-img" src="{{ asset('images/taladsod/banner-rider.webp') }}" alt="" loading="lazy">
+                    <div class="ts-hero-in" style="min-height:200px;">
+                        <span class="ts-pill solid ts-tone-info" style="align-self:flex-start;"><i class="fas fa-motorcycle" aria-hidden="true"></i> รับสมัครไรเดอร์</span>
+                        <h2 class="ts-hero-title" style="font-size:clamp(20px,3.6vw,28px);">มาเป็นไรเดอร์ รับงานใกล้บ้าน</h2>
+                        <p class="ts-hero-sub">เลือกเวลาเอง ค่าส่งเข้ากระเป๋าทันทีที่ส่งสำเร็จ</p>
+                        <span class="ts-btn3d ts-tone-info sm" style="align-self:flex-start;">สมัครไรเดอร์ <i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        {{-- ════════ สินค้าแนะนำ ════════ --}}
+        @if($featuredListings->count() > 0)
+            <section class="sf-section" aria-labelledby="ts-featured-h">
+                <div class="sf-section-h">
+                    <div>
+                        <div class="sf-kicker">คัดมาให้</div>
+                        <h2 id="ts-featured-h" class="sf-title">สินค้าแนะนำ</h2>
+                    </div>
+                </div>
+                <div class="sf-grid">
+                    @foreach($featuredListings as $listing)
+                        @include('taladsod.partials.listing-card', ['listing' => $listing])
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        {{-- ════════ มาใหม่ ════════ --}}
+        <section class="sf-section" aria-labelledby="ts-latest-h">
+            <div class="sf-section-h">
+                <div>
+                    <div class="sf-kicker">สดใหม่ทุกวัน</div>
+                    <h2 id="ts-latest-h" class="sf-title">เมนูและของสดมาใหม่</h2>
+                </div>
+                <a href="{{ route('taladsod.search') }}" class="ts-link ts-small">ดูทั้งหมด <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+            </div>
+            @if($latestListings->count() > 0)
+                <div class="sf-grid">
+                    @foreach($latestListings as $listing)
+                        @include('taladsod.partials.listing-card', ['listing' => $listing])
+                    @endforeach
+                </div>
+            @else
+                <div class="tp-card ts-empty">
+                    <span class="em" aria-hidden="true">🧺</span>
+                    <b style="font-size:16px;">ร้านค้ากำลังทยอยลงสินค้า</b>
+                    <span class="ts-muted">อยากขายของในตลาดสด? เปิดร้านฟรีได้เลยวันนี้</span>
+                    <a href="{{ route('taladsod.landing.seller') }}" class="ts-btn3d ts-tone-gold sm"><i class="fas fa-store" aria-hidden="true"></i> เปิดร้านฟรี</a>
+                </div>
+            @endif
+        </section>
+
+        {{-- ════════ ร้านยอดนิยม ════════ --}}
+        @if($topSellers->count() > 0)
+            <section class="sf-section" aria-labelledby="ts-top-h">
+                <div class="sf-section-h">
+                    <div>
+                        <div class="sf-kicker">รีวิวดี ลูกค้าประจำเยอะ</div>
+                        <h2 id="ts-top-h" class="sf-title">ร้านยอดนิยม</h2>
+                    </div>
+                </div>
+                <div class="ts-grid" style="--ts-min:280px;">
+                    @foreach($topSellers as $seller)
+                        @include('taladsod.partials.shop-card', ['shop' => [
+                            'id' => $seller->id,
+                            'shop_name' => $seller->shop_name,
+                            'shop_image' => $seller->shop_image,
+                            'rating_average' => (float) $seller->rating_average,
+                            'rating_count' => (int) $seller->rating_count,
+                            'is_verified' => (bool) $seller->is_verified,
+                            'is_mobile' => $seller->isMobileShop(),
+                            'is_open' => $seller->isOpenNow(),
+                            'presence' => $seller->presencePayload(),
+                            'url' => route('taladsod.seller', $seller->id),
+                        ]])
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        {{-- ════════ ช่างบริการ ════════ --}}
+        @if(isset($serviceProviders) && $serviceProviders->count() > 0)
+            <section class="sf-section" aria-labelledby="ts-svc-h">
+                <div class="sf-section-h">
+                    <div>
+                        <div class="sf-kicker">ช่างใกล้บ้าน</div>
+                        <h2 id="ts-svc-h" class="sf-title">ช่างบริการพร้อมรับงาน</h2>
+                    </div>
+                </div>
+                <div class="ts-grid" style="--ts-min:230px;">
+                    @foreach($serviceProviders as $provider)
+                        <div class="tp-card" style="display:flex; gap:12px; align-items:center; padding:14px;">
+                            <span class="ts-avatar" style="width:46px; height:46px; font-size:17px;">{{ $ui::initial(data_get($provider, 'display_name') ?: data_get($provider, 'name'), 'ช') }}</span>
+                            <span style="min-width:0;">
+                                <b style="display:block; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ data_get($provider, 'display_name') ?: data_get($provider, 'name', 'ช่างบริการ') }}</b>
+                                <span class="ts-muted ts-small"><span class="ts-star-view">★</span> {{ number_format((float) data_get($provider, 'rating', 0), 1) }} · งานสำเร็จ {{ number_format((int) data_get($provider, 'total_bookings', 0)) }} งาน</span>
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+    </div>
+</main>
+
+<x-theme-v4.public-footer />
 @endsection
+
+@push('scripts')
+<script>
+    /** แบนเนอร์หมุนอัตโนมัติ (ปัดซ้าย/ขวาบนมือถือได้) */
+    window.tsHeroSlider = function (n) {
+        return {
+            i: 0, n: n, t: null, sx: null, hover: false,
+            init() { this.start(); },
+            // กดจุด/ปัดเปลี่ยนสไลด์ → นับเวลาใหม่ (ถ้าเมาส์ยังชี้อยู่ รอจนเมาส์ออกก่อน)
+            go(k) { this.i = (k + this.n) % this.n; if (!this.hover) { this.start(); } },
+            start() { this.stop(); if (this.n > 1) { this.t = setInterval(() => { this.i = (this.i + 1) % this.n; }, 6000); } },
+            stop() { clearInterval(this.t); this.t = null; },
+            swipe(x) {
+                if (this.sx === null || this.n < 2) { return; }
+                const dx = x - this.sx;
+                this.sx = null;
+                if (Math.abs(dx) > 40) { this.go(this.i + (dx < 0 ? 1 : -1)); }
+            }
+        };
+    };
+
+    /** ร้านที่เปิดอยู่ใกล้คุณ: ขอตำแหน่ง → ดึงร้าน → วาดหมุดบนแผนที่ (ร้านเคลื่อนที่ที่ส่งตำแหน่งสดมีวงแหวน) */
+    window.tsNearby = function (cfg) {
+        // วัตถุ Leaflet เก็บนอก state ของ Alpine (ไม่ให้ถูกห่อเป็น reactive proxy)
+        let map = null;
+        let layer = null;
+        const markers = {};
+
+        return {
+            located: false, busy: false, error: '', radius: 5, lat: null, lng: null,
+            shops: [], followed: [],
+
+            async init() {
+                if (cfg.followedUrl) { this.loadFollowed(); }
+                // เคยอนุญาตตำแหน่งแล้ว → ค้นหาให้เลยโดยไม่ต้องกด
+                if (await window.ts.geoGranted()) { this.locate(); }
+            },
+
+            async loadFollowed() {
+                const r = await window.ts.get(cfg.followedUrl);
+                if (r.ok && Array.isArray(r.data)) { this.followed = r.data.slice(0, 20); }
+            },
+
+            setRadius(r) {
+                this.radius = r;
+                if (this.lat !== null) { this.load(); } else { this.locate(); }
+            },
+
+            async locate() {
+                this.busy = true;
+                this.error = '';
+                try {
+                    const p = await window.ts.geo();
+                    this.lat = p.lat;
+                    this.lng = p.lng;
+                    await this.load();
+                } catch (e) {
+                    this.error = (e && e.message) || 'หาตำแหน่งไม่ได้ กรุณาลองใหม่';
+                } finally {
+                    this.busy = false;
+                }
+            },
+
+            async load() {
+                this.busy = true;
+                const r = await window.ts.get(cfg.url, { lat: this.lat, lng: this.lng, radius: this.radius });
+                this.busy = false;
+                if (!r.ok) {
+                    this.error = r.message;
+                    return;
+                }
+                this.shops = (r.data && Array.isArray(r.data.shops)) ? r.data.shops : [];
+                this.located = true;
+                this.$nextTick(() => this.draw());
+            },
+
+            draw() {
+                if (!window.tpMap || !window.tpMap.ready()) { return; }
+                if (!map) {
+                    map = window.tpMap.create(this.$refs.map, this.lat, this.lng, 14);
+                    layer = window.L.layerGroup().addTo(map);
+                }
+                map.invalidateSize();
+                layer.clearLayers();
+                Object.keys(markers).forEach((k) => delete markers[k]);
+                layer.addLayer(window.L.marker([this.lat, this.lng], { icon: window.tpMap.icon('home') }));
+
+                const bounds = [[this.lat, this.lng]];
+                this.shops.forEach((shop) => {
+                    if (!shop.location) { return; }
+                    const live = !!shop.location.is_live;
+                    const icon = window.L.divIcon({
+                        className: '',
+                        html: '<div class="tp-map-pin is-shop' + (live ? ' ts-pin-live' : '') + '"><i class="fas ' + (shop.is_mobile ? 'fa-cart-flatbed' : 'fa-store') + '"></i></div>',
+                        iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -36]
+                    });
+                    const marker = window.L.marker([shop.location.latitude, shop.location.longitude], { icon: icon });
+                    marker.bindPopup(this.popup(shop));
+                    layer.addLayer(marker);
+                    markers[shop.id] = marker;
+                    bounds.push([shop.location.latitude, shop.location.longitude]);
+                });
+
+                if (bounds.length > 1) {
+                    map.fitBounds(bounds, { padding: [36, 36], maxZoom: 16 });
+                } else {
+                    map.setView([this.lat, this.lng], 14);
+                }
+            },
+
+            /** เนื้อหา popup สร้างด้วย textContent เท่านั้น (ชื่อร้านมาจากผู้ใช้) */
+            popup(shop) {
+                const box = document.createElement('div');
+                box.className = 'ts-map-popup';
+                const name = document.createElement('b');
+                name.textContent = shop.shop_name || 'ร้านตลาดสด';
+                const meta = document.createElement('span');
+                meta.textContent = (shop.is_mobile ? 'รถเข็น/ตลาดนัด · ' : '') + window.ts.distance(shop.distance_km)
+                    + (shop.location && shop.location.label ? ' · ' + shop.location.label : '');
+                const link = document.createElement('a');
+                link.href = shop.url;
+                link.textContent = 'ดูเมนูและสั่งซื้อ →';
+                box.append(name, meta, link);
+                return box;
+            },
+
+            focusShop(shop) {
+                if (map && markers[shop.id] && window.matchMedia('(hover: hover)').matches) {
+                    markers[shop.id].openPopup();
+                }
+            }
+        };
+    };
+</script>
+@endpush

@@ -1,165 +1,111 @@
-@extends('layouts.admin-v3')
+{{--
+ | รายงานค่าธรรมเนียมตลาดสด (admin.fresh-market.commissions) — ธีม V4
+ | ตัวแปรจาก Admin\FreshMarketController@commissions:
+ |   $stats{total_platform_fees,total_seller_earnings,total_cashback,total_referral_fees,outstanding_gp_debt,total_refunded,total_mlm_processed(จำนวนออเดอร์)},
+ |   $recentOrders (ออเดอร์สำเร็จ 20 ล่าสุด with buyer, seller)
+ | ใช้คอลัมน์จริง seller_earning / platform_fee / gp_rate (ไม่มีคอลัมน์ mlm_commission / seller_amount)
+--}}
+@extends('layouts.admin-v4')
 
-@section('title', 'รายงานค่าธรรมเนียม - ตลาดสดไทยพร๊อม')
+@section('title', 'ค่าธรรมเนียมตลาดสด')
 
 @section('content')
-<div class="space-y-6">
-    {{-- ส่วนหัว --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">รายงานค่าธรรมเนียม - ตลาดสดไทยพร๊อม</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">สรุปค่าธรรมเนียมแพลตฟอร์ม แคชแบ็ก และคอมมิชชั่น MLM</p>
-        </div>
-        <a href="{{ route('admin.fresh-market.dashboard') }}"
-           class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            <i class="fas fa-arrow-left mr-2"></i> กลับแดชบอร์ด
-        </a>
-    </div>
+@include('admin.riders.partials.v4-kit')
+@php
+    $gp = (float) ($stats['total_platform_fees'] ?? 0);
+    $sellerNet = (float) ($stats['total_seller_earnings'] ?? 0);
+    $cashback = (float) ($stats['total_cashback'] ?? 0);
+    $grossPie = max(0.01, $gp + $sellerNet);
+    $gpShare = round($gp / $grossPie * 100, 1);
+    try {
+        $currentGpRate = app(\App\Services\Pricing\PricingEngine::class)->gpRateForFreshListing(new \App\Models\FreshMarketListing);
+    } catch (\Throwable) {
+        $currentGpRate = null;
+    }
+@endphp
+<div x-data="{}" style="display:flex; flex-direction:column; gap:18px;">
 
-    {{-- การ์ดสถิติ --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {{-- ค่าธรรมเนียมแพลตฟอร์ม --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">ค่าธรรมเนียมแพลตฟอร์มรวม</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                        {{ number_format($stats['total_platform_fees'] ?? 0, 2) }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">บาท</p>
-                </div>
-                <div class="w-14 h-14 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-hand-holding-usd text-2xl text-green-600 dark:text-green-400"></i>
-                </div>
-            </div>
-        </div>
-
-        {{-- แคชแบ็กรวม --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">แคชแบ็กที่จ่ายรวม</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                        {{ number_format($stats['total_cashback'] ?? 0, 2) }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">บาท</p>
-                </div>
-                <div class="w-14 h-14 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-undo text-2xl text-blue-600 dark:text-blue-400"></i>
-                </div>
-            </div>
-        </div>
-
-        {{-- MLM ที่ประมวลผลแล้ว --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">คอมมิชชั่น MLM ที่ประมวลผล</p>
-                    <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                        {{ number_format($stats['total_mlm_processed'] ?? 0, 2) }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">บาท</p>
-                </div>
-                <div class="w-14 h-14 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-sitemap text-2xl text-purple-600 dark:text-purple-400"></i>
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.fresh-market.dashboard') }}" class="tp-icon-btn" title="กลับแดชบอร์ดตลาดสด"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ตลาดสด · ค่าธรรมเนียม</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ค่าธรรมเนียมและส่วนแบ่ง 💰</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">
+                    ค่า GP ที่ใช้กับออเดอร์ใหม่ตอนนี้:
+                    <b class="tp-num" style="color:var(--ink);">{{ $currentGpRate !== null ? rtrim(rtrim(number_format($currentGpRate, 2), '0'), '.').'%' : '-' }}</b>
+                    <a href="{{ route('admin.fresh-market.settings') }}" class="w1-link" style="margin-left:6px;">ตั้งค่า →</a>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- ตารางคำสั่งซื้อที่สำเร็จล่าสุด --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">คำสั่งซื้อที่สำเร็จล่าสุด (พร้อมข้อมูลค่าธรรมเนียม)</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">แสดงคำสั่งซื้อที่เสร็จสิ้นและประมวลผลค่าธรรมเนียมแล้ว</p>
+    {{-- ===== ตัวเลขสรุป ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:14px;">
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-building', 'kpiValue' => '฿'.number_format($gp, 2), 'kpiLabel' => 'ค่า GP แพลตฟอร์ม', 'kpiTone' => null, 'kpiHref' => null, 'kpiHint' => 'จากออเดอร์ที่เสร็จสิ้น', 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-store', 'kpiValue' => '฿'.number_format($sellerNet, 2), 'kpiLabel' => 'ร้านได้รับสุทธิ', 'kpiTone' => 'ok', 'kpiHref' => null, 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-gift', 'kpiValue' => '฿'.number_format($cashback, 2), 'kpiLabel' => 'แคชแบ็คจ่ายผู้ซื้อ', 'kpiTone' => 'info', 'kpiHref' => null, 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-user-plus', 'kpiValue' => '฿'.number_format((float) ($stats['total_referral_fees'] ?? 0), 2), 'kpiLabel' => 'ค่าแนะนำร้าน', 'kpiTone' => 'violet', 'kpiHref' => null, 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-file-invoice-dollar', 'kpiValue' => '฿'.number_format((float) ($stats['outstanding_gp_debt'] ?? 0), 2), 'kpiLabel' => 'ค่า GP ค้างชำระ (COD)', 'kpiTone' => ($stats['outstanding_gp_debt'] ?? 0) > 0 ? 'warn' : null, 'kpiHref' => null, 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-rotate-left', 'kpiValue' => '฿'.number_format((float) ($stats['total_refunded'] ?? 0), 2), 'kpiLabel' => 'คืนเงินผู้ซื้อทั้งหมด', 'kpiTone' => 'bad', 'kpiHref' => null, 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-sitemap', 'kpiValue' => number_format((int) ($stats['total_mlm_processed'] ?? 0)), 'kpiLabel' => 'ออเดอร์ที่คำนวณค่าแนะนำแล้ว', 'kpiTone' => null, 'kpiHref' => null, 'kpiHint' => 'นับเป็นจำนวนออเดอร์ ไม่ใช่ยอดเงิน', 'kpiPulse' => false])
+    </div>
+
+    {{-- ===== สัดส่วนยอดขาย ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-chart-pie"></i> ยอดขายสำเร็จแบ่งให้ใคร</div>
+        <div style="display:flex; flex-wrap:wrap; gap:22px; align-items:center;">
+            <div style="width:150px; height:150px; border-radius:50%; flex:none; box-shadow:var(--raise); position:relative;
+                        background:conic-gradient(var(--accent1) 0 {{ $gpShare }}%, var(--w-ok) {{ $gpShare }}% 100%);">
+                <div style="position:absolute; inset:24px; border-radius:50%; background:var(--surf); display:grid; place-items:center; text-align:center; box-shadow:var(--inset-sm);">
+                    <span><b class="tp-num" style="font-size:18px;">{{ $gpShare }}%</b><br><span style="font-size:10.5px; color:var(--ink2);">เป็นค่า GP</span></span>
+                </div>
+            </div>
+            <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:10px; font-size:13px;">
+                <div style="display:flex; align-items:center; gap:10px;"><span style="width:12px; height:12px; border-radius:4px; background:var(--accent1);"></span><span style="flex:1;">ค่า GP แพลตฟอร์ม</span><b class="tp-num">฿{{ number_format($gp, 2) }}</b></div>
+                <div style="display:flex; align-items:center; gap:10px;"><span style="width:12px; height:12px; border-radius:4px; background:var(--w-ok);"></span><span style="flex:1;">ร้านได้รับ</span><b class="tp-num">฿{{ number_format($sellerNet, 2) }}</b></div>
+                <div class="tp-divider"></div>
+                <div style="font-size:12px; color:var(--ink2); line-height:1.6;">
+                    ตลาดสด: ร้านได้ = ยอดขาย − ค่า GP (ไม่มี VAT/ค่าแนะนำหักจากร้าน) · แคชแบ็คตามโปรแพลตฟอร์มออกจากกระเป๋าแพลตฟอร์ม
+                    · ออเดอร์เก็บเงินปลายทาง ร้านรับเงินสดเอง ค่า GP จึงตั้งเป็นยอดค้างแล้วหักจากวอลเลตร้านภายหลัง
+                </div>
+            </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">เลขที่</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ร้านค้า</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ยอดรวม</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ค่าธรรมเนียม</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">แคชแบ็ก</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">MLM</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ผู้ขายได้รับ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">วันที่</th>
+    </div>
+
+    {{-- ===== ออเดอร์สำเร็จล่าสุด ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div class="tp-section-h" style="padding:14px 18px;"><i class="fas fa-receipt"></i> ออเดอร์สำเร็จล่าสุด</div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:820px; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="text-align:right; font-size:11px; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">
+                        <th style="padding:10px 18px; text-align:left;">ออเดอร์</th>
+                        <th style="padding:10px 12px; text-align:left;">ร้าน</th>
+                        <th style="padding:10px 12px;">ยอดขาย</th>
+                        <th style="padding:10px 12px;">ค่า GP</th>
+                        <th style="padding:10px 12px;">แคชแบ็ค</th>
+                        <th style="padding:10px 12px;">ร้านได้รับ</th>
+                        <th style="padding:10px 18px;">เสร็จเมื่อ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($recentOrders as $order)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-4 py-4 whitespace-nowrap">
-                                <span class="text-sm font-semibold text-green-600 dark:text-green-400">{{ $order->order_number }}</span>
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                {{ $order->seller->shop_name ?? '-' }}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900 dark:text-white">
-                                {{ number_format($order->total_amount, 2) }}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm text-green-600 dark:text-green-400 font-medium">
-                                {{ number_format($order->platform_fee ?? 0, 2) }}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm text-blue-600 dark:text-blue-400 font-medium">
-                                {{ number_format($order->cashback_amount ?? 0, 2) }}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm text-purple-600 dark:text-purple-400 font-medium">
-                                {{ number_format($order->mlm_commission ?? 0, 2) }}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900 dark:text-white">
-                                {{ number_format($order->seller_amount ?? 0, 2) }}
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                {{ $order->completed_at ? $order->completed_at->format('d/m/Y H:i') : $order->updated_at->format('d/m/Y H:i') }}
-                            </td>
+                <tbody>
+                    @forelse ($recentOrders as $order)
+                        <tr class="w1-row tp-num" style="text-align:right; box-shadow:inset 0 1px 0 color-mix(in srgb, var(--ink2) 14%, transparent);">
+                            <td style="padding:10px 18px; text-align:left;"><a href="{{ route('admin.fresh-market.orders.show', $order) }}" class="w1-link">#{{ $order->order_number }}</a></td>
+                            <td style="padding:10px 12px; text-align:left;">{{ $order->seller?->shop_name ?? '-' }}</td>
+                            <td style="padding:10px 12px;">฿{{ number_format((float) $order->total_amount, 2) }}</td>
+                            <td style="padding:10px 12px;">฿{{ number_format((float) $order->platform_fee, 2) }} <span style="font-size:11px; color:var(--ink2);">({{ $order->gp_rate !== null ? rtrim(rtrim(number_format((float) $order->gp_rate, 2), '0'), '.') : '-' }}%)</span></td>
+                            <td style="padding:10px 12px;">฿{{ number_format((float) $order->cashback_amount, 2) }}</td>
+                            <td style="padding:10px 12px; font-weight:700;">฿{{ number_format((float) $order->seller_earning, 2) }}</td>
+                            <td style="padding:10px 18px; color:var(--ink2); white-space:nowrap;">{{ ($order->completed_at ?? $order->updated_at)?->thaidate('j M Y H:i') }}</td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-chart-line text-4xl mb-3 block"></i>
-                                ยังไม่มีคำสั่งซื้อที่สำเร็จ
-                            </td>
-                        </tr>
+                        <tr><td colspan="7" style="padding:36px; text-align:center; color:var(--ink2);">ยังไม่มีออเดอร์ที่เสร็จสิ้น</td></tr>
                     @endforelse
                 </tbody>
             </table>
-        </div>
-    </div>
-
-    {{-- คำอธิบายค่าธรรมเนียม --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">คำอธิบายการคำนวณค่าธรรมเนียม</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-green-800 dark:text-green-400">ค่าธรรมเนียมแพลตฟอร์ม</span>
-                </div>
-                <p class="text-xs text-green-700 dark:text-green-300">หักจากยอดขายตามอัตราที่กำหนด เป็นรายได้ของแพลตฟอร์ม</p>
-            </div>
-            <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-blue-800 dark:text-blue-400">แคชแบ็ก</span>
-                </div>
-                <p class="text-xs text-blue-700 dark:text-blue-300">จำนวนเงินที่คืนให้ผู้ซื้อเข้ากระเป๋าเงินในระบบ</p>
-            </div>
-            <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-purple-800 dark:text-purple-400">คอมมิชชั่น MLM</span>
-                </div>
-                <p class="text-xs text-purple-700 dark:text-purple-300">คอมมิชชั่นที่จ่ายให้สายงาน MLM ตามโครงสร้าง</p>
-            </div>
-            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-3 h-3 bg-gray-500 rounded-full"></div>
-                    <span class="text-sm font-medium text-gray-800 dark:text-gray-300">ผู้ขายได้รับ</span>
-                </div>
-                <p class="text-xs text-gray-700 dark:text-gray-400">ยอดขายหลังหักค่าธรรมเนียมทั้งหมด ที่โอนเข้ากระเป๋าเงินผู้ขาย</p>
-            </div>
         </div>
     </div>
 </div>

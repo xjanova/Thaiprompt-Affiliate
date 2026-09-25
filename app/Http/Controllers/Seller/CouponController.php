@@ -17,12 +17,14 @@ use Illuminate\View\View;
  */
 class CouponController extends Controller
 {
+    use \App\Http\Controllers\Seller\Concerns\ResolvesSellerStore;
+
     /**
      * แสดงรายการคูปองของร้าน
      */
     public function index(Request $request): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         $coupons = Coupon::where('store_id', $store->id)
             ->latest()
@@ -57,23 +59,31 @@ class CouponController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'discount_type' => 'required|in:percentage,fixed,free_shipping',
-            'discount_value' => 'required|numeric|min:0',
+            // ส่วนลดแบบเปอร์เซ็นต์ต้องไม่เกิน 100%
+            'discount_value' => ['required', 'numeric', 'min:0', $request->input('discount_type') === 'percentage' ? 'max:100' : 'max:1000000'],
             'min_purchase' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
             'usage_limit' => 'nullable|integer|min:1',
             'starts_at' => 'nullable|date',
             'expires_at' => 'nullable|date|after:starts_at',
             'is_public' => 'boolean',
+        ], [
+            'discount_value.max' => 'ส่วนลดแบบเปอร์เซ็นต์ต้องไม่เกิน 100%',
+            'expires_at.after' => 'วันหมดอายุต้องอยู่หลังวันเริ่มใช้',
         ]);
 
-        // สร้างรหัสคูปองอัตโนมัติ
-        $code = strtoupper($store->store_slug).'-'.strtoupper(Str::random(6));
+        // สร้างรหัสคูปองอัตโนมัติ — codes เป็น varchar(50) + ต้องไม่ซ้ำ
+        // (เดิมใช้ slug ร้านเต็ม ๆ → ร้านที่ slug ยาวสร้างคูปองไม่ได้)
+        $prefix = Str::upper(Str::substr(preg_replace('/[^A-Za-z0-9]/', '', (string) $store->store_slug) ?: 'SHOP', 0, 16));
+        do {
+            $code = $prefix.'-'.Str::upper(Str::random(6));
+        } while (Coupon::where('code', $code)->exists());
 
         Coupon::create([
             'code' => $code,
@@ -103,7 +113,7 @@ class CouponController extends Controller
      */
     public function edit(Request $request, Coupon $coupon): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // ตรวจสอบสิทธิ์
         if ($coupon->store_id !== $store->id) {
@@ -121,7 +131,7 @@ class CouponController extends Controller
      */
     public function update(Request $request, Coupon $coupon): RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         if ($coupon->store_id !== $store->id) {
             abort(403, 'ไม่มีสิทธิ์แก้ไขคูปองนี้');
@@ -131,14 +141,20 @@ class CouponController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'discount_type' => 'required|in:percentage,fixed,free_shipping',
-            'discount_value' => 'required|numeric|min:0',
+            'discount_value' => ['required', 'numeric', 'min:0', $request->input('discount_type') === 'percentage' ? 'max:100' : 'max:1000000'],
             'min_purchase' => 'nullable|numeric|min:0',
             'max_discount' => 'nullable|numeric|min:0',
             'usage_limit' => 'nullable|integer|min:1',
             'starts_at' => 'nullable|date',
-            'expires_at' => 'nullable|date',
+            'expires_at' => 'nullable|date|after:starts_at',
             'is_public' => 'boolean',
+        ], [
+            'discount_value.max' => 'ส่วนลดแบบเปอร์เซ็นต์ต้องไม่เกิน 100%',
+            'expires_at.after' => 'วันหมดอายุต้องอยู่หลังวันเริ่มใช้',
         ]);
+
+        // min_purchase เป็น NOT NULL default 0 — ช่องว่างให้เป็น 0
+        $validated['min_purchase'] = $validated['min_purchase'] ?? 0;
 
         $coupon->update($validated);
 
@@ -152,7 +168,7 @@ class CouponController extends Controller
      */
     public function destroy(Request $request, Coupon $coupon): RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         if ($coupon->store_id !== $store->id) {
             abort(403, 'ไม่มีสิทธิ์ลบคูปองนี้');
@@ -170,7 +186,7 @@ class CouponController extends Controller
      */
     public function toggleActive(Request $request, Coupon $coupon): JsonResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         if ($coupon->store_id !== $store->id) {
             return response()->json([

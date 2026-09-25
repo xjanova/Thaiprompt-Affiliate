@@ -1,122 +1,93 @@
-{{-- Section: Store Header --}}
-{{-- ใช้ร่วมกันระหว่าง storefront + preview --}}
+{{--
+ | ส่วนหัวร้าน (ผู้ขายปรับแต่งได้) — ธีม V4 · ใช้ร่วม: หน้าร้านจริง (vendor-store.show-custom) + หน้าตัวอย่างของผู้ขาย
+ | ตัวแปร: $store, $layoutSettings, $stats, $isPreview · สีร้านมาจาก CSS var --store-a / --store-b ที่หน้าแม่ตั้งไว้
+ --}}
 @php
-    $headerStyle = $layoutSettings->header_style ?? 'gradient';
-    $headerHeight = $layoutSettings->header_height ?? 200;
-    $lc = $layoutSettings->layout_classes;
-    $isPreview = $isPreview ?? false;
+    $vhStyle = $layoutSettings->header_style ?? 'gradient';
+    $vhHeight = max(160, min(420, (int) ($layoutSettings->header_height ?? 200)));
+    $vhImage = $vhStyle === 'image' ? \App\Support\Shop\StoreTheme::image($layoutSettings->header_image) : null;
+    $vhTransparent = $vhStyle === 'transparent';
+    $vhBackground = match (true) {
+        $vhImage !== null => 'var(--ink)',
+        $vhStyle === 'solid' => 'var(--store-a)',
+        $vhTransparent => 'var(--card-bg)',
+        default => 'linear-gradient(135deg, var(--store-a), var(--store-b))',
+    };
+    $vhLogo = \App\Services\Shop\ShopPresenter::imageUrl($store->store_logo ?? null);
+    $vhSocialMap = ['facebook' => 'fa-facebook', 'line' => 'fa-line', 'instagram' => 'fa-instagram', 'tiktok' => 'fa-tiktok', 'youtube' => 'fa-youtube'];
+    $vhSocial = [];
+    if ($layoutSettings->show_social_links && is_array($layoutSettings->social_links)) {
+        foreach ($vhSocialMap as $net => $icon) {
+            $raw = trim((string) ($layoutSettings->social_links[$net] ?? ''));
+            if ($raw === '') {
+                continue;
+            }
+            $link = $net === 'line' && ! preg_match('#^https?://#i', $raw)
+                ? 'https://line.me/R/ti/p/'.rawurlencode(ltrim($raw, '@'))
+                : \App\Support\Shop\StoreTheme::url($raw);
+            if ($link) {
+                $vhSocial[$net] = ['href' => $link, 'icon' => $icon];
+            }
+        }
+    }
+    $vhInk = $vhTransparent ? 'var(--ink)' : 'var(--on-accent, #fff)';
+    $vhRider = $store instanceof \App\Models\VendorStore && $store->canUseRiderDelivery();
 @endphp
 
-<header class="relative overflow-hidden"
-        style="min-height: {{ $headerHeight }}px;
-               @if($headerStyle === 'image' && $layoutSettings->header_image)
-                   background-image: url('{{ Storage::url($layoutSettings->header_image) }}');
-                   background-size: cover;
-                   background-position: center;
-               @elseif($headerStyle === 'solid')
-                   background-color: {{ $layoutSettings->primary_color ?? '#6366f1' }};
-               @elseif($headerStyle === 'transparent')
-                   background: transparent;
-               @else
-                   background: linear-gradient(135deg, {{ $layoutSettings->primary_color ?? '#6366f1' }}, {{ $layoutSettings->secondary_color ?? '#8b5cf6' }});
-               @endif
-        ">
-    {{-- Overlay สำหรับ image header --}}
-    @if($headerStyle === 'image' && $layoutSettings->header_image)
-        <div class="absolute inset-0 bg-black/40"></div>
-    @endif
+<section class="sf-wrap" style="padding-top:20px;">
+    <div style="position:relative; overflow:hidden; border-radius:28px; min-height:{{ $vhHeight }}px; background:{{ $vhBackground }}; box-shadow:var(--card-shadow); display:flex; align-items:flex-end;">
+        @if($vhImage)
+            <img src="{{ $vhImage }}" alt="" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
+            <div aria-hidden="true" style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.6) 100%);"></div>
+        @elseif(! $vhTransparent)
+            <div aria-hidden="true" style="position:absolute; inset:0; background:radial-gradient(520px 260px at 90% 0%, rgba(255,255,255,.24), transparent 60%);"></div>
+        @endif
 
-    {{-- Background Pattern สำหรับ gradient/solid --}}
-    @if($headerStyle !== 'image' && $headerStyle !== 'transparent')
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 40px 40px;"></div>
-        </div>
-    @endif
-
-    <div class="{{ $lc['container'] }} py-12 md:py-16 relative z-10">
-        <div class="max-w-5xl mx-auto">
-            <div class="flex flex-col md:flex-row items-center gap-8 text-white">
-                {{-- Store Logo --}}
-                @if($layoutSettings->show_store_logo)
-                    @if($store->store_logo)
-                        <div class="{{ $lc['logo_size'] }} bg-white/20 {{ $lc['backdrop_blur'] }} {{ $lc['logo_radius'] }} shadow-2xl p-3 border-4 border-white/30 flex-shrink-0">
-                            <img src="{{ $store->logo_url }}" alt="{{ $store->store_name }}" class="w-full h-full object-contain">
-                        </div>
+        <div style="position:relative; width:100%; padding:clamp(20px, 4vw, 36px); color:{{ $vhInk }}; display:flex; flex-wrap:wrap; align-items:center; gap:18px;">
+            @if($layoutSettings->show_store_logo)
+                <span style="width:clamp(76px, 12vw, 104px); height:clamp(76px, 12vw, 104px); flex:none; border-radius:26px; overflow:hidden; display:grid; place-items:center; font-size:42px; background:rgba(255,255,255,.2); box-shadow:0 10px 26px rgba(0,0,0,.2); border:3px solid rgba(255,255,255,.45);">
+                    @if($vhLogo)
+                        <img src="{{ $vhLogo }}" alt="{{ $store->store_name }}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';">
                     @else
-                        <div class="{{ $lc['logo_size'] }} bg-white/20 {{ $lc['backdrop_blur'] }} {{ $lc['logo_radius'] }} shadow-2xl flex items-center justify-center text-5xl md:text-6xl border-4 border-white/30 flex-shrink-0">
-                            🏪
-                        </div>
+                        🏪
                     @endif
-                @endif
-
-                {{-- Store Info --}}
-                <div class="flex-1 text-center md:text-left">
+                </span>
+            @endif
+            <div style="flex:1; min-width:220px;">
+                <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
                     @if($store->is_verified ?? false)
-                    <div class="inline-flex items-center gap-2 {{ $lc['badge'] }} text-white mb-4">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                        </svg>
-                        <span class="font-bold">ร้านค้ายืนยันตัวตน</span>
-                    </div>
+                        <span class="tp-pill" style="padding:6px 12px; color:{{ $vhInk }}; background:rgba(255,255,255,.2);"><i class="fas fa-circle-check"></i> ร้านค้ายืนยันตัวตน</span>
                     @endif
-
-                    @if($layoutSettings->show_store_name)
-                        <h1 class="{{ $lc['header_text'] }} mb-3 {{ $headerStyle === 'transparent' ? 'text-gray-900 dark:text-white' : '' }}">
-                            {{ $store->store_name }}
-                        </h1>
-                    @endif
-
-                    @if($layoutSettings->show_store_description && $store->store_description)
-                        <p class="text-lg md:text-xl {{ $headerStyle === 'transparent' ? 'text-gray-600 dark:text-gray-300' : 'text-white/90' }} mb-4">
-                            {{ Str::limit($store->store_description, 150) }}
-                        </p>
-                    @endif
-
-                    {{-- Stats --}}
-                    @if($layoutSettings->show_store_stats)
-                        <div class="flex flex-wrap gap-3 justify-center md:justify-start">
-                            <div class="flex items-center gap-2 {{ $lc['stats_bg'] }}">
-                                <span>📦</span>
-                                <span class="font-bold">{{ $stats['total_products'] ?? 0 }} สินค้า</span>
-                            </div>
-                            <div class="flex items-center gap-2 {{ $lc['stats_bg'] }}">
-                                <span>🛒</span>
-                                <span class="font-bold">{{ $stats['total_sales'] ?? 0 }} ยอดขาย</span>
-                            </div>
-                            @if(($stats['rating_count'] ?? 0) > 0)
-                                <div class="flex items-center gap-2 {{ $lc['stats_bg'] }}">
-                                    <span class="text-yellow-300">⭐</span>
-                                    <span class="font-bold">{{ number_format($stats['rating'] ?? 0, 1) }} ({{ $stats['rating_count'] }})</span>
-                                </div>
-                            @endif
-                        </div>
-                    @endif
-
-                    {{-- Social Links --}}
-                    @if($layoutSettings->show_social_links && $layoutSettings->social_links)
-                        <div class="flex gap-2 mt-4 justify-center md:justify-start">
-                            @foreach(['facebook' => '📘', 'line' => '💚', 'instagram' => '📷', 'tiktok' => '🎵', 'youtube' => '📺'] as $platform => $icon)
-                                @if(!empty($layoutSettings->social_links[$platform]))
-                                    <a href="{{ $platform === 'line' ? 'https://line.me/R/ti/p/' . ltrim($layoutSettings->social_links[$platform], '@') : $layoutSettings->social_links[$platform] }}"
-                                       target="_blank"
-                                       class="w-10 h-10 bg-white/20 hover:bg-white/30 {{ $lc['backdrop_blur'] }} {{ $lc['border_radius'] }} flex items-center justify-center transition-all transform hover:scale-110 border border-white/30">
-                                        <span class="text-xl">{{ $icon }}</span>
-                                    </a>
-                                @endif
-                            @endforeach
-                        </div>
+                    @if($vhRider)
+                        <span class="tp-pill" style="padding:6px 12px; color:{{ $vhInk }}; background:rgba(255,255,255,.2);"><i class="fas fa-motorcycle"></i> ส่งด่วนด้วยไรเดอร์</span>
                     @endif
                 </div>
+                @if($layoutSettings->show_store_name)
+                    <h1 style="margin:0; font-size:clamp(24px, 4.6vw, 40px); font-weight:800; line-height:1.15; letter-spacing:-.4px; text-shadow:{{ $vhTransparent ? 'none' : '0 2px 10px rgba(0,0,0,.25)' }}; overflow-wrap:anywhere;">{{ $store->store_name }}</h1>
+                @endif
+                @if($layoutSettings->show_store_description && ($store->store_description ?? null))
+                    <p style="margin:8px 0 0; font-size:clamp(13.5px, 1.8vw, 16px); line-height:1.6; opacity:.94; max-width:720px;">{{ \Illuminate\Support\Str::limit($store->store_description, 180) }}</p>
+                @endif
+                @if($layoutSettings->show_store_stats)
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+                        <span class="tp-pill" style="padding:7px 12px; color:{{ $vhInk }}; background:rgba(255,255,255,.18);"><i class="fas fa-box"></i> {{ number_format((int) ($stats['total_products'] ?? 0)) }} สินค้า</span>
+                        <span class="tp-pill" style="padding:7px 12px; color:{{ $vhInk }}; background:rgba(255,255,255,.18);"><i class="fas fa-cart-shopping"></i> {{ number_format((int) ($stats['total_sales'] ?? 0)) }} ยอดขาย</span>
+                        @if(($stats['rating_count'] ?? 0) > 0)
+                            <span class="tp-pill" style="padding:7px 12px; color:{{ $vhInk }}; background:rgba(255,255,255,.18);">★ {{ number_format((float) ($stats['rating'] ?? 0), 1) }} ({{ number_format((int) $stats['rating_count']) }})</span>
+                        @endif
+                    </div>
+                @endif
             </div>
+            @if($vhSocial !== [])
+                <div style="display:flex; gap:8px;">
+                    @foreach($vhSocial as $net => $s)
+                        <a href="{{ ($isPreview ?? false) ? '#' : $s['href'] }}" @if(! ($isPreview ?? false)) target="_blank" rel="noopener nofollow" @endif aria-label="{{ $net }}"
+                           style="width:44px; height:44px; border-radius:14px; display:grid; place-items:center; text-decoration:none; color:{{ $vhInk }}; background:rgba(255,255,255,.2);">
+                            <i class="fab {{ $s['icon'] }}"></i>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </div>
-
-    {{-- Wave Divider --}}
-    @if($lc['wave_divider'])
-        <div class="absolute bottom-0 left-0 right-0">
-            <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full">
-                <path d="M0 48h1440V24C1440 24 1200 0 720 0S0 24 0 24v24z" fill="white" fill-opacity="0.9"/>
-            </svg>
-        </div>
-    @endif
-</header>
+</section>

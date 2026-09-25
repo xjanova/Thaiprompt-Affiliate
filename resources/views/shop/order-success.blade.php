@@ -1,254 +1,162 @@
-@extends('layouts.storefront')
+{{--
+ | สั่งซื้อสำเร็จ — ธีม V4 (frontend-v4)
+ | ข้อมูลจาก CheckoutController@success: $order (items.product, shippingAddress)
+ | ใช้หลังชำระด้วยกระเป๋าเงิน / เก็บเงินปลายทาง / พร้อมเพย์ที่ยืนยันแล้ว / บัตร
+ --}}
+@extends('layouts.frontend-v4')
 
-@section('title', 'สั่งซื้อสำเร็จ')
+@section('title', 'สั่งซื้อสำเร็จ #'.$order->order_number)
+
+@php
+    $osPaid = $order->payment_status === 'paid';
+    $osCod = $order->isCod();
+    $osShipping = \App\Services\Shop\ShopPresenter::shipping($order);
+    $osRider = \App\Services\Shop\ShopPresenter::riderSummary($order);
+    $osSiblings = $order->checkout_group
+        ? \App\Models\Order::where('user_id', $order->user_id)->where('checkout_group', $order->checkout_group)
+            ->where('id', '!=', $order->id)->orderBy('id')->get(['id', 'order_number', 'total_amount', 'payment_status', 'payment_method'])
+        : collect();
+    $osCanPay = ! $osPaid && ! $osCod && $order->canRetryPayment();
+@endphp
 
 @section('content')
-<div class="py-6">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<x-theme-v4.shop-kit />
+<x-theme-v4.public-header active="orders" />
 
-        <!-- Success Header -->
-        <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-6">
-                <svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <h1 class="text-4xl font-black text-gray-900 mb-3">🎉 สั่งซื้อสำเร็จ!</h1>
-            <p class="text-xl text-gray-600 mb-2">ขอบคุณสำหรับคำสั่งซื้อของคุณ</p>
-            <p class="text-gray-500">
-                เลขที่คำสั่งซื้อ:
-                <span class="font-bold text-indigo-600">{{ $order->order_number }}</span>
-            </p>
-        </div>
-
-        <!-- Order Status Card -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-gray-900">สถานะคำสั่งซื้อ</h2>
-                <span class="px-4 py-2 bg-yellow-100 text-yellow-800 font-semibold rounded-lg">
-                    {{ $order->status_label }}
-                </span>
-            </div>
-
-            @if($order->status === 'pending')
-            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-blue-800">รอชำระเงิน</h3>
-                        <div class="mt-2 text-sm text-blue-700">
-                            @if($order->payment_method === 'promptpay')
-                                <p>กรุณาชำระเงินผ่าน PromptPay โดยสแกน QR Code ที่แนบมาในอีเมล</p>
-                            @elseif($order->payment_method === 'bank_transfer')
-                                <p>กรุณาโอนเงินเข้าบัญชีธนาคารตามรายละเอียดที่แนบมาในอีเมล</p>
-                            @elseif($order->payment_method === 'credit_card')
-                                <p>คำสั่งซื้อของคุณกำลังดำเนินการชำระเงิน</p>
-                            @elseif($order->payment_method === 'cod')
-                                <p>คุณสามารถชำระเงินเมื่อได้รับสินค้า</p>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
+<main style="flex:1; padding-bottom:40px;">
+    <section class="sf-wrap" style="padding-top:26px; max-width:860px; text-align:center;">
+        <span style="width:84px; height:84px; margin:0 auto; border-radius:28px; display:grid; place-items:center; font-size:38px; color:var(--on-accent, #fff); background:linear-gradient(135deg, {{ $osPaid || $osCod ? 'var(--sf-ok, #4f9e7e), var(--sf-ok2, #3b8467)' : 'var(--accent1), var(--accent2)' }}); box-shadow:var(--card-shadow); animation:tpPop .5s ease both;">
+            <i class="fas {{ $osPaid || $osCod ? 'fa-check' : 'fa-hourglass-half' }}"></i>
+        </span>
+        <h1 class="sf-h1" style="margin-top:14px;">
+            @if($osPaid)
+                สั่งซื้อและชำระเงินสำเร็จ
+            @elseif($osCod)
+                สั่งซื้อสำเร็จ
+            @else
+                สร้างคำสั่งซื้อแล้ว — รอชำระเงิน
             @endif
+        </h1>
+        <p class="tp-muted" style="margin:6px 0 0;">หมายเลขคำสั่งซื้อ <strong class="tp-num" style="color:var(--ink);">#{{ $order->order_number }}</strong> · {{ $order->status_label }}</p>
+        @if($osCod)
+            <div class="sf-note sf-note-info" style="margin:14px auto 0; max-width:560px;"><i class="fas fa-money-bill-wave"></i> เตรียมเงินสด <strong class="tp-num">฿{{ number_format((float) $order->total_amount, 2) }}</strong> จ่ายให้ไรเดอร์เมื่อได้รับสินค้า</div>
+        @elseif(! $osPaid)
+            <div class="sf-note sf-note-warn" style="margin:14px auto 0; max-width:560px;">คำสั่งซื้อจะเริ่มดำเนินการหลังชำระเงินเรียบร้อย</div>
+        @endif
+    </section>
 
-            <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                    <div class="text-gray-500 text-sm mb-1">วิธีชำระเงิน</div>
-                    <div class="font-semibold text-gray-900">
-                        @if($order->payment_method === 'promptpay')
-                            📱 PromptPay
-                        @elseif($order->payment_method === 'bank_transfer')
-                            🏦 โอนธนาคาร
-                        @elseif($order->payment_method === 'credit_card')
-                            💳 บัตรเครดิต
-                        @elseif($order->payment_method === 'cod')
-                            💵 เก็บเงินปลายทาง
-                        @else
-                            {{ $order->payment_method }}
-                        @endif
-                    </div>
-                </div>
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                    <div class="text-gray-500 text-sm mb-1">สถานะการชำระเงิน</div>
-                    <div class="font-semibold text-gray-900">
-                        @if($order->payment_status === 'paid')
-                            ✅ ชำระแล้ว
-                        @elseif($order->payment_status === 'pending')
-                            ⏳ รอชำระเงิน
-                        @elseif($order->payment_status === 'failed')
-                            ❌ ชำระไม่สำเร็จ
-                        @else
-                            {{ $order->payment_status }}
-                        @endif
-                    </div>
-                </div>
-                <div class="text-center p-4 bg-gray-50 rounded-lg">
-                    <div class="text-gray-500 text-sm mb-1">วันที่สั่งซื้อ</div>
-                    <div class="font-semibold text-gray-900">
-                        {{ $order->created_at->format('d/m/Y H:i') }}
-                    </div>
-                </div>
+    <section class="sf-wrap sf-stack" style="padding-top:20px; max-width:860px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+            <div class="tp-card" style="padding:14px;">
+                <div class="tp-muted" style="font-size:12px;">วิธีชำระเงิน</div>
+                <div style="font-weight:800; color:var(--ink); margin-top:2px;">{{ \App\Support\Shop\PaymentMethod::labelTh($order->payment_method) }}</div>
+            </div>
+            <div class="tp-card" style="padding:14px;">
+                <div class="tp-muted" style="font-size:12px;">สถานะการชำระ</div>
+                <div style="font-weight:800; margin-top:2px; color:{{ $osPaid ? 'var(--sf-ok, #4f9e7e)' : 'var(--deep2)' }};">{{ $osCod && ! $osPaid ? 'จ่ายเมื่อรับของ' : \App\Services\Shop\ShopPresenter::paymentStatusLabel($order->payment_status) }}</div>
+            </div>
+            <div class="tp-card" style="padding:14px;">
+                <div class="tp-muted" style="font-size:12px;">การจัดส่ง</div>
+                <div style="font-weight:800; color:var(--ink); margin-top:2px;">{{ $order->isRiderDelivery() ? 'ส่งด่วนด้วยไรเดอร์' : ($osShipping ? 'ส่งพัสดุ' : 'สินค้าดิจิทัล') }}</div>
+            </div>
+            <div class="tp-card" style="padding:14px;">
+                <div class="tp-muted" style="font-size:12px;">วันที่สั่งซื้อ</div>
+                <div class="tp-num" style="font-weight:800; color:var(--ink); margin-top:2px;">{{ $order->created_at->timezone('Asia/Bangkok')->format('d/m/Y H:i') }}</div>
             </div>
         </div>
 
-        <!-- Shipping Address -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">📍 ที่อยู่จัดส่ง</h2>
-            @if($order->shippingAddress)
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <p class="font-bold text-gray-900 mb-2">{{ $order->shippingAddress->recipient_name }}</p>
-                    <p class="text-gray-700 mb-1">{{ $order->shippingAddress->phone_number }}</p>
-                    <p class="text-gray-700">{{ $order->shippingAddress->full_address }}</p>
+        @if($osRider)
+            <div class="tp-card" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+                <span class="tp-tile" style="width:48px; height:48px; font-size:20px; background:linear-gradient(135deg, var(--accent2), var(--deep2));"><i class="fas fa-motorcycle"></i></span>
+                <div style="flex:1; min-width:200px;">
+                    <div style="font-weight:800; color:var(--ink);">ไรเดอร์: {{ $osRider['status_label'] ?? 'รอร้านเรียกไรเดอร์' }}</div>
+                    <div class="tp-muted" style="font-size:12.5px;">เมื่อร้านเตรียมของเสร็จ ระบบจะเรียกไรเดอร์ใกล้ร้านมารับ แล้วคุณติดตามได้แบบสด</div>
                 </div>
-            @elseif($order->shipping_address_snapshot)
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <p class="font-bold text-gray-900 mb-2">{{ $order->shipping_address_snapshot['recipient_name'] ?? '' }}</p>
-                    <p class="text-gray-700 mb-1">{{ $order->shipping_address_snapshot['phone_number'] ?? '' }}</p>
-                    <p class="text-gray-700">
-                        {{ implode(', ', array_filter([
-                            $order->shipping_address_snapshot['address_line_1'] ?? '',
-                            $order->shipping_address_snapshot['address_line_2'] ?? '',
-                            $order->shipping_address_snapshot['sub_district'] ?? '',
-                            $order->shipping_address_snapshot['district'] ?? '',
-                            $order->shipping_address_snapshot['province'] ?? '',
-                            $order->shipping_address_snapshot['postal_code'] ?? '',
-                        ])) }}
-                    </p>
-                </div>
-            @endif
+                @if(! empty($osRider['tracking_url']))
+                    <a href="{{ $osRider['tracking_url'] }}" class="sf-btn3d is-alt"><i class="fas fa-location-arrow"></i> ติดตามไรเดอร์</a>
+                @endif
+            </div>
+        @endif
 
-            @if($order->customer_notes)
-                <div class="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                    <p class="text-sm font-semibold text-gray-700 mb-1">📝 หมายเหตุ:</p>
-                    <p class="text-sm text-gray-700">{{ $order->customer_notes }}</p>
-                </div>
-            @endif
-        </div>
-
-        <!-- Order Items -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">📦 รายการสินค้า</h2>
-
-            <div class="space-y-4">
-                @foreach($order->items as $item)
-                <div class="flex gap-4 pb-4 border-b border-gray-200 last:border-0">
-                    <!-- Product Image -->
-                    <div class="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                        @if($item->product_image)
-                            <img src="{{ $item->product_image }}"
-                                 alt="{{ $item->product_name }}"
-                                 class="w-full h-full object-cover">
-                        @else
-                            <div class="w-full h-full flex items-center justify-center text-gray-400 text-3xl">
-                                📦
-                            </div>
-                        @endif
-                    </div>
-
-                    <!-- Product Details -->
-                    <div class="flex-1">
-                        <h3 class="font-bold text-gray-900 mb-1">{{ $item->product_name }}</h3>
-                        @if($item->product_sku)
-                            <p class="text-xs text-gray-500 mb-1">SKU: {{ $item->product_sku }}</p>
-                        @endif
-                        @if($item->product_attributes && count($item->product_attributes) > 0)
-                            <div class="flex flex-wrap gap-1 mb-2">
-                                @foreach($item->product_attributes as $key => $value)
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                    {{ ucfirst($key) }}: {{ $value }}
-                                </span>
+        <div class="tp-card sf-stack" style="gap:10px;">
+            <div class="tp-section-h">รายการสินค้า</div>
+            @foreach($order->items as $item)
+                @php $osImg = \App\Services\Shop\ShopPresenter::imageUrl($item->product_image); @endphp
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <span class="sf-thumb">@if($osImg)<img src="{{ $osImg }}" alt="" loading="lazy">@else 📦 @endif</span>
+                    <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-weight:700; color:var(--ink); overflow-wrap:anywhere;">{{ $item->product_name }}</span>
+                        @if(is_array($item->product_attributes) && $item->product_attributes !== [])
+                            <span class="tp-muted" style="display:block; font-size:12px;">
+                                @foreach($item->product_attributes as $ak => $av)
+                                    @if(is_scalar($av)){{ $ak }}: {{ $av }}@if(! $loop->last), @endif @endif
                                 @endforeach
-                            </div>
+                            </span>
                         @endif
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm text-gray-600">
-                                ฿{{ number_format($item->unit_price, 2) }} x {{ $item->quantity }}
-                            </div>
-                            <div class="text-lg font-bold text-indigo-600">
-                                ฿{{ number_format($item->subtotal, 2) }}
-                            </div>
+                        <span class="tp-muted" style="font-size:12px;">{{ (int) $item->quantity }} × ฿{{ number_format((float) $item->unit_price, 2) }}</span>
+                    </span>
+                    <span class="tp-num" style="font-weight:800; color:var(--ink);">฿{{ number_format((float) $item->total, 2) }}</span>
+                </div>
+            @endforeach
+            <div style="border-top:1px solid color-mix(in srgb, var(--ink2) 20%, transparent); padding-top:10px; display:flex; flex-direction:column; gap:6px;">
+                <div class="sf-row"><span>ยอดรวมสินค้า</span><strong class="tp-num">฿{{ number_format((float) $order->subtotal, 2) }}</strong></div>
+                @if((float) $order->discount_amount > 0)
+                    <div class="sf-row"><span>ส่วนลด</span><strong class="tp-num" style="color:var(--sf-ok, #4f9e7e);">-฿{{ number_format((float) $order->discount_amount, 2) }}</strong></div>
+                @endif
+                <div class="sf-row"><span>ค่าจัดส่ง</span><strong class="tp-num">{{ (float) $order->shipping_fee > 0 ? '฿'.number_format((float) $order->shipping_fee, 2) : 'ฟรี' }}</strong></div>
+                @if((float) ($order->tax_amount ?? 0) > 0)
+                    <div class="sf-row"><span>ภาษี</span><strong class="tp-num">฿{{ number_format((float) $order->tax_amount, 2) }}</strong></div>
+                @endif
+                <div class="sf-total"><span style="font-weight:800; color:var(--ink);">ยอดรวมทั้งหมด</span><span class="tp-num">฿{{ number_format((float) $order->total_amount, 2) }}</span></div>
+            </div>
+        </div>
+
+        @if($osShipping || $order->customer_notes)
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
+                @if($osShipping)
+                    <div class="tp-card">
+                        <div class="tp-section-h" style="margin-bottom:8px;"><i class="fas fa-location-dot" style="color:var(--deep1);"></i> ที่อยู่จัดส่ง</div>
+                        <div style="font-size:13.5px; line-height:1.65; color:var(--ink2);">
+                            <strong style="color:var(--ink);">{{ $osShipping['name'] }}</strong> · {{ $osShipping['phone'] }}<br>
+                            {{ $osShipping['full_address'] ?: trim(implode(' ', array_filter([$osShipping['address'], $osShipping['address_line_2'], $osShipping['subdistrict'], $osShipping['district'], $osShipping['province'], $osShipping['postal_code']]))) }}
                         </div>
                     </div>
-                </div>
+                @endif
+                @if($order->customer_notes)
+                    <div class="tp-card">
+                        <div class="tp-section-h" style="margin-bottom:8px;"><i class="fas fa-note-sticky" style="color:var(--deep1);"></i> หมายเหตุ</div>
+                        <div style="font-size:13.5px; color:var(--ink2); overflow-wrap:anywhere;">{{ $order->customer_notes }}</div>
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        @if($osSiblings->isNotEmpty())
+            <div class="tp-card sf-stack" style="gap:10px;">
+                <div class="tp-section-h"><i class="fas fa-store" style="color:var(--deep1);"></i> คำสั่งซื้ออื่นจากการสั่งครั้งนี้ (แยกตามร้าน)</div>
+                @foreach($osSiblings as $sib)
+                    <a href="{{ route('orders.show', $sib->id) }}" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 12px; border-radius:14px; text-decoration:none; background:var(--surf); box-shadow:var(--raise); color:var(--ink);">
+                        <strong class="tp-num" style="flex:1;">#{{ $sib->order_number }}</strong>
+                        <span class="tp-num">฿{{ number_format((float) $sib->total_amount, 2) }}</span>
+                        <span class="tp-pill tp-pill-soft">{{ $sib->payment_status === 'paid' ? 'ชำระแล้ว' : ($sib->payment_method === 'cod' ? 'จ่ายเมื่อรับของ' : 'รอชำระ') }}</span>
+                    </a>
                 @endforeach
             </div>
+        @endif
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+            @if($osCanPay)
+                <form method="POST" action="{{ route('orders.retry-payment', $order->id) }}" style="margin:0; display:grid;">
+                    @csrf
+                    <button type="submit" class="sf-btn3d is-alt"><i class="fas fa-credit-card"></i> ชำระเงินตอนนี้</button>
+                </form>
+            @endif
+            <a href="{{ route('orders.show', $order->id) }}" class="sf-btn3d"><i class="fas fa-receipt"></i> ดูรายละเอียดคำสั่งซื้อ</a>
+            <a href="{{ route('storefront.index') }}" class="sf-btn3d is-soft"><i class="fas fa-bag-shopping"></i> ช้อปต่อ</a>
         </div>
+        <p class="tp-muted" style="margin:0; text-align:center; font-size:12.5px;">มีคำถามเกี่ยวกับคำสั่งซื้อ? <a href="{{ route('contact') }}" style="color:var(--deep1); font-weight:700;">ติดต่อเรา</a></p>
+    </section>
+</main>
 
-        <!-- Order Summary -->
-        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">💰 สรุปยอดชำระ</h2>
-
-            <div class="space-y-3">
-                <div class="flex justify-between text-gray-700">
-                    <span>ยอดรวมสินค้า ({{ $order->total_items }} ชิ้น)</span>
-                    <span class="font-semibold">฿{{ number_format($order->subtotal, 2) }}</span>
-                </div>
-
-                @if($order->discount_amount > 0)
-                <div class="flex justify-between text-green-600">
-                    <span>ส่วนลด</span>
-                    <span class="font-semibold">-฿{{ number_format($order->discount_amount, 2) }}</span>
-                </div>
-                @endif
-
-                <div class="flex justify-between text-gray-700">
-                    <span>ค่าจัดส่ง</span>
-                    <span class="font-semibold">
-                        @if($order->shipping_fee == 0)
-                            <span class="text-green-600">ฟรี</span>
-                        @else
-                            ฿{{ number_format($order->shipping_fee, 2) }}
-                        @endif
-                    </span>
-                </div>
-
-                @if($order->tax_amount > 0)
-                <div class="flex justify-between text-gray-700">
-                    <span>ภาษี</span>
-                    <span class="font-semibold">฿{{ number_format($order->tax_amount, 2) }}</span>
-                </div>
-                @endif
-            </div>
-
-            <div class="mt-6 pt-4 border-t-2 border-gray-200">
-                <div class="flex justify-between items-center">
-                    <span class="text-xl font-bold text-gray-900">ยอดรวมทั้งหมด</span>
-                    <span class="text-3xl font-black text-indigo-600">
-                        ฿{{ number_format($order->total_amount, 2) }}
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-4">
-            <a href="{{ route('orders.show', $order->id) }}"
-               class="flex-1 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-center font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
-                📋 ดูรายละเอียดคำสั่งซื้อ
-            </a>
-            <a href="{{ route('storefront.index') }}"
-               class="flex-1 px-6 py-4 border-2 border-gray-300 hover:border-indigo-600 text-gray-700 hover:text-indigo-600 text-center font-bold text-lg rounded-xl transition">
-                🛍️ ช๊อปปิ้งต่อ
-            </a>
-        </div>
-
-        <!-- Additional Info -->
-        <div class="mt-8 text-center">
-            <p class="text-gray-600 mb-2">
-                เราได้ส่งอีเมลยืนยันการสั่งซื้อไปยังที่อยู่อีเมลของคุณแล้ว
-            </p>
-            <p class="text-sm text-gray-500">
-                หากคุณมีคำถามเกี่ยวกับคำสั่งซื้อ กรุณา
-                <a href="{{ route('contact') }}" class="text-indigo-600 hover:text-indigo-700 font-medium underline">
-                    ติดต่อเรา
-                </a>
-            </p>
-        </div>
-    </div>
-</div>
+<x-theme-v4.public-footer />
 @endsection

@@ -1,135 +1,84 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'จัดการอุปกรณ์ POS')
+@section('title', 'อุปกรณ์ POS')
+
+@php
+    $subMap = ['active' => ['ใช้งาน', 'ok'], 'trial' => ['ทดลองใช้', 'info'], 'expired' => ['หมดอายุ', 'bad'], 'suspended' => ['ระงับ', 'bad'], 'cancelled' => ['ยกเลิก', 'muted']];
+    $typeIcons = ['premium' => '💎', 'web' => '🌐', 'tablet' => '📲', 'desktop' => '🖥️'];
+@endphp
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">📱 จัดการอุปกรณ์ POS</h1>
-            <p class="text-gray-500 mt-1">อุปกรณ์ขายหน้าร้านของคุณ</p>
-        </div>
-        <a href="{{ route('seller.pos.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
-            ← กลับ
-        </a>
-    </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-    <!-- Devices Grid -->
+    <x-seller-kit.header title="อุปกรณ์ POS" icon="📱" crumb="ร้านค้า · POS"
+                         subtitle="อุปกรณ์ขายหน้าร้านทั้งหมดของร้าน (รวมหน้าขายบนเว็บที่ระบบสร้างให้อัตโนมัติ)">
+        <a href="{{ route('seller.pos.terminals') }}" class="tp-btn tp-btn-sm">🖥️ ลงทะเบียนเครื่อง POS</a>
+    </x-seller-kit.header>
+
+    @include('seller.pos.partials.nav')
+
     @if($devices->count() > 0)
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach($devices as $device)
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-            <!-- Device Header -->
-            <div class="p-6 {{ $device->is_online ? 'bg-gradient-to-r from-green-500 to-green-600' : 'bg-gradient-to-r from-gray-400 to-gray-500' }} text-white">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2">
-                        <span class="text-3xl">
-                            @if($device->device_type === 'premium')
-                                💎
-                            @else
-                                📱
-                            @endif
-                        </span>
-                        @if($device->is_online)
-                            <span class="px-2 py-1 bg-white/20 text-xs rounded-full">🟢 ออนไลน์</span>
-                        @else
-                            <span class="px-2 py-1 bg-white/20 text-xs rounded-full">⚫ ออฟไลน์</span>
-                        @endif
-                    </div>
-                </div>
-                <h3 class="text-xl font-bold">{{ $device->device_name }}</h3>
-                <p class="text-sm opacity-80">{{ $device->device_code }}</p>
-            </div>
-
-            <!-- Device Details -->
-            <div class="p-6">
-                <div class="space-y-3">
-                    <!-- Subscription Status -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">สถานะแพคเกจ</span>
-                        <div>
-                            @if($device->subscription_status === 'active')
-                                <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded">✅ ใช้งาน</span>
-                            @elseif($device->subscription_status === 'trial')
-                                <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">🆓 ทดลอง</span>
-                            @elseif($device->subscription_status === 'expired')
-                                <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded">⚠️ หมดอายุ</span>
-                            @else
-                                <span class="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">{{ $device->subscription_status }}</span>
-                            @endif
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:16px;">
+            @foreach($devices as $device)
+                @php
+                    [$subLabel, $subTone] = $subMap[$device->subscription_status] ?? [$device->subscription_status ?: 'ไม่ระบุ', 'muted'];
+                    $todayQuery = $device->transactions()->whereDate('transaction_date', today());
+                    $todayCount = (clone $todayQuery)->count();
+                    $todaySales = (float) (clone $todayQuery)->sum('total_amount');
+                @endphp
+                <div class="tp-card" style="padding:18px; display:flex; flex-direction:column; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="tp-tile" style="width:46px; height:46px; font-size:22px; border-radius:14px;" aria-hidden="true">{{ $typeIcons[$device->device_type] ?? '📱' }}</span>
+                        <div style="min-width:0; flex:1;">
+                            <div style="font-weight:800; font-size:14.5px; overflow-wrap:anywhere;">{{ $device->device_name }}</div>
+                            <div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $device->device_code ?? '—' }}</div>
                         </div>
+                        <x-seller-kit.pill :tone="$device->is_online ? 'ok' : 'muted'">{{ $device->is_online ? '● ออนไลน์' : '○ ออฟไลน์' }}</x-seller-kit.pill>
                     </div>
 
-                    <!-- Expiry Date -->
-                    @if($device->subscription_ends_at)
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm text-gray-500">วันหมดอายุ</span>
-                        <span class="text-sm font-medium text-gray-900">{{ $device->subscription_ends_at->format('d/m/Y') }}</span>
+                    <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+                        <span style="color:var(--ink2);">สถานะแพ็กเกจ</span>
+                        <x-seller-kit.pill :tone="$subTone">{{ $subLabel }}</x-seller-kit.pill>
                     </div>
+                    @if($device->subscription_ends_at)
+                        <div style="display:flex; justify-content:space-between; font-size:12.5px;">
+                            <span style="color:var(--ink2);">หมดอายุ</span>
+                            <span class="tp-num" style="font-weight:700;">{{ $device->subscription_ends_at->format('d/m/Y') }}</span>
+                        </div>
                     @endif
 
-                    <!-- Features -->
-                    <div class="pt-3 border-t border-gray-200">
-                        <div class="text-xs text-gray-500 mb-2">ฟีเจอร์</div>
-                        <div class="flex flex-wrap gap-1">
-                            @if($device->dual_screen_enabled)
-                                <span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">🖥️ Dual Screen</span>
-                            @endif
-                            @if($device->offline_mode_enabled)
-                                <span class="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded">📡 Offline</span>
-                            @endif
-                            @if($device->receipt_printer_enabled)
-                                <span class="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">🖨️ Printer</span>
-                            @endif
+                    <div style="display:flex; flex-wrap:wrap; gap:6px;">
+                        @if($device->dual_screen_enabled)<span class="tp-pill tp-pill-soft">🖥️ จอลูกค้า</span>@endif
+                        @if($device->offline_mode_enabled)<span class="tp-pill tp-pill-soft">📡 ใช้ออฟไลน์ได้</span>@endif
+                        @if($device->receipt_printer_enabled)<span class="tp-pill tp-pill-soft">🖨️ เครื่องพิมพ์</span>@endif
+                    </div>
+
+                    <div class="tp-inset-sm" style="border-radius:14px; padding:10px 12px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <div>
+                            <div style="font-size:11px; color:var(--ink2);">รายการวันนี้</div>
+                            <div class="tp-num" style="font-weight:800; font-size:17px;">{{ number_format($todayCount) }}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:11px; color:var(--ink2);">ยอดขายวันนี้</div>
+                            <div class="tp-num" style="font-weight:800; font-size:17px; color:var(--deep1);">฿{{ number_format($todaySales, 2) }}</div>
                         </div>
                     </div>
 
-                    <!-- Stats -->
-                    @php
-                        $todayTransactions = $device->transactions()->whereDate('transaction_date', today())->count();
-                        $todaySales = $device->transactions()->whereDate('transaction_date', today())->sum('total_amount');
-                    @endphp
-                    <div class="pt-3 border-t border-gray-200">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <div class="text-xs text-gray-500">รายการวันนี้</div>
-                                <div class="text-lg font-bold text-gray-900">{{ number_format($todayTransactions) }}</div>
-                            </div>
-                            <div>
-                                <div class="text-xs text-gray-500">ยอดขายวันนี้</div>
-                                <div class="text-lg font-bold text-green-600">฿{{ number_format($todaySales, 0) }}</div>
-                            </div>
-                        </div>
-                    </div>
+                    <a href="{{ route('seller.pos.devices.show', $device) }}" class="tp-btn tp-btn-sm" style="width:100%;">ดูรายละเอียด →</a>
                 </div>
-
-                <!-- Actions -->
-                <div class="mt-6 flex gap-2">
-                    <a href="{{ route('seller.pos.devices.show', $device) }}"
-                       class="flex-1 px-4 py-2 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 text-sm font-medium">
-                        ดูรายละเอียด
-                    </a>
-                </div>
-            </div>
+            @endforeach
         </div>
-        @endforeach
-    </div>
 
-    <!-- Pagination -->
-    @if($devices->hasPages())
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        {{ $devices->links() }}
-    </div>
-    @endif
-
+        @if($devices->hasPages())
+            <div>{{ $devices->links() }}</div>
+        @endif
     @else
-    <!-- No Devices -->
-    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-        <div class="text-6xl mb-4">📱</div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">ยังไม่มีอุปกรณ์ POS</h3>
-        <p class="text-gray-500 mb-6">ติดต่อผู้ดูแลระบบเพื่อเพิ่มอุปกรณ์ POS สำหรับร้านค้าของคุณ</p>
-    </div>
+        <div class="tp-card">
+            <x-seller-kit.empty icon="📱" title="ยังไม่มีอุปกรณ์ POS" text="เปิดหน้าขายหน้าร้านครั้งแรกระบบจะสร้างอุปกรณ์ “Web POS” ให้อัตโนมัติ หรือเชื่อมโปรแกรม POS บนคอมพิวเตอร์ด้วย API Key">
+                <a href="{{ route('seller.pos.terminal') }}" class="tp-btn tp-btn-primary tp-btn-sm">🛒 เปิดหน้าขาย</a>
+                <a href="{{ route('seller.pos.terminals') }}" class="tp-btn tp-btn-sm">🖥️ สร้าง API Key</a>
+            </x-seller-kit.empty>
+        </div>
     @endif
 </div>
 @endsection

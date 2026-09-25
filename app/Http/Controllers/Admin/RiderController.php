@@ -653,6 +653,20 @@ class RiderController extends Controller
     }
 
     /**
+     * หน้าจอมอนิเตอร์การกระจายงานสด (admin.riders.monitor) — หน้าเว็บดึง JSON จาก dispatchMonitor() ทุก 15 วินาที
+     */
+    public function monitor()
+    {
+        return view('admin.riders.monitor', [
+            'dataUrl' => route('admin.riders.dispatch-monitor'),
+            'refreshSeconds' => 15,
+            'staleAfterSeconds' => $this->staleAfterSeconds(),
+            'manualAfterMinutes' => (new DeliveryFeeCalculator)->intSetting('rider.pending_timeout_minutes'),
+            'pageTitle' => 'มอนิเตอร์การกระจายงานสด',
+        ]);
+    }
+
+    /**
      * เล่นย้อนหลัง GPS 24 ชม. (admin.riders.playback)
      */
     public function locationPlayback(Rider $rider)

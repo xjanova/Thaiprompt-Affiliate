@@ -1,380 +1,213 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'พิมพ์ฉลากสินค้า - POS')
+@section('title', 'พิมพ์ฉลากสินค้า')
 
-@push('styles')
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-@endpush
+@php
+    $labelConfig = [
+        'productsUrl' => route('seller.pos.labels.api.products'),
+        'printUrl' => route('seller.pos.labels.api.print'),
+        'previewUrl' => route('seller.pos.labels.preview'),
+        'defaultTemplate' => $templates->count() === 1 ? (string) $templates->first()->id : '',
+    ];
+@endphp
 
 @section('content')
-<div class="container-fluid px-4 py-6" x-data="productLabelPrinter()">
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                🏷️ พิมพ์ฉลากสินค้า
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-                เลือกสินค้าและพิมพ์ฉลาก Barcode
-            </p>
-        </div>
-        <a href="{{ route('seller.pos.labels.index') }}"
-           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            <i class="fas fa-arrow-left mr-2"></i>
-            กลับ
-        </a>
-    </div>
+<div x-data="productLabelPrinter(@js($labelConfig))" style="display:flex; flex-direction:column; gap:18px;">
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- Left: รายการสินค้า --}}
-        <div class="lg:col-span-2">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-                {{-- Search & Filter --}}
-                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <input type="text"
-                                   x-model="searchQuery"
-                                   @input.debounce.500ms="fetchProducts()"
-                                   placeholder="ค้นหาชื่อ, Barcode, SKU..."
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+    <x-seller-kit.header title="พิมพ์ฉลากสินค้า" icon="🏷️" crumb="ร้านค้า · POS · ฉลากบาร์โค้ด"
+                         subtitle="เลือกสินค้า กำหนดจำนวนดวง แล้วกดพิมพ์ — ระบบจะเปิดหน้าตัวอย่างสำหรับสั่งพิมพ์">
+        <a href="{{ route('seller.pos.labels.history') }}" class="tp-btn tp-btn-sm">📜 ประวัติการพิมพ์</a>
+    </x-seller-kit.header>
+
+    @include('seller.pos.partials.nav')
+
+    <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
+        {{-- รายการสินค้าของร้าน --}}
+        <div class="tp-card" style="padding:0; overflow:hidden; flex:2 1 440px; min-width:0;">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; padding:14px 16px;">
+                <input type="search" x-model="search" @input.debounce.400ms="fetchProducts(1)" class="tp-input" style="flex:1 1 220px;" placeholder="ค้นหาชื่อ บาร์โค้ด หรือ SKU" aria-label="ค้นหาสินค้า">
+                <select x-model.number="perPage" @change="fetchProducts(1)" class="tp-input" style="width:auto;" aria-label="จำนวนต่อหน้า">
+                    <option value="20">20 รายการ</option>
+                    <option value="50">50 รายการ</option>
+                    <option value="100">100 รายการ</option>
+                </select>
+            </div>
+
+            <div style="max-height:60vh; overflow-y:auto;">
+                <template x-if="loading">
+                    <div style="padding:40px; text-align:center; color:var(--ink2); font-size:13px;"><i class="fas fa-spinner fa-spin"></i> กำลังโหลดสินค้า…</div>
+                </template>
+                <template x-if="!loading && products.length === 0">
+                    <div style="padding:40px; text-align:center; color:var(--ink2); font-size:13px;">📭 ไม่พบสินค้า</div>
+                </template>
+                <template x-for="p in products" :key="p.id">
+                    <div style="display:flex; align-items:center; gap:12px; padding:12px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                        <div class="tp-inset-sm" style="width:52px; height:52px; border-radius:12px; overflow:hidden; display:grid; place-items:center; flex:none;">
+                            <template x-if="p.image"><img :src="p.image" :alt="p.name" loading="lazy" style="width:100%; height:100%; object-fit:cover;"></template>
+                            <template x-if="!p.image"><span aria-hidden="true">📦</span></template>
                         </div>
-                        <select x-model="perPage"
-                                @change="fetchProducts()"
-                                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                            <option value="20">20 รายการ</option>
-                            <option value="50">50 รายการ</option>
-                            <option value="100">100 รายการ</option>
-                        </select>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:700; font-size:13.5px;" x-text="p.name"></div>
+                            <div class="tp-num" style="font-size:11px; color:var(--ink2);" x-text="'บาร์โค้ด ' + (p.barcode || '—') + ' · SKU ' + (p.sku || '—')"></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="tp-num" style="font-weight:800; color:var(--deep1);" x-text="money(p.price)"></div>
+                            <button type="button" class="tp-btn tp-btn-sm" style="margin-top:4px;" @click="add(p)">＋ เพิ่ม</button>
+                        </div>
                     </div>
-                </div>
+                </template>
+            </div>
 
-                {{-- Products List --}}
-                <div class="overflow-y-auto" style="max-height: 600px;">
-                    <template x-if="loading">
-                        <div class="p-12 text-center text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-spinner fa-spin text-3xl mb-2"></i>
-                            <p>กำลังโหลดสินค้า...</p>
-                        </div>
-                    </template>
-
-                    <template x-if="!loading && products.length === 0">
-                        <div class="p-12 text-center text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-inbox text-4xl mb-2"></i>
-                            <p>ไม่พบสินค้า</p>
-                        </div>
-                    </template>
-
-                    <template x-if="!loading && products.length > 0">
-                        <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                            <template x-for="product in products" :key="product.id">
-                                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer"
-                                     @click="addProduct(product)">
-                                    <div class="flex items-center gap-4">
-                                        <img :src="product.image || '/images/no-image.png'"
-                                             :alt="product.name"
-                                             class="w-16 h-16 object-cover rounded-lg">
-                                        <div class="flex-1">
-                                            <h4 class="font-semibold text-gray-900 dark:text-white" x-text="product.name"></h4>
-                                            <p class="text-sm text-gray-600 dark:text-gray-400">
-                                                Barcode: <span x-text="product.barcode"></span>
-                                                | SKU: <span x-text="product.sku"></span>
-                                            </p>
-                                            <template x-if="product.store_name">
-                                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                                    ร้าน: <span x-text="product.store_name"></span>
-                                                </p>
-                                            </template>
-                                        </div>
-                                        <div class="text-right">
-                                            <p class="text-lg font-bold text-green-600 dark:text-green-400">
-                                                ฿<span x-text="product.price"></span>
-                                            </p>
-                                            <button @click.stop="addProduct(product)"
-                                                    class="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition">
-                                                <i class="fas fa-plus mr-1"></i> เพิ่ม
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-
-                {{-- Pagination --}}
-                <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                    <div class="text-sm text-gray-600 dark:text-gray-400">
-                        แสดง <span x-text="products.length"></span> รายการ
-                        จากทั้งหมด <span x-text="meta.total"></span> รายการ
-                    </div>
-                    <div class="flex gap-2">
-                        <button @click="prevPage()"
-                                :disabled="meta.current_page === 1"
-                                :class="meta.current_page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300 dark:hover:bg-gray-600'"
-                                class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span class="px-3 py-1 text-gray-700 dark:text-gray-300">
-                            หน้า <span x-text="meta.current_page"></span> / <span x-text="meta.last_page"></span>
-                        </span>
-                        <button @click="nextPage()"
-                                :disabled="meta.current_page === meta.last_page"
-                                :class="meta.current_page === meta.last_page ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-300 dark:hover:bg-gray-600'"
-                                class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded transition">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px 16px; border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent); font-size:12.5px; color:var(--ink2);">
+                <span x-text="'ทั้งหมด ' + meta.total + ' รายการ'"></span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button type="button" class="tp-icon-btn" style="width:34px; height:34px;" @click="fetchProducts(meta.current_page - 1)" :disabled="meta.current_page <= 1" :style="{ opacity: meta.current_page <= 1 ? .4 : 1 }" aria-label="หน้าก่อน">‹</button>
+                    <span class="tp-num" x-text="meta.current_page + ' / ' + meta.last_page"></span>
+                    <button type="button" class="tp-icon-btn" style="width:34px; height:34px;" @click="fetchProducts(meta.current_page + 1)" :disabled="meta.current_page >= meta.last_page" :style="{ opacity: meta.current_page >= meta.last_page ? .4 : 1 }" aria-label="หน้าถัดไป">›</button>
                 </div>
             </div>
         </div>
 
-        {{-- Right: สินค้าที่เลือก --}}
-        <div class="lg:col-span-1">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sticky top-4">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                    สินค้าที่เลือก (<span x-text="selectedProducts.length"></span>)
-                </h3>
+        {{-- สินค้าที่เลือก --}}
+        <div class="tp-card" style="flex:1 1 300px; min-width:0; position:sticky; top:12px; display:flex; flex-direction:column; gap:12px;">
+            <div class="tp-section-h">🧾 สินค้าที่เลือก <span class="tp-pill tp-pill-soft" x-text="selected.length + ' รายการ'"></span></div>
 
-                {{-- Selected Products --}}
-                <div class="space-y-3 mb-4" style="max-height: 300px; overflow-y: auto;">
-                    <template x-if="selectedProducts.length === 0">
-                        <p class="text-center text-gray-500 dark:text-gray-400 py-8">
-                            ยังไม่ได้เลือกสินค้า
-                        </p>
-                    </template>
-
-                    <template x-for="(item, index) in selectedProducts" :key="item.product_id">
-                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
-                            <div class="flex justify-between items-start mb-2">
-                                <p class="font-medium text-gray-900 dark:text-white text-sm" x-text="item.name"></p>
-                                <button @click="removeProduct(index)"
-                                        class="text-red-600 dark:text-red-400 hover:text-red-700">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs text-gray-600 dark:text-gray-400">จำนวนฉลาก:</label>
-                                <input type="number"
-                                       x-model.number="item.quantity"
-                                       min="1"
-                                       @input="updateTotal()"
-                                       class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-600 text-gray-900 dark:text-white text-sm">
-                            </div>
+            <div style="display:flex; flex-direction:column; gap:8px; max-height:36vh; overflow-y:auto; padding:2px;">
+                <template x-if="selected.length === 0">
+                    <div style="text-align:center; padding:20px 0; color:var(--ink2); font-size:13px;">ยังไม่ได้เลือกสินค้า</div>
+                </template>
+                <template x-for="(item, i) in selected" :key="item.product_id">
+                    <div class="tp-inset-sm" style="border-radius:12px; padding:10px 12px;">
+                        <div style="display:flex; justify-content:space-between; gap:8px;">
+                            <span style="font-size:12.5px; font-weight:700;" x-text="item.name"></span>
+                            <button type="button" @click="selected.splice(i, 1)" aria-label="ลบรายการ" style="border:0; background:none; cursor:pointer; color:var(--tp-bad, #d9534f);">✕</button>
                         </div>
-                    </template>
-                </div>
-
-                {{-- Template Selection --}}
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Template</label>
-                    <select x-model="selectedTemplate"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        <option value="">-- เลือก Template --</option>
-                        @foreach($templates as $template)
-                            <option value="{{ $template->id }}">{{ $template->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                {{-- Summary --}}
-                <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg mb-4">
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-gray-700 dark:text-gray-300">รายการ:</span>
-                        <span class="font-semibold text-gray-900 dark:text-white" x-text="selectedProducts.length"></span>
+                        <div style="display:flex; align-items:center; gap:8px; margin-top:6px; font-size:12px; color:var(--ink2);">
+                            จำนวนดวง
+                            <input type="number" min="1" max="500" x-model.number="item.quantity" @change="item.quantity = Math.max(1, Math.min(500, Math.floor(item.quantity || 1)))" class="tp-input tp-num" style="width:80px; padding:6px 8px; text-align:center;">
+                        </div>
                     </div>
-                    <div class="flex justify-between text-sm mb-1">
-                        <span class="text-gray-700 dark:text-gray-300">ฉลากทั้งหมด:</span>
-                        <span class="font-semibold text-gray-900 dark:text-white" x-text="totalLabels"></span>
-                    </div>
-                </div>
-
-                {{-- Action Buttons --}}
-                <div class="space-y-2">
-                    <button @click="print()"
-                            :disabled="selectedProducts.length === 0 || !selectedTemplate"
-                            :class="selectedProducts.length === 0 || !selectedTemplate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'"
-                            class="w-full px-4 py-3 bg-green-600 text-white rounded-lg font-semibold transition">
-                        <i class="fas fa-print mr-2"></i>
-                        พิมพ์ฉลาก
-                    </button>
-                    <button @click="clearSelection()"
-                            class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                        <i class="fas fa-times mr-2"></i>
-                        ล้างรายการ
-                    </button>
-                </div>
+                </template>
             </div>
+
+            <div>
+                <label for="lbl-template" style="font-size:12.5px; font-weight:700;">Template</label>
+                <select id="lbl-template" x-model="template" class="tp-input" style="margin-top:6px;">
+                    <option value="">— เลือก Template —</option>
+                    @foreach($templates as $template)
+                        <option value="{{ $template->id }}">{{ $template->name }} ({{ rtrim(rtrim(number_format((float) $template->paper_width, 1), '0'), '.') }}×{{ rtrim(rtrim(number_format((float) $template->paper_height, 1), '0'), '.') }} มม.)</option>
+                    @endforeach
+                </select>
+                @if($templates->isEmpty())
+                    <div style="font-size:11.5px; color:var(--tp-warn, #c98a1b); margin-top:6px;">ยังไม่มี Template ฉลากสินค้าในระบบ กรุณาติดต่อผู้ดูแลระบบ</div>
+                @endif
+            </div>
+
+            <div class="tp-inset-sm" style="border-radius:12px; padding:10px 12px; display:flex; justify-content:space-between; font-size:13px;">
+                <span style="color:var(--ink2);">ฉลากทั้งหมด</span>
+                <span class="tp-num" style="font-weight:800;" x-text="totalLabels + ' ดวง'"></span>
+            </div>
+
+            <button type="button" class="tp-btn tp-btn-primary" style="height:48px;" @click="print()"
+                    :disabled="busy || selected.length === 0 || !template" :style="{ opacity: (busy || selected.length === 0 || !template) ? .5 : 1 }">
+                <span x-text="busy ? 'กำลังเตรียม…' : '🖨️ พิมพ์ฉลาก'"></span>
+            </button>
+            <button type="button" class="tp-btn" @click="if (selected.length && confirm('ล้างรายการที่เลือกทั้งหมด?')) selected = []">ล้างรายการ</button>
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script>
-function productLabelPrinter() {
-    return {
-        products: [],
-        selectedProducts: [],
-        searchQuery: '',
-        perPage: 20,
-        loading: false,
-        meta: {
-            current_page: 1,
-            last_page: 1,
-            per_page: 20,
-            total: 0
-        },
-        selectedTemplate: '',
-        totalLabels: 0,
+    // หน้าเลือกสินค้าพิมพ์ฉลาก — ดึงเฉพาะสินค้าของร้านผ่าน API ของผู้ขาย
+    function productLabelPrinter(cfg) {
+        const fmt = new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return {
+            products: [],
+            selected: [],
+            search: '',
+            perPage: 20,
+            loading: false,
+            busy: false,
+            template: cfg.defaultTemplate,
+            meta: { current_page: 1, last_page: 1, per_page: 20, total: 0 },
+            reqId: 0,
 
-        async init() {
-            await this.fetchProducts();
-        },
+            get totalLabels() { return this.selected.reduce((s, i) => s + (Number(i.quantity) || 0), 0); },
+            money(n) { return '฿' + fmt.format(Number(n) || 0); },
 
-        async fetchProducts(page = 1) {
-            this.loading = true;
-            try {
-                const params = new URLSearchParams({
-                    page: page,
-                    per_page: this.perPage,
-                    search: this.searchQuery
-                });
+            init() { this.fetchProducts(1); },
 
-                const response = await fetch(`{{ route('seller.pos.labels.api.products') }}?${params}`);
-                const data = await response.json();
-
-                if (data.success) {
-                    this.products = data.data;
-                    this.meta = data.meta;
+            async fetchProducts(page) {
+                if (page < 1 || (page > this.meta.last_page && this.meta.last_page > 0 && page !== 1)) return;
+                const my = ++this.reqId; // กันผลลัพธ์เก่ามาทับผลลัพธ์ใหม่ตอนพิมพ์ค้นหาเร็ว ๆ
+                this.loading = true;
+                try {
+                    const params = new URLSearchParams({ page: page, per_page: this.perPage, search: this.search });
+                    const res = await fetch(cfg.productsUrl + '?' + params.toString(), { headers: { 'Accept': 'application/json' } });
+                    const data = await res.json();
+                    if (my !== this.reqId) return;
+                    if (data.success) {
+                        this.products = data.data;
+                        this.meta = data.meta || this.meta;
+                    } else {
+                        this.products = [];
+                        window.showNotification(data.message || 'โหลดสินค้าไม่สำเร็จ', 'error');
+                    }
+                } catch (e) {
+                    if (my === this.reqId) window.showNotification('โหลดสินค้าไม่สำเร็จ กรุณาลองใหม่', 'error');
+                } finally {
+                    if (my === this.reqId) this.loading = false;
                 }
-            } catch (error) {
-                console.error('Error fetching products:', error);
-                alert('เกิดข้อผิดพลาดในการโหลดสินค้า');
-            } finally {
-                this.loading = false;
-            }
-        },
+            },
 
-        addProduct(product) {
-            const exists = this.selectedProducts.find(p => p.product_id === product.id);
-            if (exists) {
-                exists.quantity++;
-            } else {
-                this.selectedProducts.push({
-                    product_id: product.id,
-                    name: product.name,
-                    barcode: product.barcode,
-                    sku: product.sku,
-                    price: product.price,
-                    quantity: 1
-                });
-            }
-            this.updateTotal();
-        },
+            add(p) {
+                const row = this.selected.find((s) => s.product_id === p.id);
+                if (row) { row.quantity = Math.min(500, row.quantity + 1); return; }
+                this.selected.push({ product_id: p.id, name: p.name, quantity: 1 });
+            },
 
-        removeProduct(index) {
-            this.selectedProducts.splice(index, 1);
-            this.updateTotal();
-        },
-
-        updateTotal() {
-            this.totalLabels = this.selectedProducts.reduce((sum, item) => sum + item.quantity, 0);
-        },
-
-        clearSelection() {
-            this.selectedProducts = [];
-            this.totalLabels = 0;
-        },
-
-        async print() {
-            if (this.selectedProducts.length === 0) {
-                alert('กรุณาเลือกสินค้า');
-                return;
-            }
-
-            if (!this.selectedTemplate) {
-                alert('กรุณาเลือก Template');
-                return;
-            }
-
-            try {
-                // 1. บันทึกข้อมูลการพิมพ์ก่อน
-                const response = await fetch('{{ route('seller.pos.labels.api.print') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        template_id: this.selectedTemplate,
-                        print_type: 'product_label',
-                        products: this.selectedProducts
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // 2. เปิดหน้า Preview ในหน้าต่างใหม่
-                    const previewUrl = new URL('{{ route('seller.pos.labels.preview') }}', window.location.origin);
-                    previewUrl.searchParams.append('template_id', this.selectedTemplate);
-
-                    // ส่งข้อมูล products ผ่าน POST
-                    const form = document.createElement('form');
-                    form.method = 'GET';
-                    form.action = previewUrl.toString();
-                    form.target = '_blank';
-
-                    // เพิ่ม template_id
-                    const templateInput = document.createElement('input');
-                    templateInput.type = 'hidden';
-                    templateInput.name = 'template_id';
-                    templateInput.value = this.selectedTemplate;
-                    form.appendChild(templateInput);
-
-                    // เพิ่ม products
-                    this.selectedProducts.forEach((product, index) => {
-                        const productIdInput = document.createElement('input');
-                        productIdInput.type = 'hidden';
-                        productIdInput.name = `products[${index}][product_id]`;
-                        productIdInput.value = product.product_id;
-                        form.appendChild(productIdInput);
-
-                        const quantityInput = document.createElement('input');
-                        quantityInput.type = 'hidden';
-                        quantityInput.name = `products[${index}][quantity]`;
-                        quantityInput.value = product.quantity;
-                        form.appendChild(quantityInput);
+            async print() {
+                if (this.busy || !this.selected.length || !this.template) return;
+                this.busy = true;
+                try {
+                    // 1) บันทึกประวัติการพิมพ์
+                    const res = await fetch(cfg.printUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        },
+                        body: JSON.stringify({
+                            template_id: this.template,
+                            print_type: 'product_label',
+                            products: this.selected.map((s) => ({ product_id: s.product_id, quantity: s.quantity })),
+                        }),
                     });
-
-                    document.body.appendChild(form);
-                    form.submit();
-                    document.body.removeChild(form);
-
-                    // 3. ล้างรายการ
-                    this.clearSelection();
-                } else {
-                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || !data.success) {
+                        window.showNotification(data.message || 'บันทึกการพิมพ์ไม่สำเร็จ', 'error');
+                        return;
+                    }
+                    // 2) เปิดหน้าตัวอย่างสำหรับสั่งพิมพ์ในแท็บใหม่
+                    const url = new URL(cfg.previewUrl, window.location.origin);
+                    url.searchParams.set('template_id', this.template);
+                    this.selected.forEach((s, i) => {
+                        url.searchParams.set('products[' + i + '][product_id]', s.product_id);
+                        url.searchParams.set('products[' + i + '][quantity]', s.quantity);
+                    });
+                    window.open(url.toString(), '_blank', 'noopener');
+                    window.showNotification('เปิดหน้าตัวอย่างฉลากแล้ว', 'success');
+                    this.selected = [];
+                } catch (e) {
+                    window.showNotification('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่', 'error');
+                } finally {
+                    this.busy = false;
                 }
-            } catch (error) {
-                console.error('Print error:', error);
-                alert('เกิดข้อผิดพลาดในการพิมพ์');
-            }
-        },
-
-        prevPage() {
-            if (this.meta.current_page > 1) {
-                this.fetchProducts(this.meta.current_page - 1);
-            }
-        },
-
-        nextPage() {
-            if (this.meta.current_page < this.meta.last_page) {
-                this.fetchProducts(this.meta.current_page + 1);
-            }
-        }
+            },
+        };
     }
-}
 </script>
 @endpush
-@endsection

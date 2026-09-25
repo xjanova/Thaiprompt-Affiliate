@@ -1,339 +1,164 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
 @section('title', 'วิเคราะห์ยอดขาย')
 
+@php
+    // ── กราฟ CSS (.tp-bars / .tp-spark) แทน Chart.js ──
+    $dates = $chartData['dates'] ?? [];
+    $revenue = array_map('floatval', $chartData['revenue'] ?? []);
+    $orders = array_map('intval', $chartData['orders'] ?? []);
+    $views = array_map('intval', $chartData['page_views'] ?? []);
+    $visitors = array_map('intval', $chartData['unique_visitors'] ?? []);
+    $revMax = max(1, ...(count($revenue) ? $revenue : [0]));
+    $viewMax = max(1, ...(count($views) ? $views : [0]), ...(count($visitors) ? $visitors : [0]));
+
+    $th = 'padding:11px 14px; text-align:left; font-size:10.5px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); white-space:nowrap;';
+    $row = 'border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);';
+    $convTone = fn ($r) => $r >= 5 ? 'ok' : ($r >= 2 ? 'warn' : 'bad');
+@endphp
+
 @section('content')
-<div class="space-y-6">
-    <!-- Page Header -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <div class="flex justify-between items-center mb-4">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-800">📊 วิเคราะห์ยอดขาย</h1>
-                <p class="text-gray-600 mt-2">ข้อมูลการวิเคราะห์ร้านค้าของคุณ</p>
-            </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-            <div class="flex gap-2">
-                <a href="{{ route('seller.analytics.ai-insights') }}" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-bold shadow-lg">
-                    🤖 AI Insights
-                </a>
-                <a href="{{ route('seller.analytics.settings') }}" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
-                    ⚙️ ตั้งค่า
-                </a>
-                <a href="{{ route('seller.analytics.export', request()->query()) }}" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
-                    📥 Export CSV
-                </a>
-            </div>
+    <x-seller-kit.header title="วิเคราะห์ยอดขาย" icon="📊" crumb="ร้านค้า · วิเคราะห์"
+                         :subtitle="'ช่วงวันที่ '.\Carbon\Carbon::parse($startDate)->format('d/m/Y').' – '.\Carbon\Carbon::parse($endDate)->format('d/m/Y')">
+        <a href="{{ route('seller.analytics.export', request()->query()) }}" class="tp-btn tp-btn-sm">📥 ดาวน์โหลด CSV</a>
+    </x-seller-kit.header>
+
+    @include('seller.analytics.partials.nav')
+
+    {{-- ตัวกรอง --}}
+    <form method="GET" action="{{ route('seller.analytics.index') }}" class="tp-card" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end;">
+        <div>
+            <label for="an-start" style="font-size:12px; font-weight:700; color:var(--ink2);">วันที่เริ่มต้น</label>
+            <input id="an-start" type="date" name="start_date" value="{{ $startDate }}" class="tp-input" style="margin-top:6px;">
         </div>
+        <div>
+            <label for="an-end" style="font-size:12px; font-weight:700; color:var(--ink2);">วันที่สิ้นสุด</label>
+            <input id="an-end" type="date" name="end_date" value="{{ $endDate }}" class="tp-input" style="margin-top:6px;">
+        </div>
+        <div>
+            <label for="an-orders" style="font-size:12px; font-weight:700; color:var(--ink2);">ออเดอร์ขั้นต่ำ/วัน</label>
+            <input id="an-orders" type="number" name="min_orders" value="{{ $minOrders }}" min="0" class="tp-input tp-num" style="margin-top:6px;">
+        </div>
+        <div>
+            <label for="an-conv" style="font-size:12px; font-weight:700; color:var(--ink2);">Conversion ขั้นต่ำ (%)</label>
+            <input id="an-conv" type="number" name="min_conversion" value="{{ $minConversion }}" min="0" max="100" step="0.1" class="tp-input tp-num" style="margin-top:6px;">
+        </div>
+        <div>
+            <label for="an-bounce" style="font-size:12px; font-weight:700; color:var(--ink2);">Bounce สูงสุด (%)</label>
+            <input id="an-bounce" type="number" name="max_bounce" value="{{ $maxBounce }}" min="0" max="100" step="0.1" class="tp-input tp-num" style="margin-top:6px;">
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button type="submit" class="tp-btn tp-btn-primary" style="flex:1;">🔍 กรอง</button>
+            <a href="{{ route('seller.analytics.index') }}" class="tp-btn">ล้าง</a>
+        </div>
+    </form>
 
-        <!-- Filters -->
-        <form method="GET" action="{{ route('seller.analytics.index') }}" class="grid grid-cols-1 md:grid-cols-6 gap-3" id="analyticsFilterForm">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มต้น</label>
-                <input type="date" name="start_date" value="{{ $startDate }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">วันที่สิ้นสุด</label>
-                <input type="date" name="end_date" value="{{ $endDate }}"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ออเดอร์ขั้นต่ำ</label>
-                <input type="number" name="min_orders" value="{{ $minOrders }}" min="0"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="0">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Conversion ขั้นต่ำ (%)</label>
-                <input type="number" name="min_conversion" value="{{ $minConversion }}" min="0" max="100" step="0.1"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="0">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Bounce สูงสุด (%)</label>
-                <input type="number" name="max_bounce" value="{{ $maxBounce }}" min="0" max="100" step="0.1"
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="100">
-            </div>
-            <div class="flex items-end gap-2">
-                <button type="submit" class="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    🔍 กรอง
-                </button>
-                <a href="{{ route('seller.analytics.index') }}" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
-                    ล้าง
-                </a>
-            </div>
-        </form>
-    </div>
-
-    <!-- Real-time Stats -->
-    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-xl p-6 text-white">
-        <h2 class="text-xl font-bold mb-4">📈 สถิติแบบเรียลไทม์ (วันนี้)</h2>
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div class="text-sm opacity-80">ผู้เยี่ยมชมออนไลน์</div>
-                <div class="text-3xl font-bold mt-2">{{ number_format($realTimeStats['current_active_visitors']) }}</div>
-            </div>
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div class="text-sm opacity-80">เข้าชมวันนี้</div>
-                <div class="text-3xl font-bold mt-2">{{ number_format($realTimeStats['page_views_today']) }}</div>
-            </div>
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div class="text-sm opacity-80">ผู้เยี่ยมชมไม่ซ้ำ</div>
-                <div class="text-3xl font-bold mt-2">{{ number_format($realTimeStats['unique_visitors_today']) }}</div>
-            </div>
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div class="text-sm opacity-80">ออเดอร์วันนี้</div>
-                <div class="text-3xl font-bold mt-2">{{ number_format($realTimeStats['orders_today']) }}</div>
-            </div>
-            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <div class="text-sm opacity-80">รายได้วันนี้</div>
-                <div class="text-3xl font-bold mt-2">฿{{ number_format($realTimeStats['revenue_today'], 2) }}</div>
-            </div>
+    {{-- วันนี้แบบเรียลไทม์ --}}
+    <div class="tp-card" style="background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 20%, var(--card-bg)), var(--card-bg) 70%);">
+        <div class="tp-section-h" style="display:flex; align-items:center; gap:8px;"><span style="width:8px; height:8px; border-radius:50%; background:var(--tp-ok, #5aa07e); animation:tpPulse 1.6s infinite;"></span> วันนี้แบบเรียลไทม์</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-top:12px;">
+            @foreach([
+                ['กำลังดูร้านอยู่', number_format((int) ($realTimeStats['current_active_visitors'] ?? 0)), '🟢'],
+                ['เข้าชมวันนี้', number_format((int) ($realTimeStats['page_views_today'] ?? 0)), '👁️'],
+                ['ผู้เยี่ยมชมไม่ซ้ำ', number_format((int) ($realTimeStats['unique_visitors_today'] ?? 0)), '👥'],
+                ['ออเดอร์วันนี้', number_format((int) ($realTimeStats['orders_today'] ?? 0)), '🛒'],
+                ['รายได้วันนี้', '฿'.number_format((float) ($realTimeStats['revenue_today'] ?? 0), 2), '💰'],
+            ] as [$rtLabel, $rtValue, $rtIcon])
+                <div class="tp-inset-sm" style="border-radius:14px; padding:12px;">
+                    <div style="font-size:11.5px; color:var(--ink2);">{{ $rtIcon }} {{ $rtLabel }}</div>
+                    <div class="tp-num" style="font-size:20px; font-weight:800; margin-top:4px;">{{ $rtValue }}</div>
+                </div>
+            @endforeach
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Page Views -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">การเข้าชมทั้งหมด</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">{{ number_format($summary['total_page_views']) }}</p>
-                </div>
-                <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-2xl">
-                    👁️
-                </div>
-            </div>
-        </div>
-
-        <!-- Unique Visitors -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">ผู้เยี่ยมชมไม่ซ้ำ</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">{{ number_format($summary['total_unique_visitors']) }}</p>
-                </div>
-                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center text-2xl">
-                    👥
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Orders -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">ออเดอร์ทั้งหมด</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">{{ number_format($summary['total_orders']) }}</p>
-                </div>
-                <div class="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">
-                    🛒
-                </div>
-            </div>
-        </div>
-
-        <!-- Total Revenue -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-gray-600">รายได้ทั้งหมด</p>
-                    <p class="text-3xl font-bold text-gray-800 mt-2">฿{{ number_format($summary['total_revenue'], 2) }}</p>
-                </div>
-                <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center text-2xl">
-                    💰
-                </div>
-            </div>
-        </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;">
+        <x-seller-kit.stat label="การเข้าชมทั้งหมด" :value="number_format((int) $summary['total_page_views'])" icon="👁️" tone="info" />
+        <x-seller-kit.stat label="ผู้เยี่ยมชมไม่ซ้ำ" :value="number_format((int) $summary['total_unique_visitors'])" icon="👥" tone="ok" />
+        <x-seller-kit.stat label="ออเดอร์ทั้งหมด" :value="number_format((int) $summary['total_orders'])" icon="🛒" tone="warn" />
+        <x-seller-kit.stat label="รายได้ทั้งหมด" :value="'฿'.number_format((float) $summary['total_revenue'], 2)" icon="💰" tone="gold" />
+        <x-seller-kit.stat label="อัตราการแปลงเฉลี่ย" :value="number_format((float) $summary['avg_conversion_rate'], 2).'%'" icon="🎯" tone="violet" hint="ผู้เข้าชม → ผู้ซื้อ" />
+        <x-seller-kit.stat label="มูลค่าเฉลี่ยต่อออเดอร์" :value="'฿'.number_format((float) $summary['avg_order_value'], 2)" icon="🧾" tone="ok" />
+        <x-seller-kit.stat label="อัตราตีกลับเฉลี่ย" :value="number_format((float) $summary['avg_bounce_rate'], 2).'%'" icon="↩️" tone="bad" hint="เข้าแล้วออกทันที" />
     </div>
 
-    <!-- Performance Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">อัตราการแปลง</h3>
-            <div class="text-4xl font-bold text-blue-600">{{ number_format($summary['avg_conversion_rate'], 2) }}%</div>
-            <p class="text-sm text-gray-600 mt-2">จากผู้เยี่ยมชมเป็นลูกค้า</p>
+    @if(count($dates) > 0)
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px;">
+            <div class="tp-card">
+                <div class="tp-section-h">💰 รายได้รายวัน</div>
+                <div style="overflow-x:auto; margin-top:14px;">
+                    <div class="tp-bars" style="height:180px; gap:4px; min-width:{{ max(300, count($dates) * 22) }}px;">
+                        @foreach($dates as $i => $d)
+                            @php
+                                $rv = $revenue[$i] ?? 0;
+                            @endphp
+                            <div class="col" title="{{ $d }} · ฿{{ number_format($rv, 2) }} · {{ $orders[$i] ?? 0 }} ออเดอร์">
+                                <div class="stack"><div class="bar a" style="height:{{ max(2, $rv / $revMax * 100) }}%; width:70%; {{ $rv > 0 ? '' : 'opacity:.25;' }}"></div></div>
+                                <div class="lbl">{{ $i % max(1, (int) ceil(count($dates) / 8)) === 0 ? $d : '' }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            <div class="tp-card">
+                <div class="tp-section-h">👁️ การเข้าชม vs ผู้เยี่ยมชมไม่ซ้ำ</div>
+                <div style="overflow-x:auto; margin-top:14px;">
+                    <div class="tp-bars" style="height:180px; gap:4px; min-width:{{ max(300, count($dates) * 22) }}px;">
+                        @foreach($dates as $i => $d)
+                            <div class="col" title="{{ $d }} · เข้าชม {{ number_format($views[$i] ?? 0) }} · ไม่ซ้ำ {{ number_format($visitors[$i] ?? 0) }}">
+                                <div class="stack">
+                                    <div class="bar a" style="height:{{ max(2, ($views[$i] ?? 0) / $viewMax * 100) }}%;"></div>
+                                    <div class="bar b" style="height:{{ max(2, ($visitors[$i] ?? 0) / $viewMax * 100) }}%;"></div>
+                                </div>
+                                <div class="lbl">{{ $i % max(1, (int) ceil(count($dates) / 8)) === 0 ? $d : '' }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div style="display:flex; gap:14px; font-size:11.5px; color:var(--ink2); margin-top:8px;">
+                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--accent1);"></span> การเข้าชม</span>
+                    <span><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--accent2);"></span> ผู้เยี่ยมชมไม่ซ้ำ</span>
+                </div>
+            </div>
         </div>
+    @endif
 
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">มูลค่าเฉลี่ยต่อออเดอร์</h3>
-            <div class="text-4xl font-bold text-green-600">฿{{ number_format($summary['avg_order_value'], 2) }}</div>
-            <p class="text-sm text-gray-600 mt-2">ค่าเฉลี่ยต่อครั้งที่สั่งซื้อ</p>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">อัตราตีกลับ</h3>
-            <div class="text-4xl font-bold text-orange-600">{{ number_format($summary['avg_bounce_rate'], 2) }}%</div>
-            <p class="text-sm text-gray-600 mt-2">ผู้เยี่ยมชมที่ออกทันที</p>
-        </div>
-    </div>
-
-    <!-- Charts -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">📈 กราฟแสดงข้อมูล</h2>
-
-        <div class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-700 mb-4">การเข้าชมและผู้เยี่ยมชม</h3>
-            <canvas id="visitorChart" height="80"></canvas>
-        </div>
-
-        <div class="mb-8">
-            <h3 class="text-lg font-semibold text-gray-700 mb-4">ออเดอร์และรายได้</h3>
-            <canvas id="revenueChart" height="80"></canvas>
-        </div>
-    </div>
-
-    <!-- Daily Analytics Table -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">📅 ข้อมูลรายวัน</h2>
-
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การเข้าชม</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ผู้เยี่ยมชม</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ออเดอร์</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รายได้</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อัตราแปลง</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($dailyAnalytics as $day)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ \Carbon\Carbon::parse($day->date)->format('d M Y') }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ number_format($day->page_views) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ number_format($day->unique_visitors) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ number_format($day->orders_count) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ฿{{ number_format($day->total_sales, 2) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                {{ $day->conversion_rate >= 5 ? 'bg-green-100 text-green-800' : ($day->conversion_rate >= 2 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                {{ number_format($day->conversion_rate, 2) }}%
-                            </span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                            ยังไม่มีข้อมูล - ข้อมูลจะถูกรวบรวมโดยอัตโนมัติทุกวัน
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+    {{-- ตารางรายวัน --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div class="tp-section-h" style="padding:16px 18px;">📅 ข้อมูลรายวัน</div>
+        @if($dailyAnalytics->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:640px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="{{ $th }}">วันที่</th>
+                            <th style="{{ $th }} text-align:right;">การเข้าชม</th>
+                            <th style="{{ $th }} text-align:right;">ผู้เยี่ยมชม</th>
+                            <th style="{{ $th }} text-align:right;">ออเดอร์</th>
+                            <th style="{{ $th }} text-align:right;">รายได้</th>
+                            <th style="{{ $th }} text-align:center;">อัตราแปลง</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($dailyAnalytics as $day)
+                            <tr style="{{ $row }}">
+                                <td style="{{ $td }}" class="tp-num">{{ \Carbon\Carbon::parse($day->date)->format('d/m/Y') }}</td>
+                                <td style="{{ $td }} text-align:right;" class="tp-num">{{ number_format((int) $day->page_views) }}</td>
+                                <td style="{{ $td }} text-align:right;" class="tp-num">{{ number_format((int) $day->unique_visitors) }}</td>
+                                <td style="{{ $td }} text-align:right;" class="tp-num">{{ number_format((int) $day->orders_count) }}</td>
+                                <td style="{{ $td }} text-align:right; font-weight:800;" class="tp-num">฿{{ number_format((float) $day->total_sales, 2) }}</td>
+                                <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$convTone((float) $day->conversion_rate)">{{ number_format((float) $day->conversion_rate, 2) }}%</x-seller-kit.pill></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <x-seller-kit.empty icon="📅" title="ยังไม่มีข้อมูลรายวัน" text="ระบบรวบรวมสถิติของเมื่อวานทุกคืน (ตี 1:20) เมื่อร้านมีผู้เข้าชมหรือออเดอร์ ตารางนี้จะเริ่มมีข้อมูล" />
+        @endif
     </div>
 </div>
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Visitor Chart
-    const visitorCtx = document.getElementById('visitorChart').getContext('2d');
-    new Chart(visitorCtx, {
-        type: 'line',
-        data: {
-            labels: @json($chartData['dates']),
-            datasets: [
-                {
-                    label: 'การเข้าชม',
-                    data: @json($chartData['page_views']),
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4
-                },
-                {
-                    label: 'ผู้เยี่ยมชมไม่ซ้ำ',
-                    data: @json($chartData['unique_visitors']),
-                    borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    tension: 0.4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(revenueCtx, {
-        type: 'bar',
-        data: {
-            labels: @json($chartData['dates']),
-            datasets: [
-                {
-                    label: 'ออเดอร์',
-                    data: @json($chartData['orders']),
-                    backgroundColor: 'rgba(251, 191, 36, 0.8)',
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'รายได้ (฿)',
-                    data: @json($chartData['revenue']),
-                    backgroundColor: 'rgba(147, 51, 234, 0.8)',
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
-            },
-            scales: {
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'ออเดอร์'
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'รายได้ (฿)'
-                    },
-                    grid: {
-                        drawOnChartArea: false,
-                    }
-                }
-            }
-        }
-    });
-</script>
-@endpush
 @endsection

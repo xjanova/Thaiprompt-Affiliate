@@ -1,274 +1,201 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'จัดการ POS Terminal')
+@section('title', 'เครื่อง POS (Desktop)')
+
+@php
+    $posCtl = \App\Http\Controllers\Seller\SellerPosController::class;
+    // สถานะ API Key → โทนสี
+    $keyTone = function ($k) {
+        if (! $k->is_active) {
+            return 'muted';
+        }
+        if ($k->is_blocked) {
+            return 'bad';
+        }
+        if ($k->expires_at && $k->expires_at->isPast()) {
+            return 'warn';
+        }
+
+        return 'ok';
+    };
+    $mask = fn ($key) => $key ? substr($key, 0, 6).'••••••'.substr($key, -4) : '—';
+    $th = 'padding:11px 14px; text-align:left; font-size:10.5px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink);';
+    $row = 'border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);';
+    $newKey = session('new_api_key');
+@endphp
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🖥️ จัดการ POS Terminal</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">ลงทะเบียนและจัดการ POS Desktop App</p>
-        </div>
-        <a href="{{ route('seller.pos.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-            ← กลับ
-        </a>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <x-seller-kit.header title="เครื่อง POS (Desktop / แท็บเล็ต)" icon="🖥️" crumb="ร้านค้า · POS"
+                         subtitle="สร้าง API Key เพื่อเชื่อมโปรแกรม POS บนเครื่องหน้าร้านเข้ากับร้านของคุณ" />
+
+    @include('seller.pos.partials.nav')
+
+    <x-seller-kit.errors />
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px;">
+        <x-seller-kit.stat label="API Key ทั้งหมด" :value="number_format($stats['total_api_keys'])" icon="🔑" tone="info" />
+        <x-seller-kit.stat label="Key ใช้งานได้" :value="number_format($stats['active_api_keys'])" icon="✅" tone="ok" />
+        <x-seller-kit.stat label="เครื่องที่ลงทะเบียน" :value="number_format($stats['total_terminals'])" icon="🖥️" tone="violet" />
+        <x-seller-kit.stat label="เครื่องที่เปิดใช้" :value="number_format($stats['active_terminals'])" icon="⚡" tone="gold" />
+        <x-seller-kit.stat label="ออนไลน์ตอนนี้" :value="number_format($stats['online_terminals'])" icon="📡" tone="ok" hint="เห็นเครื่องภายใน 10 นาที" />
     </div>
 
-    <!-- Statistics -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div class="bg-blue-500 rounded-lg p-4 text-white">
-            <div class="text-2xl font-bold">{{ $stats['total_api_keys'] }}</div>
-            <div class="text-sm opacity-80">API Keys ทั้งหมด</div>
-        </div>
-        <div class="bg-green-500 rounded-lg p-4 text-white">
-            <div class="text-2xl font-bold">{{ $stats['active_api_keys'] }}</div>
-            <div class="text-sm opacity-80">API Keys ใช้งานได้</div>
-        </div>
-        <div class="bg-purple-500 rounded-lg p-4 text-white">
-            <div class="text-2xl font-bold">{{ $stats['total_terminals'] }}</div>
-            <div class="text-sm opacity-80">Terminals ทั้งหมด</div>
-        </div>
-        <div class="bg-orange-500 rounded-lg p-4 text-white">
-            <div class="text-2xl font-bold">{{ $stats['active_terminals'] }}</div>
-            <div class="text-sm opacity-80">Terminals ใช้งาน</div>
-        </div>
-        <div class="bg-cyan-500 rounded-lg p-4 text-white">
-            <div class="text-2xl font-bold">{{ $stats['online_terminals'] }}</div>
-            <div class="text-sm opacity-80">Terminals ออนไลน์</div>
-        </div>
-    </div>
-
-    <!-- Store Info -->
-    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <div class="flex items-center gap-3">
-            <span class="text-2xl">🏪</span>
-            <div>
-                <div class="font-bold text-blue-900 dark:text-blue-100">{{ $store->name }}</div>
-                <div class="text-sm text-blue-700 dark:text-blue-300">
-                    รหัสร้าน: <code class="bg-blue-200 dark:bg-blue-800 px-2 py-0.5 rounded">{{ $store->shop_code ?? $store->id }}</code>
+    {{-- API Key ใหม่ (แสดงครั้งเดียวหลังสร้าง) --}}
+    @if($newKey)
+        <div class="tp-card" x-data="{ copied: false }" style="border-left:4px solid var(--tp-ok, #5aa07e);">
+            <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+                <span class="tp-tile" style="width:44px; height:44px; font-size:20px;" aria-hidden="true">🔑</span>
+                <div style="flex:1; min-width:220px;">
+                    <div class="tp-section-h">สร้าง API Key ใหม่สำเร็จ</div>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">คัดลอกไปวางในโปรแกรม POS ตอนนี้เลย — เพื่อความปลอดภัย Key เต็มจะแสดงเฉพาะครั้งนี้</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; align-items:center;">
+                        <code class="tp-inset-sm tp-num" style="padding:10px 14px; border-radius:12px; font-size:13px; overflow-wrap:anywhere; user-select:all;">{{ $newKey }}</code>
+                        <button type="button" class="tp-btn tp-btn-primary tp-btn-sm"
+                                @click="navigator.clipboard.writeText(@js($newKey)).then(() => { copied = true; window.showNotification('คัดลอก API Key แล้ว', 'success'); })">
+                            <span x-text="copied ? '✓ คัดลอกแล้ว' : '📋 คัดลอก'"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- New API Key Alert -->
-    @if(session('new_api_key'))
-    <div class="bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-lg p-4">
-        <div class="flex items-start gap-3">
-            <span class="text-2xl">🔑</span>
-            <div class="flex-1">
-                <div class="font-bold text-green-800 dark:text-green-200">API Key ใหม่สร้างสำเร็จ!</div>
-                <p class="text-sm text-green-700 dark:text-green-300 mt-1">คัดลอก Key นี้ไปใส่ในโปรแกรม POS (จะแสดงครั้งเดียว)</p>
-                <div class="mt-2 flex items-center gap-2">
-                    <code id="newApiKey" class="bg-green-200 dark:bg-green-800 px-3 py-2 rounded font-mono text-sm select-all">{{ session('new_api_key') }}</code>
-                    <button onclick="copyApiKey()" class="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
-                        📋 คัดลอก
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
     @endif
 
-    <!-- Create API Key Section -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">➕ สร้าง API Key ใหม่</h3>
-        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
-            สร้าง API Key เพื่อลงทะเบียน POS Terminal ใหม่ นำ Key ไปกรอกในโปรแกรม POS Desktop
-        </p>
-        <form action="{{ route('seller.pos.api-keys.store') }}" method="POST" class="flex gap-4 items-end">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px;">
+        {{-- สร้าง API Key --}}
+        <form method="POST" action="{{ route('seller.pos.api-keys.store') }}" class="tp-card" style="display:flex; flex-direction:column; gap:12px;"
+              x-data="{ busy: false }" @submit="busy = true">
             @csrf
-            <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อ (ไม่บังคับ)</label>
-                <input type="text" name="name" placeholder="เช่น เครื่องหน้าร้าน, แคชเชียร์ 1"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white">
+            <div class="tp-section-h">➕ สร้าง API Key ใหม่</div>
+            <div>
+                <label for="k-name" style="font-size:12.5px; font-weight:700;">ชื่อเรียก (ไม่บังคับ)</label>
+                <input id="k-name" type="text" name="name" maxlength="255" value="{{ old('name') }}" placeholder="เช่น เครื่องหน้าร้าน, แคชเชียร์ 1" class="tp-input" style="margin-top:6px;">
             </div>
-            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                🔑 สร้าง API Key
-            </button>
+            <div>
+                <label for="k-desc" style="font-size:12.5px; font-weight:700;">รายละเอียด (ไม่บังคับ)</label>
+                <input id="k-desc" type="text" name="description" maxlength="500" value="{{ old('description') }}" class="tp-input" style="margin-top:6px;">
+            </div>
+            <button type="submit" class="tp-btn tp-btn-primary" :disabled="busy" :style="{ opacity: busy ? .6 : 1 }">🔑 สร้าง API Key</button>
         </form>
-    </div>
 
-    <!-- API Keys List -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">🔑 API Keys ของร้าน</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ชื่อ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">API Key</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Terminals</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ใช้งานล่าสุด</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($apiKeys as $apiKey)
-                    <tr>
-                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
-                            {{ $apiKey->name ?? 'ไม่ระบุชื่อ' }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-mono">
-                                {{ substr($apiKey->key, 0, 12) }}...
-                            </code>
-                            <button onclick="copyToClipboard('{{ $apiKey->key }}')" class="ml-1 text-blue-600 hover:text-blue-800 text-xs">📋</button>
-                        </td>
-                        <td class="px-4 py-3">
-                            <span class="px-2 py-1 text-xs rounded-full {{ $apiKey->getStatusBadgeClass() }}">
-                                {{ $apiKey->getStatusText() }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                            {{ $apiKey->terminals->count() }} เครื่อง
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            {{ $apiKey->last_used_at?->diffForHumans() ?? 'ยังไม่เคยใช้' }}
-                        </td>
-                        <td class="px-4 py-3 text-sm">
-                            <div class="flex gap-2">
-                                <form action="{{ route('seller.pos.api-keys.toggle-block', $apiKey) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="text-{{ $apiKey->is_blocked ? 'green' : 'orange' }}-600 hover:underline text-xs">
-                                        {{ $apiKey->is_blocked ? '✅ ปลดบล็อก' : '⛔ บล็อก' }}
-                                    </button>
-                                </form>
-                                <form action="{{ route('seller.pos.api-keys.destroy', $apiKey) }}" method="POST" class="inline"
-                                    onsubmit="return confirm('ลบ API Key นี้?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline text-xs">🗑️ ลบ</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                            ยังไม่มี API Key - กดปุ่ม "สร้าง API Key" เพื่อเริ่มต้น
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        {{-- วิธีเชื่อมเครื่อง --}}
+        <div class="tp-card" style="background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 14%, transparent), transparent 70%);">
+            <div class="tp-section-h">📖 วิธีเชื่อมโปรแกรม POS</div>
+            <ol style="margin:10px 0 0; padding-left:20px; font-size:13px; line-height:1.9;">
+                <li>กด “สร้าง API Key” แล้วคัดลอก Key ที่ได้</li>
+                <li>เปิดโปรแกรม POS แล้ววาง Key ในช่อง API Key</li>
+                <li>รหัสร้าน: <code class="tp-inset-sm tp-num" style="padding:2px 8px; border-radius:8px;">{{ $store->id }}</code></li>
+                <li>Server URL: <code class="tp-inset-sm" style="padding:2px 8px; border-radius:8px; overflow-wrap:anywhere;">{{ config('app.url') }}</code></li>
+                <li>กด Activate — เครื่องจะขึ้นในตารางด้านล่าง</li>
+            </ol>
         </div>
     </div>
 
-    <!-- Terminals List -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-lg font-bold text-gray-900 dark:text-white">🖥️ POS Terminals ที่ลงทะเบียนแล้ว</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Device</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Product Key</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ออนไลน์</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Sync ล่าสุด</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($terminals as $terminal)
-                    <tr>
-                        <td class="px-4 py-3">
-                            <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                {{ $terminal->device_name ?? 'Unknown Device' }}
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $terminal->device_model }} • {{ $terminal->platform }}
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <code class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs font-mono">
-                                {{ $terminal->product_key }}
-                            </code>
-                        </td>
-                        <td class="px-4 py-3">
-                            @if($terminal->status === 'active')
-                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                ใช้งาน
-                            </span>
-                            @else
-                            <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                ปิด
-                            </span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3">
-                            @if($terminal->is_online)
-                            <span class="flex items-center gap-1 text-green-600">
-                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> ออนไลน์
-                            </span>
-                            @else
-                            <span class="flex items-center gap-1 text-gray-500">
-                                <span class="w-2 h-2 bg-gray-400 rounded-full"></span> ออฟไลน์
-                            </span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                            {{ $terminal->last_sync_at?->diffForHumans() ?? 'ยังไม่เคย' }}
-                        </td>
-                        <td class="px-4 py-3 text-sm">
-                            <div class="flex gap-2">
-                                <form action="{{ route('seller.pos.terminals.toggle-status', $terminal) }}" method="POST" class="inline">
-                                    @csrf
-                                    <button type="submit" class="text-{{ $terminal->status === 'active' ? 'orange' : 'green' }}-600 hover:underline text-xs">
-                                        {{ $terminal->status === 'active' ? '⏸️ ปิด' : '▶️ เปิด' }}
-                                    </button>
-                                </form>
-                                <form action="{{ route('seller.pos.terminals.destroy', $terminal) }}" method="POST" class="inline"
-                                    onsubmit="return confirm('ลบ Terminal นี้?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline text-xs">🗑️ ลบ</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                            ยังไม่มี Terminal ลงทะเบียน
-                        </td>
-                    </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+    {{-- ตาราง API Keys --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div class="tp-section-h" style="padding:16px 18px;">🔑 API Keys ของร้าน</div>
+        @if($apiKeys->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:760px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="{{ $th }}">ชื่อ</th>
+                            <th style="{{ $th }}">API Key</th>
+                            <th style="{{ $th }} text-align:center;">สถานะ</th>
+                            <th style="{{ $th }} text-align:center;">เครื่อง</th>
+                            <th style="{{ $th }}">ใช้ล่าสุด</th>
+                            <th style="{{ $th }} text-align:right;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($apiKeys as $apiKey)
+                            <tr style="{{ $row }}">
+                                <td style="{{ $td }}">
+                                    <a href="{{ route('seller.pos.api-keys.show', $apiKey) }}" style="font-weight:700; color:var(--ink); text-decoration:none;">{{ $apiKey->name ?: 'ไม่ระบุชื่อ' }}</a>
+                                    @if($apiKey->description)<div style="font-size:11px; color:var(--ink2);">{{ \Illuminate\Support\Str::limit($apiKey->description, 50) }}</div>@endif
+                                </td>
+                                <td style="{{ $td }}"><code class="tp-num" style="font-size:12px;">{{ $mask($apiKey->key) }}</code></td>
+                                <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$keyTone($apiKey)">{{ $apiKey->getStatusText() }}</x-seller-kit.pill></td>
+                                <td style="{{ $td }} text-align:center;" class="tp-num">{{ $apiKey->terminals->count() }}</td>
+                                <td style="{{ $td }} color:var(--ink2);">{{ $apiKey->last_used_at?->diffForHumans() ?? 'ยังไม่เคยใช้' }}</td>
+                                <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                    <a href="{{ route('seller.pos.api-keys.show', $apiKey) }}" class="tp-btn tp-btn-sm">ดู</a>
+                                    <form method="POST" action="{{ route('seller.pos.api-keys.toggle-block', $apiKey) }}" style="display:inline;"
+                                          onsubmit="return confirm('{{ $apiKey->is_blocked ? 'ปลดบล็อก API Key นี้?' : 'บล็อก API Key นี้? เครื่องที่ใช้ Key นี้จะซิงก์ไม่ได้ทันที' }}');">
+                                        @csrf
+                                        <button type="submit" class="tp-btn tp-btn-sm" style="color:{{ $apiKey->is_blocked ? 'var(--tp-ok, #4f9a74)' : 'var(--tp-warn, #c98a1b)' }};">{{ $apiKey->is_blocked ? '✅ ปลดบล็อก' : '⛔ บล็อก' }}</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('seller.pos.api-keys.destroy', $apiKey) }}" style="display:inline;"
+                                          onsubmit="return confirm('ลบ API Key นี้? เครื่อง POS ที่ผูกกับ Key นี้จะถูกลบด้วย');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="tp-btn tp-btn-sm" style="color:var(--tp-bad, #d9534f);">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <x-seller-kit.empty icon="🔑" title="ยังไม่มี API Key" text="สร้าง Key แรกด้านบนเพื่อเชื่อมโปรแกรม POS" />
+        @endif
     </div>
 
-    <!-- Instructions -->
-    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-        <h4 class="font-bold text-yellow-800 dark:text-yellow-200 mb-2">📖 วิธีใช้งาน</h4>
-        <ol class="text-sm text-yellow-700 dark:text-yellow-300 space-y-1 list-decimal list-inside">
-            <li>กดปุ่ม <strong>"สร้าง API Key"</strong> เพื่อสร้าง Key ใหม่</li>
-            <li>คัดลอก <strong>API Key</strong> ที่ได้ไปใส่ในโปรแกรม POS Desktop</li>
-            <li>กรอก <strong>รหัสร้าน</strong>: <code class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">{{ $store->shop_code ?? $store->id }}</code></li>
-            <li>กรอก <strong>Server URL</strong>: <code class="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">{{ config('app.url') }}</code></li>
-            <li>กด <strong>Activate</strong> ในโปรแกรม POS</li>
-        </ol>
+    {{-- ตารางเครื่อง POS --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div class="tp-section-h" style="padding:16px 18px;">🖥️ เครื่อง POS ที่ลงทะเบียนแล้ว</div>
+        @if($terminals->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:760px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="{{ $th }}">เครื่อง</th>
+                            <th style="{{ $th }}">Product Key</th>
+                            <th style="{{ $th }} text-align:center;">สถานะ</th>
+                            <th style="{{ $th }} text-align:center;">ออนไลน์</th>
+                            <th style="{{ $th }}">ซิงก์ล่าสุด</th>
+                            <th style="{{ $th }} text-align:right;">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($terminals as $terminal)
+                            @php
+                                $tActive = $posCtl::terminalIsActive($terminal);
+                                $tOnline = $posCtl::terminalIsOnline($terminal);
+                            @endphp
+                            <tr style="{{ $row }}">
+                                <td style="{{ $td }}">
+                                    <a href="{{ route('seller.pos.terminals.show', $terminal) }}" style="font-weight:700; color:var(--ink); text-decoration:none;">{{ $terminal->terminal_name ?? $terminal->device_name ?? 'POS Terminal' }}</a>
+                                    <div style="font-size:11px; color:var(--ink2);">{{ trim(($terminal->device_model ?? '').' · '.($terminal->platform ?? ''), ' ·') ?: '—' }}</div>
+                                </td>
+                                <td style="{{ $td }}"><code class="tp-num" style="font-size:12px;">{{ $terminal->product_key }}</code></td>
+                                <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$tActive ? 'ok' : 'muted'">{{ $tActive ? 'เปิดใช้' : 'ปิดอยู่' }}</x-seller-kit.pill></td>
+                                <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$tOnline ? 'ok' : 'muted'">{{ $tOnline ? '● ออนไลน์' : '○ ออฟไลน์' }}</x-seller-kit.pill></td>
+                                <td style="{{ $td }} color:var(--ink2);">{{ $terminal->last_sync_at?->diffForHumans() ?? 'ยังไม่เคย' }}</td>
+                                <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                    <a href="{{ route('seller.pos.terminals.show', $terminal) }}" class="tp-btn tp-btn-sm">ดู</a>
+                                    <form method="POST" action="{{ route('seller.pos.terminals.toggle-status', $terminal) }}" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="tp-btn tp-btn-sm">{{ $tActive ? '⏸️ ปิด' : '▶️ เปิด' }}</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('seller.pos.terminals.destroy', $terminal) }}" style="display:inline;"
+                                          onsubmit="return confirm('ลบเครื่อง POS นี้ออกจากร้าน?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="tp-btn tp-btn-sm" style="color:var(--tp-bad, #d9534f);">🗑️</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <x-seller-kit.empty icon="🖥️" title="ยังไม่มีเครื่อง POS ลงทะเบียน" text="เมื่อกรอก API Key ในโปรแกรม POS แล้ว เครื่องจะขึ้นที่นี่โดยอัตโนมัติ" />
+        @endif
     </div>
 </div>
-
-<script>
-function copyApiKey() {
-    const key = document.getElementById('newApiKey').textContent;
-    navigator.clipboard.writeText(key);
-    alert('คัดลอก API Key แล้ว!');
-}
-
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text);
-    alert('คัดลอกแล้ว!');
-}
-</script>
 @endsection

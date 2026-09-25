@@ -1,375 +1,270 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'เริ่มต้นใช้งานร้านค้า')
+@section('title', 'เริ่มต้นเปิดร้านค้า')
+
+@push('styles')
+    @include('seller.partials.v4-styles')
+@endpush
+
+@php
+    use App\Support\Seller\SellerUi;
+
+    $subscriptionService = app(\App\Services\VendorSubscriptionService::class);
+    $gpPromoActive = app(\App\Services\Pricing\PricingEngine::class)->gpPromoActive();
+    $supportEmail = \App\Support\ContactInfo::supportEmail();
+    $steps = [1 => ['🪪', 'ยืนยันตัวตน'], 2 => ['🏪', 'ตั้งค่าร้าน & แพ็กเกจ'], 3 => ['🚀', 'พร้อมขาย']];
+    $packageCards = $packages->map(fn ($p) => [
+        'id' => (int) $p->id,
+        'free' => $subscriptionService->isFree($p),
+        'custom' => $subscriptionService->isCustomPricing($p),
+        'yearly' => $p->yearly_price !== null && (float) $p->yearly_price > 0,
+    ])->values();
+    $onboardingConfig = [
+        'storeName' => $store?->store_name ?? '',
+        'hasStore' => (bool) $store,
+        'packages' => $packageCards,
+    ];
+@endphp
 
 @section('content')
-<div class="max-w-5xl mx-auto px-4 py-8 space-y-8 pb-24 lg:pb-8">
-    {{-- Header --}}
-    <div class="text-center">
-        <h1 class="text-3xl font-bold text-white mb-2">
-            <i class="fas fa-store mr-3"></i>เริ่มต้นใช้งานร้านค้าของคุณ
-        </h1>
-        <p class="text-gray-200">ทำตามขั้นตอนง่ายๆ เพื่อเปิดร้านค้าและเริ่มขายสินค้า</p>
-    </div>
+<div class="sv4-page" style="max-width:1100px; margin-inline:auto; width:100%;">
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="bg-green-500/20 backdrop-blur-sm border border-green-400/30 text-white rounded-xl p-4">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
-        </div>
-    @endif
+    <x-seller-v4.header title="เริ่มต้นเปิดร้านค้า" subtitle="3 ขั้นตอนง่ายๆ ก็เริ่มขายสินค้าได้" icon="🏪" crumb="แผงผู้ขาย" />
 
-    @if(session('error'))
-        <div class="bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-white rounded-xl p-4">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
-        </div>
-    @endif
+    <x-seller-v4.errors />
 
-    @if(session('warning'))
-        <div class="bg-yellow-500/20 backdrop-blur-sm border border-yellow-400/30 text-white rounded-xl p-4">
-            <i class="fas fa-exclamation-triangle mr-2"></i>{{ session('warning') }}
-        </div>
-    @endif
-
-    @if(session('info'))
-        <div class="bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 text-white rounded-xl p-4">
-            <i class="fas fa-info-circle mr-2"></i>{{ session('info') }}
-        </div>
-    @endif
-
-    {{-- Stepper Progress --}}
-    <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20">
-        <div class="flex items-center justify-between">
-            {{-- Step 1: KYC --}}
-            <div class="flex-1 flex flex-col items-center">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300
-                    {{ $currentStep >= 1 ? ($currentStep > 1 ? 'bg-green-500 text-white' : 'bg-purple-600 text-white ring-4 ring-purple-300') : 'bg-gray-600 text-gray-300' }}">
-                    @if($currentStep > 1)
-                        <i class="fas fa-check"></i>
-                    @else
-                        1
-                    @endif
+    {{-- ขั้นตอน --}}
+    <div class="tp-card" style="padding:18px 20px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+            @foreach($steps as $n => [$icon, $label])
+                @php
+                    $done = $currentStep > $n || ($n === 3 && $currentStep >= 3);
+                    $active = $currentStep === $n;
+                @endphp
+                <div style="display:flex; flex-direction:column; align-items:center; gap:6px; flex:0 0 auto; min-width:70px;">
+                    <span style="width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-size:18px; font-weight:800;
+                        {{ $done ? 'color:var(--tp-on-accent, #fff); background:' . SellerUi::OK . ';' : ($active ? 'color:var(--tp-on-accent, #fff); background:linear-gradient(135deg, var(--accent1), var(--accent2)); box-shadow:var(--raise);' : 'color:var(--ink2); box-shadow:var(--inset-sm);') }}">
+                        {{ $done ? '✓' : $icon }}
+                    </span>
+                    <span style="font-size:11.5px; font-weight:700; text-align:center; color:{{ $active || $done ? 'var(--ink)' : 'var(--ink2)' }};">{{ $label }}</span>
                 </div>
-                <span class="mt-2 text-sm font-medium {{ $currentStep >= 1 ? 'text-white' : 'text-gray-400' }}">ยืนยันตัวตน</span>
-            </div>
-
-            <div class="flex-1 h-1 rounded-full mx-2 {{ $currentStep > 1 ? 'bg-green-500' : 'bg-gray-600' }}"></div>
-
-            {{-- Step 2: เลือก Package --}}
-            <div class="flex-1 flex flex-col items-center">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300
-                    {{ $currentStep >= 2 ? ($currentStep > 2 ? 'bg-green-500 text-white' : 'bg-purple-600 text-white ring-4 ring-purple-300') : 'bg-gray-600 text-gray-300' }}">
-                    @if($currentStep > 2)
-                        <i class="fas fa-check"></i>
-                    @else
-                        2
-                    @endif
-                </div>
-                <span class="mt-2 text-sm font-medium {{ $currentStep >= 2 ? 'text-white' : 'text-gray-400' }}">ตั้งค่าร้าน</span>
-            </div>
-
-            <div class="flex-1 h-1 rounded-full mx-2 {{ $currentStep > 2 ? 'bg-green-500' : 'bg-gray-600' }}"></div>
-
-            {{-- Step 3: เสร็จสิ้น --}}
-            <div class="flex-1 flex flex-col items-center">
-                <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300
-                    {{ $currentStep >= 3 ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-300' }}">
-                    @if($currentStep >= 3)
-                        <i class="fas fa-check"></i>
-                    @else
-                        3
-                    @endif
-                </div>
-                <span class="mt-2 text-sm font-medium {{ $currentStep >= 3 ? 'text-white' : 'text-gray-400' }}">พร้อมใช้งาน</span>
-            </div>
+                @if(! $loop->last)
+                    <span style="flex:1; height:4px; border-radius:4px; margin-bottom:20px; background:{{ $currentStep > $n ? SellerUi::OK : 'color-mix(in srgb, var(--ink2) 20%, transparent)' }};"></span>
+                @endif
+            @endforeach
         </div>
     </div>
 
-    {{-- Step Content --}}
     @if($currentStep == 1)
-        {{-- Step 1: KYC Verification --}}
-        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-            <div class="text-center mb-8">
-                <div class="w-24 h-24 mx-auto mb-4 bg-purple-500/20 rounded-full flex items-center justify-center ring-4 ring-purple-400/30">
-                    <i class="fas fa-id-card text-4xl text-purple-300"></i>
-                </div>
-                <h2 class="text-2xl font-bold text-white mb-2">ยืนยันตัวตน (KYC)</h2>
-                <p class="text-gray-300">เพื่อความปลอดภัยและความน่าเชื่อถือ กรุณายืนยันตัวตนก่อนเปิดร้านค้า</p>
-            </div>
+        {{-- ── ขั้นที่ 1: KYC ─────────────────────────────────── --}}
+        <div class="tp-card" style="padding:26px 22px; text-align:center;">
+            <span class="tp-tile" style="width:74px; height:74px; border-radius:22px; font-size:34px; margin:0 auto;">🪪</span>
+            <h2 style="font-size:20px; font-weight:800; margin:14px 0 4px;">ยืนยันตัวตน (KYC)</h2>
+            <div style="font-size:13px; color:var(--ink2);">เพื่อความปลอดภัยของผู้ซื้อและร้านค้า กรุณายืนยันตัวตนก่อนเปิดร้าน</div>
 
             @if($kycStatus['status'] === 'pending')
-                {{-- รอการตรวจสอบ --}}
-                <div class="text-center py-6">
-                    <div class="inline-flex items-center px-6 py-3 bg-yellow-500/20 border border-yellow-400/30 text-yellow-200 rounded-full font-bold mb-4">
-                        <i class="fas fa-hourglass-half mr-2 animate-pulse"></i>
-                        กำลังรอตรวจสอบเอกสาร
-                    </div>
-                    <p class="text-gray-300 mb-6">ทีมงานกำลังตรวจสอบเอกสารของคุณ โปรดรอ 1-3 วันทำการ</p>
-
-                    @if($kycStatus['latest_submission'])
-                        <div class="bg-white/5 rounded-xl p-4 max-w-md mx-auto mb-4">
-                            <div class="flex justify-between items-center text-sm">
-                                <span class="text-gray-400">วันที่ส่ง:</span>
-                                <span class="text-white font-medium">
-                                    {{ $kycStatus['latest_submission']->submitted_at ? $kycStatus['latest_submission']->submitted_at->format('d/m/Y H:i') : '-' }}
-                                </span>
-                            </div>
-                        </div>
+                <div style="margin-top:18px;">
+                    <span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::WARN) }} font-size:13px; padding:8px 14px;">⏳ กำลังรอตรวจสอบเอกสาร</span>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:10px;">ทีมงานตรวจสอบภายใน 1–3 วันทำการ</div>
+                    @if($kycStatus['latest_submission'] && $kycStatus['latest_submission']->submitted_at)
+                        <div class="sv4-hint">ส่งเอกสารเมื่อ {{ $kycStatus['latest_submission']->submitted_at->format('d/m/Y H:i') }}</div>
                     @endif
-
-                    <a href="{{ route('user.kyc.index') }}"
-                       class="inline-flex items-center px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl transition">
-                        <i class="fas fa-eye mr-2"></i>ดูสถานะ KYC
-                    </a>
+                    <a href="{{ route('user.kyc.index') }}" class="tp-btn" style="margin-top:14px;">👁️ ดูสถานะ KYC</a>
                 </div>
-
             @elseif($kycStatus['status'] === 'rejected')
-                {{-- ถูกปฏิเสธ --}}
-                <div class="text-center py-6">
-                    <div class="inline-flex items-center px-6 py-3 bg-red-500/20 border border-red-400/30 text-red-200 rounded-full font-bold mb-4">
-                        <i class="fas fa-times-circle mr-2"></i>
-                        ไม่ผ่านการตรวจสอบ
-                    </div>
-
+                <div style="margin-top:18px;">
+                    <span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::BAD) }} font-size:13px; padding:8px 14px;">✕ เอกสารไม่ผ่านการตรวจสอบ</span>
                     @if($kycStatus['latest_submission'] && $kycStatus['latest_submission']->rejection_reason)
-                        <div class="bg-red-500/10 border border-red-400/30 rounded-xl p-4 max-w-md mx-auto mb-6">
-                            <p class="text-sm text-red-200">
-                                <i class="fas fa-exclamation-circle mr-2"></i>
-                                <strong>เหตุผล:</strong> {{ $kycStatus['latest_submission']->rejection_reason }}
-                            </p>
+                        <div class="sv4-note" style="--c:{{ SellerUi::BAD }}; margin:12px auto 0; max-width:460px; text-align:left;">
+                            <b>เหตุผล:</b> {{ $kycStatus['latest_submission']->rejection_reason }}
                         </div>
                     @endif
-
-                    <a href="{{ route('user.kyc.create') }}"
-                       class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-bold text-lg transition shadow-lg">
-                        <i class="fas fa-redo mr-3"></i>ส่งเอกสารใหม่
-                    </a>
+                    <a href="{{ route('user.kyc.create') }}" class="tp-btn tp-btn-primary" style="margin-top:14px; height:46px;">🔄 ส่งเอกสารใหม่</a>
                 </div>
-
             @else
-                {{-- ยังไม่ได้ส่ง KYC --}}
-                <div class="text-center py-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-8">
-                        <div class="bg-white/5 rounded-xl p-4">
-                            <i class="fas fa-shield-alt text-2xl text-purple-400 mb-2"></i>
-                            <p class="text-sm text-gray-300">ปลอดภัย 100%</p>
-                        </div>
-                        <div class="bg-white/5 rounded-xl p-4">
-                            <i class="fas fa-clock text-2xl text-purple-400 mb-2"></i>
-                            <p class="text-sm text-gray-300">ตรวจสอบภายใน 1-3 วัน</p>
-                        </div>
-                        <div class="bg-white/5 rounded-xl p-4">
-                            <i class="fas fa-lock text-2xl text-purple-400 mb-2"></i>
-                            <p class="text-sm text-gray-300">ข้อมูลเป็นความลับ</p>
-                        </div>
-                    </div>
-
-                    <a href="{{ route('user.kyc.create') }}"
-                       class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold text-lg transition shadow-lg">
-                        <i class="fas fa-upload mr-3"></i>เริ่มยืนยันตัวตน
-                    </a>
+                <div class="sv4-grid" style="max-width:620px; margin:18px auto 0;">
+                    <div class="sv4-well">🛡️<div style="font-size:12.5px; margin-top:4px;">ข้อมูลปลอดภัย เข้ารหัส</div></div>
+                    <div class="sv4-well">⏱️<div style="font-size:12.5px; margin-top:4px;">ตรวจภายใน 1–3 วัน</div></div>
+                    <div class="sv4-well">🔒<div style="font-size:12.5px; margin-top:4px;">ไม่เปิดเผยต่อผู้อื่น</div></div>
                 </div>
+                <a href="{{ route('user.kyc.create') }}" class="tp-btn tp-btn-primary" style="margin-top:18px; height:48px; padding:0 26px; font-size:14px;">📤 เริ่มยืนยันตัวตน</a>
             @endif
         </div>
 
     @elseif($currentStep == 2)
-        {{-- Step 2: ตั้งค่าร้านและเลือก Package --}}
-        <div x-data="{
-            selectedPackage: null,
-            subscriptionType: 'monthly',
-            storeName: '{{ $store ? $store->store_name : '' }}',
-            showModal: false
-        }">
-            {{-- ถ้ามี store อยู่แล้ว --}}
+        {{-- ── ขั้นที่ 2: ตั้งค่าร้าน + เลือกแพ็กเกจ ─────────────── --}}
+        <div x-data="sellerOnboarding(@js($onboardingConfig))" style="display:flex; flex-direction:column; gap:18px;">
+
             @if($store)
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 mb-6">
-                    <div class="flex items-center mb-6">
-                        <div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mr-4">
-                            @if($store->store_logo)
-                                <img src="{{ asset($store->store_logo) }}" alt="{{ $store->store_name }}" class="w-16 h-16 rounded-full object-cover">
-                            @else
-                                <i class="fas fa-store text-2xl text-purple-300"></i>
-                            @endif
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-white">{{ $store->store_name }}</h3>
-                            <p class="text-gray-400">ร้านค้าของคุณพร้อมแล้ว กรุณาเลือกแพ็คเกจ</p>
-                        </div>
+                <div class="tp-card" style="padding:18px 20px; display:flex; align-items:center; gap:14px;">
+                    @if($store->logo_url)
+                        <img src="{{ $store->logo_url }}" alt="โลโก้ {{ $store->store_name }}" style="width:54px; height:54px; border-radius:16px; object-fit:cover; box-shadow:var(--inset-sm);">
+                    @else
+                        <span class="tp-tile" style="width:54px; height:54px; border-radius:16px; font-size:24px;">🏪</span>
+                    @endif
+                    <div style="min-width:0;">
+                        <div style="font-size:17px; font-weight:800; overflow-wrap:anywhere;">{{ $store->store_name }}</div>
+                        <div style="font-size:12.5px; color:var(--ink2);">ร้านของคุณพร้อมแล้ว เลือกแพ็กเกจเพื่อเริ่มขาย</div>
                     </div>
                 </div>
-            @endif
-
-            {{-- Store Name Input (ถ้ายังไม่มี store) --}}
-            @if(!$store)
-                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-6">
-                    <label class="block text-white font-medium mb-2">
-                        <i class="fas fa-store mr-2"></i>ชื่อร้านค้า
-                    </label>
-                    <input type="text"
-                           x-model="storeName"
-                           placeholder="กรอกชื่อร้านค้าของคุณ"
-                           class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+            @else
+                <div class="tp-card" style="padding:18px 20px;">
+                    <label for="onb_store_name" class="sv4-label">ชื่อร้านค้า <span class="req">*</span></label>
+                    <input type="text" id="onb_store_name" x-model="storeName" maxlength="255" class="tp-input" placeholder="เช่น ร้านผ้าไหมคุณแม่">
+                    <div class="sv4-hint">แก้ไขภายหลังได้ที่หน้าตั้งค่าร้าน</div>
                 </div>
             @endif
 
-            {{-- Package Cards --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            @if($gpPromoActive)
+                <div class="sv4-note" style="--c:{{ SellerUi::OK }};">🎉 ช่วงเปิดตัวไม่เก็บค่า GP ทุกแพ็กเกจ</div>
+            @endif
+
+            <div style="display:flex; justify-content:center;">
+                <div class="sv4-tabs" style="display:inline-flex;">
+                    <button type="button" class="sv4-tab" :class="subscriptionType === 'monthly' && 'on'" @click="subscriptionType = 'monthly'">รายเดือน</button>
+                    <button type="button" class="sv4-tab" :class="subscriptionType === 'yearly' && 'on'" @click="subscriptionType = 'yearly'">รายปี (ประหยัดกว่า)</button>
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; padding-top:8px;">
                 @foreach($packages as $package)
-                    <div class="relative bg-white/10 backdrop-blur-md rounded-2xl border-2 transition-all duration-300 overflow-hidden cursor-pointer group
-                                {{ $package->is_featured ? 'border-purple-400' : 'border-white/20' }}"
-                         :class="selectedPackage == {{ $package->id }} ? 'ring-4 ring-purple-500 border-purple-500 scale-105' : 'hover:border-purple-400/50'"
-                         @click="selectedPackage = {{ $package->id }}">
-
-                        {{-- Badge --}}
+                    @php
+                        $isCustom = $subscriptionService->isCustomPricing($package);
+                        $isFree = $subscriptionService->isFree($package);
+                        $gpRate = rtrim(rtrim(number_format((float) $package->commission_rate, 2), '0'), '.');
+                    @endphp
+                    <div class="sv4-choice" style="position:relative; flex-direction:column; gap:10px; padding:20px; {{ $isCustom ? 'cursor:default;' : '' }}"
+                         :class="selected === {{ (int) $package->id }} && 'on'"
+                         @if(! $isCustom) @click="select({{ (int) $package->id }})" role="button" tabindex="0" @keydown.enter.prevent="select({{ (int) $package->id }})" @endif>
                         @if($package->badge)
-                            <div class="absolute top-0 right-0 px-3 py-1 text-xs font-bold text-white rounded-bl-xl"
-                                 style="background-color: {{ $package->badge_color ?? '#9333EA' }}">
-                                {{ $package->badge }}
-                            </div>
+                            <span class="sv4-pill tp-pill-gold" style="position:absolute; top:-10px; right:16px; color:var(--tp-on-accent, #fff);">{{ $package->badge }}</span>
                         @endif
-
-                        <div class="p-6">
-                            {{-- Package Name --}}
-                            <h3 class="text-xl font-bold text-white mb-1">{{ $package->display_name }}</h3>
-                            <p class="text-gray-400 text-sm mb-4">{{ $package->description }}</p>
-
-                            {{-- Price --}}
-                            <div class="mb-4">
-                                @if($package->price == 0)
-                                    <div class="text-3xl font-bold text-green-400">ฟรี</div>
-                                @else
-                                    <div x-show="subscriptionType === 'monthly'">
-                                        <span class="text-3xl font-bold text-white">฿{{ number_format($package->price) }}</span>
-                                        <span class="text-gray-400">/เดือน</span>
-                                    </div>
-                                    <div x-show="subscriptionType === 'yearly'" x-cloak>
-                                        <span class="text-3xl font-bold text-white">฿{{ number_format($package->yearly_price ?? $package->price * 10) }}</span>
-                                        <span class="text-gray-400">/ปี</span>
-                                        @if($package->yearly_price && $package->yearly_price < $package->price * 12)
-                                            <span class="ml-2 px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
-                                                ประหยัด {{ round((1 - $package->yearly_price / ($package->price * 12)) * 100) }}%
-                                            </span>
-                                        @endif
-                                    </div>
-                                @endif
-                            </div>
-
-                            {{-- Trial Info --}}
-                            @if($package->trial_days > 0)
-                                <div class="mb-4 px-3 py-2 bg-blue-500/20 border border-blue-400/30 rounded-lg">
-                                    <i class="fas fa-gift text-blue-400 mr-2"></i>
-                                    <span class="text-blue-200 text-sm">ทดลองใช้ฟรี {{ $package->trial_days }} วัน</span>
+                        <div class="sv4-row" style="width:100%;">
+                            <div style="font-size:17px; font-weight:800;">{{ $package->display_name }}</div>
+                            @unless($isCustom)
+                                <span style="width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:12px; box-shadow:var(--inset-sm);"
+                                      :style="selected === {{ (int) $package->id }} ? 'background:var(--accent1); color:var(--tp-on-accent, #fff); box-shadow:none;' : ''">
+                                    <span x-show="selected === {{ (int) $package->id }}">✓</span>
+                                </span>
+                            @endunless
+                        </div>
+                        @if($package->description)
+                            <div style="font-size:12px; color:var(--ink2); line-height:1.5;">{{ $package->description }}</div>
+                        @endif
+                        <div>
+                            @if($isCustom)
+                                <div style="font-size:20px; font-weight:800;">ราคาพิเศษ</div>
+                            @elseif($isFree)
+                                <div class="tp-num" style="font-size:26px; font-weight:800; color:{{ SellerUi::OK }};">ฟรี</div>
+                            @else
+                                <div x-show="subscriptionType === 'monthly'"><span class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1);">฿{{ number_format((float) $package->price) }}</span><span style="font-size:12px; color:var(--ink2);"> /เดือน</span></div>
+                                <div x-show="subscriptionType === 'yearly'" x-cloak>
+                                    @if($package->yearly_price)
+                                        <span class="tp-num" style="font-size:26px; font-weight:800; color:var(--deep1);">฿{{ number_format((float) $package->yearly_price) }}</span><span style="font-size:12px; color:var(--ink2);"> /ปี</span>
+                                    @else
+                                        <span style="font-size:13px; color:var(--ink2);">มีเฉพาะรายเดือน</span>
+                                    @endif
                                 </div>
                             @endif
-
-                            {{-- Features --}}
-                            <ul class="space-y-2 text-sm mb-4">
-                                @foreach($package->features ?? [] as $feature)
-                                    <li class="flex items-start text-gray-300">
-                                        <i class="fas fa-check text-green-400 mr-2 mt-1 flex-shrink-0"></i>
-                                        <span>{{ $feature }}</span>
-                                    </li>
+                        </div>
+                        @if($package->trial_days > 0 && ! $isCustom)
+                            <span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::INFO) }}">🎁 ทดลองใช้ฟรี {{ $package->trial_days }} วัน</span>
+                        @endif
+                        @if(! empty($package->features))
+                            <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px; font-size:12.5px;">
+                                @foreach((array) $package->features as $feature)
+                                    <li style="display:flex; gap:7px;"><span style="color:{{ SellerUi::OK }}; font-weight:800;">✓</span><span>{{ is_string($feature) ? $feature : '' }}</span></li>
                                 @endforeach
                             </ul>
-
-                            {{-- Commission Rate --}}
-                            <div class="pt-4 border-t border-white/10 text-sm text-gray-400">
-                                <i class="fas fa-percentage mr-1"></i>
-                                ค่าคอมมิชชั่น: <span class="text-white font-medium">{{ $package->commission_rate }}%</span>
-                            </div>
+                        @endif
+                        <div class="sv4-well" style="padding:8px 12px; font-size:12px; width:100%;">
+                            ค่า GP: @if($gpPromoActive)<b style="color:{{ SellerUi::OK }};">ฟรีช่วงเปิดตัว</b> <span style="color:var(--ink2);">(ปกติ {{ $gpRate }}%)</span>@else<b class="tp-num">{{ $gpRate }}%</b>@endif
                         </div>
-
-                        {{-- Select Indicator --}}
-                        <div class="absolute bottom-4 right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center"
-                             :class="selectedPackage == {{ $package->id }} ? 'bg-purple-500 border-purple-500' : 'border-gray-500'">
-                            <i class="fas fa-check text-white text-xs" x-show="selectedPackage == {{ $package->id }}"></i>
-                        </div>
+                        @if($isCustom)
+                            <a href="mailto:{{ $supportEmail }}?subject={{ rawurlencode('สนใจแพ็กเกจ ' . $package->display_name) }}" class="tp-btn tp-btn-sm sv4-btn-block">📞 ติดต่อทีมงาน</a>
+                        @endif
                     </div>
                 @endforeach
             </div>
 
-            {{-- Subscription Type Toggle (สำหรับ paid packages) --}}
-            <div class="mt-6 flex justify-center" x-show="selectedPackage && selectedPackage != {{ $packages->where('price', 0)->first()?->id ?? 0 }}">
-                <div class="bg-white/10 backdrop-blur-md rounded-xl p-1 inline-flex">
-                    <button type="button"
-                            class="px-6 py-2 rounded-lg font-medium transition"
-                            :class="subscriptionType === 'monthly' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'"
-                            @click="subscriptionType = 'monthly'">
-                        รายเดือน
-                    </button>
-                    <button type="button"
-                            class="px-6 py-2 rounded-lg font-medium transition"
-                            :class="subscriptionType === 'yearly' ? 'bg-purple-600 text-white' : 'text-gray-400 hover:text-white'"
-                            @click="subscriptionType = 'yearly'">
-                        รายปี (ประหยัด)
-                    </button>
-                </div>
+            <div class="sv4-note" style="--c:{{ SellerUi::INFO }};" x-show="selectedIsPaid()" x-cloak>
+                💳 แพ็กเกจเสียเงิน: ระบบเปิดร้านด้วยแพ็กเกจฟรีให้ก่อน แล้วพาไปหน้าชำระเงิน (ชำระด้วยยอดในกระเป๋า) แพ็กเกจเปลี่ยนทันทีหลังชำระสำเร็จ
             </div>
 
-            {{-- Action Buttons --}}
-            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                <form action="{{ route('seller.onboarding.create-store') }}" method="POST" class="inline">
+            <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;">
+                <form action="{{ route('seller.onboarding.create-store') }}" method="POST" @submit="if (!canSubmit()) { $event.preventDefault(); return; } busy = true">
                     @csrf
                     <input type="hidden" name="store_name" :value="storeName">
-                    <input type="hidden" name="package_id" :value="selectedPackage">
+                    <input type="hidden" name="package_id" :value="selected">
                     <input type="hidden" name="subscription_type" :value="subscriptionType">
-
-                    <button type="submit"
-                            class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold text-lg transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            :disabled="!selectedPackage || (!storeName && !{{ $store ? 'true' : 'false' }})">
-                        <i class="fas fa-rocket mr-2"></i>
-                        <span x-text="selectedPackage == {{ $packages->where('price', 0)->first()?->id ?? 0 }} ? 'เริ่มใช้งานฟรี' : 'ดำเนินการต่อ'">เริ่มใช้งาน</span>
+                    <button type="submit" class="tp-btn tp-btn-primary" style="height:48px; padding:0 26px; font-size:14px;" :disabled="!canSubmit() || busy">
+                        <span x-show="!busy" x-text="selectedIsPaid() ? '🚀 ดำเนินการต่อ (ไปชำระเงิน)' : '🚀 เริ่มใช้งานร้านค้า'"></span>
+                        <span x-show="busy" x-cloak>กำลังดำเนินการ…</span>
                     </button>
                 </form>
-
-                <form action="{{ route('seller.onboarding.skip-package') }}" method="POST" class="inline">
+                <form action="{{ route('seller.onboarding.skip-package') }}" method="POST" x-data="{ b: false }" @submit="b = true">
                     @csrf
-                    <button type="submit"
-                            class="px-8 py-4 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition">
-                        <i class="fas fa-forward mr-2"></i>ใช้แพ็คเกจฟรีก่อน
-                    </button>
+                    <button type="submit" class="tp-btn" style="height:48px; padding:0 22px;" :disabled="b">⏭️ ใช้แพ็กเกจฟรีก่อน</button>
                 </form>
             </div>
+            <div class="sv4-hint" style="text-align:center;" x-show="!hasStore && !storeName.trim()">กรอกชื่อร้านและเลือกแพ็กเกจก่อนกดเริ่มใช้งาน</div>
         </div>
 
     @else
-        {{-- Step 3: เสร็จสิ้น - Redirect ไป Dashboard --}}
-        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 text-center">
-            <div class="w-24 h-24 mx-auto mb-6 bg-green-500/20 rounded-full flex items-center justify-center ring-4 ring-green-400/30">
-                <i class="fas fa-check text-5xl text-green-400"></i>
-            </div>
-            <h2 class="text-3xl font-bold text-white mb-4">พร้อมใช้งานแล้ว!</h2>
-            <p class="text-gray-300 mb-8">ร้านค้าของคุณพร้อมรับลูกค้าแล้ว เริ่มเพิ่มสินค้าและจัดการร้านได้เลย</p>
-
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('seller.dashboard') }}"
-                   class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold text-lg transition shadow-lg">
-                    <i class="fas fa-tachometer-alt mr-2"></i>ไปยังแดชบอร์ด
-                </a>
-                <a href="{{ route('seller.products.create') }}"
-                   class="px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-lg transition shadow-lg">
-                    <i class="fas fa-plus-circle mr-2"></i>เพิ่มสินค้าแรก
-                </a>
+        {{-- ── ขั้นที่ 3: พร้อมใช้งาน ─────────────────────────── --}}
+        <div class="tp-card" style="padding:30px 22px; text-align:center;">
+            <span style="width:84px; height:84px; border-radius:50%; margin:0 auto; display:grid; place-items:center; font-size:40px; color:var(--tp-on-accent, #fff); background:{{ SellerUi::OK }}; box-shadow:var(--raise);">✓</span>
+            <h2 style="font-size:22px; font-weight:800; margin:16px 0 6px;">ร้านของคุณพร้อมขายแล้ว!</h2>
+            <div style="font-size:13px; color:var(--ink2);">เพิ่มสินค้าแรก แล้วแชร์ลิงก์หน้าร้านให้ลูกค้าได้เลย</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:18px;">
+                <a href="{{ route('seller.products.create') }}" class="tp-btn tp-btn-primary" style="height:48px; padding:0 24px;">➕ เพิ่มสินค้าแรก</a>
+                <a href="{{ route('seller.dashboard') }}" class="tp-btn" style="height:48px; padding:0 24px;">📊 ไปแดชบอร์ด</a>
             </div>
         </div>
     @endif
 
-    {{-- Help Section --}}
-    <div class="bg-blue-500/10 backdrop-blur-md border border-blue-400/30 rounded-2xl p-6">
-        <h3 class="text-lg font-bold text-white mb-4">
-            <i class="fas fa-question-circle mr-2 text-blue-400"></i>ต้องการความช่วยเหลือ?
-        </h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <a href="{{ route('seller.user-guide.index') }}" class="flex items-center text-blue-200 hover:text-white transition">
-                <i class="fas fa-book mr-2"></i>คู่มือการใช้งาน
-            </a>
-            <a href="#" class="flex items-center text-blue-200 hover:text-white transition">
-                <i class="fas fa-comments mr-2"></i>ติดต่อทีมสนับสนุน
-            </a>
-            <a href="#" class="flex items-center text-blue-200 hover:text-white transition">
-                <i class="fas fa-video mr-2"></i>วิดีโอสอนใช้งาน
-            </a>
+    {{-- ความช่วยเหลือ --}}
+    <div class="tp-card" style="padding:18px 20px;">
+        <div class="sv4-h2">🙋 ต้องการความช่วยเหลือ?</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+            <a href="{{ route('seller.user-guide.index') }}" class="tp-btn tp-btn-sm">📘 คู่มือการใช้งาน</a>
+            <a href="mailto:{{ $supportEmail }}" class="tp-btn tp-btn-sm">✉️ ติดต่อทีมงาน</a>
         </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+/**
+ * ขั้นตอนเปิดร้าน: เลือกแพ็กเกจ + รอบการชำระ แล้วส่งไปสร้างร้าน
+ */
+function sellerOnboarding(cfg) {
+    return {
+        storeName: cfg.storeName || '',
+        hasStore: !!cfg.hasStore,
+        packages: cfg.packages || [],
+        selected: null,
+        subscriptionType: 'monthly',
+        busy: false,
+        pkg() {
+            return this.packages.find((p) => p.id === this.selected) || null;
+        },
+        select(id) {
+            const p = this.packages.find((x) => x.id === id);
+            if (!p || p.custom) return;
+            this.selected = id;
+        },
+        selectedIsPaid() {
+            const p = this.pkg();
+            return !!p && !p.free && !p.custom;
+        },
+        canSubmit() {
+            if (!this.selected) return false;
+            if (!this.hasStore && !this.storeName.trim()) return false;
+            return true;
+        }
+    };
+}
+</script>
+@endpush

@@ -1,259 +1,229 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'จัดการการจัดส่ง #' . $order->order_number)
+@section('title', 'การจัดส่ง #' . $order->order_number)
+
+@push('styles')
+    @include('seller.partials.v4-styles')
+@endpush
+
+@php
+    use App\Support\Seller\SellerUi;
+
+    // แท็บเริ่มต้นจาก ?tab= (ลิงก์ "แชท" จากหน้าอื่นส่ง tab=chat มา)
+    $initialTab = in_array(request('tab'), ['tracking', 'history', 'chat'], true) ? request('tab') : 'tracking';
+    $unreadCount = $order->messages->where('is_read', false)->where('sender_type', 'customer')->count();
+    $isRider = $order->isRiderDelivery();
+    $actions = $allowedActions ?? [];
+    $canShip = in_array('ship', $actions, true);
+    $riderStatus = $riderSummary['status'] ?? null;
+    $historyLabels = ['in_transit' => 'อยู่ระหว่างขนส่ง', 'out_for_delivery' => 'กำลังนำส่ง', 'delivered' => 'ส่งถึงแล้ว'];
+@endphp
 
 @section('content')
-<div class="space-y-6" x-data="{ activeTab: 'tracking' }">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <a href="{{ route('seller.orders.show', $order) }}" class="text-blue-600 hover:text-blue-800 text-sm mb-2 inline-block">
-                ← กลับไปรายละเอียดคำสั่งซื้อ
-            </a>
-            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
-                จัดการการจัดส่ง #{{ $order->order_number }}
-            </h1>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                ลูกค้า: {{ $order->user->name ?? 'ไม่ระบุ' }}
-            </p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{{ route('seller.orders.print', $order) }}" target="_blank"
-               class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition">
-                พิมพ์ใบส่งของ
-            </a>
-        </div>
-    </div>
+<div class="sv4-page" x-data="orderTracking(@js($initialTab), @js(route('seller.orders.messages.read', $order->id)), {{ $unreadCount }})">
 
-    {{-- Tabs --}}
-    <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="flex gap-4">
-            <button @click="activeTab = 'tracking'"
-                    :class="activeTab === 'tracking' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="px-4 py-3 border-b-2 font-medium transition">
-                ข้อมูลการจัดส่ง
-            </button>
-            <button @click="activeTab = 'history'"
-                    :class="activeTab === 'history' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="px-4 py-3 border-b-2 font-medium transition">
-                ประวัติการจัดส่ง
-            </button>
-            <button @click="activeTab = 'chat'"
-                    :class="activeTab === 'chat' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="px-4 py-3 border-b-2 font-medium transition relative">
-                แชทกับลูกค้า
-                @if($order->messages()->where('is_read', false)->where('sender_type', 'customer')->count() > 0)
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {{ $order->messages()->where('is_read', false)->where('sender_type', 'customer')->count() }}
-                    </span>
-                @endif
-            </button>
-        </nav>
-    </div>
+    <x-seller-v4.header :title="'การจัดส่ง #' . $order->order_number"
+                        :subtitle="'ลูกค้า: ' . ($order->user->name ?? 'ไม่ระบุ')"
+                        icon="📍" :back="route('seller.orders.show', $order)">
+        <span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::orderStatusColor($order->status)) }} font-size:12px; padding:7px 12px;">{{ $order->status_label }}</span>
+        <a href="{{ route('seller.orders.print', $order) }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm">🖨️ พิมพ์ใบส่งของ</a>
+    </x-seller-v4.header>
 
-    {{-- Tracking Tab --}}
-    <div x-show="activeTab === 'tracking'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Tracking Form --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                อัพเดทข้อมูลการจัดส่ง
-            </h3>
+    <x-seller-v4.errors />
 
-            <form action="{{ route('seller.orders.add-tracking', $order) }}" method="POST" class="space-y-4">
-                @csrf
+    <nav class="sv4-tabs" role="tablist" aria-label="เมนูการจัดส่ง">
+        <button type="button" class="sv4-tab" :class="tab === 'tracking' && 'on'" @click="go('tracking')" role="tab">🚚 ข้อมูลการจัดส่ง</button>
+        <button type="button" class="sv4-tab" :class="tab === 'history' && 'on'" @click="go('history')" role="tab">🕑 ประวัติการจัดส่ง</button>
+        <button type="button" class="sv4-tab" :class="tab === 'chat' && 'on'" @click="go('chat')" role="tab">
+            💬 แชทกับลูกค้า
+            <span class="sv4-count" x-show="unread > 0" x-text="unread" style="background:{{ SellerUi::BAD }}; color:var(--tp-on-accent, #fff);"></span>
+        </button>
+    </nav>
 
-                {{-- Shipping Provider --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        บริษัทขนส่ง <span class="text-red-500">*</span>
-                    </label>
-                    <select name="shipping_provider_id" required
-                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="">เลือกบริษัทขนส่ง</option>
-                        @foreach($shippingProviders as $provider)
-                            <option value="{{ $provider->id }}"
-                                    {{ $order->shipping_provider_id == $provider->id ? 'selected' : '' }}>
-                                {{ $provider->name }} ({{ $provider->name_en }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('shipping_provider_id')
-                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
+    {{-- ── แท็บข้อมูลการจัดส่ง ─────────────────────────────── --}}
+    <div x-show="tab === 'tracking'" class="flex" style="flex-wrap:wrap; gap:18px; align-items:flex-start;">
 
-                {{-- Tracking Number --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        หมายเลขพัสดุ <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="tracking_number" value="{{ $order->tracking_number }}" required
-                           placeholder="เช่น TH123456789"
-                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                    @error('tracking_number')
-                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Estimated Delivery --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        วันที่คาดว่าจะถึง
-                    </label>
-                    <input type="date" name="estimated_delivery_at"
-                           value="{{ $order->estimated_delivery_at ? $order->estimated_delivery_at->format('Y-m-d') : '' }}"
-                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <button type="submit"
-                        class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
-                    บันทึกข้อมูลการจัดส่ง
-                </button>
-            </form>
-        </div>
-
-        {{-- Current Status --}}
-        <div class="space-y-6">
-            {{-- Order Status --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                    สถานะปัจจุบัน
-                </h3>
-                <div class="space-y-3">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">สถานะ:</span>
-                        <span class="px-3 py-1 rounded-full text-sm font-medium
-                            @if($order->status === 'delivered') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                            @elseif($order->status === 'shipped') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                            @elseif($order->status === 'cancelled') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                            @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                            @endif">
-                            {{ $order->status }}
-                        </span>
-                    </div>
-
-                    @if($order->tracking_number)
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">หมายเลขพัสดุ:</span>
-                            <span class="font-mono font-semibold text-gray-800 dark:text-white">{{ $order->tracking_number }}</span>
+        <div class="tp-card" style="padding:20px; flex:1 1 360px; min-width:0;">
+            @if($isRider)
+                <div class="sv4-h2">🛵 ส่งด้วยไรเดอร์</div>
+                <div class="sv4-sub">ออเดอร์นี้ลูกค้าเลือกส่งด้วยไรเดอร์ ไม่ต้องกรอกเลขพัสดุ</div>
+                @if($riderSummary)
+                    <div class="sv4-well" style="margin-top:14px;">
+                        <div class="sv4-kv"><span>สถานะไรเดอร์</span>
+                            <span><span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::riderStatusColor($riderStatus)) }}">{{ $riderSummary['status_label'] ?? '-' }}</span></span>
                         </div>
-                    @endif
-
-                    @if($order->shippingProvider)
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">ขนส่ง:</span>
-                            <span class="text-gray-800 dark:text-white">{{ $order->shippingProvider->name }}</span>
-                        </div>
-
-                        @if($order->tracking_number && $order->shippingProvider->getTrackingLink($order->tracking_number))
-                            <a href="{{ $order->shippingProvider->getTrackingLink($order->tracking_number) }}"
-                               target="_blank"
-                               class="block mt-4 px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-200 text-center rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition">
-                                ติดตามพัสดุ
-                            </a>
+                        @if(! empty($riderSummary['rider']['name']))
+                            <div class="sv4-kv"><span>ไรเดอร์</span><span>{{ $riderSummary['rider']['name'] }}</span></div>
                         @endif
-                    @endif
+                        @if(! empty($riderSummary['rider']['vehicle_plate']))
+                            <div class="sv4-kv"><span>ทะเบียนรถ</span><span class="tp-num">{{ $riderSummary['rider']['vehicle_plate'] }}</span></div>
+                        @endif
+                    </div>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
+                        @if(! empty($riderSummary['tracking_url']))
+                            <a href="{{ $riderSummary['tracking_url'] }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm">🗺️ ติดตามไรเดอร์แบบสด</a>
+                        @endif
+                        @if(in_array('request_rider', $actions, true))
+                            <a href="{{ route('seller.orders.show', $order) }}" class="tp-btn tp-btn-sm tp-btn-primary">🛵 ไปเรียกไรเดอร์</a>
+                        @endif
+                    </div>
+                @endif
+            @elseif($canShip)
+                <div class="sv4-h2">📝 กรอกข้อมูลการจัดส่ง</div>
+                <div class="sv4-sub">บันทึกแล้วสถานะจะเปลี่ยนเป็น "จัดส่งแล้ว" และแจ้งลูกค้าอัตโนมัติ</div>
+                <form action="{{ route('seller.orders.add-tracking', $order) }}" method="POST"
+                      x-data="{ busy: false }" @submit="busy = true"
+                      style="display:flex; flex-direction:column; gap:14px; margin-top:16px;">
+                    @csrf
+                    <div>
+                        <label for="shipping_provider_id" class="sv4-label">บริษัทขนส่ง <span class="req">*</span></label>
+                        <select name="shipping_provider_id" id="shipping_provider_id" required class="tp-input">
+                            <option value="">— เลือกบริษัทขนส่ง —</option>
+                            @foreach($shippingProviders as $provider)
+                                <option value="{{ $provider->id }}" @selected(old('shipping_provider_id', $order->shipping_provider_id) == $provider->id)>
+                                    {{ $provider->name }}@if($provider->name_en) ({{ $provider->name_en }})@endif
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('shipping_provider_id')<div class="sv4-err">{{ $message }}</div>@enderror
+                    </div>
+                    <div>
+                        <label for="tracking_number" class="sv4-label">หมายเลขพัสดุ <span class="req">*</span></label>
+                        <input type="text" name="tracking_number" id="tracking_number" required maxlength="100" autocomplete="off"
+                               value="{{ old('tracking_number', $order->tracking_number) }}" placeholder="เช่น TH123456789" class="tp-input tp-num">
+                        @error('tracking_number')<div class="sv4-err">{{ $message }}</div>@enderror
+                    </div>
+                    <div>
+                        <label for="estimated_delivery_at" class="sv4-label">วันที่คาดว่าจะถึง</label>
+                        <input type="date" name="estimated_delivery_at" id="estimated_delivery_at" min="{{ now()->toDateString() }}"
+                               value="{{ old('estimated_delivery_at', $order->estimated_delivery_at ? \Illuminate\Support\Carbon::parse($order->estimated_delivery_at)->format('Y-m-d') : '') }}"
+                               class="tp-input">
+                        @error('estimated_delivery_at')<div class="sv4-err">{{ $message }}</div>@enderror
+                    </div>
+                    <button type="submit" class="tp-btn tp-btn-primary sv4-btn-block" :disabled="busy">
+                        <span x-show="!busy">💾 บันทึกข้อมูลการจัดส่ง</span>
+                        <span x-show="busy" x-cloak>กำลังบันทึก…</span>
+                    </button>
+                </form>
+            @else
+                <div class="sv4-h2">🚚 ข้อมูลการจัดส่ง</div>
+                @if($order->tracking_number)
+                    <div class="sv4-sub">ออเดอร์นี้จัดส่งแล้ว ติดตามความคืบหน้าในแท็บ "ประวัติการจัดส่ง"</div>
+                @elseif(! $order->isReadyForFulfilment())
+                    <div class="sv4-note" style="margin-top:12px; --c:{{ SellerUi::WARN }};">⏳ ยังจัดส่งไม่ได้ — ออเดอร์ต้องชำระเงินแล้ว (หรือเป็นเก็บเงินปลายทาง) และยังไม่ถูกยกเลิก</div>
+                @else
+                    <div class="sv4-note" style="margin-top:12px; --c:{{ SellerUi::INFO }};">กดยืนยันรับคำสั่งซื้อในหน้ารายละเอียดก่อน แล้วจึงกรอกเลขพัสดุ</div>
+                    <a href="{{ route('seller.orders.show', $order) }}" class="tp-btn tp-btn-sm" style="margin-top:12px;">ไปหน้ารายละเอียด</a>
+                @endif
+            @endif
+        </div>
 
+        <div style="display:flex; flex-direction:column; gap:18px; flex:1 1 300px; min-width:0;">
+            <div class="tp-card" style="padding:20px;">
+                <div class="sv4-h2">📋 สถานะปัจจุบัน</div>
+                <div style="margin-top:10px;">
+                    <div class="sv4-kv"><span>สถานะ</span><span><span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::orderStatusColor($order->status)) }}">{{ $order->status_label }}</span></span></div>
+                    @if($order->tracking_number)
+                        <div class="sv4-kv"><span>หมายเลขพัสดุ</span><span class="tp-num">{{ $order->tracking_number }}</span></div>
+                    @endif
+                    @if($order->shippingProvider)
+                        <div class="sv4-kv"><span>ขนส่ง</span><span>{{ $order->shippingProvider->name }}</span></div>
+                    @endif
                     @if($order->shipped_at)
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">จัดส่งเมื่อ:</span>
-                            <span class="text-gray-800 dark:text-white">{{ $order->shipped_at->format('d/m/Y H:i') }}</span>
-                        </div>
+                        <div class="sv4-kv"><span>จัดส่งเมื่อ</span><span>{{ $order->shipped_at->format('d/m/Y H:i') }}</span></div>
                     @endif
                 </div>
+                @if($order->tracking_number && $order->shippingProvider && $order->shippingProvider->getTrackingLink($order->tracking_number))
+                    <a href="{{ $order->shippingProvider->getTrackingLink($order->tracking_number) }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm" style="margin-top:12px;">🔍 ติดตามพัสดุ</a>
+                @endif
             </div>
 
-            {{-- Shipping Address --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                    ที่อยู่จัดส่ง
-                </h3>
-                <div class="text-gray-700 dark:text-gray-300 space-y-1">
-                    <p class="font-semibold">{{ $order->shipping_name }}</p>
-                    <p>{{ $order->shipping_phone }}</p>
-                    <p>{{ $order->shipping_address }}</p>
-                    <p>{{ $order->shipping_subdistrict }} {{ $order->shipping_district }}</p>
-                    <p>{{ $order->shipping_province }} {{ $order->shipping_postal_code }}</p>
-                </div>
+            <div class="tp-card" style="padding:20px;">
+                <div class="sv4-h2">📍 ที่อยู่จัดส่ง</div>
+                @if($shipping)
+                    <div style="margin-top:10px; font-size:13px; line-height:1.7;">
+                        <div style="font-weight:800;">{{ $shipping['name'] }}</div>
+                        @if($shipping['phone'])<div class="tp-num" style="color:var(--ink2);">{{ $shipping['phone'] }}</div>@endif
+                        <div style="margin-top:4px;">
+                            {{ $shipping['address'] }}
+                            @if($shipping['address_line_2'])<br>{{ $shipping['address_line_2'] }}@endif
+                            <br>{{ trim(($shipping['subdistrict'] ?? '') . ' ' . ($shipping['district'] ?? '')) }}
+                            <br>{{ $shipping['province'] }} {{ $shipping['postal_code'] }}
+                        </div>
+                    </div>
+                @else
+                    <div class="sv4-sub" style="margin-top:8px;">ไม่มีข้อมูลที่อยู่จัดส่ง</div>
+                @endif
             </div>
         </div>
     </div>
 
-    {{-- History Tab --}}
-    <div x-show="activeTab === 'history'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Add History Form --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                เพิ่มประวัติการจัดส่ง
-            </h3>
-
-            <form action="{{ route('seller.orders.tracking.history', $order) }}" method="POST" class="space-y-4">
-                @csrf
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        สถานะ <span class="text-red-500">*</span>
-                    </label>
-                    <select name="status" required
-                            class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        {{-- 🛒 (2026-09-25) ยืนยัน/จัดส่ง ใช้ปุ่มในหน้ารายละเอียด — ตรงนี้เฉพาะความคืบหน้าหลังส่งแล้ว --}}
-                        <option value="in_transit">กำลังจัดส่ง</option>
-                        <option value="out_for_delivery">กำลังนำส่ง</option>
-                        <option value="delivered">ส่งถึงแล้ว</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        รายละเอียด <span class="text-red-500">*</span>
-                    </label>
-                    <textarea name="description" rows="3" required
-                              placeholder="เช่น สินค้าถึงศูนย์กระจายสินค้า กรุงเทพฯ"
-                              class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        สถานที่
-                    </label>
-                    <input type="text" name="location"
-                           placeholder="เช่น ศูนย์กระจายสินค้า กรุงเทพฯ"
-                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <button type="submit"
-                        class="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition">
-                    เพิ่มประวัติ
-                </button>
-            </form>
+    {{-- ── แท็บประวัติการจัดส่ง ───────────────────────────── --}}
+    <div x-show="tab === 'history'" x-cloak class="flex" style="flex-wrap:wrap; gap:18px; align-items:flex-start;">
+        <div class="tp-card" style="padding:20px; flex:1 1 340px; min-width:0;">
+            <div class="sv4-h2">➕ เพิ่มความคืบหน้า</div>
+            @if($isRider)
+                <div class="sv4-note" style="margin-top:12px; --c:{{ SellerUi::INFO }};">ออเดอร์ไรเดอร์ ระบบอัปเดตความคืบหน้าให้อัตโนมัติตามสถานะไรเดอร์</div>
+            @elseif(! $order->tracking_number)
+                <div class="sv4-note" style="margin-top:12px; --c:{{ SellerUi::WARN }};">เพิ่มความคืบหน้าได้หลังกรอกเลขพัสดุแล้ว</div>
+            @else
+                <form action="{{ route('seller.orders.tracking.history', $order) }}" method="POST"
+                      x-data="{ busy: false, st: @js(old('status', 'in_transit')) }" @submit="busy = true"
+                      style="display:flex; flex-direction:column; gap:14px; margin-top:14px;">
+                    @csrf
+                    <div>
+                        <label for="history_status" class="sv4-label">สถานะ <span class="req">*</span></label>
+                        <select name="status" id="history_status" required class="tp-input" x-model="st">
+                            @foreach($historyLabels as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <div class="sv4-hint" x-show="st === 'delivered'">เลือก "ส่งถึงแล้ว" = ยืนยันว่าลูกค้าได้รับสินค้า ระบบจะเริ่มนับวันปล่อยรายได้</div>
+                    </div>
+                    <div>
+                        <label for="history_description" class="sv4-label">รายละเอียด <span class="req">*</span></label>
+                        <textarea name="description" id="history_description" rows="3" required maxlength="500" class="tp-input"
+                                  placeholder="เช่น สินค้าถึงศูนย์กระจายสินค้า กรุงเทพฯ">{{ old('description') }}</textarea>
+                        @error('description')<div class="sv4-err">{{ $message }}</div>@enderror
+                    </div>
+                    <div>
+                        <label for="history_location" class="sv4-label">สถานที่</label>
+                        <input type="text" name="location" id="history_location" maxlength="255" class="tp-input"
+                               value="{{ old('location') }}" placeholder="เช่น ศูนย์กระจายสินค้า กรุงเทพฯ">
+                    </div>
+                    <button type="submit" class="tp-btn tp-btn-primary sv4-btn-block" :disabled="busy">
+                        <span x-show="!busy">➕ เพิ่มประวัติ</span>
+                        <span x-show="busy" x-cloak>กำลังบันทึก…</span>
+                    </button>
+                </form>
+            @endif
         </div>
 
-        {{-- History Timeline --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-                ประวัติการจัดส่ง
-            </h3>
-
+        <div class="tp-card" style="padding:20px; flex:1 1 340px; min-width:0;">
+            <div class="sv4-h2">🕑 ประวัติการจัดส่ง</div>
             @if($order->trackingHistory->isEmpty())
-                <p class="text-gray-500 dark:text-gray-400 text-center py-8">ยังไม่มีประวัติ</p>
+                <x-seller-v4.empty icon="🕑" title="ยังไม่มีประวัติ" text="ความคืบหน้าการจัดส่งจะแสดงที่นี่" />
             @else
-                <div class="space-y-4">
+                <div style="margin-top:14px; display:flex; flex-direction:column;">
                     @foreach($order->trackingHistory as $history)
-                        <div class="flex gap-4">
-                            <div class="flex flex-col items-center">
-                                <div class="w-3 h-3 rounded-full {{ $loop->first ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600' }}"></div>
-                                @if(!$loop->last)
-                                    <div class="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700"></div>
+                        <div style="display:flex; gap:12px;">
+                            <div style="display:flex; flex-direction:column; align-items:center;">
+                                <span style="width:12px; height:12px; border-radius:50%; margin-top:4px; flex:none; background:{{ $loop->first ? 'var(--accent1)' : 'color-mix(in srgb, var(--ink2) 40%, transparent)' }}; box-shadow:var(--raise);"></span>
+                                @if(! $loop->last)
+                                    <span style="width:2px; flex:1; background:color-mix(in srgb, var(--ink2) 22%, transparent); margin:3px 0;"></span>
                                 @endif
                             </div>
-                            <div class="flex-1 pb-4">
-                                <p class="font-medium text-gray-800 dark:text-white">{{ $history->description }}</p>
-                                @if($history->location)
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $history->location }}</p>
+                            <div style="flex:1; min-width:0; padding-bottom:16px;">
+                                <div style="font-weight:800; font-size:13px;">{{ $history->title ?: ($historyLabels[$history->status] ?? $history->status) }}</div>
+                                @if($history->description)
+                                    <div style="font-size:12.5px; margin-top:2px;">{{ $history->description }}</div>
                                 @endif
-                                <p class="text-xs text-gray-400 mt-1">
-                                    {{ $history->created_at->format('d/m/Y H:i') }}
-                                </p>
+                                @if($history->location)
+                                    <div style="font-size:12px; color:var(--ink2);">📍 {{ $history->location }}</div>
+                                @endif
+                                <div class="tp-num" style="font-size:11px; color:var(--ink2); margin-top:3px;">
+                                    {{ ($history->tracked_at ?? $history->created_at)?->format('d/m/Y H:i') }}
+                                </div>
                             </div>
                         </div>
                     @endforeach
@@ -262,63 +232,89 @@
         </div>
     </div>
 
-    {{-- Chat Tab --}}
-    <div x-show="activeTab === 'chat'" class="bg-white dark:bg-gray-800 rounded-xl shadow p-6"
-         x-data="{ loading: false }"
-         x-init="
-            fetch('{{ route('seller.orders.messages.read', $order) }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json'
-                }
-            });
-         ">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
-            แชทกับลูกค้า
-        </h3>
+    {{-- ── แท็บแชทกับลูกค้า ─────────────────────────────────── --}}
+    <div x-show="tab === 'chat'" x-cloak class="tp-card" style="padding:20px;">
+        <div class="sv4-h2">💬 แชทกับลูกค้า</div>
+        <div class="sv4-sub">ข้อความในออเดอร์นี้ ลูกค้าจะได้รับแจ้งเตือนเมื่อคุณตอบ</div>
 
-        {{-- Messages --}}
-        <div class="h-96 overflow-y-auto space-y-4 mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-            @forelse($order->messages->reverse() as $message)
-                <div class="{{ $message->sender_type === 'seller' ? 'flex justify-end' : 'flex justify-start' }}">
-                    <div class="max-w-[70%] {{ $message->sender_type === 'seller' ? 'bg-blue-500 text-white' : ($message->is_system_message ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800 border dark:border-gray-700') }} rounded-2xl px-4 py-3 shadow">
-                        @if($message->sender_type !== 'seller')
-                            <p class="text-xs {{ $message->is_system_message ? 'text-gray-500' : 'text-gray-500 dark:text-gray-400' }} mb-1">
-                                {{ $message->sender_name }}
-                            </p>
+        <div x-ref="chatBox" style="height:min(60vh, 420px); overflow-y:auto; margin-top:14px; padding:14px; border-radius:16px; box-shadow:var(--inset-sm); display:flex; flex-direction:column; gap:10px;">
+            @forelse($order->messages as $message)
+                @php
+                    $mine = $message->sender_type === 'seller';
+                    $system = (bool) $message->is_system_message;
+                @endphp
+                <div style="display:flex; justify-content:{{ $system ? 'center' : ($mine ? 'flex-end' : 'flex-start') }};">
+                    <div style="max-width:78%; padding:10px 14px; border-radius:16px; font-size:13px; line-height:1.55; overflow-wrap:anywhere;
+                        {{ $system
+                            ? 'background:color-mix(in srgb, var(--ink2) 14%, transparent); color:var(--ink2); font-size:12px;'
+                            : ($mine
+                                ? 'background:linear-gradient(135deg, var(--accent1), var(--accent2)); color:var(--tp-on-accent, #fff); border-bottom-right-radius:5px;'
+                                : 'background:var(--card-bg); box-shadow:var(--card-shadow-sm); color:var(--ink); border-bottom-left-radius:5px;') }}">
+                        @if(! $mine && ! $system)
+                            <div style="font-size:11px; font-weight:700; color:var(--ink2); margin-bottom:3px;">{{ $message->sender?->name ?? 'ลูกค้า' }}</div>
                         @endif
-                        <p class="{{ $message->sender_type === 'seller' ? 'text-white' : 'text-gray-800 dark:text-white' }}">
-                            {{ $message->message }}
-                        </p>
-                        <p class="text-xs {{ $message->sender_type === 'seller' ? 'text-blue-100' : 'text-gray-400' }} mt-1 text-right">
-                            {{ $message->created_at->format('H:i') }}
-                        </p>
+                        <div style="white-space:pre-line;">{{ $message->message }}</div>
+                        <div class="tp-num" style="font-size:10.5px; margin-top:4px; text-align:right; opacity:.75;">{{ $message->created_at->format('d/m H:i') }}</div>
                     </div>
                 </div>
             @empty
-                <div class="flex items-center justify-center h-full">
-                    <div class="text-center text-gray-500 dark:text-gray-400">
-                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                        </svg>
-                        <p>ยังไม่มีข้อความ</p>
-                    </div>
-                </div>
+                <x-seller-v4.empty icon="💬" title="ยังไม่มีข้อความ" text="เริ่มพูดคุยกับลูกค้าได้เลย เช่น แจ้งกำหนดส่งหรือสอบถามรายละเอียด" />
             @endforelse
         </div>
 
-        {{-- Send Message Form --}}
-        <form action="{{ route('seller.orders.messages.send', $order) }}" method="POST" class="flex gap-3">
+        <form action="{{ route('seller.orders.messages.send', $order) }}" method="POST"
+              x-data="{ busy: false }" @submit="busy = true"
+              style="display:flex; gap:10px; margin-top:14px;">
             @csrf
-            <input type="text" name="message" required
-                   placeholder="พิมพ์ข้อความ..."
-                   class="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-            <button type="submit"
-                    class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
-                ส่ง
-            </button>
+            <input type="text" name="message" required maxlength="2000" autocomplete="off" class="tp-input" placeholder="พิมพ์ข้อความถึงลูกค้า…" style="flex:1;">
+            <button type="submit" class="tp-btn tp-btn-primary" :disabled="busy">ส่ง ➤</button>
         </form>
+        @error('message')<div class="sv4-err">{{ $message }}</div>@enderror
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+/**
+ * หน้าจัดการการจัดส่ง — สลับแท็บ + ทำเครื่องหมายอ่านแชทเมื่อเปิดแท็บแชท (ครั้งเดียว)
+ */
+function orderTracking(initialTab, readUrl, unreadCount) {
+    return {
+        tab: initialTab,
+        unread: unreadCount,
+        marked: false,
+        init() {
+            this.onTab();
+        },
+        go(name) {
+            this.tab = name;
+            this.onTab();
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', name);
+                window.history.replaceState({}, '', url);
+            } catch (e) {}
+        },
+        onTab() {
+            if (this.tab !== 'chat') return;
+            this.$nextTick(() => {
+                const box = this.$refs.chatBox;
+                if (box) box.scrollTop = box.scrollHeight;
+            });
+            if (this.marked || this.unread <= 0) return;
+            this.marked = true;
+            const token = document.querySelector('meta[name="csrf-token"]');
+            fetch(readUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token ? token.getAttribute('content') : '',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            }).then((r) => { if (r.ok) this.unread = 0; }).catch(() => { this.marked = false; });
+        }
+    };
+}
+</script>
+@endpush

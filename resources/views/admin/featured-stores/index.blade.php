@@ -1,172 +1,166 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการร้านค้าแนะนำในหน้าแรก')
+@section('title', 'ร้านแนะนำหน้าแรก')
+
+@php
+    $bad = 'var(--tp-bad,#d9534f)';
+    $warn = 'var(--tp-warn,#e0a52e)';
+@endphp
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="h3 mb-3">จัดการร้านค้าแนะนำในหน้าแรก</h1>
-            <p class="text-muted">เลือกร้านค้าที่จะแสดงในหน้าแรก (ร้านค้าที่มี 5 ดาวจะแสดงอัตโนมัติ)</p>
+{{-- ⭐ ร้านแนะนำหน้าแรก (GAP-20) — เดิมใช้ Bootstrap + ปลั๊กอินลากวางรุ่นเก่าที่ layout ไม่ได้โหลด → ย้ายเป็น V4 + SortableJS --}}
+<div style="display:flex; flex-direction:column; gap:18px;"
+     x-data="{
+        saving: false,
+        dirty: false,
+        orderUrl: @js(route('admin.featured-stores.update-order')),
+        init() {
+            const el = this.$refs.list;
+            if (!el || typeof Sortable === 'undefined') return;
+            Sortable.create(el, {
+                animation: 160,
+                handle: '[data-drag]',
+                ghostClass: 'tp-drag-ghost',
+                onEnd: () => { this.renumber(); this.save(); },
+            });
+        },
+        renumber() {
+            this.$refs.list.querySelectorAll('[data-id]').forEach((node, i) => {
+                const badge = node.querySelector('[data-rank]');
+                if (badge) badge.textContent = i + 1;
+            });
+        },
+        async save() {
+            const order = {};
+            this.$refs.list.querySelectorAll('[data-id]').forEach((node, i) => { order[node.dataset.id] = i + 1; });
+            this.saving = true;
+            try {
+                const res = await fetch(this.orderUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    body: JSON.stringify({ order }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) throw new Error('fail');
+                this.$dispatch('notify', { type: 'success', message: data.message || 'บันทึกลำดับแล้ว' });
+            } catch (e) {
+                this.$dispatch('notify', { type: 'error', message: 'บันทึกลำดับไม่สำเร็จ กรุณาลองใหม่' });
+            } finally {
+                this.saving = false;
+            }
+        }
+     }">
+
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ร้านค้า · หน้าแรก</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ร้านแนะนำหน้าแรก ⭐</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">เลือกร้านที่จะแสดงบนหน้าแรก แล้วลาก <i class="fas fa-grip-vertical"></i> เพื่อเรียงลำดับ (บันทึกอัตโนมัติ)</div>
+        </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap; align-items:center;">
+            <span x-show="saving" x-cloak style="font-size:12px; color:var(--ink2);"><i class="fas fa-spinner fa-spin"></i> กำลังบันทึก...</span>
+            <a href="{{ route('admin.storefront.vendor-stores.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-store"></i> ร้านค้าทั้งหมด</a>
+            <a href="{{ route('admin.storefront.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-gear"></i> ตั้งค่าหน้าร้าน</a>
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:16px; align-items:start;">
 
-    <div class="row">
-        <!-- Featured Stores (Currently Showing) -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">ร้านค้าที่แสดงในหน้าแรก ({{ $featuredStores->count() }})</h5>
-                </div>
-                <div class="card-body">
-                    @if($featuredStores->count() > 0)
-                        <form action="{{ route('admin.featured-stores.update-order') }}" method="POST" id="orderForm">
-                            @csrf
-                            @method('PUT')
-                            <div id="sortable-list" class="list-group">
-                                @foreach($featuredStores as $store)
-                                    <div class="list-group-item d-flex justify-content-between align-items-center mb-2" data-id="{{ $store->id }}">
-                                        <div class="d-flex align-items-center">
-                                            <span class="handle me-3" style="cursor: move;">
-                                                <i class="fas fa-grip-vertical"></i>
-                                            </span>
-                                            @if($store->store_logo)
-                                                <img src="{{ asset($store->store_logo) }}" alt="{{ $store->store_name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                            @else
-                                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-center me-3" style="width: 50px; height: 50px;">
-                                                    <span class="fw-bold">{{ substr($store->store_name, 0, 1) }}</span>
-                                                </div>
-                                            @endif
-                                            <div>
-                                                <h6 class="mb-0">{{ $store->store_name }}</h6>
-                                                <small class="text-muted">
-                                                    <i class="fas fa-star text-warning"></i> {{ number_format($store->rating_average, 1) }}
-                                                    | <i class="fas fa-box"></i> {{ number_format($store->total_products) }} สินค้า
-                                                </small>
-                                                <input type="hidden" name="order[{{ $store->id }}]" value="{{ $store->featured_home_order }}" class="order-input">
-                                            </div>
-                                        </div>
-                                        <form action="{{ route('admin.featured-stores.remove', $store->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('คุณแน่ใจหรือไม่ที่จะลบร้านค้านี้ออกจากหน้าแรก?')">
-                                                <i class="fas fa-times"></i> ลบ
-                                            </button>
-                                        </form>
-                                    </div>
-                                @endforeach
-                            </div>
-                            <button type="submit" class="btn btn-success mt-3 w-100">
-                                <i class="fas fa-save"></i> บันทึกลำดับการแสดง
-                            </button>
-                        </form>
-                    @else
-                        <div class="text-center py-5 text-muted">
-                            <i class="fas fa-store fa-3x mb-3"></i>
-                            <p>ยังไม่มีร้านค้าที่เลือกให้แสดงในหน้าแรก</p>
-                        </div>
-                    @endif
-                </div>
+        {{-- ===== ร้านที่แสดงอยู่ ===== --}}
+        <div class="tp-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+                <div class="tp-section-h">แสดงบนหน้าแรก <span class="tp-pill tp-pill-gold tp-num">{{ $featuredStores->count() }}</span></div>
+                @if($featuredStores->count() > 1)
+                    <button type="button" class="tp-btn tp-btn-sm" @click="save()" :disabled="saving"><i class="fas fa-floppy-disk"></i> บันทึกลำดับ</button>
+                @endif
             </div>
-        </div>
 
-        <!-- Available Stores -->
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">ร้านค้าที่สามารถเลือกได้ ({{ $availableStores->count() }})</h5>
-                </div>
-                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
-                    @if($availableStores->count() > 0)
-                        <div class="list-group">
-                            @foreach($availableStores as $store)
-                                <div class="list-group-item d-flex justify-content-between align-items-center mb-2">
-                                    <div class="d-flex align-items-center">
-                                        @if($store->store_logo)
-                                            <img src="{{ asset($store->store_logo) }}" alt="{{ $store->store_name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                        @else
-                                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-center me-3" style="width: 50px; height: 50px;">
-                                                <span class="fw-bold">{{ substr($store->store_name, 0, 1) }}</span>
-                                            </div>
-                                        @endif
-                                        <div>
-                                            <h6 class="mb-0">{{ $store->store_name }}</h6>
-                                            <small class="text-muted">
-                                                <i class="fas fa-star text-warning"></i> {{ number_format($store->rating_average, 1) }}
-                                                | <i class="fas fa-box"></i> {{ number_format($store->total_products) }} สินค้า
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <form action="{{ route('admin.featured-stores.add', $store->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-plus"></i> เพิ่ม
-                                        </button>
-                                    </form>
+            @if($featuredStores->count() > 0)
+                <div x-ref="list" style="display:flex; flex-direction:column; gap:10px;">
+                    @foreach($featuredStores as $store)
+                        <div data-id="{{ $store->id }}" class="tp-well" style="padding:10px 12px; border-radius:15px; display:flex; align-items:center; gap:10px;">
+                            <span data-drag class="tp-icon-btn" style="width:34px; height:34px; cursor:grab;" title="ลากเพื่อเรียงลำดับ"><i class="fas fa-grip-vertical"></i></span>
+                            <span data-rank class="tp-num" style="width:22px; text-align:center; font-weight:800; color:var(--deep1);">{{ $loop->iteration }}</span>
+                            @if($store->logo_url)
+                                <img src="{{ $store->logo_url }}" alt="" loading="lazy" style="width:42px; height:42px; border-radius:12px; object-fit:cover; flex:none;">
+                            @else
+                                <span class="tp-tile" style="width:42px; height:42px; font-weight:800;">{{ mb_strtoupper(mb_substr($store->store_name ?: '?', 0, 1)) }}</span>
+                            @endif
+                            <div style="flex:1; min-width:0;">
+                                <a href="{{ route('admin.storefront.vendor-stores.show', $store) }}" style="font-weight:700; color:var(--ink); text-decoration:none; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $store->store_name }}</a>
+                                <div style="font-size:11.5px; color:var(--ink2);">
+                                    <span style="color:{{ $warn }};">★</span> <span class="tp-num">{{ number_format((float) $store->rating_average, 1) }}</span>
+                                    · <span class="tp-num">{{ number_format((int) ($store->products_count ?? $store->total_products)) }}</span> สินค้า
+                                    @if(! $store->is_active || in_array($store->status, ['suspended', 'closed'], true))
+                                        · <span style="color:{{ $bad }};">ร้านปิดอยู่ (ไม่แสดงบนหน้าแรก)</span>
+                                    @endif
                                 </div>
-                            @endforeach
+                            </div>
+                            <form method="POST" action="{{ route('admin.featured-stores.remove', $store->id) }}"
+                                  @submit="if (!confirm(@js('นำร้าน '.$store->store_name.' ออกจากหน้าแรก?'))) $event.preventDefault()">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="tp-icon-btn" style="width:34px; height:34px; color:{{ $bad }};" title="นำออก"><i class="fas fa-xmark"></i></button>
+                            </form>
                         </div>
-                    @else
-                        <div class="text-center py-5 text-muted">
-                            <i class="fas fa-check-circle fa-3x mb-3"></i>
-                            <p>ร้านค้าทั้งหมดถูกเลือกให้แสดงในหน้าแรกแล้ว</p>
-                        </div>
-                    @endif
+                    @endforeach
                 </div>
-            </div>
+            @else
+                <div style="text-align:center; color:var(--ink2); padding:36px 0; font-size:13px;">
+                    <i class="fas fa-store" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                    ยังไม่มีร้านแนะนำ — เลือกจากรายการด้านขวา
+                </div>
+            @endif
+        </div>
+
+        {{-- ===== ร้านที่เลือกได้ ===== --}}
+        <div class="tp-card" x-data="{ q: '' }">
+            <div class="tp-section-h" style="margin-bottom:10px;">ร้านที่เลือกได้ <span class="tp-pill tp-pill-soft tp-num">{{ $availableStores->count() }}</span></div>
+            <div style="font-size:11.5px; color:var(--ink2); margin-bottom:10px;">แสดงเฉพาะร้านที่เปิดขายและยืนยันแล้ว</div>
+            @if($availableStores->count() > 5)
+                <input type="text" x-model="q" class="tp-input" placeholder="ค้นหาชื่อร้าน" style="margin-bottom:10px;">
+            @endif
+            @if($availableStores->count() > 0)
+                <div style="display:flex; flex-direction:column; gap:8px; max-height:620px; overflow-y:auto; padding:2px;">
+                    @foreach($availableStores as $store)
+                        <div class="tp-well flex" style="padding:10px 12px; border-radius:15px; align-items:center; gap:10px;"
+                             x-show="q === '' || @js(mb_strtolower($store->store_name)).includes(q.toLowerCase())">
+                            @if($store->logo_url)
+                                <img src="{{ $store->logo_url }}" alt="" loading="lazy" style="width:40px; height:40px; border-radius:12px; object-fit:cover; flex:none;">
+                            @else
+                                <span class="tp-tile" style="width:40px; height:40px; font-weight:800;">{{ mb_strtoupper(mb_substr($store->store_name ?: '?', 0, 1)) }}</span>
+                            @endif
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $store->store_name }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);">
+                                    <span style="color:{{ $warn }};">★</span> <span class="tp-num">{{ number_format((float) $store->rating_average, 1) }}</span>
+                                    · <span class="tp-num">{{ number_format((int) ($store->products_count ?? $store->total_products)) }}</span> สินค้า
+                                </div>
+                            </div>
+                            <form method="POST" action="{{ route('admin.featured-stores.add', $store->id) }}" x-data="{ busy: false }" @submit="busy = true">
+                                @csrf
+                                <button type="submit" class="tp-btn tp-btn-sm tp-btn-primary" :disabled="busy"><i class="fas fa-plus"></i> เพิ่ม</button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div style="text-align:center; color:var(--ink2); padding:36px 0; font-size:13px;">
+                    <i class="fas fa-circle-check" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                    ไม่มีร้านอื่นที่เลือกได้ในตอนนี้
+                </div>
+            @endif
         </div>
     </div>
 </div>
-
-<!-- jQuery UI for Sortable -->
-<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-
-<script>
-$(function() {
-    $("#sortable-list").sortable({
-        handle: ".handle",
-        update: function(event, ui) {
-            // Update order inputs
-            $("#sortable-list .list-group-item").each(function(index) {
-                $(this).find('.order-input').val(index + 1);
-            });
-        }
-    });
-});
-</script>
-
-<style>
-.handle {
-    color: #6c757d;
-}
-
-.handle:hover {
-    color: #495057;
-}
-
-.list-group-item {
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem !important;
-    transition: all 0.3s ease;
-}
-
-.list-group-item:hover {
-    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
-    transform: translateY(-2px);
-}
-
-.ui-sortable-helper {
-    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
-    transform: rotate(2deg);
-}
-</style>
 @endsection
+
+@push('styles')
+<style>
+    .tp-drag-ghost { opacity: .45; }
+</style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+@endpush

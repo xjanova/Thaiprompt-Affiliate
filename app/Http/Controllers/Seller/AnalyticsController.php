@@ -138,7 +138,7 @@ class AnalyticsController extends Controller
         $settings->update($validated);
 
         return redirect()->route('seller.analytics.settings')
-            ->with('success', 'Analytics settings updated successfully!');
+            ->with('success', 'บันทึกการตั้งค่าการวิเคราะห์เรียบร้อยแล้ว');
     }
 
     /**
@@ -170,7 +170,7 @@ class AnalyticsController extends Controller
             ->where('visited_at', '<', $cutoffDate)
             ->delete();
 
-        return back()->with('success', "Cleanup complete! Deleted {$analyticsDeleted} analytics records and {$visitsDeleted} visit records.");
+        return back()->with('success', "ล้างข้อมูลเรียบร้อย: ลบสถิติรายวัน {$analyticsDeleted} รายการ และประวัติการเข้าชม {$visitsDeleted} รายการ");
     }
 
     /**
@@ -203,17 +203,20 @@ class AnalyticsController extends Controller
         $callback = function () use ($analytics) {
             $file = fopen('php://output', 'w');
 
-            // Header row
+            // UTF-8 BOM ให้ Excel เปิดภาษาไทยได้ถูกต้อง
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // หัวตาราง (ภาษาไทย)
             fputcsv($file, [
-                'Date',
-                'Page Views',
-                'Unique Visitors',
-                'Orders',
-                'Revenue',
-                'Conversion Rate (%)',
-                'Bounce Rate (%)',
-                'Avg Session Duration (seconds)',
-                'Avg Order Value',
+                'วันที่',
+                'การเข้าชม',
+                'ผู้เยี่ยมชมไม่ซ้ำ',
+                'ออเดอร์',
+                'รายได้ (บาท)',
+                'อัตราการแปลง (%)',
+                'อัตราตีกลับ (%)',
+                'เวลาเฉลี่ยในร้าน (วินาที)',
+                'มูลค่าเฉลี่ยต่อออเดอร์ (บาท)',
             ]);
 
             // Data rows

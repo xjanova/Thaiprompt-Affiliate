@@ -47,35 +47,10 @@
 @section('content')
 <div x-data="{ mobileMenu: false }">
 
-    {{-- ════════ NAV ════════ --}}
-    <header style="position:sticky; top:0; z-index:30; display:flex; align-items:center; flex-wrap:wrap; gap:12px 18px; padding:15px clamp(16px,3vw,40px); background:var(--card-bg); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); box-shadow:var(--card-shadow-sm); border-bottom:var(--card-border);">
-        <a href="{{ url('/') }}" style="display:flex; align-items:center; text-decoration:none;" title="ไทยพร๊อมท์">
-            <x-theme-v4.brand-logo :height="44" />
-        </a>
-        <nav style="display:flex; gap:4px; margin-left:14px; flex-wrap:wrap;">
-            <a href="#services" style="text-decoration:none; padding:9px 14px; border-radius:11px; font-size:13px; font-weight:600; color:var(--ink2);">บริการ</a>
-            <a href="#products" style="text-decoration:none; padding:9px 14px; border-radius:11px; font-size:13px; font-weight:600; color:var(--ink2);">สินค้า</a>
-            <a href="{{ $shopUrl }}" style="text-decoration:none; padding:9px 14px; border-radius:11px; font-size:13px; font-weight:600; color:var(--ink2);">ร้านค้า</a>
-            <a href="#wallet" style="text-decoration:none; padding:9px 14px; border-radius:11px; font-size:13px; font-weight:600; color:var(--ink2);">Wallet</a>
-        </nav>
-        <div style="display:flex; align-items:center; gap:9px; margin-left:auto;">
-            @auth
-                <span class="tp-muted" style="font-size:12px; font-weight:600; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">สวัสดี, {{ \Illuminate\Support\Str::limit($authUser->name ?? 'สมาชิก', 16) }}</span>
-                <a href="{{ $dashUrl }}" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; padding:0 16px; height:40px; border-radius:12px; font-weight:700; font-size:12.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">
-                    <i class="fas fa-gauge-high"></i> แดชบอร์ด
-                </a>
-                <form method="POST" action="{{ $logoutUrl }}" style="margin:0;">
-                    @csrf
-                    <button type="submit" title="ออกจากระบบ" style="cursor:pointer; border:0; display:grid; place-items:center; width:40px; height:40px; border-radius:12px; font-weight:600; color:var(--ink); background:var(--card-bg); box-shadow:var(--raise);">
-                        <i class="fas fa-arrow-right-from-bracket"></i>
-                    </button>
-                </form>
-            @else
-                <a href="{{ $loginUrl }}" style="text-decoration:none; display:grid; place-items:center; padding:0 15px; height:40px; border-radius:12px; font-weight:600; font-size:12.5px; color:var(--ink); background:var(--card-bg); box-shadow:var(--raise);">เข้าสู่ระบบ</a>
-                <a href="{{ $registerUrl }}" style="text-decoration:none; display:grid; place-items:center; padding:0 18px; height:40px; border-radius:12px; font-weight:700; font-size:12.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">สมัครสมาชิก</a>
-            @endauth
-        </div>
-    </header>
+    {{-- ════════ NAV (คอมโพเนนต์กลาง ใช้ร่วมกับร้านค้า/ตลาดสด) ════════ --}}
+    <x-theme-v4.public-header active="home"
+        :links="[['href' => '#services', 'label' => 'บริการ'], ['href' => '#products', 'label' => 'สินค้า']]"
+        :links-after="[['href' => '#wallet', 'label' => 'Wallet']]" />
 
     {{-- ════════ HERO ════════ --}}
     {{-- พื้นหลังภาพวาดลายไทย (นวลทองคำ) — วางใต้เนื้อหา จางลงด้านล่างให้กลืนกับพื้นหน้า --}}
@@ -89,12 +64,12 @@
         @endif
     <section style="position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:54px clamp(16px,3vw,40px) 30px; display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:44px; align-items:center;">
         <div>
-            <div style="display:inline-flex; align-items:center; gap:9px; padding:7px 14px; border-radius:20px; background:var(--a1soft); color:var(--deep1); font-size:12px; font-weight:700; margin-bottom:18px;"><span style="width:8px; height:8px; border-radius:50%; background:#4f9e7e; box-shadow:0 0 0 4px rgba(79,158,126,.18);"></span>แพลตฟอร์มคนไทย • เพื่อคนไทย • เพื่อเอเชีย</div>
+            <div style="display:inline-flex; align-items:center; gap:9px; padding:7px 14px; border-radius:20px; background:var(--a1soft); color:var(--deep1); font-size:12px; font-weight:700; margin-bottom:18px;"><span style="width:8px; height:8px; border-radius:50%; background:var(--sf-ok,#4f9e7e); box-shadow:0 0 0 4px rgba(79,158,126,.18);"></span>แพลตฟอร์มคนไทย • เพื่อคนไทย • เพื่อเอเชีย</div>
             <h1 style="margin:0; font-size:clamp(32px,5.5vw,46px); line-height:1.12; font-weight:700; letter-spacing:-1px; color:var(--ink);"><span style="background:linear-gradient(135deg,var(--accent1),var(--deep1)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;">ไทยพร๊อมท์</span> แพลตฟอร์ม<br/>เพื่อชีวิตที่ดีกว่า</h1>
             <div style="font-family:'Sora','Anuphan'; font-size:14px; font-weight:600; color:var(--deep2); margin-top:8px; letter-spacing:.3px;">ThaiPrompt · one platform for a better life</div>
             <p style="font-size:15px; color:var(--ink2); line-height:1.7; margin:18px 0 22px; max-width:470px;">รวมทุกโซลูชันในที่เดียว — อีคอมเมิร์ซ &amp; ตลาดสด, ไรเดอร์, จัดการด้วย AI, กระเป๋าเงินดิจิทัล และระบบปันผลโปร่งใสด้วย Blockchain ของเราเอง</p>
             <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                <a href="{{ $shopUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:14px 26px; border-radius:14px; font-weight:700; font-size:14px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">🛒 ช้อปสินค้าเลย</a>
+                <a href="{{ $shopUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:14px 26px; border-radius:14px; font-weight:700; font-size:14px; color:var(--on-accent,#fff); background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">🛒 ช้อปสินค้าเลย</a>
                 <a href="#products" style="text-decoration:none; display:inline-grid; place-items:center; padding:14px 24px; border-radius:14px; font-weight:600; font-size:14px; color:var(--ink); background:var(--card-bg); box-shadow:var(--raise);">ดูสินค้าแนะนำ</a>
             </div>
             <div style="display:flex; gap:26px; margin-top:34px; flex-wrap:wrap;">
@@ -106,8 +81,8 @@
 
         {{-- HERO CARD --}}
         <div style="padding:24px; border-radius:28px; background:var(--card-bg); box-shadow:var(--card-shadow); border:var(--card-border); -webkit-backdrop-filter:var(--card-blur); backdrop-filter:var(--card-blur);">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;"><div style="font-size:12px; color:var(--ink2); font-weight:700;">ภาพรวมแพลตฟอร์ม · LIVE</div><span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; color:#4f9e7e; background:rgba(79,158,126,.14); padding:4px 10px; border-radius:20px;"><span style="width:6px; height:6px; border-radius:50%; background:#4f9e7e;"></span>เรียลไทม์</span></div>
-            <div style="padding:20px 22px; border-radius:20px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:0 8px 22px rgba(0,0,0,.12); color:#fff;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;"><div style="font-size:12px; color:var(--ink2); font-weight:700;">ภาพรวมแพลตฟอร์ม · LIVE</div><span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; color:var(--sf-ok,#4f9e7e); background:rgba(79,158,126,.14); padding:4px 10px; border-radius:20px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--sf-ok,#4f9e7e);"></span>เรียลไทม์</span></div>
+            <div style="padding:20px 22px; border-radius:20px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:0 8px 22px rgba(0,0,0,.12); color:var(--on-accent,#fff);">
                 <div style="font-size:12px; font-weight:600; opacity:.92;">สินค้าพร้อมขายในระบบ</div>
                 <div style="font-family:'Sora','Anuphan'; font-weight:800; font-size:34px; letter-spacing:-1px; margin:3px 0; text-shadow:0 1px 3px rgba(0,0,0,.16);">{{ number_format($stats['products'] ?? 0) }} <span style="font-size:18px; opacity:.85;">รายการ</span></div>
                 <div style="display:flex; align-items:flex-end; gap:4px; height:34px; margin-top:8px;">
@@ -142,7 +117,7 @@
                 <h2 style="margin:6px 0 4px; font-size:clamp(23px,4vw,30px); font-weight:700; letter-spacing:-.4px; color:var(--ink);">ช้อปสินค้าคุณภาพ ราคาดี</h2>
                 <p style="font-size:14px; color:var(--ink2); margin:0; line-height:1.6;">คัดสรรสินค้าไอที เครื่องใช้ไฟฟ้า และอีกมากมาย จัดส่งทั่วไทย</p>
             </div>
-            <a href="{{ $shopUrl }}" style="text-decoration:none; flex:none; display:inline-flex; align-items:center; gap:8px; padding:12px 20px; border-radius:13px; font-weight:700; font-size:13.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">ดูสินค้าทั้งหมด <span style="font-family:'Sora','Anuphan';">→</span></a>
+            <a href="{{ $shopUrl }}" style="text-decoration:none; flex:none; display:inline-flex; align-items:center; gap:8px; padding:12px 20px; border-radius:13px; font-weight:700; font-size:13.5px; color:var(--on-accent,#fff); background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">ดูสินค้าทั้งหมด <span style="font-family:'Sora','Anuphan';">→</span></a>
         </div>
 
         @if($products->isEmpty())
@@ -151,14 +126,14 @@
                     title="ยังไม่มีสินค้าแนะนำ"
                     subtitle="ตอนนี้ยังไม่มีสินค้าที่ถูกตั้งเป็นสินค้าแนะนำ — เข้าไปดูสินค้าทั้งหมดในหน้าร้านได้เลย">
                     <x-slot:actions>
-                        <a href="{{ $shopUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:12px 22px; border-radius:13px; font-weight:700; font-size:13.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise);">ไปที่หน้าร้าน</a>
+                        <a href="{{ $shopUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:12px 22px; border-radius:13px; font-weight:700; font-size:13.5px; color:var(--on-accent,#fff); background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise);">ไปที่หน้าร้าน</a>
                     </x-slot:actions>
                 </x-art.empty-state>
             </div>
         @else
             <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px;">
                 @foreach($products as $product)
-                    <a href="{{ $shopUrl }}" style="text-decoration:none; display:flex; flex-direction:column; border-radius:20px; overflow:hidden; background:var(--card-bg); box-shadow:var(--card-shadow); border:var(--card-border);">
+                    <a href="{{ \Illuminate\Support\Facades\Route::has('shop.show') ? route('shop.show', $product->slug ?: $product->id) : $shopUrl }}" style="text-decoration:none; display:flex; flex-direction:column; border-radius:20px; overflow:hidden; background:var(--card-bg); box-shadow:var(--card-shadow); border:var(--card-border);">
                         <div style="aspect-ratio:1/1; background:var(--surf); box-shadow:var(--inset-sm); display:flex; align-items:center; justify-content:center; overflow:hidden;">
                             @if($product->primary_image)
                                 <img src="{{ $product->primary_image }}" alt="{{ $product->name }}" loading="lazy" style="width:100%; height:100%; object-fit:contain;" onerror="this.style.opacity=0">
@@ -229,17 +204,17 @@
                 <h2 style="margin:8px 0 12px; font-size:28px; font-weight:700; letter-spacing:-.4px; color:var(--ink);">กระเป๋าเงินดิจิทัล <span style="color:var(--deep1);">ปลอดภัย โปร่งใส</span></h2>
                 <p style="font-size:14px; color:var(--ink2); line-height:1.7; margin:0 0 22px;">จัดการเงิน ปันผล และเหรียญ TPX ได้จากแอปเดียว ทุกธุรกรรมบันทึกบน Blockchain ของเรา ตรวจสอบได้ทุกขั้นตอน</p>
                 <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                    <a href="{{ $primaryCtaUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:13px 24px; border-radius:13px; font-weight:700; font-size:13.5px; color:#fff; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">{{ $authUser ? 'ไปที่กระเป๋าเงิน' : 'เปิดกระเป๋า TPX' }}</a>
+                    <a href="{{ $primaryCtaUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:13px 24px; border-radius:13px; font-weight:700; font-size:13.5px; color:var(--on-accent,#fff); background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:var(--raise); text-shadow:0 1px 2px rgba(0,0,0,.14);">{{ $authUser ? 'ไปที่กระเป๋าเงิน' : 'เปิดกระเป๋า TPX' }}</a>
                     <a href="{{ $shopUrl }}" style="text-decoration:none; display:inline-grid; place-items:center; padding:13px 22px; border-radius:13px; font-weight:600; font-size:13.5px; color:var(--ink); background:var(--surf); box-shadow:var(--raise);">เริ่มช้อป</a>
                 </div>
             </div>
-            <div style="position:relative; z-index:1; padding:24px; border-radius:24px; background:linear-gradient(150deg,var(--accent1),var(--accent2)); box-shadow:0 16px 40px rgba(0,0,0,.18); color:#fff; overflow:hidden;">
+            <div style="position:relative; z-index:1; padding:24px; border-radius:24px; background:linear-gradient(150deg,var(--accent1),var(--accent2)); box-shadow:0 16px 40px rgba(0,0,0,.18); color:var(--on-accent,#fff); overflow:hidden;">
                 <div style="position:absolute; top:-20px; right:-20px; width:96px; height:96px; border-radius:50%; background:rgba(255,255,255,.12);"></div>
-                <div style="position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;"><div style="font-weight:700; font-size:13.5px;">ThaiPrompt Wallet</div><span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; background:rgba(255,255,255,.2); padding:4px 10px; border-radius:20px;"><span style="width:6px; height:6px; border-radius:50%; background:#9affc9;"></span>Live</span></div>
+                <div style="position:relative; display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;"><div style="font-weight:700; font-size:13.5px;">ThaiPrompt Wallet</div><span style="display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; background:rgba(255,255,255,.2); padding:4px 10px; border-radius:20px;"><span style="width:6px; height:6px; border-radius:50%; background:var(--tp-live,#9affc9);"></span>Live</span></div>
                 <div style="position:relative; padding:18px 20px; border-radius:18px; background:rgba(255,255,255,.16); margin-bottom:16px;">
                     <div style="font-size:11.5px; opacity:.92; font-weight:600;">ยอดคงเหลือทั้งหมด</div>
                     <div style="font-family:'Sora','Anuphan'; font-weight:800; font-size:31px; letter-spacing:-1px; margin:3px 0; text-shadow:0 1px 3px rgba(0,0,0,.18);">฿0<span style="font-size:18px; opacity:.8;">.00</span></div>
-                    <div style="font-size:11.5px; font-weight:700; color:#cffae0;">เปิดบัญชีฟรี ไม่มีค่าธรรมเนียมแรกเข้า</div>
+                    <div style="font-size:11.5px; font-weight:700; color:var(--tp-live-soft,#cffae0);">เปิดบัญชีฟรี ไม่มีค่าธรรมเนียมแรกเข้า</div>
                 </div>
                 <div style="position:relative; display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:9px;">
                     @foreach([['ic'=>'💸','l'=>'โอน'],['ic'=>'📥','l'=>'รับเงิน'],['ic'=>'🪙','l'=>'TPX'],['ic'=>'📊','l'=>'ปันผล']] as $a)
@@ -255,7 +230,7 @@
 
     {{-- ════════ CTA BAND ════════ --}}
     <section style="max-width:1180px; margin:20px auto 50px; padding:0 clamp(16px,3vw,40px);">
-        <div style="position:relative; overflow:hidden; padding:46px clamp(24px,4vw,44px); border-radius:28px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:0 14px 40px rgba(0,0,0,.16); color:#fff; display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;">
+        <div style="position:relative; overflow:hidden; padding:46px clamp(24px,4vw,44px); border-radius:28px; background:linear-gradient(135deg,var(--accent1),var(--accent2)); box-shadow:0 14px 40px rgba(0,0,0,.16); color:var(--on-accent,#fff); display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;">
             {{-- ริบบิ้นทองเป็นพื้นผิวบางๆ บนแถบ CTA (soft-light ให้กลืนไปกับสีแบรนด์) --}}
             @php $tpCtaArt = 'images/art/cta-band.webp'; @endphp
             @if(file_exists(public_path($tpCtaArt)))
@@ -263,66 +238,16 @@
                      style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.30; mix-blend-mode:soft-light; pointer-events:none;">
             @endif
             <div style="position:relative; z-index:1;"><h2 style="margin:0; font-size:clamp(23px,4vw,30px); font-weight:700; letter-spacing:-.4px; text-shadow:0 1px 3px rgba(0,0,0,.14);">พร้อมเริ่มต้นกับไทยพร๊อมท์แล้วหรือยัง?</h2><div style="font-family:'Sora','Anuphan'; font-size:14px; font-weight:600; opacity:.92; margin-top:6px;">หนึ่งแอป ครบทุกบริการ เพื่อชีวิตที่ดีกว่า</div></div>
-            <a href="{{ $primaryCtaUrl }}" style="position:relative; z-index:1; text-decoration:none; flex:none; display:inline-grid; place-items:center; padding:16px 32px; border-radius:15px; font-weight:700; font-size:15px; color:var(--deep1); background:#fff; box-shadow:0 8px 22px rgba(0,0,0,.16);">{{ $primaryCtaLabel }} →</a>
+            <a href="{{ $primaryCtaUrl }}" style="position:relative; z-index:1; text-decoration:none; flex:none; display:inline-grid; place-items:center; padding:16px 32px; border-radius:15px; font-weight:700; font-size:15px; color:var(--deep1); background:var(--on-accent,#fff); box-shadow:0 8px 22px rgba(0,0,0,.16);">{{ $primaryCtaLabel }} →</a>
         </div>
     </section>
 
-    {{-- ════════ FOOTER ════════ --}}
-    <style>
-        .tp-foot-link { color: var(--ink2); text-decoration: none; font-size: 12.5px; transition: color .15s ease; }
-        .tp-foot-link:hover { color: var(--deep1); }
-        .tp-foot-h { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 12px; }
-    </style>
-    <footer style="border-top:var(--card-border); margin-top:auto;">
-        <div style="max-width:1180px; margin:0 auto; padding:42px clamp(16px,3vw,40px) 26px; display:grid; grid-template-columns:1.4fr 1fr 1fr 1fr; gap:28px;" class="tp-foot-grid">
-            {{-- แบรนด์ --}}
-            <div>
-                <x-theme-v4.brand-logo :height="40" />
-                <p style="font-size:12.5px; color:var(--ink2); line-height:1.7; margin:14px 0 0; max-width:280px;">แพลตฟอร์มคนไทย รวมอีคอมเมิร์ซ ไรเดอร์ ตลาดสด กระเป๋าเงินดิจิทัล และระบบปันผลโปร่งใสด้วย Blockchain ของเราเอง</p>
-            </div>
-            {{-- ร้านค้า & บริการ --}}
-            <div>
-                <div class="tp-foot-h">ร้านค้า &amp; บริการ</div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <a href="{{ $shopUrl }}" class="tp-foot-link">ร้านค้าออนไลน์</a>
-                    <a href="#products" class="tp-foot-link">สินค้าแนะนำ</a>
-                    <a href="#services" class="tp-foot-link">บริการทั้งหมด</a>
-                    <a href="#wallet" class="tp-foot-link">กระเป๋าเงิน TPX</a>
-                </div>
-            </div>
-            {{-- บริษัท --}}
-            <div>
-                <div class="tp-foot-h">บริษัท</div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <a href="{{ route('page.show', 'about-us') }}" class="tp-foot-link">เกี่ยวกับเรา</a>
-                    <a href="{{ route('page.show', 'contact') }}" class="tp-foot-link">ติดต่อเรา</a>
-                    <a href="{{ route('page.show', 'faq') }}" class="tp-foot-link">คำถามที่พบบ่อย</a>
-                    <a href="{{ route('wiki.index') }}" class="tp-foot-link">วิกิแพลตฟอร์ม</a>
-                </div>
-            </div>
-            {{-- ข้อกำหนด & นโยบาย --}}
-            <div>
-                <div class="tp-foot-h">ข้อกำหนด &amp; นโยบาย</div>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    <a href="{{ route('terms-of-service.html') }}" class="tp-foot-link">ข้อกำหนดการใช้งาน</a>
-                    <a href="{{ route('privacy-policy.html') }}" class="tp-foot-link">นโยบายความเป็นส่วนตัว</a>
-                    <a href="{{ route('cookie-policy') }}" class="tp-foot-link">นโยบายคุกกี้</a>
-                    <a href="{{ route('software-warranty') }}" class="tp-foot-link">การรับประกันซอฟต์แวร์</a>
-                </div>
-            </div>
-        </div>
-        <div style="border-top:var(--card-border); padding:16px clamp(16px,3vw,40px); display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-            <div style="font-size:12px; color:var(--ink2); line-height:1.7;">© {{ date('Y') + 543 }} ไทยพร๊อมท์ · ThaiPrompt — แพลตฟอร์มคนไทย เพื่อคนไทย เพื่อเอเชีย<br>พัฒนาและรับประกันโดย <a href="https://xman4289.com" target="_blank" rel="noopener noreferrer" style="color:var(--deep1); text-decoration:none;">บริษัท เอ็กซ์แมน เอ็นเตอร์ไพรส์ จำกัด</a></div>
-            <div style="display:flex; gap:16px; flex-wrap:wrap;">
-                <a href="{{ route('privacy-policy.html') }}" class="tp-foot-link">ความเป็นส่วนตัว</a>
-                <a href="{{ route('terms-of-service.html') }}" class="tp-foot-link">ข้อกำหนด</a>
-                <a href="{{ $authUser ? $dashUrl : $loginUrl }}" class="tp-foot-link">{{ $authUser ? 'แดชบอร์ด' : 'เข้าสู่ระบบ' }}</a>
-            </div>
-        </div>
-    </footer>
-    <style>
-        @media (max-width: 760px) { .tp-foot-grid { grid-template-columns: 1fr 1fr !important; } }
-        @media (max-width: 460px) { .tp-foot-grid { grid-template-columns: 1fr !important; } }
-    </style>
+    {{-- ════════ FOOTER (คอมโพเนนต์กลาง) ════════ --}}
+    <x-theme-v4.public-footer :shop-links="[
+        ['href' => $shopUrl, 'label' => 'ร้านค้าออนไลน์'],
+        ['href' => '#products', 'label' => 'สินค้าแนะนำ'],
+        ['href' => '#services', 'label' => 'บริการทั้งหมด'],
+        ['href' => '#wallet', 'label' => 'กระเป๋าเงิน TPX'],
+    ]" />
 </div>
 @endsection

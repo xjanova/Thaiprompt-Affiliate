@@ -1,138 +1,59 @@
 {{--
-    Official Shop - Purchase Success Page
-    หน้าแสดงผลเมื่อซื้อสินค้าด้วย Coins สำเร็จ
---}}
+ | ซื้อด้วย Coins สำเร็จ (ร้านค้าทางการ) — ธีม V4 (frontend-v4)
+ | ข้อมูลจาก OfficialShopController@purchaseSuccess: $order (items.product) — เป็นของผู้ใช้คนนี้เท่านั้น
+ --}}
+@extends('layouts.frontend-v4')
 
-@extends('layouts.storefront')
-
-@section('title', 'ซื้อสำเร็จ - Official Shop')
+@section('title', 'ซื้อสำเร็จ - ร้านค้าทางการ')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12">
-    <div class="container mx-auto px-4">
-        {{-- Success Card --}}
-        <div class="max-w-2xl mx-auto">
-            {{-- Success Animation --}}
-            <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-24 h-24
-                           bg-gradient-to-br from-green-400 to-emerald-500
-                           rounded-full shadow-2xl shadow-green-500/30
-                           animate-bounce">
-                    <i class="fas fa-check text-white text-4xl"></i>
+<x-theme-v4.shop-kit />
+<x-theme-v4.public-header active="orders" />
+
+<main style="flex:1; padding-bottom:40px;">
+    <section class="sf-wrap" style="padding-top:28px; max-width:720px; text-align:center;">
+        <span style="width:88px; height:88px; margin:0 auto; border-radius:30px; display:grid; place-items:center; font-size:40px; color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--sf-ok, #4f9e7e), var(--sf-ok2, #3b8467)); box-shadow:var(--card-shadow); animation:tpPop .5s ease both;">
+            <i class="fas fa-check"></i>
+        </span>
+        <h1 class="sf-h1" style="margin-top:14px;">ซื้อสำเร็จ!</h1>
+        <p class="tp-muted" style="margin:6px 0 0;">ขอบคุณที่ซื้อสินค้าจากร้านค้าทางการ</p>
+    </section>
+
+    <section class="sf-wrap sf-stack" style="padding-top:20px; max-width:720px;">
+        <div class="tp-card sf-stack" style="gap:12px;">
+            <div class="sf-row"><span>เลขที่คำสั่งซื้อ</span><strong class="tp-num">{{ $order->order_number }}</strong></div>
+            <div class="sf-row"><span>วันที่</span><strong class="tp-num">{{ $order->created_at->timezone('Asia/Bangkok')->format('d/m/Y H:i') }}</strong></div>
+
+            <div class="tp-section-h" style="margin-top:6px;">รายการสินค้า</div>
+            @foreach($order->items as $item)
+                @php $psImg = $item->product ? (\App\Services\Shop\ShopPresenter::productImages($item->product)[0] ?? null) : null; @endphp
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:16px; background:var(--surf); box-shadow:var(--raise);">
+                    <span class="sf-thumb" style="width:56px; height:56px;">@if($psImg)<img src="{{ $psImg }}" alt="" loading="lazy">@else 📦 @endif</span>
+                    <span style="flex:1; min-width:0;">
+                        <span style="display:block; font-weight:700; color:var(--ink); overflow-wrap:anywhere;">{{ $item->product_name }}</span>
+                        <span class="tp-muted" style="font-size:12.5px;">× {{ (int) $item->quantity }}</span>
+                    </span>
+                    <span class="tp-num" style="font-weight:800; color:var(--deep2);"><i class="fas fa-coins"></i> {{ number_format((float) ($item->subtotal_coins ?? ((float) $item->price_coins * (int) $item->quantity)), 0) }}</span>
                 </div>
+            @endforeach
+
+            <div class="sf-total">
+                <span style="font-weight:800; color:var(--ink);">Coins ที่ใช้</span>
+                <span class="tp-num" style="color:var(--deep2);"><i class="fas fa-coins"></i> {{ number_format((float) ($order->coins_used ?? 0), 0) }}</span>
             </div>
-
-            {{-- Main Card --}}
-            <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden
-                       border border-gray-100 dark:border-gray-700">
-                {{-- Header --}}
-                <div class="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 p-8 text-center">
-                    <h1 class="text-3xl font-bold text-white mb-2">ซื้อสำเร็จ!</h1>
-                    <p class="text-green-100">ขอบคุณที่ซื้อสินค้าจาก Official Shop</p>
-                </div>
-
-                {{-- Order Details --}}
-                <div class="p-8">
-                    {{-- Order Number --}}
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl mb-6">
-                        <span class="text-gray-600 dark:text-gray-400">เลขที่คำสั่งซื้อ</span>
-                        <span class="font-bold text-gray-900 dark:text-white font-mono">{{ $order->order_number }}</span>
-                    </div>
-
-                    {{-- Items --}}
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-4">รายการสินค้า</h3>
-                    <div class="space-y-4 mb-6">
-                        @foreach($order->items as $item)
-                        <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                            @if($item->product && $item->product->primary_image_url)
-                            <img src="{{ $item->product->primary_image_url ?? 'https://via.placeholder.com/150' }}"
-                                 alt="{{ $item->product_name }}"
-                                 class="w-16 h-16 object-cover rounded-lg"
-                                 onerror="this.src='https://via.placeholder.com/150'">
-                            @else
-                            <div class="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                                <i class="fas fa-box text-gray-400 text-xl"></i>
-                            </div>
-                            @endif
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-gray-900 dark:text-white">{{ $item->product_name }}</h4>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">x{{ $item->quantity }}</p>
-                            </div>
-                            <div class="text-right">
-                                <div class="flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-bold">
-                                    <i class="fas fa-coins"></i>
-                                    <span>{{ number_format($item->subtotal_coins ?? $item->price_coins * $item->quantity, 0) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-
-                    {{-- Total --}}
-                    <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
-                        <div class="flex items-center justify-between text-lg">
-                            <span class="font-semibold text-gray-700 dark:text-gray-300">Coins ที่ใช้</span>
-                            <div class="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-bold text-xl">
-                                <i class="fas fa-coins"></i>
-                                <span>{{ number_format($order->coins_used, 0) }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Status Badge --}}
-                    <div class="mt-6 p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-700">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                <i class="fas fa-check text-white"></i>
-                            </div>
-                            <div>
-                                <p class="font-semibold text-green-800 dark:text-green-200">คำสั่งซื้อสำเร็จ</p>
-                                <p class="text-sm text-green-600 dark:text-green-400">
-                                    {{ $order->created_at->format('d/m/Y H:i') }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Action Buttons --}}
-                    <div class="flex flex-col sm:flex-row gap-4 mt-8">
-                        <a href="{{ route('official-shop.index') }}"
-                           class="flex-1 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500
-                                 hover:from-amber-600 hover:to-orange-600
-                                 text-white font-bold rounded-xl text-center
-                                 shadow-lg hover:shadow-xl transition-all">
-                            <i class="fas fa-store mr-2"></i>
-                            กลับไป Official Shop
-                        </a>
-                        <a href="{{ route('orders.index') }}"
-                           class="flex-1 px-6 py-4 bg-gray-100 dark:bg-gray-700
-                                 hover:bg-gray-200 dark:hover:bg-gray-600
-                                 text-gray-700 dark:text-gray-200 font-bold rounded-xl text-center
-                                 transition-all">
-                            <i class="fas fa-list mr-2"></i>
-                            ดูประวัติคำสั่งซื้อ
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Additional Info --}}
-            <div class="mt-8 text-center">
-                <p class="text-gray-600 dark:text-gray-400 mb-4">
-                    <i class="fas fa-envelope mr-2"></i>
-                    รายละเอียดคำสั่งซื้อจะถูกส่งไปยังอีเมลของคุณ
-                </p>
-                <div class="flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                    <a href="{{ route('home') }}" class="hover:text-amber-500 transition-colors">
-                        <i class="fas fa-home mr-1"></i> หน้าหลัก
-                    </a>
-                    <span>|</span>
-                    <a href="{{ route('user.coin-shop.index') }}" class="hover:text-amber-500 transition-colors">
-                        <i class="fas fa-coins mr-1"></i> Coin Shop
-                    </a>
-                </div>
-            </div>
+            <div class="sf-note sf-note-ok"><i class="fas fa-circle-check"></i> คำสั่งซื้อสำเร็จเรียบร้อย</div>
         </div>
-    </div>
-</div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px;">
+            <a href="{{ route('official-shop.index') }}" class="sf-btn3d"><i class="fas fa-crown"></i> กลับร้านค้าทางการ</a>
+            <a href="{{ route('orders.index') }}" class="sf-btn3d is-soft"><i class="fas fa-receipt"></i> ดูประวัติคำสั่งซื้อ</a>
+        </div>
+        <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap; font-size:13px;">
+            <a href="{{ route('home') }}" style="color:var(--deep1); text-decoration:none;"><i class="fas fa-house"></i> หน้าหลัก</a>
+            <a href="{{ route('user.coin-shop.index') }}" style="color:var(--deep1); text-decoration:none;"><i class="fas fa-coins"></i> Coin Shop</a>
+        </div>
+    </section>
+</main>
+
+<x-theme-v4.public-footer />
 @endsection

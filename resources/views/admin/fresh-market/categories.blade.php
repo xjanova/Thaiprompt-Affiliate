@@ -1,130 +1,94 @@
-@extends('layouts.admin-v3')
+{{--
+ | หมวดหมู่สินค้าตลาดสด (admin.fresh-market.categories) — ธีม V4 + SortableJS
+ | ตัวแปรจาก Admin\FreshMarketController@categories: $categories (withCount listings, เรียง sort_order)
+ | ฟอร์ม: POST categories.store / PUT categories.update {name*, icon, description, is_active (hidden 0 + checkbox 1)}
+ |        PATCH categories.toggle/{category} · DELETE categories.destroy/{category} (มีสินค้า/หมวดย่อยอยู่ = ลบไม่ได้)
+ | ลากเรียง: POST categories.reorder JSON {order: [id, id, ...]} (ส่งเป็นอาร์เรย์ของ id ตามลำดับใหม่)
+--}}
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการหมวดหมู่ - ตลาดสดไทยพร๊อม')
-
-@push('styles')
-<style>
-    .sortable-ghost {
-        opacity: 0.4;
-        background: rgba(16, 185, 129, 0.1);
-    }
-    .sortable-drag {
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    }
-</style>
-@endpush
+@section('title', 'หมวดหมู่ตลาดสด')
 
 @section('content')
-<div class="space-y-6" x-data="categoryManager()">
-    {{-- ส่วนหัว --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">จัดการหมวดหมู่ - ตลาดสดไทยพร๊อม</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">จัดการหมวดหมู่สินค้าตลาดสด ลากเพื่อเรียงลำดับ</p>
+@include('admin.riders.partials.v4-kit')
+<div x-data="w1CategoryManager()" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.fresh-market.dashboard') }}" class="tp-icon-btn" title="กลับแดชบอร์ดตลาดสด"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ตลาดสด · หมวดหมู่</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">หมวดหมู่สินค้า 📂</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ลากที่ <i class="fas fa-grip-vertical"></i> เพื่อเรียงลำดับที่ผู้ซื้อเห็น</div>
+            </div>
         </div>
-        <button @click="openCreateModal()"
-                class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-            <i class="fas fa-plus mr-2"></i> เพิ่มหมวดหมู่
-        </button>
+        <button type="button" class="tp-btn tp-btn-primary" @click="openCreate()"><i class="fas fa-plus"></i> เพิ่มหมวดหมู่</button>
     </div>
 
-    {{-- แจ้งเตือน --}}
-    @if(session('success'))
-        <div class="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl">
-            {{ session('success') }}
-        </div>
-    @endif
+    @include('admin.riders.partials.flash')
 
-    @if(session('error'))
-        <div class="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl">
-            {{ session('error') }}
-        </div>
-    @endif
+    <div x-show="orderMessage" x-cloak class="tp-card" style="padding:10px 16px; font-size:13px;" :style="{ borderLeft: '4px solid var(' + (orderOk ? '--w-ok' : '--w-bad') + ')' }">
+        <i class="fas" :class="orderOk ? 'fa-circle-check' : 'fa-circle-exclamation'" :style="{ color: 'var(' + (orderOk ? '--w-ok' : '--w-bad') + ')' }"></i>
+        <span x-text="orderMessage"></span>
+    </div>
 
-    {{-- ตารางหมวดหมู่ --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                <i class="fas fa-grip-vertical mr-1"></i> ลากแถวเพื่อเรียงลำดับหมวดหมู่
-            </p>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-10"></th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase w-16">ไอคอน</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ชื่อหมวดหมู่</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">คำอธิบาย</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จำนวนรายการ</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:720px; border-collapse:collapse; font-size:13.5px;">
+                <thead>
+                    <tr style="text-align:left; font-size:11px; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">
+                        <th style="padding:12px 8px 12px 18px; width:36px;"></th>
+                        <th style="padding:12px;">หมวดหมู่</th>
+                        <th style="padding:12px;">คำอธิบาย</th>
+                        <th style="padding:12px; text-align:center;">สินค้า</th>
+                        <th style="padding:12px; text-align:center;">สถานะ</th>
+                        <th style="padding:12px 18px; text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody id="categories-sortable" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($categories as $category)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-move"
-                            data-id="{{ $category->id }}">
-                            <td class="px-3 py-4 text-center text-gray-400 dark:text-gray-500">
-                                <i class="fas fa-grip-vertical"></i>
+                <tbody x-ref="list">
+                    @forelse ($categories as $category)
+                        <tr class="w1-row" data-id="{{ $category->id }}" style="box-shadow:inset 0 1px 0 color-mix(in srgb, var(--ink2) 14%, transparent);">
+                            <td style="padding:12px 8px 12px 18px; color:var(--ink2); cursor:grab;" class="w1-handle" title="ลากเพื่อเรียงลำดับ"><i class="fas fa-grip-vertical"></i></td>
+                            <td style="padding:12px;">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <span class="tp-well" style="width:40px; height:40px; border-radius:12px; display:grid; place-items:center; font-size:20px; flex:none;">{{ $category->icon ?: '🏷️' }}</span>
+                                    <div>
+                                        <div style="font-weight:700;">{{ $category->name }}</div>
+                                        @if ($category->slug)<div style="font-size:11.5px; color:var(--ink2);">{{ $category->slug }}</div>@endif
+                                    </div>
+                                </div>
                             </td>
-                            <td class="px-4 py-4">
-                                <span class="text-2xl">{{ $category->icon ?? '🏷️' }}</span>
+                            <td style="padding:12px; color:var(--ink2); max-width:320px;">{{ \Illuminate\Support\Str::limit((string) $category->description, 80) ?: '-' }}</td>
+                            <td style="padding:12px; text-align:center;">
+                                <a href="{{ route('admin.fresh-market.listings', ['category_id' => $category->id]) }}" class="w1-link tp-num">{{ number_format((int) $category->listings_count) }}</a>
                             </td>
-                            <td class="px-4 py-4">
-                                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $category->name }}</div>
-                                @if($category->slug)
-                                    <div class="text-xs text-gray-400">{{ $category->slug }}</div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
-                                {{ Str::limit($category->description, 60) ?? '-' }}
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                    {{ number_format($category->listings_count ?? 0) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-4 text-center">
-                                <form method="POST" action="{{ route('admin.fresh-market.categories.toggle', $category) }}" class="inline">
+                            <td style="padding:12px; text-align:center;">
+                                <form method="POST" action="{{ route('admin.fresh-market.categories.toggle', $category) }}" style="display:inline;">
                                     @csrf
                                     @method('PATCH')
-                                    <button type="submit" class="focus:outline-none">
-                                        @if($category->is_active)
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 cursor-pointer hover:bg-green-200 dark:hover:bg-green-900/50 transition">
-                                                เปิดใช้งาน
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition">
-                                                ปิดใช้งาน
-                                            </span>
-                                        @endif
+                                    <button type="submit" style="border:0; background:none; cursor:pointer; padding:0;" title="กดเพื่อสลับเปิด/ปิด">
+                                        @include('admin.riders.partials.pill', ['pillTone' => $category->is_active ? 'ok' : 'mute', 'pillText' => $category->is_active ? 'เปิดใช้งาน' : 'ปิดอยู่', 'pillIcon' => $category->is_active ? 'fa-toggle-on' : 'fa-toggle-off', 'pillTitle' => null])
                                     </button>
                                 </form>
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button @click="openEditModal({{ json_encode($category) }})"
-                                            class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition">
-                                        <i class="fas fa-edit mr-1"></i> แก้ไข
+                            <td style="padding:12px 18px;">
+                                <div style="display:flex; justify-content:flex-end; gap:7px;">
+                                    <button type="button" class="tp-btn tp-btn-sm" @click="openEdit(@js(['id' => $category->id, 'name' => $category->name, 'icon' => $category->icon, 'description' => $category->description, 'is_active' => (bool) $category->is_active]))">
+                                        <i class="fas fa-pen"></i> แก้ไข
                                     </button>
-                                    <form method="POST" action="{{ route('admin.fresh-market.categories.destroy', $category) }}"
-                                          onsubmit="return confirm('ยืนยันการลบหมวดหมู่นี้?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition">
-                                            <i class="fas fa-trash mr-1"></i> ลบ
-                                        </button>
-                                    </form>
+                                    <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-bad);" title="ลบ"
+                                            @click="$dispatch('w1-action', @js(['url' => route('admin.fresh-market.categories.destroy', $category), 'title' => 'ลบหมวดหมู่ '.$category->name, 'message' => (int) $category->listings_count > 0 ? 'หมวดนี้มีสินค้า '.(int) $category->listings_count.' รายการ ระบบจะไม่ยอมให้ลบ — ย้ายสินค้าออกก่อน' : 'ลบแล้วกู้คืนไม่ได้', 'reason' => 'none', 'confirm' => 'ลบหมวดหมู่', 'tone' => 'bad', 'icon' => 'fa-trash', 'fields' => ['_method' => 'DELETE']]))">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-folder-open text-4xl mb-3 block"></i>
-                                ยังไม่มีหมวดหมู่ กดปุ่ม "เพิ่มหมวดหมู่" เพื่อเริ่มต้น
+                            <td colspan="6" style="padding:44px 18px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-folder-open" style="font-size:30px; opacity:.5; display:block; margin-bottom:10px;"></i>
+                                ยังไม่มีหมวดหมู่ กด "เพิ่มหมวดหมู่" เพื่อเริ่มต้น
                             </td>
                         </tr>
                     @endforelse
@@ -133,146 +97,115 @@
         </div>
     </div>
 
-    {{-- Modal สร้าง/แก้ไขหมวดหมู่ --}}
-    <div x-show="showModal"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-50 overflow-y-auto"
-         style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            {{-- Overlay --}}
-            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showModal = false"></div>
-
-            {{-- Modal Content --}}
-            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg p-6 z-10"
-                 @click.away="showModal = false">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white"
-                        x-text="isEditing ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่'"></h3>
-                    <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <i class="fas fa-times text-xl"></i>
+    {{-- ===== โมดัลเพิ่ม/แก้ไข ===== --}}
+    <div x-show="modal" x-cloak @keydown.escape.window="modal = false">
+        <div style="position:fixed; inset:0; z-index:85; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,.5);" @click.self="modal = false">
+            <form method="POST" :action="editingId ? updateUrl.replace('__ID__', editingId) : storeUrl" class="tp-card"
+                  style="width:100%; max-width:480px; padding:22px; max-height:calc(100vh - 32px); overflow-y:auto;"
+                  @submit="saving = true">
+                @csrf
+                <template x-if="editingId">
+                    <input type="hidden" name="_method" value="PUT">
+                </template>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px;">
+                    <div class="tp-section-h" style="font-size:16px;" x-text="editingId ? 'แก้ไขหมวดหมู่' : 'เพิ่มหมวดหมู่ใหม่'"></div>
+                    <button type="button" class="tp-icon-btn" style="width:34px; height:34px;" @click="modal = false" title="ปิด"><i class="fas fa-xmark"></i></button>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <div style="display:grid; grid-template-columns:90px 1fr; gap:12px;">
+                        <label>
+                            <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ไอคอน</span>
+                            <input type="text" name="icon" x-model="form.icon" maxlength="10" class="tp-input" style="text-align:center; font-size:20px; padding:8px;" placeholder="🥬">
+                        </label>
+                        <label>
+                            <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ชื่อหมวดหมู่ <span style="color:var(--w-bad);">*</span></span>
+                            <input type="text" name="name" x-model="form.name" required maxlength="100" class="tp-input" placeholder="เช่น ผักสด ผลไม้ อาหารปรุงสำเร็จ">
+                        </label>
+                    </div>
+                    <label>
+                        <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">คำอธิบาย</span>
+                        <textarea name="description" x-model="form.description" rows="3" maxlength="500" class="tp-input" style="resize:vertical;" placeholder="คำอธิบายสั้นๆ ของหมวดนี้"></textarea>
+                    </label>
+                    <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13px;">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox" name="is_active" value="1" x-model="form.is_active" style="width:18px; height:18px; accent-color:var(--accent1);">
+                        เปิดให้ผู้ซื้อเห็นหมวดนี้
+                    </label>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:18px;">
+                    <button type="button" class="tp-btn" style="flex:1;" @click="modal = false">ยกเลิก</button>
+                    <button type="submit" class="tp-btn tp-btn-primary" style="flex:1;" :disabled="saving">
+                        <i class="fas" :class="saving ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+                        <span x-text="editingId ? 'บันทึกการแก้ไข' : 'สร้างหมวดหมู่'"></span>
                     </button>
                 </div>
-
-                <form :action="isEditing ? '{{ url('admin/fresh-market/categories') }}/' + editingId : '{{ route('admin.fresh-market.categories.store') }}'"
-                      method="POST">
-                    @csrf
-                    <template x-if="isEditing">
-                        <input type="hidden" name="_method" value="PUT">
-                    </template>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ไอคอน (Emoji)</label>
-                            <input type="text" name="icon" x-model="form.icon"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                   placeholder="เช่น 🥬 🍎 🐟">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชื่อหมวดหมู่ <span class="text-red-500">*</span></label>
-                            <input type="text" name="name" x-model="form.name" required
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                   placeholder="เช่น ผักสด, ผลไม้, เนื้อสัตว์">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">คำอธิบาย</label>
-                            <textarea name="description" x-model="form.description" rows="3"
-                                      class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                      placeholder="คำอธิบายสั้นๆ เกี่ยวกับหมวดหมู่นี้"></textarea>
-                        </div>
-                        <div class="flex items-center">
-                            <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" name="is_active" value="1" x-model="form.is_active"
-                                   class="rounded border-gray-300 text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600">
-                            <label class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้งาน</label>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button type="button" @click="showModal = false"
-                                class="px-5 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                            ยกเลิก
-                        </button>
-                        <button type="submit"
-                                class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg transition">
-                            <i class="fas fa-save mr-1"></i>
-                            <span x-text="isEditing ? 'บันทึกการแก้ไข' : 'สร้างหมวดหมู่'"></span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+            </form>
         </div>
     </div>
 </div>
+@endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-    // ตั้งค่า SortableJS สำหรับลากเรียงลำดับหมวดหมู่
-    document.addEventListener('DOMContentLoaded', function () {
-        const el = document.getElementById('categories-sortable');
-        if (el) {
-            Sortable.create(el, {
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                dragClass: 'sortable-drag',
-                handle: '.fa-grip-vertical',
-                onEnd: function (evt) {
-                    // ส่งลำดับใหม่ไปบันทึก
-                    const items = el.querySelectorAll('tr[data-id]');
-                    const order = Array.from(items).map((item, index) => ({
-                        id: item.dataset.id,
-                        sort_order: index
-                    }));
-
-                    fetch('{{ route("admin.fresh-market.categories.reorder") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({ order: order })
-                    });
-                }
-            });
-        }
-    });
-
-    // Alpine.js component สำหรับจัดการ Modal
-    function categoryManager() {
+    /* จัดการหมวดหมู่ตลาดสด: โมดัลเพิ่ม/แก้ไข + ลากเรียงลำดับด้วย SortableJS */
+    function w1CategoryManager() {
         return {
-            showModal: false,
-            isEditing: false,
+            storeUrl: @js(route('admin.fresh-market.categories.store')),
+            updateUrl: @js(route('admin.fresh-market.categories.update', ['category' => '__ID__'])),
+            reorderUrl: @js(route('admin.fresh-market.categories.reorder')),
+            modal: false,
+            saving: false,
             editingId: null,
-            form: {
-                icon: '',
-                name: '',
-                description: '',
-                is_active: true,
+            form: { icon: '', name: '', description: '', is_active: true },
+            orderMessage: '',
+            orderOk: true,
+            init() {
+                this.$nextTick(() => {
+                    if (!window.Sortable || !this.$refs.list || !this.$refs.list.querySelector('tr[data-id]')) return;
+                    Sortable.create(this.$refs.list, {
+                        animation: 160,
+                        handle: '.w1-handle',
+                        draggable: 'tr[data-id]',
+                        onEnd: () => this.saveOrder(),
+                    });
+                });
             },
-            openCreateModal() {
-                this.isEditing = false;
+            openCreate() {
                 this.editingId = null;
                 this.form = { icon: '', name: '', description: '', is_active: true };
-                this.showModal = true;
+                this.saving = false;
+                this.modal = true;
             },
-            openEditModal(category) {
-                this.isEditing = true;
+            openEdit(category) {
                 this.editingId = category.id;
-                this.form = {
-                    icon: category.icon || '',
-                    name: category.name || '',
-                    description: category.description || '',
-                    is_active: category.is_active ? true : false,
-                };
-                this.showModal = true;
-            }
+                this.form = { icon: category.icon || '', name: category.name || '', description: category.description || '', is_active: !!category.is_active };
+                this.saving = false;
+                this.modal = true;
+            },
+            async saveOrder() {
+                const order = Array.from(this.$refs.list.querySelectorAll('tr[data-id]')).map((row) => parseInt(row.dataset.id, 10));
+                try {
+                    const res = await fetch(this.reorderUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Accept: 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                        body: JSON.stringify({ order: order }),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    this.orderOk = res.ok && json.success !== false;
+                    this.orderMessage = this.orderOk ? (json.message || 'บันทึกลำดับหมวดหมู่แล้ว') : 'บันทึกลำดับไม่สำเร็จ กรุณารีเฟรชหน้าแล้วลองใหม่';
+                } catch (e) {
+                    this.orderOk = false;
+                    this.orderMessage = 'บันทึกลำดับไม่สำเร็จ ตรวจการเชื่อมต่อแล้วลองใหม่';
+                }
+                setTimeout(() => { this.orderMessage = ''; }, 3500);
+            },
         };
     }
 </script>
 @endpush
-@endsection

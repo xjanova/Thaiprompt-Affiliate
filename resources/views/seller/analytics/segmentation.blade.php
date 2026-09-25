@@ -1,100 +1,80 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'Customer Segmentation - RFM Analysis')
+@section('title', 'กลุ่มลูกค้า (RFM)')
+
+@php
+    // กลุ่มลูกค้าตามคะแนน RFM (ซื้อล่าสุด · ความถี่ · ยอดเงิน)
+    $segmentMeta = [
+        'champions' => ['🏆', 'ลูกค้าตัวจริง', 'ซื้อบ่อย ซื้อเยอะ และเพิ่งซื้อ — ให้สิทธิพิเศษ/ของแถมเพื่อรักษาไว้', 'gold'],
+        'loyal' => ['💙', 'ลูกค้าประจำ', 'กลับมาซื้อสม่ำเสมอ — ชวนลองสินค้าใหม่หรือแพ็กคู่', 'info'],
+        'potential' => ['🌱', 'มีแววเป็นลูกค้าประจำ', 'เพิ่งเริ่มซื้อ — ส่งคูปองครั้งถัดไปให้กลับมาซื้ออีก', 'ok'],
+        'at_risk' => ['⚠️', 'กำลังจะห่างหาย', 'ไม่ได้ซื้อมาสักพัก — ส่งโปรเฉพาะกลุ่มชวนกลับมา', 'warn'],
+        'lost' => ['💔', 'หายไปแล้ว', 'นานมากแล้วที่ไม่ได้ซื้อ — ลองโปรแรง ๆ หรือสอบถามเหตุผล', 'muted'],
+    ];
+    $segments = $rfmSegments ?? [];
+    $totalCustomers = collect($segmentMeta)->keys()->sum(fn ($k) => count($segments[$k] ?? []));
+    $th = 'padding:11px 14px; text-align:left; font-size:10.5px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); white-space:nowrap;';
+    $row = 'border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);';
+@endphp
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-4xl font-bold">👥 Customer Segmentation</h1>
-                <p class="text-lg mt-2">RFM Analysis: Recency, Frequency, Monetary</p>
-            </div>
-            <a href="{{ route('seller.analytics.ai-insights') }}" class="px-6 py-3 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition">
-                ← กลับ AI Insights
-            </a>
-        </div>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <x-seller-kit.header title="กลุ่มลูกค้า (RFM)" icon="👥" crumb="ร้านค้า · วิเคราะห์"
+                         subtitle="แบ่งลูกค้าที่ชำระเงินแล้วตาม ซื้อล่าสุดเมื่อไร · ซื้อบ่อยแค่ไหน · ใช้เงินเท่าไร เพื่อทำโปรให้ตรงกลุ่ม" />
+
+    @include('seller.analytics.partials.nav')
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px;">
+        @foreach($segmentMeta as $key => [$sIcon, $sLabel, $sHint, $sTone])
+            <x-seller-kit.stat :label="$sLabel" :value="number_format(count($segments[$key] ?? [])).' คน'" :icon="$sIcon" :tone="$sTone"
+                               :hint="$totalCustomers > 0 ? number_format(count($segments[$key] ?? []) / $totalCustomers * 100, 0).'% ของลูกค้าทั้งหมด' : null" />
+        @endforeach
     </div>
 
-    <!-- Segment Overview -->
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div class="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl mb-2">🏆</div>
-            <h3 class="font-bold text-lg">Champions</h3>
-            <p class="text-3xl font-bold mt-2">{{ count($rfmSegments['champions']) }}</p>
-            <p class="text-sm mt-1 opacity-90">ลูกค้า VIP สุดๆ</p>
+    @if($totalCustomers === 0)
+        <div class="tp-card">
+            <x-seller-kit.empty icon="👥" title="ยังไม่มีลูกค้าที่ชำระเงิน" text="เมื่อมีออเดอร์ที่ชำระเงินแล้ว ระบบจะจัดกลุ่มลูกค้าให้อัตโนมัติ" />
         </div>
-
-        <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl mb-2">💙</div>
-            <h3 class="font-bold text-lg">Loyal</h3>
-            <p class="text-3xl font-bold mt-2">{{ count($rfmSegments['loyal']) }}</p>
-            <p class="text-sm mt-1 opacity-90">ลูกค้าประจำ</p>
-        </div>
-
-        <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl mb-2">🌱</div>
-            <h3 class="font-bold text-lg">Potential</h3>
-            <p class="text-3xl font-bold mt-2">{{ count($rfmSegments['potential']) }}</p>
-            <p class="text-sm mt-1 opacity-90">มีศักยภาพ</p>
-        </div>
-
-        <div class="bg-gradient-to-br from-orange-400 to-red-500 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl mb-2">⚠️</div>
-            <h3 class="font-bold text-lg">At Risk</h3>
-            <p class="text-3xl font-bold mt-2">{{ count($rfmSegments['at_risk']) }}</p>
-            <p class="text-sm mt-1 opacity-90">กำลังจะหาย</p>
-        </div>
-
-        <div class="bg-gradient-to-br from-gray-400 to-gray-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="text-3xl mb-2">💔</div>
-            <h3 class="font-bold text-lg">Lost</h3>
-            <p class="text-3xl font-bold mt-2">{{ count($rfmSegments['lost']) }}</p>
-            <p class="text-sm mt-1 opacity-90">หายไปแล้ว</p>
-        </div>
-    </div>
-
-    <!-- Detailed Segments -->
-    @foreach(['champions' => '🏆 Champions', 'loyal' => '💙 Loyal Customers', 'potential' => '🌱 Potential', 'at_risk' => '⚠️ At Risk', 'lost' => '💔 Lost Customers'] as $key => $title)
-    @if(!empty($rfmSegments[$key]))
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ $title }} ({{ count($rfmSegments[$key]) }})</h2>
-
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recency (days)</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frequency</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monetary</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">RFM Score</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @foreach(array_slice($rfmSegments[$key], 0, 10) as $customer)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $customer['user_name'] }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">{{ $customer['recency'] }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">{{ $customer['frequency'] }}</td>
-                        <td class="px-4 py-3 text-sm text-gray-700">฿{{ number_format($customer['monetary'], 2) }}</td>
-                        <td class="px-4 py-3 text-sm">
-                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-bold">
-                                {{ number_format($customer['rfm_score'], 2) }}/5
-                            </span>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        @if(count($rfmSegments[$key]) > 10)
-        <p class="text-sm text-gray-500 mt-4 text-center">และอีก {{ count($rfmSegments[$key]) - 10 }} คน...</p>
-        @endif
-    </div>
     @endif
+
+    @foreach($segmentMeta as $key => [$sIcon, $sLabel, $sHint, $sTone])
+        @if(! empty($segments[$key]))
+            <div class="tp-card" style="padding:0; overflow:hidden;">
+                <div style="padding:16px 18px;">
+                    <div class="tp-section-h">{{ $sIcon }} {{ $sLabel }} ({{ number_format(count($segments[$key])) }})</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">💡 {{ $sHint }}</div>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; min-width:560px;">
+                        <thead>
+                            <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                                <th style="{{ $th }}">ลูกค้า</th>
+                                <th style="{{ $th }} text-align:right;">ซื้อล่าสุด</th>
+                                <th style="{{ $th }} text-align:right;">จำนวนครั้ง</th>
+                                <th style="{{ $th }} text-align:right;">ยอดซื้อรวม</th>
+                                <th style="{{ $th }} text-align:center;">คะแนน RFM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(array_slice($segments[$key], 0, 10) as $customer)
+                                <tr style="{{ $row }}">
+                                    <td style="{{ $td }} font-weight:700;">{{ $customer['user_name'] ?? '—' }}</td>
+                                    <td style="{{ $td }} text-align:right;" class="tp-num">{{ number_format((int) abs($customer['recency'] ?? 0)) }} วันก่อน</td>
+                                    <td style="{{ $td }} text-align:right;" class="tp-num">{{ number_format((int) ($customer['frequency'] ?? 0)) }}</td>
+                                    <td style="{{ $td }} text-align:right; font-weight:800;" class="tp-num">฿{{ number_format((float) ($customer['monetary'] ?? 0), 2) }}</td>
+                                    <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$sTone">{{ number_format((float) ($customer['rfm_score'] ?? 0), 1) }} / 5</x-seller-kit.pill></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @if(count($segments[$key]) > 10)
+                    <div style="padding:10px 18px; font-size:12px; color:var(--ink2); border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">และอีก {{ number_format(count($segments[$key]) - 10) }} คน</div>
+                @endif
+            </div>
+        @endif
     @endforeach
 </div>
 @endsection

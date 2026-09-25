@@ -6,6 +6,7 @@ use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\OnboardingController;
 use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\Seller\PackageController;
+use App\Http\Controllers\Seller\PricingPlannerController;
 use App\Http\Controllers\Seller\ProductController;
 use App\Http\Controllers\Seller\SellerPosController;
 use App\Http\Controllers\Seller\StaffController;
@@ -245,6 +246,17 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
     });
 
     // ========================================
+    // 💡 วางแผนราคา & กลยุทธ์ (2026-09-25 · SELLER-11)
+    // ตัวเลขทุกตัวจาก PricingEngine/StrategyAdvisor ชุดเดียวกับตอนแบ่งเงินจริง
+    // ========================================
+    Route::prefix('pricing')->name('pricing.')->group(function () {
+        Route::get('/planner', [PricingPlannerController::class, 'index'])->name('planner');
+        Route::post('/quote', [PricingPlannerController::class, 'quote'])->middleware('throttle:120,1')->name('quote');
+        Route::post('/plan', [PricingPlannerController::class, 'plan'])->middleware('throttle:60,1')->name('plan');
+        Route::post('/apply', [PricingPlannerController::class, 'applyPrice'])->middleware('throttle:30,1')->name('apply');
+    });
+
+    // ========================================
     // E-COMMERCE ORDER MANAGEMENT
     // ========================================
     Route::prefix('orders')->name('orders.')->group(function () {
@@ -331,6 +343,9 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
         // Advertisements
         Route::get('/advertisements', [SellerPosController::class, 'advertisements'])->name('advertisements');
         Route::post('/advertisements', [SellerPosController::class, 'advertisementStore'])->name('advertisements.store');
+        // GAP-10 (2026-09-25): หน้าโฆษณาเรียก update/destroy แต่ไม่มี route → หน้าพังเมื่อมีโฆษณา ≥ 1 รายการ
+        Route::put('/advertisements/{advertisement}', [SellerPosController::class, 'advertisementUpdate'])->name('advertisements.update');
+        Route::delete('/advertisements/{advertisement}', [SellerPosController::class, 'advertisementDestroy'])->name('advertisements.destroy');
 
         // POS Terminal Registration (สำหรับ Desktop App)
         Route::get('/terminals', [SellerPosController::class, 'terminals'])->name('terminals');

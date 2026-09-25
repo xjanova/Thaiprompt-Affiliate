@@ -590,7 +590,8 @@ class FreshMarketController extends Controller
      */
     public function showOrder(FreshMarketOrder $order)
     {
-        $order->load(['buyer', 'seller.user', 'listing', 'riderJob.rider']);
+        // items = รายการสินค้าทั้งหมดของออเดอร์ (ออเดอร์หลายรายการ) — ออเดอร์เก่าใช้ $order->lineItems()
+        $order->load(['buyer', 'seller.user', 'listing', 'riderJob.rider', 'items']);
 
         $allowedActions = $order->allowedActions('admin');
         $canRedispatch = $order->delivery_type === 'rider'

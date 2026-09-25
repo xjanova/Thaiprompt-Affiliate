@@ -1,626 +1,415 @@
-@extends('layouts.admin-v3')
+{{--
+ | ตั้งค่าระบบตลาดสด (admin.fresh-market.settings) — ธีม V4
+ | ตัวแปรจาก Admin\FreshMarketController@settings: $settings (FreshMarketSetting), $lineSecretMasked, $lineTokenMasked,
+ |   $marketSettings [pending_expiry_minutes, auto_complete_hours, auto_approve_sellers, rider_dispatch_on_accept, referral_fee_amount,
+ |                    line_basic_id, default_line_stock, max_seller_gp_debt]
+ | ฟอร์มเดียว PUT settings.update — ชื่อฟิลด์ทั้งหมดตรงกับ validate ใน updateSettings()
+ | 🔐 line_channel_secret / line_channel_access_token ห้ามใส่ค่าจริงใน value (เว้นว่าง = ใช้ค่าเดิม) — แสดงแค่ค่าแบบปิดบัง
+ | checkbox ทุกตัวใช้ hidden 0 + checkbox 1 · ค่าตลาดส่งเป็น market[<key>]
+--}}
+@extends('layouts.admin-v4')
 
-@section('title', 'ตั้งค่าระบบ - ตลาดสดไทยพร๊อม')
+@section('title', 'ตั้งค่าตลาดสด')
 
 @section('content')
-<div class="space-y-6" x-data="{
-    activeTab: 'line',
-    saving: false,
-    saved: false,
-    showSaved() {
-        this.saved = true;
-        setTimeout(() => this.saved = false, 3000);
+@include('admin.riders.partials.v4-kit')
+@php
+    $flexColor = $settings->line_flex_primary_color ?: '#06C755';
+    $menuLabels = $settings->menu_button_labels ?? [];
+    $menuDefaults = [
+        'buy' => ['🛒 ซื้อของ', 'ปุ่มซื้อของ'],
+        'sell' => ['🏷️ ลงขาย', 'ปุ่มลงขาย'],
+        'rider' => ['🏍️ ไรเดอร์', 'ปุ่มไรเดอร์'],
+        'chat_ai' => ['💬 คุยกับ AI', 'ปุ่มคุยกับ AI'],
+        'help' => ['📋 ช่วยเหลือ', 'ปุ่มช่วยเหลือ'],
+    ];
+    $dataToggles = [
+        ['ai_can_access_listings', 'รายการสินค้า', true],
+        ['ai_can_access_pricing', 'ราคาสินค้า', true],
+        ['ai_can_access_orders', 'คำสั่งซื้อ', false],
+        ['ai_can_access_user_profile', 'โปรไฟล์ผู้ใช้', false],
+        ['ai_can_access_sellers', 'ข้อมูลผู้ขาย', false],
+    ];
+    $featureToggles = [
+        ['escrow_enabled', 'ระบบพักเงิน (Escrow)', 'ถือเงินผู้ซื้อไว้จนผู้ซื้อยืนยันรับของ แล้วค่อยโอนให้ร้าน', false],
+        ['cod_enabled', 'เก็บเงินปลายทาง (COD)', 'ผู้ซื้อจ่ายเงินสดตอนรับของ — ร้านรับเงินเอง ค่า GP ตั้งเป็นยอดค้าง', false],
+        ['rider_enabled', 'ส่งด้วยไรเดอร์', 'ผู้ซื้อเลือกให้ไรเดอร์ส่งได้ (ค่าส่งตามหน้า "ตั้งค่าค่าส่ง")', false],
+        ['mlm_commission_enabled', 'ค่าแนะนำสายงาน', 'คำนวณค่าแนะนำเมื่อออเดอร์เสร็จสิ้น', false],
+        ['cashback_enabled', 'แคชแบ็คผู้ซื้อ', 'คืนเงินเข้า Wallet ผู้ซื้อตามที่ร้านตั้งไว้', false],
+    ];
+    $marketFields = [
+        ['pending_expiry_minutes', 'ยกเลิกออเดอร์ที่ร้านไม่รับอัตโนมัติหลัง', 'นาที', 'number', 5, 1440, 1],
+        ['auto_complete_hours', 'ปิดออเดอร์ที่ส่งถึงแล้วอัตโนมัติหลัง', 'ชั่วโมง', 'number', 1, 720, 1],
+        ['referral_fee_amount', 'ค่าแนะนำร้านใหม่ต่อร้าน', 'บาท', 'number', 0, 1000, 0.01],
+        ['max_seller_gp_debt', 'ค่า GP ค้างสูงสุดก่อนงดรับ COD', 'บาท', 'number', 0, 100000, 0.01],
+        ['default_line_stock', 'จำนวนสต็อกเริ่มต้นเมื่อลงขายผ่าน LINE', 'ชิ้น', 'number', 1, 10000, 1],
+        ['line_basic_id', 'LINE Basic ID (สำหรับปุ่มแอดไลน์)', 'เช่น @taladsod', 'text', null, null, null],
+    ];
+    $marketToggles = [
+        ['auto_approve_sellers', 'อนุมัติร้านใหม่อัตโนมัติ', 'ปิด = สินค้าของร้านจะไม่แสดงจนกว่าแอดมินจะกด "ยืนยันร้าน"'],
+        ['rider_dispatch_on_accept', 'เรียกไรเดอร์ทันทีที่ร้านรับออเดอร์', 'ปิด = เรียกไรเดอร์เมื่อร้านกด "พร้อมส่ง"'],
+    ];
+    try {
+        $currentGpRate = app(\App\Services\Pricing\PricingEngine::class)->gpRateForFreshListing(new \App\Models\FreshMarketListing);
+    } catch (\Throwable) {
+        $currentGpRate = null;
     }
-}">
-    {{-- ส่วนหัว --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ตั้งค่าระบบ - ตลาดสดไทยพร๊อม</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">กำหนดค่าต่างๆ สำหรับระบบตลาดสด</p>
+    $gpOverride = \App\Models\Setting::get('pricing.fresh_market_gp_rate');
+    // ตรวจแค่ว่ามีค่าหรือไม่ — ไม่พิมพ์ค่าจริงลงหน้าเว็บ (maskSecret คืนข้อความเสมอ จึงใช้ตัดสินไม่ได้)
+    $hasLineSecret = filled($settings->line_channel_secret ?? null);
+    $hasLineToken = filled($settings->line_channel_access_token ?? null);
+    $tabs = [
+        'fees' => ['fa-percent', 'ค่าธรรมเนียม'],
+        'market' => ['fa-store', 'ระบบตลาด'],
+        'toggles' => ['fa-toggle-on', 'เปิด/ปิดฟีเจอร์'],
+        'line' => ['fa-comment-dots', 'LINE OA'],
+        'ai' => ['fa-robot', 'AI บอท'],
+        'search' => ['fa-location-crosshairs', 'การค้นหา'],
+        'branding' => ['fa-palette', 'แบรนด์'],
+    ];
+@endphp
+<div x-data="{ tab: (location.hash || '').replace('#', '') || 'fees', saving: false }"
+     x-init="$watch('tab', (value) => history.replaceState(null, '', '#' + value))"
+     style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.fresh-market.dashboard') }}" class="tp-icon-btn" title="กลับแดชบอร์ดตลาดสด"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ตลาดสด · ตั้งค่า</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ตั้งค่าตลาดสด ⚙️</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ค่าธรรมเนียม ระบบออเดอร์ LINE OA และบอท AI — บันทึกครั้งเดียวทุกแท็บ</div>
+            </div>
         </div>
-        <a href="{{ route('admin.fresh-market.dashboard') }}"
-           class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            <i class="fas fa-arrow-left mr-2"></i> กลับแดชบอร์ด
-        </a>
+        <a href="{{ route('admin.fresh-market.test-line') }}" class="tp-btn tp-btn-sm"><i class="fas fa-vial"></i> ทดสอบ LINE</a>
     </div>
 
-    {{-- แจ้งเตือนบันทึกสำเร็จ --}}
-    @if(session('success'))
-        <div class="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
-        </div>
-    @endif
+    @include('admin.riders.partials.flash')
 
-    @if(session('error'))
-        <div class="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl" role="alert">
-            <span class="block sm:inline">{{ session('error') }}</span>
-        </div>
-    @endif
-
-    {{-- แจ้งเตือนบันทึกสำเร็จ (Alpine) --}}
-    <div x-show="saved" x-transition class="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl">
-        บันทึกการตั้งค่าสำเร็จ
+    {{-- ===== แท็บ ===== --}}
+    <div class="tp-card" style="padding:8px; display:flex; gap:6px; overflow-x:auto;">
+        @foreach ($tabs as $tabKey => [$tabIcon, $tabLabel])
+            <button type="button" class="tp-btn tp-btn-sm" style="flex:none;"
+                    :class="tab === '{{ $tabKey }}' ? 'tp-btn-primary' : ''" @click="tab = '{{ $tabKey }}'">
+                <i class="fas {{ $tabIcon }}"></i> {{ $tabLabel }}
+            </button>
+        @endforeach
     </div>
 
-    {{-- แท็บเมนู --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
-        <div class="border-b border-gray-200 dark:border-gray-700">
-            <nav class="flex overflow-x-auto -mb-px">
-                <button @click="activeTab = 'line'"
-                        :class="activeTab === 'line' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition">
-                    <i class="fab fa-line mr-2"></i>LINE OA
-                </button>
-                <button @click="activeTab = 'ai'"
-                        :class="activeTab === 'ai' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition">
-                    <i class="fas fa-robot mr-2"></i>AI
-                </button>
-                <button @click="activeTab = 'fees'"
-                        :class="activeTab === 'fees' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition">
-                    <i class="fas fa-percentage mr-2"></i>ค่าธรรมเนียม
-                </button>
-                <button @click="activeTab = 'search'"
-                        :class="activeTab === 'search' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition">
-                    <i class="fas fa-search-location mr-2"></i>การค้นหา
-                </button>
-                <button @click="activeTab = 'toggles'"
-                        :class="activeTab === 'toggles' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition">
-                    <i class="fas fa-toggle-on mr-2"></i>เปิด/ปิดฟีเจอร์
-                </button>
-                <button @click="activeTab = 'branding'"
-                        :class="activeTab === 'branding' ? 'border-green-500 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition">
-                    <i class="fas fa-palette mr-2"></i>แบรนด์
-                </button>
-            </nav>
+    {{-- novalidate: ช่องในแท็บที่ซ่อนอยู่ถ้าติด min/required เบราว์เซอร์จะกันส่งแบบเงียบๆ — ให้เซิร์ฟเวอร์ตรวจแล้วแจ้งเป็นภาษาไทยแทน --}}
+    <form method="POST" action="{{ route('admin.fresh-market.settings.update') }}" novalidate @submit="saving = true" style="display:flex; flex-direction:column; gap:18px;">
+        @csrf
+        @method('PUT')
+
+        {{-- ================= ค่าธรรมเนียม ================= --}}
+        <section class="tp-card" style="padding:20px;" x-show="tab === 'fees'">
+            <div class="tp-section-h" style="margin-bottom:4px;"><i class="fas fa-percent"></i> ค่าธรรมเนียมร้านค้า</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-bottom:14px;">
+                ค่า GP ที่ใช้กับออเดอร์ใหม่ตอนนี้ <b class="tp-num" style="color:var(--ink);">{{ $currentGpRate !== null ? rtrim(rtrim(number_format($currentGpRate, 2), '0'), '.').'%' : '-' }}</b>
+                @if ($gpOverride !== null && $gpOverride !== '')
+                    — ใช้ค่าจากหน้า "ส่วนแบ่งรายได้ & GP" ({{ $gpOverride }}%) แทนช่องด้านล่าง
+                @endif
+                (ช่วงโปร GP ฟรีของแพลตฟอร์ม ระบบคิด 0% อัตโนมัติ)
+                @if (\Illuminate\Support\Facades\Route::has('admin.pricing.settings'))
+                    · <a href="{{ route('admin.pricing.settings') }}" class="w1-link">ไปหน้า ส่วนแบ่งรายได้ & GP →</a>
+                @endif
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:14px;">
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ค่า GP ตลาดสด (%)</span>
+                    <input type="number" name="platform_fee_percentage" step="0.01" min="0" max="50" required class="tp-input" value="{{ old('platform_fee_percentage', $settings->platform_fee_percentage ?? 5) }}">
+                    <span style="display:block; font-size:11px; color:var(--ink2); margin-top:4px;">ตั้งได้ 0 – 50%</span>
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ค่าสมาชิกรายเดือน (บาท)</span>
+                    <input type="number" name="monthly_subscription_fee" step="0.01" min="0" required class="tp-input" value="{{ old('monthly_subscription_fee', $settings->monthly_subscription_fee ?? 0) }}">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ทดลองใช้ฟรี (วัน)</span>
+                    <input type="number" name="free_trial_days" min="0" required class="tp-input" value="{{ old('free_trial_days', $settings->free_trial_days ?? 30) }}">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ลงขายได้ (ร้านฟรี)</span>
+                    <input type="number" name="max_listings_free" min="1" required class="tp-input" value="{{ old('max_listings_free', $settings->max_listings_free ?? 5) }}">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ลงขายได้ (สมาชิก)</span>
+                    <input type="number" name="max_listings_subscribed" min="0" required class="tp-input" value="{{ old('max_listings_subscribed', $settings->max_listings_subscribed ?? 0) }}">
+                    <span style="display:block; font-size:11px; color:var(--ink2); margin-top:4px;">0 = ไม่จำกัด</span>
+                </label>
+            </div>
+            <div style="margin-top:16px;">
+                <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:8px;">รูปแบบการเก็บค่าธรรมเนียม</span>
+                @php $feeMode = old('fee_mode', $settings->fee_mode ?? 'both'); @endphp
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:10px;">
+                    @foreach (['percentage' => ['เก็บ GP ต่อออเดอร์', 'ไม่มีค่าสมาชิก ลงขายได้ไม่จำกัด'], 'subscription' => ['ค่าสมาชิกรายเดือน', 'ไม่หัก GP ต่อออเดอร์'], 'both' => ['ผสม', 'ค่าสมาชิก + หัก GP']] as $modeValue => [$modeLabel, $modeHint])
+                        <label style="display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm); cursor:pointer;">
+                            <input type="radio" name="fee_mode" value="{{ $modeValue }}" @checked($feeMode === $modeValue) style="margin-top:3px; accent-color:var(--accent1);">
+                            <span><b style="font-size:13px;">{{ $modeLabel }}</b><span style="display:block; font-size:11.5px; color:var(--ink2);">{{ $modeHint }}</span></span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+
+        {{-- ================= ระบบตลาด (market[...]) ================= --}}
+        <section class="tp-card" style="padding:20px;" x-show="tab === 'market'" x-cloak>
+            <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-store"></i> ระบบออเดอร์และร้านค้า</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:14px;">
+                @foreach ($marketFields as [$mKey, $mLabel, $mUnit, $mType, $mMin, $mMax, $mStep])
+                    <label>
+                        <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">{{ $mLabel }} @if ($mType === 'number')<span style="font-weight:500;">({{ $mUnit }})</span>@endif</span>
+                        <input type="{{ $mType }}" name="market[{{ $mKey }}]" class="tp-input"
+                               value="{{ old('market.'.$mKey, $marketSettings[$mKey] ?? '') }}"
+                               @if ($mType === 'number') min="{{ $mMin }}" max="{{ $mMax }}" step="{{ $mStep }}" @else maxlength="50" placeholder="{{ $mUnit }}" @endif>
+                    </label>
+                @endforeach
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:10px; margin-top:16px;">
+                @foreach ($marketToggles as [$mKey, $mLabel, $mHint])
+                    <label style="display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm); cursor:pointer;">
+                        <input type="hidden" name="market[{{ $mKey }}]" value="0">
+                        <input type="checkbox" name="market[{{ $mKey }}]" value="1" @checked(filter_var(old('market.'.$mKey, $marketSettings[$mKey] ?? false), FILTER_VALIDATE_BOOLEAN)) style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1);">
+                        <span><b style="font-size:13px;">{{ $mLabel }}</b><span style="display:block; font-size:11.5px; color:var(--ink2);">{{ $mHint }}</span></span>
+                    </label>
+                @endforeach
+            </div>
+        </section>
+
+        {{-- ================= เปิด/ปิดฟีเจอร์ ================= --}}
+        <section class="tp-card" style="padding:20px;" x-show="tab === 'toggles'" x-cloak>
+            <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-toggle-on"></i> เปิด/ปิดฟีเจอร์</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:10px;">
+                @foreach ($featureToggles as [$fKey, $fLabel, $fHint, $fDefault])
+                    <label style="display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:14px; box-shadow:var(--inset-sm); cursor:pointer;">
+                        <input type="hidden" name="{{ $fKey }}" value="0">
+                        <input type="checkbox" name="{{ $fKey }}" value="1" @checked((bool) old($fKey, $settings->{$fKey} ?? $fDefault)) style="margin-top:3px; width:18px; height:18px; accent-color:var(--accent1);">
+                        <span><b style="font-size:13px;">{{ $fLabel }}</b><span style="display:block; font-size:11.5px; color:var(--ink2);">{{ $fHint }}</span></span>
+                    </label>
+                @endforeach
+            </div>
+            <p style="font-size:12px; color:var(--ink2); margin:12px 0 0;"><i class="fas fa-circle-info"></i> ค่าส่งและส่วนแบ่งไรเดอร์ตั้งที่ <a href="{{ route('admin.riders.settings') }}" class="w1-link">ตั้งค่าค่าส่งไรเดอร์</a></p>
+        </section>
+
+        {{-- ================= LINE OA ================= --}}
+        <section class="tp-card" style="padding:20px;" x-show="tab === 'line'" x-cloak>
+            <div class="tp-section-h" style="margin-bottom:4px;"><i class="fas fa-comment-dots"></i> LINE Official Account</div>
+            <div style="font-size:12.5px; color:var(--ink2); margin-bottom:14px;">ช่อง Secret/Token เว้นว่าง = ใช้ค่าเดิม (ระบบไม่แสดงค่าจริงในหน้าเว็บ)</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:14px;">
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">Channel ID</span>
+                    <input type="text" name="line_channel_id" maxlength="50" class="tp-input" value="{{ old('line_channel_id', $settings->line_channel_id ?? '') }}" placeholder="กรอก Channel ID">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">Channel Secret</span>
+                    <input type="password" name="line_channel_secret" value="" maxlength="100" autocomplete="new-password" class="tp-input"
+                           placeholder="{{ $hasLineSecret ? $lineSecretMasked.' — เว้นว่างเพื่อใช้ค่าเดิม' : 'ยังไม่ได้ตั้งค่า — กรอกเพื่อบันทึก' }}">
+                </label>
+                <label style="grid-column:1 / -1;">
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">Channel Access Token</span>
+                    <input type="password" name="line_channel_access_token" value="" maxlength="500" autocomplete="new-password" class="tp-input"
+                           placeholder="{{ $hasLineToken ? $lineTokenMasked.' — เว้นว่างเพื่อใช้ค่าเดิม' : 'ยังไม่ได้ตั้งค่า — กรอกเพื่อบันทึก' }}">
+                </label>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
+                @include('admin.riders.partials.pill', ['pillTone' => $hasLineSecret ? 'ok' : 'warn', 'pillText' => $hasLineSecret ? 'มี Secret แล้ว' : 'ยังไม่มี Secret', 'pillIcon' => 'fa-key', 'pillTitle' => null])
+                @include('admin.riders.partials.pill', ['pillTone' => $hasLineToken ? 'ok' : 'warn', 'pillText' => $hasLineToken ? 'มี Access Token แล้ว' : 'ยังไม่มี Access Token', 'pillIcon' => 'fa-key', 'pillTitle' => null])
+            </div>
+            <p style="font-size:12px; color:var(--ink2); margin:12px 0 0;"><i class="fas fa-triangle-exclamation" style="color:var(--w-warn);"></i> ระบบตอบลูกค้าด้วย reply (ฟรี) เป็นหลัก — push มีโควต้าจำกัดต่อเดือน</p>
+        </section>
+
+        {{-- ================= AI บอท ================= --}}
+        <section class="tp-card" style="padding:20px;" x-show="tab === 'ai'" x-cloak
+                 x-data="{
+                    allowedTopics: @js(array_values((array) ($settings->ai_allowed_topics ?? []))),
+                    blockedTopics: @js(array_values((array) ($settings->ai_blocked_topics ?? []))),
+                    newAllowed: '',
+                    newBlocked: '',
+                    temp: @js((float) ($settings->bot_temperature ?? 0.7)),
+                    add(list, key) { const v = this[key].trim(); if (v && !this[list].includes(v)) this[list].push(v); this[key] = ''; },
+                 }">
+            <input type="hidden" name="ai_allowed_topics" :value="JSON.stringify(allowedTopics)">
+            <input type="hidden" name="ai_blocked_topics" :value="JSON.stringify(blockedTopics)">
+
+            <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-robot"></i> บุคลิกและผู้ให้บริการ AI</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:14px;">
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ชื่อบอท</span>
+                    <input type="text" name="bot_name" maxlength="50" class="tp-input" value="{{ old('bot_name', $settings->bot_name ?? 'พี่ตลาด') }}">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">สไตล์การตอบ</span>
+                    @php $responseStyle = old('bot_response_style', $settings->bot_response_style ?? 'friendly'); @endphp
+                    <select name="bot_response_style" class="tp-input">
+                        @foreach (['friendly' => 'ใจดี เป็นกันเอง', 'formal' => 'เป็นทางการ สุภาพ', 'casual' => 'สบายๆ ชิลล์', 'funny' => 'ตลก ขี้เล่น'] as $styleValue => $styleLabel)
+                            <option value="{{ $styleValue }}" @selected($responseStyle === $styleValue)>{{ $styleLabel }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ผู้ให้บริการ AI</span>
+                    @php $aiProvider = old('ai_provider', $settings->ai_provider ?? 'groq'); @endphp
+                    <select name="ai_provider" class="tp-input" required>
+                        @foreach (['groq' => 'Groq (แนะนำ)', 'openrouter' => 'OpenRouter', 'openai' => 'OpenAI'] as $providerValue => $providerLabel)
+                            <option value="{{ $providerValue }}" @selected($aiProvider === $providerValue)>{{ $providerLabel }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">โมเดล AI</span>
+                    <input type="text" name="ai_model" maxlength="100" required class="tp-input" value="{{ old('ai_model', $settings->ai_model ?? 'llama-3.3-70b-versatile') }}">
+                </label>
+                <label style="grid-column:1 / -1;">
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">บุคลิกภาพ / อารมณ์</span>
+                    <textarea name="bot_personality" rows="2" maxlength="1000" class="tp-input" style="resize:vertical;" placeholder="เช่น ร่าเริง อบอุ่น พูดสั้นกระชับ">{{ old('bot_personality', $settings->bot_personality ?? '') }}</textarea>
+                </label>
+                <label style="grid-column:1 / -1;">
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ความสร้างสรรค์ของคำตอบ: <b class="tp-num" style="color:var(--ink);" x-text="Number(temp).toFixed(2)"></b></span>
+                    <input type="range" name="bot_temperature" min="0" max="1" step="0.05" x-model="temp" class="tp-range">
+                    <span style="display:flex; justify-content:space-between; font-size:11px; color:var(--ink2); margin-top:4px;"><span>0 ตรงประเด็น</span><span>1 สร้างสรรค์</span></span>
+                </label>
+                <label style="grid-column:1 / -1; display:flex; gap:10px; align-items:center; cursor:pointer; font-size:13px;">
+                    <input type="hidden" name="use_global_ai_settings" value="0">
+                    <input type="checkbox" name="use_global_ai_settings" value="1" @checked((bool) old('use_global_ai_settings', $settings->use_global_ai_settings ?? true)) style="width:18px; height:18px; accent-color:var(--accent1);">
+                    ใช้ API Key Pool จากระบบหลัก
+                </label>
+                <label style="grid-column:1 / -1;">
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">System Prompt</span>
+                    <textarea name="ai_system_prompt" rows="5" class="tp-input" style="resize:vertical; font-family:var(--tp-font);" placeholder="บทบาทและคำสั่งหลักของ AI">{{ old('ai_system_prompt', $settings->ai_system_prompt ?? '') }}</textarea>
+                </label>
+            </div>
+
+            <div class="tp-divider" style="margin:18px 0;"></div>
+            <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-hand-sparkles"></i> ข้อความต้อนรับและปุ่มเมนู</div>
+            <label style="display:block; margin-bottom:12px;">
+                <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ข้อความต้อนรับ (เมื่อผู้ใช้พิมพ์ตอนยังไม่ได้เลือกเมนู)</span>
+                <textarea name="greeting_message_template" rows="3" maxlength="2000" class="tp-input" style="resize:vertical;">{{ old('greeting_message_template', $settings->greeting_message_template ?? '') }}</textarea>
+            </label>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr)); gap:10px;">
+                @foreach ($menuDefaults as $menuKey => [$menuDefault, $menuDesc])
+                    <label>
+                        <span style="display:block; font-size:11.5px; color:var(--ink2); font-weight:600; margin-bottom:5px;">{{ $menuDesc }}</span>
+                        <input type="text" name="menu_label_{{ $menuKey }}" maxlength="20" class="tp-input" value="{{ old('menu_label_'.$menuKey, $menuLabels[$menuKey] ?? $menuDefault) }}">
+                    </label>
+                @endforeach
+            </div>
+            <label style="display:flex; gap:10px; align-items:center; cursor:pointer; font-size:13px; margin-top:12px;">
+                <input type="hidden" name="ai_enabled_in_idle" value="0">
+                <input type="checkbox" name="ai_enabled_in_idle" value="1" @checked((bool) old('ai_enabled_in_idle', $settings->ai_enabled_in_idle ?? false)) style="width:18px; height:18px; accent-color:var(--accent1);">
+                ให้ AI ตอบข้อความทั่วไปได้เลย (ไม่บังคับกดปุ่ม)
+            </label>
+
+            <div class="tp-divider" style="margin:18px 0;"></div>
+            <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-shield-halved"></i> ขอบเขตการตอบ</div>
+            <label style="display:block; margin-bottom:12px;">
+                <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ขอบเขตการตอบ</span>
+                <textarea name="ai_scope_description" rows="2" maxlength="2000" class="tp-input" style="resize:vertical;" placeholder="เช่น ตอบเฉพาะเรื่องตลาดสด สินค้าเกษตร อาหาร และการส่งของ">{{ old('ai_scope_description', $settings->ai_scope_description ?? '') }}</textarea>
+            </label>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:14px;">
+                <div>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">หัวข้อที่ตอบได้</span>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; min-height:22px;">
+                        <template x-for="(topic, i) in allowedTopics" :key="'a' + i">
+                            <span class="tp-pill tp-pill-soft"><span x-text="topic"></span> <button type="button" @click="allowedTopics.splice(i, 1)" style="border:0; background:none; cursor:pointer; color:inherit; padding:0 0 0 2px;" title="ลบ">×</button></span>
+                        </template>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" x-model="newAllowed" @keydown.enter.prevent="add('allowedTopics', 'newAllowed')" class="tp-input" placeholder="พิมพ์หัวข้อแล้วกด Enter">
+                        <button type="button" class="tp-btn tp-btn-sm" @click="add('allowedTopics', 'newAllowed')">เพิ่ม</button>
+                    </div>
+                </div>
+                <div>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">หัวข้อที่ห้ามตอบ</span>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; min-height:22px;">
+                        <template x-for="(topic, i) in blockedTopics" :key="'b' + i">
+                            <span class="tp-pill" style="background:color-mix(in srgb, var(--w-bad) 16%, transparent); color:color-mix(in srgb, var(--w-bad) 74%, var(--ink));"><span x-text="topic"></span> <button type="button" @click="blockedTopics.splice(i, 1)" style="border:0; background:none; cursor:pointer; color:inherit; padding:0 0 0 2px;" title="ลบ">×</button></span>
+                        </template>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" x-model="newBlocked" @keydown.enter.prevent="add('blockedTopics', 'newBlocked')" class="tp-input" placeholder="พิมพ์หัวข้อแล้วกด Enter">
+                        <button type="button" class="tp-btn tp-btn-sm" @click="add('blockedTopics', 'newBlocked')">เพิ่ม</button>
+                    </div>
+                </div>
+                <label style="grid-column:1 / -1;">
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ข้อความเมื่อถามนอกขอบเขต</span>
+                    <input type="text" name="ai_off_topic_message" maxlength="500" class="tp-input" value="{{ old('ai_off_topic_message', $settings->ai_off_topic_message ?? '') }}">
+                </label>
+            </div>
+
+            <div class="tp-divider" style="margin:18px 0;"></div>
+            <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-database"></i> ปุ่มอัจฉริยะและสิทธิ์เข้าถึงข้อมูล</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px;">
+                <label style="display:flex; gap:10px; align-items:center; padding:11px 13px; border-radius:13px; box-shadow:var(--inset-sm); cursor:pointer; font-size:13px;">
+                    <input type="hidden" name="ai_can_suggest_buttons" value="0">
+                    <input type="checkbox" name="ai_can_suggest_buttons" value="1" @checked((bool) old('ai_can_suggest_buttons', $settings->ai_can_suggest_buttons ?? true)) style="width:18px; height:18px; accent-color:var(--accent1);">
+                    AI แนะนำปุ่มตามบริบทสนทนา
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">จำนวนปุ่มสูงสุด</span>
+                    <input type="number" name="ai_max_buttons" min="1" max="13" class="tp-input" value="{{ old('ai_max_buttons', $settings->ai_max_buttons ?? 4) }}">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ข้อความย้อนหลังที่ AI เห็น</span>
+                    <input type="number" name="ai_max_context_messages" min="1" max="50" class="tp-input" value="{{ old('ai_max_context_messages', $settings->ai_max_context_messages ?? 10) }}">
+                </label>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+                @foreach ($dataToggles as [$dKey, $dLabel, $dDefault])
+                    <label class="tp-btn tp-btn-sm" style="cursor:pointer;">
+                        <input type="hidden" name="{{ $dKey }}" value="0">
+                        <input type="checkbox" name="{{ $dKey }}" value="1" @checked((bool) old($dKey, $settings->{$dKey} ?? $dDefault)) style="accent-color:var(--accent1);">
+                        {{ $dLabel }}
+                    </label>
+                @endforeach
+            </div>
+        </section>
+
+        {{-- ================= การค้นหา ================= --}}
+        <section class="tp-card" style="padding:20px;" x-show="tab === 'search'" x-cloak>
+            <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-location-crosshairs"></i> รัศมีค้นหาร้าน/สินค้าใกล้ผู้ซื้อ</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:14px;">
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">รัศมีเริ่มต้น (กม.)</span>
+                    <input type="number" name="default_search_radius_km" step="0.1" min="1" max="100" required class="tp-input" value="{{ old('default_search_radius_km', $settings->default_search_radius_km ?? 5) }}">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">รัศมีสูงสุดที่ผู้ใช้เลือกได้ (กม.)</span>
+                    <input type="number" name="max_search_radius_km" step="0.1" min="1" max="200" required class="tp-input" value="{{ old('max_search_radius_km', $settings->max_search_radius_km ?? 50) }}">
+                </label>
+            </div>
+        </section>
+
+        {{-- ================= แบรนด์ ================= --}}
+        <section class="tp-card" style="padding:20px;" x-show="tab === 'branding'" x-cloak x-data="{ flex: @js(old('line_flex_primary_color', $flexColor)) }">
+            <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-palette"></i> แบรนด์และข้อความต้อนรับ</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:14px;">
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ชื่อแบรนด์</span>
+                    <input type="text" name="brand_name" maxlength="100" required class="tp-input" value="{{ old('brand_name', $settings->brand_name ?? 'ตลาดสดไทยพร๊อม') }}">
+                </label>
+                <label>
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">สีหลักของการ์ด LINE (Flex)</span>
+                    <span style="display:flex; gap:10px; align-items:center;">
+                        <input type="color" name="line_flex_primary_color" x-model="flex" style="width:52px; height:42px; border:0; border-radius:12px; padding:3px; background:var(--surf); box-shadow:var(--raise); cursor:pointer;">
+                        <input type="text" class="tp-input tp-num" x-model="flex" readonly aria-label="รหัสสี">
+                    </span>
+                </label>
+                <label style="grid-column:1 / -1;">
+                    <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ข้อความต้อนรับเมื่อเพิ่มเพื่อน LINE OA</span>
+                    <textarea name="welcome_message" rows="4" class="tp-input" style="resize:vertical;">{{ old('welcome_message', $settings->welcome_message ?? '') }}</textarea>
+                </label>
+            </div>
+        </section>
+
+        {{-- ===== แถบบันทึก ===== --}}
+        <div class="tp-card" style="padding:14px 18px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; position:sticky; bottom:12px; z-index:5;">
+            <span style="font-size:12.5px; color:var(--ink2);">บันทึกทุกแท็บพร้อมกัน — ช่อง Secret/Token ที่เว้นว่างจะคงค่าเดิม</span>
+            <button type="submit" class="tp-btn tp-btn-primary" :disabled="saving">
+                <i class="fas" :class="saving ? 'fa-spinner fa-spin' : 'fa-floppy-disk'"></i>
+                <span x-text="saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'"></span>
+            </button>
         </div>
-
-        <form method="POST" action="{{ route('admin.fresh-market.settings.update') }}" class="p-6">
-            @csrf
-            @method('PUT')
-
-            {{-- แท็บ LINE OA --}}
-            <div x-show="activeTab === 'line'" x-transition>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่า LINE Official Account</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">กำหนดค่าการเชื่อมต่อ LINE OA สำหรับระบบตลาดสด</p>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel ID</label>
-                        <input type="text" name="line_channel_id"
-                               value="{{ $settings->line_channel_id ?? '' }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                               placeholder="กรอก Channel ID">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel Secret</label>
-                        {{-- ไม่แสดงค่าจริงใน HTML: เว้นว่าง = ใช้ค่าเดิม --}}
-                        <input type="password" name="line_channel_secret" value="" autocomplete="new-password"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                               placeholder="{{ $lineSecretMasked ?? 'กรอก Channel Secret' }} — เว้นว่างเพื่อใช้ค่าเดิม">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel Access Token</label>
-                        <input type="password" name="line_channel_access_token" value="" autocomplete="new-password"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                               placeholder="{{ $lineTokenMasked ?? 'กรอก Channel Access Token' }} — เว้นว่างเพื่อใช้ค่าเดิม">
-                    </div>
-                </div>
-
-                <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                    <p class="text-sm text-blue-700 dark:text-blue-400">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        สามารถทดสอบการส่งข้อความ LINE ได้ที่หน้า
-                        <a href="{{ route('admin.fresh-market.test-line') }}" class="underline font-medium">ทดสอบ LINE</a>
-                    </p>
-                </div>
-            </div>
-
-            {{-- แท็บ AI --}}
-            <div x-show="activeTab === 'ai'" x-transition x-data="{
-                allowedTopics: {{ json_encode($settings->ai_allowed_topics ?? []) }},
-                blockedTopics: {{ json_encode($settings->ai_blocked_topics ?? []) }},
-                newAllowed: '',
-                newBlocked: '',
-                addAllowed() {
-                    if (this.newAllowed.trim() && !this.allowedTopics.includes(this.newAllowed.trim())) {
-                        this.allowedTopics.push(this.newAllowed.trim());
-                        this.newAllowed = '';
-                    }
-                },
-                addBlocked() {
-                    if (this.newBlocked.trim() && !this.blockedTopics.includes(this.newBlocked.trim())) {
-                        this.blockedTopics.push(this.newBlocked.trim());
-                        this.newBlocked = '';
-                    }
-                },
-                removeAllowed(i) { this.allowedTopics.splice(i, 1); },
-                removeBlocked(i) { this.blockedTopics.splice(i, 1); },
-                tempSlider: {{ $settings->bot_temperature ?? 0.70 }}
-            }">
-                {{-- Hidden fields สำหรับ JSON arrays --}}
-                <input type="hidden" name="ai_allowed_topics" :value="JSON.stringify(allowedTopics)">
-                <input type="hidden" name="ai_blocked_topics" :value="JSON.stringify(blockedTopics)">
-
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่า AI บอท "พี่ตลาด"</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">ควบคุมบุคลิกภาพ ขอบเขต และพฤติกรรมของบอท AI ทั้งหมดจากที่นี่</p>
-
-                {{-- Section A: Bot Identity --}}
-                <div class="mb-8 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                    <h4 class="text-md font-semibold text-purple-800 dark:text-purple-300 mb-4">
-                        <i class="fas fa-user-robot mr-2"></i>บุคลิกภาพบอท
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชื่อบอท</label>
-                            <input type="text" name="bot_name"
-                                   value="{{ $settings->bot_name ?? 'พี่ตลาด' }}"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                                   placeholder="เช่น พี่ตลาด, น้องสด">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สไตล์การตอบ</label>
-                            <select name="bot_response_style"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                <option value="friendly" {{ ($settings->bot_response_style ?? 'friendly') === 'friendly' ? 'selected' : '' }}>ใจดี เป็นกันเอง</option>
-                                <option value="formal" {{ ($settings->bot_response_style ?? '') === 'formal' ? 'selected' : '' }}>เป็นทางการ สุภาพ</option>
-                                <option value="casual" {{ ($settings->bot_response_style ?? '') === 'casual' ? 'selected' : '' }}>สบายๆ ชิลล์</option>
-                                <option value="funny" {{ ($settings->bot_response_style ?? '') === 'funny' ? 'selected' : '' }}>ตลก ขี้เล่น</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">บุคลิกภาพ / อารมณ์</label>
-                            <textarea name="bot_personality" rows="3"
-                                      class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-purple-500 focus:ring-purple-500"
-                                      placeholder="เช่น ร่าเริง อบอุ่น ชอบช่วยเหลือ พูดสั้นกระชับ ใช้อิโมจิบ้าง">{{ $settings->bot_personality ?? '' }}</textarea>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                อุณหภูมิ AI (ความคิดสร้างสรรค์):
-                                <span class="text-purple-600 dark:text-purple-400 font-bold" x-text="tempSlider"></span>
-                            </label>
-                            <input type="range" name="bot_temperature" min="0" max="1" step="0.05"
-                                   x-model="tempSlider"
-                                   class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-purple-600">
-                            <div class="flex justify-between text-xs text-gray-400 mt-1">
-                                <span>0.0 (ตรงประเด็น)</span>
-                                <span>0.5 (สมดุล)</span>
-                                <span>1.0 (สร้างสรรค์)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Section B: AI Provider --}}
-                <div class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                    <h4 class="text-md font-semibold text-blue-800 dark:text-blue-300 mb-4">
-                        <i class="fas fa-microchip mr-2"></i>ผู้ให้บริการ AI
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Provider</label>
-                            <select name="ai_provider"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="groq" {{ ($settings->ai_provider ?? 'groq') === 'groq' ? 'selected' : '' }}>Groq (แนะนำ)</option>
-                                <option value="openrouter" {{ ($settings->ai_provider ?? '') === 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
-                                <option value="openai" {{ ($settings->ai_provider ?? '') === 'openai' ? 'selected' : '' }}>OpenAI</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โมเดล AI</label>
-                            <input type="text" name="ai_model"
-                                   value="{{ $settings->ai_model ?? 'llama-3.3-70b-versatile' }}"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                   placeholder="เช่น llama-3.3-70b-versatile, gpt-4o-mini">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="use_global_ai_settings" value="0">
-                                <input type="checkbox" name="use_global_ai_settings" value="1"
-                                       {{ ($settings->use_global_ai_settings ?? true) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
-                                <span class="text-sm text-gray-700 dark:text-gray-300">ใช้ API Key Pool จากระบบหลัก</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Section C: System Prompt --}}
-                <div class="mb-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
-                    <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                        <i class="fas fa-terminal mr-2"></i>System Prompt
-                    </h4>
-                    <textarea name="ai_system_prompt" rows="6"
-                              class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                              placeholder="กำหนดบทบาทและคำสั่งสำหรับ AI แชทบอท...">{{ $settings->ai_system_prompt ?? '' }}</textarea>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Prompt หลักที่กำหนดพฤติกรรมของ AI</p>
-                </div>
-
-                {{-- Section D: Greeting & Menu --}}
-                <div class="mb-8 p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                    <h4 class="text-md font-semibold text-green-800 dark:text-green-300 mb-4">
-                        <i class="fas fa-hand-wave mr-2"></i>ข้อความต้อนรับ & เมนูปุ่ม
-                    </h4>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความต้อนรับ (แสดงเมื่อผู้ใช้พิมพ์ใน idle)</label>
-                            <textarea name="greeting_message_template" rows="3"
-                                      class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                      placeholder="สวัสดีค่ะ! พี่ตลาดพร้อมช่วยเหลือค่ะ 😊&#10;&#10;เลือกสิ่งที่ต้องการได้เลยนะคะ:">{{ $settings->greeting_message_template ?? '' }}</textarea>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            @php
-                                $labels = $settings->menu_button_labels ?? [];
-                                $defaultLabels = [
-                                    'buy' => ['default' => '🛒 ซื้อของ', 'desc' => 'ปุ่มซื้อของ'],
-                                    'sell' => ['default' => '🏷️ ลงขาย', 'desc' => 'ปุ่มลงขาย'],
-                                    'rider' => ['default' => '🏍️ ไรเดอร์', 'desc' => 'ปุ่มไรเดอร์'],
-                                    'chat_ai' => ['default' => '💬 คุยกับ AI', 'desc' => 'ปุ่มคุยกับ AI'],
-                                    'help' => ['default' => '📋 ช่วยเหลือ', 'desc' => 'ปุ่มช่วยเหลือ'],
-                                ];
-                            @endphp
-                            @foreach($defaultLabels as $key => $info)
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{{ $info['desc'] }}</label>
-                                    <input type="text" name="menu_label_{{ $key }}"
-                                           value="{{ $labels[$key] ?? $info['default'] }}"
-                                           class="w-full text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                           maxlength="20">
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <div class="flex items-center gap-4 pt-2">
-                            <label class="flex items-center gap-2">
-                                <input type="hidden" name="ai_enabled_in_idle" value="0">
-                                <input type="checkbox" name="ai_enabled_in_idle" value="1"
-                                       {{ ($settings->ai_enabled_in_idle ?? false) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 dark:border-gray-600 text-green-600 focus:ring-green-500">
-                                <span class="text-sm text-gray-700 dark:text-gray-300">AI ตอบ free text ใน idle (ไม่บังคับกดปุ่ม)</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Section E: AI Scope & Boundaries --}}
-                <div class="mb-8 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
-                    <h4 class="text-md font-semibold text-orange-800 dark:text-orange-300 mb-4">
-                        <i class="fas fa-shield-alt mr-2"></i>ขอบเขต AI & หัวข้อ
-                    </h4>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ขอบเขตการตอบ</label>
-                            <textarea name="ai_scope_description" rows="2"
-                                      class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-orange-500 focus:ring-orange-500"
-                                      placeholder="เช่น ตอบเฉพาะเรื่องตลาดสด สินค้าเกษตร อาหาร และบริการส่งของ">{{ $settings->ai_scope_description ?? '' }}</textarea>
-                        </div>
-
-                        {{-- Allowed Topics Tag Input --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">หัวข้อที่ตอบได้</label>
-                            <div class="flex flex-wrap gap-2 mb-2">
-                                <template x-for="(topic, i) in allowedTopics" :key="'a'+i">
-                                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm rounded-full">
-                                        <span x-text="topic"></span>
-                                        <button type="button" @click="removeAllowed(i)" class="text-green-500 hover:text-red-500">&times;</button>
-                                    </span>
-                                </template>
-                            </div>
-                            <div class="flex gap-2">
-                                <input type="text" x-model="newAllowed" @keydown.enter.prevent="addAllowed()"
-                                       class="flex-1 text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-orange-500 focus:ring-orange-500"
-                                       placeholder="พิมพ์หัวข้อ แล้วกด Enter">
-                                <button type="button" @click="addAllowed()"
-                                        class="px-3 py-1 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">เพิ่ม</button>
-                            </div>
-                        </div>
-
-                        {{-- Blocked Topics Tag Input --}}
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">หัวข้อที่ห้ามตอบ</label>
-                            <div class="flex flex-wrap gap-2 mb-2">
-                                <template x-for="(topic, i) in blockedTopics" :key="'b'+i">
-                                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm rounded-full">
-                                        <span x-text="topic"></span>
-                                        <button type="button" @click="removeBlocked(i)" class="text-red-500 hover:text-red-700">&times;</button>
-                                    </span>
-                                </template>
-                            </div>
-                            <div class="flex gap-2">
-                                <input type="text" x-model="newBlocked" @keydown.enter.prevent="addBlocked()"
-                                       class="flex-1 text-sm rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-orange-500 focus:ring-orange-500"
-                                       placeholder="พิมพ์หัวข้อ แล้วกด Enter">
-                                <button type="button" @click="addBlocked()"
-                                        class="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700">เพิ่ม</button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความเมื่อถามนอกขอบเขต</label>
-                            <input type="text" name="ai_off_topic_message"
-                                   value="{{ $settings->ai_off_topic_message ?? '' }}"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-orange-500 focus:ring-orange-500"
-                                   placeholder="เช่น ขอโทษค่ะ หัวข้อนี้อยู่นอกขอบเขตบริการค่ะ">
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Section F: AI Dynamic Buttons & Data Access --}}
-                <div class="mb-8 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
-                    <h4 class="text-md font-semibold text-indigo-800 dark:text-indigo-300 mb-4">
-                        <i class="fas fa-database mr-2"></i>ปุ่มอัจฉริยะ & สิทธิ์เข้าถึงข้อมูล
-                    </h4>
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900 dark:text-white">AI สร้างปุ่มอัตโนมัติ</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">AI แนะนำปุ่มตามบริบทสนทนา</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="hidden" name="ai_can_suggest_buttons" value="0">
-                                    <input type="checkbox" name="ai_can_suggest_buttons" value="1"
-                                           {{ ($settings->ai_can_suggest_buttons ?? true) ? 'checked' : '' }}
-                                           class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-indigo-600"></div>
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนปุ่มสูงสุดที่ AI แนะนำ</label>
-                                <input type="number" name="ai_max_buttons" min="1" max="13"
-                                       value="{{ $settings->ai_max_buttons ?? 4 }}"
-                                       class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            </div>
-                        </div>
-
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 pt-2">สิทธิ์เข้าถึงข้อมูล (AI เข้าถึงได้เฉพาะที่เปิด)</p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            @php
-                                $dataToggles = [
-                                    ['name' => 'ai_can_access_listings', 'label' => 'รายการสินค้า', 'default' => true],
-                                    ['name' => 'ai_can_access_pricing', 'label' => 'ราคาสินค้า', 'default' => true],
-                                    ['name' => 'ai_can_access_orders', 'label' => 'คำสั่งซื้อ', 'default' => false],
-                                    ['name' => 'ai_can_access_user_profile', 'label' => 'โปรไฟล์ผู้ใช้', 'default' => false],
-                                    ['name' => 'ai_can_access_sellers', 'label' => 'ข้อมูลผู้ขาย', 'default' => false],
-                                ];
-                            @endphp
-                            @foreach($dataToggles as $toggle)
-                                <label class="flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750 transition">
-                                    <input type="hidden" name="{{ $toggle['name'] }}" value="0">
-                                    <input type="checkbox" name="{{ $toggle['name'] }}" value="1"
-                                           {{ ($settings->{$toggle['name']} ?? $toggle['default']) ? 'checked' : '' }}
-                                           class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="text-sm text-gray-700 dark:text-gray-300">{{ $toggle['label'] }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวน context messages สูงสุดที่ AI เห็น</label>
-                            <input type="number" name="ai_max_context_messages" min="1" max="50"
-                                   value="{{ $settings->ai_max_context_messages ?? 10 }}"
-                                   class="w-32 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- แท็บค่าธรรมเนียม --}}
-            <div x-show="activeTab === 'fees'" x-transition>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าค่าธรรมเนียม</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">กำหนดอัตราค่าธรรมเนียมและรูปแบบการเรียกเก็บ</p>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ค่าธรรมเนียมแพลตฟอร์ม (%)</label>
-                        <input type="number" name="platform_fee_percentage" step="0.01" min="0" max="100"
-                               value="{{ $settings->platform_fee_percentage ?? 5 }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ค่าสมาชิกรายเดือน (บาท)</label>
-                        <input type="number" name="monthly_subscription_fee" step="0.01" min="0"
-                               value="{{ $settings->monthly_subscription_fee ?? 0 }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนวันทดลองใช้ฟรี</label>
-                        <input type="number" name="free_trial_days" min="0"
-                               value="{{ $settings->free_trial_days ?? 30 }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบการเก็บค่าธรรมเนียม</label>
-                        <div class="mt-2 space-y-3">
-                            <label class="flex items-center">
-                                <input type="radio" name="fee_mode" value="percentage"
-                                       {{ ($settings->fee_mode ?? 'both') === 'percentage' ? 'checked' : '' }}
-                                       class="text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เก็บเปอร์เซ็นต์ต่อคำสั่งซื้อ</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="fee_mode" value="subscription"
-                                       {{ ($settings->fee_mode ?? '') === 'subscription' ? 'checked' : '' }}
-                                       class="text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">สมัครสมาชิกรายเดือน</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="radio" name="fee_mode" value="both"
-                                       {{ ($settings->fee_mode ?? 'both') === 'both' ? 'checked' : '' }}
-                                       class="text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ผสม (สมาชิก + เปอร์เซ็นต์)</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนรายการขายฟรี (แพ็กเกจฟรี)</label>
-                        <input type="number" name="max_listings_free" min="1"
-                               value="{{ $settings->max_listings_free ?? 5 }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">จำนวนรายการสินค้าที่ผู้ขายฟรีสามารถลงได้</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนรายการขาย (สมาชิก)</label>
-                        <input type="number" name="max_listings_subscribed" min="0"
-                               value="{{ $settings->max_listings_subscribed ?? 0 }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">0 = ไม่จำกัด</p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- แท็บการค้นหา --}}
-            <div x-show="activeTab === 'search'" x-transition>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าการค้นหา</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">กำหนดรัศมีการค้นหาร้านค้าและสินค้า</p>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รัศมีค้นหาเริ่มต้น (กม.)</label>
-                        <input type="number" name="default_search_radius_km" step="0.1" min="0.1"
-                               value="{{ $settings->default_search_radius_km ?? 5 }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">รัศมีเริ่มต้นที่ใช้ค้นหาร้านค้าใกล้เคียง</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รัศมีค้นหาสูงสุด (กม.)</label>
-                        <input type="number" name="max_search_radius_km" step="0.1" min="1"
-                               value="{{ $settings->max_search_radius_km ?? 50 }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">รัศมีสูงสุดที่ผู้ใช้สามารถกำหนดได้</p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- แท็บเปิด/ปิดฟีเจอร์ --}}
-            <div x-show="activeTab === 'toggles'" x-transition>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">เปิด/ปิดฟีเจอร์</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">เปิดหรือปิดฟีเจอร์ต่างๆ ของระบบตลาดสด</p>
-
-                <div class="space-y-4">
-                    {{-- Escrow --}}
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">ระบบ Escrow (พักเงิน)</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">พักเงินไว้จนกว่าผู้ซื้อจะยืนยันรับสินค้า</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="hidden" name="escrow_enabled" value="0">
-                            <input type="checkbox" name="escrow_enabled" value="1"
-                                   {{ ($settings->escrow_enabled ?? false) ? 'checked' : '' }}
-                                   class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
-                        </label>
-                    </div>
-
-                    {{-- COD --}}
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">ชำระเงินปลายทาง (COD)</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">อนุญาตให้ผู้ซื้อชำระเงินตอนรับสินค้า</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="hidden" name="cod_enabled" value="0">
-                            <input type="checkbox" name="cod_enabled" value="1"
-                                   {{ ($settings->cod_enabled ?? false) ? 'checked' : '' }}
-                                   class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
-                        </label>
-                    </div>
-
-                    {{-- Rider --}}
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">ระบบไรเดอร์</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">เปิดใช้งานระบบจัดส่งโดยไรเดอร์</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="hidden" name="rider_enabled" value="0">
-                            <input type="checkbox" name="rider_enabled" value="1"
-                                   {{ ($settings->rider_enabled ?? false) ? 'checked' : '' }}
-                                   class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
-                        </label>
-                    </div>
-
-                    {{-- MLM Commission --}}
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">คอมมิชชั่น MLM</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">เปิดระบบคอมมิชชั่นสายงาน MLM</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="hidden" name="mlm_commission_enabled" value="0">
-                            <input type="checkbox" name="mlm_commission_enabled" value="1"
-                                   {{ ($settings->mlm_commission_enabled ?? false) ? 'checked' : '' }}
-                                   class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
-                        </label>
-                    </div>
-
-                    {{-- Cashback --}}
-                    <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                        <div>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">แคชแบ็ก (Cashback)</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">เปิดระบบคืนเงินให้ผู้ซื้อ</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="hidden" name="cashback_enabled" value="0">
-                            <input type="checkbox" name="cashback_enabled" value="1"
-                                   {{ ($settings->cashback_enabled ?? false) ? 'checked' : '' }}
-                                   class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            {{-- แท็บแบรนด์ --}}
-            <div x-show="activeTab === 'branding'" x-transition>
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าแบรนด์</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">กำหนดชื่อแบรนด์ สี และข้อความต้อนรับ</p>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชื่อแบรนด์</label>
-                        <input type="text" name="brand_name"
-                               value="{{ $settings->brand_name ?? 'ตลาดสดไทยพร๊อม' }}"
-                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีหลัก LINE Flex Message</label>
-                        <div class="flex items-center gap-3">
-                            <input type="color" name="line_flex_primary_color"
-                                   value="{{ $settings->line_flex_primary_color ?? '#06C755' }}"
-                                   class="w-12 h-10 rounded-lg border-gray-300 dark:border-gray-600 cursor-pointer">
-                            <input type="text" value="{{ $settings->line_flex_primary_color ?? '#06C755' }}"
-                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                   readonly>
-                        </div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความต้อนรับ</label>
-                        <textarea name="welcome_message" rows="4"
-                                  class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                  placeholder="ข้อความต้อนรับเมื่อผู้ใช้เพิ่มเพื่อน LINE OA...">{{ $settings->welcome_message ?? '' }}</textarea>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ข้อความนี้จะแสดงเมื่อผู้ใช้เพิ่มเพื่อน LINE OA ของตลาดสด</p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ปุ่มบันทึก --}}
-            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-                <button type="submit"
-                        class="inline-flex items-center px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-                    <i class="fas fa-save mr-2"></i> บันทึกการตั้งค่า
-                </button>
-            </div>
-        </form>
-    </div>
+    </form>
 </div>
 @endsection

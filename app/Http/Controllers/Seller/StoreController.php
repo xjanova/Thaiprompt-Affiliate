@@ -72,6 +72,8 @@ class StoreController extends Controller
             'pickup_address' => 'nullable|string|max:500',
             'pickup_latitude' => 'nullable|numeric|between:-90,90|required_with:pickup_longitude|required_if:rider_delivery_enabled,1',
             'pickup_longitude' => 'nullable|numeric|between:-180,180|required_with:pickup_latitude|required_if:rider_delivery_enabled,1',
+            // 🧾 (2026-09-25) ร้านแจ้งเองว่าจดทะเบียน VAT (ระบบถอด VAT 7/107 ออกจากยอดขายก่อนโอน) — ต้องมีเลขผู้เสียภาษี
+            'vat_registered' => 'nullable|boolean',
         ], [
             'business_type.required' => 'กรุณาเลือกประเภทธุรกิจ',
             'business_type.in' => 'ประเภทธุรกิจไม่ถูกต้อง',
@@ -83,12 +85,31 @@ class StoreController extends Controller
             'pickup_longitude.between' => 'พิกัดจุดรับของไม่ถูกต้อง',
         ]);
 
-        // Handle boolean fields (checkboxes send '1' when checked, nothing when unchecked)
-        $validated['enable_cod'] = $request->has('enable_cod');
-        $validated['enable_reviews'] = $request->has('enable_reviews');
+        // สวิตช์: ฟอร์ม V4 ส่ง hidden 0 + checkbox 1 (ไม่ติ๊ก = "0") → ต้องอ่านด้วย boolean() ไม่ใช่ has()
+        // (has() จะเป็น true เสมอเพราะมี hidden 0 → ปิด COD/รีวิวไม่ได้) · ไม่ส่งช่องมาเลย = ปิด เหมือนเดิม
+        $validated['enable_cod'] = $request->boolean('enable_cod');
+        $validated['enable_reviews'] = $request->boolean('enable_reviews');
         $validated['rider_delivery_enabled'] = $request->boolean('rider_delivery_enabled');
         $validated['pickup_latitude'] = is_numeric($request->input('pickup_latitude')) ? round((float) $request->input('pickup_latitude'), 7) : null;
         $validated['pickup_longitude'] = is_numeric($request->input('pickup_longitude')) ? round((float) $request->input('pickup_longitude'), 7) : null;
+
+        // VAT: เปลี่ยนเฉพาะเมื่อฟอร์มส่งช่องนี้มา (ฟอร์มเว็บส่ง hidden 0 + checkbox 1) — ไคลเอนต์อื่นที่ไม่ส่งจะไม่ถูกรีเซ็ต
+        $vatChanged = false;
+        if ($request->has('vat_registered')) {
+            $vatRegistered = $request->boolean('vat_registered');
+            if ($vatRegistered) {
+                $taxDigits = preg_replace('/\D/', '', (string) $request->input('tax_id'));
+                if (strlen($taxDigits) !== 13) {
+                    return back()->withInput()->withErrors([
+                        'tax_id' => 'ร้านที่จดทะเบียน VAT ต้องกรอกเลขประจำตัวผู้เสียภาษี 13 หลัก',
+                    ]);
+                }
+            }
+            $vatChanged = (bool) $store->vat_registered !== $vatRegistered;
+            $validated['vat_registered'] = $vatRegistered;
+        } else {
+            unset($validated['vat_registered']);
+        }
 
         // Handle logo upload with WebP conversion
         if ($request->hasFile('store_logo')) {
@@ -128,7 +149,27 @@ class StoreController extends Controller
             $validated['store_slug'] = VendorStore::generateUniqueSlug($validated['store_name'], $store->id);
         }
 
+        $oldVat = (bool) $store->vat_registered;
+
         $store->update($validated);
+
+        // บันทึกประวัติการเปลี่ยนสถานะ VAT (กระทบเงินที่ร้านได้รับทุกออเดอร์หลังจากนี้)
+        if ($vatChanged) {
+            try {
+                \App\Models\AccountingActivityLog::create([
+                    'user_id' => $user->id,
+                    'loggable_type' => VendorStore::class,
+                    'loggable_id' => $store->id,
+                    'action' => 'store.vat_registered_changed',
+                    'description' => 'ร้านเปลี่ยนสถานะจดทะเบียน VAT: '.($oldVat ? 'จด' : 'ไม่จด').' → '.($validated['vat_registered'] ? 'จด' : 'ไม่จด'),
+                    'old_values' => ['vat_registered' => $oldVat],
+                    'new_values' => ['vat_registered' => (bool) $validated['vat_registered'], 'tax_id' => $store->tax_id],
+                    'ip_address' => $request->ip(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('Store VAT change audit log failed', ['store_id' => $store->id, 'error' => $e->getMessage()]);
+            }
+        }
 
         // ซิงค์สีกับ StoreLayoutSetting (สร้างอัตโนมัติถ้ายังไม่มี)
         $colorFields = array_filter([

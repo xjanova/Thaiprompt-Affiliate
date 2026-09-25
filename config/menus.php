@@ -219,8 +219,29 @@ return [
                 ['label' => '👨‍🌾 ผู้ขาย', 'route' => 'admin.fresh-market.sellers'],
                 ['label' => '🥬 รายการสินค้า', 'route' => 'admin.fresh-market.listings'],
                 ['label' => '📦 ออเดอร์', 'route' => 'admin.fresh-market.orders'],
-                ['label' => '💰 คอมมิชชั่น', 'route' => 'admin.fresh-market.commissions'],
+                ['label' => '💰 ค่าธรรมเนียม & GP', 'route' => 'admin.fresh-market.commissions'],
                 ['label' => '🤖 ทดสอบ LINE Bot', 'route' => 'admin.fresh-market.test-line'],
+            ],
+        ],
+
+        // 🛵 (2026-09-25) ระบบไรเดอร์ — audit RIDER-24 / GAP-12: เดิมเข้าคิวอนุมัติได้ทางเดียวคือพิมพ์ URL เอง
+        [
+            'id' => 'riders',
+            'label' => 'ไรเดอร์',
+            'icon' => '🛵',
+            'route' => null,
+            'order' => 5.8,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-amber-500 to-orange-500',
+            'submenu' => [
+                ['label' => '⏳ รออนุมัติ', 'route' => 'admin.riders.pending', 'description' => 'ใบสมัครไรเดอร์ที่รอตรวจเอกสาร'],
+                ['label' => '🛵 ไรเดอร์ทั้งหมด', 'route' => 'admin.riders.index'],
+                ['label' => '📦 งานไรเดอร์', 'route' => 'admin.rider-jobs.index'],
+                ['label' => '📡 มอนิเตอร์สด', 'route' => 'admin.riders.monitor', 'description' => 'งานรอไรเดอร์ + ไรเดอร์ออนไลน์บนแผนที่ รีเฟรชทุก 15 วินาที'],
+                ['label' => '🗺️ แผนที่ไรเดอร์', 'route' => 'admin.riders.map'],
+                ['label' => '📈 สถิติงาน', 'route' => 'admin.rider-jobs.statistics'],
+                ['label' => '⚙️ ตั้งค่าค่าส่ง', 'route' => 'admin.riders.settings', 'description' => 'ค่าส่ง ส่วนแบ่งไรเดอร์ การกระจายงาน COD GPS'],
             ],
         ],
 
@@ -237,8 +258,14 @@ return [
                 ['label' => 'นำเข้าจาก Lazada', 'route' => 'admin.ecommerce.lazada-import.form', 'icon' => 'fas fa-cloud-download-alt', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500'],
                 ['label' => 'สินค้าที่ถูกบล็อก', 'route' => 'admin.ecommerce.products.blocked', 'icon' => 'fas fa-ban', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-red-500 to-orange-500'],
                 ['label' => 'คำสั่งซื้อ', 'route' => 'admin.ecommerce.orders.index', 'icon' => 'fas fa-shopping-cart'],
+                ['label' => 'รายงานยอดขาย', 'route' => 'admin.ecommerce.reports', 'icon' => 'fas fa-chart-column'],
                 ['label' => 'หมวดหมู่', 'route' => 'admin.ecommerce.categories.index', 'icon' => 'fas fa-tags'],
                 ['label' => 'รีวิวสินค้า', 'route' => 'admin.ecommerce.reviews.index', 'icon' => 'fas fa-star'],
+                // 🏪 (2026-09-25) GAP-12: ร้านค้า vendor / คำขอเปิดร้าน / ร้านแนะนำ / ตั้งค่าหน้าร้าน (เดิมเข้าได้แค่พิมพ์ URL)
+                ['label' => 'ร้านค้าทั้งหมด', 'route' => 'admin.storefront.vendor-stores.index', 'icon' => 'fas fa-store'],
+                ['label' => 'คำขอเปิดร้าน', 'route' => 'admin.seller-applications.index', 'icon' => 'fas fa-inbox'],
+                ['label' => 'ร้านแนะนำหน้าแรก', 'route' => 'admin.featured-stores.index', 'icon' => 'fas fa-award'],
+                ['label' => 'ตั้งค่าหน้าร้าน', 'route' => 'admin.storefront.index', 'icon' => 'fas fa-sliders'],
                 ['label' => 'Official Shop', 'route' => 'admin.official-shop.dashboard', 'icon' => 'fas fa-crown', 'badge' => 'Premium', 'badge_color' => 'bg-gradient-to-r from-amber-500 to-yellow-500'],
             ],
         ],
@@ -382,6 +409,7 @@ return [
             'badge' => 'ADMIN',
             'badge_color' => 'bg-gradient-to-r from-emerald-500 to-teal-500',
             'submenu' => [
+                ['label' => 'ส่วนแบ่งรายได้ & GP', 'route' => 'admin.pricing.settings', 'icon' => 'fas fa-percent', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-amber-500 to-yellow-500', 'description' => 'โปรฯ GP ฟรี · GP ร้านค้า/ตลาดสด · ส่วนแบ่งไรเดอร์ · VAT · ตัวจำลองการแบ่งเงิน'],
                 ['label' => '📊 รายได้แพลตฟอร์ม', 'route' => 'admin.platform-revenue.index', 'description' => 'ดูรายได้ Platform Fee, VAT, MLM Pool'],
                 ['label' => '💰 กระเป๋าเงินแพลตฟอร์ม', 'route' => 'admin.platform-revenue.wallets.index', 'description' => 'ดูยอดเงินใน Platform Wallets'],
                 ['label' => '📝 ธุรกรรมแพลตฟอร์ม', 'route' => 'admin.platform-revenue.transactions', 'description' => 'ประวัติการเงินเข้า-ออก'],
@@ -907,7 +935,7 @@ return [
                 // =====================================================
                 ['label' => 'Mobile App', 'route' => 'admin.mobile-app.index', 'icon' => 'fas fa-mobile-alt', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500', 'description' => 'จัดการแอพมือถือ'],
                 ['label' => 'Push Notifications', 'route' => 'admin.mobile-app.push.index', 'icon' => 'fas fa-bell', 'description' => 'ส่งข้อความถึงผู้ใช้'],
-                ['label' => 'Banner โฆษณา', 'route' => 'admin.mobile-app.banners.index', 'icon' => 'fas fa-ad', 'description' => 'จัดการแบนเนอร์ในแอพ'],
+                ['label' => 'แบนเนอร์แคมเปญแอป', 'route' => 'admin.app-banners.index', 'icon' => 'fas fa-ad', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-amber-500 to-yellow-500', 'description' => 'แบนเนอร์หน้าแรก/ตลาดสด/ไรเดอร์/ร้านค้าในแอป พร้อมพรีวิว'],
                 ['label' => 'Device Analytics', 'route' => 'admin.mobile-app.analytics.index', 'icon' => 'fas fa-chart-bar', 'description' => 'สถิติเครื่องที่ลงทะเบียน'],
                 ['label' => 'ตั้งค่า OCR', 'route' => 'admin.settings.ocr', 'icon' => 'fas fa-file-image'],
                 ['label' => 'จัดการ API', 'route' => 'admin.api-management.endpoints.index', 'icon' => 'fas fa-code'],
@@ -943,13 +971,23 @@ return [
             'permissions' => [],
         ],
 
+        // ✅ (2026-09-25 · SELLER-10 / GAP-07) เปิดเมนู "การตลาด" กลับ — สร้าง view V4 ของ
+        //    seller/marketing/*, seller/coupons/*, seller/store-rating/*, seller/achievements/* ครบแล้ว
+        //    (route เดิม 'seller.marketing' ไม่มีจริง → ใช้ชื่อ route ที่ถูกต้องทุกตัว)
         [
             'id' => 'marketing',
             'label' => 'การตลาด',
             'icon' => '📢',
-            'route' => 'seller.marketing',
+            'route' => null,
             'order' => 0.5,
             'permissions' => [],
+            'submenu' => [
+                ['label' => 'ภาพรวมการตลาด', 'route' => 'seller.marketing.index'],
+                ['label' => 'คูปองร้าน', 'route' => 'seller.coupons.index'],
+                ['label' => 'โปรโมทสินค้าใหม่', 'route' => 'seller.marketing.select-product'],
+                ['label' => 'คะแนนและรีวิวร้าน', 'route' => 'seller.store-rating.index'],
+                ['label' => 'รางวัลร้าน / Premium', 'route' => 'seller.achievements.index'],
+            ],
         ],
 
         [
@@ -971,6 +1009,8 @@ return [
             'submenu' => [
                 ['label' => 'รายการสินค้า', 'route' => 'seller.products.index'],
                 ['label' => 'เพิ่มสินค้า', 'route' => 'seller.products.create'],
+                // 💡 (2026-09-25 · SELLER-11) หน้าวางแผนราคา 3 กลยุทธ์ (PricingEngine + StrategyAdvisor)
+                ['label' => '💡 วางแผนราคา & กลยุทธ์', 'route' => 'seller.pricing.planner', 'description' => 'ตั้งราคาให้มีกำไร พร้อมคำแนะนำ'],
                 ['label' => 'แพ็คเกจ/สมาชิก', 'route' => 'seller.packages'],
             ],
         ],
@@ -983,10 +1023,14 @@ return [
             'order' => 2,
             'permissions' => [],
             'submenu' => [
+                // (2026-09-25 · SELLER-17) หน้า POS ทั้งหมดย้ายเป็น V4 แล้ว — เพิ่มภาพรวม/เครื่อง POS/รายงาน
+                ['label' => 'ภาพรวม POS', 'route' => 'seller.pos.index'],
                 ['label' => 'ขายสินค้า', 'route' => 'seller.pos.terminal'],
                 ['label' => 'รายการขาย', 'route' => 'seller.pos.transactions'],
+                ['label' => 'รายงาน POS', 'route' => 'seller.pos.analytics'],
                 ['label' => 'อุปกรณ์ POS', 'route' => 'seller.pos.devices'],
-                ['label' => 'Session', 'route' => 'seller.pos.sessions'],
+                ['label' => 'เครื่อง POS (API Key)', 'route' => 'seller.pos.terminals'],
+                ['label' => 'เซสชันการขาย', 'route' => 'seller.pos.sessions'],
                 ['label' => 'หมวดหมู่', 'route' => 'seller.pos.categories'],
                 ['label' => 'โฆษณา', 'route' => 'seller.pos.advertisements'],
                 ['label' => 'ฉลาก Barcode', 'route' => 'seller.pos.labels.index'],
@@ -1069,7 +1113,8 @@ return [
 
         [
             'id' => 'commissions',
-            'label' => 'คอมมิชชั่น',
+            // (2026-09-25 · SELLER-23) เดิม "คอมมิชชั่น" เป็นหน้าว่าง → ตอนนี้แสดงรายได้จริงจาก EarningsLedger
+            'label' => 'รายได้จากการขาย / ค่าแนะนำ',
             'icon' => '💵',
             'route' => 'seller.commissions',
             'order' => 5,
@@ -1084,14 +1129,14 @@ return [
             'order' => 6,
             'permissions' => [],
             'submenu' => [
-                ['label' => '📊 Dashboard', 'route' => 'seller.analytics.index'],
-                ['label' => '🤖 AI Insights', 'route' => 'seller.analytics.ai-insights'],
-                ['label' => '👥 Customer Segments', 'route' => 'seller.analytics.segmentation'],
-                ['label' => '📈 Cohort Analysis', 'route' => 'seller.analytics.cohort'],
-                ['label' => '🏆 Products Ranking', 'route' => 'seller.analytics.products'],
+                ['label' => '📊 ภาพรวม', 'route' => 'seller.analytics.index'],
+                ['label' => '🤖 AI วิเคราะห์ร้าน', 'route' => 'seller.analytics.ai-insights'],
+                ['label' => '👥 กลุ่มลูกค้า', 'route' => 'seller.analytics.segmentation'],
+                ['label' => '🔁 ลูกค้ากลับมาซื้อซ้ำ', 'route' => 'seller.analytics.cohort'],
+                ['label' => '🏆 อันดับสินค้า', 'route' => 'seller.analytics.products'],
                 // 🔒 (2026-09-25) SELLER-24: เอา System Monitoring ออก — ข้อมูลเซิร์ฟเวอร์ทั้งระบบ ให้เฉพาะแอดมิน
-                ['label' => '📤 Export Data', 'route' => 'seller.analytics.export'],
-                ['label' => '⚙️ Settings', 'route' => 'seller.analytics.settings'],
+                ['label' => '📤 ดาวน์โหลด CSV', 'route' => 'seller.analytics.export'],
+                ['label' => '⚙️ ตั้งค่าการวิเคราะห์', 'route' => 'seller.analytics.settings'],
             ],
         ],
 
@@ -1099,9 +1144,16 @@ return [
             'id' => 'settings',
             'label' => 'ตั้งค่าร้าน',
             'icon' => '⚙️',
-            'route' => 'seller.settings',
+            'route' => null,
             'order' => 7,
             'permissions' => [],
+            // (2026-09-25 · GAP-13) เพิ่มหน้าตั้งค่าร้าน/ปรับแต่งหน้าร้าน/พนักงาน ที่มี view แล้วแต่ไม่มีทางเข้าจากเมนู
+            'submenu' => [
+                ['label' => '⚙️ ภาพรวมการตั้งค่า', 'route' => 'seller.settings'],
+                ['label' => '🏪 ข้อมูลร้าน ภาษี & ไรเดอร์', 'route' => 'seller.store.settings', 'description' => 'ชื่อร้าน ที่อยู่ VAT และจุดรับของไรเดอร์'],
+                ['label' => '🎨 ปรับแต่งหน้าร้าน', 'route' => 'seller.store.layout.index'],
+                ['label' => '👥 พนักงาน', 'route' => 'seller.staff.index'],
+            ],
         ],
 
         [
@@ -1124,9 +1176,36 @@ return [
                 ['label' => 'บอทของฉัน', 'route' => 'chatbot.index'],
                 ['label' => 'สร้างบอทใหม่', 'route' => 'chatbot.create'],
                 ['label' => 'ตลาดบอท', 'route' => 'chatbot.marketplace.index'],
-                ['label' => 'บอทที่เช่า', 'route' => 'chatbot.marketplace.my-rentals'],
-                ['label' => 'รายได้ของฉัน', 'route' => 'chatbot.marketplace.my-earnings'],
+                // 🚫 (2026-09-25 · SELLER-25) เอา "บอทที่เช่า" / "รายได้ของฉัน" ออก — path ชนกับ /{id} (404)
+                //    และ view chatbot.marketplace.my-rentals / my-earnings ยังไม่มี (ถึงแก้ลำดับ route ก็ 500)
             ],
+        ],
+
+        // 👥 (2026-09-25) ระบบพนักงานร้าน (ฟรี) — หน้า V4 พร้อมแล้ว เดิมไม่มีทางเข้าจากเมนู
+        [
+            'id' => 'staff',
+            'label' => 'พนักงาน',
+            'icon' => '👥',
+            'route' => null,
+            'order' => 6.5,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => 'รายชื่อพนักงาน', 'route' => 'seller.staff.index'],
+                ['label' => 'เพิ่มพนักงาน', 'route' => 'seller.staff.create'],
+                ['label' => 'แผนก', 'route' => 'seller.staff.departments'],
+                ['label' => 'ตำแหน่ง', 'route' => 'seller.staff.positions'],
+                ['label' => 'กะการทำงาน', 'route' => 'seller.staff.shifts'],
+            ],
+        ],
+
+        // 📘 (2026-09-25) คู่มือผู้ขาย (V4) — เดิมไม่มีทางเข้าจากเมนู
+        [
+            'id' => 'user-guide',
+            'label' => 'คู่มือผู้ขาย',
+            'icon' => '📘',
+            'route' => 'seller.user-guide.index',
+            'order' => 9,
+            'permissions' => [],
         ],
     ],
 
@@ -1282,13 +1361,65 @@ return [
             ],
         ],
 
+        // 🛒 (2026-09-26) ช้อป/ตลาดสด/ไรเดอร์ อยู่กลุ่มเดียวกันถัดจากกระเป๋าเงิน (audit RIDER-07 / GAP-01: เดิมไม่มีทางเข้าเลย)
+        [
+            'id' => 'my-orders',
+            'label' => 'คำสั่งซื้อของฉัน',
+            'icon' => '🧾',
+            'route' => null,
+            'order' => 7.2,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '🛍️ ออเดอร์ร้านค้า', 'route' => 'orders.index', 'description' => 'สินค้าที่สั่งจากร้านค้าออนไลน์'],
+                ['label' => '🥬 ออเดอร์ตลาดสด', 'route' => 'taladsod.orders', 'description' => 'ของสดและอาหารจากตลาดสดไทยพร้อม'],
+            ],
+        ],
+
+        [
+            'id' => 'shipping-addresses',
+            'label' => 'ที่อยู่จัดส่ง',
+            'icon' => '📍',
+            'route' => 'shipping-addresses.index',
+            'order' => 7.3,
+            'permissions' => [],
+        ],
+
+        [
+            'id' => 'taladsod',
+            'label' => 'ตลาดสดไทยพร้อม',
+            'icon' => '🥬',
+            'route' => 'taladsod.home',
+            'order' => 7.4,
+            'permissions' => [],
+        ],
+
+        // 🛒 (2026-09-26) ร้านตลาดสด/รถเข็นของฉัน — ยังไม่มีร้านจะถูกพาไปหน้าสมัครเปิดร้านเอง
+        [
+            'id' => 'taladsod-shop',
+            'label' => 'ร้านตลาดสดของฉัน',
+            'icon' => '🛒',
+            'route' => 'taladsod.seller.dashboard',
+            'order' => 7.45,
+            'permissions' => [],
+        ],
+
+        // 🏍️ หน้าเว็บไรเดอร์ /user/rider — ยังไม่สมัครจะถูกพาไปหน้าสมัคร / รอตรวจไปหน้าสถานะเอง
+        [
+            'id' => 'rider',
+            'label' => 'ไรเดอร์',
+            'icon' => '🏍️',
+            'route' => 'user.rider.dashboard',
+            'order' => 7.5,
+            'permissions' => [],
+        ],
+
         // 🏪 (2026-09-25) SELLER-07: สมาชิกทั่วไปสมัครเปิดร้านเองได้ (เดิมไม่มีทางเข้า /seller/* เลย)
         [
             'id' => 'seller-apply',
-            'label' => 'เปิดร้านค้า',
+            'label' => 'สมัครเปิดร้าน',
             'icon' => '🏪',
             'route' => 'user.seller-apply.index',
-            'order' => 13.8,
+            'order' => 7.6,
             'permissions' => [],
         ],
 

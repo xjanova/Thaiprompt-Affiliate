@@ -58,6 +58,7 @@ class FreshMarketListing extends Model
         'price',
         'compare_at_price',
         'quantity_available',
+        'track_stock',
         'unit',
         'images',
         'main_image_url',
@@ -97,6 +98,7 @@ class FreshMarketListing extends Model
         'cashback_percentage' => 'decimal:2',
         'commission_rate' => 'decimal:2',
         'quantity_available' => 'integer',
+        'track_stock' => 'boolean',
         'view_count' => 'integer',
         'order_count' => 'integer',
     ];
@@ -116,7 +118,17 @@ class FreshMarketListing extends Model
         // ทุกทางที่แก้จำนวนสต็อก (เว็บ, API, LINE, แอดมิน) ผ่านจุดนี้:
         // เติมสต็อกแล้ว → sold_out กลับเป็น active / สต็อกหมด → sold_out
         static::saving(function (self $listing) {
-            if (! $listing->isDirty('quantity_available')) {
+            // ไม่ตัดสต็อก (ทำตามสั่ง) → จำนวนคงเหลือไม่มีผล ของไม่มีวันหมดเพราะสต็อก
+            if (! $listing->tracksStock()) {
+                if ($listing->status === 'sold_out') {
+                    $listing->status = 'active';
+                    $listing->is_available = true;
+                }
+
+                return;
+            }
+
+            if (! $listing->isDirty('quantity_available') && ! $listing->isDirty('track_stock')) {
                 return;
             }
 
@@ -159,6 +171,30 @@ class FreshMarketListing extends Model
         return $this->hasMany(FreshMarketOrder::class, 'listing_id');
     }
 
+    /**
+     * กลุ่มตัวเลือกของสินค้า (เรียงตาม sort_order)
+     */
+    public function optionGroups(): HasMany
+    {
+        return $this->hasMany(FreshMarketListingOptionGroup::class, 'listing_id')->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * ตัวเลือกทั้งหมดของสินค้า (ทุกกลุ่ม)
+     */
+    public function options(): HasMany
+    {
+        return $this->hasMany(FreshMarketListingOption::class, 'listing_id');
+    }
+
+    /**
+     * รายการในออเดอร์ที่มีสินค้านี้ (ออเดอร์หลายรายการ)
+     */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(FreshMarketOrderItem::class, 'listing_id');
+    }
+
     // ===== Scopes =====
 
     /**
@@ -170,11 +206,16 @@ class FreshMarketListing extends Model
     }
 
     /**
-     * Scope: สินค้ายังมีของ
+     * Scope: สินค้ายังมีของ (สินค้าไม่ตัดสต็อก = มีของเสมอ)
      */
     public function scopeInStock($query)
     {
-        return $query->where('quantity_available', '>', 0);
+        $table = $query->getModel()->getTable();
+
+        return $query->where(function ($q) use ($table) {
+            $q->where($table.'.quantity_available', '>', 0)
+                ->orWhere($table.'.track_stock', false);
+        });
     }
 
     /**
@@ -207,21 +248,90 @@ class FreshMarketListing extends Model
     }
 
     /**
-     * Scope: ค้นหาสินค้าใกล้พิกัด (Haversine formula)
+     * Scope: ค้นหาสินค้าใกล้พิกัด (Haversine formula) ตาม "ตำแหน่งร้านตอนนี้"
+     *
+     * - ร้านประจำที่: พิกัดสินค้า (ไม่มี = พิกัดร้าน) ตามเดิม
+     * - ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด) ที่เปิดอยู่: ตำแหน่งปัจจุบันของร้าน
+     * - ร้านเคลื่อนที่ที่ปิดอยู่: ไม่มีตำแหน่ง → ไม่โผล่ในผลค้นหาใกล้ฉัน (ไม่เปิดเผยจุดล่าสุด/ที่อยู่บ้าน)
+     *   แต่ยังเห็นในค้นหาด้วยคำ/หมวดหมู่ และหน้าร้าน (แสดงว่า "ปิดอยู่")
+     * - ร้านที่เปิดอยู่ขึ้นก่อน แล้วเรียงตามระยะทาง
+     *
+     * เพิ่มคอลัมน์: distance_km, shop_latitude, shop_longitude, shop_is_open (1|0)
+     * ใช้ join กับตารางย่อยที่ตั้งชื่อคอลัมน์ขึ้นต้น fm_shop_ → ไม่ชนชื่อ created_at/id/latitude ของสินค้า
      */
     public function scopeNearby($query, float $lat, float $lng, float $radiusKm = 10)
     {
-        return $query->selectRaw('fresh_market_listings.*, (
-            6371 * acos(
-                cos(radians(?)) * cos(radians(latitude))
-                * cos(radians(longitude) - radians(?))
-                + sin(radians(?)) * sin(radians(latitude))
-            )
-        ) AS distance_km', [$lat, $lng, $lat])
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
+        $table = $query->getModel()->getTable();
+
+        $shops = DB::table('fresh_market_sellers')
+            ->select([
+                'id as fm_shop_id',
+                'is_mobile as fm_shop_mobile',
+                'current_latitude as fm_shop_cur_lat',
+                'current_longitude as fm_shop_cur_lng',
+                'latitude as fm_shop_lat',
+                'longitude as fm_shop_lng',
+            ])
+            ->selectRaw(
+                'CASE WHEN is_open = 1 AND (closes_at IS NULL OR closes_at > ?) THEN 1 ELSE 0 END AS fm_shop_open',
+                [now()->toDateTimeString()]
+            );
+
+        $effective = fn (string $current, string $fixed, string $listingColumn) => 'CASE WHEN fm_shop.fm_shop_mobile = 1 '
+            ."THEN (CASE WHEN fm_shop.fm_shop_open = 1 THEN fm_shop.{$current} ELSE NULL END) "
+            ."ELSE COALESCE({$table}.{$listingColumn}, fm_shop.{$fixed}) END";
+
+        $effLat = $effective('fm_shop_cur_lat', 'fm_shop_lat', 'latitude');
+        $effLng = $effective('fm_shop_cur_lng', 'fm_shop_lng', 'longitude');
+
+        // withCount() ที่เรียกก่อนหน้าใส่ "{$table}.*" ไว้แล้ว → ห้ามใส่ซ้ำ
+        // (คอลัมน์ซ้ำทำให้ subquery นับหน้าของ paginate() พัง: Duplicate column name 'id')
+        $allColumns = $query->getQuery()->columns === null ? "{$table}.*, " : '';
+
+        return $query->joinSub($shops, 'fm_shop', 'fm_shop.fm_shop_id', '=', "{$table}.seller_id")
+            ->selectRaw("{$allColumns}({$effLat}) AS shop_latitude, ({$effLng}) AS shop_longitude, fm_shop.fm_shop_open AS shop_is_open, (
+                6371 * acos(LEAST(1, GREATEST(-1,
+                    cos(radians(?)) * cos(radians({$effLat}))
+                    * cos(radians({$effLng}) - radians(?))
+                    + sin(radians(?)) * sin(radians({$effLat}))
+                )))
+            ) AS distance_km", [$lat, $lng, $lat])
             ->having('distance_km', '<=', $radiusKm)
+            ->orderByDesc('shop_is_open')
             ->orderBy('distance_km');
+    }
+
+    /**
+     * พิกัดที่แสดงให้ผู้ซื้อ: ผลจาก scopeNearby (ตำแหน่งร้านตอนนี้) → ถ้าไม่ได้ค้นหาใกล้ฉัน ใช้กติกาเดียวกันจากข้อมูลร้าน
+     *
+     * @return array{latitude: ?float, longitude: ?float}
+     */
+    public function displayCoordinates(): array
+    {
+        $attributes = $this->getAttributes();
+
+        if (array_key_exists('shop_latitude', $attributes)) {
+            return [
+                'latitude' => $attributes['shop_latitude'] !== null ? (float) $attributes['shop_latitude'] : null,
+                'longitude' => $attributes['shop_longitude'] !== null ? (float) $attributes['shop_longitude'] : null,
+            ];
+        }
+
+        $seller = $this->relationLoaded('seller') ? $this->seller : null;
+
+        if ($seller && $seller->isMobileShop()) {
+            $location = $seller->publicLocation();
+
+            return [
+                'latitude' => $location['latitude'] ?? null,
+                'longitude' => $location['longitude'] ?? null,
+            ];
+        }
+
+        return [
+            'latitude' => $this->latitude !== null ? (float) $this->latitude : ($seller?->latitude !== null ? (float) $seller->latitude : null),
+            'longitude' => $this->longitude !== null ? (float) $this->longitude : ($seller?->longitude !== null ? (float) $seller->longitude : null),
+        ];
     }
 
     /**
@@ -330,13 +440,35 @@ class FreshMarketListing extends Model
     }
 
     /**
-     * ตรวจสอบว่าสินค้ายังพร้อมขาย
+     * ตรวจสอบว่าสินค้ายังพร้อมขาย (ไม่ตัดสต็อก = ไม่ต้องดูจำนวนคงเหลือ)
      */
     public function isAvailableForPurchase(): bool
     {
         return $this->status === 'active'
             && $this->is_available
-            && $this->quantity_available > 0;
+            && (! $this->tracksStock() || $this->quantity_available > 0);
+    }
+
+    /**
+     * สินค้านี้ตัดสต็อกหรือไม่ (คอลัมน์ยังไม่มี/ค่า null = ตัดสต็อกตามเดิม)
+     */
+    public function tracksStock(): bool
+    {
+        $value = $this->getAttributes()['track_stock'] ?? null;
+
+        return $value === null ? true : (bool) $value;
+    }
+
+    /**
+     * จำนวนสูงสุดที่สั่งได้ต่อครั้ง (ไม่ตัดสต็อก = 999)
+     */
+    public function getMaxOrderQuantityAttribute(): int
+    {
+        if (! $this->tracksStock()) {
+            return 999;
+        }
+
+        return max(0, min(999, (int) $this->quantity_available));
     }
 
     /**

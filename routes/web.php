@@ -605,6 +605,9 @@ Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
 Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function () {
     Route::get('/', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
     Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->middleware('turnstile:checkout')->name('process');
+    // 🛵 (2026-09-26) คิดยอดใหม่ตามที่อยู่/วิธีส่ง/คูปอง + ปักหมุดที่อยู่ (JSON สำหรับหน้า checkout V4)
+    Route::get('/quote', [\App\Http\Controllers\CheckoutController::class, 'quote'])->middleware('throttle:60,1')->name('quote');
+    Route::post('/address-location', [\App\Http\Controllers\CheckoutController::class, 'saveAddressLocation'])->middleware('throttle:20,1')->name('address-location');
     Route::get('/payment/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'payment'])->name('payment');
     Route::post('/payment/{orderId}/process', [\App\Http\Controllers\CheckoutController::class, 'processPayment'])->name('payment.process');
     Route::get('/processing/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'paymentProcessing'])->name('processing');

@@ -177,7 +177,8 @@ class RiderJobService
                     'at' => now()->toIso8601String(),
                 ];
 
-                $locked->fill([
+                // คืนงาน = ไม่มีไรเดอร์แล้ว → หยุดแชร์ตำแหน่งลูกค้า (ลูกค้าต้องเปิดแชร์ใหม่กับไรเดอร์คนถัดไปเอง)
+                $locked->fill(array_merge([
                     'rider_id' => null,
                     'accepted_at' => null,
                     'release_count' => (int) $locked->release_count + 1,
@@ -187,7 +188,7 @@ class RiderJobService
                     'gps_active' => true,
                     'gps_lost_at' => null,
                     'gps_warning_count' => 0,
-                ]);
+                ], $this->stopCustomerSharing()));
 
                 Rider::whereKey($rider->id)->increment('cancelled_jobs');
             },
@@ -560,7 +561,8 @@ class RiderJobService
                 'at' => now()->toIso8601String(),
             ];
 
-            $locked->fill([
+            // เปลี่ยนไรเดอร์ = ลูกค้ายังไม่ได้ยินยอมแชร์ตำแหน่งกับไรเดอร์คนใหม่ → หยุดแชร์ (ลูกค้าต้องเปิดใหม่เอง เหมือนตอนไรเดอร์คืนงาน)
+            $locked->fill(array_merge([
                 'rider_id' => $lockedRider->id,
                 'status' => $from === 'pending' ? 'accepted' : $from,
                 'accepted_at' => $from === 'pending' ? now() : ($locked->accepted_at ?? now()),
@@ -572,7 +574,7 @@ class RiderJobService
                 'gps_active' => true,
                 'gps_lost_at' => null,
                 'gps_warning_count' => 0,
-            ])->save();
+            ], $this->stopCustomerSharing()))->save();
 
             $lockedRider->forceFill(['availability' => 'busy'])->save();
             $lockedRider->increment('total_jobs');
@@ -644,14 +646,15 @@ class RiderJobService
                         'reason' => 'ไรเดอร์ถูกระงับ',
                         'at' => now()->toIso8601String(),
                     ];
-                    $locked->fill([
+                    // ไม่มีไรเดอร์แล้ว → หยุดแชร์ตำแหน่งลูกค้า (ไรเดอร์คนถัดไปจะเห็นเมื่อลูกค้ายินยอมใหม่เท่านั้น)
+                    $locked->fill(array_merge([
                         'rider_id' => null,
                         'accepted_at' => null,
                         'dispatch_attempts' => $attempts,
                         'gps_active' => true,
                         'gps_lost_at' => null,
                         'gps_warning_count' => 0,
-                    ]);
+                    ], $this->stopCustomerSharing()));
                 },
                 afterSave: fn () => Rider::find($rider->id)?->refreshAvailabilityAfterJob(),
             );

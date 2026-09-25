@@ -17,12 +17,14 @@ use Illuminate\View\View;
  */
 class AchievementController extends Controller
 {
+    use \App\Http\Controllers\Seller\Concerns\ResolvesSellerStore;
+
     /**
      * หน้าหลัก Achievement Dashboard
      */
     public function index(Request $request, PremiumStoreService $service): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // Trophy ที่ได้รับ
         $achievements = StoreTrophyAchievement::where('store_id', $store->id)
@@ -66,7 +68,7 @@ class AchievementController extends Controller
      */
     public function trophies(Request $request, PremiumStoreService $service): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // ตรวจสอบและให้ Trophy ที่ผ่านเกณฑ์ใหม่
         $newlyAwarded = $service->checkAndAwardTrophies($store);
@@ -97,7 +99,7 @@ class AchievementController extends Controller
      */
     public function premiumStatus(Request $request, PremiumStoreService $service): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         $premiumReport = $service->getPremiumEligibilityReport($store);
 
@@ -117,7 +119,7 @@ class AchievementController extends Controller
      */
     public function toggleTrophyDisplay(Request $request, StoreTrophyAchievement $trophy): JsonResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // ตรวจสอบว่า Trophy นี้เป็นของร้านนี้
         if ($trophy->store_id !== $store->id) {

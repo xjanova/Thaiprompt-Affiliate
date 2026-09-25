@@ -76,8 +76,8 @@
                x-init="@if($tpCartCountUrl) fetch('{{ $tpCartCountUrl }}', { headers: { 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' } }).then(r => r.ok ? r.json() : null).then(d => { if (d) c = d.count || 0 }).catch(() => {}) @endif">
                 <i class="fas fa-cart-shopping"></i>
                 <span x-show="c > 0" x-cloak x-text="c > 99 ? '99+' : c"
-                      class="tp-num"
-                      style="position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 4px; display:grid; place-items:center; border-radius:9px; background:linear-gradient(135deg,#e0972e,#d9534f); color:#fff; font-size:10px; font-weight:700;"></span>
+                      class="tp-num grid"
+                      style="position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 4px; place-items:center; border-radius:9px; background:linear-gradient(135deg,#e0972e,#d9534f); color:#fff; font-size:10px; font-weight:700;"></span>
             </a>
         @endif
         @endauth

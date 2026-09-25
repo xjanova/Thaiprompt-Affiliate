@@ -215,7 +215,13 @@ class OrderManagementController extends Controller
 
         $shippingProviders = ShippingProvider::active()->ordered()->get();
 
-        return view('seller.orders.tracking', compact('order', 'shippingProviders'));
+        // 🎨 (2026-09-25) หน้า V4: ปุ่มที่ทำได้จริง (ฟอร์มเลขพัสดุแสดงเมื่อ ship ได้) + สถานะไรเดอร์ + ที่อยู่ snapshot
+        $fullOrder = Order::with('items')->find($order->id);
+        $allowedActions = $fullOrder ? $this->sellerOrders->allowedActions($fullOrder, (int) auth()->id()) : [];
+        $riderSummary = ShopPresenter::riderSummary($order);
+        $shipping = ShopPresenter::shipping($order);
+
+        return view('seller.orders.tracking', compact('order', 'shippingProviders', 'allowedActions', 'riderSummary', 'shipping'));
     }
 
     /**
@@ -441,7 +447,18 @@ class OrderManagementController extends Controller
 
         $shippingProviders = ShippingProvider::active()->ordered()->get();
 
-        return view('seller.orders.pending-shipping', compact('orders', 'stats', 'shippingProviders'));
+        // ปุ่มที่ร้านกดได้ต่อออเดอร์ — ใช้ SellerOrderService::allowedActions ตัวเดียวกับหน้ารายละเอียด
+        // (เรียกไรเดอร์ใหม่ได้หลังงานเดิมยกเลิก/ล้มเหลว/หมดเวลา · ร้านที่ยังไม่ปักหมุดจุดรับของจะไม่เห็นปุ่ม)
+        // ต้องใช้ออเดอร์ที่โหลดสินค้าครบทุกร้าน (รายการด้านบนกรองเหลือเฉพาะสินค้าของร้านนี้)
+        $sellerId = (int) auth()->id();
+        $fullOrders = Order::with('items')->whereIn('id', $orders->pluck('id'))->get()->keyBy('id');
+        $orderActions = [];
+        foreach ($orders as $listed) {
+            $full = $fullOrders->get($listed->id);
+            $orderActions[$listed->id] = $full ? $this->sellerOrders->allowedActions($full, $sellerId) : [];
+        }
+
+        return view('seller.orders.pending-shipping', compact('orders', 'stats', 'shippingProviders', 'orderActions'));
     }
 
     /**

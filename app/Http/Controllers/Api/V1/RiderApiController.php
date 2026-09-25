@@ -184,6 +184,39 @@ class RiderApiController extends Controller
     }
 
     /**
+     * POST /rider/consent — ยินยอม/ถอนความยินยอมให้ลูกค้าเห็นตำแหน่งระหว่างส่งงาน
+     *
+     * body: location_consent (bool, ไม่ส่ง = true) · ต้องยินยอม 1 ครั้งก่อนรับงานแรก (ไม่งั้น accept ได้ CONSENT_REQUIRED)
+     * ถอนความยินยอมระหว่างมีงานวิ่งอยู่ไม่ได้ → 409 HAS_ACTIVE_JOB
+     */
+    public function consent(Request $request): JsonResponse
+    {
+        return $this->guard('consent', function () use ($request) {
+            $rider = $this->riderOrFail($request);
+
+            $data = $this->validateRiderInput($request, [
+                'location_consent' => ['nullable', 'boolean'],
+            ]);
+
+            $grant = ! array_key_exists('location_consent', $data) || $data['location_consent'] === null
+                ? true
+                : (bool) $data['location_consent'];
+
+            $rider = $this->accounts->updatePermissions($rider, ['location_consent' => $grant]);
+            $payload = $this->riderPayload($rider);
+
+            return $this->ok([
+                'location_consent' => $rider->hasLocationConsent(),
+                'location_consent_at' => $payload['location_consent_at'],
+                'can_accept_jobs' => $payload['can_accept_jobs'],
+                'block_reason' => $payload['block_reason'],
+            ], $rider->hasLocationConsent()
+                ? 'บันทึกความยินยอมแล้ว ลูกค้าจะเห็นตำแหน่งของคุณเฉพาะระหว่างส่งงานของเขาเท่านั้น'
+                : 'ยกเลิกความยินยอมแล้ว (ต้องยินยอมอีกครั้งก่อนรับงาน)');
+        });
+    }
+
+    /**
      * PUT /rider/profile — แก้เบอร์/ยานพาหนะ/ความชอบงาน
      *
      * เปลี่ยนยานพาหนะหลังอนุมัติ → แอดมินต้องตรวจซ้ำ (documents_pending_review = true) + อาจต้องอัปโหลดเอกสารเพิ่ม

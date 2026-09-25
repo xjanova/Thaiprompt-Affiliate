@@ -1,200 +1,145 @@
-@extends('layouts.admin-v3')
+{{--
+ | ออเดอร์ตลาดสด (admin.fresh-market.orders) — ธีม V4
+ | ตัวแปรจาก Admin\FreshMarketController@orders: $orders (paginator, with buyer, seller, listing), $statuses [order_status => ชื่อไทย]
+ | ตัวกรอง GET: status (รองรับชื่อเก่า confirmed/ready_for_pickup), payment_status (pending|paid|released|refunded), delivery_type (pickup|rider), search
+ | ใช้คอลัมน์จริง order_status / seller_earning — กดแถวเพื่อจัดการ (ยกเลิก/คืนเงิน/ปิดออเดอร์/เรียกไรเดอร์ใหม่) ที่หน้ารายละเอียด
+--}}
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการคำสั่งซื้อ - ตลาดสดไทยพร๊อม')
+@section('title', 'ออเดอร์ตลาดสด')
 
 @section('content')
-<div class="space-y-6">
-    {{-- ส่วนหัว --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">จัดการคำสั่งซื้อ - ตลาดสดไทยพร๊อม</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">ดูและจัดการคำสั่งซื้อทั้งหมดในระบบตลาดสด</p>
+@include('admin.riders.partials.v4-kit')
+@php
+    $paymentStatuses = ['pending' => 'รอชำระ / เก็บปลายทาง', 'paid' => 'ชำระแล้ว (ระบบถือเงิน)', 'released' => 'โอนให้ร้านแล้ว', 'refunded' => 'คืนเงินแล้ว'];
+    $deliveryTypes = ['rider' => 'ไรเดอร์ส่ง', 'pickup' => 'ลูกค้ารับเอง'];
+    $currentStatus = \App\Models\FreshMarketOrder::normalizeStatus(request('status'));
+    $hasFilter = request()->hasAny(['status', 'payment_status', 'delivery_type', 'search']);
+@endphp
+<div x-data="{}" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.fresh-market.dashboard') }}" class="tp-icon-btn" title="กลับแดชบอร์ดตลาดสด"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ตลาดสด · ออเดอร์</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ออเดอร์ตลาดสด 📦</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ติดตามทุกออเดอร์ และเข้าไปยกเลิก/คืนเงิน ปิดออเดอร์ หรือเรียกไรเดอร์ใหม่ได้ที่หน้ารายละเอียด</div>
+            </div>
         </div>
-        <a href="{{ route('admin.fresh-market.dashboard') }}"
-           class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            <i class="fas fa-arrow-left mr-2"></i> กลับแดชบอร์ด
-        </a>
     </div>
 
-    {{-- แจ้งเตือน --}}
-    @if(session('success'))
-        <div class="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl">
-            {{ session('success') }}
-        </div>
-    @endif
+    @include('admin.riders.partials.flash')
 
-    {{-- ตัวกรอง --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <form method="GET" action="{{ route('admin.fresh-market.orders') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ค้นหา</label>
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ค้นหาเลขที่คำสั่งซื้อ, ชื่อผู้ซื้อ..."
-                       class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">สถานะคำสั่งซื้อ</label>
-                <select name="status"
-                        class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                    <option value="">ทุกสถานะ</option>
-                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
-                    <option value="confirmed" {{ request('status') === 'confirmed' ? 'selected' : '' }}>ยืนยันแล้ว</option>
-                    <option value="preparing" {{ request('status') === 'preparing' ? 'selected' : '' }}>กำลังจัดเตรียม</option>
-                    <option value="ready_for_pickup" {{ request('status') === 'ready_for_pickup' ? 'selected' : '' }}>พร้อมรับสินค้า</option>
-                    <option value="delivering" {{ request('status') === 'delivering' ? 'selected' : '' }}>กำลังจัดส่ง</option>
-                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>สำเร็จ</option>
-                    <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>ยกเลิก</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">สถานะการชำระเงิน</label>
-                <select name="payment_status"
-                        class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
-                    <option value="">ทุกสถานะ</option>
-                    <option value="pending" {{ request('payment_status') === 'pending' ? 'selected' : '' }}>รอชำระเงิน</option>
-                    <option value="paid" {{ request('payment_status') === 'paid' ? 'selected' : '' }}>ชำระแล้ว</option>
-                    <option value="refunded" {{ request('payment_status') === 'refunded' ? 'selected' : '' }}>คืนเงินแล้ว</option>
-                    <option value="failed" {{ request('payment_status') === 'failed' ? 'selected' : '' }}>ชำระไม่สำเร็จ</option>
-                </select>
-            </div>
-            <div class="flex items-end gap-2">
-                <button type="submit"
-                        class="inline-flex items-center px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition">
-                    <i class="fas fa-search mr-2"></i> ค้นหา
-                </button>
-                <a href="{{ route('admin.fresh-market.orders') }}"
-                   class="inline-flex items-center px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                    <i class="fas fa-redo mr-1"></i> ล้าง
-                </a>
+    {{-- ===== ตัวกรอง ===== --}}
+    <div class="tp-card" style="padding:16px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            <a href="{{ route('admin.fresh-market.orders', array_filter(['payment_status' => request('payment_status'), 'delivery_type' => request('delivery_type'), 'search' => request('search')])) }}"
+               class="tp-btn tp-btn-sm {{ $currentStatus === null ? 'tp-btn-primary' : '' }}">ทุกสถานะ</a>
+            @foreach ($statuses as $value => $label)
+                <a href="{{ route('admin.fresh-market.orders', array_filter(['status' => $value, 'payment_status' => request('payment_status'), 'delivery_type' => request('delivery_type'), 'search' => request('search')])) }}"
+                   class="tp-btn tp-btn-sm {{ $currentStatus === $value ? 'tp-btn-primary' : '' }}">{{ $label }}</a>
+            @endforeach
+        </div>
+        <form method="GET" action="{{ route('admin.fresh-market.orders') }}" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:10px; align-items:end;">
+            @if ($currentStatus)<input type="hidden" name="status" value="{{ $currentStatus }}">@endif
+            <input type="search" name="search" value="{{ request('search') }}" class="tp-input" placeholder="เลขออเดอร์ ชื่อผู้ซื้อ หรือชื่อร้าน">
+            <select name="payment_status" class="tp-input">
+                <option value="">การชำระเงินทั้งหมด</option>
+                @foreach ($paymentStatuses as $value => $label)
+                    <option value="{{ $value }}" @selected(request('payment_status') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <select name="delivery_type" class="tp-input">
+                <option value="">การจัดส่งทั้งหมด</option>
+                @foreach ($deliveryTypes as $value => $label)
+                    <option value="{{ $value }}" @selected(request('delivery_type') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> ค้นหา</button>
+                @if ($hasFilter)
+                    <a href="{{ route('admin.fresh-market.orders') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> ล้าง</a>
+                @endif
             </div>
         </form>
     </div>
 
-    {{-- ตารางคำสั่งซื้อ --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">เลขที่คำสั่งซื้อ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ผู้ซื้อ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ผู้ขาย</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ยอดรวม</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">การชำระเงิน</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">สถานะ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">วันที่สั่งซื้อ</th>
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px;">
+            <div class="tp-section-h"><i class="fas fa-receipt"></i> รายการออเดอร์</div>
+            <span style="font-size:12px; color:var(--ink2);">ทั้งหมด {{ number_format($orders->total()) }} ออเดอร์</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:1000px; border-collapse:collapse; font-size:13px;">
+                <thead>
+                    <tr style="text-align:left; font-size:11px; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">
+                        <th style="padding:10px 18px;">ออเดอร์</th>
+                        <th style="padding:10px 12px;">ผู้ซื้อ / ร้าน</th>
+                        <th style="padding:10px 12px;">สินค้า</th>
+                        <th style="padding:10px 12px; text-align:right;">ยอดเงิน</th>
+                        <th style="padding:10px 12px;">การชำระเงิน</th>
+                        <th style="padding:10px 12px;">สถานะ</th>
+                        <th style="padding:10px 18px; text-align:right;"></th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($orders as $order)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-4 py-4 whitespace-nowrap">
-                                <span class="text-sm font-semibold text-green-600 dark:text-green-400">{{ $order->order_number }}</span>
+                <tbody>
+                    @forelse ($orders as $order)
+                        <tr class="w1-row" style="box-shadow:inset 0 1px 0 color-mix(in srgb, var(--ink2) 14%, transparent);">
+                            <td style="padding:12px 18px;">
+                                <a href="{{ route('admin.fresh-market.orders.show', $order) }}" class="w1-link tp-num">#{{ $order->order_number }}</a>
+                                <div style="font-size:11.5px; color:var(--ink2);">{{ $order->created_at?->thaidate('j M Y H:i') }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);"><i class="fas {{ $order->delivery_type === 'rider' ? 'fa-motorcycle' : 'fa-person-walking' }}"></i> {{ $deliveryTypes[$order->delivery_type] ?? $order->delivery_type }}</div>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                                {{ $order->buyer->name ?? '-' }}
+                            <td style="padding:12px;">
+                                <div>{{ $order->buyer?->name ?? '-' }}</div>
+                                <div style="font-size:11.5px;">
+                                    @if ($order->seller)
+                                        <a href="{{ route('admin.fresh-market.sellers.show', $order->seller_id) }}" class="w1-link">{{ $order->seller->shop_name }}</a>
+                                    @else
+                                        <span style="color:var(--ink2);">-</span>
+                                    @endif
+                                </div>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                {{ $order->seller->shop_name ?? '-' }}
+                            <td style="padding:12px; max-width:260px;">
+                                {{-- ออเดอร์หลายรายการ: สรุปทุกรายการ (ออเดอร์เก่าใช้สินค้าเดียวจากคอลัมน์เดิม) --}}
+                                @php $itemsSummary = $order->riderItemsSummary(); @endphp
+                                <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $itemsSummary }}">{{ $itemsSummary }}</div>
                             </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-right">
-                                <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ number_format($order->total_amount, 2) }}</span>
-                                <span class="text-xs text-gray-500 ml-1">บาท</span>
+                            <td style="padding:12px; text-align:right; white-space:nowrap;" class="tp-num">
+                                <b>฿{{ number_format((float) $order->total_amount, 2) }}</b>
+                                @if ((float) $order->delivery_fee > 0)
+                                    <div style="font-size:11.5px; color:var(--ink2);">+ ค่าส่ง ฿{{ number_format((float) $order->delivery_fee, 2) }}</div>
+                                @endif
+                                @if ((float) $order->refunded_amount > 0)
+                                    <div style="font-size:11.5px; color:color-mix(in srgb, var(--w-violet) 74%, var(--ink));">คืนแล้ว ฿{{ number_format((float) $order->refunded_amount, 2) }}</div>
+                                @endif
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                @switch($order->payment_status)
-                                    @case('pending')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                            รอชำระเงิน
-                                        </span>
-                                        @break
-                                    @case('paid')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            ชำระแล้ว
-                                        </span>
-                                        @break
-                                    @case('refunded')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                            คืนเงินแล้ว
-                                        </span>
-                                        @break
-                                    @case('failed')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                            ชำระไม่สำเร็จ
-                                        </span>
-                                        @break
-                                    @default
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                                            {{ $order->payment_status }}
-                                        </span>
-                                @endswitch
+                            <td style="padding:12px;">
+                                <div style="font-size:12px; margin-bottom:4px;">{{ $order->payment_method === 'cod' ? 'เก็บเงินปลายทาง' : ($order->payment_method === 'wallet' || $order->payment_method === 'escrow' ? 'Wallet' : $order->payment_method) }}</div>
+                                @include('admin.riders.partials.status', ['statusKind' => 'payment', 'statusValue' => $order->payment_status, 'statusLabel' => $order->payment_status_label])
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                @switch($order->status)
-                                    @case('pending')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
-                                            รอดำเนินการ
-                                        </span>
-                                        @break
-                                    @case('confirmed')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                            ยืนยันแล้ว
-                                        </span>
-                                        @break
-                                    @case('preparing')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400">
-                                            กำลังจัดเตรียม
-                                        </span>
-                                        @break
-                                    @case('ready_for_pickup')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400">
-                                            พร้อมรับสินค้า
-                                        </span>
-                                        @break
-                                    @case('delivering')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                                            กำลังจัดส่ง
-                                        </span>
-                                        @break
-                                    @case('completed')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                            สำเร็จ
-                                        </span>
-                                        @break
-                                    @case('cancelled')
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                            ยกเลิก
-                                        </span>
-                                        @break
-                                    @default
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                                            {{ $order->status }}
-                                        </span>
-                                @endswitch
-                            </td>
-                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                <div>{{ $order->created_at->format('d/m/Y') }}</div>
-                                <div class="text-xs">{{ $order->created_at->format('H:i') }} น.</div>
+                            <td style="padding:12px;">@include('admin.riders.partials.status', ['statusKind' => 'fm_order', 'statusValue' => $order->order_status, 'statusLabel' => null])</td>
+                            <td style="padding:12px 18px; text-align:right;">
+                                <a href="{{ route('admin.fresh-market.orders.show', $order) }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-eye"></i> จัดการ</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-receipt text-4xl mb-3 block"></i>
-                                ไม่พบคำสั่งซื้อที่ตรงกับเงื่อนไข
+                            <td colspan="7" style="padding:44px 18px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-receipt" style="font-size:30px; opacity:.5; display:block; margin-bottom:10px;"></i>
+                                {{ $hasFilter ? 'ไม่พบออเดอร์ตามเงื่อนไขที่เลือก' : 'ยังไม่มีออเดอร์ตลาดสด' }}
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        {{-- Pagination --}}
-        @if($orders->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                {{ $orders->withQueryString()->links() }}
-            </div>
-        @endif
     </div>
+
+    @if ($orders->hasPages())
+        <div>{{ $orders->links() }}</div>
+    @endif
 </div>
 @endsection

@@ -1,347 +1,221 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการการจัดส่ง - #' . $order->order_number)
+@section('title', 'จัดการการจัดส่ง #' . $order->order_number)
+
+@php
+    $c = [
+        'ok' => 'var(--tp-ok,#5aa07e)',
+        'bad' => 'var(--tp-bad,#d9534f)',
+        'info' => 'var(--tp-info,#5689b8)',
+    ];
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+    $row = 'display:flex; justify-content:space-between; gap:12px; font-size:13px; padding:6px 0;';
+    $shipping = \App\Services\Shop\ShopPresenter::shipping($order);
+    $unreadCount = $order->messages->where('is_read', false)->where('sender_type', '!=', 'admin')->count();
+    $trackingLink = ($order->tracking_number && $order->shippingProvider) ? $order->shippingProvider->getTrackingLink($order->tracking_number) : null;
+    $historyStatuses = [
+        'processing' => 'กำลังเตรียมสินค้า',
+        'shipped' => 'จัดส่งแล้ว',
+        'in_transit' => 'อยู่ระหว่างขนส่ง',
+        'out_for_delivery' => 'กำลังนำส่ง',
+        'delivered' => 'ส่งถึงแล้ว',
+        'pending' => 'รอดำเนินการ',
+    ];
+@endphp
 
 @section('content')
-<div class="space-y-6" x-data="{ activeTab: 'tracking' }">
-    {{-- Header --}}
-    <div class="flex justify-between items-center">
+<div style="display:flex; flex-direction:column; gap:18px;"
+     x-data="{ tab: @js(request('tab') === 'chat' ? 'chat' : 'tracking'), readMarked: false,
+               openChat() {
+                   this.tab = 'chat';
+                   if (this.readMarked) return;
+                   this.readMarked = true;
+                   fetch(@js(route('admin.ecommerce.orders.messages.read', $order)), {
+                       method: 'POST',
+                       headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                   }).catch(() => {});
+               } }"
+     x-init="if (tab === 'chat') { tab = 'tracking'; openChat(); }">
+
+    {{-- ===== หัวหน้า ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                จัดการการจัดส่ง #{{ $order->order_number }}
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-                สถานะ: <span class="font-semibold">{{ $order->status }}</span> |
-                ลูกค้า: {{ $order->user->name ?? 'ไม่ระบุ' }}
-            </p>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · อีคอมเมิร์ซ · การจัดส่ง</div>
+            <h1 class="tp-num" style="font-size:clamp(20px,4vw,27px); font-weight:800; margin:4px 0 0;">จัดการการจัดส่ง #{{ $order->order_number }}</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">สถานะ: <strong style="color:var(--ink);">{{ $order->status_label }}</strong> · ลูกค้า: {{ $order->user?->name ?? 'ไม่ระบุ' }}</div>
         </div>
-        <div class="flex gap-3">
-            <a href="{{ route('admin.ecommerce.orders.show', $order) }}"
-               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                ดูรายละเอียด
-            </a>
-            <a href="{{ route('admin.ecommerce.orders.index') }}"
-               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                กลับ
-            </a>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <a href="{{ route('admin.ecommerce.orders.show', $order) }}" class="tp-btn tp-btn-sm"><i class="fas fa-receipt"></i> รายละเอียดออเดอร์</a>
+            <a href="{{ route('admin.ecommerce.orders.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-arrow-left"></i> รายการออเดอร์</a>
         </div>
     </div>
 
-    {{-- Tabs --}}
-    <div class="border-b border-gray-200 dark:border-gray-700">
-        <nav class="flex gap-4">
-            <button @click="activeTab = 'tracking'"
-                    :class="activeTab === 'tracking' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="px-4 py-3 border-b-2 font-medium transition">
-                ข้อมูลการจัดส่ง
-            </button>
-            <button @click="activeTab = 'history'"
-                    :class="activeTab === 'history' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="px-4 py-3 border-b-2 font-medium transition">
-                ประวัติการจัดส่ง
-            </button>
-            <button @click="activeTab = 'chat'"
-                    :class="activeTab === 'chat' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="px-4 py-3 border-b-2 font-medium transition relative">
-                แชทกับลูกค้า
-                @if($order->messages()->where('is_read', false)->where('sender_type', '!=', 'admin')->count() > 0)
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {{ $order->messages()->where('is_read', false)->where('sender_type', '!=', 'admin')->count() }}
-                    </span>
-                @endif
-            </button>
-        </nav>
+    @if($errors->any())
+        <div class="tp-card" style="padding:14px 18px; border-left:4px solid {{ $c['bad'] }};">
+            <ul style="margin:0; padding-left:18px; font-size:13px;">
+                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- ===== แท็บ ===== --}}
+    <div class="tp-card tp-inset-sm" style="padding:6px; display:flex; gap:6px; max-width:420px;">
+        <button type="button" class="tp-seg" @click="tab = 'tracking'" :style="{ background: tab === 'tracking' ? 'var(--card-bg)' : '', boxShadow: tab === 'tracking' ? 'var(--raise)' : '' }">
+            <i class="fas fa-truck"></i> ข้อมูลการจัดส่ง
+        </button>
+        <button type="button" class="tp-seg" @click="openChat()" :style="{ background: tab === 'chat' ? 'var(--card-bg)' : '', boxShadow: tab === 'chat' ? 'var(--raise)' : '' }">
+            <i class="fas fa-comments"></i> แชทกับลูกค้า
+            @if($unreadCount > 0)<span class="tp-pill tp-pill-gold tp-num" style="margin-left:4px;">{{ $unreadCount }}</span>@endif
+        </button>
     </div>
 
-    {{-- Tracking Tab --}}
-    <div x-show="activeTab === 'tracking'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Tracking Form --}}
-        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-white/10">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                อัพเดทข้อมูลการจัดส่ง
-            </h3>
-
-            <form action="{{ route('admin.ecommerce.orders.tracking.update', $order) }}" method="POST" class="space-y-4">
-                @csrf
-
-                {{-- Shipping Provider --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        บริษัทขนส่ง <span class="text-red-500">*</span>
-                    </label>
-                    <select name="shipping_provider_id" required
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="">เลือกบริษัทขนส่ง</option>
+    {{-- ===== แท็บจัดส่ง ===== --}}
+    <div x-show="tab === 'tracking'" class="flex" style="flex-direction:column; gap:16px;">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px;">
+            {{-- ฟอร์มเลขพัสดุ --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-barcode" style="color:var(--accent1);"></i> ข้อมูลพัสดุ</div>
+                <form method="POST" action="{{ route('admin.ecommerce.orders.tracking.update', $order) }}" x-data="{ busy: false }" @submit="busy = true">
+                    @csrf
+                    <label style="{{ $lbl }}">บริษัทขนส่ง <span style="color:{{ $c['bad'] }};">*</span></label>
+                    <select name="shipping_provider_id" class="tp-input" required>
+                        <option value="">-- เลือกบริษัทขนส่ง --</option>
                         @foreach($shippingProviders as $provider)
-                            <option value="{{ $provider->id }}"
-                                    {{ $order->shipping_provider_id == $provider->id ? 'selected' : '' }}>
-                                {{ $provider->name }} ({{ $provider->name_en }})
+                            <option value="{{ $provider->id }}" @selected((int) old('shipping_provider_id', $order->shipping_provider_id) === (int) $provider->id)>
+                                {{ $provider->name }}{{ $provider->name_en ? ' ('.$provider->name_en.')' : '' }}
                             </option>
                         @endforeach
                     </select>
-                    @error('shipping_provider_id')
-                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
 
-                {{-- Tracking Number --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        หมายเลขพัสดุ <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="tracking_number" value="{{ $order->tracking_number }}" required
-                           placeholder="เช่น TH123456789"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                    @error('tracking_number')
-                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                    @enderror
-                </div>
+                    <label style="{{ $lbl }} margin-top:12px;">หมายเลขพัสดุ <span style="color:{{ $c['bad'] }};">*</span></label>
+                    <input type="text" name="tracking_number" class="tp-input tp-num" maxlength="100" required
+                           value="{{ old('tracking_number', $order->tracking_number) }}" placeholder="เช่น TH1234567890">
 
-                {{-- Estimated Delivery --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        วันที่คาดว่าจะถึง
-                    </label>
-                    <input type="date" name="estimated_delivery_at"
-                           value="{{ $order->estimated_delivery_at ? $order->estimated_delivery_at->format('Y-m-d') : '' }}"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
+                    <label style="{{ $lbl }} margin-top:12px;">วันที่คาดว่าจะถึง</label>
+                    <input type="date" name="estimated_delivery_at" class="tp-input"
+                           value="{{ old('estimated_delivery_at', $order->estimated_delivery_at?->format('Y-m-d')) }}">
 
-                {{-- Notes --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        หมายเหตุ
-                    </label>
-                    <textarea name="admin_notes" rows="3"
-                              class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ $order->admin_notes }}</textarea>
-                </div>
-
-                <button type="submit"
-                        class="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition shadow-lg">
-                    บันทึกข้อมูลการจัดส่ง
-                </button>
-            </form>
-        </div>
-
-        {{-- Current Status --}}
-        <div class="space-y-6">
-            {{-- Order Status --}}
-            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-white/10">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    สถานะปัจจุบัน
-                </h3>
-                <div class="space-y-3">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400">สถานะ:</span>
-                        <span class="px-3 py-1 rounded-full text-sm font-medium
-                            @if($order->status === 'delivered') bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                            @elseif($order->status === 'shipped') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                            @elseif($order->status === 'cancelled') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                            @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                            @endif">
-                            {{ $order->status }}
-                        </span>
-                    </div>
-
-                    @if($order->tracking_number)
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">หมายเลขพัสดุ:</span>
-                            <span class="font-mono font-semibold text-gray-900 dark:text-white">{{ $order->tracking_number }}</span>
-                        </div>
+                    <label style="{{ $lbl }} margin-top:12px;">เพิ่มบันทึกของแอดมิน <span style="font-weight:500;">(ต่อท้ายประวัติเดิม)</span></label>
+                    @if($order->admin_notes)
+                        <div class="tp-well" style="padding:10px 12px; margin-bottom:8px; font-size:12px; color:var(--ink2); white-space:pre-wrap; overflow-wrap:anywhere; max-height:140px; overflow:auto;">{{ $order->admin_notes }}</div>
                     @endif
+                    <textarea name="admin_notes" rows="3" maxlength="500" class="tp-input" placeholder="ไม่บังคับ — ข้อความใหม่จะต่อท้ายบันทึกเดิม">{{ old('admin_notes') }}</textarea>
 
-                    @if($order->shippingProvider)
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">ขนส่ง:</span>
-                            <span class="text-gray-900 dark:text-white">{{ $order->shippingProvider->name }}</span>
-                        </div>
+                    <button type="submit" class="tp-btn tp-btn-primary" style="width:100%; margin-top:12px;" :disabled="busy">
+                        <i class="fas fa-floppy-disk"></i> บันทึกข้อมูลการจัดส่ง
+                    </button>
+                    <div style="font-size:11.5px; color:var(--ink2); margin-top:8px;">ออเดอร์ที่ยังไม่ส่งจะเปลี่ยนเป็น "จัดส่งแล้ว" อัตโนมัติ</div>
+                </form>
+            </div>
 
-                        @if($order->tracking_number && $order->shippingProvider->getTrackingLink($order->tracking_number))
-                            <a href="{{ $order->shippingProvider->getTrackingLink($order->tracking_number) }}"
-                               target="_blank"
-                               class="block mt-4 px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-200 text-center rounded-xl hover:bg-blue-200 dark:hover:bg-blue-800 transition">
-                                ติดตามพัสดุ
-                            </a>
-                        @endif
+            {{-- สรุปการจัดส่ง --}}
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <div class="tp-card">
+                    <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-box" style="color:var(--accent1);"></i> สถานะปัจจุบัน</div>
+                    <div style="{{ $row }}"><span style="color:var(--ink2);">สถานะ</span><span class="tp-pill tp-pill-soft">{{ $order->status_label }}</span></div>
+                    <div style="{{ $row }}"><span style="color:var(--ink2);">เลขพัสดุ</span><span class="tp-num" style="font-weight:700;">{{ $order->tracking_number ?: '-' }}</span></div>
+                    <div style="{{ $row }}"><span style="color:var(--ink2);">ขนส่ง</span><span>{{ $order->shippingProvider?->name ?? ($order->shipping_provider ?: '-') }}</span></div>
+                    @if($order->shipped_at)<div style="{{ $row }}"><span style="color:var(--ink2);">ส่งเมื่อ</span><span class="tp-num">{{ $order->shipped_at->format('d/m/Y H:i') }}</span></div>@endif
+                    @if($order->estimated_delivery_at)<div style="{{ $row }}"><span style="color:var(--ink2);">คาดว่าถึง</span><span class="tp-num">{{ $order->estimated_delivery_at->format('d/m/Y') }}</span></div>@endif
+                    @if($trackingLink)
+                        <a href="{{ $trackingLink }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm" style="margin-top:8px;"><i class="fas fa-up-right-from-square"></i> เปิดหน้าติดตามของขนส่ง</a>
                     @endif
+                </div>
 
-                    @if($order->shipped_at)
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">จัดส่งเมื่อ:</span>
-                            <span class="text-gray-900 dark:text-white">{{ $order->shipped_at->format('d/m/Y H:i') }}</span>
+                <div class="tp-card">
+                    <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-location-dot" style="color:var(--accent1);"></i> ที่อยู่จัดส่ง</div>
+                    @if($shipping)
+                        <div style="font-size:13px; line-height:1.7;">
+                            <div style="font-weight:700;">{{ $shipping['name'] ?? '-' }} <span class="tp-num" style="font-weight:500; color:var(--ink2);">{{ $shipping['phone'] ?? '' }}</span></div>
+                            <div>{{ $shipping['full_address'] ?? trim(implode(' ', array_filter([$shipping['address'] ?? null, $shipping['address_line_2'] ?? null, $shipping['subdistrict'] ?? null, $shipping['district'] ?? null, $shipping['province'] ?? null, $shipping['postal_code'] ?? null]))) }}</div>
                         </div>
-                    @endif
-
-                    @if($order->estimated_delivery_at)
-                        <div class="flex justify-between">
-                            <span class="text-gray-600 dark:text-gray-400">คาดว่าจะถึง:</span>
-                            <span class="text-gray-900 dark:text-white">{{ $order->estimated_delivery_at->format('d/m/Y') }}</span>
+                    @elseif($order->shippingAddress)
+                        <div style="font-size:13px; line-height:1.7;">
+                            <div style="font-weight:700;">{{ $order->shippingAddress->recipient_name }} <span class="tp-num" style="font-weight:500; color:var(--ink2);">{{ $order->shippingAddress->phone_number }}</span></div>
+                            <div>{{ $order->shippingAddress->full_address }}</div>
                         </div>
+                    @else
+                        <div style="font-size:13px; color:var(--ink2);">ไม่มีข้อมูลที่อยู่จัดส่ง</div>
                     @endif
                 </div>
             </div>
-
-            {{-- Shipping Address --}}
-            <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-white/10">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    ที่อยู่จัดส่ง
-                </h3>
-                <div class="text-gray-700 dark:text-gray-300 space-y-1">
-                    <p class="font-semibold">{{ $order->shipping_name }}</p>
-                    <p>{{ $order->shipping_phone }}</p>
-                    <p>{{ $order->shipping_address }}</p>
-                    <p>{{ $order->shipping_subdistrict }} {{ $order->shipping_district }}</p>
-                    <p>{{ $order->shipping_province }} {{ $order->shipping_postal_code }}</p>
-                </div>
-            </div>
         </div>
-    </div>
 
-    {{-- History Tab --}}
-    <div x-show="activeTab === 'history'" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {{-- Add History Form --}}
-        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-white/10">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                เพิ่มประวัติการจัดส่ง
-            </h3>
-
-            <form action="{{ route('admin.ecommerce.orders.tracking.history', $order) }}" method="POST" class="space-y-4">
-                @csrf
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        สถานะ <span class="text-red-500">*</span>
-                    </label>
-                    <select name="status" required
-                            class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="pending">รอดำเนินการ</option>
-                        <option value="processing">กำลังเตรียมสินค้า</option>
-                        <option value="shipped">จัดส่งแล้ว</option>
-                        <option value="in_transit">กำลังจัดส่ง</option>
-                        <option value="out_for_delivery">กำลังนำส่ง</option>
-                        <option value="delivered">ส่งถึงแล้ว</option>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px;">
+            {{-- เพิ่มประวัติ --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-plus" style="color:var(--accent1);"></i> เพิ่มประวัติการจัดส่ง</div>
+                <form method="POST" action="{{ route('admin.ecommerce.orders.tracking.history', $order) }}"
+                      x-data="{ st: 'in_transit', busy: false }"
+                      @submit="if (st === 'delivered' && !confirm('ยืนยันว่าสินค้าส่งถึงลูกค้าแล้ว? ระบบจะเปลี่ยนสถานะออเดอร์เป็น ส่งถึงแล้ว')) { $event.preventDefault(); return; } busy = true">
+                    @csrf
+                    <label style="{{ $lbl }}">สถานะ <span style="color:{{ $c['bad'] }};">*</span></label>
+                    <select name="status" x-model="st" class="tp-input" required>
+                        @foreach($historyStatuses as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
                     </select>
-                </div>
+                    <label style="{{ $lbl }} margin-top:12px;">รายละเอียด <span style="color:{{ $c['bad'] }};">*</span></label>
+                    <textarea name="description" rows="3" maxlength="500" required class="tp-input" placeholder="เช่น สินค้าถึงศูนย์กระจายสินค้า กรุงเทพฯ"></textarea>
+                    <label style="{{ $lbl }} margin-top:12px;">สถานที่</label>
+                    <input type="text" name="location" maxlength="255" class="tp-input" placeholder="เช่น ศูนย์กระจายสินค้า กรุงเทพฯ">
+                    <button type="submit" class="tp-btn tp-btn-primary" style="width:100%; margin-top:12px;" :disabled="busy"><i class="fas fa-plus"></i> เพิ่มประวัติ</button>
+                </form>
+            </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        รายละเอียด <span class="text-red-500">*</span>
-                    </label>
-                    <textarea name="description" rows="3" required
-                              placeholder="เช่น สินค้าถึงศูนย์กระจายสินค้า กรุงเทพฯ"
-                              class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        สถานที่
-                    </label>
-                    <input type="text" name="location"
-                           placeholder="เช่น ศูนย์กระจายสินค้า กรุงเทพฯ"
-                           class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                </div>
-
-                <button type="submit"
-                        class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-teal-600 text-white font-semibold rounded-xl hover:from-green-600 hover:to-teal-700 transition shadow-lg">
-                    เพิ่มประวัติ
-                </button>
-            </form>
-        </div>
-
-        {{-- History Timeline --}}
-        <div class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-white/10">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                ประวัติการจัดส่ง
-            </h3>
-
-            @if($order->trackingHistory->isEmpty())
-                <p class="text-gray-500 dark:text-gray-400 text-center py-8">ยังไม่มีประวัติ</p>
-            @else
-                <div class="space-y-4">
-                    @foreach($order->trackingHistory as $history)
-                        <div class="flex gap-4">
-                            <div class="flex flex-col items-center">
-                                <div class="w-3 h-3 rounded-full {{ $loop->first ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600' }}"></div>
-                                @if(!$loop->last)
-                                    <div class="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700"></div>
-                                @endif
-                            </div>
-                            <div class="flex-1 pb-4">
-                                <p class="font-medium text-gray-900 dark:text-white">{{ $history->description }}</p>
-                                @if($history->location)
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ $history->location }}</p>
-                                @endif
-                                <p class="text-xs text-gray-400 mt-1">
-                                    {{ $history->created_at->format('d/m/Y H:i') }}
-                                    @if($history->user)
-                                        - {{ $history->user->name }}
-                                    @endif
-                                </p>
+            {{-- ไทม์ไลน์ --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-timeline" style="color:var(--accent1);"></i> ประวัติการจัดส่ง</div>
+                @forelse($order->trackingHistory as $history)
+                    <div style="display:flex; gap:12px;">
+                        <div style="display:flex; flex-direction:column; align-items:center;">
+                            <span style="width:12px; height:12px; border-radius:50%; margin-top:4px; flex:none; background:{{ $loop->first ? 'linear-gradient(135deg,var(--accent1),var(--accent2))' : 'color-mix(in srgb, var(--ink2) 40%, transparent)' }};"></span>
+                            @unless($loop->last)<span style="width:2px; flex:1; background:color-mix(in srgb, var(--ink2) 22%, transparent);"></span>@endunless
+                        </div>
+                        <div style="flex:1; padding-bottom:14px; min-width:0;">
+                            <div style="font-weight:700; font-size:13.5px;">{{ $history->status_icon }} {{ $history->title }}</div>
+                            @if($history->description)<div style="font-size:13px; overflow-wrap:anywhere;">{{ $history->description }}</div>@endif
+                            @if($history->location)<div style="font-size:12px; color:var(--ink2);">📍 {{ $history->location }}</div>@endif
+                            <div style="font-size:11.5px; color:var(--ink2); margin-top:2px;">
+                                <span class="tp-num">{{ ($history->tracked_at ?? $history->created_at)?->format('d/m/Y H:i') }}</span>
+                                @if($history->creator) · {{ $history->creator->name }} @endif
                             </div>
                         </div>
-                    @endforeach
-                </div>
-            @endif
+                    </div>
+                @empty
+                    <div style="text-align:center; color:var(--ink2); padding:26px 0; font-size:13px;">ยังไม่มีประวัติการจัดส่ง</div>
+                @endforelse
+            </div>
         </div>
     </div>
 
-    {{-- Chat Tab --}}
-    <div x-show="activeTab === 'chat'" class="glass-fusion dark:bg-slate-800 rounded-2xl shadow-lg p-6 border border-white/20 dark:border-white/10"
-         x-data="{ loading: false }"
-         x-init="
-            // Mark messages as read when tab opens
-            fetch('{{ route('admin.ecommerce.orders.messages.read', $order) }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json'
-                }
-            });
-         ">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            แชทกับลูกค้า
-        </h3>
-
-        {{-- Messages --}}
-        <div class="h-96 overflow-y-auto space-y-4 mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl">
-            @forelse($order->messages->reverse() as $message)
-                <div class="{{ $message->sender_type === 'admin' ? 'flex justify-end' : 'flex justify-start' }}">
-                    <div class="max-w-[70%] {{ $message->sender_type === 'admin' ? 'bg-blue-500 text-white' : ($message->is_system_message ? 'bg-gray-200 dark:bg-gray-700' : 'bg-white dark:bg-gray-800') }} rounded-2xl px-4 py-3 shadow">
-                        @if($message->sender_type !== 'admin')
-                            <p class="text-xs {{ $message->is_system_message ? 'text-gray-500' : 'text-gray-500 dark:text-gray-400' }} mb-1">
-                                {{ $message->sender_name }}
-                            </p>
-                        @endif
-                        <p class="{{ $message->sender_type === 'admin' ? 'text-white' : 'text-gray-900 dark:text-white' }}">
-                            {{ $message->message }}
-                        </p>
-                        <p class="text-xs {{ $message->sender_type === 'admin' ? 'text-blue-100' : 'text-gray-400' }} mt-1 text-right">
-                            {{ $message->created_at->format('H:i') }}
-                        </p>
+    {{-- ===== แท็บแชท ===== --}}
+    <div x-show="tab === 'chat'" x-cloak class="tp-card">
+        <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-comments" style="color:var(--accent1);"></i> แชทกับลูกค้า</div>
+        <div class="tp-well" style="height:380px; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px;">
+            @forelse($order->messages as $message)
+                @php $mine = $message->sender_type === 'admin'; @endphp
+                <div style="display:flex; justify-content:{{ $mine ? 'flex-end' : 'flex-start' }};">
+                    <div style="max-width:78%; padding:10px 14px; border-radius:16px; {{ $mine ? 'background:linear-gradient(135deg,var(--accent1),var(--accent2)); color:var(--tp-on-accent,#fff);' : 'background:var(--card-bg); box-shadow:var(--raise); color:var(--ink);' }}">
+                        @unless($mine)
+                            <div style="font-size:11px; font-weight:700; color:var(--ink2); margin-bottom:3px;">{{ $message->sender_name }}</div>
+                        @endunless
+                        <div style="font-size:13.5px; white-space:pre-wrap; overflow-wrap:anywhere;">{{ $message->message }}</div>
+                        <div class="tp-num" style="font-size:10.5px; opacity:.75; text-align:right; margin-top:3px;">{{ $message->created_at?->format('d/m H:i') }}</div>
                     </div>
                 </div>
             @empty
-                <div class="flex items-center justify-center h-full">
-                    <div class="text-center text-gray-500 dark:text-gray-400">
-                        <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                        </svg>
-                        <p>ยังไม่มีข้อความ</p>
-                    </div>
+                <div style="margin:auto; text-align:center; color:var(--ink2); font-size:13px;">
+                    <i class="fas fa-comment-slash" style="font-size:28px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                    ยังไม่มีข้อความ
                 </div>
             @endforelse
         </div>
-
-        {{-- Send Message Form --}}
-        <form action="{{ route('admin.ecommerce.orders.messages.send', $order) }}" method="POST" class="flex gap-3">
+        <form method="POST" action="{{ route('admin.ecommerce.orders.messages.send', $order) }}"
+              style="display:flex; gap:10px; margin-top:12px;" x-data="{ busy: false }" @submit="busy = true">
             @csrf
-            <input type="text" name="message" required
-                   placeholder="พิมพ์ข้อความ..."
-                   class="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-            <button type="submit"
-                    class="px-6 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition">
-                ส่ง
-            </button>
+            <input type="text" name="message" maxlength="2000" required class="tp-input" placeholder="พิมพ์ข้อความถึงลูกค้า...">
+            <button type="submit" class="tp-btn tp-btn-primary" :disabled="busy"><i class="fas fa-paper-plane"></i> ส่ง</button>
         </form>
     </div>
 </div>

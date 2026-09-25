@@ -1,484 +1,211 @@
 {{--
-    Individual Store Page - สไตล์ AliExpress Premium
+ | หน้าร้านแบบแบรนด์ (/lazada, /aliexpress และร้านที่เรียก StorefrontController::showStore) — ธีม V4
+ | ข้อมูล: $store (VendorStore), $products (paginator), $storeCategories (มี products_count), $storeBanners
+ | ตัวกรอง: ?category=<slug> ?sort_by=newest|popular|price_low|price_high|rating
+ --}}
+@extends('layouts.frontend-v4')
 
-    หน้าร้านค้าแต่ละร้านที่รองรับการ customization
-    รองรับ Dark Mode, Responsive, และ Custom Theme Colors
+@section('title', ($store->store_name ?? 'ร้านค้า').' - สินค้าคุณภาพดี')
+@section('meta_description', \Illuminate\Support\Str::limit((string) ($store->store_description ?: 'สินค้าคุณภาพจากร้านค้าที่ได้รับการยืนยัน'), 160))
 
-    Features:
-    - Customizable Banner
-    - Store Logo & Info
-    - Custom Theme Colors (primary_color, secondary_color)
-    - Custom CSS Support
-    - Store Categories
-    - Product Grid
---}}
+@php
+    $bsPrimary = \App\Support\Shop\StoreTheme::brand($store->primary_color ?? null, 'var(--accent1)');
+    $bsSecondary = \App\Support\Shop\StoreTheme::brand($store->secondary_color ?? null, 'var(--accent2)');
+    $bsBanner = \App\Services\Shop\ShopPresenter::imageUrl($store->store_banner);
+    $bsLogo = \App\Services\Shop\ShopPresenter::imageUrl($store->store_logo);
+    $bsCategory = is_scalar(request('category')) ? (string) request('category') : '';
+    $bsSort = is_scalar(request('sort_by')) ? (string) request('sort_by') : 'newest';
+    $bsSorts = ['newest' => 'ใหม่ล่าสุด', 'popular' => 'ยอดนิยม', 'price_low' => 'ราคาต่ำ → สูง', 'price_high' => 'ราคาสูง → ต่ำ', 'rating' => 'คะแนนสูงสุด'];
+    $bsSocial = array_filter([
+        'facebook' => \App\Support\Shop\StoreTheme::url($store->facebook_url ?? null),
+        'instagram' => \App\Support\Shop\StoreTheme::url($store->instagram_url ?? null),
+        'line' => ($store->line_oa_id ?? null) ? 'https://line.me/R/ti/p/'.rawurlencode(ltrim((string) $store->line_oa_id, '@')) : null,
+    ]);
+    $bsCss = \App\Support\Shop\StoreTheme::css($store->custom_css ?? null);
 
-@extends('layouts.storefront')
-
-@section('title', ($store->store_name ?? 'ร้านค้า') . ' - สินค้าคุณภาพดี')
-
-@section('meta')
-<meta name="description" content="{{ $store->store_description ?? 'สินค้าคุณภาพจากร้านค้าที่ได้รับการยืนยัน' }}">
-@endsection
-
-{{-- Lava Lamp Background - เฉพาะหน้าร้านค้าผู้เช่า --}}
-@section('lava-background')
-<div class="lava-background" aria-hidden="true">
-    <div class="lava-blob"></div>
-    <div class="lava-blob"></div>
-    <div class="lava-blob"></div>
-    <div class="lava-blob"></div>
-    <div class="lava-blob"></div>
-    <div class="lava-blob"></div>
-    <div class="lava-blob"></div>
-    <div class="lava-blob"></div>
-</div>
-@endsection
-
-{{-- Custom Theme Colors --}}
-@push('styles')
-<style>
-    :root {
-        --store-primary: {{ $store->primary_color ?? '#f97316' }};
-        --store-secondary: {{ $store->secondary_color ?? '#ea580c' }};
+    $bsFavIds = [];
+    if (auth()->check()) {
+        try {
+            $bsFavIds = \App\Models\ProductFavorite::where('user_id', auth()->id())
+                ->whereIn('product_id', collect($products->items())->pluck('id')->all())
+                ->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+        } catch (\Throwable $e) {
+            $bsFavIds = [];
+        }
     }
+@endphp
 
-    .store-primary-bg {
-        background-color: var(--store-primary);
-    }
-
-    .store-primary-text {
-        color: var(--store-primary);
-    }
-
-    .store-gradient {
-        background: linear-gradient(135deg, var(--store-primary), var(--store-secondary));
-    }
-
-    .store-border {
-        border-color: var(--store-primary);
-    }
-
-    /* Custom CSS จากร้าน */
-    {{ $store->custom_css ?? '' }}
-</style>
-@endpush
+@if($bsCss !== '')
+    @push('styles')
+    <style>{!! $bsCss !!}</style>
+    @endpush
+@endif
 
 @section('content')
-<div x-data="storePageManager()"
-     x-init="init()"
-     class="min-h-screen">
+<x-theme-v4.shop-kit />
+<x-theme-v4.public-header active="shop" :search="true" />
 
-    {{-- ========================================
-         STORE HEADER / BANNER SECTION
-         ======================================== --}}
-    <div class="relative">
-        {{-- Banner Image/Gradient --}}
-        <div class="relative h-64 md:h-80 lg:h-96 overflow-hidden">
-            @if($store->store_banner)
-            <img src="{{ $store->store_banner }}"
-                 alt="{{ $store->store_name }}"
-                 class="w-full h-full object-cover"
-                 style="object-position: center {{ $store->banner_position_y ?? 50 }}%;">
-            {{-- Gradient Overlay --}}
-            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
-            @else
-            {{-- Default Gradient Background --}}
-            <div class="w-full h-full store-gradient">
-                {{-- Pattern Overlay --}}
-                <div class="absolute inset-0 opacity-20">
-                    <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 40px 40px;"></div>
-                </div>
+<main style="flex:1; padding-bottom:40px; --store-a: {{ $bsPrimary }}; --store-b: {{ $bsSecondary }};">
+    <section class="sf-wrap" style="padding-top:22px;">
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            <div style="position:relative; height:clamp(140px, 22vw, 230px); background:linear-gradient(135deg, var(--store-a), var(--store-b));">
+                @if($bsBanner)
+                    <img src="{{ $bsBanner }}" alt="" aria-hidden="true" fetchpriority="high"
+                         style="width:100%; height:100%; object-fit:cover; object-position:center {{ max(0, min(100, (int) ($store->banner_position_y ?? 50))) }}%;"
+                         onerror="this.style.display='none';">
+                @endif
+                <div aria-hidden="true" style="position:absolute; inset:0; background:linear-gradient(180deg, transparent 40%, rgba(0,0,0,.35) 100%);"></div>
             </div>
-            @endif
-
-            {{-- Floating Decorations --}}
-            <div class="absolute top-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-20 left-20 w-48 h-48 bg-white/10 rounded-full blur-3xl animate-pulse delay-500"></div>
-        </div>
-
-        {{-- Store Info Card (Overlapping Banner) --}}
-        <div class="container mx-auto px-4">
-            <div class="relative -mt-24 md:-mt-32 mb-8">
-                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden
-                           border border-gray-100 dark:border-gray-700">
-                    <div class="p-6 md:p-8">
-                        <div class="flex flex-col md:flex-row gap-6 md:items-end">
-                            {{-- Store Logo --}}
-                            <div class="relative">
-                                <div class="w-28 h-28 md:w-36 md:h-36 rounded-2xl overflow-hidden
-                                           ring-4 ring-white dark:ring-gray-800 shadow-xl
-                                           {{ $store->store_logo ? '' : 'store-gradient' }}">
-                                    @if($store->store_logo)
-                                    <img src="{{ $store->store_logo }}"
-                                         alt="{{ $store->store_name }}"
-                                         class="w-full h-full object-cover">
-                                    @else
-                                    <div class="w-full h-full flex items-center justify-center text-white">
-                                        <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                        </svg>
-                                    </div>
-                                    @endif
-                                </div>
-
-                                {{-- Verified Badge --}}
-                                @if($store->is_verified)
-                                <div class="absolute -bottom-2 -right-2 w-10 h-10 rounded-full
-                                           bg-blue-500 text-white
-                                           flex items-center justify-center shadow-lg">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                                @endif
-                            </div>
-
-                            {{-- Store Details --}}
-                            <div class="flex-1">
-                                <div class="flex flex-wrap items-start gap-3 mb-3">
-                                    <h1 class="text-3xl md:text-4xl font-black text-gray-900 dark:text-white">
-                                        {{ $store->store_name }}
-                                    </h1>
-
-                                    @if($store->is_verified)
-                                    <span class="inline-flex items-center gap-1 px-3 py-1
-                                               bg-blue-100 dark:bg-blue-900/30
-                                               text-blue-700 dark:text-blue-400
-                                               text-sm font-bold rounded-full">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                        </svg>
-                                        Verified Seller
-                                    </span>
-                                    @endif
-                                </div>
-
-                                @if($store->store_description)
-                                <p class="text-gray-600 dark:text-gray-400 mb-4 max-w-2xl">
-                                    {{ $store->store_description }}
-                                </p>
-                                @endif
-
-                                {{-- Store Stats --}}
-                                <div class="flex flex-wrap items-center gap-4 md:gap-6 text-sm">
-                                    {{-- Rating --}}
-                                    @if($store->rating_average > 0)
-                                    <div class="flex items-center gap-2">
-                                        <div class="flex items-center gap-1 px-3 py-1.5
-                                                   bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                                            <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                            </svg>
-                                            <span class="font-bold text-yellow-700 dark:text-yellow-400">
-                                                {{ number_format($store->rating_average, 1) }}
-                                            </span>
-                                        </div>
-                                        <span class="text-gray-500 dark:text-gray-400">
-                                            ({{ number_format($store->rating_count) }} รีวิว)
-                                        </span>
-                                    </div>
-                                    @endif
-
-                                    {{-- Products Count --}}
-                                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                                        </svg>
-                                        <span><strong>{{ $products->total() }}</strong> สินค้า</span>
-                                    </div>
-
-                                    {{-- Join Date --}}
-                                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                        </svg>
-                                        <span>เปิดร้านเมื่อ {{ $store->created_at->diffForHumans() }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Action Buttons --}}
-                            <div class="flex flex-col gap-2">
-                                <button @click="followStore()"
-                                        class="px-6 py-3 store-gradient text-white font-bold rounded-xl
-                                              shadow-lg hover:shadow-xl
-                                              transform hover:scale-105
-                                              transition-all flex items-center justify-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                                    </svg>
-                                    <span x-text="isFollowing ? 'กำลังติดตาม' : 'ติดตามร้าน'">ติดตามร้าน</span>
-                                </button>
-
-                                {{-- Social Links --}}
-                                @if($store->facebook_url || $store->line_oa_id || $store->instagram_url)
-                                <div class="flex items-center justify-center gap-2">
-                                    @if($store->facebook_url)
-                                    <a href="{{ $store->facebook_url }}" target="_blank"
-                                       class="w-10 h-10 bg-blue-600 text-white rounded-full
-                                             flex items-center justify-center
-                                             hover:bg-blue-700 transition-colors">
-                                        <i class="fab fa-facebook-f"></i>
-                                    </a>
-                                    @endif
-
-                                    @if($store->line_oa_id)
-                                    <a href="https://line.me/R/ti/p/{{ $store->line_oa_id }}" target="_blank"
-                                       class="w-10 h-10 bg-green-500 text-white rounded-full
-                                             flex items-center justify-center
-                                             hover:bg-green-600 transition-colors">
-                                        <i class="fab fa-line"></i>
-                                    </a>
-                                    @endif
-
-                                    @if($store->instagram_url)
-                                    <a href="{{ $store->instagram_url }}" target="_blank"
-                                       class="w-10 h-10 bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400
-                                             text-white rounded-full
-                                             flex items-center justify-center
-                                             hover:opacity-90 transition-opacity">
-                                        <i class="fab fa-instagram"></i>
-                                    </a>
-                                    @endif
-                                </div>
-                                @endif
-                            </div>
+            <div style="padding:0 clamp(16px, 3vw, 28px) 22px;">
+                <div style="display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; margin-top:-44px; position:relative;">
+                    <span style="width:96px; height:96px; flex:none; border-radius:26px; overflow:hidden; display:grid; place-items:center; font-size:40px; color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--store-a), var(--store-b)); box-shadow:var(--card-shadow); border:4px solid var(--card-bg);">
+                        @if($bsLogo)
+                            <img src="{{ $bsLogo }}" alt="{{ $store->store_name }}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';">
+                        @else
+                            {{ mb_substr((string) $store->store_name, 0, 1) }}
+                        @endif
+                    </span>
+                    <div style="flex:1; min-width:220px; padding-bottom:4px;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <h1 class="sf-h1">{{ $store->store_name }}</h1>
+                            @if($store->is_verified)
+                                <span class="sf-badge sf-badge-deep"><i class="fas fa-circle-check"></i> ร้านยืนยันแล้ว</span>
+                            @endif
+                        </div>
+                        <div class="sf-meta" style="margin-top:6px; font-size:12.5px;">
+                            @if(($store->rating_average ?? 0) > 0)
+                                <span><span class="sf-stars">★</span> {{ number_format((float) $store->rating_average, 1) }} ({{ number_format((int) $store->rating_count) }} รีวิว)</span>
+                            @endif
+                            <span>{{ number_format($products->total()) }} สินค้า</span>
+                            @if($store->created_at)
+                                <span>เปิดร้านเมื่อ {{ $store->created_at->diffForHumans() }}</span>
+                            @endif
                         </div>
                     </div>
-
-                    {{-- Store Highlights Bar --}}
-                    <div class="border-t border-gray-100 dark:border-gray-700
-                               bg-gray-50 dark:bg-gray-800/50 px-6 py-4">
-                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-6 text-sm">
-                            @if($store->free_shipping_threshold > 0)
-                            <div class="flex items-center gap-2 text-green-600 dark:text-green-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                                </svg>
-                                <span>ส่งฟรีเมื่อซื้อครบ ฿{{ number_format($store->free_shipping_threshold) }}</span>
-                            </div>
-                            @endif
-
-                            @if($store->enable_cod)
-                            <div class="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                                <span>รับเก็บเงินปลายทาง</span>
-                            </div>
-                            @endif
-
-                            <div class="flex items-center gap-2 text-purple-600 dark:text-purple-400">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                </svg>
-                                <span>รับประกันคุณภาพสินค้า</span>
-                            </div>
+                    @if($bsSocial !== [])
+                        <div style="display:flex; gap:8px;">
+                            @foreach($bsSocial as $network => $link)
+                                <a href="{{ $link }}" target="_blank" rel="noopener nofollow" class="tp-icon-btn" style="width:44px; height:44px; text-decoration:none;" aria-label="{{ $network }}">
+                                    <i class="fab fa-{{ $network }}"></i>
+                                </a>
+                            @endforeach
                         </div>
-                    </div>
+                    @endif
+                </div>
+
+                @if($store->store_description)
+                    <p class="tp-muted" style="margin:14px 0 0; font-size:14px; line-height:1.7; max-width:860px;">{{ \Illuminate\Support\Str::limit($store->store_description, 400) }}</p>
+                @endif
+
+                <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;">
+                    @if(($store->free_shipping_threshold ?? 0) > 0)
+                        <span class="tp-pill tp-pill-soft" style="padding:7px 12px;"><i class="fas fa-truck-fast"></i> ส่งฟรีเมื่อซื้อครบ ฿{{ number_format((float) $store->free_shipping_threshold) }}</span>
+                    @endif
+                    @if($store->canUseRiderDelivery())
+                        <span class="tp-pill tp-pill-soft" style="padding:7px 12px;"><i class="fas fa-motorcycle"></i> ส่งด่วนด้วยไรเดอร์</span>
+                    @endif
+                    @if(($store->minimum_order_amount ?? 0) > 0)
+                        <span class="tp-pill tp-pill-soft" style="padding:7px 12px;"><i class="fas fa-basket-shopping"></i> ขั้นต่ำ ฿{{ number_format((float) $store->minimum_order_amount) }}</span>
+                    @endif
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    {{-- ========================================
-         STORE CATEGORIES (If any)
-         ======================================== --}}
-    @if($storeCategories && $storeCategories->count() > 0)
-    <div class="container mx-auto px-4 mb-8">
-        <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-            <button @click="categoryFilter = ''"
-                    :class="categoryFilter === '' ? 'store-gradient text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'"
-                    class="flex-shrink-0 px-6 py-3 rounded-xl font-semibold transition-all">
-                ทั้งหมด ({{ $products->total() }})
-            </button>
-
-            @foreach($storeCategories as $category)
-            <button @click="filterByCategory('{{ $category->slug }}')"
-                    :class="categoryFilter === '{{ $category->slug }}' ? 'store-gradient text-white shadow-lg' : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'"
-                    class="flex-shrink-0 px-6 py-3 rounded-xl font-semibold transition-all">
-                {{ $category->name }} ({{ $category->products_count }})
-            </button>
-            @endforeach
-        </div>
-    </div>
+    @if($storeBanners && $storeBanners->count() > 0)
+        <section class="sf-wrap" style="padding-top:16px;">
+            <div class="sf-scroll">
+                @foreach($storeBanners as $sb)
+                    @php
+                        $sbImg = \App\Services\Shop\ShopPresenter::imageUrl($sb['image'] ?? null);
+                        $sbUrl = \App\Support\Shop\StoreTheme::url($sb['cta_url'] ?? null) ?? (($sb['cta_url'] ?? '') === '#products' ? '#products' : null);
+                    @endphp
+                    <a @if($sbUrl) href="{{ $sbUrl }}" @endif class="tp-card" style="flex:none; width:min(560px, 86vw); padding:0; overflow:hidden; text-decoration:none; position:relative; min-height:150px; display:flex; align-items:flex-end; background:linear-gradient(135deg, var(--store-a), var(--store-b));">
+                        @if($sbImg)
+                            <img src="{{ $sbImg }}" alt="" aria-hidden="true" loading="lazy" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
+                        @endif
+                        <span aria-hidden="true" style="position:absolute; inset:0; background:linear-gradient(0deg, rgba(0,0,0,.55), transparent 70%);"></span>
+                        <span style="position:relative; padding:16px; color:var(--on-accent, #fff);">
+                            <span style="display:block; font-weight:800; font-size:17px;">{{ $sb['title'] ?? '' }}</span>
+                            @if(! empty($sb['subtitle']))
+                                <span style="display:block; font-size:12.5px; opacity:.92; margin-top:2px;">{{ \Illuminate\Support\Str::limit($sb['subtitle'], 90) }}</span>
+                            @endif
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </section>
     @endif
 
-    {{-- ========================================
-         PRODUCTS SECTION
-         ======================================== --}}
-    <div class="container mx-auto px-4 pb-12" id="products">
-        {{-- Section Header --}}
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                สินค้าทั้งหมด
-            </h2>
-
-            {{-- Sort --}}
-            <select x-model="sortBy"
-                    @change="applySorting()"
-                    class="px-4 py-2 bg-white dark:bg-gray-800
-                          border border-gray-200 dark:border-gray-700
-                          rounded-xl text-sm font-medium
-                          focus:ring-2 focus:ring-orange-500">
-                <option value="newest">ใหม่ล่าสุด</option>
-                <option value="popular">ยอดนิยม</option>
-                <option value="price_low">ราคาต่ำ-สูง</option>
-                <option value="price_high">ราคาสูง-ต่ำ</option>
-                <option value="rating">คะแนนสูงสุด</option>
-            </select>
+    <section class="sf-wrap sf-section" id="products">
+        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+            <div class="sf-scroll" style="padding-bottom:4px; max-width:100%;">
+                <a href="{{ request()->fullUrlWithQuery(['category' => null, 'page' => null]) }}#products" class="sf-chip {{ $bsCategory === '' ? 'is-on' : '' }}">ทั้งหมด</a>
+                @foreach($storeCategories ?? [] as $cat)
+                    <a href="{{ request()->fullUrlWithQuery(['category' => $cat->slug, 'page' => null]) }}#products" class="sf-chip {{ $bsCategory === $cat->slug ? 'is-on' : '' }}">
+                        {{ $cat->name }} <span class="tp-num" style="opacity:.75;">{{ number_format((int) $cat->products_count) }}</span>
+                    </a>
+                @endforeach
+            </div>
+            <form method="GET" action="{{ url()->current() }}" style="display:flex; align-items:center; gap:6px;">
+                @if($bsCategory !== '')
+                    <input type="hidden" name="category" value="{{ $bsCategory }}">
+                @endif
+                <label for="bs-sort" class="tp-muted" style="font-size:12.5px; font-weight:600;">เรียง</label>
+                <select id="bs-sort" name="sort_by" class="tp-input" style="height:44px; width:auto; padding:0 12px;" onchange="this.form.submit()">
+                    @foreach($bsSorts as $sk => $sl)
+                        <option value="{{ $sk }}" @selected($bsSort === $sk)>{{ $sl }}</option>
+                    @endforeach
+                </select>
+            </form>
         </div>
 
-        {{-- Products Grid --}}
-        <x-storefront.product-grid-aliexpress
-            :products="$products"
-            columns="auto"
-            :showPv="true"
-            :showCommission="auth()->check()" />
-
-        {{-- Pagination --}}
-        @if($products->hasPages())
-        <div class="mt-8">
-            {{ $products->links() }}
-        </div>
+        @if($products->count() > 0)
+            <div class="sf-grid">
+                @foreach($products as $product)
+                    <x-theme-v4.product-card :product="$product" :favorited="in_array((int) $product->id, $bsFavIds, true)" />
+                @endforeach
+            </div>
+            @if($products->hasPages())
+                <div style="margin-top:20px;">
+                    {{ $products->links(view()->exists('vendor.pagination.tp-v4') ? 'vendor.pagination.tp-v4' : null) }}
+                </div>
+            @endif
+        @else
+            <div class="tp-card" style="text-align:center; padding:40px 16px;">
+                <div style="font-size:44px;" aria-hidden="true">📦</div>
+                <h2 style="margin:10px 0 6px; font-size:18px; font-weight:800; color:var(--ink);">ยังไม่มีสินค้าในหมวดนี้</h2>
+                <a href="{{ url()->current() }}" class="sf-btn3d" style="margin-top:8px;">ดูสินค้าทั้งหมดของร้าน</a>
+            </div>
         @endif
-    </div>
+    </section>
 
-    {{-- ========================================
-         STORE INFO FOOTER
-         ======================================== --}}
-    <div class="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
-        <div class="container mx-auto px-4 py-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {{-- Contact Info --}}
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                        ติดต่อร้าน
-                    </h3>
-                    <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-                        @if($store->store_email)
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                            </svg>
-                            <span>{{ $store->store_email }}</span>
-                        </div>
-                        @endif
-
-                        @if($store->store_phone)
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                            </svg>
-                            <span>{{ $store->store_phone }}</span>
-                        </div>
-                        @endif
-
-                        @if($store->store_address)
-                        <div class="flex items-start gap-2">
-                            <svg class="w-5 h-5 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span>{{ $store->store_address }}</span>
-                        </div>
-                        @endif
-                    </div>
+    <section class="sf-wrap sf-section">
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px;">
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-address-card" style="color:var(--deep1);"></i> ติดต่อร้าน</div>
+                <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px; color:var(--ink2);">
+                    @if($store->store_email)<span><i class="fas fa-envelope" style="width:18px;"></i> {{ $store->store_email }}</span>@endif
+                    @if($store->store_phone)<span><i class="fas fa-phone" style="width:18px;"></i> {{ $store->store_phone }}</span>@endif
+                    @if($store->store_address)<span><i class="fas fa-location-dot" style="width:18px;"></i> {{ $store->store_address }}</span>@endif
+                    @if(! $store->store_email && ! $store->store_phone && ! $store->store_address)
+                        <span>ร้านยังไม่ได้ระบุช่องทางติดต่อ</span>
+                    @endif
                 </div>
-
-                {{-- Shipping Info --}}
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                        ข้อมูลการจัดส่ง
-                    </h3>
-                    <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-                        @if($store->shipping_fee > 0)
-                        <div>ค่าจัดส่ง: ฿{{ number_format($store->shipping_fee) }}</div>
-                        @endif
-                        @if($store->free_shipping_threshold > 0)
-                        <div>ส่งฟรีเมื่อซื้อครบ: ฿{{ number_format($store->free_shipping_threshold) }}</div>
-                        @endif
-                        @if($store->minimum_order_amount > 0)
-                        <div>ยอดสั่งซื้อขั้นต่ำ: ฿{{ number_format($store->minimum_order_amount) }}</div>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Store Policies --}}
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                        นโยบายร้าน
-                    </h3>
-                    <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>รับประกันสินค้าทุกชิ้น</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>เปลี่ยน/คืนสินค้าได้ภายใน 7 วัน</span>
-                        </div>
-                        @if($store->enable_reviews)
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>เปิดรับรีวิวจากลูกค้า</span>
-                        </div>
-                        @endif
-                    </div>
+            </div>
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-truck" style="color:var(--deep1);"></i> การจัดส่ง</div>
+                <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px; color:var(--ink2);">
+                    @if(($store->shipping_fee ?? 0) > 0)<span>ค่าจัดส่งพัสดุ ฿{{ number_format((float) $store->shipping_fee) }}</span>@endif
+                    @if(($store->free_shipping_threshold ?? 0) > 0)<span>ส่งฟรีเมื่อซื้อครบ ฿{{ number_format((float) $store->free_shipping_threshold) }}</span>@endif
+                    @if($store->canUseRiderDelivery())<span>ส่งด่วนด้วยไรเดอร์ในพื้นที่ ติดตามได้สด</span>@endif
+                    <span>ค่าส่งจริงคำนวณตอนชำระเงินตามที่อยู่ของคุณ</span>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </section>
+</main>
 
-@push('scripts')
-<script>
-/**
- * Store Page Manager
- */
-function storePageManager() {
-    return {
-        isFollowing: false,
-        categoryFilter: '',
-        sortBy: '{{ request("sort_by", "newest") }}',
-
-        init() {
-            console.log('Store Page Manager initialized');
-        },
-
-        followStore() {
-            @guest
-            if (confirm('กรุณาเข้าสู่ระบบเพื่อติดตามร้าน')) {
-                window.location.href = '{{ route("login") }}';
-            }
-            return;
-            @endguest
-
-            this.isFollowing = !this.isFollowing;
-            // TODO: API call to follow store
-        },
-
-        filterByCategory(slug) {
-            this.categoryFilter = slug;
-            const url = new URL(window.location.href);
-            url.searchParams.set('category', slug);
-            window.location.href = url.toString();
-        },
-
-        applySorting() {
-            const url = new URL(window.location.href);
-            url.searchParams.set('sort_by', this.sortBy);
-            window.location.href = url.toString();
-        }
-    };
-}
-</script>
-@endpush
+<x-theme-v4.public-footer />
+<x-eve.widget surface="storefront" />
 @endsection

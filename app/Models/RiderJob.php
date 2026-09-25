@@ -642,7 +642,12 @@ class RiderJob extends Model
     }
 
     /**
-     * ตำแหน่งสดของลูกค้า (เฉพาะเมื่อลูกค้ายินยอม + งานยังวิ่งอยู่ + อัปเดตไม่เกิน 5 นาที)
+     * ตำแหน่งสดของลูกค้า "สด" ได้ไม่เกินกี่วินาที (เก่ากว่านี้ไรเดอร์ไม่เห็น — ใช้หมุดที่อยู่จัดส่งแทน)
+     */
+    public const CUSTOMER_LOCATION_FRESH_SECONDS = 120;
+
+    /**
+     * ตำแหน่งสดของลูกค้า (เฉพาะเมื่อลูกค้ายินยอม + งานยังวิ่งอยู่ + อัปเดตไม่เกิน 2 นาที)
      *
      * @return array{latitude: float, longitude: float, updated_at: string}|null
      */
@@ -653,7 +658,7 @@ class RiderJob extends Model
             || ! $this->customer_location_at
             || $this->customer_last_latitude === null
             || $this->customer_last_longitude === null
-            || $this->customer_location_at->lt(now()->subMinutes(5))) {
+            || $this->customer_location_at->lt(now()->subSeconds(self::CUSTOMER_LOCATION_FRESH_SECONDS))) {
             return null;
         }
 

@@ -1,219 +1,148 @@
 {{--
-    User Rider Status - ติดตามสถานะการสมัครไรเดอร์ (Theme V4 "นวลทองคำ")
-    แสดงสถานะและขั้นตอนการสมัครของไรเดอร์
+    ติดตามสถานะการสมัครไรเดอร์ (user.rider.status) — Theme V4 นวลทองคำ
+    Controller: User\RiderController@status (อนุมัติแล้ว → แดชบอร์ด)
+    ตัวแปร: rider, riderData, documents [{type,label,uploaded,required,url}], missingDocuments, missingDocumentLabels,
+            canReapply, pageTitle
 --}}
-
 @extends('layouts.user-v4')
 
-@section('title', 'ติดตามสถานะการสมัคร')
+@section('title', $pageTitle ?? 'ติดตามสถานะการสมัคร')
+
+@push('styles')
+    @include('user.rider.partials.styles')
+@endpush
 
 @php
-    // ── เอกสารที่อัพโหลดแล้วหรือยัง (ใช้คุม progress) ─────────────
-    $hasDocuments = $rider->id_card_image || $rider->driver_license_image;
+    $ui = \App\Support\RiderWebUi::class;
+    $docsComplete = count($missingDocuments) === 0;
 
-    // ── map สถานะ → ข้อมูลแสดงผล (ไอคอน, สี hex, ป้าย, คำอธิบาย) ──
+    // สถานะ → ไอคอน / โทนสี / ข้อความ
     $statusMap = [
-        'pending' => [
-            'icon'  => 'fa-clock',
-            'color' => '#e0a52e',
-            'label' => 'รอตรวจสอบ',
-            'desc'  => 'ทีมงานกำลังตรวจสอบข้อมูลของคุณ',
-        ],
-        'rejected' => [
-            'icon'  => 'fa-times-circle',
-            'color' => '#d9534f',
-            'label' => 'ไม่ผ่านการอนุมัติ',
-            'desc'  => $rider->rejection_reason ?? 'กรุณาติดต่อทีมงานเพื่อขอข้อมูลเพิ่มเติม',
-        ],
-        'suspended' => [
-            'icon'  => 'fa-ban',
-            'color' => 'var(--ink2)',
-            'label' => 'ถูกระงับ',
-            'desc'  => 'บัญชีของคุณถูกระงับชั่วคราว กรุณาติดต่อทีมงาน',
-        ],
-        'approved' => [
-            'icon'  => 'fa-circle-check',
-            'color' => '#5aa07e',
-            'label' => 'อนุมัติแล้ว',
-            'desc'  => 'ยินดีด้วย! คุณพร้อมเริ่มรับงานแล้ว',
-        ],
+        'pending' => ['icon' => 'fa-hourglass-half', 'tone' => 'warn', 'label' => 'รอตรวจสอบ',
+            'desc' => $docsComplete ? 'ทีมงานกำลังตรวจสอบใบสมัครและเอกสารของคุณ จะแจ้งผลผ่านการแจ้งเตือนโดยเร็ว' : 'อัปโหลดเอกสารให้ครบ ทีมงานจึงจะเริ่มตรวจใบสมัครได้'],
+        'rejected' => ['icon' => 'fa-circle-xmark', 'tone' => 'bad', 'label' => 'ไม่ผ่านการอนุมัติ',
+            'desc' => $rider->rejection_reason ?: 'กรุณาแก้ไขข้อมูลแล้วส่งใบสมัครใหม่ หรือติดต่อทีมงานเพื่อสอบถาม'],
+        'suspended' => ['icon' => 'fa-ban', 'tone' => 'bad', 'label' => 'ถูกระงับ',
+            'desc' => $rider->suspension_reason ?: 'บัญชีไรเดอร์ถูกระงับชั่วคราว กรุณาติดต่อทีมงาน'],
+        'inactive' => ['icon' => 'fa-moon', 'tone' => 'muted', 'label' => 'ไม่ได้ใช้งาน',
+            'desc' => 'บัญชีไรเดอร์ปิดอยู่ ส่งใบสมัครใหม่เพื่อกลับมารับงาน'],
+        'approved' => ['icon' => 'fa-circle-check', 'tone' => 'ok', 'label' => 'อนุมัติแล้ว',
+            'desc' => 'ยินดีด้วย! คุณพร้อมเริ่มรับงานแล้ว'],
     ];
     $cur = $statusMap[$rider->status] ?? $statusMap['pending'];
 
-    // ── ความกว้างแถบความคืบหน้า ───────────────────────────────
-    $progressWidth = $rider->status === 'approved' ? '100%' : ($hasDocuments ? '50%' : '25%');
+    // ขั้นตอนการสมัคร 4 ขั้น
+    $steps = [
+        ['label' => 'ส่งใบสมัคร', 'state' => 'done', 'sub' => $ui::date($rider->created_at, false)],
+        ['label' => 'อัปโหลดเอกสาร', 'state' => $docsComplete ? 'done' : 'current', 'sub' => $docsComplete ? 'ครบแล้ว' : 'ยังขาด '.count($missingDocuments).' รายการ'],
+        ['label' => 'ทีมงานตรวจสอบ', 'state' => match ($rider->status) {
+            'approved' => 'done',
+            'rejected', 'suspended', 'inactive' => 'stopped',
+            default => $docsComplete ? 'current' : 'todo',
+        }, 'sub' => $cur['label']],
+        ['label' => 'เริ่มรับงาน', 'state' => $rider->status === 'approved' ? 'done' : 'todo', 'sub' => null],
+    ];
 
-    // ── เอกสารที่ต้องอัพโหลด ──────────────────────────────────
-    $docList = [
-        ['key' => 'id_card_image',             'label' => 'บัตรประชาชน', 'icon' => 'fa-id-card'],
-        ['key' => 'driver_license_image',      'label' => 'ใบขับขี่',     'icon' => 'fa-car'],
-        ['key' => 'vehicle_registration_image','label' => 'ทะเบียนรถ',   'icon' => 'fa-file-alt'],
-        ['key' => 'profile_image',             'label' => 'รูปโปรไฟล์',   'icon' => 'fa-user'],
+    $infoItems = [
+        ['ชื่อ-นามสกุล', $rider->full_name],
+        ['เบอร์โทร', $rider->phone],
+        ['ยานพาหนะ', $rider->vehicle_type_text.($rider->vehicle_plate ? ' · '.$rider->vehicle_plate : '')],
+        ['วันที่สมัคร', $ui::date($rider->created_at)],
     ];
 @endphp
 
 @section('content')
-<div style="display:flex; flex-direction:column; gap:18px;">
-
-    {{-- ── Hero ─────────────────────────────────────────────── --}}
-    <div class="tp-card" style="padding:0; overflow:hidden;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:16px; padding:20px 24px;
-                    background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
-            <span class="tp-tile" style="width:52px; height:52px; border-radius:16px; font-size:24px;"><i class="fas fa-motorcycle" style="color:#fff;"></i></span>
-            <div style="flex:1; min-width:200px;">
-                <h1 style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:0;">ติดตามสถานะการสมัครไรเดอร์</h1>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">ข้อมูลการสมัครของคุณกำลังอยู่ระหว่างการตรวจสอบ</div>
-            </div>
-            <span class="tp-pill" style="color:#fff; background:{{ $cur['color'] }};"><i class="fas {{ $cur['icon'] }}" style="font-size:10px;"></i> {{ $cur['label'] }}</span>
-        </div>
-    </div>
+<div class="rd-scope">
+    @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'status'])
 
     {{-- ── การ์ดสถานะปัจจุบัน ───────────────────────────────── --}}
-    <div class="tp-card" style="padding:28px 24px; text-align:center;">
-        <span class="tp-tile" style="width:88px; height:88px; border-radius:28px; font-size:40px; margin:0 auto; background:color-mix(in srgb, {{ $cur['color'] }} 18%, transparent);">
-            <i class="fas {{ $cur['icon'] }}" style="color:{{ $cur['color'] }};"></i>
-        </span>
-        <h2 style="font-size:clamp(20px,4vw,24px); font-weight:800; margin:16px 0 0; color:{{ $cur['color'] }};">{{ $cur['label'] }}</h2>
-        <p style="font-size:13.5px; color:var(--ink2); margin:8px 0 0; max-width:520px; margin-left:auto; margin-right:auto;">{{ $cur['desc'] }}</p>
-    </div>
-
-    {{-- ── Timeline / ขั้นตอนการสมัคร ────────────────────────── --}}
-    @php
-        // ── นิยาม 4 ขั้นตอน พร้อมสถานะ done/active/pending ──────
-        $steps = [
-            [
-                'label' => 'ส่งใบสมัคร',
-                'icon'  => 'fa-check',
-                'state' => 'done',
-                'sub'   => optional($rider->created_at)->thaidate('j M Y'),
-            ],
-            [
-                'label' => 'อัพโหลดเอกสาร',
-                'icon'  => $hasDocuments ? 'fa-check' : 'fa-file-alt',
-                'state' => $hasDocuments ? 'done' : 'pending',
-                'sub'   => null,
-            ],
-            [
-                'label' => $rider->status === 'pending' ? 'รอตรวจสอบ' : ($rider->status === 'approved' ? 'อนุมัติแล้ว' : 'ไม่อนุมัติ'),
-                'icon'  => $rider->status === 'approved' ? 'fa-check' : ($rider->status === 'rejected' ? 'fa-times' : 'fa-hourglass-half'),
-                'state' => $rider->status === 'approved' ? 'done' : ($rider->status === 'rejected' ? 'rejected' : 'active'),
-                'sub'   => null,
-            ],
-            [
-                'label' => 'เริ่มรับงาน',
-                'icon'  => 'fa-motorcycle',
-                'state' => $rider->status === 'approved' ? 'done' : 'pending',
-                'sub'   => null,
-            ],
-        ];
-
-        // ── สี hex ตาม state ของแต่ละ step ─────────────────────
-        $stepColor = function ($state) {
-            return match ($state) {
-                'done'     => '#5aa07e',
-                'active'   => '#e0a52e',
-                'rejected' => '#d9534f',
-                default    => 'var(--ink2)',
-            };
-        };
-    @endphp
-    <div class="tp-card" style="padding:24px;">
-        <div class="tp-section-h" style="margin-bottom:20px;">📋 ขั้นตอนการสมัคร</div>
-
-        <div style="position:relative;">
-            {{-- เส้นพื้นหลัง --}}
-            <div style="position:absolute; top:24px; left:24px; right:24px; height:3px; border-radius:3px; background:color-mix(in srgb, var(--ink2) 18%, transparent);"></div>
-            {{-- เส้นความคืบหน้า (ทอง) --}}
-            <div style="position:absolute; top:24px; left:24px; height:3px; border-radius:3px; width:calc(({{ $progressWidth }} - 48px) + 24px); max-width:calc(100% - 48px); background:linear-gradient(90deg, var(--accent1), var(--accent2));"></div>
-
-            <div style="position:relative; display:flex; justify-content:space-between; gap:6px;">
-                @foreach($steps as $step)
-                    @php $sc = $stepColor($step['state']); @endphp
-                    <div style="display:flex; flex-direction:column; align-items:center; flex:1; min-width:0; text-align:center;">
-                        <span class="tp-tile" style="width:48px; height:48px; border-radius:16px; font-size:18px; background:{{ $sc }};">
-                            <i class="fas {{ $step['icon'] }}" style="color:#fff;"></i>
-                        </span>
-                        <div style="font-size:12px; font-weight:700; margin-top:9px; color:var(--ink);">{{ $step['label'] }}</div>
-                        @if($step['sub'])
-                            <div class="tp-num" style="font-size:10.5px; color:var(--ink2); margin-top:2px;">{{ $step['sub'] }}</div>
-                        @endif
-                        @if($loop->index === 1 && !$hasDocuments)
-                            <a href="{{ route('user.rider.documents') }}" style="font-size:10.5px; color:var(--deep1); font-weight:700; margin-top:2px; text-decoration:none;">อัพโหลดเลย →</a>
-                        @endif
-                    </div>
-                @endforeach
+    <section class="tp-card rd-hero rd-tone-{{ $cur['tone'] }}">
+        <div class="rd-hero-in" style="flex-direction:column; text-align:center; padding-top:30px; padding-bottom:30px;">
+            <span class="rd-ring rd-tone-{{ $cur['tone'] }}" style="--p:100; width:96px; height:96px;">
+                <span style="font-size:34px; color:var(--tone);"><i class="fas {{ $cur['icon'] }}"></i></span>
+            </span>
+            <div>
+                <div class="rd-muted rd-small">สถานะใบสมัครไรเดอร์</div>
+                <h1 class="rd-h1" style="color:var(--tone);">{{ $cur['label'] }}</h1>
+                <p class="rd-muted" style="font-size:13.5px; margin:8px auto 0; max-width:520px; line-height:1.6;">{{ $cur['desc'] }}</p>
+            </div>
+            <div class="rd-row" style="justify-content:center;">
+                @if($canReapply)
+                    <a href="{{ route('user.rider.register') }}" class="rd-btn3d rd-tone-gold"><i class="fas fa-paper-plane"></i> แก้ไขและส่งใบสมัครใหม่</a>
+                @elseif(!$docsComplete)
+                    <a href="{{ route('user.rider.documents') }}" class="rd-btn3d rd-tone-gold"><i class="fas fa-cloud-arrow-up"></i> อัปโหลดเอกสารที่ขาด</a>
+                @elseif($rider->status === 'pending')
+                    <a href="{{ route('user.rider.register') }}" class="tp-btn"><i class="fas fa-pen-to-square"></i> แก้ไขใบสมัคร</a>
+                @endif
+                @if($rider->status === 'suspended')
+                    <a href="{{ route('user.rider.dashboard') }}" class="tp-btn"><i class="fas fa-gauge-high"></i> ไปแดชบอร์ด</a>
+                @endif
             </div>
         </div>
-    </div>
+    </section>
 
-    {{-- ── ข้อมูลการสมัคร ────────────────────────────────────── --}}
-    @php
-        $infoItems = [
-            ['ชื่อ-นามสกุล', $rider->full_name],
-            ['เบอร์โทร',      $rider->phone],
-            ['ยานพาหนะ',     $rider->vehicle_type_text],
-            ['วันที่สมัคร',   optional($rider->created_at)->thaidate('j M Y H:i')],
-        ];
-    @endphp
-    <div class="tp-card" style="padding:22px;">
-        <div class="tp-section-h" style="margin-bottom:16px;">👤 ข้อมูลการสมัคร</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px;">
-            @foreach($infoItems as [$label, $value])
-                <div style="padding:14px 16px; border-radius:14px; box-shadow:var(--inset-sm);">
-                    <div style="font-size:11.5px; color:var(--ink2);">{{ $label }}</div>
-                    <div style="font-size:14px; font-weight:700; color:var(--ink); margin-top:3px;">{{ $value ?? '—' }}</div>
+    {{-- ── ขั้นตอนการสมัคร ──────────────────────────────────── --}}
+    <section class="tp-card rd-stack">
+        <h2 class="rd-h2"><i class="fas fa-list-check" style="color:var(--accent1);"></i> ขั้นตอนการสมัคร</h2>
+        <div class="rd-steps">
+            @foreach($steps as $step)
+                <div class="st {{ $step['state'] }}">
+                    <div class="bar"></div>
+                    <div class="lb">{{ $step['label'] }}@if($step['sub'])<br><span class="rd-muted" style="font-weight:600;">{{ $step['sub'] }}</span>@endif</div>
                 </div>
             @endforeach
         </div>
-    </div>
+    </section>
 
-    {{-- ── เอกสารที่อัพโหลด ──────────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px;">
-        <div class="tp-section-h" style="margin-bottom:16px;">📎 เอกสารที่อัพโหลด</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
-            @foreach($docList as $doc)
-                @php $uploaded = (bool) $rider->{$doc['key']}; @endphp
-                <div style="padding:18px 14px; border-radius:16px; text-align:center;
-                            box-shadow:var(--inset-sm);
-                            border:1.5px solid {{ $uploaded ? 'color-mix(in srgb, #5aa07e 45%, transparent)' : 'color-mix(in srgb, var(--ink2) 18%, transparent)' }};">
-                    <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:19px; margin:0 auto;
-                          background:{{ $uploaded ? 'color-mix(in srgb, #5aa07e 18%, transparent)' : 'color-mix(in srgb, var(--ink2) 14%, transparent)' }};">
-                        <i class="fas {{ $doc['icon'] }}" style="color:{{ $uploaded ? '#5aa07e' : 'var(--ink2)' }};"></i>
-                    </span>
-                    <div style="font-size:12.5px; font-weight:700; margin-top:10px; color:{{ $uploaded ? '#5aa07e' : 'var(--ink2)' }};">{{ $doc['label'] }}</div>
-                    @if($uploaded)
-                        <span class="tp-pill" style="margin-top:8px; color:#5aa07e; background:color-mix(in srgb, #5aa07e 16%, transparent);"><i class="fas fa-check" style="font-size:9px;"></i> อัพโหลดแล้ว</span>
-                    @else
-                        <span class="tp-pill" style="margin-top:8px; color:var(--ink2); background:color-mix(in srgb, var(--ink2) 12%, transparent);">ยังไม่อัพโหลด</span>
-                    @endif
-                </div>
-            @endforeach
+    {{-- ── เอกสาร ──────────────────────────────────────────────── --}}
+    <section class="tp-card rd-stack">
+        <div class="rd-row" style="justify-content:space-between;">
+            <h2 class="rd-h2"><i class="fas fa-folder-open" style="color:var(--accent1);"></i> เอกสาร</h2>
+            <a href="{{ route('user.rider.documents') }}" class="rd-link rd-small">จัดการเอกสาร <i class="fas fa-arrow-right"></i></a>
         </div>
-
-        @if(!$rider->id_card_image || !$rider->driver_license_image)
-            <div style="text-align:center; margin-top:18px;">
-                <a href="{{ route('user.rider.documents') }}" class="tp-btn tp-btn-primary">
-                    <i class="fas fa-upload"></i> อัพโหลดเอกสาร
-                </a>
+        @if(!$docsComplete)
+            <div class="rd-alert rd-tone-warn">
+                <i class="fas fa-circle-exclamation"></i>
+                <div><b>ยังขาด:</b> {{ $missingDocumentLabels }}</div>
             </div>
         @endif
-    </div>
-
-    {{-- ── ต้องการความช่วยเหลือ ──────────────────────────────── --}}
-    <div class="tp-card" style="padding:22px; box-shadow:var(--inset-sm); border-left:4px solid #5689b8;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; gap:14px;">
-            <span class="tp-tile" style="width:46px; height:46px; border-radius:15px; font-size:19px; background:color-mix(in srgb, #5689b8 18%, transparent);">
-                <i class="fas fa-question-circle" style="color:#5689b8;"></i>
-            </span>
-            <div style="flex:1; min-width:220px;">
-                <div style="font-size:15px; font-weight:800; color:var(--ink);">มีคำถามหรือต้องการความช่วยเหลือ?</div>
-                <div style="font-size:12.5px; color:var(--ink2); margin-top:3px;">หากมีข้อสงสัยเกี่ยวกับการสมัครหรือสถานะ สามารถติดต่อทีมงานได้ทันที</div>
-            </div>
-            <a href="{{ route('user.tickets.create') }}" class="tp-btn tp-btn-primary">
-                <i class="fas fa-headset"></i> ติดต่อทีมงาน
-            </a>
+        <div class="rd-grid" style="--rd-min:150px; gap:12px;">
+            @foreach($documents as $doc)
+                @php $docTone = $doc['uploaded'] ? 'ok' : ($doc['required'] ? 'warn' : 'muted'); @endphp
+                <div class="rd-item rd-tone-{{ $docTone }}" style="border-top:0; padding:12px; border-radius:16px; box-shadow:var(--inset-sm);">
+                    <span class="ic"><i class="fas {{ $ui::documentIcon($doc['type']) }}"></i></span>
+                    <span class="main">
+                        <span class="ttl" style="display:block; white-space:normal;">{{ $doc['label'] }}</span>
+                        <span class="sub" style="display:block; color:var(--tone); font-weight:700;">
+                            {{ $doc['uploaded'] ? 'อัปโหลดแล้ว' : ($doc['required'] ? 'ยังไม่อัปโหลด' : 'ไม่บังคับ') }}
+                        </span>
+                    </span>
+                </div>
+            @endforeach
         </div>
-    </div>
+    </section>
 
+    {{-- ── ข้อมูลการสมัคร ───────────────────────────────────── --}}
+    <section class="tp-card rd-stack">
+        <h2 class="rd-h2"><i class="fas fa-user" style="color:var(--accent1);"></i> ข้อมูลการสมัคร</h2>
+        <div class="rd-grid" style="--rd-min:200px; gap:12px;">
+            @foreach($infoItems as [$label, $value])
+                <div class="rd-meta" style="flex-direction:column; align-items:flex-start; padding:12px 14px;">
+                    <span>{{ $label }}</span>
+                    <b style="color:var(--ink); font-size:14px;">{{ $value ?: '—' }}</b>
+                </div>
+            @endforeach
+        </div>
+    </section>
+
+    {{-- ── ช่วยเหลือ ─────────────────────────────────────────── --}}
+    <section class="rd-alert rd-tone-info">
+        <i class="fas fa-circle-question"></i>
+        <div style="flex:1;">
+            <b>มีคำถามเรื่องการสมัคร?</b>
+            <div class="rd-small" style="margin-top:3px;">ติดต่อทีมงานได้ทันที เราพร้อมช่วยให้คุณเริ่มรับงานได้เร็วที่สุด</div>
+            <a href="{{ route('user.tickets.create') }}" class="tp-btn tp-btn-sm" style="margin-top:10px;"><i class="fas fa-headset"></i> ติดต่อทีมงาน</a>
+        </div>
+    </section>
 </div>
 @endsection

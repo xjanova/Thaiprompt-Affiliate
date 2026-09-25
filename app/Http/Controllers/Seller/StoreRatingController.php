@@ -19,12 +19,14 @@ use Illuminate\View\View;
  */
 class StoreRatingController extends Controller
 {
+    use \App\Http\Controllers\Seller\Concerns\ResolvesSellerStore;
+
     /**
      * แสดง Dashboard คะแนนร้าน
      */
     public function index(Request $request): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // ดึงสถิติ
         $stats = StoreRating::getStoreStats($store->id);
@@ -58,7 +60,7 @@ class StoreRatingController extends Controller
      */
     public function all(Request $request): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         $query = StoreRating::where('store_id', $store->id)
             ->approved()
@@ -109,7 +111,7 @@ class StoreRatingController extends Controller
      */
     public function respond(Request $request, StoreRating $rating)
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // ตรวจสอบว่าเป็นคะแนนของร้านนี้
         if ($rating->store_id !== $store->id) {
@@ -151,7 +153,7 @@ class StoreRatingController extends Controller
      */
     public function show(Request $request, StoreRating $rating): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // ตรวจสอบว่าเป็นคะแนนของร้านนี้
         abort_if($rating->store_id !== $store->id, 403);
@@ -169,7 +171,7 @@ class StoreRatingController extends Controller
      */
     public function statistics(Request $request): View
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->requireStore($request);
 
         // ดึงสถิติ
         $stats = StoreRating::getStoreStats($store->id);

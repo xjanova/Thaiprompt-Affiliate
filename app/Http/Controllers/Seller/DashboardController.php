@@ -133,8 +133,18 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // Store visitors (last 30 days) - Mock data for now
-        $totalVisitors = rand(500, 5000);
+        // ผู้เยี่ยมชมร้าน 30 วันล่าสุด (นับผู้เยี่ยมชมไม่ซ้ำจาก vendor_store_visits — เดิมเป็นเลขสุ่ม audit SELLER-23)
+        $totalVisitors = 0;
+        if ($store) {
+            try {
+                $totalVisitors = (int) \App\Models\VendorStoreVisit::where('store_id', $store->id)
+                    ->where('visited_at', '>=', now()->subDays(30))
+                    ->distinct()
+                    ->count('visitor_id');
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Seller dashboard: visitor count failed', ['store_id' => $store->id, 'error' => $e->getMessage()]);
+            }
+        }
         $conversionRate = $totalSales > 0 ? ($completedSales / $totalSales) * 100 : 0;
 
         // ดึงคำขวัญสำหรับ Seller Dashboard (สุ่ม 5 คำ)
@@ -253,21 +263,59 @@ class DashboardController extends Controller
     }
 
     /**
-     * Display seller commissions
+     * รายได้จากการขาย / ค่าแนะนำ (เดิมหน้า "คอมมิชชั่น" เป็น placeholder ว่าง — audit SELLER-23)
+     *
+     * อ่านจาก EarningsLedger จริง: รายได้จากการขายของร้าน (seller_sale) และค่าแนะนำที่ผู้ขายได้รับ
+     * (mlm_commission / affiliate_commission / referral_bonus) พร้อมยอดรอโอน/โอนแล้ว
+     * ?type=sale|referral|all (ค่าเริ่มต้น sale)
      */
-    public function commissions()
+    public function commissions(Request $request)
     {
         $user = Auth::user();
-        $sellerId = $user->id;
+        $sellerId = (int) $user->id;
 
-        // Get commissions data (placeholder for now)
-        $commissions = [];
-        $totalCommissions = 0;
-        $pendingCommissions = 0;
-        $paidCommissions = 0;
+        $referralTypes = [
+            EarningsLedger::TYPE_MLM_COMMISSION,
+            EarningsLedger::TYPE_AFFILIATE_COMMISSION,
+            EarningsLedger::TYPE_REFERRAL_BONUS,
+        ];
+        $type = in_array($request->query('type'), ['sale', 'referral', 'all'], true) ? $request->query('type') : 'sale';
+
+        $query = EarningsLedger::where('user_id', $sellerId)->latest('id');
+        if ($type === 'sale') {
+            $query->where('earning_type', EarningsLedger::TYPE_SELLER_SALE);
+        } elseif ($type === 'referral') {
+            $query->whereIn('earning_type', $referralTypes);
+        } else {
+            $query->whereIn('earning_type', array_merge([EarningsLedger::TYPE_SELLER_SALE], $referralTypes));
+        }
+        $earnings = $query->paginate(20)->withQueryString();
+
+        // สรุปรายได้จากการขาย (รอโอน/โอนแล้ว + ระยะพักเงิน) — ตัวเดียวกับหน้ากระเป๋าเงิน
+        $earningsSummary = app(SellerPayoutService::class)->summaryForSeller($sellerId);
+
+        // สรุปค่าแนะนำ
+        $referralBase = EarningsLedger::where('user_id', $sellerId)->whereIn('earning_type', $referralTypes);
+        $referralSummary = [
+            'pending_amount' => round((float) (clone $referralBase)
+                ->whereIn('status', [EarningsLedger::STATUS_PENDING, EarningsLedger::STATUS_AVAILABLE, EarningsLedger::STATUS_PROCESSING])
+                ->sum('net_amount'), 2),
+            'paid_amount' => round((float) (clone $referralBase)->where('status', EarningsLedger::STATUS_PAID)->sum('net_amount'), 2),
+            'count' => (int) (clone $referralBase)->count(),
+        ];
+
+        // ตัวแปรเดิม (คงไว้ให้ view/โค้ดเก่าที่อาจอ้างถึง)
+        $commissions = $earnings->items();
+        $pendingCommissions = round($earningsSummary['pending_amount'] + $referralSummary['pending_amount'], 2);
+        $paidCommissions = round($earningsSummary['paid_amount'] + $referralSummary['paid_amount'], 2);
+        $totalCommissions = round($pendingCommissions + $paidCommissions, 2);
 
         return view('seller.commissions', compact(
             'user',
+            'type',
+            'earnings',
+            'earningsSummary',
+            'referralSummary',
             'commissions',
             'totalCommissions',
             'pendingCommissions',

@@ -1558,6 +1558,9 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
         Route::put('/{store}', [VendorStoreController::class, 'update'])->name('update');
         Route::post('/{store}/toggle-status', [VendorStoreController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/{store}/toggle-featured', [VendorStoreController::class, 'toggleFeatured'])->name('toggle-featured');
+        // ⛔ (2026-09-25) ระงับ/เปิดร้านพร้อมเหตุผล (เจ้าของร้านได้รับแจ้งเตือน)
+        Route::post('/{store}/suspend', [VendorStoreController::class, 'suspend'])->name('suspend');
+        Route::post('/{store}/unsuspend', [VendorStoreController::class, 'unsuspend'])->name('unsuspend');
         Route::delete('/{store}', [VendorStoreController::class, 'destroy'])->name('destroy');
     });
 });
@@ -2345,11 +2348,13 @@ Route::prefix('mobile-app')->name('mobile-app.')->group(function () {
     });
 
     // 2. Banner โฆษณา
+    // 🖼️ (2026-09-26) หน้าดู/สร้าง/แก้ย้ายไป "แบนเนอร์แคมเปญแอป" (admin.app-banners.*, ธีม V4) — ตารางเดียวกัน
+    //    ชื่อ route เดิมคงไว้ให้ลิงก์เก่าใช้ได้ แต่ redirect ไปหน้าใหม่
     Route::prefix('banners')->name('banners.')->group(function () {
-        Route::get('/', [MobileAppController::class, 'bannersIndex'])->name('index');
-        Route::get('/create', [MobileAppController::class, 'bannersCreate'])->name('create');
+        Route::get('/', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'legacyIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'legacyCreate'])->name('create');
         Route::post('/', [MobileAppController::class, 'bannersStore'])->name('store');
-        Route::get('/{banner}/edit', [MobileAppController::class, 'bannersEdit'])->name('edit');
+        Route::get('/{banner}/edit', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'legacyEdit'])->name('edit');
         Route::put('/{banner}', [MobileAppController::class, 'bannersUpdate'])->name('update');
         Route::delete('/{banner}', [MobileAppController::class, 'bannersDestroy'])->name('destroy');
         Route::post('/{banner}/toggle', [MobileAppController::class, 'bannersToggle'])->name('toggle');
@@ -2361,6 +2366,34 @@ Route::prefix('mobile-app')->name('mobile-app.')->group(function () {
         Route::get('/', [MobileAppController::class, 'analytics'])->name('index');
         Route::get('/export', [MobileAppController::class, 'exportAnalytics'])->name('export');
     });
+});
+
+// =====================================================
+// 🖼️ (2026-09-26) แบนเนอร์แคมเปญแอป (ตาราง mobile_banners) — หน้า V4 + พรีวิวกรอบมือถือ
+//    แอปอ่านผ่าน GET /api/v1/banners?placement=home|taladsod|rider|merchant
+// =====================================================
+Route::prefix('app-banners')->name('app-banners.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'store'])->name('store');
+    Route::post('/reorder', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'reorder'])->name('reorder');
+    Route::get('/{banner}/edit', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'edit'])->whereNumber('banner')->name('edit');
+    Route::put('/{banner}', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'update'])->whereNumber('banner')->name('update');
+    Route::delete('/{banner}', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'destroy'])->whereNumber('banner')->name('destroy');
+    Route::post('/{banner}/toggle', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'toggle'])->whereNumber('banner')->name('toggle');
+    Route::post('/{banner}/move', [\App\Http\Controllers\Admin\AppCampaignBannerController::class, 'move'])->whereNumber('banner')->name('move');
+});
+
+// =====================================================
+// 💰 (2026-09-26) ส่วนแบ่งรายได้ & GP — โปรฯ GP ฟรี / GP มาตรฐาน / GP ตลาดสด / ส่วนแบ่งไรเดอร์ / VAT / ค่าแนะนำ
+//    ทุกการแก้บันทึกประวัติ (accounting_activity_logs) · ตัวจำลองใช้ PricingEngine ตัวจริง
+// =====================================================
+Route::prefix('pricing')->name('pricing.')->group(function () {
+    Route::get('/settings', [\App\Http\Controllers\Admin\PricingSettingsController::class, 'index'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\PricingSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/simulate', [\App\Http\Controllers\Admin\PricingSettingsController::class, 'simulate'])
+        ->middleware('throttle:120,1,admin-pricing-simulate')
+        ->name('simulate');
 });
 
 // =====================================================
@@ -2964,6 +2997,9 @@ Route::prefix('riders')->name('riders.')->group(function () {
 
     // API: จอติดตามการกระจายงานสด (งานรอไรเดอร์ + ไรเดอร์ออนไลน์) — JSON
     Route::get('/dispatch-monitor', [RiderController::class, 'dispatchMonitor'])->name('dispatch-monitor');
+
+    // หน้าจอมอนิเตอร์สด (แผนที่งานรอไรเดอร์ + ไรเดอร์ออนไลน์ รีเฟรชทุก 15 วินาทีจาก JSON ด้านบน)
+    Route::get('/monitor', [RiderController::class, 'monitor'])->name('monitor');
 
     // ตั้งค่าระบบไรเดอร์ (Setting rider.*)
     Route::get('/settings', [RiderController::class, 'settings'])->name('settings');

@@ -1,236 +1,167 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'เลือกแพ็คเกจ')
+@section('title', 'แพ็กเกจร้านค้า')
+
+@push('styles')
+    @include('seller.partials.v4-styles')
+@endpush
+
+@php
+    use App\Support\Seller\SellerUi;
+
+    $subscriptionService = app(\App\Services\VendorSubscriptionService::class);
+    $gpPromoActive = app(\App\Services\Pricing\PricingEngine::class)->gpPromoActive();
+    $supportEmail = \App\Support\ContactInfo::supportEmail();
+    $currentPackage = $store?->package;
+    $subscriptionLabels = [
+        'trial' => 'ทดลองใช้',
+        'active' => 'ใช้งานอยู่',
+        'expired' => 'หมดอายุ',
+        'cancelled' => 'ยกเลิกแล้ว',
+        'pending' => 'รอชำระเงิน',
+    ];
+@endphp
 
 @section('content')
-<div class="py-6">
-    <div class="max-w-7xl mx-auto">
-        {{-- Header --}}
-        <div class="text-center mb-12">
-            <h1 class="text-4xl font-bold text-gray-900 mb-4">
-                เลือกแพ็คเกจที่เหมาะกับธุรกิจของคุณ
-            </h1>
-            <p class="text-xl text-gray-600">
-                เริ่มต้นฟรี หรือเลือกแพ็คเกจที่ใช่เพื่อปลดล็อกความสามารถทั้งหมด
-            </p>
-        </div>
+<div class="sv4-page">
 
-        @if($store && $store->package)
-            {{-- Current Package Info --}}
-            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8 border-l-4 border-indigo-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-1">
-                            แพ็คเกจปัจจุบัน: {{ $store->package->display_name }}
-                        </h3>
-                        <p class="text-gray-600">
-                            @if($store->subscription_status === 'trial')
-                                ทดลองใช้ฟรี - หมดอายุ {{ $store->trial_ends_at?->diffForHumans() }}
-                            @elseif($store->subscription_status === 'active')
-                                ใช้งานจนถึง {{ $store->subscription_expires_at?->format('d/m/Y') }}
-                            @else
-                                สถานะ: {{ $store->subscription_status }}
-                            @endif
-                        </p>
+    <x-seller-v4.header title="แพ็กเกจร้านค้า" subtitle="เริ่มต้นฟรี หรืออัปเกรดเพื่อปลดล็อกความสามารถเพิ่ม" icon="💎" :back="route('seller.dashboard')" />
+
+    @if($gpPromoActive)
+        <div class="sv4-note" style="--c:{{ SellerUi::OK }}; font-size:13px;">
+            🎉 <b>ช่วงเปิดตัว: ไม่เก็บค่า GP ทุกแพ็กเกจ</b> — อัตรา GP ด้านล่างจะเริ่มใช้หลังหมดโปรโมชัน
+        </div>
+    @endif
+
+    @if($store && $currentPackage)
+        <div class="tp-card" style="padding:18px 20px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;">
+            <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                <span class="tp-tile" style="width:46px; height:46px; border-radius:14px; font-size:21px;">🏷️</span>
+                <div style="min-width:0;">
+                    <div style="font-size:12px; color:var(--ink2); font-weight:700;">แพ็กเกจปัจจุบัน</div>
+                    <div style="font-size:18px; font-weight:800;">{{ $currentPackage->display_name }}</div>
+                    <div style="font-size:12.5px; color:var(--ink2); margin-top:2px;">
+                        @if($store->subscription_status === 'trial')
+                            ทดลองใช้ฟรี · หมดอายุ {{ $store->trial_ends_at?->diffForHumans() ?? '-' }}
+                        @elseif($store->subscription_status === 'active')
+                            ใช้งานได้ถึง {{ $store->subscription_expires_at?->format('d/m/Y') ?? 'ไม่มีกำหนด' }}
+                        @else
+                            สถานะ: {{ $subscriptionLabels[$store->subscription_status] ?? $store->subscription_status }}
+                        @endif
                     </div>
-                    @if($store->subscription_status === 'active')
-                        <form action="{{ route('seller.packages.cancel') }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะยกเลิกแพ็คเกจ?')">
-                            @csrf
-                            <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition">
-                                ยกเลิกแพ็คเกจ
-                            </button>
-                        </form>
-                    @endif
                 </div>
             </div>
-        @endif
+            @if($store->subscription_status === 'active' && ! $subscriptionService->isFree($currentPackage))
+                <x-seller-v4.confirm-form :action="route('seller.packages.cancel')" title="ยกเลิกแพ็กเกจ?"
+                                          message="ร้านจะหยุดต่ออายุแพ็กเกจนี้ และอาจใช้ความสามารถบางอย่างไม่ได้ จนกว่าจะสมัครใหม่"
+                                          confirm-label="ยกเลิกแพ็กเกจ" danger>
+                    <button type="submit" class="tp-btn tp-btn-sm" style="color:{{ SellerUi::BAD }};">ยกเลิกแพ็กเกจ</button>
+                </x-seller-v4.confirm-form>
+            @endif
+        </div>
+    @endif
 
-        {{-- Packages Grid --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            @foreach($packages as $package)
-                <div class="bg-white rounded-2xl shadow-xl overflow-hidden transform hover:scale-105 transition duration-300 {{ $package->is_featured ? 'ring-4 ring-purple-500' : '' }}">
-                    {{-- Package Header --}}
-                    <div class="bg-gradient-to-r {{ $package->is_featured ? 'from-purple-600 to-indigo-600' : 'from-indigo-500 to-purple-500' }} p-6 text-white relative">
-                        @if($package->badge)
-                            <div class="absolute top-4 right-4">
-                                <span class="px-3 py-1 text-xs font-bold rounded-full" style="background-color: {{ $package->badge_color ?? '#10B981' }}">
-                                    {{ $package->badge }}
-                                </span>
-                            </div>
-                        @endif
-
-                        <h3 class="text-2xl font-bold mb-2">{{ $package->display_name }}</h3>
-                        <p class="text-white/90 text-sm mb-4">{{ $package->package_name }}</p>
-
-                        <div class="mb-4">
-                            @if($package->price == 0)
-                                <div class="text-4xl font-bold">ฟรี</div>
-                            @else
-                                <div class="text-4xl font-bold">฿{{ number_format($package->price, 0) }}</div>
-                                <div class="text-white/80 text-sm">/เดือน</div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:18px; padding-top:10px;">
+        @foreach($packages as $package)
+            @php
+                $isCurrent = $store && (int) $store->package_id === (int) $package->id;
+                $isCustom = $subscriptionService->isCustomPricing($package);
+                $isFree = $subscriptionService->isFree($package);
+                $gpRate = rtrim(rtrim(number_format((float) $package->commission_rate, 2), '0'), '.');
+                $features = array_values(array_filter([
+                    $package->max_products ? number_format($package->max_products) . ' สินค้า' : 'สินค้าไม่จำกัด',
+                    $package->max_images_per_product ? $package->max_images_per_product . ' รูปต่อสินค้า' : null,
+                    $package->max_storage_mb ? number_format($package->max_storage_mb / 1024, 1) . ' GB พื้นที่เก็บรูป' : null,
+                    $package->max_monthly_orders ? number_format($package->max_monthly_orders) . ' ออเดอร์/เดือน' : 'ออเดอร์ไม่จำกัด',
+                    $package->allow_custom_domain ? 'โดเมนของร้านเอง' : null,
+                    $package->allow_advanced_analytics ? 'รายงานขั้นสูง' : null,
+                    $package->allow_marketing_tools ? 'เครื่องมือการตลาด' : null,
+                    $package->allow_ai_bot ? 'แชทบอท AI' : null,
+                    $package->priority_support ? 'ทีมงานดูแลพิเศษ' : null,
+                ]));
+            @endphp
+            <div class="tp-card" style="position:relative; padding:0; overflow:visible; display:flex; flex-direction:column; {{ $package->is_featured ? 'box-shadow:var(--card-shadow), 0 0 0 2px var(--accent1);' : '' }}">
+                @if($package->is_featured || $package->badge)
+                    <span class="sv4-pill tp-pill-gold" style="position:absolute; top:-11px; left:18px; color:var(--tp-on-accent, #fff);">{{ $package->badge ?: '⭐ แนะนำ' }}</span>
+                @endif
+                <div style="padding:22px 20px 16px; border-radius:var(--card-radius) var(--card-radius) 0 0; background:linear-gradient(135deg, color-mix(in srgb, var(--accent1) {{ $package->is_featured ? 26 : 14 }}%, transparent), transparent);">
+                    <div style="font-size:18px; font-weight:800;">{{ $package->display_name }}</div>
+                    @if($package->description)
+                        <div style="font-size:12px; color:var(--ink2); margin-top:4px; line-height:1.5;">{{ $package->description }}</div>
+                    @endif
+                    <div style="margin-top:12px;">
+                        @if($isCustom)
+                            <div style="font-size:22px; font-weight:800;">ราคาพิเศษ</div>
+                            <div style="font-size:12px; color:var(--ink2);">ตามข้อตกลงกับทีมงาน</div>
+                        @elseif($isFree)
+                            <div class="tp-num" style="font-size:30px; font-weight:800; color:{{ SellerUi::OK }};">ฟรี</div>
+                        @else
+                            <div><span class="tp-num" style="font-size:30px; font-weight:800; color:var(--deep1);">฿{{ number_format((float) $package->price, 0) }}</span>
+                                <span style="font-size:12px; color:var(--ink2);">/เดือน</span></div>
+                            @if($package->yearly_price)
+                                <div style="font-size:12px; color:var(--ink2); margin-top:2px;">
+                                    หรือ <span class="tp-num" style="font-weight:700; color:var(--ink);">฿{{ number_format((float) $package->yearly_price, 0) }}</span>/ปี
+                                    @if($package->yearly_savings_percentage)
+                                        <span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::OK) }}">ประหยัด {{ $package->yearly_savings_percentage }}%</span>
+                                    @endif
+                                </div>
                             @endif
-                        </div>
-
-                        @if($package->yearly_price && $package->yearly_savings_percentage)
-                            <div class="bg-white/20 rounded-lg p-2 text-sm">
-                                <div class="font-semibold">฿{{ number_format($package->yearly_price, 0) }}/ปี</div>
-                                <div class="text-xs">ประหยัด {{ $package->yearly_savings_percentage }}%</div>
-                            </div>
                         @endif
                     </div>
+                </div>
 
-                    {{-- Package Description --}}
-                    @if($package->description)
-                        <div class="px-6 py-4 bg-gray-50">
-                            <p class="text-sm text-gray-600">{{ $package->description }}</p>
-                        </div>
+                <div style="padding:16px 20px; flex:1; display:flex; flex-direction:column; gap:12px;">
+                    <div class="sv4-well" style="padding:10px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                        <span style="font-size:12px; color:var(--ink2); font-weight:700;">ค่า GP ต่อยอดขาย</span>
+                        <span>
+                            @if($gpPromoActive)
+                                <span class="sv4-pill" style="{{ SellerUi::pill(SellerUi::OK) }}">ฟรี (ปกติ {{ $gpRate }}%)</span>
+                            @else
+                                <span class="tp-num" style="font-weight:800;">{{ $gpRate }}%</span>
+                            @endif
+                        </span>
+                    </div>
+                    <ul style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px; font-size:13px;">
+                        @foreach($features as $feature)
+                            <li style="display:flex; gap:8px; align-items:flex-start;"><span style="color:{{ SellerUi::OK }}; font-weight:800;">✓</span><span>{{ $feature }}</span></li>
+                        @endforeach
+                    </ul>
+                    @if($package->trial_days > 0 && ! $isCustom)
+                        <div class="sv4-note" style="--c:{{ SellerUi::INFO }}; padding:9px 12px;">🎁 ทดลองใช้ฟรี {{ $package->trial_days }} วัน</div>
                     @endif
 
-                    {{-- Features List --}}
-                    <div class="px-6 py-4">
-                        <ul class="space-y-3 text-sm">
-                            {{-- Products --}}
-                            <li class="flex items-start">
-                                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                <span>{{ $package->max_products ? number_format($package->max_products) . ' สินค้า' : 'สินค้าไม่จำกัด' }}</span>
-                            </li>
-
-                            {{-- Images --}}
-                            <li class="flex items-start">
-                                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                <span>{{ $package->max_images_per_product }} รูป/สินค้า</span>
-                            </li>
-
-                            {{-- Storage --}}
-                            @if($package->max_storage_mb)
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span>{{ number_format($package->max_storage_mb / 1024, 1) }} GB พื้นที่เก็บข้อมูล</span>
-                                </li>
-                            @endif
-
-                            {{-- Orders --}}
-                            <li class="flex items-start">
-                                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                <span>{{ $package->max_monthly_orders ? number_format($package->max_monthly_orders) . ' ออเดอร์/เดือน' : 'ออเดอร์ไม่จำกัด' }}</span>
-                            </li>
-
-                            {{-- Commission --}}
-                            <li class="flex items-start">
-                                <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                <span>ค่าคอมมิชชั่น {{ $package->commission_rate }}%</span>
-                            </li>
-
-                            {{-- Premium Features --}}
-                            @if($package->allow_custom_domain)
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span>โดเมนส่วนตัว</span>
-                                </li>
-                            @endif
-
-                            @if($package->allow_advanced_analytics)
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span>รายงานขั้นสูง</span>
-                                </li>
-                            @endif
-
-                            @if($package->allow_marketing_tools)
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span>เครื่องมือการตลาด</span>
-                                </li>
-                            @endif
-
-                            @if($package->allow_ai_bot)
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span>AI Chatbot</span>
-                                </li>
-                            @endif
-
-                            @if($package->priority_support)
-                                <li class="flex items-start">
-                                    <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    <span>ซัพพอร์ตพิเศษ</span>
-                                </li>
-                            @endif
-                        </ul>
-
-                        @if($package->trial_days > 0)
-                            <div class="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                                <p class="text-sm text-yellow-800 font-medium">
-                                    🎁 ทดลองใช้ฟรี {{ $package->trial_days }} วัน
-                                </p>
-                            </div>
-                        @endif
-                    </div>
-
-                    {{-- Action Button --}}
-                    <div class="px-6 pb-6">
-                        @if($store && $store->package_id === $package->id)
-                            <button disabled class="w-full py-3 bg-gray-300 text-gray-600 rounded-lg font-semibold cursor-not-allowed">
-                                แพ็คเกจปัจจุบัน
-                            </button>
+                    <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+                        @if($isCurrent)
+                            <span class="tp-btn is-disabled sv4-btn-block" aria-disabled="true">✓ แพ็กเกจปัจจุบัน</span>
+                        @elseif($isCustom)
+                            <a href="mailto:{{ $supportEmail }}?subject={{ rawurlencode('สนใจแพ็กเกจ ' . $package->display_name) }}" class="tp-btn sv4-btn-block">📞 ติดต่อทีมงาน</a>
                         @else
-                            <form action="{{ route('seller.packages.subscribe', $package->id) }}" method="POST">
+                            <form action="{{ route('seller.packages.subscribe', $package->id) }}" method="POST" x-data="{ busy: false }" @submit="busy = true">
                                 @csrf
                                 <input type="hidden" name="subscription_type" value="monthly">
-                                <button type="submit" class="w-full py-3 {{ $package->is_featured ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700' : 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600' }} text-white rounded-lg font-semibold transition shadow-lg hover:shadow-xl">
-                                    @if($package->price == 0)
-                                        เริ่มใช้ฟรี
-                                    @else
-                                        เลือกแพ็คเกจนี้
-                                    @endif
+                                <button type="submit" class="tp-btn sv4-btn-block {{ $package->is_featured || $isFree ? 'tp-btn-primary' : '' }}" :disabled="busy">
+                                    {{ $isFree ? 'เริ่มใช้ฟรี' : 'สมัครรายเดือน' }}
                                 </button>
                             </form>
-
-                            @if($package->yearly_price)
-                                <form action="{{ route('seller.packages.subscribe', $package->id) }}" method="POST" class="mt-2">
+                            @if($package->yearly_price && ! $isFree)
+                                <form action="{{ route('seller.packages.subscribe', $package->id) }}" method="POST" x-data="{ busy: false }" @submit="busy = true">
                                     @csrf
                                     <input type="hidden" name="subscription_type" value="yearly">
-                                    <button type="submit" class="w-full py-2 bg-white border-2 {{ $package->is_featured ? 'border-purple-600 text-purple-600 hover:bg-purple-50' : 'border-indigo-500 text-indigo-500 hover:bg-indigo-50' }} rounded-lg font-semibold transition">
-                                        จ่ายรายปี (ประหยัด {{ $package->yearly_savings_percentage }}%)
+                                    <button type="submit" class="tp-btn tp-btn-sm sv4-btn-block" :disabled="busy">
+                                        สมัครรายปี{{ $package->yearly_savings_percentage ? ' (ประหยัด ' . $package->yearly_savings_percentage . '%)' : '' }}
                                     </button>
                                 </form>
                             @endif
                         @endif
                     </div>
                 </div>
-            @endforeach
-        </div>
+            </div>
+        @endforeach
+    </div>
 
-        {{-- Additional Info --}}
-        <div class="mt-12 text-center text-gray-600">
-            <p class="mb-4">มีคำถาม? ติดต่อทีมงานของเราได้ที่ <a href="mailto:support@thaiprompt.online" class="text-indigo-600 hover:underline">support@thaiprompt.online</a></p>
-            <a href="{{ route('seller.dashboard') }}" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                กลับไปหน้าแดชบอร์ด
-            </a>
-        </div>
+    <div class="tp-card" style="padding:16px 20px; text-align:center; font-size:12.5px; color:var(--ink2); line-height:1.7;">
+        ชำระค่าแพ็กเกจผ่านกระเป๋าเงินของคุณ (เติมเงินด้วย PromptPay/โอนได้ที่ <a href="{{ route('user.wallet.topup') }}" class="sv4-link">เติมเงิน</a>)
+        · มีคำถาม ติดต่อทีมงาน <a href="mailto:{{ $supportEmail }}" class="sv4-link">{{ $supportEmail }}</a>
     </div>
 </div>
 @endsection

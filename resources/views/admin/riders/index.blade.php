@@ -1,315 +1,185 @@
 {{--
-    Admin Riders Index - หน้าจัดการไรเดอร์ทั้งหมด
-    แสดงรายการ สถิติ และเครื่องมือจัดการ
+ | จัดการไรเดอร์ (admin.riders.index) — ธีม V4
+ | ตัวแปรจาก Admin\RiderController@index: $riders (paginator), $stats{total,pending,approved,rejected,suspended,online,busy,needs_review}, $pageTitle
+ | ตัวกรอง GET: search, status, availability, vehicle_type, needs_review=1
+ | ปุ่มจัดการส่งฟอร์ม POST จริงผ่านโมดัลยืนยัน (controller ตอบ redirect back + flash)
 --}}
+@extends('layouts.admin-v4')
 
-@extends('layouts.admin-v3')
-
-@section('title', 'จัดการไรเดอร์')
+@section('title', $pageTitle ?? 'จัดการไรเดอร์')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
-    {{-- Header --}}
-    <div class="mb-6 p-6 rounded-2xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-xl border border-gray-200/50 dark:border-gray-700/50">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent flex items-center">
-                    <i class="fas fa-motorcycle mr-3 text-blue-600"></i>จัดการไรเดอร์
-                </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-1">ดูแลและจัดการไรเดอร์ในระบบ</p>
-            </div>
-            <div class="flex gap-3">
-                <a href="{{ route('admin.riders.pending') }}"
-                   class="px-5 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-medium transition shadow-lg shadow-yellow-500/30 flex items-center">
-                    <i class="fas fa-clock mr-2"></i>รอตรวจสอบ
-                    @if(($stats['pending'] ?? 0) > 0)
-                        <span class="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-sm">{{ $stats['pending'] }}</span>
-                    @endif
-                </a>
-                <a href="{{ route('admin.riders.map') }}"
-                   class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-medium transition shadow-lg shadow-green-500/30 flex items-center">
-                    <i class="fas fa-map-location-dot mr-2"></i>แผนที่
-                </a>
-            </div>
+@include('admin.riders.partials.v4-kit')
+@php
+    $vehicleIcons = ['motorcycle' => 'fa-motorcycle', 'car' => 'fa-car', 'bicycle' => 'fa-bicycle', 'walk' => 'fa-person-walking'];
+    $vehicleNames = \App\Services\RiderAccountService::VEHICLE_TYPES;
+    $hasFilter = request()->hasAny(['search', 'status', 'availability', 'vehicle_type', 'needs_review']);
+@endphp
+<div x-data="{}" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ไรเดอร์ · ไรเดอร์ทั้งหมด</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">จัดการไรเดอร์ 🛵</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ตรวจใบสมัคร ดูเอกสาร ระงับ/ปลดระงับ และติดตามตำแหน่งไรเดอร์</div>
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:9px;">
+            <a href="{{ route('admin.riders.pending') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-user-clock" style="color:var(--w-warn);"></i> รออนุมัติ
+                @if (($stats['pending'] ?? 0) > 0)
+                    <span class="tp-pill tp-pill-gold">{{ number_format($stats['pending']) }}</span>
+                @endif
+            </a>
+            <a href="{{ route('admin.riders.monitor') }}" class="tp-btn tp-btn-sm"><i class="fas fa-satellite-dish"></i> มอนิเตอร์สด</a>
+            <a href="{{ route('admin.riders.map') }}" class="tp-btn tp-btn-sm"><i class="fas fa-map-location-dot"></i> แผนที่ไรเดอร์</a>
+            <a href="{{ route('admin.riders.settings') }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-sliders"></i> ตั้งค่าค่าส่ง</a>
         </div>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        {{-- ทั้งหมด --}}
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center">
-                    <i class="fas fa-users text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">ทั้งหมด</p>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total'] ?? 0) }}</p>
-                </div>
-            </div>
-        </div>
+    @include('admin.riders.partials.flash')
 
-        {{-- รอตรวจสอบ --}}
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-                    <i class="fas fa-clock text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">รอตรวจสอบ</p>
-                    <p class="text-2xl font-bold text-yellow-600">{{ number_format($stats['pending'] ?? 0) }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- อนุมัติแล้ว --}}
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-                    <i class="fas fa-check-circle text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">อนุมัติแล้ว</p>
-                    <p class="text-2xl font-bold text-green-600">{{ number_format($stats['approved'] ?? 0) }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- ปฏิเสธ --}}
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center">
-                    <i class="fas fa-times-circle text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">ปฏิเสธ</p>
-                    <p class="text-2xl font-bold text-red-600">{{ number_format($stats['rejected'] ?? 0) }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- พร้อมรับงาน --}}
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                    <i class="fas fa-signal text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">พร้อมรับงาน</p>
-                    <p class="text-2xl font-bold text-emerald-600">{{ number_format($stats['online'] ?? 0) }}</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- กำลังส่ง --}}
-        <div class="p-4 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                    <i class="fas fa-truck-fast text-white text-lg"></i>
-                </div>
-                <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">กำลังส่ง</p>
-                    <p class="text-2xl font-bold text-purple-600">{{ number_format($stats['busy'] ?? 0) }}</p>
-                </div>
-            </div>
-        </div>
+    {{-- ===== ตัวเลขสรุป ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr)); gap:14px;">
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-users', 'kpiValue' => number_format($stats['total'] ?? 0), 'kpiLabel' => 'ไรเดอร์ทั้งหมด', 'kpiTone' => null, 'kpiHref' => route('admin.riders.index'), 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-user-clock', 'kpiValue' => number_format($stats['pending'] ?? 0), 'kpiLabel' => 'รอตรวจสอบ', 'kpiTone' => 'warn', 'kpiHref' => route('admin.riders.pending'), 'kpiHint' => null, 'kpiPulse' => ($stats['pending'] ?? 0) > 0])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-circle-check', 'kpiValue' => number_format($stats['approved'] ?? 0), 'kpiLabel' => 'อนุมัติแล้ว', 'kpiTone' => 'ok', 'kpiHref' => route('admin.riders.index', ['status' => 'approved']), 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-signal', 'kpiValue' => number_format($stats['online'] ?? 0), 'kpiLabel' => 'พร้อมรับงาน', 'kpiTone' => 'ok', 'kpiHref' => route('admin.riders.index', ['availability' => 'online']), 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-motorcycle', 'kpiValue' => number_format($stats['busy'] ?? 0), 'kpiLabel' => 'กำลังส่งงาน', 'kpiTone' => 'violet', 'kpiHref' => route('admin.riders.index', ['availability' => 'busy']), 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-file-circle-exclamation', 'kpiValue' => number_format($stats['needs_review'] ?? 0), 'kpiLabel' => 'เอกสารเปลี่ยน รอตรวจซ้ำ', 'kpiTone' => 'info', 'kpiHref' => route('admin.riders.index', ['needs_review' => 1]), 'kpiHint' => null, 'kpiPulse' => ($stats['needs_review'] ?? 0) > 0])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-ban', 'kpiValue' => number_format($stats['suspended'] ?? 0), 'kpiLabel' => 'ถูกระงับ', 'kpiTone' => 'bad', 'kpiHref' => route('admin.riders.index', ['status' => 'suspended']), 'kpiHint' => null, 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-circle-xmark', 'kpiValue' => number_format($stats['rejected'] ?? 0), 'kpiLabel' => 'ถูกปฏิเสธ', 'kpiTone' => 'bad', 'kpiHref' => route('admin.riders.index', ['status' => 'rejected']), 'kpiHint' => null, 'kpiPulse' => false])
     </div>
 
-    {{-- Filters --}}
-    <div class="mb-6 p-5 rounded-xl backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
-        <form method="GET" action="{{ route('admin.riders.index') }}" class="flex flex-wrap gap-4 items-end">
-            {{-- ค้นหา --}}
-            <div class="flex-1 min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    <i class="fas fa-search mr-1"></i>ค้นหา
-                </label>
-                <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="ชื่อ, เบอร์โทร, อีเมล..."
-                       class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-            </div>
-
-            {{-- สถานะ --}}
-            <div class="w-40">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สถานะ</label>
-                <select name="status" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+    {{-- ===== ตัวกรอง ===== --}}
+    <div class="tp-card" style="padding:18px;">
+        <div class="tp-section-h" style="margin-bottom:12px;"><i class="fas fa-filter"></i> ตัวกรอง</div>
+        <form method="GET" action="{{ route('admin.riders.index') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; align-items:end;">
+            <label style="display:block; grid-column:1 / -1; min-width:0;">
+                <span style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ค้นหา</span>
+                <input type="search" name="search" value="{{ request('search') }}" class="tp-input"
+                       placeholder="ชื่อ เบอร์โทร เลขบัตร ทะเบียนรถ หรืออีเมล">
+            </label>
+            <label style="display:block;">
+                <span style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">สถานะบัญชี</span>
+                <select name="status" class="tp-input">
                     <option value="">ทั้งหมด</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>รอตรวจสอบ</option>
-                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
-                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>ปฏิเสธ</option>
-                    <option value="suspended" {{ request('status') == 'suspended' ? 'selected' : '' }}>ระงับ</option>
+                    @foreach (['pending' => 'รอตรวจสอบ', 'approved' => 'อนุมัติแล้ว', 'rejected' => 'ถูกปฏิเสธ', 'suspended' => 'ถูกระงับ', 'inactive' => 'ไม่ใช้งาน'] as $value => $label)
+                        <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
-            </div>
-
-            {{-- สถานะพร้อมรับงาน --}}
-            <div class="w-40">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">พร้อมรับงาน</label>
-                <select name="availability" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            </label>
+            <label style="display:block;">
+                <span style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">สถานะรับงาน</span>
+                <select name="availability" class="tp-input">
                     <option value="">ทั้งหมด</option>
-                    <option value="online" {{ request('availability') == 'online' ? 'selected' : '' }}>พร้อมรับงาน</option>
-                    <option value="offline" {{ request('availability') == 'offline' ? 'selected' : '' }}>ออฟไลน์</option>
-                    <option value="busy" {{ request('availability') == 'busy' ? 'selected' : '' }}>กำลังส่ง</option>
+                    @foreach (['online' => 'พร้อมรับงาน', 'busy' => 'กำลังส่งงาน', 'offline' => 'ออฟไลน์'] as $value => $label)
+                        <option value="{{ $value }}" @selected(request('availability') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
-            </div>
-
-            {{-- ประเภทรถ --}}
-            <div class="w-40">
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภทรถ</label>
-                <select name="vehicle_type" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+            </label>
+            <label style="display:block;">
+                <span style="display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ยานพาหนะ</span>
+                <select name="vehicle_type" class="tp-input">
                     <option value="">ทั้งหมด</option>
-                    <option value="motorcycle" {{ request('vehicle_type') == 'motorcycle' ? 'selected' : '' }}>มอเตอร์ไซค์</option>
-                    <option value="car" {{ request('vehicle_type') == 'car' ? 'selected' : '' }}>รถยนต์</option>
-                    <option value="bicycle" {{ request('vehicle_type') == 'bicycle' ? 'selected' : '' }}>จักรยาน</option>
-                    <option value="walk" {{ request('vehicle_type') == 'walk' ? 'selected' : '' }}>เดินเท้า</option>
+                    @foreach ($vehicleNames as $value => $label)
+                        <option value="{{ $value }}" @selected(request('vehicle_type') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; min-height:42px; font-size:13px; cursor:pointer;">
+                <input type="checkbox" name="needs_review" value="1" @checked(request()->boolean('needs_review')) style="width:17px; height:17px; accent-color:var(--accent1);">
+                เฉพาะเอกสารรอตรวจซ้ำ
+            </label>
+            <div style="display:flex; gap:9px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> ค้นหา</button>
+                @if ($hasFilter)
+                    <a href="{{ route('admin.riders.index') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> ล้าง</a>
+                @endif
             </div>
-
-            {{-- ปุ่มค้นหา --}}
-            <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium hover:opacity-90 transition shadow-lg shadow-blue-500/30 flex items-center">
-                <i class="fas fa-search mr-2"></i>ค้นหา
-            </button>
-
-            @if(request()->hasAny(['search', 'status', 'availability', 'vehicle_type']))
-                <a href="{{ route('admin.riders.index') }}" class="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center">
-                    <i class="fas fa-times mr-2"></i>ล้าง
-                </a>
-            @endif
         </form>
     </div>
 
-    {{-- Data Table --}}
-    <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 rounded-2xl shadow-xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700/50">
-                    <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ไรเดอร์</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ติดต่อ</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">รถ</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">คะแนน</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">งาน</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
-                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">จัดการ</th>
+    {{-- ===== รายชื่อไรเดอร์ ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px;">
+            <div class="tp-section-h"><i class="fas fa-list"></i> รายชื่อไรเดอร์</div>
+            <span style="font-size:12px; color:var(--ink2);">ทั้งหมด {{ number_format($riders->total()) }} คน</span>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:860px; border-collapse:collapse; font-size:13.5px;">
+                <thead>
+                    <tr style="text-align:left; font-size:11px; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px;">
+                        <th style="padding:10px 18px;">ไรเดอร์</th>
+                        <th style="padding:10px 12px;">ติดต่อ / ยานพาหนะ</th>
+                        <th style="padding:10px 12px;">ผลงาน</th>
+                        <th style="padding:10px 12px;">สถานะ</th>
+                        <th style="padding:10px 18px; text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse($riders as $rider)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
-                            {{-- ไรเดอร์ --}}
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                        {{ mb_substr($rider->full_name ?? 'R', 0, 1) }}
+                <tbody>
+                    @forelse ($riders as $rider)
+                        <tr class="w1-row" style="box-shadow:inset 0 1px 0 color-mix(in srgb, var(--ink2) 14%, transparent);">
+                            <td style="padding:12px 18px;">
+                                <div style="display:flex; align-items:center; gap:11px;">
+                                    @if ($rider->profile_image)
+                                        <img src="{{ route('admin.riders.document', [$rider, 'profile']) }}" alt="" loading="lazy"
+                                             style="width:40px; height:40px; border-radius:50%; object-fit:cover; box-shadow:var(--raise); flex:none;">
+                                    @else
+                                        <span class="tp-tile" style="width:40px; height:40px; border-radius:50%; font-weight:800;">{{ mb_substr($rider->full_name ?: 'R', 0, 1) }}</span>
+                                    @endif
+                                    <div style="min-width:0;">
+                                        <a href="{{ route('admin.riders.show', $rider) }}" class="w1-link" style="color:var(--ink);">{{ $rider->full_name }}</a>
+                                        <div style="font-size:11.5px; color:var(--ink2);">#{{ $rider->id }} · สมัคร {{ $rider->created_at?->thaidate('j M Y') }}</div>
+                                        @if ($rider->documents_changed_at)
+                                            <div style="margin-top:4px;">@include('admin.riders.partials.pill', ['pillTone' => 'info', 'pillText' => 'เอกสารเปลี่ยน รอตรวจ', 'pillIcon' => 'fa-file-circle-exclamation', 'pillTitle' => null])</div>
+                                        @endif
                                     </div>
-                                    <div>
-                                        <p class="font-semibold text-gray-900 dark:text-white">{{ $rider->full_name }}</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">ID: {{ $rider->id }}</p>
-                                    </div>
                                 </div>
                             </td>
-
-                            {{-- ติดต่อ --}}
-                            <td class="px-6 py-4">
-                                <p class="text-gray-900 dark:text-white">{{ $rider->phone }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $rider->user->email ?? '-' }}</p>
-                            </td>
-
-                            {{-- รถ --}}
-                            <td class="px-6 py-4">
-                                @php
-                                    $vehicleIcons = [
-                                        'motorcycle' => 'fa-motorcycle',
-                                        'car' => 'fa-car',
-                                        'bicycle' => 'fa-bicycle',
-                                        'walk' => 'fa-person-walking',
-                                    ];
-                                    $vehicleNames = [
-                                        'motorcycle' => 'มอเตอร์ไซค์',
-                                        'car' => 'รถยนต์',
-                                        'bicycle' => 'จักรยาน',
-                                        'walk' => 'เดินเท้า',
-                                    ];
-                                @endphp
-                                <div class="flex items-center gap-2">
-                                    <i class="fas {{ $vehicleIcons[$rider->vehicle_type] ?? 'fa-question' }} text-gray-500"></i>
-                                    <span class="text-gray-700 dark:text-gray-300">{{ $vehicleNames[$rider->vehicle_type] ?? $rider->vehicle_type }}</span>
+                            <td style="padding:12px;">
+                                <div><a href="tel:{{ $rider->phone }}" class="w1-link">{{ $rider->phone }}</a></div>
+                                <div style="font-size:11.5px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; max-width:220px; white-space:nowrap;">{{ $rider->user?->email ?? '-' }}</div>
+                                <div style="font-size:12px; margin-top:4px;">
+                                    <i class="fas {{ $vehicleIcons[$rider->vehicle_type] ?? 'fa-question' }}" style="color:var(--ink2);"></i>
+                                    {{ $rider->vehicle_type_text }} @if ($rider->vehicle_plate)<span class="tp-num" style="color:var(--ink2);">· {{ $rider->vehicle_plate }}</span>@endif
                                 </div>
                             </td>
-
-                            {{-- คะแนน --}}
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-1">
-                                    <i class="fas fa-star text-yellow-400"></i>
-                                    <span class="font-bold text-gray-900 dark:text-white">{{ number_format($rider->rating ?? 0, 1) }}</span>
-                                    <span class="text-xs text-gray-500">({{ $rider->rating_count ?? 0 }})</span>
-                                </div>
+                            <td style="padding:12px; white-space:nowrap;">
+                                <div><i class="fas fa-star" style="color:var(--accent1);"></i> <b class="tp-num">{{ number_format((float) $rider->rating, 1) }}</b> <span style="font-size:11.5px; color:var(--ink2);">({{ number_format((int) $rider->rating_count) }})</span></div>
+                                <div style="font-size:12px; color:var(--ink2);">สำเร็จ <b class="tp-num" style="color:var(--ink);">{{ number_format((int) $rider->completed_jobs) }}</b> / {{ number_format((int) $rider->total_jobs) }} งาน</div>
                             </td>
-
-                            {{-- งาน --}}
-                            <td class="px-6 py-4">
-                                <div>
-                                    <span class="font-semibold text-gray-900 dark:text-white">{{ number_format($rider->total_jobs ?? 0) }}</span>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">งาน</span>
-                                </div>
-                                <div class="text-xs">
-                                    <span class="text-green-600">{{ number_format($rider->completed_jobs ?? 0) }} สำเร็จ</span>
-                                </div>
-                            </td>
-
-                            {{-- สถานะ --}}
-                            <td class="px-6 py-4">
-                                @php
-                                    $statusColors = [
-                                        'pending' => 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-                                        'approved' => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                                        'rejected' => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                                        'suspended' => 'bg-gray-100 text-gray-700 dark:bg-gray-600 dark:text-gray-300',
-                                    ];
-                                    $statusNames = [
-                                        'pending' => 'รอตรวจสอบ',
-                                        'approved' => 'อนุมัติแล้ว',
-                                        'rejected' => 'ปฏิเสธ',
-                                        'suspended' => 'ระงับ',
-                                    ];
-                                    $availabilityColors = [
-                                        'online' => 'bg-green-500',
-                                        'offline' => 'bg-gray-400',
-                                        'busy' => 'bg-purple-500',
-                                    ];
-                                @endphp
-                                <div class="flex flex-col gap-1">
-                                    <span class="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-full {{ $statusColors[$rider->status] ?? '' }}">
-                                        {{ $statusNames[$rider->status] ?? $rider->status }}
-                                    </span>
-                                    @if($rider->status === 'approved')
-                                        <div class="flex items-center gap-1.5">
-                                            <span class="w-2 h-2 rounded-full {{ $availabilityColors[$rider->availability] ?? 'bg-gray-400' }}"></span>
-                                            <span class="text-xs text-gray-500 dark:text-gray-400">
-                                                {{ $rider->availability === 'online' ? 'พร้อมรับงาน' : ($rider->availability === 'busy' ? 'กำลังส่ง' : 'ออฟไลน์') }}
-                                            </span>
-                                        </div>
+                            <td style="padding:12px;">
+                                <div style="display:flex; flex-direction:column; align-items:flex-start; gap:5px;">
+                                    @include('admin.riders.partials.status', ['statusKind' => 'rider', 'statusValue' => $rider->status, 'statusLabel' => null])
+                                    @if ($rider->status === 'approved')
+                                        @include('admin.riders.partials.status', ['statusKind' => 'availability', 'statusValue' => $rider->availability, 'statusLabel' => null])
                                     @endif
                                 </div>
                             </td>
-
-                            {{-- จัดการ --}}
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('admin.riders.show', $rider) }}"
-                                       class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition" title="ดูรายละเอียด">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{{ route('admin.riders.locations', $rider) }}"
-                                       class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition" title="ตำแหน่ง GPS">
-                                        <i class="fas fa-map-location-dot"></i>
-                                    </a>
-                                    @if($rider->status === 'pending')
-                                        <button onclick="approveRider({{ $rider->id }})"
-                                                class="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition" title="อนุมัติ">
+                            <td style="padding:12px 18px;">
+                                <div style="display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap;">
+                                    <a href="{{ route('admin.riders.show', $rider) }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-eye"></i> ดู</a>
+                                    <a href="{{ route('admin.riders.locations', $rider) }}" class="tp-icon-btn" style="width:34px; height:34px;" title="ตำแหน่ง GPS"><i class="fas fa-location-crosshairs"></i></a>
+                                    @if ($rider->status === 'pending')
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-ok);" title="อนุมัติ"
+                                                @click="$dispatch('w1-action', @js(['url' => route('admin.riders.approve', $rider), 'title' => 'อนุมัติไรเดอร์ '.$rider->full_name, 'message' => 'ระบบจะตรวจว่ามีเอกสารที่บังคับครบก่อนอนุมัติ ไรเดอร์จะได้รับแจ้งเตือนในแอปทันที', 'reason' => 'none', 'confirm' => 'อนุมัติ', 'tone' => 'ok', 'icon' => 'fa-circle-check']))">
                                             <i class="fas fa-check"></i>
                                         </button>
-                                        <button onclick="rejectRider({{ $rider->id }})"
-                                                class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition" title="ปฏิเสธ">
-                                            <i class="fas fa-times"></i>
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-bad);" title="ปฏิเสธ"
+                                                @click="$dispatch('w1-action', @js(['url' => route('admin.riders.reject', $rider), 'title' => 'ปฏิเสธใบสมัคร '.$rider->full_name, 'message' => 'ไรเดอร์จะเห็นเหตุผลนี้ในแอป และแก้ไขแล้วส่งใหม่ได้', 'reason' => 'required', 'reasonLabel' => 'เหตุผลที่ไม่อนุมัติ', 'placeholder' => 'เช่น รูปบัตรประชาชนไม่ชัด กรุณาถ่ายใหม่', 'confirm' => 'ปฏิเสธ', 'tone' => 'bad', 'icon' => 'fa-circle-xmark']))">
+                                            <i class="fas fa-xmark"></i>
+                                        </button>
+                                    @elseif ($rider->status === 'approved')
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-bad);" title="ระงับ"
+                                                @click="$dispatch('w1-action', @js(['url' => route('admin.riders.suspend', $rider), 'title' => 'ระงับไรเดอร์ '.$rider->full_name, 'message' => "ไรเดอร์จะถูกบังคับออฟไลน์ทันที\nงานที่ยังไม่รับของจะคืนเข้าคิว — งานที่รับของแล้วต้องมอบหมายไรเดอร์ใหม่", 'reason' => 'required', 'reasonLabel' => 'เหตุผลที่ระงับ', 'confirm' => 'ระงับ', 'tone' => 'bad', 'icon' => 'fa-ban']))">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    @elseif ($rider->status === 'suspended')
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:var(--w-ok);" title="ยกเลิกการระงับ"
+                                                @click="$dispatch('w1-action', @js(['url' => route('admin.riders.toggle-active', $rider), 'title' => 'ยกเลิกการระงับ '.$rider->full_name, 'message' => 'บัญชีกลับเป็น "อนุมัติแล้ว" แต่ยังออฟไลน์ ไรเดอร์ต้องกดเปิดรับงานเอง', 'reason' => 'none', 'confirm' => 'ยกเลิกการระงับ', 'tone' => 'ok', 'icon' => 'fa-unlock']))">
+                                            <i class="fas fa-unlock"></i>
                                         </button>
                                     @endif
                                 </div>
@@ -317,14 +187,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-16 text-center">
-                                <div class="flex flex-col items-center">
-                                    <div class="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-4">
-                                        <i class="fas fa-motorcycle text-4xl text-gray-400"></i>
-                                    </div>
-                                    <p class="text-gray-500 dark:text-gray-400 text-lg">ไม่พบไรเดอร์</p>
-                                    <p class="text-gray-400 dark:text-gray-500 text-sm mt-1">ลองเปลี่ยนเงื่อนไขการค้นหา</p>
-                                </div>
+                            <td colspan="5" style="padding:44px 18px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-motorcycle" style="font-size:32px; opacity:.5; display:block; margin-bottom:10px;"></i>
+                                {{ $hasFilter ? 'ไม่พบไรเดอร์ตามเงื่อนไขที่เลือก' : 'ยังไม่มีไรเดอร์สมัครเข้ามา' }}
                             </td>
                         </tr>
                     @endforelse
@@ -333,78 +198,8 @@
         </div>
     </div>
 
-    {{-- Pagination --}}
-    @if($riders->hasPages())
-        <div class="mt-6">
-            {{ $riders->links() }}
-        </div>
+    @if ($riders->hasPages())
+        <div>{{ $riders->links() }}</div>
     @endif
 </div>
-
-{{-- Reject Modal --}}
-<div id="rejectModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeRejectModal()"></div>
-        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                <i class="fas fa-times-circle text-red-500 mr-2"></i>ปฏิเสธไรเดอร์
-            </h3>
-            <form id="rejectForm" method="POST">
-                @csrf
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผล</label>
-                    <textarea name="reason" rows="3" required
-                              class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-red-500"
-                              placeholder="ระบุเหตุผลในการปฏิเสธ..."></textarea>
-                </div>
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeRejectModal()"
-                            class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium">
-                        ยกเลิก
-                    </button>
-                    <button type="submit"
-                            class="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition">
-                        ปฏิเสธ
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-@push('scripts')
-<script>
-    // อนุมัติไรเดอร์
-    function approveRider(id) {
-        if (confirm('ยืนยันอนุมัติไรเดอร์นี้?')) {
-            fetch(`/admin/riders/${id}/approve`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert(data.message || 'เกิดข้อผิดพลาด');
-                }
-            });
-        }
-    }
-
-    // เปิด modal ปฏิเสธ
-    function rejectRider(id) {
-        document.getElementById('rejectForm').action = `/admin/riders/${id}/reject`;
-        document.getElementById('rejectModal').classList.remove('hidden');
-    }
-
-    // ปิด modal
-    function closeRejectModal() {
-        document.getElementById('rejectModal').classList.add('hidden');
-    }
-</script>
-@endpush
 @endsection

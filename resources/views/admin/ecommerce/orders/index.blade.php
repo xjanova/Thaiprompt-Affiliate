@@ -1,266 +1,215 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการคำสั่งซื้อ')
+@section('title', 'คำสั่งซื้อร้านค้า')
+
+@php
+    // โทนสีสถานะ — ใช้ตัวแปร CSS (มีค่าสำรอง) ให้เปลี่ยนตามธีม/โหมดมืดได้
+    $c = [
+        'ok' => 'var(--tp-ok,#5aa07e)',
+        'bad' => 'var(--tp-bad,#d9534f)',
+        'warn' => 'var(--tp-warn,#e0a52e)',
+        'info' => 'var(--tp-info,#5689b8)',
+        'violet' => 'var(--tp-violet,#8c6fd6)',
+        'mute' => 'var(--ink2)',
+    ];
+    $pill = fn (string $color) => "background:color-mix(in srgb, {$color} 16%, transparent); color:{$color};";
+
+    $statusColor = [
+        'pending' => $c['warn'], 'paid' => $c['info'], 'processing' => $c['info'],
+        'shipped' => $c['violet'], 'delivered' => $c['ok'], 'completed' => $c['ok'],
+        'cancelled' => $c['bad'], 'refunded' => $c['mute'],
+    ];
+    $statusOptions = [
+        'pending' => 'รอดำเนินการ / รอชำระ', 'paid' => 'ชำระแล้ว รอร้านยืนยัน', 'processing' => 'กำลังเตรียมสินค้า',
+        'shipped' => 'จัดส่งแล้ว', 'delivered' => 'ส่งถึงแล้ว', 'completed' => 'สำเร็จ',
+        'cancelled' => 'ยกเลิก', 'refunded' => 'คืนเงิน',
+    ];
+    $paymentColor = ['pending' => $c['warn'], 'paid' => $c['ok'], 'failed' => $c['bad'], 'refunded' => $c['mute']];
+
+    $th = 'padding:12px 14px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); letter-spacing:.3px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); vertical-align:middle;';
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+    $stats = $stats ?? [];
+@endphp
 
 @section('content')
-<div class="space-y-6" x-data="{ language: 'th' }">
-    <div class="flex justify-between items-center">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">📋 <span data-translate>จัดการคำสั่งซื้อ</span></h1>
+<div style="display:flex; flex-direction:column; gap:18px;">
 
-        {{-- Language Switcher --}}
-        <div class="relative inline-block" x-data="{ open: false }">
-            <button @click="open = !open" class="px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-xl hover:from-orange-600 hover:to-pink-700 transition-all duration-200 shadow-lg flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
-                </svg>
-                <span data-translate>ภาษา</span>
-            </button>
-
-            <div x-show="open" @click.away="open = false" x-transition
-                 class="absolute right-0 mt-2 w-48 glass-fusion dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 dark:border-slate-700 overflow-hidden z-50" border border-white/20 dark:border-white/10>
-                <a href="#" @click.prevent="language = 'th'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                    <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
-                </a>
-                <a href="#" @click.prevent="language = 'en'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                    <span class="mr-2">🇬🇧</span> English
-                </a>
-                <a href="#" @click.prevent="language = 'zh'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                    <span class="mr-2">🇨🇳</span> 中文
-                </a>
-                <a href="#" @click.prevent="language = 'ja'" class="block px-4 py-3 hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700 transition-colors">
-                    <span class="mr-2">🇯🇵</span> 日本語
-                </a>
-            </div>
+    {{-- ===== หัวหน้า ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · อีคอมเมิร์ซ · คำสั่งซื้อ</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">คำสั่งซื้อร้านค้า 🧾</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ติดตามออเดอร์ทุกร้าน สถานะการชำระเงิน และการจัดส่ง</div>
+        </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <a href="{{ route('admin.ecommerce.orders.unread-messages') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-comments"></i> ข้อความยังไม่อ่าน
+                @if(($stats['unread_messages'] ?? 0) > 0)
+                    <span class="tp-pill tp-pill-gold tp-num">{{ number_format($stats['unread_messages']) }}</span>
+                @endif
+            </a>
+            <a href="{{ route('admin.ecommerce.reports') }}" class="tp-btn tp-btn-sm"><i class="fas fa-chart-column"></i> รายงานยอดขาย</a>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="ค้นหาเลขที่คำสั่งซื้อ..." data-translate-placeholder="ค้นหาเลขที่คำสั่งซื้อ..." class="rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
-            <select name="status" class="rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
-                <option value="" data-translate>ทุกสถานะ</option>
-                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }} data-translate>รอดำเนินการ</option>
-                <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }} data-translate>กำลังจัดเตรียม</option>
-                <option value="shipped" {{ request('status') == 'shipped' ? 'selected' : '' }} data-translate>จัดส่งแล้ว</option>
-                <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }} data-translate>เสร็จสิ้น</option>
-                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }} data-translate>ยกเลิก</option>
-            </select>
-            <select name="payment_status" class="rounded-xl border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
-                <option value="" data-translate>ทุกสถานะการชำระเงิน</option>
-                <option value="pending" {{ request('payment_status') == 'pending' ? 'selected' : '' }} data-translate>รอชำระเงิน</option>
-                <option value="paid" {{ request('payment_status') == 'paid' ? 'selected' : '' }} data-translate>ชำระแล้ว</option>
-                <option value="failed" {{ request('payment_status') == 'failed' ? 'selected' : '' }} data-translate>ชำระไม่สำเร็จ</option>
-            </select>
-            <button type="submit" class="bg-orange-600 text-white px-6 py-2 rounded-xl hover:bg-orange-700">
-                <span data-translate>ค้นหา</span>
-            </button>
+    {{-- ===== KPI ===== --}}
+    @if(!empty($stats))
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px;">
+            @foreach([
+                ['ทั้งหมด', $stats['total'] ?? 0, 'fa-layer-group', null, []],
+                ['รอดำเนินการ', $stats['pending'] ?? 0, 'fa-clock', $c['warn'], ['status' => 'pending']],
+                ['ต้องเตรียม/ส่ง', $stats['to_fulfil'] ?? 0, 'fa-box-open', $c['info'], ['status' => 'processing']],
+                ['กำลังขนส่ง', $stats['shipped'] ?? 0, 'fa-truck-fast', $c['violet'], ['status' => 'shipped']],
+                ['ยังไม่ชำระ', $stats['unpaid'] ?? 0, 'fa-wallet', $c['bad'], ['payment_status' => 'pending']],
+            ] as [$label, $value, $icon, $color, $query])
+                <a href="{{ route('admin.ecommerce.orders.index', $query) }}" class="tp-card tp-card-hover" style="padding:16px; text-decoration:none; color:inherit;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div class="tp-tile" style="width:40px; height:40px; font-size:16px; {{ $color ? 'background:'.$color.';' : '' }}">
+                            <i class="fas {{ $icon }}"></i>
+                        </div>
+                        <div>
+                            <div class="tp-num" style="font-size:24px; font-weight:800; line-height:1;">{{ number_format($value) }}</div>
+                            <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $label }}</div>
+                        </div>
+                    </div>
+                </a>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- ===== ตัวกรอง ===== --}}
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" action="{{ route('admin.ecommerce.orders.index') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:end;">
+            <div style="grid-column:1 / -1; min-width:0;">
+                <label style="{{ $lbl }}">🔍 ค้นหา</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="tp-input" placeholder="เลขที่คำสั่งซื้อ ชื่อ หรืออีเมลลูกค้า">
+            </div>
+            <div>
+                <label style="{{ $lbl }}">สถานะออเดอร์</label>
+                <select name="status" class="tp-input">
+                    <option value="">ทุกสถานะ</option>
+                    @foreach($statusOptions as $value => $label)
+                        <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label style="{{ $lbl }}">การชำระเงิน</label>
+                <select name="payment_status" class="tp-input">
+                    <option value="">ทั้งหมด</option>
+                    <option value="pending" @selected(request('payment_status') === 'pending')>รอชำระเงิน</option>
+                    <option value="paid" @selected(request('payment_status') === 'paid')>ชำระแล้ว</option>
+                    <option value="failed" @selected(request('payment_status') === 'failed')>ชำระไม่สำเร็จ</option>
+                    <option value="refunded" @selected(request('payment_status') === 'refunded')>คืนเงินแล้ว</option>
+                </select>
+            </div>
+            <div>
+                <label style="{{ $lbl }}">การจัดส่ง</label>
+                <select name="delivery_method" class="tp-input">
+                    <option value="">ทั้งหมด</option>
+                    <option value="parcel" @selected(request('delivery_method') === 'parcel')>📦 พัสดุ</option>
+                    <option value="rider" @selected(request('delivery_method') === 'rider')>🛵 ไรเดอร์</option>
+                </select>
+            </div>
+            <div>
+                <label style="{{ $lbl }}">ตั้งแต่วันที่</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="tp-input">
+            </div>
+            <div>
+                <label style="{{ $lbl }}">ถึงวันที่</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="tp-input">
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> กรอง</button>
+                <a href="{{ route('admin.ecommerce.orders.index') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> ล้าง</a>
+            </div>
         </form>
     </div>
 
-    <!-- Orders Table -->
-    <div class="glass-fusion dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-slate-700">
+    {{-- ===== ตารางออเดอร์ ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:14px 18px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; box-shadow:var(--inset-sm);">
+            <div class="tp-section-h">รายการคำสั่งซื้อ</div>
+            <div style="font-size:12px; color:var(--ink2);">พบ <span class="tp-num">{{ number_format($orders->total()) }}</span> รายการ</div>
+        </div>
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:980px; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>เลขที่คำสั่งซื้อ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ลูกค้า</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>จำนวน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ยอดรวม</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>สถานะ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>ชำระเงิน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>วันที่</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-300 uppercase" data-translate>การกระทำ</th>
+                        <th style="{{ $th }}">เลขที่</th>
+                        <th style="{{ $th }}">ลูกค้า</th>
+                        <th style="{{ $th }}">ร้าน</th>
+                        <th style="{{ $th }} text-align:right;">ยอดรวม</th>
+                        <th style="{{ $th }}">สถานะ</th>
+                        <th style="{{ $th }}">ชำระเงิน</th>
+                        <th style="{{ $th }}">จัดส่ง</th>
+                        <th style="{{ $th }}">วันที่</th>
+                        <th style="{{ $th }} text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="glass-fusion dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($orders as $order)
-                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-slate-700">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="text-sm font-medium text-gray-900 dark:text-white">#{{ $order->order_number }}</span>
+                        @php
+                            $sColor = $statusColor[$order->status] ?? $c['mute'];
+                            $pColor = $paymentColor[$order->payment_status] ?? $c['mute'];
+                            $isRider = ($order->delivery_method ?? 'parcel') === 'rider';
+                        @endphp
+                        <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                            <td style="{{ $td }} white-space:nowrap;">
+                                <a href="{{ route('admin.ecommerce.orders.show', $order) }}" class="tp-num" style="font-weight:700; color:var(--deep1); text-decoration:none;">#{{ $order->order_number }}</a>
+                                @if($order->has_unread_messages)
+                                    <span class="tp-pill" style="{{ $pill($c['bad']) }} margin-left:4px;" title="มีข้อความยังไม่อ่าน"><i class="fas fa-comment-dots"></i></span>
+                                @endif
+                                <div style="font-size:11.5px; color:var(--ink2); margin-top:2px;">{{ number_format($order->items->sum('quantity')) }} ชิ้น</div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900 dark:text-white">
-                                    @if($order->user->name)
-                                        {{ $order->user->name }}
-                                    @else
-                                        <span data-translate>ไม่ระบุ</span>
-                                    @endif
-                                </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $order->user->email ?? '' }}</div>
+                            <td style="{{ $td }}">
+                                <div style="font-weight:600; max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $order->user?->name ?: 'ไม่ระบุ' }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2); max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $order->user?->email }}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                {{ $order->items->sum('quantity') }} <span data-translate>รายการ</span>
+                            <td style="{{ $td }}">
+                                @if($order->store)
+                                    <a href="{{ route('admin.storefront.vendor-stores.show', $order->store) }}" style="color:var(--ink); text-decoration:none; max-width:160px; display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $order->store->store_name }}</a>
+                                @else
+                                    <span style="color:var(--ink2);">หลายร้าน / ไม่ระบุ</span>
+                                @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                ฿{{ number_format($order->total_amount, 2) }}
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <span class="tp-num" style="font-weight:700;">฿{{ number_format((float) $order->total_amount, 2) }}</span>
+                                <div style="font-size:11px; color:var(--ink2);">{{ \App\Support\Shop\PaymentMethod::labelTh($order->payment_method) }}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @php
-                                    $statusColors = [
-                                        'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-                                        'processing' => 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-                                        'shipped' => 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-                                        'completed' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-                                        'cancelled' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                                    ];
-                                    $statusLabels = [
-                                        'pending' => 'รอดำเนินการ',
-                                        'processing' => 'กำลังจัดเตรียม',
-                                        'shipped' => 'จัดส่งแล้ว',
-                                        'completed' => 'เสร็จสิ้น',
-                                        'cancelled' => 'ยกเลิก',
-                                    ];
-                                @endphp
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusColors[$order->status] ?? 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white' }}" data-translate="{{ $statusLabels[$order->status] ?? $order->status }}">
-                                    {{ $statusLabels[$order->status] ?? $order->status }}
-                                </span>
+                            <td style="{{ $td }} white-space:nowrap;"><span class="tp-pill" style="{{ $pill($sColor) }}">{{ $order->status_label }}</span></td>
+                            <td style="{{ $td }} white-space:nowrap;"><span class="tp-pill" style="{{ $pill($pColor) }}">{{ \App\Services\Shop\ShopPresenter::paymentStatusLabel($order->payment_status) }}</span></td>
+                            <td style="{{ $td }} white-space:nowrap; color:var(--ink2);">
+                                {{ $isRider ? '🛵 ไรเดอร์' : '📦 พัสดุ' }}
+                                @if($order->tracking_number)
+                                    <div class="tp-num" style="font-size:11px;">{{ $order->tracking_number }}</div>
+                                @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                @php
-                                    $paymentColors = [
-                                        'pending' => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-                                        'paid' => 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-                                        'failed' => 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-                                        'refunded' => 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white dark:bg-gray-900 dark:text-gray-200',
-                                    ];
-                                    $paymentLabels = [
-                                        'pending' => 'รอชำระเงิน',
-                                        'paid' => 'ชำระแล้ว',
-                                        'failed' => 'ไม่สำเร็จ',
-                                        'refunded' => 'คืนเงินแล้ว',
-                                    ];
-                                @endphp
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $paymentColors[$order->payment_status] ?? 'bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white' }}" data-translate="{{ $paymentLabels[$order->payment_status] ?? $order->payment_status }}">
-                                    {{ $paymentLabels[$order->payment_status] ?? $order->payment_status }}
-                                </span>
+                            <td style="{{ $td }} white-space:nowrap;">
+                                <div>{{ $order->created_at?->format('d/m/Y') }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);">{{ $order->created_at?->format('H:i') }}</div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                {{ $order->created_at->format('d/m/Y H:i') }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                <a href="{{ route('admin.ecommerce.orders.show', $order) }}" class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium" data-translate="ดูรายละเอียด">
-                                    ดูรายละเอียด
-                                </a>
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <a href="{{ route('admin.ecommerce.orders.show', $order) }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-eye"></i> ดู</a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
-                                <span data-translate>ไม่พบคำสั่งซื้อ</span>
+                            <td colspan="9" style="padding:44px 16px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-inbox" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                                ไม่พบคำสั่งซื้อตามเงื่อนไขนี้
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
-            {{ $orders->links() }}
-        </div>
     </div>
+
+    @if($orders->hasPages())
+        <div>{{ $orders->links() }}</div>
+    @endif
 </div>
-
-@push('scripts')
-<script>
-/**
- * ฟังก์ชันแปลภาษาด้วย Google Translate API
- *
- * @param {string} targetLang รหัสภาษาเป้าหมาย (en, zh, ja)
- */
-async function translatePage(targetLang) {
-    // ถ้าเลือกภาษาไทย ให้โหลดหน้าใหม่เพื่อแสดงข้อความต้นฉบับ
-    if (targetLang === 'th') {
-        location.reload();
-        return;
-    }
-
-    // ดึง elements ที่มี data-translate attribute
-    const elements = document.querySelectorAll('[data-translate]');
-
-    try {
-        // สร้าง array ของข้อความที่ต้องการแปล
-        const textsToTranslate = Array.from(elements).map(el => {
-            // เก็บข้อความต้นฉบับไว้ใน dataset
-            if (!el.dataset.originalText) {
-                el.dataset.originalText = el.textContent.trim();
-            }
-            return el.dataset.originalText;
-        });
-
-        // เรียก Google Translate API
-        const apiKey = '{{ config("services.google_translate.key", "") }}';
-
-        if (!apiKey) {
-            console.warn('Google Translate API key not configured');
-            return;
-        }
-
-        const response = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                q: textsToTranslate,
-                source: 'th',
-                target: targetLang,
-                format: 'text'
-            })
-        });
-
-        const data = await response.json();
-
-        // อัพเดทข้อความที่แปลแล้ว
-        if (data.data && data.data.translations) {
-            data.data.translations.forEach((translation, index) => {
-                if (elements[index]) {
-                    elements[index].textContent = translation.translatedText;
-                }
-            });
-        }
-
-        // แปล placeholders
-        const placeholderElements = document.querySelectorAll('[data-translate-placeholder]');
-        for (const el of placeholderElements) {
-            if (!el.dataset.originalPlaceholder) {
-                el.dataset.originalPlaceholder = el.placeholder;
-            }
-
-            const placeholderResponse = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    q: [el.dataset.originalPlaceholder],
-                    source: 'th',
-                    target: targetLang,
-                    format: 'text'
-                })
-            });
-
-            const placeholderData = await placeholderResponse.json();
-            if (placeholderData.data && placeholderData.data.translations[0]) {
-                el.placeholder = placeholderData.data.translations[0].translatedText;
-            }
-        }
-
-    } catch (error) {
-        console.error('Translation error:', error);
-    }
-}
-
-// ติดตั้ง watcher สำหรับ Alpine.js
-document.addEventListener('alpine:init', () => {
-    Alpine.watch('language', (value) => {
-        if (value !== 'th') {
-            translatePage(value);
-        }
-    });
-});
-</script>
-@endpush
 @endsection

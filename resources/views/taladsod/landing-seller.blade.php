@@ -1,178 +1,169 @@
 {{--
-    Landing Page — ผู้ขาย/บริการ (Seller/Service)
-    หน้าสอนการใช้งานก่อนส่งไปเพิ่มเพื่อน LINE ตลาดสด
+ | หน้าแนะนำสำหรับผู้ขาย / ร้านรถเข็น / ตลาดนัด (taladsod.landing.seller) — ธีม V4 (frontend-v4)
+ | Controller: FreshMarket\HomeController@landingSeller
+ | อ่านโปรฯ GP ฟรีช่วงเปิดตัว + อัตรา GP ตลาดสดจาก PricingEngine (อ่านไม่ได้ = ไม่แสดงตัวเลข)
+ --}}
+@extends('layouts.frontend-v4')
 
-    Route: GET /taladsod/start/seller
-    V3: Tailwind CSS + Alpine.js
---}}
+@section('title', 'เปิดร้านฟรีในตลาดสด · รถเข็น ตลาดนัด ร้านเล็ก ขายออนไลน์ได้ทันที')
+@section('meta_description', 'เปิดร้านในตลาดสดไทยพร้อมฟรี รถเข็นและตลาดนัดบอกลูกค้าได้ว่าวันนี้ขายที่ไหนด้วยปุ่มเดียว ลูกค้าติดตามร้านแล้วได้แจ้งเตือนเมื่อร้านเปิด มีไรเดอร์รับของไปส่ง')
 
-@extends('layouts.taladsod')
+@php
+    $lsGpFree = false;
+    $lsGpRate = null;
+    try {
+        $lsPricing = app(\App\Services\Pricing\PricingEngine::class);
+        $lsGpFree = $lsPricing->gpPromoActive();
+        $lsGpRate = $lsPricing->gpRateForFreshListing(new \App\Models\FreshMarketListing);
+    } catch (\Throwable $e) {
+        $lsGpFree = false;
+    }
 
-@section('title', 'เปิดร้านออนไลน์ฟรี - ตลาดสดไทยพร๊อม')
+    $lsIsSeller = auth()->check() && \App\Models\FreshMarketSeller::where('user_id', auth()->id())->exists();
+    $lsCtaUrl = $lsIsSeller ? route('taladsod.seller.dashboard') : route('taladsod.register-seller');
+    $lsCtaLabel = $lsIsSeller ? 'ไปหน้าร้านของฉัน' : 'สมัครเปิดร้านฟรี';
+    $lsLineUrl = config('services.line.fresh_market_add_friend_url');
 
-@section('meta_description', 'เปิดร้านออนไลน์ฟรี ขายได้ทันที จัดการทุกอย่างผ่าน LINE ไม่ต้องสร้างเว็บ ไม่มีค่าแรกเข้า พร้อม MLM Cashback')
+    $lsWho = [
+        ['icon' => 'fa-cart-flatbed', 'label' => 'รถเข็นขายอาหาร'],
+        ['icon' => 'fa-tents', 'label' => 'แผงตลาดนัด'],
+        ['icon' => 'fa-bowl-rice', 'label' => 'ร้านข้าวแกง ตามสั่ง'],
+        ['icon' => 'fa-apple-whole', 'label' => 'ผัก ผลไม้ ของสด'],
+        ['icon' => 'fa-cookie-bite', 'label' => 'ขนม ของทำเองที่บ้าน'],
+    ];
+    $lsFeatures = [
+        ['icon' => 'fa-location-crosshairs', 'tone' => 'gold', 'title' => 'ปุ่มเดียว "เปิดร้านที่นี่วันนี้"', 'text' => 'ย้ายไปขายที่ไหน กดปุ่มเดียวลูกค้าก็เห็นร้านคุณบนแผนที่ ส่งตำแหน่งสดได้ระหว่างขาย'],
+        ['icon' => 'fa-bell', 'tone' => 'bad', 'title' => 'ลูกค้าประจำได้แจ้งเตือน', 'text' => 'ลูกค้ากดติดตามร้าน พอคุณเปิดร้าน ระบบแจ้งเตือนให้ทันที'],
+        ['icon' => 'fa-sliders', 'tone' => 'info', 'title' => 'เมนูมีตัวเลือกได้', 'text' => 'ตั้ง "เลือกเนื้อสัตว์" "เพิ่มไข่ดาว" "ระดับความเผ็ด" พร้อมราคาเพิ่มได้เอง'],
+        ['icon' => 'fa-motorcycle', 'tone' => 'deep', 'title' => 'มีไรเดอร์ไปส่งให้', 'text' => 'ลูกค้าเลือกให้ไรเดอร์ส่งได้ ร้านแค่เตรียมของ ระบบเรียกไรเดอร์ใกล้ร้านมารับ'],
+        ['icon' => 'fa-sack-dollar', 'tone' => 'ok', 'title' => 'เงินเข้ากระเป๋าอัตโนมัติ', 'text' => 'ลูกค้าจ่ายผ่านกระเป๋าเงิน ระบบโอนให้ร้านทันทีที่ลูกค้าได้รับของ ดูรายได้รายวันได้'],
+        ['icon' => 'fa-mobile-screen', 'tone' => 'gold', 'title' => 'จัดการได้จากมือถือ', 'text' => 'รับออเดอร์ เปิด-ปิดร้าน ลงเมนู ทำได้ทั้งเว็บ แอป และ LINE'],
+    ];
+    $lsSteps = [
+        ['title' => 'สมัครร้าน', 'text' => 'กรอกชื่อร้าน เบอร์โทร ปักหมุดร้าน ใช้เวลาไม่ถึง 3 นาที'],
+        ['title' => 'ลงเมนู', 'text' => 'ถ่ายรูป ตั้งราคา เพิ่มตัวเลือก ลงได้หลายเมนู'],
+        ['title' => 'กดเปิดร้าน', 'text' => 'ไปถึงจุดขายแล้วกด "เปิดร้านที่นี่วันนี้"'],
+        ['title' => 'รับออเดอร์', 'text' => 'กดรับ → เตรียม → พร้อมส่ง เงินเข้ากระเป๋าเมื่อลูกค้าได้ของ'],
+    ];
+@endphp
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-b from-orange-50 to-white dark:from-gray-900 dark:to-gray-800">
+<x-theme-v4.shop-kit />
+@include('taladsod.partials.kit')
+<x-theme-v4.public-header active="merchant" />
 
-    {{-- Hero Section --}}
-    <section class="relative overflow-hidden py-16 lg:py-24">
-        <div class="absolute inset-0 opacity-10 dark:opacity-5">
-            <div class="absolute top-10 right-10 text-8xl">🏪</div>
-            <div class="absolute bottom-10 left-20 text-7xl">💼</div>
-        </div>
+<main class="ts-scope" style="flex:1; padding-bottom:48px;">
+    <div class="sf-wrap">
+        @include('taladsod.partials.nav', ['active' => 'open-shop'])
 
-        <div class="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium mb-6">
-                <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
-                สำหรับผู้ขาย / ผู้ให้บริการ
-            </div>
-
-            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-                เปิดร้านออนไลน์<span class="text-orange-600 dark:text-orange-400">ฟรี</span>
-                <br>ขายได้ทันที
-            </h1>
-
-            <p class="text-xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto">
-                ไม่ต้องสร้างเว็บ ไม่ต้องมีทุน จัดการทุกอย่างผ่าน LINE แค่ถ่ายรูปสินค้า ก็เริ่มขายได้เลย
-            </p>
-        </div>
-    </section>
-
-    {{-- ขั้นตอน 4 Steps --}}
-    <section class="py-16 bg-white dark:bg-gray-800">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-                เริ่มขายใน <span class="text-orange-600 dark:text-orange-400">4 ขั้นตอน</span>
-            </h2>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {{-- Step 1 --}}
-                <div class="text-center p-6 relative">
-                    <div class="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-xl font-bold text-orange-600 dark:text-orange-400">1</span>
-                    </div>
-                    <div class="text-3xl mb-3">📱</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">เพิ่มเพื่อน LINE</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">กดเพิ่มเพื่อน LINE ตลาดสด ระบบสร้างร้านให้อัตโนมัติ</p>
-                </div>
-
-                {{-- Step 2 --}}
-                <div class="text-center p-6 relative">
-                    <div class="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-xl font-bold text-orange-600 dark:text-orange-400">2</span>
-                    </div>
-                    <div class="text-3xl mb-3">🔐</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">ยืนยัน OTP</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">พิมพ์เบอร์โทร → รับ OTP ทาง SMS → ยืนยันตัวตน</p>
-                </div>
-
-                {{-- Step 3 --}}
-                <div class="text-center p-6 relative">
-                    <div class="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-xl font-bold text-orange-600 dark:text-orange-400">3</span>
-                    </div>
-                    <div class="text-3xl mb-3">📸</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">ถ่ายรูปสินค้า</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">ถ่ายรูปสินค้าส่งผ่าน LINE ตั้งราคา AI ช่วยเขียนคำอธิบาย</p>
-                </div>
-
-                {{-- Step 4 --}}
-                <div class="text-center p-6">
-                    <div class="w-14 h-14 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-xl font-bold text-orange-600 dark:text-orange-400">4</span>
-                    </div>
-                    <div class="text-3xl mb-3">🎉</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">เริ่มขายเลย!</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">สินค้าขึ้นหน้าร้านทันที ลูกค้าสั่งซื้อ ได้เงิน!</p>
+        <section class="ts-hero">
+            <img class="ts-hero-img" src="{{ asset('images/taladsod/banner-merchant.webp') }}" alt="">
+            <div class="ts-hero-in">
+                @if($lsGpFree)
+                    <span class="ts-pill solid ts-tone-ok" style="align-self:flex-start; font-size:13px; padding:8px 14px;"><i class="fas fa-gift" aria-hidden="true"></i> ฟรี GP ช่วงเปิดตัว — ไม่หักค่าธรรมเนียมการขาย</span>
+                @else
+                    <span class="ts-pill solid ts-tone-gold" style="align-self:flex-start;"><i class="fas fa-store" aria-hidden="true"></i> เปิดร้านฟรี ไม่มีค่าสมัคร</span>
+                @endif
+                <h1 class="ts-hero-title">รถเข็น ตลาดนัด ร้านเล็ก<br>ก็ขายออนไลน์ได้วันนี้</h1>
+                <p class="ts-hero-sub">บอกลูกค้าว่าวันนี้ขายที่ไหนด้วยปุ่มเดียว รับออเดอร์ มีไรเดอร์ไปส่ง เงินเข้ากระเป๋าอัตโนมัติ</p>
+                <div class="ts-row" style="margin-top:6px;">
+                    <a href="{{ $lsCtaUrl }}" class="ts-btn3d ts-tone-gold lg"><i class="fas fa-store" aria-hidden="true"></i> {{ $lsCtaLabel }}</a>
+                    <a href="#ls-how" class="ts-btn3d soft lg"><i class="fas fa-circle-play" aria-hidden="true"></i> ดูวิธีเริ่มขาย</a>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    {{-- จุดเด่น --}}
-    <section class="py-16 bg-orange-50 dark:bg-gray-900">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-                ข้อดีของการเปิดร้านกับ<span class="text-orange-600 dark:text-orange-400">ไทยพร๊อม</span>
-            </h2>
+        <section class="sf-section" aria-labelledby="ls-who-h">
+            <div class="sf-section-h"><h2 id="ls-who-h" class="sf-title">เหมาะกับใคร</h2></div>
+            <div class="sf-scroll">
+                @foreach($lsWho as $who)
+                    <span class="sf-chip" style="min-height:48px; padding:0 18px; font-size:13.5px;"><i class="fas {{ $who['icon'] }}" style="color:var(--accent2);" aria-hidden="true"></i> {{ $who['label'] }}</span>
+                @endforeach
+            </div>
+        </section>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <div class="text-3xl mb-3">🆓</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">ฟรี! ไม่มีค่าแรกเข้า</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">เปิดร้านฟรี ไม่มีค่าสมัคร ไม่มีค่ารายเดือน</p>
+        <section class="sf-section" aria-labelledby="ls-feat-h">
+            <div class="sf-section-h"><h2 id="ls-feat-h" class="sf-title">ขายง่าย ได้เงินไว</h2></div>
+            <div class="ts-grid" style="--ts-min:260px;">
+                @foreach($lsFeatures as $feature)
+                    <div class="tp-card ts-stat ts-tone-{{ $feature['tone'] }}" style="gap:8px;">
+                        <span class="ic"><i class="fas {{ $feature['icon'] }}" aria-hidden="true"></i></span>
+                        <b style="font-size:15px;">{{ $feature['title'] }}</b>
+                        <span class="ts-muted" style="font-size:13.5px; line-height:1.6;">{{ $feature['text'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+
+        <section id="ls-how" class="sf-section" aria-labelledby="ls-how-h" style="scroll-margin-top:90px;">
+            <div class="sf-section-h"><h2 id="ls-how-h" class="sf-title">เริ่มขายใน 4 ขั้นตอน</h2></div>
+            <div class="tp-card">
+                <ol class="sf-tl">
+                    @foreach($lsSteps as $i => $step)
+                        <li class="sf-tl-item">
+                            <span class="sf-tl-dot ts-num">{{ $i + 1 }}</span>
+                            <div style="padding-top:6px;">
+                                <b style="font-size:15px;">{{ $step['title'] }}</b>
+                                <p class="ts-muted" style="margin:4px 0 0; font-size:13.5px; line-height:1.6;">{{ $step['text'] }}</p>
+                            </div>
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+        </section>
+
+        <section class="sf-section" aria-labelledby="ls-fee-h">
+            <div class="ts-grid" style="--ts-min:280px;">
+                <div class="tp-card ts-stack">
+                    <h2 id="ls-fee-h" class="ts-h2"><i class="fas fa-receipt" style="color:var(--accent2);" aria-hidden="true"></i> ค่าธรรมเนียมชัดเจน</h2>
+                    <div class="ts-kv"><span>ค่าสมัคร / ค่าเปิดร้าน</span><b style="color:var(--ts-ok);">ฟรี</b></div>
+                    <div class="ts-kv">
+                        <span>ค่า GP ต่อออเดอร์</span>
+                        @if($lsGpFree)
+                            <b style="color:var(--ts-ok);">ฟรีช่วงเปิดตัว</b>
+                        @elseif($lsGpRate !== null)
+                            <b>{{ rtrim(rtrim(number_format((float) $lsGpRate, 2), '0'), '.') }}% ของยอดขาย</b>
+                        @else
+                            <b>ตามที่ประกาศในหน้าร้าน</b>
+                        @endif
+                    </div>
+                    <div class="ts-kv"><span>ค่าส่งไรเดอร์</span><b>ลูกค้าเป็นคนจ่าย</b></div>
+                    <p class="ts-help">ร้านเห็นยอดรับจริงทุกออเดอร์ก่อนกดรับ ไม่มีค่าใช้จ่ายแอบแฝง</p>
                 </div>
-
-                <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <div class="text-3xl mb-3">💬</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">จัดการผ่าน LINE</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">ลงขาย จัดการออเดอร์ ดูรายได้ ทำทุกอย่างผ่าน LINE ง่ายมาก</p>
-                </div>
-
-                <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <div class="text-3xl mb-3">🤖</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">AI ช่วยเขียนโฆษณา</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">ถ่ายรูป AI เขียนคำอธิบายสินค้าให้อัตโนมัติ ไม่ต้องพิมพ์เอง</p>
-                </div>
-
-                <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <div class="text-3xl mb-3">🚚</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">มีไรเดอร์ส่งให้</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">ไม่ต้องส่งเอง ไรเดอร์ในระบบมารับของส่งให้ลูกค้า</p>
-                </div>
-
-                <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <div class="text-3xl mb-3">💰</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">MLM Cashback</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">ชวนเพื่อนมาขาย ได้คอมมิชชั่นจากยอดขายทั้งทีม</p>
-                </div>
-
-                <div class="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                    <div class="text-3xl mb-3">📊</div>
-                    <h3 class="font-bold text-gray-900 dark:text-white mb-2">แดชบอร์ดครบ</h3>
-                    <p class="text-gray-600 dark:text-gray-400 text-sm">ดูยอดขาย ออเดอร์ รีวิว สถิติร้าน ทั้งบน LINE และเว็บ</p>
+                <div class="tp-card" style="padding:0; overflow:hidden; min-height:220px; position:relative;">
+                    <img src="{{ asset('images/taladsod/krapao-hero.webp') }}" alt="ตัวอย่างเมนูผัดกะเพราพร้อมตัวเลือก" loading="lazy" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;">
+                    <div style="position:absolute; left:14px; right:14px; bottom:14px;" class="tp-card">
+                        <b style="font-size:14px;">ผัดกะเพราราดข้าว</b>
+                        <div class="ts-row" style="gap:6px; margin-top:6px;">
+                            <span class="ts-pill ts-tone-gold">หมูสับ</span><span class="ts-pill ts-tone-gold">กุ้ง +฿20</span><span class="ts-pill ts-tone-ok">ไข่ดาว +฿10</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    {{-- CTA Section --}}
-    <section class="py-20 bg-gradient-to-r from-orange-500 to-amber-600 dark:from-orange-700 dark:to-amber-800">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="text-5xl mb-6">🏪</div>
-            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">พร้อมเปิดร้านแล้วหรือยัง?</h2>
-            <p class="text-lg text-orange-100 mb-8">
-                เพิ่มเพื่อน LINE ตลาดสด ระบบสร้างร้านให้อัตโนมัติ เริ่มขายได้ทันที!
-            </p>
-            <a href="{{ config('services.line.fresh_market_add_friend_url') ?: '#' }}"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="inline-flex items-center gap-3 px-10 py-5 bg-[#06C755] hover:bg-[#05b34d] text-white font-bold text-xl rounded-2xl shadow-2xl shadow-black/20 hover:shadow-black/30 transition-all hover:-translate-y-1">
-                <svg class="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
-                </svg>
-                เพิ่มเพื่อน LINE เปิดร้านเลย
-            </a>
-            <p class="text-orange-200 text-sm mt-4">ฟรี! ไม่มีค่าใช้จ่าย</p>
-        </div>
-    </section>
-
-    {{-- หรือเลือกบทบาทอื่น --}}
-    <section class="py-12 bg-gray-50 dark:bg-gray-800">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <p class="text-gray-600 dark:text-gray-400 mb-4">สนใจบทบาทอื่น?</p>
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ route('taladsod.landing.buyer') }}"
-                   class="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:border-green-500 hover:text-green-600 dark:hover:text-green-400 transition-all">
-                    🛍️ ซื้อของตลาดสด
-                </a>
-                <a href="{{ route('taladsod.landing.rider') }}"
-                   class="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all">
-                    🚴 สมัครเป็นไรเดอร์/ช่าง
-                </a>
+        <section class="sf-section">
+            <div class="tp-card ts-stack" style="align-items:center; text-align:center; padding:clamp(22px,5vw,40px); background:linear-gradient(135deg, var(--a2soft), var(--a1soft));">
+                <h2 class="ts-h1" style="font-size:clamp(22px,4vw,30px);">พร้อมเปิดร้านแล้วหรือยัง?</h2>
+                <p class="ts-muted" style="margin:0;">สมัครวันนี้ เปิดขายได้เลย{{ $lsGpFree ? ' — ฟรี GP ช่วงเปิดตัว' : '' }}</p>
+                <div class="ts-row" style="justify-content:center;">
+                    <a href="{{ $lsCtaUrl }}" class="ts-btn3d ts-tone-gold lg"><i class="fas fa-store" aria-hidden="true"></i> {{ $lsCtaLabel }}</a>
+                    @if($lsLineUrl)
+                        <a href="{{ $lsLineUrl }}" target="_blank" rel="noopener" class="ts-btn3d ts-tone-ok lg"><i class="fab fa-line" aria-hidden="true"></i> สมัครผ่าน LINE</a>
+                    @endif
+                </div>
             </div>
-        </div>
-    </section>
-</div>
+        </section>
+
+        <section class="sf-section" aria-label="บทบาทอื่น">
+            <div class="ts-row" style="justify-content:center; gap:10px;">
+                <span class="ts-muted">สนใจบทบาทอื่น?</span>
+                <a href="{{ route('taladsod.landing.buyer') }}" class="sf-chip"><i class="fas fa-basket-shopping" aria-hidden="true"></i> สั่งของสด</a>
+                <a href="{{ route('taladsod.landing.rider') }}" class="sf-chip"><i class="fas fa-motorcycle" aria-hidden="true"></i> สมัครไรเดอร์</a>
+            </div>
+        </section>
+    </div>
+</main>
+
+<x-theme-v4.public-footer />
 @endsection

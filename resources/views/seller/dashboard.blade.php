@@ -11,22 +11,22 @@
     $chartSum = (float) $chartRows->sum('total');
 
     // สีสถานะออเดอร์ (map เป็น hex ใช้ใน V4 แทนคลาส tailwind แบบไดนามิก)
-    $orderStatus = [
-        'pending' => ['รอดำเนินการ', '#e0a52e'],
-        'processing' => ['กำลังจัดเตรียม', '#5689b8'],
-        'completed' => ['สำเร็จ', '#5aa07e'],
-        'cancelled' => ['ยกเลิก', '#d9534f'],
-    ];
+    // สีจาก App\Support\Seller\SellerUi (ตัวแปร CSS + fallback) · ป้ายใช้ $order->status_label ของโมเดล
+    $ui = \App\Support\Seller\SellerUi::class;
 
     // เมนูด่วน: [อีโมจิ, ป้าย, ลิงก์, เปิดแท็บใหม่ไหม]
     $quickActions = [
         ['➕', 'เพิ่มสินค้า', route('seller.products.create'), false],
         ['📋', 'ดูออเดอร์', route('seller.orders.index'), false],
-        ['🎨', 'แต่งร้าน', route('seller.store.settings'), false],
+        ['💡', 'วางแผนราคา', route('seller.pricing.planner'), false],
+        ['🎨', 'แต่งร้าน', route('seller.store.layout.index'), false],
         ['📊', 'รายงาน', route('seller.analytics.index'), false],
-        ['📢', 'การตลาด', route('seller.marketing.index'), false],
         ['🌐', 'หน้าร้าน', $store->store_url, true],
     ];
+    // (2026-09-25 · SELLER-10) หน้าการตลาดยังไม่มี view → แสดงปุ่มเฉพาะเมื่อหน้าพร้อมแล้ว (กันกดแล้วเจอ 500)
+    if (view()->exists('seller.marketing.index')) {
+        array_splice($quickActions, 5, 0, [['📢', 'การตลาด', route('seller.marketing.index'), false]]);
+    }
 @endphp
 
 @section('content')
@@ -48,7 +48,7 @@
                     <div style="display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin-top:8px;">
                         <span class="tp-pill tp-pill-soft tp-num">{{ $store->store_slug }}</span>
                         @if($store->is_verified)
-                            <span class="tp-pill" style="color:#fff; background:#5aa07e;">✓ ยืนยันแล้ว</span>
+                            <span class="tp-pill" style="color:var(--tp-on-accent, #fff); background:{{ $ui::OK }};">✓ ยืนยันแล้ว</span>
                         @endif
                     </div>
                 </div>
@@ -59,7 +59,7 @@
                     <div style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">
                         <span class="tp-pill tp-pill-gold" style="font-weight:800;">{{ $package->display_name }}</span>
                         @if($store->subscription_status === 'trial')
-                            <span class="tp-pill" style="color:#fff; background:#5689b8;">
+                            <span class="tp-pill" style="color:var(--tp-on-accent, #fff); background:{{ $ui::INFO }};">
                                 ทดลองใช้: {{ $store->trial_ends_at ? $store->trial_ends_at->diffForHumans() : 'ไม่ระบุ' }}
                             </span>
                         @endif
@@ -116,10 +116,10 @@
     {{-- ── สถิติหลัก 4 ใบ ────────────────────────────────────── --}}
     @php
         $mainStats = [
-            ['รายได้วันนี้', '฿'.number_format($todayRevenue ?? 0, 0), '💰', '#5aa07e', 'อัพเดทล่าสุดเมื่อสักครู่'],
-            ['รายได้ทั้งหมด', '฿'.number_format($totalRevenue ?? 0, 0), '📊', '#5689b8', number_format($completedSales ?? 0).' ออเดอร์สำเร็จ'],
-            ['คำสั่งซื้อรอดำเนินการ', number_format($pendingSales ?? 0), '⏳', '#e0a52e', 'จากทั้งหมด '.number_format($totalSales ?? 0)],
-            ['สินค้าทั้งหมด', number_format($totalProducts ?? 0), '📦', '#8b6bb8', ($activeProducts ?? 0).' ใช้งาน'],
+            ['รายได้วันนี้', '฿'.number_format($todayRevenue ?? 0, 0), '💰', $ui::OK, 'อัพเดทล่าสุดเมื่อสักครู่'],
+            ['รายได้ทั้งหมด', '฿'.number_format($totalRevenue ?? 0, 0), '📊', $ui::INFO, number_format($completedSales ?? 0).' ออเดอร์สำเร็จ'],
+            ['คำสั่งซื้อรอดำเนินการ', number_format($pendingSales ?? 0), '⏳', $ui::WARN, 'จากทั้งหมด '.number_format($totalSales ?? 0)],
+            ['สินค้าทั้งหมด', number_format($totalProducts ?? 0), '📦', $ui::VIOLET, ($activeProducts ?? 0).' ใช้งาน'],
         ];
     @endphp
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px;">
@@ -133,12 +133,12 @@
                 <div style="font-size:11px; color:var(--ink2); margin-top:3px;">
                     {{-- การ์ดใบที่ 2 โชว์อัตราเติบโต / ใบที่ 4 เตือนสต็อกใกล้หมด --}}
                     @if($i === 1 && ($salesGrowth ?? 0) != 0)
-                        <span style="color:{{ $salesGrowth > 0 ? '#5aa07e' : '#d9534f' }}; font-weight:700;">
+                        <span style="color:{{ $salesGrowth > 0 ? $ui::OK : $ui::BAD }}; font-weight:700;">
                             {{ $salesGrowth > 0 ? '▲' : '▼' }} {{ number_format(abs($salesGrowth), 1) }}%
                         </span>
                         · {{ $hint }}
                     @elseif($i === 3 && ($lowStockProducts ?? 0) > 0)
-                        <span style="color:#e0a52e; font-weight:700;">⚠️ {{ $lowStockProducts }} ใกล้หมด</span>
+                        <span style="color:{{ $ui::WARN }}; font-weight:700;">⚠️ {{ $lowStockProducts }} ใกล้หมด</span>
                         · {{ $outOfStockProducts ?? 0 }} หมดสต็อก
                     @else
                         {{ $hint }}
@@ -245,7 +245,8 @@
                     <tbody>
                         @foreach($recentOrders as $order)
                             @php
-                                [$statusLabel, $statusColor] = $orderStatus[$order->status] ?? [$order->status, 'var(--ink2)'];
+                                $statusLabel = $order->status_label;
+                                $statusColor = $ui::orderStatusColor($order->status);
                             @endphp
                             <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
                                 <td style="padding:12px 16px; white-space:nowrap;">

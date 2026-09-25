@@ -1,255 +1,147 @@
-@extends('layouts.admin-v3')
+{{--
+ | ทดสอบ LINE OA ของตลาดสด (admin.fresh-market.test-line) — ธีม V4
+ | ตัวแปรจาก Admin\FreshMarketController@testLine: $settings (FreshMarketSetting — ใช้ดูแค่ว่ามีค่าหรือไม่ ไม่แสดงค่าจริง)
+ | ตรวจการเชื่อมต่อ: POST verify-line (AJAX JSON {success, data{displayName,basicId,userId,pictureUrl,chatMode}, error})
+ | ส่งข้อความทดสอบ: POST test-line.send {user_id*, message*} — ใช้ push 1 ครั้ง (นับโควต้า LINE ต่อเดือน)
+--}}
+@extends('layouts.admin-v4')
 
-@section('title', 'ทดสอบ LINE - ตลาดสดไทยพร๊อม')
+@section('title', 'ทดสอบ LINE ตลาดสด')
 
 @section('content')
-<div class="space-y-6" x-data="{
-    sending: false,
-    verifying: false,
-    botInfo: null,
-    verifyError: null,
-    async verifyConnection() {
-        this.verifying = true;
-        this.botInfo = null;
-        this.verifyError = null;
-        try {
-            const res = await fetch('{{ route('admin.fresh-market.verify-line') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                },
-            });
-            const data = await res.json();
-            if (data.success) {
-                this.botInfo = data.data;
-            } else {
-                this.verifyError = data.error;
-            }
-        } catch (e) {
-            this.verifyError = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์: ' + e.message;
-        } finally {
-            this.verifying = false;
-        }
-    }
-}">
-    {{-- ส่วนหัว --}}
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ทดสอบส่งข้อความ LINE - ตลาดสดไทยพร๊อม</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">ทดสอบการส่งข้อความผ่าน LINE OA ของตลาดสด</p>
+@include('admin.riders.partials.v4-kit')
+@php
+    $configItems = [
+        ['Channel ID', filled($settings->line_channel_id ?? null)],
+        ['Channel Secret', filled($settings->line_channel_secret ?? null)],
+        ['Access Token', filled($settings->line_channel_access_token ?? null)],
+    ];
+@endphp
+<div x-data="w1LineTester()" style="display:flex; flex-direction:column; gap:18px;">
+
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.fresh-market.settings') }}#line" class="tp-icon-btn" title="กลับตั้งค่า LINE OA"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ตลาดสด · ทดสอบ LINE</div>
+                <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ทดสอบ LINE OA 💬</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ตรวจว่า Access Token ใช้งานได้ และลองส่งข้อความหาบัญชีทดสอบ</div>
+            </div>
         </div>
-        <a href="{{ route('admin.fresh-market.settings') }}"
-           class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            <i class="fas fa-cog mr-2"></i> ตั้งค่า LINE OA
-        </a>
+        <a href="{{ route('admin.fresh-market.settings') }}#line" class="tp-btn tp-btn-sm"><i class="fas fa-gear"></i> ตั้งค่า LINE OA</a>
     </div>
 
-    {{-- แจ้งเตือน --}}
-    @if(session('success'))
-        <div class="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 px-4 py-3 rounded-xl">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
-        </div>
-    @endif
+    @include('admin.riders.partials.flash')
 
-    @if(session('error'))
-        <div class="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-400 px-4 py-3 rounded-xl">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
-        </div>
-    @endif
-
-    {{-- สถานะการเชื่อมต่อ --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">สถานะการเชื่อมต่อ LINE OA</h3>
-            <button @click="verifyConnection()"
-                    :disabled="verifying"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-sm font-medium rounded-xl transition">
-                <template x-if="!verifying">
-                    <span class="flex items-center">
-                        <i class="fas fa-plug mr-2"></i> ตรวจสอบการเชื่อมต่อ
-                    </span>
-                </template>
-                <template x-if="verifying">
-                    <span class="flex items-center">
-                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        กำลังตรวจสอบ...
-                    </span>
-                </template>
+    {{-- ===== สถานะการเชื่อมต่อ ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px;">
+            <div class="tp-section-h"><i class="fas fa-plug"></i> สถานะการเชื่อมต่อ</div>
+            <button type="button" class="tp-btn tp-btn-sm tp-btn-primary" @click="verify()" :disabled="verifying">
+                <i class="fas" :class="verifying ? 'fa-spinner fa-spin' : 'fa-plug-circle-check'"></i>
+                <span x-text="verifying ? 'กำลังตรวจสอบ...' : 'ตรวจสอบการเชื่อมต่อ'"></span>
             </button>
         </div>
-
-        {{-- Config status indicators --}}
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="w-3 h-3 rounded-full {{ ($settings->line_channel_id ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
-                <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Channel ID</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ ($settings->line_channel_id ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
-                    </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr)); gap:10px;">
+            @foreach ($configItems as [$configLabel, $configured])
+                <div class="tp-well" style="padding:12px 14px; display:flex; align-items:center; gap:10px;">
+                    <span style="width:10px; height:10px; border-radius:50%; background:var({{ $configured ? '--w-ok' : '--w-bad' }}); flex:none;"></span>
+                    <div>
+                        <div style="font-size:11.5px; color:var(--ink2);">{{ $configLabel }}</div>
+                        <div style="font-size:13px; font-weight:600;">{{ $configured ? 'ตั้งค่าแล้ว' : 'ยังไม่ได้ตั้งค่า' }}</div>
+                    </div>
                 </div>
-            </div>
-            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="w-3 h-3 rounded-full {{ ($settings->line_channel_secret ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
-                <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Channel Secret</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ ($settings->line_channel_secret ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
-                    </p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="w-3 h-3 rounded-full {{ ($settings->line_channel_access_token ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
-                <div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">Access Token</p>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ ($settings->line_channel_access_token ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
-                    </p>
-                </div>
-            </div>
+            @endforeach
         </div>
 
-        {{-- ผลการตรวจสอบ --}}
         <template x-if="botInfo">
-            <div class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-xl">
-                <div class="flex items-center gap-3 mb-3">
-                    <i class="fas fa-check-circle text-green-500 text-xl"></i>
-                    <p class="text-green-700 dark:text-green-400 font-semibold">เชื่อมต่อ LINE OA สำเร็จ!</p>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div class="flex items-center gap-2" x-show="botInfo.displayName">
-                        <span class="text-gray-500 dark:text-gray-400">ชื่อ Bot:</span>
-                        <span class="font-medium text-gray-900 dark:text-white" x-text="botInfo.displayName"></span>
-                    </div>
-                    <div class="flex items-center gap-2" x-show="botInfo.basicId">
-                        <span class="text-gray-500 dark:text-gray-400">Basic ID:</span>
-                        <span class="font-medium text-gray-900 dark:text-white" x-text="'@' + botInfo.basicId"></span>
-                    </div>
-                    <div class="flex items-center gap-2" x-show="botInfo.userId">
-                        <span class="text-gray-500 dark:text-gray-400">Bot User ID:</span>
-                        <span class="font-mono text-xs text-gray-900 dark:text-white" x-text="botInfo.userId"></span>
-                    </div>
-                    <div class="flex items-center gap-2" x-show="botInfo.chatMode">
-                        <span class="text-gray-500 dark:text-gray-400">Chat Mode:</span>
-                        <span class="font-medium text-gray-900 dark:text-white" x-text="botInfo.chatMode"></span>
-                    </div>
-                </div>
+            <div class="tp-well" style="margin-top:14px; padding:14px; border-left:4px solid var(--w-ok); display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
                 <template x-if="botInfo.pictureUrl">
-                    <div class="mt-3 flex items-center gap-3">
-                        <img :src="botInfo.pictureUrl" alt="Bot Avatar" class="w-12 h-12 rounded-full">
-                        <span class="text-sm text-gray-500 dark:text-gray-400">รูปโปรไฟล์ Bot</span>
-                    </div>
+                    <img :src="botInfo.pictureUrl" alt="" style="width:52px; height:52px; border-radius:50%; object-fit:cover;">
                 </template>
+                <div style="font-size:13px; display:grid; grid-template-columns:auto 1fr; gap:4px 12px;">
+                    <b style="grid-column:1 / -1; color:color-mix(in srgb, var(--w-ok) 74%, var(--ink));"><i class="fas fa-circle-check"></i> เชื่อมต่อ LINE OA สำเร็จ</b>
+                    <span style="color:var(--ink2);" x-show="botInfo.displayName">ชื่อบอท</span><span x-show="botInfo.displayName" x-text="botInfo.displayName"></span>
+                    <span style="color:var(--ink2);" x-show="botInfo.basicId">Basic ID</span><span x-show="botInfo.basicId" x-text="'@' + botInfo.basicId"></span>
+                    <span style="color:var(--ink2);" x-show="botInfo.chatMode">Chat mode</span><span x-show="botInfo.chatMode" x-text="botInfo.chatMode"></span>
+                    <span style="color:var(--ink2);" x-show="botInfo.userId">Bot user ID</span><span x-show="botInfo.userId" class="tp-num" style="font-size:11.5px; word-break:break-all;" x-text="botInfo.userId"></span>
+                </div>
             </div>
         </template>
-
         <template x-if="verifyError">
-            <div class="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl">
-                <div class="flex items-start gap-3">
-                    <i class="fas fa-times-circle text-red-500 text-xl mt-0.5"></i>
-                    <div>
-                        <p class="text-red-700 dark:text-red-400 font-semibold">เชื่อมต่อไม่สำเร็จ</p>
-                        <p class="text-red-600 dark:text-red-300 text-sm mt-1" x-text="verifyError"></p>
-                    </div>
-                </div>
+            <div class="tp-well" style="margin-top:14px; padding:12px 14px; border-left:4px solid var(--w-bad); font-size:13px;">
+                <b style="color:var(--w-bad);"><i class="fas fa-circle-xmark"></i> เชื่อมต่อไม่สำเร็จ</b>
+                <div style="margin-top:4px;" x-text="verifyError"></div>
             </div>
         </template>
     </div>
 
-    {{-- ฟอร์มทดสอบ --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ส่งข้อความทดสอบ</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">กรอก User ID ของ LINE และข้อความที่ต้องการส่งเพื่อทดสอบการเชื่อมต่อ</p>
-
-        <form method="POST" action="{{ route('admin.fresh-market.test-line.send') }}"
-              @submit="sending = true">
+    {{-- ===== ส่งข้อความทดสอบ ===== --}}
+    <div class="tp-card" style="padding:20px;">
+        <div class="tp-section-h" style="margin-bottom:4px;"><i class="fas fa-paper-plane"></i> ส่งข้อความทดสอบ</div>
+        <div style="font-size:12.5px; color:var(--w-warn); margin-bottom:14px;"><i class="fas fa-triangle-exclamation"></i> ส่งแบบ push ครั้งละ 1 ข้อความ — นับรวมในโควต้าข้อความต่อเดือนของ LINE OA ใช้เท่าที่จำเป็น</div>
+        <form method="POST" action="{{ route('admin.fresh-market.test-line.send') }}" @submit="sending = true" style="display:flex; flex-direction:column; gap:14px; max-width:680px;">
             @csrf
-
-            <div class="space-y-4 max-w-2xl">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        LINE User ID <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="user_id" value="{{ old('user_id') }}" required
-                           class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                           placeholder="เช่น U1234567890abcdef...">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        LINE User ID เริ่มต้นด้วย "U" ตามด้วยตัวอักษรและตัวเลข 32 ตัว
-                        — ดูจาก Webhook event เมื่อมีคน follow หรือส่งข้อความมา
-                    </p>
-                    @error('user_id')
-                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ข้อความ <span class="text-red-500">*</span>
-                    </label>
-                    <textarea name="message" rows="5" required
-                              class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                              placeholder="พิมพ์ข้อความที่ต้องการส่งทดสอบ...">{{ old('message', 'ทดสอบการส่งข้อความจากระบบตลาดสดไทยพร๊อม') }}</textarea>
-                    @error('message')
-                        <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="pt-2">
-                    <button type="submit"
-                            :disabled="sending"
-                            class="inline-flex items-center px-8 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
-                        <template x-if="!sending">
-                            <span class="flex items-center">
-                                <i class="fab fa-line mr-2 text-lg"></i> ส่งข้อความทดสอบ
-                            </span>
-                        </template>
-                        <template x-if="sending">
-                            <span class="flex items-center">
-                                <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                กำลังส่ง...
-                            </span>
-                        </template>
-                    </button>
-                </div>
+            <label>
+                <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">LINE User ID <span style="color:var(--w-bad);">*</span></span>
+                <input type="text" name="user_id" value="{{ old('user_id') }}" required class="tp-input tp-num" placeholder="เช่น U1234567890abcdef...">
+                <span style="display:block; font-size:11.5px; color:var(--ink2); margin-top:4px;">ขึ้นต้นด้วย U ตามด้วยตัวอักษร 32 ตัว — ดูได้จาก webhook ตอนมีคนเพิ่มเพื่อนหรือทักมา (ผู้รับต้องเป็นเพื่อนกับ OA)</span>
+                @error('user_id')<span style="display:block; font-size:12px; color:var(--w-bad); margin-top:4px;">{{ $message }}</span>@enderror
+            </label>
+            <label>
+                <span style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">ข้อความ <span style="color:var(--w-bad);">*</span></span>
+                <textarea name="message" rows="4" required class="tp-input" style="resize:vertical;">{{ old('message', 'ทดสอบการส่งข้อความจากระบบตลาดสดไทยพร๊อม') }}</textarea>
+                @error('message')<span style="display:block; font-size:12px; color:var(--w-bad); margin-top:4px;">{{ $message }}</span>@enderror
+            </label>
+            <div>
+                <button type="submit" class="tp-btn tp-btn-primary" :disabled="sending">
+                    <i class="fas" :class="sending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+                    <span x-text="sending ? 'กำลังส่ง...' : 'ส่งข้อความทดสอบ'"></span>
+                </button>
             </div>
         </form>
     </div>
-
-    {{-- คำแนะนำ --}}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>คำแนะนำ
-        </h3>
-        <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
-            <div class="flex items-start gap-2">
-                <span class="text-green-500 mt-0.5"><i class="fas fa-check-circle"></i></span>
-                <p>กดปุ่ม <strong>"ตรวจสอบการเชื่อมต่อ"</strong> ด้านบนเพื่อยืนยันว่า Access Token ถูกต้องและ Bot พร้อมใช้งาน</p>
-            </div>
-            <div class="flex items-start gap-2">
-                <span class="text-green-500 mt-0.5"><i class="fas fa-check-circle"></i></span>
-                <p>ตรวจสอบว่าได้กำหนดค่า Channel ID, Channel Secret และ Access Token ที่หน้า <a href="{{ route('admin.fresh-market.settings') }}" class="text-green-600 dark:text-green-400 underline">ตั้งค่าระบบ</a> แล้ว</p>
-            </div>
-            <div class="flex items-start gap-2">
-                <span class="text-green-500 mt-0.5"><i class="fas fa-check-circle"></i></span>
-                <p>User ID สามารถดูได้จาก LINE Webhook event เมื่อผู้ใช้ follow หรือส่งข้อความมา</p>
-            </div>
-            <div class="flex items-start gap-2">
-                <span class="text-green-500 mt-0.5"><i class="fas fa-check-circle"></i></span>
-                <p>ผู้รับข้อความต้องเป็นเพื่อนกับ LINE OA ของระบบตลาดสดจึงจะได้รับข้อความ</p>
-            </div>
-            <div class="flex items-start gap-2">
-                <span class="text-yellow-500 mt-0.5"><i class="fas fa-exclamation-triangle"></i></span>
-                <p>การส่งข้อความ push จะถูกนับเป็นจำนวนข้อความรายเดือนของ LINE OA ตามแพลนที่ใช้</p>
-            </div>
-        </div>
-    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    /* ตรวจการเชื่อมต่อ LINE OA ของตลาดสด (ไม่ส่งข้อความ ไม่เสียโควต้า) */
+    function w1LineTester() {
+        return {
+            verifyUrl: @js(route('admin.fresh-market.verify-line')),
+            verifying: false,
+            sending: false,
+            botInfo: null,
+            verifyError: '',
+            async verify() {
+                this.verifying = true;
+                this.botInfo = null;
+                this.verifyError = '';
+                try {
+                    const res = await fetch(this.verifyUrl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        },
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (res.ok && json.success) {
+                        this.botInfo = json.data || {};
+                    } else {
+                        this.verifyError = json.error || json.message || 'LINE ปฏิเสธการเชื่อมต่อ กรุณาตรวจ Access Token';
+                    }
+                } catch (e) {
+                    this.verifyError = 'ติดต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่';
+                } finally {
+                    this.verifying = false;
+                }
+            },
+        };
+    }
+</script>
+@endpush

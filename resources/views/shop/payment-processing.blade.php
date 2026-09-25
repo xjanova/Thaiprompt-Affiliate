@@ -1,452 +1,275 @@
-@extends('layouts.storefront')
+{{--
+ | รอการชำระเงิน (QR พร้อมเพย์ / โอนธนาคาร) — ธีม V4 (frontend-v4)
+ | ข้อมูลจาก CheckoutController@paymentProcessing: $order, $transaction, $paymentData (qr_code, qr_code_image, ref_no), $promptpayInfo
+ | ⚠️ ห้ามรีโหลดหน้าเอง (ยอดทศนิยมเฉพาะตัวต้องคงเดิม) — ตรวจสถานะด้วย AJAX GET orders.show (JSON) ทุก 10 วินาที
+ --}}
+@extends('layouts.frontend-v4')
 
-@section('title', 'รอการชำระเงิน')
+@section('title', 'รอการชำระเงิน #'.$order->order_number)
 
 @php
-// ⚡ สร้าง unique amount สำหรับ SMS Checker auto-matching
-// ทำงานเสมอสำหรับ promptpay/bank_transfer โดยไม่ต้องเช็ค config
-// เพราะ config cache อาจทำให้ไม่ทำงาน
-$smsDebug = ['method' => $transaction->payment_method];
-
-if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
-    $meta = $transaction->metadata ?? [];
-    $smsDebug['has_unique_id'] = !empty($meta['unique_amount_id']);
-    $smsDebug['current_amount'] = $transaction->amount;
-
-    // ถ้ายังไม่มี unique_amount_id หรือยอดยังเป็นจำนวนเต็ม (ไม่มีทศนิยม)
-    $amountHasDecimal = ($transaction->amount != floor($transaction->amount));
-    $smsDebug['amount_has_decimal'] = $amountHasDecimal;
-
-    if (empty($meta['unique_amount_id']) && !$amountHasDecimal) {
-        try {
-            $ua = \App\Models\UniquePaymentAmount::generate(
-                $transaction->amount,
-                $transaction->id,
-                $transaction->type ?? 'order',
-                config('smschecker.unique_amount_expiry', 60)
-            );
-
-            if ($ua) {
-                $meta['original_amount'] = $transaction->amount;
-                $meta['unique_amount_id'] = $ua->id;
-                $meta['decimal_suffix'] = $ua->decimal_suffix;
-                $transaction->update([
-                    'amount' => $ua->unique_amount,
-                    'metadata' => $meta,
-                ]);
-                $transaction = $transaction->fresh();
-                $smsDebug['created'] = true;
-                $smsDebug['new_amount'] = $ua->unique_amount;
-                \Log::info('SMS Checker BLADE: unique amount created', [
-                    'txn' => $transaction->id,
-                    'orig' => $meta['original_amount'],
-                    'new' => $ua->unique_amount,
-                ]);
-            } else {
-                $smsDebug['error'] = 'generate_returned_null';
-                \Log::warning('SMS Checker BLADE: generate() returned null for txn #' . $transaction->id);
+    // ⚡ ยอดทศนิยมเฉพาะตัวสำหรับ SMS Checker (สำรองกรณีรายการเก่ายังไม่มี) — คงตรรกะเดิมไว้
+    $smsDebug = ['method' => $transaction->payment_method];
+    if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'], true)) {
+        $meta = $transaction->metadata ?? [];
+        $amountHasDecimal = ($transaction->amount != floor($transaction->amount));
+        if (empty($meta['unique_amount_id']) && ! $amountHasDecimal) {
+            try {
+                $ua = \App\Models\UniquePaymentAmount::generate(
+                    $transaction->amount,
+                    $transaction->id,
+                    $transaction->type ?? 'order',
+                    config('smschecker.unique_amount_expiry', 60)
+                );
+                if ($ua) {
+                    $meta['original_amount'] = $transaction->amount;
+                    $meta['unique_amount_id'] = $ua->id;
+                    $meta['decimal_suffix'] = $ua->decimal_suffix;
+                    $transaction->update(['amount' => $ua->unique_amount, 'metadata' => $meta]);
+                    $transaction = $transaction->fresh();
+                } else {
+                    $smsDebug['error'] = 'generate_returned_null';
+                    \Illuminate\Support\Facades\Log::warning('SMS Checker BLADE: generate() returned null for txn #'.$transaction->id);
+                }
+            } catch (\Throwable $e) {
+                $smsDebug['error'] = 'generate_failed';
+                \Illuminate\Support\Facades\Log::error('SMS Checker BLADE error: '.$e->getMessage());
             }
-        } catch (\Exception $e) {
-            $smsDebug['error'] = $e->getMessage();
-            \Log::error('SMS Checker BLADE error: ' . $e->getMessage());
         }
     }
-}
-@endphp
 
-{{-- Debug info (แสดงเฉพาะ debug mode) --}}
-@if(config('app.debug'))
-@php
-    // ดึงข้อมูล debug สำหรับตรวจสอบ
-    $debugUniqueAmount = \App\Models\UniquePaymentAmount::where('transaction_id', $transaction->id)->first();
-    $debugSmsNotifications = \App\Models\SmsPaymentNotification::where('matched_transaction_id', $transaction->id)
-        ->orWhere(function($q) use ($debugUniqueAmount) {
-            if ($debugUniqueAmount) {
-                $q->where('amount', $debugUniqueAmount->unique_amount);
+    $ppMethod = $order->payment_method;
+    $ppAmount = (float) $transaction->amount;
+    $ppOriginal = isset($transaction->metadata['original_amount']) ? (float) $transaction->metadata['original_amount'] : null;
+    $ppQr = $paymentData['qr_code_image'] ?? ($paymentData['qr_code'] ?? null);
+    $ppQrIsImage = is_string($ppQr) && (str_starts_with($ppQr, 'data:image/') || preg_match('#^https?://#i', $ppQr));
+    $ppExplain = (array) config('smschecker.customer_explanation', []);
+
+    // บัญชีธนาคาร (โอนธนาคาร): ร้าน Enterprise ที่รับเงินตรง → บัญชีร้าน · อื่นๆ → บัญชีแพลตฟอร์ม
+    $ppSellerStore = null;
+    $ppBankAccounts = collect();
+    if ($ppMethod === 'bank_transfer') {
+        if ($transaction->store_id) {
+            $ppStore = \App\Models\VendorStore::with('package')->find($transaction->store_id);
+            if ($ppStore && $ppStore->allowsDirectPayment()) {
+                $ppBankAccounts = \App\Models\SmsGatewayBankAccount::where('store_id', $transaction->store_id)
+                    ->where('is_active', true)->orderByDesc('is_primary')->orderBy('sort_order')->get();
+                if ($ppBankAccounts->isNotEmpty()) {
+                    $ppSellerStore = $ppStore->store_name;
+                }
             }
-        })
-        ->latest()
-        ->take(3)
-        ->get(['id', 'amount', 'status', 'bank', 'created_at']);
+        }
+        if ($ppBankAccounts->isEmpty()) {
+            $ppBankAccounts = \App\Models\PaymentBankAccount::where('is_active', true)->orderByDesc('is_default')->orderBy('sort_order')->get();
+        }
+    }
+    $ppDefaultAccount = $ppBankAccounts->firstWhere('is_primary', true) ?? $ppBankAccounts->firstWhere('is_default', true) ?? $ppBankAccounts->first();
+
+    // คำสั่งซื้ออื่นจากการกดสั่งครั้งเดียวกัน (สินค้าหลายร้าน = แยกออเดอร์ละร้าน แต่ละออเดอร์มี QR ของตัวเอง)
+    $ppSiblings = $order->checkout_group
+        ? \App\Models\Order::where('user_id', $order->user_id)
+            ->where('checkout_group', $order->checkout_group)
+            ->where('id', '!=', $order->id)
+            ->orderBy('id')
+            ->get(['id', 'order_number', 'total_amount', 'payment_status', 'payment_method', 'status'])
+        : collect();
 @endphp
-<div class="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-3 rounded mb-4 mx-4 text-xs font-mono space-y-1">
-    <strong>🔍 Payment Debug:</strong>
-    <div>Transaction: #{{ $transaction->id }} | Status: <span class="font-bold {{ $transaction->status === 'completed' ? 'text-green-600' : 'text-yellow-600' }}">{{ $transaction->status }}</span> | Amount: ฿{{ $transaction->amount }}</div>
-    <div>Order: #{{ $order->id }} | Payment Status: <span class="font-bold {{ $order->payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600' }}">{{ $order->payment_status }}</span> | Store ID: {{ $transaction->store_id ?? 'null' }}</div>
-    <div>UniqueAmount: {{ $debugUniqueAmount ? '✅ ID#'.$debugUniqueAmount->id.' | suffix: .'.$debugUniqueAmount->decimal_suffix.' | status: '.$debugUniqueAmount->status.' | expires: '.$debugUniqueAmount->expires_at : '❌ ไม่มี' }}</div>
-    <div>QR Image: {{ !empty($paymentData['qr_code_image']) && str_starts_with($paymentData['qr_code_image'] ?? '', 'data:image/') ? '✅ data URI' : '❌ ไม่มี/ไม่ถูกต้อง' }}</div>
-    <div>SMS Notifications (matched): {{ $debugSmsNotifications->isEmpty() ? '❌ ยังไม่มี SMS เข้ามา' : '✅ '.$debugSmsNotifications->count().' รายการ' }}</div>
-    @foreach($debugSmsNotifications as $sms)
-    <div class="ml-4">→ SMS#{{ $sms->id }} | ฿{{ $sms->amount }} | {{ $sms->bank }} | {{ $sms->status }} | {{ $sms->created_at }}</div>
-    @endforeach
-    @if(isset($smsDebug['error']))
-    <div class="text-red-600">⚠️ Error: {{ $smsDebug['error'] }}</div>
-    @endif
-</div>
-@endif
 
 @section('content')
-<div class="py-6">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Page Header -->
-        <div class="mb-8 text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-yellow-100 dark:bg-yellow-900/20 rounded-full mb-4">
-                <svg class="w-8 h-8 text-yellow-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
+<x-theme-v4.shop-kit />
+<x-theme-v4.public-header active="orders" />
+
+<main style="flex:1; padding-bottom:40px;"
+      x-data="tpPaymentWait({{ \Illuminate\Support\Js::from([
+          'statusUrl' => route('orders.show', $order->id),
+          'successUrl' => route('checkout.success', $order->id),
+          'expiresAt' => optional($transaction->expired_at)->toIso8601String(),
+      ]) }})">
+    @if(config('app.debug'))
+        <section class="sf-wrap" style="padding-top:12px; max-width:760px;">
+            <div class="sf-note sf-note-info tp-num" style="font-size:11.5px;">
+                <strong>🔍 ข้อมูลตรวจสอบ (debug)</strong> — รายการ #{{ $transaction->id }} · {{ $transaction->status }} · ฿{{ $transaction->amount }} · ออเดอร์ {{ $order->payment_status }}
+                @if(isset($smsDebug['error'])) · ⚠️ {{ $smsDebug['error'] }} @endif
             </div>
-            <h1 class="text-3xl font-black text-gray-900 dark:text-white mb-2">รอการชำระเงิน</h1>
-            <p class="text-gray-600 dark:text-gray-400">คำสั่งซื้อ #{{ $order->order_number }}</p>
-        </div>
+        </section>
+    @endif
 
-        <div class="space-y-6">
-            <!-- PromptPay QR Code -->
-            @if($order->payment_method === 'promptpay' && isset($paymentData['qr_code']))
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="bg-gradient-to-r from-blue-500 to-blue-600 p-6 text-center">
-                    <h2 class="text-2xl font-bold text-white">📱 สแกน QR Code PromptPay</h2>
-                    <p class="text-blue-100 mt-2">เปิดแอพธนาคารของคุณและสแกน QR Code ด้านล่าง</p>
-                </div>
+    <section class="sf-wrap" style="padding-top:22px; max-width:760px; text-align:center;">
+        <span class="tp-tile" style="width:64px; height:64px; border-radius:20px; font-size:28px; margin:0 auto;"><i class="fas fa-hourglass-half" style="animation:tpPulse 1.8s ease-in-out infinite;"></i></span>
+        <h1 class="sf-h1" style="margin-top:12px;">รอการชำระเงิน</h1>
+        <p class="tp-muted" style="margin:6px 0 0;">คำสั่งซื้อ #{{ $order->order_number }}</p>
+    </section>
 
-                <div class="p-8 text-center">
-                    <!-- QR Code Display -->
-                    <div class="inline-block p-6 bg-white rounded-2xl shadow-xl mb-6">
-                        @if(isset($paymentData['qr_code_image']))
-                        <img src="{{ $paymentData['qr_code_image'] }}" alt="PromptPay QR Code" class="w-64 h-64 mx-auto">
-                        @else
-                        <div class="w-64 h-64 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center">
-                            <p class="text-sm text-gray-500 dark:text-gray-400">QR Code จะแสดงที่นี่</p>
-                        </div>
-                        @endif
-                    </div>
-
-                    <!-- Amount (ใช้ transaction->amount ที่อาจมี unique decimal) -->
-                    <div class="mb-6">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">ยอดชำระ</p>
-                        <p class="text-4xl font-black text-gray-900 dark:text-white">฿{{ number_format($transaction->amount, 2) }}</p>
-                        @if(($transaction->metadata['original_amount'] ?? null) && $transaction->metadata['original_amount'] != $transaction->amount)
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            (ราคาสินค้า ฿{{ number_format($transaction->metadata['original_amount'], 2) }} + ค่าทศนิยมยืนยันอัตโนมัติ)
-                        </p>
-                        @endif
-                    </div>
-
-                    <!-- PromptPay Account Info -->
-                    @if(!empty($promptpayInfo['promptpay_id']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
-                        <div class="space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">ชื่อบัญชี:</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ $promptpayInfo['promptpay_name'] ?? '-' }}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">
-                                    {{ ($promptpayInfo['promptpay_type'] ?? 'phone') === 'phone' ? 'เบอร์พร้อมเพย์:' : 'เลขพร้อมเพย์:' }}
-                                </span>
-                                <span class="font-mono font-bold text-lg text-blue-600 dark:text-blue-400">{{ $promptpayInfo['promptpay_id'] }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-
-                    <!-- Reference Number -->
-                    @if(isset($paymentData['ref_no']))
-                    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">เลขอ้างอิง</p>
-                        <p class="text-xl font-mono font-bold text-blue-600">{{ $paymentData['ref_no'] }}</p>
-                    </div>
-                    @endif
-
-                    {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
-                    <div class="mt-4">
-                        @include('components.sms-payment-explanation', [
-                            'compact' => true,
-                            'amount' => $transaction->amount,
-                            'originalAmount' => $transaction->metadata['original_amount'] ?? null
-                        ])
-                    </div>
-
-                    <!-- Instructions -->
-                    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 text-left mt-4">
-                        <h3 class="font-semibold text-gray-900 dark:text-white mb-3">วิธีการชำระเงิน:</h3>
-                        <ol class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 font-semibold text-xs mr-3">1</span>
-                                <span>เปิดแอพธนาคารหรือ Mobile Banking ของคุณ</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 font-semibold text-xs mr-3">2</span>
-                                <span>เลือกเมนู "สแกน QR" หรือ "PromptPay"</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 font-semibold text-xs mr-3">3</span>
-                                <span>สแกน QR Code ด้านบน</span>
-                            </li>
-                            <li class="flex items-start">
-                                <span class="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center text-blue-600 font-semibold text-xs mr-3">4</span>
-                                <span>ตรวจสอบยอดเงินและยืนยันการชำระเงิน</span>
-                            </li>
-                        </ol>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            <!-- Bank Transfer -->
-            @if($order->payment_method === 'bank_transfer')
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <div class="bg-gradient-to-r from-green-500 to-green-600 p-6 text-center">
-                    <h2 class="text-2xl font-bold text-white">🏦 โอนเงินผ่านธนาคาร</h2>
-                    <p class="text-green-100 mt-2">โอนเงินไปยังบัญชีธนาคารด้านล่าง</p>
-                </div>
-
-                <div class="p-8">
-                    <!-- Amount (ใช้ transaction->amount ที่อาจมี unique decimal) -->
-                    <div class="text-center mb-8">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">ยอดชำระ</p>
-                        <p class="text-4xl font-black text-gray-900 dark:text-white">฿{{ number_format($transaction->amount, 2) }}</p>
-                        @if(($transaction->metadata['original_amount'] ?? null) && $transaction->metadata['original_amount'] != $transaction->amount)
-                        <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-                            (ราคาสินค้า ฿{{ number_format($transaction->metadata['original_amount'], 2) }} + ค่าทศนิยมยืนยันอัตโนมัติ)
-                        </p>
-                        @endif
-                        <p class="text-xs text-red-600 dark:text-red-400 mt-2">⚠️ โปรดโอนตามยอดที่ระบุเท่านั้น (รวมจุดทศนิยม)</p>
-                    </div>
-
-                    {{-- คำชี้แจงทำไมยอดโอนมีจุดทศนิยม --}}
-                    <div class="mb-6">
-                        @include('components.sms-payment-explanation', [
-                            'compact' => true,
-                            'amount' => $transaction->amount,
-                            'originalAmount' => $transaction->metadata['original_amount'] ?? null
-                        ])
-                    </div>
-
-                    <!-- Bank Account Info — Enterprise store ใช้บัญชีร้าน / อื่นๆ ใช้บัญชี platform -->
-                    @php
-                        $showSellerBank = false;
-                        $sellerStoreName = null;
-
-                        // เช็คว่า order นี้มาจากร้าน Enterprise ที่มี Direct Payment หรือไม่
-                        if (isset($transaction) && $transaction->store_id) {
-                            $paymentStore = \App\Models\VendorStore::with('package')->find($transaction->store_id);
-                            if ($paymentStore && $paymentStore->allowsDirectPayment()) {
-                                $sellerBankAccounts = \App\Models\SmsGatewayBankAccount::where('store_id', $transaction->store_id)
-                                    ->where('is_active', true)
-                                    ->orderByDesc('is_primary')
-                                    ->orderBy('sort_order')
-                                    ->get();
-                                if ($sellerBankAccounts->isNotEmpty()) {
-                                    $showSellerBank = true;
-                                    $sellerStoreName = $paymentStore->store_name;
-                                    $bankAccounts = $sellerBankAccounts;
-                                    $defaultAccount = $sellerBankAccounts->firstWhere('is_primary', true) ?? $sellerBankAccounts->first();
-                                }
-                            }
-                        }
-
-                        // ถ้าไม่ใช่ Enterprise หรือร้านไม่มีบัญชี → ใช้บัญชี platform
-                        if (! $showSellerBank) {
-                            $bankAccounts = \App\Models\PaymentBankAccount::where('is_active', true)
-                                ->orderByDesc('is_default')
-                                ->orderBy('sort_order')
-                                ->get();
-                            $defaultAccount = $bankAccounts->firstWhere('is_default', true) ?? $bankAccounts->first();
-                        }
-                    @endphp
-
-                    @if($showSellerBank && $sellerStoreName)
-                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span class="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                                โอนเงินไปยังบัญชีของร้าน {{ $sellerStoreName }} โดยตรง
-                            </span>
-                        </div>
-                    </div>
-                    @endif
-
-                    @if($defaultAccount)
-                    <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 mb-6">
-                        <h3 class="font-semibold text-gray-900 dark:text-white mb-4">ข้อมูลบัญชีธนาคาร:</h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">ธนาคาร:</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ $defaultAccount->bank_name }} ({{ $defaultAccount->bank_code }})</span>
-                            </div>
-                            <div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">ชื่อบัญชี:</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ $defaultAccount->account_name }}</span>
-                            </div>
-                            <div class="flex justify-between items-center py-2">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">เลขที่บัญชี:</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono font-bold text-lg text-gray-900 dark:text-white">{{ $defaultAccount->account_number }}</span>
-                                    <button onclick="copyBankAccount()" class="text-indigo-600 hover:text-indigo-700">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                            @if($defaultAccount->branch)
-                            <div class="flex justify-between items-center py-2 border-t border-gray-200 dark:border-gray-700">
-                                <span class="text-sm text-gray-600 dark:text-gray-400">สาขา:</span>
-                                <span class="font-semibold text-gray-900 dark:text-white">{{ $defaultAccount->branch }}</span>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- แสดงบัญชีธนาคารอื่นๆ (ถ้ามี) --}}
-                    @if($bankAccounts->count() > 1)
-                    <div class="mb-6">
-                        <button onclick="document.getElementById('other-accounts').classList.toggle('hidden')"
-                                class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-2">
-                            ดูบัญชีธนาคารอื่น ({{ $bankAccounts->count() - 1 }} บัญชี) ▼
-                        </button>
-                        <div id="other-accounts" class="hidden space-y-3 mt-2">
-                            @foreach($bankAccounts->where('id', '!=', $defaultAccount->id) as $account)
-                            <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-900 dark:text-white">{{ $account->bank_name }} ({{ $account->bank_code }})</span>
-                                    @if($account->sms_checker_enabled)
-                                        <span class="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">SMS ยืนยันอัตโนมัติ</span>
-                                    @endif
-                                </div>
-                                <p class="text-gray-600 dark:text-gray-400 mt-1">{{ $account->account_name }} | {{ $account->account_number }}</p>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    @endif
+    <section class="sf-wrap sf-stack" style="padding-top:18px; max-width:760px;">
+        @if($ppMethod === 'promptpay')
+            <div class="tp-card" style="text-align:center; padding:clamp(18px, 4vw, 30px);">
+                <div class="tp-section-h" style="margin-bottom:4px;"><i class="fas fa-qrcode" style="color:var(--deep1);"></i> สแกน QR พร้อมเพย์</div>
+                <p class="tp-muted" style="margin:0 0 16px; font-size:13px;">เปิดแอปธนาคาร แล้วสแกน QR ด้านล่าง</p>
+                <div style="display:inline-block; padding:16px; border-radius:22px; background:var(--on-accent, #fff); box-shadow:var(--card-shadow);">
+                    @if($ppQrIsImage)
+                        <img src="{{ $ppQr }}" alt="QR พร้อมเพย์ สำหรับคำสั่งซื้อ {{ $order->order_number }}" style="width:min(260px, 64vw); height:auto; display:block;">
                     @else
-                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
-                        <p class="text-sm text-yellow-800 dark:text-yellow-300">⚠️ ยังไม่มีบัญชีธนาคารที่ตั้งค่า กรุณาติดต่อแอดมิน</p>
-                    </div>
+                        <div style="width:min(260px, 64vw); aspect-ratio:1/1; display:grid; place-items:center; color:var(--ink2); font-size:13px;">สร้าง QR ไม่สำเร็จ กรุณาโหลดหน้าใหม่</div>
                     @endif
-
-                    <!-- Instructions -->
-                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
-                        <h4 class="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">📋 สิ่งที่ต้องทำหลังโอนเงิน:</h4>
-                        <ol class="space-y-1 text-sm text-yellow-700 dark:text-yellow-400">
-                            <li>1. เก็บหลักฐานการโอนเงิน (Slip)</li>
-                            @if($defaultAccount && $defaultAccount->sms_checker_enabled)
-                            <li>2. ✅ ระบบจะยืนยันอัตโนมัติผ่าน SMS Checker (ไม่ต้องส่ง Slip)</li>
-                            @else
-                            <li>2. ส่งหลักฐานผ่าน Line: @thaiprompt</li>
-                            @endif
-                            <li>3. แจ้งเลขที่คำสั่งซื้อ: <span class="font-semibold">{{ $order->order_number }}</span></li>
-                        </ol>
+                </div>
+                <div style="margin-top:16px;">
+                    <div class="tp-muted" style="font-size:12.5px;">ยอดที่ต้องโอน (ตรงทุกหลัก)</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
+                        <span class="tp-num" style="font-size:clamp(30px, 6vw, 40px); font-weight:800; color:var(--deep1);">฿{{ number_format($ppAmount, 2) }}</span>
+                        <button type="button" class="tp-btn tp-btn-sm" @click="copy(@js(number_format($ppAmount, 2, '.', '')))"><i class="fas fa-copy"></i> คัดลอกยอด</button>
                     </div>
+                    @if($ppOriginal !== null && abs($ppOriginal - $ppAmount) > 0.001)
+                        <div class="tp-muted" style="font-size:12px;">ราคาสินค้า ฿{{ number_format($ppOriginal, 2) }} + เศษสตางค์สำหรับยืนยันอัตโนมัติ</div>
+                    @endif
                 </div>
-            </div>
-
-            <script>
-            function copyBankAccount() {
-                const accountNumber = '{{ $defaultAccount->account_number ?? '' }}';
-                navigator.clipboard.writeText(accountNumber).then(() => {
-                    const toast = document.createElement('div');
-                    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-                    toast.innerHTML = '✅ คัดลอกเลขที่บัญชีแล้ว!';
-                    document.body.appendChild(toast);
-                    setTimeout(() => toast.remove(), 3000);
-                });
-            }
-            </script>
-            @endif
-
-            <!-- Status & Timer -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-gray-900 dark:text-white">สถานะการชำระเงิน</h3>
-                    <span class="px-3 py-1 rounded-full text-sm font-semibold
-                        {{ $transaction->status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' : '' }}
-                        {{ $transaction->status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' : '' }}">
-                        {{ $transaction->status === 'pending' ? 'รอชำระเงิน' : ($transaction->status === 'processing' ? 'กำลังตรวจสอบ' : $transaction->status) }}
-                    </span>
-                </div>
-
-                <div class="text-center py-6">
-                    <div class="inline-flex items-center justify-center w-20 h-20 bg-yellow-100 dark:bg-yellow-900/20 rounded-full mb-4">
-                        <svg class="w-10 h-10 text-yellow-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
+                @if(! empty($promptpayInfo['promptpay_id']))
+                    <div style="margin-top:14px; padding:12px 14px; border-radius:16px; background:var(--surf); box-shadow:var(--inset-sm); text-align:left;">
+                        <div class="sf-row"><span>ชื่อบัญชี</span><strong>{{ $promptpayInfo['promptpay_name'] ?? '-' }}</strong></div>
+                        <div class="sf-row" style="margin-top:6px;"><span>{{ ($promptpayInfo['promptpay_type'] ?? 'phone') === 'phone' ? 'เบอร์พร้อมเพย์' : 'เลขพร้อมเพย์' }}</span><strong class="tp-num">{{ $promptpayInfo['promptpay_id'] }}</strong></div>
                     </div>
-                    <p class="text-lg font-semibold text-gray-900 dark:text-white mb-2">กำลังรอการชำระเงิน</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">เมื่อคุณชำระเงินสำเร็จ ระบบจะอัพเดทอัตโนมัติ</p>
-                </div>
-
-                @if($transaction->expired_at)
-                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <svg class="w-5 h-5 text-red-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                            </svg>
-                            <span class="text-sm font-medium text-red-800 dark:text-red-300">หมดอายุ:</span>
-                        </div>
-                        <span class="text-sm font-semibold text-red-800 dark:text-red-300">{{ $transaction->expired_at->format('d/m/Y H:i') }} น.</span>
-                    </div>
-                </div>
+                @endif
+                @if(! empty($paymentData['ref_no']))
+                    <div class="tp-muted" style="margin-top:10px; font-size:12.5px;">เลขอ้างอิง <span class="tp-num" style="font-weight:800; color:var(--ink);">{{ $paymentData['ref_no'] }}</span></div>
                 @endif
             </div>
-
-            <!-- Actions -->
-            <div class="flex flex-col sm:flex-row gap-4">
-                <a href="{{ route('orders.show', $order->id) }}"
-                   class="flex-1 py-3 px-4 rounded-lg font-semibold text-center text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 transition">
-                    ดูคำสั่งซื้อ
-                </a>
-                <a href="{{ route('home') }}"
-                   class="flex-1 py-3 px-4 rounded-lg font-semibold text-center text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition">
-                    กลับหน้าแรก
-                </a>
+        @elseif($ppMethod === 'bank_transfer')
+            <div class="tp-card sf-stack" style="gap:12px;">
+                <div class="tp-section-h"><i class="fas fa-building-columns" style="color:var(--deep1);"></i> โอนเงินผ่านธนาคาร</div>
+                <div style="text-align:center;">
+                    <div class="tp-muted" style="font-size:12.5px;">ยอดที่ต้องโอน (ตรงทุกหลัก)</div>
+                    <div class="tp-num" style="font-size:clamp(30px, 6vw, 40px); font-weight:800; color:var(--deep1);">฿{{ number_format($ppAmount, 2) }}</div>
+                    <button type="button" class="tp-btn tp-btn-sm" @click="copy(@js(number_format($ppAmount, 2, '.', '')))"><i class="fas fa-copy"></i> คัดลอกยอด</button>
+                </div>
+                @if($ppSellerStore)
+                    <div class="sf-note sf-note-warn"><i class="fas fa-circle-info"></i> โอนเข้าบัญชีของร้าน {{ $ppSellerStore }} โดยตรง</div>
+                @endif
+                @if($ppDefaultAccount)
+                    <div style="padding:14px; border-radius:16px; background:var(--surf); box-shadow:var(--inset-sm);">
+                        <div class="sf-row"><span>ธนาคาร</span><strong>{{ $ppDefaultAccount->bank_name }}</strong></div>
+                        <div class="sf-row" style="margin-top:6px;"><span>ชื่อบัญชี</span><strong>{{ $ppDefaultAccount->account_name }}</strong></div>
+                        <div class="sf-row" style="margin-top:6px; align-items:center;"><span>เลขบัญชี</span>
+                            <span style="display:flex; align-items:center; gap:8px;"><strong class="tp-num" style="font-size:17px;">{{ $ppDefaultAccount->account_number }}</strong>
+                                <button type="button" class="tp-btn tp-btn-sm" @click="copy(@js((string) $ppDefaultAccount->account_number))" aria-label="คัดลอกเลขบัญชี"><i class="fas fa-copy"></i></button>
+                            </span>
+                        </div>
+                        @if($ppDefaultAccount->branch)
+                            <div class="sf-row" style="margin-top:6px;"><span>สาขา</span><strong>{{ $ppDefaultAccount->branch }}</strong></div>
+                        @endif
+                    </div>
+                    @if($ppBankAccounts->count() > 1)
+                        <details>
+                            <summary class="tp-muted" style="cursor:pointer; font-size:13px; font-weight:600;">บัญชีอื่น ({{ $ppBankAccounts->count() - 1 }})</summary>
+                            <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+                                @foreach($ppBankAccounts->where('id', '!=', $ppDefaultAccount->id) as $acc)
+                                    <div style="padding:10px 12px; border-radius:14px; background:var(--surf); box-shadow:var(--raise); font-size:13px;">
+                                        <strong>{{ $acc->bank_name }}</strong> · {{ $acc->account_name }} · <span class="tp-num">{{ $acc->account_number }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </details>
+                    @endif
+                @else
+                    <div class="sf-note sf-note-warn">ยังไม่มีบัญชีธนาคารสำหรับรับโอน กรุณาติดต่อทีมงาน</div>
+                @endif
             </div>
+        @else
+            <div class="tp-card sf-note sf-note-info">คำสั่งซื้อนี้ชำระด้วย {{ \App\Support\Shop\PaymentMethod::labelTh($ppMethod) }} — ระบบกำลังตรวจสอบสถานะให้อัตโนมัติ</div>
+        @endif
 
-            <!-- Auto Refresh Info -->
-            <div class="text-center">
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                    ระบบตรวจสอบสถานะอัตโนมัติทุก 10 วินาที
-                </p>
+        <div class="sf-note sf-note-info" style="font-size:12.5px;">
+            <strong>💡 {{ $ppExplain['title'] ?? 'ทำไมยอดโอนมีจุดทศนิยม?' }}</strong><br>
+            {{ $ppExplain['note'] ?? 'กรุณาโอนตามยอดที่แสดงทุกประการ (รวมจุดทศนิยม) เพื่อให้ระบบยืนยันอัตโนมัติ ไม่ต้องรอแอดมิน' }}
+        </div>
+
+        <div class="tp-card" style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <span class="tp-tile" style="width:46px; height:46px; font-size:18px;"><i class="fas fa-rotate" :class="checking && 'fa-spin'"></i></span>
+            <div style="flex:1; min-width:200px;">
+                <div style="font-weight:800; color:var(--ink);">ระบบตรวจสถานะอัตโนมัติทุก 10 วินาที</div>
+                <div class="tp-muted" style="font-size:12.5px;">เมื่อเงินเข้า หน้านี้จะพาไปหน้าสั่งซื้อสำเร็จเอง ไม่ต้องรีเฟรช</div>
+            </div>
+            <div x-show="left" x-cloak style="text-align:right;">
+                <div class="tp-muted" style="font-size:11.5px;">หมดอายุใน</div>
+                <div class="tp-num" style="font-weight:800; font-size:18px; color:var(--deep2);" x-text="left"></div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Auto Refresh Script -->
-<script>
-// ❌ ไม่ใช้ window.location.reload() เพราะจะทำให้ระบบสร้างทศนิยมใหม่ถ้า transaction หมดอายุ
-// ✅ ใช้ AJAX polling เท่านั้น — ยอดทศนิยมจะไม่เปลี่ยนระหว่างรอชำระ
+        @if($ppSiblings->isNotEmpty())
+            <div class="tp-card sf-stack" style="gap:10px;">
+                <div class="tp-section-h"><i class="fas fa-store" style="color:var(--deep1);"></i> คำสั่งซื้ออื่นจากการสั่งครั้งนี้</div>
+                <p class="tp-muted" style="margin:0; font-size:12.5px;">สินค้ามาจากหลายร้าน ระบบแยกเป็นคำสั่งซื้อละร้าน — ชำระให้ครบทุกรายการ</p>
+                @foreach($ppSiblings as $sib)
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 12px; border-radius:14px; background:var(--surf); box-shadow:var(--raise);">
+                        <span style="flex:1; min-width:160px;"><strong class="tp-num">#{{ $sib->order_number }}</strong> · ฿{{ number_format((float) $sib->total_amount, 2) }}</span>
+                        @if($sib->payment_status === 'paid')
+                            <span class="tp-pill tp-pill-soft"><i class="fas fa-check"></i> ชำระแล้ว</span>
+                        @elseif(in_array($sib->payment_method, ['promptpay', 'bank_transfer'], true))
+                            <a href="{{ route('checkout.processing', $sib->id) }}" class="tp-btn tp-btn-sm tp-btn-primary" style="text-decoration:none;">ชำระรายการนี้</a>
+                        @else
+                            <a href="{{ route('orders.show', $sib->id) }}" class="tp-btn tp-btn-sm" style="text-decoration:none;">ดูคำสั่งซื้อ</a>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
-// Check payment status via AJAX every 10 seconds
-setInterval(async () => {
-    try {
-        const response = await fetch('{{ route("orders.show", $order->id) }}', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        });
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+            <a href="{{ route('orders.show', $order->id) }}" class="sf-btn3d is-soft">ดูคำสั่งซื้อ</a>
+            <a href="{{ route('storefront.index') }}" class="sf-btn3d is-soft">กลับไปร้านค้า</a>
+        </div>
+    </section>
+</main>
 
-        if (response.ok) {
-            const data = await response.json();
-            if (data.order && data.order.payment_status === 'paid') {
-                // Payment completed, redirect to success page
-                window.location.href = '{{ route("checkout.success", $order->id) }}';
-            }
-        }
-    } catch (error) {
-        console.error('Failed to check payment status:', error);
-    }
-}, 10000);
-
-// Safety: hard refresh after 5 minutes only (ไม่ใช่ 30 วินาที)
-// กรณี AJAX ไม่ทำงาน ก็ยังมี fallback
-setTimeout(() => {
-    window.location.reload();
-}, 300000);
-</script>
+<x-theme-v4.public-footer />
 @endsection
+
+@push('scripts')
+<script>
+    /**
+     * รอเงินเข้า: โพลสถานะออเดอร์ทุก 10 วิ (ห้ามรีโหลดหน้า — ยอดทศนิยมต้องคงเดิม) + นับถอยหลังหมดอายุ
+     */
+    function tpPaymentWait(cfg) {
+        return {
+            checking: false,
+            left: '',
+            init() {
+                setInterval(() => this.check(), 10000);
+                if (cfg.expiresAt) {
+                    const end = new Date(cfg.expiresAt).getTime();
+                    const tick = () => {
+                        const d = Math.max(0, end - Date.now());
+                        const m = Math.floor(d / 60000);
+                        const s = Math.floor(d % 60000 / 1000);
+                        this.left = d > 0 ? (String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0')) : 'หมดเวลา';
+                    };
+                    tick();
+                    setInterval(tick, 1000);
+                }
+                // สำรอง: ถ้าโพลไม่ทำงาน รีเฟรชหน้าหลัง 5 นาที (ระบบไม่สร้างยอดใหม่ถ้ารายการยังไม่หมดอายุ)
+                setTimeout(() => window.location.reload(), 300000);
+            },
+            async check() {
+                if (this.checking) { return; }
+                this.checking = true;
+                try {
+                    const res = await fetch(cfg.statusUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.order && data.order.payment_status === 'paid') {
+                            window.location.href = cfg.successUrl;
+                        }
+                    }
+                } catch (e) {
+                    // เงียบไว้ รอบถัดไปลองใหม่
+                } finally {
+                    this.checking = false;
+                }
+            },
+            copy(text) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text).then(() => window.tpShop.notify('คัดลอกแล้ว', 'success')).catch(() => {});
+                }
+            }
+        };
+    }
+</script>
+@endpush

@@ -84,7 +84,10 @@ class ProductController extends Controller
     {
         $categories = ProductCategory::active()->orderBy('name')->get();
 
-        return view('seller.products.create', compact('categories'));
+        return view('seller.products.create', array_merge(
+            compact('categories'),
+            $this->pricingContext(null)
+        ));
     }
 
     /**
@@ -160,7 +163,9 @@ class ProductController extends Controller
                 'main_image_url' => $mainImageUrl,
                 // Shipping fields
                 'shipping_method' => $request->shipping_method ?? 'store_default',
-                'shipping_fee' => $request->shipping_fee,
+                // products.shipping_fee เป็น NOT NULL DEFAULT 0 — ฟอร์ม V4 ปิดช่องค่าส่ง (disabled) เมื่อไม่ใช่ค่าส่งคงที่
+                // เบราว์เซอร์จึงไม่ส่งช่องนี้มา → ใช้ 0 แทน null (เดิมสร้างสินค้าแบบ "ใช้ค่าร้าน/ส่งฟรี" ไม่ได้เลย)
+                'shipping_fee' => $request->filled('shipping_fee') ? round((float) $request->shipping_fee, 2) : 0,
                 'shipping_weight_kg' => $request->shipping_weight_kg,
                 'free_shipping_min_amount' => $request->free_shipping_min_amount
                     ?? $request->free_shipping_min_amount_weight,
@@ -220,7 +225,22 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            // ลบรูปหลักที่อัปโหลดไปก่อนบันทึกไม่สำเร็จ (ไม่ให้ไฟล์กำพร้าค้างใน storage)
+            if (! empty($mainImageUrl)) {
+                try {
+                    $this->imageUploadService->deleteImage($mainImageUrl);
+                } catch (\Throwable $cleanupError) {
+                    \Illuminate\Support\Facades\Log::warning('Seller product create: orphan image cleanup failed', ['error' => $cleanupError->getMessage()]);
+                }
+            }
+
+            // 🔒 (2026-09-25) ไม่ส่งข้อความ exception ดิบให้ผู้ใช้ (อาจมี SQL/พาธไฟล์) — log ไว้ แล้วตอบภาษาไทย
+            \Illuminate\Support\Facades\Log::error('Seller product create failed', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'บันทึกสินค้าไม่สำเร็จ กรุณาตรวจสอบข้อมูลและรูปภาพ แล้วลองใหม่อีกครั้ง');
         }
     }
 
@@ -236,7 +256,10 @@ class ProductController extends Controller
 
         $categories = ProductCategory::active()->orderBy('name')->get();
 
-        return view('seller.products.edit', compact('product', 'categories'));
+        return view('seller.products.edit', array_merge(
+            compact('product', 'categories'),
+            $this->pricingContext($product)
+        ));
     }
 
     /**
@@ -404,7 +427,13 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Seller product update failed', [
+                'user_id' => auth()->id(),
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'บันทึกการแก้ไขสินค้าไม่สำเร็จ กรุณาตรวจสอบข้อมูลและรูปภาพ แล้วลองใหม่อีกครั้ง');
         }
     }
 
@@ -495,6 +524,40 @@ class ProductController extends Controller
             'success' => true,
             'message' => 'อัพเดตสต็อกเรียบร้อยแล้ว',
         ]);
+    }
+
+    /**
+     * ข้อมูลราคาสำหรับฟอร์มสินค้า V4 (อ่านอย่างเดียว — ผู้ขายตั้ง GP เองไม่ได้)
+     *
+     * gpInfo = อัตรา GP ที่ใช้จริงพร้อมเหตุผล, gpPromoActive = โปรฯ GP ฟรีช่วงเปิดตัว,
+     * vatRegistered = ร้านจด VAT (ถอด VAT 7/107), mlmEnabled = ระบบค่าแนะนำเปิดอยู่ (ฟีเจอร์เฉพาะเว็บ)
+     * pvValue = PV ต่อชิ้นที่ใช้จริง (แถว mlm_product_pv ถ้ามี)
+     *
+     * @return array<string, mixed>
+     */
+    private function pricingContext(?Product $product): array
+    {
+        $engine = app(PricingEngine::class);
+        $store = \App\Models\VendorStore::where('user_id', auth()->id())->orderBy('id')->first();
+        $subject = $product ?? (new Product)->forceFill([
+            'seller_id' => auth()->id(),
+            'store_id' => $store?->id,
+        ]);
+
+        try {
+            $gpInfo = $engine->gpRateInfoForProduct($subject);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Seller product form: GP info unavailable', ['error' => $e->getMessage()]);
+            $gpInfo = ['rate' => null, 'source' => 'unknown', 'label_th' => 'อัตรา GP ตามที่แพลตฟอร์มกำหนด', 'clamped' => false];
+        }
+
+        return [
+            'gpInfo' => $gpInfo,
+            'gpPromoActive' => $engine->gpPromoActive(),
+            'vatRegistered' => $engine->storeVatRegistered($store),
+            'mlmEnabled' => $engine->mlmEnabled(),
+            'pvValue' => $product !== null ? $engine->pvInfoForProduct($product)['pv'] : 0.0,
+        ];
     }
 
     /**

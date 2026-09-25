@@ -128,7 +128,8 @@ class AnalyticsAIService
             }
 
             $lastOrderDate = $orders->max(fn ($o) => $o->order->created_at);
-            $recency = now()->diffInDays($lastOrderDate);
+            // Carbon 3 คืนค่าติดลบ/ทศนิยมเมื่อเทียบกับอดีต → ใช้ค่าสัมบูรณ์เป็นจำนวนวันเต็ม
+            $recency = (int) abs(now()->diffInDays($lastOrderDate));
             $frequency = $orders->count();
             $monetary = $orders->sum('total');
 
@@ -177,7 +178,9 @@ class AnalyticsAIService
             }
 
             $retention = [];
-            for ($month = 0; $month <= now()->diffInMonths($cohortMonth); $month++) {
+            // Carbon 3: now()->diffInMonths(อดีต) ติดลบ → เดิมลูปไม่ทำงานเลย ตาราง cohort ว่างเสมอ
+            $monthsSince = (int) floor(abs($cohortMonth->diffInMonths(now())));
+            for ($month = 0; $month <= $monthsSince; $month++) {
                 $periodStart = $cohortMonth->copy()->addMonths($month);
                 $periodEnd = $periodStart->copy()->endOfMonth();
 

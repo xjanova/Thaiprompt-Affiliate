@@ -75,6 +75,20 @@ class OfficialShopAdminController extends Controller
     }
 
     /**
+     * บันทึก error ลง log แล้วคืนข้อความไทย (ไม่เปิดเผยข้อความ exception ดิบให้ผู้ใช้)
+     */
+    private function failMessage(\Throwable $e): string
+    {
+        \Illuminate\Support\Facades\Log::error('Official shop admin action failed', [
+            'route' => request()->route()?->getName(),
+            'error' => $e->getMessage(),
+            'file' => $e->getFile().':'.$e->getLine(),
+        ]);
+
+        return 'เกิดข้อผิดพลาด ระบบยังไม่ได้บันทึกการเปลี่ยนแปลง กรุณาลองใหม่อีกครั้ง';
+    }
+
+    /**
      * ตรวจสอบว่าเป็นสินค้า Official Shop หรือไม่
      */
     protected function isOfficialProduct(Product $product): bool
@@ -170,14 +184,19 @@ class OfficialShopAdminController extends Controller
             }
         }
 
-        // กรองตามสถานะสต็อก
+        // กรองตามสถานะสต็อก ("ใกล้หมด" คำนวณจากจำนวนเทียบเกณฑ์ — enum ไม่มี low_stock)
         if ($request->filled('stock_status')) {
-            $query->where('stock_status', $request->stock_status);
+            if ($request->stock_status === 'low_stock') {
+                $query->lowStock();
+            } else {
+                $query->where('stock_status', $request->stock_status);
+            }
         }
 
-        // เรียงลำดับ
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // เรียงลำดับ (whitelist — ค่าแปลกเคยทำให้หน้า 500)
+        $allowedSort = ['created_at', 'name', 'price', 'stock_quantity', 'sales_count', 'view_count'];
+        $sortBy = in_array($request->get('sort_by'), $allowedSort, true) ? $request->get('sort_by') : 'created_at';
+        $sortOrder = strtolower((string) $request->get('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
         $products = $query->paginate(20)->withQueryString();
@@ -282,18 +301,10 @@ class OfficialShopAdminController extends Controller
             $validated['track_inventory'] = $request->boolean('track_inventory', true);
             $validated['allow_coin_purchase'] = $request->boolean('allow_coin_purchase', false);
 
-            // คำนวณสถานะสต็อก
+            // คำนวณสถานะสต็อก — enum มีแค่ in_stock|out_of_stock|on_backorder ('low_stock' ทำให้ insert พัง)
             if ($validated['track_inventory']) {
                 $stockQty = $validated['stock_quantity'] ?? 0;
-                $lowThreshold = $validated['low_stock_threshold'] ?? 5;
-
-                if ($stockQty <= 0) {
-                    $validated['stock_status'] = 'out_of_stock';
-                } elseif ($stockQty <= $lowThreshold) {
-                    $validated['stock_status'] = 'low_stock';
-                } else {
-                    $validated['stock_status'] = 'in_stock';
-                }
+                $validated['stock_status'] = $stockQty <= 0 ? 'out_of_stock' : 'in_stock';
             } else {
                 $validated['stock_status'] = 'in_stock';
             }
@@ -333,7 +344,7 @@ class OfficialShopAdminController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', $this->failMessage($e));
         }
     }
 
@@ -451,18 +462,10 @@ class OfficialShopAdminController extends Controller
             $validated['track_inventory'] = $request->boolean('track_inventory', true);
             $validated['allow_coin_purchase'] = $request->boolean('allow_coin_purchase', false);
 
-            // คำนวณสถานะสต็อก
+            // คำนวณสถานะสต็อก — enum มีแค่ in_stock|out_of_stock|on_backorder ('low_stock' ทำให้ update พัง)
             if ($validated['track_inventory']) {
                 $stockQty = $validated['stock_quantity'] ?? 0;
-                $lowThreshold = $validated['low_stock_threshold'] ?? 5;
-
-                if ($stockQty <= 0) {
-                    $validated['stock_status'] = 'out_of_stock';
-                } elseif ($stockQty <= $lowThreshold) {
-                    $validated['stock_status'] = 'low_stock';
-                } else {
-                    $validated['stock_status'] = 'in_stock';
-                }
+                $validated['stock_status'] = $stockQty <= 0 ? 'out_of_stock' : 'in_stock';
             }
 
             // อัพเดทสินค้า
@@ -511,7 +514,7 @@ class OfficialShopAdminController extends Controller
 
             return back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', $this->failMessage($e));
         }
     }
 
@@ -554,7 +557,7 @@ class OfficialShopAdminController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', $this->failMessage($e));
         }
     }
 

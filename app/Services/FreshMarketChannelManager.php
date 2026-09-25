@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Exceptions\FreshMarketException;
 use App\Exceptions\RiderJobException;
 use App\Models\FreshMarketConversation;
 use App\Models\FreshMarketListing;
 use App\Models\FreshMarketOrder;
 use App\Models\FreshMarketReferral;
 use App\Models\FreshMarketSeller;
-use App\Exceptions\FreshMarketException;
 use App\Models\FreshMarketSetting;
 use App\Models\Rider;
 use App\Models\RiderJob;
@@ -1311,8 +1311,28 @@ class FreshMarketChannelManager
         if ($parsed && ! empty($parsed['quantity'])) {
             $quantity = (int) $parsed['quantity'];
             $deliveryType = $parsed['delivery_type'] ?? 'pickup';
-            $unitPrice = (float) ($ctx['listing_price'] ?? 0);
-            $totalAmount = round($unitPrice * $quantity, 2);
+
+            // ราคาจริงจากตัวคำนวณเดียวกับตอนสร้างออเดอร์ (LINE ยังเลือกตัวเลือกไม่ได้ → กลุ่มบังคับใช้ตัวเลือกที่ถูกที่สุด)
+            // ยอดที่ผู้ซื้อกด "ยืนยัน" ต้องตรงกับยอดที่ถูกเก็บจริง
+            $pricedListing = FreshMarketListing::with('seller')->find($ctx['listing_id'] ?? 0);
+
+            if (! $pricedListing || ! $pricedListing->isAvailableForPurchase()) {
+                $conversation->resetToIdle();
+
+                return ['text' => 'ขอโทษค่ะ สินค้านี้ไม่พร้อมขายแล้วค่ะ 😅'];
+            }
+
+            try {
+                $priced = app(FreshMarketOptionService::class)->resolveLine($pricedListing, [], $quantity, null, true);
+            } catch (FreshMarketException $e) {
+                return ['text' => '⚠️ '.$e->getMessage()."\n\nพิมพ์จำนวนใหม่ หรือสั่งผ่านแอป/เว็บเพื่อเลือกตัวเลือกเองได้ค่ะ"];
+            }
+
+            $unitPrice = (float) $priced['unit_price'];
+            $totalAmount = (float) $priced['line_total'];
+            $optionsLabel = collect($priced['selected_options'])
+                ->map(fn (array $o) => $o['group_name'].': '.$o['name'].($o['price_delta'] > 0 ? ' (+฿'.number_format($o['price_delta'], 0).')' : ''))
+                ->implode(', ');
 
             // ค่าส่งไรเดอร์คำนวณฝั่งเซิร์ฟเวอร์จากร้าน → ตำแหน่งผู้ซื้อ (ตัวเลขเดียวกับตอนสร้างออเดอร์)
             $deliveryFee = 0;
@@ -1348,9 +1368,36 @@ class FreshMarketChannelManager
                 ]);
             }
 
+            // วิธีจ่ายที่ LINE จะใช้จริง (เก็บเงินปลายทาง ถ้าปิดอยู่ = หัก Wallet) — แสดงในสรุปก่อนกดยืนยัน
+            try {
+                $paymentMethod = $this->marketService->resolvePaymentMethod(null, 'cod');
+            } catch (FreshMarketException $e) {
+                $conversation->resetToIdle();
+
+                return ['text' => '⚠️ '.$e->getMessage()];
+            }
+
+            // เก็บเงินปลายทาง + ไรเดอร์: ยอดรวมต้องไม่เกินวงเงิน COD (กติกาเดียวกับตอนสร้างออเดอร์ — บอกก่อนให้กดยืนยัน)
+            if ($paymentMethod === 'cod' && $deliveryType === 'rider') {
+                $codLimit = app(DeliveryFeeCalculator::class)->maxCodAmount();
+                $codTotal = round($totalAmount + $deliveryFee, 2);
+
+                if ($codTotal > $codLimit) {
+                    return [
+                        'text' => '⚠️ '.($codLimit > 0
+                            ? 'ยอดรวม ฿'.number_format($codTotal, 0).' เกินวงเงินเก็บเงินปลายทาง ฿'.number_format($codLimit, 0)
+                            : 'ขณะนี้ยังไม่รับเก็บเงินปลายทางสำหรับการส่งด้วยไรเดอร์')
+                            ."\n\nลดจำนวน หรือพิมพ์ \"{$quantity} นัดรับ\" เพื่อไปรับเองที่ร้านได้ค่ะ",
+                    ];
+                }
+            }
+
             $conversation->setFlowContext('order', [
                 'quantity' => $quantity,
                 'delivery_type' => $deliveryType,
+                'payment_method' => $paymentMethod,
+                'unit_price' => $unitPrice,
+                'options_label' => $optionsLabel !== '' ? $optionsLabel : null,
                 'total_amount' => $totalAmount,
                 'delivery_fee' => $deliveryFee,
             ]);
@@ -2194,21 +2241,33 @@ class FreshMarketChannelManager
         $title = $ctx['listing_title'] ?? 'สินค้า';
         $quantity = $ctx['quantity'] ?? 1;
         $unit = $ctx['listing_unit'] ?? 'ชิ้น';
-        $unitPrice = $ctx['listing_price'] ?? 0;
+        // ราคาต่อหน่วยรวมตัวเลือก (คำนวณด้วยตัวเดียวกับตอนสร้างออเดอร์) — context เก่าที่ยังไม่มีใช้ราคาสินค้า
+        $unitPrice = $ctx['unit_price'] ?? ($ctx['listing_price'] ?? 0);
         $total = $ctx['total_amount'] ?? ($unitPrice * $quantity);
         $deliveryFee = $ctx['delivery_fee'] ?? 0;
         $deliveryLabel = ($ctx['delivery_type'] ?? 'pickup') === 'rider' ? '🚗 ให้ส่ง' : '🏪 นัดรับเอง';
+        $optionsLabel = $ctx['options_label'] ?? null;
+        $paymentMethod = $ctx['payment_method'] ?? null;
 
         $text = "{$progress}\n\n";
         $text .= "🧾 สรุปคำสั่งซื้อ:\n";
         $text .= "━━━━━━━━━━━━━━━\n";
         $text .= "📦 {$title} x{$quantity} {$unit}\n";
+        if ($optionsLabel) {
+            $text .= "🔸 ตัวเลือก: {$optionsLabel}\n";
+            $text .= "   (ระบบเลือกให้อัตโนมัติ — อยากเลือกเองสั่งผ่านแอป/เว็บได้ค่ะ)\n";
+        }
         $text .= '💰 ฿'.number_format($unitPrice, 0)." x {$quantity} = ฿".number_format($total, 0)."\n";
         if ($deliveryFee > 0) {
             $text .= '🚗 ค่าส่ง: ฿'.number_format($deliveryFee, 0)."\n";
             $text .= '💵 รวมทั้งหมด: ฿'.number_format($total + $deliveryFee, 0)."\n";
         }
         $text .= "📍 {$deliveryLabel}\n";
+        if ($paymentMethod) {
+            $text .= $paymentMethod === 'cod'
+                ? "💳 ชำระเงินสดตอนรับสินค้า\n"
+                : '💳 หักจาก Wallet ฿'.number_format($total + $deliveryFee, 0)." (ระบบถือเงินไว้จนคุณได้รับของ)\n";
+        }
         $text .= "━━━━━━━━━━━━━━━\n\n";
         $text .= "พิมพ์ \"ยืนยัน\" เพื่อสั่งซื้อ\n";
         $text .= "พิมพ์ \"แก้ไข\" เพื่อเปลี่ยนจำนวน\n";
@@ -2216,7 +2275,7 @@ class FreshMarketChannelManager
 
         // Flex message พร้อมรายละเอียดราคาครบถ้วน
         $flex = $this->lineService->buildOrderSummaryFlex([
-            'title' => $title,
+            'title' => $optionsLabel ? mb_substr($title.' ('.$optionsLabel.')', 0, 120) : $title,
             'quantity' => $quantity,
             'unit' => $unit,
             'unit_price' => $unitPrice,

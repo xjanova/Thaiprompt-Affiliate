@@ -1,1138 +1,456 @@
 {{--
-    หน้าจัดการงานจัดส่งสำหรับไรเดอร์ (Active Job)
+ | หน้างานที่กำลังส่งของไรเดอร์ (taladsod.rider.active-job) — ธีม V4 (user-v4)
+ | Controller: FreshMarket\RiderTrackingController@riderActiveJob (เจ้าของงานเท่านั้น · งานจบแล้วถูกพาไปหน้ารายละเอียดงาน)
+ | ตัวแปร: $job, $rider, $orderNumber, $customerLocation {latitude, longitude, address, contact_name, contact_phone, live_location},
+ |         $pickupLocation {latitude, longitude, address, contact_name, contact_phone}, $gpsUpdateInterval (ms), $gpsLostTimeout (ms),
+ |         $maxWarnings, $codAmount, $endpoints {location, status, deliver, fail, gps_lost, gps_off, job_detail, jobs}
+ | คำสั่ง (session + CSRF, ตอบ JSON {success, message, data{job}}):
+ |   POST location {latitude, longitude, accuracy?, speed?, heading?} ทุก gpsUpdateInterval
+ |   POST status {status: picking_up|picked_up|delivering, photo?} · POST deliver multipart {photo*, latitude?, longitude?, cod_collected, note?}
+ |   POST fail {reason_code, note? (บังคับเมื่อ other), photo?} · POST gps_lost · POST gps_off
+ | แผนที่: OpenStreetMap + Leaflet (ไม่ใช้ Google Maps API key)
+ --}}
+@extends('layouts.user-v4')
 
-    ฟีเจอร์หลัก:
-    - บังคับเปิด GPS ตลอดเวลา (ปิดไม่ได้จนกว่าจะเปิดกลับ)
-    - แผนที่ Google Maps แสดงตำแหน่งจริง + เส้นทาง
-    - ปุ่มเปลี่ยนสถานะงานตามลำดับ
-    - โทรหาลูกค้า/ร้านค้า
-    - ส่งพิกัด GPS ไปเซิร์ฟเวอร์ทุก N วินาที
+@section('title', 'งานส่งของ #'.$job->job_number)
 
-    ตัวแปรจาก Controller:
-    - $job (RiderJob), $rider (Rider), $orderNumber (?string)
-    - $customerLocation, $pickupLocation (array: latitude, longitude, address, contact_name, contact_phone)
-    - $googleMapsApiKey, $gpsUpdateInterval, $gpsLostTimeout (ms), $maxWarnings, $codAmount (float)
-    - $endpoints (array URL ของ route session user.rider.*: location, status, deliver, fail, gps_lost, gps_off, job_detail, jobs)
+@push('styles')
+    @include('user.rider.partials.styles')
+    <style>
+        /* หน้าส่งงาน: ปุ่มลอย Theme Studio / น้อง Eve ทับแถบปุ่มหลักด้านล่าง (ส่งของสำเร็จ / ส่งไม่สำเร็จ) → ซ่อนเฉพาะหน้านี้ */
+        .tp-studio-fab, .eve-w { display: none !important; }
+    </style>
+@endpush
 
-    🔐 (2026-09-25) เลิกสร้าง Sanctum token ใส่หน้าเว็บทุกครั้งที่เปิด (audit FM-23)
-       ทุกปุ่มเรียก route session + CSRF (meta csrf-token ของ layout) แทน
---}}
+@php
+    $ui = \App\Support\TaladsodWebUi::class;
+    $rw = \App\Support\RiderWebUi::class;
+    $jobData = $job->toApiDetail($rider);
+    $failureReasons = array_intersect_key(\App\Models\RiderJob::FAILURE_REASONS, array_flip(\App\Models\RiderJob::RIDER_FAILURE_REASONS));
+    $point = fn ($p) => $rw::validPoint($p['latitude'] ?? null, $p['longitude'] ?? null)
+        ? ['lat' => (float) $p['latitude'], 'lng' => (float) $p['longitude']]
+        : null;
 
-@extends('layouts.taladsod')
-
-@section('title', 'งานจัดส่ง #' . $job->job_number . ' - ตลาดสดไทยพร๊อม')
+    $ajCfg = [
+        'job' => $jobData,
+        'endpoints' => $endpoints,
+        'sendMs' => max(10000, (int) $gpsUpdateInterval),
+        'lostMs' => max(30000, (int) $gpsLostTimeout),
+        'maxWarnings' => (int) $maxWarnings,
+        'cod' => (float) $codAmount,
+        'pickup' => $point($pickupLocation),
+        'dropoff' => $point($customerLocation),
+    ];
+@endphp
 
 @section('content')
-<div class="min-h-screen pb-32"
-     x-data="riderActiveJob()"
-     x-init="init()"
-     x-cloak>
+<x-theme-v4.shop-kit />
+@include('taladsod.partials.kit')
+<x-theme-v4.leaflet />
 
-    {{-- ===== GPS Warning Overlay — เต็มจอ ปิดไม่ได้ ===== --}}
-    <div x-show="gpsLost"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         class="fixed inset-0 z-[9999] bg-red-600 flex flex-col items-center justify-center p-6 text-white"
-         style="display: none;">
+<div class="ts-scope rd-scope ts-stack" style="gap:16px; max-width:900px; margin:0 auto; padding-bottom:100px;" x-data="tsActiveJob({{ \Illuminate\Support\Js::from($ajCfg) }})">
+    @include('user.rider.partials.nav', ['rider' => $rider, 'active' => 'jobs'])
 
-        {{-- ไอคอนเตือน GPS --}}
-        <div class="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center mb-6 animate-pulse">
-            <i class="fas fa-location-crosshairs text-5xl text-white"></i>
-        </div>
-
-        <h2 class="text-2xl font-bold text-center mb-3">GPS ไม่ทำงาน</h2>
-        <p class="text-lg text-center text-red-100 mb-2">
-            กรุณาเปิด GPS เพื่อดำเนินการจัดส่ง
-        </p>
-        <p class="text-sm text-center text-red-200 mb-8 max-w-sm">
-            ระบบต้องการตำแหน่งของคุณเพื่อติดตามการจัดส่ง
-            หากปิด GPS จะไม่สามารถทำงานต่อได้
-        </p>
-
-        {{-- แสดงจำนวนครั้งที่เตือน --}}
-        <div class="bg-white/10 rounded-xl px-6 py-3 mb-6">
-            <p class="text-sm text-center">
-                <i class="fas fa-exclamation-triangle mr-1"></i>
-                เตือนครั้งที่ <span class="font-bold text-xl" x-text="warningCount"></span>
-                / <span x-text="maxWarnings"></span>
-            </p>
-        </div>
-
-        {{-- วิธีเปิด GPS --}}
-        <div class="bg-white/10 rounded-xl p-4 mb-6 max-w-sm w-full">
-            <h3 class="font-semibold mb-2 text-center">
-                <i class="fas fa-info-circle mr-1"></i> วิธีเปิด GPS
-            </h3>
-            <ul class="text-sm text-red-100 space-y-1.5">
-                <li class="flex items-start gap-2">
-                    <span class="font-bold mt-0.5">1.</span>
-                    <span>ปัดแถบสถานะลงมาจากด้านบน</span>
-                </li>
-                <li class="flex items-start gap-2">
-                    <span class="font-bold mt-0.5">2.</span>
-                    <span>กดเปิดไอคอน "ตำแหน่ง" หรือ "Location"</span>
-                </li>
-                <li class="flex items-start gap-2">
-                    <span class="font-bold mt-0.5">3.</span>
-                    <span>กลับมาที่แอปนี้ ระบบจะตรวจจับอัตโนมัติ</span>
-                </li>
-            </ul>
-        </div>
-
-        {{-- ปุ่มลองใหม่ --}}
-        <button @click="retryGps()"
-                class="w-full max-w-sm px-6 py-4 bg-white text-red-600 font-bold rounded-xl shadow-lg hover:bg-red-50 transition-colors mb-4">
-            <i class="fas fa-sync-alt mr-2"></i> ลองเปิด GPS อีกครั้ง
-        </button>
-
-        {{-- ปุ่มยืนยันปิด GPS จริง (เมื่อเตือนถึงจำนวนสูงสุด) --}}
-        <template x-if="warningCount >= maxWarnings">
-            <button @click="confirmGpsOff()"
-                    class="w-full max-w-sm px-6 py-3 bg-white/10 border border-white/30 text-white font-medium rounded-xl hover:bg-white/20 transition-colors text-sm">
-                <i class="fas fa-power-off mr-2"></i> ปิด GPS จริง ๆ (หยุดงาน)
-            </button>
-        </template>
-    </div>
-
-    {{-- ===== แถบสถานะ GPS ด้านบน ===== --}}
-    <div class="sticky top-[65px] z-40 px-4 py-2"
-         :class="gpsActive ? 'bg-green-500 dark:bg-green-600' : 'bg-red-500 dark:bg-red-600'">
-        <div class="max-w-3xl mx-auto flex items-center justify-between text-white text-sm">
-            <div class="flex items-center gap-2">
-                {{-- จุดแสดงสถานะ GPS --}}
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                          :class="gpsActive ? 'bg-green-200' : 'bg-red-200'"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3"
-                          :class="gpsActive ? 'bg-white' : 'bg-red-200'"></span>
-                </span>
-                <span x-text="gpsActive ? 'GPS ทำงานปกติ' : 'GPS ไม่ทำงาน'"></span>
-            </div>
-            <div class="flex items-center gap-3">
-                <span x-show="accuracy" class="text-xs opacity-80">
-                    <i class="fas fa-crosshairs mr-1"></i>
-                    <span x-text="accuracy ? (accuracy.toFixed(0) + ' ม.') : '-'"></span>
-                </span>
-                <span x-show="speed !== null && speed > 0" class="text-xs opacity-80">
-                    <i class="fas fa-gauge-high mr-1"></i>
-                    <span x-text="speed ? ((speed * 3.6).toFixed(0) + ' กม./ชม.') : '-'"></span>
-                </span>
-            </div>
+    {{-- ════════ GPS หาย: เต็มจอ ════════ --}}
+    <div class="ts-dialog-bg" x-show="gpsLost" x-cloak style="align-items:center; z-index:120;">
+        <div class="tp-card ts-dialog ts-stack" role="alertdialog" aria-modal="true" aria-labelledby="aj-gps-h" style="text-align:center; align-items:center;">
+            <span class="tp-tile" style="width:72px; height:72px; border-radius:24px; font-size:30px; background:linear-gradient(135deg, var(--ts-bad), color-mix(in srgb, var(--ts-bad) 70%, var(--ink)));"><i class="fas fa-location-crosshairs" aria-hidden="true"></i></span>
+            <h2 id="aj-gps-h" class="ts-h2" style="justify-content:center; font-size:20px;">GPS ไม่ทำงาน</h2>
+            <p class="ts-muted" style="margin:0; font-size:13.5px; line-height:1.6;">ต้องเปิดตำแหน่งตลอดการส่งงาน เพื่อให้ลูกค้าและร้านติดตามได้ — เปิด "ตำแหน่ง/Location" ในเครื่อง แล้วกดลองใหม่</p>
+            <span class="ts-pill ts-tone-bad">เตือนครั้งที่ <b x-text="warningCount"></b> / <span x-text="cfg.maxWarnings"></span></span>
+            <button type="button" class="ts-btn3d ts-tone-ok block" x-on:click="retryGps()"><i class="fas fa-rotate" aria-hidden="true"></i> ลองเปิด GPS อีกครั้ง</button>
+            <button type="button" class="tp-btn ts-btn-ghost ts-tone-bad" x-show="warningCount >= cfg.maxWarnings" x-on:click="askGpsOff = true"><i class="fas fa-power-off" aria-hidden="true"></i> ปิด GPS และหยุดงาน</button>
         </div>
     </div>
 
-    <div class="max-w-3xl mx-auto px-4 py-4 space-y-4">
+    {{-- ════════ แถบสถานะ GPS ════════ --}}
+    <div class="tp-card ts-row" style="justify-content:space-between; padding:10px 16px; position:sticky; top:8px; z-index:30;" :class="gpsActive ? 'ts-tone-ok' : 'ts-tone-bad'">
+        <span class="ts-row" style="gap:8px; font-size:13px; font-weight:700;">
+            <span class="ts-dot" :class="gpsActive ? 'live' : ''"></span>
+            <span x-text="gpsActive ? 'GPS ทำงานปกติ · ส่งตำแหน่งให้ลูกค้าอยู่' : 'กำลังหาตำแหน่ง GPS...'">กำลังหาตำแหน่ง GPS...</span>
+        </span>
+        <span class="ts-muted ts-small">
+            <span x-show="accuracy" x-text="accuracy ? ('แม่นยำ ±' + Math.round(accuracy) + ' ม.') : ''"></span>
+            <span x-show="speed > 0" x-text="speed > 0 ? (' · ' + Math.round(speed * 3.6) + ' กม./ชม.') : ''"></span>
+        </span>
+    </div>
 
-        {{-- ===== แผนที่ Google Maps ===== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-            {{-- พื้นที่แผนที่ --}}
-            <div id="rider-map" class="w-full h-64 sm:h-80 bg-gray-200 dark:bg-gray-700 relative">
-                {{-- แสดง Loading ระหว่างโหลดแผนที่ --}}
-                <div x-show="!mapReady" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-700">
-                    <i class="fas fa-spinner fa-spin text-3xl text-green-500 mb-3"></i>
-                    <span class="text-sm text-gray-500 dark:text-gray-400">กำลังโหลดแผนที่...</span>
-                </div>
-            </div>
-
-            {{-- ปุ่มนำทาง --}}
-            <div class="p-3 flex items-center gap-2">
-                <button @click="navigateToDestination()"
-                        class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm">
-                    <i class="fas fa-diamond-turn-right"></i>
-                    <span>นำทาง</span>
-                </button>
-                <button @click="centerOnRider()"
-                        class="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-colors"
-                        title="ศูนย์กลางที่ตำแหน่งไรเดอร์">
-                    <i class="fas fa-location-crosshairs"></i>
-                </button>
-            </div>
-        </div>
-
-        {{-- ===== การ์ดรายละเอียดงาน ===== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-5">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">
-                    <i class="fas fa-clipboard-list text-green-500 mr-2"></i>
-                    งาน #{{ $job->id }}
-                </h2>
-                {{-- แสดงสถานะปัจจุบัน --}}
-                <span class="px-3 py-1 rounded-full text-xs font-semibold"
-                      :class="statusBadgeClass">
-                    <span x-text="statusLabel"></span>
-                </span>
-            </div>
-
-            {{-- รายละเอียดงาน --}}
-            <dl class="space-y-3 text-sm">
-                @if($orderNumber ?? null)
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">เลขออเดอร์</dt>
-                    <dd class="text-gray-900 dark:text-white font-medium">
-                        #{{ $orderNumber }}
-                    </dd>
-                </div>
+    {{-- ════════ หัวงาน ════════ --}}
+    <section class="tp-card ts-stack" style="gap:10px;">
+        <div class="ts-row" style="justify-content:space-between;">
+            <div style="min-width:0;">
+                <div class="sf-kicker">งานที่กำลังทำ</div>
+                <h1 class="ts-h1" style="font-size:clamp(20px,4vw,26px);">#{{ $job->job_number }}</h1>
+                @if($orderNumber)
+                    <div class="ts-muted ts-small">ออเดอร์ #{{ $orderNumber }}</div>
                 @endif
-                @if(($codAmount ?? 0) > 0)
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">เก็บเงินปลายทาง</dt>
-                    <dd class="text-amber-600 dark:text-amber-400 font-bold">
-                        &#3647;{{ number_format($codAmount, 2) }}
-                    </dd>
-                </div>
-                @endif
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">ระยะทาง</dt>
-                    <dd class="text-gray-900 dark:text-white font-medium">
-                        {{ number_format($job->distance_km ?? 0, 1) }} กม.
-                    </dd>
-                </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">เวลาโดยประมาณ</dt>
-                    <dd class="text-gray-900 dark:text-white font-medium">
-                        {{ $job->estimated_duration_minutes ?? '-' }} นาที
-                    </dd>
-                </div>
-                <div class="flex justify-between">
-                    <dt class="text-gray-500 dark:text-gray-400">ค่าจัดส่ง</dt>
-                    <dd class="text-orange-600 dark:text-orange-400 font-bold text-base">
-                        &#3647;{{ number_format($job->total_fee ?? 0) }}
-                    </dd>
-                </div>
-            </dl>
+            </div>
+            <span class="ts-pill solid ts-tone-info" style="font-size:13px; padding:9px 14px;"><i class="fas fa-motorcycle" aria-hidden="true"></i> <span x-text="job.status_text">{{ $job->status_text }}</span></span>
         </div>
-
-        {{-- ===== การ์ดจุดรับของ (ร้านค้า) ===== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-5"
-             x-show="['accepted', 'picking_up'].includes(jobStatus)">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-lg flex-shrink-0">
-                    <i class="fas fa-store text-green-600 dark:text-green-400"></i>
+        <div class="ts-grid" style="--ts-min:140px; gap:10px;">
+            <div class="tp-inset" style="border-radius:14px; padding:10px 12px;"><span class="ts-muted ts-small">ค่าส่งที่คุณได้</span><div class="ts-money" style="font-size:20px;">฿{{ $ui::money($jobData['rider_earnings'] ?? $job->rider_earnings) }}</div></div>
+            <div class="tp-inset" style="border-radius:14px; padding:10px 12px;"><span class="ts-muted ts-small">ระยะทาง</span><div class="ts-num" style="font-size:20px;">{{ $ui::distance($job->distance_km) }}</div></div>
+            @if($codAmount > 0)
+                <div class="tp-inset ts-tone-warn" style="border-radius:14px; padding:10px 12px; box-shadow:var(--inset-sm), 0 0 0 2px color-mix(in srgb, var(--ts-warn) 50%, transparent);">
+                    <span class="ts-muted ts-small">เก็บเงินปลายทาง</span><div class="ts-num" style="font-size:20px; color:var(--deep2);">฿{{ $ui::money($codAmount) }}</div>
                 </div>
-                <div>
-                    <h3 class="font-semibold text-gray-900 dark:text-white">จุดรับของ</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">ร้านค้า / ผู้ขาย</p>
-                </div>
-            </div>
-
-            <div class="space-y-2 text-sm mb-4">
-                <div class="flex items-start gap-2">
-                    <i class="fas fa-user text-gray-400 mt-0.5 w-4 text-center"></i>
-                    <span class="text-gray-900 dark:text-white">{{ $pickupLocation['contact_name'] ?? '-' }}</span>
-                </div>
-                <div class="flex items-start gap-2">
-                    <i class="fas fa-map-marker-alt text-gray-400 mt-0.5 w-4 text-center"></i>
-                    <span class="text-gray-600 dark:text-gray-300">{{ $pickupLocation['address'] ?? '-' }}</span>
-                </div>
-            </div>
-
-            {{-- ปุ่มโทรหาร้านค้า --}}
-            @if(!empty($pickupLocation['contact_phone']))
-            <a href="tel:{{ $pickupLocation['contact_phone'] }}"
-               class="flex items-center justify-center gap-2 w-full px-4 py-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl font-medium hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors">
-                <i class="fas fa-phone"></i>
-                <span>โทรหาร้านค้า {{ $pickupLocation['contact_phone'] }}</span>
-            </a>
             @endif
         </div>
+        @if($jobData['items_summary'] ?? null)
+            <p class="ts-muted" style="margin:0; font-size:13px;"><i class="fas fa-box" aria-hidden="true"></i> {{ $jobData['items_summary'] }}</p>
+        @endif
+    </section>
 
-        {{-- ===== การ์ดจุดส่งของ (ลูกค้า) ===== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-5"
-             x-show="['picked_up', 'delivering'].includes(jobStatus)">
-            <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-lg flex-shrink-0">
-                    <i class="fas fa-house text-orange-600 dark:text-orange-400"></i>
-                </div>
-                <div>
-                    <h3 class="font-semibold text-gray-900 dark:text-white">จุดส่งของ</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">ลูกค้า / ผู้สั่งซื้อ</p>
-                </div>
-            </div>
-
-            <div class="space-y-2 text-sm mb-4">
-                <div class="flex items-start gap-2">
-                    <i class="fas fa-user text-gray-400 mt-0.5 w-4 text-center"></i>
-                    <span class="text-gray-900 dark:text-white">{{ $customerLocation['contact_name'] ?? '-' }}</span>
-                </div>
-                <div class="flex items-start gap-2">
-                    <i class="fas fa-map-marker-alt text-gray-400 mt-0.5 w-4 text-center"></i>
-                    <span class="text-gray-600 dark:text-gray-300">{{ $customerLocation['address'] ?? '-' }}</span>
-                </div>
-            </div>
-
-            {{-- ปุ่มโทรหาลูกค้า --}}
-            @if(!empty($customerLocation['contact_phone']))
-            <a href="tel:{{ $customerLocation['contact_phone'] }}"
-               class="flex items-center justify-center gap-2 w-full px-4 py-3 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-xl font-medium hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors">
-                <i class="fas fa-phone"></i>
-                <span>โทรหาลูกค้า {{ $customerLocation['contact_phone'] }}</span>
-            </a>
-            @endif
+    {{-- ════════ แผนที่ ════════ --}}
+    <section class="tp-card ts-stack" style="padding:12px; gap:10px;">
+        <div class="ts-map lg" x-ref="map" aria-label="แผนที่ตำแหน่งของคุณและจุดหมาย"></div>
+        <div class="ts-row" style="gap:8px;">
+            <a :href="directionsUrl" target="_blank" rel="noopener" class="ts-btn3d ts-tone-info" style="flex:1;"><i class="fas fa-diamond-turn-right" aria-hidden="true"></i> <span x-text="beforePickup ? 'นำทางไปร้าน' : 'นำทางไปหาลูกค้า'">นำทาง</span></a>
+            <button type="button" class="ts-icon-btn" x-on:click="centerOnMe()" aria-label="ไปที่ตำแหน่งของฉัน"><i class="fas fa-location-crosshairs" aria-hidden="true"></i></button>
         </div>
+        <p class="ts-help" style="margin:0;" x-show="job.customer_live_location"><span class="ts-dot live ts-tone-ok" style="display:inline-block; margin-right:6px;"></span>ลูกค้าแชร์ตำแหน่งสดให้คุณ (หมุดสีส้ม)</p>
+    </section>
 
-        {{-- ===== สถานะงานแบบ Timeline ===== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-5">
-            <h3 class="font-bold text-gray-900 dark:text-white mb-4">
-                <i class="fas fa-route text-blue-500 mr-2"></i> ขั้นตอนการจัดส่ง
-            </h3>
-            <div class="space-y-0">
-                @php
-                    $steps = [
-                        ['status' => 'accepted', 'label' => 'รับงานแล้ว', 'icon' => 'fa-check-circle'],
-                        ['status' => 'picking_up', 'label' => 'ถึงร้านแล้ว', 'icon' => 'fa-store'],
-                        ['status' => 'picked_up', 'label' => 'รับของแล้ว', 'icon' => 'fa-box'],
-                        ['status' => 'delivering', 'label' => 'กำลังจัดส่ง', 'icon' => 'fa-motorcycle'],
-                        ['status' => 'delivered', 'label' => 'ส่งแล้ว', 'icon' => 'fa-flag-checkered'],
-                    ];
-                    $statusOrder = ['accepted', 'picking_up', 'picked_up', 'delivering', 'delivered'];
-                @endphp
+    {{-- ════════ จุดหมาย ════════ --}}
+    <div class="ts-grid" style="--ts-min:280px; align-items:start;">
+        <section class="tp-card ts-stack" :style="{ boxShadow: beforePickup ? 'var(--card-shadow), 0 0 0 2px color-mix(in srgb, var(--ts-ok) 55%, transparent)' : 'var(--card-shadow)', opacity: beforePickup ? 1 : 0.75 }">
+            <h2 class="ts-h2"><i class="fas fa-store" style="color:var(--ts-ok);" aria-hidden="true"></i> จุดรับของ</h2>
+            <b style="font-size:14.5px;">{{ $pickupLocation['contact_name'] ?? 'ร้านค้า' }}</b>
+            <p class="ts-muted" style="margin:0; font-size:13px; line-height:1.6; overflow-wrap:anywhere;">{{ $pickupLocation['address'] ?? '—' }}</p>
+            @if(! empty($pickupLocation['contact_phone']))
+                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $pickupLocation['contact_phone']) }}" class="tp-btn"><i class="fas fa-phone" aria-hidden="true"></i> โทรหาร้าน</a>
+            @endif
+        </section>
+        <section class="tp-card ts-stack" :style="{ boxShadow: !beforePickup ? 'var(--card-shadow), 0 0 0 2px color-mix(in srgb, var(--accent2) 55%, transparent)' : 'var(--card-shadow)' }">
+            <h2 class="ts-h2"><i class="fas fa-house" style="color:var(--accent2);" aria-hidden="true"></i> จุดส่งของ</h2>
+            <b style="font-size:14.5px;">{{ $customerLocation['contact_name'] ?? 'ลูกค้า' }}</b>
+            <p class="ts-muted" style="margin:0; font-size:13px; line-height:1.6; overflow-wrap:anywhere;">{{ $customerLocation['address'] ?? '—' }}</p>
+            @if(! empty($jobData['dropoff']['notes']))
+                <p class="sf-note sf-note-info" style="margin:0;">โน้ต: {{ $jobData['dropoff']['notes'] }}</p>
+            @endif
+            @if(! empty($customerLocation['contact_phone']))
+                <a href="tel:{{ preg_replace('/[^0-9+]/', '', $customerLocation['contact_phone']) }}" class="tp-btn"><i class="fas fa-phone" aria-hidden="true"></i> โทรหาลูกค้า</a>
+            @endif
+        </section>
+    </div>
 
-                @foreach($steps as $index => $step)
-                <div class="flex items-start gap-3">
-                    {{-- ไอคอนวงกลมและเส้นต่อ --}}
-                    <div class="flex flex-col items-center">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs transition-colors"
-                             :class="stepClass('{{ $step['status'] }}')">
-                            <i class="fas {{ $step['icon'] }}"></i>
-                        </div>
-                        @if($index < count($steps) - 1)
-                        <div class="w-0.5 h-8 transition-colors"
-                             :class="stepLineClass('{{ $step['status'] }}')"></div>
-                        @endif
-                    </div>
-                    {{-- ข้อความ --}}
-                    <div class="pt-1.5">
-                        <span class="text-sm font-medium"
-                              :class="stepTextClass('{{ $step['status'] }}')">
-                            {{ $step['label'] }}
-                        </span>
-                    </div>
-                </div>
+    <a href="{{ $endpoints['job_detail'] }}" class="ts-link ts-small" style="align-self:center;">ดูรายละเอียดงาน / คืนงาน <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+
+    {{-- ════════ ปุ่มหลักติดล่างจอ ════════ --}}
+    <div class="ts-bottom-bar" style="display:flex;">
+        <div class="ts-row" style="gap:8px; width:100%; max-width:900px; margin:0 auto; flex-wrap:nowrap;">
+            <template x-if="has('picking_up')">
+                <button type="button" class="ts-btn3d soft" x-on:click="setStatus('picking_up')" :disabled="busy"><i class="fas fa-route" aria-hidden="true"></i><span class="sf-hide-sm"> กำลังไปร้าน</span></button>
+            </template>
+            <template x-if="has('picked_up')">
+                <button type="button" class="ts-btn3d ts-tone-ok" style="flex:1;" x-on:click="dialog = 'pickup'" :disabled="busy"><i class="fas fa-box" aria-hidden="true"></i> รับของแล้ว</button>
+            </template>
+            <template x-if="has('delivering')">
+                <button type="button" class="ts-btn3d soft" x-on:click="setStatus('delivering')" :disabled="busy"><i class="fas fa-motorcycle" aria-hidden="true"></i><span class="sf-hide-sm"> เริ่มนำส่ง</span></button>
+            </template>
+            <template x-if="has('deliver')">
+                <button type="button" class="ts-btn3d ts-tone-gold" style="flex:1;" x-on:click="dialog = 'deliver'" :disabled="busy"><i class="fas fa-flag-checkered" aria-hidden="true"></i> ส่งของสำเร็จ</button>
+            </template>
+            <template x-if="has('fail')">
+                <button type="button" class="ts-btn3d soft" x-on:click="dialog = 'fail'" :disabled="busy" aria-label="ส่งไม่สำเร็จ"><i class="fas fa-triangle-exclamation" style="color:var(--ts-bad);" aria-hidden="true"></i></button>
+            </template>
+        </div>
+    </div>
+
+    {{-- ════════ กล่องรับของ ════════ --}}
+    <div class="ts-dialog-bg" x-show="dialog === 'pickup'" x-cloak x-transition.opacity x-on:click.self="dialog = null">
+        <div class="tp-card ts-dialog ts-stack" role="dialog" aria-modal="true" aria-labelledby="aj-pick-h">
+            <h2 id="aj-pick-h" class="ts-h2"><i class="fas fa-box" style="color:var(--ts-ok);" aria-hidden="true"></i> ยืนยันรับของจากร้าน</h2>
+            <label class="tp-inset" style="border-radius:14px; padding:14px; cursor:pointer; display:flex; gap:10px; align-items:center;">
+                <i class="fas fa-camera" aria-hidden="true"></i>
+                <span x-text="pickupPhoto ? pickupPhoto.name : 'ถ่ายรูปของที่รับ (ไม่บังคับ)'"></span>
+                <input type="file" accept="image/*" capture="environment" style="position:absolute; width:1px; height:1px; opacity:0;" x-on:change="pickupPhoto = $event.target.files[0] || null">
+            </label>
+            <div class="ts-row" style="justify-content:flex-end;">
+                <button type="button" class="tp-btn" x-on:click="dialog = null">ยกเลิก</button>
+                <button type="button" class="ts-btn3d ts-tone-ok sm" x-on:click="setStatus('picked_up')" :disabled="busy"><i class="fas" :class="busy ? 'fa-circle-notch ts-spin' : 'fa-check'" aria-hidden="true"></i> รับของแล้ว</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════ กล่องส่งของสำเร็จ ════════ --}}
+    <div class="ts-dialog-bg" x-show="dialog === 'deliver'" x-cloak x-transition.opacity x-on:click.self="dialog = null">
+        <div class="tp-card ts-dialog ts-stack" role="dialog" aria-modal="true" aria-labelledby="aj-del-h">
+            <h2 id="aj-del-h" class="ts-h2"><i class="fas fa-flag-checkered" style="color:var(--accent2);" aria-hidden="true"></i> ส่งของสำเร็จ</h2>
+            <label class="tp-inset" style="border-radius:14px; padding:14px; cursor:pointer; display:flex; gap:10px; align-items:center;">
+                <i class="fas fa-camera" aria-hidden="true"></i>
+                <span x-text="deliveryPhoto ? deliveryPhoto.name : 'ถ่ายรูปยืนยันการส่ง (บังคับ)'"></span>
+                <input type="file" accept="image/*" capture="environment" style="position:absolute; width:1px; height:1px; opacity:0;" x-on:change="deliveryPhoto = $event.target.files[0] || null">
+            </label>
+            @if($codAmount > 0)
+                <label class="ts-row" style="gap:10px; flex-wrap:nowrap; cursor:pointer; min-height:44px;">
+                    <input type="checkbox" x-model="codCollected" style="width:22px; height:22px; flex:none; accent-color:var(--accent1);">
+                    <span style="font-size:14px; font-weight:700;">เก็บเงินสดจากลูกค้าแล้ว ฿{{ $ui::money($codAmount) }}</span>
+                </label>
+            @endif
+            <input type="text" class="tp-input" maxlength="500" x-model="deliverNote" placeholder="หมายเหตุ (ไม่บังคับ) เช่น ฝากไว้ที่ป้อมยาม" aria-label="หมายเหตุการส่ง">
+            <div class="ts-row" style="justify-content:flex-end;">
+                <button type="button" class="tp-btn" x-on:click="dialog = null">ยกเลิก</button>
+                <button type="button" class="ts-btn3d ts-tone-gold sm" x-on:click="deliver()" :disabled="busy || !deliveryPhoto || (cfg.cod > 0 && !codCollected)">
+                    <i class="fas" :class="busy ? 'fa-circle-notch ts-spin' : 'fa-check'" aria-hidden="true"></i> ยืนยันส่งสำเร็จ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════ กล่องส่งไม่สำเร็จ ════════ --}}
+    <div class="ts-dialog-bg" x-show="dialog === 'fail'" x-cloak x-transition.opacity x-on:click.self="dialog = null">
+        <div class="tp-card ts-dialog ts-stack" role="dialog" aria-modal="true" aria-labelledby="aj-fail-h">
+            <h2 id="aj-fail-h" class="ts-h2"><i class="fas fa-triangle-exclamation" style="color:var(--ts-bad);" aria-hidden="true"></i> ส่งของไม่สำเร็จ</h2>
+            <p class="ts-muted" style="margin:0; font-size:13px;">ใช้เมื่อพยายามส่งแล้วแต่ส่งไม่ได้จริง — ทีมงานจะติดต่อลูกค้าและร้านต่อ</p>
+            <div class="ts-stack" style="gap:8px;">
+                @foreach($failureReasons as $code => $label)
+                    <button type="button" class="ts-choice" :class="failReason === @js($code) ? 'is-on' : ''" x-on:click="failReason = @js($code)">
+                        <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span><span class="name">{{ $label }}</span>
+                    </button>
                 @endforeach
             </div>
-        </div>
-
-    </div>
-
-    {{-- ===== Fixed Bottom Action Bar ===== --}}
-    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] p-4 safe-area-bottom">
-        <div class="max-w-3xl mx-auto">
-
-            {{-- สถานะ: accepted → ปุ่ม "ถึงร้านแล้ว" --}}
-            <template x-if="jobStatus === 'accepted'">
-                <button @click="updateJobStatus('picking_up')"
-                        :disabled="updatingStatus"
-                        class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-2xl font-bold text-lg transition-colors shadow-lg">
-                    <template x-if="!updatingStatus">
-                        <span class="flex items-center gap-3">
-                            <i class="fas fa-store"></i>
-                            <span>ถึงร้านแล้ว</span>
-                        </span>
-                    </template>
-                    <template x-if="updatingStatus">
-                        <span class="flex items-center gap-2">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <span>กำลังอัปเดต...</span>
-                        </span>
-                    </template>
+            <textarea class="tp-input" rows="2" maxlength="500" x-model="failNote" :placeholder="failReason === 'other' ? 'อธิบายเหตุผล (บังคับ)' : 'รายละเอียดเพิ่มเติม (ไม่บังคับ)'" aria-label="รายละเอียด"></textarea>
+            <div class="ts-row" style="justify-content:flex-end;">
+                <button type="button" class="tp-btn" x-on:click="dialog = null">ยกเลิก</button>
+                <button type="button" class="ts-btn3d ts-tone-bad sm" x-on:click="fail()" :disabled="busy || !failReason || (failReason === 'other' && !failNote.trim())">
+                    <i class="fas" :class="busy ? 'fa-circle-notch ts-spin' : 'fa-check'" aria-hidden="true"></i> ยืนยัน
                 </button>
-            </template>
-
-            {{-- สถานะ: picking_up → ปุ่ม "รับของแล้ว" (พร้อมถ่ายรูป) --}}
-            <template x-if="jobStatus === 'picking_up'">
-                <div class="space-y-3">
-                    {{-- ช่องถ่ายรูป --}}
-                    <div class="flex items-center gap-3">
-                        <label class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                            <i class="fas fa-camera"></i>
-                            <span x-text="pickupPhotoName || 'ถ่ายรูปรับของ (ไม่บังคับ)'"></span>
-                            <input type="file" accept="image/*" capture="environment" class="hidden"
-                                   @change="pickupPhotoName = $event.target.files[0]?.name || ''; pickupPhoto = $event.target.files[0] || null">
-                        </label>
-                    </div>
-                    <button @click="updateJobStatus('picked_up')"
-                            :disabled="updatingStatus"
-                            class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-2xl font-bold text-lg transition-colors shadow-lg">
-                        <template x-if="!updatingStatus">
-                            <span class="flex items-center gap-3">
-                                <i class="fas fa-box"></i>
-                                <span>รับของแล้ว</span>
-                            </span>
-                        </template>
-                        <template x-if="updatingStatus">
-                            <span class="flex items-center gap-2">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <span>กำลังอัปเดต...</span>
-                            </span>
-                        </template>
-                    </button>
-                </div>
-            </template>
-
-            {{-- สถานะ: picked_up → ปุ่ม "เริ่มจัดส่ง" --}}
-            <template x-if="jobStatus === 'picked_up'">
-                <button @click="updateJobStatus('delivering')"
-                        :disabled="updatingStatus"
-                        class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-2xl font-bold text-lg transition-colors shadow-lg">
-                    <template x-if="!updatingStatus">
-                        <span class="flex items-center gap-3">
-                            <i class="fas fa-motorcycle"></i>
-                            <span>เริ่มจัดส่ง</span>
-                        </span>
-                    </template>
-                    <template x-if="updatingStatus">
-                        <span class="flex items-center gap-2">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <span>กำลังอัปเดต...</span>
-                        </span>
-                    </template>
-                </button>
-            </template>
-
-            {{-- สถานะ: delivering → ปุ่ม "ส่งแล้ว" (พร้อมถ่ายรูป) --}}
-            <template x-if="jobStatus === 'delivering'">
-                <div class="space-y-3">
-                    {{-- ช่องถ่ายรูป --}}
-                    <div class="flex items-center gap-3">
-                        <label class="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                            <i class="fas fa-camera"></i>
-                            <span x-text="deliveryPhotoName || 'ถ่ายรูปส่งของ (บังคับ)'"></span>
-                            <input type="file" accept="image/*" capture="environment" class="hidden"
-                                   @change="deliveryPhotoName = $event.target.files[0]?.name || ''; deliveryPhoto = $event.target.files[0] || null">
-                        </label>
-                    </div>
-                    <button @click="updateJobStatus('delivered')"
-                            :disabled="updatingStatus"
-                            class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-2xl font-bold text-lg transition-colors shadow-lg">
-                        <template x-if="!updatingStatus">
-                            <span class="flex items-center gap-3">
-                                <i class="fas fa-flag-checkered"></i>
-                                <span>ส่งแล้ว</span>
-                            </span>
-                        </template>
-                        <template x-if="updatingStatus">
-                            <span class="flex items-center gap-2">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <span>กำลังอัปเดต...</span>
-                            </span>
-                        </template>
-                    </button>
-                </div>
-            </template>
-
-            {{-- สถานะ: delivered → แสดงข้อความสำเร็จ --}}
-            <template x-if="jobStatus === 'delivered'">
-                <div class="text-center py-2">
-                    <div class="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 mb-2">
-                        <i class="fas fa-check-circle text-2xl"></i>
-                        <span class="text-lg font-bold">จัดส่งสำเร็จ!</span>
-                    </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">
-                        ค่าจัดส่งจะเข้ากระเป๋าเงินของคุณเร็ว ๆ นี้
-                    </p>
-                    <a href="{{ route('taladsod.home') }}"
-                       class="inline-flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors">
-                        <i class="fas fa-home"></i>
-                        <span>กลับหน้าหลัก</span>
-                    </a>
-                </div>
-            </template>
-
+            </div>
         </div>
     </div>
 
-    {{-- ===== Toast แจ้งเตือน ===== --}}
-    <div x-show="toastMessage"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 translate-y-4"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 translate-y-0"
-         x-transition:leave-end="opacity-0 translate-y-4"
-         class="fixed top-24 left-1/2 -translate-x-1/2 z-[100] max-w-sm w-full mx-4"
-         style="display: none;">
-        <div class="rounded-xl px-4 py-3 shadow-lg flex items-center gap-3"
-             :class="toastType === 'error'
-                 ? 'bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800'
-                 : 'bg-green-50 dark:bg-green-900/50 border border-green-200 dark:border-green-800'">
-            <i class="text-lg"
-               :class="toastType === 'error'
-                   ? 'fas fa-exclamation-circle text-red-500'
-                   : 'fas fa-check-circle text-green-500'"></i>
-            <span class="text-sm"
-                  :class="toastType === 'error'
-                      ? 'text-red-800 dark:text-red-200'
-                      : 'text-green-800 dark:text-green-200'"
-                  x-text="toastMessage"></span>
+    {{-- ════════ ยืนยันปิด GPS ════════ --}}
+    <div class="ts-dialog-bg" x-show="askGpsOff" x-cloak style="z-index:130;" x-on:click.self="askGpsOff = false">
+        <div class="tp-card ts-dialog ts-stack" role="alertdialog" aria-modal="true" aria-labelledby="aj-off-h">
+            <h2 id="aj-off-h" class="ts-h2"><i class="fas fa-power-off" style="color:var(--ts-bad);" aria-hidden="true"></i> หยุดงานนี้จริงหรือ?</h2>
+            <p class="ts-muted" style="margin:0; font-size:13.5px;">การปิด GPS ระหว่างส่งงานอาจทำให้งานถูกยกเลิกและมีผลต่อคะแนนของคุณ</p>
+            <div class="ts-row" style="justify-content:flex-end;">
+                <button type="button" class="tp-btn" x-on:click="askGpsOff = false">กลับไปเปิด GPS</button>
+                <button type="button" class="ts-btn3d ts-tone-bad sm" x-on:click="confirmGpsOff()" :disabled="busy">ยืนยันหยุดงาน</button>
+            </div>
         </div>
     </div>
-
 </div>
 @endsection
 
-@section('styles')
-<style>
-    /* ปรับ safe area สำหรับ iPhone ที่มี notch */
-    .safe-area-bottom {
-        padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-    }
-</style>
-@endsection
-
-@section('scripts')
-{{-- โหลด Google Maps API --}}
-<script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&libraries=geometry&callback=Function.prototype" async defer></script>
-
+@push('scripts')
 <script>
-/**
- * Alpine.js Component สำหรับหน้าจัดการงานจัดส่ง
- *
- * จัดการ GPS tracking, แผนที่, และอัปเดตสถานะงาน
- */
-function riderActiveJob() {
-    return {
-        // === ค่าคอนฟิก ===
-        jobId: {{ $job->id }},
-        gpsUpdateInterval: {{ $gpsUpdateInterval ?? 30 }},
-        gpsLostTimeout: {{ $gpsLostTimeout ?? 120 }},
-        maxWarnings: {{ $maxWarnings ?? 3 }},
-        codAmount: {{ (float) ($codAmount ?? 0) }},
-        endpoints: @json($endpoints ?? []),
-        csrfToken: document.querySelector('meta[name="csrf-token"]')?.content || '',
+    /**
+     * งานที่กำลังส่ง (ไรเดอร์บนเว็บ): ติดตาม GPS + ส่งตำแหน่งตามรอบ + ตรวจ GPS หาย + ปุ่มตามขั้นตอนจาก allowed_actions ของเซิร์ฟเวอร์
+     */
+    window.tsActiveJob = function (cfg) {
+        let map = null;
+        let meMarker = null;
+        let destMarker = null;
+        let liveMarker = null;
+        let line = null;
+        let watchId = null;
+        let sendTimer = null;
+        let lostTimer = null;
+        let lastFix = null;
 
-        // === สถานะ GPS ===
-        watchId: null,
-        gpsActive: false,
-        gpsLost: false,
-        warningCount: 0,
-        riderLat: null,
-        riderLng: null,
-        accuracy: null,
-        speed: null,
-        heading: null,
-        lastGpsTime: null,
-        gpsLostTimer: null,
-        sendLocationTimer: null,
+        return {
+            cfg: cfg, job: cfg.job, busy: false, dialog: null, askGpsOff: false,
+            lat: null, lng: null, accuracy: null, speed: null, heading: null,
+            gpsActive: false, gpsLost: false, warningCount: 0,
+            pickupPhoto: null, deliveryPhoto: null, codCollected: false, deliverNote: '',
+            failReason: '', failNote: '',
 
-        // === สถานะงาน ===
-        jobStatus: '{{ $job->status ?? "accepted" }}',
-        updatingStatus: false,
+            get beforePickup() { return ['accepted', 'picking_up'].includes(this.job.status); },
+            get destination() { return this.beforePickup ? cfg.pickup : (this.customerLive || cfg.dropoff); },
+            get customerLive() {
+                const c = this.job.customer_live_location;
+                return c ? { lat: Number(c.latitude), lng: Number(c.longitude) } : null;
+            },
+            get directionsUrl() {
+                const d = this.destination;
+                return d ? 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(d.lat + ',' + d.lng) : '#';
+            },
 
-        // === แผนที่ ===
-        map: null,
-        mapReady: false,
-        riderMarker: null,
-        destinationMarker: null,
-        routeLine: null,
+            has(action) { return (this.job.allowed_actions || []).includes(action); },
 
-        // === รูปภาพ ===
-        pickupPhoto: null,
-        pickupPhotoName: '',
-        deliveryPhoto: null,
-        deliveryPhotoName: '',
+            init() {
+                this.$nextTick(() => this.drawMap());
+                this.startGps();
+            },
 
-        // === Toast ===
-        toastMessage: '',
-        toastType: 'success',
-        toastTimer: null,
-
-        // === ข้อมูลตำแหน่ง ===
-        pickupLocation: {
-            lat: {{ $pickupLocation['latitude'] ?? 0 }},
-            lng: {{ $pickupLocation['longitude'] ?? 0 }}
-        },
-        customerLocation: {
-            lat: {{ $customerLocation['latitude'] ?? 0 }},
-            lng: {{ $customerLocation['longitude'] ?? 0 }}
-        },
-
-        // === ลำดับสถานะสำหรับ timeline ===
-        statusOrder: ['accepted', 'picking_up', 'picked_up', 'delivering', 'delivered'],
-
-        /**
-         * เริ่มต้น component
-         * ขอสิทธิ์ GPS และเริ่ม tracking
-         */
-        init() {
-            // รอ Google Maps โหลดเสร็จ
-            this.waitForGoogleMaps();
-
-            // เริ่ม GPS tracking
-            this.startGpsTracking();
-        },
-
-        /**
-         * รอจนกว่า Google Maps API จะโหลดเสร็จ
-         */
-        waitForGoogleMaps() {
-            const checkMap = () => {
-                if (typeof google !== 'undefined' && google.maps) {
-                    this.initMap();
-                } else {
-                    setTimeout(checkMap, 500);
-                }
-            };
-            checkMap();
-        },
-
-        /**
-         * สร้าง Google Maps
-         */
-        initMap() {
-            const mapEl = document.getElementById('rider-map');
-            if (!mapEl) return;
-
-            // กำหนดจุดศูนย์กลางเริ่มต้น (ใช้จุดรับของ)
-            const center = this.riderLat
-                ? { lat: this.riderLat, lng: this.riderLng }
-                : { lat: this.pickupLocation.lat, lng: this.pickupLocation.lng };
-
-            this.map = new google.maps.Map(mapEl, {
-                center: center,
-                zoom: 15,
-                disableDefaultUI: true,
-                zoomControl: true,
-                mapTypeControl: false,
-                streetViewControl: false,
-                fullscreenControl: false,
-                styles: this.getMapStyles(),
-            });
-
-            // วาง marker จุดหมาย
-            this.updateDestinationMarker();
-            this.mapReady = true;
-        },
-
-        /**
-         * สไตล์แผนที่ให้ดูสวย
-         */
-        getMapStyles() {
-            return [
-                { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-                { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-            ];
-        },
-
-        /**
-         * อัปเดต marker จุดหมายตามสถานะ
-         */
-        updateDestinationMarker() {
-            if (!this.map) return;
-
-            // ลบ marker เดิม
-            if (this.destinationMarker) {
-                this.destinationMarker.setMap(null);
-            }
-
-            // กำหนดจุดหมายตามสถานะ
-            const dest = ['accepted', 'picking_up'].includes(this.jobStatus)
-                ? this.pickupLocation
-                : this.customerLocation;
-
-            if (!dest.lat || !dest.lng) return;
-
-            const isPickup = ['accepted', 'picking_up'].includes(this.jobStatus);
-
-            this.destinationMarker = new google.maps.Marker({
-                position: { lat: dest.lat, lng: dest.lng },
-                map: this.map,
-                title: isPickup ? 'จุดรับของ' : 'จุดส่งของ',
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 12,
-                    fillColor: isPickup ? '#22C55E' : '#F97316',
-                    fillOpacity: 1,
-                    strokeColor: '#ffffff',
-                    strokeWeight: 3,
-                },
-            });
-
-            this.updateRouteLine();
-        },
-
-        /**
-         * วาดเส้นทางระหว่างไรเดอร์กับจุดหมาย
-         */
-        updateRouteLine() {
-            if (!this.map || !this.riderLat) return;
-
-            // ลบเส้นเดิม
-            if (this.routeLine) {
-                this.routeLine.setMap(null);
-            }
-
-            const dest = ['accepted', 'picking_up'].includes(this.jobStatus)
-                ? this.pickupLocation
-                : this.customerLocation;
-
-            if (!dest.lat || !dest.lng) return;
-
-            this.routeLine = new google.maps.Polyline({
-                path: [
-                    { lat: this.riderLat, lng: this.riderLng },
-                    { lat: dest.lat, lng: dest.lng },
-                ],
-                geodesic: true,
-                strokeColor: '#3B82F6',
-                strokeOpacity: 0.8,
-                strokeWeight: 4,
-                map: this.map,
-            });
-        },
-
-        /**
-         * เริ่ม GPS Tracking
-         */
-        startGpsTracking() {
-            if (!navigator.geolocation) {
-                this.showToast('เบราว์เซอร์ไม่รองรับ GPS', 'error');
-                this.gpsLost = true;
-                return;
-            }
-
-            // เริ่ม watchPosition
-            this.watchId = navigator.geolocation.watchPosition(
-                (pos) => this.onPositionUpdate(pos),
-                (err) => this.onPositionError(err),
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 10000,
-                    timeout: 15000,
-                }
-            );
-
-            // ตั้ง timer ตรวจสอบ GPS หาย
-            this.startGpsLostDetection();
-
-            // ตั้ง timer ส่งพิกัดไปเซิร์ฟเวอร์
-            this.sendLocationTimer = setInterval(() => {
-                this.sendLocationToServer();
-            }, this.gpsUpdateInterval);
-        },
-
-        /**
-         * ตรวจสอบ GPS หายทุก N วินาที
-         */
-        startGpsLostDetection() {
-            this.gpsLostTimer = setInterval(() => {
-                if (!this.lastGpsTime) return;
-                const elapsedMs = Date.now() - this.lastGpsTime;
-                if (elapsedMs > this.gpsLostTimeout && !this.gpsLost) {
+            // ===== GPS =====
+            startGps() {
+                if (!('geolocation' in navigator)) {
                     this.gpsLost = true;
-                    this.gpsActive = false;
-                    this.reportGpsLost();
+                    return;
                 }
-            }, 5000);
-        },
+                watchId = navigator.geolocation.watchPosition((p) => this.onFix(p), (e) => this.onGpsError(e), { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+                clearInterval(sendTimer);
+                sendTimer = setInterval(() => this.sendLocation(), cfg.sendMs);
+                clearInterval(lostTimer);
+                lostTimer = setInterval(() => {
+                    if (lastFix && Date.now() - lastFix > cfg.lostMs && !this.gpsLost) { this.markLost(); }
+                }, 5000);
+            },
 
-        /**
-         * เมื่อได้รับตำแหน่ง GPS ใหม่
-         */
-        onPositionUpdate(pos) {
-            this.riderLat = pos.coords.latitude;
-            this.riderLng = pos.coords.longitude;
-            this.accuracy = pos.coords.accuracy;
-            this.speed = pos.coords.speed;
-            this.heading = pos.coords.heading;
-            this.lastGpsTime = Date.now();
+            onFix(p) {
+                const first = this.lat === null;
+                this.lat = p.coords.latitude;
+                this.lng = p.coords.longitude;
+                this.accuracy = p.coords.accuracy;
+                this.speed = p.coords.speed;
+                this.heading = p.coords.heading;
+                lastFix = Date.now();
+                this.gpsActive = true;
+                this.gpsLost = false;
+                this.drawMap();
+                if (first) { this.sendLocation(); }
+            },
 
-            // อัปเดตสถานะ
-            this.gpsActive = true;
-            this.gpsLost = false;
+            onGpsError(e) {
+                this.gpsActive = false;
+                if (e && e.code === 1) {
+                    this.markLost();
+                } else {
+                    setTimeout(() => { if (!this.gpsActive) { this.markLost(); } }, 10000);
+                }
+            },
 
-            // อัปเดต marker ไรเดอร์บนแผนที่
-            this.updateRiderMarker();
-            this.updateRouteLine();
-        },
-
-        /**
-         * เมื่อ GPS มีปัญหา
-         */
-        onPositionError(err) {
-            console.error('GPS Error:', err.code, err.message);
-            this.gpsActive = false;
-
-            if (err.code === 1) {
-                // PERMISSION_DENIED — แสดงคำเตือนเต็มจอทันที
+            async markLost() {
                 this.gpsLost = true;
-                this.reportGpsLost();
-            } else if (err.code === 2 || err.code === 3) {
-                // POSITION_UNAVAILABLE หรือ TIMEOUT
-                // รอสักครู่ก่อนแสดงคำเตือน (อาจเป็นแค่ชั่วคราว)
-                setTimeout(() => {
-                    if (!this.gpsActive) {
-                        this.gpsLost = true;
-                        this.reportGpsLost();
-                    }
-                }, 10000);
-            }
-        },
+                this.gpsActive = false;
+                const r = await window.ts.post(cfg.endpoints.gps_lost, {});
+                if (r.ok && r.data && r.data.warning_count !== undefined) { this.warningCount = Number(r.data.warning_count) || 0; }
+            },
 
-        /**
-         * อัปเดต marker ตำแหน่งไรเดอร์บนแผนที่
-         */
-        updateRiderMarker() {
-            if (!this.map || !this.riderLat) return;
+            retryGps() {
+                if (watchId !== null) { navigator.geolocation.clearWatch(watchId); }
+                this.startGps();
+            },
 
-            const position = { lat: this.riderLat, lng: this.riderLng };
+            async confirmGpsOff() {
+                this.busy = true;
+                const r = await window.ts.post(cfg.endpoints.gps_off, {});
+                this.busy = false;
+                if (!r.ok) { window.ts.notify(r.message, 'error'); return; }
+                this.stop();
+                window.location.href = cfg.endpoints.job_detail;
+            },
 
-            if (this.riderMarker) {
-                this.riderMarker.setPosition(position);
-            } else {
-                this.riderMarker = new google.maps.Marker({
-                    position: position,
-                    map: this.map,
-                    title: 'ตำแหน่งของคุณ',
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 10,
-                        fillColor: '#3B82F6',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 3,
-                    },
-                    zIndex: 999,
+            async sendLocation() {
+                if (this.lat === null || document.visibilityState !== 'visible') { return; }
+                await window.ts.post(cfg.endpoints.location, {
+                    job_id: this.job.id, latitude: this.lat, longitude: this.lng,
+                    accuracy: this.accuracy, speed: this.speed, heading: this.heading
                 });
+            },
 
-                // ครั้งแรก — ย้ายแผนที่มาที่ตำแหน่งไรเดอร์
-                this.map.panTo(position);
-            }
-        },
+            stop() {
+                if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+                clearInterval(sendTimer);
+                clearInterval(lostTimer);
+            },
 
-        /**
-         * ศูนย์กลางแผนที่ที่ตำแหน่งไรเดอร์
-         */
-        centerOnRider() {
-            if (this.map && this.riderLat) {
-                this.map.panTo({ lat: this.riderLat, lng: this.riderLng });
-                this.map.setZoom(16);
-            }
-        },
-
-        /**
-         * เปิด Google Maps นำทางไปจุดหมาย
-         */
-        navigateToDestination() {
-            const dest = ['accepted', 'picking_up'].includes(this.jobStatus)
-                ? this.pickupLocation
-                : this.customerLocation;
-
-            if (!dest.lat || !dest.lng) {
-                this.showToast('ไม่พบตำแหน่งจุดหมาย', 'error');
-                return;
-            }
-
-            this.navigateTo(dest.lat, dest.lng);
-        },
-
-        /**
-         * เปิด Google Maps ไปยังพิกัดที่กำหนด
-         */
-        navigateTo(lat, lng) {
-            const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-            window.open(url, '_blank');
-        },
-
-        /**
-         * ส่งตำแหน่ง GPS ไปเซิร์ฟเวอร์
-         */
-        async sendLocationToServer() {
-            if (!this.riderLat || !this.riderLng) return;
-
-            try {
-                // ค่า speed/heading ติดลบหรือ null = ไม่ทราบ (เซิร์ฟเวอร์เก็บเป็น null ให้เอง)
-                const response = await fetch(this.endpoints.location, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        job_id: this.jobId,
-                        latitude: this.riderLat,
-                        longitude: this.riderLng,
-                        accuracy: this.accuracy,
-                        speed: this.speed,
-                        heading: this.heading,
-                    }),
-                });
-
-                if (!response.ok) {
-                    console.warn('ส่งพิกัดไม่สำเร็จ:', response.status);
+            // ===== แผนที่ =====
+            drawMap() {
+                if (!window.tpMap || !window.tpMap.ready()) { return; }
+                const start = this.lat !== null ? { lat: this.lat, lng: this.lng } : (this.destination || cfg.pickup);
+                if (!start) { return; }
+                if (!map) {
+                    map = window.tpMap.create(this.$refs.map, start.lat, start.lng, 15);
+                    if (!map) { return; }
+                    [250, 900].forEach((ms) => setTimeout(() => map && map.invalidateSize(), ms));
                 }
-            } catch (error) {
-                console.warn('ส่งพิกัดผิดพลาด:', error);
-            }
-        },
-
-        /**
-         * แจ้งเซิร์ฟเวอร์ว่า GPS หาย
-         */
-        async reportGpsLost() {
-            try {
-                const response = await fetch(this.endpoints.gps_lost, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({}),
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.data && data.data.warning_count !== undefined) {
-                        this.warningCount = data.data.warning_count;
+                const dest = this.beforePickup ? cfg.pickup : cfg.dropoff;
+                if (dest) {
+                    if (!destMarker) {
+                        destMarker = window.tpMap.pin(map, dest.lat, dest.lng, this.beforePickup ? 'shop' : 'home');
+                    } else {
+                        destMarker.setLatLng([dest.lat, dest.lng]);
+                        destMarker.setIcon(window.tpMap.icon(this.beforePickup ? 'shop' : 'home'));
                     }
                 }
-            } catch (error) {
-                console.warn('แจ้ง GPS หายผิดพลาด:', error);
-            }
-        },
-
-        /**
-         * ลองเปิด GPS อีกครั้ง
-         */
-        retryGps() {
-            // หยุด watch เดิมก่อน
-            if (this.watchId !== null) {
-                navigator.geolocation.clearWatch(this.watchId);
-            }
-
-            // เริ่ม watch ใหม่
-            this.watchId = navigator.geolocation.watchPosition(
-                (pos) => this.onPositionUpdate(pos),
-                (err) => this.onPositionError(err),
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 10000,
-                    timeout: 15000,
+                const live = this.customerLive;
+                if (live && !this.beforePickup) {
+                    if (!liveMarker) { liveMarker = window.tpMap.pin(map, live.lat, live.lng, 'home'); } else { liveMarker.setLatLng([live.lat, live.lng]); }
+                } else if (liveMarker) {
+                    map.removeLayer(liveMarker);
+                    liveMarker = null;
                 }
-            );
-        },
-
-        /**
-         * ยืนยันว่าไรเดอร์ปิด GPS จริง (หยุดงาน)
-         */
-        async confirmGpsOff() {
-            if (!confirm('คุณต้องการหยุดงานจริง ๆ ใช่ไหม? งานจะถูกยกเลิกและอาจมีผลต่อคะแนนของคุณ')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(this.endpoints.gps_off, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({}),
-                });
-
-                if (response.ok) {
-                    // หยุด GPS tracking ทั้งหมด
-                    this.stopTracking();
-                    window.location.href = this.endpoints.job_detail || '{{ route("taladsod.home") }}';
-                } else {
-                    this.showToast('ไม่สามารถหยุดงานได้ กรุณาลองใหม่', 'error');
-                }
-            } catch (error) {
-                this.showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
-            }
-        },
-
-        /**
-         * หยุด GPS tracking ทั้งหมด
-         */
-        stopTracking() {
-            if (this.watchId !== null) {
-                navigator.geolocation.clearWatch(this.watchId);
-                this.watchId = null;
-            }
-            if (this.gpsLostTimer) {
-                clearInterval(this.gpsLostTimer);
-                this.gpsLostTimer = null;
-            }
-            if (this.sendLocationTimer) {
-                clearInterval(this.sendLocationTimer);
-                this.sendLocationTimer = null;
-            }
-        },
-
-        /**
-         * อัปเดตสถานะงานผ่าน API
-         */
-        async updateJobStatus(newStatus) {
-            if (this.updatingStatus) return;
-
-            const isDeliver = newStatus === 'delivered';
-
-            // ส่งสำเร็จต้องมีรูปยืนยันเสมอ
-            if (isDeliver && !this.deliveryPhoto) {
-                this.showToast('กรุณาถ่ายรูปยืนยันการส่งของก่อน', 'error');
-                return;
-            }
-
-            // งานเก็บเงินปลายทาง → ต้องยืนยันว่าเก็บเงินจากลูกค้าแล้ว
-            if (isDeliver && this.codAmount > 0
-                && !confirm(`ยืนยันว่าเก็บเงินปลายทางจากลูกค้าแล้ว ฿${this.codAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`)) {
-                return;
-            }
-
-            this.updatingStatus = true;
-
-            try {
-                // เตรียม FormData สำหรับส่งรูป
-                const formData = new FormData();
-
-                if (this.riderLat) {
-                    formData.append('latitude', this.riderLat);
-                    formData.append('longitude', this.riderLng);
-                }
-
-                if (isDeliver) {
-                    formData.append('photo', this.deliveryPhoto);
-                    if (this.codAmount > 0) {
-                        formData.append('cod_collected', '1');
+                if (this.lat !== null) {
+                    if (!meMarker) {
+                        meMarker = window.tpMap.pin(map, this.lat, this.lng, 'rider');
+                        map.panTo([this.lat, this.lng]);
+                    } else {
+                        meMarker.setLatLng([this.lat, this.lng]);
                     }
-                } else {
-                    formData.append('status', newStatus);
-                    if (newStatus === 'picked_up' && this.pickupPhoto) {
-                        formData.append('photo', this.pickupPhoto);
+                    const target = this.destination;
+                    if (target) {
+                        const pts = [[this.lat, this.lng], [target.lat, target.lng]];
+                        if (!line) { line = window.L.polyline(pts, { dashArray: '8 8', weight: 4, opacity: 0.7 }).addTo(map); } else { line.setLatLngs(pts); }
                     }
                 }
+            },
 
-                const response = await fetch(isDeliver ? this.endpoints.deliver : this.endpoints.status, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                    credentials: 'same-origin',
-                    body: formData,
-                });
+            centerOnMe() {
+                if (map && this.lat !== null) { map.setView([this.lat, this.lng], 16); }
+            },
 
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    this.jobStatus = newStatus;
-                    this.updateDestinationMarker();
-
-                    // แสดง toast สำเร็จ
-                    const messages = {
-                        'picking_up': 'ถึงร้านแล้ว!',
-                        'picked_up': 'รับของสำเร็จ!',
-                        'delivering': 'เริ่มจัดส่งแล้ว!',
-                        'delivered': 'ส่งของสำเร็จ!',
-                    };
-                    this.showToast(messages[newStatus] || 'อัปเดตสำเร็จ', 'success');
-
-                    // หยุด tracking เมื่อส่งเสร็จ
-                    if (newStatus === 'delivered') {
-                        this.stopTracking();
-                    }
-                } else {
-                    this.showToast(data.message || 'ไม่สามารถอัปเดตสถานะได้', 'error');
+            // ===== คำสั่งงาน =====
+            applyJob(r) {
+                if (r.data && r.data.job) {
+                    this.job = r.data.job;
+                    this.$nextTick(() => this.drawMap());
                 }
-            } catch (error) {
-                console.error('อัปเดตสถานะผิดพลาด:', error);
-                this.showToast('เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
-            } finally {
-                this.updatingStatus = false;
+            },
+
+            async setStatus(status) {
+                if (this.busy) { return; }
+                this.busy = true;
+                const fd = new FormData();
+                fd.append('status', status);
+                if (status === 'picked_up' && this.pickupPhoto) { fd.append('photo', this.pickupPhoto); }
+                const r = await window.ts.post(cfg.endpoints.status, fd);
+                this.busy = false;
+                if (!r.ok) { window.ts.notify(r.message, 'error'); return; }
+                this.dialog = null;
+                this.applyJob(r);
+                window.ts.notify(r.message || 'อัปเดตสถานะแล้ว', 'success');
+            },
+
+            async deliver() {
+                if (this.busy || !this.deliveryPhoto) { return; }
+                this.busy = true;
+                const fd = new FormData();
+                fd.append('photo', this.deliveryPhoto);
+                if (this.lat !== null) { fd.append('latitude', this.lat); fd.append('longitude', this.lng); }
+                if (cfg.cod > 0) { fd.append('cod_collected', this.codCollected ? '1' : '0'); }
+                if (this.deliverNote.trim()) { fd.append('note', this.deliverNote.trim()); }
+                const r = await window.ts.post(cfg.endpoints.deliver, fd);
+                if (!r.ok) {
+                    this.busy = false;
+                    window.ts.notify(r.message, 'error');
+                    return;
+                }
+                this.stop();
+                window.ts.notify(r.message || 'ส่งของสำเร็จ!', 'success');
+                setTimeout(() => { window.location.href = cfg.endpoints.job_detail; }, 900);
+            },
+
+            async fail() {
+                if (this.busy || !this.failReason) { return; }
+                this.busy = true;
+                const fd = new FormData();
+                fd.append('reason_code', this.failReason);
+                if (this.failNote.trim()) { fd.append('note', this.failNote.trim()); }
+                const r = await window.ts.post(cfg.endpoints.fail, fd);
+                if (!r.ok) {
+                    this.busy = false;
+                    window.ts.notify(r.message, 'error');
+                    return;
+                }
+                this.stop();
+                window.ts.notify(r.message || 'บันทึกแล้ว', 'info');
+                setTimeout(() => { window.location.href = cfg.endpoints.job_detail; }, 900);
             }
-        },
-
-        /**
-         * แสดง Toast message
-         */
-        showToast(message, type = 'success') {
-            this.toastMessage = message;
-            this.toastType = type;
-
-            if (this.toastTimer) clearTimeout(this.toastTimer);
-            this.toastTimer = setTimeout(() => {
-                this.toastMessage = '';
-            }, 4000);
-        },
-
-        // === คลาสสำหรับ Badge สถานะ ===
-        get statusBadgeClass() {
-            const classes = {
-                'accepted': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
-                'picking_up': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400',
-                'picked_up': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-400',
-                'delivering': 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-400',
-                'delivered': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
-            };
-            return classes[this.jobStatus] || 'bg-gray-100 text-gray-800';
-        },
-
-        get statusLabel() {
-            const labels = {
-                'accepted': 'รับงานแล้ว',
-                'picking_up': 'ถึงร้านแล้ว',
-                'picked_up': 'รับของแล้ว',
-                'delivering': 'กำลังจัดส่ง',
-                'delivered': 'ส่งแล้ว',
-            };
-            return labels[this.jobStatus] || this.jobStatus;
-        },
-
-        // === คลาสสำหรับ Timeline ===
-        stepClass(stepStatus) {
-            const currentIdx = this.statusOrder.indexOf(this.jobStatus);
-            const stepIdx = this.statusOrder.indexOf(stepStatus);
-
-            if (stepIdx < currentIdx) {
-                // ขั้นตอนที่ผ่านแล้ว
-                return 'bg-green-500 text-white';
-            } else if (stepIdx === currentIdx) {
-                // ขั้นตอนปัจจุบัน
-                return 'bg-blue-500 text-white ring-4 ring-blue-200 dark:ring-blue-900';
-            } else {
-                // ขั้นตอนที่ยังไม่ถึง
-                return 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500';
-            }
-        },
-
-        stepLineClass(stepStatus) {
-            const currentIdx = this.statusOrder.indexOf(this.jobStatus);
-            const stepIdx = this.statusOrder.indexOf(stepStatus);
-
-            if (stepIdx < currentIdx) {
-                return 'bg-green-500';
-            } else {
-                return 'bg-gray-200 dark:bg-gray-600';
-            }
-        },
-
-        stepTextClass(stepStatus) {
-            const currentIdx = this.statusOrder.indexOf(this.jobStatus);
-            const stepIdx = this.statusOrder.indexOf(stepStatus);
-
-            if (stepIdx < currentIdx) {
-                return 'text-green-600 dark:text-green-400';
-            } else if (stepIdx === currentIdx) {
-                return 'text-blue-600 dark:text-blue-400 font-bold';
-            } else {
-                return 'text-gray-400 dark:text-gray-500';
-            }
-        },
-
-        /**
-         * Cleanup เมื่อ component ถูกทำลาย
-         */
-        destroy() {
-            this.stopTracking();
-        },
+        };
     };
-}
 </script>
-@endsection
+@endpush

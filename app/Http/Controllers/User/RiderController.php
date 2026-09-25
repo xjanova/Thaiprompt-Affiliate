@@ -16,6 +16,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -69,8 +70,10 @@ class RiderController extends Controller
         }
 
         $activeJob = $rider->activeJob();
+        [$availableJobs, $availableReason] = $this->availableJobsPayload($rider, $activeJob);
+        $blockReason = $rider->acceptBlockReason();
 
-        return $this->page('user.rider.dashboard', [
+        return view('user.rider.dashboard', [
             'rider' => $rider,
             'riderData' => $this->riderPayload($rider),
             'stats' => [
@@ -85,9 +88,15 @@ class RiderController extends Controller
             'activeJob' => $activeJob,
             'activeJobData' => $activeJob?->toApiDetail($rider),
             'todayEarnings' => $this->earnings->summary($rider, 'today'),
+            'weekEarnings' => $this->earnings->summary($rider, 'week'),
+            // งานรอรับใกล้ตัว (เงื่อนไขเดียวกับหน้า "งาน" และแอป) — แสดงบนแดชบอร์ดพร้อมปุ่มรับงาน
+            'availableJobs' => $availableJobs,
+            'availableReason' => $availableReason,
+            'canAcceptJobs' => $blockReason === null,
+            'blockReason' => $blockReason,
             'recentJobs' => RiderJob::where('rider_id', $rider->id)->latest('id')->limit(10)->get(),
             'pageTitle' => 'แดชบอร์ดไรเดอร์',
-        ], $rider);
+        ]);
     }
 
     /**
@@ -103,7 +112,7 @@ class RiderController extends Controller
             return redirect()->route('user.rider.dashboard');
         }
 
-        return $this->page('user.rider.register', [
+        return view('user.rider.register', [
             'rider' => $rider,
             'isReapply' => $rider !== null && in_array($rider->status, ['rejected', 'inactive'], true),
             'vehicleTypes' => self::VEHICLE_TYPES,
@@ -111,20 +120,30 @@ class RiderController extends Controller
                 ->mapWithKeys(fn ($v) => [$v => $this->accounts->requiredDocumentTypes($v)])
                 ->all(),
             'documentTypes' => RiderAccountService::DOCUMENT_TYPES,
+            'documentFlags' => $rider ? $this->accounts->documentFlags($rider) : [],
             'minBirthDate' => now()->subYears(100)->toDateString(),
             'maxBirthDate' => now()->subYears(18)->toDateString(),
             'formAction' => route('user.rider.register.submit'),
             'pageTitle' => $rider ? 'แก้ไขใบสมัครไรเดอร์' : 'สมัครเป็นไรเดอร์',
-        ], $rider);
+        ]);
     }
 
     /**
      * บันทึกใบสมัคร (user.rider.register.submit)
+     *
+     * หน้าเว็บต้องติ๊กยินยอม PDPA (pdpa_consent) ทุกครั้งที่ส่งใบสมัคร — บันทึกเวลาไว้ใน riders.pdpa_consent_at
+     * (API แอปใช้ RiderRegistrationRequest ตัวเดียวกันแต่ไม่ผ่านเมธอดนี้ จึงไม่กระทบแอปรุ่นเก่า)
      */
     public function submitRegistration(RiderRegistrationRequest $request): RedirectResponse
     {
+        $request->validate(
+            ['pdpa_consent' => ['accepted']],
+            ['pdpa_consent.accepted' => 'กรุณาอ่านและยอมรับการเก็บและใช้ข้อมูลส่วนบุคคล (PDPA) ก่อนส่งใบสมัคร']
+        );
+
         try {
-            ['outcome' => $outcome] = $this->accounts->register($request->user(), $request->riderData());
+            ['rider' => $rider, 'outcome' => $outcome] = $this->accounts->register($request->user(), $request->riderData());
+            $this->recordPdpaConsent($rider);
         } catch (RiderJobException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
@@ -157,18 +176,10 @@ class RiderController extends Controller
             return redirect()->route('user.rider.register');
         }
 
-        if ($rider->status === 'approved' && view()->exists('user.rider.dashboard')) {
+        if ($rider->status === 'approved') {
             return redirect()->route('user.rider.dashboard');
         }
 
-        return $this->statusView($rider);
-    }
-
-    /**
-     * หน้าสถานะไรเดอร์ (ใช้เป็นหน้าหลักสำรองระหว่างที่หน้าเว็บไรเดอร์ V4 ยังสร้างไม่ครบ)
-     */
-    private function statusView(Rider $rider)
-    {
         $missing = $this->accounts->missingDocuments($rider);
 
         return view('user.rider.status', [
@@ -180,32 +191,6 @@ class RiderController extends Controller
             'canReapply' => in_array($rider->status, ['rejected', 'inactive'], true),
             'pageTitle' => 'ติดตามสถานะการสมัคร',
         ]);
-    }
-
-    /**
-     * แสดงหน้า ถ้าไฟล์ view มีแล้ว — ยังไม่มี (หน้าเว็บไรเดอร์ V4 ยังทยอยสร้าง) → หน้าสำรองแทน 500
-     *
-     * - ยังไม่สมัคร → หน้าแนะนำไรเดอร์ของตลาดสด (สมัครในแอปได้)
-     * - สมัครแล้ว → หน้าสถานะไรเดอร์ + แจ้งให้ใช้งานเต็มรูปแบบในแอป
-     *
-     * @param  array<string, mixed>  $data
-     */
-    private function page(string $view, array $data, ?Rider $rider)
-    {
-        if (view()->exists($view)) {
-            return view($view, $data);
-        }
-
-        Log::notice('RiderWeb: view not built yet, showing fallback page', ['view' => $view, 'user_id' => Auth::id()]);
-
-        if (! $rider) {
-            return redirect()->route('taladsod.landing.rider')
-                ->with('info', 'สมัครเป็นไรเดอร์ได้ในแอปไทยพร้อม เมนู "ไรเดอร์" ค่ะ');
-        }
-
-        session()->now('info', 'หน้านี้กำลังปรับปรุง ใช้งานไรเดอร์เต็มรูปแบบได้ในแอปไทยพร้อม เมนู "ไรเดอร์"');
-
-        return $this->statusView($rider);
     }
 
     // =====================================================
@@ -225,7 +210,7 @@ class RiderController extends Controller
 
         $missing = $this->accounts->missingDocuments($rider);
 
-        return $this->page('user.rider.documents', [
+        return view('user.rider.documents', [
             'rider' => $rider,
             'documents' => $this->accounts->documentList($rider, fn (Rider $r, string $t) => $this->documentUrl($t)),
             'documentTypes' => RiderAccountService::DOCUMENT_TYPES,
@@ -235,7 +220,7 @@ class RiderController extends Controller
             'documentsPendingReview' => $this->accounts->documentsChangedAt($rider) !== null,
             'uploadUrl' => route('user.rider.documents.upload'),
             'pageTitle' => 'อัปโหลดเอกสารไรเดอร์',
-        ], $rider);
+        ]);
     }
 
     /**
@@ -388,23 +373,7 @@ class RiderController extends Controller
         $activeJob = $rider->activeJob();
 
         // งานที่รอรับ (เงื่อนไขเดียวกับแอป)
-        $availableJobs = [];
-        $availableReason = null;
-        if ($rider->status !== 'approved') {
-            $availableReason = 'not_approved';
-        } elseif ($activeJob) {
-            $availableReason = 'busy';
-        } elseif ($rider->availability !== 'online') {
-            $availableReason = 'offline';
-        } elseif ($rider->last_latitude === null || $rider->last_longitude === null) {
-            $availableReason = 'no_location';
-        } else {
-            $availableJobs = $this->dispatch->availableJobsFor($rider, null, null, 30)
-                ->reject(fn (RiderJob $job) => $this->rejectedByRider($job, $rider))
-                ->map(fn (RiderJob $job) => $job->toApiSummary($rider))
-                ->values()
-                ->all();
-        }
+        [$availableJobs, $availableReason] = $this->availableJobsPayload($rider, $activeJob);
 
         $history = RiderJob::query()
             ->where('rider_id', $rider->id)
@@ -413,7 +382,9 @@ class RiderController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return $this->page('user.rider.jobs', [
+        $blockReason = $rider->acceptBlockReason();
+
+        return view('user.rider.jobs', [
             'rider' => $rider,
             'tab' => $tab,
             'statusFilter' => $statusFilter,
@@ -423,10 +394,10 @@ class RiderController extends Controller
             'currentJobData' => $activeJob?->toApiDetail($rider),
             'history' => $history,
             'historyItems' => collect($history->items())->map(fn (RiderJob $job) => $job->toApiSummary($rider))->all(),
-            'canAcceptJobs' => $rider->acceptBlockReason() === null,
-            'blockReason' => $rider->acceptBlockReason(),
+            'canAcceptJobs' => $blockReason === null,
+            'blockReason' => $blockReason,
             'pageTitle' => 'งานไรเดอร์',
-        ], $rider);
+        ]);
     }
 
     /**
@@ -441,18 +412,6 @@ class RiderController extends Controller
         }
 
         $isMine = $job->rider_id !== null && (int) $job->rider_id === (int) $rider->id;
-
-        // หน้ารายละเอียดงาน V4 ยังไม่ถูกสร้าง → งานของตัวเองที่ยังวิ่งอยู่ไปหน้าทำงาน (มีครบทุกปุ่ม) / งานจบแล้วไปหน้าสถานะ
-        if (! view()->exists('user.rider.job-detail')) {
-            if ($isMine && $job->isTrackable()) {
-                return redirect()->route('taladsod.rider.active-job', $job);
-            }
-
-            Log::notice('RiderWeb: job-detail view not built yet, showing status page', ['job_id' => $job->id]);
-            session()->now('info', 'งาน #'.$job->job_number.' — '.$job->status_text.' · ดูรายละเอียดงานได้ในแอปไทยพร้อม เมนู "ไรเดอร์"');
-
-            return $this->statusView($rider);
-        }
 
         return view('user.rider.job-detail', [
             'rider' => $rider,
@@ -596,7 +555,7 @@ class RiderController extends Controller
 
         $summary = $this->earnings->summary($rider, $period);
 
-        return $this->page('user.rider.earnings', [
+        return view('user.rider.earnings', [
             'rider' => $rider,
             'period' => $period,
             'periodOptions' => ['today' => 'วันนี้', 'week' => 'สัปดาห์นี้', 'month' => 'เดือนนี้', 'all' => 'ทั้งหมด'],
@@ -611,7 +570,7 @@ class RiderController extends Controller
                 ->withQueryString(),
             'kyc' => $this->riderPayload($rider)['kyc'],
             'pageTitle' => 'รายได้ไรเดอร์',
-        ], $rider);
+        ]);
     }
 
     /**
@@ -625,7 +584,7 @@ class RiderController extends Controller
             return redirect()->route('user.rider.register');
         }
 
-        return $this->page('user.rider.settings', [
+        return view('user.rider.settings', [
             'rider' => $rider,
             'riderData' => $this->riderPayload($rider),
             'vehicleTypes' => self::VEHICLE_TYPES,
@@ -638,7 +597,7 @@ class RiderController extends Controller
             'updateUrl' => route('user.rider.settings.update'),
             'consentUrl' => route('user.rider.consent'),
             'pageTitle' => 'ตั้งค่าไรเดอร์',
-        ], $rider);
+        ]);
     }
 
     /**
@@ -675,6 +634,52 @@ class RiderController extends Controller
     private function currentRider(): ?Rider
     {
         return $this->accounts->findForUser(Auth::user());
+    }
+
+    /**
+     * งานรอรับใกล้ไรเดอร์ (เงื่อนไขเดียวกับแอป) + เหตุผลเมื่อแสดงไม่ได้
+     *
+     * @return array{0: array<int, array<string, mixed>>, 1: ?string} [JobSummary[], null|not_approved|busy|offline|no_location]
+     */
+    private function availableJobsPayload(Rider $rider, ?RiderJob $activeJob): array
+    {
+        if ($rider->status !== 'approved') {
+            return [[], 'not_approved'];
+        }
+
+        if ($activeJob) {
+            return [[], 'busy'];
+        }
+
+        if ($rider->availability !== 'online') {
+            return [[], 'offline'];
+        }
+
+        if ($rider->last_latitude === null || $rider->last_longitude === null) {
+            return [[], 'no_location'];
+        }
+
+        $jobs = $this->dispatch->availableJobsFor($rider, null, null, 30)
+            ->reject(fn (RiderJob $job) => $this->rejectedByRider($job, $rider))
+            ->map(fn (RiderJob $job) => $job->toApiSummary($rider))
+            ->values()
+            ->all();
+
+        return [$jobs, null];
+    }
+
+    /**
+     * บันทึกเวลาที่ผู้สมัครยินยอม PDPA (ถ้ายังไม่ได้ migrate คอลัมน์ ข้ามไปเงียบ ๆ — ใบสมัครต้องไม่ล้มเพราะเรื่องนี้)
+     */
+    private function recordPdpaConsent(Rider $rider): void
+    {
+        try {
+            if (Schema::hasColumn('riders', 'pdpa_consent_at')) {
+                Rider::withTrashed()->whereKey($rider->id)->update(['pdpa_consent_at' => now()]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('RiderWeb: cannot record PDPA consent', ['rider_id' => $rider->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

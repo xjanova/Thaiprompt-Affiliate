@@ -1,8 +1,30 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
 @section('title', 'ปรับแต่ง Layout ร้านค้า - ' . ($store->store_name ?? 'ร้านค้าของคุณ'))
 
 @push('styles')
+@include('seller.partials.v4-styles')
+<style>
+    /* ธีม V4: สะพานสี — ให้ utility เดิมของ editor ใช้สีจากตัวแปรธีม (สว่าง/มืด/palette ตาม Theme Studio) */
+    .le-v4 .bg-white, .le-v4 .dark\:bg-slate-800, .le-v4 .dark\:bg-slate-900 { background-color: var(--card-bg) !important; }
+    .le-v4 .bg-gray-50, .le-v4 .bg-gray-100, .le-v4 .dark\:bg-slate-700, .le-v4 .bg-gray-200, .le-v4 .dark\:bg-slate-600 { background-color: var(--surf) !important; box-shadow: var(--inset-sm); }
+    .le-v4 .hover\:bg-gray-50:hover, .le-v4 .hover\:bg-gray-200:hover, .le-v4 .dark\:hover\:bg-slate-700:hover, .le-v4 .dark\:hover\:bg-slate-600:hover { background-color: color-mix(in srgb, var(--accent1) 10%, var(--surf)) !important; }
+    .le-v4 .text-gray-900, .le-v4 .text-gray-800, .le-v4 .text-gray-700, .le-v4 .dark\:text-white, .le-v4 .dark\:text-gray-200 { color: var(--ink) !important; }
+    .le-v4 .text-gray-600, .le-v4 .text-gray-500, .le-v4 .text-gray-400, .le-v4 .dark\:text-gray-300, .le-v4 .dark\:text-gray-400 { color: var(--ink2) !important; }
+    .le-v4 .border-gray-200, .le-v4 .border-gray-300, .le-v4 .dark\:border-slate-600, .le-v4 .dark\:border-slate-700 { border-color: color-mix(in srgb, var(--ink2) 24%, transparent) !important; }
+    .le-v4 .bg-indigo-500, .le-v4 .bg-indigo-600, .le-v4 .hover\:bg-indigo-600:hover { background: linear-gradient(135deg, var(--accent1), var(--accent2)) !important; color: var(--tp-on-accent, #fff) !important; }
+    .le-v4 .bg-gradient-to-r.from-indigo-500, .le-v4 .bg-gradient-to-br.from-indigo-500 { background-image: linear-gradient(135deg, var(--accent1), var(--accent2)) !important; }
+    .le-v4 .from-indigo-50 { background-image: linear-gradient(120deg, color-mix(in srgb, var(--accent1) 14%, transparent), transparent) !important; }
+    .le-v4 .bg-indigo-50, .le-v4 .dark\:bg-indigo-900\/30 { background-color: color-mix(in srgb, var(--accent1) 12%, transparent) !important; }
+    .le-v4 .ring-indigo-500 { --tw-ring-color: var(--accent1) !important; }
+    .le-v4 .border-indigo-500, .le-v4 .hover\:border-indigo-400:hover, .le-v4 .focus\:border-indigo-500:focus { border-color: var(--accent1) !important; }
+    .le-v4 .text-indigo-500, .le-v4 .text-indigo-600 { color: var(--deep1) !important; }
+    .le-v4 input[type="text"], .le-v4 input[type="url"], .le-v4 input[type="number"], .le-v4 input[type="email"], .le-v4 textarea, .le-v4 select {
+        background-color: var(--surf); color: var(--ink); box-shadow: var(--inset-sm);
+    }
+    .le-v4 input::placeholder, .le-v4 textarea::placeholder { color: var(--ink2); }
+    .le-v4 input[type="checkbox"], .le-v4 input[type="radio"], .le-v4 input[type="range"] { accent-color: var(--accent1); }
+</style>
 <style>
     /* Color Picker Custom Styles */
     input[type="color"] {
@@ -35,8 +57,8 @@
     /* Preview Frame */
     .preview-frame {
         border: 2px solid transparent;
-        background: linear-gradient(white, white) padding-box,
-                    linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899) border-box;
+        background: linear-gradient(var(--card-bg), var(--card-bg)) padding-box,
+                    linear-gradient(135deg, var(--accent1), var(--accent2), var(--deep2)) border-box;
         border-radius: 16px;
     }
 
@@ -62,82 +84,32 @@
 @endpush
 
 @section('content')
-<div x-data="layoutEditor()" x-init="init()" class="min-h-screen pb-20 lg:pb-6">
-    {{-- Header --}}
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-3xl shadow-2xl p-6 md:p-8 text-white mb-6">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <div class="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/20 flex items-center justify-center text-3xl md:text-4xl shadow-lg border-4 border-white/30">
-                    🎨
-                </div>
-                <div>
-                    <h1 class="text-2xl md:text-4xl font-bold mb-1">ปรับแต่ง Layout ร้านค้า</h1>
-                    <p class="text-indigo-100 text-sm md:text-base">ออกแบบหน้าร้านให้สวยงามตามสไตล์ของคุณ</p>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
-                {{-- สถานะการเผยแพร่ --}}
-                <div class="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-xl">
-                    <template x-if="settings.is_published">
-                        <span class="flex items-center gap-1 text-green-300">
-                            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                            เผยแพร่แล้ว
-                        </span>
-                    </template>
-                    <template x-if="!settings.is_published">
-                        <span class="flex items-center gap-1 text-yellow-300">
-                            <span class="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                            ฉบับร่าง
-                        </span>
-                    </template>
-                </div>
-
-                {{-- ปุ่มดู Preview --}}
-                <button @click="showPreviewModal = true" type="button"
-                        class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm transition flex items-center gap-2">
-                    👁️ ดูตัวอย่าง
-                </button>
-
-                {{-- ปุ่มเผยแพร่/ยกเลิก --}}
-                <template x-if="settings.is_published">
-                    <button @click="unpublish()" type="button"
-                            class="px-4 py-2 bg-red-500/80 hover:bg-red-600/80 rounded-xl text-sm transition">
-                        ยกเลิกเผยแพร่
-                    </button>
-                </template>
-                <template x-if="!settings.is_published">
-                    <button @click="publish()" type="button"
-                            class="px-4 py-2 bg-green-500 hover:bg-green-600 rounded-xl text-sm transition">
-                        เผยแพร่ Layout
-                    </button>
-                </template>
-            </div>
-        </div>
-    </div>
+<div x-data="layoutEditor()" x-init="init()" class="sv4-page le-v4">
+    {{-- หัวหน้า (ธีม V4) + สถานะเผยแพร่ / ดูตัวอย่าง / เผยแพร่ --}}
+    <x-seller-v4.header title="ปรับแต่งหน้าร้าน" subtitle="สีธีม ส่วนหัว แบนเนอร์สไลด์ สินค้าแนะนำ โซเชียล และ SEO" icon="🎨" :back="route('seller.store.settings')">
+        <span class="sv4-pill" x-show="settings.is_published" style="{{ \App\Support\Seller\SellerUi::pill(\App\Support\Seller\SellerUi::OK) }} font-size:12px; padding:7px 12px;">● เผยแพร่แล้ว</span>
+        <span class="sv4-pill" x-show="!settings.is_published" x-cloak style="{{ \App\Support\Seller\SellerUi::pill(\App\Support\Seller\SellerUi::WARN) }} font-size:12px; padding:7px 12px;">○ ฉบับร่าง</span>
+        <button @click="showPreviewModal = true" type="button" class="tp-btn tp-btn-sm">👁️ ดูตัวอย่าง</button>
+        <button x-show="settings.is_published" @click="unpublish()" type="button" class="tp-btn tp-btn-sm" style="color:var(--tp-bad, #d9534f);">ยกเลิกเผยแพร่</button>
+        <button x-show="!settings.is_published" x-cloak @click="publish()" type="button" class="tp-btn tp-btn-sm tp-btn-primary">🚀 เผยแพร่หน้าร้าน</button>
+    </x-seller-v4.header>
 
     {{-- Main Content with Tabs --}}
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {{-- Left Panel: Settings --}}
         <div class="xl:col-span-2 space-y-6">
             {{-- Tab Navigation --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-2 overflow-x-auto">
-                <div class="flex space-x-1 min-w-max">
-                    <template x-for="tab in tabs" :key="tab.id">
-                        <button @click="activeTab = tab.id"
-                                :class="activeTab === tab.id
-                                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
-                                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'"
-                                class="px-4 py-3 rounded-xl text-sm font-semibold transition whitespace-nowrap flex items-center gap-2">
-                            <span x-text="tab.icon"></span>
-                            <span x-text="tab.name"></span>
-                        </button>
-                    </template>
-                </div>
-            </div>
+            <nav class="sv4-tabs" aria-label="หมวดการปรับแต่ง">
+                <template x-for="tab in tabs" :key="tab.id">
+                    <button type="button" @click="activeTab = tab.id" class="sv4-tab" :class="activeTab === tab.id && 'on'">
+                        <span x-text="tab.icon"></span>
+                        <span x-text="tab.name"></span>
+                    </button>
+                </template>
+            </nav>
 
             {{-- Tab Content --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 md:p-8">
+            <div class="tp-card" style="padding:clamp(18px, 3vw, 28px);">
                 {{-- General Tab --}}
                 <div x-show="activeTab === 'general'" x-cloak class="tab-panel space-y-8">
                     <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
@@ -667,35 +639,31 @@
         {{-- Right Panel: Mini Preview --}}
         <div class="hidden xl:block">
             <div class="sticky top-6 space-y-4">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-4">
-                    <h3 class="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                <div class="tp-card" style="padding:16px;">
+                    <h3 class="sv4-h2" style="margin-bottom:14px;">
                         <span>📱</span> ตัวอย่าง (Preview)
                     </h3>
                     <div class="preview-frame rounded-xl overflow-hidden">
                         <iframe :src="previewUrl" class="w-full h-[700px]" frameborder="0"></iframe>
                     </div>
-                    <div class="mt-4 flex gap-2">
-                        <button @click="showPreviewModal = true"
-                                class="flex-1 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm transition">
+                    <div style="margin-top:14px; display:flex; gap:8px;">
+                        <button type="button" @click="showPreviewModal = true" class="tp-btn tp-btn-sm tp-btn-primary" style="flex:1;">
                             🔍 ขยายดูเต็มจอ
                         </button>
-                        <a :href="'{{ $store->store_url ?? '#' }}'" target="_blank"
-                           class="flex-1 px-4 py-2 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm transition text-center">
+                        <a href="{{ $store->store_url ?? '#' }}" target="_blank" rel="noopener" class="tp-btn tp-btn-sm" style="flex:1;">
                             🌐 เปิดหน้าจริง
                         </a>
                     </div>
                 </div>
 
                 {{-- Quick Tips --}}
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-4 text-white">
-                    <h3 class="font-bold mb-2 flex items-center gap-2">
-                        <span>💡</span> เคล็ดลับ
-                    </h3>
-                    <ul class="text-sm space-y-2 text-indigo-100">
-                        <li>• ใช้สีที่ตัดกันเพื่อความโดดเด่น</li>
-                        <li>• รูป Slider ควรมีขนาด 1920x800px</li>
-                        <li>• อย่าลืมกด "เผยแพร่" เมื่อพร้อม</li>
-                        <li>• ทดสอบบนมือถือด้วยนะ!</li>
+                <div class="sv4-note" style="--c:var(--accent1);">
+                    <div class="sv4-h2" style="font-size:14px; margin-bottom:6px;"><span>💡</span> เคล็ดลับ</div>
+                    <ul style="margin:0; padding-left:18px; display:flex; flex-direction:column; gap:4px;">
+                        <li>ใช้สีที่ตัดกันเพื่อความโดดเด่น</li>
+                        <li>รูป Slider ควรมีขนาด 1920×800 พิกเซล</li>
+                        <li>อย่าลืมกด "เผยแพร่" เมื่อพร้อม</li>
+                        <li>ทดสอบบนมือถือด้วย</li>
                     </ul>
                 </div>
             </div>
@@ -703,37 +671,20 @@
     </div>
 
     {{-- Preview Modal --}}
-    <div x-show="showPreviewModal" x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
-         @click.self="showPreviewModal = false"
-         x-transition>
-        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-7xl max-h-[95vh] overflow-hidden">
-            <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
-                <h3 class="text-xl font-bold text-gray-800 dark:text-white">ตัวอย่างหน้าร้านค้า</h3>
-                <button @click="showPreviewModal = false"
-                        class="w-10 h-10 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-full flex items-center justify-center transition">
-                    ✕
-                </button>
+    <template x-teleport="body">
+        <div x-show="showPreviewModal" x-cloak x-transition.opacity
+             @keydown.escape.window="showPreviewModal = false"
+             @click.self="showPreviewModal = false" class="flex"
+             style="position:fixed; inset:0; z-index:120; align-items:center; justify-content:center; padding:14px; background:rgba(0,0,0,.6);">
+            <div class="tp-card" role="dialog" aria-modal="true" style="width:100%; max-width:1280px; max-height:95vh; padding:0; overflow:hidden; display:flex; flex-direction:column;">
+                <div class="sv4-row" style="padding:14px 18px; border-bottom:1px solid color-mix(in srgb, var(--ink2) 16%, transparent);">
+                    <div class="sv4-h2">👁️ ตัวอย่างหน้าร้านค้า</div>
+                    <button type="button" @click="showPreviewModal = false" class="tp-icon-btn" aria-label="ปิด">✕</button>
+                </div>
+                <iframe :src="previewUrl" title="ตัวอย่างหน้าร้าน" style="width:100%; height:85vh; border:0;"></iframe>
             </div>
-            <iframe :src="previewUrl" class="w-full h-[85vh]" frameborder="0"></iframe>
         </div>
-    </div>
-
-    {{-- Toast Notification --}}
-    <div x-show="toast.show" x-cloak
-         x-transition:enter="transform ease-out duration-300"
-         x-transition:enter-start="translate-y-4 opacity-0"
-         x-transition:enter-end="translate-y-0 opacity-100"
-         x-transition:leave="transform ease-in duration-200"
-         x-transition:leave-start="translate-y-0 opacity-100"
-         x-transition:leave-end="translate-y-4 opacity-0"
-         class="fixed bottom-6 right-6 z-50"
-         :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'"
-         class="text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3">
-        <span x-show="toast.type === 'success'" class="text-2xl">✅</span>
-        <span x-show="toast.type === 'error'" class="text-2xl">❌</span>
-        <span x-text="toast.message"></span>
-    </div>
+    </template>
 </div>
 @endsection
 
@@ -751,12 +702,11 @@ function layoutEditor() {
             { id: 'seo', name: 'SEO', icon: '🔍' },
             { id: 'reset', name: 'รีเซ็ต', icon: '🔄' },
         ],
-        settings: @json($layoutSettings),
-        socialLinks: @json($layoutSettings->social_links ?? []),
+        settings: {{ Js::from($layoutSettings) }},
+        socialLinks: {{ Js::from($layoutSettings->social_links ?? []) }},
         saving: false,
         showPreviewModal: false,
         previewUrl: '{{ route("seller.store.layout.preview") }}',
-        toast: { show: false, message: '', type: 'success' },
 
         init() {
             // Initialize slider_images if null
@@ -774,9 +724,11 @@ function layoutEditor() {
             this.previewUrl = '{{ route("seller.store.layout.preview") }}?t=' + timestamp;
         },
 
+        // ใช้ toast กลางของ layout seller-v4 (window.showNotification)
         showToast(message, type = 'success') {
-            this.toast = { show: true, message, type };
-            setTimeout(() => { this.toast.show = false; }, 3000);
+            if (window.showNotification) {
+                window.showNotification(message, type);
+            }
         },
 
         async saveGeneral() {

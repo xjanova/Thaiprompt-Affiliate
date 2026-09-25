@@ -1,551 +1,269 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
-@section('title', 'จัดการคอมมิชชั่น MLM')
+@section('title', 'คอมมิชชั่นค่าแนะนำ (MLM)')
+
+@php
+    $c = [
+        'ok' => 'var(--tp-ok,#5aa07e)',
+        'bad' => 'var(--tp-bad,#d9534f)',
+        'warn' => 'var(--tp-warn,#e0a52e)',
+        'info' => 'var(--tp-info,#5689b8)',
+        'violet' => 'var(--tp-violet,#8c6fd6)',
+        'mute' => 'var(--ink2)',
+    ];
+    $pill = fn (string $color) => "background:color-mix(in srgb, {$color} 16%, transparent); color:{$color};";
+    $th = 'padding:12px 14px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); letter-spacing:.3px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); vertical-align:middle;';
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+    $statusMeta = [
+        'pending' => ['รออนุมัติ', $c['warn']],
+        'approved' => ['อนุมัติแล้ว', $c['info']],
+        'paid' => ['จ่ายแล้ว', $c['ok']],
+        'rejected' => ['ปฏิเสธ', $c['bad']],
+        'cancelled' => ['ยกเลิก', $c['mute']],
+        'clawback' => ['ดึงคืน', $c['bad']],
+    ];
+    // ค่าตรงกับ enum mlm_commissions.type (ตัวกรองเดิมใช้ unilevel/binary ที่ไม่มีใน DB → กรองแล้วไม่เจออะไร)
+    $typeMeta = [
+        'unilevel_direct' => 'ยูนิเลเวล (ชั้นตรง)',
+        'unilevel_indirect' => 'ยูนิเลเวล (ชั้นลึก)',
+        'unilevel_rollup' => 'ยูนิเลเวล (Roll-up)',
+        'binary_pair' => 'ไบนารี (จับคู่)',
+        'binary_matching' => 'ไบนารี (Matching)',
+        'sponsor_bonus' => 'โบนัสผู้แนะนำ',
+        'rank_bonus' => 'โบนัสตำแหน่ง',
+        'leadership_bonus' => 'โบนัสผู้นำ',
+        'matching_bonus' => 'Matching โบนัส',
+        'pool_bonus' => 'โบนัสกองกลาง',
+    ];
+    $pageIds = $commissions->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->values();
+@endphp
 
 @section('content')
-<div class="space-y-6">
-    {{-- Premium Hero Header with Gradient & Animations --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 dark:from-emerald-800 dark:via-green-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
-        {{-- Animated Background Orbs --}}
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse delay-500"></div>
-            <div class="absolute top-1/3 right-1/3 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse delay-1000"></div>
+<div style="display:flex; flex-direction:column; gap:18px;"
+     x-data="{
+        selected: [],
+        pageIds: @js($pageIds),
+        busy: false,
+        urls: { approve: @js(route('admin.mlm.commissions.approve')), pay: @js(route('admin.mlm.commissions.pay')), bulk: @js(route('admin.mlm.commissions.bulk-action')) },
+        get allChecked() { return this.pageIds.length > 0 && this.selected.length === this.pageIds.length; },
+        toggleAll(on) { this.selected = on ? [...this.pageIds] : []; },
+        async run(action, ids) {
+            ids = ids || this.selected;
+            if (!ids.length) { this.$dispatch('notify', { type: 'warning', message: 'กรุณาเลือกคอมมิชชั่นก่อน' }); return; }
+            let reason = null;
+            if (action === 'reject') {
+                reason = prompt('เหตุผลที่ปฏิเสธ (' + ids.length + ' รายการ)');
+                if (!reason) return;
+            } else {
+                const label = action === 'approve' ? 'อนุมัติ' : 'จ่ายเงิน';
+                if (!confirm(label + 'คอมมิชชั่น ' + ids.length + ' รายการ?' + (action === 'pay' ? ' (เงินเข้ากระเป๋าสมาชิกทันที)' : ''))) return;
+            }
+            const fd = new FormData();
+            fd.append('_token', document.querySelector('meta[name=csrf-token]').content);
+            fd.append('action', action);
+            ids.forEach(id => fd.append('commission_ids[]', id));
+            if (reason) fd.append('reason', reason);
+            const url = action === 'reject' ? this.urls.bulk : this.urls[action];
+            this.busy = true;
+            try {
+                const res = await fetch(url, { method: 'POST', headers: { 'Accept': 'application/json' }, body: fd });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) throw new Error(data.message || 'fail');
+                this.$dispatch('notify', { type: 'success', message: data.message || 'สำเร็จ' });
+                setTimeout(() => window.location.reload(), 700);
+            } catch (e) {
+                this.$dispatch('notify', { type: 'error', message: (e && e.message && e.message !== 'fail') ? e.message : 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่' });
+            } finally {
+                this.busy = false;
+            }
+        }
+     }">
+
+    {{-- ===== หัวหน้า ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ระบบค่าแนะนำ · คอมมิชชั่น</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">คอมมิชชั่นค่าแนะนำ 💰</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">จ่ายจากกองทุนผู้แนะนำที่หักจากยอดขายสินค้าที่มี PV — ตรวจ อนุมัติ แล้วจ่ายเข้ากระเป๋าสมาชิก</div>
         </div>
-
-        {{-- Header Content --}}
-        <div class="relative z-10">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                {{-- Title Section --}}
-                <div class="flex-1">
-                    <div class="flex items-center gap-4 mb-3">
-                        <div class="glass-fusion p-4 rounded-2xl">
-                            <i class="fas fa-hand-holding-usd text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-4xl font-bold text-white drop-shadow-lg">จัดการคอมมิชชั่น MLM</h1>
-                            <p class="text-emerald-100 text-lg mt-1">ดูและจัดการคอมมิชชั่น MLM ทั้งหมดในระบบ</p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Action Buttons --}}
-                <div class="flex flex-wrap gap-3">
-                    <form action="{{ route('admin.mlm.commissions.approve-all') }}" method="POST" class="inline-block">
-                        @csrf
-                        <button type="submit"
-                                onclick="return confirm('อนุมัติคอมมิชชั่นที่รออนุมัติทั้งหมด?')"
-                                class="glass-fusion hover:bg-white/30 text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
-                            <i class="fas fa-check group-hover:scale-110 transition-transform"></i>
-                            อนุมัติทั้งหมด
-                        </button>
-                    </form>
-                    <form action="{{ route('admin.mlm.commissions.pay-all') }}" method="POST" class="inline-block">
-                        @csrf
-                        <button type="submit"
-                                onclick="return confirm('จ่ายคอมมิชชั่นที่อนุมัติแล้วทั้งหมด?')"
-                                class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-3 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 shadow-lg border border-white/30 group">
-                            <i class="fas fa-dollar-sign group-hover:scale-110 transition-transform"></i>
-                            จ่ายทั้งหมด
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Statistics Cards --}}
-    <div>
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <i class="fas fa-chart-pie text-green-600 dark:text-green-400"></i>
-            สถิติภาพรวม
-        </h2>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {{-- Pending Commissions --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-yellow-400 to-orange-500 dark:from-yellow-500 dark:to-orange-700 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-clock text-9xl"></i>
-                </div>
-
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">รออนุมัติ</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-hourglass-half text-2xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($stats['pending_count']) }}</h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-baht-sign text-yellow-100"></i>
-                        <span class="opacity-90 font-semibold">{{ number_format($stats['pending_amount'], 2) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Approved Commissions --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-green-400 to-emerald-600 dark:from-green-500 dark:to-emerald-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-check-circle text-9xl"></i>
-                </div>
-
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">อนุมัติแล้ว</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-check-double text-2xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($stats['approved_count']) }}</h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-baht-sign text-green-100"></i>
-                        <span class="opacity-90 font-semibold">{{ number_format($stats['approved_amount'], 2) }}</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Paid Commissions --}}
-            <div class="group relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-800 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 cursor-pointer">
-                <div class="absolute -right-8 -top-8 opacity-10">
-                    <i class="fas fa-coins text-9xl"></i>
-                </div>
-
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-sm font-medium opacity-90">จ่ายแล้ว</p>
-                        <div class="glass-fusion p-3 rounded-xl">
-                            <i class="fas fa-money-bill-wave text-2xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-4xl font-bold mb-2">{{ number_format($stats['paid_count']) }}</h3>
-                    <div class="flex items-center text-sm gap-1">
-                        <i class="fas fa-baht-sign text-blue-100"></i>
-                        <span class="opacity-90 font-semibold">{{ number_format($stats['paid_amount'], 2) }}</span>
-                    </div>
-                </div>
-            </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            @if(($stats['pending_count'] ?? 0) > 0)
+                <form method="POST" action="{{ route('admin.mlm.commissions.approve-all') }}"
+                      @submit="if (!confirm(@js('อนุมัติคอมมิชชั่นที่รออนุมัติทั้งหมด '.number_format($stats['pending_count']).' รายการ?'))) $event.preventDefault()">
+                    @csrf
+                    <button type="submit" class="tp-btn tp-btn-sm"><i class="fas fa-check-double"></i> อนุมัติทั้งหมด</button>
+                </form>
+            @endif
+            @if(($stats['approved_count'] ?? 0) > 0)
+                <form method="POST" action="{{ route('admin.mlm.commissions.pay-all') }}"
+                      @submit="if (!confirm(@js('จ่ายคอมมิชชั่นที่อนุมัติแล้วทั้งหมด '.number_format($stats['approved_count']).' รายการ ยอด ฿'.number_format($stats['approved_amount'], 2).' ?'))) $event.preventDefault()">
+                    @csrf
+                    <button type="submit" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-money-bill-transfer"></i> จ่ายทั้งหมด</button>
+                </form>
+            @endif
         </div>
     </div>
 
-    {{-- Filters Section --}}
-    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <i class="fas fa-filter text-purple-600 dark:text-purple-400"></i>
-            ตัวกรองข้อมูล
-        </h3>
+    {{-- ===== KPI ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;">
+        @foreach([
+            ['รออนุมัติ', $stats['pending_count'] ?? 0, $stats['pending_amount'] ?? 0, $c['warn'], 'fa-hourglass-half', 'pending'],
+            ['อนุมัติแล้ว (รอจ่าย)', $stats['approved_count'] ?? 0, $stats['approved_amount'] ?? 0, $c['info'], 'fa-circle-check', 'approved'],
+            ['จ่ายแล้ว', $stats['paid_count'] ?? 0, $stats['paid_amount'] ?? 0, $c['ok'], 'fa-sack-dollar', 'paid'],
+        ] as [$label, $count, $amount, $color, $icon, $status])
+            <a href="{{ route('admin.mlm.commissions.index', ['status' => $status]) }}" class="tp-card tp-card-hover" style="padding:16px; text-decoration:none; color:inherit;">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="tp-tile" style="width:42px; height:42px; font-size:17px; background:{{ $color }};"><i class="fas {{ $icon }}"></i></div>
+                    <div>
+                        <div class="tp-num" style="font-size:22px; font-weight:800; line-height:1;">{{ number_format((int) $count) }}</div>
+                        <div style="font-size:12px; color:var(--ink2); margin-top:3px;">{{ $label }}</div>
+                    </div>
+                </div>
+                <div class="tp-num" style="font-size:14px; font-weight:700; margin-top:10px; color:{{ $color }};">฿{{ number_format((float) $amount, 2) }}</div>
+            </a>
+        @endforeach
+    </div>
 
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
-            {{-- Plan Filter --}}
+    {{-- ===== ตัวกรอง ===== --}}
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" action="{{ route('admin.mlm.commissions.index') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; align-items:end;">
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-layer-group mr-1 text-purple-600 dark:text-purple-400"></i>
-                    แผน MLM
-                </label>
-                <select name="plan_id"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
+                <label style="{{ $lbl }}">แผน</label>
+                <select name="plan_id" class="tp-input">
                     <option value="">ทั้งหมด</option>
                     @foreach($plans as $plan)
-                        <option value="{{ $plan->id }}" {{ request('plan_id') == $plan->id ? 'selected' : '' }}>
-                            {{ $plan->display_name }}
-                        </option>
+                        <option value="{{ $plan->id }}" @selected((string) request('plan_id') === (string) $plan->id)>{{ $plan->display_name ?? $plan->name }}</option>
                     @endforeach
                 </select>
             </div>
-
-            {{-- Status Filter --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-toggle-on mr-1 text-green-600 dark:text-green-400"></i>
-                    สถานะ
-                </label>
-                <select name="status"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
+                <label style="{{ $lbl }}">สถานะ</label>
+                <select name="status" class="tp-input">
                     <option value="">ทั้งหมด</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>รออนุมัติ</option>
-                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
-                    <option value="paid" {{ request('status') == 'paid' ? 'selected' : '' }}>จ่ายแล้ว</option>
-                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>ปฏิเสธ</option>
+                    @foreach($statusMeta as $value => [$label])
+                        <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
-
-            {{-- Type Filter --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-tag mr-1 text-blue-600 dark:text-blue-400"></i>
-                    ประเภท
-                </label>
-                <select name="type"
-                        class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
+                <label style="{{ $lbl }}">ประเภท</label>
+                <select name="type" class="tp-input">
                     <option value="">ทั้งหมด</option>
-                    <option value="unilevel" {{ request('type') == 'unilevel' ? 'selected' : '' }}>Unilevel</option>
-                    <option value="binary" {{ request('type') == 'binary' ? 'selected' : '' }}>Binary</option>
-                    <option value="direct_sponsor" {{ request('type') == 'direct_sponsor' ? 'selected' : '' }}>Direct Sponsor</option>
-                    <option value="matching" {{ request('type') == 'matching' ? 'selected' : '' }}>Matching</option>
+                    @foreach($typeMeta as $value => $label)
+                        <option value="{{ $value }}" @selected(request('type') === $value)>{{ $label }}</option>
+                    @endforeach
                 </select>
             </div>
-
-            {{-- Date From --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-calendar-alt mr-1 text-indigo-600 dark:text-indigo-400"></i>
-                    วันที่เริ่มต้น
-                </label>
-                <input type="date"
-                       name="date_from"
-                       value="{{ request('date_from') }}"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
+                <label style="{{ $lbl }}">ตั้งแต่</label>
+                <input type="date" name="date_from" value="{{ request('date_from') }}" class="tp-input">
             </div>
-
-            {{-- Date To --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <i class="fas fa-calendar-check mr-1 text-pink-600 dark:text-pink-400"></i>
-                    วันที่สิ้นสุด
-                </label>
-                <input type="date"
-                       name="date_to"
-                       value="{{ request('date_to') }}"
-                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent transition-all">
+                <label style="{{ $lbl }}">ถึง</label>
+                <input type="date" name="date_to" value="{{ request('date_to') }}" class="tp-input">
             </div>
-
-            {{-- Search Button --}}
-            <div class="flex items-end">
-                <button type="submit"
-                        class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600 text-white px-4 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl font-medium flex items-center justify-center gap-2">
-                    <i class="fas fa-search"></i>
-                    ค้นหา
-                </button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> กรอง</button>
+                <a href="{{ route('admin.mlm.commissions.index') }}" class="tp-btn"><i class="fas fa-rotate-left"></i></a>
             </div>
         </form>
     </div>
 
-    {{-- Commissions Table --}}
-    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-        {{-- Bulk Actions Header --}}
-        <div class="bg-gray-50 dark:bg-gray-700 p-4 border-b border-gray-200 dark:border-gray-600">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <input type="checkbox"
-                           id="select-all"
-                           class="w-5 h-5 rounded border-gray-300 dark:border-gray-500 text-purple-600 focus:ring-purple-500 dark:focus:ring-purple-400 cursor-pointer">
-                    <label for="select-all" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                        เลือกทั้งหมด
-                    </label>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button onclick="bulkAction('approve')"
-                            class="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 shadow hover:shadow-lg flex items-center gap-2">
-                        <i class="fas fa-check"></i>
-                        อนุมัติที่เลือก
-                    </button>
-                    <button onclick="bulkAction('pay')"
-                            class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 shadow hover:shadow-lg flex items-center gap-2">
-                        <i class="fas fa-dollar-sign"></i>
-                        จ่ายที่เลือก
-                    </button>
-                    <button onclick="bulkAction('reject')"
-                            class="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 shadow hover:shadow-lg flex items-center gap-2">
-                        <i class="fas fa-times"></i>
-                        ปฏิเสธที่เลือก
-                    </button>
-                </div>
+    {{-- ===== ตาราง ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="padding:12px 16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; box-shadow:var(--inset-sm);">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+                <input type="checkbox" :checked="allChecked" @change="toggleAll($event.target.checked)" style="accent-color:var(--accent1); width:17px; height:17px;">
+                เลือกทั้งหน้า <span class="tp-pill tp-pill-soft tp-num" x-show="selected.length" x-cloak x-text="selected.length + ' รายการ'"></span>
+            </label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="tp-btn tp-btn-sm" @click="run('approve')" :disabled="busy"><i class="fas fa-check"></i> อนุมัติที่เลือก</button>
+                <button type="button" class="tp-btn tp-btn-sm tp-btn-primary" @click="run('pay')" :disabled="busy"><i class="fas fa-money-bill-wave"></i> จ่ายที่เลือก</button>
+                <button type="button" class="tp-btn tp-btn-sm" style="color:{{ $c['bad'] }};" @click="run('reject')" :disabled="busy"><i class="fas fa-xmark"></i> ปฏิเสธที่เลือก</button>
             </div>
         </div>
-
-        {{-- Table --}}
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                {{-- Table Header --}}
-                <thead class="bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700">
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:960px; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <input type="checkbox" class="w-4 h-4 rounded border-white/50 text-white focus:ring-white/50 cursor-pointer">
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-user mr-2"></i>สมาชิก
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-tag mr-2"></i>ประเภท
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-user-circle mr-2"></i>จาก
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-dollar-sign mr-2"></i>จำนวน
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-info-circle mr-2"></i>สถานะ
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-calendar mr-2"></i>วันที่
-                        </th>
-                        <th scope="col" class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">
-                            <i class="fas fa-cog mr-2"></i>จัดการ
-                        </th>
+                        <th style="{{ $th }} width:40px;"></th>
+                        <th style="{{ $th }}">สมาชิก</th>
+                        <th style="{{ $th }}">ประเภท</th>
+                        <th style="{{ $th }}">จาก</th>
+                        <th style="{{ $th }} text-align:right;">จำนวน</th>
+                        <th style="{{ $th }}">สถานะ</th>
+                        <th style="{{ $th }}">วันที่</th>
+                        <th style="{{ $th }} text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-
-                {{-- Table Body --}}
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($commissions as $commission)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
-                        {{-- Checkbox --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox"
-                                   name="commission_ids[]"
-                                   value="{{ $commission->id }}"
-                                   class="commission-checkbox w-5 h-5 rounded border-gray-300 dark:border-gray-500 text-purple-600 focus:ring-purple-500 dark:focus:ring-purple-400 cursor-pointer">
-                        </td>
-
-                        {{-- Member --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-3">
-                                <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold shadow">
-                                    {{ strtoupper(substr($commission->member->user->name, 0, 1)) }}
-                                </div>
-                                <div>
-                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                                        {{ $commission->member->user->name }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                                        {{ $commission->member->member_code }}
+                        @php
+                            [$sLabel, $sColor] = $statusMeta[$commission->status] ?? [$commission->status, $c['mute']];
+                            $memberName = $commission->member?->user?->name ?? $commission->user?->name ?? 'ไม่ระบุ';
+                        @endphp
+                        <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                            <td style="{{ $td }}">
+                                <input type="checkbox" value="{{ $commission->id }}" x-model.number="selected" style="accent-color:var(--accent1); width:17px; height:17px;">
+                            </td>
+                            <td style="{{ $td }}">
+                                <div style="display:flex; align-items:center; gap:9px;">
+                                    <span class="tp-tile" style="width:32px; height:32px; border-radius:50%; font-size:12px; font-weight:800;">{{ mb_strtoupper(mb_substr($memberName, 0, 1)) }}</span>
+                                    <div style="min-width:0;">
+                                        <div style="font-weight:600; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $memberName }}</div>
+                                        <div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ $commission->member?->member_code ?? '-' }}</div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-
-                        {{-- Type --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center gap-2">
-                                @if($commission->type === 'unilevel')
-                                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 shadow">
-                                        <i class="fas fa-layer-group mr-1"></i>
-                                        Unilevel
-                                    </span>
-                                @elseif($commission->type === 'binary')
-                                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 shadow">
-                                        <i class="fas fa-code-branch mr-1"></i>
-                                        Binary
-                                    </span>
-                                @elseif($commission->type === 'direct_sponsor')
-                                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 shadow">
-                                        <i class="fas fa-user-plus mr-1"></i>
-                                        Direct
-                                    </span>
-                                @elseif($commission->type === 'matching')
-                                    <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300 shadow">
-                                        <i class="fas fa-handshake mr-1"></i>
-                                        Matching
-                                    </span>
+                            </td>
+                            <td style="{{ $td }} white-space:nowrap;">
+                                <span class="tp-pill tp-pill-soft">{{ $typeMeta[$commission->type] ?? $commission->type }}</span>
+                                @if($commission->level)<span class="tp-num" style="font-size:11.5px; color:var(--ink2);"> Lv.{{ $commission->level }}</span>@endif
+                            </td>
+                            <td style="{{ $td }}">
+                                @if($commission->fromMember)
+                                    <div style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $commission->fromMember->user?->name ?? '-' }}</div>
+                                    <div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ $commission->fromMember->member_code }}</div>
+                                @else
+                                    <span style="color:var(--ink2);">—</span>
                                 @endif
-                                @if($commission->level)
-                                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
-                                        Lv.{{ $commission->level }}
-                                    </span>
-                                @endif
-                            </div>
-                        </td>
-
-                        {{-- From Member --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($commission->fromMember)
-                                <div>
-                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                        {{ $commission->fromMember->user->name }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                                        {{ $commission->fromMember->member_code }}
-                                    </div>
+                            </td>
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <div class="tp-num" style="font-weight:800;">฿{{ number_format((float) $commission->commission_amount, 2) }}</div>
+                                @if((float) $commission->pv_amount > 0)<div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ number_format((float) $commission->pv_amount, 2) }} PV</div>@endif
+                            </td>
+                            <td style="{{ $td }}"><span class="tp-pill" style="{{ $pill($sColor) }}">{{ $sLabel }}</span></td>
+                            <td style="{{ $td }} white-space:nowrap;">
+                                <div class="tp-num">{{ $commission->created_at?->format('d/m/Y') }}</div>
+                                <div class="tp-num" style="font-size:11.5px; color:var(--ink2);">{{ $commission->created_at?->format('H:i') }}</div>
+                            </td>
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:6px;">
+                                    @if($commission->status === 'pending')
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:{{ $c['ok'] }};" title="อนุมัติ" @click="run('approve', [{{ $commission->id }}])" :disabled="busy"><i class="fas fa-check"></i></button>
+                                    @elseif($commission->status === 'approved')
+                                        <button type="button" class="tp-icon-btn" style="width:34px; height:34px; color:{{ $c['info'] }};" title="จ่าย" @click="run('pay', [{{ $commission->id }}])" :disabled="busy"><i class="fas fa-money-bill-wave"></i></button>
+                                    @endif
+                                    <a href="{{ route('admin.mlm.commissions.show', $commission) }}" class="tp-icon-btn" style="width:34px; height:34px;" title="ดูรายละเอียด"><i class="fas fa-eye"></i></a>
                                 </div>
-                            @else
-                                <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
-                            @endif
-                        </td>
-
-                        {{-- Amount --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                <i class="fas fa-baht-sign text-xs"></i>
-                                {{ number_format($commission->commission_amount, 2) }}
-                            </div>
-                            @if($commission->pv_amount)
-                                <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                    <i class="fas fa-gem text-xs"></i>
-                                    {{ number_format($commission->pv_amount, 2) }} PV
-                                </div>
-                            @endif
-                        </td>
-
-                        {{-- Status --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($commission->status === 'pending')
-                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 shadow">
-                                    <i class="fas fa-clock mr-1"></i>
-                                    Pending
-                                </span>
-                            @elseif($commission->status === 'approved')
-                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 shadow">
-                                    <i class="fas fa-check mr-1"></i>
-                                    Approved
-                                </span>
-                            @elseif($commission->status === 'paid')
-                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 shadow">
-                                    <i class="fas fa-check-double mr-1"></i>
-                                    Paid
-                                </span>
-                            @elseif($commission->status === 'rejected')
-                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 shadow">
-                                    <i class="fas fa-times mr-1"></i>
-                                    Rejected
-                                </span>
-                            @endif
-                        </td>
-
-                        {{-- Date --}}
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-600 dark:text-gray-400">
-                                {{ $commission->created_at->format('d/m/Y') }}
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-500">
-                                {{ $commission->created_at->format('H:i') }}
-                            </div>
-                        </td>
-
-                        {{-- Actions --}}
-                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('admin.mlm.commissions.show', $commission) }}"
-                                   class="px-3 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl transition-all duration-300 shadow hover:shadow-lg transform hover:scale-105"
-                                   title="ดูรายละเอียด">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                @if($commission->status === 'pending')
-                                    <button onclick="approveCommission({{ $commission->id }})"
-                                            class="px-3 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-xl transition-all duration-300 shadow hover:shadow-lg transform hover:scale-105"
-                                            title="อนุมัติ">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-16 text-center">
-                            <div class="flex flex-col items-center justify-center gap-3">
-                                <div class="bg-gray-100 dark:bg-gray-700 p-6 rounded-full">
-                                    <i class="fas fa-inbox text-5xl text-gray-400 dark:text-gray-500"></i>
-                                </div>
-                                <div>
-                                    <p class="text-lg font-semibold text-gray-600 dark:text-gray-400">ไม่พบข้อมูลคอมมิชชั่น</p>
-                                    <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">ลองเปลี่ยนตัวกรองเพื่อค้นหาข้อมูล</p>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="8" style="padding:44px 16px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-inbox" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                                ไม่พบคอมมิชชั่นตามเงื่อนไขนี้
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
-    {{-- Pagination --}}
     @if($commissions->hasPages())
-        <div class="flex justify-center">
-            <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-4">
-                {{ $commissions->links() }}
-            </div>
-        </div>
+        <div>{{ $commissions->links() }}</div>
     @endif
 </div>
-
-{{-- JavaScript for Bulk Actions --}}
-<script>
-// Select All Checkbox
-document.getElementById('select-all').addEventListener('change', function() {
-    const checkboxes = document.querySelectorAll('.commission-checkbox');
-    checkboxes.forEach(checkbox => checkbox.checked = this.checked);
-});
-
-// Bulk Actions
-function bulkAction(action) {
-    const checkedBoxes = document.querySelectorAll('.commission-checkbox:checked');
-    const ids = Array.from(checkedBoxes).map(cb => cb.value);
-
-    if (ids.length === 0) {
-        alert('กรุณาเลือกคอมมิชชั่นที่ต้องการดำเนินการ');
-        return;
-    }
-
-    let confirmMessage = '';
-    let url = '';
-
-    switch(action) {
-        case 'approve':
-            confirmMessage = `อนุมัติคอมมิชชั่น ${ids.length} รายการ?`;
-            url = '{{ route("admin.mlm.commissions.approve") }}';
-            break;
-        case 'pay':
-            confirmMessage = `จ่ายคอมมิชชั่น ${ids.length} รายการ?`;
-            url = '{{ route("admin.mlm.commissions.pay") }}';
-            break;
-        case 'reject':
-            const reason = prompt('กรุณาระบุเหตุผล:');
-            if (!reason) return;
-            confirmMessage = `ปฏิเสธคอมมิชชั่น ${ids.length} รายการ?`;
-            url = '{{ route("admin.mlm.commissions.bulk-action") }}';
-            break;
-    }
-
-    if (!confirm(confirmMessage)) return;
-
-    const formData = new FormData();
-    formData.append('_token', '{{ csrf_token() }}');
-    formData.append('action', action);
-    ids.forEach(id => formData.append('commission_ids[]', id));
-    if (action === 'reject') {
-        formData.append('reason', reason);
-    }
-
-    fetch(url, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        } else {
-            alert('เกิดข้อผิดพลาด: ' + data.message);
-        }
-    })
-    .catch(error => {
-        alert('เกิดข้อผิดพลาด: ' + error.message);
-    });
-}
-
-// Single Commission Approve
-function approveCommission(id) {
-    if (!confirm('อนุมัติคอมมิชชั่นนี้?')) return;
-
-    const formData = new FormData();
-    formData.append('_token', '{{ csrf_token() }}');
-    formData.append('commission_ids[]', id);
-
-    fetch('{{ route("admin.mlm.commissions.approve") }}', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('อนุมัติคอมมิชชั่นสำเร็จ');
-            location.reload();
-        } else {
-            alert('เกิดข้อผิดพลาด');
-        }
-    });
-}
-</script>
 @endsection

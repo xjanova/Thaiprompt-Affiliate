@@ -1,34 +1,32 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'พิมพ์ใบปะสินค้า')
+@section('title', 'ใบปะหน้าพัสดุ')
 
 @section('content')
-<div class="container-fluid px-4 py-6">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                📦 พิมพ์ใบปะสินค้า
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">
-                สร้างและพิมพ์ใบปะสินค้าจาก POS Transaction
-            </p>
-        </div>
-        <a href="{{ route('seller.pos.labels.index') }}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            ← กลับ
-        </a>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <x-seller-kit.header title="ใบปะหน้าพัสดุ" icon="📦" crumb="ร้านค้า · POS · ฉลากบาร์โค้ด"
+                         subtitle="พิมพ์ที่อยู่ผู้รับจากออเดอร์ออนไลน์ของร้าน" />
+
+    @include('seller.pos.partials.nav')
+
+    <div class="tp-card">
+        <x-seller-kit.empty icon="📦" title="พิมพ์ใบปะหน้าได้จากหน้าออเดอร์"
+                            text="เปิดออเดอร์ที่รอจัดส่ง แล้วกดปุ่มพิมพ์ใบปะหน้า ระบบจะดึงชื่อ ที่อยู่ และเบอร์โทรผู้รับให้อัตโนมัติ">
+            <a href="{{ route('seller.orders.pending-shipping') }}" class="tp-btn tp-btn-primary tp-btn-sm">📋 ออเดอร์รอจัดส่ง</a>
+            <a href="{{ route('seller.pos.labels.index') }}" class="tp-btn tp-btn-sm">← หน้าพิมพ์ฉลาก</a>
+        </x-seller-kit.empty>
     </div>
 
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 text-center">
-        <svg class="w-24 h-24 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-        </svg>
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ฟีเจอร์กำลังพัฒนา</h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-6">
-            คุณสามารถพิมพ์ใบปะสินค้าได้จากหน้า POS Transaction โดยตรง
-        </p>
-        <a href="{{ route('admin.pos.transactions.index') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            ไปที่ POS Transactions →
-        </a>
-    </div>
+    @if($templates->count() > 0)
+        <div class="tp-card">
+            <div class="tp-section-h">🧩 Template ใบปะหน้าที่พร้อมใช้ ({{ number_format($templates->count()) }})</div>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;">
+                @foreach($templates as $template)
+                    <span class="tp-pill tp-pill-soft">{{ $template->name }} · {{ rtrim(rtrim(number_format((float) $template->paper_width, 1), '0'), '.') }}×{{ rtrim(rtrim(number_format((float) $template->paper_height, 1), '0'), '.') }} มม.</span>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>
 @endsection

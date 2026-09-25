@@ -1,900 +1,463 @@
 {{--
-    หน้าติดตามไรเดอร์แบบ Real-time บน Google Maps
-    ลูกค้าเปิดหน้านี้เพื่อดูตำแหน่งไรเดอร์และสถานะงาน
+ | หน้าติดตามไรเดอร์ของลูกค้า (taladsod.track.show — ลิงก์ token ไม่ต้อง login) — ธีม V4 (frontend-v4)
+ | Controller: FreshMarket\RiderTrackingController@show
+ | ตัวแปร: $job, $rider (null = ยังไม่มีไรเดอร์), $order, $orderNumber, $riderPhotoUrl, $riderPhone (เฉพาะงานยังวิ่ง), $isActive,
+ |         $location (getCurrentLocation), $customerLocation, $pickupLocation, $token, $pollInterval (ms), $customerPollInterval,
+ |         $deliveryEndpoints ({source, order_id, rider_location, share_location} เฉพาะเจ้าของออเดอร์ที่ login อยู่ | null)
+ | Poll: GET taladsod.track.location → {success, location{available,...}, job_status, job_status_text, gps_active, is_active} · 404 TRACKING_EXPIRED
+ |       GET taladsod.track.route → {route[{lat,lng,speed,time}]}
+ | ไม่มีตำแหน่งไรเดอร์ให้ดู → แสดง job_status_text แทนแผนที่ · ข้อความจากผู้ใช้เข้า JS ผ่าน Js::from และแสดงด้วย textContent เท่านั้น
+ --}}
+@extends('layouts.frontend-v4')
 
-    ข้อมูลที่ส่งมาจาก RiderTrackingController@show:
-    - $job, $rider (null = ยังไม่มีไรเดอร์รับงาน), $order, $location, $customerLocation, $pickupLocation
-    - $orderNumber (?string), $riderPhotoUrl (?string URL เต็ม), $riderPhone (?string เฉพาะงานยังวิ่ง), $isActive (bool)
-    - $token, $googleMapsApiKey, $pollInterval, $customerPollInterval
---}}
-@extends('layouts.taladsod')
-
-@section('title', 'ติดตามไรเดอร์ - งาน #' . $job->job_number)
+@section('title', 'ติดตามไรเดอร์ · งาน #'.$job->job_number)
 
 @section('meta')
     <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
 @endsection
 
-@section('styles')
-<style>
-    /* สไตล์สำหรับ Google Maps */
-    #tracking-map {
-        width: 100%;
-        height: 100%;
-        min-height: 350px;
-    }
+@php
+    $ui = \App\Support\TaladsodWebUi::class;
+    $rw = \App\Support\RiderWebUi::class;
+    $status = (string) $job->status;
+    $available = (bool) ($location['available'] ?? false);
+    $steps = $rw::progressSteps($status, [
+        'accepted_at' => $job->accepted_at,
+        'picked_up_at' => $job->picked_up_at,
+        'delivered_at' => $job->delivered_at,
+        'completed_at' => $job->completed_at,
+    ]);
+    $stepLabels = [
+        'accepted' => 'ไรเดอร์รับงาน',
+        'picking_up' => 'กำลังไปรับของ',
+        'picked_up' => 'รับของแล้ว',
+        'delivering' => 'กำลังมาส่ง',
+        'completed' => 'ส่งถึงแล้ว',
+    ];
+    $stepIcons = [
+        'accepted' => 'fa-user-check',
+        'picking_up' => 'fa-store',
+        'picked_up' => 'fa-box',
+        'delivering' => 'fa-motorcycle',
+        'completed' => 'fa-house-circle-check',
+    ];
+    $tone = match (true) {
+        in_array($status, ['cancelled', 'failed'], true) => 'bad',
+        in_array($status, ['delivered', 'completed'], true) => 'ok',
+        $status === 'pending' => 'warn',
+        default => 'info',
+    };
+    $validPoint = fn ($p) => $rw::validPoint($p['latitude'] ?? null, $p['longitude'] ?? null);
+    $vehicleText = $rider ? ($rider->vehicle_type_text ?? $rider->vehicle_type) : null;
+    $statusText = (string) ($location['job_status_text'] ?? $job->status_text);
+    $reasonText = match ($location['reason'] ?? null) {
+        'consent_missing' => 'ไรเดอร์ยังไม่ได้เปิดแชร์ตำแหน่ง — จะเห็นบนแผนที่เมื่อไรเดอร์เริ่มแชร์',
+        'job_not_active' => $status === 'pending'
+            ? 'กำลังหาไรเดอร์ใกล้ร้าน เมื่อมีคนรับงานจะเห็นตำแหน่งที่นี่'
+            : 'การจัดส่งจบแล้ว จึงไม่แสดงตำแหน่งไรเดอร์',
+        default => 'กำลังรอสัญญาณ GPS จากไรเดอร์',
+    };
 
-    /* แอนิเมชันจุดกระพริบสำหรับสถานะ GPS */
-    @keyframes gps-pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.2); }
-    }
-    .gps-pulse {
-        animation: gps-pulse 2s ease-in-out infinite;
-    }
-
-    /* แอนิเมชันไรเดอร์เคลื่อนที่ */
-    @keyframes rider-move {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-3px); }
-    }
-    .rider-bounce {
-        animation: rider-move 1.5s ease-in-out infinite;
-    }
-
-    /* Progress bar สีไล่ */
-    .progress-gradient {
-        background: linear-gradient(90deg, #22C55E 0%, #F97316 100%);
-    }
-
-    /* Custom info window สำหรับ Google Maps */
-    .gm-style-iw-d { overflow: hidden !important; }
-    .gm-style-iw { padding: 0 !important; }
-</style>
-@endsection
+    $trackCfg = [
+        'locationUrl' => route('taladsod.track.location', $token),
+        'routeUrl' => route('taladsod.track.route', $token),
+        'pollMs' => max(10000, (int) ($pollInterval ?? 30000)),
+        // active = งานวิ่งอยู่ (เห็นไรเดอร์/แชร์ตำแหน่งได้) · watch = งานยังไม่จบ → poll ต่อ (รวมตอนรอไรเดอร์รับงาน)
+        'active' => (bool) $isActive,
+        'watch' => ! $job->isTerminal(),
+        'status' => $status,
+        'statusText' => $statusText,
+        'reasonText' => $reasonText,
+        'rider' => $available ? ['lat' => (float) $location['latitude'], 'lng' => (float) $location['longitude'], 'updated_at' => $location['updated_at'] ?? null] : null,
+        'pickup' => $validPoint($pickupLocation) ? ['lat' => (float) $pickupLocation['latitude'], 'lng' => (float) $pickupLocation['longitude']] : null,
+        'dropoff' => $validPoint($customerLocation) ? ['lat' => (float) $customerLocation['latitude'], 'lng' => (float) $customerLocation['longitude']] : null,
+        'labels' => [
+            'pickup' => (string) ($pickupLocation['contact_name'] ?? 'จุดรับสินค้า'),
+            'rider' => (string) ($rider?->full_name ?? 'ไรเดอร์'),
+        ],
+        'share' => $deliveryEndpoints ? [
+            'riderLocationUrl' => $deliveryEndpoints['rider_location'],
+            'shareUrl' => $deliveryEndpoints['share_location'],
+        ] : null,
+    ];
+@endphp
 
 @section('content')
-<div x-data="riderTracking()" x-init="init()" class="max-w-4xl mx-auto px-4 py-4 sm:py-6">
+<x-theme-v4.shop-kit />
+@include('taladsod.partials.kit')
+<x-theme-v4.leaflet />
+<x-theme-v4.public-header :sticky="false" />
 
-    {{-- ===== แบนเนอร์เตือน GPS ไม่ทำงาน ===== --}}
-    <div x-show="!gpsActive && jobStatus !== 'completed' && jobStatus !== 'delivered'"
-         x-cloak
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 -translate-y-2"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="mb-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 flex items-start gap-3">
-        <div class="flex-shrink-0 mt-0.5">
-            <i class="fas fa-exclamation-triangle text-amber-500 text-lg"></i>
-        </div>
-        <div>
-            <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
-                GPS ไรเดอร์ไม่ได้เปิดอยู่
-            </p>
-            <p class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                ตำแหน่งที่แสดงอาจไม่ใช่ตำแหน่งปัจจุบัน กรุณาโทรหาไรเดอร์เพื่อสอบถามสถานะ
-            </p>
-        </div>
-    </div>
+<main class="ts-scope" style="flex:1; padding-bottom:44px;" x-data="tsTrack({{ \Illuminate\Support\Js::from($trackCfg) }})">
+    <div class="sf-wrap" style="max-width:980px;">
 
-    {{-- ===== แผนที่ Google Maps ===== --}}
-    <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-4">
-        {{-- Loading overlay --}}
-        <div x-show="mapLoading"
-             x-transition:leave="transition ease-in duration-300"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="absolute inset-0 z-10 bg-white/90 dark:bg-gray-800/90 flex flex-col items-center justify-center">
-            <div class="w-12 h-12 border-4 border-green-200 border-t-green-500 rounded-full animate-spin mb-3"></div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">กำลังโหลดแผนที่...</p>
-        </div>
-
-        {{-- แผนที่ --}}
-        <div id="tracking-map" class="h-[350px] sm:h-[400px] lg:h-[450px]"></div>
-
-        {{-- ปุ่มควบคุมแผนที่ --}}
-        <div class="absolute top-3 right-3 z-10 flex flex-col gap-2">
-            {{-- ปุ่มปรับมุมมองให้เห็นทุก marker --}}
-            <button @click="fitAllMarkers()"
-                    class="w-10 h-10 bg-white dark:bg-gray-700 rounded-lg shadow-md flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-gray-600 transition-colors"
-                    title="แสดงทั้งหมด">
-                <i class="fas fa-expand"></i>
-            </button>
-            {{-- ปุ่มติดตามไรเดอร์ --}}
-            <button @click="centerOnRider()"
-                    class="w-10 h-10 bg-white dark:bg-gray-700 rounded-lg shadow-md flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-gray-600 transition-colors"
-                    title="ติดตามไรเดอร์">
-                <i class="fas fa-motorcycle text-green-500"></i>
-            </button>
-        </div>
-
-        {{-- แถบข้อมูลระยะทางด้านล่างแผนที่ --}}
-        <div class="absolute bottom-3 left-3 right-3 z-10">
-            <div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-xl px-4 py-2.5 shadow-md flex items-center justify-between"
-                 x-show="riderLat !== null">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-route text-green-500"></i>
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-200">
-                        ระยะห่าง:
-                        <span class="text-green-600 dark:text-green-400 font-bold" x-text="distanceText"></span>
-                    </span>
+        {{-- ════════ หัว: สถานะงาน ════════ --}}
+        <section class="tp-card" style="margin-top:18px; padding:20px;">
+            <div class="ts-row" style="justify-content:space-between; gap:12px;">
+                <div style="min-width:0;">
+                    <div class="sf-kicker">ติดตามการจัดส่ง</div>
+                    <h1 class="ts-h1" style="font-size:clamp(20px,4vw,26px);">งาน #{{ $job->job_number }}</h1>
+                    @if($orderNumber)
+                        <div class="ts-muted ts-small" style="margin-top:4px;">ออเดอร์ #{{ $orderNumber }}</div>
+                    @endif
                 </div>
-                <div class="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
-                    <span class="w-2 h-2 rounded-full gps-pulse" :class="gpsActive ? 'bg-green-500' : 'bg-amber-500'"></span>
-                    <span x-text="gpsActive ? 'GPS ทำงาน' : 'GPS ปิดอยู่'"></span>
-                </div>
+                <span class="ts-pill solid ts-tone-{{ $tone }}" style="font-size:13px; padding:9px 14px;">
+                    <span class="ts-dot {{ $isActive ? 'live' : '' }}" style="background:var(--ts-on);"></span>
+                    <span x-text="statusText">{{ $statusText }}</span>
+                </span>
             </div>
-        </div>
-    </div>
 
-    {{-- ===== Progress Bar สถานะการจัดส่ง ===== --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-4">
-        <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">สถานะการจัดส่ง</h2>
-
-        {{-- Progress Steps --}}
-        <div class="relative">
-            {{-- เส้น Progress พื้นหลัง --}}
-            <div class="absolute top-4 left-4 right-4 h-1 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-            {{-- เส้น Progress ที่เติมสี --}}
-            <div class="absolute top-4 left-4 h-1 rounded-full progress-gradient transition-all duration-700 ease-out"
-                 :style="'width: ' + progressPercent + '%'"></div>
-
-            {{-- Steps --}}
-            <div class="relative flex justify-between">
-                <template x-for="(step, index) in statusSteps" :key="step.key">
-                    <div class="flex flex-col items-center" style="width: 14.28%;">
-                        {{-- วงกลมสถานะ --}}
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 relative z-10"
-                             :class="getStepClass(step.key)">
-                            <i :class="step.icon" x-show="isStepCompleted(step.key) || isStepActive(step.key)"></i>
-                            <span x-show="!isStepCompleted(step.key) && !isStepActive(step.key)" x-text="index + 1"></span>
-                        </div>
-                        {{-- ป้ายชื่อสถานะ (ซ่อนบน mobile เล็ก) --}}
-                        <span class="hidden sm:block text-[10px] sm:text-xs text-center mt-2 leading-tight"
-                              :class="isStepActive(step.key) ? 'text-green-600 dark:text-green-400 font-semibold' : (isStepCompleted(step.key) ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500')"
-                              x-text="step.label">
+            {{-- แถบขั้นตอน --}}
+            <ol style="list-style:none; margin:18px 0 0; padding:0; display:grid; grid-template-columns:repeat({{ count($steps) }}, minmax(0,1fr)); gap:6px;">
+                @foreach($steps as $step)
+                    @php
+                        $stateTone = match ($step['state']) {
+                            'done' => 'ok',
+                            'current' => 'gold',
+                            'stopped' => 'bad',
+                            default => 'muted',
+                        };
+                    @endphp
+                    <li style="display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; min-width:0;" class="ts-tone-{{ $stateTone }}">
+                        <span style="width:40px; height:40px; border-radius:50%; display:grid; place-items:center; font-size:15px;
+                                     {{ $step['state'] === 'todo' ? 'color:var(--ink2); background:var(--surf); box-shadow:var(--inset-sm);' : 'color:var(--ts-on); background:linear-gradient(135deg, color-mix(in srgb, var(--tone) 70%, var(--ts-on)), var(--tone)); box-shadow:var(--raise);' }}
+                                     {{ $step['state'] === 'current' ? 'animation:tpPulse 1.8s ease-in-out infinite;' : '' }}">
+                            <i class="fas {{ $step['state'] === 'stopped' ? 'fa-xmark' : ($stepIcons[$step['key']] ?? 'fa-circle') }}" aria-hidden="true"></i>
                         </span>
-                    </div>
-                </template>
+                        <span style="font-size:11.5px; font-weight:700; line-height:1.3; color:{{ $step['state'] === 'todo' ? 'var(--ink2)' : 'var(--ink)' }};">{{ $stepLabels[$step['key']] ?? $step['label'] }}</span>
+                        @if($step['at'])
+                            <span class="ts-muted" style="font-size:10.5px;">{{ $ui::time($step['at']) }}</span>
+                        @endif
+                    </li>
+                @endforeach
+            </ol>
+        </section>
+
+        {{-- ════════ แผนที่ / สถานะแทนแผนที่ ════════ --}}
+        <section class="tp-card ts-stack" style="margin-top:16px; padding:14px;">
+            <div x-show="expired" x-cloak class="ts-empty">
+                <span class="em" aria-hidden="true">⌛</span>
+                <b>ลิงก์ติดตามนี้หมดอายุแล้ว</b>
+                <span class="ts-muted ts-small">การจัดส่งจบไปแล้ว ขอบคุณที่ใช้บริการค่ะ</span>
             </div>
-        </div>
 
-        {{-- สถานะปัจจุบัน (แสดงชัดบน mobile) --}}
-        <div class="mt-5 flex items-center justify-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
-                  :class="statusBadgeClass">
-                <i :class="currentStatusIcon"></i>
-                <span x-text="currentStatusText"></span>
-            </span>
-        </div>
-    </div>
+            <div x-show="!expired">
+                <div class="ts-map lg" x-ref="map" x-show="riderAvailable" @if(! $available) x-cloak @endif aria-label="แผนที่ตำแหน่งไรเดอร์"></div>
 
-    {{-- ===== การ์ดข้อมูลไรเดอร์ (ยังไม่มีไรเดอร์รับงาน → แสดงข้อความรอ) ===== --}}
-    @if(! $rider)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-4 flex items-center gap-3">
-        <i class="fas fa-hourglass-half text-amber-500 text-xl"></i>
-        <p class="text-sm text-gray-600 dark:text-gray-300">กำลังหาไรเดอร์ใกล้ร้านให้คุณ ระบบจะแจ้งเมื่อมีไรเดอร์รับงาน</p>
-    </div>
-    @else
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-4">
-        <div class="flex items-start gap-4">
-            {{-- รูปโปรไฟล์ไรเดอร์ (URL เต็มผ่าน route ของ token — รูปอยู่บน private disk) --}}
-            <div class="flex-shrink-0">
-                @if($riderPhotoUrl ?? null)
-                    <img src="{{ $riderPhotoUrl }}"
-                         alt="{{ $rider->full_name }}"
-                         class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover ring-2 ring-green-200 dark:ring-green-800">
+                <div x-show="!riderAvailable" @if($available) x-cloak @endif class="ts-empty" style="padding:28px 16px;">
+                    <span class="tp-tile" style="width:64px; height:64px; border-radius:22px; font-size:26px;"><i class="fas {{ $status === 'pending' ? 'fa-magnifying-glass-location' : ($isActive ? 'fa-satellite-dish' : 'fa-flag-checkered') }}" aria-hidden="true"></i></span>
+                    <b style="font-size:16px;" x-text="statusText">{{ $statusText }}</b>
+                    <span class="ts-muted ts-small" x-text="reasonText">{{ $reasonText }}</span>
+                    <button type="button" class="tp-btn tp-btn-sm" x-show="watch" x-on:click="poll(true)" :disabled="polling" style="margin-top:6px;"><i class="fas fa-rotate" :class="polling ? 'ts-spin' : ''" aria-hidden="true"></i> ตรวจสอบสถานะอีกครั้ง</button>
+                </div>
+
+                <div class="ts-row" style="justify-content:space-between; margin-top:10px;" x-show="riderAvailable" @if(! $available) x-cloak @endif>
+                    <span class="ts-muted ts-small">
+                        <span class="ts-dot live ts-tone-ok" style="display:inline-block; margin-right:6px;"></span>
+                        <span x-text="distanceText"></span>
+                        <span x-show="riderUpdatedAt"> · อัปเดต <span x-text="window.ts.timeAgo(riderUpdatedAt)"></span></span>
+                    </span>
+                    <button type="button" class="tp-btn tp-btn-sm" x-on:click="poll(true)" :disabled="polling"><i class="fas fa-rotate" :class="polling ? 'ts-spin' : ''" aria-hidden="true"></i> อัปเดต</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="ts-grid" style="--ts-min:280px; margin-top:16px; align-items:start;">
+            {{-- ════════ ไรเดอร์ ════════ --}}
+            <section class="tp-card ts-stack">
+                <h2 class="ts-h2"><i class="fas fa-motorcycle" style="color:var(--accent2);" aria-hidden="true"></i> ไรเดอร์ของคุณ</h2>
+                @if($rider)
+                    <div class="ts-row" style="gap:14px; flex-wrap:nowrap;">
+                        <span class="ts-avatar" style="width:62px; height:62px; border-radius:20px;">
+                            @if($riderPhotoUrl)
+                                <img src="{{ $riderPhotoUrl }}" alt="รูปไรเดอร์" loading="lazy">
+                            @else
+                                <i class="fas {{ $rw::vehicleIcon($rider->vehicle_type) }}" aria-hidden="true"></i>
+                            @endif
+                        </span>
+                        <div style="min-width:0;">
+                            <b style="font-size:16px; display:block;">{{ $rider->full_name }}</b>
+                            <span class="ts-muted ts-small">
+                                {{ $vehicleText }}{{ $rider->vehicle_color ? ' สี'.$rider->vehicle_color : '' }}
+                                @if($rider->vehicle_plate) · <b style="color:var(--ink);">{{ $rider->vehicle_plate }}</b>@endif
+                            </span>
+                            <div class="ts-star-view ts-small" style="margin-top:2px;">★ <span style="color:var(--ink);">{{ number_format((float) $rider->rating, 1) }}</span></div>
+                        </div>
+                    </div>
+                    @if($riderPhone)
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $riderPhone) }}" class="ts-btn3d ts-tone-ok block"><i class="fas fa-phone" aria-hidden="true"></i> โทรหาไรเดอร์</a>
+                    @endif
                 @else
-                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center ring-2 ring-green-200 dark:ring-green-800">
-                        <i class="fas fa-motorcycle text-white text-xl sm:text-2xl"></i>
+                    <div class="ts-empty" style="padding:14px;">
+                        <span class="em" aria-hidden="true">🔍</span>
+                        <b>กำลังหาไรเดอร์ใกล้ร้าน</b>
+                        <span class="ts-muted ts-small">ระบบกำลังส่งงานให้ไรเดอร์ที่อยู่ใกล้ที่สุด</span>
                     </div>
                 @endif
-            </div>
 
-            {{-- ข้อมูลไรเดอร์ --}}
-            <div class="flex-1 min-w-0">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-white truncate">
-                    {{ $rider->full_name }}
-                </h3>
-                <div class="mt-1 space-y-1">
-                    {{-- ข้อมูลยานพาหนะ --}}
-                    @if($rider->vehicle_type)
-                        <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                            <i class="fas fa-{{ $rider->vehicle_type === 'motorcycle' ? 'motorcycle' : ($rider->vehicle_type === 'car' ? 'car' : 'bicycle') }} text-gray-400 w-4 text-center"></i>
-                            <span>
-                                {{ ['motorcycle' => 'มอเตอร์ไซค์', 'car' => 'รถยนต์', 'bicycle' => 'จักรยาน'][$rider->vehicle_type] ?? $rider->vehicle_type }}
-                                @if($rider->vehicle_color)
-                                    <span class="text-gray-400">- {{ $rider->vehicle_color }}</span>
-                                @endif
-                            </span>
+                {{-- แชร์ตำแหน่งของฉันให้ไรเดอร์ (เฉพาะเจ้าของออเดอร์) --}}
+                <template x-if="share">
+                    <div class="tp-inset ts-stack" style="border-radius:18px; padding:14px; gap:10px;">
+                        <label class="ts-switch">
+                            <input type="checkbox" :checked="sharing" x-on:change="toggleShare($event.target)" :disabled="shareBusy || !canShare">
+                            <span class="track"></span>
+                            <span style="font-size:14px; font-weight:700;">แชร์ตำแหน่งของฉันให้ไรเดอร์</span>
+                        </label>
+                        <p class="ts-help" style="margin:0;">
+                            ไรเดอร์จะเห็นตำแหน่งของคุณ<b>เฉพาะออเดอร์นี้</b>ระหว่างมาส่งเท่านั้น เพื่อหาคุณเจอง่ายขึ้น
+                            ระบบหยุดแชร์อัตโนมัติเมื่อส่งของเสร็จหรือยกเลิก และปิดเองได้ทุกเมื่อ (ต้องเปิดหน้านี้ไว้ระหว่างรอ)
                         </p>
-                    @endif
-                    {{-- ป้ายทะเบียน --}}
-                    @if($rider->vehicle_plate)
-                        <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                            <i class="fas fa-id-card text-gray-400 w-4 text-center"></i>
-                            <span class="font-mono font-medium text-gray-700 dark:text-gray-300">{{ $rider->vehicle_plate }}</span>
-                        </p>
-                    @endif
-                </div>
-            </div>
+                        <span class="ts-pill ts-tone-ok" x-show="sharing" style="align-self:flex-start;"><span class="ts-dot live"></span> กำลังแชร์ · ส่งล่าสุด <span x-text="lastShared ? window.ts.timeAgo(lastShared) : '—'"></span></span>
+                        <span class="ts-help" x-show="!canShare" style="margin:0;">แชร์ได้เมื่อไรเดอร์รับงานแล้ว</span>
+                        <p class="ts-err" x-show="shareError" x-text="shareError" x-cloak></p>
+                    </div>
+                </template>
+            </section>
 
-            {{-- ปุ่มโทรหาไรเดอร์ (เฉพาะช่วงงานยังวิ่งอยู่) --}}
-            @if($riderPhone ?? null)
-                <a href="tel:{{ $riderPhone }}"
-                   class="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded-xl flex items-center justify-center shadow-lg shadow-green-500/25 transition-all hover:scale-105 active:scale-95">
-                    <i class="fas fa-phone text-lg sm:text-xl"></i>
-                </a>
-            @endif
-        </div>
-
-        {{-- ปุ่มโทรเต็มความกว้าง (แสดงเฉพาะ mobile) --}}
-        @if($riderPhone ?? null)
-            <a href="tel:{{ $riderPhone }}"
-               class="sm:hidden mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl font-medium text-sm hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors">
-                <i class="fas fa-phone"></i>
-                โทรหาไรเดอร์ {{ $riderPhone }}
-            </a>
-        @endif
-    </div>
-    @endif
-
-    {{-- ===== ข้อมูลจุดรับ-ส่ง ===== --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-        {{-- จุดรับสินค้า --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
-            <div class="flex items-center gap-2 mb-2">
-                <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-store text-orange-500 text-sm"></i>
-                </div>
-                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">จุดรับสินค้า</h4>
-            </div>
-            @if($pickupLocation['contact_name'] ?? null)
-                <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">{{ $pickupLocation['contact_name'] }}</p>
-            @endif
-            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                {{ $pickupLocation['address'] ?? 'ไม่ระบุที่อยู่' }}
-            </p>
-        </div>
-
-        {{-- จุดส่งสินค้า --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
-            <div class="flex items-center gap-2 mb-2">
-                <div class="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-house text-green-500 text-sm"></i>
-                </div>
-                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">จุดส่งสินค้า</h4>
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                {{ $customerLocation['address'] ?? 'ไม่ระบุที่อยู่' }}
-            </p>
+            {{-- ════════ จุดรับ / จุดส่ง ════════ --}}
+            <section class="tp-card ts-stack">
+                <h2 class="ts-h2"><i class="fas fa-route" style="color:var(--accent2);" aria-hidden="true"></i> เส้นทาง</h2>
+                <ol class="sf-tl">
+                    <li class="sf-tl-item">
+                        <span class="sf-tl-dot ts-tone-ok" style="background:linear-gradient(135deg, var(--ts-ok), color-mix(in srgb, var(--ts-ok) 70%, var(--ink)));"><i class="fas fa-store" aria-hidden="true"></i></span>
+                        <div style="min-width:0; padding-top:4px;">
+                            <b style="font-size:13.5px;">รับของที่ {{ $pickupLocation['contact_name'] ?? 'ร้านค้า' }}</b>
+                            <p class="ts-muted" style="margin:3px 0 0; font-size:12.5px; line-height:1.5; overflow-wrap:anywhere;">{{ $pickupLocation['address'] ?? 'ไม่ระบุที่อยู่' }}</p>
+                        </div>
+                    </li>
+                    <li class="sf-tl-item">
+                        <span class="sf-tl-dot"><i class="fas fa-house" aria-hidden="true"></i></span>
+                        <div style="min-width:0; padding-top:4px;">
+                            <b style="font-size:13.5px;">ส่งถึง</b>
+                            <p class="ts-muted" style="margin:3px 0 0; font-size:12.5px; line-height:1.5; overflow-wrap:anywhere;">{{ $customerLocation['address'] ?? 'ไม่ระบุที่อยู่' }}</p>
+                        </div>
+                    </li>
+                </ol>
+                @if($order)
+                    <a href="{{ route('taladsod.orders.show', $order->id) }}" class="tp-btn" rel="nofollow"><i class="fas fa-receipt" aria-hidden="true"></i> ดูรายละเอียดออเดอร์ (ต้องเข้าสู่ระบบ)</a>
+                @endif
+            </section>
         </div>
     </div>
+</main>
 
-    {{-- ===== ข้อมูลงานและออเดอร์ ===== --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">รายละเอียดงาน</h3>
-        <dl class="space-y-2.5 text-sm">
-            <div class="flex justify-between items-center">
-                <dt class="text-gray-500 dark:text-gray-400">หมายเลขงาน</dt>
-                <dd class="font-mono font-medium text-gray-900 dark:text-white">{{ $job->job_number }}</dd>
-            </div>
-            @if($orderNumber ?? null)
-                <div class="flex justify-between items-center">
-                    <dt class="text-gray-500 dark:text-gray-400">หมายเลขออเดอร์</dt>
-                    <dd class="font-mono font-medium text-gray-900 dark:text-white">{{ $orderNumber }}</dd>
-                </div>
-            @endif
-            <div class="flex justify-between items-center">
-                <dt class="text-gray-500 dark:text-gray-400">อัปเดตล่าสุด</dt>
-                <dd class="text-gray-900 dark:text-white flex items-center gap-1.5">
-                    <span class="w-2 h-2 rounded-full gps-pulse" :class="gpsActive ? 'bg-green-500' : 'bg-gray-400'"></span>
-                    <span x-text="lastUpdatedText">{{ $location['updated_ago'] ?? 'ไม่ทราบ' }}</span>
-                </dd>
-            </div>
-            <div class="flex justify-between items-center">
-                <dt class="text-gray-500 dark:text-gray-400">รีเฟรชอัตโนมัติ</dt>
-                <dd class="text-gray-900 dark:text-white">
-                    ทุก <span x-text="Math.round(pollIntervalMs / 1000)"></span> วินาที
-                </dd>
-            </div>
-        </dl>
-    </div>
-
-    {{-- ===== ปุ่มรีเฟรชด้วยตนเอง ===== --}}
-    <div class="text-center mb-8">
-        <button @click="fetchLocation()"
-                :disabled="fetching"
-                class="inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
-            <i class="fas fa-sync-alt" :class="fetching ? 'animate-spin' : ''"></i>
-            <span x-text="fetching ? 'กำลังอัปเดต...' : 'รีเฟรชตำแหน่ง'"></span>
-        </button>
-    </div>
-</div>
+<x-theme-v4.public-footer />
 @endsection
 
-@section('scripts')
-{{-- โหลด Google Maps API --}}
+@push('scripts')
 <script>
     /**
-     * ฟังก์ชัน callback เมื่อ Google Maps โหลดสำเร็จ
+     * ติดตามไรเดอร์สด: poll ตำแหน่ง + เส้นทาง, หยุดเมื่องานจบ/ลิงก์หมดอายุ/แท็บถูกซ่อน
+     * ผู้ซื้อที่ login เป็นเจ้าของออเดอร์ เปิดแชร์ตำแหน่งตัวเองให้ไรเดอร์ได้ (ส่งทุก 30 วินาทีระหว่างเปิดหน้านี้)
      */
-    function initGoogleMaps() {
-        window.googleMapsReady = true;
-        window.dispatchEvent(new Event('google-maps-ready'));
-    }
-</script>
-<script src="https://maps.googleapis.com/maps/api/js?key={{ $googleMapsApiKey }}&callback=initGoogleMaps&libraries=geometry" async defer></script>
-
-<script>
-    /**
-     * Alpine.js component สำหรับติดตามไรเดอร์
-     * จัดการแผนที่ Google Maps, การ polling ตำแหน่ง และ UI ทั้งหมด
-     */
-    function riderTracking() {
-        return {
-            /* ===== State ===== */
-
-            /** @type {number|null} ละติจูดไรเดอร์ */
-            riderLat: {{ $location['available'] && $location['latitude'] ? $location['latitude'] : 'null' }},
-            /** @type {number|null} ลองจิจูดไรเดอร์ */
-            riderLng: {{ $location['available'] && $location['longitude'] ? $location['longitude'] : 'null' }},
-            /** @type {boolean} GPS ไรเดอร์เปิดอยู่หรือไม่ */
-            gpsActive: {{ $location['gps_active'] ?? false ? 'true' : 'false' }},
-            /** @type {string} สถานะงานปัจจุบัน */
-            jobStatus: '{{ $job->status }}',
-            /** @type {string} ข้อความอัปเดตล่าสุด */
-            lastUpdatedText: '{{ $location['updated_ago'] ?? 'ไม่ทราบ' }}',
-            /** @type {boolean} กำลังโหลดแผนที่ */
-            mapLoading: true,
-            /** @type {boolean} กำลัง fetch ตำแหน่ง */
-            fetching: false,
-            /** @type {number} ระยะทาง (เมตร) */
-            distanceMeters: 0,
-            /** @type {number} Polling interval (ms) */
-            pollIntervalMs: {{ $customerPollInterval ?? 180000 }},
-            /** @type {number|null} Polling timer ID */
-            pollTimer: null,
-
-            /* ===== Google Maps Objects ===== */
-
-            /** @type {google.maps.Map|null} */
-            map: null,
-            /** @type {google.maps.Marker|null} */
-            riderMarker: null,
-            /** @type {google.maps.Marker|null} */
-            customerMarker: null,
-            /** @type {google.maps.Marker|null} */
-            pickupMarker: null,
-
-            /* ===== ข้อมูลตำแหน่งคงที่ ===== */
-
-            customerLat: {{ $customerLocation['latitude'] ?? 'null' }},
-            customerLng: {{ $customerLocation['longitude'] ?? 'null' }},
-            pickupLat: {{ $pickupLocation['latitude'] ?? 'null' }},
-            pickupLng: {{ $pickupLocation['longitude'] ?? 'null' }},
-
-            /**
-             * ข้อความที่ผู้ใช้กรอกเอง (ชื่อร้าน ที่อยู่ ชื่อไรเดอร์) — ส่งเข้า JS ด้วย Js::from เท่านั้น
-             * แล้วสร้าง DOM ด้วย textContent ❗ ห้ามพิมพ์ลง template literal (`...${}...`) ตรงๆ = Stored XSS
-             */
-            labels: {{ \Illuminate\Support\Js::from([
-                'pickupName' => (string) ($pickupLocation['contact_name'] ?? 'จุดรับสินค้า'),
-                'pickupAddress' => (string) \Illuminate\Support\Str::limit((string) ($pickupLocation['address'] ?? ''), 60),
-                'customerAddress' => (string) \Illuminate\Support\Str::limit((string) ($customerLocation['address'] ?? ''), 60),
-                'riderName' => (string) ($rider?->full_name ?? 'ไรเดอร์'),
-            ]) }},
-
-            /* ===== สถานะ Steps ===== */
-
-            /** ขั้นตอนการจัดส่งทั้งหมด */
-            statusSteps: [
-                { key: 'pending', label: 'รอรับงาน', icon: 'fas fa-clock' },
-                { key: 'accepted', label: 'รับงาน', icon: 'fas fa-check' },
-                { key: 'picking_up', label: 'กำลังไปรับ', icon: 'fas fa-store' },
-                { key: 'picked_up', label: 'รับแล้ว', icon: 'fas fa-box' },
-                { key: 'delivering', label: 'กำลังส่ง', icon: 'fas fa-shipping-fast' },
-                { key: 'delivered', label: 'ส่งแล้ว', icon: 'fas fa-check-double' },
-                { key: 'completed', label: 'สำเร็จ', icon: 'fas fa-flag-checkered' },
-            ],
-
-            /** สถานะแปลเป็นภาษาไทย */
-            statusTexts: {
-                'pending': 'รอไรเดอร์รับงาน',
-                'accepted': 'ไรเดอร์รับงานแล้ว',
-                'picking_up': 'ไรเดอร์กำลังไปรับสินค้า',
-                'picked_up': 'ไรเดอร์รับสินค้าแล้ว',
-                'delivering': 'กำลังจัดส่งถึงคุณ',
-                'delivered': 'ส่งสินค้าแล้ว',
-                'completed': 'จัดส่งสำเร็จ',
-                'cancelled': 'ยกเลิกงาน',
-            },
-
-            /* ===== Computed Properties ===== */
-
-            /** ข้อความระยะทาง */
-            get distanceText() {
-                if (this.riderLat === null) return 'ไม่ทราบ';
-                if (this.distanceMeters < 1000) {
-                    return Math.round(this.distanceMeters) + ' ม.';
-                }
-                return (this.distanceMeters / 1000).toFixed(1) + ' กม.';
-            },
-
-            /** เปอร์เซ็นต์ progress bar */
-            get progressPercent() {
-                const order = ['pending', 'accepted', 'picking_up', 'picked_up', 'delivering', 'delivered', 'completed'];
-                const idx = order.indexOf(this.jobStatus);
-                if (idx === -1) return 0;
-                return Math.min(100, (idx / (order.length - 1)) * 100);
-            },
-
-            /** ข้อความสถานะปัจจุบัน */
-            get currentStatusText() {
-                return this.statusTexts[this.jobStatus] || this.jobStatus;
-            },
-
-            /** ไอคอนสถานะปัจจุบัน */
-            get currentStatusIcon() {
-                const step = this.statusSteps.find(s => s.key === this.jobStatus);
-                return step ? step.icon : 'fas fa-info-circle';
-            },
-
-            /** คลาส CSS สำหรับ badge สถานะ */
-            get statusBadgeClass() {
-                const map = {
-                    'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400',
-                    'accepted': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400',
-                    'picking_up': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-400',
-                    'picked_up': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-400',
-                    'delivering': 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-400',
-                    'delivered': 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-400',
-                    'completed': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
-                    'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400',
-                };
-                return map[this.jobStatus] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-            },
-
-            /* ===== Methods ===== */
-
-            /**
-             * เริ่มต้น component: โหลดแผนที่และตั้ง polling
-             */
-            init() {
-                if (window.googleMapsReady) {
-                    this.initMap();
-                } else {
-                    window.addEventListener('google-maps-ready', () => this.initMap());
-                }
-            },
-
-            /**
-             * สร้าง Google Maps พร้อม markers ทั้งหมด
-             */
-            initMap() {
-                /* สไตล์แผนที่แบบ clean modern */
-                const mapStyles = [
-                    { elementType: 'geometry', stylers: [{ color: '#f5f5f5' }] },
-                    { elementType: 'labels.icon', stylers: [{ visibility: 'on' }] },
-                    { elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-                    { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f5f5' }] },
-                    { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: '#bdbdbd' }] },
-                    { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#eeeeee' }] },
-                    { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-                    { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#c8e6c9' }] },
-                    { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#388e3c' }] },
-                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#ffffff' }] },
-                    { featureType: 'road.arterial', elementType: 'labels.text.fill', stylers: [{ color: '#757575' }] },
-                    { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#dadada' }] },
-                    { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#616161' }] },
-                    { featureType: 'road.local', elementType: 'labels.text.fill', stylers: [{ color: '#9e9e9e' }] },
-                    { featureType: 'transit.line', elementType: 'geometry', stylers: [{ color: '#e5e5e5' }] },
-                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#bbdefb' }] },
-                    { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#64b5f6' }] },
-                ];
-
-                /* จุดกลางเริ่มต้น: ใช้ตำแหน่งไรเดอร์ หรือตำแหน่งลูกค้า หรือกรุงเทพฯ */
-                const centerLat = this.riderLat || this.customerLat || 13.7563;
-                const centerLng = this.riderLng || this.customerLng || 100.5018;
-
-                this.map = new google.maps.Map(document.getElementById('tracking-map'), {
-                    center: { lat: centerLat, lng: centerLng },
-                    zoom: 14,
-                    styles: mapStyles,
-                    disableDefaultUI: true,
-                    zoomControl: true,
-                    zoomControlOptions: {
-                        position: google.maps.ControlPosition.LEFT_BOTTOM,
-                    },
-                    gestureHandling: 'greedy',
-                    mapTypeControl: false,
-                    streetViewControl: false,
-                    fullscreenControl: false,
-                });
-
-                /* สร้าง Marker: จุดรับสินค้า (ร้านค้า) */
-                if (this.pickupLat && this.pickupLng) {
-                    this.pickupMarker = new google.maps.Marker({
-                        position: { lat: this.pickupLat, lng: this.pickupLng },
-                        map: this.map,
-                        title: this.labels.pickupName,
-                        icon: {
-                            url: 'data:image/svg+xml,' + encodeURIComponent(`
-                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
-                                    <path d="M20 0C8.95 0 0 8.95 0 20c0 14 20 28 20 28s20-14 20-28C40 8.95 31.05 0 20 0z" fill="#F97316"/>
-                                    <circle cx="20" cy="18" r="10" fill="white"/>
-                                    <text x="20" y="23" text-anchor="middle" font-size="16" fill="#F97316">🏪</text>
-                                </svg>
-                            `),
-                            scaledSize: new google.maps.Size(40, 48),
-                            anchor: new google.maps.Point(20, 48),
-                        },
-                        zIndex: 1,
-                    });
-
-                    /* Info window สำหรับจุดรับสินค้า */
-                    const pickupInfo = new google.maps.InfoWindow({
-                        content: this.infoContent(this.labels.pickupName, this.labels.pickupAddress, '#666'),
-                    });
-                    this.pickupMarker.addListener('click', () => pickupInfo.open(this.map, this.pickupMarker));
-                }
-
-                /* สร้าง Marker: จุดส่งสินค้า (บ้านลูกค้า) */
-                if (this.customerLat && this.customerLng) {
-                    this.customerMarker = new google.maps.Marker({
-                        position: { lat: this.customerLat, lng: this.customerLng },
-                        map: this.map,
-                        title: 'ตำแหน่งของคุณ',
-                        icon: {
-                            url: 'data:image/svg+xml,' + encodeURIComponent(`
-                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
-                                    <path d="M20 0C8.95 0 0 8.95 0 20c0 14 20 28 20 28s20-14 20-28C40 8.95 31.05 0 20 0z" fill="#22C55E"/>
-                                    <circle cx="20" cy="18" r="10" fill="white"/>
-                                    <text x="20" y="23" text-anchor="middle" font-size="16" fill="#22C55E">🏠</text>
-                                </svg>
-                            `),
-                            scaledSize: new google.maps.Size(40, 48),
-                            anchor: new google.maps.Point(20, 48),
-                        },
-                        zIndex: 1,
-                    });
-
-                    const customerInfo = new google.maps.InfoWindow({
-                        content: this.infoContent('ตำแหน่งของคุณ', this.labels.customerAddress, '#666'),
-                    });
-                    this.customerMarker.addListener('click', () => customerInfo.open(this.map, this.customerMarker));
-                }
-
-                /* สร้าง Marker: ไรเดอร์ */
-                if (this.riderLat && this.riderLng) {
-                    this.createRiderMarker();
-                    this.calculateDistance();
-                }
-
-                /* ปรับมุมมองให้เห็นทุก marker */
-                this.fitAllMarkers();
-
-                /* ซ่อน loading */
-                this.mapLoading = false;
-
-                /* เริ่ม polling ตำแหน่งไรเดอร์ */
-                this.startPolling();
-            },
-
-            /**
-             * สร้าง marker ไรเดอร์ (ไอคอนมอเตอร์ไซค์)
-             */
-            createRiderMarker() {
-                if (this.riderMarker) {
-                    this.riderMarker.setPosition({ lat: this.riderLat, lng: this.riderLng });
-                    return;
-                }
-
-                this.riderMarker = new google.maps.Marker({
-                    position: { lat: this.riderLat, lng: this.riderLng },
-                    map: this.map,
-                    title: this.labels.riderName,
-                    icon: {
-                        url: 'data:image/svg+xml,' + encodeURIComponent(`
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
-                                <circle cx="24" cy="24" r="22" fill="#22C55E" stroke="white" stroke-width="3"/>
-                                <text x="24" y="30" text-anchor="middle" font-size="22" fill="white">🏍️</text>
-                            </svg>
-                        `),
-                        scaledSize: new google.maps.Size(48, 48),
-                        anchor: new google.maps.Point(24, 24),
-                    },
-                    zIndex: 10,
-                    optimized: false,
-                });
-
-                const riderInfo = new google.maps.InfoWindow({
-                    content: this.infoContent(this.labels.riderName, 'ไรเดอร์ของคุณ', '#22C55E'),
-                });
-                this.riderMarker.addListener('click', () => riderInfo.open(this.map, this.riderMarker));
-            },
-
-            /**
-             * กล่องข้อความใน InfoWindow — สร้างด้วย DOM + textContent (ข้อความผู้ใช้ไม่ถูกตีความเป็น HTML/JS)
-             *
-             * @param {string} title หัวข้อ (ตัวหนา)
-             * @param {string} subtitle บรรทัดรอง (ว่างได้)
-             * @param {string} subtitleColor สีบรรทัดรอง
-             * @returns {HTMLDivElement}
-             */
-            infoContent(title, subtitle, subtitleColor) {
-                const box = document.createElement('div');
-                box.style.fontFamily = "'Kanit', sans-serif";
-                box.style.padding = '8px';
-
-                const heading = document.createElement('p');
-                heading.style.fontWeight = '600';
-                heading.style.margin = '0 0 4px';
-                heading.textContent = String(title ?? '');
-                box.appendChild(heading);
-
-                if (subtitle) {
-                    const line = document.createElement('p');
-                    line.style.fontSize = '12px';
-                    line.style.color = subtitleColor || '#666';
-                    line.style.margin = '0';
-                    line.textContent = String(subtitle);
-                    box.appendChild(line);
-                }
-
-                return box;
-            },
-
-            /**
-             * เริ่ม polling ตำแหน่งไรเดอร์ทุก customerPollInterval
-             */
-            startPolling() {
-                /* หยุด polling ถ้างานเสร็จแล้ว */
-                const doneStatuses = ['delivered', 'completed', 'cancelled'];
-                if (doneStatuses.includes(this.jobStatus)) return;
-
-                this.pollTimer = setInterval(() => {
-                    this.fetchLocation();
-                }, this.pollIntervalMs);
-            },
-
-            /**
-             * หยุด polling
-             */
-            stopPolling() {
-                if (this.pollTimer) {
-                    clearInterval(this.pollTimer);
-                    this.pollTimer = null;
-                }
-            },
-
-            /**
-             * ดึงตำแหน่งไรเดอร์ล่าสุดจาก API
-             */
-            async fetchLocation() {
-                if (this.fetching) return;
-                this.fetching = true;
-
-                try {
-                    const response = await fetch('/taladsod/track/{{ $token }}/location', {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        },
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('ไม่สามารถดึงตำแหน่งได้ (HTTP ' + response.status + ')');
-                    }
-
-                    const data = await response.json();
-
-                    /* อัปเดตข้อมูลตำแหน่ง */
-                    if (data.location && data.location.available) {
-                        const newLat = parseFloat(data.location.latitude);
-                        const newLng = parseFloat(data.location.longitude);
-
-                        /* ตรวจสอบว่าตำแหน่งเปลี่ยนจริง */
-                        if (newLat !== this.riderLat || newLng !== this.riderLng) {
-                            this.riderLat = newLat;
-                            this.riderLng = newLng;
-                            this.updateMarker();
-                            this.calculateDistance();
-                        }
-
-                        this.gpsActive = data.location.gps_active || false;
-                        this.lastUpdatedText = data.location.updated_ago || 'เมื่อสักครู่';
-                    }
-
-                    /* อัปเดตสถานะงาน (API คืน job_status ไม่ใช่ status) */
-                    if (data.job_status) {
-                        const oldStatus = this.jobStatus;
-                        this.jobStatus = data.job_status;
-
-                        /* หยุด polling ถ้างานเสร็จแล้ว */
-                        const doneStatuses = ['delivered', 'completed', 'cancelled'];
-                        if (doneStatuses.includes(data.job_status) && !doneStatuses.includes(oldStatus)) {
-                            this.stopPolling();
-                        }
-                    }
-
-                } catch (error) {
-                    console.error('ดึงตำแหน่งไรเดอร์ผิดพลาด:', error);
-                } finally {
-                    this.fetching = false;
-                }
-            },
-
-            /**
-             * ย้าย marker ไรเดอร์ไปตำแหน่งใหม่แบบ smooth
-             */
-            updateMarker() {
-                if (!this.map) return;
-
-                if (this.riderLat && this.riderLng) {
-                    if (!this.riderMarker) {
-                        this.createRiderMarker();
-                    } else {
-                        /* ย้ายตำแหน่งแบบ smooth ด้วย animation */
-                        const newPos = new google.maps.LatLng(this.riderLat, this.riderLng);
-                        this.animateMarker(this.riderMarker, newPos, 800);
-                    }
-                }
-            },
-
-            /**
-             * เคลื่อนย้าย marker แบบ smooth animation
-             * @param {google.maps.Marker} marker
-             * @param {google.maps.LatLng} newPosition
-             * @param {number} duration ระยะเวลา (ms)
-             */
-            animateMarker(marker, newPosition, duration) {
-                const startPos = marker.getPosition();
-                const startLat = startPos.lat();
-                const startLng = startPos.lng();
-                const endLat = newPosition.lat();
-                const endLng = newPosition.lng();
-                const startTime = performance.now();
-
-                const animate = (currentTime) => {
-                    const elapsed = currentTime - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-
-                    /* Easing function: ease-out cubic */
-                    const eased = 1 - Math.pow(1 - progress, 3);
-
-                    const lat = startLat + (endLat - startLat) * eased;
-                    const lng = startLng + (endLng - startLng) * eased;
-
-                    marker.setPosition({ lat, lng });
-
-                    if (progress < 1) {
-                        requestAnimationFrame(animate);
-                    }
-                };
-
-                requestAnimationFrame(animate);
-            },
-
-            /**
-             * คำนวณระยะทางระหว่างไรเดอร์กับลูกค้า (Haversine)
-             */
-            calculateDistance() {
-                if (!this.riderLat || !this.customerLat) {
-                    this.distanceMeters = 0;
-                    return;
-                }
-
-                /* ใช้ Google Maps Geometry Library ถ้ามี */
-                if (google.maps.geometry) {
-                    const riderPos = new google.maps.LatLng(this.riderLat, this.riderLng);
-                    const customerPos = new google.maps.LatLng(this.customerLat, this.customerLng);
-                    this.distanceMeters = google.maps.geometry.spherical.computeDistanceBetween(riderPos, customerPos);
-                } else {
-                    /* Haversine fallback */
-                    this.distanceMeters = this.haversine(
-                        this.riderLat, this.riderLng,
-                        this.customerLat, this.customerLng
-                    );
-                }
-            },
-
-            /**
-             * Haversine formula คำนวณระยะทาง (เมตร) ระหว่าง 2 จุดพิกัด
-             */
-            haversine(lat1, lon1, lat2, lon2) {
-                const R = 6371000; // รัศมีโลก (เมตร)
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                          Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                return R * c;
-            },
-
-            /**
-             * ปรับมุมมองแผนที่ให้เห็น markers ทั้งหมด
-             */
-            fitAllMarkers() {
-                if (!this.map) return;
-
-                const bounds = new google.maps.LatLngBounds();
-                let hasPoints = false;
-
-                if (this.riderLat && this.riderLng) {
-                    bounds.extend({ lat: this.riderLat, lng: this.riderLng });
-                    hasPoints = true;
-                }
-                if (this.customerLat && this.customerLng) {
-                    bounds.extend({ lat: this.customerLat, lng: this.customerLng });
-                    hasPoints = true;
-                }
-                if (this.pickupLat && this.pickupLng) {
-                    bounds.extend({ lat: this.pickupLat, lng: this.pickupLng });
-                    hasPoints = true;
-                }
-
-                if (hasPoints) {
-                    this.map.fitBounds(bounds, { top: 60, right: 60, bottom: 60, left: 60 });
-
-                    /* ไม่ให้ zoom เข้าไปเกินไป */
-                    const listener = google.maps.event.addListener(this.map, 'idle', () => {
-                        if (this.map.getZoom() > 16) {
-                            this.map.setZoom(16);
-                        }
-                        google.maps.event.removeListener(listener);
-                    });
-                }
-            },
-
-            /**
-             * เลื่อนแผนที่ไปที่ตำแหน่งไรเดอร์
-             */
-            centerOnRider() {
-                if (!this.map || !this.riderLat) return;
-                this.map.panTo({ lat: this.riderLat, lng: this.riderLng });
-                this.map.setZoom(16);
-            },
-
-            /* ===== Step Progress Helpers ===== */
-
-            /**
-             * ตรวจสอบว่า step นี้ผ่านไปแล้วหรือยัง
-             */
-            isStepCompleted(stepKey) {
-                const order = ['pending', 'accepted', 'picking_up', 'picked_up', 'delivering', 'delivered', 'completed'];
-                const currentIdx = order.indexOf(this.jobStatus);
-                const stepIdx = order.indexOf(stepKey);
-                return stepIdx < currentIdx;
-            },
-
-            /**
-             * ตรวจสอบว่า step นี้เป็นสถานะปัจจุบัน
-             */
-            isStepActive(stepKey) {
-                return this.jobStatus === stepKey;
-            },
-
-            /**
-             * คลาส CSS สำหรับวงกลม step
-             */
-            getStepClass(stepKey) {
-                if (this.isStepActive(stepKey)) {
-                    return 'bg-green-500 text-white ring-4 ring-green-200 dark:ring-green-800 shadow-lg';
-                }
-                if (this.isStepCompleted(stepKey)) {
-                    return 'bg-green-500 text-white';
-                }
-                return 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500';
-            },
-
-            /**
-             * ทำลาย component — หยุด polling
-             */
-            destroy() {
-                this.stopPolling();
-            },
+    window.tsTrack = function (cfg) {
+        let map = null;
+        let riderMarker = null;
+        let routeLine = null;
+        let pollTimer = null;
+        let routeTimer = null;
+        let shareTimer = null;
+
+        const R = 6371;
+        const rad = (d) => d * Math.PI / 180;
+        const km = (a, b) => {
+            const dLat = rad(b.lat - a.lat);
+            const dLng = rad(b.lng - a.lng);
+            const x = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
         };
-    }
+
+        // สถานะจบงานแล้ว → หยุด poll
+        const TERMINAL = ['completed', 'cancelled', 'failed'];
+
+        return {
+            active: !!cfg.active, watch: !!cfg.watch, status: cfg.status, statusText: cfg.statusText || '', reasonText: cfg.reasonText || '',
+            rider: cfg.rider, riderUpdatedAt: cfg.rider ? cfg.rider.updated_at : null,
+            expired: false, polling: false,
+            share: cfg.share, sharing: false, shareBusy: false, canShare: !!cfg.active, lastShared: null, shareError: '',
+
+            get riderAvailable() { return !!this.rider && !this.expired; },
+
+            get distanceText() {
+                if (!this.rider || !cfg.dropoff) { return 'ไรเดอร์กำลังเดินทาง'; }
+                const d = km(this.rider, cfg.dropoff);
+                const mins = Math.max(1, Math.round(d / 25 * 60));
+                return 'ไรเดอร์อยู่ห่างคุณ ' + window.ts.distance(d) + ' · ประมาณ ' + mins + ' นาที';
+            },
+
+            init() {
+                this.$nextTick(() => this.drawMap());
+                // งานยังไม่จบ (รวมตอนรอไรเดอร์รับงาน) → poll ต่อ เพื่อให้เห็นเมื่อมีไรเดอร์รับงาน/เปลี่ยนสถานะ
+                if (this.watch) { this.schedule(); }
+                if (this.active) { this.loadRoute(); }
+                if (this.share) { this.loadShareState(); }
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && this.watch) { this.poll(); }
+                });
+            },
+
+            schedule() {
+                clearTimeout(pollTimer);
+                pollTimer = setTimeout(() => this.poll(), cfg.pollMs);
+            },
+
+            async poll(manual) {
+                clearTimeout(pollTimer);
+                if (!manual && document.visibilityState !== 'visible') { return; }
+                this.polling = true;
+                const r = await window.ts.get(cfg.locationUrl);
+                this.polling = false;
+
+                if (r.status === 404) {
+                    this.expired = true;
+                    this.active = false;
+                    this.watch = false;
+                    this.stopShareLoop();
+                    return;
+                }
+                if (r.body && r.body.success) {
+                    const loc = r.body.location || {};
+                    const prev = this.status;
+                    this.status = r.body.job_status;
+                    this.statusText = r.body.job_status_text || this.statusText;
+                    this.active = !!r.body.is_active;
+                    this.watch = TERMINAL.indexOf(String(this.status)) === -1;
+                    this.canShare = this.active;
+                    if (loc.available) {
+                        this.rider = { lat: Number(loc.latitude), lng: Number(loc.longitude) };
+                        this.riderUpdatedAt = loc.updated_at || null;
+                        this.$nextTick(() => this.drawMap());
+                    } else {
+                        this.rider = null;
+                        this.reasonText = loc.reason === 'consent_missing'
+                            ? 'ไรเดอร์ยังไม่ได้เปิดแชร์ตำแหน่ง — จะเห็นบนแผนที่เมื่อไรเดอร์เริ่มแชร์'
+                            : (this.active ? 'กำลังรอสัญญาณ GPS จากไรเดอร์' : 'การจัดส่งจบแล้ว จึงไม่แสดงตำแหน่งไรเดอร์');
+                    }
+                    // สถานะเปลี่ยน (เช่น รับของแล้ว / ส่งถึงแล้ว) → โหลดหน้าใหม่ให้แถบขั้นตอนตรง
+                    if (prev && prev !== this.status) {
+                        window.ts.notify('สถานะอัปเดต: ' + this.statusText, 'info');
+                        setTimeout(() => window.location.reload(), 1600);
+                        return;
+                    }
+                    if (!this.active) {
+                        this.stopShareLoop();
+                    }
+                }
+                // poll ต่อจนกว่างานจบ (รอไรเดอร์ / ไรเดอร์คืนงานแล้วรอคนใหม่ ก็ยังอัปเดตเอง)
+                if (this.watch) { this.schedule(); }
+            },
+
+            async loadRoute() {
+                clearTimeout(routeTimer);
+                const r = await window.ts.get(cfg.routeUrl);
+                if (r.body && Array.isArray(r.body.route) && map && r.body.route.length > 1) {
+                    const pts = r.body.route.map((p) => [p.lat, p.lng]);
+                    if (!routeLine) {
+                        // สีเส้นทางตามธีม (อ่านตัวแปร CSS) — อ่านไม่ได้ใช้สีเริ่มต้นของ Leaflet
+                        const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim();
+                        const opts = { weight: 5, opacity: 0.75 };
+                        if (themeColor) { opts.color = themeColor; }
+                        routeLine = window.L.polyline(pts, opts).addTo(map);
+                    } else {
+                        routeLine.setLatLngs(pts);
+                    }
+                }
+                if (this.active) { routeTimer = setTimeout(() => this.loadRoute(), 60000); }
+            },
+
+            drawMap() {
+                if (!this.riderAvailable || !window.tpMap || !window.tpMap.ready()) { return; }
+                if (!map) {
+                    map = window.tpMap.create(this.$refs.map, this.rider.lat, this.rider.lng, 15);
+                    if (!map) { return; }
+                    if (cfg.pickup) { window.tpMap.pin(map, cfg.pickup.lat, cfg.pickup.lng, 'shop'); }
+                    if (cfg.dropoff) { window.tpMap.pin(map, cfg.dropoff.lat, cfg.dropoff.lng, 'home'); }
+                    riderMarker = window.tpMap.pin(map, this.rider.lat, this.rider.lng, 'rider');
+                    const bounds = [[this.rider.lat, this.rider.lng]];
+                    if (cfg.pickup) { bounds.push([cfg.pickup.lat, cfg.pickup.lng]); }
+                    if (cfg.dropoff) { bounds.push([cfg.dropoff.lat, cfg.dropoff.lng]); }
+                    if (bounds.length > 1) { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 }); }
+                    [250, 900].forEach((ms) => setTimeout(() => map && map.invalidateSize(), ms));
+                    return;
+                }
+                riderMarker.setLatLng([this.rider.lat, this.rider.lng]);
+                map.invalidateSize();
+            },
+
+            // ===== แชร์ตำแหน่งผู้ซื้อ =====
+
+            async loadShareState() {
+                const r = await window.ts.get(this.share.riderLocationUrl);
+                if (r.ok && r.data) {
+                    this.canShare = !!r.data.can_share_location;
+                    this.sharing = !!(r.data.customer_sharing && r.data.customer_sharing.enabled);
+                    this.lastShared = r.data.customer_sharing ? r.data.customer_sharing.last_shared_at : null;
+                    if (this.sharing) { this.startShareLoop(); }
+                }
+            },
+
+            // el = สวิตช์ที่ผู้ใช้กด — ทำไม่สำเร็จต้องตั้งสวิตช์กลับเอง
+            // (:checked ไม่วาดใหม่ถ้าค่า sharing ไม่เปลี่ยน → สวิตช์ค้าง "เปิด" ทั้งที่ไม่ได้แชร์)
+            async toggleShare(el) {
+                const on = !!el.checked;
+                this.shareBusy = true;
+                this.shareError = '';
+                if (!on) {
+                    this.stopShareLoop();
+                    const r = await window.ts.post(this.share.shareUrl, { share: 0 });
+                    this.shareBusy = false;
+                    this.sharing = false;
+                    el.checked = false;
+                    if (!r.ok) { this.shareError = r.message; }
+                    return;
+                }
+                try {
+                    const p = await window.ts.geo();
+                    const r = await window.ts.post(this.share.shareUrl, { share: 1, latitude: p.lat, longitude: p.lng });
+                    if (!r.ok) {
+                        this.sharing = false;
+                        this.shareError = r.message;
+                    } else {
+                        this.sharing = true;
+                        this.lastShared = new Date().toISOString();
+                        this.startShareLoop();
+                        window.ts.notify(r.message, 'success');
+                    }
+                } catch (e) {
+                    this.sharing = false;
+                    this.shareError = (e && e.message) || 'หาตำแหน่งไม่ได้';
+                } finally {
+                    this.shareBusy = false;
+                    el.checked = this.sharing;
+                }
+            },
+
+            startShareLoop() {
+                clearInterval(shareTimer);
+                shareTimer = setInterval(async () => {
+                    if (!this.sharing || document.visibilityState !== 'visible') { return; }
+                    try {
+                        const p = await window.ts.geo({ maximumAge: 15000 });
+                        const r = await window.ts.post(this.share.shareUrl, { share: 1, latitude: p.lat, longitude: p.lng });
+                        if (r.ok) {
+                            this.lastShared = new Date().toISOString();
+                        } else if (r.status === 409) {
+                            // งานจบแล้ว → ระบบหยุดแชร์ให้เอง
+                            this.sharing = false;
+                            this.stopShareLoop();
+                        }
+                    } catch (e) {
+                        // หาตำแหน่งไม่ได้รอบนี้ — ลองใหม่รอบหน้า
+                    }
+                }, 30000);
+            },
+
+            stopShareLoop() {
+                clearInterval(shareTimer);
+                shareTimer = null;
+            }
+        };
+    };
 </script>
-@endsection
+@endpush

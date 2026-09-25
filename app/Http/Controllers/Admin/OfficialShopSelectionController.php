@@ -26,6 +26,14 @@ use Illuminate\View\View;
  */
 class OfficialShopSelectionController extends Controller
 {
+    /**
+     * 🚧 (2026-09-25) ยังไม่เปิด AI Selection สำหรับการเปิดตัว
+     * หน้า view ของระบบนี้ไม่เคยถูกสร้าง (เปิดแล้ว 500) และไม่มีเมนู/cron เรียกใช้
+     * → หน้า GET แสดง "ฟีเจอร์นี้ยังไม่เปิดให้บริการ" และปุ่มที่เปลี่ยนข้อมูลถูกปิดไว้
+     * เปิดใช้เมื่อสร้าง view admin/official-shop/selection/* ครบแล้ว: เปลี่ยนเป็น true
+     */
+    public const FEATURE_ENABLED = false;
+
     protected OfficialShopSelectionService $service;
 
     public function __construct(OfficialShopSelectionService $service)
@@ -34,10 +42,43 @@ class OfficialShopSelectionController extends Controller
     }
 
     /**
+     * หน้าแจ้งว่ายังไม่เปิดให้บริการ (ธีม V4)
+     */
+    private function unavailableView(): View
+    {
+        return view('admin.feature-unavailable', [
+            'featureName' => 'AI คัดเลือกสินค้าเข้า Official Shop',
+            'reason' => 'ระบบคัดเลือกสินค้าอัตโนมัติยังไม่เปิดใช้ในช่วงเปิดตัว ระหว่างนี้เพิ่ม/นำเข้าสินค้าร้านทางการได้ที่หน้าสินค้า Official Shop',
+            'backUrl' => route('admin.official-shop.dashboard'),
+            'backLabel' => 'กลับ Official Shop',
+        ]);
+    }
+
+    /**
+     * ปุ่มที่เปลี่ยนข้อมูลของฟีเจอร์ที่ยังไม่เปิด → ตอบข้อความไทย (ไม่ทำอะไร)
+     *
+     * @return JsonResponse|RedirectResponse
+     */
+    private function unavailableAction(Request $request)
+    {
+        $message = 'ฟีเจอร์ AI คัดเลือกสินค้ายังไม่เปิดให้บริการ';
+
+        if ($request->wantsJson()) {
+            return response()->json(['success' => false, 'code' => 'FEATURE_UNAVAILABLE', 'message' => $message], 403);
+        }
+
+        return redirect()->route('admin.official-shop.dashboard')->with('info', $message);
+    }
+
+    /**
      * Dashboard AI Selection
      */
     public function index(): View
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableView();
+        }
+
         $stats = $this->service->getStatistics();
 
         // สินค้าที่ถูกคัดเลือก
@@ -83,6 +124,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function runSelection(Request $request)
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableAction($request);
+        }
+
         $result = $this->service->runAiSelection();
 
         if ($request->wantsJson()) {
@@ -103,6 +148,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function warnings(Request $request): View
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableView();
+        }
+
         $query = OfficialShopWarning::with(['product', 'store', 'officialShopProduct']);
 
         // กรองตามสถานะ
@@ -127,6 +176,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function processWarnings(Request $request)
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableAction($request);
+        }
+
         $result = $this->service->processWarnings();
 
         if ($request->wantsJson()) {
@@ -146,6 +199,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function removeProduct(Request $request, OfficialShopProduct $entry)
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableAction($request);
+        }
+
         $reason = $request->input('reason', 'ถอดออกโดย Admin');
         $entry->removeFromOfficialShop($reason);
 
@@ -164,6 +221,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function settings(): View
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableView();
+        }
+
         $settings = OfficialShopSetting::getAll();
 
         return view('admin.official-shop.selection.settings', [
@@ -177,6 +238,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function updateSettings(Request $request): RedirectResponse
     {
+        if (! self::FEATURE_ENABLED) {
+            return redirect()->route('admin.official-shop.dashboard')->with('info', 'ฟีเจอร์ AI คัดเลือกสินค้ายังไม่เปิดให้บริการ');
+        }
+
         $validated = $request->validate([
             'min_ai_score' => 'required|integer|min:0|max:100',
             'best_seller_count' => 'required|integer|min:1|max:100',
@@ -231,6 +296,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function calculateBestSellers(Request $request)
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableAction($request);
+        }
+
         $month = $request->input('month', now()->month);
         $year = $request->input('year', now()->year);
 
@@ -254,6 +323,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function newProductPromotions(Request $request): View
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableView();
+        }
+
         $query = NewProductPromotion::with(['product', 'store', 'requestedBy']);
 
         // กรองตามสถานะ
@@ -276,6 +349,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function cancelPromotion(Request $request, NewProductPromotion $promotion)
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableAction($request);
+        }
+
         $reason = $request->input('reason', 'ยกเลิกโดย Admin');
         $promotion->cancelPromotion($reason);
 
@@ -316,6 +393,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function addProductManually(Request $request, Product $product)
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableAction($request);
+        }
+
         // คำนวณคะแนน
         $scoreData = $this->service->calculateProductScore($product);
 
@@ -343,6 +424,10 @@ class OfficialShopSelectionController extends Controller
      */
     public function bestSellers(Request $request): View
     {
+        if (! self::FEATURE_ENABLED) {
+            return $this->unavailableView();
+        }
+
         $month = $request->input('month', now()->month);
         $year = $request->input('year', now()->year);
 

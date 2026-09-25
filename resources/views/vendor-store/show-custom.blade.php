@@ -1,89 +1,53 @@
-@extends('layouts.storefront')
+{{--
+ | หน้าร้านของผู้ขาย (/store/{slug}) ตามเลย์เอาต์ที่ผู้ขายจัดเอง — ธีม V4 (frontend-v4)
+ | ข้อมูลจาก VendorStoreController@show: $store, $products (paginator), $categories, $stats, $layoutSettings, $featuredProducts
+ | ลำดับส่วนตาม $layoutSettings->getOrderedSections() (header, slider, promotion, featured_products, categories, all_products, footer)
+ |
+ | 🔒 ความปลอดภัย: สี/ลิงก์/CSS/เนื้อหาท้ายร้านที่ผู้ขายกรอก ผ่านการล้างทุกครั้ง (StoreTheme / SafeHtml)
+ |    และ "โค้ด JavaScript เพิ่มเติม" ของร้านจะไม่ถูกรันบนหน้าสาธารณะ — หน้านี้อยู่โดเมนเดียวกับระบบหลัก
+ |    โค้ดของผู้ขายจะอ่าน session/คุกกี้ของผู้ซื้อและแอดมินที่เข้าชมได้
+ --}}
+@extends('layouts.frontend-v4')
 
-@section('title', $layoutSettings->meta_title ?? $store->store_name)
+@section('title', $layoutSettings->meta_title ?: $store->store_name)
+@section('meta_description', \Illuminate\Support\Str::limit(strip_tags((string) ($layoutSettings->meta_description ?: ($store->store_description ?: 'ร้านค้าออนไลน์บนไทยพร๊อมท์'))), 160))
 
 @section('meta')
-<meta name="description" content="{{ $layoutSettings->meta_description ?? $store->store_description ?? 'ร้านค้าออนไลน์' }}">
-@if($layoutSettings->meta_keywords)
-<meta name="keywords" content="{{ $layoutSettings->meta_keywords }}">
-@endif
+    @if($layoutSettings->meta_keywords)
+        <meta name="keywords" content="{{ \Illuminate\Support\Str::limit(strip_tags((string) $layoutSettings->meta_keywords), 250) }}">
+    @endif
 @endsection
 
-@push('styles')
-<style>
-    :root {
-        --store-primary: {{ $layoutSettings->primary_color ?? '#6366f1' }};
-        --store-secondary: {{ $layoutSettings->secondary_color ?? '#8b5cf6' }};
-        --store-accent: {{ $layoutSettings->accent_color ?? '#ec4899' }};
-        --store-text: {{ $layoutSettings->text_color ?? '#1f2937' }};
-        --store-bg: {{ $layoutSettings->background_color ?? '#ffffff' }};
-    }
+@php
+    $vsA = \App\Support\Shop\StoreTheme::brand($layoutSettings->primary_color ?? null, 'var(--accent1)');
+    $vsB = \App\Support\Shop\StoreTheme::brand($layoutSettings->secondary_color ?? null, 'var(--accent2)');
+    $vsC = \App\Support\Shop\StoreTheme::brand($layoutSettings->accent_color ?? null, 'var(--deep2)');
+    $vsCss = \App\Support\Shop\StoreTheme::css($layoutSettings->custom_css ?? null);
+    $vsSectionMap = [
+        'header' => 'vendor-store.sections.header',
+        'slider' => 'vendor-store.sections.slider',
+        'promotion' => 'vendor-store.sections.promotion',
+        'featured_products' => 'vendor-store.sections.featured-products',
+        'categories' => 'vendor-store.sections.categories',
+        'all_products' => 'vendor-store.sections.all-products',
+        'footer' => 'vendor-store.sections.footer',
+    ];
+@endphp
 
-    .store-bg {
-        background-color: var(--store-bg);
-    }
-
-    .store-primary-text {
-        color: var(--store-primary);
-    }
-
-    .store-primary-bg {
-        background-color: var(--store-primary);
-    }
-
-    .store-button {
-        background: linear-gradient(135deg, var(--store-primary), var(--store-secondary));
-    }
-
-    .store-button:hover {
-        filter: brightness(1.1);
-    }
-
-    .store-accent-bg {
-        background-color: var(--store-accent);
-    }
-
-    .product-card-default {
-        @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
-    }
-
-    .product-card-minimal {
-        @apply bg-white dark:bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg;
-    }
-
-    .product-card-detailed {
-        @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl;
-    }
-</style>
-
-{{-- Custom CSS จากผู้ใช้ --}}
-@if($layoutSettings->custom_css)
-<style>
-{!! $layoutSettings->custom_css !!}
-</style>
+@if($vsCss !== '')
+    @push('styles')
+    <style>{!! $vsCss !!}</style>
+    @endpush
 @endif
-@endpush
 
 @section('content')
-<div class="min-h-screen bg-transparent">
+<x-theme-v4.shop-kit />
+<x-theme-v4.public-header active="shop" :search="true" />
 
-    {{-- Render sections ตามลำดับที่ user กำหนด --}}
-    @php
-        $orderedSections = $layoutSettings->getOrderedSections();
-        $sectionMap = [
-            'header' => 'vendor-store.sections.header',
-            'slider' => 'vendor-store.sections.slider',
-            'promotion' => 'vendor-store.sections.promotion',
-            'featured_products' => 'vendor-store.sections.featured-products',
-            'categories' => 'vendor-store.sections.categories',
-            'all_products' => 'vendor-store.sections.all-products',
-            'footer' => 'vendor-store.sections.footer',
-        ];
-    @endphp
-
-    @foreach($orderedSections as $section)
-        @if(isset($sectionMap[$section]))
-            @include($sectionMap[$section], [
+<main style="flex:1; padding-bottom:40px; --store-a: {{ $vsA }}; --store-b: {{ $vsB }}; --store-c: {{ $vsC }};">
+    @foreach($layoutSettings->getOrderedSections() as $section)
+        @if(isset($vsSectionMap[$section]))
+            @include($vsSectionMap[$section], [
                 'store' => $store,
                 'layoutSettings' => $layoutSettings,
                 'products' => $products ?? null,
@@ -94,45 +58,8 @@
             ])
         @endif
     @endforeach
+</main>
 
-</div>
+<x-theme-v4.public-footer />
+<x-eve.widget surface="storefront" />
 @endsection
-
-@push('scripts')
-{{-- Swiper JS สำหรับ Slider --}}
-@if($layoutSettings->slider_enabled && !empty($layoutSettings->slider_images))
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        new Swiper('#store-slider', {
-            loop: true,
-            autoplay: {
-                delay: {{ $layoutSettings->slider_autoplay_speed ?? 5000 }},
-                disableOnInteraction: false,
-            },
-            effect: '{{ $layoutSettings->slider_effect ?? 'slide' }}',
-            @if($layoutSettings->slider_show_arrows)
-            navigation: {
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
-            },
-            @endif
-            @if($layoutSettings->slider_show_dots)
-            pagination: {
-                el: '.swiper-pagination',
-                clickable: true,
-            },
-            @endif
-        });
-    });
-</script>
-@endif
-
-{{-- Custom JS --}}
-@if($layoutSettings->custom_js)
-<script>
-{!! $layoutSettings->custom_js !!}
-</script>
-@endif
-@endpush

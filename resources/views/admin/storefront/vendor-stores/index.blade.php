@@ -1,349 +1,243 @@
-{{--
-    Admin Vendor Stores Index - จัดการร้านค้าทั้งหมด
+@extends('layouts.admin-v4')
 
-    หน้านี้แสดงรายการร้านค้าทั้งหมดในระบบ
-    Admin สามารถค้นหา, กรอง, และจัดการร้านค้าได้
+@section('title', 'ร้านค้าทั้งหมด')
 
-    @version 3.0
-    @uses Tailwind CSS + Alpine.js
---}}
-
-@extends('layouts.admin-v3')
-
-@section('title', 'จัดการร้านค้าทั้งหมด')
+@php
+    $c = [
+        'ok' => 'var(--tp-ok,#5aa07e)',
+        'bad' => 'var(--tp-bad,#d9534f)',
+        'warn' => 'var(--tp-warn,#e0a52e)',
+        'info' => 'var(--tp-info,#5689b8)',
+        'mute' => 'var(--ink2)',
+    ];
+    $pill = fn (string $color) => "background:color-mix(in srgb, {$color} 16%, transparent); color:{$color};";
+    $th = 'padding:12px 14px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); letter-spacing:.3px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); vertical-align:middle;';
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+    $statusMeta = [
+        'active' => ['เปิดอยู่', $c['ok']],
+        'pending' => ['รออนุมัติ', $c['warn']],
+        'suspended' => ['ถูกระงับ', $c['bad']],
+        'closed' => ['ปิดถาวร', $c['mute']],
+    ];
+    // ร้าน closed มี 2 ที่มา: ใบสมัครถูกปฏิเสธ (เจ้าของยังอยู่) / เจ้าของลบบัญชีตาม PDPA (user ถูก soft delete → relation ว่าง)
+    $closedLabel = fn ($store) => $store->user ? 'ใบสมัครถูกปฏิเสธ' : 'บัญชีเจ้าของถูกลบ';
+    // สถานะที่เปิดขายจากสวิตช์ไม่ได้ (ต้องเปิดคืน/อนุมัติที่หน้ารายละเอียด)
+    $switchLocked = ['suspended', 'closed', 'pending'];
+@endphp
 
 @section('content')
-<div class="space-y-6" x-data="vendorStoresManager()">
-    {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+<div style="display:flex; flex-direction:column; gap:18px;"
+     x-data="{
+        statusUrl: @js(route('admin.storefront.vendor-stores.toggle-status', ['store' => '__ID__'])),
+        featuredUrl: @js(route('admin.storefront.vendor-stores.toggle-featured', ['store' => '__ID__'])),
+        busy: {},
+        async flip(kind, id) {
+            if (this.busy[id]) return;
+            this.busy[id] = true;
+            const url = (kind === 'status' ? this.statusUrl : this.featuredUrl).replace('__ID__', id);
+            try {
+                const res = await fetch(url, { method: 'POST', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content } });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) {
+                    const err = new Error('fail');
+                    err.userMessage = data.message || null;
+                    throw err;
+                }
+                this.$dispatch('notify', { type: 'success', message: data.message || 'บันทึกแล้ว' });
+                setTimeout(() => window.location.reload(), 600);
+            } catch (e) {
+                this.$dispatch('notify', { type: 'error', message: e.userMessage || 'บันทึกไม่สำเร็จ กรุณาลองใหม่' });
+            } finally {
+                this.busy[id] = false;
+            }
+        }
+     }">
+
+    {{-- ===== หัวหน้า ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                <div class="p-2 bg-gradient-to-br from-orange-500 to-pink-600 rounded-xl text-white">
-                    <i class="fas fa-store-alt"></i>
-                </div>
-                จัดการร้านค้าทั้งหมด
-            </h1>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                ดูและจัดการร้านค้า Vendor ทั้งหมดในระบบ
-            </p>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ร้านค้า</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">ร้านค้าทั้งหมด 🏪</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ดูข้อมูลร้าน เปลี่ยนแพ็กเกจ/GP ตั้งค่า VAT ระงับหรือเปิดร้าน</div>
+        </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <a href="{{ route('admin.seller-applications.index') }}" class="tp-btn tp-btn-sm">
+                <i class="fas fa-inbox"></i> คำขอเปิดร้าน
+                @if(($stats['pending'] ?? 0) > 0)<span class="tp-pill tp-pill-gold tp-num">{{ number_format($stats['pending']) }}</span>@endif
+            </a>
+            <a href="{{ route('admin.featured-stores.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-award"></i> ร้านแนะนำ</a>
+            <a href="{{ route('admin.storefront.index') }}" class="tp-btn tp-btn-sm"><i class="fas fa-gear"></i> ตั้งค่าหน้าร้าน</a>
         </div>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {{-- Total Stores --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                    <i class="fas fa-store text-blue-600 dark:text-blue-400"></i>
+    {{-- ===== KPI ===== --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
+        @foreach([
+            ['ทั้งหมด', $stats['total'] ?? 0, 'fa-store', null, ''],
+            ['เปิดใช้งาน', $stats['active'] ?? 0, 'fa-circle-check', $c['ok'], 'active'],
+            ['รออนุมัติ', $stats['pending'] ?? 0, 'fa-hourglass-half', $c['warn'], 'pending'],
+            ['ถูกระงับ', $stats['suspended'] ?? 0, 'fa-ban', $c['bad'], 'suspended'],
+            ['ปิดถาวร', $stats['closed'] ?? 0, 'fa-store-slash', null, 'closed'],
+            ['ยืนยันแล้ว', $stats['verified'] ?? 0, 'fa-certificate', $c['info'], 'verified'],
+            ['ร้านแนะนำ', $stats['featured'] ?? 0, 'fa-award', null, 'featured'],
+        ] as [$label, $value, $icon, $color, $status])
+            <a href="{{ route('admin.storefront.vendor-stores.index', $status ? ['status' => $status] : []) }}" class="tp-card tp-card-hover" style="padding:14px 16px; text-decoration:none; color:inherit; {{ request('status', '') === $status ? 'box-shadow:var(--inset);' : '' }}">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="tp-tile" style="width:36px; height:36px; font-size:14px; {{ $color ? 'background:'.$color.';' : '' }}"><i class="fas {{ $icon }}"></i></div>
+                    <div>
+                        <div class="tp-num" style="font-size:21px; font-weight:800; line-height:1;">{{ number_format($value) }}</div>
+                        <div style="font-size:11.5px; color:var(--ink2); margin-top:2px;">{{ $label }}</div>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">ร้านค้าทั้งหมด</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Active Stores --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
-                    <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['active']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">เปิดใช้งาน</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Featured Stores --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
-                    <i class="fas fa-star text-yellow-600 dark:text-yellow-400"></i>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['featured']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">ร้านค้าแนะนำ</p>
-                </div>
-            </div>
-        </div>
-
-        {{-- Verified Stores --}}
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-                    <i class="fas fa-badge-check text-purple-600 dark:text-purple-400"></i>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['verified']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">ยืนยันแล้ว</p>
-                </div>
-            </div>
-        </div>
+            </a>
+        @endforeach
     </div>
 
-    {{-- Filters & Search --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-lg border border-gray-100 dark:border-gray-700">
-        <form action="{{ route('admin.storefront.vendor-stores.index') }}" method="GET" class="flex flex-col md:flex-row gap-4">
-            {{-- Search --}}
-            <div class="flex-1">
-                <div class="relative">
-                    <input type="text"
-                           name="search"
-                           value="{{ request('search') }}"
-                           placeholder="ค้นหาชื่อร้าน, เจ้าของร้าน..."
-                           class="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl
-                                  text-gray-900 dark:text-white placeholder-gray-400
-                                  focus:ring-2 focus:ring-orange-500">
-                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                </div>
+    {{-- ===== ตัวกรอง ===== --}}
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" action="{{ route('admin.storefront.vendor-stores.index') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:end;">
+            <div style="grid-column:1 / -1;">
+                <label style="{{ $lbl }}">🔍 ค้นหา</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="tp-input" placeholder="ชื่อร้าน slug ชื่อหรืออีเมลเจ้าของ">
             </div>
-
-            {{-- Status Filter --}}
-            <div class="w-full md:w-48">
-                <select name="status"
-                        class="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl
-                               text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500">
-                    <option value="">ทุกสถานะ</option>
-                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>เปิดใช้งาน</option>
-                    <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>ปิดใช้งาน</option>
-                    <option value="featured" {{ request('status') === 'featured' ? 'selected' : '' }}>ร้านค้าแนะนำ</option>
-                    <option value="verified" {{ request('status') === 'verified' ? 'selected' : '' }}>ยืนยันแล้ว</option>
+            <div>
+                <label style="{{ $lbl }}">สถานะ</label>
+                <select name="status" class="tp-input">
+                    <option value="">ทั้งหมด</option>
+                    <option value="active" @selected(request('status') === 'active')>เปิดใช้งาน</option>
+                    <option value="inactive" @selected(request('status') === 'inactive')>ปิดใช้งาน</option>
+                    <option value="pending" @selected(request('status') === 'pending')>รออนุมัติ</option>
+                    <option value="suspended" @selected(request('status') === 'suspended')>ถูกระงับ</option>
+                    <option value="closed" @selected(request('status') === 'closed')>ปิดถาวร (ใบสมัครถูกปฏิเสธ/บัญชีถูกลบ)</option>
+                    <option value="verified" @selected(request('status') === 'verified')>ยืนยันแล้ว</option>
+                    <option value="featured" @selected(request('status') === 'featured')>ร้านแนะนำ</option>
+                    <option value="rider" @selected(request('status') === 'rider')>ส่งด้วยไรเดอร์</option>
                 </select>
             </div>
-
-            {{-- Search Button --}}
-            <button type="submit"
-                    class="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-pink-600
-                           hover:from-orange-600 hover:to-pink-700
-                           text-white font-semibold rounded-xl
-                           transition-all hover:scale-105 shadow-lg">
-                <i class="fas fa-search mr-2"></i>
-                ค้นหา
-            </button>
+            <div>
+                <label style="{{ $lbl }}">เรียงตาม</label>
+                <select name="sort_by" class="tp-input">
+                    <option value="created_at" @selected(request('sort_by', 'created_at') === 'created_at')>สมัครล่าสุด</option>
+                    <option value="store_name" @selected(request('sort_by') === 'store_name')>ชื่อร้าน</option>
+                    <option value="orders_count" @selected(request('sort_by') === 'orders_count')>จำนวนออเดอร์</option>
+                    <option value="products_count" @selected(request('sort_by') === 'products_count')>จำนวนสินค้า</option>
+                    <option value="rating_average" @selected(request('sort_by') === 'rating_average')>คะแนนรีวิว</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> กรอง</button>
+                <a href="{{ route('admin.storefront.vendor-stores.index') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> ล้าง</a>
+            </div>
         </form>
     </div>
 
-    {{-- Stores Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
+    {{-- ===== ตาราง ===== --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:980px; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                            ร้านค้า
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                            เจ้าของ
-                        </th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                            สินค้า
-                        </th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                            สถานะ
-                        </th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                            แนะนำ
-                        </th>
-                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
-                            จัดการ
-                        </th>
+                        <th style="{{ $th }}">ร้าน</th>
+                        <th style="{{ $th }}">เจ้าของ</th>
+                        <th style="{{ $th }}">แพ็กเกจ / GP</th>
+                        <th style="{{ $th }} text-align:right;">สินค้า / ออเดอร์</th>
+                        <th style="{{ $th }}">สถานะ</th>
+                        <th style="{{ $th }} text-align:center;">เปิดขาย</th>
+                        <th style="{{ $th }} text-align:center;">แนะนำ</th>
+                        <th style="{{ $th }} text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                     @forelse($stores as $store)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        {{-- Store Info --}}
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-4">
-                                @if($store->store_logo)
-                                    <img src="{{ asset('storage/' . $store->store_logo) }}"
-                                         alt="{{ $store->store_name }}"
-                                         class="w-12 h-12 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-600">
-                                @else
-                                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-pink-500
-                                                flex items-center justify-center text-white font-bold text-lg">
-                                        {{ strtoupper(substr($store->store_name, 0, 1)) }}
+                        @php [$sLabel, $sColor] = $statusMeta[$store->status] ?? [$store->status ?: 'ไม่ระบุ', $c['mute']]; @endphp
+                        <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                            <td style="{{ $td }}">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    @if($store->logo_url)
+                                        <img src="{{ $store->logo_url }}" alt="" loading="lazy" style="width:40px; height:40px; border-radius:12px; object-fit:cover; flex:none;">
+                                    @else
+                                        <span class="tp-tile" style="width:40px; height:40px; font-size:15px; font-weight:800;">{{ mb_strtoupper(mb_substr($store->store_name ?: '?', 0, 1)) }}</span>
+                                    @endif
+                                    <div style="min-width:0;">
+                                        <a href="{{ route('admin.storefront.vendor-stores.show', $store) }}" style="font-weight:700; color:var(--ink); text-decoration:none; display:block; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $store->store_name }}</a>
+                                        <div style="font-size:11.5px; color:var(--ink2);" class="tp-num">{{ $store->store_slug }}</div>
+                                        <div style="display:flex; gap:4px; flex-wrap:wrap; margin-top:3px;">
+                                            @if($store->is_verified)<span class="tp-pill" style="{{ $pill($c['info']) }}">✓ ยืนยันแล้ว</span>@endif
+                                            @if($store->vat_registered)<span class="tp-pill tp-pill-soft">VAT</span>@endif
+                                            @if($store->rider_delivery_enabled)<span class="tp-pill tp-pill-soft">🛵 ไรเดอร์</span>@endif
+                                        </div>
                                     </div>
+                                </div>
+                            </td>
+                            <td style="{{ $td }}">
+                                <div style="font-weight:600; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $store->user?->name ?? '-' }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2); max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $store->user?->email }}</div>
+                            </td>
+                            <td style="{{ $td }}">
+                                <div>{{ $store->package?->display_name ?? $store->package?->package_name ?? 'ไม่มีแพ็กเกจ' }}</div>
+                                <div style="font-size:11.5px; color:var(--ink2);" class="tp-num">
+                                    GP {{ rtrim(rtrim(number_format((float) ($store->package?->commission_rate ?? $store->commission_rate ?? 0), 2), '0'), '.') }}%
+                                </div>
+                            </td>
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;" class="tp-num">
+                                <a href="{{ route('admin.ecommerce.products.index', ['store_id' => $store->id]) }}" style="color:var(--ink); text-decoration:none;">{{ number_format((int) $store->products_count) }}</a>
+                                <span style="color:var(--ink2);"> / {{ number_format((int) $store->orders_count) }}</span>
+                            </td>
+                            <td style="{{ $td }}">
+                                <span class="tp-pill" style="{{ $pill($sColor) }}">{{ $sLabel }}</span>
+                                @if($store->status === 'closed')
+                                    <div style="font-size:11px; color:var(--ink2); margin-top:2px;">{{ $closedLabel($store) }}</div>
                                 @endif
-                                <div>
-                                    <a href="{{ route('admin.storefront.vendor-stores.show', $store) }}"
-                                       class="font-semibold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400">
-                                        {{ $store->store_name }}
+                                @if($store->suspension_reason && in_array($store->status, ['suspended', 'closed'], true))
+                                    <div style="font-size:11px; color:var(--ink2); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ $store->suspension_reason }}">{{ $store->suspension_reason }}</div>
+                                @endif
+                            </td>
+                            <td style="{{ $td }} text-align:center;">
+                                @if(! $store->is_active && in_array($store->status, $switchLocked, true))
+                                    {{-- ถูกระงับ/ปิดถาวร/รออนุมัติ: เปิดขายจากสวิตช์ไม่ได้ → ไปจัดการที่หน้ารายละเอียด --}}
+                                    <a href="{{ route('admin.storefront.vendor-stores.show', $store) }}" class="tp-icon-btn" style="width:34px; height:34px; margin:auto; color:{{ $c['mute'] }};"
+                                       title="{{ $store->status === 'pending' ? 'รออนุมัติ — อนุมัติที่หน้ารายละเอียด' : ($store->status === 'suspended' ? 'ถูกระงับ — เปิดร้านคืนที่หน้ารายละเอียด' : 'ปิดถาวร — เปิดขายไม่ได้') }}">
+                                        <i class="fas fa-lock" style="font-size:14px;"></i>
                                     </a>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                                        /{{ $store->store_slug }}
-                                    </p>
-                                </div>
-                            </div>
-                        </td>
-
-                        {{-- Owner --}}
-                        <td class="px-6 py-4">
-                            <div class="text-sm">
-                                <p class="font-medium text-gray-900 dark:text-white">
-                                    {{ $store->user->name ?? 'N/A' }}
-                                </p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    {{ $store->user->email ?? '' }}
-                                </p>
-                            </div>
-                        </td>
-
-                        {{-- Products Count --}}
-                        <td class="px-6 py-4 text-center">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                                        bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                                {{ number_format($store->products_count) }}
-                            </span>
-                        </td>
-
-                        {{-- Status Toggle --}}
-                        <td class="px-6 py-4 text-center">
-                            <button @click="toggleStatus({{ $store->id }})"
-                                    :class="storeStatuses[{{ $store->id }}] ?? {{ $store->is_active ? 'true' : 'false' }}
-                                           ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"
-                                    class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
-                                <span :class="storeStatuses[{{ $store->id }}] ?? {{ $store->is_active ? 'true' : 'false' }}
-                                             ? 'translate-x-6' : 'translate-x-1'"
-                                      class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
-                            </button>
-                        </td>
-
-                        {{-- Featured Toggle --}}
-                        <td class="px-6 py-4 text-center">
-                            <button @click="toggleFeatured({{ $store->id }})"
-                                    :class="storeFeatured[{{ $store->id }}] ?? {{ $store->is_featured_home ? 'true' : 'false' }}
-                                           ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'"
-                                    class="text-2xl hover:scale-110 transition-transform">
-                                <i class="fas fa-star"></i>
-                            </button>
-                        </td>
-
-                        {{-- Actions --}}
-                        <td class="px-6 py-4 text-right">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('admin.storefront.vendor-stores.show', $store) }}"
-                                   class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition"
-                                   title="ดูรายละเอียด">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.storefront.vendor-stores.edit', $store) }}"
-                                   class="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/30 rounded-lg transition"
-                                   title="แก้ไข">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="{{ route('admin.storefront.vendor-stores.destroy', $store) }}"
-                                      method="POST"
-                                      onsubmit="return confirm('คุณต้องการลบร้านค้า {{ $store->store_name }} หรือไม่?')"
-                                      class="inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition"
-                                            title="ลบ">
-                                        <i class="fas fa-trash"></i>
+                                @else
+                                    <button type="button" class="tp-icon-btn" style="width:34px; height:34px; margin:auto; color:{{ $store->is_active ? $c['ok'] : $c['mute'] }};"
+                                            title="{{ $store->is_active ? 'ปิดการขายชั่วคราว' : 'เปิดการขาย' }}"
+                                            @click="if (confirm(@js(($store->is_active ? 'ปิด' : 'เปิด').'การขายของร้าน "'.$store->store_name.'" ?'))) flip('status', {{ $store->id }})" :disabled="busy[{{ $store->id }}]">
+                                        <i class="fas {{ $store->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}" style="font-size:18px;"></i>
                                     </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" class="px-6 py-12 text-center">
-                            <div class="flex flex-col items-center gap-3">
-                                <div class="p-4 bg-gray-100 dark:bg-gray-700 rounded-full">
-                                    <i class="fas fa-store-slash text-3xl text-gray-400"></i>
+                                @endif
+                            </td>
+                            <td style="{{ $td }} text-align:center;">
+                                <button type="button" class="tp-icon-btn" style="width:34px; height:34px; margin:auto; color:{{ $store->is_featured_home ? 'var(--accent1)' : $c['mute'] }};"
+                                        title="{{ $store->is_featured_home ? 'เอาออกจากร้านแนะนำ' : 'ตั้งเป็นร้านแนะนำ' }}"
+                                        @click="flip('featured', {{ $store->id }})" :disabled="busy[{{ $store->id }}]">
+                                    <i class="{{ $store->is_featured_home ? 'fas' : 'far' }} fa-star"></i>
+                                </button>
+                            </td>
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:6px;">
+                                    <a href="{{ route('admin.storefront.vendor-stores.show', $store) }}" class="tp-icon-btn" style="width:34px; height:34px;" title="ดูรายละเอียด"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ route('admin.storefront.vendor-stores.edit', $store) }}" class="tp-icon-btn" style="width:34px; height:34px;" title="แก้ไข"><i class="fas fa-pen"></i></a>
                                 </div>
-                                <p class="text-gray-500 dark:text-gray-400">ไม่พบร้านค้าในระบบ</p>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" style="padding:44px 16px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-store-slash" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                                ไม่พบร้านค้าตามเงื่อนไขนี้
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        {{-- Pagination --}}
-        @if($stores->hasPages())
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-            {{ $stores->withQueryString()->links() }}
-        </div>
-        @endif
     </div>
+
+    @if($stores->hasPages())
+        <div>{{ $stores->links() }}</div>
+    @endif
 </div>
-
-@push('scripts')
-<script>
-/**
- * Alpine.js Component สำหรับจัดการร้านค้า
- */
-function vendorStoresManager() {
-    return {
-        storeStatuses: {},
-        storeFeatured: {},
-
-        /**
-         * สลับสถานะ Active/Inactive
-         *
-         * @param {number} storeId
-         */
-        async toggleStatus(storeId) {
-            try {
-                const response = await fetch(`{{ url('admin/storefront/vendor-stores') }}/${storeId}/toggle-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    this.storeStatuses[storeId] = data.is_active;
-                    // แสดง notification
-                    if (typeof showNotification === 'function') {
-                        showNotification(data.message, 'success');
-                    }
-                }
-            } catch (error) {
-                console.error('Error toggling status:', error);
-            }
-        },
-
-        /**
-         * สลับสถานะ Featured
-         *
-         * @param {number} storeId
-         */
-        async toggleFeatured(storeId) {
-            try {
-                const response = await fetch(`{{ url('admin/storefront/vendor-stores') }}/${storeId}/toggle-featured`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    this.storeFeatured[storeId] = data.is_featured;
-                    // แสดง notification
-                    if (typeof showNotification === 'function') {
-                        showNotification(data.message, 'success');
-                    }
-                }
-            } catch (error) {
-                console.error('Error toggling featured:', error);
-            }
-        }
-    };
-}
-</script>
-@endpush
 @endsection

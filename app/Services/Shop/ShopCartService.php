@@ -394,7 +394,21 @@ class ShopCartService
     public function quote(User $user, array $opts = []): array
     {
         $cart = $this->cartFor($user);
-        $lines = $this->lines($cart);
+
+        return ['cart_id' => (int) $cart->id] + $this->quoteLines($user, $this->lines($cart), $opts);
+    }
+
+    /**
+     * ยอดรวมของรายการชุดใดก็ได้ (ตะกร้าแอป หรือตะกร้าเว็บที่แปลงผ่าน WebCartLines)
+     *
+     * รูปแบบผลลัพธ์เหมือน quote() ทุกคีย์ ยกเว้นไม่มี cart_id
+     *
+     * @param  Collection<int, CartItem>  $lines  รายการ (มี relation product แล้ว)
+     * @param  array{address_id?: int|null, delivery_method?: string|null, coupon_code?: string|null}  $opts
+     * @return array<string, mixed>
+     */
+    public function quoteLines(User $user, Collection $lines, array $opts = []): array
+    {
         $deliveryMethod = ($opts['delivery_method'] ?? 'parcel') === 'rider' ? 'rider' : 'parcel';
 
         $address = null;
@@ -489,7 +503,6 @@ class ShopCartService
         $threshold = (float) ShippingService::DEFAULT_FREE_SHIPPING_THRESHOLD;
 
         return [
-            'cart_id' => (int) $cart->id,
             'items' => $itemsOut,
             'stores' => $storesOut,
             'address' => $address ? [

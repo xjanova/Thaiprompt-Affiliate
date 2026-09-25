@@ -1,390 +1,186 @@
-{{--
-    Official Shop Products List - Admin Panel
-    หน้าแสดงรายการสินค้าร้านของระบบ (Premium V3)
---}}
-
-@extends('layouts.admin-v3')
+@extends('layouts.admin-v4')
 
 @section('title', 'สินค้า Official Shop')
 
+@php
+    $c = [
+        'ok' => 'var(--tp-ok,#5aa07e)',
+        'bad' => 'var(--tp-bad,#d9534f)',
+        'warn' => 'var(--tp-warn,#e0a52e)',
+        'mute' => 'var(--ink2)',
+    ];
+    $pill = fn (string $color) => "background:color-mix(in srgb, {$color} 16%, transparent); color:{$color};";
+    $th = 'padding:12px 14px; text-align:left; font-size:11px; font-weight:700; color:var(--ink2); letter-spacing:.3px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); vertical-align:middle;';
+    $lbl = 'display:block; font-size:12px; color:var(--ink2); font-weight:600; margin-bottom:6px;';
+@endphp
+
 @section('content')
-<div class="space-y-6" x-data="productManager()">
-    {{-- Alert Messages --}}
-    @if(session('success'))
-    <div x-data="{ show: true }" x-show="show" x-transition
-         class="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20
-                border-l-4 border-green-500 rounded-xl shadow-lg p-4">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-check-circle text-green-500 text-xl"></i>
-                <span class="text-green-800 dark:text-green-200 font-medium">{{ session('success') }}</span>
-            </div>
-            <button @click="show = false" class="text-green-500 hover:text-green-700">
-                <i class="fas fa-times"></i>
-            </button>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div>
+            <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · Official Shop · สินค้า</div>
+            <h1 class="tp-num" style="font-size:clamp(22px,4vw,28px); font-weight:800; margin:4px 0 0;">สินค้าร้านทางการ 👑</h1>
+            <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">สินค้าที่แพลตฟอร์มขายเอง (ไม่มีค่า GP)</div>
+        </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+            <a href="{{ route('admin.official-shop.dashboard') }}" class="tp-btn tp-btn-sm"><i class="fas fa-gauge"></i> แดชบอร์ด</a>
+            <a href="{{ route('admin.official-shop.products.create') }}" class="tp-btn tp-btn-sm tp-btn-primary"><i class="fas fa-plus"></i> เพิ่มสินค้า</a>
         </div>
     </div>
-    @endif
 
-    @if(session('error'))
-    <div x-data="{ show: true }" x-show="show" x-transition
-         class="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20
-                border-l-4 border-red-500 rounded-xl shadow-lg p-4">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-exclamation-circle text-red-500 text-xl"></i>
-                <span class="text-red-800 dark:text-red-200 font-medium">{{ session('error') }}</span>
-            </div>
-            <button @click="show = false" class="text-red-500 hover:text-red-700">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
-    @endif
-
-    {{-- Header --}}
-    <div class="relative overflow-hidden bg-gradient-to-br from-amber-500 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8">
-        <div class="absolute inset-0 bg-black/10" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
-
-        <div class="relative flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-            <div class="flex items-center gap-4">
-                <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-4 ring-4 ring-amber-400/30">
-                    <i class="fas fa-boxes text-4xl text-white"></i>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px;">
+        @foreach([
+            ['ทั้งหมด', $stats['total'] ?? 0, 'fa-box', null, []],
+            ['เปิดขาย', $stats['active'] ?? 0, 'fa-circle-check', $c['ok'], ['status' => 'active']],
+            ['แนะนำ', $stats['featured'] ?? 0, 'fa-star', $c['warn'], ['status' => 'featured']],
+            ['สินค้าหมด', $stats['out_of_stock'] ?? 0, 'fa-circle-xmark', $c['bad'], ['stock_status' => 'out_of_stock']],
+        ] as [$label, $value, $icon, $color, $query])
+            <a href="{{ route('admin.official-shop.products.index', $query) }}" class="tp-card tp-card-hover" style="padding:14px 16px; text-decoration:none; color:inherit;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="tp-tile" style="width:38px; height:38px; font-size:15px; {{ $color ? 'background:'.$color.';' : '' }}"><i class="fas {{ $icon }}"></i></div>
+                    <div>
+                        <div class="tp-num" style="font-size:21px; font-weight:800; line-height:1;">{{ number_format((int) $value) }}</div>
+                        <div style="font-size:11.5px; color:var(--ink2); margin-top:2px;">{{ $label }}</div>
+                    </div>
                 </div>
-                <div class="text-white">
-                    <h1 class="text-3xl font-bold mb-1">สินค้า Official Shop</h1>
-                    <p class="text-white/90 text-sm">จัดการสินค้าร้านทางการของระบบ</p>
-                </div>
-            </div>
-
-            <a href="{{ route('admin.official-shop.products.create') }}"
-               class="px-6 py-3 bg-white text-purple-600 font-bold rounded-xl shadow-lg
-                      hover:bg-purple-50 transition-all flex items-center gap-2 self-start md:self-auto">
-                <i class="fas fa-plus"></i>
-                เพิ่มสินค้าใหม่
             </a>
-        </div>
+        @endforeach
     </div>
 
-    {{-- Stats Row --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <i class="fas fa-boxes text-blue-600 dark:text-blue-400"></i>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['total']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">ทั้งหมด</p>
-                </div>
+    <div class="tp-card" style="padding:18px;">
+        <form method="GET" action="{{ route('admin.official-shop.products.index') }}"
+              style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; align-items:end;">
+            <div style="grid-column:1 / -1;">
+                <label style="{{ $lbl }}">🔍 ค้นหา</label>
+                <input type="text" name="search" value="{{ request('search') }}" class="tp-input" placeholder="ชื่อ SKU หรือคำอธิบาย">
             </div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <i class="fas fa-check text-green-600 dark:text-green-400"></i>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['active']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">เปิดใช้งาน</p>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <i class="fas fa-star text-amber-600 dark:text-amber-400"></i>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['featured']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">แนะนำ</p>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow border border-gray-100 dark:border-gray-700">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                    <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400"></i>
-                </div>
-                <div>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($stats['out_of_stock']) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">สินค้าหมด</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Filters --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
-        <form method="GET" action="{{ route('admin.official-shop.products.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {{-- Search --}}
-            <div class="md:col-span-2">
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="ค้นหาสินค้า..."
-                           class="w-full pl-10 pr-4 py-3 bg-gray-100 dark:bg-gray-700
-                                  border-2 border-transparent focus:border-purple-500
-                                  rounded-xl transition-colors">
-                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                </div>
-            </div>
-
-            {{-- Category --}}
             <div>
-                <select name="category"
-                        class="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700
-                               border-2 border-transparent focus:border-purple-500
-                               rounded-xl transition-colors">
+                <label style="{{ $lbl }}">หมวดหมู่</label>
+                <select name="category" class="tp-input">
                     <option value="">ทุกหมวดหมู่</option>
                     @foreach($categories as $category)
-                    <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }}
-                    </option>
+                        <option value="{{ $category->id }}" @selected((string) request('category') === (string) $category->id)>{{ $category->name }}</option>
                     @endforeach
                 </select>
             </div>
-
-            {{-- Status --}}
             <div>
-                <select name="status"
-                        class="w-full py-3 px-4 bg-gray-100 dark:bg-gray-700
-                               border-2 border-transparent focus:border-purple-500
-                               rounded-xl transition-colors">
-                    <option value="">ทุกสถานะ</option>
-                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>เปิดใช้งาน</option>
-                    <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>ปิดใช้งาน</option>
-                    <option value="featured" {{ request('status') === 'featured' ? 'selected' : '' }}>สินค้าแนะนำ</option>
+                <label style="{{ $lbl }}">สถานะ</label>
+                <select name="status" class="tp-input">
+                    <option value="">ทั้งหมด</option>
+                    <option value="active" @selected(request('status') === 'active')>เปิดขาย</option>
+                    <option value="inactive" @selected(request('status') === 'inactive')>ปิดขาย</option>
+                    <option value="featured" @selected(request('status') === 'featured')>สินค้าแนะนำ</option>
                 </select>
             </div>
-
-            {{-- Actions --}}
-            <div class="flex gap-2">
-                <button type="submit"
-                        class="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500
-                               text-white font-bold rounded-xl hover:shadow-lg transition-all">
-                    <i class="fas fa-search mr-2"></i>
-                    ค้นหา
-                </button>
-                <a href="{{ route('admin.official-shop.products.index') }}"
-                   class="py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300
-                          font-bold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all">
-                    <i class="fas fa-redo"></i>
-                </a>
+            <div>
+                <label style="{{ $lbl }}">สต็อก</label>
+                <select name="stock_status" class="tp-input">
+                    <option value="">ทั้งหมด</option>
+                    <option value="in_stock" @selected(request('stock_status') === 'in_stock')>มีสินค้า</option>
+                    <option value="low_stock" @selected(request('stock_status') === 'low_stock')>ใกล้หมด</option>
+                    <option value="out_of_stock" @selected(request('stock_status') === 'out_of_stock')>หมด</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> กรอง</button>
+                <a href="{{ route('admin.official-shop.products.index') }}" class="tp-btn"><i class="fas fa-rotate-left"></i> ล้าง</a>
             </div>
         </form>
     </div>
 
-    {{-- Products Table --}}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-        @if($products->count() > 0)
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-700/50">
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="overflow-x:auto;">
+            <table style="width:100%; min-width:900px; border-collapse:collapse;">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
-                            สินค้า
-                        </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
-                            หมวดหมู่
-                        </th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
-                            ราคา
-                        </th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
-                            สต็อก
-                        </th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
-                            สถานะ
-                        </th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">
-                            จัดการ
-                        </th>
+                        <th style="{{ $th }}">สินค้า</th>
+                        <th style="{{ $th }}">หมวดหมู่</th>
+                        <th style="{{ $th }} text-align:right;">ราคา</th>
+                        <th style="{{ $th }} text-align:right;">สต็อก</th>
+                        <th style="{{ $th }} text-align:center;">เปิดขาย</th>
+                        <th style="{{ $th }} text-align:center;">แนะนำ</th>
+                        <th style="{{ $th }} text-align:right;">จัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                    @foreach($products as $product)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-4">
-                                <div class="w-16 h-16 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                                    @if($product->main_image_url)
-                                    <img src="{{ $product->main_image_url }}" alt="{{ $product->name }}" class="w-full h-full object-cover">
+                <tbody>
+                    @forelse($products as $product)
+                        <tr style="border-top:1px solid color-mix(in srgb, var(--ink2) 12%, transparent);">
+                            <td style="{{ $td }}">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    @if($product->primary_image_url)
+                                        <img src="{{ $product->primary_image_url }}" alt="" loading="lazy" style="width:46px; height:46px; border-radius:12px; object-fit:cover; flex:none;">
                                     @else
-                                    <div class="w-full h-full flex items-center justify-center">
-                                        <i class="fas fa-image text-gray-400 text-xl"></i>
-                                    </div>
+                                        <span class="tp-well" style="width:46px; height:46px; border-radius:12px; display:grid; place-items:center; color:var(--ink2); flex:none;"><i class="fas fa-image"></i></span>
                                     @endif
-                                </div>
-                                <div class="min-w-0">
-                                    <h3 class="font-semibold text-gray-900 dark:text-white truncate max-w-xs">
-                                        {{ $product->name }}
-                                    </h3>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">SKU: {{ $product->sku ?? '-' }}</p>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        @if($product->is_featured)
-                                        <span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs rounded-full">
-                                            <i class="fas fa-star mr-1"></i>แนะนำ
-                                        </span>
-                                        @endif
-                                        @if($product->pv_value > 0)
-                                        <span class="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs rounded-full">
-                                            PV: {{ $product->pv_value }}
-                                        </span>
-                                        @endif
+                                    <div style="min-width:0;">
+                                        <a href="{{ route('admin.official-shop.products.show', $product) }}" style="font-weight:700; color:var(--ink); text-decoration:none; display:block; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $product->name }}</a>
+                                        <div style="font-size:11.5px; color:var(--ink2);">SKU: {{ $product->sku ?: '-' }}@if((float) $product->pv_value > 0) · PV <span class="tp-num">{{ rtrim(rtrim(number_format((float) $product->pv_value, 2), '0'), '.') }}</span>@endif</div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="text-gray-700 dark:text-gray-300">
-                                {{ $product->category->name ?? '-' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <p class="font-bold text-green-600 dark:text-green-400">฿{{ number_format($product->price, 2) }}</p>
-                            @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                            <p class="text-sm text-gray-400 line-through">฿{{ number_format($product->compare_at_price, 2) }}</p>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            @if($product->track_inventory)
-                                @if($product->stock_status === 'out_of_stock')
-                                <span class="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-semibold rounded-full">
-                                    หมด
-                                </span>
-                                @elseif($product->stock_status === 'low_stock')
-                                <span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-semibold rounded-full">
-                                    {{ $product->stock_quantity }} เหลือน้อย
-                                </span>
-                                @else
-                                <span class="text-gray-700 dark:text-gray-300">{{ $product->stock_quantity }}</span>
+                            </td>
+                            <td style="{{ $td }} color:var(--ink2);">{{ $product->category?->name ?? 'ไม่ระบุ' }}</td>
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <div class="tp-num" style="font-weight:700;">฿{{ number_format((float) $product->price, 2) }}</div>
+                                @if((float) $product->compare_at_price > (float) $product->price)
+                                    <div class="tp-num" style="font-size:11.5px; color:var(--ink2); text-decoration:line-through;">฿{{ number_format((float) $product->compare_at_price, 2) }}</div>
                                 @endif
-                            @else
-                            <span class="text-gray-400">-</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                {{-- Active Toggle --}}
-                                <form action="{{ route('admin.official-shop.products.toggle-active', $product) }}" method="POST" class="inline">
+                            </td>
+                            <td style="{{ $td }} text-align:right;">
+                                @if(! $product->track_inventory)
+                                    <span style="font-size:12px; color:var(--ink2);">ไม่นับ</span>
+                                @else
+                                    <span class="tp-num" style="font-weight:800; color:{{ (int) $product->stock_quantity <= 0 ? $c['bad'] : ((int) $product->stock_quantity <= (int) ($product->low_stock_threshold ?? 5) ? $c['warn'] : $c['ok']) }};">{{ number_format((int) $product->stock_quantity) }}</span>
+                                @endif
+                            </td>
+                            <td style="{{ $td }} text-align:center;">
+                                <form method="POST" action="{{ route('admin.official-shop.products.toggle-active', $product) }}">
                                     @csrf
-                                    <button type="submit" title="{{ $product->is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน' }}"
-                                            class="w-10 h-6 rounded-full relative transition-colors
-                                                   {{ $product->is_active ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600' }}">
-                                        <span class="absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform
-                                                     {{ $product->is_active ? 'left-5' : 'left-1' }}"></span>
+                                    <button type="submit" class="tp-icon-btn" style="width:34px; height:34px; margin:auto; color:{{ $product->is_active ? $c['ok'] : $c['mute'] }};" title="{{ $product->is_active ? 'ปิดการขาย' : 'เปิดการขาย' }}">
+                                        <i class="fas {{ $product->is_active ? 'fa-toggle-on' : 'fa-toggle-off' }}" style="font-size:18px;"></i>
                                     </button>
                                 </form>
-
-                                {{-- Featured Toggle --}}
-                                <form action="{{ route('admin.official-shop.products.toggle-featured', $product) }}" method="POST" class="inline">
+                            </td>
+                            <td style="{{ $td }} text-align:center;">
+                                <form method="POST" action="{{ route('admin.official-shop.products.toggle-featured', $product) }}">
                                     @csrf
-                                    <button type="submit" title="{{ $product->is_featured ? 'นำออกจากแนะนำ' : 'เพิ่มเป็นแนะนำ' }}"
-                                            class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors
-                                                   {{ $product->is_featured ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-400' }}">
-                                        <i class="fas fa-star"></i>
+                                    <button type="submit" class="tp-icon-btn" style="width:34px; height:34px; margin:auto; color:{{ $product->is_featured ? 'var(--accent1)' : $c['mute'] }};" title="{{ $product->is_featured ? 'เลิกแนะนำ' : 'ตั้งเป็นสินค้าแนะนำ' }}">
+                                        <i class="{{ $product->is_featured ? 'fas' : 'far' }} fa-star"></i>
                                     </button>
                                 </form>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center justify-center gap-2">
-                                <a href="{{ route('admin.official-shop.products.edit', $product) }}"
-                                   class="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400
-                                          flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-                                   title="แก้ไข">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{{ route('official-shop.show', $product->slug) }}" target="_blank"
-                                   class="w-9 h-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400
-                                          flex items-center justify-center hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
-                                   title="ดูหน้าร้าน">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </a>
-                                <button @click="confirmDelete({{ $product->id }}, '{{ addslashes($product->name) }}')"
-                                        class="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400
-                                               flex items-center justify-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                                        title="ลบ">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
+                            </td>
+                            <td style="{{ $td }} text-align:right; white-space:nowrap;">
+                                <div style="display:inline-flex; gap:6px;">
+                                    <a href="{{ route('admin.official-shop.products.edit', $product) }}" class="tp-icon-btn" style="width:34px; height:34px;" title="แก้ไข"><i class="fas fa-pen"></i></a>
+                                    @if($product->slug)
+                                        <a href="{{ route('official-shop.show', $product->slug) }}" target="_blank" rel="noopener" class="tp-icon-btn" style="width:34px; height:34px;" title="ดูหน้าสินค้า"><i class="fas fa-up-right-from-square"></i></a>
+                                    @endif
+                                    <form method="POST" action="{{ route('admin.official-shop.products.destroy', $product) }}"
+                                          @submit="if (!confirm(@js('ลบสินค้า "'.$product->name.'" ?'))) $event.preventDefault()">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="tp-icon-btn" style="width:34px; height:34px; color:{{ $c['bad'] }};" title="ลบ"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" style="padding:44px 16px; text-align:center; color:var(--ink2);">
+                                <i class="fas fa-box-open" style="font-size:30px; display:block; margin-bottom:8px; opacity:.5;"></i>
+                                ยังไม่มีสินค้าร้านทางการ
+                                <div style="margin-top:12px;"><a href="{{ route('admin.official-shop.products.create') }}" class="tp-btn tp-btn-primary"><i class="fas fa-plus"></i> เพิ่มสินค้าแรก</a></div>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
-
-        {{-- Pagination --}}
-        <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-700">
-            {{ $products->links() }}
-        </div>
-        @else
-        <div class="text-center py-16">
-            <div class="w-24 h-24 mx-auto mb-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                <i class="fas fa-box-open text-4xl text-gray-400"></i>
-            </div>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ยังไม่มีสินค้า Official Shop</h3>
-            <p class="text-gray-500 dark:text-gray-400 mb-6">เริ่มต้นเพิ่มสินค้าแรกของร้านทางการ</p>
-            <a href="{{ route('admin.official-shop.products.create') }}"
-               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500
-                      text-white font-bold rounded-xl hover:shadow-lg transition-all">
-                <i class="fas fa-plus"></i>
-                เพิ่มสินค้าใหม่
-            </a>
-        </div>
-        @endif
     </div>
 
-    {{-- Delete Confirmation Modal --}}
-    <div x-show="showDeleteModal" x-cloak
-         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-         x-transition>
-        <div @click.away="showDeleteModal = false"
-             class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 w-full max-w-md">
-            <div class="text-center">
-                <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                    <i class="fas fa-exclamation-triangle text-3xl text-red-500"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ยืนยันการลบสินค้า</h3>
-                <p class="text-gray-500 dark:text-gray-400 mb-6">
-                    คุณต้องการลบสินค้า "<span class="font-semibold text-gray-700 dark:text-gray-300" x-text="deleteProductName"></span>" ใช่หรือไม่?
-                </p>
-                <div class="flex gap-3">
-                    <button @click="showDeleteModal = false"
-                            class="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300
-                                   font-bold rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition-all">
-                        ยกเลิก
-                    </button>
-                    <form :action="deleteUrl" method="POST" class="flex-1">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit"
-                                class="w-full py-3 px-4 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 transition-all">
-                            ลบสินค้า
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    @if($products->hasPages())
+        <div>{{ $products->links() }}</div>
+    @endif
 </div>
-
-@push('scripts')
-<script>
-function productManager() {
-    return {
-        showDeleteModal: false,
-        deleteUrl: '',
-        deleteProductName: '',
-
-        confirmDelete(productId, productName) {
-            this.deleteUrl = '{{ route("admin.official-shop.products.destroy", "") }}/' + productId;
-            this.deleteProductName = productName;
-            this.showDeleteModal = true;
-        }
-    };
-}
-</script>
-@endpush
 @endsection

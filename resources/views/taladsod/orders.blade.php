@@ -1,180 +1,135 @@
 {{--
-    คำสั่งซื้อของฉัน - ตลาดสดไทยพร๊อม
+ | ออเดอร์ตลาดสดของฉัน (taladsod.orders) — ธีม V4 (frontend-v4)
+ | Controller: FreshMarket\HomeController@orders
+ | ตัวแปร: $orders (paginator + seller, listing, items), $statusFilter (?string), $statuses [status => ป้ายไทย]
+ | ยกเลิก: PUT taladsod.orders.cancel {reason?} — แสดงเมื่อ $order->canBeCancelled('buyer') (มีกล่องยืนยัน)
+ --}}
+@extends('layouts.frontend-v4')
 
-    ตัวแปรที่ใช้:
-    - $orders: คำสั่งซื้อ (paginated collection)
---}}
-@extends('layouts.taladsod')
+@section('title', 'ออเดอร์ตลาดสดของฉัน')
 
-@section('title', 'คำสั่งซื้อของฉัน - ตลาดสดไทยพร๊อม')
+@section('meta')
+    <meta name="robots" content="noindex">
+@endsection
+
+@php
+    $ui = \App\Support\TaladsodWebUi::class;
+    $filters = array_merge(['all' => 'ทั้งหมด'], $statuses);
+@endphp
 
 @section('content')
+<x-theme-v4.shop-kit />
+@include('taladsod.partials.kit')
+<x-theme-v4.public-header active="orders" />
 
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+<main class="ts-scope" style="flex:1; padding-bottom:44px;" x-data="{ cancelFor: null, cancelUrl: '', reason: '', sending: false }">
+    <div class="sf-wrap" style="max-width:980px;">
+        @include('taladsod.partials.nav', ['active' => 'orders'])
 
-        {{-- ===== หัวข้อ ===== --}}
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                📦 คำสั่งซื้อของฉัน
-            </h1>
-            <a href="{{ route('taladsod.home') }}"
-               class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium flex items-center gap-1">
-                <i class="fas fa-arrow-left"></i> กลับหน้าแรก
-            </a>
+        <div class="ts-row" style="justify-content:space-between; margin:6px 0 12px;">
+            <h1 class="sf-h1">ออเดอร์ตลาดสดของฉัน</h1>
+            <a href="{{ route('taladsod.home') }}" class="tp-btn"><i class="fas fa-basket-shopping" aria-hidden="true"></i> สั่งเพิ่ม</a>
         </div>
 
-        {{-- ===== แท็บสถานะ ===== --}}
-        <div class="flex gap-2 overflow-x-auto scrollbar-hide pb-4 mb-4">
-            @php
-                $statusTabs = [
-                    '' => ['ทั้งหมด', 'fas fa-list'],
-                    'pending' => ['รอยืนยัน', 'fas fa-clock'],
-                    'confirmed' => ['ยืนยันแล้ว', 'fas fa-check'],
-                    'completed' => ['สำเร็จ', 'fas fa-check-double'],
-                    'cancelled' => ['ยกเลิก', 'fas fa-times'],
-                ];
-                $currentStatus = request('status', '');
-            @endphp
-            @foreach($statusTabs as $statusKey => $statusInfo)
-                <a href="{{ route('taladsod.orders', $statusKey ? ['status' => $statusKey] : []) }}"
-                   class="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors {{ $currentStatus === $statusKey ? 'bg-green-500 text-white shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-green-50 dark:hover:bg-gray-700' }}">
-                    <i class="{{ $statusInfo[1] }}"></i>
-                    {{ $statusInfo[0] }}
-                </a>
+        <div class="sf-scroll" role="tablist" aria-label="กรองตามสถานะ">
+            @foreach($filters as $key => $label)
+                @php $isOn = ($key === 'all' && ! $statusFilter) || $key === $statusFilter; @endphp
+                <a href="{{ route('taladsod.orders', $key === 'all' ? [] : ['status' => $key]) }}" class="sf-chip {{ $isOn ? 'is-on' : '' }}" role="tab" aria-selected="{{ $isOn ? 'true' : 'false' }}">{{ $label }}</a>
             @endforeach
         </div>
 
-        {{-- ===== รายการคำสั่งซื้อ ===== --}}
-        @if(isset($orders) && $orders->count() > 0)
-            <div class="space-y-4">
-                @foreach($orders as $order)
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-md border border-gray-100 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
-                        {{-- หัวออเดอร์ --}}
-                        <div class="flex items-center justify-between px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                            <div class="flex items-center gap-3">
-                                <span class="text-sm font-semibold text-gray-900 dark:text-white">
-                                    ออเดอร์ #{{ $order->order_number ?? $order->id }}
-                                </span>
-                                @php
-                                    $statusConfig = [
-                                        'pending' => ['รอยืนยัน', 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', 'fas fa-clock'],
-                                        'confirmed' => ['ยืนยันแล้ว', 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', 'fas fa-check'],
-                                        'shipping' => ['กำลังจัดส่ง', 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400', 'fas fa-truck'],
-                                        'completed' => ['สำเร็จ', 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', 'fas fa-check-double'],
-                                        'cancelled' => ['ยกเลิก', 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', 'fas fa-times'],
-                                    ];
-                                    $orderStatus = $order->order_status ?? 'pending';
-                                    $config = $statusConfig[$orderStatus] ?? [$order->status_label, 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200', 'fas fa-box'];
-                                @endphp
-                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $config[1] }}">
-                                    <i class="{{ $config[2] }}"></i> {{ $config[0] }}
-                                </span>
-                            </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                {{ $order->created_at ? $order->created_at->format('d/m/Y H:i') : '' }}
+        <div class="ts-stack" style="margin-top:10px;">
+            @forelse($orders as $order)
+                @php
+                    $lines = $order->lineItems();
+                    $first = $lines->first();
+                    $more = max(0, $lines->count() - 1);
+                    $tone = $ui::orderTone($order->order_status);
+                @endphp
+                <article class="tp-card tp-card-hover" style="padding:16px;">
+                    <div class="ts-row" style="justify-content:space-between; gap:8px;">
+                        <div class="ts-row" style="gap:8px; min-width:0;">
+                            <span class="ts-avatar" style="width:38px; height:38px; border-radius:12px; font-size:14px;">{{ $ui::initial($order->seller?->shop_name) }}</span>
+                            <div style="min-width:0;">
+                                <b style="display:block; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $order->seller?->shop_name ?? 'ร้านตลาดสด' }}</b>
+                                <span class="ts-muted ts-small">#{{ $order->order_number }} · {{ $ui::shortDate($order->created_at) }}</span>
                             </div>
                         </div>
+                        <span class="ts-pill ts-tone-{{ $tone }}"><i class="fas {{ $ui::orderIcon($order->order_status) }}" aria-hidden="true"></i> {{ $order->status_label }}</span>
+                    </div>
 
-                        {{-- รายการสินค้า --}}
-                        <div class="px-4 sm:px-5 py-4">
-                            @if($order->items ?? false)
-                                @foreach($order->items as $item)
-                                    <div class="flex items-center gap-4 {{ !$loop->last ? 'mb-3 pb-3 border-b border-gray-50 dark:border-gray-700' : '' }}">
-                                        {{-- รูปสินค้า --}}
-                                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-                                            @if($item->listing->image_url ?? false)
-                                                <img src="{{ $item->listing->image_url }}" alt="{{ $item->listing->title ?? '' }}" class="w-full h-full object-cover">
-                                            @else
-                                                <div class="w-full h-full flex items-center justify-center text-3xl">🥬</div>
-                                            @endif
-                                        </div>
-                                        {{-- ข้อมูลสินค้า --}}
-                                        <div class="flex-1 min-w-0">
-                                            <h3 class="text-sm sm:text-base font-medium text-gray-900 dark:text-white truncate">
-                                                {{ $item->listing->title ?? 'สินค้า' }}
-                                            </h3>
-                                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                                จำนวน {{ $item->quantity ?? 1 }} {{ $item->listing->unit ?? 'กก.' }}
-                                            </div>
-                                            <div class="text-sm font-bold text-green-600 dark:text-green-400 mt-1">
-                                                ฿{{ number_format($item->total ?? ($item->price * ($item->quantity ?? 1)), 0) }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
+                    <a href="{{ route('taladsod.orders.show', $order) }}" class="ts-row" style="gap:12px; flex-wrap:nowrap; margin-top:12px; text-decoration:none; color:var(--ink);">
+                        <span class="sf-thumb">
+                            @if($first?->image_url)
+                                <img src="{{ $first->image_url }}" alt="" loading="lazy">
                             @else
-                                {{-- ออเดอร์ตลาดสด = สินค้า 1 รายการ (listing) --}}
-                                <div class="flex items-center gap-4">
-                                    <div class="w-16 h-16 rounded-xl overflow-hidden bg-green-50 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                                        @if($order->listing?->primary_image)
-                                            <img src="{{ $order->listing->primary_image }}" alt="{{ $order->listing->title }}" class="w-full h-full object-cover">
-                                        @else
-                                            <i class="fas fa-box text-green-500 text-xl"></i>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ $order->listing->title ?? 'สินค้า' }} x{{ $order->quantity }} {{ $order->listing->unit ?? '' }}
-                                        </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                                            จาก {{ $order->seller->shop_name ?? 'ร้านค้า' }}
-                                            • {{ $order->delivery_type === 'rider' ? 'ส่งด้วยไรเดอร์' : 'รับเองที่ร้าน' }}
-                                        </p>
-                                    </div>
-                                </div>
+                                <span aria-hidden="true">🥬</span>
                             @endif
-                        </div>
+                        </span>
+                        <span style="flex:1; min-width:0;">
+                            <b style="display:block; font-size:14px; overflow-wrap:anywhere;">{{ $first?->title ?? 'สินค้าตลาดสด' }} × {{ (int) ($first?->quantity ?? $order->quantity) }}</b>
+                            @if($first && $first->optionsLabel() !== '')
+                                <span class="ts-muted ts-small" style="display:block;">{{ $first->optionsLabel() }}</span>
+                            @endif
+                            @if($more > 0)
+                                <span class="ts-muted ts-small">และอีก {{ $more }} รายการ</span>
+                            @endif
+                        </span>
+                        <span style="text-align:right;">
+                            <b class="ts-money" style="font-size:17px; display:block;">฿{{ $ui::money($order->grand_total) }}</b>
+                            <span class="ts-muted ts-small">{{ $ui::deliveryLabel($order->delivery_type) }}</span>
+                        </span>
+                    </a>
 
-                        {{-- ส่วนล่าง: ยอดรวมและปุ่ม --}}
-                        <div class="flex items-center justify-between px-4 sm:px-5 py-3 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700">
-                            <div>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">ยอดรวม</span>
-                                <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-                                    ฿{{ number_format($order->grand_total, 0) }}
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                @if($order->canBeCancelled('buyer'))
-                                    <form method="POST" action="{{ route('taladsod.orders.cancel', $order) }}"
-                                          onsubmit="return confirm('ยืนยันยกเลิกออเดอร์นี้? ถ้าชำระผ่าน Wallet แล้ว ระบบจะคืนเงินให้อัตโนมัติ');">
-                                        @csrf
-                                        @method('PUT')
-                                        <button type="submit" class="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors">
-                                            ยกเลิก
-                                        </button>
-                                    </form>
-                                @endif
-                                <a href="{{ route('taladsod.orders.show', $order->id) }}"
-                                   class="px-4 py-2 text-sm font-medium bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
-                                    ดูรายละเอียด
-                                </a>
-                            </div>
+                    <div class="ts-row" style="justify-content:space-between; gap:8px; margin-top:12px;">
+                        <span class="ts-muted ts-small"><i class="fas {{ $order->payment_method === 'cod' ? 'fa-money-bill-wave' : 'fa-wallet' }}" aria-hidden="true"></i> {{ $ui::paymentShortLabel($order->payment_method) }} · {{ $order->payment_status_label }}</span>
+                        <div class="ts-row" style="gap:8px;">
+                            @if($order->canBeCancelled('buyer'))
+                                <button type="button" class="tp-btn tp-btn-sm ts-btn-ghost ts-tone-bad"
+                                        x-on:click="cancelFor = @js($order->order_number); cancelUrl = @js(route('taladsod.orders.cancel', $order)); reason = ''">
+                                    <i class="fas fa-xmark" aria-hidden="true"></i> ยกเลิก
+                                </button>
+                            @endif
+                            @if($order->canBeReviewed())
+                                <a href="{{ route('taladsod.orders.show', $order) }}#review" class="tp-btn tp-btn-sm"><i class="fas fa-star" aria-hidden="true"></i> ให้คะแนน</a>
+                            @endif
+                            <a href="{{ route('taladsod.orders.show', $order) }}" class="ts-btn3d sm ts-tone-gold">ดูรายละเอียด <i class="fas fa-chevron-right" aria-hidden="true"></i></a>
                         </div>
                     </div>
-                @endforeach
-            </div>
-
-            {{-- Pagination --}}
-            @if(method_exists($orders, 'links'))
-                <div class="mt-8">
-                    {{ $orders->withQueryString()->links() }}
+                </article>
+            @empty
+                <div class="tp-card ts-empty" style="padding:44px 18px;">
+                    <span class="em" aria-hidden="true">🧾</span>
+                    <b style="font-size:16px;">{{ $statusFilter ? 'ไม่มีออเดอร์ในสถานะนี้' : 'ยังไม่มีออเดอร์ตลาดสด' }}</b>
+                    <span class="ts-muted">ร้านอร่อยใกล้บ้านรออยู่ สั่งครั้งแรกได้เลย</span>
+                    <a href="{{ route('taladsod.home') }}" class="ts-btn3d ts-tone-gold"><i class="fas fa-carrot" aria-hidden="true"></i> ไปตลาดสด</a>
                 </div>
-            @endif
+            @endforelse
+        </div>
 
-        @else
-            {{-- ===== สถานะไม่มีคำสั่งซื้อ ===== --}}
-            <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-7xl mb-6 animate-float">🛒</div>
-                <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-3">ยังไม่มีคำสั่งซื้อ</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-                    เมื่อคุณสั่งซื้อสินค้า คำสั่งซื้อจะแสดงที่นี่ ลองค้นหาสินค้าสดใกล้บ้านคุณเลย!
-                </p>
-                <a href="{{ route('taladsod.search') }}"
-                   class="inline-flex items-center gap-2 px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors shadow-md hover:shadow-lg">
-                    <i class="fas fa-search"></i> ค้นหาสินค้า
-                </a>
-            </div>
+        @if($orders->hasPages())
+            <div style="margin-top:20px;">{{ $orders->links('vendor.pagination.tp-v4') }}</div>
         @endif
     </div>
 
+    {{-- กล่องยืนยันยกเลิก --}}
+    <div class="ts-dialog-bg" x-show="cancelFor" x-cloak x-transition.opacity x-on:keydown.escape.window="cancelFor = null" x-on:click.self="cancelFor = null">
+        <form method="POST" :action="cancelUrl" class="tp-card ts-dialog ts-stack" role="dialog" aria-modal="true" aria-labelledby="ts-cancel-h" x-on:submit="sending = true">
+            @csrf
+            @method('PUT')
+            <h2 id="ts-cancel-h" class="ts-h2"><i class="fas fa-circle-xmark" style="color:var(--ts-bad);" aria-hidden="true"></i> ยกเลิกออเดอร์ #<span x-text="cancelFor"></span>?</h2>
+            <p class="ts-muted" style="margin:0; font-size:13.5px;">ยกเลิกได้เฉพาะตอนร้านยังไม่รับออเดอร์ — ถ้าจ่ายด้วยกระเป๋าเงินไว้ ระบบคืนเงินให้ทันที</p>
+            <div>
+                <label class="ts-label" for="ts-cancel-reason">เหตุผล <span class="ts-muted" style="font-weight:600;">(ไม่บังคับ)</span></label>
+                <input id="ts-cancel-reason" type="text" name="reason" class="tp-input" maxlength="500" x-model="reason" placeholder="เช่น สั่งผิดร้าน เปลี่ยนใจ">
+            </div>
+            <div class="ts-row" style="justify-content:flex-end;">
+                <button type="button" class="tp-btn" x-on:click="cancelFor = null">ไม่ยกเลิก</button>
+                <button type="submit" class="ts-btn3d ts-tone-bad sm" :disabled="sending"><i class="fas fa-xmark" aria-hidden="true"></i> ยืนยันยกเลิก</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<x-theme-v4.public-footer />
 @endsection

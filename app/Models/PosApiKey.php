@@ -254,9 +254,17 @@ class PosApiKey extends Model
 
     /**
      * อัพเดทเวลาใช้งานล่าสุด
+     *
+     * (2026-09-25) signature ต้องตรงกับ Model::touch($attribute = null) — เดิมเป็น touch(): bool
+     * ทำให้ PHP fatal ทันทีที่โหลดคลาสนี้ (หน้าเครื่อง POS / API Key ของผู้ขายพังทั้งหมด)
+     * ส่งชื่อคอลัมน์มา = ทำงานแบบ touch ปกติของ Eloquent
      */
-    public function touch(): bool
+    public function touch($attribute = null)
     {
+        if ($attribute !== null) {
+            return parent::touch($attribute);
+        }
+
         return $this->update(['last_used_at' => now()]);
     }
 
@@ -284,6 +292,12 @@ class PosApiKey extends Model
         static::creating(function ($model) {
             if (empty($model->key)) {
                 $model->key = self::generateKey();
+            }
+
+            // ตาราง pos_api_keys บน prod มีคอลัมน์ key_prefix แบบ NOT NULL (ใช้ค้นหา/แสดงผล)
+            // → เติมให้อัตโนมัติ (setAttribute ตรง ๆ เพราะไม่อยู่ใน fillable)
+            if (empty($model->getAttribute('key_prefix'))) {
+                $model->setAttribute('key_prefix', substr((string) $model->key, 0, 8));
             }
         });
     }

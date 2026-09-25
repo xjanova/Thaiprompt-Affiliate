@@ -1,179 +1,106 @@
-{{-- Section: All Products + Sidebar (สินค้าทั้งหมด + ตัวกรอง) --}}
+{{--
+ | สินค้าทั้งหมดของร้าน + ตัวกรอง — ธีม V4
+ | ตัวแปร: $store, $layoutSettings (show_sidebar, sidebar_position, products_per_row), $products (paginator), $categories, $isPreview
+ | ตัวกรอง GET store.show: search, category (slug), sort (latest|price_low|price_high|popular|rating|name), min_price, max_price
+ --}}
 @php
-    $lc = $layoutSettings->layout_classes;
-    $productsPerRow = $layoutSettings->products_per_row ?? 4;
-    $gridCols = match($productsPerRow) {
-        2 => 'grid-cols-1 sm:grid-cols-2',
-        3 => 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
-        4 => 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
-        5 => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5',
-        6 => 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6',
-        default => 'grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
-    };
-    $productCardStyle = $layoutSettings->product_card_style ?? 'default';
-    $isPreview = $isPreview ?? false;
+    $vaPreview = (bool) ($isPreview ?? false);
+    $vaMin = [2 => '240px', 3 => '210px', 4 => '172px', 5 => '152px', 6 => '136px'][(int) ($layoutSettings->products_per_row ?? 4)] ?? '172px';
+    $vaSidebar = (bool) ($layoutSettings->show_sidebar ?? true);
+    $vaRight = ($layoutSettings->sidebar_position ?? 'left') === 'right';
+    $vaQ = fn (string $k) => is_scalar(request($k)) ? (string) request($k) : '';
+    $vaSorts = ['latest' => 'ล่าสุด', 'popular' => 'ยอดนิยม', 'price_low' => 'ราคาต่ำ → สูง', 'price_high' => 'ราคาสูง → ต่ำ', 'rating' => 'คะแนนสูงสุด', 'name' => 'ชื่อสินค้า'];
+    $vaTotal = (isset($products) && method_exists($products, 'total')) ? $products->total() : (isset($products) ? $products->count() : 0);
+    $vaFav = [];
+    if (! $vaPreview && auth()->check() && isset($products) && $products->count() > 0) {
+        try {
+            $vaFav = \App\Models\ProductFavorite::where('user_id', auth()->id())
+                ->whereIn('product_id', collect(method_exists($products, 'items') ? $products->items() : $products)->pluck('id')->filter()->all())
+                ->pluck('product_id')->map(fn ($id) => (int) $id)->all();
+        } catch (\Throwable $e) {
+            $vaFav = [];
+        }
+    }
 @endphp
 
-<section class="{{ $lc['section_spacing'] }}">
-    <div class="{{ $lc['container'] }}">
-        <div class="flex flex-col lg:flex-row gap-6">
-            {{-- Filters Sidebar --}}
-            @if($layoutSettings->show_sidebar ?? true)
-                <aside class="lg:w-80 flex-shrink-0" style="order: {{ $layoutSettings->sidebar_position === 'right' ? '2' : '1' }}">
-                    <div class="{{ $lc['sidebar_card'] }}">
-                        {{-- Filters Header --}}
-                        <div class="text-white px-6 py-4" style="background: linear-gradient(135deg, var(--store-primary), var(--store-secondary))">
-                            <h2 class="text-lg font-bold flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"/>
-                                </svg>
-                                ค้นหา & กรอง
-                            </h2>
-                        </div>
-
-                        @if(!$isPreview)
-                            <form method="GET" action="{{ route('store.show', $store->store_slug) }}" class="p-6 space-y-6">
-                                {{-- Search --}}
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ค้นหาสินค้า</label>
-                                    <input type="text" name="search" value="{{ request('search') }}"
-                                           placeholder="พิมพ์ชื่อสินค้า..."
-                                           class="w-full px-4 py-3 {{ $lc['border_radius'] }} border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-opacity-50 transition"
-                                           style="--tw-ring-color: var(--store-primary)">
-                                </div>
-
-                                {{-- Categories --}}
-                                @if(isset($categories) && $categories->count() > 0)
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">หมวดหมู่</label>
-                                    <select name="category" class="w-full px-4 py-3 {{ $lc['border_radius'] }} border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-opacity-50 transition">
-                                        <option value="">ทุกหมวดหมู่</option>
-                                        @foreach($categories as $cat)
-                                            <option value="{{ $cat->slug }}" {{ request('category') == $cat->slug ? 'selected' : '' }}>
-                                                {{ $cat->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                @endif
-
-                                {{-- Sort --}}
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เรียงตาม</label>
-                                    <select name="sort" class="w-full px-4 py-3 {{ $lc['border_radius'] }} border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 focus:ring-2 focus:ring-opacity-50 transition">
-                                        <option value="latest" {{ request('sort') == 'latest' ? 'selected' : '' }}>ล่าสุด</option>
-                                        <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>ราคาต่ำ-สูง</option>
-                                        <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>ราคาสูง-ต่ำ</option>
-                                        <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>ยอดนิยม</option>
-                                    </select>
-                                </div>
-
-                                {{-- Submit --}}
-                                <button type="submit" class="store-button w-full text-white font-semibold py-3 {{ $lc['button'] }} transition hover:shadow-lg">
-                                    ค้นหา
-                                </button>
-                            </form>
-                        @else
-                            {{-- Preview mode: แสดง form แบบ static --}}
-                            <div class="p-6 space-y-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ค้นหาสินค้า</label>
-                                    <input type="text" placeholder="พิมพ์ชื่อสินค้า..." disabled
-                                           class="w-full px-4 py-3 {{ $lc['border_radius'] }} border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">หมวดหมู่</label>
-                                    <select disabled class="w-full px-4 py-3 {{ $lc['border_radius'] }} border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700">
-                                        <option>ทุกหมวดหมู่</option>
-                                    </select>
-                                </div>
-                                <button type="button" class="store-button w-full text-white font-semibold py-3 {{ $lc['button'] }} cursor-not-allowed opacity-80">
-                                    ค้นหา
-                                </button>
-                            </div>
-                        @endif
-                    </div>
-                </aside>
-            @endif
-
-            {{-- Products Grid --}}
-            <div class="flex-1" style="order: {{ $layoutSettings->sidebar_position === 'right' ? '1' : '2' }}">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="{{ $lc['heading'] }} text-gray-800 dark:text-gray-200">
-                        🛍️ สินค้าทั้งหมด
-                        @if(isset($products) && !$isPreview)
-                            <span class="text-gray-500 text-base font-normal">({{ $products->total() }} รายการ)</span>
-                        @endif
-                    </h2>
-                </div>
-
-                @if(isset($products) && $products->count() > 0)
-                    <div class="grid {{ $gridCols }} gap-4 md:gap-6">
-                        @foreach($products as $product)
-                            <a href="{{ $isPreview ? '#' : route('store.product', ['storeSlug' => $store->store_slug, 'productSlug' => $product->slug ?? '#']) }}"
-                               class="product-card-{{ $productCardStyle }} block group {{ $lc['card_hover'] }}">
-                                {{-- Product Image --}}
-                                <div class="aspect-square relative overflow-hidden">
-                                    @if($product->primary_image_url ?? null)
-                                        <img src="{{ $product->primary_image_url }}"
-                                             alt="{{ $product->name }}"
-                                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                             loading="lazy">
-                                    @else
-                                        <div class="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-6xl text-gray-300">
-                                            📦
-                                        </div>
-                                    @endif
-                                    @if(($product->discount_percent ?? 0) > 0)
-                                        <div class="absolute top-2 left-2 store-accent-bg text-white text-xs font-bold px-2 py-1 rounded">
-                                            -{{ $product->discount_percent }}%
-                                        </div>
-                                    @endif
-                                </div>
-                                {{-- Product Info --}}
-                                <div class="p-4">
-                                    <h3 class="font-semibold text-gray-800 dark:text-gray-200 line-clamp-2 mb-2 group-hover:store-primary-text transition">
-                                        {{ $product->name }}
-                                    </h3>
-                                    <div class="flex items-center gap-2 mb-2">
-                                        <span class="text-lg font-bold" style="color: var(--store-primary)">
-                                            ฿{{ number_format($product->sale_price ?? $product->price ?? 0) }}
-                                        </span>
-                                        @if(($product->sale_price ?? null) && ($product->price ?? 0) > ($product->sale_price ?? 0))
-                                            <span class="text-sm text-gray-400 line-through">
-                                                ฿{{ number_format($product->price) }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                    @if(($product->rating_average ?? 0) > 0 || ($product->sales_count ?? 0) > 0)
-                                        <div class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
-                                            @if(($product->rating_average ?? 0) > 0)
-                                                <span class="text-yellow-400">★</span>
-                                                <span>{{ number_format($product->rating_average, 1) }}</span>
-                                                <span class="text-gray-300">|</span>
-                                            @endif
-                                            <span>ขายแล้ว {{ $product->sales_count ?? 0 }}</span>
-                                        </div>
-                                    @endif
-                                </div>
-                            </a>
-                        @endforeach
-                    </div>
-
-                    {{-- Pagination --}}
-                    @if(!$isPreview && $products->hasPages())
-                        <div class="mt-8">
-                            {{ $products->links() }}
-                        </div>
+<section class="sf-wrap sf-section" id="all-products">
+    <div style="display:grid; grid-template-columns:{{ $vaSidebar ? ($vaRight ? 'minmax(0, 1fr) 290px' : '290px minmax(0, 1fr)') : 'minmax(0, 1fr)' }}; gap:18px; align-items:start;" class="va-layout">
+        @if($vaSidebar)
+            <aside style="order:{{ $vaRight ? 2 : 1 }};" class="sf-sticky">
+                <form method="GET" action="{{ $vaPreview ? '#' : route('store.show', $store->store_slug) }}#all-products" class="tp-card sf-stack" style="gap:12px;"
+                      @if($vaPreview) onsubmit="return false;" @endif>
+                    <div class="tp-section-h"><i class="fas fa-filter" style="color:var(--store-a);"></i> ค้นหา &amp; กรอง</div>
+                    <label style="display:flex; flex-direction:column; gap:4px;">
+                        <span class="tp-muted" style="font-size:12px; font-weight:600;">ค้นหาสินค้า</span>
+                        <input type="search" name="search" value="{{ $vaQ('search') }}" class="tp-input" placeholder="พิมพ์ชื่อสินค้า..." style="height:44px;" @disabled($vaPreview)>
+                    </label>
+                    @if(isset($categories) && $categories->count() > 0)
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span class="tp-muted" style="font-size:12px; font-weight:600;">หมวดหมู่</span>
+                            <select name="category" class="tp-input" style="height:44px; padding:0 12px;" @disabled($vaPreview)>
+                                <option value="">ทุกหมวดหมู่</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->slug }}" @selected($vaQ('category') === (string) $cat->slug)>{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
                     @endif
-                @else
-                    <div class="text-center py-16 {{ $lc['card'] }}">
-                        <div class="text-6xl mb-4">🔍</div>
-                        <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">ไม่พบสินค้า</h3>
-                        <p class="text-gray-500 dark:text-gray-400">ลองค้นหาด้วยคำค้นอื่น หรือเลือกหมวดหมู่อื่น</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span class="tp-muted" style="font-size:12px; font-weight:600;">ราคาต่ำสุด</span>
+                            <input type="number" name="min_price" min="0" value="{{ $vaQ('min_price') }}" class="tp-input" style="height:44px;" inputmode="numeric" @disabled($vaPreview)>
+                        </label>
+                        <label style="display:flex; flex-direction:column; gap:4px;">
+                            <span class="tp-muted" style="font-size:12px; font-weight:600;">สูงสุด</span>
+                            <input type="number" name="max_price" min="0" value="{{ $vaQ('max_price') }}" class="tp-input" style="height:44px;" inputmode="numeric" @disabled($vaPreview)>
+                        </label>
                     </div>
-                @endif
+                    <label style="display:flex; flex-direction:column; gap:4px;">
+                        <span class="tp-muted" style="font-size:12px; font-weight:600;">เรียงตาม</span>
+                        <select name="sort" class="tp-input" style="height:44px; padding:0 12px;" @disabled($vaPreview)>
+                            @foreach($vaSorts as $sk => $sl)
+                                <option value="{{ $sk }}" @selected(($vaQ('sort') ?: 'latest') === $sk)>{{ $sl }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <button type="submit" class="sf-btn3d is-block" style="background:linear-gradient(180deg, var(--store-a), var(--store-b));" @disabled($vaPreview)><i class="fas fa-magnifying-glass"></i> ค้นหา</button>
+                    @if(! $vaPreview && request()->hasAny(['search', 'category', 'min_price', 'max_price', 'sort']))
+                        <a href="{{ route('store.show', $store->store_slug) }}#all-products" class="tp-btn" style="text-decoration:none;">ล้างตัวกรอง</a>
+                    @endif
+                </form>
+            </aside>
+        @endif
+
+        <div style="order:{{ $vaRight ? 1 : 2 }}; min-width:0;">
+            <div class="sf-section-h" style="margin-bottom:12px;">
+                <h2 class="sf-title" style="font-size:20px;"><i class="fas fa-bag-shopping" style="color:var(--store-a);"></i> สินค้าทั้งหมด <span class="tp-muted tp-num" style="font-size:14px; font-weight:600;">({{ number_format($vaTotal) }})</span></h2>
             </div>
+            @if(isset($products) && $products->count() > 0)
+                <div class="sf-grid" style="--sf-min:{{ $vaMin }};">
+                    @foreach($products as $product)
+                        <x-theme-v4.product-card :product="$product" :preview="$vaPreview"
+                            :favorited="in_array((int) ($product->id ?? 0), $vaFav, true)"
+                            :href="$vaPreview ? '#' : route('store.product', ['storeSlug' => $store->store_slug, 'productSlug' => $product->slug ?: $product->id])" />
+                    @endforeach
+                </div>
+                @if(! $vaPreview && method_exists($products, 'hasPages') && $products->hasPages())
+                    <div style="margin-top:20px;">{{ $products->fragment('all-products')->links(view()->exists('vendor.pagination.tp-v4') ? 'vendor.pagination.tp-v4' : null) }}</div>
+                @endif
+            @else
+                <div class="tp-card" style="text-align:center; padding:40px 16px;">
+                    <div style="font-size:44px;" aria-hidden="true">🔎</div>
+                    <h3 style="margin:10px 0 6px; font-size:18px; font-weight:800; color:var(--ink);">ไม่พบสินค้า</h3>
+                    <p class="tp-muted" style="margin:0;">ลองค้นหาด้วยคำอื่น หรือเลือกหมวดหมู่อื่น</p>
+                </div>
+            @endif
         </div>
     </div>
 </section>
+
+@once
+@push('styles')
+<style>
+    @media (max-width: 900px) { .va-layout { grid-template-columns:minmax(0, 1fr) !important; } .va-layout > aside { order:1 !important; } }
+</style>
+@endpush
+@endonce

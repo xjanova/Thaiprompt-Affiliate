@@ -1,99 +1,80 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
-@section('title', 'Product Performance - AI Analysis')
+@section('title', 'อันดับสินค้า')
+
+@php
+    $rows = collect($products ?? []);
+    $top3 = $rows->take(3);
+    $medals = ['🥇', '🥈', '🥉'];
+    $scoreTone = fn ($s) => $s >= 70 ? 'ok' : ($s >= 40 ? 'warn' : 'bad');
+    $th = 'padding:11px 14px; text-align:left; font-size:10.5px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); white-space:nowrap;';
+    $row = 'border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);';
+@endphp
 
 @section('content')
-<div class="space-y-6">
-    <div class="bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-4xl font-bold">🏆 Product Performance Matrix</h1>
-                <p class="text-lg mt-2">AI Ranking สินค้าตามยอดขาย, จำนวน, และราคา</p>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <x-seller-kit.header title="อันดับสินค้าขายดี" icon="🏆" crumb="ร้านค้า · วิเคราะห์"
+                         subtitle="จัดอันดับสินค้าใน 30 วันล่าสุด จากยอดขาย จำนวนชิ้น และจำนวนออเดอร์" />
+
+    @include('seller.analytics.partials.nav')
+
+    @if($rows->isNotEmpty())
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;">
+            @foreach($top3 as $i => $p)
+                <div class="tp-card" style="display:flex; flex-direction:column; gap:8px; {{ $i === 0 ? 'background:linear-gradient(140deg, color-mix(in srgb, var(--accent1) 24%, var(--card-bg)), var(--card-bg) 70%);' : '' }}">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:34px;" aria-hidden="true">{{ $medals[$i] }}</span>
+                        <x-seller-kit.pill :tone="$scoreTone((float) $p['performance'])">คะแนน {{ number_format((float) $p['performance'], 0) }}/100</x-seller-kit.pill>
+                    </div>
+                    <div style="font-weight:800; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ $p['product_name'] }}</div>
+                    <div class="tp-num" style="font-size:22px; font-weight:800; color:var(--deep1);">฿{{ number_format((float) $p['revenue'], 2) }}</div>
+                    <div style="font-size:12px; color:var(--ink2);">{{ number_format((int) $p['orders']) }} ออเดอร์ · {{ number_format((float) $p['quantity_sold']) }} ชิ้น</div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            <div class="tp-section-h" style="padding:16px 18px;">📊 ตารางอันดับทั้งหมด</div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:680px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="{{ $th }}">อันดับ</th>
+                            <th style="{{ $th }}">สินค้า</th>
+                            <th style="{{ $th }} text-align:right;">ออเดอร์</th>
+                            <th style="{{ $th }} text-align:right;">ขายได้ (ชิ้น)</th>
+                            <th style="{{ $th }} text-align:right;">ยอดขาย</th>
+                            <th style="{{ $th }} text-align:right;">ราคาเฉลี่ย</th>
+                            <th style="{{ $th }} text-align:center;">คะแนน</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($rows as $i => $p)
+                            <tr style="{{ $row }}">
+                                <td style="{{ $td }} font-weight:800; {{ $i < 3 ? 'color:var(--deep1);' : '' }}" class="tp-num">{{ $i + 1 }}</td>
+                                <td style="{{ $td }} font-weight:700; white-space:normal; min-width:180px;">{{ $p['product_name'] }}</td>
+                                <td style="{{ $td }} text-align:right;" class="tp-num">{{ number_format((int) $p['orders']) }}</td>
+                                <td style="{{ $td }} text-align:right;" class="tp-num">{{ number_format((float) $p['quantity_sold']) }}</td>
+                                <td style="{{ $td }} text-align:right; font-weight:800;" class="tp-num">฿{{ number_format((float) $p['revenue'], 2) }}</td>
+                                <td style="{{ $td }} text-align:right;" class="tp-num">฿{{ number_format((float) $p['avg_price'], 2) }}</td>
+                                <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$scoreTone((float) $p['performance'])">{{ number_format((float) $p['performance'], 0) }}</x-seller-kit.pill></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
-            <a href="{{ route('seller.analytics.ai-insights') }}" class="px-6 py-3 bg-white/20 backdrop-blur-sm rounded-xl hover:bg-white/30 transition">
-                ← กลับ AI Insights
-            </a>
-        </div>
-    </div>
-
-    @if(!empty($products))
-    <!-- Top 3 Products -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        @foreach(array_slice($products, 0, 3) as $index => $product)
-        <div class="bg-gradient-to-br {{ $index === 0 ? 'from-yellow-400 to-yellow-600' : ($index === 1 ? 'from-gray-300 to-gray-500' : 'from-orange-400 to-orange-600') }} rounded-2xl shadow-xl p-6 text-white">
-            <div class="flex items-center justify-between mb-4">
-                <div class="text-5xl">{{ $index === 0 ? '🥇' : ($index === 1 ? '🥈' : '🥉') }}</div>
-                <div class="text-3xl font-bold">#{{ $index + 1 }}</div>
-            </div>
-            <h3 class="font-bold text-xl mb-2 truncate">{{ $product['product_name'] }}</h3>
-            <div class="space-y-2 text-sm">
-                <p><span class="opacity-80">Revenue:</span> <span class="font-bold">฿{{ number_format($product['revenue'], 2) }}</span></p>
-                <p><span class="opacity-80">Orders:</span> <span class="font-bold">{{ $product['orders'] }}</span></p>
-                <p><span class="opacity-80">Quantity:</span> <span class="font-bold">{{ $product['quantity_sold'] }}</span></p>
-                <p><span class="opacity-80">AI Score:</span> <span class="font-bold">{{ $product['performance'] }}/100</span></p>
+            <div style="padding:12px 18px; font-size:12px; color:var(--ink2); border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);">
+                วิธีคิดคะแนน: ยอดขาย 50% · จำนวนชิ้น 30% · จำนวนออเดอร์ 20% (เต็ม 100)
             </div>
         </div>
-        @endforeach
-    </div>
-
-    <!-- All Products Table -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 Full Performance Matrix</h2>
-
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Orders</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty Sold</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Avg Price</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">AI Score</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @foreach($products as $index => $product)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm">
-                            <span class="font-bold {{ $index < 3 ? 'text-yellow-600' : 'text-gray-600' }}">
-                                #{{ $index + 1 }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ $product['product_name'] }}</td>
-                        <td class="px-4 py-3 text-sm text-right text-gray-700">{{ number_format($product['orders']) }}</td>
-                        <td class="px-4 py-3 text-sm text-right text-gray-700">{{ number_format($product['quantity_sold']) }}</td>
-                        <td class="px-4 py-3 text-sm text-right font-semibold text-green-600">฿{{ number_format($product['revenue'], 2) }}</td>
-                        <td class="px-4 py-3 text-sm text-right text-gray-700">฿{{ number_format($product['avg_price'], 2) }}</td>
-                        <td class="px-4 py-3 text-center">
-                            <div class="inline-flex items-center px-3 py-1 rounded-full font-bold text-sm
-                                {{ $product['performance'] >= 70 ? 'bg-green-100 text-green-800' :
-                                   ($product['performance'] >= 40 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') }}">
-                                {{ $product['performance'] }}/100
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <div class="mt-6 p-4 bg-purple-50 rounded-lg">
-            <h3 class="font-bold text-gray-800 mb-2">🤖 AI Scoring Algorithm:</h3>
-            <ul class="text-sm text-gray-700 space-y-1 list-disc list-inside">
-                <li><strong>Revenue Weight:</strong> 50% - ยอดขายรวม</li>
-                <li><strong>Quantity Weight:</strong> 30% - จำนวนที่ขาย</li>
-                <li><strong>Order Count Weight:</strong> 20% - จำนวนออเดอร์</li>
-                <li>คะแนนสูง = สินค้าที่ทำเงินได้ดีที่สุด</li>
-            </ul>
-        </div>
-    </div>
     @else
-    <div class="bg-white rounded-2xl shadow-xl p-12 text-center">
-        <div class="text-6xl mb-4">📦</div>
-        <p class="text-xl text-gray-600">ยังไม่มีข้อมูลการขายในช่วง 30 วันที่ผ่านมา</p>
-    </div>
+        <div class="tp-card">
+            <x-seller-kit.empty icon="📦" title="ยังไม่มียอดขายใน 30 วันล่าสุด" text="เมื่อมีออเดอร์ สินค้าขายดีจะถูกจัดอันดับให้อัตโนมัติ">
+                <a href="{{ route('seller.products.index') }}" class="tp-btn tp-btn-sm">📦 ไปหน้าสินค้า</a>
+            </x-seller-kit.empty>
+        </div>
     @endif
 </div>
 @endsection

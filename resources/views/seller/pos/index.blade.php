@@ -1,230 +1,152 @@
-@extends('layouts.seller')
+@extends('layouts.seller-v4')
 
 @section('title', 'ระบบขายหน้าร้าน (POS)')
 
+@php
+    // ป้ายวิธีชำระเงิน / สถานะรายการขาย (ใช้ซ้ำในตาราง)
+    $payLabels = ['cash' => '💵 เงินสด', 'card' => '💳 บัตร', 'qr' => '📱 QR', 'bank_transfer' => '🏦 โอน', 'other' => '• อื่น ๆ'];
+    $statusMap = ['completed' => ['สำเร็จ', 'ok'], 'refunded' => ['คืนเงิน', 'bad'], 'void' => ['ยกเลิก', 'muted'], 'pending' => ['รอดำเนินการ', 'warn']];
+    $th = 'padding:11px 14px; text-align:left; font-size:10.5px; font-weight:700; color:var(--ink2); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;';
+    $td = 'padding:12px 14px; font-size:13px; color:var(--ink); vertical-align:middle;';
+    $row = 'border-top:1px solid color-mix(in srgb, var(--ink2) 13%, transparent);';
+
+    $quick = [
+        ['🛒', 'เปิดหน้าขาย', route('seller.pos.terminal')],
+        ['🖥️', 'ลงทะเบียนเครื่อง POS', route('seller.pos.terminals')],
+        ['📱', 'จัดการอุปกรณ์', route('seller.pos.devices')],
+        ['🧾', 'รายการขาย', route('seller.pos.transactions')],
+        ['🔐', 'เซสชันการขาย', route('seller.pos.sessions')],
+        ['⚙️', 'ตั้งค่า POS', route('seller.pos.settings')],
+    ];
+@endphp
+
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">🏪 ระบบขายหน้าร้าน (POS)</h1>
-            <p class="text-gray-500 mt-1">จัดการอุปกรณ์ขายหน้าร้านและยอดขายของคุณ</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{{ route('seller.pos.transactions') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                📊 รายการขาย
-            </a>
-            <a href="{{ route('seller.pos.analytics') }}" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                📈 รายงาน
-            </a>
+<div style="display:flex; flex-direction:column; gap:18px;">
+
+    <x-seller-kit.header title="ระบบขายหน้าร้าน (POS)" icon="🏪" crumb="ร้านค้า · POS"
+                         subtitle="ขายหน้าร้าน ดูยอดขาย และจัดการอุปกรณ์ทั้งหมดของร้านในที่เดียว">
+        <a href="{{ route('seller.pos.terminal') }}" class="tp-btn tp-btn-primary">🛒 เปิดหน้าขาย</a>
+        <a href="{{ route('seller.pos.analytics') }}" class="tp-btn">📈 รายงาน</a>
+    </x-seller-kit.header>
+
+    @include('seller.pos.partials.nav')
+
+    {{-- สถิติหลัก --}}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px;">
+        <x-seller-kit.stat label="อุปกรณ์ทั้งหมด" :value="number_format($stats['total_devices'])" icon="📱" tone="info" hint="จำนวนอุปกรณ์ที่ลงทะเบียน" />
+        <x-seller-kit.stat label="ออนไลน์ / พร้อมใช้" :value="number_format($stats['online_devices']).' / '.number_format($stats['active_devices'])" icon="✅" tone="ok" :hint="'เซสชันที่เปิดอยู่ '.number_format($stats['active_sessions'])" />
+        <x-seller-kit.stat label="ยอดขายวันนี้" :value="'฿'.number_format($stats['today_sales'], 2)" icon="💰" tone="gold" :hint="number_format($stats['today_transactions']).' รายการ'" />
+        <x-seller-kit.stat label="ยอดขายเดือนนี้" :value="'฿'.number_format($stats['month_sales'], 2)" icon="📊" tone="violet" :hint="number_format($stats['month_transactions']).' รายการ'" />
+    </div>
+
+    {{-- เมนูด่วน --}}
+    <div class="tp-card" style="padding:18px 20px;">
+        <div class="tp-section-h" style="margin-bottom:12px;">⚡ เมนูด่วน</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px;">
+            @foreach($quick as [$qIcon, $qLabel, $qUrl])
+                <a href="{{ $qUrl }}" class="tp-card tp-card-hover" style="padding:16px 10px; text-align:center; text-decoration:none; box-shadow:var(--card-shadow-sm);">
+                    <div style="font-size:28px;" aria-hidden="true">{{ $qIcon }}</div>
+                    <div style="font-size:12.5px; font-weight:700; color:var(--ink); margin-top:6px;">{{ $qLabel }}</div>
+                </a>
+            @endforeach
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <!-- Total Devices -->
-        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm opacity-80">อุปกรณ์ทั้งหมด</p>
-                    <h3 class="text-3xl font-bold mt-1">{{ $stats['total_devices'] }}</h3>
-                    <p class="text-xs opacity-70 mt-1">จำนวนอุปกรณ์</p>
-                </div>
-                <div class="text-5xl opacity-30">📱</div>
-            </div>
-        </div>
-
-        <!-- Active Devices -->
-        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm opacity-80">อุปกรณ์ใช้งาน</p>
-                    <h3 class="text-3xl font-bold mt-1">{{ $stats['online_devices'] }}/{{ $stats['active_devices'] }}</h3>
-                    <p class="text-xs opacity-70 mt-1">ออนไลน์/พร้อมใช้</p>
-                </div>
-                <div class="text-5xl opacity-30">✅</div>
-            </div>
-        </div>
-
-        <!-- Today Sales -->
-        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm opacity-80">ยอดขายวันนี้</p>
-                    <h3 class="text-3xl font-bold mt-1">฿{{ number_format($stats['today_sales'], 0) }}</h3>
-                    <p class="text-xs opacity-70 mt-1">{{ number_format($stats['today_transactions']) }} รายการ</p>
-                </div>
-                <div class="text-5xl opacity-30">💰</div>
-            </div>
-        </div>
-
-        <!-- Month Sales -->
-        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm opacity-80">ยอดขายเดือนนี้</p>
-                    <h3 class="text-3xl font-bold mt-1">฿{{ number_format($stats['month_sales'], 0) }}</h3>
-                    <p class="text-xs opacity-70 mt-1">{{ number_format($stats['month_transactions']) }} รายการ</p>
-                </div>
-                <div class="text-5xl opacity-30">📊</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">เมนูด่วน</h3>
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <a href="{{ route('seller.pos.terminals') }}" class="flex flex-col items-center p-6 border-2 border-blue-200 bg-blue-50 rounded-lg hover:border-blue-500 hover:bg-blue-100 transition-all">
-                <div class="text-4xl mb-2">🖥️</div>
-                <span class="text-sm font-medium text-blue-700">ลงทะเบียน POS</span>
-            </a>
-
-            <a href="{{ route('seller.pos.devices') }}" class="flex flex-col items-center p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all">
-                <div class="text-4xl mb-2">📱</div>
-                <span class="text-sm font-medium text-gray-700">จัดการอุปกรณ์</span>
-            </a>
-
-            <a href="{{ route('seller.pos.transactions') }}" class="flex flex-col items-center p-6 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all">
-                <div class="text-4xl mb-2">💵</div>
-                <span class="text-sm font-medium text-gray-700">รายการขาย</span>
-            </a>
-
-            <a href="{{ route('seller.pos.sessions') }}" class="flex flex-col items-center p-6 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all">
-                <div class="text-4xl mb-2">🔐</div>
-                <span class="text-sm font-medium text-gray-700">เซสชั่นการขาย</span>
-            </a>
-
-            <a href="{{ route('seller.pos.settings') }}" class="flex flex-col items-center p-6 border-2 border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all">
-                <div class="text-4xl mb-2">⚙️</div>
-                <span class="text-sm font-medium text-gray-700">ตั้งค่า POS</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Active Sessions -->
+    {{-- เซสชันที่เปิดอยู่ --}}
     @if($activeSessions->count() > 0)
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900">🔐 เซสชั่นที่เปิดอยู่</h3>
-            <a href="{{ route('seller.pos.sessions') }}" class="text-blue-600 hover:text-blue-800 text-sm">ดูทั้งหมด →</a>
+        <div class="tp-card" style="padding:0; overflow:hidden;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:16px 18px;">
+                <div class="tp-section-h">🔐 เซสชันที่เปิดอยู่</div>
+                <a href="{{ route('seller.pos.sessions') }}" style="font-size:12.5px; font-weight:700; color:var(--deep1); text-decoration:none;">ดูทั้งหมด →</a>
+            </div>
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:560px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="{{ $th }}">อุปกรณ์</th>
+                            <th style="{{ $th }}">พนักงาน</th>
+                            <th style="{{ $th }}">เริ่มเซสชัน</th>
+                            <th style="{{ $th }} text-align:right;">ระยะเวลา</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($activeSessions as $session)
+                            <tr style="{{ $row }}">
+                                <td style="{{ $td }}">
+                                    <a href="{{ route('seller.pos.sessions.show', $session) }}" style="font-weight:700; color:var(--ink); text-decoration:none;">{{ $session->posDevice->device_name ?? '-' }}</a>
+                                    <div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $session->posDevice->device_code ?? '' }}</div>
+                                </td>
+                                <td style="{{ $td }}">{{ $session->user->name ?? '-' }}</td>
+                                <td style="{{ $td }}" class="tp-num">{{ optional($session->opened_at)->format('d/m/Y H:i') }}</td>
+                                <td style="{{ $td }} text-align:right; color:var(--ink2);">{{ optional($session->opened_at)->diffForHumans() }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">อุปกรณ์</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">พนักงาน</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">เริ่มเซสชั่น</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">ระยะเวลา</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @foreach($activeSessions as $session)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3">
-                            <div class="text-sm font-medium text-gray-900">{{ $session->posDevice->device_name }}</div>
-                            <div class="text-xs text-gray-500">{{ $session->posDevice->device_code }}</div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="text-sm text-gray-900">{{ $session->user->name ?? 'N/A' }}</div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="text-sm text-gray-900">{{ $session->opened_at->format('d/m/Y H:i') }}</div>
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <span class="text-sm text-gray-600">{{ $session->opened_at->diffForHumans() }}</span>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
     @endif
 
-    <!-- Recent Transactions -->
-    @if($recentTransactions->count() > 0)
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900">💰 รายการขายล่าสุด</h3>
-            <a href="{{ route('seller.pos.transactions') }}" class="text-blue-600 hover:text-blue-800 text-sm">ดูทั้งหมด →</a>
+    {{-- รายการขายล่าสุด --}}
+    <div class="tp-card" style="padding:0; overflow:hidden;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:16px 18px;">
+            <div class="tp-section-h">💰 รายการขายล่าสุด</div>
+            @if($recentTransactions->count() > 0)
+                <a href="{{ route('seller.pos.transactions') }}" style="font-size:12.5px; font-weight:700; color:var(--deep1); text-decoration:none;">ดูทั้งหมด →</a>
+            @endif
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">รหัสรายการ</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">อุปกรณ์</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">วิธีชำระ</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">จำนวนเงิน</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
-                    @foreach($recentTransactions as $transaction)
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-3 text-sm text-gray-900">
-                            {{ $transaction->transaction_date->format('d/m/Y H:i') }}
-                        </td>
-                        <td class="px-4 py-3">
-                            <a href="{{ route('seller.pos.transactions.show', $transaction) }}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
-                                {{ $transaction->transaction_code }}
-                            </a>
-                            @if($transaction->receipt_number)
-                            <div class="text-xs text-gray-500">{{ $transaction->receipt_number }}</div>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="text-sm text-gray-900">{{ $transaction->posDevice->device_name ?? 'N/A' }}</div>
-                        </td>
-                        <td class="px-4 py-3">
-                            @if($transaction->payment_method === 'cash')
-                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded">💵 เงินสด</span>
-                            @elseif($transaction->payment_method === 'card')
-                                <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">💳 บัตร</span>
-                            @elseif($transaction->payment_method === 'qr')
-                                <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded">📱 QR</span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <span class="text-sm font-bold text-gray-900">฿{{ number_format($transaction->total_amount, 2) }}</span>
-                        </td>
-                        <td class="px-4 py-3">
-                            @if($transaction->status === 'completed')
-                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">✅ สำเร็จ</span>
-                            @elseif($transaction->status === 'refunded')
-                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">↩️ คืนเงิน</span>
-                            @elseif($transaction->status === 'void')
-                                <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">❌ ยกเลิก</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+        @if($recentTransactions->count() > 0)
+            <div style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse; min-width:720px;">
+                    <thead>
+                        <tr style="background:color-mix(in srgb, var(--ink2) 8%, transparent);">
+                            <th style="{{ $th }}">วันที่</th>
+                            <th style="{{ $th }}">เลขรายการ</th>
+                            <th style="{{ $th }}">อุปกรณ์</th>
+                            <th style="{{ $th }}">วิธีชำระ</th>
+                            <th style="{{ $th }} text-align:right;">ยอดเงิน</th>
+                            <th style="{{ $th }} text-align:center;">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($recentTransactions as $transaction)
+                            @php
+                                [$stLabel, $stTone] = $statusMap[$transaction->status] ?? [$transaction->status, 'muted'];
+                            @endphp
+                            <tr style="{{ $row }}">
+                                <td style="{{ $td }} white-space:nowrap;" class="tp-num">{{ optional($transaction->transaction_date)->format('d/m/Y H:i') }}</td>
+                                <td style="{{ $td }}">
+                                    <a href="{{ route('seller.pos.transactions.show', $transaction) }}" class="tp-num" style="font-weight:700; color:var(--deep1); text-decoration:none;">{{ $transaction->transaction_code }}</a>
+                                    @if($transaction->receipt_number)
+                                        <div class="tp-num" style="font-size:11px; color:var(--ink2);">{{ $transaction->receipt_number }}</div>
+                                    @endif
+                                </td>
+                                <td style="{{ $td }}">{{ $transaction->posDevice->device_name ?? '-' }}</td>
+                                <td style="{{ $td }}">{{ $payLabels[$transaction->payment_method] ?? $transaction->payment_method }}</td>
+                                <td style="{{ $td }} text-align:right; font-weight:800;" class="tp-num">฿{{ number_format($transaction->total_amount, 2) }}</td>
+                                <td style="{{ $td }} text-align:center;"><x-seller-kit.pill :tone="$stTone">{{ $stLabel }}</x-seller-kit.pill></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <x-seller-kit.empty icon="🧾" title="ยังไม่มีรายการขาย" text="เปิดหน้าขายหน้าร้านหรือเชื่อมเครื่อง POS แล้วรายการขายจะแสดงที่นี่">
+                <a href="{{ route('seller.pos.terminal') }}" class="tp-btn tp-btn-primary tp-btn-sm">🛒 เริ่มขายเลย</a>
+            </x-seller-kit.empty>
+        @endif
     </div>
-    @else
-    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-        <div class="text-6xl mb-4">📊</div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">ยังไม่มีรายการขาย</h3>
-        <p class="text-gray-500">เริ่มใช้งานอุปกรณ์ POS เพื่อบันทึกรายการขาย</p>
-    </div>
-    @endif
 
-    <!-- Help Section -->
-    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow p-6">
-        <div class="flex items-start gap-4">
-            <div class="text-4xl">💡</div>
+    {{-- คำแนะนำเริ่มต้น --}}
+    <div class="tp-card" style="padding:18px 20px; background:linear-gradient(120deg, color-mix(in srgb, var(--accent1) 16%, transparent), transparent 70%);">
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+            <span class="tp-tile" style="width:44px; height:44px; font-size:20px;" aria-hidden="true">💡</span>
             <div>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">เริ่มต้นใช้งาน POS</h3>
-                <ul class="text-sm text-gray-700 space-y-2">
-                    <li>✓ ตรวจสอบอุปกรณ์ของคุณในเมนู "จัดการอุปกรณ์"</li>
-                    <li>✓ ตั้งค่า POS ให้เหมาะสมกับร้านค้าของคุณ</li>
-                    <li>✓ เริ่มเซสชั่นการขายผ่านอุปกรณ์ POS</li>
-                    <li>✓ ตรวจสอบรายงานและสถิติได้ทุกเวลา</li>
+                <div class="tp-section-h">เริ่มต้นใช้งาน POS</div>
+                <ul style="margin:8px 0 0; padding-left:18px; font-size:13px; line-height:1.8; color:var(--ink);">
+                    <li>ตั้งค่าใบเสร็จ ภาษี และวิธีชำระเงินที่เมนู “ตั้งค่า”</li>
+                    <li>ขายผ่านเว็บได้ทันทีที่ “ขายหน้าร้าน” หรือเชื่อมโปรแกรม POS ด้วย API Key ที่ “เครื่อง POS”</li>
+                    <li>ติดตามยอดขายรายวันและสินค้าขายดีได้ที่ “รายงาน”</li>
                 </ul>
             </div>
         </div>

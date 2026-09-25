@@ -25,6 +25,8 @@ use Illuminate\View\View;
  */
 class MarketingController extends Controller
 {
+    use \App\Http\Controllers\Seller\Concerns\ResolvesSellerStore;
+
     protected OfficialShopSelectionService $service;
 
     public function __construct(OfficialShopSelectionService $service)
@@ -37,7 +39,7 @@ class MarketingController extends Controller
      */
     public function index(Request $request): View|RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -91,7 +93,7 @@ class MarketingController extends Controller
      */
     public function selectProductForPromotion(Request $request): View|RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -123,7 +125,7 @@ class MarketingController extends Controller
      */
     public function requestPromotion(Request $request, Product $product)
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
         $user = $request->user();
 
         // ตรวจสอบว่ามี store หรือไม่
@@ -171,7 +173,7 @@ class MarketingController extends Controller
      */
     public function promotionHistory(Request $request): View|RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -195,7 +197,7 @@ class MarketingController extends Controller
      */
     public function warnings(Request $request): View|RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -219,7 +221,7 @@ class MarketingController extends Controller
      */
     public function officialShopProducts(Request $request): View|RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -243,7 +245,7 @@ class MarketingController extends Controller
      */
     public function previewScore(Request $request, Product $product): JsonResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -339,7 +341,7 @@ class MarketingController extends Controller
      */
     public function getCooldownStatus(Request $request): JsonResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -374,7 +376,7 @@ class MarketingController extends Controller
      */
     public function requestEditLockedProduct(Request $request, Product $product): RedirectResponse
     {
-        $store = $request->user()->vendorStore;
+        $store = $this->currentStore($request);
 
         // ตรวจสอบว่ามี store หรือไม่
         if (! $store) {
@@ -388,13 +390,19 @@ class MarketingController extends Controller
         }
 
         // ตรวจสอบว่าสินค้าถูกล็อคจริง
-        if (! $product->is_promotion_locked) {
+        // (2026-09-25) Product ไม่มี attribute is_promotion_locked → ดูธงล็อคจากตารางโปรโมท/Official Shop แทน
+        $isLocked = (bool) $product->getAttribute('is_promotion_locked')
+            || NewProductPromotion::where('product_id', $product->id)->where('is_locked', true)->exists()
+            || OfficialShopProduct::where('product_id', $product->id)->where('is_locked', true)->where('is_active', true)->exists();
+
+        if (! $isLocked) {
             return back()->with('error', 'สินค้านี้ไม่ได้ถูกล็อค');
         }
 
         // Redirect ไปหน้าสร้าง Ticket พร้อม context
+        // (GAP-07) เดิมใช้ route seller.tickets.create ที่ไม่มีอยู่ → 500 · ระบบ ticket อยู่ฝั่งสมาชิก (user.tickets.*)
         return redirect()
-            ->route('seller.tickets.create', [
+            ->route('user.tickets.create', [
                 'subject' => 'ขอแก้ไขสินค้าที่ถูกล็อค: '.$product->name,
                 'product_id' => $product->id,
                 'category' => 'product_edit_request',

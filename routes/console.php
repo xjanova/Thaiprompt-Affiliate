@@ -901,6 +901,15 @@ Schedule::command('fresh-market:sweep-orders --limit=100')
     ->onOneServer()
     ->name('fresh-market-sweep-orders');
 
+// 🛒 (2026-09-26) ร้านรถเข็น/ตลาดนัด: ปิดร้านที่เลยเวลาปิด หรือตำแหน่งสดเงียบเกิน 30 นาที
+//    แจ้งเจ้าของร้านในแอป + Expo push (ไม่ใช่ LINE push) · อัปเดตแบบมีเงื่อนไข รันซ้ำได้
+Schedule::command('fresh-market:close-stale-shops --limit=200')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fresh-market-close-stale-shops')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🏍️ (2026-09-25) ระบบไรเดอร์: กระจายงาน / ไรเดอร์ผี / GPS หาย / ลบตำแหน่งเก่า
 // ════════════════════════════════════════════════════════════════
@@ -948,6 +957,18 @@ Schedule::command('notifications:send-scheduled')
     ->withoutOverlapping(5)
     ->onOneServer()
     ->name('notifications-send-scheduled')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
+// 📊 (2026-09-25) รวมสถิติร้านค้ารายวัน (vendor_analytics) — หน้า "วิเคราะห์" ของผู้ขาย
+// ════════════════════════════════════════════════════════════════
+// เดิม command มีแต่ไม่เคยถูกตั้งเวลา → ตารางรายวัน/กราฟ/AI Insights ของผู้ขายว่างตลอด
+// รวมข้อมูลของ "เมื่อวาน" ทุกร้านที่ active วันละครั้งหลังเที่ยงคืน
+Schedule::command('analytics:aggregate-vendor')
+    ->dailyAt('01:20')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('analytics-aggregate-vendor')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════

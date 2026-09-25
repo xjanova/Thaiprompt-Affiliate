@@ -1,825 +1,537 @@
-@extends('layouts.storefront')
+{{--
+ | รายละเอียดคำสั่งซื้อ (ผู้ซื้อ) — ธีม V4 (user-v4)
+ | ข้อมูลจาก OrderController@show: $order (items.product, items.reviews, shippingAddress, shippingProviderRelation, trackingHistory)
+ | - ไทม์ไลน์สถานะ · ลิงก์ติดตามพัสดุ · ติดตามพัสดุแบบเรียลไทม์ (orders.tracking.realtime)
+ | - ส่งด้วยไรเดอร์: การ์ดไรเดอร์ + ลิงก์หน้าติดตาม + แผนที่ตำแหน่งไรเดอร์แบบสด (โพล taladsod.track.location ด้วย token ของงาน
+ |   ซึ่งตรวจสิทธิ์/ความยินยอมแชร์ตำแหน่งของไรเดอร์ที่ฝั่งเซิร์ฟเวอร์แล้ว)
+ | - ชำระใหม่ POST orders.retry-payment · ยืนยันรับของ POST orders.confirm-received · ยกเลิก POST orders.cancel {reason}
+ --}}
+@extends('layouts.user-v4')
 
-@section('title', 'รายละเอียดคำสั่งซื้อ #' . $order->order_number)
+@section('title', 'คำสั่งซื้อ #'.$order->order_number)
+
+@php
+    $odShipping = \App\Services\Shop\ShopPresenter::shipping($order);
+    $odRider = \App\Services\Shop\ShopPresenter::riderSummary($order);
+    $odIsCod = $order->isCod();
+    $odCanPay = $order->canRetryPayment() && ! $odIsCod;
+    $odCancelled = in_array($order->status, ['cancelled', 'refunded'], true);
+
+    // งานไรเดอร์ที่ยังวิ่งอยู่ → แผนที่สด
+    //   ใช้ API ติดตามของผู้ซื้อ (session, ตรวจเจ้าของออเดอร์ + ความยินยอมแชร์ตำแหน่งของไรเดอร์) ถ้ามี
+    //   ไม่มี → สำรองด้วย endpoint ของลิงก์ติดตาม (token ของงาน)
+    $odJob = $order->isRiderDelivery() ? \App\Models\RiderJob::forSource($order)->latest('id')->first() : null;
+    $odActiveStatuses = ['accepted', 'picking_up', 'picked_up', 'delivering'];
+    $odLive = $odJob && $odJob->isTrackable() && in_array($odJob->status, $odActiveStatuses, true);
+    $odStore = $order->store;
+    $odHasApi = \Illuminate\Support\Facades\Route::has('taladsod.delivery.rider-location');
+    $odMapCfg = null;
+    if ($odLive && ($odHasApi || $odJob->tracking_token)) {
+        $odMapCfg = [
+            'mode' => $odHasApi ? 'order' : 'token',
+            'locationUrl' => $odHasApi
+                ? route('taladsod.delivery.rider-location', ['source' => 'shop', 'id' => $order->id])
+                : route('taladsod.track.location', $odJob->tracking_token),
+            'shareUrl' => \Illuminate\Support\Facades\Route::has('taladsod.delivery.share-location')
+                ? route('taladsod.delivery.share-location', ['source' => 'shop', 'id' => $order->id])
+                : null,
+            'drop' => ($odShipping && $odShipping['latitude'] !== null) ? [$odShipping['latitude'], $odShipping['longitude']] : null,
+            'pickup' => ($odStore && $odStore->pickup_latitude) ? [(float) $odStore->pickup_latitude, (float) $odStore->pickup_longitude] : null,
+        ];
+    }
+    $odLive = $odMapCfg !== null;
+
+    // ไทม์ไลน์
+    $odTracking = $order->trackingHistory ? $order->trackingHistory->sortBy('tracked_at') : collect();
+    $odTransit = $odTracking->filter(fn ($e) => in_array($e->status, ['in_transit', 'at_sorting_center', 'out_for_delivery'], true));
+    $odProcessingAt = optional($odTracking->firstWhere('status', 'processing'))->tracked_at ?? ($order->paid_at ?? null);
+    $odIsPrepared = in_array($order->status, ['processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'completed'], true);
+    $odTrackingUrl = null;
+    if ($order->tracking_number) {
+        $odTrackingUrl = $order->shippingProviderRelation
+            ? $order->shippingProviderRelation->getTrackingLink($order->tracking_number)
+            : ($order->tracking_url ?: null);
+    }
+    $odTransitLabels = ['in_transit' => 'กำลังขนส่ง', 'at_sorting_center' => 'ถึงศูนย์กระจายสินค้า', 'out_for_delivery' => 'กำลังนำส่ง'];
+    $odFmt = fn ($d) => $d ? $d->timezone('Asia/Bangkok')->format('d/m/Y H:i') : null;
+
+    $odSteps = [];
+    $odSteps[] = ['icon' => 'fa-file-circle-plus', 'title' => 'สร้างคำสั่งซื้อ', 'time' => $odFmt($order->created_at), 'done' => true];
+    if ($odIsCod) {
+        $odSteps[] = ['icon' => 'fa-money-bill-wave', 'title' => $order->payment_status === 'paid' ? 'ชำระเงินปลายทางแล้ว' : 'ชำระเงินปลายทาง (จ่ายกับไรเดอร์)', 'time' => $odFmt($order->paid_at), 'done' => $order->payment_status === 'paid'];
+    } else {
+        $odSteps[] = ['icon' => 'fa-wallet', 'title' => $order->paid_at ? 'ชำระเงินแล้ว' : 'รอชำระเงิน', 'time' => $odFmt($order->paid_at), 'done' => (bool) $order->paid_at, 'sub' => $order->payment_reference ? 'อ้างอิง: '.$order->payment_reference : null];
+    }
+    $odSteps[] = ['icon' => 'fa-box-open', 'title' => 'ร้านกำลังเตรียมสินค้า', 'time' => $odIsPrepared ? $odFmt($odProcessingAt) : null, 'done' => $odIsPrepared];
+    if ($order->isRiderDelivery()) {
+        $odRiderStarted = $odJob && in_array($odJob->status, ['picked_up', 'delivering', 'delivered', 'completed'], true);
+        $odSteps[] = ['icon' => 'fa-motorcycle', 'title' => $odRider['status_label'] ?? 'รอร้านเรียกไรเดอร์', 'time' => $odJob ? $odFmt($odJob->accepted_at) : null, 'done' => $odRiderStarted, 'now' => $odLive];
+    } else {
+        $odSteps[] = ['icon' => 'fa-truck-fast', 'title' => $order->shipped_at ? 'จัดส่งสินค้าแล้ว' : 'รอจัดส่ง', 'time' => $odFmt($order->shipped_at), 'done' => (bool) $order->shipped_at,
+            'sub' => $order->tracking_number ? 'เลขพัสดุ '.$order->tracking_number.($order->shippingProviderRelation ? ' · '.$order->shippingProviderRelation->name : '') : null];
+        foreach ($odTransit as $u) {
+            $odSteps[] = ['icon' => 'fa-route', 'title' => $u->title ?: ($odTransitLabels[$u->status] ?? $u->status), 'time' => $odFmt($u->tracked_at), 'done' => true, 'sub' => trim(($u->description ?? '').' '.($u->location ? '· '.$u->location : '')) ?: null, 'small' => true];
+        }
+    }
+    $odSteps[] = ['icon' => 'fa-house-circle-check', 'title' => 'ส่งถึงแล้ว', 'time' => $odFmt($order->delivered_at), 'done' => (bool) $order->delivered_at];
+    $odSteps[] = ['icon' => 'fa-star', 'title' => 'สำเร็จ', 'time' => $order->status === 'completed' ? $odFmt($order->completed_at ?? $order->updated_at) : null, 'done' => $order->status === 'completed'];
+
+    $odTone = match ((string) $order->status) {
+        'pending' => 'color:var(--deep2); background:var(--a2soft);',
+        'delivered', 'completed' => 'color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--sf-ok, #4f9e7e), var(--sf-ok2, #3b8467));',
+        'cancelled', 'refunded' => 'color:var(--on-accent, #fff); background:color-mix(in srgb, var(--ink2) 80%, transparent);',
+        default => 'color:var(--deep1); background:var(--a1soft);',
+    };
+@endphp
 
 @section('content')
-<div class="py-6">
+<x-theme-v4.shop-kit />
+@if($odLive)
+    <x-theme-v4.leaflet />
+@endif
 
-    {{-- Breadcrumb: กลับหน้าแรก/ร้านค้า/รายการคำสั่งซื้อ ได้ง่าย (layout storefront ไม่มี navbar) --}}
-    <nav class="container mx-auto px-4 mb-4" aria-label="Breadcrumb">
-        <ol class="flex items-center flex-wrap gap-2 text-sm">
-            <li>
-                <a href="{{ route('home') }}" class="text-gray-500 hover:text-indigo-600 transition flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
-                    หน้าแรก
-                </a>
-            </li>
-            <li><span class="text-gray-400">/</span></li>
-            <li><a href="{{ route('storefront.index') }}" class="text-gray-500 hover:text-indigo-600 transition">ร้านค้า</a></li>
-            <li><span class="text-gray-400">/</span></li>
-            <li><a href="{{ route('orders.index') }}" class="text-gray-500 hover:text-indigo-600 transition">คำสั่งซื้อของฉัน</a></li>
-            <li><span class="text-gray-400">/</span></li>
-            <li><span class="text-gray-700 dark:text-gray-300 font-medium">#{{ $order->order_number }}</span></li>
-        </ol>
+<div style="max-width:1140px; margin:0 auto; display:flex; flex-direction:column; gap:16px;">
+    <nav class="sf-breadcrumb" aria-label="เส้นทาง">
+        <a href="{{ route('orders.index') }}">คำสั่งซื้อของฉัน</a>
+        <span aria-hidden="true">/</span>
+        <span style="color:var(--ink); font-weight:600;">#{{ $order->order_number }}</span>
     </nav>
 
-    <!-- Hero Header -->
-    <div class="relative overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 dark:from-orange-700 dark:via-amber-700 dark:to-yellow-700">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 40px 40px;"></div>
-        </div>
-
-        <div class="container mx-auto px-4 py-8 relative z-10">
-            <div class="flex items-center gap-4 mb-4">
-                <a href="{{ route('orders.index') }}"
-                   class="p-2 bg-white/20 hover:bg-white/30 backdrop-blur-lg rounded-xl border border-white/30 transition-all">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                </a>
-                <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-lg px-4 py-2 rounded-full border border-white/30">
-                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                        <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                    </svg>
-                    <span class="font-semibold text-white">รายละเอียดคำสั่งซื้อ</span>
-                </div>
-            </div>
-
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl md:text-4xl font-black text-white mb-2 tracking-tight drop-shadow-lg">
-                        {{ $order->order_number }}
-                    </h1>
-                    <div class="flex flex-wrap items-center gap-3 text-orange-100">
-                        <span class="px-4 py-2 rounded-full text-sm font-bold bg-{{ $order->status_color }}-500 text-white shadow-lg">
-                            {{ $order->status_label }}
-                        </span>
-                        <span>{{ $order->created_at->format('d/m/Y H:i') }}</span>
-                    </div>
-                </div>
-
-                <div class="text-right">
-                    <div class="text-orange-100 mb-1">ยอดรวมทั้งหมด</div>
-                    <div class="text-4xl font-black text-white drop-shadow-lg">
-                        ฿{{ number_format($order->total_amount, 2) }}
-                    </div>
-                </div>
+    <div class="tp-card" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; background:linear-gradient(135deg, var(--a1soft), var(--a2soft));">
+        <div style="min-width:0;">
+            <div class="tp-muted" style="font-size:12.5px;">คำสั่งซื้อ</div>
+            <h1 class="tp-num" style="margin:2px 0 6px; font-size:clamp(20px, 3.6vw, 28px); font-weight:800; color:var(--ink); overflow-wrap:anywhere;">#{{ $order->order_number }}</h1>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                <span class="tp-pill" style="{{ $odTone }} padding:6px 12px;">{{ $order->status_label }}</span>
+                <span class="tp-muted" style="font-size:12.5px;">{{ $odFmt($order->created_at) }}</span>
+                @if($order->isRiderDelivery())
+                    <span class="tp-pill tp-pill-soft" style="padding:6px 12px;"><i class="fas fa-motorcycle"></i> ส่งด่วนด้วยไรเดอร์</span>
+                @endif
             </div>
         </div>
-
-        <!-- Wave Divider -->
-        <div class="absolute bottom-0 left-0 right-0">
-            <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full dark:hidden">
-                <path d="M0 48h1440V24C1440 24 1200 0 720 0S0 24 0 24v24z" fill="rgb(249, 250, 251)"/>
-            </svg>
-            <svg viewBox="0 0 1440 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full hidden dark:block">
-                <path d="M0 48h1440V24C1440 24 1200 0 720 0S0 24 0 24v24z" fill="rgb(17, 24, 39)"/>
-            </svg>
+        <div style="text-align:right;">
+            <div class="tp-muted" style="font-size:12.5px;">ยอดรวมทั้งหมด</div>
+            <div class="tp-num" style="font-size:clamp(24px, 4vw, 32px); font-weight:800; color:var(--deep1);">฿{{ number_format((float) $order->total_amount, 2) }}</div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 py-8 -mt-6 relative z-10">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    @if(session('error'))
+        <div class="sf-note sf-note-err" role="alert"><i class="fas fa-circle-exclamation"></i> {{ session('error') }}</div>
+    @endif
+    @if(session('success'))
+        <div class="sf-note sf-note-ok" role="status"><i class="fas fa-circle-check"></i> {{ session('success') }}</div>
+    @endif
 
-            <!-- Left Column - Main Details -->
-            <div class="lg:col-span-2 space-y-6">
+    <div class="sf-2col">
+        <div class="sf-stack">
 
-                <!-- Order Timeline -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-700 dark:to-amber-700 text-white px-6 py-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                            </svg>
-                            ติดตามสถานะพัสดุ
-                        </h2>
-                    </div>
-
-                    <div class="p-6">
-                        @php
-                            // รวม tracking history จากร้านค้า (เรียงตาม tracked_at จากเก่าไปใหม่)
-                            $trackingEntries = $order->trackingHistory
-                                ? $order->trackingHistory->sortBy('tracked_at')
-                                : collect();
-
-                            // กรอง tracking entries ที่เป็นสถานะระหว่างทาง (หลังจัดส่ง ก่อนถึง)
-                            $shippingUpdates = $trackingEntries->filter(function ($entry) {
-                                return in_array($entry->status, ['in_transit', 'at_sorting_center', 'out_for_delivery']);
-                            });
-
-                            // ตรวจสอบว่าอยู่ในขั้นตอน "กำลังเตรียมสินค้า"
-                            $isProcessing = in_array($order->status, ['processing', 'shipped', 'in_transit', 'out_for_delivery', 'delivered', 'completed']);
-                            $processingEntry = $trackingEntries->firstWhere('status', 'processing');
-
-                            // ตรวจสอบว่ามีขั้นตอนถัดไปหรือยัง (สำหรับแสดงเส้น connector)
-                            $hasNextAfterCreated = $order->paid_at || $isProcessing || $order->shipped_at || $order->delivered_at;
-                            $hasNextAfterPaid = $isProcessing || $order->shipped_at || $order->delivered_at;
-                            $hasNextAfterProcessing = $order->shipped_at || $order->delivered_at;
-                            $hasNextAfterShipped = $shippingUpdates->count() > 0 || $order->delivered_at;
-
-                            // คำนวณ tracking URL
-                            $trackingUrl = null;
-                            if ($order->tracking_number) {
-                                if ($order->shippingProviderRelation) {
-                                    $trackingUrl = $order->shippingProviderRelation->getTrackingLink($order->tracking_number);
-                                } elseif ($order->tracking_url) {
-                                    $trackingUrl = $order->tracking_url;
-                                }
-                            }
-                        @endphp
-
-                        <div class="relative">
-                            <!-- Timeline -->
-                            <div class="space-y-0">
-
-                                {{-- 1. สร้างคำสั่งซื้อ (แสดงเสมอ) --}}
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd"/>
-                                            </svg>
-                                        </div>
-                                        @if($hasNextAfterCreated)
-                                        <div class="w-1 flex-1 bg-gradient-to-b from-green-300 to-gray-200 dark:to-gray-600 mt-2"></div>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1 pb-6">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">สร้างคำสั่งซื้อ</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                            {{ $order->created_at->format('d/m/Y H:i') }}
-                                        </div>
-                                    </div>
+            {{-- ── ไรเดอร์ (ส่งด่วน) ── --}}
+            @if($odRider)
+                <div class="tp-card sf-stack" style="gap:12px;">
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <span class="tp-tile" style="width:48px; height:48px; font-size:20px; background:linear-gradient(135deg, var(--accent2), var(--deep2));"><i class="fas fa-motorcycle"></i></span>
+                        <div style="flex:1; min-width:200px;">
+                            <div style="font-weight:800; color:var(--ink);">{{ $odRider['status_label'] ?? 'รอร้านเรียกไรเดอร์' }}</div>
+                            @if(! empty($odRider['rider']))
+                                <div class="tp-muted" style="font-size:12.5px;">
+                                    {{ $odRider['rider']['name'] ?? 'ไรเดอร์' }}
+                                    @if(! empty($odRider['rider']['vehicle_plate'])) · ทะเบียน {{ $odRider['rider']['vehicle_plate'] }} @endif
                                 </div>
-
-                                {{-- 2. ชำระเงินแล้ว --}}
-                                @if($order->paid_at)
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-                                            </svg>
-                                        </div>
-                                        @if($hasNextAfterPaid)
-                                        <div class="w-1 flex-1 bg-gradient-to-b from-blue-300 to-gray-200 dark:to-gray-600 mt-2"></div>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1 pb-6">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">ชำระเงินแล้ว</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                            {{ $order->paid_at->format('d/m/Y H:i') }}
-                                        </div>
-                                        @if($order->payment_reference)
-                                        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            อ้างอิง: {{ $order->payment_reference }}
-                                        </div>
-                                        @endif
-                                    </div>
-                                </div>
-                                @endif
-
-                                {{-- 3. กำลังเตรียมสินค้า --}}
-                                @if($isProcessing)
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M5 5a3 3 0 015-2.236A3 3 0 0114.83 6H16a2 2 0 110 4h-5V9a1 1 0 10-2 0v1H4a2 2 0 110-4h1.17C5.06 5.687 5 5.35 5 5zm4 1V5a1 1 0 10-1 1h1zm3 0a1 1 0 10-1-1v1h1z" clip-rule="evenodd"/>
-                                                <path d="M9 11H3v5a2 2 0 002 2h4v-7zM11 18h4a2 2 0 002-2v-5h-6v7z"/>
-                                            </svg>
-                                        </div>
-                                        @if($hasNextAfterProcessing)
-                                        <div class="w-1 flex-1 bg-gradient-to-b from-violet-300 to-gray-200 dark:to-gray-600 mt-2"></div>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1 pb-6">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">กำลังเตรียมสินค้า</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                            @if($processingEntry)
-                                                {{ $processingEntry->tracked_at->format('d/m/Y H:i') }}
-                                            @elseif($order->paid_at)
-                                                {{ $order->paid_at->format('d/m/Y H:i') }}
-                                            @else
-                                                {{ $order->created_at->format('d/m/Y H:i') }}
-                                            @endif
-                                        </div>
-                                        @if($processingEntry && $processingEntry->description)
-                                        <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                            {{ $processingEntry->description }}
-                                        </div>
-                                        @endif
-                                    </div>
-                                </div>
-                                @endif
-
-                                {{-- 4. จัดส่งสินค้าแล้ว --}}
-                                @if($order->shipped_at)
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-                                                <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
-                                            </svg>
-                                        </div>
-                                        @if($hasNextAfterShipped)
-                                        <div class="w-1 flex-1 bg-gradient-to-b from-cyan-300 to-gray-200 dark:to-gray-600 mt-2"></div>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1 pb-6">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">จัดส่งสินค้าแล้ว</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                            {{ $order->shipped_at->format('d/m/Y H:i') }}
-                                        </div>
-                                        @if($order->tracking_number)
-                                        <div class="mt-2 space-y-2">
-                                            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 rounded-lg text-sm font-semibold">
-                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                                                </svg>
-                                                เลขพัสดุ: {{ $order->tracking_number }}
-                                            </div>
-
-                                            @if($order->shippingProviderRelation)
-                                            <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                ขนส่ง: {{ $order->shippingProviderRelation->name }}
-                                            </div>
-                                            @endif
-
-                                            @if($trackingUrl)
-                                            <div>
-                                                <a href="{{ $trackingUrl }}"
-                                                   target="_blank"
-                                                   rel="noopener noreferrer"
-                                                   class="inline-flex items-center gap-2 px-4 py-2.5
-                                                          bg-gradient-to-r from-cyan-600 to-blue-600
-                                                          hover:from-cyan-700 hover:to-blue-700
-                                                          text-white font-bold rounded-xl
-                                                          shadow-lg hover:shadow-xl
-                                                          transform hover:scale-105
-                                                          transition-all text-sm">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                                                    </svg>
-                                                    ติดตามพัสดุที่เว็บไซต์ขนส่ง
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                                    </svg>
-                                                </a>
-                                            </div>
-                                            @endif
-                                        </div>
-                                        @endif
-                                    </div>
-                                </div>
-                                @endif
-
-                                {{-- 5. อัพเดทระหว่างจัดส่ง (จาก tracking history ของร้านค้า) --}}
-                                @foreach($shippingUpdates as $update)
-                                @php
-                                    $updateColors = [
-                                        'in_transit' => ['from-sky-500', 'to-blue-500', 'from-sky-300'],
-                                        'at_sorting_center' => ['from-teal-500', 'to-cyan-500', 'from-teal-300'],
-                                        'out_for_delivery' => ['from-emerald-500', 'to-green-500', 'from-emerald-300'],
-                                    ];
-                                    $colors = $updateColors[$update->status] ?? ['from-gray-500', 'to-gray-500', 'from-gray-300'];
-                                    $updateIcons = [
-                                        'in_transit' => 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0',
-                                        'at_sorting_center' => 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
-                                        'out_for_delivery' => 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
-                                    ];
-                                    $iconPath = $updateIcons[$update->status] ?? 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7';
-                                    $statusLabels = [
-                                        'in_transit' => 'กำลังจัดส่ง',
-                                        'at_sorting_center' => 'ถึงศูนย์กระจายสินค้า',
-                                        'out_for_delivery' => 'กำลังนำส่ง',
-                                    ];
-                                    $isLastUpdate = $loop->last && !$order->delivered_at;
-                                @endphp
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-10 h-10 bg-gradient-to-br {{ $colors[0] }} {{ $colors[1] }} rounded-full flex items-center justify-center text-white shadow-md">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $iconPath }}"/>
-                                            </svg>
-                                        </div>
-                                        @if(!$isLastUpdate)
-                                        <div class="w-1 flex-1 bg-gradient-to-b {{ $colors[2] }} to-gray-200 dark:to-gray-600 mt-2"></div>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1 pb-5">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1 text-sm">
-                                            {{ $update->title ?: ($statusLabels[$update->status] ?? $update->status) }}
-                                        </div>
-                                        @if($update->description)
-                                        <div class="text-xs text-gray-600 dark:text-gray-400">
-                                            {{ $update->description }}
-                                        </div>
-                                        @endif
-                                        @if($update->location)
-                                        <div class="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1 mt-0.5">
-                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                                            </svg>
-                                            {{ $update->location }}
-                                        </div>
-                                        @endif
-                                        <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                                            {{ $update->tracked_at->format('d/m/Y H:i') }}
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-
-                                {{-- 6. จัดส่งสำเร็จ --}}
-                                @if($order->delivered_at)
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center text-white shadow-lg">
-                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                            </svg>
-                                        </div>
-                                        @if($order->status === 'completed')
-                                        <div class="w-1 flex-1 bg-gradient-to-b from-orange-300 to-gray-200 dark:to-gray-600 mt-2"></div>
-                                        @endif
-                                    </div>
-                                    <div class="flex-1 pb-6">
-                                        <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">จัดส่งสำเร็จ</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                            {{ $order->delivered_at->format('d/m/Y H:i') }}
-                                        </div>
-                                        @if($order->status === 'delivered')
-                                        <form action="{{ route('orders.confirm-received', $order->id) }}" method="POST" class="mt-2">
-                                            @csrf
-                                            <button type="submit"
-                                                    class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-lg shadow-lg transition-all text-sm">
-                                                ยืนยันรับสินค้า
-                                            </button>
-                                        </form>
-                                        @endif
-                                    </div>
-                                </div>
-                                @endif
-
-                                {{-- 7. สำเร็จ (ลูกค้ายืนยันรับสินค้าแล้ว) --}}
-                                @if($order->status === 'completed')
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg ring-4 ring-green-200 dark:ring-green-900/50">
-                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="font-bold text-green-700 dark:text-green-400 mb-1">สำเร็จ</div>
-                                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                                            ยืนยันรับสินค้าเรียบร้อยแล้ว
-                                        </div>
-                                    </div>
-                                </div>
-                                @endif
-
-                                {{-- สถานะถัดไปที่รอ (แสดงเป็นจุดจาง) --}}
-                                @if(!$order->paid_at && $order->status === 'pending')
-                                <div class="flex gap-4 opacity-40">
-                                    <div class="flex flex-col items-center">
-                                        <div class="w-12 h-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center text-gray-400 dark:text-gray-500">
-                                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
-                                            </svg>
-                                        </div>
-                                    </div>
-                                    <div class="flex-1 pb-6">
-                                        <div class="font-bold text-gray-400 dark:text-gray-500 mb-1">รอชำระเงิน</div>
-                                        <div class="text-xs text-gray-400 dark:text-gray-500">รอดำเนินการ</div>
-                                    </div>
-                                </div>
-                                @endif
-
-                            </div>
+                            @elseif(($odRider['status'] ?? '') === 'not_requested')
+                                <div class="tp-muted" style="font-size:12.5px;">ร้านจะเรียกไรเดอร์เมื่อเตรียมสินค้าเสร็จ</div>
+                            @endif
                         </div>
+                        @if(! empty($odRider['rider']['phone']))
+                            <a href="tel:{{ preg_replace('/[^0-9+]/', '', (string) $odRider['rider']['phone']) }}" class="tp-btn" style="text-decoration:none; height:44px;"><i class="fas fa-phone"></i> โทรหาไรเดอร์</a>
+                        @endif
+                        @if(! empty($odRider['tracking_url']))
+                            <a href="{{ $odRider['tracking_url'] }}" class="sf-btn3d is-alt" style="min-height:44px;" target="_blank" rel="noopener"><i class="fas fa-location-arrow"></i> หน้าติดตามไรเดอร์</a>
+                        @endif
                     </div>
+
+                    @if($odLive)
+                        <div x-data="tpRiderLive({{ \Illuminate\Support\Js::from($odMapCfg) }})">
+                            <div id="od-rider-map" class="sf-map" style="height:300px;"></div>
+                            <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin-top:8px; font-size:12.5px;">
+                                <span class="tp-muted"><i class="fas fa-circle" :style="live ? 'color:var(--sf-ok, #4f9e7e)' : 'color:var(--ink2)'"></i> <span x-text="statusText"></span></span>
+                                <span class="tp-muted" x-show="updatedAgo" x-text="'อัปเดต ' + updatedAgo"></span>
+                            </div>
+
+                            {{-- ผู้ซื้อเลือกแชร์ตำแหน่งตัวเองให้ไรเดอร์ (หยุดเองเมื่อส่งเสร็จ/ยกเลิก) --}}
+                            <template x-if="cfg.shareUrl && canShare">
+                                <div style="margin-top:12px; padding:12px 14px; border-radius:16px; background:var(--surf); box-shadow:var(--inset-sm); display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                                    <span style="flex:1; min-width:200px;">
+                                        <strong style="display:block; color:var(--ink); font-size:13.5px;"><i class="fas fa-location-crosshairs" style="color:var(--deep1);"></i> แชร์ตำแหน่งของฉันให้ไรเดอร์</strong>
+                                        <span class="tp-muted" style="font-size:12px;" x-text="sharing ? 'ไรเดอร์เห็นตำแหน่งของคุณระหว่างมาส่ง · หยุดแชร์เองเมื่อส่งเสร็จ' : 'ช่วยให้ไรเดอร์หาคุณเจอง่ายขึ้น (ส่งเฉพาะตอนเปิดหน้านี้)'"></span>
+                                    </span>
+                                    <button type="button" class="tp-btn" :class="sharing && 'tp-btn-primary'" style="height:44px;" @click="toggleShare()" :disabled="shareBusy">
+                                        <i class="fas" :class="shareBusy ? 'fa-spinner fa-spin' : (sharing ? 'fa-toggle-on' : 'fa-toggle-off')"></i>
+                                        <span x-text="sharing ? 'กำลังแชร์ — หยุด' : 'เปิดแชร์ตำแหน่ง'"></span>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    @endif
                 </div>
+            @endif
 
-                {{-- Realtime Tracking Panel - แสดงเมื่อมีเลขพัสดุ --}}
-                @if($order->tracking_number && in_array($order->status, ['shipped', 'in_transit', 'out_for_delivery', 'delivered']))
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden"
-                     x-data="trackingPanel()"
-                     x-init="loadTracking()">
-                    <div class="bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-700 dark:to-blue-700 text-white px-6 py-4">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-xl font-bold flex items-center gap-2">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                                </svg>
-                                ติดตามพัสดุ Realtime
-                            </h2>
-                            <button @click="loadTracking(true)"
-                                    :disabled="loading"
-                                    class="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-all disabled:opacity-50"
-                                    title="รีเฟรช">
-                                <svg class="w-5 h-5" :class="loading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                </svg>
-                            </button>
-                        </div>
+            {{-- ── ไทม์ไลน์ ── --}}
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:14px;"><i class="fas fa-timeline" style="color:var(--deep1);"></i> สถานะคำสั่งซื้อ</div>
+                @if($odCancelled)
+                    <div class="sf-note sf-note-err" style="margin-bottom:14px;">
+                        <strong>{{ $order->status === 'refunded' ? 'คืนเงินแล้ว' : 'ยกเลิกคำสั่งซื้อแล้ว' }}</strong>
+                        @if($order->cancelled_at) · {{ $odFmt($order->cancelled_at) }} @endif
+                        @if($order->cancellation_reason)<br>เหตุผล: {{ $order->cancellation_reason }}@endif
                     </div>
-
-                    <div class="p-6">
-                        {{-- Loading state --}}
-                        <div x-show="loading && !trackingData" class="flex items-center justify-center py-8">
-                            <svg class="animate-spin w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="ml-3 text-gray-600 dark:text-gray-400">กำลังดึงข้อมูลจากขนส่ง...</span>
-                        </div>
-
-                        {{-- Tracking Data --}}
-                        <div x-show="trackingData" x-cloak>
-                            {{-- Provider Info --}}
-                            <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
-                                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM3 4h1l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-gray-900 dark:text-gray-100" x-text="trackingData?.provider?.name || 'ขนส่ง'"></div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400" x-text="trackingData?.provider?.hotline ? 'โทร: ' + trackingData.provider.hotline : ''"></div>
-                                    </div>
-                                </div>
-                                <div x-show="trackingData?.from_cache" class="text-xs text-gray-400 dark:text-gray-500">
-                                    จาก cache
-                                </div>
-                            </div>
-
-                            {{-- Status Badge --}}
-                            <div class="mb-4">
-                                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
-                                      :class="getStatusBadgeClass(trackingData?.current_status)">
-                                    <span x-text="trackingData?.current_status_label || 'กำลังตรวจสอบ'"></span>
-                                </span>
-                            </div>
-
-                            {{-- Tracking URL --}}
-                            <div x-show="trackingData?.carrier_data?.tracking_url" class="mb-4">
-                                <a :href="trackingData?.carrier_data?.tracking_url"
-                                   target="_blank"
-                                   rel="noopener noreferrer"
-                                   class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-lg text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-all">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                    </svg>
-                                    ดูรายละเอียดเพิ่มเติมที่เว็บขนส่ง
-                                </a>
-                            </div>
-
-                            {{-- Carrier Message --}}
-                            <div x-show="trackingData?.carrier_data?.message" class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-                                <p class="text-sm text-amber-800 dark:text-amber-300" x-text="trackingData?.carrier_data?.message"></p>
-                            </div>
-
-                            {{-- Timeline from carrier --}}
-                            <div x-show="trackingData?.timeline && trackingData.timeline.length > 0" class="mt-4">
-                                <h4 class="font-bold text-gray-900 dark:text-gray-100 mb-3 text-sm">ประวัติการขนส่ง</h4>
-                                <div class="space-y-3 max-h-64 overflow-y-auto">
-                                    <template x-for="(event, index) in trackingData?.timeline || []" :key="index">
-                                        <div class="flex gap-3">
-                                            <div class="flex flex-col items-center">
-                                                <div class="w-3 h-3 rounded-full mt-1.5 flex-shrink-0"
-                                                     :style="'background-color: ' + (event.color || '#9CA3AF')"></div>
-                                                <div class="w-0.5 h-full bg-gray-200 dark:bg-gray-600 mt-1"
-                                                     x-show="index < (trackingData?.timeline?.length || 0) - 1"></div>
-                                            </div>
-                                            <div class="flex-1 pb-3">
-                                                <div class="font-semibold text-sm text-gray-900 dark:text-gray-100" x-text="event.title"></div>
-                                                <div x-show="event.description" class="text-xs text-gray-600 dark:text-gray-400" x-text="event.description"></div>
-                                                <div x-show="event.location" class="text-xs text-gray-500 dark:text-gray-500 flex items-center gap-1 mt-0.5">
-                                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                                                    </svg>
-                                                    <span x-text="event.location"></span>
-                                                </div>
-                                                <div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5"
-                                                     x-text="event.timestamp_display || event.timestamp"></div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-
-                            {{-- Error state --}}
-                            <div x-show="error" class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                <p class="text-sm text-red-600 dark:text-red-400" x-text="error"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                function trackingPanel() {
-                    return {
-                        loading: false,
-                        trackingData: null,
-                        error: null,
-
-                        async loadTracking(forceRefresh = false) {
-                            this.loading = true;
-                            this.error = null;
-
-                            try {
-                                const url = '{{ route("orders.tracking.realtime", $order->id) }}' + (forceRefresh ? '?refresh=1' : '');
-                                const response = await fetch(url, {
-                                    headers: {
-                                        'Accept': 'application/json',
-                                        'X-Requested-With': 'XMLHttpRequest',
-                                    }
-                                });
-                                const data = await response.json();
-
-                                if (data.success) {
-                                    this.trackingData = data;
-                                } else {
-                                    this.error = data.message || 'ไม่สามารถดึงข้อมูลติดตามได้';
-                                }
-                            } catch (e) {
-                                this.error = 'เกิดข้อผิดพลาดในการเชื่อมต่อ';
-                            } finally {
-                                this.loading = false;
-                            }
-                        },
-
-                        getStatusBadgeClass(status) {
-                            const classes = {
-                                'delivered': 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
-                                'out_for_delivery': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-                                'in_transit': 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300',
-                                'at_sorting_center': 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300',
-                                'picked_up': 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
-                                'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
-                                'failed_delivery': 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
-                                'returned': 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
-                            };
-                            return classes[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-                        }
-                    }
-                }
-                </script>
                 @endif
-
-                <!-- Order Items -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-700 dark:to-amber-700 text-white px-6 py-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/>
-                            </svg>
-                            รายการสินค้า ({{ $order->items->count() }} รายการ)
-                        </h2>
-                    </div>
-
-                    <div class="p-6">
-                        <div class="space-y-4">
-                            @foreach($order->items as $item)
-                            <div class="flex gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600">
-                                <div class="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-lg overflow-hidden flex-shrink-0">
-                                    @if($item->product_image)
-                                        <img src="{{ asset($item->product_image) }}"
-                                             alt="{{ $item->product_name }}"
-                                             class="w-full h-full object-cover">
-                                    @else
-                                        <div class="w-full h-full flex items-center justify-center text-gray-400">
-                                            <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                                            </svg>
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="flex-1">
-                                    <div class="font-bold text-gray-900 dark:text-gray-100 mb-1">
-                                        {{ $item->product_name }}
-                                    </div>
-                                    <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                                        SKU: {{ $item->product_sku }}
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <div class="text-sm text-gray-600 dark:text-gray-300">
-                                            {{ $item->quantity }} x ฿{{ number_format($item->unit_price, 2) }}
-                                        </div>
-                                        <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-                                            ฿{{ number_format($item->total, 2) }}
-                                        </div>
-                                    </div>
-
-                                    <!-- Review Button -->
-                                    @if(in_array($order->status, ['delivered', 'completed']) && !$item->hasReview())
-                                    <div class="mt-3">
-                                        <a href="{{ route('orders.review.form', [$order->id, $item->id]) }}"
-                                           class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white font-bold rounded-lg shadow-lg transition-all text-sm">
-                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                            </svg>
-                                            รีวิวสินค้า
-                                        </a>
-                                    </div>
-                                    @elseif($item->hasReview())
-                                    <div class="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg text-sm font-semibold">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                        </svg>
-                                        รีวิวแล้ว
-                                    </div>
-                                    @endif
-                                </div>
+                <ol class="sf-tl">
+                    @foreach($odSteps as $i => $step)
+                        @php $odNext = ! $step['done'] && ($i === 0 || $odSteps[$i - 1]['done']) && ! $odCancelled; @endphp
+                        <li class="sf-tl-item {{ $step['done'] ? '' : 'is-todo' }} {{ ! empty($step['now']) || $odNext ? 'is-now' : '' }}">
+                            <span class="sf-tl-dot" style="{{ ! empty($step['small']) ? 'width:32px; height:32px; margin:4px;' : '' }}"><i class="fas {{ $step['icon'] }}"></i></span>
+                            <div style="min-width:0; padding-top:8px;">
+                                <div style="font-weight:{{ $step['done'] ? 800 : 600 }}; color:{{ $step['done'] ? 'var(--ink)' : 'var(--ink2)' }}; font-size:{{ ! empty($step['small']) ? '13px' : '14px' }};">{{ $step['title'] }}</div>
+                                @if(! empty($step['time']))<div class="tp-muted tp-num" style="font-size:12px;">{{ $step['time'] }}</div>@endif
+                                @if(! empty($step['sub']))<div class="tp-muted" style="font-size:12px; overflow-wrap:anywhere;">{{ $step['sub'] }}</div>@endif
                             </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
+                        </li>
+                    @endforeach
+                </ol>
+
+                @if($odTrackingUrl)
+                    <a href="{{ $odTrackingUrl }}" target="_blank" rel="noopener noreferrer" class="tp-btn" style="text-decoration:none; height:44px;"><i class="fas fa-up-right-from-square"></i> ติดตามพัสดุที่เว็บขนส่ง</a>
+                @endif
+                @if($order->status === 'delivered')
+                    <form method="POST" action="{{ route('orders.confirm-received', $order->id) }}" style="margin:12px 0 0;" onsubmit="return confirm(@js('ยืนยันว่าได้รับสินค้าครบถ้วนแล้ว?'))">
+                        @csrf
+                        <button type="submit" class="sf-btn3d"><i class="fas fa-check"></i> ยืนยันว่าได้รับสินค้าแล้ว</button>
+                    </form>
+                @endif
             </div>
 
-            <!-- Right Column - Summary & Address -->
-            <div class="space-y-6">
-
-                <!-- Order Summary -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-4">
-                    <div class="bg-gradient-to-r from-orange-600 to-amber-600 dark:from-orange-700 dark:to-amber-700 text-white px-6 py-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                            </svg>
-                            สรุปคำสั่งซื้อ
-                        </h2>
+            {{-- ── ติดตามพัสดุเรียลไทม์ (มีเลขพัสดุ) ── --}}
+            @if($order->tracking_number && in_array($order->status, ['shipped', 'in_transit', 'out_for_delivery', 'delivered'], true))
+                <div class="tp-card sf-stack" style="gap:10px;" x-data="tpParcelTracking(@js(route('orders.tracking.realtime', $order->id)))">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                        <div class="tp-section-h"><i class="fas fa-map-location-dot" style="color:var(--deep1);"></i> ติดตามพัสดุเรียลไทม์</div>
+                        <button type="button" class="tp-icon-btn" @click="load(true)" :disabled="loading" aria-label="รีเฟรช"><i class="fas fa-rotate" :class="loading && 'fa-spin'"></i></button>
                     </div>
-
-                    <div class="p-6 space-y-3">
-                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                            <span>ยอดรวมสินค้า</span>
-                            <span class="font-semibold text-gray-900 dark:text-gray-100">
-                                ฿{{ number_format($order->subtotal, 2) }}
-                            </span>
-                        </div>
-
-                        @if($order->discount_amount > 0)
-                        <div class="flex justify-between text-green-600 dark:text-green-400">
-                            <span>ส่วนลด</span>
-                            <span class="font-semibold">
-                                -฿{{ number_format($order->discount_amount, 2) }}
-                            </span>
-                        </div>
-                        @endif
-
-                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                            <span>ค่าจัดส่ง</span>
-                            <span class="font-semibold text-gray-900 dark:text-gray-100">
-                                @if($order->shipping_fee > 0)
-                                    ฿{{ number_format($order->shipping_fee, 2) }}
-                                @else
-                                    <span class="text-green-600 dark:text-green-400">ฟรี</span>
-                                @endif
-                            </span>
-                        </div>
-
-                        @if($order->tax_amount > 0)
-                        <div class="flex justify-between text-gray-600 dark:text-gray-400">
-                            <span>ภาษี</span>
-                            <span class="font-semibold text-gray-900 dark:text-gray-100">
-                                ฿{{ number_format($order->tax_amount, 2) }}
-                            </span>
-                        </div>
-                        @endif
-
-                        <div class="pt-3 border-t-2 border-gray-200 dark:border-gray-600"></div>
-
-                        <div class="flex justify-between items-center">
-                            <span class="text-lg font-bold text-gray-900 dark:text-gray-100">ยอดรวมทั้งหมด</span>
-                            <span class="text-2xl font-black text-orange-600 dark:text-orange-400">
-                                ฿{{ number_format($order->total_amount, 2) }}
-                            </span>
-                        </div>
-
-                        <div class="pt-3 border-t border-gray-200 dark:border-gray-600">
-                            <div class="flex items-center gap-2 text-sm">
-                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
-                                    <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
-                                </svg>
-                                <span class="text-gray-600 dark:text-gray-400">
-                                    {{ $order->payment_method }}
-                                </span>
+                    <p x-show="loading && !data" class="tp-muted" style="margin:0; font-size:13px;"><i class="fas fa-spinner fa-spin"></i> กำลังดึงข้อมูลจากขนส่ง...</p>
+                    <p x-show="error" x-cloak x-text="error" class="sf-note sf-note-err" style="margin:0;"></p>
+                    <template x-if="data">
+                        <div class="sf-stack" style="gap:10px;">
+                            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                                <span class="tp-pill tp-pill-gold" x-text="data.current_status_label || 'กำลังตรวจสอบ'"></span>
+                                <span class="tp-muted" style="font-size:12.5px;" x-text="(data.provider && data.provider.name) ? data.provider.name : ''"></span>
                             </div>
+                            <template x-if="data.carrier_data && data.carrier_data.message">
+                                <div class="sf-note sf-note-warn" style="font-size:12.5px;" x-text="data.carrier_data.message"></div>
+                            </template>
+                            <ol class="sf-tl" style="max-height:280px; overflow-y:auto;">
+                                <template x-for="(ev, k) in (data.timeline || [])" :key="k">
+                                    <li class="sf-tl-item">
+                                        <span class="sf-tl-dot" style="width:28px; height:28px; margin:6px;"><i class="fas fa-circle" style="font-size:8px;"></i></span>
+                                        <div style="padding-top:6px; min-width:0;">
+                                            <div style="font-weight:700; font-size:13px; color:var(--ink);" x-text="ev.title"></div>
+                                            <div class="tp-muted" style="font-size:12px;" x-show="ev.description" x-text="ev.description"></div>
+                                            <div class="tp-muted" style="font-size:12px;" x-show="ev.location" x-text="ev.location"></div>
+                                            <div class="tp-muted tp-num" style="font-size:11.5px;" x-text="ev.timestamp_display || ev.timestamp"></div>
+                                        </div>
+                                    </li>
+                                </template>
+                            </ol>
                         </div>
-                    </div>
+                    </template>
                 </div>
+            @endif
 
-                <!-- Shipping Address -->
-                @if($order->shippingAddress)
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-700 dark:to-pink-700 text-white px-6 py-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                            </svg>
-                            ที่อยู่จัดส่ง
-                        </h2>
-                    </div>
-
-                    <div class="p-6">
-                        <div class="space-y-2 text-gray-900 dark:text-gray-100">
-                            <div class="font-bold text-lg">{{ $order->shippingAddress->full_name }}</div>
-                            <div class="text-gray-600 dark:text-gray-400">{{ $order->shippingAddress->phone }}</div>
-                            <div class="text-gray-600 dark:text-gray-400 leading-relaxed">
-                                {{ $order->shippingAddress->address }}<br>
-                                {{ $order->shippingAddress->district }} {{ $order->shippingAddress->city }}<br>
-                                {{ $order->shippingAddress->province }} {{ $order->shippingAddress->postal_code }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @endif
-
-                <!-- ปุ่มชำระเงิน (สำหรับคำสั่งซื้อที่ยังไม่ได้ชำระ) -->
-                @if($order->canRetryPayment())
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border-2 border-green-300 dark:border-green-700 overflow-hidden">
-                    <div class="bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-700 dark:to-emerald-700 text-white px-6 py-4">
-                        <h2 class="text-xl font-bold flex items-center gap-2">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
-                                <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
-                            </svg>
-                            รอชำระเงิน
-                        </h2>
-                    </div>
-                    <div class="p-6">
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">
-                            คำสั่งซื้อนี้ยังไม่ได้ชำระเงิน กดปุ่มด้านล่างเพื่อดำเนินการชำระเงิน
-                        </p>
-                        <form action="{{ route('orders.retry-payment', $order->id) }}" method="POST">
-                            @csrf
-                            <button type="submit"
-                                    class="w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
-                                    <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
-                                </svg>
-                                ชำระเงินตอนนี้
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                @endif
-
-                <!-- ยกเลิกคำสั่งซื้อ -->
-                @if($order->canBeCancelled())
-                <div id="cancel-section" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-red-200 dark:border-red-800 overflow-hidden">
-                    <div class="p-6">
-                        <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-3">ยกเลิกคำสั่งซื้อ</h3>
-                        @if(in_array($order->status, ['paid', 'processing']))
-                            <div class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
-                                <p class="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                                    </svg>
-                                    คำสั่งซื้อนี้ชำระเงินแล้ว — หากยกเลิก ระบบจะคืนเงินเข้า Wallet อัตโนมัติ
-                                </p>
-                            </div>
-                        @endif
-                        <form action="{{ route('orders.cancel', $order->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคำสั่งซื้อนี้?{{ in_array($order->status, ['paid', 'processing']) ? '\n\nคำสั่งซื้อนี้ชำระเงินแล้ว ระบบจะดำเนินการคืนเงินให้อัตโนมัติ' : '' }}')">
-                            @csrf
-                            <textarea name="reason"
-                                      required
-                                      class="w-full px-4 py-3 rounded-xl border-2 {{ $errors->has('reason') ? 'border-red-500 dark:border-red-400' : 'border-gray-200 dark:border-gray-600' }} bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-red-500 dark:focus:border-red-400 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all mb-1"
-                                      rows="3"
-                                      placeholder="กรุณาระบุเหตุผลในการยกเลิก">{{ old('reason') }}</textarea>
-                            @error('reason')
-                                <p class="text-red-500 dark:text-red-400 text-sm mb-3">{{ $message }}</p>
-                            @enderror
-                            @if(!$errors->has('reason'))
-                                <div class="mb-3"></div>
+            {{-- ── รายการสินค้า ── --}}
+            <div class="tp-card sf-stack" style="gap:12px;">
+                <div class="tp-section-h"><i class="fas fa-bag-shopping" style="color:var(--deep1);"></i> รายการสินค้า ({{ $order->items->count() }})</div>
+                @foreach($order->items as $item)
+                    @php
+                        $odImg = \App\Services\Shop\ShopPresenter::imageUrl($item->product_image);
+                        $odReviewed = $item->relationLoaded('reviews') ? $item->reviews->isNotEmpty() : $item->hasReview();
+                    @endphp
+                    <div style="display:flex; gap:12px; align-items:flex-start; padding:12px; border-radius:16px; background:var(--surf); box-shadow:var(--raise);">
+                        <span class="sf-thumb" style="width:70px; height:70px;">@if($odImg)<img src="{{ $odImg }}" alt="" loading="lazy">@else 📦 @endif</span>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-weight:700; color:var(--ink); overflow-wrap:anywhere;">{{ $item->product_name }}</div>
+                            @if(is_array($item->product_attributes) && $item->product_attributes !== [])
+                                <div class="tp-muted" style="font-size:12px;">
+                                    @foreach($item->product_attributes as $ak => $av)
+                                        @if(is_scalar($av)){{ $ak }}: {{ $av }}@if(! $loop->last), @endif @endif
+                                    @endforeach
+                                </div>
                             @endif
-                            <button type="submit"
-                                    class="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                </svg>
-                                ยกเลิกคำสั่งซื้อ
-                            </button>
-                        </form>
+                            <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; margin-top:4px;">
+                                <span class="tp-muted tp-num" style="font-size:12.5px;">{{ (int) $item->quantity }} × ฿{{ number_format((float) $item->unit_price, 2) }}</span>
+                                <strong class="tp-num" style="color:var(--deep1);">฿{{ number_format((float) $item->total, 2) }}</strong>
+                            </div>
+                            @if(in_array($order->status, ['delivered', 'completed'], true))
+                                <div style="margin-top:8px;">
+                                    @if($odReviewed)
+                                        <span class="tp-pill tp-pill-soft"><i class="fas fa-circle-check"></i> รีวิวแล้ว</span>
+                                    @else
+                                        <a href="{{ route('orders.review.form', [$order->id, $item->id]) }}" class="tp-btn tp-btn-sm tp-btn-primary" style="text-decoration:none;"><i class="fas fa-star"></i> รีวิวสินค้า</a>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
                     </div>
-                </div>
-                @endif
+                @endforeach
             </div>
         </div>
+
+        {{-- ── สรุป / ที่อยู่ / ชำระ / ยกเลิก ── --}}
+        <aside class="sf-sticky sf-stack">
+            <div class="tp-card sf-stack" style="gap:10px;">
+                <div class="tp-section-h">สรุปคำสั่งซื้อ</div>
+                <div class="sf-row"><span>ยอดรวมสินค้า</span><strong class="tp-num">฿{{ number_format((float) $order->subtotal, 2) }}</strong></div>
+                @if((float) $order->discount_amount > 0)
+                    <div class="sf-row"><span>ส่วนลด</span><strong class="tp-num" style="color:var(--sf-ok, #4f9e7e);">-฿{{ number_format((float) $order->discount_amount, 2) }}</strong></div>
+                @endif
+                <div class="sf-row"><span>ค่าจัดส่ง</span><strong class="tp-num">{{ (float) $order->shipping_fee > 0 ? '฿'.number_format((float) $order->shipping_fee, 2) : 'ฟรี' }}</strong></div>
+                @if((float) ($order->tax_amount ?? 0) > 0)
+                    <div class="sf-row"><span>ภาษี</span><strong class="tp-num">฿{{ number_format((float) $order->tax_amount, 2) }}</strong></div>
+                @endif
+                <div class="sf-total"><span style="font-weight:800; color:var(--ink);">รวมทั้งหมด</span><span class="tp-num">฿{{ number_format((float) $order->total_amount, 2) }}</span></div>
+                <div class="sf-row" style="font-size:12.5px;"><span>ชำระด้วย</span><strong>{{ \App\Support\Shop\PaymentMethod::labelTh($order->payment_method) }}</strong></div>
+                <div class="sf-row" style="font-size:12.5px;"><span>สถานะการชำระ</span><strong>{{ $odIsCod && $order->payment_status !== 'paid' ? 'จ่ายเมื่อรับของ' : \App\Services\Shop\ShopPresenter::paymentStatusLabel($order->payment_status) }}</strong></div>
+            </div>
+
+            <div class="tp-card">
+                <div class="tp-section-h" style="margin-bottom:8px;"><i class="fas fa-location-dot" style="color:var(--deep1);"></i> ที่อยู่จัดส่ง</div>
+                @if($odShipping)
+                    <div style="font-size:13.5px; line-height:1.65; color:var(--ink2); overflow-wrap:anywhere;">
+                        <strong style="color:var(--ink);">{{ $odShipping['name'] }}</strong><br>
+                        {{ $odShipping['phone'] }}<br>
+                        {{ $odShipping['full_address'] ?: trim(implode(' ', array_filter([$odShipping['address'], $odShipping['address_line_2'], $odShipping['subdistrict'], $odShipping['district'], $odShipping['province'], $odShipping['postal_code']]))) }}
+                        @if($odShipping['notes'])<br><span style="font-size:12.5px;">หมายเหตุ: {{ $odShipping['notes'] }}</span>@endif
+                    </div>
+                @else
+                    <div class="tp-muted" style="font-size:13px;"><i class="fas fa-cloud-arrow-down"></i> สินค้าดิจิทัล — ไม่ต้องจัดส่ง</div>
+                @endif
+                @if($order->customer_notes)
+                    <div class="sf-note sf-note-info" style="margin-top:10px; font-size:12.5px; overflow-wrap:anywhere;"><strong>หมายเหตุถึงร้าน:</strong> {{ $order->customer_notes }}</div>
+                @endif
+            </div>
+
+            @if($odCanPay)
+                <div class="tp-card sf-stack" style="gap:10px;">
+                    <div class="tp-section-h"><i class="fas fa-hourglass-half" style="color:var(--deep2);"></i> รอชำระเงิน</div>
+                    <p class="tp-muted" style="margin:0; font-size:13px;">คำสั่งซื้อนี้ยังไม่ได้ชำระ กดเพื่อชำระเงินต่อ</p>
+                    <form method="POST" action="{{ route('orders.retry-payment', $order->id) }}" style="margin:0;" x-data="{ busy: false }" @submit="if (busy) { $event.preventDefault(); } busy = true">
+                        @csrf
+                        <button type="submit" class="sf-btn3d is-block" :disabled="busy"><i class="fas fa-credit-card"></i> ชำระเงินตอนนี้</button>
+                    </form>
+                </div>
+            @endif
+
+            @if($order->canBeCancelled())
+                <div class="tp-card sf-stack" id="cancel" style="gap:10px;" x-data="{ reason: @js(old('reason', '')), busy: false }">
+                    <div class="tp-section-h" style="color:var(--sf-sale, #e0564f);"><i class="fas fa-ban"></i> ยกเลิกคำสั่งซื้อ</div>
+                    @if($order->payment_status === 'paid')
+                        <div class="sf-note sf-note-warn" style="font-size:12.5px;">คำสั่งซื้อนี้ชำระเงินแล้ว — หากยกเลิก ระบบจะคืนเงินเข้ากระเป๋าเงินอัตโนมัติ</div>
+                    @endif
+                    <form method="POST" action="{{ route('orders.cancel', $order->id) }}" class="sf-stack" style="gap:10px;"
+                          @submit="if (busy || !confirm(@js($order->payment_status === 'paid' ? 'ยืนยันยกเลิกคำสั่งซื้อ? ระบบจะคืนเงินเข้ากระเป๋าให้อัตโนมัติ' : 'ยืนยันยกเลิกคำสั่งซื้อนี้?'))) { $event.preventDefault(); return; } busy = true">
+                        @csrf
+                        <label for="od-cancel-reason" class="tp-muted" style="font-size:12.5px; font-weight:600;">เหตุผลในการยกเลิก <span style="color:var(--sf-sale, #e0564f);">*</span></label>
+                        <textarea id="od-cancel-reason" name="reason" rows="3" maxlength="500" required class="tp-input" x-model="reason" placeholder="เช่น สั่งผิด ต้องการเปลี่ยนที่อยู่"></textarea>
+                        @error('reason')
+                            <div class="sf-note sf-note-err" style="padding:8px 12px;">{{ $message }}</div>
+                        @enderror
+                        <button type="submit" class="tp-btn" style="height:46px; color:var(--sf-sale, #e0564f);" :disabled="busy || reason.trim().length === 0"><i class="fas fa-ban"></i> ยืนยันยกเลิก</button>
+                    </form>
+                </div>
+            @endif
+        </aside>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    /**
+     * ติดตามพัสดุเรียลไทม์จากขนส่ง (orders.tracking.realtime)
+     */
+    function tpParcelTracking(url) {
+        return {
+            loading: false,
+            data: null,
+            error: '',
+            init() { this.load(false); },
+            async load(force) {
+                this.loading = true;
+                this.error = '';
+                try {
+                    const res = await fetch(url + (force ? '?refresh=1' : ''), { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                    const d = await res.json().catch(() => null);
+                    if (d && d.success) { this.data = d; } else { this.error = (d && d.message) || 'ยังดึงข้อมูลจากขนส่งไม่ได้ ลองใหม่ภายหลัง'; }
+                } catch (e) {
+                    this.error = 'เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่';
+                } finally {
+                    this.loading = false;
+                }
+            }
+        };
+    }
+
+    /**
+     * แผนที่ไรเดอร์แบบสด — โพลตำแหน่งทุก 10 วินาทีระหว่างงานยังวิ่งอยู่
+     * (เซิร์ฟเวอร์ส่งตำแหน่งเฉพาะเมื่อไรเดอร์ยินยอมแชร์และงานยังไม่จบ)
+     */
+    function tpRiderLive(cfg) {
+        return {
+            cfg: cfg,
+            map: null,
+            riderMarker: null,
+            live: false,
+            statusText: 'กำลังค้นหาตำแหน่งไรเดอร์...',
+            updatedAgo: '',
+            timer: null,
+            canShare: false,
+            sharing: false,
+            shareBusy: false,
+            shareTimer: null,
+            init() {
+                this.$nextTick(() => {
+                    if (!window.tpMap || !window.tpMap.ready()) { this.statusText = 'โหลดแผนที่ไม่สำเร็จ'; return; }
+                    const center = cfg.drop || cfg.pickup || [13.7563, 100.5018];
+                    this.map = window.tpMap.create(document.getElementById('od-rider-map'), center[0], center[1], 14);
+                    if (cfg.drop) { window.tpMap.pin(this.map, cfg.drop[0], cfg.drop[1], 'home'); }
+                    if (cfg.pickup) { window.tpMap.pin(this.map, cfg.pickup[0], cfg.pickup[1], 'shop'); }
+                    this.poll();
+                    this.timer = setInterval(() => this.poll(), 15000);
+                });
+                window.addEventListener('beforeunload', () => { clearInterval(this.shareTimer); });
+            },
+            placeRider(lat, lng) {
+                const ll = [Number(lat), Number(lng)];
+                if (!this.riderMarker) {
+                    this.riderMarker = window.tpMap.pin(this.map, ll[0], ll[1], 'rider');
+                    const pts = [ll];
+                    if (cfg.drop) { pts.push(cfg.drop); }
+                    this.map.fitBounds(pts, { padding: [40, 40], maxZoom: 16 });
+                } else {
+                    this.riderMarker.setLatLng(ll);
+                }
+            },
+            stop(message) {
+                clearInterval(this.timer);
+                this.stopSharingTimer();
+                this.live = false;
+                this.canShare = false;
+                if (message) { this.statusText = message; }
+            },
+            async poll() {
+                try {
+                    const res = await fetch(cfg.locationUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                    const d = await res.json().catch(() => null);
+                    if (!res.ok || !d || !d.success) {
+                        this.stop((d && d.message) || 'ดึงตำแหน่งไรเดอร์ไม่สำเร็จ');
+                        return;
+                    }
+                    if (cfg.mode === 'order') {
+                        // API ติดตามของผู้ซื้อ: {job{is_active,status_text}, rider_location{latitude,longitude,is_stale}, reason_text, customer_sharing, can_share_location}
+                        const data = d.data || {};
+                        const job = data.job || {};
+                        this.statusText = data.reason_text || job.status_text || '';
+                        this.canShare = !!data.can_share_location;
+                        this.sharing = !!(data.customer_sharing && data.customer_sharing.enabled);
+                        if (this.sharing && !this.shareTimer) { this.startSharingTimer(); }
+                        if (data.rider_location && data.rider_location.latitude) {
+                            this.placeRider(data.rider_location.latitude, data.rider_location.longitude);
+                            this.live = !!data.location_available;
+                            this.updatedAgo = data.rider_location.updated_at ? new Date(data.rider_location.updated_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.' : '';
+                            if (!this.statusText) { this.statusText = job.status_text || ''; }
+                        } else {
+                            this.live = false;
+                        }
+                        if (job && job.is_active === false) { this.stop(this.statusText || 'การจัดส่งจบแล้ว'); }
+                        return;
+                    }
+                    // สำรอง: endpoint ของลิงก์ติดตาม (token)
+                    const loc = d.location || {};
+                    this.statusText = d.job_status_text || loc.job_status_text || '';
+                    if (loc.latitude && loc.longitude) {
+                        this.placeRider(loc.latitude, loc.longitude);
+                        this.live = !!loc.available;
+                        this.updatedAgo = loc.updated_ago || '';
+                        if (!loc.available) { this.statusText += ' · สัญญาณ GPS ของไรเดอร์ขาดช่วง'; }
+                    } else {
+                        this.live = false;
+                        if (loc.reason === 'consent_missing') { this.statusText = 'ไรเดอร์ยังไม่ได้ยินยอมแชร์ตำแหน่ง'; }
+                    }
+                    if (!d.is_active) { this.stop(this.statusText); }
+                } catch (e) {
+                    this.live = false;
+                }
+            },
+            // ── แชร์ตำแหน่งของผู้ซื้อ ──
+            position() {
+                return new Promise((resolve, reject) => {
+                    if (!navigator.geolocation) { reject(new Error('no_geo')); return; }
+                    navigator.geolocation.getCurrentPosition(
+                        (p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }),
+                        () => reject(new Error('denied')),
+                        { enableHighAccuracy: true, timeout: 12000, maximumAge: 20000 }
+                    );
+                });
+            },
+            async sendShare(share, point) {
+                const body = Object.assign({ share: share }, point || {});
+                const res = await fetch(cfg.shareUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': window.tpShop.csrf(), 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify(body)
+                });
+                const d = await res.json().catch(() => null);
+                if (!res.ok || !d || !d.success) { throw new Error((d && d.message) || 'แชร์ตำแหน่งไม่สำเร็จ กรุณาลองใหม่'); }
+                return d;
+            },
+            startSharingTimer() {
+                this.stopSharingTimer();
+                this.shareTimer = setInterval(async () => {
+                    try {
+                        const point = await this.position();
+                        await this.sendShare(true, point);
+                    } catch (e) {
+                        // งานจบ/ไม่อนุญาต GPS → หยุดส่งเงียบๆ
+                        if (e && e.message && e.message !== 'denied' && e.message !== 'no_geo') { this.stopSharingTimer(); this.sharing = false; }
+                    }
+                }, 30000);
+            },
+            stopSharingTimer() { clearInterval(this.shareTimer); this.shareTimer = null; },
+            async toggleShare() {
+                if (this.shareBusy) { return; }
+                this.shareBusy = true;
+                try {
+                    if (this.sharing) {
+                        await this.sendShare(false);
+                        this.sharing = false;
+                        this.stopSharingTimer();
+                        window.tpShop.notify('หยุดแชร์ตำแหน่งแล้ว', 'success');
+                    } else {
+                        let point = null;
+                        try { point = await this.position(); } catch (e) {
+                            window.tpShop.notify('เปิดสิทธิ์ตำแหน่ง (GPS) ในเบราว์เซอร์ก่อน แล้วลองใหม่', 'error');
+                            return;
+                        }
+                        await this.sendShare(true, point);
+                        this.sharing = true;
+                        this.startSharingTimer();
+                        window.tpShop.notify('ไรเดอร์เห็นตำแหน่งของคุณแล้ว', 'success');
+                    }
+                } catch (e) {
+                    window.tpShop.notify(e.message || 'แชร์ตำแหน่งไม่สำเร็จ', 'error');
+                } finally {
+                    this.shareBusy = false;
+                }
+            }
+        };
+    }
+</script>
+@endpush

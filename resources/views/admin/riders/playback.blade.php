@@ -1,359 +1,97 @@
 {{--
-    Admin Riders Playback - เล่นย้อนหลังตำแหน่ง GPS ของไรเดอร์
-    แสดงเส้นทางและประวัติการเคลื่อนที่
+ | เล่นย้อนหลังเส้นทาง GPS 24 ชม. (admin.riders.playback) — ธีม V4 + OpenStreetMap/Leaflet
+ | ตัวแปรจาก Admin\RiderController@locationPlayback: $rider, $logs (RiderLocation เก่า → ใหม่), $pageTitle
 --}}
+@extends('layouts.admin-v4')
 
-@extends('layouts.admin-v3')
-
-@section('title', 'เล่นย้อนหลัง GPS: ' . $rider->full_name)
+@section('title', $pageTitle ?? 'เล่นย้อนหลัง GPS')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900" x-data="riderPlayback()">
-    {{-- Header --}}
-    <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-4">
-                <a href="{{ route('admin.riders.locations', $rider) }}"
-                   class="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition backdrop-blur-lg border border-white/10">
-                    <i class="fas fa-arrow-left text-white"></i>
-                </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-white flex items-center gap-3">
-                        <i class="fas fa-play-circle text-purple-400"></i>
-                        เล่นย้อนหลัง GPS: {{ $rider->full_name }}
-                    </h1>
-                    <p class="text-gray-400 text-sm mt-1">
-                        {{ $logs->count() }} จุด | ข้อมูล 24 ชม.ล่าสุด
-                    </p>
-                </div>
-            </div>
+@include('admin.riders.partials.v4-kit')
+@include('admin.riders.partials.leaflet')
+@include('admin.riders.partials.track-js')
+@php
+    $trackPoints = $logs->map(fn ($log) => [
+        'lat' => (float) $log->latitude,
+        'lng' => (float) $log->longitude,
+        't' => ($log->recorded_at ?? $log->created_at)?->toIso8601String(),
+        'speed' => $log->speed !== null ? (float) $log->speed : null,
+        'heading' => $log->heading !== null ? (float) $log->heading : null,
+        'accuracy' => $log->accuracy !== null ? (float) $log->accuracy : null,
+        'battery' => $log->battery_level !== null ? (int) $log->battery_level : null,
+        'job_id' => $log->job_id !== null ? (int) $log->job_id : null,
+    ])->values()->all();
+@endphp
+<div x-data="w1Track(@js($trackPoints), {})" x-init="boot()" style="display:flex; flex-direction:column; gap:16px;">
 
-            {{-- Controls --}}
-            <div class="flex items-center gap-3">
-                <div class="flex items-center gap-2 bg-white/10 backdrop-blur-lg rounded-xl px-4 py-2 border border-white/10">
-                    <label class="text-gray-300 text-sm">ความเร็ว:</label>
-                    <select x-model="playbackSpeed"
-                            class="bg-transparent text-white border-0 focus:ring-0 text-sm">
-                        <option value="0.5" class="text-gray-900">0.5x</option>
-                        <option value="1" class="text-gray-900">1x</option>
-                        <option value="2" class="text-gray-900">2x</option>
-                        <option value="5" class="text-gray-900">5x</option>
-                        <option value="10" class="text-gray-900">10x</option>
-                    </select>
-                </div>
+    {{-- ===== หัวเรื่อง ===== --}}
+    <div style="display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="{{ route('admin.riders.locations', $rider) }}" class="tp-icon-btn" title="กลับหน้าตำแหน่ง GPS"><i class="fas fa-arrow-left"></i></a>
+            <div>
+                <div style="font-size:11px; color:var(--ink2); font-weight:600; letter-spacing:.4px;">หลังบ้าน · ไรเดอร์ · เล่นย้อนหลัง</div>
+                <h1 class="tp-num" style="font-size:clamp(20px,4vw,26px); font-weight:800; margin:4px 0 0;">เล่นย้อนหลัง: {{ $rider->full_name }}</h1>
+                <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">{{ number_format($logs->count()) }} จุด · ข้อมูล 24 ชั่วโมงล่าสุด</div>
             </div>
         </div>
-
-        {{-- Map & Timeline --}}
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {{-- Map --}}
-            <div class="lg:col-span-3">
-                <div class="bg-white/10 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/10 relative">
-                    <div id="playbackMap" class="h-[600px] w-full"></div>
-
-                    {{-- Playback Controls --}}
-                    <div class="absolute bottom-4 left-4 right-4 bg-gray-900/90 backdrop-blur-lg rounded-xl p-4 border border-white/10">
-                        <div class="flex items-center gap-4">
-                            {{-- Play/Pause Button --}}
-                            <button @click="togglePlayback()"
-                                    class="w-12 h-12 rounded-full bg-purple-600 hover:bg-purple-500 text-white flex items-center justify-center transition">
-                                <i :class="isPlaying ? 'fas fa-pause' : 'fas fa-play'" class="text-lg"></i>
-                            </button>
-
-                            {{-- Progress Bar --}}
-                            <div class="flex-1">
-                                <input type="range" min="0" :max="totalPoints - 1" x-model="currentIndex"
-                                       @input="seekTo(currentIndex)"
-                                       class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                            </div>
-
-                            {{-- Time Display --}}
-                            <div class="text-white text-sm min-w-[120px] text-right">
-                                <span x-text="currentTime"></span>
-                            </div>
-                        </div>
-
-                        {{-- Stats --}}
-                        <div class="flex items-center gap-6 mt-3 text-sm">
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-route text-purple-400"></i>
-                                <span>ระยะทาง: <span x-text="distanceTraveled" class="text-white font-bold"></span> กม.</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-tachometer-alt text-green-400"></i>
-                                <span>ความเร็ว: <span x-text="currentSpeed" class="text-white font-bold"></span> กม./ชม.</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-gray-300">
-                                <i class="fas fa-map-pin text-yellow-400"></i>
-                                <span>จุดที่ <span x-text="parseInt(currentIndex) + 1" class="text-white font-bold"></span> / <span x-text="totalPoints"></span></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Timeline Sidebar --}}
-            <div class="lg:col-span-1">
-                <div class="bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/10 h-[600px] overflow-hidden flex flex-col">
-                    <h3 class="text-white font-bold mb-4 flex items-center gap-2">
-                        <i class="fas fa-history text-purple-400"></i>
-                        ประวัติตำแหน่ง
-                    </h3>
-
-                    <div class="flex-1 overflow-y-auto space-y-2 pr-2" id="timelineContainer">
-                        @forelse($logs as $index => $log)
-                            <div class="timeline-item p-3 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition"
-                                 data-index="{{ $index }}"
-                                 @click="seekTo({{ $index }})">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 rounded-full bg-purple-600/30 flex items-center justify-center text-purple-400 text-xs font-bold">
-                                        {{ $index + 1 }}
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-white text-sm">{{ $log->created_at->format('H:i:s') }}</p>
-                                        <p class="text-gray-400 text-xs">
-                                            @if($log->speed)
-                                                {{ number_format($log->speed, 1) }} กม./ชม.
-                                            @else
-                                                หยุดนิ่ง
-                                            @endif
-                                        </p>
-                                    </div>
-                                    @if($log->battery_level)
-                                        <div class="text-xs {{ $log->battery_level < 20 ? 'text-red-400' : ($log->battery_level < 50 ? 'text-yellow-400' : 'text-green-400') }}">
-                                            <i class="fas fa-battery-{{ $log->battery_level < 20 ? 'empty' : ($log->battery_level < 50 ? 'half' : 'full') }}"></i>
-                                            {{ $log->battery_level }}%
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center text-gray-400 py-8">
-                                <i class="fas fa-map-marked-alt text-4xl mb-4"></i>
-                                <p>ไม่พบข้อมูลตำแหน่ง</p>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
+        <a href="{{ route('admin.riders.show', $rider) }}" class="tp-btn tp-btn-sm"><i class="fas fa-user"></i> โปรไฟล์ไรเดอร์</a>
     </div>
+
+    @if ($logs->isEmpty())
+        <div class="tp-card" style="padding:40px 20px; text-align:center; color:var(--ink2);">
+            <i class="fas fa-map-location-dot" style="font-size:30px; opacity:.5; display:block; margin-bottom:10px;"></i>
+            ไม่มีข้อมูลตำแหน่งใน 24 ชั่วโมงล่าสุด — ระบบบันทึกเส้นทางเฉพาะตอนที่ไรเดอร์มีงาน
+        </div>
+    @else
+        <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
+            <div class="tp-card" style="padding:0; overflow:hidden; flex:3 1 520px; min-width:0;">
+                <div x-ref="map" style="width:100%; height:min(62vh, 560px); min-height:320px;"></div>
+                <div style="padding:14px 16px; display:flex; flex-direction:column; gap:10px;">
+                    <input type="range" class="tp-range" min="0" :max="points.length - 1" :value="index" @input="seek($event.target.value)">
+                    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px;">
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button type="button" class="tp-btn tp-btn-primary" style="width:54px;" @click="toggle()" :title="playing ? 'หยุด' : 'เล่น'"><i class="fas" :class="playing ? 'fa-pause' : 'fa-play'"></i></button>
+                            <button type="button" class="tp-icon-btn" style="width:38px; height:38px;" @click="seek(index - 1)" title="ถอยหนึ่งจุด"><i class="fas fa-backward-step"></i></button>
+                            <button type="button" class="tp-icon-btn" style="width:38px; height:38px;" @click="seek(index + 1)" title="เดินหน้าหนึ่งจุด"><i class="fas fa-forward-step"></i></button>
+                            <select class="tp-input" style="width:auto; padding:7px 10px; font-size:12.5px;" @change="setSpeed($event.target.value)">
+                                <option value="0.5">0.5x</option>
+                                <option value="1" selected>1x</option>
+                                <option value="2">2x</option>
+                                <option value="5">5x</option>
+                                <option value="10">10x</option>
+                            </select>
+                        </div>
+                        <div style="font-size:12.5px; color:var(--ink2); display:flex; flex-wrap:wrap; gap:12px;">
+                            <span><i class="fas fa-clock"></i> <b class="tp-num" style="color:var(--ink);" x-text="time(current() && current().t)"></b></span>
+                            <span><i class="fas fa-gauge-high"></i> <b class="tp-num" style="color:var(--ink);" x-text="num(current() && current().speed, 1)"></b> กม./ชม.</span>
+                            <span><i class="fas fa-route"></i> <b class="tp-num" style="color:var(--ink);" x-text="distanceUntil(index).toFixed(2)"></b> กม.</span>
+                            <span><i class="fas fa-map-pin"></i> <b class="tp-num" style="color:var(--ink);" x-text="(index + 1) + '/' + points.length"></b></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ===== ไทม์ไลน์ ===== --}}
+            <div class="tp-card" style="padding:16px; flex:1 1 280px; min-width:0;">
+                <div class="tp-section-h" style="margin-bottom:10px;"><i class="fas fa-clock-rotate-left"></i> ไทม์ไลน์ตำแหน่ง</div>
+                <div style="display:flex; flex-direction:column; gap:6px; max-height:560px; overflow-y:auto; padding:2px;">
+                    <template x-for="(p, i) in points" :key="i">
+                        <button type="button" @click="seek(i)"
+                                style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:12px; border:0; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink); background:var(--card-bg);"
+                                :style="{ boxShadow: i === index ? 'var(--inset-sm)' : 'var(--raise)' }">
+                            <span class="tp-num" style="width:30px; font-size:11px; color:var(--ink2);" x-text="i + 1"></span>
+                            <span style="flex:1; min-width:0;">
+                                <span class="tp-num" style="display:block; font-size:12.5px; font-weight:700;" x-text="time(p.t)"></span>
+                                <span style="display:block; font-size:11px; color:var(--ink2);" x-text="p.speed ? num(p.speed, 1) + ' กม./ชม.' : 'หยุดนิ่ง/ไม่ทราบความเร็ว'"></span>
+                            </span>
+                            <span x-show="p.battery !== null" style="font-size:11px;" :style="{ color: p.battery !== null && p.battery < 20 ? 'var(--w-bad)' : 'var(--ink2)' }">
+                                <i class="fas fa-battery-half"></i> <span x-text="p.battery + '%'"></span>
+                            </span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
-
-@push('scripts')
-<script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_api_key', '') }}&libraries=geometry"></script>
-<script>
-    function riderPlayback() {
-        return {
-            map: null,
-            marker: null,
-            path: null,
-            pathCoordinates: [],
-            isPlaying: false,
-            currentIndex: 0,
-            playbackSpeed: 1,
-            playInterval: null,
-            totalPoints: {{ $logs->count() }},
-            currentTime: '--:--:--',
-            currentSpeed: 0,
-            distanceTraveled: 0,
-
-            init() {
-                // เตรียมข้อมูล path
-                this.pathCoordinates = @json($logs->map(function($log) {
-                    return [
-                        'lat' => (float) $log->latitude,
-                        'lng' => (float) $log->longitude,
-                        'timestamp' => $log->created_at->format('H:i:s'),
-                        'speed' => $log->speed ?? 0,
-                        'battery' => $log->battery_level,
-                    ];
-                })->values());
-
-                this.initMap();
-            },
-
-            initMap() {
-                if (this.pathCoordinates.length === 0) return;
-
-                const center = this.pathCoordinates[0];
-
-                // Dark mode style
-                const darkStyle = [
-                    { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
-                    { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
-                    { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
-                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
-                    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
-                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
-                ];
-
-                this.map = new google.maps.Map(document.getElementById('playbackMap'), {
-                    zoom: 15,
-                    center: center,
-                    styles: darkStyle,
-                    disableDefaultUI: true,
-                    zoomControl: true,
-                });
-
-                // Draw full path
-                this.path = new google.maps.Polyline({
-                    path: this.pathCoordinates,
-                    geodesic: true,
-                    strokeColor: '#9333ea',
-                    strokeOpacity: 0.8,
-                    strokeWeight: 4,
-                });
-                this.path.setMap(this.map);
-
-                // Rider marker
-                this.marker = new google.maps.Marker({
-                    position: center,
-                    map: this.map,
-                    icon: {
-                        path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                        scale: 6,
-                        fillColor: '#22c55e',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 2,
-                        rotation: 0,
-                    },
-                });
-
-                // Start marker
-                new google.maps.Marker({
-                    position: this.pathCoordinates[0],
-                    map: this.map,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 10,
-                        fillColor: '#22c55e',
-                        fillOpacity: 1,
-                        strokeColor: '#ffffff',
-                        strokeWeight: 2,
-                    },
-                    label: {
-                        text: 'เริ่ม',
-                        color: '#ffffff',
-                        fontSize: '10px',
-                    },
-                });
-
-                // End marker
-                if (this.pathCoordinates.length > 1) {
-                    new google.maps.Marker({
-                        position: this.pathCoordinates[this.pathCoordinates.length - 1],
-                        map: this.map,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 10,
-                            fillColor: '#ef4444',
-                            fillOpacity: 1,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 2,
-                        },
-                        label: {
-                            text: 'จบ',
-                            color: '#ffffff',
-                            fontSize: '10px',
-                        },
-                    });
-                }
-
-                // Fit bounds
-                const bounds = new google.maps.LatLngBounds();
-                this.pathCoordinates.forEach(coord => bounds.extend(coord));
-                this.map.fitBounds(bounds);
-
-                this.updateDisplay();
-            },
-
-            togglePlayback() {
-                if (this.isPlaying) {
-                    this.pausePlayback();
-                } else {
-                    this.startPlayback();
-                }
-            },
-
-            startPlayback() {
-                this.isPlaying = true;
-                this.playInterval = setInterval(() => {
-                    if (this.currentIndex < this.totalPoints - 1) {
-                        this.currentIndex++;
-                        this.updateDisplay();
-                    } else {
-                        this.pausePlayback();
-                    }
-                }, 1000 / this.playbackSpeed);
-            },
-
-            pausePlayback() {
-                this.isPlaying = false;
-                if (this.playInterval) {
-                    clearInterval(this.playInterval);
-                    this.playInterval = null;
-                }
-            },
-
-            seekTo(index) {
-                this.currentIndex = parseInt(index);
-                this.updateDisplay();
-
-                // Scroll timeline item into view
-                const item = document.querySelector(`.timeline-item[data-index="${index}"]`);
-                if (item) {
-                    item.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            },
-
-            updateDisplay() {
-                if (this.pathCoordinates.length === 0) return;
-
-                const point = this.pathCoordinates[this.currentIndex];
-
-                // Update marker position
-                if (this.marker) {
-                    this.marker.setPosition(point);
-
-                    // Calculate rotation if there's a next point
-                    if (this.currentIndex < this.pathCoordinates.length - 1) {
-                        const nextPoint = this.pathCoordinates[this.currentIndex + 1];
-                        const heading = google.maps.geometry.spherical.computeHeading(
-                            new google.maps.LatLng(point.lat, point.lng),
-                            new google.maps.LatLng(nextPoint.lat, nextPoint.lng)
-                        );
-                        const icon = this.marker.getIcon();
-                        icon.rotation = heading;
-                        this.marker.setIcon(icon);
-                    }
-                }
-
-                // Update time display
-                this.currentTime = point.timestamp;
-                this.currentSpeed = point.speed ? point.speed.toFixed(1) : 0;
-
-                // Calculate distance traveled
-                let distance = 0;
-                for (let i = 1; i <= this.currentIndex; i++) {
-                    const p1 = this.pathCoordinates[i - 1];
-                    const p2 = this.pathCoordinates[i];
-                    distance += google.maps.geometry.spherical.computeDistanceBetween(
-                        new google.maps.LatLng(p1.lat, p1.lng),
-                        new google.maps.LatLng(p2.lat, p2.lng)
-                    );
-                }
-                this.distanceTraveled = (distance / 1000).toFixed(2);
-
-                // Highlight timeline item
-                document.querySelectorAll('.timeline-item').forEach((el, i) => {
-                    el.classList.toggle('bg-purple-600/30', i === this.currentIndex);
-                    el.classList.toggle('border-purple-500', i === this.currentIndex);
-                });
-            },
-        }
-    }
-</script>
-@endpush
 @endsection

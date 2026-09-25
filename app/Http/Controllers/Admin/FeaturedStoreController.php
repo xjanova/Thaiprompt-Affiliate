@@ -14,15 +14,19 @@ class FeaturedStoreController extends Controller
     public function index()
     {
         $featuredStores = VendorStore::where('is_featured_home', true)
+            ->withCount('products')
             ->orderBy('featured_home_order', 'asc')
             ->get();
 
+        // เลือกได้เฉพาะร้านที่เปิดขาย + ยืนยันแล้ว + ไม่ถูกระงับ
         $availableStores = VendorStore::where('is_active', true)
             ->where('is_verified', true)
+            ->whereNotIn('status', ['suspended', 'closed', 'pending'])
             ->where(function ($query) {
                 $query->where('is_featured_home', false)
                     ->orWhereNull('is_featured_home');
             })
+            ->withCount('products')
             ->orderBy('rating_average', 'desc')
             ->get();
 
@@ -72,12 +76,26 @@ class FeaturedStoreController extends Controller
     {
         $request->validate([
             'order' => 'required|array',
-            'order.*' => 'required|integer',
+            'order.*' => 'required|integer|min:1',
+        ], [
+            'order.required' => 'ไม่พบลำดับที่จะบันทึก',
         ]);
 
-        foreach ($request->order as $storeId => $order) {
-            VendorStore::where('id', $storeId)
-                ->update(['featured_home_order' => $order]);
+        // อัปเดตเฉพาะร้านที่เป็นร้านแนะนำอยู่จริง (กันส่ง id อื่นมาแก้ลำดับ)
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+            foreach ($request->order as $storeId => $order) {
+                VendorStore::where('id', (int) $storeId)
+                    ->where('is_featured_home', true)
+                    ->update(['featured_home_order' => (int) $order]);
+            }
+        });
+
+        // หน้า V4 ส่งแบบ AJAX (SortableJS) → ตอบ JSON · ฟอร์มปกติ → redirect กลับ
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'อัปเดตลำดับการแสดงเรียบร้อยแล้ว',
+            ]);
         }
 
         return redirect()->back()->with('success', 'อัปเดตลำดับการแสดงเรียบร้อยแล้ว');

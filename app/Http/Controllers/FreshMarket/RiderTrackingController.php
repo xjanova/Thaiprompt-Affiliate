@@ -55,7 +55,42 @@ class RiderTrackingController extends Controller
             'googleMapsApiKey' => config('services.google_maps.api_key', ''),
             'pollInterval' => ((int) ($gps->settings->gps_update_interval_seconds ?? 30)) * 1000,
             'customerPollInterval' => 180000, // 3 นาที
+            // ผู้ซื้อที่ login อยู่ = เจ้าของออเดอร์ → ปุ่ม "แชร์ตำแหน่งของฉันให้ไรเดอร์" (null = ไม่ใช่เจ้าของ ไม่ต้องแสดงปุ่ม)
+            'deliveryEndpoints' => $this->buyerDeliveryEndpoints($job),
         ]);
+    }
+
+    /**
+     * ลิงก์ติดตาม/แชร์ตำแหน่งแบบ session ของผู้ซื้อ (เฉพาะผู้ที่ login เป็นเจ้าของออเดอร์)
+     *
+     * @return array{rider_location: string, share_location: string, source: string, order_id: int}|null
+     */
+    private function buyerDeliveryEndpoints(RiderJob $job): ?array
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return null;
+        }
+
+        $source = $job->deliverableSource() ?? $job->freshMarketOrder;
+
+        [$key, $ownerId] = match (true) {
+            $source instanceof \App\Models\FreshMarketOrder => ['fresh-market', (int) $source->buyer_id],
+            $source instanceof \App\Models\Order => ['shop', (int) $source->user_id],
+            default => [null, 0],
+        };
+
+        if (! $key || $ownerId !== (int) $user->id) {
+            return null;
+        }
+
+        return [
+            'source' => $key,
+            'order_id' => (int) $source->getKey(),
+            'rider_location' => route('taladsod.delivery.rider-location', [$key, $source->getKey()]),
+            'share_location' => route('taladsod.delivery.share-location', [$key, $source->getKey()]),
+        ];
     }
 
     /**
