@@ -393,7 +393,7 @@ export default function IndexScreen() {
           <Text style={styles.appName}>{APP_INFO.NAME}</Text>
           <View style={styles.subtitleRow}>
             <View style={styles.subtitleLine} />
-            <Text style={styles.appSubtitle}>AFFILIATE</Text>
+            <Text style={styles.appSubtitle}>ช้อป · ตลาดสด · ส่งของ</Text>
             <View style={styles.subtitleLine} />
           </View>
         </Animated.View>
@@ -410,19 +410,19 @@ export default function IndexScreen() {
         >
           {/* Tagline */}
           <View style={styles.taglineSection}>
-            <Text style={styles.tagline}>สร้างรายได้</Text>
-            <Text style={styles.taglineHighlight}>ไม่จำกัด</Text>
+            <Text style={styles.tagline}>ของดีใกล้บ้าน</Text>
+            <Text style={styles.taglineHighlight}>ส่งถึงมือ</Text>
             <Text style={styles.taglineDesc}>
-              ร่วมเป็นส่วนหนึ่งของเครือข่ายพันธมิตร{'\n'}ที่เติบโตเร็วที่สุด
+              สั่งของจากตลาดสดและร้านค้าในชุมชน{'\n'}มีไรเดอร์ใกล้คุณช่วยส่ง
             </Text>
           </View>
 
           {/* Features with Glassmorphism */}
           <View style={styles.featuresSection}>
             {[
-              { icon: '💰', text: 'รับค่าคอมมิชชั่นทันที', color: '#10B981' },
-              { icon: '👥', text: 'สร้างทีมได้ไม่จำกัด', color: '#3B82F6' },
-              { icon: '🛡️', text: 'ปลอดภัย มั่นคง', color: '#8B5CF6' },
+              { icon: '🥬', text: 'ตลาดสดและร้านอาหารใกล้บ้าน', color: '#10B981' },
+              { icon: '🛵', text: 'ไรเดอร์ในชุมชนส่งไว ติดตามได้', color: '#F59E0B' },
+              { icon: '🛡️', text: 'จ่ายปลอดภัย ด้วย PromptPay หรือกระเป๋าเงิน', color: '#8B5CF6' },
             ].map((feature, index) => (
               <View key={index} style={styles.featureRow}>
                 <LinearGradient
@@ -586,9 +586,9 @@ const styles = StyleSheet.create({
   },
   appSubtitle: {
     fontSize: 14,
-    color: '#3B82F6',
+    color: '#E6B347',
     fontWeight: '700',
-    letterSpacing: 6,
+    letterSpacing: 1,
   },
 
   // Content Section

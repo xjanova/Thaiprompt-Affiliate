@@ -1,673 +1,404 @@
 /**
- * Store Detail Screen - แสดงรายละเอียดร้านค้า
- * Dynamic route สำหรับดูสินค้าในร้านค้า
+ * หน้าร้าน — GET /mobile/stores/{id} + /mobile/stores/{id}/products (SHOP-18)
+ *
+ * - อ่าน data[] + pagination.has_more ตาม contract ใหม่ (เดิมอ่าน .items จึงว่างเสมอ)
+ * - ค้นหาในร้าน (หน่วง 400ms) · เรียงลำดับ · เลื่อนโหลดเพิ่ม · ดึงลงเพื่อรีเฟรช
+ * - ตัวเลขร้านเป็นค่าจริงทั้งหมด (ไม่มีอัตราตอบกลับสมมติ)
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
-  Image,
-  ActivityIndicator,
-  Dimensions,
+  ScrollView,
   StyleSheet,
-  StatusBar,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAppStore } from '@/stores/appStore';
-import { getStoreDetail, getStoreProducts } from '@/services/api';
-import { formatCurrency } from '@/constants';
-import type { Product } from '@/types';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useAuthStore } from '@/stores/authStore';
+import { getStore, getStoreProducts, type ShopProduct, type StoreDetail } from '@/services/api/shopApi';
+import { Card3D, Chip, EmptyState, Pill, Screen, SectionHeader } from '@/components/ui';
+import { CartButton, ProductCard, formatThaiDateTime } from '@/components/shop';
+import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
 
-const { width } = Dimensions.get('window');
-const PRODUCT_CARD_WIDTH = (width - 48) / 2;
+const PER_PAGE = 20;
 
-// Store type
-interface StoreDetail {
-  id: string;
-  name: string;
-  description?: string;
-  logo?: string;
-  banner?: string;
-  rating: number;
-  isOfficial: boolean;
-  isFeatured: boolean;
-  productCount: number;
-  followerCount: number;
-  responseRate?: number;
-  joinedAt?: string;
-}
-
-// Product Card Component
-const ProductCard = ({
-  product,
-  onPress,
-}: {
-  product: Product;
-  onPress: () => void;
-}) => {
-  const hasDiscount = product.discount_price && product.discount_price < product.price;
-  const pv = (product as any).pv || Math.round(product.price * 0.1);
-
-  return (
-    <Pressable onPress={onPress} style={styles.productCard}>
-      <View style={styles.productImageContainer}>
-        {product.image ? (
-          <Image source={{ uri: product.image }} style={styles.productImage} resizeMode="cover" />
-        ) : (
-          <Text style={{ fontSize: 48, color: '#9CA3AF' }}>📦</Text>
-        )}
-
-        {hasDiscount && (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountBadgeText}>
-              -{Math.round((1 - product.discount_price! / product.price) * 100)}%
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.pvBadge}>
-          <Text style={{ fontSize: 10, color: '#FFD700' }}>⭐</Text>
-          <Text style={styles.pvBadgeText}>{pv} PV</Text>
-        </View>
-      </View>
-
-      <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-
-        <View style={styles.priceRow}>
-          {hasDiscount ? (
-            <>
-              <Text style={styles.priceDiscount}>{formatCurrency(product.discount_price!)}</Text>
-              <Text style={styles.priceOriginal}>{formatCurrency(product.price)}</Text>
-            </>
-          ) : (
-            <Text style={styles.priceNormal}>{formatCurrency(product.price)}</Text>
-          )}
-        </View>
-      </View>
-    </Pressable>
-  );
-};
+type SortKey = 'newest' | 'popular' | 'price_asc' | 'price_desc';
+const SORTS: Array<{ key: SortKey; label: string; sort: string; order: 'asc' | 'desc' }> = [
+  { key: 'newest', label: 'มาใหม่', sort: 'newest', order: 'desc' },
+  { key: 'popular', label: 'ขายดี', sort: 'popular', order: 'desc' },
+  { key: 'price_asc', label: 'ราคาต่ำ → สูง', sort: 'price', order: 'asc' },
+  { key: 'price_desc', label: 'ราคาสูง → ต่ำ', sort: 'price', order: 'desc' },
+];
 
 export default function StoreDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { resolvedTheme } = useAppStore();
-  const isDark = resolvedTheme === 'dark';
+  const storeId = String(id || '');
+  const { colors, gradients } = useTheme();
+  const { width } = useWindowDimensions();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const cardWidth = Math.floor((width - spacing.screen * 2 - spacing.md) / 2);
 
   const [store, setStore] = useState<StoreDetail | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [storeError, setStoreError] = useState<{ message: string; notFound: boolean } | null>(null);
+  const [products, setProducts] = useState<ShopProduct[]>([]);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<SortKey>('newest');
 
-  // โหลดข้อมูลร้านค้า
-  const loadStoreData = useCallback(async () => {
-    if (!id) return;
-
-    try {
-      setIsLoading(true);
-
-      // โหลดข้อมูลร้านค้าและสินค้าพร้อมกัน
-      const [storeRes, productsRes] = await Promise.all([
-        getStoreDetail(id),
-        getStoreProducts(id, 1),
-      ]);
-
-      if (storeRes?.success && storeRes.data) {
-        setStore(storeRes.data);
-      }
-
-      if (productsRes?.success && productsRes.data) {
-        setProducts(productsRes.data.items || []);
-        setHasMore(productsRes.data.hasMore || false);
-        setPage(1);
-      }
-    } catch (error) {
-      console.error('Load store data error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [id]);
-
-  // โหลดสินค้าเพิ่มเติม
-  const loadMore = useCallback(async () => {
-    if (!hasMore || isLoadingMore || !id) return;
-
-    try {
-      setIsLoadingMore(true);
-      const nextPage = page + 1;
-
-      const response = await getStoreProducts(id, nextPage);
-
-      if (response?.success && response.data) {
-        setProducts(prev => [...prev, ...(response.data.items || [])]);
-        setHasMore(response.data.hasMore || false);
-        setPage(nextPage);
-      }
-    } catch (error) {
-      console.error('Load more products error:', error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [id, page, hasMore, isLoadingMore]);
-
-  // Refresh
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadStoreData();
-    setRefreshing(false);
-  }, [loadStoreData]);
+  const mountedRef = useRef(true);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    loadStoreData();
-  }, [loadStoreData]);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-  // Loading state
-  if (isLoading) {
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput.trim()), 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const loadStore = useCallback(async () => {
+    if (!isAuthenticated || !/^\d+$/.test(storeId)) {
+      if (!/^\d+$/.test(storeId)) setStoreError({ message: 'ไม่พบร้านค้านี้', notFound: true });
+      return;
+    }
+    const result = await getStore(storeId);
+    if (!mountedRef.current) return;
+    if (result.success && result.data) {
+      setStore(result.data);
+      setStoreError(null);
+    } else if (!result.success) {
+      setStoreError({ message: result.message, notFound: result.status === 404 });
+    }
+  }, [isAuthenticated, storeId]);
+
+  const loadProducts = useCallback(
+    async (mode: 'initial' | 'refresh' | 'more', targetPage: number) => {
+      if (!isAuthenticated || !/^\d+$/.test(storeId)) {
+        setLoading(false);
+        return;
+      }
+      const requestId = ++requestIdRef.current;
+      if (mode === 'initial') setLoading(true);
+      if (mode === 'refresh') setRefreshing(true);
+      if (mode === 'more') setLoadingMore(true);
+
+      const sortSpec = SORTS.find((s) => s.key === sort) ?? SORTS[0];
+      const result = await getStoreProducts(storeId, {
+        page: targetPage,
+        per_page: PER_PAGE,
+        sort: sortSpec.sort,
+        order: sortSpec.order,
+        ...(search ? { search } : {}),
+      });
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
+
+      if (result.success) {
+        const list = result.data.products;
+        setProducts((prev) => {
+          if (mode !== 'more') return list;
+          const seen = new Set(prev.map((p) => p.id));
+          return [...prev, ...list.filter((p) => !seen.has(p.id))];
+        });
+        setPage(targetPage);
+        const p = result.data.pagination;
+        setHasMore(!!p && (p.has_more ?? p.current_page < p.last_page));
+        setProductsError(null);
+      } else if (mode !== 'more') {
+        setProductsError(result.message);
+      }
+      setLoading(false);
+      setRefreshing(false);
+      setLoadingMore(false);
+    },
+    [isAuthenticated, storeId, sort, search]
+  );
+
+  useEffect(() => {
+    loadStore();
+  }, [loadStore]);
+
+  useEffect(() => {
+    loadProducts('initial', 1);
+  }, [loadProducts]);
+
+  const onRefresh = () => {
+    loadStore();
+    loadProducts('refresh', 1);
+  };
+
+  if (!isAuthenticated) {
     return (
-      <View style={[styles.container, isDark && styles.containerDark]}>
-        <StatusBar barStyle="light-content" />
-        <LinearGradient
-          colors={['#0F0F23', '#1a1a2e', '#16213e']}
-          style={StyleSheet.absoluteFill}
+      <Screen title="ร้านค้า" scroll={false}>
+        <EmptyState
+          icon="🔐"
+          title="เข้าสู่ระบบก่อนนะ"
+          message="เข้าสู่ระบบเพื่อดูสินค้าของร้าน"
+          actionLabel="เข้าสู่ระบบ"
+          onAction={() => router.push('/login')}
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>กำลังโหลด...</Text>
-        </View>
-      </View>
+      </Screen>
     );
   }
 
-  // ถ้าไม่พบร้านค้า
-  if (!store) {
+  if (storeError && !store) {
     return (
-      <View style={[styles.container, isDark && styles.containerDark]}>
-        <StatusBar barStyle="light-content" />
-        <LinearGradient
-          colors={['#0F0F23', '#1a1a2e', '#16213e']}
-          style={StyleSheet.absoluteFill}
+      <Screen title="ร้านค้า" scroll={false}>
+        <EmptyState
+          variant={storeError.notFound ? 'empty' : 'error'}
+          icon={storeError.notFound ? '🏚️' : undefined}
+          title={storeError.notFound ? 'ไม่พบร้านค้านี้' : undefined}
+          message={storeError.notFound ? 'ร้านอาจปิดให้บริการแล้ว ลองดูร้านอื่นนะ' : storeError.message}
+          actionLabel={storeError.notFound ? 'ดูร้านอื่น' : 'ลองใหม่'}
+          onAction={storeError.notFound ? () => router.replace('/stores' as never) : loadStore}
         />
-        <View style={styles.errorContainer}>
-          <Text style={{ fontSize: 64 }}>🏪</Text>
-          <Text style={styles.errorTitle}>ไม่พบร้านค้า</Text>
-          <Text style={styles.errorSubtitle}>ร้านค้านี้อาจถูกลบหรือไม่มีอยู่</Text>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>← กลับ</Text>
-          </Pressable>
-        </View>
-      </View>
+      </Screen>
     );
   }
 
-  const renderHeader = () => (
+  const rating = Number(store?.rating) || 0;
+  const ratingCount = Number(store?.rating_count) || 0;
+
+  const header = (
     <View>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable style={styles.backIconButton} onPress={() => router.back()}>
-          <Text style={{ fontSize: 20 }}>←</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>ร้านค้า</Text>
-        <View style={{ width: 44 }} />
-      </View>
-
-      {/* Store Banner */}
-      <View style={styles.bannerContainer}>
-        {store.banner ? (
-          <Image source={{ uri: store.banner }} style={styles.banner} resizeMode="cover" />
-        ) : (
-          <LinearGradient
-            colors={['#3B82F6', '#8B5CF6']}
-            style={styles.bannerPlaceholder}
-          />
-        )}
-
-        {/* Store Logo */}
-        <View style={styles.logoContainer}>
-          {store.logo ? (
-            <Image source={{ uri: store.logo }} style={styles.logo} resizeMode="cover" />
+      {/* หัวร้าน */}
+      <Card3D padding={0} radius={radii.xl} gradientBorder style={styles.hero}>
+        <View style={styles.bannerBox}>
+          {store?.banner ? (
+            <Image source={{ uri: store.banner }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
           ) : (
-            <View style={styles.logoPlaceholder}>
-              <Text style={{ fontSize: 40 }}>🏪</Text>
+            <LinearGradient colors={gradients.hero} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
+          )}
+          <LinearGradient colors={gradients.bannerScrim} style={StyleSheet.absoluteFill} />
+        </View>
+        <View style={styles.heroBody}>
+          <View style={styles.heroRow}>
+            {store?.logo ? (
+              <Image source={{ uri: store.logo }} style={[styles.logo, { backgroundColor: colors.inset, borderColor: colors.card }]} contentFit="cover" />
+            ) : (
+              <View style={[styles.logo, styles.center, { backgroundColor: colors.goldSoft, borderColor: colors.card }]}>
+                <Text style={styles.logoIcon}>🏪</Text>
+              </View>
+            )}
+            <View style={styles.flex}>
+              <Text numberOfLines={2} style={[typography.h2, { color: colors.textStrong }]}>
+                {store?.name || 'ร้านค้า'}
+              </Text>
+              <View style={styles.pills}>
+                {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="✔" />}
+                {store?.rider_delivery && <Pill label="ไรเดอร์ส่ง" tone="gold" icon="🛵" />}
+                {store?.cod_available && <Pill label="เก็บเงินปลายทาง" tone="info" />}
+              </View>
             </View>
+          </View>
+          <View style={[styles.stats, { borderTopColor: colors.divider }]}>
+            <View style={styles.stat}>
+              <Text style={[typography.h3, { color: colors.textStrong }]}>{Number(store?.product_count) || 0}</Text>
+              <Text style={[typography.micro, { color: colors.textMuted }]}>สินค้า</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={[typography.h3, { color: colors.textStrong }]}>{ratingCount > 0 ? `⭐ ${rating.toFixed(1)}` : '—'}</Text>
+              <Text style={[typography.micro, { color: colors.textMuted }]}>{ratingCount > 0 ? `${ratingCount} รีวิว` : 'ยังไม่มีรีวิว'}</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={[typography.h3, { color: colors.textStrong }]}>{Number(store?.follower_count) || 0}</Text>
+              <Text style={[typography.micro, { color: colors.textMuted }]}>ผู้ติดตาม</Text>
+            </View>
+          </View>
+          {!!store?.description && (
+            <Text numberOfLines={4} style={[typography.bodySm, styles.description, { color: colors.text }]}>
+              {store.description}
+            </Text>
+          )}
+          {!!store?.joinedAt && (
+            <Text style={[typography.micro, { color: colors.textFaint }]}>เปิดร้านเมื่อ {formatThaiDateTime(store.joinedAt, false)}</Text>
           )}
         </View>
-      </View>
+      </Card3D>
 
-      {/* Store Info - ⭐ เพิ่ม null checks เพื่อป้องกัน crash */}
-      <View style={styles.storeInfoContainer}>
-        <View style={styles.storeNameRow}>
-          <Text style={styles.storeName}>{store?.name || 'ร้านค้า'}</Text>
-          {store.isOfficial && (
-            <View style={styles.officialBadge}>
-              <Text style={{ fontSize: 12 }}>✅</Text>
-              <Text style={styles.officialText}>ทางการ</Text>
-            </View>
-          )}
-          {store.isFeatured && !store.isOfficial && (
-            <View style={styles.featuredBadge}>
-              <Text style={{ fontSize: 12 }}>⭐</Text>
-              <Text style={styles.featuredText}>แนะนำ</Text>
-            </View>
-          )}
-        </View>
-
-        {store.description && (
-          <Text style={styles.storeDescription}>{store.description}</Text>
+      {/* ค้นหาในร้าน */}
+      <View style={[styles.searchBox, { backgroundColor: colors.card }, clayShadowStyle('sm', colors.shadowDark, colors.shadowLight)]}>
+        <Text>🔍</Text>
+        <TextInput
+          value={searchInput}
+          onChangeText={setSearchInput}
+          placeholder="ค้นหาสินค้าในร้านนี้"
+          placeholderTextColor={colors.textFaint}
+          returnKeyType="search"
+          onSubmitEditing={() => setSearch(searchInput.trim())}
+          style={[typography.body, styles.searchInput, { color: colors.textStrong }]}
+          accessibilityLabel="ค้นหาสินค้าในร้าน"
+          maxLength={100}
+        />
+        {searchInput.length > 0 && (
+          <Pressable onPress={() => setSearchInput('')} accessibilityRole="button" accessibilityLabel="ล้างคำค้นหา" hitSlop={10}>
+            <Text style={[typography.h3, { color: colors.textFaint }]}>✕</Text>
+          </Pressable>
         )}
-
-        {/* Stats Row - ⭐ เพิ่ม null checks */}
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>⭐ {(store?.rating ?? 0).toFixed(1)}</Text>
-            <Text style={styles.statLabel}>คะแนน</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{store?.productCount ?? 0}</Text>
-            <Text style={styles.statLabel}>สินค้า</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{store?.followerCount ?? 0}</Text>
-            <Text style={styles.statLabel}>ผู้ติดตาม</Text>
-          </View>
-        </View>
       </View>
 
-      {/* Products Section Title */}
-      <View style={styles.productsSectionHeader}>
-        <Text style={styles.productsSectionTitle}>สินค้าในร้าน</Text>
-        <Text style={styles.productsCount}>{store?.productCount ?? 0} รายการ</Text>
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {SORTS.map((s) => (
+          <Chip key={s.key} label={s.label} size="sm" tone="gold" selected={sort === s.key} onPress={() => setSort(s.key)} />
+        ))}
+      </ScrollView>
+
+      <SectionHeader title={search ? `ผลการค้นหา "${search}"` : 'สินค้าในร้าน'} style={styles.section} />
     </View>
   );
 
-  const renderFooter = () => {
-    if (!isLoadingMore) return null;
-    return (
-      <View style={styles.loadMoreContainer}>
-        <ActivityIndicator size="small" color="#3B82F6" />
-        <Text style={styles.loadMoreText}>กำลังโหลดเพิ่มเติม...</Text>
-      </View>
-    );
-  };
-
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      <StatusBar barStyle="light-content" />
-      <LinearGradient
-        colors={['#0F0F23', '#1a1a2e', '#16213e']}
-        style={StyleSheet.absoluteFill}
-      />
-
+    <Screen title={store?.name || 'ร้านค้า'} scroll={false} right={<CartButton />}>
       <FlatList
         data={products}
+        keyExtractor={(item) => String(item.id)}
         numColumns={2}
-        keyExtractor={(item, index) => `product-${item.id || index}`}
-        renderItem={({ item }) => (
-          <ProductCard
-            product={item}
-            onPress={() => router.push(`/product/${item.id}`)}
-          />
-        )}
-        ListHeaderComponent={renderHeader}
-        ListFooterComponent={renderFooter}
+        columnWrapperStyle={styles.column}
+        renderItem={({ item }) => <ProductCard product={item} width={cardWidth} />}
+        ListHeaderComponent={header}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={{ fontSize: 64 }}>📦</Text>
-            <Text style={styles.emptyTitle}>ยังไม่มีสินค้า</Text>
-            <Text style={styles.emptySubtitle}>ร้านค้านี้ยังไม่มีสินค้าในขณะนี้</Text>
-          </View>
+          loading ? (
+            <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+          ) : productsError ? (
+            <EmptyState compact variant="error" message={productsError} onAction={() => loadProducts('initial', 1)} />
+          ) : (
+            <EmptyState
+              compact
+              icon="📦"
+              title={search ? 'ไม่พบสินค้าที่ค้นหา' : 'ร้านนี้ยังไม่มีสินค้า'}
+              message={search ? 'ลองใช้คำค้นอื่นนะ' : 'แวะมาดูใหม่เร็วๆ นี้นะ'}
+            />
+          )
         }
-        contentContainerStyle={styles.listContainer}
-        columnWrapperStyle={styles.columnWrapper}
+        ListFooterComponent={loadingMore ? <ActivityIndicator color={colors.gold} style={styles.footer} /> : <View style={styles.footerSpace} />}
+        contentContainerStyle={styles.list}
+        onEndReached={() => {
+          if (hasMore && !loadingMore && !loading && !refreshing) loadProducts('more', page + 1);
+        }}
+        onEndReachedThreshold={0.5}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#3B82F6"
-            colors={['#3B82F6']}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
+            progressBackgroundColor={colors.card}
           />
         }
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
+        showsVerticalScrollIndicator={false}
       />
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
     flex: 1,
-    backgroundColor: '#0F0F23',
   },
-  containerDark: {
-    backgroundColor: '#0F0F23',
-  },
-  loadingContainer: {
-    flex: 1,
+  center: {
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  loadingText: {
-    color: '#9CA3AF',
-    marginTop: 12,
+  list: {
+    paddingHorizontal: spacing.screen,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 16,
-  },
-  errorSubtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 8,
-  },
-  backButton: {
-    marginTop: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-  },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  column: {
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 56,
-    paddingBottom: 16,
+    marginBottom: spacing.md,
   },
-  backIconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+  hero: {
+    marginBottom: spacing.md,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-
-  // Banner
-  bannerContainer: {
-    height: 160,
-    position: 'relative',
-  },
-  banner: {
-    width: '100%',
-    height: '100%',
-  },
-  bannerPlaceholder: {
-    width: '100%',
-    height: '100%',
-  },
-  logoContainer: {
-    position: 'absolute',
-    bottom: -40,
-    left: 20,
-    width: 80,
-    height: 80,
-    borderRadius: 16,
-    borderWidth: 4,
-    borderColor: '#0F0F23',
+  bannerBox: {
+    height: 110,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     overflow: 'hidden',
-    backgroundColor: '#1F2937',
+  },
+  heroBody: {
+    padding: spacing.lg,
+    paddingTop: 0,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.md,
+    marginTop: -28,
   },
   logo: {
-    width: '100%',
-    height: '100%',
+    width: 68,
+    height: 68,
+    borderRadius: 20,
+    borderWidth: 3,
   },
-  logoPlaceholder: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#374151',
+  logoIcon: {
+    fontSize: 30,
   },
-
-  // Store Info
-  storeInfoContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 20,
-  },
-  storeNameRow: {
+  pills: {
     flexDirection: 'row',
-    alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
-  storeName: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  officialBadge: {
+  stats: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
   },
-  officialText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  featuredBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  featuredText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  storeDescription: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 8,
-    lineHeight: 20,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
-  },
-  statItem: {
+  stat: {
     flex: 1,
     alignItems: 'center',
   },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  description: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 4,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-
-  // Products Section
-  productsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  productsSectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  productsCount: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-
-  // Product Card
-  listContainer: {
-    paddingBottom: 100,
-  },
-  columnWrapper: {
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  productCard: {
-    width: PRODUCT_CARD_WIDTH,
-    backgroundColor: '#1F2937',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginVertical: 6,
-  },
-  productImageContainer: {
-    width: '100%',
-    height: 140,
-    backgroundColor: '#374151',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  productImage: {
-    width: '100%',
-    height: '100%',
-  },
-  discountBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  discountBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  pvBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    gap: 2,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
+    gap: spacing.sm,
   },
-  pvBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '600',
+  searchInput: {
+    flex: 1,
+    paddingVertical: spacing.sm,
   },
-  productInfo: {
-    padding: 12,
+  chips: {
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+    paddingRight: spacing.sm,
   },
-  productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 8,
-    minHeight: 36,
+  section: {
+    marginTop: spacing.md,
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  loader: {
+    marginTop: spacing.xxxl,
   },
-  priceDiscount: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#EF4444',
+  footer: {
+    marginVertical: spacing.lg,
   },
-  priceOriginal: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textDecorationLine: 'line-through',
-  },
-  priceNormal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#10B981',
-  },
-
-  // Empty State
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginTop: 16,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 8,
-  },
-
-  // Load More
-  loadMoreContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-    gap: 8,
-  },
-  loadMoreText: {
-    color: '#9CA3AF',
-    fontSize: 14,
+  footerSpace: {
+    height: spacing.xxl,
   },
 });

@@ -1,10 +1,11 @@
 /**
- * Edit Profile Screen - เขียนใหม่ทั้งหมด
+ * Edit Profile Screen - แก้ไขโปรไฟล์
  * - Design สะอาด ใช้ StyleSheet ล้วน
- * - Upload และ Update ใช้ fetch API ตรงๆ
+ * - เรียก API ผ่าน client กลาง (services/api/client) → ข้อความผิดพลาดเป็นภาษาไทยเสมอ ไม่แสดง error ดิบ
+ *   PUT /profile · POST /profile/avatar (multipart ช่อง avatar)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,21 +23,17 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import * as SecureStore from 'expo-secure-store';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
-import { API_BASE_URL, STORAGE_KEYS } from '@/constants';
+import { API_ENDPOINTS } from '@/constants';
+import { apiPut, apiUpload, fileFromUri, type ApiResult } from '@/services/api/client';
 import { getAvatarUrl, getAvatarInitial } from '@/utils/user';
 
 // =====================================================
-// API Functions - เขียนตรงๆ ไม่ผ่าน api.ts
+// API Functions
 // =====================================================
 
-const getToken = async (): Promise<string | null> => {
-  return await SecureStore.getItemAsync(STORAGE_KEYS.AUTH_TOKEN);
-};
-
-const updateProfileApi = async (data: {
+interface ProfileUpdateBody {
   name?: string;
   phone?: string;
   address?: string;
@@ -44,94 +41,21 @@ const updateProfileApi = async (data: {
   bank_name?: string;
   bank_account?: string;
   bank_account_name?: string;
-}): Promise<{ success: boolean; message?: string; data?: any }> => {
-  const token = await getToken();
-  if (!token) {
-    return { success: false, message: 'กรุณาเข้าสู่ระบบใหม่' };
-  }
+}
 
-  try {
-    console.log('📝 Updating profile...', data);
+/** PUT /profile */
+const updateProfileApi = (data: ProfileUpdateBody): Promise<ApiResult<unknown>> =>
+  apiPut<unknown>('/profile', data, { fallbackMessage: 'บันทึกโปรไฟล์ไม่สำเร็จ ลองใหม่อีกครั้งนะ' });
 
-    const response = await fetch(`${API_BASE_URL}/profile`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    const result = await response.json();
-    console.log('📝 Update result:', response.status, result);
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || `อัพเดทไม่สำเร็จ (${response.status})`,
-      };
-    }
-
-    return result;
-  } catch (error: any) {
-    console.error('❌ Update profile error:', error);
-    return {
-      success: false,
-      message: error.message || 'เกิดข้อผิดพลาด',
-    };
-  }
-};
-
-const uploadAvatarApi = async (
+/** POST /profile/avatar → { avatarUrl, user } */
+const uploadAvatarApi = (
   imageUri: string
-): Promise<{ success: boolean; message?: string; data?: any }> => {
-  const token = await getToken();
-  if (!token) {
-    return { success: false, message: 'กรุณาเข้าสู่ระบบใหม่' };
-  }
-
-  try {
-    const filename = imageUri.split('/').pop() || 'avatar.jpg';
-    const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
-    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
-
-    console.log('📸 Uploading avatar...', { filename, mimeType });
-
-    const formData = new FormData();
-    formData.append('avatar', {
-      uri: imageUri,
-      name: filename,
-      type: mimeType,
-    } as any);
-
-    const response = await fetch(`${API_BASE_URL}/mobile/profile/avatar`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
-      body: formData,
-    });
-
-    const result = await response.json();
-    console.log('📸 Upload result:', response.status, result);
-
-    if (!response.ok) {
-      return {
-        success: false,
-        message: result.message || `อัพโหลดไม่สำเร็จ (${response.status})`,
-      };
-    }
-
-    return result;
-  } catch (error: any) {
-    console.error('❌ Upload avatar error:', error);
-    return {
-      success: false,
-      message: error.message || 'เกิดข้อผิดพลาด',
-    };
-  }
+): Promise<ApiResult<{ avatarUrl?: string; user?: Record<string, unknown> }>> => {
+  const form = new FormData();
+  form.append('avatar', fileFromUri(imageUri, 'avatar') as unknown as Blob);
+  return apiUpload<{ avatarUrl?: string; user?: Record<string, unknown> }>(API_ENDPOINTS.AVATAR_UPLOAD, form, {
+    fallbackMessage: 'อัปโหลดรูปโปรไฟล์ไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+  });
 };
 
 // =====================================================
@@ -199,6 +123,17 @@ export default function EditProfileScreen() {
   // Loading states
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  // กันกดซ้ำระหว่างรอ (state อัปเดตไม่ทันเมื่อกดรัว) + กัน setState หลังออกจากหน้า
+  const savingRef = useRef(false);
+  const uploadingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // ⭐ ใช้ utility function สำหรับ avatar URL
 
@@ -253,37 +188,46 @@ export default function EditProfileScreen() {
 
   // Upload avatar
   const handleUploadAvatar = async (uri: string) => {
+    if (uploadingRef.current) return;
+    uploadingRef.current = true;
     setIsUploading(true);
 
-    const result = await uploadAvatarApi(uri);
+    try {
+      const result = await uploadAvatarApi(uri);
 
-    if (result.success) {
-      // ใช้ user object จาก API response (มีข้อมูลล่าสุด)
-      if (result.data?.user) {
-        updateUser(result.data.user);
-      } else if (result.data?.avatarUrl) {
-        // Fallback: ถ้าไม่มี user object ให้ใช้ avatarUrl
-        updateUser({ avatar: result.data.avatarUrl });
+      if (result.success) {
+        // ใช้ user object จาก API response (มีข้อมูลล่าสุด)
+        if (result.data?.user) {
+          updateUser(result.data.user as Parameters<typeof updateUser>[0]);
+        } else if (result.data?.avatarUrl) {
+          // Fallback: ถ้าไม่มี user object ให้ใช้ avatarUrl
+          updateUser({ avatar: result.data.avatarUrl });
+        }
+
+        // Refresh user data จาก server เพื่อให้แน่ใจว่าข้อมูลตรงกัน
+        await refreshUser();
+        if (!mountedRef.current) return;
+
+        Alert.alert('สำเร็จ', 'เปลี่ยนรูปโปรไฟล์แล้ว');
+      } else if (mountedRef.current) {
+        // result.message เป็นภาษาไทยเสมอ (client กลางแปลงจาก code/HTTP status ให้แล้ว)
+        Alert.alert('อัปโหลดรูปไม่สำเร็จ', result.message);
       }
-
-      // Refresh user data จาก server เพื่อให้แน่ใจว่าข้อมูลตรงกัน
-      await refreshUser();
-
-      Alert.alert('สำเร็จ', 'อัพโหลดรูปโปรไฟล์เรียบร้อย');
-    } else {
-      Alert.alert('ผิดพลาด', result.message || 'อัพโหลดไม่สำเร็จ');
+    } finally {
+      uploadingRef.current = false;
+      if (mountedRef.current) setIsUploading(false);
     }
-
-    setIsUploading(false);
   };
 
   // Save profile
   const handleSave = async () => {
+    if (savingRef.current) return;
     if (!name.trim()) {
       Alert.alert('กรุณากรอกข้อมูล', 'กรุณากรอกชื่อ');
       return;
     }
 
+    savingRef.current = true;
     setIsSaving(true);
 
     const result = await updateProfileApi({
@@ -295,6 +239,9 @@ export default function EditProfileScreen() {
       bank_account: bankAccount.trim(),
       bank_account_name: bankAccountName.trim(),
     });
+
+    savingRef.current = false;
+    if (!mountedRef.current) return;
 
     if (result.success) {
       // Update local user data
@@ -311,7 +258,7 @@ export default function EditProfileScreen() {
         { text: 'ตกลง', onPress: () => router.back() },
       ]);
     } else {
-      Alert.alert('ผิดพลาด', result.message || 'บันทึกไม่สำเร็จ');
+      Alert.alert('บันทึกไม่สำเร็จ', result.message);
     }
 
     setIsSaving(false);

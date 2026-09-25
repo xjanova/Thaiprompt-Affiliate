@@ -54,7 +54,6 @@ const fetchKycStatus = async () => {
       },
     });
     const data = await response.json();
-    console.log('📋 KYC Status:', data);
     return data;
   } catch (error) {
     console.error('❌ Fetch KYC status error:', error);
@@ -82,7 +81,6 @@ const uploadKycFile = async (
     const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
     const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
 
-    console.log(`📤 Uploading ${type}...`, { filename, mimeType, size: base64.length });
 
     // สร้าง FormData
     const formData = new FormData();
@@ -103,7 +101,6 @@ const uploadKycFile = async (
     });
 
     const result = await response.json();
-    console.log(`📤 Upload ${type} result:`, response.status, result);
 
     if (!response.ok) {
       return {
@@ -140,7 +137,6 @@ const submitKyc = async (): Promise<{ success: boolean; message?: string }> => {
     });
 
     const result = await response.json();
-    console.log('📋 Submit KYC result:', result);
     return result;
   } catch (error: any) {
     console.error('❌ Submit KYC error:', error);
@@ -350,7 +346,7 @@ export default function KycScreen() {
 
           <View style={[styles.benefitBox, isDark && styles.benefitBoxDark]}>
             <Text style={[styles.benefitTitle, isDark && styles.textWhite]}>ฟีเจอร์ที่ปลดล็อค:</Text>
-            {['✓ ถอนเงินได้ไม่จำกัด', '✓ รับคอมมิชชั่นทันที', '✓ Premium Features'].map((item, i) => (
+            {['✓ ถอนเงินเข้าบัญชีธนาคารได้', '✓ สมัครไรเดอร์และเปิดร้านได้', '✓ บัญชีปลอดภัยยิ่งขึ้น'].map((item, i) => (
               <Text key={i} style={[styles.benefitItem, isDark && styles.textGray300]}>{item}</Text>
             ))}
           </View>

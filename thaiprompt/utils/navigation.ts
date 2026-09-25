@@ -4,6 +4,7 @@
 
 import { router } from 'expo-router';
 import { Linking } from 'react-native';
+import { isTrustedWebUrl } from './linking';
 
 /**
  * เปิด URL ใน WebView ภายในแอพ
@@ -47,10 +48,7 @@ export const openUrl = async (
   icon?: string,
   forceWebView: boolean = false
 ) => {
-  // ตรวจสอบว่าเป็น URL ของเราหรือไม่
-  const isInternalUrl = url.includes('thaiprompt.online') || url.includes('thaiprompt.com');
-
-  // URLs พิเศษที่ไม่ควรเปิดใน WebView
+  // URLs พิเศษที่เปิดด้วยแอประบบ (โทร / อีเมล / SMS / ตั้งค่า)
   const specialUrls = [
     'tel:',    // โทรศัพท์
     'mailto:', // อีเมล
@@ -66,11 +64,12 @@ export const openUrl = async (
     if (canOpen) {
       await Linking.openURL(url);
     }
-  } else if (isInternalUrl || forceWebView) {
-    // เปิดใน WebView
-    openInWebView(url, title, icon);
-  } else {
-    // External URL - เปิดใน WebView เช่นกัน (เพื่อความสะดวก)
-    openInWebView(url, title || 'เว็บไซต์', icon || '🌐');
+    return;
   }
+
+  // PLAY-23: เปิดได้เฉพาะเว็บของเรา (https://*.thaiprompt.online) — forceWebView ไม่ข้ามกติกานี้
+  if (isTrustedWebUrl(url)) {
+    openInWebView(url, title, icon);
+  }
+  void forceWebView;
 };

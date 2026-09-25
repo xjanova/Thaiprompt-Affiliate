@@ -26,6 +26,7 @@ import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { getWalletTransactions } from '@/services/api';
+import { hasRestrictedText, walletReferenceLabel, walletTransactionTitle } from '@/utils/storePolicy';
 import { formatCurrency } from '@/constants';
 
 // Transaction type
@@ -251,7 +252,7 @@ const TransactionDetailModal = ({
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>ประเภท</Text>
               <Text style={[styles.detailValue, isDark && styles.textLight]}>
-                {transaction.referenceType || (isIncome ? 'รายรับ' : 'รายจ่าย')}
+                {walletReferenceLabel(transaction.referenceType, isIncome)}
               </Text>
             </View>
 
@@ -307,27 +308,32 @@ export default function WalletHistoryScreen() {
     }
 
     try {
-      const response = await getWalletTransactions(
-        pageNum,
-        filterType,
-        20,
-        dateRange.startDate?.toISOString(),
-        dateRange.endDate?.toISOString()
-      );
+      // หมายเหตุ: GET /wallet/transactions ยังไม่รับช่วงวันที่ (รับแค่ page / type / per_page)
+      const response = await getWalletTransactions(pageNum, filterType, 20);
 
       if (response?.success && response.data) {
-        const newItems = response.data.items.map((tx: any) => ({
-          id: tx.id,
-          type: tx.type,
-          amount: tx.amount,
-          title: tx.title,
-          description: tx.description,
-          status: tx.status || 'completed',
-          date: tx.date,
-          dateRelative: tx.dateRelative,
-          referenceType: tx.referenceType,
-          referenceId: tx.referenceId,
-        }));
+        // server รุ่นใหม่อาจส่ง hasMore / summary มาเพิ่ม (รุ่นปัจจุบันส่งแค่ items + pagination)
+        const page = response.data as typeof response.data & {
+          hasMore?: boolean;
+          summary?: { totalIncome?: number; totalExpense?: number };
+        };
+        const newItems = page.items.map((tx: any) => {
+          const isIncome = tx.type === 'in';
+          const description = typeof tx.description === 'string' ? tx.description : undefined;
+          return {
+            id: tx.id,
+            type: tx.type,
+            amount: Number(tx.amount) || 0,
+            // นโยบาย Google Play: รายได้จากระบบเครือข่ายแสดงเป็น "ค่าแนะนำ" (ไม่มีคำว่าคอมมิชชั่น/ชั้น)
+            title: walletTransactionTitle(tx.title, tx.referenceType, isIncome),
+            description: description && !hasRestrictedText(description) ? description : undefined,
+            status: tx.status || 'completed',
+            date: tx.date,
+            dateRelative: tx.dateRelative,
+            referenceType: tx.referenceType,
+            referenceId: tx.referenceId,
+          };
+        });
 
         if (refresh || pageNum === 1) {
           setTransactions(newItems);
@@ -335,9 +341,13 @@ export default function WalletHistoryScreen() {
           setTransactions(prev => [...prev, ...newItems]);
         }
 
-        setHasMore(response.data.hasMore ?? newItems.length >= 20);
-        setTotalIncome(response.data.summary?.totalIncome || 0);
-        setTotalExpense(response.data.summary?.totalExpense || 0);
+        const pagination = page.pagination;
+        setHasMore(
+          page.hasMore ??
+            (pagination ? Number(pagination.currentPage) < Number(pagination.lastPage) : newItems.length >= 20)
+        );
+        setTotalIncome(Number(page.summary?.totalIncome) || 0);
+        setTotalExpense(Number(page.summary?.totalExpense) || 0);
       }
     } catch (error) {
       console.error('Load transactions error:', error);

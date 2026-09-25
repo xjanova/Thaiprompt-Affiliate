@@ -198,7 +198,7 @@ export default function RegisterScreen() {
               <Text style={styles.logoEmoji}>🚀</Text>
             </LinearGradient>
             <Text style={styles.title}>สมัครสมาชิก</Text>
-            <Text style={styles.subtitle}>เริ่มต้นสร้างรายได้กับ Thaiprompt</Text>
+            <Text style={styles.subtitle}>สมัครฟรี สั่งของใกล้บ้านได้ทันที</Text>
           </View>
 
           {/* Step Indicators */}

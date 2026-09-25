@@ -12,10 +12,12 @@ export { LavaBackground, GlassCard } from './LavaBackground';
 export {
   EarningsChart,
   StatCard,
-  CommissionBreakdownChart,
   ProgressRing,
   MiniProgressRing,
 } from './charts';
+
+// UI kit ธีมนวลทองคำ (ใช้ `@/components/ui` ในหน้าจอใหม่)
+export * from './ui';
 
 // Admin Control Components
 export { default as BannerCarousel } from './BannerCarousel';

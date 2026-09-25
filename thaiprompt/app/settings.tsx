@@ -4,18 +4,18 @@
  * ปิด AnimatedBackground ชั่วคราวเพื่อทดสอบ crash
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   ScrollView,
   Pressable,
-  Switch,
   StyleSheet,
   Alert,
   StatusBar,
   ActivityIndicator,
-  Platform,
+  TextInput,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -26,9 +26,15 @@ import { router } from 'expo-router';
 import { useAppStore } from '@/stores/appStore';
 import { useAuthStore } from '@/stores/authStore';
 import { APP_INFO } from '@/config/appConfig';
-import { startGpsSharing, stopGpsSharing, requestLocationPermission } from '@/services/location';
 import { openUrl } from '@/utils/navigation';
 import { getAvatarInitial } from '@/utils/user';
+import {
+  deleteAccount,
+  getAccountDeletionCheck,
+  type DeletionCheck,
+} from '@/services/api/accountApi';
+import { ConsentSheet, openWebsite, resultHaptic } from '@/components/ui';
+import { useTheme, spacing, radii, typography } from '@/theme';
 
 // Import SVG Icons
 import {
@@ -192,16 +198,115 @@ const ThemeOption = ({
   );
 };
 
-export default function SettingsScreen() {
-  const { resolvedTheme, themeMode, setThemeMode, gpsSharing, setGpsSharing } = useAppStore();
-  const { user, isAuthenticated, logout } = useAuthStore();
-  const isDark = resolvedTheme === 'dark';
+/**
+ * ช่องยืนยันการลบบัญชี (พิมพ์คำยืนยัน + รหัสผ่านถ้าจำเป็น)
+ */
+const DeleteConfirmFields = ({
+  check,
+  confirmText,
+  onConfirmText,
+  password,
+  onPassword,
+  errorMessage,
+}: {
+  check: DeletionCheck;
+  confirmText: string;
+  onConfirmText: (v: string) => void;
+  password: string;
+  onPassword: (v: string) => void;
+  errorMessage: string | null;
+}) => {
+  const { colors } = useTheme();
+  const inputStyle = [
+    deleteStyles.input,
+    { backgroundColor: colors.inset, borderColor: colors.border, color: colors.textStrong },
+  ];
 
-  // Settings state
-  const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [isGpsLoading, setIsGpsLoading] = useState(false);
+  return (
+    <View style={deleteStyles.fields}>
+      <Text style={[typography.bodySm, { color: colors.text }]}>
+        พิมพ์คำว่า <Text style={{ fontWeight: '800', color: colors.danger }}>{check.confirm_text}</Text> เพื่อยืนยัน
+      </Text>
+      <TextInput
+        value={confirmText}
+        onChangeText={onConfirmText}
+        placeholder={check.confirm_text}
+        placeholderTextColor={colors.textFaint}
+        autoCorrect={false}
+        autoCapitalize="none"
+        style={inputStyle}
+        accessibilityLabel="ช่องพิมพ์คำยืนยันการลบบัญชี"
+      />
+      {check.requires_password && (
+        <>
+          <Text style={[typography.bodySm, deleteStyles.label, { color: colors.text }]}>รหัสผ่านของคุณ</Text>
+          <TextInput
+            value={password}
+            onChangeText={onPassword}
+            placeholder="รหัสผ่าน"
+            placeholderTextColor={colors.textFaint}
+            secureTextEntry
+            autoCapitalize="none"
+            style={inputStyle}
+            accessibilityLabel="รหัสผ่าน"
+          />
+        </>
+      )}
+      {!!errorMessage && (
+        <Text style={[typography.bodySm, deleteStyles.error, { color: colors.danger }]} accessibilityRole="alert">
+          {errorMessage}
+        </Text>
+      )}
+    </View>
+  );
+};
+
+const deleteStyles = StyleSheet.create({
+  fields: {
+    marginTop: spacing.lg,
+  },
+  label: {
+    marginTop: spacing.md,
+  },
+  input: {
+    marginTop: spacing.xs,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: 16,
+  },
+  error: {
+    marginTop: spacing.md,
+  },
+  blocker: {
+    marginTop: spacing.sm,
+  },
+});
+
+type DeleteStep = 'closed' | 'warning' | 'confirm';
+
+export default function SettingsScreen() {
+  const { resolvedTheme, themeMode, setThemeMode } = useAppStore();
+  const { user, isAuthenticated, logout, clearSession } = useAuthStore();
+  const isDark = resolvedTheme === 'dark';
+  const { colors } = useTheme();
+
+  // ลบบัญชี (PLAY-05)
+  const [deleteStep, setDeleteStep] = useState<DeleteStep>('closed');
+  const [deletionCheck, setDeletionCheck] = useState<DeletionCheck | null>(null);
+  const [isCheckingDeletion, setIsCheckingDeletion] = useState(false);
+  const [confirmText, setConfirmText] = useState('');
+  const [password, setPassword] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Handlers
   const handleKYC = () => {
@@ -220,24 +325,26 @@ export default function SettingsScreen() {
     );
   };
 
+  // PLAY-06: ลิงก์นโยบายชี้ไปหน้าที่มีอยู่จริงบนเว็บ (/privacy-policy, /terms-of-service)
   const handlePrivacyPolicy = () => {
-    openUrl(
-      APP_INFO.PRIVACY_URL || 'https://main.thaiprompt.online/privacy',
-      'นโยบายความเป็นส่วนตัว',
-      '📄'
-    );
+    openUrl(APP_INFO.PRIVACY_URL, 'นโยบายความเป็นส่วนตัว', '📄');
   };
 
   const handleTermsOfService = () => {
-    openUrl(
-      APP_INFO.TERMS_URL || 'https://main.thaiprompt.online/terms',
-      'ข้อกำหนดการใช้งาน',
-      '📋'
-    );
+    openUrl(APP_INFO.TERMS_URL, 'ข้อกำหนดการใช้งาน', '📋');
+  };
+
+  // PLAY-25: อีเมลติดต่อชุดเดียวกับเว็บ
+  const handleContactSupport = () => {
+    Linking.openURL(`mailto:${APP_INFO.SUPPORT_EMAIL}`).catch(() => {
+      Alert.alert('ติดต่อทีมงาน', `ส่งอีเมลถึงเราได้ที่ ${APP_INFO.SUPPORT_EMAIL}`);
+    });
   };
 
   const handleRateApp = () => {
-    Alert.alert('ให้คะแนนแอพ', 'ขอบคุณที่ใช้งานแอพของเรา!');
+    Linking.openURL(`market://details?id=${APP_INFO.BUNDLE_ID}`).catch(() => {
+      Linking.openURL(`https://play.google.com/store/apps/details?id=${APP_INFO.BUNDLE_ID}`).catch(() => {});
+    });
   };
 
   const handleLogout = () => {
@@ -258,65 +365,62 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'ลบบัญชี',
-      'คุณแน่ใจหรือไม่ที่จะลบบัญชี? การดำเนินการนี้ไม่สามารถยกเลิกได้',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'ลบบัญชี',
-          style: 'destructive',
-          onPress: () => Alert.alert('แจ้งเตือน', 'กรุณาติดต่อ support@thaiprompt.com เพื่อลบบัญชี'),
-        },
-      ]
-    );
+  // ---------- ลบบัญชี: เช็คเงื่อนไข → คำเตือน → พิมพ์ยืนยัน → DELETE /account → ออกจากระบบ ----------
+  const closeDelete = () => {
+    setDeleteStep('closed');
+    setConfirmText('');
+    setPassword('');
+    setDeleteError(null);
   };
 
-  // ⭐ GPS Sharing Handler
-  const handleGpsSharingToggle = async (enabled: boolean) => {
-    if (!isAuthenticated) {
-      Alert.alert('แจ้งเตือน', 'กรุณาเข้าสู่ระบบก่อน');
+  const handleDeleteAccount = async () => {
+    if (isCheckingDeletion) return;
+    setIsCheckingDeletion(true);
+    const result = await getAccountDeletionCheck();
+    if (!mountedRef.current) return;
+    setIsCheckingDeletion(false);
+
+    if (!result.success) {
+      Alert.alert('ลบบัญชี', result.message);
+      return;
+    }
+    setDeletionCheck(result.data);
+    setDeleteError(null);
+    setDeleteStep('warning');
+  };
+
+  const submitDeleteAccount = async () => {
+    if (!deletionCheck) return;
+    setDeleteError(null);
+
+    const result = await deleteAccount({
+      confirm_text: confirmText.trim(),
+      ...(deletionCheck.requires_password ? { password } : {}),
+    });
+    if (!mountedRef.current) return;
+
+    if (result.success) {
+      resultHaptic('success');
+      closeDelete();
+      // token ถูกเพิกถอนที่ server แล้ว → ล้าง session ในเครื่องอย่างเดียว
+      await clearSession('ลบบัญชีเรียบร้อยแล้ว ขอบคุณที่ใช้บริการ');
+      router.replace('/login');
       return;
     }
 
-    setIsGpsLoading(true);
-
-    try {
-      if (enabled) {
-        // ขอสิทธิ์ก่อน
-        const permissions = await requestLocationPermission();
-        if (!permissions.foreground) {
-          Alert.alert(
-            'ต้องการสิทธิ์',
-            'กรุณาอนุญาตการเข้าถึงตำแหน่งในการตั้งค่าเพื่อเปิดใช้งาน GPS Sharing',
-            [{ text: 'ตกลง' }]
-          );
-          setIsGpsLoading(false);
-          return;
-        }
-
-        // เริ่ม GPS Sharing
-        const success = await startGpsSharing();
-        if (success) {
-          await setGpsSharing(true);
-          Alert.alert('เปิดใช้งาน', 'เริ่มแชร์ตำแหน่ง GPS แล้ว\nAdmin จะสามารถเห็นตำแหน่งของคุณได้');
-        } else {
-          Alert.alert('ล้มเหลว', 'ไม่สามารถเริ่ม GPS Sharing ได้');
-        }
-      } else {
-        // หยุด GPS Sharing
-        await stopGpsSharing();
-        await setGpsSharing(false);
-        Alert.alert('ปิดใช้งาน', 'หยุดแชร์ตำแหน่ง GPS แล้ว');
-      }
-    } catch (error) {
-      console.error('GPS Sharing toggle error:', error);
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถเปลี่ยนการตั้งค่า GPS ได้');
-    } finally {
-      setIsGpsLoading(false);
+    resultHaptic('error');
+    // มีเงื่อนไขค้าง (409) → อัปเดตรายการที่ต้องจัดการ แล้วกลับไปหน้าคำเตือน
+    if (result.status === 409 && Array.isArray(result.data?.blockers)) {
+      setDeletionCheck({ ...deletionCheck, can_delete: false, blockers: result.data.blockers });
+      setDeleteStep('warning');
     }
+    setDeleteError(result.message);
   };
+
+  const canSubmitDelete =
+    !!deletionCheck &&
+    confirmText.trim() === deletionCheck.confirm_text &&
+    (!deletionCheck.requires_password || password.length > 0);
 
   return (
     <View style={styles.container}>
@@ -433,94 +537,39 @@ export default function SettingsScreen() {
           icon={ShieldCheckIcon}
           iconColor="#10B981"
           title="ยืนยันตัวตน (KYC)"
-          subtitle="ยืนยันตัวตนเพื่อเพิ่มวงเงิน"
+          subtitle="ยืนยันตัวตนก่อนถอนเงินเข้าบัญชี"
           onPress={handleKYC}
           isDark={isDark}
         />
 
-        {/* Notifications */}
+        {/* Notifications — ตั้งค่าจริงอยู่หน้า notification-settings
+            (PLAY-13: ถอด "แชร์ตำแหน่งให้แอดมิน" ออก — ตำแหน่งใช้เฉพาะไรเดอร์ระหว่างส่งงาน) */}
         <SectionHeader title="🔔 การแจ้งเตือน" isDark={isDark} />
         <SettingItem
           icon={BellIcon}
           iconColor="#FF6B6B"
-          title="Push Notification"
-          subtitle="รับการแจ้งเตือนบนอุปกรณ์"
+          title="ตั้งค่าการแจ้งเตือน"
+          subtitle="เลือกประเภทการแจ้งเตือนที่อยากได้รับ"
+          onPress={() => router.push('/notification-settings')}
           isDark={isDark}
-          rightElement={
-            <Switch
-              value={pushNotifications}
-              onValueChange={setPushNotifications}
-              trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
-              thumbColor={pushNotifications ? '#FFFFFF' : '#f4f3f4'}
-            />
-          }
-        />
-        <SettingItem
-          icon={MailIcon}
-          iconColor="#4ECDC4"
-          title="Email Notification"
-          subtitle="รับการแจ้งเตือนทางอีเมล"
-          isDark={isDark}
-          rightElement={
-            <Switch
-              value={emailNotifications}
-              onValueChange={setEmailNotifications}
-              trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
-              thumbColor={emailNotifications ? '#FFFFFF' : '#f4f3f4'}
-            />
-          }
         />
 
-        {/* ⭐ GPS Sharing - แยกหมวดให้เห็นชัด */}
-        <SectionHeader title="📍 แชร์ตำแหน่ง GPS" isDark={isDark} />
-        <SettingItem
-          icon={LocationIcon}
-          iconColor="#10B981"
-          title="เปิดแชร์ตำแหน่ง"
-          subtitle={gpsSharing ? '🟢 กำลังแชร์ตำแหน่งอยู่...' : 'แชร์ตำแหน่งให้ Admin GPS Monitor ดู'}
-          isDark={isDark}
-          rightElement={
-            isGpsLoading ? (
-              <ActivityIndicator size="small" color={isDark ? '#7B2CBF' : '#10B981'} />
-            ) : (
-              <Switch
-                value={gpsSharing}
-                onValueChange={handleGpsSharingToggle}
-                trackColor={{ false: '#767577', true: '#10B981' }}
-                thumbColor={gpsSharing ? '#FFFFFF' : '#f4f3f4'}
-              />
-            )
-          }
-        />
-        {gpsSharing && (
-          <LinearGradient
-            colors={['rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0.05)']}
-            style={styles.gpsStatusCard}
-          >
-            <NavigationIcon size={20} color="#10B981" />
-            <Text style={[styles.gpsStatusText, { color: '#10B981' }]}>
-              กำลังส่งตำแหน่งทุก 30 วินาที
-            </Text>
-          </LinearGradient>
+        {/* Website */}
+        {isAuthenticated && (
+          <>
+            <SectionHeader title="🌐 เว็บไซต์" isDark={isDark} />
+            <SettingItem
+              icon={GlobeIcon}
+              iconColor="#E6B347"
+              title="จัดการบนเว็บไซต์"
+              subtitle="เปิดเว็บไซต์ในเบราว์เซอร์ ล็อกอินให้อัตโนมัติ"
+              onPress={() => {
+                openWebsite('/user').catch(() => {});
+              }}
+              isDark={isDark}
+            />
+          </>
         )}
-
-        {/* Security */}
-        <SectionHeader title="🔐 ความปลอดภัย" isDark={isDark} />
-        <SettingItem
-          icon={FingerprintIcon}
-          iconColor="#45B7D1"
-          title="Biometric Login"
-          subtitle="เข้าสู่ระบบด้วยลายนิ้วมือ/Face ID"
-          isDark={isDark}
-          rightElement={
-            <Switch
-              value={biometricEnabled}
-              onValueChange={setBiometricEnabled}
-              trackColor={{ false: '#767577', true: isDark ? '#7B2CBF' : '#3B82F6' }}
-              thumbColor={biometricEnabled ? '#FFFFFF' : '#f4f3f4'}
-            />
-          }
-        />
 
         {/* About */}
         <SectionHeader title="ℹ️ เกี่ยวกับ" isDark={isDark} />
@@ -536,6 +585,14 @@ export default function SettingsScreen() {
           iconColor="#8B5CF6"
           title="ข้อกำหนดการใช้งาน"
           onPress={handleTermsOfService}
+          isDark={isDark}
+        />
+        <SettingItem
+          icon={MailIcon}
+          iconColor="#4ECDC4"
+          title="ติดต่อทีมงาน"
+          subtitle={APP_INFO.SUPPORT_EMAIL}
+          onPress={handleContactSupport}
           isDark={isDark}
         />
         <SettingItem
@@ -569,8 +626,11 @@ export default function SettingsScreen() {
               icon={TrashIcon}
               iconColor="#DC143C"
               title="ลบบัญชี"
-              subtitle="ลบบัญชีของคุณอย่างถาวร"
+              subtitle="ลบบัญชีและข้อมูลส่วนตัวของคุณอย่างถาวร"
               onPress={handleDeleteAccount}
+              rightElement={
+                isCheckingDeletion ? <ActivityIndicator size="small" color="#DC143C" /> : undefined
+              }
               isDark={isDark}
             />
           </>
@@ -578,6 +638,81 @@ export default function SettingsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* PLAY-05: ลบบัญชีในแอป — คำเตือน → พิมพ์ยืนยัน */}
+      {deletionCheck && (
+        <ConsentSheet
+          visible={deleteStep !== 'closed'}
+          icon={deleteStep === 'confirm' ? '⚠️' : '🗑️'}
+          title={
+            deleteStep === 'confirm'
+              ? 'ยืนยันการลบบัญชี'
+              : deletionCheck.can_delete
+                ? 'ลบบัญชีถาวร'
+                : 'ยังลบบัญชีไม่ได้'
+          }
+          description={
+            deleteStep === 'confirm'
+              ? 'ขั้นตอนสุดท้าย หลังกดยืนยันจะย้อนกลับไม่ได้'
+              : deletionCheck.can_delete
+                ? 'ก่อนลบ อ่านสิ่งที่จะเกิดขึ้นก่อนนะ'
+                : 'จัดการรายการด้านล่างให้เรียบร้อยก่อน แล้วค่อยกลับมาลบใหม่'
+          }
+          reasons={
+            deleteStep === 'confirm'
+              ? []
+              : deletionCheck.can_delete
+                ? [
+                    { icon: '👤', text: 'ชื่อ อีเมล เบอร์โทร และบัญชีที่เชื่อมไว้จะถูกลบหรือปกปิด' },
+                    { icon: '🔒', text: 'เข้าสู่ระบบด้วยบัญชีนี้ไม่ได้อีก ทุกเครื่องจะออกจากระบบ' },
+                    { icon: '🧾', text: 'ประวัติธุรกรรมการเงินเก็บไว้ตามที่กฎหมายกำหนดเท่านั้น' },
+                    { icon: '↩️', text: 'ยกเลิกไม่ได้หลังยืนยัน' },
+                  ]
+                : deletionCheck.blockers.map((b) => ({ icon: '•', text: b.message }))
+          }
+          acceptLabel={
+            deleteStep === 'confirm'
+              ? 'ลบบัญชีของฉัน'
+              : deletionCheck.can_delete
+                ? 'เข้าใจแล้ว ไปต่อ'
+                : 'เข้าใจแล้ว'
+          }
+          declineLabel={deleteStep === 'confirm' ? 'ยกเลิก' : 'ไม่ลบแล้ว'}
+          acceptVariant="danger"
+          acceptDisabled={deleteStep === 'confirm' && !canSubmitDelete}
+          onAccept={() => {
+            if (deleteStep === 'confirm') {
+              return submitDeleteAccount();
+            }
+            if (deletionCheck.can_delete) {
+              setDeleteError(null);
+              setDeleteStep('confirm');
+            } else {
+              closeDelete();
+            }
+            return undefined;
+          }}
+          onDecline={closeDelete}
+          footnote={
+            deleteStep === 'warning'
+              ? `อ่านวิธีลบบัญชีบนเว็บได้ที่ ${APP_INFO.ACCOUNT_DELETION_URL}`
+              : undefined
+          }
+        >
+          {deleteStep === 'confirm' ? (
+            <DeleteConfirmFields
+              check={deletionCheck}
+              confirmText={confirmText}
+              onConfirmText={setConfirmText}
+              password={password}
+              onPassword={setPassword}
+              errorMessage={deleteError}
+            />
+          ) : deleteError ? (
+            <Text style={[typography.bodySm, deleteStyles.blocker, { color: colors.danger }]}>{deleteError}</Text>
+          ) : null}
+        </ConsentSheet>
+      )}
     </View>
   );
 }

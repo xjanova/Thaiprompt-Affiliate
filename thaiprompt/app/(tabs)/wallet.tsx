@@ -5,7 +5,7 @@
  * Features:
  * - แสดงยอดเงินในกระเป๋า
  * - ประวัติธุรกรรม
- * - ปุ่มเติมเงิน/ถอนเงิน/โอนเงิน
+ * - ปุ่มเติมเงิน/ถอนเงิน (โอนเงิน P2P ปิดตาม FEATURES.P2P_TRANSFER_ENABLED)
  * - รองรับโหมดมืด/สว่าง
  * - KYC Warning
  */
@@ -55,6 +55,8 @@ const EMOJI_ICONS: Record<string, string> = {
 import { useAppStore } from '@/stores/appStore';
 import { getWallet, getWalletTransactions, getKycStatus } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import { isFeatureEnabled } from '@/config/appConfig';
+import { walletTransactionTitle } from '@/utils/storePolicy';
 import QRCode from 'react-native-qrcode-svg';
 
 // Wallet data type
@@ -186,6 +188,8 @@ export default function WalletScreen() {
   const { isAuthenticated, user } = useAuthStore();
   const { resolvedTheme } = useAppStore();
   const isDark = resolvedTheme === 'dark';
+  // PLAY-18: โอนเงินระหว่างผู้ใช้ (P2P) ปิดไว้จนกว่าจะยื่น Financial features declaration
+  const p2pEnabled = isFeatureEnabled('P2P_TRANSFER_ENABLED');
 
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -214,8 +218,9 @@ export default function WalletScreen() {
         const txItems = txResponse.data.items.map((tx: any) => ({
           id: tx.id,
           type: tx.type,
-          amount: tx.amount,
-          title: tx.title,
+          amount: Number(tx.amount) || 0,
+          // นโยบาย Google Play: รายได้จากระบบเครือข่ายแสดงเป็น "ค่าแนะนำ" (ไม่มีคำว่าคอมมิชชั่น/ชั้น)
+          title: walletTransactionTitle(tx.title, tx.referenceType, tx.type === 'in'),
           status: tx.status || 'completed',
           date: tx.date,
           dateRelative: tx.dateRelative,
@@ -276,6 +281,8 @@ export default function WalletScreen() {
   };
 
   const handleShowQr = () => {
+    // PLAY-18: รับ/โอนเงินระหว่างผู้ใช้ปิดใน build สโตร์
+    if (!p2pEnabled) return;
     setShowQrModal(true);
   };
 
@@ -379,13 +386,15 @@ export default function WalletScreen() {
                 <Text style={{ fontSize: 20 }}>💰</Text>
                 <Text style={styles.balanceLabel}>ยอดเงินคงเหลือ</Text>
               </View>
-              {/* QR Code Button - ปุ่มรับเงินชัดเจน */}
-              <Pressable style={styles.receiveMoneyButton} onPress={handleShowQr}>
-                <View style={styles.receiveMoneyIcon}>
-                  <Text style={{ fontSize: 18 }}>📲</Text>
-                </View>
-                <Text style={styles.receiveMoneyText}>รับเงิน</Text>
-              </Pressable>
+              {/* QR Code Button - ปุ่มรับเงิน (เฉพาะเมื่อเปิดโอนเงินระหว่างผู้ใช้ — PLAY-18) */}
+              {p2pEnabled && (
+                <Pressable style={styles.receiveMoneyButton} onPress={handleShowQr}>
+                  <View style={styles.receiveMoneyIcon}>
+                    <Text style={{ fontSize: 18 }}>📲</Text>
+                  </View>
+                  <Text style={styles.receiveMoneyText}>รับเงิน</Text>
+                </Pressable>
+              )}
             </View>
             <Text style={styles.balanceAmount}>
               {formatCurrency(wallet?.balance || 0)}
@@ -408,7 +417,8 @@ export default function WalletScreen() {
           </LinearGradient>
         </View>
 
-        {/* Receive Money Button - ปุ่มรับเงินโดดเด่น */}
+        {/* Receive Money Button - รับเงินจากผู้ใช้อื่น (P2P) — ปิดใน build สโตร์ (PLAY-18) */}
+        {p2pEnabled && (
         <Pressable style={styles.receiveMoneyCard} onPress={handleShowQr}>
           <LinearGradient
             colors={['#8B5CF6', '#7C3AED']}
@@ -426,6 +436,7 @@ export default function WalletScreen() {
             <Text style={{ fontSize: 20, color: 'rgba(255,255,255,0.8)' }}>›</Text>
           </LinearGradient>
         </Pressable>
+        )}
 
         {/* Action Buttons */}
         <View style={styles.actionsRow}>
@@ -441,12 +452,14 @@ export default function WalletScreen() {
             color="#10B981"
             onPress={handleWithdraw}
           />
-          <ActionButton
-            icon="swap-horizontal-outline"
-            label="โอนเงิน"
-            color="#8B5CF6"
-            onPress={handleTransfer}
-          />
+          {p2pEnabled && (
+            <ActionButton
+              icon="swap-horizontal-outline"
+              label="โอนเงิน"
+              color="#8B5CF6"
+              onPress={handleTransfer}
+            />
+          )}
           <ActionButton
             icon="time-outline"
             label="ประวัติ"
@@ -454,6 +467,9 @@ export default function WalletScreen() {
             onPress={handleHistory}
           />
         </View>
+        <Text style={[styles.walletPurposeNote, !isDark && { color: '#6B7280' }]}>
+          ยอดในกระเป๋าใช้ชำระค่าสินค้าและค่าจัดส่งในแอป และรับค่าส่งของ/ยอดขายจากร้าน
+        </Text>
 
         {/* Stats Cards */}
         <View style={styles.statsRow}>
@@ -522,7 +538,8 @@ export default function WalletScreen() {
         </View>
       </ScrollView>
 
-      {/* QR Code Modal */}
+      {/* QR Code Modal (PLAY-18: ไม่ render เลยเมื่อปิดโอนเงินระหว่างผู้ใช้) */}
+      {p2pEnabled && (
       <Modal
         visible={showQrModal}
         transparent
@@ -595,6 +612,7 @@ export default function WalletScreen() {
           </View>
         </View>
       </Modal>
+      )}
     </View>
   );
 }
@@ -770,6 +788,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  walletPurposeNote: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginHorizontal: 24,
+    marginTop: -8,
+    marginBottom: 16,
+  },
   actionsRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,

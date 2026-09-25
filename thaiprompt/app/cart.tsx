@@ -1,819 +1,543 @@
 /**
- * Cart Screen - หน้าตะกร้าสินค้า
- * Premium Design พร้อม Animation
+ * ตะกร้าสินค้า — ตะกร้าบน server เป็นข้อมูลหลัก (SHOP-03 / SHOP-23)
  *
- * V2: Hybrid Mode
- * - การแสดงผล (ราคา, PV, ค่าส่ง) → คำนวณในแอพ (client-side)
- * - การ Checkout (หักเงิน, สร้าง order) → ใช้ Server คำนวณเท่านั้น
+ * - ทุกการแก้ไขเรียก API แล้วแทนตะกร้าทั้งใบด้วยค่าที่ server ตอบ (cartStore)
+ * - กด +/− รัวๆ → รวมเป็นคำสั่งเดียวหลังหยุดกด 450ms (ไม่ยิง API ทุกครั้งที่กด)
+ * - ราคา/ค่าส่ง/ยอดรวม มาจาก server เท่านั้น — ไม่มี PV/คอมมิชชั่น
+ * - สินค้าที่สั่งไม่ได้ (หมด/ปิดขาย) ต้องเอาออกก่อนชำระเงิน เพราะ checkout ตรวจทั้งตะกร้า
+ * - ลบสินค้า / ล้างตะกร้า ต้องยืนยันก่อนเสมอ
  */
 
-import React, { useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  Pressable,
-  Image,
-  StyleSheet,
-  StatusBar,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
-import { router, Stack, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useCartStore, CartItem } from '@/stores/cartStore';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { router, useFocusEffect } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
-import { formatCurrency } from '@/constants';
+import { useCartStore, type CartItem } from '@/stores/cartStore';
+import { Button3D, Card3D, EmptyState, Pill, PriceText, Screen, resultHaptic } from '@/components/ui';
+import { QuantityStepper } from '@/components/shop';
+import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
 
-// Cart Item Component - แสดงข้อมูลจาก local calculation
-const CartItemCard = ({
-  item,
-  onUpdateQuantity,
-  onRemove,
-  isUpdating,
-}: {
+const QTY_DEBOUNCE_MS = 450;
+
+interface ItemRowProps {
   item: CartItem;
-  onUpdateQuantity: (quantity: number) => void;
+  quantity: number;
+  busy: boolean;
+  onQuantity: (next: number) => void;
   onRemove: () => void;
-  isUpdating: boolean;
-}) => {
-  // ใช้ค่าที่คำนวณไว้แล้ว
-  const price = item.price;
-  const pv = item.pvValue;
-  const subtotal = item.subtotal;
-  const image = item.productImage || item.product.image;
+}
+
+const ItemRow: React.FC<ItemRowProps> = ({ item, quantity, busy, onQuantity, onRemove }) => {
+  const { colors } = useTheme();
+  const hasDiscount = item.original_price !== null && item.original_price > item.unit_price;
+  const maxQty = Math.max(1, Math.min(99, item.max_quantity || 99));
 
   return (
-    <View style={[styles.cartItem, isUpdating && styles.cartItemUpdating]}>
-      {/* Product Image */}
-      <View style={styles.itemImageContainer}>
-        {image ? (
-          <Image
-            source={{ uri: image }}
-            style={styles.itemImage}
-            resizeMode="cover"
-          />
+    <View style={[styles.itemRow, !item.is_available && styles.dimmed]}>
+      <Pressable
+        onPress={() => router.push(`/product/${item.product_id}` as never)}
+        accessibilityRole="button"
+        accessibilityLabel={`ดูสินค้า ${item.name}`}
+      >
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={[styles.thumb, { backgroundColor: colors.inset }]} contentFit="cover" transition={120} />
         ) : (
-          <Text style={styles.itemPlaceholder}>📦</Text>
-        )}
-        {!item.isAvailable && (
-          <View style={styles.unavailableOverlay}>
-            <Text style={styles.unavailableText}>หมด</Text>
+          <View style={[styles.thumb, styles.center, { backgroundColor: colors.inset }]}>
+            <Text style={styles.thumbIcon}>📦</Text>
           </View>
         )}
-      </View>
+      </Pressable>
 
-      {/* Product Info */}
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemName} numberOfLines={2}>
-          {item.productName || item.product.name}
-        </Text>
-
-        {item.selectedVariant && (
-          <Text style={styles.itemVariant}>
-            ตัวเลือก: {item.selectedVariant.name}
+      <View style={styles.flex}>
+        <View style={styles.itemTop}>
+          <Text numberOfLines={2} style={[typography.bodyStrong, styles.flex, { color: colors.textStrong }]}>
+            {item.name}
           </Text>
-        )}
-
-        <View style={styles.itemPriceRow}>
-          <Text style={styles.itemPrice}>{formatCurrency(price)}</Text>
-          {item.originalPrice > price && (
-            <Text style={styles.itemOriginalPrice}>
-              {formatCurrency(item.originalPrice)}
-            </Text>
-          )}
-        </View>
-
-        <View style={styles.itemMetaRow}>
-          <View style={styles.itemPvBadge}>
-            <Text style={styles.itemPvText}>⭐ {pv} PV</Text>
-          </View>
-          {item.stock <= 5 && item.stock > 0 && (
-            <Text style={styles.lowStockText}>เหลือ {item.stock} ชิ้น</Text>
-          )}
-        </View>
-
-        {/* Quantity Controls */}
-        <View style={styles.quantityRow}>
-          <View style={styles.quantityControls}>
-            <Pressable
-              style={[styles.quantityButton, isUpdating && styles.buttonDisabled]}
-              onPress={() => !isUpdating && onUpdateQuantity(item.quantity - 1)}
-              disabled={isUpdating}
-            >
-              <Text style={styles.quantityButtonText}>−</Text>
-            </Pressable>
-
-            <Text style={styles.quantityText}>{item.quantity}</Text>
-
-            <Pressable
-              style={[
-                styles.quantityButton,
-                (isUpdating || item.quantity >= item.stock) && styles.buttonDisabled
-              ]}
-              onPress={() => !isUpdating && item.quantity < item.stock && onUpdateQuantity(item.quantity + 1)}
-              disabled={isUpdating || item.quantity >= item.stock}
-            >
-              <Text style={styles.quantityButtonText}>+</Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.itemSubtotal}>{formatCurrency(subtotal)}</Text>
-
           <Pressable
-            style={[styles.removeButton, isUpdating && styles.buttonDisabled]}
-            onPress={() => !isUpdating && onRemove()}
-            disabled={isUpdating}
+            onPress={onRemove}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel={`ลบ ${item.name} ออกจากตะกร้า`}
+            hitSlop={10}
+            style={styles.removeButton}
           >
-            <Text style={styles.removeButtonText}>🗑️</Text>
+            <Text style={[typography.h3, { color: colors.textFaint }]}>✕</Text>
           </Pressable>
         </View>
-      </View>
 
-      {/* Loading overlay */}
-      {isUpdating && (
-        <View style={styles.itemLoadingOverlay}>
-          <ActivityIndicator size="small" color="#3B82F6" />
+        <View style={styles.priceRow}>
+          <PriceText amount={item.unit_price} size="sm" tone="gold" />
+          {hasDiscount && <PriceText amount={item.original_price} size="xs" tone="muted" strike bold={false} />}
         </View>
-      )}
+
+        {!item.is_available ? (
+          <Text style={[typography.caption, { color: colors.danger }]}>{item.unavailable_reason || 'สินค้านี้สั่งซื้อไม่ได้ตอนนี้'}</Text>
+        ) : (
+          <View style={styles.qtyRow}>
+            <QuantityStepper value={quantity} min={1} max={maxQty} size="sm" onChange={onQuantity} busy={busy} />
+            <PriceText amount={item.unit_price * quantity} size="md" tone="strong" />
+          </View>
+        )}
+        {item.is_available && item.stock !== null && item.stock <= 5 && (
+          <Text style={[typography.micro, { color: colors.warning }]}>เหลือเพียง {item.stock} ชิ้น</Text>
+        )}
+      </View>
     </View>
   );
 };
 
-// Empty Cart Component
-const EmptyCart = () => (
-  <View style={styles.emptyContainer}>
-    <Text style={styles.emptyIcon}>🛒</Text>
-    <Text style={styles.emptyTitle}>ตะกร้าว่างเปล่า</Text>
-    <Text style={styles.emptySubtitle}>เริ่มช้อปปิ้งและเพิ่มสินค้าลงตะกร้ากันเลย!</Text>
-
-    <Pressable
-      style={styles.shopButton}
-      onPress={() => router.push('/shopping')}
-    >
-      <LinearGradient
-        colors={['#3B82F6', '#2563EB']}
-        style={styles.shopButtonGradient}
-      >
-        <Text style={styles.shopButtonText}>🛍️ เริ่มช้อปปิ้ง</Text>
-      </LinearGradient>
-    </Pressable>
-  </View>
-);
-
 export default function CartScreen() {
-  const {
-    items,
-    totalItems,
-    totalPrice,
-    totalPV,
-    summary,
-    isLoading,
-    error,
-    initialize,
-    updateQuantity,
-    removeItem,
-    clearCart,
-    clearError,
-  } = useCartStore();
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const cart = useCartStore((s) => s.cart);
+  const loading = useCartStore((s) => s.loading);
+  const loadError = useCartStore((s) => s.error);
 
-  const { isAuthenticated } = useAuthStore();
-  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  /** จำนวนที่ผู้ใช้กดไว้แต่ยังไม่ได้ส่ง/ยังไม่ตอบกลับ */
+  const [pendingQty, setPendingQty] = useState<Record<number, number>>({});
+  const [busyItems, setBusyItems] = useState<Record<number, boolean>>({});
+  const [clearing, setClearing] = useState(false);
 
-  // Initialize cart on focus
+  const mountedRef = useRef(true);
+  const timersRef = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const timers = timersRef.current;
+    return () => {
+      mountedRef.current = false;
+      Object.values(timers).forEach(clearTimeout);
+    };
+  }, []);
+
+  // กลับมาหน้านี้ → โหลดตะกร้าล่าสุด (ครั้งแรกแสดงวงหมุน ครั้งถัดไปเงียบๆ)
   useFocusEffect(
     useCallback(() => {
-      initialize();
-    }, [initialize])
+      if (isAuthenticated) {
+        useCartStore.getState().refresh();
+      }
+    }, [isAuthenticated])
   );
 
-  // Handle refresh
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await initialize();
-    setIsRefreshing(false);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await useCartStore.getState().refresh();
+    if (mountedRef.current) setRefreshing(false);
   };
 
-  // Handle update quantity - คำนวณในแอพทันที
-  const handleUpdateQuantity = (itemId: string, quantity: number) => {
-    setUpdatingItemId(itemId);
-    updateQuantity(itemId, quantity);
-    // Reset updating state after brief delay for visual feedback
-    setTimeout(() => setUpdatingItemId(null), 100);
+  const setBusy = (itemId: number, busy: boolean) =>
+    setBusyItems((prev) => {
+      const next = { ...prev };
+      if (busy) next[itemId] = true;
+      else delete next[itemId];
+      return next;
+    });
+
+  const clearPending = (itemId: number) =>
+    setPendingQty((prev) => {
+      if (!(itemId in prev)) return prev;
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+
+  /** เปลี่ยนจำนวน: แสดงทันที แล้วส่งค่าสุดท้ายหลังหยุดกด */
+  const changeQuantity = (item: CartItem, next: number) => {
+    setPendingQty((prev) => ({ ...prev, [item.id]: next }));
+    if (timersRef.current[item.id]) clearTimeout(timersRef.current[item.id]);
+    timersRef.current[item.id] = setTimeout(async () => {
+      delete timersRef.current[item.id];
+      if (!mountedRef.current) return;
+      setBusy(item.id, true);
+      const result = await useCartStore.getState().setQuantity(item.id, next);
+      if (!mountedRef.current) return;
+      setBusy(item.id, false);
+      // ถ้าผู้ใช้กดต่อระหว่างรอ อย่าล้างค่าที่กดใหม่
+      setPendingQty((prev) => {
+        if (prev[item.id] !== next) return prev;
+        const copy = { ...prev };
+        delete copy[item.id];
+        return copy;
+      });
+      if (!result.success) {
+        resultHaptic('error');
+        clearPending(item.id);
+        Alert.alert('แก้จำนวนไม่สำเร็จ', result.message);
+      }
+    }, QTY_DEBOUNCE_MS);
   };
 
-  // Handle remove item with confirmation
-  const handleRemoveItem = (item: CartItem) => {
+  const removeItem = (item: CartItem) => {
+    Alert.alert('ลบสินค้าออกจากตะกร้า?', item.name, [
+      { text: 'ไม่ลบ', style: 'cancel' },
+      {
+        text: 'ลบออก',
+        style: 'destructive',
+        onPress: async () => {
+          if (timersRef.current[item.id]) {
+            clearTimeout(timersRef.current[item.id]);
+            delete timersRef.current[item.id];
+          }
+          setBusy(item.id, true);
+          const result = await useCartStore.getState().remove(item.id);
+          if (!mountedRef.current) return;
+          setBusy(item.id, false);
+          clearPending(item.id);
+          if (!result.success) {
+            resultHaptic('error');
+            Alert.alert('ลบไม่สำเร็จ', result.message);
+          }
+        },
+      },
+    ]);
+  };
+
+  const clearAll = () => {
+    if (clearing) return;
+    Alert.alert('ล้างตะกร้าทั้งหมด?', 'สินค้าทุกชิ้นในตะกร้าจะถูกนำออก', [
+      { text: 'ไม่ล้าง', style: 'cancel' },
+      {
+        text: 'ล้างตะกร้า',
+        style: 'destructive',
+        onPress: async () => {
+          setClearing(true);
+          const result = await useCartStore.getState().clear();
+          if (!mountedRef.current) return;
+          setClearing(false);
+          setPendingQty({});
+          if (!result.success) {
+            Alert.alert('ล้างตะกร้าไม่สำเร็จ', result.message);
+          }
+        },
+      },
+    ]);
+  };
+
+  const items = cart?.items ?? [];
+  const availableItems = items.filter((i) => i.is_available);
+  const unavailableItems = items.filter((i) => !i.is_available);
+  const hasPending = Object.keys(pendingQty).length > 0 || Object.keys(busyItems).length > 0;
+
+  /** รายการที่สั่งได้ จัดกลุ่มตามร้าน (ลำดับตาม cart.stores จาก server) */
+  const groups = useMemo(() => {
+    const byStore = new Map<string, { key: string; name: string; items: CartItem[]; subtotal: number | null; riderAvailable: boolean }>();
+    for (const store of cart?.stores ?? []) {
+      byStore.set(String(store.store_id ?? 'none'), {
+        key: store.key,
+        name: store.store_name,
+        items: [],
+        subtotal: store.subtotal,
+        riderAvailable: store.rider.available,
+      });
+    }
+    for (const item of availableItems) {
+      const key = String(item.store?.id ?? 'none');
+      if (!byStore.has(key)) {
+        byStore.set(key, { key, name: item.store?.name || 'ร้านค้า', items: [], subtotal: null, riderAvailable: false });
+      }
+      byStore.get(key)!.items.push(item);
+    }
+    return Array.from(byStore.values()).filter((g) => g.items.length > 0);
+  }, [cart?.stores, availableItems]);
+
+  const removeUnavailable = () => {
     Alert.alert(
-      'ลบสินค้า',
-      `ต้องการลบ "${item.productName || item.product.name}" ออกจากตะกร้าหรือไม่?`,
+      'เอาสินค้าที่สั่งไม่ได้ออก?',
+      `มี ${unavailableItems.length} รายการที่หมดหรือปิดขาย ต้องเอาออกก่อนจึงชำระเงินได้`,
       [
-        { text: 'ยกเลิก', style: 'cancel' },
+        { text: 'ไว้ก่อน', style: 'cancel' },
         {
-          text: 'ลบ',
+          text: 'เอาออก',
           style: 'destructive',
-          onPress: () => {
-            removeItem(item.id);
+          onPress: async () => {
+            for (const item of unavailableItems) {
+              const result = await useCartStore.getState().remove(item.id);
+              if (!mountedRef.current) return;
+              if (!result.success) {
+                Alert.alert('เอาสินค้าออกไม่สำเร็จ', result.message);
+                return;
+              }
+            }
           },
         },
       ]
     );
   };
 
-  // Handle clear cart
-  const handleClearCart = () => {
-    Alert.alert(
-      'ล้างตะกร้า',
-      'ต้องการลบสินค้าทั้งหมดออกจากตะกร้าหรือไม่?',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'ล้างตะกร้า',
-          style: 'destructive',
-          onPress: clearCart,
-        },
-      ]
-    );
-  };
-
-  // Handle checkout
-  const handleCheckout = () => {
-    if (!isAuthenticated) {
-      Alert.alert(
-        'กรุณาเข้าสู่ระบบ',
-        'คุณต้องเข้าสู่ระบบก่อนทำการสั่งซื้อ',
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          {
-            text: 'เข้าสู่ระบบ',
-            onPress: () => router.push('/login'),
-          },
-        ]
-      );
+  const goCheckout = () => {
+    if (hasPending) {
+      Alert.alert('รอสักครู่', 'กำลังบันทึกจำนวนสินค้า ลองกดอีกครั้งนะ');
       return;
     }
-
-    // Check if any item is unavailable
-    const unavailableItems = items.filter(item => !item.isAvailable);
     if (unavailableItems.length > 0) {
-      Alert.alert(
-        'มีสินค้าหมดสต๊อก',
-        'กรุณาลบสินค้าที่หมดสต๊อกก่อนทำการสั่งซื้อ',
-        [{ text: 'ตกลง' }]
-      );
+      removeUnavailable();
       return;
     }
-
-    // Navigate to checkout
     router.push('/checkout');
   };
 
-  // Show error alert
-  React.useEffect(() => {
-    if (error) {
-      Alert.alert('เกิดข้อผิดพลาด', error, [
-        { text: 'ตกลง', onPress: clearError }
-      ]);
-    }
-  }, [error, clearError]);
-
-  // Render cart item
-  const renderCartItem = ({ item }: { item: CartItem }) => (
-    <CartItemCard
-      item={item}
-      onUpdateQuantity={(quantity) => handleUpdateQuantity(item.id, quantity)}
-      onRemove={() => handleRemoveItem(item)}
-      isUpdating={updatingItemId === item.id}
-    />
-  );
-
-  // Loading state
-  if (isLoading && items.length === 0) {
+  // ---------- render ----------
+  if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <LinearGradient
-          colors={['#0F0F23', '#1A1A2E', '#16213E']}
-          style={StyleSheet.absoluteFill}
+      <Screen title="ตะกร้าสินค้า" scroll={false}>
+        <EmptyState
+          icon="🔐"
+          title="เข้าสู่ระบบก่อนนะ"
+          message="เข้าสู่ระบบเพื่อดูตะกร้าและสั่งซื้อสินค้า"
+          actionLabel="เข้าสู่ระบบ"
+          onAction={() => router.push('/login')}
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>กำลังโหลดตะกร้า...</Text>
-        </View>
-      </View>
+      </Screen>
     );
   }
 
+  if (!cart) {
+    return (
+      <Screen title="ตะกร้าสินค้า" scroll={false}>
+        {loading || !loadError ? (
+          <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+        ) : (
+          <EmptyState variant="error" message={loadError} onAction={() => useCartStore.getState().refresh()} />
+        )}
+      </Screen>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <Screen title="ตะกร้าสินค้า" scroll={false}>
+        <EmptyState
+          icon="🛒"
+          title="ตะกร้ายังว่างอยู่"
+          message="เลือกของถูกใจแล้วกดใส่ตะกร้าได้เลย"
+          actionLabel="ไปช้อปเลย"
+          onAction={() => router.replace('/(tabs)/shop' as never)}
+          secondaryActionLabel="ไปตลาดสด"
+          onSecondaryAction={() => router.push('/taladsod' as never)}
+        />
+      </Screen>
+    );
+  }
+
+  const summary = cart.summary;
+
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-
-      <LinearGradient
-        colors={['#0F0F23', '#1A1A2E', '#16213E']}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: `ตะกร้า (${totalItems})`,
-          headerStyle: { backgroundColor: '#0F0F23' },
-          headerTintColor: '#FFFFFF',
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} style={styles.headerButton}>
-              <Text style={styles.headerIcon}>⬅️</Text>
-            </Pressable>
-          ),
-          headerRight: () =>
-            items.length > 0 ? (
-              <Pressable onPress={handleClearCart} style={styles.headerButton}>
-                <Text style={styles.headerIcon}>🗑️</Text>
-              </Pressable>
-            ) : null,
-        }}
-      />
-
-      {items.length === 0 ? (
-        <EmptyCart />
-      ) : (
-        <>
-          {/* Cart Items List */}
-          <FlatList
-            data={items}
-            renderItem={renderCartItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={isRefreshing}
-                onRefresh={handleRefresh}
-                tintColor="#3B82F6"
-                colors={['#3B82F6']}
-              />
-            }
-          />
-
-          {/* Summary & Checkout */}
-          <View style={styles.summaryContainer}>
-            <LinearGradient
-              colors={['rgba(15,15,35,0.98)', 'rgba(26,26,46,0.98)']}
-              style={styles.summaryGradient}
-            >
-              {/* Free Shipping Progress */}
-              {summary.amountToFreeShipping > 0 && (
-                <View style={styles.freeShippingBanner}>
-                  <Text style={styles.freeShippingText}>
-                    🚚 ช้อปอีก {formatCurrency(summary.amountToFreeShipping)} รับส่งฟรี!
-                  </Text>
-                  <View style={styles.progressBar}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${Math.min((totalPrice / summary.freeShippingThreshold) * 100, 100)}%` }
-                      ]}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {/* Summary Info - คำนวณในแอพ */}
-              <View style={styles.summaryInfo}>
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>สินค้าทั้งหมด</Text>
-                  <Text style={styles.summaryValue}>{totalItems} ชิ้น</Text>
-                </View>
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>ราคาสินค้า</Text>
-                  <Text style={styles.summaryValue}>{formatCurrency(totalPrice)}</Text>
-                </View>
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>ค่าจัดส่ง</Text>
-                  <Text style={[
-                    styles.summaryValue,
-                    summary.shippingFee === 0 && styles.freeText
-                  ]}>
-                    {summary.shippingFee === 0 ? 'ฟรี!' : formatCurrency(summary.shippingFee)}
-                  </Text>
-                </View>
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.summaryLabel}>PV รวม</Text>
-                  <View style={styles.pvRow}>
-                    <Text style={styles.pvIcon}>⭐</Text>
-                    <Text style={styles.pvValue}>{totalPV} PV</Text>
-                  </View>
-                </View>
-
-                {summary.estimatedCommission > 0 && (
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>คอมมิชชั่นโดยประมาณ</Text>
-                    <Text style={styles.commissionValue}>
-                      +{formatCurrency(summary.estimatedCommission)}
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.summaryDivider} />
-
-                <View style={styles.summaryRow}>
-                  <Text style={styles.totalLabel}>ยอดรวมสุทธิ</Text>
-                  <Text style={styles.totalPrice}>{formatCurrency(summary.grandTotal)}</Text>
-                </View>
-
-                <Text style={styles.calculationNote}>
-                  * ยอดชำระจริงจะคำนวณใหม่ที่หน้าชำระเงิน
-                </Text>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <Screen
+        title="ตะกร้าสินค้า"
+        subtitle={`${summary.items_count.toLocaleString('th-TH')} ชิ้น`}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        right={
+          <Button3D title="ล้าง" variant="ghost" size="sm" onPress={clearAll} loading={clearing} accessibilityLabel="ล้างตะกร้าทั้งหมด" />
+        }
+        contentStyle={{ paddingBottom: 150 + insets.bottom }}
+      >
+        {groups.map((group) => (
+          <Card3D key={group.key} padding={spacing.lg} style={styles.group}>
+            <View style={styles.groupHeader}>
+              <Text style={styles.storeIcon}>🏪</Text>
+              <Text numberOfLines={1} style={[typography.h3, styles.flex, { color: colors.textStrong }]}>
+                {group.name}
+              </Text>
+              {group.riderAvailable && <Pill label="ไรเดอร์ส่งได้" icon="🛵" tone="success" />}
+            </View>
+            {group.items.map((item, index) => (
+              <View key={item.id} style={index > 0 ? [styles.divider, { borderTopColor: colors.divider }] : undefined}>
+                <ItemRow
+                  item={item}
+                  quantity={pendingQty[item.id] ?? item.quantity}
+                  busy={!!busyItems[item.id]}
+                  onQuantity={(next) => changeQuantity(item, next)}
+                  onRemove={() => removeItem(item)}
+                />
               </View>
+            ))}
+            {group.subtotal !== null && (
+              <View style={[styles.groupFooter, { borderTopColor: colors.divider }]}>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>รวมร้านนี้</Text>
+                <PriceText amount={group.subtotal} size="sm" tone="strong" />
+              </View>
+            )}
+          </Card3D>
+        ))}
 
-              {/* Checkout Button */}
-              <Pressable
-                style={[styles.checkoutButton, isLoading && styles.buttonDisabled]}
-                onPress={handleCheckout}
-                disabled={isLoading}
-              >
-                <LinearGradient
-                  colors={['#10B981', '#059669']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.checkoutGradient}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.checkoutIcon}>💳</Text>
-                      <Text style={styles.checkoutText}>ดำเนินการสั่งซื้อ</Text>
-                    </>
-                  )}
-                </LinearGradient>
-              </Pressable>
-            </LinearGradient>
+        {unavailableItems.length > 0 && (
+          <Card3D variant="flat" padding={spacing.lg} style={styles.group}>
+            <View style={styles.groupHeader}>
+              <Text style={styles.storeIcon}>⚠️</Text>
+              <Text style={[typography.h3, styles.flex, { color: colors.danger }]}>สั่งซื้อไม่ได้ตอนนี้</Text>
+            </View>
+            {unavailableItems.map((item, index) => (
+              <View key={item.id} style={index > 0 ? [styles.divider, { borderTopColor: colors.divider }] : undefined}>
+                <ItemRow
+                  item={item}
+                  quantity={item.quantity}
+                  busy={!!busyItems[item.id]}
+                  onQuantity={() => {}}
+                  onRemove={() => removeItem(item)}
+                />
+              </View>
+            ))}
+            <Button3D title="เอาสินค้าเหล่านี้ออก" variant="danger" size="sm" onPress={removeUnavailable} style={styles.removeAll} />
+          </Card3D>
+        )}
+
+        {/* สรุปยอดจาก server */}
+        <Card3D variant="inset" padding={spacing.lg} style={styles.group}>
+          <View style={styles.summaryRow}>
+            <Text style={[typography.body, { color: colors.text }]}>ค่าสินค้า ({summary.available_items_count} ชิ้น)</Text>
+            <PriceText amount={summary.subtotal} size="sm" tone="strong" />
           </View>
-        </>
-      )}
+          <View style={styles.summaryRow}>
+            <Text style={[typography.body, { color: colors.text }]}>ค่าจัดส่ง (พัสดุ)</Text>
+            {summary.shipping_fee > 0 ? (
+              <PriceText amount={summary.shipping_fee} size="sm" tone="strong" />
+            ) : (
+              <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งฟรี</Text>
+            )}
+          </View>
+          {summary.discount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={[typography.body, { color: colors.text }]}>ส่วนลด</Text>
+              <PriceText amount={-summary.discount} size="sm" tone="success" />
+            </View>
+          )}
+          <Text style={[typography.caption, { color: colors.textMuted }]}>
+            เลือกส่งด้วยไรเดอร์ ใส่โค้ดส่วนลด และเลือกที่อยู่ได้ในขั้นตอนชำระเงิน
+          </Text>
+        </Card3D>
+      </Screen>
+
+      {/* แถบชำระเงิน */}
+      <View
+        style={[
+          styles.bottomBar,
+          { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, spacing.md) },
+          clayShadowStyle('md', colors.shadowDark, colors.shadowLight),
+        ]}
+      >
+        <View style={styles.flex}>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดรวมโดยประมาณ</Text>
+          <PriceText amount={summary.grand_total} size="lg" tone="gold" />
+        </View>
+        <Button3D
+          title={unavailableItems.length > 0 ? 'จัดการตะกร้าก่อน' : 'ไปชำระเงิน'}
+          icon="💳"
+          size="lg"
+          disabled={availableItems.length === 0}
+          onPress={goCheckout}
+          style={styles.checkoutButton}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#0F0F23',
   },
-  headerButton: {
-    padding: 8,
-  },
-  headerIcon: {
-    fontSize: 24,
-    color: '#FFFFFF',
-  },
-
-  // Loading
-  loadingContainer: {
+  flex: {
     flex: 1,
+  },
+  center: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loadingText: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    marginTop: 12,
+  loader: {
+    marginTop: spacing.xxxl,
   },
-
-  // List
-  listContent: {
-    padding: 16,
-    paddingBottom: 340,
+  group: {
+    marginBottom: spacing.md,
   },
-
-  // Cart Item
-  cartItem: {
+  groupHeader: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    position: 'relative',
-  },
-  cartItemUpdating: {
-    opacity: 0.7,
-  },
-  itemImageContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  itemImage: {
-    width: '100%',
-    height: '100%',
+  storeIcon: {
+    fontSize: 18,
   },
-  itemPlaceholder: {
-    fontSize: 40,
-    color: '#9CA3AF',
+  itemRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  unavailableOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+  dimmed: {
+    opacity: 0.6,
+  },
+  thumb: {
+    width: 76,
+    height: 76,
+    borderRadius: radii.md,
+  },
+  thumbIcon: {
+    fontSize: 28,
+  },
+  itemTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  removeButton: {
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  unavailableText: {
-    color: '#EF4444',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  itemInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  itemName: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  itemVariant: {
-    color: '#9CA3AF',
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  itemPriceRow: {
+  priceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    alignItems: 'baseline',
+    gap: spacing.xs,
+    marginTop: spacing.xxs,
   },
-  itemPrice: {
-    color: '#3B82F6',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  itemOriginalPrice: {
-    color: '#6B7280',
-    fontSize: 13,
-    textDecorationLine: 'line-through',
-    marginLeft: 8,
-  },
-  itemMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  itemPvBadge: {
-    backgroundColor: 'rgba(255,215,0,0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.3)',
-  },
-  itemPvText: {
-    color: '#FFD700',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  lowStockText: {
-    color: '#F59E0B',
-    fontSize: 12,
-    marginLeft: 8,
-  },
-
-  // Quantity Controls
-  quantityRow: {
+  qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: spacing.sm,
   },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  quantityButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quantityButtonText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  quantityText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    minWidth: 40,
-    textAlign: 'center',
-  },
-  itemSubtotal: {
-    color: '#10B981',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  removeButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(239,68,68,0.15)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(239,68,68,0.3)',
-  },
-  removeButtonText: {
-    fontSize: 18,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  itemLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 16,
-  },
-
-  // Empty Cart
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  emptyIcon: {
-    fontSize: 80,
-    marginBottom: 16,
-    opacity: 0.5,
-  },
-  emptyTitle: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  shopButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  shopButtonGradient: {
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 14,
-  },
-  shopButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  // Summary
-  summaryContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  summaryGradient: {
-    padding: 20,
-    paddingBottom: 34,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  divider: {
     borderTopWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
-  freeShippingBanner: {
-    backgroundColor: 'rgba(16,185,129,0.15)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(16,185,129,0.3)',
+  groupFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    paddingTop: spacing.sm,
+    marginTop: spacing.xs,
   },
-  freeShippingText: {
-    color: '#10B981',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#10B981',
-    borderRadius: 3,
-  },
-  summaryInfo: {
-    marginBottom: 16,
+  removeAll: {
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  summaryLabel: {
-    color: '#9CA3AF',
-    fontSize: 14,
-  },
-  summaryValue: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  freeText: {
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  pvRow: {
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
   },
-  pvIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  pvValue: {
-    color: '#FFD700',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  commissionValue: {
-    color: '#10B981',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginVertical: 12,
-  },
-  totalLabel: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  totalPrice: {
-    color: '#10B981',
-    fontSize: 22,
-    fontWeight: 'bold',
-  },
-  calculationNote: {
-    color: '#6B7280',
-    fontSize: 11,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-
-  // Checkout Button
   checkoutButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  checkoutGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 14,
-  },
-  checkoutIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  checkoutText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+    minWidth: 170,
   },
 });

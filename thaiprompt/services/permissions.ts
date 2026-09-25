@@ -399,27 +399,8 @@ export const requestCameraAndGalleryPermissions = async (): Promise<{
   return { camera, mediaLibrary };
 };
 
-/**
- * ขอ permission สำหรับไรเดอร์ (ตำแหน่ง + กล้อง + ไมโครโฟน)
- */
-export const requestRiderPermissions = async (): Promise<{
-  location: boolean;
-  locationBackground: boolean;
-  camera: boolean;
-  microphone: boolean;
-}> => {
-  const location = await requestLocationPermission(false);
-  const locationBackground = location ? await requestBackgroundLocationPermission(false) : false;
-  const camera = await requestCameraPermission(false);
-  const microphone = await requestMicrophonePermission(false);
-
-  return {
-    location,
-    locationBackground,
-    camera,
-    microphone,
-  };
-};
+// PLAY-13: ถอด requestRiderPermissions (ขอตำแหน่งเบื้องหลังต่อกันโดยไม่มี prominent disclosure)
+// หน้าไรเดอร์ต้องแสดง ConsentSheet อธิบายเหตุผลก่อนเรียก requestBackgroundLocationPermission เสมอ
 
 export default {
   // Check functions
@@ -442,5 +423,4 @@ export default {
 
   // Utility functions
   requestCameraAndGalleryPermissions,
-  requestRiderPermissions,
 };

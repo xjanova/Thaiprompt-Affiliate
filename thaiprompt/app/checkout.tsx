@@ -1,1433 +1,1300 @@
 /**
- * Checkout Screen - Native Payment Flow
- * Premium Design พร้อมการชำระเงินภายในแอพ
+ * ชำระเงิน — POST /cart/checkout (SHOP-03 / 07 / 08 / 11 / 23)
  *
- * V2: Native Payment Flow
- * - ชำระผ่าน Wallet (หักทันที)
- * - ชำระผ่าน QR Code / Bank Transfer (แสดง QR + Polling)
- * - COD (เก็บเงินปลายทาง)
- * - ไม่เปิด WebBrowser
+ * ขั้นตอน
+ *   1. form     เลือกที่อยู่ · วิธีส่ง (พัสดุ | ไรเดอร์ เมื่อร้านรองรับ + ค่าส่งจาก server)
+ *               · วิธีจ่าย (กระเป๋าเงิน | พร้อมเพย์ | เก็บเงินปลายทาง เฉพาะส่งด้วยไรเดอร์) · คูปอง (server ตรวจ) · หมายเหตุ
+ *   2. payment  พร้อมเพย์: แสดง QR ของแต่ละออเดอร์ (ยอดตรงทุกสตางค์) + poll สถานะทุก 4 วินาที + ขอ QR ใหม่ได้
+ *   3. done     สรุปคำสั่งซื้อ
+ *
+ * ความปลอดภัย
+ *   - ยอดทุกตัวมาจาก server (GET /cart?address_id&delivery_method&coupon_code) — แอปไม่คำนวณเอง
+ *   - Idempotency-Key ต่อ "ชุดข้อมูลที่กดสั่ง" — กดซ้ำ/เน็ตหลุดแล้วลองใหม่ = ไม่สั่งซ้ำ
+ *   - ยืนยันก่อนสั่งทุกครั้ง (โดยเฉพาะตัดเงินกระเป๋า)
+ *   - ข้อความ error ภาษาไทยจาก code ของ server เท่านั้น
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  TextInput,
-  StyleSheet,
-  StatusBar,
-  Alert,
-  ActivityIndicator,
-  Modal,
-  Image,
-  Dimensions,
-} from 'react-native';
-import { router, Stack, useFocusEffect } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useCartStore } from '@/stores/cartStore';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, AppState, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
-import { formatCurrency, API_BASE_URL } from '@/constants';
+import { useCartStore, normalizeCart } from '@/stores/cartStore';
+import { getWallet } from '@/services/api';
 import {
+  applyCartPromo,
   checkout,
-  getWallet,
+  getAddresses,
+  getCart,
   getPaymentMethods,
   getPaymentStatus,
-  type CheckoutRequest,
-} from '@/services/api';
+  payOrder,
+  type Address,
+  type Cart,
+  type CheckoutPaymentMethod,
+  type CheckoutResult,
+  type DeliveryMethod,
+  type PaymentInstruction,
+} from '@/services/api/shopApi';
+import { newIdempotencyKey, type ApiFailure } from '@/services/api/client';
+import {
+  Button3D,
+  Card3D,
+  EmptyState,
+  Pill,
+  PriceText,
+  Screen,
+  SectionHeader,
+  formatBaht,
+  resultHaptic,
+} from '@/components/ui';
+import { Field, FormSheet, PromptPayQR, type PromptPayState } from '@/components/shop';
+import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+type Step = 'form' | 'payment' | 'done';
 
-// Payment Method Type
-interface PaymentMethod {
-  id: string;
-  name: string;
+const POLL_INTERVAL_MS = 4000;
+const POLL_MAX_MS = 20 * 60 * 1000;
+
+const PAYMENT_LABEL: Record<CheckoutPaymentMethod, string> = {
+  wallet: 'กระเป๋าเงิน',
+  promptpay: 'พร้อมเพย์',
+  cod: 'เก็บเงินปลายทาง',
+};
+
+// =====================================================
+// ตัวเลือกแบบการ์ด (วิธีส่ง / วิธีจ่าย)
+// =====================================================
+
+interface OptionCardProps {
   icon: string;
-  description: string;
-  category: string;
-  isAvailable: boolean;
+  title: string;
+  subtitle?: string;
+  right?: React.ReactNode;
+  selected: boolean;
+  disabled?: boolean;
+  disabledReason?: string | null;
+  onPress: () => void;
 }
 
-// Payment Steps
-type PaymentStep = 'summary' | 'processing' | 'qrcode' | 'success' | 'failed';
+const OptionCard: React.FC<OptionCardProps> = ({ icon, title, subtitle, right, selected, disabled, disabledReason, onPress }) => {
+  const { colors } = useTheme();
+  return (
+    <Card3D
+      onPress={disabled ? undefined : onPress}
+      gradientBorder={selected}
+      variant={disabled ? 'flat' : 'raised'}
+      shadow="sm"
+      padding={spacing.md}
+      radius={radii.lg}
+      style={[styles.option, disabled && styles.dimmed]}
+      accessibilityLabel={`${title}${selected ? ' เลือกอยู่' : ''}${disabled && disabledReason ? ` ใช้ไม่ได้: ${disabledReason}` : ''}`}
+    >
+      <View style={styles.optionRow}>
+        <View style={[styles.radio, { borderColor: selected ? colors.gold : colors.border }]}>
+          {selected && <View style={[styles.radioDot, { backgroundColor: colors.gold }]} />}
+        </View>
+        <Text style={styles.optionIcon}>{icon}</Text>
+        <View style={styles.flex}>
+          <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{title}</Text>
+          {!!subtitle && <Text style={[typography.caption, { color: colors.textMuted }]}>{subtitle}</Text>}
+          {disabled && !!disabledReason && (
+            <Text style={[typography.caption, { color: colors.warning }]}>{disabledReason}</Text>
+          )}
+        </View>
+        {right}
+      </View>
+    </Card3D>
+  );
+};
 
-// Default Payment Methods
-const DEFAULT_PAYMENT_METHODS: PaymentMethod[] = [
-  { id: 'wallet', name: 'กระเป๋าเงิน TP', icon: '💰', description: 'ชำระด้วยยอดเงินในกระเป๋า', category: 'wallet', isAvailable: true },
-  { id: 'promptpay', name: 'พร้อมเพย์', icon: '📱', description: 'สแกน QR Code ชำระผ่านแอพธนาคาร', category: 'qrcode', isAvailable: true },
-  { id: 'bank', name: 'โอนเงินธนาคาร', icon: '🏦', description: 'โอนเงินเข้าบัญชีธนาคาร', category: 'bank', isAvailable: true },
-  { id: 'cod', name: 'เก็บเงินปลายทาง', icon: '📦', description: 'ชำระเงินเมื่อรับสินค้า', category: 'cod', isAvailable: true },
-];
+// =====================================================
+// หน้าจอ
+// =====================================================
 
 export default function CheckoutScreen() {
-  const {
-    items,
-    totalItems,
-    totalPrice,
-    totalPV,
-    summary,
-    isLoading: isCartLoading,
-    initialize: initializeCart,
-    clearCart,
-    checkout: cartCheckout,
-  } = useCartStore();
-  const { user, isAuthenticated } = useAuthStore();
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  // States
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(DEFAULT_PAYMENT_METHODS);
-  const [selectedPayment, setSelectedPayment] = useState<string>('wallet');
-  const [promoCode, setPromoCode] = useState('');
-  const [discount, setDiscount] = useState(0);
-  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+  // ---------- ข้อมูลฟอร์ม ----------
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressesChecked, setAddressesChecked] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+  const [addressSheet, setAddressSheet] = useState(false);
+  const [delivery, setDelivery] = useState<DeliveryMethod>('parcel');
+  const [payment, setPayment] = useState<CheckoutPaymentMethod>('wallet');
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
 
-  // Wallet
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [isLoadingWallet, setIsLoadingWallet] = useState(false);
+  const [quote, setQuote] = useState<Cart | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
+  const [promptpayEnabled, setPromptpayEnabled] = useState<boolean | null>(null);
 
-  // Payment Flow
-  const [paymentStep, setPaymentStep] = useState<PaymentStep>('summary');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const [orderId, setOrderId] = useState<number | null>(null);
-  const [orderNumber, setOrderNumber] = useState<string | null>(null);
+  // ---------- ผลการสั่ง ----------
+  const [step, setStep] = useState<Step>('form');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<CheckoutResult | null>(null);
+  const [payments, setPayments] = useState<PaymentInstruction[]>([]);
+  const [payStates, setPayStates] = useState<Record<string, PromptPayState>>({});
+  const [pollTimedOut, setPollTimedOut] = useState(false);
 
-  // Polling
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [pollingCount, setPollingCount] = useState(0);
-  const MAX_POLLING_COUNT = 120; // 6 นาที (3 วินาที x 120)
+  const mountedRef = useRef(true);
+  const quoteReqRef = useRef(0);
+  const knownAddressIdsRef = useRef<Set<number> | null>(null);
+  const focusCountRef = useRef(0);
+  const idemRef = useRef<{ signature: string; key: string } | null>(null);
+  const leavingRef = useRef(false);
+  const pollStartedAtRef = useRef(0);
+  const pollingBusyRef = useRef(false);
+  const submittingRef = useRef(false);
+  const repayingRef = useRef<Set<number>>(new Set());
+  const pollCursorRef = useRef(0);
 
-  // Calculate
-  const shippingFee = summary.shippingFee;
-  const finalTotal = totalPrice + shippingFee - discount;
-
-  // โหลดยอด wallet
-  const loadWalletBalance = useCallback(async () => {
-    if (!isAuthenticated) return;
-
-    setIsLoadingWallet(true);
-    try {
-      const response = await getWallet();
-      if (response?.success && response.data) {
-        setWalletBalance(response.data.balance || 0);
-      }
-    } catch (error) {
-      console.error('Load wallet error:', error);
-    } finally {
-      setIsLoadingWallet(false);
-    }
-  }, [isAuthenticated]);
-
-  // โหลด payment methods
-  const loadPaymentMethods = useCallback(async () => {
-    try {
-      const response = await getPaymentMethods();
-      if (response?.success && response.methods) {
-        // Map และแปลงข้อมูลจาก server
-        const serverMethods: PaymentMethod[] = response.methods
-          .filter((m: any) => m.enabled !== false)  // กรองเฉพาะที่เปิดใช้งาน
-          .map((m: any) => ({
-            // ถ้า id เป็น cash_on_delivery ให้เปลี่ยนเป็น cod เพื่อความสอดคล้อง
-            id: m.id === 'cash_on_delivery' ? 'cod' : m.id,
-            name: m.id === 'cash_on_delivery' ? 'เก็บเงินปลายทาง' : m.name,
-            icon: m.icon || '💳',
-            description: m.description || '',
-            category: m.category || 'other',
-            isAvailable: m.enabled !== false,
-          }));
-
-        // ตรวจสอบว่ามี methods ที่จำเป็นหรือไม่
-        const hasWallet = serverMethods.some((m) => m.id === 'wallet');
-        const hasCod = serverMethods.some((m) => m.id === 'cod');
-        const hasPromptPay = serverMethods.some((m) => m.id === 'promptpay');
-        const hasBank = serverMethods.some((m) => m.id === 'bank_transfer' || m.id === 'bank');
-
-        // สร้างรายการ methods โดยไม่ให้ซ้ำ
-        const allMethods: PaymentMethod[] = [];
-
-        // เพิ่ม wallet ถ้าไม่มี
-        if (!hasWallet) {
-          allMethods.push(DEFAULT_PAYMENT_METHODS[0]); // wallet
-        }
-
-        // เพิ่ม methods จาก server
-        allMethods.push(...serverMethods);
-
-        // เพิ่ม promptpay ถ้าไม่มี
-        if (!hasPromptPay) {
-          allMethods.push(DEFAULT_PAYMENT_METHODS[1]); // promptpay
-        }
-
-        // เพิ่ม bank ถ้าไม่มี
-        if (!hasBank) {
-          allMethods.push(DEFAULT_PAYMENT_METHODS[2]); // bank
-        }
-
-        // เพิ่ม COD ถ้าไม่มี
-        if (!hasCod) {
-          allMethods.push(DEFAULT_PAYMENT_METHODS[3]); // cod
-        }
-
-        // กรอง duplicates โดยใช้ id
-        const uniqueMethods = allMethods.filter(
-          (method, index, self) =>
-            index === self.findIndex((m) => m.id === method.id)
-        );
-
-        setPaymentMethods(uniqueMethods.length > 0 ? uniqueMethods : DEFAULT_PAYMENT_METHODS);
-      } else {
-        // ถ้า API ไม่สำเร็จ ใช้ default
-        setPaymentMethods(DEFAULT_PAYMENT_METHODS);
-      }
-    } catch (error) {
-      console.error('Load payment methods error:', error);
-      // ใช้ default methods เมื่อเกิด error
-      setPaymentMethods(DEFAULT_PAYMENT_METHODS);
-    }
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
-  // Initial load - โหลด cart, wallet และ payment methods
+  // =====================================================
+  // โหลดข้อมูลประกอบ
+  // =====================================================
+
+  const loadAddresses = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const res = await getAddresses();
+    if (!mountedRef.current) return;
+    setAddressesChecked(true);
+    if (!res.success) return;
+    const list = Array.isArray(res.data) ? res.data : [];
+    setAddresses(list);
+
+    // ที่อยู่ที่เพิ่งเพิ่มจากหน้าเพิ่มที่อยู่ → เลือกให้เลย
+    const known = knownAddressIdsRef.current;
+    const added = known ? list.filter((a) => !known.has(a.id)) : [];
+    knownAddressIdsRef.current = new Set(list.map((a) => a.id));
+    setSelectedAddressId((prev) => {
+      if (added.length > 0) return added.reduce((max, a) => (a.id > max.id ? a : max)).id;
+      if (prev && list.some((a) => a.id === prev)) return prev;
+      const fallback = list.find((a) => a.is_default) || list[0];
+      return fallback ? fallback.id : null;
+    });
+  }, [isAuthenticated]);
+
+  const loadWallet = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const res = await getWallet();
+    if (!mountedRef.current) return;
+    const balance = Number(res?.data?.balance);
+    if (res?.success && Number.isFinite(balance)) setWalletBalance(balance);
+  }, [isAuthenticated]);
+
+  const loadPaymentMethods = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const res = await getPaymentMethods();
+    if (!mountedRef.current || !res.success) return;
+    const methods = Array.isArray(res.data?.methods) ? res.data.methods : [];
+    setPromptpayEnabled(methods.some((m) => m.id === 'promptpay' && m.enabled !== false));
+  }, [isAuthenticated]);
+
+  const fetchQuote = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const requestId = ++quoteReqRef.current;
+    setQuoteLoading(true);
+    const res = await getCart({
+      ...(selectedAddressId ? { address_id: selectedAddressId } : {}),
+      delivery_method: delivery,
+      ...(appliedCoupon ? { coupon_code: appliedCoupon } : {}),
+    });
+    if (!mountedRef.current || requestId !== quoteReqRef.current) return;
+    setQuoteLoading(false);
+    if (res.success) {
+      const cart = normalizeCart(res.data);
+      setQuote(cart);
+      setQuoteError(null);
+      useCartStore.getState().replace(cart);
+    } else {
+      setQuoteError(res.message);
+    }
+  }, [isAuthenticated, selectedAddressId, delivery, appliedCoupon]);
+
+  useEffect(() => {
+    loadAddresses();
+    loadWallet();
+    loadPaymentMethods();
+  }, [loadAddresses, loadWallet, loadPaymentMethods]);
+
+  // คำนวณยอดใหม่ทุกครั้งที่เปลี่ยนที่อยู่/วิธีส่ง/คูปอง
+  useEffect(() => {
+    if (step !== 'form' || !addressesChecked) return;
+    fetchQuote();
+  }, [step, addressesChecked, fetchQuote]);
+
+  // ฟังก์ชันล่าสุด (กัน closure เก่าใน focus effect ยิงด้วยที่อยู่/วิธีส่งเดิม)
+  const latestRef = useRef({ loadAddresses, loadWallet, fetchQuote });
+  latestRef.current = { loadAddresses, loadWallet, fetchQuote };
+
+  // กลับมาจากหน้าเพิ่ม/แก้ที่อยู่ หรือเติมเงิน → โหลดใหม่
   useFocusEffect(
     useCallback(() => {
-      // ⭐ CRITICAL: โหลด cart จาก storage ก่อนแสดงผล
-      initializeCart();
-      loadWalletBalance();
-      loadPaymentMethods();
-
-      // Cleanup polling on unmount
-      return () => {
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-        }
-      };
-    }, [initializeCart, loadWalletBalance, loadPaymentMethods])
+      focusCountRef.current += 1;
+      if (focusCountRef.current > 1 && step === 'form') {
+        latestRef.current.loadAddresses();
+        latestRef.current.loadWallet();
+        latestRef.current.fetchQuote();
+      }
+    }, [step])
   );
 
-  // Apply promo code
-  const handleApplyPromo = async () => {
-    if (!promoCode.trim()) {
-      Alert.alert('กรุณากรอกโค้ด', 'กรุณากรอกโค้ดส่วนลดก่อน');
+  // =====================================================
+  // ปรับตัวเลือกให้ตรงกับที่ server บอก (ไรเดอร์/COD/คูปอง)
+  // =====================================================
+
+  const riderInfo = useMemo(() => {
+    const stores = quote?.stores ?? [];
+    const available = !!quote?.summary.rider_available;
+    const fee = stores.reduce((sum, s) => sum + (s.rider.available && s.rider.fee !== null ? s.rider.fee : 0), 0);
+    const minutes = stores.reduce((max, s) => Math.max(max, s.rider.estimated_minutes ?? 0), 0);
+    const distance = stores.reduce((max, s) => Math.max(max, s.rider.distance_km ?? 0), 0);
+    const reason = stores.find((s) => !s.rider.available && s.rider.reason)?.rider.reason ?? null;
+    const parcelFee = stores.reduce((sum, s) => sum + s.parcel_fee, 0);
+    const codReason = stores.find((s) => !s.cod.available && s.cod.reason)?.cod.reason ?? null;
+    return { available, fee, minutes, distance, reason, parcelFee, codReason };
+  }, [quote]);
+
+  const codAvailable = delivery === 'rider' && !!quote?.summary.cod_available;
+
+  useEffect(() => {
+    if (!quote || quoteLoading || step !== 'form') return;
+    if (delivery === 'rider' && !quote.summary.rider_available) {
+      setDelivery('parcel');
+      setNotice(`ส่งด้วยไรเดอร์ไม่ได้ (${riderInfo.reason || 'ร้านหรือที่อยู่ยังไม่พร้อม'}) เปลี่ยนเป็นส่งพัสดุให้แล้ว`);
+    }
+    if (payment === 'cod' && !(delivery === 'rider' && quote.summary.cod_available)) {
+      setPayment('wallet');
+      setNotice('เก็บเงินปลายทางใช้ได้เมื่อส่งด้วยไรเดอร์ เปลี่ยนเป็นจ่ายด้วยกระเป๋าเงินให้แล้ว');
+    }
+    if (appliedCoupon && quote.coupon_error) {
+      setCouponError(quote.coupon_error.message || 'คูปองนี้ใช้ไม่ได้แล้ว');
+      setAppliedCoupon(null);
+    }
+  }, [quote, quoteLoading, step, delivery, payment, appliedCoupon, riderInfo.reason]);
+
+  useEffect(() => {
+    if (payment === 'promptpay' && promptpayEnabled === false) {
+      setPayment('wallet');
+    }
+  }, [payment, promptpayEnabled]);
+
+  // =====================================================
+  // คูปอง
+  // =====================================================
+
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError('ใส่โค้ดส่วนลดก่อนนะ');
       return;
     }
-
-    setIsApplyingPromo(true);
-    try {
-      // Mock promo codes - ในอนาคตเรียก API จริง
-      if (promoCode.toUpperCase() === 'FIRST10') {
-        setDiscount(totalPrice * 0.1);
-        Alert.alert('สำเร็จ!', 'ใช้โค้ดส่วนลด 10% แล้ว');
-      } else if (promoCode.toUpperCase() === 'FREE50') {
-        setDiscount(50);
-        Alert.alert('สำเร็จ!', 'ใช้โค้ดส่วนลด ฿50 แล้ว');
-      } else {
-        Alert.alert('ไม่พบโค้ด', 'โค้ดส่วนลดไม่ถูกต้องหรือหมดอายุแล้ว');
-      }
-    } finally {
-      setIsApplyingPromo(false);
+    setCouponError(null);
+    const res = await applyCartPromo(code, {
+      ...(selectedAddressId ? { address_id: selectedAddressId } : {}),
+      delivery_method: delivery,
+    });
+    if (!mountedRef.current) return;
+    if (res.success) {
+      resultHaptic('success');
+      const cart = normalizeCart(res.data);
+      quoteReqRef.current += 1; // ทิ้งผลคำนวณเก่าที่ยังค้าง
+      setQuote(cart);
+      setQuoteLoading(false);
+      setAppliedCoupon(code);
+      setCouponInput('');
+    } else {
+      resultHaptic('error');
+      setCouponError(res.message);
     }
   };
 
-  // Check payment status (polling)
-  const checkPaymentStatus = useCallback(async (paymentId: number) => {
-    try {
-      const response = await getPaymentStatus(paymentId);
-      console.log('💳 Payment status:', response);
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+  };
 
-      if (response?.success && response.data) {
-        const status = response.data.status;
+  // =====================================================
+  // สั่งซื้อ
+  // =====================================================
 
-        if (status === 'completed' || status === 'paid') {
-          // ชำระเงินสำเร็จ
-          if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
-          }
-          setPaymentStep('success');
-          clearCart();
-        } else if (status === 'failed' || status === 'expired' || status === 'cancelled') {
-          // ชำระเงินล้มเหลว
-          if (pollingRef.current) {
-            clearInterval(pollingRef.current);
-            pollingRef.current = null;
-          }
-          setPaymentStep('failed');
-        }
+  const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || null;
+  const grandTotal = quote?.summary.grand_total ?? 0;
+  const availableItems = (quote?.items ?? []).filter((i) => i.is_available);
+  const walletShort = payment === 'wallet' && walletBalance !== null && walletBalance < grandTotal;
+
+  /** ชุดข้อมูลที่กดสั่ง — เปลี่ยน = คีย์ใหม่ (ไม่เปลี่ยน = ใช้คีย์เดิมตอนลองใหม่ กันสั่งซ้ำ) */
+  const signature = JSON.stringify({
+    a: selectedAddressId,
+    d: delivery,
+    p: payment,
+    c: appliedCoupon,
+    n: note.trim(),
+    i: (quote?.items ?? []).map((i) => [i.id, i.quantity]),
+  });
+
+  const handleFailure = (res: ApiFailure) => {
+    resultHaptic('error');
+    switch (res.code) {
+      case 'INSUFFICIENT_BALANCE': {
+        const shortfall = Number(res.data?.shortfall);
+        Alert.alert(
+          'ยอดเงินในกระเป๋าไม่พอ',
+          Number.isFinite(shortfall) ? `ขาดอีก ${formatBaht(shortfall, { decimals: 2 })} เติมเงินหรือเลือกวิธีจ่ายอื่นได้นะ` : res.message,
+          [
+            { text: 'เลือกวิธีอื่น', style: 'cancel' },
+            { text: 'เติมเงิน', onPress: () => router.push('/wallet-topup' as never) },
+          ]
+        );
+        loadWallet();
+        return;
       }
-    } catch (error) {
-      console.error('Check payment status error:', error);
-    }
-
-    setPollingCount((prev) => {
-      if (prev >= MAX_POLLING_COUNT) {
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-        }
-        setPaymentStep('failed');
+      case 'ADDRESS_REQUIRED':
+      case 'ADDRESS_NOT_FOUND':
+        Alert.alert('เลือกที่อยู่จัดส่งก่อนนะ', res.message, [
+          { text: 'ไว้ก่อน', style: 'cancel' },
+          { text: 'เพิ่มที่อยู่', onPress: () => router.push('/addresses/edit' as never) },
+        ]);
+        loadAddresses();
+        return;
+      case 'ADDRESS_LOCATION_REQUIRED': {
+        const id = Number(res.data?.address_id) || selectedAddressId;
+        Alert.alert('ปักหมุดที่อยู่ก่อนนะ', 'ส่งด้วยไรเดอร์ต้องปักหมุดตำแหน่ง ไรเดอร์จะได้ไปส่งถูกที่', [
+          { text: 'ส่งพัสดุแทน', onPress: () => setDelivery('parcel') },
+          { text: 'ปักหมุด', onPress: () => router.push((id ? `/addresses/edit?id=${id}` : '/addresses/edit') as never) },
+        ]);
+        return;
       }
-      return prev + 1;
-    });
-  }, [clearCart]);
-
-  // Start polling
-  const startPolling = useCallback((paymentId: number) => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
+      case 'COUPON_INVALID':
+        setCouponError(res.message);
+        setAppliedCoupon(null);
+        Alert.alert('คูปองใช้ไม่ได้', res.message);
+        return;
+      case 'CART_EMPTY':
+      case 'PRODUCT_UNAVAILABLE':
+      case 'OUT_OF_STOCK':
+        Alert.alert('ตะกร้ามีการเปลี่ยนแปลง', res.message, [{ text: 'ไปที่ตะกร้า', onPress: () => router.replace('/cart') }]);
+        return;
+      case 'RIDER_NOT_AVAILABLE':
+      case 'COD_NOT_AVAILABLE':
+      case 'PAYMENT_METHOD_UNAVAILABLE':
+        Alert.alert('เปลี่ยนตัวเลือกก่อนนะ', res.message);
+        fetchQuote();
+        loadPaymentMethods();
+        return;
+      case 'CHECKOUT_IN_PROGRESS':
+        Alert.alert('กำลังสร้างคำสั่งซื้อ', 'รอสักครู่แล้วกดยืนยันอีกครั้ง ระบบจะไม่สั่งซ้ำ');
+        return;
+      case 'NETWORK_ERROR':
+      case 'TIMEOUT':
+      case 'SERVER_ERROR':
+      case 'CHECKOUT_FAILED':
+        Alert.alert('ยังสั่งซื้อไม่สำเร็จ', `${res.message}\nกดยืนยันอีกครั้งได้เลย ระบบจะไม่สั่งซ้ำ`);
+        return;
+      default:
+        Alert.alert('สั่งซื้อไม่สำเร็จ', res.message);
     }
+  };
 
-    setPollingCount(0);
-    pollingRef.current = setInterval(() => {
-      checkPaymentStatus(paymentId);
-    }, 3000);
-  }, [checkPaymentStatus]);
+  const submit = async () => {
+    // กันกดยืนยันซ้ำระหว่างรอ (state อาจยังไม่อัปเดตทัน)
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    if (!idemRef.current || idemRef.current.signature !== signature) {
+      idemRef.current = { signature, key: newIdempotencyKey() };
+    }
+    const res = await checkout(
+      {
+        payment_method: payment,
+        delivery_method: delivery,
+        ...(selectedAddressId ? { address_id: selectedAddressId } : {}),
+        ...(appliedCoupon ? { coupon_code: appliedCoupon } : {}),
+        ...(note.trim() ? { note: note.trim() } : {}),
+      },
+      idemRef.current.key
+    );
+    submittingRef.current = false;
+    if (!mountedRef.current) return;
+    setSubmitting(false);
 
-  // Place order
-  const handlePlaceOrder = async () => {
-    if (!isAuthenticated) {
-      Alert.alert('กรุณาเข้าสู่ระบบ', 'คุณต้องเข้าสู่ระบบก่อนทำการสั่งซื้อ', [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'เข้าสู่ระบบ', onPress: () => router.push('/login') },
-      ]);
+    if (!res.success) {
+      handleFailure(res);
       return;
     }
 
-    // Check wallet balance if wallet payment
-    if (selectedPayment === 'wallet' && walletBalance < finalTotal) {
+    // สั่งสำเร็จ — server ล้างตะกร้าแล้ว
+    idemRef.current = null;
+    resultHaptic('success');
+    useCartStore.getState().reset();
+    useCartStore.getState().refresh();
+
+    const data = res.data;
+    setResult(data);
+    if (typeof data.wallet_balance === 'number') setWalletBalance(data.wallet_balance);
+
+    if (data.payment_status === 'pending' && Array.isArray(data.payments) && data.payments.length > 0) {
+      const states: Record<string, PromptPayState> = {};
+      data.payments.forEach((p, index) => {
+        states[p.transaction_id || `order-${p.order_id}-${index}`] = p.status === 'error' || !p.transaction_id ? 'error' : 'waiting';
+      });
+      setPayments(data.payments);
+      setPayStates(states);
+      pollStartedAtRef.current = Date.now();
+      setPollTimedOut(false);
+      setStep('payment');
+    } else {
+      setStep('done');
+    }
+  };
+
+  const confirmAndSubmit = () => {
+    if (!quote || quoteLoading) return;
+    if (availableItems.length === 0) {
+      Alert.alert('ตะกร้าว่าง', 'ยังไม่มีสินค้าที่สั่งได้');
+      return;
+    }
+    if ((quote.summary.unavailable_count ?? 0) > 0) {
+      Alert.alert('มีสินค้าที่สั่งไม่ได้', 'เอาสินค้าที่หมด/ปิดขายออกจากตะกร้าก่อนนะ', [
+        { text: 'ไปที่ตะกร้า', onPress: () => router.replace('/cart') },
+      ]);
+      return;
+    }
+    if (walletShort) {
       Alert.alert(
-        'ยอดเงินไม่พอ',
-        `ยอดเงินในกระเป๋า: ${formatCurrency(walletBalance)}\nต้องชำระ: ${formatCurrency(finalTotal)}\n\nต้องการเติมเงินหรือไม่?`,
+        'ยอดเงินในกระเป๋าไม่พอ',
+        `ต้องจ่าย ${formatBaht(grandTotal, { decimals: 2 })} แต่มี ${formatBaht(walletBalance, { decimals: 2 })}`,
         [
-          { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'เติมเงิน', onPress: () => router.push('/wallet-topup') },
+          { text: 'เลือกวิธีอื่น', style: 'cancel' },
+          { text: 'เติมเงิน', onPress: () => router.push('/wallet-topup' as never) },
         ]
       );
       return;
     }
 
-    setIsProcessing(true);
-    setPaymentStep('processing');
+    const lines = [
+      `ยอดชำระ ${formatBaht(grandTotal, { decimals: 2 })}`,
+      `จ่ายด้วย: ${PAYMENT_LABEL[payment]}`,
+      `จัดส่ง: ${delivery === 'rider' ? 'ไรเดอร์' : 'พัสดุ'}`,
+      quote.stores.length > 1 ? `แยกเป็น ${quote.stores.length} คำสั่งซื้อตามร้าน` : '',
+      payment === 'wallet' ? 'ระบบจะตัดเงินจากกระเป๋าทันที' : '',
+    ].filter(Boolean);
 
+    Alert.alert('ยืนยันสั่งซื้อ?', lines.join('\n'), [
+      { text: 'ยังก่อน', style: 'cancel' },
+      { text: payment === 'wallet' ? 'ยืนยันจ่ายเงิน' : 'ยืนยันสั่งซื้อ', onPress: () => submit() },
+    ]);
+  };
+
+  // =====================================================
+  // พร้อมเพย์: poll สถานะ
+  // =====================================================
+
+  const paymentKey = (p: PaymentInstruction, index: number) => p.transaction_id || `order-${p.order_id}-${index}`;
+
+  /**
+   * เช็คสถานะทีละรายการแบบวนรอบ (หลายร้าน = หลาย QR) — รวมแล้วไม่เกิน 15 ครั้ง/นาที
+   * ไม่ชน throttle 60 ครั้ง/นาทีของ API
+   */
+  const pollOnce = useCallback(async () => {
+    if (pollingBusyRef.current) return;
+    pollingBusyRef.current = true;
     try {
-      // เตรียมข้อมูล checkout
-      const checkoutData: CheckoutRequest = {
-        payment_method: selectedPayment as any,
-        promo_code: promoCode || undefined,
-      };
+      const waiting = payments
+        .map((p, index) => ({ p, key: paymentKey(p, index) }))
+        .filter(({ p, key }) => payStates[key] === 'waiting' && !!p.transaction_id);
+      if (waiting.length === 0) return;
 
-      console.log('🛒 Checkout with:', checkoutData);
+      const target = waiting[pollCursorRef.current % waiting.length];
+      pollCursorRef.current += 1;
+      const res = await getPaymentStatus(target.p.transaction_id);
+      if (!mountedRef.current || !res.success) return;
 
-      const response = await checkout(checkoutData);
-      console.log('🛒 Checkout response:', response);
-
-      if (response?.success && response.data) {
-        setOrderId(response.data.orderId);
-        setOrderNumber(response.data.orderNumber);
-
-        // ตรวจสอบ payment method
-        if (selectedPayment === 'wallet') {
-          // Wallet - หักเงินทันที ไปหน้า success
-          setPaymentStep('success');
-          clearCart();
-        } else if (selectedPayment === 'cod') {
-          // COD - ไปหน้า success
-          setPaymentStep('success');
-          clearCart();
-        } else {
-          // QR Code / Bank Transfer - แสดง QR และ polling
-          setPaymentData(response.data);
-          setPaymentStep('qrcode');
-
-          // Start polling
-          if (response.data.paymentId) {
-            startPolling(response.data.paymentId);
-          }
-        }
-      } else {
-        // Error
-        Alert.alert('เกิดข้อผิดพลาด', response?.message || 'ไม่สามารถสร้างคำสั่งซื้อได้');
-        setPaymentStep('summary');
+      const st = String(res.data?.status || '');
+      const nextState: PromptPayState | null =
+        st === 'completed' || res.data?.order?.payment_status === 'paid'
+          ? 'paid'
+          : st === 'failed' || st === 'cancelled'
+            ? 'error'
+            : st === 'expired' || res.data?.is_expired === true
+              ? 'expired'
+              : null;
+      if (nextState) {
+        setPayStates((prev) => (prev[target.key] === 'waiting' ? { ...prev, [target.key]: nextState } : prev));
       }
-    } catch (error: any) {
-      console.error('Checkout error:', error);
-      Alert.alert('เกิดข้อผิดพลาด', error.message || 'ไม่สามารถดำเนินการได้');
-      setPaymentStep('summary');
     } finally {
-      setIsProcessing(false);
+      pollingBusyRef.current = false;
+    }
+  }, [payments, payStates]);
+
+  const anyWaiting = Object.values(payStates).some((s) => s === 'waiting');
+  const allPaid = payments.length > 0 && payments.every((p, i) => payStates[paymentKey(p, i)] === 'paid');
+
+  // poll ระหว่างอยู่หน้านี้ + ยังมี QR ที่รอจ่าย
+  useFocusEffect(
+    useCallback(() => {
+      if (step !== 'payment' || !anyWaiting || pollTimedOut) return undefined;
+      const timer = setInterval(() => {
+        if (Date.now() - pollStartedAtRef.current > POLL_MAX_MS) {
+          setPollTimedOut(true);
+          return;
+        }
+        pollOnce();
+      }, POLL_INTERVAL_MS);
+      // กลับมาจากแอปธนาคาร → เช็คทันที
+      const sub = AppState.addEventListener('change', (state) => {
+        if (state === 'active') pollOnce();
+      });
+      return () => {
+        clearInterval(timer);
+        sub.remove();
+      };
+    }, [step, anyWaiting, pollTimedOut, pollOnce])
+  );
+
+  // จ่ายครบทุก QR → ไปหน้าสำเร็จ
+  useEffect(() => {
+    if (step !== 'payment' || !allPaid) return;
+    resultHaptic('success');
+    const timer = setTimeout(() => {
+      if (mountedRef.current) setStep('done');
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [step, allPaid]);
+
+  /** ขอ QR ใหม่ / เปลี่ยนไปจ่ายด้วยกระเป๋า สำหรับออเดอร์หนึ่ง */
+  const repay = async (index: number, method: 'promptpay' | 'wallet') => {
+    const current = payments[index];
+    if (!current || repayingRef.current.has(current.order_id)) return;
+    const oldKey = paymentKey(current, index);
+    repayingRef.current.add(current.order_id);
+    const res = await payOrder(current.order_id, method);
+    repayingRef.current.delete(current.order_id);
+    if (!mountedRef.current) return;
+
+    if (!res.success) {
+      if (res.code === 'ALREADY_PAID') {
+        setPayStates((prev) => ({ ...prev, [oldKey]: 'paid' }));
+        return;
+      }
+      resultHaptic('error');
+      Alert.alert(method === 'wallet' ? 'จ่ายด้วยกระเป๋าไม่สำเร็จ' : 'ขอ QR ใหม่ไม่สำเร็จ', res.message);
+      return;
+    }
+
+    const paidNow = res.data?.order?.payment_status === 'paid' || res.data?.status === 'completed';
+    const updated: PaymentInstruction = { ...res.data, order_id: res.data.order_id || current.order_id };
+    const newKey = updated.transaction_id || oldKey;
+    setPayments((prev) => prev.map((p, i) => (i === index ? updated : p)));
+    setPayStates((prev) => {
+      const next = { ...prev };
+      delete next[oldKey];
+      next[newKey] = paidNow ? 'paid' : 'waiting';
+      return next;
+    });
+    if (paidNow) {
+      resultHaptic('success');
+      loadWallet();
+    } else {
+      pollStartedAtRef.current = Date.now();
+      setPollTimedOut(false);
     }
   };
 
-  // Cancel payment
-  const handleCancelPayment = () => {
+  const payWithWallet = (index: number) => {
+    const p = payments[index];
+    if (!p) return;
     Alert.alert(
-      'ยกเลิกการชำระเงิน',
-      'คุณต้องการยกเลิกการชำระเงินหรือไม่?',
+      'จ่ายด้วยกระเป๋าเงิน?',
+      `ระบบจะตัดเงิน ${formatBaht(p.amount, { decimals: 2 })} จากกระเป๋าทันที${
+        walletBalance !== null ? `\nยอดคงเหลือ ${formatBaht(walletBalance, { decimals: 2 })}` : ''
+      }\nถ้าโอนพร้อมเพย์ไปแล้ว ไม่ต้องกดนะ`,
       [
-        { text: 'ไม่', style: 'cancel' },
-        {
-          text: 'ยกเลิก',
-          style: 'destructive',
-          onPress: () => {
-            if (pollingRef.current) {
-              clearInterval(pollingRef.current);
-              pollingRef.current = null;
-            }
-            setPaymentStep('summary');
-            setPaymentData(null);
-          },
-        },
+        { text: 'ยังก่อน', style: 'cancel' },
+        { text: 'ยืนยันจ่าย', onPress: () => repay(index, 'wallet') },
       ]
     );
   };
 
-  // Loading cart state - รอ cart โหลดเสร็จก่อนตรวจสอบ
-  if (isCartLoading && paymentStep === 'summary') {
+  // =====================================================
+  // ออกจากหน้า (ขั้นจ่ายเงิน/สำเร็จ ไม่ย้อนกลับไปตะกร้าที่ว่างแล้ว)
+  // =====================================================
+
+  const orderIds = result?.order_ids ?? [];
+  const goOrders = useCallback(() => {
+    leavingRef.current = true;
+    if (orderIds.length === 1) router.replace(`/order/${orderIds[0]}` as never);
+    else router.replace('/(tabs)/orders' as never);
+  }, [orderIds]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event: any) => {
+      if (leavingRef.current || step === 'form') return;
+      event.preventDefault();
+      if (step === 'payment' && anyWaiting) {
+        Alert.alert('ออกจากหน้าชำระเงิน?', 'ชำระภายหลังได้ที่หน้าคำสั่งซื้อ (ก่อน QR หมดอายุ)', [
+          { text: 'อยู่ต่อ', style: 'cancel' },
+          { text: 'ไปหน้าคำสั่งซื้อ', onPress: goOrders },
+        ]);
+      } else {
+        goOrders();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, step, anyWaiting, goOrders]);
+
+  // =====================================================
+  // render
+  // =====================================================
+
+  if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'ชำระเงิน',
-            headerStyle: { backgroundColor: '#0F0F23' },
-            headerTintColor: '#FFFFFF',
-          }}
-        />
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.processingText}>กำลังโหลดตะกร้า...</Text>
-        </View>
-      </View>
+      <Screen title="ชำระเงิน" scroll={false}>
+        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+      </Screen>
     );
   }
 
-  // Empty cart - แสดงเมื่อโหลด cart เสร็จแล้วและไม่มีสินค้า
-  if (items.length === 0 && paymentStep === 'summary' && !isCartLoading) {
+  // ---------- สำเร็จ ----------
+  if (step === 'done' && result) {
+    const status = result.payment_status;
+    const title =
+      status === 'cod' ? 'สั่งซื้อสำเร็จ!' : status === 'paid' || allPaid ? 'ชำระเงินเรียบร้อย!' : 'สร้างคำสั่งซื้อแล้ว';
+    const message =
+      status === 'cod'
+        ? 'เตรียมเงินสดไว้จ่ายไรเดอร์ตอนรับของนะ ร้านจะเริ่มเตรียมสินค้าเร็วๆ นี้'
+        : 'ร้านได้รับคำสั่งซื้อแล้ว ติดตามสถานะได้ที่หน้าคำสั่งซื้อ';
     return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'ชำระเงิน',
-            headerStyle: { backgroundColor: '#0F0F23' },
-            headerTintColor: '#FFFFFF',
-          }}
-        />
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🛒</Text>
-          <Text style={styles.emptyText}>ไม่มีสินค้าในตะกร้า</Text>
-          <Pressable style={styles.shopButton} onPress={() => router.push('/shopping')}>
-            <Text style={styles.shopButtonText}>ไปช้อปปิ้ง</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  // QR Code / Bank Transfer Step
-  if (paymentStep === 'qrcode') {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'ชำระเงิน',
-            headerStyle: { backgroundColor: '#0F0F23' },
-            headerTintColor: '#FFFFFF',
-            headerLeft: () => null, // ปิดปุ่มกลับ
-          }}
-        />
-
-        <ScrollView contentContainerStyle={styles.qrContainer}>
-          {/* QR Code Card */}
-          <View style={styles.qrCard}>
-            <Text style={styles.qrTitle}>
-              {selectedPayment === 'promptpay' ? '📱 สแกน QR Code' : '🏦 โอนเงินธนาคาร'}
-            </Text>
-
-            <View style={styles.qrAmountRow}>
-              <Text style={styles.qrAmountLabel}>ยอดที่ต้องชำระ</Text>
-              <Text style={styles.qrAmount}>{formatCurrency(finalTotal)}</Text>
-            </View>
-
-            {/* QR Code */}
-            {paymentData?.qrCodeUrl ? (
-              <View style={styles.qrImageContainer}>
-                <Image
-                  source={{ uri: paymentData.qrCodeUrl }}
-                  style={styles.qrImage}
-                  resizeMode="contain"
-                />
-              </View>
-            ) : paymentData?.qrCode ? (
-              <View style={styles.qrImageContainer}>
-                <Image
-                  source={{ uri: `data:image/png;base64,${paymentData.qrCode}` }}
-                  style={styles.qrImage}
-                  resizeMode="contain"
-                />
-              </View>
-            ) : (
-              <View style={styles.qrPlaceholder}>
-                <Text style={styles.qrPlaceholderText}>QR Code</Text>
-              </View>
-            )}
-
-            {/* Bank Info (for bank transfer) */}
-            {selectedPayment === 'bank' && paymentData?.bankInfo && (
-              <View style={styles.bankInfo}>
-                <Text style={styles.bankInfoTitle}>ข้อมูลบัญชีธนาคาร</Text>
-                <View style={styles.bankInfoRow}>
-                  <Text style={styles.bankInfoLabel}>ธนาคาร</Text>
-                  <Text style={styles.bankInfoValue}>{paymentData.bankInfo.bankName}</Text>
-                </View>
-                <View style={styles.bankInfoRow}>
-                  <Text style={styles.bankInfoLabel}>เลขบัญชี</Text>
-                  <Text style={styles.bankInfoValue}>{paymentData.bankInfo.accountNumber}</Text>
-                </View>
-                <View style={styles.bankInfoRow}>
-                  <Text style={styles.bankInfoLabel}>ชื่อบัญชี</Text>
-                  <Text style={styles.bankInfoValue}>{paymentData.bankInfo.accountName}</Text>
-                </View>
-              </View>
-            )}
-
-            {/* Reference */}
-            {paymentData?.reference && (
-              <View style={styles.referenceBox}>
-                <Text style={styles.referenceLabel}>รหัสอ้างอิง</Text>
-                <Text style={styles.referenceValue}>{paymentData.reference}</Text>
-              </View>
-            )}
-
-            {/* Order Number */}
-            {orderNumber && (
-              <Text style={styles.orderNumberText}>หมายเลขคำสั่งซื้อ: {orderNumber}</Text>
-            )}
-
-            {/* Polling Status */}
-            <View style={styles.pollingStatus}>
-              <ActivityIndicator size="small" color="#3B82F6" />
-              <Text style={styles.pollingText}>
-                กำลังรอการชำระเงิน... ({Math.floor((MAX_POLLING_COUNT - pollingCount) * 3 / 60)} นาที)
-              </Text>
-            </View>
-          </View>
-
-          {/* Instructions */}
-          <View style={styles.instructionCard}>
-            <Text style={styles.instructionTitle}>📋 วิธีชำระเงิน</Text>
-            <Text style={styles.instructionText}>
-              1. เปิดแอพธนาคารบนมือถือ{'\n'}
-              2. เลือกสแกน QR Code หรือโอนเงิน{'\n'}
-              3. สแกน QR Code ด้านบน หรือใส่ข้อมูลบัญชี{'\n'}
-              4. ยืนยันการชำระเงินตามยอดที่แสดง{'\n'}
-              5. รอระบบตรวจสอบอัตโนมัติ (ประมาณ 1-3 นาที)
-            </Text>
-          </View>
-
-          {/* Cancel Button */}
-          <Pressable style={styles.cancelButton} onPress={handleCancelPayment}>
-            <Text style={styles.cancelButtonText}>ยกเลิกการชำระเงิน</Text>
-          </Pressable>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  // Processing Step
-  if (paymentStep === 'processing') {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'กำลังดำเนินการ',
-            headerStyle: { backgroundColor: '#0F0F23' },
-            headerTintColor: '#FFFFFF',
-            headerLeft: () => null,
-          }}
-        />
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.processingText}>กำลังสร้างคำสั่งซื้อ...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Success Step
-  if (paymentStep === 'success') {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'สำเร็จ',
-            headerStyle: { backgroundColor: '#0F0F23' },
-            headerTintColor: '#FFFFFF',
-            headerLeft: () => null,
-          }}
-        />
-        <View style={styles.centerContainer}>
-          <LinearGradient
-            colors={['#10B981', '#059669']}
-            style={styles.successIcon}
-          >
-            <Text style={styles.successEmoji}>✅</Text>
-          </LinearGradient>
-          <Text style={styles.successTitle}>สั่งซื้อสำเร็จ!</Text>
-          <Text style={styles.successSubtitle}>
-            คำสั่งซื้อของคุณได้รับการยืนยันแล้ว
-          </Text>
-          {orderNumber && (
-            <Text style={styles.successOrderNumber}>
-              หมายเลขคำสั่งซื้อ: {orderNumber}
+      <Screen title="สั่งซื้อสำเร็จ" onBack={goOrders}>
+        <Card3D gradientBorder padding={spacing.xl} style={styles.block}>
+          <Text style={styles.bigIcon}>🎉</Text>
+          <Text style={[typography.h1, styles.centerText, { color: colors.textStrong }]}>{title}</Text>
+          <Text style={[typography.body, styles.centerText, styles.gapTop, { color: colors.textMuted }]}>{message}</Text>
+          <PriceText amount={result.total_amount} decimals={2} size="xl" tone="gold" style={[styles.centerText, styles.gapTop]} />
+          {typeof result.wallet_balance === 'number' && (
+            <Text style={[typography.caption, styles.centerText, { color: colors.textMuted }]}>
+              ยอดคงเหลือในกระเป๋า {formatBaht(result.wallet_balance, { decimals: 2 })}
             </Text>
           )}
+        </Card3D>
 
-          <View style={styles.successPvBox}>
-            <Text style={styles.successPvText}>⭐ คุณได้รับ {totalPV} PV</Text>
-          </View>
-
-          <View style={styles.successButtons}>
-            <Pressable
-              style={styles.successButton}
-              onPress={() => router.replace('/orders')}
-            >
-              <Text style={styles.successButtonText}>📋 ดูคำสั่งซื้อ</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.successButton, styles.successButtonPrimary]}
-              onPress={() => router.replace('/(tabs)')}
-            >
-              <LinearGradient
-                colors={['#3B82F6', '#2563EB']}
-                style={styles.successButtonGradient}
-              >
-                <Text style={styles.successButtonTextPrimary}>🏠 กลับหน้าหลัก</Text>
-              </LinearGradient>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    );
-  }
-
-  // Failed Step
-  if (paymentStep === 'failed') {
-    return (
-      <View style={styles.container}>
-        <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: 'ไม่สำเร็จ',
-            headerStyle: { backgroundColor: '#0F0F23' },
-            headerTintColor: '#FFFFFF',
-            headerLeft: () => null,
-          }}
-        />
-        <View style={styles.centerContainer}>
-          <View style={styles.failedIcon}>
-            <Text style={styles.failedEmoji}>❌</Text>
-          </View>
-          <Text style={styles.failedTitle}>การชำระเงินไม่สำเร็จ</Text>
-          <Text style={styles.failedSubtitle}>
-            ไม่พบการชำระเงิน หรือหมดเวลารอ{'\n'}กรุณาลองใหม่อีกครั้ง
-          </Text>
-
-          <Pressable
-            style={styles.retryButton}
+        {result.orders.map((order) => (
+          <Card3D
+            key={order.id}
             onPress={() => {
-              setPaymentStep('summary');
-              setPaymentData(null);
+              leavingRef.current = true;
+              router.replace(`/order/${order.id}` as never);
             }}
+            padding={spacing.md}
+            radius={radii.lg}
+            shadow="sm"
+            style={styles.block}
+            accessibilityLabel={`ดูคำสั่งซื้อ ${order.order_number}`}
           >
-            <Text style={styles.retryButtonText}>🔄 ลองใหม่</Text>
-          </Pressable>
-        </View>
-      </View>
+            <View style={styles.rowBetween}>
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{order.store?.name || 'คำสั่งซื้อ'}</Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>{order.order_number}</Text>
+              </View>
+              <PriceText amount={order.total_amount} size="md" tone="strong" />
+              <Text style={[typography.h2, { color: colors.textFaint }]}> ›</Text>
+            </View>
+          </Card3D>
+        ))}
+
+        <Button3D title="ดูคำสั่งซื้อ" icon="🧾" size="lg" fullWidth onPress={goOrders} style={styles.gapTop} />
+        <Button3D
+          title="ช้อปต่อ"
+          variant="secondary"
+          size="lg"
+          fullWidth
+          onPress={() => {
+            leavingRef.current = true;
+            router.replace('/(tabs)/shop' as never);
+          }}
+          style={styles.gapTop}
+        />
+      </Screen>
     );
   }
 
-  // Summary Step (Default)
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-      <LinearGradient colors={['#0F0F23', '#1A1A2E', '#16213E']} style={StyleSheet.absoluteFill} />
-
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: 'ชำระเงิน',
-          headerStyle: { backgroundColor: '#0F0F23' },
-          headerTintColor: '#FFFFFF',
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} style={styles.headerButton}>
-              <Text style={styles.headerIcon}>⬅️</Text>
-            </Pressable>
-          ),
-        }}
-      />
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Shipping Address */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>📍</Text>
-            <Text style={styles.sectionTitle}>ที่อยู่จัดส่ง</Text>
-          </View>
-          <Pressable style={styles.addressCard}>
-            <Text style={styles.addressName}>{user?.name || 'ชื่อผู้รับ'}</Text>
-            <Text style={styles.addressPhone}>{user?.phone || '0xx-xxx-xxxx'}</Text>
-            <Text style={styles.addressText}>
-              {user?.address || 'กรุณาเพิ่มที่อยู่ในโปรไฟล์'}
+  // ---------- จ่ายพร้อมเพย์ ----------
+  if (step === 'payment' && result) {
+    return (
+      <Screen title="สแกนจ่ายพร้อมเพย์" subtitle={`${payments.length} รายการที่ต้องชำระ`} onBack={() => navigation.goBack()}>
+        {payments.length > 1 && (
+          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
+            <Text style={[typography.bodySm, { color: colors.text }]}>
+              สั่งจากหลายร้าน แต่ละร้านมี QR ของตัวเอง โอนให้ครบทุก QR นะ
             </Text>
-            <Text style={styles.addressChange}>เปลี่ยนที่อยู่ ➡️</Text>
-          </Pressable>
-        </View>
-
-        {/* Order Summary */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>📦</Text>
-            <Text style={styles.sectionTitle}>สรุปคำสั่งซื้อ ({totalItems} ชิ้น)</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            {items.map((item) => (
-              <View key={item.id} style={styles.summaryItem}>
-                <Text style={styles.summaryItemName} numberOfLines={1}>
-                  {item.productName || item.product.name}
-                </Text>
-                <Text style={styles.summaryItemQty}>x{item.quantity}</Text>
-                <Text style={styles.summaryItemPrice}>
-                  {formatCurrency(item.subtotal)}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Promo Code */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>🎟️</Text>
-            <Text style={styles.sectionTitle}>โค้ดส่วนลด</Text>
-          </View>
-          <View style={styles.promoRow}>
-            <TextInput
-              value={promoCode}
-              onChangeText={setPromoCode}
-              placeholder="ใส่โค้ดส่วนลด"
-              placeholderTextColor="#6B7280"
-              style={styles.promoInput}
-            />
-            <Pressable
-              style={[styles.promoButton, isApplyingPromo && styles.buttonDisabled]}
-              onPress={handleApplyPromo}
-              disabled={isApplyingPromo}
-            >
-              {isApplyingPromo ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <Text style={styles.promoButtonText}>ใช้โค้ด</Text>
+          </Card3D>
+        )}
+        {payments.map((p, index) => {
+          const key = paymentKey(p, index);
+          const state = payStates[key] || 'waiting';
+          const order = result.orders.find((o) => o.id === p.order_id);
+          return (
+            <View key={key}>
+              <PromptPayQR
+                payment={p}
+                state={state}
+                title={order?.store?.name ? `ร้าน ${order.store.name}` : `คำสั่งซื้อ ${order?.order_number || ''}`}
+                onRenew={() => repay(index, 'promptpay')}
+              />
+              {state !== 'paid' && (
+                <Button3D
+                  title="จ่ายด้วยกระเป๋าเงินแทน"
+                  icon="👛"
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => payWithWallet(index)}
+                  style={styles.walletAlt}
+                />
               )}
-            </Pressable>
-          </View>
-        </View>
+            </View>
+          );
+        })}
 
-        {/* Payment Method */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>💳</Text>
-            <Text style={styles.sectionTitle}>วิธีชำระเงิน</Text>
+        {pollTimedOut && anyWaiting && (
+          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
+            <Text style={[typography.bodySm, { color: colors.warning }]}>
+              ยังไม่พบยอดโอน ถ้าโอนแล้วกดตรวจสอบอีกครั้งได้เลย
+            </Text>
+            <Button3D
+              title="ตรวจสอบอีกครั้ง"
+              icon="🔄"
+              size="sm"
+              onPress={async () => {
+                pollStartedAtRef.current = Date.now();
+                setPollTimedOut(false);
+                await pollOnce();
+              }}
+              style={styles.gapTop}
+            />
+          </Card3D>
+        )}
+
+        {anyWaiting && (
+          <View style={styles.waitingRow}>
+            <ActivityIndicator color={colors.gold} />
+            <Text style={[typography.caption, { color: colors.textMuted }]}>กำลังรอยืนยันยอดโอนอัตโนมัติ...</Text>
           </View>
-          {paymentMethods.map((method) => (
-            <Pressable
-              key={method.id}
-              style={[
-                styles.paymentOption,
-                selectedPayment === method.id && styles.paymentOptionSelected,
-                !method.isAvailable && styles.paymentOptionDisabled,
-              ]}
-              onPress={() => method.isAvailable && setSelectedPayment(method.id)}
-              disabled={!method.isAvailable}
-            >
-              <Text style={styles.paymentIcon}>{method.icon}</Text>
-              <View style={styles.paymentInfo}>
-                <Text style={styles.paymentName}>{method.name}</Text>
-                <Text style={styles.paymentDesc}>
-                  {method.id === 'wallet'
-                    ? `ยอดเงิน: ${formatCurrency(walletBalance)}`
-                    : method.description}
+        )}
+
+        <Button3D title="ชำระภายหลัง / ดูคำสั่งซื้อ" variant="secondary" size="md" fullWidth onPress={goOrders} style={styles.gapTop} />
+      </Screen>
+    );
+  }
+
+  // ---------- ฟอร์ม ----------
+  if (!quote) {
+    return (
+      <Screen title="ชำระเงิน" scroll={false}>
+        {quoteError ? (
+          <EmptyState variant="error" message={quoteError} onAction={fetchQuote} />
+        ) : (
+          <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+        )}
+      </Screen>
+    );
+  }
+
+  if (quote.items.length === 0) {
+    return (
+      <Screen title="ชำระเงิน" scroll={false}>
+        <EmptyState
+          icon="🛒"
+          title="ตะกร้ายังว่างอยู่"
+          message="เลือกสินค้าก่อนแล้วค่อยมาชำระเงินนะ"
+          actionLabel="ไปช้อปเลย"
+          onAction={() => router.replace('/(tabs)/shop' as never)}
+        />
+      </Screen>
+    );
+  }
+
+  const summary = quote.summary;
+  const submitDisabled = quoteLoading || submitting || availableItems.length === 0;
+
+  return (
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
+      <Screen title="ชำระเงิน" subtitle={`${summary.available_items_count} ชิ้น`} contentStyle={{ paddingBottom: 150 + insets.bottom }}>
+        {!!notice && (
+          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
+            <View style={styles.rowBetween}>
+              <Text style={[typography.bodySm, styles.flex, { color: colors.info }]}>ℹ️ {notice}</Text>
+              <Pressable onPress={() => setNotice(null)} accessibilityRole="button" accessibilityLabel="ปิดข้อความ" hitSlop={10}>
+                <Text style={[typography.h3, { color: colors.textFaint }]}>✕</Text>
+              </Pressable>
+            </View>
+          </Card3D>
+        )}
+
+        {/* ---------- ที่อยู่ ---------- */}
+        <SectionHeader title="ที่อยู่จัดส่ง" icon="📍" actionLabel={addresses.length > 0 ? 'เปลี่ยน' : undefined} onAction={() => setAddressSheet(true)} />
+        {selectedAddress ? (
+          <Card3D onPress={() => setAddressSheet(true)} padding={spacing.lg} style={styles.block} accessibilityLabel="เปลี่ยนที่อยู่จัดส่ง">
+            <View style={styles.rowBetween}>
+              <Text style={[typography.bodyStrong, styles.flex, { color: colors.textStrong }]}>
+                {selectedAddress.recipient_name} · {selectedAddress.phone_number}
+              </Text>
+              {selectedAddress.is_default && <Pill label="หลัก" tone="gold" />}
+            </View>
+            <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.text }]}>{selectedAddress.full_address}</Text>
+            {!selectedAddress.has_location && (
+              <View style={styles.pinWarn}>
+                <Text style={[typography.caption, styles.flex, { color: colors.warning }]}>
+                  📍 ยังไม่ปักหมุด — ปักหมุดแล้วเลือกส่งด้วยไรเดอร์ได้
                 </Text>
-                {method.id === 'wallet' && walletBalance < finalTotal && (
-                  <Text style={styles.insufficientText}>⚠️ ยอดเงินไม่พอ</Text>
+                <Button3D
+                  title="ปักหมุด"
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => router.push(`/addresses/edit?id=${selectedAddress.id}` as never)}
+                />
+              </View>
+            )}
+          </Card3D>
+        ) : (
+          <Card3D gradientBorder padding={spacing.lg} style={styles.block}>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ยังไม่มีที่อยู่จัดส่ง</Text>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>เพิ่มที่อยู่ครั้งเดียว ใช้ได้ทุกครั้งที่สั่ง</Text>
+            <Button3D
+              title="เพิ่มที่อยู่"
+              icon="➕"
+              size="md"
+              onPress={() => router.push('/addresses/edit' as never)}
+              style={styles.gapTop}
+            />
+          </Card3D>
+        )}
+
+        {/* ---------- วิธีจัดส่ง ---------- */}
+        <SectionHeader title="วิธีจัดส่ง" icon="🚚" style={styles.section} />
+        <OptionCard
+          icon="📦"
+          title="ส่งพัสดุ"
+          subtitle="ร้านแพ็กส่งผ่านบริษัทขนส่ง พร้อมเลขติดตาม"
+          selected={delivery === 'parcel'}
+          onPress={() => setDelivery('parcel')}
+          right={
+            riderInfo.parcelFee > 0 ? (
+              <PriceText amount={riderInfo.parcelFee} size="sm" tone="strong" />
+            ) : (
+              <Text style={[typography.caption, { color: colors.success }]}>ส่งฟรี</Text>
+            )
+          }
+        />
+        <OptionCard
+          icon="🛵"
+          title="ส่งด้วยไรเดอร์"
+          subtitle={
+            riderInfo.available
+              ? `ประมาณ ${riderInfo.minutes || '-'} นาที · ${riderInfo.distance ? riderInfo.distance.toFixed(1) : '-'} กม.`
+              : undefined
+          }
+          selected={delivery === 'rider'}
+          disabled={!riderInfo.available}
+          disabledReason={riderInfo.reason || 'ร้านนี้ยังไม่เปิดส่งด้วยไรเดอร์'}
+          onPress={() => setDelivery('rider')}
+          right={riderInfo.available ? <PriceText amount={riderInfo.fee} size="sm" tone="strong" /> : null}
+        />
+
+        {/* ---------- วิธีชำระเงิน ---------- */}
+        <SectionHeader title="วิธีชำระเงิน" icon="💳" style={styles.section} />
+        <OptionCard
+          icon="👛"
+          title="กระเป๋าเงิน"
+          subtitle={walletBalance !== null ? `ยอดคงเหลือ ${formatBaht(walletBalance, { decimals: 2 })}` : 'ตัดเงินจากกระเป๋าทันที'}
+          selected={payment === 'wallet'}
+          onPress={() => setPayment('wallet')}
+          right={walletShort ? <Pill label="ไม่พอ" tone="danger" /> : null}
+        />
+        {walletShort && (
+          <Button3D
+            title="เติมเงินเข้ากระเป๋า"
+            icon="➕"
+            variant="secondary"
+            size="sm"
+            onPress={() => router.push('/wallet-topup' as never)}
+            style={styles.topup}
+          />
+        )}
+        <OptionCard
+          icon="📱"
+          title="พร้อมเพย์ (สแกน QR)"
+          subtitle="โอนผ่านแอปธนาคาร ระบบยืนยันให้อัตโนมัติ"
+          selected={payment === 'promptpay'}
+          disabled={promptpayEnabled === false}
+          disabledReason="พร้อมเพย์ปิดใช้งานชั่วคราว"
+          onPress={() => setPayment('promptpay')}
+        />
+        <OptionCard
+          icon="💵"
+          title="เก็บเงินปลายทาง"
+          subtitle="จ่ายเงินสดกับไรเดอร์ตอนรับของ"
+          selected={payment === 'cod'}
+          disabled={!codAvailable}
+          disabledReason={delivery !== 'rider' ? 'ใช้ได้เมื่อเลือกส่งด้วยไรเดอร์' : riderInfo.codReason || 'ออเดอร์นี้เก็บเงินปลายทางไม่ได้'}
+          onPress={() => setPayment('cod')}
+        />
+
+        {/* ---------- คูปอง ---------- */}
+        <SectionHeader title="โค้ดส่วนลด" icon="🎟️" style={styles.section} />
+        <Card3D padding={spacing.lg} style={styles.block}>
+          {appliedCoupon ? (
+            <View style={styles.rowBetween}>
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.success }]}>✅ ใช้โค้ด {appliedCoupon}</Text>
+                {quote.coupon && quote.coupon.discount > 0 && (
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    ลด {formatBaht(quote.coupon.discount, { decimals: 2 })}
+                  </Text>
                 )}
               </View>
-              <View
-                style={[
-                  styles.paymentRadio,
-                  selectedPayment === method.id && styles.paymentRadioSelected,
-                ]}
-              >
-                {selectedPayment === method.id && <View style={styles.paymentRadioDot} />}
-              </View>
-            </Pressable>
-          ))}
-        </View>
+              <Button3D title="เอาออก" variant="ghost" size="sm" onPress={removeCoupon} />
+            </View>
+          ) : (
+            <View style={styles.couponRow}>
+              <Field
+                label="โค้ด"
+                value={couponInput}
+                onChangeText={(v) => {
+                  setCouponInput(v.replace(/\s/g, '').slice(0, 50));
+                  if (couponError) setCouponError(null);
+                }}
+                placeholder="ใส่โค้ดส่วนลด"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                error={couponError}
+                containerStyle={styles.flex}
+                returnKeyType="done"
+                onSubmitEditing={applyCoupon}
+              />
+              <Button3D title="ใช้โค้ด" size="md" onPress={applyCoupon} disabled={!couponInput.trim()} style={styles.couponButton} />
+            </View>
+          )}
+        </Card3D>
 
-        {/* Price Breakdown */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionIcon}>📊</Text>
-            <Text style={styles.sectionTitle}>สรุปยอดชำระ</Text>
-          </View>
-          <View style={styles.priceCard}>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>ราคาสินค้า</Text>
-              <Text style={styles.priceValue}>{formatCurrency(totalPrice)}</Text>
-            </View>
-            <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>ค่าจัดส่ง</Text>
-              <Text style={[styles.priceValue, shippingFee === 0 && styles.freeText]}>
-                {shippingFee === 0 ? 'ฟรี!' : formatCurrency(shippingFee)}
-              </Text>
-            </View>
-            {discount > 0 && (
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>ส่วนลด</Text>
-                <Text style={styles.discountValue}>-{formatCurrency(discount)}</Text>
+        {/* ---------- รายการตามร้าน ---------- */}
+        <SectionHeader title="สรุปคำสั่งซื้อ" icon="🧾" style={styles.section} />
+        {quote.stores.map((store) => {
+          const items = availableItems.filter((i) => (i.store?.id ?? null) === store.store_id);
+          return (
+            <Card3D key={store.key} padding={spacing.lg} style={styles.block}>
+              <Text style={[typography.h3, { color: colors.textStrong }]}>🏪 {store.store_name}</Text>
+              {items.map((item) => (
+                <View key={item.id} style={styles.itemLine}>
+                  <Text numberOfLines={2} style={[typography.bodySm, styles.flex, { color: colors.text }]}>
+                    {item.name} × {item.quantity}
+                  </Text>
+                  <PriceText amount={item.line_total} size="sm" tone="strong" />
+                </View>
+              ))}
+              <View style={[styles.storeTotals, { borderTopColor: colors.divider }]}>
+                <View style={styles.rowBetween}>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    ค่าส่ง ({store.delivery_method === 'rider' ? 'ไรเดอร์' : 'พัสดุ'})
+                  </Text>
+                  {store.shipping_fee > 0 ? (
+                    <PriceText amount={store.shipping_fee} size="xs" tone="default" />
+                  ) : (
+                    <Text style={[typography.caption, { color: colors.success }]}>ฟรี</Text>
+                  )}
+                </View>
+                {store.discount > 0 && (
+                  <View style={styles.rowBetween}>
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>ส่วนลด</Text>
+                    <PriceText amount={-store.discount} size="xs" tone="success" />
+                  </View>
+                )}
+                <View style={styles.rowBetween}>
+                  <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>รวมร้านนี้</Text>
+                  <PriceText amount={store.total} size="md" tone="strong" />
+                </View>
               </View>
-            )}
-            <View style={styles.priceDivider} />
-            <View style={styles.priceRow}>
-              <Text style={styles.totalLabel}>ยอดรวมทั้งสิ้น</Text>
-              <Text style={styles.totalValue}>{formatCurrency(finalTotal)}</Text>
-            </View>
-            <View style={styles.pvRow}>
-              <Text style={styles.pvLabel}>⭐ รับ PV</Text>
-              <Text style={styles.pvValue}>{totalPV} PV</Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+            </Card3D>
+          );
+        })}
+        {summary.unavailable_count > 0 && (
+          <Card3D variant="flat" padding={spacing.md} style={styles.block}>
+            <Text style={[typography.bodySm, { color: colors.danger }]}>
+              ⚠️ มีสินค้า {summary.unavailable_count} รายการที่สั่งไม่ได้ เอาออกจากตะกร้าก่อนนะ
+            </Text>
+            <Button3D title="ไปที่ตะกร้า" size="sm" variant="secondary" onPress={() => router.replace('/cart')} style={styles.gapTopSm} />
+          </Card3D>
+        )}
 
-      {/* Place Order Button */}
-      <View style={styles.bottomContainer}>
-        <Pressable
-          style={[styles.placeOrderButton, isProcessing && styles.buttonDisabled]}
-          onPress={handlePlaceOrder}
-          disabled={isProcessing}
-        >
-          <LinearGradient
-            colors={isProcessing ? ['#6B7280', '#4B5563'] : ['#10B981', '#059669']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.placeOrderGradient}
-          >
-            {isProcessing ? (
-              <ActivityIndicator size="small" color="#FFF" />
+        {/* ---------- หมายเหตุ ---------- */}
+        <Card3D padding={spacing.lg} style={styles.block}>
+          <Field
+            label="หมายเหตุถึงร้าน (ถ้ามี)"
+            value={note}
+            onChangeText={(v) => setNote(v.slice(0, 500))}
+            placeholder="เช่น ขอถุงแยก, โทรก่อนส่ง"
+            multiline
+            maxLength={500}
+            containerStyle={styles.noTop}
+          />
+        </Card3D>
+
+        {/* ---------- ยอดรวม ---------- */}
+        <Card3D variant="inset" padding={spacing.lg} style={styles.block}>
+          <View style={styles.rowBetween}>
+            <Text style={[typography.body, { color: colors.text }]}>ค่าสินค้า</Text>
+            <PriceText amount={summary.subtotal} size="sm" tone="strong" />
+          </View>
+          <View style={[styles.rowBetween, styles.gapTopSm]}>
+            <Text style={[typography.body, { color: colors.text }]}>ค่าจัดส่ง</Text>
+            {summary.shipping_fee > 0 ? (
+              <PriceText amount={summary.shipping_fee} size="sm" tone="strong" />
             ) : (
-              <Text style={styles.placeOrderText}>
-                ✅ ยืนยันคำสั่งซื้อ {formatCurrency(finalTotal)}
-              </Text>
+              <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งฟรี</Text>
             )}
-          </LinearGradient>
-        </Pressable>
+          </View>
+          {summary.discount > 0 && (
+            <View style={[styles.rowBetween, styles.gapTopSm]}>
+              <Text style={[typography.body, { color: colors.text }]}>ส่วนลด</Text>
+              <PriceText amount={-summary.discount} size="sm" tone="success" />
+            </View>
+          )}
+          <View style={[styles.rowBetween, styles.grand, { borderTopColor: colors.divider }]}>
+            <Text style={[typography.h3, { color: colors.textStrong }]}>ยอดชำระ</Text>
+            <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
+          </View>
+        </Card3D>
+      </Screen>
+
+      {/* ---------- แถบยืนยัน ---------- */}
+      <View
+        style={[
+          styles.bottomBar,
+          { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, spacing.md) },
+          clayShadowStyle('md', colors.shadowDark, colors.shadowLight),
+        ]}
+      >
+        <View style={styles.flex}>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>
+            {quoteLoading ? 'กำลังคำนวณยอด...' : `จ่ายด้วย${PAYMENT_LABEL[payment]}`}
+          </Text>
+          {quoteLoading ? (
+            <ActivityIndicator color={colors.gold} style={styles.totalLoader} />
+          ) : (
+            <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
+          )}
+        </View>
+        <Button3D
+          title="ยืนยันสั่งซื้อ"
+          icon="✅"
+          size="lg"
+          loading={submitting}
+          loadingText="กำลังสั่งซื้อ..."
+          disabled={submitDisabled}
+          onPress={confirmAndSubmit}
+          style={styles.submit}
+        />
       </View>
+
+      {/* ---------- เลือกที่อยู่ ---------- */}
+      <FormSheet
+        visible={addressSheet}
+        icon="📍"
+        title="เลือกที่อยู่จัดส่ง"
+        onClose={() => setAddressSheet(false)}
+        cancelLabel="ปิด"
+      >
+        {addresses.map((a) => (
+          <OptionCard
+            key={a.id}
+            icon={a.has_location ? '📍' : '🏠'}
+            title={`${a.recipient_name}${a.is_default ? ' (หลัก)' : ''}`}
+            subtitle={a.full_address}
+            selected={a.id === selectedAddressId}
+            onPress={() => {
+              setSelectedAddressId(a.id);
+              setAddressSheet(false);
+            }}
+          />
+        ))}
+        <View style={styles.sheetButtons}>
+          <Button3D
+            title="เพิ่มที่อยู่ใหม่"
+            icon="➕"
+            size="md"
+            onPress={() => {
+              setAddressSheet(false);
+              router.push('/addresses/edit' as never);
+            }}
+            style={styles.flex}
+          />
+          <Button3D
+            title="จัดการที่อยู่"
+            variant="secondary"
+            size="md"
+            onPress={() => {
+              setAddressSheet(false);
+              router.push('/addresses' as never);
+            }}
+            style={styles.flex}
+          />
+        </View>
+      </FormSheet>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#0F0F23',
   },
-  headerButton: {
-    padding: 8,
-  },
-  headerIcon: {
-    fontSize: 24,
-    color: '#FFFFFF',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 120,
-  },
-
-  // Center Container
-  centerContainer: {
+  flex: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
   },
-  processingText: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    marginTop: 16,
+  loader: {
+    marginTop: spacing.xxxl,
   },
-
-  // Section
+  block: {
+    marginBottom: spacing.md,
+  },
   section: {
-    marginBottom: 20,
+    marginTop: spacing.md,
   },
-  sectionHeader: {
+  rowBetween: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  sectionIcon: {
-    fontSize: 20,
-    marginRight: 8,
+  centerText: {
+    textAlign: 'center',
+    alignSelf: 'center',
   },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+  gapTop: {
+    marginTop: spacing.md,
   },
-
-  // Address
-  addressCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  gapTopSm: {
+    marginTop: spacing.xs,
   },
-  addressName: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  bigIcon: {
+    fontSize: 56,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
-  addressPhone: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginTop: 4,
+  option: {
+    marginBottom: spacing.sm,
   },
-  addressText: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginTop: 4,
+  dimmed: {
+    opacity: 0.6,
   },
-  addressChange: {
-    color: '#3B82F6',
-    fontSize: 14,
-    marginTop: 12,
-  },
-
-  // Summary
-  summaryCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  summaryItem: {
+  optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: spacing.md,
   },
-  summaryItemName: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 14,
-  },
-  summaryItemQty: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginHorizontal: 12,
-  },
-  summaryItemPrice: {
-    color: '#3B82F6',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // Promo
-  promoRow: {
-    flexDirection: 'row',
-  },
-  promoInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    color: '#FFFFFF',
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    marginRight: 8,
-  },
-  promoButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    justifyContent: 'center',
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  promoButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // Payment
-  paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  paymentOptionSelected: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59,130,246,0.1)',
-  },
-  paymentOptionDisabled: {
-    opacity: 0.5,
-  },
-  paymentIcon: {
-    fontSize: 28,
-    marginRight: 12,
-  },
-  paymentInfo: {
-    flex: 1,
-  },
-  paymentName: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  paymentDesc: {
-    color: '#9CA3AF',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  insufficientText: {
-    color: '#EF4444',
-    fontSize: 11,
-    marginTop: 4,
-  },
-  paymentRadio: {
+  radio: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#6B7280',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  paymentRadioSelected: {
-    borderColor: '#3B82F6',
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
-  paymentRadioDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#3B82F6',
+  optionIcon: {
+    fontSize: 22,
   },
-
-  // Price
-  priceCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  priceRow: {
+  pinWarn: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  priceLabel: {
-    color: '#9CA3AF',
-    fontSize: 14,
+  topup: {
+    alignSelf: 'flex-start',
+    marginBottom: spacing.sm,
   },
-  priceValue: {
-    color: '#FFFFFF',
-    fontSize: 14,
-  },
-  freeText: {
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  discountValue: {
-    color: '#10B981',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  priceDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginVertical: 12,
-  },
-  totalLabel: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  totalValue: {
-    color: '#10B981',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  pvRow: {
+  couponRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 8,
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+  },
+  couponButton: {
+    marginBottom: spacing.xxs,
+  },
+  noTop: {
+    marginTop: 0,
+  },
+  itemLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  storeTotals: {
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,215,0,0.2)',
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    gap: spacing.xs,
   },
-  pvLabel: {
-    color: '#FFD700',
-    fontSize: 14,
+  grand: {
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
   },
-  pvValue: {
-    color: '#FFD700',
-    fontSize: 14,
-    fontWeight: 'bold',
+  walletAlt: {
+    alignSelf: 'center',
+    marginTop: -spacing.xs,
+    marginBottom: spacing.md,
   },
-
-  // Bottom
-  bottomContainer: {
+  waitingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  bottomBar: {
     position: 'absolute',
-    bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingBottom: 34,
-    backgroundColor: 'rgba(15,15,35,0.95)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-  },
-  placeOrderButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  placeOrderGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 14,
-  },
-  placeOrderText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: 'bold',
-  },
-
-  // Empty
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  emptyIcon: {
-    fontSize: 64,
-    marginBottom: 16,
-    opacity: 0.5,
-  },
-  emptyText: {
-    color: '#9CA3AF',
-    fontSize: 18,
-    marginBottom: 24,
-  },
-  shopButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  shopButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  // QR Code Screen
-  qrContainer: {
-    padding: 16,
-  },
-  qrCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  qrTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  qrAmountRow: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  qrAmountLabel: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  qrAmount: {
-    color: '#10B981',
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  qrImageContainer: {
-    width: SCREEN_WIDTH - 80,
-    height: SCREEN_WIDTH - 80,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  qrImage: {
-    width: '100%',
-    height: '100%',
-  },
-  qrPlaceholder: {
-    width: SCREEN_WIDTH - 80,
-    height: SCREEN_WIDTH - 80,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  qrPlaceholderText: {
-    color: '#6B7280',
-    fontSize: 18,
-  },
-  bankInfo: {
-    width: '100%',
-    backgroundColor: 'rgba(59,130,246,0.1)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  bankInfoTitle: {
-    color: '#3B82F6',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  bankInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  bankInfoLabel: {
-    color: '#9CA3AF',
-    fontSize: 14,
-  },
-  bankInfoValue: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  referenceBox: {
-    backgroundColor: 'rgba(255,215,0,0.1)',
-    borderRadius: 12,
-    padding: 12,
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  referenceLabel: {
-    color: '#9CA3AF',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  referenceValue: {
-    color: '#FFD700',
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 2,
-  },
-  orderNumberText: {
-    color: '#9CA3AF',
-    fontSize: 13,
-    marginBottom: 16,
-  },
-  pollingStatus: {
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.md,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.md,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
   },
-  pollingText: {
-    color: '#9CA3AF',
-    fontSize: 14,
+  totalLoader: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.xs,
   },
-  instructionCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  submit: {
+    minWidth: 170,
   },
-  instructionTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  instructionText: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    lineHeight: 24,
-  },
-  cancelButton: {
-    marginTop: 24,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#EF4444',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-
-  // Success Screen
-  successIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  successEmoji: {
-    fontSize: 48,
-  },
-  successTitle: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  successSubtitle: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  successOrderNumber: {
-    color: '#3B82F6',
-    fontSize: 14,
-    marginBottom: 24,
-  },
-  successPvBox: {
-    backgroundColor: 'rgba(255,215,0,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: 'rgba(255,215,0,0.3)',
-  },
-  successPvText: {
-    color: '#FFD700',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  successButtons: {
-    width: '100%',
-    gap: 12,
-  },
-  successButton: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  successButtonPrimary: {
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    overflow: 'hidden',
-  },
-  successButtonGradient: {
-    width: '100%',
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderRadius: 14,
-  },
-  successButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  successButtonTextPrimary: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  // Failed Screen
-  failedIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(239,68,68,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  failedEmoji: {
-    fontSize: 48,
-  },
-  failedTitle: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  failedSubtitle: {
-    color: '#9CA3AF',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  retryButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 14,
-    paddingHorizontal: 40,
-    paddingVertical: 16,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+  sheetButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
 });

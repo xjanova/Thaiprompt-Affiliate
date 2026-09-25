@@ -19,6 +19,11 @@ import {
   exchangeWebAuthCode,
   generateCodeVerifier,
 } from '@/services/api';
+import { clearAuthToken } from '@/services/api';
+import { setAccountSuspendedHandler } from '@/services/api/client';
+import { resetSellerCache } from '@/services/api/merchantApi';
+import { clearBannerCache } from '@/services/api/bannerApi';
+import { getPushIdentity, clearStoredPushToken } from '@/services/notifications';
 import { STORAGE_KEYS } from '@/constants';
 import * as Network from '@/services/network';
 import type { User } from '@/types';
@@ -47,6 +52,12 @@ interface AuthState {
   loginWithWeb: (deviceId: string, deviceName: string) => Promise<{ success: boolean; loginUrl?: string; message?: string }>;
   handleWebAuthCallback: (authCode: string, state: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  /**
+   * ล้าง session ในเครื่องโดยไม่เรียก API logout
+   * ใช้หลังลบบัญชีสำเร็จ (server เพิกถอน token ไปแล้ว) หรือบัญชีถูกระงับ
+   * @param message ข้อความไทยที่จะแสดงบนหน้า login (ถ้ามี)
+   */
+  clearSession: (message?: string | null) => Promise<void>;
   refreshUser: () => Promise<void>;
   clearError: () => void;
   updateUser: (user: Partial<User>) => void;
@@ -521,7 +532,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       set({ isLoading: true });
 
-      await apiLogout();
+      // CC-21: ส่ง push token + device_id ไปให้ server ถอด (แจ้งเตือนบัญชีเดิมจะไม่เด้งในเครื่องนี้อีก)
+      const identity = await getPushIdentity();
+      await apiLogout({ push_token: identity.token, device_id: identity.deviceId });
+      await clearStoredPushToken();
+      resetSellerCache();
+      clearBannerCache();
 
       // ลบ token แต่เก็บ user data ไว้สำหรับ offline view
       set({
@@ -532,7 +548,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isOfflineMode: false,
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout error');
       // ล้างข้อมูลแม้จะ error
       set({
         user: null,
@@ -541,6 +557,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
     }
+  },
+
+  clearSession: async (message?: string | null) => {
+    try {
+      await clearAuthToken();
+      await clearStoredPushToken();
+    } catch {
+      // ล้างไม่สำเร็จก็ยังต้องออกจากระบบในแอป
+    }
+    resetSellerCache();
+    clearBannerCache();
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+      isOfflineMode: false,
+      error: message || null,
+    });
   },
 
   /**
@@ -593,3 +628,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ error: null });
   },
 }));
+
+// F-platform: บัญชีถูกระงับ (403 ACCOUNT_SUSPENDED จาก API ใดก็ได้) → ออกจากระบบในเครื่อง + แสดงข้อความบนหน้า login
+setAccountSuspendedHandler((message) => {
+  const { isAuthenticated, clearSession } = useAuthStore.getState();
+  if (isAuthenticated) {
+    clearSession(message).catch(() => {});
+  } else {
+    useAuthStore.setState({ error: message });
+  }
+});

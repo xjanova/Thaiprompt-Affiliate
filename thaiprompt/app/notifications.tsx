@@ -3,7 +3,7 @@
  * แสดงรายการการแจ้งเตือนทั้งหมดของผู้ใช้
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import {
   deleteNotification,
   Notification,
 } from '@/services/api';
+import { isRestrictedNotification } from '@/utils/storePolicy';
 
 // =====================================================
 // Type Icons
@@ -129,18 +130,33 @@ export default function NotificationsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const loadNotifications = useCallback(async () => {
     try {
       const response = await getNotifications();
+      if (!mountedRef.current) return;
       if (response?.success && response.data) {
-        setNotifications(response.data.notifications);
-        setUnreadCount(response.data.unreadCount);
+        const all = Array.isArray(response.data.notifications) ? response.data.notifications : [];
+        // นโยบาย Google Play: แจ้งเตือนระบบเครือข่าย (คอมมิชชั่น/สายงาน/rank) ดูได้บนเว็บเท่านั้น
+        const visible = all.filter((n) => !isRestrictedNotification(n));
+        const hiddenUnread = all.filter((n) => !n.isRead && isRestrictedNotification(n)).length;
+        setNotifications(visible);
+        setUnreadCount(Math.max(0, (Number(response.data.unreadCount) || 0) - hiddenUnread));
       }
     } catch (error) {
       console.error('Load notifications error:', error);
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
     }
   }, []);
 
@@ -158,6 +174,7 @@ export default function NotificationsScreen() {
   const handleMarkAsRead = async (notification: Notification) => {
     if (!notification.isRead) {
       await markNotificationRead(notification.id);
+      if (!mountedRef.current) return;
       setNotifications((prev) =>
         prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
       );
@@ -175,6 +192,7 @@ export default function NotificationsScreen() {
     if (unreadCount === 0) return;
 
     const response = await markAllNotificationsRead();
+    if (!mountedRef.current) return;
     if (response.success) {
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
@@ -183,10 +201,11 @@ export default function NotificationsScreen() {
 
   const handleDelete = async (id: number) => {
     const response = await deleteNotification(id);
+    if (!mountedRef.current) return;
     if (response.success) {
       setNotifications((prev) => prev.filter((n) => n.id !== id));
     } else {
-      Alert.alert('ข้อผิดพลาด', response.message || 'ไม่สามารถลบการแจ้งเตือนได้');
+      Alert.alert('ลบไม่สำเร็จ', 'ลบการแจ้งเตือนไม่สำเร็จ ลองใหม่อีกครั้งนะ');
     }
   };
 
@@ -271,7 +290,7 @@ export default function NotificationsScreen() {
           <FlatList
             data={notifications}
             keyExtractor={(item) => item.id.toString()}
-            contentContainerClassName="px-5 py-4"
+            contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16 }}
             refreshControl={
               <RefreshControl
                 refreshing={isRefreshing}

@@ -4,6 +4,8 @@
  */
 
 // ประเภทไพ่
+import { isFeatureEnabled } from '@/config/appConfig';
+
 export type CardType = 'major_arcana' | 'minor_arcana';
 export type Suit = 'wands' | 'cups' | 'swords' | 'pentacles' | null;
 
@@ -470,7 +472,9 @@ export const ALL_TAROT_CARDS: TarotCard[] = [
 // หมวดหมู่การอ่านไพ่ (5 หมวด)
 // ==============================
 
-export const TAROT_CATEGORIES: TarotCategory[] = [
+// PLAY-12: ดูดวงในแอปฟรีทั้งหมด — ห้ามขายเนื้อหาดิจิทัลผ่านกระเป๋าเงิน (ต้องใช้ Google Play Billing)
+// ราคาเดิมเก็บไว้ใน BASE_PRICE เผื่อเปิด Play Billing ในอนาคต (FEATURES.PAID_TAROT_ENABLED)
+const TAROT_BASE_CATEGORIES: TarotCategory[] = [
   {
     id: 1,
     slug: 'love-relationships',
@@ -528,7 +532,7 @@ export const TAROT_CATEGORIES: TarotCategory[] = [
     slug: 'general',
     name_en: 'General Reading',
     name_th: 'ดูดวงทั่วไป',
-    description_th: 'เปิดไพ่ดูดวงทั่วไป ฟรี!',
+    description_th: 'เปิดไพ่ดูดวงทั่วไป',
     icon: '🔮',
     color: '#F59E0B',
     gradientStart: '#F59E0B',
@@ -537,6 +541,11 @@ export const TAROT_CATEGORIES: TarotCategory[] = [
     is_free_first: true,
   },
 ];
+
+export const TAROT_CATEGORIES: TarotCategory[] = TAROT_BASE_CATEGORIES.map((category) => ({
+  ...category,
+  price: isFeatureEnabled('PAID_TAROT_ENABLED') ? category.price : 0,
+}));
 
 // ==============================
 // โหมดการเปิดไพ่ (5 โหมด)

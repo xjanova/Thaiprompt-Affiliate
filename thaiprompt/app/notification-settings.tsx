@@ -340,17 +340,7 @@ export default function NotificationSettingsScreen() {
           )}
         </View>
 
-        {/* Token Info (Debug) */}
-        {pushToken && (
-          <View style={[styles.tokenCard, !isDark && styles.cardLight]}>
-            <Text style={[styles.tokenLabel, !isDark && styles.textMuted]}>
-              Push Token (สำหรับนักพัฒนา)
-            </Text>
-            <Text style={[styles.tokenValue, !isDark && styles.textDark]} numberOfLines={1}>
-              {pushToken.substring(0, 40)}...
-            </Text>
-          </View>
-        )}
+        {/* PLAY-22: ไม่แสดง Push Token บนหน้าจอแล้ว (ข้อมูลอุปกรณ์ที่ไม่ควรเปิดเผย) */}
 
         {/* Notification Channels */}
         <View style={styles.section}>

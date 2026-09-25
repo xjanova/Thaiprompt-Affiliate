@@ -1,729 +1,217 @@
 /**
- * Referral Screen - หน้าแนะนำเพื่อน/สมัครต่อสายงานแบบ Premium
- * QR Code, Commission Tiers, Sharing Features
+ * ชวนเพื่อน — แบบชั้นเดียว (PLAY-08)
+ *
+ * แสดงแค่: รหัสแนะนำ · QR · ลิงก์สมัคร · ปุ่มแชร์/คัดลอก
+ * + ข้อความเดียว "รับค่าแนะนำเมื่อเพื่อนสั่งซื้อครั้งแรก — ดูรายละเอียดบนเว็บไซต์" + ปุ่มเปิดเว็บ
+ * ไม่มีระดับ / ทีม / อันดับ / เปอร์เซ็นต์คอมมิชชั่นในแอป (นโยบาย Google Play)
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Alert,
-  Share,
-  ActivityIndicator,
-  Animated,
-  Easing,
-  Dimensions,
-  StatusBar,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router, Stack } from 'expo-router';
-import ReAnimated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Share, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Haptics from 'expo-haptics';
 import QRCode from 'react-native-qrcode-svg';
-import { useAppStore } from '@/stores/appStore';
+import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
-import { getReferralStats, getMyAffiliate } from '@/services/api';
-import { formatCurrency } from '@/constants';
-import type { ReferralStats } from '@/types';
+import { getReferralInfo } from '@/services/api/accountApi';
+import { APP_INFO } from '@/config/appConfig';
+import { isTrustedWebUrl } from '@/utils/linking';
+import {
+  Button3D,
+  Card3D,
+  EmptyState,
+  Screen,
+  WebsiteButton,
+  resultHaptic,
+} from '@/components/ui';
+import { useTheme, spacing, radii, typography } from '@/theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// =====================================================
-// Format Member ID as Member Code (เหมือน Profile)
-// =====================================================
-
-const formatMemberId = (id: number): string => {
-  return `TP${String(id).padStart(6, '0')}`;
-};
-
-// =====================================================
-// Commission Tier Type
-// =====================================================
-
-interface CommissionTier {
-  level: number;
-  name: string;
-  percentage: string;
-  description: string;
-  color: string;
-  icon: string;
-}
-
-// =====================================================
-// Stat Card Component
-// =====================================================
-
-const StatCard = ({
-  icon,
-  value,
-  label,
-  color,
-  isDark,
-  delay,
-}: {
-  icon: string;
-  value: string;
-  label: string;
-  color: string;
-  isDark: boolean;
-  delay: number;
-}) => (
-  <ReAnimated.View entering={FadeInDown.delay(delay).springify()} className="flex-1 mx-1">
-    <View
-      className={`p-4 rounded-2xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-      style={{
-        shadowColor: color,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 5,
-      }}
-    >
-      <View
-        className="w-10 h-10 rounded-xl items-center justify-center mb-2"
-        style={{ backgroundColor: color + '20' }}
-      >
-        <Text style={{ fontSize: 20 }}>{icon}</Text>
-      </View>
-      <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-        {value}
-      </Text>
-      <Text className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{label}</Text>
-    </View>
-  </ReAnimated.View>
-);
-
-// =====================================================
-// QR Code Section Component
-// =====================================================
-
-const QRCodeSection = ({
-  referralLink,
-  referralCode,
-  memberCode,
-  isDark,
-  onCopyCode,
-}: {
-  referralLink: string;
-  referralCode: string;
-  memberCode: string;
-  isDark: boolean;
-  onCopyCode: () => void;
-}) => {
-  // Glow animation
-  const glowAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowAnim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-        Animated.timing(glowAnim, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  const shadowOpacity = glowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.2, 0.5],
-  });
-
-  return (
-    <ReAnimated.View entering={ZoomIn.delay(300)}>
-      <View className={`rounded-3xl overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-        {/* Gradient Header */}
-        <LinearGradient
-          colors={['#EC4899', '#BE185D']}
-          style={{ paddingHorizontal: 24, paddingVertical: 16 }}
-        >
-          <Text className="text-white text-lg font-bold text-center">
-            🎁 แชร์รหัสนี้ให้เพื่อน
-          </Text>
-        </LinearGradient>
-
-        <View className="p-6">
-          {/* QR Code with Glow */}
-          <Animated.View
-            style={{
-              alignSelf: 'center',
-              shadowColor: '#EC4899',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity,
-              shadowRadius: 24,
-              elevation: 12,
-            }}
-          >
-            <LinearGradient
-              colors={['#EC4899', '#BE185D', '#9D174D']}
-              style={{ padding: 4, borderRadius: 24 }}
-            >
-              <View className="bg-white p-5 rounded-3xl">
-                <QRCode
-                  value={referralLink}
-                  size={180}
-                  color="#1F2937"
-                  backgroundColor="white"
-                  logo={require('@/assets/images/icon.png')}
-                  logoSize={40}
-                  logoBackgroundColor="white"
-                  logoMargin={4}
-                />
-              </View>
-            </LinearGradient>
-          </Animated.View>
-
-          {/* Member Code Display */}
-          <Text className={`text-center mt-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            รหัสสมาชิกของคุณ
-          </Text>
-          <Text className="text-pink-500 font-bold text-3xl text-center mt-2 tracking-widest">
-            {memberCode}
-          </Text>
-
-          {/* Referral Code Display */}
-          <Pressable
-            onPress={onCopyCode}
-            className={`mt-6 p-4 rounded-2xl flex-row items-center justify-between ${
-              isDark ? 'bg-gray-700' : 'bg-pink-50'
-            }`}
-          >
-            <View>
-              <Text className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                รหัสแนะนำ (สำหรับสมัคร)
-              </Text>
-              <Text className="text-pink-500 font-bold text-xl tracking-widest">
-                {referralCode}
-              </Text>
-            </View>
-            <View className="bg-pink-500 px-4 py-2 rounded-xl flex-row items-center">
-              <Text style={{ fontSize: 18 }}>📋</Text>
-              <Text className="text-white font-semibold ml-2">คัดลอก</Text>
-            </View>
-          </Pressable>
-        </View>
-      </View>
-    </ReAnimated.View>
-  );
-};
-
-// =====================================================
-// Commission Tier Card
-// =====================================================
-
-const CommissionTierCard = ({
-  tier,
-  index,
-  isDark,
-}: {
-  tier: CommissionTier;
-  index: number;
-  isDark: boolean;
-}) => (
-  <ReAnimated.View
-    entering={FadeInDown.delay(500 + index * 80)}
-    className={`p-4 rounded-2xl mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-    style={{
-      shadowColor: tier.color,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 3,
-    }}
-  >
-    <View className="flex-row items-center">
-      <LinearGradient
-        colors={[tier.color, tier.color + 'CC']}
-        style={{ width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}
-      >
-        <Text className="text-white text-lg font-bold">{tier.level}</Text>
-      </LinearGradient>
-      <View className="flex-1">
-        <View className="flex-row items-center">
-          <Text className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {tier.name}
-          </Text>
-          <Text className="ml-2">{tier.icon}</Text>
-        </View>
-        <Text className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-          {tier.description}
-        </Text>
-      </View>
-      <View
-        className="px-4 py-2 rounded-xl"
-        style={{ backgroundColor: tier.color + '20' }}
-      >
-        <Text className="font-bold text-lg" style={{ color: tier.color }}>
-          {tier.percentage}
-        </Text>
-      </View>
-    </View>
-  </ReAnimated.View>
-);
-
-// =====================================================
-// Share Button Component
-// =====================================================
-
-const ShareButton = ({
-  icon,
-  label,
-  color,
-  onPress,
-}: {
-  icon: string;
-  label: string;
-  color: string;
-  onPress: () => void;
-}) => (
-  <Pressable onPress={onPress} className="items-center flex-1" style={{ maxWidth: 80 }}>
-    <LinearGradient
-      colors={[color, color + 'CC']}
-      style={{
-        width: 56,
-        height: 56,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 8,
-      }}
-    >
-      <Text style={{ fontSize: 24 }}>{icon}</Text>
-    </LinearGradient>
-    <Text className="text-gray-500 text-xs text-center">{label}</Text>
-  </Pressable>
-);
-
-// =====================================================
-// Benefit Card
-// =====================================================
-
-const BenefitCard = ({
-  icon,
-  title,
-  description,
-  delay,
-  isDark,
-}: {
-  icon: string;
-  title: string;
-  description: string;
-  delay: number;
-  isDark: boolean;
-}) => (
-  <ReAnimated.View
-    entering={FadeInDown.delay(delay).springify()}
-    className="flex-row items-start mb-4"
-  >
-    <View className="w-10 h-10 rounded-xl bg-pink-100 dark:bg-pink-900/30 items-center justify-center mr-3">
-      <Text style={{ fontSize: 20 }}>{icon}</Text>
-    </View>
-    <View className="flex-1">
-      <Text className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-        {title}
-      </Text>
-      <Text className={`text-sm mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-        {description}
-      </Text>
-    </View>
-  </ReAnimated.View>
-);
-
-// =====================================================
-// Main Component
-// =====================================================
+/** ลิงก์สมัครจากรหัส (ใช้เมื่อ server ไม่ส่งลิงก์มา) */
+const buildRegisterLink = (code: string): string =>
+  `${APP_INFO.WEBSITE}/register?ref=${encodeURIComponent(code)}`;
 
 export default function ReferralScreen() {
-  const { resolvedTheme } = useAppStore();
-  const { isAuthenticated, user } = useAuthStore();
-  const isDark = resolvedTheme === 'dark';
+  const { colors } = useTheme();
+  const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
-  const [stats, setStats] = useState<ReferralStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  // ข้อมูล referral จาก API (เหมือนในเว็บ)
-  const [affiliateData, setAffiliateData] = useState<{
-    referralCode: string;
-    referralLink: string;
-  } | null>(null);
+  const [code, setCode] = useState<string | null>(user?.referralCode || null);
+  const [link, setLink] = useState<string | null>(
+    user?.referralLink && isTrustedWebUrl(user.referralLink) ? user.referralLink : null
+  );
+  const [loading, setLoading] = useState(!user?.referralCode);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copied, setCopied] = useState<'code' | 'link' | null>(null);
+  const mountedRef = useRef(true);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ⭐ ใช้รหัสสมาชิก (Member Code) แทน referral code
-  // รูปแบบ: TP000001
-  const memberCode = user?.id ? formatMemberId(user.id) : 'XXXX';
-  // ใช้ข้อมูลจาก API หรือใช้ memberCode
-  const referralCode = affiliateData?.referralCode || user?.referralCode || user?.referral_code || memberCode;
-  const referralLink = affiliateData?.referralLink || `https://main.thaiprompt.online/register?ref=${referralCode}`;
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    };
+  }, []);
 
-  // Commission tiers
-  const commissionTiers: CommissionTier[] = [
-    {
-      level: 1,
-      name: 'สายตรง (Direct)',
-      percentage: '10%',
-      description: 'จากยอดซื้อของสมาชิกโดยตรง',
-      color: '#3B82F6',
-      icon: '⭐',
-    },
-    {
-      level: 2,
-      name: 'ระดับ 2',
-      percentage: '5%',
-      description: 'จากยอดซื้อของสมาชิกระดับ 2',
-      color: '#8B5CF6',
-      icon: '🌟',
-    },
-    {
-      level: 3,
-      name: 'ระดับ 3',
-      percentage: '3%',
-      description: 'จากยอดซื้อของสมาชิกระดับ 3',
-      color: '#EC4899',
-      icon: '💫',
-    },
-    {
-      level: 4,
-      name: 'ระดับ 4',
-      percentage: '2%',
-      description: 'จากยอดซื้อของสมาชิกระดับ 4',
-      color: '#F97316',
-      icon: '✨',
-    },
-    {
-      level: 5,
-      name: 'ระดับ 5',
-      percentage: '1%',
-      description: 'จากยอดซื้อของสมาชิกระดับ 5',
-      color: '#10B981',
-      icon: '🎯',
-    },
-  ];
-
-  // โหลดข้อมูล stats และ affiliate data
-  const loadData = useCallback(async () => {
-    if (!isAuthenticated) {
-      setIsLoading(false);
-      return;
+  const load = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setErrorMessage(null);
+    const result = await getReferralInfo();
+    if (!mountedRef.current) return;
+    if (result.success && result.data?.referralCode) {
+      setCode(result.data.referralCode);
+      setLink(
+        result.data.referralLink && isTrustedWebUrl(result.data.referralLink)
+          ? result.data.referralLink
+          : buildRegisterLink(result.data.referralCode)
+      );
+    } else if (!code) {
+      setErrorMessage(result.success ? 'ยังไม่มีรหัสแนะนำ ลองใหม่อีกครั้งนะ' : result.message);
     }
-    try {
-      setIsLoading(true);
-      // โหลดข้อมูลพร้อมกัน
-      const [statsData, affiliateResult] = await Promise.all([
-        getReferralStats(),
-        getMyAffiliate(),
-      ]);
-
-      if (statsData) setStats(statsData);
-
-      // ใช้ข้อมูล referral link จาก API (เหมือนในเว็บ)
-      if (affiliateResult?.success && affiliateResult.data) {
-        setAffiliateData({
-          referralCode: affiliateResult.data.referralCode,
-          referralLink: affiliateResult.data.referralLink,
-        });
-      }
-    } catch (error) {
-      console.error('Load referral data error:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    load();
+  }, [load]);
 
-  // Copy code
-  const handleCopyCode = async () => {
-    await Clipboard.setStringAsync(referralCode);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('คัดลอกแล้ว!', 'รหัสแนะนำถูกคัดลอกไปยังคลิปบอร์ด');
-  };
+  const shareLink = link || (code ? buildRegisterLink(code) : null);
 
-  // Copy link
-  const handleCopyLink = async () => {
-    await Clipboard.setStringAsync(referralLink);
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('คัดลอกแล้ว!', 'ลิงก์แนะนำถูกคัดลอกไปยังคลิปบอร์ด');
-  };
-
-  // Share
-  const handleShare = async () => {
+  const copy = async (what: 'code' | 'link') => {
+    const value = what === 'code' ? code : shareLink;
+    if (!value) return;
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const message =
-        `🚀 มาสร้างรายได้ไปด้วยกัน!\n\n` +
-        `สมัครเป็นสมาชิก Thaiprompt Affiliate วันนี้\n` +
-        `รับค่าคอมมิชชั่นสูงถึง 10%!\n\n` +
-        `🔗 สมัครเลย: ${referralLink}\n` +
-        `หรือใช้รหัส: ${referralCode}`;
-
-      await Share.share({
-        message,
-        title: 'แนะนำเพื่อน - Thaiprompt Affiliate',
-      });
-    } catch (error) {
-      console.error('Share error:', error);
+      await Clipboard.setStringAsync(value);
+      resultHaptic('success');
+      setCopied(what);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => {
+        if (mountedRef.current) setCopied(null);
+      }, 1800);
+    } catch {
+      // คัดลอกไม่ได้ก็ไม่เป็นไร ผู้ใช้กดแชร์แทนได้
     }
   };
 
-  // ถ้ายังไม่ login
+  const share = async () => {
+    if (!shareLink || !code) return;
+    try {
+      await Share.share({
+        message: `มาใช้ ThaiPrompt สั่งของจากตลาดสดและร้านใกล้บ้านกัน ใช้รหัสแนะนำ ${code} ตอนสมัครนะ\n${shareLink}`,
+      });
+    } catch {
+      // ผู้ใช้ยกเลิกการแชร์
+    }
+  };
+
   if (!isAuthenticated) {
     return (
-      <View className={`flex-1 ${isDark ? 'bg-dark' : 'bg-gray-50'}`}>
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={isDark ? '#0F172A' : '#F9FAFB'} />
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-          <LinearGradient
-            colors={['#EC4899', '#BE185D']}
-            style={{
-              width: 112,
-              height: 112,
-              borderRadius: 56,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 24,
-              shadowColor: '#EC4899',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.4,
-              shadowRadius: 16,
-              elevation: 12,
-            }}
-          >
-            <Text style={{ fontSize: 56 }}>🔗</Text>
-          </LinearGradient>
-          <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-            แนะนำเพื่อนรับรายได้
-          </Text>
-          <Text className="text-gray-500 text-center mt-2 px-8">
-            เข้าสู่ระบบเพื่อรับรหัสแนะนำและเริ่มสร้างรายได้จากเครือข่าย
-          </Text>
-          <Pressable onPress={() => router.push('/login')} className="mt-6">
-            <LinearGradient
-              colors={['#EC4899', '#BE185D']}
-              style={{
-                paddingHorizontal: 40,
-                paddingVertical: 16,
-                borderRadius: 16,
-              }}
-            >
-              <Text className="text-white font-bold text-lg">เข้าสู่ระบบ</Text>
-            </LinearGradient>
-          </Pressable>
-        </View>
-      </View>
+      <Screen title="ชวนเพื่อน" scroll={false}>
+        <EmptyState
+          icon="🤝"
+          title="เข้าสู่ระบบก่อนนะ"
+          message="เข้าสู่ระบบเพื่อรับรหัสแนะนำของคุณ"
+          actionLabel="เข้าสู่ระบบ"
+          onAction={() => router.push('/login')}
+        />
+      </Screen>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F9FAFB' }}>
-      <StatusBar barStyle="light-content" backgroundColor={isDark ? '#9D174D' : '#EC4899'} />
-      <Stack.Screen options={{ headerShown: false }} />
-
-      {/* Header */}
-      <LinearGradient
-        colors={isDark ? ['#9D174D', '#831843'] : ['#EC4899', '#BE185D']}
-        style={{ paddingHorizontal: 20, paddingTop: 50, paddingBottom: 32 }}
-      >
-          <View className="flex-row items-center mb-4">
-            <Pressable
-              onPress={() => router.back()}
-              className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3"
+    <Screen title="ชวนเพื่อน" subtitle="แชร์รหัสของคุณให้เพื่อนสมัคร">
+      {loading ? (
+        <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+      ) : errorMessage || !code ? (
+        <EmptyState compact variant="error" message={errorMessage || undefined} onAction={load} />
+      ) : (
+        <>
+          <Card3D gradientBorder padding={spacing.xl} style={styles.card}>
+            <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>รหัสแนะนำของคุณ</Text>
+            <Text
+              selectable
+              accessibilityLabel={`รหัสแนะนำ ${code}`}
+              style={[typography.display, styles.code, { color: colors.goldDeep }]}
             >
-              <Text style={{ fontSize: 24 }}>⬅️</Text>
-            </Pressable>
-            <View className="flex-1">
-              <Text className="text-white text-xl font-bold">แนะนำเพื่อน</Text>
-              <Text className="text-pink-100 text-sm">สร้างรายได้จากเครือข่าย</Text>
+              {code}
+            </Text>
+
+            <View style={[styles.qrBox, { backgroundColor: '#FFFFFF', borderColor: colors.border }]}>
+              {shareLink ? <QRCode value={shareLink} size={176} backgroundColor="#FFFFFF" color="#2B241A" /> : null}
             </View>
-          </View>
+            <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>
+              ให้เพื่อนสแกน QR นี้เพื่อสมัครพร้อมรหัสของคุณ
+            </Text>
 
-          <ReAnimated.View entering={FadeInUp}>
-            <Text className="text-white text-3xl font-bold text-center">
-              รับค่าคอมมิชชั่น
-            </Text>
-            <Text className="text-white text-3xl font-bold text-center">
-              สูงถึง 21%!
-            </Text>
-            <Text className="text-pink-100 text-center mt-2">
-              จาก 5 ระดับลึกในเครือข่ายของคุณ
-            </Text>
-          </ReAnimated.View>
-        </LinearGradient>
-
-        {isLoading ? (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color="#EC4899" />
-            <Text className="text-gray-500 mt-4">กำลังโหลด...</Text>
-          </View>
-        ) : (
-          <ScrollView
-            className="flex-1"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 24 }}
-          >
-            {/* Stats */}
-            <View className="flex-row px-3 -mt-4">
-              <StatCard
-                icon="👥"
-                value={`${stats?.totalReferrals || 0}`}
-                label="สมาชิกทั้งหมด"
-                color="#8B5CF6"
-                isDark={isDark}
-                delay={100}
+            <View style={styles.row}>
+              <Button3D
+                title={copied === 'code' ? 'คัดลอกแล้ว' : 'คัดลอกรหัส'}
+                icon={copied === 'code' ? '✅' : '📋'}
+                variant="secondary"
+                size="sm"
+                onPress={() => copy('code')}
+                style={styles.flex}
               />
-              <StatCard
-                icon="💰"
-                value={formatCurrency(stats?.totalEarnings || 0)}
-                label="รายได้รวม"
-                color="#10B981"
-                isDark={isDark}
-                delay={150}
+              <Button3D
+                title={copied === 'link' ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}
+                icon={copied === 'link' ? '✅' : '🔗'}
+                variant="secondary"
+                size="sm"
+                onPress={() => copy('link')}
+                style={styles.flex}
               />
             </View>
+            <Button3D title="แชร์ให้เพื่อน" icon="📤" size="lg" fullWidth onPress={share} style={styles.shareButton} />
+          </Card3D>
 
-            {/* QR Code Section */}
-            <View className="px-4 mt-6">
-              <QRCodeSection
-                referralLink={referralLink}
-                referralCode={referralCode}
-                memberCode={memberCode}
-                isDark={isDark}
-                onCopyCode={handleCopyCode}
-              />
-            </View>
-
-            {/* Referral Link */}
-            <ReAnimated.View entering={FadeInDown.delay(400)} className="px-4 mt-6">
-              <Text className={`font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                ลิงก์แนะนำ
-              </Text>
-              <Pressable
-                onPress={handleCopyLink}
-                className={`p-4 rounded-2xl flex-row items-center ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-              >
-                <Text style={{ fontSize: 20 }}>🔗</Text>
-                <Text
-                  className={`flex-1 mx-3 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                  numberOfLines={1}
-                >
-                  {referralLink}
-                </Text>
-                <View className="bg-pink-500 px-4 py-2 rounded-xl">
-                  <Text className="text-white font-semibold">คัดลอก</Text>
-                </View>
-              </Pressable>
-            </ReAnimated.View>
-
-            {/* Share Options */}
-            <ReAnimated.View entering={FadeInDown.delay(450)} className="px-4 mt-6">
-              <Text className={`font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                แชร์ผ่านช่องทาง
-              </Text>
-              <View className={`p-6 rounded-2xl flex-row justify-around ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-                <ShareButton icon="💬" label="LINE" color="#06C755" onPress={handleShare} />
-                <ShareButton icon="📘" label="Facebook" color="#1877F2" onPress={handleShare} />
-                <ShareButton icon="📧" label="Email" color="#EA4335" onPress={handleShare} />
-                <ShareButton icon="🔗" label="อื่นๆ" color="#6B7280" onPress={handleShare} />
-              </View>
-            </ReAnimated.View>
-
-            {/* Commission Tiers */}
-            <View className="px-4 mt-6">
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className={`font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                  โครงสร้างค่าคอมมิชชั่น
-                </Text>
-                <View className="px-3 py-1 bg-pink-100 dark:bg-pink-900/30 rounded-full">
-                  <Text className="text-pink-600 dark:text-pink-400 text-xs font-semibold">
-                    รวม 21%
-                  </Text>
-                </View>
-              </View>
-
-              {commissionTiers.map((tier, index) => (
-                <CommissionTierCard key={tier.level} tier={tier} index={index} isDark={isDark} />
-              ))}
-            </View>
-
-            {/* Benefits */}
-            <ReAnimated.View entering={FadeInDown.delay(800)} className="px-4 mt-6">
-              <LinearGradient
-                colors={['#EC4899', '#BE185D']}
-                style={{
-                  padding: 20,
-                  borderRadius: 16,
-                }}
-              >
-                <Text className="text-white font-bold text-lg mb-3">
-                  🎁 สิทธิประโยชน์ที่จะได้รับ
-                </Text>
-                {[
-                  'ค่าคอมมิชชั่นจาก 5 ระดับลึก',
-                  'โบนัสรายเดือนจากยอดทีม',
-                  'โบนัสพิเศษเมื่อทีมถึงเป้าหมาย',
-                  'รางวัล Rank สำหรับ Top Performer',
-                ].map((benefit, index) => (
-                  <View key={index} className="flex-row items-center mb-2">
-                    <Text style={{ fontSize: 20 }}>✅</Text>
-                    <Text className="text-pink-100 ml-3">{benefit}</Text>
-                  </View>
-                ))}
-              </LinearGradient>
-            </ReAnimated.View>
-
-            {/* CTA Buttons */}
-            <View className="px-4 mt-6">
-              <ReAnimated.View entering={FadeInUp.delay(900)}>
-                <Pressable onPress={handleShare}>
-                  <LinearGradient
-                    colors={['#10B981', '#059669']}
-                    style={{
-                      paddingVertical: 20,
-                      borderRadius: 16,
-                      alignItems: 'center',
-                      flexDirection: 'row',
-                      justifyContent: 'center',
-                      shadowColor: '#10B981',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 6,
-                    }}
-                  >
-                    <Text style={{ fontSize: 24 }}>🔗</Text>
-                    <Text className="text-white font-bold text-lg ml-2">
-                      แชร์ลิงก์แนะนำเพื่อน
-                    </Text>
-                  </LinearGradient>
-                </Pressable>
-              </ReAnimated.View>
-
-              <ReAnimated.View entering={FadeInUp.delay(1000)} className="mt-4">
-                <Pressable
-                  onPress={() => router.push('/mlm-tree')}
-                  className={`py-4 rounded-2xl items-center flex-row justify-center border-2 border-pink-500 ${
-                    isDark ? 'bg-pink-500/10' : 'bg-pink-50'
-                  }`}
-                >
-                  <Text style={{ fontSize: 24 }}>🌐</Text>
-                  <Text className="text-pink-600 dark:text-pink-400 font-bold text-lg ml-2">
-                    ดูแผนผังสายงาน
-                  </Text>
-                </Pressable>
-              </ReAnimated.View>
-            </View>
-          </ScrollView>
-        )}
-    </View>
+          <Card3D variant="flat" padding={spacing.lg} style={styles.card}>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+              🎁 รับค่าแนะนำเมื่อเพื่อนสั่งซื้อครั้งแรก — ดูรายละเอียดบนเว็บไซต์
+            </Text>
+            <WebsiteButton path="/user" size="sm" style={styles.webButton} />
+          </Card3D>
+        </>
+      )}
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  loader: {
+    marginTop: spacing.xxxl,
+  },
+  card: {
+    marginBottom: spacing.lg,
+  },
+  center: {
+    textAlign: 'center',
+  },
+  code: {
+    textAlign: 'center',
+    letterSpacing: 2,
+    marginTop: spacing.xs,
+  },
+  qrBox: {
+    alignSelf: 'center',
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.lg,
+  },
+  shareButton: {
+    marginTop: spacing.md,
+  },
+  webButton: {
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
+  },
+});

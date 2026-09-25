@@ -20,7 +20,6 @@ import {
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '@/stores/authStore';
-import { getWallet } from '@/services/api';
 import {
   TAROT_CATEGORIES,
   SPREAD_TYPES,
@@ -197,7 +196,8 @@ const SpreadCard = ({
 export default function TarotHomeScreen() {
   const { isAuthenticated, user } = useAuthStore();
   const [loading, setLoading] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
+  // PLAY-12: ไม่มีการใช้ยอดกระเป๋าเงินในหน้าดูดวงแล้ว (modal ชำระเงินด้านล่างเปิดไม่ได้)
+  const walletBalance = 0;
   const [showSpreadModal, setShowSpreadModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TarotCategory | null>(null);
   const [selectedSpread, setSelectedSpread] = useState<SpreadType>(SPREAD_TYPES[1]); // Default: Past, Present, Future
@@ -221,22 +221,7 @@ export default function TarotHomeScreen() {
       }),
     ]).start();
 
-    // โหลดยอดเงินใน Wallet
-    loadWalletBalance();
   }, [headerOpacity, headerTranslateY]);
-
-  const loadWalletBalance = async () => {
-    if (isAuthenticated) {
-      try {
-        const response = await getWallet();
-        if (response?.success && response.data) {
-          setWalletBalance(response.data.availableBalance || 0);
-        }
-      } catch (error) {
-        console.error('Error loading wallet:', error);
-      }
-    }
-  };
 
   const handleCategoryPress = (category: TarotCategory) => {
     if (!isAuthenticated) {
@@ -245,7 +230,7 @@ export default function TarotHomeScreen() {
         'คุณต้องเข้าสู่ระบบเพื่อใช้บริการดูดวงไพ่ทาโรต์',
         [
           { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'เข้าสู่ระบบ', onPress: () => router.push('/auth/login') },
+          { text: 'เข้าสู่ระบบ', onPress: () => router.push('/login') },
         ]
       );
       return;
@@ -264,27 +249,8 @@ export default function TarotHomeScreen() {
 
     if (!selectedCategory) return;
 
-    // ถ้าเป็นหมวดฟรี ไปหน้าเลือกไพ่เลย
-    if (selectedCategory.price === 0) {
-      navigateToSelectCards();
-      return;
-    }
-
-    // ถ้าเป็นหมวดเสียเงิน ตรวจสอบยอดเงิน
-    if (walletBalance < selectedCategory.price) {
-      Alert.alert(
-        'ยอดเงินไม่เพียงพอ',
-        `ยอดเงินในกระเป๋า: ฿${walletBalance.toLocaleString()}\nค่าบริการ: ฿${selectedCategory.price}\n\nกรุณาเติมเงินก่อนใช้บริการ`,
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'เติมเงิน', onPress: () => router.push('/(tabs)/wallet') },
-        ]
-      );
-      return;
-    }
-
-    // มีเงินพอ - ถามยืนยันก่อนหักเงิน
-    setShowPaymentModal(true);
+    // PLAY-12: ทุกหมวดฟรีในแอป → ไปหน้าเลือกไพ่เลย (ไม่มีการตรวจยอด/หักกระเป๋าเงิน/ปุ่มเติมเงิน)
+    navigateToSelectCards();
   };
 
   const handleConfirmPayment = () => {
@@ -360,13 +326,10 @@ export default function TarotHomeScreen() {
             </Text>
           </View>
 
-          {/* Wallet Badge (if authenticated) */}
-          {isAuthenticated && (
-            <View style={styles.walletBadge}>
-              <Text style={{ fontSize: 16, color: '#10B981' }}>💰</Text>
-              <Text style={styles.walletAmount}>฿{walletBalance.toLocaleString()}</Text>
-            </View>
-          )}
+          {/* PLAY-12: ดูดวงในแอปฟรี — ไม่แสดงยอดกระเป๋าเงิน/ไม่มีการหักเงิน */}
+          <View style={styles.walletBadge}>
+            <Text style={styles.walletAmount}>ดูฟรีทุกหมวด</Text>
+          </View>
 
           {/* Mystical Orb */}
           <View style={styles.orbContainer}>

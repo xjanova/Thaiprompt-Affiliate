@@ -1,809 +1,1111 @@
 /**
- * Order Detail Screen - หน้ารายละเอียดคำสั่งซื้อ
+ * รายละเอียดคำสั่งซื้อ (ผู้ซื้อ) — GET /orders/{id} + /orders/{id}/tracking (SHOP-11 / SHOP-20 / CC-20)
  *
- * แสดงรายละเอียดคำสั่งซื้อ, ติดตามสถานะ, และแชทกับร้านค้า
+ * - ไทม์ไลน์ตาม enum จริงของ orders.status (ไม่มี 'confirmed')
+ * - ยังไม่จ่าย: แสดง QR พร้อมเพย์ที่ค้าง + poll สถานะ / ขอ QR ใหม่ / จ่ายด้วยกระเป๋า
+ * - ส่งด้วยไรเดอร์: การ์ดไรเดอร์ (ชื่อ ทะเบียน โทร) + ลิงก์ติดตามสด — รีเฟรชทุก 15 วินาทีระหว่างไรเดอร์วิ่ง
+ * - ส่งพัสดุ: เลขพัสดุ (คัดลอกได้) + ประวัติการขนส่ง
+ * - ยืนยันรับสินค้า · ยกเลิก (เมื่อ server อนุญาต) · รีวิวสินค้า · แชทกับร้าน (?tab=chat)
  */
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
+  ActivityIndicator,
+  Alert,
+  AppState,
+  FlatList,
+  KeyboardAvoidingView,
   Pressable,
   RefreshControl,
-  Image,
-  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Linking,
-  Alert,
-  FlatList,
-  StatusBar,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { useAppStore } from '@/stores/appStore';
+import { Image } from 'expo-image';
+import * as Clipboard from 'expo-clipboard';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
 import {
-  getOrderDetail,
-  getOrderTracking,
+  cancelMyOrder,
+  confirmOrderReceived,
+  getMyOrder,
   getOrderMessages,
+  getOrderTracking,
+  getPaymentStatus,
+  payOrder,
+  reviewOrderItem,
   sendOrderMessage,
-  cancelOrder,
-  type OrderDetail,
-  type OrderTracking,
-  type OrderMessage,
-} from '@/services/api';
-import { formatCurrency } from '@/constants';
+  type PaymentInstruction,
+  type ShopOrder,
+  type ShopOrderItem,
+  type ShopOrderMessage,
+  type ShopOrderTracking,
+} from '@/services/api/shopApi';
+import { isTrustedWebUrl } from '@/utils/linking';
+import {
+  Button3D,
+  Card3D,
+  Chip,
+  EmptyState,
+  Pill,
+  PriceText,
+  Screen,
+  SectionHeader,
+  formatBaht,
+  resultHaptic,
+} from '@/components/ui';
+import {
+  ACTIVE_RIDER_STATUSES,
+  Field,
+  FormSheet,
+  PromptPayQR,
+  StatusTimeline,
+  callPhone,
+  formatThaiDateTime,
+  openHttpsLink,
+  type PromptPayState,
+  type TimelineStep,
+} from '@/components/shop';
+import { useTheme, clayShadowStyle, radii, spacing, typography } from '@/theme';
 
-// Tab types
-type TabType = 'detail' | 'tracking' | 'chat';
+type Tab = 'detail' | 'chat';
 
-// สีสถานะ
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return '#F59E0B';
-    case 'confirmed':
-      return '#3B82F6';
-    case 'processing':
-      return '#8B5CF6';
-    case 'shipped':
-      return '#06B6D4';
-    case 'delivered':
-    case 'completed':
-      return '#10B981';
-    case 'cancelled':
-    case 'refunded':
-      return '#EF4444';
-    default:
-      return '#6B7280';
+const STATUS_FLOW = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'completed'] as const;
+const CANCEL_REASONS = ['เปลี่ยนใจไม่ซื้อแล้ว', 'สั่งผิด อยากแก้รายการ', 'ได้ของจากที่อื่นแล้ว', 'รอนานเกินไป'];
+const PAY_POLL_MS = 4000;
+const RIDER_POLL_MS = 15000;
+const ORDER_POLL_MS = 45000;
+const CHAT_POLL_MS = 10000;
+
+/** ไทม์ไลน์ของออเดอร์ร้านค้า */
+const buildTimeline = (order: ShopOrder): TimelineStep[] => {
+  const isRider = order.delivery_method === 'rider';
+  const isCod = order.payment_method === 'cod';
+
+  if (order.status === 'cancelled' || order.status === 'refunded') {
+    return [
+      { key: 'placed', label: 'สั่งซื้อแล้ว', caption: formatThaiDateTime(order.created_at), state: 'done' },
+      {
+        key: 'cancelled',
+        label: order.status === 'refunded' ? 'คืนเงินแล้ว' : 'ยกเลิกแล้ว',
+        caption: [formatThaiDateTime(order.cancelled_at), order.cancellation_reason].filter(Boolean).join(' · '),
+        state: 'failed',
+      },
+    ];
   }
+
+  let idx = STATUS_FLOW.indexOf(order.status as (typeof STATUS_FLOW)[number]);
+  if (idx < 0) idx = 0;
+  // เก็บเงินปลายทาง: ไม่ต้องรอชำระก่อน → ถือว่าผ่านขั้นชำระแล้ว
+  if (isCod && idx === 0) idx = 1;
+
+  const stateOf = (i: number): TimelineStep['state'] =>
+    i <= idx || (i === 5 && order.status === 'completed') ? 'done' : i === idx + 1 ? 'current' : 'todo';
+
+  return [
+    { key: 'placed', label: 'สั่งซื้อแล้ว', caption: formatThaiDateTime(order.created_at), icon: '🧾', state: 'done' },
+    {
+      key: 'paid',
+      label: isCod ? 'เก็บเงินปลายทาง' : stateOf(1) === 'current' ? 'รอชำระเงิน' : 'ชำระเงินแล้ว',
+      caption: isCod ? 'จ่ายเงินสดกับไรเดอร์ตอนรับของ' : formatThaiDateTime(order.paid_at),
+      icon: '💳',
+      state: stateOf(1),
+    },
+    {
+      key: 'processing',
+      label: stateOf(2) === 'current' ? 'รอร้านยืนยันคำสั่งซื้อ' : 'ร้านรับคำสั่งซื้อแล้ว',
+      icon: '🏪',
+      state: stateOf(2),
+    },
+    {
+      key: 'shipped',
+      label: isRider
+        ? stateOf(3) === 'current' ? 'ร้านกำลังเตรียมของให้ไรเดอร์' : 'ไรเดอร์รับของแล้ว'
+        : stateOf(3) === 'current' ? 'ร้านกำลังแพ็กสินค้า' : 'จัดส่งแล้ว',
+      caption: formatThaiDateTime(order.shipped_at),
+      icon: isRider ? '🛵' : '📦',
+      state: stateOf(3),
+    },
+    {
+      key: 'delivered',
+      label: stateOf(4) === 'current' ? (isRider ? 'ไรเดอร์กำลังไปส่ง' : 'อยู่ระหว่างขนส่ง') : 'ส่งถึงแล้ว',
+      caption: formatThaiDateTime(order.delivered_at),
+      icon: '📍',
+      state: stateOf(4),
+    },
+    {
+      key: 'completed',
+      label: stateOf(5) === 'current' ? 'ได้รับของแล้วกดยืนยันได้เลย' : 'สำเร็จ',
+      icon: '🎉',
+      state: stateOf(5),
+    },
+  ];
 };
 
-// Tab Component
-const TabButton = ({
-  label,
-  icon,
-  isActive,
-  onPress,
-  badge,
-}: {
-  label: string;
-  icon: string;
-  isActive: boolean;
-  onPress: () => void;
-  badge?: number;
-}) => (
-  <Pressable
-    onPress={onPress}
-    className={`flex-1 py-3 items-center border-b-2 ${
-      isActive
-        ? 'border-primary-500'
-        : 'border-transparent'
-    }`}
-  >
-    <View className="relative">
-      <Ionicons
-        name={icon as any}
-        size={24}
-        color={isActive ? '#3B82F6' : '#9CA3AF'}
-      />
-      {badge && badge > 0 && (
-        <View className="absolute -top-1 -right-2 bg-red-500 rounded-full w-4 h-4 items-center justify-center">
-          <Text className="text-white text-xs">{badge}</Text>
-        </View>
-      )}
-    </View>
-    <Text
-      className={`text-sm mt-1 ${
-        isActive ? 'text-primary-500 font-medium' : 'text-gray-500'
-      }`}
-    >
-      {label}
-    </Text>
-  </Pressable>
-);
+// =====================================================
+// แชทกับร้าน
+// =====================================================
 
-// Order Detail Tab Component
-const OrderDetailTab = ({
-  order,
-  onCancel,
-}: {
-  order: OrderDetail;
-  onCancel: () => void;
-}) => {
-  const statusColor = getStatusColor(order.status);
-  const canCancel = ['pending', 'confirmed'].includes(order.status) && order.payment_status !== 'paid';
+const ChatPanel: React.FC<{ orderId: number; canSend: boolean }> = ({ orderId, canSend }) => {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const [messages, setMessages] = useState<ShopOrderMessage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const mountedRef = useRef(true);
+  const busyRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const load = useCallback(
+    async (silent: boolean) => {
+      if (busyRef.current) return;
+      busyRef.current = true;
+      if (!silent) setLoading(true);
+      const res = await getOrderMessages(orderId, { per_page: 50 });
+      busyRef.current = false;
+      if (!mountedRef.current) return;
+      if (res.success) {
+        setMessages(Array.isArray(res.data?.messages) ? res.data.messages : []);
+        setError(null);
+      } else if (!silent) {
+        setError(res.message);
+      }
+      setLoading(false);
+    },
+    [orderId]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      load(false);
+      const timer = setInterval(() => load(true), CHAT_POLL_MS);
+      return () => clearInterval(timer);
+    }, [load])
+  );
+
+  const send = async () => {
+    const message = text.trim();
+    if (!message || sending) return;
+    setSending(true);
+    const res = await sendOrderMessage(orderId, message.slice(0, 2000));
+    if (!mountedRef.current) return;
+    setSending(false);
+    if (res.success) {
+      setText('');
+      if (res.data) setMessages((prev) => [res.data, ...prev.filter((m) => m.id !== res.data.id)]);
+    } else {
+      Alert.alert('ส่งข้อความไม่สำเร็จ', res.message);
+    }
+  };
+
+  if (loading && messages.length === 0) {
+    return <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />;
+  }
 
   return (
-    <ScrollView className="flex-1 p-4">
-      {/* Status Badge */}
-      <Animated.View
-        entering={FadeInDown.delay(100)}
-        className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
-      >
-        <View className="flex-row justify-between items-center">
-          <View>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">สถานะ</Text>
-            <View className="flex-row items-center mt-1">
-              <View
-                className="w-3 h-3 rounded-full mr-2"
-                style={{ backgroundColor: statusColor }}
-              />
-              <Text
-                className="text-lg font-semibold"
-                style={{ color: statusColor }}
-              >
-                {order.status_label}
-              </Text>
-            </View>
-          </View>
-          <View className="items-end">
-            <Text className="text-sm text-gray-500 dark:text-gray-400">การชำระเงิน</Text>
-            <Text className="text-base font-medium text-gray-900 dark:text-white mt-1">
-              {order.payment_status_label}
-            </Text>
-          </View>
-        </View>
-      </Animated.View>
-
-      {/* Order Items */}
-      <Animated.View
-        entering={FadeInDown.delay(200)}
-        className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
-      >
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          รายการสินค้า
-        </Text>
-        {order.items.map((item, index) => (
-          <View
-            key={item.id}
-            className={`flex-row items-center py-3 ${
-              index < order.items.length - 1
-                ? 'border-b border-gray-100 dark:border-gray-700'
-                : ''
-            }`}
-          >
-            {item.product_image ? (
-              <Image
-                source={{ uri: item.product_image }}
-                className="w-16 h-16 rounded-xl"
-                resizeMode="cover"
-              />
+    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <FlatList
+        data={messages}
+        inverted
+        keyExtractor={(m) => String(m.id)}
+        contentContainerStyle={styles.chatList}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          // รายการกลับหัว (inverted) → กลับหัวช่องว่างอีกครั้งให้อ่านได้ปกติ
+          <View style={styles.flipped}>
+            {error ? (
+              <EmptyState compact variant="error" message={error} onAction={() => load(false)} />
             ) : (
-              <View className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-800 items-center justify-center">
-                <Ionicons name="cube-outline" size={24} color="#9CA3AF" />
+              <View style={styles.chatEmpty}>
+                <Text style={[typography.body, { color: colors.textMuted }]}>💬 มีคำถามเรื่องสินค้า ทักร้านได้เลย</Text>
               </View>
             )}
-            <View className="flex-1 ml-3">
-              <Text
-                className="text-base font-medium text-gray-900 dark:text-white"
-                numberOfLines={2}
+          </View>
+        }
+        renderItem={({ item }) => {
+          const mine = item.is_mine;
+          return (
+            <View style={[styles.bubbleRow, mine ? styles.bubbleRight : styles.bubbleLeft]}>
+              <View
+                style={[
+                  styles.bubble,
+                  {
+                    backgroundColor: item.is_system_message ? colors.infoSoft : mine ? colors.goldSoft : colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
-                {item.product_name}
-              </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {formatCurrency(item.price)} x {item.quantity}
-              </Text>
-            </View>
-            <Text className="text-base font-semibold text-primary-500">
-              {formatCurrency(item.total)}
-            </Text>
-          </View>
-        ))}
-      </Animated.View>
-
-      {/* Order Summary */}
-      <Animated.View
-        entering={FadeInDown.delay(300)}
-        className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
-      >
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-          สรุปยอด
-        </Text>
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-500 dark:text-gray-400">ราคาสินค้า</Text>
-          <Text className="text-gray-900 dark:text-white">{formatCurrency(order.subtotal)}</Text>
-        </View>
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-gray-500 dark:text-gray-400">ค่าจัดส่ง</Text>
-          <Text className="text-gray-900 dark:text-white">
-            {order.shipping_fee > 0 ? formatCurrency(order.shipping_fee) : 'ฟรี'}
-          </Text>
-        </View>
-        {order.discount > 0 && (
-          <View className="flex-row justify-between mb-2">
-            <Text className="text-green-500">ส่วนลด</Text>
-            <Text className="text-green-500">-{formatCurrency(order.discount)}</Text>
-          </View>
-        )}
-        <View className="flex-row justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">รวมทั้งหมด</Text>
-          <Text className="text-xl font-bold text-primary-500">
-            {formatCurrency(order.total_amount)}
-          </Text>
-        </View>
-      </Animated.View>
-
-      {/* Shipping Address - ⭐ เพิ่ม null checks เพื่อป้องกัน crash */}
-      {order?.shipping && (
-        <Animated.View
-          entering={FadeInDown.delay(400)}
-          className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
-        >
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            ที่อยู่จัดส่ง
-          </Text>
-          <View className="flex-row items-start">
-            <Ionicons name="location" size={20} color="#3B82F6" />
-            <View className="flex-1 ml-2">
-              <Text className="text-base font-medium text-gray-900 dark:text-white">
-                {order.shipping?.name || 'ไม่ระบุชื่อ'}
-              </Text>
-              <Text className="text-gray-500 dark:text-gray-400 mt-1">
-                {order.shipping?.phone || '-'}
-              </Text>
-              <Text className="text-gray-600 dark:text-gray-300 mt-2">
-                {order.shipping?.address || ''}, {order.shipping?.subdistrict || ''}, {order.shipping?.district || ''},{' '}
-                {order.shipping?.province || ''} {order.shipping?.postal_code || ''}
-              </Text>
-            </View>
-          </View>
-        </Animated.View>
-      )}
-
-      {/* Cancel Button */}
-      {canCancel && (
-        <Animated.View entering={FadeInDown.delay(500)}>
-          <Pressable
-            onPress={onCancel}
-            className="bg-red-500 rounded-xl py-4 items-center mb-8"
-          >
-            <Text className="text-white font-semibold">ยกเลิกคำสั่งซื้อ</Text>
-          </Pressable>
-        </Animated.View>
-      )}
-    </ScrollView>
-  );
-};
-
-// Tracking Tab Component
-const TrackingTab = ({ tracking }: { tracking: OrderTracking | null }) => {
-  if (!tracking) {
-    return (
-      <View className="flex-1 items-center justify-center p-4">
-        <Ionicons name="cube-outline" size={64} color="#9CA3AF" />
-        <Text className="text-gray-500 dark:text-gray-400 text-lg mt-4">
-          ยังไม่มีข้อมูลการจัดส่ง
-        </Text>
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView className="flex-1 p-4">
-      {/* Tracking Info */}
-      {tracking.tracking_number && (
-        <Animated.View
-          entering={FadeInDown.delay(100)}
-          className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
-        >
-          <View className="flex-row justify-between items-start">
-            <View className="flex-1">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">หมายเลขพัสดุ</Text>
-              <Text className="text-lg font-bold text-gray-900 dark:text-white mt-1">
-                {tracking.tracking_number}
-              </Text>
-              {tracking.shipping_provider && (
-                <View className="flex-row items-center mt-2">
-                  <Ionicons name="business" size={16} color="#6B7280" />
-                  <Text className="text-gray-600 dark:text-gray-300 ml-1">
-                    {tracking.shipping_provider.name}
-                  </Text>
-                </View>
-              )}
-            </View>
-            {tracking.tracking_url && (
-              <Pressable
-                onPress={() => Linking.openURL(tracking.tracking_url!)}
-                className="bg-primary-500 px-4 py-2 rounded-lg"
-              >
-                <Text className="text-white font-medium">ติดตาม</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {/* Shipping Provider Hotline */}
-          {tracking.shipping_provider?.hotline && (
-            <Pressable
-              onPress={() =>
-                Linking.openURL(`tel:${tracking.shipping_provider!.hotline}`)
-              }
-              className="flex-row items-center mt-4 pt-4 border-t border-gray-100 dark:border-gray-700"
-            >
-              <Ionicons name="call" size={20} color="#3B82F6" />
-              <Text className="text-primary-500 ml-2">
-                โทร {tracking.shipping_provider.hotline}
-              </Text>
-            </Pressable>
-          )}
-        </Animated.View>
-      )}
-
-      {/* Estimated Delivery */}
-      {tracking.estimated_delivery_at && (
-        <Animated.View
-          entering={FadeInDown.delay(200)}
-          className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4 mb-4"
-        >
-          <View className="flex-row items-center">
-            <Ionicons name="time" size={24} color="#10B981" />
-            <View className="ml-3">
-              <Text className="text-sm text-green-600 dark:text-green-400">คาดว่าจะได้รับ</Text>
-              <Text className="text-lg font-semibold text-green-700 dark:text-green-300">
-                {new Date(tracking.estimated_delivery_at).toLocaleDateString('th-TH', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </Text>
-            </View>
-          </View>
-        </Animated.View>
-      )}
-
-      {/* Tracking History */}
-      <Animated.View
-        entering={FadeInDown.delay(300)}
-        className="bg-white dark:bg-dark-50 rounded-2xl p-4 mb-4"
-      >
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          ประวัติการจัดส่ง
-        </Text>
-        {tracking.history.length === 0 ? (
-          <Text className="text-gray-500 dark:text-gray-400 text-center py-4">
-            ยังไม่มีประวัติ
-          </Text>
-        ) : (
-          tracking.history.map((item, index) => {
-            const statusColor = getStatusColor(item.status);
-            const isFirst = index === 0;
-            const isLast = index === tracking.history.length - 1;
-
-            return (
-              <View key={item.id} className="flex-row">
-                {/* Timeline */}
-                <View className="items-center mr-4">
-                  <View
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: isFirst ? statusColor : '#D1D5DB' }}
-                  />
-                  {!isLast && (
-                    <View className="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700" />
-                  )}
-                </View>
-
-                {/* Content */}
-                <View className="flex-1 pb-6">
-                  <Text
-                    className={`text-base font-medium ${
-                      isFirst ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    {item.status_label}
-                  </Text>
-                  {item.description && (
-                    <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {item.description}
-                    </Text>
-                  )}
-                  {item.location && (
-                    <View className="flex-row items-center mt-1">
-                      <Ionicons name="location" size={14} color="#9CA3AF" />
-                      <Text className="text-sm text-gray-400 ml-1">{item.location}</Text>
-                    </View>
-                  )}
-                  <Text className="text-xs text-gray-400 mt-1">
-                    {new Date(item.created_at).toLocaleDateString('th-TH', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                </View>
+                {!mine && !!item.sender_name && (
+                  <Text style={[typography.micro, { color: colors.goldDeep }]}>{item.sender_name}</Text>
+                )}
+                {!!item.message && <Text style={[typography.body, { color: colors.textStrong }]}>{item.message}</Text>}
+                {!!item.attachment && item.attachment_type === 'image' && isTrustedWebUrl(item.attachment) && (
+                  <Image source={{ uri: item.attachment }} style={styles.chatImage} contentFit="cover" />
+                )}
+                <Text style={[typography.micro, styles.bubbleTime, { color: colors.textFaint }]}>
+                  {formatThaiDateTime(item.created_at)}
+                </Text>
               </View>
-            );
-          })
-        )}
-      </Animated.View>
-    </ScrollView>
-  );
-};
-
-// Chat Tab Component
-const ChatTab = ({
-  orderId,
-  messages,
-  isLoading,
-  onSend,
-  onRefresh,
-}: {
-  orderId: number;
-  messages: OrderMessage[];
-  isLoading: boolean;
-  onSend: (message: string) => void;
-  onRefresh: () => void;
-}) => {
-  const [inputText, setInputText] = useState('');
-  const [isSending, setIsSending] = useState(false);
-  const flatListRef = useRef<FlatList>(null);
-
-  const handleSend = async () => {
-    if (!inputText.trim() || isSending) return;
-
-    setIsSending(true);
-    await onSend(inputText.trim());
-    setInputText('');
-    setIsSending(false);
-  };
-
-  const renderMessage = ({ item }: { item: OrderMessage }) => {
-    const isMe = item.is_mine;
-
-    return (
-      <View
-        className={`mb-3 ${isMe ? 'items-end' : 'items-start'}`}
-      >
-        {!isMe && (
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1 ml-2">
-            {item.sender_name}
-          </Text>
-        )}
+            </View>
+          );
+        }}
+      />
+      {canSend ? (
         <View
-          className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-            isMe
-              ? 'bg-primary-500'
-              : item.is_system_message
-              ? 'bg-gray-100 dark:bg-gray-800'
-              : 'bg-white dark:bg-dark-50'
-          }`}
+          style={[
+            styles.chatInputBar,
+            { backgroundColor: colors.card, paddingBottom: Math.max(insets.bottom, spacing.sm) },
+            clayShadowStyle('sm', colors.shadowDark, colors.shadowLight),
+          ]}
         >
-          {item.is_system_message && (
-            <View className="flex-row items-center mb-1">
-              <Ionicons name="information-circle" size={14} color="#6B7280" />
-              <Text className="text-xs text-gray-500 ml-1">ข้อความจากระบบ</Text>
-            </View>
-          )}
-          <Text
-            className={`text-base ${
-              isMe ? 'text-white' : 'text-gray-900 dark:text-white'
-            }`}
-          >
-            {item.message}
-          </Text>
-          {item.attachment && (
-            <Pressable
-              onPress={() => Linking.openURL(item.attachment!)}
-              className="mt-2"
-            >
-              {item.attachment_type === 'image' ? (
-                <Image
-                  source={{ uri: item.attachment }}
-                  className="w-48 h-48 rounded-xl"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
-                  <Ionicons name="document" size={20} color="#3B82F6" />
-                  <Text className="text-primary-500 ml-2">ดูไฟล์แนบ</Text>
-                </View>
-              )}
-            </Pressable>
-          )}
-        </View>
-        <Text className="text-xs text-gray-400 mt-1 mx-2">
-          {new Date(item.created_at).toLocaleTimeString('th-TH', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-      </View>
-    );
-  };
-
-  return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1"
-      keyboardVerticalOffset={100}
-    >
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="พิมพ์ข้อความถึงร้าน"
+            placeholderTextColor={colors.textFaint}
+            multiline
+            maxLength={2000}
+            style={[typography.body, styles.chatInput, { backgroundColor: colors.inset, color: colors.textStrong }]}
+            accessibilityLabel="ข้อความถึงร้าน"
+          />
+          <Button3D title="ส่ง" size="sm" onPress={send} loading={sending} disabled={!text.trim()} />
         </View>
       ) : (
-        <FlatList
-          ref={flatListRef}
-          data={[...messages].reverse()}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderMessage}
-          contentContainerStyle={{ padding: 16, flexGrow: 1 }}
-          inverted={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={false}
-              onRefresh={onRefresh}
-              colors={['#3B82F6']}
-            />
-          }
-          ListEmptyComponent={
-            <View className="flex-1 items-center justify-center py-20">
-              <Ionicons name="chatbubbles-outline" size={64} color="#9CA3AF" />
-              <Text className="text-gray-500 dark:text-gray-400 text-lg mt-4">
-                ยังไม่มีข้อความ
-              </Text>
-              <Text className="text-gray-400 text-sm mt-2">
-                เริ่มพูดคุยกับร้านค้าได้เลย
-              </Text>
-            </View>
-          }
-        />
+        <Text style={[typography.caption, styles.chatClosed, { color: colors.textMuted }]}>
+          คำสั่งซื้อนี้ปิดแล้ว ส่งข้อความเพิ่มไม่ได้
+        </Text>
       )}
-
-      {/* Input */}
-      <View className="flex-row items-end p-4 bg-white dark:bg-dark-50 border-t border-gray-100 dark:border-gray-700">
-        <TextInput
-          className="flex-1 bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3 text-gray-900 dark:text-white mr-2 max-h-24"
-          placeholder="พิมพ์ข้อความ..."
-          placeholderTextColor="#9CA3AF"
-          value={inputText}
-          onChangeText={setInputText}
-          multiline
-          editable={!isSending}
-        />
-        <Pressable
-          onPress={handleSend}
-          disabled={!inputText.trim() || isSending}
-          className={`w-12 h-12 rounded-full items-center justify-center ${
-            inputText.trim() && !isSending ? 'bg-primary-500' : 'bg-gray-200 dark:bg-gray-700'
-          }`}
-        >
-          {isSending ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Ionicons
-              name="send"
-              size={20}
-              color={inputText.trim() ? 'white' : '#9CA3AF'}
-            />
-          )}
-        </Pressable>
-      </View>
     </KeyboardAvoidingView>
   );
 };
 
+// =====================================================
+// หน้าจอหลัก
+// =====================================================
+
 export default function OrderDetailScreen() {
   const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
-  const orderId = parseInt(id, 10);
-  const { isDarkMode } = useAppStore();
-  const { isAuthenticated } = useAuthStore();
+  const orderId = /^\d+$/.test(String(id || '')) ? Number(id) : 0;
+  const { colors } = useTheme();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  // เปิด tab ตาม query param (เช่น ?tab=tracking)
-  const initialTab: TabType = tab === 'tracking' ? 'tracking' : tab === 'chat' ? 'chat' : 'detail';
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
-  const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [tracking, setTracking] = useState<OrderTracking | null>(null);
-  const [messages, setMessages] = useState<OrderMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingChat, setIsLoadingChat] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [activeTab, setActiveTab] = useState<Tab>(tab === 'chat' ? 'chat' : 'detail');
+  const [order, setOrder] = useState<ShopOrder | null>(null);
+  const [tracking, setTracking] = useState<ShopOrderTracking | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<{ message: string; notFound: boolean } | null>(null);
 
-  // โหลดรายละเอียดคำสั่งซื้อ
-  const loadOrderDetail = useCallback(async () => {
-    if (!isAuthenticated || !orderId) {
-      router.replace('/login');
+  const [payment, setPayment] = useState<PaymentInstruction | null>(null);
+  const [payState, setPayState] = useState<PromptPayState>('waiting');
+
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState<string | null>(null);
+  const [cancelOther, setCancelOther] = useState('');
+  const [cancelBusy, setCancelBusy] = useState(false);
+
+  const [reviewItem, setReviewItem] = useState<ShopOrderItem | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
+
+  const mountedRef = useRef(true);
+  const loadingRef = useRef(false);
+  const payBusyRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const applyOrder = useCallback((next: ShopOrder) => {
+    setOrder(next);
+    if (next.payment && next.payment.transaction_id) {
+      setPayment(next.payment);
+      setPayState('waiting');
+    } else if (next.payment_status === 'paid') {
+      setPayment((prev) => (prev ? prev : null));
+      setPayState('paid');
+    } else {
+      setPayment(null);
+    }
+  }, []);
+
+  const load = useCallback(
+    async (mode: 'initial' | 'refresh' | 'silent') => {
+      if (!isAuthenticated || !orderId) {
+        setLoading(false);
+        if (!orderId) setError({ message: 'ไม่พบคำสั่งซื้อนี้', notFound: true });
+        return;
+      }
+      if (loadingRef.current && mode === 'silent') return;
+      loadingRef.current = true;
+      if (mode === 'initial') setLoading(true);
+      if (mode === 'refresh') setRefreshing(true);
+
+      const [orderRes, trackRes] = await Promise.all([getMyOrder(orderId), getOrderTracking(orderId)]);
+      loadingRef.current = false;
+      if (!mountedRef.current) return;
+
+      if (orderRes.success && orderRes.data) {
+        applyOrder(orderRes.data);
+        setError(null);
+      } else if (!orderRes.success && mode !== 'silent') {
+        setError({ message: orderRes.message, notFound: orderRes.status === 404 });
+      }
+      if (trackRes.success) setTracking(trackRes.data);
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [isAuthenticated, orderId, applyOrder]
+  );
+
+  useEffect(() => {
+    load('initial');
+  }, [load]);
+
+  // ---------- รีเฟรชอัตโนมัติ ----------
+  const riderActive = !!order?.rider && ACTIVE_RIDER_STATUSES.includes(order.rider.status);
+  const orderOpen = !!order && !['completed', 'cancelled', 'refunded'].includes(order.status);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!orderOpen || activeTab !== 'detail') return undefined;
+      const timer = setInterval(() => load('silent'), riderActive ? RIDER_POLL_MS : ORDER_POLL_MS);
+      return () => clearInterval(timer);
+    }, [orderOpen, riderActive, activeTab, load])
+  );
+
+  // poll สถานะพร้อมเพย์ที่ค้าง
+  const pollPayment = useCallback(async () => {
+    if (!payment?.transaction_id || payBusyRef.current) return;
+    payBusyRef.current = true;
+    const res = await getPaymentStatus(payment.transaction_id);
+    payBusyRef.current = false;
+    if (!mountedRef.current || !res.success) return;
+    const st = String(res.data?.status || '');
+    if (st === 'completed' || res.data?.order?.payment_status === 'paid') {
+      setPayState('paid');
+      resultHaptic('success');
+      load('silent');
+    } else if (st === 'failed' || st === 'cancelled') {
+      setPayState('error');
+    } else if (st === 'expired' || res.data?.is_expired === true) {
+      setPayState('expired');
+    }
+  }, [payment?.transaction_id, load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!payment?.transaction_id || payState !== 'waiting') return undefined;
+      const timer = setInterval(pollPayment, PAY_POLL_MS);
+      const sub = AppState.addEventListener('change', (s) => {
+        if (s === 'active') pollPayment();
+      });
+      return () => {
+        clearInterval(timer);
+        sub.remove();
+      };
+    }, [payment?.transaction_id, payState, pollPayment])
+  );
+
+  // ---------- การกระทำ ----------
+  const startPay = async (method: 'promptpay' | 'wallet') => {
+    if (!order) return;
+    const res = await payOrder(order.id, method);
+    if (!mountedRef.current) return;
+    if (!res.success) {
+      resultHaptic('error');
+      if (res.code === 'ALREADY_PAID') {
+        load('silent');
+        return;
+      }
+      if (res.code === 'INSUFFICIENT_BALANCE') {
+        Alert.alert('ยอดเงินในกระเป๋าไม่พอ', res.message, [
+          { text: 'ไว้ก่อน', style: 'cancel' },
+          { text: 'เติมเงิน', onPress: () => router.push('/wallet-topup' as never) },
+        ]);
+        return;
+      }
+      Alert.alert('ชำระเงินไม่สำเร็จ', res.message);
       return;
     }
-
-    try {
-      setIsLoading(true);
-      const result = await getOrderDetail(orderId);
-      if (result) {
-        setOrder(result);
-      } else {
-        Alert.alert('ผิดพลาด', 'ไม่พบคำสั่งซื้อ');
-        router.back();
-      }
-    } catch (error) {
-      console.error('Load order detail error:', error);
-    } finally {
-      setIsLoading(false);
+    const paid = res.data?.order?.payment_status === 'paid' || res.data?.status === 'completed';
+    if (paid) {
+      resultHaptic('success');
+      setPayState('paid');
+      Alert.alert('ชำระเงินแล้ว', 'ร้านได้รับคำสั่งซื้อแล้ว');
+      load('silent');
+      return;
     }
-  }, [isAuthenticated, orderId]);
-
-  // โหลด Tracking
-  const loadTracking = useCallback(async () => {
-    if (!orderId) return;
-    try {
-      const result = await getOrderTracking(orderId);
-      setTracking(result);
-    } catch (error) {
-      console.error('Load tracking error:', error);
-    }
-  }, [orderId]);
-
-  // โหลดข้อความ (showLoading = false สำหรับ polling แบบ silent)
-  const loadMessages = useCallback(async (showLoading: boolean = true) => {
-    if (!orderId) return;
-    try {
-      if (showLoading) {
-        setIsLoadingChat(true);
-      }
-      const result = await getOrderMessages(orderId);
-      if (result) {
-        setMessages(result.messages);
-        setUnreadCount(0); // Reset after loading
-      }
-    } catch (error) {
-      console.error('Load messages error:', error);
-    } finally {
-      if (showLoading) {
-        setIsLoadingChat(false);
-      }
-    }
-  }, [orderId]);
-
-  // ส่งข้อความ
-  const handleSendMessage = async (message: string) => {
-    const result = await sendOrderMessage(orderId, message);
-    if (result.success && result.data) {
-      setMessages((prev) => [result.data!, ...prev]);
-    } else {
-      Alert.alert('ผิดพลาด', result.message || 'ไม่สามารถส่งข้อความได้');
-    }
+    setPayment({ ...res.data, order_id: res.data.order_id || order.id });
+    setPayState('waiting');
   };
 
-  // ยกเลิกคำสั่งซื้อ
-  const handleCancelOrder = () => {
+  const payWithWallet = () => {
+    if (!order) return;
     Alert.alert(
-      'ยืนยันการยกเลิก',
-      'คุณต้องการยกเลิกคำสั่งซื้อนี้หรือไม่?',
+      'จ่ายด้วยกระเป๋าเงิน?',
+      `ระบบจะตัดเงิน ${formatBaht(order.total_amount, { decimals: 2 })} จากกระเป๋าทันที\nถ้าโอนพร้อมเพย์ไปแล้ว ไม่ต้องกดนะ`,
       [
-        { text: 'ไม่ใช่', style: 'cancel' },
-        {
-          text: 'ยกเลิก',
-          style: 'destructive',
-          onPress: async () => {
-            const result = await cancelOrder(orderId);
-            if (result.success) {
-              Alert.alert('สำเร็จ', 'ยกเลิกคำสั่งซื้อแล้ว');
-              loadOrderDetail();
-            } else {
-              Alert.alert('ผิดพลาด', result.message || 'ไม่สามารถยกเลิกได้');
-            }
-          },
-        },
+        { text: 'ยังก่อน', style: 'cancel' },
+        { text: 'ยืนยันจ่าย', onPress: () => startPay('wallet') },
       ]
     );
   };
 
-  // Initial load
-  useEffect(() => {
-    loadOrderDetail();
-    loadTracking();
-  }, []);
+  const confirmReceived = () => {
+    if (!order) return;
+    Alert.alert('ได้รับสินค้าครบแล้ว?', 'ยืนยันแล้วคำสั่งซื้อจะปิดงาน และร้านจะได้รับเงิน', [
+      { text: 'ยังไม่ได้รับ', style: 'cancel' },
+      {
+        text: 'ได้รับแล้ว',
+        onPress: async () => {
+          const res = await confirmOrderReceived(order.id);
+          if (!mountedRef.current) return;
+          if (res.success && res.data) {
+            resultHaptic('success');
+            applyOrder(res.data);
+            const reviewable = res.data.items.find((i) => i.can_review);
+            if (reviewable) {
+              Alert.alert('ขอบคุณที่ช้อปกับเรา 🎉', 'รีวิวสินค้าให้ร้านหน่อยไหม?', [
+                { text: 'ไว้ทีหลัง', style: 'cancel' },
+                { text: 'รีวิวเลย', onPress: () => openReview(reviewable) },
+              ]);
+            }
+          } else if (!res.success) {
+            resultHaptic('error');
+            Alert.alert('ยืนยันไม่สำเร็จ', res.message);
+            load('silent');
+          }
+        },
+      },
+    ]);
+  };
 
-  // Load messages when chat tab is active + Auto-poll every 10 seconds
-  useEffect(() => {
-    if (activeTab === 'chat') {
-      loadMessages(true); // โหลดครั้งแรกแสดง loading
-
-      // ตั้ง interval เพื่อ poll ข้อความใหม่ทุก 10 วินาที (silent)
-      const pollInterval = setInterval(() => {
-        loadMessages(false); // poll แบบไม่แสดง loading
-      }, 10000); // 10 วินาที
-
-      return () => clearInterval(pollInterval);
+  const submitCancel = async () => {
+    if (!order || cancelBusy) return;
+    const reason = cancelReason === 'other' ? cancelOther.trim() : cancelReason;
+    if (!reason) {
+      Alert.alert('เลือกเหตุผลก่อนนะ', 'บอกเหตุผลสั้นๆ ให้ร้านทราบหน่อย');
+      return;
     }
-  }, [activeTab, loadMessages]);
+    setCancelBusy(true);
+    const res = await cancelMyOrder(order.id, reason.slice(0, 500));
+    if (!mountedRef.current) return;
+    setCancelBusy(false);
+    if (res.success) {
+      resultHaptic('success');
+      setCancelOpen(false);
+      if (res.data) applyOrder(res.data);
+      Alert.alert('ยกเลิกคำสั่งซื้อแล้ว', res.message || (res.meta?.refunded ? 'คืนเงินเข้ากระเป๋าให้แล้ว' : 'ยกเลิกเรียบร้อย'));
+      load('silent');
+    } else {
+      resultHaptic('error');
+      Alert.alert('ยกเลิกไม่สำเร็จ', res.message);
+      load('silent');
+    }
+  };
 
-  if (isLoading) {
+  const openReview = (item: ShopOrderItem) => {
+    setReviewItem(item);
+    setRating(5);
+    setComment('');
+  };
+
+  const submitReview = async () => {
+    if (!order || !reviewItem || reviewBusy) return;
+    if (comment.trim().length < 2) {
+      Alert.alert('เขียนรีวิวสั้นๆ ก่อนนะ', 'บอกความรู้สึกต่อสินค้าอย่างน้อย 2 ตัวอักษร');
+      return;
+    }
+    setReviewBusy(true);
+    const res = await reviewOrderItem(order.id, reviewItem.id, { rating, comment: comment.trim().slice(0, 1000) });
+    if (!mountedRef.current) return;
+    setReviewBusy(false);
+    if (res.success || res.code === 'ALREADY_REVIEWED') {
+      resultHaptic('success');
+      setReviewItem(null);
+      Alert.alert(res.success ? 'ขอบคุณสำหรับรีวิว 💛' : 'รีวิวแล้ว', res.success ? 'รีวิวของคุณช่วยร้านและผู้ซื้อคนอื่นได้มาก' : res.message);
+      load('silent');
+    } else {
+      resultHaptic('error');
+      Alert.alert('ส่งรีวิวไม่สำเร็จ', res.message);
+    }
+  };
+
+  const copyTracking = async (value: string) => {
+    try {
+      await Clipboard.setStringAsync(value);
+      resultHaptic('success');
+      Alert.alert('คัดลอกแล้ว', `เลขพัสดุ ${value}`);
+    } catch {
+      // คัดลอกไม่ได้ก็ไม่เป็นไร
+    }
+  };
+
+  const timeline = useMemo(() => (order ? buildTimeline(order) : []), [order]);
+
+  // ---------- render ----------
+  if (!isAuthenticated) {
     return (
-      <View style={{ flex: 1, backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB' }}>
-        <StatusBar barStyle="light-content" backgroundColor={isDarkMode ? '#1F2937' : '#3B82F6'} />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text className="text-gray-500 dark:text-gray-400 mt-3">
-            กำลังโหลด...
-          </Text>
-        </View>
-      </View>
+      <Screen title="คำสั่งซื้อ" scroll={false}>
+        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+      </Screen>
+    );
+  }
+
+  if (loading && !order) {
+    return (
+      <Screen title="คำสั่งซื้อ" scroll={false}>
+        <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+      </Screen>
     );
   }
 
   if (!order) {
-    return null;
+    return (
+      <Screen title="คำสั่งซื้อ" scroll={false}>
+        <EmptyState
+          variant={error?.notFound ? 'empty' : 'error'}
+          icon={error?.notFound ? '🔍' : undefined}
+          title={error?.notFound ? 'ไม่พบคำสั่งซื้อนี้' : undefined}
+          message={error?.notFound ? 'คำสั่งซื้ออาจไม่ใช่ของบัญชีนี้' : error?.message}
+          actionLabel={error?.notFound ? 'ดูคำสั่งซื้อทั้งหมด' : 'ลองใหม่'}
+          onAction={error?.notFound ? () => router.replace('/(tabs)/orders' as never) : () => load('initial')}
+        />
+      </Screen>
+    );
   }
 
-  return (
-    <View style={{ flex: 1, backgroundColor: isDarkMode ? '#0F172A' : '#F9FAFB' }}>
-      <StatusBar barStyle="light-content" backgroundColor={isDarkMode ? '#1F2937' : '#3B82F6'} />
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
-
-      {/* Header */}
-      <LinearGradient
-        colors={isDarkMode ? ['#1F2937', '#111827'] : ['#3B82F6', '#1D4ED8']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ paddingHorizontal: 16, paddingTop: 50, paddingBottom: 16 }}
-      >
-        <View className="flex-row items-center">
-          <Pressable
-            onPress={() => router.back()}
-            className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3"
-          >
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </Pressable>
-          <View className="flex-1">
-            <Text className="text-white text-lg font-bold">
-              {order.order_number}
-            </Text>
-            <Text className="text-white/70 text-sm">
-              {new Date(order.created_at).toLocaleDateString('th-TH')}
-            </Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Tabs */}
-      <View className="flex-row bg-white dark:bg-dark-50 border-b border-gray-100 dark:border-gray-700">
-        <TabButton
-          label="รายละเอียด"
-          icon="receipt-outline"
-          isActive={activeTab === 'detail'}
-          onPress={() => setActiveTab('detail')}
-        />
-        <TabButton
-          label="ติดตาม"
-          icon="location-outline"
-          isActive={activeTab === 'tracking'}
-          onPress={() => setActiveTab('tracking')}
-        />
-        <TabButton
-          label="แชท"
-          icon="chatbubbles-outline"
-          isActive={activeTab === 'chat'}
-          onPress={() => setActiveTab('chat')}
-          badge={unreadCount}
-        />
-      </View>
-
-      {/* Tab Content */}
-      {activeTab === 'detail' && (
-        <OrderDetailTab order={order} onCancel={handleCancelOrder} />
-      )}
-      {activeTab === 'tracking' && <TrackingTab tracking={tracking} />}
-      {activeTab === 'chat' && (
-        <ChatTab
-          orderId={orderId}
-          messages={messages}
-          isLoading={isLoadingChat}
-          onSend={handleSendMessage}
-          onRefresh={() => loadMessages(true)}
-        />
-      )}
+  const tabs = (
+    <View style={styles.tabs}>
+      <Chip label="รายละเอียด" icon="🧾" selected={activeTab === 'detail'} onPress={() => setActiveTab('detail')} />
+      <Chip label="แชทกับร้าน" icon="💬" selected={activeTab === 'chat'} onPress={() => setActiveTab('chat')} />
     </View>
   );
+
+  if (activeTab === 'chat') {
+    return (
+      <Screen title={order.store?.name || 'แชทกับร้าน'} subtitle={order.order_number} scroll={false}>
+        <View style={styles.chatTabs}>{tabs}</View>
+        <ChatPanel orderId={order.id} canSend={!['cancelled', 'refunded'].includes(order.status)} />
+      </Screen>
+    );
+  }
+
+  const isRider = order.delivery_method === 'rider';
+  const rider = order.rider;
+  const codWaiting =
+    order.payment_method === 'cod' && order.payment_status !== 'paid' && ['delivered', 'completed'].includes(order.status);
+  const history = tracking?.history ?? [];
+
+  return (
+    <Screen
+      title="คำสั่งซื้อ"
+      subtitle={order.order_number}
+      refreshing={refreshing}
+      onRefresh={() => load('refresh')}
+    >
+      {tabs}
+
+      {/* ---------- หัวคำสั่งซื้อ ---------- */}
+      <Card3D gradientBorder padding={spacing.lg} style={styles.block}>
+        <View style={styles.rowBetween}>
+          <View style={styles.flex}>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>สถานะ</Text>
+            <Text style={[typography.h2, { color: colors.textStrong }]}>{order.status_label}</Text>
+          </View>
+          <Pill label={order.payment_status_label || order.payment_status} tone={order.payment_status === 'paid' ? 'success' : 'warning'} />
+        </View>
+        <View style={[styles.metaRow, { borderTopColor: colors.divider }]}>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>
+            {order.store?.name ? `🏪 ${order.store.name} · ` : ''}
+            {isRider ? '🛵 ส่งด้วยไรเดอร์' : '📦 ส่งพัสดุ'} · {order.payment_method_label}
+          </Text>
+          <Text style={[typography.micro, { color: colors.textFaint }]}>สั่งเมื่อ {formatThaiDateTime(order.created_at)}</Text>
+        </View>
+      </Card3D>
+
+      {/* ---------- ชำระเงินที่ค้าง ---------- */}
+      {payment && order.payment_status !== 'paid' && (
+        <>
+          <PromptPayQR payment={payment} state={payState} onRenew={() => startPay('promptpay')} />
+          {payState !== 'paid' && (
+            <Button3D title="จ่ายด้วยกระเป๋าเงินแทน" icon="👛" variant="ghost" size="sm" onPress={payWithWallet} style={styles.center} />
+          )}
+        </>
+      )}
+      {!payment && order.can_pay && (
+        <Card3D padding={spacing.lg} style={styles.block}>
+          <Text style={[typography.h3, { color: colors.textStrong }]}>ยังไม่ได้ชำระเงิน</Text>
+          <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+            ยอด {formatBaht(order.total_amount, { decimals: 2 })} ชำระแล้วร้านจะเริ่มเตรียมสินค้าให้ทันที
+          </Text>
+          <View style={styles.buttonRow}>
+            <Button3D title="สแกนพร้อมเพย์" icon="📱" size="md" onPress={() => startPay('promptpay')} style={styles.flex} />
+            <Button3D title="กระเป๋าเงิน" icon="👛" variant="secondary" size="md" onPress={payWithWallet} style={styles.flex} />
+          </View>
+        </Card3D>
+      )}
+      {codWaiting && (
+        <Card3D variant="flat" padding={spacing.md} style={styles.block}>
+          <Text style={[typography.bodySm, { color: colors.info }]}>💵 รอยืนยันยอดเก็บปลายทางจากไรเดอร์</Text>
+        </Card3D>
+      )}
+
+      {/* ---------- ไรเดอร์ ---------- */}
+      {isRider && rider && (
+        <Card3D padding={spacing.lg} style={styles.block}>
+          <View style={styles.rowBetween}>
+            <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>🛵 ไรเดอร์</Text>
+            <Pill label={rider.status_label} tone={ACTIVE_RIDER_STATUSES.includes(rider.status) ? 'gold' : 'neutral'} />
+          </View>
+          {rider.status === 'not_requested' && (
+            <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.textMuted }]}>
+              ร้านจะเรียกไรเดอร์เมื่อเตรียมของเสร็จ
+            </Text>
+          )}
+          {rider.status === 'pending' && (
+            <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.textMuted }]}>กำลังหาไรเดอร์ใกล้ร้านให้อยู่นะ</Text>
+          )}
+          {!!rider.rider && (
+            <View style={styles.riderRow}>
+              <View style={[styles.riderAvatar, { backgroundColor: colors.goldSoft }]}>
+                <Text style={styles.riderAvatarIcon}>🧑‍✈️</Text>
+              </View>
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{rider.rider.name || 'ไรเดอร์'}</Text>
+                {!!rider.rider.vehicle_plate && (
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>ทะเบียน {rider.rider.vehicle_plate}</Text>
+                )}
+              </View>
+              {!!rider.rider.phone && (
+                <Button3D title="โทร" icon="📞" size="sm" variant="secondary" onPress={() => callPhone(rider.rider?.phone)} />
+              )}
+            </View>
+          )}
+          {isTrustedWebUrl(rider.tracking_url) && (
+            <Button3D
+              title="ดูตำแหน่งไรเดอร์แบบสด"
+              icon="🗺️"
+              size="md"
+              fullWidth
+              onPress={() => openHttpsLink(rider.tracking_url, 'ติดตามไรเดอร์')}
+              style={styles.gapTop}
+            />
+          )}
+          {riderActive && (
+            <Text style={[typography.micro, styles.gapTopSm, { color: colors.textFaint }]}>อัปเดตสถานะอัตโนมัติทุก 15 วินาที</Text>
+          )}
+        </Card3D>
+      )}
+
+      {/* ---------- พัสดุ ---------- */}
+      {!isRider && (!!order.tracking_number || history.length > 0) && (
+        <Card3D padding={spacing.lg} style={styles.block}>
+          <Text style={[typography.h3, { color: colors.textStrong }]}>📦 การจัดส่ง</Text>
+          {!!order.tracking_number && (
+            <View style={[styles.trackBox, { backgroundColor: colors.inset }]}>
+              <View style={styles.flex}>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>{order.shipping_provider || 'เลขพัสดุ'}</Text>
+                <Text selectable style={[typography.h3, { color: colors.textStrong }]}>
+                  {order.tracking_number}
+                </Text>
+              </View>
+              <Button3D title="คัดลอก" size="sm" variant="secondary" onPress={() => copyTracking(order.tracking_number!)} />
+            </View>
+          )}
+          {!!order.tracking_url && (
+            <Button3D
+              title="ติดตามพัสดุ"
+              icon="🔎"
+              size="sm"
+              variant="secondary"
+              onPress={() => openHttpsLink(order.tracking_url, 'ติดตามพัสดุ')}
+              style={styles.gapTop}
+            />
+          )}
+          {history.length > 0 && (
+            <View style={styles.gapTop}>
+              {history.map((h, i) => (
+                <View key={h.id} style={[styles.historyRow, i > 0 && { borderTopColor: colors.divider, borderTopWidth: 1 }]}>
+                  <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{h.title}</Text>
+                  {!!h.description && <Text style={[typography.caption, { color: colors.text }]}>{h.description}</Text>}
+                  <Text style={[typography.micro, { color: colors.textFaint }]}>
+                    {[formatThaiDateTime(h.tracked_at), h.location].filter(Boolean).join(' · ')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </Card3D>
+      )}
+
+      {/* ---------- ไทม์ไลน์ ---------- */}
+      <SectionHeader title="สถานะคำสั่งซื้อ" icon="🕒" style={styles.section} />
+      <Card3D padding={spacing.lg} style={styles.block}>
+        <StatusTimeline steps={timeline} />
+      </Card3D>
+
+      {/* ---------- สินค้า ---------- */}
+      <SectionHeader title="สินค้า" icon="🛍️" style={styles.section} />
+      <Card3D padding={spacing.lg} style={styles.block}>
+        {order.items.map((item, i) => (
+          <View key={item.id} style={[styles.itemRow, i > 0 && { borderTopColor: colors.divider, borderTopWidth: 1 }]}>
+            <Pressable onPress={() => router.push(`/product/${item.product_id}` as never)} accessibilityRole="button" accessibilityLabel={`ดูสินค้า ${item.product_name}`}>
+              {item.product_image ? (
+                <Image source={{ uri: item.product_image }} style={[styles.thumb, { backgroundColor: colors.inset }]} contentFit="cover" />
+              ) : (
+                <View style={[styles.thumb, styles.thumbEmpty, { backgroundColor: colors.inset }]}>
+                  <Text>📦</Text>
+                </View>
+              )}
+            </Pressable>
+            <View style={styles.flex}>
+              <Text numberOfLines={2} style={[typography.bodyStrong, { color: colors.textStrong }]}>{item.product_name}</Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>
+                {formatBaht(item.unit_price)} × {item.quantity}
+              </Text>
+              {item.can_review && (
+                <Button3D title="รีวิวสินค้า" icon="⭐" size="sm" variant="secondary" onPress={() => openReview(item)} style={styles.reviewButton} />
+              )}
+            </View>
+            <PriceText amount={item.total} size="sm" tone="strong" />
+          </View>
+        ))}
+      </Card3D>
+
+      {/* ---------- ที่อยู่ ---------- */}
+      {order.shipping && (
+        <>
+          <SectionHeader title="ที่อยู่จัดส่ง" icon="📍" style={styles.section} />
+          <Card3D padding={spacing.lg} style={styles.block}>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+              {order.shipping.name}
+              {order.shipping.phone ? ` · ${order.shipping.phone}` : ''}
+            </Text>
+            <Text style={[typography.bodySm, styles.gapTopSm, { color: colors.text }]}>
+              {order.shipping.full_address ||
+                [order.shipping.address, order.shipping.address_line_2, order.shipping.subdistrict, order.shipping.district, order.shipping.province, order.shipping.postal_code]
+                  .filter(Boolean)
+                  .join(' ')}
+            </Text>
+            {!!order.note && (
+              <Text style={[typography.caption, styles.gapTopSm, { color: colors.textMuted }]}>หมายเหตุ: {order.note}</Text>
+            )}
+          </Card3D>
+        </>
+      )}
+
+      {/* ---------- ยอดเงิน ---------- */}
+      <Card3D variant="inset" padding={spacing.lg} style={styles.block}>
+        <View style={styles.rowBetween}>
+          <Text style={[typography.body, { color: colors.text }]}>ค่าสินค้า</Text>
+          <PriceText amount={order.subtotal} size="sm" tone="strong" />
+        </View>
+        <View style={[styles.rowBetween, styles.gapTopSm]}>
+          <Text style={[typography.body, { color: colors.text }]}>ค่าจัดส่ง</Text>
+          {order.shipping_fee > 0 ? (
+            <PriceText amount={order.shipping_fee} size="sm" tone="strong" />
+          ) : (
+            <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งฟรี</Text>
+          )}
+        </View>
+        {order.discount > 0 && (
+          <View style={[styles.rowBetween, styles.gapTopSm]}>
+            <Text style={[typography.body, { color: colors.text }]}>ส่วนลด</Text>
+            <PriceText amount={-order.discount} size="sm" tone="success" />
+          </View>
+        )}
+        <View style={[styles.rowBetween, styles.total, { borderTopColor: colors.divider }]}>
+          <Text style={[typography.h3, { color: colors.textStrong }]}>ยอดรวม</Text>
+          <PriceText amount={order.total_amount} decimals={2} size="lg" tone="gold" />
+        </View>
+      </Card3D>
+
+      {/* ---------- ปุ่มดำเนินการ ---------- */}
+      {order.can_confirm_received && (
+        <Button3D title="ได้รับสินค้าแล้ว" icon="✅" variant="success" size="lg" fullWidth onPress={confirmReceived} style={styles.gapTop} />
+      )}
+      {order.can_cancel && (
+        <Button3D
+          title="ยกเลิกคำสั่งซื้อ"
+          variant="ghost"
+          size="md"
+          fullWidth
+          onPress={() => {
+            setCancelReason(null);
+            setCancelOther('');
+            setCancelOpen(true);
+          }}
+          style={styles.gapTop}
+        />
+      )}
+      <Button3D
+        title="ต้องการความช่วยเหลือ"
+        icon="🙋"
+        variant="ghost"
+        size="sm"
+        onPress={() => router.push('/support' as never)}
+        style={[styles.center, styles.gapTop]}
+      />
+
+      {/* ---------- ยกเลิก ---------- */}
+      <FormSheet
+        visible={cancelOpen}
+        icon="🛑"
+        title="ยกเลิกคำสั่งซื้อ"
+        description={
+          order.payment_status === 'paid'
+            ? 'ยกเลิกแล้วระบบจะคืนเงินเข้ากระเป๋าเงินของคุณ'
+            : 'คำสั่งซื้อนี้ยังไม่ได้ชำระเงิน ยกเลิกได้เลย'
+        }
+        submitLabel="ยืนยันยกเลิก"
+        submitVariant="danger"
+        submitDisabled={!cancelReason || (cancelReason === 'other' && cancelOther.trim().length < 2)}
+        onSubmit={submitCancel}
+        busy={cancelBusy}
+        cancelLabel="ไม่ยกเลิก"
+        onClose={() => setCancelOpen(false)}
+      >
+        <View style={styles.reasonWrap}>
+          {CANCEL_REASONS.map((r) => (
+            <Chip key={r} label={r} size="sm" selected={cancelReason === r} onPress={() => setCancelReason(r)} />
+          ))}
+          <Chip label="อื่นๆ" size="sm" selected={cancelReason === 'other'} onPress={() => setCancelReason('other')} />
+        </View>
+        {cancelReason === 'other' && (
+          <Field label="เหตุผล" value={cancelOther} onChangeText={setCancelOther} multiline maxLength={500} placeholder="บอกเหตุผลสั้นๆ" />
+        )}
+      </FormSheet>
+
+      {/* ---------- รีวิว ---------- */}
+      <FormSheet
+        visible={!!reviewItem}
+        icon="⭐"
+        title="รีวิวสินค้า"
+        description={reviewItem?.product_name}
+        submitLabel="ส่งรีวิว"
+        submitDisabled={comment.trim().length < 2}
+        onSubmit={submitReview}
+        busy={reviewBusy}
+        cancelLabel="ไว้ทีหลัง"
+        onClose={() => setReviewItem(null)}
+      >
+        <ScrollView horizontal contentContainerStyle={styles.stars} scrollEnabled={false}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Pressable
+              key={n}
+              onPress={() => setRating(n)}
+              accessibilityRole="button"
+              accessibilityLabel={`ให้ ${n} ดาว`}
+              hitSlop={6}
+              style={styles.star}
+            >
+              <Text style={[styles.starText, { opacity: n <= rating ? 1 : 0.25 }]}>⭐</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+        <Field
+          label="เล่าให้ฟังหน่อย"
+          value={comment}
+          onChangeText={setComment}
+          multiline
+          maxLength={1000}
+          placeholder="สินค้าเป็นยังไงบ้าง ตรงปกไหม"
+        />
+      </FormSheet>
+    </Screen>
+  );
 }
+
+const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  loader: {
+    marginTop: spacing.xxxl,
+  },
+  center: {
+    alignSelf: 'center',
+  },
+  tabs: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingHorizontal: 0,
+  },
+  block: {
+    marginBottom: spacing.md,
+  },
+  section: {
+    marginTop: spacing.sm,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  metaRow: {
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    gap: spacing.xxs,
+  },
+  gapTop: {
+    marginTop: spacing.md,
+  },
+  gapTopSm: {
+    marginTop: spacing.xs,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  riderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  riderAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  riderAvatarIcon: {
+    fontSize: 24,
+  },
+  trackBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginTop: spacing.md,
+  },
+  historyRow: {
+    paddingVertical: spacing.sm,
+    gap: spacing.xxs,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  thumb: {
+    width: 60,
+    height: 60,
+    borderRadius: radii.sm,
+  },
+  thumbEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewButton: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.xs,
+  },
+  total: {
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+  },
+  reasonWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  stars: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    justifyContent: 'center',
+    flexGrow: 1,
+  },
+  star: {
+    padding: spacing.xs,
+  },
+  starText: {
+    fontSize: 34,
+  },
+  chatList: {
+    paddingHorizontal: spacing.screen,
+    paddingVertical: spacing.md,
+  },
+  flipped: {
+    transform: [{ scaleY: -1 }],
+  },
+  chatEmpty: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxxl,
+  },
+  chatTabs: {
+    paddingHorizontal: spacing.screen,
+  },
+  bubbleRow: {
+    flexDirection: 'row',
+    marginVertical: spacing.xs,
+  },
+  bubbleLeft: {
+    justifyContent: 'flex-start',
+  },
+  bubbleRight: {
+    justifyContent: 'flex-end',
+  },
+  bubble: {
+    maxWidth: '80%',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.xxs,
+  },
+  bubbleTime: {
+    alignSelf: 'flex-end',
+  },
+  chatImage: {
+    width: 180,
+    height: 180,
+    borderRadius: radii.md,
+  },
+  chatInputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.screen,
+    paddingTop: spacing.sm,
+  },
+  chatInput: {
+    flex: 1,
+    maxHeight: 120,
+    minHeight: 44,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  chatClosed: {
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+});

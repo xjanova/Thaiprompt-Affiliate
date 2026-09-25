@@ -63,6 +63,15 @@ const PAYMENT_ICONS: Record<string, string> = {
   default: '💰',
 };
 
+/**
+ * วิธีชำระเงินนี้ใช้ได้หรือไม่ — backend ส่ง `enabled` (บางรุ่นส่ง `is_available`)
+ * เดิมเช็คแค่ is_available ทำให้ทุกวิธีขึ้น "ไม่พร้อมใช้งาน" เมื่อ server ไม่ส่งคีย์นี้
+ */
+const isMethodAvailable = (method: PaymentMethod): boolean => {
+  const flags = method as PaymentMethod & { is_available?: boolean };
+  return flags.enabled !== false && flags.is_available !== false;
+};
+
 export default function WalletTopupScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -111,8 +120,13 @@ export default function WalletTopupScreen() {
       const response = await getDepositMethods();
       if (response?.success && response.methods) {
         // กรอง wallet/balance ออก - ไม่ให้ใช้ wallet เติม wallet (ป้องกัน pump เงิน)
+        // PLAY-18: เติมเงินในแอปใช้ PromptPay (QR) เท่านั้น — กระเป๋าเงินแบบใช้ในระบบสำหรับสินค้า/ค่าส่ง
         const filteredMethods = response.methods.filter(
-          (method) => method.category !== 'wallet' && method.id !== 'wallet' && method.id !== 'balance'
+          (method) =>
+            method.category !== 'wallet' &&
+            method.id !== 'wallet' &&
+            method.id !== 'balance' &&
+            (method.category === 'qr' || /promptpay/i.test(String(method.id)))
         );
         console.log('📋 Got methods:', filteredMethods.length, '(filtered wallet out)');
         setPaymentMethods(filteredMethods);
@@ -187,7 +201,6 @@ export default function WalletTopupScreen() {
       const amount = getAmount();
 
       const response = await initializeWalletTopup(amount, method.id);
-      console.log('💳 Payment response:', response);
 
       if (response.success && response.transaction) {
         setTransaction(response.transaction);
@@ -199,9 +212,10 @@ export default function WalletTopupScreen() {
         }
 
         // เปิด Deep Link สำหรับ TrueMoney หรือ wallet อื่น
-        if (response.transaction.deep_link) {
+        const deepLink = response.transaction.deep_link;
+        if (deepLink) {
           setTimeout(() => {
-            Linking.openURL(response.transaction.deep_link!).catch(() => {
+            Linking.openURL(deepLink).catch(() => {
               console.log('Cannot open deep link');
             });
           }, 500);
@@ -332,6 +346,10 @@ export default function WalletTopupScreen() {
         <Text style={[styles.balanceAmount, isDark && styles.textLight]}>
           {isLoading ? '...' : formatCurrency(walletBalance)}
         </Text>
+        {/* PLAY-18: กระเป๋าเงินแบบใช้ในระบบ — สำหรับสินค้าจริงและค่าจัดส่งเท่านั้น */}
+        <Text style={[styles.topupPurpose, isDark && styles.textLight]}>
+          ยอดเติมใช้ชำระค่าสินค้าและค่าจัดส่งในแอป
+        </Text>
       </View>
 
       {/* เลือกจำนวนเงิน */}
@@ -457,6 +475,12 @@ export default function WalletTopupScreen() {
             กำลังโหลดวิธีชำระเงิน...
           </Text>
         </View>
+      ) : paymentMethods.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, isDark && styles.textMuted]}>
+            ตอนนี้ยังเติมเงินผ่าน PromptPay ไม่ได้ ลองใหม่ภายหลังนะ
+          </Text>
+        </View>
       ) : (
         <View style={styles.methodList}>
           {paymentMethods.map((method) => (
@@ -466,10 +490,10 @@ export default function WalletTopupScreen() {
                 styles.methodCard,
                 isDark && styles.cardDark,
                 selectedMethod?.id === method.id && styles.methodCardSelected,
-                !method.is_available && styles.methodCardDisabled,
+                !isMethodAvailable(method) && styles.methodCardDisabled,
               ]}
-              onPress={() => method.is_available && handleSelectPaymentMethod(method)}
-              disabled={!method.is_available || isSubmitting}
+              onPress={() => isMethodAvailable(method) && handleSelectPaymentMethod(method)}
+              disabled={!isMethodAvailable(method) || isSubmitting}
             >
               <View
                 style={[
@@ -490,7 +514,7 @@ export default function WalletTopupScreen() {
                     {method.description}
                   </Text>
                 )}
-                {!method.is_available && (
+                {!isMethodAvailable(method) && (
                   <Text style={styles.methodUnavailable}>ไม่พร้อมใช้งาน</Text>
                 )}
               </View>
@@ -578,16 +602,16 @@ export default function WalletTopupScreen() {
             </View>
           </View>
 
-          {transaction.bank_info.reference && (
+          {transaction.bank_info.ref_no && (
             <View style={styles.bankInfoRow}>
               <Text style={[styles.bankInfoLabel, isDark && styles.textMuted]}>อ้างอิง</Text>
               <View style={styles.copyRow}>
                 <Text style={[styles.bankInfoValue, isDark && styles.textLight]}>
-                  {transaction.bank_info.reference}
+                  {transaction.bank_info.ref_no}
                 </Text>
                 <TouchableOpacity
                   style={styles.copyBtn}
-                  onPress={() => handleCopy(transaction.bank_info!.reference!, 'เลขอ้างอิง')}
+                  onPress={() => handleCopy(transaction.bank_info!.ref_no!, 'เลขอ้างอิง')}
                 >
                   <Text style={styles.copyBtnText}>คัดลอก</Text>
                 </TouchableOpacity>
@@ -793,6 +817,11 @@ export default function WalletTopupScreen() {
 }
 
 const styles = StyleSheet.create({
+  topupPurpose: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 6,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',

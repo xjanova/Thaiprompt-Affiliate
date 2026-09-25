@@ -1,770 +1,854 @@
 /**
- * หน้าถอนเงิน (Withdraw) - ตรงกับเว็บ
+ * ถอนเงิน — ใช้ API ถอนเงินชุดเดียวกับเว็บ (E2: WithdrawalService + PIN)
  *
- * Features:
- * - เลือกช่องทางการถอน (ธนาคาร, PromptPay)
- * - กรอกจำนวนเงิน
- * - คำนวณค่าธรรมเนียมและภาษี
- * - ใส่ PIN ยืนยัน
- * - แสดงยอดสุทธิที่จะได้รับ
+ * ลำดับ: GET /wallet/withdraw/info → (ยังไม่ยืนยันตัวตน: ไป KYC) → (ยังไม่มี PIN: ตั้ง PIN)
+ *        → (ยังไม่มีบัญชี: เพิ่มบัญชี) → กรอกยอด (preview จาก server) → ใส่ PIN → POST /wallet/withdraw
+ *
+ * ค่าธรรมเนียม / ภาษี / ขั้นต่ำ มาจาก server ทั้งหมด — ห้ามฮาร์ดโค้ดในแอป
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
-  StatusBar,
-  Alert,
   ActivityIndicator,
-  Modal,
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
-import { getWallet, createWithdrawalRequest } from '@/services/api';
-import { formatCurrency } from '@/constants';
+import {
+  addPayoutAccount,
+  cancelWithdrawal,
+  getWithdrawInfo,
+  getWithdrawals,
+  previewWithdraw,
+  setWalletPin,
+  withdraw,
+  type PayoutAccount,
+  type WithdrawInfo,
+  type WithdrawPreview,
+  type Withdrawal,
+} from '@/services/api/accountApi';
+import { newIdempotencyKey } from '@/services/api/client';
+import {
+  Button3D,
+  Card3D,
+  Chip,
+  ConsentSheet,
+  EmptyState,
+  Pill,
+  PriceText,
+  Screen,
+  SectionHeader,
+  formatBaht,
+  resultHaptic,
+} from '@/components/ui';
+import { useTheme, spacing, radii, typography, type Tone } from '@/theme';
 
-// ช่องทางการถอน
-interface PaymentMethod {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  description: string;
-}
+const BANKS = ['กสิกรไทย', 'ไทยพาณิชย์', 'กรุงเทพ', 'กรุงไทย', 'กรุงศรีอยุธยา', 'ทหารไทยธนชาต', 'ออมสิน', 'ธ.ก.ส.'];
 
-const PAYMENT_METHODS: PaymentMethod[] = [
-  {
-    id: 'bank',
-    name: 'โอนเข้าบัญชีธนาคาร',
-    icon: '🏦',
-    color: '#3B82F6',
-    description: 'โอนเงินเข้าบัญชีธนาคารที่ผูกไว้',
-  },
-  {
-    id: 'promptpay',
-    name: 'PromptPay',
-    icon: '📱',
-    color: '#10B981',
-    description: 'โอนผ่าน PromptPay',
-  },
-];
+const WITHDRAWAL_TONE: Record<string, Tone> = {
+  pending: 'warning',
+  processing: 'info',
+  approved: 'info',
+  completed: 'success',
+  rejected: 'danger',
+  cancelled: 'neutral',
+};
 
-// ค่าธรรมเนียม (ตัวอย่าง - ควรดึงจาก API)
-const FEE_RATE = 0; // ฟรี
-const TAX_RATE = 0.03; // 3%
-const MIN_WITHDRAW = 300;
+/** เก็บเฉพาะตัวเลข + ทศนิยม 2 ตำแหน่ง */
+const sanitizeAmount = (text: string): string => {
+  const cleaned = text.replace(/[^0-9.]/g, '');
+  const [intPart, ...rest] = cleaned.split('.');
+  if (rest.length === 0) return intPart.slice(0, 9);
+  return `${intPart.slice(0, 9)}.${rest.join('').slice(0, 2)}`;
+};
 
-export default function WalletWithdrawScreen() {
-  const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const { isAuthenticated } = useAuthStore();
+const onlyDigits = (text: string, max: number) => text.replace(/\D/g, '').slice(0, max);
 
-  // State
-  const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
-  const [amount, setAmount] = useState<string>('');
-  const [pin, setPin] = useState<string>('');
-  const [note, setNote] = useState<string>('');
-  const [showPinModal, setShowPinModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+// =====================================================
+// ช่องกรอกแบบธีม
+// =====================================================
 
-  // โหลดข้อมูล wallet
-  const loadWallet = useCallback(async () => {
-    if (!isAuthenticated) return;
+const Field = ({
+  label,
+  hint,
+  ...inputProps
+}: React.ComponentProps<typeof TextInput> & { label: string; hint?: string }) => {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.field}>
+      <Text style={[typography.caption, { color: colors.textMuted }]}>{label}</Text>
+      <TextInput
+        placeholderTextColor={colors.textFaint}
+        {...inputProps}
+        style={[
+          styles.input,
+          { backgroundColor: colors.inset, borderColor: colors.border, color: colors.textStrong },
+          inputProps.style,
+        ]}
+        accessibilityLabel={label}
+      />
+      {!!hint && <Text style={[typography.micro, { color: colors.textFaint }]}>{hint}</Text>}
+    </View>
+  );
+};
 
-    setIsLoading(true);
-    try {
-      const response = await getWallet();
-      if (response?.success && response.data) {
-        setWalletBalance(response.data.balance || 0);
-      }
-    } catch (error) {
-      console.error('Load wallet error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated]);
+// =====================================================
+// ตั้ง PIN
+// =====================================================
 
-  useEffect(() => {
-    loadWallet();
-  }, [loadWallet]);
+const PinSetupCard = ({ onDone }: { onDone: () => void }) => {
+  const { colors } = useTheme();
+  const [pin, setPin] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  // คำนวณค่าธรรมเนียมและยอดสุทธิ
-  const amountNum = parseFloat(amount) || 0;
-  const fee = amountNum * FEE_RATE;
-  const tax = amountNum * TAX_RATE;
-  const netAmount = amountNum - fee - tax;
-  const remainingBalance = walletBalance - amountNum;
-
-  const isValidAmount = amountNum >= MIN_WITHDRAW && amountNum <= walletBalance;
-
-  // เปิด Modal ใส่ PIN
-  const handleContinue = () => {
-    if (!selectedMethod) {
-      Alert.alert('กรุณาเลือกช่องทาง', 'เลือกช่องทางการถอนเงิน');
-      return;
-    }
-
-    if (!isValidAmount) {
-      if (amountNum < MIN_WITHDRAW) {
-        Alert.alert('จำนวนเงินไม่ถูกต้อง', `ถอนขั้นต่ำ ${formatCurrency(MIN_WITHDRAW)}`);
-      } else {
-        Alert.alert('ยอดเงินไม่พอ', 'ยอดเงินในกระเป๋าไม่เพียงพอ');
-      }
-      return;
-    }
-
-    setShowPinModal(true);
-  };
-
-  // ยืนยันการถอน
-  const handleSubmit = async () => {
+  const submit = async () => {
+    setError(null);
     if (pin.length !== 6) {
-      Alert.alert('PIN ไม่ถูกต้อง', 'กรุณากรอก PIN 6 หลัก');
+      setError('PIN ต้องเป็นตัวเลข 6 หลัก');
       return;
     }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await createWithdrawalRequest({
-        amount: amountNum,
-        payment_method: selectedMethod?.id,
-        pin,
-        note,
-      });
-
-      if (response?.success) {
-        setShowPinModal(false);
-        Alert.alert(
-          'ส่งคำขอสำเร็จ',
-          `คำขอถอนเงิน ${formatCurrency(amountNum)} ถูกส่งแล้ว\nรอการอนุมัติภายใน 1-3 วันทำการ`,
-          [{ text: 'ตกลง', onPress: () => router.back() }]
-        );
-      } else {
-        Alert.alert('เกิดข้อผิดพลาด', response?.message || 'ไม่สามารถส่งคำขอถอนเงินได้');
-      }
-    } catch (error: any) {
-      Alert.alert('เกิดข้อผิดพลาด', error?.message || 'ไม่สามารถส่งคำขอถอนเงินได้');
-    } finally {
-      setIsSubmitting(false);
+    if (pin !== confirm) {
+      setError('PIN ทั้งสองช่องไม่ตรงกัน');
+      return;
+    }
+    const result = await setWalletPin({ pin, pin_confirmation: confirm });
+    if (result.success) {
+      resultHaptic('success');
+      onDone();
+    } else {
+      resultHaptic('error');
+      setError(result.message);
     }
   };
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <Card3D gradientBorder padding={spacing.xl}>
+      <Text style={[typography.h2, { color: colors.textStrong }]}>🔐 ตั้งรหัส PIN กระเป๋าเงิน</Text>
+      <Text style={[typography.bodySm, styles.lead, { color: colors.textMuted }]}>
+        ใช้ PIN 6 หลักยืนยันทุกครั้งที่ถอนเงินหรือแก้ไขบัญชีรับเงิน
+      </Text>
+      <Field label="PIN 6 หลัก" value={pin} onChangeText={(t) => setPin(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" />
+      <Field label="ยืนยัน PIN อีกครั้ง" value={confirm} onChangeText={(t) => setConfirm(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" />
+      {!!error && <Text style={[typography.bodySm, styles.error, { color: colors.danger }]}>{error}</Text>}
+      <Button3D title="บันทึก PIN" icon="✅" size="lg" fullWidth onPress={submit} style={styles.cta} />
+    </Card3D>
+  );
+};
 
-      {/* Header */}
-      <LinearGradient colors={['#10B981', '#059669']} style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Text style={styles.headerIcon}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>ถอนเงิน</Text>
-        <View style={styles.headerSpacer} />
-      </LinearGradient>
+// =====================================================
+// เพิ่มบัญชีรับเงิน
+// =====================================================
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* ยอดเงินคงเหลือ */}
-          <View style={[styles.balanceCard, isDark && styles.cardDark]}>
-            <Text style={[styles.balanceLabel, isDark && styles.textMuted]}>
-              ยอดเงินที่ถอนได้
-            </Text>
-            <Text style={[styles.balanceAmount, isDark && styles.textLight]}>
-              {isLoading ? '...' : formatCurrency(walletBalance)}
-            </Text>
+const AddAccountCard = ({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) => {
+  const { colors } = useTheme();
+  const [type, setType] = useState<'bank_transfer' | 'promptpay'>('bank_transfer');
+  const [bankName, setBankName] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    setError(null);
+    if (type === 'bank_transfer' && !bankName) {
+      setError('เลือกธนาคารก่อนนะ');
+      return;
+    }
+    if (accountName.trim().length < 2) {
+      setError('กรอกชื่อบัญชีให้ตรงกับหน้าสมุดบัญชี');
+      return;
+    }
+    const digits = accountNumber.replace(/\D/g, '');
+    if (digits.length < 9 || digits.length > 30) {
+      setError(type === 'promptpay' ? 'กรอกเบอร์โทรหรือเลขบัตรประชาชนที่ผูก PromptPay' : 'เลขบัญชีไม่ถูกต้อง');
+      return;
+    }
+    if (pin.length !== 6) {
+      setError('กรอก PIN 6 หลักเพื่อยืนยัน');
+      return;
+    }
+    const result = await addPayoutAccount({
+      type,
+      account_name: accountName.trim(),
+      account_number: digits,
+      ...(type === 'bank_transfer' ? { bank_name: bankName } : {}),
+      pin,
+    });
+    if (result.success) {
+      resultHaptic('success');
+      onDone();
+    } else {
+      resultHaptic('error');
+      setError(result.message);
+    }
+  };
+
+  return (
+    <Card3D gradientBorder padding={spacing.xl}>
+      <Text style={[typography.h2, { color: colors.textStrong }]}>🏦 เพิ่มบัญชีรับเงิน</Text>
+      <View style={styles.chipRow}>
+        <Chip label="บัญชีธนาคาร" icon="🏦" selected={type === 'bank_transfer'} onPress={() => setType('bank_transfer')} />
+        <Chip label="PromptPay" icon="📱" selected={type === 'promptpay'} onPress={() => setType('promptpay')} />
+      </View>
+
+      {type === 'bank_transfer' && (
+        <View style={styles.field}>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>ธนาคาร</Text>
+          <View style={styles.bankWrap}>
+            {BANKS.map((bank) => (
+              <Chip key={bank} label={bank} size="sm" selected={bankName === bank} onPress={() => setBankName(bank)} />
+            ))}
           </View>
+        </View>
+      )}
 
-          {/* เลือกช่องทาง */}
-          <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-            เลือกช่องทางการรับเงิน
+      <Field label="ชื่อบัญชี" value={accountName} onChangeText={setAccountName} placeholder="ชื่อ-นามสกุล ตามบัญชี" maxLength={100} />
+      <Field
+        label={type === 'promptpay' ? 'เบอร์โทร / เลขบัตรประชาชน (PromptPay)' : 'เลขบัญชี'}
+        value={accountNumber}
+        onChangeText={(t) => setAccountNumber(t.replace(/[^0-9-]/g, '').slice(0, 30))}
+        keyboardType="number-pad"
+        placeholder={type === 'promptpay' ? '08x-xxx-xxxx' : 'xxx-x-xxxxx-x'}
+      />
+      <Field label="PIN กระเป๋าเงิน" value={pin} onChangeText={(t) => setPin(onlyDigits(t, 6))} keyboardType="number-pad" secureTextEntry maxLength={6} placeholder="••••••" />
+
+      {!!error && <Text style={[typography.bodySm, styles.error, { color: colors.danger }]}>{error}</Text>}
+      <Button3D title="บันทึกบัญชี" icon="✅" size="lg" fullWidth onPress={submit} style={styles.cta} />
+      {onCancel && <Button3D title="ยกเลิก" variant="ghost" size="sm" onPress={onCancel} style={styles.secondary} />}
+    </Card3D>
+  );
+};
+
+// =====================================================
+// หน้าหลัก
+// =====================================================
+
+export default function WalletWithdrawScreen() {
+  const { colors } = useTheme();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  const [info, setInfo] = useState<WithdrawInfo | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const [accountId, setAccountId] = useState<number | null>(null);
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [preview, setPreview] = useState<WithdrawPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [showAddAccount, setShowAddAccount] = useState(false);
+
+  const [pinSheet, setPinSheet] = useState(false);
+  const [pin, setPin] = useState('');
+  const [pinError, setPinError] = useState<string | null>(null);
+
+  const [history, setHistory] = useState<Withdrawal[]>([]);
+
+  const mountedRef = useRef(true);
+  const previewReq = useRef(0);
+  /** Idempotency-Key ต่อ (ยอด, บัญชี, หมายเหตุ) — กดซ้ำด้วยข้อมูลเดิมหลังเน็ตหลุดจะใช้คีย์เดิม */
+  const idempotencyRef = useRef<{ signature: string; key: string } | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // ---------- โหลดข้อมูล ----------
+  /** โหลดคำขอถอนล่าสุด — คืนรายการหน้าแรก (null = โหลดไม่สำเร็จ/ออกจากหน้าแล้ว) */
+  const loadHistory = useCallback(async (): Promise<Withdrawal[] | null> => {
+    const result = await getWithdrawals(1);
+    if (!mountedRef.current || !result.success) return null;
+    const items = Array.isArray(result.data?.items) ? result.data.items : [];
+    setHistory(items.slice(0, 5));
+    return items;
+  }, []);
+
+  const loadInfo = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+    if (mode === 'refresh') setRefreshing(true);
+    const result = await getWithdrawInfo();
+    if (!mountedRef.current) return;
+    if (result.success) {
+      // กันคีย์หายจาก server ไม่ให้หน้าจอพัง
+      const normalized: WithdrawInfo = {
+        ...result.data,
+        balance: Number(result.data?.balance) || 0,
+        pending_withdrawal_amount: Number(result.data?.pending_withdrawal_amount) || 0,
+        limits: {
+          min_amount: Number(result.data?.limits?.min_amount) || 0,
+          max_amount: Number(result.data?.limits?.max_amount) || 0,
+        },
+        payment_methods: Array.isArray(result.data?.payment_methods) ? result.data.payment_methods : [],
+      };
+      setInfo(normalized);
+      setLoadError(null);
+      const methods = normalized.payment_methods;
+      setAccountId((current) => {
+        if (current && methods.some((m) => m.id === current)) return current;
+        return (methods.find((m) => m.is_default) || methods[0])?.id ?? null;
+      });
+    } else if (!info) {
+      setLoadError(result.message);
+    }
+    setLoading(false);
+    setRefreshing(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    loadInfo('initial');
+    loadHistory();
+  }, [loadInfo, loadHistory]);
+
+  // ---------- preview จาก server (debounce 500ms) ----------
+  const amountNum = Number(amount) || 0;
+  useEffect(() => {
+    if (!info || amountNum <= 0) {
+      setPreview(null);
+      setPreviewLoading(false);
+      return;
+    }
+    const req = ++previewReq.current;
+    setPreviewLoading(true);
+    const timer = setTimeout(async () => {
+      const result = await previewWithdraw(amountNum);
+      if (!mountedRef.current || req !== previewReq.current) return;
+      setPreview(
+        result.success
+          ? { ...result.data, errors: Array.isArray(result.data?.errors) ? result.data.errors : [] }
+          : { amount: amountNum, fee: 0, tax: 0, net_amount: 0, errors: [result.message] }
+      );
+      setPreviewLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [amountNum, info]);
+
+  const selectedAccount: PayoutAccount | null = useMemo(
+    () => info?.payment_methods.find((m) => m.id === accountId) || null,
+    [info, accountId]
+  );
+
+  const canContinue =
+    !!info &&
+    !!selectedAccount &&
+    amountNum > 0 &&
+    !previewLoading &&
+    !!preview &&
+    preview.errors.length === 0;
+
+  // ---------- ยืนยันด้วย PIN ----------
+  const submitWithdraw = async () => {
+    if (!selectedAccount || pin.length !== 6) {
+      setPinError('กรอก PIN 6 หลัก');
+      return;
+    }
+    setPinError(null);
+    const noteText = note.trim().slice(0, 200);
+    const signature = `${amountNum.toFixed(2)}|${selectedAccount.id}|${noteText}`;
+    if (!idempotencyRef.current || idempotencyRef.current.signature !== signature) {
+      idempotencyRef.current = { signature, key: newIdempotencyKey() };
+    }
+    // คำขอที่มีอยู่แล้วก่อนกด — ใช้แยกคำขอใหม่ตอนเน็ตหลุด/ตอบช้า
+    const knownIds = new Set(history.map((w) => w.id));
+
+    const result = await withdraw(
+      {
+        amount: amountNum,
+        pin,
+        payment_method_id: selectedAccount.id,
+        ...(noteText ? { note: noteText } : {}),
+      },
+      idempotencyRef.current.key
+    );
+    if (!mountedRef.current) return;
+
+    if (result.success) {
+      idempotencyRef.current = null;
+      resultHaptic('success');
+      setPinSheet(false);
+      setPin('');
+      setAmount('');
+      setNote('');
+      Alert.alert(
+        'ส่งคำขอถอนเงินแล้ว',
+        `ยอดที่จะได้รับ ${formatBaht(result.data.net_amount, { decimals: 2 })}\nสถานะ: ${result.data.status_label}`,
+        [{ text: 'ตกลง' }]
+      );
+      loadInfo('refresh');
+      loadHistory();
+      return;
+    }
+
+    resultHaptic('error');
+    switch (result.code) {
+      case 'INVALID_PIN': {
+        const left = Number(result.data?.attempts_remaining);
+        setPinError(Number.isFinite(left) ? `${result.message} (ลองได้อีก ${left} ครั้ง)` : result.message);
+        setPin('');
+        return;
+      }
+      case 'PIN_NOT_SET':
+      case 'PAYMENT_METHOD_REQUIRED':
+      case 'WALLET_LOCKED':
+      case 'KYC_REQUIRED':
+        setPinSheet(false);
+        setPin('');
+        Alert.alert('ถอนเงิน', result.message);
+        loadInfo('refresh');
+        return;
+      case 'TIMEOUT':
+      case 'NETWORK_ERROR':
+      case 'REQUEST_IN_PROGRESS': {
+        // ไม่รู้ว่า server สร้างคำขอไปแล้วหรือยัง → ห้ามชวน "ลองใหม่" ทันที ตรวจรายการล่าสุดก่อน
+        setPinSheet(false);
+        setPin('');
+        loadInfo('refresh');
+        const latest = await loadHistory();
+        if (!mountedRef.current) return;
+        const created = latest?.find(
+          (w) =>
+            !knownIds.has(w.id) &&
+            Math.abs((Number(w.amount) || 0) - amountNum) < 0.005 &&
+            (w.status === 'pending' || w.status === 'processing' || w.status === 'approved')
+        );
+        if (created) {
+          idempotencyRef.current = null;
+          setAmount('');
+          setNote('');
+          Alert.alert(
+            'ส่งคำขอถอนเงินแล้ว',
+            `พบคำขอถอน ${formatBaht(created.amount, { decimals: 2 })} ในรายการล่าสุดแล้ว ไม่ต้องกดซ้ำนะ`,
+            [{ text: 'ตกลง' }]
+          );
+        } else {
+          Alert.alert(
+            'ยังไม่แน่ใจว่าถอนเงินสำเร็จไหม',
+            'ตรวจสอบรายการล่าสุดก่อนลองใหม่นะ ถ้ายังไม่มีคำขอนี้ ค่อยกดถอนเงินอีกครั้ง',
+            [{ text: 'ตกลง' }]
+          );
+        }
+        return;
+      }
+      default:
+        setPinSheet(false);
+        setPin('');
+        Alert.alert('ถอนเงินไม่สำเร็จ', result.message);
+    }
+  };
+
+  const handleCancelWithdrawal = (item: Withdrawal) => {
+    Alert.alert('ยกเลิกคำขอถอนเงิน', `ยกเลิกคำขอ ${formatBaht(item.amount, { decimals: 2 })} ใช่ไหม?`, [
+      { text: 'ไม่ยกเลิก', style: 'cancel' },
+      {
+        text: 'ยกเลิกคำขอ',
+        style: 'destructive',
+        onPress: async () => {
+          const result = await cancelWithdrawal(item.id);
+          if (!mountedRef.current) return;
+          if (result.success) {
+            loadInfo('refresh');
+            loadHistory();
+          } else {
+            Alert.alert('ยกเลิกไม่สำเร็จ', result.message);
+          }
+        },
+      },
+    ]);
+  };
+
+  // ---------- render ----------
+  if (!isAuthenticated) {
+    return (
+      <Screen title="ถอนเงิน" scroll={false}>
+        <EmptyState icon="🔐" title="เข้าสู่ระบบก่อนนะ" actionLabel="เข้าสู่ระบบ" onAction={() => router.push('/login')} />
+      </Screen>
+    );
+  }
+
+  const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />;
+    }
+    if (!info) {
+      return <EmptyState compact variant="error" message={loadError || undefined} onAction={() => loadInfo('initial')} />;
+    }
+
+    if (!info.kyc_verified) {
+      return (
+        <EmptyState
+          compact
+          icon="🪪"
+          title="ยืนยันตัวตนก่อนถอนเงิน"
+          message="เพื่อความปลอดภัย ต้องยืนยันตัวตน (KYC) ก่อนถอนเงินครั้งแรก"
+          actionLabel="ไปยืนยันตัวตน"
+          onAction={() => router.push('/kyc')}
+        />
+      );
+    }
+
+    if (info.wallet_locked) {
+      return (
+        <EmptyState
+          compact
+          variant="error"
+          icon="🔒"
+          title="กระเป๋าเงินถูกล็อกชั่วคราว"
+          message="ใส่ PIN ผิดหลายครั้ง ลองใหม่อีกครั้งภายหลังนะ"
+          actionLabel="ลองใหม่"
+          onAction={() => loadInfo('refresh')}
+        />
+      );
+    }
+
+    if (!info.has_pin) {
+      return <PinSetupCard onDone={() => loadInfo('refresh')} />;
+    }
+
+    if (info.payment_methods.length === 0 || showAddAccount) {
+      return (
+        <AddAccountCard
+          onDone={() => {
+            setShowAddAccount(false);
+            loadInfo('refresh');
+          }}
+          onCancel={info.payment_methods.length > 0 ? () => setShowAddAccount(false) : undefined}
+        />
+      );
+    }
+
+    const quickAmounts = [info.limits.min_amount, 500, 1000, info.balance]
+      .map((v) => Math.floor(Number(v) || 0))
+      .filter((v, i, arr) => v > 0 && v <= info.balance && arr.indexOf(v) === i);
+
+    return (
+      <>
+        {/* ยอดที่ถอนได้ */}
+        <Card3D gradientBorder padding={spacing.lg}>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>ยอดในกระเป๋าเงิน</Text>
+          <PriceText amount={info.balance} size="xl" tone="strong" decimals={2} />
+          {info.pending_withdrawal_amount > 0 && (
+            <Text style={[typography.caption, { color: colors.warning }]}>
+              รอโอน {formatBaht(info.pending_withdrawal_amount, { decimals: 2 })}
+            </Text>
+          )}
+          <Text style={[typography.micro, styles.limits, { color: colors.textFaint }]}>
+            ถอนได้ครั้งละ {formatBaht(info.limits.min_amount)} – {formatBaht(info.limits.max_amount)}
           </Text>
+        </Card3D>
 
-          {PAYMENT_METHODS.map((method) => (
-            <TouchableOpacity
-              key={method.id}
-              style={[
-                styles.methodCard,
-                isDark && styles.cardDark,
-                selectedMethod?.id === method.id && styles.methodCardSelected,
-              ]}
-              onPress={() => setSelectedMethod(method)}
+        {/* บัญชีรับเงิน */}
+        <SectionHeader
+          title="โอนเข้าบัญชี"
+          actionLabel={info.payment_methods.length < 5 ? 'เพิ่มบัญชี' : undefined}
+          onAction={() => setShowAddAccount(true)}
+          style={styles.sectionHeader}
+        />
+        {info.payment_methods.map((m) => {
+          const selected = m.id === accountId;
+          return (
+            <Card3D
+              key={m.id}
+              onPress={() => setAccountId(m.id)}
+              gradientBorder={selected}
+              padding={spacing.md}
+              radius={radii.lg}
+              shadow="sm"
+              style={styles.accountCard}
+              accessibilityLabel={`${m.bank_name || 'PromptPay'} ${m.account_name} ลงท้าย ${m.account_last4}`}
             >
-              <View style={[styles.methodIcon, { backgroundColor: `${method.color}20` }]}>
-                <Text style={styles.methodEmoji}>{method.icon}</Text>
-              </View>
-              <View style={styles.methodInfo}>
-                <Text style={[styles.methodName, isDark && styles.textLight]}>
-                  {method.name}
+              <View style={styles.accountRow}>
+                <Text style={styles.accountIcon}>{m.type === 'promptpay' ? '📱' : '🏦'}</Text>
+                <View style={styles.flex}>
+                  <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+                    {m.type === 'promptpay' ? 'PromptPay' : m.bank_name || 'บัญชีธนาคาร'}
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    {m.account_name} · {m.account_number_masked}
+                  </Text>
+                </View>
+                {m.is_default && <Pill label="หลัก" tone="gold" />}
+                <Text style={[styles.radio, { color: selected ? colors.goldDeep : colors.textFaint }]}>
+                  {selected ? '◉' : '○'}
                 </Text>
-                <Text style={[styles.methodDesc, isDark && styles.textMuted]}>
-                  {method.description}
-                </Text>
               </View>
-              {selectedMethod?.id === method.id && (
-                <Text style={styles.checkIcon}>✓</Text>
-              )}
-            </TouchableOpacity>
-          ))}
+            </Card3D>
+          );
+        })}
 
-          {/* กรอกจำนวนเงิน */}
-          <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-            จำนวนเงินที่ต้องการถอน
-          </Text>
-
-          <View style={[styles.inputContainer, isDark && styles.inputContainerDark]}>
-            <Text style={[styles.inputPrefix, isDark && styles.textMuted]}>฿</Text>
+        {/* จำนวนเงิน */}
+        <SectionHeader title="จำนวนเงิน" style={styles.sectionHeader} />
+        <Card3D padding={spacing.lg}>
+          <View style={[styles.amountBox, { backgroundColor: colors.inset, borderColor: colors.border }]}>
+            <Text style={[typography.h1, { color: colors.goldDeep }]}>฿</Text>
             <TextInput
-              style={[styles.input, isDark && styles.textLight]}
               value={amount}
-              onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, ''))}
+              onChangeText={(t) => setAmount(sanitizeAmount(t))}
+              keyboardType="decimal-pad"
               placeholder="0"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="numeric"
-              maxLength={7}
+              placeholderTextColor={colors.textFaint}
+              style={[styles.amountInput, { color: colors.textStrong }]}
+              accessibilityLabel="จำนวนเงินที่ต้องการถอน"
             />
-            <TouchableOpacity
-              style={styles.maxButton}
-              onPress={() => setAmount(String(Math.floor(walletBalance)))}
-            >
-              <Text style={styles.maxButtonText}>ถอนทั้งหมด</Text>
-            </TouchableOpacity>
           </View>
-
-          <Text style={styles.inputHint}>ถอนขั้นต่ำ {formatCurrency(MIN_WITHDRAW)}</Text>
-
-          {/* หมายเหตุ */}
-          <Text style={[styles.sectionTitle, isDark && styles.textLight]}>
-            หมายเหตุ (ไม่บังคับ)
-          </Text>
-
-          <TextInput
-            style={[styles.noteInput, isDark && styles.noteInputDark, isDark && styles.textLight]}
-            value={note}
-            onChangeText={setNote}
-            placeholder="ระบุหมายเหตุ..."
-            placeholderTextColor="#9CA3AF"
-            multiline
-            maxLength={200}
-          />
-
-          {/* สรุปการถอน */}
-          {amountNum > 0 && (
-            <View style={[styles.summaryCard, isDark && styles.cardDark]}>
-              <Text style={[styles.summaryTitle, isDark && styles.textLight]}>
-                สรุปการถอนเงิน
-              </Text>
-
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-                  จำนวนเงินที่ถอน
-                </Text>
-                <Text style={[styles.summaryValue, isDark && styles.textLight]}>
-                  {formatCurrency(amountNum)}
-                </Text>
-              </View>
-
-              {fee > 0 && (
-                <View style={styles.summaryRow}>
-                  <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-                    ค่าธรรมเนียม
-                  </Text>
-                  <Text style={styles.feeText}>-{formatCurrency(fee)}</Text>
-                </View>
-              )}
-
-              {tax > 0 && (
-                <View style={styles.summaryRow}>
-                  <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-                    ภาษีหัก ณ ที่จ่าย (3%)
-                  </Text>
-                  <Text style={styles.feeText}>-{formatCurrency(tax)}</Text>
-                </View>
-              )}
-
-              <View style={styles.divider} />
-
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabelBold, isDark && styles.textLight]}>
-                  ยอดสุทธิที่จะได้รับ
-                </Text>
-                <Text style={styles.netAmount}>{formatCurrency(netAmount)}</Text>
-              </View>
-
-              <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, isDark && styles.textMuted]}>
-                  ยอดคงเหลือหลังถอน
-                </Text>
-                <Text
-                  style={[
-                    styles.summaryValue,
-                    remainingBalance < 0 && styles.errorText,
-                    isDark && styles.textLight,
-                  ]}
-                >
-                  {formatCurrency(remainingBalance)}
-                </Text>
-              </View>
+          {quickAmounts.length > 0 && (
+            <View style={styles.chipRow}>
+              {quickAmounts.map((v) => (
+                <Chip
+                  key={v}
+                  size="sm"
+                  label={v === Math.floor(info.balance) ? 'ถอนทั้งหมด' : formatBaht(v)}
+                  selected={amountNum === v}
+                  onPress={() => setAmount(String(v))}
+                />
+              ))}
             </View>
           )}
 
-          <View style={styles.bottomPadding} />
-        </ScrollView>
+          <Field label="หมายเหตุ (ไม่บังคับ)" value={note} onChangeText={setNote} maxLength={200} placeholder="เช่น ถอนค่าส่งของสัปดาห์นี้" />
 
-        {/* ปุ่มดำเนินการ */}
-        <View style={[styles.footer, isDark && styles.footerDark]}>
-          <TouchableOpacity
-            style={[styles.submitButton, !isValidAmount && styles.submitButtonDisabled]}
-            onPress={handleContinue}
-            disabled={!isValidAmount}
-          >
-            <Text style={styles.submitButtonText}>ดำเนินการถอนเงิน</Text>
-            <Text style={styles.buttonIcon}>→</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-
-      {/* PIN Modal */}
-      <Modal
-        visible={showPinModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowPinModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, isDark && styles.textLight]}>
-                ยืนยันด้วย PIN
-              </Text>
-              <TouchableOpacity onPress={() => setShowPinModal(false)}>
-                <Text style={[styles.modalIcon, isDark && styles.textLight]}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.modalDesc, isDark && styles.textMuted]}>
-              กรอก PIN 6 หลักเพื่อยืนยันการถอนเงิน
-            </Text>
-
-            <View style={styles.pinContainer}>
-              <TextInput
-                style={[styles.pinInput, isDark && styles.pinInputDark]}
-                value={pin}
-                onChangeText={(text) => setPin(text.replace(/[^0-9]/g, '').slice(0, 6))}
-                placeholder="● ● ● ● ● ●"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numeric"
-                secureTextEntry
-                maxLength={6}
-                textAlign="center"
-              />
-            </View>
-
-            <View style={styles.modalSummary}>
-              <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>
-                จำนวนเงินที่ถอน
-              </Text>
-              <Text style={styles.modalSummaryAmount}>{formatCurrency(amountNum)}</Text>
-              <Text style={[styles.modalSummaryLabel, isDark && styles.textMuted]}>
-                ยอดสุทธิที่จะได้รับ
-              </Text>
-              <Text style={styles.modalNetAmount}>{formatCurrency(netAmount)}</Text>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.modalButton, pin.length !== 6 && styles.modalButtonDisabled]}
-              onPress={handleSubmit}
-              disabled={pin.length !== 6 || isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#FFF" />
+          {amountNum > 0 && (
+            <View style={[styles.previewBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {previewLoading || !preview ? (
+                <ActivityIndicator color={colors.gold} />
+              ) : preview.errors.length > 0 ? (
+                preview.errors.map((e) => (
+                  <Text key={e} style={[typography.bodySm, { color: colors.danger }]}>• {e}</Text>
+                ))
               ) : (
-                <Text style={styles.modalButtonText}>ยืนยันการถอนเงิน</Text>
+                <>
+                  <View style={styles.previewRow}>
+                    <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าธรรมเนียม</Text>
+                    <PriceText amount={preview.fee} size="sm" decimals={2} bold={false} />
+                  </View>
+                  {preview.tax > 0 && (
+                    <View style={styles.previewRow}>
+                      <Text style={[typography.bodySm, { color: colors.textMuted }]}>หักภาษี ณ ที่จ่าย</Text>
+                      <PriceText amount={preview.tax} size="sm" decimals={2} bold={false} />
+                    </View>
+                  )}
+                  <View style={[styles.previewRow, styles.previewTotal, { borderTopColor: colors.divider }]}>
+                    <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ยอดที่จะได้รับ</Text>
+                    <PriceText amount={preview.net_amount} size="lg" tone="success" decimals={2} />
+                  </View>
+                </>
               )}
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </View>
+            </View>
+          )}
+
+          <Button3D
+            title="ถอนเงิน"
+            icon="🏦"
+            size="lg"
+            fullWidth
+            disabled={!canContinue}
+            onPress={() => {
+              setPin('');
+              setPinError(null);
+              setPinSheet(true);
+            }}
+            style={styles.cta}
+          />
+        </Card3D>
+
+        {/* ประวัติล่าสุด */}
+        {history.length > 0 && (
+          <>
+            <SectionHeader title="คำขอล่าสุด" style={styles.sectionHeader} />
+            {history.map((w) => (
+              <Card3D key={w.id} variant="flat" padding={spacing.md} radius={radii.md} style={styles.historyCard}>
+                <View style={styles.accountRow}>
+                  <View style={styles.flex}>
+                    <PriceText amount={w.amount} size="md" tone="strong" decimals={2} />
+                    <Text style={[typography.micro, { color: colors.textFaint }]}>
+                      {new Date(w.created_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      {w.payment_method ? ` · ${w.payment_method.bank_name || 'PromptPay'} ••${w.payment_method.account_last4}` : ''}
+                    </Text>
+                    {!!w.rejection_reason && (
+                      <Text style={[typography.micro, { color: colors.danger }]}>{w.rejection_reason}</Text>
+                    )}
+                  </View>
+                  <Pill label={w.status_label} tone={WITHDRAWAL_TONE[w.status] || 'neutral'} />
+                </View>
+                {w.can_cancel && (
+                  <Pressable
+                    onPress={() => handleCancelWithdrawal(w)}
+                    accessibilityRole="button"
+                    hitSlop={8}
+                    style={styles.cancelLink}
+                  >
+                    <Text style={[typography.caption, { color: colors.danger, fontWeight: '700' }]}>ยกเลิกคำขอ</Text>
+                  </Pressable>
+                )}
+              </Card3D>
+            ))}
+          </>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Screen
+        title="ถอนเงิน"
+        subtitle="โอนเข้าบัญชีธนาคารหรือ PromptPay"
+        refreshing={refreshing}
+        onRefresh={() => {
+          loadInfo('refresh');
+          loadHistory();
+        }}
+      >
+        {renderContent()}
+      </Screen>
+
+      <ConsentSheet
+        visible={pinSheet}
+        icon="🔐"
+        title="ยืนยันด้วย PIN"
+        description={
+          selectedAccount && preview
+            ? `ถอน ${formatBaht(amountNum, { decimals: 2 })} เข้า ${selectedAccount.type === 'promptpay' ? 'PromptPay' : selectedAccount.bank_name || 'บัญชีธนาคาร'} ••${selectedAccount.account_last4} ได้รับจริง ${formatBaht(preview.net_amount, { decimals: 2 })}`
+            : undefined
+        }
+        acceptLabel="ยืนยันถอนเงิน"
+        declineLabel="ยกเลิก"
+        acceptDisabled={pin.length !== 6}
+        onAccept={submitWithdraw}
+        onDecline={() => {
+          setPinSheet(false);
+          setPin('');
+        }}
+      >
+        <Field
+          label="PIN 6 หลัก"
+          value={pin}
+          onChangeText={(t) => setPin(onlyDigits(t, 6))}
+          keyboardType="number-pad"
+          secureTextEntry
+          maxLength={6}
+          placeholder="••••••"
+          autoFocus
+        />
+        {!!pinError && <Text style={[typography.bodySm, styles.error, { color: colors.danger }]}>{pinError}</Text>}
+      </ConsentSheet>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  containerDark: {
-    backgroundColor: '#111827',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFF',
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  keyboardView: {
+  flex: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-    padding: 16,
+  loader: {
+    marginTop: spacing.xxxl,
   },
-  textLight: {
-    color: '#F3F4F6',
+  lead: {
+    marginTop: spacing.xs,
   },
-  textMuted: {
-    color: '#9CA3AF',
-  },
-  headerIcon: {
-    fontSize: 24,
-    color: '#FFF',
-    fontWeight: 'bold',
-  },
-  methodEmoji: {
-    fontSize: 24,
-  },
-  checkIcon: {
-    fontSize: 24,
-    color: '#10B981',
-    fontWeight: 'bold',
-  },
-  buttonIcon: {
-    fontSize: 20,
-    color: '#FFF',
-    fontWeight: 'bold',
-  },
-  modalIcon: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-
-  // Balance Card
-  balanceCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  cardDark: {
-    backgroundColor: '#1F2937',
-  },
-  balanceLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  balanceAmount: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#10B981',
-  },
-
-  // Section
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-  },
-
-  // Method Card
-  methodCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-  },
-  methodCardSelected: {
-    borderColor: '#10B981',
-    backgroundColor: 'rgba(16, 185, 129, 0.05)',
-  },
-  methodIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  methodInfo: {
-    flex: 1,
-  },
-  methodName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  methodDesc: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginTop: 2,
-  },
-
-  // Input
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  inputContainerDark: {
-    backgroundColor: '#1F2937',
-    borderColor: '#374151',
-  },
-  inputPrefix: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#6B7280',
-    marginRight: 8,
+  field: {
+    marginTop: spacing.md,
+    gap: spacing.xs,
   },
   input: {
-    flex: 1,
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1F2937',
-    paddingVertical: 16,
-  },
-  maxButton: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  maxButtonText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  inputHint: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 16,
-  },
-
-  // Note Input
-  noteInput: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    padding: 16,
-    fontSize: 14,
-    color: '#1F2937',
-    minHeight: 80,
-    textAlignVertical: 'top',
-    marginBottom: 16,
-  },
-  noteInputDark: {
-    backgroundColor: '#1F2937',
-    borderColor: '#374151',
-  },
-
-  // Summary
-  summaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-  },
-  summaryTitle: {
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 16,
   },
-  summaryRow: {
+  error: {
+    marginTop: spacing.md,
+  },
+  cta: {
+    marginTop: spacing.lg,
+  },
+  secondary: {
+    marginTop: spacing.sm,
+    alignSelf: 'center',
+  },
+  chipRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#6B7280',
+  bankWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
-  summaryLabelBold: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+  limits: {
+    marginTop: spacing.xs,
   },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+  sectionHeader: {
+    marginTop: spacing.xl,
   },
-  feeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#EF4444',
+  accountCard: {
+    marginBottom: spacing.sm,
   },
-  netAmount: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#10B981',
-  },
-  errorText: {
-    color: '#EF4444',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 12,
-  },
-
-  bottomPadding: {
-    height: 100,
-  },
-
-  // Footer
-  footer: {
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  footerDark: {
-    backgroundColor: '#1F2937',
-    borderTopColor: '#374151',
-  },
-  submitButton: {
+  accountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    gap: spacing.md,
   },
-  submitButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
-  },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-  },
-  modalContentDark: {
-    backgroundColor: '#1F2937',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#374151',
-  },
-  modalDesc: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
-  },
-  pinContainer: {
-    marginBottom: 24,
-  },
-  pinInput: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#374151',
-    letterSpacing: 8,
-  },
-  pinInputDark: {
-    backgroundColor: '#374151',
-    color: '#FFF',
-  },
-  modalSummary: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalSummaryLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  modalSummaryAmount: {
+  accountIcon: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#374151',
-    marginBottom: 12,
   },
-  modalNetAmount: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#10B981',
+  radio: {
+    fontSize: 20,
   },
-  modalButton: {
-    backgroundColor: '#10B981',
-    borderRadius: 12,
-    padding: 16,
+  amountBox: {
+    flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
   },
-  modalButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+  amountInput: {
+    flex: 1,
+    fontSize: 30,
+    fontWeight: '800',
+    paddingVertical: spacing.md,
   },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFF',
+  previewBox: {
+    marginTop: spacing.lg,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  previewTotal: {
+    borderTopWidth: 1,
+    paddingTop: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  historyCard: {
+    marginBottom: spacing.sm,
+  },
+  cancelLink: {
+    marginTop: spacing.sm,
+    alignSelf: 'flex-end',
   },
 });

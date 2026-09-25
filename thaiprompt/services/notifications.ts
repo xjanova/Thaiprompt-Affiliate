@@ -17,9 +17,40 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { registerPushToken, removePushToken } from './api';
 import { APP_INFO } from '@/config/appConfig';
+import { isRestrictedNotification } from '@/utils/storePolicy';
 
 // Key สำหรับเก็บ device_id
 const DEVICE_ID_STORAGE_KEY = 'device_id';
+// Key สำหรับเก็บ push token ล่าสุดที่ลงทะเบียนกับ server (ใช้ถอดตอน logout)
+const PUSH_TOKEN_STORAGE_KEY = 'push_token_registered';
+
+/**
+ * push token + device_id ของเครื่องนี้ (ส่งไปกับ POST /logout เพื่อให้ server ถอด token)
+ */
+export const getPushIdentity = async (): Promise<{ token: string | null; deviceId: string | null }> => {
+  let token: string | null = null;
+  let deviceId: string | null = null;
+  try {
+    token = await SecureStore.getItemAsync(PUSH_TOKEN_STORAGE_KEY);
+  } catch {
+    token = null;
+  }
+  try {
+    deviceId = await SecureStore.getItemAsync(DEVICE_ID_STORAGE_KEY);
+  } catch {
+    deviceId = null;
+  }
+  return { token, deviceId };
+};
+
+/** ลืม push token ในเครื่อง (หลัง logout / ลบบัญชี) — device_id เก็บไว้ใช้ต่อ */
+export const clearStoredPushToken = async (): Promise<void> => {
+  try {
+    await SecureStore.deleteItemAsync(PUSH_TOKEN_STORAGE_KEY);
+  } catch {
+    // ไม่มีก็ไม่เป็นไร
+  }
+};
 
 // =====================================================
 // State
@@ -43,12 +74,21 @@ export const setupNotificationHandler = (): void => {
     Notifications.setNotificationHandler({
       // SDK 53+: shouldShowAlert เลิกใช้ ต้องระบุ shouldShowBanner / shouldShowList แทน
       // (ถ้าไม่ระบุ แจ้งเตือนจะไม่เด้งตอนเปิดแอปอยู่)
-      handleNotification: async () => ({
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-      }),
+      // นโยบาย Google Play: แจ้งเตือนระบบเครือข่าย (คอมมิชชั่น/สายงาน/rank) ไม่แสดงในแอป
+      handleNotification: async (notification) => {
+        const content = notification?.request?.content;
+        const show = !isRestrictedNotification({
+          title: content?.title,
+          body: content?.body,
+          data: content?.data,
+        });
+        return {
+          shouldShowBanner: show,
+          shouldShowList: show,
+          shouldPlaySound: show,
+          shouldSetBadge: show,
+        };
+      },
     });
     isNotificationHandlerSet = true;
     console.log('✅ Notification handler set successfully');
@@ -154,7 +194,6 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
         projectId,
       });
       token = tokenData.data;
-      console.log('Expo Push Token:', token?.substring(0, 30) + '...');
     } catch (tokenError) {
       console.error('Failed to get Expo push token:', tokenError);
       isRegistering = false;
@@ -174,7 +213,6 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
       deviceId = `${Platform.OS}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       try {
         await SecureStore.setItemAsync(DEVICE_ID_STORAGE_KEY, deviceId);
-        console.log('📱 Generated new device_id:', deviceId);
       } catch (e) {
         console.warn('⚠️ Failed to save device_id:', e);
       }
@@ -190,11 +228,14 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
         app_version: APP_INFO.VERSION,
       };
 
-      console.log('📤 Registering push token with device_id:', deviceId);
       const response = await registerPushToken(deviceInfo);
 
       if (response.success) {
-        console.log('✅ Push token registered successfully');
+        try {
+          await SecureStore.setItemAsync(PUSH_TOKEN_STORAGE_KEY, token);
+        } catch {
+          // เก็บไม่ได้ก็ยังใช้งาน push ได้ แค่ถอดตอน logout ด้วย device_id อย่างเดียว
+        }
       } else {
         console.warn('⚠️ Failed to register push token:', response.message);
       }
@@ -224,12 +265,16 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
  *
  * @param token - Token ที่ต้องการยกเลิก
  */
-export const unregisterPushNotifications = async (token: string): Promise<void> => {
+export const unregisterPushNotifications = async (token?: string): Promise<void> => {
   try {
-    await removePushToken(token);
-    console.log('Push token unregistered successfully');
+    const identity = await getPushIdentity();
+    const target = token || identity.token;
+    if (target) {
+      await removePushToken(target, identity.deviceId);
+    }
+    await clearStoredPushToken();
   } catch (error) {
-    console.error('Unregister push notification error:', error);
+    console.error('Unregister push notification error');
   }
 };
 

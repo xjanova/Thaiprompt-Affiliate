@@ -55,12 +55,18 @@ const EMOJI_ICONS: Record<string, string> = {
   'close': '✕',
   'eye-outline': '👁️',
   'eye-off-outline': '👁️‍🗨️',
+  'receipt-outline': '🧾',
+  'bicycle-outline': '🛵',
+  'storefront-outline': '🏪',
+  'globe-outline': '🌐',
+  'settings-outline': '⚙️',
 };
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
 import { uploadAvatar, changePassword } from '@/services/api';
-import { APP_INFO } from '@/config/appConfig';
+import { APP_INFO, isFeatureEnabled } from '@/config/appConfig';
+import { openWebsite } from '@/components/ui/WebsiteButton';
 import { getAvatarUrl, getAvatarInitial, formatMemberId } from '@/utils/user';
 
 // Menu Item Component - ใช้ emoji icons
@@ -326,7 +332,7 @@ export default function ProfileScreen() {
   // Handle share referral
   const handleShareReferral = async () => {
     try {
-      const message = `มาเป็นสมาชิก Thaiprompt กับผม! ใช้รหัสแนะนำ: ${referralCode}\n\nสมัครได้ที่: https://main.thaiprompt.online/register?ref=${referralCode}`;
+      const message = `มาใช้ ThaiPrompt สั่งของจากตลาดสดและร้านใกล้บ้านกัน ใช้รหัสแนะนำ ${referralCode} ตอนสมัครนะ\n${APP_INFO.WEBSITE}/register?ref=${encodeURIComponent(referralCode)}`;
       await Share.share({ message });
     } catch (error) {
       console.error('Share error:', error);
@@ -464,7 +470,7 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.memberCodeLarge}>{memberCode}</Text>
           <Text style={[styles.memberCardHint, !isDark && { color: '#6B7280' }]}>
-            ใช้รหัสนี้ในการแนะนำสมาชิกใหม่
+            ใช้รหัสนี้ชวนเพื่อนมาสมัครใช้งาน
           </Text>
           <View style={styles.memberCardActions}>
             <Pressable style={styles.memberCardBtn} onPress={handleCopyReferral}>
@@ -503,27 +509,69 @@ export default function ProfileScreen() {
           />
         </View>
 
+        {/* SHOP-24: ทางเข้าคำสั่งซื้อ + บริการของฉัน */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
-            การแนะนำ
+            บริการของฉัน
           </Text>
           <MenuItem
-            icon="share-social-outline"
-            label="แนะนำเพื่อน"
-            value={referralCode}
-            onPress={handleShareReferral}
+            icon="receipt-outline"
+            label="คำสั่งซื้อของฉัน"
+            onPress={() => router.push('/(tabs)/orders' as never)}
             isDark={isDark}
           />
+          {/* SHOP-08: จัดการที่อยู่จัดส่ง (ปักหมุดสำหรับส่งด้วยไรเดอร์) */}
           <MenuItem
-            icon="qr-code-outline"
-            label="QR Code ของฉัน"
-            onPress={() => router.push('/referral')}
+            icon="location-outline"
+            label="ที่อยู่จัดส่ง"
+            onPress={() => router.push('/addresses' as never)}
             isDark={isDark}
           />
+          {isFeatureEnabled('RIDER_ENABLED') && (
+            <MenuItem
+              icon="bicycle-outline"
+              label="ไรเดอร์"
+              onPress={() => router.push('/rider')}
+              isDark={isDark}
+            />
+          )}
+          {isFeatureEnabled('MERCHANT_ENABLED') && (
+            <MenuItem
+              icon="storefront-outline"
+              label="ร้านของฉัน"
+              onPress={() => router.push('/merchant' as never)}
+              isDark={isDark}
+            />
+          )}
+        </View>
+
+        {/* PLAY-08: ชวนเพื่อนแบบชั้นเดียว (ไม่มีทีม/สายงาน) */}
+        {isFeatureEnabled('REFERRAL_ENABLED') && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
+              ชวนเพื่อน
+            </Text>
+            <MenuItem
+              icon="share-social-outline"
+              label="ชวนเพื่อน (รหัส / QR / ลิงก์)"
+              value={referralCode}
+              onPress={() => router.push('/referral')}
+              isDark={isDark}
+            />
+          </View>
+        )}
+
+        {/* PLAY-17: จัดการบัญชีบนเว็บไซต์ (ล็อกอินให้อัตโนมัติ) */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, !isDark && styles.sectionTitleLight]}>
+            เว็บไซต์
+          </Text>
           <MenuItem
-            icon="people-outline"
-            label="ทีมของฉัน"
-            onPress={() => router.push('/referral')}
+            icon="globe-outline"
+            label="จัดการบนเว็บไซต์"
+            onPress={() => {
+              openWebsite('/user').catch(() => {});
+            }}
             isDark={isDark}
           />
         </View>
@@ -550,6 +598,12 @@ export default function ProfileScreen() {
             icon="notifications-outline"
             label="การแจ้งเตือน"
             onPress={() => router.push('/notification-settings')}
+            isDark={isDark}
+          />
+          <MenuItem
+            icon="settings-outline"
+            label="ตั้งค่าเพิ่มเติม และลบบัญชี"
+            onPress={() => router.push('/settings')}
             isDark={isDark}
           />
         </View>

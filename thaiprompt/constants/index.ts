@@ -109,20 +109,7 @@ export const API_ENDPOINTS = {
   TAROT_READING: '/tarot/reading', // + /{readingId}
   TAROT_HISTORY: '/tarot/history',
 
-  // Rank System (Mobile App)
-  RANKS: '/mobile/ranks',
-  RANK_DETAIL: '/mobile/ranks', // + /{rankId}
-  RANK_PROGRESS: '/mobile/ranks/progress',
-  RANK_LEADERBOARD: '/mobile/ranks/leaderboard',
-
-  // MLM / Affiliate Network (Mobile App)
-  AFFILIATE: '/mobile/affiliate',
-  AFFILIATE_REFERRALS: '/mobile/affiliate/referrals',
-  AFFILIATE_TEAM_TREE: '/mobile/affiliate/team-tree',
-
-  // Commission System (Mobile App)
-  COMMISSIONS_LIST: '/mobile/commissions',
-  COMMISSIONS_EARNINGS: '/mobile/commissions/earnings',
+  // (2026-09-25) PLAY-07: endpoint ของ Rank / สายงาน / คอมมิชชั่นหลายชั้น / ผัง MLM ถูกถอดออกจากแอป
 
   // Profile
   PROFILE: '/profile',
@@ -132,11 +119,6 @@ export const API_ENDPOINTS = {
   AVATAR_DELETE: '/profile/avatar', // DELETE - ลบรูปโปรไฟล์
   CHANGE_PASSWORD: '/profile/change-password',
   REFERRAL_CODE: '/profile/referral-code',
-
-  // MLM Tree (Mobile App)
-  MLM_TREE: '/mobile/mlm/tree',
-  MLM_SEARCH: '/mobile/mlm/search',
-  MLM_MEMBER: '/mobile/mlm/member', // + /{memberId}
 
   // =====================================================
   // Admin Control (3 อย่างหลัก)
@@ -277,96 +259,48 @@ export const SUCCESS_MESSAGES = {
 
 export const HUB_ITEMS = [
   {
-    id: 'shopping',
-    icon: '🛒',
-    title: 'ช้อปปิ้ง & บริการ',
-    subtitle: 'สั่งอาหาร, จองโรงแรม, หมอนวด, E-commerce',
-    route: '/shopping',
-    gradientStart: '#F59E0B',
-    gradientEnd: '#EF4444',
+    id: 'taladsod',
+    icon: '🥬',
+    title: 'ตลาดสด',
+    subtitle: 'ของสด อาหารร้อนๆ จากร้านใกล้บ้าน',
+    route: '/taladsod',
+    gradientStart: '#E6B347',
+    gradientEnd: '#D98E3F',
     sortOrder: 1,
     requiresLogin: false,
   },
   {
+    id: 'shopping',
+    icon: '🛒',
+    title: 'ช้อปปิ้ง',
+    subtitle: 'สินค้าจากร้านค้าในระบบ',
+    route: '/shopping',
+    gradientStart: '#F59E0B',
+    gradientEnd: '#EF4444',
+    sortOrder: 2,
+    requiresLogin: false,
+  },
+  {
     id: 'wallet',
-    icon: '💰',
+    icon: '👛',
     title: 'กระเป๋าเงิน',
-    subtitle: 'เติมเงิน, ถอนเงิน, โอนเงิน, Cashback',
+    subtitle: 'เติมเงิน ถอนเงิน ดูประวัติ',
     route: '/(tabs)/wallet',
     gradientStart: '#10B981',
     gradientEnd: '#059669',
-    sortOrder: 2,
-    requiresLogin: true,
-  },
-  {
-    id: 'invest',
-    icon: '📈',
-    title: 'ลงทุน & Trade',
-    subtitle: 'Crypto, Bot Trading, TPIX Token',
-    route: '/coming-soon',
-    gradientStart: '#3B82F6',
-    gradientEnd: '#1D4ED8',
     sortOrder: 3,
     requiresLogin: true,
   },
   {
-    id: 'mlm',
-    icon: '🤝',
-    title: 'MLM & Affiliate',
-    subtitle: 'สมัครสมาชิก, Commission, Referral, Team',
-    route: '/referral',
-    gradientStart: '#8B5CF6',
-    gradientEnd: '#6D28D9',
-    sortOrder: 4,
-    hasBadge: true,
-    badgeText: 'HOT',
-    requiresLogin: true,
-  },
-  {
     id: 'rider',
-    icon: '🚴',
-    title: 'เป็นไรเดอร์',
-    subtitle: 'รับงานส่งของ, Service Provider',
+    icon: '🛵',
+    title: 'ไรเดอร์',
+    subtitle: 'รับงานส่งของใกล้บ้าน',
     route: '/rider',
     gradientStart: '#06B6D4',
     gradientEnd: '#0891B2',
-    sortOrder: 5,
+    sortOrder: 4,
     requiresLogin: true,
-  },
-  {
-    id: 'aibot',
-    icon: '🤖',
-    title: 'AI Bot',
-    subtitle: 'LINE Bot, Chatbot, Automation',
-    route: '/coming-soon',
-    gradientStart: '#EC4899',
-    gradientEnd: '#BE185D',
-    sortOrder: 6,
-    hasBadge: true,
-    badgeText: 'NEW',
-    requiresLogin: false,
-  },
-  {
-    id: 'academy',
-    icon: '🎓',
-    title: 'Academy',
-    subtitle: 'เรียนรู้, หลักสูตร, Certificate',
-    route: '/wiki',
-    gradientStart: '#14B8A6',
-    gradientEnd: '#0D9488',
-    sortOrder: 7,
-    requiresLogin: false,
-  },
-  {
-    id: 'gaming',
-    icon: '🎮',
-    title: 'Gaming & Rewards',
-    subtitle: 'เกม, Quest, Achievement, Rewards',
-    route: '/coming-soon',
-    gradientStart: '#F97316',
-    gradientEnd: '#EA580C',
-    sortOrder: 8,
-    requiresLogin: false,
   },
 ] as const;
 

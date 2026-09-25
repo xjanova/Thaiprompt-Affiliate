@@ -20,7 +20,9 @@ import {
   getNotificationData,
   setupNotificationHandler,
 } from '@/services/notifications';
-import { startGpsSharing } from '@/services/location';
+import { stopJobTracking, stopLegacyGpsSharing, syncJobTrackingWithServer } from '@/services/location';
+import { routeForNotification } from '@/utils/notificationRouting';
+import { isRestrictedNotification } from '@/utils/storePolicy';
 import { router } from 'expo-router';
 
 // ซ่อน native splash screen ทันทีเพื่อให้เห็น custom loading screen
@@ -105,7 +107,7 @@ const LoadingScreen = () => {
 
       {/* App Name */}
       <Text style={loadingStyles.appName}>{APP_INFO.NAME}</Text>
-      <Text style={loadingStyles.tagline}>Affiliate Marketing Platform</Text>
+      <Text style={loadingStyles.tagline}>ช้อป · ตลาดสด · ส่งของใกล้บ้าน</Text>
 
       {/* Loading Indicator */}
       <View style={loadingStyles.loadingBox}>
@@ -179,7 +181,12 @@ const loadingStyles = StyleSheet.create({
 
 export default function RootLayout() {
   const { initialize } = useAuthStore();
-  const { loadSettings, gpsSharing } = useAppStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authInitialized = useAuthStore((state) => state.isInitialized);
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  /** สถานะล็อกอินรอบก่อน (null = ยังไม่รู้) — ใช้แยก "ออกจากระบบจริง" ออกจาก "ยังตรวจ token ไม่เสร็จ" */
+  const prevAuthenticatedRef = useRef<boolean | null>(null);
+  const { loadSettings, gpsSharing, setGpsSharing } = useAppStore();
   const [appIsReady, setAppIsReady] = useState(false);
   const appState = useRef(AppState.currentState);
 
@@ -206,14 +213,7 @@ export default function RootLayout() {
         // ลงทะเบียนเครื่องกับ Admin Dashboard (non-blocking)
         initDeviceTracking().catch((e) => console.log('Device tracking:', e));
 
-        // ⭐ ลงทะเบียน Push Notification (non-blocking)
-        registerForPushNotifications()
-          .then((token) => {
-            if (token) {
-              console.log('✅ Push notification registered:', token.substring(0, 30) + '...');
-            }
-          })
-          .catch((e) => console.log('Push notification error:', e));
+        // Push Notification ลงทะเบียนหลัง login เท่านั้น (ดู effect isAuthenticated ด้านล่าง)
       } catch (error) {
         console.error('App prepare error:', error);
       } finally {
@@ -253,6 +253,8 @@ export default function RootLayout() {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         // แอพกลับมา foreground - ส่ง heartbeat
         sendHeartbeat().catch(() => {});
+        // 📍 ไรเดอร์ที่กำลังติดตามตำแหน่งงานอยู่ → ตรวจกับ server ว่างานยังไม่จบ (ไม่มีการติดตาม = ไม่เรียก API)
+        syncJobTrackingWithServer({ onlyIfTracking: true }).catch(() => {});
       }
       appState.current = nextAppState;
     });
@@ -281,6 +283,17 @@ export default function RootLayout() {
           const body = notification?.request?.content?.body || '';
           console.log('📩 Notification received:', title);
 
+          // นโยบาย Google Play: แจ้งเตือนระบบเครือข่าย (คอมมิชชั่น/สายงาน/rank) ไม่แสดงในแอป
+          if (
+            isRestrictedNotification({
+              title,
+              body,
+              data: notification?.request?.content?.data,
+            })
+          ) {
+            return;
+          }
+
           // แสดง alert เมื่อได้รับ notification (เพราะ app เปิดอยู่)
           // ใช้ setTimeout เพื่อให้ UI render เสร็จก่อน
           setTimeout(() => {
@@ -292,8 +305,9 @@ export default function RootLayout() {
                   {
                     text: 'ดูเลย',
                     onPress: () => {
-                      // นำทางไปหน้า notifications
-                      router.push('/notifications');
+                      // เปิดหน้าที่เกี่ยวข้อง (เช่น งานไรเดอร์ใหม่ → /rider-jobs) ผ่าน allowlist เดียวกับตอนกดแจ้งเตือน
+                      const data = notification?.request?.content?.data as Record<string, unknown> | undefined;
+                      router.push(routeForNotification(data) as never);
                     },
                   },
                   {
@@ -315,28 +329,18 @@ export default function RootLayout() {
       // Listener สำหรับเมื่อกด notification
       responseSubscription = addNotificationResponseListener((response) => {
         try {
-          console.log('👆 Notification tapped');
           const data = getNotificationData(response);
+          // แจ้งเตือนระบบเครือข่ายที่หลุดมาจากถาดแจ้งเตือน → เปิดแอปหน้าแรกเฉยๆ ไม่พาไปหน้าที่เกี่ยวข้อง
+          const content = response?.notification?.request?.content;
+          if (isRestrictedNotification({ title: content?.title, body: content?.body, data: content?.data })) {
+            return;
+          }
 
           // รอ 100ms ให้ router พร้อมก่อน navigate
           setTimeout(() => {
             try {
-              // นำทางไปหน้าที่เกี่ยวข้องตาม notification type
-              const orderId = data.orderId || data.order_id;
-              if (data.type === 'order_message' && orderId) {
-                // ข้อความใหม่ในคำสั่งซื้อ - ไปหน้ารายละเอียด Order (tab แชท)
-                router.push(`/order/${orderId}` as never);
-              } else if (data.type === 'order') {
-                router.push('/commissions');
-              } else if (data.type === 'ticket' && data.ticketId) {
-                router.push('/support');
-              } else if (data.type === 'rider' || data.type === 'job') {
-                router.push('/rider');
-              } else if (data.url) {
-                router.push(data.url as never);
-              } else {
-                router.push('/notifications');
-              }
+              // path ผ่าน allowlist แล้ว (PLAY-23: ห้ามพาไป path/URL ใดๆ จาก payload ตรงๆ)
+              router.push(routeForNotification(data) as never);
             } catch (navError) {
               console.warn('Notification navigation error:', navError);
             }
@@ -359,18 +363,39 @@ export default function RootLayout() {
     };
   }, [appIsReady]);
 
-  // ⭐ เริ่ม GPS Sharing ถ้าเคยเปิดไว้
+  // 📍 PLAY-13: เลิก auto-start "แชร์ตำแหน่งให้แอดมิน" แล้ว — เครื่องที่เคยเปิดไว้ให้ปิดทิ้งหนึ่งครั้ง
+  //    (ไรเดอร์ใช้การติดตามตำแหน่งระหว่างส่งงานในหน้าไรเดอร์แทน)
   useEffect(() => {
     if (appIsReady && gpsSharing) {
-      startGpsSharing()
-        .then((success) => {
-          if (success) {
-            console.log('📍 GPS sharing auto-started');
-          }
-        })
-        .catch((e) => console.log('GPS sharing auto-start error:', e));
+      stopLegacyGpsSharing().catch(() => {});
+      setGpsSharing(false).catch(() => {});
     }
-  }, [appIsReady, gpsSharing]);
+  }, [appIsReady, gpsSharing, setGpsSharing]);
+
+  // 📍 RIDER-APP-12: ตัวติดตามตำแหน่งงานไรเดอร์ต้องตรงกับความจริงเสมอ
+  //    - รอ authStore ตรวจ token เสร็จก่อน (isInitialized) — แอปขึ้นหน้าแรกได้ก่อนที่ /me จะตอบบนเน็ตช้า
+  //      ถ้าตัดสินใจตอนนั้น isAuthenticated ยังเป็นค่าเริ่มต้น false → เคยหยุดติดตามงานที่ยังส่งอยู่ทิ้ง
+  //    - เปิดแอปใหม่ (เคยถูกปิดกลางงาน) → ถาม server แล้วติดตามต่อ/หยุด task ที่ค้าง
+  //      (ยังไม่ล็อกอิน/ตรวจ token ไม่ทัน ก็ถาม server เหมือนกัน: หยุดเฉพาะเมื่อ server ตอบ 401/403 จริง)
+  //    - ออกจากระบบจริง (ล็อกอินอยู่ → ไม่ล็อกอิน) → หยุดติดตามทันที
+  useEffect(() => {
+    if (!appIsReady || !authInitialized) return;
+    const wasAuthenticated = prevAuthenticatedRef.current;
+    prevAuthenticatedRef.current = isAuthenticated;
+
+    if (!isAuthenticated && wasAuthenticated === true) {
+      stopJobTracking().catch(() => {});
+      return;
+    }
+    syncJobTrackingWithServer({ onlyIfTracking: true }).catch(() => {});
+  }, [appIsReady, authInitialized, isAuthenticated]);
+
+  // 🔔 RIDER-APP-29: ลงทะเบียน push token หลัง login (และตอนเปิดแอปที่ login ค้างไว้)
+  //    ผูก token กับผู้ใช้คนปัจจุบันเสมอ — เปลี่ยนบัญชีแล้วลงทะเบียนใหม่
+  useEffect(() => {
+    if (!appIsReady || !isAuthenticated || !userId) return;
+    registerForPushNotifications().catch(() => {});
+  }, [appIsReady, isAuthenticated, userId]);
 
   // รอ app พร้อม
   if (!appIsReady) {
@@ -397,23 +422,22 @@ export default function RootLayout() {
         <Stack.Screen name="login" options={{ headerShown: false }} />
         <Stack.Screen name="register" options={{ headerShown: false }} />
 
-        {/* Feature Screens - ปิด header ทั้งหมดให้แอพจัดการเอง */}
-        <Stack.Screen name="main-menu" options={{ headerShown: false }} />
-        <Stack.Screen name="dashboard" options={{ headerShown: false }} />
+        {/* Feature Screens - ปิด header ทั้งหมดให้แอพจัดการเอง
+            (หน้า MLM / คริปโต / ดูคลิปได้เงิน ถูกถอดออกจากแอปแล้ว — นโยบาย Google Play) */}
         <Stack.Screen name="shopping" options={{ headerShown: false }} />
-        <Stack.Screen name="commissions" options={{ headerShown: false }} />
         <Stack.Screen name="referral" options={{ headerShown: false }} />
         <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen name="support" options={{ headerShown: false }} />
         <Stack.Screen name="kyc" options={{ headerShown: false }} />
-        <Stack.Screen name="leaderboard" options={{ headerShown: false }} />
-        <Stack.Screen name="rank" options={{ headerShown: false }} />
         <Stack.Screen name="rider" options={{ headerShown: false }} />
         <Stack.Screen name="wiki" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
-        <Stack.Screen name="coming-soon" options={{ headerShown: false }} />
         <Stack.Screen name="product/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+
+        {/* ตลาดสด / ร้านของฉัน */}
+        <Stack.Screen name="taladsod/index" options={{ headerShown: false }} />
+        <Stack.Screen name="merchant/index" options={{ headerShown: false }} />
 
         {/* Wallet Screens */}
         <Stack.Screen name="wallet-topup" options={{ headerShown: false }} />
@@ -426,16 +450,7 @@ export default function RootLayout() {
         <Stack.Screen name="tarot/select-cards" options={{ headerShown: false }} />
         <Stack.Screen name="tarot/reading" options={{ headerShown: false }} />
 
-        {/* MLM Tree */}
-        <Stack.Screen name="mlm-tree" options={{ headerShown: false }} />
-
-        {/* Wealth Guide */}
-        <Stack.Screen name="wealth-guide" options={{ headerShown: false }} />
-
-        {/* QR Scanner */}
-        <Stack.Screen name="qr-scanner" options={{ headerShown: false }} />
-
-        {/* WebView - สำหรับเปิด URL จาก Banner */}
+        {/* WebView - เปิดลิงก์เว็บของเรา (allowlist) */}
         <Stack.Screen name="webview" options={{ headerShown: false }} />
       </Stack>
     </View>

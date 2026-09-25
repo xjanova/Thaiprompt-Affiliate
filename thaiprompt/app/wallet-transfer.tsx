@@ -27,7 +27,8 @@ import {
   Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
+import { isFeatureEnabled } from '@/config/appConfig';
 import { useColorScheme } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuthStore } from '@/stores/authStore';
@@ -48,7 +49,17 @@ interface RecipientInfo {
   userId: number;
 }
 
+/**
+ * PLAY-18: โอนเงินระหว่างผู้ใช้ (P2P) ปิดใน build สโตร์ → deep link เข้ามาก็กลับไปหน้ากระเป๋าเงิน
+ */
 export default function WalletTransferScreen() {
+  if (!isFeatureEnabled('P2P_TRANSFER_ENABLED')) {
+    return <Redirect href={'/(tabs)/wallet' as never} />;
+  }
+  return <WalletTransferContent />;
+}
+
+function WalletTransferContent() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';

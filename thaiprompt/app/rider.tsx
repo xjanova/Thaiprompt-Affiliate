@@ -1,749 +1,858 @@
 /**
- * Rider Screen - Premium Stable Version
- * ใช้ StyleSheet แทน NativeWind
+ * หน้าไรเดอร์ (ศูนย์กลาง) — สมัคร · สถานะบัญชี · เริ่ม/หยุดรับงาน · รายได้วันนี้ · สิทธิ์ตำแหน่ง
+ *
+ * แก้ audit: RIDER-APP-12 (ไม่เปิดติดตามเบื้องหลังตอนไม่มีงาน), RIDER-APP-13/PLAY-13/PLAY-14
+ * (prominent disclosure + ออนไลน์ได้ด้วยสิทธิ์ "ขณะใช้แอป"), RIDER-APP-18 (ปุ่มอัปโหลดเอกสารเมื่อยังไม่ครบ),
+ * RIDER-APP-21 (ลิงก์หน้ารายได้), RIDER-APP-22 (busy/suspended/rejected แสดงถูก + สมัครใหม่ได้),
+ * RIDER-APP-26 (ไม่มีแถวไมโครโฟน)
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Alert,
-  TextInput,
-  ActivityIndicator,
-  Modal,
-  StyleSheet,
-  StatusBar,
-  Linking,
-} from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import * as Location from 'expo-location';
-import * as ImagePicker from 'expo-image-picker';
-import { getMicrophonePermissionStatusAsync } from '@/services/permissions';
 import { useAuthStore } from '@/stores/authStore';
+import { useTheme, spacing, radii, typography, toneColors, type Tone } from '@/theme';
 import {
+  BannerSlider,
+  Button3D,
+  Card3D,
+  EmptyState,
+  Pill,
+  PriceText,
+  Screen,
+  SectionHeader,
+  StatTile,
+  WebsiteButton,
+} from '@/components/ui';
+import {
+  getRiderEarnings,
   getRiderStatus,
-  registerRider,
   updateRiderPermissions,
-  setRiderAvailability,
-  updateRiderLocation,
-} from '@/services/api';
-import { formatCurrency } from '@/constants';
+  type RiderEarningsResponse,
+  type RiderStatus,
+  type RiderStatusResponse,
+} from '@/services/api/riderApi';
+import { num } from '@/services/api/client';
+import { addNotificationReceivedListener } from '@/services/notifications';
 import {
-  startTracking,
-  stopTracking,
-  isTrackingLocation,
-  getCurrentLocation,
+  getJobTrackingState,
+  getLocationPermissionState,
+  isLocationServiceEnabled,
+  pingRiderLocation,
+  reconcileJobTracking,
+  type TrackingMode,
 } from '@/services/location';
+import { useRiderPermissionFlow } from '@/components/rider/useRiderPermissionFlow';
+import { useRiderAvailability } from '@/components/rider/useRiderAvailability';
+import { RiderRegisterForm } from '@/components/rider/RiderRegisterForm';
 
-// Permission Modal
-const PermissionModal = ({
-  visible,
-  onClose,
-  onGrant,
-  permissionType,
-  isLoading,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onGrant: () => void;
-  permissionType: 'location' | 'camera' | 'microphone';
-  isLoading?: boolean;
-}) => {
-  const info = {
-    location: {
-      icon: '📍',
-      title: 'การเข้าถึงตำแหน่ง',
-      description: 'แอปจะขอเข้าถึงตำแหน่งเพื่อแสดงให้ลูกค้าเห็นเมื่อรับงาน',
-      color: '#3B82F6',
-    },
-    camera: {
-      icon: '📷',
-      title: 'การเข้าถึงกล้อง',
-      description: 'แอปจะขอเข้าถึงกล้องเพื่อถ่ายรูปเอกสารและหลักฐาน',
-      color: '#10B981',
-    },
-    microphone: {
-      icon: '🎤',
-      title: 'การเข้าถึงไมโครโฟน',
-      description: 'แอปจะขอเข้าถึงไมโครโฟนเพื่อโทรหาลูกค้า',
-      color: '#8B5CF6',
-    },
-  }[permissionType];
+/** ส่งตำแหน่งทุกกี่มิลลิวินาทีตอนออนไลน์และเปิดหน้านี้อยู่ (กัน server ปิดรับงานอัตโนมัติ) */
+const ONLINE_PING_MS = 45_000;
 
+// =====================================================
+// ชิ้นส่วนย่อย
+// =====================================================
+
+const PermissionRow: React.FC<{
+  icon: string;
+  title: string;
+  description: string;
+  granted: boolean;
+  optional?: boolean;
+  actionLabel?: string;
+  onPress?: () => unknown;
+}> = ({ icon, title, description, granted, optional, actionLabel = 'เปิดใช้', onPress }) => {
+  const { colors } = useTheme();
+  const tone: Tone = granted ? 'success' : optional ? 'neutral' : 'warning';
+  const t = toneColors(tone, colors);
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <LinearGradient colors={[info.color, info.color + 'CC']} style={styles.modalHeader}>
-            <View style={styles.modalIconBox}>
-              <Text style={{ fontSize: 32 }}>{info.icon}</Text>
-            </View>
-            <Text style={styles.modalTitle}>{info.title}</Text>
-          </LinearGradient>
-
-          <View style={styles.modalBody}>
-            <Text style={styles.modalDesc}>{info.description}</Text>
-          </View>
-
-          <View style={styles.modalActions}>
-            <Pressable style={styles.modalCancelBtn} onPress={onClose}>
-              <Text style={styles.modalCancelText}>ภายหลัง</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.modalGrantBtn, { backgroundColor: info.color }]}
-              onPress={onGrant}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.modalGrantText}>อนุญาต</Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
+    <View style={[styles.permRow, { borderBottomColor: colors.divider }]}>
+      <View style={[styles.permIcon, { backgroundColor: t.bg }]}>
+        <Text style={styles.permEmoji}>{icon}</Text>
       </View>
-    </Modal>
+      <View style={styles.flex}>
+        <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{title}</Text>
+        <Text style={[typography.caption, { color: colors.textMuted }]}>{description}</Text>
+      </View>
+      {granted ? (
+        <Pill label="พร้อม" tone="success" icon="✓" />
+      ) : onPress ? (
+        <Button3D title={actionLabel} size="sm" variant={optional ? 'secondary' : 'primary'} onPress={onPress} />
+      ) : (
+        <Pill label={optional ? 'ไม่บังคับ' : 'ยังไม่พร้อม'} tone={optional ? 'neutral' : 'warning'} />
+      )}
+    </View>
   );
 };
 
+const ActionTile: React.FC<{ icon: string; title: string; caption: string; onPress: () => void; highlight?: boolean }> = ({
+  icon,
+  title,
+  caption,
+  onPress,
+  highlight,
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Card3D
+      onPress={onPress}
+      style={styles.tile}
+      padding={spacing.md}
+      radius={radii.lg}
+      shadow="sm"
+      gradientBorder={highlight}
+      accessibilityLabel={title}
+    >
+      <Text style={styles.tileIcon}>{icon}</Text>
+      <Text style={[typography.bodyStrong, { color: colors.textStrong }]} numberOfLines={1}>
+        {title}
+      </Text>
+      <Text style={[typography.caption, { color: colors.textMuted }]} numberOfLines={2}>
+        {caption}
+      </Text>
+    </Card3D>
+  );
+};
+
+// =====================================================
+// หน้าจอ
+// =====================================================
+
 export default function RiderScreen() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { colors, gradients } = useTheme();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
 
-  // ⭐ Super Admin Bypass - เข้าได้โดยไม่ต้องสมัคร
-  const isSuperAdmin = user?.is_super_admin === true || user?.role === 'super_admin';
+  const [data, setData] = useState<RiderStatusResponse | null>(null);
+  const [earnings, setEarnings] = useState<RiderEarningsResponse | null>(null);
+  const [earningsLoading, setEarningsLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [trackingMode, setTrackingMode] = useState<TrackingMode | 'none'>('none');
+  const [gpsOff, setGpsOff] = useState(false);
+  const [bannerKey, setBannerKey] = useState(0);
 
-  const [riderData, setRiderData] = useState<any>(null);
-  const [showRegisterForm, setShowRegisterForm] = useState(false);
-  const [formData, setFormData] = useState({
-    full_name: user?.name || '',
-    phone: '',
-    vehicle_type: 'motorcycle' as 'motorcycle' | 'car' | 'bicycle' | 'walk',
-    vehicle_plate: '',
-  });
-
-  const [permissionModal, setPermissionModal] = useState<{
-    visible: boolean;
-    type: 'location' | 'camera' | 'microphone';
-  }>({ visible: false, type: 'location' });
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGrantingPermission, setIsGrantingPermission] = useState(false);
-  const [isTogglingAvailability, setIsTogglingAvailability] = useState(false);
-  const [isLocationSharing, setIsLocationSharing] = useState(false);
-  const [isTogglingLocationShare, setIsTogglingLocationShare] = useState(false);
-
-  // Load Rider Status
-  const loadRiderStatus = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setIsLoading(true);
-    try {
-      // ⭐ Super Admin Bypass - สร้างข้อมูลจำลองสำหรับทดสอบ
-      if (isSuperAdmin) {
-        setRiderData({
-          isRider: true,
-          riderId: 'ADMIN-DEV',
-          status: 'approved',
-          statusText: '✅ อนุมัติแล้ว (Developer Mode)',
-          availability: 'online',
-          availabilityText: 'ออนไลน์',
-          vehicleType: 'motorcycle',
-          vehicleTypeText: 'มอเตอร์ไซค์',
-          rating: 5.0,
-          totalJobs: 999,
-          completedJobs: 999,
-          completionRate: 100,
-          totalEarnings: 999999,
-          permissions: {
-            gps: true,
-            camera: true,
-            microphone: true,
-            notification: true,
-            allGranted: true,
-          },
-          isSuperAdminMode: true,  // Flag แสดงว่าเป็น dev mode
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await getRiderStatus();
-      if (response?.success && response.data) {
-        setRiderData(response.data);
-      }
-    } catch (error) {
-      console.error('Load rider status error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isAuthenticated, isSuperAdmin]);
+  const mountedRef = useRef(true);
+  const requestIdRef = useRef(0);
+  const loadedOnceRef = useRef(false);
 
   useEffect(() => {
-    loadRiderStatus();
-    setIsLocationSharing(isTrackingLocation());
-  }, [loadRiderStatus]);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
-  // Permission Handlers
-  const requestLocationPermission = async () => {
-    setIsGrantingPermission(true);
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const { status: bg } = await Location.requestBackgroundPermissionsAsync();
-        await updateRiderPermissions({ gps: bg === 'granted' });
-        await loadRiderStatus();
-        Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงตำแหน่งเรียบร้อย');
-      } else {
-        Alert.alert('ไม่ได้รับอนุญาต', 'คุณต้องอนุญาตการเข้าถึงตำแหน่ง', [
-          { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'ไปตั้งค่า', onPress: () => Linking.openSettings() },
-        ]);
+  // เปลี่ยนบัญชี → ล้างข้อมูลของบัญชีเดิมทิ้ง ไม่ให้เห็นข้อมูลคนอื่นแวบขึ้นมา
+  const userId = user?.id ?? null;
+  useEffect(() => {
+    requestIdRef.current += 1;
+    loadedOnceRef.current = false;
+    setData(null);
+    setEarnings(null);
+    setShowForm(false);
+    setErrorMessage(null);
+    setInitialLoading(true);
+  }, [userId]);
+
+  const loadEarnings = useCallback(async () => {
+    setEarningsLoading(true);
+    const result = await getRiderEarnings('today');
+    if (!mountedRef.current) return;
+    if (result.success) setEarnings(result.data);
+    setEarningsLoading(false);
+  }, []);
+
+  const load = useCallback(
+    async (mode: 'initial' | 'refresh' | 'silent') => {
+      if (!isAuthenticated) {
+        setInitialLoading(false);
+        return;
       }
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์ได้');
-    } finally {
-      setIsGrantingPermission(false);
-      setPermissionModal({ visible: false, type: 'location' });
-    }
-  };
+      const requestId = ++requestIdRef.current;
+      if (mode === 'initial') setInitialLoading(true);
+      if (mode === 'refresh') setRefreshing(true);
 
-  const requestCameraPermission = async () => {
-    setIsGrantingPermission(true);
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      await updateRiderPermissions({ camera: status === 'granted' });
-      await loadRiderStatus();
-      if (status === 'granted') Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงกล้องเรียบร้อย');
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์ได้');
-    } finally {
-      setIsGrantingPermission(false);
-      setPermissionModal({ visible: false, type: 'camera' });
-    }
-  };
+      const result = await getRiderStatus();
+      if (!mountedRef.current || requestId !== requestIdRef.current) return;
 
-  const requestMicrophonePermission = async () => {
-    setIsGrantingPermission(true);
-    try {
-      const { status } = await getMicrophonePermissionStatusAsync();
-      await updateRiderPermissions({ microphone: status === 'granted' });
-      await loadRiderStatus();
-      if (status === 'granted') Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงไมโครโฟนเรียบร้อย');
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถขอสิทธิ์ได้');
-    } finally {
-      setIsGrantingPermission(false);
-      setPermissionModal({ visible: false, type: 'microphone' });
-    }
-  };
+      if (result.success) {
+        setData(result.data);
+        setErrorMessage(null);
+        loadedOnceRef.current = true;
+        const rider = result.data?.rider;
 
-  const handleGrantPermission = async () => {
-    switch (permissionModal.type) {
-      case 'location': await requestLocationPermission(); break;
-      case 'camera': await requestCameraPermission(); break;
-      case 'microphone': await requestMicrophonePermission(); break;
-    }
-  };
+        // ตัวติดตามตำแหน่งต้องตรงกับงานที่ server บอก (แอปถูกปิดกลางงาน / งานถูกยกเลิก)
+        reconcileJobTracking(rider?.active_job_id ?? null)
+          .then((m) => mountedRef.current && setTrackingMode(m))
+          .catch(() => {});
 
-  // Register Handler
-  const handleRegister = async () => {
-    if (!formData.full_name.trim() || !formData.phone.trim()) {
-      Alert.alert('ข้อผิดพลาด', 'กรุณากรอกข้อมูลให้ครบ');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const response = await registerRider(formData);
-      if (response.success) {
-        Alert.alert('สำเร็จ', response.message || 'สมัครเป็นไรเดอร์สำเร็จ');
-        setShowRegisterForm(false);
-        await loadRiderStatus();
-      } else {
-        Alert.alert('ข้อผิดพลาด', response.message || 'สมัครไม่สำเร็จ');
-      }
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Availability Toggle
-  const toggleAvailability = async () => {
-    if (!riderData?.permissions?.gps) {
-      Alert.alert('ต้องอนุญาตตำแหน่งก่อน', 'คุณต้องอนุญาตการเข้าถึงตำแหน่งก่อนเปิดรับงาน', [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'อนุญาต', onPress: () => setPermissionModal({ visible: true, type: 'location' }) },
-      ]);
-      return;
-    }
-    setIsTogglingAvailability(true);
-    try {
-      const newStatus = riderData?.availability === 'online' ? 'offline' : 'online';
-      const response = await setRiderAvailability(newStatus);
-      if (response.success) {
-        await loadRiderStatus();
-        if (newStatus === 'online') Alert.alert('🟢 เปิดรับงานแล้ว', 'ระบบจะแจ้งเตือนเมื่อมีงานใกล้คุณ');
-      } else {
-        Alert.alert('ข้อผิดพลาด', response.message || 'ไม่สามารถเปลี่ยนสถานะได้');
-      }
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      setIsTogglingAvailability(false);
-    }
-  };
-
-  // Location Sharing Toggle
-  const toggleLocationSharing = async () => {
-    if (!riderData?.permissions?.gps) {
-      Alert.alert('ต้องอนุญาตตำแหน่งก่อน', 'กรุณาอนุญาตการเข้าถึงตำแหน่ง', [
-        { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'อนุญาต', onPress: () => setPermissionModal({ visible: true, type: 'location' }) },
-      ]);
-      return;
-    }
-    setIsTogglingLocationShare(true);
-    try {
-      if (isLocationSharing) {
-        await stopTracking();
-        setIsLocationSharing(false);
-        Alert.alert('หยุดแชร์ตำแหน่งแล้ว');
-      } else {
-        const success = await startTracking(0);
-        if (success) {
-          setIsLocationSharing(true);
-          const location = await getCurrentLocation();
-          if (location) {
-            await updateRiderLocation({ latitude: location.latitude, longitude: location.longitude, accuracy: location.accuracy });
-          }
-          Alert.alert('🟢 เริ่มแชร์ตำแหน่งแล้ว');
-        } else {
-          Alert.alert('ไม่สามารถเริ่มแชร์ตำแหน่งได้');
+        // ผู้ใช้ไปเปิดสิทธิ์ตำแหน่งในตั้งค่าเครื่องเอง → แจ้ง server ให้ตรงกัน (RIDER-APP-13)
+        if (rider && !rider.permissions?.gps) {
+          getLocationPermissionState()
+            .then((p) => (p.foreground ? updateRiderPermissions({ gps: true }) : null))
+            .catch(() => null);
         }
-      }
-    } catch (error) {
-      Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-    } finally {
-      setIsTogglingLocationShare(false);
-    }
-  };
 
-  // Not Authenticated
+        if (rider?.status === 'approved') {
+          loadEarnings();
+        }
+      } else if (mode !== 'silent' || !loadedOnceRef.current) {
+        setErrorMessage(result.message);
+      }
+
+      setInitialLoading(false);
+      setRefreshing(false);
+    },
+    // userId: เปลี่ยนบัญชีแล้วต้องได้ฟังก์ชันใหม่ → หน้าโหลดข้อมูลของบัญชีใหม่ทันที
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAuthenticated, loadEarnings, userId]
+  );
+
+  const flow = useRiderPermissionFlow({ onServerUpdated: () => load('silent') });
+  const { goOnline, goOffline } = useRiderAvailability(flow);
+
+  const rider: RiderStatus | null = data?.rider ?? null;
+  const isApproved = rider?.status === 'approved';
+  const isOnline = rider?.availability === 'online';
+  const isBusy = rider?.availability === 'busy' || !!rider?.active_job_id;
+
+  // เข้าหน้านี้ทุกครั้ง: รีเฟรชเงียบๆ + ตรวจสิทธิ์ในเครื่อง (ผู้ใช้อาจไปเปิดในตั้งค่ามา)
+  useFocusEffect(
+    useCallback(() => {
+      load(loadedOnceRef.current ? 'silent' : 'initial');
+      flow.refreshPermissions().catch(() => {});
+      isLocationServiceEnabled().then((on) => mountedRef.current && setGpsOff(!on)).catch(() => {});
+      getJobTrackingState()
+        .then((s) => mountedRef.current && setTrackingMode(s ? s.mode : 'none'))
+        .catch(() => {});
+
+      // แจ้งเตือนเรื่องบัญชีไรเดอร์ (อนุมัติ/ระงับ/ออฟไลน์อัตโนมัติ) → รีเฟรช
+      const sub = addNotificationReceivedListener((notification) => {
+        const type = (notification?.request?.content?.data as Record<string, unknown> | undefined)?.type;
+        if (type === 'rider_account' || type === 'rider_job_update') {
+          load('silent');
+        }
+      });
+      return () => sub.remove();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [load])
+  );
+
+  // ออนไลน์อยู่และเปิดหน้านี้ → ส่งตำแหน่งเป็นระยะ (เฉพาะตอนเปิดแอป ไม่ติดตามเบื้องหลัง)
+  useFocusEffect(
+    useCallback(() => {
+      if (!isApproved || !isOnline) return undefined;
+      pingRiderLocation().catch(() => {});
+      const timer = setInterval(() => {
+        pingRiderLocation().catch(() => {});
+      }, ONLINE_PING_MS);
+      return () => clearInterval(timer);
+    }, [isApproved, isOnline])
+  );
+
+  const onRefresh = useCallback(() => {
+    setBannerKey((k) => k + 1);
+    load('refresh');
+  }, [load]);
+
+  const handleGoOnline = useCallback(async () => {
+    const ok = await goOnline({ hasConsent: !!rider?.permissions?.location_consent });
+    await load('silent');
+    if (ok && mountedRef.current) {
+      // รอ sheet ขอสิทธิ์ปิดสนิทก่อน (iOS)
+      setTimeout(() => {
+        if (!mountedRef.current) return;
+        Alert.alert('พร้อมรับทรัพย์แล้ว! 🟢', 'ระบบจะแจ้งเตือนทันทีเมื่อมีงานใกล้คุณ', [
+          { text: 'อยู่หน้านี้', style: 'cancel' },
+          { text: 'ดูงานใกล้ฉัน', onPress: () => router.push('/rider-jobs' as never) },
+        ]);
+      }, 450);
+    }
+  }, [goOnline, load, rider?.permissions?.location_consent]);
+
+  const handleGoOffline = useCallback(async () => {
+    await goOffline();
+    await load('silent');
+  }, [goOffline, load]);
+
+  const handleRegistered = useCallback(
+    (result: { outcome: string; rider: RiderStatus }, message: string) => {
+      setShowForm(false);
+      setData({ is_rider: true, rider: result.rider });
+      load('silent');
+      const needDocs = (result.rider?.documents_missing || []).length > 0;
+      Alert.alert(
+        result.outcome === 'created' ? 'สมัครสำเร็จ! 🎉' : 'ส่งใบสมัครแล้ว',
+        needDocs ? `${message || 'บันทึกใบสมัครแล้ว'}\nขั้นต่อไป อัปโหลดเอกสารให้ครบนะ` : message || 'ทีมงานจะตรวจสอบโดยเร็ว',
+        needDocs
+          ? [
+              { text: 'ไว้ก่อน', style: 'cancel' },
+              { text: 'อัปโหลดเอกสาร', onPress: () => router.push('/rider-documents' as never) },
+            ]
+          : [{ text: 'ตกลง' }]
+      );
+    },
+    [load]
+  );
+
+  const openJob = useCallback(() => {
+    const id = rider?.active_job_id;
+    router.push((id ? `/rider-job-detail?id=${id}` : '/rider-job-detail') as never);
+  }, [rider?.active_job_id]);
+
+  // =====================================================
+  // สถานะพิเศษ
+  // =====================================================
+
   if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <View style={styles.centerBox}>
-          <Text style={{ fontSize: 80, color: '#4B5563' }}>🚴</Text>
-          <Text style={styles.centerTitle}>สมัครเป็นไรเดอร์</Text>
-          <Text style={styles.centerText}>เข้าสู่ระบบเพื่อสมัครเป็นไรเดอร์และรับงาน</Text>
-          <Pressable style={styles.primaryButton} onPress={() => router.push('/login')}>
-            <Text style={styles.primaryButtonText}>เข้าสู่ระบบ</Text>
-          </Pressable>
-        </View>
-      </View>
+      <Screen title="ไรเดอร์">
+        <EmptyState
+          icon="🛵"
+          title="เข้าสู่ระบบก่อนนะ"
+          message="เข้าสู่ระบบเพื่อสมัครเป็นไรเดอร์และเริ่มรับงานส่งใกล้บ้าน"
+          actionLabel="เข้าสู่ระบบ"
+          onAction={() => router.push('/login' as never)}
+        />
+      </Screen>
     );
   }
 
-  // Loading
-  if (isLoading) {
+  if (initialLoading && !data) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <View style={styles.centerBox}>
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>กำลังโหลด...</Text>
-        </View>
-      </View>
+      <Screen title="ไรเดอร์">
+        <EmptyState icon="⏳" title="กำลังโหลด..." message="รอสักครู่นะ" />
+      </Screen>
     );
   }
 
-  // Not a Rider - Show Registration
-  if (!riderData?.isRider) {
+  if (!data) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* Header */}
-          <View style={styles.headerRow}>
-            <Pressable style={styles.backBtn} onPress={() => router.back()}>
-              <Text style={{ fontSize: 24, color: '#FFF' }}>←</Text>
-            </Pressable>
-            <Text style={styles.headerTitle}>สมัครเป็นไรเดอร์</Text>
-            <View style={{ width: 44 }} />
-          </View>
+      <Screen title="ไรเดอร์" onRefresh={onRefresh} refreshing={refreshing}>
+        <EmptyState
+          variant="error"
+          message={errorMessage || 'โหลดข้อมูลไรเดอร์ไม่สำเร็จ'}
+          onAction={() => load('initial')}
+        />
+      </Screen>
+    );
+  }
 
-          {/* Benefits Card */}
-          <LinearGradient colors={['#06B6D4', '#0891B2']} style={styles.benefitsCard}>
-            <Text style={styles.benefitsTitle}>🚴 ทำไมต้องเป็นไรเดอร์กับเรา?</Text>
-            {['รายได้ดี คิดค่าบริการยุติธรรม', 'เวลาทำงานยืดหยุ่น', 'ถอนเงินได้ทันที', 'ประกันอุบัติเหตุ'].map((item, i) => (
-              <View key={i} style={styles.benefitItem}>
-                <Text style={{ fontSize: 20, color: '#FFF' }}>✓</Text>
-                <Text style={styles.benefitText}>{item}</Text>
+  // =====================================================
+  // ยังไม่ได้สมัคร
+  // =====================================================
+
+  if (!rider) {
+    return (
+      <Screen title="มาเป็นไรเดอร์" subtitle="รับงานส่งใกล้บ้าน เลือกเวลาได้เอง" onRefresh={onRefresh} refreshing={refreshing}>
+        <Card3D gradientBorder padding={0} style={styles.block}>
+          <LinearGradient colors={gradients.hero} style={styles.heroInner}>
+            <Text style={styles.heroEmoji}>🛵</Text>
+            <Text style={[typography.h1, { color: colors.textStrong }]}>ขับไป รับทรัพย์ไป</Text>
+            <Text style={[typography.body, { color: colors.text }]}>
+              เห็นค่าส่งก่อนกดรับทุกงาน ส่งเสร็จเงินเข้ากระเป๋าทันที
+            </Text>
+          </LinearGradient>
+          <View style={styles.benefits}>
+            {[
+              { icon: '💰', text: 'ค่าส่งแสดงชัดก่อนรับงาน ไม่มีหักแอบแฝง' },
+              { icon: '⏰', text: 'ออนไลน์เมื่อไหร่ก็ได้ พักเมื่อไหร่ก็ได้' },
+              { icon: '📍', text: 'รับงานใกล้ตัว วิ่งไม่ไกล' },
+              { icon: '👛', text: 'รายได้เข้ากระเป๋าเงินในแอปทันทีที่ส่งสำเร็จ' },
+            ].map((b) => (
+              <View key={b.text} style={styles.benefitRow}>
+                <Text style={styles.benefitIcon}>{b.icon}</Text>
+                <Text style={[typography.body, styles.flex, { color: colors.text }]}>{b.text}</Text>
               </View>
             ))}
-          </LinearGradient>
-
-          {/* Permission Notice */}
-          <View style={styles.warningCard}>
-            <Text style={styles.warningTitle}>⚠️ แอปจะขอสิทธิ์ดังนี้:</Text>
-            <Text style={styles.warningItem}>📍 ตำแหน่ง - แชร์เฉพาะเมื่อรับงาน</Text>
-            <Text style={styles.warningItem}>📷 กล้อง - ถ่ายรูปเอกสารและหลักฐาน</Text>
-            <Text style={styles.warningItem}>🎤 ไมโครโฟน - โทรหาลูกค้า</Text>
           </View>
+        </Card3D>
 
-          {/* Register Form */}
-          {showRegisterForm ? (
-            <View style={styles.formCard}>
-              <Text style={styles.formTitle}>กรอกข้อมูลสมัคร</Text>
+        <Card3D variant="inset" style={styles.block} padding={spacing.lg}>
+          <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>สิ่งที่ต้องเตรียม</Text>
+          <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+            บัตรประชาชน · ใบขับขี่ (มอเตอร์ไซค์/รถยนต์) · เล่มทะเบียนรถ · รูปหน้าตรง
+          </Text>
+          <Text style={[typography.bodySm, { color: colors.textMuted, marginTop: spacing.sm }]}>
+            แอปจะขอใช้ตำแหน่งตอนคุณออนไลน์รับงาน และกล้องตอนถ่ายรูปเอกสาร/หลักฐานการส่ง
+          </Text>
+        </Card3D>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>ชื่อ-นามสกุล *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="ชื่อจริง นามสกุล"
-                  placeholderTextColor="#6B7280"
-                  value={formData.full_name}
-                  onChangeText={(t) => setFormData({ ...formData, full_name: t })}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>เบอร์โทรศัพท์ *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="08X-XXX-XXXX"
-                  placeholderTextColor="#6B7280"
-                  value={formData.phone}
-                  onChangeText={(t) => setFormData({ ...formData, phone: t })}
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>ประเภทยานพาหนะ *</Text>
-                <View style={styles.vehicleRow}>
-                  {[
-                    { value: 'motorcycle', label: '🏍️ มอเตอร์ไซค์' },
-                    { value: 'car', label: '🚗 รถยนต์' },
-                    { value: 'bicycle', label: '🚲 จักรยาน' },
-                    { value: 'walk', label: '🚶 เดินเท้า' },
-                  ].map((opt) => (
-                    <Pressable
-                      key={opt.value}
-                      style={[styles.vehicleBtn, formData.vehicle_type === opt.value && styles.vehicleBtnActive]}
-                      onPress={() => setFormData({ ...formData, vehicle_type: opt.value as any })}
-                    >
-                      <Text style={[styles.vehicleBtnText, formData.vehicle_type === opt.value && styles.vehicleBtnTextActive]}>
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </View>
-
-              {formData.vehicle_type !== 'walk' && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>ทะเบียนรถ</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="กข 1234"
-                    placeholderTextColor="#6B7280"
-                    value={formData.vehicle_plate}
-                    onChangeText={(t) => setFormData({ ...formData, vehicle_plate: t })}
-                  />
-                </View>
-              )}
-
-              <Pressable
-                style={[styles.submitBtn, isSubmitting && styles.buttonDisabled]}
-                onPress={handleRegister}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.submitBtnText}>สมัครเป็นไรเดอร์</Text>
-                )}
-              </Pressable>
-            </View>
-          ) : (
-            <Pressable style={styles.primaryButtonLarge} onPress={() => setShowRegisterForm(true)}>
-              <Text style={styles.primaryButtonText}>สมัครเลย</Text>
-            </Pressable>
-          )}
-        </ScrollView>
-      </View>
+        {showForm ? (
+          <RiderRegisterForm
+            defaultName={user?.name}
+            defaultPhone={user?.phone}
+            onDone={handleRegistered}
+            onCancel={() => setShowForm(false)}
+          />
+        ) : (
+          <Button3D title="สมัครเลย" icon="🚀" size="lg" fullWidth onPress={() => setShowForm(true)} />
+        )}
+      </Screen>
     );
   }
 
-  // Rider Dashboard
-  const isApproved = riderData.status === 'approved';
-  const isPending = riderData.status === 'pending';
-  const isRejected = riderData.status === 'rejected';
-  const isOnline = riderData.availability === 'online';
+  // =====================================================
+  // สมัครแล้ว — การ์ดสถานะตามบัญชี
+  // =====================================================
+
+  const docsRequired = rider.documents_required?.length ?? 0;
+  const docsMissing = rider.documents_missing?.length ?? 0;
+  const docsDone = Math.max(0, docsRequired - docsMissing);
+  const canReapply = !!rider.can_reapply;
+  const onlineBlock = rider.online_block_reason;
+
+  const statusLook = (() => {
+    switch (rider.status) {
+      case 'pending':
+        return { icon: '⏳', title: 'รอตรวจใบสมัคร', tone: 'warning' as Tone, gradient: gradients.hero };
+      case 'rejected':
+        return { icon: '📝', title: 'ใบสมัครยังไม่ผ่าน', tone: 'danger' as Tone, gradient: gradients.secondary };
+      case 'suspended':
+        return { icon: '🚫', title: 'บัญชีถูกระงับชั่วคราว', tone: 'danger' as Tone, gradient: gradients.secondary };
+      case 'inactive':
+        return { icon: '💤', title: 'บัญชีไม่ได้ใช้งาน', tone: 'neutral' as Tone, gradient: gradients.secondary };
+      default:
+        if (isBusy) return { icon: '🛵', title: 'กำลังส่งงาน', tone: 'gold' as Tone, gradient: gradients.primary };
+        if (isOnline) return { icon: '🟢', title: 'ออนไลน์ รอรับงาน', tone: 'success' as Tone, gradient: gradients.success };
+        return { icon: '☕', title: 'พักอยู่ (ออฟไลน์)', tone: 'neutral' as Tone, gradient: gradients.surface };
+    }
+  })();
+  const heroOnAccent = isApproved && (isBusy || isOnline);
+  // กำลังส่งงาน = พื้นทอง → ตัวอักษรเข้ม · ออนไลน์ = พื้นเขียวเข้ม → ตัวอักษรขาว
+  const heroOnColor = isBusy ? colors.textOnGold : colors.textOnAccent;
+  const heroText = heroOnAccent ? heroOnColor : colors.textStrong;
+  const heroSub = heroOnAccent ? heroOnColor : colors.textMuted;
+
+  const perms = flow.permissions;
+  const fgGranted = perms?.foreground ?? !!rider.permissions?.gps;
+  const bgGranted = perms?.background ?? false;
+  const consentGiven = !!rider.permissions?.location_consent;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F23" />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={{ fontSize: 24, color: '#FFF' }}>←</Text>
-          </Pressable>
-          <Text style={styles.headerTitle}>ไรเดอร์</Text>
-          {isApproved && (
-            <View style={[styles.statusBadge, isOnline && styles.statusBadgeOnline]}>
-              <Text style={[styles.statusBadgeText, isOnline && styles.statusBadgeTextOnline]}>
-                {isOnline ? '🟢 ออนไลน์' : '⚫ ออฟไลน์'}
+    <Screen
+      title="ไรเดอร์"
+      subtitle={rider.full_name}
+      onRefresh={onRefresh}
+      refreshing={refreshing}
+      right={
+        isApproved ? (
+          <Pill
+            label={isBusy ? 'กำลังส่งงาน' : isOnline ? 'ออนไลน์' : 'ออฟไลน์'}
+            tone={isBusy ? 'gold' : isOnline ? 'success' : 'neutral'}
+            icon={isBusy ? '🛵' : isOnline ? '●' : '○'}
+          />
+        ) : null
+      }
+    >
+      {/* ---------- การ์ดสถานะ ---------- */}
+      <Card3D padding={0} style={styles.block} gradientBorder={isApproved}>
+        <LinearGradient colors={statusLook.gradient} style={styles.statusInner}>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusEmoji}>{statusLook.icon}</Text>
+            <View style={styles.flex}>
+              <Text style={[typography.h2, { color: heroText }]}>{statusLook.title}</Text>
+              <Text style={[typography.caption, { color: heroSub }]}>
+                {rider.vehicle_type_text}
+                {rider.vehicle_plate ? ` · ${rider.vehicle_plate}` : ''}
               </Text>
             </View>
-          )}
-        </View>
-
-        {/* ⭐ Developer Mode Banner for Super Admin */}
-        {riderData?.isSuperAdminMode && (
-          <View style={styles.devModeBanner}>
-            <Text style={styles.devModeText}>⚙️ Developer Mode - Super Admin Access</Text>
           </View>
-        )}
 
-        {/* Status Card */}
-        <LinearGradient
-          colors={isPending ? ['#F59E0B', '#D97706'] : isRejected ? ['#EF4444', '#DC2626'] : ['#10B981', '#059669']}
-          style={styles.statusCard}
-        >
-          <View style={styles.statusRow}>
-            <Text style={{ fontSize: 32, color: '#FFF' }}>
-              {isPending ? '⏰' : isRejected ? '❌' : '✅'}
+          {rider.status === 'pending' && (
+            <Text style={[typography.bodySm, { color: colors.text }]}>
+              {docsMissing > 0
+                ? `อัปโหลดเอกสารอีก ${docsMissing} รายการ แล้วทีมงานจะเริ่มตรวจใบสมัครให้`
+                : 'เอกสารครบแล้ว ทีมงานกำลังตรวจ ปกติใช้เวลา 1-3 วันทำการ'}
             </Text>
-            <View style={styles.statusInfo}>
-              <Text style={styles.statusTitle}>{riderData.statusText}</Text>
-              <Text style={styles.statusSubtitle}>รหัสไรเดอร์: #{riderData.riderId}</Text>
-            </View>
-          </View>
-
-          {isPending && (
-            <View style={styles.statusNote}>
-              <Text style={styles.statusNoteText}>เอกสารกำลังตรวจสอบ โดยปกติใช้เวลา 1-3 วันทำการ</Text>
-              <Pressable style={styles.statusBtn} onPress={() => router.push('/rider-documents')}>
-                <Text style={styles.statusBtnText}>📄 ดูเอกสารที่ส่ง</Text>
-              </Pressable>
-            </View>
           )}
-
-          {isApproved && (
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>งานทั้งหมด</Text>
-                <Text style={styles.statValue}>{riderData.totalJobs || 0}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>เสร็จสิ้น</Text>
-                <Text style={styles.statValue}>{riderData.completedJobs || 0}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>รายได้รวม</Text>
-                <Text style={styles.statValue}>{formatCurrency(riderData.totalEarnings || 0)}</Text>
-              </View>
+          {rider.status === 'rejected' && (
+            <Text style={[typography.bodySm, { color: colors.text }]}>
+              {rider.rejection_reason ? `เหตุผล: ${rider.rejection_reason}` : 'แก้ไขข้อมูลหรือเอกสาร แล้วส่งใบสมัครใหม่ได้เลย'}
+            </Text>
+          )}
+          {rider.status === 'suspended' && (
+            <Text style={[typography.bodySm, { color: colors.text }]}>
+              {rider.suspension_reason ? `เหตุผล: ${rider.suspension_reason}` : 'ติดต่อทีมงานเพื่อสอบถามรายละเอียด'}
+            </Text>
+          )}
+          {rider.status === 'inactive' && (
+            <Text style={[typography.bodySm, { color: colors.text }]}>ส่งใบสมัครอีกครั้งเพื่อกลับมารับงาน</Text>
+          )}
+          {isApproved && isBusy && (
+            <Text style={[typography.bodySm, { color: heroSub }]}>ส่งงานนี้ให้เสร็จ แล้วระบบจะเปิดรับงานถัดไปให้เอง</Text>
+          )}
+          {isApproved && !isBusy && isOnline && (
+            <Text style={[typography.bodySm, { color: heroSub }]}>ระบบจะแจ้งเตือนทันทีเมื่อมีงานใกล้คุณ</Text>
+          )}
+          {isApproved && !isBusy && !isOnline && !onlineBlock && (
+            <Text style={[typography.bodySm, { color: heroSub }]}>พร้อมเมื่อไหร่ กดเริ่มรับงานได้เลย</Text>
+          )}
+          {isApproved && !!onlineBlock && !isBusy && (
+            <View style={[styles.blockNote, { backgroundColor: colors.warningSoft }]}>
+              <Text style={[typography.bodySm, { color: colors.text }]}>⚠️ {onlineBlock.message}</Text>
             </View>
           )}
         </LinearGradient>
+      </Card3D>
 
-        {/* Permission Status */}
-        <View style={styles.permissionCard}>
-          <Text style={styles.permissionTitle}>สถานะสิทธิ์การใช้งาน</Text>
-
-          {[
-            { key: 'gps', icon: '📍', label: 'ตำแหน่ง (GPS)', desc: 'แชร์เฉพาะเมื่อรับงาน', type: 'location' as const },
-            { key: 'camera', icon: '📷', label: 'กล้อง', desc: 'ถ่ายรูปเอกสาร', type: 'camera' as const },
-            { key: 'microphone', icon: '🎤', label: 'ไมโครโฟน', desc: 'โทรหาลูกค้า', type: 'microphone' as const },
-          ].map((perm) => (
-            <Pressable
-              key={perm.key}
-              style={styles.permissionRow}
-              onPress={() => !riderData.permissions?.[perm.key] && setPermissionModal({ visible: true, type: perm.type })}
-            >
-              <View style={[styles.permissionIcon, riderData.permissions?.[perm.key] ? styles.permissionIconGranted : styles.permissionIconDenied]}>
-                <Text style={{ fontSize: 20, color: riderData.permissions?.[perm.key] ? '#10B981' : '#EF4444' }}>
-                  {perm.icon}
-                </Text>
-              </View>
-              <View style={styles.permissionInfo}>
-                <Text style={styles.permissionLabel}>{perm.label}</Text>
-                <Text style={styles.permissionDesc}>{perm.desc}</Text>
-              </View>
-              {riderData.permissions?.[perm.key] ? (
-                <Text style={{ fontSize: 24, color: '#10B981' }}>✓</Text>
-              ) : (
-                <Text style={styles.permissionGrantText}>อนุญาต</Text>
-              )}
-            </Pressable>
-          ))}
+      {/* ---------- ปุ่มหลักตามสถานะ ---------- */}
+      {isApproved && isBusy && (
+        <Button3D title="ไปที่งานที่กำลังส่ง" icon="🧭" size="lg" fullWidth onPress={openJob} style={styles.block} />
+      )}
+      {isApproved && !isBusy && isOnline && (
+        <View style={styles.block}>
+          <Button3D title="ดูงานใกล้ฉัน" icon="📋" size="lg" fullWidth onPress={() => router.push('/rider-jobs' as never)} />
+          <Button3D
+            title="หยุดรับงาน"
+            icon="⏸️"
+            variant="secondary"
+            fullWidth
+            onPress={handleGoOffline}
+            style={styles.gapTop}
+          />
         </View>
+      )}
+      {isApproved && !isBusy && !isOnline && (
+        <Button3D
+          title="เริ่มรับงาน"
+          icon="🟢"
+          variant="success"
+          size="lg"
+          fullWidth
+          disabled={!rider.can_go_online}
+          onPress={handleGoOnline}
+          loadingText="กำลังเปิดรับงาน..."
+          style={styles.block}
+        />
+      )}
+      {(rider.status === 'pending' || canReapply) && docsMissing > 0 && (
+        <Button3D
+          title={`อัปโหลดเอกสาร (${docsDone}/${docsRequired})`}
+          icon="📄"
+          size="lg"
+          fullWidth
+          onPress={() => router.push('/rider-documents' as never)}
+          style={styles.block}
+        />
+      )}
+      {(canReapply || rider.status === 'pending') && !showForm && (
+        <Button3D
+          title={canReapply ? 'แก้ไขแล้วส่งใบสมัครใหม่' : 'แก้ไขใบสมัคร'}
+          icon="✏️"
+          variant="secondary"
+          fullWidth
+          onPress={() => setShowForm(true)}
+          style={styles.block}
+        />
+      )}
+      {showForm && (
+        <RiderRegisterForm
+          rider={rider}
+          defaultName={user?.name}
+          defaultPhone={user?.phone}
+          onDone={handleRegistered}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
+      {rider.status === 'suspended' && (
+        <Button3D
+          title="ติดต่อทีมงาน"
+          icon="💬"
+          variant="secondary"
+          fullWidth
+          onPress={() => router.push('/support' as never)}
+          style={styles.block}
+        />
+      )}
 
-        {/* Quick Actions - Approved Only */}
+      {/* ---------- แบนเนอร์แคมเปญไรเดอร์ ---------- */}
+      {isApproved && (
+        <View style={styles.bleed}>
+          <BannerSlider placement="rider" height={148} refreshKey={bannerKey} />
+        </View>
+      )}
+
+      {/* ---------- รายได้วันนี้ ---------- */}
+      {isApproved && (
+        <>
+          <SectionHeader
+            title="รายได้วันนี้"
+            icon="💰"
+            actionLabel="ดูทั้งหมด"
+            onAction={() => router.push('/rider-earnings' as never)}
+            style={styles.section}
+          />
+          <View style={styles.grid}>
+            <StatTile
+              label="รายได้วันนี้"
+              icon="💸"
+              tone="gold"
+              loading={earningsLoading && !earnings}
+              value={<PriceText amount={earnings?.gross_earnings ?? 0} size="lg" tone="gold" />}
+              onPress={() => router.push('/rider-earnings' as never)}
+              style={styles.gridItem}
+            />
+            <StatTile
+              label="ส่งสำเร็จวันนี้"
+              icon="📦"
+              tone="success"
+              loading={earningsLoading && !earnings}
+              value={earnings?.completed_jobs ?? 0}
+              caption="งาน"
+              style={styles.gridItem}
+            />
+            <StatTile
+              label="ยอดในกระเป๋า"
+              icon="👛"
+              tone="info"
+              value={<PriceText amount={rider.wallet_balance} size="lg" />}
+              onPress={() => router.push('/(tabs)/wallet' as never)}
+              style={styles.gridItem}
+            />
+            <StatTile
+              label="วงเงินรับงานเก็บเงินปลายทาง"
+              icon="💵"
+              tone="warning"
+              value={<PriceText amount={rider.cod_credit_available} size="lg" />}
+              style={styles.gridItem}
+            />
+          </View>
+        </>
+      )}
+
+      {/* ---------- เมนูลัด ---------- */}
+      <SectionHeader title="เมนูไรเดอร์" icon="🧰" style={styles.section} />
+      <View style={styles.grid}>
         {isApproved && (
-          <>
-            <Text style={styles.sectionTitle}>เมนูลัด</Text>
-            <View style={styles.actionsGrid}>
-              {[
-                { icon: '📋', label: 'งานที่รอรับ', desc: 'ดูรายการงานใหม่', color: '#3B82F6', route: '/rider-jobs' },
-                { icon: '🧭', label: 'งานปัจจุบัน', desc: 'ดูงานที่กำลังทำ', color: '#10B981', route: '/rider-job-detail' },
-                { icon: '💼', label: 'บริการของฉัน', desc: 'เลือกบริการที่ให้', color: '#EC4899', route: '/rider-services' },
-                { icon: '📄', label: 'เอกสาร', desc: 'อัพเดทเอกสาร', color: '#8B5CF6', route: '/rider-documents' },
-              ].map((action, i) => (
-                <Pressable key={i} style={styles.actionCard} onPress={() => router.push(action.route as any)}>
-                  <View style={[styles.actionIcon, { backgroundColor: action.color + '20' }]}>
-                    <Text style={{ fontSize: 24, color: action.color }}>{action.icon}</Text>
-                  </View>
-                  <Text style={styles.actionLabel}>{action.label}</Text>
-                  <Text style={styles.actionDesc}>{action.desc}</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            {/* Online/Offline Toggle */}
-            <Pressable
-              style={[styles.toggleBtn, isOnline ? styles.toggleBtnOffline : styles.toggleBtnOnline, isTogglingAvailability && styles.buttonDisabled]}
-              onPress={toggleAvailability}
-              disabled={isTogglingAvailability}
-            >
-              {isTogglingAvailability ? (
-                <ActivityIndicator color="#FFF" />
-              ) : (
-                <Text style={styles.toggleBtnText}>{isOnline ? '🔴 ปิดรับงาน' : '🟢 เปิดรับงาน'}</Text>
-              )}
-            </Pressable>
-
-            {/* Location Sharing Toggle */}
-            <Pressable
-              style={[styles.locationShareBtn, isLocationSharing && styles.locationShareBtnActive, isTogglingLocationShare && styles.buttonDisabled]}
-              onPress={toggleLocationSharing}
-              disabled={isTogglingLocationShare}
-            >
-              {isTogglingLocationShare ? (
-                <ActivityIndicator color={isLocationSharing ? '#FFF' : '#3B82F6'} />
-              ) : (
-                <>
-                  <View style={[styles.locationDot, isLocationSharing && styles.locationDotActive]} />
-                  <Text style={[styles.locationShareText, isLocationSharing && styles.locationShareTextActive]}>
-                    {isLocationSharing ? '📍 กำลังแชร์ตำแหน่ง' : '📍 แชร์ตำแหน่ง'}
-                  </Text>
-                </>
-              )}
-            </Pressable>
-          </>
+          <ActionTile icon="📋" title="งานใกล้ฉัน" caption="ดูงานที่รอคนรับ" onPress={() => router.push('/rider-jobs' as never)} />
         )}
-      </ScrollView>
+        {isApproved && isBusy && (
+          <ActionTile icon="🧭" title="งานปัจจุบัน" caption="ขั้นตอนและนำทาง" onPress={openJob} highlight />
+        )}
+        {isApproved && (
+          <ActionTile icon="📊" title="รายได้ & ประวัติ" caption="สรุปรายวัน รายเดือน" onPress={() => router.push('/rider-earnings' as never)} />
+        )}
+        <ActionTile
+          icon="📄"
+          title="เอกสาร"
+          caption={docsMissing > 0 ? `ยังขาด ${docsMissing} รายการ` : rider.documents_pending_review ? 'รอทีมงานตรวจ' : 'ครบแล้ว'}
+          onPress={() => router.push('/rider-documents' as never)}
+          highlight={docsMissing > 0}
+        />
+      </View>
 
-      {/* Permission Modal */}
-      <PermissionModal
-        visible={permissionModal.visible}
-        onClose={() => setPermissionModal({ ...permissionModal, visible: false })}
-        onGrant={handleGrantPermission}
-        permissionType={permissionModal.type}
-        isLoading={isGrantingPermission}
+      {/* ---------- ตำแหน่ง & ความเป็นส่วนตัว ---------- */}
+      <SectionHeader
+        title="ตำแหน่ง & ความเป็นส่วนตัว"
+        subtitle="ใช้ตำแหน่งเฉพาะตอนออนไลน์หรือกำลังส่งงาน"
+        icon="📍"
+        style={styles.section}
       />
-    </View>
+      <Card3D padding={spacing.md} style={styles.block}>
+        {gpsOff && (
+          <Pressable
+            onPress={() => Linking.openSettings().catch(() => {})}
+            style={[styles.gpsOff, { backgroundColor: colors.dangerSoft }]}
+            accessibilityRole="button"
+          >
+            <Text style={[typography.bodySm, { color: colors.danger }]}>⚠️ GPS ของเครื่องปิดอยู่ — แตะเพื่อเปิดในตั้งค่า</Text>
+          </Pressable>
+        )}
+        <PermissionRow
+          icon="📍"
+          title="ตำแหน่งขณะใช้แอป"
+          description="จำเป็นสำหรับเริ่มรับงานและนำทาง"
+          granted={fgGranted}
+          onPress={() => flow.ensureForeground().then(() => load('silent'))}
+        />
+        <PermissionRow
+          icon="🤝"
+          title="แชร์ตำแหน่งให้ลูกค้าระหว่างส่ง"
+          description="ลูกค้าเห็นเฉพาะออเดอร์ที่คุณกำลังส่ง ต้องยอมรับก่อนรับงานแรก"
+          granted={consentGiven}
+          actionLabel="ยอมรับ"
+          onPress={() => flow.requestConsent().then(() => load('silent'))}
+        />
+        <PermissionRow
+          icon="🛰️"
+          title="ติดตามต่อแม้ปิดหน้าจอ"
+          description={
+            bgGranted
+              ? 'ทำงานเฉพาะช่วงมีงาน และหยุดเองเมื่อจบงาน'
+              : 'ไม่บังคับ — ถ้าไม่เปิด ตำแหน่งจะอัปเดตเฉพาะตอนเปิดแอปไว้'
+          }
+          granted={bgGranted}
+          optional
+          actionLabel="ตั้งค่า"
+          onPress={
+            fgGranted
+              ? () => flow.offerBackground({ force: true }).then(() => load('silent')) // มีงานอยู่ → สลับไปติดตามแบบเบื้องหลัง
+              : undefined
+          }
+        />
+        {isBusy && (
+          <Text style={[typography.caption, styles.trackingNote, { color: colors.textMuted }]}>
+            {trackingMode === 'background'
+              ? '📡 กำลังแชร์ตำแหน่งงานปัจจุบัน (ทำงานแม้ปิดหน้าจอ)'
+              : trackingMode === 'foreground'
+                ? '📡 กำลังแชร์ตำแหน่งงานปัจจุบัน (เฉพาะตอนเปิดแอป)'
+                : '⚠️ ยังไม่ได้แชร์ตำแหน่งงานปัจจุบัน — เปิดสิทธิ์ตำแหน่งก่อนนะ'}
+          </Text>
+        )}
+      </Card3D>
+
+      {/* ---------- ข้อมูลบัญชี ---------- */}
+      {isApproved && (
+        <>
+          <SectionHeader title="ผลงานของฉัน" icon="⭐" style={styles.section} />
+          <View style={styles.grid}>
+            <StatTile
+              label="คะแนน"
+              icon="⭐"
+              tone="gold"
+              value={rider.rating_count > 0 ? num(rider.rating).toFixed(1) : '-'}
+              caption={rider.rating_count > 0 ? `จาก ${rider.rating_count} รีวิว` : 'ยังไม่มีรีวิว'}
+              style={styles.gridItem}
+            />
+            <StatTile
+              label="ส่งสำเร็จทั้งหมด"
+              icon="🏁"
+              tone="success"
+              value={rider.completed_jobs}
+              caption={rider.total_jobs > 0 ? `สำเร็จ ${Math.round(num(rider.completion_rate))}%` : undefined}
+              style={styles.gridItem}
+            />
+          </View>
+        </>
+      )}
+
+      {!!rider.id && (
+        <View style={styles.webBox}>
+          <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>
+            แก้ไขยานพาหนะ ตั้งค่างาน และดูรายงานเต็มได้บนเว็บไซต์
+          </Text>
+          <WebsiteButton path="/user/rider" label="จัดการบัญชีไรเดอร์บนเว็บไซต์" fullWidth />
+        </View>
+      )}
+
+      {flow.element}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0F0F23' },
-  scrollView: { flex: 1 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  devModeBanner: { backgroundColor: 'rgba(245,158,11,0.2)', borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#F59E0B' },
-  devModeText: { color: '#FBBF24', fontSize: 14, fontWeight: '600', textAlign: 'center' },
-  centerBox: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  centerTitle: { fontSize: 20, fontWeight: 'bold', color: '#FFF', marginTop: 16 },
-  centerText: { fontSize: 14, color: '#9CA3AF', textAlign: 'center', marginTop: 8 },
-  loadingText: { color: '#9CA3AF', marginTop: 12 },
-  primaryButton: { backgroundColor: '#3B82F6', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, marginTop: 24 },
-  primaryButtonLarge: { backgroundColor: '#3B82F6', paddingVertical: 16, borderRadius: 14, marginTop: 16 },
-  primaryButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 56, paddingBottom: 16 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#FFF' },
-  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
-  benefitsCard: { borderRadius: 16, padding: 24, marginBottom: 16 },
-  benefitsTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginBottom: 16 },
-  benefitItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  benefitText: { color: '#FFF', marginLeft: 8 },
-  warningCard: { backgroundColor: 'rgba(245,158,11,0.15)', borderRadius: 12, padding: 16, marginBottom: 16 },
-  warningTitle: { color: '#FBBF24', fontWeight: 'bold', marginBottom: 8 },
-  warningItem: { color: '#FCD34D', fontSize: 13, marginBottom: 4 },
-  formCard: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
-  formTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginBottom: 16 },
-  inputGroup: { marginBottom: 16 },
-  label: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', marginBottom: 8 },
-  input: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, color: '#FFF', fontSize: 16 },
-  vehicleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  vehicleBtn: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)' },
-  vehicleBtnActive: { backgroundColor: '#3B82F6' },
-  vehicleBtnText: { color: '#9CA3AF', fontWeight: '500' },
-  vehicleBtnTextActive: { color: '#FFF' },
-  submitBtn: { backgroundColor: '#3B82F6', paddingVertical: 16, borderRadius: 14, marginTop: 8 },
-  submitBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-  buttonDisabled: { opacity: 0.6 },
-  statusCard: { borderRadius: 16, padding: 24, marginBottom: 16 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  statusInfo: { marginLeft: 12, flex: 1 },
-  statusTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
-  statusSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
-  statusNote: { marginTop: 8 },
-  statusNoteText: { color: 'rgba(255,255,255,0.9)', marginBottom: 12 },
-  statusBtn: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 12, paddingVertical: 8, paddingHorizontal: 16, alignSelf: 'flex-start' },
-  statusBtnText: { color: '#FFF', fontWeight: '500' },
-  statsRow: { flexDirection: 'row', marginTop: 8 },
-  statItem: { flex: 1 },
-  statLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  statValue: { fontSize: 18, fontWeight: 'bold', color: '#FFF', marginTop: 2 },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)' },
-  statusBadgeOnline: { backgroundColor: 'rgba(16,185,129,0.2)' },
-  statusBadgeText: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
-  statusBadgeTextOnline: { color: '#10B981' },
-  permissionCard: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 20, marginBottom: 16 },
-  permissionTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFF', marginBottom: 16 },
-  permissionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.08)' },
-  permissionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  permissionIconGranted: { backgroundColor: 'rgba(16,185,129,0.15)' },
-  permissionIconDenied: { backgroundColor: 'rgba(239,68,68,0.15)' },
-  permissionInfo: { flex: 1, marginLeft: 12 },
-  permissionLabel: { fontSize: 15, fontWeight: '500', color: '#FFF' },
-  permissionDesc: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  permissionGrantText: { color: '#3B82F6', fontWeight: '600' },
-  sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#FFF', marginBottom: 12, marginTop: 8 },
-  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  actionCard: { width: '47%', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  actionIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  actionLabel: { fontSize: 14, fontWeight: 'bold', color: '#FFF' },
-  actionDesc: { fontSize: 11, color: '#6B7280', marginTop: 2 },
-  toggleBtn: { borderRadius: 16, paddingVertical: 18, marginTop: 16 },
-  toggleBtnOnline: { backgroundColor: '#10B981' },
-  toggleBtnOffline: { backgroundColor: '#EF4444' },
-  toggleBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-  locationShareBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 16, paddingVertical: 18, marginTop: 12, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.1)' },
-  locationShareBtnActive: { backgroundColor: '#10B981', borderColor: '#34D399' },
-  locationDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#6B7280', marginRight: 12 },
-  locationDotActive: { backgroundColor: '#FFF' },
-  locationShareText: { fontSize: 16, fontWeight: 'bold', color: '#9CA3AF' },
-  locationShareTextActive: { color: '#FFF' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
-  modalContent: { backgroundColor: '#1F2937', borderRadius: 24, width: '100%', overflow: 'hidden' },
-  modalHeader: { padding: 24, alignItems: 'center' },
-  modalIconBox: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
-  modalBody: { padding: 20 },
-  modalDesc: { fontSize: 14, color: '#D1D5DB', lineHeight: 22 },
-  modalActions: { flexDirection: 'row', padding: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
-  modalCancelBtn: { flex: 1, paddingVertical: 12, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, marginRight: 8 },
-  modalCancelText: { color: '#9CA3AF', textAlign: 'center', fontWeight: '600' },
-  modalGrantBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, marginLeft: 8 },
-  modalGrantText: { color: '#FFF', textAlign: 'center', fontWeight: 'bold' },
+  flex: {
+    flex: 1,
+  },
+  center: {
+    textAlign: 'center',
+  },
+  block: {
+    marginBottom: spacing.lg,
+  },
+  gapTop: {
+    marginTop: spacing.sm,
+  },
+  section: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  bleed: {
+    marginHorizontal: -spacing.screen,
+    marginBottom: spacing.md,
+  },
+  heroInner: {
+    padding: spacing.xl,
+    gap: spacing.xs,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+  },
+  heroEmoji: {
+    fontSize: 44,
+    marginBottom: spacing.xs,
+  },
+  benefits: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  benefitIcon: {
+    fontSize: 22,
+    width: 30,
+    textAlign: 'center',
+  },
+  statusInner: {
+    padding: spacing.lg,
+    gap: spacing.sm,
+    borderRadius: radii.xl,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  statusEmoji: {
+    fontSize: 36,
+  },
+  blockNote: {
+    borderRadius: radii.md,
+    padding: spacing.sm,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  gridItem: {
+    flexBasis: '47%',
+    flexGrow: 1,
+  },
+  tile: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    minHeight: 112,
+  },
+  tileIcon: {
+    fontSize: 28,
+    marginBottom: spacing.xs,
+  },
+  permRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  permIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  permEmoji: {
+    fontSize: 20,
+  },
+  gpsOff: {
+    borderRadius: radii.md,
+    padding: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  trackingNote: {
+    marginTop: spacing.md,
+  },
+  webBox: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
 });

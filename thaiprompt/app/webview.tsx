@@ -1,9 +1,11 @@
 /**
- * WebView Screen - เปิด URL ในเบราว์เซอร์ภายนอก
- * (ใช้ Linking แทน react-native-webview เพราะยังไม่ได้ติดตั้ง)
+ * WebView Screen - เปิดลิงก์เว็บของเราในเบราว์เซอร์ในแอป (Custom Tabs)
+ *
+ * PLAY-23: deep link thaiprompt://webview?url= รับเฉพาะ https://*.thaiprompt.online
+ * scheme/โดเมนอื่น (intent://, javascript:, เว็บภายนอก) ปฏิเสธทั้งหมด
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,9 +14,27 @@ import {
   StyleSheet,
   StatusBar,
   SafeAreaView,
-  Linking,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import { isTrustedWebUrl } from '@/utils/linking';
+
+const safeDecode = (value?: string): string | null => {
+  if (!value) return null;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+};
+
+const goBackSafely = () => {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace('/(tabs)' as never);
+  }
+};
 
 export default function WebViewScreen() {
   const params = useLocalSearchParams<{
@@ -24,32 +44,36 @@ export default function WebViewScreen() {
   }>();
 
   // Decode URL
-  const url = params.url ? decodeURIComponent(params.url) : null;
-  const title = params.title ? decodeURIComponent(params.title) : 'เว็บไซต์';
-  const icon = params.icon ? decodeURIComponent(params.icon) : '🌐';
+  const rawUrl = safeDecode(params.url);
+  const url = isTrustedWebUrl(rawUrl) ? rawUrl : null;
+  const title = safeDecode(params.title) || 'เว็บไซต์';
+  const icon = safeDecode(params.icon) || '🌐';
+  const openedRef = useRef(false);
 
-  // เปิด URL ในเบราว์เซอร์และกลับหน้าเดิม
+  // เปิด URL ในเบราว์เซอร์แล้วกลับหน้าเดิม (เปิดครั้งเดียว)
   useEffect(() => {
-    if (url) {
-      Linking.openURL(url).catch((err) => {
-        console.error('Cannot open URL:', err);
+    if (!url || openedRef.current) return;
+    openedRef.current = true;
+    WebBrowser.openBrowserAsync(url)
+      .catch(() => {
+        // เปิดไม่ได้ก็กลับหน้าเดิม
+      })
+      .finally(() => {
+        goBackSafely();
       });
-      // กลับหน้าเดิมหลังเปิด URL
-      setTimeout(() => {
-        router.back();
-      }, 500);
-    }
   }, [url]);
 
-  // ถ้าไม่มี URL ให้กลับ
+  // ไม่มี URL หรือเป็นลิงก์ที่ไม่อนุญาต
   if (!url) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
         <View style={styles.errorContainer}>
-          <Text style={styles.errorEmoji}>❌</Text>
-          <Text style={styles.errorText}>ไม่พบ URL</Text>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Text style={styles.errorEmoji}>🔒</Text>
+          <Text style={styles.errorText}>
+            {rawUrl ? 'ลิงก์นี้เปิดจากแอปไม่ได้เพื่อความปลอดภัยของคุณ' : 'ไม่พบลิงก์ที่ต้องการเปิด'}
+          </Text>
+          <Pressable style={styles.backButton} onPress={goBackSafely} accessibilityRole="button">
             <Text style={styles.backButtonText}>กลับ</Text>
           </Pressable>
         </View>
@@ -63,7 +87,7 @@ export default function WebViewScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3B82F6" />
         <Text style={styles.loadingText}>กำลังเปิด {title}...</Text>
-        <Text style={styles.urlText}>{icon} {url}</Text>
+        <Text style={styles.urlText}>{icon}</Text>
       </View>
     </SafeAreaView>
   );

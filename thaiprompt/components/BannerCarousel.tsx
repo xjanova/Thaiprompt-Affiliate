@@ -30,6 +30,7 @@ import { router } from 'expo-router';
 // import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { trackBannerClick, type Banner } from '@/services/api';
+import { isAllowedInternalRoute } from '@/utils/linking';
 import { getBannersWithCache, type CachedBanner } from '@/services/bannerCache';
 import { openUrl } from '@/utils/navigation';
 
@@ -160,25 +161,8 @@ export default function BannerCarousel({
       // Default navigation
       if (!banner.link) return;
 
-      // ⭐ รายการ routes ที่มีอยู่ในแอพ (ป้องกัน navigation ไปยัง route ที่ไม่มี)
-      const validInternalRoutes = [
-        '/dashboard', '/shopping', '/register', '/wallet', '/referral',
-        '/services', '/academy', '/support', '/tpix', '/stores', '/cart',
-        '/orders', '/commissions', '/leaderboard', '/login', '/main-menu',
-        '/notifications', '/settings', '/privacy', '/terms', '/rank',
-        '/mlm-tree', '/wealth-guide', '/watch-earn', '/wiki', '/kyc',
-        '/edit-profile', '/notification-settings', '/wallet-history',
-        '/wallet-topup', '/wallet-transfer', '/wallet-withdraw', '/coming-soon',
-      ];
-
-      // ตรวจสอบว่าเป็น internal route ที่ถูกต้องหรือไม่
-      const isValidInternalRoute = (link: string): boolean => {
-        // ถ้าเริ่มต้นด้วย /product/ หรือ /store/ หรือ /order/ ถือว่าถูกต้อง (dynamic routes)
-        if (link.startsWith('/product/') || link.startsWith('/store/') || link.startsWith('/order/')) {
-          return true;
-        }
-        return validInternalRoutes.includes(link);
-      };
+      // ⭐ ใช้ allowlist กลาง (utils/linking) — หน้า MLM/คริปโตถูกถอดออกจากแอปแล้ว (PLAY-07/11)
+      const isValidInternalRoute = (link: string): boolean => isAllowedInternalRoute(link);
 
       switch (banner.linkType) {
         case 'product':
