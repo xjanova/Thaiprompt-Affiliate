@@ -8,7 +8,8 @@
  * - ถ้ามี banner ใหม่จึงโหลดใหม่
  */
 
-import * as FileSystem from 'expo-file-system';
+// SDK 54+ ย้าย API แบบเดิมไปที่ expo-file-system/legacy
+import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getBanners, type Banner } from './api';
 
@@ -368,7 +369,7 @@ export const getBannerCacheSize = async (): Promise<number> => {
     let totalSize = 0;
 
     for (const file of files) {
-      const fileInfo = await FileSystem.getInfoAsync(`${BANNER_DIRECTORY}${file}`, { size: true });
+      const fileInfo = await FileSystem.getInfoAsync(`${BANNER_DIRECTORY}${file}`);
       if (fileInfo.exists && fileInfo.size) {
         totalSize += fileInfo.size;
       }

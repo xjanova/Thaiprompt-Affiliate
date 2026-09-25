@@ -1,21 +1,20 @@
-# GitHub Actions Workflow สำหรับ Build Mobile App
-# ใช้ EAS Cloud Build - ฟรี 30 builds/เดือน
+# GitHub Actions Workflow สำหรับ Build Mobile App (โฟลเดอร์ thaiprompt/ — Expo SDK 57)
+# ใช้ EAS Cloud Build — สั่งรันเองเท่านั้น (ไม่ trigger อัตโนมัติ และไม่ submit ขึ้นสโตร์)
 #
 # วิธีใช้:
 # 1. สร้าง Expo account ที่ https://expo.dev
 # 2. สร้าง Access Token ที่ Settings > Access Tokens
 # 3. เพิ่ม Token ใน GitHub Secrets ชื่อ EXPO_TOKEN
-# 4. สร้าง tag ชื่อ mobile-v* เพื่อ trigger build หรือใช้ workflow_dispatch
+# 4. Actions > "Mobile App Build" > Run workflow แล้วเลือก platform / profile
+#
+# หมายเหตุ:
+# - keystore / google-services.json / Play service account เก็บใน EAS เท่านั้น (repo เป็น PUBLIC)
+# - profile production สร้าง AAB (signed ด้วย EAS managed credentials) — การส่งขึ้น Play ให้ทำเองด้วย `eas submit`
 
 name: 📱 Mobile App Build
 
 on:
-  # Build เมื่อสร้าง tag
-  push:
-    tags:
-      - 'mobile-v*'
-
-  # Manual trigger
+  # Manual trigger เท่านั้น
   workflow_dispatch:
     inputs:
       platform:
@@ -37,18 +36,22 @@ on:
           - preview
           - production
 
+permissions:
+  contents: read
+
 env:
-  WORKING_DIR: mobile-app
+  WORKING_DIR: thaiprompt
+  # Expo SDK 57 (React Native 0.86) ต้องใช้ Node.js >= 22.13
+  NODE_VERSION: '22'
 
 jobs:
   # =====================================================
-  # Build Android APK
+  # Build Android (APK สำหรับ development/preview, AAB สำหรับ production)
   # =====================================================
   build-android:
     name: 🤖 Build Android
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'push' ||
       github.event.inputs.platform == 'android' ||
       github.event.inputs.platform == 'all'
 
@@ -63,7 +66,7 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
 
@@ -76,17 +79,18 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🏗️ Build Android APK
+      - name: 🏗️ Build Android
+        env:
+          PROFILE: ${{ github.event.inputs.profile }}
         run: |
-          PROFILE=${{ github.event.inputs.profile || 'preview' }}
           echo "Building with profile: $PROFILE"
-          eas build --platform android --profile $PROFILE --non-interactive
+          eas build --platform android --profile "$PROFILE" --non-interactive --no-wait
 
       - name: 📤 Get build URL
         if: success()
         run: |
-          echo "✅ Build completed!"
-          echo "📱 Download APK from Expo dashboard: https://expo.dev"
+          echo "✅ Build queued on EAS"
+          echo "📱 ติดตาม/ดาวน์โหลดไฟล์ได้ที่ Expo dashboard: https://expo.dev"
 
   # =====================================================
   # Build iOS (ต้องมี Apple Developer Account)
@@ -109,7 +113,7 @@ jobs:
       - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: '${{ env.WORKING_DIR }}/package-lock.json'
 
@@ -122,15 +126,15 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: 🏗️ Build iOS IPA
+      - name: 🏗️ Build iOS
+        env:
+          PROFILE: ${{ github.event.inputs.profile }}
         run: |
-          PROFILE=${{ github.event.inputs.profile || 'preview' }}
           echo "Building with profile: $PROFILE"
-          eas build --platform ios --profile $PROFILE --non-interactive
+          eas build --platform ios --profile "$PROFILE" --non-interactive --no-wait
 
       - name: 📤 Get build URL
         if: success()
         run: |
-          echo "✅ Build completed!"
-          echo "📱 Download IPA from Expo dashboard: https://expo.dev"
-
+          echo "✅ Build queued on EAS"
+          echo "📱 ติดตาม/ดาวน์โหลดไฟล์ได้ที่ Expo dashboard: https://expo.dev"

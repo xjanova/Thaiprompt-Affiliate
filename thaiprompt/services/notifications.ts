@@ -41,8 +41,11 @@ export const setupNotificationHandler = (): void => {
 
   try {
     Notifications.setNotificationHandler({
+      // SDK 53+: shouldShowAlert เลิกใช้ ต้องระบุ shouldShowBanner / shouldShowList แทน
+      // (ถ้าไม่ระบุ แจ้งเตือนจะไม่เด้งตอนเปิดแอปอยู่)
       handleNotification: async () => ({
-        shouldShowAlert: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
         shouldPlaySound: true,
         shouldSetBadge: true,
       }),

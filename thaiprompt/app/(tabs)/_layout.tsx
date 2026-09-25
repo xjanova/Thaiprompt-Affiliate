@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
     right: 0,
   },
   tabBarBackground: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
   },
   tabBarTopBorder: {

@@ -5,8 +5,9 @@
  * รวมถึงการ save, read, delete และจัดการ directories
  */
 
-import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
+// SDK 54+ ย้าย API แบบเดิม (documentDirectory, getInfoAsync ฯลฯ) ไปที่ expo-file-system/legacy
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { Alert, Platform } from 'react-native';
 
 // =====================================================
@@ -120,7 +121,8 @@ export const getFileInfo = async (
   uri: string
 ): Promise<FileSystem.FileInfo | null> => {
   try {
-    const info = await FileSystem.getInfoAsync(uri, { size: true });
+    // legacy API คืน size มาเสมออยู่แล้ว (ไม่มี option size ให้ส่ง)
+    const info = await FileSystem.getInfoAsync(uri);
     return info.exists ? info : null;
   } catch (error) {
     console.error('Error getting file info:', error);
@@ -298,39 +300,30 @@ export const saveImage = async (
 };
 
 /**
- * Save รูปภาพไปยัง Media Library (แกลเลอรี่ของเครื่อง)
+ * บันทึก/แชร์รูปภาพผ่านหน้าต่างแชร์ของระบบ (ผู้ใช้เลือก "บันทึกรูป" หรือแอปปลายทางเอง)
  *
- * @param uri - URI ของรูป
- * @param albumName - ชื่ออัลบั้ม (optional)
- * @returns Promise<boolean>
+ * เดิมใช้ expo-media-library ซึ่งต้องขอสิทธิ์ READ_MEDIA_* ที่ Google Play จำกัด
+ * จึงเปลี่ยนมาใช้ expo-sharing ที่ไม่ต้องขอสิทธิ์ใด ๆ
+ *
+ * @param uri - URI ของรูป (file://)
+ * @param albumName - ไม่ใช้แล้ว (คงไว้ให้โค้ดที่เรียกอยู่ไม่ต้องแก้)
+ * @returns Promise<boolean> true เมื่อเปิดหน้าต่างแชร์สำเร็จ
  */
 export const saveToMediaLibrary = async (
   uri: string,
-  albumName?: string
+  _albumName?: string
 ): Promise<boolean> => {
   try {
-    // ขอ permission
-    const { status } = await MediaLibrary.requestPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'ต้องการสิทธิ์',
-        'กรุณาอนุญาตให้แอพบันทึกรูปภาพลงในแกลเลอรี่'
-      );
+    const available = await Sharing.isAvailableAsync();
+    if (!available) {
+      Alert.alert('บันทึกรูปไม่ได้', 'อุปกรณ์นี้ไม่รองรับการแชร์หรือบันทึกรูป');
       return false;
     }
 
-    // สร้าง asset
-    const asset = await MediaLibrary.createAssetAsync(uri);
-
-    // ถ้ามีชื่ออัลบั้ม ให้สร้างหรือเพิ่มเข้าอัลบั้ม
-    if (albumName) {
-      const album = await MediaLibrary.getAlbumAsync(albumName);
-      if (album) {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-      } else {
-        await MediaLibrary.createAlbumAsync(albumName, asset, false);
-      }
-    }
+    await Sharing.shareAsync(uri, {
+      mimeType: getMimeType(getFileExtension(uri) ?? 'jpg'),
+      dialogTitle: 'บันทึกหรือแชร์รูปภาพ',
+    });
 
     return true;
   } catch (error) {

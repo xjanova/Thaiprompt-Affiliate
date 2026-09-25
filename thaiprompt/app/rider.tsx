@@ -21,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-import { Audio } from 'expo-av';
+import { getMicrophonePermissionStatusAsync } from '@/services/permissions';
 import { useAuthStore } from '@/stores/authStore';
 import {
   getRiderStatus,
@@ -229,7 +229,7 @@ export default function RiderScreen() {
   const requestMicrophonePermission = async () => {
     setIsGrantingPermission(true);
     try {
-      const { status } = await Audio.requestPermissionsAsync();
+      const { status } = await getMicrophonePermissionStatusAsync();
       await updateRiderPermissions({ microphone: status === 'granted' });
       await loadRiderStatus();
       if (status === 'granted') Alert.alert('สำเร็จ', 'อนุญาตการเข้าถึงไมโครโฟนเรียบร้อย');

@@ -93,7 +93,7 @@ export default function CheckoutScreen() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
 
   // Polling
-  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [pollingCount, setPollingCount] = useState(0);
   const MAX_POLLING_COUNT = 120; // 6 นาที (3 วินาที x 120)
 

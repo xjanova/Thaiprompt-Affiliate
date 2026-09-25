@@ -24,12 +24,12 @@ export const GPS_SHARING_TASK_NAME = 'GPS_SHARING_TRACKING';
 
 // สถานะการติดตาม
 let isTracking = false;
-let trackingInterval: NodeJS.Timeout | null = null;
+let trackingInterval: ReturnType<typeof setInterval> | null = null;
 let currentJobId: number | null = null;
 
 // ⭐ สถานะ GPS Sharing
 let isGpsSharing = false;
-let gpsSharingInterval: NodeJS.Timeout | null = null;
+let gpsSharingInterval: ReturnType<typeof setInterval> | null = null;
 
 // =====================================================
 // Task Manager Definition

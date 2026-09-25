@@ -63,8 +63,9 @@ export const getDeviceInfo = async () => {
     deviceBrand: Device.brand || 'Unknown',
     osVersion: Device.osVersion || 'Unknown',
     appVersion: APP_INFO.VERSION,
-    locale: Localization.locale || 'th-TH',
-    timezone: Localization.timezone || 'Asia/Bangkok',
+    // SDK 5x ถอด Localization.locale / timezone แล้ว → ใช้ getLocales() / getCalendars()
+    locale: Localization.getLocales()[0]?.languageTag || 'th-TH',
+    timezone: Localization.getCalendars()[0]?.timeZone || 'Asia/Bangkok',
   };
 };
 

@@ -337,7 +337,7 @@ export default function QRScannerScreen() {
 
       {/* Camera View */}
       <CameraView
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
         facing={facing}
         enableTorch={isFlashOn}
         onCameraReady={handleCameraReady}
@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: 'space-between',
   },
   headerContainer: {

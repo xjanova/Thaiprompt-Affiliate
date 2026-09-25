@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0a0a1a',
   },
   backgroundGradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   content: {
     flex: 1,

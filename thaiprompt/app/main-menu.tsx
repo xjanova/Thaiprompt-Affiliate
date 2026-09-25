@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   glassOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(255,255,255,0.15)',
     opacity: 0.5,
   },

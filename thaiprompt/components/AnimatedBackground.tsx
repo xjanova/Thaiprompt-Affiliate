@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   particlesContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
     zIndex: 1,
   },
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     borderRadius: 1000,
   },
   orbsContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
   },
   orb: {

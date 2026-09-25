@@ -11,9 +11,13 @@
 
 import { Alert, Linking, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library';
 import * as Location from 'expo-location';
-import { Audio } from 'expo-av';
+
+// หมายเหตุ (อัปเกรด Expo SDK 57):
+// - เลิกใช้ expo-av (ถูกถอดออกตั้งแต่ SDK 55) และบล็อก RECORD_AUDIO ใน app.json
+//   แอปไม่มีฟีเจอร์อัดเสียง การโทรหาลูกค้าเปิดแอปโทรศัพท์ของเครื่อง (tel:) ซึ่งไม่ต้องใช้สิทธิ์ไมโครโฟน
+// - เลิกใช้ expo-media-library (ต้องใช้สิทธิ์ READ_MEDIA_* ที่ Google Play จำกัด)
+//   การบันทึกรูปใช้หน้าต่างแชร์ของระบบ (expo-sharing) แทน จึงไม่ต้องขอสิทธิ์
 
 // =====================================================
 // Types
@@ -54,12 +58,13 @@ export const checkMediaLibraryPermission = async (): Promise<PermissionResult> =
 
 /**
  * ตรวจสอบสถานะ permission บันทึกรูปลงแกลเลอรี่
+ *
+ * บันทึกรูปผ่านหน้าต่างแชร์ของระบบ (ผู้ใช้เลือกปลายทางเอง) จึงไม่ต้องขอสิทธิ์ → อนุญาตเสมอ
  */
 export const checkSaveMediaPermission = async (): Promise<PermissionResult> => {
-  const { status, canAskAgain } = await MediaLibrary.getPermissionsAsync();
   return {
-    granted: status === 'granted',
-    canAskAgain,
+    granted: true,
+    canAskAgain: true,
   };
 };
 
@@ -86,12 +91,35 @@ export const checkBackgroundLocationPermission = async (): Promise<PermissionRes
 };
 
 /**
- * ตรวจสอบสถานะ permission ไมโครโฟน
+ * ข้อความอธิบายเมื่อมีการขอสิทธิ์ไมโครโฟน (แอปไม่ใช้ไมโครโฟนแล้ว)
+ */
+export const MICROPHONE_NOT_REQUIRED_MESSAGE =
+  'แอปไม่ต้องใช้ไมโครโฟน การโทรหาลูกค้าจะเปิดแอปโทรศัพท์ของเครื่องโดยตรง';
+
+/**
+ * สถานะสิทธิ์ไมโครโฟนในรูปแบบเดียวกับ expo-av เดิม (ให้หน้าจอเดิมเรียกแทน Audio.requestPermissionsAsync ได้)
+ *
+ * RECORD_AUDIO ถูกบล็อกใน app.json → ตอบ denied เสมอ และไม่เปิดกล่องขอสิทธิ์ของระบบ
+ */
+export const getMicrophonePermissionStatusAsync = async (): Promise<{
+  status: 'granted' | 'denied';
+  granted: boolean;
+  canAskAgain: boolean;
+}> => {
+  return {
+    status: 'denied',
+    granted: false,
+    canAskAgain: false,
+  };
+};
+
+/**
+ * ตรวจสอบสถานะ permission ไมโครโฟน (ไม่ได้ใช้แล้ว → ไม่อนุญาตเสมอ)
  */
 export const checkMicrophonePermission = async (): Promise<PermissionResult> => {
-  const { status, canAskAgain } = await Audio.getPermissionsAsync();
+  const { granted, canAskAgain } = await getMicrophonePermissionStatusAsync();
   return {
-    granted: status === 'granted',
+    granted,
     canAskAgain,
   };
 };
@@ -162,33 +190,13 @@ export const requestMediaLibraryPermission = async (showAlert = true): Promise<b
 };
 
 /**
- * ขอ permission บันทึกรูปลงแกลเลอรี่ พร้อมแสดง Alert หากถูกปฏิเสธ
+ * ขอ permission บันทึกรูปลงแกลเลอรี่
+ *
+ * บันทึกรูปผ่านหน้าต่างแชร์ของระบบ (saveToMediaLibrary ใน fileService) จึงไม่ต้องขอสิทธิ์ → true เสมอ
+ * คง signature เดิม (showAlert) ไว้ให้โค้ดที่เรียกอยู่ไม่ต้องแก้
  */
-export const requestSaveMediaPermission = async (showAlert = true): Promise<boolean> => {
-  try {
-    const { status, canAskAgain } = await MediaLibrary.requestPermissionsAsync();
-
-    if (status === 'granted') {
-      return true;
-    }
-
-    if (showAlert) {
-      if (!canAskAgain) {
-        showSettingsAlert('บันทึกรูป', 'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพบันทึกรูปภาพลงแกลเลอรี่');
-      } else {
-        Alert.alert(
-          'ต้องการสิทธิ์บันทึกรูป',
-          'กรุณาอนุญาตให้แอพบันทึกรูปภาพลงในแกลเลอรี่',
-          [{ text: 'ตกลง' }]
-        );
-      }
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Request save media permission error:', error);
-    return false;
-  }
+export const requestSaveMediaPermission = async (_showAlert = true): Promise<boolean> => {
+  return true;
 };
 
 /**
@@ -265,33 +273,16 @@ export const requestBackgroundLocationPermission = async (showAlert = true): Pro
 };
 
 /**
- * ขอ permission ไมโครโฟน พร้อมแสดง Alert หากถูกปฏิเสธ
+ * ขอ permission ไมโครโฟน
+ *
+ * แอปไม่ใช้ไมโครโฟนแล้ว (RECORD_AUDIO ถูกบล็อก) → ไม่เปิดกล่องขอสิทธิ์ของระบบ คืน false เสมอ
+ * ถ้า showAlert = true จะแจ้งผู้ใช้ว่าไม่ต้องอนุญาตสิทธิ์นี้
  */
 export const requestMicrophonePermission = async (showAlert = true): Promise<boolean> => {
-  try {
-    const { status, canAskAgain } = await Audio.requestPermissionsAsync();
-
-    if (status === 'granted') {
-      return true;
-    }
-
-    if (showAlert) {
-      if (!canAskAgain) {
-        showSettingsAlert('ไมโครโฟน', 'กรุณาไปที่ตั้งค่าเพื่ออนุญาตให้แอพใช้ไมโครโฟน');
-      } else {
-        Alert.alert(
-          'ต้องการสิทธิ์ไมโครโฟน',
-          'กรุณาอนุญาตให้แอพใช้ไมโครโฟนเพื่อโทรหาลูกค้า',
-          [{ text: 'ตกลง' }]
-        );
-      }
-    }
-
-    return false;
-  } catch (error) {
-    console.error('Request microphone permission error:', error);
-    return false;
+  if (showAlert) {
+    Alert.alert('ไม่ต้องใช้ไมโครโฟน', MICROPHONE_NOT_REQUIRED_MESSAGE, [{ text: 'ตกลง' }]);
   }
+  return false;
 };
 
 // =====================================================

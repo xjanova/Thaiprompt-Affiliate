@@ -59,7 +59,7 @@ export default function BannerCarousel({
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
-  const autoPlayRef = useRef<NodeJS.Timeout | null>(null);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ⭐ ใช้ native Animated แทน reanimated (ต้องประกาศก่อน return)
   const fadeAnim = useRef(new Animated.Value(0)).current;

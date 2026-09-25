@@ -7,25 +7,21 @@
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0F0F23"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thaiprompt.affiliate",
-      "buildNumber": "40",
+      "buildNumber": "41",
       "infoPlist": {
-        "NSCameraUsageDescription": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC และรูปโปรไฟล์",
-        "NSPhotoLibraryUsageDescription": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
-        "NSLocationWhenInUseUsageDescription": "แอปต้องการตำแหน่งเพื่อแสดงงานใกล้เคียงสำหรับไรเดอร์",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "แอปต้องการติดตามตำแหน่งเพื่อแจ้งสถานะการจัดส่งให้ลูกค้า",
-        "UIBackgroundModes": ["location"]
+        "NSCameraUsageDescription": "แอปใช้กล้องเพื่อถ่ายรูปเอกสารยืนยันตัวตน (KYC) รูปโปรไฟล์ และสแกน QR Code",
+        "NSPhotoLibraryUsageDescription": "แอปเข้าถึงรูปภาพที่คุณเลือกเพื่ออัปโหลดเอกสารและรูปโปรไฟล์",
+        "NSLocationWhenInUseUsageDescription": "ใช้ตำแหน่งเฉพาะฟีเจอร์ไรเดอร์ เพื่อแสดงงานจัดส่งที่อยู่ใกล้คุณและนำทางไปรับ-ส่งของ ผู้ใช้ที่ไม่ได้เป็นไรเดอร์ไม่จำเป็นต้องอนุญาต",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "สำหรับไรเดอร์เท่านั้น: ใช้ตำแหน่งขณะแอปทำงานเบื้องหลังเฉพาะช่วงที่คุณกำลังส่งงานที่รับไว้ เพื่อให้ลูกค้าติดตามสถานะการจัดส่งได้ และหยุดติดตามเมื่อจบงานหรือออฟไลน์",
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
@@ -34,21 +30,28 @@
         "backgroundColor": "#0F0F23"
       },
       "package": "com.thaiprompt.affiliate",
-      "versionCode": 40,
+      "versionCode": 41,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_LOCATION",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.MANAGE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "web": {
@@ -59,7 +62,15 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "imageWidth": 200,
+          "backgroundColor": "#0F0F23"
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -70,30 +81,25 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC"
+          "cameraPermission": "แอปใช้กล้องเพื่อถ่ายรูปเอกสารยืนยันตัวตน (KYC) และสแกน QR Code",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร",
-          "cameraPermission": "แอปต้องการใช้กล้องเพื่อถ่ายรูปเอกสาร KYC"
-        }
-      ],
-      [
-        "expo-media-library",
-        {
-          "photosPermission": "แอปต้องการเข้าถึงรูปภาพเพื่ออัพโหลดเอกสาร KYC และรูปโปรไฟล์",
-          "savePhotosPermission": "แอปต้องการบันทึกรูปภาพลงในแกลเลอรี่",
-          "isAccessMediaLocationEnabled": true
+          "photosPermission": "แอปเข้าถึงรูปภาพที่คุณเลือกเพื่ออัปโหลดเอกสารและรูปโปรไฟล์",
+          "cameraPermission": "แอปใช้กล้องเพื่อถ่ายรูปเอกสารยืนยันตัวตน (KYC) และรูปโปรไฟล์",
+          "microphonePermission": false
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "แอปต้องการติดตามตำแหน่งเพื่อแจ้งสถานะการจัดส่งให้ลูกค้า",
-          "locationAlwaysPermission": "แอปต้องการติดตามตำแหน่งในพื้นหลังเมื่อคุณรับงานส่งของ",
-          "locationWhenInUsePermission": "แอปต้องการตำแหน่งเพื่อแสดงงานใกล้เคียงสำหรับไรเดอร์",
+          "locationWhenInUsePermission": "ใช้ตำแหน่งเฉพาะฟีเจอร์ไรเดอร์ เพื่อแสดงงานจัดส่งที่อยู่ใกล้คุณและนำทางไปรับ-ส่งของ ผู้ใช้ที่ไม่ได้เป็นไรเดอร์ไม่จำเป็นต้องอนุญาต",
+          "locationAlwaysAndWhenInUsePermission": "สำหรับไรเดอร์เท่านั้น: ใช้ตำแหน่งขณะแอปทำงานเบื้องหลังเฉพาะช่วงที่คุณกำลังส่งงานที่รับไว้ เพื่อให้ลูกค้าติดตามสถานะการจัดส่งได้ และหยุดติดตามเมื่อจบงานหรือออฟไลน์",
+          "locationAlwaysPermission": "สำหรับไรเดอร์เท่านั้น: ใช้ตำแหน่งขณะแอปทำงานเบื้องหลังเฉพาะช่วงที่คุณกำลังส่งงานที่รับไว้ เพื่อให้ลูกค้าติดตามสถานะการจัดส่งได้",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }

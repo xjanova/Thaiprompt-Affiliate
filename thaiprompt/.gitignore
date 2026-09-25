@@ -51,3 +51,18 @@ ios/
 
 # EAS
 .easignore
+
+# ความลับสำหรับ build / ส่งขึ้นสโตร์ — ห้าม commit (repo เป็น PUBLIC)
+# ให้เก็บใน EAS (managed credentials / file env vars) แทน
+google-services.json
+GoogleService-Info.plist
+play-service-account.json
+# กันไฟล์ service account ชื่ออื่น ๆ (เช่น service-account.json, google-play-service-account.json)
+*service-account*.json
+*.keystore
+credentials.json
+credentials/
+
+# โฟลเดอร์ native ที่ prebuild สร้าง (CNG) — สร้างใหม่ทุกครั้งตอน build
+/android
+/ios

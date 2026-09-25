@@ -7,6 +7,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Appearance } from 'react-native';
 
 type ThemeMode = 'light' | 'dark' | 'system';
+
+/**
+ * แปลงค่า color scheme ของระบบเป็นธีมของแอป
+ * RN 0.8x คืน 'unspecified' ได้ด้วย → ถือเป็น light
+ */
+const systemTheme = (): 'light' | 'dark' =>
+  Appearance.getColorScheme() === 'dark' ? 'dark' : 'light';
 type Language = 'th' | 'en';
 
 interface AppState {
@@ -30,7 +37,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial State
   themeMode: 'system',
-  resolvedTheme: Appearance.getColorScheme() || 'light',
+  resolvedTheme: systemTheme(),
   language: 'th',
   isOnline: true,
   isAppReady: false,
@@ -43,7 +50,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     let resolvedTheme: 'light' | 'dark';
 
     if (mode === 'system') {
-      resolvedTheme = Appearance.getColorScheme() || 'light';
+      resolvedTheme = systemTheme();
     } else {
       resolvedTheme = mode;
     }
@@ -101,7 +108,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       let resolvedTheme: 'light' | 'dark';
 
       if (mode === 'system') {
-        resolvedTheme = Appearance.getColorScheme() || 'light';
+        resolvedTheme = systemTheme();
       } else {
         resolvedTheme = mode;
       }
@@ -122,6 +129,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 Appearance.addChangeListener(({ colorScheme }) => {
   const { themeMode } = useAppStore.getState();
   if (themeMode === 'system') {
-    useAppStore.setState({ resolvedTheme: colorScheme || 'light' });
+    useAppStore.setState({ resolvedTheme: colorScheme === 'dark' ? 'dark' : 'light' });
   }
 });

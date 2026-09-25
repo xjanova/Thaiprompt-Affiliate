@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   disabledOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 6,
   },
