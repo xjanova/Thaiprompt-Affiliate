@@ -7,9 +7,10 @@
 // API Configuration
 // =====================================================
 
-// Production API URL - ใช้ production เสมอ
-// เพราะ dev server อาจมีปัญหา และ production มีข้อมูลจริง
-export const API_BASE_URL = 'https://main.thaiprompt.online/api/v1';
+// Production API URL - ใช้ production เป็นค่าเริ่มต้นเสมอ
+// EXPO_PUBLIC_API_URL ใช้เฉพาะตอนทดสอบกับ backend ในเครื่อง (เช่น emulator → http://10.0.2.2:8765/api/v1)
+// build ที่ขึ้น Play Store ไม่ตั้งค่านี้ จึงชี้ production เหมือนเดิม
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.trim() || 'https://main.thaiprompt.online/api/v1';
 
 // API Endpoints
 export const API_ENDPOINTS = {

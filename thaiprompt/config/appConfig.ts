@@ -21,8 +21,8 @@ export const APP_INFO = {
   BUILD_DATE: '2026-09-25',
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
-  // App URLs
-  WEBSITE: 'https://main.thaiprompt.online',
+  // App URLs (EXPO_PUBLIC_WEB_URL ใช้เฉพาะตอนทดสอบกับเว็บในเครื่อง — build จริงไม่ตั้ง)
+  WEBSITE: process.env.EXPO_PUBLIC_WEB_URL?.trim() || 'https://main.thaiprompt.online',
   SUPPORT_EMAIL: 'support@thaiprompt.online',
   TERMS_URL: 'https://main.thaiprompt.online/terms-of-service',
   PRIVACY_URL: 'https://main.thaiprompt.online/privacy-policy',
