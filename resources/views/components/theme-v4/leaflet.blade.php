@@ -38,6 +38,16 @@
                     maxZoom: 19,
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
                 }).addTo(map);
+                // กล่องแผนที่ที่ถูกซ่อน (x-show) ตอนสร้างมีขนาด 0 → Leaflet โหลดไทล์แค่แถบเดียว
+                // เดิมแต่ละหน้าพึ่ง invalidateSize ตามเวลา (setTimeout) ซึ่งอาจมาก่อนกล่องแสดงจริง (เครื่องช้า/แท็บพื้นหลัง)
+                // → คำนวณขนาดใหม่ทุกครั้งที่กล่องเปลี่ยนขนาดจริง
+                if (window.ResizeObserver) {
+                    new ResizeObserver(function () {
+                        if (el.clientWidth > 0 && el.clientHeight > 0) {
+                            try { map.invalidateSize(); } catch (e) { /* แผนที่ถูกลบไปแล้ว */ }
+                        }
+                    }).observe(el);
+                }
                 return map;
             },
 

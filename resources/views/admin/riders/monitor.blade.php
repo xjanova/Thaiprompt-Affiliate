@@ -53,7 +53,7 @@
                     <i class="fas" :class="card.icon"></i>
                 </span>
                 <span>
-                    <span class="tp-num" style="display:block; font-size:22px; font-weight:800; line-height:1;" x-text="stats[card.key] ?? 0"></span>
+                    <span class="tp-num" style="display:block; font-size:22px; font-weight:800; line-height:1;" x-text="loaded ? (stats[card.key] ?? 0) : '–'"></span>
                     <span style="display:block; font-size:11.5px; color:var(--ink2); margin-top:2px;" x-text="card.label"></span>
                 </span>
                 <span x-show="card.key === 'manual_needed' && (stats.manual_needed || 0) > 0"
@@ -125,7 +125,7 @@
                         </div>
                     </div>
                 </template>
-                <div x-show="pendingList().length === 0" style="text-align:center; color:var(--ink2); font-size:13px; padding:26px 8px;">
+                <div x-show="loaded && pendingList().length === 0" style="text-align:center; color:var(--ink2); font-size:13px; padding:26px 8px;">
                     <i class="fas fa-mug-hot" style="font-size:22px; opacity:.5; display:block; margin-bottom:6px;"></i>
                     ไม่มีงานรอไรเดอร์ตอนนี้
                 </div>
@@ -155,7 +155,7 @@
                         <a :href="job.url" class="tp-btn tp-btn-sm" style="margin-top:8px; width:100%;" @click.stop><i class="fas fa-up-right-from-square"></i> เปิดหน้างาน</a>
                     </div>
                 </template>
-                <div x-show="activeList().length === 0" style="text-align:center; color:var(--ink2); font-size:13px; padding:26px 8px;">
+                <div x-show="loaded && activeList().length === 0" style="text-align:center; color:var(--ink2); font-size:13px; padding:26px 8px;">
                     ไม่มีงานที่กำลังวิ่ง
                 </div>
             </div>
@@ -179,7 +179,7 @@
                         <a :href="rider.url" class="w1-link" style="font-size:12px;" @click.stop>โปรไฟล์ →</a>
                     </div>
                 </template>
-                <div x-show="riderList().length === 0" style="text-align:center; color:var(--ink2); font-size:13px; padding:26px 8px;">
+                <div x-show="loaded && riderList().length === 0" style="text-align:center; color:var(--ink2); font-size:13px; padding:26px 8px;">
                     ไม่มีไรเดอร์ออนไลน์
                 </div>
             </div>
@@ -213,6 +213,8 @@
             loading: false,
             error: '',
             generatedAt: '-',
+            // ยังไม่ได้ข้อมูลรอบแรก → ตัวเลขเป็น – และไม่ขึ้น "ไม่มีงาน" (กันเข้าใจผิดว่าระบบว่าง)
+            loaded: false,
             selectedKey: null,
             map: null,
             layers: null,
@@ -254,6 +256,7 @@
                     this.active = data.active_jobs || [];
                     this.riders = data.riders || [];
                     this.stats = data.stats || this.stats;
+                    this.loaded = true;
                     const ids = this.pending.map((j) => j.id);
                     this.newIds = this.seenPending === null ? [] : ids.filter((id) => !this.seenPending.includes(id));
                     this.seenPending = ids;

@@ -38,6 +38,17 @@
     }
     $hasBuyerPoint = $rw::validPoint($order->buyer_latitude, $order->buyer_longitude);
 
+    // สถานะไรเดอร์ตอนเปิดหน้า (ข้อมูลชุดเดียวกับ API ที่ poll) — กันหน้าแสดง "รอร้านกดพร้อมส่ง"
+    // + สวิตช์แชร์ปิด ระหว่างรอผลรอบแรก ทั้งที่ไรเดอร์กำลังมาส่งอยู่แล้ว
+    $initialRider = null;
+    if ($showLive) {
+        try {
+            $initialRider = app(\App\Services\DeliveryTrackingService::class)->riderLocation($order, 'fresh-market');
+        } catch (\Throwable $e) {
+            $initialRider = null;
+        }
+    }
+
     $liveCfg = [
         'statusUrl' => route('taladsod.orders.status-json', $order),
         'status' => $status,
@@ -47,6 +58,7 @@
             'locationUrl' => route('taladsod.delivery.rider-location', ['fresh-market', $order->id]),
             'shareUrl' => route('taladsod.delivery.share-location', ['fresh-market', $order->id]),
             'dropoff' => $hasBuyerPoint ? ['lat' => (float) $order->buyer_latitude, 'lng' => (float) $order->buyer_longitude] : null,
+            'initial' => $initialRider,
         ] : null,
     ];
 @endphp
@@ -148,7 +160,8 @@
                                 <a :href="'tel:' + (rider.phone || '').replace(/[^0-9+]/g, '')" x-show="rider.phone" class="ts-btn3d sm ts-tone-ok"><i class="fas fa-phone" aria-hidden="true"></i> โทร</a>
                             </div>
                         </template>
-                        <p class="ts-muted ts-small" style="margin:0;" x-show="riderLoc && updatedAt"><span class="ts-dot live ts-tone-ok" style="display:inline-block; margin-right:6px;"></span>ตำแหน่งไรเดอร์อัปเดต <span x-text="window.ts.timeAgo(updatedAt)"></span></p>
+                        {{-- GPS ขาดช่วง (is_stale) = จุดสีเหลืองไม่กะพริบ + บอกเหตุผล (ไม่หลอกว่าเป็นตำแหน่งสด) --}}
+                        <p class="ts-muted ts-small" style="margin:0;" x-show="riderLoc && updatedAt"><span class="ts-dot" :class="stale ? 'ts-tone-warn' : 'live ts-tone-ok'" style="display:inline-block; margin-right:6px;"></span>ตำแหน่งไรเดอร์อัปเดต <span x-text="window.ts.timeAgo(updatedAt)"></span><span x-show="stale && reasonText" x-text="' · ' + reasonText"></span></p>
 
                         {{-- แชร์ตำแหน่งของฉัน --}}
                         <div class="tp-inset ts-stack" style="border-radius:18px; padding:14px; gap:10px;">
@@ -381,12 +394,14 @@
 
         return {
             dialog: null, changed: false,
-            rider: null, riderLoc: null, updatedAt: null, hasJob: false, reasonText: '',
+            rider: null, riderLoc: null, updatedAt: null, stale: false, hasJob: false, reasonText: '',
             sharing: false, canShare: false, shareBusy: false, lastShared: null, shareError: '',
 
             init() {
                 if (cfg.watch) { statusTimer = setTimeout(() => this.pollStatus(), 20000); }
-                if (cfg.rider) { this.pollRider(); }
+                // วาดสถานะไรเดอร์จากข้อมูลที่เซิร์ฟเวอร์ส่งมากับหน้าก่อน แล้วค่อย poll ต่อ (ไม่กระพริบสถานะผิด)
+                const liveRider = cfg.rider && (!cfg.rider.initial || this.applyRider(cfg.rider.initial));
+                if (liveRider) { this.pollRider(); }
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible') {
                         if (cfg.watch && !this.changed) { this.pollStatus(); }
@@ -414,32 +429,38 @@
                 const r = await window.ts.get(cfg.rider.locationUrl);
                 let next = 15000;
                 if (r.ok && r.data) {
-                    const d = r.data;
-                    next = Math.max(10, Number(d.poll_interval_seconds) || 15) * 1000;
-                    this.hasJob = !!d.has_rider_job;
-                    this.rider = d.rider;
-                    this.reasonText = d.reason_text || (d.job ? d.job.status_text : 'ร้านกำลังเตรียมสินค้า');
-                    this.canShare = !!d.can_share_location;
-                    this.sharing = !!(d.customer_sharing && d.customer_sharing.enabled);
-                    // สวิตช์บนจอตรงกับสถานะจริงเสมอ (ระบบหยุดแชร์เองตอนงานจบ/เปลี่ยนไรเดอร์)
-                    if (this.$refs.shareBox && !this.shareBusy) { this.$refs.shareBox.checked = this.sharing; }
-                    this.lastShared = d.customer_sharing ? d.customer_sharing.last_shared_at : this.lastShared;
-                    if (this.sharing && !shareTimer) { this.startShareLoop(); }
-                    if (!this.sharing) { this.stopShareLoop(); }
-                    if (d.rider_location) {
-                        this.riderLoc = { lat: Number(d.rider_location.latitude), lng: Number(d.rider_location.longitude) };
-                        this.updatedAt = d.rider_location.updated_at;
-                        this.$nextTick(() => this.drawMap(d.pickup));
-                    } else {
-                        this.riderLoc = null;
-                    }
-                    if (d.job && !d.job.is_active && d.job.status !== 'pending') {
-                        // งานจบแล้ว — ไม่ต้องติดตามต่อ
-                        this.stopShareLoop();
-                        return;
-                    }
+                    next = Math.max(10, Number(r.data.poll_interval_seconds) || 15) * 1000;
+                    if (!this.applyRider(r.data)) { return; }
                 }
                 riderTimer = setTimeout(() => this.pollRider(), next);
+            },
+
+            /** ใส่ข้อมูลไรเดอร์ลงหน้าจอ — คืน false เมื่องานจบแล้ว (หยุด poll) */
+            applyRider(d) {
+                this.hasJob = !!d.has_rider_job;
+                this.rider = d.rider;
+                this.reasonText = d.reason_text || (d.job ? d.job.status_text : 'ร้านกำลังเตรียมสินค้า');
+                this.canShare = !!d.can_share_location;
+                this.sharing = !!(d.customer_sharing && d.customer_sharing.enabled);
+                // สวิตช์บนจอตรงกับสถานะจริงเสมอ (ระบบหยุดแชร์เองตอนงานจบ/เปลี่ยนไรเดอร์)
+                if (this.$refs.shareBox && !this.shareBusy) { this.$refs.shareBox.checked = this.sharing; }
+                this.lastShared = d.customer_sharing ? d.customer_sharing.last_shared_at : this.lastShared;
+                if (this.sharing && !shareTimer) { this.startShareLoop(); }
+                if (!this.sharing) { this.stopShareLoop(); }
+                if (d.rider_location) {
+                    this.riderLoc = { lat: Number(d.rider_location.latitude), lng: Number(d.rider_location.longitude) };
+                    this.updatedAt = d.rider_location.updated_at;
+                    this.stale = !!d.rider_location.is_stale;
+                    this.$nextTick(() => this.drawMap(d.pickup));
+                } else {
+                    this.riderLoc = null;
+                }
+                if (d.job && !d.job.is_active && d.job.status !== 'pending') {
+                    // งานจบแล้ว — ไม่ต้องติดตามต่อ
+                    this.stopShareLoop();
+                    return false;
+                }
+                return true;
             },
 
             drawMap(pickup) {

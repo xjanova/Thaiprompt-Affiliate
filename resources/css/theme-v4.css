@@ -183,6 +183,18 @@
 }
 .tp-icon-btn:active { box-shadow: var(--inset-sm); transform: translateY(1px); }
 
+/* ปุ่ม V4 + คลาสซ่อนของ Tailwind (hidden sm:inline-flex / md:inline-flex)
+   ไฟล์นี้โหลดหลัง app.css → .tp-btn/.tp-icon-btn (display ของตัวเอง) ทับ .hidden
+   ทำให้มือถือเห็นปุ่มที่ตั้งใจซ่อนทั้งหมด (เช่นหัวเว็บ V4 ล้นจอ 375px ต้องเลื่อนแนวนอน)
+   → ใช้ specificity สองคลาสให้ hidden ชนะ แล้วเปิดคืนตาม breakpoint (ประกาศทีหลัง = ชนะเมื่อจอกว้างพอ) */
+.tp-btn.hidden, .tp-icon-btn.hidden { display: none; }
+@media (min-width: 640px) {
+  .tp-btn.sm\:inline-flex, .tp-icon-btn.sm\:inline-flex { display: inline-flex; }
+}
+@media (min-width: 768px) {
+  .tp-btn.md\:inline-flex, .tp-icon-btn.md\:inline-flex { display: inline-flex; }
+}
+
 /* tile ไอคอนทอง */
 .tp-tile {
   flex:none; display:grid; place-items:center;

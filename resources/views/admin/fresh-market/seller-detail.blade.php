@@ -46,7 +46,8 @@
         <div style="display:flex; align-items:center; gap:14px; min-width:0;">
             <a href="{{ route('admin.fresh-market.sellers') }}" class="tp-icon-btn" title="กลับรายชื่อผู้ขาย"><i class="fas fa-arrow-left"></i></a>
             @if ($seller->shop_image)
-                <img src="{{ \Illuminate\Support\Str::startsWith($seller->shop_image, ['http://', 'https://']) ? $seller->shop_image : asset('storage/'.$seller->shop_image) }}" alt=""
+                {{-- รูปร้านเก็บได้ 3 แบบ: URL เต็ม (LINE) / path เริ่มด้วย / (เช่น /images/..., /storage/...) / path ใน disk public --}}
+                <img src="{{ \Illuminate\Support\Str::startsWith($seller->shop_image, ['http://', 'https://']) ? $seller->shop_image : (\Illuminate\Support\Str::startsWith($seller->shop_image, '/') ? asset(ltrim($seller->shop_image, '/')) : asset('storage/'.$seller->shop_image)) }}" alt=""
                      style="width:54px; height:54px; border-radius:16px; object-fit:cover; box-shadow:var(--raise);">
             @else
                 <span class="tp-tile" style="width:54px; height:54px; border-radius:16px; font-size:22px; font-weight:800;">{{ mb_substr($seller->shop_name ?: 'ร', 0, 1) }}</span>
