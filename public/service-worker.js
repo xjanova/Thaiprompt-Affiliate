@@ -12,7 +12,8 @@
  * @version 2.0.0 - อัพเกรดเป็น full PWA
  */
 
-const CACHE_VERSION = 'v2';
+// v3 (2026-09-26): เปลี่ยนโลโก้/ไอคอนเป็นแบรนด์ Thai Prompt — เปลี่ยนเวอร์ชันเพื่อล้าง /favicon.ico เก่าที่ค้างใน cache
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `tp-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `tp-pages-${CACHE_VERSION}`;
 const API_CACHE = `tp-api-${CACHE_VERSION}`;
@@ -20,8 +21,8 @@ const API_CACHE = `tp-api-${CACHE_VERSION}`;
 /** Static assets ที่ต้อง pre-cache ตอน install */
 const PRECACHE_ASSETS = [
     '/offline',
-    '/images/logo.svg',
-    '/favicon.ico',
+    '/images/brand/favicon.ico',
+    '/images/brand/android-chrome-192.png',
 ];
 
 /** URL patterns สำหรับ API caching */
@@ -285,8 +286,8 @@ self.addEventListener('push', (event) => {
 
     const options = {
         body: data.message || 'คุณมีการแจ้งเตือนใหม่',
-        icon: '/images/pwa/icon-192x192.png',
-        badge: '/images/pwa/icon-72x72.png',
+        icon: '/images/brand/android-chrome-192.png',
+        badge: '/images/brand/favicon-32.png',
         vibrate: [200, 100, 200],
         tag: data.id || 'notification',
         requireInteraction: data.is_important || false,
@@ -294,7 +295,7 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'TP-Affiliate', options)
+        self.registration.showNotification(data.title || 'Thai Prompt', options)
     );
 });
 

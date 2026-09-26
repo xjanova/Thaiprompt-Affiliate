@@ -435,7 +435,7 @@ class ArrowXThemeController extends Controller
                 'theme_name' => 'Arrow X',
                 'theme_version' => '1.0.0',
                 'is_active' => true,
-                'brand_name' => 'TP-Affiliate',
+                'brand_name' => 'Thai Prompt',
                 'layout_type' => 'fluid',
                 'sidebar_width' => 260,
                 'navbar_height' => 64,

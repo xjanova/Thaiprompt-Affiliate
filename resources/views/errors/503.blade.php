@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ระบบปิดปรับปรุงชั่วคราว | {{ config('app.name', 'TP-Affiliate') }}</title>
+    <title>ระบบปิดปรับปรุงชั่วคราว | {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -396,7 +396,7 @@
             <!-- Footer -->
             <div class="text-center mt-12 slide-in-up" style="animation-delay: 0.6s;">
                 <p class="text-white/70 text-sm">
-                    © {{ date('Y') }} {{ $siteSettings->site_name ?? config('app.name', 'TP-Affiliate') }}. All rights reserved.
+                    © {{ date('Y') }} {{ $siteSettings->site_name ?? config('app.brand_name', 'Thai Prompt') }}. All rights reserved.
                 </p>
                 <p class="text-white/50 text-xs mt-2">
                     <i class="fas fa-clock mr-1"></i>

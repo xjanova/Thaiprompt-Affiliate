@@ -4,6 +4,10 @@ use Illuminate\Support\Facades\Facade;
 
 return [
     'name' => env('APP_NAME', 'TP-Affiliate'),
+
+    // ชื่อแบรนด์สาธารณะที่โชว์ใน <title>/หัวเว็บ (แยกจาก app.name ที่ระบบอื่นยังอ้างอิงอยู่ เช่น license/อีเมล)
+    'brand_name' => env('APP_BRAND_NAME', 'Thai Prompt'),
+
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
 

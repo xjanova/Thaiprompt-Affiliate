@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#111827">
-    <title>ไม่มีอินเทอร์เน็ต - TP-Affiliate</title>
+    <title>ไม่มีอินเทอร์เน็ต - Thai Prompt</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {

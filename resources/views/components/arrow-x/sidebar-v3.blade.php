@@ -23,17 +23,18 @@
 --}}
 
 @props([
-    'title' => config('app.name'),
+    'title' => config('app.brand_name', 'Thai Prompt'),
     'logo' => null,
     'type' => 'admin', // Type: admin, user, seller
 ])
 
 @php
     // ดึงโลโก้จาก ThemeSetting (โลโก้ธีม - แยกจากโลโก้เว็บไซต์)
+    // ไม่ได้ตั้งไว้ → ใช้เครื่องหมาย T ทองของแบรนด์ Thai Prompt (กล่องเล็ก 40px ใช้เครื่องหมายแทนโลโก้แนวนอน)
     $themeSetting = \App\Models\ThemeSetting::active();
     $themeLogo = $themeSetting && $themeSetting->logo_path
         ? asset('storage/' . $themeSetting->logo_path)
-        : $logo;
+        : ($logo ?: asset('images/brand/thaiprompt-mark.png'));
     $themeBrandName = $themeSetting->brand_name ?? $title;
 
     // โหลดเมนูจาก MenuService สำหรับทุก type (admin, user, seller)
@@ -73,7 +74,7 @@
     <div class="h-16 flex items-center justify-between px-4 border-b border-white/30">
         <div class="flex items-center gap-3 transition-all" x-show="$store.sidebar.shouldExpand" x-transition>
             @if($themeLogo)
-                <img src="{{ $themeLogo }}" alt="{{ $themeBrandName }}" class="w-10 h-10 rounded-xl object-cover shadow-lg">
+                <img src="{{ $themeLogo }}" alt="{{ $themeBrandName }}" width="40" height="40" class="w-10 h-10 rounded-xl object-contain shadow-lg">
             @else
                 <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                     <i class="fas fa-rocket text-white text-lg"></i>
@@ -2453,7 +2454,7 @@
             <div x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 min-w-0">
                 {{-- App Name with Gradient Text --}}
                 <div class="font-black text-base tracking-wider mb-1 bg-gradient-to-r from-white via-cyan-200 to-purple-200 bg-clip-text text-transparent drop-shadow-2xl">
-                    TP-AFFILIATE
+                    THAI PROMPT
                 </div>
 
                 {{-- Version Badge (Premium Chip) --}}

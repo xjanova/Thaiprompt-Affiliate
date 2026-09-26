@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0F0F23">
-    <title>กำลังเปลี่ยนเส้นทาง... - Thaiprompt Affiliate</title>
+    <title>กำลังเปลี่ยนเส้นทาง... - Thai Prompt</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {

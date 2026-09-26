@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>404 - ไม่พบหน้าที่คุณต้องการ | {{ config('app.name', 'TP-Affiliate') }}</title>
+    <title>404 - ไม่พบหน้าที่คุณต้องการ | {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -331,7 +331,7 @@
             <!-- Footer -->
             <div class="text-center mt-12 slide-in-up" style="animation-delay: 1s;">
                 <p class="text-white/70 text-sm">
-                    © {{ date('Y') }} {{ config('app.name', 'TP-Affiliate') }}. All rights reserved.
+                    © {{ date('Y') }} {{ config('app.brand_name', 'Thai Prompt') }}. All rights reserved.
                 </p>
                 <p class="text-white/50 text-xs mt-2">
                     <i class="fas fa-clock mr-1"></i>

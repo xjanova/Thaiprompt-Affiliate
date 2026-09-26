@@ -22,7 +22,7 @@
     $tpCoinBalance   = $user && $user->videoCoin ? (float) $user->videoCoin->balance : 0;
     // ปลายทาง/ป้ายตามประเภทแดชบอร์ด
     $tpDashRoute = $type === 'seller' ? 'seller.dashboard' : ($type === 'user' ? 'user.dashboard' : 'admin.dashboard');
-    $tpBrandSub  = $type === 'seller' ? 'TP-AFFILIATE · ร้านค้า' : ($type === 'user' ? 'TP-AFFILIATE · บัญชีของฉัน' : 'TP-AFFILIATE · หลังบ้าน');
+    $tpBrandSub  = $type === 'seller' ? 'THAI PROMPT · ร้านค้า' : ($type === 'user' ? 'THAI PROMPT · บัญชีของฉัน' : 'THAI PROMPT · หลังบ้าน');
     $tpSearchPh  = $type === 'admin' ? 'ค้นหาสมาชิก · รหัส · ออเดอร์…' : 'ค้นหาเมนู · บริการ…';
 
     // กระเป๋าเงิน: แอดมินชี้ห้องแอดมินก่อน, ผู้ใช้/ร้านค้าชี้ห้องผู้ใช้ (กัน user เด้งไปห้องแอดมิน → 403)

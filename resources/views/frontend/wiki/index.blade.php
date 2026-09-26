@@ -1,6 +1,6 @@
 @extends('layouts.wiki-arrow-x')
 
-@section('title', 'คู่มือและความช่วยเหลือ - Thaiprompt Affiliate')
+@section('title', 'คู่มือและความช่วยเหลือ')
 
 @section('content')
 {{-- 📚 WIKI KNOWLEDGE BASE - Arrow X V3 (Tailwind + Alpine.js) --}}

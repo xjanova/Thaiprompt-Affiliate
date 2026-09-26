@@ -5,17 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'Dashboard') - Admin - {{ config('app.name') }}</title>
+    <title>@yield('title', 'Dashboard') - Admin - {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- Favicon (ใช้จาก Theme Setting) --}}
     @php
         $themeSetting = \App\Models\ThemeSetting::active();
         $faviconPath = $themeSetting && $themeSetting->favicon_path
             ? asset('storage/' . $themeSetting->favicon_path)
-            : asset('favicon.ico');
+            : asset('images/brand/favicon.ico');
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
+    <link rel="apple-touch-icon" href="{{ ($themeSetting->favicon_path ?? null) ? $faviconPath : asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">

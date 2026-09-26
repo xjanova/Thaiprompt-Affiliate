@@ -19,7 +19,7 @@ class SeoService
             return $this->getDefaultMetaTags($customData);
         }
 
-        $siteName = Setting::get('site_name', config('app.name'));
+        $siteName = Setting::get('site_name', config('app.brand_name', config('app.name')));
         $siteUrl = config('app.url');
         $currentUrl = URL::current();
 
@@ -52,7 +52,7 @@ class SeoService
      */
     private function getDefaultMetaTags(array $customData = []): array
     {
-        $siteName = Setting::get('site_name', config('app.name'));
+        $siteName = Setting::get('site_name', config('app.brand_name', config('app.name')));
         $currentUrl = URL::current();
 
         return [
@@ -84,7 +84,7 @@ class SeoService
      */
     public function generateOrganizationStructuredData(): array
     {
-        $siteName = Setting::get('site_name', config('app.name'));
+        $siteName = Setting::get('site_name', config('app.brand_name', config('app.name')));
         $siteUrl = config('app.url');
         $logo = Setting::get('logo');
 
@@ -93,7 +93,8 @@ class SeoService
             '@type' => 'Organization',
             'name' => $siteName,
             'url' => $siteUrl,
-            'logo' => $logo ? $this->getFullUrl($logo) : null,
+            // ไม่ได้ตั้งโลโก้ → ใช้เครื่องหมาย T ของแบรนด์ Thai Prompt (สี่เหลี่ยมจัตุรัส 512px ตามที่ Google แนะนำ)
+            'logo' => $logo ? $this->getFullUrl($logo) : asset('images/brand/thaiprompt-mark.png'),
             'description' => Setting::get('site_description', 'ระบบ Affiliate Marketing MLM อันดับ 1 ของไทย'),
             'contactPoint' => [
                 '@type' => 'ContactPoint',
@@ -131,12 +132,10 @@ class SeoService
      *
      * ช่วยให้ Google/AI เข้าใจว่าเว็บคืออะไร ชื่ออะไร ภาษาอะไร
      * เป็นสัญญาณสำคัญสำหรับ Google AI Overviews / AI Mode / Gemini grounding
-     *
-     * @return array
      */
     public function generateWebsiteStructuredData(): array
     {
-        $siteName = Setting::get('site_name', config('app.name'));
+        $siteName = Setting::get('site_name', config('app.brand_name', config('app.name')));
         $siteUrl = config('app.url');
 
         return [
@@ -188,9 +187,6 @@ class SeoService
      *
      * ป้องกันไม่ให้ JSON-LD มี field ที่เป็น null เช่น logo/email ที่ยังไม่ตั้งค่า
      * ซึ่งอาจทำให้ Rich Results Test เตือนได้
-     *
-     * @param array $data
-     * @return array
      */
     private function stripNulls(array $data): array
     {

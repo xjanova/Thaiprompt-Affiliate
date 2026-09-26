@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>กำลังกลับสู่แอป - TP UltraAPP</title>
+    <title>กำลังกลับสู่แอป - Thai Prompt</title>
     <style>
         * {
             margin: 0;
@@ -147,11 +147,11 @@
             </div>
             <div class="spinner"></div>
             <h1>{{ $message }}</h1>
-            <p class="message">กรุณารอสักครู่ ระบบกำลังนำคุณกลับไปยังแอป TP UltraAPP</p>
+            <p class="message">กรุณารอสักครู่ ระบบกำลังนำคุณกลับไปยังแอป Thai Prompt</p>
         @endif
 
         <a href="{{ $deepLink }}" class="manual-link" id="open-app-btn">
-            เปิดแอป TP UltraAPP
+            เปิดแอป Thai Prompt
         </a>
 
         <p class="hint">

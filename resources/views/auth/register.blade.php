@@ -22,11 +22,11 @@
     @php
         // ดึงข้อมูลจาก SiteSetting (ที่แอดมินตั้งค่า)
         $siteSettings = \App\Models\SiteSetting::getSetting();
-        $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
+        $appName = $siteSettings->site_name ?: config('app.brand_name', 'Thai Prompt');
 
         // 🔖 โลโก้ตัวเดียวกับทั้งเว็บ (ธีมปัจจุบัน) มาก่อน แล้วค่อยถอยไป SiteSetting
-        //    เหตุผลเดียวกับหน้า login — ดูคอมเมนต์ใน auth/login.blade.php
-        $logo = optional(\App\Models\ThemeSetting::active())->logo_path ?: $siteSettings->logo;
+        //    เหตุผลเดียวกับหน้า login — ดูคอมเมนต์ใน auth/login.blade.php (เลิกถอยไป SiteSetting.logo ที่เป็นแบรนด์เก่า)
+        $logo = optional(\App\Models\ThemeSetting::active())->logo_path;
         $favicon = $siteSettings->favicon;
     @endphp
 
@@ -34,7 +34,10 @@
 
     @if($favicon)
         <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $favicon) }}">
+    @else
+        <link rel="icon" type="image/x-icon" href="{{ asset('images/brand/favicon.ico') }}">
     @endif
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -180,11 +183,14 @@
                                         </div>
                                     </div>
                                 @else
+                                    {{-- โลโก้แบรนด์ Thai Prompt ตัวอักษรงาช้าง (การ์ดหน้านี้พื้นมืดเสมอ) --}}
                                     <div class="relative group">
-                                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-amber-400 rounded-2xl blur-xl opacity-40"></div>
-                                        <div class="relative bg-white rounded-2xl p-3 shadow-2xl animate-float">
-                                            <img src="{{ asset('images/logo.png') }}" alt="ไทยพร๊อมท์" class="h-12 sm:h-14 w-auto">
-                                        </div>
+                                        <div class="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-300 rounded-2xl blur-xl opacity-25"></div>
+                                        <picture class="relative block animate-float">
+                                            <source srcset="{{ asset('images/brand/thaiprompt-logo-dark.webp') }}" type="image/webp">
+                                            <img src="{{ asset('images/brand/thaiprompt-logo-dark.png') }}" alt="Thai Prompt"
+                                                 width="165" height="48" class="h-12 sm:h-14 w-auto">
+                                        </picture>
                                     </div>
                                 @endif
                             </div>

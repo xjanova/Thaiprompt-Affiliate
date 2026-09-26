@@ -13,15 +13,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'ไทยพร๊อมท์ · แพลตฟอร์มเพื่อชีวิตที่ดีกว่า') · {{ config('app.name') }}</title>
+    <title>@yield('title', 'ไทยพร๊อมท์ · แพลตฟอร์มเพื่อชีวิตที่ดีกว่า') · {{ config('app.brand_name', 'Thai Prompt') }}</title>
     <meta name="description" content="@yield('meta_description', 'ไทยพร๊อมท์ — แพลตฟอร์มคนไทย รวมอีคอมเมิร์ซ ไรเดอร์ ตลาดสด กระเป๋าเงินดิจิทัล และระบบปันผลโปร่งใสด้วย Blockchain')">
     @yield('meta')
 
     @php
         $tpFavicon = optional(\App\Models\ThemeSetting::active())->favicon_path ?? null;
-        $faviconUrl = $tpFavicon ? asset('storage/' . $tpFavicon) : asset('favicon.ico');
+        $faviconUrl = $tpFavicon ? asset('storage/' . $tpFavicon) : asset('images/brand/favicon.ico');
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconUrl }}">
+    @unless($tpFavicon)
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/brand/favicon-32.png') }}">
+    @endunless
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- ฟอนต์: Anuphan (ไทย/ทั่วไป) + Sora (ตัวเลข/หัวข้อ) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">

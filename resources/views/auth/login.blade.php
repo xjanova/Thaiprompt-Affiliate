@@ -23,13 +23,14 @@
     @php
         // ดึงข้อมูลจาก SiteSetting (ที่แอดมินตั้งค่า)
         $siteSettings = \App\Models\SiteSetting::getSetting();
-        $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
+        $appName = $siteSettings->site_name ?: config('app.brand_name', 'Thai Prompt');
 
         // 🔖 โลโก้ต้องเป็นตัวเดียวกับทั้งเว็บ (ธีมปัจจุบัน) มาก่อนเสมอ
         //    เดิมอ่านจาก SiteSetting อย่างเดียว → หน้า login โชว์โลโก้เก่าที่ค้างอยู่ในตั้งค่านั้น
         //    ส่วนหน้าอื่นๆ (storefront/admin V4) ใช้ ThemeSetting.logo_path = คนละรูปกัน
-        //    ลำดับ: โลโก้ธีม → โลโก้ใน SiteSetting → public/images/logo.png (สาขา @else ด้านล่าง)
-        $logo = optional(\App\Models\ThemeSetting::active())->logo_path ?: $siteSettings->logo;
+        //    ลำดับ: โลโก้ธีม → โลโก้แบรนด์ Thai Prompt (public/images/brand, สาขา @else ด้านล่าง)
+        //    2026-09-26: เลิกถอยไป SiteSetting.logo — บน prod เป็นไฟล์แบรนด์เก่าค้างอยู่ ถ้าถอยไปจะโชว์โลโก้เก่ากลับมา
+        $logo = optional(\App\Models\ThemeSetting::active())->logo_path;
         $favicon = $siteSettings->favicon;
     @endphp
 
@@ -37,7 +38,10 @@
 
     @if($favicon)
         <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $favicon) }}">
+    @else
+        <link rel="icon" type="image/x-icon" href="{{ asset('images/brand/favicon.ico') }}">
     @endif
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -256,11 +260,14 @@
                                 </div>
                             </div>
                         @else
+                            {{-- โลโก้แบรนด์ Thai Prompt ตัวอักษรงาช้าง (การ์ดหน้านี้พื้นมืดเสมอ) --}}
                             <div class="relative group">
-                                <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-amber-400 rounded-2xl blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
-                                <div class="relative bg-white rounded-2xl p-4 shadow-2xl animate-float">
-                                    <img src="{{ asset('images/logo.png') }}" alt="{{ $appName }}" class="h-14 sm:h-16 w-auto">
-                                </div>
+                                <div class="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-300 rounded-2xl blur-xl opacity-25 group-hover:opacity-40 transition-opacity"></div>
+                                <picture class="relative block animate-float">
+                                    <source srcset="{{ asset('images/brand/thaiprompt-logo-dark.webp') }}" type="image/webp">
+                                    <img src="{{ asset('images/brand/thaiprompt-logo-dark.png') }}" alt="Thai Prompt"
+                                         width="192" height="56" class="h-14 sm:h-16 w-auto">
+                                </picture>
                             </div>
                         @endif
                     </div>

@@ -26,10 +26,10 @@
         $tpTheme    = \App\Models\ThemeSetting::active();
         $tpFavicon  = $tpTheme && $tpTheme->favicon_path
             ? asset('storage/' . $tpTheme->favicon_path)
-            : ($tpSite->favicon_url ?: asset('favicon.ico'));
+            : ($tpSite->favicon_url ?: asset('images/brand/favicon.ico'));
     @endphp
 
-    <title>@yield('title', 'หน้าหลัก') · {{ config('app.name') }}</title>
+    <title>@yield('title', 'หน้าหลัก') · {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- PWA / มือถือ --}}
     <meta name="mobile-web-app-capable" content="yes">

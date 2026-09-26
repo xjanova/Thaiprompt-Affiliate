@@ -25,7 +25,7 @@
     {{-- PWA Manifest (dynamic - ดึงไอคอนจาก Admin Settings) --}}
     <link rel="manifest" href="{{ route('manifest.json') }}">
 
-    <title>@yield('title', 'Dashboard') - {{ config('app.name') }}</title>
+    <title>@yield('title', 'Dashboard') - {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- Favicon + App Icon จาก Admin --}}
     <link rel="icon" href="{{ $faviconPath }}">
@@ -279,7 +279,7 @@
 
                 {{-- ข้อความ --}}
                 <div class="flex-1 min-w-0">
-                    <h3 class="text-white font-bold text-sm">ติดตั้งแอป TP-Affiliate</h3>
+                    <h3 class="text-white font-bold text-sm">ติดตั้งแอป Thai Prompt</h3>
                     <p class="text-gray-400 text-xs mt-0.5">เพิ่มลงหน้าจอหลักเพื่อเข้าถึงได้ง่ายขึ้น</p>
                 </div>
 

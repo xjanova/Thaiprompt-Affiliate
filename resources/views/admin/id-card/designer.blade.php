@@ -293,7 +293,7 @@
                                              data-element="logo"
                                              @mousedown="startDrag($event, 'logo')">
                                             <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center shadow-lg group-hover:ring-2 group-hover:ring-white/50">
-                                                <img src="{{ asset('images/logo.png') }}" class="w-8 h-8 object-contain"
+                                                <img src="{{ asset('images/brand/thaiprompt-mark.png') }}" class="w-8 h-8 object-contain"
                                                      onerror="this.src='https://ui-avatars.com/api/?name=TP&background=8B5CF6&color=fff&bold=true'">
                                             </div>
                                         </div>

@@ -148,7 +148,7 @@
                     </label>
                     <div class="relative group">
                         <div class="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-purple-500 dark:group-hover:border-purple-400 transition-all">
-                            <img :src="logoPreview || '{{ $settings->logo ? asset('storage/' . $settings->logo) : asset('images/logo.png') }}'" alt="Logo" class="max-w-full max-h-full object-contain">
+                            <img :src="logoPreview || '{{ $settings->logo ? asset('storage/' . $settings->logo) : asset('images/brand/thaiprompt-logo-light.png') }}'" alt="Logo" class="max-w-full max-h-full object-contain">
                         </div>
                         <label for="logo-upload" class="mt-3 block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-center">
                             <i class="fas fa-upload mr-2"></i>อัพโหลดโลโก้
@@ -170,7 +170,7 @@
                     </label>
                     <div class="relative group">
                         <div class="w-full h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-600 group-hover:border-purple-400 transition-all">
-                            <img :src="logoDarkPreview || '{{ $settings->logo_dark ? asset('storage/' . $settings->logo_dark) : ($settings->logo ? asset('storage/' . $settings->logo) : asset('images/logo.png')) }}'" alt="Logo Dark" class="max-w-full max-h-full object-contain">
+                            <img :src="logoDarkPreview || '{{ $settings->logo_dark ? asset('storage/' . $settings->logo_dark) : ($settings->logo ? asset('storage/' . $settings->logo) : asset('images/brand/thaiprompt-logo-dark.png')) }}'" alt="Logo Dark" class="max-w-full max-h-full object-contain">
                         </div>
                         <label for="logo-dark-upload" class="mt-3 block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-center">
                             <i class="fas fa-upload mr-2"></i>อัพโหลดโลโก้ Dark
@@ -192,7 +192,7 @@
                     </label>
                     <div class="relative group">
                         <div class="w-full h-48 bg-gradient-to-br from-blue-100 to-cyan-200 dark:from-blue-900 dark:to-cyan-900 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-blue-500 dark:group-hover:border-blue-400 transition-all">
-                            <img :src="faviconPreview || '{{ $settings->favicon ? asset('storage/' . $settings->favicon) : asset('favicon.ico') }}'" alt="Favicon" class="w-32 h-32 object-contain">
+                            <img :src="faviconPreview || '{{ $settings->favicon ? asset('storage/' . $settings->favicon) : asset('images/brand/favicon.ico') }}'" alt="Favicon" class="w-32 h-32 object-contain">
                         </div>
                         <label for="favicon-upload" class="mt-3 block w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-center">
                             <i class="fas fa-upload mr-2"></i>อัพโหลด Favicon
@@ -540,7 +540,7 @@
                         </label>
                         <div class="relative group">
                             <div class="w-full h-32 bg-gradient-to-br from-cyan-100 to-blue-200 dark:from-cyan-900 dark:to-blue-900 rounded-xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-cyan-500 dark:group-hover:border-cyan-400 transition-all">
-                                <img :src="appIconPreview || '{{ $settings->app_icon ? asset('storage/' . $settings->app_icon) : asset('images/tp-ultra-icon.png') }}'" alt="App Icon" class="max-w-full max-h-full object-contain w-24 h-24 rounded-xl">
+                                <img :src="appIconPreview || '{{ $settings->app_icon ? asset('storage/' . $settings->app_icon) : asset('images/brand/android-chrome-512.png') }}'" alt="App Icon" class="max-w-full max-h-full object-contain w-24 h-24 rounded-xl">
                             </div>
                             <label for="app-icon-upload" class="mt-3 block w-full px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer text-center text-sm">
                                 <i class="fas fa-upload mr-2"></i>อัพโหลดไอคอน

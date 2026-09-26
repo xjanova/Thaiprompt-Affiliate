@@ -185,7 +185,7 @@ class SiteSetting extends Model
     public function getLogoUrlAttribute(): ?string
     {
         if (! $this->logo) {
-            return asset('images/logo.png'); // Default logo
+            return asset('images/brand/thaiprompt-logo-light.png'); // โลโก้แบรนด์ Thai Prompt (พื้นสว่าง)
         }
 
         return Storage::disk('public')->url($this->logo);
@@ -197,7 +197,8 @@ class SiteSetting extends Model
     public function getLogoDarkUrlAttribute(): ?string
     {
         if (! $this->logo_dark) {
-            return $this->logo_url; // ใช้โลโก้ปกติถ้าไม่มี dark logo
+            // ไม่มี dark logo: ถ้าไม่ได้อัปโหลดโลโก้เองเลย ใช้โลโก้แบรนด์ตัวอักษรงาช้าง ไม่งั้นใช้โลโก้ปกติ
+            return $this->logo ? $this->logo_url : asset('images/brand/thaiprompt-logo-dark.png');
         }
 
         return Storage::disk('public')->url($this->logo_dark);
@@ -209,7 +210,7 @@ class SiteSetting extends Model
     public function getFaviconUrlAttribute(): ?string
     {
         if (! $this->favicon) {
-            return asset('favicon.ico'); // Default favicon
+            return asset('images/brand/favicon.ico'); // favicon แบรนด์ Thai Prompt
         }
 
         return Storage::disk('public')->url($this->favicon);
@@ -221,7 +222,7 @@ class SiteSetting extends Model
     public function getAppIconUrlAttribute(): string
     {
         if (! $this->app_icon) {
-            return asset('images/tp-ultra-icon.png'); // Default app icon
+            return asset('images/brand/android-chrome-512.png'); // ไอคอนแอป Thai Prompt (512px พื้นกรมท่า)
         }
 
         return Storage::disk('public')->url($this->app_icon);

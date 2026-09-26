@@ -94,12 +94,12 @@
                         {{-- Logo & Title --}}
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center shadow-lg">
-                                <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-8 h-8 object-contain"
+                                <img src="{{ asset('images/brand/thaiprompt-mark.png') }}" alt="Thai Prompt" class="w-8 h-8 object-contain"
                                      onerror="this.src='https://ui-avatars.com/api/?name=TP&background=8B5CF6&color=fff&bold=true'">
                             </div>
                             <div>
                                 <div class="text-white/80 text-xs font-medium tracking-wider uppercase">Member ID Card</div>
-                                <div class="text-white text-lg font-bold tracking-wide">TP Affiliate</div>
+                                <div class="text-white text-lg font-bold tracking-wide">Thai Prompt</div>
                             </div>
                         </div>
 

@@ -22,7 +22,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-    <title>@yield('title', 'ร้านค้าออนไลน์') - {{ config('app.name') }}</title>
+    <title>@yield('title', 'ร้านค้าออนไลน์') - {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- Meta Tags สำหรับ SEO --}}
     @yield('meta')
@@ -32,11 +32,11 @@
         $themeSetting = \App\Models\ThemeSetting::active();
         $faviconPath = $themeSetting && $themeSetting->favicon_path
             ? asset('storage/' . $themeSetting->favicon_path)
-            : asset('favicon.ico');
+            : asset('images/brand/favicon.ico');
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="apple-touch-icon" href="{{ $faviconPath }}">
+    <link rel="apple-touch-icon" href="{{ ($themeSetting->favicon_path ?? null) ? $faviconPath : asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">

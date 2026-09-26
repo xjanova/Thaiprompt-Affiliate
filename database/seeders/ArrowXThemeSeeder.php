@@ -38,7 +38,7 @@ class ArrowXThemeSeeder extends Seeder
                 'theme_name' => 'Arrow X',
                 'theme_version' => '1.0.0',
                 'is_active' => true,
-                'brand_name' => 'TP-Affiliate',
+                'brand_name' => 'Thai Prompt',
                 'brand_tagline' => 'Ultimate Affiliate Marketing Platform',
                 'layout_type' => 'fluid',
                 'sidebar_width' => 260,

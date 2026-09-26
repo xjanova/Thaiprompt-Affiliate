@@ -17,14 +17,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'หลังบ้าน') · {{ config('app.name') }}</title>
+    <title>@yield('title', 'หลังบ้าน') · {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- Favicon (ใช้จาก Theme Setting ถ้ามี — เป็นแค่ branding ไม่เกี่ยวกับ engine ธีม) --}}
     @php
         $tpFavicon = optional(\App\Models\ThemeSetting::active())->favicon_path;
-        $faviconUrl = $tpFavicon ? asset('storage/' . $tpFavicon) : asset('favicon.ico');
+        $faviconUrl = $tpFavicon ? asset('storage/' . $tpFavicon) : asset('images/brand/favicon.ico');
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconUrl }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- ฟอนต์: Anuphan (ไทย/ทั่วไป) + Sora (ตัวเลข/หัวข้อ) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">

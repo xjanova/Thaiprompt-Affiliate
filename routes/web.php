@@ -30,13 +30,21 @@ Route::get('/offline', function () {
     return view('offline');
 })->name('offline');
 
-// PWA Manifest - ดึงไอคอนจาก SiteSetting ที่แอดมินอัพโหลดไว้
+// PWA Manifest - ดึงไอคอนจาก SiteSetting ที่แอดมินอัพโหลดไว้ (ไม่ได้อัปโหลด → ไอคอนแบรนด์ Thai Prompt)
 Route::get('/manifest.json', function () {
     $site = \App\Models\SiteSetting::getSetting();
-    $appName = $site->app_name ?: ($site->site_name ?: config('app.name', 'TP-Affiliate'));
-    $appIcon = $site->app_icon_url;
-    $favicon = $site->favicon_url;
-    $logo = $site->logo_url;
+    $appName = $site->app_name ?: ($site->site_name ?: config('app.brand_name', 'Thai Prompt'));
+    // ใช้เฉพาะไฟล์ที่แอดมินอัปโหลดเอง (accessor *_url คืนค่า default เสมอ จึงต้องเช็คคอลัมน์ดิบ)
+    $appIcon = $site->app_icon ? $site->app_icon_url : null;
+    $favicon = $site->favicon ? $site->favicon_url : null;
+    // ชนิดไฟล์ตามนามสกุลจริง (อัปโหลดผ่าน ImageUploadService ได้ .webp แต่เผื่อไฟล์อื่น)
+    $mime = fn (string $url) => match (strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION))) {
+        'png' => 'image/png',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'svg' => 'image/svg+xml',
+        'ico' => 'image/x-icon',
+        default => 'image/webp',
+    };
 
     return response()->json([
         'name' => $appName.' - ระบบ Affiliate Marketing',
@@ -46,38 +54,38 @@ Route::get('/manifest.json', function () {
         'scope' => '/',
         'display' => 'standalone',
         'orientation' => 'any',
-        'background_color' => '#111827',
-        'theme_color' => '#8B5CF6',
+        // สีแบรนด์ Thai Prompt: กรมท่า #0C1A33
+        'background_color' => '#0C1A33',
+        'theme_color' => '#0C1A33',
         'lang' => 'th',
         'dir' => 'ltr',
         'categories' => ['business', 'finance', 'shopping'],
         'icons' => array_values(array_filter([
-            // ไอคอนแอปจาก admin (หลัก - 512x512)
+            // ไอคอนแอปที่แอดมินอัปโหลด (ถ้ามี)
             $appIcon ? [
                 'src' => $appIcon,
                 'sizes' => '512x512',
-                'type' => 'image/webp',
-                'purpose' => 'any maskable',
+                'type' => $mime($appIcon),
+                'purpose' => 'any',
             ] : null,
-            // Favicon จาก admin
+            // Favicon ที่แอดมินอัปโหลด (ถ้ามี)
             $favicon ? [
                 'src' => $favicon,
                 'sizes' => '64x64',
-                'type' => 'image/x-icon',
+                'type' => $mime($favicon),
                 'purpose' => 'any',
             ] : null,
-            // โลโก้จาก admin
-            $logo ? [
-                'src' => $logo,
-                'sizes' => '512x512',
-                'type' => str_contains($logo, '.svg') ? 'image/svg+xml' : 'image/webp',
-                'purpose' => 'any',
-            ] : null,
-            // Fallback SVG logo
+            // ไอคอนแบรนด์ Thai Prompt (ค่าเริ่มต้น)
             [
-                'src' => '/images/logo.svg',
-                'sizes' => 'any',
-                'type' => 'image/svg+xml',
+                'src' => asset('images/brand/android-chrome-192.png'),
+                'sizes' => '192x192',
+                'type' => 'image/png',
+                'purpose' => 'any',
+            ],
+            [
+                'src' => asset('images/brand/android-chrome-512.png'),
+                'sizes' => '512x512',
+                'type' => 'image/png',
                 'purpose' => 'any',
             ],
         ])),

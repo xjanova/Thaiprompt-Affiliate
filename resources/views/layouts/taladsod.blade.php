@@ -20,7 +20,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#22C55E">
 
-    <title>@yield('title', 'ตลาดสดไทยพร๊อม') - {{ config('app.name', 'ไทยพร๊อม') }}</title>
+    <title>@yield('title', 'ตลาดสดไทยพร๊อม') - {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- Meta Tags สำหรับ SEO --}}
     <meta name="description" content="@yield('meta_description', 'ตลาดสดออนไลน์ ค้นหาอาหารสดจากผู้ขายใกล้บ้านคุณ ผักสด ผลไม้ เนื้อสัตว์ อาหารทะเล')">
@@ -28,7 +28,8 @@
     @yield('meta')
 
     {{-- Favicon --}}
-    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/x-icon" href="{{ asset('images/brand/favicon.ico') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts - Kanit สำหรับภาษาไทย --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">

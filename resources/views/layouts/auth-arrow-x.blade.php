@@ -6,9 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     @php
-        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+        $appName = \App\Models\Setting::get('app_name', config('app.brand_name', 'Thai Prompt'));
         $logo = \App\Models\Setting::get('logo');
-        $logoUrl = $logo ? asset($logo) : asset('images/logo.svg');
+        // ไม่ได้ตั้งโลโก้ใน Setting → ใช้โลโก้แบรนด์ Thai Prompt (component สลับรูปตามโหมดมืดให้เอง)
+        $logoUrl = $logo ? asset($logo) : null;
     @endphp
 
     <title>@yield('title') - {{ $appName }}</title>
@@ -179,9 +180,13 @@
             {{-- Logo & Branding --}}
             <div class="text-center mb-8" x-data="{ show: false }" x-init="setTimeout(() => show = true, 100)" x-show="show" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
                 <div class="flex justify-center mb-6">
-                    <img src="{{ $logoUrl }}"
-                         alt="{{ $appName }}"
-                         class="h-20 w-auto logo-glow-auth">
+                    @if($logoUrl)
+                        <img src="{{ $logoUrl }}"
+                             alt="{{ $appName }}"
+                             class="h-20 w-auto logo-glow-auth">
+                    @else
+                        <x-theme-v4.brand-logo :height="64" />
+                    @endif
                 </div>
                 <h1 class="text-4xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-orange-400 mb-2">
                     {{ $appName }}

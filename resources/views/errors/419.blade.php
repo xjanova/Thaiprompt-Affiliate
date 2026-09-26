@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>419 - Session หมดอายุ | {{ config('app.name', 'TP-Affiliate') }}</title>
+    <title>419 - Session หมดอายุ | {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>

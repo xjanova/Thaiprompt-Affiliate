@@ -8,11 +8,11 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-    <title>@yield('title', 'Wiki') - {{ config('app.name') }}</title>
+    <title>@yield('title', 'Wiki') - {{ config('app.brand_name', 'Thai Prompt') }}</title>
 
     {{-- Favicon - พร้อม fallback ถ้าตารางยังไม่มี --}}
     @php
-        $faviconPath = asset('favicon.ico');
+        $faviconPath = asset('images/brand/favicon.ico');
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('theme_settings')) {
                 $themeSetting = \App\Models\ThemeSetting::active();
@@ -26,7 +26,7 @@
     @endphp
     <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="apple-touch-icon" href="{{ $faviconPath }}">
+    <link rel="apple-touch-icon" href="{{ ($themeSetting->favicon_path ?? null) ? $faviconPath : asset('apple-touch-icon.png') }}">
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -339,15 +339,14 @@
                             }
                         @endphp
                         @if($logo)
-                            <img src="{{ asset('storage/' . $logo) }}" alt="Logo" class="h-10 w-auto group-hover:scale-105 transition-transform">
+                            <img src="{{ asset('storage/' . $logo) }}" alt="Thai Prompt" class="h-10 w-auto group-hover:scale-105 transition-transform">
+                            <span class="hidden sm:block text-gray-800 dark:text-white font-bold text-lg dark:drop-shadow">
+                                {{ config('app.brand_name', 'Thai Prompt') }}
+                            </span>
                         @else
-                            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-105 transition-transform">
-                                TP
-                            </div>
+                            {{-- โลโก้แบรนด์ Thai Prompt (สลับรูปตามโหมดมืดให้เอง) --}}
+                            <x-theme-v4.brand-logo :height="40" class="group-hover:scale-105 transition-transform" />
                         @endif
-                        <span class="hidden sm:block text-gray-800 dark:text-white font-bold text-lg dark:drop-shadow">
-                            {{ config('app.name', 'TP-Affiliate') }}
-                        </span>
                     </a>
                 </div>
 
