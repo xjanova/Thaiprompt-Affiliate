@@ -37,6 +37,7 @@ import { isFeatureEnabled } from '@/config/appConfig';
 import { BannerCard, Chip, EmptyState, Icon, Screen, SectionHeader, tapHaptic, usePressGuard } from '@/components/ui';
 import { CartButton, ProductCard, SearchField, StoreLogo } from '@/components/shop';
 import { useTheme, shadowStyle, spacing, typography } from '@/theme';
+import { KANOK_CREST_CLEARANCE } from '@/components/ui/KanokTabBar';
 
 const PER_PAGE = 20;
 const BANNER_MARKET = require('@/assets/images/taladsod/banner-market.webp');
@@ -385,8 +386,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.md,
   },
+  // อยู่ในแท็บ: เว้นท้ายพ้นยอดซุ้มกนกของแถบล่าง
   listTab: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + KANOK_CREST_CLEARANCE,
   },
   column: {
     justifyContent: 'space-between',

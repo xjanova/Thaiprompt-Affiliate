@@ -44,6 +44,7 @@ import {
   type IconName,
 } from '@/components/ui';
 import { useTheme, spacing, typography, shadowStyle, type Tone } from '@/theme';
+import { KANOK_CREST_CLEARANCE } from '@/components/ui/KanokTabBar';
 
 const KANOK = require('@/assets/images/brand/kanok-gold.webp');
 
@@ -333,7 +334,8 @@ export default function WalletScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: spacing.xxxl }}
+        // ยอดซุ้มกนกของแถบล่างยื่นขึ้นมาทับท้ายรายการ — เผื่อที่ให้เลื่อนพ้นซุ้ม
+        contentContainerStyle={{ paddingBottom: spacing.xxxl + KANOK_CREST_CLEARANCE }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

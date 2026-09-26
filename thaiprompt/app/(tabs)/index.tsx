@@ -59,6 +59,7 @@ import {
 } from '@/components/taladsod';
 import { useTheme, spacing, radii, typography, shadowStyle } from '@/theme';
 import { getAvatarUrl, getAvatarInitial } from '@/utils/user';
+import { KANOK_CREST_CLEARANCE } from '@/components/ui/KanokTabBar';
 
 /** คีย์เดียวกับหน้าตลาดสด (พื้นที่ที่ผู้ใช้เลือกไว้) */
 const TALADSOD_AREA_KEY = '@thaiprompt/taladsod_area_v1';
@@ -320,7 +321,8 @@ export default function HomeScreen() {
         isFeatureEnabled('MERCHANT_ENABLED') && isSeller
           ? { id: 'merchant', title: 'ร้านของฉัน', art: 'store', route: merchantRoute, requiresLogin: true }
           : { id: 'stores', title: 'ร้านค้า', art: 'store', route: '/stores', requiresLogin: false },
-        taladsodOn && { id: 'carts', title: 'รถเข็นใกล้ฉัน', art: 'cart', route: '/taladsod', requiresLogin: false },
+        // ไทล์นี้หาตำแหน่งให้ทันทีแล้วโชว์ร้าน/รถเข็นที่เปิดอยู่ใกล้ๆ (ต่างจากไทล์ตลาดสดที่เปิดหน้ารวม)
+        taladsodOn && { id: 'carts', title: 'รถเข็นใกล้ฉัน', art: 'cart', route: '/taladsod?nearby=1', requiresLogin: false },
         isFeatureEnabled('WALLET_ENABLED') && { id: 'wallet', title: 'กระเป๋าเงิน', art: 'wallet', route: '/(tabs)/wallet', requiresLogin: true },
         isFeatureEnabled('REFERRAL_ENABLED') && { id: 'referral', title: 'ชวนเพื่อน', art: 'gift', route: '/referral', requiresLogin: true },
         isFeatureEnabled('TAROT_ENABLED') && { id: 'tarot', title: 'ดูดวงฟรี', art: 'tarot', route: '/tarot', requiresLogin: false },
@@ -444,7 +446,8 @@ export default function HomeScreen() {
         <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
         <ScrollView
-          contentContainerStyle={{ paddingBottom: spacing.xxxl }}
+          // ยอดซุ้มกนกของแถบล่างยื่นขึ้นมาทับท้ายรายการ — เผื่อที่ให้เลื่อนพ้นซุ้ม
+          contentContainerStyle={{ paddingBottom: spacing.xxxl + KANOK_CREST_CLEARANCE }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

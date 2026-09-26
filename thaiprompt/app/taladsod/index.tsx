@@ -13,7 +13,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Image } from 'expo-image';
-import { router, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, TextInput } from '@/components/ui/Text';
 import { useAuthStore } from '@/stores/authStore';
@@ -205,6 +205,8 @@ export default function TaladsodHomeScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const mountedRef = useMountedRef();
   const location = useBuyerLocation();
+  // ?nearby=1 มาจากไทล์ "รถเข็นใกล้ฉัน" ในหน้าแรก — ยังไม่มีพื้นที่ให้หาตำแหน่งให้ทันที (ไม่ต้องกดซ้ำ)
+  const { nearby: nearbyParam } = useLocalSearchParams<{ nearby?: string }>();
 
   const [area, setArea] = useState<Area | null>(null);
   const [areaReady, setAreaReady] = useState(false);
@@ -300,6 +302,8 @@ export default function TaladsodHomeScreen() {
       if (!alive || !mountedRef.current) return;
       if (coords) setArea({ kind: 'gps', coords });
       setAreaReady(true);
+      // มาจากไทล์ "รถเข็นใกล้ฉัน" แต่ยังไม่มีตำแหน่ง → ขอตำแหน่งเลย (มีหน้าอธิบายก่อนขอสิทธิ์ใน location.request)
+      if (!coords && nearbyParam === '1') locateMe();
     })();
     return () => {
       alive = false;

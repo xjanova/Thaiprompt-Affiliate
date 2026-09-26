@@ -47,6 +47,34 @@ function withLocalQaCleartext(config) {
   });
 }
 
+/** แพ็กเกจแอปจันทรา (ดูดวงเชิงลึก) — ต้องตรงกับ JUNTRA_ANDROID_PACKAGE ใน services/juntraLauncher.ts */
+const JUNTRA_ANDROID_PACKAGE = 'com.xjanova.juntra';
+
+/**
+ * config plugin แบบ inline: ประกาศ <queries><package android:name="com.xjanova.juntra"/></queries>
+ * ทำไม: Android 11+ ซ่อนแอปอื่นจาก getLaunchIntentForPackage ถ้าไม่ประกาศ → ปุ่ม "เปิดแอปจันทรา" จะเด้งไป Play Store ตลอด
+ * ประกาศทีละแพ็กเกจแบบนี้ไม่ต้องขอสิทธิ์ QUERY_ALL_PACKAGES (ผ่านนโยบาย Google Play)
+ *
+ * @param {object} config ค่าคอนฟิก Expo
+ * @returns {object} ค่าคอนฟิกที่ผ่าน mod ของ AndroidManifest แล้ว
+ */
+function withJuntraPackageQuery(config) {
+  const { withAndroidManifest } = require('expo/config-plugins');
+  return withAndroidManifest(config, (modConfig) => {
+    const manifest = modConfig.modResults.manifest;
+    if (!manifest.queries || manifest.queries.length === 0) {
+      manifest.queries = [{}];
+    }
+    const query = manifest.queries[0];
+    query.package = query.package || [];
+    const exists = query.package.some((item) => item.$ && item.$['android:name'] === JUNTRA_ANDROID_PACKAGE);
+    if (!exists) {
+      query.package.push({ $: { 'android:name': JUNTRA_ANDROID_PACKAGE } });
+    }
+    return modConfig;
+  });
+}
+
 // โปรไฟล์ EAS ที่กำลัง build (EAS ตั้งให้อัตโนมัติ) หรือ APP_VARIANT ที่ตั้งใน eas.json
 const buildProfile = process.env.EAS_BUILD_PROFILE || '';
 const isDevelopmentVariant =
@@ -105,10 +133,13 @@ module.exports = ({ config }) => {
     },
   };
 
-  // build ปกติ: คืนค่าเดิมทันที (no-op) — เปิด cleartext เฉพาะ QA ที่ชี้ http:// เท่านั้น
+  // ทุก build: ให้มองเห็นแอปจันทรา (ปุ่มเปิดแอปจันทราในหน้าดูดวง)
+  const withJuntra = withJuntraPackageQuery(finalConfig);
+
+  // build ปกติ: ไม่แตะ cleartext — เปิดเฉพาะ QA ที่ชี้ http:// เท่านั้น
   if (!needsCleartextForLocalQa) {
-    return finalConfig;
+    return withJuntra;
   }
   console.warn('[app.config] EXPO_PUBLIC_API_URL เป็น http:// — เปิด usesCleartextTraffic สำหรับ build ทดสอบในเครื่องเท่านั้น');
-  return withLocalQaCleartext(finalConfig);
+  return withLocalQaCleartext(withJuntra);
 };

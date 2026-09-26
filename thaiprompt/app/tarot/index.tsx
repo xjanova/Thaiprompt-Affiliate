@@ -1,6 +1,7 @@
 /**
  * Tarot Home Screen - หน้าหลักดูดวงไพ่ทาโรต์
- * พร้อม 78 ไพ่ครบ, 5 หมวด, 5 โหมด, ระบบตรวจสอบ Wallet
+ * พร้อม 78 ไพ่ครบ, 5 หมวด, 5 โหมด — ดูฟรีทุกหมวด ไม่ต้องเข้าสู่ระบบ (ไพ่และคำทำนายอยู่ในเครื่อง)
+ * ท้ายรายการหมวดมีการ์ด "ดูดวงเชิงลึกกับแม่หมอจันทรา" → เปิดแอปจันทรา (components/tarot/JuntraCard.tsx)
  *
  * หน้าตา: ธีมรอยัล "มิดไนท์-ทอง" ทั้งโหมดสว่างและมืด — พื้นน้ำเงินกรมท่า ลายกนกทอง ดาวระยิบ
  * การ์ดหมวดเป็นแผงกระจก + เหรียญตราทอง · ไม่แสดงอีโมจิจากข้อมูลไพ่ (ใช้ไอคอนเส้นแทน)
@@ -14,15 +15,12 @@ import {
   StyleSheet,
   Animated,
   StatusBar,
-  ActivityIndicator,
-  Alert,
   Modal,
 } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuthStore } from '@/stores/authStore';
 import {
   TAROT_CATEGORIES,
   SPREAD_TYPES,
@@ -33,6 +31,7 @@ import { BrandArt, Button3D, GlassIconButton, Icon, OnHeaderProvider, Pill } fro
 import { useTheme, radii, spacing, typography, withAlpha } from '@/theme';
 import { GlassPanel, GlowHalo, GoldDivider, Medallion, MysticBackground } from '@/components/tarot/MysticUI';
 import { categoryIcon, spreadIcon } from '@/components/tarot/tarotVisuals';
+import { JuntraCard } from '@/components/tarot/JuntraCard';
 
 /** ขั้นตอนการใช้งาน (แสดงเป็นรายการมีเลขกำกับ) */
 const HOW_TO_STEPS = [
@@ -166,14 +165,9 @@ const SpreadCard = ({
 export default function TarotHomeScreen() {
   const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
-  const { isAuthenticated, user } = useAuthStore();
-  const [loading, setLoading] = useState(false);
-  // PLAY-12: ไม่มีการใช้ยอดกระเป๋าเงินในหน้าดูดวงแล้ว (modal ชำระเงินด้านล่างเปิดไม่ได้)
-  const walletBalance = 0;
   const [showSpreadModal, setShowSpreadModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<TarotCategory | null>(null);
   const [selectedSpread, setSelectedSpread] = useState<SpreadType>(SPREAD_TYPES[1]); // Default: Past, Present, Future
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const headerTranslateY = useRef(new Animated.Value(-30)).current;
@@ -195,19 +189,8 @@ export default function TarotHomeScreen() {
 
   }, [headerOpacity, headerTranslateY]);
 
+  // ดูฟรีไม่ต้องเข้าสู่ระบบ — ตรงกับไทล์หน้าแรก (requiresLogin: false) และไม่มีการบันทึกข้อมูลผู้ใช้
   const handleCategoryPress = (category: TarotCategory) => {
-    if (!isAuthenticated) {
-      Alert.alert(
-        'กรุณาเข้าสู่ระบบ',
-        'คุณต้องเข้าสู่ระบบเพื่อใช้บริการดูดวงไพ่ทาโรต์',
-        [
-          { text: 'ยกเลิก', style: 'cancel' },
-          { text: 'เข้าสู่ระบบ', onPress: () => router.push('/login') },
-        ]
-      );
-      return;
-    }
-
     setSelectedCategory(category);
     setShowSpreadModal(true);
   };
@@ -222,12 +205,6 @@ export default function TarotHomeScreen() {
     if (!selectedCategory) return;
 
     // PLAY-12: ทุกหมวดฟรีในแอป → ไปหน้าเลือกไพ่เลย (ไม่มีการตรวจยอด/หักกระเป๋าเงิน/ปุ่มเติมเงิน)
-    navigateToSelectCards();
-  };
-
-  const handleConfirmPayment = () => {
-    setShowPaymentModal(false);
-    // หักเงินและไปหน้าเลือกไพ่
     navigateToSelectCards();
   };
 
@@ -317,6 +294,9 @@ export default function TarotHomeScreen() {
               />
             ))}
           </View>
+
+          {/* ดูดวงเชิงลึก → แอปจันทรา (Android เท่านั้น — การ์ดซ่อนตัวเองบน iOS) */}
+          <JuntraCard style={styles.section} />
 
           {/* Info Section — วิธีใช้งาน */}
           <View style={styles.section}>
@@ -427,77 +407,6 @@ export default function TarotHomeScreen() {
           </View>
         </Modal>
 
-        {/* Payment Confirmation Modal */}
-        <Modal
-          visible={showPaymentModal}
-          transparent
-          animationType="fade"
-          statusBarTranslucent
-          onRequestClose={() => setShowPaymentModal(false)}
-        >
-          <View style={[styles.modalOverlay, styles.modalCenter, { backgroundColor: colors.overlay }]}>
-            <View style={[styles.paymentModal, { borderColor: withAlpha(colors.gold, 0.4) }]}>
-              <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} />
-
-              <Medallion icon="coins" size={72} style={styles.paymentIcon} />
-
-              <Text style={[typography.serif, styles.center, { color: colors.onHeader }]}>ยืนยันการชำระเงิน</Text>
-
-              {selectedCategory && (
-                <>
-                  <View style={styles.paymentCategory}>
-                    <Icon name={categoryIcon(selectedCategory.slug)} size={18} color={colors.goldLight} />
-                    <Text style={[typography.h3, { color: colors.onHeader }]}>{selectedCategory.name_th}</Text>
-                  </View>
-                  <Text style={[typography.bodySm, styles.center, styles.paymentSpread, { color: colors.onHeaderMuted }]}>
-                    โหมด: {selectedSpread.name_th} ({selectedSpread.card_count} ใบ)
-                  </Text>
-
-                  <GlassPanel padding={spacing.lg} radius={radii.md} style={styles.paymentDetails}>
-                    <View style={styles.paymentRow}>
-                      <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]}>ค่าบริการ</Text>
-                      <Text style={[typography.bodyStrong, { color: colors.goldLight }]}>฿{selectedCategory.price}</Text>
-                    </View>
-                    <View style={styles.paymentRow}>
-                      <Text style={[typography.bodySm, { color: colors.onHeaderMuted }]}>ยอดเงินในกระเป๋า</Text>
-                      <Text style={[typography.bodyStrong, { color: colors.onHeader }]}>฿{walletBalance.toLocaleString()}</Text>
-                    </View>
-                    <View style={[styles.paymentRow, styles.paymentRowTotal, { borderTopColor: colors.headerGlassBorder }]}>
-                      <Text style={[typography.bodyStrong, { color: colors.onHeader }]}>ยอดคงเหลือหลังหัก</Text>
-                      <Text style={[typography.h3, { color: colors.goldLight }]}>
-                        ฿{(walletBalance - selectedCategory.price).toLocaleString()}
-                      </Text>
-                    </View>
-                  </GlassPanel>
-                </>
-              )}
-
-              <View style={styles.paymentButtons}>
-                <Button3D
-                  title="ยกเลิก"
-                  variant="secondary"
-                  onPress={() => setShowPaymentModal(false)}
-                  style={styles.flex}
-                />
-                <Button3D
-                  title="ยืนยันหักเงิน"
-                  variant="primary"
-                  icon="check-circle"
-                  onPress={handleConfirmPayment}
-                  style={styles.flex}
-                />
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Loading Overlay */}
-        {loading && (
-          <View style={[styles.loadingOverlay, { backgroundColor: withAlpha(gradients.hero[0], 0.92) }]}>
-            <ActivityIndicator size="large" color={colors.gold} />
-            <Text style={[typography.body, styles.loadingText, { color: colors.onHeader }]}>กำลังโหลด...</Text>
-          </View>
-        )}
       </View>
     </OnHeaderProvider>
   );
@@ -613,21 +522,10 @@ const styles = StyleSheet.create({
   footerText: {
     textAlign: 'center',
   },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: spacing.lg,
-  },
   // Modal Styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-  },
-  modalCenter: {
-    justifyContent: 'center',
   },
   modalContent: {
     borderTopLeftRadius: 28,
@@ -696,47 +594,5 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     marginTop: spacing.xl,
-  },
-  // Payment Modal
-  paymentModal: {
-    marginHorizontal: spacing.xl,
-    borderRadius: radii.xxl,
-    borderWidth: 1,
-    overflow: 'hidden',
-    padding: spacing.xxl,
-    alignItems: 'center',
-  },
-  paymentIcon: {
-    marginBottom: spacing.lg,
-  },
-  paymentCategory: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  paymentSpread: {
-    marginTop: 2,
-    marginBottom: spacing.xl,
-  },
-  paymentDetails: {
-    alignSelf: 'stretch',
-    marginBottom: spacing.xxl,
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  paymentRowTotal: {
-    borderTopWidth: 1,
-    marginTop: spacing.sm,
-    paddingTop: spacing.md,
-  },
-  paymentButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignSelf: 'stretch',
   },
 });

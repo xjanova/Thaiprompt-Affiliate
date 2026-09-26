@@ -51,6 +51,7 @@ import {
 } from '@/components/ui';
 import { AvatarRing, IconTile, MenuGroup, MenuRow, ThemedSwitch } from '@/components/profile';
 import { useTheme, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
+import { KANOK_CREST_CLEARANCE } from '@/components/ui/KanokTabBar';
 
 /** ความโค้งของแผ่นเนื้อหาใต้หัวน้ำเงิน (เท่ากับ <Screen>) */
 const SHEET_RADIUS = 26;
@@ -861,8 +862,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: SHEET_RADIUS,
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.xxl,
-    // แท็บบาร์ไม่ได้ลอยทับเนื้อหา — เว้นท้ายพอให้ปุ่มสุดท้ายไม่ชิดแท็บ
-    paddingBottom: spacing.xxxl + spacing.lg,
+    // เว้นท้ายพ้นยอดซุ้มกนกของแถบล่าง (ยื่นขึ้นมาทับท้ายเนื้อหา)
+    paddingBottom: spacing.xxxl + spacing.lg + KANOK_CREST_CLEARANCE,
   },
   promo: {
     flexDirection: 'row',

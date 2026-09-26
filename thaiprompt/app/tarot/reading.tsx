@@ -31,6 +31,7 @@ import {
   SPREAD_TYPES,
 } from '../../data/tarotData';
 import { BrandArt, Button3D, GlassIconButton, Icon, OnHeaderProvider, Pill } from '@/components/ui';
+import { JuntraCard } from '@/components/tarot/JuntraCard';
 import { useTheme, glowStyle, radii, spacing, typography, withAlpha } from '@/theme';
 import { GlassPanel, GlowHalo, GoldDivider, Medallion, MysticBackground } from '@/components/tarot/MysticUI';
 import { TarotCardFace, TarotGlyph } from '@/components/tarot/TarotCardArt';
@@ -457,6 +458,9 @@ export default function ReadingScreen() {
             </LinearGradient>
           </Animated.View>
 
+          {/* ชวนถามต่อกับแม่หมอจันทรา (Android เท่านั้น) — วางก่อนปุ่ม "ดูดวงใหม่" ตอนผู้ใช้อ่านคำทำนายจบ */}
+          <JuntraCard variant="after-reading" style={styles.juntraCard} />
+
           {/* Action Buttons */}
           <View style={styles.actionSection}>
             <Button3D
@@ -668,6 +672,9 @@ const styles = StyleSheet.create({
   },
   interpretationText: {
     lineHeight: 26,
+  },
+  juntraCard: {
+    marginTop: spacing.xxl,
   },
   actionSection: {
     marginTop: spacing.xxxl,

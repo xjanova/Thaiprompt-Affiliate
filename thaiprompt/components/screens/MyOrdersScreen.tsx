@@ -18,6 +18,7 @@ import { useTheme, spacing, typography, type Tone } from '@/theme';
 import { Card3D, Chip, EmptyState, Icon, Pill, PriceText, Screen } from '@/components/ui';
 import { FreshOrdersList, OrderSourceSwitch, type OrderSource } from '@/components/taladsod';
 import { MetaItem, ThumbImage } from '@/components/shop';
+import { KANOK_CREST_CLEARANCE } from '@/components/ui/KanokTabBar';
 
 type Filter = 'all' | ShopOrderStatus;
 
@@ -291,7 +292,8 @@ export const MyOrdersScreen: React.FC<MyOrdersScreenProps> = ({ embedded = false
         ListFooterComponent={
           loadingMore ? <ActivityIndicator color={colors.gold} style={styles.footerLoader} /> : null
         }
-        contentContainerStyle={styles.list}
+        // อยู่ในแท็บ: เว้นท้ายพ้นยอดซุ้มกนกของแถบล่าง
+        contentContainerStyle={[styles.list, embedded && { paddingBottom: spacing.xxxl + KANOK_CREST_CLEARANCE }]}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.4}
         refreshControl={
