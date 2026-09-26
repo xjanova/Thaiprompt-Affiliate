@@ -12,7 +12,10 @@
  *       event seller_account (อนุมัติ/ระงับร้าน ไม่มี role) → /merchant/taladsod · role อื่น (admin) → ไม่พาไปหน้าผู้ซื้อ
  *   - fresh_market_shop_open {shop_id}        → หน้าร้าน /taladsod/shop/{id} (ร้านที่ติดตามเปิดแล้ว)
  *   - fresh_market_shop {event: auto_closed}  → /merchant/taladsod (ร้านถูกปิดอัตโนมัติ)
- *   - order_message {order_id}                → /order/{id}?tab=chat
+ *   - order_message {role?, order_id}         → แชทฝั่งผู้ซื้อ /order/{id}?tab=chat (role อื่นที่ไม่ใช่ buyer → ไม่พาไปหน้าผู้ซื้อ)
+ *   - seller_order_message {order_id}         → แชทฝั่งร้าน /merchant/order/{id}?tab=chat (OrderChatNotifier)
+ *       type แยกจาก order_message เพราะแอปรุ่นเก่าพา order_message ไปหน้าผู้ซื้อเสมอ (ร้านเปิดแล้ว 404)
+ *       — แอปรุ่นเก่าไม่รู้จัก type นี้ จึงตกไปหน้าแจ้งเตือนแทน
  *   - ticket                                  → /support
  * นอกนั้นใช้ data.url เฉพาะ path ภายในที่อยู่ใน allowlist (PLAY-23) ไม่งั้นไปหน้าแจ้งเตือน
  */
@@ -101,7 +104,18 @@ export const routeForNotification = (data: PushData | null | undefined): string 
       path = '/merchant/taladsod';
       break;
     case 'order_message':
-      path = orderId ? `/order/${orderId}?tab=chat` : '/orders';
+      // แชทถึงผู้ซื้อ (payload เก่าไม่มี role = ผู้ซื้อ) · role=seller เผื่อ payload ช่วงสั้นๆ ก่อนแยก type
+      if (role === 'seller') {
+        path = orderId ? `/merchant/order/${orderId}?tab=chat` : '/merchant/orders?status=unread_chat';
+      } else if (role === 'buyer' || role === '') {
+        path = orderId ? `/order/${orderId}?tab=chat` : '/orders';
+      } else {
+        path = null;
+      }
+      break;
+    case 'seller_order_message':
+      // ลูกค้าทักร้าน → แท็บแชทของหน้าออเดอร์ร้าน (ไม่มีเลขออเดอร์ → แท็บข้อความใหม่)
+      path = orderId ? `/merchant/order/${orderId}?tab=chat` : '/merchant/orders?status=unread_chat';
       break;
     case 'order':
       path = orderId ? `/order/${orderId}` : '/orders';

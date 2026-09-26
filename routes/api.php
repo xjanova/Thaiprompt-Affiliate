@@ -501,8 +501,63 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/{orderId}/tracking-history', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'addTrackingHistory'])->whereNumber('orderId');
         });
 
+        // ===== แชทออเดอร์ฝั่งผู้ขาย (แอป) =====
+        // 💬 (2026-09-26) ร้านคุยกับลูกค้าในออเดอร์ (order_messages) — ออเดอร์ร้านอื่น = 404 · แจ้งลูกค้าผ่าน push แอป ไม่ใช้ LINE
+        Route::prefix('seller/orders/{orderId}/messages')->whereNumber('orderId')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'messages'])
+                ->middleware('throttle:60,1,api-seller-order-messages')->name('api.v1.seller.orders.messages');
+            Route::post('/', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'sendMessage'])
+                ->middleware('throttle:20,1,api-seller-order-message-send')->name('api.v1.seller.orders.messages.send');
+            Route::post('/read', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'markMessagesRead'])
+                ->middleware('throttle:60,1,api-seller-order-message-read')->name('api.v1.seller.orders.messages.read');
+        });
+
         // Shipping Providers (Mobile App) - รายการบริษัทขนส่ง
         Route::get('/seller/shipping-providers', [\App\Http\Controllers\Api\V1\SellerOrderApiController::class, 'shippingProviders']);
+
+        // ===== ผู้ขาย: จัดการสินค้า + สมัครผู้ขาย (แอป) =====
+        // 🏪 (2026-09-26) แทนการเด้งไปเว็บ /user/seller-apply · /seller/products · /seller/store/settings
+        //    กติกาเดียวกับเว็บ (SellerApplicationService / SellerProductService / SellerStoreSettingsService)
+        //    ด่าน SellerPanelGate = role seller + KYC + ร้านเปิดอยู่ + มีแพ็กเกจ · แตะได้เฉพาะของตัวเอง (ของคนอื่น = 404)
+        Route::prefix('seller')->name('api.v1.seller.')->group(function () {
+            Route::get('/application', [\App\Http\Controllers\Api\V1\SellerApplicationApiController::class, 'show'])->name('application.show');
+            Route::post('/application', [\App\Http\Controllers\Api\V1\SellerApplicationApiController::class, 'store'])
+                ->middleware('throttle:10,1,api-seller-apply')->name('application.store');
+
+            Route::get('/store', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'show'])->name('store.show');
+            Route::put('/store', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'update'])
+                ->middleware('throttle:30,1,api-seller-store-update')->name('store.update');
+            Route::post('/store/logo', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'uploadLogo'])
+                ->middleware('throttle:10,1,api-seller-store-image')->name('store.logo');
+            Route::post('/store/banner', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'uploadBanner'])
+                ->middleware('throttle:10,1,api-seller-store-image')->name('store.banner');
+
+            Route::prefix('products')->name('products.')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'index'])->name('index');
+                Route::get('/meta', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'meta'])->name('meta');
+                Route::post('/quote', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'quote'])
+                    ->middleware('throttle:120,1,api-seller-product-quote')->name('quote');
+                Route::post('/', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'store'])
+                    ->middleware('throttle:20,1,api-seller-product-create')->name('store');
+                Route::get('/{id}', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'show'])->whereNumber('id')->name('show');
+                Route::put('/{id}', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'update'])
+                    ->whereNumber('id')->middleware('throttle:30,1,api-seller-product-write')->name('update');
+                Route::delete('/{id}', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'destroy'])
+                    ->whereNumber('id')->middleware('throttle:30,1,api-seller-product-write')->name('destroy');
+                Route::post('/{id}/active', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'setActive'])
+                    ->whereNumber('id')->middleware('throttle:60,1,api-seller-product-toggle')->name('active');
+                Route::post('/{id}/stock', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'updateStock'])
+                    ->whereNumber('id')->middleware('throttle:60,1,api-seller-product-toggle')->name('stock');
+                Route::post('/{id}/images', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'addImages'])
+                    ->whereNumber('id')->middleware('throttle:20,1,api-seller-product-images')->name('images.store');
+                Route::post('/{id}/images/main', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'setMainImage'])
+                    ->whereNumber('id')->middleware('throttle:30,1,api-seller-product-write')->name('images.main');
+                Route::post('/{id}/images/order', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'reorderImages'])
+                    ->whereNumber('id')->middleware('throttle:30,1,api-seller-product-write')->name('images.order');
+                Route::delete('/{id}/images/{imageId}', [\App\Http\Controllers\Api\V1\SellerProductApiController::class, 'deleteImage'])
+                    ->whereNumber(['id', 'imageId'])->middleware('throttle:30,1,api-seller-product-write')->name('images.destroy');
+            });
+        });
 
         // Rank System (Mobile App)
         Route::prefix('mobile/ranks')->group(function () {
@@ -877,6 +932,16 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             //    confirm-off → POST /rider/jobs/{id}/gps-off · resume = อัตโนมัติเมื่อส่งตำแหน่งใหม่
             //    customer/tracking → GET /rider/jobs/{id} (dropoff + customer_live_location)
         });
+    });
+
+    // ===== ตลาดสด ผู้ขาย + ไรเดอร์ตั้งค่า (แอป) =====
+    // (2026-09-26) รายได้ร้าน (ตัวเลขชุดเดียวกับหน้าเว็บ) + ค่าที่ฟอร์มลงขาย/แก้สินค้าในแอปต้องใช้ — อ่านอย่างเดียว
+    // ไรเดอร์ตั้งค่าใช้ PUT /rider/profile เดิม (GET /rider/status ส่งค่าความชอบงานกลับมาแล้ว)
+    Route::prefix('fresh-market')->name('fresh-market.')->middleware('auth:sanctum')->group(function () {
+        Route::get('/seller/earnings', [\App\Http\Controllers\Api\V1\FreshMarketSellerAppApiController::class, 'earnings'])
+            ->middleware('throttle:30,1,api-fm-seller-earnings')
+            ->name('seller.earnings');
+        Route::get('/seller/listing-form', [\App\Http\Controllers\Api\V1\FreshMarketSellerAppApiController::class, 'listingForm'])->name('seller.listing-form');
     });
 });
 

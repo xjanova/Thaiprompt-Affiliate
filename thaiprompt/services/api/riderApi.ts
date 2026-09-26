@@ -80,6 +80,10 @@ export interface RiderStatus {
   vehicle_plate: string | null;
   vehicle_brand: string | null;
   vehicle_color: string | null;
+  /** ความชอบงาน (ว่าง = รับทุกงาน) — ต้องส่งกลับครบทุกครั้งที่ PUT /rider/profile ไม่งั้นค่าจะถูกล้าง (server รุ่นเก่าไม่ส่งมา) */
+  preferred_job_types?: RiderJobType[];
+  preferred_radius_km?: number | null;
+  preferred_min_fee?: number | null;
   rider_type: string | null;
   rating: number;
   rating_count: number;
@@ -186,10 +190,14 @@ export interface RiderProfileBody {
   vehicle_plate?: string;
   vehicle_brand?: string;
   vehicle_color?: string;
-  preferred_radius_km?: number;
-  preferred_min_fee?: number;
-  preferred_job_types?: Array<'delivery' | 'fresh_market' | 'shop_delivery' | 'food' | 'document'>;
+  /** null = ไม่กำหนด (ล้างค่าเดิม) */
+  preferred_radius_km?: number | null;
+  preferred_min_fee?: number | null;
+  preferred_job_types?: RiderJobType[];
 }
+
+/** ประเภทงานที่ไรเดอร์เลือกรับได้ (ตรงกับ RiderAccountService::JOB_TYPE_OPTIONS) */
+export type RiderJobType = 'delivery' | 'fresh_market' | 'shop_delivery' | 'food' | 'document';
 
 export interface RiderAvailabilityResponse {
   availability: RiderAvailability;

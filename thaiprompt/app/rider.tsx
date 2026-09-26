@@ -26,7 +26,6 @@ import {
   Screen,
   SectionHeader,
   StatTile,
-  WebsiteButton,
   resultHaptic,
   BrandArt,
   Icon,
@@ -710,6 +709,14 @@ export default function RiderScreen() {
           onPress={() => router.push('/rider-documents' as never)}
           highlight={docsMissing > 0}
         />
+        {isApproved && (
+          <ActionTile
+            icon="sliders-horizontal"
+            title="ตั้งค่าไรเดอร์"
+            caption="ยานพาหนะ งานที่อยากรับ"
+            onPress={() => router.push('/rider-settings' as never)}
+          />
+        )}
       </View>
 
       {/* ---------- ตำแหน่ง & ความเป็นส่วนตัว ---------- */}
@@ -809,12 +816,18 @@ export default function RiderScreen() {
         </>
       )}
 
-      {!!rider.id && (
+      {isApproved && (
         <View style={styles.webBox}>
           <Text style={[typography.caption, styles.center, { color: colors.textMuted }]}>
-            แก้ไขยานพาหนะ ตั้งค่างาน และดูรายงานเต็มได้บนเว็บไซต์
+            เปลี่ยนยานพาหนะ เบอร์ติดต่อ รัศมีและประเภทงานที่อยากรับ
           </Text>
-          <WebsiteButton path="/user/rider" label="จัดการบัญชีไรเดอร์บนเว็บไซต์" fullWidth />
+          <Button3D
+            title="ตั้งค่าไรเดอร์"
+            icon="sliders-horizontal"
+            variant="secondary"
+            fullWidth
+            onPress={() => router.push('/rider-settings' as never)}
+          />
         </View>
       )}
 

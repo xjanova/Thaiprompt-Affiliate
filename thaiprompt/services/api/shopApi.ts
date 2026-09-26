@@ -598,9 +598,15 @@ export const getOrderMessages = (
 ): Promise<ApiResult<{ messages: ShopOrderMessage[]; pagination: Pagination }>> =>
   apiGet<{ messages: ShopOrderMessage[]; pagination: Pagination }>(`/orders/${orderId}/messages`, params);
 
-export const sendOrderMessage = (orderId: number, message: string): Promise<ApiResult<ShopOrderMessage>> => {
+/** clientMessageId = รหัสข้อความของแอป — ส่งใหม่หลังเน็ตหลุดด้วยรหัสเดิม server คืนข้อความเดิม ไม่สร้างซ้ำ */
+export const sendOrderMessage = (
+  orderId: number,
+  message: string,
+  clientMessageId?: string
+): Promise<ApiResult<ShopOrderMessage>> => {
   const form = new FormData();
   form.append('message', message);
+  if (clientMessageId) form.append('client_message_id', clientMessageId);
   return apiUpload<ShopOrderMessage>(`/orders/${orderId}/messages`, form);
 };
 

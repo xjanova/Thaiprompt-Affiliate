@@ -24,7 +24,7 @@ import {
   type FmSellerOrder,
 } from '@/services/api/taladsodSellerApi';
 import { addNotificationReceivedListener } from '@/services/notifications';
-import { Chip, EmptyState, Icon, Screen, WebsiteButton, formatBaht, resultHaptic } from '@/components/ui';
+import { Button3D, Chip, EmptyState, Icon, Screen, formatBaht, resultHaptic } from '@/components/ui';
 import { FormSheet, Field } from '@/components/shop';
 import {
   FM_CANCEL_REASONS,
@@ -321,8 +321,15 @@ export default function TaladsodSellerOrdersScreen() {
   if (notSeller) {
     return (
       <Screen title="ออเดอร์ตลาดสด" scroll={false} contentStyle={styles.pad}>
-        <EmptyState art="cart" title="ยังไม่มีร้านในตลาดสด" message="สมัครขายบนเว็บไซต์ แล้วกลับมารับออเดอร์ในแอปได้เลย" />
-        <WebsiteButton path="/taladsod/register-seller" label="สมัครขายในตลาดสด" icon="basket" variant="primary" fullWidth style={styles.notSellerCta} />
+        <EmptyState art="cart" title="ยังไม่มีร้านในตลาดสด" message="สมัครเปิดร้านในแอปไม่กี่นาที แล้วรับออเดอร์ได้เลย" />
+        <Button3D
+          title="สมัครเปิดร้านในตลาดสด"
+          icon="basket"
+          variant="primary"
+          fullWidth
+          onPress={() => router.push('/merchant/taladsod/register' as never)}
+          style={styles.notSellerCta}
+        />
       </Screen>
     );
   }

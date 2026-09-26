@@ -180,53 +180,18 @@ class OrderMessage extends Model
             'is_system_message' => $options['is_system_message'] ?? false,
         ]);
 
-        // อัพเดท order
-        $order->update([
+        // อัพเดท order — 💬 (2026-09-26) ไม่แตะ updated_at: แชทไม่ใช่การแก้ออเดอร์
+        //    (updated_at ใช้ตัดสินซ่อนเบอร์ลูกค้าของออเดอร์ที่จบเกิน 7 วัน — ทักแชทต้องไม่ทำให้เบอร์กลับมาโชว์)
+        Order::withoutTimestamps(fn () => $order->update([
             'has_unread_messages' => true,
             'last_message_at' => now(),
-        ]);
+        ]));
 
-        // ส่ง Push Notification ไปยังลูกค้าเมื่อ Admin/Seller ส่งข้อความ
-        if (in_array($senderType, ['admin', 'seller']) && $order->user_id) {
-            static::sendPushNotification($order, $orderMessage);
-        }
+        // แจ้งอีกฝั่ง (แอป + กล่องแจ้งเตือน ไม่ใช้ LINE push): ร้าน/แอดมินตอบ → ผู้ซื้อ · ลูกค้าส่ง → ผู้ขาย
+        // payload มี role ของผู้รับ ให้แอปเปิดหน้าแชทฝั่งที่ถูกต้อง (ดู OrderChatNotifier)
+        app(\App\Services\Shop\OrderChatNotifier::class)->messageSent($order, $orderMessage);
 
         return $orderMessage;
-    }
-
-    /**
-     * ส่ง Push Notification ไปยังลูกค้า
-     */
-    protected static function sendPushNotification(Order $order, OrderMessage $message): void
-    {
-        try {
-            $pushService = app(\App\Services\ExpoPushService::class);
-
-            $senderName = match ($message->sender_type) {
-                'admin' => 'ทีมงาน '.config('app.name'),
-                'seller' => 'ร้านค้า',
-                default => 'ระบบ',
-            };
-
-            $pushService->sendToUser(
-                $order->user_id,
-                "ข้อความใหม่จาก{$senderName}",
-                \Illuminate\Support\Str::limit($message->message, 100),
-                [
-                    'type' => 'order_message',
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'message_id' => $message->id,
-                    'channel' => 'orders',
-                ]
-            );
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to send order message push notification', [
-                'order_id' => $order->id,
-                'message_id' => $message->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 
     /**

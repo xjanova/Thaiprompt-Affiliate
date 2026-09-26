@@ -12,12 +12,9 @@ use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
 use App\Models\ServiceProvider;
 use App\Models\Setting;
-use App\Models\Wallet;
-use App\Models\WalletTransaction;
 use App\Services\AppBannerService;
 use App\Services\FreshMarketService;
 use App\Services\FreshMarketShopPresenceService;
-use App\Services\Pricing\PricingEngine;
 use App\Support\TaladsodWebUi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -1059,96 +1056,22 @@ class HomeController extends Controller
             return redirect()->route('taladsod.register-seller')->with('info', 'กรุณาสมัครเป็นผู้ขายก่อนค่ะ');
         }
 
-        $completed = fn () => FreshMarketOrder::where('seller_id', $seller->id)
-            ->where('order_status', FreshMarketOrder::STATUS_COMPLETED);
+        // ตัวเลขทั้งหมดมาจาก service เดียวกับ API แอป (GET /api/v1/fresh-market/seller/earnings) → ตรงกันเสมอ
+        $summary = app(\App\Services\FreshMarketSellerEarningsService::class)->summary($seller);
 
-        $sum = function ($from) use ($completed) {
-            $row = $completed()
-                ->when($from, fn ($q) => $q->where('completed_at', '>=', $from))
-                ->selectRaw('COUNT(*) as orders, COALESCE(SUM(total_amount), 0) as gross, COALESCE(SUM(platform_fee), 0) as gp, COALESCE(SUM(seller_earning), 0) as net')
-                ->first();
-
-            return [
-                'orders' => (int) ($row->orders ?? 0),
-                'gross' => round((float) ($row->gross ?? 0), 2),
-                'gp' => round((float) ($row->gp ?? 0), 2),
-                'net' => round((float) ($row->net ?? 0), 2),
-            ];
-        };
-
-        $periods = [
-            'today' => ['label' => 'วันนี้', 'data' => $sum(now()->startOfDay())],
-            'week' => ['label' => '7 วันล่าสุด', 'data' => $sum(now()->subDays(6)->startOfDay())],
-            'month' => ['label' => 'เดือนนี้', 'data' => $sum(now()->startOfMonth())],
-            'all' => ['label' => 'ทั้งหมด', 'data' => $sum(null)],
-        ];
-
-        // กราฟรายได้สุทธิ 14 วันล่าสุด (วันที่ไม่มีขาย = 0)
-        $fromDay = now()->subDays(13)->startOfDay();
-        $byDay = $completed()
-            ->where('completed_at', '>=', $fromDay)
-            ->selectRaw('DATE(completed_at) as d, COUNT(*) as orders, COALESCE(SUM(seller_earning), 0) as net')
-            ->groupBy('d')
-            ->get()
-            ->keyBy(fn ($r) => (string) $r->d);
-
-        $daily = [];
-        for ($i = 0; $i < 14; $i++) {
-            $day = $fromDay->copy()->addDays($i);
-            $key = $day->toDateString();
-            $daily[] = [
-                'date' => $key,
-                'label' => TaladsodWebUi::shortDay($day),
-                'orders' => (int) ($byDay[$key]->orders ?? 0),
-                'net' => round((float) ($byDay[$key]->net ?? 0), 2),
-            ];
-        }
-
-        // เงินที่กำลังจะได้ (ออเดอร์ที่ยังไม่จบ): จ่ายผ่าน wallet ระบบถือไว้ / เก็บเงินปลายทาง
-        $activeStatuses = [
-            FreshMarketOrder::STATUS_PENDING, FreshMarketOrder::STATUS_ACCEPTED, FreshMarketOrder::STATUS_PREPARING,
-            FreshMarketOrder::STATUS_READY, FreshMarketOrder::STATUS_DELIVERING, FreshMarketOrder::STATUS_DELIVERED,
-        ];
-        $pendingRow = FreshMarketOrder::where('seller_id', $seller->id)
-            ->whereIn('order_status', $activeStatuses)
-            ->selectRaw("COUNT(*) as orders,
-                COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN seller_earning ELSE 0 END), 0) as held_net,
-                COALESCE(SUM(CASE WHEN payment_method = 'cod' AND payment_status <> 'paid' THEN total_amount ELSE 0 END), 0) as cod_to_collect")
-            ->first();
-        $pending = [
-            'orders' => (int) ($pendingRow->orders ?? 0),
-            'held_net' => round((float) ($pendingRow->held_net ?? 0), 2),
-            'cod_to_collect' => round((float) ($pendingRow->cod_to_collect ?? 0), 2),
-        ];
-
-        $gpDebt = $seller->outstandingGpDebt();
-        $gpRate = $this->currentFreshGpRate($seller);
-        $gpFree = $this->gpPromoActive();
-        $gpFreeUntil = null;
-        try {
-            $gpFreeUntil = $gpFree ? app(PricingEngine::class)->gpPromoEndsAt() : null;
-        } catch (\Throwable $e) {
-            $gpFreeUntil = null;
-        }
-
-        $walletBalance = round((float) (Wallet::where('user_id', auth()->id())->value('balance') ?? 0), 2);
-
-        $payouts = WalletTransaction::where('user_id', auth()->id())
-            ->where('reference_type', FreshMarketService::REF_PAYOUT)
-            ->latest('id')
-            ->limit(10)
-            ->get(['id', 'amount', 'description', 'reference_id', 'created_at']);
-
-        $recentCompleted = $completed()
-            ->with('items')
-            ->latest('completed_at')
-            ->limit(15)
-            ->get();
-
-        return view('taladsod.seller-earnings', compact(
-            'seller', 'periods', 'daily', 'pending', 'gpDebt', 'gpRate', 'gpFree', 'gpFreeUntil',
-            'walletBalance', 'payouts', 'recentCompleted'
-        ));
+        return view('taladsod.seller-earnings', [
+            'seller' => $seller,
+            'periods' => $summary['periods'],
+            'daily' => $summary['daily'],
+            'pending' => $summary['pending'],
+            'gpDebt' => $summary['gp_debt'],
+            'gpRate' => $summary['gp_rate'],
+            'gpFree' => $summary['gp_free'],
+            'gpFreeUntil' => $summary['gp_free_until'],
+            'walletBalance' => $summary['wallet_balance'],
+            'payouts' => $summary['payouts'],
+            'recentCompleted' => $summary['recent_completed'],
+        ]);
     }
 
     /**
@@ -1595,11 +1518,7 @@ class HomeController extends Controller
      */
     protected function gpPromoActive(): bool
     {
-        try {
-            return app(PricingEngine::class)->gpPromoActive();
-        } catch (\Throwable $e) {
-            return false;
-        }
+        return app(\App\Services\FreshMarketSellerEarningsService::class)->gpPromoActive();
     }
 
     /**
@@ -1607,16 +1526,7 @@ class HomeController extends Controller
      */
     protected function currentFreshGpRate(FreshMarketSeller $seller): float
     {
-        try {
-            $probe = new FreshMarketListing(['seller_id' => $seller->id]);
-            $probe->setRelation('seller', $seller);
-
-            return round((float) $this->marketService->gpRateFor($probe), 2);
-        } catch (\Throwable $e) {
-            Log::warning('FreshMarket web: อ่านอัตรา GP ล้มเหลว', ['seller_id' => $seller->id, 'error' => $e->getMessage()]);
-
-            return 0.0;
-        }
+        return app(\App\Services\FreshMarketSellerEarningsService::class)->currentGpRate($seller);
     }
 
     /**
@@ -1644,87 +1554,17 @@ class HomeController extends Controller
      */
     protected function thaiRuleMessages(): array
     {
-        return [
-            'required' => 'กรุณากรอก:attribute',
-            'required_if' => 'กรุณากรอก:attribute',
-            'accepted' => 'กรุณายอมรับ:attribute',
-            'string' => ':attributeไม่ถูกต้อง',
-            'numeric' => ':attributeต้องเป็นตัวเลข',
-            'integer' => ':attributeต้องเป็นจำนวนเต็ม',
-            'boolean' => ':attributeไม่ถูกต้อง',
-            'array' => ':attributeไม่ถูกต้อง',
-            'exists' => 'กรุณาเลือก:attributeที่มีอยู่ในระบบ',
-            'in' => ':attributeไม่ถูกต้อง',
-            'image' => ':attributeต้องเป็นไฟล์รูปภาพ',
-            'regex' => 'รูปแบบ:attributeไม่ถูกต้อง',
-            'between' => [
-                'numeric' => ':attributeไม่ถูกต้อง',
-                'string' => ':attributeไม่ถูกต้อง',
-                'array' => ':attributeไม่ถูกต้อง',
-                'file' => ':attributeไม่ถูกต้อง',
-            ],
-            'gt' => [
-                'numeric' => ':attributeต้องมากกว่า :value',
-                'string' => ':attributeไม่ถูกต้อง',
-                'array' => ':attributeไม่ถูกต้อง',
-                'file' => ':attributeไม่ถูกต้อง',
-            ],
-            'min' => [
-                'numeric' => ':attributeต้องไม่น้อยกว่า :min',
-                'string' => ':attributeต้องยาวอย่างน้อย :min ตัวอักษร',
-                'array' => ':attributeต้องมีอย่างน้อย :min รายการ',
-                'file' => ':attributeมีขนาดเล็กเกินไป',
-            ],
-            'max' => [
-                'numeric' => ':attributeต้องไม่เกิน :max',
-                'string' => ':attributeยาวได้ไม่เกิน :max ตัวอักษร',
-                'array' => ':attributeมีได้ไม่เกิน :max รายการ',
-                'file' => ':attributeต้องมีขนาดไม่เกิน :max KB',
-            ],
-        ];
+        return \App\Support\FreshMarketValidationText::messages();
     }
 
     /**
-     * ชื่อช่องภาษาไทยสำหรับข้อความ validation
+     * ชื่อช่องภาษาไทยสำหรับข้อความ validation (ใช้ชุดเดียวกับ API แอป)
      *
      * @return array<string, string>
      */
     protected function thaiAttributes(): array
     {
-        return [
-            'title' => 'ชื่อสินค้า',
-            'description' => 'รายละเอียดสินค้า',
-            'category_id' => 'หมวดหมู่',
-            'price' => 'ราคาขาย',
-            'compare_at_price' => 'ราคาก่อนลด',
-            'unit' => 'หน่วยขาย',
-            'track_stock' => 'การตัดสต็อก',
-            'quantity_available' => 'จำนวนที่มีขาย',
-            'is_organic' => 'สินค้าอินทรีย์',
-            'is_available' => 'สถานะเปิดขาย',
-            'freshness_level' => 'ระดับความสด',
-            'cashback_percentage' => 'เงินคืน',
-            'images' => 'รูปสินค้า',
-            'images.*' => 'รูปสินค้า',
-            'shop_name' => 'ชื่อร้าน',
-            'shop_description' => 'คำอธิบายร้าน',
-            'phone' => 'เบอร์โทร',
-            'address' => 'ที่อยู่ร้าน',
-            'province' => 'จังหวัด',
-            'district' => 'อำเภอ/เขต',
-            'sub_district' => 'ตำบล/แขวง',
-            'latitude' => 'พิกัดร้าน',
-            'longitude' => 'พิกัดร้าน',
-            'agree_terms' => 'เงื่อนไขการขาย',
-            'option_groups' => 'กลุ่มตัวเลือก',
-            'option_groups.*.name' => 'ชื่อกลุ่มตัวเลือก',
-            'option_groups.*.min_select' => 'จำนวนขั้นต่ำที่ต้องเลือก',
-            'option_groups.*.max_select' => 'จำนวนสูงสุดที่เลือกได้',
-            'option_groups.*.options' => 'ตัวเลือก',
-            'option_groups.*.options.*.name' => 'ชื่อตัวเลือก',
-            'option_groups.*.options.*.price_delta' => 'ราคาเพิ่มของตัวเลือก',
-            'option_groups.*.options.*.image' => 'รูปตัวเลือก',
-        ];
+        return \App\Support\FreshMarketValidationText::attributes();
     }
 
     /**

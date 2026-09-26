@@ -3,8 +3,10 @@
  *
  * - ตัวเลขงานค้าง (กดแล้วไปรายการที่กรองไว้) + ยอดขาย/รายรับสุทธิ/ค่า GP ของเดือนนี้
  * - ออเดอร์ใหม่รอยืนยัน 5 รายการล่าสุด → แตะเพื่อจัดการในแอป
- * - จัดการสินค้า ตั้งราคา และวางกลยุทธ์ GP อยู่บนเว็บไซต์ (WebsiteButton — ล็อกอินให้อัตโนมัติ)
- * - ยังไม่มีร้าน (403 NOT_A_SELLER) → ชวนเปิดร้านบนเว็บ · ร้านถูกระงับ (STORE_SUSPENDED) → แจ้งเหตุผล
+ * - (2026-09-26) จัดการสินค้า (/merchant/products) · ตั้งค่าร้าน/ปักหมุด (/merchant/store-settings) · สมัครเปิดร้าน
+ *   (/merchant/apply) ทำในแอปได้แล้ว — วางแผนราคา/กลยุทธ์ GP ยังอยู่บนเว็บไซต์ (WebsiteButton — ล็อกอินให้อัตโนมัติ)
+ * - ยังไม่มีร้าน (403 NOT_A_SELLER) → ชวนสมัครเปิดร้านในแอป · ร้านถูกระงับ (STORE_SUSPENDED) → แจ้งเหตุผล
+ *   (คำขอเปิดร้านที่รออนุมัติ/ไม่ผ่าน ก็ได้ STORE_SUSPENDED จาก /seller/summary → เช็คสถานะคำขอแล้วแสดงให้ถูก)
  * - รีเฟรชเงียบๆ ทุก 30 วินาทีระหว่างเปิดหน้านี้ (ไม่มีสปินเนอร์เต็มจอ)
  * - ปุ่มสลับด้านบน → ร้านตลาดสด (/merchant/taladsod) ซึ่งเป็นอีกระบบ (รถเข็น/ตลาดนัด/ร้านอาหาร)
  *
@@ -42,6 +44,7 @@ import {
 import { ORDER_STATUS_TONE, formatThaiDateTime, toNumber } from '@/components/shop';
 import { HeroCard, IconTile, MerchantModeSwitch } from '@/components/merchant';
 import { checkIsFreshMarketSeller } from '@/services/api/taladsodSellerApi';
+import { getSellerApplication, type SellerApplicationStatus } from '@/services/api/sellerStoreApi';
 import { DARK_THEME, useTheme, radii, spacing, typography } from '@/theme';
 
 const POLL_MS = 30000;
@@ -117,6 +120,8 @@ export default function MerchantScreen() {
   const [newOrders, setNewOrders] = useState<SellerOrderListItem[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [hasFmShop, setHasFmShop] = useState(false);
+  /** สถานะคำขอเปิดร้าน (เช็คเมื่อยังไม่มีร้าน/ร้านไม่เปิด — แยก "รออนุมัติ/ไม่ผ่าน" ออกจาก "ถูกระงับ") */
+  const [application, setApplication] = useState<SellerApplicationStatus | null>(null);
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const mountedRef = useRef(true);
   const busyRef = useRef(false);
@@ -182,6 +187,23 @@ export default function MerchantScreen() {
     };
   }, [state.kind, userId]);
 
+  // ยังไม่มีร้าน / ร้านไม่เปิด → ดูสถานะคำขอเปิดร้าน (คำขอรออนุมัติ = ร้าน pending ซึ่ง summary ตอบว่า "ถูกระงับ")
+  useEffect(() => {
+    if (state.kind !== 'not_seller' && state.kind !== 'suspended') {
+      setApplication(null);
+      return;
+    }
+    let alive = true;
+    getSellerApplication()
+      .then((res) => {
+        if (alive && mountedRef.current && res.success) setApplication(res.data);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [state.kind]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
@@ -203,6 +225,33 @@ export default function MerchantScreen() {
       </Screen>
     );
   }
+
+  /** การ์ดสถานะคำขอเปิดร้าน (รออนุมัติ / ไม่ผ่าน) — null = ไม่มีคำขอค้าง */
+  const applicationCard =
+    application && (application.state === 'pending' || application.state === 'rejected') ? (
+      <Card3D gradientBorder padding={spacing.xl} contentStyle={styles.centerBox}>
+        <IconTile icon={application.state === 'pending' ? 'hourglass' : 'x-circle'} tone={application.state === 'pending' ? 'info' : 'danger'} size={64} />
+        <Text style={[typography.serif, styles.centerText, styles.lead, { color: colors.textStrong }]}>
+          {application.state === 'pending' ? 'คำขอเปิดร้านรอตรวจสอบ' : 'คำขอเปิดร้านยังไม่ผ่าน'}
+        </Text>
+        <Text style={[typography.body, styles.lead, styles.centerText, { color: colors.textMuted }]}>
+          {application.state === 'pending'
+            ? `ร้าน "${application.application?.store_name ?? ''}" · ทีมงานจะแจ้งผลผ่านการแจ้งเตือน`
+            : application.rejection_reason
+              ? `เหตุผล: ${application.rejection_reason}`
+              : 'แก้ไขข้อมูลแล้วยื่นใหม่ได้เลย'}
+        </Text>
+        <Button3D
+          title={application.state === 'pending' ? 'ดูสถานะคำขอ' : 'แก้ไขแล้วยื่นใหม่'}
+          icon={application.state === 'pending' ? 'clipboard-text' : 'pencil-simple'}
+          variant={application.state === 'pending' ? 'secondary' : 'primary'}
+          size="lg"
+          fullWidth
+          style={styles.cta}
+          onPress={() => router.push('/merchant/apply' as never)}
+        />
+      </Card3D>
+    ) : null;
 
   const renderBody = () => {
     switch (state.kind) {
@@ -239,26 +288,35 @@ export default function MerchantScreen() {
                 />
               </Card3D>
             )}
-            <Card3D gradientBorder padding={spacing.xl} contentStyle={styles.centerBox}>
-              <BrandArt name="store" size={128} />
-              <Text style={[typography.serif, styles.centerText, { color: colors.textStrong }]}>ยังไม่มีร้านค้า</Text>
-              <Text style={[typography.body, styles.lead, styles.centerText, { color: colors.textMuted }]}>
-                เปิดร้านบนเว็บไซต์ได้เลย เมื่อร้านพร้อมขาย ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปนี้ และจัดการออเดอร์ในแอปได้ทันที
-              </Text>
-              <WebsiteButton
-                path="/user/seller-apply"
-                label="เปิดร้านบนเว็บไซต์"
-                icon="storefront"
-                variant="primary"
-                size="lg"
-                fullWidth
-                style={styles.cta}
-              />
-            </Card3D>
+            {applicationCard ?? (
+              <Card3D gradientBorder padding={spacing.xl} contentStyle={styles.centerBox}>
+                <BrandArt name="store" size={128} />
+                <Text style={[typography.serif, styles.centerText, { color: colors.textStrong }]}>ยังไม่มีร้านค้า</Text>
+                <Text style={[typography.body, styles.lead, styles.centerText, { color: colors.textMuted }]}>
+                  {application?.state === 'role_not_eligible'
+                    ? 'บัญชีของคุณมีบทบาทเฉพาะอยู่แล้ว หากต้องการเปิดร้านค้าด้วย กรุณาติดต่อทีมงาน'
+                    : 'สมัครเปิดร้านในแอปได้เลย เมื่อร้านพร้อมขาย ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปนี้ และจัดการร้านในแอปได้ทันที'}
+                </Text>
+                {application?.state === 'role_not_eligible' ? (
+                  <Button3D title="ติดต่อทีมงาน" icon="headset" variant="secondary" size="lg" fullWidth style={styles.cta} onPress={() => router.push('/support')} />
+                ) : (
+                  <Button3D
+                    title="สมัครเปิดร้าน"
+                    icon="storefront"
+                    iconRight="arrow-right"
+                    size="lg"
+                    fullWidth
+                    style={styles.cta}
+                    onPress={() => router.push('/merchant/apply' as never)}
+                  />
+                )}
+              </Card3D>
+            )}
           </>
         );
 
       case 'suspended':
+        if (applicationCard) return applicationCard;
         return (
           <EmptyState
             compact
@@ -342,13 +400,13 @@ export default function MerchantScreen() {
                     ยังไม่ได้ปักหมุดจุดรับสินค้า ไรเดอร์จะยังรับงานของร้านไม่ได้
                   </Text>
                 </View>
-                <WebsiteButton
-                  path="/seller/store/settings"
-                  label="ปักหมุดบนเว็บไซต์"
+                <Button3D
+                  title="ปักหมุดจุดรับของ"
                   icon="map-pin"
                   size="sm"
                   variant="secondary"
                   style={styles.warningCta}
+                  onPress={() => router.push('/merchant/store-settings' as never)}
                 />
               </Card3D>
             )}
@@ -400,20 +458,41 @@ export default function MerchantScreen() {
               style={styles.sectionHeader}
             />
 
-            {/* งานบนเว็บ */}
-            <SectionHeader title="จัดการร้านบนเว็บไซต์" subtitle="สินค้า ราคา และกลยุทธ์ GP อยู่บนเว็บ" style={styles.sectionHeader} />
+            {/* จัดการร้านในแอป */}
+            <SectionHeader title="จัดการร้าน" subtitle="สินค้า สต็อก และข้อมูลร้าน" style={styles.sectionHeader} />
             <Card3D padding={spacing.lg}>
-              <WebsiteButton
-                path="/seller/products"
-                label="จัดการสินค้า ตั้งราคา & วางกลยุทธ์ GP"
-                icon="sliders-horizontal"
+              <Button3D
+                title="สินค้าของร้าน"
+                icon="package"
+                iconRight="arrow-right"
                 variant="navy"
                 fullWidth
+                onPress={() => router.push('/merchant/products' as never)}
               />
               <View style={styles.webRow}>
-                <WebsiteButton path="/seller/pricing/planner" label="วางแผนราคา" icon="chart-bar" size="sm" style={styles.flex} />
-                <WebsiteButton path="/seller/store/settings" label="ตั้งค่าร้าน" icon="gear-six" size="sm" style={styles.flex} />
+                <Button3D
+                  title="เพิ่มสินค้า"
+                  icon="plus"
+                  size="sm"
+                  variant="secondary"
+                  style={styles.flex}
+                  onPress={() => router.push('/merchant/products/new' as never)}
+                />
+                <Button3D
+                  title="ตั้งค่าร้าน"
+                  icon="gear-six"
+                  size="sm"
+                  variant="secondary"
+                  style={styles.flex}
+                  onPress={() => router.push('/merchant/store-settings' as never)}
+                />
               </View>
+            </Card3D>
+
+            {/* งานบนเว็บ */}
+            <SectionHeader title="เครื่องมือบนเว็บไซต์" subtitle="วางแผนราคาและกลยุทธ์ GP อยู่บนเว็บ" style={styles.sectionHeader} />
+            <Card3D padding={spacing.lg}>
+              <WebsiteButton path="/seller/pricing/planner" label="วางแผนราคา & กลยุทธ์ GP" icon="chart-bar" variant="navy" fullWidth />
               <View style={styles.webNoteRow}>
                 <Icon name="lock" size={13} color={colors.textFaint} />
                 <Text style={[typography.caption, { color: colors.textMuted }]}>

@@ -6,10 +6,13 @@ use App\Exceptions\ShopException;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderMessage;
 use App\Models\OrderTrackingHistory;
 use App\Models\ShippingProvider;
 use App\Models\User;
 use App\Models\VendorStore;
+use App\Services\Shop\OrderChatIdempotency;
+use App\Services\Shop\OrderChatNotifier;
 use App\Services\Shop\SellerOrderService;
 use App\Services\Shop\ShopPresenter;
 use App\Support\Shop\PaymentMethod;
@@ -24,16 +27,23 @@ use Illuminate\Support\Facades\Validator;
  *
  * สิทธิ์: ร้านเห็นเฉพาะออเดอร์ที่มีสินค้าของตัวเอง และเห็นเฉพาะรายการสินค้าของตัวเอง
  * (ออเดอร์ของร้านอื่น = 404 เหมือนไม่มีอยู่ — กัน IDOR)
+ *
+ * 💬 (2026-09-26) แชทกับลูกค้าในแอป (order_messages) — messages / sendMessage / markMessagesRead
+ *    สิทธิ์เดียวกับหน้าเว็บ /seller/orders/{id}/messages (มีสินค้าของร้านในออเดอร์) · แจ้งเตือนผ่าน OrderChatNotifier
  */
 class SellerOrderApiController extends Controller
 {
     /** ตัวกรองรายการที่แอปใช้ → เงื่อนไข */
-    private const FILTERS = ['all', 'to_confirm', 'to_ship', 'shipping', 'delivered', 'completed', 'cancelled', 'awaiting_payment'];
+    private const FILTERS = ['all', 'to_confirm', 'to_ship', 'shipping', 'delivered', 'completed', 'cancelled', 'awaiting_payment', 'unread_chat'];
+
+    /** ออเดอร์สถานะนี้ปิดแชท (เหมือนฝั่งผู้ซื้อ OrderApiController::sendMessage) */
+    private const CHAT_CLOSED_STATUSES = ['cancelled', 'refunded'];
 
     public function __construct(private readonly SellerOrderService $service) {}
 
     /**
-     * GET /api/v1/seller/orders?status=all|to_confirm|to_ship|shipping|delivered|completed|cancelled|awaiting_payment&page=&per_page=
+     * GET /api/v1/seller/orders?status=all|to_confirm|to_ship|shipping|delivered|completed|cancelled|awaiting_payment|unread_chat&page=&per_page=
+     * แต่ละออเดอร์มี unread_messages (ข้อความจากลูกค้าที่ร้านยังไม่อ่าน) · counts.unread_chat = จำนวนออเดอร์ที่มีข้อความใหม่
      */
     public function index(Request $request): JsonResponse
     {
@@ -51,6 +61,7 @@ class SellerOrderApiController extends Controller
         // โหลดสินค้าทั้งออเดอร์ (ใช้ตรวจว่าเป็นออเดอร์หลายร้าน) แต่แสดงเฉพาะของร้านนี้
         $query = Order::forSeller($sellerId)
             ->with(['items', 'user:id,name'])
+            ->withCount(['unreadMessages as unread_customer_messages_count' => fn ($q) => $q->where('sender_type', 'customer')])
             ->latest('id');
 
         $this->applyFilter($query, $status);
@@ -64,7 +75,9 @@ class SellerOrderApiController extends Controller
             'data' => [
                 'orders' => $orders->getCollection()->map(fn (Order $o) => $this->presentListItem($o, $sellerId))->values(),
                 'pagination' => ShopPresenter::pagination($orders),
-                'counts' => $this->service->summary($seller)['counts'],
+                'counts' => $this->service->summary($seller)['counts'] + [
+                    'unread_chat' => Order::forSeller($sellerId)->whereHas('unreadMessages', fn ($q) => $q->where('sender_type', 'customer'))->count(),
+                ],
             ],
         ]);
     }
@@ -282,8 +295,268 @@ class SellerOrderApiController extends Controller
     }
 
     // =====================================================
+    // 💬 แชทกับลูกค้า (order_messages)
+    // =====================================================
+
+    /**
+     * GET /api/v1/seller/orders/{id}/messages?page=&per_page=
+     * หน้าแรก = ข้อความล่าสุด เรียงใหม่ → เก่า (สัญญาเดียวกับฝั่งผู้ซื้อ GET /orders/{id}/messages — แอปใช้รายการกลับหัว)
+     * เปิดอ่าน = ข้อความจากลูกค้าถือว่าอ่านแล้ว (เหมือนฝั่งผู้ซื้อ)
+     */
+    public function messages(Request $request, int $id): JsonResponse
+    {
+        $seller = $request->user();
+        if ($denied = $this->denySeller($seller)) {
+            return $denied;
+        }
+
+        $order = $this->findChatOrder((int) $seller->id, $id);
+        if (! $order) {
+            return $this->notFound();
+        }
+
+        $perPage = max(1, min(100, (int) $request->input('per_page', 50)));
+
+        $messages = OrderMessage::where('order_id', $order->id)
+            ->with('sender')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        $this->markCustomerMessagesRead($order, (int) $seller->id);
+        // ร้านกำลังเปิดแชทนี้ → ข้อความลูกค้าช่วงนี้ไม่ต้อง push ซ้อนหน้าแชท
+        OrderChatNotifier::markViewing((int) $order->id, (int) $seller->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ดึงข้อความสำเร็จ',
+            'data' => [
+                'messages' => $messages->getCollection()
+                    ->map(fn (OrderMessage $m) => $this->presentMessage($m, (int) $seller->id))
+                    ->values(),
+                'pagination' => [
+                    'current_page' => $messages->currentPage(),
+                    'last_page' => $messages->lastPage(),
+                    'per_page' => $messages->perPage(),
+                    'total' => $messages->total(),
+                ],
+                'chat' => [
+                    'can_send' => $this->chatOpen($order),
+                    'customer_name' => $order->user?->name ?? 'ลูกค้า',
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/v1/seller/orders/{id}/messages {message?, attachment? (รูป jpg/png/webp ≤ 5MB), client_message_id?}
+     * client_message_id = กันส่งซ้ำเมื่อแอปส่งใหม่หลังเน็ตหลุด (รหัสเดิม → คืนข้อความเดิม ไม่สร้างซ้ำ)
+     */
+    public function sendMessage(Request $request, int $id): JsonResponse
+    {
+        $seller = $request->user();
+        if ($denied = $this->denySeller($seller)) {
+            return $denied;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'message' => 'nullable|required_without:attachment|string|max:2000',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+            'client_message_id' => OrderChatIdempotency::RULES,
+        ], [
+            'message.required_without' => 'กรุณาพิมพ์ข้อความหรือแนบรูป',
+            'message.string' => 'ข้อความไม่ถูกต้อง',
+            'message.max' => 'ข้อความต้องไม่เกิน 2000 ตัวอักษร',
+            'attachment.file' => 'ไฟล์แนบไม่ถูกต้อง',
+            'attachment.mimes' => 'แนบได้เฉพาะรูป JPG, PNG หรือ WEBP',
+            'attachment.max' => 'รูปต้องไม่เกิน 5MB',
+            'client_message_id.*' => 'รหัสข้อความไม่ถูกต้อง',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'code' => 'VALIDATION_ERROR',
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $order = $this->findChatOrder((int) $seller->id, $id);
+        if (! $order) {
+            return $this->notFound();
+        }
+
+        if (! $this->chatOpen($order)) {
+            return response()->json([
+                'success' => false,
+                'code' => 'CHAT_CLOSED',
+                'message' => 'คำสั่งซื้อนี้ปิดแล้ว ส่งข้อความเพิ่มไม่ได้',
+            ], 409);
+        }
+
+        // กันส่งซ้ำ: จองคีย์ก่อนสร้าง — ส่งซ้ำด้วยรหัสเดิม = คืนข้อความเดิม
+        $idemKey = OrderChatIdempotency::key((int) $order->id, 'seller', (int) $seller->id, $request->input('client_message_id'));
+        [$claim, $existing] = OrderChatIdempotency::claim($idemKey, (int) $order->id);
+        if ($claim !== 'new') {
+            if ($existing) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'ส่งข้อความสำเร็จ',
+                    'data' => $this->presentMessage($existing, (int) $seller->id),
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'code' => 'MESSAGE_IN_FLIGHT',
+                'message' => 'ข้อความนี้กำลังส่งอยู่ รอสักครู่นะ',
+            ], 409);
+        }
+
+        try {
+            $attachmentPath = null;
+            if ($request->hasFile('attachment')) {
+                $attachmentPath = $request->file('attachment')->store('order-messages/'.$order->id, 'public');
+            }
+
+            $message = OrderMessage::send(
+                $order,
+                (int) $seller->id,
+                'seller',
+                trim((string) $request->input('message', '')),
+                [
+                    'attachment' => $attachmentPath,
+                    'attachment_type' => $attachmentPath ? 'image' : null,
+                ]
+            );
+
+            OrderChatIdempotency::complete($idemKey, (int) $message->id);
+
+            // ร้านตอบแล้ว = อ่านข้อความลูกค้าก่อนหน้าแล้ว
+            $this->markCustomerMessagesRead($order, (int) $seller->id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ส่งข้อความสำเร็จ',
+                'data' => $this->presentMessage($message->load('sender'), (int) $seller->id),
+            ], 201);
+        } catch (\Throwable $e) {
+            OrderChatIdempotency::release($idemKey);
+
+            Log::error('Seller order message send failed', [
+                'order_id' => $order->id,
+                'seller_id' => $seller->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'SEND_FAILED',
+                'message' => 'ส่งข้อความไม่สำเร็จ กรุณาลองใหม่',
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /api/v1/seller/orders/{id}/messages/read — อ่านข้อความลูกค้าทั้งหมดแล้ว
+     */
+    public function markMessagesRead(Request $request, int $id): JsonResponse
+    {
+        $seller = $request->user();
+        if ($denied = $this->denySeller($seller)) {
+            return $denied;
+        }
+
+        $order = $this->findChatOrder((int) $seller->id, $id);
+        if (! $order) {
+            return $this->notFound();
+        }
+
+        $marked = $this->markCustomerMessagesRead($order, (int) $seller->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อ่านข้อความแล้ว',
+            'data' => ['marked' => $marked, 'unread' => 0],
+        ]);
+    }
+
+    // =====================================================
     // ตัวช่วย
     // =====================================================
+
+    /**
+     * ออเดอร์สำหรับแชท — เงื่อนไขเดียวกับ findForSeller (มีสินค้าของร้านนี้) แต่โหลดน้อยกว่า
+     */
+    private function findChatOrder(int $sellerId, int $orderId): ?Order
+    {
+        return Order::forSeller($sellerId)
+            ->with(['items:id,order_id,seller_id', 'user:id,name'])
+            ->find($orderId);
+    }
+
+    private function chatOpen(Order $order): bool
+    {
+        return ! in_array((string) $order->status, self::CHAT_CLOSED_STATUSES, true);
+    }
+
+    /** ข้อความจากลูกค้าที่ร้านยังไม่อ่าน */
+    private function unreadCustomerMessages(Order $order): int
+    {
+        return OrderMessage::where('order_id', $order->id)
+            ->where('sender_type', 'customer')
+            ->where('is_read', false)
+            ->count();
+    }
+
+    /**
+     * ทำเครื่องหมายข้อความลูกค้าว่าอ่านแล้ว + คำนวณ orders.has_unread_messages ใหม่
+     * (ความหมายเดิม = ยังมีข้อความที่ใครสักฝั่งยังไม่อ่าน — เหมือน Seller\OrderManagementController::markMessagesRead)
+     * เขียนผ่าน query builder: ไม่แตะ updated_at (ใช้ตัดสินซ่อนเบอร์ลูกค้าของออเดอร์เก่า) และไม่ยิง observer ของออเดอร์
+     *
+     * @return int จำนวนข้อความที่เพิ่งอ่าน
+     */
+    private function markCustomerMessagesRead(Order $order, int $sellerId): int
+    {
+        $marked = OrderMessage::where('order_id', $order->id)
+            ->where('sender_type', 'customer')
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+                'read_by' => $sellerId,
+            ]);
+
+        if ($marked > 0) {
+            $hasUnread = OrderMessage::where('order_id', $order->id)->where('is_read', false)->exists();
+            Order::whereKey($order->id)->toBase()->update(['has_unread_messages' => $hasUnread]);
+        }
+
+        return (int) $marked;
+    }
+
+    /**
+     * รูปแบบข้อความเดียวกับฝั่งผู้ซื้อ + is_read (ฟองของฉัน: ลูกค้าอ่านแล้วหรือยัง)
+     *
+     * @return array<string, mixed>
+     */
+    private function presentMessage(OrderMessage $message, int $sellerId): array
+    {
+        return [
+            'id' => (int) $message->id,
+            'sender_type' => (string) $message->sender_type,
+            'sender_name' => $message->sender_name,
+            'sender_avatar' => $message->sender_avatar,
+            'message' => (string) $message->message,
+            'attachment' => $message->attachment_url,
+            'attachment_type' => $message->attachment_type,
+            'is_system_message' => (bool) $message->is_system_message,
+            'is_mine' => $message->sender_type === 'seller' && (int) $message->sender_id === $sellerId,
+            'is_read' => (bool) $message->is_read,
+            'created_at' => $message->created_at?->toISOString(),
+        ];
+    }
 
     private function isSeller(?User $user): bool
     {
@@ -314,6 +587,9 @@ class SellerOrderApiController extends Controller
             'delivered' => $query->where('status', 'delivered'),
             'completed' => $query->where('status', 'completed'),
             'cancelled' => $query->whereIn('status', ['cancelled', 'refunded']),
+            // มีข้อความจากลูกค้าที่ยังไม่อ่าน (เรียงตามข้อความล่าสุด)
+            'unread_chat' => $query->whereHas('unreadMessages', fn ($q) => $q->where('sender_type', 'customer'))
+                ->reorder()->orderByDesc('last_message_at')->orderByDesc('id'),
             default => null,
         };
     }
@@ -344,6 +620,8 @@ class SellerOrderApiController extends Controller
             'seller_total' => round((float) $items->sum('total'), 2),
             'seller_earning' => round((float) $items->sum('seller_earning'), 2),
             'is_multi_seller' => $order->isMultiSeller(),
+            'unread_messages' => (int) ($order->unread_customer_messages_count ?? 0),
+            'last_message_at' => $order->last_message_at?->toISOString(),
             'created_at' => $order->created_at?->toISOString(),
         ];
     }
@@ -430,6 +708,11 @@ class SellerOrderApiController extends Controller
                 ])
                 ->values(),
             'allowed_actions' => $this->service->allowedActions($order, $sellerId),
+            'chat' => [
+                'unread' => $this->unreadCustomerMessages($order),
+                'can_send' => $this->chatOpen($order),
+                'last_message_at' => $order->last_message_at?->toISOString(),
+            ],
         ];
     }
 

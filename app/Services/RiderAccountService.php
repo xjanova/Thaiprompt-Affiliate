@@ -638,6 +638,10 @@ class RiderAccountService
             'vehicle_plate' => $rider->vehicle_plate,
             'vehicle_brand' => $rider->vehicle_brand,
             'vehicle_color' => $rider->vehicle_color,
+            // ความชอบงาน — แอปต้องส่งกลับครบทุกครั้งที่ PUT /rider/profile (ไม่ส่ง = ล้างค่า เหมือนฟอร์มเว็บ)
+            'preferred_job_types' => array_values(array_filter((array) ($rider->preferred_job_types ?? []), 'is_string')),
+            'preferred_radius_km' => $rider->preferred_radius_km !== null ? (float) $rider->preferred_radius_km : null,
+            'preferred_min_fee' => $rider->preferred_min_fee !== null ? (float) $rider->preferred_min_fee : null,
             'rider_type' => $rider->rider_type,
             'rating' => round((float) $rider->rating, 2),
             'rating_count' => (int) $rider->rating_count,

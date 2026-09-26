@@ -55,6 +55,31 @@ describe('routeForNotification — ไรเดอร์', () => {
   });
 });
 
+describe('routeForNotification — แชทออเดอร์ร้านค้า', () => {
+  it('ร้านได้ข้อความจากลูกค้า (seller_order_message) → แท็บแชทของหน้าออเดอร์ร้าน', () => {
+    expect(
+      routeForNotification({ type: 'seller_order_message', role: 'seller', order_id: 15, message_id: 3, channel: 'messages' })
+    ).toBe('/merchant/order/15?tab=chat');
+    expect(routeForNotification({ type: 'seller_order_message' })).toBe('/merchant/orders?status=unread_chat');
+  });
+
+  it('order_message ที่ระบุ role=seller ยังพาไปหน้าร้าน', () => {
+    expect(routeForNotification({ type: 'order_message', role: 'seller', order_id: 15 })).toBe('/merchant/order/15?tab=chat');
+  });
+
+  it('ผู้ซื้อได้ข้อความจากร้าน → แท็บแชทของหน้าคำสั่งซื้อผู้ซื้อ', () => {
+    expect(routeForNotification({ type: 'order_message', role: 'buyer', order_id: '15' })).toBe('/order/15?tab=chat');
+  });
+
+  it('payload เก่าที่ไม่มี role (ส่งหาผู้ซื้อเท่านั้น) → หน้าผู้ซื้อเหมือนเดิม', () => {
+    expect(routeForNotification({ type: 'order_message', order_id: 15 })).toBe('/order/15?tab=chat');
+  });
+
+  it('role อื่นไม่พาไปหน้าผู้ซื้อ', () => {
+    expect(routeForNotification({ type: 'order_message', role: 'admin', order_id: 15 })).toBe('/notifications');
+  });
+});
+
 describe('routeForNotification — ปลอดภัย', () => {
   it('url นอก allowlist ไม่พาไป', () => {
     expect(routeForNotification({ type: 'unknown', url: 'https://evil.example' })).toBe('/notifications');

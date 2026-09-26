@@ -11,6 +11,7 @@ use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
 use App\Models\Setting;
 use App\Services\FreshMarketService;
+use App\Support\FreshMarketValidationText;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -672,9 +673,11 @@ class FreshMarketApiController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'agree_terms' => 'accepted',
         ], [
+            'latitude.required' => 'กรุณาปักหมุดตำแหน่งร้าน (ใช้คำนวณระยะทางและเรียกไรเดอร์)',
+            'longitude.required' => 'กรุณาปักหมุดตำแหน่งร้าน (ใช้คำนวณระยะทางและเรียกไรเดอร์)',
             'agree_terms.accepted' => 'กรุณายอมรับเงื่อนไขการขาย',
             'phone.regex' => 'รูปแบบเบอร์โทรไม่ถูกต้อง',
-        ]);
+        ] + FreshMarketValidationText::messages(), FreshMarketValidationText::attributes());
 
         unset($data['agree_terms']);
 
@@ -724,7 +727,11 @@ class FreshMarketApiController extends Controller
             'longitude' => 'required_with:latitude|numeric|between:-180,180',
             // ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด) — สลับแล้วต้องกด "เปิดร้านที่นี่วันนี้" ใหม่
             'is_mobile' => 'sometimes|boolean',
-        ]);
+        ], [
+            'phone.regex' => 'รูปแบบเบอร์โทรไม่ถูกต้อง',
+            'latitude.required_with' => 'กรุณาปักหมุดตำแหน่งร้าน',
+            'longitude.required_with' => 'กรุณาปักหมุดตำแหน่งร้าน',
+        ] + FreshMarketValidationText::messages(), FreshMarketValidationText::attributes());
 
         $mobile = array_key_exists('is_mobile', $data) ? (bool) $data['is_mobile'] : null;
         unset($data['is_mobile']);
@@ -767,6 +774,15 @@ class FreshMarketApiController extends Controller
             return $this->error('NOT_SELLER', 'คุณยังไม่ได้สมัครเป็นผู้ขาย', 403);
         }
 
+        // ร้านถูกระงับ / ลงขายครบโควต้าแล้ว → ตอบก่อนรับไฟล์รูป (ไม่ให้มีไฟล์ค้างบน disk)
+        if (! $seller->is_active || $seller->is_suspended) {
+            return $this->error('SELLER_SUSPENDED', 'ร้านของคุณถูกระงับหรือปิดอยู่ ไม่สามารถลงขายได้', 403);
+        }
+
+        if (! $seller->canCreateListing()) {
+            return $this->error('LISTING_LIMIT', $this->marketService->listingLimitMessage(), 403);
+        }
+
         if (! $request->filled('quantity_available') && $request->filled('quantity')) {
             $request->merge(['quantity_available' => $request->input('quantity')]);
         }
@@ -794,7 +810,15 @@ class FreshMarketApiController extends Controller
             'tags' => 'nullable|array',
             'images' => 'nullable|array|max:5',
             'images.*' => 'image|max:5120',
-        ] + \App\Services\FreshMarketOptionService::groupsRules(), \App\Services\FreshMarketOptionService::validationMessages());
+        ] + \App\Services\FreshMarketOptionService::groupsRules(), [
+            'quantity_available.required' => 'กรุณาระบุจำนวนสินค้าที่มีขาย',
+            'quantity_available.min' => 'จำนวนสินค้าต้องมีอย่างน้อย 1',
+            'cashback_percentage.max' => 'แคชแบ็คตั้งได้ไม่เกิน '.$maxCashback.'%',
+            'compare_at_price.gt' => 'ราคาก่อนลดต้องมากกว่าราคาขาย',
+            'images.max' => 'อัปโหลดรูปสินค้าได้ไม่เกิน 5 รูป',
+            'images.*.image' => 'รูปสินค้าต้องเป็นไฟล์รูปภาพ',
+            'images.*.max' => 'รูปสินค้าแต่ละรูปต้องไม่เกิน 5MB',
+        ] + \App\Services\FreshMarketOptionService::validationMessages() + FreshMarketValidationText::messages(), FreshMarketValidationText::attributes());
 
         $optionGroups = $data['option_groups'] ?? null;
         unset($data['option_groups']);
@@ -812,19 +836,28 @@ class FreshMarketApiController extends Controller
         $data['main_image_url'] = $imageUrls[0] ?? null;
         $data['created_via'] = 'api';
 
-        return $this->handle(function () use ($seller, $data, $optionGroups, $request) {
+        return $this->handle(function () use ($seller, $data, $optionGroups, $request, $imageUrls) {
             $optionService = app(\App\Services\FreshMarketOptionService::class);
 
-            // สินค้า + ตัวเลือกบันทึกพร้อมกัน (ตัวเลือกพัง = ไม่มีสินค้าที่ขายได้โดยไม่มีตัวเลือกบังคับ)
-            $listing = \Illuminate\Support\Facades\DB::transaction(function () use ($seller, $data, $optionGroups, $request, $optionService) {
-                $listing = $this->marketService->createListing($seller, $data);
+            try {
+                // สินค้า + ตัวเลือกบันทึกพร้อมกัน (ตัวเลือกพัง = ไม่มีสินค้าที่ขายได้โดยไม่มีตัวเลือกบังคับ)
+                $listing = \Illuminate\Support\Facades\DB::transaction(function () use ($seller, $data, $optionGroups, $request, $optionService) {
+                    $listing = $this->marketService->createListing($seller, $data);
 
-                if (is_array($optionGroups) && ! empty($optionGroups)) {
-                    $optionService->syncGroups($listing, $optionGroups, $request);
+                    if (is_array($optionGroups) && ! empty($optionGroups)) {
+                        $optionService->syncGroups($listing, $optionGroups, $request);
+                    }
+
+                    return $listing;
+                });
+            } catch (\Throwable $e) {
+                // บันทึกไม่สำเร็จ → ลบไฟล์รูปที่เพิ่งอัปโหลด (ไม่มีสินค้าไหนใช้) แล้วส่งต่อให้ handle() ตอบข้อความไทย
+                foreach ($imageUrls as $url) {
+                    $optionService->deleteListingImageIfUnused($url);
                 }
 
-                return $listing;
-            });
+                throw $e;
+            }
 
             return $this->ok(array_merge($this->listingSummary($listing), [
                 'status' => $listing->status,
@@ -869,7 +902,18 @@ class FreshMarketApiController extends Controller
             'freshness_level' => 'nullable|string|in:สด,สดมาก,ผลิตวันนี้',
             'cashback_percentage' => 'nullable|numeric|min:0|max:'.$maxCashback,
             'tags' => 'sometimes|nullable|array',
-        ] + \App\Services\FreshMarketOptionService::groupsRules(), \App\Services\FreshMarketOptionService::validationMessages());
+        ] + \App\Services\FreshMarketOptionService::groupsRules(), [
+            'cashback_percentage.max' => 'แคชแบ็คตั้งได้ไม่เกิน '.$maxCashback.'%',
+        ] + \App\Services\FreshMarketOptionService::validationMessages() + FreshMarketValidationText::messages(), FreshMarketValidationText::attributes());
+
+        // ราคาก่อนลด (ถ้าส่งมา) ต้องมากกว่าราคาขาย — เทียบราคาใหม่ถ้าส่งมาด้วย ไม่งั้นเทียบราคาเดิม (เหมือนฟอร์มเว็บ)
+        if (array_key_exists('compare_at_price', $data) && $data['compare_at_price'] !== null) {
+            $effectivePrice = (float) ($data['price'] ?? $listing->price);
+
+            if ((float) $data['compare_at_price'] <= $effectivePrice) {
+                return $this->error('VALIDATION_ERROR', 'ราคาก่อนลดต้องมากกว่าราคาขาย', 422);
+            }
+        }
 
         // ส่ง option_groups มา = แทนที่ตัวเลือกทั้งชุด (ไม่ส่ง = ไม่แตะ, [] = ลบทั้งหมด)
         $hasGroups = $request->has('option_groups');
@@ -1130,9 +1174,9 @@ class FreshMarketApiController extends Controller
     /**
      * ตรวจ request แล้วคืนข้อมูลที่ผ่าน — ไม่ผ่านตอบ 422 แบบมาตรฐานของแอป
      */
-    protected function validateRequest(Request $request, array $rules, array $messages = []): array
+    protected function validateRequest(Request $request, array $rules, array $messages = [], array $attributes = []): array
     {
-        $validator = Validator::make($request->all(), $rules, $messages);
+        $validator = Validator::make($request->all(), $rules, $messages, $attributes);
 
         if ($validator->fails()) {
             throw new HttpResponseException(response()->json([

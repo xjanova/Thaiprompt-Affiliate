@@ -8,6 +8,8 @@ use App\Models\Order;
 use App\Models\OrderMessage;
 use App\Models\ProductReview;
 use App\Models\ShippingProvider;
+use App\Services\Shop\OrderChatIdempotency;
+use App\Services\Shop\OrderChatNotifier;
 use App\Services\Shop\ShopPresenter;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -451,7 +453,11 @@ class OrderApiController extends Controller
             $hasUnread = OrderMessage::where('order_id', $order->id)
                 ->where('is_read', false)
                 ->exists();
-            $order->update(['has_unread_messages' => $hasUnread]);
+            // 💬 (2026-09-26) query builder: ไม่แตะ updated_at (ใช้ซ่อนเบอร์ลูกค้าของออเดอร์ที่จบเกิน 7 วัน) และไม่ยิง observer
+            Order::whereKey($order->id)->toBase()->update(['has_unread_messages' => $hasUnread]);
+
+            // ลูกค้ากำลังเปิดแชทนี้ → ข้อความร้านช่วงนี้ไม่ต้อง push ซ้อนหน้าแชท
+            OrderChatNotifier::markViewing((int) $order->id, (int) $user->id);
 
             return response()->json([
                 'success' => true,
@@ -493,11 +499,16 @@ class OrderApiController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'message' => 'required_without:attachment|string|max:2000',
-            'attachment' => 'nullable|file|max:10240', // 10MB max
+            // 🔒 (2026-09-26) รับเฉพาะรูป/PDF — เดิมรับไฟล์ทุกชนิดลง disk public (อัปโหลด .html/.php ให้เปิดผ่านเว็บได้)
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,webp,gif,pdf|max:10240', // 10MB max
+            // 💬 (2026-09-26) รหัสข้อความจากแอป — ส่งใหม่หลังเน็ตหลุดด้วยรหัสเดิม = ได้ข้อความเดิม ไม่สร้างซ้ำ
+            'client_message_id' => OrderChatIdempotency::RULES,
         ], [
             'message.required_without' => 'กรุณาพิมพ์ข้อความหรือแนบไฟล์',
             'message.max' => 'ข้อความต้องไม่เกิน 2000 ตัวอักษร',
+            'attachment.mimes' => 'แนบได้เฉพาะรูปภาพหรือไฟล์ PDF',
             'attachment.max' => 'ไฟล์แนบต้องไม่เกิน 10MB',
+            'client_message_id.*' => 'รหัสข้อความไม่ถูกต้อง',
         ]);
 
         if ($validator->fails()) {
@@ -507,6 +518,8 @@ class OrderApiController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
+
+        $idemKey = null;
 
         try {
             $user = Auth::user();
@@ -523,6 +536,25 @@ class OrderApiController extends Controller
                     'success' => false,
                     'message' => 'ไม่สามารถส่งข้อความในคำสั่งซื้อที่ยกเลิกแล้ว',
                 ], 400);
+            }
+
+            // กันส่งซ้ำ (เหมือนฝั่งร้าน): รหัสเดิมที่ส่งสำเร็จแล้ว → คืนข้อความเดิม
+            $idemKey = OrderChatIdempotency::key((int) $order->id, 'customer', (int) $user->id, $request->input('client_message_id'));
+            [$claim, $existing] = OrderChatIdempotency::claim($idemKey, (int) $order->id);
+            if ($claim !== 'new') {
+                $idemKey = null; // ไม่ใช่คีย์ของ request นี้ — ห้ามปล่อยทิ้งใน catch
+
+                return $existing
+                    ? response()->json([
+                        'success' => true,
+                        'message' => 'ส่งข้อความสำเร็จ',
+                        'data' => $this->presentSentMessage($existing),
+                    ])
+                    : response()->json([
+                        'success' => false,
+                        'code' => 'MESSAGE_IN_FLIGHT',
+                        'message' => 'ข้อความนี้กำลังส่งอยู่ รอสักครู่นะ',
+                    ], 409);
             }
 
             $attachmentPath = null;
@@ -547,21 +579,15 @@ class OrderApiController extends Controller
                 ]
             );
 
+            OrderChatIdempotency::complete($idemKey, (int) $message->id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'ส่งข้อความสำเร็จ',
-                'data' => [
-                    'id' => $message->id,
-                    'sender_type' => $message->sender_type,
-                    'sender_name' => $message->sender_name,
-                    'message' => $message->message,
-                    'attachment' => $message->attachment_url,
-                    'attachment_type' => $message->attachment_type,
-                    'is_mine' => true,
-                    'created_at' => $message->created_at->toISOString(),
-                ],
+                'data' => $this->presentSentMessage($message),
             ], 201);
         } catch (Exception $e) {
+            OrderChatIdempotency::release($idemKey);
             Log::error('Send order message error', ['error' => $e->getMessage()]);
 
             return response()->json([
@@ -569,6 +595,25 @@ class OrderApiController extends Controller
                 'message' => 'ไม่สามารถส่งข้อความได้',
             ], 500);
         }
+    }
+
+    /**
+     * ข้อความที่ลูกค้าเพิ่งส่ง (รูปแบบเดิมของ POST /orders/{id}/messages)
+     *
+     * @return array<string, mixed>
+     */
+    private function presentSentMessage(OrderMessage $message): array
+    {
+        return [
+            'id' => $message->id,
+            'sender_type' => $message->sender_type,
+            'sender_name' => $message->sender_name,
+            'message' => $message->message,
+            'attachment' => $message->attachment_url,
+            'attachment_type' => $message->attachment_type,
+            'is_mine' => true,
+            'created_at' => $message->created_at->toISOString(),
+        ];
     }
 
     /**

@@ -6,6 +6,7 @@
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลเก่า (requestId)
  * - หน้าแรกรีเฟรชเงียบๆ ทุก 30 วินาทีระหว่างเปิดหน้า + ดึงลงเพื่อรีเฟรช + เลื่อนโหลดเพิ่ม
  * - แสดงเฉพาะสินค้า/ยอดของร้านนี้ (ออเดอร์หลายร้านแยกให้แล้วที่ server)
+ * - ป้าย "ข้อความใหม่ N" บนการ์ด (unread_messages) + แท็บ "ข้อความใหม่" (unread_chat) แตะแล้วเปิดแท็บแชทของออเดอร์
  *
  * หน้าตา: การ์ดออเดอร์ขาว — หัว (เลขออเดอร์ + ป้ายสถานะ) · สินค้า · แถบล่างวิธีส่ง + ยอดทอง/รับสุทธิเขียว
  */
@@ -27,6 +28,7 @@ const FILTERS: Array<{ key: SellerOrderFilter; label: string; countKey?: string 
   { key: 'to_ship', label: 'รอจัดส่ง', countKey: 'to_ship' },
   { key: 'shipping', label: 'กำลังส่ง', countKey: 'shipping' },
   { key: 'awaiting_payment', label: 'รอชำระ', countKey: 'awaiting_payment' },
+  { key: 'unread_chat', label: 'ข้อความใหม่', countKey: 'unread_chat' },
   { key: 'delivered', label: 'ส่งถึงแล้ว' },
   { key: 'completed', label: 'สำเร็จ' },
   { key: 'cancelled', label: 'ยกเลิก' },
@@ -37,17 +39,18 @@ const VALID = new Set<string>(FILTERS.map((f) => f.key));
 const POLL_MS = 30000;
 const PER_PAGE = 20;
 
-const OrderRow: React.FC<{ order: SellerOrderListItem }> = ({ order }) => {
+const OrderRow: React.FC<{ order: SellerOrderListItem; openChat?: boolean }> = ({ order, openChat = false }) => {
   const { colors } = useTheme();
   const isRider = order.delivery_method === 'rider';
+  const unread = toNumber(order.unread_messages);
   return (
     <Card3D
-      onPress={() => router.push(`/merchant/order/${order.id}` as never)}
+      onPress={() => router.push(`/merchant/order/${order.id}${openChat ? '?tab=chat' : ''}` as never)}
       padding={spacing.lg}
       radius={radii.xl}
       shadow="sm"
       style={styles.card}
-      accessibilityLabel={`ออเดอร์ ${order.order_number} ${order.status_label}`}
+      accessibilityLabel={`ออเดอร์ ${order.order_number} ${order.status_label}${unread > 0 ? ` มีข้อความใหม่ ${unread} ข้อความ` : ''}`}
     >
       <View style={styles.rowTop}>
         <View style={styles.flex}>
@@ -56,7 +59,10 @@ const OrderRow: React.FC<{ order: SellerOrderListItem }> = ({ order }) => {
           </Text>
           <Text style={[typography.caption, { color: colors.textFaint }]}>{formatThaiDateTime(order.created_at)}</Text>
         </View>
-        <Pill label={order.status_label} tone={ORDER_STATUS_TONE[order.status] || 'neutral'} size="md" />
+        <View style={styles.pills}>
+          <Pill label={order.status_label} tone={ORDER_STATUS_TONE[order.status] || 'neutral'} size="md" />
+          {unread > 0 && <Pill label={`ข้อความใหม่ ${unread > 99 ? '99+' : unread}`} tone="gold" icon="chat-circle-dots" />}
+        </View>
       </View>
 
       <View style={styles.rowItem}>
@@ -177,6 +183,17 @@ export default function MerchantOrdersScreen() {
     load('initial', filter, 1);
   }, [filter, load]);
 
+  // กลับมาจากหน้าออเดอร์/แชท → รีเฟรชทันที (ป้ายข้อความใหม่/สถานะไม่ค้าง) — ครั้งแรกให้ useEffect ด้านบนโหลด
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+  const focusedOnceRef = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedOnceRef.current && pageRef.current === 1) load('silent', filterRef.current, 1);
+      focusedOnceRef.current = true;
+    }, [load])
+  );
+
   // รีเฟรชเงียบๆ เฉพาะตอนดูหน้าแรก (ไม่ดึงรายการที่เลื่อนโหลดไว้ทิ้ง)
   useFocusEffect(
     useCallback(() => {
@@ -236,7 +253,7 @@ export default function MerchantOrdersScreen() {
       <FlatList
         data={orders}
         keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <OrderRow order={item} />}
+        renderItem={({ item }) => <OrderRow order={item} openChat={filter === 'unread_chat'} />}
         ListHeaderComponent={header}
         ListEmptyComponent={
           initialLoading ? (
@@ -248,7 +265,13 @@ export default function MerchantOrdersScreen() {
               compact
               art="bag"
               title="ไม่มีออเดอร์ในสถานะนี้"
-              message={filter === 'to_confirm' ? 'ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปทันที' : 'ลองดูแท็บอื่นนะ'}
+              message={
+                filter === 'to_confirm'
+                  ? 'ออเดอร์ใหม่จะแจ้งเตือนมาที่แอปทันที'
+                  : filter === 'unread_chat'
+                    ? 'ตอบลูกค้าครบแล้ว ข้อความใหม่จะแจ้งเตือนมาที่แอป'
+                    : 'ลองดูแท็บอื่นนะ'
+              }
             />
           )
         }
@@ -304,6 +327,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
     marginBottom: spacing.md,
+  },
+  pills: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
   },
   rowItem: {
     flexDirection: 'row',

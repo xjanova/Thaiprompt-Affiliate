@@ -6,6 +6,11 @@
  *
  * ค่าธรรมเนียม / ภาษี / ขั้นต่ำ มาจาก server ทั้งหมด — ห้ามฮาร์ดโค้ดในแอป
  *
+ * จัดการบัญชีรับเงิน (ปุ่มจุดสามจุดท้ายแถว):
+ *   - ตั้งเป็นบัญชีหลัก → ถามยืนยัน → POST /wallet/bank-accounts/{id}/default
+ *   - ลบบัญชี → ถามยืนยันพร้อม PIN → POST /wallet/bank-accounts/{id}/delete
+ *     (มีคำขอถอนค้าง = 409 IN_USE · PIN ผิด = บอกจำนวนครั้งที่เหลือ · ลบบัญชีหลัก = server ตั้งบัญชีอื่นเป็นหลักให้)
+ *
  * หน้าตา: การ์ดยอดเงินน้ำเงินแบบบัตรโลหะ · บัญชีรับเงินเป็นแถวในการ์ดเดียว (เลือกแบบวิทยุ)
  *         ตัวเลขถอนตัวใหญ่ · ฟอร์ม PIN/บัญชีเป็นการ์ดขาวหัวไอคอน · ธนาคารเลือกเป็นแถว
  */
@@ -26,9 +31,11 @@ import { useAuthStore } from '@/stores/authStore';
 import {
   addPayoutAccount,
   cancelWithdrawal,
+  deletePayoutAccount,
   getWithdrawInfo,
   getWithdrawals,
   previewWithdraw,
+  setDefaultPayoutAccount,
   setWalletPin,
   withdraw,
   type PayoutAccount,
@@ -355,6 +362,13 @@ export default function WalletWithdrawScreen() {
 
   const [history, setHistory] = useState<Withdrawal[]>([]);
 
+  // ลบบัญชีรับเงิน (ยืนยันด้วย PIN)
+  const [removeTarget, setRemoveTarget] = useState<PayoutAccount | null>(null);
+  const [removePin, setRemovePin] = useState('');
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  /** กันกดตั้งบัญชีหลัก/ลบซ้อนกัน */
+  const accountBusyRef = useRef(false);
+
   const mountedRef = useRef(true);
   const previewReq = useRef(0);
   /** Idempotency-Key ต่อ (ยอด, บัญชี, หมายเหตุ) — กดซ้ำด้วยข้อมูลเดิมหลังเน็ตหลุดจะใช้คีย์เดิม */
@@ -573,6 +587,88 @@ export default function WalletWithdrawScreen() {
     ]);
   };
 
+  // ---------- จัดการบัญชีรับเงิน ----------
+  const accountLabel = (m: PayoutAccount) =>
+    `${m.type === 'promptpay' ? 'PromptPay' : m.bank_name || 'บัญชีธนาคาร'} ••${m.account_last4}`;
+
+  const doSetDefault = async (m: PayoutAccount) => {
+    if (accountBusyRef.current) return;
+    accountBusyRef.current = true;
+    const result = await setDefaultPayoutAccount(m.id);
+    accountBusyRef.current = false;
+    if (!mountedRef.current) return;
+    if (result.success) {
+      resultHaptic('success');
+      // แสดงผลทันที แล้วโหลดใหม่ให้ตรง server
+      setInfo((prev) =>
+        prev ? { ...prev, payment_methods: prev.payment_methods.map((x) => ({ ...x, is_default: x.id === m.id })) } : prev
+      );
+      loadInfo('refresh');
+    } else {
+      resultHaptic('error');
+      Alert.alert('ตั้งบัญชีหลักไม่สำเร็จ', result.message);
+      if (result.code === 'NOT_FOUND') loadInfo('refresh');
+    }
+  };
+
+  const openRemove = (m: PayoutAccount) => {
+    setRemovePin('');
+    setRemoveError(null);
+    setRemoveTarget(m);
+  };
+
+  const submitRemove = async () => {
+    const target = removeTarget;
+    if (!target || accountBusyRef.current) return;
+    if (removePin.length !== 6) {
+      setRemoveError('กรอก PIN 6 หลัก');
+      return;
+    }
+    accountBusyRef.current = true;
+    setRemoveError(null);
+    const result = await deletePayoutAccount(target.id, removePin);
+    accountBusyRef.current = false;
+    if (!mountedRef.current) return;
+
+    if (result.success) {
+      resultHaptic('success');
+      setRemoveTarget(null);
+      setRemovePin('');
+      Alert.alert('ลบบัญชีแล้ว', `ลบ ${accountLabel(target)} ออกจากบัญชีรับเงินแล้ว`);
+      loadInfo('refresh');
+      return;
+    }
+
+    resultHaptic('error');
+    if (result.code === 'INVALID_PIN') {
+      const left = Number(result.data?.attempts_remaining);
+      setRemoveError(Number.isFinite(left) ? `${result.message} (ลองได้อีก ${left} ครั้ง)` : result.message);
+      setRemovePin('');
+      return;
+    }
+    setRemoveTarget(null);
+    setRemovePin('');
+    Alert.alert('ลบบัญชีไม่สำเร็จ', result.message);
+    if (result.code === 'WALLET_LOCKED' || result.code === 'NOT_FOUND' || result.code === 'PIN_NOT_SET') loadInfo('refresh');
+  };
+
+  const manageAccount = (m: PayoutAccount) => {
+    const buttons: Array<{ text: string; style?: 'cancel' | 'destructive'; onPress?: () => void }> = [];
+    if (!m.is_default) {
+      buttons.push({
+        text: 'ตั้งเป็นบัญชีหลัก',
+        onPress: () =>
+          Alert.alert('ตั้งเป็นบัญชีหลัก?', `${accountLabel(m)} จะถูกเลือกไว้ก่อนทุกครั้งที่ถอนเงิน`, [
+            { text: 'ยกเลิก', style: 'cancel' },
+            { text: 'ตั้งเป็นบัญชีหลัก', onPress: () => doSetDefault(m) },
+          ]),
+      });
+    }
+    buttons.push({ text: 'ลบบัญชีนี้', style: 'destructive', onPress: () => openRemove(m) });
+    buttons.push({ text: 'ปิด', style: 'cancel' });
+    Alert.alert(accountLabel(m), `${m.account_name}${m.is_default ? ' · บัญชีหลัก' : ''}`, buttons);
+  };
+
   // ---------- render ----------
   if (!isAuthenticated) {
     return (
@@ -674,35 +770,48 @@ export default function WalletWithdrawScreen() {
         <Card3D padding={0} contentStyle={styles.listCard}>
           {info.payment_methods.map((m, index) => {
             const selected = m.id === accountId;
+            // แถว = พื้นที่เลือกบัญชี (วิทยุ) + ปุ่มจัดการแยกกัน — ถ้าซ้อนปุ่มในปุ่ม VoiceOver จะกดปุ่มข้างในไม่ได้
             return (
-              <Pressable
+              <View
                 key={m.id}
-                onPress={() => {
-                  selectionHaptic();
-                  setAccountId(m.id);
-                }}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selected }}
-                accessibilityLabel={`${m.bank_name || 'PromptPay'} ${m.account_name} ลงท้าย ${m.account_last4}`}
-                style={({ pressed }) => [
-                  styles.accountRow,
+                style={[
+                  styles.accountRowWrap,
                   index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
                   selected && { backgroundColor: colors.goldSoft },
-                  pressed && styles.pressedDim,
                 ]}
               >
-                <IconTile icon={m.type === 'promptpay' ? 'device-mobile' : 'bank'} tone={selected ? 'gold' : 'navy'} />
-                <View style={styles.flex}>
-                  <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
-                    {m.type === 'promptpay' ? 'PromptPay' : m.bank_name || 'บัญชีธนาคาร'}
-                  </Text>
-                  <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
-                    {m.account_name} · {m.account_number_masked}
-                  </Text>
-                </View>
-                {m.is_default && <Pill label="หลัก" tone="gold" />}
-                <Radio checked={selected} />
-              </Pressable>
+                <Pressable
+                  onPress={() => {
+                    selectionHaptic();
+                    setAccountId(m.id);
+                  }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={`${m.bank_name || 'PromptPay'} ${m.account_name} ลงท้าย ${m.account_last4}${m.is_default ? ' บัญชีหลัก' : ''}`}
+                  style={({ pressed }) => [styles.accountRow, pressed && styles.pressedDim]}
+                >
+                  <IconTile icon={m.type === 'promptpay' ? 'device-mobile' : 'bank'} tone={selected ? 'gold' : 'navy'} />
+                  <View style={styles.flex}>
+                    <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
+                      {m.type === 'promptpay' ? 'PromptPay' : m.bank_name || 'บัญชีธนาคาร'}
+                    </Text>
+                    <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
+                      {m.account_name} · {m.account_number_masked}
+                    </Text>
+                  </View>
+                  {m.is_default && <Pill label="หลัก" tone="gold" />}
+                  <Radio checked={selected} />
+                </Pressable>
+                <Pressable
+                  onPress={() => manageAccount(m)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`จัดการบัญชี ${accountLabel(m)} ตั้งเป็นบัญชีหลักหรือลบ`}
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.manageButton, pressed && styles.pressedDim]}
+                >
+                  <Icon name="dots-three-vertical" size={20} color={colors.textMuted} weight="bold" />
+                </Pressable>
+              </View>
             );
           })}
         </Card3D>
@@ -872,6 +981,44 @@ export default function WalletWithdrawScreen() {
         />
         {!!pinError && <ErrorNote text={pinError} />}
       </ConsentSheet>
+
+      <ConsentSheet
+        visible={!!removeTarget}
+        icon="trash"
+        title="ลบบัญชีรับเงิน"
+        description={
+          removeTarget
+            ? `ลบ ${accountLabel(removeTarget)} (${removeTarget.account_name}) ออกจากบัญชีรับเงิน${removeTarget.is_default ? ' — บัญชีนี้เป็นบัญชีหลัก ระบบจะตั้งบัญชีอื่นเป็นหลักแทน' : ''}`
+            : undefined
+        }
+        acceptLabel="ลบบัญชี"
+        acceptVariant="danger"
+        declineLabel="ไม่ลบ"
+        acceptDisabled={removePin.length !== 6}
+        onAccept={submitRemove}
+        onDecline={() => {
+          setRemoveTarget(null);
+          setRemovePin('');
+          setRemoveError(null);
+        }}
+        footnote="บัญชีที่มีคำขอถอนเงินค้างอยู่ ลบได้หลังโอนเงินเสร็จ"
+      >
+        <Field
+          label="PIN กระเป๋าเงิน 6 หลัก"
+          value={removePin}
+          onChangeText={(t) => {
+            setRemovePin(onlyDigits(t, 6));
+            setRemoveError(null);
+          }}
+          keyboardType="number-pad"
+          secureTextEntry
+          maxLength={6}
+          placeholder="••••••"
+          autoFocus
+          style={styles.pinInput}
+        />
+        {!!removeError && <ErrorNote text={removeError} />}
+      </ConsentSheet>
     </KeyboardAvoidingView>
   );
 }
@@ -989,11 +1136,25 @@ const styles = StyleSheet.create({
   listCard: {
     overflow: 'hidden',
   },
+  accountRowWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   accountRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: 14,
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: spacing.xs,
+  },
+  manageButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.xs,
   },
   previewBox: {
     marginTop: spacing.lg,

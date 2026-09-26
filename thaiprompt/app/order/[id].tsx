@@ -17,19 +17,15 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
-  FlatList,
-  KeyboardAvoidingView,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
-import { Text, TextInput } from '@/components/ui/Text';
-import { Image } from 'expo-image';
+import { Text } from '@/components/ui/Text';
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/stores/authStore';
 import {
   cancelMyOrder,
@@ -44,7 +40,6 @@ import {
   type PaymentInstruction,
   type ShopOrder,
   type ShopOrderItem,
-  type ShopOrderMessage,
   type ShopOrderTracking,
 } from '@/services/api/shopApi';
 import { isTrustedWebUrl } from '@/utils/linking';
@@ -77,8 +72,9 @@ import {
   type PromptPayState,
   type TimelineStep,
 } from '@/components/shop';
+import { OrderChatPanel } from '@/components/shop/OrderChatPanel';
 import { RiderTracker } from '@/components/taladsod';
-import { useTheme, radii, spacing, typography, withAlpha } from '@/theme';
+import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Tab = 'detail' | 'chat';
 
@@ -87,7 +83,6 @@ const CANCEL_REASONS = ['เปลี่ยนใจไม่ซื้อแล�
 const PAY_POLL_MS = 4000;
 const RIDER_POLL_MS = 15000;
 const ORDER_POLL_MS = 45000;
-const CHAT_POLL_MS = 10000;
 
 /** ไทม์ไลน์ของออเดอร์ร้านค้า */
 const buildTimeline = (order: ShopOrder): TimelineStep[] => {
@@ -159,157 +154,21 @@ const buildTimeline = (order: ShopOrder): TimelineStep[] => {
 // =====================================================
 
 const ChatPanel: React.FC<{ orderId: number; canSend: boolean }> = ({ orderId, canSend }) => {
-  const { colors, isDark } = useTheme();
-  const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState<ShopOrderMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
-  const mountedRef = useRef(true);
-  const busyRef = useRef(false);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  const load = useCallback(
-    async (silent: boolean) => {
-      if (busyRef.current) return;
-      busyRef.current = true;
-      if (!silent) setLoading(true);
-      const res = await getOrderMessages(orderId, { per_page: 50 });
-      busyRef.current = false;
-      if (!mountedRef.current) return;
-      if (res.success) {
-        setMessages(Array.isArray(res.data?.messages) ? res.data.messages : []);
-        setError(null);
-      } else if (!silent) {
-        setError(res.message);
-      }
-      setLoading(false);
-    },
+  // แผงแชทใช้ร่วมกับฝั่งร้าน (components/shop/OrderChatPanel) — ที่นี่แค่ผูก API ฝั่งผู้ซื้อ
+  const fetchPage = useCallback((page: number) => getOrderMessages(orderId, { page, per_page: 50 }), [orderId]);
+  const send = useCallback(
+    (message: string, clientId: string) => sendOrderMessage(orderId, message, clientId),
     [orderId]
   );
-
-  useFocusEffect(
-    useCallback(() => {
-      load(false);
-      const timer = setInterval(() => load(true), CHAT_POLL_MS);
-      return () => clearInterval(timer);
-    }, [load])
-  );
-
-  const send = async () => {
-    const message = text.trim();
-    if (!message || sending) return;
-    setSending(true);
-    const res = await sendOrderMessage(orderId, message.slice(0, 2000));
-    if (!mountedRef.current) return;
-    setSending(false);
-    if (res.success) {
-      setText('');
-      if (res.data) setMessages((prev) => [res.data, ...prev.filter((m) => m.id !== res.data.id)]);
-    } else {
-      Alert.alert('ส่งข้อความไม่สำเร็จ', res.message);
-    }
-  };
-
-  if (loading && messages.length === 0) {
-    return <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />;
-  }
-
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior="padding">
-      <FlatList
-        data={messages}
-        inverted
-        keyExtractor={(m) => String(m.id)}
-        contentContainerStyle={styles.chatList}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          // รายการกลับหัว (inverted) → กลับหัวช่องว่างอีกครั้งให้อ่านได้ปกติ
-          <View style={styles.flipped}>
-            {error ? (
-              <EmptyState compact variant="error" message={error} onAction={() => load(false)} />
-            ) : (
-              <View style={styles.chatEmpty}>
-                <IconTile icon="chat-circle-dots" tone="gold" size={60} weight="fill" />
-                <Text style={[typography.body, styles.chatEmptyText, { color: colors.textMuted }]}>
-                  มีคำถามเรื่องสินค้า ทักร้านได้เลย
-                </Text>
-              </View>
-            )}
-          </View>
-        }
-        renderItem={({ item }) => {
-          const mine = item.is_mine;
-          const system = item.is_system_message;
-          // ฟองของฉัน = น้ำเงินกรมท่า ตัวอักษรขาว (ทั้งสองโหมด) · ร้าน = การ์ดขาว · ระบบ = ฟ้าอ่อน
-          const bubbleBg = system ? colors.infoSoft : mine ? colors.navyFill : colors.card;
-          const textColor = mine && !system ? colors.textOnAccent : colors.textStrong;
-          const timeColor = mine && !system ? colors.onHeaderMuted : colors.textFaint;
-          return (
-            <View style={[styles.bubbleRow, mine ? styles.bubbleRight : styles.bubbleLeft]}>
-              <View
-                style={[
-                  styles.bubble,
-                  mine ? styles.bubbleMine : styles.bubbleTheirs,
-                  {
-                    backgroundColor: bubbleBg,
-                    borderColor: mine && !system ? (isDark ? colors.border : 'transparent') : colors.border,
-                  },
-                ]}
-              >
-                {!mine && !!item.sender_name && (
-                  <Text style={[typography.micro, { color: colors.goldDeep }]}>{item.sender_name}</Text>
-                )}
-                {!!item.message && <Text style={[typography.body, { color: textColor }]}>{item.message}</Text>}
-                {!!item.attachment && item.attachment_type === 'image' && isTrustedWebUrl(item.attachment) && (
-                  <Image source={{ uri: item.attachment }} style={styles.chatImage} contentFit="cover" />
-                )}
-                <Text style={[typography.micro, styles.bubbleTime, { color: timeColor }]}>
-                  {formatThaiDateTime(item.created_at)}
-                </Text>
-              </View>
-            </View>
-          );
-        }}
-      />
-      {canSend ? (
-        <View
-          style={[
-            styles.chatInputBar,
-            {
-              backgroundColor: colors.card,
-              borderTopColor: colors.divider,
-              paddingBottom: Math.max(insets.bottom, spacing.sm),
-              boxShadow: `0px -14px 30px -22px ${withAlpha(colors.shadowDark, isDark ? 0.9 : 0.45)}`,
-            },
-          ]}
-        >
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder="พิมพ์ข้อความถึงร้าน"
-            placeholderTextColor={colors.textFaint}
-            multiline
-            maxLength={2000}
-            style={[typography.body, styles.chatInput, { backgroundColor: colors.inset, borderColor: colors.border, color: colors.textStrong }]}
-            accessibilityLabel="ข้อความถึงร้าน"
-          />
-          <Button3D title="ส่ง" icon="paper-plane-tilt" size="sm" onPress={send} loading={sending} disabled={!text.trim()} style={styles.sendButton} />
-        </View>
-      ) : (
-        <View style={[styles.chatClosed, { borderTopColor: colors.divider }]}>
-          <Icon name="lock" size={14} color={colors.textMuted} />
-          <Text style={[typography.caption, { color: colors.textMuted }]}>คำสั่งซื้อนี้ปิดแล้ว ส่งข้อความเพิ่มไม่ได้</Text>
-        </View>
-      )}
-    </KeyboardAvoidingView>
+    <OrderChatPanel
+      fetchPage={fetchPage}
+      send={send}
+      canSend={canSend}
+      placeholder="พิมพ์ข้อความถึงร้าน"
+      inputLabel="ข้อความถึงร้าน"
+      emptyText="มีคำถามเรื่องสินค้า ทักร้านได้เลย"
+    />
   );
 };
 
@@ -1134,82 +993,7 @@ const styles = StyleSheet.create({
   starPressed: {
     transform: [{ scale: 0.9 }],
   },
-  chatList: {
-    paddingHorizontal: spacing.screen,
-    paddingVertical: spacing.md,
-  },
-  flipped: {
-    transform: [{ scaleY: -1 }],
-  },
-  chatEmpty: {
-    alignItems: 'center',
-    paddingVertical: spacing.xxxl,
-  },
-  chatEmptyText: {
-    marginTop: spacing.md,
-    textAlign: 'center',
-  },
   chatTabs: {
     paddingHorizontal: spacing.screen,
-  },
-  bubbleRow: {
-    flexDirection: 'row',
-    marginVertical: spacing.xs,
-  },
-  bubbleLeft: {
-    justifyContent: 'flex-start',
-  },
-  bubbleRight: {
-    justifyContent: 'flex-end',
-  },
-  bubble: {
-    maxWidth: '80%',
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.xxs,
-  },
-  bubbleMine: {
-    borderBottomRightRadius: 6,
-  },
-  bubbleTheirs: {
-    borderBottomLeftRadius: 6,
-  },
-  bubbleTime: {
-    alignSelf: 'flex-end',
-  },
-  chatImage: {
-    width: 180,
-    height: 180,
-    borderRadius: radii.md,
-  },
-  chatInputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.screen,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-  },
-  chatInput: {
-    flex: 1,
-    maxHeight: 120,
-    minHeight: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  sendButton: {
-    marginBottom: 2,
-  },
-  chatClosed: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: spacing.md,
-    borderTopWidth: 1,
   },
 });

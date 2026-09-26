@@ -7,16 +7,17 @@
  * - สวิตช์แชร์ตำแหน่งสด: ล็อกทันทีที่แตะ (รวมช่วงรอคำอธิบาย/GPS) + เช็คสถานะร้านล่าสุดก่อนส่ง
  *   (POST /seller/open ซ้ำ = อัปเดต แต่ถ้าร้านเพิ่งปิดไปจะกลายเป็นเปิดร้านใหม่และแจ้งผู้ติดตามทุกคน)
  * - ปิดร้าน: เตือนถ้ามีออเดอร์ค้าง (ออเดอร์ที่รับแล้วยังทำต่อได้)
- * - ตัวเลขรายได้/ออเดอร์ + ทางไปหน้าออเดอร์และสินค้า + ปุ่มเปิดเว็บสำหรับงานละเอียด
+ * - ตัวเลขรายได้/ออเดอร์ + ทางไปหน้าออเดอร์ สินค้า ลงขายใหม่ รายได้ ตั้งค่าร้าน (ในแอปทั้งหมด)
+ *   เหลือเปิดเว็บแค่แผงควบคุมร้านเต็ม (/taladsod/seller-dashboard — สมาชิกรายเดือน ลิงก์แนะนำเพื่อน)
  * - รีเฟรชเงียบๆ ทุก 30 วินาทีเฉพาะตอนเปิดหน้านี้ + รีเฟรชทันทีเมื่อมีแจ้งเตือนออเดอร์/ร้านปิดอัตโนมัติ
- * - ยังไม่มีร้านตลาดสด (403 NOT_SELLER) → ชวนสมัครบนเว็บ
+ * - ยังไม่มีร้านตลาดสด (403 NOT_SELLER) → ชวนสมัครในแอป (หน้า register)
  *
  * หน้าตา: หัวร้าน (รูปร้าน + ชื่อตัวมีเชิง) → การ์ดสถานะร้านแบบการ์ด "ออนไลน์" (PresenceCard)
  *         → สรุปตัวเลข (StatTile) → ทางลัดออเดอร์/สินค้า (การ์ดช่องไอคอน) → งานบนเว็บ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
@@ -55,7 +56,6 @@ import {
   SectionHeader,
   StatTile,
   WebsiteButton,
-  openWebsite,
   resultHaptic,
 } from '@/components/ui';
 import {
@@ -68,6 +68,7 @@ import {
   hasShopLocationConsent,
   useShopLocationConsent,
 } from '@/components/merchant';
+import { SkeletonBlock, SkeletonCard } from '@/components/merchant/SkeletonBlock';
 import { useTheme, palette, radii, spacing, typography, type Tone } from '@/theme';
 
 const POLL_MS = 30_000;
@@ -213,6 +214,15 @@ export default function TaladsodSellerScreen() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [load])
   );
+
+  /** เปิดหน้าย่อย — กันแตะรัวจนเปิดหน้าซ้อน 2 ชั้น */
+  const lastOpenRef = useRef(0);
+  const openPage = (path: string) => {
+    const now = Date.now();
+    if (now - lastOpenRef.current < 800) return;
+    lastOpenRef.current = now;
+    router.push(path as never);
+  };
 
   const onRefresh = async () => {
     setBannerKey((k) => k + 1);
@@ -394,10 +404,10 @@ export default function TaladsodSellerScreen() {
     if (!next && !presence.has_fixed_location) {
       Alert.alert(
         'ยังไม่มีที่อยู่ร้านประจำ',
-        'ตั้งที่อยู่และปักหมุดร้านบนเว็บไซต์ก่อน แล้วค่อยเปลี่ยนเป็นร้านประจำที่นะ',
+        'ตั้งที่อยู่และปักหมุดร้านก่อน แล้วค่อยเปลี่ยนเป็นร้านประจำที่นะ',
         [
           { text: 'ไว้ก่อน', style: 'cancel' },
-          { text: 'ตั้งค่าบนเว็บ', onPress: () => openWebsite('/taladsod/seller/profile') },
+          { text: 'ตั้งค่าร้าน', onPress: () => router.push('/merchant/taladsod/profile' as never) },
         ]
       );
       return;
@@ -435,7 +445,23 @@ export default function TaladsodSellerScreen() {
   const renderBody = () => {
     switch (state.kind) {
       case 'loading':
-        return <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />;
+        return (
+          <View style={styles.skeleton}>
+            <View style={styles.shopRow}>
+              <SkeletonBlock width={60} height={60} radius={20} />
+              <View style={styles.flex}>
+                <SkeletonBlock width="65%" height={22} />
+                <SkeletonBlock width="40%" height={14} style={styles.gapTop} />
+              </View>
+            </View>
+            <SkeletonBlock height={170} radius={24} />
+            <View style={styles.grid}>
+              <SkeletonBlock width="48%" height={96} radius={radii.xl} />
+              <SkeletonBlock width="48%" height={96} radius={radii.xl} />
+            </View>
+            <SkeletonCard lines={2} withTile />
+          </View>
+        );
 
       case 'not_seller':
         return (
@@ -443,25 +469,16 @@ export default function TaladsodSellerScreen() {
             <BrandArt name="cart" size={128} />
             <Text style={[typography.serif, styles.centerText, { color: colors.textStrong }]}>ยังไม่มีร้านในตลาดสด</Text>
             <Text style={[typography.body, styles.lead, styles.centerText, { color: colors.textMuted }]}>
-              ขายของสด อาหารทำตามสั่ง รถเข็น หรือร้านตลาดนัดก็ได้ สมัครบนเว็บไซต์ไม่กี่นาที แล้วกลับมาเปิดร้านและรับออเดอร์ในแอปนี้
+              ขายของสด อาหารทำตามสั่ง รถเข็น หรือร้านตลาดนัดก็ได้ สมัครในแอปไม่กี่นาที แล้วลงเมนู เปิดร้าน และรับออเดอร์ได้เลย
             </Text>
-            <WebsiteButton
-              path="/taladsod/register-seller"
-              label="สมัครขายในตลาดสด"
+            <Button3D
+              title="สมัครเปิดร้านในตลาดสด"
               icon="basket"
               variant="primary"
               size="lg"
               fullWidth
+              onPress={() => router.push('/merchant/taladsod/register' as never)}
               style={styles.cta}
-            />
-            <WebsiteButton
-              path="/taladsod/start/seller"
-              label="อ่านรายละเอียดก่อน"
-              icon="book-open"
-              variant="ghost"
-              size="md"
-              fullWidth
-              style={styles.gapTop}
             />
           </Card3D>
         );
@@ -530,11 +547,18 @@ export default function TaladsodSellerScreen() {
                   <View style={[styles.flex, styles.warningContent]}>
                     <Text style={[typography.bodyStrong, { color: colors.warning }]}>ลูกค้ายังมองไม่เห็นร้าน</Text>
                     <Text style={[typography.bodySm, { color: colors.text }]}>
-                      สถานะร้าน: {dashboard.status_label || '-'} ดูรายละเอียดและสิ่งที่ต้องทำบนเว็บไซต์ได้เลย
+                      สถานะร้าน: {dashboard.status_label || '-'} ตรวจข้อมูลร้านให้ครบ หรือติดต่อทีมงานที่หน้าช่วยเหลือ
                     </Text>
                   </View>
                 </View>
-                <WebsiteButton path="/taladsod/seller/profile" label="ดูบนเว็บไซต์" size="sm" style={styles.warningCta} />
+                <Button3D
+                  title="ตั้งค่าร้าน"
+                  icon="sliders-horizontal"
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => router.push('/merchant/taladsod/profile' as never)}
+                  style={styles.warningCta}
+                />
               </Card3D>
             )}
             {dashboard.outstanding_gp_debt > 0 && (
@@ -642,18 +666,40 @@ export default function TaladsodSellerScreen() {
               </Card3D>
             </View>
 
-            {/* ---------- เว็บ ---------- */}
-            <SectionHeader title="จัดการละเอียดบนเว็บไซต์" subtitle="ลงขายสินค้าใหม่ ดูรายได้ย้อนหลัง ตั้งค่าร้าน" style={styles.section} />
-            <Card3D padding={spacing.lg}>
-              <WebsiteButton path="/taladsod/seller-dashboard" label="เปิดหน้าร้านบนเว็บไซต์" icon="storefront" variant="navy" fullWidth />
-              <View style={styles.webRow}>
-                <WebsiteButton path="/taladsod/create-listing" label="ลงขายสินค้าใหม่" icon="plus" size="sm" style={styles.flex} />
-                <WebsiteButton path="/taladsod/seller/earnings" label="ดูรายได้" icon="chart-line-up" size="sm" style={styles.flex} />
-              </View>
+            {/* ---------- จัดการร้าน (ในแอป) ---------- */}
+            <SectionHeader title="จัดการร้าน" subtitle="ลงขายสินค้าใหม่ ดูรายได้ ตั้งค่าร้าน" style={styles.section} />
+            <Card3D padding={0} contentStyle={styles.menuCard}>
+              {([
+                { icon: 'plus', title: 'ลงขายสินค้าใหม่', caption: 'รูป ราคา หมวดหมู่ และตัวเลือก', path: '/merchant/taladsod/listing/new', tone: 'gold' },
+                { icon: 'chart-line-up', title: 'รายได้ร้าน', caption: 'รายรับสุทธิ ค่า GP เงินที่กำลังจะได้', path: '/merchant/taladsod/earnings', tone: 'success' },
+                { icon: 'sliders-horizontal', title: 'ตั้งค่าร้าน', caption: 'ชื่อร้าน เบอร์โทร ที่อยู่ หมุดร้าน', path: '/merchant/taladsod/profile', tone: 'navy' },
+              ] as const).map((item, index) => (
+                <Pressable
+                  key={item.path}
+                  onPress={() => openPage(item.path)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.title} ${item.caption}`}
+                  style={({ pressed }) => [
+                    styles.menuInner,
+                    index > 0 && [styles.menuRow, { borderTopColor: colors.divider }],
+                    pressed && { backgroundColor: colors.inset },
+                  ]}
+                >
+                  <IconTile icon={item.icon} tone={item.tone} />
+                  <View style={styles.flex}>
+                    <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{item.title}</Text>
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>{item.caption}</Text>
+                  </View>
+                  <Icon name="caret-right" size={18} color={colors.textFaint} />
+                </Pressable>
+              ))}
+            </Card3D>
+            <Card3D padding={spacing.lg} style={styles.webCard}>
+              <WebsiteButton path="/taladsod/seller-dashboard" label="แผงควบคุมร้านบนเว็บไซต์" icon="storefront" variant="navy" fullWidth />
               <View style={styles.webNoteRow}>
                 <Icon name="lock" size={13} color={colors.textFaint} />
                 <Text style={[typography.caption, { color: colors.textMuted }]}>
-                  เปิดในเบราว์เซอร์และเข้าสู่ระบบให้อัตโนมัติ
+                  สมาชิกรายเดือน ลิงก์ชวนลูกค้า · เปิดในเบราว์เซอร์และเข้าสู่ระบบให้อัตโนมัติ
                 </Text>
               </View>
             </Card3D>
@@ -697,9 +743,6 @@ export default function TaladsodSellerScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-  },
-  loader: {
-    marginTop: spacing.xxxl,
   },
   bannerWrap: {
     marginHorizontal: -spacing.screen,
@@ -813,9 +856,22 @@ const styles = StyleSheet.create({
   navTitle: {
     marginTop: spacing.md,
   },
-  webRow: {
+  skeleton: {
+    gap: spacing.lg,
+  },
+  menuCard: {
+    overflow: 'hidden',
+  },
+  menuRow: {
+    borderTopWidth: 1,
+  },
+  menuInner: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: 14,
+  },
+  webCard: {
     marginTop: spacing.md,
   },
   webNoteRow: {

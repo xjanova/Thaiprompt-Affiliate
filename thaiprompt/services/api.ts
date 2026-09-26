@@ -23,7 +23,6 @@ import type {
   Commission,
   PaginatedCommissions,
   ReferralsData,
-  ReferralStats,
   Product,
   ProductCategory,
 } from '@/types';
@@ -593,25 +592,6 @@ export const getProductDetail = async (id: string): Promise<Product | null> => {
 };
 
 // =====================================================
-// Referral Stats APIs
-// =====================================================
-
-/**
- * ดึงสถิติการแนะนำ
- */
-export const getReferralStats = async (): Promise<ReferralStats | null> => {
-  try {
-    const response = await apiClient.get<ApiResponse<ReferralStats>>(
-      `${API_ENDPOINTS.REFERRALS}/stats`
-    );
-    return response.data.data || null;
-  } catch (error) {
-    console.error('Get referral stats error:', error);
-    return null;
-  }
-};
-
-// =====================================================
 // LINE Login APIs
 // =====================================================
 
@@ -978,38 +958,6 @@ export const getWalletTransactions = async (
     return response.data;
   } catch (error) {
     console.error('Get wallet transactions error:', error);
-    return null;
-  }
-};
-
-/**
- * ส่งคำขอถอนเงิน
- */
-export const createWithdrawalRequest = async (data: {
-  amount: number;
-  payment_method?: string;
-  pin: string;
-  note?: string;
-}): Promise<{
-  success: boolean;
-  data?: {
-    request_id: string;
-    amount: number;
-    fee: number;
-    tax: number;
-    net_amount: number;
-    status: string;
-  };
-  message?: string;
-} | null> => {
-  try {
-    const response = await apiClient.post(API_ENDPOINTS.WALLET_WITHDRAW, data);
-    return response.data;
-  } catch (error: any) {
-    console.error('Create withdrawal request error:', error);
-    if (error.response?.data?.message) {
-      return { success: false, message: error.response.data.message };
-    }
     return null;
   }
 };

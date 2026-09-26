@@ -2,8 +2,8 @@
  * สินค้าของร้านตลาดสด — GET /fresh-market/seller/listings
  *
  * - เปิด/ปิดขายด้วยสวิตช์ (เปลี่ยนทันทีบนจอ ล้มเหลว = คืนค่าเดิม + แจ้งเหตุผล)
- * - แก้ราคาเร็วๆ ในแผ่นล่าง · แตะการ์ด = แก้รูป ราคา และกลุ่มตัวเลือก
- * - ลงขายสินค้าใหม่ → เว็บไซต์ (ฟอร์มเต็ม: หมวดหมู่ รูป สต็อก)
+ * - แก้ราคาเร็วๆ ในแผ่นล่าง · แตะการ์ด = แก้ข้อมูลทั้งหมด รูป กลุ่มตัวเลือก และลบสินค้า
+ * - ลงขายสินค้าใหม่ → หน้าลงขายในแอป (merchant/taladsod/listing/new)
  *
  * หน้าตา: กริดสองคอลัมน์ รูปสินค้าเด่น + ป้ายสถานะบนรูป · ราคาทอง · แถวเปิดขาย · ปุ่มแก้ราคา
  */
@@ -42,12 +42,12 @@ import {
   Pill,
   PriceText,
   Screen,
-  WebsiteButton,
   resultHaptic,
   tapHaptic,
 } from '@/components/ui';
 import { FormSheet, Field } from '@/components/shop';
 import { FM_LISTING_FILTERS, FM_LISTING_STATUS } from '@/components/merchant';
+import { SkeletonBlock } from '@/components/merchant/SkeletonBlock';
 import { DARK_THEME, useTheme, radii, spacing, toneColors, typography } from '@/theme';
 
 /** ระยะห่างระหว่างคอลัมน์ของกริด */
@@ -211,6 +211,13 @@ export default function TaladsodListingsScreen() {
     router.push(`/merchant/taladsod/listing/${item.id}` as never);
   };
 
+  const openCreate = () => {
+    const now = Date.now();
+    if (now - lastOpenRef.current < 800) return;
+    lastOpenRef.current = now;
+    router.push('/merchant/taladsod/listing/new' as never);
+  };
+
   /**
    * การ์ดสินค้า: พื้นที่กดเปิดหน้าแก้ (รูป ชื่อ ราคา) แยกจากแถวปุ่ม "แก้ราคา" + สวิตช์เปิดขาย
    * — ถ้าทั้งการ์ดเป็นปุ่มเดียว iOS จะรวมลูกเป็น element เดียว VoiceOver กดสวิตช์/ปุ่มข้างในไม่ได้
@@ -316,22 +323,22 @@ export default function TaladsodListingsScreen() {
   if (notSeller) {
     return (
       <Screen title="สินค้าของร้าน" scroll={false} contentStyle={styles.pad}>
-        <EmptyState art="cart" title="ยังไม่มีร้านในตลาดสด" message="สมัครขายบนเว็บไซต์ แล้วกลับมาจัดการสินค้าในแอปได้เลย" />
-        <WebsiteButton path="/taladsod/register-seller" label="สมัครขายในตลาดสด" icon="basket" variant="primary" fullWidth style={styles.notSellerCta} />
+        <EmptyState art="cart" title="ยังไม่มีร้านในตลาดสด" message="สมัครเปิดร้านในแอปไม่กี่นาที แล้วลงขายสินค้าได้เลย" />
+        <Button3D
+          title="สมัครเปิดร้านในตลาดสด"
+          icon="basket"
+          variant="primary"
+          fullWidth
+          onPress={() => router.push('/merchant/taladsod/register' as never)}
+          style={styles.notSellerCta}
+        />
       </Screen>
     );
   }
 
   const header = (
     <View>
-      <WebsiteButton
-        path="/taladsod/create-listing"
-        label="ลงขายสินค้าใหม่ (บนเว็บ)"
-        icon="plus"
-        variant="primary"
-        fullWidth
-        style={styles.create}
-      />
+      <Button3D title="ลงขายสินค้าใหม่" icon="plus" variant="primary" fullWidth onPress={openCreate} style={styles.create} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
         {FM_LISTING_FILTERS.map((f) => (
           <Chip key={f.key} label={f.label} size="sm" selected={filter === f.key} onPress={() => setFilter(f.key)} />
@@ -351,11 +358,24 @@ export default function TaladsodListingsScreen() {
         ListHeaderComponent={header}
         ListEmptyComponent={
           initialLoading ? (
-            <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
+            <View style={styles.skeletonGrid} accessibilityLabel="กำลังโหลดสินค้า">
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={[styles.card, { width: cardWidth }]}>
+                  <SkeletonBlock height={Math.round(cardWidth * 0.8)} radius={radii.xl} />
+                  <SkeletonBlock width="80%" height={16} style={styles.skeletonLine} />
+                  <SkeletonBlock width="50%" height={20} style={styles.skeletonLine} />
+                </View>
+              ))}
+            </View>
           ) : error ? (
             <EmptyState compact variant="error" message={error} onAction={() => load('refresh', filter, 1)} />
           ) : (
-            <EmptyState compact art="basket" title="ยังไม่มีสินค้าในแท็บนี้" message="ลงขายสินค้าใหม่บนเว็บ แล้วกลับมาแก้ราคาและตัวเลือกในแอปได้" />
+            <EmptyState
+              compact
+              art="basket"
+              title="ยังไม่มีสินค้าในแท็บนี้"
+              message="กด ลงขายสินค้าใหม่ ด้านบน ใส่รูป ราคา และตัวเลือกได้ในแอปเลย"
+            />
           )
         }
         contentContainerStyle={styles.list}
@@ -501,8 +521,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
-  loader: {
-    marginTop: spacing.xxxl,
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: GRID_GAP,
+  },
+  skeletonLine: {
+    marginTop: spacing.sm,
   },
   more: {
     marginVertical: spacing.lg,

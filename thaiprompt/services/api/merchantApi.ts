@@ -17,7 +17,9 @@ export type SellerOrderFilter =
   | 'delivered'
   | 'completed'
   | 'cancelled'
-  | 'awaiting_payment';
+  | 'awaiting_payment'
+  /** มีข้อความจากลูกค้าที่ร้านยังไม่อ่าน */
+  | 'unread_chat';
 
 export type SellerOrderAction = 'confirm' | 'request_rider' | 'ship' | 'deliver' | 'cancel';
 
@@ -65,6 +67,9 @@ export interface SellerOrderListItem {
   seller_total: number;
   seller_earning: number;
   is_multi_seller: boolean;
+  /** ข้อความจากลูกค้าที่ร้านยังไม่อ่าน (แชทออเดอร์) */
+  unread_messages?: number;
+  last_message_at?: string | null;
   created_at: string;
 }
 
@@ -147,6 +152,8 @@ export interface SellerOrderDetail {
     tracked_at: string;
   }>;
   allowed_actions: SellerOrderAction[];
+  /** แชทกับลูกค้า — unread = ข้อความลูกค้าที่ร้านยังไม่อ่าน · can_send=false เมื่อออเดอร์ยกเลิก/คืนเงิน */
+  chat?: { unread: number; can_send: boolean; last_message_at: string | null };
 }
 
 export interface SellerOrderActionBody {

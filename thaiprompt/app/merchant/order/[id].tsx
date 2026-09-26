@@ -7,16 +7,19 @@
  * - 409 ACTION_NOT_ALLOWED → แจ้งแล้วโหลดใหม่ (มีคนกดไปก่อน/สถานะเปลี่ยน)
  * - รีเฟรชอัตโนมัติ (ไรเดอร์กำลังวิ่ง 15 วินาที, ปกติ 30 วินาที) + ดึงลงเพื่อรีเฟรช
  * - ค่าธรรมเนียม GP และรายรับสุทธิของร้านมาจาก server
+ * - แท็บ "แชทกับลูกค้า" (?tab=chat — push แชทพามาที่นี่) ใช้แผงแชทเดียวกับฝั่งผู้ซื้อ
+ *   GET/POST /seller/orders/{id}/messages · ป้ายตัวเลข = ข้อความลูกค้าที่ยังไม่อ่าน (detail.chat.unread)
  *
  * หน้าตา: การ์ดสถานะ (ช่องไอคอนสีตามสถานะ) → การ์ดขั้นตอนถัดไป (ปุ่มใหญ่) → ไรเดอร์ → ที่อยู่ → สินค้า → ยอด → เส้นเวลาพัสดุ
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
+import { getSellerOrderMessages, sendSellerOrderMessage } from '@/services/api/sellerChatApi';
 import {
   getSellerOrder,
   getShippingProviders,
@@ -51,6 +54,7 @@ import {
   openHttpsLink,
   toNumber,
 } from '@/components/shop';
+import { OrderChatPanel } from '@/components/shop/OrderChatPanel';
 import { IconTile } from '@/components/merchant';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
@@ -79,8 +83,42 @@ const MetaLine: React.FC<{ icon: IconName; color: string; children: React.ReactN
   </View>
 );
 
+/** แชทกับลูกค้า — ผูกแผงแชทกลางเข้ากับ API ฝั่งร้าน */
+const SellerChatPanel: React.FC<{ orderId: number; canSend: boolean; isRider: boolean; onRead: () => void }> = ({
+  orderId,
+  canSend,
+  isRider,
+  onRead,
+}) => {
+  const fetchPage = useCallback((page: number) => getSellerOrderMessages(orderId, { page, per_page: 50 }), [orderId]);
+  const send = useCallback(
+    (message: string, clientId: string) => sendSellerOrderMessage(orderId, message, clientId),
+    [orderId]
+  );
+  const quickReplies = useMemo(
+    () => [
+      'ได้รับออเดอร์แล้ว กำลังเตรียมสินค้าให้',
+      isRider ? 'เรียกไรเดอร์แล้ว รอรับของได้เลย' : 'จัดส่งแล้ว ดูเลขพัสดุได้ในคำสั่งซื้อ',
+      'ขอบคุณที่อุดหนุนร้านเรานะ',
+    ],
+    [isRider]
+  );
+  return (
+    <OrderChatPanel
+      fetchPage={fetchPage}
+      send={send}
+      canSend={canSend}
+      placeholder="พิมพ์ข้อความถึงลูกค้า"
+      inputLabel="ข้อความถึงลูกค้า"
+      emptyText="ยังไม่มีข้อความ ทักลูกค้าเพื่อแจ้งความคืบหน้าหรือสอบถามรายละเอียดได้เลย"
+      quickReplies={quickReplies}
+      onRead={onRead}
+    />
+  );
+};
+
 export default function MerchantOrderDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, tab } = useLocalSearchParams<{ id: string; tab?: string }>();
   const orderId = /^\d+$/.test(String(id || '')) ? Number(id) : 0;
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -90,6 +128,7 @@ export default function MerchantOrderDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<{ message: string; code: string } | null>(null);
   const [acting, setActing] = useState<SellerOrderAction | null>(null);
+  const [activeTab, setActiveTab] = useState<'detail' | 'chat'>(tab === 'chat' ? 'chat' : 'detail');
 
   const [shipOpen, setShipOpen] = useState(false);
   const [providers, setProviders] = useState<ShippingProvider[]>([]);
@@ -143,6 +182,15 @@ export default function MerchantOrderDetailScreen() {
   useEffect(() => {
     load('initial');
   }, [load]);
+
+  useEffect(() => {
+    if (tab === 'chat') setActiveTab('chat');
+  }, [tab]);
+
+  // เปิดแชทแล้ว = ข้อความลูกค้าถูกอ่าน → ล้างป้ายตัวเลขทันที ไม่ต้องรอรีเฟรชรอบหน้า
+  const clearChatUnread = useCallback(() => {
+    setDetail((prev) => (prev?.chat && prev.chat.unread > 0 ? { ...prev, chat: { ...prev.chat, unread: 0 } } : prev));
+  }, []);
 
   const order = detail?.order;
   const rider = detail?.rider ?? null;
@@ -286,6 +334,31 @@ export default function MerchantOrderDetailScreen() {
     Number.isFinite(Number(shipping.latitude)) &&
     Number.isFinite(Number(shipping.longitude));
 
+  const chatUnread = toNumber(detail.chat?.unread);
+  const chatCanSend = detail.chat ? !!detail.chat.can_send : !['cancelled', 'refunded'].includes(order.status);
+  const tabs = (
+    <View style={styles.tabs}>
+      <Chip label="รายละเอียด" icon="receipt" selected={activeTab === 'detail'} onPress={() => setActiveTab('detail')} />
+      <Chip
+        label="แชทกับลูกค้า"
+        icon="chat-circle-dots"
+        selected={activeTab === 'chat'}
+        count={chatUnread > 0 ? chatUnread : undefined}
+        onPress={() => setActiveTab('chat')}
+        accessibilityLabel={chatUnread > 0 ? `แชทกับลูกค้า มีข้อความใหม่ ${chatUnread} ข้อความ` : 'แชทกับลูกค้า'}
+      />
+    </View>
+  );
+
+  if (activeTab === 'chat') {
+    return (
+      <Screen title={detail.customer?.name || 'แชทกับลูกค้า'} subtitle={order.order_number} scroll={false}>
+        <View style={styles.chatTabs}>{tabs}</View>
+        <SellerChatPanel orderId={order.id} canSend={chatCanSend} isRider={order.delivery_method === 'rider'} onRead={clearChatUnread} />
+      </Screen>
+    );
+  }
+
   const statusTone = ORDER_STATUS_TONE[order.status] || 'neutral';
   // ข้อความรอขั้นตอนถัดไป (ไม่มีปุ่มให้กด)
   const waiting: { icon: IconName; text: string } =
@@ -297,6 +370,8 @@ export default function MerchantOrderDetailScreen() {
 
   return (
     <Screen title="ออเดอร์" subtitle={order.order_number} refreshing={refreshing} onRefresh={() => load('refresh')}>
+      {tabs}
+
       {/* ---------- หัว ---------- */}
       <Card3D gradientBorder padding={spacing.lg} style={styles.block}>
         <View style={styles.rowBetween}>
@@ -333,6 +408,25 @@ export default function MerchantOrderDetailScreen() {
           )}
         </View>
       </Card3D>
+
+      {/* ---------- ข้อความใหม่จากลูกค้า ---------- */}
+      {chatUnread > 0 && (
+        <Card3D
+          onPress={() => setActiveTab('chat')}
+          padding={spacing.md}
+          style={styles.block}
+          accessibilityLabel={`ลูกค้าส่งข้อความมา ${chatUnread} ข้อความ แตะเพื่อตอบ`}
+        >
+          <View style={styles.titleRow}>
+            <IconTile icon="chat-circle-dots" tone="gold" size={40} />
+            <View style={styles.flex}>
+              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ลูกค้าส่งข้อความถึงร้าน</Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>มี {chatUnread} ข้อความใหม่ แตะเพื่อตอบ</Text>
+            </View>
+            <Icon name="caret-right" size={18} color={colors.textFaint} />
+          </View>
+        </Card3D>
+      )}
 
       {/* ---------- ปุ่มดำเนินการ (ตาม allowed_actions) ---------- */}
       {allowed.size > 0 && (
@@ -642,6 +736,14 @@ export default function MerchantOrderDetailScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
+  },
+  tabs: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  chatTabs: {
+    paddingHorizontal: spacing.screen,
   },
   loader: {
     marginTop: spacing.xxxl,
