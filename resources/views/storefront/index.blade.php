@@ -60,16 +60,46 @@
     ];
     $sfTabUrl = fn (string $type) => route('storefront.index', array_filter(array_merge(request()->except(['page', 'shop_type']), $type === 'all' ? [] : ['shop_type' => $type]), fn ($v) => $v !== null && $v !== ''));
     $sfCoverService = app(\App\Services\CategoryImageService::class);
+
+    // หน้าแรก (ยังไม่เลือกดูอะไร) = ธีม "โนวา" · หน้าค้นหา/หมวด ยังเป็นธีม V4
+    // ปิดกลับไปหน้าแรกแบบเดิมได้ด้วย SHOP_NOVA_HOME=false (config/shop.php) แล้ว config:cache
+    $sfNova = $browseMode === 'home' && (bool) config('shop.nova_home', true);
+    $sfNovaVer = static fn (string $p) => is_file(public_path($p)) ? filemtime(public_path($p)) : 1;
 @endphp
+
+@if($sfNova)
+    @push('styles')
+        <link href="https://fonts.googleapis.com/css2?family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ $sfNovaVer('theme-nova/nova.css') }}">
+        {{-- ซ่อนการ์ดไว้เผยตอนเลื่อนถึง — ถ้าสคริปต์โหลดไม่ขึ้นภายใน 3 วิ ให้โชว์ทุกอย่างตามปกติ --}}
+        <script>document.documentElement.classList.add('nv-js');setTimeout(function(){if(!window.__nvReady){document.documentElement.classList.remove('nv-js');}},3000);</script>
+    @endpush
+    @push('scripts')
+        <script src="{{ asset('theme-nova/nova.js') }}?v={{ $sfNovaVer('theme-nova/nova.js') }}" defer></script>
+    @endpush
+@endif
+
+@if($sfNova)
+    {{-- ธีมโนวา: เปลี่ยนตัวแปรสี V4 ทั้งหน้า (การ์ดสินค้า/ร้าน ชิป ปุ่ม แจ้งเตือน) เป็นกรมท่า-ทอง — ดู theme-nova/nova.css --}}
+    @section('body_class', 'nv-body')
+@endif
 
 @section('content')
 <x-theme-v4.shop-kit />
+@if($sfNova)
+<div class="nv-page">
+    <x-nova.header active="home" />
+    @include('storefront.nova.top')
+    <div class="nv-sheet nv-sheet--2">
+        <img class="nv-sheet__crest" src="{{ asset('images/nova/brand/tabbar-kanok-arch.webp') }}" alt="" aria-hidden="true" decoding="async">
+@else
 <x-theme-v4.public-header active="shop" :search="true" :search-value="$sfSearch" />
+@endif
 
 <main style="flex:1; padding-bottom:40px;">
 
-    {{-- ════════ HERO (เฉพาะหน้าแรกของร้านค้า) ════════ --}}
-    @if($browseMode === 'home')
+    {{-- ════════ HERO (เฉพาะหน้าแรกของร้านค้า — ธีม V4 เดิม เมื่อปิดธีมโนวา) ════════ --}}
+    @if($browseMode === 'home' && ! $sfNova)
         <section class="sf-wrap" style="padding-top:22px;">
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap:16px; align-items:stretch;">
                 {{-- แบนเนอร์หมุน --}}
@@ -234,8 +264,8 @@
         </section>
     @endif
 
-    {{-- ════════ FLASH DEALS (ดีลที่ยืนยันกับปลายทางแล้วเท่านั้น) ════════ --}}
-    @if($browseMode === 'home' && $flashDeals && $flashDeals->count() > 0)
+    {{-- ════════ FLASH DEALS (ดีลที่ยืนยันกับปลายทางแล้วเท่านั้น) — ธีมโนวามีแถบดีลของตัวเองใน nova/top ════════ --}}
+    @if($browseMode === 'home' && ! $sfNova && $flashDeals && $flashDeals->count() > 0)
         <section class="sf-wrap sf-section">
             <div class="tp-card" style="padding:clamp(16px, 2.6vw, 24px);"
                  x-data="{ end: new Date({{ \Illuminate\Support\Js::from($flashDealEndTime ?? now()->addHours(3)->toIso8601String()) }}).getTime(), h: '00', m: '00', s: '00',
@@ -266,8 +296,8 @@
         </section>
     @endif
 
-    {{-- ════════ หมวดหมู่ (หน้าแรก) ════════ --}}
-    @if($browseMode === 'home' && $categories && $categories->count() > 0)
+    {{-- ════════ หมวดหมู่ (หน้าแรก) — ธีมโนวาใช้การ์ดหมวดหมู่ในแถบกลางคืนแทน ════════ --}}
+    @if($browseMode === 'home' && ! $sfNova && $categories && $categories->count() > 0)
         <section class="sf-wrap sf-section">
             <div class="sf-section-h">
                 <div>
@@ -343,6 +373,14 @@
 
     {{-- ════════ สินค้าทั้งหมด ════════ --}}
     <section class="sf-wrap sf-section" id="products">
+        @if($sfNova)
+            <div class="sf-section-h">
+                <div>
+                    <div class="sf-kicker">ALL PRODUCTS</div>
+                    <h2 class="sf-title">สินค้า<em>ทั้งหมด</em></h2>
+                </div>
+            </div>
+        @endif
         <div class="tp-card" style="padding:clamp(14px, 2.4vw, 22px);">
             <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
                 <div class="sf-scroll" style="padding-bottom:4px;" role="tablist" aria-label="ประเภทร้าน">
@@ -354,7 +392,7 @@
                         </a>
                     @endforeach
                 </div>
-                <form method="GET" action="{{ route('storefront.index') }}" style="display:flex; align-items:center; gap:8px;">
+                <form method="GET" action="{{ route('storefront.index') }}#products" style="display:flex; align-items:center; gap:8px;">
                     @foreach(request()->except(['sort_by', 'page']) as $qk => $qv)
                         @if(is_scalar($qv))
                             <input type="hidden" name="{{ $qk }}" value="{{ $qv }}">
@@ -439,8 +477,8 @@
         </div>
     </section>
 
-    {{-- ════════ จุดเด่น + รับข่าวสาร (หน้าแรก) ════════ --}}
-    @if($browseMode === 'home')
+    {{-- ════════ จุดเด่น + รับข่าวสาร (หน้าแรก V4 — ธีมโนวาใช้ส่วนสร้างรายได้/แถบแอปแทน) ════════ --}}
+    @if($browseMode === 'home' && ! $sfNova)
         <section class="sf-wrap sf-section">
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px;">
                 @foreach([
@@ -488,7 +526,16 @@
     @endif
 </main>
 
+@if($sfNova)
+        @include('storefront.nova.bottom')
+    </div>
+    <x-nova.footer />
+    <x-nova.guide />
+    <div class="nv-toast" id="nv-toast" role="status" aria-live="polite"></div>
+</div>
+@else
 <x-theme-v4.public-footer />
+@endif
 <x-eve.widget surface="storefront" />
 @endsection
 

@@ -159,7 +159,8 @@
     {{-- Structured Data (Schema.org JSON-LD) — Organization + WebSite สำหรับ Google AI Overviews / Gemini --}}
     {!! render_global_structured_data() !!}
 </head>
-<body class="tp-root">
+{{-- body_class: หน้าที่ใช้ธีมอื่นทับ V4 (เช่นธีมโนวา = nv-body) ใส่คลาสเพิ่มผ่าน @section('body_class', '...') --}}
+<body class="tp-root @yield('body_class')">
 
     {{-- พื้นหลังลาวา (3 วงเบลอ) --}}
     <div class="tp-lava" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i></div>

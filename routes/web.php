@@ -523,6 +523,12 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
     Route::match(['GET', 'HEAD'], '/products', [\App\Http\Controllers\StorefrontController::class, 'loadMoreProducts'])->name('products');
 });
 
+// ดาวน์โหลดแอป Thai Prompt APP (APK) จากเซิร์ฟเวอร์เราเอง → ส่งต่อไปไฟล์นิ่งใน storage (ดู AppDownloadService)
+// อัปไฟล์ใหม่ด้วย: php artisan app:publish-apk <ไฟล์.apk> --app-version=x.y.z --version-code=n
+Route::get('/app/download', [\App\Http\Controllers\AppDownloadController::class, 'android'])
+    ->middleware('throttle:30,1')
+    ->name('app.download');
+
 // ตัวกลางนับคลิกลิงก์ affiliate → ส่งต่อไป Lazada (302)
 // ⚠️ นี่คือหลักฐานชิ้นเดียวที่บอกได้ว่า "ลูกค้าคนไหนของเราเป็นคนพาไปซื้อ"
 //    เพราะ Lazada ไม่ยอมรับ subId ในลิงก์ (ทดสอบแล้ว — ได้ token เดียวกันหมด)

@@ -35,7 +35,7 @@
 @endphp
 
 <a href="{{ $scHref }}" class="sf-card" style="text-decoration:none; color:inherit;" {{ $attributes }}>
-    <div style="position:relative; height:96px; overflow:hidden; background:linear-gradient(135deg, var(--accent1), var(--accent2));">
+    <div class="sf-store-banner" style="position:relative; height:96px; overflow:hidden; background:linear-gradient(135deg, var(--accent1), var(--accent2));">
         @if($scBanner)
             <img src="{{ $scBanner }}" alt="" aria-hidden="true" loading="lazy" decoding="async"
                  style="width:100%; height:100%; object-fit:cover; object-position:center {{ $scBannerY }}%;"
@@ -54,7 +54,7 @@
     </div>
     <div style="padding:0 14px 14px; display:flex; flex-direction:column; gap:10px; flex:1;">
         <div style="display:flex; align-items:flex-end; gap:10px; margin-top:-26px; position:relative;">
-            <span style="width:56px; height:56px; flex:none; border-radius:16px; overflow:hidden; display:grid; place-items:center; font-size:24px; background:var(--surf); box-shadow:var(--raise); border:3px solid var(--card-bg);">
+            <span class="sf-store-logo" style="width:56px; height:56px; flex:none; border-radius:16px; overflow:hidden; display:grid; place-items:center; font-size:24px; background:var(--surf); box-shadow:var(--raise); border:3px solid var(--card-bg);">
                 @if($scLogo)
                     <img src="{{ $scLogo }}" alt="{{ $scName }}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none';">
                 @else
