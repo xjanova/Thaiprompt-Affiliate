@@ -21387,6 +21387,24 @@ PROMPT;
      */
     protected function switchPendingBillTier(FortuneReading $reading, string $target): array
     {
+        // 🚧 (2026-09-27, owner "สร้างบิลรัวๆ ระบบกันทำงานไหม") เพดานสลับแพคเกจ
+        //   สลับ = ปิดบิลเก่าด้วย package_switch (ไม่นับ strike · ไม่นับในแบบสอบถาม 5 ข้อ) + เปิดบิลใหม่
+        //   ไม่มีเพดาน = กดสลับ 39↔99 สร้างบิลได้ไม่จำกัดโดยไม่เคยถูกนับ
+        //   เกินเพดาน → คงบิลเดิม (ยังโอนได้) · อยากเปลี่ยนจริงให้ "ยกเลิก" ซึ่งนับเป็นบิลค้างตามปกติ
+        $trollGuard = app(\App\Services\Fortune\BillTrollGuardService::class);
+        $switchUid = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
+        if (! $trollGuard->packageSwitchAllowed($switchUid)) {
+            Log::info('Fortune: สลับแพคเกจเกินเพดาน → คงบิลเดิม', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'from_tier' => $reading->reading_type,
+                'to_tier' => $target,
+                'switches' => $trollGuard->packageSwitchCount($switchUid),
+            ]);
+
+            return $this->packageSwitchLimitReply($reading);
+        }
+
         Log::info('Fortune: ลูกค้าขอเปลี่ยนแพคเกจระหว่างรอจ่าย → ยกเลิกบิลเดิม + เปิดบิลใหม่', [
             'reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
@@ -21450,6 +21468,30 @@ PROMPT;
         }
 
         return $result;
+    }
+
+    /**
+     * 🚧 (2026-09-27) ตอบเมื่อสลับแพคเกจเกินเพดาน — คงบิลเดิม บอกยอดเดิม ชี้ทางยกเลิก
+     *
+     * ห้ามยกเลิก/แตะบิลเดิม — ลูกค้าที่ตั้งใจจ่ายต้องโอนตาม QR เดิมได้ทันที
+     */
+    protected function packageSwitchLimitReply(FortuneReading $reading): array
+    {
+        $amount = $reading->uniquePaymentAmount?->unique_amount ?? $reading->amount_paid;
+        $label = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? 'ไพ่ยิปซีเต็มสำรับ Celtic Cross'
+            : 'ดูดวงเชิงลึก';
+
+        return [
+            'action' => 'package_switch_limit',
+            'message' => '🙏 เจ้าชะตาเปลี่ยนแพคเกจมาแล้ว '.\App\Services\Fortune\BillTrollGuardService::MAX_PACKAGE_SWITCHES
+                .' ครั้งภายใน '.\App\Services\Fortune\BillTrollGuardService::PACKAGE_SWITCH_WINDOW_HOURS
+                ." ชั่วโมง แม่หมอขอคงบิลเดิมไว้นะคะ\n\n"
+                ."📋 บิลของเจ้าชะตา: {$reading->bill_reference} ({$label})\n"
+                .($amount ? '💸 ยอดโอน *'.number_format((float) $amount, 2)." บาท* ตาม QR เดิม ยังโอนได้ตามปกติค่ะ\n" : '')
+                ."\nถ้าไม่ต้องการบิลนี้แล้ว พิมพ์ \"ยกเลิก\" ได้เลยค่ะ",
+            'reading' => $reading,
+        ];
     }
 
     /**

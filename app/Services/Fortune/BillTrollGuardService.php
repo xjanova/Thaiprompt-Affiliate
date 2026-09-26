@@ -69,6 +69,17 @@ class BillTrollGuardService
     public const QUIZ_UNPAID_WINDOW_DAYS = 7;
 
     /**
+     * 🔄 (2026-09-27) เพดานสลับแพคเกจระหว่างรอจ่าย ต่อคน ต่อ PACKAGE_SWITCH_WINDOW_HOURS
+     *
+     * สลับ 39↔99 = ปิดบิลเก่าด้วย package_switch (ไม่นับ strike · ไม่นับในแบบสอบถาม 5 ข้อ)
+     * แล้วเปิดบิลใหม่ทันที — ไม่มีเพดาน = กดสลับสร้างบิลได้ไม่จำกัดโดยไม่เคยถูกนับ
+     * ลูกค้าจริงที่ลังเลเปลี่ยนไป-กลับ 2 ครั้งยังทำได้ตามปกติ
+     */
+    public const MAX_PACKAGE_SWITCHES = 2;
+
+    public const PACKAGE_SWITCH_WINDOW_HOURS = 24;
+
+    /**
      * เปิดใช้งานระบบหรือไม่ (admin toggle — default เปิด)
      */
     public function isEnabled(): bool
@@ -229,6 +240,38 @@ class BillTrollGuardService
         }
 
         return $query->count();
+    }
+
+    /**
+     * 🔄 (2026-09-27) นับครั้งที่สลับแพคเกจ (บิลที่ถูกปิดด้วย package_switch) ใน N ชม.ล่าสุด
+     *
+     * @param  string  $userId  PSID / LINE userId (match ทั้ง facebook_user_id + platform_user_id)
+     */
+    public function packageSwitchCount(string $userId, int $hours = self::PACKAGE_SWITCH_WINDOW_HOURS): int
+    {
+        if ($userId === '') {
+            return 0;
+        }
+
+        return FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('created_at', '>=', now()->subHours($hours))
+            ->where('conversation_state->cancellation_reason', 'package_switch')
+            ->count();
+    }
+
+    /**
+     * 🔄 (2026-09-27) สลับแพคเกจได้อีกไหม — ปิดสวิตช์ enable_bill_troll_ban = ไม่จำกัดเหมือนเดิม
+     */
+    public function packageSwitchAllowed(string $userId): bool
+    {
+        if (! $this->isEnabled()) {
+            return true;
+        }
+
+        return $this->packageSwitchCount($userId) < self::MAX_PACKAGE_SWITCHES;
     }
 
     /**
