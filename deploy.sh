@@ -353,6 +353,33 @@ error_exit() {
     # Ensure essential directories exist before running artisan
     ensure_laravel_directories
 
+    # 🔄 (2026-09-26) ล้มหลัง STEP 4.3 = โค้ดใหม่ลงดิสก์แล้ว แต่ PHP-FPM ยังเสิร์ฟ OPcache ของเก่า (ดู R4543 ที่ STEP 13)
+    #   และ queue worker ยังรันโค้ดเก่าในหน่วยความจำ ⇒ ถ้าเปิดเว็บเลยจะได้โค้ดสองรุ่นปนกัน
+    #   (ไฟล์ที่ OPcache จำไว้ = เก่า · ไฟล์ที่ยังไม่เคยโหลด/route/view ที่เพิ่งล้าง cache = ใหม่)
+    #   reload + queue:restart ก่อน up ⇒ เหลือโค้ดใหม่ชุดเดียว — ไม่มี config/route/view cache จนกว่า deploy รอบถัดไปจะผ่าน (ช้าลงแต่ไม่ปน)
+    #   ลิสต์ service ต้องตรงกับ STEP 13
+    if [ "${CODE_SYNCED:-0}" = "1" ]; then
+        print_warning "→ โค้ดใหม่ลงดิสก์แล้ว — reload PHP-FPM + queue:restart ก่อนเปิดเว็บ (กันโค้ดเก่า/ใหม่ปนกัน)"
+        local fpm_found=0
+        if command -v systemctl >/dev/null 2>&1; then
+            for service in php-fpm83 php-fpm82 php-fpm81 php8.3-fpm php8.2-fpm php8.1-fpm php8.0-fpm php-fpm; do
+                if systemctl is-active --quiet $service 2>/dev/null; then
+                    fpm_found=1
+                    if sudo systemctl reload $service 2>/dev/null; then
+                        print_success "  ✓ Reload $service สำเร็จ (OPcache cleared)"
+                    else
+                        print_error "  ✗ Reload $service ล้มเหลว — รันเอง: sudo systemctl reload $service"
+                    fi
+                    break
+                fi
+            done
+        fi
+        if [ "$fpm_found" = "0" ]; then
+            print_error "  ✗ ไม่พบ PHP-FPM service — OPcache อาจยังเป็นโค้ดเก่า ต้อง reload เอง"
+        fi
+        php artisan queue:restart >/dev/null 2>&1 || print_warning "  ⚠ queue:restart ไม่สำเร็จ — worker อาจยังรันโค้ดเก่า"
+    fi
+
     # Try to bring application back up
     php artisan up 2>/dev/null || {
         print_error "Could not disable maintenance mode automatically"
@@ -377,7 +404,10 @@ error_exit() {
         sleep 2
 
         # Restart the entire deployment script
-        exec "$0" "$@"
+        # 🐛 (2026-09-26) เดิม `exec "$0" "$@"` — ในฟังก์ชัน "$@" คือ args ของ error_exit (ข้อความ error) ไม่ใช่ของสคริปต์
+        #   ⇒ รอบใหม่เอาข้อความ error ไปเป็นชื่อ branch · และ CI รัน `bash deploy.sh ...` ⇒ $0 = "deploy.sh" ไม่มี /
+        #   ⇒ exec ไปหาใน PATH ไม่เจอ ตายด้วย 127 ⇒ ใช้ path เต็ม + branch เดิม
+        exec bash "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}")" "$BRANCH"
     fi
 
     # Final failure - not a timeout or exceeded max attempts
@@ -855,6 +885,8 @@ print_info "Force resetting to origin/$BRANCH..."
 if ! ( set -o pipefail; git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE" ); then
     error_exit "Failed to reset to origin/$BRANCH" "$?"
 fi
+# 🏷️ (2026-09-26) จากตรงนี้โค้ดใหม่ลงดิสก์แล้ว — error_exit ใช้ธงนี้ตัดสินว่าต้อง reload PHP-FPM + queue:restart ก่อนเปิดเว็บ
+CODE_SYNCED=1
 
 # Step 4.4: Clean all untracked files and directories (SAFE - excludes critical files)
 print_info "Removing untracked files and directories..."
