@@ -4,7 +4,7 @@
  |         $ohSearch (ค่าค้นหาเดิม|null — null = ไม่แสดงช่องค้นหา), $ohAction (ปลายทางฟอร์มค้นหา)
  --}}
 <section class="sf-wrap" style="padding-top:22px;">
-    <div style="position:relative; overflow:hidden; border-radius:28px; padding:clamp(22px, 4vw, 40px); color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--deep1) 0%, var(--accent1) 55%, var(--accent2) 100%); box-shadow:0 18px 44px rgba(0,0,0,.2);">
+    <div class="sf-hero-band" style="position:relative; overflow:hidden; border-radius:28px; padding:clamp(22px, 4vw, 40px); color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--deep1) 0%, var(--accent1) 55%, var(--accent2) 100%); box-shadow:0 18px 44px rgba(0,0,0,.2);">
         <div aria-hidden="true" style="position:absolute; inset:0; background:radial-gradient(520px 260px at 92% -10%, rgba(255,255,255,.28), transparent 60%), radial-gradient(420px 220px at 0% 110%, rgba(255,255,255,.14), transparent 60%);"></div>
         <div style="position:relative;">
             <nav class="sf-breadcrumb" aria-label="เส้นทาง" style="color:rgba(255,255,255,.85);">

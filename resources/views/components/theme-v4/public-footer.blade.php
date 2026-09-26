@@ -11,6 +11,10 @@
     'shopLinks' => null,
 ])
 
+@if(config('shop.nova_public', true))
+    {{-- ธีมโนวาบนหน้าสาธารณะ (config shop.nova_public) --}}
+    <x-nova.footer />
+@else
 @php
     $pfRoute = fn (string $name, $params = [], ?string $fallback = null) => \Illuminate\Support\Facades\Route::has($name)
         ? route($name, $params)
@@ -88,3 +92,4 @@
         </div>
     </div>
 </footer>
+@endif

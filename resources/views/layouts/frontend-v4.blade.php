@@ -159,8 +159,13 @@
     {{-- Structured Data (Schema.org JSON-LD) — Organization + WebSite สำหรับ Google AI Overviews / Gemini --}}
     {!! render_global_structured_data() !!}
 </head>
-{{-- body_class: หน้าที่ใช้ธีมอื่นทับ V4 (เช่นธีมโนวา = nv-body) ใส่คลาสเพิ่มผ่าน @section('body_class', '...') --}}
-<body class="tp-root @yield('body_class')">
+{{-- คลาสของ <body>: หน้าใส่เพิ่มเองได้ผ่าน @section('body_class', '...')
+     ธีมโนวาบนหน้าสาธารณะ (config shop.nova_public) = nv-body — มีผลเฉพาะหน้าที่โหลด theme-nova/nova.css (แถบหัวโนวาโหลดให้เอง) --}}
+@php
+    $tpBodyClass = collect(explode(' ', 'tp-root '.trim($__env->yieldContent('body_class')).(config('shop.nova_public', true) ? ' nv-body' : '')))
+        ->filter()->unique()->implode(' ');
+@endphp
+<body class="{{ $tpBodyClass }}">
 
     {{-- พื้นหลังลาวา (3 วงเบลอ) --}}
     <div class="tp-lava" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i></div>

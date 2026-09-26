@@ -82,6 +82,21 @@
 .nv-nav__panel .nv-nav__panel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .nv-nav__panel .nv-nav__panel-gold { background: var(--nv-btn-gold); color: #1a1405; box-shadow: none; justify-content: center; font-weight: 700; }
 .nv-nav [x-cloak] { display: none !important; }
+/* แถบหัวแบบทึบ (หน้าอื่นที่ไม่มีฮีโร่มืด) — sticky อยู่ในกระแสหน้า ไม่ลอยทับเนื้อหา ไม่ต้องมีตัวดันระยะ */
+.nv-nav--solid { position: sticky; top: 0; }
+.nv-nav--static { position: relative; }
+/* ลิงก์เสริมของหน้า (เช่นหน้ารู้จักเรา) — จอไม่กว้างพอให้หลบไปอยู่ในเมนูแผงแทน กันแถบหัวล้น */
+@media (max-width: 1399px) { .nv-nav__link--extra { display: none; } }
+.nv-ibtn.is-on { color: var(--nv-gold-100); background: rgba(245, 210, 127, .16); border-color: rgba(245, 210, 127, .7); }
+/* แนะนำสินค้าขณะพิมพ์ค้นหา */
+.nv-suggest { position: absolute; top: calc(100% + 8px); left: 0; right: 0; z-index: 70; padding: 6px; border-radius: 18px; background: rgba(7, 13, 32, .97); box-shadow: inset 0 0 0 1px rgba(245, 210, 127, .3), 0 24px 50px -20px rgba(0, 0, 0, .85); }
+.nv-suggest a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; color: var(--nv-on-night); text-decoration: none; }
+.nv-suggest a:hover, .nv-suggest a:focus-visible { background: rgba(245, 210, 127, .1); outline: 0; }
+.nv-suggest__img { flex: none; width: 40px; height: 40px; border-radius: 10px; overflow: hidden; background: rgba(255, 255, 255, .06); }
+.nv-suggest__img img { width: 100%; height: 100%; object-fit: cover; }
+.nv-suggest__txt { min-width: 0; display: grid; }
+.nv-suggest__txt b { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nv-suggest__txt small { font-family: var(--nv-font-display); font-weight: 700; font-size: 13px; color: var(--nv-gold-300); }
 
 /* =====================================================================
    ฉากกลางคืน (ใช้ร่วม: ฮีโร่ + แถบหมวดหมู่)
@@ -308,9 +323,10 @@
 body.nv-body {
     --bg: #f4f0e7; --surf: #faf7f0; --sd: rgba(20, 26, 43, .14); --sl: #fff;
     --ink: #141a2b; --ink2: #6b7489;
-    --accent1: #f0c96a; --accent2: #d4a64a; --deep1: #0d1b3d; --deep2: #946714;
+    /* บทบาทเดียวกับสีแบรนด์ V4 (accent1 = สีหลักที่วางตัวอักษรขาวทับ · accent2 = ทอง) → กรมท่าหลวง + ทอง
+       ปุ่มทอง/ป้ายทองของโนวากำหนดสีเองด้านล่าง ไม่พึ่งตัวแปรนี้ */
+    --accent1: #1f3b85; --accent2: #c99a3e; --deep1: #0d1b3d; --deep2: #946714;
     --a1soft: rgba(240, 201, 106, .2); --a2soft: rgba(212, 166, 74, .16);
-    --on-accent: #1a1405;
     --card-bg: #fff; --card-blur: none; --card-border: 1px solid rgba(212, 166, 74, .2); --card-radius: 20px;
     --card-shadow: 0 1px 2px rgba(20, 26, 43, .05), 0 12px 30px -16px rgba(20, 26, 43, .22);
     --card-shadow-sm: 0 1px 2px rgba(20, 26, 43, .06), 0 6px 16px -10px rgba(20, 26, 43, .22);
@@ -325,7 +341,8 @@ body.nv-body {
 .nv-body .tp-lava { display: none; }
 
 /* หัวข้อส่วน */
-.nv-body .sf-section { padding-top: 56px; }
+/* หน้าแรกโนวาเว้นจังหวะกว้างกว่า · หน้าอื่นคงระยะเดิมของ V4 */
+.nv-page .sf-section { padding-top: 56px; }
 .nv-body .sf-section-h { align-items: flex-end; margin-bottom: 22px; }
 .nv-body .sf-kicker { font-family: var(--nv-font-latin); font-size: 12px; font-weight: 600; letter-spacing: .28em; text-transform: uppercase; color: var(--nv-gold-ink); }
 .nv-body .sf-title { margin: 4px 0 0; font-family: var(--nv-font-display); font-size: clamp(26px, 2.6vw, 36px); font-weight: 700; line-height: 1.25; letter-spacing: 0; color: var(--nv-ink); }
@@ -338,7 +355,7 @@ body.nv-body {
 .nv-body .tp-btn { border-radius: 999px; font-weight: 600; color: var(--nv-navy-800); background: #fff; box-shadow: inset 0 0 0 1px rgba(212, 166, 74, .45), 0 4px 12px -8px rgba(20, 26, 43, .35); }
 .nv-body .tp-btn:hover { filter: none; background: #fffaf0; box-shadow: inset 0 0 0 1px rgba(212, 166, 74, .8), 0 8px 18px -10px rgba(20, 26, 43, .4); }
 .nv-body .tp-btn-primary, .nv-body .tp-btn-primary:hover { color: #1a1405; text-shadow: none; background: var(--nv-btn-gold); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(138, 100, 32, .35), 0 8px 22px -10px rgba(212, 166, 74, .8); }
-.nv-body .tp-pill-gold { color: #1a1405; }
+.nv-body .tp-pill-gold { color: #1a1405; background: var(--nv-btn-gold); }
 .nv-body .tp-tile { color: #1a1405; text-shadow: none; background: var(--nv-btn-gold); }
 .nv-body .sf-chip { min-height: 40px; padding: 8px 16px; border-radius: 999px; color: var(--nv-ink); background: #fff; box-shadow: inset 0 0 0 1px rgba(212, 166, 74, .35), 0 4px 10px -8px rgba(20, 26, 43, .3); transition: box-shadow .2s, transform .1s; }
 .nv-body .sf-chip:hover { box-shadow: inset 0 0 0 1px rgba(212, 166, 74, .75), 0 6px 14px -8px rgba(20, 26, 43, .35); }
@@ -387,6 +404,9 @@ body.nv-body {
 .nv-body .sf-card:hover .sf-card-cta .tp-btn-primary, .nv-body .sf-card-cta .tp-btn-primary:focus-visible { color: #1a1405; }
 .nv-body .sf-card:hover .sf-card-cta .tp-btn-primary i, .nv-body .sf-card-cta .tp-btn-primary:focus-visible i { color: #1a1405; }
 .nv-body .sf-card:hover .sf-card-cta .tp-btn-primary::before, .nv-body .sf-card-cta .tp-btn-primary:focus-visible::before { opacity: 1; }
+/* แบนเนอร์หัวหน้า (รวมร้าน / ร้านทางการ) — V4 ไล่สีฟ้า→ทองตัวขาว · โนวาเป็นกรมท่า ตัวขาวอ่านชัด */
+.nv-body .sf-hero-band { background: radial-gradient(120% 160% at 100% 0%, #1d3676 0%, #0d1b3d 50%, #070d20 100%) !important; box-shadow: 0 24px 50px -24px rgba(7, 13, 32, .8) !important; }
+.nv-body .sf-hero-band::before { content: ""; position: absolute; right: -24px; top: -16px; width: 300px; height: 230px; background: url(../images/nova/brand/kanok-gold.webp) right top / contain no-repeat; opacity: .28; pointer-events: none; }
 .nv-body .sf-store-banner { background: radial-gradient(120% 150% at 100% 0%, #1d3676 0%, #0d1b3d 55%, #070d20 100%) !important; }
 .nv-body .sf-store-banner:not(:has(img))::after { content: ""; position: absolute; right: -12px; top: -6px; width: 150px; height: 110px; background: url(../images/nova/brand/kanok-gold.webp) right top / contain no-repeat; opacity: .32; pointer-events: none; }
 /* ชื่อร้านต้องอยู่ใต้แบนเนอร์กรมท่าทั้งบรรทัด (V4 วางซ้อนขอบแบนเนอร์ได้เพราะแบนเนอร์สีอ่อน) */

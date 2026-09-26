@@ -20,7 +20,7 @@
 
 <main style="flex:1; padding-bottom:40px;">
     <section class="sf-wrap" style="padding-top:24px;">
-        <div style="position:relative; overflow:hidden; border-radius:26px; padding:clamp(22px, 4vw, 38px); color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--accent1), var(--accent2)); box-shadow:0 14px 36px rgba(0,0,0,.16);">
+        <div class="sf-hero-band" style="position:relative; overflow:hidden; border-radius:26px; padding:clamp(22px, 4vw, 38px); color:var(--on-accent, #fff); background:linear-gradient(135deg, var(--accent1), var(--accent2)); box-shadow:0 14px 36px rgba(0,0,0,.16);">
             <div aria-hidden="true" style="position:absolute; inset:0; background:radial-gradient(520px 260px at 90% 0%, rgba(255,255,255,.25), transparent 60%);"></div>
             <div style="position:relative; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px;">
                 <div>

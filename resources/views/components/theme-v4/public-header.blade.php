@@ -31,6 +31,12 @@
     'sticky' => true,
 ])
 
+@if(config('shop.nova_public', true))
+    {{-- ธีมโนวาบนหน้าสาธารณะ (config shop.nova_public) — props ชุดเดียวกันส่งต่อให้แถบหัวโนวาแบบทึบ --}}
+    <x-nova.header :active="$active" :solid="true" :links="$links" :links-after="$linksAfter" :search="(bool) $search"
+                   :search-action="$searchAction" :search-name="$searchName" :search-value="$searchValue"
+                   :search-placeholder="$searchPlaceholder" :suggest="(bool) $suggest" :sticky="(bool) $sticky" />
+@else
 @php
     $rh = fn (string $name, array $params = [], ?string $fallback = null) => \Illuminate\Support\Facades\Route::has($name)
         ? route($name, $params)
@@ -257,3 +263,4 @@
         @endauth
     </div>
 </header>
+@endif

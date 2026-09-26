@@ -84,25 +84,38 @@ class StorefrontNovaHomeTest extends TestCase
         $this->assertStringContainsString('ออกจากระบบ', $html);
     }
 
-    public function test_browse_mode_keeps_v4_layout(): void
+    public function test_browse_mode_uses_the_solid_nova_header_without_the_hero(): void
     {
         $html = $this->get(route('storefront.index', ['search' => 'ทดสอบ']))->assertOk()->getContent();
 
-        $this->assertStringNotContainsString('id="nv-hero"', $html);
+        $this->assertStringNotContainsString('id="nv-hero"', $html, 'หน้าค้นหาไม่มีฮีโร่');
+        $this->assertStringContainsString('nv-nav--solid', $html, 'หน้าค้นหาต้องใช้แถบหัวโนวาแบบทึบ');
+        $this->assertStringContainsString('theme-nova/nova.css', $html, 'แถบหัวโนวาต้องโหลด nova.css เอง');
+        $this->assertMatchesRegularExpression('/<body class="[^"]*\bnv-body\b/', $html);
+        $this->assertStringContainsString('value="ทดสอบ"', $html, 'ช่องค้นหาต้องแสดงคำที่ค้นอยู่');
+        $this->assertStringNotContainsString('tp-ph-desk', $html, 'ไม่ซ้อนแถบหัว V4');
+    }
+
+    public function test_public_pages_fall_back_to_v4_when_nova_public_is_off(): void
+    {
+        config(['shop.nova_public' => false]);
+
+        $html = $this->get(route('storefront.index', ['search' => 'ทดสอบ']))->assertOk()->getContent();
+
+        $this->assertStringContainsString('tp-ph-desk', $html, 'ปิดโนวาหน้าสาธารณะ = แถบหัว V4');
         $this->assertStringNotContainsString('theme-nova/nova.css', $html);
-        $this->assertStringContainsString('tp-ph-desk', $html, 'หน้าค้นหาต้องยังใช้แถบหัว V4');
-        $this->assertStringNotContainsString('nv-body', $html, 'หน้าค้นหาต้องไม่โดนสกินโนวา');
+        $this->assertStringNotContainsString('nv-body', $html);
     }
 
     public function test_nova_home_can_be_switched_off(): void
     {
-        config(['shop.nova_home' => false]);
+        config(['shop.nova_home' => false, 'shop.nova_public' => false]);
 
         $html = $this->get('/')->assertOk()->getContent();
 
         $this->assertStringNotContainsString('id="nv-hero"', $html);
         $this->assertStringNotContainsString('theme-nova/nova.css', $html);
-        $this->assertStringContainsString('tp-ph-desk', $html, 'ปิดธีมใหม่แล้วต้องกลับไปแถบหัว V4');
+        $this->assertStringContainsString('tp-ph-desk', $html, 'ปิดธีมใหม่ทั้งหมดแล้วต้องกลับไปแถบหัว V4');
     }
 
     public function test_nova_assets_are_shipped(): void
