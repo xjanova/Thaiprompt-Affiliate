@@ -2814,15 +2814,23 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     /**
      * ดึงรูปภาพจาก Messenger attachment
      *
+     * 👍 (2026-09-27) ข้ามสติกเกอร์ — FB ส่งสติกเกอร์ (รวมปุ่มยกนิ้ว 👍) มาเป็น type=image + payload.sticker_id
+     *   ถ้าคืน URL ของสติกเกอร์ ปลายทางจะมองเป็น "รูป" แล้ววิ่งเข้าเส้นสลิป
+     *   เคสจริง FTU-260927-T0255: ลูกค้ากด 👍 ตอนบิลรอจ่าย → vision ปิด ตัวแยกรูปตอบ general_photo
+     *   → บอทตอบ "ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ" (ตอน vision เปิด ตัวแยกตอบ emoji_sticker → เงียบ)
+     *   ⇒ รู้ได้จาก sticker_id ที่ FB บอกมาเอง ไม่ต้องใช้ AI ดูรูปเลย
+     *
      * @param  array  $attachments  Facebook message attachments array
-     * @return string|null URL ของรูปภาพ
+     * @return string|null URL ของรูปภาพ (สติกเกอร์ล้วน = null)
      */
     public function extractImageFromAttachments(array $attachments): ?string
     {
         foreach ($attachments as $attachment) {
-            if (($attachment['type'] ?? '') === 'image') {
-                return $attachment['payload']['url'] ?? null;
+            if (($attachment['type'] ?? '') !== 'image' || ! empty($attachment['payload']['sticker_id'])) {
+                continue;
             }
+
+            return $attachment['payload']['url'] ?? null;
         }
 
         return null;

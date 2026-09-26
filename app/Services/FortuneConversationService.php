@@ -16417,6 +16417,31 @@ class FortuneConversationService
     }
 
     /**
+     * 🔎 (2026-09-27) ทางลัดของ returningImageLooksLikeSlip — รูปนี้มี QR สลิปไหม (ไม่ใช้ AI)
+     *
+     *   พังทุกทาง = false (ให้ด่านถัดไปตัดสินตามเดิม) · timeout สั้นกว่า readSlipBytes (20 วิ)
+     *   เพราะเป็นทางลัดในจังหวะ webhook — FB CDN ช้าก็แค่ข้ามไปถาม AI ไม่ถ่วงลูกค้า
+     *   ⚠️ ไม่เพิ่มพารามิเตอร์ timeout ให้ readSlipBytes — เทสต์ override เมธอดนั้นด้วย signature เดิม
+     */
+    protected function slipQrFoundQuick(?string $url, ?string $base64): bool
+    {
+        try {
+            $bytes = null;
+            if (! empty($base64)) {
+                $clean = str_contains($base64, ',') ? substr($base64, strpos($base64, ',') + 1) : $base64;
+                $bytes = base64_decode($clean, true) ?: null;
+            } elseif (! empty($url)) {
+                $resp = \Illuminate\Support\Facades\Http::timeout(6)->get($url);
+                $bytes = $resp->successful() ? $resp->body() : null;
+            }
+
+            return ! empty($bytes) && $this->imageHasSlipQr($bytes);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
      * 🧾 สลิปใบนี้ (transRef) ตัดบิลไปสำเร็จแล้วหรือยัง — ใช้ตอบให้ถูกเมื่อพังกลางทาง
      *   ดูที่ "สลิปใบนี้" ไม่ใช่ "ลูกค้าเพิ่งจ่ายอะไรสักใบ" (บิลอื่นที่เพิ่งจ่ายจะทำให้ตอบว่าได้เงินแล้วผิด ๆ)
      *   finalizeSlipOkApproved เขียน slipok_trans_ref + SlipVerification ก่อน confirmPayment
@@ -17990,6 +18015,16 @@ class FortuneConversationService
             }
             if ($imageData === null) {
                 return true; // ไม่มีข้อมูลรูป → ไม่บล็อก
+            }
+
+            // 🔎 (2026-09-27, owner "แยกสลิปกับรูป โดยไม่เปิดโหมดดูรูป") ด่านแรก: ถอด QR สลิปเองในเครื่อง
+            //   สลิปจากแอปธนาคารไทยมี QR ตรวจสลิปทุกใบ → ถอดออก = สลิปแน่นอน ไม่ต้องจ่ายเงินถาม AI
+            //   prod 20-27 ก.ย.: AI ข้างล่างถูกเรียก 0-6 ครั้ง/วัน และตอบ payment_slip 0.99 ทุกครั้ง
+            //   ⚠️ ใช้ผลเชิงบวกเท่านั้น — ถอดไม่ออก ≠ ไม่ใช่สลิป (ถ่ายจอ/ใบเสร็จร้าน) → ถาม AI ตามเดิม
+            if ($this->slipQrFoundQuick($url, $base64)) {
+                Log::info('SlipOK pre-check: ถอด QR สลิปได้ → เป็นสลิป (ข้าม AI)');
+
+                return true;
             }
 
             // 🌟 (2026-06-05, user) reliableMode=true → OpenAI vision (paid, ล่มยาก) ก่อน + bypass master image-vision gate

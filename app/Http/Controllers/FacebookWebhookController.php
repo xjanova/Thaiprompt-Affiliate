@@ -3062,6 +3062,7 @@ class FacebookWebhookController extends Controller
         // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
         $userImageUrl = null;
         if (! empty($attachments)) {
+            // 👍 สติกเกอร์ได้ null — ไม่วิ่งเข้าเส้นรูป/สลิป/vision (เหตุผลอยู่ที่ extractImageFromAttachments)
             $userImageUrl = $this->facebookService->extractImageFromAttachments($attachments);
 
             $hasSticker = false;
@@ -3771,8 +3772,10 @@ class FacebookWebhookController extends Controller
                     ]);
                 }
 
+                // 🌙 (2026-09-27) ถึงตรงนี้ = ตรวจรูปไม่ได้ (SlipOK ปิด/โหลดรูปพัง) → ไม่รู้ว่าสลิปหรือรูปอื่น
+                //   ห้ามขึ้นต้นว่า "ขอบคุณที่ส่งสลิป" — เคยตอบแบบนั้นใส่ลูกค้าที่กด 👍 (FTU-260927-T0255)
                 $billRef = $activeReading->bill_reference ?? '-';
-                $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
+                $message = "🌙 ได้รับรูปแล้วค่ะ ขอบคุณนะคะ\n\n"
                     ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
                     ."💡 ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ — ไม่ต้องส่งสลิปให้แอดมินดูค่ะ\n\n"
                     ."🔔 *กรุณากดปุ่ม \"แจ้งชำระเงิน\" หรือพิมพ์ \"โอนแล้ว\"* เพื่อให้ระบบเช็คเร็วขึ้น\n"

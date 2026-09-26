@@ -1561,10 +1561,11 @@ class TelegramFortuneWebhookController extends Controller
                     Log::warning('Telegram: SlipOK store ล้ม (non-blocking)', ['user_id' => $userId, 'error' => $slipErr->getMessage()]);
                 }
 
+                // 🌙 (2026-09-27) ถึงตรงนี้ = ตรวจรูปไม่ได้ → ไม่รู้ว่าสลิปหรือรูปอื่น ห้ามอ้างว่า "ส่งสลิปมา" (คู่แฝด FB)
                 $billRef = $active->bill_reference ?? '-';
                 $this->telegram->sendQuickReplies(
                     $userId,
-                    "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
+                    "🌙 ได้รับรูปแล้วค่ะ ขอบคุณนะคะ\n\n"
                         ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
                         ."💡 ระบบตรวจยอดโอนอัตโนมัติ — ไม่ต้องส่งสลิปให้แอดมินดูค่ะ\n"
                         ."กดปุ่มด้านล่างหรือพิมพ์ \"โอนแล้ว\" เพื่อให้ระบบเช็คเร็วขึ้น\n"
