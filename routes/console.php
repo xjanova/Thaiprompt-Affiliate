@@ -977,3 +977,17 @@ Schedule::command('analytics:aggregate-vendor')
 //   - line:cleanup-conversations — command file ไม่พบ
 // ถ้าต้องการกลับมา → restore command file ก่อน แล้วเพิ่ม Schedule ที่นี่
 // ════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════
+// 🛠️ (2026-09-26) ทุก task ยังรันระหว่างเว็บปิดซ่อม (deploy.sh STEP 3→20 ~60-90 วิ)
+// ════════════════════════════════════════════════════════════════
+// scheduler ข้ามทุก task ที่ไม่ได้ตั้ง evenInMaintenanceMode() ระหว่าง `artisan down`
+//   ⇒ task ที่ตั้งเวลาเป๊ะ (dailyAt 06:00 / 09:00 / HH:00 ของดวงรายวัน ฯลฯ) ถ้าตรงกับช่วง deploy จะหายไปทั้งวัน
+// ก่อน 2026-09-26 git clean ใน deploy.sh ลบไฟล์ storage/framework/down ทิ้ง เว็บเลยไม่เคยปิดจริง
+//   task จึงรันตลอด — คงพฤติกรรมนั้นไว้ ยกเว้นคำสั่ง migrate (ห้ามรันชนกับ migration ของ deploy.sh)
+// ⚠️ ต้องอยู่ท้ายไฟล์เสมอ — task ที่ประกาศหลังบล็อกนี้จะไม่ถูกแตะ
+foreach (Schedule::events() as $scheduledEvent) {
+    if (! str_contains((string) $scheduledEvent->command, ' migrate')) {
+        $scheduledEvent->evenInMaintenanceMode();
+    }
+}

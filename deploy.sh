@@ -844,6 +844,19 @@ print_step 2 22 "Backing up Critical Files (.env, uploads)"
 backup_critical_files
 print_success "Critical files backed up safely"
 
+# 🛑 (2026-09-26) ตั้งแต่ STEP 3 เว็บปิดจริงจนถึง STEP 20 — deploy ตายกลางทาง = เว็บค้าง 503 จนกว่าจะมีคนมา `artisan up`
+#   - ssh จาก GitHub Actions หลุด (deploy.yml รันผ่าน heredoc ไม่มี tty) ⇒ stdout ตาย
+#     echo ครั้งถัดไปโดน SIGPIPE ⇒ สคริปต์ตาย ⇒ ไม่สน SIGPIPE: เขียนหน้าจอไม่ออกก็ทำต่อจนจบ
+#     (ทุกอย่างลง $LOG_FILE ผ่าน tee อยู่แล้ว — tee ที่ไม่โดน SIGPIPE จะข้าม stdout ที่ตายแล้วเขียนไฟล์ต่อ exit 0)
+#   - terminal ปิด (SIGHUP) ⇒ ทำต่อจนจบเหมือนกัน
+#   - มีคนสั่งหยุด (Ctrl-C / kill) ⇒ error_exit: reload PHP-FPM ถ้าโค้ดใหม่ลงแล้ว + เปิดเว็บ แล้วจบ exit 1
+deploy_interrupted() {
+    trap '' INT TERM
+    error_exit "Deployment interrupted by signal - เปิดเว็บคืนแล้ว ตรวจ log แล้ว deploy ใหม่" 1
+}
+trap '' PIPE HUP
+trap deploy_interrupted INT TERM
+
 # Step 3: Enable Maintenance Mode
 print_step 3 22 "Enabling Maintenance Mode"
 
@@ -882,11 +895,12 @@ fi
 
 # Step 4.3: Force reset to match GitHub exactly
 print_info "Force resetting to origin/$BRANCH..."
+# 🏷️ (2026-09-26) ตั้งแต่ reset เริ่ม ไฟล์บนดิสก์อาจเป็นของใหม่แล้ว (แม้ reset จะล้มกลางทาง หรือ tee รายงานผิด)
+#   — error_exit ใช้ธงนี้ตัดสินว่าต้อง reload PHP-FPM + queue:restart ก่อนเปิดเว็บ · reload ตอนไม่มีอะไรเปลี่ยนไม่เสียหาย
+CODE_SYNCED=1
 if ! ( set -o pipefail; git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE" ); then
     error_exit "Failed to reset to origin/$BRANCH" "$?"
 fi
-# 🏷️ (2026-09-26) จากตรงนี้โค้ดใหม่ลงดิสก์แล้ว — error_exit ใช้ธงนี้ตัดสินว่าต้อง reload PHP-FPM + queue:restart ก่อนเปิดเว็บ
-CODE_SYNCED=1
 
 # Step 4.4: Clean all untracked files and directories (SAFE - excludes critical files)
 print_info "Removing untracked files and directories..."
@@ -921,7 +935,16 @@ print_info "Removing untracked files and directories..."
 #                                    ผล: new/changed เป็น 0 ⇒ ข้าม safety analysis + tinker 2 ครั้ง
 #                                    ปลอดภัย: ต่อให้เจอ changed prod ก็ไม่ seed เอง (auto-run ต้องฐานว่าง)
 #                                    และ read -p ตอบ n อัตโนมัติเมื่อไม่มี TTY
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
+#   - 'storage/framework/down' + 'storage/framework/maintenance.php' : (2026-09-26) ไฟล์ที่ `artisan down` (STEP 3) สร้าง
+#                                    ต้องอยู่ใน .gitignore ด้วย ไม่งั้น STEP 4.1 `git stash push -u` กวาดไปก่อนถึงตรงนี้
+#                                    (stash อัตโนมัติบน prod มีทั้ง 2 ไฟล์จริง)
+#                                    storage/framework/ ทั้งโฟลเดอร์ไม่อยู่ใน git ⇒ -x ลบทั้งก้อน (log จริง: "Removing storage/framework/")
+#                                    ⇒ เว็บเปิดกลับเองตั้งแต่ตรงนี้ STEP 20 ขึ้น "Application is already up." ทุกรอบ
+#                                    และรับ traffic ตลอด deploy ขณะโค้ดใหม่ปน OPcache เก่า
+#                                    ทดสอบแล้วบน git 2.34.1 (prod) + 2.53: เก็บ 2 ไฟล์นี้ ลบ cache/sessions/views ตามเดิม
+#                                    (STEP 4.7 สร้างโฟลเดอร์คืน) · webhook ยังเข้าได้ — รายการยกเว้นอยู่ใน
+#                                    app/Http/Middleware/PreventRequestsDuringMaintenance.php · scheduler: ท้าย routes/console.php
+git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -1984,7 +2007,8 @@ else
     # ลอง start queue worker ใน background (ถ้า Redis/Database มีอยู่)
     QUEUE_DRIVER=$(php artisan tinker --execute="echo config('queue.default');" 2>/dev/null | tail -1)
     if [ "$QUEUE_DRIVER" = "redis" ] || [ "$QUEUE_DRIVER" = "database" ]; then
-        nohup php artisan queue:work "$QUEUE_DRIVER" --queue=fortune-deep --tries=3 --timeout=300 --sleep=5 --max-jobs=50 --max-time=3600 >> storage/logs/queue-fortune-deep.log 2>&1 &
+        # --force: (2026-09-26) ตัวนี้เริ่มตอนเว็บยังปิดซ่อมอยู่ (STEP 13 < STEP 20) — ไม่ใส่ = นั่งรอจนเปิดเว็บ
+        nohup php artisan queue:work "$QUEUE_DRIVER" --queue=fortune-deep --tries=3 --timeout=300 --sleep=5 --max-jobs=50 --max-time=3600 --force >> storage/logs/queue-fortune-deep.log 2>&1 &
         print_success "  ✓ เริ่ม Fortune deep queue worker (PID: $!)"
         QUEUE_STATUS="$QUEUE_STATUS | Fortune: started PID $!"
     else

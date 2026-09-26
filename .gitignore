@@ -6,6 +6,10 @@
 /storage/framework/cache/*
 /storage/framework/sessions/*
 /storage/framework/views/*
+# (2026-09-26) ไฟล์ของ `artisan down` — ต้อง ignore ไม่งั้น deploy.sh STEP 4.1 `git stash push -u` กวาดเข้า stash
+#   = เว็บกลับมาเปิดกลาง deploy (git clean -x ไม่อ่านไฟล์นี้ แต่ deploy.sh สั่ง -e เก็บ 2 ไฟล์นี้ไว้เอง)
+/storage/framework/down
+/storage/framework/maintenance.php
 /vendor
 .env
 .env.backup

@@ -35,9 +35,11 @@ declare -A WORKERS
 spawn_worker() {
   local idx="$1"
   cd "$LARAVEL_DIR" || exit 1
+  # --force (2026-09-26): ทำงานต่อระหว่าง deploy.sh ปิดเว็บซ่อม (STEP 3→20 ~60-90 วิ)
+  #   ไม่ใส่ = worker นั่งรอจนเปิดเว็บ ⇒ job ที่ถือ LINE reply token รอนานจน token หมดอายุ แล้วตกไปใช้ push (โควต้า 300/เดือน)
   "$PHP_BIN" -d memory_limit=512M artisan queue:work redis \
     --queue="$QUEUES" --sleep=1 --tries=3 \
-    --max-time=3600 --timeout=120 --memory=512 &
+    --max-time=3600 --timeout=120 --memory=512 --force &
   WORKERS[$idx]=$!
   echo "$LOG_PREFIX spawned worker #$idx (pid=${WORKERS[$idx]})"
 }

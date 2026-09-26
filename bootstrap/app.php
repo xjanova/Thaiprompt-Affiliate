@@ -42,6 +42,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Request::HEADER_X_FORWARDED_AWS_ELB
         );
 
+        // 🛠️ (2026-09-26) ระหว่างเว็บปิดซ่อม (deploy.sh STEP 3→20) webhook ยังต้องเข้าได้
+        //   รายการ path อยู่ใน App\Http\Middleware\PreventRequestsDuringMaintenance ที่เดียว
+        //   — `artisan down` อ่านจากคลาสนั้นไปฝังในไฟล์ down, ฝั่ง HTTP ต้องใช้คลาสเดียวกัน
+        $middleware->replace(
+            \Illuminate\Foundation\Http\Middleware\PreventRequestsDuringMaintenance::class,
+            \App\Http\Middleware\PreventRequestsDuringMaintenance::class
+        );
+
         // Exclude webhook and API webhook routes from CSRF verification
         $middleware->validateCsrfTokens(except: [
             'webhook/*',
