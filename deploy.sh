@@ -843,14 +843,16 @@ if [[ -n $(git status -s) ]]; then
 fi
 
 # Step 4.2: Fetch all changes from remote
+# 🚨 (2026-09-26) pipefail (subshell) เหมือน STEP 10.6 — เดิม `if` ได้ exit ของ tee (0 เสมอ)
+#   ⇒ fetch/reset ล้มก็ไปต่อเงียบ ๆ แล้ว deploy โค้ดเก่า (origin/$BRANCH ค้างจากรอบก่อน) ทั้งที่ขึ้นว่าสำเร็จ
 print_info "Fetching latest code from origin/$BRANCH..."
-if ! git fetch origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
+if ! ( set -o pipefail; git fetch origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE" ); then
     error_exit "Failed to fetch from git - อาจเป็นปัญหาการเชื่อมต่อ" "$?"
 fi
 
 # Step 4.3: Force reset to match GitHub exactly
 print_info "Force resetting to origin/$BRANCH..."
-if ! git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
+if ! ( set -o pipefail; git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE" ); then
     error_exit "Failed to reset to origin/$BRANCH" "$?"
 fi
 
@@ -1042,7 +1044,9 @@ smart_composer_install() {
         print_info "Running composer install..."
         composer clear-cache 2>/dev/null || true
 
-        if ! composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+        # 🚨 (2026-09-26) pipefail (subshell) — เดิม install ล้มก็ไปต่อ แล้วบันทึก checksum ข้างล่างว่าติดตั้งแล้ว
+        #   ⇒ deploy รอบถัด ๆ ไปข้าม install ตลอด (lock ไม่เปลี่ยน) vendor พังค้างจนกว่า composer.lock จะเปลี่ยน
+        if ! ( set -o pipefail; composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE" ); then
             error_exit "Composer install failed - อาจเป็นปัญหา network หรือ Packagist" "$?"
         fi
 
@@ -1201,7 +1205,8 @@ else
     print_info "🔧 Attempting automatic schema repair..."
     echo ""
 
-    if php artisan schema:verify --auto-fix --force 2>&1 | tee -a "$LOG_FILE"; then
+    # 🚨 (2026-09-26) pipefail (subshell) — เดิมขึ้น "auto-repair completed successfully" เสมอแม้ ALTER ล้ม/ตารางหาย
+    if ( set -o pipefail; php artisan schema:verify --auto-fix --force 2>&1 | tee -a "$LOG_FILE" ); then
         print_success "✓ Schema auto-repair completed successfully!"
         echo ""
         log "Schema auto-repair: SUCCESS"
@@ -1740,7 +1745,8 @@ else
             # Auto-run if database is empty
             if [ "$USER_COUNT" = "0" ] || [ "$EMAIL_TEMPLATE_COUNT" = "0" ]; then
                 print_warning "⚠ Database appears empty - Auto-running seeders..."
-                if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
+                # (2026-09-26) pipefail (subshell) — ให้ log บอกผลจริงของ db:seed ไม่ใช่ของ tee (กิ่งล้มยังไปต่อเหมือนเดิม)
+                if ! ( set -o pipefail; php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE" ); then
                     print_warning "Seeding failed (continuing anyway)"
                 else
                     print_success "✓ Database seeded successfully"
@@ -1765,7 +1771,7 @@ else
 
                 if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
                     print_info "Running database seeders..."
-                    if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
+                    if ! ( set -o pipefail; php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE" ); then
                         print_warning "Seeding failed (continuing anyway)"
                     else
                         print_success "✓ Database seeded successfully"
@@ -1980,7 +1986,9 @@ echo ""
 
 # Step 15: Cache Configuration
 print_step 15 22 "Caching Configuration"
-if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
+# 🚨 (2026-09-26) pipefail (subshell) — เดิม config:cache ล้มก็ไม่เคยเข้า error_exit (ได้ exit ของ tee)
+#   แล้ว STEP 18 ล้าง cache ทิ้งเงียบ ๆ ⇒ prod วิ่งแบบไม่มี config cache โดยไม่มีใครรู้
+if ! ( set -o pipefail; php artisan config:cache 2>&1 | tee -a "$LOG_FILE" ); then
     error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
 fi
 print_success "Configuration cached"
