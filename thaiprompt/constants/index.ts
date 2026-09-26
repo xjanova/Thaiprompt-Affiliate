@@ -37,7 +37,6 @@ export const API_ENDPOINTS = {
 
   // Commissions
   COMMISSIONS: '/dashboard/commissions',
-  COMMISSION_DETAILS: '/dashboard/commissions/{id}',
 
   // Referrals
   REFERRALS: '/dashboard/referrals',
@@ -51,7 +50,6 @@ export const API_ENDPOINTS = {
   // Cart
   CART: '/cart',
   CART_ADD: '/cart/add',
-  CART_REMOVE: '/cart/remove',
 
   // Wallet (Mobile App)
   WALLET: '/wallet',
@@ -62,7 +60,6 @@ export const API_ENDPOINTS = {
 
   // KYC (Mobile App)
   KYC_STATUS: '/kyc/status',
-  KYC_SUBMIT: '/kyc/submit',
   KYC_UPLOAD: '/kyc/upload',
   KYC_CONFIRM: '/kyc/confirm',
 
@@ -99,16 +96,6 @@ export const API_ENDPOINTS = {
   PUSH_PENDING: '/mobile/push/pending',
   PUSH_BULK_CONFIRM: '/mobile/push/bulk-confirm',
   PUSH_ANALYTICS: '/mobile/push/analytics',
-
-  // Tarot / Fortune Telling (Mobile App)
-  TAROT_CATEGORIES: '/tarot/categories',
-  TAROT_SPREAD_TYPES: '/tarot/spread-types',
-  TAROT_START_READING: '/tarot/start',
-  TAROT_CARDS: '/tarot/cards',
-  TAROT_CARD_BACKS: '/tarot/card-backs',
-  TAROT_SAVE_SELECTION: '/tarot/save-selection',
-  TAROT_READING: '/tarot/reading', // + /{readingId}
-  TAROT_HISTORY: '/tarot/history',
 
   // (2026-09-25) PLAY-07: endpoint ของ Rank / สายงาน / คอมมิชชั่นหลายชั้น / ผัง MLM ถูกถอดออกจากแอป
 
@@ -165,7 +152,7 @@ export const STORAGE_KEYS = {
 // =====================================================
 
 export const APP_CONFIG = {
-  NAME: 'TP UltraAPP',
+  NAME: 'Thai Prompt APP',
   VERSION: '1.5.0',
   DEFAULT_PAGE_SIZE: 20,
   MAX_PAGE_SIZE: 100,

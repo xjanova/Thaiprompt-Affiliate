@@ -15,7 +15,7 @@
 // =====================================================
 
 export const APP_INFO = {
-  NAME: 'TP UltraAPP',
+  NAME: 'Thai Prompt APP',
   VERSION: '3.384.0',
   BUILD_NUMBER: 41,
   BUILD_DATE: '2026-09-25',

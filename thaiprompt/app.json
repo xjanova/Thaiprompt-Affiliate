@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "TP UltraAPP",
+    "name": "Thai Prompt APP",
     "slug": "thaiprompt",
     "version": "3.384.0",
     "orientation": "portrait",
@@ -75,7 +75,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/notification-icon.png",
-          "color": "#3B82F6"
+          "color": "#CFA349"
         }
       ],
       [
