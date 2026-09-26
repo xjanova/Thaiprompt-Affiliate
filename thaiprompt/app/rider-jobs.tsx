@@ -42,7 +42,6 @@ import { useAcceptJob } from '@/components/rider/useAcceptJob';
 import { formatKm, formatMinutes, formatTime } from '@/components/rider/riderHelpers';
 import {
   LiveDot,
-  MapRouteStrip,
   MapTag,
   NavyCard,
   NoticeCard,
@@ -82,14 +81,12 @@ const JobCard: React.FC<{
   onSkip: () => Promise<void>;
   onOpen: () => void;
 }> = ({ job, accepting, disabled, onAccept, onSkip, onOpen }) => {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const tones = useRiderTones();
   const toPickup = formatKm(job.distance_to_pickup_km);
   const tripKm = formatKm(job.distance_km);
   const eta = formatMinutes(job.estimated_duration_minutes);
   const highlight = job.rider_earnings >= 60;
-  // มุมแผนที่ต้องเล็กกว่าการ์ดเท่าความหนาขอบ (ขอบทอง 1.5 / ขอบกระจกโหมดมืด 1)
-  const mapRadius = radii.xl - (highlight ? 1.5 : isDark ? 1 : 0);
 
   return (
     <Card3D
@@ -101,16 +98,13 @@ const JobCard: React.FC<{
       accessibilityLabel={`งาน ${job.title} ได้รับ ${job.rider_earnings} บาท`}
       accessibilityHint="แตะเพื่อดูรายละเอียดงาน"
     >
-      <MapRouteStrip from={job.pickup} to={job.dropoff} seed={job.id} radius={mapRadius}>
-        <View style={styles.mapTags}>
+      <View style={styles.cardBody}>
+        <View style={styles.jobTags}>
           <MapTag icon={jobTypeIcon(job.job_type)} label={job.job_type_text || 'งานส่ง'} />
           {!!job.created_at && (
             <MapTag icon="clock" label={formatTime(job.created_at)} iconColor={colors.textMuted} />
           )}
         </View>
-      </MapRouteStrip>
-
-      <View style={styles.cardBody}>
         <View style={styles.routeRow}>
           <RouteStops
             style={styles.flex}
@@ -533,11 +527,12 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: spacing.lg,
   },
-  mapTags: {
+  jobTags: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   cardBody: {
     paddingHorizontal: spacing.lg,

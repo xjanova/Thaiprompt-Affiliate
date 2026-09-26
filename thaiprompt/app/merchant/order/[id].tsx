@@ -346,13 +346,13 @@ export default function MerchantOrderDetailScreen() {
               <Button3D title="ยืนยันรับออเดอร์" icon="check-circle" size="lg" fullWidth loading={acting === 'confirm'} disabled={!!acting} onPress={confirmOrder} />
             )}
             {allowed.has('request_rider') && (
-              <Button3D title="เรียกไรเดอร์" icon="moped" variant="success" size="lg" fullWidth loading={acting === 'request_rider'} disabled={!!acting} onPress={requestRider} />
+              <Button3D title="เรียกไรเดอร์" icon="moped" variant="primary" size="lg" fullWidth loading={acting === 'request_rider'} disabled={!!acting} onPress={requestRider} />
             )}
             {allowed.has('ship') && (
               <Button3D title="แจ้งจัดส่งพัสดุ" icon="package" size="lg" fullWidth loading={acting === 'ship'} disabled={!!acting} onPress={openShip} />
             )}
             {allowed.has('deliver') && (
-              <Button3D title="ยืนยันส่งถึงแล้ว" icon="seal-check" variant="success" size="md" fullWidth loading={acting === 'deliver'} disabled={!!acting} onPress={markDelivered} />
+              <Button3D title="ยืนยันส่งถึงแล้ว" icon="seal-check" variant="primary" size="md" fullWidth loading={acting === 'deliver'} disabled={!!acting} onPress={markDelivered} />
             )}
             {allowed.has('cancel') && (
               <Button3D

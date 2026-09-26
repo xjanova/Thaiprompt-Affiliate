@@ -51,7 +51,7 @@
 | `RoyalHeader` + `GlassIconButton` | หน้าที่มีหัวใหญ่ของตัวเอง (หน้าแรก ตลาดสด ไรเดอร์ กระเป๋าเงิน) |
 | `Icon` | ไอคอนเส้น — ชื่อดูใน `components/ui/iconPaths.ts` (164 ตัว) · `weight="fill"` สถานะเลือก · `"bold"` บางตัว |
 | `BrandArt` | ภาพ 3D: basket(ตลาดสด) cart(รถเข็น) bag(ช้อป) scooter(ไรเดอร์) store(ร้าน) wallet gift(ชวนเพื่อน) tarot |
-| `Button3D` | variant `primary`(ทอง—การกระทำหลัก) `navy`(น้ำเงินตัวทอง) `secondary`(ขาว) `success` `danger` `ghost` · `icon`/`iconRight` = ชื่อไอคอน |
+| `Button3D` | variant `primary`(ทอง—การกระทำหลัก) `navy`(น้ำเงินตัวทอง) `secondary`(ขาว) `success`(เขียว — เฉพาะปุ่ม LINE) `danger` `ghost` · **ปุ่มยืนยัน/รับงาน/ส่งสำเร็จ/เปิดร้าน = `primary` ทองเสมอ** เขียวใช้แสดงสถานะเท่านั้น (เจ้าของเคาะ 2026-09-26) · `icon`/`iconRight` = ชื่อไอคอน |
 | `Card3D` | การ์ดขาวเงานุ่ม · `variant="inset"` กล่องสรุป · `gradientBorder` เฉพาะการ์ดสำคัญมาก |
 | `Chip` / `Pill` | ตัวกรอง (เลือก = เม็ดน้ำเงินตัวทอง) / ป้ายสถานะ `tone` |
 | `SectionHeader` | หัวข้อส่วน + "ดูทั้งหมด ›" |

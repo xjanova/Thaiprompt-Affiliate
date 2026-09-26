@@ -1008,7 +1008,7 @@ export default function RiderJobDetailScreen() {
             <Button3D
               title="นำทางไปหาลูกค้า"
               icon="navigation-arrow"
-              variant="success"
+              variant="primary"
               size="sm"
               onPress={() => openNavigation({ latitude: live.latitude, longitude: live.longitude })}
               style={styles.alignStart}
@@ -1237,7 +1237,7 @@ export default function RiderJobDetailScreen() {
             <Button3D
               title="ยืนยันส่งสำเร็จ"
               icon="seal-check"
-              variant="success"
+              variant="primary"
               size="lg"
               fullWidth
               disabled={!photoUri || (job.cod_amount > 0 && !codConfirmed)}

@@ -231,7 +231,7 @@ export default function MerchantScreen() {
                   title="ไปที่ร้านตลาดสด"
                   icon="basket"
                   iconRight="arrow-right"
-                  variant="success"
+                  variant="primary"
                   size="md"
                   fullWidth
                   onPress={() => router.replace('/merchant/taladsod' as never)}

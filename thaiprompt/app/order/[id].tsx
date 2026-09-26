@@ -898,7 +898,7 @@ export default function OrderDetailScreen() {
 
       {/* ---------- ปุ่มดำเนินการ ---------- */}
       {order.can_confirm_received && (
-        <Button3D title="ได้รับสินค้าแล้ว" icon="check-circle" variant="success" size="lg" fullWidth onPress={confirmReceived} style={styles.gapTop} />
+        <Button3D title="ได้รับสินค้าแล้ว" icon="check-circle" variant="primary" size="lg" fullWidth onPress={confirmReceived} style={styles.gapTop} />
       )}
       {order.can_cancel && (
         <Button3D

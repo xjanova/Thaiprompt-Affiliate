@@ -4,7 +4,7 @@
  * - แผงบนสุด = น้ำเงินกรมท่าลายกนก + วงเรดาร์ภาพร้าน 3D + สวิตช์ใหญ่ (แบบการ์ด "ออนไลน์" ของไรเดอร์)
  *   ร้านเปิด = เรืองเขียว + วงเรดาร์เต้นเบาๆ · ร้านปิด = โทนกระจกเรียบ
  *   สวิตช์ใหญ่เรียก onOpen / onClose ตัวเดียวกับปุ่มด้านล่าง (ใช้ตัวกันกดซ้ำร่วมกัน)
- * - ปิดอยู่: ปุ่มใหญ่ "เปิดร้านที่นี่วันนี้" + จำนวนผู้ติดตามที่จะได้รับแจ้งเตือน
+ * - ปิดอยู่: ปุ่มใหญ่สีทอง "เปิดร้านที่นี่วันนี้" + จำนวนผู้ติดตามที่จะได้รับแจ้งเตือน
  * - เปิดอยู่: จุดขาย, เวลาปิดอัตโนมัติ, สถานะการส่งตำแหน่งสด, ย้ายจุดขาย, ปิดร้าน
  * - สลับ "ร้านเคลื่อนที่ (รถเข็น/ตลาดนัด)" ได้ที่ท้ายการ์ด
  */
@@ -261,7 +261,7 @@ export const PresenceCard: React.FC<PresenceCardProps> = ({
             <Button3D
               title={needsGps ? 'เปิดร้านที่นี่วันนี้' : 'เปิดร้านวันนี้'}
               icon="storefront"
-              variant="success"
+              variant="primary"
               size="lg"
               fullWidth
               loading={openGuard.busy}
@@ -339,7 +339,7 @@ export const PresenceCard: React.FC<PresenceCardProps> = ({
                   <Button3D
                     title="เริ่มส่งตำแหน่งจากเครื่องนี้"
                     icon="broadcast"
-                    variant="success"
+                    variant="primary"
                     size="sm"
                     onPress={onResumeLive}
                     style={styles.resume}

@@ -481,7 +481,7 @@ export default function TarotHomeScreen() {
                 />
                 <Button3D
                   title="ยืนยันหักเงิน"
-                  variant="success"
+                  variant="primary"
                   icon="check-circle"
                   onPress={handleConfirmPayment}
                   style={styles.flex}

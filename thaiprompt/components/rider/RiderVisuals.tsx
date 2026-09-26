@@ -12,13 +12,11 @@ import {
   Pressable,
   StyleSheet,
   View,
-  type LayoutChangeEvent,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 import Animated, {
   Easing,
   cancelAnimation,
@@ -50,7 +48,6 @@ import {
   type ThemeColors,
   type Tone,
 } from '@/theme';
-import { num } from '@/services/api/client';
 
 // =====================================================
 // สีเฉพาะหน้าไรเดอร์
@@ -443,171 +440,10 @@ export const RouteStops: React.FC<{ stops: RouteStop[]; style?: StyleProp<ViewSt
 };
 
 // =====================================================
-// แผนที่ประกอบ + เส้นทาง (ภาพประกอบ ไม่ใช่แผนที่จริง)
+// ป้ายเล็ก (ประเภทงาน · เวลา)
 // =====================================================
 
-const MAP_ART = require('@/assets/images/brand/map-light.webp');
-/** สัดส่วนภาพแผนที่ (กว้าง 1000 × สูง 563) */
-const MAP_RATIO = 1000 / 563;
-
-type LatLngLike = { latitude?: unknown; longitude?: unknown } | null | undefined;
-
-/**
- * ทิศจากจุดรับไปจุดส่งบนจอ (x ขวา = ตะวันออก · y ลง = ใต้) เป็นเวกเตอร์หนึ่งหน่วย
- * ไม่มีพิกัด/พิกัด 0,0/จุดเดียวกัน = null
- */
-const routeDirection = (from: LatLngLike, to: LatLngLike): { x: number; y: number } | null => {
-  if (!from || !to) return null;
-  const la1 = num(from.latitude, NaN);
-  const lo1 = num(from.longitude, NaN);
-  const la2 = num(to.latitude, NaN);
-  const lo2 = num(to.longitude, NaN);
-  if (![la1, lo1, la2, lo2].every(Number.isFinite)) return null;
-  if ((la1 === 0 && lo1 === 0) || (la2 === 0 && lo2 === 0)) return null;
-  const x = (lo2 - lo1) * Math.cos((la1 * Math.PI) / 180);
-  const y = -(la2 - la1);
-  const length = Math.hypot(x, y);
-  if (length < 1e-7) return null;
-  return { x: x / length, y: y / length };
-};
-
-/** เลขสุ่มคงที่ 0..1 จาก seed (ให้แต่ละงานได้มุมแผนที่ไม่ซ้ำกัน แต่ไม่เปลี่ยนทุก render) */
-const seeded = (seed: number, salt: number): number => {
-  const x = Math.sin((seed + 1) * 12.9898 + salt * 78.233) * 43758.5453;
-  return x - Math.floor(x);
-};
-
-export interface MapRouteStripProps {
-  from?: LatLngLike;
-  to?: LatLngLike;
-  /** เลือกมุมแผนที่/ความโค้งของเส้น (เช่น job.id) */
-  seed: number;
-  height?: number;
-  /** มุมโค้งด้านบน ให้ตรงกับการ์ด */
-  radius?: number;
-  /** ป้ายลอยบนแผนที่ */
-  children?: React.ReactNode;
-}
-
-/**
- * แถบแผนที่ประกอบหัวการ์ดงาน — เส้นทองจากจุดรับ (ทอง) ไปจุดส่ง (น้ำเงิน)
- * ทิศของเส้นอิงพิกัดจริงของงาน (ถ้ามี) แต่ภาพพื้นเป็นภาพประกอบของแบรนด์
- */
-export const MapRouteStrip: React.FC<MapRouteStripProps> = ({ from, to, seed, height = 104, radius = radii.xl, children }) => {
-  const { colors, isDark } = useTheme();
-  const tones = useRiderTones();
-  const [width, setWidth] = useState(0);
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    const w = Math.round(event.nativeEvent.layout.width);
-    if (w > 0 && w !== width) setWidth(w);
-  };
-
-  const geometry = useMemo(() => {
-    if (width <= 0) return null;
-    // ภาพขยายใหญ่กว่ากรอบ แล้วเลื่อนมุมตาม seed
-    const imgW = Math.max(width * 1.55, height * MAP_RATIO * 1.2);
-    const imgH = imgW / MAP_RATIO;
-    const left = -(imgW - width) * seeded(seed, 1);
-    const top = -(imgH - height) * seeded(seed, 2);
-
-    // เส้นทาง: ปลายสองด้านอยู่ในกรอบ (เว้นขอบให้ป้ายด้านบน)
-    const dir = routeDirection(from, to) ?? { x: 0.94, y: -0.34 };
-    const padX = 30;
-    const padTop = 34;
-    const padBottom = 20;
-    const cx = width / 2;
-    const cy = padTop + (height - padTop - padBottom) / 2;
-    const ax = Math.max(1, width / 2 - padX);
-    const ay = Math.max(1, (height - padTop - padBottom) / 2);
-    const t = 1 / Math.max(Math.abs(dir.x) / ax, Math.abs(dir.y) / ay);
-    const p1 = { x: cx - dir.x * t, y: cy - dir.y * t };
-    const p2 = { x: cx + dir.x * t, y: cy + dir.y * t };
-    // จุดควบคุมเส้นโค้ง: ตั้งฉากกับเส้นตรง โค้งซ้าย/ขวาตาม seed
-    const length = Math.hypot(p2.x - p1.x, p2.y - p1.y);
-    const bend = (seeded(seed, 3) > 0.5 ? 1 : -1) * Math.max(14, length * 0.2);
-    const c = {
-      x: Math.min(width - 8, Math.max(8, (p1.x + p2.x) / 2 - dir.y * bend)),
-      y: Math.min(height - 8, Math.max(8, (p1.y + p2.y) / 2 + dir.x * bend)),
-    };
-    return { imgW, imgH, left, top, p1, p2, c };
-  }, [width, height, seed, from, to]);
-
-  const dot = (kind: StopKind, point: { x: number; y: number }) => {
-    const size = 16;
-    const fill = kind === 'pickup' ? tones.pickup : tones.dropoff;
-    return (
-      <View
-        style={[
-          styles.mapDot,
-          {
-            left: point.x - size / 2,
-            top: point.y - size / 2,
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            backgroundColor: fill,
-            borderColor: colors.card,
-          },
-          shadowStyle('sm', colors.shadowDark),
-        ]}
-      />
-    );
-  };
-
-  return (
-    <View
-      onLayout={onLayout}
-      pointerEvents="none"
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={[
-        styles.map,
-        { height, borderTopLeftRadius: radius, borderTopRightRadius: radius, backgroundColor: colors.inset },
-      ]}
-    >
-      {geometry && (
-        <>
-          <Image
-            source={MAP_ART}
-            contentFit="cover"
-            accessible={false}
-            transition={0}
-            style={{
-              position: 'absolute',
-              width: geometry.imgW,
-              height: geometry.imgH,
-              left: geometry.left,
-              top: geometry.top,
-              opacity: isDark ? 0.14 : 1,
-            }}
-          />
-          <Svg width={width} height={height} style={StyleSheet.absoluteFill}>
-            <Path
-              d={`M ${geometry.p1.x} ${geometry.p1.y} Q ${geometry.c.x} ${geometry.c.y} ${geometry.p2.x} ${geometry.p2.y}`}
-              stroke={withAlpha(colors.gold, isDark ? 0.28 : 0.35)}
-              strokeWidth={9}
-              strokeLinecap="round"
-              fill="none"
-            />
-            <Path
-              d={`M ${geometry.p1.x} ${geometry.p1.y} Q ${geometry.c.x} ${geometry.c.y} ${geometry.p2.x} ${geometry.p2.y}`}
-              stroke={colors.gold}
-              strokeWidth={3.5}
-              strokeLinecap="round"
-              fill="none"
-            />
-          </Svg>
-          {dot('pickup', geometry.p1)}
-          {dot('dropoff', geometry.p2)}
-        </>
-      )}
-      <View style={styles.mapOverlay}>{children}</View>
-    </View>
-  );
-};
-
-/** ป้ายเล็กลอยบนแผนที่ */
+/** ป้ายเล็กบนหัวการ์ดงาน */
 export const MapTag: React.FC<{ icon?: IconName; label: string; iconColor?: string }> = ({ icon, label, iconColor }) => {
   const { colors, isDark } = useTheme();
   return (
@@ -816,21 +652,6 @@ const styles = StyleSheet.create({
     width: 2.5,
     height: 2.5,
     borderRadius: 1.25,
-  },
-  map: {
-    overflow: 'hidden',
-  },
-  mapDot: {
-    position: 'absolute',
-    borderWidth: 3,
-  },
-  mapOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: spacing.md,
   },
   mapTag: {
     flexDirection: 'row',

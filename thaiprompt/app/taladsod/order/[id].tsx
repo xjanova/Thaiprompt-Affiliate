@@ -431,7 +431,7 @@ export default function TaladsodOrderScreen() {
         {/* ---------- ปุ่ม ---------- */}
         <View style={styles.actions}>
           {canConfirm && (
-            <Button3D title="ได้รับของแล้ว" icon="check-circle" variant="success" size="lg" fullWidth onPress={() => openSheet('confirm')} />
+            <Button3D title="ได้รับของแล้ว" icon="check-circle" variant="primary" size="lg" fullWidth onPress={() => openSheet('confirm')} />
           )}
           {order.can_review && !canConfirm && (
             <Button3D title="ให้คะแนนร้าน" icon="star" size="lg" fullWidth onPress={() => openSheet('review')} />

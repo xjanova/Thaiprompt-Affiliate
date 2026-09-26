@@ -588,7 +588,7 @@ export default function RiderScreen() {
         <Button3D
           title="เริ่มรับงาน"
           icon="power"
-          variant="success"
+          variant="primary"
           size="lg"
           fullWidth
           disabled={!rider.can_go_online}
