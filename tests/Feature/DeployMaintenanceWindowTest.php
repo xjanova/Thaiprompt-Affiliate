@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Artisan;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
@@ -23,7 +25,7 @@ use Tests\TestCase;
  *         evenInMaintenanceMode() ⇒ deploy คร่อมเวลานั้น = โพสหายทั้งวัน
  *      3. แต่ migrate ต้อง "ไม่" รันระหว่างปิดซ่อม — ชนกับ migration ของ deploy.sh
  *
- * ไม่ใช้ DB — handler ของ webhook จะล้มเพราะต่อ DB ไม่ได้ก็ไม่เป็นไร ขอแค่ไม่ใช่ 503 ของ maintenance
+ * ไม่แตะ DB เลย (ไม่มี RefreshDatabase) — ห้ามเพิ่มเทสต์ที่ยิงเข้า controller จริงในคลาสนี้ ข้อมูลจะค้างข้ามเทสต์
  */
 class DeployMaintenanceWindowTest extends TestCase
 {
@@ -83,15 +85,20 @@ class DeployMaintenanceWindowTest extends TestCase
     {
         $this->assertSame(0, Artisan::call('down'), 'artisan down ต้องสำเร็จ');
 
-        // สนแค่ว่า "ไม่ใช่ 503 ของ maintenance" — handler จะตอบอะไรต่อ (401 ลายเซ็นผิด ฯลฯ) ไม่ใช่เรื่องของเทสต์นี้
-        $this->assertNotSame(503, $this->postJson('/webhook/line/fortune', [])->getStatusCode());
-        $this->assertNotSame(503, $this->postJson('/api/webhook/line', [])->getStatusCode());
-        $this->assertNotSame(503, $this->postJson('/api/v1/sms-payment/notify', [])->getStatusCode());
+        // ⚠️ เรียก middleware ตรง ๆ ห้ามยิงเข้า controller จริง — เทสต์นี้ไม่มี RefreshDatabase
+        //   handler ของ webhook เขียน DB (FortuneTellingSetting::getGlobalSettings() สร้างแถวเองถ้าตารางว่าง)
+        //   แถวนั้นค้างข้ามเทสต์ ทำ FacebookOAuthPsidMatchTest พัง 8 ข้อบน CI (2026-09-26)
+        $middleware = $this->app->make(PreventRequestsDuringMaintenance::class);
+        $next = fn () => new Response('passed');
 
-        // หน้าเว็บโดน maintenance — ดูที่ exception ตรง ๆ ไม่เรนเดอร์หน้า errors/503 (หน้านั้นอ่าน DB)
-        $this->withoutExceptionHandling();
+        foreach (['/webhook/line/fortune', '/webhook/facebook', '/api/webhook/line', '/api/webhook/bot/facebook',
+            '/api/v1/sms-payment/notify', '/api/v1/juntra/server/bills', '/payment/callback/123'] as $uri) {
+            $this->assertSame('passed', $middleware->handle(Request::create($uri, 'POST'), $next)->getContent(), "{$uri} ต้องผ่านระหว่างปิดซ่อม");
+        }
+
+        // หน้าเว็บโดน maintenance
         try {
-            $this->get('/');
+            $middleware->handle(Request::create('/', 'GET'), $next);
             $this->fail('หน้าแรกต้องโดน 503 ระหว่างปิดซ่อม');
         } catch (HttpException $e) {
             $this->assertSame(503, $e->getStatusCode());
