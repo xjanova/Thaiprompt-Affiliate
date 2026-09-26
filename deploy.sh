@@ -1258,13 +1258,23 @@ echo "  • Pending migrations: $PENDING_COUNT"
 echo ""
 
 # Step 10.6: Smart Migration Handler with Auto-Recovery
+# 🚨 (2026-09-26) ทุก pipeline `php artisan migrate... | tee` ต้องรันใน subshell ที่ `set -o pipefail`
+#   ไม่งั้น `if` ได้ exit code ของ tee ตัวสุดท้าย (0 เสมอ) ⇒ migrate ล้มก็ขึ้น "สำเร็จ" และกิ่ง fallback/recovery
+#   ไม่เคยถูกเรียกจริง · จงใจไม่ตั้ง pipefail ทั้งสคริปต์ (บนสุดเป็น `set +e`) เพราะมี `cmd | grep -q` หลายจุด
+#   (git ls-remote, queue:restart, crontab ...) ที่จะกลายเป็นล้มเมื่อ grep -q เจอแล้วปิดท่อก่อน (SIGPIPE 141)
+
+# migration ชื่อนี้ยังค้าง pending อยู่ไหม (-w = ทั้งคำ: ชื่อ ..._table ไม่ไปตรงกับ ..._table_v2)
+migration_is_pending() {
+    php artisan migrate:status --pending 2>/dev/null | grep -qwF "$1"
+}
+
 handle_migration_with_smart_recovery() {
     local migration_output_file="/tmp/migration_output_$$.log"
 
     print_info "→ Executing migrations with smart error recovery..."
 
     # Run migrations and capture output
-    if php artisan migrate --force 2>&1 | tee "$migration_output_file" | tee -a "$LOG_FILE"; then
+    if ( set -o pipefail; php artisan migrate --force 2>&1 | tee "$migration_output_file" | tee -a "$LOG_FILE" ); then
         print_success "✓ Migrations applied successfully!"
         rm -f "$migration_output_file"
         return 0
@@ -1300,6 +1310,22 @@ handle_migration_with_smart_recovery() {
             print_info "→ Found migration: $migration_name"
             echo ""
 
+            # 🛡️ (2026-09-26) ไฟล์ที่ grep "'$table_name'" | head -1 เจอ อาจเป็น migration เก่าที่รันไปแล้ว
+            #   ⇒ บันทึกซ้ำ + ตัวที่ล้มจริงยังค้าง ⇒ migrate ล้มซ้ำ ⇒ ฟังก์ชันเรียกตัวเองวนไม่รู้จบ
+            #   บันทึกได้เฉพาะตัวที่ยัง pending จริง และต้องหลุดจาก pending หลังบันทึก (ดูด้านล่าง) ⇒ การเรียกซ้ำจบแน่นอน
+            if ! migration_is_pending "$migration_name"; then
+                print_error "✗ '$migration_name' is not pending - refusing to register it (the failing migration is another one)"
+                rm -f "$migration_output_file"
+                return 1
+            fi
+
+            # ตัวที่ migrate:smart เพิ่งรายงานว่าล้ม ห้ามบันทึกโดยไม่รัน — ผลของมันยังไม่ครบแน่นอน
+            if [ -n "$SMART_FAILED_MIGRATION" ] && [ "$migration_name" = "$SMART_FAILED_MIGRATION" ]; then
+                print_error "✗ '$migration_name' just failed in migrate:smart - refusing to register it without running it"
+                rm -f "$migration_output_file"
+                return 1
+            fi
+
             print_warning "📋 Auto-Recovery Options:"
             echo "  1. Table exists but migration not recorded"
             echo "  2. Will register migration as completed without running it"
@@ -1320,13 +1346,15 @@ handle_migration_with_smart_recovery() {
                 echo 'Migration registered successfully';
             " 2>&1 | tee -a "$LOG_FILE"
 
-            if [ $? -eq 0 ]; then
+            # เช็คผลจริง: `tinker --execute` คืน 0 เสมอแม้ insert ล้ม (PsySH จับ exception แล้วแค่พิมพ์)
+            #   และ $? ตรงนี้เป็นของ tee ⇒ ดูว่าตัวนี้หลุดจาก pending แล้วจริงแทน
+            if ! migration_is_pending "$migration_name"; then
                 print_success "✓ Migration '$migration_name' registered as completed"
                 echo ""
 
                 # Try running remaining migrations
                 print_info "→ Attempting to run remaining migrations..."
-                if php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
+                if ( set -o pipefail; php artisan migrate --force 2>&1 | tee -a "$LOG_FILE" ); then
                     print_success "✓ All remaining migrations applied successfully!"
                     rm -f "$migration_output_file"
                     return 0
@@ -1406,9 +1434,23 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     echo "  • Create new tables if they don't exist"
     echo "  • Add missing columns to existing tables"
     echo "  • Skip tables/columns that already exist"
+    echo "  • Leave a failing migration pending and exit non-zero (failure inside up() → deploy stops)"
     echo ""
 
-    if php artisan migrate:smart --force 2>&1 | tee -a "$LOG_FILE"; then
+    # 🚨 (2026-09-26) pipefail (subshell) — เดิม `if` ได้ exit ของ tee เสมอ ⇒ migrate:smart ล้มก็ขึ้นว่าสำเร็จ
+    #   exit ของ migrate:smart (ดู docblock ใน app/Console/Commands/SmartMigrate.php):
+    #   0 = สำเร็จ
+    #   1 = migration ล้มใน up() ⇒ หยุด deploy เลย ไม่ fallback — `migrate --force` จะรัน up() ตัวเดิมซ้ำ
+    #       ถ้า up() มี guard (hasTable → return) มันจะ no-op แล้วถูกบันทึกว่ารันแล้ว = บั๊กเดิมกลับมา
+    #   2 = ล้มตอนเพิ่มคอลัมน์ที่ migrate:smart เดาชนิดเอง (up() ยังไม่เคยรัน) ⇒ fallback รัน up() จริงผ่าน migrate
+    SMART_MIGRATE_OUTPUT="/tmp/smart_migrate_output_$$.log"
+    ( set -o pipefail; php artisan migrate:smart --force 2>&1 | tee "$SMART_MIGRATE_OUTPUT" | tee -a "$LOG_FILE" )
+    SMART_MIGRATE_EXIT=$?
+    # ตัวที่ล้มใน migrate:smart — handle_migration_with_smart_recovery ห้าม auto-register ตัวนี้
+    SMART_FAILED_MIGRATION=$(grep -oE '^SMART_MIGRATE_FAILED=[^[:space:]]+' "$SMART_MIGRATE_OUTPUT" 2>/dev/null | head -1 | cut -d= -f2)
+    rm -f "$SMART_MIGRATE_OUTPUT"
+
+    if [ "$SMART_MIGRATE_EXIT" -eq 0 ]; then
         print_success "✓ Smart Migration completed successfully!"
         echo ""
         print_info "→ What was done:"
@@ -1417,12 +1459,26 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
         echo "  • Existing schema preserved safely"
         echo ""
     else
-        print_warning "⚠ Smart Migration failed, falling back to standard migration..."
-        echo ""
+        MIGRATION_RECOVERED=0
+        if [ "$SMART_MIGRATE_EXIT" -eq 2 ]; then
+            print_warning "⚠ Smart Migration failed while adding guessed columns, falling back to standard migration..."
+            echo ""
 
-        # Fallback to migrations with smart error recovery
-        if ! handle_migration_with_smart_recovery; then
-            print_critical "Migration failed after auto-recovery attempts!"
+            # Fallback to migrations with smart error recovery
+            if handle_migration_with_smart_recovery; then
+                MIGRATION_RECOVERED=1
+            fi
+        else
+            print_error "✗ Smart Migration failed (exit $SMART_MIGRATE_EXIT) - the failed migration stays pending, NOT falling back"
+            echo "  • Re-running the same up() via 'migrate --force' could record a half-applied migration as ran"
+            if [ -n "$SMART_FAILED_MIGRATION" ]; then
+                echo "  • Failed migration: $SMART_FAILED_MIGRATION"
+            fi
+            echo ""
+        fi
+
+        if [ "$MIGRATION_RECOVERED" != "1" ]; then
+            print_critical "Database migration failed!"
             echo ""
             print_warning "→ Rollback information:"
             echo "  • Backup file: $MIGRATION_BACKUP"
