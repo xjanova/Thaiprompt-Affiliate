@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\RunsDataMigrations;
 use Tests\TestCase;
 
 /**
@@ -18,12 +19,17 @@ use Tests\TestCase;
 class AppBannerApiTest extends TestCase
 {
     use RefreshDatabase;
+    use RunsDataMigrations;
+
+    private const LAUNCH_BANNERS_MIGRATION = '2026_09_26_133100_seed_launch_app_campaign_banners.php';
 
     protected function setUp(): void
     {
         parent::setUp();
 
         Cache::flush();
+        // แบนเนอร์เปิดตัวมาจาก data migration — CI โหลด schema dump ที่ข้ามมันไป ต้องใส่เอง
+        $this->runDataMigration(self::LAUNCH_BANNERS_MIGRATION);
     }
 
     public function test_launch_banners_are_seeded_once_with_absolute_images(): void
@@ -57,8 +63,7 @@ class AppBannerApiTest extends TestCase
 
         // รัน data migration ซ้ำไม่ใส่ซ้ำ และไม่ทับที่แอดมินแก้
         MobileBanner::where('campaign_key', 'launch-2026-rider-recruit')->update(['title' => 'แก้โดยแอดมิน']);
-        $migration = require database_path('migrations/2026_09_26_133100_seed_launch_app_campaign_banners.php');
-        $migration->up();
+        $this->runDataMigration(self::LAUNCH_BANNERS_MIGRATION);
         $this->assertSame(4, MobileBanner::where('campaign_key', 'like', 'launch-2026-%')->count());
         $this->assertSame('แก้โดยแอดมิน', MobileBanner::where('campaign_key', 'launch-2026-rider-recruit')->value('title'));
     }

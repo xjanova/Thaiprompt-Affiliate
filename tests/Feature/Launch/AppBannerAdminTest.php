@@ -8,6 +8,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\RunsDataMigrations;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,7 @@ use Tests\TestCase;
 class AppBannerAdminTest extends TestCase
 {
     use RefreshDatabase;
+    use RunsDataMigrations;
 
     private User $admin;
 
@@ -29,6 +31,8 @@ class AppBannerAdminTest extends TestCase
         $this->withoutVite();
         Storage::fake('public');
         Cache::flush();
+        // แบนเนอร์เปิดตัวมาจาก data migration — CI โหลด schema dump ที่ข้ามมันไป ต้องใส่เอง
+        $this->runDataMigration('2026_09_26_133100_seed_launch_app_campaign_banners.php');
         $this->admin = User::factory()->create(['role' => 'admin']);
     }
 

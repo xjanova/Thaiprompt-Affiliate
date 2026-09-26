@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\Pricing\PricingEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\RunsDataMigrations;
 use Tests\TestCase;
 
 /**
@@ -18,6 +19,7 @@ use Tests\TestCase;
 class PricingSettingsAdminTest extends TestCase
 {
     use RefreshDatabase;
+    use RunsDataMigrations;
 
     private User $admin;
 
@@ -26,6 +28,8 @@ class PricingSettingsAdminTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
+        // ค่า pricing เริ่มต้น (GP ฟรีช่วงเปิดตัว) มาจาก data migration — CI โหลด schema dump ที่ข้ามมันไป ต้องใส่เอง
+        $this->runDataMigration('2026_09_25_120000_add_admin_gp_rate_and_pricing_settings.php');
         $this->admin = User::factory()->create(['role' => 'admin']);
     }
 
