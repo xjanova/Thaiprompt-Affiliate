@@ -31,6 +31,21 @@ return [
     'force_https' => env('FORCE_HTTPS', false),
     'ffmpeg_path' => env('FFMPEG_PATH', 'ffmpeg'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Auto Migrate (ร้านลูกค้าที่ไม่ได้ deploy ด้วย deploy.sh)
+    |--------------------------------------------------------------------------
+    |
+    | true  = scheduler รัน `php artisan migrate --force` วันละครั้ง 04:10
+    |         เป็นโปรเซสแยก (App\Console\AutoMigrateSchedule)
+    | false = ไม่รันเอง (ค่าเริ่มต้นทุก environment) — prod ใช้ deploy.sh (migrate:smart)
+    |
+    | ⚠️ ห้ามเปิดบนเซิร์ฟเวอร์ที่ deploy ด้วย deploy.sh — จะมีตัวรัน migration 2 ตัวแย่งกัน
+    | แอปไม่เคยรัน migrate ตอนบูตอีกแล้ว ไม่ว่าค่านี้จะเป็นอะไร
+    |
+    */
+    'auto_migrate' => (bool) env('APP_AUTO_MIGRATE', false),
+
     'url' => env('APP_URL', 'http://localhost'),
     'timezone' => 'Asia/Bangkok',
     'locale' => 'th',

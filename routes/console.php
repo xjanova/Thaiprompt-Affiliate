@@ -972,6 +972,13 @@ Schedule::command('analytics:aggregate-vendor')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 🗄️ (2026-09-26) Auto-migrate — เฉพาะร้านลูกค้าที่ตั้ง APP_AUTO_MIGRATE=true (prod ปิด)
+// ════════════════════════════════════════════════════════════════
+// แทนการรัน migrate ตอนบูตแอปใน AppServiceProvider — เหตุผลอยู่ใน App\Console\AutoMigrateSchedule
+// ปิดอยู่ = ไม่ลงทะเบียนอะไรเลย ; deploy.sh (migrate:smart) เป็นตัวรัน migration ตัวเดียวบน prod
+\App\Console\AutoMigrateSchedule::register(app(\Illuminate\Console\Scheduling\Schedule::class));
+
+// ════════════════════════════════════════════════════════════════
 // ⚠️ DROPPED (commands ไม่อยู่ใน artisan list)
 //   - snake-game:spawn-items     — command file ไม่พบ
 //   - line:cleanup-conversations — command file ไม่พบ
