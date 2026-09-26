@@ -40,7 +40,7 @@ class SmartMigrate extends Command
 {
     private const EXIT_MIGRATION_FAILED = 1;
 
-    /** ตารางจำ migration ที่ล้มข้าม deploy — 2026_09_26_180000_create_smart_migrate_failures_table */
+    /** ตารางจำ migration ที่ล้มข้าม deploy — 2026_09_26_200000_create_smart_migrate_failures_table */
     private const FAILURES_TABLE = 'smart_migrate_failures';
 
     /** คำแรกของคำสั่ง SQL ที่ไม่เปลี่ยนฐานข้อมูล (guard อย่าง hasTable/hasColumn = SELECT จาก information_schema) */
