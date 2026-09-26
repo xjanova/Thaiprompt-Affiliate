@@ -252,6 +252,11 @@
         }
     </style>
 
+    {{-- ธีมโนวา: แถบหัวอยู่ในเลย์เอาต์ (เรนเดอร์หลัง stack) จึงโหลดสไตล์ตรงนี้เอง --}}
+    @if(config('shop.nova_public', true))
+        <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
+    @endif
     @stack('styles')
 
     {{-- Structured Data (Schema.org JSON-LD) — Organization + WebSite สำหรับ Google AI Overviews / Gemini --}}
@@ -259,6 +264,10 @@
 </head>
 <body class="antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
 
+    @if(config('shop.nova_public', true))
+        {{-- ธีมโนวา: แถบหัวชุดเดียวกับหน้าสาธารณะอื่น — แบบทึบลอยติดบน (หน้าในเลย์เอาต์นี้เว้นที่ด้านบนไว้ให้แถบหัวแบบลอยอยู่แล้ว) --}}
+        <x-nova.header :solid="true" :fixed="true" :search="true" :active="request()->is('horoscope*') ? 'fortune' : ''" />
+    @else
     {{-- ================================================================
         TOP NAVIGATION BAR - Fixed
     ================================================================ --}}
@@ -503,6 +512,8 @@
             </div>
         </div>
     </div>
+
+    @endif
 
     {{-- ================================================================
         MAIN CONTENT

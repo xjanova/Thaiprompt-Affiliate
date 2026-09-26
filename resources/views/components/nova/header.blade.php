@@ -13,6 +13,7 @@
  |   searchAction/searchName/searchValue/searchPlaceholder  ปลายทางและช่องค้นหา
  |   suggest           bool         แนะนำสินค้าขณะพิมพ์ (เฉพาะค้นหาร้านค้าออนไลน์)
  |   sticky            bool         ติดขอบบนเมื่อเลื่อน (ใช้กับ solid)
+ |   fixed             bool         แถบทึบแบบลอยทับ (เลย์เอาต์ที่เว้นที่ด้านบนให้แถบหัวแบบลอยไว้แล้ว เช่น layouts.landing)
  --}}
 @props([
     'active' => 'home',
@@ -26,6 +27,7 @@
     'searchPlaceholder' => 'ค้นหาสินค้า ร้านค้า หรือหมวดหมู่...',
     'suggest' => true,
     'sticky' => true,
+    'fixed' => false,
 ])
 
 @php
@@ -80,13 +82,13 @@
 @if($solid)
     @once
         @push('styles')
-            <link href="https://fonts.googleapis.com/css2?family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+            <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
             <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ $nvVer('theme-nova/nova.css') }}">
         @endpush
     @endonce
 @endif
 
-<header id="nv-nav" class="nv-nav {{ $solid ? 'nv-nav--solid is-solid' : '' }} {{ $solid && ! $sticky ? 'nv-nav--static' : '' }}"
+<header id="nv-nav" class="nv-nav {{ $solid ? 'nv-nav--solid is-solid' : '' }} {{ $solid && ! $sticky ? 'nv-nav--static' : '' }} {{ $solid && $fixed ? 'nv-nav--fixed' : '' }}"
         x-data="{ open: false, merchantOpen: false, searchOpen: {{ $nvSearchOn && $nvSearchValue !== '' ? 'true' : 'false' }}, cartCount: {{ (int) $nvCartCount }},
                   q: @js($nvSearchValue), items: [], timer: null,
                   suggest() {

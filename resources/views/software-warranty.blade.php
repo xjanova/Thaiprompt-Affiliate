@@ -19,6 +19,8 @@
 @endpush
 
 @section('content')
+{{-- แถบหัว/ท้ายสาธารณะ (เปิด shop.nova_public = ธีมโนวา) — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
+<x-theme-v4.public-header />
 <div style="max-width:920px; margin:0 auto; padding:40px clamp(16px,3vw,40px) 60px;">
     <div style="text-align:center; margin-bottom:28px;">
         <div class="tp-tile" style="width:64px; height:64px; border-radius:20px; font-size:30px; margin:0 auto 16px;">🛡️</div>
@@ -88,4 +90,5 @@
         <a href="{{ url('/') }}" class="tp-btn tp-btn-sm" style="text-decoration:none;"><i class="fas fa-arrow-left"></i> <span>กลับหน้าแรก</span></a>
     </div>
 </div>
+<x-theme-v4.public-footer />
 @endsection

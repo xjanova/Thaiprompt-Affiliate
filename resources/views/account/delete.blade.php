@@ -10,6 +10,8 @@
 @section('meta_description', 'วิธีลบบัญชีไทยพร๊อมท์ และข้อมูลที่จะถูกลบเมื่อลบบัญชี')
 
 @section('content')
+{{-- แถบหัว/ท้ายสาธารณะ (เปิด shop.nova_public = ธีมโนวา) — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
+<x-theme-v4.public-header />
 <div style="max-width:820px; width:100%; margin:0 auto; padding:40px 16px 60px; display:flex; flex-direction:column; gap:18px;">
 
     <div style="text-align:center;">
@@ -151,4 +153,5 @@
         <a href="{{ url('/') }}" style="color:var(--deep1);">กลับหน้าแรก</a>
     </div>
 </div>
+<x-theme-v4.public-footer />
 @endsection

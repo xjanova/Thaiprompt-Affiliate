@@ -3,6 +3,8 @@
 @section('title', 'นโยบายคุกกี้ · ไทยพร๊อมท์')
 
 @section('content')
+{{-- แถบหัว/ท้ายสาธารณะ (เปิด shop.nova_public = ธีมโนวา) — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
+<x-theme-v4.public-header />
 <div style="padding:40px 0 60px;">
     <div class="container mx-auto px-4 max-w-4xl">
         <div class="tp-card" style="padding:clamp(20px,4vw,40px);">
@@ -161,4 +163,5 @@
         </div>
     </div>
 </div>
+<x-theme-v4.public-footer />
 @endsection

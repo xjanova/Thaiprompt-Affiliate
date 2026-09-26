@@ -135,8 +135,9 @@
             border-radius: 3px;
         }
     </style>
+    @include('auth.partials.nova-skin')
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 relative overflow-x-hidden">
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 relative overflow-x-hidden {{ config('shop.nova_public', true) ? 'nv-auth' : '' }}">
     {{-- Background Effects --}}
     <div class="fixed inset-0 overflow-hidden pointer-events-none">
         {{-- ภาพประกอบซุ้มลายกนกทอง (เจนเอง เก็บที่ public/images/art) --}}

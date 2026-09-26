@@ -85,6 +85,7 @@
 /* แถบหัวแบบทึบ (หน้าอื่นที่ไม่มีฮีโร่มืด) — sticky อยู่ในกระแสหน้า ไม่ลอยทับเนื้อหา ไม่ต้องมีตัวดันระยะ */
 .nv-nav--solid { position: sticky; top: 0; }
 .nv-nav--static { position: relative; }
+.nv-nav--solid.nv-nav--fixed { position: fixed; z-index: 100; }
 /* ลิงก์เสริมของหน้า (เช่นหน้ารู้จักเรา) — จอไม่กว้างพอให้หลบไปอยู่ในเมนูแผงแทน กันแถบหัวล้น */
 @media (max-width: 1399px) { .nv-nav__link--extra { display: none; } }
 .nv-ibtn.is-on { color: var(--nv-gold-100); background: rgba(245, 210, 127, .16); border-color: rgba(245, 210, 127, .7); }
@@ -272,7 +273,7 @@
 .nv-phone__med img { width: 24px; }
 
 /* ท้ายเว็บ */
-.nv-foot { position: relative; z-index: 5; padding: 70px 0 34px; color: rgba(236, 229, 210, .72); background: linear-gradient(180deg, #0a1530, #050916); font-family: var(--nv-font-ui); }
+.nv-foot { position: relative; z-index: 5; margin-top: auto; padding: 70px 0 34px; color: rgba(236, 229, 210, .72); background: linear-gradient(180deg, #0a1530, #050916); font-family: var(--nv-font-ui); }
 .nv-foot__arch { position: absolute; left: 50%; top: -26px; width: min(360px, 70vw); transform: translateX(-50%); }
 .nv-foot__grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 30px; }
 .nv-foot h4 { margin: 0 0 12px; font-family: var(--nv-font-display); color: var(--nv-gold-200); font-size: 17px; }

@@ -208,8 +208,9 @@
             animation: orbFloat 15s ease-in-out infinite;
         }
     </style>
+    @include('auth.partials.nova-skin')
 </head>
-<body class="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 relative overflow-x-hidden">
+<body class="min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 relative overflow-x-hidden {{ config('shop.nova_public', true) ? 'nv-auth' : '' }}">
     {{-- ✨ Firefly Container --}}
     <div id="fireflies" class="fixed inset-0 pointer-events-none z-0 overflow-hidden"></div>
 

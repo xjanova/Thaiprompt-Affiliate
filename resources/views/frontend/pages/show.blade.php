@@ -23,6 +23,8 @@
 @endpush
 
 @section('content')
+{{-- แถบหัว/ท้ายสาธารณะ (เปิด shop.nova_public = ธีมโนวา) — หน้านี้เดิมไม่มีเมนูให้กลับไปหน้าอื่น --}}
+<x-theme-v4.public-header />
 <div style="max-width:920px; margin:0 auto; padding:40px clamp(16px,3vw,40px) 60px;">
     {{-- หัวเรื่อง V4 บนแถบลายกนกทอง (เจนเอง เก็บที่ public/images/art) --}}
     <div style="position:relative; overflow:hidden; border-radius:22px; text-align:center; margin-bottom:28px; padding:clamp(26px,4vw,42px) 20px;">
@@ -44,4 +46,5 @@
         <a href="{{ url('/') }}" class="tp-btn tp-btn-sm" style="text-decoration:none;"><i class="fas fa-arrow-left"></i> <span>กลับหน้าแรก</span></a>
     </div>
 </div>
+<x-theme-v4.public-footer />
 @endsection
