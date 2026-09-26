@@ -3,45 +3,59 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 /**
- * รัน migration ที่ค้างแบบ "รู้ว่าตารางมีอยู่แล้ว" (deploy.sh เรียกก่อน fallback ไป `migrate --force`)
+ * รัน migration ที่ค้างทีละตัวด้วย up() "ของจริง" เสมอ (deploy.sh เรียกเมื่อมี migration ค้าง)
  *
- * 🚨 (2026-09-26) เดิม markMigrationsAsRan() ใส่ migration "ทุกตัว" ลงตาราง migrations แม้ตัวนั้น throw
- *   แล้วยังพิมพ์ว่าสำเร็จ + exit 0 ⇒ schema prod ค้างเงียบ
- *   (2025_12_21_000001_fix_mobile_banner_images → mobile_banners.position ค้าง enum เก่า 9 เดือน,
- *    2026_09_26_133100_seed_launch_app_campaign_banners ล้มซ้ำแบบเดียวกันใน v4.0.521)
- *   ตอนนี้: บันทึกทีละตัว "หลังสำเร็จจริง" เท่านั้น · ตัวที่ล้มยังค้าง pending · หยุดที่ตัวแรกที่ล้ม
- *   (ตัวถัดไปอาจพึ่งตัวที่ล้ม — แบบเดียวกับ `php artisan migrate`) · exit ≠ 0 + สรุปข้อความ error
+ * 🚨 ประวัติ (2026-09-26) — ทำไมคำสั่งนี้ถึงไม่ "ฉลาด" อีกต่อไป:
+ *   1. เดิม markMigrationsAsRan() ใส่ migration "ทุกตัว" ลงตาราง migrations แม้ตัวนั้น throw + exit 0
+ *      (2025_12_21_000001_fix_mobile_banner_images → mobile_banners.position ค้าง enum เก่า 9 เดือน)
+ *      ⇒ แก้แล้ว: บันทึกทีละตัวหลังสำเร็จจริง · หยุดที่ตัวแรกที่ล้ม · exit ≠ 0
+ *   2. เดิม migration ชื่อ create_X_table / add_..._to_X_table ที่ตาราง X มีอยู่แล้ว "ไม่เคยถูกรัน up()"
+ *      คำสั่งนี้ regex หา `$table->type('col')` ทั้งไฟล์ (รวม down()) แล้วเพิ่มคอลัมน์ที่ขาดด้วยชนิดที่เดาเอง
+ *      (string/int nullable) หรือบันทึกว่ารันแล้วเฉย ๆ ถ้าคอลัมน์ครบ ⇒ schema prod drift ทั้งระบบ:
+ *      fortune_readings.is_floating เป็น varchar NULL (ตัวกรองบิลชำระแล้วคืน 0 แถว), boolean/int/bigint
+ *      กลายเป็น varchar, unique/index/FK หาย, คอลัมน์ขยะชื่อตามอาร์กิวเมนต์ของ dropColumn()/dropIndex()
+ *      ⇒ ลบทางเดาทิ้งทั้งหมด: ตารางมีอยู่หรือไม่ก็รัน up() จริง — migration ของโปรเจกต์ต้อง idempotent
+ *      (hasTable สำหรับ CREATE, hasColumn/SafeMigration สำหรับ ALTER — ดู CLAUDE.md)
+ *
+ * 🛡️ กันบันทึก migration ที่ทำไปครึ่งเดียว:
+ *   MySQL/MariaDB ไม่มี transaction ครอบ DDL — ตัวที่ล้มกลางทางอาจสร้างตารางไปแล้ว (แต่ FK/index/ข้อมูลยังไม่มี)
+ *   deploy รอบถัดไปรัน up() ซ้ำ ถ้ามี guard ทั้งก้อน (hasTable → return) มันจะ no-op แล้วถูกบันทึกว่ารันแล้ว
+ *   ⇒ ตัวที่ล้ม "หลังเปลี่ยนฐานข้อมูลไปแล้วบางส่วน" ถูกจำไว้ในตาราง smart_migrate_failures และถ้ารอบซ้ำของมัน
+ *   "ไม่ได้เปลี่ยนอะไรเลย" (นับเฉพาะคำสั่งที่ไม่ใช่ SELECT/SHOW/...) คำสั่งนี้จะไม่บันทึก + exit 1 ให้คนตรวจของที่ค้าง
  *
  * exit code (deploy.sh ใช้ตัดสินว่าจะ fallback ไป `migrate --force` หรือไม่):
  *   0 = สำเร็จทั้งหมด
- *   1 = migration ล้มใน up() (หรือพังก่อนเริ่ม) ⇒ ห้าม fallback: `migrate --force` จะรัน up() ตัวเดิมซ้ำ
- *       ถ้า up() มี guard (hasTable → return) มันจะ no-op แล้วถูกบันทึกว่ารันแล้ว = บั๊กเดิมกลับมา
- *   2 = ล้มตอนเพิ่มคอลัมน์ที่คำสั่งนี้ "เดาชนิด" เอง (up() ยังไม่เคยถูกรัน) ⇒ fallback รัน up() จริงได้
+ *   1 = migration ล้มใน up() / รอบซ้ำถูกปฏิเสธ / พังก่อนเริ่ม ⇒ ห้าม fallback: `migrate --force` จะรัน up() ตัวเดิมซ้ำ
+ *       แล้วถ้า guard ทำให้ no-op มันจะถูกบันทึกว่ารันแล้ว = บั๊กเดิมกลับมา
+ *   2 = (สงวนไว้ — ไม่มีทางไหนคืนค่านี้แล้วตั้งแต่ลบการเดาคอลัมน์ 2026-09-26)
+ *       deploy.sh ยังตีความ 2 ว่า "up() ยังไม่เคยรัน fallback ไป migrate --force ได้"
  */
 class SmartMigrate extends Command
 {
     private const EXIT_MIGRATION_FAILED = 1;
 
-    private const EXIT_COLUMN_GUESS_FAILED = 2;
+    /** ตารางจำ migration ที่ล้มข้าม deploy — 2026_09_26_180000_create_smart_migrate_failures_table */
+    private const FAILURES_TABLE = 'smart_migrate_failures';
+
+    /** คำแรกของคำสั่ง SQL ที่ไม่เปลี่ยนฐานข้อมูล (guard อย่าง hasTable/hasColumn = SELECT จาก information_schema) */
+    private const READ_ONLY_STATEMENTS = ['select', 'show', 'describe', 'desc', 'explain', 'set', 'use'];
 
     protected $signature = 'migrate:smart
         {--force : Force the operation to run in production}
         {--path= : Absolute path of the migrations directory (default: database/migrations)}';
 
-    protected $description = 'Smart migration system that handles existing tables';
+    protected $description = 'Run pending migrations one by one with their real up(); never record a failed or half-applied one';
 
     private $stats = [
         'migrations_run' => 0,
-        'migrations_marked_without_up' => 0,
+        'migrations_noop' => 0,
         'tables_created' => 0,
-        'tables_updated' => 0,
-        'tables_skipped' => 0,
-        'columns_added' => 0,
-        'columns_modified' => 0,
     ];
 
     /** @var array<int, array{migration: string, error: string}> migration ที่ล้ม (ไม่ถูกบันทึก) */
@@ -55,8 +69,13 @@ class SmartMigrate extends Command
 
     private int $nextBatch = 1;
 
-    /** ล้มในส่วนที่คำสั่งนี้เดาชนิดคอลัมน์เอง (ไม่ใช่ใน up()) — ดู EXIT_COLUMN_GUESS_FAILED */
-    private bool $failedInColumnGuess = false;
+    /** จำนวนคำสั่ง SQL ที่เปลี่ยนฐานข้อมูลระหว่าง up() ตัวปัจจุบัน (null = ไม่ได้อยู่ใน up()) */
+    private ?int $changeStatements = null;
+
+    /** จำนวนคำสั่งที่เปลี่ยนฐานข้อมูลสำเร็จไปแล้วก่อน up() ตัวล่าสุดจะ throw (> 0 = ค้างครึ่งทาง) */
+    private int $changesBeforeFailure = 0;
+
+    private bool $failuresTableExists = false;
 
     public function handle()
     {
@@ -67,7 +86,7 @@ class SmartMigrate extends Command
         if (! $this->checkDatabaseConnection()) {
             $this->error('✗ Database connection failed');
 
-            return 1;
+            return self::EXIT_MIGRATION_FAILED;
         }
         $this->info('✓ Database connection OK');
         $this->newLine();
@@ -77,7 +96,7 @@ class SmartMigrate extends Command
         if (! is_dir($directory)) {
             $this->error("✗ Migrations directory not found: {$directory}");
 
-            return 1;
+            return self::EXIT_MIGRATION_FAILED;
         }
 
         // Get pending migrations
@@ -95,16 +114,24 @@ class SmartMigrate extends Command
         // ทุกตัวในรอบนี้อยู่ batch เดียวกัน (แบบ migrator ของ Laravel)
         $this->nextBatch = (int) (DB::table('migrations')->max('batch') ?? 0) + 1;
 
+        // นับคำสั่งที่เปลี่ยนฐานข้อมูลระหว่าง up() — แยก "up() ทำงานจริง" ออกจาก "guard ข้ามทั้งก้อน"
+        DB::listen(function (QueryExecuted $query) {
+            if ($this->changeStatements !== null && ! $this->isReadOnlyStatement($query->sql)) {
+                $this->changeStatements++;
+            }
+        });
+
         foreach ($pending as $index => $migration) {
             try {
                 $this->processMigration($migration);
             } catch (\Throwable $e) {
-                // ตัวที่ล้ม "ห้าม" บันทึกว่ารันแล้ว — ต้องค้าง pending ให้ deploy รอบหน้า/fallback รันใหม่
+                // ตัวที่ล้ม "ห้าม" บันทึกว่ารันแล้ว — ต้องค้าง pending ให้ deploy รอบหน้ารันใหม่
                 $this->error('  ✗ FAILED — not marked as ran: '.$e->getMessage());
                 $this->failures[] = [
                     'migration' => $migration['name'],
                     'error' => get_class($e).': '.$e->getMessage(),
                 ];
+                $this->rememberFailure($migration['name'], $e);
                 $this->notAttempted = array_column(array_slice($pending, $index + 1), 'name');
 
                 break;
@@ -112,6 +139,7 @@ class SmartMigrate extends Command
 
             // บันทึกทันทีหลังสำเร็จ — ถ้า process ตายกลางทาง ตัวที่รันไปแล้วจะไม่ถูกรันซ้ำ
             $this->markMigrationAsRan($migration);
+            $this->forgetFailure($migration['name']);
         }
 
         // Show summary
@@ -121,7 +149,7 @@ class SmartMigrate extends Command
             $this->error('✗ Smart Migration FAILED — '.count($this->failures).' failed, '
                 .count($this->notAttempted).' not attempted; they remain pending');
 
-            return $this->failedInColumnGuess ? self::EXIT_COLUMN_GUESS_FAILED : self::EXIT_MIGRATION_FAILED;
+            return self::EXIT_MIGRATION_FAILED;
         }
 
         return 0;
@@ -168,24 +196,45 @@ class SmartMigrate extends Command
     private function processMigration(array $migration): void
     {
         $this->line("→ Processing: {$migration['name']}");
+        $this->changesBeforeFailure = 0;
 
-        // Detect table name from migration filename
+        $previousFailure = $this->previousFailure($migration['name']);
+
+        if ($previousFailure) {
+            $this->warn("  ⚠ Failed on an earlier run ({$previousFailure->attempts}x since {$previousFailure->created_at}):"
+                ." {$previousFailure->error}");
+        }
+
+        // ชื่อ create_X_table / add_..._to_X_table ใช้ประกอบ log เท่านั้น — ไม่ได้ใช้ตัดสินว่าจะรัน up() หรือไม่
         $tableName = $this->extractTableName($migration['name']);
+        $tableExisted = $tableName !== null && Schema::hasTable($tableName);
 
-        if (! $tableName) {
-            $this->warn('  ⚠ Could not detect table name, running normal migration');
-            $this->runNormalMigration($migration);
-            $this->info('  ✓ Migration ran successfully');
+        if ($tableExisted) {
+            $this->line("  → Table '{$tableName}' already exists — running the real up() anyway (migrations must be idempotent)");
+        }
+
+        $changes = $this->runMigrationUp($migration);
+
+        if ($changes > 0) {
+            if ($tableName !== null && ! $tableExisted && Schema::hasTable($tableName)) {
+                $this->stats['tables_created']++;
+            }
+            $this->info("  ✓ up() ran ({$changes} change statement(s))");
 
             return;
         }
 
-        // Check if table exists
-        if (Schema::hasTable($tableName)) {
-            $this->handleExistingTable($migration, $tableName);
-        } else {
-            $this->handleNewTable($migration, $tableName);
+        if ($previousFailure) {
+            // รอบก่อนล้มกลางทาง รอบนี้ up() ไม่แตะอะไรเลย = guard น่าจะข้ามของที่ทำไปครึ่งเดียว ⇒ ห้ามบันทึก
+            throw new \RuntimeException('Refusing to record: this migration failed on an earlier run and this retry\'s'
+                .' up() changed nothing — a guard such as hasTable() → return most likely skipped a half-applied'
+                .' migration. Check what the failed run left behind (tables/columns/FKs/indexes/data), then finish'
+                .' it by hand and INSERT it into `migrations`, or undo the partial changes, or make up() complete'
+                .' the missing parts. To accept the current schema as is, DELETE its row from `'.self::FAILURES_TABLE.'`.');
         }
+
+        $this->stats['migrations_noop']++;
+        $this->info('  ✓ up() ran — no changes (already applied, or skipped by its own guard)');
     }
 
     private function extractTableName(string $migrationName): ?string
@@ -203,195 +252,10 @@ class SmartMigrate extends Command
         return null;
     }
 
-    private function handleExistingTable(array $migration, string $tableName): void
-    {
-        $this->line("  → Table '{$tableName}' exists, checking schema...");
-
-        // Get expected columns from migration
-        $expectedColumns = $this->parseExpectedColumns($migration['file']);
-
-        if (empty($expectedColumns)) {
-            // เดิม "skipping" แล้วบันทึกว่ารันแล้วทั้งที่ไม่รู้ว่าทำอะไร (เช่น DB::statement ALTER) ⇒ รันจริงแทน
-            $this->warn('  ⚠ Could not parse columns from migration, running normal migration');
-            $this->runNormalMigration($migration);
-            $this->info('  ✓ Migration ran successfully');
-
-            return;
-        }
-
-        // Get existing columns
-        $existingColumns = $this->getTableColumns($tableName);
-
-        // Find missing columns
-        $missingColumns = array_diff_key($expectedColumns, $existingColumns);
-
-        if (empty($missingColumns)) {
-            // ข้ามโดยตั้งใจ: ตาราง + คอลัมน์ที่ parse ได้มีครบ ⇒ บันทึกว่ารันแล้วโดยไม่เรียก up()
-            // บอกให้ชัดใน log ว่าส่วนที่ไม่ใช่การเพิ่มคอลัมน์ (enum/index/ข้อมูล) ไม่ได้ถูกรัน
-            $this->info("  ✓ Table '{$tableName}' and all ".count($expectedColumns)
-                .' parsed column(s) already exist — marking as ran WITHOUT running up()'
-                .' (enum/index/data changes in this migration are not applied)');
-            $this->stats['tables_skipped']++;
-            $this->stats['migrations_marked_without_up']++;
-
-            return;
-        }
-
-        // Add missing columns
-        $this->line('  → Adding '.count($missingColumns).' missing column(s)...');
-
-        foreach ($missingColumns as $columnName => $columnDef) {
-            // addColumn() throw เมื่อเพิ่มไม่ได้ ⇒ migration นี้ล้มทั้งตัว (คอลัมน์ที่เพิ่มไปแล้วรอบหน้าจะถูกข้าม)
-            try {
-                $this->addColumn($tableName, $columnName, $columnDef);
-            } catch (\Throwable $e) {
-                // ล้มในชนิดคอลัมน์ที่เราเดาเอง ไม่ใช่ใน up() ⇒ exit 2 ให้ deploy.sh ลองรัน up() จริงผ่าน migrate
-                $this->failedInColumnGuess = true;
-
-                throw $e;
-            }
-            $this->info("    ✓ Added: {$columnName}");
-            $this->stats['columns_added']++;
-        }
-
-        // กิ่งนี้ก็ไม่ได้เรียก up() — คอลัมน์ถูกเพิ่มด้วยชนิดที่เดา บอกให้ชัดใน log เผื่อไล่ schema drift ทีหลัง
-        $this->info('  ✓ Added missing column(s) with generic types — marking as ran WITHOUT running up()'
-            .' (enum/index/data changes in this migration are not applied)');
-        $this->stats['migrations_marked_without_up']++;
-        $this->stats['tables_updated']++;
-    }
-
-    private function handleNewTable(array $migration, string $tableName): void
-    {
-        $this->line("  → Creating new table '{$tableName}'...");
-
-        $this->runNormalMigration($migration);
-        $this->info('  ✓ Table created successfully');
-        $this->stats['tables_created']++;
-    }
-
-    private function parseExpectedColumns(string $migrationFile): array
-    {
-        $columns = [];
-        $content = file_get_contents($migrationFile);
-
-        // Common column patterns
-        $patterns = [
-            '/\$table->(\w+)\(\'(\w+)\'[^;]*\)/',  // $table->string('name')
-            '/\$table->(\w+)\(\)/',                  // $table->timestamps()
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
-                foreach ($matches as $match) {
-                    $type = $match[1];
-                    $name = $match[2] ?? $this->inferColumnName($type);
-
-                    if ($name) {
-                        $columns[$name] = [
-                            'type' => $type,
-                            'definition' => $match[0],
-                        ];
-                    }
-                }
-            }
-        }
-
-        // Handle timestamps()
-        if (stripos($content, '$table->timestamps()') !== false) {
-            $columns['created_at'] = ['type' => 'timestamp', 'definition' => '$table->timestamp(\'created_at\')->nullable()'];
-            $columns['updated_at'] = ['type' => 'timestamp', 'definition' => '$table->timestamp(\'updated_at\')->nullable()'];
-        }
-
-        // Handle softDeletes()
-        if (stripos($content, '$table->softDeletes()') !== false) {
-            $columns['deleted_at'] = ['type' => 'timestamp', 'definition' => '$table->timestamp(\'deleted_at\')->nullable()'];
-        }
-
-        // Handle id()
-        if (stripos($content, '$table->id()') !== false) {
-            $columns['id'] = ['type' => 'bigInteger', 'definition' => '$table->id()'];
-        }
-
-        return $columns;
-    }
-
-    private function inferColumnName(string $type): ?string
-    {
-        $mapping = [
-            'timestamps' => null,  // Returns multiple columns
-            'softDeletes' => 'deleted_at',
-            'id' => 'id',
-            'rememberToken' => 'remember_token',
-        ];
-
-        return $mapping[$type] ?? null;
-    }
-
-    private function getTableColumns(string $tableName): array
-    {
-        $columns = Schema::getColumnListing($tableName);
-        $result = [];
-
-        foreach ($columns as $column) {
-            $result[$column] = true;
-        }
-
-        return $result;
-    }
-
     /**
-     * เพิ่มคอลัมน์ที่ขาด — throw เมื่อเพิ่มไม่ได้ (เดิม catch แล้วคืน false ⇒ migration ยังถูกบันทึก)
+     * รัน up() ของ migration แล้วคืนจำนวนคำสั่งที่เปลี่ยนฐานข้อมูล — throw เมื่อล้ม
      */
-    private function addColumn(string $tableName, string $columnName, array $columnDef): void
-    {
-        Schema::table($tableName, function ($table) use ($columnName, $columnDef) {
-            // Determine column type and add accordingly
-            $type = $columnDef['type'];
-
-            switch ($type) {
-                case 'string':
-                    $table->string($columnName)->nullable();
-                    break;
-                case 'text':
-                    $table->text($columnName)->nullable();
-                    break;
-                case 'integer':
-                case 'int':
-                    $table->integer($columnName)->nullable()->default(0);
-                    break;
-                case 'bigInteger':
-                    $table->bigInteger($columnName)->nullable();
-                    break;
-                case 'decimal':
-                    $table->decimal($columnName, 10, 2)->nullable()->default(0);
-                    break;
-                case 'boolean':
-                    $table->boolean($columnName)->default(false);
-                    break;
-                case 'json':
-                    $table->json($columnName)->nullable();
-                    break;
-                case 'timestamp':
-                    $table->timestamp($columnName)->nullable();
-                    break;
-                case 'date':
-                    $table->date($columnName)->nullable();
-                    break;
-                case 'foreignId':
-                    $table->foreignId($columnName)->nullable();
-                    break;
-                default:
-                    // Generic nullable column
-                    $table->string($columnName)->nullable();
-            }
-        });
-    }
-
-    /**
-     * รัน up() ของ migration — throw เมื่อล้ม (เดิม catch \Exception แล้วคืน false ซึ่งไม่มีใครเช็ค)
-     */
-    private function runNormalMigration(array $migration): void
+    private function runMigrationUp(array $migration): int
     {
         // require ครั้งเดียวพอ (เดิม require_once แล้ว include ซ้ำ = รันไฟล์สองรอบ)
         $migrationClass = require $migration['file'];
@@ -400,9 +264,40 @@ class SmartMigrate extends Command
             throw new \RuntimeException("Migration file does not return an object with up(): {$migration['file']}");
         }
 
-        $migrationClass->up();
+        $transactionLevel = DB::transactionLevel();
+        $this->changeStatements = 0;
+
+        try {
+            $migrationClass->up();
+        } catch (\Throwable $e) {
+            // QueryExecuted ยิงเฉพาะคำสั่งที่สำเร็จ ⇒ ค่านี้ = ของที่ถูกเปลี่ยนไปแล้วก่อนล้ม (DDL ย้อนไม่ได้)
+            $this->changesBeforeFailure = $this->changeStatements;
+
+            // up() ที่เปิด transaction เองแล้ว throw — ปิดให้ ไม่งั้นการจดความล้มเหลวจะค้างใน transaction ที่ไม่มีวัน commit
+            try {
+                DB::rollBack($transactionLevel);
+            } catch (\Throwable) {
+                // ไม่บัง exception ตัวจริง
+            }
+
+            throw $e;
+        } finally {
+            $changes = $this->changeStatements;
+            $this->changeStatements = null;
+        }
 
         $this->stats['migrations_run']++;
+
+        return $changes;
+    }
+
+    private function isReadOnlyStatement(string $sql): bool
+    {
+        if (! preg_match('/^[\s(]*([a-z]+)/i', $sql, $matches)) {
+            return false;
+        }
+
+        return in_array(strtolower($matches[1]), self::READ_ONLY_STATEMENTS, true);
     }
 
     private function markMigrationAsRan(array $migration): void
@@ -415,16 +310,91 @@ class SmartMigrate extends Command
         $this->marked[] = $migration['name'];
     }
 
+    /**
+     * ตารางจำความล้มเหลวมีหรือยัง (deploy แรกหลังเพิ่มตารางนี้ มันอาจถูกสร้างกลางรอบ — เช็คใหม่จนกว่าจะเจอ)
+     */
+    private function failuresTableExists(): bool
+    {
+        return $this->failuresTableExists = $this->failuresTableExists || Schema::hasTable(self::FAILURES_TABLE);
+    }
+
+    private function previousFailure(string $migration): ?object
+    {
+        if (! $this->failuresTableExists()) {
+            return null;
+        }
+
+        return DB::table(self::FAILURES_TABLE)->where('migration', $migration)->first();
+    }
+
+    /**
+     * จำความล้มเหลวข้าม deploy — เฉพาะตัวที่ล้มหลังเปลี่ยนฐานข้อมูลไปแล้วบางส่วน (ตัวที่ล้มตั้งแต่ยังไม่แตะอะไร
+     * รันซ้ำได้ตามปกติ) · ครั้งแรกเก็บ error ไว้ ครั้งถัดไปเพิ่มแค่ attempts (error ตัวแรกคือต้นเหตุ)
+     */
+    private function rememberFailure(string $migration, \Throwable $e): void
+    {
+        try {
+            if (! $this->failuresTableExists()) {
+                if ($this->changesBeforeFailure > 0) {
+                    $this->warn('  ⚠ Half-applied, but '.self::FAILURES_TABLE.' does not exist yet — not remembered across deploys');
+                }
+
+                return;
+            }
+
+            $existing = DB::table(self::FAILURES_TABLE)->where('migration', $migration)->first();
+
+            if ($existing) {
+                DB::table(self::FAILURES_TABLE)->where('id', $existing->id)->update([
+                    'attempts' => $existing->attempts + 1,
+                    'updated_at' => now(),
+                ]);
+
+                return;
+            }
+
+            if ($this->changesBeforeFailure === 0) {
+                $this->line('  → Failed before changing anything — nothing half-applied, a retry is safe');
+
+                return;
+            }
+
+            $this->warn("  ⚠ Failed after {$this->changesBeforeFailure} change statement(s) — remembered in "
+                .self::FAILURES_TABLE.'; a retry that changes nothing will not be recorded');
+
+            DB::table(self::FAILURES_TABLE)->insert([
+                'migration' => $migration,
+                'error' => Str::limit("[after {$this->changesBeforeFailure} change statement(s)] "
+                    .get_class($e).': '.$e->getMessage(), 5000),
+                'attempts' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $inner) {
+            // ห้ามบังความล้มเหลวตัวจริง — เตือนแล้วไปต่อ (exit 1 อยู่แล้ว)
+            $this->warn('  ⚠ Could not remember the failure: '.$inner->getMessage());
+        }
+    }
+
+    private function forgetFailure(string $migration): void
+    {
+        try {
+            if ($this->failuresTableExists()) {
+                DB::table(self::FAILURES_TABLE)->where('migration', $migration)->delete();
+            }
+        } catch (\Throwable $e) {
+            // migration ถูกบันทึกไปแล้ว — แถวค้างไม่อันตราย (เช็คเฉพาะตัวที่ยัง pending) แค่เตือน
+            $this->warn('  ⚠ Could not clear the remembered failure: '.$e->getMessage());
+        }
+    }
+
     private function showSummary(): void
     {
         $this->newLine();
         $this->info('📊 Smart Migration Summary:');
-        $this->line("  • Migrations run (up() executed): {$this->stats['migrations_run']}");
-        $this->line("  • Marked without running up() (table existed): {$this->stats['migrations_marked_without_up']}");
+        $this->line("  • Migrations run (real up()): {$this->stats['migrations_run']}");
+        $this->line("  • ...of which changed nothing (already applied / own guard): {$this->stats['migrations_noop']}");
         $this->line("  • Tables created: {$this->stats['tables_created']}");
-        $this->line("  • Tables updated: {$this->stats['tables_updated']}");
-        $this->line("  • Tables skipped: {$this->stats['tables_skipped']}");
-        $this->line("  • Columns added: {$this->stats['columns_added']}");
 
         if (! empty($this->failures)) {
             $this->newLine();

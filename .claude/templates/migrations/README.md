@@ -133,9 +133,9 @@ $table->timestamp('created_at');  // Error: Invalid default value
 
 deploy.sh มีระบบ Smart Migration ที่จะ:
 
-✅ **สร้างตารางใหม่** ถ้ายังไม่มี
-✅ **เพิ่มคอลัมน์ใหม่** ในตารางที่มีอยู่แล้ว
-✅ **ข้ามคอลัมน์** ที่มีอยู่แล้ว
+✅ **รัน `up()` ของจริงทุกตัว** แม้ตารางมีอยู่แล้ว ⇒ migration ต้อง idempotent (hasTable / hasColumn / SafeMigration)
+✅ **บันทึกเฉพาะตัวที่สำเร็จ** — ตัวที่ล้มค้าง pending และ deploy หยุด
+⛔ **ไม่เดาคอลัมน์อีกแล้ว** (เลิก 2026-09-26 — เคยทำให้ schema prod ชนิดผิด/index หาย) ดู `database/migrations/README_MIGRATIONS.md`
 
 **วิธีใช้:**
 ```bash

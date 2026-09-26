@@ -666,71 +666,36 @@ return new class extends Migration
 
 ## 🚀 Smart Migration System
 
-ระบบนี้จะช่วยจัดการกรณีที่ตารางมีอยู่แล้วแต่โครงสร้างไม่ตรงกับ migration
+`deploy.sh` เรียก `php artisan migrate:smart --force` เมื่อมี migration ค้าง (โค้ด: `app/Console/Commands/SmartMigrate.php`)
 
-### การทำงาน
+### การทำงาน (ตั้งแต่ 2026-09-26)
 
-1. ✅ **ตรวจสอบ** - เช็คว่าตารางมีอยู่หรือยัง
-2. 🔍 **เปรียบเทียบ** - เปรียบเทียบ schema ของตารางกับ migration
-3. ➕ **เพิ่มคอลัมน์** - เพิ่มคอลัมน์ที่ยังไม่มีอัตโนมัติ
-4. ⏭️ **ข้าม** - ข้ามถ้า schema ตรงกันแล้ว
+1. ✅ **รัน `up()` ของจริงทุกตัว** ทีละไฟล์ — ตารางมีอยู่แล้วหรือไม่ก็รัน (migration ต้อง idempotent: `hasTable` สำหรับ CREATE, `hasColumn`/SafeMigration สำหรับ ALTER)
+2. ✅ **บันทึกลงตาราง `migrations` หลังสำเร็จจริงเท่านั้น** — ตัวที่ล้มค้าง pending, หยุดที่ตัวแรกที่ล้ม, exit 1 ⇒ deploy หยุด
+3. 🛡️ **กันบันทึกของที่ทำไปครึ่งเดียว** — ตัวที่ล้ม *หลัง* เปลี่ยนฐานข้อมูลไปแล้วบางส่วน ถูกจำในตาราง `smart_migrate_failures`
+   ถ้ารอบถัดไป `up()` ของมันไม่เปลี่ยนอะไรเลย (เช่น guard `hasTable → return` ข้ามทั้งก้อน) จะ **ไม่บันทึก** + exit 1
+   ⇒ ตรวจของที่ค้าง แล้วทำให้ครบ/ย้อนเอง หรือแก้ `up()` ให้ทำส่วนที่ขาดต่อ · ยอมรับ schema ตามที่เป็น = ลบแถวของตัวนั้นใน `smart_migrate_failures`
 
-### การใช้งาน
+### ⛔ เลิกแล้ว: การ "เดาคอลัมน์"
 
-```bash
-# รัน Smart Migration
-php artisan migrate:smart --force
+เดิม migration ชื่อ `create_X_table` / `add_..._to_X_table` ที่ตาราง X มีอยู่แล้ว **ไม่เคยถูกรัน `up()`** —
+คำสั่งนี้ regex หา `$table->type('col')` ทั้งไฟล์ (รวม `down()`) แล้วเพิ่มคอลัมน์ด้วยชนิดที่เดาเอง (varchar/int nullable)
+ผลบน prod: boolean/int/bigint กลายเป็น varchar, unique/index/FK หาย, คอลัมน์ขยะชื่อตามอาร์กิวเมนต์ของ `dropColumn()`
+(เช่น `fortune_readings.is_floating` เป็น varchar NULL ⇒ ตัวกรองบิลชำระแล้วคืน 0 แถว) — ลบทิ้งทั้งหมดแล้ว
+ไม่ต้องตั้งชื่อไฟล์หลบ pattern อีกต่อไป
 
-# ระบบจะแสดงผลการทำงาน:
-# ✓ Tables created: X
-# ✓ Tables updated: Y
-# ✓ Columns added: Z
+### ตัวอย่าง output
+
 ```
-
-### ตัวอย่างการทำงาน
-
-**กรณีที่ 1: ตารางยังไม่มี**
-```
+→ Processing: 2026_09_26_140500_add_pdpa_consent_at_to_riders_table
+  → Table 'riders' already exists — running the real up() anyway (migrations must be idempotent)
+  ✓ up() ran (1 change statement(s))
 → Processing: 2025_01_08_000003_create_trend_keywords_table
-  → Creating new table 'trend_keywords'...
-  ✓ Table created successfully
+  → Table 'trend_keywords' already exists — running the real up() anyway (migrations must be idempotent)
+  ✓ up() ran — no changes (already applied, or skipped by its own guard)
 ```
 
-**กรณีที่ 2: ตารางมีแล้วแต่ขาดบางคอลัมน์**
-```
-→ Processing: 2025_01_08_000003_create_trend_keywords_table
-  → Table 'trend_keywords' exists, checking schema...
-  → Adding 2 missing column(s)...
-    ✓ Added: last_seen_at
-    ✓ Added: metadata
-```
-
-**กรณีที่ 3: Schema ตรงกันแล้ว**
-```
-→ Processing: 2025_01_08_000003_create_trend_keywords_table
-  → Table 'trend_keywords' exists, checking schema...
-  ✓ Schema up to date (skipped)
-```
-
-### ความสามารถ
-
-Smart Migration สามารถจัดการ:
-
-- ✅ เพิ่มคอลัมน์ใหม่ที่ยังไม่มี
-- ✅ สร้างตารางใหม่ถ้ายังไม่มี
-- ✅ ตรวจสอบและข้ามถ้า schema ตรงกันแล้ว
-- ✅ รองรับ data types ทั่วไป (string, text, integer, decimal, boolean, json, timestamp, date)
-- ✅ รองรับ foreign keys
-- ✅ รองรับ timestamps(), softDeletes(), id()
-
-### ข้อจำกัด
-
-- ⚠️ ไม่สามารถแก้ไข data type ของคอลัมน์ที่มีอยู่แล้ว
-- ⚠️ ไม่สามารถลบคอลัมน์
-- ⚠️ ไม่สามารถเปลี่ยนชื่อคอลัมน์
-- ⚠️ Indexes และ foreign keys อาจต้องสร้างด้วยตนเอง
-
-สำหรับกรณีข้างต้น ให้ใช้ migration ปกติ หรือ alter table ด้วยตนเอง
+exit code: `0` สำเร็จ · `1` ล้ม/ถูกปฏิเสธ (deploy หยุด ไม่ fallback) · `2` สงวนไว้ (ไม่มีทางไหนคืนแล้ว)
 
 ## คำสั่ง Artisan ที่เป็นประโยชน์
 
