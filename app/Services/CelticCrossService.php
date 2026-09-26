@@ -11,6 +11,7 @@ use App\Services\Fortune\ThaiAstrologyService;
 use App\Support\ThaiOutputSanitizer;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -44,6 +45,16 @@ class CelticCrossService
      * เพื่อจับเฉพาะเคสที่ "ไม่ใช่คำทำนายชัดๆ" (ถามกลับ/รับทราบข้อมูล) ไม่ไปตัดคำตอบสั้นที่ยังมีเนื้อ
      */
     private const MIN_PREDICTION_CHARS = 250;
+
+    /**
+     * 🔒 (2026-09-26) อายุธง "AI กำลังคิดคำถามข้อนี้อยู่" (วินาที) — ดู isGenerationInFlight()
+     *
+     * ต้องยาวกว่าเวลาคิดที่ยาวที่สุดที่ "ยังไม่ตาย": job รอ AI ได้ 180 วิ
+     * (ProcessBufferedCelticMessageJob::$timeout) · HTTP OpenAI 120 วิ/ครั้ง + retry/fallback ⇒ 240
+     * ⚠️ ยาวเกินก็มีราคา: process ตายจริงนอกรอบ deploy (FPM kill/OOM) = ตัวกู้รอจนธงหมดอายุ
+     *    ส่วนรอบ deploy ไม่กระทบ — cache:clear ล้างธงทิ้งพร้อมกับที่ worker ถูก restart อยู่แล้ว
+     */
+    public const GENERATION_INFLIGHT_TTL_SEC = 240;
 
     protected FortuneTellingSetting $settings;
 
@@ -137,6 +148,76 @@ class CelticCrossService
     protected function resolveCelticModelOverrides(FortuneReading $reading, ?string $userQuestion = null): ?array
     {
         return app(\App\Services\Fortune\FortuneModelRouter::class)->celticOverrides($reading, $userQuestion);
+    }
+
+    /**
+     * 🔒 (2026-09-26) AI กำลังคิดคำถามของบิลนี้อยู่จริงไหม — แยก "ช้า" ออกจาก "ตาย"
+     *
+     * ## ทำไมต้องมี (เคสจริง reading 13746 / FTU-260926-S8307)
+     * ด่านกู้สถานะค้างทุกตัวเคยตัดสินด้วยเวลาอย่างเดียว: CELTIC_GENERATING นานกว่า 90 วิ = process ตาย
+     * แต่วันที่ AI ช้า (gpt-5.6-luna ตอบข้อหนึ่ง 126 วิ) ตัวที่ "ยังคิดอยู่" ถูกตีว่าตาย:
+     *   18:28:15  job เริ่มถาม AI ข้อ 4
+     *   18:30:04  cron fortune:celtic-redeliver เห็นค้าง 109 วิ → เด้งสถานะ + ลบแถวคำถาม + ปั่นใหม่
+     *   18:30:23  ตัวจริงตอบเสร็จ ส่งถึงลูกค้า
+     *   18:32:05  คำตอบจากตัวปั่นใหม่ถูกส่งตามไปอีกรอบ ⇒ ลูกค้าได้คำตอบข้อเดียวกัน 2 รอบคนละเนื้อ
+     *
+     * ⇒ askQuestion() ปักธงนี้ครอบช่วงเรียก AI · ด่านกู้ทุกตัวต้องเช็คธงก่อนเด้งสถานะ
+     *   ธงหาย (ตอบเสร็จ / process ตายเกิน TTL / deploy ล้าง cache) = ตัดสินด้วยเวลาแบบเดิม
+     *
+     * ⚠️ fail-open: อ่าน cache ไม่ได้ = false → กลับไปพฤติกรรมเดิม (ไม่แย่กว่าก่อนมีธง)
+     */
+    public static function isGenerationInFlight(int $readingId): bool
+    {
+        try {
+            return Cache::has(self::generationInFlightKey($readingId));
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /** คีย์ธง "กำลังคิด" ของบิลนี้ */
+    public static function generationInFlightKey(int $readingId): string
+    {
+        return 'celtic:gen_inflight:'.$readingId;
+    }
+
+    /**
+     * ปักธง "กำลังคิด" — คืน token ไว้ปลดธงของตัวเอง (null = ปักไม่สำเร็จ ไม่บล็อก flow)
+     *
+     * ใช้ token แทนการลบดื้อ ๆ: 2 เส้นทางคิดบิลเดียวกันซ้อน ตัวที่จบก่อนต้องไม่ปลดธงของอีกตัว
+     */
+    public static function markGenerationInFlight(int $readingId): ?string
+    {
+        try {
+            $token = bin2hex(random_bytes(8));
+            Cache::put(self::generationInFlightKey($readingId), $token, self::GENERATION_INFLIGHT_TTL_SEC);
+
+            return $token;
+        } catch (\Throwable $e) {
+            Log::warning('CelticCross: ปักธง in-flight ไม่สำเร็จ (ไม่บล็อก)', [
+                'reading_id' => $readingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /** ปลดธง "กำลังคิด" — เฉพาะธงที่ตัวเองปักไว้ (token ตรง) */
+    public static function clearGenerationInFlight(int $readingId, ?string $token): void
+    {
+        if ($token === null) {
+            return;
+        }
+
+        try {
+            $key = self::generationInFlightKey($readingId);
+            if (Cache::get($key) === $token) {
+                Cache::forget($key);
+            }
+        } catch (\Throwable $e) {
+            // non-blocking — แย่สุดธงหมดอายุเองตาม TTL
+        }
     }
 
     /**
@@ -285,6 +366,11 @@ class CelticCrossService
             return ['success' => false, 'message' => 'ระบบกำลังประมวลผลคำถามก่อนหน้าอยู่ค่ะ รอสักครู่นะคะ'];
         }
         [$questionRecord, $sequence] = $inserted;
+
+        // 🔒 (2026-09-26 FTU-260926-S8307) ปักธง "AI กำลังคิดข้อนี้อยู่" ครอบทั้งช่วงเรียก AI
+        //   ด่านกู้สถานะค้างจะได้ไม่ตีตัวที่แค่ "ช้า" ว่าตาย แล้วปั่นซ้อน (ดู isGenerationInFlight)
+        //   ปลดใน finally ท้าย try นี้ — ทุกทางออก (สำเร็จ / ไม่ใช่คำทำนาย / exception)
+        $inFlightToken = self::markGenerationInFlight($reading->id);
 
         try {
             $startTime = microtime(true);
@@ -636,6 +722,9 @@ class CelticCrossService
                     ."⏳ รบกวนเจ้าชะตารอสักครู่แล้วลองพิมพ์คำถามใหม่อีกครั้งนะคะ\n"
                     .'📌 ถ้ายังไม่ได้ พิมพ์ "ขอคุยกับคน" เพื่อให้แอดมินช่วย 🙏',
             ];
+        } finally {
+            // 🔒 ปลดธง "กำลังคิด" ของตัวเอง (ดูตอนปักด้านบน)
+            self::clearGenerationInFlight($reading->id, $inFlightToken);
         }
     }
 

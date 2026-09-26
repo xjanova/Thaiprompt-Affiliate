@@ -759,7 +759,12 @@ class FortuneConversationService
                         //   → silent_skip ทุก message → ลูกค้าจ่ายแล้วใช้ไม่ได้
                         //   Fix: ถ้าเก่ากว่า 90s → auto-recover state + fall through (ไม่ silent_skip)
                         $stuckSeconds = $inPredictionReading->updated_at?->diffInSeconds(now()) ?? 0;
-                        if ($stuckSeconds > 90) {
+                        // 🔒 (2026-09-26 FTU-260926-S8307) Celtic ที่ AI ยังคิดอยู่จริง (ธง in-flight) = ช้า ไม่ใช่ตาย
+                        //   เด้งตอนนี้ = ข้อความลูกค้าไหลเข้าไปถามข้อใหม่ซ้อนตัวที่ยังคิดอยู่ → ตอบซ้ำ/เลขคำถามชน
+                        //   ⇒ ตกไปทางเงียบ/เข้าคิวปุ่มคำถามแนะนำด้านล่างแทน (เหมือนช่วงก่อน 90 วิ)
+                        $celticStillThinking = $status === FortuneReading::STATUS_CELTIC_GENERATING
+                            && CelticCrossService::isGenerationInFlight((int) $inPredictionReading->id);
+                        if ($stuckSeconds > 90 && ! $celticStillThinking) {
                             $recoverStatus = $status === FortuneReading::STATUS_CELTIC_GENERATING
                                 ? FortuneReading::STATUS_CELTIC_AWAITING_QUESTION
                                 : FortuneReading::STATUS_PAID;

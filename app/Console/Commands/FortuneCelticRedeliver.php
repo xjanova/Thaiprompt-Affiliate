@@ -314,6 +314,24 @@ class FortuneCelticRedeliver extends Command
                 ->limit(50)
                 ->get(['id', 'bill_reference', 'updated_at']);
 
+            // 🔒 (2026-09-26 FTU-260926-S8307) "ช้า" ≠ "ตาย" — AI ที่ยังคิดอยู่จริง (ธง in-flight)
+            //   ห้ามเด้งสถานะและห้ามเข้าคิวปั่นใหม่ · เดิมใบที่ AI ตอบช้า 126 วิ ถูกเด้งที่ 109 วิ
+            //   → ลบแถวคำถามแล้วปั่นซ้อน → ลูกค้าได้คำตอบข้อเดียวกัน 2 รอบ (ดู CelticCrossService::isGenerationInFlight)
+            //   ธงหายเมื่อคิดเสร็จ/process ตายเกิน TTL → รอบถัดไปตัดสินด้วยเวลาตามเดิม
+            $stuck = $stuck->reject(function (FortuneReading $r): bool {
+                if (! CelticCrossService::isGenerationInFlight((int) $r->id)) {
+                    return false;
+                }
+
+                Log::info('FortuneCelticRedeliver: GENERATING นานแต่ AI ยังคิดอยู่ (ธง in-flight) → ไม่เด้ง', [
+                    'reading_id' => $r->id,
+                    'bill_reference' => $r->bill_reference,
+                    'generating_seconds' => abs(now()->diffInSeconds($r->updated_at, false)),
+                ]);
+
+                return true;
+            })->values();
+
             foreach ($stuck as $r) {
                 $stuckSec = abs(now()->diffInSeconds($r->updated_at, false));
 
@@ -459,6 +477,13 @@ class FortuneCelticRedeliver extends Command
                 && $reading->updated_at
                 && $reading->updated_at->gt(now()->subSeconds(90))) {
                 return 'busy'; // generation สดกำลังวิ่ง — คงธง pending ไว้รอรอบถัดไป
+            }
+
+            // 🔒 (2026-09-26) AI กำลังคิดข้อนี้อยู่จริง (ธง in-flight) — ไม่ว่า status/อายุจะเป็นเท่าไร
+            //   ใบในคิว celtic_regen_pending อาจถูกเด้ง status ไปแล้ว ทั้งที่ generation เดิมยังวิ่ง
+            //   ลบแถวตอนนี้ = คำตอบตัวจริงหาย (update โดนแถวที่ถูกลบ) + ปั่นซ้อน = ลูกค้าได้ 2 คำตอบ
+            if (CelticCrossService::isGenerationInFlight($reading->id)) {
+                return 'busy';
             }
 
             // ธงเก่า (pre-2026-09-01) = เคยกู้สำเร็จไปแล้ว — ไม่กู้ซ้ำ

@@ -81,7 +81,10 @@ trait CelticCrossConversationTrait
             : 0;
 
         // ค้างเกิน threshold → ถือว่า process ตายแล้ว → revert state เพื่อให้ถามใหม่ได้
-        if ($generatingForSec >= $stuckThresholdSec) {
+        // 🔒 (2026-09-26 FTU-260926-S8307) ยกเว้น AI ยังคิดอยู่จริง (ธง in-flight) = ช้า ไม่ใช่ตาย
+        //   เดิมตอบลูกค้าว่า "พิมพ์คำถามมาใหม่" ทั้งที่ตัวแรกยังคิดอยู่ → ถามซ้อน → ได้คำตอบ 2 รอบ
+        if ($generatingForSec >= $stuckThresholdSec
+            && ! CelticCrossService::isGenerationInFlight((int) $reading->id)) {
             \Log::warning('Celtic: GENERATING state stuck — auto-recovering to AWAITING_QUESTION', [
                 'reading_id' => $reading->id,
                 'bill_reference' => $reading->bill_reference,
@@ -3234,7 +3237,13 @@ trait CelticCrossConversationTrait
         //     เคสจริง: เล่าเรื่องยาวเป็นชิ้นๆ ห่างกัน 15-47 วิ → บอทตอบเต็ม 9 ครั้งใน 25 นาที
         $settleSec = (int) ($this->settings->celtic_qa_settle_seconds ?? 10);
         if ($settleSec > 0 && ! $isCelticBaseChart) {
-            $this->qaTrackRamble($reading);
+            // 🔢 (2026-09-26 FTU-260926-S8307) กดปุ่มคำถามแนะนำ = ถามจริง ไม่ใช่เล่ายาว → ล้างสตรีค
+            //   เดิมนับเหมือนพิมพ์เอง ⇒ คนที่กดปุ่มต่อกันโดนรอ 50 วิทุกข้อ + โดนสั่งตอบสั้น (ดู qaResetRamble)
+            if ($fromSuggestionPick) {
+                $this->qaResetRamble($reading);
+            } else {
+                $this->qaTrackRamble($reading);
+            }
             $settleSec = $this->qaSettleWindow($reading, $settleSec);
             // ✈️ (2026-09-13) ใช้ FortuneRecipient — เดิม whitelist แค่ facebook/line แล้ว regex ตี 'tg_…' เป็น facebook
             //    ⇒ คำตอบ Celtic ที่ลูกค้า Telegram จ่าย 99฿ จะถูกยิงเข้า Facebook Send API แล้วหายเงียบ

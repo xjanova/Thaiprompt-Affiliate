@@ -93,6 +93,8 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
      *
      *   • celtic_generating = รอเสมอ ไม่ดูอายุ — ค้างจริง FortuneCelticRedeliver::recoverStuckGenerating
      *     เด้งกลับเป็น awaiting ให้เองที่ 90 วิ (ถ้าฝืนตอบระหว่าง generating = ชนเลขลำดับคำถาม)
+     *     ⚠️ (2026-09-26) ยกเว้น AI ยังคิดอยู่จริง (ธง CelticCrossService::isGenerationInFlight) — ไม่เด้ง
+     *     ⇒ AI ช้ากว่าเพดานรอคิว (~3 นาที) ข้อที่รอจะตกไปให้ fortune:celtic-answer-recover ตามเดิม
      *   • แถวที่เพิ่งตอบ (< 90 วิ) แต่ยังไม่ mark delivered = กล่องแรกกำลังส่ง
      *     (ยกเว้นแถว error ขึ้นต้น ⚠️ — ไม่มีวันถูก mark ห้ามทำให้ข้อถัดไปรอฟรี 90 วิ)
      *   • bubble_pending ค้าง > 3 นาที = FortuneBubbleRecover รับช่วงกู้ไปแล้ว ไม่ต้องรอ
