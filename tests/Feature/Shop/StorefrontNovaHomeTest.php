@@ -85,6 +85,15 @@ class StorefrontNovaHomeTest extends TestCase
         $this->get('/horoscope')->assertRedirect($juntra);
     }
 
+    public function test_missing_page_shows_the_nova_404(): void
+    {
+        $html = $this->get('/ไม่มีหน้านี้-nova-404')->assertNotFound()->getContent();
+
+        $this->assertStringContainsString('ไม่พบหน้าที่คุณต้องการ', $html);
+        $this->assertStringContainsString('theme-nova/nova.css', $html);
+        $this->assertStringContainsString('images/nova/deco/lamp.webp', $html);
+    }
+
     public function test_logged_in_buyer_sees_cart_in_nova_header(): void
     {
         $buyer = $this->makeBuyer();
@@ -146,7 +155,7 @@ class StorefrontNovaHomeTest extends TestCase
         foreach (['rider', 'store', 'earn'] as $earn) {
             $files[] = "images/nova/earn/{$earn}.webp";
         }
-        foreach (['lotus', 'lantern', 'coins', 'gift', 'crystal', 'garland'] as $deco) {
+        foreach (['lotus', 'lantern', 'coins', 'gift', 'crystal', 'garland', 'umbrella', 'bell', 'elephant', 'scroll', 'scooter', 'bag', 'lamp'] as $deco) {
             $files[] = "images/nova/deco/{$deco}.webp";
         }
 

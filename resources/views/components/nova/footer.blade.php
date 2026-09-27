@@ -27,6 +27,9 @@
 
 <footer class="nv-foot">
     <img class="nv-foot__arch" src="{{ asset('images/nova/brand/tabbar-kanok-arch.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async">
+    {{-- วัตถุตกแต่งยืนบนขอบท้ายเว็บ (ทุกหน้าสาธารณะที่ใช้ธีมโนวา) --}}
+    <img class="nv-foot__deco nv-foot__deco--l" src="{{ asset('images/nova/deco/lamp.webp') }}" alt="" aria-hidden="true" width="319" height="414" loading="lazy" decoding="async">
+    <img class="nv-foot__deco nv-foot__deco--r" src="{{ asset('images/nova/deco/elephant.webp') }}" alt="" aria-hidden="true" width="420" height="418" loading="lazy" decoding="async">
     <div class="nv-wrap">
         <div class="nv-foot__grid">
             <div>

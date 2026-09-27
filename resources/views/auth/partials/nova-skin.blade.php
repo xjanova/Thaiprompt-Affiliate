@@ -49,5 +49,12 @@
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(138, 100, 32, .35), 0 12px 28px -12px rgba(240, 201, 106, .8) !important;
     }
     .nv-auth button[type="submit"].btn-shine:disabled { filter: grayscale(.5); opacity: .6; }
+    /* วัตถุตกแต่งลอยข้างการ์ด (จอกว้างเท่านั้น — จอแคบการ์ดเต็มจอ ไม่มีที่ว่าง) */
+    body.nv-auth::before, body.nv-auth::after { content: ""; position: fixed; z-index: 1; pointer-events: none; background: center / contain no-repeat; filter: drop-shadow(0 18px 26px rgba(0, 0, 0, .55)); animation: nvAuthFloat 9s ease-in-out infinite; }
+    body.nv-auth::before { left: max(2.5vw, calc(50% - 640px)); bottom: 8vh; width: 150px; height: 190px; background-image: url('{{ asset('images/nova/deco/lamp.webp') }}'); }
+    body.nv-auth::after { right: max(2.5vw, calc(50% - 660px)); top: 9vh; width: 200px; height: 200px; background-image: url('{{ asset('images/nova/deco/umbrella.webp') }}'); animation-delay: -4s; }
+    @keyframes nvAuthFloat { 50% { transform: translateY(-14px) rotate(2deg); } }
+    @media (max-width: 1279px) { body.nv-auth::before, body.nv-auth::after { display: none; } }
+    @media (prefers-reduced-motion: reduce) { body.nv-auth::before, body.nv-auth::after { animation: none; } }
 </style>
 @endif

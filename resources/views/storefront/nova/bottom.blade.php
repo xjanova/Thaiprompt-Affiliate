@@ -32,7 +32,8 @@
 @endphp
 
 <div class="nv-wrap">
-    <section class="nv-sec" aria-labelledby="nv-earn-title">
+    <section class="nv-sec nv-sec--decor" aria-labelledby="nv-earn-title">
+        <img class="nv-deco nv-hide-m" src="{{ $rbImg('deco/scooter.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async" style="--x:calc(100% - 178px);--y:18px;--w:168px;--z:10;--t:8s;--r0:-2deg;--r1:2deg">
         <div class="nv-sec__head nv-rv">
             <div><p class="nv-kicker">GROW WITH US</p><h2 class="nv-sec__title" id="nv-earn-title">สร้างรายได้ไปกับ <em>Thai Prompt</em></h2></div>
         </div>
@@ -52,7 +53,6 @@
     @if($rbSection)
     <div class="nv-appwrap" id="nv-app">
         <img class="nv-deco nv-deco--front nv-hide-m" src="{{ $rbImg('deco/garland.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async" style="--x:-18px;--y:-34px;--w:96px;--z:8;--t:6s;--r0:-8deg;--r1:-2deg">
-        <img class="nv-deco nv-deco--front nv-hide-m" src="{{ $rbImg('deco/lotus.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async" style="--x:calc(100% - 118px);--y:calc(100% - 70px);--w:136px;--z:10;--t:9s;--dl:-2s;--r0:-2deg;--r1:2deg">
         <section class="nv-appband nv-rv" aria-labelledby="nv-app-title">
             <img class="nv-appband__kanok" src="{{ $rbImg('brand/kanok-gold.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async">
             <div>

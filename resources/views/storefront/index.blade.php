@@ -374,11 +374,12 @@
     {{-- ════════ สินค้าทั้งหมด ════════ --}}
     <section class="sf-wrap sf-section" id="products">
         @if($sfNova)
-            <div class="sf-section-h">
+            <div class="sf-section-h nv-sec--decor">
                 <div>
                     <div class="sf-kicker">ALL PRODUCTS</div>
                     <h2 class="sf-title">สินค้า<em>ทั้งหมด</em></h2>
                 </div>
+                <img class="nv-deco nv-hide-m" src="{{ asset('images/nova/deco/bag.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async" style="--x:262px;--y:-26px;--w:84px;--z:10;--t:9s;--r0:-6deg;--r1:2deg">
             </div>
         @endif
         <div class="tp-card" style="padding:clamp(14px, 2.4vw, 22px);">

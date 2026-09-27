@@ -279,6 +279,16 @@
         }
     </style>
 
+    @if(config('shop.nova_public', true))
+        {{-- ธีมโนวา: แถบหัว/ท้ายอยู่ในเลย์เอาต์ (เรนเดอร์หลัง stack) จึงโหลดสไตล์ตรงนี้เอง --}}
+        <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
+        <style>
+            /* พื้นหลังวิกิ: ม่วง-ชมพูเดิม → ฟ้าราตรีกรมท่า-ทองของโนวา */
+            .wiki-bg { background: radial-gradient(120% 70% at 50% 110%, rgba(212, 166, 74, .2), transparent 55%), radial-gradient(90% 60% at 50% -10%, #1d3676, transparent 62%), linear-gradient(180deg, #081230 0%, #0a1636 45%, #050916 100%) !important; }
+            .wiki-bg-orbs { display: none; }
+        </style>
+    @endif
     @stack('styles')
 </head>
 <body class="min-h-full font-sans"
@@ -294,14 +304,14 @@
       :class="isDark ? 'dark' : ''">
 
     {{-- Background Gradient - Arrow X V3 Style --}}
-    <div class="fixed inset-0 -z-10 transition-all duration-500"
+    <div class="fixed inset-0 -z-10 transition-all duration-500 wiki-bg"
          :style="isDark
              ? 'background: linear-gradient(to bottom right, #111827, #1f2937, #111827)'
              : 'background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)'">
     </div>
 
     {{-- Animated Background Circles - Arrow X V3 --}}
-    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none wiki-bg-orbs">
         <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full animate-pulse transition-all duration-500"
              :style="isDark
                  ? 'background: linear-gradient(to bottom right, #3b82f6, #8b5cf6); opacity: 0.1; filter: blur(80px);'
@@ -322,6 +332,9 @@
     </div>
 
     {{-- Top Navigation Bar - Arrow X V3 Glass Fusion --}}
+    @if(config('shop.nova_public', true))
+        <x-nova.header :solid="true" :search="false" active="" />
+    @else
     <header class="sticky top-0 z-50 glass-fusion border-b border-white/20 dark:border-gray-700/50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -441,6 +454,7 @@
             </div>
         </div>
     </header>
+    @endif
 
     {{-- Main Content --}}
     <main class="min-h-screen">
@@ -448,6 +462,9 @@
     </main>
 
     {{-- Footer --}}
+    @if(config('shop.nova_public', true))
+        <x-nova.footer />
+    @else
     <footer class="glass-fusion border-t border-gray-200 dark:border-white/20 dark:border-gray-700/50 py-8 mt-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -464,6 +481,7 @@
             </div>
         </div>
     </footer>
+    @endif
 
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-[90] space-y-2 max-w-md"

@@ -226,6 +226,7 @@
 .nv-night__cta { display: flex; justify-content: center; margin-top: 34px; }
 
 /* สร้างรายได้ */
+.nv-sec--decor { position: relative; }
 .nv-earn { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .nv-ecard { position: relative; min-height: 380px; border-radius: 28px; overflow: hidden; color: #fff7e3; display: flex; flex-direction: column; justify-content: flex-end; padding: 26px; background: #0b1633; box-shadow: 0 30px 60px -30px rgba(7, 13, 32, .7); isolation: isolate; text-decoration: none; }
 .nv-ecard:hover { color: #fff7e3; }
@@ -275,6 +276,10 @@
 /* ท้ายเว็บ */
 .nv-foot { position: relative; z-index: 5; margin-top: auto; padding: 70px 0 34px; color: rgba(236, 229, 210, .72); background: linear-gradient(180deg, #0a1530, #050916); font-family: var(--nv-font-ui); }
 .nv-foot__arch { position: absolute; left: 50%; top: -26px; width: min(360px, 70vw); transform: translateX(-50%); }
+/* วัตถุตกแต่งยืนบนขอบท้ายเว็บ — ลอยขึ้นลงช้าๆ (transform) · translate ใช้ดันขึ้นไปยืนบนขอบ */
+.nv-foot__deco { position: absolute; top: 0; z-index: 1; height: auto; pointer-events: none; filter: drop-shadow(0 16px 20px rgba(0, 0, 0, .5)); animation: nv-dfloat 8s ease-in-out infinite; }
+.nv-foot__deco--l { left: max(18px, calc(50% - 600px)); width: 88px; translate: 0 -64%; --r0: -3deg; --r1: 2deg; }
+.nv-foot__deco--r { right: max(18px, calc(50% - 600px)); width: 150px; translate: 0 -60%; --r0: 2deg; --r1: -2deg; animation-delay: -3s; }
 .nv-foot__grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 30px; }
 .nv-foot h4 { margin: 0 0 12px; font-family: var(--nv-font-display); color: var(--nv-gold-200); font-size: 17px; }
 .nv-foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14.5px; }
@@ -414,6 +419,9 @@ body.nv-body {
 .nv-body .sf-store-logo + div { align-self: flex-start; padding-top: 30px; }
 .nv-body .sf-store-logo { border-color: #fff !important; box-shadow: 0 0 0 1px rgba(212, 166, 74, .5), 0 8px 18px -8px rgba(13, 27, 61, .5) !important; background: #faf6ec !important; }
 
+/* หน้ากฎหมาย (ความเป็นส่วนตัว / ข้อกำหนด) — คัมภีร์ทองมุมขวาบนของกรอบเอกสาร */
+.nv-body .legal-doc { position: relative; }
+.nv-body .legal-doc::before { content: ""; position: absolute; right: -30px; top: -58px; width: 112px; height: 124px; background: url(../images/nova/deco/scroll.webp) center / contain no-repeat; transform: rotate(8deg); filter: drop-shadow(0 14px 18px rgba(70, 48, 12, .3)); pointer-events: none; }
 /* หน้าแรกโนวา: รายการสินค้าวางบนแผ่นงาช้างตรงๆ ไม่ต้องมีกรอบการ์ดใหญ่ครอบ */
 .nv-page #products > .tp-card { padding: 0 !important; background: none; border: 0; box-shadow: none; }
 
@@ -489,6 +497,9 @@ body.nv-body {
     .nv-deco { --w: 64px !important; }
     .nv-deco.nv-hide-m { display: none; }
     .nv-guide { left: 10px; bottom: 10px; }
+    .nv-foot__deco--l { width: 58px; }
+    .nv-foot__deco--r { width: 96px; }
+    .nv-body .legal-doc::before { width: 70px; height: 78px; right: -6px; top: -42px; }
     .nv-guide__bubble { max-width: 220px; font-size: 13px; }
     .nv-timer__last { display: none; }
 }

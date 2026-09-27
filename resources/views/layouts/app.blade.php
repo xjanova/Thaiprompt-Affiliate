@@ -8,6 +8,8 @@
     @php
         $pageType = $pageType ?? 'home';
         $seoData = $seoData ?? [];
+        // ธีมโนวา: เฉพาะหน้าสาธารณะที่ยังใช้เลย์เอาต์นี้ — ส่วนผู้ใช้/โรงแรม/หลังบ้านที่ใช้เลย์เอาต์เดียวกันไม่แตะ (เจ้าของสั่งยกเว้นส่วนผู้ใช้)
+        $novaShell = config('shop.nova_public', true) && request()->routeIs('tarot.*', 'qr-barcode.*', 'software.products.*');
     @endphp
 
     {!! render_seo_meta($pageType, $seoData) !!}
@@ -43,10 +45,17 @@
     <x-dark-mode-init />
     <x-dark-mode-styles />
 
+    @if($novaShell)
+        {{-- แถบหัวโนวาอยู่ในเลย์เอาต์ (เรนเดอร์หลัง stack) จึงโหลดสไตล์ตรงนี้เอง --}}
+        <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
+    @endif
+
     @stack('styles')
 
     @stack('seo')
 
+    @unless($novaShell)
     <style>
         /* Ensure Windows UI has proper z-index */
         body {
@@ -61,6 +70,7 @@
             @endif
         }
     </style>
+    @endunless
 
     {{-- Laravel Echo Configuration --}}
     <x-echo-config />
@@ -74,6 +84,16 @@
         $taskbarType = auth()->check() ? 'user' : 'guest';
     @endphp
 
+    @if($novaShell)
+        {{-- ธีมโนวา: แถบหัวทึบติดบน + ท้ายเว็บโนวา แทนแถบงาน Classic X --}}
+        <div style="min-height:100vh; display:flex; flex-direction:column;">
+            <x-nova.header :solid="true" :search="true" :active="request()->routeIs('tarot.*') ? 'fortune' : ''" />
+            <main style="flex:1;">
+                @yield('content')
+            </main>
+            <x-nova.footer />
+        </div>
+    @else
     <!-- Classic X Sidebar -->
     <x-classic-x-sidebar type="{{ $taskbarType }}" />
 
@@ -90,6 +110,7 @@
 
     <!-- Floating Action Buttons for Classic X Theme -->
     <x-classic-x-floating-buttons />
+    @endif
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
