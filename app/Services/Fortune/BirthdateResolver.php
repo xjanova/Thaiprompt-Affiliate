@@ -44,6 +44,15 @@ final class BirthdateResolver
     public const SRC_DAILY_DM = 'daily_dm';
 
     /**
+     * 🎂 (2026-09-27) วันเกิดที่อยู่ในบิลนี้เองแล้ว — ลูกค้าแจ้งระหว่างรอโอน/เปิดไพ่ หรือแอดมินกรอก
+     *
+     * เดิม forReading() ตัดบิลปัจจุบันทิ้งเสมอ (excludeReadingId) ⇒ ลูกค้าพิมพ์วันเกิดที่ถูกไว้ในบิลนี้
+     *   แต่หลังจ่ายเงิน ระบบไปหยิบวันเกิดจาก "บิลเก่า" มาทับ (SmsPaymentService / Celtic ครบ 10 ใบ)
+     *   เคส FTU-260927-A4514: บิลเก่าของลูกค้าคนนี้มีวันเกิดผิด 1978-07-27 ปนอยู่ (ที่ถูก 1978-06-27)
+     */
+    public const SRC_THIS_READING = 'this_reading';
+
+    /**
      * หา ว/ด/ป ล่าสุดที่เชื่อถือได้ที่สุดของลูกค้าคนนี้
      *
      * ลำดับ: บิลที่จ่ายเงิน → บิลทั่วไป → วันเกิดจาก DM ดวงฟรี
@@ -86,6 +95,22 @@ final class BirthdateResolver
      */
     public static function forReading(FortuneReading $reading): ?array
     {
+        // 🎂 (2026-09-27) บิลนี้มีวันเกิดอยู่แล้ว = ข้อมูลที่ใหม่และตรงตัวที่สุด ชนะบิลเก่าเสมอ
+        if (! empty($reading->birth_date)) {
+            try {
+                $date = Carbon::parse($reading->birth_date);
+
+                return [
+                    'ymd' => $date->format('Y-m-d'),
+                    'date' => $date,
+                    'source' => self::SRC_THIS_READING,
+                    'reading_id' => $reading->id ? (int) $reading->id : null,
+                ];
+            } catch (\Throwable $e) {
+                // อ่านไม่ได้ → ไปหาจากบิลเก่าตามเดิม
+            }
+        }
+
         return self::resolve(
             (string) ($reading->facebook_user_id ?? ''),
             (string) ($reading->platform_user_id ?? ''),
@@ -102,6 +127,7 @@ final class BirthdateResolver
     public static function sourceLabel(string $source): string
     {
         return match ($source) {
+            self::SRC_THIS_READING => '(ตามที่เจ้าชะตาแจ้งแม่หมอไว้ในบิลนี้)',
             self::SRC_PAID_READING => '(จากบิลที่เจ้าชะตาเคยดูกับแม่หมอ)',
             self::SRC_READING => '(จากที่เคยกรอกไว้กับแม่หมอ)',
             self::SRC_DAILY_DM => '(จากที่เจ้าชะตาเคยพิมพ์บอกแม่หมอตอนขอดวงรายวัน)',

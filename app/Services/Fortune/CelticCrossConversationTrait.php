@@ -1521,6 +1521,28 @@ trait CelticCrossConversationTrait
         //    ที่เคย bug: looksLikeMetaOrChitchat อาจจับ "ดี" prefix → "ดีค่ะเปิดเลย" → chitchat → ไม่เปิดไพ่
         $isExplicitPick = $this->matchesCelticReadyKeyword($messageText);
 
+        // 🎂 (2026-09-27, owner) ลูกค้าพิมพ์วันเกิด/เวลา/จังหวัดเกิดระหว่างเปิดไพ่ → ลงบิลทันที
+        //   เดิม "27/6/2521" ถูกนับเป็น "พร้อม" (เปิดไพ่ไป 1 ใบ) แล้ววันเกิดหายไปกับการเปิดไพ่
+        //   ข้อความที่มีแต่ข้อมูลเกิด → ทวนสิ่งที่บันทึก + ชวนเปิดไพ่ต่อ (ไม่กินไพ่)
+        //   มีเรื่องอื่นปน → บันทึกแล้วไหลต่อเส้นเดิม (park คำถาม / เปิดไพ่)
+        if (! $isExplicitPick) {
+            $birthSaved = $this->captureCelticPickingBirthInfo($reading, $messageText);
+            if ($birthSaved !== null && $birthSaved['only']) {
+                $picked = $reading->getCelticPickedCount();
+
+                return [
+                    'action' => 'celtic_question_parked',
+                    'message' => "📝 แม่หมอบันทึกข้อมูลเกิดของลูกลงบิลให้แล้วนะคะ\n"
+                        .implode("\n", $birthSaved['lines'])."\n"
+                        ."_(ถ้าไม่ใช่ของลูกเอง พิมพ์วันเกิดของลูกมาทับได้เลยค่ะ)_\n\n"
+                        ."🃏 เปิดไพ่ครบ 10 ใบเมื่อไหร่ แม่หมอผูกดวงจากข้อมูลนี้ให้เลย — ตอนนี้ได้ *{$picked}/10 ใบ*\n\n"
+                        ."──────────────────────\n"
+                        .'👉 พิมพ์ *"พร้อม"* เพื่อเปิดไพ่ใบถัดไปได้เลยค่ะ ✨',
+                    'reading' => $reading,
+                ];
+            }
+        }
+
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" — ห้ามถือเป็น "พร้อม" สุ่มไพ่
         if (! $isExplicitPick && $this->looksLikeFortuneRestartRequest($messageText)) {
             $picked = $reading->getCelticPickedCount();
@@ -2016,8 +2038,10 @@ trait CelticCrossConversationTrait
                 $priorBirth = $priorHit === null ? null : $priorHit['date']->format('d/m/Y');
                 if ($priorBirth !== null) {
                     // เคยให้วันเกิด/ทำ 39 มาแล้ว → ใช้เลย ไม่ถามซ้ำ
+                    //   🎂 (2026-09-27) รวมถึงวันเกิดที่ลูกค้าแจ้งไว้ในบิลนี้เอง (ระหว่างรอโอน/เปิดไพ่) — ชนะบิลเก่า
                     $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$priorBirth);
                     $reading->setConversationState('celtic_birthdate_from_prior', true);
+                    $reading->setConversationState('celtic_birthdate_prior_source', $priorHit['source']);
                     // 🎂 (2026-09-07) เขียนคอลัมน์ `birth_date` ด้วย — ห้ามเก็บไว้แค่ใน conversation_state
                     //   เดิม path นี้ตั้งแต่ state อย่างเดียว ⇒ คอลัมน์ค้าง NULL ทั้งบิล
                     //   ผลจริง (prod 14 วัน: 13 จาก 75 บิล 99฿ ที่ลูกค้า *ให้วันเกิดแล้ว*):
@@ -2169,8 +2193,20 @@ trait CelticCrossConversationTrait
                 .'💬 เล่าให้แม่หมอฟังได้เลย — ตอนนี้มีเรื่องอะไรคาใจที่สุด?';
 
         // 🎂 (2026-06-08) เคยมีวันเกิดในฐาน (39/เคยทำ) → บอกว่าจำได้ + จะอ่านไพ่ผสมดวงดาวให้
+        //   🎂 (2026-09-27) บอก "วันเกิดที่ใช้" ด้วย — เดิมบอกแค่ว่าจำได้ ลูกค้าไม่มีทางรู้ว่าระบบหยิบวันไหนมา
+        //     (บิลเก่าของลูกค้าบางคนมีวันเกิดผิดปนอยู่ — FTU-260725-J8315 ได้ 1978-07-27 ทั้งที่เกิด 27/6/2521)
+        //     เห็นวันที่ = แย้งได้ทันที และตอนนี้พิมพ์วันเกิดที่ถูกกลางวงถาม-ตอบ = แก้ในบิลได้จริงแล้ว
         if ($reading->getConversationState('celtic_birthdate_from_prior')) {
-            $openingText = "🎂 แม่หมอจำวันเกิดของเจ้าชะตาได้แล้วนะคะ — จะอ่านไพ่ผสมกับดวงดาว (ดาวเจ้าชนะ) ให้เลยค่ะ ✨\n\n"
+            $usedDate = $reading->birth_date?->format('Y-m-d');
+            $usedLabel = \App\Services\Fortune\BirthdateResolver::sourceLabel(
+                (string) $reading->getConversationState('celtic_birthdate_prior_source', '')
+            );
+            $openingText = ($usedDate !== null
+                    ? '🎂 แม่หมอผูกดวงจากวันเกิด *'.$this->formatThaiDate($usedDate).'* '
+                        .($usedLabel !== '' ? $usedLabel.' ' : '')
+                        ."— จะอ่านไพ่ผสมกับดวงดาว (ดาวเจ้าชนะ) ให้เลยค่ะ ✨\n"
+                        ."   (ถ้าวันเกิดไม่ถูก พิมพ์วันเกิดที่ถูกมาได้เลย แม่หมอแก้ในบิลให้ค่ะ)\n\n"
+                    : "🎂 แม่หมอจำวันเกิดของเจ้าชะตาได้แล้วนะคะ — จะอ่านไพ่ผสมกับดวงดาว (ดาวเจ้าชนะ) ให้เลยค่ะ ✨\n\n")
                 .$openingText;
         }
 
@@ -2556,9 +2592,11 @@ trait CelticCrossConversationTrait
         $text = trim($text);
         try {
             // source=time_answer → ใช้ตัวอ่านแบบผ่อนกฎ (ทั้งข้อความคือคำตอบเรื่องเวลา)
-            $reading->captureStatedBirthTime($text, FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER);
+            // 🎂 (2026-09-27) touchState:false — พื้นดวงที่ตามมาคือคำตอบรับของขั้นนี้อยู่แล้ว
+            //   ธงทวน one-shot จะไปโผล่ผิดจังหวะ (คำถามข้อถัดไป/คุยต่อหลังบทสรุป: "เจ้าชะตาเพิ่งบอกเวลาเกิด…")
+            $reading->captureStatedBirthTime($text, FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER, touchState: false);
             // 🗺️ (2026-09-09) กล่องเดียวถามทั้งเวลาและจังหวัด ⇒ ต้องอ่านทั้งสองจากข้อความเดียวกัน
-            $reading->captureStatedBirthProvince($text, FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER);
+            $reading->captureStatedBirthProvince($text, FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER, touchState: false);
         } catch (\Throwable $e) {
             // non-blocking — ตกไปใช้เวลามาตรฐาน 12:00 น. + พิกัดกรุงเทพ
         }
@@ -2692,9 +2730,10 @@ trait CelticCrossConversationTrait
             $reading->setConversationState('celtic_birthdate_text', 'เจ้าชะตาเกิด '.$human);
             $reading->setConversationState('celtic_birthdate_pending', false);
             // 🕛 (2026-09-02) ลูกค้าพิมพ์เวลาเกิดมาพร้อมวันเกิด ("29/01/2516 ตอน 6 โมงเช้า") → เก็บด้วย
-            $reading->captureStatedBirthTime($text, 'celtic_birthdate');
+            //   🎂 (2026-09-27) touchState:false — ขั้นนี้ทวนเองแล้ว (ดู handleCelticBirthTimeStep)
+            $reading->captureStatedBirthTime($text, 'celtic_birthdate', touchState: false);
             // 🗺️ (2026-09-09) เช่นเดียวกับจังหวัด ("29/01/2516 ที่เชียงใหม่") — เก็บตั้งแต่ตอนนี้จะได้ไม่ต้องถาม
-            $reading->captureStatedBirthProvince($text, 'celtic_birthdate');
+            $reading->captureStatedBirthProvince($text, 'celtic_birthdate', touchState: false);
             // 🌟 (2026-06-08) flag คำทำนายพื้นดวงเปิดตัว — รอบแรกใช้โครงสร้างแบบ 39 (ดวงดาวเต็ม)
             //   ผสานไพ่ 10 ใบ + ยาว 1500-3000 (buildFollowupPrompt อ่าน flag นี้ + เคลียร์ทิ้งหลังใช้)
             $reading->setConversationState('celtic_base_chart', true);
@@ -2941,6 +2980,93 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 🎂 (2026-09-27, owner) ข้อมูลเกิดที่ลูกค้าพิมพ์กลางวงถาม-ตอบ 99 — ลงบิลจริง ไม่ใช่ให้ AI รับปาก
+     *
+     *   1. คำขอแก้วันเกิด / วันเกิดของตัวเองที่ไม่ตรงกับบิล → กล่องยืนยัน (BirthdateCorrectionTrait)
+     *      ถามก่อนเสมอ เพราะกลางวงคุย "3/6/2497" อาจเป็นวันเกิดแฟนที่ส่งตามคำถามก่อนหน้า
+     *   2. ส่งวันเกิดเดิมมาซ้ำ (ตรงกับบิล) → บอกว่าใช้อยู่แล้ว + เก็บเวลา/จังหวัดที่พ่วงมา · ไม่กินสิทธิ์ถาม
+     *   3. บิลยังไม่มีวันเกิด (ข้ามขั้นวันเกิด) + บอกวันเกิดตัวเองพร้อมคำถาม → ลงบิลเลย แล้วตอบคำถามตามปกติ
+     *      (วันเกิดเปล่า ๆ ให้เส้น "วันเกิดมาช้า" เดิมจัดการ — เส้นนั้นสร้างพื้นดวงให้ด้วย)
+     *
+     * @return array|null คำตอบที่ต้องส่งทันที · null = ไม่เกี่ยวกับข้อมูลเกิด ให้ถาม-ตอบตามปกติ
+     */
+    protected function handleCelticQaBirthStatement(FortuneReading $reading, string $text): ?array
+    {
+        if (method_exists($this, 'handleBirthdateCorrection')) {
+            $correction = $this->handleBirthdateCorrection($reading, $text);
+            if ($correction !== null) {
+                return $correction;
+            }
+        }
+
+        $current = $reading->birth_date?->format('Y-m-d');
+
+        if ($current !== null && \App\Support\OwnBirthDate::isBirthInfoOnly($text)) {
+            $found = \App\Support\OwnBirthDate::find($text);
+            if ($found !== null && $found['conflict'] === null && $found['ymd'] === $current) {
+                $lines = $this->captureCorrectionBirthDetails($reading, $text);
+
+                return [
+                    'action' => 'celtic_invite_question',
+                    'message' => '🎂 วันเกิด *'.$this->formatThaiDate($current).'* ตรงกับที่แม่หมอผูกดวงให้อยู่แล้วค่ะ'
+                        .($lines !== [] ? "\n📝 บันทึกเพิ่มลงบิลแล้ว:\n".implode("\n", $lines) : '')
+                        ."\n\n💬 พิมพ์ถามเรื่องที่อยากรู้ต่อได้เลยนะคะ ✨",
+                    'reading' => $reading,
+                ];
+            }
+        }
+
+        if ($current === null) {
+            $found = \App\Support\OwnBirthDate::find($text, allowBare: false);
+            if ($found !== null && $found['conflict'] === null
+                && $reading->captureStatedBirthDate($found['ymd'], 'celtic_qa_self')) {
+                \Log::info('Celtic: ลูกค้าบอกวันเกิดตัวเองพร้อมคำถาม (บิลยังไม่มีวันเกิด) → ลงบิลแล้ว', [
+                    'reading_id' => $reading->id,
+                    'birth_date' => $found['ymd'],
+                ]);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🎂 (2026-09-27) ข้อมูลเกิดที่ลูกค้าพิมพ์ระหว่างเปิดไพ่ (ยังไม่ทำนาย) → ลงบิลเลย ไม่ต้องยืนยัน
+     *
+     * เดิม "27/6/2521" (สั้นกว่า 10 ตัว) ถูกนับเป็น "พร้อม" → เปิดไพ่ไป 1 ใบ แล้ววันเกิดหายไปกับการเปิดไพ่
+     * พอครบ 10 ใบ ระบบไปหยิบวันเกิดจากบิลเก่าแทน (อาจเป็นวันที่ผิดที่ลูกค้าเพิ่งพยายามแก้)
+     * ตอนนี้ลงคอลัมน์ไว้ → ครบ 10 ใบ BirthdateResolver หยิบของบิลนี้ก่อนบิลเก่าเสมอ
+     *
+     * @return array{only: bool, lines: array<int, string>}|null null = ไม่ได้บันทึกอะไร
+     */
+    protected function captureCelticPickingBirthInfo(FortuneReading $reading, string $text): ?array
+    {
+        try {
+            $found = \App\Support\OwnBirthDate::find($text);
+            if ($found === null || $found['conflict'] !== null) {
+                return null;
+            }
+
+            $only = \App\Support\OwnBirthDate::isBirthInfoOnly($text);
+            $lines = [];
+            if ($reading->captureStatedBirthDate($found['ymd'], 'celtic_picking')
+                || $reading->birth_date?->format('Y-m-d') === $found['ymd']) {
+                $lines[] = '🎂 วันเกิด: *'.$this->formatThaiDate($found['ymd']).'*';
+            }
+            $lines = array_merge($lines, $this->captureCorrectionBirthDetails($reading, $text));
+
+            return $lines === [] ? null : ['only' => $only, 'lines' => $lines];
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: เก็บข้อมูลเกิดระหว่างเปิดไพ่ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * 🗺️ (2026-06-08) สร้าง/ดึง "แผนที่ดาวชะตา" (birth chart) ของ Celtic — ส่งคู่ภาพไพ่ตอนสรุป
      *
      * user spec: "ตอนสรุปให้ส่งแผนที่ดาวชะตาไปกับแผนภูมิภาพไพ่พร้อมกัน"
@@ -2992,6 +3118,19 @@ trait CelticCrossConversationTrait
         // 🆕 (2026-06-23) flag: คำถามนี้เป็น "พื้นดวงเปิดตัว auto" (จาก birthdate step) หรือไม่
         //   → ถ้าใช่ ส่ง isAutoBaseChart=true ให้ askQuestion (นับ used แต่ไม่เริ่มจับเวลา 15 นาที)
         $isCelticBaseChart = false;
+
+        // 🎂 (2026-09-27, owner) ลูกค้าแก้/บอกวันเกิดกลางวงถาม-ตอบ → ต้องลงบิลจริง ห้ามให้ AI รับปากลอย ๆ
+        //   owner: "ลูกค้าเปลี่ยนวันเกิด แม่หมอรับว่ารับวันเกิดแล้ว แต่ไม่เปลี่ยนในบิลให้ตรงจริง"
+        //   เดิมเลน 99 ไม่มีทางแก้วันเกิดเลย — ข้อความไหลเป็น "คำถาม" (กินสิทธิ์) แล้ว AI ตอบรับเอง
+        //   ⚠️ ข้ามเมื่อยังอยู่ในด่านวันเกิด/เวลาเกิด — สองด่านนั้นรับข้อมูลเกิดของมันเอง
+        //   ⚠️ ต้องอยู่ก่อน settle-buffer — กล่องยืนยันต้องตอบทันที ไม่ใช่ถูกอมไปรวมเป็นคำถาม
+        if (! $reading->getConversationState('celtic_birthtime_pending')
+            && ! $reading->getConversationState('celtic_birthdate_pending')) {
+            $birthFix = $this->handleCelticQaBirthStatement($reading, $question);
+            if ($birthFix !== null) {
+                return $birthFix;
+            }
+        }
 
         // 🎂 (2026-06-08) ขั้นถามวันเกิด (คำถามแรกบังคับใน Celtic 99) — ต้องอยู่บนสุด ก่อน Q&A ปกติ
         //   handleCelticBirthdateStep คืน:
@@ -3192,7 +3331,13 @@ trait CelticCrossConversationTrait
             ]);
 
             if ($isBirthdateFragment) {
-                $inviteMsg = "🌙 รับทราบค่ะ — แม่หมอเก็บไว้ผูกกับดวงให้นะคะ\n\n"
+                // 🎂 (2026-09-27) เดิมตอบ "แม่หมอเก็บไว้ผูกกับดวงให้นะคะ" ทั้งที่ไม่มีอะไรถูกเก็บเลย
+                //   (เศษวันเกิด "วันจันทร์"/"ปีฉลู" ไม่พอผูกดวง) ⇒ บอกตามจริงว่าผูกจากอะไรอยู่ + ทางแก้
+                $usedDate = $reading->birth_date?->format('Y-m-d');
+                $inviteMsg = ($usedDate !== null
+                        ? '🌙 รับทราบค่ะ — ตอนนี้แม่หมอผูกดวงจากวันเกิด *'.$this->formatThaiDate($usedDate).'* อยู่นะคะ'
+                            ."\n   ถ้าไม่ตรง พิมพ์ วัน/เดือน/ปีเกิด ที่ถูกมาได้เลย แม่หมอแก้ในบิลให้ค่ะ\n\n"
+                        : "🌙 รับทราบค่ะ — ถ้าอยากให้แม่หมอผูกดวงจากวันเกิด พิมพ์ วัน/เดือน/ปีเกิด มาได้เลยนะคะ (เช่น 27/6/2521)\n\n")
                     .'💬 อยากให้แม่หมอดูเรื่องอะไรต่อคะ? พิมพ์คำถามมาได้เลย (ความรัก งาน เงิน สุขภาพ หรือเรื่องที่ค้างคาใจ)';
             } elseif ($usedQ === 0) {
                 $inviteMsg = "🌙 เปิดไพ่ครบแล้วค่ะ — เจ้าชะตาอยากให้แม่หมอดูเรื่องอะไรก่อนดีคะ\n\n"

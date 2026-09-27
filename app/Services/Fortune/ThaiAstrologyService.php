@@ -132,9 +132,16 @@ class ThaiAstrologyService
      *     ->buildCelticBirthAstrologyBlock('เกิด 27/6/1978 คู่ปรับเกิด 6/2/2532');
      * // → บล็อกดวงดาว 2 คน + directive ให้ผสานกับไพ่
      */
-    public function buildCelticBirthAstrologyBlock(string $text, ?float $birthHour = null, ?string $birthProvince = null): string
+    public function buildCelticBirthAstrologyBlock(string $text, ?float $birthHour = null, ?string $birthProvince = null, array $excludeYmds = []): string
     {
-        $dates = $this->extractBirthDatesFromText($text);
+        // 🎂 (2026-09-27) วันเกิดเดิมที่ลูกค้าแก้ทิ้งแล้ว (FortuneReading::replacedBirthDates) — ห้ามกลับมาเป็น "คนที่ 2"
+        //   ข้อความต้นทางเก็บคำถามเก่าไว้ทั้งก้อน วันเกิดเดิมจึงยังอยู่ในนั้น ⇒ ต้องตัดที่นี่
+        $excludeYmds = array_values(array_filter($excludeYmds, 'is_string'));
+        $dates = $this->extractBirthDatesFromText($text, self::MAX_PEOPLE + count($excludeYmds));
+        if ($excludeYmds !== []) {
+            $dates = array_values(array_filter($dates, fn ($d) => ! in_array($d['ymd'], $excludeYmds, true)));
+        }
+        $dates = array_slice($dates, 0, self::MAX_PEOPLE);
 
         if (empty($dates)) {
             return '';

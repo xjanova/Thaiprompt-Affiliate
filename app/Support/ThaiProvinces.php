@@ -479,4 +479,19 @@ class ThaiProvinces
     {
         return array_keys(self::PROVINCES);
     }
+
+    /**
+     * ลบชื่อจังหวัด/ชื่อเรียกทุกตัวออกจากข้อความ (ยาวก่อนสั้น) — ใช้เช็คว่า "ข้อความนี้มีแต่ข้อมูลเกิดไหม"
+     * (OwnBirthDate::residual) ไม่ใช่ตัวอ่านที่เกิด — ตัวอ่านที่เกิดคือ resolve()/resolveBirthplace()
+     */
+    public static function stripNames(string $text): string
+    {
+        foreach (array_keys(self::candidates()) as $needle) {
+            if (mb_strpos($text, $needle) !== false) {
+                $text = str_replace($needle, ' ', $text);
+            }
+        }
+
+        return $text;
+    }
 }

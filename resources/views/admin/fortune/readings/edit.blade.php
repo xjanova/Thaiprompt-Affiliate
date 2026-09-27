@@ -92,21 +92,23 @@
                             สถานะ Conversation
                         </label>
                         <div class="tp-well tp-input" style="padding:0;">
+                            {{-- 🎂 (2026-09-27) เดิมมีตัวเลือกแค่ 9 สถานะของเลน 39 — บิล Celtic / รอจ่าย 99 / บัตร
+                                 ไม่มีตัวเลือกที่ตรงกับสถานะจริง เบราว์เซอร์จึงเลือกตัวแรก ("ใหม่") ให้เอง
+                                 ⇒ แอดมินเข้ามาแก้แค่วันเกิดแล้วกดบันทึก = สถานะบิลกลายเป็น new หลุดจากขั้นตอนเงียบ ๆ
+                                 เคสจริง FTU-260927-A4514: กำลังถาม-ตอบ 99 (celtic_awaiting_question) → new
+                                 ใช้ชื่อสถานะชุดเดียวกับ Warroom/ตัวกรอง (FortuneFunnelStage) + ใส่สถานะปัจจุบันเสมอ --}}
+                            @php
+                                $statusOptions = \App\Support\FortuneFunnelStage::STATUS_NAMES
+                                    + [\App\Support\FortuneFunnelStage::REJECTED_STATUS => 'ยกเลิก (ปฏิเสธจากแอป)'];
+                                if (! array_key_exists((string) $reading->conversation_status, $statusOptions)) {
+                                    $statusOptions[(string) $reading->conversation_status] = (string) $reading->conversation_status;
+                                }
+                            @endphp
                             <select name="conversation_status"
                                     style="width:100%; background:transparent; border:0; outline:0; padding:11px 13px; color:var(--ink); font-size:14px;">
-                                @foreach([
-                                    'new' => '🆕 ใหม่',
-                                    'awaiting_confirmation' => '⏳ รอยืนยัน',
-                                    'basic_done' => '🔮 Basic เสร็จ',
-                                    'collecting_birthdate' => '📅 รับวันเกิด',
-                                    'collecting_questions' => '❓ รับคำถาม',
-                                    'collecting_tarot' => '🃏 รับไพ่',
-                                    'pending_payment' => '💳 รอชำระ',
-                                    'paid' => '✅ ชำระแล้ว',
-                                    'completed' => '🏁 เสร็จสิ้น',
-                                ] as $value => $label)
+                                @foreach($statusOptions as $value => $label)
                                     <option value="{{ $value }}" @selected(old('conversation_status', $reading->conversation_status) === $value)>
-                                        {{ $label }}
+                                        {{ $label }} ({{ $value }})
                                     </option>
                                 @endforeach
                             </select>

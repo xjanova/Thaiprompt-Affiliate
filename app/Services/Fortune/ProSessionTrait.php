@@ -1271,19 +1271,21 @@ trait ProSessionTrait
         //   ลูกค้าถาม "แล้วดวงเรื่องงานล่ะ" หลังบทสรุป → ไม่มีข้อเท็จจริงให้ยึด → มโน
         $celticAstroBlock = '';
         try {
-            $astroSource = (string) $reading->getConversationState('celtic_birthdate_text', '');
-            if ($astroSource === '' && $reading->birth_date) {
-                $astroSource = 'เจ้าชะตาเกิด '.$reading->birth_date->format('d/m/Y');
-            }
+            // 🎂 (2026-09-27, owner) วันเกิดในบิลขึ้นก่อนเสมอ (= เจ้าชะตา) — ตัวเดียวกับเลนถาม-ตอบ 99
+            //   เดิมอ่าน celtic_birthdate_text ก่อน ⇒ ลูกค้า/แอดมินแก้วันเกิดในบิลแล้ว ผังคุยต่อยังเป็นวันเดิม
+            $astroSource = $reading->celticBirthAstroSource();
             // 🕛 ต่อท้ายเวลาเฉพาะตอน "รู้จริง" — ค่ามาตรฐาน 12:00 ห้ามเอาไปบอกว่าลูกค้าบอกมา
-            if ($astroSource !== '' && $reading->birthTimeIsKnown()) {
-                $astroSource .= ' เวลาเกิด '.FortuneReading::hourToTimeString((float) $reading->birthHourFloat(), false).' น.';
+            $knownHour = $reading->birthTimeIsKnown() ? (float) $reading->birthHourFloat() : null;
+            if ($astroSource !== '' && $knownHour !== null) {
+                $astroSource .= "\nเจ้าชะตาเกิดเวลา ".FortuneReading::hourToTimeString($knownHour, false).' น.';
             }
             if ($astroSource !== '') {
                 $celticAstroBlock = (new ThaiAstrologyService)->buildCelticBirthAstrologyBlock(
                     $astroSource,
-                    null,
-                    $reading->birthProvinceIfKnown()
+                    // เวลาที่ยืนยันแล้วส่งตรง — ห้ามให้ตัว parse เดาจากข้อความ (อาจมีเวลาเกิดของคู่ปนอยู่ก่อน)
+                    $knownHour,
+                    $reading->birthProvinceIfKnown(),
+                    $reading->replacedBirthDates()
                 );
                 $justUpdated = $reading->pullBirthTimeJustUpdated();
                 if ($justUpdated !== null && $celticAstroBlock !== '') {
@@ -1459,10 +1461,27 @@ trait ProSessionTrait
             $reading->setConversationState('awaiting_birth_time', null);
         }
 
-        $reading->captureStatedBirthTime(
-            $messageText,
-            $isAnswer ? FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER : 'pro_session'
-        );
+        // 🎂 (2026-09-27) ข้ามเมื่อ "เกิด" ในข้อความเป็นของคนอื่น ("แฟนเกิดตี 2") — ตัวอ่านเวลาไม่มีด่านนี้
+        //    แล้วพรอมต์จะสั่งให้แม่หมอทวนว่า "รับเวลาเกิดแล้ว" = ผูกดวงลูกค้าด้วยเวลาเกิดแฟน
+        if ($isAnswer || ! \App\Support\OwnBirthDate::birthCueBelongsToOther($messageText)) {
+            $reading->captureStatedBirthTime(
+                $messageText,
+                $isAnswer ? FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER : 'pro_session'
+            );
+        }
+
+        // 🗺️ (2026-09-27, owner "วันเวลา เมืองเกิดด้วย") จังหวัดเกิดที่บอกกลางวงคุยต่อ — เดิมเลนนี้เก็บแต่เวลา
+        //    พรอมต์มีบรรทัดทวนจังหวัดรออยู่แล้ว (pullBirthProvinceJustUpdated) แต่ไม่มีใครตั้งธง = ตายเงียบ
+        //    ตอบคำถามเวลาเกิดที่แม่หมอเพิ่งถาม ("ตี 5 เชียงใหม่") ⇒ นับจังหวัดได้เลย · แชททั่วไปต้องมี "เกิดที่…"
+        try {
+            $reading->captureStatedBirthProvince(
+                $messageText,
+                $isAnswer ? FortuneReading::BIRTH_TIME_SOURCE_TIME_ANSWER : 'pro_session',
+                ! $isAnswer
+            );
+        } catch (\Throwable $e) {
+            // non-blocking — ผังใช้พิกัดเดิม
+        }
 
         // 🚨 บอกเวลาเกิดมาแล้วแต่ยังไม่มีค่าใน DB = ตัวดึงอ่านไม่ออก → ติดธงกันแม่หมอรับปากลอยๆ
         //    (เช็ค birthHourFloat() ไม่ใช่ค่า return ของ capture — capture คืน null ตอน "ค่าเดิมอยู่แล้ว" ด้วย)
@@ -1685,9 +1704,16 @@ trait ProSessionTrait
 
         // 🎂 (2026-07-25, owner) "เจ้าชะตาแย้งว่าวันเกิดผิด ควรทำนายให้ใหม่ (1 ครั้ง/บิล)"
         //   ต้องดักก่อน AI Pro chat — ไม่งั้น AI ตอบคุยเฉยๆ โดยยังทำนายจากดวงเดิม (ลูกค้าเสียเงินฟรี)
-        //   เฉพาะ Deep 39 (Celtic ทำนายจากไพ่เป็นหลัก + มีระบบสับไพ่ใหม่ของตัวเองอยู่แล้ว)
-        if ($proType !== 'celtic'
-            && $reading->reading_type === FortuneReading::READING_TYPE_DEEP
+        // 🎂 (2026-09-27, owner) + เลน 99 ช่วงคุยต่อหลังบทสรุป — "รับว่ารับวันเกิดแล้ว แต่ไม่เปลี่ยนในบิล"
+        //   เลน 99 แก้ = แก้ข้อมูลในบิล (ไม่ทำนายใหม่ ไม่มีโควต้า) · ช่วงถาม-ตอบ 99 ดักใน
+        //   handleCelticAwaitingQuestion แล้ว (เส้นนั้นเข้าถึงได้โดยไม่ผ่าน Pro Session ด้วย) ⇒ ที่นี่รับแค่ช่วงอื่น
+        $celticOutsideQa = $proType === 'celtic'
+            && $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            && ! in_array((string) $reading->conversation_status, [
+                FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                FortuneReading::STATUS_CELTIC_GENERATING,
+            ], true);
+        if ((($proType !== 'celtic' && $reading->reading_type === FortuneReading::READING_TYPE_DEEP) || $celticOutsideQa)
             && method_exists($this, 'handleBirthdateCorrection')) {
             $correction = $this->handleBirthdateCorrection($reading, $messageText);
             if ($correction !== null) {

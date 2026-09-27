@@ -8,6 +8,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\TarotCard;
 use App\Services\Fortune\CustomerPersonaService;
 use App\Services\Fortune\ThaiAstrologyService;
+use App\Support\OwnBirthDate;
 use App\Support\ThaiOutputSanitizer;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
@@ -6370,12 +6371,8 @@ class CelticCrossService
         ?string $persistCandidate = null
     ): string {
         $astro = new ThaiAstrologyService;
-        $source = $seedText;
 
         $persistedBirth = (string) $reading->getConversationState('celtic_birthdate_text', '');
-        if ($persistedBirth !== '') {
-            $source .= "\n".$persistedBirth;
-        }
 
         try {
             // เจอวันเกิดในเทิร์นนี้ → เก็บไว้ กันหายถ้าเทิร์นถูกจัดเป็น TYPE:D (record ถูกลบ)
@@ -6387,12 +6384,24 @@ class CelticCrossService
             }
             // 🕛 (2026-09-02) ลูกค้าบอก "เวลาเกิด" ทีหลัง (ไม่มีวันเกิดในข้อความ) → ต้องเก็บด้วย
             //    เดิมเก็บเฉพาะข้อความที่มีวันที่ → "เกิดตอน 6 โมงเช้าค่ะ" หายไปเทิร์นถัดไป
-            if ($persistCandidate !== null) {
+            //    🎂 (2026-09-27) ข้ามเมื่อ "เกิด" ในข้อความเป็นของคนอื่น ("แฟนเกิดตี 2") — ตัวอ่านเวลาไม่มีด่านนี้
+            //       และตอนนี้คำตอบข้อนี้ทวนเวลาที่เก็บกลับไปหาลูกค้า (บล็อกทวนด้านล่าง) = ห้ามเก็บผิดคน
+            if ($persistCandidate !== null && ! OwnBirthDate::birthCueBelongsToOther($persistCandidate)) {
                 $reading->captureStatedBirthTime($persistCandidate, 'celtic_qa');
+            }
+            // 🗺️ (2026-09-27) จังหวัดเกิดที่บอกกลางวงถาม-ตอบ — เดิมเลนนี้เก็บแต่เวลา
+            //    ต้องมี "เกิดที่…" กำกับ (resolveBirthplace มีด่านกันที่เกิดของคนอื่นในตัว)
+            if ($persistCandidate !== null) {
+                $reading->captureStatedBirthProvince($persistCandidate, 'celtic_qa', true);
             }
         } catch (\Throwable $e) {
             // non-blocking
         }
+
+        // 🎂 (2026-09-27, owner) วันเกิดในบิล (คอลัมน์ = ที่ยืนยันแล้ว) ขึ้นก่อนเสมอ = คนที่ 1 = เจ้าชะตา
+        //   เดิมข้อความต้นทางเริ่มด้วยคำถามของลูกค้า แล้วตัวผังถือ "วันที่ตัวแรกที่เจอ" เป็นเจ้าชะตา ⇒
+        //   ลูกค้า/แอดมินแก้วันเกิดในบิลแล้วผังไม่เปลี่ยน · "แฟนเกิด 3/6/2497" กลายเป็นผังของเจ้าชะตา
+        $source = $reading->celticBirthAstroSource($seedText);
 
         // 🕛 เวลาเกิดที่รู้แล้ว (ลูกค้าบอก/แอดมินกรอก) → แปะเข้า source ให้ตัวคำนวณเห็นทุกเทิร์น
         //
@@ -6421,15 +6430,37 @@ class CelticCrossService
             // 🕛 (2026-09-03) ส่งเวลาเกิดที่ *ยืนยันแล้ว* เข้าไปตรงๆ — ห้ามให้ตัว parse เดาจากลำดับข้อความ
             //    (ในแชทเดียวอาจมีเวลาเกิดของคู่/ลูก/พ่อแม่ปนอยู่ก่อนของเจ้าชะตา)
             // 🗺️ (2026-09-09) จังหวัดเกิดที่ยืนยันแล้วก็ต้องส่งไปด้วย — ลัคนาขึ้นกับพิกัดสถานที่
-            return (string) $astro->buildCelticBirthAstrologyBlock(
+            $block = (string) $astro->buildCelticBirthAstrologyBlock(
                 $source,
                 $confirmedHour,
-                $reading->birthProvinceIfKnown()
+                $reading->birthProvinceIfKnown(),
+                $reading->replacedBirthDates()
             );
         } catch (\Throwable $e) {
             // คำนวณดาวไม่ได้ → ทำนายจากไพ่ล้วน ดีกว่าล้มทั้งบิลที่ลูกค้าจ่ายแล้ว
             return '';
         }
+
+        // 🕛🗺️ (2026-09-27) ลูกค้าเพิ่งบอกเวลา/จังหวัดเกิดในคำถามข้อนี้ → ให้คำตอบข้อนี้ทวนเลย
+        //   เดิมธงทวนค้างไปโผล่ตอน "คุยต่อหลังบทสรุป" (พรอมต์เดียวที่อ่านธง) = ทวนผิดจังหวะ
+        //   อ่านเฉพาะเทิร์นที่มีข้อความลูกค้า ($persistCandidate) — พื้นดวง/บทสรุปไม่ใช่คำตอบของใคร
+        //   ⚠️ ไม่ใส่อีโมจิหัวข้อ (🕛/🗺️) ในบรรทัดทวน — must gate ตรวจอีโมจิบนคำตอบทั้งก้อน
+        //      AI ลอกอีโมจิไปใช้ = ด่านรายงานว่าหัวข้อลัคนามาแล้วทั้งที่ไม่มี ([[rule_must_gate_no_foreign_emoji_in_spec]])
+        if ($persistCandidate !== null && $block !== '') {
+            $justTime = $reading->pullBirthTimeJustUpdated();
+            if ($justTime !== null) {
+                $block .= "• เจ้าชะตาเพิ่งบอกเวลาเกิด {$justTime} น. — ผังข้างบนคำนวณใหม่ด้วยเวลานี้แล้ว"
+                    .' → เปิดคำตอบด้วยประโยคสั้นๆ ว่ารับเวลาเกิดแล้ว (1 ประโยค) แล้วตอบต่อ'
+                    ." · ทวนเวลาเป็นตัวเลข {$justTime} น. ตามนี้เท่านั้น ห้ามแปลงเป็นนาฬิกาไทยเอง\n\n";
+            }
+            $justPlace = $reading->pullBirthProvinceJustUpdated();
+            if ($justPlace !== null) {
+                $block .= "• เจ้าชะตาเพิ่งบอกจังหวัดเกิด: {$justPlace} — ผังข้างบนใช้พิกัดจังหวัดนี้แล้ว"
+                    ." → ทวนสั้นๆ 1 ประโยคว่ารับจังหวัดเกิดแล้ว แล้วตอบต่อ\n\n";
+            }
+        }
+
+        return $block;
     }
 
     /**

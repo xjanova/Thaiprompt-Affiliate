@@ -424,6 +424,7 @@ class PendingListenerDouble extends FortuneConversationService
     {
         $this->aiReplies = [];
         $this->aiCalls = [];
+        $this->birthHints = [];
         $this->turns = [];
         $this->adminNotes = [];
         $this->botAsked = false;
@@ -436,9 +437,13 @@ class PendingListenerDouble extends FortuneConversationService
         return $this->stillPending;
     }
 
-    protected function pendingListenAiReply(FortuneReading $reading, string $messageText, ?string $intent, int $remainingMinutes): array
+    /** @var array<int, string> คำกำกับเรื่องข้อมูลเกิดที่ส่งให้ AI แต่ละครั้ง */
+    public array $birthHints = [];
+
+    protected function pendingListenAiReply(FortuneReading $reading, string $messageText, ?string $intent, int $remainingMinutes, string $birthHint = ''): array
     {
         $this->aiCalls[] = [$messageText, $intent];
+        $this->birthHints[] = $birthHint;
 
         return ['text' => (string) (array_shift($this->aiReplies) ?? ''), 'history_saved' => false];
     }

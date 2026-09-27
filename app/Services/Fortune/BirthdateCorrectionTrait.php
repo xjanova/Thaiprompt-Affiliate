@@ -4,6 +4,7 @@ namespace App\Services\Fortune;
 
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
+use App\Support\OwnBirthDate;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -160,6 +161,16 @@ trait BirthdateCorrectionTrait
     protected function handleBirthdateCorrection(FortuneReading $reading, string $messageText): ?array
     {
         $trimmed = trim($messageText);
+        $isCeltic = $this->birthdateCorrectionIsCeltic($reading);
+
+        // 🧹 (2026-09-27) ธงค้างเกิน 30 นาที = ลูกค้าเลิกสนใจไปแล้ว → ล้าง ปล่อยข้อความไปตามทางปกติ
+        //   เดิมเช็คอายุเฉพาะเส้นบิล COMPLETED — ใน Pro Session ธงค้างได้ไม่มีวันหมด
+        //   ⇒ ทุกคำถามถัดไปถูกดูดเข้า "ยืนยันไหมคะ" ซ้ำ ๆ (กลืนคำถามของคนที่จ่ายเงินแล้ว)
+        $hasPending = ! empty($reading->getConversationState('birthdate_correction_pending_date'))
+            || (bool) $reading->getConversationState('birthdate_correction_awaiting', false);
+        if ($hasPending && ! $this->birthdateCorrectionPendingStillValid($reading)) {
+            $this->clearBirthdateCorrectionPending($reading);
+        }
 
         // ── ขั้นที่ 3: รอยืนยันก่อนทำนายใหม่ ──────────────────────────
         $pendingDate = $reading->getConversationState('birthdate_correction_pending_date');
@@ -170,13 +181,14 @@ trait BirthdateCorrectionTrait
 
             // ปฏิเสธ → ยกเลิกคำขอ (ไม่กินโควต้า)
             if ($this->isBirthdateCorrectionDeclined($trimmed)) {
-                $reading->setConversationState('birthdate_correction_pending_date', null);
-                $reading->setConversationState('birthdate_correction_awaiting', false);
+                $this->clearBirthdateCorrectionPending($reading);
 
                 return [
                     'action' => 'birthdate_correction_cancelled',
-                    'message' => "🙏 ยกเลิกการแก้วันเกิดแล้วนะคะ — ใช้คำทำนายเดิมต่อได้เลยค่ะ\n\n"
-                        .'ถ้าเปลี่ยนใจ พิมพ์ "วันเกิดผิด" ได้อีกครั้ง (ยังไม่ได้ใช้สิทธิ์ค่ะ)',
+                    'message' => $isCeltic
+                        ? $this->celticBirthdateKeptMessage($reading)
+                        : "🙏 ยกเลิกการแก้วันเกิดแล้วนะคะ — ใช้คำทำนายเดิมต่อได้เลยค่ะ\n\n"
+                            .'ถ้าเปลี่ยนใจ พิมพ์ "วันเกิดผิด" ได้อีกครั้ง (ยังไม่ได้ใช้สิทธิ์ค่ะ)',
                     'reading' => $reading,
                 ];
             }
@@ -184,18 +196,31 @@ trait BirthdateCorrectionTrait
             // พิมพ์วันเกิดใหม่มาอีก (เปลี่ยนใจก่อนยืนยัน) → อัปเดตตัวที่รอยืนยัน
             $newDate = $this->extractBirthdateFromCorrectionMessage($trimmed);
             if (! empty($newDate)) {
-                return $this->askBirthdateCorrectionConfirm($reading, $newDate);
+                return $this->askBirthdateCorrectionConfirm($reading, $newDate, $trimmed);
             }
 
-            // อย่างอื่น → ย้ำให้ยืนยัน
+            // 🗣️ (2026-09-27) พิมพ์คำถาม/เล่าเรื่องมาแทนการกดยืนยัน = ไม่แก้ ปล่อยไปตอบตามปกติ
+            //   เดิมย้ำ "ยืนยันไหมคะ" ทุกข้อความ ⇒ คำถามจริงถูกกลืน ([[rule_gate_must_not_swallow_customer_text]])
+            //   คำตอบรับสั้น ๆ ("ค่ะ") ยังย้ำเหมือนเดิม — กำกวมว่าจะยืนยันหรือแค่รับรู้
+            if (! $this->isShortBirthdateCorrectionAck($trimmed)) {
+                $this->clearBirthdateCorrectionPending($reading);
+                Log::info('Fortune: รอยืนยันแก้วันเกิด แต่ลูกค้าพิมพ์เรื่องอื่น → ไม่แก้ ตอบตามปกติ', [
+                    'reading_id' => $reading->id,
+                    'text_preview' => mb_substr($trimmed, 0, 60),
+                ]);
+
+                return null;
+            }
+
             return [
                 'action' => 'birthdate_correction_confirm',
-                'message' => '🙏 ยืนยันไหมคะว่าจะให้แม่หมอทำนายใหม่ด้วยวันเกิด *'
-                    .$this->formatThaiDate((string) $pendingDate)."*\n\n"
-                    .'กดปุ่มด้านล่าง หรือพิมพ์ "ยืนยัน" / "ไม่ใช่" ค่ะ',
+                'message' => ($isCeltic
+                    ? '🙏 วันเกิด *'.$this->formatThaiDate((string) $pendingDate).'* เป็นของลูกเองใช่ไหมคะ'
+                    : '🙏 ยืนยันไหมคะว่าจะให้แม่หมอทำนายใหม่ด้วยวันเกิด *'.$this->formatThaiDate((string) $pendingDate).'*')
+                    ."\n\n".'กดปุ่มด้านล่าง หรือพิมพ์ "ยืนยัน" / "ไม่ใช่" ค่ะ',
                 'reading' => $reading,
                 'show_quick_replies' => true,
-                'quick_replies' => $this->birthdateCorrectionConfirmQuickReplies(),
+                'quick_replies' => $this->birthdateCorrectionConfirmQuickReplies($isCeltic),
             ];
         }
 
@@ -203,18 +228,27 @@ trait BirthdateCorrectionTrait
         if ((bool) $reading->getConversationState('birthdate_correction_awaiting', false)) {
             $newDate = $this->extractBirthdateFromCorrectionMessage($trimmed);
             if (! empty($newDate)) {
-                return $this->askBirthdateCorrectionConfirm($reading, $newDate);
+                return $this->askBirthdateCorrectionConfirm($reading, $newDate, $trimmed);
             }
 
             // ลูกค้าเปลี่ยนใจ ไม่แก้แล้ว
             if ($this->isBirthdateCorrectionDeclined($trimmed)) {
-                $reading->setConversationState('birthdate_correction_awaiting', false);
+                $this->clearBirthdateCorrectionPending($reading);
 
                 return [
                     'action' => 'birthdate_correction_cancelled',
-                    'message' => '🙏 ได้ค่ะ ใช้คำทำนายเดิมต่อได้เลยนะคะ',
+                    'message' => $isCeltic
+                        ? $this->celticBirthdateKeptMessage($reading)
+                        : '🙏 ได้ค่ะ ใช้คำทำนายเดิมต่อได้เลยนะคะ',
                     'reading' => $reading,
                 ];
+            }
+
+            // 🗣️ พิมพ์คำถาม/เรื่องอื่นมาแทนวันเกิด = ไม่แก้แล้ว — ห้ามกลืนคำถาม (เหตุผลเดียวกับขั้นที่ 3)
+            if (! $this->isShortBirthdateCorrectionAck($trimmed) && ! OwnBirthDate::mentionsBirthInfo($trimmed)) {
+                $this->clearBirthdateCorrectionPending($reading);
+
+                return null;
             }
 
             return [
@@ -226,13 +260,50 @@ trait BirthdateCorrectionTrait
             ];
         }
 
-        // ── ขั้นที่ 1: ลูกค้าเพิ่งแย้งว่าวันเกิดผิด ────────────────────
-        if (! $this->looksLikeBirthdateCorrectionRequest($trimmed)) {
+        // ── ขั้นที่ 1: ลูกค้าแย้งว่าวันเกิดผิด / พิมพ์วันเกิดของตัวเองที่ไม่ตรงกับบิล ─────
+        //   🎂 (2026-09-27, owner) เดิมจับแค่ประโยคแย้งตรง ๆ ("วันเกิดผิด" / "แก้วันเกิด")
+        //     ลูกค้าที่พิมพ์ "หนูเกิด 5/3/2530 นะคะ" หรือส่งวันเกิดเปล่า ๆ มา → หลุดไปให้ AI ตอบ
+        //     AI รับปาก "รับวันเกิดใหม่แล้ว" แต่บิลไม่เปลี่ยน = เคสที่ owner แจ้ง
+        //     ⇒ วันเกิดของตัวเองที่ต่างจากบิล = คำขอแก้วันเกิด → กล่องยืนยันเสมอ (กลางวงคุยกำกวมได้
+        //       "3/6/2497" ที่ตามหลัง "แล้วแฟนล่ะ" คือวันเกิดแฟน — ถามก่อนดีกว่าแก้ผิดคน)
+        // 🔘 กดปุ่มยืนยันของกล่องที่ปิดไปแล้ว (หมดอายุ / ลูกค้าพิมพ์เรื่องอื่นไปก่อน) — ปุ่มอยู่ในแชทถาวร
+        //   ห้ามปล่อยให้ AI ตีความ "ยืนยันวันเกิดใหม่" เอง (จะรับปากว่าแก้แล้วทั้งที่ไม่มีอะไรรอยืนยัน)
+        if ($this->normalizeBirthdateCorrectionReply($trimmed) === 'ยืนยันวันเกิดใหม่') {
+            // กดซ้ำหลังแก้สำเร็จไปแล้ว (ปุ่มเดิมยังอยู่บนจอ) → บอกว่าแก้แล้ว ห้ามบอกว่า "ยังไม่ได้แก้"
+            $current = $reading->birth_date?->format('Y-m-d');
+            if ($current !== null && $this->birthdateCorrectionAppliedRecently($reading)) {
+                return [
+                    'action' => 'birthdate_correction_applied',
+                    'message' => '✅ แม่หมอแก้วันเกิดในบิลเป็น *'.$this->formatThaiDate($current).'* ให้แล้วค่ะ 🙏',
+                    'reading' => $reading,
+                ];
+            }
+
+            return [
+                'action' => 'birthdate_correction_ask',
+                'message' => "🙏 กล่องยืนยันวันเกิดปิดไปแล้วค่ะ — ยังไม่ได้แก้อะไรในบิลนะคะ\n\n"
+                    .'ถ้าจะแก้วันเกิด พิมพ์ วัน/เดือน/ปีเกิด ที่ถูกมาอีกครั้งได้เลยค่ะ (เช่น 15/3/2538)',
+                'reading' => $reading,
+            ];
+        }
+
+        $isRequest = $this->looksLikeBirthdateCorrectionRequest($trimmed);
+        $stated = $isRequest ? null : $this->statedOwnBirthdateDiffering($reading, $trimmed);
+        if (! $isRequest && $stated === null) {
             return null;
         }
 
-        // หมดโควต้าแล้ว → อธิบายอย่างสุภาพ (ไม่ปล่อยให้ AI ตอบมั่ว)
-        if (! $this->canCorrectBirthdateAgain($reading)) {
+        // วันในสัปดาห์ที่บอกมา ขัดกับวันที่ → ถามกลับด้วยตัวเลือกจริง (ห้ามเลือกเชื่อเงียบ ๆ)
+        if ($stated !== null && $stated['conflict'] !== null) {
+            return [
+                'action' => 'birthdate_correction_ask',
+                'message' => $this->ownBirthdateConflictMessage($stated['ymd'], $stated['conflict']),
+                'reading' => $reading,
+            ];
+        }
+
+        // หมดโควต้าแล้ว → อธิบายอย่างสุภาพ (ไม่ปล่อยให้ AI ตอบมั่ว) — โควต้ามีแค่เลน 39 (ทำนายใหม่ทั้งชุด)
+        if (! $isCeltic && ! $this->canCorrectBirthdateAgain($reading)) {
             $current = $reading->birth_date?->format('Y-m-d');
 
             return [
@@ -245,9 +316,9 @@ trait BirthdateCorrectionTrait
         }
 
         // พิมพ์วันเกิดมาพร้อมกันเลย → ข้ามไปยืนยันทันที (ลดขั้นตอน)
-        $inlineDate = $this->extractBirthdateFromCorrectionMessage($trimmed);
+        $inlineDate = $stated['ymd'] ?? $this->extractBirthdateFromCorrectionMessage($trimmed);
         if (! empty($inlineDate)) {
-            return $this->askBirthdateCorrectionConfirm($reading, $inlineDate);
+            return $this->askBirthdateCorrectionConfirm($reading, $inlineDate, $trimmed);
         }
 
         $reading->setConversationState('birthdate_correction_awaiting', true);
@@ -260,12 +331,125 @@ trait BirthdateCorrectionTrait
 
         return [
             'action' => 'birthdate_correction_ask',
-            'message' => "🙏 ขอโทษด้วยนะคะ เดี๋ยวแม่หมอทำนายใหม่ให้เลย\n\n"
-                ."🎂 ขอ*วันเดือนปีเกิดที่ถูกต้อง*ค่ะ\n"
-                ."📝 *ตัวอย่าง:* 15 มีนาคม 2538 หรือ 15/3/2538\n\n"
-                .'⚠️ _แก้วันเกิดแล้วทำนายใหม่ได้ *1 ครั้งต่อบิล* นะคะ — ตรวจให้ดีก่อนส่งค่ะ_',
+            'message' => $isCeltic
+                ? "🎂 ได้ค่ะ ขอ*วันเดือนปีเกิดที่ถูกต้อง*ของลูกนะคะ\n"
+                    ."📝 *ตัวอย่าง:* 15 มีนาคม 2538 หรือ 15/3/2538 (มีเวลา/จังหวัดเกิดพิมพ์ต่อท้ายได้เลย)\n\n"
+                    .'แก้แล้วคำตอบต่อจากนี้แม่หมอผูกดวงจากวันเกิดใหม่ให้ค่ะ'
+                : "🙏 ขอโทษด้วยนะคะ เดี๋ยวแม่หมอทำนายใหม่ให้เลย\n\n"
+                    ."🎂 ขอ*วันเดือนปีเกิดที่ถูกต้อง*ค่ะ\n"
+                    ."📝 *ตัวอย่าง:* 15 มีนาคม 2538 หรือ 15/3/2538\n\n"
+                    .'⚠️ _แก้วันเกิดแล้วทำนายใหม่ได้ *1 ครั้งต่อบิล* นะคะ — ตรวจให้ดีก่อนส่งค่ะ_',
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🎂 (2026-09-27) วันในสัปดาห์ที่ลูกค้าบอก ขัดกับวันที่ที่พิมพ์มา — ถามกลับพร้อมวันที่ที่เป็นไปได้จริง
+     *
+     * ⚠️ ไม่ใช้ buildBirthDayConflictQuestion() ตรง ๆ — ข้อความนั้นชวนพิมพ์ "ยืนยันวันที่"
+     *    ซึ่งมีตัวรับเฉพาะเส้น DM ที่ยังไม่มีบิล · เลนแชทในบิลไม่มีตัวรับคำนี้ = สัญญาที่ไม่มีโค้ดรองรับ
+     *    ([[rule_bot_promise_needs_code_behind_it]]) ⇒ ให้พิมพ์วันเกิดใหม่แทน (+ เวลาเกิด ถ้าเกิดก่อนรุ่งสาง
+     *    โหรไทยนับเป็นวันก่อนหน้า — ผังคำนวณเลื่อนวันให้เองเมื่อรู้เวลา)
+     *
+     * @param  array{stated_day: int, parsed_day: int}  $conflict
+     */
+    protected function ownBirthdateConflictMessage(string $ymd, array $conflict): string
+    {
+        [$y, $m] = array_map('intval', explode('-', $ymd));
+        $statedName = \App\Support\StatedBirthDayName::name($conflict['stated_day']);
+        $parsedName = \App\Support\StatedBirthDayName::name($conflict['parsed_day']);
+        $candidates = \App\Support\StatedBirthDayName::datesMatching($y, $m, $conflict['stated_day']);
+
+        return "🎂 เอ๊ะ... แม่หมอขอเช็กนิดนึงนะคะ\n\n"
+            ."ลูกบอกว่าเกิด *วัน{$statedName}* แต่วันที่ *".$this->formatThaiDate($ymd)."* ตรงกับ *วัน{$parsedName}* ค่ะ 🤔\n"
+            .($candidates !== []
+                ? '📅 ใน'.$this->getThaiMonth($m).' '.($y + 543)." วัน{$statedName} คือวันที่ ".implode(', ', $candidates)."\n"
+                : '')
+            ."\n🪄 ยังไม่ได้บันทึกนะคะ — พิมพ์ วัน/เดือน/ปีเกิด ที่ถูกมาอีกครั้งได้เลยค่ะ\n"
+            .'💡 ถ้าเกิดช่วงตี 1–ตี 5 โหรไทยนับเป็นวันก่อนหน้า พิมพ์เวลาเกิดต่อท้ายมาด้วยเลยนะคะ (เช่น 27/6/2521 ตี 2)';
+    }
+
+    /**
+     * 🎂 (2026-09-27) บิลนี้เป็นเลน 99 ไหม — เลน 99 แก้วันเกิด = แก้ข้อมูลในบิล (ไม่ทำนายใหม่ทั้งชุด ไม่มีโควต้า)
+     */
+    protected function birthdateCorrectionIsCeltic(FortuneReading $reading): bool
+    {
+        return $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+    }
+
+    /**
+     * 🎂 (2026-09-27) วันเกิด "ของตัวเอง" ที่ลูกค้าพิมพ์มา และไม่ตรงกับวันเกิดในบิล
+     *
+     * @return array{ymd: string, basis: string, conflict: array{stated_day: int, parsed_day: int}|null}|null
+     *                                                                                                        null = ไม่ได้พิมพ์วันเกิดตัวเอง / ตรงกับบิลอยู่แล้ว / บิลยังไม่มีวันเกิด (ไม่ใช่การ "แก้")
+     */
+    protected function statedOwnBirthdateDiffering(FortuneReading $reading, string $text): ?array
+    {
+        $current = $reading->birth_date?->format('Y-m-d');
+        if ($current === null) {
+            return null;
+        }
+
+        $found = OwnBirthDate::find($text, allowBare: true);
+        if ($found === null || $found['ymd'] === $current) {
+            return null;
+        }
+
+        return $found;
+    }
+
+    /**
+     * เพิ่งแก้วันเกิดสำเร็จไม่เกิน 30 นาที (39 = birthdate_correction_at · 99 = birth_date_updated_at ที่มาจากการยืนยัน)
+     */
+    protected function birthdateCorrectionAppliedRecently(FortuneReading $reading): bool
+    {
+        $at = $reading->getConversationState('birthdate_correction_at');
+        if (empty($at) && $reading->getConversationState('birth_date_source') === 'correction_confirmed') {
+            $at = $reading->getConversationState('birth_date_updated_at');
+        }
+        if (empty($at)) {
+            return false;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($at)->diffInMinutes(now(), true) <= self::BIRTHDATE_CORRECTION_PENDING_MINUTES;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * คำตอบรับสั้น ๆ ("ค่ะ" / "โอเค" / "อืม") — กำกวมว่ายืนยันหรือแค่รับรู้ ⇒ ถามย้ำ ไม่ปล่อยผ่าน
+     */
+    protected function isShortBirthdateCorrectionAck(string $text): bool
+    {
+        return mb_strlen($this->normalizeBirthdateCorrectionReply($text)) <= 4;
+    }
+
+    /**
+     * ล้างธงรอยืนยัน/รอวันเกิดใหม่ทั้งชุด (เขียนครั้งเดียว — setConversationState ทีละตัว = เขียน JSON หลายรอบ)
+     */
+    protected function clearBirthdateCorrectionPending(FortuneReading $reading): void
+    {
+        $state = is_array($reading->conversation_state) ? $reading->conversation_state : [];
+        $state['birthdate_correction_pending_date'] = null;
+        $state['birthdate_correction_pending_text'] = null;
+        $state['birthdate_correction_awaiting'] = false;
+        $reading->update(['conversation_state' => $state]);
+    }
+
+    /**
+     * เลน 99 — ลูกค้าบอกว่าวันที่นั้นไม่ใช่ของตัวเอง → ยืนยันว่าใช้วันเกิดเดิม + บอกทางถามเรื่องคนอื่น
+     */
+    protected function celticBirthdateKeptMessage(FortuneReading $reading): string
+    {
+        $current = $reading->birth_date?->format('Y-m-d');
+
+        return '🙏 ได้ค่ะ แม่หมอใช้วันเกิดเดิมในบิล'
+            .(! empty($current) ? ' (*'.$this->formatThaiDate($current).'*)' : '')
+            ." ต่อนะคะ\n\n"
+            .'💬 ถ้าเป็นวันเกิดของคนที่อยากถามถึง พิมพ์ถามพร้อมบอกว่าเป็นของใครได้เลย '
+            .'เช่น "แฟนเกิด 3/6/2497 จะกลับมาไหม" ค่ะ';
     }
 
     /**
@@ -294,38 +478,55 @@ trait BirthdateCorrectionTrait
 
     /**
      * ถามยืนยันก่อนใช้สิทธิ์แก้วันเกิด
+     *
+     * @param  string  $rawText  🕛🗺️ (2026-09-27) ข้อความที่ลูกค้าพิมพ์มา — เก็บไว้อ่านเวลา/จังหวัดเกิดตอนยืนยัน
+     *                           ("วันเกิดที่ถูกคือ 5/3/2530 ตี 5 ที่เชียงใหม่" — เดิมยืนยันแล้วได้แค่วันที่)
      */
-    protected function askBirthdateCorrectionConfirm(FortuneReading $reading, string $newDate): array
+    protected function askBirthdateCorrectionConfirm(FortuneReading $reading, string $newDate, string $rawText = ''): array
     {
-        $reading->setConversationState('birthdate_correction_pending_date', $newDate);
-        $reading->setConversationState('birthdate_correction_awaiting', false);
-        $reading->setConversationState('birthdate_correction_pending_at', now()->toIso8601String());
+        $isCeltic = $this->birthdateCorrectionIsCeltic($reading);
+
+        $state = is_array($reading->conversation_state) ? $reading->conversation_state : [];
+        $state['birthdate_correction_pending_date'] = $newDate;
+        $state['birthdate_correction_pending_text'] = $rawText !== '' ? mb_substr($rawText, 0, 300) : null;
+        $state['birthdate_correction_awaiting'] = false;
+        $state['birthdate_correction_pending_at'] = now()->toIso8601String();
+        $reading->update(['conversation_state' => $state]);
 
         $old = $reading->birth_date?->format('Y-m-d');
         $oldLine = ! empty($old) && $old !== $newDate
-            ? '🔸 เดิม: '.$this->formatThaiDate($old)."\n"
+            ? '🔸 '.($isCeltic ? 'ในบิลตอนนี้' : 'เดิม').': '.$this->formatThaiDate($old)."\n"
             : '';
+
+        $body = $isCeltic
+            ? "วันเกิดนี้เป็นของ *ลูกเอง* ใช่ไหมคะ — ถ้าใช่ แม่หมอจะแก้ในบิล แล้วผูกดวงจากวันเกิดนี้ในคำตอบต่อจากนี้ค่ะ\n"
+            : "ถ้าถูกต้องแล้ว แม่หมอจะคำนวณดวงและทำนายให้ใหม่ทั้งหมดค่ะ\n"
+                .'⚠️ _ใช้ได้ *ครั้งเดียวต่อบิล* — ยืนยันแล้วเปลี่ยนอีกไม่ได้นะคะ_'."\n";
 
         return [
             'action' => 'birthdate_correction_confirm',
             'message' => "🎂 *ตรวจสอบวันเกิดใหม่*\n\n"
                 .$oldLine
-                .'🔹 ใหม่: *'.$this->formatThaiDate($newDate)."*\n\n"
-                ."ถ้าถูกต้องแล้ว แม่หมอจะคำนวณดวงและทำนายให้ใหม่ทั้งหมดค่ะ\n"
-                .'⚠️ _ใช้ได้ *ครั้งเดียวต่อบิล* — ยืนยันแล้วเปลี่ยนอีกไม่ได้นะคะ_',
+                .'🔹 '.($isCeltic ? 'ที่ลูกพิมพ์มา' : 'ใหม่').': *'.$this->formatThaiDate($newDate)."*\n\n"
+                .$body
+                ."\nกดปุ่มด้านล่าง หรือพิมพ์ \"ยืนยัน\" / \"ไม่ใช่\" ค่ะ\n"
+                .'_(ถ้าเป็นวันเกิดของคนอื่น ตอบ "ไม่ใช่" แล้วพิมพ์ถามพร้อมบอกว่าเป็นของใครได้เลยค่ะ)_',
             'reading' => $reading,
             'show_quick_replies' => true,
-            'quick_replies' => $this->birthdateCorrectionConfirmQuickReplies(),
+            'quick_replies' => $this->birthdateCorrectionConfirmQuickReplies($isCeltic),
         ];
     }
 
     /**
      * ปุ่มยืนยัน/ยกเลิกการแก้วันเกิด
      */
-    protected function birthdateCorrectionConfirmQuickReplies(): array
+    protected function birthdateCorrectionConfirmQuickReplies(bool $isCeltic = false): array
     {
         return [
-            ['title' => '✅ ถูกต้อง ทำนายใหม่', 'text' => 'ยืนยันวันเกิดใหม่', 'payload' => 'ยืนยันวันเกิดใหม่'],
+            $isCeltic
+                // ⚠️ ชื่อปุ่มห้ามเกิน 20 ตัว (เพดาน FB/LINE) — "✅ ใช่ วันเกิดของฉัน" = 19
+                ? ['title' => '✅ ใช่ วันเกิดของฉัน', 'text' => 'ยืนยันวันเกิดใหม่', 'payload' => 'ยืนยันวันเกิดใหม่']
+                : ['title' => '✅ ถูกต้อง ทำนายใหม่', 'text' => 'ยืนยันวันเกิดใหม่', 'payload' => 'ยืนยันวันเกิดใหม่'],
             ['title' => '❌ ยังไม่ใช่', 'text' => 'ไม่แก้แล้ว', 'payload' => 'ไม่แก้แล้ว'],
         ];
     }
@@ -379,6 +580,11 @@ trait BirthdateCorrectionTrait
      */
     protected function applyBirthdateCorrection(FortuneReading $reading, string $newDate): array
     {
+        // 🎂 (2026-09-27) เลน 99 — แก้ข้อมูลในบิลอย่างเดียว (ทำนายจากไพ่ ไม่ต้องทำนายใหม่ทั้งชุด)
+        if ($this->birthdateCorrectionIsCeltic($reading)) {
+            return $this->applyCelticBirthdateCorrection($reading, $newDate);
+        }
+
         // 🔒 กันกดยืนยันรัวๆ → ทำนายใหม่ซ้อน (atomic lock 60 วิ)
         if (! Cache::add("fortune:birthdate_fix:{$reading->id}", 1, 60)) {
             return [
@@ -398,10 +604,13 @@ trait BirthdateCorrectionTrait
         }
 
         $existingState = is_array($reading->conversation_state) ? $reading->conversation_state : [];
+        // 🕛🗺️ (2026-09-27) ข้อความที่ลูกค้าพิมพ์ตอนขอแก้ — มีเวลา/จังหวัดเกิดพ่วงมาได้
+        $correctionText = (string) ($existingState['birthdate_correction_pending_text'] ?? '');
         $newState = array_merge($existingState, [
             // ใช้สิทธิ์ (ต่อจากนี้แก้ไม่ได้อีก)
             'birthdate_correction_count' => (int) ($existingState['birthdate_correction_count'] ?? 0) + 1,
             'birthdate_correction_pending_date' => null,
+            'birthdate_correction_pending_text' => null,
             'birthdate_correction_awaiting' => false,
             'birthdate_correction_previous' => $reading->birth_date?->format('Y-m-d'),
             'birthdate_correction_at' => now()->toIso8601String(),
@@ -444,6 +653,10 @@ trait BirthdateCorrectionTrait
             'conversation_state' => $newState,
         ]);
 
+        // 🕛🗺️ (2026-09-27) เวลา/จังหวัดเกิดที่พิมพ์มาพร้อมคำขอแก้ → ลงบิลก่อนสั่งทำนายใหม่
+        //   (ทำนายรอบใหม่อ่านจากคอลัมน์ — ต้องเขียนให้เสร็จก่อน dispatch)
+        $this->captureCorrectionBirthDetails($reading, $correctionText);
+
         // ล้าง lock ของรอบก่อน — ไม่งั้น Job/dispatch มองว่ากำลังทำอยู่แล้วข้ามเงียบ
         Cache::forget("fortune:deep_gen:{$reading->id}");
         Cache::forget("fortune:deep_deliver:{$reading->id}");
@@ -482,5 +695,86 @@ trait BirthdateCorrectionTrait
                 .'⏳ ใช้เวลาสักครู่ — รอรับได้เลยค่ะ 🙏',
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🎂 (2026-09-27, owner) เลน 99 — ลูกค้ายืนยันแก้วันเกิด → แก้ข้อมูลในบิลจริงทุกที่ที่ผังอ่าน
+     *
+     * owner: *"รับว่ารับวันเกิดแล้ว แต่ไม่เปลี่ยนในบิลให้ตรงจริง วันเวลา เมืองเกิดด้วย"*
+     *   เดิมเลน 99 ไม่มีทางแก้วันเกิดเลย (โฟลแก้วันเกิดเป็นของ 39 อย่างเดียว) — ลูกค้าพิมพ์วันเกิดใหม่
+     *   กลางวงถาม-ตอบ AI รับปากแล้วผังยังผูกจากวันเกิดเดิม · คอลัมน์ในหลังบ้านก็ยังเป็นค่าเดิม
+     *
+     * ไม่ทำนายพื้นดวงใหม่ (ไพ่ 10 ใบคือแกนของ 99 — ของที่ตอบไปแล้วยังอิงไพ่เดิมได้)
+     * คำตอบข้อถัดไปผูกดวงจากวันเกิดใหม่ทันที (CelticCrossService อ่านคอลัมน์ก่อนเสมอ)
+     */
+    protected function applyCelticBirthdateCorrection(FortuneReading $reading, string $newDate): array
+    {
+        $correctionText = (string) $reading->getConversationState('birthdate_correction_pending_text', '');
+        $this->clearBirthdateCorrectionPending($reading);
+
+        $reading->captureStatedBirthDate($newDate, 'correction_confirmed');
+
+        $lines = ['🎂 วันเกิด: *'.$this->formatThaiDate($newDate).'*'];
+        $lines = array_merge($lines, $this->captureCorrectionBirthDetails($reading, $correctionText));
+
+        // รูปผังดวงที่วาดไว้แล้ว (ส่งตอนสรุป) เป็นของวันเกิดเดิม → ล้างให้วาดใหม่จากข้อมูลใหม่
+        if (! empty($reading->reading_image_url)) {
+            try {
+                $reading->update(['reading_image_url' => null]);
+            } catch (\Throwable $e) {
+                // non-blocking — แย่สุดคือรูปผังตอนสรุปยังเป็นของวันเกิดเดิม
+            }
+        }
+
+        Log::info('Fortune Celtic: ✅ ลูกค้ายืนยันแก้วันเกิด → แก้ในบิลแล้ว', [
+            'reading_id' => $reading->id,
+            'bill' => $reading->bill_reference,
+            'birth_date_new' => $newDate,
+            'replaced' => $reading->replacedBirthDates(),
+        ]);
+
+        return [
+            'action' => 'birthdate_correction_applied',
+            'message' => "✅ *แก้ข้อมูลเกิดในบิลให้แล้วค่ะ*\n"
+                .implode("\n", $lines)."\n\n"
+                ."🌟 คำตอบต่อจากนี้ แม่หมอผูกดวงจากข้อมูลนี้ให้ทั้งหมดนะคะ\n"
+                .'💬 ถามต่อได้เลยค่ะ',
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🕛🗺️ เวลา/จังหวัดเกิดที่พิมพ์มาพร้อมคำขอแก้วันเกิด → ลงบิล (ไม่ตั้งธงทวน — ข้อความยืนยันบอกเองแล้ว)
+     *
+     * @return array<int, string> บรรทัดสรุปสิ่งที่บันทึก
+     */
+    protected function captureCorrectionBirthDetails(FortuneReading $reading, string $text): array
+    {
+        if (trim($text) === '') {
+            return [];
+        }
+
+        $lines = [];
+        try {
+            // ข้อความมีแต่ข้อมูลเกิด ⇒ "5/3/2530 เชียงใหม่" นับจังหวัดได้ · มีเรื่องอื่นปน ⇒ ต้องมี "เกิดที่"
+            $only = OwnBirthDate::isBirthInfoOnly($text);
+
+            $hour = $reading->captureStatedBirthTime($text, 'birthdate_answer', touchState: false);
+            if ($hour !== null) {
+                $lines[] = '🕛 เวลาเกิด: *'.FortuneReading::hourToTimeString($hour, false).' น.*';
+            }
+
+            $province = $reading->captureStatedBirthProvince($text, 'birthdate_answer', requireBirthCue: ! $only, touchState: false);
+            if ($province !== null) {
+                $lines[] = "🗺️ จังหวัดเกิด: *{$province}*";
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: เก็บเวลา/จังหวัดเกิดจากคำขอแก้วันเกิดล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $lines;
     }
 }

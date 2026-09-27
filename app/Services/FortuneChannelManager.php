@@ -1021,6 +1021,10 @@ class FortuneChannelManager
                 'pdpa_delete_confirm' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [], $extra),
                 'pdpa_deleted', 'pdpa_delete_cancelled' => $fbService->sendMessage($userId, $message, $extra),
 
+                // 🎂 (2026-09-27) กล่องยืนยันแก้วันเกิด — เดิมตกไป default = ปุ่ม "ถูกต้อง/ยังไม่ใช่" หายเงียบ
+                //   ลูกค้าเห็นข้อความให้ยืนยันแต่ไม่มีปุ่มให้กด (FB + LINE เหมือนกัน)
+                'birthdate_correction_confirm' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [], $extra),
+
                 // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — สรุป + ปุ่มแก้/ลบ (FB)
                 'personal_data_summary' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [], $extra),
                 'personal_name_ask', 'personal_name_updated', 'personal_name_cancelled',
@@ -2871,6 +2875,15 @@ class FortuneChannelManager
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineQr);
                 })(),
                 'pdpa_deleted', 'pdpa_delete_cancelled' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 🎂 (2026-09-27) กล่องยืนยันแก้วันเกิด — เดิมตกไป default (Flex ไม่มีปุ่ม) ⇒ ปุ่มยืนยันหาย
+                'birthdate_correction_confirm' => $this->sendLineMessageWithQuickReply(
+                    $lineService, $userId, $message, $replyToken,
+                    array_map(fn ($b) => [
+                        'label' => mb_substr((string) ($b['title'] ?? ''), 0, 20),
+                        'text' => (string) ($b['text'] ?? ($b['title'] ?? '')),
+                    ], $result['quick_replies'] ?? [])
+                ),
 
                 // 👤 (2026-07-25) ศูนย์ข้อมูลของฉัน — สรุปข้อมูล + ปุ่มแก้/ลบ (reply ฟรี ไม่กิน push)
                 'personal_data_summary' => (function () use ($lineService, $userId, $message, $replyToken, $result) {

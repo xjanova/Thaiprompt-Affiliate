@@ -3,6 +3,7 @@
 namespace App\Services\Fortune;
 
 use App\Models\FortuneReading;
+use App\Support\OwnBirthDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -339,15 +340,29 @@ trait PendingPaymentListenerTrait
             return $this->pendingListenDeterministicReply($reading, $messageText, 'expired', $ctx);
         }
 
+        // 🎂 (2026-09-27, owner) ลูกค้าบอกวันเกิด/เวลา/จังหวัดเกิดระหว่างรอโอน → เก็บลงบิลก่อนใครตอบ
+        //   เคสจริง FTU-260927-A4514 (LINE 99): "อย่าทำนายผิดวันเกิดนะคะ" → "27/6/2521"
+        //   AI ตอบ *"ได้ข้อมูลวันเกิด 27 มิถุนายน 2521 แล้วนะคะลูก"* ทั้งที่ไม่มีโค้ดเก็บ — birth_date = NULL
+        //   แอดมินต้องเข้าไปกรอกเอง · owner: "รับว่ารับวันเกิดแล้ว แต่ไม่เปลี่ยนในบิลให้ตรงจริง"
+        //   ⇒ บันทึกจริงก่อน แล้วค่อยบอกลูกค้าตามที่บันทึกได้ (ข้อความตายตัว) — AI ห้ามรับปากเรื่องนี้เอง
+        $birth = $this->pendingListenCaptureBirthInfo($reading, $messageText);
+        if ($birth['reply'] !== null) {
+            return $this->pendingListenBirthInfoReply($reading, $messageText, $birth['reply'], $ctx);
+        }
+
         // ก. คำรับทราบล้วน — ไม่เผา AI (ยกเว้นบอทเพิ่งถามคำถาม "ค่ะ" คือคำตอบ)
         if (in_array($intent, ['ack', 'thanks'], true)
             && ! ($userId !== '' && $this->botAskedQuestionRecently($userId))) {
-            return $this->pendingListenDeterministicReply($reading, $messageText, $intent, $ctx);
+            return $this->pendingListenDeterministicReply($reading, $messageText, $intent, $ctx, $birth['prefix']);
         }
 
         // ข. AI ฟังก่อนเสมอ
-        $ai = $this->pendingListenAiReply($reading, $messageText, $intent, (int) ($ctx['remaining_minutes'] ?? 0));
+        $ai = $this->pendingListenAiReply($reading, $messageText, $intent, (int) ($ctx['remaining_minutes'] ?? 0), $birth['hint']);
         $aiText = trim((string) ($ai['text'] ?? ''));
+        if ($aiText !== '' && $birth['prefix'] !== '') {
+            // ข้อมูลเกิดที่บันทึกแล้ว → บอกด้วยข้อความของระบบเอง (AI ถูกสั่งไม่ให้พูดเรื่องนี้ซ้ำ)
+            $aiText = $birth['prefix']."\n\n".$aiText;
+        }
 
         // 🩹 (2026-09-15 จับผี) AI ใช้เวลาหลายวินาที — เงินอาจเข้าระหว่างนั้น
         //   ห้ามส่ง "บิลยังรออยู่" ตามหลังข้อความยืนยันการจ่าย ([[feedback_never_interrupt_payment_to_prediction_flow]])
@@ -389,13 +404,146 @@ trait PendingPaymentListenerTrait
         }
 
         // ค. AI ไม่ได้ผล → ตอบตามเจตนาที่จับได้
-        return $this->pendingListenDeterministicReply($reading, $messageText, $intent ?? 'unknown', $ctx);
+        return $this->pendingListenDeterministicReply($reading, $messageText, $intent ?? 'unknown', $ctx, $birth['prefix']);
+    }
+
+    /**
+     * 🎂 (2026-09-27) อ่าน "ข้อมูลเกิดของเจ้าชะตา" จากข้อความระหว่างรอโอน แล้วเขียนลงบิลจริง
+     *
+     * ยังไม่ทำนาย ⇒ เขียนได้เลย ไม่ต้องถามยืนยัน (หลังจ่ายเงินเลน 39 มีกล่องยืนยันวันเกิดอีกชั้น
+     *   และ BirthdateResolver หยิบวันเกิดในบิลนี้ก่อนบิลเก่าแล้ว — เลน 99 ครบ 10 ใบก็ใช้ตัวนี้)
+     * ⚠️ เขียนแค่คอลัมน์ ห้ามแตะ conversation_state — เส้นยืนยันการจ่ายเงินเขียน state ได้พร้อมกัน
+     *    (หลักเดียวกับหัวไฟล์: ตัวฟังไม่เขียน state เพิ่ม)
+     *
+     * @return array{reply: string|null, prefix: string, hint: string}
+     *                                                                 reply  = ข้อความตายตัว (ข้อความนี้มีแต่ข้อมูลเกิด / วันในสัปดาห์ขัดกับวันที่)
+     *                                                                 prefix = บรรทัดทวนสิ่งที่บันทึก — แปะหน้าคำตอบเมื่อข้อความมีเรื่องอื่นปน
+     *                                                                 hint   = คำกำกับ AI เรื่องข้อมูลเกิด ('' = ข้อความไม่เกี่ยวกับการเกิด)
+     */
+    protected function pendingListenCaptureBirthInfo(FortuneReading $reading, string $text): array
+    {
+        $none = ['reply' => null, 'prefix' => '', 'hint' => ''];
+
+        $only = OwnBirthDate::isBirthInfoOnly($text);
+        if (! $only && ! OwnBirthDate::mentionsBirthInfo($text)) {
+            return $none;
+        }
+
+        try {
+            $found = OwnBirthDate::find($text, allowBare: true);
+
+            // วันในสัปดาห์ที่ลูกค้าบอก ขัดกับวันที่ → ไม่เก็บ ถามกลับพร้อมวันที่ที่เป็นไปได้จริง
+            if ($found !== null && $found['conflict'] !== null) {
+                return ['reply' => $this->ownBirthdateConflictMessage($found['ymd'], $found['conflict']), 'prefix' => '', 'hint' => ''];
+            }
+
+            $lines = [];
+            if ($found !== null) {
+                $before = $reading->birth_date ? $reading->birth_date->format('Y-m-d') : null;
+                if ($reading->captureStatedBirthDate($found['ymd'], 'pending_payment', touchState: false)) {
+                    $lines[] = '🎂 วันเกิด: *'.$this->formatThaiDate($found['ymd']).'*';
+                } elseif ($before === $found['ymd']) {
+                    $lines[] = '🎂 วันเกิด: *'.$this->formatThaiDate($found['ymd']).'* (ตรงกับที่มีในบิลแล้ว)';
+                }
+            }
+
+            // เวลา/จังหวัด — เฉพาะเมื่อแน่ใจว่าพูดถึงการเกิดของตัวเอง ("แฟนเกิดตี 5" ห้ามเก็บ)
+            if ($found !== null || OwnBirthDate::isOwnBirthTalk($text)) {
+                // ทั้งข้อความคือข้อมูลเกิด ⇒ อ่านเวลาแบบคำตอบ ("27/6/2521 06:30" ไม่มีคำว่าเกิดก็ได้)
+                $hour = $reading->captureStatedBirthTime($text, $only ? 'birthdate_answer' : 'pending_payment', touchState: false);
+                if ($hour !== null) {
+                    $lines[] = '🕛 เวลาเกิด: *'.FortuneReading::hourToTimeString($hour, false).' น.*';
+                }
+
+                $province = $reading->captureStatedBirthProvince($text, 'pending_payment', requireBirthCue: ! $only, touchState: false);
+                if ($province !== null) {
+                    $lines[] = "🗺️ จังหวัดเกิด: *{$province}*";
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: รอโอน — เก็บข้อมูลเกิดล้มเหลว (ตอบตามปกติ)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+            $lines = [];
+        }
+
+        if ($lines !== []) {
+            Log::info('Fortune: รอโอน — ลูกค้าแจ้งข้อมูลเกิด → บันทึกลงบิลแล้ว', [
+                'reading_id' => $reading->id,
+                'saved' => $lines,
+                'text_preview' => mb_substr($text, 0, 60),
+            ]);
+
+            $saved = implode("\n", $lines);
+
+            // บอกชัดว่าบันทึกเป็น "ของลูกเอง" — วันที่เปล่า ๆ นับเป็นของเจ้าชะตา ถ้าไม่ใช่ พิมพ์ของตัวเองทับได้
+            //   (ยังไม่ทำนาย = พิมพ์ใหม่ทับได้ทันที · หลังจ่ายเงินทั้ง 39/99 ทวนวันเกิดที่ใช้ให้เห็นอีกรอบ)
+            return [
+                'reply' => $only
+                    ? "📝 แม่หมอบันทึกข้อมูลเกิดของลูกลงบิลให้แล้วนะคะ\n".$saved
+                        ."\n\nโอนเสร็จเมื่อไหร่ แม่หมอใช้ข้อมูลนี้ผูกดวงให้เลยค่ะ ✨"
+                        ."\n_(ถ้าไม่ใช่ของลูกเอง พิมพ์วันเกิดของลูกมาทับได้เลยนะคะ)_"
+                    : null,
+                'prefix' => "📝 แม่หมอบันทึกข้อมูลเกิดของลูกลงบิลให้แล้วค่ะ\n".$saved,
+                'hint' => 'ระบบบันทึกข้อมูลเกิดลงบิลแล้ว และทวนให้ลูกค้าในบรรทัดแรกของคำตอบแล้ว'
+                    .' → ห้ามพูดเรื่องวันเกิด/เวลาเกิด/จังหวัดเกิดซ้ำ ตอบเฉพาะเรื่องอื่นที่ลูกค้าพูดมา',
+            ];
+        }
+
+        // พูดถึงการเกิดแต่ไม่มีอะไรถูกบันทึก (อ่านไม่ออก / เป็นของคนอื่น / แค่เตือน "อย่าทำนายผิดวันเกิด")
+        $onFile = $reading->birth_date
+            ? 'ในบิลตอนนี้มีวันเกิด '.$this->formatThaiDate($reading->birth_date->format('Y-m-d'))
+            : 'ในบิลตอนนี้ยังไม่มีวันเกิด';
+
+        return [
+            'reply' => null,
+            'prefix' => '',
+            'hint' => "ลูกค้าพูดถึงวันเกิด/ข้อมูลเกิด แต่ระบบยังไม่ได้บันทึกอะไรใหม่ลงบิล ({$onFile})"
+                .' → ห้ามพูดว่ารับ/บันทึก/จด/แก้วันเกิดแล้ว'
+                .' · ถ้าลูกค้าอยากให้ใช้วันเกิดของตัวเอง ให้บอกว่าพิมพ์ วัน/เดือน/ปีเกิด มาเป็นข้อความเดียวได้เลย เช่น 27/6/2521'
+                .' · ถ้าไม่แน่ใจว่าเป็นวันเกิดของใคร ให้ถามกลับสั้นๆ',
+        ];
+    }
+
+    /**
+     * ตอบข้อความที่มีแต่ข้อมูลเกิด (ทวนสิ่งที่บันทึกจริง) — ใช้กติกากันพูดซ้ำ/ท้ายบิลชุดเดียวกับตัวฟัง
+     */
+    protected function pendingListenBirthInfoReply(FortuneReading $reading, string $messageText, string $reply, array $ctx): array
+    {
+        // เงินเข้าพอดี → ห้ามส่ง "โอนเสร็จเมื่อไหร่…" ทับเส้นจ่ายเงิน ([[feedback_never_interrupt_payment_to_prediction_flow]])
+        //   วันเกิดลงบิลไปแล้ว — ขั้นถัดไปของทั้ง 39/99 ทวนวันเกิดที่ใช้ให้ลูกค้าเห็นเองอยู่แล้ว
+        if (! $this->pendingListenStillPending($reading)) {
+            return [
+                'action' => 'silent_skip',
+                'message' => null,
+                'reading' => $reading,
+            ];
+        }
+
+        $state = $this->pendingListenState($reading);
+        $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
+
+        $footer = $this->pendingListenFooterIfDue($reading, $state, $ctx, true);
+        if ($userId !== '') {
+            $this->pendingListenRecordTurn($userId, 'user', $messageText);
+            $this->pendingListenRecordTurn($userId, 'assistant', $reply);
+        }
+        $this->pendingListenMarkSpoke($reading, $state, 'birth_info', $footer['footer_shown']);
+
+        return [
+            'action' => $ctx['action'],
+            'message' => $reply.$footer['text'],
+            'reading' => $reading,
+        ];
     }
 
     /**
      * ตอบแบบตายตัวตามเจตนา — กันพูดเรื่องเดิมซ้ำใน 10 นาที (ซ้ำ = เงียบ)
+     *
+     * @param  string  $prefix  🎂 (2026-09-27) บรรทัดทวนข้อมูลเกิดที่เพิ่งบันทึก — มีค่า = ห้ามเงียบ
      */
-    protected function pendingListenDeterministicReply(FortuneReading $reading, string $messageText, string $intent, array $ctx): array
+    protected function pendingListenDeterministicReply(FortuneReading $reading, string $messageText, string $intent, array $ctx, string $prefix = ''): array
     {
         $state = $this->pendingListenState($reading);
         $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
@@ -410,6 +558,18 @@ trait PendingPaymentListenerTrait
         $silent = in_array($intent, ['ack', 'thanks'], true)
             ? $this->pendingListenWithin($this->pendingListenLastBotSpokeAt($reading, $state), $window)
             : $this->pendingListenWithin($state['intents'][$intent] ?? null, $window);
+
+        // 🎂 เพิ่งบันทึกข้อมูลเกิดให้ → ต้องบอกลูกค้าเสมอ ห้ามเงียบ (ไม่งั้นเขาไม่รู้ว่าเก็บแล้ว)
+        if ($silent && $prefix !== '') {
+            $reply = $prefix;
+            $this->pendingListenMarkSpoke($reading, $state, 'birth_info', false);
+
+            return [
+                'action' => $ctx['action'],
+                'message' => $reply,
+                'reading' => $reading,
+            ];
+        }
 
         if ($silent) {
             Log::info('Fortune: รอโอน — เรื่องเดิมเพิ่งตอบไป เงียบไว้', [
@@ -428,6 +588,9 @@ trait PendingPaymentListenerTrait
         $reply = $this->pendingListenReplyText($intent, $ctx);
         if ($intent === 'no_bank' && $userId !== '') {
             $reply .= $this->pendingListenCardHint($userId);
+        }
+        if ($prefix !== '') {
+            $reply = $prefix."\n\n".$reply;
         }
         // เจตนาที่ลูกค้าจ่ายตอนนี้ไม่ได้ / แค่ตอบรับ / บิลหมดอายุ → ไม่แนบยอดบิลต่อท้าย (ไม่ทวง)
         $withFooter = ! in_array($intent, ['ack', 'thanks', 'apology', 'later', 'no_money', 'wait', 'keep_bill', 'expired'], true);
@@ -719,9 +882,10 @@ trait PendingPaymentListenerTrait
     /**
      * ให้ AI ฟังแล้วตอบ — Bill Psychology (Pro) ก่อน แล้วค่อย chat AI
      *
+     * @param  string  $birthHint  🎂 (2026-09-27) คำกำกับเรื่องข้อมูลเกิด (บันทึกอะไรไว้แล้ว / ยังไม่ได้บันทึก)
      * @return array{text: string, history_saved: bool}
      */
-    protected function pendingListenAiReply(FortuneReading $reading, string $messageText, ?string $intent, int $remainingMinutes): array
+    protected function pendingListenAiReply(FortuneReading $reading, string $messageText, ?string $intent, int $remainingMinutes, string $birthHint = ''): array
     {
         $userId = (string) ($reading->facebook_user_id ?: $reading->platform_user_id);
         if ($userId === '') {
@@ -729,23 +893,26 @@ trait PendingPaymentListenerTrait
         }
 
         // 1) Bill Psychology — พรอมต์ฟังก่อนอยู่แล้ว + บันทึกประวัติเอง (prod ปิดอยู่: sensitive_ai_mode=off)
-        try {
-            $platform = $reading->platform ?: FortuneRecipient::platformFromUserId($userId);
-            $pro = $this->tryBillPsychologyResponse($platform, $userId, $messageText, $reading, $remainingMinutes);
-            if (! empty($pro)) {
-                return ['text' => (string) $pro, 'history_saved' => true];
+        //    🎂 ข้ามเมื่อข้อความพูดถึงข้อมูลเกิด — พรอมต์ตัวนั้นไม่รู้ว่าระบบบันทึกอะไรไว้ (จะรับปากลอย ๆ)
+        if ($birthHint === '') {
+            try {
+                $platform = $reading->platform ?: FortuneRecipient::platformFromUserId($userId);
+                $pro = $this->tryBillPsychologyResponse($platform, $userId, $messageText, $reading, $remainingMinutes);
+                if (! empty($pro)) {
+                    return ['text' => (string) $pro, 'history_saved' => true];
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Fortune: Bill Psychology (รอโอน) ล้มเหลว', [
+                    'error' => $e->getMessage(),
+                    'reading_id' => $reading->id,
+                ]);
             }
-        } catch (\Throwable $e) {
-            Log::warning('Fortune: Bill Psychology (รอโอน) ล้มเหลว', [
-                'error' => $e->getMessage(),
-                'reading_id' => $reading->id,
-            ]);
         }
 
         // 2) chat AI — ส่งประวัติสั้นๆ ไปด้วย ให้รู้ว่าก่อนหน้านี้ลูกค้าเล่าอะไรไว้
         try {
             $history = $this->getConversationHistoryForAI($userId);
-            $nudge = $this->buildPendingPaymentNudge($reading, $messageText, $remainingMinutes, $intent, $history);
+            $nudge = $this->buildPendingPaymentNudge($reading, $messageText, $remainingMinutes, $intent, $history, $birthHint);
 
             return ['text' => trim($nudge), 'history_saved' => false];
         } catch (\Throwable $e) {

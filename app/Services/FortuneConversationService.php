@@ -7246,8 +7246,10 @@ class FortuneConversationService
         // 🎂 (2026-07-25, owner) "ต้องถามก่อนทำนายว่าจะใช้วันเกิดเก่าไหม"
         //   เดิมแจ้งเฉยๆ แล้วไปตั้งจิตเลย — ลูกค้าหลายคนไม่ทันอ่าน แล้วได้ดวงจากวันเกิดผิด
         //   ตอนนี้ถามยืนยันชัดเจน + มีปุ่มให้กด (ปุ่มจริงใส่โดย caller)
+        // 🎂 (2026-09-27) "วันเกิดเดิม" → "วันเกิดของเจ้าชะตา" — ตอนนี้อาจเป็นวันที่ลูกค้าเพิ่งแจ้งไว้ในบิลนี้
+        //   ระหว่างรอโอน (BirthdateResolver หยิบของบิลนี้ก่อนบิลเก่า) ไม่ใช่ของเก่าเสมอไป
         return '🎂 *ขอยืนยันวันเกิดก่อนนะคะ*'."\n"
-            .'แม่หมอมีวันเกิดเดิมของเจ้าชะตาอยู่: *'.$this->formatThaiDate($reused)."*\n\n"
+            .'แม่หมอมีวันเกิดของเจ้าชะตาอยู่: *'.$this->formatThaiDate($reused)."*\n\n"
             ."✅ ถ้าถูกต้อง — พิมพ์ *\"ใช่\"* หรือกดปุ่มด้านล่างได้เลย\n"
             .'📅 ถ้าไม่ใช่ — พิมพ์วันเกิดที่ถูกต้องมาได้เลยค่ะ'."\n\n";
     }
@@ -8239,8 +8241,10 @@ class FortuneConversationService
         //          → ทับ birth_date ของบิลเป็นของคนอื่น (ทำนายผิดคนทั้งดวง)
         // 🎂 (2026-07-25, owner) ปุ่ม "📅 เปลี่ยนวันเกิด" ตอนยืนยันวันเกิดเดิม (ก่อนเปิดไพ่)
         //   ยังไม่ทำนาย = ไม่กินโควต้าแก้วันเกิด 1 ครั้ง/บิล (โควต้านั้นใช้หลังทำนายเสร็จแล้วเท่านั้น)
-        if ($reading->getConversationState('birthdate_auto_filled', false)
-            && $this->looksLikeBirthdateCorrectionRequest($messageText)
+        // 🎂 (2026-09-27, owner) ถอดเงื่อนไข birthdate_auto_filled — ลูกค้าที่พิมพ์วันเกิดเอง (ขั้นวันเกิด /
+        //   ระหว่างรอโอน) ก็ต้องแก้ได้ก่อนเปิดไพ่เหมือนกัน · เดิม "เปลี่ยนวันเกิด" / วันเกิดใหม่ของคนกลุ่มนี้
+        //   ถูกนับเป็น "ตั้งจิตเสร็จ" แล้วเปิดไพ่ด้วยวันเกิดเดิม (รับข้อความแต่ไม่แก้ในบิล = เคสที่ owner แจ้ง)
+        if ($this->looksLikeBirthdateCorrectionRequest($messageText)
             && ! $this->messageLooksLikeBirthdate($messageText)) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
             $reading->setConversationState('birthdate_auto_filled', false);
@@ -8258,8 +8262,7 @@ class FortuneConversationService
             ];
         }
 
-        if ($reading->getConversationState('birthdate_auto_filled', false)
-            && $this->messageLooksLikeBirthdate($messageText)) {
+        if ($this->messageLooksLikeBirthdate($messageText)) {
             $overrideBirthdate = $this->parseBirthDate($messageText);
             if (! empty($overrideBirthdate)
                 && $overrideBirthdate !== $reading->birth_date?->format('Y-m-d')) {
@@ -8269,16 +8272,40 @@ class FortuneConversationService
                 $reading->setConversationState('tarot_intention_confirmed', false);
                 $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
 
+                // 🕛🗺️ (2026-09-27) "27/6/2521 ตี 5 เชียงใหม่" — เดิม return ก่อนถึงด่านเก็บเวลา/จังหวัด
+                //   ⇒ ได้แค่วันที่ เวลากับจังหวัดที่พิมพ์มาในข้อความเดียวกันหายเงียบ
+                //   จังหวัดไม่มีคำว่า "เกิดที่" นับได้เฉพาะข้อความที่มีแต่ข้อมูลเกิด ("15/3/2538 อยู่ภูเก็ต" ≠ ที่เกิด)
+                $alsoSaved = '';
+                try {
+                    $hour = $reading->captureStatedBirthTime($messageText, 'birthdate_answer', touchState: false);
+                    if ($hour !== null) {
+                        $alsoSaved .= '🕛 เวลาเกิด *'.FortuneReading::hourToTimeString($hour, false)." น.*\n";
+                    }
+                    $province = $reading->captureStatedBirthProvince(
+                        $messageText,
+                        'birthdate_answer',
+                        ! \App\Support\OwnBirthDate::isBirthInfoOnly($messageText),
+                        touchState: false
+                    );
+                    if ($province !== null) {
+                        $alsoSaved .= "🗺️ จังหวัดเกิด *{$province}*\n";
+                    }
+                } catch (\Throwable $e) {
+                    // non-blocking — ด่านถามเวลา/จังหวัดยังค้างธงไว้ ถามต่อได้
+                }
+
                 $formattedOverride = $this->formatThaiDate($overrideBirthdate);
 
-                Log::info('Fortune Deep39: ลูกค้าแก้วันเกิด (override วันเกิดเดิมที่ระบบเติมให้)', [
+                Log::info('Fortune Deep39: ลูกค้าแก้วันเกิดก่อนเปิดไพ่ (override)', [
                     'reading_id' => $reading->id,
                     'birth_date' => $overrideBirthdate,
+                    'also_saved' => $alsoSaved !== '',
                 ]);
 
                 return [
                     'action' => 'awaiting_tarot_intention',
-                    'message' => "📅 *เปลี่ยนวันเกิดเป็น {$formattedOverride} แล้วค่ะ* ✨\n\n"
+                    'message' => "📅 *เปลี่ยนวันเกิดเป็น {$formattedOverride} แล้วค่ะ* ✨\n"
+                        .($alsoSaved !== '' ? $alsoSaved : '')."\n"
                         ."🧘 *ตั้งจิตอีกครั้ง* — นึกถึงเรื่องที่อยากรู้ในใจ\n\n"
                         .'🃏 เมื่อพร้อม → พิมพ์ *"พร้อม"* แม่หมอจะเปิดไพ่อ่านพื้นดวงให้ค่ะ',
                     'reading' => $reading,
@@ -22571,6 +22598,7 @@ PROMPT;
      * @param  int  $remainingMinutes  เวลาเหลือก่อนบิลหมดอายุ
      * @param  string|null  $listenIntent  เจตนาที่ classifyPendingPaymentListening จับได้ (คำใบ้ให้ AI)
      * @param  array<int, array{role?: string, content?: string}>  $history  ประวัติสนทนาล่าสุด
+     * @param  string  $birthHint  🎂 (2026-09-27) สิ่งที่ระบบบันทึกเรื่องข้อมูลเกิดไว้จริง (PendingPaymentListenerTrait)
      * @return string ข้อความ AI หรือ empty string ถ้าข้าม
      */
     protected function buildPendingPaymentNudge(
@@ -22578,7 +22606,8 @@ PROMPT;
         string $messageText,
         int $remainingMinutes,
         ?string $listenIntent = null,
-        array $history = []
+        array $history = [],
+        string $birthHint = ''
     ): string {
         // ตรวจรอบ — เกินเพดาน → return empty (ให้ตัวฟังตอบตามเจตนาแทน)
         // 🩹 (2026-09-15 จับผี) ตัวนับย้ายไป Cache — เดิมเขียน conversation_state หลัง AI ตอบ (หลายวินาที)
@@ -22668,6 +22697,9 @@ PROMPT;
             if ($intentHint !== '') {
                 $promptForAI .= "บริบท intent: {$intentHint}\n";
             }
+            if ($birthHint !== '') {
+                $promptForAI .= "ข้อมูลเกิดในบิล (ระบบตรวจแล้ว): {$birthHint}\n";
+            }
 
             $promptForAI .= "\nหน้าที่: *ฟังและตอบสิ่งที่ลูกค้าเพิ่งพูดก่อนเสมอ* เหมือนแอดมินตัวจริงตอบแชท\n"
                 .'- ลูกค้าบอกปัญหาการโอน → ช่วยแก้ปัญหานั้นตรงๆ (ไม่มีบัญชี/แอป → ให้ญาติหรือคนใกล้ตัวโอนแทนได้'
@@ -22682,6 +22714,9 @@ PROMPT;
                 .'ห้าม: ทวงหรือเร่งให้โอนเมื่อลูกค้าไม่ได้ถาม · เทศน์เรื่องค่าครูเมื่อลูกค้าไม่ได้ถาม'
                 .' · แต่งวิธีจ่ายเงินที่ไม่มีจริง (มีแค่พร้อมเพย์/โอนเข้าบัญชีตามบิล) · พิมพ์เลขบัญชีเอง'
                 .' · สัญญาสิ่งที่ระบบไม่มี (ให้ดูก่อนจ่าย / ขยายเวลาบิล / ลดราคา / ยกเว้นค่าครู)'
+                // 🎂 (2026-09-27 FTU-260927-A4514) AI เคยตอบ "ได้ข้อมูลวันเกิด 27 มิถุนายน 2521 แล้ว" ทั้งที่ไม่มีใครบันทึก
+                //   การบันทึกวันเกิดเป็นหน้าที่ของระบบ (ทวนให้ลูกค้าเองเมื่อบันทึกได้จริง) — AI ห้ามรับปากแทน
+                .' · บอกว่ารับ/บันทึก/จด/แก้วันเกิด เวลาเกิด หรือจังหวัดเกิดแล้ว (ระบบเป็นคนบันทึกและแจ้งลูกค้าเอง)'
                 .' · พูดชื่อป้ายหรือคำภาษาอังกฤษจากข้อมูลระบบข้างบน · ใส่ลิสต์ · ใส่ [OFFER_FORTUNE]'."\n"
                 .'ตอบภาษาแชทธรรมดา 1-3 ประโยค';
 
