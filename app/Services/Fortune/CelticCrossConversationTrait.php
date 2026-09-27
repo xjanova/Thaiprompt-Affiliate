@@ -848,7 +848,8 @@ trait CelticCrossConversationTrait
         // 🌙 (2026-05-23) สร้าง hint dynamic — ถ้า Deep ปิด ไม่ใส่บรรทัด 39
         $deepEnabledHint = $this->settings->isDeepReadingEnabled();
         $celticEnabledHint = (bool) ($this->settings->enable_celtic_cross ?? false);
-        $stepHintCompact = "🙏 ยังรอเจ้าชะตาเลือกแพคเกจอยู่นะคะ\n";
+        // 👉 (2026-09-27) บรรทัดเร่งนี้ FB แทนด้วยสติกเกอร์มือชี้ได้ — ข้อความมาจากค่าคงที่ที่เดียวกับตัวตัด
+        $stepHintCompact = \App\Services\Fortune\FortuneGestureSender::TIER_WAITING_LINE."\n";
         if ($deepEnabledHint) {
             $stepHintCompact .= "🔹 *\"{$deepPriceInt}\"* — ดูพื้นดวง {$deepPriceInt} บาท (วันเกิด + ไพ่ + คุย {$deepWindow} นาที)\n";
         }

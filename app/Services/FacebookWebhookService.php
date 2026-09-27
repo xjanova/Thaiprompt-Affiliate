@@ -1269,6 +1269,99 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
     }
 
     /**
+     * 👉 (2026-09-27) ส่งสติกเกอร์ของ Messenger — `message.sticker_id`
+     *
+     * ส่งได้เฉพาะสติกเกอร์ฟรีของ Meta (ชุดที่ Sticker Catalog API `/sticker_packs` คืนมา)
+     * + 👍 369239263222822 · ต้องอยู่ในกรอบ 24 ชม. เหมือนข้อความปกติ
+     * ⚠️ ของประดับล้วน — ส่งไม่สำเร็จคืน false เงียบ ๆ ห้ามโยน exception เข้า flow ลูกค้า
+     *
+     * @param  string  $recipientId  Facebook PSID
+     * @param  int|string  $stickerId  id จาก Sticker Catalog API
+     */
+    public function sendSticker(string $recipientId, int|string $stickerId): bool
+    {
+        return $this->postGesture($recipientId, [
+            'messaging_type' => 'RESPONSE',
+            'message' => ['sticker_id' => (int) $stickerId],
+        ], 'sticker');
+    }
+
+    /**
+     * ❤️ (2026-09-27) กดรีแอคชันบน "ข้อความของลูกค้า" — `sender_action: react`
+     *
+     * Meta เปิดให้เพจกดรีแอคชันผ่าน Send API ตั้งแต่ 2025-12-02 (changelog Messenger Platform)
+     * ไม่สร้างกล่องข้อความใหม่ในแชท = ไม่แทรก flow ใด ๆ
+     *
+     * @param  string  $recipientId  Facebook PSID เจ้าของข้อความ
+     * @param  string  $messageId  mid ของข้อความลูกค้า (จาก webhook)
+     * @param  string  $emoji  อีโมจิที่จะกด เช่น ❤️
+     */
+    public function reactToMessage(string $recipientId, string $messageId, string $emoji = '❤️'): bool
+    {
+        if ($messageId === '') {
+            return false;
+        }
+
+        return $this->postGesture($recipientId, [
+            'sender_action' => 'react',
+            'payload' => [
+                'message_id' => $messageId,
+                'reaction' => $emoji,
+            ],
+        ], 'react');
+    }
+
+    /**
+     * ตัวยิงร่วมของสติกเกอร์ / รีแอคชัน — กันผู้รับผิดแพลตฟอร์ม + ผู้รับที่รู้แล้วว่าส่งไม่ถึงวันนี้
+     *
+     * @param  array<string, mixed>  $body  เนื้อคำขอ (ไม่รวม recipient / access_token)
+     */
+    protected function postGesture(string $recipientId, array $body, string $kind): bool
+    {
+        // ⚠️ ทุกบรรทัดต้องอยู่ใน try — ผู้เรียก (ตัวเรนเดอร์ FB) มี catch ที่ "ส่งข้อความซ้ำเป็น fallback"
+        //    ถ้า Cache/Redis โยน exception หลุดออกไป = ลูกค้าได้เมนูสองรอบเพราะของประดับชิ้นเดียว
+        try {
+            if ($this->isMisroutedLineRecipient($recipientId, __FUNCTION__)) {
+                return false;
+            }
+
+            // รู้แล้วว่าวันนี้ส่งไม่ถึง (551 / นอกกรอบ 24 ชม.) → ไม่ยิง call ตกน้ำ
+            if (Cache::has("fb_user_unreachable:{$recipientId}:".now()->format('Y-m-d'))) {
+                return false;
+            }
+
+            $this->ensurePageContextForRecipient($recipientId);
+
+            // token อยู่ใน body ไม่ใช่ query — ข้อความ exception ของ Http จึงไม่มี token ติดออกไป
+            // timeout สั้น: รีแอคชันยิงระหว่างรับ webhook — ของประดับห้ามถ่วงคำตอบจริง
+            $response = Http::timeout(5)->post($this->graphUrl('/me/messages'), [
+                'recipient' => ['id' => $recipientId],
+            ] + $body + [
+                'access_token' => $this->pageAccessToken,
+            ]);
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            Log::warning("FB gesture ({$kind}) ส่งไม่สำเร็จ", [
+                'recipient' => $recipientId,
+                'status' => $response->status(),
+                'code' => $response->json('error.code'),
+                'subcode' => $response->json('error.error_subcode'),
+                'error' => mb_substr((string) $response->json('error.message'), 0, 200),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning("FB gesture ({$kind}) exception", [
+                'recipient' => $recipientId,
+                'exception' => get_class($e),
+            ]);
+        }
+
+        return false;
+    }
+
+    /**
      * 🔒 (2026-08-12) ปุ่มที่ "ห้ามเป็น Quick Reply" — ต้องส่งเป็น postback button เท่านั้น
      *
      * Quick Reply ของ FB อยู่ติดช่องพิมพ์ → บางเครื่อง/บางเวอร์ชันการกดปุ่มวิ่งผ่านช่องพิมพ์

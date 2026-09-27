@@ -989,7 +989,32 @@ class FortuneChannelManager
                     //       ระบบฟรีย้ายไป tryAutoFreeCardForFirstReply แบบเงียบแล้ว
                     //       ดู CelticCrossConversationTrait:170-173 → เมนูนี้จึงมีไม่เกิน 3 ปุ่มเสมอ)
 
-                    return $fbService->sendQuickReplies($userId, $menuText, $buttons, $extra);
+                    // 👉 (2026-09-27) ลูกค้าคุยเล่นแทนการเลือก → สติกเกอร์มือชี้ "แทน" ประโยคเร่ง
+                    //   เจ้าของ: "ใช้รูปมือ แทนการใช้คำพูดเร่งให้เลือกแพคเกจ ... เพื่อให้เหมือนคน"
+                    //   ตัดเฉพาะบรรทัด TIER_WAITING_LINE — คำตอบ AI + รายการแพคเกจ + ปุ่มคงเดิม
+                    //   ⚠️ สติกเกอร์ต้องตาม "หลัง" กล่องปุ่ม: ถ้าส่งก่อนแล้วปุ่มตกเป็น quick reply
+                    //      ข้อความถัดไปจะทำให้ quick reply หายไปจากจอ
+                    //   ติดคูลดาวน์ / สวิตช์ปิด / Telegram / หาบรรทัดไม่เจอ → ข้อความเดิมทุกตัวอักษร
+                    $nudgeSticker = false;
+                    if (($result['action'] ?? '') === 'tier_choice_chitchat' && $fbService instanceof FacebookWebhookService) {
+                        $withoutNudge = \App\Services\Fortune\FortuneGestureSender::withoutWaitingLine($menuText);
+                        if ($withoutNudge !== null
+                            && app(\App\Services\Fortune\FortuneGestureSender::class)->claim(
+                                $userId,
+                                \App\Services\Fortune\FortuneGestureSender::GESTURE_NUDGE_CHOOSE
+                            )) {
+                            $menuText = $withoutNudge;
+                            $nudgeSticker = true;
+                        }
+                    }
+
+                    $menuSent = $fbService->sendQuickReplies($userId, $menuText, $buttons, $extra);
+
+                    if ($menuSent && $nudgeSticker) {
+                        $fbService->sendSticker($userId, \App\Services\Fortune\FortuneGestureSender::STICKER_NUDGE_CHOOSE);
+                    }
+
+                    return $menuSent;
                 })(),
 
                 // 🗑️ (2026-07-07) PDPA ลบข้อมูล — กล่องยืนยัน (คำเตือน + ปุ่มยืนยัน/ยกเลิก) / ผลลัพธ์ (text ล้วน)
@@ -1770,6 +1795,24 @@ class FortuneChannelManager
                     //   ⚠️ และห้ามไปแตะ quick_replies เดิม — ที่นั่นตั้งใจไม่มีปุ่มแพคเกจเกาะดวงฟรี
                     if ($sent) {
                         $this->offerProductsLater($fbService->getPlatformName(), $userId, $result);
+                    }
+
+                    return $sent;
+                })(),
+
+                // 🙏 (2026-09-27) ลูกค้าบอกลา/ขอบคุณ → คำอวยพร แล้วตามด้วยสติกเกอร์ไหว้ (FB · วันละครั้งต่อคน)
+                //   เดิมตกไป default = sendMessage เฉย ๆ — คำอวยพรยังเป็นตัวตัดสินผลส่งเหมือนเดิม
+                //   สติกเกอร์ล้ม/ติดคูลดาวน์/Telegram = ได้แค่คำอวยพร เหมือนก่อนมีฟีเจอร์นี้
+                'farewell_blessing' => (function () use ($fbService, $userId, $message, $extra) {
+                    $sent = $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra);
+
+                    if ($sent) {
+                        app(\App\Services\Fortune\FortuneGestureSender::class)->sendStickerIfAllowed(
+                            $fbService,
+                            $userId,
+                            \App\Services\Fortune\FortuneGestureSender::GESTURE_FAREWELL,
+                            \App\Services\Fortune\FortuneGestureSender::STICKER_FAREWELL
+                        );
                     }
 
                     return $sent;

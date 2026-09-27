@@ -277,6 +277,8 @@ class FortuneTellingSetting extends Model
         'fortune_chat_bubble_max',
         // ✦ (2026-09-13) แต่งหัวข้อคำทำนายบน FB เป็น 【 หัวข้อ 】 + เส้นคั่นสั้น
         'fortune_messenger_format_fb',
+        // 👉 (2026-09-27) แม่หมอส่งสติกเกอร์ / กดหัวใจตอบ บน FB
+        'fortune_gestures_fb',
         // 📜 Consent Gate — กติกาก่อนจองคิว (2026-06-06)
         'fortune_consent_enabled',
         'fortune_consent_pick_strategy',
@@ -646,6 +648,8 @@ class FortuneTellingSetting extends Model
         'fortune_chat_bubble_max' => 'integer',
         // ✦ แต่งหัวข้อคำทำนาย FB (2026-09-13)
         'fortune_messenger_format_fb' => 'boolean',
+        // 👉 สติกเกอร์ / หัวใจ FB (2026-09-27)
+        'fortune_gestures_fb' => 'boolean',
         // 📜 Consent Gate (2026-06-06)
         'fortune_consent_enabled' => 'boolean',
         'fortune_consent_cancel_enabled' => 'boolean',
@@ -909,6 +913,8 @@ class FortuneTellingSetting extends Model
         'fortune_chat_bubble_max' => 4,
         // ✦ (2026-09-13) แต่งหัวข้อคำทำนาย FB — เจ้าของสั่ง "แก้ให้หมดแล้วพุชพร้อมกัน" ⇒ เปิด
         'fortune_messenger_format_fb' => true,
+        // 👉 (2026-09-27) สติกเกอร์ / หัวใจ FB — เจ้าของสั่ง "ทำตามสมควร" ⇒ เปิด (ส่งไม่สำเร็จ = ไม่มีอะไรหาย)
+        'fortune_gestures_fb' => true,
         // 📜 Consent Gate — กติกาก่อนจองคิว (default เปิด)
         'fortune_consent_enabled' => true,
         'fortune_consent_pick_strategy' => 'random',

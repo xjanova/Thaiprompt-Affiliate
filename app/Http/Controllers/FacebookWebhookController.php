@@ -2933,6 +2933,39 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // ❤️ (2026-09-27) ลูกค้าขอบคุณล้วน / ส่งสติกเกอร์ / อีโมจิล้วน → แม่หมอกดหัวใจบนข้อความนั้น
+        //    เจ้าของ: "ใช้...อีโมชั่นอื่นๆ ของเฟชบุ๊ค เพื่อให้เหมือนคน"
+        //    รีแอคชันไม่สร้างกล่องใหม่ในแชท = ไม่แทรก flow ใด ๆ (รวมช่วงรอโอน → คำทำนาย)
+        //    อยู่หลังด่านแบน + ด่านสติกเกอร์รัว ⇒ คนที่โดนเงียบ/ระงับไม่ได้หัวใจ · คูลดาวน์ 60 วิ/คน
+        //    ⚠️ ของประดับ — ล้มยังไงก็ต้องไหลต่อ ห้าม return ตรงนี้
+        try {
+            $gestureOnly = false;
+            if (trim((string) $messageText) === '') {
+                foreach ($attachments ?? [] as $att) {
+                    if (($att['type'] ?? '') === 'sticker' || isset($att['payload']['sticker_id'])) {
+                        $gestureOnly = true;
+                        break;
+                    }
+                }
+            } elseif (! preg_match('/[\p{L}\p{N}]/u', (string) $messageText)) {
+                // อีโมจิ/สัญลักษณ์ล้วน เช่น "🙏🙏" "❤️"
+                $gestureOnly = true;
+            }
+
+            app(\App\Services\Fortune\FortuneGestureSender::class)->reactToInbound(
+                $this->facebookService,
+                $senderId,
+                $mid,
+                (string) $messageText,
+                $gestureOnly
+            );
+        } catch (\Throwable $e) {
+            Log::debug('FB: กดหัวใจข้อความลูกค้าไม่สำเร็จ (non-blocking)', [
+                'sender_id' => $senderId,
+                'exception' => get_class($e),
+            ]);
+        }
+
         // 🔒 (2026-05-20) IN-PREDICTION guard — ห้าม handoff/affiliate ระหว่างทำนาย
         //    User spec: ระหว่างทำนาย ไม่ต้องคุยกับคน ไม่ต้องโยน affiliate
         //    เดี๋ยวแอดมินจะแทคเอง ถ้าจำเป็น (admin /aistop ยัง win)
@@ -4248,6 +4281,16 @@ class FacebookWebhookController extends Controller
         \Illuminate\Support\Facades\Cache::put($throttleKey, true, now()->addHours(6));
 
         try {
+            // 👋 (2026-09-27) ลูกค้าส่งสติกเกอร์/อีโมจิมาทัก → แม่หมอโบกมือกลับเป็นสติกเกอร์ก่อนคำทักทาย
+            //    ส่ง "ก่อน" กล่องปุ่ม — ปุ่มต้องอยู่กล่องสุดท้าย (quick reply หายเมื่อมีข้อความตามหลัง)
+            //    ล้ม/สวิตช์ปิด = ได้คำทักทายอย่างเดียวเหมือนเดิม
+            app(\App\Services\Fortune\FortuneGestureSender::class)->sendStickerIfAllowed(
+                $this->facebookService,
+                $senderId,
+                \App\Services\Fortune\FortuneGestureSender::GESTURE_HELLO,
+                \App\Services\Fortune\FortuneGestureSender::STICKER_HELLO
+            );
+
             $message = "สวัสดีค่ะ 🙏 แม่หมอจันทราอยู่ตรงนี้นะคะ\n"
                 .'ถ้าเจ้าชะตาอยากให้แม่หมอดูดวงให้ กดปุ่มด้านล่าง หรือพิมพ์เรื่องที่อยากรู้มาได้เลยค่ะ 🔮';
             $quickReplies = [
@@ -5059,9 +5102,10 @@ class FacebookWebhookController extends Controller
     /**
      * 💗 จัดการเมื่อลูกค้า react ข้อความ (❤️/👍/😆/😮/😢/😡)
      *
-     * Throttle: 1 ครั้ง/user/60 วินาที — ป้องกันรัวสแปม
-     * ตอบกลับด้วย emoji เดียวกัน (เพราะ FB Page Messenger API ยังไม่รองรับ react กลับ
-     * เป็น sender_action — เลยใช้ emoji เป็นข้อความแทน)
+     * ปิดเสียงทั้งหมดตั้งแต่ 2026-05-01 (เหตุผลในตัวเมธอด)
+     * ℹ️ (2026-09-27) ข้อมูลเดิมที่ว่า "FB ไม่รองรับ react กลับ" ล้าสมัยแล้ว — Meta เปิด
+     *    `sender_action: react` ตั้งแต่ 2025-12-02 · ฝั่งแม่หมอกดหัวใจให้ข้อความลูกค้าอยู่ที่
+     *    FortuneGestureSender::reactToInbound() (เรียกใน processMessage)
      */
     protected function handleMessageReaction(array $messaging): void
     {

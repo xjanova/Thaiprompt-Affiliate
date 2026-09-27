@@ -345,6 +345,8 @@ class FortuneBannerController extends Controller
             'fortune_chat_bubble_max' => 'nullable|integer|min:1|max:8',
             // ✦ (2026-09-13) แต่งหัวข้อคำทำนาย FB
             'fortune_messenger_format_fb' => 'nullable|boolean',
+            // 👉 (2026-09-27) แม่หมอส่งสติกเกอร์ / กดหัวใจตอบ บน FB
+            'fortune_gestures_fb' => 'nullable|boolean',
         ]);
 
         // 💬 จังหวะบับเบิ้ล — คำนวณ min ก่อนเพราะ max ต้องไม่ต่ำกว่ามัน
@@ -367,6 +369,7 @@ class FortuneBannerController extends Controller
             'fortune_chat_bubble_gap_max' => max($gapMin, (int) ($validated['fortune_chat_bubble_gap_max'] ?? 10)),
             'fortune_chat_bubble_max' => (int) ($validated['fortune_chat_bubble_max'] ?? 4),
             'fortune_messenger_format_fb' => (bool) ($validated['fortune_messenger_format_fb'] ?? false),
+            'fortune_gestures_fb' => (bool) ($validated['fortune_gestures_fb'] ?? false),
         ]);
 
         // ล้าง static memo ของโปรเซสนี้ ให้หน้าที่ redirect กลับไปโชว์ค่าที่เพิ่งบันทึกทันที
