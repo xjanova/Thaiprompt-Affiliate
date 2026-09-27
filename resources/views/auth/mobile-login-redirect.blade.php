@@ -95,8 +95,9 @@
 
     <script>
         // Auto redirect after short delay
+        // 🩹 (2026-09-27) ต้องเข้ารหัสแบบ JSON — แบบ echo ปกติแปลง & เป็น &amp; ในสคริปต์ → แอปได้พารามิเตอร์ "amp;state" แทน state
         setTimeout(function() {
-            window.location.href = '{{ $redirectUrl }}';
+            window.location.href = @json($redirectUrl);
         }, 1500);
 
         // Try to close window after redirect

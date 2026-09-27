@@ -37,8 +37,9 @@ export const APP_INFO = {
 export const FEATURES = {
   // Authentication
   LINE_LOGIN_ENABLED: true,
-  FACEBOOK_LOGIN_ENABLED: false,
-  GOOGLE_LOGIN_ENABLED: false,
+  // Facebook / Google: ปุ่มแสดงจริงเมื่อเซิร์ฟเวอร์เปิดใช้ด้วย (/api/v1/auth/social/status) — false = ปิดในแอปแม้เซิร์ฟเวอร์เปิด
+  FACEBOOK_LOGIN_ENABLED: true,
+  GOOGLE_LOGIN_ENABLED: true,
   APPLE_LOGIN_ENABLED: false,
 
   // บริการหลักในแอป

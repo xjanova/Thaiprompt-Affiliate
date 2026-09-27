@@ -4,6 +4,8 @@
  * - หัวน้ำเงินลายกนก + ไอคอนแอปเรืองทอง (AuthHero) · การ์ดฟอร์มขาวซ้อนขึ้นบนหัว
  * - อีเมล + รหัสผ่าน (ตรวจรูปแบบก่อนส่ง บอกผิดใต้ช่อง) · ปุ่มกันกดซ้ำในตัว (Button3D)
  * - LINE Login แสดงเฉพาะเมื่อ server เปิดใช้งานและตั้งค่าครบ · รับ callback ทั้งจาก deep link และ auth session
+ * - Facebook / Google (ใต้ปุ่ม LINE) แสดงตาม /api/v1/auth/social/status — ล็อกอินผ่านหน้าเว็บ (PKCE) ด้วยค่าเดียวกับเว็บ
+ *   แล้วเว็บพากลับ thaiprompt://auth → แลก code ได้ครั้งเดียว (claimWebAuthCode กันแลกซ้ำจาก deep link)
  * - เข้าสู่ระบบอยู่แล้ว → ไปหน้าแรกทันที
  */
 
@@ -21,16 +23,30 @@ import { Text, TextInput } from '@/components/ui/Text';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import * as Device from 'expo-device';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { APP_INFO } from '@/config/appConfig';
+import { APP_INFO, isFeatureEnabled } from '@/config/appConfig';
 import { useAuthStore } from '@/stores/authStore';
-import { checkLineLoginStatus } from '@/services/api';
+import { checkLineLoginStatus, getSocialLoginStatus } from '@/services/api';
+import { getDeviceId } from '@/services/deviceService';
 import { Button3D, Card3D, Icon } from '@/components/ui';
 import { AuthField } from '@/components/auth/AuthField';
 import { AuthHero, AUTH_OVERLAP } from '@/components/auth/AuthHero';
+import { FacebookGlyph, GoogleGlyph } from '@/components/auth/SocialGlyphs';
+import {
+  claimWebAuthCode,
+  parseWebAuthRedirect,
+  setWebAuthSessionPending,
+  SOCIAL_PROVIDER_LABEL,
+  WEB_AUTH_REDIRECT_URL,
+  type SocialProvider,
+} from '@/utils/webAuth';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+/** ผู้ให้บริการที่ล็อกอินผ่านหน้าเว็บ (LINE ใช้เส้นเดิมของตัวเอง) */
+type WebProvider = Exclude<SocialProvider, 'line'>;
 
 /**
  * code ของ LINE ที่ส่งไปแลกแล้ว — ระดับโมดูลเพราะ deep link อาจเปิดหน้า login ใบใหม่
@@ -50,7 +66,17 @@ const claimLineCode = (code: string) => {
 export default function LoginScreen() {
   const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
-  const { login, loginWithLine, handleLineCallback, isLoading, error, clearError, isAuthenticated } = useAuthStore();
+  const {
+    login,
+    loginWithLine,
+    handleLineCallback,
+    loginWithWeb,
+    handleWebAuthCallback,
+    isLoading,
+    error,
+    clearError,
+    isAuthenticated,
+  } = useAuthStore();
   const params = useLocalSearchParams<{ code?: string; state?: string; error?: string }>();
 
   const [email, setEmail] = useState('');
@@ -60,6 +86,9 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [lineEnabled, setLineEnabled] = useState(false);
   const [lineLoading, setLineLoading] = useState(false);
+  // ปุ่ม Facebook / Google — แสดงเมื่อเซิร์ฟเวอร์เปิดใช้ และไม่ได้ปิดไว้ในแอป (FEATURES)
+  const [socialEnabled, setSocialEnabled] = useState<{ facebook: boolean; google: boolean }>({ facebook: false, google: false });
+  const [socialLoading, setSocialLoading] = useState<WebProvider | null>(null);
 
   const mountedRef = useRef(true);
   const passwordRef = useRef<TextInput>(null);
@@ -87,6 +116,17 @@ export default function LoginScreen() {
       .catch(() => {
         if (mountedRef.current) setLineEnabled(false);
       });
+  }, []);
+
+  // Facebook / Google เปิดใช้งานไหม (ยังไม่ตั้งค่าบนเซิร์ฟเวอร์ / เรียกไม่สำเร็จ = ซ่อนปุ่ม)
+  useEffect(() => {
+    getSocialLoginStatus().then((status) => {
+      if (!mountedRef.current) return;
+      setSocialEnabled({
+        facebook: status.facebook && isFeatureEnabled('FACEBOOK_LOGIN_ENABLED'),
+        google: status.google && isFeatureEnabled('GOOGLE_LOGIN_ENABLED'),
+      });
+    });
   }, []);
 
   // callback จาก LINE (deep link)
@@ -134,6 +174,55 @@ export default function LoginScreen() {
       if (mountedRef.current) setLineLoading(false);
     }
   }, [lineLoading, loginWithLine, handleLineCallback]);
+
+  /**
+   * เข้าสู่ระบบด้วย Facebook / Google ผ่านหน้าเว็บ (PKCE)
+   * ขอ login_url พร้อม provider → เว็บพาไปหน้าอนุญาตทันที → กลับ thaiprompt://auth?code → แลก token
+   */
+  const loginSocial = useCallback(
+    async (provider: WebProvider) => {
+      if (socialLoading || lineLoading) return;
+      const label = SOCIAL_PROVIDER_LABEL[provider];
+      setSocialLoading(provider);
+      try {
+        const deviceId = await getDeviceId();
+        const deviceName = Device.modelName || Device.deviceName || 'Mobile App';
+        const result = await loginWithWeb(deviceId, deviceName, provider);
+        if (!result.success || !result.loginUrl) {
+          // ข้อความจาก store เป็นภาษาไทยเสมอ (แสดงในกล่องแดงบนการ์ดด้วย)
+          Alert.alert(`เข้าสู่ระบบด้วย ${label}`, result.message || `เชื่อมต่อ ${label} ไม่ได้ ลองใหม่อีกครั้งนะ`);
+          return;
+        }
+
+        setWebAuthSessionPending(true);
+        try {
+          const browserResult = await WebBrowser.openAuthSessionAsync(result.loginUrl, WEB_AUTH_REDIRECT_URL);
+          // ผู้ใช้ปิดหน้าต่างเอง (cancel / dismiss) = ไม่ต้องแจ้งอะไร
+          if (browserResult.type !== 'success' || !browserResult.url) return;
+
+          const { code, state, error: authError } = parseWebAuthRedirect(browserResult.url);
+          if (code && state) {
+            // deep link (หน้า /auth) อาจได้ code ตัวเดียวกัน — ใครได้ก่อนคนนั้นแลก
+            if (!claimWebAuthCode(code)) return;
+            const ok = await handleWebAuthCallback(code, state);
+            if (ok) router.replace('/(tabs)');
+          } else if (authError && authError !== 'access_denied') {
+            Alert.alert(`เข้าสู่ระบบด้วย ${label} ไม่สำเร็จ`, 'ลองใหม่อีกครั้ง หรือใช้อีเมลแทนนะ');
+          }
+        } finally {
+          setWebAuthSessionPending(false);
+        }
+      } catch {
+        Alert.alert(`เข้าสู่ระบบด้วย ${label} ไม่สำเร็จ`, 'ลองใหม่อีกครั้ง หรือใช้อีเมลแทนนะ');
+      } finally {
+        if (mountedRef.current) setSocialLoading(null);
+      }
+    },
+    [socialLoading, lineLoading, loginWithWeb, handleWebAuthCallback]
+  );
+
+  const showSocial = lineEnabled || socialEnabled.facebook || socialEnabled.google;
+  const socialBusy = isLoading || lineLoading || socialLoading !== null;
 
   const validate = (): boolean => {
     let ok = true;
@@ -254,25 +343,54 @@ export default function LoginScreen() {
                   style={styles.submit}
                 />
 
-                {lineEnabled && (
-                  <>
-                    <View style={styles.dividerRow}>
-                      <View style={[styles.divider, { backgroundColor: colors.divider }]} />
-                      <Text style={[typography.caption, { color: colors.textMuted }]}>หรือ</Text>
-                      <View style={[styles.divider, { backgroundColor: colors.divider }]} />
-                    </View>
+                {showSocial && (
+                  <View style={styles.dividerRow}>
+                    <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>หรือ</Text>
+                    <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+                  </View>
+                )}
+
+                <View style={styles.socialStack}>
+                  {lineEnabled && (
                     <Button3D
                       title="เข้าสู่ระบบด้วย LINE"
                       icon="chat-circle-dots"
                       variant="success"
                       size="lg"
                       fullWidth
-                      disabled={isLoading}
+                      disabled={isLoading || socialLoading !== null}
                       loading={lineLoading}
                       onPress={loginLine}
                     />
-                  </>
-                )}
+                  )}
+                  {socialEnabled.facebook && (
+                    <Button3D
+                      title="เข้าสู่ระบบด้วย Facebook"
+                      icon={<FacebookGlyph />}
+                      variant="facebook"
+                      size="lg"
+                      fullWidth
+                      disabled={socialBusy && socialLoading !== 'facebook'}
+                      loading={socialLoading === 'facebook'}
+                      loadingText="กำลังเปิด Facebook..."
+                      onPress={() => loginSocial('facebook')}
+                    />
+                  )}
+                  {socialEnabled.google && (
+                    <Button3D
+                      title="เข้าสู่ระบบด้วย Google"
+                      icon={<GoogleGlyph />}
+                      variant="secondary"
+                      size="lg"
+                      fullWidth
+                      disabled={socialBusy && socialLoading !== 'google'}
+                      loading={socialLoading === 'google'}
+                      loadingText="กำลังเปิด Google..."
+                      onPress={() => loginSocial('google')}
+                    />
+                  )}
+                </View>
               </Card3D>
             </Animated.View>
 
@@ -331,6 +449,9 @@ const styles = StyleSheet.create({
   divider: {
     flex: 1,
     height: 1,
+  },
+  socialStack: {
+    gap: spacing.md,
   },
   registerRow: {
     flexDirection: 'row',

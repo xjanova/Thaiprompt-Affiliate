@@ -30,6 +30,8 @@ export const API_ENDPOINTS = {
   WEB_AUTH_EXCHANGE: '/auth/mobile/exchange',
   WEB_AUTH_STATUS: '/auth/mobile/status',
   WEB_AUTH_CANCEL: '/auth/mobile/cancel',
+  // ปุ่มเข้าสู่ระบบด้วย LINE / Facebook / Google ที่ควรแสดง (เปิดใช้ + ตั้งค่าครบบนเซิร์ฟเวอร์)
+  SOCIAL_LOGIN_STATUS: '/auth/social/status',
 
   // Dashboard
   DASHBOARD_STATS: '/dashboard/statistics',

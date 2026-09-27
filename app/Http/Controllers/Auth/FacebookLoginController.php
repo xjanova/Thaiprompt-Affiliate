@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureAccountActive;
 use App\Models\FacebookOAuthSetting;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Rules\NotReservedEmailDomain;
+use App\Services\Auth\MobileAppLogin;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAffiliateService;
+use App\Support\LocalRedirect;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,6 +27,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 use Laravel\Socialite\Facades\Socialite;
 
 /**
@@ -47,18 +51,47 @@ class FacebookLoginController extends Controller
 {
     /**
      * Redirect ไป Facebook OAuth
+     *
+     * 📱 (2026-09-27) รองรับแอป: /auth/facebook?mobile_token=..&state=.. (มาจาก /mobile-login)
+     *    ใช้ App ID/Secret และ callback /auth/facebook/callback ตัวเดิมของเว็บ — ไม่มี redirect URI ใหม่
      */
-    public function redirect(Request $request): RedirectResponse
+    public function redirect(Request $request): RedirectResponse|View
     {
+        $mobileLogin = app(MobileAppLogin::class);
+        $mobileToken = MobileAppLogin::text($request->query('mobile_token'));
+        $mobileState = MobileAppLogin::text($request->query('state'));
+        $fromApp = $request->has('mobile_token');
+
         $setting = $this->loadSetting();
         if (! $setting) {
+            if ($fromApp && $mobileToken !== '' && $mobileState !== '') {
+                return $mobileLogin->backToLoginPage(
+                    ['token' => $mobileToken, 'state' => $mobileState],
+                    'ยังไม่เปิดให้เข้าสู่ระบบด้วย Facebook — กรุณาใช้วิธีอื่น'
+                );
+            }
+
             return redirect()->route('login')
                 ->with('error', 'Facebook Login ยังไม่ได้ตั้งค่า — กรุณาแจ้งผู้ดูแลระบบ');
         }
 
+        if ($fromApp) {
+            // ลิงก์จากแอปต้องชี้ token ที่ยังรอล็อกอินอยู่จริง — ไม่งั้นไม่พาไป Facebook เลย
+            if (! $mobileLogin->findPending($mobileToken, $mobileState)) {
+                return $mobileLogin->expiredView();
+            }
+
+            $mobileLogin->remember('facebook', $mobileToken, $mobileState);
+        } else {
+            // ล็อกอินเว็บปกติ — ล้างร่องรอยจากแอปที่อาจค้างอยู่ใน session
+            $mobileLogin->forget('facebook');
+        }
+
         // เก็บ intended URL เพื่อ redirect หลัง login (default: wallet)
-        if ($request->has('redirect')) {
-            Session::put('facebook_login_redirect', $request->get('redirect'));
+        // 🔐 เฉพาะหน้าในเว็บเราเท่านั้น (กัน open redirect ผ่าน ?redirect=https://เว็บอื่น)
+        Session::forget('facebook_login_redirect');
+        if ($target = LocalRedirect::sanitize($request->get('redirect'))) {
+            Session::put('facebook_login_redirect', $target);
         }
 
         // เก็บ referral code ถ้ามี (สำหรับสมัครใหม่ผ่านลิงก์)
@@ -78,7 +111,7 @@ class FacebookLoginController extends Controller
     /**
      * Handle Facebook OAuth callback
      */
-    public function callback(Request $request): RedirectResponse
+    public function callback(Request $request): RedirectResponse|View
     {
         // 🔗 (2026-08-28) เส้น "เชื่อมเพจด้วย Facebook" ของหลังบ้าน ใช้ redirect_uri ตัวเดียวกับที่นี่
         //    (เป็น URI เดียวที่ whitelist ไว้ในแอป — เพิ่มตัวใหม่ต้องไปแก้ตั้งค่าบน developers.facebook.com)
@@ -91,14 +124,28 @@ class FacebookLoginController extends Controller
                 ->handleOAuthCallback($request);
         }
 
+        // 📱 มาจากแอปไหม — อ่านจาก session เท่านั้น (ใช้ครั้งเดียว) ไม่เชื่อค่าใน query ของ callback
+        $mobileLogin = app(MobileAppLogin::class);
+        $mobile = $mobileLogin->pull('facebook');
+
         // Load setting + apply runtime config (สำคัญ! Socialite อ่าน config ตอน driver init)
         $setting = $this->loadSetting();
         $errorOrigin = Session::get('facebook_login_origin', 'login');
         $errorRoute = $errorOrigin === 'register' ? 'register' : 'login';
 
+        // ผิดพลาด → แอปกลับหน้าเข้าสู่ระบบของแอป · เว็บกลับหน้าเดิม (login/register)
+        $fail = function (string $message) use ($mobile, $mobileLogin, $errorRoute): RedirectResponse {
+            if ($mobile) {
+                Session::forget(['facebook_login_origin', 'facebook_login_referral', 'facebook_login_redirect']);
+
+                return $mobileLogin->backToLoginPage($mobile, $message);
+            }
+
+            return redirect()->route($errorRoute)->with('error', $message);
+        };
+
         if (! $setting) {
-            return redirect()->route($errorRoute)
-                ->with('error', 'Facebook Login ยังไม่ได้ตั้งค่า — กรุณาแจ้งผู้ดูแลระบบ');
+            return $fail('Facebook Login ยังไม่ได้ตั้งค่า — กรุณาแจ้งผู้ดูแลระบบ');
         }
 
         // User cancel หรือ error จาก FB
@@ -106,10 +153,10 @@ class FacebookLoginController extends Controller
             Log::info('Facebook OAuth: user denied or error', [
                 'error' => $request->get('error'),
                 'error_description' => $request->get('error_description'),
+                'from_app' => $mobile !== null,
             ]);
 
-            return redirect()->route($errorRoute)
-                ->with('error', 'การเข้าสู่ระบบด้วย Facebook ถูกยกเลิก');
+            return $fail('การเข้าสู่ระบบด้วย Facebook ถูกยกเลิก');
         }
 
         try {
@@ -119,16 +166,14 @@ class FacebookLoginController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->route($errorRoute)
-                ->with('error', 'ไม่สามารถเชื่อมต่อกับ Facebook ได้ กรุณาลองใหม่');
+            return $fail('ไม่สามารถเชื่อมต่อกับ Facebook ได้ กรุณาลองใหม่');
         }
 
         // Validate FB user data
         if (empty($fbUser->getId())) {
             Log::warning('Facebook OAuth: missing user ID');
 
-            return redirect()->route($errorRoute)
-                ->with('error', 'ข้อมูลจาก Facebook ไม่ครบ กรุณาลองใหม่');
+            return $fail('ข้อมูลจาก Facebook ไม่ครบ กรุณาลองใหม่');
         }
 
         try {
@@ -139,8 +184,12 @@ class FacebookLoginController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return redirect()->route($errorRoute)
-                ->with('error', 'เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่');
+            return $fail('เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่');
+        }
+
+        // 🔒 บัญชีถูกระงับ → ไม่ให้เข้า (เดิมเข้าได้แล้วค่อยโดนเด้งตอนเปิดหน้าถัดไป · แอปจะได้ token ไปด้วย)
+        if ($user->isSuspended()) {
+            return $fail(EnsureAccountActive::SUSPENDED_MESSAGE);
         }
 
         // Login user
@@ -171,10 +220,18 @@ class FacebookLoginController extends Controller
             'user_id' => $user->id,
             'fb_user_id' => $fbUser->getId(),
             'is_new_user' => $user->wasRecentlyCreated,
+            'from_app' => $mobile !== null,
         ]);
 
+        // 📱 มาจากแอป → ออก auth code แล้วพากลับแอป (thaiprompt://auth)
+        if ($mobile) {
+            Session::forget(['facebook_login_redirect', 'facebook_login_origin', 'facebook_login_referral']);
+
+            return $mobileLogin->authorize($user, $mobile['token'], $mobile['state'], 'facebook');
+        }
+
         // Redirect ไป intended URL หรือ wallet (default)
-        $redirectUrl = Session::pull('facebook_login_redirect', route('user.wallet.index'));
+        $redirectUrl = LocalRedirect::sanitize(Session::pull('facebook_login_redirect')) ?? route('user.wallet.index');
         Session::forget(['facebook_login_origin', 'facebook_login_referral']);
 
         return redirect($redirectUrl)

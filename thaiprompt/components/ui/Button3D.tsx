@@ -6,6 +6,7 @@
  *   navy      = น้ำเงินกรมท่า ตัวอักษรทอง (การกระทำเด่นรอง: ดูตะกร้า ติดตาม)
  *   secondary = ขาว/กระจก มีเส้นขอบ (ทางเลือก: ยกเลิก ข้าม)
  *   success   = เขียว ใช้เฉพาะปุ่มแบรนด์ LINE — ปุ่มยืนยัน/รับงาน/ส่งสำเร็จ ใช้ primary (ทอง) เสมอ
+ *   facebook  = น้ำเงินแบรนด์ Facebook ใช้เฉพาะปุ่ม "เข้าสู่ระบบด้วย Facebook" (Google ใช้ secondary + โลโก้ G ตามแนวทางแบรนด์)
  *   danger    = ลบ / ยกเลิกถาวร
  *   ghost     = ตัวอักษรทอง ไม่มีพื้น
  *
@@ -44,7 +45,7 @@ import { tapHaptic } from './haptics';
 import { usePressGuard } from './usePressGuard';
 import { useOnHeader } from './RoyalHeader';
 
-export type Button3DVariant = 'primary' | 'navy' | 'secondary' | 'success' | 'danger' | 'ghost';
+export type Button3DVariant = 'primary' | 'navy' | 'secondary' | 'success' | 'danger' | 'ghost' | 'facebook';
 export type Button3DSize = 'sm' | 'md' | 'lg';
 
 export interface Button3DProps {
@@ -121,6 +122,8 @@ export const Button3D: React.FC<Button3DProps> = ({
       secondary: { gradient: gradients.secondary, edge: buttonEdges.secondary, glow: colors.shadowDark, glowAlpha: 0.35, text: colors.textStrong },
       success: { gradient: gradients.success, edge: buttonEdges.success, glow: colors.success, glowAlpha: 0.7, text: colors.textOnAccent },
       danger: { gradient: gradients.danger, edge: buttonEdges.danger, glow: colors.danger, glowAlpha: 0.7, text: colors.textOnAccent },
+      // สีแบรนด์ Facebook (คงที่ทั้งธีมสว่าง/มืด ตามแนวทางแบรนด์)
+      facebook: { gradient: ['#3B8BFF', '#1877F2'], edge: '#0F5BC4', glow: '#1877F2', glowAlpha: 0.7, text: '#FFFFFF' },
       ghost: { gradient: ['transparent', 'transparent'], edge: 'transparent', glow: 'transparent', glowAlpha: 0, text: colors.goldDeep },
     };
     if (glass) {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\MobileAuthToken;
 use App\Models\User;
+use App\Services\Auth\MobileAppLogin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -63,6 +64,8 @@ class MobileAuthController extends Controller
             'device_id' => 'required|string|max:255',
             'device_name' => 'nullable|string|max:255',
             'code_verifier' => 'required|string|min:43|max:128',
+            // 📱 (2026-09-27) กระโดดไปผู้ให้บริการเลย (ปุ่ม LINE/Facebook/Google ในแอป) — whitelist เท่านั้น
+            'provider' => ['nullable', 'string', 'in:'.implode(',', MobileAppLogin::PROVIDERS)],
         ]);
 
         if ($validator->fails()) {
@@ -94,13 +97,16 @@ class MobileAuthController extends Controller
             ]);
 
             // สร้าง login URL
-            $loginUrl = url('/mobile-login').'?'.http_build_query([
+            $provider = $request->input('provider');
+            $loginUrl = url('/mobile-login').'?'.http_build_query(array_filter([
                 'token' => $loginToken,
                 'state' => $state,
-            ]);
+                'provider' => MobileAppLogin::isSupportedProvider($provider) ? $provider : null,
+            ]));
 
             Log::info('Mobile auth init', [
                 'device_id' => $request->device_id,
+                'provider' => $provider,
                 'ip' => $request->ip(),
             ]);
 
@@ -199,10 +205,17 @@ class MobileAuthController extends Controller
                 ], 401);
             }
 
-            // Mark as used
-            $mobileAuthToken->update([
-                'used_at' => now(),
-            ]);
+            // Mark as used — แบบ atomic: คำขอแลกซ้ำที่เข้ามาพร้อมกัน (deep link + auth session) ได้ token แค่ครั้งเดียว
+            $claimed = MobileAuthToken::whereKey($mobileAuthToken->id)
+                ->whereNull('used_at')
+                ->update(['used_at' => now()]);
+
+            if ($claimed !== 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or expired auth code',
+                ], 401);
+            }
 
             // ดึง user
             $user = User::find($mobileAuthToken->user_id);
@@ -341,6 +354,20 @@ class MobileAuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login cancelled',
+        ]);
+    }
+
+    /**
+     * ปุ่มเข้าสู่ระบบด้วยบัญชีภายนอกที่แอปควรแสดง
+     *
+     * GET /api/v1/auth/social/status → { success, data: { line, facebook, google } }
+     * true = เปิดใช้งานและตั้งค่าครบ (ยังไม่ตั้งค่า Google = false → แอปซ่อนปุ่ม)
+     */
+    public function socialStatus(MobileAppLogin $mobileLogin): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $mobileLogin->providerStatus(),
         ]);
     }
 

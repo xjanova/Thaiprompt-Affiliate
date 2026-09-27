@@ -926,6 +926,9 @@ return [
             'submenu' => [
                 ['label' => 'ตั้งค่าทั่วไป', 'route' => 'admin.settings.index', 'icon' => 'fas fa-cog'],
                 ['label' => 'จัดการสิทธิ์เมนู', 'route' => 'admin.menu-management.index', 'icon' => 'fas fa-bars', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500', 'description' => 'เปิด/ปิด จัดเรียงเมนูตาม Role'],
+                // 🔑 เข้าสู่ระบบด้วยบัญชีภายนอก (ใช้ทั้งเว็บและแอป) — LINE ตั้งที่ LINE OA & AI → ตั้งค่า LINE OA
+                ['label' => 'เข้าสู่ระบบด้วย Facebook', 'route' => 'admin.auth.facebook-oauth.index', 'icon' => 'fab fa-facebook', 'description' => 'App ID / App Secret ของ Facebook Login'],
+                ['label' => 'เข้าสู่ระบบด้วย Google', 'route' => 'admin.auth.google-oauth.index', 'icon' => 'fab fa-google', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500', 'description' => 'Client ID / Client secret จาก Google Cloud'],
                 // =====================================================
                 // 📱 Mobile App Management (3 อย่างเท่านั้น)
                 // แอพเป็น Standalone - Admin ควบคุมได้เฉพาะ:

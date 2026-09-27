@@ -118,6 +118,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/mobile-callback', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lineLoginCallback']);
     });
 
+    // 📱 ปุ่มเข้าสู่ระบบด้วย LINE / Facebook / Google ที่แอปควรแสดง (เปิดใช้ + ตั้งค่าครบ) — public
+    Route::get('/auth/social/status', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'socialStatus'])
+        ->name('api.v1.auth.social.status');
+
     // Web-Based Mobile Authentication (PKCE) - สำหรับ mobile app login ผ่านเว็บ
     Route::prefix('auth/mobile')->group(function () {
         Route::post('/init', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'init']);

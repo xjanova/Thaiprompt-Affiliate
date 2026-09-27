@@ -28,6 +28,7 @@ import { getPushIdentity, clearStoredPushToken } from '@/services/notifications'
 import { STORAGE_KEYS } from '@/constants';
 import * as Network from '@/services/network';
 import type { User } from '@/types';
+import type { SocialProvider } from '@/utils/webAuth';
 
 interface AuthState {
   // State
@@ -50,7 +51,8 @@ interface AuthState {
   loginWithLine: () => Promise<{ success: boolean; authUrl?: string; message?: string }>;
   handleLineCallback: (code: string, state: string, referralCode?: string) => Promise<boolean>;
   // Web-Based Login (PKCE) - ปลอดภัยกว่า direct login
-  loginWithWeb: (deviceId: string, deviceName: string) => Promise<{ success: boolean; loginUrl?: string; message?: string }>;
+  // provider = เว็บพาไปหน้าอนุญาตของ LINE / Facebook / Google ทันที
+  loginWithWeb: (deviceId: string, deviceName: string, provider?: SocialProvider) => Promise<{ success: boolean; loginUrl?: string; message?: string }>;
   handleWebAuthCallback: (authCode: string, state: string) => Promise<boolean>;
   logout: () => Promise<void>;
   /**
@@ -74,6 +76,12 @@ const saveUserToStorage = async (user: User): Promise<void> => {
     console.error('Save user to storage error:', error);
   }
 };
+
+/**
+ * ข้อความจากเซิร์ฟเวอร์ที่แสดงผู้ใช้ได้ต้องเป็นภาษาไทย — ข้อความอังกฤษ (เช่น "Invalid or expired auth code") ใช้ข้อความสำรองแทน
+ */
+const thaiMessageOr = (message: string | undefined, fallback: string): string =>
+  message && /[\u0E00-\u0E7F]/.test(message) ? message : fallback;
 
 /**
  * โหลดข้อมูล user จาก SecureStore
@@ -404,14 +412,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
    * 5. เว็บ redirect กลับ app ด้วย auth_code
    * 6. App ส่ง auth_code + code_verifier → ได้ access_token
    */
-  loginWithWeb: async (deviceId: string, deviceName: string) => {
+  loginWithWeb: async (deviceId: string, deviceName: string, provider?: SocialProvider) => {
     try {
       set({ isLoading: true, error: null });
 
       // สร้าง code_verifier สำหรับ PKCE
       const codeVerifier = generateCodeVerifier();
 
-      const response = await initWebAuth(deviceId, deviceName, codeVerifier);
+      const response = await initWebAuth(deviceId, deviceName, codeVerifier, provider);
 
       if (response.success && response.data) {
         // เก็บ code_verifier และ state ไว้สำหรับใช้ตอน exchange
@@ -428,13 +436,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         };
       }
 
+      const initMessage = thaiMessageOr(response.message, 'ไม่สามารถเริ่มต้นการเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง');
       set({
-        error: response.message || 'ไม่สามารถเริ่มต้นการเข้าสู่ระบบได้',
+        error: initMessage,
         isLoading: false,
       });
       return {
         success: false,
-        message: response.message,
+        message: initMessage,
       };
     } catch (error) {
       console.error('Web Login init error:', error);
@@ -501,11 +510,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           webAuthState: null,
           webAuthLoginToken: null,
         });
+        // ข้อมูลผู้ใช้จากการแลก code เป็นชุดย่อ → ดึงโปรไฟล์เต็มตามหลัง (ไม่ขวางการเข้าแอป)
+        get().refreshUser().catch(() => {});
         return true;
       }
 
       set({
-        error: response.message || 'เข้าสู่ระบบไม่สำเร็จ',
+        error: thaiMessageOr(response.message, 'เข้าสู่ระบบไม่สำเร็จ ลิงก์อาจหมดอายุ กรุณาลองใหม่อีกครั้ง'),
         isLoading: false,
         webAuthCodeVerifier: null,
         webAuthState: null,

@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\LineLoginLog;
-use App\Models\MobileAuthToken;
 use App\Models\User;
+use App\Services\Auth\MobileAppLogin;
 use App\Services\LineService;
 use App\Services\LineTokenService;
+use App\Support\LocalRedirect;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -243,7 +244,8 @@ class LineLoginController extends Controller
                 }
 
                 // Redirect to intended page (user home - App-Like Interface)
-                $redirect = Session::get('line_login_redirect', route('user.home'));
+                // 🔐 ปลายทางต้องเป็นหน้าในเว็บเราเท่านั้น (กัน open redirect ผ่าน ?redirect=https://เว็บอื่น)
+                $redirect = LocalRedirect::sanitize(Session::get('line_login_redirect')) ?? route('user.home');
                 Session::forget('line_login_redirect');
 
                 return redirect($redirect)
@@ -448,11 +450,6 @@ class LineLoginController extends Controller
     }
 
     /**
-     * Auth code expiry (seconds)
-     */
-    private const AUTH_CODE_EXPIRY = 60;
-
-    /**
      * Handle LINE Login callback สำหรับ Mobile App
      *
      * รับ GET request จาก LINE OAuth แล้ว redirect ไป app deep link
@@ -526,6 +523,7 @@ class LineLoginController extends Controller
      * Authorize mobile app หลังจาก LINE login สำเร็จ
      *
      * สร้าง auth_code และ redirect กลับไปแอพผ่าน deep link
+     * — ใช้ตัวกลางเดียวกับ Facebook / Google (App\Services\Auth\MobileAppLogin) พฤติกรรมเหมือนเดิมทุกอย่าง
      *
      * @param  User  $user  ผู้ใช้ที่ login สำเร็จ
      * @param  string  $mobileToken  login_token จาก mobile app (raw, unhashed)
@@ -533,63 +531,6 @@ class LineLoginController extends Controller
      */
     protected function authorizeMobileApp(User $user, string $mobileToken, string $mobileState): RedirectResponse|View
     {
-        // Hash token ก่อน query (ฐานข้อมูลเก็บแบบ hash)
-        $loginTokenHash = hash('sha256', $mobileToken);
-
-        // หา MobileAuthToken
-        $authToken = MobileAuthToken::where('login_token', $loginTokenHash)
-            ->where('state', $mobileState)
-            ->whereNull('used_at')
-            ->first();
-
-        if (! $authToken) {
-            Log::warning('Mobile auth token not found for LINE login', [
-                'token_hash' => substr($loginTokenHash, 0, 10).'...',
-                'state' => $mobileState,
-            ]);
-
-            return view('auth.mobile-login-error', [
-                'error' => 'expired',
-                'message' => 'Session หมดอายุแล้ว กรุณาเริ่มต้นใหม่จากแอพ',
-            ]);
-        }
-
-        // ตรวจสอบ expiry
-        if ($authToken->isLoginTokenExpired()) {
-            Log::warning('Mobile auth token expired for LINE login', [
-                'token_id' => $authToken->id,
-            ]);
-
-            return view('auth.mobile-login-error', [
-                'error' => 'expired',
-                'message' => 'Session หมดอายุแล้ว กรุณาเริ่มต้นใหม่จากแอพ',
-            ]);
-        }
-
-        // สร้าง auth code
-        $authCode = Str::random(64);
-
-        // อัพเดท token
-        $authToken->update([
-            'user_id' => $user->id,
-            'auth_code' => hash('sha256', $authCode),
-            'auth_code_expires_at' => now()->addSeconds(self::AUTH_CODE_EXPIRY),
-        ]);
-
-        Log::info('Mobile app authorized via LINE login', [
-            'user_id' => $user->id,
-            'device_name' => $authToken->device_name,
-        ]);
-
-        // สร้าง deep link URL
-        $redirectUrl = 'thaiprompt://auth?'.http_build_query([
-            'code' => $authCode,
-            'state' => $mobileState,
-        ]);
-
-        // แสดงหน้า redirect ที่จะ auto-redirect ไปแอพ
-        return view('auth.mobile-login-redirect', [
-            'redirectUrl' => $redirectUrl,
-        ]);
+        return app(MobileAppLogin::class)->authorize($user, $mobileToken, $mobileState, 'line');
     }
 }

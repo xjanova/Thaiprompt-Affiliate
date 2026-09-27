@@ -59,6 +59,9 @@ class User extends Authenticatable
         'facebook_picture_url',
         'facebook_verified',
         'facebook_linked_at',
+        // Google OAuth fields (เข้าสู่ระบบด้วย Google)
+        'google_id',
+        'google_avatar',
         // Contact fields
         'phone',
         'phone_verified',

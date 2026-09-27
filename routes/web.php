@@ -320,11 +320,17 @@ Route::middleware('guest')->group(function () {
 
     // Facebook OAuth Login (Socialite)
     Route::match(['GET', 'HEAD'], '/auth/facebook', [\App\Http\Controllers\Auth\FacebookLoginController::class, 'redirect'])->name('facebook.login');
+
+    // Google OAuth Login (Socialite) — ค่า Client ID/Secret จาก DB (/admin/auth/google-oauth) ยังไม่ตั้งค่า = ปุ่มซ่อน
+    Route::match(['GET', 'HEAD'], '/auth/google', [\App\Http\Controllers\Auth\GoogleLoginController::class, 'redirect'])->name('google.login');
 });
 
 // ✅ Facebook callback ต้องอยู่นอก guest middleware
 // เพราะ FB redirect กลับมาเฉพาะ guest flow (ไม่มี link mode)
 Route::match(['GET', 'HEAD'], '/auth/facebook/callback', [\App\Http\Controllers\Auth\FacebookLoginController::class, 'callback'])->name('facebook.callback');
+
+// ✅ Google callback อยู่นอก guest middleware เหมือน Facebook (URI นี้ต้องลงทะเบียนใน Google Cloud ตรงตัวอักษร)
+Route::match(['GET', 'HEAD'], '/auth/google/callback', [\App\Http\Controllers\Auth\GoogleLoginController::class, 'callback'])->name('google.callback');
 
 // ✅ LINE callback ต้องอยู่นอก guest middleware
 // เพราะทั้ง guest (login) และ authenticated users (link LINE) ต้องเข้าถึงได้

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MobileAuthToken;
+use App\Services\Auth\MobileAppLogin;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,10 +29,11 @@ class MobileLoginController extends Controller
      */
     public function show(Request $request): View|RedirectResponse
     {
-        $loginToken = $request->get('token');
-        $state = $request->get('state');
+        // ต้องเป็นข้อความเท่านั้น (?token[]= ส่งมาเป็น array → เดิมระเบิด 500 ที่ hash())
+        $loginToken = MobileAppLogin::text($request->get('token'));
+        $state = MobileAppLogin::text($request->get('state'));
 
-        if (! $loginToken || ! $state) {
+        if ($loginToken === '' || $state === '') {
             return view('auth.mobile-login-error', [
                 'error' => 'invalid_request',
                 'message' => 'ลิงก์ไม่ถูกต้อง กรุณาเปิดจากแอพใหม่อีกครั้ง',
@@ -70,6 +72,20 @@ class MobileLoginController extends Controller
                 'state' => $state,
                 'deviceName' => $mobileAuthToken->device_name,
             ]);
+        }
+
+        // 📱 (2026-09-27) ปุ่ม LINE/Facebook/Google ในแอป → กระโดดไปหน้าอนุญาตของผู้ให้บริการเลย
+        //    provider ต้องอยู่ใน whitelist (ค่าอื่น = แสดงหน้าเข้าสู่ระบบปกติ) และต้องตั้งค่าไว้แล้ว
+        $provider = $request->query('provider');
+        if (MobileAppLogin::isSupportedProvider($provider)) {
+            if (app(MobileAppLogin::class)->isProviderReady($provider)) {
+                return redirect()->route($provider.'.login', [
+                    'mobile_token' => $loginToken,
+                    'state' => $state,
+                ]);
+            }
+
+            session()->now('error', 'ยังไม่เปิดให้เข้าสู่ระบบด้วยช่องทางนี้ — กรุณาเลือกวิธีอื่น');
         }
 
         // แสดงหน้า login

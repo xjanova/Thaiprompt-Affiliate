@@ -14,6 +14,7 @@ import {
   ERROR_MESSAGES,
 } from '@/constants';
 import { useSyncStore } from '@/stores/syncStore';
+import type { SocialProvider } from '@/utils/webAuth';
 import type {
   LoginRequest,
   LoginResponse,
@@ -712,27 +713,73 @@ export const lineLoginCallback = async (
 };
 
 // =====================================================
+// ปุ่มเข้าสู่ระบบด้วยบัญชีภายนอก (LINE / Facebook / Google)
+// =====================================================
+
+/** ปุ่มไหนเปิดใช้บนเซิร์ฟเวอร์ (false = ซ่อนปุ่ม) */
+export type SocialLoginStatus = Record<SocialProvider, boolean>;
+
+/**
+ * ถามเซิร์ฟเวอร์ว่าควรแสดงปุ่มเข้าสู่ระบบด้วย LINE / Facebook / Google ไหม
+ * เรียกไม่สำเร็จ (ออฟไลน์ / เซิร์ฟเวอร์รุ่นเก่า) = ซ่อนทุกปุ่ม — ไม่มีปุ่มที่กดแล้วพัง
+ */
+export const getSocialLoginStatus = async (): Promise<SocialLoginStatus> => {
+  const off: SocialLoginStatus = { line: false, facebook: false, google: false };
+  try {
+    const response = await apiClient.get<{ success: boolean; data?: Partial<SocialLoginStatus> }>(
+      API_ENDPOINTS.SOCIAL_LOGIN_STATUS
+    );
+    const data = response.data?.success ? response.data.data : undefined;
+    if (!data) return off;
+    return {
+      line: data.line === true,
+      facebook: data.facebook === true,
+      google: data.google === true,
+    };
+  } catch {
+    return off;
+  }
+};
+
+// =====================================================
 // Web-Based Mobile Authentication (PKCE)
 // =====================================================
 
 /**
- * สร้าง code_verifier สำหรับ PKCE
- * code_verifier ต้องมีความยาว 43-128 characters
+ * สร้าง code_verifier สำหรับ PKCE (ยาว 43-128 ตัว สุ่มแบบปลอดภัยเท่านั้น)
+ *
+ * Hermes ไม่มี crypto.getRandomValues ในตัว (เดิมเรียกตรงๆ → พังทุกครั้งในแอปจริง)
+ * → ใช้ของ Web Crypto ถ้ามี ไม่งั้นใช้ UUID v4 จาก native ของ expo-modules-core
+ *   (Android: UUID.randomUUID() = SecureRandom · iOS: UUID()) ต่อกัน 3 ตัว = สุ่ม 366 บิต
+ * ห้าม fallback เป็น Math.random เด็ดขาด — ไม่มีแหล่งสุ่มที่ปลอดภัย = โยน error ให้ผู้เรียกแจ้งผู้ใช้
  */
 export const generateCodeVerifier = (): string => {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  const webCrypto = (globalThis as { crypto?: { getRandomValues?: (array: Uint8Array) => Uint8Array } }).crypto;
+  if (typeof webCrypto?.getRandomValues === 'function') {
+    const array = new Uint8Array(32);
+    webCrypto.getRandomValues(array);
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  const nativeUuid = (globalThis as { expo?: { uuidv4?: () => string } }).expo?.uuidv4;
+  if (typeof nativeUuid === 'function') {
+    return [nativeUuid(), nativeUuid(), nativeUuid()].join('').replace(/-/g, '');
+  }
+
+  throw new Error('No secure random source for PKCE');
 };
 
 /**
  * ขั้นตอนที่ 1: เริ่มต้น web-based login
  * สร้าง login_token และ login_url สำหรับเปิดใน browser
+ *
+ * @param provider ส่งมา = เว็บพาไปหน้าอนุญาตของ LINE / Facebook / Google ทันที (ไม่ต้องกดซ้ำบนเว็บ)
  */
 export const initWebAuth = async (
   deviceId: string,
   deviceName: string,
-  codeVerifier: string
+  codeVerifier: string,
+  provider?: SocialProvider
 ): Promise<{
   success: boolean;
   data?: {
@@ -748,6 +795,7 @@ export const initWebAuth = async (
       device_id: deviceId,
       device_name: deviceName,
       code_verifier: codeVerifier,
+      ...(provider ? { provider } : {}),
     });
     return response.data;
   } catch (error) {

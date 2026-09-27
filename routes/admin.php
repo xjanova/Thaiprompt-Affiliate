@@ -93,6 +93,7 @@ use App\Http\Controllers\Admin\ForumAdminController;
 use App\Http\Controllers\Admin\FreshMarketController;
 use App\Http\Controllers\Admin\GameController;
 use App\Http\Controllers\Admin\GameSettingsController;
+use App\Http\Controllers\Admin\GoogleOAuthController;
 use App\Http\Controllers\Admin\GpsMonitoringController;
 use App\Http\Controllers\Admin\HDWalletManagementController;
 use App\Http\Controllers\Admin\HeaderSettingsController;
@@ -878,6 +879,13 @@ Route::prefix('auth')->name('auth.')->group(function () {
         Route::get('/', [FacebookOAuthController::class, 'index'])->name('index');
         Route::put('/', [FacebookOAuthController::class, 'update'])->name('update');
         Route::post('/test', [FacebookOAuthController::class, 'test'])->name('test');
+    });
+
+    // Google OAuth Login Settings (DB-backed · client secret เข้ารหัส) — ใช้ทั้งเว็บและแอป
+    Route::prefix('google-oauth')->name('google-oauth.')->group(function () {
+        Route::get('/', [GoogleOAuthController::class, 'index'])->name('index');
+        Route::put('/', [GoogleOAuthController::class, 'update'])->name('update');
+        Route::post('/test', [GoogleOAuthController::class, 'test'])->name('test');
     });
 });
 
