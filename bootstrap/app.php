@@ -58,6 +58,9 @@ return Application::configure(basePath: dirname(__DIR__))
             '/api/webhook/*',
         ]);
 
+        // 🔮 ส่วนดูดวง/ไพ่ทาโรต์ที่ย้ายไปเว็บจันทรา: ต้องเด้งก่อนด่าน auth (ไม่งั้นแขกโดนส่งไปหน้าเข้าสู่ระบบก่อน)
+        $middleware->prependToPriorityList(\Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests::class, \App\Http\Middleware\RedirectFortuneToJuntra::class);
+
         $middleware->web(append: [
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,

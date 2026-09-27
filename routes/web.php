@@ -778,7 +778,9 @@ Route::middleware(['auth', 'role:seller,super_admin'])->prefix('pos')->name('pos
 
 // Tarot Reading Routes (Public)
 // ⚠️ Public Service: Tarot reading service ต้องถูก index โดย search engines
-Route::prefix('tarot')->name('tarot.')->group(function () {
+// 🔮 ส่วนไพ่ทาโรต์บนเว็บนี้ย้ายไปเว็บแม่หมอจันทรา (เจ้าของสั่ง 2026-09-27) — ทุกหน้าในกลุ่มเด้งไปจันทรา
+//   ชื่อ route คงไว้ให้ลิงก์เดิมในเมนู/หลังบ้านยังสร้างได้ · ปิดการเด้งด้วย JUNTRA_REDIRECT_FORTUNE=false
+Route::prefix('tarot')->name('tarot.')->middleware(\App\Http\Middleware\RedirectFortuneToJuntra::class)->group(function () {
     Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\TarotReadingController::class, 'index'])->name('index');
     Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\TarotReadingController::class, 'showCategory'])->name('category');
     Route::post('/start', [\App\Http\Controllers\TarotReadingController::class, 'startReading'])->name('start');
@@ -815,10 +817,11 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
 // Horoscope Public Routes (ระบบดูดวงออนไลน์สาธารณะ)
 // ⚠️ Public Service: ดูดวงฟรี ต้องถูก index โดย search engines (SEO friendly)
 // ================================================
-Route::prefix('horoscope')->name('horoscope.')->group(function () {
-    // หน้าแรกดูดวง "ดูดวงออนไลน์" → เว็บแม่หมอจันทรา (เจ้าของสั่ง 2026-09-27) — หน้าย่อย (ดวงรายวัน ฯลฯ) ยังอยู่ที่นี่
-    //   HoroscopeHomeController::index ยังอยู่ ถ้าจะกลับมาใช้หน้านี้ให้เปลี่ยนบรรทัดนี้กลับ
-    Route::redirect('/', rtrim((string) config('services.juntra.url', 'https://xn--82c4af5bzdj.online'), '/').'/', 302)->name('home');
+// 🔮 ส่วนดูดวงทั้งหมด (หน้าแรก ดวงรายวัน ไพ่ทาโรต์ เลขศาสตร์ ทำนายฝัน) เด้งไปเว็บแม่หมอจันทรา (เจ้าของสั่ง 2026-09-27)
+//   ปิดการเด้งด้วย JUNTRA_REDIRECT_FORTUNE=false → หน้าเดิมกลับมาทำงานครบ
+Route::prefix('horoscope')->name('horoscope.')->middleware(\App\Http\Middleware\RedirectFortuneToJuntra::class)->group(function () {
+    // หน้าแรกดูดวง (แสดงทุกหมวด)
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeHomeController::class, 'index'])->name('home');
 
     // ดวงรายวัน 7+1 วันเกิด (ถอดเลน 12 ราศี ออก 2026-09-09 — ตารางราศีว่างมาตลอด)
     Route::prefix('daily')->name('daily.')->group(function () {

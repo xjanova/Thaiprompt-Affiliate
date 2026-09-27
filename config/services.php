@@ -324,6 +324,8 @@ return [
     'juntra' => [
         // เว็บแม่หมอจันทรา (โดเมนไทย จันทรา.online ในรูป punycode) — ปุ่ม/เมนู "ดูดวง" ทุกหน้าสาธารณะพาไปที่นี่
         'url' => rtrim((string) env('JUNTRA_URL', 'https://xn--82c4af5bzdj.online'), '/'),
+        // ส่วนดูดวง/ไพ่ทาโรต์บนเว็บนี้ (/tarot/*, /horoscope/*) เด้งไปเว็บจันทราทั้งหมด — false = หน้าเดิมกลับมาทำงาน
+        'redirect_fortune' => (bool) env('JUNTRA_REDIRECT_FORTUNE', true),
         'server_client_ids' => array_values(array_filter(array_map(
             'trim',
             explode(',', (string) env('JUNTRA_SERVER_CLIENT_IDS', ''))

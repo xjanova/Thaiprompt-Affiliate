@@ -81,8 +81,11 @@ class StorefrontNovaHomeTest extends TestCase
         $html = $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('href="'.$juntra.'"', $html, 'การ์ด/เมนูดูดวงต้องพาไปเว็บแม่หมอจันทรา');
 
-        // หน้า "ดูดวงออนไลน์" เดิมเด้งไปเว็บจันทรา
-        $this->get('/horoscope')->assertRedirect($juntra);
+        // ส่วนดูดวง/ไพ่ทาโรต์ทั้งหมดบนเว็บนี้เด้งไปเว็บจันทรา (ชื่อ route เดิมยังสร้างลิงก์ได้)
+        foreach (['/horoscope', '/horoscope/daily', '/horoscope/tarot/quick', '/tarot', '/tarot/cart', '/tarot/history'] as $path) {
+            $this->get($path)->assertRedirect($juntra);
+        }
+        $this->assertStringEndsWith('/tarot', route('tarot.index'));
     }
 
     public function test_missing_page_shows_the_nova_404(): void
