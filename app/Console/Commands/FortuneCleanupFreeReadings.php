@@ -44,7 +44,7 @@ class FortuneCleanupFreeReadings extends Command
         $isDryRun = $this->option('dry-run');
         $chunkSize = (int) $this->option('chunk');
 
-        $this->info("🧹 เริ่มล้างข้อมูลคำทำนายฟรี...");
+        $this->info('🧹 เริ่มล้างข้อมูลคำทำนายฟรี...');
         if ($isDryRun) {
             $this->warn('   [DRY RUN] จะไม่ลบข้อมูลจริง');
         }
@@ -91,6 +91,10 @@ class FortuneCleanupFreeReadings extends Command
             return 0;
         }
 
+        // 🐛 (2026-09-27) เดิมสั่ง 'conversation_data' => null ด้วย แต่ fortune_readings ไม่เคยมีคอลัมน์นี้
+        //    (มีแค่ใน mlm_prospects) → SQL error ทุกคืนตั้งแต่ 2026-02-20 คำสั่งล้มตั้งแต่ขั้นที่ 1
+        //    ขั้นที่ 2-3 จึงไม่เคยได้รันเลย · ห้ามเปลี่ยนไปล้าง conversation_state แทน — มี cancellation_reason
+        //    ที่ scope cancelled() ใช้นับบิลยกเลิก (ด่านกันบิลรัว) และสถานะอื่นที่ระบบยังอ่านอยู่
         $cleared = FortuneReading::where('is_paid', false)
             ->where('reading_type', 'basic')
             ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
@@ -98,7 +102,6 @@ class FortuneCleanupFreeReadings extends Command
             ->where('created_at', '<', now()->subDays($days))
             ->update([
                 'basic_response' => null,
-                'conversation_data' => null,
             ]);
 
         $this->info("   ✅ ล้าง response แล้ว {$cleared} records");
