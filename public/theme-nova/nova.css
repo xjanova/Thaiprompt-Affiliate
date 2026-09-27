@@ -277,6 +277,12 @@
 .nv-phone--video.is-playing { transform: none; }
 .nv-phone--video .nv-phone__scr { height: auto; aspect-ratio: 9 / 16; background: #05070c; }
 .nv-phone__vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; background: #05070c; }
+/* เต็มจอ (ปุ่มเต็มจอ/ดับเบิลคลิกของตัววิดีโอ): สเปก Fullscreen ให้ object-fit: contain แบบไม่ !important → cover ข้างบนชนะ
+   คลิปแนวตั้ง 9:16 บนจอคอม (แนวนอน) เลยถูกขยายเต็มความกว้างจอแล้วล้นบน-ล่าง เห็นแค่ช่วงกลางภาพ
+   → ตอนเต็มจอย่อทั้งคลิปให้พอดีจอ มีขอบดำด้านข้าง (มือถือแนวตั้งก็เห็นครบ ไม่โดนตัดขอบ)
+   แยกเป็น 2 กฎ เพราะเบราว์เซอร์ที่ไม่รู้จัก selector ตัวใดตัวหนึ่งจะทิ้งทั้งกฎ */
+.nv-phone__vid:fullscreen { object-fit: contain; background: #000; }
+.nv-phone__vid:-webkit-full-screen { object-fit: contain; background: #000; }
 .nv-phone__play { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; padding: 0 16px 30px; border: 0; cursor: pointer; font-family: var(--nv-font-ui); color: #fff7e3; text-align: center; background: linear-gradient(0deg, rgba(5, 9, 22, .9) 0%, rgba(5, 9, 22, .45) 32%, rgba(5, 9, 22, 0) 58%); }
 .nv-phone__play b { font-family: var(--nv-font-display); font-size: 20px; color: #fbf6ea; text-shadow: 0 2px 10px rgba(0, 0, 0, .7); }
 .nv-phone__play small { font-size: 12px; color: rgba(236, 229, 210, .85); }

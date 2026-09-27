@@ -105,8 +105,23 @@
             if (p && p.catch) p.catch(function () { /* เบราว์เซอร์บล็อกเสียง → ให้ผู้ใช้กดปุ่มเล่นของวิดีโอเอง */ });
         }
 
+        // จบคลิปตอนเต็มจอ → ออกจากเต็มจอก่อน (ข้างล่างถอด controls ออก ถ้ายังค้างเต็มจอจะไม่มีแถบควบคุมให้กด ต้องกด Esc เอง)
+        function exitFullscreen() {
+            try {
+                if (document.fullscreenElement === vid && document.exitFullscreen) {
+                    var q = document.exitFullscreen();
+                    if (q && q.catch) q.catch(function () {});
+                } else if (document.webkitFullscreenElement === vid && document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (vid.webkitDisplayingFullscreen && vid.webkitExitFullscreen) {
+                    vid.webkitExitFullscreen(); // iPhone: ตัวเล่นเต็มจอของระบบ
+                }
+            } catch (e) {}
+        }
+
         btn.addEventListener('click', play);
         vid.addEventListener('ended', function () {
+            exitFullscreen();
             box.classList.remove('is-playing');
             vid.removeAttribute('controls');
             try { vid.currentTime = 0; } catch (e) {}
