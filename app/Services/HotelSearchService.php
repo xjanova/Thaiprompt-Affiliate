@@ -190,6 +190,21 @@ class HotelSearchService
     }
 
     /**
+     * โรงแรมแนะนำแบบแบ่งหน้า — หน้า /hotels/featured ใช้ total() กับ links()
+     * (เดิมส่ง Collection จาก getFeaturedHotels() → หน้าพัง 500 "Collection::total does not exist")
+     */
+    public function paginateFeaturedHotels(int $perPage = 12)
+    {
+        return Hotel::active()
+            ->featured()
+            ->with(['roomTypes' => function ($query) {
+                $query->active()->orderBy('base_price', 'asc');
+            }])
+            ->orderBy('rating', 'DESC')
+            ->paginate($perPage);
+    }
+
+    /**
      * Get popular destinations
      */
     public function getPopularDestinations($limit = 10)

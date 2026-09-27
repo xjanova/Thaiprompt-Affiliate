@@ -204,7 +204,7 @@ class HotelController extends Controller
      */
     public function featured()
     {
-        $hotels = $this->searchService->getFeaturedHotels();
+        $hotels = $this->searchService->paginateFeaturedHotels(12);
         $provinces = Province::active()->ordered()->get();
 
         return view('hotels.featured', compact('hotels', 'provinces'));

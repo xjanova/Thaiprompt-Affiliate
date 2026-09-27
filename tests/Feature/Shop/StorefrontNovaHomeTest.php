@@ -161,6 +161,17 @@ class StorefrontNovaHomeTest extends TestCase
         $this->assertStringContainsString('from-green-600 to-emerald-600', $this->get('/how-to-register')->assertOk()->getContent());
     }
 
+    public function test_public_hotel_pages_use_the_nova_shell(): void
+    {
+        $index = $this->get('/hotels')->assertOk()->getContent();
+        $this->assertStringContainsString('nv-nav', $index);
+        $this->assertStringContainsString('theme-nova/nova-tw.css', $index);
+
+        // เดิมพัง 500: หน้าเรียก total()/links() แต่ controller ส่ง Collection
+        $featured = $this->get('/hotels/featured')->assertOk()->getContent();
+        $this->assertStringContainsString('nv-nav', $featured);
+    }
+
     public function test_status_pages_use_nova_and_never_reload_in_a_loop(): void
     {
         // 503: นับถอยหลังเฉพาะเวลาที่ยังไม่ถึง · เลยเวลาแล้วต้องไม่มีสคริปต์โหลดซ้ำ

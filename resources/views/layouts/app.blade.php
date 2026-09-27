@@ -9,7 +9,12 @@
         $pageType = $pageType ?? 'home';
         $seoData = $seoData ?? [];
         // ธีมโนวา: เฉพาะหน้าสาธารณะที่ยังใช้เลย์เอาต์นี้ — ส่วนผู้ใช้/โรงแรม/หลังบ้านที่ใช้เลย์เอาต์เดียวกันไม่แตะ (เจ้าของสั่งยกเว้นส่วนผู้ใช้)
-        $novaShell = config('shop.nova_public', true) && request()->routeIs('tarot.*', 'qr-barcode.*', 'software.products.*');
+        // หน้าโรงแรม/ตลาดบอท: เฉพาะหน้าดูสาธารณะ (ระบุชื่อ route ตรงๆ) — หน้าจอง/เช่า (ต้องล็อกอิน) ยังเป็นเลย์เอาต์เดิม
+        $novaShell = config('shop.nova_public', true) && request()->routeIs(
+            'tarot.*', 'qr-barcode.*', 'software.products.*',
+            'marketplace.index', 'marketplace.show',
+            'hotels.index', 'hotels.featured', 'hotels.show', 'hotels.search', 'hotels.by-city', 'hotels.by-province', 'hotels.by-region', 'hotels.reviews.index'
+        );
     @endphp
 
     {!! render_seo_meta($pageType, $seoData) !!}
