@@ -539,7 +539,9 @@ class MlmGlobalSettingsSeeder extends Seeder
             ],
             [
                 'key' => 'direct_referral_bonus_first_order_only',
-                'value' => '0',
+                // เปิดไว้ตั้งแต่ติดตั้ง — แอปบอกผู้ใช้ว่า "รับค่าแนะนำเมื่อเพื่อนสั่งซื้อครั้งแรก"
+                // (seeder ไม่ทับค่าเดิมบนเครื่องที่ติดตั้งแล้ว ต้องตั้งบน prod เอง)
+                'value' => '1',
                 'type' => 'boolean',
                 'input_type' => 'toggle',
                 'group' => 'referral',

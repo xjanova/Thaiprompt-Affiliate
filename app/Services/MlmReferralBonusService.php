@@ -23,8 +23,8 @@ use Illuminate\Support\Facades\Log;
  * - direct_referral_bonus_amount: จำนวนเงินคงที่ (ถ้า type = fixed)
  * - direct_referral_bonus_percentage: เปอร์เซ็นต์ (ถ้า type = percentage)
  * - direct_referral_bonus_min_order: ยอดสั่งซื้อขั้นต่ำ
- * - direct_referral_bonus_max_per_order: ค่าแนะนำสูงสุดต่อออเดอร์
- * - direct_referral_bonus_first_order_only: จ่ายเฉพาะออเดอร์แรก
+ * - direct_referral_bonus_max_per_order: ค่าแนะนำสูงสุดต่อออเดอร์ (ว่าง/0 = ไม่จำกัด)
+ * - direct_referral_bonus_first_order_only: จ่ายเฉพาะออเดอร์แรก — ต้องเปิดไว้ ตรงกับที่แอปบอกผู้ใช้
  */
 class MlmReferralBonusService
 {
@@ -89,12 +89,16 @@ class MlmReferralBonusService
             return null;
         }
 
-        // ตรวจสอบว่าเป็น first_order_only หรือไม่
-        $firstOrderOnly = MlmGlobalSetting::get('direct_referral_bonus_first_order_only', false);
+        // จ่ายเฉพาะออเดอร์แรกของเพื่อน — แอปบอกผู้ใช้ว่า "รับค่าแนะนำเมื่อเพื่อนสั่งซื้อครั้งแรก" (thaiprompt/app/referral.tsx)
+        $firstOrderOnly = (bool) MlmGlobalSetting::get('direct_referral_bonus_first_order_only', false);
+
         if ($firstOrderOnly) {
-            // ตรวจสอบว่ามี referral bonus สำหรับสมาชิกนี้แล้วหรือยัง
+            // ค่าแนะนำที่ถูกยกเลิก/ดึงคืนเพราะคืนเงินออเดอร์ ไม่นับ — ออเดอร์ถัดไปที่ไม่ถูกคืนเงินได้สิทธิ์แทน
+            // ⚠️ ห้ามเปลี่ยนเป็น lockForUpdate: ล็อกช่องว่างของ index บน mlm_commissions
+            //    ทำให้ออเดอร์ของคนละคนที่แบ่งเงินพร้อมกัน deadlock กันเอง (ค่าแนะนำเป็น pending ให้แอดมินอนุมัติอยู่แล้ว)
             $existingBonus = MlmCommission::where('from_member_id', $buyerMember->id)
                 ->where('type', 'direct_referral')
+                ->whereNotIn('status', ['cancelled', 'clawback'])
                 ->exists();
 
             if ($existingBonus) {
@@ -107,7 +111,8 @@ class MlmReferralBonusService
             }
         }
 
-        // ตรวจสอบว่ายังไม่เคยจ่ายค่าแนะนำสำหรับออเดอร์นี้
+        // ตรวจสอบว่ายังไม่เคยจ่ายค่าแนะนำสำหรับออเดอร์นี้ (นับทุกสถานะ — ออเดอร์ที่ถูกดึงคืนแล้วห้ามจ่ายใหม่)
+        // ออเดอร์เดียวกันแบ่งเงินพร้อมกันไม่ได้อยู่แล้ว — OrderDistributionService ล็อกแถวออเดอร์ไว้
         $existingOrderBonus = MlmCommission::where('source_type', Order::class)
             ->where('source_id', $order->id)
             ->where('type', 'direct_referral')
@@ -156,10 +161,12 @@ class MlmReferralBonusService
             $amount = ($orderTotal * $percentage) / 100;
         }
 
-        // จำกัดค่าสูงสุดต่อออเดอร์
-        $maxPerOrder = MlmGlobalSetting::get('direct_referral_bonus_max_per_order');
-        if ($maxPerOrder !== null && $amount > $maxPerOrder) {
-            $amount = (float) $maxPerOrder;
+        // จำกัดค่าสูงสุดต่อออเดอร์ — ค่าว่าง = ไม่จำกัด (ตามคำอธิบายใน MlmGlobalSettingsSeeder)
+        // 🐛 (2026-09-27) getTypedValue() แปลง NULL ของคีย์ชนิด decimal เป็น 0.0 → เดิมเช็คแค่ !== null
+        //    ค่าแนะนำเลยถูกตัดเหลือ 0 ทุกออเดอร์ = ไม่เคยจ่ายเลยบน prod · 0 หรือติดลบจึงนับเป็น "ไม่จำกัด"
+        $maxPerOrder = (float) MlmGlobalSetting::get('direct_referral_bonus_max_per_order', 0);
+        if ($maxPerOrder > 0 && $amount > $maxPerOrder) {
+            $amount = $maxPerOrder;
         }
 
         return round($amount, 2);
