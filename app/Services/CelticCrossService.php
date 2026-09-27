@@ -6173,8 +6173,8 @@ class CelticCrossService
             ];
         }
 
-        // ค้นหา Deep 39฿ reading ของ user เดียวกัน (ใช้ birth_date + ดาวเจ้าชนะ)
-        $deepReading = $this->findLinkedDeepReading($reading);
+        // ค้นหา Deep 39฿ reading ของ user เดียวกัน (ใช้ birth_date + ดาวเจ้าชนะ) — ต้องเป็นวันเกิดเดียวกับบิลนี้
+        $deepReading = $this->linkedDeepForFinale($reading);
 
         $prompt = $this->buildGrandFinalePrompt($reading, $cards, $answeredQuestions, $deepReading, $pendingQuestions);
 
@@ -6270,6 +6270,25 @@ class CelticCrossService
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * 🎂 (2026-09-27) บิล 39 ที่เอามาประกอบบทสรุป — ต้องเป็นวันเกิดเดียวกับบิล 99 ใบนี้
+     *
+     * บิลนี้อาจมีวันเกิดที่ลูกค้า/แอดมินเพิ่งแก้ แต่บิล 39 ล่าสุดของลูกค้ายังเป็นวันเกิดเก่าที่ผิด ⇒
+     *   {birth_date_section} (ดาวเจ้าชนะ/สี/เลขมงคล) และป้าย "วันเกิด: …" ในบริบทคำทำนายเดิม
+     *   จะเป็นของวันที่ผิด ขัดกับผังดวงของบิลนี้ = บทสรุปทำนายผิดคนทั้งย่อหน้า
+     *   ⇒ วันเกิดไม่ตรงกัน = ไม่ใช้บิลนั้นเลย (ผังดวงของบิลนี้ยังอยู่ครบ)
+     * บิลนี้ยังไม่มีวันเกิด = ใช้บิล 39 ตามเดิม (เป็นแหล่งวันเกิดเดียวที่มี)
+     */
+    protected function linkedDeepForFinale(FortuneReading $reading): ?FortuneReading
+    {
+        $deep = $this->findLinkedDeepReading($reading);
+        if ($deep === null || empty($reading->birth_date) || empty($deep->birth_date)) {
+            return $deep;
+        }
+
+        return $deep->birth_date->isSameDay($reading->birth_date) ? $deep : null;
     }
 
     /**

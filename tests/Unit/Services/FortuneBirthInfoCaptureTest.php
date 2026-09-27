@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use App\Models\FortuneReading;
+use App\Services\CelticCrossService;
 use App\Services\Fortune\BirthdateResolver;
 use App\Services\Fortune\ThaiAstrologyService;
 use App\Services\FortuneConversationService;
@@ -77,10 +78,15 @@ class FortuneBirthInfoCaptureTest extends TestCase
 
     private function callProtected(string $method, ...$args)
     {
-        $m = new ReflectionMethod($this->service, $method);
+        return $this->invokeOn($this->service, $method, ...$args);
+    }
+
+    private function invokeOn(object $target, string $method, ...$args)
+    {
+        $m = new ReflectionMethod($target, $method);
         $m->setAccessible(true);
 
-        return $m->invoke($this->service, ...$args);
+        return $m->invoke($target, ...$args);
     }
 
     // ─── เลนรอโอน ──────────────────────────────────────────────
@@ -368,6 +374,27 @@ class FortuneBirthInfoCaptureTest extends TestCase
         $this->assertSame('1978-06-27', $reading->getConversationState('birthdate_correction_pending_date'));
     }
 
+    // ─── บทสรุป 99: ห้ามปนบิล 39 ที่วันเกิดไม่ตรงกับบิลนี้ ─────────────────
+
+    public function test_grand_finale_never_mixes_in_a_39_bill_with_a_different_birthdate(): void
+    {
+        $finale = (new ReflectionClass(LinkedDeepFinaleDouble::class))->newInstanceWithoutConstructor();
+        $finale->deep = (new InMemoryFortuneReading)->forceFill([
+            'id' => 12515,
+            'reading_type' => FortuneReading::READING_TYPE_DEEP,
+            'birth_date' => '1978-07-27',
+        ]);
+
+        // ลูกค้าแก้วันเกิดในบิล 99 แล้ว แต่บิล 39 ล่าสุดยังเป็นวันเก่าที่ผิด ⇒ ดาวเจ้าชนะ/สี/เลขมงคลจะผิดวัน
+        $this->assertNull($this->invokeOn($finale, 'linkedDeepForFinale', $this->celticReading('1978-06-27')));
+
+        $finale->deep->forceFill(['birth_date' => '1978-06-27']);
+        $this->assertSame(12515, $this->invokeOn($finale, 'linkedDeepForFinale', $this->celticReading('1978-06-27'))?->id);
+
+        // บิล 99 ยังไม่มีวันเกิด → บิล 39 เป็นแหล่งเดียวที่มี ใช้ตามเดิม
+        $this->assertSame(12515, $this->invokeOn($finale, 'linkedDeepForFinale', $this->celticReading())?->id);
+    }
+
     // ─── เลน 99 เปิดไพ่ ────────────────────────────────────────────
 
     public function test_birthdate_typed_while_picking_cards_is_saved_not_counted_as_ready(): void
@@ -407,6 +434,19 @@ class InMemoryFortuneReading extends FortuneReading
         $this->forceFill(['conversation_state' => $state]);
 
         return true;
+    }
+}
+
+/**
+ * ตัวแทน CelticCrossService — บิล 39 ที่ "ค้นเจอ" กำหนดเองได้ (ของจริงค้นจาก DB)
+ */
+class LinkedDeepFinaleDouble extends CelticCrossService
+{
+    public ?FortuneReading $deep = null;
+
+    protected function findLinkedDeepReading(FortuneReading $reading): ?FortuneReading
+    {
+        return $this->deep;
     }
 }
 
