@@ -24,8 +24,8 @@
 @section('content')
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
 
-    {{-- Header --}}
-    <div class="bg-gradient-to-r from-green-600 to-emerald-600 py-16 lg:py-24">
+    {{-- Header — ธีมโนวา: แถบกรมท่าลายกนกทอง / ปิดธีม = แถบเขียวเดิม --}}
+    <div class="{{ config('shop.nova_public', true) ? 'nv-hero-band' : 'bg-gradient-to-r from-green-600 to-emerald-600' }} py-16 lg:py-24">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-white text-sm font-medium mb-6">
                 <i class="fas fa-book-open"></i>
@@ -34,7 +34,7 @@
             <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
                 📝 วิธีสมัครสมาชิก
             </h1>
-            <p class="text-xl text-green-100 max-w-2xl mx-auto">
+            <p class="text-xl {{ config('shop.nova_public', true) ? 'nv-hero-band__sub' : 'text-green-100' }} max-w-2xl mx-auto">
                 อธิบายทุกขั้นตอนอย่างละเอียด อ่านง่าย ทำตามได้เลย!
             </p>
         </div>
@@ -570,13 +570,13 @@
 
         {{-- CTA Section --}}
         <section class="text-center">
-            <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-8 lg:p-12">
+            <div class="{{ config('shop.nova_public', true) ? 'nv-hero-band nv-hero-band--box rounded-2xl' : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl' }} p-8 lg:p-12">
                 <h2 class="text-3xl font-bold text-white mb-4">พร้อมเริ่มต้นแล้ว?</h2>
                 <p class="text-slate-300 mb-8 max-w-xl mx-auto">
                     สมัครสมาชิกฟรีวันนี้ เริ่มต้นสร้างรายได้กับ {{ $appName }} ได้ทันที!
                 </p>
                 <div class="flex flex-wrap justify-center gap-4">
-                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-green-500/30 transition-all">
+                    <a href="{{ route('register') }}" class="{{ config('shop.nova_public', true) ? 'nv-btn nv-btn--gold nv-btn--lg' : 'inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-green-500/30 transition-all' }}">
                         <i class="fas fa-rocket"></i>
                         สมัครสมาชิกเลย!
                     </a>

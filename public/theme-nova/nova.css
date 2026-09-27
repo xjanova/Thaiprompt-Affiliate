@@ -453,6 +453,29 @@ body.nv-body {
 /* หน้าแรกโนวา: รายการสินค้าวางบนแผ่นงาช้างตรงๆ ไม่ต้องมีกรอบการ์ดใหญ่ครอบ */
 .nv-page #products > .tp-card { padding: 0 !important; background: none; border: 0; box-shadow: none; }
 
+/* =====================================================================
+   หน้าฉากกลางคืนแบบเรียบ (ติดต่อเรา · ออฟไลน์ ฯลฯ) — ฉากชุดเดียวกับฮีโร่หน้าแรก ไม่มี canvas ไม่มีสคริปต์
+   ===================================================================== */
+.nv-page-hero { position: relative; isolation: isolate; overflow: hidden; min-height: 100svh; padding: 120px 20px 90px; display: flex; align-items: center; justify-content: center; color: var(--nv-on-night); background: #060b1c; font-family: var(--nv-font-ui); }
+.nv-page-hero__in { position: relative; z-index: 1; width: min(980px, 100%); text-align: center; }
+.nv-page-hero__title { margin: 12px 0 8px; font-family: var(--nv-font-display); font-weight: 700; font-size: clamp(34px, 5vw, 60px); line-height: 1.15; color: #fbf6ea; text-shadow: 0 4px 40px rgba(0, 0, 0, .45); }
+.nv-page-hero__sub { margin: 0 auto 34px; max-width: 640px; color: var(--nv-on-night-2); font-size: clamp(15px, 1.3vw, 17.5px); }
+.nv-page-hero__kanok { position: absolute; top: 62px; z-index: 0; width: clamp(150px, 22vw, 320px); opacity: .24; pointer-events: none; }
+.nv-page-hero__kanok--l { left: -6px; transform: scaleX(-1); }
+.nv-page-hero__kanok--r { right: -6px; }
+.nv-page-hero__back { margin-top: 34px; }
+.nv-contact__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; text-align: left; }
+.nv-ccard { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 22px 22px 20px; border-radius: 22px; color: var(--nv-on-night); text-decoration: none; background: linear-gradient(160deg, rgba(24, 40, 90, .8), rgba(8, 13, 32, .88)); border: 1px solid rgba(245, 210, 127, .2); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .06); transition: transform .35s var(--nv-ease), border-color .35s, box-shadow .35s; }
+.nv-ccard:hover, .nv-ccard:focus-visible { transform: translateY(-4px); color: var(--nv-on-night); border-color: rgba(245, 210, 127, .55); box-shadow: 0 34px 70px -30px rgba(240, 201, 106, .45), inset 0 1px 0 rgba(255, 255, 255, .08); outline: 0; }
+.nv-ccard__ic { width: 48px; height: 48px; margin-bottom: 10px; border-radius: 14px; display: grid; place-items: center; font-size: 20px; color: #1a1405; background: var(--nv-btn-gold); box-shadow: 0 10px 22px -10px rgba(240, 201, 106, .8); }
+.nv-ccard__en { font-family: var(--nv-font-latin); font-size: 11px; font-weight: 600; letter-spacing: .24em; color: var(--nv-gold-300); }
+.nv-ccard__title { font-family: var(--nv-font-display); font-size: 20px; color: #fff7e3; }
+.nv-ccard__text { font-size: 14px; color: var(--nv-on-night-2); overflow-wrap: anywhere; }
+@media (max-width: 720px) {
+    .nv-page-hero { padding: 96px 16px 70px; }
+    .nv-contact__grid { grid-template-columns: 1fr; }
+}
+
 /* เผยเมื่อเลื่อนถึง (เรียงทีละใบ) */
 .nv-js .nv-rv:not(.is-in):not(.nv-hero .nv-rv) { opacity: 0; }
 /* ฮีโร่อยู่จอแรกเสมอ — เล่นแอนิเมชันเข้าด้วย CSS ล้วน ไม่รอสคริปต์ (เน็ตช้าการ์ดต้องไม่หายค้าง) */
@@ -553,3 +576,11 @@ body.nv-body {
     .nv-page *, .nv-page *::before, .nv-page *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
     .nv-deco { translate: none; }
 }
+
+/* ---------- แถบหัวหน้า (hero band) กรมท่า + กนกทองมุมขวา — ใช้แทนแถบสีเดิมของหน้าเอกสาร ---------- */
+.nv-hero-band { position: relative; overflow: hidden; isolation: isolate; background: radial-gradient(120% 160% at 100% 0%, #1d3676 0%, #0d1b3d 52%, #070d20 100%); border-bottom: 1px solid rgba(240, 201, 106, .28); }
+.nv-hero-band::before { content: ""; position: absolute; right: -28px; top: -18px; z-index: -1; width: min(340px, 46vw); height: 260px; background: url(../images/nova/brand/kanok-gold.webp) right top / contain no-repeat; opacity: .3; pointer-events: none; }
+.nv-hero-band::after { content: ""; position: absolute; left: -28px; top: -18px; z-index: -1; width: min(340px, 46vw); height: 260px; background: url(../images/nova/brand/kanok-gold.webp) right top / contain no-repeat; transform: scaleX(-1); opacity: .3; pointer-events: none; }
+.nv-hero-band h1 { font-family: 'Trirong', 'Anuphan', serif; }
+.nv-hero-band__sub { color: rgba(246, 239, 221, .78); }
+.nv-hero-band--box { border: 1px solid rgba(240, 201, 106, .3); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .06); }

@@ -49,6 +49,7 @@
         {{-- แถบหัวโนวาอยู่ในเลย์เอาต์ (เรนเดอร์หลัง stack) จึงโหลดสไตล์ตรงนี้เอง --}}
         <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
+        <link rel="stylesheet" href="{{ asset('theme-nova/nova-tw.css') }}?v={{ is_file(public_path('theme-nova/nova-tw.css')) ? filemtime(public_path('theme-nova/nova-tw.css')) : 1 }}">
     @endif
 
     @stack('styles')
@@ -75,7 +76,7 @@
     {{-- Laravel Echo Configuration --}}
     <x-echo-config />
 </head>
-<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300{{ $novaShell ? ' nv-tw' : '' }}">
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
@@ -86,7 +87,7 @@
 
     @if($novaShell)
         {{-- ธีมโนวา: แถบหัวทึบติดบน + ท้ายเว็บโนวา แทนแถบงาน Classic X --}}
-        <div style="min-height:100vh; display:flex; flex-direction:column;">
+        <div class="nv-tw" style="min-height:100vh; display:flex; flex-direction:column;">
             <x-nova.header :solid="true" :search="true" :active="request()->routeIs('tarot.*') ? 'fortune' : ''" />
             <main style="flex:1;">
                 @yield('content')

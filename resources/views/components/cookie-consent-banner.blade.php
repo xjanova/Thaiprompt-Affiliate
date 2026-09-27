@@ -10,7 +10,7 @@
     x-data="cookieConsent()"
     x-show="!hasConsent"
     x-cloak
-    class="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 bg-white dark:bg-gray-900 shadow-2xl border-t-4 border-indigo-600"
+    class="tp-cookie fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 bg-white dark:bg-gray-900 shadow-2xl border-t-4 border-indigo-600"
     style="display: none;"
 >
     <div class="container mx-auto max-w-7xl">

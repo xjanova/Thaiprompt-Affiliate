@@ -3,7 +3,7 @@
 @section('title', 'Software Products')
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+<div class="nv-auto-bg min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
     <!-- Hero Section -->
     <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 shadow-2xl">
         <div class="absolute inset-0 opacity-20">
@@ -36,7 +36,7 @@
                 </div>
             </div>
         </div>
-        <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-slate-50 to-transparent"></div>
+        <div class="nv-auto-fade absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-slate-50 to-transparent"></div>
     </div>
 
     <div class="container mx-auto px-4 py-8 -mt-10 relative z-10">

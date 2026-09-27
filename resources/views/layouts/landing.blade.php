@@ -256,13 +256,14 @@
     @if(config('shop.nova_public', true))
         <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1 }}">
+        <link rel="stylesheet" href="{{ asset('theme-nova/nova-tw.css') }}?v={{ is_file(public_path('theme-nova/nova-tw.css')) ? filemtime(public_path('theme-nova/nova-tw.css')) : 1 }}">
     @endif
     @stack('styles')
 
     {{-- Structured Data (Schema.org JSON-LD) — Organization + WebSite สำหรับ Google AI Overviews / Gemini --}}
     {!! render_global_structured_data() !!}
 </head>
-<body class="antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+<body class="antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-300 {{ config('shop.nova_public', true) ? 'nv-tw' : '' }}">
 
     @if(config('shop.nova_public', true))
         {{-- ธีมโนวา: แถบหัวชุดเดียวกับหน้าสาธารณะอื่น — แบบทึบลอยติดบน (หน้าในเลย์เอาต์นี้เว้นที่ด้านบนไว้ให้แถบหัวแบบลอยอยู่แล้ว) --}}

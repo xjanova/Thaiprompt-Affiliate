@@ -142,10 +142,29 @@ class StorefrontNovaHomeTest extends TestCase
         $this->assertStringContainsString('tp-ph-desk', $html, 'ปิดธีมใหม่ทั้งหมดแล้วต้องกลับไปแถบหัว V4');
     }
 
+    public function test_contact_and_guide_pages_use_nova_and_fall_back_when_off(): void
+    {
+        $contact = $this->get('/contact')->assertOk()->getContent();
+        $this->assertStringContainsString('nv-page-hero', $contact);
+        $this->assertStringContainsString('nv-ccard', $contact);
+        $this->assertStringContainsString('mailto:'.\App\Support\ContactInfo::supportEmail(), $contact);
+        $this->assertStringContainsString('theme-nova/nova-tw.css', $contact);
+
+        $guide = $this->get('/how-to-register')->assertOk()->getContent();
+        $this->assertStringContainsString('nv-hero-band', $guide);
+        $this->assertStringNotContainsString('from-green-600 to-emerald-600', $guide);
+
+        config(['shop.nova_public' => false]);
+        $contactOff = $this->get('/contact')->assertOk()->getContent();
+        $this->assertStringNotContainsString('nv-page-hero', $contactOff);
+        $this->assertStringContainsString('mailto:'.\App\Support\ContactInfo::supportEmail(), $contactOff, 'ปิดธีมแล้วช่องทางอีเมลต้องยังอยู่');
+        $this->assertStringContainsString('from-green-600 to-emerald-600', $this->get('/how-to-register')->assertOk()->getContent());
+    }
+
     public function test_nova_assets_are_shipped(): void
     {
         $files = [
-            'theme-nova/nova.css', 'theme-nova/nova.js', 'images/nova/hero-temple.webp',
+            'theme-nova/nova.css', 'theme-nova/nova.js', 'theme-nova/nova-tw.css', 'images/nova/hero-temple.webp',
             'images/nova/mascot/welcome.webp', 'images/nova/mascot/present.webp', 'images/nova/mascot/face.webp',
             'images/nova/brand/kanok-gold.webp', 'images/nova/brand/tabbar-kanok-arch.webp', 'images/nova/brand/tabbar-kanok-medallion.webp',
         ];
