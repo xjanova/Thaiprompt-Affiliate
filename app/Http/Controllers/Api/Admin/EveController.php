@@ -171,7 +171,7 @@ class EveController extends Controller
             ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Eve ตอบไม่ได้: ' . $e->getMessage(),
+                'message' => 'Eve ตอบไม่ได้: ' . \App\Support\SafeLog::exceptionMessage($e),
                 'data' => [
                     'provider' => $provider,
                     'model' => $model,

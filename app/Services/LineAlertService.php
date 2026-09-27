@@ -185,7 +185,10 @@ class LineAlertService
         }
 
         if ($telegramSent) {
-            Log::channel('line')->warning($title, ['message' => $message, 'via' => 'telegram']);
+            // 🔐 (2026-09-27) เดิมใช้ Log::channel('line') แต่ไม่มี channel ชื่อนี้ในระบบ → Laravel ตกไปใช้
+            //    emergency logger ที่ไม่ผ่านตัวปิดบัง secret (RedactSecretsTap) + พ่นบรรทัด EMERGENCY ทุกครั้ง
+            //    ⇒ ใช้ channel หลักแทน
+            Log::warning($title, ['message' => $message, 'via' => 'telegram']);
 
             return;
         }
@@ -208,8 +211,8 @@ class LineAlertService
             }
         }
 
-        // Also log to system
-        Log::channel('line')->warning($title, ['message' => $message]);
+        // Also log to system (channel หลัก — ดูเหตุผลด้านบน)
+        Log::warning($title, ['message' => $message]);
     }
 
     /**

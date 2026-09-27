@@ -132,9 +132,9 @@ class AiApiKeyController extends Controller
         } catch (\Throwable $testErr) {
             $key->update([
                 'last_test_failed_at' => now(),
-                'last_test_message' => mb_substr('Auto-test failed: '.$testErr->getMessage(), 0, 500),
+                'last_test_message' => mb_substr('Auto-test failed: '.\App\Support\SafeLog::exceptionMessage($testErr), 0, 500),
             ]);
-            $testResult = ['passed' => false, 'message' => $testErr->getMessage()];
+            $testResult = ['passed' => false, 'message' => \App\Support\SafeLog::exceptionMessage($testErr)];
         }
 
         return response()->json([
@@ -225,9 +225,9 @@ class AiApiKeyController extends Controller
             } catch (\Throwable $testErr) {
                 $key->update([
                     'last_test_failed_at' => now(),
-                    'last_test_message' => mb_substr('Auto-test (update) failed: '.$testErr->getMessage(), 0, 500),
+                    'last_test_message' => mb_substr('Auto-test (update) failed: '.\App\Support\SafeLog::exceptionMessage($testErr), 0, 500),
                 ]);
-                $testResult = ['passed' => false, 'message' => $testErr->getMessage()];
+                $testResult = ['passed' => false, 'message' => \App\Support\SafeLog::exceptionMessage($testErr)];
             }
         }
 
@@ -655,7 +655,7 @@ class AiApiKeyController extends Controller
             try {
                 $key->update([
                     'last_test_failed_at' => now(),
-                    'last_test_message' => mb_substr($e->getMessage(), 0, 500),
+                    'last_test_message' => mb_substr(\App\Support\SafeLog::exceptionMessage($e), 0, 500),
                 ]);
             } catch (\Throwable $logErr) {
                 // ignore — เก็บใน response ก็พอ
@@ -663,7 +663,7 @@ class AiApiKeyController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => '❌ API Key ไม่สามารถใช้งานได้: '.$e->getMessage(),
+                'message' => '❌ API Key ไม่สามารถใช้งานได้: '.\App\Support\SafeLog::exceptionMessage($e),
             ], 400);
         }
     }

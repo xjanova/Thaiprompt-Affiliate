@@ -10,6 +10,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
 use App\Services\FortuneAIService;
 use App\Services\FortuneConversationService;
+use App\Support\SafeLog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -658,7 +659,7 @@ class FortuneSettingsController extends Controller
             $svc = app(\App\Services\Fortune\PaymentBannerService::class);
             $defaultBannerPath = $svc->getOrGenerateDefaultBanner();
         } catch (\Throwable $e) {
-            \Log::warning('Admin Banner: generate default ล้มเหลว', ['error' => $e->getMessage()]);
+            \Log::warning('Admin Banner: generate default ล้มเหลว', ['error' => SafeLog::exceptionMessage($e)]);
         }
 
         $defaultBannerUrl = $defaultBannerPath
@@ -755,11 +756,11 @@ class FortuneSettingsController extends Controller
                 'preview_url' => $url,
             ]);
         } catch (\Throwable $e) {
-            \Log::error('Admin Banner Preview: ล้มเหลว', ['error' => $e->getMessage()]);
+            \Log::error('Admin Banner Preview: ล้มเหลว', ['error' => SafeLog::exceptionMessage($e)]);
 
             return response()->json([
                 'success' => false,
-                'error' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'error' => 'เกิดข้อผิดพลาด: '.SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -822,11 +823,11 @@ class FortuneSettingsController extends Controller
                 ['Content-Type' => 'image/png']
             );
         } catch (\Throwable $e) {
-            \Log::error('Banner Template Download fail', ['error' => $e->getMessage()]);
+            \Log::error('Banner Template Download fail', ['error' => SafeLog::exceptionMessage($e)]);
 
             return redirect()
                 ->route('admin.fortune.payment-banner.index')
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาด: '.SafeLog::exceptionMessage($e));
         }
     }
 
@@ -883,7 +884,7 @@ class FortuneSettingsController extends Controller
             // คืน JSON เสมอ ไม่ให้ return HTML error page
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการคำนวณ: '.$e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการคำนวณ: '.SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -1074,13 +1075,13 @@ class FortuneSettingsController extends Controller
             }
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('FortuneSettings: testSensitive exception', [
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
                 'scenario' => $scenario,
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -1133,7 +1134,7 @@ class FortuneSettingsController extends Controller
             $checks['api_pool'] = [
                 'label' => 'API Key Pool',
                 'status' => 'warning',
-                'message' => 'Pool ไม่พร้อม: '.mb_substr($e->getMessage(), 0, 100),
+                'message' => 'Pool ไม่พร้อม: '.mb_substr(SafeLog::exceptionMessage($e), 0, 100),
             ];
         }
 
@@ -1155,7 +1156,7 @@ class FortuneSettingsController extends Controller
             $checks['ai_connection'] = [
                 'label' => 'การเชื่อมต่อ AI',
                 'status' => 'error',
-                'message' => 'เชื่อมต่อ AI ไม่ได้: '.mb_substr($e->getMessage(), 0, 200),
+                'message' => 'เชื่อมต่อ AI ไม่ได้: '.mb_substr(SafeLog::exceptionMessage($e), 0, 200),
                 'fix' => 'ตรวจสอบ API Key และ Provider ว่าตั้งค่าถูกต้อง',
             ];
         }
@@ -1221,7 +1222,7 @@ class FortuneSettingsController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                $dbChecks[$table] = ['exists' => false, 'error' => $e->getMessage()];
+                $dbChecks[$table] = ['exists' => false, 'error' => SafeLog::exceptionMessage($e)];
                 if (in_array($table, $requiredTables)) {
                     $missingRequired[] = $table;
                 } else {
@@ -1324,7 +1325,7 @@ class FortuneSettingsController extends Controller
                 $checks['facebook_token'] = [
                     'label' => 'Facebook Token',
                     'status' => 'error',
-                    'message' => 'ทดสอบ Facebook Token ไม่ได้: '.mb_substr($e->getMessage(), 0, 200),
+                    'message' => 'ทดสอบ Facebook Token ไม่ได้: '.mb_substr(SafeLog::exceptionMessage($e), 0, 200),
                     'fix' => 'ตรวจสอบ Page Access Token และ internet connection',
                 ];
             }
@@ -1366,7 +1367,7 @@ class FortuneSettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'รัน migration ไม่สำเร็จ: '.mb_substr($e->getMessage(), 0, 300),
+                'message' => 'รัน migration ไม่สำเร็จ: '.mb_substr(SafeLog::exceptionMessage($e), 0, 300),
             ], 500);
         }
     }
@@ -1616,7 +1617,7 @@ class FortuneSettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
                 'debug' => [
                     'provider' => $overrideProvider ?? $settings->getActualAIProvider(),
                     'model' => $overrideModel ?? $settings->getActualAIModel(),
@@ -1756,13 +1757,13 @@ class FortuneSettingsController extends Controller
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Admin test deep prediction failed', [
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
                 'provider' => $overrideProvider,
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
                 'debug' => [
                     'provider' => $overrideProvider ?? $settings->getActualAIProvider(),
                     'model' => $overrideModel ?? $settings->getActualAIModel(),
@@ -1813,7 +1814,7 @@ class FortuneSettingsController extends Controller
 
         } catch (\Exception $e) {
             $debug['success'] = false;
-            $debug['error'] = $e->getMessage();
+            $debug['error'] = SafeLog::exceptionMessage($e);
             $debug['error_class'] = get_class($e);
             $debug['trace'] = mb_substr($e->getTraceAsString(), 0, 2000);
         }
@@ -1842,7 +1843,7 @@ class FortuneSettingsController extends Controller
             $debug['engagements_count'] = $count;
         } catch (\Exception $e) {
             $debug['table_exists'] = false;
-            $debug['table_error'] = $e->getMessage();
+            $debug['table_error'] = SafeLog::exceptionMessage($e);
         }
 
         // ตรวจสอบ columns ในตาราง fortune_telling_settings
@@ -1850,7 +1851,7 @@ class FortuneSettingsController extends Controller
             $hasColumn = \Schema::hasColumn('fortune_telling_settings', 'comment_engagement_enabled');
             $debug['settings_column_exists'] = $hasColumn;
         } catch (\Exception $e) {
-            $debug['settings_column_error'] = $e->getMessage();
+            $debug['settings_column_error'] = SafeLog::exceptionMessage($e);
         }
 
         // ดู failed jobs ล่าสุด
@@ -1871,7 +1872,7 @@ class FortuneSettingsController extends Controller
                 ];
             });
         } catch (\Exception $e) {
-            $debug['failed_jobs_error'] = $e->getMessage();
+            $debug['failed_jobs_error'] = SafeLog::exceptionMessage($e);
         }
 
         // ดู recent logs จาก webhook
@@ -1885,7 +1886,7 @@ class FortuneSettingsController extends Controller
                 $debug['recent_webhook_logs'] = array_values(array_map('trim', array_slice($webhookLogs, -20)));
             }
         } catch (\Exception $e) {
-            $debug['logs_error'] = $e->getMessage();
+            $debug['logs_error'] = SafeLog::exceptionMessage($e);
         }
 
         return response()->json($debug, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

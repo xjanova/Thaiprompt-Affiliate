@@ -8,6 +8,7 @@ use App\Models\FortuneResponseTemplate;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortunePageContext;
 use App\Services\Fortune\FortuneRecipient;
+use App\Support\SafeLog;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
@@ -368,7 +369,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         } catch (\Throwable $e) {
             Log::warning('🏬 หาสาขาจากผู้รับไม่สำเร็จ ใช้ค่ากลางต่อ', [
                 'recipient' => $recipientId,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
             ]);
         }
     }
@@ -584,7 +585,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                     }
 
                 } catch (Exception $e) {
-                    Log::error("❌ ส่งข้อความไม่สำเร็จ (ครั้งที่ {$attempt}): ".$e->getMessage(), [
+                    Log::error("❌ ส่งข้อความไม่สำเร็จ (ครั้งที่ {$attempt}): ".SafeLog::exceptionMessage($e), [
                         'recipient' => $recipientId,
                         'chunk' => $chunkIndex + 1,
                     ]);
@@ -769,7 +770,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                     break; // ไป cache mark unreachable ข้างล่าง
                 }
             } catch (Exception $e) {
-                Log::error('ส่งรูปภาพ '.$msgType.' exception: '.$e->getMessage(), [
+                Log::error('ส่งรูปภาพ '.$msgType.' exception: '.SafeLog::exceptionMessage($e), [
                     'recipient' => $recipientId,
                 ]);
                 if ($msgType === 'MESSAGE_TAG') {
@@ -838,7 +839,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 ->where('last_seen_at', '>=', now()->subHours(24))
                 ->exists();
         } catch (Exception $e) {
-            Log::debug('hasOpenMessagingWindow: เช็คไม่ได้ ปล่อยผ่าน: '.$e->getMessage());
+            Log::debug('hasOpenMessagingWindow: เช็คไม่ได้ ปล่อยผ่าน: '.SafeLog::exceptionMessage($e));
 
             return true;
         }
@@ -919,7 +920,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return false;
         } catch (Exception $e) {
-            Log::warning('Private Reply image exception: '.$e->getMessage(), [
+            Log::warning('Private Reply image exception: '.SafeLog::exceptionMessage($e), [
                 'comment_id' => $commentId,
             ]);
 
@@ -1007,7 +1008,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return false;
         } catch (Exception $e) {
-            Log::warning('Private Reply image+QR exception: '.$e->getMessage(), [
+            Log::warning('Private Reply image+QR exception: '.SafeLog::exceptionMessage($e), [
                 'comment_id' => $commentId,
             ]);
 
@@ -1098,7 +1099,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return false;
         } catch (Exception $e) {
-            Log::warning('Private Reply template exception: '.$e->getMessage(), [
+            Log::warning('Private Reply template exception: '.SafeLog::exceptionMessage($e), [
                 'comment_id' => $commentId,
             ]);
 
@@ -1162,7 +1163,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                     'comment_id' => $commentId,
                 ]);
             } catch (Exception $e) {
-                Log::warning('sendAudio: Private Reply exception', ['error' => $e->getMessage()]);
+                Log::warning('sendAudio: Private Reply exception', ['error' => SafeLog::exceptionMessage($e)]);
             }
         }
 
@@ -1230,7 +1231,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                     return false;
                 }
             } catch (Exception $e) {
-                Log::warning('sendAudio exception: '.$e->getMessage(), [
+                Log::warning('sendAudio exception: '.SafeLog::exceptionMessage($e), [
                     'recipient' => $recipientId,
                     'messaging_type' => $msgType,
                 ]);
@@ -1264,7 +1265,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 ]);
         } catch (Exception $e) {
             // ไม่ต้อง throw error ถ้า typing indicator ส่งไม่ได้
-            Log::debug('ส่ง typing indicator ไม่สำเร็จ: '.$e->getMessage());
+            Log::debug('ส่ง typing indicator ไม่สำเร็จ: '.SafeLog::exceptionMessage($e));
         }
     }
 
@@ -1646,7 +1647,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return true;
         } catch (Exception $e) {
-            Log::error('ส่ง quick replies ไม่สำเร็จ: '.$e->getMessage());
+            Log::error('ส่ง quick replies ไม่สำเร็จ: '.SafeLog::exceptionMessage($e));
 
             // Fallback: ส่งข้อความธรรมดา
             return $this->sendMessage($recipientId, $message);
@@ -1948,7 +1949,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         } catch (Exception $e) {
             // HTTP 403 = token ไม่มี pages_manage_engagement permission
             // ต้องไปขออนุมัติ App Review ที่ Facebook Developer Console
-            $msg = $e->getMessage();
+            $msg = SafeLog::exceptionMessage($e);
             $is403 = str_contains($msg, '403');
             Log::error('ตอบคอมเมนต์ไม่สำเร็จ: '.$msg, [
                 'comment_id' => $commentId,
@@ -1989,7 +1990,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return true;
         } catch (Exception $e) {
-            $msg = $e->getMessage();
+            $msg = SafeLog::exceptionMessage($e);
             // 100/3 = comment ไม่พบหรือถูกลบ
             // 403 = token ขาด pages_manage_engagement
             Log::warning('React comment ล้มเหลว: '.mb_substr($msg, 0, 200), [
@@ -2031,7 +2032,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return true;
         } catch (Exception $e) {
-            $msg = $e->getMessage();
+            $msg = SafeLog::exceptionMessage($e);
             $is403 = str_contains($msg, '403');
             Log::error('ซ่อนคอมเม้นต์ไม่สำเร็จ: '.mb_substr($msg, 0, 200), [
                 'comment_id' => $commentId,
@@ -2073,7 +2074,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return true;
         } catch (Exception $e) {
-            $msg = $e->getMessage();
+            $msg = SafeLog::exceptionMessage($e);
             $is403 = str_contains($msg, '403');
             Log::error('ลบคอมเม้นต์ไม่สำเร็จ: '.mb_substr($msg, 0, 200), [
                 'comment_id' => $commentId,
@@ -2313,6 +2314,10 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
      *
      * ⚠️ ห้ามเปลี่ยนกลับไปส่ง `[]` เด็ดขาด — มันดูเหมือน no-op แต่เป็นการลบพารามิเตอร์
      *
+     * 🔐 (2026-09-27) URL ที่ยิงจากตรงนี้มี access_token อยู่ใน query เสมอ (paging.next ของ Facebook
+     *    ฝังมาเองด้วย ย้ายไปส่งทาง header ก็ไม่ช่วยหน้าถัดไป) และ error ของ Guzzle พิมพ์ URL เต็ม
+     *    ⇒ catch ทุกตัวที่ครอบ GET ของ Graph ต้องใช้ SafeLog::exceptionMessage($e) ห้าม $e->getMessage() ดิบ
+     *
      * @param  array|null  $params  null = URL มี query ครบในตัวแล้ว (paging.next) ห้ามแตะ
      */
     protected function graphGet(string $url, ?array $params = null): \Illuminate\Http\Client\Response
@@ -2375,8 +2380,8 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 $params = null; // paging.next มี query ครบในตัวแล้ว — ส่ง [] = ล้างทิ้ง (ดู graphGet)
             }
         } catch (Exception $e) {
-            $this->lastFetchError = 'Exception: '.$e->getMessage();
-            Log::warning("fetchPagedFeed exception ({$relPath}): ".$e->getMessage());
+            $this->lastFetchError = 'Exception: '.SafeLog::exceptionMessage($e);
+            Log::warning("fetchPagedFeed exception ({$relPath}): ".SafeLog::exceptionMessage($e));
         }
 
         return $items;
@@ -2510,8 +2515,8 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 ]);
             }
         } catch (Exception $e) {
-            $this->lastFetchError = 'Exception: '.$e->getMessage();
-            Log::warning('listCommentsForPost exception: '.$e->getMessage(), [
+            $this->lastFetchError = 'Exception: '.SafeLog::exceptionMessage($e);
+            Log::warning('listCommentsForPost exception: '.SafeLog::exceptionMessage($e), [
                 'post_id' => $postId,
             ]);
         }
@@ -2628,7 +2633,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return false;
         } catch (Exception $e) {
-            Log::warning('Private Reply exception: '.$e->getMessage(), [
+            Log::warning('Private Reply exception: '.SafeLog::exceptionMessage($e), [
                 'comment_id' => $commentId,
             ]);
 
@@ -2750,7 +2755,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             //    เคสที่พบ: HTTP 400 ทุก call → เคส page token expired หรือ permission revoked
             Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้', [
                 'user_id' => $facebookUserId,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
                 'token_first_8' => mb_substr($this->pageAccessToken ?? '', 0, 8),
                 'token_len' => strlen($this->pageAccessToken ?? ''),
                 'hint' => 'HTTP 400 ที่ User Profile API = ข้อจำกัด "รายบัญชีลูกค้า" ฝั่ง Meta (privacy/region/บัญชีถูกจำกัด) — ไม่ใช่ token หมดอายุ ไม่ใช่ App Review และไม่บล็อกการส่ง DM. ยืนยันแล้ว prod 2026-08-19: token+เพจเดียวกัน resolve คนอื่นได้ปกติ 96% ⇒ ถ้าพังทุกคนค่อยสงสัย token/permission. กำลังลองต่อด้วย conversations API 👇',
@@ -2849,7 +2854,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
                 return $this->conversationProfile($facebookUserId, $singleOther, 'conversations_single');
             }
         } catch (Exception $e) {
-            Log::info('FB conversations fallback exception: '.$e->getMessage(), [
+            Log::info('FB conversations fallback exception: '.SafeLog::exceptionMessage($e), [
                 'user_id' => $facebookUserId,
             ]);
         }
@@ -2898,7 +2903,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return $data['data'] ?? [];
         } catch (Exception $e) {
-            Log::warning('ไม่สามารถดึงโพสของผู้ใช้ได้: '.$e->getMessage());
+            Log::warning('ไม่สามารถดึงโพสของผู้ใช้ได้: '.SafeLog::exceptionMessage($e));
 
             return null;
         }
@@ -3591,8 +3596,8 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return $ok;
         } catch (Exception $e) {
-            $this->lastFetchError = 'Exception: '.$e->getMessage();
-            Log::warning('🚫 blockPageUser exception: '.$e->getMessage(), ['psid' => $psid]);
+            $this->lastFetchError = 'Exception: '.SafeLog::exceptionMessage($e);
+            Log::warning('🚫 blockPageUser exception: '.SafeLog::exceptionMessage($e), ['psid' => $psid]);
 
             return false;
         }
@@ -3633,7 +3638,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return true;
         } catch (Exception $e) {
-            $this->lastFetchError = 'Exception: '.$e->getMessage();
+            $this->lastFetchError = 'Exception: '.SafeLog::exceptionMessage($e);
 
             return false;
         }
@@ -3733,11 +3738,11 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
             ];
 
         } catch (Exception $e) {
-            Log::error('Messenger Profile setup error: '.$e->getMessage());
+            Log::error('Messenger Profile setup error: '.SafeLog::exceptionMessage($e));
 
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -3912,7 +3917,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -3952,7 +3957,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -4047,7 +4052,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
         } catch (\Throwable $e) {
             Log::debug('sendGroupInvitePrompt failed (non-blocking)', [
                 'user_id' => $recipientId,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
             ]);
 
             return false;
@@ -4145,7 +4150,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return false;
         } catch (Exception $e) {
-            Log::error('Facebook Button Template exception: '.$e->getMessage());
+            Log::error('Facebook Button Template exception: '.SafeLog::exceptionMessage($e));
 
             return false;
         }
@@ -4184,7 +4189,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return $this->sendButtonTemplate($recipientId, $payload, $options);
         } catch (Exception $e) {
-            Log::error('Facebook Generic Template exception: '.$e->getMessage());
+            Log::error('Facebook Generic Template exception: '.SafeLog::exceptionMessage($e));
 
             return false;
         }
@@ -4219,7 +4224,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return $sent;
         } catch (Exception $e) {
-            Log::error('Facebook Template+QuickReplies exception: '.$e->getMessage());
+            Log::error('Facebook Template+QuickReplies exception: '.SafeLog::exceptionMessage($e));
 
             return false;
         }
@@ -4252,7 +4257,7 @@ class FacebookWebhookService implements \App\Contracts\FortuneMessengerSender, M
 
             return true;
         } catch (Exception $e) {
-            Log::error('ส่ง Rich Message ไม่สำเร็จ: '.$e->getMessage());
+            Log::error('ส่ง Rich Message ไม่สำเร็จ: '.SafeLog::exceptionMessage($e));
 
             return false;
         }

@@ -164,7 +164,7 @@ class EveSettingsController extends Controller
             return response()->json([
                 'success' => false,
                 // โชว์ error ให้แอดมินเห็นตรงๆ (หน้านี้แอดมินเท่านั้น) — ตัดสั้นกัน stack trace ยาว
-                'reply' => '❌ ทดสอบไม่ผ่าน: '.mb_substr($e->getMessage(), 0, 300),
+                'reply' => '❌ ทดสอบไม่ผ่าน: '.mb_substr(\App\Support\SafeLog::exceptionMessage($e), 0, 300),
                 'provider' => $data['ai_provider'],
                 'model' => $model !== '' ? $model : '(พูลเลือกอัตโนมัติ)',
                 'ms' => (int) round((microtime(true) - $t0) * 1000),

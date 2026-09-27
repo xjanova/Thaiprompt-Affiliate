@@ -94,7 +94,7 @@ class ThaiIdCardOcrService
                 $testResult = $this->testApiConnection();
                 $status['connection_test'] = $testResult;
             } catch (\Exception $e) {
-                $status['error'] = $e->getMessage();
+                $status['error'] = \App\Support\SafeLog::exceptionMessage($e);
             }
         } elseif ($this->client) {
             $status['configured'] = true;
@@ -145,7 +145,7 @@ class ThaiIdCardOcrService
 
             return ['success' => false, 'error' => $error];
         } catch (\Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            return ['success' => false, 'error' => \App\Support\SafeLog::exceptionMessage($e)];
         }
     }
 
@@ -272,7 +272,7 @@ class ThaiIdCardOcrService
                 'error' => 'เกิดข้อผิดพลาดในการประมวลผลรูปภาพ',
                 'error_code' => 'PROCESSING_ERROR',
                 'suggestion' => 'กรุณาลองอัพโหลดรูปภาพใหม่อีกครั้ง หรือใช้รูปภาพอื่น',
-                'technical_error' => $e->getMessage(),
+                'technical_error' => \App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }

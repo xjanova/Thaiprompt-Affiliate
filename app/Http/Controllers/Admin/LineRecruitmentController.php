@@ -459,7 +459,7 @@ class LineRecruitmentController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }

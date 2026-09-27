@@ -50,7 +50,7 @@ class GoogleMapsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถแปลงพิกัดเป็นที่อยู่ได้',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -77,7 +77,7 @@ class GoogleMapsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถแปลงที่อยู่เป็นพิกัดได้',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -114,7 +114,7 @@ class GoogleMapsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถคำนวณเส้นทางได้',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -151,7 +151,7 @@ class GoogleMapsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถคำนวณระยะทางได้',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -187,7 +187,7 @@ class GoogleMapsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถค้นหาสถานที่ได้',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -210,7 +210,7 @@ class GoogleMapsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถดึงข้อมูลสถานที่ได้',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -233,7 +233,7 @@ class GoogleMapsController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'ไม่สามารถตรวจสอบสถานะได้',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }

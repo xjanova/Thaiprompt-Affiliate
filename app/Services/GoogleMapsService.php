@@ -595,7 +595,7 @@ class GoogleMapsService
                 'error' => $data['status'] !== 'OK' ? $data['error_message'] ?? $data['status'] : null,
             ];
         } catch (\Exception $e) {
-            $results['geocoding'] = ['status' => 'error', 'error' => $e->getMessage()];
+            $results['geocoding'] = ['status' => 'error', 'error' => \App\Support\SafeLog::exceptionMessage($e)];
         }
 
         // Test Directions API
@@ -611,7 +611,7 @@ class GoogleMapsService
                 'error' => $data['status'] !== 'OK' ? $data['error_message'] ?? $data['status'] : null,
             ];
         } catch (\Exception $e) {
-            $results['directions'] = ['status' => 'error', 'error' => $e->getMessage()];
+            $results['directions'] = ['status' => 'error', 'error' => \App\Support\SafeLog::exceptionMessage($e)];
         }
 
         // Test Distance Matrix API
@@ -627,7 +627,7 @@ class GoogleMapsService
                 'error' => $data['status'] !== 'OK' ? $data['error_message'] ?? $data['status'] : null,
             ];
         } catch (\Exception $e) {
-            $results['distance_matrix'] = ['status' => 'error', 'error' => $e->getMessage()];
+            $results['distance_matrix'] = ['status' => 'error', 'error' => \App\Support\SafeLog::exceptionMessage($e)];
         }
 
         // Test Places API
@@ -643,7 +643,7 @@ class GoogleMapsService
                 'error' => ! in_array($data['status'], ['OK', 'ZERO_RESULTS']) ? $data['error_message'] ?? $data['status'] : null,
             ];
         } catch (\Exception $e) {
-            $results['places'] = ['status' => 'error', 'error' => $e->getMessage()];
+            $results['places'] = ['status' => 'error', 'error' => \App\Support\SafeLog::exceptionMessage($e)];
         }
 
         return $results;

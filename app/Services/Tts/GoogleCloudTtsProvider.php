@@ -215,7 +215,7 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
             return [
                 'success' => false,
                 'audio_path' => null,
-                'error' => 'Google TTS exception: '.$e->getMessage(),
+                'error' => 'Google TTS exception: '.\App\Support\SafeLog::exceptionMessage($e),
                 'duration_ms' => (int) round((microtime(true) - $startTime) * 1000),
                 'voice_used' => $voice,
             ];

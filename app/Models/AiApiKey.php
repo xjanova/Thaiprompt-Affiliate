@@ -992,6 +992,10 @@ class AiApiKey extends Model
         ?int $retryAfter = null,
         ?array $context = null
     ): void {
+        // 🔐 (2026-09-27) ข้อความมักมาจาก $e->getMessage() ของ Gemini ที่ส่ง ?key=<คีย์นี้เอง> ใน URL
+        //    → ห้ามเก็บลง last_error / error_message (แสดงเต็มในหน้าแอดมิน) หรือส่งแจ้งเตือนทั้งดอก
+        $errorMessage = \App\Support\SafeLog::redactSecrets($errorMessage);
+
         // ถ้า critical แล้ว ไม่ทำอะไร (รอ admin)
         if ($this->is_critical) {
             return;
@@ -1299,6 +1303,8 @@ class AiApiKey extends Model
         //    - 5xx/timeout transient → cooldown 90s no strike
         //    - 402/billing → mark critical immediately + alert admin
         //    legacy callers ที่เรียก recordError() จะได้ smart handling ฟรี ไม่ต้องแก้
+        // 🔐 (2026-09-27) ปิดบัง ?key= ก่อนเก็บ — เหตุผลเดียวกับ recordSmartError()
+        $errorMessage = \App\Support\SafeLog::redactSecrets($errorMessage);
         $msgLower = mb_strtolower($errorMessage);
         $needsSmartRouting = str_contains($errorMessage, '429')
             || str_contains($errorMessage, '413')

@@ -136,7 +136,7 @@ class AiPlaygroundController extends Controller
                     $entry['raw'] = array_intersect_key($result, array_flip(['response', 'content', 'text', 'tokens_used', 'finish_reason']));
                 }
             } catch (Throwable $e) {
-                $entry['error'] = $e->getMessage();
+                $entry['error'] = \App\Support\SafeLog::exceptionMessage($e);
                 Log::warning('AiPlayground: provider call failed', [
                     'provider' => $providerName,
                     'model' => $modelName,

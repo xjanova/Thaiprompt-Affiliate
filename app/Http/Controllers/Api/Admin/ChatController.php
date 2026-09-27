@@ -148,7 +148,7 @@ class ChatController extends Controller
             Log::warning('AdminChat: suggest failed', ['error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
-                'message' => 'suggest failed: ' . $e->getMessage(),
+                'message' => 'suggest failed: ' . \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }

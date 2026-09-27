@@ -280,7 +280,7 @@ class TraceabilityController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to geocode location',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -308,7 +308,7 @@ class TraceabilityController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to geocode address',
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }

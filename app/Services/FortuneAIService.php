@@ -6,6 +6,7 @@ use App\Models\AiApiKey;
 use App\Models\AiContentSetting;
 use App\Models\FortuneTellingSetting;
 use App\Services\Fortune\FortuneScopeGuard;
+use App\Support\SafeLog;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Cache;
@@ -1648,7 +1649,7 @@ PROMPT;
                 'ready' => false,
                 'abusive' => false,
                 'failed' => true,
-                'fail_reason' => $e->getMessage(),
+                'fail_reason' => SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -6953,7 +6954,7 @@ TXT;
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => SafeLog::exceptionMessage($e),
                 'debug' => [
                     'provider' => $this->provider,
                     'model' => $this->model,

@@ -91,7 +91,7 @@ class GeminiService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: '.\App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -203,7 +203,7 @@ class GeminiService
 
             return [
                 'success' => false,
-                'error' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+                'error' => 'เกิดข้อผิดพลาด: '.\App\Support\SafeLog::exceptionMessage($e),
                 'error_code' => 'EXCEPTION',
             ];
         }

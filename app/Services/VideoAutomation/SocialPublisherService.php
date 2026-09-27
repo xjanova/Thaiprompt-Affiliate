@@ -250,11 +250,11 @@ class SocialPublisherService
             throw new \Exception('อัปโหลดไม่สำเร็จ: '.$response->body());
         } catch (\Exception $e) {
             $platform?->recordPost(false);
-            $job?->logError('โพส Facebook ล้มเหลว', ['error' => $e->getMessage()]);
+            $job?->logError('โพส Facebook ล้มเหลว', ['error' => \App\Support\SafeLog::exceptionMessage($e)]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -340,11 +340,11 @@ class SocialPublisherService
             throw new \Exception('Publish ล้มเหลว: '.$publishResponse->body());
         } catch (\Exception $e) {
             $platform?->recordPost(false);
-            $job?->logError('โพส Instagram ล้มเหลว', ['error' => $e->getMessage()]);
+            $job?->logError('โพส Instagram ล้มเหลว', ['error' => \App\Support\SafeLog::exceptionMessage($e)]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -427,11 +427,11 @@ class SocialPublisherService
             throw new \Exception('Timeout: รอนานเกินไป');
         } catch (\Exception $e) {
             $platform?->recordPost(false);
-            $job?->logError('โพส TikTok ล้มเหลว', ['error' => $e->getMessage()]);
+            $job?->logError('โพส TikTok ล้มเหลว', ['error' => \App\Support\SafeLog::exceptionMessage($e)]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -574,11 +574,11 @@ class SocialPublisherService
             throw new \Exception('Timeout: รอนานเกินไป');
         } catch (\Exception $e) {
             $platform?->recordPost(false);
-            $job?->logError('โพส Lemon8 ล้มเหลว', ['error' => $e->getMessage()]);
+            $job?->logError('โพส Lemon8 ล้มเหลว', ['error' => \App\Support\SafeLog::exceptionMessage($e)]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -637,11 +637,11 @@ class SocialPublisherService
             throw new \Exception('Publish ล้มเหลว: '.$response->body());
         } catch (\Exception $e) {
             $platform?->recordPost(false);
-            $job?->logError('โพส LINE VOOM ล้มเหลว', ['error' => $e->getMessage()]);
+            $job?->logError('โพส LINE VOOM ล้มเหลว', ['error' => \App\Support\SafeLog::exceptionMessage($e)]);
 
             return [
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }

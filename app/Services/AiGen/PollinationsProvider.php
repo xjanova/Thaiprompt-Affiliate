@@ -163,7 +163,7 @@ class PollinationsProvider extends BaseAiGenProvider
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'error' => 'Pollinations request failed: '.$e->getMessage(),
+                'error' => 'Pollinations request failed: '.\App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }
@@ -288,7 +288,7 @@ class PollinationsProvider extends BaseAiGenProvider
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'เชื่อมต่อล้มเหลว: '.$e->getMessage(),
+                'message' => 'เชื่อมต่อล้มเหลว: '.\App\Support\SafeLog::exceptionMessage($e),
             ];
         }
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\FortunePage;
 use App\Models\FortuneReading;
 use App\Services\Fortune\FortunePageContext;
+use App\Support\SafeLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -355,7 +356,7 @@ class FortunePagesController extends Controller
 
             return back()->with('success', '✅ Token ใช้ได้ เพจ: '.($body['name'] ?? $returnedId));
         } catch (\Throwable $e) {
-            return back()->with('error', 'ทดสอบไม่สำเร็จ: '.$e->getMessage());
+            return back()->with('error', 'ทดสอบไม่สำเร็จ: '.SafeLog::exceptionMessage($e));
         }
     }
 
@@ -459,7 +460,7 @@ class FortunePagesController extends Controller
                 'warning' => $this->lifetimeWarning($exchange, $info),
             ];
         } catch (\Throwable $e) {
-            return ['ok' => false, 'error' => 'เชื่อมบัญชีไม่สำเร็จ: '.$e->getMessage()];
+            return ['ok' => false, 'error' => 'เชื่อมบัญชีไม่สำเร็จ: '.SafeLog::exceptionMessage($e)];
         }
     }
 
@@ -554,7 +555,7 @@ class FortunePagesController extends Controller
 
             $result = $this->storeUserToken((string) $res->json('access_token'));
         } catch (\Throwable $e) {
-            return $to->with('error', 'เชื่อมเพจไม่สำเร็จ: '.$e->getMessage());
+            return $to->with('error', 'เชื่อมเพจไม่สำเร็จ: '.SafeLog::exceptionMessage($e));
         }
 
         if (! $result['ok']) {
@@ -626,7 +627,7 @@ class FortunePagesController extends Controller
 
             return ['token' => $longLived, 'exchanged' => true, 'error' => null];
         } catch (\Throwable $e) {
-            return ['token' => $token, 'exchanged' => false, 'error' => $e->getMessage()];
+            return ['token' => $token, 'exchanged' => false, 'error' => SafeLog::exceptionMessage($e)];
         }
     }
 
@@ -666,7 +667,7 @@ class FortunePagesController extends Controller
                 'checked' => true,
             ];
         } catch (\Throwable $e) {
-            Log::warning('🔑 ตรวจอายุ token ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            Log::warning('🔑 ตรวจอายุ token ไม่สำเร็จ', ['error' => SafeLog::exceptionMessage($e)]);
 
             return $blank;
         }
@@ -898,9 +899,9 @@ class FortunePagesController extends Controller
 
             return back()->with('success', $message);
         } catch (\Throwable $e) {
-            Log::error('🏬 ดึงรายชื่อเพจไม่สำเร็จ', ['error' => $e->getMessage()]);
+            Log::error('🏬 ดึงรายชื่อเพจไม่สำเร็จ', ['error' => SafeLog::exceptionMessage($e)]);
 
-            return back()->with('error', 'ดึงรายชื่อเพจไม่สำเร็จ: '.$e->getMessage());
+            return back()->with('error', 'ดึงรายชื่อเพจไม่สำเร็จ: '.SafeLog::exceptionMessage($e));
         }
     }
 
@@ -984,7 +985,7 @@ class FortunePagesController extends Controller
         } catch (\Throwable $e) {
             Log::warning('🏬 ดึง page token อัตโนมัติไม่ได้', [
                 'external_page_id' => $externalPageId,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
             ]);
 
             return null;
@@ -1088,10 +1089,10 @@ class FortunePagesController extends Controller
 
             Log::warning('📡 '.($subscribe ? 'ต่อ' : 'ตัด').'สายเว็บฮุกล้มเหลว', [
                 'fortune_page_id' => $page->id,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
             ]);
 
-            return ['ok' => false, 'error' => $e->getMessage()];
+            return ['ok' => false, 'error' => SafeLog::exceptionMessage($e)];
         }
     }
 
@@ -1177,7 +1178,7 @@ class FortunePagesController extends Controller
         } catch (\Throwable $e) {
             // 🔐 คอลัมน์นี้เข้ารหัสไว้ — ถ้า APP_KEY ถูกเปลี่ยน decrypt จะ throw
             //    ปล่อยให้หลุดขึ้นไป = หน้าจัดการสาขา 500 ทั้งหน้า ทั้งที่แค่ต้อง "วาง token ใหม่"
-            Log::warning('🔑 อ่าน facebook_user_token ไม่ได้ (APP_KEY เปลี่ยน?)', ['error' => $e->getMessage()]);
+            Log::warning('🔑 อ่าน facebook_user_token ไม่ได้ (APP_KEY เปลี่ยน?)', ['error' => SafeLog::exceptionMessage($e)]);
 
             return null;
         }

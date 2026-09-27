@@ -72,6 +72,36 @@ class AppServiceProvider extends ServiceProvider
         //      เป็นคนลงทะเบียน route และ package provider boot ก่อน AppServiceProvider
         //      (register() ของทุก provider จบก่อน boot() ตัวแรกเสมอ จึงทัน)
         Passport::ignoreRoutes();
+
+        $this->redactSecretsInEveryLogChannel();
+    }
+
+    /**
+     * 🔐 (2026-09-27 SECURITY) ติดตัวปิดบัง secret ให้ "ทุก" log channel
+     *
+     *   เหตุจริงบน prod: ConnectException ของ Guzzle พิมพ์ URL เต็มที่มี access_token (app access token
+     *   = app_id|app_secret) แล้ว catch block ส่ง $e->getMessage() ลง laravel.log ตรง ๆ
+     *   ดูรายละเอียดที่ App\Support\SafeLog และ App\Logging\RedactSecretsProcessor
+     *
+     *   โปรเจกต์ไม่มี config/logging.php ของตัวเอง จึงเติม tap ตอนรันแทน — ทำใน register()
+     *   เพราะ channel ถูกสร้างครั้งแรกตอน log บรรทัดแรก ต้องติดให้ทันก่อนหน้านั้น
+     *   config:cache จะฝัง tap ลงไฟล์ cache ไปด้วย (คำสั่งนั้น boot แอปก่อนเขียน) — ไม่เป็นไร
+     *   เพราะ in_array กันใส่ซ้ำ และถ้า cache เก่าไม่มี tap รอบนี้ก็เติมให้ในหน่วยความจำอยู่ดี
+     *   ⚠️ Log::channel('<ชื่อที่ไม่มีใน config>') ตกไปใช้ emergency logger ที่ไม่ผ่าน tap — ห้ามใช้ channel ที่ไม่ได้ประกาศ
+     */
+    protected function redactSecretsInEveryLogChannel(): void
+    {
+        foreach ((array) config('logging.channels', []) as $channel => $channelConfig) {
+            if (! is_array($channelConfig)) {
+                continue;
+            }
+
+            $taps = (array) ($channelConfig['tap'] ?? []);
+            if (! in_array(\App\Logging\RedactSecretsTap::class, $taps, true)) {
+                $taps[] = \App\Logging\RedactSecretsTap::class;
+                config(["logging.channels.{$channel}.tap" => $taps]);
+            }
+        }
     }
 
     /**

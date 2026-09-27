@@ -808,7 +808,7 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'เชื่อมต่อ Google Maps API ไม่สำเร็จ: '.$e->getMessage(),
+                'message' => 'เชื่อมต่อ Google Maps API ไม่สำเร็จ: '.\App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -856,7 +856,7 @@ class SettingsController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'คำนวณระยะทางไม่สำเร็จ: '.$e->getMessage(),
+                'message' => 'คำนวณระยะทางไม่สำเร็จ: '.\App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }

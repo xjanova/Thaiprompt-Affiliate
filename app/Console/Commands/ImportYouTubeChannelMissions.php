@@ -200,7 +200,7 @@ class ImportYouTubeChannelMissions extends Command
                 'uploadsPlaylistId' => $channel['contentDetails']['relatedPlaylists']['uploads'] ?? null,
             ];
         } catch (\Exception $e) {
-            $this->error('Error: '.$e->getMessage());
+            $this->error('Error: '.\App\Support\SafeLog::exceptionMessage($e));
 
             return null;
         }

@@ -69,7 +69,7 @@ abstract class BaseMarketplaceService implements MarketplaceApiInterface
             // Update account with error
             $this->account->update([
                 'status' => 'error',
-                'last_error' => $e->getMessage(),
+                'last_error' => \App\Support\SafeLog::exceptionMessage($e),
             ]);
 
             return null;

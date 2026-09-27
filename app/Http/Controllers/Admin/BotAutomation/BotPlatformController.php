@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\BotAutomation;
 
 use App\Http\Controllers\Controller;
 use App\Models\BotAutomation\BotPlatformConnection;
+use App\Support\SafeLog;
 use Illuminate\Http\Request;
 
 class BotPlatformController extends Controller
@@ -178,10 +179,10 @@ class BotPlatformController extends Controller
             logger()->error('Token refresh failed', [
                 'platform' => $connection->platform,
                 'connection_id' => $connection->id,
-                'error' => $e->getMessage(),
+                'error' => SafeLog::exceptionMessage($e),
             ]);
 
-            return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: '.SafeLog::exceptionMessage($e));
         }
     }
 
@@ -214,7 +215,7 @@ class BotPlatformController extends Controller
                 'expires_at' => now()->addSeconds($data['expires_in'] ?? 5184000), // 60 days default
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Facebook API error: '.$e->getMessage()];
+            return ['success' => false, 'message' => 'Facebook API error: '.SafeLog::exceptionMessage($e)];
         }
     }
 
@@ -248,7 +249,7 @@ class BotPlatformController extends Controller
                 'expires_at' => now()->addSeconds($data['expires_in'] ?? 2592000), // 30 days default
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'LINE API error: '.$e->getMessage()];
+            return ['success' => false, 'message' => 'LINE API error: '.SafeLog::exceptionMessage($e)];
         }
     }
 
@@ -284,7 +285,7 @@ class BotPlatformController extends Controller
                 'expires_at' => now()->addSeconds($data['expires_in'] ?? 7200), // 2 hours default
             ];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Twitter API error: '.$e->getMessage()];
+            return ['success' => false, 'message' => 'Twitter API error: '.SafeLog::exceptionMessage($e)];
         }
     }
 
@@ -309,7 +310,7 @@ class BotPlatformController extends Controller
 
             return ['success' => false, 'message' => 'Token ไม่ถูกต้อง'];
         } catch (\Exception $e) {
-            return ['success' => false, 'message' => 'Telegram API error: '.$e->getMessage()];
+            return ['success' => false, 'message' => 'Telegram API error: '.SafeLog::exceptionMessage($e)];
         }
     }
 
