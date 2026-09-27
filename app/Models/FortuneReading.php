@@ -2999,28 +2999,7 @@ class FortuneReading extends Model
         }
 
         if ($touchState) {
-            try {
-                $state = is_array($this->conversation_state) ? $this->conversation_state : [];
-                $state['birth_date_source'] = $source;
-                $state['birth_date_updated_at'] = now()->toIso8601String();
-
-                if ($old !== null) {
-                    $replaced = array_filter((array) ($state['birth_date_replaced'] ?? []), 'is_string');
-                    $replaced[] = $old;
-                    $state['birth_date_replaced'] = array_values(array_unique(array_diff($replaced, [$ymd])));
-                }
-
-                if (trim((string) ($state['celtic_birthdate_text'] ?? '')) !== '') {
-                    $state['celtic_birthdate_text'] = self::celticOwnerLineReplaced((string) $state['celtic_birthdate_text'], $ymd);
-                }
-
-                $this->update(['conversation_state' => $state]);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('FortuneReading: ย้าย state ตามวันเกิดใหม่ไม่สำเร็จ (คอลัมน์เปลี่ยนแล้ว)', [
-                    'reading_id' => $this->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $this->syncStateAfterBirthDateChange($old, $source);
         }
 
         \Illuminate\Support\Facades\Log::info('FortuneReading: ลูกค้าแจ้งวันเกิด → บันทึกลงบิลแล้ว', [
@@ -3028,6 +3007,101 @@ class FortuneReading extends Model
             'birth_date' => $ymd,
             'was' => $old,
             'source' => $source,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * 🎂 (2026-09-27) ย้าย state ตามวันเกิดในคอลัมน์ที่เพิ่งเปลี่ยน — ใช้ทั้งเส้นลูกค้าแจ้งเองและแอดมินแก้ในหลังบ้าน
+     *
+     * (จับผี) แอดมินแก้คอลัมน์อย่างเดียว ⇒ ข้อความผังเลน 99 ยังมี "เจ้าชะตาเกิด <วันเดิม>" ⇒ วันเดิมกลายเป็น
+     * "คนที่ 2" พร้อมบล็อกความเข้ากันปลอม ๆ · ต้องจดวันเดิมไว้ให้ผังตัดทิ้ง + ย้ายบรรทัดเจ้าชะตา
+     *
+     * @param  string|null  $old  วันเกิดเดิม (Y-m-d) ก่อนเปลี่ยน — null = เดิมไม่มี
+     */
+    public function syncStateAfterBirthDateChange(?string $old, string $source): void
+    {
+        $new = $this->birth_date ? $this->birth_date->format('Y-m-d') : null;
+        if ($new === null || $old === $new) {
+            return;
+        }
+
+        try {
+            $state = is_array($this->conversation_state) ? $this->conversation_state : [];
+            $state['birth_date_source'] = $source;
+            $state['birth_date_updated_at'] = now()->toIso8601String();
+
+            if ($old !== null) {
+                $replaced = array_filter((array) ($state['birth_date_replaced'] ?? []), 'is_string');
+                $replaced[] = $old;
+                $state['birth_date_replaced'] = array_values(array_unique(array_diff($replaced, [$new])));
+            }
+
+            if (trim((string) ($state['celtic_birthdate_text'] ?? '')) !== '') {
+                $state['celtic_birthdate_text'] = self::celticOwnerLineReplaced((string) $state['celtic_birthdate_text'], $new);
+            }
+
+            // วันเกิดที่ลูกค้าแจ้งไว้ตอนรอโอน (ยังไม่ลงคอลัมน์) — คอลัมน์มีค่าจริงแล้ว ไม่ต้องจำต่อ
+            unset($state['stated_birth_date']);
+
+            $this->update(['conversation_state' => $state]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FortuneReading: ย้าย state ตามวันเกิดใหม่ไม่สำเร็จ (คอลัมน์เปลี่ยนแล้ว)', [
+                'reading_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🎂 (2026-09-27) จำวันเกิดที่ลูกค้าแจ้งระหว่างรอโอน "บิล 39 แบบจ่ายก่อน" — ไม่แตะคอลัมน์ birth_date
+     *
+     * (จับผี CRITICAL) เลน 39 ทั้งเส้นหลังจ่ายเงินใช้ "birth_date ว่าง" เป็นตัวแยกว่าเป็นบิลจ่ายก่อน
+     *   (SmsPaymentService / SlipOK / processPaymentConfirmed) — เขียนคอลัมน์ตั้งแต่ก่อนจ่าย ⇒ หลุดไปเส้น
+     *   "กำลังคำนวณดวง" แล้วชนกล่องตั้งจิต ลูกค้าพิมพ์ "พร้อม" โดนช่วงเงียบ 5 นาที
+     *   ⇒ จำไว้ใน state แทน · หลังจ่าย BirthdateResolver หยิบค่านี้ → กล่อง "ขอยืนยันวันเกิด" โชว์วันที่ลูกค้าพิมพ์
+     *
+     * เขียนด้วย JSON_SET ทีละคีย์ (อะตอมมิก) — ไม่ read-modify-write ทั้งก้อน เส้นจ่ายเงินที่เขียน state
+     * พร้อมกันจะไม่โดนทับ (หลักเดียวกับ PendingPaymentListenerTrait: ตัวฟังห้ามเขียน state ทั้งก้อน)
+     */
+    public function rememberStatedBirthDate(string $ymd): bool
+    {
+        if (! preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $ymd, $m)
+            || ! checkdate((int) $m[2], (int) $m[3], (int) $m[1]) || empty($this->id)) {
+            return false;
+        }
+
+        try {
+            // คอลัมน์เป็น longtext + cast 'array' ⇒ state ว่างถูกเก็บเป็น "[]" (อาร์เรย์ JSON)
+            //   JSON_SET คีย์ชื่อบนอาร์เรย์ = ไม่ทำอะไรเงียบ ๆ (ระบบบอกลูกค้าว่าบันทึกแล้วแต่ไม่มีจริง)
+            //   ⇒ ไม่ใช่อ็อบเจกต์ JSON ที่อ่านได้ (NULL / "" / "[]") ให้เริ่มจากอ็อบเจกต์ว่าง
+            \Illuminate\Support\Facades\DB::update(
+                'UPDATE '.$this->getTable()
+                    .' SET conversation_state = JSON_SET('
+                    .'IF(JSON_VALID(conversation_state) AND JSON_TYPE(conversation_state) = \'OBJECT\', conversation_state, JSON_OBJECT()),'
+                    .' \'$.stated_birth_date\', ?)'
+                    .' WHERE id = ?',
+                [$ymd, (int) $this->id]
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FortuneReading: จำวันเกิดที่แจ้งตอนรอโอนไม่สำเร็จ', [
+                'reading_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+
+        // สำเนาในหน่วยความจำให้ตรง DB — sync original ไว้ จะได้ไม่กลายเป็น "dirty" แล้วถูกเขียนทั้งก้อนภายหลัง
+        $state = is_array($this->conversation_state) ? $this->conversation_state : [];
+        $state['stated_birth_date'] = $ymd;
+        $this->conversation_state = $state;
+        $this->syncOriginalAttribute('conversation_state');
+
+        \Illuminate\Support\Facades\Log::info('FortuneReading: ลูกค้าแจ้งวันเกิดตอนรอโอน (39 จ่ายก่อน) → จำไว้ใช้หลังจ่าย', [
+            'reading_id' => $this->id,
+            'birth_date' => $ymd,
         ]);
 
         return true;
@@ -3058,11 +3132,18 @@ class FortuneReading extends Model
     public function celticBirthAstroSource(string $seed = ''): string
     {
         $parts = [];
+        $persisted = (string) $this->getConversationState('celtic_birthdate_text', '');
         if (! empty($this->birth_date)) {
-            $parts[] = 'เจ้าชะตาเกิด '.$this->birth_date->format('d/m/Y');
+            $owner = 'เจ้าชะตาเกิด '.$this->birth_date->format('d/m/Y');
+            $parts[] = $owner;
+            // บรรทัดเจ้าชะตาที่ระบบเขียนไว้ด้วยวันเดิม (ก่อนแอดมิน/ลูกค้าแก้คอลัมน์) — ทิ้ง ไม่งั้นกลายเป็น "คนที่ 2"
+            $persisted = implode("\n", array_filter(
+                preg_split('/\R/u', $persisted) ?: [],
+                fn ($l) => ! preg_match('/^\s*เจ้าชะตาเกิด\s+\d{1,2}\/\d{1,2}\/\d{4}\s*$/u', (string) $l) || trim((string) $l) === $owner
+            ));
         }
         $parts[] = $seed;
-        $parts[] = (string) $this->getConversationState('celtic_birthdate_text', '');
+        $parts[] = $persisted;
 
         return trim(implode("\n", array_filter(array_map('trim', $parts), fn ($p) => $p !== '')));
     }

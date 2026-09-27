@@ -111,6 +111,24 @@ final class BirthdateResolver
             }
         }
 
+        // 🎂 วันเกิดที่ลูกค้าแจ้งตอนรอโอนบิล 39 แบบจ่ายก่อน — จำไว้ใน state (ห้ามลงคอลัมน์ก่อนจ่าย
+        //    เพราะเส้นหลังจ่ายใช้ "birth_date ว่าง" แยกเส้น · FortuneReading::rememberStatedBirthDate)
+        $stated = (string) $reading->getConversationState('stated_birth_date', '');
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $stated)) {
+            try {
+                $date = Carbon::parse($stated);
+
+                return [
+                    'ymd' => $date->format('Y-m-d'),
+                    'date' => $date,
+                    'source' => self::SRC_THIS_READING,
+                    'reading_id' => $reading->id ? (int) $reading->id : null,
+                ];
+            } catch (\Throwable $e) {
+                // อ่านไม่ได้ → ไปหาจากบิลเก่าตามเดิม
+            }
+        }
+
         return self::resolve(
             (string) ($reading->facebook_user_id ?? ''),
             (string) ($reading->platform_user_id ?? ''),

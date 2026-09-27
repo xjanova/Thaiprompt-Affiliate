@@ -160,6 +160,56 @@ class FortuneBirthInfoCaptureTest extends TestCase
         $this->assertSame([], $this->service->aiCalls);
     }
 
+    public function test_pre_dawn_birth_on_the_previous_thai_day_is_not_a_conflict(): void
+    {
+        // 27/6/2521 = วันอังคาร · ตี 2 โหรไทยยังนับเป็นวันจันทร์ ⇒ ต้องบันทึก ไม่ใช่ถามกลับ
+        $reading = $this->celticReading();
+
+        $this->callProtected('respondWhilePendingPayment', $reading, 'เกิดวันจันทร์ 27/6/2521 ตี 2', $this->ctx());
+
+        $this->assertSame('1978-06-27', $reading->birth_date?->format('Y-m-d'));
+        $this->assertSame('02:00', substr((string) $reading->birth_time, 0, 5));
+    }
+
+    public function test_mixed_message_never_reads_a_mood_word_as_the_birth_time(): void
+    {
+        // "เย็นชา" มีคำว่า "เย็น" — ตัวอ่านแบบคำตอบจะได้ 17:00 · ข้อความมีเรื่องอื่นปนต้องใช้ตัวเข้มงวด
+        $reading = $this->celticReading();
+        $this->service->aiReplies = ['เข้าใจเลยค่ะลูก'];
+
+        $this->callProtected('respondWhilePendingPayment', $reading, 'หนูเกิด 5/3/2530 แฟนเย็นชามากค่ะ', $this->ctx());
+
+        $this->assertSame('1987-03-05', $reading->birth_date?->format('Y-m-d'));
+        $this->assertFalse($reading->birthTimeIsKnown(), '"เย็นชา" ไม่ใช่เวลาเกิด');
+    }
+
+    /**
+     * (จับผี CRITICAL) บิล 39 แบบจ่ายก่อน — เส้นหลังจ่ายเงินใช้ "birth_date ว่าง" แยกว่าเป็นบิลจ่ายก่อน
+     * เขียนคอลัมน์ตั้งแต่รอโอน ⇒ หลุดไปเส้น "กำลังคำนวณดวง" ⇒ ต้องจำไว้ใน state แทน
+     */
+    public function test_deep_pay_first_bill_remembers_the_date_without_touching_the_column(): void
+    {
+        $reading = $this->celticReading();
+        $reading->forceFill(['reading_type' => FortuneReading::READING_TYPE_DEEP]);
+
+        $result = $this->callProtected('respondWhilePendingPayment', $reading, '27/6/2521', $this->ctx());
+
+        $this->assertNull($reading->birth_date, 'คอลัมน์ต้องว่างจนกว่าจะจ่าย');
+        $this->assertSame('1978-06-27', $reading->getConversationState('stated_birth_date'));
+        $this->assertSame(['1978-06-27'], $reading->remembered);
+        $this->assertStringContainsString('27 มิถุนายน 2521', $result['message']);
+
+        // หลังจ่าย กล่องขอยืนยันวันเกิดของเลน 39 อ่านผ่าน BirthdateResolver ⇒ ต้องได้วันที่ลูกค้าพิมพ์
+        $hit = BirthdateResolver::forReading($reading);
+        $this->assertSame('1978-06-27', $hit['ymd']);
+        $this->assertSame(BirthdateResolver::SRC_THIS_READING, $hit['source']);
+
+        // พิมพ์วันเดิมซ้ำ = ไม่เขียนซ้ำ แค่ทวนว่ามีแล้ว
+        $again = $this->callProtected('respondWhilePendingPayment', $reading, '27/6/2521', $this->ctx());
+        $this->assertSame(['1978-06-27'], $reading->remembered);
+        $this->assertStringContainsString('ตรงกับที่มีในบิลแล้ว', $again['message']);
+    }
+
     // ─── หลังจ่าย: วันเกิดในบิลนี้ชนะบิลเก่า ───────────────────────────
 
     public function test_resolver_prefers_the_date_already_in_this_bill(): void
@@ -226,6 +276,39 @@ class FortuneBirthInfoCaptureTest extends TestCase
         $this->assertSame('birthdate_correction_cancelled', $no['action']);
         $this->assertSame('1978-06-27', $reading->birth_date?->format('Y-m-d'));
         $this->assertStringContainsString('27 มิถุนายน 2521', $no['message']);
+    }
+
+    public function test_polite_yes_with_a_vocative_confirms_the_correction(): void
+    {
+        $reading = $this->celticReading('1978-07-27');
+        $this->callProtected('handleCelticQaBirthStatement', $reading, '27/6/2521');
+
+        $done = $this->callProtected('handleCelticQaBirthStatement', $reading, 'ใช่ค่ะแม่หมอ');
+
+        $this->assertSame('birthdate_correction_applied', $done['action'], '"ใช่ค่ะแม่หมอ" = ยืนยัน ไม่ใช่ถามวนซ้ำ');
+        $this->assertSame('1978-06-27', $reading->birth_date?->format('Y-m-d'));
+    }
+
+    public function test_confirmation_reader_accepts_thai_yes_but_not_someone_elses_date(): void
+    {
+        foreach (['ใช่ค่ะแม่หมอ', 'ใช่ค่ะแม่', 'ถูกต้องค่ะ ของหนูเอง', '✅ ใช่ วันเกิดของฉัน', 'ใช่ วันเกิดหนูเอง'] as $yes) {
+            $this->assertTrue($this->callProtected('isBirthdateCorrectionConfirmed', $yes), $yes);
+        }
+        foreach (['ใช่ค่ะ ของแม่', 'ใช่ของแฟนค่ะ', 'ใช่ไหมคะ', 'ถูกแฟนทิ้ง', 'ใช่ วันเกิดแฟน'] as $no) {
+            $this->assertFalse($this->callProtected('isBirthdateCorrectionConfirmed', $no), $no);
+        }
+    }
+
+    public function test_decline_that_explains_whose_date_it_is_passes_through(): void
+    {
+        $reading = $this->celticReading('1978-06-27');
+        $this->callProtected('handleCelticQaBirthStatement', $reading, '3/6/2497');
+
+        $next = $this->callProtected('handleCelticQaBirthStatement', $reading, 'ไม่ใช่ค่ะ เป็นวันเกิดแฟน 3/6/2497');
+
+        $this->assertNull($next, 'ไม่ใช่ของตัวเอง + เล่าต่อ = ไม่แก้ ปล่อยไปตอบตามปกติ');
+        $this->assertNull($reading->getConversationState('birthdate_correction_pending_date'));
+        $this->assertSame('1978-06-27', $reading->birth_date?->format('Y-m-d'));
     }
 
     public function test_pending_confirmation_never_swallows_a_real_question(): void
@@ -305,9 +388,23 @@ class FortuneBirthInfoCaptureTest extends TestCase
  */
 class InMemoryFortuneReading extends FortuneReading
 {
+    /** @var array<int, string> วันที่ที่ถูกจำผ่าน rememberStatedBirthDate() */
+    public array $remembered = [];
+
     public function update(array $attributes = [], array $options = [])
     {
         $this->forceFill($attributes);
+
+        return true;
+    }
+
+    public function rememberStatedBirthDate(string $ymd): bool
+    {
+        // ของจริงเขียนด้วย JSON_SET ทีละคีย์ (ต้องมี DB) — ที่นี่เติม state ในหน่วยความจำแทน
+        $this->remembered[] = $ymd;
+        $state = is_array($this->conversation_state) ? $this->conversation_state : [];
+        $state['stated_birth_date'] = $ymd;
+        $this->forceFill(['conversation_state' => $state]);
 
         return true;
     }

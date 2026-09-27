@@ -3016,7 +3016,9 @@ trait CelticCrossConversationTrait
             }
         }
 
-        if ($current === null) {
+        // (จับผี) ข้อความที่มีแต่วันเกิด ("เกิด 24/8/2500") ต้องปล่อยให้เส้น "วันเกิดมาช้า" — เส้นนั้นสร้างพื้นดวงให้
+        //   ถ้าลงคอลัมน์ตรงนี้ก่อน ด่าน empty(birth_date) ของเส้นนั้นจะปิด = ลูกค้าไม่ได้พื้นดวงที่จ่ายมาแล้ว
+        if ($current === null && ! \App\Support\OwnBirthDate::isBirthInfoOnly($text)) {
             $found = \App\Support\OwnBirthDate::find($text, allowBare: false);
             if ($found !== null && $found['conflict'] === null
                 && $reading->captureStatedBirthDate($found['ymd'], 'celtic_qa_self')) {

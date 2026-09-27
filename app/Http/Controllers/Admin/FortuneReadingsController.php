@@ -252,6 +252,10 @@ class FortuneReadingsController extends Controller
 
         $reading->update($validated);
 
+        // 🎂 (2026-09-27) แอดมินแก้วันเกิด → ย้ายบรรทัดเจ้าชะตาในผังเลน 99 + จดวันเดิมให้ผังตัดทิ้ง
+        //   (จับผี) แก้แค่คอลัมน์ ⇒ ข้อความผัง 99 ยังมี "เจ้าชะตาเกิด <วันเดิม>" ⇒ วันเดิมกลายเป็น "คนที่ 2"
+        $reading->syncStateAfterBirthDateChange($beforeSnapshot['birth_date'], 'admin');
+
         // 🃏 (2026-05-14) ถ้า admin ขอจับไพ่ random + ยังไม่มีไพ่ → จับให้
         if ($pickTarotRandom && count($reading->getCollectedTarotCards()) === 0) {
             try {

@@ -439,8 +439,20 @@ trait PendingPaymentListenerTrait
 
             $lines = [];
             if ($found !== null) {
-                $before = $reading->birth_date ? $reading->birth_date->format('Y-m-d') : null;
-                if ($reading->captureStatedBirthDate($found['ymd'], 'pending_payment', touchState: false)) {
+                // 🚨 (จับผี CRITICAL) บิล 39 แบบจ่ายก่อน (ยังไม่มีวันเกิด) ห้ามเขียนคอลัมน์ก่อนจ่าย —
+                //   เส้นหลังจ่ายทั้งหมดใช้ "birth_date ว่าง" แยกว่าเป็นบิลจ่ายก่อน ⇒ จำไว้ใน state แทน
+                //   หลังจ่าย BirthdateResolver หยิบค่านี้ แล้วกล่อง "ขอยืนยันวันเกิด" โชว์วันที่ลูกค้าพิมพ์
+                //   (บิล 99 ไม่มีเงื่อนไขนี้ — ครบ 10 ใบค่อยใช้วันเกิด ⇒ เขียนคอลัมน์ได้เลย)
+                $deferToPayment = $reading->reading_type === FortuneReading::READING_TYPE_DEEP && empty($reading->birth_date);
+                $before = $reading->birth_date
+                    ? $reading->birth_date->format('Y-m-d')
+                    : ($deferToPayment ? (string) $reading->getConversationState('stated_birth_date', '') : null);
+
+                $saved = $deferToPayment
+                    ? ($before !== $found['ymd'] && $reading->rememberStatedBirthDate($found['ymd']))
+                    : $reading->captureStatedBirthDate($found['ymd'], 'pending_payment', touchState: false);
+
+                if ($saved) {
                     $lines[] = '🎂 วันเกิด: *'.$this->formatThaiDate($found['ymd']).'*';
                 } elseif ($before === $found['ymd']) {
                     $lines[] = '🎂 วันเกิด: *'.$this->formatThaiDate($found['ymd']).'* (ตรงกับที่มีในบิลแล้ว)';
@@ -450,9 +462,12 @@ trait PendingPaymentListenerTrait
             // เวลา/จังหวัด — เฉพาะเมื่อแน่ใจว่าพูดถึงการเกิดของตัวเอง ("แฟนเกิดตี 5" ห้ามเก็บ)
             if ($found !== null || OwnBirthDate::isOwnBirthTalk($text)) {
                 // ทั้งข้อความคือข้อมูลเกิด ⇒ อ่านเวลาแบบคำตอบ ("27/6/2521 06:30" ไม่มีคำว่าเกิดก็ได้)
-                $hour = $reading->captureStatedBirthTime($text, $only ? 'birthdate_answer' : 'pending_payment', touchState: false);
-                if ($hour !== null) {
-                    $lines[] = '🕛 เวลาเกิด: *'.FortuneReading::hourToTimeString($hour, false).' น.*';
+                //   มีเรื่องอื่นปน ⇒ ตัวอ่านเข้มงวด (ต้องมี "เกิด" ใกล้เวลา) — "แฟนเย็นชา" ต้องไม่กลายเป็น 17:00
+                if ($only || ! OwnBirthDate::birthCueBelongsToOther($text)) {
+                    $hour = $reading->captureStatedBirthTime($text, $only ? 'birthdate_answer' : 'pending_payment', touchState: false);
+                    if ($hour !== null) {
+                        $lines[] = '🕛 เวลาเกิด: *'.FortuneReading::hourToTimeString($hour, false).' น.*';
+                    }
                 }
 
                 $province = $reading->captureStatedBirthProvince($text, 'pending_payment', requireBirthCue: ! $only, touchState: false);
@@ -492,8 +507,11 @@ trait PendingPaymentListenerTrait
         }
 
         // พูดถึงการเกิดแต่ไม่มีอะไรถูกบันทึก (อ่านไม่ออก / เป็นของคนอื่น / แค่เตือน "อย่าทำนายผิดวันเกิด")
-        $onFile = $reading->birth_date
-            ? 'ในบิลตอนนี้มีวันเกิด '.$this->formatThaiDate($reading->birth_date->format('Y-m-d'))
+        $onFileYmd = $reading->birth_date
+            ? $reading->birth_date->format('Y-m-d')
+            : (string) $reading->getConversationState('stated_birth_date', '');
+        $onFile = $onFileYmd !== ''
+            ? 'ในบิลตอนนี้มีวันเกิด '.$this->formatThaiDate($onFileYmd)
             : 'ในบิลตอนนี้ยังไม่มีวันเกิด';
 
         return [

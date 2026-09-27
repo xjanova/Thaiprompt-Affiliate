@@ -193,8 +193,16 @@ trait BirthdateCorrectionTrait
                 ];
             }
 
-            // พิมพ์วันเกิดใหม่มาอีก (เปลี่ยนใจก่อนยืนยัน) → อัปเดตตัวที่รอยืนยัน
-            $newDate = $this->extractBirthdateFromCorrectionMessage($trimmed);
+            // "ไม่ใช่ค่ะ เป็นวันเกิดแฟน 3/6/2497 …" — ปฏิเสธ + พูดต่อ ⇒ ไม่แก้ แล้วปล่อยเนื้อความไปตอบตามปกติ
+            //   (จับผี) เดิมหยิบวันที่ของแฟนมาเปิดกล่องยืนยันซ้ำ = วนไม่จบ ทั้งที่กล่องเองสอนให้พิมพ์แบบนี้
+            if ($this->startsWithBirthdateCorrectionDecline($trimmed)) {
+                $this->clearBirthdateCorrectionPending($reading);
+
+                return null;
+            }
+
+            // พิมพ์วันเกิดใหม่ "ของตัวเอง" มาอีก (เปลี่ยนใจก่อนยืนยัน) → อัปเดตตัวที่รอยืนยัน
+            $newDate = $this->correctionDateFrom($trimmed);
             if (! empty($newDate)) {
                 return $this->askBirthdateCorrectionConfirm($reading, $newDate, $trimmed);
             }
@@ -226,7 +234,7 @@ trait BirthdateCorrectionTrait
 
         // ── ขั้นที่ 2: รอรับวันเกิดใหม่ ─────────────────────────────────
         if ((bool) $reading->getConversationState('birthdate_correction_awaiting', false)) {
-            $newDate = $this->extractBirthdateFromCorrectionMessage($trimmed);
+            $newDate = $this->correctionDateFrom($trimmed);
             if (! empty($newDate)) {
                 return $this->askBirthdateCorrectionConfirm($reading, $newDate, $trimmed);
             }
@@ -303,7 +311,13 @@ trait BirthdateCorrectionTrait
         }
 
         // หมดโควต้าแล้ว → อธิบายอย่างสุภาพ (ไม่ปล่อยให้ AI ตอบมั่ว) — โควต้ามีแค่เลน 39 (ทำนายใหม่ทั้งชุด)
+        //   (จับผี) เฉพาะคำขอแก้ตรง ๆ — วันที่ที่พิมพ์มาเฉย ๆ อาจเป็นวันเกิดคนอื่นที่ถามถึง ⇒ ปล่อยไปตอบตามปกติ
+        //   (พรอมต์คุยต่อห้ามรับปากแก้วันเกิดอยู่แล้ว — ดู ProSessionTrait)
         if (! $isCeltic && ! $this->canCorrectBirthdateAgain($reading)) {
+            if (! $isRequest) {
+                return null;
+            }
+
             $current = $reading->birth_date?->format('Y-m-d');
 
             return [
@@ -316,7 +330,8 @@ trait BirthdateCorrectionTrait
         }
 
         // พิมพ์วันเกิดมาพร้อมกันเลย → ข้ามไปยืนยันทันที (ลดขั้นตอน)
-        $inlineDate = $stated['ymd'] ?? $this->extractBirthdateFromCorrectionMessage($trimmed);
+        //   (จับผี) "วันเกิดไม่ใช่ 27/7/2521 ที่ถูกคือ 27/6/2521" — ตัวอ่านเดิมหยิบวันแรก (= ตัวที่ผิด)
+        $inlineDate = $stated['ymd'] ?? $this->correctionDateFrom($trimmed);
         if (! empty($inlineDate)) {
             return $this->askBirthdateCorrectionConfirm($reading, $inlineDate, $trimmed);
         }
@@ -536,10 +551,36 @@ trait BirthdateCorrectionTrait
      */
     protected function isBirthdateCorrectionConfirmed(string $text): bool
     {
-        return in_array($this->normalizeBirthdateCorrectionReply($text), [
+        $t = $this->normalizeBirthdateCorrectionReply($text);
+
+        if (in_array($t, [
             'ยืนยันวันเกิดใหม่', 'ยืนยัน', 'ถูกต้อง', 'ถูกแล้ว', 'ถูก', 'ใช่', 'ใช่แล้ว',
             'ตกลง', 'ทำนายใหม่', 'เอาเลย', 'ok', 'okay', 'yes',
-        ], true);
+            // ชื่อปุ่มที่หลุดมาเป็นข้อความ (FB บางเครื่องส่ง title แทน payload)
+            'ใช่ วันเกิดของฉัน', 'ถูกต้อง ทำนายใหม่',
+        ], true)) {
+            return true;
+        }
+
+        // 🗣️ (จับผี) คนไทยตอบยืนยันยาวกว่ารายการ — "ใช่ค่ะแม่หมอ" · "ถูกต้องค่ะ ของหนูเอง" · "ใช่ วันเกิดหนูเอง"
+        //   เดิมไม่ตรงรายการ ⇒ ถูกนับว่า "พิมพ์เรื่องอื่น" แล้วล้างกล่องทิ้ง = ลูกค้ายืนยันแล้วแต่ไม่แก้
+        //   รับเฉพาะ: ขึ้นต้นด้วยคำยืนยัน + ที่เหลือเป็นคำยืนยันซ้ำ/บอกว่าเป็นของตัวเองล้วน ๆ
+        if (! preg_match('/^(?:ใช่|ถูกต้อง|ถูก|ยืนยัน|ตกลง|โอเค|ok)/u', $t, $m)) {
+            return false;
+        }
+        $rest = trim(mb_substr($t, mb_strlen($m[0])));
+        // "ใช่ค่ะ ของแม่" = บอกว่าเป็นวันเกิดของคนอื่น ไม่ใช่ยืนยันแก้ — "ของ" ต้องตามด้วยตัวเองเท่านั้น
+        //   ("แม่" ท้ายประโยคเฉย ๆ = เรียกแม่หมอ ยังนับเป็นยืนยัน)
+        if (preg_match('/ของ\s*(?!หนู|ฉัน|ชั้น|ผม|ดิฉัน|เรา|ตัวเอง|จริง)\S/u', $rest)) {
+            return false;
+        }
+        $rest = (string) preg_replace(
+            '/แล้ว|ค่ะ|คะ|ครับ|นะ|จ้า|เลย|ของ|วันเกิด|เอง|ทำนายใหม่|แก้|ได้|หนู|ฉัน|ชั้น|ผม|ดิฉัน|เรา|แม่หมอ|แม่|[\s\p{P}\p{S}]/u',
+            '',
+            $rest
+        );
+
+        return $rest === '';
     }
 
     /**
@@ -549,7 +590,36 @@ trait BirthdateCorrectionTrait
     {
         return in_array($this->normalizeBirthdateCorrectionReply($text), [
             'ไม่แก้แล้ว', 'ไม่แก้', 'ยกเลิก', 'ไม่ใช่', 'ไม่ต้อง', 'ไม่เอา', 'พอแล้ว', 'ไม่', 'no',
+            'ยังไม่ใช่', 'ไม่ใช่แล้ว', 'ไม่ต้องแก้',
         ], true);
+    }
+
+    /**
+     * ขึ้นต้นด้วยคำปฏิเสธแล้วพูดต่อ — "ไม่ใช่ค่ะ เป็นวันเกิดแฟน 3/6/2497" · "ไม่ใช่ของหนู แล้วงานล่ะ"
+     */
+    protected function startsWithBirthdateCorrectionDecline(string $text): bool
+    {
+        return (bool) preg_match('/^(?:ยังไม่ใช่|ไม่ใช่|ไม่แก้|ไม่ต้อง|ไม่เอา)/u', $this->normalizeBirthdateCorrectionReply($text));
+    }
+
+    /**
+     * 🎂 (2026-09-27) วันเกิดใหม่ "ของเจ้าชะตาเอง" จากข้อความในโฟลแก้วันเกิด
+     *
+     * ลำดับ: ตัวอ่านเข้มงวด (OwnBirthDate — รู้จัก "ที่ถูกคือ" / กันวันเกิดคนอื่น) → ถ้าไม่เจอและไม่ได้พูดถึงคนอื่น
+     * ค่อยใช้ตัวอ่านเดิม (รูปแบบที่ตัวเข้มงวดไม่รู้จัก เช่น "วันเกิดผิดค่ะ 27/6/2521" — กำกวม แต่มีกล่องยืนยันกั้น)
+     */
+    protected function correctionDateFrom(string $text): ?string
+    {
+        $found = OwnBirthDate::find($text);
+        if ($found !== null) {
+            return $found['conflict'] === null ? $found['ymd'] : null;
+        }
+
+        if (OwnBirthDate::mentionsOtherPerson($text)) {
+            return null;
+        }
+
+        return $this->extractBirthdateFromCorrectionMessage($text);
     }
 
     /**
@@ -558,12 +628,14 @@ trait BirthdateCorrectionTrait
     protected function normalizeBirthdateCorrectionReply(string $text): string
     {
         $t = mb_strtolower(trim($text));
+        // อีโมจินำหน้าของชื่อปุ่ม ("✅ ใช่ วันเกิดของฉัน" · "❌ ยังไม่ใช่") — ปุ่มบางช่องทางส่งชื่อปุ่มมาเป็นข้อความ
+        $t = trim((string) preg_replace('/^[\p{So}\p{Sk}\x{FE0F}\x{200D}\s]+/u', '', $t));
         // ตัดเครื่องหมาย/ตัวซ้ำท้ายก่อน
         // ⚠️ ห้ามใช้ trim($t, '...ๆฯ') — trim ตัดทีละ "ไบต์" ไม่ใช่ตัวอักษร
         //    ตัวไทยเป็น UTF-8 3 ไบต์ → ไบต์แรก (0xE0) ของ ๆ/ฯ ไปตัดหัวคำไทยอื่นพัง
         $t = (string) preg_replace('/[\s.!?ๆฯ]+$/u', '', $t);
-        // ตัดคำลงท้ายสุภาพ (ซ้อนกันได้ เช่น "ใช่ครับผม" → "ใช่")
-        $t = (string) preg_replace('/\s*(ครับผม|ครับ|คร้าบ|ค่ะ|คะ|ค่า|จ้า|จ้ะ|นะคะ|นะครับ|นะ|เลย)+\s*$/u', '', $t);
+        // ตัดคำลงท้ายสุภาพ (ซ้อนกันได้ เช่น "ใช่ครับผม" → "ใช่") + "แม่หมอ" ที่ต่อท้าย ("ใช่ค่ะแม่หมอ")
+        $t = (string) preg_replace('/\s*(ครับผม|ครับ|คร้าบ|ค่ะ|คะ|ค่า|จ้า|จ้ะ|นะคะ|นะครับ|นะ|เลย|แม่หมอ)+\s*$/u', '', $t);
 
         return trim($t);
     }
@@ -759,7 +831,14 @@ trait BirthdateCorrectionTrait
             // ข้อความมีแต่ข้อมูลเกิด ⇒ "5/3/2530 เชียงใหม่" นับจังหวัดได้ · มีเรื่องอื่นปน ⇒ ต้องมี "เกิดที่"
             $only = OwnBirthDate::isBirthInfoOnly($text);
 
-            $hour = $reading->captureStatedBirthTime($text, 'birthdate_answer', touchState: false);
+            // เวลา: ข้อความมีแต่ข้อมูลเกิด ⇒ ตัวอ่านแบบคำตอบ (ผ่อนกฎ) · มีเรื่องอื่นปน ⇒ ตัวเข้มงวด
+            //   (จับผี) ตัวผ่อนกฎอ่าน "ช่วงนี้แฟนเย็นชา" = 17:00 · "ทำงานสายบัญชี" = 10:00 · "พรุ่งนี้ 9.30 สัมภาษณ์" = 09:30
+            $hour = null;
+            if ($only) {
+                $hour = $reading->captureStatedBirthTime($text, 'birthdate_answer', touchState: false);
+            } elseif (! OwnBirthDate::birthCueBelongsToOther($text)) {
+                $hour = $reading->captureStatedBirthTime($text, 'customer', touchState: false);
+            }
             if ($hour !== null) {
                 $lines[] = '🕛 เวลาเกิด: *'.FortuneReading::hourToTimeString($hour, false).' น.*';
             }

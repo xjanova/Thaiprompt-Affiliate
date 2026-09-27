@@ -70,6 +70,9 @@ final class OwnBirthDate
     /** คำขยายหลังคำเรียกญาติ ("แฟนเก่า" · "ลูกสาว" · "พี่ชาย") */
     private const KIN_MOD = '(?:เก่า|ใหม่|สนิท|ชาย|สาว|คนนี้|คนนั้น|คนแรก|คนเล็ก|คนโต)';
 
+    /** คำปฏิเสธ — วันที่ที่ตามหลังคือ "วันที่ผิด" ที่ลูกค้ากำลังแย้ง ไม่ใช่วันเกิดที่ถูก */
+    private const NEGATION = '(?:ไม่ใช่|ไม่ถูก|ผิด|คลาดเคลื่อน)';
+
     /**
      * ชื่อเดือนไทย → เลขเดือน (ยาวก่อนสั้น — "มิถุนายน" ต้องมาก่อน "มิถุนา")
      * ตัวย่อเขียนเป็น regex เพราะคนพิมพ์ทั้ง "มิ.ย." "มิ.ย" "มิย" "มิ ย"
@@ -123,8 +126,10 @@ final class OwnBirthDate
                 }
 
                 $between = substr($t, $cueEnd, $d['start'] - $cueEnd);
+                // 🚫 (จับผี) "วันเกิดไม่ใช่ 27/7/2521 ที่ถูกคือ 27/6/2521" — วันที่ที่ตามคำปฏิเสธคือ "ตัวที่ผิด"
+                //    ต้องไม่หยิบ · ตัวที่ถูกจะถูกจับโดยคำบ่งชี้ "ที่ถูกคือ / ต้องเป็น" แทน
                 if (mb_strlen($between) > self::SELF_SPAN_MAX
-                    || preg_match('/'.self::KIN.'|[?？\n]|ไหม|มั้ย/u', $between)) {
+                    || preg_match('/'.self::KIN.'|[?？\n]|ไหม|มั้ย|'.self::NEGATION.'/u', $between)) {
                     break; // วันที่ตัวนี้ไม่ได้ผูกกับคำบ่งชี้นี้ — ลองคำบ่งชี้ถัดไป
                 }
 
@@ -153,11 +158,22 @@ final class OwnBirthDate
             return false;
         }
 
-        $hasBirthInfo = self::dates($t) !== []
-            || preg_match('/'.self::BORN.'|ตี\s*\d|\d\s*(?:ทุ่ม|โมง|นาฬิกา)|\d{1,2}\s*[:.]\s*\d{2}/u', $t)
-            || ThaiProvinces::resolve($t) !== null;
+        // ต้องมีวันที่ หรือคำว่า "เกิด" — เวลา/ชื่อจังหวัดลอย ๆ ไม่นับ (จับผี: "2 ทุ่มค่ะ" · "18.30" ·
+        //   "เลยค่ะ" = จ.เลย เคยผ่าน แล้วถูกนับเป็นข้อมูลเกิดทั้งข้อความ)
+        $hasBirthInfo = self::dates($t) !== [] || preg_match('/'.self::BORN.'/u', $t);
 
         return $hasBirthInfo && self::residual($t, self::dates($t)) === '';
+    }
+
+    /**
+     * ข้อความพูดถึงคนอื่น/สัตว์เลี้ยงไหม (แฟน/แม่/ลูก/เพื่อน/หมา …) — ใช้กันตัวอ่านวันที่แบบหลวม
+     * ไม่ให้หยิบวันเกิดของคนอื่นมาเสนอแก้ ("ไม่ใช่ค่ะ เป็นวันเกิดแฟน 3/6/2497")
+     */
+    public static function mentionsOtherPerson(string $text): bool
+    {
+        $t = self::normalize($text);
+
+        return $t !== '' && (bool) preg_match('/'.self::KIN.'/u', $t);
     }
 
     /**
@@ -239,12 +255,29 @@ final class OwnBirthDate
         $stated = StatedBirthDayName::stated($rawText);
         if ($stated !== null) {
             $parsedDay = Carbon::parse($ymd)->dayOfWeek;
-            if ($parsedDay !== $stated) {
+            // 🌙 (จับผี) เกิดก่อนรุ่งสาง โหรไทยนับเป็น "วันก่อนหน้า" — "เกิดวันจันทร์ 27/6/2521 ตี 2" ถูกต้องแล้ว
+            //    (27/6/2521 เป็นวันอังคารตามปฏิทิน) ห้ามตีเป็นข้อมูลขัดกัน ไม่งั้นถามวนไม่จบ
+            $preDawnPreviousDay = $stated === ($parsedDay + 6) % 7 && self::statesPreDawnBirth($rawText);
+            if ($parsedDay !== $stated && ! $preDawnPreviousDay) {
                 $conflict = ['stated_day' => $stated, 'parsed_day' => $parsedDay];
             }
         }
 
         return ['ymd' => $ymd, 'basis' => $basis, 'conflict' => $conflict];
+    }
+
+    /**
+     * ข้อความบอกว่าเกิดช่วงก่อนรุ่งสาง (ตี 1–ตี 5 / 00:00–05:59 / เที่ยงคืน / เช้ามืด) ไหม
+     * ตัดวันที่ทิ้งก่อน — "1.12.2530" มี "1.12" หน้าตาเหมือนเวลา
+     */
+    private static function statesPreDawnBirth(string $rawText): bool
+    {
+        $t = (string) preg_replace('/(?<!\d)\d{1,2}\s*[\/\-.]\s*\d{1,2}\s*[\/\-.]\s*\d{2,4}(?!\d)/u', ' ', self::normalize($rawText));
+
+        return (bool) preg_match(
+            '/ตี\s*[1-5](?!\d)|ตี\s*(?:หนึ่ง|สอง|สาม|สี่|ห้า)|(?<!\d)0?[0-5]\s*[:.]\s*[0-5]\d(?!\d)|เที่ยงคืน|เช้ามืด|ย่ำรุ่ง/u',
+            $t
+        );
     }
 
     /**
@@ -335,24 +368,27 @@ final class OwnBirthDate
      */
     private static function selfCues(string $t): array
     {
+        // [แพทเทิร์น, ต้องไม่มีคนอื่นอยู่ในประโยคก่อนหน้าเลยไหม]
         $patterns = [
             // หนูเกิด · ผมเกิด · ตัวเองเกิด
-            self::SELF_PRONOUN.'\s*(?:เป็นคน|เอง)?\s*'.self::BORN,
+            [self::SELF_PRONOUN.'\s*(?:เป็นคน|เอง)?\s*'.self::BORN, false],
             // วันเกิดหนู · วันเกิดของฉัน
-            self::BIRTHDAY.'\s*(?:ของ\s*)?'.self::SELF_PRONOUN,
+            [self::BIRTHDAY.'\s*(?:ของ\s*)?'.self::SELF_PRONOUN, false],
             // วันเกิดที่ถูก(ต้อง) · วันเกิดจริง · วันเกิดใหม่
-            self::BIRTHDAY.'\s*(?:ที่)?\s*(?:ถูก(?:ต้อง)?|แท้จริง|จริง|ใหม่)',
+            [self::BIRTHDAY.'\s*(?:ที่)?\s*(?:ถูก(?:ต้อง)?|แท้จริง|จริง|ใหม่)', true],
             // แก้วันเกิด · เปลี่ยนวันเกิดเป็น
-            '(?:แก้ไข|แก้|เปลี่ยน|อัพเดท|อัปเดต)\s*(?:เป็น)?\s*'.self::BIRTHDAY,
-            // วันเกิดผิด (แล้วตามด้วยที่ถูก)
-            self::BIRTHDAY.'\s*(?:มัน|นั้น|นี่|นี้)?\s*(?:ยัง)?(?:ผิด|ไม่ถูก|ไม่ใช่|คลาดเคลื่อน)',
+            ['(?:แก้ไข|แก้|เปลี่ยน|อัพเดท|อัปเดต)\s*(?:เป็น)?\s*'.self::BIRTHDAY, true],
+            // คำชี้ "ตัวที่ถูก" หลังประโยคแย้ง — "วันเกิดไม่ใช่ 27/7 ที่ถูกคือ 27/6" · "…ผิด ต้องเป็น 27/6"
+            //   ⚠️ (จับผี) เดิมใช้ "วันเกิดผิด/ไม่ใช่" เป็นคำบ่งชี้ตรง ๆ ⇒ หยิบวันที่ถัดไป = ตัวที่ลูกค้าบอกว่าผิด
+            //   คำชี้พวกนี้ไม่บอกว่า "ของใคร" ⇒ ประโยคก่อนหน้าต้องไม่เอ่ยถึงคนอื่น ("วันเกิดแฟน ที่ถูกคือ …")
+            ['(?:ที่ถูก(?:ต้อง)?(?:\s*คือ)?|ต้องเป็น|(?:แก้|เปลี่ยน)(?:ไข)?\s*เป็น)', true],
             // ขึ้นต้นข้อความด้วย "วันเกิด / เกิด" (คนไทยละสรรพนาม — "เกิด 27/6/2521 ค่ะ")
-            '^'.self::BIRTHDAY,
-            '^'.self::BORN,
+            ['^'.self::BIRTHDAY, false],
+            ['^'.self::BORN, false],
         ];
 
         $cues = [];
-        foreach ($patterns as $p) {
+        foreach ($patterns as [$p, $noOtherBefore]) {
             if (! preg_match_all('/'.$p.'/u', $t, $m, PREG_OFFSET_CAPTURE)) {
                 continue;
             }
@@ -363,6 +399,9 @@ final class OwnBirthDate
                 //   (หลักเดียวกับ ThaiProvinces::BIRTH_THIRD_PARTY_TAIL)
                 $before = mb_substr(substr($t, 0, $offset), -30);
                 if (preg_match('/'.self::KIN.self::KIN_MOD.'?(?:\s*ของ\s*)?$/u', $before)) {
+                    continue;
+                }
+                if ($noOtherBefore && preg_match('/'.self::KIN.'/u', mb_substr(substr($t, 0, $offset), -40))) {
                     continue;
                 }
 

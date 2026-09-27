@@ -8262,10 +8262,20 @@ class FortuneConversationService
             ];
         }
 
-        if ($this->messageLooksLikeBirthdate($messageText)) {
-            $overrideBirthdate = $this->parseBirthDate($messageText);
-            if (! empty($overrideBirthdate)
-                && $overrideBirthdate !== $reading->birth_date?->format('Y-m-d')) {
+        // 🎂 (2026-09-27) อ่านด้วย OwnBirthDate ก่อน — (จับผี) ถอดด่าน birthdate_auto_filled แล้ว
+        //   "แฟนเกิด 3/6/2530" (สั้นพอผ่าน messageLooksLikeBirthdate + parseBirthDate ปอก "เกิด" ทิ้ง)
+        //   จะทับวันเกิดเจ้าชะตาทุกบิล · ตัวอ่านใหม่กันวันเกิดคนอื่น + วันในสัปดาห์ที่ขัดกัน
+        //   ตัวอ่านเดิม (มี AI fallback) คงไว้เฉพาะบิลที่ระบบเติมวันเกิดให้เอง ตามพฤติกรรมเดิม
+        $ownFound = \App\Support\OwnBirthDate::find($messageText);
+        $overrideBirthdate = $ownFound !== null
+            ? ($ownFound['conflict'] === null ? $ownFound['ymd'] : null)
+            : (($reading->getConversationState('birthdate_auto_filled', false)
+                && $this->messageLooksLikeBirthdate($messageText)
+                && ! \App\Support\OwnBirthDate::mentionsOtherPerson($messageText))
+                ? $this->parseBirthDate($messageText)
+                : null);
+        if (! empty($overrideBirthdate)) {
+            if ($overrideBirthdate !== $reading->birth_date?->format('Y-m-d')) {
                 $reading->update(['birth_date' => $overrideBirthdate]);
                 $reading->setConversationState('birthdate_reused_from_history', null);
                 // รีเซ็ตการตั้งจิต — ให้ตั้งจิตใหม่กับวันเกิดที่เพิ่งแก้
@@ -8274,25 +8284,9 @@ class FortuneConversationService
 
                 // 🕛🗺️ (2026-09-27) "27/6/2521 ตี 5 เชียงใหม่" — เดิม return ก่อนถึงด่านเก็บเวลา/จังหวัด
                 //   ⇒ ได้แค่วันที่ เวลากับจังหวัดที่พิมพ์มาในข้อความเดียวกันหายเงียบ
-                //   จังหวัดไม่มีคำว่า "เกิดที่" นับได้เฉพาะข้อความที่มีแต่ข้อมูลเกิด ("15/3/2538 อยู่ภูเก็ต" ≠ ที่เกิด)
-                $alsoSaved = '';
-                try {
-                    $hour = $reading->captureStatedBirthTime($messageText, 'birthdate_answer', touchState: false);
-                    if ($hour !== null) {
-                        $alsoSaved .= '🕛 เวลาเกิด *'.FortuneReading::hourToTimeString($hour, false)." น.*\n";
-                    }
-                    $province = $reading->captureStatedBirthProvince(
-                        $messageText,
-                        'birthdate_answer',
-                        ! \App\Support\OwnBirthDate::isBirthInfoOnly($messageText),
-                        touchState: false
-                    );
-                    if ($province !== null) {
-                        $alsoSaved .= "🗺️ จังหวัดเกิด *{$province}*\n";
-                    }
-                } catch (\Throwable $e) {
-                    // non-blocking — ด่านถามเวลา/จังหวัดยังค้างธงไว้ ถามต่อได้
-                }
+                //   ตัวเก็บกลาง: ข้อความมีแต่ข้อมูลเกิด = อ่านผ่อนกฎ · มีเรื่องอื่นปน = ต้องมี "เกิด" กำกับ
+                $birthLines = $this->captureCorrectionBirthDetails($reading, $messageText);
+                $alsoSaved = $birthLines !== [] ? implode("\n", $birthLines)."\n" : '';
 
                 $formattedOverride = $this->formatThaiDate($overrideBirthdate);
 
@@ -8315,6 +8309,17 @@ class FortuneConversationService
                     ],
                 ];
             }
+        } elseif ($ownFound !== null && $ownFound['conflict'] !== null) {
+            // วันในสัปดาห์ที่บอกมาขัดกับวันที่ — ห้ามนับเป็น "ตั้งจิตเสร็จ" แล้วเปิดไพ่ด้วยวันเกิดเดิม
+            return [
+                'action' => 'awaiting_tarot_intention',
+                'message' => $this->ownBirthdateConflictMessage($ownFound['ymd'], $ownFound['conflict']),
+                'reading' => $reading,
+                'show_quick_replies' => true,
+                'quick_replies' => [
+                    ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+                ],
+            ];
         }
 
         // 🕛 (2026-09-03, owner) ลูกค้าตอบ "เวลาเกิด" ที่แม่หมอถามไปพร้อมกล่องตั้งจิต

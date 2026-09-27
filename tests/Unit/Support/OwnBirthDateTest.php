@@ -34,6 +34,9 @@ class OwnBirthDateTest extends TestCase
             'self possessive' => ['วันเกิดของฉันคือ 1 ม.ค. 2530 แล้วงานจะดีไหม', '1987-01-01', OwnBirthDate::BASIS_SELF],
             'self first, partner second' => ['หนูเกิด 27/6/2521 แฟนเกิด 3/6/2497 เข้ากันไหม', '1978-06-27', OwnBirthDate::BASIS_SELF],
             'vocative mom-doctor then self' => ['แม่ หนูเกิด 27/6/2521 ค่ะ ช่วยดูเรื่องเงินหน่อย', '1978-06-27', OwnBirthDate::BASIS_SELF],
+            // (จับผี) วันที่ที่ตามคำปฏิเสธคือ "ตัวที่ผิด" — ต้องได้ตัวที่ถูกเสมอ
+            'wrong one first, correct marker' => ['วันเกิดไม่ใช่ 27/7/2521 นะคะ ที่ถูกคือ 27/6/2521', '1978-06-27', OwnBirthDate::BASIS_SELF],
+            'wrong then must-be' => ['วันเกิดผิดค่ะ 27/7/2521 ต้องเป็น 27/6/2521', '1978-06-27', OwnBirthDate::BASIS_SELF],
         ];
     }
 
@@ -65,6 +68,9 @@ class OwnBirthDateTest extends TestCase
             'money' => ['หนี้ 2.50 แสน จะหมดเมื่อไหร่'],
             'warning only (A4514)' => ['อย่าทำนายผิดวันเกิดนะคะ'],
             'question with an old date' => ['เรื่องเมื่อ 5/3/2530 จะกลับมาอีกไหม'],
+            // กำกวม: วันที่เดียวหลังคำว่า "ผิด" อาจเป็นตัวที่ผิด — ตัวอ่านนี้ไม่เดา (โฟลแก้วันเกิดมีกล่องยืนยันกั้น)
+            'single date right after a negation' => ['วันเกิดผิดค่ะ 27/6/2521 ช่วยดูใหม่'],
+            'partner with a correct marker' => ['วันเกิดแฟน ที่ถูกคือ 3/6/2497'],
         ];
     }
 
@@ -86,6 +92,12 @@ class OwnBirthDateTest extends TestCase
         $this->assertSame(2, $found['conflict']['parsed_day']);
 
         $this->assertNull(OwnBirthDate::find('เกิดวันอังคาร 27/6/2521')['conflict']);
+
+        // 🌙 เกิดก่อนรุ่งสาง โหรไทยนับเป็นวันก่อนหน้า — วันจันทร์ตี 2 ของวันที่ 27 (อังคาร) ถูกต้อง
+        $this->assertNull(OwnBirthDate::find('เกิดวันจันทร์ 27/6/2521 ตี 2')['conflict']);
+        $this->assertNull(OwnBirthDate::find('เกิดวันจันทร์ 27/6/2521 เวลา 02:30 น.')['conflict']);
+        $this->assertNotNull(OwnBirthDate::find('เกิดวันจันทร์ 27/6/2521')['conflict'], 'ไม่บอกเวลา = ยังขัดกัน ต้องถาม');
+        $this->assertNotNull(OwnBirthDate::find('เกิดวันจันทร์ 27/6/2521 บ่าย 2')['conflict'], 'บ่าย 2 ไม่ใช่ก่อนรุ่งสาง');
     }
 
     public function test_bare_dates_can_be_switched_off(): void
@@ -103,6 +115,14 @@ class OwnBirthDateTest extends TestCase
         $this->assertFalse(OwnBirthDate::isBirthInfoOnly('15/3/2538 อยู่ภูเก็ต'), '"อยู่" = ที่อยู่ ไม่ใช่ที่เกิด');
         $this->assertFalse(OwnBirthDate::isBirthInfoOnly('ค่ะ'));
         $this->assertFalse(OwnBirthDate::isBirthInfoOnly('โอนแล้วค่ะ'));
+        // เวลา/จังหวัดลอย ๆ ไม่มีวันที่หรือคำว่าเกิด = ไม่ใช่ข้อมูลเกิด ("เลยค่ะ" เคยถูกอ่านเป็น จ.เลย)
+        $this->assertFalse(OwnBirthDate::isBirthInfoOnly('2 ทุ่มค่ะ'));
+        $this->assertFalse(OwnBirthDate::isBirthInfoOnly('18.30'));
+        $this->assertFalse(OwnBirthDate::isBirthInfoOnly('เลยค่ะ'));
+        $this->assertTrue(OwnBirthDate::isBirthInfoOnly('เกิดตี 5 ที่เชียงใหม่ค่ะ'));
+
+        $this->assertTrue(OwnBirthDate::mentionsOtherPerson('ไม่ใช่ค่ะ เป็นวันเกิดแฟน 3/6/2497'));
+        $this->assertFalse(OwnBirthDate::mentionsOtherPerson('แม่หมอคะ หนูเกิด 27/6/2521'));
     }
 
     public function test_mentions_birth_info(): void
