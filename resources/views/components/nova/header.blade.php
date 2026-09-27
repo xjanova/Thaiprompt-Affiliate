@@ -71,7 +71,8 @@
         ['key' => 'taladsod', 'label' => 'ตลาดสด', 'icon' => 'fa-carrot', 'href' => $nv('taladsod.home', [], url('/taladsod'))],
         ['key' => 'rider', 'label' => 'เป็นไรเดอร์', 'icon' => 'fa-motorcycle', 'href' => $nvUser ? $nv('user.rider.dashboard') : $nv('taladsod.landing.rider')],
     ];
-    $nvFortune = ['key' => 'fortune', 'label' => 'ดูดวง', 'icon' => 'fa-moon', 'href' => $nv('tarot.index', [], url('/tarot'))];
+    // ดูดวง = เว็บแม่หมอจันทรา (จันทรา.online) — เจ้าของสั่งให้ไปที่นั่นตรงๆ
+    $nvFortune = ['key' => 'fortune', 'label' => 'ดูดวง', 'icon' => 'fa-moon', 'href' => (string) config('services.juntra.url', 'https://xn--82c4af5bzdj.online')];
     $nvMerchant = [
         ['label' => 'ร้านค้าออนไลน์ (ส่งทั่วไทย)', 'desc' => 'ขายสินค้า ส่งพัสดุหรือไรเดอร์', 'icon' => 'fa-store', 'href' => $nv('user.seller-apply.index', [], $nvLoginUrl)],
         ['label' => 'ร้านตลาดสด / รถเข็น', 'desc' => 'ขายของสด อาหาร ใกล้บ้าน', 'icon' => 'fa-cart-flatbed', 'href' => $nv('taladsod.landing.seller')],

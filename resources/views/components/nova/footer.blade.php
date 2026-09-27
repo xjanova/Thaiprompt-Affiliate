@@ -16,7 +16,7 @@
         ['href' => $rfRoute('storefront.index', [], url('/storefront')), 'label' => 'ร้านค้าออนไลน์'],
         ['href' => $rfRoute('taladsod.home', [], url('/taladsod')), 'label' => 'ตลาดสด ใกล้บ้าน'],
         ['href' => $rfRoute('official-shop.index', [], url('/official-shop')), 'label' => 'ร้านค้าทางการ'],
-        ['href' => $rfRoute('tarot.index', [], url('/tarot')), 'label' => 'ดูดวงไพ่ทาโรต์'],
+        ['href' => (string) config('services.juntra.url', 'https://xn--82c4af5bzdj.online'), 'label' => 'ดูดวงกับแม่หมอจันทรา'],
     ];
     $rfJoin = [
         ['href' => $rfUser ? $rfRoute('user.rider.dashboard') : $rfRoute('taladsod.landing.rider'), 'label' => 'สมัครเป็นไรเดอร์'],

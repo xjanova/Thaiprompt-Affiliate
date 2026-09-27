@@ -282,6 +282,8 @@
     var hot = null;
     function accentOf(c) { return (c.style.getPropertyValue('--accent') || '#f0c96a').trim(); }
     document.addEventListener('pointerover', function (e) {
+        // จอสัมผัส: ไม่มีสถานะ "ชี้" — ถ้าเปลี่ยนหน้าตา/ข้อความตอนแตะ iOS จะกินแตะแรกเป็นชี้ ต้องแตะซ้ำถึงจะไป
+        if (e.pointerType === 'touch') return;
         var c = e.target.closest && e.target.closest('.nv-tcard');
         if (!c || c === hot) return;
         hot = c; c.classList.add('is-hover');
@@ -307,14 +309,14 @@
         var ax = (0.5 - y) * 2, ay = (x - 0.5) * 2, ang = Math.hypot(ax, ay) * 5;
         if (ang > 0.05) c.style.rotate = ax.toFixed(3) + ' ' + ay.toFixed(3) + ' 0 ' + ang.toFixed(2) + 'deg';
     }, { passive: true });
-    var navT = 0; // ตัวจับเวลาเปลี่ยนหน้า มีได้ตัวเดียว (ดับเบิลคลิก/คลิกสองการ์ดติดกัน = ไปตามการ์ดล่าสุด)
+    // คลิก/แตะการ์ด = ไปทันที (เจ้าของสั่ง: ห้ามรอเอฟเฟกต์เรืองแสงก่อนค่อยไป)
+    // เอฟเฟกต์เล่นพร้อมกันระหว่างเบราว์เซอร์โหลดหน้าถัดไป · ลิงก์ในหน้า (#...) เลื่อนไปทันที
     document.addEventListener('click', function (e) {
         var c = e.target.closest && e.target.closest('.nv-tcard');
         if (!c) return;
         // คลิกกลาง/กดค้าง Ctrl-Cmd-Shift = เปิดแท็บใหม่ตามปกติของเบราว์เซอร์
         if (e.defaultPrevented || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         var href = c.getAttribute('href'); if (!href) return;
-        e.preventDefault();
         var r = c.getBoundingClientRect(), o = fxOf(c);
         var x = e.clientX || r.left + r.width / 2, y = e.clientY || r.top + r.height / 2;
         var rp = document.createElement('span'); rp.className = 'nv-tcard__ripple'; rp.style.left = (x - r.left) + 'px'; rp.style.top = (y - r.top) + 'px';
@@ -331,26 +333,20 @@
             }
         }
         Sfx.select(+(c.getAttribute('data-i') || 0));
-        var name = c.getAttribute('data-name') || '';
-        Guide.speak(c.getAttribute('data-go-say') || ('ไป' + name + 'กันเลยค่ะ'), 2600);
-        clearTimeout(navT);
-        navT = setTimeout(function () {
-            navT = 0;
-            if (href.charAt(0) === '#') {
-                var tg = document.querySelector(href);
-                if (tg) tg.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); else location.hash = href;
-            } else {
-                toast('กำลังไปที่ ' + name + ' …');
-                window.location.href = href;
-            }
-        }, reduce ? 0 : 420);
+        if (href.charAt(0) === '#') {
+            e.preventDefault();
+            var tg = document.querySelector(href);
+            if (tg) tg.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }); else location.hash = href;
+            var name = c.getAttribute('data-name') || '';
+            Guide.speak(c.getAttribute('data-go-say') || ('ไป' + name + 'กันเลยค่ะ'), 2600);
+        }
+        // ลิงก์หน้าอื่น/เว็บอื่น: ไม่ preventDefault — เบราว์เซอร์พาไปทันทีตามปกติ
     });
 
-    // ออกจากหน้า/กลับมาจาก bfcache (ปุ่ม Back) — ล้างตัวจับเวลาค้าง ไม่ให้เด้งไปหน้าปลายทางซ้ำ และล้างสถานะชี้การ์ด
-    window.addEventListener('pagehide', function () { clearTimeout(navT); navT = 0; });
+    // กลับมาจาก bfcache (ปุ่ม Back) — ล้างสถานะชี้การ์ดที่ค้างจากก่อนออกจากหน้า
     window.addEventListener('pageshow', function (e) {
         if (!e.persisted) return;
-        clearTimeout(navT); navT = 0; hot = null;
+        hot = null;
         $$('.nv-tcard.is-hover').forEach(function (c) {
             c.classList.remove('is-hover'); c.style.rotate = '';
             var o = fxOf(c); if (o.fx) o.fx.beaconOff();

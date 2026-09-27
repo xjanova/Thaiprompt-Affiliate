@@ -73,6 +73,18 @@ class StorefrontNovaHomeTest extends TestCase
         }
     }
 
+    public function test_fortune_goes_to_the_juntra_website(): void
+    {
+        $juntra = config('services.juntra.url');
+        $this->assertNotEmpty($juntra);
+
+        $html = $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('href="'.$juntra.'"', $html, 'การ์ด/เมนูดูดวงต้องพาไปเว็บแม่หมอจันทรา');
+
+        // หน้า "ดูดวงออนไลน์" เดิมเด้งไปเว็บจันทรา
+        $this->get('/horoscope')->assertRedirect($juntra);
+    }
+
     public function test_logged_in_buyer_sees_cart_in_nova_header(): void
     {
         $buyer = $this->makeBuyer();

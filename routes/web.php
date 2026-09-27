@@ -804,8 +804,9 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
 // ⚠️ Public Service: ดูดวงฟรี ต้องถูก index โดย search engines (SEO friendly)
 // ================================================
 Route::prefix('horoscope')->name('horoscope.')->group(function () {
-    // หน้าแรกดูดวง (แสดงทุกหมวด)
-    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeHomeController::class, 'index'])->name('home');
+    // หน้าแรกดูดวง "ดูดวงออนไลน์" → เว็บแม่หมอจันทรา (เจ้าของสั่ง 2026-09-27) — หน้าย่อย (ดวงรายวัน ฯลฯ) ยังอยู่ที่นี่
+    //   HoroscopeHomeController::index ยังอยู่ ถ้าจะกลับมาใช้หน้านี้ให้เปลี่ยนบรรทัดนี้กลับ
+    Route::redirect('/', rtrim((string) config('services.juntra.url', 'https://xn--82c4af5bzdj.online'), '/').'/', 302)->name('home');
 
     // ดวงรายวัน 7+1 วันเกิด (ถอดเลน 12 ราศี ออก 2026-09-09 — ตารางราศีว่างมาตลอด)
     Route::prefix('daily')->name('daily.')->group(function () {
