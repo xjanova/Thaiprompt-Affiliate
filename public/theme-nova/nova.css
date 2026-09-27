@@ -584,3 +584,9 @@ body.nv-body {
 .nv-hero-band h1 { font-family: 'Trirong', 'Anuphan', serif; }
 .nv-hero-band__sub { color: rgba(246, 239, 221, .78); }
 .nv-hero-band--box { border: 1px solid rgba(240, 201, 106, .3); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .06); }
+
+/* ---------- กันสไตล์เหมารวมของเลย์เอาต์เก่า (components/dark-mode-styles: header / input ใส่ !important) ----------
+   โหมดสว่างเดิมทำให้แถบหัวโนวาเป็นพื้นขาว ตัวอักษรทองจมหาย — กฎตรงนี้เฉพาะเจาะจงกว่าจึงชนะเสมอ */
+.nv-nav.is-solid, .nv-nav.is-open { background-color: rgba(7, 13, 32, .88) !important; border-color: transparent !important; }
+.nv-nav:not(.is-solid):not(.is-open) { background-color: transparent !important; border-color: transparent !important; }
+.nv-nav .nv-nav__search input { background-color: rgba(255, 255, 255, .07) !important; color: var(--nv-on-night) !important; border-color: transparent !important; }

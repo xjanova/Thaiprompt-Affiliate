@@ -12,7 +12,7 @@
         // หน้าโรงแรม/ตลาดบอท: เฉพาะหน้าดูสาธารณะ (ระบุชื่อ route ตรงๆ) — หน้าจอง/เช่า (ต้องล็อกอิน) ยังเป็นเลย์เอาต์เดิม
         $novaShell = config('shop.nova_public', true) && request()->routeIs(
             'tarot.*', 'qr-barcode.*', 'software.products.*',
-            'marketplace.index', 'marketplace.show',
+            'marketplace.index', 'marketplace.show', 'nfc.verify',
             'hotels.index', 'hotels.featured', 'hotels.show', 'hotels.search', 'hotels.by-city', 'hotels.by-province', 'hotels.by-region', 'hotels.reviews.index'
         );
     @endphp
@@ -94,7 +94,7 @@
         {{-- ธีมโนวา: แถบหัวทึบติดบน + ท้ายเว็บโนวา แทนแถบงาน Classic X --}}
         <div class="nv-tw" style="min-height:100vh; display:flex; flex-direction:column;">
             <x-nova.header :solid="true" :search="true" :active="request()->routeIs('tarot.*') ? 'fortune' : ''" />
-            <main style="flex:1;">
+            <main class="nv-auto-bg" style="flex:1;">
                 @yield('content')
             </main>
             <x-nova.footer />

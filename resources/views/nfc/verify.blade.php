@@ -10,7 +10,7 @@
         {{-- Header --}}
         <div class="text-center mb-8">
             <div class="inline-flex items-center justify-center w-20 h-20 mb-4 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg">
-                <i class="fas fa-shield-check text-3xl text-white"></i>
+                <i class="fas fa-shield-halved text-3xl text-white"></i>
             </div>
             <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 ตรวจสอบบัตร NFC
