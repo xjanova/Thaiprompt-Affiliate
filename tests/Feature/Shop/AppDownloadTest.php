@@ -153,6 +153,10 @@ class AppDownloadTest extends TestCase
 
         $html = $this->get('/')->assertOk()->getContent();
         $this->assertStringContainsString('https://play.google.com/store/apps/details?id=com.thaiprompt.affiliate', $html);
+        // แถบแอปอยู่ต่อจากฮีโร่ + มีคลิปแนะนำ และปุ่มลัดบนฮีโร่ชี้มาที่แถบแอป
+        $this->assertStringContainsString('id="nv-app"', $html);
+        $this->assertStringContainsString('id="nv-intro-video"', $html);
+        $this->assertStringContainsString('data-nv-intro', $html);
 
         // ปิด "แสดงส่วนดาวน์โหลดแอปในหน้าแรก" → แถบแอปและการ์ดแอปบนฮีโร่หายทั้งคู่
         $setting->update(['app_download_enabled' => false]);
@@ -162,5 +166,9 @@ class AppDownloadTest extends TestCase
         $this->assertStringNotContainsString('id="nv-app"', $html);
         $this->assertStringNotContainsString('href="#nv-app"', $html);
         $this->assertStringNotContainsString('play.google.com', $html);
+        // คลิปแนะนำยังอยู่ (กล่องคลิปล้วน) ไม่ผูกกับสวิตช์ดาวน์โหลดแอป
+        $this->assertStringContainsString('id="nv-intro-sec"', $html);
+        $this->assertStringContainsString('id="nv-intro-video"', $html);
+        $this->assertStringContainsString('href="#nv-intro-sec"', $html);
     }
 }

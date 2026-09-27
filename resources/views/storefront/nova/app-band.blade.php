@@ -24,11 +24,13 @@
     $abPoster = (string) (\App\Models\Setting::get('intro_video_poster') ?: asset('storage/videos/intro/intro_poster.jpg').'?v=2');
 @endphp
 
-<div class="nv-appwrap nv-appwrap--top" id="nv-app">
+{{-- หลังบ้านปิดส่วนดาวน์โหลดแอป = เหลือกล่องคลิปล้วน (id อื่น — ไม่มีอะไรชี้ #nv-app) --}}
+<div class="nv-appwrap nv-appwrap--top" id="{{ $abSection ? 'nv-app' : 'nv-intro-sec' }}">
     <img class="nv-deco nv-deco--front nv-hide-m" src="{{ $abImg('deco/garland.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async" style="--x:-18px;--y:-34px;--w:96px;--z:8;--t:6s;--r0:-8deg;--r1:-2deg">
     <section class="nv-appband nv-rv" aria-labelledby="nv-app-title">
         <img class="nv-appband__kanok" src="{{ $abImg('brand/kanok-gold.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async">
         <div>
+            @if($abSection)
             <p class="nv-kicker" style="color:var(--nv-gold-300);">THAI PROMPT APP</p>
             <h2 id="nv-app-title">ทุกบริการ <span class="nv-foil">ในแอปเดียว</span></h2>
             <p>ช้อปของ ตลาดสด เรียกไรเดอร์ จัดการร้าน และกระเป๋าเงิน รวมไว้ในแอปที่ออกแบบชุดเดียวกับเว็บ · กดดูคลิปแนะนำจากน้องพร้อมได้เลย</p>
@@ -37,7 +39,6 @@
                 <li><i class="fas fa-circle-check" aria-hidden="true"></i>กระเป๋าเงินในตัว เติม โอน ถอน ได้ในแอป</li>
                 <li><i class="fas fa-circle-check" aria-hidden="true"></i>ผู้ขาย ไรเดอร์ และร้านตลาดสด จัดการงานได้จากมือถือ</li>
             </ul>
-            @if($abSection)
             <div class="nv-appband__get">
                 <div>
                     <div class="nv-appband__cta">
@@ -67,6 +68,10 @@
                     </div>
                 @endif
             </div>
+            @else
+            <p class="nv-kicker" style="color:var(--nv-gold-300);">แนะนำไทยพร้อม</p>
+            <h2 id="nv-app-title">รู้จักไทยพร้อม <span class="nv-foil">ใน 2 นาที</span></h2>
+            <p>น้องพร้อมเล่าให้ฟังว่าไทยพร้อมเกิดขึ้นเพื่อแก้ปัญหาอะไร ทำไมคนไทยควรช่วยกันใช้ และทำอะไรได้บ้าง — กดเล่นที่มือถือได้เลย</p>
             @endif
         </div>
 

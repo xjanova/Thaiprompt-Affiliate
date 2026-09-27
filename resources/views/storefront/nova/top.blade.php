@@ -108,7 +108,7 @@
         <p class="nv-sub"><span class="nv-nw">เลือกบริการที่ตอบโจทย์คุณ</span> <span class="nv-nw">— ช้อป กิน ส่ง ขาย และดูดวง</span> <span class="nv-nw">ครบในที่เดียว</span></p>
         {{-- ปุ่มลัดไปคลิปแนะนำ + โหลดแอป (เห็นตั้งแต่จอแรกบนมือถือ) — ทำงานคู่กับ storefront/nova/app-band --}}
         <div class="nv-herocta">
-            <a href="#nv-app" class="nv-btn nv-btn--gold" data-nv-intro><i class="fas fa-circle-play" aria-hidden="true"></i> ดูคลิปแนะนำ 2 นาที</a>
+            <a href="{{ $nvAppSection ? '#nv-app' : '#nv-intro-sec' }}" class="nv-btn nv-btn--gold" data-nv-intro><i class="fas fa-circle-play" aria-hidden="true"></i> ดูคลิปแนะนำ 2 นาที</a>
             @if($nvAppSection)
                 <a href="#nv-app" class="nv-btn nv-btn--ghost"><i class="fab fa-android" aria-hidden="true"></i> {{ $nvApkReady ? 'โหลดแอปฟรี' : 'แอป Thai Prompt' }}</a>
             @endif
