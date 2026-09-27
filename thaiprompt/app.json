@@ -2,7 +2,7 @@
   "expo": {
     "name": "Thai Prompt APP",
     "slug": "thaiprompt",
-    "version": "3.384.0",
+    "version": "3.385.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thaiprompt.affiliate",
-      "buildNumber": "41",
+      "buildNumber": "42",
       "infoPlist": {
         "NSCameraUsageDescription": "แอปใช้กล้องเพื่อถ่ายรูปเอกสารยืนยันตัวตน (KYC) รูปโปรไฟล์ และสแกน QR Code",
         "NSPhotoLibraryUsageDescription": "แอปเข้าถึงรูปภาพที่คุณเลือกเพื่ออัปโหลดเอกสารและรูปโปรไฟล์",
@@ -30,7 +30,7 @@
         "backgroundColor": "#0C1A33"
       },
       "package": "com.thaiprompt.affiliate",
-      "versionCode": 41,
+      "versionCode": 42,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
