@@ -441,6 +441,13 @@ export default function SettingsScreen() {
           onPress={() => router.push('/support')}
         />
         <MenuRow icon="envelope" title="อีเมลทีมงาน" subtitle={APP_INFO.SUPPORT_EMAIL} onPress={handleContactSupport} />
+        <MenuRow
+          icon="sparkle"
+          tone="gold"
+          title="ดูคลิปแนะนำแอป"
+          subtitle="น้องพร้อมเล่าให้ฟังใน 2 นาที"
+          onPress={() => router.push('/intro-video' as never)}
+        />
         <MenuRow icon="star" tone="gold" title="ให้คะแนนแอป" onPress={handleRateApp} />
         <MenuRow icon="info" title="เวอร์ชัน" subtitle={APP_INFO.VERSION || '-'} right={null} />
       </MenuGroup>

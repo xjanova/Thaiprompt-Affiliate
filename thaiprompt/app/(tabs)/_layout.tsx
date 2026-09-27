@@ -21,6 +21,7 @@ import { useSyncStore, initSyncMonitor } from '@/stores/syncStore';
 import { ErrorBoundary } from '@/components';
 import { isFeatureEnabled } from '@/config/appConfig';
 import { getAvatarUrl } from '@/utils/user';
+import { introVideoToShow } from '@/services/introVideo';
 import { useTheme, radii, spacing } from '@/theme';
 
 /** ป้ายออฟไลน์ (แสดงเฉพาะตอนไม่มีเน็ต) */
@@ -46,12 +47,28 @@ const OfflinePill = () => {
 
 export default function TabLayout() {
   const user = useAuthStore((state) => state.user);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   // เริ่มตัวตรวจสถานะเน็ต
   useEffect(() => {
     const unsubscribe = initSyncMonitor();
     return () => unsubscribe();
   }, []);
+
+  // คลิปแนะนำแอป: ล็อกอินแล้วและยังไม่เคยดูเวอร์ชันนี้ → เปิดให้ครั้งเดียว (ถามเซิร์ฟเวอร์ไม่ได้ = ข้ามเงียบๆ)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    introVideoToShow()
+      .then((config) => {
+        if (cancelled || !config) return;
+        router.push({ pathname: '/intro-video', params: { url: config.pageUrl, version: config.version } } as never);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   let avatarUrl: string | null = null;
   try {

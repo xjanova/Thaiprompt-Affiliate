@@ -538,6 +538,9 @@ Route::get('/app/download', [\App\Http\Controllers\AppDownloadController::class,
     ->middleware('throttle:30,1')
     ->name('app.download');
 
+// คลิปแนะนำแอป (น้องพร้อม) แบบเต็มจอ — แอปเปิดใน WebView ตอนล็อกอินครั้งแรก (ค่าคลิปอยู่ใน settings.intro_video_*)
+Route::view('/app/intro', 'app.intro-player')->name('app.intro');
+
 // ตัวกลางนับคลิกลิงก์ affiliate → ส่งต่อไป Lazada (302)
 // ⚠️ นี่คือหลักฐานชิ้นเดียวที่บอกได้ว่า "ลูกค้าคนไหนของเราเป็นคนพาไปซื้อ"
 //    เพราะ Lazada ไม่ยอมรับ subId ในลิงก์ (ทดสอบแล้ว — ได้ token เดียวกันหมด)

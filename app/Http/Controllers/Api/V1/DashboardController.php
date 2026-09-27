@@ -101,9 +101,17 @@ class DashboardController extends Controller
         $accentStart = \App\Models\Setting::get('theme_accent_start', '#8B5CF6');
         $accentEnd = \App\Models\Setting::get('theme_accent_end', '#6D28D9');
 
+        // คลิปแนะนำแอป (น้องพร้อม) — แอปเปิดหน้า page_url ใน WebView ครั้งเดียวต่อ version (เปลี่ยน version = ขึ้นใหม่อีกรอบ)
+        $introVideo = [
+            'enabled' => filter_var(\App\Models\Setting::get('intro_video_enabled', true), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+            'version' => (string) (\App\Models\Setting::get('intro_video_version') ?: 'v1'),
+            'page_url' => route('app.intro'),
+        ];
+
         return response()->json([
             'success' => true,
             'data' => [
+                'intro_video' => $introVideo,
                 'branding' => [
                     'logo' => $logo ? url($logo) : null,
                     'favicon' => $favicon ? url($favicon) : null,

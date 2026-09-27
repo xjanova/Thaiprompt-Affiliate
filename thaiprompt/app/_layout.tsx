@@ -449,6 +449,8 @@ export default function RootLayout() {
         <Stack.Screen name="register" options={{ headerShown: false }} />
         {/* deep link thaiprompt://auth หลังเข้าสู่ระบบบนเว็บ (Facebook / Google / อีเมล) */}
         <Stack.Screen name="auth" options={{ headerShown: false, animation: 'fade' }} />
+        {/* คลิปแนะนำแอป (น้องพร้อม) — เปิดเองครั้งเดียวหลังล็อกอิน / ดูซ้ำจากหน้าตั้งค่า */}
+        <Stack.Screen name="intro-video" options={{ headerShown: false, animation: 'fade', presentation: 'fullScreenModal' }} />
 
         {/* Feature Screens - ปิด header ทั้งหมดให้แอพจัดการเอง
             (หน้า MLM / คริปโต / ดูคลิปได้เงิน ถูกถอดออกจากแอปแล้ว — นโยบาย Google Play) */}
