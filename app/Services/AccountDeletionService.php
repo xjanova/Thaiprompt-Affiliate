@@ -385,6 +385,8 @@ class AccountDeletionService
             'facebook_user_id' => null, 'facebook_psid' => null, 'facebook_email' => null,
             'facebook_name' => null, 'facebook_picture_url' => null, 'facebook_verified' => false,
             'facebook_linked_at' => null,
+            // Google — ไม่ล้าง = แถวที่ลบแล้วยังถือ google_id (unique) ไว้ เจ้าของสมัครใหม่ด้วย Google ไม่ได้อีกเลย
+            'google_id' => null, 'google_avatar' => null,
             'profile_picture' => null, 'avatar_url' => null, 'bio' => null,
             'bank_name' => null, 'bank_account' => null, 'bank_account_name' => null,
             'address' => null, 'city' => null, 'state' => null, 'postal_code' => null,

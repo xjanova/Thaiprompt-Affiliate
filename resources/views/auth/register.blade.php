@@ -546,8 +546,13 @@
                             </div>
                             @endif
 
-                            {{-- Google Register Option — ยังไม่ตั้งค่า = ไม่แสดง · ส่งรหัสผู้แนะนำ (ref) ต่อให้ด้วย --}}
-                            @if(\App\Models\GoogleOAuthSetting::isConfigured())
+                            {{-- Google Register Option — ยังไม่ตั้งค่า = ไม่แสดง · ส่งรหัสผู้แนะนำ (ref) ต่อให้ด้วย
+                                 เปิดจากเบราว์เซอร์ฝังในแอป (LINE/Facebook/WebView) → Google ปฏิเสธ (403) ซ่อนปุ่ม แสดงคำแนะนำแทน --}}
+                            @if(\App\Models\GoogleOAuthSetting::isConfigured() && \App\Support\InAppBrowser::current())
+                            <p class="mt-4 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-xs text-center leading-relaxed">
+                                {{ \App\Support\InAppBrowser::GOOGLE_HINT }}
+                            </p>
+                            @elseif(\App\Models\GoogleOAuthSetting::isConfigured())
                             <div class="{{ $showLineRegister ? 'mt-3' : 'mt-5' }}">
                                 @if(!$showLineRegister)
                                     <div class="relative flex items-center justify-center my-4">

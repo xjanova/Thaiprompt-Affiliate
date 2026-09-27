@@ -448,8 +448,13 @@
                 </div>
                 @endif
 
-                {{-- Google Login (Socialite OAuth) — config จาก DB ผ่าน GoogleOAuthSetting · ยังไม่ตั้งค่า = ไม่แสดง --}}
-                @if(\App\Models\GoogleOAuthSetting::isConfigured())
+                {{-- Google Login (Socialite OAuth) — config จาก DB ผ่าน GoogleOAuthSetting · ยังไม่ตั้งค่า = ไม่แสดง
+                     เปิดจากเบราว์เซอร์ฝังในแอป (LINE/Facebook/WebView) → Google ปฏิเสธ (403) ซ่อนปุ่ม แสดงคำแนะนำแทน --}}
+                @if(\App\Models\GoogleOAuthSetting::isConfigured() && \App\Support\InAppBrowser::current())
+                <p class="mt-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-xs text-center leading-relaxed">
+                    {{ \App\Support\InAppBrowser::GOOGLE_HINT }}
+                </p>
+                @elseif(\App\Models\GoogleOAuthSetting::isConfigured())
                 <div class="mt-3">
                     @if(!$showLineLogin && !\App\Models\FacebookOAuthSetting::isConfigured())
                         <div class="relative flex items-center justify-center my-4">

@@ -251,6 +251,8 @@ class FortunePdpaDeletionService
                 'line_access_token' => null, 'line_verified' => false,
                 'facebook_user_id' => null, 'facebook_email' => null, 'facebook_name' => null,
                 'facebook_picture_url' => null, 'facebook_verified' => false,
+                // Google — ไม่ล้าง = แถวที่ลบแล้วยังถือ google_id (unique) ไว้ เจ้าของสมัครใหม่ด้วย Google ไม่ได้อีกเลย
+                'google_id' => null, 'google_avatar' => null,
                 // โปรไฟล์/ข้อมูลอ่อนไหว
                 'profile_picture' => null, 'avatar_url' => null, 'date_of_birth' => null,
                 'gender' => null, 'phone' => null, 'phone_verified' => false, 'bio' => null,

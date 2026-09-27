@@ -375,6 +375,9 @@ Route::prefix('mobile-login')->name('mobile-login.')->group(function () {
 
     // ปฏิเสธการ authorize
     Route::post('/deny', [\App\Http\Controllers\MobileLoginController::class, 'deny'])->name('deny');
+
+    // "ใช้บัญชีอื่น" — ออกจากระบบเว็บในเบราว์เซอร์นี้แล้วกลับหน้าเข้าสู่ระบบของแอป (POST + CSRF)
+    Route::post('/switch-account', [\App\Http\Controllers\MobileLoginController::class, 'switchAccount'])->name('switch-account');
 });
 
 // Mobile Web Session (เปิดหน้าเว็บจากแอพพร้อม authentication)

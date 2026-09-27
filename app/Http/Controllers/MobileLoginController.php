@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MobileAuthToken;
 use App\Services\Auth\MobileAppLogin;
+use App\Support\InAppBrowser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -78,14 +79,17 @@ class MobileLoginController extends Controller
         //    provider ต้องอยู่ใน whitelist (ค่าอื่น = แสดงหน้าเข้าสู่ระบบปกติ) และต้องตั้งค่าไว้แล้ว
         $provider = $request->query('provider');
         if (MobileAppLogin::isSupportedProvider($provider)) {
-            if (app(MobileAppLogin::class)->isProviderReady($provider)) {
+            if ($provider === 'google' && InAppBrowser::current()) {
+                // เบราว์เซอร์ฝังในแอป → Google ตอบ 403 disallowed_useragent (แอป Thai Prompt ใช้ Custom Tab จึงไม่เข้าเคสนี้)
+                session()->now('error', InAppBrowser::GOOGLE_HINT);
+            } elseif (app(MobileAppLogin::class)->isProviderReady($provider)) {
                 return redirect()->route($provider.'.login', [
                     'mobile_token' => $loginToken,
                     'state' => $state,
                 ]);
+            } else {
+                session()->now('error', 'ยังไม่เปิดให้เข้าสู่ระบบด้วยช่องทางนี้ — กรุณาเลือกวิธีอื่น');
             }
-
-            session()->now('error', 'ยังไม่เปิดให้เข้าสู่ระบบด้วยช่องทางนี้ — กรุณาเลือกวิธีอื่น');
         }
 
         // แสดงหน้า login
@@ -220,6 +224,31 @@ class MobileLoginController extends Controller
         return view('auth.mobile-login-redirect', [
             'redirectUrl' => $redirectUrl,
             'authCode' => $authCode,
+            'state' => $state,
+        ]);
+    }
+
+    /**
+     * "ใช้บัญชีอื่น" บนหน้ายืนยัน — ออกจากระบบเว็บในเบราว์เซอร์นี้ แล้วกลับหน้าเข้าสู่ระบบของแอปด้วย token เดิม
+     *
+     * ใช้เมื่อเบราว์เซอร์ในมือถือค้าง session ของบัญชีอื่น (หรือของคนอื่นที่เคยใช้เครื่อง)
+     * POST + CSRF เท่านั้น (กันเว็บอื่นสั่งออกจากระบบ) · ปลายทางเป็น route ของเราเสมอ (ไม่มี open redirect)
+     */
+    public function switchAccount(Request $request): RedirectResponse
+    {
+        $loginToken = MobileAppLogin::text($request->input('token'));
+        $state = MobileAppLogin::text($request->input('state'));
+
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        if ($loginToken === '' || $state === '') {
+            return redirect()->route('login');
+        }
+
+        return redirect()->route('mobile-login.show', [
+            'token' => $loginToken,
             'state' => $state,
         ]);
     }

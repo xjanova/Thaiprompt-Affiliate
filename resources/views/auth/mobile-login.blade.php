@@ -254,7 +254,10 @@
                     $showLineLogin = $lineSettings && $lineSettings->login_channel_id && $lineSettings->channel_secret;
                     // Facebook / Google — แสดงเฉพาะเมื่อเปิดใช้และตั้งค่าครบ (ค่าเดียวกับหน้าเว็บ)
                     $showFacebookLogin = \App\Models\FacebookOAuthSetting::isConfigured();
-                    $showGoogleLogin = \App\Models\GoogleOAuthSetting::isConfigured();
+                    $googleConfigured = \App\Models\GoogleOAuthSetting::isConfigured();
+                    // เบราว์เซอร์ฝังในแอป (LINE/Facebook/WebView) → Google ปฏิเสธ (403) ซ่อนปุ่ม แสดงคำแนะนำแทน
+                    $googleBlockedHere = $googleConfigured && \App\Support\InAppBrowser::current();
+                    $showGoogleLogin = $googleConfigured && ! $googleBlockedHere;
                 @endphp
 
                 {{-- Success Message --}}
@@ -338,6 +341,12 @@
                     </a>
                     @endif
                 </div>
+                @endif
+
+                @if($googleBlockedHere)
+                <p class="mb-6 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-xs text-center leading-relaxed">
+                    {{ \App\Support\InAppBrowser::GOOGLE_HINT }}
+                </p>
                 @endif
 
                 @if($showLineLogin || $showFacebookLogin || $showGoogleLogin)

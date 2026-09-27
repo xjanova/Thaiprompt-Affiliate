@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FacebookOAuthSetting;
 use App\Models\GoogleOAuthSetting;
 use App\Models\LineOaSetting;
+use App\Models\MobileAuthToken;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -150,6 +151,51 @@ class SocialStatusTest extends TestCase
             ->assertSee('เข้าสู่ระบบด้วย Google')
             ->assertSee(e(route('google.login', ['mobile_token' => $init['login_token'], 'state' => $init['state']])), false)
             ->assertSee(e(route('facebook.login', ['mobile_token' => $init['login_token'], 'state' => $init['state']])), false);
+    }
+
+    public function test_app_login_link_lives_fifteen_minutes(): void
+    {
+        // Google/Facebook อาจต้องพิมพ์รหัสผ่าน + ยืนยัน 2 ขั้นตอน — 5 นาทีไม่พอ
+        $init = $this->postJson('/api/v1/auth/mobile/init', [
+            'device_id' => 'device-1',
+            'code_verifier' => $this->codeVerifier,
+        ])->assertOk();
+
+        $init->assertJsonPath('data.expires_in', 900);
+        $token = MobileAuthToken::firstOrFail();
+        $this->assertEqualsWithDelta(900, now()->diffInSeconds($token->login_token_expires_at), 5);
+    }
+
+    public function test_use_another_account_logs_the_browser_out_and_returns_to_the_app_login_page(): void
+    {
+        $someoneElse = User::factory()->create();
+        $init = $this->initMobileLogin();
+        $url = '/mobile-login?'.http_build_query(['token' => $init['login_token'], 'state' => $init['state']]);
+
+        // เบราว์เซอร์ค้าง session ของบัญชีอื่น → หน้ายืนยันต้องมีทางออก
+        $this->actingAs($someoneElse)->get($url)
+            ->assertOk()
+            ->assertViewIs('auth.mobile-login-confirm')
+            ->assertSee('ใช้บัญชีอื่น');
+
+        $this->post(route('mobile-login.switch-account'), ['token' => $init['login_token'], 'state' => $init['state']])
+            ->assertRedirect(route('mobile-login.show', ['token' => $init['login_token'], 'state' => $init['state']]));
+
+        $this->assertGuest();
+        $this->assertNull(MobileAuthToken::first()->user_id, 'ใช้บัญชีอื่น ≠ อนุญาต — ต้องไม่ออก code ให้บัญชีเดิม');
+    }
+
+    public function test_line_in_the_app_does_not_leave_a_web_session_behind(): void
+    {
+        $this->configureAll();
+        User::factory()->create(['line_user_id' => 'U0000000000000000000000000000pkce']);
+        $init = $this->initMobileLogin('line');
+
+        $jump = $this->get($this->relative($init['login_url']))->headers->get('Location');
+        $lineState = $this->queryOf($this->get($this->relative($jump))->headers->get('Location'))['state'];
+
+        $this->deepLinkFrom($this->get('/auth/line/callback?'.http_build_query(['code' => 'line-code', 'state' => $lineState])));
+        $this->assertGuest();
     }
 
     public function test_line_in_the_app_still_ends_with_a_code_through_the_shared_authorizer(): void

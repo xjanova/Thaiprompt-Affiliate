@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\SocialLoginRefusedException;
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\EnsureAccountActive;
 use App\Models\GoogleOAuthSetting;
 use App\Models\MlmMember;
 use App\Models\Setting;
@@ -11,7 +11,9 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Rules\NotReservedEmailDomain;
 use App\Services\Auth\MobileAppLogin;
+use App\Services\Auth\SocialLoginGuard;
 use App\Services\FortuneAffiliateService;
+use App\Support\InAppBrowser;
 use App\Support\LocalRedirect;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,7 +28,6 @@ use Illuminate\View\View;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
-use RuntimeException;
 use Throwable;
 
 /**
@@ -36,18 +37,23 @@ use Throwable;
  *   1. /auth/google → หน้าเลือกบัญชีของ Google (state กัน CSRF เก็บใน session โดย Socialite)
  *   2. Google ส่งกลับ /auth/google/callback?code=..&state=..
  *   3. จับคู่บัญชี: google_id ตรง → บัญชีเดิม
- *                  อีเมลตรง + Google ยืนยันอีเมลแล้วเท่านั้น → ผูก Google ให้บัญชีเดิม
- *                  ไม่เข้าเงื่อนไข → สร้างบัญชีใหม่ + Wallet + MlmMember (sponsor จาก ?ref=)
+ *                  อีเมลตรง → ผูกให้เฉพาะเมื่อยืนยันอีเมลแล้วทั้ง Google และบัญชีเรา + ไม่ใช่แอดมิน
+ *                              (ไม่ครบ = ปฏิเสธ ให้เข้าด้วยอีเมล+รหัสผ่าน — SocialLoginGuard)
+ *                  ไม่มีบัญชีที่ใช้อีเมลนี้ → สร้างบัญชีใหม่ + Wallet + MlmMember (sponsor จาก ?ref=)
+ *      บัญชีถูกระงับ / ต้องใช้ 2FA → ปฏิเสธ
  *   4. ล็อกอิน → หน้าที่ขอไว้ (?redirect= เฉพาะหน้าในเว็บ) หรือหน้าแรกผู้ใช้
  *
  * Flow แอป: /auth/google?mobile_token=..&state=.. (มาจาก /mobile-login) → เหมือนข้างบน
- *   แต่ข้อ 4 ออก auth code ให้แอปผ่าน MobileAppLogin แล้วพากลับ thaiprompt://auth
+ *   แต่ข้อ 4 ไม่ล็อกอินเว็บ — ออก auth code ให้แอปผ่าน MobileAppLogin แล้วพากลับ thaiprompt://auth
  *
  * ค่า client id / secret มาจาก DB (GoogleOAuthSetting) — ยังไม่ตั้งค่า = ปุ่มซ่อน + route นี้พากลับหน้าเข้าสู่ระบบ
  */
 class GoogleLoginController extends Controller
 {
-    public function __construct(protected MobileAppLogin $mobileLogin) {}
+    public function __construct(
+        protected MobileAppLogin $mobileLogin,
+        protected SocialLoginGuard $guard,
+    ) {}
 
     /**
      * พาไปหน้าเลือกบัญชีของ Google
@@ -70,6 +76,16 @@ class GoogleLoginController extends Controller
 
             return redirect()->route('login')
                 ->with('error', 'ยังไม่เปิดให้เข้าสู่ระบบด้วย Google — กรุณาแจ้งผู้ดูแลระบบ');
+        }
+
+        // เบราว์เซอร์ฝังในแอป (LINE/Facebook/WebView) → Google ตอบ 403 disallowed_useragent แน่นอน
+        //   บอกให้เปิดใน Chrome/Safari แทนการพาไปหน้า error ของ Google
+        if (InAppBrowser::current()) {
+            if ($fromApp && $mobileToken !== '' && $mobileState !== '') {
+                return $this->mobileLogin->backToLoginPage(['token' => $mobileToken, 'state' => $mobileState], InAppBrowser::GOOGLE_HINT);
+            }
+
+            return redirect()->route('login')->with('error', InAppBrowser::GOOGLE_HINT);
         }
 
         if ($fromApp) {
@@ -169,10 +185,15 @@ class GoogleLoginController extends Controller
 
         try {
             $user = $this->findOrCreateUser($googleUser);
-        } catch (RuntimeException $e) {
-            // ข้อความภาษาไทยที่ตั้งใจให้ผู้ใช้เห็น (เช่น อีเมลนี้ผูกกับ Google บัญชีอื่นแล้ว)
+            // ระงับ / ต้องใช้ 2FA → ไม่ให้เข้าทางลัด (ทั้งเว็บและแอป)
+            $this->guard->assertCanSignIn($user, 'google');
+        } catch (SocialLoginRefusedException $e) {
+            // ข้อความภาษาไทยที่ตั้งใจให้ผู้ใช้เห็นเท่านั้น
+            Log::info('Google OAuth: ปฏิเสธการเข้าสู่ระบบ', ['reason' => $e->reason(), 'from_app' => $mobile !== null]);
+
             return $fail($e->getMessage());
         } catch (Throwable $e) {
+            // อย่างอื่นทั้งหมด (รวม QueryException ที่มี SQL/อีเมล) ห้ามถึงหน้าจอ — log แล้วแสดงข้อความกลางๆ
             Log::error('Google OAuth: หา/สร้างบัญชีไม่สำเร็จ', [
                 'exception' => class_basename($e),
                 'error' => Str::limit($e->getMessage(), 300),
@@ -180,14 +201,6 @@ class GoogleLoginController extends Controller
 
             return $fail('เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง');
         }
-
-        // บัญชีถูกระงับ → ไม่ให้เข้า (ทั้งเว็บและแอป)
-        if ($user->isSuspended()) {
-            return $fail(EnsureAccountActive::SUSPENDED_MESSAGE);
-        }
-
-        Auth::login($user, true);
-        $request->session()->regenerate();
 
         try {
             $setting->recordLogin();
@@ -202,11 +215,15 @@ class GoogleLoginController extends Controller
         ]);
 
         // 📱 มาจากแอป → ออก auth code แล้วพากลับแอป
+        //    ไม่ล็อกอินเว็บในเบราว์เซอร์ของมือถือ (Custom Tab แชร์ cookie กับ Chrome — ไม่ทิ้ง session ที่จำไว้)
         if ($mobile) {
             Session::forget(['google_login_redirect', 'google_login_referral']);
 
             return $this->mobileLogin->authorize($user, $mobile['token'], $mobile['state'], 'google');
         }
+
+        Auth::login($user, true);
+        $request->session()->regenerate();
 
         $redirectUrl = LocalRedirect::sanitize(Session::pull('google_login_redirect')) ?? route('user.home');
         Session::forget('google_login_referral');
@@ -220,11 +237,14 @@ class GoogleLoginController extends Controller
      *
      * ลำดับการจับคู่:
      *   1. google_id ตรง → บัญชีเดิม
-     *   2. อีเมลตรง "และ Google ยืนยันว่าเป็นเจ้าของอีเมลแล้ว" → ผูก Google ให้บัญชีเดิม
-     *      (อีเมลที่ยังไม่ยืนยัน ห้ามผูกเด็ดขาด — ไม่งั้นใครก็ตั้งอีเมลคนอื่นแล้วยึดบัญชีได้)
-     *   3. ไม่เข้าเงื่อนไข → สร้างบัญชีใหม่
+     *   2. มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว → ผูก Google ให้ "เฉพาะเมื่อ" ครบทุกข้อ:
+     *        - Google ยืนยันว่าเป็นเจ้าของอีเมล (email_verified)
+     *        - บัญชีเรายืนยันอีเมลแล้ว (email_verified_at) — ไม่งั้นคนร้ายตั้งอีเมลเหยื่อไว้ก่อนแล้วรอยึด
+     *        - ไม่ใช่บัญชีแอดมิน
+     *      ไม่ครบ → ปฏิเสธ (ไม่ผูก ไม่สร้างบัญชีใหม่) ให้เข้าด้วยอีเมล+รหัสผ่าน
+     *   3. ไม่มีบัญชีที่ใช้อีเมลนี้ → สร้างบัญชีใหม่
      *
-     * @throws RuntimeException ข้อความภาษาไทยสำหรับแสดงผู้ใช้
+     * @throws SocialLoginRefusedException ข้อความภาษาไทยสำหรับแสดงผู้ใช้
      */
     protected function findOrCreateUser(SocialiteUser $googleUser): User
     {
@@ -248,16 +268,27 @@ class GoogleLoginController extends Controller
             return $user;
         }
 
-        // 2. อีเมลตรงกับบัญชีเดิม — ผูกให้เฉพาะเมื่อ Google ยืนยันอีเมลแล้ว
-        if ($email !== '' && $emailVerified) {
+        // 2. มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว
+        if ($email !== '') {
             $user = User::where('email', $email)->first();
 
             if ($user) {
+                if (! $emailVerified) {
+                    Log::warning('Google OAuth: อีเมลจาก Google ยังไม่ยืนยัน แต่ตรงกับบัญชีเดิม — ปฏิเสธ', ['user_id' => $user->id]);
+
+                    throw new SocialLoginRefusedException(SocialLoginGuard::EMAIL_TAKEN_MESSAGE, 'email_taken');
+                }
+
+                $this->guard->assertCanAutoLinkByEmail($user, 'google');
+
                 if (! empty($user->google_id) && $user->google_id !== $googleId) {
                     Log::warning('Google OAuth: อีเมลนี้ผูกกับบัญชี Google อื่นอยู่แล้ว', ['user_id' => $user->id]);
 
-                    throw new RuntimeException('อีเมลนี้ผูกกับบัญชี Google อื่นอยู่แล้ว กรุณาเข้าสู่ระบบด้วยวิธีเดิม');
+                    throw new SocialLoginRefusedException('อีเมลนี้ผูกกับบัญชี Google อื่นอยู่แล้ว กรุณาเข้าสู่ระบบด้วยวิธีเดิม', 'identity_taken');
                 }
+
+                // ระงับ / 2FA → ปฏิเสธก่อนผูก (ไม่ทิ้งการผูกไว้กับบัญชีที่เข้าทางนี้ไม่ได้)
+                $this->guard->assertCanSignIn($user, 'google');
 
                 $user->update([
                     'google_id' => $googleId,
@@ -265,7 +296,7 @@ class GoogleLoginController extends Controller
                     'profile_picture' => $user->profile_picture ?: $avatar,
                 ]);
 
-                Log::info('Google OAuth: ผูก Google ให้บัญชีเดิม (อีเมลยืนยันแล้ว)', ['user_id' => $user->id]);
+                Log::info('Google OAuth: ผูก Google ให้บัญชีเดิม (อีเมลยืนยันแล้วทั้งสองฝั่ง)', ['user_id' => $user->id]);
 
                 return $user;
             }

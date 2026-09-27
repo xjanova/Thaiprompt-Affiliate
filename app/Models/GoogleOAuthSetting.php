@@ -64,12 +64,15 @@ class GoogleOAuthSetting extends Model
     /**
      * ดึงแถวตั้งค่า (cache ไว้ 1 ชม. — บันทึกเมื่อไหร่ล้าง cache ให้เอง)
      *
+     * ยังไม่มีแถว → cache ค่า false ไว้ด้วย (Cache::remember ไม่จำ null → เดิมยิง DB ทุกครั้งที่เปิดหน้า login)
      * ตารางยังไม่มี / DB ล่ม → null (ปุ่ม Google ซ่อน ไม่ทำให้หน้าเว็บพัง)
      */
     public static function getActive(): ?self
     {
         try {
-            return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () => self::first());
+            $cached = Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () => self::first() ?? false);
+
+            return $cached instanceof self ? $cached : null;
         } catch (\Throwable) {
             return null;
         }

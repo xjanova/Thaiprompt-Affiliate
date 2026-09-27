@@ -316,6 +316,8 @@ class FacebookOAuthPsidMatchTest extends TestCase
             'email' => 'somchai@example.com',
             'password' => bcrypt(str()->random(20)),
         ]);
+        // 🔒 (2026-09-27) ผูกด้วยอีเมลได้เฉพาะบัญชีที่ยืนยันอีเมลแล้ว (SocialLoginGuard) — เคสนี้คือบัญชีที่ยืนยันแล้ว
+        $existing->forceFill(['email_verified_at' => now()])->save();
         $this->fakeIdsForPages([
             ['id' => self::PSID, 'page' => ['id' => self::PAGE_ID, 'name' => 'เพจดูดวง']],
         ]);

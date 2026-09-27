@@ -29,6 +29,7 @@ import { STORAGE_KEYS } from '@/constants';
 import * as Network from '@/services/network';
 import type { User } from '@/types';
 import type { SocialProvider } from '@/utils/webAuth';
+import { clearPendingWebAuth, loadPendingWebAuth, savePendingWebAuth } from '@/utils/webAuthStorage';
 
 interface AuthState {
   // State
@@ -429,6 +430,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           webAuthLoginToken: response.data.login_token,
           isLoading: false,
         });
+        // เก็บลงเครื่องด้วย — Android อาจฆ่าแอประหว่างผู้ใช้อยู่ใน Custom Tab (หน้า /auth อ่านคืนผ่าน handleWebAuthCallback)
+        await savePendingWebAuth(codeVerifier, response.data.state);
 
         return {
           success: true,
@@ -467,8 +470,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       // ตรวจสอบ state เพื่อป้องกัน CSRF
-      const savedState = get().webAuthState;
-      const codeVerifier = get().webAuthCodeVerifier;
+      let savedState = get().webAuthState;
+      let codeVerifier = get().webAuthCodeVerifier;
+
+      // แอปถูกปิดระหว่างอยู่ใน Custom Tab (หน่วยความจำหาย) หรือค่าในหน่วยความจำเป็นของอีกรอบ
+      // → ใช้ค่าที่เก็บในเครื่อง (state ต้องตรง + ไม่เก่ากว่า 15 นาที)
+      if (!codeVerifier || (savedState && savedState !== state)) {
+        const pending = await loadPendingWebAuth(state);
+        if (pending) {
+          codeVerifier = pending.verifier;
+          savedState = pending.state;
+        }
+      }
+      // ใช้ครั้งเดียว — ลบทิ้งทุกกรณี (code แลกได้ครั้งเดียวอยู่แล้ว)
+      await clearPendingWebAuth();
 
       if (!codeVerifier) {
         set({

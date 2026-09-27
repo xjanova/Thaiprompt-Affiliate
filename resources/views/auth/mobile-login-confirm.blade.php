@@ -120,6 +120,21 @@
                         ปฏิเสธ
                     </button>
                 </form>
+
+                {{-- ไม่ใช่บัญชีนี้ → ออกจากระบบเว็บในเบราว์เซอร์นี้ แล้วเลือกวิธีเข้าสู่ระบบใหม่ --}}
+                <form method="POST" action="{{ route('mobile-login.switch-account') }}" class="mt-4 text-center">
+                    @csrf
+                    <input type="hidden" name="token" value="{{ $token }}">
+                    <input type="hidden" name="state" value="{{ $state }}">
+
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 py-2 px-4 text-sm font-medium text-blue-300 hover:text-blue-200 underline-offset-4 hover:underline transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                        ใช้บัญชีอื่น
+                    </button>
+                </form>
             </div>
 
             {{-- Security Notice --}}

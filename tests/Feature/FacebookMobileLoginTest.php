@@ -84,6 +84,8 @@ class FacebookMobileLoginTest extends TestCase
         $deepLink = $this->deepLinkFrom($this->get('/auth/facebook/callback?code=abc&state=x'));
 
         $this->assertSame($init['state'], $deepLink['state']);
+        // เส้นแอปไม่ทิ้ง session เว็บ (remember) ไว้ในเบราว์เซอร์ของมือถือ
+        $this->assertGuest();
 
         $user = User::where('facebook_user_id', 'fb-asid-1')->firstOrFail();
         $this->exchangeCode($deepLink['code'], $deepLink['state'])
@@ -169,6 +171,63 @@ class FacebookMobileLoginTest extends TestCase
 
         $this->get('/auth/facebook/callback?code=abc&state=x')
             ->assertRedirect('/user/fortune-referral/recruit');
+    }
+
+    public function test_unverified_local_account_is_never_auto_linked_by_facebook_email(): void
+    {
+        // คนร้ายตั้งอีเมลเหยื่อไว้ในบัญชีตัวเอง (ยืนยันไม่ได้) → เหยื่อกด Facebook ในแอป
+        $squatter = User::factory()->create(['email' => 'victim@example.com', 'email_verified_at' => null]);
+        [$init] = $this->startAppFacebookLogin();
+
+        $this->fakeProviderUser('facebook', $this->socialiteUser('fb-victim', 'victim@example.com'));
+        $this->get('/auth/facebook/callback?code=abc&state=x')
+            ->assertRedirect(route('mobile-login.show', ['token' => $init['login_token'], 'state' => $init['state']]))
+            ->assertSessionHas('error', 'มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน');
+
+        $this->assertNull($squatter->fresh()->facebook_user_id);
+        $this->assertSame(0, User::where('facebook_user_id', 'fb-victim')->count());
+        $this->assertNull(MobileAuthToken::first()->auth_code);
+    }
+
+    public function test_admin_account_is_never_auto_linked_by_facebook_email(): void
+    {
+        $admin = User::factory()->create(['email' => 'boss@example.com', 'is_super_admin' => true]);
+
+        $this->get('/auth/facebook');
+        $this->fakeProviderUser('facebook', $this->socialiteUser('fb-boss', 'boss@example.com'));
+        $this->get('/auth/facebook/callback?code=abc&state=x')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', 'มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน');
+
+        $this->assertNull($admin->fresh()->facebook_user_id);
+        $this->assertGuest();
+    }
+
+    public function test_verified_normal_account_is_linked_by_facebook_email(): void
+    {
+        $owner = User::factory()->create(['email' => 'owner@example.com']);
+
+        $this->get('/auth/facebook');
+        $this->fakeProviderUser('facebook', $this->socialiteUser('fb-owner', 'owner@example.com'));
+        $this->get('/auth/facebook/callback?code=abc&state=x')->assertRedirect(route('user.wallet.index'));
+
+        $this->assertSame('fb-owner', $owner->fresh()->facebook_user_id);
+        $this->assertAuthenticatedAs($owner);
+    }
+
+    public function test_account_with_two_factor_login_cannot_skip_it_with_facebook(): void
+    {
+        User::factory()->create(['facebook_user_id' => 'fb-2fa']);
+        $this->mock(\App\Services\TwoFactorService::class, fn ($mock) => $mock->shouldReceive('isRequired')->with('login', \Mockery::any())->andReturn(true));
+        [$init] = $this->startAppFacebookLogin();
+
+        $this->fakeProviderUser('facebook', $this->socialiteUser('fb-2fa', null));
+        $this->get('/auth/facebook/callback?code=abc&state=x')
+            ->assertRedirect(route('mobile-login.show', ['token' => $init['login_token'], 'state' => $init['state']]))
+            ->assertSessionHas('error', 'บัญชีนี้เปิดยืนยันตัวตน 2 ขั้นตอน กรุณาเข้าสู่ระบบด้วยรหัสผ่าน');
+
+        $this->assertNull(MobileAuthToken::first()->auth_code);
+        $this->assertGuest();
     }
 
     public function test_suspended_facebook_user_is_refused_in_the_app(): void

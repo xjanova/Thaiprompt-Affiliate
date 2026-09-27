@@ -32,7 +32,8 @@ class MobileAuthController extends Controller
     /**
      * Token expiry times (seconds)
      */
-    private const LOGIN_TOKEN_EXPIRY = 300;     // 5 นาที
+    // 15 นาที — เข้าสู่ระบบด้วย Google/Facebook อาจต้องพิมพ์รหัสผ่าน + ยืนยัน 2 ขั้นตอนของผู้ให้บริการ (5 นาทีไม่พอ)
+    private const LOGIN_TOKEN_EXPIRY = 900;
 
     private const AUTH_CODE_EXPIRY = 60;        // 1 นาที
 

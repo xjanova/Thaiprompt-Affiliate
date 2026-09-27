@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\SocialLoginRefusedException;
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\EnsureAccountActive;
 use App\Models\FacebookOAuthSetting;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Rules\NotReservedEmailDomain;
 use App\Services\Auth\MobileAppLogin;
+use App\Services\Auth\SocialLoginGuard;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAffiliateService;
 use App\Support\LocalRedirect;
@@ -178,22 +179,29 @@ class FacebookLoginController extends Controller
 
         try {
             $user = $this->findOrCreateUser($fbUser);
-        } catch (Exception $e) {
+            // 🔒 ระงับ / ต้องใช้ 2FA → ไม่ให้เข้าทางลัด (เดิมเข้าได้แล้วค่อยโดนเด้งหน้าถัดไป · แอปได้ token ไปด้วย)
+            app(SocialLoginGuard::class)->assertCanSignIn($user, 'facebook');
+        } catch (SocialLoginRefusedException $e) {
+            // ข้อความภาษาไทยที่ตั้งใจให้ผู้ใช้เห็นเท่านั้น
+            Log::info('Facebook OAuth: ปฏิเสธการเข้าสู่ระบบ', ['reason' => $e->reason(), 'from_app' => $mobile !== null]);
+
+            return $fail($e->getMessage());
+        } catch (\Throwable $e) {
+            // อย่างอื่นทั้งหมด (รวม QueryException) ห้ามถึงหน้าจอ — log แล้วแสดงข้อความกลางๆ
             Log::error('Facebook OAuth: findOrCreateUser failed', [
                 'fb_user_id' => $fbUser->getId(),
-                'error' => $e->getMessage(),
+                'exception' => class_basename($e),
+                'error' => Str::limit($e->getMessage(), 300),
             ]);
 
             return $fail('เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่');
         }
 
-        // 🔒 บัญชีถูกระงับ → ไม่ให้เข้า (เดิมเข้าได้แล้วค่อยโดนเด้งตอนเปิดหน้าถัดไป · แอปจะได้ token ไปด้วย)
-        if ($user->isSuspended()) {
-            return $fail(EnsureAccountActive::SUSPENDED_MESSAGE);
+        // Login user — เฉพาะเว็บ
+        // 📱 มาจากแอป = ไม่ล็อกอินเว็บในเบราว์เซอร์ของมือถือ (Custom Tab แชร์ cookie กับ Chrome — ไม่ทิ้ง session ที่จำไว้)
+        if (! $mobile) {
+            Auth::login($user, true);
         }
-
-        // Login user
-        Auth::login($user, true);
 
         // 🔗 (2026-08-15) เย็บความจำข้ามสาขา — ตอนนี้เรารู้ทั้ง ASID และ PSID พร้อมกัน
         //    ASID ผูกกับ "แอป" ไม่ใช่ "เพจ" → เป็นกุญแจเดียวที่ใช้บอกได้ว่า
@@ -243,7 +251,8 @@ class FacebookLoginController extends Controller
      *
      * Match priority:
      *   1. facebook_user_id ตรง → existing FB-linked user
-     *   2. user.email ตรง → link FB ให้ user เดิม (เคย register แบบอื่น)
+     *   2. user.email ตรง → link FB ให้ user เดิม เฉพาะบัญชีที่ยืนยันอีเมลแล้ว + ไม่ใช่แอดมิน
+     *      (ไม่เข้าเงื่อนไข = SocialLoginRefusedException ให้เข้าด้วยอีเมล+รหัสผ่าน)
      *   3. map ASID→PSID ผ่าน Graph ids_for_pages → บัญชีที่บอทสมัครให้ตอนดูดวง
      *      (facebook_psid หรือ email fb_{psid}@thaiprompt.local)
      *   4. ไม่เจอ → สร้างใหม่
@@ -268,9 +277,17 @@ class FacebookLoginController extends Controller
         }
 
         // 2. หา by email (เคย register แบบอื่น)
+        //    🔒 (2026-09-27) ผูกอัตโนมัติได้เฉพาะบัญชีที่ "ยืนยันอีเมลแล้ว" และ "ไม่ใช่แอดมิน"
+        //       ไม่งั้นคนร้ายสมัคร/แก้โปรไฟล์ใส่อีเมลเหยื่อไว้ก่อน → เหยื่อกด Facebook = ตัวตนเหยื่อถูกผูกเข้าบัญชีคนร้าย
+        //       ไม่เข้าเงื่อนไข = ปฏิเสธ (ไม่ผูก ไม่สร้างบัญชีซ้ำ) ให้เข้าด้วยอีเมล+รหัสผ่าน
         if ($fbEmail) {
             $user = User::where('email', $fbEmail)->first();
             if ($user) {
+                $guard = app(SocialLoginGuard::class);
+                $guard->assertCanAutoLinkByEmail($user, 'facebook');
+                // ระงับ / 2FA → ปฏิเสธก่อนผูก
+                $guard->assertCanSignIn($user, 'facebook');
+
                 $this->linkFacebookToUser($user, $fbUser);
                 $this->reconcileMissingPsid($user, $fbId);
 
@@ -482,7 +499,7 @@ class FacebookLoginController extends Controller
             ->where('id', '!=', $user->id)
             ->exists();
         if ($existingFb) {
-            throw new Exception('บัญชี Facebook นี้ถูกผูกกับผู้ใช้อื่นแล้ว');
+            throw new SocialLoginRefusedException('บัญชี Facebook นี้ถูกผูกกับผู้ใช้อื่นแล้ว', 'identity_taken');
         }
 
         $user->update([

@@ -223,12 +223,6 @@ class LineLoginController extends Controller
                     'display_name' => $displayName,
                 ]);
 
-                // Login user
-                Auth::login($user);
-
-                // Regenerate session เพื่อป้องกัน session fixation + สร้าง CSRF token ใหม่
-                $request->session()->regenerate();
-
                 // ตรวจสอบว่ามาจาก mobile app หรือไม่
                 $mobileToken = Session::get('line_mobile_token');
                 $mobileState = Session::get('line_mobile_state');
@@ -239,9 +233,17 @@ class LineLoginController extends Controller
                     Session::forget('line_mobile_state');
                     Session::forget('line_login_redirect');
 
-                    // หา MobileAuthToken และ authorize
+                    // 📱 (2026-09-27) ไม่ล็อกอินเว็บในเบราว์เซอร์ของมือถือ — แอปใช้แค่ auth code
+                    //    (Custom Tab แชร์ cookie กับ Chrome — ไม่ทิ้ง session เว็บค้างไว้ให้คนหยิบมือถือไปใช้ต่อ)
+                    //    ผู้ใช้ LINE ใหม่ที่ต้องไปหน้าสมัคร ไม่ผ่านจุดนี้ (อยู่ด้านล่าง ใช้ session ตามเดิม)
                     return $this->authorizeMobileApp($user, $mobileToken, $mobileState);
                 }
+
+                // Login user
+                Auth::login($user);
+
+                // Regenerate session เพื่อป้องกัน session fixation + สร้าง CSRF token ใหม่
+                $request->session()->regenerate();
 
                 // Redirect to intended page (user home - App-Like Interface)
                 // 🔐 ปลายทางต้องเป็นหน้าในเว็บเราเท่านั้น (กัน open redirect ผ่าน ?redirect=https://เว็บอื่น)
@@ -445,7 +447,8 @@ class LineLoginController extends Controller
             ]);
 
             return redirect()->route('user.profile')
-                ->with('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อบัญชี LINE: '.$e->getMessage());
+                // 🔒 ห้ามต่อข้อความ exception ให้ผู้ใช้เห็น (QueryException มี SQL/อีเมลอยู่ข้างใน) — รายละเอียดอยู่ใน log แล้ว
+                ->with('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อบัญชี LINE กรุณาลองใหม่อีกครั้ง');
         }
     }
 

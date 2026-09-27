@@ -6,6 +6,12 @@ use App\Models\GoogleOAuthSetting;
 use App\Models\MobileAuthToken;
 use App\Models\User;
 use App\Models\Wallet;
+use App\Services\AccountDeletionService;
+use App\Services\Auth\SocialLoginGuard;
+use App\Services\Fortune\FortunePdpaDeletionService;
+use App\Services\TwoFactorService;
+use App\Support\InAppBrowser;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -171,6 +177,65 @@ class GoogleLoginTest extends TestCase
         $this->assertArrayHasKey('api_key', config('services.google'));
     }
 
+    public function test_missing_settings_row_is_cached_instead_of_hitting_the_db_every_page_view(): void
+    {
+        GoogleOAuthSetting::clearCache();
+        DB::enableQueryLog();
+
+        GoogleOAuthSetting::isConfigured();
+        GoogleOAuthSetting::isConfigured();
+        GoogleOAuthSetting::isConfigured();
+
+        $queries = collect(DB::getQueryLog())->filter(fn ($q) => str_contains($q['query'], 'google_oauth_settings'));
+        DB::disableQueryLog();
+        $this->assertCount(1, $queries, 'ยังไม่มีแถว → ต้อง cache ผล "ไม่มี" ไว้ ไม่ยิง DB ทุกครั้ง');
+
+        // บันทึกแล้วต้องเห็นค่าใหม่ทันที (ล้าง cache ตอน save)
+        $this->configureGoogle();
+        $this->assertTrue(GoogleOAuthSetting::isConfigured());
+    }
+
+    public function test_in_app_browsers_hide_the_google_button_and_explain_why(): void
+    {
+        $this->configureGoogle();
+        $lineInApp = 'Mozilla/5.0 (Linux; Android 13; SM-A536E Build/TP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.230 Mobile Safari/537.36 Line/13.19.1/IAB';
+
+        $this->withHeader('User-Agent', $lineInApp)->get('/login')
+            ->assertOk()
+            ->assertDontSee('เข้าสู่ระบบด้วย Google')
+            ->assertSee('Chrome หรือ Safari');
+
+        $this->withHeader('User-Agent', $lineInApp)->get('/auth/google')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', InAppBrowser::GOOGLE_HINT);
+    }
+
+    public function test_in_app_browser_detection_matches_webviews_but_not_the_apps_custom_tab(): void
+    {
+        $embedded = [
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Line/14.5.0',
+            'Mozilla/5.0 (Linux; Android 14; Pixel 7 Build/UQ1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/460.0.0.46.108;]',
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/460.0]',
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 330.0.0.0',
+            'Mozilla/5.0 (Linux; Android 10; K; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0 Mobile Safari/537.36',
+        ];
+        $browsers = [
+            // Chrome Custom Tab ของแอป (Android) = UA ของ Chrome ปกติ
+            'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+            // ASWebAuthenticationSession (iOS) = UA ของ Safari ปกติ
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            '',
+        ];
+
+        foreach ($embedded as $ua) {
+            $this->assertTrue(InAppBrowser::isEmbedded($ua), $ua);
+        }
+        foreach ($browsers as $ua) {
+            $this->assertFalse(InAppBrowser::isEmbedded($ua), $ua);
+        }
+    }
+
     public function test_client_secret_is_encrypted_at_rest(): void
     {
         $this->configureGoogle();
@@ -232,7 +297,7 @@ class GoogleLoginTest extends TestCase
         $this->assertSame(1, User::where('email', 'owner@example.com')->count());
     }
 
-    public function test_unverified_email_never_links_to_the_existing_account(): void
+    public function test_unverified_google_email_never_links_to_the_existing_account(): void
     {
         $this->configureGoogle();
         $victim = User::factory()->create(['email' => 'victim@example.com']);
@@ -240,17 +305,138 @@ class GoogleLoginTest extends TestCase
         $this->get('/auth/google');
         $this->fakeProviderUser('google', $this->googleUser('g-attacker', 'victim@example.com', verified: false));
 
+        $this->get('/auth/google/callback?code=abc&state=x')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', SocialLoginGuard::EMAIL_TAKEN_MESSAGE);
+
+        // บัญชีเหยื่อไม่ถูกผูก ไม่มีใครล็อกอิน ไม่มีบัญชีใหม่
+        $this->assertNull($victim->fresh()->google_id);
+        $this->assertGuest();
+        $this->assertSame(0, User::where('google_id', 'g-attacker')->count());
+    }
+
+    public function test_unverified_google_email_without_existing_account_gets_a_synthetic_email(): void
+    {
+        $this->configureGoogle();
+        $this->get('/auth/google');
+        $this->fakeProviderUser('google', $this->googleUser('g-unverified', 'nobody@example.com', verified: false));
+
         $this->get('/auth/google/callback?code=abc&state=x')->assertRedirect(route('user.home'));
 
-        // บัญชีเหยื่อไม่ถูกผูก และคนที่ล็อกอินไม่ใช่เหยื่อ
-        $this->assertNull($victim->fresh()->google_id);
-        $this->assertNotSame($victim->id, auth()->id());
-
-        // ได้บัญชีแยกของตัวเอง อีเมลสังเคราะห์ (ไม่เอาอีเมลที่ยังไม่ยืนยันมาเป็นของตัว)
-        $created = User::where('google_id', 'g-attacker')->firstOrFail();
-        $this->assertSame('googleoauth_g-attacker@thaiprompt.local', $created->email);
+        // ไม่เอาอีเมลที่ยังไม่ยืนยันมาเป็นของตัว
+        $created = User::where('google_id', 'g-unverified')->firstOrFail();
+        $this->assertSame('googleoauth_g-unverified@thaiprompt.local', $created->email);
         $this->assertNull($created->email_verified_at);
         $this->assertAuthenticatedAs($created);
+    }
+
+    public function test_unverified_local_account_is_never_auto_linked_even_with_a_verified_google_email(): void
+    {
+        // คนร้ายสมัคร/แก้โปรไฟล์ใส่อีเมลเหยื่อไว้ก่อน (ยืนยันอีเมลไม่ได้) แล้วรอเหยื่อกด Google
+        $this->configureGoogle();
+        $squatter = User::factory()->create(['email' => 'victim@gmail.com', 'email_verified_at' => null]);
+
+        $this->get('/auth/google');
+        $this->fakeProviderUser('google', $this->googleUser('g-victim', 'victim@gmail.com', verified: true));
+
+        $this->get('/auth/google/callback?code=abc&state=x')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', 'มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่าน');
+
+        $this->assertNull($squatter->fresh()->google_id, 'ตัวตน Google ของเหยื่อต้องไม่ถูกผูกเข้าบัญชีคนร้าย');
+        $this->assertSame(0, User::where('google_id', 'g-victim')->count(), 'ห้ามสร้างบัญชีซ้ำอีเมลเดียวกัน');
+        $this->assertGuest();
+    }
+
+    public function test_admin_account_is_never_auto_linked_by_email(): void
+    {
+        $this->configureGoogle();
+        $admin = User::factory()->create(['email' => 'boss@example.com', 'role' => 'admin']);
+
+        $this->get('/auth/google');
+        $this->fakeProviderUser('google', $this->googleUser('g-boss', 'boss@example.com', verified: true));
+
+        $this->get('/auth/google/callback?code=abc&state=x')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', SocialLoginGuard::EMAIL_TAKEN_MESSAGE);
+
+        $this->assertNull($admin->fresh()->google_id);
+        $this->assertGuest();
+    }
+
+    public function test_account_with_two_factor_login_must_use_password(): void
+    {
+        $this->configureGoogle();
+        $user = User::factory()->create(['google_id' => 'g-2fa']);
+        $this->mock(TwoFactorService::class, fn ($mock) => $mock->shouldReceive('isRequired')->with('login', \Mockery::any())->andReturn(true));
+
+        $this->get('/auth/google');
+        $this->fakeProviderUser('google', $this->googleUser('g-2fa', 'twofa@gmail.com'));
+
+        $this->get('/auth/google/callback?code=abc&state=x')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', 'บัญชีนี้เปิดยืนยันตัวตน 2 ขั้นตอน กรุณาเข้าสู่ระบบด้วยรหัสผ่าน');
+
+        $this->assertGuest();
+        $this->assertSame($user->id, User::where('google_id', 'g-2fa')->value('id'));
+    }
+
+    public function test_database_error_text_never_reaches_the_user(): void
+    {
+        $this->configureGoogle();
+        // จำลอง QueryException (ลูกของ RuntimeException) ที่ข้อความมี SQL + อีเมล
+        User::creating(function () {
+            throw new QueryException('mysql', 'insert into users (email, password) values (?, ?)', ['leak@example.com', '$2y$hash'], new \Exception('Duplicate entry'));
+        });
+
+        $this->get('/auth/google');
+        $this->fakeProviderUser('google', $this->googleUser('g-db', 'leak@example.com'));
+
+        $response = $this->get('/auth/google/callback?code=abc&state=x')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('error', 'เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง');
+
+        $this->assertStringNotContainsString('insert into', (string) session('error'));
+        $this->assertStringNotContainsString('leak@example.com', (string) $response->getContent());
+        $this->assertGuest();
+    }
+
+    public function test_deleted_google_user_can_sign_up_with_google_again(): void
+    {
+        $this->configureGoogle();
+        $user = User::factory()->create(['google_id' => 'g-comeback', 'google_avatar' => 'https://example.test/a.jpg']);
+
+        app(AccountDeletionService::class)->delete($user);
+
+        $row = DB::table('users')->where('id', $user->id)->first();
+        $this->assertNull($row->google_id, 'ลบบัญชีแล้วต้องปล่อย google_id (unique) คืน');
+        $this->assertNull($row->google_avatar);
+
+        $this->get('/auth/google');
+        $this->fakeProviderUser('google', $this->googleUser('g-comeback', 'comeback@gmail.com'));
+        $this->get('/auth/google/callback?code=abc&state=x')->assertRedirect(route('user.home'));
+
+        $newAccount = User::where('google_id', 'g-comeback')->firstOrFail();
+        $this->assertNotSame($user->id, $newAccount->id);
+    }
+
+    public function test_pdpa_deletion_also_releases_google_id(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'line_Ubot@thaiprompt.local',
+            'line_user_id' => 'U00000000000000000000000000000bot',
+            'google_id' => 'g-pdpa',
+            'google_avatar' => 'https://example.test/p.jpg',
+        ]);
+
+        $service = app(FortunePdpaDeletionService::class);
+        $method = new \ReflectionMethod($service, 'anonymizeLinkedAccounts');
+        $method->setAccessible(true);
+        $method->invoke($service, [$user->id], 'line', 'U00000000000000000000000000000bot');
+
+        $row = DB::table('users')->where('id', $user->id)->first();
+        $this->assertNull($row->google_id);
+        $this->assertNull($row->google_avatar);
     }
 
     public function test_email_already_linked_to_another_google_account_is_refused(): void
@@ -353,6 +539,8 @@ class GoogleLoginTest extends TestCase
         $this->fakeProviderUser('google', $this->googleUser('g-app', 'app.user@gmail.com'));
         $deepLink = $this->deepLinkFrom($this->get('/auth/google/callback?code=abc&state=x'));
         $this->assertSame($init['state'], $deepLink['state']);
+        // เส้นแอปไม่ทิ้ง session เว็บไว้ในเบราว์เซอร์ของมือถือ
+        $this->assertGuest();
 
         // แอปแลก code + verifier → ได้ token ของบัญชี Google นี้
         $this->exchangeCode($deepLink['code'], $deepLink['state'])
