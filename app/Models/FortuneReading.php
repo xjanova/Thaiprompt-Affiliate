@@ -2347,9 +2347,10 @@ class FortuneReading extends Model
                 'conversation_status' => self::STATUS_COMPLETED,
                 // 🏷️ (2026-08-07) บันทึกเหตุผลด้วย ไม่งั้นบิลไปกองรวมกับ "ปิดเงียบ" ในหน้าแอดมิน
                 //   ทำให้ดูเหมือนลูกค้าหายไปเอง ทั้งที่ระบบเป็นคนยกเลิกตามเวลา
-                //   ใช้ JSON_SET เพื่อไม่ทับ state อื่นที่มีอยู่ (COALESCE กันเคส state เป็น NULL)
+                //   ใช้ JSON_SET เพื่อไม่ทับ state อื่นที่มีอยู่
+                //   🧩 (2026-09-27) เดิม COALESCE(…, '{}') กันแค่ NULL — state "[]" ได้ป้ายหายเงียบ ⇒ STATE_OBJECT_SQL
                 'conversation_state' => \DB::raw(
-                    "JSON_SET(COALESCE(conversation_state, '{}'), '$.cancellation_reason', 'auto_expired')"
+                    'JSON_SET('.self::STATE_OBJECT_SQL.", '\$.cancellation_reason', 'auto_expired')"
                 ),
             ]);
 
@@ -2563,6 +2564,15 @@ class FortuneReading extends Model
             return false;
         }
     }
+
+    /**
+     * 🧩 (2026-09-27) นิพจน์ SQL: conversation_state ในรูป "อ็อบเจกต์ JSON" — ใช้เป็นต้นทางของ JSON_SET ทีละคีย์
+     *
+     * คอลัมน์เป็น longtext + cast 'array' ⇒ state ว่างถูกเก็บเป็น "[]" (อาร์เรย์ JSON) และ JSON_SET คีย์ชื่อ
+     * บนอาร์เรย์ = ไม่ทำอะไรเงียบ ๆ (ทดสอบบน prod MariaDB 10.6 แล้ว) · NULL / "" / JSON เสีย ก็เริ่มจาก {} เช่นกัน
+     * ⚠️ ค่าที่เป็น JSON (อาร์เรย์/อ็อบเจกต์) ให้ส่งผ่าน JSON_EXTRACT(?, '$') — MariaDB ไม่รู้จัก CAST(? AS JSON)
+     */
+    public const STATE_OBJECT_SQL = "IF(JSON_VALID(conversation_state) AND JSON_TYPE(conversation_state) = 'OBJECT', conversation_state, JSON_OBJECT())";
 
     // ════════════════════════════════════════════════════════════════
     // 🕛 เวลาเกิด (2026-09-02 owner directive)
@@ -3073,14 +3083,11 @@ class FortuneReading extends Model
         }
 
         try {
-            // คอลัมน์เป็น longtext + cast 'array' ⇒ state ว่างถูกเก็บเป็น "[]" (อาร์เรย์ JSON)
-            //   JSON_SET คีย์ชื่อบนอาร์เรย์ = ไม่ทำอะไรเงียบ ๆ (ระบบบอกลูกค้าว่าบันทึกแล้วแต่ไม่มีจริง)
-            //   ⇒ ไม่ใช่อ็อบเจกต์ JSON ที่อ่านได้ (NULL / "" / "[]") ให้เริ่มจากอ็อบเจกต์ว่าง
+            // state ว่างเก็บเป็น "[]" — JSON_SET บนอาร์เรย์ไม่ทำอะไรเงียบ ๆ (บอกลูกค้าว่าบันทึกแล้วแต่ไม่มีจริง)
+            //   ⇒ เริ่มจาก STATE_OBJECT_SQL เสมอ
             \Illuminate\Support\Facades\DB::update(
                 'UPDATE '.$this->getTable()
-                    .' SET conversation_state = JSON_SET('
-                    .'IF(JSON_VALID(conversation_state) AND JSON_TYPE(conversation_state) = \'OBJECT\', conversation_state, JSON_OBJECT()),'
-                    .' \'$.stated_birth_date\', ?)'
+                    .' SET conversation_state = JSON_SET('.self::STATE_OBJECT_SQL.', \'$.stated_birth_date\', ?)'
                     .' WHERE id = ?',
                 [$ymd, (int) $this->id]
             );

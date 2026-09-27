@@ -4127,9 +4127,10 @@ trait CelticCrossConversationTrait
         //   พลาด = เสียแค่ตาข่ายสำรอง (buffer ยังถือคำถามอยู่) ห้ามทำให้การเข้าคิวล้ม
         try {
             \Illuminate\Support\Facades\DB::update(
-                // ท่าเดียวกับ FortuneReading (cancellation_reason) ที่ใช้บน prod อยู่แล้ว — คอลัมน์เป็น LONGTEXT
-                'UPDATE '.$reading->getTable().' SET conversation_state = JSON_SET(COALESCE(conversation_state, \'{}\'),'
-                ." '$.celtic_pending_q', CAST(? AS JSON), '$.celtic_pending_q_at', ?) WHERE id = ?",
+                // 🧩 (2026-09-27) เดิม CAST(? AS JSON) = syntax error บน MariaDB ของ prod ⇒ ตาข่ายนี้ไม่เคยเขียนได้เลย
+                //   (log จริง 2026-09-20 reading 13489) · ใช้ JSON_EXTRACT(?, '$') ได้ทั้ง MariaDB และ MySQL
+                'UPDATE '.$reading->getTable().' SET conversation_state = JSON_SET('.FortuneReading::STATE_OBJECT_SQL.','
+                ." '\$.celtic_pending_q', JSON_EXTRACT(?, '\$'), '\$.celtic_pending_q_at', ?) WHERE id = ?",
                 [
                     json_encode(array_values($pending), JSON_UNESCAPED_UNICODE),
                     (string) ($state['celtic_pending_q_at'] ?? now()->toIso8601String()),
