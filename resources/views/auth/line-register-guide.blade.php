@@ -66,8 +66,26 @@
             animation: float 3s ease-in-out infinite;
         }
     </style>
+    {{-- ธีมโนวา: พื้นกลางคืน + วัตถุตกแต่งชุดเดียวกับหน้าเข้าสู่ระบบ · เขียว LINE คงไว้เฉพาะโลโก้และปุ่มแอดไลน์ (สีแบรนด์) --}}
+    @include('auth.partials.nova-skin')
+    @if(config('shop.nova_public', true))
+    <style>
+        .nv-lg .max-w-2xl > .glass-fusion { background: linear-gradient(160deg, rgba(20, 36, 84, .8), rgba(7, 13, 32, .9)) !important; border: 1px solid rgba(245, 210, 127, .26) !important; box-shadow: 0 34px 80px -30px rgba(0, 0, 0, .85), inset 0 1px 0 rgba(255, 255, 255, .07) !important; }
+        .nv-lg .max-w-2xl > .glass-fusion .glass-fusion { background: rgba(255, 255, 255, .04) !important; border: 1px solid rgba(245, 210, 127, .2) !important; box-shadow: none !important; }
+        .nv-lg .max-w-2xl > .glass-fusion .group.glass-fusion:hover { border-color: rgba(245, 210, 127, .5) !important; }
+        .nv-lg .group.glass-fusion .flex-shrink-0.w-12 { background-image: linear-gradient(180deg, #fbe3a8, #d4a64a) !important; color: #1a1405 !important; }
+        .nv-lg h1.bg-clip-text { font-family: 'Trirong', 'Anuphan', serif; background-image: linear-gradient(100deg, #fff1c7 0%, #f5d27f 25%, #d4a64a 50%, #fbe3a8 72%, #c8962f 100%) !important; }
+        .nv-lg .text-gray-900, .nv-lg h3 { color: #fbf6ea !important; }
+        .nv-lg .text-gray-700 { color: rgba(246, 239, 221, .78) !important; }
+        .nv-lg .text-yellow-900 { color: #f5d27f !important; }
+        .nv-lg .text-yellow-800 { color: rgba(246, 239, 221, .82) !important; }
+        .nv-lg svg.text-green-600 { color: #f0c96a !important; }
+        .nv-lg .grid > a { background: rgba(255, 255, 255, .05) !important; background-image: none !important; color: #fbf6ea !important; border: 1px solid rgba(245, 210, 127, .32) !important; box-shadow: none !important; }
+        .nv-lg .grid > a:hover { background: rgba(255, 255, 255, .1) !important; border-color: rgba(245, 210, 127, .6) !important; }
+    </style>
+    @endif
 </head>
-<body class="animated-gradient min-h-screen">
+<body class="{{ config('shop.nova_public', true) ? 'nv-auth nv-lg' : 'animated-gradient' }} min-h-screen">
     <div class="min-h-screen flex items-center justify-center px-4 py-12">
         <div class="max-w-2xl w-full">
             <div class="glass-fusion backdrop-blur-2xl bg-white/90 dark:bg-gray-800/90 rounded-3xl shadow-2xl border border-white/30 dark:border-gray-700/50 p-8 md:p-12 animate-fade-in-up">

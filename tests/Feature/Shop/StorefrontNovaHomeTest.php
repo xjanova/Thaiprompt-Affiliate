@@ -161,6 +161,38 @@ class StorefrontNovaHomeTest extends TestCase
         $this->assertStringContainsString('from-green-600 to-emerald-600', $this->get('/how-to-register')->assertOk()->getContent());
     }
 
+    public function test_status_pages_use_nova_and_never_reload_in_a_loop(): void
+    {
+        // 503: นับถอยหลังเฉพาะเวลาที่ยังไม่ถึง · เลยเวลาแล้วต้องไม่มีสคริปต์โหลดซ้ำ
+        $m = \App\Models\AppMaintenance::getInstance();
+        $m->update(['show_countdown' => true, 'scheduled_end' => now()->addHour(), 'message' => 'ทดสอบข้อความปิดปรับปรุง']);
+        $html = view('errors.503')->render();
+        $this->assertStringContainsString('nv-foil', $html);
+        $this->assertStringContainsString('ทดสอบข้อความปิดปรับปรุง', $html);
+        $this->assertStringContainsString('id="mt-cd"', $html);
+        $this->assertStringNotContainsString('cdn.tailwindcss.com', $html);
+
+        $m->update(['scheduled_end' => now()->subMinute()]);
+        $late = view('errors.503')->render();
+        $this->assertStringNotContainsString('id="mt-cd"', $late, 'เลยเวลาแล้วห้ามนับถอยหลัง (เดิม reload ทุกวินาที)');
+        $this->assertStringNotContainsString('location.reload(); }, 30000', $late);
+
+        // 403 IP ถูกบล็อก: ภาษาไทย + โชว์ IP/สาเหตุ (escape) + ไม่มีปุ่มพากลับเข้าเว็บเป็นปุ่มหลัก
+        $blocked = view('errors.blocked', ['ip' => '203.0.113.45', 'reason' => '<b>brute</b>'])->render();
+        $this->assertStringContainsString('ระบบระงับการเข้าถึงชั่วคราว', $blocked);
+        $this->assertStringContainsString('203.0.113.45', $blocked);
+        $this->assertStringContainsString('&lt;b&gt;brute&lt;/b&gt;', $blocked);
+        $this->assertStringContainsString('mailto:', $blocked);
+
+        // หน้าออฟไลน์: ต้องอยู่ได้โดยไม่มีเน็ต (ไม่มี CSS ภายนอก) และไม่ reload วนตอนเปิด /offline ตรงๆ
+        $offline = $this->get('/offline')->assertOk()->getContent();
+        $this->assertStringNotContainsString('<link rel="stylesheet"', $offline);
+        $this->assertStringNotContainsString('setTimeout(() => location.reload(), 500)', $offline);
+        $this->assertStringContainsString("location.href = '/'", $offline);
+
+        $this->assertStringContainsString('nv-lg', $this->get('/auth/line/register-guide')->assertOk()->getContent());
+    }
+
     public function test_nova_assets_are_shipped(): void
     {
         $files = [

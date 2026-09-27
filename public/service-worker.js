@@ -13,7 +13,8 @@
  */
 
 // v3 (2026-09-26): เปลี่ยนโลโก้/ไอคอนเป็นแบรนด์ Thai Prompt — เปลี่ยนเวอร์ชันเพื่อล้าง /favicon.ico เก่าที่ค้างใน cache
-const CACHE_VERSION = 'v3';
+// v4 (2026-09-27): หน้า /offline เป็นธีมโนวา — เปลี่ยนเวอร์ชันให้ cache หน้าใหม่ + รูปตะเกียงของหน้า offline
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE = `tp-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `tp-pages-${CACHE_VERSION}`;
 const API_CACHE = `tp-api-${CACHE_VERSION}`;
@@ -21,6 +22,7 @@ const API_CACHE = `tp-api-${CACHE_VERSION}`;
 /** Static assets ที่ต้อง pre-cache ตอน install */
 const PRECACHE_ASSETS = [
     '/offline',
+    '/images/nova/deco/lamp.webp',
     '/images/brand/favicon.ico',
     '/images/brand/android-chrome-192.png',
 ];
@@ -219,7 +221,7 @@ async function networkFirstWithOffline(request) {
         if (offlinePage) return offlinePage;
 
         return new Response(
-            '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#111827;color:white;font-family:sans-serif;text-align:center"><div><h1 style="font-size:48px;margin-bottom:16px">📴</h1><h2>ไม่มีอินเทอร์เน็ต</h2><p style="color:#9ca3af">กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่</p><button onclick="location.reload()" style="margin-top:24px;padding:12px 32px;background:#8B5CF6;color:white;border:none;border-radius:12px;font-size:16px;cursor:pointer">ลองใหม่</button></div></body></html>',
+            '<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;box-sizing:border-box;background:linear-gradient(180deg,#0d1b3d,#060b1c);color:#fbf6ea;font-family:system-ui,sans-serif;text-align:center"><div><h2 style="color:#f5d27f;margin:0 0 10px">ไม่มีอินเทอร์เน็ต</h2><p style="color:rgba(246,239,221,.75);margin:0">กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่</p><button onclick="location.reload()" style="margin-top:24px;padding:12px 32px;background:linear-gradient(180deg,#fbe3a8,#d4a64a);color:#1a1405;border:none;border-radius:999px;font-size:16px;font-weight:600;cursor:pointer">ลองใหม่</button></div></body></html>',
             { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
         );
     }

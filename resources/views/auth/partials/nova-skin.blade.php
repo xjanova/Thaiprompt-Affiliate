@@ -11,6 +11,9 @@
         background: radial-gradient(120% 70% at 50% 112%, rgba(212, 166, 74, .24) 0%, rgba(212, 166, 74, 0) 55%),
                     radial-gradient(90% 60% at 50% -12%, #1d3676 0%, rgba(29, 54, 118, 0) 62%),
                     linear-gradient(180deg, #081230 0%, #0a1636 42%, #070d22 76%, #050916 100%) !important;
+        /* หน้ายาวกว่าจอ (สมัครสมาชิกบนมือถือ ฯลฯ) → ห้ามให้ gradient วนซ้ำเป็นรอยต่อ ส่วนเกินเป็นสีเดียวกับปลาย gradient */
+        background-repeat: no-repeat !important;
+        background-color: #050916 !important;
     }
     /* แสงฟุ้งพื้นหลัง: ฟ้าคราม/ม่วง/ชมพูเดิม → กรมท่าหลวง · ทอง · ม่วงราตรีจางๆ */
     .nv-auth .bg-indigo-600\/30, .nv-auth .bg-blue-600\/20 { background-color: rgba(64, 98, 200, .26) !important; }

@@ -1,462 +1,197 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ระบบปิดปรับปรุงชั่วคราว | {{ config('app.brand_name', 'Thai Prompt') }}</title>
+{{--
+ | 503 ปิดปรับปรุงชั่วคราว — ธีมโนวา (หน้าเต็ม ไม่มี layout)
+ | ข้อมูล: SiteSetting (ข้อความ/ช่องทางติดต่อ/โซเชียล) + AppMaintenance (หัวข้อ ข้อความ เวลานับถอยหลัง)
+ | ⚠️ หน้านี้ขึ้นตอน deploy/ฐานข้อมูลมีปัญหาได้ → ห่อการอ่าน DB ด้วย try/catch ทั้งหมด พังแล้วต้องยังแสดงหน้าได้
+ | ⚠️ นับถอยหลังครบแล้วยังปิดอยู่ → ห้าม reload ทุกวินาที (เดิมยิงเซิร์ฟเวอร์วนไม่หยุด) → ลองใหม่ทุก 30 วินาที
+ --}}
+@php
+    $nvBrand = config('app.brand_name', 'Thai Prompt');
+    $nvCssVer = is_file(public_path('theme-nova/nova.css')) ? filemtime(public_path('theme-nova/nova.css')) : 1;
 
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
-
-    @php
-        // ดึงการตั้งค่าเว็บไซต์
+    $siteSettings = null;
+    try {
         $siteSettings = \App\Models\SiteSetting::getSetting();
+    } catch (\Throwable $e) {
+        $siteSettings = null;
+    }
 
-        // ดึง AppMaintenance ถ้ามี
-        $appMaintenance = null;
+    $appMaintenance = null;
+    try {
         if (class_exists(\App\Models\AppMaintenance::class)) {
             $appMaintenance = \App\Models\AppMaintenance::getInstance();
         }
-    @endphp
+    } catch (\Throwable $e) {
+        $appMaintenance = null;
+    }
 
+    $mtSubtitle = ($appMaintenance && $appMaintenance->title) ? $appMaintenance->title : 'กรุณารอสักครู่ เรากำลังปรับปรุงระบบให้ดียิ่งขึ้น';
+    $mtMessage = ($appMaintenance && $appMaintenance->message) ? $appMaintenance->message : ($siteSettings->maintenance_message ?? null);
+    $mtEnd = ($appMaintenance && $appMaintenance->show_countdown && $appMaintenance->scheduled_end && $appMaintenance->scheduled_end->isFuture())
+        ? $appMaintenance->scheduled_end
+        : null;
+
+    $mtSocials = array_filter([
+        ['url' => $siteSettings->facebook_url ?? null, 'icon' => 'fa-facebook-f', 'label' => 'Facebook'],
+        ['url' => $siteSettings->line_url ?? null, 'icon' => 'fa-line', 'label' => 'LINE'],
+        ['url' => $siteSettings->youtube_url ?? null, 'icon' => 'fa-youtube', 'label' => 'YouTube'],
+        ['url' => $siteSettings->instagram_url ?? null, 'icon' => 'fa-instagram', 'label' => 'Instagram'],
+        ['url' => $siteSettings->twitter_url ?? null, 'icon' => 'fa-x-twitter', 'label' => 'X'],
+    ], fn ($s) => ! empty($s['url']));
+    $mtEmail = $siteSettings->contact_email ?? null;
+    $mtPhone = $siteSettings->contact_phone ?? null;
+    $mtSiteName = $siteSettings->site_name ?? $nvBrand;
+@endphp
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0d1b3d">
+    <title>ระบบปิดปรับปรุงชั่วคราว | {{ $nvBrand }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('images/brand/favicon.ico') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@400;500;600;700&family=Trirong:wght@600;700&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="{{ asset('theme-nova/nova.css') }}?v={{ $nvCssVer }}">
     <style>
-        * {
-            font-family: 'Figtree', sans-serif;
-        }
-
-        /* Dark mode support */
-        @media (prefers-color-scheme: dark) {
-            .dark-mode-auto {
-                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-                color: #f1f5f9;
-            }
-        }
-
-        /* Animated gradient background - ใช้สีส้ม/เหลืองสำหรับ maintenance */
-        .gradient-bg {
-            background: linear-gradient(135deg, #f97316 0%, #eab308 50%, #f97316 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-        }
-
-        .gradient-bg-dark {
-            background: linear-gradient(135deg, #1e293b 0%, #422006 50%, #0f172a 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Floating animation */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
-        }
-
-        .float-animation {
-            animation: float 3s ease-in-out infinite;
-        }
-
-        /* Gear rotation animation */
-        @keyframes gear-rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .gear-rotate {
-            animation: gear-rotate 8s linear infinite;
-        }
-
-        .gear-rotate-reverse {
-            animation: gear-rotate 6s linear infinite reverse;
-        }
-
-        /* Pulse animation */
-        @keyframes pulse-glow {
-            0%, 100% {
-                opacity: 1;
-                box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
-            }
-            50% {
-                opacity: 0.8;
-                box-shadow: 0 0 40px rgba(249, 115, 22, 0.6);
-            }
-        }
-
-        .pulse-glow {
-            animation: pulse-glow 2s ease-in-out infinite;
-        }
-
-        /* Slide in animation */
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .slide-in-up {
-            animation: slideInUp 0.6s ease-out forwards;
-            opacity: 0;
-        }
-
-        /* Social icon hover effect */
-        .social-icon {
-            transition: all 0.3s ease;
-        }
-
-        .social-icon:hover {
-            transform: translateY(-5px) scale(1.1);
-        }
-
-        /* Progress bar animation */
-        @keyframes progress-bar {
-            0% { width: 0%; }
-            50% { width: 70%; }
-            100% { width: 100%; }
-        }
-
-        .progress-animation {
-            animation: progress-bar 3s ease-in-out infinite;
-        }
-
-        /* Wrench swing animation */
-        @keyframes wrench-swing {
-            0%, 100% { transform: rotate(-10deg); }
-            50% { transform: rotate(10deg); }
-        }
-
-        .wrench-swing {
-            animation: wrench-swing 1s ease-in-out infinite;
-            transform-origin: 50% 100%;
-        }
-
-        /* Dark mode classes */
-        .dark .gradient-bg {
-            background: linear-gradient(135deg, #1e293b 0%, #422006 50%, #0f172a 100%);
-        }
-
-        .dark .text-gray-800 { color: #f1f5f9; }
-        .dark .text-gray-600 { color: #cbd5e1; }
-        .dark .text-gray-700 { color: #e2e8f0; }
-        .dark .bg-white { background-color: #1e293b; }
-        .dark .bg-gray-50 { background-color: #0f172a; }
-        .dark .border-gray-200 { border-color: #334155; }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; }
+        body { font-family: var(--nv-font-ui); color: var(--nv-on-night); background: #060b1c; }
+        .mt { position: relative; isolation: isolate; overflow: hidden; min-height: 100svh; display: grid; grid-template-columns: minmax(0, 1fr); place-items: center; padding: 104px 20px 56px; }
+        .mt__logo { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 2; }
+        .mt__logo img { height: 42px; width: auto; display: block; }
+        .mt__kanok { position: absolute; width: clamp(160px, 24vw, 320px); opacity: .22; pointer-events: none; top: 70px; }
+        .mt__kanok--l { left: -8px; transform: scaleX(-1); }
+        .mt__kanok--r { right: -8px; }
+        .mt__card { position: relative; z-index: 1; width: min(620px, 100%); padding: 40px 32px 30px; border-radius: 30px; text-align: center; background: linear-gradient(160deg, rgba(20, 36, 84, .8), rgba(7, 13, 32, .9)); border: 1px solid rgba(245, 210, 127, .26); box-shadow: 0 40px 90px -36px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .06); }
+        .mt__deco { width: 132px; height: auto; margin: -112px auto 4px; display: block; filter: drop-shadow(0 22px 26px rgba(0, 0, 0, .55)); animation: nv-dfloat 7s ease-in-out infinite; --r0: -4deg; --r1: 3deg; }
+        .mt__code { margin: 0; font-family: var(--nv-font-latin); font-weight: 700; font-size: clamp(56px, 12vw, 88px); line-height: 1; letter-spacing: .06em; }
+        .mt__title { margin: 8px 0 8px; font-family: var(--nv-font-display); font-size: clamp(24px, 4.6vw, 34px); line-height: 1.3; color: #fbf6ea; }
+        .mt__sub { margin: 0 auto 18px; max-width: 460px; color: var(--nv-on-night-2); line-height: 1.7; }
+        .mt__note { margin: 0 auto 20px; max-width: 480px; padding: 12px 16px; border-radius: 16px; text-align: left; display: flex; gap: 10px; align-items: flex-start; background: rgba(255, 255, 255, .04); border: 1px solid rgba(245, 210, 127, .2); color: rgba(246, 239, 221, .85); line-height: 1.65; }
+        .mt__note i { color: #f0c96a; margin-top: 4px; }
+        .mt__bar { max-width: 360px; height: 8px; margin: 0 auto 8px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, .08); border: 1px solid rgba(245, 210, 127, .16); }
+        .mt__bar i { display: block; height: 100%; width: 40%; border-radius: inherit; background: linear-gradient(90deg, rgba(240, 201, 106, 0), #f0c96a, #fbe3a8, rgba(240, 201, 106, 0)); animation: mt-slide 2.2s ease-in-out infinite; }
+        @keyframes mt-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+        .mt__bar-t { margin: 0 0 22px; font-size: 13px; color: rgba(246, 239, 221, .55); }
+        .mt__sec { margin: 0 auto 20px; padding-top: 18px; border-top: 1px solid rgba(245, 210, 127, .14); }
+        .mt__h { margin: 0 0 12px; font-size: 14px; letter-spacing: .04em; color: #f0c96a; font-weight: 600; }
+        .mt__cd { display: flex; justify-content: center; gap: 10px; }
+        .mt__cd div { min-width: 70px; padding: 10px 6px; border-radius: 16px; background: rgba(255, 255, 255, .05); border: 1px solid rgba(245, 210, 127, .22); }
+        .mt__cd b { display: block; font-family: var(--nv-font-latin); font-size: 28px; line-height: 1.1; color: #fbf6ea; font-variant-numeric: tabular-nums; }
+        .mt__cd span { font-size: 12px; color: rgba(246, 239, 221, .6); }
+        .mt__social { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+        .mt__social a { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: #1a1405; font-size: 19px; text-decoration: none; background: linear-gradient(180deg, #fbe3a8, #d4a64a); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 10px 22px -12px rgba(240, 201, 106, .8); transition: transform .2s; }
+        .mt__social a:hover { transform: translateY(-2px); }
+        .mt__contact { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+        .mt__contact a { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 999px; color: #fbf6ea; text-decoration: none; background: rgba(255, 255, 255, .05); border: 1px solid rgba(245, 210, 127, .22); }
+        .mt__contact a i { color: #f0c96a; }
+        .mt__foot { margin: 22px 0 0; font-size: 12px; color: rgba(246, 239, 221, .45); }
+        @media (max-width: 520px) { .mt__card { padding: 32px 18px 24px; } .mt__deco { width: 104px; margin-top: -88px; } .mt__cd div { min-width: 60px; } .mt__cd b { font-size: 23px; } }
+        @media (prefers-reduced-motion: reduce) { .mt__deco, .mt__bar i { animation: none; } }
     </style>
-
-    <script>
-        // Dark mode initialization
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
-
-        function toggleDarkMode() {
-            if (document.documentElement.classList.contains('dark')) {
-                document.documentElement.classList.remove('dark')
-                localStorage.theme = 'light'
-            } else {
-                document.documentElement.classList.add('dark')
-                localStorage.theme = 'dark'
-            }
-        }
-    </script>
 </head>
-<body class="antialiased gradient-bg dark:gradient-bg-dark min-h-screen">
-    <!-- Dark Mode Toggle Button -->
-    <button
-        onclick="toggleDarkMode()"
-        class="fixed top-6 right-6 z-50 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
-        aria-label="Toggle dark mode"
-    >
-        <i class="fas fa-moon text-gray-800 dark:text-yellow-300 text-lg"></i>
-    </button>
-
-    <div class="min-h-screen flex items-center justify-center px-4 py-12">
-        <div class="max-w-4xl w-full">
-            <!-- Maintenance Icon & Message -->
-            <div class="text-center mb-8 slide-in-up" style="animation-delay: 0.1s;">
-                <!-- Animated Maintenance Icon -->
-                <div class="inline-block mb-8 float-animation">
-                    <div class="relative">
-                        <!-- Background circle with pulse effect -->
-                        <div class="absolute inset-0 bg-white/20 dark:bg-gray-800/40 rounded-full blur-xl pulse-glow"></div>
-
-                        <!-- Main icon container -->
-                        <div class="relative bg-white dark:bg-gray-800 rounded-full p-8 shadow-2xl pulse-glow">
-                            <div class="text-center relative">
-                                <!-- Gear icons -->
-                                <div class="absolute -top-4 -left-4">
-                                    <i class="fas fa-cog text-4xl text-orange-400 gear-rotate"></i>
-                                </div>
-                                <div class="absolute -bottom-2 -right-2">
-                                    <i class="fas fa-cog text-3xl text-yellow-400 gear-rotate-reverse"></i>
-                                </div>
-
-                                <!-- Main wrench icon -->
-                                <i class="fas fa-tools text-6xl text-orange-600 dark:text-orange-400 wrench-swing"></i>
-
-                                <!-- 503 text -->
-                                <div class="text-4xl font-bold bg-gradient-to-r from-orange-600 to-yellow-500 dark:from-orange-400 dark:to-yellow-400 bg-clip-text text-transparent mt-2">
-                                    503
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Maintenance Message -->
-                <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
-                    ระบบปิดปรับปรุงชั่วคราว
-                </h1>
-                <p class="text-xl text-white/90 dark:text-gray-300 mb-4">
-                    @if($appMaintenance && $appMaintenance->title)
-                        {{ $appMaintenance->title }}
-                    @else
-                        กรุณารอสักครู่ เรากำลังปรับปรุงระบบให้ดียิ่งขึ้น
-                    @endif
-                </p>
-
-                @if($siteSettings->maintenance_message || ($appMaintenance && $appMaintenance->message))
-                <div class="bg-white/10 dark:bg-gray-800/40 backdrop-blur-sm rounded-xl p-4 mb-4 max-w-2xl mx-auto">
-                    <p class="text-white/80 dark:text-gray-300">
-                        <i class="fas fa-info-circle mr-2 text-yellow-300"></i>
-                        {{ $appMaintenance->message ?? $siteSettings->maintenance_message }}
-                    </p>
-                </div>
-                @endif
-
-                <!-- Progress Bar -->
-                <div class="max-w-md mx-auto mb-8">
-                    <div class="bg-white/20 dark:bg-gray-700/50 rounded-full h-3 overflow-hidden">
-                        <div class="bg-gradient-to-r from-orange-400 to-yellow-400 h-full rounded-full progress-animation"></div>
-                    </div>
-                    <p class="text-white/70 text-sm mt-2">
-                        <i class="fas fa-spinner fa-spin mr-1"></i>
-                        กำลังดำเนินการ...
-                    </p>
-                </div>
-            </div>
-
-            <!-- Countdown Timer (ถ้ามี scheduled_end) -->
-            @if($appMaintenance && $appMaintenance->scheduled_end && $appMaintenance->show_countdown)
-            <div class="bg-white/10 dark:bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 mb-8 text-center slide-in-up" style="animation-delay: 0.2s;">
-                <h3 class="text-lg font-semibold text-white mb-4">
-                    <i class="fas fa-clock mr-2"></i>
-                    คาดว่าจะกลับมาในอีก
-                </h3>
-                <div class="flex justify-center gap-4" x-data="countdown('{{ $appMaintenance->scheduled_end->toISOString() }}')" x-init="init()">
-                    <div class="bg-white/20 dark:bg-gray-700/50 rounded-lg p-4 min-w-[80px]">
-                        <span class="text-3xl font-bold text-white" x-text="days">00</span>
-                        <p class="text-white/70 text-sm">วัน</p>
-                    </div>
-                    <div class="bg-white/20 dark:bg-gray-700/50 rounded-lg p-4 min-w-[80px]">
-                        <span class="text-3xl font-bold text-white" x-text="hours">00</span>
-                        <p class="text-white/70 text-sm">ชั่วโมง</p>
-                    </div>
-                    <div class="bg-white/20 dark:bg-gray-700/50 rounded-lg p-4 min-w-[80px]">
-                        <span class="text-3xl font-bold text-white" x-text="minutes">00</span>
-                        <p class="text-white/70 text-sm">นาที</p>
-                    </div>
-                    <div class="bg-white/20 dark:bg-gray-700/50 rounded-lg p-4 min-w-[80px]">
-                        <span class="text-3xl font-bold text-white" x-text="seconds">00</span>
-                        <p class="text-white/70 text-sm">วินาที</p>
-                    </div>
-                </div>
-            </div>
-            @endif
-
-            <!-- Social Media Links -->
-            @if($siteSettings->facebook_url || $siteSettings->twitter_url || $siteSettings->instagram_url || $siteSettings->line_url || $siteSettings->youtube_url)
-            <div class="bg-white/10 dark:bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 mb-8 text-center slide-in-up" style="animation-delay: 0.3s;">
-                <h3 class="text-lg font-semibold text-white mb-4">
-                    <i class="fas fa-heart mr-2 text-red-400"></i>
-                    ติดตามเราได้ที่
-                </h3>
-                <div class="flex justify-center gap-4 flex-wrap">
-                    @if($siteSettings->facebook_url)
-                    <a href="{{ $siteSettings->facebook_url }}"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="social-icon w-14 h-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-blue-500/50">
-                        <i class="fab fa-facebook-f text-2xl text-white"></i>
-                    </a>
-                    @endif
-
-                    @if($siteSettings->twitter_url)
-                    <a href="{{ $siteSettings->twitter_url }}"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="social-icon w-14 h-14 bg-gradient-to-br from-gray-800 to-black rounded-full flex items-center justify-center shadow-lg hover:shadow-gray-500/50">
-                        <i class="fab fa-x-twitter text-2xl text-white"></i>
-                    </a>
-                    @endif
-
-                    @if($siteSettings->instagram_url)
-                    <a href="{{ $siteSettings->instagram_url }}"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="social-icon w-14 h-14 bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 rounded-full flex items-center justify-center shadow-lg hover:shadow-pink-500/50">
-                        <i class="fab fa-instagram text-2xl text-white"></i>
-                    </a>
-                    @endif
-
-                    @if($siteSettings->line_url)
-                    <a href="{{ $siteSettings->line_url }}"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="social-icon w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg hover:shadow-green-500/50">
-                        <i class="fab fa-line text-2xl text-white"></i>
-                    </a>
-                    @endif
-
-                    @if($siteSettings->youtube_url)
-                    <a href="{{ $siteSettings->youtube_url }}"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       class="social-icon w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center shadow-lg hover:shadow-red-500/50">
-                        <i class="fab fa-youtube text-2xl text-white"></i>
-                    </a>
-                    @endif
-                </div>
-                <p class="text-white/60 text-sm mt-4">
-                    ติดตามข่าวสารและอัพเดทล่าสุดจากเรา
-                </p>
-            </div>
-            @endif
-
-            <!-- Contact Info -->
-            @if($siteSettings->contact_email || $siteSettings->contact_phone)
-            <div class="bg-white/10 dark:bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 mb-8 text-center slide-in-up" style="animation-delay: 0.4s;">
-                <h3 class="text-lg font-semibold text-white mb-4">
-                    <i class="fas fa-headset mr-2 text-cyan-400"></i>
-                    ต้องการความช่วยเหลือ?
-                </h3>
-                <div class="flex justify-center gap-6 flex-wrap">
-                    @if($siteSettings->contact_email)
-                    <a href="mailto:{{ $siteSettings->contact_email }}"
-                       class="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg transition-all duration-300 hover:scale-105">
-                        <i class="fas fa-envelope mr-3 text-xl"></i>
-                        <div class="text-left">
-                            <span class="text-xs text-white/70 block">อีเมล</span>
-                            <span class="font-medium">{{ $siteSettings->contact_email }}</span>
-                        </div>
-                    </a>
-                    @endif
-
-                    @if($siteSettings->contact_phone)
-                    <a href="tel:{{ $siteSettings->contact_phone }}"
-                       class="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg transition-all duration-300 hover:scale-105">
-                        <i class="fas fa-phone mr-3 text-xl"></i>
-                        <div class="text-left">
-                            <span class="text-xs text-white/70 block">โทรศัพท์</span>
-                            <span class="font-medium">{{ $siteSettings->contact_phone }}</span>
-                        </div>
-                    </a>
-                    @endif
-                </div>
-            </div>
-            @endif
-
-            <!-- Notification Sign-up (ถ้าต้องการเพิ่มในอนาคต) -->
-            <div class="bg-white/10 dark:bg-gray-800/40 backdrop-blur-sm rounded-xl p-6 mb-8 text-center slide-in-up" style="animation-delay: 0.5s;">
-                <h3 class="text-lg font-semibold text-white mb-2">
-                    <i class="fas fa-bell mr-2 text-yellow-300"></i>
-                    กลับมาเร็วๆ นี้!
-                </h3>
-                <p class="text-white/70 text-sm">
-                    ขออภัยในความไม่สะดวก เราจะกลับมาให้บริการเร็วที่สุด
-                </p>
-
-                <!-- Refresh Button -->
-                <button
-                    onclick="location.reload()"
-                    class="mt-4 inline-flex items-center px-6 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                >
-                    <i class="fas fa-sync-alt mr-2"></i>
-                    ลองอีกครั้ง
-                </button>
-            </div>
-
-            <!-- Footer -->
-            <div class="text-center mt-12 slide-in-up" style="animation-delay: 0.6s;">
-                <p class="text-white/70 text-sm">
-                    © {{ date('Y') }} {{ $siteSettings->site_name ?? config('app.brand_name', 'Thai Prompt') }}. All rights reserved.
-                </p>
-                <p class="text-white/50 text-xs mt-2">
-                    <i class="fas fa-clock mr-1"></i>
-                    {{ now()->format('Y-m-d H:i:s T') }}
-                </p>
-            </div>
-        </div>
+<body>
+<main class="mt">
+    <div class="nv-bg" aria-hidden="true">
+        <div class="nv-sky"></div>
+        <div class="nv-aurora"><i class="a1"></i><i class="a2"></i><i class="a3"></i></div>
+        <div class="nv-temple"></div>
+        <div class="nv-vignette"></div>
     </div>
+    <img class="mt__kanok mt__kanok--l" src="{{ asset('images/nova/brand/kanok-gold.webp') }}" alt="" aria-hidden="true">
+    <img class="mt__kanok mt__kanok--r" src="{{ asset('images/nova/brand/kanok-gold.webp') }}" alt="" aria-hidden="true">
+    <span class="mt__logo">
+        <picture>
+            <source srcset="{{ asset('images/brand/thaiprompt-logo-dark.webp') }}" type="image/webp">
+            <img src="{{ asset('images/brand/thaiprompt-logo-dark.png') }}" alt="{{ $nvBrand }}" width="192" height="56">
+        </picture>
+    </span>
 
-    <!-- Decorative Elements -->
-    <div class="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden" style="z-index: -1;">
-        <!-- Floating circles -->
-        <div class="absolute top-20 left-10 w-32 h-32 bg-yellow-500/10 rounded-full blur-2xl animate-pulse"></div>
-        <div class="absolute top-40 right-20 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
-        <div class="absolute bottom-20 left-1/4 w-40 h-40 bg-red-500/10 rounded-full blur-2xl animate-pulse" style="animation-delay: 2s;"></div>
-        <div class="absolute bottom-32 right-1/3 w-36 h-36 bg-yellow-400/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1.5s;"></div>
+    <section class="mt__card" aria-labelledby="mt-title">
+        <img class="mt__deco" src="{{ asset('images/nova/deco/lantern.webp') }}" alt="" aria-hidden="true">
+        <p class="mt__code"><span class="nv-foil">503</span></p>
+        <h1 class="mt__title" id="mt-title">ระบบปิดปรับปรุงชั่วคราว</h1>
+        <p class="mt__sub">{{ $mtSubtitle }}</p>
 
-        <!-- Floating tools -->
-        <div class="absolute top-1/4 left-10 text-white/10">
-            <i class="fas fa-wrench text-8xl gear-rotate"></i>
-        </div>
-        <div class="absolute bottom-1/4 right-10 text-white/10">
-            <i class="fas fa-cog text-9xl gear-rotate-reverse"></i>
-        </div>
-    </div>
+        @if($mtMessage)
+            <p class="mt__note"><i class="fas fa-circle-info" aria-hidden="true"></i><span>{{ $mtMessage }}</span></p>
+        @endif
 
-    <!-- Alpine.js สำหรับ Countdown -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
-    <script>
-        // Countdown function สำหรับ Alpine.js
-        function countdown(endDate) {
-            return {
-                days: '00',
-                hours: '00',
-                minutes: '00',
-                seconds: '00',
+        <div class="mt__bar" aria-hidden="true"><i></i></div>
+        <p class="mt__bar-t">กำลังดำเนินการ...</p>
 
-                init() {
-                    this.updateCountdown();
-                    setInterval(() => this.updateCountdown(), 1000);
-                },
+        @if($mtEnd)
+            <div class="mt__sec">
+                <p class="mt__h"><i class="fas fa-clock" aria-hidden="true"></i> คาดว่าจะกลับมาในอีก</p>
+                <div class="mt__cd" id="mt-cd" data-end="{{ $mtEnd->toISOString() }}" role="timer" aria-live="off">
+                    <div><b data-u="d">00</b><span>วัน</span></div>
+                    <div><b data-u="h">00</b><span>ชั่วโมง</span></div>
+                    <div><b data-u="m">00</b><span>นาที</span></div>
+                    <div><b data-u="s">00</b><span>วินาที</span></div>
+                </div>
+            </div>
+        @endif
 
-                updateCountdown() {
-                    const end = new Date(endDate).getTime();
-                    const now = new Date().getTime();
-                    const diff = end - now;
+        @if(count($mtSocials))
+            <div class="mt__sec">
+                <p class="mt__h">ติดตามข่าวสารได้ที่</p>
+                <div class="mt__social">
+                    @foreach($mtSocials as $s)
+                        <a href="{{ $s['url'] }}" target="_blank" rel="noopener" aria-label="{{ $s['label'] }}"><i class="fab {{ $s['icon'] }}" aria-hidden="true"></i></a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
-                    if (diff <= 0) {
-                        // Time's up - refresh the page
-                        location.reload();
-                        return;
-                    }
+        @if($mtEmail || $mtPhone)
+            <div class="mt__sec">
+                <p class="mt__h">ติดต่อทีมงาน</p>
+                <div class="mt__contact">
+                    @if($mtEmail)<a href="mailto:{{ $mtEmail }}"><i class="fas fa-envelope" aria-hidden="true"></i>{{ $mtEmail }}</a>@endif
+                    @if($mtPhone)<a href="tel:{{ $mtPhone }}"><i class="fas fa-phone" aria-hidden="true"></i>{{ $mtPhone }}</a>@endif
+                </div>
+            </div>
+        @endif
 
-                    this.days = String(Math.floor(diff / (1000 * 60 * 60 * 24))).padStart(2, '0');
-                    this.hours = String(Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))).padStart(2, '0');
-                    this.minutes = String(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))).padStart(2, '0');
-                    this.seconds = String(Math.floor((diff % (1000 * 60)) / 1000)).padStart(2, '0');
-                }
+        <button type="button" class="nv-btn nv-btn--gold nv-btn--lg" onclick="location.reload()"><i class="fas fa-rotate-right" aria-hidden="true"></i> ลองอีกครั้ง</button>
+        <p class="mt__foot">© {{ date('Y') }} {{ $mtSiteName }} · ขออภัยในความไม่สะดวก เราจะกลับมาให้บริการเร็วที่สุด</p>
+    </section>
+</main>
+
+@if($mtEnd)
+<script>
+    // นับถอยหลังถึงเวลาที่คาดว่าจะเปิด (ไม่พึ่ง Alpine/CDN)
+    (function () {
+        var box = document.getElementById('mt-cd');
+        if (!box) return;
+        var end = new Date(box.getAttribute('data-end')).getTime();
+        var el = {};
+        ['d', 'h', 'm', 's'].forEach(function (u) { el[u] = box.querySelector('[data-u="' + u + '"]'); });
+        var pad = function (n) { return String(n).padStart(2, '0'); };
+        var timer = null, done = false;
+        function tick() {
+            if (done) return;
+            var diff = end - Date.now();
+            if (diff <= 0) {
+                done = true;
+                // ครบเวลาแล้ว → หยุดนับ แล้วลองโหลดใหม่ทุก 30 วินาที (ถ้ายังปิดอยู่ หน้านี้จะนับรอบใหม่ไม่ได้ จึงไม่วนถี่)
+                clearInterval(timer);
+                ['d', 'h', 'm', 's'].forEach(function (u) { el[u].textContent = '00'; });
+                setTimeout(function () { location.reload(); }, 30000);
+                return;
             }
+            el.d.textContent = pad(Math.floor(diff / 86400000));
+            el.h.textContent = pad(Math.floor(diff % 86400000 / 3600000));
+            el.m.textContent = pad(Math.floor(diff % 3600000 / 60000));
+            el.s.textContent = pad(Math.floor(diff % 60000 / 1000));
         }
-    </script>
+        tick();
+        timer = setInterval(tick, 1000);
+    })();
+</script>
+@endif
 </body>
 </html>
