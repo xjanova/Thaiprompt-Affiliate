@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Auth\LineLoginController;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Rules\NotReservedEmailDomain;
@@ -9,6 +10,7 @@ use App\Services\ImageUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -529,16 +531,15 @@ class MobileApiController extends Controller
         // สร้าง state สำหรับ CSRF protection
         $state = Str::random(40);
 
-        // ดึง referral code ถ้ามี
-        $referralCode = $request->get('ref');
+        // จำ state ไว้ฝั่ง server — หน้า callback ของเว็บใช้แยกว่าเป็นคำขอจากแอป
+        // และ mobile-callback ใช้ยืนยันว่า state นี้เราออกให้จริง (ใช้ได้ครั้งเดียว)
+        Cache::put(
+            LineLoginController::MOBILE_STATE_CACHE_PREFIX.$state,
+            true,
+            now()->addMinutes(LineLoginController::MOBILE_STATE_TTL_MINUTES)
+        );
 
-        // สร้าง callback URL สำหรับ mobile
-        // ใช้ web route แทน API route เพราะ LINE OAuth redirect มาเป็น GET request
-        // Web route จะ redirect ไป app deep link (thaiprompt://login?code=xxx&state=yyy)
-        $redirectUri = config('services.line.mobile_redirect_uri')
-            ?? url('/auth/line/mobile-callback');
-
-        $authUrl = $lineService->getAuthorizationUrl($state, $redirectUri);
+        $authUrl = $lineService->getAuthorizationUrl($state, $this->lineMobileRedirectUri());
 
         return response()->json([
             'success' => true,
@@ -547,6 +548,20 @@ class MobileApiController extends Controller
                 'state' => $state,
             ],
         ]);
+    }
+
+    /**
+     * redirect URI ของ LINE Login ฝั่งแอป
+     *
+     * ใช้ค่าเดียวกับเว็บ (LineOaSetting.redirect_uri → /auth/line/callback) เพราะช่อง LINE Login
+     * ลงทะเบียน callback ไว้แค่ตัวนั้น — ส่ง URL อื่นไป LINE จะปฏิเสธตั้งแต่หน้าแรก
+     * หน้า callback ของเว็บเห็น state ของแอปแล้วส่ง code ต่อเข้าแอปเอง
+     *
+     * null = ให้ LineService ใช้ค่าของเว็บ · ตั้ง services.line.mobile_redirect_uri เพื่อแยกเส้นได้ (ต้องลงทะเบียนใน LINE ก่อน)
+     */
+    private function lineMobileRedirectUri(): ?string
+    {
+        return config('services.line.mobile_redirect_uri') ?: null;
     }
 
     /**
@@ -568,16 +583,21 @@ class MobileApiController extends Controller
             ], 422);
         }
 
+        // state ต้องเป็นตัวที่ getLineLoginUrl ออกให้ และยังไม่เคยใช้
+        // (กัน code ถูกแลกซ้ำ เช่น deep link กับ auth session ยิงเข้ามาพร้อมกัน)
+        if (! Cache::pull(LineLoginController::MOBILE_STATE_CACHE_PREFIX.$request->state)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ลิงก์เข้าสู่ระบบหมดอายุแล้ว กดเข้าสู่ระบบด้วย LINE ใหม่อีกครั้งนะ',
+            ], 400);
+        }
+
         $lineService = app(\App\Services\LineService::class);
         $tokenService = app(\App\Services\LineTokenService::class);
 
         try {
-            // แลก code เป็น access token
-            // ใช้ web route redirect URI เหมือนกับตอนขอ auth URL
-            $redirectUri = config('services.line.mobile_redirect_uri')
-                ?? url('/auth/line/mobile-callback');
-
-            $tokenData = $lineService->getAccessToken($request->code, $redirectUri);
+            // แลก code เป็น access token — redirect URI ต้องตรงกับตอนขอ auth URL
+            $tokenData = $lineService->getAccessToken($request->code, $this->lineMobileRedirectUri());
             $accessToken = $tokenData['access_token'];
 
             // ดึงข้อมูล profile

@@ -11,6 +11,7 @@ use App\Services\LineTokenService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
@@ -18,6 +19,16 @@ use Illuminate\View\View;
 
 class LineLoginController extends Controller
 {
+    /**
+     * key ใน cache ของ state ที่ออกให้แอป (ใช้ครั้งเดียว — API mobile-callback ดึงออกตอนแลก token)
+     */
+    public const MOBILE_STATE_CACHE_PREFIX = 'line_mobile_login_state:';
+
+    /**
+     * อายุ state ของแอป — นานพอให้ผู้ใช้ล็อกอิน LINE / กดยินยอมเสร็จ
+     */
+    public const MOBILE_STATE_TTL_MINUTES = 15;
+
     protected LineService $lineService;
 
     protected LineTokenService $tokenService;
@@ -94,9 +105,18 @@ class LineLoginController extends Controller
      * 1. Login flow (guest) — ผู้ใช้ใหม่/เดิมเข้าสู่ระบบด้วย LINE
      * 2. Link flow (authenticated) — ผู้ใช้ที่ login แล้วต้องการเชื่อมต่อ LINE
      *    (เมื่อ link() redirect ไป LINE OAuth แล้ว LINE redirect กลับมาที่นี่)
+     * 3. Mobile app flow — แอปขอ URL จาก API (MobileApiController::getLineLoginUrl)
+     *    แอปใช้ callback เดียวกับเว็บ (LINE ลงทะเบียน callback ไว้แค่ตัวนี้) → ส่งต่อเข้าแอปผ่าน deep link
      */
-    public function callback(Request $request): RedirectResponse
+    public function callback(Request $request): RedirectResponse|View
     {
+        // 📱 state ที่ API ออกให้แอป → ไม่ใช่ของเว็บ ส่ง code กลับเข้าแอป (แอปเป็นคนแลก token เอง)
+        // เช็คก่อน link mode: เบราว์เซอร์ในแอปอาจมี session เว็บที่ค้าง line_link_mode อยู่
+        $state = (string) $request->get('state', '');
+        if ($state !== '' && Cache::has(self::MOBILE_STATE_CACHE_PREFIX.$state)) {
+            return $this->mobileCallback($request);
+        }
+
         // ✅ ตรวจสอบว่าเป็น link mode หรือไม่ (มาจาก line-required page → link())
         // link() เก็บ state เป็น 'line_link_state' (ไม่ใช่ 'line_login_state')
         // ดังนั้นต้อง forward ไป linkCallback() เพื่อใช้ state key ที่ถูกต้อง
@@ -405,7 +425,7 @@ class LineLoginController extends Controller
             // RequireLineUid middleware เก็บ URL ไว้ใน 'line_redirect_after'
             $redirectAfter = session()->pull('line_redirect_after');
 
-            Log::info('LINE linkCallback: เชื่อมต่อสำเร็จ! redirect ไป ' . ($redirectAfter ?? 'profile'), [
+            Log::info('LINE linkCallback: เชื่อมต่อสำเร็จ! redirect ไป '.($redirectAfter ?? 'profile'), [
                 'user_id' => $user->id,
             ]);
 
@@ -423,7 +443,7 @@ class LineLoginController extends Controller
             ]);
 
             return redirect()->route('user.profile')
-                ->with('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อบัญชี LINE: ' . $e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อบัญชี LINE: '.$e->getMessage());
         }
     }
 

@@ -32,6 +32,17 @@ import { useTheme, radii, spacing, typography } from '@/theme';
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+/**
+ * code ของ LINE ที่ส่งไปแลกแล้ว — ระดับโมดูลเพราะ deep link อาจเปิดหน้า login ใบใหม่
+ * ขณะที่ auth session ของหน้าเดิมก็ได้ code ตัวเดียวกัน (code ใช้แลกได้ครั้งเดียว)
+ */
+let claimedLineCode: string | null = null;
+const claimLineCode = (code: string) => {
+  if (claimedLineCode === code) return false;
+  claimedLineCode = code;
+  return true;
+};
+
 // =====================================================
 // หน้าหลัก
 // =====================================================
@@ -82,6 +93,7 @@ export default function LoginScreen() {
   useEffect(() => {
     const run = async () => {
       if (params.code && params.state) {
+        if (!claimLineCode(params.code)) return;
         setLineLoading(true);
         try {
           const ok = await handleLineCallback(params.code, params.state);
@@ -108,7 +120,7 @@ export default function LoginScreen() {
           const url = new URL(browserResult.url);
           const code = url.searchParams.get('code');
           const state = url.searchParams.get('state');
-          if (code && state) {
+          if (code && state && claimLineCode(code)) {
             const ok = await handleLineCallback(code, state);
             if (ok) router.replace('/(tabs)');
           }
