@@ -154,6 +154,10 @@ class StorefrontNovaHomeTest extends TestCase
         $this->assertStringContainsString('nv-hero-band', $guide);
         $this->assertStringNotContainsString('from-green-600 to-emerald-600', $guide);
 
+        $doc = $this->get('/documents/multi-currency-wallet')->assertOk()->getContent();
+        $this->assertStringContainsString('nv-hero-band', $doc);
+        $this->assertStringNotContainsString('from-emerald-900 via-green-900 to-teal-900', $doc);
+
         config(['shop.nova_public' => false]);
         $contactOff = $this->get('/contact')->assertOk()->getContent();
         $this->assertStringNotContainsString('nv-page-hero', $contactOff);

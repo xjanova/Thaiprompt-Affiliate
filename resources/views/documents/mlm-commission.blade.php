@@ -23,7 +23,8 @@
 @section('content')
 
 {{-- Hero Section --}}
-<section class="relative py-20 lg:py-32 bg-gradient-to-br from-pink-900 via-rose-900 to-red-900 overflow-hidden">
+{{-- ธีมโนวา: แถบหัวเอกสารกรมท่า+กนกทองชุดเดียวกันทุกหน้า / ปิดธีม = สีประจำหน้าเดิม --}}
+<section class="relative py-20 lg:py-32 {{ config('shop.nova_public', true) ? 'nv-hero-band' : 'bg-gradient-to-br from-pink-900 via-rose-900 to-red-900' }} overflow-hidden">
     {{-- Background Pattern --}}
     <div class="absolute inset-0 opacity-10">
         <div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px); background-size: 50px 50px;"></div>
