@@ -913,8 +913,8 @@ class VideoMissionController extends Controller
 
         // ค้นหา Channel ID จาก handle/username
         try {
-            $response = \Http::get('https://www.googleapis.com/youtube/v3/search', [
-                'key' => $apiKey,
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = \Http::withHeaders(['x-goog-api-key' => $apiKey])->get('https://www.googleapis.com/youtube/v3/search', [
                 'q' => $handle,
                 'type' => 'channel',
                 'part' => 'snippet',
@@ -929,8 +929,8 @@ class VideoMissionController extends Controller
             }
 
             // ลองค้นหาด้วย forUsername (สำหรับ legacy usernames)
-            $response = \Http::get('https://www.googleapis.com/youtube/v3/channels', [
-                'key' => $apiKey,
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = \Http::withHeaders(['x-goog-api-key' => $apiKey])->get('https://www.googleapis.com/youtube/v3/channels', [
                 'forUsername' => $handle,
                 'part' => 'id',
             ]);
@@ -943,8 +943,8 @@ class VideoMissionController extends Controller
             }
 
             // ลองค้นหาด้วย forHandle (สำหรับ @handles ใหม่)
-            $response = \Http::get('https://www.googleapis.com/youtube/v3/channels', [
-                'key' => $apiKey,
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = \Http::withHeaders(['x-goog-api-key' => $apiKey])->get('https://www.googleapis.com/youtube/v3/channels', [
                 'forHandle' => $handle,
                 'part' => 'id',
             ]);
@@ -968,8 +968,8 @@ class VideoMissionController extends Controller
     protected function getChannelInfo(string $channelId, string $apiKey): ?array
     {
         try {
-            $response = \Http::get('https://www.googleapis.com/youtube/v3/channels', [
-                'key' => $apiKey,
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = \Http::withHeaders(['x-goog-api-key' => $apiKey])->get('https://www.googleapis.com/youtube/v3/channels', [
                 'id' => $channelId,
                 'part' => 'snippet,contentDetails,statistics',
             ]);
@@ -1010,7 +1010,6 @@ class VideoMissionController extends Controller
 
         do {
             $params = [
-                'key' => $apiKey,
                 'playlistId' => $playlistId,
                 'part' => 'snippet,contentDetails',
                 'maxResults' => min(50, $limit - count($videos)),
@@ -1020,7 +1019,8 @@ class VideoMissionController extends Controller
                 $params['pageToken'] = $nextPageToken;
             }
 
-            $response = \Http::get('https://www.googleapis.com/youtube/v3/playlistItems', $params);
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = \Http::withHeaders(['x-goog-api-key' => $apiKey])->get('https://www.googleapis.com/youtube/v3/playlistItems', $params);
 
             if (! $response->successful()) {
                 break;
@@ -1058,8 +1058,8 @@ class VideoMissionController extends Controller
     protected function getVideoDetails(string $videoId, string $apiKey): ?array
     {
         try {
-            $response = \Http::get('https://www.googleapis.com/youtube/v3/videos', [
-                'key' => $apiKey,
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = \Http::withHeaders(['x-goog-api-key' => $apiKey])->get('https://www.googleapis.com/youtube/v3/videos', [
                 'id' => $videoId,
                 'part' => 'contentDetails,statistics',
             ]);

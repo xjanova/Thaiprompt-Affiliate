@@ -95,11 +95,12 @@ class GeminiEmbeddingService
 
         // 3) เรียก Gemini embedContent endpoint
         try {
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
             $url = 'https://generativelanguage.googleapis.com/v1beta/models/'
                 .self::MODEL
-                .':embedContent?key='.$apiKey;
+                .':embedContent';
 
-            $response = Http::timeout(self::HTTP_TIMEOUT)
+            $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout(self::HTTP_TIMEOUT)
                 ->post($url, [
                     'content' => [
                         'parts' => [['text' => $text]],

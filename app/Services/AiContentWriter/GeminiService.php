@@ -71,9 +71,10 @@ class GeminiService
         }
 
         try {
-            $url = $this->baseUrl.'/models?key='.$this->apiKey;
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $url = $this->baseUrl.'/models';
 
-            $response = Http::timeout(10)->get($url);
+            $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])->timeout(10)->get($url);
 
             if ($response->successful()) {
                 return [
@@ -122,7 +123,8 @@ class GeminiService
         }
         $fullPrompt .= $userPrompt;
 
-        $url = $this->baseUrl.'/models/'.$model.':generateContent?key='.$this->apiKey;
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = $this->baseUrl.'/models/'.$model.':generateContent';
 
         $payload = [
             'contents' => [
@@ -141,7 +143,7 @@ class GeminiService
         $startTime = microtime(true);
 
         try {
-            $response = Http::timeout(120)
+            $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])->timeout(120)
                 ->post($url, $payload);
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);

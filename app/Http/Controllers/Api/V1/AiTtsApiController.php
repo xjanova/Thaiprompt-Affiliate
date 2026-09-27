@@ -64,10 +64,11 @@ class AiTtsApiController extends Controller
         }
 
         $model = config('services.gemini.tts_model') ?: 'gemini-2.5-flash-preview-tts';
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
         try {
-            $resp = Http::timeout(20)->post($url, [
+            $resp = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout(20)->post($url, [
                 'contents' => [[
                     'parts' => [['text' => $data['text']]],
                 ]],

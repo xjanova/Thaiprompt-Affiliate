@@ -128,7 +128,8 @@ class ThaiIdCardOcrService
             // สร้างรูปขนาดเล็กสำหรับทดสอบ (1x1 pixel transparent PNG)
             $testImage = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
-            $response = Http::timeout(10)->post(self::VISION_API_URL.'?key='.$this->apiKey, [
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])->timeout(10)->post(self::VISION_API_URL, [
                 'requests' => [
                     [
                         'image' => ['content' => $testImage],
@@ -288,7 +289,8 @@ class ThaiIdCardOcrService
         try {
             $base64Image = base64_encode($imageContent);
 
-            $response = Http::timeout(30)->post(self::VISION_API_URL.'?key='.$this->apiKey, [
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])->timeout(30)->post(self::VISION_API_URL, [
                 'requests' => [
                     [
                         'image' => ['content' => $base64Image],

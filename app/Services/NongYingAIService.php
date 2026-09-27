@@ -200,8 +200,9 @@ class NongYingAIService
             Log::info("NongYingAI TTS: ลอง key [{$n}/{$total}] {$label}");
 
             try {
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$geminiTtsModel}:generateContent?key={$keyInfo['api_key']}";
-                $resp = Http::timeout(25)->post($url, [
+                // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$geminiTtsModel}:generateContent";
+                $resp = Http::withHeaders(['x-goog-api-key' => $keyInfo['api_key']])->timeout(25)->post($url, [
                     'contents' => [['parts' => [['text' => $text]]]],
                     'generationConfig' => [
                         'responseModalities' => ['AUDIO'],
@@ -370,7 +371,8 @@ class NongYingAIService
     protected function callGemini(string $apiKey, string $model, string $message, array $history, string $systemPrompt, array $options): array
     {
         $model = $model ?: self::DEFAULT_MODELS['gemini'];
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
         // Gemini format: `systemInstruction` + `contents[]` with `role` + `parts`
         $contents = [];
@@ -395,7 +397,7 @@ class NongYingAIService
             ],
         ];
 
-        $resp = Http::timeout(30)->post($url, $body);
+        $resp = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout(30)->post($url, $body);
         if (! $resp->successful()) {
             throw new Exception("Gemini {$resp->status()}: " . Str::limit($resp->body(), 200));
         }

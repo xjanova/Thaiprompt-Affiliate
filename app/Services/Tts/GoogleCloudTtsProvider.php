@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
  * 🎙️ Google Cloud Text-to-Speech — free tier (1M chars/month for Standard, 1M for WaveNet)
  *
  * Doc: https://cloud.google.com/text-to-speech/docs
- * Endpoint: POST https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}
+ * Endpoint: POST https://texttospeech.googleapis.com/v1/text:synthesize (คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL)
  *
  * 2 modes:
  *   1. API key auth — เร็ว + ไม่ต้อง OAuth (เก็บใน config('services.google.tts_api_key'))
@@ -149,11 +149,12 @@ class GoogleCloudTtsProvider implements TtsProviderInterface
             ],
         ];
 
-        $url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key='.urlencode($apiKey);
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = 'https://texttospeech.googleapis.com/v1/text:synthesize';
 
         try {
             $response = Http::timeout(60)
-                ->withHeaders(['Content-Type' => 'application/json'])
+                ->withHeaders(['Content-Type' => 'application/json', 'x-goog-api-key' => $apiKey])
                 ->post($url, $payload);
 
             if (! $response->successful()) {

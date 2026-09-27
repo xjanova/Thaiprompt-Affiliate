@@ -426,9 +426,10 @@ class LineBotAiService
         }
 
         $model = $this->settings->model ?: 'gemini-pro';
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$this->settings->api_key}";
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
-        $response = Http::timeout(60)->post($url, [
+        $response = Http::withHeaders(['x-goog-api-key' => $this->settings->api_key])->timeout(60)->post($url, [
             'contents' => $contents,
             'generationConfig' => [
                 'temperature' => $this->settings->temperature,

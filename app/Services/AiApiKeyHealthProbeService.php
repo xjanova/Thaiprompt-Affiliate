@@ -182,7 +182,7 @@ class AiApiKeyHealthProbeService
         }
 
         // 🎯 ใช้ /models endpoint สำหรับ OpenAI-compatible providers
-        //    Gemini มี endpoint แตกต่าง: /models?key=...
+        //    Gemini มี endpoint แตกต่าง: /models + header x-goog-api-key (ไม่ใส่ ?key= ใน URL)
         //    Anthropic ไม่มี GET /models — ต้อง POST /messages (ข้าม — admin ตรวจเอง)
         return match ($key->provider) {
             'openai', 'grok', 'groq', 'qwen', 'openrouter', 'deepseek', 'typhoon', 'xiaomi' => [
@@ -193,9 +193,10 @@ class AiApiKeyHealthProbeService
                 ],
             ],
             'gemini' => [
-                'url' => "{$baseUrl}/models?key={$apiKey}",
+                'url' => "{$baseUrl}/models",
                 'headers' => [
                     'Content-Type' => 'application/json',
+                    'x-goog-api-key' => $apiKey,
                 ],
             ],
             default => null,

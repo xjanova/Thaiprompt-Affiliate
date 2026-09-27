@@ -170,8 +170,8 @@ class ImportYouTubeChannelMissions extends Command
     protected function getChannelInfo(string $channelId, string $apiKey): ?array
     {
         try {
-            $response = Http::get("{$this->apiBaseUrl}/channels", [
-                'key' => $apiKey,
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->get("{$this->apiBaseUrl}/channels", [
                 'id' => $channelId,
                 'part' => 'snippet,contentDetails,statistics',
             ]);
@@ -216,7 +216,6 @@ class ImportYouTubeChannelMissions extends Command
 
         do {
             $params = [
-                'key' => $apiKey,
                 'playlistId' => $playlistId,
                 'part' => 'snippet,contentDetails',
                 'maxResults' => min(50, $limit - count($videos)),
@@ -226,7 +225,8 @@ class ImportYouTubeChannelMissions extends Command
                 $params['pageToken'] = $nextPageToken;
             }
 
-            $response = Http::get("{$this->apiBaseUrl}/playlistItems", $params);
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->get("{$this->apiBaseUrl}/playlistItems", $params);
 
             if (! $response->successful()) {
                 break;
@@ -264,8 +264,8 @@ class ImportYouTubeChannelMissions extends Command
     protected function getVideoDetails(string $videoId, string $apiKey): ?array
     {
         try {
-            $response = Http::get("{$this->apiBaseUrl}/videos", [
-                'key' => $apiKey,
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->get("{$this->apiBaseUrl}/videos", [
                 'id' => $videoId,
                 'part' => 'contentDetails,statistics',
             ]);

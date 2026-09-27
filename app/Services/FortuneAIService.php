@@ -1995,7 +1995,8 @@ PROMPT;
         try {
             $startTime = microtime(true);
 
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
             $genConfig = [
                 'temperature' => $config['temperature'] ?? 0.5,
@@ -2025,7 +2026,7 @@ PROMPT;
                 'generationConfig' => $genConfig,
             ];
 
-            $response = Http::timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, $payload);
+            $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, $payload);
 
             if (! $response->successful()) {
                 $errBody = $response->json();
@@ -3374,7 +3375,8 @@ PROMPT;
         array $config,
         array $history
     ): array {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
         // สร้าง contents จาก history (Gemini ใช้ 'model' แทน 'assistant')
         $contents = [];
@@ -3402,7 +3404,7 @@ PROMPT;
             $genConfigChat1['thinkingConfig'] = ['thinkingBudget' => 0];
         }
 
-        $response = Http::timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
+        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -4401,7 +4403,8 @@ PROMPT;
      */
     protected function callChatGemini(string $prompt, string $systemMessage, string $apiKey, string $model, array $config): array
     {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
         // 🐛 (2026-05-02) ปิด thinking สำหรับ Gemini 2.5
         $genConfigChat2 = [
@@ -4414,7 +4417,7 @@ PROMPT;
             $genConfigChat2['thinkingConfig'] = ['thinkingBudget' => 0];
         }
 
-        $response = Http::timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
+        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -6346,7 +6349,8 @@ PROMPT;
     protected function callGemini(string $prompt, array $config = []): array
     {
         try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+            // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
 
             // 🐛 (2026-05-02) Gemini 2.5 Flash thinking mode กิน max_tokens ก่อนตอบจริง
             //    user feedback: "Tokens 11,876 แต่คำทำนายแค่ 425 ตัวอักษร = สั้นจุดจู๋"
@@ -6362,7 +6366,7 @@ PROMPT;
                 $generationConfig['thinkingConfig'] = ['thinkingBudget' => 0];
             }
 
-            $response = Http::timeout($this->geminiTimeoutFor(self::DEEP_PROVIDER_TIMEOUT))->post($url, [
+            $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])->timeout($this->geminiTimeoutFor(self::DEEP_PROVIDER_TIMEOUT))->post($url, [
                 'system_instruction' => [
                     'parts' => [['text' => $this->getReadingSystemMessage()]],
                 ],
@@ -7353,7 +7357,8 @@ TXT;
             ];
         }
 
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
 
         // 🐛 (2026-05-02) ปิด thinking สำหรับ Gemini 2.5 — playground
         $genConfigPlayground = [
@@ -7377,7 +7382,7 @@ TXT;
             ];
         }
 
-        $response = Http::timeout(90)->post($url, $body)->throw();
+        $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])->timeout(90)->post($url, $body)->throw();
         $data = $response->json();
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
 

@@ -819,8 +819,10 @@ class AiApiKeyController extends Controller
     protected function testGeminiApi(string $apiKey): array
     {
         $client = new Client;
-        $response = $client->get("https://generativelanguage.googleapis.com/v1/models?key={$apiKey}", [
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $response = $client->get('https://generativelanguage.googleapis.com/v1/models', [
             'timeout' => 10,
+            'headers' => ['x-goog-api-key' => $apiKey],
         ]);
 
         return json_decode($response->getBody(), true);

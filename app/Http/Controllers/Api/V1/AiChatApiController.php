@@ -105,14 +105,15 @@ TXT;
     {
         $model = config('services.gemini.model') ?: 'gemini-2.5-flash';
         $key = config('services.gemini.api_key');
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$key}";
+        // 🔐 คีย์ส่งทาง header x-goog-api-key ไม่ใส่ ?key= ใน URL (error ของ Guzzle พิมพ์ URL เต็ม = คีย์หลุดไปกับข้อความ)
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent";
 
         $contents = array_map(fn ($m) => [
             'role' => $m['role'] === 'assistant' ? 'model' : 'user',
             'parts' => [['text' => $m['content']]],
         ], $messages);
 
-        $resp = Http::timeout(30)->post($url, [
+        $resp = Http::withHeaders(['x-goog-api-key' => $key])->timeout(30)->post($url, [
             'systemInstruction' => ['parts' => [['text' => $system]]],
             'contents'          => $contents,
             'generationConfig'  => [
