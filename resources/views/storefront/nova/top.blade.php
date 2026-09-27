@@ -106,6 +106,13 @@
         <p class="nv-eyebrow"><span class="nv-eyebrow__line"></span>Thai Prompt <b>ซูเปอร์แอปของคนไทย</b><span class="nv-eyebrow__line"></span></p>
         <h1 class="nv-title" id="nv-hero-title"><span class="nv-nw">ทุกเรื่องใกล้ตัว</span> <span class="nv-foil nv-nw">จบในที่เดียว</span></h1>
         <p class="nv-sub"><span class="nv-nw">เลือกบริการที่ตอบโจทย์คุณ</span> <span class="nv-nw">— ช้อป กิน ส่ง ขาย และดูดวง</span> <span class="nv-nw">ครบในที่เดียว</span></p>
+        {{-- ปุ่มลัดไปคลิปแนะนำ + โหลดแอป (เห็นตั้งแต่จอแรกบนมือถือ) — ทำงานคู่กับ storefront/nova/app-band --}}
+        <div class="nv-herocta">
+            <a href="#nv-app" class="nv-btn nv-btn--gold" data-nv-intro><i class="fas fa-circle-play" aria-hidden="true"></i> ดูคลิปแนะนำ 2 นาที</a>
+            @if($nvAppSection)
+                <a href="#nv-app" class="nv-btn nv-btn--ghost"><i class="fab fa-android" aria-hidden="true"></i> {{ $nvApkReady ? 'โหลดแอปฟรี' : 'แอป Thai Prompt' }}</a>
+            @endif
+        </div>
     </div>
 
     <div class="nv-g3d">
@@ -139,6 +146,8 @@
     <img class="nv-deco nv-hide-m" src="{{ $nvImg('deco/coins.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async" style="--x:91%;--y:26px;--w:118px;--z:12;--t:8s;--dl:-2s">
     <img class="nv-deco nv-hide-m nv-hide-t" src="{{ $nvImg('deco/lotus.webp') }}" alt="" aria-hidden="true" loading="lazy" decoding="async" style="--x:.8%;--y:62%;--w:128px;--z:9;--t:11s;--r0:-2deg;--r1:2deg">
     <div class="nv-wrap">
+        @include('storefront.nova.app-band')
+
         <div class="nv-stats">
             <div class="nv-stat nv-rv" style="--d:0"><span class="nv-stat__ic"><i class="fas fa-bag-shopping" aria-hidden="true"></i></span><div><b>{{ number_format($nvAll) }}</b><span>สินค้าพร้อมขาย</span></div></div>
             <div class="nv-stat nv-rv" style="--d:1"><span class="nv-stat__ic"><i class="fas fa-store" aria-hidden="true"></i></span><div><b>{{ number_format((int) ($stats['stores'] ?? 0)) }}</b><span>ร้านค้าในระบบ</span></div></div>

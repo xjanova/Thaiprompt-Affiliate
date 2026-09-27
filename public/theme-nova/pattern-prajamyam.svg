@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="120" height="120" viewBox="0 0 120 120">
+  <!-- ลายประจำยาม (ดอกสี่กลีบ + กลีบเฉียงเล็ก) ต่อกันไร้รอยต่อ ใช้เป็นพื้นหลังท้ายเว็บธีมโนวา — สีทองโปร่ง คุมความเข้มที่ CSS -->
+  <defs>
+    <path id="petal" d="M0 -6 C -9 -14 -10 -27 0 -38 C 10 -27 9 -14 0 -6 Z"/>
+    <path id="vein" d="M0 -12 C -4 -18 -4 -26 0 -32"/>
+    <path id="leaf" d="M0 -9 C -5 -14 -5 -20 0 -25 C 5 -20 5 -14 0 -9 Z"/>
+    <g id="motif" fill="none" stroke="#E4C06B" stroke-linejoin="round" stroke-linecap="round">
+      <g stroke-width="1.5">
+        <use xlink:href="#petal"/>
+        <use xlink:href="#petal" transform="rotate(90)"/>
+        <use xlink:href="#petal" transform="rotate(180)"/>
+        <use xlink:href="#petal" transform="rotate(270)"/>
+      </g>
+      <g stroke-width="1" opacity=".75">
+        <use xlink:href="#vein"/>
+        <use xlink:href="#vein" transform="rotate(90)"/>
+        <use xlink:href="#vein" transform="rotate(180)"/>
+        <use xlink:href="#vein" transform="rotate(270)"/>
+      </g>
+      <g stroke-width="1.2" opacity=".85">
+        <use xlink:href="#leaf" transform="rotate(45)"/>
+        <use xlink:href="#leaf" transform="rotate(135)"/>
+        <use xlink:href="#leaf" transform="rotate(225)"/>
+        <use xlink:href="#leaf" transform="rotate(315)"/>
+      </g>
+      <circle r="5.5" stroke-width="1.4"/>
+      <circle r="2.2" fill="#E4C06B" stroke="none"/>
+    </g>
+    <g id="star" fill="#E4C06B" opacity=".7">
+      <path d="M0 -7 L1.6 -1.6 L7 0 L1.6 1.6 L0 7 L-1.6 1.6 L-7 0 L-1.6 -1.6 Z"/>
+    </g>
+  </defs>
+  <!-- เส้นก้ามปู: ข้าวหลามตัดต่อกันทุกช่อง ล้อมดอกประจำยามทุกดอก -->
+  <g fill="none" stroke="#E4C06B" stroke-linejoin="round">
+    <path d="M60 0 L120 60 L60 120 L0 60 Z" stroke-width="1.1" opacity=".55"/>
+    <path d="M60 8 L112 60 L60 112 L8 60 Z" stroke-width=".7" opacity=".35"/>
+    <path d="M52 0 L0 52 M68 0 L120 52 M0 68 L52 120 M68 120 L120 68" stroke-width=".7" opacity=".35"/>
+  </g>
+  <use xlink:href="#motif" x="60" y="60"/>
+  <use xlink:href="#motif" x="0" y="0"/>
+  <use xlink:href="#motif" x="120" y="0"/>
+  <use xlink:href="#motif" x="0" y="120"/>
+  <use xlink:href="#motif" x="120" y="120"/>
+  <use xlink:href="#star" x="60" y="0"/>
+  <use xlink:href="#star" x="60" y="120"/>
+  <use xlink:href="#star" x="0" y="60"/>
+  <use xlink:href="#star" x="120" y="60"/>
+</svg>
