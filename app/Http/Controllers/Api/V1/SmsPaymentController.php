@@ -2229,60 +2229,30 @@ class SmsPaymentController extends Controller
         }
 
         // =====================================================================
-        // ค้นหา FortuneReading (เฉพาะ admin device)
+        // ค้นหา FortuneReading (เฉพาะ admin device) — หาไว้แสดงบิลให้แอพเท่านั้น ห้ามตัดบิลที่นี่
         // =====================================================================
+        // 🚨 (2026-10-03, บิล FTU-261002-X6634) เส้นนี้เคยตัดบิลดูดวงเองทันทีที่ยอดตรง
+        //   แอพเรียก /orders/match "ก่อน" /notify ราว 2 วิ — ตอนนั้น SMS ใบจริงยังไม่ถูกบันทึก
+        //   โค้ดเลยหยิบ "SMS ยอดเดียวกันที่ยังไม่ผูก ตัวล่าสุด" = SMS กำพร้าเก่าเป็นเดือน
+        //   (บิลนี้ได้ SMS ของ 21 ก.ค.) มาเป็นหลักฐานจ่าย และไม่ mark ว่าใช้แล้ว
+        //   → SMS ใบจริงมาถึงทีหลังกลายเป็น "เงินกำพร้า" แล้วกลายเป็นหลักฐานปลอมของบิลถัดไปอีกทอด
+        //   prod ส.ค.–ต.ค. ผูกผิดแบบนี้ 121 บิล · หน้า billing โชว์ SMS ผิดใบ แอดมินเลยเข้าใจว่าไม่ได้จ่าย
+        //   + endpoint นี้เป็น GET ที่ส่งมาแค่ยอดเงิน — ไม่มี HMAC / เข้ารหัส / nonce แบบ /notify
+        //   ⇒ บิลดูดวงตัดจาก SMS ได้ทางเดียวคือ /notify (SmsPaymentService::handleFortuneReadingPayment)
+        //     ที่ผูก SMS ใบจริง + กัน SMS ที่มาก่อนเปิดบิล + ไม่เดาเมื่อยอดซ้ำหลายใบ + กัน side-effect ซ้ำ
+        //   ข้อมูล prod: ทุกบิลที่เส้นนี้เคยตัด มี SMS ใบจริงตามมาถึง /notify ภายใน 0–31 วิ → ไม่มีบิลค้าง
+        //   ⚠️ ห้ามใส่การกู้สถานะบิล (completed → pending_payment) กลับมาที่นี่ — /notify กู้เองเมื่อเงินเข้าจริง
         if (! $transaction && $this->deviceCanAccessFortuneReading($device)) {
             $fortuneReading = $this->matchFortuneReadingByAmount($amount, $graceMinutes);
 
             if ($fortuneReading) {
-                // Recovery: ถ้า cleanup ปิดไปแล้ว → กู้คืนเป็น pending_payment ตาม reading_type
-                $expectedStatus = $fortuneReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
-                    ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
-                    : FortuneReading::STATUS_PENDING_PAYMENT;
-
-                if (! $fortuneReading->is_paid && $fortuneReading->conversation_status !== $expectedStatus) {
-                    $fortuneReading->update(['conversation_status' => $expectedStatus]);
-                    Log::info('SMS Payment: Recovered fortune reading for match', [
+                if (! $fortuneReading->is_paid) {
+                    Log::info('SMS Payment: /orders/match พบบิลดูดวงที่รอชำระ — รอ /notify ตัดบิลด้วย SMS ใบจริง', [
+                        'device_id' => $device->device_id,
+                        'amount' => $amount,
                         'fortune_reading_id' => $fortuneReading->id,
-                        'expected_status' => $expectedStatus,
+                        'bill_reference' => $fortuneReading->bill_reference,
                     ]);
-                }
-
-                // Auto-approve fortune reading (เหมือน xmanstudio auto-approve topup)
-                $autoConfirm = config('smschecker.auto_confirm_matched', true);
-                if ($autoConfirm && ! $fortuneReading->is_paid) {
-                    try {
-                        // 🔮 หา notification ที่เพิ่งส่ง (จาก /match endpoint)
-                        //   🌙 ไม่หยิบ SMS ที่เป็นเงินของจันทรา.online (status external) มาผูกบิลเรา
-                        $notification = SmsPaymentNotification::where('amount', $amount)
-                            ->where('type', 'credit')
-                            ->whereNull('matched_transaction_id')
-                            ->where('status', '!=', 'external')
-                            ->orderBy('sms_timestamp', 'desc')
-                            ->first();
-
-                        $fortuneReading->confirmPayment($notification);
-                        $fortuneReading = $fortuneReading->fresh();
-
-                        // 🔮 Route ตาม reading_type — Celtic / Deep flow ต่างกัน
-                        //    helper จะเลือก ProcessDeepFortuneReadingJob (deep) หรือ
-                        //    handleCelticPaymentMatched (celtic) ตาม reading.reading_type
-                        //    ⚠️ เคยมีบั๊ก: dispatchSmart ทุก reading_type → Celtic ได้ flow Deep ผิด
-                        $dispatched = $this->dispatchFortuneApprovalFlow($fortuneReading, $notification);
-
-                        Log::info('SMS Payment: Auto-approved fortune reading on match', [
-                            'device_id' => $device->device_id,
-                            'amount' => $amount,
-                            'fortune_reading_id' => $fortuneReading->id,
-                            'reading_type' => $fortuneReading->reading_type,
-                            'flow_dispatched' => $dispatched,
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('SMS Payment: Auto-approve fortune reading failed', [
-                            'fortune_reading_id' => $fortuneReading->id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
                 }
 
                 $orderData = $this->transformFortuneReadingToOrderApproval($fortuneReading);
