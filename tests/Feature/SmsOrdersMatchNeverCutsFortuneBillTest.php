@@ -7,6 +7,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
+use App\Services\SmsPaymentService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -16,12 +17,13 @@ use Tests\Concerns\BuildsJuntraServerSchema;
 use Tests\TestCase;
 
 /**
- * 🚨 (2026-10-03, บิล FTU-261002-X6634) GET /orders/match ห้ามตัดบิลดูดวงเอง
+ * 🚨 (2026-10-03, บิล FTU-261002-X6634) /orders/match ต้องไม่เอา SMS เก่ามาเป็นหลักฐานของบิลใหม่
  *
- * แอพ SmsChecker เรียก /orders/match ก่อน /notify ราว 2 วิ — SMS ใบจริงยังไม่ถูกบันทึก
- * เส้นนี้เคยหยิบ "SMS ยอดเดียวกันที่ยังไม่ผูก ตัวล่าสุด" (SMS กำพร้าของ 21 ก.ค.) มาตัดบิลวันที่ 2 ต.ค.
- * → หลักฐานการจ่ายบนหน้า billing เป็นของคนอื่น / SMS ใบจริงตกเป็นเงินกำพร้า
- * บิลดูดวงต้องตัดผ่าน /notify เท่านั้น (SMS ใบจริง + HMAC + กัน SMS ที่มาก่อนเปิดบิล)
+ * แอพ SmsChecker เรียก /orders/match ก่อน /notify ราว 2 วิ — เส้นนี้ตัดบิลทันที (ตัวตัดบิลอัตโนมัติตัวจริง)
+ * แต่เคยหยิบ "SMS ยอดเดียวกันที่ยังไม่ผูก ตัวล่าสุด" (SMS กำพร้าของ 21 ก.ค.) มาผูกบิลวันที่ 2 ต.ค.
+ * → หน้า billing โชว์ SMS ผิดใบ แอดมินยกเลิกบิลที่ลูกค้าจ่ายจริง / SMS ใบจริงกลายเป็นเงินกำพร้า
+ *
+ * ที่ถูก: /orders/match ผูกได้เฉพาะ SMS ที่มาหลังเปิดบิล · SMS ใบจริงที่มาทาง /notify ทีหลังถูกผูกเข้าบิลนั้น
  */
 class SmsOrdersMatchNeverCutsFortuneBillTest extends TestCase
 {
@@ -36,7 +38,7 @@ class SmsOrdersMatchNeverCutsFortuneBillTest extends TestCase
         $this->buildJuntraServerSchema();
         Cache::flush();
 
-        // คอลัมน์ที่ /orders/match + ตัวแปลงบิลให้แอพอ่าน (ตาราง fortune_readings ของ trait มีแค่ขั้นต่ำ)
+        // คอลัมน์ที่ /orders/match + confirmPayment + ตัวแปลงบิลให้แอพอ่าน (ตาราง fortune_readings ของ trait มีแค่ขั้นต่ำ)
         Schema::table('fortune_readings', function (Blueprint $table) {
             $table->string('platform')->nullable();
             $table->string('platform_user_id')->nullable();
@@ -49,6 +51,7 @@ class SmsOrdersMatchNeverCutsFortuneBillTest extends TestCase
             $table->timestamp('paid_at')->nullable();
             $table->text('conversation_state')->nullable();
         });
+
         // เครื่องแอดมิน (store_id ว่าง) → resolveDeviceStoreId() ไปหา/สร้างร้าน Platform
         Schema::table('users', function (Blueprint $table) {
             $table->string('role')->nullable();
@@ -86,44 +89,56 @@ class SmsOrdersMatchNeverCutsFortuneBillTest extends TestCase
         parent::tearDown();
     }
 
-    /** SMS กำพร้าเก่าเป็นเดือน ยอดเดียวกับบิลใหม่ — แบบ id 1871 บน prod */
-    private function staleOrphanSms(float $amount): SmsPaymentNotification
+    private function sms(float $amount, $createdAt, string $status = 'requires_admin_review'): SmsPaymentNotification
     {
-        return SmsPaymentNotification::create([
+        $sms = SmsPaymentNotification::create([
             'bank' => 'KBANK',
             'type' => 'credit',
             'amount' => $amount,
             'sender_or_receiver' => 'X-4572',
-            'sms_timestamp' => now()->subDays(73),
+            'sms_timestamp' => $createdAt,
             'device_id' => 'SMSCHK-MATCH01',
             'nonce' => Str::random(24),
-            'status' => 'requires_admin_review',
+            'status' => $status,
         ]);
+        $sms->forceFill(['created_at' => $createdAt])->save();
+
+        return $sms;
     }
 
-    private function billWithAmount(float $amount, string $status, string $upaStatus, array $upaTimes): FortuneReading
+    /** SMS กำพร้าเก่าเป็นเดือน ยอดเดียวกับบิลใหม่ — แบบ id 1871 บน prod */
+    private function staleOrphanSms(float $amount): SmsPaymentNotification
     {
-        $upa = UniquePaymentAmount::unguarded(fn () => UniquePaymentAmount::create(array_merge([
+        return $this->sms($amount, now()->subDays(73));
+    }
+
+    /**
+     * บิลรอจ่าย — ไม่ใส่ user id เพื่อให้ dispatchFortuneApprovalFlow ไม่ไปปลุกงานทำนาย (process แยก) ในเทสต์
+     */
+    private function pendingBill(float $amount): FortuneReading
+    {
+        $openedAt = now()->subMinutes(2);
+        $upa = UniquePaymentAmount::unguarded(fn () => UniquePaymentAmount::create([
             'base_amount' => floor($amount),
             'unique_amount' => $amount,
             'decimal_suffix' => (int) round(($amount - floor($amount)) * 100),
             'transaction_type' => 'fortune_reading',
-            'status' => $upaStatus,
-        ], $upaTimes)));
+            'status' => 'reserved',
+            'created_at' => $openedAt,
+            'expires_at' => now()->addHours(3),
+        ]));
 
         $id = DB::table('fortune_readings')->insertGetId([
             'bill_reference' => 'FTU-261002-X6634',
             'reading_type' => FortuneReading::READING_TYPE_DEEP,
-            'conversation_status' => $status,
+            'conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT,
             'is_paid' => false,
             'unique_payment_amount_id' => $upa->id,
             'amount_paid' => $amount,
             'platform' => 'facebook',
-            'platform_user_id' => '35272642915716630',
-            'facebook_user_id' => '35272642915716630',
             'facebook_user_name' => 'ลูกค้าทดสอบ',
-            'created_at' => $upaTimes['created_at'],
-            'updated_at' => $upaTimes['created_at'],
+            'created_at' => $openedAt,
+            'updated_at' => $openedAt,
         ]);
         $upa->forceFill(['transaction_id' => $id])->save();
 
@@ -135,51 +150,64 @@ class SmsOrdersMatchNeverCutsFortuneBillTest extends TestCase
         return $this->getJson('/api/v1/sms-payment/orders/match?amount='.$amount, ['X-Api-Key' => $this->apiKey]);
     }
 
-    public function test_orders_match_shows_the_pending_bill_but_never_cuts_it_with_an_old_sms(): void
+    public function test_orders_match_cuts_the_bill_but_never_attaches_an_old_sms(): void
     {
         $stale = $this->staleOrphanSms(39.34);
-        $bill = $this->billWithAmount(39.34, FortuneReading::STATUS_PENDING_PAYMENT, 'reserved', [
-            'created_at' => now()->subMinutes(2),
-            'expires_at' => now()->addHours(3),
-        ]);
+        $bill = $this->pendingBill(39.34);
 
         $this->match(39.34)
             ->assertOk()
             ->assertJsonPath('data.matched', true)
             ->assertJsonPath('data.order.order_details_json.order_number', 'FTU-261002-X6634')
-            ->assertJsonPath('data.order.approval_status', 'pending_review');
+            ->assertJsonPath('data.order.approval_status', 'auto_approved');
 
         $fresh = $bill->fresh();
-        $this->assertFalse((bool) $fresh->is_paid, 'GET ที่ส่งมาแค่ยอดเงินห้ามตัดบิล');
-        $this->assertSame(FortuneReading::STATUS_PENDING_PAYMENT, $fresh->conversation_status);
-        $this->assertNull($fresh->sms_notification_id);
-        $this->assertSame('reserved', UniquePaymentAmount::find($fresh->unique_payment_amount_id)->status);
-
-        // SMS เก่าต้องไม่ถูกเอามาเป็นหลักฐานของบิลนี้ — และ /notify ก็ต้องไม่รับมันด้วย (มาก่อนเปิดบิล)
+        $this->assertTrue((bool) $fresh->is_paid, 'การตัดบิลอัตโนมัติต้องทำงานเหมือนเดิม');
+        $this->assertNull($fresh->sms_notification_id, 'SMS ของ 73 วันก่อนห้ามเป็นหลักฐานของบิลนี้');
         $this->assertNull($stale->fresh()->matched_transaction_id);
-        $this->assertNull(FortuneReading::findByUniqueAmount(39.34, $stale->sms_timestamp));
-
-        // SMS ใบจริงที่ /notify จะได้ (มาหลังเปิดบิล) ยังจับคู่บิลนี้ได้ตามปกติ
-        $this->assertSame($bill->id, FortuneReading::findByUniqueAmount(39.34, now())?->id);
+        $this->assertSame('requires_admin_review', $stale->fresh()->status);
     }
 
-    public function test_orders_match_does_not_reopen_a_bill_the_cleanup_already_closed(): void
+    public function test_orders_match_attaches_an_sms_that_already_arrived_after_the_bill(): void
     {
-        // บิลหมดเวลาแล้ว (cleanup ปิดเป็น completed + ยอดหมดอายุ แต่ยังอยู่ในช่วง grace ของ /orders/match)
-        $this->staleOrphanSms(39.21);
-        $bill = $this->billWithAmount(39.21, FortuneReading::STATUS_COMPLETED, 'expired', [
-            'created_at' => now()->subMinutes(40),
-            'expires_at' => now()->subMinutes(10),
-        ]);
+        $stale = $this->staleOrphanSms(39.34);
+        $bill = $this->pendingBill(39.34);
+        $real = $this->sms(39.34, now(), 'pending');
 
-        $this->match(39.21)
-            ->assertOk()
-            ->assertJsonPath('data.matched', true)
-            ->assertJsonPath('data.order.approval_status', 'cancelled');
+        $this->match(39.34)->assertOk()->assertJsonPath('data.order.approval_status', 'auto_approved');
 
-        $fresh = $bill->fresh();
-        $this->assertFalse((bool) $fresh->is_paid);
-        $this->assertSame(FortuneReading::STATUS_COMPLETED, $fresh->conversation_status,
-            'กู้บิลกลับมาเป็นรอชำระได้เฉพาะตอน /notify เจอเงินเข้าจริง');
+        $this->assertSame($real->id, (int) $bill->fresh()->sms_notification_id);
+        $this->assertSame('matched', $real->fresh()->status);
+        $this->assertSame($bill->id, (int) $real->fresh()->matched_transaction_id);
+        $this->assertNull($stale->fresh()->matched_transaction_id);
+    }
+
+    public function test_real_sms_arriving_after_orders_match_is_attached_to_that_bill_not_orphaned(): void
+    {
+        $this->staleOrphanSms(39.34);
+        $bill = $this->pendingBill(39.34);
+
+        // 1) แอพเรียก /orders/match ก่อน → ตัดบิล (ยังไม่มี SMS ใบจริง)
+        $this->match(39.34)->assertOk();
+        $this->assertTrue((bool) $bill->fresh()->is_paid);
+
+        // 2) อีก ~2 วิ SMS ใบจริงมาทาง /notify
+        $result = app(SmsPaymentService::class)->processNotification([
+            'bank' => 'KBANK',
+            'type' => 'credit',
+            'amount' => 39.34,
+            'account_number' => '',
+            'sender_or_receiver' => '',
+            'reference_number' => '',
+            'sms_timestamp' => now()->getTimestampMs(),
+            'device_id' => 'SMSCHK-MATCH01',
+            'nonce' => Str::random(24),
+        ], SmsCheckerDevice::where('device_id', 'SMSCHK-MATCH01')->firstOrFail(), '127.0.0.1');
+
+        $this->assertTrue($result['data']['matched']);
+        $this->assertTrue($result['data']['fortune_reading']);
+        $this->assertSame('matched', $result['data']['status'], 'ห้ามตกเป็นเงินกำพร้า');
+        $this->assertSame($bill->id, (int) $result['data']['matched_transaction_id']);
+        $this->assertSame((int) $result['data']['notification_id'], (int) $bill->fresh()->sms_notification_id);
     }
 }
