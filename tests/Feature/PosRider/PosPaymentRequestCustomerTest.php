@@ -189,6 +189,7 @@ class PosPaymentRequestCustomerTest extends PosRiderTestCase
         $this->assertSame((int) PosDeliveryRequest::findOrFail($r['id'])->pos_terminal_id, (int) $order->getAttribute('pos_terminal_id'));
         $this->assertSame('POS-000123', $order->getAttribute('pos_local_id'));
         $this->assertSame('processing', $order->status, 'เรียกไรเดอร์แล้ว = กำลังเตรียม');
+        $this->assertTrue((bool) $order->settlement_deferred, 'ไรเดอร์รอบ 2: เงินพักไว้จนส่งมอบสำเร็จ');
 
         // กระเป๋าถูกตัดครั้งเดียว ตามยอด server · ช่องทาง pos
         $this->assertEqualsWithDelta(1000 - $total, $this->walletBalance($customer), 0.001);
@@ -211,6 +212,7 @@ class PosPaymentRequestCustomerTest extends PosRiderTestCase
         $this->assertSame('shop_delivery', $job->job_type);
         $this->assertSame('pending', $job->status);
         $this->assertEqualsWithDelta($fee, (float) $job->total_fee, 0.001, 'ค่าส่งงาน = ที่ลูกค้าจ่ายจริง');
+        $this->assertTrue((bool) $job->handover_required, 'ไรเดอร์รอบ 2: ปลดเงินด้วยการสแกนส่งมอบสองฝ่าย');
         $this->assertTrue(OrderTrackingHistory::where('order_id', $order->id)->where('status', 'rider_requested')->exists());
 
         // POS เห็นสถานะ
@@ -445,6 +447,38 @@ class PosPaymentRequestCustomerTest extends PosRiderTestCase
         $this->assertSame('paid', $order->payment_status);
         $this->assertSame('paid', $order->status, 'ยังไม่เรียกไรเดอร์ = คงสถานะจ่ายแล้วให้ร้านกดเรียกเอง');
         $this->assertSame(0, RiderJob::count());
+        $this->assertSame('paid', PosDeliveryRequest::findOrFail($r['id'])->status);
+    }
+
+    /**
+     * ไรเดอร์รอบ 2: แอปรุ่นใหม่ (X-App-Build ≥ 43) ที่ยังไม่มีรูปโปรไฟล์ถ่ายสด → 422 PROFILE_PHOTO_REQUIRED
+     * ตรวจก่อน PIN (PIN ผิดก็ไม่ถูกนับ) · ไม่ตัดเงิน · คำขอยังรอจ่าย · มีรูปแล้วจ่ายได้ตามปกติ
+     */
+    public function test_pay_requires_live_profile_photo_on_new_app_builds(): void
+    {
+        $r = $this->pendingRequest();
+        $customer = $this->makeCustomer(1000);
+        $address = $this->makeAddress($customer);
+        $newApp = ['X-App-Build' => '43'];
+
+        $this->customerPay($customer, $r['token'], $address->id, '000000', null, $newApp)
+            ->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'PROFILE_PHOTO_REQUIRED')
+            ->assertJsonPath('message', 'กรุณาถ่ายรูปโปรไฟล์ก่อนใช้งานส่วนนี้')
+            ->assertJsonPath('data.has_photo', false);
+
+        $this->assertSame(0, (int) Wallet::where('user_id', $customer->id)->value('failed_attempts'), 'ด่านรูปมาก่อน PIN');
+        $this->assertSame('pending', PosDeliveryRequest::findOrFail($r['id'])->status);
+        $this->assertSame(0, Order::count());
+        $this->assertEqualsWithDelta(1000.0, $this->walletBalance($customer), 0.001);
+
+        // ถ่ายรูปแล้ว → จ่ายได้
+        $customer->forceFill(['profile_photo_private_path' => 'profile-photos/'.$customer->id.'/live.jpg', 'profile_photo_taken_at' => now()])->save();
+
+        $this->customerPay($customer, $r['token'], $address->id, self::PIN, null, $newApp)
+            ->assertOk()
+            ->assertJsonPath('success', true);
         $this->assertSame('paid', PosDeliveryRequest::findOrFail($r['id'])->status);
     }
 

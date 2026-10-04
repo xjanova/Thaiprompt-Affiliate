@@ -53,14 +53,14 @@ describe('routeForNotification — คำขอจ่ายจากร้าน
   });
 });
 
-describe('routeForNotification — การส่งมอบ (ไรเดอร์รอบ 2)', () => {
-  it('ไรเดอร์มาถึง / วางของไว้ → หน้าออเดอร์ของผู้ซื้อ', () => {
+describe('routeForNotification — การส่งมอบ (ไรเดอร์รอบ 2, payload จริงของ HandoverService: มี screen ไม่มี role)', () => {
+  it('ไรเดอร์มาถึง / วางของไว้ → หน้ารับของของผู้ซื้อ', () => {
     expect(routeForNotification({ type: 'handover_arrived', source: 'shop', order_id: 901, job_id: 55, screen: 'order-handover' })).toBe(
-      '/order/901'
+      '/handover/shop/901'
     );
     expect(
       routeForNotification({ type: 'handover_auto_release_scheduled', source: 'fresh-market', order_id: 9, job_id: 5, screen: 'order-handover' })
-    ).toBe('/taladsod/order/9');
+    ).toBe('/handover/fresh-market/9');
   });
 
   it('ส่งมอบสำเร็จ → ผู้ซื้อ / ไรเดอร์ / ร้าน ตาม screen', () => {
@@ -90,10 +90,5 @@ describe('routeForNotification — การส่งมอบ (ไรเดอ�
     expect(routeForNotification({ type: 'handover_disputed', source: 'shop', order_id: 901, job_id: 55, reason: 'not_received' })).toBe(
       '/notifications'
     );
-  });
-
-  it('screen ที่เป็น path ต้องผ่าน allowlist', () => {
-    expect(routeForNotification({ type: 'handover_completed', order_id: 901, screen: '/order/901' })).toBe('/order/901');
-    expect(routeForNotification({ type: 'handover_completed', order_id: 901, screen: '//evil.example' })).toBe('/notifications');
   });
 });

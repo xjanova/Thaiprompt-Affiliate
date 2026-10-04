@@ -17,5 +17,6 @@ Route::prefix('pos-requests/{token}')
     ->controller(PosPaymentRequestController::class)
     ->group(function () {
         Route::get('/', 'show')->middleware('throttle:60,1,api-pos-request-show')->name('show');
-        Route::post('/pay', 'pay')->middleware('throttle:10,1,api-pos-request-pay')->name('pay');
+        // profile.photo = ด่านรูปโปรไฟล์ถ่ายสดของไรเดอร์รอบ 2 (แบบเดียวกับ /cart/checkout) — ตรวจก่อน PIN จึงไม่กินจำนวนครั้ง PIN
+        Route::post('/pay', 'pay')->middleware(['throttle:10,1,api-pos-request-pay', 'profile.photo'])->name('pay');
     });

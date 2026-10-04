@@ -343,5 +343,7 @@ class PosDeliveryRequestTerminalTest extends PosRiderTestCase
         $this->assertSame('api/v1/pos-requests/{token}/pay', $customerPay->uri());
         $this->assertContains('auth:sanctum', $customerPay->gatherMiddleware());
         $this->assertContains('throttle:10,1,api-pos-request-pay', $customerPay->gatherMiddleware());
+        $this->assertContains('profile.photo', $customerPay->gatherMiddleware());
+        $this->assertNotContains('profile.photo', $customerShow->gatherMiddleware());
     }
 }

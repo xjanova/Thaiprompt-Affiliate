@@ -14,6 +14,7 @@
  *         (จ่ายแล้วโดยผู้ใช้คนนี้ = 200 + status "paid" + order_id)
  *   POST: เหมือน GET + INVALID_PIN (data.attempts_remaining) · WALLET_LOCKED (data.locked_until) · PIN_NOT_SET
  *         · INSUFFICIENT_BALANCE (data.shortfall) · RIDER_NOT_AVAILABLE · ADDRESS_LOCATION_REQUIRED · OUT_OF_STOCK ฯลฯ
+ *         · PROFILE_PHOTO_REQUIRED (422 ด่านรูปโปรไฟล์ถ่ายสดของไรเดอร์รอบ 2 — ตรวจก่อน PIN ยังไม่ตัดเงิน)
  */
 
 import { apiGet, apiPost, newIdempotencyKey, num, type ApiResult } from './client';

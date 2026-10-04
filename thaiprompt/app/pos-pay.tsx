@@ -708,6 +708,18 @@ const PosPayContent: React.FC<{ token: string }> = ({ token }) => {
         );
         return;
       }
+      case 'PROFILE_PHOTO_REQUIRED':
+        // ไรเดอร์รอบ 2: ด่าน profile.photo ของ server (แบบเดียวกับหน้าชำระเงินตะกร้า) — ยังไม่ได้ตัดเงิน/ไม่นับ PIN
+        forceClosePin();
+        Alert.alert(
+          'ถ่ายรูปโปรไฟล์ก่อนนะ',
+          'ก่อนสั่งซื้อครั้งแรก ทุกบัญชีต้องมีรูปโปรไฟล์ถ่ายสดจากกล้อง ไรเดอร์จะได้รู้ว่าส่งของถึงมือใคร ถ่ายเสร็จแล้วกลับมาจ่ายต่อได้เลย (ก่อน QR หมดเวลา)',
+          [
+            { text: 'ไว้ก่อน', style: 'cancel' },
+            { text: 'ถ่ายรูปเลย', onPress: () => router.push('/profile-photo?from=checkout' as never) },
+          ]
+        );
+        return;
       case 'PIN_NOT_SET':
         forceClosePin();
         Alert.alert('ยังไม่ได้ตั้ง PIN กระเป๋าเงิน', 'ตั้ง PIN 6 หลักก่อน แล้วกลับมาจ่ายได้เลย (ก่อน QR หมดเวลา)', [

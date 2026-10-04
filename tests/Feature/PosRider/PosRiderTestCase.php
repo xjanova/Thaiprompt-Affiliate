@@ -174,11 +174,14 @@ abstract class PosRiderTestCase extends TestCase
         return $this->getJson('/api/v1/pos-requests/'.$token.($addressId !== null ? '?address_id='.$addressId : ''));
     }
 
-    protected function customerPay(User $user, string $token, int $addressId, ?string $pin = self::PIN, ?string $idempotencyKey = null): TestResponse
+    /**
+     * @param  array<string, string>  $extraHeaders  เช่น X-App-Build
+     */
+    protected function customerPay(User $user, string $token, int $addressId, ?string $pin = self::PIN, ?string $idempotencyKey = null, array $extraHeaders = []): TestResponse
     {
         Sanctum::actingAs($user);
 
-        $headers = $idempotencyKey === '' ? [] : ['Idempotency-Key' => $idempotencyKey ?? (string) Str::uuid()];
+        $headers = $extraHeaders + ($idempotencyKey === '' ? [] : ['Idempotency-Key' => $idempotencyKey ?? (string) Str::uuid()]);
 
         return $this->postJson('/api/v1/pos-requests/'.$token.'/pay', array_filter([
             'address_id' => $addressId,
