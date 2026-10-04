@@ -51,6 +51,9 @@ class RiderApiTest extends TestCase
     {
         parent::setUp();
 
+        // ไรเดอร์รอบ 2: เทสต์ชุดนี้ตรวจปุ่ม "ส่งสำเร็จ" แบบเดิม — งานที่ต้องสแกนส่งมอบอยู่ใน tests/Feature/RiderR2
+        \App\Models\Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
+
         Http::fake();
         Storage::fake('public');
         Storage::fake('local');

@@ -64,7 +64,7 @@
     }
     $odSteps[] = ['icon' => 'fa-box-open', 'title' => 'ร้านกำลังเตรียมสินค้า', 'time' => $odIsPrepared ? $odFmt($odProcessingAt) : null, 'done' => $odIsPrepared];
     if ($order->isRiderDelivery()) {
-        $odRiderStarted = $odJob && in_array($odJob->status, ['picked_up', 'delivering', 'delivered', 'completed'], true);
+        $odRiderStarted = $odJob && in_array($odJob->status, ['picked_up', 'delivering', 'awaiting_release', 'delivered', 'completed'], true);
         $odSteps[] = ['icon' => 'fa-motorcycle', 'title' => $odRider['status_label'] ?? 'รอร้านเรียกไรเดอร์', 'time' => $odJob ? $odFmt($odJob->accepted_at) : null, 'done' => $odRiderStarted, 'now' => $odLive];
     } else {
         $odSteps[] = ['icon' => 'fa-truck-fast', 'title' => $order->shipped_at ? 'จัดส่งสินค้าแล้ว' : 'รอจัดส่ง', 'time' => $odFmt($order->shipped_at), 'done' => (bool) $order->shipped_at,

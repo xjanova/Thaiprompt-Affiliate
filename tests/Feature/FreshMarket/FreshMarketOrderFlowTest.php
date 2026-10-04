@@ -390,6 +390,8 @@ class FreshMarketOrderFlowTest extends TestCase
      */
     public function test_cod_rider_order_over_the_cod_limit_is_rejected_at_checkout(): void
     {
+        // ไรเดอร์รอบ 2: ค่าเริ่มต้นปิด COD กับไรเดอร์ (ต้องจ่ายก่อน) — เทสต์นี้ตรวจเส้นทาง COD เดิมเมื่อแอดมินเปิดให้
+        \App\Models\Setting::set('rider.allow_cod', '1', 'boolean', 'rider');
         FreshMarketSetting::query()->update(['rider_enabled' => true]);
         FreshMarketSetting::clearCache();
         Setting::set('rider.max_cod_amount', '100', 'float', 'rider');

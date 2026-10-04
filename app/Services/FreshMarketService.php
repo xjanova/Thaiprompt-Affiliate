@@ -662,6 +662,12 @@ class FreshMarketService
             throw FreshMarketException::make('PAYMENT_METHOD_DISABLED', 'ร้านนี้รับเฉพาะชำระผ่าน Wallet ชั่วคราว', 422);
         }
 
+        // ไรเดอร์รอบ 2: ส่งด้วยไรเดอร์ต้องจ่ายก่อน (เงินพักไว้จนส่งมอบ) เว้นแต่แอดมินเปิด rider.allow_cod
+        if ($paymentMethod === 'cod' && $deliveryType === 'rider'
+            && ! app(DeliveryFeeCalculator::class)->boolSetting('rider.allow_cod')) {
+            throw FreshMarketException::make('COD_NOT_AVAILABLE', 'ส่งด้วยไรเดอร์ต้องชำระก่อน เงินพักไว้ปลอดภัยจนคุณได้รับของ', 422);
+        }
+
         $deliveryFee = 0.0;
         $distance = null;
         $buyerLat = isset($data['buyer_latitude']) && is_numeric($data['buyer_latitude']) ? (float) $data['buyer_latitude'] : null;
@@ -832,6 +838,8 @@ class FreshMarketService
                 'delivery_address' => $address !== '' ? mb_substr($address, 0, 500) : null,
                 'delivery_notes' => isset($data['delivery_notes']) ? mb_substr((string) $data['delivery_notes'], 0, 500) : null,
                 'cashback_amount' => $cashback,
+                // ไรเดอร์รอบ 2 (เลน money): ส่งด้วยไรเดอร์ = เงินพักจนส่งมอบสำเร็จ (ระบบปิดออเดอร์ให้ทันทีหลังสแกนครบ/ปลดเงิน)
+                'settlement_deferred' => $deliveryType === 'rider',
             ]);
             $order->appendHistory([
                 'action' => 'create',
@@ -1384,7 +1392,7 @@ class FreshMarketService
         ];
 
         $gp = round((float) $locked->platform_fee, 2);
-        $net = round((float) $locked->seller_earning, 2);
+        $net = $this->sellerNetAfterRiderCosts($locked);
         $sellerUser = $locked->seller?->user;
 
         if (! $sellerUser) {
@@ -1443,6 +1451,41 @@ class FreshMarketService
         }
 
         return $summary;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (เลน money): รายได้สุทธิของร้านหลังหักต้นทุนไรเดอร์ที่ร้านรับภาระ (อ่านจากค่าที่ล็อกบนออเดอร์)
+     *
+     * ออเดอร์เงินพัก (settlement_deferred): seller_earning − rider_bonus_amount − delivery_subsidy_amount (ไม่ติดลบ)
+     * แล้วเขียน seller_earning ใหม่ = ยอดที่ร้านได้จริง (รายงานรายได้ร้าน SUM(seller_earning) ตรงกับเงินที่โอน)
+     * ค่าส่งที่ผู้ซื้อจ่าย (delivery_fee) ไม่เคยเข้ารายได้ร้าน — เป็นของไรเดอร์/แพลตฟอร์ม (RiderEarningService)
+     * เรียกภายใน transaction ที่ lock ออเดอร์แล้ว (settleCompletedOrder) — ออเดอร์ที่ปิดแล้วไม่ถูกเรียกซ้ำ
+     */
+    protected function sellerNetAfterRiderCosts(FreshMarketOrder $locked): float
+    {
+        $net = round((float) $locked->seller_earning, 2);
+
+        if (! $locked->settlement_deferred) {
+            return $net;
+        }
+
+        $riderCosts = round(max(0.0, (float) $locked->rider_bonus_amount) + max(0.0, (float) $locked->delivery_subsidy_amount), 2);
+        if ($riderCosts <= 0) {
+            return $net;
+        }
+
+        if ($riderCosts > $net) {
+            Log::warning('FreshMarket: ต้นทุนไรเดอร์เกินรายได้ร้าน แพลตฟอร์มรับส่วนเกิน', [
+                'order_id' => $locked->id,
+                'seller_earning' => $net,
+                'rider_costs' => $riderCosts,
+            ]);
+        }
+
+        $net = round(max(0.0, $net - $riderCosts), 2);
+        $locked->seller_earning = $net;
+
+        return $net;
     }
 
     /**

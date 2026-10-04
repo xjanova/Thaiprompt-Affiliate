@@ -53,6 +53,9 @@ class RiderJobException extends RuntimeException
 
     public const SOURCE_NOT_DISPATCHABLE = 'SOURCE_NOT_DISPATCHABLE';
 
+    /** ไรเดอร์รอบ 2: งานนี้ต้องสแกนส่งมอบ (ปุ่มส่งของแบบเดิมใช้ไม่ได้) */
+    public const HANDOVER_REQUIRED = 'HANDOVER_REQUIRED';
+
     /**
      * @param  string  $errorCode  รหัสข้อผิดพลาด (ค่าคงที่ในคลาสนี้)
      * @param  string  $message  ข้อความภาษาไทยสำหรับผู้ใช้
@@ -191,6 +194,18 @@ class RiderJobException extends RuntimeException
         );
     }
 
+    /**
+     * งานที่ต้องสแกนส่งมอบ เรียกปุ่ม "ส่งสำเร็จ" แบบเดิม (แอปรุ่นเก่า/หน้าเว็บ) → 409
+     */
+    public static function handoverRequired(): self
+    {
+        return new self(
+            self::HANDOVER_REQUIRED,
+            'งานนี้ต้องส่งมอบด้วยการสแกน QR กับผู้รับ กรุณาอัปเดตแอปไรเดอร์เป็นเวอร์ชันล่าสุดแล้วกด "ส่งมอบของ"',
+            409
+        );
+    }
+
     // =====================================================
     // การแสดงผล
     // =====================================================
@@ -246,6 +261,7 @@ class RiderJobException extends RuntimeException
             'picked_up' => 'รับของแล้ว',
             'delivering' => 'กำลังจัดส่ง',
             'delivered' => 'ส่งแล้ว',
+            'awaiting_release' => 'วางของแล้ว รอปลดเงิน',
             'completed' => 'เสร็จสิ้น',
             'cancelled' => 'ยกเลิก',
             'failed' => 'ส่งไม่สำเร็จ',

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exceptions\FreshMarketException;
+use App\Exceptions\HandoverException;
 use App\Exceptions\RiderJobException;
+use App\Exceptions\ShopException;
 use App\Http\Controllers\Controller;
 use App\Models\FreshMarketOrder;
 use App\Models\Order;
@@ -11,6 +13,7 @@ use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Services\DeliveryFeeCalculator;
 use App\Services\FreshMarketService;
+use App\Services\Rider\HandoverService;
 use App\Services\RiderDispatchService;
 use App\Services\RiderJobService;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +23,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * หลังบ้านงานไรเดอร์ (admin.rider-jobs.*) — route อยู่ใต้ auth + role:admin,super_admin
@@ -109,7 +114,7 @@ class RiderJobController extends Controller
      */
     public function show(RiderJob $job)
     {
-        $job->load(['rider', 'customer']);
+        $job->load(['rider', 'customer', 'handover']);
 
         $locationHistory = $job->locations()
             ->orderBy('recorded_at')
@@ -123,8 +128,162 @@ class RiderJobController extends Controller
             'eligibleRiders' => $this->eligibleRiders($job),
             'source' => $this->sourceInfo($job),
             'dispatchAttempts' => $job->dispatch_attempts ?? [],
+            'handover' => $this->handoverPanel($job),
             'pageTitle' => 'รายละเอียดงาน: #'.$job->job_number,
         ]);
+    }
+
+    // =====================================================
+    // ไรเดอร์รอบ 2: ตัดสินการส่งมอบ (ร้องเรียน / วางของรอปลดเงิน)
+    // =====================================================
+
+    /**
+     * ปล่อยเงิน (admin.rider-jobs.handover.release) — ปิดงานเหมือนส่งสำเร็จ แบ่งเงินร้าน/จ่ายไรเดอร์ตามปกติ
+     */
+    public function handoverRelease(Request $request, RiderJob $job): JsonResponse|RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'reason.max' => 'หมายเหตุยาวเกินไป (ไม่เกิน 1,000 ตัวอักษร)',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->respond($request, false, $validator->errors()->first(), 422, 'VALIDATION_ERROR');
+        }
+
+        try {
+            app(HandoverService::class)->adminRelease($job, Auth::user(), $request->input('reason'));
+        } catch (HandoverException $e) {
+            return $this->respond($request, false, $e->getMessage(), $e->httpStatus, $e->errorCode);
+        } catch (\Throwable $e) {
+            return $this->failure($request, 'handover_release', $e, $job);
+        }
+
+        return $this->respond($request, true, 'ปล่อยเงินแล้ว งานปิดเป็นส่งสำเร็จ และแจ้งผู้ซื้อกับไรเดอร์แล้ว', 200, null, [
+            'job' => ['id' => (int) $job->id, 'status' => (string) $job->fresh()->status],
+        ]);
+    }
+
+    /**
+     * คืนเงินผู้ซื้อ (admin.rider-jobs.handover.refund) — งานส่งไม่สำเร็จ (ไรเดอร์ไม่ได้ค่าส่ง) + ยกเลิกออเดอร์ คืนเงินเต็มจำนวน
+     */
+    public function handoverRefund(Request $request, RiderJob $job): JsonResponse|RedirectResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'reason' => ['required', 'string', 'min:3', 'max:1000'],
+        ], [
+            'reason.required' => 'กรุณาระบุเหตุผลที่คืนเงิน',
+            'reason.min' => 'กรุณาระบุเหตุผลให้ชัดเจน',
+            'reason.max' => 'เหตุผลยาวเกินไป (ไม่เกิน 1,000 ตัวอักษร)',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->respond($request, false, $validator->errors()->first(), 422, 'VALIDATION_ERROR');
+        }
+
+        try {
+            app(HandoverService::class)->adminRefund($job, Auth::user(), (string) $request->input('reason'));
+        } catch (HandoverException $e) {
+            return $this->respond($request, false, $e->getMessage(), $e->httpStatus, $e->errorCode);
+        } catch (ShopException|FreshMarketException $e) {
+            // คืนเงินไม่สำเร็จ (เช่น กระเป๋าผู้ซื้อถูกระงับ) → ไม่มีอะไรเปลี่ยน
+            return $this->respond($request, false, $e->getMessage(), 409, 'REFUND_FAILED');
+        } catch (\Throwable $e) {
+            return $this->failure($request, 'handover_refund', $e, $job);
+        }
+
+        return $this->respond($request, true, 'คืนเงินผู้ซื้อเต็มจำนวนแล้ว งานปิดเป็นส่งไม่สำเร็จ และแจ้งผู้ซื้อกับไรเดอร์แล้ว', 200, null, [
+            'job' => ['id' => (int) $job->id, 'status' => (string) $job->fresh()->status],
+        ]);
+    }
+
+    /**
+     * รูปทางสำรองของการส่งมอบ (private disk) — เปิดได้เฉพาะแอดมิน (route อยู่ใต้ role:admin)
+     */
+    public function handoverPhoto(RiderJob $job, string $kind): StreamedResponse
+    {
+        $handover = $job->handover()->first();
+        $path = match ($kind) {
+            'arrival' => $handover?->arrival_photo_path,
+            'waited' => $handover?->waited_photo_path,
+            default => null,
+        };
+
+        if (! $path || str_contains($path, '..')) {
+            abort(404, 'ไม่พบรูป');
+        }
+
+        $storage = Storage::disk(HandoverService::PHOTO_DISK);
+        if (! $storage->exists($path)) {
+            abort(404, 'ไม่พบไฟล์รูป');
+        }
+
+        Log::info('Admin: view handover photo', ['admin_id' => Auth::id(), 'job_id' => $job->id, 'kind' => $kind]);
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION) ?: 'jpg';
+
+        return $storage->response($path, "handover-{$job->id}-{$kind}.{$extension}", [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'",
+        ], 'inline');
+    }
+
+    /**
+     * ข้อมูลแผง "การส่งมอบ" บนหน้ารายละเอียดงาน (null = งานแบบเดิมที่ไม่ต้องสแกน)
+     *
+     * @return array<string, mixed>|null
+     */
+    private function handoverPanel(RiderJob $job): ?array
+    {
+        if (! $job->handover_required) {
+            return null;
+        }
+
+        $handover = $job->loadedHandover();
+        $service = app(HandoverService::class);
+
+        $photos = [];
+        if ($handover?->arrival_photo_path) {
+            $photos[] = ['label' => 'รูปถึงจุดส่ง (รอบ 1)', 'url' => route('admin.rider-jobs.handover.photo', [$job, 'arrival'])];
+        }
+        if ($handover?->waited_photo_path) {
+            $photos[] = ['label' => 'รูปวางของ (รอบ 2)', 'url' => route('admin.rider-jobs.handover.photo', [$job, 'waited'])];
+        }
+
+        return [
+            'row' => $handover,
+            'status' => $handover?->status ?? 'waiting',
+            'status_text' => self::handoverStatusText($handover?->status),
+            'method_text' => match ($handover?->method) {
+                'qr' => 'สแกน QR ทั้งสองฝ่าย',
+                'code' => 'ไรเดอร์กรอกรหัส 6 หลัก + ผู้ซื้อสแกน QR',
+                'fallback' => 'วางของ (รูป 2 รอบ) แล้วปลดเงินอัตโนมัติ',
+                'admin' => 'แอดมินตัดสิน',
+                default => null,
+            },
+            'dispute_reason_text' => $handover?->dispute_reason ? HandoverService::disputeReasonText($handover->dispute_reason) : null,
+            'photos' => $photos,
+            'can_resolve' => $service->adminCanResolve($job, $handover),
+            'resolved_by_name' => $handover?->resolved_by ? \App\Models\User::whereKey($handover->resolved_by)->value('name') : null,
+        ];
+    }
+
+    public static function handoverStatusText(?string $status): string
+    {
+        return match ($status) {
+            null, 'waiting' => 'รอส่งมอบ',
+            'rider_confirmed' => 'ไรเดอร์ยืนยันแล้ว รอผู้ซื้อสแกน',
+            'buyer_confirmed' => 'ผู้ซื้อยืนยันแล้ว รอไรเดอร์สแกน',
+            'completed' => 'ส่งมอบสำเร็จ',
+            'fallback_waiting' => 'ไรเดอร์ถึงจุดส่ง กำลังรอผู้รับ',
+            'fallback_pending_release' => 'วางของแล้ว รอปลดเงินอัตโนมัติ',
+            'disputed' => 'ผู้ซื้อร้องเรียน รอแอดมินตัดสิน',
+            'released' => 'ปลดเงินแล้ว',
+            'refunded' => 'คืนเงินผู้ซื้อแล้ว',
+            default => $status,
+        };
     }
 
     /**
@@ -156,7 +315,7 @@ class RiderJobController extends Controller
         }
 
         try {
-            if (in_array($job->status, ['picked_up', 'delivering', 'delivered'], true)) {
+            if (in_array($job->status, ['picked_up', 'delivering', RiderJob::STATUS_AWAITING_RELEASE, 'delivered'], true)) {
                 // ไรเดอร์ถือของอยู่ → ปิดเป็นส่งไม่สำเร็จ (ยกเลิกเฉยๆ ไม่ได้ ของต้องกลับร้าน)
                 $done = $this->jobs->adminFail($job, $admin, $reason);
                 $message = 'ปิดงานเป็น "ส่งไม่สำเร็จ" แล้ว (ไรเดอร์รับของไปแล้ว) กรุณาประสานคืนสินค้า';

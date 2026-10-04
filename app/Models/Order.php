@@ -429,7 +429,7 @@ class Order extends Model implements RiderDeliverable
         }
 
         return RiderJob::forSource($this)
-            ->whereIn('status', ['picked_up', 'delivering', 'delivered', 'completed'])
+            ->whereIn('status', ['picked_up', 'delivering', RiderJob::STATUS_AWAITING_RELEASE, 'delivered', 'completed'])
             ->exists();
     }
 
@@ -1040,7 +1040,8 @@ class Order extends Model implements RiderDeliverable
             return null;
         }
 
-        $fee = round((float) $this->shipping_fee, 2);
+        // ไรเดอร์รอบ 2: ร้านออกค่าส่งให้ (ส่งฟรี) → ค่างานไรเดอร์ = ที่ผู้ซื้อจ่าย + ที่ร้านออก (ไรเดอร์ได้ค่าส่งเต็ม ไม่ใช่ 0)
+        $fee = round((float) $this->shipping_fee + max(0.0, (float) $this->delivery_subsidy_amount), 2);
 
         return $fee > 0 ? $fee : null;
     }
@@ -1131,6 +1132,17 @@ class Order extends Model implements RiderDeliverable
                     $order->shipping_provider = $order->shipping_provider ?: 'ไรเดอร์ Thaiprompt';
                     $history = ['shipped', 'ไรเดอร์รับสินค้าแล้ว', 'กำลังนำส่งถึงผู้รับ'];
                 }
+                break;
+
+            case RiderJob::STATUS_AWAITING_RELEASE:
+                // ไรเดอร์รอบ 2: ไรเดอร์วางของไว้ที่จุดส่งแล้ว (รูปครบ 2 รอบ) รอปลดเงิน/ผู้ซื้อร้องเรียน
+                // ออเดอร์ยังเป็น "จัดส่งแล้ว" (ลิงก์ติดตามยังใช้ได้) — เป็น delivered เมื่องานปิดจริงเท่านั้น
+                if (! in_array($order->status, ['shipped', 'delivered'], true)) {
+                    $order->status = 'shipped';
+                    $order->shipped_at = $order->shipped_at ?? $now;
+                    $order->shipping_provider = $order->shipping_provider ?: 'ไรเดอร์ Thaiprompt';
+                }
+                $history = ['rider_left_item', 'ไรเดอร์วางสินค้าไว้ที่จุดส่งแล้ว', 'ถ้าไม่ได้รับสินค้า กรุณาแจ้งร้องเรียนก่อนระบบปลดเงินอัตโนมัติ'];
                 break;
 
             case 'delivered':

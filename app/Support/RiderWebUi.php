@@ -136,7 +136,7 @@ final class RiderWebUi
             'completed', 'delivered' => 'ok',
             'failed' => 'bad',
             'cancelled' => 'muted',
-            'pending' => 'warn',
+            'pending', 'awaiting_release' => 'warn',
             default => 'info',
         };
     }
@@ -238,6 +238,8 @@ final class RiderWebUi
         $stopped = in_array($status, ['cancelled', 'failed'], true);
         $position = match ($status) {
             'delivered', 'completed' => count($order) - 1,
+            // ไรเดอร์รอบ 2: วางของแล้วรอปลดเงิน = ขั้นนำส่ง (ยังไม่ถือว่าส่งสำเร็จ)
+            'awaiting_release' => array_search('delivering', $order, true),
             'pending' => -1,
             default => array_search($status, $order, true),
         };

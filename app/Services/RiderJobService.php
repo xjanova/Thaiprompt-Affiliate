@@ -254,6 +254,7 @@ class RiderJobService
             $this->deletePhoto($path);
         } else {
             $this->notifier->notifyParties($fresh->partyUserIds(), $fresh, 'picked_up');
+            $this->ensureHandoverQuietly($fresh);
         }
 
         return $fresh;
@@ -268,6 +269,7 @@ class RiderJobService
 
         if ($changed) {
             $this->notifier->notifyParties($fresh->partyUserIds(), $fresh, 'delivering');
+            $this->ensureHandoverQuietly($fresh);
         }
 
         return $fresh;
@@ -289,6 +291,11 @@ class RiderJobService
             $this->settleQuietly($job);
 
             return $job->fresh();
+        }
+
+        // ไรเดอร์รอบ 2: งานที่ต้องสแกนส่งมอบ ห้ามปิดด้วยปุ่มส่งของแบบเดิม (เงินผู้ซื้อพักไว้จนส่งมอบครบ)
+        if ($job->handover_required) {
+            throw RiderJobException::handoverRequired();
         }
 
         $cod = round((float) $job->cod_amount, 2);
@@ -384,6 +391,125 @@ class RiderJobService
         }
 
         return $fresh;
+    }
+
+    // =====================================================
+    // ส่งมอบของ (ไรเดอร์รอบ 2 — เรียกจาก App\Services\Rider\HandoverService เท่านั้น)
+    // =====================================================
+
+    /**
+     * ส่งมอบสำเร็จ: picked_up|delivering → delivered → completed (สแกนครบ/แอดมินปล่อย)
+     *            หรือ awaiting_release → completed (ปลดเงินอัตโนมัติ/แอดมินปล่อย)
+     *
+     * ⚠️ ต้องเรียกภายใน DB::transaction ที่ล็อกแถวงาน ($locked) แล้วเท่านั้น
+     * เรียก hook ออเดอร์ต้นทางทุกขั้นเหมือน deliver() → ออเดอร์เป็น delivered ใน transaction เดียวกัน
+     * (เคลียร์เงินไรเดอร์ + แจ้งเตือน ทำหลัง commit โดยผู้เรียก)
+     *
+     * @return bool true = เปลี่ยนสถานะจริง / false = เสร็จไปแล้ว
+     *
+     * @throws RiderJobException INVALID_TRANSITION
+     */
+    public function completeHandoverLocked(RiderJob $locked, ?float $lat = null, ?float $lng = null): bool
+    {
+        $from = (string) $locked->status;
+        if ($from === 'completed') {
+            return false;
+        }
+
+        $graceMinutes = max(1, $this->config->intSetting('rider.tracking_grace_minutes'));
+
+        if (in_array($from, ['picked_up', 'delivering'], true)) {
+            $validPoint = $lat !== null && $lng !== null && DeliveryFeeCalculator::isValidCoordinate($lat, $lng);
+
+            // ขั้นที่ 1: delivered
+            $locked->fill([
+                'status' => 'delivered',
+                'delivered_at' => now(),
+                'delivered_latitude' => $validPoint ? $lat : null,
+                'delivered_longitude' => $validPoint ? $lng : null,
+                'cod_collected_at' => (float) $locked->cod_amount > 0 ? now() : null,
+            ])->save();
+            $this->callSourceHook($locked, $from);
+            $from = 'delivered';
+        } elseif (! in_array($from, ['delivered', RiderJob::STATUS_AWAITING_RELEASE], true)) {
+            throw RiderJobException::invalidTransition($from, 'completed');
+        }
+
+        // ขั้นที่ 2: completed (ปิดลิงก์ติดตามหลังช่วงผ่อนผัน + หยุดแชร์ตำแหน่งลูกค้า)
+        $locked->fill(array_merge([
+            'status' => 'completed',
+            'completed_at' => now(),
+            'delivered_at' => $locked->delivered_at ?? now(),
+            'tracking_expires_at' => now()->addMinutes($graceMinutes),
+        ], $this->stopCustomerSharing()))->save();
+        $this->callSourceHook($locked, $from);
+
+        if ($locked->rider_id) {
+            Rider::find($locked->rider_id)?->refreshAvailabilityAfterJob();
+        }
+
+        Log::info('RiderJob: handover completed', ['job_id' => $locked->id, 'rider_id' => $locked->rider_id, 'from' => $from]);
+
+        return true;
+    }
+
+    /**
+     * ไรเดอร์วางของไว้ที่จุดส่งแล้ว (ถ่ายรูปครบ 2 รอบ) → awaiting_release — ไรเดอร์ว่างรับงานใหม่ได้ทันที
+     *
+     * ⚠️ ต้องเรียกภายใน DB::transaction ที่ล็อกแถวงานแล้วเท่านั้น
+     * ลิงก์ติดตามของผู้ซื้อใช้ได้ถึง $trackingUntil (เวลาปลดเงินอัตโนมัติ + ช่วงผ่อนผัน)
+     *
+     * @throws RiderJobException INVALID_TRANSITION
+     */
+    public function markAwaitingReleaseLocked(RiderJob $locked, \DateTimeInterface $trackingUntil): bool
+    {
+        $from = (string) $locked->status;
+        if ($from === RiderJob::STATUS_AWAITING_RELEASE) {
+            return false;
+        }
+
+        if (! RiderJob::canTransition($from, RiderJob::STATUS_AWAITING_RELEASE)) {
+            throw RiderJobException::invalidTransition($from, RiderJob::STATUS_AWAITING_RELEASE);
+        }
+
+        $locked->fill(array_merge([
+            'status' => RiderJob::STATUS_AWAITING_RELEASE,
+            'delivered_at' => now(),
+            'tracking_expires_at' => $trackingUntil,
+        ], $this->stopCustomerSharing()))->save();
+        $this->callSourceHook($locked, $from);
+
+        if ($locked->rider_id) {
+            Rider::find($locked->rider_id)?->refreshAvailabilityAfterJob();
+        }
+
+        Log::info('RiderJob: awaiting release', ['job_id' => $locked->id, 'rider_id' => $locked->rider_id]);
+
+        return true;
+    }
+
+    /**
+     * เคลียร์เงินไรเดอร์หลังส่งมอบสำเร็จ (ไม่ throw — ล้มเหลว sweep ลองใหม่)
+     */
+    public function settleEarnings(RiderJob $job): void
+    {
+        $this->settleQuietly($job);
+    }
+
+    /**
+     * สร้างแถวส่งมอบเมื่อไรเดอร์รับของ (ไม่ให้ล้มขั้นตอนหลัก — หน้าส่งมอบสร้างให้อีกทีตอนเปิดครั้งแรก)
+     */
+    private function ensureHandoverQuietly(RiderJob $job): void
+    {
+        if (! $job->handover_required) {
+            return;
+        }
+
+        try {
+            app(\App\Services\Rider\HandoverService::class)->ensureFor($job);
+        } catch (\Throwable $e) {
+            Log::warning('RiderJob: ensure handover failed', ['job_id' => $job->id, 'error' => $e->getMessage()]);
+        }
     }
 
     // =====================================================
@@ -511,7 +637,7 @@ class RiderJobService
         $job->refresh();
         $newRider->refresh();
 
-        if ($job->isTerminal() || $job->status === 'delivered') {
+        if ($job->isTerminal() || in_array($job->status, ['delivered', RiderJob::STATUS_AWAITING_RELEASE], true)) {
             throw RiderJobException::invalidTransition((string) $job->status, (string) $job->status);
         }
 
@@ -532,7 +658,7 @@ class RiderJobService
         $fresh = DB::transaction(function () use ($job, $newRider, $admin, &$oldRiderId) {
             $locked = $this->lockJob($job);
 
-            if ($locked->isTerminal() || $locked->status === 'delivered') {
+            if ($locked->isTerminal() || in_array($locked->status, ['delivered', RiderJob::STATUS_AWAITING_RELEASE], true)) {
                 throw RiderJobException::invalidTransition((string) $locked->status, (string) $locked->status);
             }
 

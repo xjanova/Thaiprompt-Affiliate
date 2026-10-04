@@ -74,7 +74,9 @@ class RiderEarningService
 
             $wallet = $this->wallets->getOrCreateWallet($user);
 
-            $earnings = round((float) $locked->rider_earnings, 2);
+            // ไรเดอร์รอบ 2: โบนัสที่ร้านเติม (หักจากรายได้ร้านตอนแบ่งเงินแล้ว) จ่ายไรเดอร์เต็มจำนวน ในรายการเดียวกับค่าส่ง
+            $bonus = $this->bonusFor($locked);
+            $earnings = round((float) $locked->rider_earnings + $bonus, 2);
             $cod = round((float) $locked->cod_amount, 2);
             $platformFee = round((float) $locked->platform_fee, 2);
 
@@ -97,7 +99,13 @@ class RiderEarningService
                     }
                 }
             } elseif ($earnings > 0) {
-                $this->creditOnce($wallet, $locked, $earnings, 'ค่าส่งไรเดอร์ งาน #'.$locked->job_number);
+                $this->creditOnce(
+                    $wallet,
+                    $locked,
+                    $earnings,
+                    'ค่าส่งไรเดอร์ งาน #'.$locked->job_number.($bonus > 0 ? ' (รวมโบนัสจากร้าน ฿'.number_format($bonus, 2).')' : ''),
+                    $bonus
+                );
             }
 
             // ค่าธรรมเนียมแพลตฟอร์ม: จ่ายล่วงหน้า = มีเงินแล้ว / COD = หลังหักเงินไรเดอร์สำเร็จ
@@ -130,7 +138,7 @@ class RiderEarningService
      * สรุปรายได้ไรเดอร์ตามช่วงเวลา (ใช้กับ GET /api/v1/rider/earnings)
      *
      * @param  string  $period  today|week|month|all
-     * @return array{period: string, from: ?string, to: string, completed_jobs: int, gross_earnings: float, cod_jobs: int, cod_collected: float, cod_remitted: float, unsettled_jobs: int, wallet_balance: float, total_earnings_all_time: float, daily: array<int, array{date: string, jobs: int, earnings: float}>}
+     * @return array{period: string, from: ?string, to: string, pending_release_amount: float, pending_release_jobs: int, completed_jobs: int, gross_earnings: float, cod_jobs: int, cod_collected: float, cod_remitted: float, unsettled_jobs: int, wallet_balance: float, total_earnings_all_time: float, daily: array<int, array{date: string, jobs: int, earnings: float}>}
      */
     public function summary(Rider $rider, string $period = 'today'): array
     {
@@ -183,10 +191,18 @@ class RiderEarningService
             })
             ->count();
 
+        // ไรเดอร์รอบ 2: งานที่วางของแล้วรอปลดเงิน (ยังไม่เข้ากระเป๋า — ไม่จำกัดช่วงเวลา)
+        $awaiting = RiderJob::query()
+            ->where('rider_id', $rider->id)
+            ->where('status', RiderJob::STATUS_AWAITING_RELEASE)
+            ->get(['id', 'rider_earnings', 'shop_bonus', 'source_type', 'source_id']);
+
         return [
             'period' => $period,
             'from' => $from?->toIso8601String(),
             'to' => now()->toIso8601String(),
+            'pending_release_amount' => round((float) $awaiting->sum(fn (RiderJob $job) => (float) $job->rider_earnings + $this->bonusFor($job)), 2),
+            'pending_release_jobs' => $awaiting->count(),
             'completed_jobs' => $rows->count(),
             'gross_earnings' => round((float) $rows->sum(fn ($r) => (float) $r->rider_earnings), 2),
             'cod_jobs' => $rows->filter(fn ($r) => (float) $r->cod_amount > 0)->count(),
@@ -237,7 +253,7 @@ class RiderEarningService
     /**
      * เครดิตวอลเลตไรเดอร์ครั้งเดียวต่องาน (เช็ครายการเดิมก่อนเสมอ)
      */
-    private function creditOnce(Wallet $wallet, RiderJob $job, float $amount, string $description): void
+    private function creditOnce(Wallet $wallet, RiderJob $job, float $amount, string $description, float $bonus = 0.0): void
     {
         if ($amount <= 0) {
             return;
@@ -258,7 +274,34 @@ class RiderEarningService
             'kind' => 'rider_delivery_earning',
             'source_type' => $job->source_type,
             'source_id' => $job->source_id,
+            'shop_bonus' => round($bonus, 2),
         ]);
+    }
+
+    /**
+     * โบนัสจากร้านของงานนี้ (ไรเดอร์รอบ 2)
+     *
+     * ใช้ rider_jobs.shop_bonus ที่คัดลอกจากออเดอร์ตอนสร้างงาน — ถ้างานไม่มีค่า (สร้างก่อนเลน pricing คัดลอก)
+     * ใช้ rider_bonus_amount ที่ล็อกไว้บนออเดอร์แบบเงินพัก (ยอดเดียวกับที่หักจากรายได้ร้านตอนแบ่งเงิน)
+     */
+    public function bonusFor(RiderJob $job): float
+    {
+        $bonus = round(max(0.0, (float) $job->shop_bonus), 2);
+        if ($bonus > 0) {
+            return $bonus;
+        }
+
+        try {
+            $source = $job->deliverableSource();
+        } catch (\Throwable) {
+            return 0.0;
+        }
+
+        if ($source instanceof \Illuminate\Database\Eloquent\Model && (bool) $source->getAttribute('settlement_deferred')) {
+            return round(max(0.0, (float) $source->getAttribute('rider_bonus_amount')), 2);
+        }
+
+        return 0.0;
     }
 
     /**

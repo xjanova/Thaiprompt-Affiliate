@@ -947,6 +947,15 @@ Schedule::command('rider:purge-locations')
     ->name('rider-purge-locations')
     ->runInBackground();
 
+// 🛵 ไรเดอร์รอบ 2 (2026-10-04): ไรเดอร์วางของไว้ (รูปครบ 2 รอบ) ครบ rider.handover_auto_release_hours
+//    และผู้ซื้อไม่ร้องเรียน → ปิดงาน + แบ่งเงินตามปกติ (ตรวจซ้ำหลังล็อก รันซ้ำได้ไม่จ่ายซ้ำ)
+Schedule::command('rider:handover-release --limit=100')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('rider-handover-release')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🔔 (2026-09-25) แจ้งเตือนตั้งเวลา (notifications.is_scheduled) — CC-07
 // ════════════════════════════════════════════════════════════════

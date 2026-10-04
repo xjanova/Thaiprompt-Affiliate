@@ -7,6 +7,7 @@ use App\Services\DeliveryFeeCalculator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,9 @@ use Illuminate\Support\Str;
  *   pending/accepted/picking_up → cancelled
  *   accepted/picking_up → pending (ไรเดอร์คืนงานก่อนรับของ)
  *   picked_up/delivering → failed (ส่งไม่สำเร็จ ต้องให้แอดมินจัดการคืนของ)
+ *   (ไรเดอร์รอบ 2) งาน handover_required: สแกนครบสองฝ่าย → delivered → completed ในคำขอเดียว
+ *     ผู้ซื้อไม่สแกน → รูปรอบ 1 + รอ + รูปรอบ 2 → awaiting_release (ไรเดอร์ว่างรับงานใหม่ได้)
+ *     → completed (ปลดเงินอัตโนมัติ/แอดมินปล่อย) หรือ failed (แอดมินคืนเงินผู้ซื้อ)
  *
  * @property int $id
  * @property string $job_number
@@ -51,6 +55,12 @@ class RiderJob extends Model
     public const TERMINAL_STATUSES = ['completed', 'cancelled', 'failed'];
 
     /**
+     * (ไรเดอร์รอบ 2) ไรเดอร์วางของไว้ที่จุดส่งแล้ว (ถ่ายรูปครบ 2 รอบ) รอปลดเงินอัตโนมัติ/แอดมินตัดสิน
+     * ไม่ใช่สถานะ "กำลังทำงาน" — ไรเดอร์รับงานใหม่ได้ทันที · ไม่ใช่สถานะจบ — เงินยังไม่ถูกแบ่ง
+     */
+    public const STATUS_AWAITING_RELEASE = 'awaiting_release';
+
+    /**
      * การเปลี่ยนสถานะที่อนุญาต (state machine เดียวของระบบ)
      *
      * @var array<string, array<int, string>>
@@ -59,8 +69,9 @@ class RiderJob extends Model
         'pending' => ['accepted', 'cancelled'],
         'accepted' => ['picking_up', 'picked_up', 'pending', 'cancelled'],
         'picking_up' => ['picked_up', 'pending', 'cancelled'],
-        'picked_up' => ['delivering', 'delivered', 'failed'],
-        'delivering' => ['delivered', 'failed'],
+        'picked_up' => ['delivering', 'delivered', 'failed', self::STATUS_AWAITING_RELEASE],
+        'delivering' => ['delivered', 'failed', self::STATUS_AWAITING_RELEASE],
+        self::STATUS_AWAITING_RELEASE => ['completed', 'failed'],
         'delivered' => ['completed'],
         'completed' => [],
         'cancelled' => [],
@@ -270,7 +281,25 @@ class RiderJob extends Model
             if (empty($job->job_number)) {
                 $job->job_number = self::generateJobNumber();
             }
+
+            // ไรเดอร์รอบ 2: งานใหม่ต้องส่งมอบด้วยการสแกน QR ใส่กัน เมื่อเปิด rider.handover_enabled
+            // (ผู้สร้างระบุค่าเองได้ — เช่นเทสต์/ข้อมูลย้ายระบบ · งานเก่าในตารางไม่ถูกแตะ)
+            if (! array_key_exists('handover_required', $job->getAttributes())) {
+                $job->handover_required = self::handoverEnabledForNewJobs();
+            }
         });
+    }
+
+    /**
+     * งานที่สร้างตอนนี้ต้องสแกนส่งมอบหรือไม่ (อ่านค่าตั้งไม่ได้ = ใช้ค่าเริ่มต้นของระบบ)
+     */
+    public static function handoverEnabledForNewJobs(): bool
+    {
+        try {
+            return app(DeliveryFeeCalculator::class)->boolSetting('rider.handover_enabled');
+        } catch (\Throwable) {
+            return (bool) (DeliveryFeeCalculator::DEFAULTS['rider.handover_enabled'] ?? false);
+        }
     }
 
     /**
@@ -398,6 +427,15 @@ class RiderJob extends Model
             return [];
         }
 
+        // ไรเดอร์รอบ 2: งานที่ต้องสแกนส่งมอบ — ไม่มีปุ่ม "ส่งสำเร็จ" แบบเดิม (POST /deliver ตอบ 409 HANDOVER_REQUIRED)
+        if ($this->handover_required && in_array($this->status, ['picked_up', 'delivering'], true)) {
+            return array_values(array_merge(
+                $this->status === 'picked_up' ? ['delivering'] : [],
+                $this->handoverActions(),
+                ['fail'],
+            ));
+        }
+
         return match ($this->status) {
             'accepted' => ['picking_up', 'picked_up', 'release'],
             'picking_up' => ['picked_up', 'release'],
@@ -405,6 +443,39 @@ class RiderJob extends Model
             'delivering' => ['deliver', 'fail'],
             default => [],
         };
+    }
+
+    /**
+     * ปุ่มส่งมอบที่ไรเดอร์กดได้ตามสถานะการส่งมอบตอนนี้ (handover_scan | arrival_photo | waited_photo)
+     *
+     * @return array<int, string>
+     */
+    private function handoverActions(): array
+    {
+        $handover = $this->loadedHandover();
+        $status = $handover?->status ?? DeliveryHandover::STATUS_WAITING;
+        $actions = [];
+
+        $scannable = [
+            DeliveryHandover::STATUS_WAITING,
+            DeliveryHandover::STATUS_RIDER_CONFIRMED,
+            DeliveryHandover::STATUS_BUYER_CONFIRMED,
+            DeliveryHandover::STATUS_FALLBACK_WAITING,
+        ];
+
+        if (in_array($status, $scannable, true) && ! $handover?->rider_confirmed_at) {
+            $actions[] = 'handover_scan';
+        }
+
+        if (in_array($status, [DeliveryHandover::STATUS_WAITING, DeliveryHandover::STATUS_RIDER_CONFIRMED], true)) {
+            $actions[] = 'arrival_photo';
+        }
+
+        if ($status === DeliveryHandover::STATUS_FALLBACK_WAITING) {
+            $actions[] = 'waited_photo';
+        }
+
+        return $actions;
     }
 
     // =====================================================
@@ -449,6 +520,26 @@ class RiderJob extends Model
     public function freshMarketOrder()
     {
         return $this->hasOne(FreshMarketOrder::class, 'rider_job_id');
+    }
+
+    /**
+     * การส่งมอบของงานนี้ (ไรเดอร์รอบ 2 — สร้างเมื่อไรเดอร์รับของ หรือเมื่อมีคนเปิดหน้าส่งมอบครั้งแรก)
+     */
+    public function handover(): HasOne
+    {
+        return $this->hasOne(DeliveryHandover::class, 'rider_job_id');
+    }
+
+    /**
+     * การส่งมอบที่โหลดแล้ว (โหลดครั้งเดียวต่อ instance — ผู้แก้แถวส่งมอบต้อง setRelation/unsetRelation เอง)
+     */
+    public function loadedHandover(): ?DeliveryHandover
+    {
+        if (! $this->relationLoaded('handover')) {
+            $this->setRelation('handover', $this->handover()->first());
+        }
+
+        return $this->getRelation('handover');
     }
 
     /**
@@ -563,6 +654,7 @@ class RiderJob extends Model
             'picked_up' => 'รับของแล้ว',
             'delivering' => 'กำลังจัดส่ง',
             'delivered' => 'ส่งแล้ว',
+            self::STATUS_AWAITING_RELEASE => 'วางของแล้ว รอปลดเงิน',
             'completed' => 'เสร็จสิ้น',
             'cancelled' => 'ยกเลิก',
             'failed' => 'ส่งไม่สำเร็จ',
@@ -906,9 +998,35 @@ class RiderJob extends Model
             'cod_amount' => (float) $this->cod_amount,
             'is_cod' => (float) $this->cod_amount > 0,
             'allowed_actions' => $this->allowedActionsFor($viewer),
+            // ไรเดอร์รอบ 2 (เลน money): สถานะส่งมอบแบบย่อ — null = งานแบบเดิมที่ไม่ต้องสแกน
+            'handover' => $this->handoverSummary(),
             'created_at' => $this->created_at?->toIso8601String(),
             'accepted_at' => $this->accepted_at?->toIso8601String(),
             'completed_at' => $this->completed_at?->toIso8601String(),
+        ];
+    }
+
+    /**
+     * สถานะส่งมอบแบบย่อสำหรับรายการงาน (ยังไม่มีแถวส่งมอบ = รอส่งมอบ)
+     *
+     * @return array{required: bool, status: string, method: ?string, wait_until: ?string, auto_release_at: ?string, rider_confirmed: bool, buyer_confirmed: bool}|null
+     */
+    public function handoverSummary(): ?array
+    {
+        if (! $this->handover_required) {
+            return null;
+        }
+
+        $handover = $this->loadedHandover();
+
+        return [
+            'required' => true,
+            'status' => (string) ($handover?->status ?? DeliveryHandover::STATUS_WAITING),
+            'method' => $handover?->method,
+            'wait_until' => $handover?->wait_until?->toIso8601String(),
+            'auto_release_at' => $handover?->auto_release_at?->toIso8601String(),
+            'rider_confirmed' => $handover?->rider_confirmed_at !== null,
+            'buyer_confirmed' => $handover?->buyer_confirmed_at !== null,
         ];
     }
 

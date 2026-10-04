@@ -49,15 +49,25 @@ class OrderObserver
         $becameDelivered = $order->wasChanged('status')
             && in_array($order->status, SellerPayoutService::DELIVERED_STATUSES, true);
 
+        // ไรเดอร์รอบ 2: ออเดอร์ส่งด้วยไรเดอร์ = เงินพัก (settlement_deferred) — ไม่แบ่งเงินร้าน/ไม่จ่ายเงินคืน/ไม่จ่ายค่าแนะนำ
+        // ตอนจ่ายเงิน รอจนส่งมอบสำเร็จ (ออเดอร์เป็น delivered) แล้วจึงแบ่ง + ปล่อยเงินร้านทันทีไม่ต้องพัก
+        $deferred = (bool) $order->settlement_deferred;
+        $deliveredNow = in_array($order->status, SellerPayoutService::DELIVERED_STATUSES, true);
+
         if ($becamePaid) {
-            $this->processCashback($order);
-            $this->processOrderDistribution($order);
+            if ($deferred && ! $deliveredNow) {
+                Log::info('Deferred settlement order paid, distribution waits for handover', ['order_id' => $order->id]);
+            } else {
+                $this->processCashback($order);
+                $this->processOrderDistribution($order);
+            }
         }
 
         if ($becameDelivered) {
             if ($order->payment_status === 'paid') {
                 // COD: เงินคืนลูกค้าจ่ายหลังส่งถึง (CashbackService ข้าม COD ที่ยังไม่ delivered)
-                if ($order->payment_method === 'cod') {
+                // เงินพัก: ส่งมอบสำเร็จแล้ว → จ่ายเงินคืนตอนนี้ (idempotent)
+                if ($order->payment_method === 'cod' || $deferred) {
                     $this->processCashback($order);
                 }
 
@@ -72,6 +82,10 @@ class OrderObserver
             }
 
             $this->startHoldingClock($order);
+
+            if ($deferred && $order->payment_status === 'paid') {
+                $this->releaseDeferredEarnings($order);
+            }
         } elseif ($order->wasChanged('status') && $order->status === 'shipped' && $order->payment_status === 'paid') {
             // ส่งพัสดุแล้ว: ตั้งวันที่คาดว่าจะปล่อยเงิน (ถ้าลูกค้าไม่กดยืนยันรับของภายในกำหนด)
             $this->startHoldingClock($order);
@@ -116,6 +130,22 @@ class OrderObserver
             ]);
         } catch (\Throwable $e) {
             Log::error('Failed to process order distribution', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * เงินพักของออเดอร์ส่งด้วยไรเดอร์: ส่งมอบสำเร็จแล้ว → ปล่อยรายได้ร้านเข้ากระเป๋าทันที (ไม่พัก holding days)
+     * ล้มเหลว → earnings:release-pending เก็บตก (SellerPayoutService::eligibleQuery รู้จักออเดอร์เงินพัก)
+     */
+    protected function releaseDeferredEarnings(Order $order): void
+    {
+        try {
+            $this->payoutService->releaseDeferredOrder($order);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to release deferred seller earnings', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

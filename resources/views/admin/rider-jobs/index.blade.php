@@ -18,6 +18,7 @@
         'picked_up' => 'รับของแล้ว',
         'delivering' => 'กำลังจัดส่ง',
         'delivered' => 'ส่งแล้ว',
+        'awaiting_release' => 'วางของแล้ว รอปลดเงิน',
         'completed' => 'เสร็จสิ้น',
         'cancelled' => 'ยกเลิก',
         'failed' => 'ส่งไม่สำเร็จ',

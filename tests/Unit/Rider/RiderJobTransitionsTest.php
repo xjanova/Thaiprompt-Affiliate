@@ -27,8 +27,10 @@ class RiderJobTransitionsTest extends TestCase
             'pending' => ['accepted', 'cancelled'],
             'accepted' => ['picking_up', 'picked_up', 'pending', 'cancelled'],
             'picking_up' => ['picked_up', 'pending', 'cancelled'],
-            'picked_up' => ['delivering', 'delivered', 'failed'],
-            'delivering' => ['delivered', 'failed'],
+            'picked_up' => ['delivering', 'delivered', 'failed', 'awaiting_release'],
+            'delivering' => ['delivered', 'failed', 'awaiting_release'],
+            // ไรเดอร์รอบ 2: วางของแล้ว (รูป 2 รอบ) รอปลดเงิน → ปลดเงิน/แอดมินปล่อย หรือแอดมินคืนเงิน
+            'awaiting_release' => ['completed', 'failed'],
             'delivered' => ['completed'],
             'completed' => [],
             'cancelled' => [],
@@ -77,6 +79,12 @@ class RiderJobTransitionsTest extends TestCase
             'completed ซ้ำไม่ได้' => ['completed', 'completed', false],
             'failed กลับ pending ไม่ได้' => ['failed', 'pending', false],
             'cancelled กลับ pending ไม่ได้' => ['cancelled', 'pending', false],
+            'วางของรอปลดเงิน (ไรเดอร์รอบ 2)' => ['delivering', 'awaiting_release', true],
+            'รับของแล้ววางของได้เลย' => ['picked_up', 'awaiting_release', true],
+            'ยังไม่รับของ วางของไม่ได้' => ['accepted', 'awaiting_release', false],
+            'ปลดเงิน → completed' => ['awaiting_release', 'completed', true],
+            'แอดมินคืนเงิน → failed' => ['awaiting_release', 'failed', true],
+            'รอปลดเงินแล้วยกเลิกไม่ได้' => ['awaiting_release', 'cancelled', false],
             'สถานะแปลกปลอม' => ['unknown', 'accepted', false],
         ];
     }
