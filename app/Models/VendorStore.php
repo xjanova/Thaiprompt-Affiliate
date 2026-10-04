@@ -33,6 +33,9 @@ class VendorStore extends Model
     public const ALIEXPRESS_STORE_SLUG = 'aliexpress';
 
     protected $fillable = [
+        'rider_bonus',  // ไรเดอร์รอบ 2
+        'rider_bonus_peak',  // ไรเดอร์รอบ 2
+        'rider_free_delivery',  // ไรเดอร์รอบ 2
         'user_id',
         'package_id',
         'store_name',
@@ -96,6 +99,9 @@ class VendorStore extends Model
     ];
 
     protected $casts = [
+        'rider_bonus' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'rider_bonus_peak' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'rider_free_delivery' => 'boolean',  // ไรเดอร์รอบ 2
         'banner_position_y' => 'integer',
         'commission_rate' => 'decimal:2',
         'minimum_order_amount' => 'decimal:2',

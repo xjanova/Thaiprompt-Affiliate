@@ -43,6 +43,10 @@ class Order extends Model implements RiderDeliverable
     public bool $suppressStatusNotification = false;
 
     protected $fillable = [
+        'preferred_rider_id',  // ไรเดอร์รอบ 2
+        'rider_bonus_amount',  // ไรเดอร์รอบ 2
+        'delivery_subsidy_amount',  // ไรเดอร์รอบ 2
+        'settlement_deferred',  // ไรเดอร์รอบ 2
         'order_number',
         'checkout_group',
         'user_id',
@@ -87,6 +91,9 @@ class Order extends Model implements RiderDeliverable
     ];
 
     protected $casts = [
+        'rider_bonus_amount' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'delivery_subsidy_amount' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'settlement_deferred' => 'boolean',  // ไรเดอร์รอบ 2
         'subtotal' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'product_discount' => 'decimal:2',

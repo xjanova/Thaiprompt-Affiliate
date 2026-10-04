@@ -947,6 +947,14 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             ->name('seller.earnings');
         Route::get('/seller/listing-form', [\App\Http\Controllers\Api\V1\FreshMarketSellerAppApiController::class, 'listingForm'])->name('seller.listing-form');
     });
+
+    // ===== 🛵 ไรเดอร์รอบ 2 (2026-10-04) — แยกไฟล์ต่อหัวข้อใน routes/api_v1/ =====
+    Route::middleware('auth:sanctum')->group(function () {
+        require __DIR__.'/api_v1/rider_r2_routing.php';
+        require __DIR__.'/api_v1/rider_r2_handover.php';
+        require __DIR__.'/api_v1/rider_r2_social.php';
+        require __DIR__.'/api_v1/rider_r2_profile_photo.php';
+    });
 });
 
 // Public Crypto Wallet API (no auth required)

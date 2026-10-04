@@ -181,6 +181,10 @@ class FreshMarketOrder extends Model implements RiderDeliverable
     ];
 
     protected $fillable = [
+        'preferred_rider_id',  // ไรเดอร์รอบ 2
+        'rider_bonus_amount',  // ไรเดอร์รอบ 2
+        'delivery_subsidy_amount',  // ไรเดอร์รอบ 2
+        'settlement_deferred',  // ไรเดอร์รอบ 2
         'order_number',
         'buyer_id',
         'seller_id',
@@ -232,6 +236,9 @@ class FreshMarketOrder extends Model implements RiderDeliverable
     ];
 
     protected $casts = [
+        'rider_bonus_amount' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'delivery_subsidy_amount' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'settlement_deferred' => 'boolean',  // ไรเดอร์รอบ 2
         'unit_price' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'platform_fee' => 'decimal:2',

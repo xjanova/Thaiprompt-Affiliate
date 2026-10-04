@@ -101,6 +101,13 @@ class RiderJob extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'handover_required',  // ไรเดอร์รอบ 2
+        'shop_bonus',  // ไรเดอร์รอบ 2
+        'distance_source',  // ไรเดอร์รอบ 2
+        'route_polyline',  // ไรเดอร์รอบ 2
+        'preferred_rider_id',  // ไรเดอร์รอบ 2
+        'preferred_until',  // ไรเดอร์รอบ 2
+        'preferred_by_user_id',  // ไรเดอร์รอบ 2
         'job_number',
         'rider_id',
         'job_type',
@@ -181,6 +188,9 @@ class RiderJob extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'handover_required' => 'boolean',  // ไรเดอร์รอบ 2
+        'shop_bonus' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'preferred_until' => 'datetime',  // ไรเดอร์รอบ 2
         'pickup_latitude' => 'decimal:8',
         'pickup_longitude' => 'decimal:8',
         'delivery_latitude' => 'decimal:8',

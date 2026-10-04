@@ -52,6 +52,26 @@ class DeliveryFeeCalculator
         'rider.tracking_grace_minutes' => 15,
         'rider.avg_speed_kmh' => 25.0,
         'rider.max_release_count' => 3,
+        // ===== ไรเดอร์รอบ 2 (2026-10-04) =====
+        // ส่วนเพิ่มค่าส่งช่วงกลางคืน/ชั่วโมงเร่งด่วน (บาท) — 0 = ไม่เพิ่ม จนกว่าแอดมินจะตั้ง
+        'rider.night_surcharge' => 0.0,
+        'rider.night_start_hour' => 22,
+        'rider.night_end_hour' => 6,
+        'rider.peak_surcharge' => 0.0,
+        // งานไรเดอร์ต้องจ่ายก่อน (เงินพักไว้จนส่งมอบ) — 0 = ปิดเก็บเงินปลายทางกับไรเดอร์
+        'rider.allow_cod' => false,
+        // ส่งมอบของ: งานใหม่ต้องสแกน · รัศมีจุดส่ง (ม.) · อายุ QR (วิ) · รอผู้ซื้อ (วิ) · ปลดเงินอัตโนมัติ (ชม.)
+        'rider.handover_enabled' => true,
+        'rider.handover_geofence_m' => 150,
+        'rider.handover_qr_ttl_seconds' => 60,
+        'rider.handover_wait_seconds' => 180,
+        'rider.handover_auto_release_hours' => 24,
+        // ล็อกเรียกไรเดอร์: ผู้ซื้อคนนั้นต้องให้หัวใจไรเดอร์คนนั้นอย่างน้อยกี่ดวง (เกิน 10 = 11) · สิทธิ์รับก่อนกี่วินาที
+        'rider.lock_min_hearts' => 11,
+        'rider.lock_offer_seconds' => 60,
+        // ไรเดอร์ใกล้ฉัน: รัศมี (กม.) · เบลอตำแหน่ง (ม.)
+        'rider.nearby_radius_km' => 3.0,
+        'rider.nearby_fuzz_m' => 200,
     ];
 
     /**

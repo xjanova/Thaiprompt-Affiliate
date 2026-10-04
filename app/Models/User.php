@@ -212,6 +212,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'profile_photo_taken_at' => 'datetime',  // ไรเดอร์รอบ 2
             'email_verified_at' => 'datetime',
             'blocked_at' => 'datetime',
             'blocked_by' => 'integer',

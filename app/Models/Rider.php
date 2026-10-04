@@ -52,6 +52,8 @@ class Rider extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'hearts_count',  // ไรเดอร์รอบ 2
+        'show_on_nearby',  // ไรเดอร์รอบ 2
         'user_id',
         'line_user_id',
         'fresh_market_linked',
@@ -113,6 +115,8 @@ class Rider extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'hearts_count' => 'integer',  // ไรเดอร์รอบ 2
+        'show_on_nearby' => 'boolean',  // ไรเดอร์รอบ 2
         'birth_date' => 'date',
         'gps_permission_granted' => 'boolean',
         'camera_permission_granted' => 'boolean',

@@ -46,6 +46,9 @@ class FreshMarketSeller extends Model
     protected $table = 'fresh_market_sellers';
 
     protected $fillable = [
+        'rider_bonus',  // ไรเดอร์รอบ 2
+        'rider_bonus_peak',  // ไรเดอร์รอบ 2
+        'rider_free_delivery',  // ไรเดอร์รอบ 2
         'user_id',
         'line_user_id',
         'shop_name',
@@ -110,6 +113,9 @@ class FreshMarketSeller extends Model
     public const LIVE_LOCATION_STALE_MINUTES = 30;
 
     protected $casts = [
+        'rider_bonus' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'rider_bonus_peak' => 'decimal:2',  // ไรเดอร์รอบ 2
+        'rider_free_delivery' => 'boolean',  // ไรเดอร์รอบ 2
         'phone_verified_at' => 'datetime',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
