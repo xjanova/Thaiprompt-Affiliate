@@ -145,10 +145,10 @@ class SmsPaymentService
                 // ขั้นที่ 1: ตรวจสอบว่าเป็นยอดดูดวง (unique amount ที่สร้างจาก conversation)
                 $fortuneReadingHandled = $this->handleFortuneReadingPayment($notification);
 
-                // ขั้นที่ 1.5: บิลถูก /orders/match ตัดไปแล้วเมื่อครู่ (แอพเรียกก่อน /notify ~2 วิ)
+                // ขั้นที่ 1.5: บิลเพิ่งถูกตัดไปก่อน SMS ใบนี้ถึง (แอดมิน/แอพกดอนุมัติระหว่างรอ)
                 //   → SMS ใบนี้คือหลักฐานของบิลนั้น ผูกให้ ไม่ใช่เงินกำพร้า
                 if (! $fortuneReadingHandled) {
-                    $fortuneReadingHandled = $this->attachSmsToBillCutByOrderMatch($notification) !== null;
+                    $fortuneReadingHandled = $this->attachSmsToRecentlyCutBill($notification) !== null;
                 }
 
                 // ดึง FortuneReading ที่ match ได้ เพื่อส่งกลับให้แอพแสดงบิล
@@ -981,21 +981,19 @@ class SmsPaymentService
     }
 
     /**
-     * @param  FortuneReading|null  $preResolved  บิลที่ด่านกู้หามาให้แล้ว (ข้ามการค้นด้วย unique amount)
-     */
-    /**
-     * 🧾 (2026-10-03, บิล FTU-261002-X6634) ผูก SMS ใบจริงเข้าบิลที่ /orders/match ตัดไปก่อนแล้ว
+     * 🧾 (2026-10-03, บิล FTU-261002-X6634) ผูก SMS ใบจริงเข้าบิลที่เพิ่งถูกตัดไปก่อนโดยยังไม่มี SMS
      *
-     * แอพ SmsChecker เรียก GET /orders/match ก่อน POST /notify ราว 2 วิ → บิลถูกตัดไปแล้วตอน SMS ใบนี้ถึง
-     * เดิม handleFortuneReadingPayment หาบิลรอจ่ายไม่เจอ → ตีเป็น "เงินกำพร้า" ทั้งที่เป็นเงินของบิลนั้น
-     * แล้ว SMS กำพร้าพวกนี้ไปเป็นหลักฐานปลอมของบิลถัดไป (121 บิล ส.ค.–ต.ค.)
+     * บิลถูกตัดก่อน SMS ใบจริงมาถึงได้ — แอดมิน/แอพกดอนุมัติ (approveOrder / bulk) ระหว่างรอ /notify
+     * (เดิม GET /orders/match ตัดบิลเองก่อน /notify ราว 2 วิทุกใบ — ถอดแล้ว 2026-10-04)
+     * ถ้าไม่ผูก handleFortuneReadingPayment หาบิลรอจ่ายไม่เจอ → ตีเป็น "เงินกำพร้า" ทั้งที่เป็นเงินของบิลนั้น
+     * แล้ว SMS กำพร้าพวกนี้เคยกลายเป็นหลักฐานปลอมของบิลถัดไป (121 บิล ส.ค.–ต.ค.)
      *
      * ผูกเฉพาะเมื่อชัดเจน: ยอดตรง + บิลเปิดก่อน SMS + บิลเพิ่งถูกตัดไม่เกิน 10 นาที + ยังไม่มี SMS ผูก
      * + เจอบิลเดียว (เจอหลายใบ = ไม่เดา ปล่อยไปทางเงินกำพร้าให้แอดมินดู) · ไม่ยิง side-effect ใดๆ ซ้ำ
      *
      * @return FortuneReading|null บิลที่ผูกให้ (null = ไม่ใช่เคสนี้)
      */
-    protected function attachSmsToBillCutByOrderMatch(SmsPaymentNotification $notification): ?FortuneReading
+    protected function attachSmsToRecentlyCutBill(SmsPaymentNotification $notification): ?FortuneReading
     {
         if ($notification->type !== 'credit' || $notification->matched_transaction_id !== null) {
             return null;
@@ -1037,7 +1035,7 @@ class SmsPaymentService
             'matched_transaction_id' => $reading->id,
         ]);
 
-        Log::info('SMS Payment: ผูก SMS ใบจริงเข้าบิลที่ /orders/match ตัดไปแล้ว', [
+        Log::info('SMS Payment: ผูก SMS ใบจริงเข้าบิลที่เพิ่งถูกตัดไปก่อน', [
             'notification_id' => $notification->id,
             'reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
@@ -1047,6 +1045,9 @@ class SmsPaymentService
         return $reading;
     }
 
+    /**
+     * @param  FortuneReading|null  $preResolved  บิลที่ด่านกู้หามาให้แล้ว (ข้ามการค้นด้วย unique amount)
+     */
     protected function handleFortuneReadingPayment(SmsPaymentNotification $notification, ?FortuneReading $preResolved = null): bool
     {
         // 🔒 GUARD #1 (2026-04-28): SMS notification นี้ถูก match ไปบิลอื่นแล้ว → ห้าม reuse

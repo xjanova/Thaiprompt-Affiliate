@@ -211,6 +211,39 @@ class SmsNotifyCutsFortuneBillTest extends TestCase
         $this->assertNotSame('', $this->messagesSentToCustomer(), 'ลูกค้า Celtic ต้องได้ข้อความเริ่มเปิดไพ่');
     }
 
+    /**
+     * ลำดับจริงของแอพ: GET /orders/match → POST /notify → (โหมด auto อาจ) กดอนุมัติตามหลัง
+     * ลูกค้าต้องได้ข้อความตัดบิลครั้งเดียว — ไม่ใช่ข้อความ "ขออภัยอย่างสูง" ของตัวกู้บิลค้าง ไม่ซ้ำ
+     */
+    public function test_app_sequence_match_then_notify_then_approve_messages_the_customer_once(): void
+    {
+        // /orders/match หาร้าน Platform ของเครื่องแอดมิน — prod มีแอดมินอยู่แล้ว เทสต์ต้องมีสักคน
+        \App\Models\User::factory()->create(['role' => 'admin']);
+        $bill = $this->pendingBill(FortuneReading::READING_TYPE_DEEP, FortuneReading::STATUS_PENDING_PAYMENT, 39.62);
+
+        // 1) แอพถามยอดก่อน — แค่เห็นบิล ยังไม่ตัด
+        $this->getJson('/api/v1/sms-payment/orders/match?amount=39.62', ['X-Api-Key' => $this->apiKey])
+            ->assertOk()
+            ->assertJsonPath('data.matched', true)
+            ->assertJsonPath('data.order.approval_status', 'pending_review');
+        $this->assertFalse((bool) $bill->fresh()->is_paid);
+        $this->assertSame('', $this->messagesSentToCustomer());
+
+        // 2) SMS ใบจริงมาทาง /notify → ตัดบิล + ขอวันเกิด
+        $this->signedNotify(39.62)->assertOk()->assertJsonPath('data.order.approval_status', 'auto_approved');
+        $this->assertTrue((bool) $bill->fresh()->is_paid);
+
+        // 3) แอพ/แอดมินกดอนุมัติตามหลัง — ต้องไม่ปลุกขั้นตอนซ้ำ
+        $this->postJson('/api/v1/sms-payment/orders/'.$bill->bill_reference.'/approve', [], ['X-Api-Key' => $this->apiKey])
+            ->assertOk()
+            ->assertJsonPath('success', true);
+
+        $sent = $this->messagesSentToCustomer();
+        $this->assertSame(1, substr_count($sent, 'ระบบตัดบิลเรียบร้อย'), 'ข้อความตัดบิลต้องไปครั้งเดียว');
+        $this->assertStringNotContainsString('ขออภัยอย่างสูง', $sent);
+        $this->assertSame(FortuneReading::STATUS_COLLECTING_BIRTHDATE, $bill->fresh()->conversation_status);
+    }
+
     public function test_notify_never_cuts_a_bill_with_an_sms_older_than_the_bill(): void
     {
         $bill = $this->pendingBill(FortuneReading::READING_TYPE_DEEP, FortuneReading::STATUS_PENDING_PAYMENT, 39.21);

@@ -17,13 +17,15 @@ use Tests\Concerns\BuildsJuntraServerSchema;
 use Tests\TestCase;
 
 /**
- * 🚨 (2026-10-03, บิล FTU-261002-X6634) /orders/match ต้องไม่เอา SMS เก่ามาเป็นหลักฐานของบิลใหม่
+ * 🚨 (2026-10-03, บิล FTU-261002-X6634) GET /orders/match ห้ามตัดบิลดูดวง
  *
- * แอพ SmsChecker เรียก /orders/match ก่อน /notify ราว 2 วิ — เส้นนี้ตัดบิลทันที (ตัวตัดบิลอัตโนมัติตัวจริง)
- * แต่เคยหยิบ "SMS ยอดเดียวกันที่ยังไม่ผูก ตัวล่าสุด" (SMS กำพร้าของ 21 ก.ค.) มาผูกบิลวันที่ 2 ต.ค.
+ * แอพ SmsChecker เรียก /orders/match ก่อน /notify ราว 2 วิ — เส้นนี้เคยตัดบิลเองทุกใบ และหยิบ
+ * "SMS ยอดเดียวกันที่ยังไม่ผูก ตัวล่าสุด" (SMS กำพร้าของ 21 ก.ค.) มาผูกบิลวันที่ 2 ต.ค.
  * → หน้า billing โชว์ SMS ผิดใบ แอดมินยกเลิกบิลที่ลูกค้าจ่ายจริง / SMS ใบจริงกลายเป็นเงินกำพร้า
  *
- * ที่ถูก: /orders/match ผูกได้เฉพาะ SMS ที่มาหลังเปิดบิล · SMS ใบจริงที่มาทาง /notify ทีหลังถูกผูกเข้าบิลนั้น
+ * ที่ถูก (2026-10-04): /orders/match แค่หาบิลให้แอพดู · ตัดบิลที่ /notify ทางเดียว
+ * (เส้นตัดบิลของ /notify ทดสอบครบเส้นบน MySQL ใน SmsNotifyCutsFortuneBillTest)
+ * · SMS ใบจริงที่มาถึงหลังบิลถูกอนุมัติมือไปก่อน ต้องถูกผูกเข้าบิลนั้น ไม่ใช่เงินกำพร้า
  */
 class SmsOrdersMatchNeverCutsFortuneBillTest extends TestCase
 {
@@ -150,48 +152,66 @@ class SmsOrdersMatchNeverCutsFortuneBillTest extends TestCase
         return $this->getJson('/api/v1/sms-payment/orders/match?amount='.$amount, ['X-Api-Key' => $this->apiKey]);
     }
 
-    public function test_orders_match_cuts_the_bill_but_never_attaches_an_old_sms(): void
+    public function test_orders_match_shows_the_bill_but_never_cuts_it(): void
     {
         $stale = $this->staleOrphanSms(39.34);
         $bill = $this->pendingBill(39.34);
+        // SMS ใบที่มาหลังเปิดบิลก็ห้ามใช้ตัดบิลที่นี่ — ตัดบิลได้ทาง /notify อย่างเดียว
+        $fresh = $this->sms(39.34, now(), 'pending');
 
         $this->match(39.34)
             ->assertOk()
             ->assertJsonPath('data.matched', true)
             ->assertJsonPath('data.order.order_details_json.order_number', 'FTU-261002-X6634')
-            ->assertJsonPath('data.order.approval_status', 'auto_approved');
+            ->assertJsonPath('data.order.approval_status', 'pending_review');
 
-        $fresh = $bill->fresh();
-        $this->assertTrue((bool) $fresh->is_paid, 'การตัดบิลอัตโนมัติต้องทำงานเหมือนเดิม');
-        $this->assertNull($fresh->sms_notification_id, 'SMS ของ 73 วันก่อนห้ามเป็นหลักฐานของบิลนี้');
-        $this->assertNull($stale->fresh()->matched_transaction_id);
+        $after = $bill->fresh();
+        $this->assertFalse((bool) $after->is_paid, 'GET ที่ส่งมาแค่ยอดเงินห้ามตัดบิล');
+        $this->assertSame(FortuneReading::STATUS_PENDING_PAYMENT, $after->conversation_status);
+        $this->assertNull($after->sms_notification_id);
+        $this->assertSame('reserved', UniquePaymentAmount::find($after->unique_payment_amount_id)->status);
+
+        foreach ([$stale, $fresh] as $sms) {
+            $this->assertNull($sms->fresh()->matched_transaction_id);
+        }
         $this->assertSame('requires_admin_review', $stale->fresh()->status);
+
+        // /notify จะไม่รับ SMS เก่า (มาก่อนเปิดบิล) แต่รับ SMS ใบที่มาหลังเปิดบิล
+        $this->assertNull(FortuneReading::findByUniqueAmount(39.34, $stale->sms_timestamp));
+        $this->assertSame($bill->id, FortuneReading::findByUniqueAmount(39.34, now())?->id);
     }
 
-    public function test_orders_match_attaches_an_sms_that_already_arrived_after_the_bill(): void
+    public function test_orders_match_does_not_reopen_a_bill_the_cleanup_already_closed(): void
     {
-        $stale = $this->staleOrphanSms(39.34);
-        $bill = $this->pendingBill(39.34);
-        $real = $this->sms(39.34, now(), 'pending');
+        $this->staleOrphanSms(39.21);
+        $bill = $this->pendingBill(39.21);
+        // บิลหมดเวลาแล้ว (cleanup ปิดเป็น completed + ยอดหมดอายุ แต่ยังอยู่ในช่วง grace ของ /orders/match)
+        $bill->forceFill(['conversation_status' => FortuneReading::STATUS_COMPLETED])->save();
+        UniquePaymentAmount::whereKey($bill->unique_payment_amount_id)
+            ->update(['status' => 'expired', 'expires_at' => now()->subMinutes(10)]);
 
-        $this->match(39.34)->assertOk()->assertJsonPath('data.order.approval_status', 'auto_approved');
+        $this->match(39.21)
+            ->assertOk()
+            ->assertJsonPath('data.matched', true)
+            ->assertJsonPath('data.order.approval_status', 'cancelled');
 
-        $this->assertSame($real->id, (int) $bill->fresh()->sms_notification_id);
-        $this->assertSame('matched', $real->fresh()->status);
-        $this->assertSame($bill->id, (int) $real->fresh()->matched_transaction_id);
-        $this->assertNull($stale->fresh()->matched_transaction_id);
+        $after = $bill->fresh();
+        $this->assertFalse((bool) $after->is_paid);
+        $this->assertSame(FortuneReading::STATUS_COMPLETED, $after->conversation_status,
+            'กู้บิลกลับมาเป็นรอชำระได้เฉพาะตอน /notify เจอเงินเข้าจริง');
     }
 
-    public function test_real_sms_arriving_after_orders_match_is_attached_to_that_bill_not_orphaned(): void
+    public function test_real_sms_arriving_after_a_manual_approval_is_attached_to_that_bill_not_orphaned(): void
     {
         $this->staleOrphanSms(39.34);
         $bill = $this->pendingBill(39.34);
 
-        // 1) แอพเรียก /orders/match ก่อน → ตัดบิล (ยังไม่มี SMS ใบจริง)
-        $this->match(39.34)->assertOk();
+        // 1) แอดมิน/แอพกดอนุมัติไปก่อน SMS ใบจริงมาถึง (ยังไม่มี SMS ให้ผูก)
+        $bill->confirmPayment(null);
         $this->assertTrue((bool) $bill->fresh()->is_paid);
+        $this->assertNull($bill->fresh()->sms_notification_id);
 
-        // 2) อีก ~2 วิ SMS ใบจริงมาทาง /notify
+        // 2) อีกไม่กี่วิ SMS ใบจริงมาทาง /notify
         $result = app(SmsPaymentService::class)->processNotification([
             'bank' => 'KBANK',
             'type' => 'credit',

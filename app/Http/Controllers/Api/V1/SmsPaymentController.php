@@ -1249,6 +1249,20 @@ class SmsPaymentController extends Controller
                 ]);
             }
 
+            if ($this->fortuneFlowJustStartedBySms($model)) {
+                Log::info('💎 SMS Payment: approve ซ้ำบิลที่ /notify เพิ่งตัด — ขั้นตอนหลังจ่ายกำลังเดิน ไม่ปลุกซ้ำ', [
+                    'reading_id' => $model->id,
+                    'bill_reference' => $model->bill_reference,
+                    'device_id' => $device->device_id,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Fortune reading already paid via SMS — flow in progress',
+                    'data' => ['bill_reference' => $model->bill_reference, 'status' => 'paid'],
+                ]);
+            }
+
             // ค้นหา SMS notification ที่จับคู่กับบิลนี้
             $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
 
@@ -1533,6 +1547,22 @@ class SmsPaymentController extends Controller
      * @param  FortuneReading  $reading  บิลที่จ่ายแล้ว (is_paid=true)
      * @param  SmsPaymentNotification|null  $notification  SMS ที่ตรงบิล (null ถ้า admin force approve)
      */
+    /**
+     * 🧾 (2026-10-04) บิลนี้เพิ่งถูก /notify ตัดด้วย SMS ใบจริง และขั้นตอนหลังจ่ายกำลังเดินอยู่ไหม
+     *
+     * การตัดบิลดูดวงอยู่ที่ /notify ทางเดียว — แอพจะเห็นบิลที่ยอดตรงเป็น "รอตรวจ" ก่อนราว 2 วิ
+     * ถ้าแอดมิน/แอพกดอนุมัติตามหลังมา approveOrder / bulk จะสั่งเดินขั้นตอนซ้ำ (บิลจ่ายแล้วแต่ยังไม่ได้คำทำนาย)
+     * → ลูกค้าได้ข้อความขอวันเกิด/เปิดไพ่ซ้ำ ⇒ 10 นาทีแรกหลัง /notify ตัดบิล ถือว่ากำลังเดินอยู่ ไม่ปลุกซ้ำ
+     * เกิน 10 นาทีแล้วยังไม่ได้คำทำนาย = ค้างจริง → ปุ่มอนุมัติปลุกได้ตามเดิม
+     */
+    private function fortuneFlowJustStartedBySms(FortuneReading $reading): bool
+    {
+        return $reading->is_paid
+            && (bool) $reading->getConversationState('sms_match_processed', false)
+            && $reading->paid_at !== null
+            && $reading->paid_at->gt(now()->subMinutes(10));
+    }
+
     private function dispatchFortuneApprovalFlow(
         FortuneReading $reading,
         ?SmsPaymentNotification $notification
@@ -1865,8 +1895,8 @@ class SmsPaymentController extends Controller
                     : (! empty($model->deep_response)
                         && (bool) ($model->conversation_state['reading_sent_directly'] ?? false));
 
-                if ($model->is_paid && $alreadyDelivered) {
-                    $failed++; // already paid + delivered — count as skip (idempotent)
+                if (($model->is_paid && $alreadyDelivered) || $this->fortuneFlowJustStartedBySms($model)) {
+                    $failed++; // already paid + delivered / flow ที่ /notify เพิ่งปลุก — count as skip (idempotent)
                 } else {
                     $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
 
@@ -2235,78 +2265,27 @@ class SmsPaymentController extends Controller
         // =====================================================================
         // ค้นหา FortuneReading (เฉพาะ admin device)
         // =====================================================================
-        // ⚠️ เส้นนี้คือตัวตัดบิลดูดวงอัตโนมัติ "ตัวจริง" — แอพเรียก /orders/match ก่อน /notify ราว 2 วิ
-        //   prod ทุกบิลถูกตัดที่นี่ (/notify ไม่เคยทันตัดเองเลยในล็อก 15 วัน) ห้ามถอดการตัดบิลออก
-        //   (2026-10-03 เคยถอดใน 3705c1bb6 แล้วคืนกลับ — เส้นตัดบิลของ /notify ไม่มีอะไรพิสูจน์ว่ายังใช้ได้)
+        // 🧾 (2026-10-04) หาไว้แสดงบิลให้แอพเท่านั้น — ห้ามตัดบิลดูดวงที่นี่
+        //   endpoint นี้เป็น GET ที่ส่งมาแค่ยอดเงิน (ไม่มี HMAC / เข้ารหัส / nonce แบบ /notify)
+        //   เดิมเป็นตัวตัดบิลตัวจริงเพราะแอพเรียกก่อน /notify ราว 2 วิ แล้ว:
+        //   - เคยหยิบ SMS กำพร้าเก่าเป็นเดือนมาเป็นหลักฐาน (FTU-261002-X6634 · 121 บิล ส.ค.–ต.ค.)
+        //   - เดินขั้นตอนต่อผ่านตัวกู้บิลค้าง → ลูกค้า 39 ทุกคนได้ข้อความ "ขออภัยอย่างสูง…ประมวลผลนานกว่าปกติ"
+        //   ⇒ ตัดบิลจาก SMS ได้ทางเดียวคือ /notify (SmsPaymentService::handleFortuneReadingPayment)
+        //     ที่ผูก SMS ใบจริง + กัน SMS ที่มาก่อนเปิดบิล + ไม่เดายอดซ้ำ + กัน side-effect ซ้ำ
+        //   หลักฐาน prod ก่อนย้าย: 16 วัน /notify ไม่เคยถูกปฏิเสธ (ลายเซ็น/nonce/ถอดรหัส = 0)
+        //     และมาถึงทุกบิล (45/45) ภายใน −2…7 วิ · เทสต์ครบเส้น SmsNotifyCutsFortuneBillTest
+        //   ⚠️ ห้ามใส่การกู้สถานะบิล (completed → pending_payment) กลับมาที่นี่ — /notify กู้เองเมื่อเงินเข้าจริง
         if (! $transaction && $this->deviceCanAccessFortuneReading($device)) {
             $fortuneReading = $this->matchFortuneReadingByAmount($amount, $graceMinutes);
 
             if ($fortuneReading) {
-                // Recovery: ถ้า cleanup ปิดไปแล้ว → กู้คืนเป็น pending_payment ตาม reading_type
-                $expectedStatus = $fortuneReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
-                    ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
-                    : FortuneReading::STATUS_PENDING_PAYMENT;
-
-                if (! $fortuneReading->is_paid && $fortuneReading->conversation_status !== $expectedStatus) {
-                    $fortuneReading->update(['conversation_status' => $expectedStatus]);
-                    Log::info('SMS Payment: Recovered fortune reading for match', [
+                if (! $fortuneReading->is_paid) {
+                    Log::info('SMS Payment: /orders/match พบบิลดูดวงที่รอชำระ — รอ /notify ตัดบิลด้วย SMS ใบจริง', [
+                        'device_id' => $device->device_id,
+                        'amount' => $amount,
                         'fortune_reading_id' => $fortuneReading->id,
-                        'expected_status' => $expectedStatus,
+                        'bill_reference' => $fortuneReading->bill_reference,
                     ]);
-                }
-
-                // Auto-approve fortune reading (เหมือน xmanstudio auto-approve topup)
-                $autoConfirm = config('smschecker.auto_confirm_matched', true);
-                if ($autoConfirm && ! $fortuneReading->is_paid) {
-                    try {
-                        // 🚨 (2026-10-03, บิล FTU-261002-X6634) ผูกได้เฉพาะ SMS ที่มาถึงหลังเปิดบิล
-                        //   เดิมหยิบ "SMS ยอดเดียวกันที่ยังไม่ผูก ตัวล่าสุด" ไม่ดูเวลา — ตอนนี้ SMS ใบจริงยังไม่ถึง
-                        //   (มาทาง /notify ช้ากว่า ~2 วิ) เลยได้ SMS กำพร้าเก่าเป็นเดือนมาเป็นหลักฐาน (บิลนี้ได้ของ 21 ก.ค.)
-                        //   → หน้า billing โชว์ SMS ผิดใบ แอดมินเข้าใจว่าไม่ได้จ่ายแล้วกดยกเลิกบิลที่จ่ายจริง
-                        //   prod ส.ค.–ต.ค. ผูกผิดแบบนี้ 121 บิล
-                        //   ✅ ปกติจะไม่เจอใบไหน (null) แล้ว /notify เอา SMS ใบจริงมาผูกให้ทีหลัง
-                        //      (SmsPaymentService::attachSmsToBillCutByOrderMatch)
-                        //   🌙 ไม่หยิบ SMS ที่เป็นเงินของจันทรา.online (status external) / ที่แอดมินตีตกแล้ว
-                        $billOpenedAt = $fortuneReading->uniquePaymentAmount?->created_at ?? $fortuneReading->created_at;
-                        $notification = SmsPaymentNotification::where('amount', $amount)
-                            ->where('type', 'credit')
-                            ->whereNull('matched_transaction_id')
-                            ->whereNotIn('status', ['external', 'rejected'])
-                            ->where('created_at', '>=', $billOpenedAt)
-                            ->orderBy('created_at', 'asc')
-                            ->first();
-
-                        $fortuneReading->confirmPayment($notification);
-                        $fortuneReading = $fortuneReading->fresh();
-
-                        // 1 SMS = 1 บิล — mark ว่าใช้แล้ว กันไปเป็นหลักฐานของบิลอื่น
-                        if ($notification) {
-                            $notification->update([
-                                'status' => 'matched',
-                                'matched_transaction_id' => $fortuneReading->id,
-                            ]);
-                        }
-
-                        // 🔮 Route ตาม reading_type — Celtic / Deep flow ต่างกัน
-                        //    helper จะเลือก ProcessDeepFortuneReadingJob (deep) หรือ
-                        //    handleCelticPaymentMatched (celtic) ตาม reading.reading_type
-                        //    ⚠️ เคยมีบั๊ก: dispatchSmart ทุก reading_type → Celtic ได้ flow Deep ผิด
-                        $dispatched = $this->dispatchFortuneApprovalFlow($fortuneReading, $notification);
-
-                        Log::info('SMS Payment: Auto-approved fortune reading on match', [
-                            'device_id' => $device->device_id,
-                            'amount' => $amount,
-                            'fortune_reading_id' => $fortuneReading->id,
-                            'reading_type' => $fortuneReading->reading_type,
-                            'sms_notification_id' => $notification?->id,
-                            'flow_dispatched' => $dispatched,
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('SMS Payment: Auto-approve fortune reading failed', [
-                            'fortune_reading_id' => $fortuneReading->id,
-                            'error' => $e->getMessage(),
-                        ]);
-                    }
                 }
 
                 $orderData = $this->transformFortuneReadingToOrderApproval($fortuneReading);
