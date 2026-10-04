@@ -16,6 +16,13 @@ use Illuminate\Support\Facades\Log;
  */
 class SendNewTransactionFcmNotification implements ShouldQueue
 {
+    /**
+     * 🔒 (2026-10-04) เข้าคิวหลัง transaction ชั้นนอกสุด commit เท่านั้น
+     * (PaymentApiController::initializeOrderPayment ครอบการสร้างบิลไว้ใน transaction ที่ล็อกออเดอร์
+     *  — ถ้าเข้าคิวทันที worker อาจหยิบไปก่อน commit แล้วหาบิลไม่เจอ)
+     */
+    public bool $afterCommit = true;
+
     public function __construct(
         private FcmNotificationService $fcmService
     ) {}

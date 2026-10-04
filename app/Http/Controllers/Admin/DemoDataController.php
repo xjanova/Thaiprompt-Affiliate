@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\DemoDataUserGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,8 @@ class DemoDataController extends Controller
         'users' => [
             'label' => 'ผู้ใช้ทดสอบ',
             'icon' => '👥',
-            'description' => 'ลบบัญชีผู้ใช้ที่มี email @example.com, @thaiprompt.com',
+            // 🛡️ (2026-10-04) K1-4: เลือกผ่าน DemoDataUserGuard — รายชื่อจริงแสดงในส่วน "ตรวจก่อนลบ" ของหน้านี้
+            'description' => 'ลบบัญชี @example.com / @thaiprompt.com ที่ไม่ใช่ร้านทางการ แอดมิน เจ้าของร้าน ผู้ขายตลาดสด ไรเดอร์ หรือผู้ที่มีออเดอร์/เงินจริง',
             'tables' => ['users', 'affiliates', 'commissions'],
             'color' => 'blue',
         ],
@@ -38,7 +40,7 @@ class DemoDataController extends Controller
         'kyc' => [
             'label' => 'KYC ตัวอย่าง',
             'icon' => '✅',
-            'description' => 'ลบข้อมูล KYC verifications ทั้งหมด',
+            'description' => 'ลบข้อมูล KYC ของผู้ใช้ทดสอบที่ลบได้เท่านั้น (KYC ลูกค้าจริงไม่ถูกแตะ)',
             'tables' => ['kyc_verifications'],
             'color' => 'yellow',
         ],
@@ -65,8 +67,11 @@ class DemoDataController extends Controller
      */
     public function index()
     {
+        // แผนการลบผู้ใช้ทดสอบ (ยังไม่ลบ) — ใช้ทั้งนับสถิติและแสดงรายชื่อให้ตรวจก่อนกด
+        $userPlan = $this->guard()->plan();
+
         // นับจำนวนข้อมูล demo ในแต่ละหมวดหมู่
-        $stats = $this->getDemoDataStats();
+        $stats = $this->getDemoDataStats($userPlan);
 
         // ตรวจสอบว่าเป็น production หรือไม่
         $isProduction = app()->environment('production');
@@ -75,8 +80,15 @@ class DemoDataController extends Controller
             'categories' => $this->demoCategories,
             'stats' => $stats,
             'isProduction' => $isProduction,
+            'userPlan' => $userPlan,
+            'reasonLabels' => DemoDataUserGuard::REASON_LABELS,
             'pageTitle' => 'จัดการข้อมูลทดสอบ (Demo Data)',
         ]);
+    }
+
+    private function guard(): DemoDataUserGuard
+    {
+        return app(DemoDataUserGuard::class);
     }
 
     /**
@@ -109,22 +121,42 @@ class DemoDataController extends Controller
                     ->with('error', 'เกิดข้อผิดพลาดในการลบข้อมูล');
             }
         } catch (\Exception $e) {
+            // ไม่ส่งข้อความ exception ดิบขึ้นหน้าเว็บ (อาจมี SQL/รายละเอียดระบบ)
+            \Illuminate\Support\Facades\Log::error('DemoData: clean failed', ['category' => $category, 'error' => $e->getMessage()]);
+
             return redirect()
                 ->route('admin.demo-data.index')
-                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+                ->with('error', 'เกิดข้อผิดพลาดในการลบข้อมูล กรุณาตรวจสอบ log');
         }
     }
 
     /**
      * ดึงสถิติข้อมูล demo
      *
+     * @param  array{deletable: array<int, array{id:int}>, protected: array<int, mixed>}|null  $userPlan  แผนจาก DemoDataUserGuard (ไม่ส่ง = คำนวณใหม่)
      * @return array
      */
-    protected function getDemoDataStats()
+    protected function getDemoDataStats(?array $userPlan = null)
     {
         $stats = [];
 
+        // 🛡️ (2026-10-04) K1-4: หมวดผู้ใช้/KYC นับเฉพาะแถวที่ demo:reset จะลบจริง
+        $userPlan ??= $this->guard()->plan();
+        $demoUserIds = array_map(fn (array $row) => (int) $row['id'], $userPlan['deletable']);
+
         foreach ($this->demoCategories as $key => $category) {
+            if ($key === 'users') {
+                $stats[$key] = count($demoUserIds);
+
+                continue;
+            }
+
+            if ($key === 'kyc') {
+                $stats[$key] = $this->countKycOf($demoUserIds);
+
+                continue;
+            }
+
             $count = 0;
 
             foreach ($category['tables'] as $table) {
@@ -151,27 +183,41 @@ class DemoDataController extends Controller
     protected function getTableCount(string $table, string $category): int
     {
         // SECURITY: conditions ถูกกำหนดไว้ในโค้ดเท่านั้น ห้ามรับค่าจาก user input
+        // (ผู้ใช้/KYC นับผ่าน DemoDataUserGuard ใน getDemoDataStats แล้ว — ไม่มาถึงตรงนี้)
         $conditions = [
-            'users' => "email LIKE '%@example.com' OR email LIKE '%@thaiprompt.com'",
             'pages' => "type IN ('about', 'faq', 'contact', 'terms', 'privacy', 'custom')",
-            'kyc' => "status IN ('pending', 'approved', 'rejected')",
             'line' => null, // ทั้งหมด
             'accounting' => "description LIKE '%demo%' OR description LIKE '%ทดสอบ%'",
         ];
 
         // ถ้าตารางไม่ตรงกับ category ให้นับทั้งหมด
-        if ($category === 'users' && $table === 'users') {
-            return DB::table($table)->whereRaw($conditions['users'])->count();
-        } elseif ($category === 'pages' && $table === 'pages') {
+        if ($category === 'pages' && $table === 'pages') {
             return DB::table($table)->whereRaw($conditions['pages'])->count();
-        } elseif ($category === 'kyc' && $table === 'kyc_verifications') {
-            return DB::table($table)->whereRaw($conditions['kyc'])->count();
         } elseif ($category === 'accounting' && in_array($table, ['accounting_journal_entries', 'accounting_transactions', 'accounting_accounts'])) {
             return DB::table($table)->whereRaw($conditions['accounting'])->count();
         } else {
             // LINE และอื่นๆ นับทั้งหมด
             return DB::table($table)->count();
         }
+    }
+
+    /**
+     * จำนวน KYC ของผู้ใช้ชุดนี้
+     *
+     * @param  array<int, int>  $userIds
+     */
+    protected function countKycOf(array $userIds): int
+    {
+        if ($userIds === [] || ! Schema::hasTable('kyc_verifications')) {
+            return 0;
+        }
+
+        $count = 0;
+        foreach (array_chunk($userIds, 500) as $chunk) {
+            $count += DB::table('kyc_verifications')->whereIn('user_id', $chunk)->count();
+        }
+
+        return $count;
     }
 
     /**

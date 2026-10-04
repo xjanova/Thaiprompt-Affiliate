@@ -972,6 +972,17 @@ Schedule::command('analytics:aggregate-vendor')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 📸 (2026-10-04) ไรเดอร์รอบ 2: ลบแคชรูปโปรไฟล์พร้อมลายน้ำของวันเก่า
+// ════════════════════════════════════════════════════════════════
+// แคชแยกโฟลเดอร์ต่อวัน (storage/app/profile-photo-cache/{Ymd}) — ลายน้ำมีวันที่ แคชวันเก่าไม่ถูกใช้อีก
+Schedule::command('profile-photo:purge-cache --keep-days=1')
+    ->dailyAt('03:55')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('profile-photo-purge-cache')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 🗄️ (2026-09-26) Auto-migrate — เฉพาะร้านลูกค้าที่ตั้ง APP_AUTO_MIGRATE=true (prod ปิด)
 // ════════════════════════════════════════════════════════════════
 // แทนการรัน migrate ตอนบูตแอปใน AppServiceProvider — เหตุผลอยู่ใน App\Console\AutoMigrateSchedule
