@@ -988,6 +988,7 @@ class FreshMarketService
                 ],
             ]);
             $order->preferred_rider_id = $data['preferred_rider_id']; // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์ (ตรวจสิทธิ์แล้ว)
+            $order->client_app_build = \App\Support\Rider\ClientAppBuild::normalize($data['client_app_build'] ?? null); // ไรเดอร์รอบ 2: build แอปที่สั่ง (ตัดสินการสแกนส่งมอบ)
             $order->save();
 
             // รายการสินค้า (snapshot ชื่อ/ตัวเลือก/ราคา ณ ตอนสั่ง)

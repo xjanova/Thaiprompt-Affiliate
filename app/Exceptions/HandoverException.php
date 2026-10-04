@@ -83,11 +83,14 @@ class HandoverException extends RuntimeException
         );
     }
 
-    public static function codeLocked(Carbon $until): self
+    /**
+     * @param  string  $hint  ทางเลือกแทนการกรอกรหัส (ฝั่งไรเดอร์: ให้ผู้รับสแกน QR · ฝั่งผู้ซื้อ: สแกน QR ของไรเดอร์)
+     */
+    public static function codeLocked(Carbon $until, string $hint = 'หรือให้ผู้รับสแกน QR แทน'): self
     {
         return new self(
             self::CODE_LOCKED,
-            'กรอกรหัสผิดหลายครั้ง กรุณาลองใหม่หลังเวลา '.$until->copy()->timezone(config('app.timezone') ?: 'Asia/Bangkok')->format('H:i').' น. หรือให้ผู้รับสแกน QR แทน',
+            'กรอกรหัสผิดหลายครั้ง กรุณาลองใหม่หลังเวลา '.$until->copy()->timezone(config('app.timezone') ?: 'Asia/Bangkok')->format('H:i').' น. '.$hint,
             429,
             ['locked_until' => $until->toIso8601String()]
         );

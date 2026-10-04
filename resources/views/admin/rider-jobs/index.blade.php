@@ -1,7 +1,7 @@
 {{--
  | งานไรเดอร์ทั้งหมด (admin.rider-jobs.index) — ธีม V4
- | ตัวแปรจาก Admin\RiderJobController@index: $jobs (paginator), $stats{total,pending,manual_needed,in_progress,completed,cancelled,failed,total_earnings}, $riders (อนุมัติแล้ว id/full_name), $pageTitle
- | ตัวกรอง GET: search, status (enum จริง 9 ค่า), manual_needed=1, job_type, rider_id, date_from, date_to
+ | ตัวแปรจาก Admin\RiderJobController@index: $jobs (paginator), $stats{total,pending,manual_needed,in_progress,completed,cancelled,failed,total_earnings,awaiting_release,disputed,handover_review}, $riders (อนุมัติแล้ว id/full_name), $pageTitle
+ | ตัวกรอง GET: search, status (enum จริง 10 ค่า), manual_needed=1, handover_review=1 (ร้องเรียน + รอปลดเงิน), disputed=1, job_type, rider_id, date_from, date_to
  | ปุ่มยกเลิก → POST admin.rider-jobs.cancel {reason, redispatch?} (รับของแล้ว = ปิดงานเป็นส่งไม่สำเร็จ)
 --}}
 @extends('layouts.admin-v4')
@@ -32,7 +32,7 @@
         'service' => 'ให้บริการ',
         'pickup' => 'รับของ',
     ];
-    $hasFilter = request()->hasAny(['search', 'status', 'manual_needed', 'job_type', 'rider_id', 'date_from', 'date_to']);
+    $hasFilter = request()->hasAny(['search', 'status', 'manual_needed', 'handover_review', 'disputed', 'job_type', 'rider_id', 'date_from', 'date_to']);
 @endphp
 <div x-data="{}" style="display:flex; flex-direction:column; gap:18px;">
 
@@ -61,6 +61,19 @@
         </a>
     @endif
 
+    {{-- ไรเดอร์รอบ 2: เงินพักที่รอแอดมิน (ผู้ซื้อร้องเรียน / วางของรอปลดเงิน) --}}
+    @if (($stats['handover_review'] ?? 0) > 0)
+        <a href="{{ route('admin.rider-jobs.index', ['handover_review' => 1]) }}" class="tp-card tp-card-hover"
+           style="padding:14px 18px; border-left:4px solid var(--w-{{ ($stats['disputed'] ?? 0) > 0 ? 'bad' : 'warn' }}); text-decoration:none; color:var(--ink); display:flex; align-items:center; gap:12px;">
+            <span style="width:10px; height:10px; border-radius:50%; background:var(--w-{{ ($stats['disputed'] ?? 0) > 0 ? 'bad' : 'warn' }}); flex:none; {{ ($stats['disputed'] ?? 0) > 0 ? 'animation:tpPulse 1.2s infinite;' : '' }}"></span>
+            <span style="flex:1; font-size:13.5px;">
+                <b class="tp-num">{{ number_format($stats['disputed'] ?? 0) }}</b> เรื่องร้องเรียนการส่งมอบรอตัดสิน ·
+                <b class="tp-num">{{ number_format($stats['awaiting_release'] ?? 0) }}</b> งานวางของรอปลดเงิน — กดเพื่อดูรายการ
+            </span>
+            <i class="fas fa-chevron-right" style="color:var(--ink2);"></i>
+        </a>
+    @endif
+
     {{-- ===== ตัวเลขสรุป ===== --}}
     <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px;">
         @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-layer-group', 'kpiValue' => number_format($stats['total'] ?? 0), 'kpiLabel' => 'งานทั้งหมด', 'kpiTone' => null, 'kpiHref' => route('admin.rider-jobs.index'), 'kpiHint' => null, 'kpiPulse' => false])
@@ -69,6 +82,7 @@
         @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-truck-fast', 'kpiValue' => number_format($stats['in_progress'] ?? 0), 'kpiLabel' => 'กำลังดำเนินการ', 'kpiTone' => 'violet', 'kpiHref' => null, 'kpiHint' => 'รับงาน → กำลังส่ง', 'kpiPulse' => false])
         @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-circle-check', 'kpiValue' => number_format($stats['completed'] ?? 0), 'kpiLabel' => 'เสร็จสิ้น', 'kpiTone' => 'ok', 'kpiHref' => route('admin.rider-jobs.index', ['status' => 'completed']), 'kpiHint' => null, 'kpiPulse' => false])
         @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-ban', 'kpiValue' => number_format(($stats['cancelled'] ?? 0) + ($stats['failed'] ?? 0)), 'kpiLabel' => 'ยกเลิก / ส่งไม่สำเร็จ', 'kpiTone' => 'bad', 'kpiHref' => null, 'kpiHint' => 'ยกเลิก '.number_format($stats['cancelled'] ?? 0).' · ไม่สำเร็จ '.number_format($stats['failed'] ?? 0), 'kpiPulse' => false])
+        @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-scale-balanced', 'kpiValue' => number_format($stats['handover_review'] ?? 0), 'kpiLabel' => 'ส่งมอบรอแอดมิน', 'kpiTone' => ($stats['disputed'] ?? 0) > 0 ? 'bad' : 'warn', 'kpiHref' => route('admin.rider-jobs.index', ['handover_review' => 1]), 'kpiHint' => 'ร้องเรียน '.number_format($stats['disputed'] ?? 0).' · รอปลดเงิน '.number_format($stats['awaiting_release'] ?? 0), 'kpiPulse' => ($stats['disputed'] ?? 0) > 0])
         @include('admin.riders.partials.kpi', ['kpiIcon' => 'fa-coins', 'kpiValue' => '฿'.number_format($stats['total_earnings'] ?? 0, 2), 'kpiLabel' => 'ค่าส่งรวม (งานสำเร็จ)', 'kpiTone' => 'info', 'kpiHref' => route('admin.rider-jobs.statistics'), 'kpiHint' => null, 'kpiPulse' => false])
     </div>
 
@@ -119,6 +133,10 @@
             <label style="display:flex; align-items:center; gap:8px; min-height:42px; font-size:13px; cursor:pointer;">
                 <input type="checkbox" name="manual_needed" value="1" @checked(request()->boolean('manual_needed')) style="width:17px; height:17px; accent-color:var(--accent1);">
                 เฉพาะงานที่ต้องจัดเอง
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; min-height:42px; font-size:13px; cursor:pointer;">
+                <input type="checkbox" name="handover_review" value="1" @checked(request()->boolean('handover_review')) style="width:17px; height:17px; accent-color:var(--accent1);">
+                ส่งมอบรอแอดมิน (ร้องเรียน / รอปลดเงิน)
             </label>
             <div style="display:flex; gap:9px; flex-wrap:wrap;">
                 <button type="submit" class="tp-btn tp-btn-primary"><i class="fas fa-magnifying-glass"></i> ค้นหา</button>

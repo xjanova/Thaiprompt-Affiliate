@@ -440,7 +440,8 @@ class FreshMarketApiController extends Controller
                 'delivery_type', 'delivery_address', 'delivery_notes', 'buyer_latitude', 'buyer_longitude', 'payment_method',
                 'preferred_rider_id',
             ])),
-            ['channel' => 'api']
+            // ไรเดอร์รอบ 2: build แอปที่สั่ง (ตัดสินว่างานไรเดอร์ต้องสแกนส่งมอบหรือไม่)
+            ['channel' => 'api', 'client_app_build' => \App\Support\Rider\ClientAppBuild::fromRequest($request)]
         );
 
         return $this->handle(function () use ($request, $data, $mode, $orderData) {

@@ -342,8 +342,9 @@ class HandoverTest extends HandoverTestCase
         $this->assertContains('deliver', $summary['allowed_actions']);
     }
 
-    public function test_new_jobs_follow_handover_enabled_setting(): void
+    public function test_new_jobs_start_as_legacy_until_accepted_from_supported_apps(): void
     {
+        // รอบแก้หลังรีวิว (FIXES §A1): ตัดสินตอนรับงาน ไม่ใช่ตอนสร้างงาน — สร้างใหม่ = แบบเดิมเสมอ
         $fields = [
             'job_type' => 'delivery', 'title' => 'ทดสอบ', 'status' => 'pending',
             'pickup_address' => 'ร้าน', 'pickup_latitude' => 13.7291, 'pickup_longitude' => 100.5210,
@@ -353,7 +354,7 @@ class HandoverTest extends HandoverTestCase
         \App\Models\Setting::set('rider.handover_enabled', '1', 'boolean', 'rider');
         $on = new RiderJob;
         $on->forceFill($fields)->save();
-        $this->assertTrue((bool) $on->fresh()->handover_required);
+        $this->assertFalse((bool) $on->fresh()->handover_required);
 
         \App\Models\Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
         $off = new RiderJob;

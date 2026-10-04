@@ -11,6 +11,7 @@ use App\Models\RiderJob;
 use App\Services\RiderAccountService;
 use App\Services\RiderDispatchService;
 use App\Services\RiderEarningService;
+use App\Support\Rider\ClientAppBuild;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,9 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 class RiderApiController extends Controller
 {
     use RiderJobActions;
+
+    /** สถานะในประวัติงาน: งานจบแล้ว + งานวางของรอปลดเงิน (ไรเดอร์รอบ 2) */
+    private const HISTORY_STATUSES = [...RiderJob::TERMINAL_STATUSES, RiderJob::STATUS_AWAITING_RELEASE];
 
     public function __construct(
         private readonly RiderAccountService $accounts,
@@ -388,6 +392,9 @@ class RiderApiController extends Controller
 
     /**
      * GET /rider/jobs/history?page&status&per_page — ประวัติงานที่จบแล้วของตัวเอง
+     *
+     * ไรเดอร์รอบ 2: รวมงาน awaiting_release (วางของแล้ว รอปลดเงิน/รอทีมงานตัดสิน) พร้อมสถานะส่งมอบใน handover
+     * → หน้า "รายได้" แสดงรายการ "รอปลดเงิน" ได้ · กรองเฉพาะได้ด้วย status=awaiting_release
      */
     public function history(Request $request): JsonResponse
     {
@@ -395,14 +402,15 @@ class RiderApiController extends Controller
             $rider = $this->riderOrFail($request);
 
             $data = $this->validateRiderInput($request, [
-                'status' => ['nullable', Rule::in(RiderJob::TERMINAL_STATUSES)],
+                'status' => ['nullable', Rule::in(self::HISTORY_STATUSES)],
                 'per_page' => ['nullable', 'integer', 'between:5,50'],
                 'page' => ['nullable', 'integer', 'min:1'],
             ]);
 
             $page = RiderJob::query()
                 ->where('rider_id', $rider->id)
-                ->whereIn('status', isset($data['status']) ? [$data['status']] : RiderJob::TERMINAL_STATUSES)
+                ->whereIn('status', isset($data['status']) ? [$data['status']] : self::HISTORY_STATUSES)
+                ->with('handover')
                 ->orderByDesc('id')
                 ->paginate((int) ($data['per_page'] ?? 20));
 
@@ -437,7 +445,8 @@ class RiderApiController extends Controller
     {
         return $this->guard('accept', function () use ($request, $id) {
             $rider = $this->riderOrFail($request);
-            $job = $this->doAccept($request, $this->findJob($id), $rider);
+            // ไรเดอร์รอบ 2: build แอป (X-App-Build) ใช้ตัดสินว่างานนี้ต้องสแกนส่งมอบหรือไม่
+            $job = $this->doAccept($request, $this->findJob($id), $rider, ClientAppBuild::fromRequest($request));
 
             return $this->ok(['job' => $job->toApiDetail($rider)], 'รับงานสำเร็จ! กรุณาเดินทางไปรับของที่ร้าน');
         }, ['job_id' => $id]);

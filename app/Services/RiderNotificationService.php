@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Jobs\SendRiderPushJob;
+use App\Models\FreshMarketOrder;
+use App\Models\Order;
 use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\User;
@@ -69,7 +71,11 @@ class RiderNotificationService
         string $priority,
         bool $push,
     ): void {
-        $userModels = $this->resolveUsers($users);
+        // ผู้ใช้ที่ถูกปิดแจ้งเตือนชั่วคราว (NotificationService::muteUsersDuring) → ไม่สร้าง ไม่ push
+        $userModels = array_values(array_filter(
+            $this->resolveUsers($users),
+            fn (User $u) => ! NotificationService::isMuted((int) $u->id)
+        ));
         if ($userModels === []) {
             return;
         }
@@ -268,6 +274,9 @@ class RiderNotificationService
     /**
      * แจ้งผู้ซื้อ/ผู้ขายของออเดอร์ต้นทางเมื่อสถานะงานไรเดอร์เปลี่ยน
      *
+     * ไรเดอร์รอบ 2: ส่ง payload แยกตามผู้รับ — role (buyer|seller) + screen (order|merchant-order)
+     * + source (shop|fresh-market) + order_id + job_id ให้แอปเปิดหน้าที่ถูกต้อง (ร้านต้องไม่ถูกพาไปหน้าออเดอร์ผู้ซื้อ)
+     *
      * @param  array<int, int>  $userIds
      */
     public function notifyParties(array $userIds, RiderJob $job, string $event): void
@@ -286,20 +295,83 @@ class RiderNotificationService
             default => ['อัปเดตการจัดส่ง', "สถานะงานส่งของ #{$job->job_number}: {$job->status_text}"],
         };
 
-        $data = [
+        // ข้อความฝั่งร้าน (ข้อความผู้ซื้อพูดว่า "ถึงคุณ" — ร้านต้องเห็นมุมของร้าน)
+        [$sellerTitle, $sellerMessage] = match ($event) {
+            'accepted' => ['ไรเดอร์รับงานแล้ว', "ไรเดอร์กำลังมารับสินค้าที่ร้าน งาน #{$job->job_number}"],
+            'picking_up' => ['ไรเดอร์กำลังมารับของ', "ไรเดอร์กำลังเดินทางมาที่ร้าน งาน #{$job->job_number}"],
+            'picked_up' => ['ไรเดอร์รับของแล้ว', "ไรเดอร์รับสินค้าจากร้านแล้ว งาน #{$job->job_number}"],
+            'delivering' => ['กำลังจัดส่ง', "ไรเดอร์กำลังนำส่งถึงลูกค้า งาน #{$job->job_number}"],
+            'completed' => ['ส่งของสำเร็จ', "ไรเดอร์ส่งของถึงลูกค้าแล้ว งาน #{$job->job_number}"],
+            'failed' => ['ส่งของไม่สำเร็จ', "ไรเดอร์ส่งของไม่สำเร็จ ทีมงานจะติดต่อเรื่องคืนสินค้า งาน #{$job->job_number}"],
+            default => [$title, $message],
+        };
+
+        $base = [
             'type' => 'delivery_update',
             'event' => $event,
             'job_id' => (int) $job->id,
             'source_type' => $job->source_type ? class_basename($job->source_type) : null,
             'source_id' => $job->source_id ? (int) $job->source_id : null,
+            'source' => self::sourceKey($job),
+            'order_id' => $job->source_id ? (int) $job->source_id : null,
         ];
 
         $trackingUrl = $job->tracking_url;
         if ($trackingUrl && in_array($event, ['accepted', 'picking_up', 'picked_up', 'delivering'], true)) {
-            $data['tracking_url'] = $trackingUrl;
+            $base['tracking_url'] = $trackingUrl;
         }
 
-        $this->notifyUsers($userIds, 'delivery_update', $title, $message, $data, $trackingUrl);
+        // แยกผู้รับ: ผู้ซื้อของออเดอร์ = buyer · ที่เหลือ (ร้าน/ผู้ขาย) = seller
+        $buyerId = $this->buyerUserIdOf($job);
+        $buyers = [];
+        $sellers = [];
+        foreach (array_unique(array_map('intval', $userIds)) as $id) {
+            if ($id <= 0) {
+                continue;
+            }
+
+            if ($buyerId !== null && $id === $buyerId) {
+                $buyers[] = $id;
+            } else {
+                $sellers[] = $id;
+            }
+        }
+
+        if ($buyers !== []) {
+            $this->notifyUsers($buyers, 'delivery_update', $title, $message, array_merge($base, ['role' => 'buyer', 'screen' => 'order']), $trackingUrl);
+        }
+
+        if ($sellers !== []) {
+            $this->notifyUsers($sellers, 'delivery_update', $sellerTitle, $sellerMessage, array_merge($base, ['role' => 'seller', 'screen' => 'merchant-order']), $trackingUrl);
+        }
+    }
+
+    /**
+     * ชนิดออเดอร์ต้นทางสำหรับแอป: shop (ร้านค้า) | fresh-market (ตลาดสด) | null
+     */
+    public static function sourceKey(RiderJob $job): ?string
+    {
+        $source = $job->deliverableSource();
+
+        return match (true) {
+            $source instanceof FreshMarketOrder => 'fresh-market',
+            $source instanceof Order => 'shop',
+            default => null,
+        };
+    }
+
+    /**
+     * ผู้ซื้อของงาน = ผู้ซื้อของออเดอร์ต้นทาง (ไม่มีออเดอร์ = customer_id ของงาน)
+     */
+    private function buyerUserIdOf(RiderJob $job): ?int
+    {
+        try {
+            $id = $job->deliverableSource()?->riderCustomerUserId() ?? $job->customer_id;
+        } catch (\Throwable) {
+            $id = $job->customer_id;
+        }
+
+        return $id ? (int) $id : null;
     }
 
     /**

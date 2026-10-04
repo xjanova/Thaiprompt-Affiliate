@@ -7,6 +7,7 @@ use App\Exceptions\HandoverException;
 use App\Exceptions\RiderJobException;
 use App\Exceptions\ShopException;
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryHandover;
 use App\Models\FreshMarketOrder;
 use App\Models\Order;
 use App\Models\Rider;
@@ -69,6 +70,15 @@ class RiderJobController extends Controller
             $query->open()->where('dispatch_type', 'manual_needed');
         }
 
+        // ไรเดอร์รอบ 2: งานส่งมอบที่รอแอดมิน (ผู้ซื้อร้องเรียน / วางของรอปลดเงิน)
+        if ($request->boolean('handover_review')) {
+            $query->where(fn ($q) => $this->scopeHandoverReview($q));
+        }
+
+        if ($request->boolean('disputed')) {
+            $query->whereHas('handover', fn ($h) => $h->where('status', DeliveryHandover::STATUS_DISPUTED));
+        }
+
         if ($request->filled('job_type')) {
             $query->where('job_type', $request->job_type);
         }
@@ -93,6 +103,10 @@ class RiderJobController extends Controller
             'cancelled' => RiderJob::where('status', 'cancelled')->count(),
             'failed' => RiderJob::where('status', 'failed')->count(),
             'total_earnings' => round((float) RiderJob::where('status', 'completed')->sum('total_fee'), 2),
+            // ไรเดอร์รอบ 2: เงินพักรอแอดมิน/รอปลดอัตโนมัติ
+            'awaiting_release' => RiderJob::where('status', RiderJob::STATUS_AWAITING_RELEASE)->count(),
+            'disputed' => DeliveryHandover::where('status', DeliveryHandover::STATUS_DISPUTED)->count(),
+            'handover_review' => RiderJob::where(fn ($q) => $this->scopeHandoverReview($q))->count(),
         ];
 
         $jobs = $query->latest('id')->paginate(20)->withQueryString();
@@ -107,6 +121,17 @@ class RiderJobController extends Controller
             'riders' => $riders,
             'pageTitle' => 'จัดการงานไรเดอร์',
         ]);
+    }
+
+    /**
+     * งานส่งมอบที่รอแอดมินดู: งานรอปลดเงิน (awaiting_release) หรือการส่งมอบถูกร้องเรียน (ยังไม่ตัดสิน)
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<RiderJob>  $query
+     */
+    private function scopeHandoverReview($query): void
+    {
+        $query->where('status', RiderJob::STATUS_AWAITING_RELEASE)
+            ->orWhereHas('handover', fn ($h) => $h->where('status', DeliveryHandover::STATUS_DISPUTED));
     }
 
     /**
@@ -260,6 +285,7 @@ class RiderJobController extends Controller
                 'qr' => 'สแกน QR ทั้งสองฝ่าย',
                 'code' => 'ไรเดอร์กรอกรหัส 6 หลัก + ผู้ซื้อสแกน QR',
                 'fallback' => 'วางของ (รูป 2 รอบ) แล้วปลดเงินอัตโนมัติ',
+                'buyer_confirm' => 'ผู้ซื้อกด "ได้รับของแล้ว" เอง',
                 'admin' => 'แอดมินตัดสิน',
                 default => null,
             },

@@ -280,12 +280,14 @@ trait RiderJobActions
 
     /**
      * ไรเดอร์กดรับงาน
+     *
+     * @param  int|null  $riderAppBuild  ไรเดอร์รอบ 2: build แอปไรเดอร์ (เฉพาะ API แอป) — หน้าเว็บส่ง null = ส่งของแบบเดิม
      */
-    protected function doAccept(Request $request, RiderJob $job, Rider $rider): RiderJob
+    protected function doAccept(Request $request, RiderJob $job, Rider $rider, ?int $riderAppBuild = null): RiderJob
     {
         $this->recordLocationFromRequest($request, $rider);
 
-        return app(RiderJobService::class)->accept($job, $rider);
+        return app(RiderJobService::class)->accept($job, $rider, $riderAppBuild);
     }
 
     /**
