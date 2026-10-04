@@ -51,6 +51,30 @@ class EkycPrivacyAndBadgeTest extends TestCase
         $this->assertNull($service->urlFor($nothing, $viewer), 'ไม่มีรูป = null (ไม่ใช่รูปตัวอักษรอัตโนมัติ)');
     }
 
+    public function test_new_avatar_upload_replaces_an_old_live_photo(): void
+    {
+        $service = app(ProfilePhotoService::class);
+        $subject = User::factory()->create(['line_picture_url' => null, 'profile_picture' => null]);
+        $viewer = User::factory()->create();
+
+        // ผู้ใช้เคยถ่ายรูปสดไว้ตอนรอบ 2 (ตอนที่ยังบังคับ)
+        Storage::disk('local')->put('profile-photos/'.$subject->id.'/old.jpg', 'jpeg-bytes');
+        $subject->forceFill(['profile_photo_private_path' => 'profile-photos/'.$subject->id.'/old.jpg', 'profile_photo_taken_at' => now()])->save();
+        $this->assertStringContainsString('/media/profile-photo/', (string) $service->urlFor($subject->fresh(), $viewer));
+
+        Sanctum::actingAs($subject);
+        $png = \Illuminate\Http\UploadedFile::fake()->image('cat.png', 400, 400);
+        $this->postJson('/api/v1/profile/avatar', ['avatar' => $png])->assertOk();
+
+        $fresh = $subject->fresh();
+        $this->assertNull($fresh->profile_photo_private_path, 'รูปถ่ายสดเก่าต้องเลิกใช้');
+        Storage::disk('local')->assertMissing('profile-photos/'.$subject->id.'/old.jpg');
+        $url = (string) $service->urlFor($fresh, $viewer);
+        // (ใน test ไฟล์อยู่บน disk ปลอม → accessor profile_picture_url ตกไป ui-avatars → urlFor คืน null ได้ บน prod ได้ลิงก์ /storage/avatars/...)
+        $this->assertStringNotContainsString('/media/profile-photo/', $url, 'คนอื่นต้องเห็นอวาตาร์ใหม่ ไม่ใช่รูปถ่ายสดเก่า');
+        $this->assertNotNull($fresh->profile_picture, 'บันทึกอวาตาร์ใหม่แล้ว');
+    }
+
     public function test_person_cards_and_profile_payloads_carry_verified_flag(): void
     {
         $verifiedRider = $this->makeRider();

@@ -439,6 +439,36 @@ class ProfilePhotoService
     }
 
     /**
+     * เลิกใช้รูปถ่ายสดของผู้ใช้ (eKYC 2026-10-04: อวาตาร์ = รูปที่ผู้ใช้เลือกเอง รูปล่าสุดต้องชนะ)
+     *
+     * เรียกเมื่อผู้ใช้อัปโหลดอวาตาร์ใหม่ — ไม่งั้น urlFor() ยังคืนรูปถ่ายสดเก่าให้คนอื่นเห็น
+     */
+    public function forget(User $user): void
+    {
+        $previous = DB::transaction(function () use ($user) {
+            /** @var User|null $locked */
+            $locked = User::query()->whereKey($user->getKey())->lockForUpdate()->first();
+            if (! $locked || empty($locked->profile_photo_private_path)) {
+                return null;
+            }
+
+            $old = $locked->profile_photo_private_path;
+            $locked->forceFill([
+                'profile_photo_private_path' => null,
+                'profile_photo_taken_at' => null,
+            ])->save();
+
+            return $old;
+        });
+
+        // ไฟล์ลบย้อนกลับไม่ได้ → ทำหลัง commit เท่านั้น
+        if (is_string($previous) && $previous !== '') {
+            $this->deleteQuietly($previous);
+        }
+        $this->forgetRenderCache((int) $user->getKey());
+    }
+
+    /**
      * ลบแคชของผู้ใช้คนหนึ่ง (วันนี้ + เมื่อวาน) — เรียกหลังถ่ายรูปใหม่
      */
     public function forgetRenderCache(int $userId): void

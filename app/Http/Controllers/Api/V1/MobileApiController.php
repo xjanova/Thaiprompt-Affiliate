@@ -282,6 +282,13 @@ class MobileApiController extends Controller
             $user->profile_picture = $path;
             $user->save();
 
+            // อวาตาร์ใหม่ต้องเป็นรูปที่คนอื่นเห็น — เลิกใช้รูปถ่ายสดเก่า (ProfilePhotoService::urlFor ใช้รูปถ่ายสดก่อน)
+            try {
+                app(\App\Services\Media\ProfilePhotoService::class)->forget($user);
+            } catch (\Throwable $e) {
+                \Log::warning('Avatar upload: cannot clear live photo', ['user_id' => $user->id, 'error' => class_basename($e)]);
+            }
+
             // สร้าง URL สำหรับ response
             $avatarUrl = \Storage::disk('public')->url($path);
 

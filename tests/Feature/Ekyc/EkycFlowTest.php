@@ -125,6 +125,12 @@ class EkycFlowTest extends TestCase
             ->assertJsonPath('data.method', 'ekyc')
             ->assertJsonPath('data.can_start', false)
             ->assertJsonPath('data.last_decision', 'approved');
+
+        // หน้าโปรไฟล์ของเจ้าของ: ชื่อตามบัตร + เลขบัตรปิดบางส่วน (ไม่มีเลขเต็ม)
+        $status = $this->getJson('/api/v1/ekyc/status')->json('data');
+        $this->assertNotEmpty($status['name_th'] ?? null);
+        $this->assertMatchesRegularExpression('/•/u', (string) ($status['id_number_masked'] ?? ''));
+        $this->assertDoesNotMatchRegularExpression('/\d{13}/', json_encode($status));
     }
 
     // =====================================================

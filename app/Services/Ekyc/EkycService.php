@@ -179,6 +179,13 @@ class EkycService
             'required_for' => $this->enforced() ? self::REQUIRED_FOR : [],
             // ข้อความยินยอม PDPA เวอร์ชันปัจจุบัน (แอปส่งกลับมาตอนเริ่มรอบ)
             'consent_version' => (string) config('ekyc.consent_version', ''),
+            // หน้าโปรไฟล์ของเจ้าของบัญชี (เห็นเฉพาะตัวเอง) — ชื่อตามบัตร + เลขบัตรแบบปิดบางส่วน
+            'name_th' => $approvedRow?->name_th,
+            'id_number_masked' => $approvedRow
+                ? ($approvedRow->id_number_encrypted
+                    ? self::maskId((string) $approvedRow->id_number_encrypted)
+                    : ($approvedRow->id_last4 ? '•••••••••'.$approvedRow->id_last4 : null))
+                : null,
         ];
     }
 
