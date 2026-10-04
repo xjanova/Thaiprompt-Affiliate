@@ -68,7 +68,7 @@ class ShopCheckoutService
      */
     public function checkout(User $user, array $input, ?string $idempotencyKey = null, ?callable $lineSource = null): array
     {
-        $this->source = ($input['source'] ?? null) === 'web' ? 'web' : 'mobile_app';
+        $this->source = in_array($input['source'] ?? null, ['web', 'pos'], true) ? $input['source'] : 'mobile_app';
 
         $paymentMethod = PaymentMethod::normalize((string) ($input['payment_method'] ?? ''));
         if (! in_array($paymentMethod, PaymentMethod::APP_CHECKOUT_VALUES, true)) {

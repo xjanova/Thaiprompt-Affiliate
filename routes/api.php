@@ -965,6 +965,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         require __DIR__.'/api_v1/rider_r2_social.php';
         require __DIR__.'/api_v1/rider_r2_profile_photo.php';
     });
+
+    // ===== 🛵 POS → ไรเดอร์ Thai Prompt (2026-10-04) — ลูกค้าสแกน QR จากเครื่อง POS แล้วจ่ายจากกระเป๋าเงิน =====
+    Route::middleware('auth:sanctum')->group(function () {
+        require __DIR__.'/api_v1/pos_requests.php';
+    });
 });
 
 // Public Crypto Wallet API (no auth required)
@@ -1893,6 +1898,25 @@ Route::prefix('pos')->name('api.pos.')->group(function () {
     // รายงานยอดขายรายวัน
     Route::post('/report/sales', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'reportSales'])
         ->name('report.sales');
+
+    // ======== 🛵 POS → ไรเดอร์ Thai Prompt (2026-10-04) — ต้องมี X-API-Key + X-Product-Key (middleware pos.terminal) ========
+    // throttle มาก่อน pos.terminal → กันเดา API Key ถี่ๆ ก่อนถึงการค้นฐานข้อมูล
+    Route::prefix('delivery-requests')->name('delivery-requests.')->group(function () {
+        // สร้างคำขอ + QR (TPPOS1.{token}) — local_id เดิมซ้ำได้ผลเดิม
+        Route::post('/', [\App\Http\Controllers\Api\Pos\PosDeliveryRequestController::class, 'store'])
+            ->middleware(['throttle:30,1,pos-delivery-create', 'pos.terminal'])
+            ->name('store');
+        // สถานะ (POS ถามทุก ~5 วินาทีระหว่างเปิดหน้าจอ)
+        Route::get('/{id}', [\App\Http\Controllers\Api\Pos\PosDeliveryRequestController::class, 'show'])
+            ->whereNumber('id')
+            ->middleware(['throttle:120,1,pos-delivery-poll', 'pos.terminal'])
+            ->name('show');
+        // ยกเลิก (เฉพาะที่ยังรอจ่าย)
+        Route::post('/{id}/cancel', [\App\Http\Controllers\Api\Pos\PosDeliveryRequestController::class, 'cancel'])
+            ->whereNumber('id')
+            ->middleware(['throttle:30,1,pos-delivery-cancel', 'pos.terminal'])
+            ->name('cancel');
+    });
 });
 
 // SMS Payment Checker Routes

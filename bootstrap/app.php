@@ -132,6 +132,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'license.owner' => \App\Http\Middleware\CheckLicenseOwnership::class,
             // SMS Payment Checker middleware
             'smschecker' => \App\Http\Middleware\VerifySmsCheckerDevice::class,
+            // 🛵 (2026-10-04) เครื่อง POS ที่ยืนยันแล้ว (X-API-Key + X-Product-Key) — POS → ไรเดอร์ Thai Prompt
+            'pos.terminal' => \App\Http\Middleware\AuthenticatePosTerminal::class,
             // 🔐 Passport OAuth scope middleware (ไม่ auto-register บน Laravel 11 —
             //    ต้องประกาศเอง ไม่งั้น /api/user โยน "middleware [scopes] not found")
             'scopes' => \Laravel\Passport\Http\Middleware\CheckScopes::class,

@@ -3,11 +3,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\PosApiKey;
 use App\Models\PosTerminal;
+use App\Models\PosTerminalSale;
+use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\VendorStore;
+use App\Services\Pos\PosTerminalAuthenticator;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -36,12 +43,15 @@ use Illuminate\Support\Facades\Validator;
  */
 class PosTerminalController extends Controller
 {
+    /** บิลต่อการอัปโหลด 1 ครั้ง (กัน request ใหญ่เกิน) */
+    private const MAX_UPLOAD_ORDERS = 200;
+
     /**
-     * ดึง Secret Key จาก config (ไม่ hardcode ใน code)
+     * ตัวยืนยันเครื่อง POS (ใช้ร่วมกับ middleware pos.terminal)
      */
-    private function getSecretKey(): string
+    private function authenticator(): PosTerminalAuthenticator
     {
-        return config('pos.secret_key', '');
+        return app(PosTerminalAuthenticator::class);
     }
 
     /**
@@ -354,7 +364,8 @@ class PosTerminalController extends Controller
             Log::info('POS Terminal activated', [
                 'terminal_id' => $terminal->id,
                 'shop_id' => $shop->id,
-                'product_key' => $validated['product_key'],
+                // Product Key เป็นครึ่งหนึ่งของกุญแจเครื่อง → log แค่ต้น key
+                'product_key' => substr((string) $validated['product_key'], 0, 8).'…',
                 'api_key_id' => $apiKey->id,
                 'ip' => $request->ip(),
             ]);
@@ -507,7 +518,8 @@ class PosTerminalController extends Controller
             Log::info('POS Terminal registered', [
                 'terminal_id' => $terminal->id,
                 'shop_id' => $shop->id,
-                'product_key' => $validated['product_key'],
+                // Product Key เป็นครึ่งหนึ่งของกุญแจเครื่อง → log แค่ต้น key
+                'product_key' => substr((string) $validated['product_key'], 0, 8).'…',
                 'device_id' => $validated['device_id'],
                 'ip' => $request->ip(),
             ]);
@@ -892,6 +904,8 @@ class PosTerminalController extends Controller
             return response()->json($response);
 
         } catch (\Exception $e) {
+            Log::error('POS Terminal status check failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด',
@@ -904,7 +918,11 @@ class PosTerminalController extends Controller
     // =========================================
 
     /**
-     * Sync สินค้าจาก Server
+     * Sync สินค้าจาก Server — สินค้า active ของร้านที่เครื่องผูกอยู่ (products.store_id)
+     *
+     * 🩹 (2026-10-04) เดิม query products.shop_id ซึ่งไม่มีคอลัมน์นี้ → sync ไม่ได้เลย
+     *   และอ่าน stock/cost/image_url ที่ไม่ใช่ชื่อคอลัมน์จริง (stock_quantity/cost_price/main_image_url)
+     *   POS ต้องได้ id ของ server เพื่อส่งคำขอไรเดอร์ (POST /api/pos/delivery-requests)
      */
     public function syncProducts(Request $request): JsonResponse
     {
@@ -916,37 +934,52 @@ class PosTerminalController extends Controller
             ], 401);
         }
 
-        // ดึงสินค้าจากร้าน
-        $products = \App\Models\Product::where('shop_id', $terminal->shop_id)
-            ->where('is_active', true)
-            ->with(['category'])
-            ->get()
-            ->map(fn ($p) => [
-                'id' => $p->id,
-                'sku' => $p->sku,
-                'barcode' => $p->barcode,
-                'name' => $p->name,
-                'price' => $p->price,
-                'cost' => $p->cost,
-                'stock' => $p->stock,
-                'category_id' => $p->category_id,
-                'category_name' => $p->category?->name,
-                'image_url' => $p->image_url,
-                'updated_at' => $p->updated_at?->toISOString(),
+        try {
+            $products = Product::query()
+                ->where('store_id', $terminal->shop_id)
+                ->where('is_active', true)
+                ->with(['category', 'store'])
+                ->orderBy('id')
+                ->get()
+                ->map(fn (Product $p) => [
+                    'id' => (int) $p->id,
+                    'sku' => $p->sku,
+                    'barcode' => $p->barcode,
+                    'name' => $p->name,
+                    'price' => round((float) $p->price, 2),
+                    'cost' => $p->cost_price !== null ? round((float) $p->cost_price, 2) : null,
+                    'stock' => (int) $p->stock_quantity,
+                    'track_inventory' => (bool) $p->track_inventory,
+                    'category_id' => $p->category_id !== null ? (int) $p->category_id : null,
+                    'category_name' => $p->category?->name,
+                    'image_url' => $p->main_image_url,
+                    // สั่งออนไลน์/ส่งไรเดอร์ได้ตอนนี้หรือไม่ (เปิดขาย ไม่ซ่อน ไม่ถูกบล็อก ร้านไม่ถูกระงับ ไม่ใช่สินค้าดิจิทัล)
+                    'orderable_online' => $p->purchaseBlockReason() === null && ! $p->is_virtual,
+                    'updated_at' => $p->updated_at?->toISOString(),
+                ]);
+
+            // อัพเดท last sync
+            $terminal->update(['last_sync_at' => now()]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $products,
+                'synced_at' => now()->toISOString(),
             ]);
+        } catch (\Throwable $e) {
+            Log::error('POS sync products failed', ['terminal_id' => $terminal->id, 'error' => $e->getMessage()]);
 
-        // อัพเดท last sync
-        $terminal->update(['last_sync_at' => now()]);
-
-        return response()->json([
-            'success' => true,
-            'data' => $products,
-            'synced_at' => now()->toISOString(),
-        ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'ดึงรายการสินค้าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+            ], 500);
+        }
     }
 
     /**
-     * Sync หมวดหมู่จาก Server
+     * Sync หมวดหมู่จาก Server — หมวดหมู่ (product_categories) ที่สินค้า active ของร้านใช้อยู่
+     *
+     * 🩹 (2026-10-04) เดิมอ้าง App\Models\Category ซึ่งไม่มีในระบบ → 500 ทุกครั้ง
      */
     public function syncCategories(Request $request): JsonResponse
     {
@@ -958,27 +991,53 @@ class PosTerminalController extends Controller
             ], 401);
         }
 
-        // ดึงหมวดหมู่จากร้าน
-        $categories = \App\Models\Category::where('shop_id', $terminal->shop_id)
-            ->where('is_active', true)
-            ->get()
-            ->map(fn ($c) => [
-                'id' => $c->id,
-                'name' => $c->name,
-                'icon' => $c->icon,
-                'color' => $c->color,
-                'sort_order' => $c->sort_order,
-            ]);
+        try {
+            $categoryIds = Product::query()
+                ->where('store_id', $terminal->shop_id)
+                ->where('is_active', true)
+                ->whereNotNull('category_id')
+                ->distinct()
+                ->pluck('category_id');
 
-        return response()->json([
-            'success' => true,
-            'data' => $categories,
-            'synced_at' => now()->toISOString(),
-        ]);
+            $categories = ProductCategory::query()
+                ->whereIn('id', $categoryIds)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get()
+                ->map(fn (ProductCategory $c) => [
+                    'id' => (int) $c->id,
+                    'name' => $c->name,
+                    'icon' => $c->icon,
+                    'color' => null,
+                    'sort_order' => (int) $c->sort_order,
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $categories,
+                'synced_at' => now()->toISOString(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('POS sync categories failed', ['terminal_id' => $terminal->id, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ดึงหมวดหมู่ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+            ], 500);
+        }
     }
 
     /**
-     * อัพโหลดคำสั่งซื้อจาก POS ไป Server
+     * อัพโหลดบิลขายหน้าร้านจาก POS ไป Server
+     *
+     * 🩹 (2026-10-04) เดิมสร้าง orders ด้วยคอลัมน์ที่ไม่มี (shop_id/total) และไม่มี user_id/order_number
+     *   → ล้มทุกบิล แล้วส่งข้อความ exception ดิบกลับไปที่เครื่อง
+     *   ตอนนี้บันทึกลง pos_terminal_sales (บันทึกอย่างเดียว ไม่แตะเงิน/สต็อก — ไม่ใช่ออเดอร์ร้านค้าออนไลน์)
+     *   - ทีละบิล: บิลไหนเสียไม่ทำให้บิลอื่นล้ม
+     *   - local_id ซ้ำ (เคยอัปโหลดแล้ว / เป็นบิลที่ส่งไรเดอร์ผ่านแอปแล้ว) → นับว่าอัปโหลดแล้ว ไม่บันทึกซ้ำ
+     *
+     * ตอบ: {"success":true,"data":{"uploaded":[local_id...],"errors":[{"local_id","error"}]}}
      */
     public function uploadOrders(Request $request): JsonResponse
     {
@@ -990,62 +1049,66 @@ class PosTerminalController extends Controller
             ], 401);
         }
 
-        $validated = $request->validate([
-            'orders' => 'required|array',
-            'orders.*.local_id' => 'required|string',
-            'orders.*.total' => 'required|numeric',
-            'orders.*.items' => 'required|array',
-            'orders.*.created_at' => 'required|date',
+        $validator = Validator::make($request->all(), [
+            'orders' => 'required|array|min:1',
+        ], [
+            'orders.required' => 'ไม่มีบิลที่จะอัปโหลด',
+            'orders.array' => 'รูปแบบข้อมูลบิลไม่ถูกต้อง',
+            'orders.min' => 'ไม่มีบิลที่จะอัปโหลด',
         ]);
 
-        $uploadedCount = 0;
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first() ?: 'ข้อมูลไม่ถูกต้อง',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $uploaded = [];
         $errors = [];
 
-        foreach ($validated['orders'] as $orderData) {
+        foreach (array_values((array) $request->input('orders', [])) as $index => $orderData) {
+            $localId = is_array($orderData) ? trim((string) ($orderData['local_id'] ?? '')) : '';
+
+            // เกินจำนวนต่อครั้ง → ไม่ทำรอบนี้ (เครื่องส่งบิลที่ค้างมาใหม่รอบถัดไป ไม่ทำให้ sync ติดทั้งก้อน)
+            if ($index >= self::MAX_UPLOAD_ORDERS) {
+                $errors[] = [
+                    'local_id' => $localId !== '' ? $localId : '#'.($index + 1),
+                    'error' => 'ส่งบิลเกิน '.self::MAX_UPLOAD_ORDERS.' บิลต่อครั้ง บิลนี้จะถูกรับในการ sync รอบถัดไป',
+                ];
+
+                continue;
+            }
+
             try {
-                // ตรวจสอบว่าเคย sync แล้วหรือยัง
-                $existing = \App\Models\Order::where('pos_local_id', $orderData['local_id'])
-                    ->where('pos_terminal_id', $terminal->id)
-                    ->first();
+                $error = $this->storeUploadedSale($terminal, is_array($orderData) ? $orderData : []);
 
-                if ($existing) {
-                    continue; // ข้าม order ที่เคย sync แล้ว
+                if ($error === null) {
+                    $uploaded[] = $localId;
+                } else {
+                    $errors[] = ['local_id' => $localId !== '' ? $localId : '#'.($index + 1), 'error' => $error];
                 }
-
-                // สร้าง order ใหม่
-                $order = \App\Models\Order::create([
-                    'shop_id' => $terminal->shop_id,
-                    'pos_terminal_id' => $terminal->id,
-                    'pos_local_id' => $orderData['local_id'],
-                    'total' => $orderData['total'],
-                    'status' => 'completed',
-                    'created_at' => $orderData['created_at'],
+            } catch (\Throwable $e) {
+                Log::error('POS upload order failed', [
+                    'terminal_id' => $terminal->id,
+                    'local_id' => mb_substr($localId, 0, 64),
+                    'error' => $e->getMessage(),
                 ]);
 
-                // สร้าง order items
-                foreach ($orderData['items'] as $item) {
-                    $order->items()->create([
-                        'product_id' => $item['product_id'] ?? null,
-                        'product_name' => $item['name'],
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $item['price'],
-                        'line_total' => $item['quantity'] * $item['price'],
-                    ]);
-                }
-
-                $uploadedCount++;
-            } catch (\Exception $e) {
                 $errors[] = [
-                    'local_id' => $orderData['local_id'],
-                    'error' => $e->getMessage(),
+                    'local_id' => $localId !== '' ? $localId : '#'.($index + 1),
+                    'error' => 'บันทึกบิลไม่สำเร็จ กรุณาลองอัปโหลดใหม่อีกครั้ง',
                 ];
             }
         }
 
         return response()->json([
             'success' => true,
-            'uploaded' => $uploadedCount,
-            'errors' => $errors,
+            'data' => [
+                'uploaded' => $uploaded,
+                'errors' => $errors,
+            ],
             'synced_at' => now()->toISOString(),
         ]);
     }
@@ -1073,22 +1136,31 @@ class PosTerminalController extends Controller
             'other_sales' => 'nullable|numeric',
         ]);
 
-        // บันทึกรายงาน
-        \App\Models\PosDailyReport::updateOrCreate(
-            [
-                'terminal_id' => $terminal->id,
-                'report_date' => $validated['date'],
-            ],
-            [
-                'total_sales' => $validated['total_sales'],
-                'total_transactions' => $validated['total_orders'],
-                'items_sold' => $validated['total_items'],
-                'total_cash' => $validated['cash_sales'] ?? 0,
-                'total_card' => $validated['card_sales'] ?? 0,
-                'total_qr' => $validated['other_sales'] ?? 0,
-                'synced_at' => now(),
-            ]
-        );
+        try {
+            // บันทึกรายงาน
+            \App\Models\PosDailyReport::updateOrCreate(
+                [
+                    'terminal_id' => $terminal->id,
+                    'report_date' => $validated['date'],
+                ],
+                [
+                    'total_sales' => $validated['total_sales'],
+                    'total_transactions' => $validated['total_orders'],
+                    'items_sold' => $validated['total_items'],
+                    'total_cash' => $validated['cash_sales'] ?? 0,
+                    'total_card' => $validated['card_sales'] ?? 0,
+                    'total_qr' => $validated['other_sales'] ?? 0,
+                    'synced_at' => now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error('POS report sales failed', ['terminal_id' => $terminal->id, 'error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'บันทึกรายงานไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,
@@ -1101,146 +1173,86 @@ class PosTerminalController extends Controller
     // =========================================
 
     /**
-     * Authenticate POS Terminal จาก headers
+     * บันทึกบิลหน้าร้าน 1 บิล — คืนข้อความไทยเมื่อข้อมูลบิลใช้ไม่ได้ (null = สำเร็จ/เคยบันทึกแล้ว)
+     *
+     * @param  array<string, mixed>  $orderData
+     */
+    private function storeUploadedSale(PosTerminal $terminal, array $orderData): ?string
+    {
+        $validator = Validator::make($orderData, [
+            'local_id' => 'required|string|max:64',
+            'total' => 'required|numeric|min:0|max:9999999',
+            'items' => 'required|array|min:1|max:500',
+            'items.*.name' => 'required|string|max:255',
+            'items.*.quantity' => 'required|numeric|min:0|max:99999',
+            'items.*.price' => 'required|numeric|min:0|max:9999999',
+            'items.*.product_id' => 'nullable|integer|min:1',
+            'created_at' => 'required|date',
+            'payment_method' => 'nullable|string|max:30',
+        ]);
+
+        if ($validator->fails()) {
+            return 'ข้อมูลบิลไม่ครบหรือไม่ถูกต้อง (ต้องมีเลขบิล ยอดรวม รายการสินค้า และเวลาขาย)';
+        }
+
+        $data = $validator->validated();
+        $localId = trim((string) $data['local_id']);
+
+        // เคยอัปโหลดแล้ว → ไม่บันทึกซ้ำ
+        if (PosTerminalSale::where('pos_terminal_id', $terminal->id)->where('local_id', $localId)->exists()) {
+            return null;
+        }
+
+        // บิลที่ส่งไรเดอร์ผ่านแอปแล้ว (ลูกค้าจ่ายออนไลน์ มีออเดอร์ในระบบอยู่แล้ว) → ไม่บันทึกเป็นยอดหน้าร้านซ้ำ
+        if (Order::where('pos_terminal_id', $terminal->id)->where('pos_local_id', mb_substr($localId, 0, 50))->exists()) {
+            return null;
+        }
+
+        $items = collect($data['items'])->map(function (array $item) {
+            $qty = round((float) $item['quantity'], 3);
+            $price = round((float) $item['price'], 2);
+
+            return [
+                'product_id' => isset($item['product_id']) ? (int) $item['product_id'] : null,
+                'name' => mb_substr((string) $item['name'], 0, 255),
+                'qty' => $qty,
+                'price' => $price,
+                'line_total' => round($qty * $price, 2),
+            ];
+        })->values()->all();
+
+        try {
+            PosTerminalSale::create([
+                'pos_terminal_id' => $terminal->id,
+                'store_id' => $terminal->shop_id,
+                'local_id' => $localId,
+                'total' => round((float) $data['total'], 2),
+                'items' => $items,
+                'payment_method' => isset($data['payment_method']) ? mb_substr((string) $data['payment_method'], 0, 30) : null,
+                // เครื่องอาจส่งเวลาแบบ UTC (Z) → แปลงเป็นเวลาของระบบก่อนเก็บ
+                'sold_at' => Carbon::parse($data['created_at'])->setTimezone(config('app.timezone')),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // อัปโหลดพร้อมกัน 2 ครั้ง → อีกครั้งบันทึกไปแล้ว
+            return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Authenticate POS Terminal จาก headers (ตรรกะอยู่ที่ PosTerminalAuthenticator — ใช้ร่วมกับ middleware pos.terminal)
      */
     private function authenticateTerminal(Request $request): ?PosTerminal
     {
-        $apiKey = $request->header('X-API-Key');
-        $productKey = $request->header('X-Product-Key');
-
-        if (empty($apiKey) || empty($productKey)) {
-            return null;
-        }
-
-        // หา API Key
-        $posApiKey = PosApiKey::where('key', $apiKey)
-            ->where('is_active', true)
-            ->where('is_blocked', false) // ต้องไม่ถูกบล็อก
-            ->first();
-
-        if (! $posApiKey) {
-            return null;
-        }
-
-        // ตรวจสอบวันหมดอายุ
-        if ($posApiKey->expires_at && $posApiKey->expires_at->isPast()) {
-            return null;
-        }
-
-        // Decode product key เพื่อหา device_id จริง
-        $decodedData = $this->decodeProductKey($productKey);
-        $deviceId = $decodedData ? $decodedData['device_id'] : null;
-
-        // หา Terminal จาก device_id (ถ้า decode ได้) หรือ product_key
-        $terminal = PosTerminal::where(function ($query) use ($productKey, $deviceId) {
-            if ($deviceId) {
-                $query->where('device_id', $deviceId);
-            } else {
-                $query->where('product_key', $productKey);
-            }
-        })
-            ->where('api_key_id', $posApiKey->id)
-            ->where('status', PosTerminal::STATUS_ACTIVE)
-            ->where('is_verified', true)
-            ->first();
-
-        if ($terminal) {
-            $terminal->recordSync($request->ip());
-        }
-
-        return $terminal;
+        return $this->authenticator()->authenticate($request);
     }
 
     /**
-     * Decode Product Key เพื่อดึงข้อมูล device จริง
-     *
-     * Product Key format: TP-POS-XXXX-XXXX-XXXX-XXXX (Base64 encoded + encrypted)
-     * เมื่อ decode แล้วจะได้: device_id, timestamp, checksum
+     * Decode Product Key เพื่อดึงข้อมูล device จริง (ตรรกะอยู่ที่ PosTerminalAuthenticator)
      */
     private function decodeProductKey(string $encryptedKey): ?array
     {
-        try {
-            // ถ้าเป็น format TP-POS-XXXX-XXXX-XXXX-XXXX
-            if (preg_match('/^TP-POS-(.+)$/', $encryptedKey, $matches)) {
-                $encoded = $matches[1];
-                // ลบ dash และ decode
-                $encoded = str_replace('-', '', $encoded);
-            } else {
-                // ถ้าเป็น raw encoded string
-                $encoded = $encryptedKey;
-            }
-
-            // ลอง Base64 decode
-            $decoded = base64_decode($encoded, true);
-
-            if ($decoded === false) {
-                // ถ้า decode ไม่ได้ → ใช้ raw value เป็น device_id
-                return [
-                    'device_id' => hash('sha256', $encryptedKey.$this->getSecretKey()),
-                    'raw_key' => $encryptedKey,
-                    'decoded_method' => 'hash_fallback',
-                ];
-            }
-
-            // ลอง XOR decrypt ด้วย secret key
-            $decrypted = $this->xorDecrypt($decoded, $this->getSecretKey());
-
-            // ลอง parse เป็น JSON
-            $data = json_decode($decrypted, true);
-
-            if ($data && isset($data['device_id'])) {
-                return [
-                    'device_id' => $data['device_id'],
-                    'timestamp' => $data['timestamp'] ?? null,
-                    'checksum' => $data['checksum'] ?? null,
-                    'raw_key' => $encryptedKey,
-                    'decoded_method' => 'json',
-                ];
-            }
-
-            // ถ้าไม่ใช่ JSON → ใช้ decrypted string เป็น device_id
-            if (! empty($decrypted) && strlen($decrypted) > 5) {
-                return [
-                    'device_id' => $decrypted,
-                    'raw_key' => $encryptedKey,
-                    'decoded_method' => 'raw',
-                ];
-            }
-
-            // Fallback: hash the key
-            return [
-                'device_id' => hash('sha256', $encryptedKey.$this->getSecretKey()),
-                'raw_key' => $encryptedKey,
-                'decoded_method' => 'hash_fallback',
-            ];
-
-        } catch (\Exception $e) {
-            Log::warning('Failed to decode product key', [
-                'key' => substr($encryptedKey, 0, 20).'...',
-                'error' => $e->getMessage(),
-            ]);
-
-            // Fallback: hash the key
-            return [
-                'device_id' => hash('sha256', $encryptedKey.$this->getSecretKey()),
-                'raw_key' => $encryptedKey,
-                'decoded_method' => 'error_fallback',
-            ];
-        }
-    }
-
-    /**
-     * XOR decrypt/encrypt
-     */
-    private function xorDecrypt(string $data, string $key): string
-    {
-        $result = '';
-        $keyLength = strlen($key);
-
-        for ($i = 0; $i < strlen($data); $i++) {
-            $result .= chr(ord($data[$i]) ^ ord($key[$i % $keyLength]));
-        }
-
-        return $result;
+        return $this->authenticator()->decodeProductKey($encryptedKey);
     }
 }
