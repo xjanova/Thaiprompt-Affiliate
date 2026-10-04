@@ -567,6 +567,27 @@ export default function HomeScreen() {
               <BannerSlider placement="home" refreshKey={bannerKey} height={170} />
             </View>
 
+            {/* ---------- ไรเดอร์ใกล้ฉัน + คนโปรด (ไรเดอร์รอบ 2) ---------- */}
+            {isAuthenticated && isFeatureEnabled('RIDER_ENABLED') && (
+              <Card3D
+                onPress={() => go('/riders/nearby', true)}
+                padding={spacing.lg}
+                style={styles.section}
+                accessibilityLabel="ดูไรเดอร์ใกล้ฉันและไรเดอร์คนโปรด"
+              >
+                <View style={styles.nearbyPrompt}>
+                  <BrandArt name="scooter" size={68} />
+                  <View style={styles.flex}>
+                    <Text style={[typography.h3, { color: colors.textStrong }]}>ไรเดอร์ใกล้ฉัน</Text>
+                    <Text style={[typography.bodySm, { color: colors.textMuted }]}>
+                      ให้หัวใจไรเดอร์ที่ประทับใจ ครบ 11 ดวง ล็อกเรียกคนเดิมมาส่งได้
+                    </Text>
+                  </View>
+                  <Icon name="caret-right" size={18} color={colors.goldDeep} weight="bold" />
+                </View>
+              </Card3D>
+            )}
+
             {/* ---------- เปิดอยู่ใกล้คุณ ---------- */}
             {taladsodOn && nearby.length > 0 && (
               <>

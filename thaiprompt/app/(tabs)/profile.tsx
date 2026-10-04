@@ -525,6 +525,12 @@ export default function ProfileScreen() {
               onPress={() => router.push('/edit-profile')}
             />
             <MenuRow
+              icon="camera"
+              title="รูปโปรไฟล์ถ่ายสด"
+              subtitle="รูปจริงที่ไรเดอร์และร้านเห็น (มีลายน้ำ)"
+              onPress={() => router.push('/profile-photo' as never)}
+            />
+            <MenuRow
               icon="key"
               title="เปลี่ยนรหัสผ่าน"
               subtitle="ตั้งรหัสใหม่อย่างน้อย 8 ตัวอักษร"
@@ -553,6 +559,14 @@ export default function ProfileScreen() {
               subtitle="ปักหมุดให้ไรเดอร์ส่งถึงหน้าบ้าน"
               onPress={() => router.push('/addresses' as never)}
             />
+            {isFeatureEnabled('RIDER_ENABLED') && (
+              <MenuRow
+                icon="heart"
+                title="ไรเดอร์ใกล้ฉัน และคนโปรด"
+                subtitle="ให้หัวใจครบ 11 ดวง ล็อกเรียกคนเดิมได้"
+                onPress={() => router.push('/riders/nearby' as never)}
+              />
+            )}
             {isFeatureEnabled('RIDER_ENABLED') && (
               <MenuRow
                 icon="moped"

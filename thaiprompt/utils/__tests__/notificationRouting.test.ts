@@ -86,3 +86,54 @@ describe('routeForNotification — ปลอดภัย', () => {
     expect(routeForNotification({ type: 'unknown', url: '//evil.example' })).toBe('/notifications');
   });
 });
+
+describe('routeForNotification — ไรเดอร์รอบ 2 (ส่งมอบของ / ล็อกเรียก)', () => {
+  it('ร้านได้ delivery_update ของออเดอร์ร้านค้า → หน้าออเดอร์ของร้าน (ไม่ใช่หน้าผู้ซื้อที่ขึ้น "ไม่พบคำสั่งซื้อนี้")', () => {
+    expect(
+      routeForNotification({ type: 'delivery_update', role: 'seller', event: 'picked_up', source_type: 'Order', source_id: 15 })
+    ).toBe('/merchant/order/15');
+    expect(
+      routeForNotification({ type: 'delivery_update', recipient: 'seller', event: 'accepted', source_type: 'FreshMarketOrder', source_id: 9 })
+    ).toBe('/merchant/taladsod/orders?focus=9');
+  });
+
+  it('delivery_update ไม่มี role → หน้าผู้ซื้อเหมือนเดิม (หน้านั้นพาร้านต่อไปหน้าร้านเอง)', () => {
+    expect(routeForNotification({ type: 'delivery_update', event: 'accepted', source_type: 'Order', source_id: 15 })).toBe('/order/15');
+  });
+
+  it('ไรเดอร์ถึงหน้าบ้าน / วางของไว้ให้ → หน้ารับของของผู้ซื้อ', () => {
+    expect(routeForNotification({ type: 'handover_arrived', source: 'shop', order_id: 15 })).toBe('/handover/shop/15');
+    expect(routeForNotification({ type: 'handover_auto_release_scheduled', source: 'fresh-market', order_id: '9' })).toBe(
+      '/handover/fresh-market/9'
+    );
+  });
+
+  it('รับของสำเร็จ → ผู้ซื้อ: หน้าออเดอร์ · ไรเดอร์: หน้างาน · ร้าน: หน้าออเดอร์ของร้าน', () => {
+    expect(routeForNotification({ type: 'handover_completed', role: 'buyer', source: 'shop', order_id: 15, job_id: 7 })).toBe('/order/15');
+    expect(routeForNotification({ type: 'handover_completed', role: 'rider', source: 'shop', order_id: 15, job_id: 7 })).toBe(
+      '/rider-job-detail?id=7'
+    );
+    expect(routeForNotification({ type: 'handover_completed', role: 'seller', source: 'fresh-market', order_id: 9 })).toBe(
+      '/merchant/taladsod/orders?focus=9'
+    );
+    expect(routeForNotification({ type: 'handover_resolved', source: 'fresh-market', order_id: 9 })).toBe('/taladsod/order/9');
+    expect(routeForNotification({ type: 'handover_resolved', job_id: 7 })).toBe('/rider-job-detail?id=7');
+  });
+
+  it('เรื่องร้องเรียนถึงแอดมิน → ไม่พาไปหน้าผู้ซื้อ', () => {
+    expect(routeForNotification({ type: 'handover_disputed', source: 'shop', order_id: 15 })).toBe('/notifications');
+    expect(routeForNotification({ type: 'handover_completed', role: 'admin', source: 'shop', order_id: 15 })).toBe('/notifications');
+  });
+
+  it('งานที่ผู้ซื้อล็อกเรียก → หน้างานนั้นทันที · งานปกติ → รายการงาน', () => {
+    expect(routeForNotification({ type: 'rider_job_offer', job_id: 7, locked: true })).toBe('/rider-job-detail?id=7');
+    expect(routeForNotification({ type: 'rider_job_offer', job_id: 7, locked: '1' })).toBe('/rider-job-detail?id=7');
+    expect(routeForNotification({ type: 'rider_job_offer', job_id: 7 })).toBe('/rider-jobs');
+  });
+
+  it('หน้าใหม่อยู่ใน allowlist (data.url)', () => {
+    expect(routeForNotification({ url: '/riders/nearby' })).toBe('/riders/nearby');
+    expect(routeForNotification({ url: '/profile-photo' })).toBe('/profile-photo');
+    expect(routeForNotification({ url: '/handover/shop/15' })).toBe('/handover/shop/15');
+  });
+});

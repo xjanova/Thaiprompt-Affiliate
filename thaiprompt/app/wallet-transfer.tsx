@@ -37,6 +37,7 @@ import { formatCurrency } from '@/constants';
 import { Button3D, Card3D, GlassIconButton, Icon, IconButton, Screen, type IconName } from '@/components/ui';
 import { ActionBar, InfoRow, MoneyInput, MoneyText, NavyCard } from '@/components/wallet/WalletKit';
 import { useTheme, DARK_THEME, radii, shadowStyle, spacing, typography } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 // ค่าธรรมเนียมโอน (ตัวอย่าง - ควรดึงจาก API)
 const TRANSFER_FEE_RATE = 0.01; // 1%
@@ -56,6 +57,8 @@ interface RecipientInfo {
  * PLAY-18: โอนเงินระหว่างผู้ใช้ (P2P) ปิดใน build สโตร์ → deep link เข้ามาก็กลับไปหน้ากระเป๋าเงิน
  */
 export default function WalletTransferScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('wallet-transfer');
   if (!isFeatureEnabled('P2P_TRANSFER_ENABLED')) {
     return <Redirect href={'/(tabs)/wallet' as never} />;
   }

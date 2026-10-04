@@ -25,6 +25,7 @@ import {
   type Cart,
   type CartItem,
   type CartQuery,
+  type CartRiderQuote,
   type CartStoreGroup,
 } from '@/services/api/shopApi';
 import { num, type ApiResult } from '@/services/api/client';
@@ -81,6 +82,33 @@ const normalizeItem = (raw: any): CartItem => ({
   store: raw?.store && typeof raw.store === 'object' ? { id: num(raw.store.id), name: String(raw.store.name ?? '') } : null,
 });
 
+const nullableNum = (value: unknown): number | null =>
+  value === null || value === undefined || value === '' ? null : num(value);
+
+/**
+ * ค่าส่งไรเดอร์ของร้าน — key ใหม่ (ไรเดอร์รอบ 2) ใช้ร่วมกับตลาดสดได้
+ * route_polyline รับเฉพาะ string ความยาวพอสมควร (กันข้อมูลแปลกปลอมใหญ่เกิน)
+ */
+export const normalizeRiderQuote = (r: any): CartRiderQuote => ({
+  available: r?.available === true,
+  reason: typeof r?.reason === 'string' ? r.reason : null,
+  fee: nullableNum(r?.fee),
+  distance_km: nullableNum(r?.distance_km),
+  estimated_minutes: nullableNum(r?.estimated_minutes),
+  fee_full: nullableNum(r?.fee_full),
+  distance_source: typeof r?.distance_source === 'string' && r.distance_source ? r.distance_source : null,
+  route_polyline:
+    typeof r?.route_polyline === 'string' && r.route_polyline.length > 0 && r.route_polyline.length <= 200_000
+      ? r.route_polyline
+      : null,
+  rider_earnings: nullableNum(r?.rider_earnings),
+  shop_bonus: nullableNum(r?.shop_bonus),
+  shop_subsidy: nullableNum(r?.shop_subsidy),
+  rider_total: nullableNum(r?.rider_total),
+  surcharge: nullableNum(r?.surcharge),
+  free_delivery: r?.free_delivery === true || r?.free_delivery === 1,
+});
+
 const normalizeGroup = (raw: any): CartStoreGroup => ({
   key: String(raw?.key ?? raw?.store_id ?? 'store'),
   store_id: raw?.store_id === null || raw?.store_id === undefined ? null : num(raw.store_id),
@@ -92,14 +120,7 @@ const normalizeGroup = (raw: any): CartStoreGroup => ({
   parcel_fee: num(raw?.parcel_fee),
   discount: num(raw?.discount),
   total: num(raw?.total),
-  rider: {
-    available: raw?.rider?.available === true,
-    reason: typeof raw?.rider?.reason === 'string' ? raw.rider.reason : null,
-    fee: raw?.rider?.fee === null || raw?.rider?.fee === undefined ? null : num(raw.rider.fee),
-    distance_km: raw?.rider?.distance_km === null || raw?.rider?.distance_km === undefined ? null : num(raw.rider.distance_km),
-    estimated_minutes:
-      raw?.rider?.estimated_minutes === null || raw?.rider?.estimated_minutes === undefined ? null : num(raw.rider.estimated_minutes),
-  },
+  rider: normalizeRiderQuote(raw?.rider),
   cod: {
     available: raw?.cod?.available === true,
     reason: typeof raw?.cod?.reason === 'string' ? raw.cod.reason : null,

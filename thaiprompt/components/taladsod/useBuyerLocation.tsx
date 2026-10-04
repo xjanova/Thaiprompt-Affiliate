@@ -21,7 +21,7 @@ import * as Location from 'expo-location';
 import { ConsentSheet, resultHaptic, type ConsentReason, type IconName } from '@/components/ui';
 import { getCurrentCoords, isLocationServiceEnabled, type Coords } from '@/services/location';
 
-export type BuyerLocationReason = 'nearby' | 'delivery' | 'share';
+export type BuyerLocationReason = 'nearby' | 'delivery' | 'share' | 'riders';
 
 interface SheetCopy {
   icon: IconName;
@@ -66,6 +66,17 @@ const COPY: Record<BuyerLocationReason, SheetCopy> = {
     ],
     acceptLabel: 'ยอมรับและแชร์ตำแหน่ง',
     footnote: 'ปิดสวิตช์เมื่อไหร่ ระบบลบตำแหน่งที่แชร์ไว้ทันที',
+  },
+  riders: {
+    icon: 'moped',
+    title: 'ดูไรเดอร์ที่อยู่ใกล้คุณ',
+    description: 'ขอใช้ตำแหน่งตอนนี้ เพื่อแสดงไรเดอร์ที่ออนไลน์อยู่รอบตัวคุณ และไรเดอร์คนโปรดที่อยู่ใกล้',
+    reasons: [
+      { icon: 'users-three', text: 'แสดงไรเดอร์ในรัศมีไม่กี่กิโลเมตร ตำแหน่งไรเดอร์เป็นแบบคร่าวๆ เพื่อความเป็นส่วนตัว' },
+      { icon: 'lock', text: 'ใช้เฉพาะตอนเปิดหน้านี้ ไม่ติดตามเบื้องหลัง และไรเดอร์ไม่เห็นตำแหน่งของคุณ' },
+      { icon: 'smiley', text: 'ไม่อนุญาตก็ได้ ระบบจะใช้ที่อยู่หลักที่ปักหมุดไว้แทน' },
+    ],
+    acceptLabel: 'อนุญาตใช้ตำแหน่ง',
   },
 };
 

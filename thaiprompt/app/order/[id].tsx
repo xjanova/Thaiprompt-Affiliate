@@ -74,6 +74,9 @@ import {
 } from '@/components/shop';
 import { OrderChatPanel } from '@/components/shop/OrderChatPanel';
 import { RiderTracker } from '@/components/taladsod';
+import { HandoverEntryCard } from '@/components/handover/HandoverEntryCard';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
+import { getSellerOrder } from '@/services/api/merchantApi';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Tab = 'detail' | 'chat';
@@ -181,9 +184,13 @@ export default function OrderDetailScreen() {
   const orderId = /^\d+$/.test(String(id || '')) ? Number(id) : 0;
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // ที่อยู่/เบอร์โทร/QR รับของ — กันแคปหน้าจอ
+  useSensitiveScreen('order');
 
   const [activeTab, setActiveTab] = useState<Tab>(tab === 'chat' ? 'chat' : 'detail');
   const [order, setOrder] = useState<ShopOrder | null>(null);
+  /** เจ้าของร้านเปิดหน้านี้ (เช่น กด push สถานะไรเดอร์) → กำลังพาไปหน้าออเดอร์ของร้าน */
+  const [redirecting, setRedirecting] = useState(false);
   const [tracking, setTracking] = useState<ShopOrderTracking | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -246,6 +253,17 @@ export default function OrderDetailScreen() {
         applyOrder(orderRes.data);
         setError(null);
       } else if (!orderRes.success && mode !== 'silent') {
+        // ไม่ใช่ออเดอร์ที่ฉันซื้อ — อาจเป็นออเดอร์ของร้านฉัน (push สถานะไรเดอร์ส่งหาทั้งผู้ซื้อและร้าน)
+        // → ถ้าเปิดฝั่งร้านได้ พาไปหน้าออเดอร์ของร้านแทนการขึ้น "ไม่พบคำสั่งซื้อนี้"
+        if (orderRes.status === 404 && mode === 'initial') {
+          const sellerRes = await getSellerOrder(orderId);
+          if (!mountedRef.current) return;
+          if (sellerRes.success) {
+            setRedirecting(true);
+            router.replace(`/merchant/order/${orderId}` as never);
+            return;
+          }
+        }
         setError({ message: orderRes.message, notFound: orderRes.status === 404 });
       }
       if (trackRes.success) setTracking(trackRes.data);
@@ -450,7 +468,7 @@ export default function OrderDetailScreen() {
     );
   }
 
-  if (loading && !order) {
+  if ((loading && !order) || redirecting) {
     return (
       <Screen title="คำสั่งซื้อ" scroll={false}>
         <ActivityIndicator size="large" color={colors.gold} style={styles.loader} />
@@ -552,6 +570,18 @@ export default function OrderDetailScreen() {
       )}
       {codWaiting && (
         <NoticeBanner tone="info" icon="money" text="รอยืนยันยอดเก็บปลายทางจากไรเดอร์" style={styles.block} />
+      )}
+
+      {/* ---------- รับของ: สแกน QR ใส่กันกับไรเดอร์ / ให้หัวใจหลังจบงาน ---------- */}
+      {isRider && !!rider?.job_id && (
+        <HandoverEntryCard
+          source="shop"
+          orderId={order.id}
+          orderNumber={order.order_number}
+          riderJobStatus={rider.status}
+          orderCompleted={order.status === 'completed'}
+          style={styles.block}
+        />
       )}
 
       {/* ---------- ไรเดอร์ ---------- */}

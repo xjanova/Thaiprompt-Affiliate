@@ -657,26 +657,65 @@ export interface FmQuote {
   code: string | null;
   message: string | null;
   distance_km: number | null;
+  /** ค่าส่งเต็ม */
   total_fee: number;
   estimated_duration_minutes: number | null;
   max_distance_km: number | null;
   subtotal: number;
   grand_total: number;
   items_count: number;
+  // ---------- ไรเดอร์รอบ 2 (server เก่าไม่ส่ง = ค่าว่าง) ----------
+  /** ค่าส่งที่ผู้ซื้อจ่ายจริง (ร้านออกให้ = 0) — ไม่มี = ใช้ total_fee */
+  buyer_fee: number;
+  /** valhalla | google = ตามถนนจริง · haversine = เส้นตรง × ตัวคูณ */
+  distance_source: string | null;
+  /** เส้นทาง (encoded polyline ความละเอียด 6) */
+  route_polyline: string | null;
+  rider_earnings: number | null;
+  shop_bonus: number | null;
+  shop_subsidy: number | null;
+  rider_total: number | null;
+  surcharge: number | null;
+  free_delivery: boolean;
+  /** เก็บเงินปลายทางได้ไหมเมื่อส่งด้วยไรเดอร์ (null = server ไม่บอก) */
+  cod: { available: boolean; reason: string | null } | null;
 }
 
-const normalizeQuote = (raw: any): FmQuote => ({
-  available: raw?.available === true,
-  code: str(raw?.code),
-  message: str(raw?.message),
-  distance_km: nullableNum(raw?.distance_km),
-  total_fee: num(raw?.total_fee),
-  estimated_duration_minutes: nullableNum(raw?.estimated_duration_minutes),
-  max_distance_km: nullableNum(raw?.max_distance_km),
-  subtotal: num(raw?.subtotal),
-  grand_total: num(raw?.grand_total),
-  items_count: num(raw?.items_count),
-});
+const normalizeQuote = (raw: any): FmQuote => {
+  // key ใหม่อาจอยู่ชั้นบนสุด หรือในก้อน rider/delivery (ตามสัญญาร่วมกับตะกร้าร้านค้า)
+  const r = raw?.rider && typeof raw.rider === 'object' ? raw.rider : raw?.delivery && typeof raw.delivery === 'object' ? raw.delivery : raw;
+  const pick = (key: string): unknown => (r?.[key] !== undefined ? r[key] : raw?.[key]);
+  const totalFee = num(raw?.total_fee, num(pick('fee_full'), num(pick('fee'))));
+  const buyerFee = nullableNum(pick('buyer_fee')) ?? nullableNum(r !== raw ? r?.fee : undefined);
+  const free = bool(pick('free_delivery'));
+  const polyline = pick('route_polyline');
+  const codRaw = raw?.cod ?? r?.cod;
+  return {
+    available: raw?.available === true,
+    code: str(raw?.code),
+    message: str(raw?.message),
+    distance_km: nullableNum(raw?.distance_km ?? r?.distance_km),
+    total_fee: totalFee,
+    estimated_duration_minutes: nullableNum(raw?.estimated_duration_minutes ?? r?.estimated_minutes),
+    max_distance_km: nullableNum(raw?.max_distance_km),
+    subtotal: num(raw?.subtotal),
+    grand_total: num(raw?.grand_total),
+    items_count: num(raw?.items_count),
+    buyer_fee: free ? 0 : buyerFee ?? totalFee,
+    distance_source: str(pick('distance_source')),
+    route_polyline: typeof polyline === 'string' && polyline.length > 0 && polyline.length <= 200_000 ? polyline : null,
+    rider_earnings: nullableNum(pick('rider_earnings')),
+    shop_bonus: nullableNum(pick('shop_bonus')),
+    shop_subsidy: nullableNum(pick('shop_subsidy')),
+    rider_total: nullableNum(pick('rider_total')),
+    surcharge: nullableNum(pick('surcharge')),
+    free_delivery: free,
+    cod:
+      codRaw && typeof codRaw === 'object'
+        ? { available: bool(codRaw.available), reason: str(codRaw.reason) }
+        : null,
+  };
+};
 
 // =====================================================
 // ชนิดข้อมูล: ออเดอร์
@@ -1309,6 +1348,8 @@ export interface FmCheckoutInput {
   buyer_latitude?: number;
   buyer_longitude?: number;
   delivery_notes?: string;
+  /** ล็อกเรียกไรเดอร์คนโปรด (เฉพาะไรเดอร์ส่ง) — ไม่มีสิทธิ์ = 422 RIDER_LOCK_NOT_ALLOWED */
+  preferred_rider_id?: number;
 }
 
 /**
@@ -1325,6 +1366,7 @@ export const placeFmOrderFromCart = async (input: FmCheckoutInput): Promise<ApiR
     body.delivery_address = (input.delivery_address || '').trim().slice(0, 500);
     body.buyer_latitude = input.buyer_latitude;
     body.buyer_longitude = input.buyer_longitude;
+    if (input.preferred_rider_id && input.preferred_rider_id > 0) body.preferred_rider_id = input.preferred_rider_id;
   }
   const notes = (input.delivery_notes || '').trim();
   if (notes) body.delivery_notes = notes.slice(0, 500);

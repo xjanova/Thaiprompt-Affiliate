@@ -21,6 +21,7 @@ import { Card3D, Chip, EmptyState, Pill, PriceText, Screen, StatTile, type IconN
 import { FormSheet } from '@/components/shop';
 import { IconTile, type TileTone } from '@/components/wallet/WalletKit';
 import { useTheme, radii, shadowStyle, spacing, typography, type Tone } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 interface Transaction {
   id: number;
@@ -185,6 +186,8 @@ const TransactionRow: React.FC<{ tx: Transaction; meta: RowMeta; onPress: () => 
 };
 
 export default function WalletHistoryScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('wallet-history');
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 

@@ -44,6 +44,7 @@ import {
   typography,
   type AppTheme,
 } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 // =====================================================
 // ตัวเลือกธีม — การ์ดตัวอย่างหน้าจอ (ใช้สีจริงของแต่ละโหมด ไม่ขึ้นกับโหมดปัจจุบัน)
@@ -238,6 +239,8 @@ const deleteStyles = StyleSheet.create({
 type DeleteStep = 'closed' | 'warning' | 'confirm';
 
 export default function SettingsScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('settings');
   const themeMode = useAppStore((s) => s.themeMode);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const { user, isAuthenticated, logout, clearSession } = useAuthStore();

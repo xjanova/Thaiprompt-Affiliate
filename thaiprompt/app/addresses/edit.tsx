@@ -21,6 +21,7 @@ import { createAddress, getAddresses, updateAddress, type AddressInput } from '@
 import { Button3D, Card3D, ConsentSheet, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
 import { Field, IconTile, NoticeBanner, openHttpsLink } from '@/components/shop';
 import { useTheme, spacing, typography } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 type FormKey =
   | 'recipient_name'
@@ -65,6 +66,8 @@ const validate = (form: FormState): Partial<Record<FormKey, string>> => {
 };
 
 export default function AddressEditScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('address-edit');
   const { colors } = useTheme();
   const navigation = useNavigation();
   const params = useLocalSearchParams<{ id?: string }>();

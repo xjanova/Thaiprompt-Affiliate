@@ -9,10 +9,31 @@
  */
 
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
+import * as Application from 'expo-application';
 import { apiClient, clearAuthToken } from '@/services/api';
 import { APP_CONFIG } from '@/constants';
+import { APP_INFO } from '@/config/appConfig';
 
 export { apiClient };
+
+// =====================================================
+// X-App-Build — เลข build ของแอป (Android versionCode / iOS buildNumber)
+// server ใช้ตัดสินว่าแอปรุ่นนี้รองรับฟีเจอร์ใหม่หรือยัง (เช่น บังคับรูปโปรไฟล์เฉพาะ build ≥ 43)
+// ใช้เลขจาก binary จริงก่อน (nativeBuildVersion) → ไม่มี = เลขในโค้ด
+// =====================================================
+
+/** เลข build ของแอปนี้ (จำนวนเต็มบวก) */
+export const APP_BUILD_NUMBER: number = (() => {
+  try {
+    const native = String(Application.nativeBuildVersion ?? '').trim();
+    if (/^\d{1,9}$/.test(native) && Number(native) > 0) return Number(native);
+  } catch {
+    // อ่านจาก native ไม่ได้ → ใช้เลขในโค้ด
+  }
+  return APP_INFO.BUILD_NUMBER;
+})();
+
+apiClient.defaults.headers.common['X-App-Build'] = String(APP_BUILD_NUMBER);
 
 // =====================================================
 // ชนิดข้อมูลผลลัพธ์
@@ -179,6 +200,24 @@ export const THAI_ERROR_MESSAGES: Record<string, string> = {
   SELLER_EXISTS: 'คุณเปิดร้านไว้แล้ว',
   ALREADY_RATED: 'คุณให้คะแนนออเดอร์นี้แล้ว',
   NOT_RATEABLE: 'ยังให้คะแนนออเดอร์นี้ไม่ได้',
+
+  // ไรเดอร์รอบ 2 — ล็อกเรียก / หัวใจ / รูปโปรไฟล์
+  RIDER_LOCK_NOT_ALLOWED: 'ยังล็อกเรียกไรเดอร์คนนี้ไม่ได้ ระบบจะจับคู่ไรเดอร์ให้อัตโนมัติแทน',
+  HEART_NOT_ALLOWED: 'ให้หัวใจได้เมื่อได้รับของจากไรเดอร์แล้วเท่านั้น',
+  PROFILE_PHOTO_REQUIRED: 'กรุณาถ่ายรูปโปรไฟล์ก่อนใช้งานส่วนนี้',
+
+  // ส่งมอบของ (สแกน QR ใส่กัน)
+  HANDOVER_NOT_READY: 'ยังไม่ถึงขั้นรับของ รอไรเดอร์มาถึงก่อนนะ',
+  HANDOVER_FINAL: 'การรับของนี้จบไปแล้ว',
+  HANDOVER_TOKEN_INVALID: 'QR นี้ใช้ไม่ได้ สแกน QR บนจอของไรเดอร์ของออเดอร์นี้นะ',
+  HANDOVER_TOKEN_EXPIRED: 'QR หมดอายุแล้ว ให้ไรเดอร์เปิด QR ใหม่แล้วสแกนอีกครั้ง',
+  HANDOVER_CODE_INVALID: 'รหัส 6 หลักไม่ถูกต้อง',
+  HANDOVER_CODE_LOCKED: 'กรอกรหัสผิดหลายครั้ง รอสักครู่แล้วลองใหม่นะ',
+  HANDOVER_REQUIRED: 'งานนี้ต้องสแกน QR กับผู้ซื้อก่อนปิดงาน',
+  LOCATION_REQUIRED: 'เปิดตำแหน่ง (GPS) ก่อนนะ',
+  TOO_FAR_FROM_DROPOFF: 'ยังอยู่ไกลจากจุดส่ง เข้าใกล้จุดส่งอีกนิดนะ',
+  WAIT_NOT_OVER: 'ยังไม่ครบเวลารอ รออีกสักครู่นะ',
+  DISPUTE_NOT_ALLOWED: 'แจ้งปัญหาออเดอร์นี้ไม่ได้แล้ว ติดต่อทีมงานที่หน้าช่วยเหลือนะ',
 };
 
 const STATUS_CODE: Record<number, string> = {
