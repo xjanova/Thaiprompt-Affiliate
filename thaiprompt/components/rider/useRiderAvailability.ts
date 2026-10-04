@@ -15,6 +15,7 @@ import { resultHaptic } from '@/components/ui';
 import { num } from '@/services/api/client';
 import { setRiderAvailability, updateRiderPermissions } from '@/services/api/riderApi';
 import { getCurrentCoords } from '@/services/location';
+import { isProfilePhotoRequired, promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import type { RiderPermissionFlow } from './useRiderPermissionFlow';
 
 export const useRiderAvailability = (flow: RiderPermissionFlow) => {
@@ -51,6 +52,12 @@ export const useRiderAvailability = (flow: RiderPermissionFlow) => {
         }
 
         resultHaptic('error');
+
+        // ยังไม่มีรูปโปรไฟล์ถ่ายสด (แอป build ≥ 43) → พาไปถ่ายรูปแล้วกลับมาเริ่มรับงาน (U8)
+        if (isProfilePhotoRequired(result)) {
+          promptProfilePhoto('rider');
+          return false;
+        }
 
         if (result.code === 'HAS_ACTIVE_JOB') {
           const activeId = num(result.data?.active_job_id, 0);

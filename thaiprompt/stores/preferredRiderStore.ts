@@ -12,13 +12,25 @@
 import { create } from 'zustand';
 import type { PersonCard } from '@/services/api/handoverApi';
 
-const MAX_AGE_MS = 2 * 60 * 60 * 1000;
+/** อายุของการเลือก (2 ชั่วโมง) */
+export const PREFERRED_RIDER_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 export interface PreferredRiderChoice {
   userId: number;
   rider: PersonCard;
   chosenAt: number;
 }
+
+/**
+ * การเลือกนี้ยังใช้ได้กับบัญชีนี้ไหม (ของบัญชีนี้ + ไม่เกิน 2 ชั่วโมง) — ใช้ทุกจุดที่แสดง/ใช้ค่า (FIXES M5)
+ * แยกเป็นฟังก์ชันเพื่อให้ selector ของ zustand / เทสต์ เรียกใช้ได้ตรงๆ
+ */
+export const isPreferredChoiceValid = (
+  choice: PreferredRiderChoice | null | undefined,
+  userId: number | null | undefined,
+  now: number = Date.now()
+): choice is PreferredRiderChoice =>
+  !!choice && !!userId && choice.userId === userId && now - choice.chosenAt <= PREFERRED_RIDER_MAX_AGE_MS;
 
 interface PreferredRiderState {
   choice: PreferredRiderChoice | null;
@@ -35,8 +47,6 @@ export const usePreferredRiderStore = create<PreferredRiderState>((set, get) => 
   clear: () => set({ choice: null }),
   validFor: (userId) => {
     const c = get().choice;
-    if (!c || !userId || c.userId !== userId) return null;
-    if (Date.now() - c.chosenAt > MAX_AGE_MS) return null;
-    return c;
+    return isPreferredChoiceValid(c, userId) ? c : null;
   },
 }));

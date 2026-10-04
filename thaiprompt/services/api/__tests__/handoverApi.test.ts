@@ -10,6 +10,7 @@ import {
   isHandoverSuccess,
   normalizeBuyerHandoverData,
   normalizePersonCard,
+  normalizeRiderHandoverData,
   sanitizeScannedToken,
 } from '../handoverApi';
 import { heartsToLock } from '../riderSocialApi';
@@ -118,5 +119,41 @@ describe('heartsToLock', () => {
     expect(heartsToLock(11, 11)).toBe(0);
     expect(heartsToLock(14, 11)).toBe(0);
     expect(heartsToLock(null, 11)).toBe(11);
+  });
+});
+
+describe('สัญญารอบแก้ไข §A2–§A4', () => {
+  it('server_now → clock_offset_ms (หักครึ่งเวลาเดินทางไป-กลับ) · ไม่มี server_now = null', () => {
+    const serverMs = Date.parse('2026-10-04T12:00:00.000Z');
+    const d = normalizeBuyerHandoverData(
+      { ...API, server_now: '2026-10-04T12:00:00.000Z' },
+      { sentAt: serverMs - 61_000, receivedAt: serverMs - 59_000 }
+    );
+    expect(d.server_now).toBe('2026-10-04T12:00:00.000Z');
+    expect(d.clock_offset_ms).toBe(60_000);
+    expect(normalizeBuyerHandoverData(API).clock_offset_ms).toBeNull();
+  });
+
+  it('ผู้ซื้อ: can_confirm_received', () => {
+    expect(normalizeBuyerHandoverData(API).handover.can_confirm_received).toBe(false);
+    const d = normalizeBuyerHandoverData({
+      ...API,
+      handover: { ...API.handover, status: 'fallback_pending_release', can_confirm_received: true },
+    });
+    expect(d.handover.can_confirm_received).toBe(true);
+  });
+
+  it('ไรเดอร์: รหัส 6 หลักของตัวเอง + รูปลูกค้าผ่าน allowlist เดียวกับฝั่งผู้ซื้อ', () => {
+    const d = normalizeRiderHandoverData({
+      handover: { required: true, status: 'waiting', code: '039217', can_waited_photo: '1', geofence_m: 150, wait_seconds: 180 },
+      buyer: { id: 5, display_name: 'นิด ส.', photo_url: 'https://evil.example/face.jpg' },
+      server_now: '2026-10-04T12:00:00+07:00',
+    });
+    expect(d.handover.code).toBe('039217');
+    expect(d.handover.can_waited_photo).toBe(true);
+    expect(d.buyer?.photo_url).toBeNull();
+    expect(d.server_now).toBe('2026-10-04T12:00:00+07:00');
+    expect(typeof d.clock_offset_ms).toBe('number');
+    expect(normalizeRiderHandoverData({ handover: { code: '12ab56' } }).handover.code).toBeNull();
   });
 });

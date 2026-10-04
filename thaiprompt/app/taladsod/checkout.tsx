@@ -74,7 +74,8 @@ import {
 } from '@/components/checkout/RiderDeliveryPanel';
 import { getFavoriteRiders, DEFAULT_LOCK_MIN_HEARTS } from '@/services/api/riderSocialApi';
 import type { PersonCard } from '@/services/api/handoverApi';
-import { usePreferredRiderStore } from '@/stores/preferredRiderStore';
+import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
+import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Pin = { latitude: number; longitude: number; source: 'gps' | 'saved' | 'map' };
@@ -263,7 +264,8 @@ export default function TaladsodCheckoutScreen() {
   // กลับจากหน้าไรเดอร์ใกล้ฉัน (กดล็อกเรียกคนใหม่) → อัปเดตตัวเลือก
   const preferredChoice = usePreferredRiderStore((s) => s.choice);
   useEffect(() => {
-    if (!preferredChoice || !userId || preferredChoice.userId !== userId) return;
+    // ของบัญชีนี้ + ไม่เกิน 2 ชั่วโมง (เกณฑ์เดียวกับ validFor — M5)
+    if (!isPreferredChoiceValid(preferredChoice, userId)) return;
     if (lockable.some((r) => r.id === preferredChoice.rider.id)) {
       setPreferredRiderId(preferredChoice.rider.id);
     } else if (preferredChoice.rider.can_lock && favoritesLoadedRef.current) {
@@ -395,7 +397,8 @@ export default function TaladsodCheckoutScreen() {
       case 'INSUFFICIENT_BALANCE':
         Alert.alert('ยอดในกระเป๋าไม่พอ', message, [
           { text: 'ไว้ก่อน', style: 'cancel' },
-          ...(methods.includes('cod') ? [{ text: 'จ่ายปลายทางแทน', onPress: () => setPayment('cod') }] : []),
+          // ส่งด้วยไรเดอร์ต้องจ่ายก่อน → ไม่เสนอทางเลือกจ่ายปลายทางที่ใช้ไม่ได้ (U9)
+          ...(methods.includes('cod') && !codBlockedReason ? [{ text: 'จ่ายปลายทางแทน', onPress: () => setPayment('cod') }] : []),
           { text: 'เติมเงิน', onPress: () => router.push('/wallet-topup' as never) },
         ]);
         return;
@@ -410,10 +413,7 @@ export default function TaladsodCheckoutScreen() {
         Alert.alert('ล็อกเรียกไรเดอร์คนนี้ไม่ได้', `${message}\nเปลี่ยนเป็นจับคู่อัตโนมัติให้แล้ว กดสั่งอีกครั้งได้เลย`);
         return;
       case 'PROFILE_PHOTO_REQUIRED':
-        Alert.alert('ถ่ายรูปโปรไฟล์ก่อนนะ', 'ก่อนสั่งครั้งแรก ทุกบัญชีต้องมีรูปโปรไฟล์ถ่ายสดจากกล้อง ไรเดอร์จะได้รู้ว่าส่งของถึงมือใคร', [
-          { text: 'ไว้ก่อน', style: 'cancel' },
-          { text: 'ถ่ายรูปเลย', onPress: () => router.push('/profile-photo?from=checkout' as never) },
-        ]);
+        promptProfilePhoto('checkout');
         return;
       case 'WALLET_INACTIVE':
       case 'PAYMENT_METHOD_DISABLED':

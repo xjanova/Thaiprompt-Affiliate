@@ -16,6 +16,7 @@ import { Button3D, Card3D, Icon, Pill, PriceText, formatBaht, type IconName } fr
 import { useTheme, radii, spacing, typography } from '@/theme';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import type { RiderJobSummary } from '@/services/api/riderApi';
+import { personPhotoUri } from '@/services/api/handoverApi';
 import {
   distanceSourceLabel,
   formatKm,
@@ -51,7 +52,8 @@ const LockedBanner: React.FC<{ job: RiderJobSummary }> = ({ job }) => {
       accessible
       accessibilityLabel={`${name} ล็อกเรียกคุณโดยตรง${hearts > 0 ? ` ให้หัวใจคุณ ${hearts} ดวง` : ''}`}
     >
-      <PersonAvatar uri={job.buyer?.photo_url ?? null} name={name} size={44} ring="none" />
+      {/* รูปลูกค้าผ่าน allowlist เดียวกับฝั่งผู้ซื้อ (รูปลายน้ำจากเว็บเราเท่านั้น — L5) */}
+      <PersonAvatar uri={personPhotoUri(job.buyer?.photo_url)} name={name} size={44} ring="none" />
       <View style={styles.flex}>
         <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
           {name}ล็อกเรียกคุณโดยตรง

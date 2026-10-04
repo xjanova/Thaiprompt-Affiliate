@@ -76,7 +76,8 @@ import {
 import { getFavoriteRiders, DEFAULT_LOCK_MIN_HEARTS } from '@/services/api/riderSocialApi';
 import type { PersonCard } from '@/services/api/handoverApi';
 import type { CartRiderQuote } from '@/services/api/shopApi';
-import { usePreferredRiderStore } from '@/stores/preferredRiderStore';
+import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
+import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { useTheme, spacing, typography } from '@/theme';
 
 type Step = 'form' | 'payment' | 'done';
@@ -381,7 +382,8 @@ export default function CheckoutScreen() {
   // กลับจากหน้าไรเดอร์ใกล้ฉัน (กดล็อกเรียกคนใหม่) → อัปเดตตัวเลือก
   const preferredChoice = usePreferredRiderStore((s) => s.choice);
   useEffect(() => {
-    if (!preferredChoice || !userId || preferredChoice.userId !== userId) return;
+    // ของบัญชีนี้ + ไม่เกิน 2 ชั่วโมง (เกณฑ์เดียวกับ validFor — M5)
+    if (!isPreferredChoiceValid(preferredChoice, userId)) return;
     if (lockable.some((r) => r.id === preferredChoice.rider.id)) {
       setPreferredRiderId(preferredChoice.rider.id);
     } else if (preferredChoice.rider.can_lock && favoritesLoadedRef.current) {
@@ -505,10 +507,7 @@ export default function CheckoutScreen() {
         );
         return;
       case 'PROFILE_PHOTO_REQUIRED':
-        Alert.alert('ถ่ายรูปโปรไฟล์ก่อนนะ', 'ก่อนสั่งซื้อครั้งแรก ทุกบัญชีต้องมีรูปโปรไฟล์ถ่ายสดจากกล้อง ไรเดอร์จะได้รู้ว่าส่งของถึงมือใคร', [
-          { text: 'ไว้ก่อน', style: 'cancel' },
-          { text: 'ถ่ายรูปเลย', onPress: () => router.push('/profile-photo?from=checkout' as never) },
-        ]);
+        promptProfilePhoto('checkout');
         return;
       case 'COD_NOT_AVAILABLE':
         if (payment === 'cod') setPayment('wallet');
@@ -1141,15 +1140,22 @@ export default function CheckoutScreen() {
           disabledReason="พร้อมเพย์ปิดใช้งานชั่วคราว"
           onPress={() => setPayment('promptpay')}
         />
-        <OptionCard
-          icon="money"
-          title="เก็บเงินปลายทาง"
-          subtitle="จ่ายเงินสดกับไรเดอร์ตอนรับของ"
-          selected={payment === 'cod'}
-          disabled={!codAvailable}
-          disabledReason={delivery !== 'rider' ? 'ใช้ได้เมื่อเลือกส่งด้วยไรเดอร์' : riderInfo.codReason || 'ออเดอร์นี้เก็บเงินปลายทางไม่ได้'}
-          onPress={() => setPayment('cod')}
-        />
+        {/*
+          เก็บเงินปลายทาง (U9): แสดงเฉพาะเมื่อ server เปิดให้ตะกร้านี้เก็บปลายทางได้จริง (summary.cod_available)
+          ส่งด้วยไรเดอร์ต้องจ่ายก่อน (rider.allow_cod = false) → ซ่อนตัวเลือกนี้ ไม่โชว์ข้อความชวนเข้าใจผิด
+          ("ใช้ได้เมื่อเลือกส่งด้วยไรเดอร์" ไม่จริงแล้ว) — EscrowNotice อธิบายเรื่องเงินพักไว้แทน
+        */}
+        {!!quote.summary.cod_available && (
+          <OptionCard
+            icon="money"
+            title="เก็บเงินปลายทาง"
+            subtitle="จ่ายเงินสดกับไรเดอร์ตอนรับของ"
+            selected={payment === 'cod'}
+            disabled={!codAvailable}
+            disabledReason={delivery !== 'rider' ? 'ใช้ได้เมื่อเลือกส่งด้วยไรเดอร์' : riderInfo.codReason || 'ออเดอร์นี้เก็บเงินปลายทางไม่ได้'}
+            onPress={() => setPayment('cod')}
+          />
+        )}
 
         {/* ---------- 4 คูปอง ---------- */}
         <SectionHeader title="โค้ดส่วนลด" icon={<StepBadge n={4} />} style={styles.section} />

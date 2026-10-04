@@ -19,6 +19,11 @@
  *   - ticket                                  → /support
  *
  * ไรเดอร์รอบ 2 (2026-10-04) — ผู้รับบอกด้วย data.role (หรือ recipient / audience) = buyer | rider | seller
+ *   push ส่งมอบของ (handover_*) และสถานะไรเดอร์ (delivery_update) ตัดสินตามลำดับ (FIXES §A5 / L2):
+ *     1) role ของผู้รับ  — rider → หน้างาน · seller → หน้าออเดอร์ของร้าน · buyer → หน้ารับของ/หน้าออเดอร์
+ *        admin / บทบาทอื่น → ไม่พาไปหน้าของผู้ซื้อ (ใช้ data.url ถ้าปลอดภัย)
+ *     2) data.screen — rider-job-detail · merchant-order · order · order-handover
+ *     3) เดาจากข้อมูลแบบเดิม (payload รุ่นเก่าไม่มี role / screen)
  *   - rider_job_offer {job_id, locked:true}   → /rider-job-detail?id= (ไรเดอร์ที่ผู้ซื้อล็อกเรียก ได้สิทธิ์รับก่อน)
  *   - delivery_update + role=seller           → หน้าออเดอร์ของร้าน (/merchant/order/{id} · ตลาดสด /merchant/taladsod/orders?focus=)
  *       แก้บั๊ก: เดิมพาร้านไปหน้าผู้ซื้อ → "ไม่พบคำสั่งซื้อนี้" · payload ไม่มี role → หน้าผู้ซื้อ ซึ่งพาร้านต่อไปหน้าร้านเอง
@@ -65,6 +70,128 @@ const orderPathFor = (source: OrderSource | null, orderId: number | null, recipi
 /** เปิด/ปิดแบบ boolean ที่มากับ push (Expo ส่งเป็น string ได้) */
 const truthy = (value: unknown): boolean => value === true || value === 1 || value === '1' || value === 'true';
 
+/** หน้างานของไรเดอร์ */
+const riderJobPath = (jobId: number | null): string => (jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs');
+
+/** หน้ารับของของผู้ซื้อ (ไม่มีข้อมูลพอ = หน้าออเดอร์) */
+const handoverPath = (source: OrderSource | null, orderId: number | null): string =>
+  source && orderId ? `/handover/${source}/${orderId}` : orderPathFor(source, orderId, 'buyer') || '/orders';
+
+/** push ขั้นตอนไรเดอร์/ส่งมอบของ — ตัดสินปลายทางด้วย role → screen → เดา */
+const RIDER_FLOW_TYPES = new Set([
+  'delivery_update',
+  'handover_arrived',
+  'handover_auto_release_scheduled',
+  'handover_completed',
+  'handover_resolved',
+  'handover_disputed',
+]);
+
+/** ชนิดที่ผู้ซื้อควรไปหน้ารับของ (ไม่ใช่หน้าออเดอร์) */
+const BUYER_HANDOVER_TYPES = new Set(['handover_arrived', 'handover_auto_release_scheduled']);
+
+/**
+ * 1) ตาม role ของผู้รับ
+ * @returns path · null = บทบาทนี้ไม่มีหน้าในแอป (เช่น admin) · undefined = ไม่มี role ให้ตัดสิน
+ */
+const pathForRole = (
+  type: string,
+  recipient: string,
+  source: OrderSource | null,
+  orderId: number | null,
+  jobId: number | null
+): string | null | undefined => {
+  switch (recipient) {
+    case '':
+      return undefined;
+    case 'rider':
+      return riderJobPath(jobId);
+    case 'seller':
+      return orderPathFor(source, orderId, 'seller');
+    case 'buyer':
+      return BUYER_HANDOVER_TYPES.has(type) ? handoverPath(source, orderId) : orderPathFor(source, orderId, 'buyer');
+    default:
+      // admin / บทบาทอื่น → ห้ามพาไปหน้าของผู้ซื้อ
+      return null;
+  }
+};
+
+/**
+ * 2) ตาม data.screen ที่ server บอก
+ * @returns path · undefined = ไม่มี/ไม่รู้จัก screen นี้
+ */
+const pathForScreen = (
+  screen: string,
+  source: OrderSource | null,
+  orderId: number | null,
+  jobId: number | null
+): string | null | undefined => {
+  switch (screen) {
+    case 'rider-job-detail':
+      return riderJobPath(jobId);
+    case 'merchant-order':
+      return orderPathFor(source, orderId, 'seller');
+    case 'order':
+      return orderPathFor(source, orderId, 'buyer');
+    case 'order-handover':
+      return handoverPath(source, orderId);
+    default:
+      return undefined;
+  }
+};
+
+/** 3) เดาแบบเดิม (payload รุ่นเก่าที่ไม่มี role / screen) */
+const legacyRiderFlowPath = (
+  type: string,
+  data: PushData,
+  source: OrderSource | null,
+  orderId: number | null,
+  jobId: number | null
+): string | null => {
+  switch (type) {
+    case 'delivery_update': {
+      const sourceType = typeof data.source_type === 'string' ? data.source_type : '';
+      if (sourceType === 'Order' && orderId) return `/order/${orderId}`;
+      if (sourceType === 'FreshMarketOrder') return orderId ? `/taladsod/order/${orderId}` : '/taladsod/orders';
+      if (source && orderId) return orderPathFor(source, orderId, 'buyer');
+      return '/orders';
+    }
+    case 'handover_arrived':
+    case 'handover_auto_release_scheduled':
+      // ไรเดอร์ถึงหน้าบ้าน / วางของไว้ให้แล้ว (มีเวลาแจ้งปัญหา 24 ชม.) → หน้ารับของของผู้ซื้อ
+      return source && orderId ? `/handover/${source}/${orderId}` : orderId ? `/order/${orderId}` : '/orders';
+    case 'handover_completed':
+    case 'handover_resolved':
+      // มีแต่เลขงาน = ส่งถึงไรเดอร์
+      if (jobId && !orderId) return riderJobPath(jobId);
+      return orderPathFor(source, orderId, 'buyer');
+    case 'handover_disputed':
+    default:
+      // แจ้งแอดมิน — ไม่มีหน้าตัดสินในแอป (ใช้ data.url ถ้าเป็น path ที่อนุญาต)
+      return null;
+  }
+};
+
+/**
+ * ปลายทางของ push ขั้นตอนไรเดอร์/ส่งมอบ: role → screen → เดา
+ * (export ไว้ทดสอบ)
+ */
+export const riderFlowPath = (type: string, data: PushData, recipient: string): string | null => {
+  const source = sourceOf(data);
+  // delivery_update รุ่นเก่าใช้ source_id เป็นเลขออเดอร์
+  const orderId = toId(data.order_id ?? data.orderId ?? data.source_id);
+  const jobId = toId(data.job_id ?? data.jobId);
+
+  const byRole = pathForRole(type, recipient, source, orderId, jobId);
+  if (byRole !== undefined) return byRole;
+
+  const screen = typeof data.screen === 'string' ? data.screen : '';
+  const byScreen = pathForScreen(screen, source, orderId, jobId);
+  if (byScreen !== undefined) return byScreen;
+
+  return legacyRiderFlowPath(type, data, source, orderId, jobId);
+};
+
 /**
  * @returns path ภายในแอป (ผ่าน allowlist แล้ว)
  */
@@ -83,6 +210,13 @@ export const routeForNotification = (data: PushData | null | undefined): string 
 
   let path: string | null = null;
 
+  if (RIDER_FLOW_TYPES.has(type)) {
+    path = riderFlowPath(type, data, recipient);
+    if (path && isAllowedInternalRoute(path)) return path;
+    if (isAllowedInternalRoute(data.url)) return data.url as string;
+    return '/notifications';
+  }
+
   switch (type) {
     case 'rider_job_offer':
       // ผู้ซื้อล็อกเรียกไรเดอร์คนนี้ → เปิดหน้างานนั้นเลย (มีสิทธิ์รับก่อนช่วงสั้นๆ)
@@ -99,23 +233,6 @@ export const routeForNotification = (data: PushData | null | undefined): string 
     case 'job':
       path = '/rider';
       break;
-    case 'delivery_update': {
-      const sourceType = typeof data.source_type === 'string' ? data.source_type : '';
-      const sourceId = toId(data.source_id);
-      if (recipient === 'seller') {
-        // ร้านได้ push สถานะไรเดอร์ → หน้าออเดอร์ของร้าน (ไม่ใช่หน้าผู้ซื้อที่เปิดไม่ได้)
-        path = orderPathFor(sourceOf(data), sourceId ?? orderId, 'seller');
-      } else if (recipient === 'rider') {
-        path = jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs';
-      } else if (sourceType === 'Order' && sourceId) {
-        path = `/order/${sourceId}`;
-      } else if (sourceType === 'FreshMarketOrder') {
-        path = sourceId ? `/taladsod/order/${sourceId}` : '/taladsod/orders';
-      } else {
-        path = '/orders';
-      }
-      break;
-    }
     case 'shop_order':
       // ร้าน → หน้าจัดการออเดอร์ของร้านในแอป · ผู้ซื้อ → รายละเอียดคำสั่งซื้อ
       path =
@@ -169,40 +286,6 @@ export const routeForNotification = (data: PushData | null | undefined): string 
       break;
     case 'ticket':
       path = '/support';
-      break;
-    case 'handover_arrived':
-    case 'handover_auto_release_scheduled': {
-      // ไรเดอร์ถึงหน้าบ้าน / วางของไว้ให้แล้ว (มีเวลาแจ้งปัญหา 24 ชม.) → หน้ารับของของผู้ซื้อ
-      const source = sourceOf(data);
-      if (recipient === 'seller') {
-        path = orderPathFor(source, orderId, 'seller');
-      } else if (recipient === 'rider') {
-        path = jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs';
-      } else if (source && orderId) {
-        path = `/handover/${source}/${orderId}`;
-      } else {
-        path = orderId ? `/order/${orderId}` : '/orders';
-      }
-      break;
-    }
-    case 'handover_completed':
-    case 'handover_resolved': {
-      const source = sourceOf(data);
-      if (recipient === 'rider' || (!recipient && jobId && !orderId)) {
-        path = jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs';
-      } else if (recipient === 'seller') {
-        path = orderPathFor(source, orderId, 'seller');
-      } else if (recipient === 'buyer' || recipient === '') {
-        path = orderPathFor(source, orderId, 'buyer');
-      } else {
-        // แอดมิน/บทบาทอื่น → ไม่พาไปหน้าของผู้ซื้อ
-        path = null;
-      }
-      break;
-    }
-    case 'handover_disputed':
-      // แจ้งแอดมิน — ไม่มีหน้าตัดสินในแอป (ใช้ data.url ถ้าเป็น path ที่อนุญาต)
-      path = null;
       break;
     default:
       path = null;

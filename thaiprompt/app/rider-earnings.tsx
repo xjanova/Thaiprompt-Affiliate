@@ -6,6 +6,7 @@
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลลัพธ์เก่า (requestId)
  * - ถอนเงินทำที่แท็บกระเป๋าเงิน · รายงานละเอียดดูบนเว็บไซต์
  * - ไรเดอร์รอบ 2: งานที่วางของด้วยทางสำรอง (รูป 2 รอบ) = "รอปลดเงิน" แสดงยอด + จำนวนงานแยก (pending_release_*)
+ *   + รายการงานรอปลดเงินจากประวัติ (status awaiting_release — §A7) พร้อมสถานะ รอ 24 ชม. / ลูกค้าแจ้งปัญหา
  * - กันแคปหน้าจอ (ยอดเงิน/ประวัติงาน)
  *
  * หน้าตา: การ์ดน้ำเงินลายกนก (ตัวเลือกช่วงเวลาแบบกระจก + ยอดทอง + กราฟแท่งรายวัน)
@@ -37,6 +38,7 @@ import {
 } from '@/components/ui';
 import { num } from '@/services/api/client';
 import {
+  getAwaitingReleaseJobs,
   getJobHistory,
   getRiderEarnings,
   type EarningsPeriod,
@@ -176,18 +178,33 @@ const DailyBars: React.FC<{ daily: RiderEarningsResponse['daily'] }> = ({ daily 
   );
 };
 
+/** ป้ายสถานะของงานรอปลดเงิน: ลูกค้าแจ้งปัญหา / รอ 24 ชม. */
+const awaitingLook = (job: RiderJobSummary): { label: string; tone: 'danger' | 'gold'; caption: string } => {
+  if (job.handover?.status === 'disputed') {
+    return { label: 'ลูกค้าแจ้งปัญหา', tone: 'danger', caption: 'ทีมงานกำลังตรวจสอบ เงินพักไว้จนกว่าจะตัดสิน' };
+  }
+  return {
+    label: 'รอ 24 ชม.',
+    tone: 'gold',
+    caption: job.handover?.auto_release_at
+      ? `ปลดเงินประมาณ ${formatThaiDateTime(job.handover.auto_release_at)}`
+      : 'ปลดเงินอัตโนมัติภายใน 24 ชม. ถ้าลูกค้าไม่ร้องเรียน',
+  };
+};
+
 /** แถวประวัติงาน — แถวติดกันเป็นการ์ดขาวใบเดียว (แถวแรกมุมบนโค้ง · แถวสุดท้ายมุมล่างโค้ง + เงา) */
 const HistoryRow: React.FC<{ job: RiderJobSummary; first: boolean; last: boolean }> = ({ job, first, last }) => {
   const { colors, isDark } = useTheme();
   const completed = job.status === 'completed' || job.status === 'delivered';
   /** วางของแล้ว รอปลดเงิน — ยังไม่ใช่รายได้ที่เข้ากระเป๋า แต่ไม่ได้เสียไป (ไม่ขีดฆ่า) */
   const pendingRelease = job.status === 'awaiting_release';
+  const awaiting = pendingRelease ? awaitingLook(job) : null;
   const amount = riderTotalOf(job);
   const { run } = usePressGuard(() => router.push(`/rider-job-detail?id=${job.id}` as never));
   const tile: { icon: IconName; tone: TileTone } = completed
     ? { icon: 'coins', tone: 'success' }
-    : pendingRelease
-      ? { icon: 'hourglass', tone: 'gold' }
+    : awaiting
+      ? { icon: awaiting.tone === 'danger' ? 'warning-circle' : 'hourglass', tone: awaiting.tone }
       : job.status === 'failed'
       ? { icon: 'x-circle', tone: 'danger' }
       : job.status === 'cancelled'
@@ -226,6 +243,11 @@ const HistoryRow: React.FC<{ job: RiderJobSummary; first: boolean; last: boolean
         <Text style={[typography.caption, { color: colors.textMuted }]} numberOfLines={1}>
           {job.job_number} · {formatThaiDateTime(job.completed_at || job.accepted_at || job.created_at)}
         </Text>
+        {!!awaiting && (
+          <Text style={[typography.caption, { color: awaiting.tone === 'danger' ? colors.danger : colors.goldDeep }]} numberOfLines={2}>
+            {awaiting.caption}
+          </Text>
+        )}
       </View>
       <View style={styles.historyRight}>
         <PriceText
@@ -235,7 +257,10 @@ const HistoryRow: React.FC<{ job: RiderJobSummary; first: boolean; last: boolean
           strike={!completed && !pendingRelease}
           signed={completed}
         />
-        <Pill label={job.status_text || JOB_STATUS_LABEL[job.status]} tone={JOB_STATUS_TONE[job.status] || 'neutral'} />
+        <Pill
+          label={awaiting ? awaiting.label : job.status_text || JOB_STATUS_LABEL[job.status]}
+          tone={awaiting ? awaiting.tone : JOB_STATUS_TONE[job.status] || 'neutral'}
+        />
       </View>
     </Pressable>
   );
@@ -258,10 +283,13 @@ export default function RiderEarningsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  /** งานรอปลดเงิน (วางของแล้ว รอ 24 ชม. / ลูกค้าแจ้งปัญหา) — §A7 */
+  const [awaitingJobs, setAwaitingJobs] = useState<RiderJobSummary[]>([]);
 
   const mountedRef = useRef(true);
   const summaryReqRef = useRef(0);
   const historyReqRef = useRef(0);
+  const awaitingReqRef = useRef(0);
   const loadedOnceRef = useRef(false);
   /** ช่วงเวลา/ตัวกรองที่เลือกอยู่ — ตัวรีเฟรชตอนกลับเข้าหน้าต้องใช้ค่าล่าสุด (ไม่ใช่ค่าตอน mount) */
   const periodRef = useRef<EarningsPeriod>(period);
@@ -314,6 +342,14 @@ export default function RiderEarningsScreen() {
     setLoadingMore(false);
   }, []);
 
+  /** งานรอปลดเงินจากประวัติ (ไม่ขึ้นกับตัวกรอง/ช่วงเวลา) — โหลดไม่ได้ = คงรายการเดิม */
+  const loadAwaiting = useCallback(async () => {
+    const requestId = ++awaitingReqRef.current;
+    const result = await getAwaitingReleaseJobs();
+    if (!mountedRef.current || requestId !== awaitingReqRef.current) return;
+    if (result.success) setAwaitingJobs(result.data);
+  }, []);
+
   useEffect(() => {
     loadSummary(period);
   }, [period, loadSummary]);
@@ -329,15 +365,16 @@ export default function RiderEarningsScreen() {
         loadSummary(periodRef.current, true);
         loadHistory(filterRef.current, 1, 'silent');
       }
+      loadAwaiting();
       loadedOnceRef.current = true;
-    }, [loadHistory, loadSummary])
+    }, [loadAwaiting, loadHistory, loadSummary])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadSummary(period, true), loadHistory(filter, 1, 'silent')]);
+    await Promise.all([loadSummary(period, true), loadHistory(filter, 1, 'silent'), loadAwaiting()]);
     if (mountedRef.current) setRefreshing(false);
-  }, [filter, loadHistory, loadSummary, period]);
+  }, [filter, loadAwaiting, loadHistory, loadSummary, period]);
 
   const onEndReached = useCallback(() => {
     if (hasMore && !loadingMore && !historyLoading) {
@@ -421,6 +458,16 @@ export default function RiderEarningsScreen() {
           message={`จาก ${num(summary.pending_release_jobs).toLocaleString('th-TH')} งานที่วางของไว้ให้ลูกค้า ระบบปลดเงินเข้ากระเป๋าอัตโนมัติภายใน 24 ชม. หลังส่ง ถ้าลูกค้าไม่ร้องเรียน`}
           style={styles.block}
         />
+      )}
+
+      {/* ---------- รายการงานรอปลดเงิน (§A7) ---------- */}
+      {awaitingJobs.length > 0 && (
+        <View style={styles.block}>
+          <SectionHeader title="รอปลดเงิน" icon="hourglass" style={styles.sectionTight} />
+          {awaitingJobs.map((job, index) => (
+            <HistoryRow key={job.id} job={job} first={index === 0} last={index === awaitingJobs.length - 1} />
+          ))}
+        </View>
       )}
 
       {!!summary && (
@@ -551,6 +598,9 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  sectionTight: {
     marginBottom: spacing.sm,
   },
   chips: {

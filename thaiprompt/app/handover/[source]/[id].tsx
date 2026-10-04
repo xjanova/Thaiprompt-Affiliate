@@ -4,18 +4,26 @@
  *
  * ขั้นตอน
  *   1. ไรเดอร์สแกน QR บนจอนี้ (QR หมุนเวียน อายุสั้น — กล้องไรเดอร์เสีย = บอกรหัส 6 หลักแทน)
- *   2. ผู้ซื้อสแกน QR บนจอไรเดอร์ (POST .../handover/scan)
+ *   2. ผู้ซื้อสแกน QR บนจอไรเดอร์ (POST .../handover/scan {token})
+ *      กล้องผู้ซื้อใช้ไม่ได้ → กรอกรหัส 6 หลักของไรเดอร์ (POST .../handover/scan {code}) §A3
  *   ครบสองฝ่าย → server ปลดเงินพักให้ร้าน/ไรเดอร์ทันที → หน้าสำเร็จ + การแบ่งเงิน + ให้หัวใจไรเดอร์
  * ทางสำรอง: ไรเดอร์ถ่ายรูปที่จุดส่ง → รอ 3 นาที → วางของ → ปลดเงินอัตโนมัติใน 24 ชม. ถ้าไม่แจ้งปัญหา
+ *   ระหว่างนั้นผู้ซื้อกด "ได้รับของแล้ว" ได้ทันที (can_confirm_received → POST .../confirm-received) §A4
+ *
+ * สถานะพิเศษ
+ *   - งานไรเดอร์ยังไม่ถึงขั้นรับของ (pending/accepted/picking_up) → "ยังไม่ถึงขั้นรับของ" (U4)
+ *   - จบแล้ว: รับของเรียบร้อย (+ การแบ่งเงิน) / คืนเงินแล้ว — ไม่ค้าง "กำลังสรุป" ตลอดไป (U5) · ดึงลงเพื่อรีเฟรช
  *
  * ความปลอดภัย
  *   - กันแคปหน้าจอ/อัดจอระหว่างเปิดหน้านี้ (useSensitiveScreen) — QR/รหัสเป็นของใช้ครั้งเดียว
  *   - ข้อมูลทุกอย่างจาก server · ดึงใหม่ทุก 4 วินาทีระหว่างหน้าเปิด (และก่อน QR หมดอายุ)
- *   - ปุ่มสแกน/แจ้งปัญหากันกดซ้ำ · ข้อความ error ภาษาไทยจาก code ของ server
+ *     ผลการดึงที่เริ่มก่อนการสแกน/ยืนยัน/แจ้งปัญหา ถูกทิ้ง ไม่ทับผลล่าสุด (requestId — U3)
+ *   - เวลาหมดอายุ QR นับตามนาฬิกา server (server_now) ไม่ใช่นาฬิกาเครื่อง (§A2)
+ *   - ปุ่มสแกน/กรอกรหัส/ยืนยันรับของ/แจ้งปัญหากันกดซ้ำ · ข้อความ error ภาษาไทยจาก code ของ server
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -43,16 +51,20 @@ import { isScreenCaptureProtectionAvailable, useSensitiveScreen } from '@/hooks/
 import { useAuthStore } from '@/stores/authStore';
 import {
   HANDOVER_DISPUTE_REASONS,
+  HANDOVER_PRE_PICKUP_JOB_STATUSES,
+  confirmHandoverReceived,
   disputeOrderHandover,
   getOrderHandover,
   isHandoverFinal,
   isHandoverSuccess,
   sanitizeScannedToken,
   scanRiderHandoverQr,
+  submitRiderHandoverCode,
   type BuyerHandoverData,
   type HandoverDisputeReason,
   type HandoverSource,
 } from '@/services/api/handoverApi';
+import { num, type ApiFailure } from '@/services/api/client';
 import { vehicleText } from '@/services/api/riderSocialApi';
 import { getMyOrder } from '@/services/api/shopApi';
 import { getFmOrder } from '@/services/api/taladsodApi';
@@ -60,11 +72,32 @@ import { useTheme, radii, spacing, typography } from '@/theme';
 
 const POLL_ACTIVE_MS = 4000;
 const POLL_IDLE_MS = 10000;
+/** จบงานแล้วแต่ยังไม่มีสรุปการแบ่งเงิน → ถามซ้ำทุกเท่านี้ ไม่เกิน SETTLEMENT_POLL_MAX ครั้ง (U5) */
+const SETTLEMENT_POLL_MS = 5000;
+const SETTLEMENT_POLL_MAX = 6;
 /** ห่างจุดส่งไม่เกินนี้ = "ถึงจุดส่ง" (ตรงกับ geofence ของ server) */
 const ARRIVED_M = 150;
 const SHEET_RADIUS = 26;
 
 type LoadError = { code: string; message: string; status: number };
+
+/** error ที่ลองส่งผลสแกนเดิมซ้ำได้ (เน็ต/เซิร์ฟเวอร์) — ไม่ใช่ QR ผิด */
+const isRetryableFailure = (res: ApiFailure): boolean =>
+  res.status === 0 || res.status >= 500 || res.code === 'TOO_MANY_REQUESTS';
+
+/** ข้อความผิดพลาดของรหัส 6 หลักของไรเดอร์ (ใส่จำนวนครั้งที่เหลือ / เวลาที่กรอกใหม่ได้) */
+const codeErrorText = (res: ApiFailure): string => {
+  const data = res.data && typeof res.data === 'object' ? res.data : {};
+  if (res.code === 'HANDOVER_CODE_INVALID') {
+    const left = num(data.attempts_left, -1);
+    return `รหัสไม่ถูกต้อง ตรวจกับไรเดอร์อีกครั้ง${left >= 0 ? ` (กรอกได้อีก ${left} ครั้ง)` : ''}`;
+  }
+  if (res.code === 'HANDOVER_CODE_LOCKED') {
+    const at = timeText(typeof data.locked_until === 'string' ? data.locked_until : typeof data.retry_at === 'string' ? data.retry_at : null);
+    return `กรอกรหัสผิดหลายครั้ง ระบบพักการกรอกชั่วคราว${at ? ` ลองใหม่ได้ตอน ${at} น.` : ''} ระหว่างนี้สแกน QR ของไรเดอร์แทนได้`;
+  }
+  return res.message;
+};
 
 interface OrderInfo {
   number: string | null;
@@ -101,34 +134,49 @@ export default function BuyerHandoverScreen() {
   const [orderInfo, setOrderInfo] = useState<OrderInfo>({ number: cleanOrderNo(params.no), riderPhone: null });
 
   const [scanOpen, setScanOpen] = useState(false);
+  const [scanMode, setScanMode] = useState<'camera' | 'code'>('camera');
   const [scanBusy, setScanBusy] = useState(false);
+  const [scanResetKey, setScanResetKey] = useState(0);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [disputeReason, setDisputeReason] = useState<HandoverDisputeReason | null>(null);
   const [disputeNote, setDisputeNote] = useState('');
   const [disputeBusy, setDisputeBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [settlementPolls, setSettlementPolls] = useState(0);
 
   const loadBusyRef = useRef(false);
+  /** เลขรอบล่าสุด — ผลของรอบเก่า (เริ่มก่อนสแกน/ยืนยัน/แจ้งปัญหา) ถูกทิ้ง (U3) */
+  const requestIdRef = useRef(0);
   const scanBusyRef = useRef(false);
+  const confirmBusyRef = useRef(false);
   const disputeBusyRef = useRef(false);
   const prevStatusRef = useRef<string | null>(null);
   const protectedScreen = useMemo(() => isScreenCaptureProtectionAvailable(), []);
 
   // ---------- โหลด ----------
   const load = useCallback(
-    async (mode: 'initial' | 'silent') => {
+    async (mode: 'initial' | 'silent' | 'refresh') => {
       if (!source || !orderId || !isAuthenticated) {
         setLoading(false);
         return;
       }
-      if (loadBusyRef.current) return;
+      // poll ซ้อนกันไม่ได้ · ดึงลงเพื่อรีเฟรชยอมให้ซ้อน (รอบล่าสุดชนะด้วย requestId)
+      if (loadBusyRef.current && mode !== 'refresh') return;
       loadBusyRef.current = true;
+      const requestId = ++requestIdRef.current;
+      if (mode === 'refresh') setRefreshing(true);
       const res = await getOrderHandover(source, orderId);
       loadBusyRef.current = false;
       if (!mountedRef.current) return;
+      if (mode === 'refresh') setRefreshing(false);
+      // ระหว่างรอมีการสแกน/ยืนยัน/แจ้งปัญหา หรือดึงรอบใหม่กว่า → ทิ้งผลนี้
+      if (requestId !== requestIdRef.current) return;
       if (res.success) {
         setData(res.data);
         setError(null);
-      } else if (mode === 'initial' || res.code === 'HANDOVER_NOT_READY' || res.status === 404 || res.status === 403) {
+      } else if (mode !== 'silent' || res.code === 'HANDOVER_NOT_READY' || res.status === 404 || res.status === 403) {
         // เน็ตหลุดตอน poll → คงหน้าจอเดิมไว้ ไม่เด้งเป็นหน้า error
         setError({ code: res.code, message: res.message, status: res.status });
       }
@@ -136,6 +184,13 @@ export default function BuyerHandoverScreen() {
     },
     [source, orderId, isAuthenticated, mountedRef]
   );
+
+  /** ผลจากการสแกน/ยืนยัน/แจ้งปัญหา = ข้อมูลล่าสุด (ทิ้งผล poll ที่ค้างอยู่) */
+  const applyActionResult = useCallback((next: BuyerHandoverData) => {
+    requestIdRef.current += 1;
+    setData(next);
+    setError(null);
+  }, []);
 
   useEffect(() => {
     load('initial');
@@ -164,12 +219,27 @@ export default function BuyerHandoverScreen() {
   const handover = data?.handover ?? null;
   const final = isHandoverFinal(handover);
   const notReady = error?.code === 'HANDOVER_NOT_READY';
+  const jobStatus = data?.job?.status ?? '';
+  /** ไรเดอร์ยังไม่ได้ของจากร้าน (รอรับงาน / กำลังไปร้าน) — U4 */
+  const prePickup = !final && HANDOVER_PRE_PICKUP_JOB_STATUSES.includes(jobStatus);
+  const idle = notReady || prePickup || (!!handover && !handover.required);
 
   // ดึงสถานะใหม่ระหว่างหน้าเปิด (หยุดเมื่อจบงาน)
   useFocusedInterval(
     () => load('silent'),
-    notReady ? POLL_IDLE_MS : POLL_ACTIVE_MS,
+    idle ? POLL_IDLE_MS : POLL_ACTIVE_MS,
     !!source && !!orderId && !final && (!!data || notReady)
+  );
+
+  // จบงานแล้วแต่ server ยังสรุปการแบ่งเงินไม่เสร็จ → ถามซ้ำช่วงสั้นๆ (ไม่ค้าง "กำลังสรุป" ตลอดไป — U5)
+  const waitingSettlement = final && isHandoverSuccess(handover) && !data?.settlement;
+  useFocusedInterval(
+    async () => {
+      setSettlementPolls((n) => n + 1);
+      await load('silent');
+    },
+    SETTLEMENT_POLL_MS,
+    waitingSettlement && settlementPolls < SETTLEMENT_POLL_MAX
   );
 
   // สถานะเปลี่ยนเป็นสำเร็จ → สั่นแจ้ง + ปิดแผ่นที่ค้าง
@@ -184,7 +254,13 @@ export default function BuyerHandoverScreen() {
     }
   }, [handover]);
 
-  // ---------- สแกน QR ของไรเดอร์ ----------
+  // ---------- สแกน QR / กรอกรหัสของไรเดอร์ ----------
+  const openScanner = (mode: 'camera' | 'code') => {
+    setScanMode(mode);
+    setCodeError(null);
+    setScanOpen(true);
+  };
+
   const onScanned = useCallback(
     async (raw: string) => {
       if (!source || scanBusyRef.current) return;
@@ -196,13 +272,14 @@ export default function BuyerHandoverScreen() {
       }
       scanBusyRef.current = true;
       setScanBusy(true);
+      requestIdRef.current += 1;
       const res = await scanRiderHandoverQr(source, orderId, token);
       scanBusyRef.current = false;
       if (!mountedRef.current) return;
       setScanBusy(false);
       if (res.success) {
         resultHaptic('success');
-        setData(res.data);
+        applyActionResult(res.data);
         setScanOpen(false);
         return;
       }
@@ -212,10 +289,81 @@ export default function BuyerHandoverScreen() {
         return;
       }
       resultHaptic('error');
-      Alert.alert('สแกนไม่สำเร็จ', res.message);
+      // เน็ต/เซิร์ฟเวอร์ขัดข้อง → ให้สแกน QR เดิมได้อีกหลังกดตกลง (U2) · QR ผิด/หมดอายุ → ต้องสแกนใหม่
+      const retryable = isRetryableFailure(res);
+      Alert.alert('สแกนไม่สำเร็จ', res.message, [
+        { text: 'ตกลง', onPress: () => retryable && mountedRef.current && setScanResetKey((k) => k + 1) },
+      ]);
     },
-    [source, orderId, load, mountedRef]
+    [source, orderId, load, mountedRef, applyActionResult]
   );
+
+  /** กล้องใช้ไม่ได้ → กรอกรหัส 6 หลักที่ไรเดอร์อ่านให้ (§A3) */
+  const submitCode = useCallback(
+    async (code: string) => {
+      if (!source || scanBusyRef.current) return;
+      const digits = code.replace(/\D/g, '');
+      if (digits.length !== 6) {
+        setCodeError('รหัสต้องเป็นตัวเลข 6 หลัก');
+        return;
+      }
+      scanBusyRef.current = true;
+      setScanBusy(true);
+      setCodeError(null);
+      requestIdRef.current += 1;
+      const res = await submitRiderHandoverCode(source, orderId, digits);
+      scanBusyRef.current = false;
+      if (!mountedRef.current) return;
+      setScanBusy(false);
+      if (res.success) {
+        resultHaptic('success');
+        applyActionResult(res.data);
+        setScanOpen(false);
+        return;
+      }
+      if (res.code === 'HANDOVER_FINAL') {
+        setScanOpen(false);
+        load('silent');
+        return;
+      }
+      resultHaptic('error');
+      // แสดงใต้ช่องรหัส (ไม่ปิดแผ่น ให้แก้รหัสต่อได้)
+      setCodeError(codeErrorText(res));
+    },
+    [source, orderId, load, mountedRef, applyActionResult]
+  );
+
+  // ---------- ได้รับของแล้ว (ไรเดอร์รอ/วางของไว้ให้) §A4 ----------
+  const doConfirmReceived = async () => {
+    if (!source || confirmBusyRef.current) return;
+    confirmBusyRef.current = true;
+    setConfirmBusy(true);
+    requestIdRef.current += 1;
+    const res = await confirmHandoverReceived(source, orderId);
+    confirmBusyRef.current = false;
+    if (!mountedRef.current) return;
+    setConfirmBusy(false);
+    if (res.success) {
+      resultHaptic('success');
+      applyActionResult(res.data);
+      return;
+    }
+    resultHaptic('error');
+    Alert.alert('ยืนยันไม่สำเร็จ', res.message);
+    load('silent');
+  };
+
+  const confirmReceived = () => {
+    if (confirmBusyRef.current) return;
+    Alert.alert(
+      'ได้รับของครบแล้วใช่ไหม?',
+      'ยืนยันแล้วเงินที่พักไว้จะโอนให้ร้านและไรเดอร์ทันที ยกเลิกไม่ได้ ถ้ายังไม่ได้รับของ อย่ากดยืนยัน',
+      [
+        { text: 'ยังไม่ได้รับ', style: 'cancel' },
+        { text: 'ได้รับของแล้ว', onPress: () => doConfirmReceived() },
+      ]
+    );
+  };
 
   // ---------- แจ้งปัญหา ----------
   const openDispute = () => {
@@ -236,13 +384,14 @@ export default function BuyerHandoverScreen() {
     }
     disputeBusyRef.current = true;
     setDisputeBusy(true);
+    requestIdRef.current += 1;
     const res = await disputeOrderHandover(source, orderId, disputeReason, disputeNote);
     disputeBusyRef.current = false;
     if (!mountedRef.current) return;
     setDisputeBusy(false);
     if (res.success) {
       resultHaptic('success');
-      setData(res.data);
+      applyActionResult(res.data);
       setDisputeOpen(false);
       Alert.alert('แจ้งปัญหาแล้ว', 'ทีมงานจะตรวจสอบและแจ้งผลให้ทราบ ระหว่างนี้เงินของคุณยังพักไว้ ไม่โอนให้ใคร');
       return;
@@ -307,6 +456,20 @@ export default function BuyerHandoverScreen() {
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: (opts.bottom ? 110 : spacing.xxl) + insets.bottom }]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            isAuthenticated && !!source && !!orderId ? (
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setSettlementPolls(0);
+                  load('refresh');
+                }}
+                tintColor={colors.gold}
+                colors={[colors.gold]}
+                progressBackgroundColor={colors.card}
+              />
+            ) : undefined
+          }
         >
           {children}
         </ScrollView>
@@ -361,6 +524,23 @@ export default function BuyerHandoverScreen() {
   const h = data.handover;
   const rider = data.rider;
 
+  // ไรเดอร์ยังไม่ได้ของจากร้าน → ยังไม่ต้องเปิด QR (U4) — ตัดสินก่อน required เพราะ server ตัดสิน required ตอนไรเดอร์รับงาน
+  if (prePickup) {
+    return shell(
+      <EmptyState
+        art="scooter"
+        title="ยังไม่ถึงขั้นรับของ"
+        message={
+          jobStatus === 'pending'
+            ? 'ระบบกำลังหาไรเดอร์ให้ เมื่อไรเดอร์รับของจากร้านแล้ว หน้านี้จะแสดง QR ให้สแกนกันตอนรับของ'
+            : 'ไรเดอร์กำลังไปรับของที่ร้าน เมื่อได้ของแล้ว หน้านี้จะแสดง QR ให้สแกนกันตอนรับของ'
+        }
+        actionLabel="ไปหน้าคำสั่งซื้อ"
+        onAction={goOrder}
+      />
+    );
+  }
+
   if (!h.required) {
     return shell(
       <EmptyState
@@ -379,13 +559,20 @@ export default function BuyerHandoverScreen() {
 
   if (final) {
     const success = isHandoverSuccess(h);
+    const methodText =
+      h.method === 'fallback'
+        ? 'ปลดเงินอัตโนมัติ'
+        : h.method === 'admin'
+          ? 'ทีมงานตรวจสอบแล้ว'
+          : h.method === 'buyer_confirm'
+            ? 'คุณยืนยันรับของแล้ว'
+            : h.method === 'code'
+              ? 'ยืนยันด้วยรหัส 6 หลัก'
+              : h.status === 'released'
+                ? 'ปลดเงินให้ร้านและไรเดอร์แล้ว'
+                : 'สแกนครบทั้งสองฝ่าย';
     const doneLine = success
-      ? [
-          h.method === 'fallback' ? 'ปลดเงินอัตโนมัติ' : h.method === 'admin' ? 'ทีมงานตรวจสอบแล้ว' : 'สแกนครบทั้งสองฝ่าย',
-          h.completed_at ? `${timeText(h.completed_at)} น.` : null,
-        ]
-          .filter(Boolean)
-          .join(' · ')
+      ? [methodText, h.completed_at ? `${timeText(h.completed_at)} น.` : null].filter(Boolean).join(' · ')
       : 'ทีมงานตรวจสอบแล้ว คืนเงินเข้ากระเป๋าของคุณ';
 
     const medal = (
@@ -402,14 +589,50 @@ export default function BuyerHandoverScreen() {
       </View>
     );
 
+    const settlementBlock = !success ? (
+      // คืนเงินแล้ว — ไม่มีการแบ่งเงิน (ไม่แสดง "กำลังสรุป")
+      <Card3D padding={spacing.lg} radius={22} style={styles.block}>
+        <View style={styles.row}>
+          <View style={[styles.stateIcon, { backgroundColor: colors.infoSoft }]}>
+            <Icon name="arrow-counter-clockwise" size={24} color={colors.info} weight="bold" />
+          </View>
+          <View style={styles.flex}>
+            <Text style={[typography.h3, { color: colors.textStrong }]}>คืนเงินเข้ากระเป๋าแล้ว</Text>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              {h.completed_at ? `เมื่อ ${formatThaiDateTime(h.completed_at)}` : 'ตามผลตรวจสอบของทีมงาน'}
+            </Text>
+          </View>
+        </View>
+        <Text style={[typography.bodySm, styles.gapTop, { color: colors.text }]}>
+          เงินที่พักไว้ไม่ได้โอนให้ร้านหรือไรเดอร์ ระบบคืนเข้ากระเป๋าเงินของคุณ ตรวจยอดได้ที่ประวัติกระเป๋าเงิน
+        </Text>
+        <Button3D
+          title="ดูประวัติกระเป๋าเงิน"
+          icon="wallet"
+          variant="secondary"
+          size="md"
+          fullWidth
+          onPress={() => router.push('/wallet-history' as never)}
+          style={styles.gapTop}
+        />
+      </Card3D>
+    ) : data.settlement ? (
+      <SettlementCard settlement={data.settlement} title="เงินที่พักไว้ ถูกแบ่งแล้ว" style={styles.block} />
+    ) : settlementPolls < SETTLEMENT_POLL_MAX ? (
+      <NoticeBanner tone="info" icon="hourglass" text="กำลังสรุปการแบ่งเงิน อีกสักครู่จะแสดงที่นี่" style={styles.block} />
+    ) : (
+      <NoticeBanner
+        tone="info"
+        icon="info"
+        text="รับของเรียบร้อยแล้ว สรุปการแบ่งเงินยังไม่พร้อม ดึงหน้าจอลงเพื่อดูอีกครั้ง หรือดูรายละเอียดที่หน้าคำสั่งซื้อ"
+        style={styles.block}
+      />
+    );
+
     return shell(
       <>
         {success && rider && <RiderHeartCard source={source} orderId={orderId} rider={rider} style={styles.block} />}
-        {data.settlement ? (
-          <SettlementCard settlement={data.settlement} title={success ? 'เงินที่พักไว้ ถูกแบ่งแล้ว' : 'การคืนเงิน'} style={styles.block} />
-        ) : (
-          <NoticeBanner tone="info" icon="hourglass" text="กำลังสรุปการแบ่งเงิน รีเฟรชอีกครั้งในอีกสักครู่" style={styles.block} />
-        )}
+        {settlementBlock}
       </>,
       {
         title: subtitle,
@@ -418,8 +641,8 @@ export default function BuyerHandoverScreen() {
           <StickyBar style={styles.bottomRow}>
             <Button3D title="กลับหน้าแรก" variant="secondary" size="lg" onPress={() => router.replace('/(tabs)' as never)} style={styles.flex} />
             <Button3D
-              title={source === 'shop' ? 'รีวิวสินค้า' : 'ให้คะแนนร้าน'}
-              icon="storefront"
+              title={!success ? 'ดูคำสั่งซื้อ' : source === 'shop' ? 'รีวิวสินค้า' : 'ให้คะแนนร้าน'}
+              icon={!success ? 'receipt' : 'storefront'}
               variant="navy"
               size="lg"
               onPress={goOrder}
@@ -542,23 +765,65 @@ export default function BuyerHandoverScreen() {
                 </View>
               </View>
               <Text style={[typography.bodySm, styles.gapTop, { color: colors.text }]}>
-                ได้รับของแล้วไม่ต้องทำอะไร ระบบจะโอนเงินให้ร้านและไรเดอร์อัตโนมัติ
+                ได้รับของแล้วกด "ได้รับของแล้ว" ระบบจะโอนเงินให้ร้านและไรเดอร์ทันที ถ้าไม่กด ระบบโอนให้อัตโนมัติ
                 {h.auto_release_at ? ` ${formatThaiDateTime(h.auto_release_at)}` : ' ภายใน 24 ชั่วโมง'}
                 {' '}ถ้าไม่ได้รับของ กดแจ้งปัญหาก่อนเวลานั้น
               </Text>
+              {h.can_confirm_received && (
+                <Button3D
+                  title="ได้รับของแล้ว"
+                  icon="check-circle"
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  loading={confirmBusy}
+                  disabled={confirmBusy || disputeBusy}
+                  onPress={confirmReceived}
+                  style={styles.gapTop}
+                />
+              )}
               {h.can_dispute && (
-                <Button3D title="ไม่ได้รับของ แจ้งปัญหา" icon="flag" variant="danger" size="md" fullWidth onPress={openDispute} style={styles.gapTop} />
+                <Button3D
+                  title="ไม่ได้รับของ แจ้งปัญหา"
+                  icon="flag"
+                  variant="danger"
+                  size="md"
+                  fullWidth
+                  disabled={confirmBusy}
+                  onPress={openDispute}
+                  style={styles.gapTop}
+                />
               )}
             </Card3D>
           )}
 
           {fallbackWaiting && (
-            <NoticeBanner
-              tone="warning"
-              icon="hourglass"
-              text={`ไรเดอร์ถึงจุดส่งและถ่ายรูปยืนยันแล้ว กำลังรอคุณ${h.wait_until ? `ถึง ${timeText(h.wait_until)} น.` : ''} ถ้าไม่ได้ออกมารับ ไรเดอร์จะวางของไว้ให้`}
-              style={styles.block}
-            />
+            <Card3D padding={spacing.lg} radius={22} style={styles.block}>
+              <View style={styles.row}>
+                <View style={[styles.stateIcon, { backgroundColor: colors.warningSoft }]}>
+                  <Icon name="hourglass" size={24} color={colors.warning} weight="fill" />
+                </View>
+                <View style={styles.flex}>
+                  <Text style={[typography.h3, { color: colors.textStrong }]}>ไรเดอร์ถึงจุดส่งแล้ว กำลังรอคุณ</Text>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    {h.wait_until ? `รอถึง ${timeText(h.wait_until)} น. ` : ''}ถ้าไม่ได้ออกมารับ ไรเดอร์จะวางของไว้ให้
+                  </Text>
+                </View>
+              </View>
+              {h.can_confirm_received && (
+                <Button3D
+                  title="ได้รับของแล้ว"
+                  icon="check-circle"
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  loading={confirmBusy}
+                  disabled={confirmBusy || disputeBusy}
+                  onPress={confirmReceived}
+                  style={styles.gapTop}
+                />
+              )}
+            </Card3D>
           )}
 
           {/* ---------- QR ของฉัน + รหัส 6 หลัก ---------- */}
@@ -585,6 +850,7 @@ export default function BuyerHandoverScreen() {
                   <RotatingQr
                     token={h.qr_token}
                     expiresAt={h.qr_expires_at}
+                    clockOffsetMs={data.clock_offset_ms}
                     onExpire={() => load('silent')}
                     caption="ยื่นหน้าจอนี้ให้ไรเดอร์สแกน"
                     size={196}
@@ -609,6 +875,19 @@ export default function BuyerHandoverScreen() {
             </Card3D>
           )}
 
+          {/* กล้องของฉันใช้ไม่ได้ → กรอกรหัส 6 หลักที่ไรเดอร์อ่านให้ (§A3) */}
+          {canScan && (
+            <Button3D
+              title="กล้องใช้ไม่ได้? กรอกรหัสของไรเดอร์"
+              icon="key"
+              variant="ghost"
+              size="sm"
+              disabled={scanBusy}
+              onPress={() => openScanner('code')}
+              style={styles.codeLink}
+            />
+          )}
+
           <View style={[styles.note, { borderColor: colors.border }]}>
             <Icon name="info" size={18} color={colors.goldDeep} />
             <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
@@ -627,7 +906,7 @@ export default function BuyerHandoverScreen() {
                     icon="scan"
                     variant="navy"
                     size="lg"
-                    onPress={() => setScanOpen(true)}
+                    onPress={() => openScanner('camera')}
                     style={styles.flex}
                   />
                 ) : (
@@ -650,6 +929,15 @@ export default function BuyerHandoverScreen() {
         onScanned={onScanned}
         busy={scanBusy}
         hint="สแกน QR บนจอแอปของไรเดอร์ เมื่อได้รับของครบแล้วเท่านั้น"
+        initialMode={scanMode}
+        scanResetKey={scanResetKey}
+        codeError={codeError}
+        codeFallback={{
+          length: 6,
+          onSubmit: submitCode,
+          label: 'กล้องใช้ไม่ได้? กรอกรหัสของไรเดอร์',
+          hint: 'ให้ไรเดอร์เปิดหน้าส่งมอบในแอป แล้วอ่านรหัส 6 หลักใต้ QR ให้ฟัง กรอกเมื่อได้รับของครบแล้วเท่านั้น',
+        }}
       />
 
       <FormSheet
@@ -867,6 +1155,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.xs,
     paddingTop: spacing.xs,
+  },
+  codeLink: {
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
   },
   bottomRow: {
     flexDirection: 'row',

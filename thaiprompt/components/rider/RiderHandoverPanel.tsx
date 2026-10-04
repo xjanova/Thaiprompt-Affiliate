@@ -13,8 +13,14 @@
  *
  * ความทนทาน
  * - สถานะจริงอยู่ที่ server (เวลาเริ่มรอ / รูปที่ส่งแล้ว) → ดึงใหม่ทุก 5 วินาทีตอนเปิดหน้าอยู่ + ทันทีที่กลับเข้าแอป
- * - รูปที่ถ่ายแล้วแต่ส่งไม่ออก (เน็ตหลุด/แอปถูกปิด) เก็บไว้ใน AsyncStorage → กด "ส่งรูปอีกครั้ง" ได้ ไม่ต้องถ่ายใหม่
- * - ทุกปุ่มกันกดซ้ำด้วย ref · ทุก await เช็ค mounted ก่อน setState
+ * - เวลาทุกตัวนับตามนาฬิกา server (server_now → clock_offset_ms) ไม่ใช่นาฬิกาเครื่อง (§A2 / L3)
+ *   ปุ่มรูปรอบ 2 เปิดเมื่อ server บอก can_waited_photo หรือครบเวลาตามนาฬิกา server
+ * - รูปที่ถ่ายแล้วแต่ส่งไม่ออก (เน็ตหลุด/แอปถูกปิด) เก็บไว้ในเครื่อง (handoverCache) → กด "ส่งรูปอีกครั้ง" ได้ ไม่ต้องถ่ายใหม่
+ *   server ตอบ WAIT_NOT_OVER → เก็บรูปไว้ แล้วส่งให้อัตโนมัติเมื่อครบเวลา (ไม่ต้องถ่ายใหม่)
+ * - ไฟล์รูปในเครื่องลบทิ้งเมื่อวางของครบ/งานจบ/ทิ้งรูป (M1)
+ * - ลูกค้าแจ้งปัญหา (disputed) → การ์ดแจ้งชัดเจนทุกสถานะ ปิดปุ่มส่งมอบทั้งหมด (L4)
+ * - รูปลูกค้าผ่าน allowlist เดียวกับฝั่งผู้ซื้อ (personPhotoUri — L5)
+ * - ทุกปุ่มกันกดซ้ำด้วย ref · ทุก await เช็ค mounted ก่อน setState · ตัวจับเวลาทุกตัวถูกล้างตอนออกจากหน้า
  * - ข้อความ error ภาษาไทยบอกสิ่งที่ต้องทำต่อ (ห่างจุดส่งกี่เมตร / ถ่ายรอบ 2 ได้กี่โมง / รหัสถูกล็อกถึงกี่โมง)
  */
 
@@ -23,7 +29,6 @@ import { Alert, AppState, Linking, Pressable, StyleSheet, View, type StyleProp, 
 import { requireOptionalNativeModule } from 'expo';
 import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Text } from '@/components/ui/Text';
 import { Button3D, Card3D, Icon, Pill, PriceText, formatBaht, resultHaptic } from '@/components/ui';
 import { useTheme, radii, spacing, typography } from '@/theme';
@@ -38,9 +43,21 @@ import {
   type RiderHandoverResponse,
   type RiderJobDetail,
 } from '@/services/api/riderApi';
+import { normalizeRiderHandoverData, personPhotoUri } from '@/services/api/handoverApi';
 import type { ApiFailure } from '@/services/api/client';
 import { calculateDistance, getCurrentCoords, type Coords } from '@/services/location';
+import { deviceTimeFor, lastClockOffset, parseIsoMs, serverNowMs } from '@/utils/serverClock';
 import { takePhoto } from './photo';
+import {
+  clearHandoverCache,
+  deleteLocalPhoto,
+  readHandoverCache,
+  writeHandoverCache,
+  type ArrivalHandoverShot as ArrivalShot,
+  type HandoverPhotoKind as PhotoKind,
+  type PendingHandoverPhoto as PendingPhoto,
+  type StoredHandoverState as StoredState,
+} from './handoverCache';
 import {
   callPhone,
   formatMeters,
@@ -57,58 +74,16 @@ const POLL_MS = 5_000;
 const MODAL_SETTLE_MS = 450;
 const DEFAULT_WAIT_SECONDS = 180;
 const DEFAULT_GEOFENCE_M = 150;
-const STORAGE_PREFIX = 'tp_rider_handover_v1:';
+/** ส่งรูปรอบ 2 อัตโนมัติหลังครบเวลาของ server + เผื่อเวลาเดินทางของ request */
+const AUTO_RETRY_SLACK_MS = 1500;
+/** ส่งอัตโนมัติได้ไม่เกินกี่ครั้ง (เกินนี้ให้ไรเดอร์กด "ส่งรูปอีกครั้ง" เอง) */
+const AUTO_RETRY_MAX = 6;
 
-type PhotoKind = 'arrival' | 'waited';
 type BusyKind = 'scan' | 'code' | PhotoKind | null;
 
-/** รูปที่ถ่ายแล้วแต่ยังส่งไม่สำเร็จ */
-interface PendingPhoto {
-  kind: PhotoKind;
-  uri: string;
-  latitude: number;
-  longitude: number;
-  distanceM: number | null;
-  takenAt: string;
-}
-
-/** รูปรอบ 1 ที่ส่งสำเร็จ (โชว์รูปย่อ + ระยะตอนถ่าย) */
-interface ArrivalShot {
-  uri: string;
-  distanceM: number | null;
-  takenAt: string;
-}
-
-interface StoredState {
-  pending?: PendingPhoto | null;
-  arrival?: ArrivalShot | null;
-}
-
-// =====================================================
-// เก็บรูปค้างส่งไว้ในเครื่อง (ต่องาน)
-// =====================================================
-
-const readStored = async (jobId: number): Promise<StoredState> => {
-  try {
-    const raw = await AsyncStorage.getItem(`${STORAGE_PREFIX}${jobId}`);
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? (parsed as StoredState) : {};
-  } catch {
-    return {};
-  }
-};
-
-const writeStored = async (jobId: number, value: StoredState): Promise<void> => {
-  try {
-    if (!value.pending && !value.arrival) {
-      await AsyncStorage.removeItem(`${STORAGE_PREFIX}${jobId}`);
-    } else {
-      await AsyncStorage.setItem(`${STORAGE_PREFIX}${jobId}`, JSON.stringify(value));
-    }
-  } catch {
-    // เก็บไม่ได้ก็ไม่เป็นไร (แค่ความสะดวกตอนเน็ตหลุด)
-  }
+/** เขียนข้อมูลในเครื่อง (ไม่รอผล) */
+const writeStored = (jobId: number, value: StoredState): void => {
+  writeHandoverCache(jobId, value).catch(() => {});
 };
 
 // =====================================================
@@ -246,6 +221,12 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const mountedRef = useRef(true);
   const busyRef = useRef(false);
   const requestIdRef = useRef(0);
+  /** ส่งรูปที่รอครบเวลา (WAIT_NOT_OVER) ถ้าถึงเวลาแล้ว — ตัวจริงตั้งด้านล่าง */
+  const retryDueRef = useRef<() => void>(() => {});
+  /** wait_until ล่าสุดจาก server (ใช้ตอน WAIT_NOT_OVER ไม่ได้แนบเวลามา) */
+  const waitUntilRef = useRef<string | null>(null);
+  /** ส่งรูปรอบ 2 อัตโนมัติหลัง WAIT_NOT_OVER: ครั้งที่ลองไปแล้ว + ห้ามลองก่อนเวลานี้ (เวลาเครื่อง) */
+  const autoRetryRef = useRef({ attempts: 0, notBefore: 0 });
   const sawActiveRef = useRef(false);
   const completedRef = useRef(false);
   const awaitingRef = useRef(false);
@@ -266,7 +247,7 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   // ---------- รูปค้างส่ง / รูปรอบ 1 ที่เคยถ่าย (กลับเข้าหน้า/เปิดแอปใหม่ก็ยังอยู่) ----------
   useEffect(() => {
     let alive = true;
-    readStored(jobId).then((stored) => {
+    readHandoverCache(jobId).then((stored) => {
       if (!alive || !mountedRef.current) return;
       storedRef.current = stored;
       setPending(stored.pending ?? null);
@@ -285,6 +266,12 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
     [jobId]
   );
 
+  /** ล้างของในเครื่องของงานนี้ทั้งหมด (ข้อมูล + ไฟล์รูป) — วางของครบ/งานจบ */
+  const dropLocal = useCallback(() => {
+    storedRef.current = {};
+    clearHandoverCache(jobId).catch(() => {});
+  }, [jobId]);
+
   // ---------- รับข้อมูลใหม่จาก server ----------
   const apply = useCallback(
     (next: RiderHandoverResponse) => {
@@ -293,29 +280,29 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
       setLoadError(null);
       const h = next.handover;
       const status = String(h.status || '');
-      if (!FINAL_STATUSES.includes(status) && !h.waited_photo_at && status !== 'fallback_pending_release') {
+      if (!FINAL_STATUSES.includes(status) && !h.waited_photo_at && status !== 'fallback_pending_release' && status !== 'disputed') {
         sawActiveRef.current = true;
       }
       if (status === 'completed' && sawActiveRef.current && !completedRef.current) {
         // สแกนครบ 2 ฝ่าย → ฉลอง (ครั้งเดียว) + ล้างของที่เก็บในเครื่อง
         completedRef.current = true;
-        storedRef.current = {};
-        writeStored(jobId, {});
+        dropLocal();
         callbacksRef.current.onCompleted({ amount: riderTotalOf(jobRef.current) });
         return;
       }
       if (FINAL_STATUSES.includes(status)) {
-        storedRef.current = {};
-        writeStored(jobId, {});
+        dropLocal();
         callbacksRef.current.onJobChanged();
         return;
       }
       if ((status === 'fallback_pending_release' || !!h.waited_photo_at) && !awaitingRef.current) {
         awaitingRef.current = true;
+        // วางของครบแล้ว ไม่ต้องเก็บรูปในเครื่องต่อ
+        dropLocal();
         if (sawActiveRef.current) callbacksRef.current.onAwaitingRelease();
       }
     },
-    [jobId]
+    [dropLocal]
   );
 
   const fetchHandover = useCallback(async () => {
@@ -325,7 +312,8 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
     if (result.success) {
       apply(result.data);
     } else {
-      setLoadError(result.message);
+      // HANDOVER_NOT_READY ฯลฯ: ใช้ข้อความไทยของ server (ข้อความสำรองเขียนสำหรับไรเดอร์) — L4
+      setLoadError(handoverErrorText(result).message);
       // ดึงข้อมูลเฉยๆ: ให้หน้าแม่โหลดใหม่เฉพาะเมื่องานหาย/จบไปแล้วจริง (กันวนโหลดทุก 5 วินาที)
       if (['HANDOVER_FINAL', 'JOB_NOT_FOUND', 'NOT_YOUR_JOB'].includes(result.code)) callbacksRef.current.onJobChanged();
     }
@@ -345,6 +333,8 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
         if (active && !wasActive) {
           setNow(Date.now());
           fetchHandover();
+          // ระหว่างอยู่เบื้องหลังอาจครบเวลารอแล้ว → ส่งรูปที่รอส่งอัตโนมัติ
+          retryDueRef.current();
         }
       });
       return () => {
@@ -358,6 +348,8 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const h = data?.handover ?? null;
   const buyer = data?.buyer ?? null;
   const status = String(h?.status ?? job.handover?.status ?? '');
+  /** เวลา server − เวลาเครื่อง (ยังไม่ได้ server_now ของงานนี้ = ค่าล่าสุดที่แอปรู้) */
+  const clockOffset = typeof data?.clock_offset_ms === 'number' ? data.clock_offset_ms : lastClockOffset();
   const geofence = Number(h?.geofence_m) > 0 ? Number(h?.geofence_m) : DEFAULT_GEOFENCE_M;
   const waitSeconds = Number(h?.wait_seconds) > 0 ? Number(h?.wait_seconds) : DEFAULT_WAIT_SECONDS;
   const waitMinutes = Math.max(1, Math.round(waitSeconds / 60));
@@ -366,16 +358,24 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const arrived = !!h?.arrival_photo_at;
   const waitedDone = !!h?.waited_photo_at || status === 'fallback_pending_release' || job.status === 'awaiting_release';
   const disputed = status === 'disputed';
-  const waitUntilMs = parseTime(h?.wait_until ?? job.handover?.wait_until);
-  const remaining = arrived && Number.isFinite(waitUntilMs)
-    ? Math.min(waitSeconds, Math.max(0, Math.ceil((waitUntilMs - now) / 1000)))
-    : arrived
-      ? 0
-      : waitSeconds;
+  const waitUntilIso = h?.wait_until ?? job.handover?.wait_until ?? null;
+  waitUntilRef.current = waitUntilIso;
+  const waitUntilMs = parseIsoMs(waitUntilIso);
+  /** วินาทีที่เหลือก่อนถ่ายรอบ 2 ได้ — นับตามนาฬิกา server */
+  const remaining =
+    arrived && waitUntilMs !== null
+      ? Math.min(waitSeconds, Math.max(0, Math.ceil((waitUntilMs - serverNowMs(clockOffset, now)) / 1000)))
+      : arrived
+        ? 0
+        : waitSeconds;
+  /** ถ่ายรอบ 2 ได้: server บอก can_waited_photo หรือครบเวลาตามนาฬิกา server (ถ้ายังไม่ครบจริง server ตอบ WAIT_NOT_OVER แล้วแอปส่งให้เองเมื่อครบ) */
   const waitOver = arrived && (!!h?.can_waited_photo || remaining <= 0);
   const amount = riderTotalOf(job);
   const buyerName = buyer?.display_name || job.buyer?.display_name || job.dropoff?.name || 'ลูกค้า';
-  const buyerPhoto = buyer?.photo_url ?? job.buyer?.photo_url ?? null;
+  // รูปลูกค้าผ่าน allowlist เดียวกับฝั่งผู้ซื้อ (L5) — ของ handover แปลงแล้วใน riderApi · ของ job แปลงตรงนี้
+  const buyerPhoto = buyer?.photo_url ?? personPhotoUri(job.buyer?.photo_url);
+  /** งานเก็บเงินปลายทาง: server ไม่รับทางสำรองรูป 2 รอบ (ต้องส่งมอบกับลูกค้าโดยตรง) */
+  const fallbackAllowed = !job.is_cod;
 
   // นับถอยหลังทีละวินาทีเฉพาะช่วงรอลูกค้า
   const counting = arrived && !waitedDone && remaining > 0;
@@ -473,7 +473,7 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
           return true;
         }
         resultHaptic('error');
-        if (result.data?.handover) apply(result.data as RiderHandoverResponse);
+        if (result.data?.handover) apply(normalizeRiderHandoverData(result.data));
         if (JOB_CHANGED_CODES.includes(result.code)) callbacksRef.current.onJobChanged();
         if (source === 'code') {
           // แสดงในกล่องกรอกรหัสเลย (ไม่ปิดกล่อง ให้แก้รหัสต่อได้)
@@ -530,15 +530,17 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
       if (!mountedRef.current) return;
       if (result.success) {
         resultHaptic('success');
+        autoRetryRef.current = { attempts: 0, notBefore: 0 };
         setPending(null);
         if (photo.kind === 'arrival') {
+          // เก็บไฟล์รูปรอบ 1 ไว้แสดงรูปย่อระหว่างรอลูกค้า (ลบเมื่อวางของครบ/งานจบ)
           const shot: ArrivalShot = { uri: photo.uri, distanceM: photo.distanceM, takenAt: photo.takenAt };
           setArrival(shot);
           persist({ pending: null, arrival: shot });
         } else {
-          // วางของครบแล้ว ไม่ต้องเก็บอะไรในเครื่องต่อ
-          storedRef.current = {};
-          writeStored(jobId, {});
+          // วางของครบแล้ว ไม่ต้องเก็บอะไรในเครื่องต่อ — ลบไฟล์รูปทั้งสองรอบทิ้ง (M1)
+          deleteLocalPhoto(photo.uri);
+          dropLocal();
         }
         setNow(Date.now());
         apply(result.data);
@@ -550,15 +552,28 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
         Alert.alert('ส่งรูปไม่สำเร็จ', `${result.message}\nรูปยังอยู่ในเครื่อง กด "ส่งรูปอีกครั้ง" ได้เลย`);
         return;
       }
-      // รูปนี้ใช้ไม่ได้แล้ว (ห่างเกิน / ยังไม่ครบเวลา / สถานะเปลี่ยน) → ทิ้ง แล้วบอกสิ่งที่ต้องทำ
+      if (result.code === 'WAIT_NOT_OVER' && photo.kind === 'waited') {
+        // ยังไม่ครบเวลาตามนาฬิกา server → เก็บรูปไว้ แล้วส่งให้อัตโนมัติเมื่อครบเวลา (ไม่ต้องถ่ายใหม่ — L3)
+        const waitUntil =
+          typeof result.data?.wait_until === 'string' ? result.data.wait_until : waitUntilRef.current ?? null;
+        const attempts = autoRetryRef.current.attempts + 1;
+        autoRetryRef.current = { attempts, notBefore: Date.now() + Math.min(30_000, 5_000 * attempts) };
+        const kept: PendingPhoto = { ...photo, waitUntil };
+        setPending(kept);
+        persist({ pending: kept });
+        fetchHandover();
+        return;
+      }
+      // รูปนี้ใช้ไม่ได้แล้ว (ห่างเกิน / สถานะเปลี่ยน) → ทิ้ง แล้วบอกสิ่งที่ต้องทำ
       setPending(null);
       persist({ pending: null });
-      if (result.data?.handover) apply(result.data as RiderHandoverResponse);
+      if (photo.uri !== storedRef.current.arrival?.uri) deleteLocalPhoto(photo.uri);
+      if (result.data?.handover) apply(normalizeRiderHandoverData(result.data));
       if (JOB_CHANGED_CODES.includes(result.code)) callbacksRef.current.onJobChanged();
       if (result.code === 'WAIT_NOT_OVER') fetchHandover();
       alertError(result);
     },
-    [alertError, apply, fetchHandover, jobId, persist]
+    [alertError, apply, dropLocal, fetchHandover, jobId, persist]
   );
 
   const shoot = useCallback(
@@ -595,6 +610,10 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
           distanceM: distanceToDropoff(after),
           takenAt: new Date().toISOString(),
         };
+        // รูปใหม่แทนรูปค้างเดิม → ลบไฟล์เดิม · เริ่มนับการส่งอัตโนมัติใหม่
+        const previous = storedRef.current.pending;
+        if (previous && previous.uri !== uri && previous.uri !== storedRef.current.arrival?.uri) deleteLocalPhoto(previous.uri);
+        autoRetryRef.current = { attempts: 0, notBefore: 0 };
         setPending(photo);
         persist({ pending: photo });
         await uploadPhoto(photo);
@@ -619,9 +638,38 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   }, [pending, uploadPhoto]);
 
   const discardPending = () => {
+    // ทิ้งรูปนี้ = ลบไฟล์ด้วย (ยกเว้นเป็นไฟล์เดียวกับรูปย่อรอบ 1)
+    if (pending && pending.uri !== storedRef.current.arrival?.uri) deleteLocalPhoto(pending.uri);
     setPending(null);
     persist({ pending: null });
   };
+
+  // ---------- รูปรอบ 2 ที่ server บอกว่ายังไม่ครบเวลา → ส่งให้อัตโนมัติเมื่อครบ (นาฬิกา server) ----------
+  /** เวลาเครื่องที่ควรส่งรูปที่รอไว้ (null = ไม่มีรูปรอส่งตามเวลา / ลองอัตโนมัติครบโควตาแล้ว) */
+  const retryAtMs =
+    pending && pending.kind === 'waited' && !!pending.waitUntil && !waitedDone && !disputed &&
+    autoRetryRef.current.attempts <= AUTO_RETRY_MAX
+      ? (() => {
+          const due = deviceTimeFor(pending.waitUntil ?? waitUntilIso, clockOffset);
+          // ไม่ยิงถี่: อย่างน้อยตามเวลาพักหลัง WAIT_NOT_OVER รอบก่อน (กันวนถ้านาฬิกา server กับเครื่องยังไม่ตรงกัน)
+          return due !== null ? Math.max(due + AUTO_RETRY_SLACK_MS, autoRetryRef.current.notBefore) : autoRetryRef.current.notBefore;
+        })()
+      : null;
+
+  // ให้ตัวกลับเข้าแอป (AppState) เรียกใช้ได้: ครบเวลาแล้วและไม่มีงานค้าง → ส่งเลย
+  retryDueRef.current = () => {
+    // เผื่อตัวจับเวลาของเครื่องยิงก่อนเวลาเล็กน้อย
+    if (retryAtMs !== null && Date.now() >= retryAtMs - 250 && !busyRef.current) retryPending();
+  };
+
+  useEffect(() => {
+    if (retryAtMs === null || busy !== null) return undefined;
+    const delay = Math.max(0, retryAtMs - Date.now());
+    const timer = setTimeout(() => {
+      if (mountedRef.current && AppState.currentState === 'active') retryDueRef.current();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [retryAtMs, busy]);
 
   const textCustomer = async () => {
     const clean = String(job.dropoff?.phone || '').replace(/[^\d+]/g, '');
@@ -689,22 +737,50 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
     </View>
   );
 
+  // ---------- ลูกค้าแจ้งปัญหา (ทุกสถานะ — ระหว่างส่ง หรือหลังวางของแล้ว) L4 / §A6 ----------
+  if (disputed) {
+    return (
+      <View style={style}>
+        {headerPills}
+        {buyerCard}
+        <NoticeCard
+          icon="warning-circle"
+          tone="danger"
+          title="ลูกค้าแจ้งว่ามีปัญหา"
+          titleColor={colors.danger}
+          message={
+            waitedDone || job.status === 'awaiting_release'
+              ? 'ทีมงานกำลังตรวจรูปถ่ายและตำแหน่งตอนส่งของ แล้วจะแจ้งผลให้ทราบ ระหว่างนี้รับงานใหม่ได้ตามปกติ'
+              : 'ลูกค้าแจ้งปัญหาการรับของ ทีมงานจะตรวจสอบและแจ้งผลให้ทราบ งานนี้ไม่ต้องสแกนหรือถ่ายรูปต่อ ระหว่างนี้รับงานใหม่ได้ตามปกติ'
+          }
+          style={styles.block}
+        />
+        <Card3D padding={spacing.lg} style={styles.block}>
+          <View style={styles.releaseHead}>
+            <IconTile icon="lock" tone="navy" size={44} />
+            <View style={styles.flex}>
+              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>เงินค่าส่งงานนี้พักไว้ก่อน</Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>
+                ทีมงานตัดสินแล้วระบบจะปลดเงินหรือคืนเงินตามผล และแจ้งเตือนให้ทราบทันที
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.releaseRow, { borderTopColor: colors.divider }]}>
+            <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าส่งของงานนี้</Text>
+            <PriceText amount={amount} size="lg" tone="gold" />
+          </View>
+        </Card3D>
+      </View>
+    );
+  }
+
   // ---------- วางของแล้ว รอปลดเงิน ----------
   if (waitedDone) {
     return (
       <View style={style}>
         {headerPills}
         {buyerCard}
-        {disputed ? (
-          <NoticeCard
-            icon="warning-circle"
-            tone="danger"
-            title="ลูกค้าแจ้งว่ามีปัญหา"
-            titleColor={colors.danger}
-            message="ทีมงานกำลังตรวจรูปถ่ายและตำแหน่งตอนส่งของ แล้วจะแจ้งผลให้ทราบ ระหว่างนี้รับงานใหม่ได้ตามปกติ"
-            style={styles.block}
-          />
-        ) : (
+        {(
           <Card3D gradientBorder padding={spacing.lg} style={styles.block}>
             <View style={styles.releaseHead}>
               <IconTile icon="hourglass" tone="gold" size={44} />
@@ -808,6 +884,7 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
                 token={h.qr_token}
                 size={200}
                 expiresAt={h.qr_expires_at ?? null}
+                clockOffsetMs={clockOffset}
                 onExpire={fetchHandover}
                 caption="QR เปลี่ยนใหม่อัตโนมัติ ใช้ได้ครั้งเดียว"
               />
@@ -816,6 +893,25 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
                 {loadError ? 'โหลด QR ไม่สำเร็จ ดึงหน้าจอลงเพื่อลองใหม่' : 'กำลังเตรียม QR...'}
               </Text>
             )}
+            {/* รหัส 6 หลักของไรเดอร์ — กล้องลูกค้าใช้ไม่ได้ ให้อ่านรหัสนี้ให้ลูกค้ากรอก (§A3) */}
+            {!!h?.code && (
+              <View style={styles.codeBlock}>
+                <View style={[styles.dashed, { borderColor: colors.border }]} />
+                <Text style={[typography.bodySm, styles.center, { color: colors.textMuted }]}>
+                  กล้องลูกค้าใช้ไม่ได้? บอกรหัส 6 หลักนี้แทน
+                </Text>
+                <View style={styles.codeRow} accessible accessibilityLabel={`รหัสส่งมอบของไรเดอร์ ${h.code.split('').join(' ')}`}>
+                  {h.code.split('').map((digit, i) => (
+                    <View
+                      key={i}
+                      style={[styles.codeTile, { backgroundColor: colors.inset, borderColor: colors.border }, i === 2 && styles.codeGap]}
+                    >
+                      <Text style={[styles.codeDigit, { color: colors.textStrong }]}>{digit}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
           </View>
         )}
       </Card3D>
@@ -823,20 +919,48 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
       {/* ---------- รูปค้างส่ง ---------- */}
       {!!pendingUsable && busy === null && (
         <NoticeCard
-          icon="upload-simple"
-          tone="warning"
-          title={pendingUsable.kind === 'arrival' ? 'รูปรอบ 1 ยังส่งไม่สำเร็จ' : 'รูปรอบ 2 ยังส่งไม่สำเร็จ'}
-          message={`ถ่ายไว้เมื่อ ${clock(pendingUsable.takenAt)} น. กดส่งอีกครั้งได้เลย ไม่ต้องถ่ายใหม่`}
+          icon={retryAtMs !== null ? 'hourglass' : 'upload-simple'}
+          tone={retryAtMs !== null ? 'info' : 'warning'}
+          title={
+            retryAtMs !== null
+              ? 'ถ่ายรูปรอบ 2 ไว้แล้ว รอครบเวลา'
+              : pendingUsable.kind === 'arrival'
+                ? 'รูปรอบ 1 ยังส่งไม่สำเร็จ'
+                : 'รูปรอบ 2 ยังส่งไม่สำเร็จ'
+          }
+          message={
+            retryAtMs !== null
+              ? `ระบบยังไม่ครบเวลารอลูกค้า จะส่งรูปนี้ให้อัตโนมัติตอน ${clock(new Date(retryAtMs).toISOString())} น. ไม่ต้องถ่ายใหม่`
+              : `ถ่ายไว้เมื่อ ${clock(pendingUsable.takenAt)} น. กดส่งอีกครั้งได้เลย ไม่ต้องถ่ายใหม่`
+          }
           style={styles.block}
         >
           <View style={styles.rowGap}>
-            <Button3D title="ส่งรูปอีกครั้ง" icon="upload-simple" size="sm" onPress={retryPending} style={styles.flex} />
+            <Button3D
+              title={retryAtMs !== null ? 'ส่งตอนนี้' : 'ส่งรูปอีกครั้ง'}
+              icon="upload-simple"
+              size="sm"
+              onPress={retryPending}
+              style={styles.flex}
+            />
             <Button3D title="ทิ้งรูปนี้" size="sm" variant="ghost" onPress={discardPending} />
           </View>
         </NoticeCard>
       )}
 
+      {/* งานเก็บเงินปลายทาง: ไม่มีทางสำรองรูป 2 รอบ (server ไม่รับ) */}
+      {!fallbackAllowed && (
+        <NoticeCard
+          icon="money"
+          tone="warning"
+          title="งานเก็บเงินปลายทาง ต้องส่งมอบกับลูกค้าโดยตรง"
+          message='ลูกค้าไม่อยู่หรือติดต่อไม่ได้ ใช้ปุ่ม "ส่งไม่สำเร็จ" ด้านล่างแทนการวางของ'
+          style={styles.block}
+        />
+      )}
+
       {/* ---------- ทางสำรอง: ลูกค้าไม่สแกน / ไม่อยู่ ---------- */}
+      {fallbackAllowed && (
       <Card3D padding={0} style={styles.block}>
         <View style={[styles.fallbackHead, { borderBottomColor: colors.divider }]}>
           <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>ลูกค้าไม่สแกน / ไม่อยู่</Text>
@@ -935,13 +1059,16 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
           )}
         </View>
       </Card3D>
+      )}
 
-      <View style={[styles.footerNote, { backgroundColor: colors.successSoft }]}>
-        <Icon name="wallet" size={18} color={colors.success} />
-        <Text style={[typography.caption, styles.flex, { color: isDark ? colors.text : colors.textStrong }]}>
-          ทำครบ 3 ขั้นแล้ว ถ้าลูกค้าไม่ร้องเรียนภายใน 24 ชม. ระบบจะปลดเงิน {formatBaht(amount)} ให้คุณอัตโนมัติ
-        </Text>
-      </View>
+      {fallbackAllowed && (
+        <View style={[styles.footerNote, { backgroundColor: colors.successSoft }]}>
+          <Icon name="wallet" size={18} color={colors.success} />
+          <Text style={[typography.caption, styles.flex, { color: isDark ? colors.text : colors.textStrong }]}>
+            ทำครบ 3 ขั้นแล้ว ถ้าลูกค้าไม่ร้องเรียนภายใน 24 ชม. ระบบจะปลดเงิน {formatBaht(amount)} ให้คุณอัตโนมัติ
+          </Text>
+        </View>
+      )}
 
       {/* ---------- กล้องสแกน QR ของลูกค้า ---------- */}
       <QrScannerSheet
@@ -1137,6 +1264,37 @@ const styles = StyleSheet.create({
   codeInput: {
     textAlign: 'center',
     letterSpacing: 8,
+  },
+  codeBlock: {
+    alignSelf: 'stretch',
+  },
+  dashed: {
+    borderTopWidth: 1,
+    borderStyle: 'dashed',
+    marginVertical: spacing.lg,
+  },
+  codeRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  codeTile: {
+    width: 44,
+    height: 54,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  codeGap: {
+    marginRight: spacing.md,
+  },
+  codeDigit: {
+    fontSize: 26,
+    lineHeight: 34,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
 });
 

@@ -184,8 +184,6 @@ export default function OrderDetailScreen() {
   const orderId = /^\d+$/.test(String(id || '')) ? Number(id) : 0;
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  // ที่อยู่/เบอร์โทร/QR รับของ — กันแคปหน้าจอ
-  useSensitiveScreen('order');
 
   const [activeTab, setActiveTab] = useState<Tab>(tab === 'chat' ? 'chat' : 'detail');
   const [order, setOrder] = useState<ShopOrder | null>(null);
@@ -208,6 +206,11 @@ export default function OrderDetailScreen() {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [reviewBusy, setReviewBusy] = useState(false);
+
+  // ที่อยู่/เบอร์โทร — กันแคปหน้าจอ · ยกเว้นระหว่างแสดง QR พร้อมเพย์ที่ค้างจ่าย
+  // (ผู้ใช้ต้องแคป QR ไปสแกนในแอปธนาคารได้ — FIXES L1)
+  const payQrVisible = !!payment && !!order && order.payment_status !== 'paid' && payState !== 'paid';
+  useSensitiveScreen('order', !payQrVisible);
 
   const mountedRef = useRef(true);
   const loadingRef = useRef(false);

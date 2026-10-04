@@ -9,31 +9,21 @@
  */
 
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
-import * as Application from 'expo-application';
 import { apiClient, clearAuthToken } from '@/services/api';
 import { APP_CONFIG } from '@/constants';
-import { APP_INFO } from '@/config/appConfig';
+import { APP_FEATURE_BUILD } from '@/config/appConfig';
 
 export { apiClient };
 
 // =====================================================
-// X-App-Build — เลข build ของแอป (Android versionCode / iOS buildNumber)
-// server ใช้ตัดสินว่าแอปรุ่นนี้รองรับฟีเจอร์ใหม่หรือยัง (เช่น บังคับรูปโปรไฟล์เฉพาะ build ≥ 43)
-// ใช้เลขจาก binary จริงก่อน (nativeBuildVersion) → ไม่มี = เลขในโค้ด
+// X-App-Build — ชุดฟีเจอร์ของแอป (ค่าคงที่ในโค้ด APP_FEATURE_BUILD = 43)
+// server ใช้ตัดสินว่าแอปรุ่นนี้รองรับฟีเจอร์ใหม่หรือยัง (ส่งมอบด้วย QR / บังคับรูปโปรไฟล์ เฉพาะ ≥ 43)
+// header ตั้งไว้ตอนสร้าง apiClient ใน services/api.ts แล้ว (ติดทุก request ตั้งแต่ request แรก)
+// ห้ามใช้ nativeBuildVersion — EAS appVersionSource: remote อาจออก versionCode ไม่ตรงกับโค้ด
 // =====================================================
 
-/** เลข build ของแอปนี้ (จำนวนเต็มบวก) */
-export const APP_BUILD_NUMBER: number = (() => {
-  try {
-    const native = String(Application.nativeBuildVersion ?? '').trim();
-    if (/^\d{1,9}$/.test(native) && Number(native) > 0) return Number(native);
-  } catch {
-    // อ่านจาก native ไม่ได้ → ใช้เลขในโค้ด
-  }
-  return APP_INFO.BUILD_NUMBER;
-})();
-
-apiClient.defaults.headers.common['X-App-Build'] = String(APP_BUILD_NUMBER);
+/** เลขชุดฟีเจอร์ที่ส่งใน X-App-Build (คงชื่อเดิมไว้ให้โค้ดที่ import อยู่) */
+export const APP_BUILD_NUMBER: number = APP_FEATURE_BUILD;
 
 // =====================================================
 // ชนิดข้อมูลผลลัพธ์

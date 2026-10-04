@@ -9,14 +9,20 @@
  *   จึงเช็ค requireOptionalNativeModule ก่อน แล้วค่อย require แบบ lazy
  * - แต่ละหน้าจอได้ key ไม่ซ้ำกัน (เปิดซ้อนหลายหน้า ปิดหน้าหนึ่งแล้วหน้าที่เหลือยังกันอยู่)
  * - ใช้ในหน้าจอ (screen ของ expo-router) เท่านั้น เพราะอาศัย useFocusEffect
+ * - enabled = false → ไม่กัน (เช่น ระหว่างแสดง QR พร้อมเพย์ที่ผู้ใช้ต้องแคปไปสแกนในแอปธนาคาร — FIXES L1)
+ *   สลับค่าระหว่างหน้าเปิดอยู่ได้ทันที (ปลดล็อก/ล็อกใหม่ตามค่า)
  *
  * @param key ชื่อหน้าจอ (ใช้แยก key ของแต่ละหน้า) เช่น 'wallet', 'handover'
+ * @param enabled กันแคปหน้าจอหรือไม่ (ค่าเริ่มต้น true)
  *
  * @example
  * export default function WalletScreen() {
  *   useSensitiveScreen('wallet');
  *   ...
  * }
+ * @example
+ * // หน้าออเดอร์: ปลดการกันระหว่างแสดง QR พร้อมเพย์ที่ค้างจ่าย
+ * useSensitiveScreen('order', !showingPromptPayQr);
  */
 
 import { useCallback, useRef } from 'react';
@@ -54,7 +60,7 @@ const loadScreenCapture = (): ScreenCaptureModule | null => {
 /** เลขลำดับต่อหน้าจอ (ทำให้ key ไม่ซ้ำแม้ชื่อเดียวกันเปิดซ้อนกัน) */
 let instanceSeq = 0;
 
-export const useSensitiveScreen = (key: string = 'sensitive'): void => {
+export const useSensitiveScreen = (key: string = 'sensitive', enabled: boolean = true): void => {
   const tagRef = useRef<string | null>(null);
   if (tagRef.current === null) {
     instanceSeq += 1;
@@ -63,6 +69,7 @@ export const useSensitiveScreen = (key: string = 'sensitive'): void => {
 
   useFocusEffect(
     useCallback(() => {
+      if (!enabled) return undefined;
       const mod = loadScreenCapture();
       const tag = tagRef.current as string;
       if (!mod) return undefined;
@@ -71,7 +78,7 @@ export const useSensitiveScreen = (key: string = 'sensitive'): void => {
       return () => {
         mod.allowScreenCaptureAsync(tag).catch(() => {});
       };
-    }, [])
+    }, [enabled])
   );
 };
 

@@ -32,7 +32,7 @@ import {
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { useBuyerLocation, useFocusedInterval, useMountedRef, getCachedBuyerCoords } from '@/components/taladsod';
 import { useAuthStore } from '@/stores/authStore';
-import { usePreferredRiderStore } from '@/stores/preferredRiderStore';
+import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { getAddresses } from '@/services/api/shopApi';
 import {
   DEFAULT_LOCK_MIN_HEARTS,
@@ -65,7 +65,8 @@ export default function NearbyRidersScreen() {
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const mountedRef = useMountedRef();
   const location = useBuyerLocation();
-  const chosen = usePreferredRiderStore((s) => (s.choice && userId && s.choice.userId === userId ? s.choice : null));
+  // ป้าย "ออเดอร์ถัดไปจะล็อกเรียก..." ใช้เกณฑ์เดียวกับหน้าชำระเงิน: ของบัญชีนี้ + ไม่เกิน 2 ชั่วโมง (M5)
+  const chosen = usePreferredRiderStore((s) => (isPreferredChoiceValid(s.choice, userId) ? s.choice : null));
 
   const [coords, setCoords] = useState<Coords | null>(null);
   const [coordsSource, setCoordsSource] = useState<'gps' | 'address' | null>(null);
