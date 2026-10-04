@@ -4,6 +4,8 @@
  * - รูปจาก server เป็นรูปลายน้ำเสมอ (THAI PROMPT · VIEWER ...) — แอปแค่แสดง ห้ามบันทึกลงเครื่อง
  * - ไม่มีรูป/โหลดรูปไม่ขึ้น = อักษรแรกของชื่อ (ฟอนต์มีเชิง สีทอง) บนพื้นน้ำเงินกรมท่า หรือไอคอนคน
  * - online = จุดเขียวมุมขวาล่าง (ขอบสีการ์ด) · online={false} = จุดเทา · ไม่ส่ง = ไม่แสดงจุด
+ * - verified = ป้ายทอง "ยืนยันตัวตนแล้ว" มุมขวาล่าง (มีจุดออนไลน์อยู่แล้ว → ย้ายไปมุมขวาบน)
+ *   รูปเป็นรูปอะไรก็ได้ที่ผู้ใช้เลือก ความน่าเชื่อถือดูจากป้ายนี้
  *
  * @example
  * <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={56} online />
@@ -16,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from '@/components/ui/Text';
 import { Icon } from '@/components/ui/Icon';
 import { useTheme, FONT } from '@/theme';
+import { VerifiedBadge } from './VerifiedBadge';
 
 export interface PersonAvatarProps {
   uri?: string | null;
@@ -29,6 +32,8 @@ export interface PersonAvatarProps {
   online?: boolean;
   /** สีขอบของจุดออนไลน์ (ปกติ = สีการ์ดที่วางอยู่) */
   surfaceColor?: string;
+  /** ยืนยันตัวตนแล้ว (จาก server เท่านั้น) → ป้ายทองที่มุมรูป */
+  verified?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -43,7 +48,7 @@ export const initialOfName = (name: string | null | undefined): string | null =>
 };
 
 export const PersonAvatar: React.FC<PersonAvatarProps> = memo(
-  ({ uri, name, size = 48, ring = 'gold', online, surfaceColor, style }) => {
+  ({ uri, name, size = 48, ring = 'gold', online, surfaceColor, verified = false, style }) => {
     const { colors, gradients } = useTheme();
     const [failed, setFailed] = useState(false);
 
@@ -56,6 +61,7 @@ export const PersonAvatar: React.FC<PersonAvatarProps> = memo(
     const gap = ring === 'gold' ? Math.max(1.5, Math.round(size * 0.03)) : 0;
     const inner = size - (ringWidth + gap) * 2;
     const dot = Math.max(10, Math.round(size * 0.24));
+    const badge = Math.max(14, Math.round(size * 0.3));
     const initial = initialOfName(name);
     const showImage = !!uri && !failed;
 
@@ -98,7 +104,7 @@ export const PersonAvatar: React.FC<PersonAvatarProps> = memo(
         style={[{ width: size, height: size }, style]}
         accessible
         accessibilityRole="image"
-        accessibilityLabel={`รูปของ ${name || 'ผู้ใช้'}${online === true ? ' ออนไลน์อยู่' : ''}`}
+        accessibilityLabel={`รูปของ ${name || 'ผู้ใช้'}${verified ? ' ยืนยันตัวตนแล้ว' : ''}${online === true ? ' ออนไลน์อยู่' : ''}`}
       >
         {ring === 'gold' ? (
           <LinearGradient
@@ -134,6 +140,13 @@ export const PersonAvatar: React.FC<PersonAvatarProps> = memo(
             ]}
           />
         )}
+        {verified && (
+          <VerifiedBadge
+            size={badge}
+            ringColor={surfaceColor ?? colors.card}
+            style={[styles.badge, online !== undefined ? styles.badgeTop : styles.badgeBottom]}
+          />
+        )}
       </View>
     );
   }
@@ -150,6 +163,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     bottom: 0,
+  },
+  badge: {
+    position: 'absolute',
+    right: -2,
+  },
+  badgeBottom: {
+    bottom: -2,
+  },
+  badgeTop: {
+    top: -2,
   },
 });
 

@@ -409,10 +409,10 @@ export default function SettingsScreen() {
       <MenuGroup title={isAuthenticated ? 'บัญชี' : 'การแจ้งเตือน'}>
         {isAuthenticated && (
           <MenuRow
-            icon="shield-check"
-            title="ยืนยันตัวตน (KYC)"
-            subtitle="ยืนยันก่อนถอนเงินเข้าบัญชี"
-            onPress={() => router.push('/kyc')}
+            icon="seal-check"
+            title="ยืนยันตัวตน"
+            subtitle="ถ่ายบัตร + ใบหน้า ใช้ได้ทั้งสั่งของ รับงาน เปิดร้าน และถอนเงิน"
+            onPress={() => router.push('/ekyc?from=profile' as never)}
           />
         )}
         <MenuRow

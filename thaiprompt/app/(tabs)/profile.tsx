@@ -8,7 +8,7 @@
  * - รหัสแนะนำ = referralCode ของผู้ใช้ (ไม่มี = รหัสสมาชิก) · ชวนเพื่อนแบบชั้นเดียว ไม่มีทีม/สายงาน
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -25,11 +25,13 @@ import { Text, TextInput } from '@/components/ui/Text';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '@/stores/authStore';
 import { useAppStore } from '@/stores/appStore';
+import { useEkycStore } from '@/stores/ekycStore';
+import { VerifiedBadge } from '@/components/people/VerifiedBadge';
 import { uploadAvatar, changePassword } from '@/services/api';
 import { APP_INFO, isFeatureEnabled } from '@/config/appConfig';
 import { openWebsite } from '@/components/ui/WebsiteButton';
@@ -174,6 +176,20 @@ export default function ProfileScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // สถานะยืนยันตัวตน (ป้ายทองข้างชื่อ + เมนูยืนยันตัวตน) — โหลดเมื่อเปิดแท็บ (แคช 60 วิ)
+  const kycStatus = useEkycStore((s) => s.status);
+  const kycVerified = !!kycStatus?.verified;
+  const kycSubtitle = kycVerified
+    ? 'ยืนยันแล้ว มีป้ายทองข้างชื่อ'
+    : kycStatus?.kyc_status === 'pending'
+      ? 'เจ้าหน้าที่กำลังตรวจสอบ'
+      : 'ถ่ายบัตร + ใบหน้า ใช้เวลาราว 1 นาที';
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) useEkycStore.getState().loadStatus().catch(() => {});
+    }, [isAuthenticated])
+  );
 
   // Password Modal State
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -454,9 +470,12 @@ export default function ProfileScreen() {
             </Pressable>
 
             <View style={styles.identityText}>
-              <Text numberOfLines={1} style={[typography.serifLg, { color: colors.onHeader }]}>
-                {user?.name}
-              </Text>
+              <View style={styles.nameRow}>
+                <Text numberOfLines={1} style={[typography.serifLg, styles.nameText, { color: colors.onHeader }]}>
+                  {user?.name}
+                </Text>
+                {kycVerified && <VerifiedBadge size={20} />}
+              </View>
               {!!user?.email && (
                 <Text numberOfLines={1} style={[typography.bodySm, styles.email, { color: colors.onHeaderMuted }]}>
                   {user.email}
@@ -525,9 +544,9 @@ export default function ProfileScreen() {
               onPress={() => router.push('/edit-profile')}
             />
             <MenuRow
-              icon="camera"
-              title="รูปโปรไฟล์ถ่ายสด"
-              subtitle="รูปจริงที่ไรเดอร์และร้านเห็น (มีลายน้ำ)"
+              icon="image"
+              title="เปลี่ยนรูปโปรไฟล์"
+              subtitle="รูปอะไรก็ได้ และดูว่าคนอื่นเห็นคุณแบบไหน"
               onPress={() => router.push('/profile-photo' as never)}
             />
             <MenuRow
@@ -537,10 +556,15 @@ export default function ProfileScreen() {
               onPress={() => setShowPasswordModal(true)}
             />
             <MenuRow
-              icon="shield-check"
-              title="ยืนยันตัวตน (KYC)"
-              subtitle="ยืนยันก่อนถอนเงินเข้าบัญชี"
-              onPress={() => router.push('/kyc')}
+              icon="seal-check"
+              tone={kycVerified ? 'gold' : 'navy'}
+              title="ยืนยันตัวตน"
+              subtitle={kycSubtitle}
+              onPress={() =>
+                router.push(
+                  (kycVerified ? '/profile-photo' : kycStatus?.kyc_status === 'pending' ? '/ekyc/result?from=profile' : '/ekyc?from=profile') as never
+                )
+              }
             />
           </MenuGroup>
 
@@ -818,6 +842,14 @@ const styles = StyleSheet.create({
   },
   identityText: {
     flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  nameText: {
+    flexShrink: 1,
   },
   email: {
     marginTop: -2,

@@ -16,7 +16,7 @@
  */
 
 import { APP_INFO } from '@/config/appConfig';
-import { isTrustedWebUrl } from '@/utils/linking';
+import { isTrustedAvatarUrl } from '@/utils/linking';
 import { clockOffsetFrom, rememberClockOffset } from '@/utils/serverClock';
 import { apiGet, apiPost, num, type ApiResult } from './client';
 import { fmImageUri } from './taladsodApi';
@@ -55,6 +55,8 @@ export interface PersonCard {
   hearts_total: number | null;
   hearts_from_me: number | null;
   can_lock: boolean;
+  /** ยืนยันตัวตนแล้ว (ป้ายทอง) — server ส่งมาเท่านั้น ไม่มี = false */
+  verified: boolean;
 }
 
 export interface SettlementLine {
@@ -163,13 +165,13 @@ const nullableNum = (value: unknown): number | null =>
   value === null || value === undefined || value === '' ? null : Number.isFinite(Number(value)) ? Number(value) : null;
 
 /**
- * รูปคน — รับเฉพาะรูปจากเว็บของเรา (thaiprompt.online หรือ path ของเว็บ) เท่านั้น
- * รูปคนเป็นรูปลายน้ำ URL ลายเซ็นจาก server เสมอ → โดเมนอื่น/scheme อื่น = ไม่แสดง
+ * รูปคน (รูปโปรไฟล์ที่ผู้ใช้เลือก) — รับเฉพาะ https จากเว็บของเรา (thaiprompt.online หรือ path ของเว็บ)
+ * หรือ CDN รูปโปรไฟล์ของ LINE / Google / Facebook (บัญชีที่ใช้เข้าสู่ระบบ) · โดเมนอื่น/scheme อื่น = ไม่แสดง
  */
 export const personPhotoUri = (value: unknown): string | null => {
   const uri = fmImageUri(value);
   if (!uri) return null;
-  return uri.startsWith(`${APP_INFO.WEBSITE}/`) || isTrustedWebUrl(uri) ? uri : null;
+  return uri.startsWith(`${APP_INFO.WEBSITE}/`) || isTrustedAvatarUrl(uri) ? uri : null;
 };
 
 export const normalizePersonCard = (raw: any): PersonCard | null => {
@@ -186,6 +188,7 @@ export const normalizePersonCard = (raw: any): PersonCard | null => {
     hearts_total: nullableNum(raw.hearts_total),
     hearts_from_me: nullableNum(raw.hearts_from_me),
     can_lock: bool(raw.can_lock),
+    verified: bool(raw.verified),
   };
 };
 

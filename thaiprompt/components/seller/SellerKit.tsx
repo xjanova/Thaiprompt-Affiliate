@@ -159,7 +159,7 @@ export const SellerGateNotice: React.FC<SellerGateNoticeProps> = ({ failure, sty
       icon = 'identification-card';
       tone = 'warning';
       action = (
-        <Button3D title="ยืนยันตัวตน (KYC)" icon="identification-card" iconRight="arrow-right" size="lg" fullWidth onPress={() => router.push('/kyc')} />
+        <Button3D title="ยืนยันตัวตน (KYC)" icon="identification-card" iconRight="arrow-right" size="lg" fullWidth onPress={() => router.push('/ekyc?from=seller' as never)} />
       );
       break;
     case 'PACKAGE_REQUIRED':

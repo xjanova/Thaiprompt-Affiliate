@@ -190,7 +190,7 @@ export const RiderChoiceBlock: React.FC<RiderChoiceBlockProps> = ({
           >
             <View style={styles.choiceRow}>
               <RadioMark selected={selected} disabled={disabled} />
-              <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={42} />
+              <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={42} verified={rider.verified} />
               <View style={styles.flex}>
                 <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
                   เรียกคนโปรด · {rider.display_name}

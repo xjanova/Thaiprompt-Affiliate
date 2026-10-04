@@ -16,8 +16,8 @@ import { APP_FEATURE_BUILD } from '@/config/appConfig';
 export { apiClient };
 
 // =====================================================
-// X-App-Build — ชุดฟีเจอร์ของแอป (ค่าคงที่ในโค้ด APP_FEATURE_BUILD = 43)
-// server ใช้ตัดสินว่าแอปรุ่นนี้รองรับฟีเจอร์ใหม่หรือยัง (ส่งมอบด้วย QR / บังคับรูปโปรไฟล์ เฉพาะ ≥ 43)
+// X-App-Build — ชุดฟีเจอร์ของแอป (ค่าคงที่ในโค้ด APP_FEATURE_BUILD = 44)
+// server ใช้ตัดสินว่าแอปรุ่นนี้รองรับฟีเจอร์ใหม่หรือยัง (ส่งมอบด้วย QR ≥ 43 · ยืนยันตัวตนด้วย AI eKYC ≥ 44)
 // header ตั้งไว้ตอนสร้าง apiClient ใน services/api.ts แล้ว (ติดทุก request ตั้งแต่ request แรก)
 // ห้ามใช้ nativeBuildVersion — EAS appVersionSource: remote อาจออก versionCode ไม่ตรงกับโค้ด
 // =====================================================
@@ -128,8 +128,8 @@ export const THAI_ERROR_MESSAGES: Record<string, string> = {
   UNSETTLED_COD: 'ยังมียอดเก็บเงินปลายทางที่ยังไม่นำส่ง',
   INVALID_REDIRECT_PATH: 'เปิดหน้านี้บนเว็บไซต์ไม่ได้',
 
-  // กระเป๋าเงิน / ถอนเงิน
-  KYC_REQUIRED: 'ยืนยันตัวตน (KYC) ก่อนถอนเงินนะ',
+  // กระเป๋าเงิน / ถอนเงิน / ยืนยันตัวตน (ด่าน eKYC ใช้ code เดียวกันตอนสั่งซื้อ/ไรเดอร์ออนไลน์/เปิดร้าน)
+  KYC_REQUIRED: 'กรุณายืนยันตัวตนก่อนใช้งานส่วนนี้ ใช้เวลาประมาณ 1 นาที',
   PIN_NOT_SET: 'ตั้งรหัส PIN กระเป๋าเงินก่อนนะ',
   WALLET_LOCKED: 'กระเป๋าเงินถูกล็อกชั่วคราว ลองใหม่ภายหลังนะ',
   PAYMENT_METHOD_REQUIRED: 'เพิ่มบัญชีรับเงินก่อนนะ',
@@ -194,7 +194,7 @@ export const THAI_ERROR_MESSAGES: Record<string, string> = {
   // ไรเดอร์รอบ 2 — ล็อกเรียก / หัวใจ / รูปโปรไฟล์
   RIDER_LOCK_NOT_ALLOWED: 'ยังล็อกเรียกไรเดอร์คนนี้ไม่ได้ ระบบจะจับคู่ไรเดอร์ให้อัตโนมัติแทน',
   HEART_NOT_ALLOWED: 'ให้หัวใจได้เมื่อได้รับของจากไรเดอร์แล้วเท่านั้น',
-  PROFILE_PHOTO_REQUIRED: 'กรุณาถ่ายรูปโปรไฟล์ก่อนใช้งานส่วนนี้',
+  PROFILE_PHOTO_REQUIRED: 'กรุณาเพิ่มรูปโปรไฟล์ก่อนใช้งานส่วนนี้',
 
   // ส่งมอบของ (สแกน QR ใส่กัน)
   HANDOVER_NOT_READY: 'ยังไม่ถึงขั้นรับของ รอไรเดอร์มาถึงก่อนนะ',
@@ -211,6 +211,14 @@ export const THAI_ERROR_MESSAGES: Record<string, string> = {
   TOO_FAR_FROM_DROPOFF: 'ยังอยู่ไกลจากจุดส่ง เข้าใกล้จุดส่งอีกนิดนะ',
   WAIT_NOT_OVER: 'ยังไม่ครบเวลารอ รออีกสักครู่นะ',
   DISPUTE_NOT_ALLOWED: 'แจ้งปัญหาออเดอร์นี้ไม่ได้แล้ว ติดต่อทีมงานที่หน้าช่วยเหลือนะ',
+
+  // ยืนยันตัวตนด้วย AI (eKYC)
+  EKYC_CONSENT_REQUIRED: 'กดยินยอมให้ใช้ข้อมูลบัตรและใบหน้าก่อนเริ่มนะ',
+  EKYC_SESSION_EXPIRED: 'หมดเวลายืนยันตัวตนรอบนี้แล้ว เริ่มใหม่อีกครั้งนะ',
+  EKYC_ALREADY_VERIFIED: 'บัญชีนี้ยืนยันตัวตนเรียบร้อยแล้ว',
+  EKYC_TOO_MANY_ATTEMPTS: 'วันนี้ลองครบจำนวนครั้งแล้ว ลองใหม่พรุ่งนี้ หรือรอเจ้าหน้าที่ตรวจสอบ',
+  EKYC_BAD_IMAGE: 'รูปนี้ใช้ไม่ได้ ถ่ายใหม่อีกครั้งนะ',
+  EKYC_CHALLENGE_MISMATCH: 'ท่าทางที่ส่งไม่ตรงกับคำสั่ง ลองถ่ายใบหน้าใหม่อีกครั้งนะ',
 };
 
 const STATUS_CODE: Record<number, string> = {
@@ -407,6 +415,9 @@ export const apiPut = <T>(url: string, data?: unknown, options: RequestOptions =
 
 export const apiDelete = <T>(url: string, data?: unknown, options: RequestOptions = {}) =>
   request<T>({ ...options, method: 'DELETE', url, data });
+
+export const apiPatch = <T>(url: string, data?: unknown, options: RequestOptions = {}) =>
+  request<T>({ ...options, method: 'PATCH', url, data });
 
 /** ส่ง multipart/form-data (อัปโหลดรูป) — timeout ยาวกว่าปกติ */
 export const apiUpload = <T>(url: string, form: FormData, options: RequestOptions = {}) =>

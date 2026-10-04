@@ -76,6 +76,7 @@ import { getFavoriteRiders, DEFAULT_LOCK_MIN_HEARTS } from '@/services/api/rider
 import type { PersonCard } from '@/services/api/handoverApi';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Pin = { latitude: number; longitude: number; source: 'gps' | 'saved' | 'map' };
@@ -415,6 +416,10 @@ export default function TaladsodCheckoutScreen() {
         return;
       case 'PROFILE_PHOTO_REQUIRED':
         promptProfilePhoto('checkout');
+        return;
+      case 'KYC_REQUIRED':
+        // ยังไม่ยืนยันตัวตน (แอป build ≥ 44) → sheet "ยืนยันตัวตนก่อนสั่งซื้อ" แล้วกลับมาหน้านี้
+        guardKycRequired({ success: false, code, message }, 'checkout');
         return;
       case 'WALLET_INACTIVE':
       case 'PAYMENT_METHOD_DISABLED':

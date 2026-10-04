@@ -28,6 +28,7 @@ import { Field, formatThaiDateTime } from '@/components/shop';
 import { IconTile, NoticeBanner } from '@/components/merchant';
 import { ErrorNote, FormCard, FormSkeleton } from '@/components/seller';
 import { isProfilePhotoRequired, promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type FormKey =
@@ -212,7 +213,12 @@ export default function SellerApplyScreen() {
     }
 
     resultHaptic('error');
-    // ยังไม่มีรูปโปรไฟล์ถ่ายสด → พาไปถ่ายรูป ข้อมูลที่กรอกยังอยู่ กลับมากดส่งต่อได้ (U8)
+    // ยังไม่ยืนยันตัวตน (แอป build ≥ 44) → sheet ยืนยันตัวตน ข้อมูลที่กรอกยังอยู่ กลับมากดส่งต่อได้
+    if (guardKycRequired(res, 'seller')) {
+      setSubmitError(res.message);
+      return;
+    }
+    // ยังไม่มีรูปโปรไฟล์ → พาไปเพิ่มรูป ข้อมูลที่กรอกยังอยู่ กลับมากดส่งต่อได้ (U8)
     if (isProfilePhotoRequired(res)) {
       setSubmitError(res.message);
       promptProfilePhoto('seller');
@@ -271,7 +277,7 @@ export default function SellerApplyScreen() {
         <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ยืนยันตัวตนไว้ก่อนได้เลย</Text>
         <Text style={[typography.caption, { color: colors.textMuted }]}>ร้านจะเริ่มขายได้ทันทีหลังอนุมัติ</Text>
       </View>
-      <Button3D title="KYC" size="sm" variant="secondary" iconRight="arrow-right" onPress={() => router.push('/kyc')} />
+      <Button3D title="KYC" size="sm" variant="secondary" iconRight="arrow-right" onPress={() => router.push('/ekyc?from=seller' as never)} />
     </View>
   );
 
@@ -290,7 +296,7 @@ export default function SellerApplyScreen() {
             </Text>
             <Button3D title="ไปที่ร้านของฉัน" icon="storefront" iconRight="arrow-right" size="lg" fullWidth style={styles.cta} onPress={() => router.replace('/merchant' as never)} />
             {!status.kyc_approved && (
-              <Button3D title="ยืนยันตัวตน (KYC)" icon="identification-card" variant="secondary" fullWidth style={styles.gapSm} onPress={() => router.push('/kyc')} />
+              <Button3D title="ยืนยันตัวตน (KYC)" icon="identification-card" variant="secondary" fullWidth style={styles.gapSm} onPress={() => router.push('/ekyc?from=seller' as never)} />
             )}
           </Card3D>
         );

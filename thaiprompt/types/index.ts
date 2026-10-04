@@ -25,6 +25,10 @@ export interface User {
   wallet_address?: string;
   permissions: string[];
   createdAt: string;
+  /** ยืนยันตัวตนแล้ว (ป้ายทอง) — server รุ่นใหม่ส่งมากับ /me */
+  verified?: boolean;
+  /** none | pending | approved | rejected */
+  kyc_status?: string;
 }
 
 // =====================================================

@@ -78,6 +78,7 @@ import type { PersonCard } from '@/services/api/handoverApi';
 import type { CartRiderQuote } from '@/services/api/shopApi';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import { useTheme, spacing, typography } from '@/theme';
 
 type Step = 'form' | 'payment' | 'done';
@@ -509,6 +510,10 @@ export default function CheckoutScreen() {
         return;
       case 'PROFILE_PHOTO_REQUIRED':
         promptProfilePhoto('checkout');
+        return;
+      case 'KYC_REQUIRED':
+        // ยังไม่ยืนยันตัวตน (แอป build ≥ 44) → sheet "ยืนยันตัวตนก่อนสั่งซื้อ" แล้วกลับมาหน้านี้ (ข้อมูลที่เลือกยังอยู่)
+        guardKycRequired(res, 'checkout');
         return;
       case 'COD_NOT_AVAILABLE':
         if (payment === 'cod') setPayment('wallet');
