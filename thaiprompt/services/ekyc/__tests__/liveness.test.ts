@@ -32,6 +32,7 @@ const face = (over: Partial<FaceSample> = {}): FaceSample => ({
   rightEyeOpen: 0.93,
   smile: 0.1,
   noseOffset: 0,
+  mouthWidth: 0.8,
   ...over,
 });
 
@@ -83,6 +84,26 @@ describe('sampleFromMlkit', () => {
     expect(s.noseOffset).toBeCloseTo(0.25);
   });
 
+  it('ความกว้างปากเทียบระยะตา (landmark ปาก 5/11 · ไม่มีจมูกก็คำนวณได้)', () => {
+    const s = sampleFromMlkit(
+      [
+        {
+          frame: { origin: { x: 300, y: 300 }, size: { x: 400, y: 400 } },
+          landmarks: [
+            { type: '4', position: { x: 400, y: 400 } },
+            { type: '10', position: { x: 560, y: 400 } },
+            { type: '5', position: { x: 410, y: 560 } },
+            { type: '11', position: { x: 550, y: 560 } },
+          ],
+        },
+      ],
+      1000,
+      1000
+    );
+    expect(s.mouthWidth).toBeCloseTo(140 / 160);
+    expect(s.noseOffset).toBeNull();
+  });
+
   it('ไม่มีหน้า = faceCount 0', () => {
     expect(sampleFromMlkit([], 100, 100).faceCount).toBe(0);
     expect(sampleFromMlkit(null, 100, 100).box).toBeNull();
@@ -125,6 +146,16 @@ describe('ทิศหันหน้า (ภาพกระจก)', () => {
     const cfg = { ...LIVENESS_CONFIG, mirrored: false };
     expect(evaluateChallenge('turn_left', face({ noseOffset: 0.3 }), base, cfg).ok).toBe(true);
   });
+
+  it('หันเกิน 40° → TURN_LESS (server มองหน้าไม่ชัด) · ไม่เกินยังผ่าน', () => {
+    expect(evaluateChallenge('turn_left', face({ noseOffset: -0.7, yaw: -48 }), base)).toEqual({ ok: false, hint: 'TURN_LESS' });
+    expect(evaluateChallenge('turn_left', face({ noseOffset: -0.5, yaw: -38 }), base).ok).toBe(true);
+    // ไม่มี landmark → ใช้ yaw อย่างเดียว
+    expect(evaluateChallenge('turn_right', face({ noseOffset: null, yaw: 45 }), base).hint).toBe('TURN_LESS');
+    // ไม่มีมุม yaw → ใช้จมูก
+    expect(evaluateChallenge('turn_right', face({ noseOffset: 0.75, yaw: null }), base)).toEqual({ ok: false, hint: 'TURN_LESS' });
+    expect(evaluateChallenge('turn_right', face({ noseOffset: 0.4, yaw: null }), base).ok).toBe(true);
+  });
 });
 
 describe('ท่าอื่นๆ', () => {
@@ -134,17 +165,41 @@ describe('ท่าอื่นๆ', () => {
     expect(evaluateChallenge('blink', face({ leftEyeOpen: 0.1, rightEyeOpen: 0.8 }), base).ok).toBe(false);
   });
 
-  it('ยิ้ม · มองตรงตอนแรกยิ้มอยู่แล้วต้องยิ้มกว้างขึ้น', () => {
+  it('กระพริบตา: ตาหรี่ลงชัดเจนเทียบกับตอนมองตรงก็นับ (ภาพนิ่งจับตาปิดสนิทยาก)', () => {
+    // มองตรงลืมตา 0.93 → 0.4 (เหลือราว 43%) นับ
+    expect(evaluateChallenge('blink', face({ leftEyeOpen: 0.4, rightEyeOpen: 0.38 }), base).ok).toBe(true);
+    // ยังเปิดอยู่มาก → อีกนิด
+    expect(evaluateChallenge('blink', face({ leftEyeOpen: 0.55, rightEyeOpen: 0.5 }), base)).toEqual({ ok: false, hint: 'MORE' });
+    // ตอนมองตรงตาหยีอยู่แล้ว → ต้องหรี่ลงอีกมาก
+    const squint = face({ leftEyeOpen: 0.6, rightEyeOpen: 0.62 });
+    expect(evaluateChallenge('blink', face({ leftEyeOpen: 0.45, rightEyeOpen: 0.45 }), squint).ok).toBe(false);
+    // ไม่มีค่าอ้างอิง → ต้องปิดสนิทตามเกณฑ์เดิม
+    expect(evaluateChallenge('blink', face({ leftEyeOpen: 0.4, rightEyeOpen: 0.4 }), null).ok).toBe(false);
+  });
+
+  it('ยิ้ม · ต้องยิ้มเพิ่มจากตอนมองตรง (คะแนน +0.25 หรือปากกว้างขึ้น ≥ 12%)', () => {
     expect(evaluateChallenge('smile', face({ smile: 0.85 }), base).ok).toBe(true);
     expect(evaluateChallenge('smile', face({ smile: 0.5 }), base)).toEqual({ ok: false, hint: 'MORE' });
     const smiley = face({ smile: 0.8 });
+    // ยิ้มอยู่แล้วตอนมองตรง: คะแนนเพิ่มนิดเดียว ไม่นับ (server จะตีกลับ)
     expect(evaluateChallenge('smile', face({ smile: 0.85 }), smiley).ok).toBe(false);
-    expect(evaluateChallenge('smile', face({ smile: 0.95 }), smiley).ok).toBe(true);
+    expect(evaluateChallenge('smile', face({ smile: 0.95 }), smiley).ok).toBe(false);
+    // ปากกว้างขึ้นจริง 15% → ผ่าน
+    expect(evaluateChallenge('smile', face({ smile: 0.95, mouthWidth: 0.92 }), smiley).ok).toBe(true);
+    // ปากกว้างขึ้นแค่ 5% → อีกนิด
+    expect(evaluateChallenge('smile', face({ smile: 0.85, mouthWidth: 0.84 }), smiley)).toEqual({ ok: false, hint: 'MORE' });
+    // ไม่มีคะแนนยิ้ม แต่ปากกว้างขึ้นชัด → ผ่าน
+    expect(evaluateChallenge('smile', face({ smile: null, mouthWidth: 0.95 }), base).ok).toBe(true);
+    // ไม่มีทั้งคะแนนและจุดปาก → ทำท่า
+    expect(evaluateChallenge('smile', face({ smile: null, mouthWidth: null }), base)).toEqual({ ok: false, hint: 'DO_ACTION' });
   });
 
-  it('พยักหน้า = มุมก้มเงยเปลี่ยน ≥ 12°', () => {
+  it('พยักหน้า = มุมก้มเงยเปลี่ยน ≥ 12° แต่ไม่เกิน 30°', () => {
     expect(evaluateChallenge('nod', face({ pitch: -14 }), base).ok).toBe(true);
     expect(evaluateChallenge('nod', face({ pitch: -7 }), base)).toEqual({ ok: false, hint: 'MORE' });
+    expect(evaluateChallenge('nod', face({ pitch: -28 }), base).ok).toBe(true);
+    expect(evaluateChallenge('nod', face({ pitch: -35 }), base)).toEqual({ ok: false, hint: 'NOD_LESS' });
+    expect(evaluateChallenge('nod', face({ pitch: 33 }), base)).toEqual({ ok: false, hint: 'NOD_LESS' });
   });
 
   it('หลายหน้า = ไม่ผ่านทุกท่า', () => {

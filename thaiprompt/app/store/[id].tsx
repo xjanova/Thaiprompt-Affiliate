@@ -26,6 +26,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { getStore, getStoreProducts, type ShopProduct, type StoreDetail } from '@/services/api/shopApi';
 import { Card3D, Chip, EmptyState, Icon, Pill, RoyalHeader, Screen, SectionHeader } from '@/components/ui';
 import { CartButton, MetaItem, ProductCard, SearchField, StoreLogo, formatThaiDateTime } from '@/components/shop';
+import { VerifiedBadge, isVerifiedFlag } from '@/components/people/VerifiedBadge';
 import { useTheme, shadowStyle, spacing, typography } from '@/theme';
 
 const PER_PAGE = 20;
@@ -50,6 +51,8 @@ export default function StoreDetailScreen() {
   const cardWidth = Math.floor((width - spacing.screen * 2 - spacing.md) / 2);
 
   const [store, setStore] = useState<StoreDetail | null>(null);
+  // ป้ายทองเจ้าของร้าน (ยืนยันตัวตนด้วย eKYC แล้ว) — server ส่ง owner_verified มา ห้ามเดาเอง
+  const ownerVerified = isVerifiedFlag(store?.owner_verified);
   const [storeError, setStoreError] = useState<{ message: string; notFound: boolean } | null>(null);
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [page, setPage] = useState(1);
@@ -216,9 +219,15 @@ export default function StoreDetailScreen() {
             {store?.is_verified && <Icon name="seal-check" size={20} color={colors.goldDeep} weight="fill" />}
           </View>
 
-          {(store?.is_verified || store?.rider_delivery || store?.cod_available) && (
+          {(store?.is_verified || ownerVerified || store?.rider_delivery || store?.cod_available) && (
             <View style={styles.pills}>
               {store?.is_verified && <Pill label="ร้านยืนยันแล้ว" tone="success" icon="seal-check" />}
+              {ownerVerified && (
+                <View style={styles.ownerBadge} accessible accessibilityLabel="เจ้าของร้านยืนยันตัวตนแล้ว">
+                  <VerifiedBadge size={15} />
+                  <Text style={[typography.caption, { color: colors.goldDeep }]}>เจ้าของร้านยืนยันตัวตนแล้ว</Text>
+                </View>
+              )}
               {store?.rider_delivery && <Pill label="ไรเดอร์ส่ง" tone="gold" icon="moped" />}
               {store?.cod_available && <Pill label="เก็บเงินปลายทาง" tone="info" icon="money" />}
             </View>
@@ -368,6 +377,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginTop: spacing.md,
+  },
+  ownerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   name: {
     flexShrink: 1,

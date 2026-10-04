@@ -9,7 +9,8 @@ import type { LivenessHint } from '@/services/ekyc/liveness';
 
 export const CHALLENGE_UI: Record<EkycFaceLabel, { instruction: string; short: string; icon: IconName }> = {
   neutral: { instruction: 'มองตรงที่กล้อง', short: 'มองตรง', icon: 'scan-smiley' },
-  blink: { instruction: 'กระพริบตาช้าๆ', short: 'กระพริบตา', icon: 'eye' },
+  // ภาพนิ่งจับจังหวะกระพริบเร็วๆ ไม่ทัน → บอกให้หลับค้างไว้ครู่หนึ่ง
+  blink: { instruction: 'กระพริบตาช้าๆ หลับค้างไว้ครู่หนึ่ง', short: 'กระพริบตา', icon: 'eye' },
   turn_left: { instruction: 'หันหน้าไปทางซ้ายช้าๆ', short: 'หันซ้าย', icon: 'arrow-left' },
   turn_right: { instruction: 'หันหน้าไปทางขวาช้าๆ', short: 'หันขวา', icon: 'arrow-right' },
   smile: { instruction: 'ยิ้มกว้างๆ', short: 'ยิ้ม', icon: 'smiley' },
@@ -27,5 +28,7 @@ export const LIVENESS_HINT_TEXT: Record<LivenessHint, string> = {
   DO_ACTION: '',
   MORE: 'อีกนิด…',
   WRONG_WAY: 'หันผิดทาง ลองหันอีกด้านนะ',
+  TURN_LESS: 'หันมากไปนิด หันกลับมาครึ่งทาง ให้ยังเห็นหน้าชัด',
+  NOD_LESS: 'ก้มหรือเงยมากไปนิด ขยับกลับมาหน่อย',
   GOOD: '',
 };

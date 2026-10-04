@@ -23,7 +23,7 @@ import { CHALLENGE_UI, LIVENESS_HINT_TEXT } from '@/components/ekyc/livenessCopy
 import { useMountedRef } from '@/components/taladsod/hooks';
 import { isScreenCaptureProtectionAvailable, useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useEkycStore } from '@/stores/ekycStore';
-import { framesMatchChallenges, type EkycFaceLabel, type EkycFrame } from '@/services/api/ekycApi';
+import { framesMatchChallenges, isSessionUsable, type EkycFaceLabel, type EkycFrame } from '@/services/api/ekycApi';
 import {
   advance,
   advanceGuided,
@@ -33,6 +33,7 @@ import {
   pickPictureSize,
   progressOf,
   sampleFromMlkit,
+  LIVENESS_CONFIG,
   type LivenessHint,
   type LivenessState,
 } from '@/services/ekyc/liveness';
@@ -68,7 +69,9 @@ export default function EkycFaceScreen() {
   const [detector, setDetector] = useState<DetectorMode>('checking');
   const [live, setLive] = useState<LivenessState>(() => createLivenessState(session?.challenges ?? []));
   const [hint, setHint] = useState<LivenessHint>('GOOD');
+  // ชิปบนจอผูกกับสิ่งที่ ML Kit เห็นจริงเท่านั้น (ไม่เดาแสง/แว่น)
   const [framed, setFramed] = useState(false);
+  const [singleFace, setSingleFace] = useState(false);
   const [eyesSeen, setEyesSeen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
@@ -86,7 +89,8 @@ export default function EkycFaceScreen() {
   // ไม่มีรอบ → เริ่มใหม่ · รอบไม่มีคำสั่ง (ไม่ควรเกิด) → กลับหน้าแนะนำ
   useEffect(() => {
     if (!focused || finishedRef.current) return;
-    if (!session || session.challenges.length === 0) router.replace('/ekyc' as never);
+    // รอบที่มีท่าที่แอปไม่รู้จัก = ถ่ายไม่ครบแน่ (ส่งไปก็ CHALLENGE_MISMATCH วนเริ่มใหม่) → กลับหน้าแนะนำ
+    if (!isSessionUsable(session)) router.replace('/ekyc' as never);
   }, [focused, session]);
 
   // เตรียมตัวตรวจใบหน้า (ไม่มี/ล้มเหลว = โหมดนับถอยหลัง)
@@ -280,7 +284,15 @@ export default function EkycFaceScreen() {
         }
         const sample = sampleFromMlkit(faces, shot.width, shot.height);
         setFramed(sample.faceCount === 1 && framingHint(sample) === null);
-        if (sample.leftEyeOpen !== null) setEyesSeen(true);
+        setSingleFace(sample.faceCount === 1);
+        // เห็นตาเปิดชัดทั้งสองข้างอย่างน้อยครั้งหนึ่ง (แว่นดำ/ตาถูกบัง = ML Kit ให้ค่าลืมตาต่ำ)
+        if (
+          sample.leftEyeOpen !== null &&
+          sample.rightEyeOpen !== null &&
+          Math.min(sample.leftEyeOpen, sample.rightEyeOpen) >= LIVENESS_CONFIG.eyesOpenMin
+        ) {
+          setEyesSeen(true);
+        }
         const result = advance(liveRef.current, sample);
         if (result.accept && result.label) {
           keep(shot.uri, result.label, result.state);
@@ -292,7 +304,8 @@ export default function EkycFaceScreen() {
         } else {
           dropTempFile(shot.uri);
           setHint(result.hint);
-          await sleep(120);
+          // ท่ากระพริบตา: ถ่ายต่อทันที (ตาปิดแค่ครู่เดียว พักนานจะพลาดจังหวะ)
+          if (label !== 'blink') await sleep(120);
         }
       }
     })();
@@ -443,8 +456,8 @@ export default function EkycFaceScreen() {
 
         <View style={styles.chips}>
           <CameraChip label="หน้าอยู่ในกรอบ" on={framed} />
-          <CameraChip label="แสงพอ" on={framed} />
-          <CameraChip label="ไม่สวมแว่นดำ" on={eyesSeen} />
+          <CameraChip label="หน้าเดียวในกล้อง" on={singleFace} />
+          <CameraChip label="เห็นดวงตาชัด" on={eyesSeen} />
         </View>
       </View>
     </View>

@@ -389,11 +389,12 @@ export default function EkycCaptureScreen() {
                   {status}
                 </Text>
               </View>
-              <View style={styles.chips}>
-                <CameraChip label="ภาพชัด" on={found} />
-                <CameraChip label="ไม่มีแสงสะท้อน" on={found} />
-                <CameraChip label="เห็นครบทั้งใบ" on={found} />
-              </View>
+              {/* ชิปผูกกับสิ่งที่ตรวจได้จริงเท่านั้น: เห็นรูปหน้าบนบัตร (ML Kit) — ความชัด/แสงสะท้อน server เป็นคนตรวจ */}
+              {mode === 'camera' && detectorAvailable && (
+                <View style={styles.chips}>
+                  <CameraChip label="พบบัตรในกล้อง" on={found} />
+                </View>
+              )}
             </View>
           </>
         )}

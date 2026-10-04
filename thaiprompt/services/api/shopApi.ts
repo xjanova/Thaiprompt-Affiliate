@@ -138,6 +138,8 @@ export interface StoreDetail {
   joinedAt: string | null;
   rider_delivery: boolean;
   cod_available: boolean;
+  /** เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทอง) — คนละเรื่องกับ is_verified ของร้าน */
+  owner_verified?: boolean;
 }
 
 /** รายการสินค้า — data = ShopProduct[], meta.pagination */
@@ -506,7 +508,14 @@ export interface ShopOrderRider {
   status_label: string;
   job_id?: number;
   job_number?: string | null;
-  rider?: { name: string | null; vehicle_type: string | null; vehicle_plate: string | null; phone: string | null } | null;
+  /** verified = ไรเดอร์ยืนยันตัวตนแล้ว (ป้ายทอง) */
+  rider?: {
+    name: string | null;
+    vehicle_type: string | null;
+    vehicle_plate: string | null;
+    phone: string | null;
+    verified?: boolean;
+  } | null;
   /** หน้าติดตามสด /taladsod/track/{token} — มีเฉพาะระหว่างงานยังไม่จบ */
   tracking_url?: string | null;
   delivered_at?: string | null;

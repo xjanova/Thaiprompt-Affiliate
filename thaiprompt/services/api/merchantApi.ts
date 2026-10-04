@@ -139,7 +139,14 @@ export interface SellerOrderDetail {
     status_label: string;
     job_id?: number;
     job_number?: string | null;
-    rider?: { name: string | null; vehicle_type: string | null; vehicle_plate: string | null; phone: string | null } | null;
+    /** verified = ไรเดอร์ยืนยันตัวตนแล้ว (ป้ายทอง) */
+    rider?: {
+      name: string | null;
+      vehicle_type: string | null;
+      vehicle_plate: string | null;
+      phone: string | null;
+      verified?: boolean;
+    } | null;
     tracking_url?: string | null;
     delivered_at?: string | null;
   } | null;

@@ -11,6 +11,13 @@
  *   - เฟรมกล้องหน้าเป็นภาพกระจก (expo-camera mirror) → ผู้ใช้หัน "ซ้ายของตัวเอง" = จมูกเคลื่อนไปทาง "ซ้ายของภาพ"
  *   - ตัดสินทิศจากตำแหน่งจมูกเทียบกึ่งกลางตา (เรขาคณิต ไม่ขึ้นกับเครื่องหมายมุมของแต่ละแพลตฟอร์ม)
  *     ไม่มีจุด landmark → ใช้มุม yaw ของ ML Kit (บวก = ใบหน้าหันไปทางขวาของภาพ)
+ *
+ * เพดานท่าทาง (ตรงกับเกณฑ์ server — ไม่รับเฟรมที่ server จะตีกลับ)
+ *   - server ต้องเห็นใบหน้าชัด (คะแนนตรวจหน้า ≥ 0.80) และยังคล้ายเฟรมมองตรง (cosine ≥ 0.35)
+ *     → หันหน้าไม่เกิน ~40° · ก้ม/เงยไม่เกิน ~30° (มากกว่านั้นบอกให้ขยับกลับมา)
+ *   - ยิ้ม: server ดู "เพิ่มขึ้นจากเฟรมมองตรง" (ปากกว้างขึ้น +10% หรือคะแนนยิ้ม +0.25)
+ *     → ต้องยิ้มเพิ่มจากตอนมองตรง ไม่ใช่แค่ยิ้มเกินค่าคงที่ (คนที่ยิ้มอยู่แล้วตอนมองตรงต้องยิ้มกว้างขึ้นจริง)
+ *   - กระพริบตา: ภาพนิ่งจับจังหวะตาปิดยาก → รับเฟรมที่ตาปิดสนิท หรือตาหรี่ลงชัดเจนเมื่อเทียบกับตอนมองตรง
  */
 
 import type { EkycChallenge, EkycFaceLabel } from '@/services/api/ekycApi';
@@ -41,6 +48,8 @@ export interface FaceSample {
   smile: number | null;
   /** (จมูก.x − กึ่งกลางตา.x) / ระยะห่างระหว่างตา — ลบ = จมูกไปทางซ้ายของภาพ */
   noseOffset: number | null;
+  /** ความกว้างปาก (มุมปากซ้าย-ขวา) / ระยะห่างระหว่างตา — ใช้เทียบ "ยิ้มกว้างขึ้น" กับตอนมองตรง */
+  mouthWidth: number | null;
 }
 
 /** คำใบ้ให้หน้าจอแปลงเป็นข้อความ */
@@ -55,6 +64,10 @@ export type LivenessHint =
   | 'DO_ACTION'
   | 'MORE'
   | 'WRONG_WAY'
+  /** หันหน้ามากเกิน (server มองหน้าไม่ชัด) */
+  | 'TURN_LESS'
+  /** ก้ม/เงยมากเกิน */
+  | 'NOD_LESS'
   | 'GOOD';
 
 export const LIVENESS_CONFIG = {
@@ -73,18 +86,30 @@ export const LIVENESS_CONFIG = {
   eyesOpenMin: 0.5,
   /** หลับตา (กระพริบ) — ต้องปิดทั้งสองข้าง (ขยิบตาข้างเดียวไม่นับ) */
   blinkMaxEyeOpen: 0.35,
-  /** ยิ้ม */
+  /** หลับตาแบบเทียบตอนมองตรง: ตาทั้งสองข้างไม่เกินค่านี้ … */
+  blinkRelaxedMaxEyeOpen: 0.5,
+  /** … และเหลือไม่เกินสัดส่วนนี้ของตอนมองตรง (ตาหรี่ลงชัดเจน) */
+  blinkMaxRatio: 0.45,
+  /** ยิ้ม: คะแนนยิ้มขั้นต่ำ */
   smileMin: 0.7,
-  /** ตอนมองตรงยิ้มอยู่แล้ว (≥ 0.5) → ต้องยิ้มกว้างขึ้นอีกอย่างน้อยเท่านี้ */
-  smileDeltaWhenSmiling: 0.1,
+  /** ยิ้ม: คะแนนยิ้มต้องเพิ่มจากตอนมองตรงอย่างน้อย (server: +0.25) */
+  smileMinGain: 0.25,
+  /** ยิ้ม: หรือปากกว้างขึ้นจากตอนมองตรงอย่างน้อย (สัดส่วน · server: +10% เผื่อค่าคลาดเคลื่อนเป็น 12%) */
+  smileMinWidthGain: 0.12,
   /** ท่าที่ไม่ใช่หันหน้า ต้องไม่หันเกิน (กันภาพหน้าข้าง) */
   frontalMaxYaw: 25,
   /** หันหน้า: มุมเปลี่ยนจากตอนมองตรงอย่างน้อย (องศา) */
   turnMinYawDelta: 18,
   /** หันหน้า: จมูกเลื่อนจากกึ่งกลางตาอย่างน้อย (สัดส่วนระยะตา) */
   turnMinNoseOffset: 0.2,
+  /** หันหน้า: มุมไม่เกิน (องศา) — เกินนี้ server มองหน้าไม่ชัด/ไม่คล้ายเฟรมมองตรง */
+  turnMaxYaw: 40,
+  /** หันหน้า: จมูกเลื่อนไม่เกิน (ใช้เมื่อไม่มีมุม yaw · ราว 40°) */
+  turnMaxNoseOffset: 0.6,
   /** พยักหน้า: มุมก้ม/เงยเปลี่ยนจากตอนมองตรงอย่างน้อย (องศา) */
   nodMinPitchDelta: 12,
+  /** พยักหน้า: มุมก้ม/เงยไม่เกิน (องศา) */
+  nodMaxPitch: 30,
 } as const;
 
 export type LivenessConfig = { mirrored: boolean } & Record<Exclude<keyof typeof LIVENESS_CONFIG, 'mirrored'>, number>;
@@ -127,13 +152,20 @@ export interface MlkitFaceLike {
 /**
  * ชนิดจุด landmark — Android ส่งเป็นเลข (FaceLandmark.LEFT_EYE = 4 …) iOS ส่งเป็นชื่อ
  */
-const LANDMARK_ALIASES: Record<string, 'leftEye' | 'rightEye' | 'nose'> = {
+type LandmarkKind = 'leftEye' | 'rightEye' | 'nose' | 'mouthLeft' | 'mouthRight';
+
+const LANDMARK_ALIASES: Record<string, LandmarkKind> = {
   '4': 'leftEye',
   leftEye: 'leftEye',
   '10': 'rightEye',
   rightEye: 'rightEye',
   '6': 'nose',
   noseBase: 'nose',
+  // FaceLandmark.MOUTH_LEFT = 5 · MOUTH_RIGHT = 11
+  '5': 'mouthLeft',
+  mouthLeft: 'mouthLeft',
+  '11': 'mouthRight',
+  mouthRight: 'mouthRight',
 };
 
 const finite = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -166,6 +198,7 @@ export const sampleFromMlkit = (
       rightEyeOpen: null,
       smile: null,
       noseOffset: null,
+      mouthWidth: null,
     };
   }
   const face = [...list].sort((a, b) => faceArea(b) - faceArea(a))[0];
@@ -179,7 +212,7 @@ export const sampleFromMlkit = (
     box = { x: fx / imageWidth, y: fy / imageHeight, w: fw / imageWidth, h: fh / imageHeight };
   }
 
-  const points: Partial<Record<'leftEye' | 'rightEye' | 'nose', { x: number; y: number }>> = {};
+  const points: Partial<Record<LandmarkKind, { x: number; y: number }>> = {};
   for (const lm of face.landmarks || []) {
     const kind = LANDMARK_ALIASES[String(lm?.type ?? '')];
     const x = finite(lm?.position?.x);
@@ -187,11 +220,17 @@ export const sampleFromMlkit = (
     if (kind && x !== null && y !== null) points[kind] = { x, y };
   }
   let noseOffset: number | null = null;
-  if (points.leftEye && points.rightEye && points.nose) {
+  let mouthWidth: number | null = null;
+  if (points.leftEye && points.rightEye) {
     const eyeDist = Math.hypot(points.leftEye.x - points.rightEye.x, points.leftEye.y - points.rightEye.y);
     if (eyeDist > 1) {
-      const midX = (points.leftEye.x + points.rightEye.x) / 2;
-      noseOffset = (points.nose.x - midX) / eyeDist;
+      if (points.nose) {
+        const midX = (points.leftEye.x + points.rightEye.x) / 2;
+        noseOffset = (points.nose.x - midX) / eyeDist;
+      }
+      if (points.mouthLeft && points.mouthRight) {
+        mouthWidth = Math.hypot(points.mouthLeft.x - points.mouthRight.x, points.mouthLeft.y - points.mouthRight.y) / eyeDist;
+      }
     }
   }
 
@@ -205,6 +244,7 @@ export const sampleFromMlkit = (
     rightEyeOpen: prob(face.rightEyeOpenProbability),
     smile: prob(face.smilingProbability),
     noseOffset,
+    mouthWidth,
   };
 };
 
@@ -283,24 +323,41 @@ export const evaluateChallenge = (
       const eye = maxEye(s);
       if (eye === null) return { ok: false, hint: 'DO_ACTION' };
       if (s.yaw !== null && Math.abs(s.yaw) > cfg.frontalMaxYaw) return { ok: false, hint: 'LOOK_STRAIGHT' };
-      return eye <= cfg.blinkMaxEyeOpen ? { ok: true, hint: 'GOOD' } : { ok: false, hint: 'DO_ACTION' };
+      if (eye <= cfg.blinkMaxEyeOpen) return { ok: true, hint: 'GOOD' };
+      // ภาพนิ่งมักจับได้ตอนตากำลังปิด → รับถ้าตาหรี่ลงชัดเจนเมื่อเทียบกับตอนมองตรง (ทั้งสองข้าง)
+      const baseEye = base ? minEye(base) : null;
+      if (baseEye !== null && baseEye > 0 && eye <= cfg.blinkRelaxedMaxEyeOpen && eye <= baseEye * cfg.blinkMaxRatio) {
+        return { ok: true, hint: 'GOOD' };
+      }
+      return { ok: false, hint: eye <= 0.6 ? 'MORE' : 'DO_ACTION' };
     }
     case 'smile': {
       const frame = framingHint(s, cfg);
       if (frame) return { ok: false, hint: frame };
-      if (s.smile === null) return { ok: false, hint: 'DO_ACTION' };
       if (s.yaw !== null && Math.abs(s.yaw) > cfg.frontalMaxYaw) return { ok: false, hint: 'LOOK_STRAIGHT' };
+      // ต้อง "ยิ้มเพิ่มจากตอนมองตรง": คะแนนยิ้มสูงพอและเพิ่ม ≥ 0.25 หรือปากกว้างขึ้น ≥ 12%
       const baseSmile = base?.smile ?? null;
-      const enough =
-        s.smile >= cfg.smileMin && (baseSmile === null || baseSmile < 0.5 || s.smile - baseSmile >= cfg.smileDeltaWhenSmiling);
-      if (enough) return { ok: true, hint: 'GOOD' };
-      return { ok: false, hint: s.smile >= 0.4 ? 'MORE' : 'DO_ACTION' };
+      const byScore =
+        s.smile !== null && s.smile >= cfg.smileMin && (baseSmile === null || s.smile - baseSmile >= cfg.smileMinGain);
+      const widthGain = s.mouthWidth !== null && base?.mouthWidth ? s.mouthWidth / base.mouthWidth - 1 : null;
+      const byWidth = widthGain !== null && widthGain >= cfg.smileMinWidthGain;
+      if (byScore || byWidth) return { ok: true, hint: 'GOOD' };
+      if (s.smile === null && widthGain === null) return { ok: false, hint: 'DO_ACTION' };
+      const some = (s.smile !== null && s.smile >= 0.4) || (widthGain !== null && widthGain >= cfg.smileMinWidthGain / 2);
+      return { ok: false, hint: some ? 'MORE' : 'DO_ACTION' };
     }
     case 'turn_left':
     case 'turn_right': {
       const dir = facingDirection(s, base, cfg);
       const want = expectedDirection(challenge, cfg.mirrored);
-      if (dir === want) return { ok: true, hint: 'GOOD' };
+      if (dir === want) {
+        // หันมากไป → server มองหน้าไม่ชัด/ไม่คล้ายเฟรมมองตรง (ใช้มุม yaw ก่อน ไม่มีค่อยใช้จมูก)
+        const tooFar =
+          s.yaw !== null
+            ? Math.abs(s.yaw) > cfg.turnMaxYaw
+            : s.noseOffset !== null && Math.abs(s.noseOffset) > cfg.turnMaxNoseOffset;
+        return tooFar ? { ok: false, hint: 'TURN_LESS' } : { ok: true, hint: 'GOOD' };
+      }
       if (dir === -want) return { ok: false, hint: 'WRONG_WAY' };
       // หันมาบ้างแล้วแต่ยังไม่พอ
       const partial =
@@ -312,7 +369,10 @@ export const evaluateChallenge = (
     case 'nod': {
       if (s.pitch === null) return { ok: false, hint: 'DO_ACTION' };
       const delta = Math.abs(s.pitch - (base?.pitch ?? 0));
-      if (delta >= cfg.nodMinPitchDelta) return { ok: true, hint: 'GOOD' };
+      if (delta >= cfg.nodMinPitchDelta) {
+        // ก้ม/เงยมากไป → server มองหน้าไม่ชัด
+        return Math.abs(s.pitch) > cfg.nodMaxPitch ? { ok: false, hint: 'NOD_LESS' } : { ok: true, hint: 'GOOD' };
+      }
       return { ok: false, hint: delta >= cfg.nodMinPitchDelta / 2 ? 'MORE' : 'DO_ACTION' };
     }
     default:

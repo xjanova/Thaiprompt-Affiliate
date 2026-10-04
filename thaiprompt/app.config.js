@@ -21,10 +21,13 @@
  * 4. usesCleartextTraffic — เปิดเฉพาะตอน build ทดสอบกับ backend ในเครื่อง
  *    (ตั้ง EXPO_PUBLIC_API_URL=http://10.0.2.2:8765/api/v1) เพราะ release build บล็อก HTTP ธรรมดา
  *    build ปกติ (ไม่ตั้ง EXPO_PUBLIC_API_URL หรือเป็น https) = ไม่แตะ manifest เลย
+ *
+ * 5. ล็อกเวอร์ชัน Google ML Kit (eKYC) — แพ็กเกจขอแบบลอย 16.+ / 17.+ → plugins/withMlkitVersionPin.js
  */
 
 const fs = require('fs');
 const path = require('path');
+const withMlkitVersionPin = require('./plugins/withMlkitVersionPin');
 
 // ต้องเปิด cleartext หรือไม่ — จริงเฉพาะเมื่อชี้ API ไปที่ http:// (QA ในเครื่องเท่านั้น)
 const needsCleartextForLocalQa = /^http:\/\//i.test((process.env.EXPO_PUBLIC_API_URL || '').trim());
@@ -134,7 +137,8 @@ module.exports = ({ config }) => {
   };
 
   // ทุก build: ให้มองเห็นแอปจันทรา (ปุ่มเปิดแอปจันทราในหน้าดูดวง)
-  const withJuntra = withJuntraPackageQuery(finalConfig);
+  // + ล็อกเวอร์ชัน ML Kit (eKYC) ที่แพ็กเกจขอแบบลอย 16.+ / 17.+ ให้ build ซ้ำได้ผลเดิม
+  const withJuntra = withMlkitVersionPin(withJuntraPackageQuery(finalConfig));
 
   // build ปกติ: ไม่แตะ cleartext — เปิดเฉพาะ QA ที่ชี้ http:// เท่านั้น
   if (!needsCleartextForLocalQa) {
