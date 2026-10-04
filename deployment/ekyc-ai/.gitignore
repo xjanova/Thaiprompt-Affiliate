@@ -1,0 +1,8 @@
+# โมเดลดาวน์โหลดตอน build เท่านั้น — ห้าม commit (ไฟล์ใหญ่ + ตรวจ sha256 ใน scripts/download_models.py)
+models/
+# ภาพหน้าจริงสำหรับทดสอบบนเครื่อง dev (scripts/fetch_test_faces.py) — ห้าม commit
+test-faces/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/

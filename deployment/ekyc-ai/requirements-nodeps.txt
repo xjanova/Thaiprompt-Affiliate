@@ -1,0 +1,4 @@
+# ติดตั้งด้วย: pip install --no-deps -r requirements-nodeps.txt
+# mediapipe 1.0.1 (Apache-2.0) ประกาศ dependency opencv-contrib-python ซึ่งชนกับ
+# opencv-python-headless (ทั้งคู่ให้โมดูล cv2) — dependency ที่เหลือของมันล็อกไว้ใน requirements.txt แล้ว
+mediapipe==1.0.1

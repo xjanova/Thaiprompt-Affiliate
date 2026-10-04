@@ -1,0 +1,5 @@
+# สำหรับรันเทสต์/วัดผลบนเครื่อง dev เท่านั้น (ไม่ติดตั้งใน image production)
+-r requirements.txt
+pytest==9.1.1
+httpx==0.28.1
+psutil==7.2.2
