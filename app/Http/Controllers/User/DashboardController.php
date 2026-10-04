@@ -251,7 +251,15 @@ class DashboardController extends Controller
         // ===============================================
 
         // ตรวจสอบ KYC status จาก KycVerification record (ข้อมูลที่ถูกต้องที่สุด)
+        // 🪪 (2026-10-04) ไม่นับรอบ AI eKYC ที่ทำค้าง (draft) / ให้ถ่ายใหม่ (retake) / คำขอที่ถูกแทนแล้ว (superseded)
+        //    ไม่งั้นการ sync ด้านล่างจะทับสถานะจริง (เช่น pending ของคำขอแบบเดิม) เป็น not_submitted
         $latestKyc = \App\Models\KycVerification::where('user_id', $user->id)
+            ->whereNotIn('status', [\App\Models\KycVerification::STATUS_RETAKE, \App\Models\KycVerification::STATUS_SUPERSEDED])
+            ->where(function ($q) {
+                $q->where('method', '!=', \App\Models\KycVerification::METHOD_EKYC)
+                    ->orWhereNull('method')
+                    ->orWhere('status', '!=', 'draft');
+            })
             ->latest()
             ->first();
 

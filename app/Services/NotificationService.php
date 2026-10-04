@@ -367,26 +367,38 @@ class NotificationService
     }
 
     /**
-     * Notify admin about new KYC verification request
+     * แจ้งแอดมินว่ามีคำขอยืนยันตัวตนรอตรวจ (แบบเดิม + AI eKYC ที่ส่งให้คนตรวจ)
+     *
+     * 🪪 (2026-10-04) แก้บั๊ก: เดิม query users.is_admin ซึ่งไม่มีคอลัมน์นี้ → SQL error ทุกครั้ง แอดมินไม่เคยได้แจ้งเตือน
+     * ผู้รับ = super admin / role admin, super_admin / ผู้มีสิทธิ์ approve_kyc (เฉพาะบัญชีที่ไม่ถูกระงับ)
      */
     public function notifyAdminNewKyc($kycVerification): void
     {
-        // Get all admins with KYC approval permission
-        $admins = User::where('is_super_admin', true)
-            ->orWhere('is_admin', true)
-            ->orWhereJsonContains('permissions', 'approve_kyc')
+        $admins = User::query()
+            ->where(function ($q) {
+                $q->where('is_super_admin', true)
+                    ->orWhereIn('role', ['admin', 'super_admin'])
+                    ->orWhereJsonContains('permissions', 'approve_kyc');
+            })
+            ->whereNull('blocked_at')
+            ->limit(50)
             ->get();
+
+        $isEkyc = ($kycVerification->method ?? null) === 'ekyc';
+        $name = $kycVerification->user->name ?? 'ผู้ใช้';
 
         foreach ($admins as $admin) {
             $this->createForModel(
                 $admin,
                 $kycVerification,
                 'kyc',
-                'ยืนยันตัวตนใหม่รออนุมัติ',
-                "มีคำขอยืนยันตัวตนใหม่จาก {$kycVerification->user->name}",
+                $isEkyc ? 'AI ส่งเคสยืนยันตัวตนให้ตรวจ' : 'ยืนยันตัวตนใหม่รออนุมัติ',
+                $isEkyc
+                    ? "AI ยังไม่มั่นใจในการยืนยันตัวตนของ {$name} กรุณาตรวจรูปบัตรกับใบหน้า"
+                    : "มีคำขอยืนยันตัวตนใหม่จาก {$name}",
                 [
-                    'user_name' => $kycVerification->user->name,
-                    'type' => $kycVerification->verification_type ?? 'standard',
+                    'user_name' => $name,
+                    'type' => $isEkyc ? 'ekyc' : ($kycVerification->verification_type ?? 'standard'),
                 ],
                 route('admin.kyc.show', $kycVerification->id),
                 'ดูและอนุมัติ',

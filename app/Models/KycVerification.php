@@ -26,6 +26,45 @@ class KycVerification extends Model
         'rejection_reason',
         'submitted_at',
         'extracted_data',
+        // 🪪 AI eKYC (2026-10-04) — เขียนจาก EkycService เท่านั้น
+        'method',
+        'ekyc_session_id',
+        'consent_at',
+        'consent_version',
+        'id_number_encrypted',
+        'id_number_hash',
+        'id_last4',
+        'name_th',
+        'name_en',
+        'birth_date',
+        'card_expiry',
+        'ai_decision',
+        'ai_reasons',
+        'ai_face_match',
+        'ai_liveness',
+        'ai_real',
+        'ai_card_real',
+        'ai_ocr_confidence',
+        'ai_model_version',
+        'card_face_path',
+        'best_frame_path',
+        'processed_at',
+        'ekyc_challenges',
+        'ekyc_expires_at',
+        'ekyc_step',
+    ];
+
+    /**
+     * ห้ามหลุดออกไปกับ toArray()/JSON (เลขบัตร + path ไฟล์ส่วนตัว)
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'id_number_encrypted',
+        'id_number_hash',
+        'card_face_path',
+        'best_frame_path',
+        'ekyc_challenges',
     ];
 
     /**
@@ -37,7 +76,35 @@ class KycVerification extends Model
         'reviewed_at' => 'datetime',
         'submitted_at' => 'datetime',
         'extracted_data' => 'array',
+        // 🪪 AI eKYC
+        'consent_at' => 'datetime',
+        'id_number_encrypted' => 'encrypted',
+        'birth_date' => 'date',
+        'card_expiry' => 'date',
+        'ai_reasons' => 'array',
+        'ai_face_match' => 'float',
+        'ai_liveness' => 'float',
+        'ai_real' => 'float',
+        'ai_card_real' => 'float',
+        'ai_ocr_confidence' => 'float',
+        'processed_at' => 'datetime',
+        'ekyc_challenges' => 'array',
+        'ekyc_expires_at' => 'datetime',
     ];
+
+    /** ช่องทางยืนยันตัวตน */
+    public const METHOD_MANUAL = 'manual';
+
+    public const METHOD_EKYC = 'ekyc';
+
+    /**
+     * สถานะเพิ่มเติมของแถว eKYC (นอกจาก draft/pending/approved/rejected เดิม)
+     * - retake      = รอบนี้ไม่ผ่านชัดเจน (AI หรือแอดมินขอให้ถ่ายใหม่) — ผู้ใช้เริ่มรอบใหม่ได้
+     * - superseded  = คำขอที่ค้างอยู่ถูกแทนด้วยการยืนยัน eKYC ที่ผ่านแล้ว
+     */
+    public const STATUS_RETAKE = 'retake';
+
+    public const STATUS_SUPERSEDED = 'superseded';
 
     /**
      * Get the user that owns the KYC verification.
@@ -53,6 +120,14 @@ class KycVerification extends Model
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /**
+     * แถวนี้มาจาก AI eKYC หรือไม่
+     */
+    public function isEkyc(): bool
+    {
+        return $this->method === self::METHOD_EKYC;
     }
 
     /**
@@ -136,6 +211,14 @@ class KycVerification extends Model
             // ดิสก์มีปัญหา (permission/symlink) — ถือว่าไม่มีไฟล์ ดีกว่าให้หน้าแอดมินพัง
             return false;
         }
+    }
+
+    /**
+     * เฉพาะแถว AI eKYC
+     */
+    public function scopeEkyc($query)
+    {
+        return $query->where('method', self::METHOD_EKYC);
     }
 
     /**

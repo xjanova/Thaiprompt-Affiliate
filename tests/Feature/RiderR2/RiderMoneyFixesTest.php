@@ -290,7 +290,7 @@ class RiderMoneyFixesTest extends TestCase
         }
     }
 
-    public function test_legacy_avatar_is_only_returned_to_its_owner(): void
+    public function test_legacy_avatar_is_returned_to_everyone_until_a_new_photo_is_set(): void
     {
         Http::fake();
         Storage::fake('local');
@@ -298,9 +298,11 @@ class RiderMoneyFixesTest extends TestCase
         $subject = User::factory()->create(['line_picture_url' => 'https://profile.line-scdn.net/legacy']);
         $viewer = User::factory()->create();
 
+        // 🪪 (2026-10-04 · AI eKYC) เจ้าของสั่ง: รูปโปรไฟล์ = รูปที่ผู้ใช้เลือก ทุกคนเห็น
+        //    ความน่าเชื่อถือมาจากป้าย "ยืนยันตัวตนแล้ว" ไม่ใช่จากรูป (ยกเลิกกติกา M5 เดิมที่ให้เห็นเฉพาะเจ้าของ)
         $this->assertSame('https://profile.line-scdn.net/legacy', $service->urlFor($subject, $subject));
-        $this->assertNull($service->urlFor($subject, $viewer));
-        $this->assertNull($service->urlFor($subject, null));
+        $this->assertSame('https://profile.line-scdn.net/legacy', $service->urlFor($subject, $viewer));
+        $this->assertSame('https://profile.line-scdn.net/legacy', $service->urlFor($subject, null));
 
         // มีรูปถ่ายสดแล้ว → ทุกคนได้ลิงก์ลายน้ำ (ไม่ใช่รูปเดิม)
         $img = imagecreatetruecolor(400, 400);

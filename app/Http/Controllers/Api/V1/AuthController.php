@@ -154,6 +154,9 @@ class AuthController extends Controller
                 'line_user_id' => $user->line_user_id,
                 'facebook_user_id' => $fbPsid,
                 'signup_via' => $signupVia,
+
+                // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" (AI eKYC / แอดมินอนุมัติ)
+                'verified' => $user->isKycVerified(),
             ]),
         ]);
     }

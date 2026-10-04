@@ -326,19 +326,20 @@ class ProfilePhotoTest extends TestCase
         $this->assertNotSame($before, $service->viewerCode(42));
     }
 
-    public function test_legacy_avatar_returned_only_to_its_owner_when_no_live_photo(): void
+    public function test_legacy_avatar_is_visible_to_everyone_when_no_live_photo(): void
     {
         $service = app(ProfilePhotoService::class);
 
         $withLine = User::factory()->create(['line_picture_url' => 'https://profile.line-scdn.net/abc']);
         $other = User::factory()->create();
 
-        // เจ้าของเห็นรูปเดิมของตัวเอง (หน้าโปรไฟล์ / ก่อนถ่ายรูปสด)
+        // เจ้าของเห็นรูปเดิมของตัวเอง (หน้าโปรไฟล์)
         $this->assertSame('https://profile.line-scdn.net/abc', $service->urlFor($withLine, $withLine));
 
-        // คนอื่น / ไม่รู้ผู้ดู → ไม่ได้รูปเดิม (ไม่มีลายน้ำ + URL ถาวร) จนกว่าจะถ่ายรูปสด (money-review M5)
-        $this->assertNull($service->urlFor($withLine, $other));
-        $this->assertNull($service->urlFor($withLine, null));
+        // 🪪 (2026-10-04 · AI eKYC) เจ้าของสั่ง: รูปโปรไฟล์ = รูปที่ผู้ใช้เลือก ทุกคนเห็น
+        //    ความน่าเชื่อถือมาจากป้าย "ยืนยันตัวตนแล้ว" ไม่ใช่จากรูป (ยกเลิกกติกา money-review M5 เดิม)
+        $this->assertSame('https://profile.line-scdn.net/abc', $service->urlFor($withLine, $other));
+        $this->assertSame('https://profile.line-scdn.net/abc', $service->urlFor($withLine, null));
 
         $nothing = User::factory()->create(['line_picture_url' => null, 'profile_picture' => null]);
         $this->assertNull($service->urlFor($nothing, $nothing), 'ไม่มีรูปเลย = null (ไม่ใช่รูปตัวอักษรอัตโนมัติ)');

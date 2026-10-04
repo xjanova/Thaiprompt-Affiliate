@@ -1161,6 +1161,8 @@ class RiderJob extends Model
                 'rating' => (float) $rider->rating,
                 // รูปโปรไฟล์อยู่บน private disk (เอกสารไรเดอร์) → ให้ API ฝั่ง controller สร้างลิงก์เอง
                 'has_profile_image' => ! empty($rider->profile_image),
+                // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว"
+                'verified' => \App\Services\Ekyc\EkycService::badge($rider->user),
             ] : null,
             'tracking_url' => $viewer === null ? $this->tracking_url : null,
         ]);
