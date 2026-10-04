@@ -812,6 +812,18 @@ export default function RiderScreen() {
               caption={rider.total_jobs > 0 ? `สำเร็จ ${Math.round(num(rider.completion_rate))}%` : undefined}
               style={styles.gridItem}
             />
+            {/* หัวใจจากลูกค้า (ไรเดอร์รอบ 2 — server รุ่นเก่าไม่ส่งมา = ไม่แสดง) */}
+            {typeof rider.hearts_count === 'number' && (
+              <StatTile
+                label="หัวใจจากลูกค้า"
+                icon="heart"
+                tone="danger"
+                value={Math.max(0, Math.round(rider.hearts_count)).toLocaleString('th-TH')}
+                caption="ลูกค้าประจำเรียกคุณได้โดยตรง"
+                onPress={() => router.push('/rider-settings' as never)}
+                style={styles.gridItem}
+              />
+            )}
           </View>
         </>
       )}

@@ -7,6 +7,9 @@
  * - ติดตามตำแหน่ง: เริ่มเมื่อรับงาน หยุดเมื่อจบ/ยกเลิก/คืนงาน — ไม่ผูกกับการเปิดปิดหน้านี้ (RIDER-APP-12)
  * - ตำแหน่งสดของลูกค้าแสดงเฉพาะเมื่อลูกค้าแชร์มา
  * - ส่งสำเร็จ → ฉลอง "รับทรัพย์!" พร้อมยอดที่ได้จริงจาก server
+ * - ไรเดอร์รอบ 2: งานที่ job.handover.required = ส่งมอบด้วยการสแกน QR ใส่กัน / ทางสำรองรูป 2 รอบ
+ *   (components/rider/RiderHandoverPanel) แทนปุ่ม "ส่งสำเร็จ" · งานเก่า (required = false) ใช้ขั้นตอนเดิมทุกอย่าง
+ *   ยอด "คุณได้รับ" = rider_total (ค่าส่ง + โบนัสร้าน) · หน้านี้กันแคปหน้าจอ (useSensitiveScreen)
  *
  * หน้าตา: การ์ดฮีโร่น้ำเงินลายกนก (ค่าส่งทอง + ตัวเลขระยะทาง + แถบขั้นตอน 5 ขั้น)
  *         → การ์ดเส้นทางจุดรับ/จุดส่ง (จุดหมายตอนนี้เด่นพร้อมปุ่มนำทาง) → รายละเอียด → แถบปุ่มทองท้ายจอ
@@ -61,6 +64,8 @@ import { useRiderPermissionFlow } from '@/components/rider/useRiderPermissionFlo
 import { useAcceptJob } from '@/components/rider/useAcceptJob';
 import { RiderSheet } from '@/components/rider/RiderSheet';
 import { JobCompleteCelebration } from '@/components/rider/JobCompleteCelebration';
+import { RiderHandoverPanel } from '@/components/rider/RiderHandoverPanel';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { takePhoto } from '@/components/rider/photo';
 import {
   FAIL_REASONS,
@@ -77,6 +82,8 @@ import {
   isActiveJobStatus,
   isFinishedJobStatus,
   openNavigation,
+  riderTotalOf,
+  shopBonusOf,
   stepIndexForStatus,
 } from '@/components/rider/riderHelpers';
 import {
@@ -108,6 +115,10 @@ const ACTION_LOOK: Record<RiderJobAction, { title: string; icon: IconName; varia
   deliver: { title: 'ส่งสำเร็จ', icon: 'check-circle', variant: 'primary' },
   fail: { title: 'ส่งไม่สำเร็จ', icon: 'warning', variant: 'ghost' },
   release: { title: 'คืนงาน', icon: 'arrow-counter-clockwise', variant: 'ghost' },
+  // ขั้นส่งมอบ (ไรเดอร์รอบ 2) — แสดงในแผงส่งมอบ ไม่ใช่แถบปุ่มท้ายจอ (อยู่ในตารางนี้ให้ชนิดข้อมูลครบ)
+  handover_scan: { title: 'สแกน QR ของลูกค้า', icon: 'scan', variant: 'primary' },
+  arrival_photo: { title: 'ถ่ายรูปรอบ 1', icon: 'camera', variant: 'primary' },
+  waited_photo: { title: 'ถ่ายรูปรอบ 2', icon: 'camera', variant: 'primary' },
 };
 
 const STEP_HINT: Record<string, string> = {
@@ -379,6 +390,8 @@ const CardHead: React.FC<{ icon: IconName; title: string; tone?: 'navy' | 'gold'
 export default function RiderJobDetailScreen() {
   const { colors, gradients } = useTheme();
   const insets = useSafeAreaInsets();
+  // ที่อยู่/เบอร์ลูกค้า + QR ส่งมอบ → กันแคปหน้าจอ/อัดหน้าจอ
+  useSensitiveScreen('rider-job-detail');
   const params = useLocalSearchParams<{ id?: string; accepted?: string; moved?: string }>();
   const paramId = useMemo(() => {
     const n = Number(params.id);
@@ -514,6 +527,11 @@ export default function RiderJobDetailScreen() {
       }, POLL_MS);
       const sub = addNotificationReceivedListener((notification) => {
         const data = notification?.request?.content?.data as Record<string, unknown> | undefined;
+        // ส่งมอบสำเร็จ / แอดมินตัดสินเรื่องร้องเรียน → โหลดสถานะงานใหม่
+        if (data?.type === 'handover_completed' || data?.type === 'handover_resolved') {
+          load('poll');
+          return;
+        }
         if (data?.type === 'rider_job_update' || data?.type === 'rider_account') {
           // ร้านย้ายจุดรับของ (งานนี้) → ดึงพิกัดใหม่ + แจ้งให้เห็นชัดๆ (ค่าส่งไม่เปลี่ยน)
           const pushedJobId = Number(data?.job_id);
@@ -584,7 +602,8 @@ export default function RiderJobDetailScreen() {
   /** error ของขั้นตอนงาน → ข้อความไทย + รีเฟรชเมื่อสถานะเปลี่ยนไปแล้ว */
   const handleActionError = (result: { code: string; message: string }, title: string) => {
     resultHaptic('error');
-    if (['INVALID_TRANSITION', 'JOB_NOT_FOUND', 'NOT_YOUR_JOB'].includes(result.code)) {
+    // HANDOVER_REQUIRED = งานนี้ต้องส่งมอบด้วย QR (server เปลี่ยนเงื่อนไขระหว่างเปิดหน้า) → โหลดใหม่ให้เห็นแผงส่งมอบ
+    if (['INVALID_TRANSITION', 'JOB_NOT_FOUND', 'NOT_YOUR_JOB', 'HANDOVER_REQUIRED'].includes(result.code)) {
       const hadSheet = sheet !== null;
       setSheet(null);
       const show = () => Alert.alert('สถานะงานเปลี่ยนไปแล้ว', result.message);
@@ -786,6 +805,36 @@ export default function RiderJobDetailScreen() {
     }
   };
 
+  // ---------- ส่งมอบของ (ไรเดอร์รอบ 2) ----------
+
+  /** สแกนใส่กันครบ 2 ฝ่าย → หยุดแชร์ตำแหน่ง + โหลดงานใหม่ + ฉลอง (ยอด = rider_total จาก server) */
+  const handleHandoverCompleted = async ({ amount }: { amount: number }) => {
+    if (!job) return;
+    const done = job;
+    await stopJobTrackingFor(done.id);
+    if (!mountedRef.current) return;
+    setTrackingMode('none');
+    load('refresh');
+    afterSheetClosed(() =>
+      setCelebration({
+        amount,
+        walletBalance: null,
+        settled: true,
+        message: 'ส่งมอบสำเร็จ ลูกค้ายืนยันรับของแล้ว ระบบโอนรายได้เข้ากระเป๋าให้อัตโนมัติ',
+        jobNumber: done.job_number,
+      })
+    );
+  };
+
+  /** วางของด้วยทางสำรองแล้ว → งานรอปลดเงิน (หยุดแชร์ตำแหน่ง รับงานใหม่ได้) */
+  const handleAwaitingRelease = async () => {
+    if (!job) return;
+    await stopJobTrackingFor(job.id);
+    if (!mountedRef.current) return;
+    setTrackingMode('none');
+    load('refresh');
+  };
+
   // =====================================================
   // สถานะพิเศษ
   // =====================================================
@@ -841,7 +890,17 @@ export default function RiderJobDetailScreen() {
   const finished = isFinishedJobStatus(job.status);
   const goneWhileViewing = error?.code === 'NOT_YOUR_JOB' || error?.code === 'JOB_NOT_FOUND';
   const allowed = new Set<RiderJobAction>(job.allowed_actions || []);
-  const flowActions = FLOW_ORDER.filter((a) => allowed.has(a));
+  /** งานส่งมอบด้วย QR — ไม่มีปุ่ม "ส่งสำเร็จ" (กันไว้แม้ server จะยังส่ง deliver มา) */
+  const handoverRequired = !!job.handover?.required;
+  const showHandover =
+    isMine &&
+    handoverRequired &&
+    (allowed.has('handover_scan') ||
+      allowed.has('arrival_photo') ||
+      allowed.has('waited_photo') ||
+      job.status === 'delivering' ||
+      job.status === 'awaiting_release');
+  const flowActions = FLOW_ORDER.filter((a) => allowed.has(a) && !(handoverRequired && a === 'deliver'));
   const primary = flowActions[0];
   const secondary = flowActions[1];
   const hasSideActions = allowed.has('fail') || allowed.has('release');
@@ -850,6 +909,9 @@ export default function RiderJobDetailScreen() {
   const toPickup = formatKm(job.distance_to_pickup_km);
   const eta = formatMinutes(job.estimated_duration_minutes);
   const live = active ? job.customer_live_location : null;
+  /** ยอดที่ไรเดอร์ได้จริง (ค่าส่ง + โบนัสร้าน) และโบนัสจากร้าน — ตัวเลขจาก server */
+  const riderTotal = riderTotalOf(job);
+  const shopBonus = shopBonusOf(job);
 
   // ---------- หน้าตาเท่านั้น (ไม่กระทบขั้นตอนงาน) ----------
   /** จุดหมายตอนนี้: ยังไม่ได้ของ = จุดรับ · ได้ของแล้ว = จุดส่ง */
@@ -943,6 +1005,31 @@ export default function RiderJobDetailScreen() {
             style={styles.block}
           />
         )}
+        {job.status === 'pending' && !!job.locked_by_buyer && (
+          <NoticeCard
+            icon="heart"
+            tone="danger"
+            title={`${job.buyer?.display_name || 'ลูกค้าประจำ'}ล็อกเรียกคุณโดยตรง`}
+            message={
+              job.buyer && job.buyer.hearts_given > 0
+                ? `ลูกค้าประจำ · ให้หัวใจคุณ ${job.buyer.hearts_given.toLocaleString('th-TH')} ดวง · รับงานก่อนเปิดให้ไรเดอร์คนอื่น`
+                : 'รับงานก่อนเปิดให้ไรเดอร์คนอื่น'
+            }
+            style={styles.block}
+          />
+        )}
+
+        {/* ---------- ส่งมอบของ: สแกน QR ใส่กัน / ทางสำรองรูป 2 รอบ ---------- */}
+        {showHandover && !goneWhileViewing && (
+          <RiderHandoverPanel
+            key={job.id}
+            job={job}
+            ensureLocation={flow.ensureForeground}
+            onCompleted={handleHandoverCompleted}
+            onAwaitingRelease={handleAwaitingRelease}
+            onJobChanged={() => load('poll')}
+          />
+        )}
 
         {/* ---------- ฮีโร่: ค่าส่ง + ความคืบหน้า ---------- */}
         <NavyCard goldBorder padding={0} style={styles.block}>
@@ -959,7 +1046,12 @@ export default function RiderJobDetailScreen() {
                 />
               )}
             </View>
-            <PriceText amount={job.rider_earnings} size="xl" style={[typography.moneyLg, { color: colors.goldLight }]} />
+            <PriceText amount={riderTotal} size="xl" style={[typography.moneyLg, { color: colors.goldLight }]} />
+            {shopBonus > 0 && (
+              <Text style={[typography.caption, { color: colors.onHeaderMuted }]}>
+                รวมโบนัสจากร้าน {formatBaht(shopBonus)}
+              </Text>
+            )}
             {heroStats.length > 0 && (
               <View style={[styles.heroStats, { borderTopColor: colors.headerGlassBorder }]}>
                 {heroStats.map((stat, index) => (
@@ -1064,10 +1156,24 @@ export default function RiderJobDetailScreen() {
               <PriceText amount={-job.platform_fee} size="sm" tone="muted" />
             </View>
           )}
+          {shopBonus > 0 && (
+            <View style={styles.feeRow}>
+              <Text style={[typography.bodySm, { color: colors.textMuted }]}>โบนัสจากร้าน (ได้เต็ม)</Text>
+              <PriceText amount={shopBonus} size="sm" tone="success" signed />
+            </View>
+          )}
           <View style={[styles.feeRow, styles.feeTotal, { borderTopColor: colors.divider }]}>
             <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>คุณได้รับ</Text>
-            <PriceText amount={job.rider_earnings} size="lg" tone="gold" />
+            <PriceText amount={riderTotal} size="lg" tone="gold" />
           </View>
+          {handoverRequired && !job.is_cod && (
+            <View style={styles.inlineRow}>
+              <Icon name="lock" size={14} color={colors.textMuted} />
+              <Text style={[typography.caption, styles.flex, { color: colors.textMuted }]}>
+                ลูกค้าจ่ายแล้ว เงินพักไว้ในระบบ จ่ายให้คุณเมื่อส่งมอบของสำเร็จ
+              </Text>
+            </View>
+          )}
         </Card3D>
 
         {/* ---------- รูปหลักฐาน ---------- */}

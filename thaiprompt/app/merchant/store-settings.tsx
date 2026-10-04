@@ -44,7 +44,7 @@ import {
   resultHaptic,
 } from '@/components/ui';
 import { Field, StickyBar } from '@/components/shop';
-import { NoticeBanner } from '@/components/merchant';
+import { IconTile, NoticeBanner } from '@/components/merchant';
 import {
   ErrorNote,
   FormCard,
@@ -729,6 +729,29 @@ export default function StoreSettingsScreen() {
             multiline
             maxLength={500}
           />
+          {/* ค่าตอบแทนไรเดอร์ (ไรเดอร์รอบ 2) — หน้าแยก บันทึกแยกจากฟอร์มนี้ */}
+          <Pressable
+            onPress={() =>
+              router.push(
+                `/merchant/rider-pay?kind=shop${form.store_name ? `&name=${encodeURIComponent(form.store_name)}` : ''}` as never
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel="ค่าตอบแทนไรเดอร์ ตั้งโบนัสไรเดอร์และส่งฟรี"
+            style={({ pressed }) => [
+              styles.riderPayRow,
+              { backgroundColor: colors.inset, borderColor: colors.border, opacity: pressed ? 0.75 : 1 },
+            ]}
+          >
+            <IconTile icon="coins" tone="gold" size={40} />
+            <View style={styles.flex}>
+              <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ค่าตอบแทนไรเดอร์</Text>
+              <Text style={[typography.caption, { color: colors.textMuted }]}>
+                เติมโบนัสให้ไรเดอร์รับงานไวขึ้น หรือเปิดส่งฟรี · มีผู้ช่วย AI แนะนำ
+              </Text>
+            </View>
+            <Icon name="caret-right" size={18} color={colors.textFaint} />
+          </Pressable>
         </FormCard>
 
         {/* ---------- ช่องทางติดต่อ ---------- */}
@@ -891,6 +914,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     padding: spacing.sm,
+  },
+  riderPayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: spacing.md,
+    minHeight: 56,
   },
   webButton: {
     marginTop: spacing.md,

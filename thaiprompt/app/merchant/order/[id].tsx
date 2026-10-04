@@ -56,6 +56,7 @@ import {
 } from '@/components/shop';
 import { OrderChatPanel } from '@/components/shop/OrderChatPanel';
 import { IconTile } from '@/components/merchant';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const CANCEL_REASONS = ['สินค้าหมด', 'ส่งไม่ได้ในพื้นที่นี้', 'ลูกค้าขอยกเลิก', 'ราคา/ข้อมูลสินค้าผิด'];
@@ -122,6 +123,8 @@ export default function MerchantOrderDetailScreen() {
   const orderId = /^\d+$/.test(String(id || '')) ? Number(id) : 0;
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // ชื่อ/ที่อยู่/เบอร์ลูกค้า → กันแคปหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('merchant-order-detail');
 
   const [detail, setDetail] = useState<SellerOrderDetail | null>(null);
   const [loading, setLoading] = useState(true);

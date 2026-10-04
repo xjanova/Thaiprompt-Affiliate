@@ -5,6 +5,8 @@
  * - ประวัติงานแบ่งหน้า → GET /rider/jobs/history (โหลดเพิ่มเมื่อเลื่อนถึงท้าย)
  * - เปลี่ยนแท็บระหว่างโหลด → ทิ้งผลลัพธ์เก่า (requestId)
  * - ถอนเงินทำที่แท็บกระเป๋าเงิน · รายงานละเอียดดูบนเว็บไซต์
+ * - ไรเดอร์รอบ 2: งานที่วางของด้วยทางสำรอง (รูป 2 รอบ) = "รอปลดเงิน" แสดงยอด + จำนวนงานแยก (pending_release_*)
+ * - กันแคปหน้าจอ (ยอดเงิน/ประวัติงาน)
  *
  * หน้าตา: การ์ดน้ำเงินลายกนก (ตัวเลือกช่วงเวลาแบบกระจก + ยอดทอง + กราฟแท่งรายวัน)
  *         → ตัวเลขสรุป 4 ช่อง → ประวัติงานเป็นการ์ดขาวใบเดียวแบ่งแถว
@@ -41,8 +43,9 @@ import {
   type RiderEarningsResponse,
   type RiderJobSummary,
 } from '@/services/api/riderApi';
-import { JOB_STATUS_LABEL, JOB_STATUS_TONE, formatThaiDateTime } from '@/components/rider/riderHelpers';
-import { IconTile, NavyCard, type TileTone } from '@/components/rider/RiderVisuals';
+import { JOB_STATUS_LABEL, JOB_STATUS_TONE, formatThaiDateTime, riderTotalOf } from '@/components/rider/riderHelpers';
+import { IconTile, NavyCard, NoticeCard, type TileTone } from '@/components/rider/RiderVisuals';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 const PERIODS: Array<{ key: EarningsPeriod; label: string; heading: string }> = [
   { key: 'today', label: 'วันนี้', heading: 'รายได้วันนี้' },
@@ -177,10 +180,15 @@ const DailyBars: React.FC<{ daily: RiderEarningsResponse['daily'] }> = ({ daily 
 const HistoryRow: React.FC<{ job: RiderJobSummary; first: boolean; last: boolean }> = ({ job, first, last }) => {
   const { colors, isDark } = useTheme();
   const completed = job.status === 'completed' || job.status === 'delivered';
+  /** วางของแล้ว รอปลดเงิน — ยังไม่ใช่รายได้ที่เข้ากระเป๋า แต่ไม่ได้เสียไป (ไม่ขีดฆ่า) */
+  const pendingRelease = job.status === 'awaiting_release';
+  const amount = riderTotalOf(job);
   const { run } = usePressGuard(() => router.push(`/rider-job-detail?id=${job.id}` as never));
   const tile: { icon: IconName; tone: TileTone } = completed
     ? { icon: 'coins', tone: 'success' }
-    : job.status === 'failed'
+    : pendingRelease
+      ? { icon: 'hourglass', tone: 'gold' }
+      : job.status === 'failed'
       ? { icon: 'x-circle', tone: 'danger' }
       : job.status === 'cancelled'
         ? { icon: 'prohibit', tone: 'neutral' }
@@ -221,10 +229,10 @@ const HistoryRow: React.FC<{ job: RiderJobSummary; first: boolean; last: boolean
       </View>
       <View style={styles.historyRight}>
         <PriceText
-          amount={job.rider_earnings}
+          amount={amount}
           size="md"
-          tone={completed ? 'success' : 'muted'}
-          strike={!completed}
+          tone={completed ? 'success' : pendingRelease ? 'gold' : 'muted'}
+          strike={!completed && !pendingRelease}
           signed={completed}
         />
         <Pill label={job.status_text || JOB_STATUS_LABEL[job.status]} tone={JOB_STATUS_TONE[job.status] || 'neutral'} />
@@ -235,6 +243,7 @@ const HistoryRow: React.FC<{ job: RiderJobSummary; first: boolean; last: boolean
 
 export default function RiderEarningsScreen() {
   const { colors } = useTheme();
+  useSensitiveScreen('rider-earnings');
 
   const [period, setPeriod] = useState<EarningsPeriod>('today');
   const [summary, setSummary] = useState<RiderEarningsResponse | null>(null);
@@ -402,6 +411,17 @@ export default function RiderEarningsScreen() {
         </View>
         {showChart && !!summary && <DailyBars daily={summary.daily} />}
       </NavyCard>
+
+      {/* ---------- รอปลดเงิน (ทางสำรองรูป 2 รอบ) ---------- */}
+      {!!summary && num(summary.pending_release_jobs) > 0 && (
+        <NoticeCard
+          icon="hourglass"
+          tone="gold"
+          title={`รอปลดเงิน ${formatBaht(summary.pending_release_amount ?? 0)}`}
+          message={`จาก ${num(summary.pending_release_jobs).toLocaleString('th-TH')} งานที่วางของไว้ให้ลูกค้า ระบบปลดเงินเข้ากระเป๋าอัตโนมัติภายใน 24 ชม. หลังส่ง ถ้าลูกค้าไม่ร้องเรียน`}
+          style={styles.block}
+        />
+      )}
 
       {!!summary && (
         <View style={styles.grid}>

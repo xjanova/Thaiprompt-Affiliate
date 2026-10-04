@@ -8,6 +8,8 @@
  * - มีงานค้างอยู่ → เปลี่ยนยานพาหนะไม่ได้ (409 HAS_ACTIVE_JOB)
  * - ไรเดอร์ที่อนุมัติแล้วเปลี่ยนยานพาหนะ → ถามยืนยันก่อน (ต้องรอทีมงานตรวจเอกสารใหม่ ระหว่างนั้นรับงานไม่ได้)
  * - ยังไม่บันทึกแล้วจะออก → ถามก่อนทิ้งการแก้ไข · ดึงลงเพื่อรีเฟรชไม่ทับสิ่งที่กำลังแก้
+ * - ไรเดอร์รอบ 2: สวิตช์ "ให้ลูกค้าเห็นฉันบนแผนที่ไรเดอร์ใกล้ฉัน" (show_on_nearby — ส่งไปกับ PUT /rider/profile
+ *   เฉพาะเมื่อ server ส่งค่านี้มา) + จำนวนหัวใจจากลูกค้า (hearts_count) · หน้านี้กันแคปหน้าจอ
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -41,6 +43,7 @@ import { Field, StickyBar } from '@/components/shop';
 import { IconTile, NoticeBanner } from '@/components/merchant';
 import { SkeletonCard } from '@/components/merchant/SkeletonBlock';
 import { VEHICLES, digitsOnly, isValidThaiPhone } from '@/components/rider/riderHelpers';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const JOB_TYPES: Array<{ value: RiderJobType; label: string; icon: IconName }> = [
@@ -64,6 +67,8 @@ interface SettingsDraft {
   radius: number;
   minFeeText: string;
   jobTypes: RiderJobType[];
+  /** null = server ยังไม่รองรับ (ไม่แสดงสวิตช์ ไม่ส่งค่า) */
+  showOnNearby: boolean | null;
 }
 
 type DraftErrors = Partial<Record<'phone' | 'vehicle_plate' | 'vehicle_brand' | 'vehicle_color' | 'radius' | 'minFeeText' | 'jobTypes', string>>;
@@ -86,6 +91,7 @@ const draftFrom = (r: RiderStatus): SettingsDraft => ({
         : r.preferred_min_fee.toFixed(2)
       : '',
   jobTypes: (r.preferred_job_types || []).filter((t): t is RiderJobType => JOB_TYPES.some((j) => j.value === t)),
+  showOnNearby: typeof r.show_on_nearby === 'boolean' ? r.show_on_nearby : null,
 });
 
 const serialize = (d: SettingsDraft): string =>
@@ -98,6 +104,7 @@ const serialize = (d: SettingsDraft): string =>
     d.useRadius ? d.radius : null,
     d.minFeeText.trim(),
     [...d.jobTypes].sort(),
+    d.showOnNearby,
   ]);
 
 const needsPlate = (type: RiderVehicleType) => VEHICLES.find((v) => v.value === type)?.needsPlate ?? false;
@@ -132,6 +139,8 @@ const toBody = (d: SettingsDraft): RiderProfileBody => {
     preferred_radius_km: d.useRadius ? d.radius : null,
     preferred_min_fee: d.minFeeText.trim() !== '' ? Number(d.minFeeText.trim()) : null,
   };
+  // ส่งเฉพาะเมื่อ server รู้จักค่านี้ (server รุ่นเก่าไม่ต้องได้ key แปลก)
+  if (d.showOnNearby !== null) body.show_on_nearby = d.showOnNearby;
   return body;
 };
 
@@ -140,6 +149,8 @@ type LoadState = { kind: 'loading' } | { kind: 'not_rider' } | { kind: 'error'; 
 export default function RiderSettingsScreen() {
   const { colors } = useTheme();
   const navigation = useNavigation();
+  // เบอร์ ทะเบียนรถ สถานะบัญชี → กันแคปหน้าจอ
+  useSensitiveScreen('rider-settings');
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
@@ -347,9 +358,56 @@ export default function RiderSettingsScreen() {
     }
   };
 
+  const hearts = typeof rider?.hearts_count === 'number' ? Math.max(0, Math.round(rider.hearts_count)) : null;
+
   const renderForm = (d: SettingsDraft, r: RiderStatus) => (
     <>
       {!!notice && <NoticeBanner tone="success" text={notice} style={styles.block} />}
+
+      {/* ---------- หัวใจจากลูกค้า + การมองเห็นบนแผนที่ ---------- */}
+      {(hearts !== null || d.showOnNearby !== null) && (
+        <Card3D padding={spacing.lg} style={styles.sectionBottom}>
+          {hearts !== null && (
+            <View style={styles.head} accessible accessibilityLabel={`หัวใจจากลูกค้า ${hearts} ดวง`}>
+              <IconTile icon="heart" tone="danger" />
+              <View style={styles.flex}>
+                <Text style={[typography.h3, { color: colors.textStrong }]}>
+                  หัวใจจากลูกค้า{' '}
+                  <Text style={[typography.h3, { color: colors.danger }]}>{hearts.toLocaleString('th-TH')}</Text> ดวง
+                </Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  ลูกค้าให้หัวใจหลังส่งสำเร็จ ลูกค้าประจำที่ให้หัวใจคุณมากพอ เรียกคุณมาส่งของได้โดยตรง
+                </Text>
+              </View>
+            </View>
+          )}
+          {d.showOnNearby !== null && (
+            <View style={[styles.switchRow, hearts === null && styles.switchRowFirst, { borderTopColor: colors.divider }]}>
+              <View style={styles.flex}>
+                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>
+                  ให้ลูกค้าเห็นฉันบนแผนที่ไรเดอร์ใกล้ฉัน
+                </Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  {d.showOnNearby
+                    ? 'ลูกค้าเห็นตำแหน่งโดยประมาณ (ไม่ใช่จุดจริง) เฉพาะตอนคุณออนไลน์'
+                    : 'ซ่อนจากแผนที่ ยังรับงานได้ตามปกติ'}
+                </Text>
+              </View>
+              <Switch
+                value={d.showOnNearby}
+                onValueChange={(v) => {
+                  selectionHaptic();
+                  update({ showOnNearby: v });
+                }}
+                disabled={saving}
+                trackColor={{ false: colors.border, true: colors.success }}
+                thumbColor={colors.card}
+                accessibilityLabel="ให้ลูกค้าเห็นฉันบนแผนที่ไรเดอร์ใกล้ฉัน"
+              />
+            </View>
+          )}
+        </Card3D>
+      )}
 
       {/* ---------- ยานพาหนะและการติดต่อ ---------- */}
       <Card3D padding={spacing.lg}>
@@ -605,6 +663,14 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: spacing.lg,
+  },
+  sectionBottom: {
+    marginBottom: spacing.lg,
+  },
+  switchRowFirst: {
+    marginTop: 0,
+    paddingTop: 0,
+    borderTopWidth: 0,
   },
   head: {
     flexDirection: 'row',

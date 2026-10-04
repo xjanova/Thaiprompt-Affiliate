@@ -673,6 +673,8 @@ export default function TaladsodSellerScreen() {
                 { icon: 'plus', title: 'ลงขายสินค้าใหม่', caption: 'รูป ราคา หมวดหมู่ และตัวเลือก', path: '/merchant/taladsod/listing/new', tone: 'gold' },
                 { icon: 'chart-line-up', title: 'รายได้ร้าน', caption: 'รายรับสุทธิ ค่า GP เงินที่กำลังจะได้', path: '/merchant/taladsod/earnings', tone: 'success' },
                 { icon: 'sliders-horizontal', title: 'ตั้งค่าร้าน', caption: 'ชื่อร้าน เบอร์โทร ที่อยู่ หมุดร้าน', path: '/merchant/taladsod/profile', tone: 'navy' },
+                // ไรเดอร์รอบ 2 — โบนัสไรเดอร์ / ส่งฟรี / คำแนะนำ
+                { icon: 'moped', title: 'ค่าตอบแทนไรเดอร์', caption: 'โบนัสไรเดอร์ ส่งฟรี และคำแนะนำจาก AI', path: '/merchant/rider-pay?kind=fresh', tone: 'gold' },
               ] as const).map((item, index) => (
                 <Pressable
                   key={item.path}

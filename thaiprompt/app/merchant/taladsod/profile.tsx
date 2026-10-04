@@ -16,7 +16,7 @@ import { usePreventRemove } from 'expo-router/react-navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { getFmSellerProfile, updateFmSellerProfile } from '@/services/api/taladsodSellerManageApi';
 import type { FmSellerProfile } from '@/services/api/taladsodSellerApi';
-import { Button3D, Card3D, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
+import { Button3D, Card3D, EmptyState, Icon, Pill, Screen, resultHaptic } from '@/components/ui';
 import { StickyBar } from '@/components/shop';
 import { IconTile, NoticeBanner } from '@/components/merchant';
 import {
@@ -214,6 +214,30 @@ export default function TaladsodShopProfileScreen() {
               <Text style={[typography.caption, styles.note, { color: colors.textFaint }]}>
                 สลับร้านเคลื่อนที่/ประจำที่ ได้ที่การ์ดเปิดร้านในหน้าร้านของฉัน
               </Text>
+            </Card3D>
+
+            {/* ---------- ค่าตอบแทนไรเดอร์ (ไรเดอร์รอบ 2) — หน้าแยก บันทึกแยกจากฟอร์มนี้ ---------- */}
+            <Card3D
+              padding={spacing.lg}
+              shadow="sm"
+              style={styles.section}
+              onPress={() =>
+                router.push(
+                  `/merchant/rider-pay?kind=fresh${profile.shop_name ? `&name=${encodeURIComponent(profile.shop_name)}` : ''}` as never
+                )
+              }
+              accessibilityLabel="ค่าตอบแทนไรเดอร์ ตั้งโบนัสไรเดอร์และส่งฟรี"
+            >
+              <View style={styles.statusRow}>
+                <IconTile icon="moped" tone="gold" />
+                <View style={styles.flex}>
+                  <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ค่าตอบแทนไรเดอร์</Text>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    เติมโบนัสให้ไรเดอร์รับงานไวขึ้น หรือเปิดส่งฟรี · มีผู้ช่วย AI แนะนำ
+                  </Text>
+                </View>
+                <Icon name="caret-right" size={18} color={colors.textFaint} />
+              </View>
             </Card3D>
 
             <View style={styles.section}>
