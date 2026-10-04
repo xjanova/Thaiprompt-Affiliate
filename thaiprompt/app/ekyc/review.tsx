@@ -74,7 +74,13 @@ export default function EkycReviewScreen() {
     uploadingRef.current = true;
     setPhase('uploading');
     setErrorText(null);
-    const res = await uploadEkycIdCard(sid, uri);
+    let res = await uploadEkycIdCard(sid, uri);
+    // ต่อไม่ติดเลย (การเชื่อมต่อเก่าถูกปิด/เน็ตมือถือสลับ) → ลองส่งซ้ำเองหนึ่งครั้ง
+    // ส่งรูปบัตรซ้ำในรอบเดิมปลอดภัย (server แทนที่รูปเดิม) · หมดเวลา (TIMEOUT) ไม่ลองซ้ำเอง
+    if (!res.success && res.code === 'NETWORK_ERROR' && mountedRef.current) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 700));
+      if (mountedRef.current) res = await uploadEkycIdCard(sid, uri);
+    }
     uploadingRef.current = false;
     if (!mountedRef.current) return;
 
