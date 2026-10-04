@@ -22,6 +22,7 @@ use App\Models\Wallet;
 use App\Models\WalletDebt;
 use App\Models\WalletTransaction;
 use App\Services\Pricing\PricingEngine;
+use App\Services\Rider\HandoverService;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -451,9 +452,11 @@ class FreshMarketService
      * ไม่ส่งยอดมา = ยังไม่จำกัด (ตอนสร้างออเดอร์จำกัดอีกครั้งจากราคาที่ล็อกแล้ว)
      *
      * @param  float|null  $itemsSubtotal  ยอดสินค้าของออเดอร์ (ไม่รวมค่าส่ง)
+     * @param  float|null  $sellerNet  รายได้ร้านที่คิดไว้แล้ว (ตะกร้าหลายรายการ — GP ต่อบรรทัด สูตรเดียวกับตอนสร้างออเดอร์)
+     *                                 null = คิดจาก $itemsSubtotal × GP ของ $listing (สั่งสินค้าเดียว)
      * @return array{available: bool, code: ?string, message: ?string, distance_km: ?float, total_fee: float, estimated_duration_minutes: ?int, max_distance_km: float, fee: float, fee_full: float, buyer_fee: float, distance_source: ?string, route_polyline: ?string, rider_earnings: float, shop_bonus: float, shop_subsidy: float, rider_total: float, surcharge: float, free_delivery: bool, subsidy_capped: bool, bonus_capped: bool, cod: array{available: bool, reason: ?string}}
      */
-    public function quoteDelivery(FreshMarketListing $listing, float $lat, float $lng, ?float $itemsSubtotal = null): array
+    public function quoteDelivery(FreshMarketListing $listing, float $lat, float $lng, ?float $itemsSubtotal = null, ?float $sellerNet = null): array
     {
         $maxKm = (float) Setting::get('rider.max_distance_km', 15);
         $listing->loadMissing('seller');
@@ -523,8 +526,10 @@ class FreshMarketService
         }
 
         // เพดานต้นทุนไรเดอร์ของร้าน (C1) — รู้ยอดสินค้าแล้วเท่านั้น
-        if ($itemsSubtotal !== null && ((float) ($quote['shop_subsidy'] ?? 0) > 0 || (float) ($quote['shop_bonus'] ?? 0) > 0)) {
-            $quote = DeliveryFeeCalculator::capShopCosts($quote, $this->expectedSellerNet($listing, $itemsSubtotal));
+        // รอบแก้ 2 (B10): ตะกร้าหลายรายการส่ง $sellerNet ที่คิด GP ต่อบรรทัดมาแล้ว → ค่าส่งที่แสดง = ค่าส่งที่เก็บจริงตอนสั่ง
+        if (($sellerNet !== null || $itemsSubtotal !== null)
+            && ((float) ($quote['shop_subsidy'] ?? 0) > 0 || (float) ($quote['shop_bonus'] ?? 0) > 0)) {
+            $quote = DeliveryFeeCalculator::capShopCosts($quote, $sellerNet ?? $this->expectedSellerNet($listing, (float) $itemsSubtotal));
         }
 
         $distance = round((float) ($quote['distance_km'] ?? 0), 2);
@@ -590,10 +595,34 @@ class FreshMarketService
      */
     public function expectedSellerNet(FreshMarketListing $listing, float $itemsSubtotal): float
     {
-        $itemsSubtotal = round(max(0.0, $itemsSubtotal), 2);
-        $gp = round($itemsSubtotal * $this->gpRateFor($listing) / 100, 2);
+        return $this->expectedSellerNetForLines([['listing' => $listing, 'line_total' => $itemsSubtotal]]);
+    }
 
-        return round(max(0.0, $itemsSubtotal - $gp), 2);
+    /**
+     * รายได้สุทธิที่ร้านคาดว่าจะได้จากหลายบรรทัด — GP ต่อบรรทัดตามอัตราของสินค้าแต่ละตัว (รอบแก้ 2 B10)
+     *
+     * สูตรเดียวกับ createOrderFromItems ทุกขั้น (ปัดเศษ GP ต่อบรรทัด → รวม → ยอดสินค้ารวม − GP รวม)
+     * → เพดานค่าส่งที่ร้านออก/โบนัสในใบเสนอราคาตะกร้า = ตัวเลขที่ล็อกบนออเดอร์จริง
+     *
+     * @param  iterable<array{listing: FreshMarketListing, line_total: float|int|string}>  $lines
+     */
+    public function expectedSellerNetForLines(iterable $lines): float
+    {
+        $rates = [];
+        $total = 0.0;
+        $gp = 0.0;
+
+        foreach ($lines as $line) {
+            /** @var FreshMarketListing $listing */
+            $listing = $line['listing'];
+            $lineTotal = max(0.0, (float) $line['line_total']);
+            $rate = $rates[$listing->id] ??= $this->gpRateFor($listing);
+
+            $total += $lineTotal;
+            $gp += round($lineTotal * $rate / 100, 2);
+        }
+
+        return round(max(0.0, round($total, 2) - round($gp, 2)), 2);
     }
 
     /**
@@ -1314,6 +1343,12 @@ class FreshMarketService
                 return [$locked, false, 0.0];
             }
 
+            // ไรเดอร์รอบ 2 รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ (วางของแล้ว/ร้องเรียน/ผู้ซื้อยืนยันรับของแล้ว)
+            // → ยกเลิกทางปกติไม่ได้ ให้แอดมินตัดสินที่หน้างานไรเดอร์ · ล็อกแถวงานไว้ (กันร้องเรียน/วางของแทรกกลางการยกเลิก)
+            if ($locked->delivery_type === 'rider' && ($hold = app(HandoverService::class)->cancelHoldMessage($locked, true))) {
+                throw FreshMarketException::make('HANDOVER_PENDING', $hold, 409);
+            }
+
             $this->assertCanTransition($locked, 'cancel', $role);
 
             $from = $locked->order_status;
@@ -1351,14 +1386,16 @@ class FreshMarketService
                 $this->restoreOrderStock($locked);
             }
 
-            return [$locked, true, $refunded];
-        });
-
-        if ($changed) {
+            // รอบแก้ 2 (B5): ปิดงานไรเดอร์ในธุรกรรมเดียวกับการคืนเงิน (เดิมทำหลัง commit → ช่วงระหว่างนั้นงานยังปลด/ปิดเป็นส่งสำเร็จได้
+            // ทั้งที่คืนเงินผู้ซื้อไปแล้ว) · แถวงานถูกล็อกไว้ตั้งแต่ตรวจเงินพักด้านบน (ลำดับ ออเดอร์ → งาน แบบเดียวกับ Order::cancel)
             if ($locked->delivery_type === 'rider') {
                 $this->cancelRiderJobs($locked, $role, $reason);
             }
 
+            return [$locked, true, $refunded];
+        });
+
+        if ($changed) {
             $this->notifier->statusChanged($locked, 'cancel', $role, ['refunded' => $refunded]);
 
             Log::info('FreshMarket: ยกเลิก order', [
@@ -2087,6 +2124,11 @@ class FreshMarketService
                 throw FreshMarketException::make('RIDER_JOB_ACTIVE', 'ออเดอร์นี้มีงานไรเดอร์ที่ยังดำเนินอยู่แล้ว', 409);
             }
 
+            // รอบแก้ 2 (B3/B4): งานเดิมเงินพักรอตัดสิน (ผู้ซื้อยืนยันรับของ/ร้องเรียนแล้ว) → ห้ามเรียกไรเดอร์ใหม่ (ตัดสินงานเดิมก่อน)
+            if ($hold = app(HandoverService::class)->cancelHoldMessage($locked)) {
+                throw FreshMarketException::make('HANDOVER_PENDING', $hold, 409);
+            }
+
             $from = $locked->order_status;
             $locked->order_status = FreshMarketOrder::STATUS_READY;
             $locked->rider_job_id = null;
@@ -2111,7 +2153,7 @@ class FreshMarketService
     }
 
     /**
-     * ยกเลิกงานไรเดอร์ของออเดอร์ (หลัง commit)
+     * ยกเลิกงานไรเดอร์ของออเดอร์ (เรียกภายใน transaction ที่ล็อกออเดอร์แล้ว — รอบแก้ 2 B5)
      */
     protected function cancelRiderJobs(FreshMarketOrder $order, string $role, string $reason): void
     {

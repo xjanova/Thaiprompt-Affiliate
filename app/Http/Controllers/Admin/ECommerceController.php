@@ -797,12 +797,22 @@ class ECommerceController extends Controller
             }
         };
 
+        // ไรเดอร์รอบ 2 รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ → ยกเลิก/คืนเงินทางนี้ไม่ได้ (ชี้ไปหน้างานไรเดอร์)
+        if (in_array($newStatus, ['cancelled', 'refunded'], true) && ($hold = $order->riderHandoverHoldMessage())) {
+            return redirect()->back()->with('error', $hold);
+        }
+
         // จัดการ "ยกเลิก" อย่างถูกต้อง
         if ($newStatus === 'cancelled') {
             if (! $order->canBeCancelled()) {
                 return redirect()->back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: '.$order->status_label.')');
             }
-            $order->cancel($adminNotes ?? 'ยกเลิกโดย Admin', auth()->id(), 'admin');
+            try {
+                $order->cancel($adminNotes ?? 'ยกเลิกโดย Admin', auth()->id(), 'admin');
+            } catch (\App\Exceptions\ShopException $e) {
+                // ข้อความไทยจากระบบ (เงินพักรอตัดสินการส่งมอบ / คืนเงินไม่สำเร็จ) — ไม่มีอะไรเปลี่ยน
+                return redirect()->back()->with('error', $e->getMessage());
+            }
             $appendNote('ยกเลิกคำสั่งซื้อ');
 
             return redirect()->back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว'.(in_array($order->fresh()->status, ['refunded']) ? ' (คืนเงินแล้ว)' : ''));

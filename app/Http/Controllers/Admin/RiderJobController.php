@@ -76,7 +76,8 @@ class RiderJobController extends Controller
         }
 
         if ($request->boolean('disputed')) {
-            $query->whereHas('handover', fn ($h) => $h->where('status', DeliveryHandover::STATUS_DISPUTED));
+            $query->whereHas('handover', fn ($h) => $h->where('status', DeliveryHandover::STATUS_DISPUTED))
+                ->where(fn ($q) => HandoverService::scopeAdminResolvable($q));
         }
 
         if ($request->filled('job_type')) {
@@ -104,8 +105,13 @@ class RiderJobController extends Controller
             'failed' => RiderJob::where('status', 'failed')->count(),
             'total_earnings' => round((float) RiderJob::where('status', 'completed')->sum('total_fee'), 2),
             // ไรเดอร์รอบ 2: เงินพักรอแอดมิน/รอปลดอัตโนมัติ
-            'awaiting_release' => RiderJob::where('status', RiderJob::STATUS_AWAITING_RELEASE)->count(),
-            'disputed' => DeliveryHandover::where('status', DeliveryHandover::STATUS_DISPUTED)->count(),
+            // รอบแก้ 2 (B7): นับเฉพาะเรื่องที่แอดมินกดตัดสินได้จริง (เงื่อนไขเดียวกับ adminCanResolve) — ไม่มีตัวนับค้างถาวร
+            'awaiting_release' => RiderJob::where('status', RiderJob::STATUS_AWAITING_RELEASE)
+                ->where(fn ($q) => HandoverService::scopeAdminResolvable($q))
+                ->count(),
+            'disputed' => RiderJob::whereHas('handover', fn ($h) => $h->where('status', DeliveryHandover::STATUS_DISPUTED))
+                ->where(fn ($q) => HandoverService::scopeAdminResolvable($q))
+                ->count(),
             'handover_review' => RiderJob::where(fn ($q) => $this->scopeHandoverReview($q))->count(),
         ];
 
@@ -126,12 +132,17 @@ class RiderJobController extends Controller
     /**
      * งานส่งมอบที่รอแอดมินดู: งานรอปลดเงิน (awaiting_release) หรือการส่งมอบถูกร้องเรียน (ยังไม่ตัดสิน)
      *
+     * รอบแก้ 2 (B7): เฉพาะงานที่แอดมินตัดสินได้จริง (HandoverService::scopeAdminResolvable = adminCanResolve)
+     * → งานเก่าที่มีงานใหม่แทนแล้ว/การส่งมอบที่จบไปแล้ว ไม่ค้างในตัวนับ
+     *
      * @param  \Illuminate\Database\Eloquent\Builder<RiderJob>  $query
      */
     private function scopeHandoverReview($query): void
     {
-        $query->where('status', RiderJob::STATUS_AWAITING_RELEASE)
-            ->orWhereHas('handover', fn ($h) => $h->where('status', DeliveryHandover::STATUS_DISPUTED));
+        $query->where(function ($q) {
+            $q->where('status', RiderJob::STATUS_AWAITING_RELEASE)
+                ->orWhereHas('handover', fn ($h) => $h->where('status', DeliveryHandover::STATUS_DISPUTED));
+        })->where(fn ($q) => HandoverService::scopeAdminResolvable($q));
     }
 
     /**
@@ -340,6 +351,12 @@ class RiderJobController extends Controller
             return $this->respond($request, false, 'งานนี้'.$job->status_text.'ไปแล้ว ยกเลิกไม่ได้', 409, 'INVALID_TRANSITION');
         }
 
+        // รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ (วางของแล้ว/ร้องเรียน/ผู้ซื้อยืนยันรับของแล้ว) → ปิดงานทางนี้ไม่ได้
+        // (ไม่งั้นออเดอร์ย้อนไปรอไรเดอร์ใหม่ ทั้งที่ของอยู่กับผู้ซื้อ) ให้ใช้ปุ่ม "ปล่อยเงิน" / "คืนเงินผู้ซื้อ" ในแผงการส่งมอบ
+        if ($hold = app(HandoverService::class)->holdMessageForJob($job, $job->loadedHandover())) {
+            return $this->respond($request, false, $hold, 409, 'HANDOVER_PENDING');
+        }
+
         try {
             if (in_array($job->status, ['picked_up', 'delivering', RiderJob::STATUS_AWAITING_RELEASE, 'delivered'], true)) {
                 // ไรเดอร์ถือของอยู่ → ปิดเป็นส่งไม่สำเร็จ (ยกเลิกเฉยๆ ไม่ได้ ของต้องกลับร้าน)
@@ -532,9 +549,12 @@ class RiderJobController extends Controller
      */
     private function adminActions(RiderJob $job): array
     {
+        // รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ → ไม่มีปุ่มปิดงาน (ใช้แผงการส่งมอบ: ปล่อยเงิน/คืนเงินผู้ซื้อ)
+        $held = $job->handover_required && app(HandoverService::class)->holdMessageForJob($job, $job->loadedHandover()) !== null;
+
         return match (true) {
             in_array($job->status, ['pending', 'accepted', 'picking_up'], true) => ['cancel', 'reassign'],
-            in_array($job->status, ['picked_up', 'delivering'], true) => ['fail', 'reassign'],
+            in_array($job->status, ['picked_up', 'delivering'], true) => $held ? ['reassign'] : ['fail', 'reassign'],
             in_array($job->status, ['cancelled', 'failed'], true) && $this->canRedispatch($job) => ['redispatch'],
             default => [],
         };

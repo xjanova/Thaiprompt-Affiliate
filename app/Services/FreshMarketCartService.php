@@ -239,7 +239,8 @@ class FreshMarketCartService
 
         $subtotal = (float) $shop['subtotal'];
         // ส่งยอดสินค้าไปด้วย → จำกัดค่าส่งที่ร้านออก/โบนัสไม่ให้เกินรายได้ร้าน (C1 — ตัวเลขเดียวกับตอนสั่งซื้อ)
-        $quote = $this->market->quoteDelivery($listing, $lat, $lng, $subtotal);
+        // รอบแก้ 2 (B10): รายได้ร้านคิด GP ต่อบรรทัดตามสินค้าแต่ละตัว (เดิมใช้ GP ของสินค้าแรกทั้งตะกร้า → ค่าส่งที่แสดงไม่ตรงกับที่เก็บจริง)
+        $quote = $this->market->quoteDelivery($listing, $lat, $lng, $subtotal, $this->sellerNetForShop($shop));
         // ไรเดอร์รอบ 2: ผู้ซื้อจ่าย fee (= buyer_fee — ร้านเลือกส่งฟรีได้) ไม่ใช่ total_fee (ค่าส่งเต็ม)
         $buyerFee = $quote['available'] ? (float) ($quote['fee'] ?? $quote['total_fee']) : 0.0;
 
@@ -261,6 +262,35 @@ class FreshMarketCartService
             'grand_total' => round($subtotal + $buyerFee, 2),
             'items_count' => (int) $shop['items_count'],
         ]);
+    }
+
+    /**
+     * รายได้ร้านที่คาดว่าจะได้จากตะกร้าร้านเดียว — GP ต่อบรรทัด (บรรทัดที่สั่งได้เท่านั้น = ชุดเดียวกับยอดสินค้า)
+     *
+     * @param  array<string, mixed>  $shop  ผลจาก shopPayload
+     */
+    protected function sellerNetForShop(array $shop): float
+    {
+        $valid = array_values(array_filter($shop['items'] ?? [], fn ($line) => ! empty($line['is_valid'])));
+
+        if ($valid === []) {
+            return 0.0;
+        }
+
+        $listings = FreshMarketListing::with('seller')
+            ->whereIn('id', array_unique(array_map(fn ($line) => (int) $line['listing_id'], $valid)))
+            ->get()
+            ->keyBy('id');
+
+        $lines = [];
+        foreach ($valid as $line) {
+            $listing = $listings->get((int) $line['listing_id']);
+            if ($listing) {
+                $lines[] = ['listing' => $listing, 'line_total' => (float) $line['line_total']];
+            }
+        }
+
+        return $this->market->expectedSellerNetForLines($lines);
     }
 
     /**

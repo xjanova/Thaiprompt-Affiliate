@@ -150,13 +150,26 @@ class DeferredSettlementTest extends HandoverTestCase
         [$order, $buyer] = $this->makeDeferredShopOrder();
         $rider = $this->makeRider();
         $job = $this->makeHandoverJob($order, $rider);
+        $admin = User::factory()->create(['role' => 'admin']);
 
         $this->riderPhoto($rider, $job, 'arrival-photo')->assertOk();
         $this->travel(181)->seconds();
         $this->riderPhoto($rider, $job, 'waited-photo')->assertOk();
         $this->assertSame(RiderJob::STATUS_AWAITING_RELEASE, $job->fresh()->status);
 
-        $order->fresh()->cancel('คืนเงินระหว่างรอปลดเงิน', null, 'admin');
+        // รอบแก้ 2 (B4): ยกเลิกทางปกติระหว่างเงินพักรอปลด → ถูกปฏิเสธ (ไม่มีอะไรเปลี่ยน) ต้องตัดสินที่แผงการส่งมอบ
+        try {
+            $order->fresh()->cancel('คืนเงินระหว่างรอปลดเงิน', null, 'admin');
+            $this->fail('ยกเลิกทางปกติระหว่างรอปลดเงินต้องถูกปฏิเสธ');
+        } catch (\App\Exceptions\ShopException $e) {
+            $this->assertSame(\App\Exceptions\ShopException::HANDOVER_PENDING, $e->errorCode);
+        }
+        $this->assertSame(RiderJob::STATUS_AWAITING_RELEASE, $job->fresh()->status);
+        $this->assertSame('shipped', $order->fresh()->status);
+
+        // แอดมินตัดสินคืนเงินที่หน้างานไรเดอร์ → คืนเต็มจำนวน ไรเดอร์ไม่ได้ค่าส่ง
+        $this->actingAs($admin)->postJson(route('admin.rider-jobs.handover.refund', $job), ['reason' => 'คืนเงินระหว่างรอปลดเงิน'])
+            ->assertOk();
 
         $this->assertSame('failed', $job->fresh()->status);
         $this->assertEqualsWithDelta(140.0, $this->walletOf($buyer), 0.001);

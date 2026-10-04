@@ -295,15 +295,18 @@ class HandoverFixesTest extends HandoverTestCase
     {
         $admin = User::factory()->create(['role' => 'admin']);
 
-        // ไรเดอร์แจ้งส่งไม่สำเร็จ (ผู้ซื้อยืนยันรับของไปแล้วจริง) → แอดมินตรวจแล้วปล่อยเงิน
+        // งานที่ถูกปิดเป็นส่งไม่สำเร็จทั้งที่ผู้ซื้อยืนยันรับของไปแล้วจริง → แอดมินตรวจแล้วปล่อยเงิน
         [$order, $buyer, $seller] = $this->makeDeferredShopOrder();
         $rider = $this->makeRider();
         $job = $this->makeHandoverJob($order, $rider);
         $token = $this->riderGet($rider, $job)->json('data.handover.qr_token');
         $this->buyerScan($buyer, $order, $token)->assertOk()->assertJsonPath('data.handover.status', 'buyer_confirmed');
 
+        // รอบแก้ 2 (B3): ไรเดอร์แจ้งส่งไม่สำเร็จหลังผู้ซื้อยืนยันรับของไม่ได้แล้ว → จำลองข้อมูลเก่า (ก่อนแก้) ที่งานถูกปิดเป็น failed ไปแล้ว
         Sanctum::actingAs($rider->user);
-        $this->postJson('/api/v1/rider/jobs/'.$job->id.'/fail', ['reason_code' => 'customer_unreachable'])->assertOk();
+        $this->postJson('/api/v1/rider/jobs/'.$job->id.'/fail', ['reason_code' => 'customer_unreachable'])->assertStatus(409);
+        RiderJob::whereKey($job->id)->update(['status' => 'failed', 'failed_at' => now(), 'failure_reason' => 'customer_unreachable']);
+        Order::whereKey($order->id)->update(['status' => 'processing']);
         $this->assertSame('failed', $job->fresh()->status);
         Rider::whereKey($rider->id)->update(['availability' => 'offline']);
 

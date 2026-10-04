@@ -619,6 +619,12 @@ class Order extends Model implements RiderDeliverable
                 return ['cancelled' => true, 'refunded' => $order->status === 'refunded', 'already' => true];
             }
 
+            // ไรเดอร์รอบ 2 รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ (วางของแล้ว/ร้องเรียน/ผู้ซื้อยืนยันรับของแล้ว)
+            // → ยกเลิกทางปกติไม่ได้ ต้องให้แอดมินตัดสินที่หน้างานไรเดอร์ (ปล่อยเงิน/คืนเงิน) — ล็อกแถวงานไว้กันร้องเรียนแทรก
+            if ($hold = $order->riderHandoverHoldMessage(true)) {
+                throw ShopException::make(ShopException::HANDOVER_PENDING, $hold, 409);
+            }
+
             // ผู้ซื้อยกเลิก: ตรวจซ้ำหลังล็อกแถว (กันชนกับร้านที่กดส่งของพร้อมกัน / ออเดอร์หลายร้านที่บางร้านส่งแล้ว)
             if ($cancelledBy === 'buyer' && ! $order->canBeCancelled()) {
                 throw ShopException::make(
@@ -751,15 +757,40 @@ class Order extends Model implements RiderDeliverable
             return false;
         }
 
-        return ! $this->hasRiderPastPickup();
+        if ($this->hasRiderPastPickup()) {
+            return false;
+        }
+
+        // ไรเดอร์รอบ 2 รอบแก้ 2 (B4): เงินพักรอแอดมินตัดสินการส่งมอบ
+        return $this->riderHandoverHoldMessage() === null;
     }
 
     /**
      * Check if order can be refunded
+     *
+     * ไรเดอร์รอบ 2 รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ → คืนเงินทางนี้ไม่ได้ (แอดมินตัดสินที่หน้างานไรเดอร์)
      */
     public function canBeRefunded(): bool
     {
-        return in_array($this->status, ['paid', 'processing', 'shipped']);
+        return in_array($this->status, ['paid', 'processing', 'shipped'])
+            && $this->riderHandoverHoldMessage() === null;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 รอบแก้ 2 (B4): งานไรเดอร์ของออเดอร์นี้ "เงินพักรอตัดสินการส่งมอบ" อยู่ไหม → ข้อความไทย (null = ไม่พัก)
+     *
+     * ระหว่างพัก (วางของแล้วรอปลดเงิน / ผู้ซื้อร้องเรียน / ผู้ซื้อยืนยันรับของแล้ว) ห้ามยกเลิก/คืนเงิน/เรียกไรเดอร์ใหม่ทางปกติ
+     * — เงินและสต็อกตัดสินที่ HandoverService::adminRelease / adminRefund เท่านั้น
+     *
+     * @param  bool  $lock  ล็อกแถวงานไรเดอร์ (เรียกใน transaction ที่ล็อกออเดอร์แล้วเท่านั้น)
+     */
+    public function riderHandoverHoldMessage(bool $lock = false): ?string
+    {
+        if (! $this->exists) {
+            return null;
+        }
+
+        return app(\App\Services\Rider\HandoverService::class)->cancelHoldMessage($this, $lock);
     }
 
     /**
@@ -1213,7 +1244,13 @@ class Order extends Model implements RiderDeliverable
             return false;
         }
 
-        return $this->isReadyForFulfilment();
+        if (! $this->isReadyForFulfilment()) {
+            return false;
+        }
+
+        // ไรเดอร์รอบ 2 รอบแก้ 2 (B3/B4): งานเดิมเงินพักรอตัดสิน (เช่น ผู้ซื้อยืนยันรับของ/ร้องเรียนแล้ว) → ห้ามสร้างงานใหม่
+        // (งานใหม่ทำให้เรื่องเดิมกลายเป็นงานเก่าที่แอดมินตัดสินไม่ได้ และส่งของซ้ำ)
+        return $this->riderHandoverHoldMessage() === null;
     }
 
     /**

@@ -41,7 +41,12 @@ use Illuminate\Support\Facades\Storage;
  *   2. ผู้ซื้อไม่ออกมารับ — รูปรอบ 1 ที่จุดส่ง (เริ่มนับรอ) → ครบเวลารอ → รูปรอบ 2 → งาน awaiting_release
  *      (ไรเดอร์ว่างรับงานใหม่) → ปลดเงินอัตโนมัติเมื่อครบ rider.handover_auto_release_hours ถ้าผู้ซื้อไม่ร้องเรียน
  *   3. ผู้ซื้อกด "ได้รับของแล้ว" ระหว่างทางสำรอง (รอผู้รับ/วางของแล้ว) → ปิดทันที (method buyer_confirm)
+ *      ผู้ซื้อสแกน QR/กรอกรหัสของไรเดอร์ระหว่างไรเดอร์รอผู้รับ → ปิดทันทีเช่นกัน (method qr/code — รอบแก้ 2)
+ *      ผู้ซื้อยืนยันแล้วแต่ไรเดอร์ยืนยันไม่ได้ → ปลดอัตโนมัติหลัง rider.handover_buyer_confirmed_release_minutes (รอบแก้ 2)
  *   4. ร้องเรียน → ไรเดอร์ถูกปล่อย (งาน awaiting_release) → แอดมินตัดสิน: ปล่อยเงิน หรือคืนเงินผู้ซื้อเต็มจำนวน
+ *
+ * รอบแก้ 2: ระหว่างเงินพักรอตัดสิน (วางของแล้ว/ร้องเรียน/ผู้ซื้อยืนยันแล้ว) การยกเลิก/คืนเงินทางปกติถูกปฏิเสธ
+ * (cancelHoldMessage) · ทุกทางที่ปิดงานแล้วจ่ายเงินตรวจซ้ำว่าออเดอร์ยังไม่ถูกยกเลิก/คืนเงิน (completeLocked)
  *
  * งานจะ "ต้องสแกนส่งมอบ" (handover_required) ก็ต่อเมื่อผู้ซื้อสั่งและไรเดอร์รับงานจากแอปรุ่นที่รองรับ
  * (ตัดสินตอนรับงาน — RiderJob::handoverRequiredOnAccept) ไม่งั้นเป็นงานแบบเดิมที่กดส่งของได้
@@ -215,10 +220,29 @@ class HandoverService
                 return true;
             }
 
+            // รอบแก้ 2 (B3): ไรเดอร์ถ่ายรูปรอที่จุดส่งอยู่ (fallback_waiting = ไรเดอร์อยู่ในรัศมีจุดส่งแล้ว)
+            // ผู้ซื้อออกมาสแกน QR/กรอกรหัสของไรเดอร์ = เจอกันและรับของแล้ว → ปิดทันทีเหมือนกด "ได้รับของแล้ว"
+            // (เดิมทับสถานะเป็น buyer_confirmed → ไรเดอร์ถ่ายรูปต่อไม่ได้ ผู้ซื้อกดได้รับของไม่ได้ = ทางตัน)
+            if ($locked->status === DeliveryHandover::STATUS_FALLBACK_WAITING) {
+                $this->completeLocked(
+                    $lockedJob,
+                    $locked,
+                    $usedCode ? 'code' : 'qr',
+                    DeliveryHandover::STATUS_COMPLETED,
+                    $locked->arrival_latitude !== null ? (float) $locked->arrival_latitude : null,
+                    $locked->arrival_longitude !== null ? (float) $locked->arrival_longitude : null,
+                );
+
+                return true;
+            }
+
             $locked->status = DeliveryHandover::STATUS_BUYER_CONFIRMED;
             if ($usedCode) {
                 $locked->method = 'code';
             }
+            // รอบแก้ 2 (B3): ผู้ซื้อยืนยันรับของแล้วแต่ไรเดอร์ยืนยันไม่ได้ (มือถือดับ/ผู้ซื้อเข้าบ้านไปแล้ว)
+            // → ปลดเงินอัตโนมัติเมื่อครบเวลา (rider:handover-release) — ค่าส่งไรเดอร์ไม่ขึ้นกับมือถือไรเดอร์
+            $locked->auto_release_at = now()->addMinutes($this->buyerConfirmedReleaseMinutes());
             $locked->save();
 
             return false;
@@ -253,8 +277,9 @@ class HandoverService
         }
 
         $note = $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 1000) : null;
+        $riderHoldsItem = false;
 
-        $changed = DB::transaction(function () use ($job, $reason, $note) {
+        $changed = DB::transaction(function () use ($job, $reason, $note, &$riderHoldsItem) {
             [$lockedJob, $locked] = $this->lockPair($job);
 
             if ($locked->status === DeliveryHandover::STATUS_DISPUTED) {
@@ -264,6 +289,10 @@ class HandoverService
             if (! $this->canDispute($lockedJob, $locked)) {
                 throw HandoverException::disputeNotAllowed();
             }
+
+            // รอบแก้ 2 (B2): ร้องเรียนตอนไรเดอร์ยังรอผู้รับอยู่ (ถ่ายรูปรอบ 1 แล้ว แต่ยังไม่วางของ/ยังไม่เจอกัน)
+            // = ของยังอยู่กับไรเดอร์ → บอกไรเดอร์ให้เก็บของไว้ แล้วนำคืนร้านตามที่ทีมงานแจ้ง
+            $riderHoldsItem = ! $this->itemLeftWithBuyer($lockedJob, $locked);
 
             $locked->forceFill([
                 'status' => DeliveryHandover::STATUS_DISPUTED,
@@ -288,7 +317,9 @@ class HandoverService
 
             $this->notifier->notifyAdmins(
                 'ผู้ซื้อร้องเรียนการส่งมอบ ต้องตัดสิน',
-                "งาน #{$job->job_number}: ".self::disputeReasonText($reason).($note ? " — {$note}" : '').' กรุณาเลือกปล่อยเงินหรือคืนเงินผู้ซื้อ',
+                "งาน #{$job->job_number}: ".self::disputeReasonText($reason).($note ? " — {$note}" : '')
+                    .($riderHoldsItem ? ' (ไรเดอร์ยังถือสินค้าอยู่ — ถ้าคืนเงิน ให้ประสานนำของคืนร้าน)' : '')
+                    .' กรุณาเลือกปล่อยเงินหรือคืนเงินผู้ซื้อ',
                 array_merge($this->pushBase($job), ['reason' => $reason]),
                 $this->adminJobUrl($job),
                 'handover_disputed',
@@ -299,8 +330,10 @@ class HandoverService
                 $this->notifier->notifyUsers(
                     [$riderUserId],
                     'handover_disputed',
-                    'ผู้รับแจ้งร้องเรียนการส่งมอบ',
-                    "ทีมงานกำลังตรวจสอบงาน #{$job->job_number} รายได้งานนี้พักไว้จนกว่าจะได้ข้อสรุป คุณรับงานใหม่ได้ตามปกติ",
+                    $riderHoldsItem ? 'ผู้รับแจ้งร้องเรียน กรุณาเก็บสินค้าไว้ก่อน' : 'ผู้รับแจ้งร้องเรียนการส่งมอบ',
+                    $riderHoldsItem
+                        ? "ทีมงานกำลังตรวจสอบงาน #{$job->job_number} กรุณาเก็บสินค้าไว้กับตัว อย่าวางทิ้งไว้ที่จุดส่ง แล้วนำคืนร้านตามที่ทีมงานแจ้ง รายได้งานนี้พักไว้จนกว่าจะได้ข้อสรุป คุณรับงานใหม่ได้ตามปกติ"
+                        : "ทีมงานกำลังตรวจสอบงาน #{$job->job_number} รายได้งานนี้พักไว้จนกว่าจะได้ข้อสรุป คุณรับงานใหม่ได้ตามปกติ",
                     $this->pushData($job, 'rider'),
                     null,
                     'high',
@@ -625,61 +658,213 @@ class HandoverService
     // =====================================================
 
     /**
-     * ปลดเงินอัตโนมัติ: งานที่วางของแล้ว ครบเวลา และผู้ซื้อไม่ร้องเรียน (rider:handover-release ทุกนาที)
+     * ปลดเงินอัตโนมัติ (rider:handover-release ทุกนาที) — 2 กรณี:
+     *   1. วางของแล้ว (fallback_pending_release) ครบเวลา และผู้ซื้อไม่ร้องเรียน → released (method fallback)
+     *   2. รอบแก้ 2 (B3): ผู้ซื้อยืนยันรับของแล้ว (buyer_confirmed) แต่ไรเดอร์ไม่ได้ยืนยันจนครบเวลา
+     *      (rider.handover_buyer_confirmed_release_minutes) → completed (method เดิม qr/code) — ผู้ซื้อยืนยันรับของแล้ว
+     *      ค่าส่งไรเดอร์ไม่ควรขึ้นกับมือถือไรเดอร์
      *
-     * @return int จำนวนที่ปลดได้
+     * รอบแก้ 2 (B5): ตรวจซ้ำหลังล็อกแถวงาน + ล็อกแถวออเดอร์ — ออเดอร์ถูกยกเลิก/คืนเงินไปแล้ว = ห้ามจ่ายไรเดอร์
+     * → ปิดงานเป็นส่งไม่สำเร็จ + ปิดเรื่องการส่งมอบ (closeLockedForClosedSource) แล้วแจ้งไรเดอร์/แอดมิน
+     *
+     * @return int จำนวนที่ปลดได้ (ไม่นับงานที่ถูกปิดเพราะออเดอร์ถูกยกเลิก)
      */
     public function releaseDue(int $limit = 100): int
     {
-        $ids = DeliveryHandover::query()
+        $limit = max(1, $limit);
+
+        $fallbackIds = DeliveryHandover::query()
             ->where('status', DeliveryHandover::STATUS_FALLBACK_PENDING_RELEASE)
             ->whereNull('disputed_at')
             ->whereNotNull('auto_release_at')
             ->where('auto_release_at', '<=', now())
-            // งานถูกปิดทางอื่นไปแล้ว (เช่น แอดมินยกเลิกออเดอร์/คืนเงิน → failed) → ไม่ต้องปลด
+            // งานถูกปิดทางอื่นไปแล้ว (เช่น แอดมินตัดสินคืนเงิน → failed) → ไม่ต้องปลด
             ->whereIn('rider_job_id', RiderJob::query()->where('status', RiderJob::STATUS_AWAITING_RELEASE)->select('id'))
             ->orderBy('auto_release_at')
-            ->limit(max(1, $limit))
+            ->limit($limit)
             ->pluck('rider_job_id');
+
+        $buyerConfirmedIds = DeliveryHandover::query()
+            ->where('status', DeliveryHandover::STATUS_BUYER_CONFIRMED)
+            ->whereNull('rider_confirmed_at')
+            ->whereNull('disputed_at')
+            ->whereNotNull('auto_release_at')
+            ->where('auto_release_at', '<=', now())
+            ->whereIn('rider_job_id', RiderJob::query()->whereIn('status', self::JOB_HANDOVER_STATUSES)->select('id'))
+            ->orderBy('auto_release_at')
+            ->limit($limit)
+            ->pluck('rider_job_id');
+
+        $candidates = [];
+        foreach ($fallbackIds as $jobId) {
+            $candidates[] = [(int) $jobId, 'fallback'];
+        }
+        foreach ($buyerConfirmedIds as $jobId) {
+            $candidates[] = [(int) $jobId, 'buyer_confirmed'];
+        }
 
         $released = 0;
 
-        foreach ($ids as $jobId) {
+        foreach ($candidates as [$jobId, $mode]) {
             $job = RiderJob::find($jobId);
             if (! $job) {
                 continue;
             }
 
+            $closeReason = 'ออเดอร์ถูกยกเลิก/คืนเงินผู้ซื้อไปก่อนปลดเงินอัตโนมัติ';
+
             try {
-                $done = DB::transaction(function () use ($job) {
+                $outcome = DB::transaction(function () use ($job, $mode, $closeReason) {
                     [$lockedJob, $locked] = $this->lockPair($job);
 
-                    // ตรวจซ้ำหลังล็อก: ผู้ซื้ออาจร้องเรียนพอดี
-                    if ($locked->status !== DeliveryHandover::STATUS_FALLBACK_PENDING_RELEASE
-                        || $lockedJob->status !== RiderJob::STATUS_AWAITING_RELEASE
-                        || $locked->disputed_at !== null
-                        || $locked->auto_release_at === null
-                        || $locked->auto_release_at->isFuture()) {
-                        return false;
+                    // ตรวจซ้ำหลังล็อก: ผู้ซื้ออาจร้องเรียน/ไรเดอร์อาจสแกน/แอดมินอาจตัดสินพอดี
+                    if (! $this->dueForAutoRelease($lockedJob, $locked, $mode)) {
+                        return null;
                     }
 
-                    $this->completeLocked($lockedJob, $locked, 'fallback', DeliveryHandover::STATUS_RELEASED);
+                    // รอบแก้ 2 (B5): ออเดอร์ถูกยกเลิก/คืนเงินไปแล้ว (ล็อกแถวออเดอร์แล้วอ่าน) → ห้ามจ่ายไรเดอร์
+                    if ($this->sourceClosed($lockedJob, true)) {
+                        $this->closeLockedForClosedSource($lockedJob, $locked, $closeReason);
 
-                    return true;
+                        return 'closed';
+                    }
+
+                    if ($mode === 'fallback') {
+                        $this->completeLocked($lockedJob, $locked, 'fallback', DeliveryHandover::STATUS_RELEASED);
+                    } else {
+                        // ไรเดอร์ไม่ได้ยืนยัน → ไม่มีพิกัดตอนส่ง (completeHandoverLocked รับค่าว่างได้)
+                        $this->completeLocked($lockedJob, $locked, $locked->method === 'code' ? 'code' : 'qr');
+                    }
+
+                    return 'released';
                 });
             } catch (\Throwable $e) {
-                Log::error('Handover: auto release failed', ['job_id' => $jobId, 'error' => $e->getMessage()]);
+                Log::error('Handover: auto release failed', ['job_id' => $jobId, 'mode' => $mode, 'error' => $e->getMessage()]);
 
                 continue;
             }
 
-            if ($done) {
+            if ($outcome === 'released') {
                 $released++;
+                Log::info('Handover: auto released', ['job_id' => $jobId, 'mode' => $mode]);
                 $this->afterCompleted($job->fresh());
+            } elseif ($outcome === 'closed') {
+                $this->notifyClosedForSource($job->fresh(), $closeReason);
             }
         }
 
         return $released;
+    }
+
+    /**
+     * ครบเงื่อนไขปลดเงินอัตโนมัติไหม (เรียกหลังล็อกคู่แล้ว)
+     *
+     * @param  string  $mode  fallback | buyer_confirmed
+     */
+    private function dueForAutoRelease(RiderJob $lockedJob, DeliveryHandover $locked, string $mode): bool
+    {
+        if ($locked->disputed_at !== null || $locked->auto_release_at === null || $locked->auto_release_at->isFuture()) {
+            return false;
+        }
+
+        if ($mode === 'fallback') {
+            return $locked->status === DeliveryHandover::STATUS_FALLBACK_PENDING_RELEASE
+                && $lockedJob->status === RiderJob::STATUS_AWAITING_RELEASE;
+        }
+
+        return $locked->status === DeliveryHandover::STATUS_BUYER_CONFIRMED
+            && $locked->buyer_confirmed_at !== null
+            && $locked->rider_confirmed_at === null
+            && in_array($lockedJob->status, self::JOB_HANDOVER_STATUSES, true);
+    }
+
+    /**
+     * ผู้ซื้อยืนยันรับของแล้วแต่ไรเดอร์ไม่ยืนยัน → ปลดเงินอัตโนมัติหลังกี่นาที
+     * (rider.handover_buyer_confirmed_release_minutes ค่าเริ่มต้น 30 · ขั้นต่ำ 5 — ให้ไรเดอร์มีเวลาสแกน/กรอกรหัสเองก่อน)
+     */
+    public function buyerConfirmedReleaseMinutes(): int
+    {
+        return max(5, $this->config->intSetting('rider.handover_buyer_confirmed_release_minutes'));
+    }
+
+    /**
+     * ปิดงานที่เงินยังพักอยู่ เพราะออเดอร์ต้นทางถูกยกเลิก/คืนเงินไปแล้ว (ภายใน transaction ที่ล็อกคู่แล้ว)
+     *
+     * งาน → failed (order_cancelled · ไม่เรียก hook กลับออเดอร์ · ไรเดอร์ไม่ได้ค่าส่งเพราะเงินคืนผู้ซื้อไปแล้ว)
+     * การส่งมอบ → refunded (ระบบปิดเรื่อง) → ไม่ค้างในตัวนับ "รอแอดมิน" · แจ้งไรเดอร์/แอดมินหลัง commit (notifyClosedForSource)
+     */
+    private function closeLockedForClosedSource(RiderJob $lockedJob, DeliveryHandover $locked, string $reason): void
+    {
+        $locked->forceFill([
+            'status' => DeliveryHandover::STATUS_REFUNDED,
+            'resolved_at' => now(),
+            'resolution' => 'refund',
+            'resolution_note' => mb_substr('ระบบปิดเรื่อง: '.$reason, 0, 1000),
+        ])->save();
+
+        $this->jobs->failQuietlyForClosedSource($lockedJob, $reason);
+
+        Log::warning('Handover: closed because source order was cancelled/refunded', [
+            'job_id' => $lockedJob->id,
+            'handover_id' => $locked->id,
+        ]);
+    }
+
+    /**
+     * ออเดอร์ต้นทางกำลังถูกยกเลิก ขณะงานยังพักเงินรอส่งมอบ (awaiting_release) — ใช้จาก RiderDispatchService::cancelJobsForSource
+     *
+     * ปกติไม่มีทางถึงจุดนี้ (cancelHoldMessage ปฏิเสธการยกเลิกทางปกติไว้แล้ว) — กันไว้ให้ปิดถูกต้องเสมอ:
+     * ไม่บอกไรเดอร์ให้ "นำของคืนร้าน" ถ้าของอยู่กับผู้ซื้อแล้ว · ไม่จ่ายไรเดอร์ · ไม่ค้างตัวนับแอดมิน
+     */
+    public function closeForCancelledSource(RiderJob $job, string $reason): void
+    {
+        $changed = DB::transaction(function () use ($job, $reason) {
+            [$lockedJob, $locked] = $this->lockPair($job);
+
+            if ($locked->isFinal() || RiderJob::isTerminalStatus((string) $lockedJob->status)) {
+                return false;
+            }
+
+            $this->closeLockedForClosedSource($lockedJob, $locked, $reason);
+
+            return true;
+        });
+
+        if ($changed) {
+            $this->notifyClosedForSource($job->fresh(), $reason);
+        }
+    }
+
+    /**
+     * แจ้งไรเดอร์ + แอดมิน หลังปิดงานเพราะออเดอร์ถูกยกเลิก/คืนเงิน (ข้อความตามว่าของอยู่กับใคร)
+     */
+    private function notifyClosedForSource(RiderJob $job, string $reason): void
+    {
+        $handover = $job->handover()->first();
+        $riderHoldsItem = $handover ? ! $this->itemLeftWithBuyer($job, $handover) : true;
+        $riderUserId = $this->riderUserIdFor($job);
+
+        if ($riderUserId) {
+            $this->notifier->notifyUsers(
+                [$riderUserId],
+                'handover_resolved',
+                'ออเดอร์ถูกยกเลิก',
+                $riderHoldsItem
+                    ? "ออเดอร์ของงาน #{$job->job_number} ถูกยกเลิกและคืนเงินผู้ซื้อแล้ว กรุณานำสินค้าคืนร้าน ทีมงานจะติดต่อเรื่องค่าวิ่ง"
+                    : "ออเดอร์ของงาน #{$job->job_number} ถูกยกเลิกและคืนเงินผู้ซื้อแล้ว ไม่ต้องนำสินค้าคืนร้าน ทีมงานจะติดต่อเรื่องค่าวิ่ง",
+                $this->pushData($job, 'rider', ['resolution' => 'refund']),
+                null,
+                'high',
+            );
+        }
+
+        $this->notifier->notifyAdmins(
+            'ปิดงานส่งมอบ: ออเดอร์ถูกยกเลิกก่อนปลดเงิน',
+            "งาน #{$job->job_number}: {$reason} — ไรเดอร์ยังไม่ได้ค่าส่ง กรุณาตรวจสอบค่าวิ่งให้ไรเดอร์"
+                .($riderHoldsItem ? ' และประสานนำสินค้าคืนร้าน' : ' (สินค้าอยู่กับผู้ซื้อแล้ว)'),
+            array_merge($this->pushBase($job), ['resolution' => 'refund']),
+            $this->adminJobUrl($job),
+        );
     }
 
     /**
@@ -710,8 +895,9 @@ class HandoverService
                 throw HandoverException::notReady('การส่งมอบนี้ยังไม่อยู่ในสถานะที่แอดมินตัดสินได้');
             }
 
-            // งานที่ถูกปิดเป็น failed: ปล่อยเงินได้เฉพาะเมื่อออเดอร์ยังเปิดอยู่ (ยกเลิก/คืนเงินไปแล้ว = ไม่มีเงินให้ปล่อย)
-            if ($lockedJob->status === 'failed' && $this->sourceClosed($lockedJob)) {
+            // ปล่อยเงินได้เฉพาะเมื่อออเดอร์ยังเปิดอยู่ (ยกเลิก/คืนเงินไปแล้ว = ไม่มีเงินให้ปล่อย)
+            // รอบแก้ 2 (B5): ตรวจทุกสถานะงาน และล็อกแถวออเดอร์ก่อนอ่าน (กันชนกับคำสั่งยกเลิกที่ยังไม่ commit)
+            if ($this->sourceClosed($lockedJob, true)) {
                 throw HandoverException::notReady('ออเดอร์นี้ถูกยกเลิกหรือคืนเงินไปแล้ว ปล่อยเงินไม่ได้ (ใช้ "คืนเงินผู้ซื้อ" เพื่อปิดเรื่อง)');
             }
 
@@ -791,7 +977,7 @@ class HandoverService
                     'resolution_note' => $note !== '' ? $note : null,
                 ])->save();
 
-                $alreadyClosed = $this->sourceClosed($lockedJob);
+                $alreadyClosed = $this->sourceClosed($lockedJob, true);
                 $itemWithBuyer = $this->itemLeftWithBuyer($lockedJob, $locked);
 
                 // 1) งานไรเดอร์ → failed (admin_intervention) — ไม่เคลียร์เงิน ไรเดอร์ไม่ได้ค่าส่ง · ไม่แจ้งข้อความ "ส่งไม่สำเร็จ"
@@ -845,6 +1031,7 @@ class HandoverService
      * แอดมินตัดสินได้เมื่อ: การส่งมอบยังไม่จบ (ทุกสถานะ) + ไรเดอร์รับของไปแล้ว (หรืองานถูกปิดเป็น failed ไปแล้ว)
      *
      * งาน failed ที่มีงานส่งใหม่ของออเดอร์เดียวกันแล้ว = เรื่องเก่า ตัดสินไม่ได้ (ไปตัดสินที่งานใหม่)
+     * รอบแก้ 2 (B3): งานใหม่ที่ถูกยกเลิกก่อนรับของ ไม่นับว่าแทนงานเก่า (ไม่งั้นเรื่องเก่าตัดสินไม่ได้ตลอดไป)
      */
     public function adminCanResolve(RiderJob $job, ?DeliveryHandover $handover): bool
     {
@@ -861,6 +1048,7 @@ class HandoverService
                 ->where('source_type', $job->source_type)
                 ->where('source_id', $job->source_id)
                 ->where('id', '>', $job->id)
+                ->where(fn ($q) => $q->where('status', '!=', 'cancelled')->orWhereNotNull('picked_up_at'))
                 ->exists();
 
             if ($superseded) {
@@ -872,16 +1060,111 @@ class HandoverService
     }
 
     /**
-     * ของออกจากมือไรเดอร์ไปถึงผู้ซื้อแล้วหรือยัง (ใช้ตัดสินว่าคืนเงินแล้วต้องคืนสต็อกเข้าร้านไหม)
+     * จำกัดคิวรีงานไรเดอร์ (rider_jobs) ให้เหลือเฉพาะงานที่แอดมินตัดสินการส่งมอบได้จริง — เงื่อนไขเดียวกับ adminCanResolve
+     * (ใช้กับตัวนับ/ตัวกรองหน้าแอดมิน → ไม่มีตัวนับค้างที่กดตัดสินไม่ได้)
      *
-     * = วางของแล้ว (รูปรอบ 2 / งานรอปลดเงิน) หรือเจอกันแล้ว (ฝั่งใดฝั่งหนึ่งสแกน/กรอกรหัสยืนยัน)
+     * @param  \Illuminate\Database\Eloquent\Builder<RiderJob>  $query
+     */
+    public static function scopeAdminResolvable($query): void
+    {
+        $query->whereIn('rider_jobs.status', self::ADMIN_RESOLVABLE_JOB_STATUSES)
+            ->whereHas('handover', fn ($h) => $h->whereNotIn('status', DeliveryHandover::FINAL_STATUSES))
+            ->where(function ($q) {
+                $q->where('rider_jobs.status', '!=', 'failed')
+                    ->orWhereNotExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('rider_jobs as newer_jobs')
+                            ->whereColumn('newer_jobs.source_type', 'rider_jobs.source_type')
+                            ->whereColumn('newer_jobs.source_id', 'rider_jobs.source_id')
+                            ->whereColumn('newer_jobs.id', '>', 'rider_jobs.id')
+                            ->whereNull('newer_jobs.deleted_at')
+                            ->where(fn ($n) => $n->where('newer_jobs.status', '!=', 'cancelled')->orWhereNotNull('newer_jobs.picked_up_at'));
+                    });
+            });
+    }
+
+    /**
+     * ของออกจากมือไรเดอร์ไปถึงผู้ซื้อแล้วหรือยัง (ใช้ตัดสินว่าคืนเงินแล้วต้องคืนสต็อกเข้าร้านไหม + ข้อความถึงไรเดอร์)
+     *
+     * = วางของแล้ว (รูปรอบ 2) หรือเจอกันแล้ว (ฝั่งใดฝั่งหนึ่งสแกน/กรอกรหัสยืนยัน)
+     * รอบแก้ 2 (B2): ไม่ดูสถานะงาน awaiting_release — ร้องเรียนตอนรอผู้รับ (รูปรอบ 1 เท่านั้น) ก็ทำให้งานเป็น
+     * awaiting_release ทั้งที่ไรเดอร์ยังถือของอยู่
      */
     private function itemLeftWithBuyer(RiderJob $job, DeliveryHandover $handover): bool
     {
-        return $job->status === RiderJob::STATUS_AWAITING_RELEASE
-            || $handover->waited_photo_at !== null
+        return $handover->waited_photo_at !== null
             || $handover->rider_confirmed_at !== null
             || $handover->buyer_confirmed_at !== null;
+    }
+
+    // =====================================================
+    // รอบแก้ 2 (B4): เงินพักรอตัดสิน → ห้ามยกเลิก/คืนเงินทางปกติ
+    // =====================================================
+
+    /**
+     * ออเดอร์นี้มีงานไรเดอร์ที่ "เงินพักรอตัดสินการส่งมอบ" อยู่หรือไม่ → ข้อความไทยสำหรับปฏิเสธ (null = ยกเลิก/คืนเงินทางปกติได้)
+     *
+     * พักอยู่ = ไรเดอร์วางของแล้วรอปลดเงิน (awaiting_release) · ผู้ซื้อร้องเรียนค้างอยู่ · ผู้ซื้อยืนยันรับของแล้วแต่งานยังไม่ปิด
+     * ระหว่างนี้การยกเลิก/คืนเงินทางปกติ (ผู้ซื้อ/ร้าน/แอดมิน/ตลาดสด) ถูกปฏิเสธ — เรื่องเงินและสต็อกตัดสินที่แผง
+     * "การส่งมอบ" ของงานไรเดอร์ (adminRelease / adminRefund) เท่านั้น (ไม่งั้นไรเดอร์ถูกสั่งให้นำของคืนร้านทั้งที่ของอยู่กับผู้ซื้อ
+     * สต็อกถูกคืน และไรเดอร์ไม่ได้ค่าส่ง)
+     *
+     * @param  bool  $lock  true = ล็อกแถวงานของออเดอร์ (เรียกใน transaction ที่ล็อกออเดอร์แล้ว — กันผู้ซื้อร้องเรียน/ไรเดอร์วางของแทรกกลางการยกเลิก)
+     */
+    public function cancelHoldMessage(Model $source, bool $lock = false): ?string
+    {
+        if (! $source->exists) {
+            return null;
+        }
+
+        $query = RiderJob::forSource($source)->orderByDesc('id');
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        $jobs = $query->get()->filter(fn (RiderJob $job) => (bool) $job->handover_required
+            && ! in_array($job->status, ['cancelled', 'completed'], true));
+
+        if ($jobs->isEmpty()) {
+            return null;
+        }
+
+        $handovers = DeliveryHandover::whereIn('rider_job_id', $jobs->pluck('id')->all())->get()->keyBy('rider_job_id');
+
+        foreach ($jobs as $job) {
+            $message = $this->holdMessageForJob($job, $handovers->get($job->id));
+            if ($message !== null) {
+                return $message;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * งานนี้เงินพักรอตัดสินการส่งมอบอยู่ไหม → ข้อความไทย (null = ไม่พัก)
+     */
+    public function holdMessageForJob(RiderJob $job, ?DeliveryHandover $handover): ?string
+    {
+        if (! $job->handover_required || ! $this->adminCanResolve($job, $handover)) {
+            return null;
+        }
+
+        $tail = "ยกเลิกหรือคืนเงินทางปกติไม่ได้ กรุณาให้แอดมินตัดสินที่หน้างานไรเดอร์ #{$job->job_number} (ปล่อยเงิน หรือคืนเงินผู้ซื้อ)";
+
+        if ($handover->status === DeliveryHandover::STATUS_DISPUTED) {
+            return 'ผู้ซื้อร้องเรียนการส่งมอบออเดอร์นี้อยู่ '.$tail;
+        }
+
+        if ($job->status === RiderJob::STATUS_AWAITING_RELEASE) {
+            return 'ไรเดอร์วางสินค้าไว้ให้ผู้ซื้อแล้ว เงินพักรอปลด '.$tail;
+        }
+
+        if ($handover->buyer_confirmed_at !== null) {
+            return 'ผู้ซื้อยืนยันรับสินค้าแล้ว รอปิดงานส่ง '.$tail;
+        }
+
+        return null;
     }
 
     /**
@@ -1098,6 +1381,12 @@ class HandoverService
         ?float $lng = null,
         bool $adminOverride = false,
     ): void {
+        // รอบแก้ 2 (B5): ทุกทางที่ปิดงานแล้วจ่ายเงิน (สแกน/รหัส/ได้รับของแล้ว/ปลดอัตโนมัติ/แอดมินปล่อย) ตรวจซ้ำหลังล็อกงาน
+        // + ล็อกแถวออเดอร์: ออเดอร์ถูกยกเลิก/คืนเงินผู้ซื้อไปแล้ว → ห้ามปิดงานเป็นส่งสำเร็จ (ไม่งั้นไรเดอร์ได้เงินซ้ำกับเงินที่คืนไปแล้ว)
+        if ($this->sourceClosed($lockedJob, true)) {
+            throw HandoverException::notReady('ออเดอร์นี้ถูกยกเลิกหรือคืนเงินไปแล้ว ปิดการส่งมอบไม่ได้ หากมีปัญหากรุณาติดต่อทีมงาน');
+        }
+
         $locked->forceFill([
             'status' => $status,
             'method' => $method,
@@ -1818,19 +2107,22 @@ class HandoverService
 
     /**
      * ออเดอร์ต้นทางจบไปแล้ว (ยกเลิก/คืนเงิน/ปิดออเดอร์) หรือไม่ — ใช้กันปล่อยเงิน/คืนเงินซ้ำของงานที่ปิดเป็น failed
+     *
+     * @param  bool  $lock  true = ล็อกแถวออเดอร์ก่อนอ่าน (ภายใน transaction ที่ล็อกงานแล้ว — ลำดับ งาน → ออเดอร์ เดียวกับ hook
+     *                      ของงาน) → เห็นค่าที่ commit ล่าสุด และรอคำสั่งยกเลิกที่ยังไม่ commit ให้จบก่อน (B5)
      */
-    private function sourceClosed(RiderJob $job): bool
+    private function sourceClosed(RiderJob $job, bool $lock = false): bool
     {
         $source = $job->deliverableSource();
 
         if ($source instanceof Order) {
-            $status = Order::whereKey($source->id)->value('status');
+            $status = Order::whereKey($source->id)->when($lock, fn ($q) => $q->lockForUpdate())->value('status');
 
             return in_array($status, Order::TERMINAL_STATUSES, true);
         }
 
         if ($source instanceof FreshMarketOrder) {
-            $status = FreshMarketOrder::whereKey($source->id)->value('order_status');
+            $status = FreshMarketOrder::whereKey($source->id)->when($lock, fn ($q) => $q->lockForUpdate())->value('order_status');
 
             return in_array($status, FreshMarketOrder::TERMINAL_STATUSES, true);
         }
