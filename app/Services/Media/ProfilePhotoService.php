@@ -98,22 +98,22 @@ class ProfilePhotoService
     // =====================================================
 
     /**
-     * URL รูปพร้อมลายน้ำของ $subject ที่ $viewer เปิดดู (signed URL อายุสั้น)
+     * URL รูปโปรไฟล์ของ $subject ที่ $viewer เปิดดู
      *
-     * ยังไม่มีรูปถ่ายสด → รูปโปรไฟล์เดิม (LINE/Google/FB/อัปโหลดเก่า) คืนให้ "เจ้าของเอง" เท่านั้น
-     * คนอื่น (ไรเดอร์/ผู้ซื้อ/ร้าน) ได้ null จนกว่าจะมีรูปถ่ายสด — รูปเดิมไม่มีลายน้ำและเป็น URL ถาวรที่ส่งต่อได้
-     * (money-review M5 / app-review L5)
+     * - มีรูปที่ตั้งผ่านแอป (POST /me/profile-photo — คลังรูปหรือกล้องก็ได้) → signed URL อายุสั้น ฝังลายน้ำรหัสผู้ดู
+     * - ยังไม่มี → รูปโปรไฟล์เดิมที่ผู้ใช้เลือกไว้ (LINE/Google/FB/อัปโหลดเก่า) ให้ "ทุกคน" เห็น
      *
-     * @return string|null null = ไม่มีรูปให้คนนี้เห็น
+     * 🪪 (2026-10-04 · AI eKYC) เจ้าของสั่ง: รูปโปรไฟล์ = รูปอะไรก็ได้ที่ผู้ใช้เลือก ความน่าเชื่อถือมาจากป้าย
+     *    "ยืนยันตัวตนแล้ว" (คีย์ verified ใน PersonCard) ไม่ใช่จากรูป — ยกเลิกกติกาเดิมที่ซ่อนรูปเดิมจากคนอื่น
+     *
+     * @return string|null null = ผู้ใช้ไม่มีรูปเลย (ไม่คืนรูปตัวอักษรอัตโนมัติ)
      */
     public function urlFor(User $subject, ?User $viewer): ?string
     {
         $version = $this->photoVersion($subject);
 
         if ($version === null) {
-            $isSelf = $viewer !== null && (int) $viewer->getKey() === (int) $subject->getKey();
-
-            return $isSelf ? $this->legacyUrl($subject) : null;
+            return $this->legacyUrl($subject);
         }
 
         try {
@@ -436,6 +436,36 @@ class ProfilePhotoService
         }
 
         return $deleted;
+    }
+
+    /**
+     * เลิกใช้รูปถ่ายสดของผู้ใช้ (eKYC 2026-10-04: อวาตาร์ = รูปที่ผู้ใช้เลือกเอง รูปล่าสุดต้องชนะ)
+     *
+     * เรียกเมื่อผู้ใช้อัปโหลดอวาตาร์ใหม่ — ไม่งั้น urlFor() ยังคืนรูปถ่ายสดเก่าให้คนอื่นเห็น
+     */
+    public function forget(User $user): void
+    {
+        $previous = DB::transaction(function () use ($user) {
+            /** @var User|null $locked */
+            $locked = User::query()->whereKey($user->getKey())->lockForUpdate()->first();
+            if (! $locked || empty($locked->profile_photo_private_path)) {
+                return null;
+            }
+
+            $old = $locked->profile_photo_private_path;
+            $locked->forceFill([
+                'profile_photo_private_path' => null,
+                'profile_photo_taken_at' => null,
+            ])->save();
+
+            return $old;
+        });
+
+        // ไฟล์ลบย้อนกลับไม่ได้ → ทำหลัง commit เท่านั้น
+        if (is_string($previous) && $previous !== '') {
+            $this->deleteQuietly($previous);
+        }
+        $this->forgetRenderCache((int) $user->getKey());
     }
 
     /**

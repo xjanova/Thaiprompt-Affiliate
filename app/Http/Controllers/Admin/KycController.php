@@ -3,9 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\KycAccessLog;
 use App\Models\KycVerification;
-use App\Models\User;
+use App\Services\Ekyc\EkycException;
+use App\Services\Ekyc\EkycService;
+use App\Services\KycAutoCheckService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 class KycController extends Controller
 {
@@ -13,17 +19,34 @@ class KycController extends Controller
      * Display a listing of KYC verifications
      *
      * ⚠️ SECURITY: ตรวจสอบสิทธิ์ก่อนดูรายการ
+     * 🪪 (2026-10-04) ตัวกรอง "AI ส่งตรวจ" (ai=review) + ช่องทาง (method) · ไม่แสดงรอบ eKYC ที่ผู้ใช้ทำค้าง
      */
     public function index(Request $request)
     {
         // ✅ ตรวจสอบสิทธิ์ในการดูรายการ (ใช้ Policy แทน manual check)
         $this->authorize('viewAny', KycVerification::class);
 
-        $query = KycVerification::with(['user', 'reviewer']);
+        $query = KycVerification::with(['user', 'reviewer'])
+            // รอบ eKYC ที่ยังทำไม่จบ = ข้อมูลชั่วคราวของผู้ใช้ ไม่ใช่คำขอให้ตรวจ
+            ->where(function ($q) {
+                $q->where('method', '!=', KycVerification::METHOD_EKYC)
+                    ->orWhereNull('method')
+                    ->orWhere('status', '!=', 'draft');
+            });
 
         // Status filter
         if ($request->filled('status')) {
             $query->where('status', $request->get('status'));
+        }
+
+        // 🪪 AI ส่งตรวจ = eKYC ที่ AI ไม่มั่นใจและยังรอแอดมิน
+        if ($request->get('ai') === 'review') {
+            $query->where('method', KycVerification::METHOD_EKYC)
+                ->where('status', 'pending');
+        }
+
+        if (in_array($request->get('method'), [KycVerification::METHOD_EKYC, KycVerification::METHOD_MANUAL], true)) {
+            $query->where('method', $request->get('method'));
         }
 
         // Search filter
@@ -36,7 +59,7 @@ class KycController extends Controller
         }
 
         // Pagination
-        $perPage = $request->get('per_page', 15);
+        $perPage = min(100, max(5, (int) $request->get('per_page', 15)));
         $kycVerifications = $query->latest()->paginate($perPage)->withQueryString();
 
         // Get statistics
@@ -44,7 +67,14 @@ class KycController extends Controller
             'pending' => KycVerification::pending()->count(),
             'approved' => KycVerification::approved()->count(),
             'rejected' => KycVerification::rejected()->count(),
-            'total' => KycVerification::count(),
+            'total' => KycVerification::where(function ($q) {
+                $q->where('method', '!=', KycVerification::METHOD_EKYC)->orWhereNull('method')->orWhere('status', '!=', 'draft');
+            })->count(),
+            'ai_review' => KycVerification::ekyc()->pending()->count(),
+            'ai_approved_today' => KycVerification::ekyc()
+                ->where('ai_decision', 'approved')
+                ->where('processed_at', '>=', now()->startOfDay())
+                ->count(),
         ];
 
         return view('admin.kyc.index', compact('kycVerifications', 'stats'));
@@ -62,12 +92,92 @@ class KycController extends Controller
 
         $kycVerification->load(['user', 'reviewer']);
 
+        // 🪪 แถว AI eKYC → หน้าตรวจแบบใหม่ (รูปบัตร ↔ ใบหน้า · คะแนน AI · เหตุผล)
+        if ($kycVerification->isEkyc()) {
+            $ekyc = app(EkycService::class)->adminSummary($kycVerification);
+
+            // ชื่อบนบัตร ↔ บัญชีธนาคาร / ผู้โอนในสลิป (ตัวช่วยเดิม — ไม่ส่งเลขบัตรเข้าไป ไม่ให้โชว์เลขเต็ม)
+            $identityChecks = [];
+            try {
+                $probe = new KycVerification;
+                $probe->setRelation('user', $kycVerification->user);
+                $thai = KycAutoCheckService::normalizeName((string) $kycVerification->name_th);
+                $parts = $thai !== '' ? explode(' ', $thai, 2) : [];
+                $probe->extracted_data = [
+                    'thai_first_name' => $parts[0] ?? null,
+                    'thai_last_name' => $parts[1] ?? null,
+                ];
+                $identityChecks = collect(app(KycAutoCheckService::class)->run($probe)['checks'] ?? [])
+                    ->whereIn('key', ['name_bank', 'name_slip'])
+                    ->values()
+                    ->all();
+            } catch (\Throwable $e) {
+                Log::info('Admin eKYC: identity checks skipped', ['error' => class_basename($e)]);
+            }
+
+            $queue = KycVerification::ekyc()->pending()
+                ->with('user')
+                ->orderBy('processed_at')
+                ->limit(30)
+                ->get();
+
+            $accessLogs = KycAccessLog::with('viewer')
+                ->where('kyc_verification_id', $kycVerification->id)
+                ->latest('id')
+                ->limit(10)
+                ->get();
+
+            $aiApprovedToday = KycVerification::ekyc()
+                ->where('ai_decision', 'approved')
+                ->where('processed_at', '>=', now()->startOfDay())
+                ->count();
+
+            return view('admin.kyc.show-ekyc', compact('kycVerification', 'ekyc', 'identityChecks', 'queue', 'accessLogs', 'aiApprovedToday'));
+        }
+
         // 🤖 ตรวจอัตโนมัติชั้นที่ 1 — checksum เลขบัตร / บัตรหมดอายุ /
         //    ชื่อบัตรเทียบบัญชีธนาคาร / ชื่อบัตรเทียบผู้โอนจากสลิปจริง
         //    (คำนวณสดทุกครั้งที่เปิดดู — ข้อมูลบัญชี/สลิปเปลี่ยนได้เรื่อยๆ)
         $autoChecks = app(\App\Services\KycAutoCheckService::class)->run($kycVerification);
 
         return view('admin.kyc.show', compact('kycVerification', 'autoChecks'));
+    }
+
+    /**
+     * 🪪 รูปของ eKYC (ถอดรหัส) — แอดมินเท่านั้น · บันทึกการเปิดดูทุกครั้ง (PDPA)
+     *
+     * @param  string  $kind  card | card_face | best_frame
+     */
+    public function image(Request $request, KycVerification $kycVerification, string $kind): Response
+    {
+        $this->authorize('viewImages', $kycVerification);
+
+        if (! $kycVerification->isEkyc() || ! in_array($kind, ['card', 'card_face', 'best_frame'], true)) {
+            abort(404);
+        }
+
+        $bytes = app(EkycService::class)->decryptImage($kycVerification, $kind);
+        if ($bytes === null) {
+            abort(404);
+        }
+
+        KycAccessLog::create([
+            'kyc_verification_id' => $kycVerification->id,
+            'subject_user_id' => $kycVerification->user_id,
+            'viewer_id' => $request->user()?->id,
+            'kind' => $kind,
+            'ip_address' => $request->ip(),
+            'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
+        ]);
+
+        return response($bytes, 200, [
+            'Content-Type' => 'image/jpeg',
+            'Content-Length' => (string) strlen($bytes),
+            'Content-Disposition' => 'inline; filename="kyc-'.$kycVerification->id.'-'.$kind.'.jpg"',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'",
+        ]);
     }
 
     /**
@@ -83,6 +193,11 @@ class KycController extends Controller
         // Check if already processed
         if ($kycVerification->status !== 'pending') {
             return back()->with('error', 'การยืนยันตัวตนนี้ได้ถูกดำเนินการไปแล้ว');
+        }
+
+        // 🪪 eKYC → EkycService (อัปเดตผู้ใช้ + ปิดคำขอค้าง + แจ้งผลแบบ kyc_result)
+        if ($kycVerification->isEkyc()) {
+            return $this->ekycDecide($request, $kycVerification, 'approved', null, 'อนุมัติการยืนยันตัวตนเรียบร้อยแล้ว');
         }
 
         // Update KYC verification
@@ -167,6 +282,11 @@ class KycController extends Controller
             'rejection_reason.max' => 'เหตุผลต้องไม่เกิน 1000 ตัวอักษร',
         ]);
 
+        // 🪪 eKYC → EkycService
+        if ($kycVerification->isEkyc()) {
+            return $this->ekycDecide($request, $kycVerification, 'rejected', $validated['rejection_reason'], 'ปฏิเสธการยืนยันตัวตนเรียบร้อยแล้ว');
+        }
+
         // Update KYC verification
         $kycVerification->update([
             'status' => 'rejected',
@@ -186,6 +306,26 @@ class KycController extends Controller
     }
 
     /**
+     * 🪪 ขอให้ผู้ใช้ถ่ายบัตร/ใบหน้าใหม่ (เฉพาะ eKYC ที่รอตรวจ)
+     */
+    public function requestRetake(Request $request, KycVerification $kycVerification)
+    {
+        $this->authorize('requestRetake', $kycVerification);
+
+        if (! $kycVerification->isEkyc() || $kycVerification->status !== 'pending') {
+            return back()->with('error', 'การยืนยันตัวตนนี้ได้ถูกดำเนินการไปแล้ว');
+        }
+
+        $validated = $request->validate([
+            'retake_note' => ['nullable', 'string', 'max:500'],
+        ], [
+            'retake_note.max' => 'หมายเหตุต้องไม่เกิน 500 ตัวอักษร',
+        ]);
+
+        return $this->ekycDecide($request, $kycVerification, 'retake', $validated['retake_note'] ?? null, 'ส่งคำขอให้ผู้ใช้ถ่ายใหม่เรียบร้อยแล้ว');
+    }
+
+    /**
      * Delete KYC verification
      *
      * ⚠️ SECURITY: ป้องกัน IDOR - ตรวจสอบสิทธิ์ก่อนลบ
@@ -200,5 +340,23 @@ class KycController extends Controller
 
         return redirect()->route('admin.kyc.index')
             ->with('success', 'ลบข้อมูลการยืนยันตัวตนเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ตัดสินแถว eKYC ผ่าน EkycService แล้วกลับหน้าเดิมพร้อมข้อความไทย
+     */
+    private function ekycDecide(Request $request, KycVerification $kyc, string $decision, ?string $note, string $success)
+    {
+        try {
+            app(EkycService::class)->adminDecide($kyc, $request->user(), $decision, $note);
+        } catch (EkycException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Admin eKYC: decide failed', ['kyc_id' => $kyc->id, 'error' => class_basename($e)]);
+
+            return back()->with('error', 'บันทึกผลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+        }
+
+        return back()->with('success', $success);
     }
 }

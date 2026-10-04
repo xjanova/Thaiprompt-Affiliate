@@ -1,0 +1,11 @@
+# ไม่เอาเข้า build context (image เล็ก + ไม่หลุดโมเดล/ภาพทดสอบที่ดาวน์โหลดไว้บนเครื่อง dev)
+tests/
+models/
+test-faces/
+**/__pycache__/
+**/*.pyc
+.pytest_cache/
+*.md
+!README.md
+.venv/
+venv/

@@ -166,6 +166,9 @@ class MobileApiController extends Controller
                 'referralLink' => url('/register?ref='.$user->referral_code),
                 'wallet_address' => $user->wallet?->wallet_address ?? null,
                 'createdAt' => $user->created_at->toISOString(),
+                // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" + สถานะ KYC แบบที่แอปใช้ (none|pending|approved|rejected)
+                'verified' => $user->isKycVerified(),
+                'kyc_status' => $user->isKycVerified() ? 'approved' : \App\Services\Ekyc\EkycService::publicStatus($user),
             ],
         ]);
     }
@@ -228,6 +231,8 @@ class MobileApiController extends Controller
                 'bank_account_name' => $user->bank_account_name,
                 'role' => $user->role,
                 'referralCode' => $user->referral_code,
+                // 🪪 (2026-10-04) ป้ายทอง "ยืนยันตัวตนแล้ว" (แอปเก็บโปรไฟล์จากคำตอบนี้ด้วย)
+                'verified' => $user->isKycVerified(),
             ],
         ]);
     }
@@ -276,6 +281,13 @@ class MobileApiController extends Controller
             // อัพเดทข้อมูลผู้ใช้ - บันทึก PATH (ไม่ใช่ URL!)
             $user->profile_picture = $path;
             $user->save();
+
+            // อวาตาร์ใหม่ต้องเป็นรูปที่คนอื่นเห็น — เลิกใช้รูปถ่ายสดเก่า (ProfilePhotoService::urlFor ใช้รูปถ่ายสดก่อน)
+            try {
+                app(\App\Services\Media\ProfilePhotoService::class)->forget($user);
+            } catch (\Throwable $e) {
+                \Log::warning('Avatar upload: cannot clear live photo', ['user_id' => $user->id, 'error' => class_basename($e)]);
+            }
 
             // สร้าง URL สำหรับ response
             $avatarUrl = \Storage::disk('public')->url($path);
@@ -1050,8 +1062,10 @@ class MobileApiController extends Controller
             );
 
             // หา or สร้าง KYC draft
+            // 🪪 (2026-10-04) เฉพาะแถวแบบเดิม — ห้ามหยิบรอบ AI eKYC (รูปเข้ารหัสบน private disk) มาใช้ต่อ
             $kyc = \App\Models\KycVerification::where('user_id', $user->id)
                 ->whereIn('status', ['pending', 'draft'])
+                ->where(fn ($q) => $q->whereNull('method')->orWhere('method', '!=', \App\Models\KycVerification::METHOD_EKYC))
                 ->latest()
                 ->first();
 
@@ -1109,9 +1123,10 @@ class MobileApiController extends Controller
     {
         $user = Auth::user();
 
-        // หา KYC draft ที่มีเอกสารครบ
+        // หา KYC draft ที่มีเอกสารครบ (เฉพาะแบบเดิม — ไม่ใช่รอบ AI eKYC ที่ทำค้าง)
         $kyc = \App\Models\KycVerification::where('user_id', $user->id)
             ->whereIn('status', ['draft'])
+            ->where(fn ($q) => $q->whereNull('method')->orWhere('method', '!=', \App\Models\KycVerification::METHOD_EKYC))
             ->whereNotNull('id_card_image')
             ->whereNotNull('selfie_image')
             ->latest()

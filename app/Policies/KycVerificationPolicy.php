@@ -75,6 +75,26 @@ class KycVerificationPolicy
     }
 
     /**
+     * 🪪 เปิดดูรูปบัตร/ใบหน้าของ eKYC (ถอดรหัส) — เฉพาะแอดมิน ไม่รวมเจ้าของข้อมูลเอง
+     *
+     * ทุกครั้งที่เปิดดูถูกบันทึกใน kyc_access_logs (PDPA)
+     */
+    public function viewImages(User $user, KycVerification $kycVerification): bool
+    {
+        return $user->hasPermission('view_kyc_verifications')
+            || in_array($user->role, ['admin', 'super_admin'], true)
+            || $user->is_super_admin;
+    }
+
+    /**
+     * 🪪 ขอให้ผู้ใช้ถ่ายบัตร/ใบหน้าใหม่ (eKYC) — สิทธิ์เดียวกับการอนุมัติ
+     */
+    public function requestRetake(User $user, KycVerification $kycVerification): bool
+    {
+        return $this->approve($user, $kycVerification);
+    }
+
+    /**
      * ตรวจสอบสิทธิ์ในการลบ KYC Verification
      *
      * ⚠️ CRITICAL: ป้องกัน IDOR vulnerability

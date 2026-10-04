@@ -198,6 +198,8 @@ export interface FmShopDetail extends FmShopCard {
   closed_message: string | null;
   location_poll_seconds: number;
   is_owner: boolean;
+  /** เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทอง) — คนละเรื่องกับ is_verified ของร้าน */
+  owner_verified: boolean;
   listings: FmShopListing[];
 }
 
@@ -1216,6 +1218,7 @@ export const getShop = async (id: number): Promise<ApiResult<FmShopDetail>> =>
     closed_message: str(raw?.closed_message),
     location_poll_seconds: num(raw?.location_poll_seconds, 120),
     is_owner: bool(raw?.is_owner),
+    owner_verified: bool(raw?.owner_verified),
     listings: (Array.isArray(raw?.listings) ? raw.listings : []).map(normalizeShopListing).filter((l: FmShopListing) => l.id > 0),
   }));
 

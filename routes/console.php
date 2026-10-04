@@ -992,6 +992,16 @@ Schedule::command('profile-photo:purge-cache --keep-days=1')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 🪪 (2026-10-04) AI eKYC: ลบรอบยืนยันตัวตนที่ทำค้างจนหมดอายุ (แถว + รูปบัตรเข้ารหัส) — PDPA เก็บเท่าที่จำเป็น
+// ════════════════════════════════════════════════════════════════
+Schedule::command('ekyc:purge-stale')
+    ->dailyAt('04:05')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('ekyc-purge-stale')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 🗄️ (2026-09-26) Auto-migrate — เฉพาะร้านลูกค้าที่ตั้ง APP_AUTO_MIGRATE=true (prod ปิด)
 // ════════════════════════════════════════════════════════════════
 // แทนการรัน migrate ตอนบูตแอปใน AppServiceProvider — เหตุผลอยู่ใน App\Console\AutoMigrateSchedule

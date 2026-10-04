@@ -1,0 +1,70 @@
+# eKYC AI service — dependency lock (ทุกตัวปักเวอร์ชันตายตัว)
+# ล็อกจากการ resolve จริงบน CPython 3.11 / manylinux x86_64 (ตรงกับ Docker image)
+# และใช้ได้กับ CPython 3.12 บน Windows (เครื่อง dev) ด้วย
+#
+# torch / torchvision ใช้ wheel แบบ CPU-only จาก index ของ PyTorch (ไม่มี CUDA ~ ประหยัด ~2 GB)
+# mediapipe ติดตั้งแยกด้วย --no-deps (ดู requirements-nodeps.txt) เพราะมันลาก
+# opencv-contrib-python (ตัวเต็ม ต้องใช้ libGL) มาชนกับ opencv-python-headless
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# --- ตัวหลัก ---
+fastapi==0.142.2
+uvicorn==0.54.0
+python-multipart==0.0.32
+numpy==2.4.6
+opencv-python-headless==4.14.0.94
+onnxruntime==1.30.0
+easyocr==1.7.2
+torch==2.14.1+cpu
+torchvision==0.29.1+cpu
+pillow==12.3.0
+
+# --- dependency ของ mediapipe 1.0.1 (ยกเว้น opencv-contrib-python) ---
+absl-py==2.5.0
+certifi==2026.7.22
+flatbuffers==25.12.19
+matplotlib==3.11.2
+sounddevice==0.5.6
+
+# --- transitive (ล็อกไว้ให้ build ซ้ำได้ผลเหมือนเดิม) ---
+annotated-doc==0.0.5
+annotated-types==0.8.0
+anyio==4.15.1
+cffi==2.1.1
+click==8.5.0
+contourpy==1.3.3
+cycler==0.12.1
+filelock==4.0.10
+fonttools==4.66.1
+fsspec==2026.9.0
+h11==0.16.0
+idna==3.20
+ImageIO==2.38.0
+Jinja2==3.1.6
+kiwisolver==1.5.1
+lazy-loader==0.6
+MarkupSafe==3.0.4
+mpmath==1.3.0
+networkx==3.6.1
+ninja==1.13.2
+opentelemetry-api==1.45.0
+packaging==26.3
+protobuf==7.36.2
+pyclipper==1.4.0
+pycparser==3.0
+pydantic==2.13.5
+pydantic_core==2.46.5
+pyparsing==3.3.3
+python-bidi==0.6.11
+python-dateutil==2.9.0.post0
+PyYAML==6.0.3
+scikit-image==0.26.0
+scipy==1.17.1
+setuptools==84.0.0
+shapely==2.1.2
+six==1.17.0
+starlette==1.7.0
+sympy==1.14.0
+tifffile==2026.3.3
+typing-inspection==0.4.4
+typing_extensions==4.16.0

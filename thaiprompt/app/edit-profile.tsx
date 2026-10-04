@@ -4,7 +4,7 @@
  * - PUT /profile · POST /profile/avatar (multipart ช่อง avatar) ผ่าน client กลาง → ข้อความผิดพลาดภาษาไทยเสมอ
  * - กรอกข้อมูลเดิมไว้ให้แล้ว · ตรวจชื่อ/เบอร์ก่อนส่ง (บอกผิดใต้ช่อง) · กันกดบันทึกซ้ำ
  * - ยังไม่บันทึกแล้วจะออกจากหน้า → ถามก่อนทิ้งการแก้ไข
- * - รูปโปรไฟล์: ถ่ายรูป (ขอสิทธิ์กล้องตอนกด) หรือเลือกจากคลังรูปของระบบ (ไม่ต้องขอสิทธิ์อ่านรูปทั้งเครื่อง)
+ * - รูปโปรไฟล์: รูปอะไรก็ได้ — ถ่ายรูป (ขอสิทธิ์กล้องตอนกด) หรือเลือกจากคลังรูปของระบบ (ไม่ต้องขอสิทธิ์อ่านรูปทั้งเครื่อง)
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -270,19 +270,19 @@ export default function EditProfileScreen() {
         </View>
       </View>
 
-      {/* ---------- รูปยืนยันตัวตนถ่ายสด (ไรเดอร์และร้านเห็นตอนส่งของ) ---------- */}
+      {/* ---------- คนอื่นเห็นคุณแบบไหน + ป้ายยืนยันตัวตน ---------- */}
       <Card3D
         onPress={() => router.push('/profile-photo' as never)}
         padding={spacing.lg}
         style={styles.section}
-        accessibilityLabel="รูปโปรไฟล์ถ่ายสด ที่ไรเดอร์และร้านเห็น"
+        accessibilityLabel="โปรไฟล์ที่คนอื่นเห็น และป้ายยืนยันตัวตน"
       >
         <View style={styles.photoRow}>
-          <IconTile icon="camera" tone="gold" />
+          <IconTile icon="seal-check" tone="gold" />
           <View style={styles.flexOne}>
-            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>รูปโปรไฟล์ถ่ายสด</Text>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>โปรไฟล์ที่คนอื่นเห็น</Text>
             <Text style={[typography.caption, { color: colors.textMuted }]}>
-              รูปจริงจากกล้องที่ไรเดอร์และร้านเห็นตอนส่งของ (มีลายน้ำกันรูปหลุด)
+              ดูรูปและป้ายทอง "ยืนยันตัวตนแล้ว" ที่ไรเดอร์และร้านเห็น
             </Text>
           </View>
           <Icon name="caret-right" size={16} color={colors.textFaint} weight="bold" />

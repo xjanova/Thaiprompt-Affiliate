@@ -365,6 +365,14 @@ class AccountDeletionService
         // ไฟล์ลบย้อนกลับไม่ได้ → ทำหลัง commit เท่านั้น (best-effort)
         $this->deleteFiles($filesToDelete);
 
+        // 🪪 (2026-10-04) รูป eKYC ทั้งหมดของบัญชี (บัตร/หน้าจากบัตร/เฟรมใบหน้า · เข้ารหัสบน private disk)
+        //    แถว kyc_verifications ถูกลบใน User::deleting แล้ว — ตรงนี้กวาดทั้งโฟลเดอร์รวมรอบที่ทำค้าง
+        try {
+            app(\App\Services\Ekyc\EkycImages::class)->deleteUserDir((int) $user->id);
+        } catch (\Throwable) {
+            // ไม่ถือว่าพัง — ekyc:purge-stale ล้างรอบค้างให้อีกชั้น
+        }
+
         // 📸 (2026-10-04) สำเนารูปถ่ายสดพร้อมลายน้ำที่แคชไว้ (ไม่รอรอบล้างรายวัน)
         try {
             app(\App\Services\Media\ProfilePhotoService::class)->forgetRenderCache((int) $user->id);

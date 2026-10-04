@@ -14,6 +14,11 @@
             <div style="font-size:12.5px; color:var(--ink2); margin-top:4px;">ตรวจสอบเอกสารและอนุมัติการยืนยันตัวตนของสมาชิก</div>
         </div>
         <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap;">
+            @if(($stats['ai_review'] ?? 0) > 0)
+                <a href="{{ route('admin.kyc.index', ['ai' => 'review']) }}" class="tp-btn tp-btn-sm tp-btn-primary">
+                    <i class="fas fa-robot"></i> AI ส่งตรวจ {{ number_format($stats['ai_review']) }} รายการ
+                </a>
+            @endif
             @if($stats['pending'] > 0)
                 <a href="{{ route('admin.kyc.index', ['status' => 'pending']) }}" class="tp-btn tp-btn-sm" style="color:#a87d1e;">
                     <i class="fas fa-clock"></i> รอตรวจสอบ {{ number_format($stats['pending']) }} รายการ
@@ -80,6 +85,19 @@
             </div>
         </div>
 
+        {{-- 🪪 AI eKYC: ส่งให้คนตรวจ / อนุมัติเองวันนี้ --}}
+        <a href="{{ route('admin.kyc.index', ['ai' => 'review']) }}" class="tp-card" style="padding:18px; text-decoration:none; color:inherit;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div class="tp-tile" style="width:42px; height:42px; border-radius:12px; font-size:18px; display:flex; align-items:center; justify-content:center; background:#c9a24a;">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <div class="tp-num" style="font-size:26px; font-weight:800; line-height:1;">{{ number_format($stats['ai_review'] ?? 0) }}</div>
+                    <div style="font-size:12px; color:var(--ink2); margin-top:3px;">AI ส่งตรวจ · อนุมัติเองวันนี้ {{ number_format($stats['ai_approved_today'] ?? 0) }}</div>
+                </div>
+            </div>
+        </a>
+
         {{-- ปฏิเสธ --}}
         <div class="tp-card" style="padding:18px;">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -122,6 +140,33 @@
                         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>⏳ รอตรวจสอบ</option>
                         <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>✅ อนุมัติแล้ว</option>
                         <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>❌ ปฏิเสธ</option>
+                        <option value="retake" {{ request('status') === 'retake' ? 'selected' : '' }}>📸 ให้ถ่ายใหม่ (eKYC)</option>
+                    </select>
+                </div>
+            </div>
+
+            {{-- 🪪 ช่องทาง: AI ส่งตรวจ / AI eKYC / แบบเดิม --}}
+            <div>
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                    ช่องทาง
+                </label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="ai" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="review" {{ request('ai') === 'review' ? 'selected' : '' }}>🤖 AI ส่งตรวจ</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label style="display:block; font-size:12.5px; color:var(--ink2); font-weight:600; margin-bottom:6px;">
+                    วิธียืนยัน
+                </label>
+                <div class="tp-well tp-input" style="padding:0;">
+                    <select name="method" style="width:100%; background:transparent; border:none; outline:none; padding:10px 12px; color:var(--ink); font-size:14px;">
+                        <option value="">ทั้งหมด</option>
+                        <option value="ekyc" {{ request('method') === 'ekyc' ? 'selected' : '' }}>AI eKYC (บัตร + ใบหน้า)</option>
+                        <option value="manual" {{ request('method') === 'manual' ? 'selected' : '' }}>แบบเดิม (อัปโหลดรูป)</option>
                     </select>
                 </div>
             </div>
@@ -197,10 +242,17 @@
                             {{-- เอกสาร — เตือนตั้งแต่หน้ารายการว่าไฟล์เปิดไม่ขึ้น --}}
                             <td style="padding:14px 16px; white-space:nowrap;">
                                 @php
-                                    $hasIdCard = $kyc->hasIdCardImage();
-                                    $hasSelfie = $kyc->hasSelfieImage();
+                                    $isEkycRow = $kyc->isEkyc();
+                                    $hasIdCard = $isEkycRow ? false : $kyc->hasIdCardImage();
+                                    $hasSelfie = $isEkycRow ? false : $kyc->hasSelfieImage();
+                                    $ekycCos = $kyc->ai_face_match !== null ? number_format($kyc->ai_face_match, 2) : '-';
+                                    $ekycDecision = ['approved' => 'AI อนุมัติ', 'review' => 'AI ส่งตรวจ', 'retake' => 'AI ให้ถ่ายใหม่'][$kyc->ai_decision] ?? 'AI';
                                 @endphp
-                                @if($hasIdCard && $hasSelfie)
+                                @if($isEkycRow)
+                                    <span class="tp-pill" style="background:rgba(201,162,74,.18); color:#8a6514;" title="ใบหน้าตรงกับบัตร (cosine)">
+                                        <i class="fas fa-robot"></i> {{ $ekycDecision }} · cos {{ $ekycCos }}
+                                    </span>
+                                @elseif($hasIdCard && $hasSelfie)
                                     <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">
                                         <i class="fas fa-images"></i> ครบ 2 รูป
                                     </span>
@@ -223,6 +275,10 @@
                                     <span class="tp-pill" style="background:rgba(90,160,126,.18); color:#3f7a5c;">✅ อนุมัติแล้ว</span>
                                 @elseif($kyc->status === 'rejected')
                                     <span class="tp-pill" style="background:rgba(217,83,79,.16); color:#d9534f;">❌ ปฏิเสธ</span>
+                                @elseif($kyc->status === 'retake')
+                                    <span class="tp-pill" style="background:rgba(86,137,184,.18); color:#3f6a96;">📸 ให้ถ่ายใหม่</span>
+                                @elseif($kyc->status === 'superseded')
+                                    <span class="tp-pill tp-pill-soft">ยืนยันด้วย eKYC แล้ว</span>
                                 @else
                                     <span class="tp-pill tp-pill-soft">{{ $kyc->status }}</span>
                                 @endif

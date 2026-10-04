@@ -30,6 +30,7 @@ squares-four power wifi-slash cloud-slash file-text clipboard-text prohibit smil
 target road-horizon path chart-bar chart-line-up trend-up percent calculator megaphone flag lifebuoy
 fingerprint device-mobile cards sliders house-simple speedometer battery-full cell-signal-full wifi-high
 navigation-arrow broadcast storefront coffee cake hamburger pizza orange-slice fish egg-crack
+cpu scan-smiley flashlight
 """.split()
 
 BOLD = set('plus minus check x arrow-right arrow-left caret-right caret-left caret-down caret-up sliders-horizontal hand-tap arrow-up-right'.split())

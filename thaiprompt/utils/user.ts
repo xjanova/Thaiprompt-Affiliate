@@ -87,3 +87,19 @@ export const formatMemberId = (id: number | null | undefined): string => {
   if (!id) return '';
   return `TP${id.toString().padStart(6, '0')}`;
 };
+
+/**
+ * ชื่อแบบที่คนอื่นเห็น: ชื่อจริง + อักษรแรกของนามสกุล (ตัดคำนำหน้า) — ตรงกับ display_name ของ PersonCard
+ *
+ * @example shortDisplayName('นาย ณัฐ ใจงาม') // 'ณัฐ จ.'
+ * @example shortDisplayName('สมชาย') // 'สมชาย'
+ */
+export const shortDisplayName = (name: string | null | undefined): string => {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  const cleaned = parts.filter((p) => !/^(นาย|นาง|นางสาว|น\.ส\.|ด\.ช\.|ด\.ญ\.|mr\.?|mrs\.?|ms\.?|miss)$/i.test(p));
+  if (cleaned.length === 0) return 'ผู้ใช้';
+  if (cleaned.length === 1) return cleaned[0];
+  // อักษรแรกของนามสกุล (ข้ามสระหน้า เ แ โ ใ ไ)
+  const last = Array.from(cleaned[1]).find((ch) => !/[เ-ไ]/.test(ch)) ?? cleaned[1][0];
+  return `${cleaned[0]} ${last}.`;
+};

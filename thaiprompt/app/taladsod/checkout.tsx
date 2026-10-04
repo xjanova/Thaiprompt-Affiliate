@@ -76,6 +76,7 @@ import { getFavoriteRiders, DEFAULT_LOCK_MIN_HEARTS } from '@/services/api/rider
 import type { PersonCard } from '@/services/api/handoverApi';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Pin = { latitude: number; longitude: number; source: 'gps' | 'saved' | 'map' };
@@ -361,7 +362,7 @@ export default function TaladsodCheckoutScreen() {
     );
   };
 
-  const handleFailure = async (code: string, message: string, status: number, startedAt: number) => {
+  const handleFailure = async (code: string, message: string, status: number, startedAt: number, data?: unknown) => {
     // ไม่แน่ใจว่า server สร้างออเดอร์ไปแล้วหรือยัง → เช็คก่อน
     const uncertain = status === 0 || status >= 500;
     if (uncertain || (code === 'CART_EMPTY' && attemptsRef.current > 1)) {
@@ -415,6 +416,11 @@ export default function TaladsodCheckoutScreen() {
         return;
       case 'PROFILE_PHOTO_REQUIRED':
         promptProfilePhoto('checkout');
+        return;
+      case 'KYC_REQUIRED':
+        // ยังไม่ยืนยันตัวตน (แอป build ≥ 44) → sheet "ยืนยันตัวตนก่อนสั่งซื้อ" แล้วกลับมาหน้านี้
+        // ส่ง data ด้วย: data.kyc_status = pending → sheet บอก "กำลังตรวจสอบ" แทนปุ่มเริ่มยืนยันตัวตน
+        guardKycRequired({ success: false, code, message, data }, 'checkout');
         return;
       case 'WALLET_INACTIVE':
       case 'PAYMENT_METHOD_DISABLED':
@@ -491,7 +497,7 @@ export default function TaladsodCheckoutScreen() {
         goToOrder(res.data);
         return;
       }
-      if (!res.success) await handleFailure(res.code, res.message, res.status, startedAt);
+      if (!res.success) await handleFailure(res.code, res.message, res.status, startedAt, res.data);
     } finally {
       placingRef.current = false;
       if (mountedRef.current) setPlacing(false);

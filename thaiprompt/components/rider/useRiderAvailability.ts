@@ -16,6 +16,7 @@ import { num } from '@/services/api/client';
 import { setRiderAvailability, updateRiderPermissions } from '@/services/api/riderApi';
 import { getCurrentCoords } from '@/services/location';
 import { isProfilePhotoRequired, promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import type { RiderPermissionFlow } from './useRiderPermissionFlow';
 
 export const useRiderAvailability = (flow: RiderPermissionFlow) => {
@@ -53,7 +54,12 @@ export const useRiderAvailability = (flow: RiderPermissionFlow) => {
 
         resultHaptic('error');
 
-        // ยังไม่มีรูปโปรไฟล์ถ่ายสด (แอป build ≥ 43) → พาไปถ่ายรูปแล้วกลับมาเริ่มรับงาน (U8)
+        // ยังไม่ยืนยันตัวตน (แอป build ≥ 44) → sheet "ยืนยันตัวตนก่อนเริ่มรับงาน" แล้วกลับมากดออนไลน์ใหม่
+        if (guardKycRequired(result, 'rider')) {
+          return false;
+        }
+
+        // ยังไม่มีรูปโปรไฟล์ (แอป build ≥ 43) → พาไปเพิ่มรูปแล้วกลับมาเริ่มรับงาน (U8)
         if (isProfilePhotoRequired(result)) {
           promptProfilePhoto('rider');
           return false;

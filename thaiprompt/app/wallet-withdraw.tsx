@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { Text, TextInput } from '@/components/ui/Text';
 import { router } from 'expo-router';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import { useAuthStore } from '@/stores/authStore';
 import {
   addPayoutAccount,
@@ -521,10 +522,15 @@ export default function WalletWithdrawScreen() {
         setPin('');
         return;
       }
+      case 'KYC_REQUIRED':
+        // ยังไม่ยืนยันตัวตน → sheet ยืนยันตัวตน (eKYC) แล้วกลับมาถอนต่อ
+        setPinSheet(false);
+        setPin('');
+        guardKycRequired(result, 'withdraw');
+        return;
       case 'PIN_NOT_SET':
       case 'PAYMENT_METHOD_REQUIRED':
       case 'WALLET_LOCKED':
-      case 'KYC_REQUIRED':
         setPinSheet(false);
         setPin('');
         Alert.alert('ถอนเงิน', result.message);
@@ -697,7 +703,7 @@ export default function WalletWithdrawScreen() {
           title="ยืนยันตัวตนก่อนถอนเงิน"
           message="เพื่อความปลอดภัย ต้องยืนยันตัวตน (KYC) ก่อนถอนเงินครั้งแรก"
           actionLabel="ไปยืนยันตัวตน"
-          onAction={() => router.push('/kyc')}
+          onAction={() => router.push('/ekyc?from=withdraw' as never)}
         />
       );
     }

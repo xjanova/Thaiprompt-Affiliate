@@ -34,6 +34,35 @@ export const isTrustedWebUrl = (url: unknown): url is string => {
   return host === TRUSTED_ROOT_DOMAIN || host.endsWith(`.${TRUSTED_ROOT_DOMAIN}`);
 };
 
+/**
+ * โดเมน CDN รูปโปรไฟล์จากบัญชีโซเชียลที่ใช้เข้าสู่ระบบ (รูปโปรไฟล์ = รูปอะไรก็ได้ที่ผู้ใช้เลือก)
+ * LINE · Google · Facebook — เฉพาะ https เท่านั้น
+ */
+export const TRUSTED_AVATAR_HOST_SUFFIXES = [
+  'line-scdn.net',
+  'googleusercontent.com',
+  'fbcdn.net',
+  // platform-lookaside.fbsbx.com (รูปโปรไฟล์ Facebook แบบ asid)
+  'fbsbx.com',
+  // Socialite เก็บรูป Facebook เป็น https://graph.facebook.com/{id}/picture (เปลี่ยนทางไป fbcdn/fbsbx เอง)
+  // ระบุ host เต็ม ห้ามเปิดทั้ง facebook.com
+  'graph.facebook.com',
+] as const;
+
+/**
+ * URL รูปโปรไฟล์นี้แสดงได้หรือไม่: เว็บของเรา หรือ CDN ของ LINE/Google/Facebook (https เท่านั้น)
+ *
+ * @example isTrustedAvatarUrl('https://profile.line-scdn.net/0h123') // true
+ * @example isTrustedAvatarUrl('https://evil.example/a.jpg') // false
+ */
+export const isTrustedAvatarUrl = (url: unknown): url is string => {
+  if (isTrustedWebUrl(url)) return true;
+  if (typeof url !== 'string' || url.length > 2048) return false;
+  const host = extractHttpsHost(url);
+  if (!host) return false;
+  return TRUSTED_AVATAR_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+};
+
 /** สร้าง URL เว็บไซต์จาก path (ไม่มี session — ใช้เป็นทางสำรอง) */
 export const buildWebsiteUrl = (path: string = '/'): string => {
   const clean = path.startsWith('/') ? path : `/${path}`;
@@ -73,6 +102,7 @@ export const INTERNAL_ROUTE_PREFIXES = [
   '/riders',
   '/handover',
   '/profile-photo',
+  '/ekyc',
   '/taladsod',
   '/merchant',
   '/tarot',

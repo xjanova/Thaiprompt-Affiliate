@@ -1,0 +1,20 @@
+# ใช้เฉพาะ stage "models" ใน Dockerfile (แปลง MiniFASNet .pth → .onnx) — ไม่อยู่ใน image สุดท้าย
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+onnx==1.23.1
+onnxruntime==1.30.0
+numpy==2.4.6
+protobuf==7.36.2
+ml_dtypes==0.6.0
+typing_extensions==4.16.0
+filelock==4.0.10
+fsspec==2026.9.0
+Jinja2==3.1.6
+MarkupSafe==3.0.4
+mpmath==1.3.0
+networkx==3.6.1
+opentelemetry-api==1.45.0
+setuptools==84.0.0
+sympy==1.14.0
+flatbuffers==25.12.19
+packaging==26.3

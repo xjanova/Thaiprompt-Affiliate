@@ -30,6 +30,7 @@ import {
 } from '@/components/merchant/ShopInfoForm';
 import { SkeletonCard } from '@/components/merchant/SkeletonBlock';
 import { isProfilePhotoRequired, promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const BENEFITS: Array<{ icon: IconName; title: string; text: string }> = [
@@ -143,7 +144,12 @@ export default function TaladsodRegisterSellerScreen() {
     }
 
     resultHaptic('error');
-    // ยังไม่มีรูปโปรไฟล์ถ่ายสด → พาไปถ่ายรูป ข้อมูลที่กรอกยังอยู่ กลับมากดสมัครต่อได้ (U8)
+    // ยังไม่ยืนยันตัวตน (แอป build ≥ 44) → sheet ยืนยันตัวตน ข้อมูลที่กรอกยังอยู่ กลับมากดสมัครต่อได้
+    if (guardKycRequired(res, 'seller')) {
+      setFormError(res.message);
+      return;
+    }
+    // ยังไม่มีรูปโปรไฟล์ → พาไปเพิ่มรูป ข้อมูลที่กรอกยังอยู่ กลับมากดสมัครต่อได้ (U8)
     if (isProfilePhotoRequired(res)) {
       setFormError(res.message);
       promptProfilePhoto('seller');

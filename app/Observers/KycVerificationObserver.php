@@ -3,7 +3,9 @@
 namespace App\Observers;
 
 use App\Models\KycVerification;
+use App\Services\Ekyc\EkycService;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
@@ -38,6 +40,11 @@ class KycVerificationObserver
      */
     public function updated(KycVerification $kycVerification): void
     {
+        // 🪪 แถว AI eKYC: EkycService แจ้งผลเอง (push type kyc_result) — ไม่ส่งแจ้งเตือนแบบเดิมซ้ำ
+        if ($kycVerification->isEkyc()) {
+            return;
+        }
+
         // Notify user when KYC is approved
         if ($kycVerification->isDirty('status') && $kycVerification->status === 'approved') {
             try {
@@ -85,6 +92,19 @@ class KycVerificationObserver
      */
     public function deleted(KycVerification $kycVerification): void
     {
+        // 🪪 แจ้งเตือนแอดมินที่ผูกกับคำขอนี้มีชื่อเจ้าของข้อมูล — ลบไปพร้อมแถว (PDPA: ลบบัญชีแล้วไม่เหลือร่องรอย)
+        try {
+            \App\Models\Notification::query()
+                ->where('notifiable_type', KycVerification::class)
+                ->where('notifiable_id', $kycVerification->id)
+                ->forceDelete(); // Notification ใช้ SoftDeletes — ต้องลบจริง
+        } catch (\Throwable $e) {
+            Log::warning('Failed to delete KYC admin notifications', [
+                'kyc_id' => $kycVerification->id,
+                'error' => class_basename($e),
+            ]);
+        }
+
         Log::info('KYC verification deleted along with images', [
             'kyc_id' => $kycVerification->id,
             'user_id' => $kycVerification->user_id,
@@ -119,6 +139,14 @@ class KycVerificationObserver
      */
     protected function deleteKycImages(KycVerification $kycVerification): void
     {
+        // 🪪 แถว AI eKYC: รูปเข้ารหัสอยู่บน private disk — ลบหลัง commit (ธุรกรรมถูกย้อน = แถวยังอยู่ ไฟล์ต้องอยู่ด้วย)
+        if ($kycVerification->isEkyc()) {
+            $snapshot = clone $kycVerification;
+            DB::afterCommit(fn () => app(EkycService::class)->deleteFilesFor($snapshot));
+
+            return;
+        }
+
         $deletedFiles = [];
 
         // ลบรูปบัตรประชาชน/ใบขับขี่

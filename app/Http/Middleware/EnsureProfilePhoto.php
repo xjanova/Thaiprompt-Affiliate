@@ -65,11 +65,19 @@ class EnsureProfilePhoto
      */
     public static function enforcedFor(Request $request): bool
     {
-        if (! filter_var(config('profile_photo.required', true), FILTER_VALIDATE_BOOL)) {
+        if (! filter_var(config('profile_photo.required', false), FILTER_VALIDATE_BOOL)) {
             return false;
         }
 
-        return self::appBuild($request) >= (int) config('profile_photo.min_build', 43);
+        $build = self::appBuild($request);
+
+        // แอปตั้งแต่ build ของ eKYC (44) ไม่มีหน้าถ่ายรูปสดแล้ว (อวาตาร์ = รูปอะไรก็ได้ + ยืนยันตัวตนด้วย eKYC แทน)
+        // บังคับต่อ = ผู้ใช้ติดด่านที่ผ่านไม่ได้ ⇒ ด่านนี้ใช้กับ build 43 เท่านั้น
+        if ($build >= (int) config('ekyc.min_build', 44)) {
+            return false;
+        }
+
+        return $build >= (int) config('profile_photo.min_build', 43);
     }
 
     /**

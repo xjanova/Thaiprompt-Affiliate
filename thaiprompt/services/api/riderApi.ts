@@ -337,6 +337,8 @@ export interface RiderJobBuyer {
   photo_url: string | null;
   /** หัวใจที่ผู้ซื้อคนนี้ให้ไรเดอร์คนนี้ */
   hearts_given: number;
+  /** ผู้ซื้อยืนยันตัวตนแล้ว (ป้ายทอง) — ค่าดิบจาก server ใช้ isVerifiedFlag() ก่อนแสดง */
+  verified?: boolean | number | string | null;
 }
 
 export interface RiderJobDetail extends RiderJobSummary {

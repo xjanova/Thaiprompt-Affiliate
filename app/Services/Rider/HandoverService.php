@@ -15,6 +15,7 @@ use App\Models\RiderJob;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use App\Services\DeliveryFeeCalculator;
+use App\Services\Ekyc\EkycService;
 use App\Services\FreshMarketService;
 use App\Services\Media\ProfilePhotoService;
 use App\Services\NotificationService;
@@ -1906,6 +1907,8 @@ class HandoverService
             'id' => (int) $rider->id,
             'display_name' => self::shortName((string) $rider->full_name),
             'photo_url' => $rider->user ? app(ProfilePhotoService::class)->urlFor($rider->user, $viewer) : null,
+            // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว"
+            'verified' => EkycService::badge($rider->user),
             'vehicle_type' => $rider->vehicle_type,
             'vehicle_label' => $vehicleLabel !== '' ? $vehicleLabel : $rider->vehicle_type_text,
             'plate_masked' => self::maskPlate($rider->vehicle_plate),
@@ -1926,6 +1929,7 @@ class HandoverService
             'id' => (int) $buyer->id,
             'display_name' => self::shortName((string) $buyer->name),
             'photo_url' => app(ProfilePhotoService::class)->urlFor($buyer, $viewer),
+            'verified' => EkycService::badge($buyer),
         ];
     }
 

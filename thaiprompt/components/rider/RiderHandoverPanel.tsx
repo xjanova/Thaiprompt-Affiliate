@@ -46,6 +46,7 @@ import {
   type RiderJobDetail,
 } from '@/services/api/riderApi';
 import { normalizeRiderHandoverData, personPhotoUri } from '@/services/api/handoverApi';
+import { isVerifiedFlag } from '@/components/people/VerifiedBadge';
 import { calculateDistance, getCurrentCoords, type Coords } from '@/services/location';
 import { deviceTimeFor, lastClockOffset, parseIsoMs, serverNowMs } from '@/utils/serverClock';
 import { takePhoto } from './photo';
@@ -389,6 +390,8 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const buyerName = buyer?.display_name || job.buyer?.display_name || job.dropoff?.name || 'ลูกค้า';
   // รูปลูกค้าผ่าน allowlist เดียวกับฝั่งผู้ซื้อ (L5) — ของ handover แปลงแล้วใน riderApi · ของ job แปลงตรงนี้
   const buyerPhoto = buyer?.photo_url ?? personPhotoUri(job.buyer?.photo_url);
+  /** ผู้ซื้อยืนยันตัวตนแล้ว (ป้ายทอง) — จาก handover หรือข้อมูลงาน */
+  const buyerVerified = !!buyer?.verified || isVerifiedFlag(job.buyer?.verified);
   /** งานเก็บเงินปลายทาง: server ไม่รับทางสำรองรูป 2 รอบ (ต้องส่งมอบกับลูกค้าโดยตรง) */
   const fallbackAllowed = !job.is_cod;
   /** แจ้ง "ส่งไม่สำเร็จ" ได้ไหม — ตาม allowed_actions ของ server เท่านั้น (ลูกค้ายืนยันรับแล้ว/ร้องเรียน = ไม่มี) */
@@ -740,7 +743,7 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const buyerCard = (
     <Card3D padding={spacing.md + 2} style={styles.block}>
       <View style={styles.buyerRow}>
-        <PersonAvatar uri={buyerPhoto} name={buyerName} size={60} ring="gold" />
+        <PersonAvatar uri={buyerPhoto} name={buyerName} size={60} ring="gold" verified={buyerVerified} />
         <View style={styles.flex}>
           <Text numberOfLines={1} style={[typography.h3, { color: colors.textStrong }]}>
             {buyerName}

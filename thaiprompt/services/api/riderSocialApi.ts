@@ -144,6 +144,7 @@ export const getRiderProfile = async (riderId: number): Promise<ApiResult<RiderP
         hearts_total: null,
         hearts_from_me: null,
         can_lock: false,
+        verified: false,
       }),
       completed_jobs: raw?.rider?.completed_jobs === undefined ? null : num(raw.rider.completed_jobs),
       joined_at: str(raw?.rider?.joined_at),

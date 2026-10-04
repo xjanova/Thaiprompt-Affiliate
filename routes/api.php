@@ -292,7 +292,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::put('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'updateItem'])->whereNumber('itemId')->name('api.v1.cart.items.update');
             Route::delete('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'removeItem'])->whereNumber('itemId')->name('api.v1.cart.items.destroy');
             Route::post('/promo', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'applyPromo'])->middleware('throttle:20,1,api-cart-promo')->name('api.v1.cart.promo');
-            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'checkout'])->middleware(['throttle:10,1,api-cart-checkout', 'profile.photo'])->name('api.v1.cart.checkout');
+            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'checkout'])->middleware(['throttle:10,1,api-cart-checkout', 'profile.photo', 'ekyc.verified'])->name('api.v1.cart.checkout');
             // เส้นทางเดิมของแอปรุ่นก่อน (ชี้ไปตัวเดียวกัน — ใช้ตัวนับเดียวกับ /items)
             Route::post('/add', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'addItem'])->middleware('throttle:60,1,api-cart-add')->name('api.v1.cart.add');
             Route::delete('/clear', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'clear'])->name('api.v1.cart.clear-legacy');
@@ -412,14 +412,15 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         //    throttle เฉพาะเส้นที่เขียนข้อมูล (ทั้งกลุ่มมี throttle:api อยู่แล้ว)
         Route::prefix('rider')->name('api.v1.rider.')->controller(\App\Http\Controllers\Api\V1\RiderApiController::class)->group(function () {
             Route::get('/status', 'status')->name('status');
-            Route::post('/register', 'register')->middleware('throttle:6,1,api-rider-register')->name('register');
+            Route::post('/register', 'register')->middleware(['throttle:6,1,api-rider-register', 'ekyc.verified'])->name('register');
             Route::post('/document', 'uploadDocument')->middleware('throttle:20,1,api-rider-document')->name('document');
             Route::get('/documents', 'documents')->name('documents');
             Route::post('/permissions', 'permissions')->middleware('throttle:30,1,api-rider-permissions')->name('permissions');
             // (2026-09-26) ยินยอมให้ลูกค้าเห็นตำแหน่งระหว่างส่งงาน — ต้องทำ 1 ครั้งก่อนรับงานแรก
             Route::post('/consent', 'consent')->middleware('throttle:20,1,api-rider-consent')->name('consent');
             Route::put('/profile', 'updateProfile')->middleware('throttle:20,1,api-rider-profile')->name('profile');
-            Route::post('/availability', 'availability')->middleware(['throttle:20,1,api-rider-availability', 'profile.photo:availability=online'])->name('availability');
+            // 🪪 (2026-10-04) ด่าน eKYC บังคับเฉพาะตอนเปิดรับงาน — ปิดรับงาน (offline) ต้องทำได้เสมอ
+            Route::post('/availability', 'availability')->middleware(['throttle:20,1,api-rider-availability', 'profile.photo:availability=online', 'ekyc.verified:availability=online'])->name('availability');
             Route::post('/location', 'location')->middleware('throttle:40,1,api-rider-location')->name('location');
             Route::get('/earnings', 'earnings')->name('earnings');
 
@@ -536,7 +537,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::prefix('seller')->name('api.v1.seller.')->group(function () {
             Route::get('/application', [\App\Http\Controllers\Api\V1\SellerApplicationApiController::class, 'show'])->name('application.show');
             Route::post('/application', [\App\Http\Controllers\Api\V1\SellerApplicationApiController::class, 'store'])
-                ->middleware(['throttle:10,1,api-seller-apply', 'profile.photo'])->name('application.store');
+                ->middleware(['throttle:10,1,api-seller-apply', 'profile.photo', 'ekyc.verified'])->name('application.store');
 
             Route::get('/store', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'show'])->name('store.show');
             Route::put('/store', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'update'])
@@ -876,7 +877,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/delivery-quote', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'deliveryQuote'])->middleware('throttle:30,1,api-fm-delivery-quote')->name('delivery-quote');
 
             // ผู้ซื้อ
-            Route::post('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeOrder'])->middleware(['throttle:10,1,api-fm-order-store', 'profile.photo'])->name('orders.store');
+            Route::post('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeOrder'])->middleware(['throttle:10,1,api-fm-order-store', 'profile.photo', 'ekyc.verified'])->name('orders.store');
             Route::get('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'orders'])->name('orders');
             Route::get('/orders/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showOrder'])->whereNumber('id')->name('orders.show');
             Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateOrderStatus'])->whereNumber('id')->name('orders.status');
@@ -885,7 +886,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/orders/{id}/review', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'reviewOrder'])->whereNumber('id')->name('orders.review');
 
             // ผู้ขาย
-            Route::post('/seller/register', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'registerSeller'])->name('seller.register');
+            // 🪪 สมัครร้านตลาดสด = สมัครผู้ขาย → ต้องยืนยันตัวตน (eKYC) ก่อน (เฉพาะแอป build ≥ 44)
+            Route::post('/seller/register', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'registerSeller'])->middleware('ekyc.verified')->name('seller.register');
             Route::get('/seller/profile', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerProfile'])->name('seller.profile');
             Route::put('/seller/profile', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateSellerProfile'])->name('seller.profile.update');
             Route::post('/seller/subscribe', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'subscribe'])->name('seller.subscribe');
@@ -964,6 +966,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         require __DIR__.'/api_v1/rider_r2_handover.php';
         require __DIR__.'/api_v1/rider_r2_social.php';
         require __DIR__.'/api_v1/rider_r2_profile_photo.php';
+        // 🪪 AI eKYC (2026-10-04) — ยืนยันตัวตนด้วยบัตรประชาชน + ใบหน้า
+        require __DIR__.'/api_v1/ekyc.php';
     });
 });
 

@@ -135,7 +135,7 @@ export const HandoverEntryCard: React.FC<HandoverEntryCardProps> = ({
       <LinearGradient colors={gradients.navy} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
         <View style={styles.row}>
           {data.rider ? (
-            <PersonAvatar uri={data.rider.photo_url} name={data.rider.display_name} size={52} surfaceColor={colors.navyFill} online />
+            <PersonAvatar uri={data.rider.photo_url} name={data.rider.display_name} size={52} surfaceColor={colors.navyFill} online verified={data.rider.verified} />
           ) : (
             <View style={[styles.qrIcon, { backgroundColor: colors.headerGlass, borderColor: colors.headerGlassBorder }]}>
               <Icon name="qr-code" size={26} color={colors.goldLight} />

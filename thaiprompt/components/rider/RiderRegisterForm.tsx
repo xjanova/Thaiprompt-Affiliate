@@ -21,6 +21,7 @@ import {
   type RiderStatus,
   type RiderVehicleType,
 } from '@/services/api/riderApi';
+import { guardKycRequired } from '@/services/ekyc/kycGate';
 import {
   VEHICLES,
   ageFromIsoDate,
@@ -231,6 +232,8 @@ export const RiderRegisterForm: React.FC<RiderRegisterFormProps> = ({
       }
 
       resultHaptic('error');
+      // ยังไม่ยืนยันตัวตน (แอป build ≥ 44) → sheet ยืนยันตัวตน ข้อมูลที่กรอกยังอยู่ กลับมากดส่งได้เลย
+      if (guardKycRequired(result, 'rider')) return;
       if (result.code === 'VALIDATION_ERROR' && result.errors) {
         const mapped: Partial<Record<FieldKey, string>> = {};
         for (const [key, messages] of Object.entries(result.errors)) {
