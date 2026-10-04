@@ -330,7 +330,6 @@ class FreshMarketApiController extends Controller
             return $this->error('LISTING_NOT_FOUND', 'ไม่พบสินค้า', 404);
         }
 
-        $quote = $this->marketService->quoteDelivery($listing, (float) $data['latitude'], (float) $data['longitude']);
         $quantity = (int) ($data['quantity'] ?? 1);
         $subtotal = round((float) $listing->price * $quantity, 2);
 
@@ -343,6 +342,9 @@ class FreshMarketApiController extends Controller
                 // ข้าม — แสดงยอดสินค้าเปล่า
             }
         }
+
+        // ไรเดอร์รอบ 2 (C1): ส่งยอดสินค้า → ค่าส่งที่ร้านออก/โบนัสถูกจำกัดไม่ให้เกินรายได้ร้าน (ตรงกับตอนสั่งจริง)
+        $quote = $this->marketService->quoteDelivery($listing, (float) $data['latitude'], (float) $data['longitude'], (float) $subtotal);
         $payload = array_merge($quote, [
             'subtotal' => $subtotal,
             // ไรเดอร์รอบ 2: ผู้ซื้อจ่าย fee (= buyer_fee) — ร้านเลือกส่งฟรีได้

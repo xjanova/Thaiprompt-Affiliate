@@ -11,6 +11,7 @@ use App\Models\ShippingAddress;
 use App\Models\User;
 use App\Models\VendorStore;
 use App\Services\DeliveryFeeCalculator;
+use App\Services\Pricing\PricingEngine;
 use App\Services\ShippingService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -316,11 +317,13 @@ class ShopCartService
 
         // ความพร้อมของไรเดอร์ (คำนวณเสมอเพื่อให้แอปแสดงตัวเลือกได้)
         // fee = ที่ผู้ซื้อจ่ายจริง (buyer_fee) · fee_full = ค่าส่งเต็ม · ร้านเติมโบนัส/ออกค่าส่งให้ได้ (ไรเดอร์รอบ 2)
+        // subsidy_capped / bonus_capped = ร้านออกค่าส่ง/โบนัสได้ไม่เต็มที่ตั้งไว้ เพราะเกินรายได้ของร้านจากออเดอร์นี้ (C1)
         $rider = [
             'available' => false, 'reason' => null, 'fee' => null, 'distance_km' => null, 'estimated_minutes' => null,
             'fee_full' => null, 'distance_source' => null, 'route_polyline' => null, 'rider_earnings' => null,
             'shop_bonus' => null, 'shop_subsidy' => null, 'rider_total' => null, 'surcharge' => null,
             'free_delivery' => DeliveryFeeCalculator::storeFreeDelivery($store),
+            'subsidy_capped' => false, 'bonus_capped' => false,
         ];
 
         if (! $group['has_physical']) {
@@ -347,6 +350,11 @@ class ShopCartService
                 $rider['route_polyline'] = $quote['route_polyline'];
 
                 if ($quote['within_service_area']) {
+                    // เพดาน: ค่าส่งที่ร้านออก + โบนัส ≤ รายได้สุทธิของร้านจากออเดอร์นี้ (ส่วนเกินผู้ซื้อจ่าย/ตัดโบนัส)
+                    if ((float) $quote['shop_subsidy'] > 0 || (float) $quote['shop_bonus'] > 0) {
+                        $quote = DeliveryFeeCalculator::capShopCosts($quote, $this->expectedShopNet($group));
+                    }
+
                     $rider['available'] = true;
                     $rider['fee'] = round((float) $quote['buyer_fee'], 2);
                     $rider['fee_full'] = round((float) $quote['total_fee'], 2);
@@ -356,6 +364,8 @@ class ShopCartService
                     $rider['rider_total'] = round((float) $quote['rider_total'], 2);
                     $rider['surcharge'] = round((float) $quote['surcharge'], 2);
                     $rider['free_delivery'] = (bool) $quote['free_delivery'];
+                    $rider['subsidy_capped'] = (bool) ($quote['subsidy_capped'] ?? false);
+                    $rider['bonus_capped'] = (bool) ($quote['bonus_capped'] ?? false);
                 } else {
                     $rider['reason'] = 'ที่อยู่อยู่นอกพื้นที่ส่งของไรเดอร์ (ไม่เกิน '.number_format((float) $quote['max_distance_km'], 0).' กม.)';
                 }
@@ -379,10 +389,28 @@ class ShopCartService
 
         $useRider = $deliveryMethod === 'rider' && $group['has_physical'];
 
-        // COD: เฉพาะส่งด้วยไรเดอร์ (ไรเดอร์เก็บเงินแล้วส่งเข้าแพลตฟอร์มผ่านวอลเลต) และไม่เกินวงเงิน COD
+        $group['delivery_method'] = $useRider ? 'rider' : 'parcel';
+        $group['shipping_fee'] = $useRider ? (float) ($rider['fee'] ?? 0) : $parcelFee;
+        $group['parcel_fee'] = $parcelFee;
+        $group['rider'] = $rider;
+        $group['cod'] = $this->codFor($group);
+
+        return $group;
+    }
+
+    /**
+     * COD ของกลุ่มร้าน: เฉพาะส่งด้วยไรเดอร์ (ไรเดอร์เก็บเงินแล้วส่งเข้าแพลตฟอร์มผ่านวอลเลต) และไม่เกินวงเงิน COD
+     *
+     * @param  array<string, mixed>  $group  ต้องมี subtotal + rider แล้ว
+     * @return array{available: bool, reason: ?string, limit: float}
+     */
+    private function codFor(array $group): array
+    {
+        $rider = $group['rider'];
         $codLimit = $this->deliveryFees->maxCodAmount();
         $riderTotal = $group['subtotal'] + (float) ($rider['fee'] ?? 0);
         $cod = ['available' => false, 'reason' => null, 'limit' => round($codLimit, 2)];
+
         if (! $rider['available']) {
             $cod['reason'] = 'เก็บเงินปลายทางใช้ได้เมื่อส่งด้วยไรเดอร์';
         } elseif (! $this->deliveryFees->boolSetting('rider.allow_cod')) {
@@ -398,13 +426,96 @@ class ShopCartService
             $cod['available'] = true;
         }
 
-        $group['delivery_method'] = $useRider ? 'rider' : 'parcel';
-        $group['shipping_fee'] = $useRider ? (float) ($rider['fee'] ?? 0) : $parcelFee;
-        $group['parcel_fee'] = $parcelFee;
-        $group['rider'] = $rider;
-        $group['cod'] = $cod;
+        return $cod;
+    }
 
-        return $group;
+    /**
+     * รายได้สุทธิที่ร้านคาดว่าจะได้จากกลุ่มนี้ (ฐานของเพดานต้นทุนไรเดอร์ — C1)
+     *
+     * สูตรเดียวกับตอนแบ่งเงิน (OrderDistributionService::computeItem): ต่อบรรทัด = ยอดหลังส่วนลดร้าน − GP − VAT − ค่าแนะนำ
+     * ตามอัตราปัจจุบันของ PricingEngine · รวมแล้วไม่ติดลบ
+     *
+     * @param  array<string, mixed>  $group
+     * @param  array<int|string, float>  $lineDiscounts  line_key => ส่วนลดของร้าน (คูปองร้าน)
+     */
+    public function expectedShopNet(array $group, array $lineDiscounts = []): float
+    {
+        $engine = app(PricingEngine::class);
+        $net = 0.0;
+
+        foreach ($group['lines'] as $line) {
+            /** @var Product $product */
+            $product = $line['product'];
+            $qty = max(1, (int) $line['quantity']);
+            $lineNet = round(max(0.0, (float) $line['line_total'] - (float) ($lineDiscounts[$line['line_key']] ?? 0)), 2);
+
+            try {
+                $opts = $engine->optionsForProduct($product);
+                // คิดทั้งบรรทัดเป็นก้อนเดียว → PV ต้องเป็นยอดรวมของบรรทัด (เหมือน computeItem)
+                $opts['pv'] = max(0.0, (float) ($opts['pv'] ?? 0)) * $qty;
+                unset($opts['cost_per_unit']);
+                $net += $engine->breakdown($lineNet, 1, $opts)->seller_net;
+            } catch (\Throwable $e) {
+                // คำนวณไม่ได้ = ไม่ให้ร้านออกค่าไรเดอร์จากบรรทัดนี้ (ปลอดภัยไว้ก่อน แพลตฟอร์มไม่ต้องรับภาระ)
+                Log::warning('ShopCart: expected shop net failed', ['product_id' => $product->id ?? null, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return round(max(0.0, $net), 2);
+    }
+
+    /**
+     * คูปองของร้านลดยอดสินค้า → รายได้ร้านลดลง → จำกัดค่าส่งที่ร้านออก/โบนัสไรเดอร์ใหม่ (C1)
+     *
+     * เรียกหลัง CouponService::evaluate ทั้งตอนคำนวณตะกร้าและตอนสั่งซื้อ (ตัวเลขที่แสดง = ที่เก็บจริง)
+     * ลดได้อย่างเดียว ไม่เพิ่มกลับ · ส่วนลดค่าส่งของคูปองร้านนับเป็นต้นทุนร้านก้อนเดียวกัน
+     *
+     * @param  array<int, array<string, mixed>>  $groups  ผลจาก buildGroups()
+     * @param  array<string, mixed>|null  $coupon  ผลจาก CouponService::evaluate()
+     * @return array<int, array<string, mixed>>
+     */
+    public function applyCouponToRiderCosts(array $groups, ?array $coupon): array
+    {
+        if ($coupon === null) {
+            return $groups;
+        }
+
+        foreach ($groups as $i => $group) {
+            $rider = $group['rider'] ?? null;
+
+            if (($group['key'] ?? null) !== ($coupon['group_key'] ?? null)
+                || ($group['delivery_method'] ?? null) !== 'rider'
+                || ! is_array($rider) || empty($rider['available'])
+                || ((float) $rider['shop_subsidy'] <= 0 && (float) $rider['shop_bonus'] <= 0)) {
+                continue;
+            }
+
+            $shippingDiscount = min((float) ($coupon['shipping_discount'] ?? 0), (float) $group['shipping_fee']);
+            $capped = DeliveryFeeCalculator::capShopCosts([
+                'total_fee' => $rider['fee_full'],
+                'rider_earnings' => $rider['rider_earnings'],
+                'shop_subsidy' => $rider['shop_subsidy'],
+                'shop_bonus' => $rider['shop_bonus'],
+                'free_delivery' => $rider['free_delivery'],
+                'subsidy_capped' => $rider['subsidy_capped'] ?? false,
+                'bonus_capped' => $rider['bonus_capped'] ?? false,
+            ], $this->expectedShopNet($group, (array) ($coupon['line_discounts'] ?? [])), $shippingDiscount);
+
+            $rider['fee'] = round((float) $capped['buyer_fee'], 2);
+            $rider['shop_subsidy'] = round((float) $capped['shop_subsidy'], 2);
+            $rider['shop_bonus'] = round((float) $capped['shop_bonus'], 2);
+            $rider['rider_total'] = round((float) $capped['rider_total'], 2);
+            $rider['free_delivery'] = (bool) $capped['free_delivery'];
+            $rider['subsidy_capped'] = (bool) $capped['subsidy_capped'];
+            $rider['bonus_capped'] = (bool) $capped['bonus_capped'];
+
+            $group['rider'] = $rider;
+            $group['shipping_fee'] = (float) $rider['fee'];
+            $group['cod'] = $this->codFor($group);
+            $groups[$i] = $group;
+        }
+
+        return $groups;
     }
 
     /**
@@ -488,6 +599,8 @@ class ShopCartService
             try {
                 $couponModel = $this->coupons->findUsable((string) $opts['coupon_code'], $user);
                 $coupon = $this->coupons->evaluate($couponModel, $groups);
+                // ไรเดอร์รอบ 2 (C1): คูปองร้านลดรายได้ร้าน → จำกัดค่าส่งที่ร้านออก/โบนัสใหม่ (สูตรเดียวกับตอนสั่งซื้อ)
+                $groups = $this->applyCouponToRiderCosts($groups, $coupon);
             } catch (ShopException $e) {
                 $couponError = ['code' => $e->errorCode, 'message' => $e->getMessage()];
             }

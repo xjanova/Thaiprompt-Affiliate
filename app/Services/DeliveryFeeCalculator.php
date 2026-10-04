@@ -29,6 +29,7 @@ use Illuminate\Support\Facades\Log;
  *   free_delivery = rider_free_delivery → buyer_fee = 0 และ shop_subsidy = total_fee (ร้านออกค่าส่งทั้งหมด)
  *   rider_total  = rider_earnings + shop_bonus
  *   total_fee ยังหมายถึง "ค่าส่งเต็ม" เสมอ · buyer_fee = ที่ผู้ซื้อจ่ายจริง
+ *   เพดาน (capShopCosts): shop_subsidy + shop_bonus ≤ รายได้สุทธิของร้านจากออเดอร์นั้น — ลดค่าส่งที่ออกให้ก่อน แล้วลดโบนัส
  *
  * ค่าตั้งค่าอ่านจากตาราง settings (group = rider) ผ่าน key ใน DEFAULTS
  * ส่ง $overrides เข้า constructor ได้ (ใช้ในเทสต์ที่ไม่มีฐานข้อมูล — โหมดนี้คิดระยะแบบเส้นตรงเท่านั้น ไม่ยิงเครือข่าย)
@@ -223,7 +224,7 @@ class DeliveryFeeCalculator
      *
      * @param  Model|null  $store  ร้านต้นทาง (VendorStore / FreshMarketSeller) — อ่าน rider_bonus, rider_bonus_peak, rider_free_delivery
      * @param  CarbonInterface|null  $at  เวลาที่ใช้ตัดสินกลางคืน/ชั่วโมงเร่งด่วน (null = ตอนนี้)
-     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float, distance_source: string, route_polyline: ?string, surcharge: float, shop_bonus: float, shop_subsidy: float, free_delivery: bool, buyer_fee: float, rider_total: float}
+     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float, distance_source: string, route_polyline: ?string, surcharge: float, shop_bonus: float, shop_subsidy: float, free_delivery: bool, buyer_fee: float, rider_total: float, subsidy_capped: bool, bonus_capped: bool}
      *
      * @throws RiderJobException INVALID_LOCATION เมื่อพิกัดไม่ถูกต้อง
      */
@@ -269,7 +270,7 @@ class DeliveryFeeCalculator
      *
      * @param  Model|null  $store  ร้านต้นทาง (อ่าน rider_bonus, rider_bonus_peak, rider_free_delivery)
      * @param  RouteResult|null  $route  ผลเส้นทาง (ให้ distance_source, route_polyline, เวลาเดินทางจริง)
-     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float, distance_source: string, route_polyline: ?string, surcharge: float, shop_bonus: float, shop_subsidy: float, free_delivery: bool, buyer_fee: float, rider_total: float}
+     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float, distance_source: string, route_polyline: ?string, surcharge: float, shop_bonus: float, shop_subsidy: float, free_delivery: bool, buyer_fee: float, rider_total: float, subsidy_capped: bool, bonus_capped: bool}
      */
     public function quoteForDistance(float $distanceKm, ?Model $store = null, ?CarbonInterface $at = null, ?RouteResult $route = null): array
     {
@@ -320,7 +321,52 @@ class DeliveryFeeCalculator
             'free_delivery' => $freeDelivery,
             'buyer_fee' => $freeDelivery ? 0.0 : $totalFee,
             'rider_total' => round($split['rider_earnings'] + $shopBonus, 2),
+            // ยังไม่รู้ยอดของออเดอร์ = ยังไม่ถูกจำกัด (capShopCosts ตั้งค่าเมื่อรู้รายได้ร้าน)
+            'subsidy_capped' => false,
+            'bonus_capped' => false,
         ];
+    }
+
+    /**
+     * เพดานต้นทุนไรเดอร์ที่ร้านเลือกจ่าย (money-review C1) — ร้านจ่ายได้ไม่เกินรายได้สุทธิที่คาดว่าจะได้จากออเดอร์นั้น
+     *
+     * ไม่งั้นสินค้า ฿1 + ส่งฟรี + โบนัส 100 ที่ 15 กม. → แพลตฟอร์มจ่ายไรเดอร์เกินเงินที่ผู้ซื้อจ่ายเข้ามา
+     * (ตอนแบ่งเงิน capRiderDeduction หักร้านได้ไม่เกินรายได้ ส่วนที่เหลือแพลตฟอร์มรับภาระ)
+     *
+     * ลำดับการลด: ค่าส่งที่ร้านออกให้ก่อน (ผู้ซื้อจ่ายส่วนที่เหลือ → buyer_fee สูงขึ้น, subsidy_capped)
+     * แล้วจึงลดโบนัสไรเดอร์ (bonus_capped) · ค่าส่งเต็ม (total_fee) และส่วนแบ่งไรเดอร์ไม่เปลี่ยน
+     *
+     * ฟังก์ชันบริสุทธิ์ (ไม่แตะฐานข้อมูล) — เรียกซ้ำด้วยงบที่น้อยลงได้ผลเท่ากับเรียกครั้งเดียวด้วยงบนั้น
+     *
+     * @param  array<string, mixed>  $quote  ผลจาก quote()/quoteForDistance() (ใช้ total_fee, rider_earnings, shop_bonus, shop_subsidy, free_delivery)
+     * @param  float  $shopNet  รายได้สุทธิที่ร้านคาดว่าจะได้ = ยอดสินค้าหลังส่วนลดที่ร้านออก − GP/VAT/ค่าแนะนำ ตามอัตราปัจจุบัน
+     * @param  float  $otherShopCosts  ต้นทุนอื่นที่ร้านจ่ายจากรายได้ก้อนเดียวกันก่อน (เช่น ส่วนลดค่าส่งจากคูปองร้าน)
+     * @return array<string, mixed> quote เดิมที่ปรับ shop_subsidy, shop_bonus, buyer_fee, rider_total, free_delivery + subsidy_capped, bonus_capped
+     */
+    public static function capShopCosts(array $quote, float $shopNet, float $otherShopCosts = 0.0): array
+    {
+        $budget = round(max(0.0, $shopNet - max(0.0, $otherShopCosts)), 2);
+        $totalFee = round(max(0.0, (float) ($quote['total_fee'] ?? 0)), 2);
+        $wantSubsidy = round(min($totalFee, max(0.0, (float) ($quote['shop_subsidy'] ?? 0))), 2);
+        $wantBonus = round(max(0.0, (float) ($quote['shop_bonus'] ?? 0)), 2);
+
+        // 1) ค่าส่งที่ร้านออกให้ก่อน 2) โบนัสไรเดอร์จากงบที่เหลือ
+        $subsidy = round(min($wantSubsidy, $budget), 2);
+        $bonus = round(min($wantBonus, max(0.0, $budget - $subsidy)), 2);
+
+        $subsidyCapped = $subsidy < $wantSubsidy || ! empty($quote['subsidy_capped']);
+        $bonusCapped = $bonus < $wantBonus || ! empty($quote['bonus_capped']);
+
+        $quote['shop_subsidy'] = $subsidy;
+        $quote['shop_bonus'] = $bonus;
+        $quote['buyer_fee'] = round($totalFee - $subsidy, 2);
+        $quote['rider_total'] = round((float) ($quote['rider_earnings'] ?? 0) + $bonus, 2);
+        // ร้านเลือกส่งฟรีแต่ออกได้ไม่เต็ม → ผู้ซื้อจ่ายส่วนที่เหลือ ไม่ใช่ "ส่งฟรี" แล้ว
+        $quote['free_delivery'] = (bool) ($quote['free_delivery'] ?? false) && ! $subsidyCapped;
+        $quote['subsidy_capped'] = $subsidyCapped;
+        $quote['bonus_capped'] = $bonusCapped;
+
+        return $quote;
     }
 
     /**

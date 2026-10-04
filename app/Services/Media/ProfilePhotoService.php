@@ -56,8 +56,11 @@ class ProfilePhotoService
     /** ด้านสั้นต่ำสุดของรูปต้นฉบับ (px) — เล็กกว่านี้เห็นหน้าไม่ชัด */
     public const MIN_EDGE = 160;
 
-    /** จำนวนพิกเซลสูงสุดที่ยอมถอดรหัส (กัน decompression bomb กินแรมเครื่อง) */
-    public const MAX_SOURCE_PIXELS = 50_000_000;
+    /**
+     * จำนวนพิกเซลสูงสุดที่ยอมถอดรหัส (กัน decompression bomb กินแรมเครื่อง)
+     * 25 ล้าน ≈ 100 MB ใน GD (4 ไบต์/พิกเซล) — กล้องมือถือทั่วไป 12–24 MP ผ่าน (money-review M4: เดิม 50 ล้าน ≈ 200 MB)
+     */
+    public const MAX_SOURCE_PIXELS = 25_000_000;
 
     public const JPEG_QUALITY = 85;
 
@@ -97,16 +100,20 @@ class ProfilePhotoService
     /**
      * URL รูปพร้อมลายน้ำของ $subject ที่ $viewer เปิดดู (signed URL อายุสั้น)
      *
-     * ยังไม่มีรูปถ่ายสด → คืนรูปโปรไฟล์สาธารณะเดิม (LINE/อัปโหลดเก่า) ถ้ามี
+     * ยังไม่มีรูปถ่ายสด → รูปโปรไฟล์เดิม (LINE/Google/FB/อัปโหลดเก่า) คืนให้ "เจ้าของเอง" เท่านั้น
+     * คนอื่น (ไรเดอร์/ผู้ซื้อ/ร้าน) ได้ null จนกว่าจะมีรูปถ่ายสด — รูปเดิมไม่มีลายน้ำและเป็น URL ถาวรที่ส่งต่อได้
+     * (money-review M5 / app-review L5)
      *
-     * @return string|null null = ไม่มีรูปเลย
+     * @return string|null null = ไม่มีรูปให้คนนี้เห็น
      */
     public function urlFor(User $subject, ?User $viewer): ?string
     {
         $version = $this->photoVersion($subject);
 
         if ($version === null) {
-            return $this->legacyUrl($subject);
+            $isSelf = $viewer !== null && (int) $viewer->getKey() === (int) $subject->getKey();
+
+            return $isSelf ? $this->legacyUrl($subject) : null;
         }
 
         try {

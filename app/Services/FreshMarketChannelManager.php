@@ -13,6 +13,7 @@ use App\Models\FreshMarketSetting;
 use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -1349,8 +1350,9 @@ class FreshMarketChannelManager
                 }
 
                 $listing = FreshMarketListing::with('seller')->find($ctx['listing_id'] ?? 0);
+                // ส่งยอดสินค้า → ค่าส่งที่ร้านออก/โบนัสถูกจำกัดไม่ให้เกินรายได้ร้าน (ไรเดอร์รอบ 2 C1 — ตรงกับตอนสร้างออเดอร์)
                 $quote = $listing
-                    ? $this->marketService->quoteDelivery($listing, (float) $buyerLat, (float) $buyerLng)
+                    ? $this->marketService->quoteDelivery($listing, (float) $buyerLat, (float) $buyerLng, $totalAmount)
                     : ['available' => false, 'message' => 'ไม่พบสินค้านี้แล้วค่ะ'];
 
                 if (! $quote['available']) {
@@ -1370,12 +1372,23 @@ class FreshMarketChannelManager
             }
 
             // วิธีจ่ายที่ LINE จะใช้จริง (เก็บเงินปลายทาง ถ้าปิดอยู่ = หัก Wallet) — แสดงในสรุปก่อนกดยืนยัน
+            // ไรเดอร์รอบ 2 (F5): ส่งด้วยไรเดอร์ต้องจ่ายก่อน (rider.allow_cod = false) → หัก Wallet ไม่ใช่เก็บปลายทาง
             try {
-                $paymentMethod = $this->marketService->resolvePaymentMethod(null, 'cod');
+                $paymentMethod = $this->marketService->resolvePaymentMethod(
+                    null,
+                    $this->marketService->defaultPaymentFor($deliveryType, 'cod')
+                );
             } catch (FreshMarketException $e) {
                 $conversation->resetToIdle();
 
                 return ['text' => '⚠️ '.$e->getMessage()];
+            }
+
+            if ($deliveryType === 'rider') {
+                $prepaidProblem = $this->riderPrepaidProblem($conversation, $paymentMethod, round($totalAmount + $deliveryFee, 2), $quantity);
+                if ($prepaidProblem !== null) {
+                    return ['text' => $prepaidProblem];
+                }
             }
 
             // เก็บเงินปลายทาง + ไรเดอร์: ยอดรวมต้องไม่เกินวงเงิน COD (กติกาเดียวกับตอนสร้างออเดอร์ — บอกก่อนให้กดยืนยัน)
@@ -2297,6 +2310,42 @@ class FreshMarketChannelManager
     }
 
     /**
+     * ไรเดอร์รอบ 2 (state-review F5): สั่งส่งด้วยไรเดอร์ผ่าน LINE ต้องจ่ายก่อนด้วย Wallet (rider.allow_cod = false)
+     *
+     * บอกผู้ซื้อตั้งแต่ขั้นสรุป (ก่อนกดยืนยัน) ว่าสั่งไม่ได้เพราะอะไร — null = สั่งได้
+     */
+    protected function riderPrepaidProblem(FreshMarketConversation $conversation, string $paymentMethod, float $grandTotal, int $quantity): ?string
+    {
+        if (app(DeliveryFeeCalculator::class)->boolSetting('rider.allow_cod')) {
+            return null;
+        }
+
+        if ($paymentMethod !== 'wallet') {
+            return "⚠️ ส่งด้วยไรเดอร์ต้องชำระก่อน เงินพักไว้ปลอดภัยจนคุณได้รับของ\n"
+                ."แต่ตอนนี้ตลาดสดยังไม่เปิดชำระผ่าน Wallet\n\n"
+                ."พิมพ์ \"{$quantity} นัดรับ\" เพื่อไปรับเองที่ร้านได้ค่ะ";
+        }
+
+        $buyer = $conversation->user_id
+            ? User::find($conversation->user_id)
+            : User::where('line_user_id', $conversation->line_user_id)->first();
+
+        // ยังไม่ลงทะเบียน → ขั้นยืนยันจะแจ้งให้ลงทะเบียนก่อนอยู่แล้ว
+        if (! $buyer) {
+            return null;
+        }
+
+        $balance = round((float) (Wallet::where('user_id', $buyer->id)->value('balance') ?? 0), 2);
+        if ($balance >= $grandTotal) {
+            return null;
+        }
+
+        return "⚠️ ส่งด้วยไรเดอร์ต้องชำระผ่าน Wallet ก่อน (เงินพักไว้ปลอดภัยจนคุณได้รับของ)\n"
+            .'ยอดที่ต้องชำระ ฿'.number_format($grandTotal, 2).' แต่ Wallet คงเหลือ ฿'.number_format($balance, 2)."\n\n"
+            ."เติมเงินเข้า Wallet แล้วพิมพ์จำนวนอีกครั้ง หรือพิมพ์ \"{$quantity} นัดรับ\" เพื่อไปรับเองที่ร้านได้ค่ะ";
+    }
+
+    /**
      * สร้าง order จาก context
      */
     protected function createOrderFromContext(FreshMarketConversation $conversation): array
@@ -2325,6 +2374,7 @@ class FreshMarketChannelManager
             $buyerLng = $ctx['buyer_longitude'] ?? $conversation->last_search_longitude;
 
             // LINE ยังไม่มีขั้นเลือกวิธีจ่าย → เก็บเงินปลายทาง (ถ้าปิดอยู่ใช้ Wallet)
+            // ส่งด้วยไรเดอร์ + ปิด COD กับไรเดอร์ → service เปลี่ยนค่าเริ่มต้นเป็น Wallet ให้เอง (defaultPaymentFor)
             $order = $this->marketService->createOrder($buyer, $listing, [
                 'quantity' => $quantity,
                 'delivery_type' => $deliveryType,
@@ -2382,8 +2432,12 @@ class FreshMarketChannelManager
             // ข้อผิดพลาดที่ผู้ซื้อต้องรู้ (ของหมด / ซื้อของร้านตัวเอง / เงินไม่พอ / นอกพื้นที่ส่ง)
             $conversation->resetToIdle();
 
+            $hint = $e->errorCode() === 'INSUFFICIENT_BALANCE'
+                ? "\n\nเติมเงินเข้า Wallet แล้วสั่งใหม่ หรือเลือกนัดรับเองที่ร้านได้ค่ะ"
+                : '';
+
             return [
-                'text' => '⚠️ '.$e->getMessage(),
+                'text' => '⚠️ '.$e->getMessage().$hint,
                 'quick_replies' => [
                     ['label' => '🛒 ดูสินค้าอื่น', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
                     ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],

@@ -214,6 +214,9 @@ class ShopCheckoutService
         if (! empty($input['coupon_code'])) {
             $couponModel = $this->coupons->findUsable((string) $input['coupon_code'], $user, true);
             $coupon = $this->coupons->evaluate($couponModel, $groups);
+            // ไรเดอร์รอบ 2 (C1): คูปองร้านลดรายได้ร้าน → จำกัดค่าส่งที่ร้านออก/โบนัสใหม่ (ค่าที่ล็อกบนออเดอร์ = ที่จำกัดแล้ว)
+            $groups = $this->carts->applyCouponToRiderCosts($groups, $coupon);
+            $this->assertCodStillAvailable($groups, $paymentMethod);
         }
 
         // 6) ยอดรวมแต่ละร้าน
@@ -362,7 +365,7 @@ class ShopCheckoutService
             'shipping_discount' => round($shippingDiscount, 2),
             'discount_funded_by' => ($productDiscount + $shippingDiscount) > 0 ? 'store' : null,
             'shipping_fee' => round((float) $group['shipping_fee'], 2),
-            // ไรเดอร์รอบ 2: ล็อกโบนัสไรเดอร์ที่ร้านจ่าย + ค่าส่งที่ร้านออกแทน (ส่งฟรี) ณ ตอนสั่ง
+            // ไรเดอร์รอบ 2: ล็อกโบนัสไรเดอร์ที่ร้านจ่าย + ค่าส่งที่ร้านออกแทน (ส่งฟรี) ณ ตอนสั่ง — ค่าที่จำกัดเพดานแล้ว (C1)
             'rider_bonus_amount' => $group['delivery_method'] === 'rider' ? round((float) ($group['rider']['shop_bonus'] ?? 0), 2) : 0,
             'delivery_subsidy_amount' => $group['delivery_method'] === 'rider' ? round((float) ($group['rider']['shop_subsidy'] ?? 0), 2) : 0,
             'total_amount' => round((float) $plan['total'], 2),
@@ -430,6 +433,31 @@ class ShopCheckoutService
         $order->save();
 
         return $order;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (C1): ค่าส่งของผู้ซื้ออาจสูงขึ้นหลังจำกัดค่าส่งที่ร้านออก → ตรวจวงเงิน COD ซ้ำ
+     *
+     * @param  array<int, array<string, mixed>>  $groups
+     *
+     * @throws ShopException COD_NOT_AVAILABLE
+     */
+    private function assertCodStillAvailable(array $groups, string $paymentMethod): void
+    {
+        if ($paymentMethod !== PaymentMethod::COD) {
+            return;
+        }
+
+        foreach ($groups as $group) {
+            if (($group['delivery_method'] ?? null) === 'rider' && empty($group['cod']['available'])) {
+                throw ShopException::make(
+                    ShopException::COD_NOT_AVAILABLE,
+                    "ร้าน {$group['store_name']}: ".($group['cod']['reason'] ?? 'เก็บเงินปลายทางไม่ได้'),
+                    422,
+                    ['store_id' => $group['store_id']]
+                );
+            }
+        }
     }
 
     /**
