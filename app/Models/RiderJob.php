@@ -905,6 +905,15 @@ class RiderJob extends Model
             'rider_earnings' => (float) $this->rider_earnings,
             'cod_amount' => (float) $this->cod_amount,
             'is_cod' => (float) $this->cod_amount > 0,
+            // ===== ไรเดอร์รอบ 2 (เลน pricing): รายได้แยกส่วน + ระยะตามถนน — เส้นทางเปิดเผยเท่าที่เปิดจุดส่ง (เส้นทางชี้บ้านผู้ซื้อ) =====
+            'earnings_breakdown' => [
+                'delivery_fee' => (float) $this->total_fee,
+                'rider_earnings' => (float) $this->rider_earnings,
+                'shop_bonus' => round((float) $this->shop_bonus, 2),
+                'rider_total' => round((float) $this->rider_earnings + (float) $this->shop_bonus, 2),
+            ],
+            'distance_source' => $this->distance_source,
+            'route_polyline' => $revealDropoff ? $this->route_polyline : null,
             'allowed_actions' => $this->allowedActionsFor($viewer),
             'created_at' => $this->created_at?->toIso8601String(),
             'accepted_at' => $this->accepted_at?->toIso8601String(),

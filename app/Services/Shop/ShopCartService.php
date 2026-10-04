@@ -32,6 +32,9 @@ class ShopCartService
     /** จำนวนรายการสูงสุดในตะกร้า (กันตะกร้าบวมจนคำนวณช้า) */
     public const MAX_LINES = 50;
 
+    /** เหตุผลที่ปิดเก็บเงินปลายทางกับไรเดอร์ (สัญญากลางไรเดอร์รอบ 2 — ข้อความเดียวกันทั้งร้านค้าและตลาดสด) */
+    public const COD_PREPAID_REASON = 'ส่งด้วยไรเดอร์ต้องชำระก่อน เงินพักไว้ปลอดภัยจนคุณได้รับของ';
+
     public function __construct(
         private readonly ShippingService $shipping,
         private readonly DeliveryFeeCalculator $deliveryFees,
@@ -312,7 +315,13 @@ class ShopCartService
         $store = $group['store'];
 
         // ความพร้อมของไรเดอร์ (คำนวณเสมอเพื่อให้แอปแสดงตัวเลือกได้)
-        $rider = ['available' => false, 'reason' => null, 'fee' => null, 'distance_km' => null, 'estimated_minutes' => null];
+        // fee = ที่ผู้ซื้อจ่ายจริง (buyer_fee) · fee_full = ค่าส่งเต็ม · ร้านเติมโบนัส/ออกค่าส่งให้ได้ (ไรเดอร์รอบ 2)
+        $rider = [
+            'available' => false, 'reason' => null, 'fee' => null, 'distance_km' => null, 'estimated_minutes' => null,
+            'fee_full' => null, 'distance_source' => null, 'route_polyline' => null, 'rider_earnings' => null,
+            'shop_bonus' => null, 'shop_subsidy' => null, 'rider_total' => null, 'surcharge' => null,
+            'free_delivery' => DeliveryFeeCalculator::storeFreeDelivery($store),
+        ];
 
         if (! $group['has_physical']) {
             $rider['reason'] = 'สินค้าดิจิทัลไม่ต้องจัดส่ง';
@@ -328,15 +337,25 @@ class ShopCartService
                     (float) $store->pickup_latitude,
                     (float) $store->pickup_longitude,
                     (float) $address->latitude,
-                    (float) $address->longitude
+                    (float) $address->longitude,
+                    $store
                 );
 
                 $rider['distance_km'] = (float) $quote['distance_km'];
                 $rider['estimated_minutes'] = (int) $quote['estimated_duration_minutes'];
+                $rider['distance_source'] = $quote['distance_source'];
+                $rider['route_polyline'] = $quote['route_polyline'];
 
                 if ($quote['within_service_area']) {
                     $rider['available'] = true;
-                    $rider['fee'] = round((float) $quote['total_fee'], 2);
+                    $rider['fee'] = round((float) $quote['buyer_fee'], 2);
+                    $rider['fee_full'] = round((float) $quote['total_fee'], 2);
+                    $rider['rider_earnings'] = round((float) $quote['rider_earnings'], 2);
+                    $rider['shop_bonus'] = round((float) $quote['shop_bonus'], 2);
+                    $rider['shop_subsidy'] = round((float) $quote['shop_subsidy'], 2);
+                    $rider['rider_total'] = round((float) $quote['rider_total'], 2);
+                    $rider['surcharge'] = round((float) $quote['surcharge'], 2);
+                    $rider['free_delivery'] = (bool) $quote['free_delivery'];
                 } else {
                     $rider['reason'] = 'ที่อยู่อยู่นอกพื้นที่ส่งของไรเดอร์ (ไม่เกิน '.number_format((float) $quote['max_distance_km'], 0).' กม.)';
                 }
@@ -366,6 +385,9 @@ class ShopCartService
         $cod = ['available' => false, 'reason' => null, 'limit' => round($codLimit, 2)];
         if (! $rider['available']) {
             $cod['reason'] = 'เก็บเงินปลายทางใช้ได้เมื่อส่งด้วยไรเดอร์';
+        } elseif (! $this->deliveryFees->boolSetting('rider.allow_cod')) {
+            // ไรเดอร์รอบ 2: งานไรเดอร์ต้องจ่ายก่อน เงินพักไว้จนส่งมอบสำเร็จ (rider.allow_cod = false)
+            $cod['reason'] = self::COD_PREPAID_REASON;
         } elseif ($riderTotal > $codLimit) {
             // เงื่อนไขเดียวกับ RiderDispatchService::createJobForSource (วงเงิน 0 = ปิดรับ COD)
             // ไม่งั้นสั่งได้แต่ร้านเรียกไรเดอร์ไม่ได้ ออเดอร์ค้าง

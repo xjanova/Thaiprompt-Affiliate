@@ -29,5 +29,8 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+        <!-- ไรเดอร์รอบ 2: เทสต์ห้ามยิงหา Valhalla จริง (เครื่อง dev/CI ไม่มี) — เทสต์ที่ต้องใช้เปิดเองพร้อม Http::fake -->
+        <env name="VALHALLA_ENABLED" value="false"/>
+        <env name="RIDER_PAY_AI_ENABLED" value="false"/>
     </php>
 </phpunit>

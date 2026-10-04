@@ -22,6 +22,13 @@
             'fields' => ['max_cod_amount', 'require_deposit']],
         'gps' => ['title' => 'GPS และลิงก์ติดตาม', 'icon' => 'fa-location-crosshairs', 'hint' => 'ความสดของพิกัดที่ใช้เลือกไรเดอร์ ระยะเวลาเก็บประวัติ และอายุลิงก์ติดตามของลูกค้า',
             'fields' => ['location_fresh_minutes', 'location_retention_days', 'tracking_expiry_hours', 'tracking_grace_minutes', 'avg_speed_kmh']],
+        // ===== ไรเดอร์รอบ 2 (2026-10-04) =====
+        'surcharge' => ['title' => 'ค่าส่งเพิ่มตามช่วงเวลา', 'icon' => 'fa-moon', 'hint' => 'บวกเพิ่มจากค่าส่งตามระยะ ผู้ซื้อจ่าย ไรเดอร์ได้ส่วนแบ่งตามเปอร์เซ็นต์เดิม — 0 = ไม่เพิ่ม (เวลาไทย กลางคืนข้ามเที่ยงคืนได้ เช่น 22 → 6)',
+            'fields' => ['night_surcharge', 'night_start_hour', 'night_end_hour', 'peak_surcharge']],
+        'handover' => ['title' => 'ส่งมอบของและพักเงิน', 'icon' => 'fa-qrcode', 'hint' => 'งานไรเดอร์ต้องจ่ายก่อน เงินพักไว้จนผู้ซื้อกับไรเดอร์สแกน QR กัน หรือปลดอัตโนมัติหลังไรเดอร์ถ่ายรูปวางของครบ',
+            'fields' => ['allow_cod', 'handover_enabled', 'handover_geofence_m', 'handover_qr_ttl_seconds', 'handover_wait_seconds', 'handover_auto_release_hours']],
+        'social' => ['title' => 'ไรเดอร์ใกล้ฉันและล็อกเรียกไรเดอร์', 'icon' => 'fa-heart', 'hint' => 'ผู้ซื้อเห็นไรเดอร์ใกล้ ๆ แบบเบลอตำแหน่ง และล็อกเรียกไรเดอร์คนโปรดได้เมื่อให้หัวใจครบ',
+            'fields' => ['lock_min_hearts', 'lock_offer_seconds', 'nearby_radius_km', 'nearby_fuzz_m']],
     ];
     $grouped = collect($groups)->flatMap(fn ($g) => $g['fields'])->all();
     $others = array_values(array_diff(array_keys($spec), $grouped));
@@ -40,6 +47,10 @@
         'rider_share_percent' => 'ไรเดอร์ได้กี่ % ของค่าส่ง ที่เหลือเข้าแพลตฟอร์ม',
         'pending_timeout_minutes' => 'งานที่ไม่มีคนรับเกินเวลานี้จะขึ้น "ต้องจัดเอง" ในจอมอนิเตอร์',
         'require_deposit' => 'เปิดแล้วไรเดอร์ที่ยังไม่วางเงินประกันจะเปิดรับงานไม่ได้',
+        'allow_cod' => 'ปิดไว้ = งานไรเดอร์ต้องชำระก่อน เงินพักไว้ปลอดภัยจนผู้ซื้อได้รับของ (เจ้าของระบบกำหนดให้ปิด)',
+        'night_start_hour' => 'เริ่ม = สิ้นสุด หมายถึงไม่มีช่วงกลางคืน',
+        'handover_enabled' => 'งานที่สร้างก่อนเปิดยังใช้ปุ่มส่งของแบบเดิมได้',
+        'lock_min_hearts' => 'ผู้ซื้อคนนั้นต้องให้หัวใจไรเดอร์คนนั้นครบจำนวนนี้ (ค่าเริ่มต้น 11 = มากกว่า 10)',
     ];
     $initial = [];
     foreach ($spec as $field => $item) {

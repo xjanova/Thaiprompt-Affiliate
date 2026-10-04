@@ -152,6 +152,7 @@ class RiderDispatchService
                 'gps_active' => true,
                 'gps_warning_count' => 0,
             ]);
+            $job->fill($this->routePricingAttributes($lockedSource, $quote)); // ไรเดอร์รอบ 2 (เลน pricing)
             $job->save();
 
             return [$job, true];
@@ -792,6 +793,25 @@ class RiderDispatchService
             'total_fee' => $charged,
             'rider_earnings' => $split['rider_earnings'],
             'platform_fee' => $split['platform_fee'],
+        ];
+    }
+
+    /**
+     * ไรเดอร์รอบ 2: โบนัสที่ร้านจ่าย (ล็อกไว้บนออเดอร์ rider_bonus_amount) + ที่มาของระยะ + เส้นทางถนน → คอลัมน์ของงานใหม่
+     *
+     * @param  array<string, mixed>  $quote  ผลจาก DeliveryFeeCalculator::quote()
+     * @return array{shop_bonus: float, distance_source: ?string, route_polyline: ?string}
+     */
+    private function routePricingAttributes(Model $source, array $quote): array
+    {
+        $bonus = $source->getAttribute('rider_bonus_amount');
+
+        return [
+            'shop_bonus' => is_numeric($bonus) ? round(max(0.0, (float) $bonus), 2) : 0.0,
+            'distance_source' => isset($quote['distance_source']) ? mb_substr((string) $quote['distance_source'], 0, 20) : null,
+            'route_polyline' => isset($quote['route_polyline']) && is_string($quote['route_polyline']) && $quote['route_polyline'] !== ''
+                ? $quote['route_polyline']
+                : null,
         ];
     }
 

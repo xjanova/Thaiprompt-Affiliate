@@ -1361,7 +1361,8 @@ class FreshMarketChannelManager
                     ];
                 }
 
-                $deliveryFee = (float) $quote['total_fee'];
+                // ไรเดอร์รอบ 2: ผู้ซื้อจ่าย fee (= buyer_fee) — ร้านเลือกส่งฟรีได้
+                $deliveryFee = (float) ($quote['fee'] ?? $quote['total_fee']);
                 $conversation->setFlowContext('order', [
                     'buyer_latitude' => (float) $buyerLat,
                     'buyer_longitude' => (float) $buyerLng,

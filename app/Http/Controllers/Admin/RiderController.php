@@ -63,6 +63,21 @@ class RiderController extends Controller
         'tracking_grace_minutes' => ['key' => 'rider.tracking_grace_minutes', 'type' => 'integer', 'min' => 1, 'max' => 180, 'label' => 'ลิงก์ติดตามหลังงานจบ', 'unit' => 'นาที'],
         'avg_speed_kmh' => ['key' => 'rider.avg_speed_kmh', 'type' => 'float', 'min' => 5, 'max' => 120, 'label' => 'ความเร็วเฉลี่ยสำหรับประมาณเวลา', 'unit' => 'กม./ชม.'],
         'max_release_count' => ['key' => 'rider.max_release_count', 'type' => 'integer', 'min' => 1, 'max' => 20, 'label' => 'คืนงานได้กี่ครั้งก่อนส่งแอดมิน', 'unit' => 'ครั้ง'],
+        // ===== ไรเดอร์รอบ 2 (2026-10-04) =====
+        'night_surcharge' => ['key' => 'rider.night_surcharge', 'type' => 'float', 'min' => 0, 'max' => 500, 'label' => 'ค่าส่งเพิ่มช่วงกลางคืน', 'unit' => 'บาท'],
+        'night_start_hour' => ['key' => 'rider.night_start_hour', 'type' => 'integer', 'min' => 0, 'max' => 23, 'label' => 'กลางคืนเริ่ม', 'unit' => 'นาฬิกา'],
+        'night_end_hour' => ['key' => 'rider.night_end_hour', 'type' => 'integer', 'min' => 0, 'max' => 23, 'label' => 'กลางคืนสิ้นสุด', 'unit' => 'นาฬิกา'],
+        'peak_surcharge' => ['key' => 'rider.peak_surcharge', 'type' => 'float', 'min' => 0, 'max' => 500, 'label' => 'ค่าส่งเพิ่มชั่วโมงเร่งด่วน (11–13, 17–19 น.)', 'unit' => 'บาท'],
+        'allow_cod' => ['key' => 'rider.allow_cod', 'type' => 'boolean', 'label' => 'อนุญาตเก็บเงินปลายทางกับงานไรเดอร์'],
+        'handover_enabled' => ['key' => 'rider.handover_enabled', 'type' => 'boolean', 'label' => 'งานใหม่ต้องส่งมอบด้วยการสแกน QR'],
+        'handover_geofence_m' => ['key' => 'rider.handover_geofence_m', 'type' => 'integer', 'min' => 20, 'max' => 2000, 'label' => 'ไรเดอร์ต้องอยู่ห่างจุดส่งไม่เกิน', 'unit' => 'เมตร'],
+        'handover_qr_ttl_seconds' => ['key' => 'rider.handover_qr_ttl_seconds', 'type' => 'integer', 'min' => 15, 'max' => 600, 'label' => 'QR ส่งมอบเปลี่ยนใหม่ทุก', 'unit' => 'วินาที'],
+        'handover_wait_seconds' => ['key' => 'rider.handover_wait_seconds', 'type' => 'integer', 'min' => 30, 'max' => 1800, 'label' => 'รอผู้ซื้อก่อนถ่ายรูปรอบสอง', 'unit' => 'วินาที'],
+        'handover_auto_release_hours' => ['key' => 'rider.handover_auto_release_hours', 'type' => 'integer', 'min' => 1, 'max' => 168, 'label' => 'ปลดเงินอัตโนมัติหลังวางของ (ถ้าไม่ร้องเรียน)', 'unit' => 'ชั่วโมง'],
+        'lock_min_hearts' => ['key' => 'rider.lock_min_hearts', 'type' => 'integer', 'min' => 1, 'max' => 1000, 'label' => 'หัวใจขั้นต่ำที่ผู้ซื้อให้ไรเดอร์ก่อนล็อกเรียกได้', 'unit' => 'ดวง'],
+        'lock_offer_seconds' => ['key' => 'rider.lock_offer_seconds', 'type' => 'integer', 'min' => 10, 'max' => 600, 'label' => 'ไรเดอร์ที่ถูกล็อกได้สิทธิ์รับก่อน', 'unit' => 'วินาที'],
+        'nearby_radius_km' => ['key' => 'rider.nearby_radius_km', 'type' => 'float', 'min' => 0.5, 'max' => 20, 'label' => 'รัศมีแสดงไรเดอร์ใกล้ผู้ซื้อ', 'unit' => 'กม.'],
+        'nearby_fuzz_m' => ['key' => 'rider.nearby_fuzz_m', 'type' => 'integer', 'min' => 0, 'max' => 2000, 'label' => 'เบลอตำแหน่งไรเดอร์บนแผนที่', 'unit' => 'เมตร'],
     ];
 
     public function __construct(
