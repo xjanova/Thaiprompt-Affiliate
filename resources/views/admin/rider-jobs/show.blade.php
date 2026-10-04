@@ -189,6 +189,113 @@
                 </div>
             @endif
 
+            {{-- ไรเดอร์รอบ 2: การส่งมอบ (สแกน QR ใส่กัน / รูป 2 รอบ / ร้องเรียน) --}}
+            @if (! empty($handover))
+                @php
+                    $hoRow = $handover['row'];
+                    $hoTone = match ($handover['status']) {
+                        'completed', 'released' => 'ok',
+                        'disputed', 'refunded' => 'bad',
+                        'fallback_waiting', 'fallback_pending_release' => 'warn',
+                        default => 'info',
+                    };
+                    $hoAt = fn ($v) => $v ? \Illuminate\Support\Carbon::parse($v)->timezone(config('app.timezone'))->thaidate('j M Y H:i:s') : '-';
+                @endphp
+                <div class="tp-card" style="padding:18px; border-left:4px solid var(--w-{{ $hoTone }});">
+                    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+                        <div class="tp-section-h"><i class="fas fa-handshake"></i> การส่งมอบของ</div>
+                        @include('admin.riders.partials.pill', ['pillTone' => $hoTone, 'pillText' => $handover['status_text'], 'pillIcon' => 'fa-qrcode', 'pillTitle' => null])
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px;">
+                        <span style="color:var(--ink2);">ไรเดอร์ยืนยัน</span>
+                        <span>
+                            {{ $hoAt($hoRow?->rider_confirmed_at) }}
+                            @if ($hoRow?->rider_confirm_distance_m !== null)
+                                <span style="color:var(--ink2);">· ห่างจุดส่ง {{ number_format((int) $hoRow->rider_confirm_distance_m) }} ม.</span>
+                            @endif
+                        </span>
+                        <span style="color:var(--ink2);">ผู้ซื้อยืนยัน</span>
+                        <span>{{ $hoAt($hoRow?->buyer_confirmed_at) }}</span>
+                        @if ($handover['method_text'])
+                            <span style="color:var(--ink2);">วิธีปิดงาน</span>
+                            <span>{{ $handover['method_text'] }}</span>
+                        @endif
+                        @if ($hoRow?->arrival_photo_at)
+                            <span style="color:var(--ink2);">ถึงจุดส่ง (รูป 1)</span>
+                            <span>{{ $hoAt($hoRow->arrival_photo_at) }} @if ($hoRow->arrival_distance_m !== null)<span style="color:var(--ink2);">· ห่าง {{ number_format((int) $hoRow->arrival_distance_m) }} ม.</span>@endif</span>
+                            <span style="color:var(--ink2);">รอผู้รับถึง</span>
+                            <span>{{ $hoAt($hoRow->wait_until) }}</span>
+                        @endif
+                        @if ($hoRow?->waited_photo_at)
+                            <span style="color:var(--ink2);">วางของ (รูป 2)</span>
+                            <span>{{ $hoAt($hoRow->waited_photo_at) }}</span>
+                        @endif
+                        @if ($hoRow?->auto_release_at && ! $hoRow->isFinal())
+                            <span style="color:var(--ink2);">ปลดเงินอัตโนมัติ</span>
+                            <span>{{ $hoAt($hoRow->auto_release_at) }}</span>
+                        @endif
+                        @if ($hoRow?->completed_at)
+                            <span style="color:var(--ink2);">ปิดการส่งมอบ</span>
+                            <span>{{ $hoAt($hoRow->completed_at) }}</span>
+                        @endif
+                        @if ((int) ($hoRow?->code_attempts ?? 0) > 0 || $hoRow?->code_locked_until)
+                            <span style="color:var(--ink2);">กรอกรหัสผิด</span>
+                            <span>{{ (int) $hoRow->code_attempts }} ครั้ง @if ($hoRow->code_locked_until)<span style="color:var(--w-bad);">· ล็อกถึง {{ $hoAt($hoRow->code_locked_until) }}</span>@endif</span>
+                        @endif
+                    </div>
+
+                    @if ($hoRow?->disputed_at)
+                        <div class="tp-well" style="padding:10px 12px; margin-top:12px; font-size:13px;">
+                            <div style="font-weight:700; color:var(--w-bad);"><i class="fas fa-flag"></i> ผู้ซื้อร้องเรียน: {{ $handover['dispute_reason_text'] }}</div>
+                            <div style="color:var(--ink2); font-size:12px; margin-top:2px;">เมื่อ {{ $hoAt($hoRow->disputed_at) }}</div>
+                            @if ($hoRow->dispute_note)
+                                <div style="margin-top:6px; white-space:pre-line;">{{ $hoRow->dispute_note }}</div>
+                            @endif
+                        </div>
+                    @endif
+
+                    @if ($hoRow?->resolution)
+                        <div class="tp-well" style="padding:10px 12px; margin-top:12px; font-size:13px;">
+                            <div style="font-weight:700;"><i class="fas fa-gavel"></i> ผลการตัดสิน: {{ $hoRow->resolution === 'refund' ? 'คืนเงินผู้ซื้อ' : 'ปล่อยเงิน' }}</div>
+                            <div style="color:var(--ink2); font-size:12px; margin-top:2px;">โดย {{ $handover['resolved_by_name'] ?? 'แอดมิน' }} · {{ $hoAt($hoRow->resolved_at) }}</div>
+                            @if ($hoRow->resolution_note)
+                                <div style="margin-top:6px; white-space:pre-line;">{{ $hoRow->resolution_note }}</div>
+                            @endif
+                        </div>
+                    @endif
+
+                    @if (count($handover['photos']) > 0)
+                        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:14px;">
+                            @foreach ($handover['photos'] as $hoPhotoIndex => $hoPhoto)
+                                <button type="button" style="border:0; padding:0; background:none; cursor:zoom-in; text-align:left; color:var(--ink);"
+                                        @click="$dispatch('w1-doc', @js(['items' => $handover['photos'], 'index' => $hoPhotoIndex]))">
+                                    <span style="display:block; border-radius:13px; overflow:hidden; aspect-ratio:4/3; box-shadow:var(--inset-sm); background:var(--bg);">
+                                        <img src="{{ $hoPhoto['url'] }}" alt="{{ $hoPhoto['label'] }}" loading="lazy" style="width:100%; height:100%; object-fit:cover; display:block;">
+                                    </span>
+                                    <span style="display:block; font-size:12.5px; font-weight:600; margin-top:6px;">{{ $hoPhoto['label'] }}</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    @if ($handover['can_resolve'])
+                        <div class="tp-divider" style="margin:14px 0;"></div>
+                        <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">เงินผู้ซื้อยังพักอยู่ ร้าน/ไรเดอร์ยังไม่ได้เงิน — ตรวจรูปและเรื่องร้องเรียนก่อนตัดสิน</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:9px;">
+                            <button type="button" class="tp-btn tp-btn-primary" style="flex:1 1 180px;"
+                                    @click="$dispatch('w1-action', @js(['url' => route('admin.rider-jobs.handover.release', $job), 'title' => 'ปล่อยเงิน งาน #'.$job->job_number, 'message' => "ถือว่าผู้ซื้อได้รับของแล้ว\nงานจะปิดเป็นส่งสำเร็จ ร้านได้รายได้ ไรเดอร์ได้ค่าส่ง และแจ้งผู้ซื้อกับไรเดอร์", 'reason' => 'optional', 'reasonLabel' => 'หมายเหตุ (ไม่บังคับ)', 'confirm' => 'ปล่อยเงิน', 'tone' => 'ok', 'icon' => 'fa-circle-check']))">
+                                <i class="fas fa-circle-check"></i> ปล่อยเงิน
+                            </button>
+                            <button type="button" class="tp-btn" style="flex:1 1 180px; color:var(--w-bad);"
+                                    @click="$dispatch('w1-action', @js(['url' => route('admin.rider-jobs.handover.refund', $job), 'title' => 'คืนเงินผู้ซื้อ งาน #'.$job->job_number, 'message' => "ยกเลิกออเดอร์และคืนเงินผู้ซื้อเต็มจำนวน (รวมค่าส่ง)\nงานไรเดอร์ปิดเป็นส่งไม่สำเร็จ ไรเดอร์ไม่ได้ค่าส่ง ร้านไม่ได้รายได้", 'reason' => 'required', 'reasonLabel' => 'เหตุผลที่คืนเงิน', 'confirm' => 'คืนเงินผู้ซื้อ', 'tone' => 'bad', 'icon' => 'fa-rotate-left']))">
+                                <i class="fas fa-rotate-left"></i> คืนเงินผู้ซื้อ
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
             {{-- ประวัติการกระจายงาน --}}
             <div class="tp-card" style="padding:0; overflow:hidden;">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px 18px;">

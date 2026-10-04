@@ -174,6 +174,12 @@ class RefundService
             ->latest('id')
             ->value('total_fee');
 
+        // ไรเดอร์รอบ 2: ร้านออกค่าส่งให้ (ส่งฟรี) → หักจากยอดคืนได้ไม่เกินค่าส่งที่ผู้ซื้อจ่ายเอง
+        // (งานส่งไม่สำเร็จ/ยังไม่ส่งมอบ = ไม่มีงาน completed → คืนเต็มจำนวน)
+        if ((bool) $order->settlement_deferred) {
+            $completedFee = min($completedFee, max(0.0, (float) $order->shipping_fee - (float) ($order->shipping_discount ?? 0)));
+        }
+
         return round(min(max(0.0, $completedFee), max(0.0, (float) $order->total_amount)), 2);
     }
 

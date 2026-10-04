@@ -349,6 +349,12 @@ trait RiderJobActions
     protected function doDeliver(Request $request, RiderJob $job, Rider $rider): array
     {
         $this->assertOwnJob($job, $rider);
+
+        // ไรเดอร์รอบ 2: งานที่ต้องสแกนส่งมอบ → 409 HANDOVER_REQUIRED (ก่อนตรวจรูป ให้แอปรุ่นเก่าเห็นเหตุผลจริง)
+        if ($job->handover_required && ! in_array($job->status, ['delivered', 'completed'], true)) {
+            throw RiderJobException::handoverRequired();
+        }
+
         $photo = $this->uploadedPhoto($request);
 
         if (! $photo) {

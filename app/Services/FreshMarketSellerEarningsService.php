@@ -111,10 +111,12 @@ class FreshMarketSellerEarningsService
         }
 
         // เงินที่กำลังจะได้ (ออเดอร์ที่ยังไม่จบ): จ่ายผ่าน wallet ระบบถือไว้ / เก็บเงินปลายทาง
+        // ไรเดอร์รอบ 2: ออเดอร์เงินพักหักโบนัสไรเดอร์ + ค่าส่งที่ร้านออกให้ (ตัดจริงตอนปิดออเดอร์ — FreshMarketService::sellerNetAfterRiderCosts)
         $pendingRow = FreshMarketOrder::where('seller_id', $seller->id)
             ->whereIn('order_status', self::ACTIVE_STATUSES)
             ->selectRaw("COUNT(*) as orders,
-                COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN seller_earning ELSE 0 END), 0) as held_net,
+                COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN GREATEST(seller_earning
+                    - (CASE WHEN settlement_deferred = 1 THEN COALESCE(rider_bonus_amount, 0) + COALESCE(delivery_subsidy_amount, 0) ELSE 0 END), 0) ELSE 0 END), 0) as held_net,
                 COALESCE(SUM(CASE WHEN payment_method = 'cod' AND payment_status <> 'paid' THEN total_amount ELSE 0 END), 0) as cod_to_collect")
             ->first();
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\DeliveryHandover;
 use App\Models\EarningsLedger;
 use App\Models\Order;
 use App\Models\PayoutSetting;
@@ -51,6 +52,9 @@ class SellerPayoutService
 
     /** สถานะออเดอร์ที่ถือว่าลูกค้าได้รับของแล้ว */
     public const DELIVERED_STATUSES = ['delivered', 'completed'];
+
+    /** ไรเดอร์รอบ 2: สถานะการส่งมอบที่ถือว่าผู้ซื้อได้รับของแล้ว (สแกนครบ / ปลดเงินอัตโนมัติ / แอดมินปล่อย) */
+    public const HANDOVER_DONE_STATUSES = ['completed', 'released'];
 
     protected WalletService $wallets;
 
@@ -134,6 +138,11 @@ class SellerPayoutService
     {
         $holding = $this->holdingDays();
 
+        // ไรเดอร์รอบ 2: เงินพักที่ส่งมอบสำเร็จแล้ว (สแกนครบ/ปลดเงิน/แอดมินปล่อย) → พร้อมจ่ายทันที
+        if ($this->deferredHandoverDone($order)) {
+            return $order->delivered_at ? Carbon::parse($order->delivered_at) : now();
+        }
+
         if (in_array($order->status, self::DELIVERED_STATUSES, true)) {
             $base = $order->delivered_at ? Carbon::parse($order->delivered_at) : now();
 
@@ -199,12 +208,26 @@ class SellerPayoutService
                             ->whereNull('rider_jobs.cod_settled_at')
                             ->whereNull('rider_jobs.deleted_at');
                     })
-                    ->where(function ($w) use ($deliveredBefore, $shippedBefore) {
-                        // 1) ส่งถึงแล้ว + ครบระยะพักเงิน
-                        $w->where(function ($d) use ($deliveredBefore) {
-                            $d->whereIn('orders.status', self::DELIVERED_STATUSES)
-                                ->whereRaw('COALESCE(orders.delivered_at, orders.updated_at) <= ?', [$deliveredBefore]);
+                    ->where(function ($w) use ($deliveredBefore, $shippedBefore, $orderMorph) {
+                        // 0) ไรเดอร์รอบ 2: เงินพักที่ส่งมอบสำเร็จแล้ว → จ่ายทันที (ไม่พัก)
+                        $w->where(function ($h) use ($orderMorph) {
+                            $h->where('orders.settlement_deferred', true)
+                                ->whereIn('orders.status', self::DELIVERED_STATUSES)
+                                ->whereExists(function ($x) use ($orderMorph) {
+                                    $x->selectRaw('1')
+                                        ->from('delivery_handovers')
+                                        ->join('rider_jobs', 'rider_jobs.id', '=', 'delivery_handovers.rider_job_id')
+                                        ->where('rider_jobs.source_type', $orderMorph)
+                                        ->whereColumn('rider_jobs.source_id', 'orders.id')
+                                        ->whereIn('rider_jobs.status', ['delivered', 'completed'])
+                                        ->whereIn('delivery_handovers.status', self::HANDOVER_DONE_STATUSES);
+                                });
                         })
+                        // 1) ส่งถึงแล้ว + ครบระยะพักเงิน
+                            ->orWhere(function ($d) use ($deliveredBefore) {
+                                $d->whereIn('orders.status', self::DELIVERED_STATUSES)
+                                    ->whereRaw('COALESCE(orders.delivered_at, orders.updated_at) <= ?', [$deliveredBefore]);
+                            })
                         // 2) ส่งพัสดุแล้วเกินกำหนด ลูกค้าไม่กดยืนยัน
                             ->orWhere(function ($s) use ($shippedBefore) {
                                 $s->where('orders.status', 'shipped')
@@ -541,6 +564,11 @@ class SellerPayoutService
             return false;
         }
 
+        // ไรเดอร์รอบ 2: เงินพักที่ส่งมอบสำเร็จแล้ว → ปล่อยทันที (ผู้ซื้อยืนยันรับของแล้ว ไม่ต้องพัก)
+        if ($this->deferredHandoverDone($order)) {
+            return true;
+        }
+
         $holding = $this->holdingDays();
 
         if (in_array($order->status, self::DELIVERED_STATUSES, true)) {
@@ -565,6 +593,63 @@ class SellerPayoutService
         }
 
         return Carbon::parse($order->paid_at)->addDays($holding)->lte($now);
+    }
+
+    /**
+     * ไรเดอร์รอบ 2: ปล่อยรายได้ร้านของออเดอร์เงินพักทันทีหลังส่งมอบสำเร็จ (เรียกจาก OrderObserver)
+     *
+     * ใช้ releaseLedger ตัวเดียวกับ cron (lock ออเดอร์ + ledger, กันจ่ายซ้ำ) — ยังไม่พร้อม = ข้าม ไม่ error
+     *
+     * @return array{credited: int, total_credited: float}
+     */
+    public function releaseDeferredOrder(Order $order): array
+    {
+        $result = ['credited' => 0, 'total_credited' => 0.0];
+
+        if (! (bool) $order->settlement_deferred) {
+            return $result;
+        }
+
+        $ids = EarningsLedger::where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->where('earning_type', EarningsLedger::TYPE_SELLER_SALE)
+            ->whereIn('status', [EarningsLedger::STATUS_PENDING, EarningsLedger::STATUS_AVAILABLE])
+            ->orderBy('id')
+            ->pluck('id');
+
+        foreach ($ids as $id) {
+            $outcome = $this->releaseLedger((int) $id);
+            if ($outcome['status'] === 'credited') {
+                $result['credited']++;
+                $result['total_credited'] = round($result['total_credited'] + $outcome['credited'], 2);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * ออเดอร์เงินพัก (settlement_deferred) ที่ส่งมอบสำเร็จแล้วหรือยัง
+     * = ออเดอร์ส่งถึงแล้ว + งานไรเดอร์ delivered/completed ที่มีการส่งมอบสถานะ completed/released
+     *   (delivered: ระหว่าง transaction ส่งมอบ — ออเดอร์เปลี่ยนเป็น delivered ตอนงานอยู่ขั้น delivered)
+     * (ส่งด้วยปุ่มแบบเดิมตอนปิดระบบสแกน → false → ใช้กติกาพักเงินเดิม)
+     */
+    public function deferredHandoverDone(Order $order): bool
+    {
+        if (! (bool) $order->settlement_deferred || ! in_array($order->status, self::DELIVERED_STATUSES, true)) {
+            return false;
+        }
+
+        try {
+            return DeliveryHandover::query()
+                ->whereIn('status', self::HANDOVER_DONE_STATUSES)
+                ->whereIn('rider_job_id', RiderJob::forSource($order)->whereIn('status', ['delivered', 'completed'])->select('id'))
+                ->exists();
+        } catch (\Throwable $e) {
+            Log::warning('SellerPayout: handover lookup failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+
+            return false;
+        }
     }
 
     /**

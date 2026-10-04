@@ -91,7 +91,7 @@ final class SellerUi
     public static function riderStatusColor(?string $status): string
     {
         return match ($status) {
-            'not_requested', 'pending' => self::WARN,
+            'not_requested', 'pending', 'awaiting_release' => self::WARN,
             'accepted', 'picking_up', 'picked_up', 'delivering' => self::INFO,
             'delivered', 'completed' => self::OK,
             'cancelled', 'failed' => self::BAD,

@@ -42,7 +42,7 @@ class AccountDeletionService
     private const SELLER_ACTIVE_ORDER_STATUSES = ['pending', 'paid', 'processing', 'shipped', 'delivered'];
 
     /** สถานะงานไรเดอร์ที่ยังไม่จบ */
-    private const ACTIVE_RIDER_JOB_STATUSES = ['pending', 'accepted', 'picking_up', 'picked_up', 'delivering', 'delivered'];
+    private const ACTIVE_RIDER_JOB_STATUSES = ['pending', 'accepted', 'picking_up', 'picked_up', 'delivering', 'awaiting_release', 'delivered'];
 
     /** สถานะออเดอร์ตลาดสดที่ยังไม่จบ */
     private const ACTIVE_FRESH_MARKET_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'picked_up', 'delivering', 'delivered'];

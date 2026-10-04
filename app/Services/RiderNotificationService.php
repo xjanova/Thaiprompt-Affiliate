@@ -153,8 +153,9 @@ class RiderNotificationService
      * แจ้งแอดมินทุกคน (in-app + push ระดับ high — เรื่องที่ต้องลงมือจัดการ)
      *
      * @param  array<string, mixed>  $data
+     * @param  string  $type  ประเภทแจ้งเตือน (ค่าเดิม rider_admin · ไรเดอร์รอบ 2 ใช้ handover_disputed)
      */
-    public function notifyAdmins(string $title, string $message, array $data = [], ?string $actionUrl = null): void
+    public function notifyAdmins(string $title, string $message, array $data = [], ?string $actionUrl = null, string $type = 'rider_admin'): void
     {
         try {
             $adminIds = User::query()
@@ -171,7 +172,7 @@ class RiderNotificationService
             return;
         }
 
-        $this->notifyUsers($adminIds, 'rider_admin', $title, $message, array_merge(['type' => 'rider_admin'], $data), $actionUrl, 'high');
+        $this->notifyUsers($adminIds, $type, $title, $message, array_merge($data, ['type' => $type]), $actionUrl, 'high');
     }
 
     // =====================================================

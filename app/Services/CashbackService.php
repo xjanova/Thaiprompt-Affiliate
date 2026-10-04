@@ -109,6 +109,15 @@ class CashbackService
      * Process cashback for an order
      * Should be called when payment is completed (not for COD until admin approves)
      */
+    /**
+     * ไรเดอร์รอบ 2: ออเดอร์เงินพักที่ยังส่งมอบไม่สำเร็จ (ยังไม่ delivered/completed) → ห้ามจ่ายเงินคืน
+     */
+    public static function waitsForHandover(Order $order): bool
+    {
+        return (bool) $order->settlement_deferred
+            && ! in_array($order->status, ['delivered', 'completed'], true);
+    }
+
     public function processOrderCashback(Order $order): ?WalletTransaction
     {
         // Check if already processed
@@ -133,12 +142,19 @@ class CashbackService
             return null;
         }
 
+        // ไรเดอร์รอบ 2: ออเดอร์เงินพัก (ส่งด้วยไรเดอร์) จ่ายเงินคืนหลังส่งมอบสำเร็จเท่านั้น
+        if (self::waitsForHandover($order)) {
+            Log::info('Deferred settlement order not delivered yet, skipping cashback', ['order_id' => $order->id]);
+
+            return null;
+        }
+
         try {
             return DB::transaction(function () use ($order) {
                 // 🔒 (2026-09-25) lock แถวออเดอร์แล้วตรวจซ้ำ — observer, checkout, job อาจเรียกพร้อมกัน
                 //    เดิมเช็ค cashback_processed นอก lock → จ่ายเงินคืนซ้ำได้
                 $locked = Order::whereKey($order->id)->lockForUpdate()->first();
-                if (! $locked || $locked->cashback_processed || $locked->payment_status !== 'paid') {
+                if (! $locked || $locked->cashback_processed || $locked->payment_status !== 'paid' || self::waitsForHandover($locked)) {
                     return null;
                 }
                 $order->setRawAttributes($locked->getAttributes(), true);

@@ -34,6 +34,10 @@ use Illuminate\Support\Facades\Log;
  *    แล้วจ่ายเข้า wallet ผู้ขายหลังส่งของถึง + ครบ holding days (SellerPayoutService)
  * ร้านทางการ (Official Shop) ไม่มี GP — รายได้สุทธิเข้ากระเป๋า admin_shop
  *
+ * ไรเดอร์รอบ 2 (2026-10-04): ออเดอร์เงินพัก (settlement_deferred — ส่งด้วยไรเดอร์) แบ่งได้หลังส่งมอบสำเร็จเท่านั้น
+ *  - ค่าส่งของผู้ซื้อไม่เข้ารายได้ร้าน (เป็นของไรเดอร์/แพลตฟอร์มผ่าน RiderEarningService)
+ *  - โบนัสไรเดอร์ + ค่าส่งที่ร้านออกให้ + ส่วนลดค่าส่งจากคูปองร้าน → หักจากรายได้ร้าน (other_deductions)
+ *
  * ความปลอดภัย: lock แถวออเดอร์ก่อนตรวจว่าแบ่งแล้วหรือยัง → เรียกซ้ำ/พร้อมกันก็แบ่งครั้งเดียว
  * unique key ของ earnings_ledger รวม user_id แล้ว → ออเดอร์หลายผู้ขายแบ่งได้ครบ (audit G3)
  */
@@ -108,6 +112,12 @@ class OrderDistributionService
                 return $this->skippedResult($locked, 'already_distributed');
             }
 
+            // ไรเดอร์รอบ 2: เงินพัก — ห้ามแบ่งให้ใครจนกว่าส่งมอบสำเร็จ (ออเดอร์เป็น delivered/completed)
+            if ((bool) $locked->settlement_deferred
+                && ! in_array($locked->status, SellerPayoutService::DELIVERED_STATUSES, true)) {
+                return $this->skippedResult($locked, 'settlement_deferred');
+            }
+
             $items = OrderItem::where('order_id', $locked->id)
                 ->with(['product' => fn ($q) => $q->withTrashed()])
                 ->orderBy('id')
@@ -136,17 +146,20 @@ class OrderDistributionService
                 (float) $locked->discount_amount > 0 ? $this->discountFundedBy($locked) : 'platform'
             );
 
+            // ไรเดอร์รอบ 2: ออเดอร์เงินพักส่งด้วยไรเดอร์ — ค่าส่งของผู้ซื้อเป็นของไรเดอร์/แพลตฟอร์ม (RiderEarningService)
+            // ห้ามเข้ารายได้ร้าน + หักโบนัสไรเดอร์/ค่าส่งที่ร้านออกให้ จากรายได้ร้าน
+            $riderCosts = $this->riderCostsFor($locked, $discount);
+
             // แบ่งค่าส่งให้ร้านที่ส่งของ — คูปองส่งฟรีของร้าน: ร้านได้เฉพาะค่าส่งที่ผู้ซื้อจ่ายจริง
             $shippingShares = $this->allocateShippingShares(
-                $discount['seller_shipping_base'],
+                $riderCosts['deferred_rider'] ? 0.0 : $discount['seller_shipping_base'],
                 $this->shippingWeights($groups)
             );
 
             // ส่วนลดของร้านที่ยังไม่ถูกหักใน order_items.total (ข้อมูลเก่า/ไม่ครบ) → หักจากรายได้ร้านตามสัดส่วนยอดขาย
-            $discountDeductions = $this->allocateShippingShares(
-                $discount['seller_deduction'],
-                $groups->map(fn ($rows) => round($rows->sum(fn ($r) => $r['breakdown']->gross), 2))->all()
-            );
+            $grossWeights = $groups->map(fn ($rows) => round($rows->sum(fn ($r) => $r['breakdown']->gross), 2))->all();
+            $discountDeductions = $this->allocateShippingShares($discount['seller_deduction'], $grossWeights);
+            $riderDeductions = $this->allocateShippingShares($riderCosts['total'], $grossWeights);
 
             $results = [
                 'order_id' => (int) $locked->id,
@@ -162,10 +175,11 @@ class OrderDistributionService
             foreach ($groups as $sellerId => $rows) {
                 $share = (float) ($shippingShares[(int) $sellerId] ?? 0.0);
                 $deduction = (float) ($discountDeductions[(int) $sellerId] ?? 0.0);
+                $riderDeduction = (float) ($riderDeductions[(int) $sellerId] ?? 0.0);
 
                 $groupResult = ($officialSellerId !== null && (int) $sellerId === $officialSellerId)
-                    ? $this->processAdminShopItems($locked, $rows, $share, $deduction)
-                    : $this->processSellerItems($locked, (int) $sellerId, $rows, $share, $engine, $deduction);
+                    ? $this->processAdminShopItems($locked, $rows, $share, $deduction, $riderDeduction, $riderCosts)
+                    : $this->processSellerItems($locked, (int) $sellerId, $rows, $share, $engine, $deduction, $riderDeduction, $riderCosts);
 
                 $results['distributions'][] = $groupResult;
                 if (($groupResult['type'] ?? '') === 'seller') {
@@ -273,8 +287,16 @@ class OrderDistributionService
      *
      * @param  Collection<int, array>  $rows  ผลจาก computeItem ของผู้ขายรายนี้
      */
-    protected function processSellerItems(Order $order, int $sellerId, Collection $rows, float $shippingShare, PricingEngine $engine, float $discountDeduction = 0.0): array
-    {
+    protected function processSellerItems(
+        Order $order,
+        int $sellerId,
+        Collection $rows,
+        float $shippingShare,
+        PricingEngine $engine,
+        float $discountDeduction = 0.0,
+        float $riderDeduction = 0.0,
+        array $riderCosts = [],
+    ): array {
         $seller = User::withTrashed()->find($sellerId);
         if (! $seller) {
             // order_items.seller_id มี FK cascade → ไม่ควรเกิด ถ้าเกิดให้ rollback ทั้งออเดอร์แล้วให้แอดมินตรวจ
@@ -306,7 +328,9 @@ class OrderDistributionService
         $ledgerGross = round($gross + $shippingShare, 2);
         // ส่วนลดของร้านที่ยังไม่ถูกหักในยอดสินค้า → หักจากรายได้ร้าน (ไม่ให้ติดลบ)
         $discountDeduction = round(min(max(0.0, $discountDeduction), $net + $shippingShare), 2);
-        $ledgerNet = round($net + $shippingShare - $discountDeduction, 2);
+        // ไรเดอร์รอบ 2: โบนัสไรเดอร์ + ค่าส่งที่ร้านออกให้ → หักจากรายได้ร้าน (ไม่ให้ติดลบ)
+        $riderDeduction = $this->capRiderDeduction($order, $sellerId, $riderDeduction, $net + $shippingShare - $discountDeduction);
+        $ledgerNet = round($net + $shippingShare - $discountDeduction - $riderDeduction, 2);
 
         $meta = [
             'order_number' => $order->order_number,
@@ -340,7 +364,7 @@ class OrderDistributionService
             'platform_fee' => $gp,
             'vat_amount' => $vat,
             'mlm_commission' => $pool,
-            'other_deductions' => $discountDeduction,
+            'other_deductions' => round($discountDeduction + $riderDeduction, 2),
             'debt_deduction' => 0,
             'net_amount' => $ledgerNet,
             'status' => EarningsLedger::STATUS_PENDING,
@@ -350,10 +374,12 @@ class OrderDistributionService
                 'version' => 2,
                 'formula' => 'pricing_engine',
                 'items' => $rows->map(fn ($r) => $this->itemBreakdownRow($r))->values()->all(),
+                'rider_costs' => $this->riderCostsBreakdown($riderCosts, $riderDeduction),
                 'calculations' => [
                     'items_gross' => $gross,
                     'shipping_share' => $shippingShare,
                     'store_discount_deduction' => $discountDeduction,
+                    'rider_cost_deduction' => $riderDeduction,
                     'gross_amount' => $ledgerGross,
                     'platform_fee' => $gp,
                     'vat_amount' => $vat,
@@ -364,8 +390,8 @@ class OrderDistributionService
                     'mlm_enabled' => $engine->mlmEnabled(),
                 ],
                 'shipping_share' => $shippingShare,
-                'release_rule' => 'after_delivery_plus_holding_days',
-                'holding_days' => $this->payoutService->holdingDays(),
+                'release_rule' => ! empty($riderCosts['deferred_rider']) ? 'after_handover' : 'after_delivery_plus_holding_days',
+                'holding_days' => ! empty($riderCosts['deferred_rider']) ? 0 : $this->payoutService->holdingDays(),
             ],
         ]);
 
@@ -380,6 +406,7 @@ class OrderDistributionService
             'vat_amount' => $vat,
             'mlm_commission' => $pool,
             'pv_total' => $pv,
+            'rider_cost_deduction' => $riderDeduction,
             'net_amount' => $ledgerNet,
             'earning_entry_id' => $ledger->id,
             'available_at' => $availableAt?->toDateTimeString(),
@@ -391,8 +418,14 @@ class OrderDistributionService
      *
      * @param  Collection<int, array>  $rows
      */
-    protected function processAdminShopItems(Order $order, Collection $rows, float $shippingShare, float $discountDeduction = 0.0): array
-    {
+    protected function processAdminShopItems(
+        Order $order,
+        Collection $rows,
+        float $shippingShare,
+        float $discountDeduction = 0.0,
+        float $riderDeduction = 0.0,
+        array $riderCosts = [],
+    ): array {
         $gross = round($rows->sum(fn ($r) => $r['breakdown']->gross), 2);
         $vat = round($rows->sum(fn ($r) => $r['breakdown']->vat_amount), 2);
         $pool = round($rows->sum(fn ($r) => $r['breakdown']->referral_pool_amount), 2);
@@ -401,6 +434,9 @@ class OrderDistributionService
         $net = round(max(0.0, $gross - $vat - $pool) + $shippingShare, 2);
         $discountDeduction = round(min(max(0.0, $discountDeduction), $net), 2);
         $net = round($net - $discountDeduction, 2);
+        // ไรเดอร์รอบ 2: ร้านทางการก็จ่ายโบนัสไรเดอร์/ค่าส่งที่ออกให้จากรายได้ของตัวเอง
+        $riderDeduction = $this->capRiderDeduction($order, 0, $riderDeduction, $net);
+        $net = round($net - $riderDeduction, 2);
 
         $meta = ['order_number' => $order->order_number, 'source' => 'admin_shop'];
 
@@ -425,6 +461,8 @@ class OrderDistributionService
                 'gross_amount' => $gross,
                 'shipping_share' => $shippingShare,
                 'store_discount_deduction' => $discountDeduction,
+                'rider_cost_deduction' => $riderDeduction,
+                'rider_costs' => $this->riderCostsBreakdown($riderCosts, $riderDeduction),
                 'vat_amount' => $vat,
                 'mlm_commission' => $pool,
                 'items' => $rows->map(fn ($r) => $this->itemBreakdownRow($r))->values()->all(),
@@ -742,6 +780,11 @@ class OrderDistributionService
         $query = Order::query()
             ->where('payment_status', 'paid')
             ->whereNotIn('status', ['cancelled', 'refunded'])
+            // ไรเดอร์รอบ 2: เงินพักแบ่งได้หลังส่งมอบสำเร็จเท่านั้น
+            ->where(function ($q) {
+                $q->where('settlement_deferred', false)
+                    ->orWhereIn('status', SellerPayoutService::DELIVERED_STATUSES);
+            })
             ->whereNotExists(function ($q) {
                 $q->selectRaw('1')
                     ->from('earnings_ledger')
@@ -848,6 +891,77 @@ class OrderDistributionService
             'pv_total' => $b->pv_total,
             'referral_pool_amount' => $b->referral_pool_amount,
             'seller_net' => $b->seller_net,
+        ];
+    }
+
+    /**
+     * ไรเดอร์รอบ 2: ต้นทุนไรเดอร์ที่ร้านรับภาระ (ออเดอร์เงินพักที่ส่งด้วยไรเดอร์เท่านั้น)
+     *
+     * - bonus      = rider_bonus_amount (ร้านเติมให้ไรเดอร์ — ไรเดอร์ได้เต็มจำนวนผ่าน RiderEarningService)
+     * - subsidy    = delivery_subsidy_amount (ร้านออกค่าส่งให้ผู้ซื้อ — "ส่งฟรี")
+     * - shipping_discount = ส่วนลดค่าส่งจากคูปองของร้าน (ไรเดอร์ได้ค่าส่งเต็ม ร้านเป็นคนออกส่วนที่ลดให้ผู้ซื้อ)
+     *
+     * @param  array<string, mixed>  $discount  ผลจาก splitDiscount()
+     * @return array{deferred_rider: bool, bonus: float, subsidy: float, shipping_discount: float, total: float}
+     */
+    protected function riderCostsFor(Order $order, array $discount): array
+    {
+        $deferredRider = (bool) $order->settlement_deferred && $order->isRiderDelivery();
+
+        if (! $deferredRider) {
+            return ['deferred_rider' => false, 'bonus' => 0.0, 'subsidy' => 0.0, 'shipping_discount' => 0.0, 'total' => 0.0];
+        }
+
+        $bonus = round(max(0.0, (float) $order->rider_bonus_amount), 2);
+        $subsidy = round(max(0.0, (float) $order->delivery_subsidy_amount), 2);
+        $shippingDiscount = ($discount['funded_by'] ?? 'platform') === 'store'
+            ? round(max(0.0, (float) ($discount['shipping_discount'] ?? 0)), 2)
+            : 0.0;
+
+        return [
+            'deferred_rider' => true,
+            'bonus' => $bonus,
+            'subsidy' => $subsidy,
+            'shipping_discount' => $shippingDiscount,
+            'total' => round($bonus + $subsidy + $shippingDiscount, 2),
+        ];
+    }
+
+    /**
+     * หักต้นทุนไรเดอร์ได้ไม่เกินรายได้ที่เหลือของร้าน (ส่วนเกินแพลตฟอร์มรับภาระ — log ไว้ให้ตรวจ)
+     */
+    protected function capRiderDeduction(Order $order, int $sellerId, float $requested, float $available): float
+    {
+        $requested = round(max(0.0, $requested), 2);
+        $available = round(max(0.0, $available), 2);
+
+        if ($requested > $available) {
+            Log::warning('Order distribution: rider costs exceed seller earnings, platform absorbs the rest', [
+                'order_id' => $order->id,
+                'seller_id' => $sellerId,
+                'requested' => $requested,
+                'available' => $available,
+            ]);
+        }
+
+        return min($requested, $available);
+    }
+
+    /**
+     * @param  array<string, mixed>  $riderCosts
+     * @return array<string, mixed>|null
+     */
+    protected function riderCostsBreakdown(array $riderCosts, float $deducted): ?array
+    {
+        if (empty($riderCosts['deferred_rider'])) {
+            return null;
+        }
+
+        return [
+            'rider_bonus' => (float) ($riderCosts['bonus'] ?? 0),
+            'delivery_subsidy' => (float) ($riderCosts['subsidy'] ?? 0),
+            'store_shipping_discount' => (float) ($riderCosts['shipping_discount'] ?? 0),
+            'deducted' => round($deducted, 2),
         ];
     }
 

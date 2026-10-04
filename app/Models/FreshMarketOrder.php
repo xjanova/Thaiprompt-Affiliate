@@ -860,7 +860,8 @@ class FreshMarketOrder extends Model implements RiderDeliverable
      */
     public function riderDeliveryFeeCharged(): ?float
     {
-        $fee = round((float) $this->delivery_fee, 2);
+        // ไรเดอร์รอบ 2: ร้านออกค่าส่งให้ (ส่งฟรี) → ค่างานไรเดอร์ = ที่ผู้ซื้อจ่าย + ที่ร้านออก (ไรเดอร์ได้ค่าส่งเต็ม ไม่ใช่ 0)
+        $fee = round((float) $this->delivery_fee + max(0.0, (float) $this->delivery_subsidy_amount), 2);
 
         return $fee > 0 ? $fee : null;
     }
@@ -962,13 +963,20 @@ class FreshMarketOrder extends Model implements RiderDeliverable
                 }
                 break;
 
+            case RiderJob::STATUS_AWAITING_RELEASE:
+                // ไรเดอร์รอบ 2: ไรเดอร์วางของไว้ที่จุดส่งแล้ว (รูปครบ 2 รอบ) รอปลดเงิน — ออเดอร์ยัง "กำลังจัดส่ง"
+                // (เงินยังพักอยู่ · ผู้ซื้อแจ้งร้องเรียนได้ · ปิดออเดอร์เมื่องานปิดจริงเท่านั้น) แค่บันทึกประวัติ
+                $order->rider_delivered_at = $order->rider_delivered_at ?? $now;
+                break;
+
             case 'delivered':
             case 'completed':
                 if ($order->order_status !== self::STATUS_DELIVERED) {
                     $order->order_status = self::STATUS_DELIVERED;
                     $order->delivered_at = $order->delivered_at ?? $now;
                     $order->rider_delivered_at = $order->rider_delivered_at ?? $now;
-                    $event = 'delivered';
+                    // งานที่สแกนส่งมอบ: ผู้ซื้อยืนยันรับของแล้ว ระบบปิดออเดอร์ให้ทันที → ไม่ส่ง "กรุณากดยืนยันรับสินค้า"
+                    $event = $job->handover_required ? null : 'delivered';
                 }
 
                 // เก็บเงินปลายทางผ่านไรเดอร์: ส่งถึง ≠ ระบบได้เงิน (ไรเดอร์ยังถือเงินสด)

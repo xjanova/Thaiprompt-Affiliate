@@ -24,6 +24,7 @@
             'picked_up' => ['violet', 'รับของแล้ว', 'fa-box'],
             'delivering' => ['violet', 'กำลังจัดส่ง', 'fa-truck-fast'],
             'delivered' => ['ok', 'ส่งแล้ว', 'fa-box-open'],
+            'awaiting_release' => ['warn', 'วางของแล้ว รอปลดเงิน', 'fa-hourglass-half'],
             'completed' => ['ok', 'เสร็จสิ้น', 'fa-circle-check'],
             'cancelled' => ['bad', 'ยกเลิก', 'fa-ban'],
             'failed' => ['bad', 'ส่งไม่สำเร็จ', 'fa-triangle-exclamation'],

@@ -78,6 +78,12 @@ class ShopCheckoutService
         $deliveryMethod = ($input['delivery_method'] ?? 'parcel') === 'rider' ? 'rider' : 'parcel';
         $input['preferred_rider_id'] = $this->preferredRiderFor($user, $input, $deliveryMethod); // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์
 
+        // ไรเดอร์รอบ 2: ส่งด้วยไรเดอร์ต้องจ่ายก่อน (เงินพักไว้จนส่งมอบ) เว้นแต่แอดมินเปิด rider.allow_cod
+        if ($paymentMethod === PaymentMethod::COD && $deliveryMethod === 'rider'
+            && ! app(\App\Services\DeliveryFeeCalculator::class)->boolSetting('rider.allow_cod')) {
+            throw ShopException::make(ShopException::COD_NOT_AVAILABLE, 'ส่งด้วยไรเดอร์ต้องชำระก่อน เงินพักไว้ปลอดภัยจนคุณได้รับของ', 422);
+        }
+
         $idemKey = $this->idempotencyCacheKey($user, $idempotencyKey);
         if ($idemKey !== null && ($cached = Cache::get($idemKey)) !== null) {
             return $cached;
@@ -363,7 +369,7 @@ class ShopCheckoutService
             'customer_notes' => $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 500) : null,
             'cashback_amount' => 0,
             'cashback_processed' => false,
-        ]);
+        ] + $this->deferredSettlementFields($group));
 
         $platformCommission = 0.0;
         $sellerEarning = 0.0;
@@ -424,6 +430,22 @@ class ShopCheckoutService
         $order->save();
 
         return $order;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (เลน money): ออเดอร์ส่งด้วยไรเดอร์ = เงินพัก — ไม่แบ่งให้ใครจนส่งมอบสำเร็จ
+     * (โบนัสไรเดอร์/ค่าส่งที่ร้านออก ถูกล็อกบนออเดอร์โดยเลน pricing — การแบ่งเงินอ่านจากออเดอร์)
+     *
+     * @param  array<string, mixed>  $group
+     * @return array<string, mixed>
+     */
+    private function deferredSettlementFields(array $group): array
+    {
+        if (($group['delivery_method'] ?? null) !== 'rider' || empty($group['has_physical'])) {
+            return [];
+        }
+
+        return ['settlement_deferred' => true];
     }
 
     /**

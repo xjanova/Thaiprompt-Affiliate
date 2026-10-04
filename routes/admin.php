@@ -3070,6 +3070,13 @@ Route::prefix('rider-jobs')->name('rider-jobs.')->group(function () {
 
     // สร้างงานใหม่ให้ออเดอร์ของงานที่ยกเลิก/ส่งไม่สำเร็จ
     Route::post('/{job}/redispatch', [RiderJobController::class, 'redispatch'])->name('redispatch');
+
+    // 🛵 ไรเดอร์รอบ 2: ตัดสินการส่งมอบ (ร้องเรียน / วางของรอปลดเงิน) + รูปทางสำรอง (private disk)
+    Route::post('/{job}/handover/release', [RiderJobController::class, 'handoverRelease'])->name('handover.release');
+    Route::post('/{job}/handover/refund', [RiderJobController::class, 'handoverRefund'])->name('handover.refund');
+    Route::get('/{job}/handover/photo/{kind}', [RiderJobController::class, 'handoverPhoto'])
+        ->whereIn('kind', ['arrival', 'waited'])
+        ->name('handover.photo');
 });
 
 // Service Providers Management (Admin)
