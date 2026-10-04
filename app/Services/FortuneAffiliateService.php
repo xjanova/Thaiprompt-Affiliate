@@ -88,7 +88,7 @@ class FortuneAffiliateService
                         'platform_user_id' => $platformUserId,
                     ]);
 
-                    DB::reconnect();
+                    $this->reconnectIfNoOpenTransaction();
                     $existingMember = $this->createMlmMember($existingUser, $platformUserId);
 
                     // สร้าง Wallet ทันที (เพื่อรองรับการโอนเงินจากกระเป๋าอื่น)
@@ -122,7 +122,7 @@ class FortuneAffiliateService
             $profile = $this->fetchPlatformProfile($platformUserId, $platform, $lineService, $reading);
 
             // Reconnect DB (กัน stale connection หลัง AI generation นาน)
-            DB::reconnect();
+            $this->reconnectIfNoOpenTransaction();
 
             $user = null;
             $member = null;
@@ -186,6 +186,21 @@ class FortuneAffiliateService
             ]);
 
             return null;
+        }
+    }
+
+    /**
+     * 🔌 ต่อ DB ใหม่กัน connection ค้างหลังงาน AI นาน — เฉพาะตอนไม่มีธุรกรรมเปิดอยู่
+     *
+     * ⚠️ (2026-10-04) reconnect กลางธุรกรรม = MySQL ทิ้งทุกอย่างที่ยังไม่ commit ทันที
+     *   เคส: POST /sms-payment/notify ห่อทั้งก้อนด้วย DB::transaction → ตัดบิล Celtic → สมัครสมาชิกให้ลูกค้าใหม่
+     *   → reconnect → การตัดบิล + SMS + nonce หายหมด → 500 ทั้งที่ลูกค้าได้ข้อความ "เริ่มเปิดไพ่" ไปแล้ว
+     *   connection ที่มีธุรกรรมค้างอยู่ = เพิ่งใช้งานไป ไม่มีทาง stale
+     */
+    private function reconnectIfNoOpenTransaction(): void
+    {
+        if (DB::transactionLevel() === 0) {
+            DB::reconnect();
         }
     }
 

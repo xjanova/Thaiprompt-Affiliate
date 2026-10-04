@@ -343,6 +343,10 @@ class SmsPaymentController extends Controller
             ], true) => 'auto_approved',
             $reading->conversation_status === FortuneReading::STATUS_COMPLETED && $reading->is_paid => 'auto_approved',
             $reading->conversation_status === FortuneReading::STATUS_COMPLETED && ! $reading->is_paid => 'cancelled',
+            // 🧾 (2026-10-04) จ่ายแล้ว = อนุมัติแล้ว ไม่ว่าอยู่ขั้นไหน — บิล 39 จ่ายก่อนแล้วไปรอวันเกิด/เปิดไพ่/ทำนาย
+            //   (collecting_birthdate / collecting_tarot / generating …) เดิมตกไป default = "รอตรวจ"
+            //   แอพเลยโชว์บิลที่ตัดแล้วเป็นรออนุมัติ ชวนให้แอดมินกดอนุมัติซ้ำ
+            $reading->is_paid => 'auto_approved',
             default => 'pending_review',
         };
 
