@@ -7669,10 +7669,22 @@ class FortuneConversationService
      *
      * ใช้เมื่อ user พิมพ์รูปแบบเต็มผิด 2 ครั้งติด → ระบบสลับเข้าโหมดนี้
      * เก็บค่าทีละส่วนใน conversation state `birthdate_partial`
+     *
+     * 🐛 (2026-10-04) เคสจริง FTU-261004-R4508 — ลูกค้าเกิด 27/9/2510 (วันพุธ) แต่บิลได้ พ.ศ. 2527
+     *    บอทถาม "ปี" → ลูกค้าตอบ "หนูเกิดวันที่27วันพุธ" (ตอบวันที่ ไม่ใช่ปี)
+     *    → parseLooseYear หยิบ "27" เป็นปีย่อ = พ.ศ. 2527 → ทวน "✅ ปี 1984 รับแล้ว" (ค.ศ. ลูกค้าดูไม่ออก)
+     *    → "เดือนกันยา" อ่านไม่ออก → "เดือน9" → "27" → กล่องยืนยัน → ลูกค้ากดใช่ → ทำนายด้วยปีผิด
+     *    ⇒ แก้ 4 อย่าง:
+     *      1. ชิ้นที่ลูกค้าระบุชนิดเอง ("วันที่27" · "เดือนกันยา" · "ปี2510") เก็บทันทีไม่ว่าบอทถามชิ้นไหน
+     *         และตัวอ่านแบบหลวมของแต่ละขั้น ห้ามหยิบเลขที่ลูกค้าระบุว่าเป็นชิ้นอื่น
+     *      2. ชื่อเดือนแบบพูด (กันยา/มีนา/ตุลา…) อ่านได้
+     *      3. ทวนปีเป็น พ.ศ. เสมอ — ลูกค้าคิดเป็น พ.ศ. เห็น "1984" แล้วไม่รู้ว่าผิด
+     *      4. วันในสัปดาห์ที่ลูกค้าบอก ("วันพุธ") จำไว้ แล้วเตือนในกล่องยืนยันถ้าไม่ตรงกับวันที่
+     *         ([[rule_stated_weekday_outranks_parsed_date]])
      */
     protected function handleBirthdateStepMode(FortuneReading $reading, string $messageText): array
     {
-        $partial = $reading->getConversationState('birthdate_partial', []) ?: [];
+        $before = $reading->getConversationState('birthdate_partial', []) ?: [];
 
         // 🎯 Short-circuit: ถ้าใน step mode ผู้ใช้ดันพิมพ์วันเกิดเต็มรูปแบบ
         //    ("15/8/1990") → รับทั้งชุดเลย ไม่ต้องถามทีละส่วน
@@ -7688,68 +7700,70 @@ class FortuneConversationService
             return $this->buildBirthdateConfirmationPrompt($reading, $fullDate);
         }
 
-        // Step 1: เก็บปี
-        if (empty($partial['year'])) {
-            $year = $this->parseLooseYear($messageText);
-            if (! $year) {
+        // 1) ชิ้นที่ลูกค้าระบุชนิดไว้เอง — เก็บได้ทุกขั้น (คำล่าสุดของลูกค้าชนะค่าเดิม)
+        $partial = array_merge($before, $this->extractTaggedBirthParts($messageText));
+        $weekday = \App\Support\StatedBirthDayName::mentioned($messageText);
+        if ($weekday !== null) {
+            $partial['weekday'] = $weekday;
+        }
+
+        // 2) ชิ้นที่บอทกำลังถามอยู่ — อ่านแบบหลวม เฉพาะเมื่อข้อ 1 ยังไม่ได้ชิ้นนี้มา
+        $asking = $this->nextMissingBirthPart($before) ?? 'day';
+        if (empty($partial[$asking])) {
+            $loose = match ($asking) {
+                'year' => $this->parseLooseYear($messageText),
+                'month' => $this->parseLooseMonth($messageText),
+                default => $this->parseLooseDay($messageText),
+            };
+            if ($loose) {
+                $partial[$asking] = $loose;
+            }
+        }
+
+        $gained = [];
+        foreach (['year', 'month', 'day', 'weekday'] as $key) {
+            if (isset($partial[$key]) && ($before[$key] ?? null) !== $partial[$key]) {
+                $gained[$key] = $partial[$key];
+            }
+        }
+
+        $missing = $this->nextMissingBirthPart($partial);
+        if ($missing !== null) {
+            $reading->setConversationState('birthdate_partial', $partial);
+
+            if ($gained === []) {
+                $label = ['year' => 'ปี', 'month' => 'เดือน', 'day' => 'วัน'][$asking];
+
                 return [
                     'action' => 'collecting_birthdate',
-                    'message' => "❓ ไม่เข้าใจปีที่บอกมาค่ะ\n\n"
-                        .$this->getBirthdateStepRequestMessage('year'),
+                    'message' => "❓ ไม่เข้าใจ{$label}ที่บอกมาค่ะ\n\n"
+                        .$this->getBirthdateStepRequestMessage($asking, $partial),
                     'reading' => $reading,
                 ];
             }
-            $partial['year'] = $year;
-            $reading->setConversationState('birthdate_partial', $partial);
 
             return [
                 'action' => 'collecting_birthdate',
-                'message' => $this->getBirthdateStepRequestMessage('month', ['year' => $year]),
+                'message' => $this->birthStepAckLine($gained)."\n\n"
+                    .$this->getBirthdateStepRequestMessage($missing, [], false),
                 'reading' => $reading,
             ];
         }
 
-        // Step 2: เก็บเดือน
-        if (empty($partial['month'])) {
-            $month = $this->parseLooseMonth($messageText);
-            if (! $month) {
-                return [
-                    'action' => 'collecting_birthdate',
-                    'message' => "❓ ไม่เข้าใจเดือนที่บอกมาค่ะ\n\n"
-                        .$this->getBirthdateStepRequestMessage('month', $partial),
-                    'reading' => $reading,
-                ];
-            }
-            $partial['month'] = $month;
-            $reading->setConversationState('birthdate_partial', $partial);
-
-            return [
-                'action' => 'collecting_birthdate',
-                'message' => $this->getBirthdateStepRequestMessage('day', ['month' => $month]),
-                'reading' => $reading,
-            ];
-        }
-
-        // Step 3: เก็บวัน + ตรวจสอบความถูกต้องทั้งชุด
-        $day = $this->parseLooseDay($messageText);
-        if (! $day) {
-            return [
-                'action' => 'collecting_birthdate',
-                'message' => "❓ ไม่เข้าใจวันที่บอกมาค่ะ\n\n"
-                    .$this->getBirthdateStepRequestMessage('day', $partial),
-                'reading' => $reading,
-            ];
-        }
-
+        // 3) ครบทั้งชุด → ตรวจความถูกต้อง
         $year = (int) $partial['year'];
         $month = (int) $partial['month'];
+        $day = (int) $partial['day'];
 
         if (! checkdate($month, $day, $year)) {
-            // วัน/เดือน/ปี ไม่ match กัน (เช่น 31 กุมภาพันธ์) → ขอวันใหม่
+            // วัน/เดือน/ปี ไม่ match กัน (เช่น 31 กุมภาพันธ์) → ทิ้งวันที่ แล้วขอวันใหม่
+            unset($partial['day']);
+            $reading->setConversationState('birthdate_partial', $partial);
+
             return [
                 'action' => 'collecting_birthdate',
-                'message' => "❓ วันที่ {$day} ไม่ตรงกับเดือน {$month} ปี {$year} ค่ะ\n\n"
-                    .$this->getBirthdateStepRequestMessage('day', $partial),
+                'message' => '❓ เดือน'.$this->getThaiMonth($month).' ปี พ.ศ. '.($year + 543)." ไม่มีวันที่ {$day} ค่ะ\n\n"
+                    .$this->getBirthdateStepRequestMessage('day', [], false),
                 'reading' => $reading,
             ];
         }
@@ -7763,7 +7777,172 @@ class FortuneConversationService
         $reading->setConversationState('awaiting_birthdate_confirmation', true);
         $reading->setConversationState('pending_birthdate', $birthDate);
 
-        return $this->buildBirthdateConfirmationPrompt($reading, $birthDate);
+        $prompt = $this->buildBirthdateConfirmationPrompt($reading, $birthDate);
+        $weekdayNote = $this->birthStepWeekdayMismatchNote($partial['weekday'] ?? null, $year, $month, $day);
+        if ($weekdayNote !== '') {
+            $prompt['message'] = $weekdayNote."\n\n".$prompt['message'];
+        }
+
+        return $prompt;
+    }
+
+    /**
+     * ชิ้นแรกที่ยังขาดตามลำดับที่บอทถาม (ปี → เดือน → วัน) · null = ครบแล้ว
+     */
+    protected function nextMissingBirthPart(array $partial): ?string
+    {
+        foreach (['year', 'month', 'day'] as $key) {
+            if (empty($partial[$key])) {
+                return $key;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * แพทเทิร์น "ชิ้นวันเกิดที่ลูกค้าระบุชนิดเอง" — กลุ่มที่ 1 คือตัวเลข
+     *
+     *   day      — วันที่27 · วัน 27 ("วันพุธ" ไม่ติด เพราะต้องตามด้วยตัวเลข)
+     *   month    — เดือน9 · เดือนที่ 9
+     *   daymonth — 27/9 (วัน/เดือน ไม่มีปี — กลุ่ม 1 วัน กลุ่ม 2 เดือน · ไม่ใช่ส่วนหน้าของ 27/9/10)
+     *   year     — ปี2510 · ปี พ.ศ. 10 · พ.ศ.2510 · ค.ศ. 1967
+     */
+    private function birthPartTagPattern(string $kind): string
+    {
+        return match ($kind) {
+            'day' => '/วัน(?:ที่)?\s*(\d{1,2})(?!\d)/u',
+            'month' => '/เดือน(?:ที่)?\s*(\d{1,2})(?!\d)/u',
+            'daymonth' => '/(?<![\d\/])(\d{1,2})\s*\/\s*(\d{1,2})(?!\s*\/|\d)/u',
+            default => '/(?:ปี\s*(?:พ\.?\s*ศ\.?|ค\.?\s*ศ\.?)?|พ\.?\s*ศ\.?|ค\.?\s*ศ\.?)\s*(\d{2,4})(?!\d)/u',
+        };
+    }
+
+    /**
+     * ชิ้นวันเกิดที่ลูกค้าระบุชนิดไว้เอง — ใช้ได้ทุกขั้นของโหมดถามทีละส่วน
+     *
+     * ชื่อเดือนลอย ๆ ("กันยา") นับด้วย เพราะไม่มีทางเป็นปีหรือวันที่
+     * ตัวเลขเปล่า ๆ ("27") ไม่นับ — ให้ตัวอ่านของขั้นที่บอทถามอยู่ตัดสิน
+     *
+     * @return array{year?: int, month?: int, day?: int}
+     */
+    protected function extractTaggedBirthParts(string $text): array
+    {
+        $t = $this->toArabicDigits($text);
+        $found = [];
+
+        // "27/9" — วัน/เดือนแบบไทย (คำกำกับ "วันที่/เดือน" ด้านล่างชนะถ้ามีทั้งคู่)
+        if (preg_match($this->birthPartTagPattern('daymonth'), $t, $m)
+            && checkdate((int) $m[2], (int) $m[1], 2000)) {
+            $found['day'] = (int) $m[1];
+            $found['month'] = (int) $m[2];
+        }
+
+        if (preg_match($this->birthPartTagPattern('day'), $t, $m) && (int) $m[1] >= 1 && (int) $m[1] <= 31) {
+            $found['day'] = (int) $m[1];
+        }
+
+        if (preg_match($this->birthPartTagPattern('month'), $t, $m) && (int) $m[1] >= 1 && (int) $m[1] <= 12) {
+            $found['month'] = (int) $m[1];
+        } elseif (($month = $this->parseThaiMonthName($t)) !== null) {
+            $found['month'] = $month;
+        }
+
+        if (preg_match($this->birthPartTagPattern('year'), $t, $m)) {
+            $year = $this->normalizeBirthYear((int) $m[1]);
+            if ($year !== null && $this->isValidBirthYear($year)) {
+                $found['year'] = $year;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * ลบตัวเลขที่ลูกค้าระบุว่าเป็นชิ้นอื่นออก ก่อนให้ตัวอ่านแบบหลวมหาเลขลอย ๆ
+     * ("หนูเกิดวันที่27" ตอนบอทถามปี — "27" คือวันที่ ห้ามกลายเป็น พ.ศ. 2527)
+     *
+     * @param  array<int, string>  $kinds  'day' / 'month' / 'year'
+     */
+    protected function stripTaggedBirthNumbers(string $text, array $kinds): string
+    {
+        foreach ($kinds as $kind) {
+            $text = preg_replace($this->birthPartTagPattern($kind), ' ', $text) ?? $text;
+        }
+
+        return $text;
+    }
+
+    /**
+     * บรรทัดทวนชิ้นที่เพิ่งรับ — ปีแสดงเป็น พ.ศ. เสมอ (ลูกค้าคิดเป็น พ.ศ.)
+     *
+     * @param  array{year?: int, month?: int, day?: int, weekday?: int}  $gained
+     */
+    protected function birthStepAckLine(array $gained): string
+    {
+        $bits = [];
+        if (! empty($gained['year'])) {
+            $bits[] = 'ปี พ.ศ. '.((int) $gained['year'] + 543);
+        }
+        if (! empty($gained['month'])) {
+            $bits[] = 'เดือน'.$this->getThaiMonth((int) $gained['month']);
+        }
+        if (! empty($gained['day'])) {
+            $bits[] = 'วันที่ '.(int) $gained['day'];
+        }
+        if (isset($gained['weekday'])) {
+            $bits[] = 'เกิดวัน'.\App\Support\StatedBirthDayName::name((int) $gained['weekday']);
+        }
+
+        return '✅ รับแล้วค่ะ: '.implode(' · ', $bits);
+    }
+
+    /**
+     * วันในสัปดาห์ที่ลูกค้าบอก ไม่ตรงกับวันที่ที่ประกอบได้ → คำเตือนหัวกล่องยืนยัน ('' = ตรงกัน/ไม่ได้บอก)
+     *
+     * ไม่บล็อก — ลูกค้ายังกดยืนยันได้ (อาจจำวันผิด หรือเกิดก่อนรุ่งสางที่โหรไทยนับเป็นวันก่อนหน้า)
+     * แต่ห้ามเงียบแล้วเชื่อตัวเลข ([[rule_stated_weekday_outranks_parsed_date]])
+     */
+    protected function birthStepWeekdayMismatchNote(?int $statedDay, int $year, int $month, int $day): string
+    {
+        if ($statedDay === null || ! checkdate($month, $day, $year)) {
+            return '';
+        }
+
+        $actualDay = \Carbon\Carbon::create($year, $month, $day)->dayOfWeek;
+        if ($actualDay === $statedDay) {
+            return '';
+        }
+
+        $statedName = \App\Support\StatedBirthDayName::name($statedDay);
+        $note = "⚠️ *เช็คอีกนิดนะคะ* — เจ้าชะตาบอกว่าเกิด*วัน{$statedName}*"
+            .' แต่ '.$this->formatThaiDate(sprintf('%04d-%02d-%02d', $year, $month, $day))
+            .' ตรงกับ*วัน'.\App\Support\StatedBirthDayName::name($actualDay)."*\n"
+            .'   • ปีเกิดอาจไม่ใช่ พ.ศ. '.($year + 543)." — ถ้าไม่ใช่ กด ❌ แล้วบอกใหม่ได้เลยค่ะ\n";
+
+        $candidates = \App\Support\StatedBirthDayName::datesMatching($year, $month, $statedDay);
+        if ($candidates !== []) {
+            $note .= "   • ถ้าปีถูกแล้ว วัน{$statedName}ของเดือนนี้คือวันที่ ".implode(', ', $candidates)."\n";
+        }
+
+        // เกิดก่อนรุ่งสาง โหรไทยนับเป็นวันก่อนหน้า — "เกิดวันพุธ" กับวันที่ที่เป็นวันพฤหัสอาจถูกทั้งคู่
+        if ($statedDay === ($actualDay + 6) % 7) {
+            $note .= "   • ถ้าเกิดก่อนรุ่งสาง โหรไทยนับเป็นวันก่อนหน้า — แบบนี้วันที่ถูกแล้ว กด ✅ ได้เลยค่ะ\n";
+        }
+
+        return rtrim($note);
+    }
+
+    /**
+     * เลขไทย/ลาว → อารบิก
+     */
+    private function toArabicDigits(string $text): string
+    {
+        return str_replace(
+            ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙', '໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'],
+            ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+            $text
+        );
     }
 
     /**
@@ -7774,11 +7953,9 @@ class FortuneConversationService
     protected function parseLooseYear(string $text): ?int
     {
         // 🇱🇦 (2026-05-03) เพิ่ม Lao digits + Thai digits
-        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
-        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
-        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        $text = str_replace($thaiDigits, $arabicDigits, $text);
-        $text = str_replace($laoDigits, $arabicDigits, $text);
+        // 🐛 (2026-10-04 FTU-261004-R4508) ข้ามเลขที่ลูกค้าระบุว่าเป็นวันที่/เดือน
+        //   "หนูเกิดวันที่27วันพุธ" ตอนบอทถามปี เคยได้ พ.ศ. 2527 (ลูกค้าเกิด 2510)
+        $text = $this->stripTaggedBirthNumbers($this->toArabicDigits($text), ['daymonth', 'day', 'month']);
 
         // ลองจับเลข 4 หลักก่อน (ปีเต็ม) — กัน case เช่น "15/8/1990" หยิบ "15" เป็นปี
         if (preg_match('/(?<!\d)(\d{4})(?!\d)/', $text, $m)) {
@@ -7807,11 +7984,32 @@ class FortuneConversationService
     protected function parseLooseMonth(string $text): ?int
     {
         // 🇱🇦 (2026-05-03) เพิ่ม Lao digits + Thai digits
-        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
-        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
-        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        $text = str_replace($thaiDigits, $arabicDigits, $text);
-        $text = str_replace($laoDigits, $arabicDigits, $text);
+        $text = $this->toArabicDigits($text);
+
+        $named = $this->parseThaiMonthName($text);
+        if ($named !== null) {
+            return $named;
+        }
+
+        // เลข 1-12 — ข้ามเลขที่ลูกค้าระบุว่าเป็นวันที่/ปี ("วันที่ 5" ≠ เดือน 5 · "ปี 10" ≠ เดือน 10)
+        $text = $this->stripTaggedBirthNumbers($text, ['day', 'year']);
+        if (preg_match('/(?<!\d)(\d{1,2})(?!\d)/', $text, $m)) {
+            $n = (int) $m[1];
+            if ($n >= 1 && $n <= 12) {
+                return $n;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * ชื่อเดือนไทย/ลาวในข้อความ (ไม่อ่านตัวเลข) · null = ไม่มีชื่อเดือน
+     *
+     * รองรับ: ชื่อเต็ม (กันยายน) · ชื่อแบบพูด (กันยา) · ตัวย่อมีจุด (ก.ย.) · ตัวย่อไม่มีจุด (กย)
+     */
+    protected function parseThaiMonthName(string $text): ?int
+    {
         $textLower = mb_strtolower(trim($text));
 
         // ชื่อเดือนไทย (ต้องเช็คชื่อเต็มก่อนย่อ เพื่อไม่ให้ "สิงหาคม" match "ส.ค." ก่อน)
@@ -7826,6 +8024,18 @@ class FortuneConversationService
             'ກັນຍາ' => 9, 'ຕຸລາ' => 10, 'ພະຈິກ' => 11, 'ທັນວາ' => 12,
         ];
         foreach ($thaiMonthsFull as $name => $num) {
+            if (str_contains($textLower, $name)) {
+                return $num;
+            }
+        }
+
+        // ชื่อแบบพูด (ตัดคม/ยน/พันธ์) — 🐛 (2026-10-04 FTU-261004-R4508) "เดือนกันยา" เคยตอบ "ไม่เข้าใจเดือน"
+        //   เช็คหลังชื่อเต็มเสมอ ("มีนา" อยู่ใน "มีนาคม" — ได้เลขเดียวกันอยู่แล้ว แต่ให้ลำดับชัด)
+        $thaiMonthsSpoken = [
+            'พฤศจิกา' => 11, 'กรกฎา' => 7, 'พฤษภา' => 5, 'มิถุนา' => 6, 'กุมภา' => 2, 'สิงหา' => 8,
+            'ธันวา' => 12, 'มกรา' => 1, 'มีนา' => 3, 'เมษา' => 4, 'กันยา' => 9, 'ตุลา' => 10,
+        ];
+        foreach ($thaiMonthsSpoken as $name => $num) {
             if (str_contains($textLower, $name)) {
                 return $num;
             }
@@ -7855,14 +8065,6 @@ class FortuneConversationService
             }
         }
 
-        // เลข 1-12
-        if (preg_match('/(?<!\d)(\d{1,2})(?!\d)/', $text, $m)) {
-            $n = (int) $m[1];
-            if ($n >= 1 && $n <= 12) {
-                return $n;
-            }
-        }
-
         return null;
     }
 
@@ -7874,11 +8076,8 @@ class FortuneConversationService
     protected function parseLooseDay(string $text): ?int
     {
         // 🇱🇦 (2026-05-03) เพิ่ม Lao digits + Thai digits
-        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
-        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
-        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        $text = str_replace($thaiDigits, $arabicDigits, $text);
-        $text = str_replace($laoDigits, $arabicDigits, $text);
+        // ข้ามเลขที่ลูกค้าระบุว่าเป็นเดือน/ปี ("ปี 10" ≠ วันที่ 10)
+        $text = $this->stripTaggedBirthNumbers($this->toArabicDigits($text), ['month', 'year']);
 
         if (preg_match('/(?<!\d)(\d{1,2})(?!\d)/', $text, $m)) {
             $n = (int) $m[1];
@@ -12275,18 +12474,20 @@ class FortuneConversationService
      *
      * @param  string  $step  'year' / 'month' / 'day'
      * @param  array  $partial  ข้อมูลที่เก็บไปแล้ว (year, month, day)
+     * @param  bool  $withPrefix  false = ไม่ใส่หัว (คำเกริ่น/บรรทัด "รับแล้ว") — ผู้เรียกทวนเอง
      */
-    protected function getBirthdateStepRequestMessage(string $step, array $partial = []): string
+    protected function getBirthdateStepRequestMessage(string $step, array $partial = [], bool $withPrefix = true): string
     {
         switch ($step) {
             case 'year':
-                return "ไม่เป็นไรค่ะ หมอจะถามทีละส่วนนะคะ 🙏\n\n"
+                return ($withPrefix ? "ไม่เป็นไรค่ะ หมอจะถามทีละส่วนนะคะ 🙏\n\n" : '')
                     ."📅 ปีที่เกิดคือปีอะไรคะ?\n\n"
                     .'  ใส่ *ครบ 4 หลัก* เช่น  *2533*  (พ.ศ.)  หรือ  *1990*  (ค.ศ.)';
 
             case 'month':
-                $year = $partial['year'] ?? '';
-                $prefix = $year ? "✅ ปี {$year} รับแล้ว\n\n" : '';
+                // ทวนเป็น พ.ศ. — (2026-10-04 FTU-261004-R4508) "✅ ปี 1984 รับแล้ว" ลูกค้าที่บอก 2510 ดูไม่ออกว่าผิด
+                $year = (int) ($partial['year'] ?? 0);
+                $prefix = ($withPrefix && $year) ? '✅ ปี พ.ศ. '.($year + 543)." รับแล้ว\n\n" : '';
 
                 return $prefix
                     ."📅 เดือนไหนคะ?\n\n"
@@ -12294,8 +12495,8 @@ class FortuneConversationService
                     .'  • หรือชื่อเดือน เช่น  สิงหาคม / ส.ค.';
 
             case 'day':
-                $month = $partial['month'] ?? '';
-                $prefix = $month ? "✅ เดือน {$month} รับแล้ว\n\n" : '';
+                $month = (int) ($partial['month'] ?? 0);
+                $prefix = ($withPrefix && $month) ? '✅ เดือน'.$this->getThaiMonth($month)." รับแล้ว\n\n" : '';
 
                 return $prefix
                     ."📅 วันที่เท่าไรคะ?\n\n"

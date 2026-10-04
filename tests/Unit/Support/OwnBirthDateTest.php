@@ -37,6 +37,11 @@ class OwnBirthDateTest extends TestCase
             // (จับผี) วันที่ที่ตามคำปฏิเสธคือ "ตัวที่ผิด" — ต้องได้ตัวที่ถูกเสมอ
             'wrong one first, correct marker' => ['วันเกิดไม่ใช่ 27/7/2521 นะคะ ที่ถูกคือ 27/6/2521', '1978-06-27', OwnBirthDate::BASIS_SELF],
             'wrong then must-be' => ['วันเกิดผิดค่ะ 27/7/2521 ต้องเป็น 27/6/2521', '1978-06-27', OwnBirthDate::BASIS_SELF],
+            // 🐛 (2026-10-04 FTU-261004-R4508) ปี/เดือน/วันที่ แบบมีคำกำกับ — ข้อความจริงตอนรอโอน (พิมพ์ผิด "เดือย" "กันยน")
+            'tagged year-first with typos (R4508)' => ['ของหนูปี2510ปีมะแมเดือยกันยนวันที่27', '1967-09-27', OwnBirthDate::BASIS_BARE],
+            'tagged day-first numeric month' => ['วันที่ 27 เดือน 9 ปี 2510 ค่ะ', '1967-09-27', OwnBirthDate::BASIS_BARE],
+            'tagged spoken month' => ['ปี พ.ศ. 2510 เดือนกันยา วันที่ 27', '1967-09-27', OwnBirthDate::BASIS_BARE],
+            'tagged self + question' => ['หนูเกิดปี 2510 เดือนกันยายน วันที่ 27 อยากรู้เรื่องงาน', '1967-09-27', OwnBirthDate::BASIS_SELF],
         ];
     }
 
@@ -71,6 +76,11 @@ class OwnBirthDateTest extends TestCase
             // กำกวม: วันที่เดียวหลังคำว่า "ผิด" อาจเป็นตัวที่ผิด — ตัวอ่านนี้ไม่เดา (โฟลแก้วันเกิดมีกล่องยืนยันกั้น)
             'single date right after a negation' => ['วันเกิดผิดค่ะ 27/6/2521 ช่วยดูใหม่'],
             'partner with a correct marker' => ['วันเกิดแฟน ที่ถูกคือ 3/6/2497'],
+            // ปี/เดือน/วันที่ แบบมีคำกำกับ — ไม่ครบ 3 ชิ้น / เป็นของคนอื่น / เป็นวันในอนาคต = ไม่นับ
+            'partner month+year only (R4508)' => ['ของผู้เดือนมีนาคมปี2512'],
+            'partner tagged full' => ['แฟนเกิดปี 2512 เดือนมีนาคม วันที่ 5'],
+            'future event tagged' => ['ปี 2569 เดือน 12 วันที่ 5 จะมีโชคไหม'],
+            'partner wedged inside tagged pieces' => ['ปี 2510 แฟนเกิดเดือน 9 วันที่ 27'],
         ];
     }
 
@@ -123,6 +133,9 @@ class OwnBirthDateTest extends TestCase
 
         $this->assertTrue(OwnBirthDate::mentionsOtherPerson('ไม่ใช่ค่ะ เป็นวันเกิดแฟน 3/6/2497'));
         $this->assertFalse(OwnBirthDate::mentionsOtherPerson('แม่หมอคะ หนูเกิด 27/6/2521'));
+        // "กันยายน" มี "ยาย" อยู่กลางคำ — ไม่ใช่คุณยาย
+        $this->assertFalse(OwnBirthDate::mentionsOtherPerson('หนูเกิด 27 กันยายน 2510'));
+        $this->assertTrue(OwnBirthDate::mentionsOtherPerson('ยายเกิด 27 กันยายน 2480'));
     }
 
     public function test_mentions_birth_info(): void

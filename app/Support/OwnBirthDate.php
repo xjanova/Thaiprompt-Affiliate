@@ -63,8 +63,9 @@ final class OwnBirthDate
     /**
      * คนอื่น/สัตว์เลี้ยง — ชุดเดียวกับ ThaiProvinces::KIN (+ คู่/หัวหน้า/เจ้าหนี้)
      * "แม่" ที่ตามด้วย "หมอ" = เรียกแม่หมอ ไม่ใช่แม่ของลูกค้า · "ลูกค้า" ไม่ใช่ลูก
+     * "ยาย" ที่อยู่หลัง "กัน" = กลางคำ "กันยายน" (เดือน 9) ไม่ใช่คุณยาย — เดิมทุกข้อความที่มีเดือนกันยายนถูกนับว่าพูดถึงคนอื่น
      */
-    private const KIN = '(?:แฟน|สามี|ภรรยา|ภริยา|เมีย|ผัว|ลูก(?!ค้า)|พ่อ|แม่(?!หมอ)|พี่|น้อง|เพื่อน|หลาน|ปู่|ย่า|ยาย|ญาติ'
+    private const KIN = '(?:แฟน|สามี|ภรรยา|ภริยา|เมีย|ผัว|ลูก(?!ค้า)|พ่อ|แม่(?!หมอ)|พี่|น้อง|เพื่อน|หลาน|ปู่|ย่า|(?<!กัน)ยาย|ญาติ'
         .'|หมา|แมว|เขา|เธอ|คู่|หัวหน้า|เจ้านาย|ลูกหนี้|เจ้าหนี้|คนรัก|กิ๊ก|ชู้)';
 
     /** คำขยายหลังคำเรียกญาติ ("แฟนเก่า" · "ลูกสาว" · "พี่ชาย") */
@@ -327,9 +328,141 @@ final class OwnBirthDate
             }
         }
 
+        // ปี / เดือน / วันที่ แบบมีคำกำกับ เรียงแบบไหนก็ได้ ("ปี2510 เดือนกันยายน วันที่27" · "วันที่ 27 เดือน 9 ปี 2510")
+        //   🐛 (2026-10-04 FTU-261004-R4508) "ของหนูปี2510ปีมะแมเดือยกันยนวันที่27" — บอกครบตั้งแต่ตอนรอโอน
+        //   แต่อ่านไม่ออก ⇒ หลังจ่ายเงินบอทถามวันเกิดใหม่จากศูนย์ แล้วไปอ่านปีผิดในโหมดถามทีละส่วน
+        if ($found === [] && ($tagged = self::taggedDate($t)) !== null) {
+            $found[] = $tagged;
+        }
+
         usort($found, fn ($a, $b) => $a['start'] <=> $b['start']);
 
         return $found;
+    }
+
+    /**
+     * วันเกิดแบบ "ปี… เดือน… วันที่…" ในข้อความเดียว — ต้องมีครบ 3 ชิ้น (ชิ้นเดียว/สองชิ้นไม่นับเป็นวันเกิด)
+     *
+     * ปีต้องมีคำว่า "ปี" (หรือ พ.ศ./ค.ศ.) นำ · วันต้องมี "วัน/วันที่" นำ · เดือนเป็นชื่อเดือน หรือ "เดือน + เลข"
+     * ⛔ ช่วงทั้งหมดต้องสั้น และไม่มีคนอื่นแทรก — กัน "ปี 2510 แฟนเกิดเดือน 9 วันที่ 27" ถูกรวบเป็นชิ้นเดียว
+     *
+     * @return array{ymd: string, start: int, end: int}|null
+     */
+    private static function taggedDate(string $t): ?array
+    {
+        if (! preg_match('/(?:ปี\s*(?:พ\.?\s*ศ\.?|ค\.?\s*ศ\.?)?|พ\.\s*ศ\.?|ค\.\s*ศ\.?)\s*(\d{4}|\d{2})(?!\d)/u', $t, $y, PREG_OFFSET_CAPTURE)
+            || ! preg_match('/วัน(?:ที่)?\s*(\d{1,2})(?!\d)/u', $t, $d, PREG_OFFSET_CAPTURE)) {
+            return null;
+        }
+
+        $month = self::taggedMonth($t);
+        if ($month === null) {
+            return null;
+        }
+
+        $start = min($y[0][1], $d[0][1], $month['start']);
+        $end = max($y[0][1] + strlen($y[0][0]), $d[0][1] + strlen($d[0][0]), $month['end']);
+        $span = substr($t, $start, $end - $start);
+        if (mb_strlen($span) > 45 || preg_match('/'.self::KIN.'|[?？\n]/u', $span)) {
+            return null;
+        }
+
+        $ymd = self::toYmd((int) $d[1][0], $month['num'], (int) $y[1][0]);
+
+        return $ymd === null ? null : ['ymd' => $ymd, 'start' => $start, 'end' => $end];
+    }
+
+    /**
+     * เดือนในรูป "มีคำกำกับ" — เดือน + เลข · ชื่อเดือน · ชื่อเดือนพิมพ์เพี้ยนหลังคำว่าเดือน ("เดือยกันยน")
+     *
+     * ตัวย่อ (ม.ค./มค) ไม่นับที่นี่ — ไม่มีเลขวันนำหน้าแล้ว "มค/กค" ไปติดกลางคำอื่นได้ง่าย
+     *
+     * @return array{num: int, start: int, end: int}|null
+     */
+    private static function taggedMonth(string $t): ?array
+    {
+        if (preg_match('/เดือ[นย]\s*(?:ที่\s*)?(\d{1,2})(?!\d)/u', $t, $m, PREG_OFFSET_CAPTURE)
+            && (int) $m[1][0] >= 1 && (int) $m[1][0] <= 12) {
+            return ['num' => (int) $m[1][0], 'start' => $m[0][1], 'end' => $m[0][1] + strlen($m[0][0])];
+        }
+
+        $names = array_filter(array_keys(self::MONTHS), fn ($k) => ! str_contains($k, '\\'));
+        if (preg_match('/(?:เดือ[นย]\s*)?('.implode('|', $names).')/u', $t, $m, PREG_OFFSET_CAPTURE)) {
+            return ['num' => self::MONTHS[$m[1][0]], 'start' => $m[0][1], 'end' => $m[0][1] + strlen($m[0][0])];
+        }
+
+        if (preg_match('/เดือ[นย]\s*([\x{0E01}-\x{0E4E}]{3,})/u', $t, $m, PREG_OFFSET_CAPTURE)) {
+            $fuzzy = self::fuzzyMonth($m[1][0]);
+            if ($fuzzy !== null) {
+                return ['num' => $fuzzy['num'], 'start' => $m[0][1], 'end' => $m[1][1] + $fuzzy['bytes']];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * ชื่อเดือนที่พิมพ์เพี้ยนเล็กน้อย ที่ "ต้นคำ" ของ token (คนไทยพิมพ์ติดกัน — "กันยนวันที่27")
+     *
+     * ระยะแก้ไขสูงสุด: ชื่อสั้น (≤5 ตัว) 1 · ชื่อยาว 2 · ต้องได้เดือนเดียวที่ใกล้สุด ไม่งั้นไม่เดา
+     *
+     * @return array{num: int, bytes: int}|null bytes = ความยาวส่วนต้นคำที่ใช้ (ไบต์)
+     */
+    private static function fuzzyMonth(string $token): ?array
+    {
+        $chars = mb_str_split(mb_substr($token, 0, 12));
+        $best = null;
+        $bestDist = PHP_INT_MAX;
+        $tie = false;
+
+        foreach (self::MONTHS as $name => $num) {
+            if (str_contains($name, '\\')) {
+                continue;
+            }
+
+            $nameChars = mb_str_split($name);
+            $len = count($nameChars);
+            $limit = $len <= 5 ? 1 : 2;
+
+            for ($l = max(3, $len - $limit); $l <= min(count($chars), $len + $limit); $l++) {
+                $dist = self::editDistance(array_slice($chars, 0, $l), $nameChars);
+                if ($dist > $limit) {
+                    continue;
+                }
+                if ($dist < $bestDist) {
+                    $bestDist = $dist;
+                    $best = ['num' => $num, 'bytes' => strlen(implode('', array_slice($chars, 0, $l)))];
+                    $tie = false;
+                } elseif ($dist === $bestDist && $best['num'] !== $num) {
+                    $tie = true;
+                } elseif ($dist === $bestDist) {
+                    // เดือนเดียวกัน ระยะเท่ากัน → ใช้ส่วนต้นคำที่ยาวกว่า (ตัดออกจากข้อความได้หมด ไม่เหลือเศษ)
+                    $best['bytes'] = max($best['bytes'], strlen(implode('', array_slice($chars, 0, $l))));
+                }
+            }
+        }
+
+        return ($best !== null && ! $tie) ? $best : null;
+    }
+
+    /**
+     * ระยะแก้ไข (Levenshtein) ระดับตัวอักษร — levenshtein() ของ PHP นับไบต์ ใช้กับภาษาไทยไม่ได้
+     *
+     * @param  array<int, string>  $a
+     * @param  array<int, string>  $b
+     */
+    private static function editDistance(array $a, array $b): int
+    {
+        $prev = range(0, count($b));
+        foreach ($a as $i => $ca) {
+            $cur = [$i + 1];
+            foreach ($b as $j => $cb) {
+                $cur[$j + 1] = min($prev[$j + 1] + 1, $cur[$j] + 1, $prev[$j] + ($ca === $cb ? 0 : 1));
+            }
+            $prev = $cur;
+        }
+
+        return $prev[count($b)];
     }
 
     private static function monthNumber(string $token): ?int
