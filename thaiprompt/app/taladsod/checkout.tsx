@@ -65,9 +65,35 @@ import {
 } from '@/services/api/taladsodApi';
 import { getAddresses, type Address } from '@/services/api/shopApi';
 import { formatDistance, formatDuration } from '@/services/location';
+import {
+  EscrowNotice,
+  RiderChoiceBlock,
+  RiderFeeLines,
+  RiderRouteBlock,
+  type RiderQuoteView,
+} from '@/components/checkout/RiderDeliveryPanel';
+import { getFavoriteRiders, DEFAULT_LOCK_MIN_HEARTS } from '@/services/api/riderSocialApi';
+import type { PersonCard } from '@/services/api/handoverApi';
+import { usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type Pin = { latitude: number; longitude: number; source: 'gps' | 'saved' | 'map' };
+
+/** แปลงค่าส่งตลาดสด → รูปแบบที่ชิ้นส่วนหน้าชำระเงินใช้ */
+const toRiderView = (q: FmQuote): RiderQuoteView => ({
+  distance_km: q.distance_km,
+  estimated_minutes: q.estimated_duration_minutes,
+  distance_source: q.distance_source,
+  route_polyline: q.route_polyline,
+  buyer_fee: q.buyer_fee,
+  fee_full: q.total_fee,
+  rider_earnings: q.rider_earnings,
+  shop_bonus: q.shop_bonus,
+  shop_subsidy: q.shop_subsidy,
+  rider_total: q.rider_total,
+  surcharge: q.surcharge,
+  free_delivery: q.free_delivery,
+});
 type QuoteState = { state: 'idle' } | { state: 'loading' } | { state: 'ready'; quote: FmQuote } | { state: 'error'; message: string };
 
 const QUOTE_DEBOUNCE_MS = 500;
@@ -83,6 +109,7 @@ export default function TaladsodCheckoutScreen() {
   const ink = useInk();
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
   const shopCart = useTaladsodCartStore((s) => s.cart?.shops.find((x) => x.seller_id === sellerId) || null);
   const cartLoaded = useTaladsodCartStore((s) => s.cart !== null);
   const mountedRef = useMountedRef();
@@ -105,6 +132,13 @@ export default function TaladsodCheckoutScreen() {
   const [addressError, setAddressError] = useState<string | null>(null);
   /** สั่งสำเร็จแล้ว กำลังพาไปหน้าออเดอร์ (กันหน้า "ตะกร้าว่าง" แวบขึ้นมา) */
   const [done, setDone] = useState(false);
+
+  // ไรเดอร์คนโปรด (ล็อกเรียก)
+  const [lockable, setLockable] = useState<PersonCard[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [lockMinHearts, setLockMinHearts] = useState(DEFAULT_LOCK_MIN_HEARTS);
+  const [preferredRiderId, setPreferredRiderId] = useState<number | null>(null);
+  const favoritesLoadedRef = useRef(false);
 
   const quoteReqRef = useRef(0);
   const baselineOrderIdRef = useRef<number | null>(null);
@@ -201,9 +235,63 @@ export default function TaladsodCheckoutScreen() {
     setSelectedAddressId(null);
   };
 
+  // ---------- ไรเดอร์คนโปรด ----------
+  const loadFavorites = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setFavoritesLoading(true);
+    const res = await getFavoriteRiders();
+    if (!mountedRef.current) return;
+    setFavoritesLoading(false);
+    favoritesLoadedRef.current = true;
+    if (!res.success) return; // โหลดไม่ได้ = จับคู่อัตโนมัติอย่างเดียว
+    setLockMinHearts(res.data.lock_min_hearts);
+    const list = res.data.riders.filter((r) => r.can_lock);
+    setLockable(list);
+    const stored = usePreferredRiderStore.getState().validFor(userId);
+    setPreferredRiderId((prev) => {
+      if (prev && list.some((r) => r.id === prev)) return prev;
+      if (stored && list.some((r) => r.id === stored.rider.id)) return stored.rider.id;
+      return null;
+    });
+  }, [isAuthenticated, userId, mountedRef]);
+
+  useEffect(() => {
+    if (deliveryType !== 'rider' || favoritesLoadedRef.current) return;
+    loadFavorites();
+  }, [deliveryType, loadFavorites]);
+
+  // กลับจากหน้าไรเดอร์ใกล้ฉัน (กดล็อกเรียกคนใหม่) → อัปเดตตัวเลือก
+  const preferredChoice = usePreferredRiderStore((s) => s.choice);
+  useEffect(() => {
+    if (!preferredChoice || !userId || preferredChoice.userId !== userId) return;
+    if (lockable.some((r) => r.id === preferredChoice.rider.id)) {
+      setPreferredRiderId(preferredChoice.rider.id);
+    } else if (preferredChoice.rider.can_lock && favoritesLoadedRef.current) {
+      setLockable((prev) => [preferredChoice.rider, ...prev.filter((r) => r.id !== preferredChoice.rider.id)]);
+      setPreferredRiderId(preferredChoice.rider.id);
+    }
+  }, [preferredChoice, userId, lockable]);
+
+  const chooseRider = (riderId: number | null) => {
+    setPreferredRiderId(riderId);
+    if (riderId === null) usePreferredRiderStore.getState().clear();
+  };
+
   // ---------- ยอดรวม ----------
   const subtotal = shopCart?.subtotal ?? 0;
-  const fee = deliveryType === 'rider' && quote.state === 'ready' && quote.quote.available ? quote.quote.total_fee : 0;
+  const readyQuote = deliveryType === 'rider' && quote.state === 'ready' && quote.quote.available ? quote.quote : null;
+  // ค่าส่งที่ผู้ซื้อจ่ายจริง (ร้านออกค่าส่งให้ = 0) — server คิดเองอีกครั้งตอนสั่ง
+  const fee = readyQuote ? readyQuote.buyer_fee : 0;
+  /** ส่งด้วยไรเดอร์แต่ server บอกว่าเก็บเงินปลายทางไม่ได้ (ต้องชำระก่อน เงินพักไว้) */
+  const codBlockedReason =
+    deliveryType === 'rider' && readyQuote?.cod && !readyQuote.cod.available
+      ? readyQuote.cod.reason || 'ส่งด้วยไรเดอร์ต้องชำระก่อน เงินพักไว้ปลอดภัยจนคุณได้รับของ'
+      : null;
+  const lockRiderId = deliveryType === 'rider' && preferredRiderId ? preferredRiderId : null;
+
+  useEffect(() => {
+    if (codBlockedReason && payment === 'cod') setPayment('wallet');
+  }, [codBlockedReason, payment]);
   /** ไรเดอร์ส่งแต่ยังไม่รู้ค่าส่ง → ยอดรวมบนจอยังไม่รวมค่าส่ง (ห้ามใช้ยืนยันตัดเงิน) */
   const feePending = deliveryType === 'rider' && !(quote.state === 'ready' && quote.quote.available);
   const quoteFailed = deliveryType === 'rider' && !!pin && quote.state === 'error';
@@ -238,6 +326,7 @@ export default function TaladsodCheckoutScreen() {
     if (!shopCart || shopCart.lines_count === 0) return 'ตะกร้าของร้านนี้ว่างแล้ว';
     if (!shopCart.can_checkout) return shopCart.is_open ? 'มีรายการที่สั่งไม่ได้ กลับไปแก้ในตะกร้าก่อนนะ' : 'ร้านปิดอยู่ตอนนี้';
     if (!methods.includes(payment)) return 'เลือกวิธีชำระเงินก่อนนะ';
+    if (payment === 'cod' && codBlockedReason) return codBlockedReason;
     if (deliveryType === 'rider') {
       if (!pin) return 'ปักหมุดจุดส่งก่อนนะ';
       if (addressText.trim().length < ADDRESS_MIN) {
@@ -313,6 +402,19 @@ export default function TaladsodCheckoutScreen() {
       case 'COD_NOT_AVAILABLE':
         Alert.alert('ยังเก็บเงินปลายทางไม่ได้', message, [{ text: 'จ่ายด้วยกระเป๋าเงิน', onPress: () => setPayment('wallet') }]);
         return;
+      case 'RIDER_LOCK_NOT_ALLOWED':
+        // สิทธิ์ล็อกเรียกเปลี่ยนไปแล้ว → กลับไปจับคู่อัตโนมัติ ให้ผู้ซื้อกดสั่งใหม่เอง
+        chooseRider(null);
+        favoritesLoadedRef.current = false;
+        loadFavorites();
+        Alert.alert('ล็อกเรียกไรเดอร์คนนี้ไม่ได้', `${message}\nเปลี่ยนเป็นจับคู่อัตโนมัติให้แล้ว กดสั่งอีกครั้งได้เลย`);
+        return;
+      case 'PROFILE_PHOTO_REQUIRED':
+        Alert.alert('ถ่ายรูปโปรไฟล์ก่อนนะ', 'ก่อนสั่งครั้งแรก ทุกบัญชีต้องมีรูปโปรไฟล์ถ่ายสดจากกล้อง ไรเดอร์จะได้รู้ว่าส่งของถึงมือใคร', [
+          { text: 'ไว้ก่อน', style: 'cancel' },
+          { text: 'ถ่ายรูปเลย', onPress: () => router.push('/profile-photo?from=checkout' as never) },
+        ]);
+        return;
       case 'WALLET_INACTIVE':
       case 'PAYMENT_METHOD_DISABLED':
         Alert.alert('เปลี่ยนวิธีชำระเงินนะ', message);
@@ -379,9 +481,12 @@ export default function TaladsodCheckoutScreen() {
         buyer_latitude: deliveryType === 'rider' ? pin?.latitude : undefined,
         buyer_longitude: deliveryType === 'rider' ? pin?.longitude : undefined,
         delivery_notes: notes.trim() || undefined,
+        preferred_rider_id: lockRiderId ?? undefined,
       });
       if (!mountedRef.current) return;
       if (res.success && res.data.id > 0) {
+        // ล็อกเรียกใช้ครั้งเดียวต่อการสั่ง
+        if (lockRiderId) usePreferredRiderStore.getState().clear();
         goToOrder(res.data);
         return;
       }
@@ -510,23 +615,41 @@ export default function TaladsodCheckoutScreen() {
       );
     }
     return (
-      <View style={[styles.quoteOk, { backgroundColor: colors.successSoft }]}>
-        <IconTile icon="moped" tone="success" size={36} weight="fill" />
-        <View style={styles.flex}>
-          <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งได้</Text>
-          {(q.distance_km !== null || !!q.estimated_duration_minutes) && (
-            <Text style={[typography.caption, { color: colors.textMuted }]}>
-              {[
-                q.distance_km !== null ? formatDistance(q.distance_km) : null,
-                q.estimated_duration_minutes ? `~${formatDuration(q.estimated_duration_minutes)}` : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
+      <>
+        <View style={[styles.quoteOk, { backgroundColor: colors.successSoft }]}>
+          <IconTile icon="moped" tone="success" size={36} weight="fill" />
+          <View style={styles.flex}>
+            <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งได้</Text>
+            {(q.distance_km !== null || !!q.estimated_duration_minutes) && (
+              <Text style={[typography.caption, { color: colors.textMuted }]}>
+                {[
+                  q.distance_km !== null ? formatDistance(q.distance_km) : null,
+                  q.estimated_duration_minutes ? `~${formatDuration(q.estimated_duration_minutes)}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Text>
+            )}
+          </View>
+          {q.free_delivery || q.buyer_fee <= 0 ? (
+            <Text style={[typography.bodyStrong, { color: colors.success }]}>ส่งฟรี</Text>
+          ) : (
+            <PriceText amount={q.buyer_fee} size="md" tone="success" />
           )}
         </View>
-        <PriceText amount={q.total_fee} size="md" tone="success" />
-      </View>
+        {/* เส้นทางวาดบนแผนที่ปักหมุดด้านบนแล้ว → ที่นี่แสดงป้ายคิดตามถนน + ระยะ/เวลา/ส่งถึงราว */}
+        <View style={styles.gapTop}>
+          <RiderRouteBlock quote={toRiderView(q)} storeName={shopName} showMap={false} title="เส้นทางไรเดอร์" />
+        </View>
+        <RiderChoiceBlock
+          lockable={lockable}
+          selectedId={lockRiderId}
+          onSelect={chooseRider}
+          loading={favoritesLoading}
+          lockMinHearts={lockMinHearts}
+          disabled={placing}
+        />
+      </>
     );
   };
 
@@ -603,6 +726,7 @@ export default function TaladsodCheckoutScreen() {
                   <LiveMap
                     markers={markers}
                     height={200}
+                    routePolyline={readyQuote?.route_polyline ?? null}
                     draggableId="pin"
                     onPick={(c) => {
                       setPin({ ...c, source: 'map' });
@@ -679,18 +803,37 @@ export default function TaladsodCheckoutScreen() {
               </Notice>
             )}
             <View style={[styles.choiceRow, styles.gapTop]}>
-              {methods.map((m) => (
-                <ChoiceTile
-                  key={m}
-                  icon={m === 'wallet' ? 'wallet' : 'money'}
-                  title={m === 'wallet' ? 'กระเป๋าเงิน' : deliveryType === 'rider' ? 'เงินสดปลายทาง' : 'จ่ายสดที่ร้าน'}
-                  caption={m === 'wallet' ? 'ตัดเงินทันที ยกเลิกได้คืนเงิน' : deliveryType === 'rider' ? 'จ่ายไรเดอร์ตอนรับของ' : 'จ่ายตอนไปรับของ'}
-                  selected={payment === m}
-                  onPress={() => setPayment(m)}
-                  accessibilityLabel={m === 'wallet' ? 'จ่ายด้วยกระเป๋าเงิน' : 'เก็บเงินปลายทาง'}
-                />
-              ))}
+              {methods.map((m) => {
+                const blocked = m === 'cod' && !!codBlockedReason;
+                return (
+                  <ChoiceTile
+                    key={m}
+                    icon={m === 'wallet' ? 'wallet' : 'money'}
+                    title={m === 'wallet' ? 'กระเป๋าเงิน' : deliveryType === 'rider' ? 'เงินสดปลายทาง' : 'จ่ายสดที่ร้าน'}
+                    caption={
+                      blocked
+                        ? 'ใช้ไม่ได้กับไรเดอร์ส่ง'
+                        : m === 'wallet'
+                          ? deliveryType === 'rider'
+                            ? 'เงินพักไว้จนได้รับของ'
+                            : 'ตัดเงินทันที ยกเลิกได้คืนเงิน'
+                          : deliveryType === 'rider'
+                            ? 'จ่ายไรเดอร์ตอนรับของ'
+                            : 'จ่ายตอนไปรับของ'
+                    }
+                    selected={payment === m}
+                    disabled={blocked}
+                    onPress={() => !blocked && setPayment(m)}
+                    accessibilityLabel={m === 'wallet' ? 'จ่ายด้วยกระเป๋าเงิน' : `เก็บเงินปลายทาง${blocked ? ` ใช้ไม่ได้: ${codBlockedReason}` : ''}`}
+                  />
+                );
+              })}
             </View>
+            {!!codBlockedReason && methods.includes('cod') && (
+              <Notice tone="info" icon="lock" style={styles.gapTop}>
+                {codBlockedReason}
+              </Notice>
+            )}
           </Card3D>
 
           {/* ---------- สรุป ---------- */}
@@ -736,22 +879,25 @@ export default function TaladsodCheckoutScreen() {
                 <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าอาหาร</Text>
                 <PriceText amount={subtotal} size="sm" tone="strong" />
               </View>
-              {deliveryType === 'rider' && (
-                <View style={styles.sumRow}>
-                  <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าส่งไรเดอร์</Text>
-                  {quote.state === 'ready' && quote.quote.available ? (
-                    <PriceText amount={fee} size="sm" tone="strong" />
-                  ) : (
+              {deliveryType === 'rider' &&
+                (readyQuote ? (
+                  <View style={styles.sumRowBlock}>
+                    <RiderFeeLines quote={toRiderView(readyQuote)} compact />
+                  </View>
+                ) : (
+                  <View style={styles.sumRow}>
+                    <Text style={[typography.bodySm, { color: colors.textMuted }]}>ค่าส่งไรเดอร์</Text>
                     <Text style={[typography.caption, { color: colors.textFaint }]}>{pin ? '—' : 'ปักหมุดก่อน'}</Text>
-                  )}
-                </View>
-              )}
+                  </View>
+                ))}
               <View style={[styles.sumRow, styles.grandRow, { borderTopColor: colors.divider }]}>
                 <Text style={[typography.h3, { color: colors.textStrong }]}>รวมทั้งหมด</Text>
                 <PriceText amount={total} size="lg" tone="gold" />
               </View>
             </View>
           </Card3D>
+
+          {deliveryType === 'rider' && payment === 'wallet' && <EscrowNotice style={styles.gapTop} />}
 
           {!shopCart.can_checkout && (
             <Notice tone="warning" onPress={() => router.replace('/taladsod/cart' as never)} style={styles.gapTop}>
@@ -1022,6 +1168,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  sumRowBlock: {
     paddingVertical: 4,
   },
   grandRow: {

@@ -21,6 +21,7 @@ import { Button3D, Card3D, EmptyState, Icon, Screen, resultHaptic } from '@/comp
 import { Field } from '@/components/shop';
 import { AvatarRing, GroupLabel, IconTile } from '@/components/profile';
 import { useTheme, radii, shadowStyle, spacing, typography } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 interface ProfileUpdateBody {
   name?: string;
@@ -50,6 +51,8 @@ type FormState = Required<ProfileUpdateBody>;
 const PHONE_RE = /^0\d{8,9}$/;
 
 export default function EditProfileScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('edit-profile');
   const { colors } = useTheme();
   const navigation = useNavigation();
   const user = useAuthStore((s) => s.user);
@@ -267,6 +270,25 @@ export default function EditProfileScreen() {
         </View>
       </View>
 
+      {/* ---------- รูปยืนยันตัวตนถ่ายสด (ไรเดอร์และร้านเห็นตอนส่งของ) ---------- */}
+      <Card3D
+        onPress={() => router.push('/profile-photo' as never)}
+        padding={spacing.lg}
+        style={styles.section}
+        accessibilityLabel="รูปโปรไฟล์ถ่ายสด ที่ไรเดอร์และร้านเห็น"
+      >
+        <View style={styles.photoRow}>
+          <IconTile icon="camera" tone="gold" />
+          <View style={styles.flexOne}>
+            <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>รูปโปรไฟล์ถ่ายสด</Text>
+            <Text style={[typography.caption, { color: colors.textMuted }]}>
+              รูปจริงจากกล้องที่ไรเดอร์และร้านเห็นตอนส่งของ (มีลายน้ำกันรูปหลุด)
+            </Text>
+          </View>
+          <Icon name="caret-right" size={16} color={colors.textFaint} weight="bold" />
+        </View>
+      </Card3D>
+
       {/* ---------- ข้อมูลส่วนตัว ---------- */}
       <GroupLabel title="ข้อมูลส่วนตัว" />
       <Card3D padding={spacing.lg}>
@@ -346,6 +368,14 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: spacing.xxl,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  flexOne: {
+    flex: 1,
   },
   referralCard: {
     flexDirection: 'row',

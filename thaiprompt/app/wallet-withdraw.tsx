@@ -63,6 +63,7 @@ import {
 } from '@/components/ui';
 import { IconTile, InfoRow, MoneyInput, MoneyText, NavyCard, type TileTone } from '@/components/wallet/WalletKit';
 import { useTheme, spacing, radii, typography, type Tone } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 const BANKS = ['กสิกรไทย', 'ไทยพาณิชย์', 'กรุงเทพ', 'กรุงไทย', 'กรุงศรีอยุธยา', 'ทหารไทยธนชาต', 'ออมสิน', 'ธ.ก.ส.'];
 
@@ -341,6 +342,8 @@ const AddAccountCard = ({ onDone, onCancel }: { onDone: () => void; onCancel?: (
 // =====================================================
 
 export default function WalletWithdrawScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('wallet-withdraw');
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 

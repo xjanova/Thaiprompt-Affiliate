@@ -66,9 +66,36 @@ import {
   StickyBar,
   type PromptPayState,
 } from '@/components/shop';
+import {
+  EscrowNotice,
+  RiderChoiceBlock,
+  RiderFeeLines,
+  RiderRouteBlock,
+  type RiderQuoteView,
+} from '@/components/checkout/RiderDeliveryPanel';
+import { getFavoriteRiders, DEFAULT_LOCK_MIN_HEARTS } from '@/services/api/riderSocialApi';
+import type { PersonCard } from '@/services/api/handoverApi';
+import type { CartRiderQuote } from '@/services/api/shopApi';
+import { usePreferredRiderStore } from '@/stores/preferredRiderStore';
 import { useTheme, spacing, typography } from '@/theme';
 
 type Step = 'form' | 'payment' | 'done';
+
+/** แปลงค่าส่งไรเดอร์ของร้าน → รูปแบบที่ชิ้นส่วนหน้าชำระเงินใช้ */
+const toRiderView = (r: CartRiderQuote): RiderQuoteView => ({
+  distance_km: r.distance_km,
+  estimated_minutes: r.estimated_minutes,
+  distance_source: r.distance_source,
+  route_polyline: r.route_polyline,
+  buyer_fee: r.fee,
+  fee_full: r.fee_full,
+  rider_earnings: r.rider_earnings,
+  shop_bonus: r.shop_bonus,
+  shop_subsidy: r.shop_subsidy,
+  rider_total: r.rider_total,
+  surcharge: r.surcharge,
+  free_delivery: r.free_delivery,
+});
 
 const POLL_INTERVAL_MS = 4000;
 const POLL_MAX_MS = 20 * 60 * 1000;
@@ -137,6 +164,14 @@ export default function CheckoutScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+
+  // ---------- ไรเดอร์คนโปรด (ล็อกเรียก) ----------
+  const [lockable, setLockable] = useState<PersonCard[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
+  const [lockMinHearts, setLockMinHearts] = useState(DEFAULT_LOCK_MIN_HEARTS);
+  const [preferredRiderId, setPreferredRiderId] = useState<number | null>(null);
+  const favoritesLoadedRef = useRef(false);
 
   // ---------- ข้อมูลฟอร์ม ----------
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -315,6 +350,53 @@ export default function CheckoutScreen() {
   }, [payment, promptpayEnabled]);
 
   // =====================================================
+  // ไรเดอร์คนโปรด: โหลดเมื่อเลือกส่งด้วยไรเดอร์ (ครั้งแรก + กลับมาจากหน้าไรเดอร์ใกล้ฉัน)
+  // =====================================================
+
+  const loadFavorites = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setFavoritesLoading(true);
+    const res = await getFavoriteRiders();
+    if (!mountedRef.current) return;
+    setFavoritesLoading(false);
+    favoritesLoadedRef.current = true;
+    if (!res.success) return; // โหลดไม่ได้ = จับคู่อัตโนมัติอย่างเดียว (ไม่ขวางการสั่ง)
+    setLockMinHearts(res.data.lock_min_hearts);
+    const list = res.data.riders.filter((r) => r.can_lock);
+    setLockable(list);
+    // ที่เลือกไว้จากหน้า "ไรเดอร์ใกล้ฉัน" → เลือกให้เลย (ถ้ายังล็อกได้)
+    const stored = usePreferredRiderStore.getState().validFor(userId);
+    setPreferredRiderId((prev) => {
+      if (prev && list.some((r) => r.id === prev)) return prev;
+      if (stored && list.some((r) => r.id === stored.rider.id)) return stored.rider.id;
+      return null;
+    });
+  }, [isAuthenticated, userId]);
+
+  useEffect(() => {
+    if (delivery !== 'rider' || favoritesLoadedRef.current) return;
+    loadFavorites();
+  }, [delivery, loadFavorites]);
+
+  // กลับจากหน้าไรเดอร์ใกล้ฉัน (กดล็อกเรียกคนใหม่) → อัปเดตตัวเลือก
+  const preferredChoice = usePreferredRiderStore((s) => s.choice);
+  useEffect(() => {
+    if (!preferredChoice || !userId || preferredChoice.userId !== userId) return;
+    if (lockable.some((r) => r.id === preferredChoice.rider.id)) {
+      setPreferredRiderId(preferredChoice.rider.id);
+    } else if (preferredChoice.rider.can_lock && favoritesLoadedRef.current) {
+      // ไม่อยู่ในรายการคนโปรด (เช่น โหลดรายการไม่ได้) แต่ server บอกว่าล็อกได้ → เพิ่มเป็นตัวเลือก
+      setLockable((prev) => [preferredChoice.rider, ...prev.filter((r) => r.id !== preferredChoice.rider.id)]);
+      setPreferredRiderId(preferredChoice.rider.id);
+    }
+  }, [preferredChoice, userId, lockable]);
+
+  const chooseRider = (riderId: number | null) => {
+    setPreferredRiderId(riderId);
+    if (riderId === null) usePreferredRiderStore.getState().clear();
+  };
+
+  // =====================================================
   // คูปอง
   // =====================================================
 
@@ -359,12 +441,14 @@ export default function CheckoutScreen() {
   const walletShort = payment === 'wallet' && walletBalance !== null && walletBalance < grandTotal;
 
   /** ชุดข้อมูลที่กดสั่ง — เปลี่ยน = คีย์ใหม่ (ไม่เปลี่ยน = ใช้คีย์เดิมตอนลองใหม่ กันสั่งซ้ำ) */
+  const lockRiderId = delivery === 'rider' && preferredRiderId ? preferredRiderId : null;
   const signature = JSON.stringify({
     a: selectedAddressId,
     d: delivery,
     p: payment,
     c: appliedCoupon,
     n: note.trim(),
+    r: lockRiderId,
     i: (quote?.items ?? []).map((i) => [i.id, i.quantity]),
   });
 
@@ -410,8 +494,28 @@ export default function CheckoutScreen() {
       case 'OUT_OF_STOCK':
         Alert.alert('ตะกร้ามีการเปลี่ยนแปลง', res.message, [{ text: 'ไปที่ตะกร้า', onPress: () => router.replace('/cart') }]);
         return;
-      case 'RIDER_NOT_AVAILABLE':
+      case 'RIDER_LOCK_NOT_ALLOWED':
+        // สิทธิ์ล็อกเรียกเปลี่ยนไปแล้ว → กลับไปจับคู่อัตโนมัติ ให้ผู้ซื้อกดยืนยันใหม่เอง
+        chooseRider(null);
+        favoritesLoadedRef.current = false;
+        loadFavorites();
+        Alert.alert(
+          'ล็อกเรียกไรเดอร์คนนี้ไม่ได้',
+          `${res.message}\nเปลี่ยนเป็นจับคู่อัตโนมัติให้แล้ว กดยืนยันสั่งซื้ออีกครั้งได้เลย`
+        );
+        return;
+      case 'PROFILE_PHOTO_REQUIRED':
+        Alert.alert('ถ่ายรูปโปรไฟล์ก่อนนะ', 'ก่อนสั่งซื้อครั้งแรก ทุกบัญชีต้องมีรูปโปรไฟล์ถ่ายสดจากกล้อง ไรเดอร์จะได้รู้ว่าส่งของถึงมือใคร', [
+          { text: 'ไว้ก่อน', style: 'cancel' },
+          { text: 'ถ่ายรูปเลย', onPress: () => router.push('/profile-photo?from=checkout' as never) },
+        ]);
+        return;
       case 'COD_NOT_AVAILABLE':
+        if (payment === 'cod') setPayment('wallet');
+        Alert.alert('ออเดอร์นี้เก็บเงินปลายทางไม่ได้', res.message || 'ส่งด้วยไรเดอร์ต้องชำระก่อน เงินพักไว้ปลอดภัยจนคุณได้รับของ');
+        fetchQuote();
+        return;
+      case 'RIDER_NOT_AVAILABLE':
       case 'PAYMENT_METHOD_UNAVAILABLE':
         Alert.alert('เปลี่ยนตัวเลือกก่อนนะ', res.message);
         fetchQuote();
@@ -446,6 +550,7 @@ export default function CheckoutScreen() {
         ...(selectedAddressId ? { address_id: selectedAddressId } : {}),
         ...(appliedCoupon ? { coupon_code: appliedCoupon } : {}),
         ...(note.trim() ? { note: note.trim() } : {}),
+        ...(lockRiderId ? { preferred_rider_id: lockRiderId } : {}),
       },
       idemRef.current.key
     );
@@ -463,6 +568,8 @@ export default function CheckoutScreen() {
     resultHaptic('success');
     useCartStore.getState().reset();
     useCartStore.getState().refresh();
+    // ล็อกเรียกใช้ครั้งเดียวต่อการสั่ง
+    if (lockRiderId) usePreferredRiderStore.getState().clear();
 
     const data = res.data;
     setResult(data);
@@ -698,7 +805,9 @@ export default function CheckoutScreen() {
     const message =
       status === 'cod'
         ? 'เตรียมเงินสดไว้จ่ายไรเดอร์ตอนรับของนะ ร้านจะเริ่มเตรียมสินค้าเร็วๆ นี้'
-        : 'ร้านได้รับคำสั่งซื้อแล้ว ติดตามสถานะได้ที่หน้าคำสั่งซื้อ';
+        : delivery === 'rider'
+          ? 'ร้านได้รับคำสั่งซื้อแล้ว เงินของคุณพักไว้ที่ระบบ เมื่อไรเดอร์มาถึง เปิดหน้าคำสั่งซื้อแล้วสแกน QR ใส่กันเพื่อรับของ'
+          : 'ร้านได้รับคำสั่งซื้อแล้ว ติดตามสถานะได้ที่หน้าคำสั่งซื้อ';
     return (
       <Screen title="สั่งซื้อสำเร็จ" onBack={goOrders}>
         <Card3D gradientBorder shadow="lg" padding={spacing.xl} style={styles.block}>
@@ -967,8 +1076,41 @@ export default function CheckoutScreen() {
           disabled={!riderInfo.available}
           disabledReason={riderInfo.reason || 'ร้านนี้ยังไม่เปิดส่งด้วยไรเดอร์'}
           onPress={() => setDelivery('rider')}
-          right={riderInfo.available ? <PriceText amount={riderInfo.fee} size="sm" tone="strong" /> : null}
+          right={
+            riderInfo.available ? (
+              riderInfo.fee > 0 ? (
+                <PriceText amount={riderInfo.fee} size="sm" tone="strong" />
+              ) : (
+                <Text style={[typography.caption, styles.free, { color: colors.success }]}>ส่งฟรี</Text>
+              )
+            ) : null
+          }
         />
+
+        {/* ---------- ส่งด้วยไรเดอร์: เส้นทางจริง + เลือกไรเดอร์ ---------- */}
+        {delivery === 'rider' && riderInfo.available && (
+          <Card3D padding={spacing.lg} radius={20} style={styles.block}>
+            {quote.stores
+              .filter((s) => s.rider.available)
+              .map((s, index) => (
+                <View key={s.key} style={index > 0 ? [styles.riderStoreSep, { borderTopColor: colors.divider }] : undefined}>
+                  <RiderRouteBlock
+                    quote={toRiderView(s.rider)}
+                    storeName={s.store_name}
+                    title={quote.stores.length > 1 ? `ไรเดอร์ส่งจาก ${s.store_name}` : 'ส่งด้วยไรเดอร์'}
+                  />
+                </View>
+              ))}
+            <RiderChoiceBlock
+              lockable={lockable}
+              selectedId={lockRiderId}
+              onSelect={chooseRider}
+              loading={favoritesLoading}
+              lockMinHearts={lockMinHearts}
+              disabled={submitting}
+            />
+          </Card3D>
+        )}
 
         {/* ---------- 3 วิธีชำระเงิน ---------- */}
         <SectionHeader title="วิธีชำระเงิน" icon={<StepBadge n={3} />} style={styles.section} />
@@ -1068,16 +1210,20 @@ export default function CheckoutScreen() {
                 </View>
               ))}
               <View style={[styles.storeTotals, { borderTopColor: colors.divider }]}>
-                <View style={styles.rowBetween}>
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>
-                    ค่าส่ง ({store.delivery_method === 'rider' ? 'ไรเดอร์' : 'พัสดุ'})
-                  </Text>
-                  {store.shipping_fee > 0 ? (
-                    <PriceText amount={store.shipping_fee} size="xs" tone="default" />
-                  ) : (
-                    <Text style={[typography.caption, { color: colors.success }]}>ฟรี</Text>
-                  )}
-                </View>
+                {store.delivery_method === 'rider' && store.rider.available ? (
+                  <RiderFeeLines quote={toRiderView(store.rider)} compact />
+                ) : (
+                  <View style={styles.rowBetween}>
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>
+                      ค่าส่ง ({store.delivery_method === 'rider' ? 'ไรเดอร์' : 'พัสดุ'})
+                    </Text>
+                    {store.shipping_fee > 0 ? (
+                      <PriceText amount={store.shipping_fee} size="xs" tone="default" />
+                    ) : (
+                      <Text style={[typography.caption, { color: colors.success }]}>ฟรี</Text>
+                    )}
+                  </View>
+                )}
                 {store.discount > 0 && (
                   <View style={styles.rowBetween}>
                     <Text style={[typography.caption, { color: colors.textMuted }]}>ส่วนลด</Text>
@@ -1140,6 +1286,8 @@ export default function CheckoutScreen() {
             <PriceText amount={summary.grand_total} decimals={2} size="lg" tone="gold" />
           </View>
         </Card3D>
+
+        {delivery === 'rider' && payment !== 'cod' && <EscrowNotice style={styles.block} />}
       </Screen>
 
       {/* ---------- แถบยืนยัน ---------- */}
@@ -1381,5 +1529,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  riderStoreSep: {
+    borderTopWidth: 1,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
   },
 });

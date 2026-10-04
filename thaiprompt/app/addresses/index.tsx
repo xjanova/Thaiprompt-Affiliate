@@ -17,10 +17,13 @@ import { deleteAddress, getAddresses, setDefaultAddress, type Address } from '@/
 import { Button3D, Card3D, EmptyState, Pill, Screen, resultHaptic } from '@/components/ui';
 import { IconTile, MetaItem } from '@/components/shop';
 import { useTheme, spacing, typography } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 const MAX_ADDRESSES = 20;
 
 export default function AddressesScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('addresses');
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 

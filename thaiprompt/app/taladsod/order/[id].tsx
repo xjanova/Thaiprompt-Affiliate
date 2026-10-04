@@ -55,6 +55,8 @@ import {
   reviewFmOrder,
   type FmOrder,
 } from '@/services/api/taladsodApi';
+import { HandoverEntryCard } from '@/components/handover/HandoverEntryCard';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const ORDER_POLL_MS = 15000;
@@ -71,6 +73,8 @@ export default function TaladsodOrderScreen() {
   const ink = useInk();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const mountedRef = useMountedRef();
+  // ที่อยู่/เบอร์โทร/QR รับของ — กันแคปหน้าจอ
+  useSensitiveScreen('fm-order');
 
   const [order, setOrder] = useState<FmOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -288,6 +292,18 @@ export default function TaladsodOrderScreen() {
             <Button3D title="โทรหาร้าน" icon="phone" size="sm" variant="secondary" onPress={() => callPhone(seller.phone)} />
           )}
         </OrderStatusHero>
+
+        {/* ---------- รับของ: สแกน QR ใส่กันกับไรเดอร์ / ให้หัวใจหลังจบงาน ---------- */}
+        {isRider && !!order.rider_job && (
+          <HandoverEntryCard
+            source="fresh-market"
+            orderId={order.id}
+            orderNumber={order.order_number}
+            riderJobStatus={order.rider_job.status || null}
+            orderCompleted={order.order_status === 'completed'}
+            style={styles.handover}
+          />
+        )}
 
         {/* ---------- ไรเดอร์ ---------- */}
         {showTracker && (
@@ -554,6 +570,9 @@ const styles = StyleSheet.create({
   },
   block: {
     marginTop: spacing.md,
+  },
+  handover: {
+    marginTop: spacing.lg,
   },
   section: {
     marginTop: spacing.xxl,

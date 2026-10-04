@@ -17,6 +17,15 @@
  *       type แยกจาก order_message เพราะแอปรุ่นเก่าพา order_message ไปหน้าผู้ซื้อเสมอ (ร้านเปิดแล้ว 404)
  *       — แอปรุ่นเก่าไม่รู้จัก type นี้ จึงตกไปหน้าแจ้งเตือนแทน
  *   - ticket                                  → /support
+ *
+ * ไรเดอร์รอบ 2 (2026-10-04) — ผู้รับบอกด้วย data.role (หรือ recipient / audience) = buyer | rider | seller
+ *   - rider_job_offer {job_id, locked:true}   → /rider-job-detail?id= (ไรเดอร์ที่ผู้ซื้อล็อกเรียก ได้สิทธิ์รับก่อน)
+ *   - delivery_update + role=seller           → หน้าออเดอร์ของร้าน (/merchant/order/{id} · ตลาดสด /merchant/taladsod/orders?focus=)
+ *       แก้บั๊ก: เดิมพาร้านไปหน้าผู้ซื้อ → "ไม่พบคำสั่งซื้อนี้" · payload ไม่มี role → หน้าผู้ซื้อ ซึ่งพาร้านต่อไปหน้าร้านเอง
+ *         (ร้านค้า: GET /orders/{id} 404 แล้วเปิดฝั่งร้านได้ · ตลาดสด: viewer_role = seller)
+ *   - handover_arrived / handover_auto_release_scheduled {source, order_id} → หน้ารับของ /handover/{source}/{id}
+ *   - handover_completed / handover_resolved  → ผู้ซื้อ: หน้าออเดอร์ · ไรเดอร์: หน้างาน · ร้าน: หน้าออเดอร์ของร้าน
+ *   - handover_disputed (แอดมิน)              → ไม่มีหน้าในแอป (ใช้ data.url ถ้าปลอดภัย)
  * นอกนั้นใช้ data.url เฉพาะ path ภายในที่อยู่ใน allowlist (PLAY-23) ไม่งั้นไปหน้าแจ้งเตือน
  */
 
@@ -29,6 +38,33 @@ const toId = (value: unknown): number | null => {
   return Number.isInteger(n) && n > 0 ? n : null;
 };
 
+type OrderSource = 'shop' | 'fresh-market';
+
+/** แหล่งของออเดอร์จาก payload (source ใหม่ หรือ source_type ชื่อคลาสแบบเดิม) */
+const sourceOf = (data: PushData): OrderSource | null => {
+  const s = typeof data.source === 'string' ? data.source : '';
+  if (s === 'shop' || s === 'fresh-market') return s;
+  if (s === 'fresh_market') return 'fresh-market';
+  const t = typeof data.source_type === 'string' ? data.source_type : '';
+  if (t === 'Order') return 'shop';
+  if (t === 'FreshMarketOrder') return 'fresh-market';
+  return null;
+};
+
+/** หน้าออเดอร์ตามบทบาทของผู้รับ */
+const orderPathFor = (source: OrderSource | null, orderId: number | null, recipient: string): string | null => {
+  if (recipient === 'seller') {
+    if (source === 'fresh-market') return orderId ? `/merchant/taladsod/orders?focus=${orderId}` : '/merchant/taladsod/orders';
+    return orderId ? `/merchant/order/${orderId}` : '/merchant/orders';
+  }
+  if (source === 'fresh-market') return orderId ? `/taladsod/order/${orderId}` : '/taladsod/orders';
+  if (source === 'shop') return orderId ? `/order/${orderId}` : '/orders';
+  return orderId ? `/order/${orderId}` : '/orders';
+};
+
+/** เปิด/ปิดแบบ boolean ที่มากับ push (Expo ส่งเป็น string ได้) */
+const truthy = (value: unknown): boolean => value === true || value === 1 || value === '1' || value === 'true';
+
 /**
  * @returns path ภายในแอป (ผ่าน allowlist แล้ว)
  */
@@ -39,12 +75,18 @@ export const routeForNotification = (data: PushData | null | undefined): string 
   const role = typeof data.role === 'string' ? data.role : '';
   const orderId = toId(data.order_id ?? data.orderId);
   const jobId = toId(data.job_id ?? data.jobId);
+  /** ผู้รับ push นี้ (buyer | rider | seller | admin) — payload ใหม่อาจใช้ชื่อ key ต่างกัน */
+  const recipient =
+    role ||
+    (typeof data.recipient === 'string' ? data.recipient : '') ||
+    (typeof data.audience === 'string' ? data.audience : '');
 
   let path: string | null = null;
 
   switch (type) {
     case 'rider_job_offer':
-      path = '/rider-jobs';
+      // ผู้ซื้อล็อกเรียกไรเดอร์คนนี้ → เปิดหน้างานนั้นเลย (มีสิทธิ์รับก่อนช่วงสั้นๆ)
+      path = truthy(data.locked) && jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs';
       break;
     case 'rider_job_update':
       // pickup_moved = ร้านเคลื่อนที่ย้ายจุดรับของ → หน้างานแสดงป้ายเตือนให้เห็นชัด
@@ -60,7 +102,12 @@ export const routeForNotification = (data: PushData | null | undefined): string 
     case 'delivery_update': {
       const sourceType = typeof data.source_type === 'string' ? data.source_type : '';
       const sourceId = toId(data.source_id);
-      if (sourceType === 'Order' && sourceId) {
+      if (recipient === 'seller') {
+        // ร้านได้ push สถานะไรเดอร์ → หน้าออเดอร์ของร้าน (ไม่ใช่หน้าผู้ซื้อที่เปิดไม่ได้)
+        path = orderPathFor(sourceOf(data), sourceId ?? orderId, 'seller');
+      } else if (recipient === 'rider') {
+        path = jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs';
+      } else if (sourceType === 'Order' && sourceId) {
         path = `/order/${sourceId}`;
       } else if (sourceType === 'FreshMarketOrder') {
         path = sourceId ? `/taladsod/order/${sourceId}` : '/taladsod/orders';
@@ -122,6 +169,40 @@ export const routeForNotification = (data: PushData | null | undefined): string 
       break;
     case 'ticket':
       path = '/support';
+      break;
+    case 'handover_arrived':
+    case 'handover_auto_release_scheduled': {
+      // ไรเดอร์ถึงหน้าบ้าน / วางของไว้ให้แล้ว (มีเวลาแจ้งปัญหา 24 ชม.) → หน้ารับของของผู้ซื้อ
+      const source = sourceOf(data);
+      if (recipient === 'seller') {
+        path = orderPathFor(source, orderId, 'seller');
+      } else if (recipient === 'rider') {
+        path = jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs';
+      } else if (source && orderId) {
+        path = `/handover/${source}/${orderId}`;
+      } else {
+        path = orderId ? `/order/${orderId}` : '/orders';
+      }
+      break;
+    }
+    case 'handover_completed':
+    case 'handover_resolved': {
+      const source = sourceOf(data);
+      if (recipient === 'rider' || (!recipient && jobId && !orderId)) {
+        path = jobId ? `/rider-job-detail?id=${jobId}` : '/rider-jobs';
+      } else if (recipient === 'seller') {
+        path = orderPathFor(source, orderId, 'seller');
+      } else if (recipient === 'buyer' || recipient === '') {
+        path = orderPathFor(source, orderId, 'buyer');
+      } else {
+        // แอดมิน/บทบาทอื่น → ไม่พาไปหน้าของผู้ซื้อ
+        path = null;
+      }
+      break;
+    }
+    case 'handover_disputed':
+      // แจ้งแอดมิน — ไม่มีหน้าตัดสินในแอป (ใช้ data.url ถ้าเป็น path ที่อนุญาต)
+      path = null;
       break;
     default:
       path = null;

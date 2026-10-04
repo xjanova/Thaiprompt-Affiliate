@@ -2,7 +2,7 @@
   "expo": {
     "name": "Thai Prompt APP",
     "slug": "thaiprompt",
-    "version": "3.385.0",
+    "version": "3.386.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "thaiprompt",
@@ -13,9 +13,9 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thaiprompt.affiliate",
-      "buildNumber": "42",
+      "buildNumber": "43",
       "infoPlist": {
-        "NSCameraUsageDescription": "แอปใช้กล้องเพื่อถ่ายรูปเอกสารยืนยันตัวตน (KYC) รูปโปรไฟล์ และสแกน QR Code",
+        "NSCameraUsageDescription": "แอปใช้กล้องเพื่อถ่ายรูปโปรไฟล์ ถ่ายรูปเอกสารยืนยันตัวตน (KYC) และสแกน QR Code ตอนรับ-ส่งของ",
         "NSPhotoLibraryUsageDescription": "แอปเข้าถึงรูปภาพที่คุณเลือกเพื่ออัปโหลดเอกสารและรูปโปรไฟล์",
         "NSLocationWhenInUseUsageDescription": "ใช้ตำแหน่งขณะเปิดแอปเมื่อคุณเลือกเอง: หาร้านตลาดสดที่เปิดอยู่ใกล้คุณ ปักหมุดจุดส่งของ แชร์ตำแหน่งให้ไรเดอร์ของออเดอร์ สำหรับร้านรถเข็น/ตลาดนัดใช้ปักหมุดจุดขายวันนี้และแชร์ตำแหน่งร้านให้ลูกค้าเห็นระหว่างร้านเปิด และสำหรับไรเดอร์ใช้แสดงงานใกล้คุณและนำทางรับ-ส่งของ ไม่อนุญาตก็ยังเลือกจังหวัดหรือที่อยู่เองได้",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "สำหรับไรเดอร์เท่านั้น: ใช้ตำแหน่งขณะแอปทำงานเบื้องหลังเฉพาะช่วงที่คุณกำลังส่งงานที่รับไว้ เพื่อให้ลูกค้าติดตามสถานะการจัดส่งได้ และหยุดติดตามเมื่อจบงานหรือออฟไลน์",
@@ -30,7 +30,7 @@
         "backgroundColor": "#0C1A33"
       },
       "package": "com.thaiprompt.affiliate",
-      "versionCode": 42,
+      "versionCode": 43,
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.ACCESS_NETWORK_STATE",
@@ -81,7 +81,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "แอปใช้กล้องเพื่อถ่ายรูปเอกสารยืนยันตัวตน (KYC) และสแกน QR Code",
+          "cameraPermission": "แอปใช้กล้องเพื่อถ่ายรูปโปรไฟล์ ถ่ายรูปเอกสารยืนยันตัวตน (KYC) และสแกน QR Code ตอนรับ-ส่งของ",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }

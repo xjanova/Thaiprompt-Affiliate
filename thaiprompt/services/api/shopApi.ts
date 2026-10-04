@@ -222,8 +222,35 @@ export interface CartStoreGroup {
   parcel_fee: number;
   discount: number;
   total: number;
-  rider: { available: boolean; reason: string | null; fee: number | null; distance_km: number | null; estimated_minutes: number | null };
+  rider: CartRiderQuote;
   cod: { available: boolean; reason: string | null; limit: number | null };
+}
+
+/** ค่าส่งไรเดอร์ของร้านหนึ่ง (fee = ที่ผู้ซื้อจ่ายจริง) — key ใหม่ของไรเดอร์รอบ 2 เป็นค่าว่างได้ (server เก่า) */
+export interface CartRiderQuote {
+  available: boolean;
+  reason: string | null;
+  /** ค่าส่งที่ผู้ซื้อจ่าย (= buyer_fee) */
+  fee: number | null;
+  distance_km: number | null;
+  estimated_minutes: number | null;
+  /** ค่าส่งเต็ม (ก่อนร้านช่วยจ่าย) */
+  fee_full: number | null;
+  /** วิธีคิดระยะ: valhalla | google = ตามถนนจริง · haversine = เส้นตรง × ตัวคูณ */
+  distance_source: string | null;
+  /** เส้นทาง (encoded polyline ความละเอียด 6) */
+  route_polyline: string | null;
+  rider_earnings: number | null;
+  /** โบนัสที่ร้านให้ไรเดอร์เพิ่ม (หักจากรายได้ร้าน) */
+  shop_bonus: number | null;
+  /** ส่วนที่ร้านช่วยจ่ายค่าส่งแทนผู้ซื้อ */
+  shop_subsidy: number | null;
+  /** ไรเดอร์ได้รับทั้งหมด = rider_earnings + shop_bonus */
+  rider_total: number | null;
+  /** ค่าบวกช่วงดึก/ช่วงเร่งด่วน */
+  surcharge: number | null;
+  /** ร้านออกค่าส่งให้ทั้งหมด (ผู้ซื้อจ่าย 0) */
+  free_delivery: boolean;
 }
 
 export interface Cart {
@@ -292,6 +319,8 @@ export interface CheckoutBody {
   delivery_method?: DeliveryMethod;
   coupon_code?: string;
   note?: string;
+  /** ล็อกเรียกไรเดอร์คนโปรด (เฉพาะส่งด้วยไรเดอร์) — ไม่มีสิทธิ์ = 422 RIDER_LOCK_NOT_ALLOWED */
+  preferred_rider_id?: number;
 }
 
 export interface PaymentInstruction {

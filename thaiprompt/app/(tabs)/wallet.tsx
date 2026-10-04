@@ -45,6 +45,7 @@ import {
 } from '@/components/ui';
 import { useTheme, spacing, typography, shadowStyle, type Tone } from '@/theme';
 import { KANOK_CREST_CLEARANCE } from '@/components/ui/KanokTabBar';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 const KANOK = require('@/assets/images/brand/kanok-gold.webp');
 
@@ -175,6 +176,8 @@ const TransactionRow = ({ transaction, last }: { transaction: Transaction; last:
 // =====================================================
 
 export default function WalletScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('wallet');
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   // แท็บค้าง mount อยู่หลังสลับแท็บ → StatusBar ของหน้านี้ต้องมีเฉพาะตอนเห็นอยู่ ไม่งั้นทับสีแถบบนของหน้าแรก

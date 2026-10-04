@@ -27,6 +27,7 @@ import { routeForNotification } from '@/utils/notificationRouting';
 import { isRestrictedNotification } from '@/utils/storePolicy';
 import { router } from 'expo-router';
 import { FONT_ASSETS, setFontsEnabled, useTheme } from '@/theme';
+import { ProfilePhotoGate } from '@/components/people/ProfilePhotoGate';
 
 // ซ่อน native splash screen ทันทีเพื่อให้เห็น custom loading screen
 SplashScreen.hideAsync().catch(() => {});
@@ -482,7 +483,12 @@ export default function RootLayout() {
 
         {/* WebView - เปิดลิงก์เว็บของเรา (allowlist) */}
         <Stack.Screen name="webview" options={{ headerShown: false }} />
+
+        {/* ไรเดอร์รอบ 2: รูปโปรไฟล์ถ่ายสด (บังคับหลังล็อกอิน) — ห้ามปัดย้อนกลับในโหมดบังคับ */}
+        <Stack.Screen name="profile-photo" options={{ headerShown: false, gestureEnabled: false }} />
       </Stack>
+      {/* ยังไม่มีรูปโปรไฟล์ → พาไปถ่ายรูป (ไม่บล็อกหน้าเข้าสู่ระบบ/ข้อตกลง) */}
+      <ProfilePhotoGate />
     </View>
   );
 }

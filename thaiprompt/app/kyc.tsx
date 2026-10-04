@@ -32,6 +32,7 @@ import {
 } from '@/components/ui';
 import { IconTile } from '@/components/profile';
 import { useTheme, DARK_THEME, radii, spacing, typography } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 type KycStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
 type ImageType = 'id_card' | 'selfie';
@@ -188,6 +189,8 @@ const UploadCard: React.FC<{
 // =====================================================
 
 export default function KycScreen() {
+  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('kyc');
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
