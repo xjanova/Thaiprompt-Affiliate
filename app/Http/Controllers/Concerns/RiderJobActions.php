@@ -201,6 +201,10 @@ trait RiderJobActions
             return false;
         }
 
+        if ($job->lockedAwayFrom($rider)) { // ไรเดอร์รอบ 2 (social): ผู้ซื้อล็อกเรียกไรเดอร์คนอื่นอยู่
+            return false;
+        }
+
         return true;
     }
 

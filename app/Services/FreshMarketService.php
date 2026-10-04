@@ -687,6 +687,8 @@ class FreshMarketService
             $distance = $quote['distance_km'];
         }
 
+        $data['preferred_rider_id'] = $this->preferredRiderFor($buyer, $data, $deliveryType); // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์
+
         $order = DB::transaction(function () use (
             $buyer, $seller, $lines, $deliveryType, $paymentMethod,
             $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data
@@ -844,6 +846,7 @@ class FreshMarketService
                     'lines' => count($resolved),
                 ],
             ]);
+            $order->preferred_rider_id = $data['preferred_rider_id']; // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์ (ตรวจสิทธิ์แล้ว)
             $order->save();
 
             // รายการสินค้า (snapshot ชื่อ/ตัวเลือก/ราคา ณ ตอนสั่ง)
@@ -912,6 +915,22 @@ class FreshMarketService
         $this->notifier->sellerNewOrder($order);
 
         return $order->fresh(['listing', 'seller', 'items']) ?? $order;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (social): ไรเดอร์ที่ผู้ซื้อล็อกเรียก (null = ไม่ได้ขอ)
+     * ต้องส่งด้วยไรเดอร์ + ให้หัวใจไรเดอร์คนนั้นครบ rider.lock_min_hearts → ไม่ผ่าน 422 RIDER_LOCK_NOT_ALLOWED
+     *
+     * @throws FreshMarketException
+     */
+    protected function preferredRiderFor(User $buyer, array $data, string $deliveryType): ?int
+    {
+        try {
+            return app(\App\Services\Rider\RiderSocialService::class)
+                ->resolveCheckoutLock($buyer, $data['preferred_rider_id'] ?? null, $deliveryType === 'rider');
+        } catch (\App\Exceptions\RiderSocialException $e) {
+            throw FreshMarketException::make($e->errorCode, $e->getMessage(), $e->httpStatus);
+        }
     }
 
     /**

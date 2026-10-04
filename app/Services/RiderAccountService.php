@@ -444,6 +444,8 @@ class RiderAccountService
             'preferred_min_fee' => ['nullable', 'numeric', 'between:0,1000'],
             'preferred_job_types' => ['nullable', 'array'],
             'preferred_job_types.*' => [\Illuminate\Validation\Rule::in(array_keys(self::JOB_TYPE_OPTIONS))],
+            // ไรเดอร์รอบ 2 (social): แสดงบนแผนที่ "ไรเดอร์ใกล้ฉัน" (ตำแหน่งเบลอ) — ไม่ส่ง = ค่าเดิม
+            'show_on_nearby' => ['nullable', 'boolean'],
         ];
     }
 
@@ -494,6 +496,10 @@ class RiderAccountService
             'preferred_min_fee' => isset($data['preferred_min_fee']) && $data['preferred_min_fee'] !== '' ? round((float) $data['preferred_min_fee'], 2) : null,
         ]);
 
+        if (isset($data['show_on_nearby'])) { // ไรเดอร์รอบ 2 (social)
+            $rider->forceFill(['show_on_nearby' => filter_var($data['show_on_nearby'], FILTER_VALIDATE_BOOLEAN)]);
+        }
+
         if ($vehicleChanged && $rider->status === 'approved') {
             // รอแอดมินตรวจเอกสารชุดใหม่ → ปิดรับงานทันที (Rider::onlineBlockReason = DOCUMENTS_REVIEW_PENDING)
             $rider->forceFill(['documents_changed_at' => now(), 'availability' => 'offline']);
@@ -516,6 +522,16 @@ class RiderAccountService
         }
 
         return ['rider' => $rider, 'vehicle_changed' => $vehicleChanged, 'missing' => $missing];
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (social): เปิด/ปิดการแสดงตัวบนแผนที่ "ไรเดอร์ใกล้ฉัน" ของผู้ซื้อ (ตำแหน่งเบลอเสมอ)
+     */
+    public function setShowOnNearby(Rider $rider, bool $show): Rider
+    {
+        $rider->forceFill(['show_on_nearby' => $show])->save();
+
+        return $rider->fresh();
     }
 
     // =====================================================
@@ -645,6 +661,9 @@ class RiderAccountService
             'rider_type' => $rider->rider_type,
             'rating' => round((float) $rider->rating, 2),
             'rating_count' => (int) $rider->rating_count,
+            // ไรเดอร์รอบ 2 (social): หัวใจรวมจากผู้ซื้อ + แสดงบนแผนที่ไรเดอร์ใกล้ฉันหรือไม่
+            'hearts_count' => (int) $rider->hearts_count,
+            'show_on_nearby' => $rider->show_on_nearby === null ? true : (bool) $rider->show_on_nearby,
             'total_jobs' => (int) $rider->total_jobs,
             'completed_jobs' => (int) $rider->completed_jobs,
             'cancelled_jobs' => (int) $rider->cancelled_jobs,
