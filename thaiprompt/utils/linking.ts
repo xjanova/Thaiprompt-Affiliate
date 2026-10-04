@@ -52,6 +52,8 @@ export const INTERNAL_ROUTE_PREFIXES = [
   '/product',
   '/cart',
   '/checkout',
+  // จ่ายคำขอจากเครื่อง POS ของร้าน (push pos_payment_request / สแกน QR TPPOS1.)
+  '/pos-pay',
   '/addresses',
   '/orders',
   '/order',

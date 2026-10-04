@@ -12,7 +12,7 @@
  * หมายเหตุ: ปิดอยู่หลัง FEATURES.P2P_TRANSFER_ENABLED (PLAY-18) — ปรับหน้าตาให้เข้าธีมแบบเบาๆ ไว้ก่อน
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -34,6 +34,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuthStore } from '@/stores/authStore';
 import { getWallet, lookupWalletAddress, transferMoney } from '@/services/api';
 import { formatCurrency } from '@/constants';
+import { isPosQr, parsePosToken, posPayPath } from '@/utils/posQr';
 import { Button3D, Card3D, GlassIconButton, Icon, IconButton, Screen, type IconName } from '@/components/ui';
 import { ActionBar, InfoRow, MoneyInput, MoneyText, NavyCard } from '@/components/wallet/WalletKit';
 import { useTheme, DARK_THEME, radii, shadowStyle, spacing, typography } from '@/theme';
@@ -110,6 +111,7 @@ function WalletTransferContent() {
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const scanHandledRef = useRef(false);
 
   // โหลดข้อมูล wallet
   const loadWallet = useCallback(async () => {
@@ -190,7 +192,20 @@ function WalletTransferContent() {
 
   // จัดการ QR scan
   const handleBarCodeScanned = ({ data }: { data: string }) => {
+    // กล้องยิงซ้ำหลายครั้งก่อน modal ปิด → รับครั้งแรกครั้งเดียว
+    if (scanHandledRef.current) return;
+    scanHandledRef.current = true;
     setShowScanner(false);
+    // QR ชำระเงินจากเครื่อง POS ของร้าน (TPPOS1.{token}) → หน้าจ่ายคำขอจากร้าน ไม่ใช่ wallet address
+    if (isPosQr(data)) {
+      const posToken = parsePosToken(data);
+      if (posToken) {
+        router.push(posPayPath(posToken) as never);
+      } else {
+        Alert.alert('QR ไม่ถูกต้อง', 'QR ชำระเงินของร้านนี้อ่านไม่ได้ ขอให้ร้านสร้าง QR ใหม่นะ');
+      }
+      return;
+    }
     setWalletAddress(data);
     lookupRecipient(data);
   };
@@ -204,6 +219,7 @@ function WalletTransferContent() {
         return;
       }
     }
+    scanHandledRef.current = false;
     setShowScanner(true);
   };
 

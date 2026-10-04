@@ -31,10 +31,12 @@
  *   - handover_arrived / handover_auto_release_scheduled {source, order_id} → หน้ารับของ /handover/{source}/{id}
  *   - handover_completed / handover_resolved  → ผู้ซื้อ: หน้าออเดอร์ · ไรเดอร์: หน้างาน · ร้าน: หน้าออเดอร์ของร้าน
  *   - handover_disputed (แอดมิน)              → ไม่มีหน้าในแอป (ใช้ data.url ถ้าปลอดภัย)
+ *   - pos_payment_request {token}             → /pos-pay?token= (ร้านขอให้จ่ายจากเครื่อง POS · token ผิดรูปแบบ = ไม่พาไป)
  * นอกนั้นใช้ data.url เฉพาะ path ภายในที่อยู่ใน allowlist (PLAY-23) ไม่งั้นไปหน้าแจ้งเตือน
  */
 
 import { isAllowedInternalRoute } from './linking';
+import { parsePosToken, posPayPath } from './posQr';
 
 type PushData = Record<string, unknown>;
 
@@ -287,6 +289,11 @@ export const routeForNotification = (data: PushData | null | undefined): string 
     case 'ticket':
       path = '/support';
       break;
+    case 'pos_payment_request': {
+      const token = parsePosToken(data.token);
+      path = token ? posPayPath(token) : null;
+      break;
+    }
     default:
       path = null;
   }

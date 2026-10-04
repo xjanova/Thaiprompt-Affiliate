@@ -185,6 +185,9 @@ export default function WalletScreen() {
   const { isAuthenticated, user } = useAuthStore();
   // PLAY-18: โอนเงินระหว่างผู้ใช้ (P2P) ปิดไว้จนกว่าจะยื่น Financial features declaration
   const p2pEnabled = isFeatureEnabled('P2P_TRANSFER_ENABLED');
+  // สแกน QR ของร้าน (POS → ส่งด้วยไรเดอร์) จ่ายค่าสินค้า+ค่าส่งจากกระเป๋า — ไม่ใช่ P2P
+  // เปิด P2P อยู่ = ใช้ตัวสแกนหน้าโอนเงินแทน (รองรับ QR ร้านแล้ว) แถวปุ่มลัดจะได้ไม่เกิน 4 ปุ่ม
+  const scanPayEnabled = isFeatureEnabled('SHOPPING_ENABLED') && !p2pEnabled;
 
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -437,6 +440,7 @@ export default function WalletScreen() {
               <QuickAction icon="plus" label="เติมเงิน" primary onPress={handleTopUp} />
               <QuickAction icon="bank" label="ถอนเงิน" onPress={handleWithdraw} />
               {p2pEnabled && <QuickAction icon="paper-plane-tilt" label="โอนเงิน" onPress={handleTransfer} />}
+              {scanPayEnabled && <QuickAction icon="scan" label="สแกนจ่าย" onPress={() => router.push('/pos-pay' as never)} />}
               <QuickAction icon="clock-counter-clockwise" label="ประวัติ" onPress={handleHistory} />
             </View>
           </OnHeaderProvider>
