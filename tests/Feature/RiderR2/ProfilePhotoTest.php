@@ -326,15 +326,23 @@ class ProfilePhotoTest extends TestCase
         $this->assertNotSame($before, $service->viewerCode(42));
     }
 
-    public function test_legacy_avatar_returned_when_no_live_photo(): void
+    public function test_legacy_avatar_returned_only_to_its_owner_when_no_live_photo(): void
     {
         $service = app(ProfilePhotoService::class);
 
         $withLine = User::factory()->create(['line_picture_url' => 'https://profile.line-scdn.net/abc']);
-        $this->assertSame('https://profile.line-scdn.net/abc', $service->urlFor($withLine, null));
+        $other = User::factory()->create();
+
+        // เจ้าของเห็นรูปเดิมของตัวเอง (หน้าโปรไฟล์ / ก่อนถ่ายรูปสด)
+        $this->assertSame('https://profile.line-scdn.net/abc', $service->urlFor($withLine, $withLine));
+
+        // คนอื่น / ไม่รู้ผู้ดู → ไม่ได้รูปเดิม (ไม่มีลายน้ำ + URL ถาวร) จนกว่าจะถ่ายรูปสด (money-review M5)
+        $this->assertNull($service->urlFor($withLine, $other));
+        $this->assertNull($service->urlFor($withLine, null));
 
         $nothing = User::factory()->create(['line_picture_url' => null, 'profile_picture' => null]);
-        $this->assertNull($service->urlFor($nothing, $withLine), 'ไม่มีรูปเลย = null (ไม่ใช่รูปตัวอักษรอัตโนมัติ)');
+        $this->assertNull($service->urlFor($nothing, $nothing), 'ไม่มีรูปเลย = null (ไม่ใช่รูปตัวอักษรอัตโนมัติ)');
+        $this->assertNull($service->urlFor($nothing, $withLine));
 
         $this->get('/api/v1/media/profile-photo/'.$nothing->id.'/ABCDEF/'.str_repeat('a', 12))->assertForbidden();
     }

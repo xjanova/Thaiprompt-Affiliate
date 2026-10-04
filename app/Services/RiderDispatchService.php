@@ -77,7 +77,19 @@ class RiderDispatchService
         $quote = $this->config->quote($pickup['latitude'], $pickup['longitude'], $dropoff['latitude'], $dropoff['longitude']);
 
         if (! $quote['within_service_area']) {
-            throw RiderJobException::outOfServiceArea($quote['distance_km'], $quote['max_distance_km']);
+            // ไรเดอร์รอบ 2 (money-review L4): ออเดอร์ที่จ่ายแล้วผ่านด่านพื้นที่ตอนสั่ง + ล็อกค่าส่งไว้แล้ว
+            // ระยะที่คำนวณใหม่อาจยาวขึ้นเพราะผู้ให้บริการเส้นทางเปลี่ยน (Valhalla ↔ Google ↔ เส้นตรง) → ห้ามปฏิเสธซ้ำ
+            // ไม่งั้นเงินผู้ซื้อค้างอยู่กับออเดอร์ที่เรียกไรเดอร์ไม่ได้ · ค่างานใช้ค่าส่งที่ล็อกตอนสั่ง (applyChargedFee)
+            if (! $this->hasPaidCheckoutSnapshot($source)) {
+                throw RiderJobException::outOfServiceArea($quote['distance_km'], $quote['max_distance_km']);
+            }
+
+            Log::warning('RiderDispatch: paid order beyond service area on re-quote, using checkout snapshot', [
+                'source' => $source->getMorphClass().'#'.$source->getKey(),
+                'distance_km' => $quote['distance_km'],
+                'max_distance_km' => $quote['max_distance_km'],
+                'distance_source' => $quote['distance_source'] ?? null,
+            ]);
         }
 
         $fees = $this->applyChargedFee($source, $quote);
@@ -1089,6 +1101,20 @@ class RiderDispatchService
             'rider_earnings' => $split['rider_earnings'],
             'platform_fee' => $split['platform_fee'],
         ];
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (L4): ออเดอร์จ่ายเงินแล้ว + มีค่าส่งที่ล็อกไว้ตอนสั่ง (ผ่านด่านพื้นที่ให้บริการตอนสั่งมาแล้ว)
+     */
+    private function hasPaidCheckoutSnapshot(Model $source): bool
+    {
+        if ($source->getAttribute('payment_status') !== 'paid' || ! method_exists($source, 'riderDeliveryFeeCharged')) {
+            return false;
+        }
+
+        $charged = $source->riderDeliveryFeeCharged();
+
+        return is_numeric($charged) && (float) $charged > 0;
     }
 
     /**

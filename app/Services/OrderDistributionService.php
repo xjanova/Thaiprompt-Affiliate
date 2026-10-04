@@ -928,7 +928,10 @@ class OrderDistributionService
     }
 
     /**
-     * หักต้นทุนไรเดอร์ได้ไม่เกินรายได้ที่เหลือของร้าน (ส่วนเกินแพลตฟอร์มรับภาระ — log ไว้ให้ตรวจ)
+     * หักต้นทุนไรเดอร์ได้ไม่เกินรายได้ที่เหลือของร้าน (ด่านสำรอง — ส่วนเกินแพลตฟอร์มรับภาระ, log ไว้ให้ตรวจ)
+     *
+     * ปกติไม่ควรเกิด: ตอนสั่งซื้อจำกัดโบนัส/ค่าส่งที่ร้านออกไม่ให้เกินรายได้ร้านแล้ว (DeliveryFeeCalculator::capShopCosts)
+     * แต่อัตรา GP/VAT/ค่าแนะนำอาจเปลี่ยนระหว่างสั่งกับส่งมอบ → หักได้น้อยกว่าค่าที่ล็อกไว้ ไรเดอร์ยังได้ shop_bonus เต็ม
      */
     protected function capRiderDeduction(Order $order, int $sellerId, float $requested, float $available): float
     {
@@ -936,11 +939,14 @@ class OrderDistributionService
         $available = round(max(0.0, $available), 2);
 
         if ($requested > $available) {
-            Log::warning('Order distribution: rider costs exceed seller earnings, platform absorbs the rest', [
+            Log::warning('Order distribution: rider costs exceed seller earnings (less than the checkout snapshot), platform absorbs the rest', [
                 'order_id' => $order->id,
                 'seller_id' => $sellerId,
                 'requested' => $requested,
                 'available' => $available,
+                'shortfall' => round($requested - $available, 2),
+                'rider_bonus_amount' => round((float) $order->rider_bonus_amount, 2),
+                'delivery_subsidy_amount' => round((float) $order->delivery_subsidy_amount, 2),
             ]);
         }
 

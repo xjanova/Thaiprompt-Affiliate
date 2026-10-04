@@ -59,8 +59,14 @@ class FreshMarketService
 
     public const REF_SUBSCRIPTION = 'fresh_market_subscription';
 
+    /** ไรเดอร์รอบ 2: หักคืนต้นทุนไรเดอร์ที่ร้านออก (โบนัส/ส่งฟรี) ตอนยกเลิกออเดอร์ที่ไรเดอร์ส่งสำเร็จแล้ว */
+    public const REF_RIDER_COST_CLAWBACK = 'fresh_market_rider_cost_clawback';
+
     /** source_type ของหนี้ค่า GP (COD ที่หักจาก wallet ร้านไม่ได้) */
     public const DEBT_SOURCE_GP = 'fresh_market_gp';
+
+    /** source_type ของหนี้ต้นทุนไรเดอร์ที่ร้านออก (wallet ร้านไม่พอตอนเรียกคืน) */
+    public const DEBT_SOURCE_RIDER_COST = 'fresh_market_rider_cost';
 
     /** จำนวนบรรทัดสินค้าสูงสุดต่อออเดอร์ */
     public const MAX_ORDER_LINES = 30;
@@ -440,9 +446,14 @@ class FreshMarketService
      * ไรเดอร์รอบ 2: total_fee = ค่าส่งเต็ม · fee/buyer_fee = ที่ผู้ซื้อจ่าย (ร้านเลือกส่งฟรีได้)
      * + ระยะตามถนน (distance_source, route_polyline) + โบนัสที่ร้านเติม + cod (ปิดเมื่อ rider.allow_cod = false)
      *
-     * @return array{available: bool, code: ?string, message: ?string, distance_km: ?float, total_fee: float, estimated_duration_minutes: ?int, max_distance_km: float, fee: float, fee_full: float, buyer_fee: float, distance_source: ?string, route_polyline: ?string, rider_earnings: float, shop_bonus: float, shop_subsidy: float, rider_total: float, surcharge: float, free_delivery: bool, cod: array{available: bool, reason: ?string}}
+     * ส่งยอดสินค้า ($itemsSubtotal) มาด้วย → จำกัดค่าส่งที่ร้านออก + โบนัส ไม่ให้เกินรายได้ร้าน (ยอด − GP) ของออเดอร์นั้น (C1)
+     * ลดค่าส่งที่ออกให้ก่อน (ผู้ซื้อจ่ายส่วนที่เหลือ → subsidy_capped) แล้วลดโบนัส (bonus_capped)
+     * ไม่ส่งยอดมา = ยังไม่จำกัด (ตอนสร้างออเดอร์จำกัดอีกครั้งจากราคาที่ล็อกแล้ว)
+     *
+     * @param  float|null  $itemsSubtotal  ยอดสินค้าของออเดอร์ (ไม่รวมค่าส่ง)
+     * @return array{available: bool, code: ?string, message: ?string, distance_km: ?float, total_fee: float, estimated_duration_minutes: ?int, max_distance_km: float, fee: float, fee_full: float, buyer_fee: float, distance_source: ?string, route_polyline: ?string, rider_earnings: float, shop_bonus: float, shop_subsidy: float, rider_total: float, surcharge: float, free_delivery: bool, subsidy_capped: bool, bonus_capped: bool, cod: array{available: bool, reason: ?string}}
      */
-    public function quoteDelivery(FreshMarketListing $listing, float $lat, float $lng): array
+    public function quoteDelivery(FreshMarketListing $listing, float $lat, float $lng, ?float $itemsSubtotal = null): array
     {
         $maxKm = (float) Setting::get('rider.max_distance_km', 15);
         $listing->loadMissing('seller');
@@ -468,6 +479,8 @@ class FreshMarketService
             'rider_total' => 0.0,
             'surcharge' => 0.0,
             'free_delivery' => DeliveryFeeCalculator::storeFreeDelivery($listing->seller),
+            'subsidy_capped' => false,
+            'bonus_capped' => false,
             'cod' => [
                 'available' => false,
                 'reason' => $allowCod ? 'เก็บเงินปลายทางใช้ได้เมื่อส่งด้วยไรเดอร์' : \App\Services\Shop\ShopCartService::COD_PREPAID_REASON,
@@ -507,6 +520,11 @@ class FreshMarketService
             Log::error('FreshMarket: คำนวณค่าส่งไรเดอร์ล้มเหลว', ['listing_id' => $listing->id, 'error' => $e->getMessage()]);
 
             return array_merge($result, ['code' => 'QUOTE_FAILED', 'message' => 'คำนวณค่าส่งไม่สำเร็จ กรุณาลองใหม่อีกครั้ง']);
+        }
+
+        // เพดานต้นทุนไรเดอร์ของร้าน (C1) — รู้ยอดสินค้าแล้วเท่านั้น
+        if ($itemsSubtotal !== null && ((float) ($quote['shop_subsidy'] ?? 0) > 0 || (float) ($quote['shop_bonus'] ?? 0) > 0)) {
+            $quote = DeliveryFeeCalculator::capShopCosts($quote, $this->expectedSellerNet($listing, $itemsSubtotal));
         }
 
         $distance = round((float) ($quote['distance_km'] ?? 0), 2);
@@ -560,7 +578,37 @@ class FreshMarketService
             'rider_total' => round((float) ($quote['rider_total'] ?? 0), 2),
             'surcharge' => round((float) ($quote['surcharge'] ?? 0), 2),
             'free_delivery' => (bool) ($quote['free_delivery'] ?? false),
+            'subsidy_capped' => (bool) ($quote['subsidy_capped'] ?? false),
+            'bonus_capped' => (bool) ($quote['bonus_capped'] ?? false),
         ];
+    }
+
+    /**
+     * รายได้สุทธิที่ร้านตลาดสดคาดว่าจะได้ = ยอดสินค้า − GP (อัตราปัจจุบัน) — ฐานของเพดานต้นทุนไรเดอร์ (C1)
+     *
+     * สูตรเดียวกับ seller_earning ตอนสร้างออเดอร์ (แคชแบ็ค/ค่าแนะนำจ่ายจาก GP ไม่หักร้าน)
+     */
+    public function expectedSellerNet(FreshMarketListing $listing, float $itemsSubtotal): float
+    {
+        $itemsSubtotal = round(max(0.0, $itemsSubtotal), 2);
+        $gp = round($itemsSubtotal * $this->gpRateFor($listing) / 100, 2);
+
+        return round(max(0.0, $itemsSubtotal - $gp), 2);
+    }
+
+    /**
+     * วิธีชำระเริ่มต้นตามวิธีรับของ (ช่องทางที่ไม่ได้ให้ผู้ซื้อเลือก เช่น LINE ใช้ cod เป็นค่าเริ่มต้น)
+     *
+     * ไรเดอร์รอบ 2 (state-review F5): ส่งด้วยไรเดอร์ต้องจ่ายก่อนเมื่อ rider.allow_cod = false
+     * → ค่าเริ่มต้นเป็น wallet (เงินพักไว้จนส่งมอบ) ไม่ใช่ cod ที่สั่งไม่ผ่านอยู่แล้ว
+     */
+    public function defaultPaymentFor(string $deliveryType, ?string $preferredDefault): ?string
+    {
+        if ($deliveryType === 'rider' && ! app(DeliveryFeeCalculator::class)->boolSetting('rider.allow_cod')) {
+            return 'wallet';
+        }
+
+        return $preferredDefault;
     }
 
     // ╔══════════════════════════════════════════╗
@@ -677,7 +725,11 @@ class FreshMarketService
             throw FreshMarketException::make('INVALID_DELIVERY_TYPE', 'รองรับเฉพาะรับเองหรือส่งด้วยไรเดอร์', 422);
         }
 
-        $paymentMethod = $this->resolvePaymentMethod($data['payment_method'] ?? null, $data['default_payment_method'] ?? null);
+        // ไรเดอร์รอบ 2 (F5): ช่องทางที่ตั้งค่าเริ่มต้นเป็น cod (LINE/เว็บ) + ส่งด้วยไรเดอร์ → ใช้ wallet แทน (ต้องจ่ายก่อน)
+        $paymentMethod = $this->resolvePaymentMethod(
+            $data['payment_method'] ?? null,
+            $this->defaultPaymentFor($deliveryType, $data['default_payment_method'] ?? null)
+        );
 
         $seller = FreshMarketSeller::find($sellerId);
 
@@ -723,7 +775,9 @@ class FreshMarketService
         $deliveryFee = 0.0;
         $distance = null;
         // ไรเดอร์รอบ 2: ล็อกโบนัสไรเดอร์ที่ร้านจ่าย + ค่าส่งที่ร้านออกแทน ณ ตอนสั่ง (งานไรเดอร์/การแบ่งเงินอ่านจากออเดอร์)
+        // จำกัดเพดานจากราคาที่ล็อกแล้วภายใน transaction ด้านล่าง (C1)
         $riderPricing = ['rider_bonus_amount' => 0.0, 'delivery_subsidy_amount' => 0.0];
+        $riderQuote = null;
         $buyerLat = isset($data['buyer_latitude']) && is_numeric($data['buyer_latitude']) ? (float) $data['buyer_latitude'] : null;
         $buyerLng = isset($data['buyer_longitude']) && is_numeric($data['buyer_longitude']) ? (float) $data['buyer_longitude'] : null;
         $address = trim((string) ($data['delivery_address'] ?? ''));
@@ -750,13 +804,20 @@ class FreshMarketService
                 'rider_bonus_amount' => round((float) ($quote['shop_bonus'] ?? 0), 2),
                 'delivery_subsidy_amount' => round((float) ($quote['shop_subsidy'] ?? 0), 2),
             ];
+            $riderQuote = [
+                'total_fee' => (float) ($quote['fee_full'] ?? $quote['total_fee'] ?? 0),
+                'rider_earnings' => (float) ($quote['rider_earnings'] ?? 0),
+                'shop_subsidy' => $riderPricing['delivery_subsidy_amount'],
+                'shop_bonus' => $riderPricing['rider_bonus_amount'],
+                'free_delivery' => (bool) ($quote['free_delivery'] ?? false),
+            ];
         }
 
         $data['preferred_rider_id'] = $this->preferredRiderFor($buyer, $data, $deliveryType); // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์
 
         $order = DB::transaction(function () use (
             $buyer, $seller, $lines, $deliveryType, $paymentMethod,
-            $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data, $riderPricing
+            $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data, $riderPricing, $riderQuote
         ) {
             // ตะกร้า: lock + ตรวจว่ารายการยังอยู่ครบ (กดชำระซ้ำ/สองแท็บพร้อมกัน → ครั้งที่สองไม่มีของในตะกร้าแล้ว)
             $cartItemIds = FreshMarketCartItem::normalizeOptionIds($data['cart_item_ids'] ?? []);
@@ -850,6 +911,17 @@ class FreshMarketService
             $platformFee = round($platformFee, 2);
             $cashback = round(min($cashback, $platformFee), 2);
             $first = $resolved[0];
+
+            // ไรเดอร์รอบ 2 (C1): ค่าส่งที่ร้านออก + โบนัส ≤ รายได้ร้าน (ยอดสินค้า − GP) จากราคาที่ล็อกแล้ว
+            // ลดค่าส่งที่ออกให้ก่อน (ผู้ซื้อจ่ายส่วนที่เหลือ) แล้วลดโบนัส — ค่าที่ล็อกบนออเดอร์ = ที่จำกัดแล้ว
+            if ($riderQuote !== null && ($riderQuote['shop_subsidy'] > 0 || $riderQuote['shop_bonus'] > 0)) {
+                $capped = DeliveryFeeCalculator::capShopCosts($riderQuote, round($totalAmount - $platformFee, 2));
+                $deliveryFee = round((float) $capped['buyer_fee'], 2);
+                $riderPricing = [
+                    'rider_bonus_amount' => round((float) $capped['shop_bonus'], 2),
+                    'delivery_subsidy_amount' => round((float) $capped['shop_subsidy'], 2),
+                ];
+            }
 
             // COD ส่งด้วยไรเดอร์: ยอดที่ไรเดอร์ต้องเก็บต้องไม่เกินวงเงิน COD ต่องาน
             // (ตรวจตั้งแต่ตอนสั่ง — ไม่งั้นร้านเตรียมของเสร็จแล้วเรียกไรเดอร์ไม่ได้ ออเดอร์ค้างที่ READY)
@@ -1251,6 +1323,9 @@ class FreshMarketService
 
             $refunded = $this->refundCollectedFunds($locked, $reason, $role, $actor);
 
+            // ไรเดอร์รอบ 2 (money-review L1): ไรเดอร์ส่งสำเร็จและได้ค่าส่ง + โบนัสไปแล้ว → ต้นทุนที่ร้านเลือกจ่ายเรียกคืนจากร้าน
+            $riderCostClawback = $this->clawbackRiderCosts($locked, $reason, $actor);
+
             $locked->appendHistory([
                 'action' => 'cancel',
                 'from' => $from,
@@ -1258,7 +1333,10 @@ class FreshMarketService
                 'by' => $role,
                 'user_id' => $actor?->id,
                 'reason' => $reason,
-                'meta' => $refunded > 0 ? ['refunded' => $refunded] : [],
+                'meta' => array_filter([
+                    'refunded' => $refunded > 0 ? $refunded : null,
+                    'rider_cost_clawback' => $riderCostClawback['amount'] > 0 ? $riderCostClawback : null,
+                ]),
             ]);
             $locked->save();
 
@@ -1566,6 +1644,88 @@ class FreshMarketService
         $locked->seller_earning = $net;
 
         return $net;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (money-review L1): ยกเลิก/คืนเงินออเดอร์เงินพักที่ไรเดอร์ส่งสำเร็จแล้ว
+     * → ไรเดอร์ได้ค่าส่งเต็ม + โบนัสไปแล้ว (ไม่เรียกคืนจากไรเดอร์) แต่ผู้ซื้อจ่ายค่าส่งแค่ส่วนของตัวเอง
+     * → ต้นทุนที่ร้านเลือกจ่าย (โบนัส + ค่าส่งที่ออกให้) หักคืนจาก wallet ร้าน ไม่พอ = บันทึกหนี้ (แพลตฟอร์มไม่รับภาระ)
+     *
+     * เรียกภายใน transaction ที่ lock ออเดอร์แล้ว · ทำซ้ำไม่หักซ้ำ (เช็ครายการ wallet/หนี้ของออเดอร์ก่อน)
+     *
+     * @return array{amount: float, deducted: float, debt_id: ?int}
+     */
+    protected function clawbackRiderCosts(FreshMarketOrder $locked, string $reason, ?User $actor): array
+    {
+        $result = ['amount' => 0.0, 'deducted' => 0.0, 'debt_id' => null];
+
+        if (! $locked->settlement_deferred || $locked->delivery_type !== 'rider' || ! $this->riderJobCompleted($locked)) {
+            return $result;
+        }
+
+        $amount = round(max(0.0, (float) $locked->rider_bonus_amount) + max(0.0, (float) $locked->delivery_subsidy_amount), 2);
+        if ($amount <= 0) {
+            return $result;
+        }
+
+        $sellerUser = $locked->seller?->user;
+        if (! $sellerUser) {
+            Log::error('FreshMarket: ไม่พบบัญชีร้าน เรียกคืนต้นทุนไรเดอร์ไม่ได้', ['order_id' => $locked->id, 'amount' => $amount]);
+
+            return $result;
+        }
+
+        $result['amount'] = $amount;
+
+        $already = $this->walletTxExists(self::REF_RIDER_COST_CLAWBACK, (int) $locked->id, (int) $sellerUser->id)
+            || WalletDebt::where('source_type', self::DEBT_SOURCE_RIDER_COST)->where('source_id', $locked->id)->exists();
+        if ($already) {
+            return $result;
+        }
+
+        $meta = [
+            'order_number' => $locked->order_number,
+            'rider_bonus_amount' => round((float) $locked->rider_bonus_amount, 2),
+            'delivery_subsidy_amount' => round((float) $locked->delivery_subsidy_amount, 2),
+            'reason' => mb_substr($reason, 0, 255),
+        ];
+
+        $wallet = $this->wallets->getOrCreateWallet($sellerUser);
+        $lockedWallet = Wallet::whereKey($wallet->id)->lockForUpdate()->first();
+        $take = ($lockedWallet && $lockedWallet->isActive())
+            ? round(min(max(0.0, (float) $lockedWallet->balance), $amount), 2)
+            : 0.0;
+
+        if ($take > 0) {
+            $this->wallets->deductForService(
+                $lockedWallet,
+                $take,
+                'หักคืนค่าไรเดอร์ที่ร้านออก (โบนัส/ส่งฟรี) — ยกเลิกออเดอร์ตลาดสด #'.$locked->order_number,
+                self::REF_RIDER_COST_CLAWBACK,
+                $locked->id,
+                $meta
+            );
+            $result['deducted'] = $take;
+        }
+
+        $remaining = round($amount - $take, 2);
+        if ($remaining > 0) {
+            $debt = WalletDebt::createDebt(
+                (int) $sellerUser->id,
+                $remaining,
+                self::DEBT_SOURCE_RIDER_COST,
+                (int) $locked->id,
+                'ค่าไรเดอร์ที่ร้านออก (โบนัส/ส่งฟรี) ของออเดอร์ตลาดสดที่ถูกยกเลิก #'.$locked->order_number,
+                $actor?->id,
+                1,
+                $meta + ['partial_deducted' => $take]
+            );
+            $result['debt_id'] = (int) $debt->id;
+        }
+
+        Log::info('FreshMarket: เรียกคืนต้นทุนไรเดอร์จากร้าน', ['order_id' => $locked->id] + $result);
+
+        return $result;
     }
 
     /**

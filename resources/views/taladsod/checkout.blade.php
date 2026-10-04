@@ -3,6 +3,7 @@
  | Controller: FreshMarket\CartController@checkout
  | ตัวแปร: $shopCart (ตะกร้าร้านเดียว), $shop (FreshMarketSeller|null), $settings, $paymentMethods [wallet|cod], $riderEnabled, $pickupAvailable,
  |         $deliveryBaseRate, $deliveryPerKm, $maxCodAmount, $walletBalance, $savedAddresses [{id, recipient_name, full_address, latitude, longitude, is_default}]
+ | ไรเดอร์รอบ 2: rider.allow_cod = false → ส่งด้วยไรเดอร์ซ่อนเก็บเงินปลายทาง + เลือกกระเป๋าเงินให้ (เซิร์ฟเวอร์ปฏิเสธ COD + ไรเดอร์)
  | ส่งฟอร์ม POST taladsod.checkout.store: seller_id, delivery_type (pickup|rider), payment_method (wallet|cod),
  |   buyer_latitude + buyer_longitude + delivery_address (บังคับเมื่อ rider), delivery_notes
  | ค่าส่ง: GET taladsod.cart.quote?seller_id&latitude&longitude → {data:{available, code, message, distance_km, total_fee, estimated_duration_minutes, subtotal, grand_total}}
@@ -38,6 +39,12 @@
         ? $oldPay
         : (($walletOn && $walletBalance >= $subtotal) || ! $codOn ? ($walletOn ? 'wallet' : 'cod') : 'cod');
 
+    // ไรเดอร์รอบ 2 (F5): ส่งด้วยไรเดอร์ต้องจ่ายก่อน (rider.allow_cod = false) → ซ่อนเก็บเงินปลายทาง + เลือกกระเป๋าเงินให้
+    $riderCodAllowed = app(\App\Services\DeliveryFeeCalculator::class)->boolSetting('rider.allow_cod');
+    if ($defaultDelivery === 'rider' && ! $riderCodAllowed && $defaultPay === 'cod' && $walletOn) {
+        $defaultPay = 'wallet';
+    }
+
     $coCfg = [
         'sellerId' => $sellerId,
         'subtotal' => round($subtotal, 2),
@@ -46,6 +53,7 @@
         'riderEnabled' => (bool) $riderEnabled,
         'walletOn' => $walletOn,
         'codOn' => $codOn,
+        'riderCod' => (bool) $riderCodAllowed,
         'walletBalance' => round((float) $walletBalance, 2),
         'maxCod' => round((float) $maxCodAmount, 2),
         'canCheckout' => $canCheckout,
@@ -206,7 +214,7 @@
                                 </button>
                             @endif
                             @if($codOn)
-                                <button type="button" class="ts-choice" :class="payment === 'cod' ? 'is-on' : ''" x-on:click="payment = 'cod'" :aria-pressed="payment === 'cod' ? 'true' : 'false'">
+                                <button type="button" class="ts-choice" :class="payment === 'cod' ? 'is-on' : ''" x-show="codUsable" x-on:click="payment = 'cod'" :aria-pressed="payment === 'cod' ? 'true' : 'false'">
                                     <span class="ind"><i class="fas fa-check" aria-hidden="true"></i></span>
                                     <span class="name">
                                         <i class="fas fa-money-bill-wave" style="color:var(--ts-ok);" aria-hidden="true"></i> เก็บเงินปลายทาง
@@ -215,12 +223,15 @@
                                 </button>
                             @endif
                         </div>
+                        <div class="sf-note sf-note-info" x-show="delivery === 'rider' && !riderCod" x-cloak>
+                            <i class="fas fa-shield-halved" aria-hidden="true"></i> {{ \App\Services\Shop\ShopCartService::COD_PREPAID_REASON }}
+                        </div>
                         <div class="sf-note sf-note-warn" x-show="walletShort" x-cloak>
                             ยอดในกระเป๋าไม่พอ (ขาดอีก ฿<span x-text="money(grandTotal - walletBalance)"></span>)
                             @if(\Illuminate\Support\Facades\Route::has('user.wallet.topup'))
                                 — <a href="{{ route('user.wallet.topup') }}" class="ts-link">เติมเงิน</a>
                             @endif
-                            หรือเลือกเก็บเงินปลายทาง
+                            <span x-show="codUsable">หรือเลือกเก็บเงินปลายทาง</span>
                         </div>
                         <div class="sf-note sf-note-warn" x-show="codTooHigh" x-cloak>
                             ยอดเก็บปลายทางเกิน ฿<span x-text="money(maxCod)"></span> — กรุณาจ่ายด้วยกระเป๋าเงินหรือเลือกรับเองที่ร้าน
@@ -302,7 +313,7 @@
 
         return {
             delivery: cfg.delivery, payment: cfg.payment,
-            riderEnabled: cfg.riderEnabled, walletBalance: cfg.walletBalance, maxCod: cfg.maxCod,
+            riderEnabled: cfg.riderEnabled, riderCod: !!cfg.riderCod, walletBalance: cfg.walletBalance, maxCod: cfg.maxCod,
             lat: num(cfg.lat), lng: num(cfg.lng), address: cfg.address || '',
             addresses: cfg.addresses || [], pickedAddress: null,
             quote: null, quoteError: '', quoting: false, submitting: false,
@@ -310,6 +321,7 @@
             money(n) { return window.ts.money(n || 0); },
 
             init() {
+                this.enforcePrepaid();
                 if (this.delivery === 'rider' && this.lat !== null) { this.requestQuote(); }
             },
 
@@ -317,11 +329,20 @@
             get grandTotal() { return Math.round((cfg.subtotal + this.deliveryFee) * 100) / 100; },
             get walletShort() { return this.payment === 'wallet' && this.walletBalance < this.grandTotal; },
             get codTooHigh() { return this.payment === 'cod' && this.delivery === 'rider' && this.maxCod > 0 && this.grandTotal > this.maxCod; },
+            // ไรเดอร์รอบ 2: ส่งด้วยไรเดอร์ต้องจ่ายก่อน (เว้นแต่แอดมินเปิด rider.allow_cod)
+            get codUsable() { return cfg.codOn && (this.delivery !== 'rider' || this.riderCod); },
+
+            // เลือกส่งด้วยไรเดอร์ตอนเลือกเก็บปลายทางอยู่ → เปลี่ยนเป็นกระเป๋าเงินให้ (เซิร์ฟเวอร์ปฏิเสธ COD + ไรเดอร์อยู่แล้ว)
+            enforcePrepaid() {
+                if (this.delivery === 'rider' && !this.riderCod && this.payment === 'cod' && cfg.walletOn) { this.payment = 'wallet'; }
+            },
 
             get blockText() {
                 if (!cfg.canCheckout) { return 'ยังสั่งซื้อจากร้านนี้ไม่ได้ตอนนี้'; }
                 if (!cfg.walletOn && !cfg.codOn) { return 'ยังไม่เปิดรับชำระเงิน'; }
                 if (this.delivery === 'rider') {
+                    if (!this.riderCod && !cfg.walletOn) { return 'ส่งด้วยไรเดอร์ต้องชำระก่อน แต่ยังไม่เปิดชำระผ่านกระเป๋าเงิน'; }
+                    if (!this.riderCod && this.payment === 'cod') { return 'ส่งด้วยไรเดอร์ต้องชำระผ่านกระเป๋าเงินก่อน'; }
                     if (this.lat === null) { return 'กรุณาปักหมุดจุดส่ง'; }
                     if (this.address.trim() === '') { return 'กรุณากรอกที่อยู่จัดส่ง'; }
                     if (this.quoting) { return 'กำลังคำนวณค่าส่ง...'; }
@@ -336,6 +357,7 @@
             setDelivery(d) {
                 if (d === 'rider' && !this.riderEnabled) { return; }
                 this.delivery = d;
+                this.enforcePrepaid();
                 if (d === 'rider') {
                     // แผนที่เพิ่งแสดง → ให้ Leaflet คำนวณขนาดใหม่ (รอให้กล่องแสดงผลจริงก่อน)
                     [60, 400].forEach((ms) => setTimeout(() => window.dispatchEvent(new CustomEvent('ts-map-refresh')), ms));

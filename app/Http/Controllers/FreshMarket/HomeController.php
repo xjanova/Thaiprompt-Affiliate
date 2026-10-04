@@ -501,8 +501,9 @@ class HomeController extends Controller
             return response()->json(['success' => false, 'code' => 'LISTING_UNAVAILABLE', 'message' => 'ไม่พบสินค้า'], 404);
         }
 
-        $quote = $this->marketService->quoteDelivery($listing, (float) $validated['latitude'], (float) $validated['longitude']);
         $subtotal = round((float) $listing->price * (int) ($validated['quantity'] ?? 1), 2);
+        // ไรเดอร์รอบ 2 (C1): ส่งยอดสินค้า → ค่าส่งที่ร้านออก/โบนัสถูกจำกัดไม่ให้เกินรายได้ร้าน (ตรงกับตอนสั่งจริง)
+        $quote = $this->marketService->quoteDelivery($listing, (float) $validated['latitude'], (float) $validated['longitude'], $subtotal);
 
         return response()->json([
             'success' => $quote['available'],

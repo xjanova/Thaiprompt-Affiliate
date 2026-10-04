@@ -237,8 +237,9 @@ class FreshMarketCartService
             throw FreshMarketException::make('LISTING_UNAVAILABLE', 'สินค้าในตะกร้าไม่พร้อมขายแล้ว', 409);
         }
 
-        $quote = $this->market->quoteDelivery($listing, $lat, $lng);
         $subtotal = (float) $shop['subtotal'];
+        // ส่งยอดสินค้าไปด้วย → จำกัดค่าส่งที่ร้านออก/โบนัสไม่ให้เกินรายได้ร้าน (C1 — ตัวเลขเดียวกับตอนสั่งซื้อ)
+        $quote = $this->market->quoteDelivery($listing, $lat, $lng, $subtotal);
         // ไรเดอร์รอบ 2: ผู้ซื้อจ่าย fee (= buyer_fee — ร้านเลือกส่งฟรีได้) ไม่ใช่ total_fee (ค่าส่งเต็ม)
         $buyerFee = $quote['available'] ? (float) ($quote['fee'] ?? $quote['total_fee']) : 0.0;
 

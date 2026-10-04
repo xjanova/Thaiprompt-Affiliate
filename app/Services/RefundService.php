@@ -4,8 +4,10 @@ namespace App\Services;
 
 use App\Models\EarningsLedger;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\PlatformTransaction;
 use App\Models\PlatformWallet;
+use App\Models\Product;
 use App\Models\RiderJob;
 use App\Models\User;
 use App\Models\WalletDebt;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\Log;
  *  1. คืนเงินลูกค้าเข้า wallet (type = refund) — สร้าง wallet ให้ถ้ายังไม่มี
  *  2. เรียกเงินคืน (cashback) กลับจาก wallet ลูกค้า ไม่พอ = สร้างหนี้ และคืนรายจ่ายโปรให้แพลตฟอร์ม
  *  3. รายได้ผู้ขาย: ยังไม่จ่าย = ยกเลิก + ดึงเงินพักออกจาก seller_escrow / จ่ายแล้ว = หักคืนจาก wallet ผู้ขาย ไม่พอ = หนี้
+ *     + ไรเดอร์รอบ 2: ไรเดอร์ส่งสำเร็จแล้ว → ต้นทุนไรเดอร์ที่ร้านเลือกจ่าย (โบนัส/ส่งฟรี) หักคืนจากร้าน ไม่พอ = หนี้
  *  4. คอม MLM: ยังไม่จ่าย = ยกเลิก / จ่ายแล้ว = หักคืน (เงินที่หักคืนกลับเข้ากองทุน MLM)
  *  5. ย้อนรายการเงินเข้ากระเป๋าแพลตฟอร์มของออเดอร์ (GP, VAT, กองทุน MLM, ร้านทางการ, ส่วนลดคูปอง)
  *  6. ออเดอร์ → status = refunded, payment_status = refunded
@@ -30,6 +33,15 @@ use Illuminate\Support\Facades\Log;
  */
 class RefundService
 {
+    /** ไรเดอร์รอบ 2: source_type ของหนี้ต้นทุนไรเดอร์ที่ร้านออก (หักคืนจาก wallet ร้านไม่พอ) */
+    public const DEBT_SOURCE_RIDER_COST = 'RiderCostClawback';
+
+    /** reference_type ของรายการหักคืนต้นทุนไรเดอร์จาก wallet ร้าน */
+    public const WALLET_REF_RIDER_COST = 'OrderRiderCostClawback';
+
+    /** หนี้ทุกชนิดที่เกิดจากการคืนเงินออเดอร์ (รายงาน/สถิติ) */
+    public const DEBT_SOURCE_TYPES = ['SellerClawback', 'MlmClawback', 'CashbackClawback', self::DEBT_SOURCE_RIDER_COST];
+
     protected MlmCommissionClawbackService $mlmClawbackService;
 
     protected WalletService $wallets;
@@ -95,6 +107,11 @@ class RefundService
             $report['seller_clawback'] = $this->clawbackFromSellers($locked, $adminId, $reason);
             $report['summary']['total_seller_clawback'] = round(collect($report['seller_clawback'])->sum('clawback_amount'), 2);
 
+            // 3b. ไรเดอร์รอบ 2 (money-review L1): ไรเดอร์ส่งสำเร็จ ได้ค่าส่งเต็ม + โบนัสไปแล้ว (ไม่เรียกคืนจากไรเดอร์)
+            //     → ต้นทุนไรเดอร์ที่ร้านเลือกจ่าย (โบนัส + ค่าส่งที่ออกให้) หักคืนจากร้าน ไม่พอ = หนี้ — แพลตฟอร์มไม่รับภาระ
+            $report['rider_cost_clawback'] = $this->clawbackRiderCosts($locked, $adminId, $reason);
+            $report['summary']['total_rider_cost_clawback'] = round(collect($report['rider_cost_clawback'])->sum('clawback_amount'), 2);
+
             // 4. คอม MLM (ก่อนย้อนกองทุน — เงินที่หักคืนจะเติมกองทุนกลับก่อน)
             $report['mlm_clawback'] = $this->mlmClawbackService->clawbackOrderCommissions($locked, $adminId);
             $report['summary']['total_mlm_clawback'] = (float) ($report['mlm_clawback']['total_clawback_amount'] ?? 0);
@@ -114,7 +131,7 @@ class RefundService
             if (! empty($report['cashback_clawback']['debt_id'])) {
                 $debts[] = $report['cashback_clawback']['debt_id'];
             }
-            foreach ($report['seller_clawback'] as $row) {
+            foreach (array_merge($report['seller_clawback'], $report['rider_cost_clawback']) as $row) {
                 if (! empty($row['debt_id'])) {
                     $debts[] = $row['debt_id'];
                 }
@@ -366,6 +383,120 @@ class RefundService
     }
 
     /**
+     * ไรเดอร์รอบ 2 (money-review L1): หักคืนต้นทุนไรเดอร์ที่ร้านเลือกจ่าย ของออเดอร์เงินพักที่ไรเดอร์ส่งสำเร็จแล้ว
+     *
+     * ไรเดอร์ได้ค่าส่งเต็ม (รวมส่วนที่ร้านออกให้) + โบนัสร้านไปแล้ว — ไม่เรียกคืนจากไรเดอร์
+     * ผู้ซื้อถูกหักไว้แค่ค่าส่งส่วนที่ตัวเองจ่าย (settleRiderJobsBeforeRefund) → ส่วนที่ร้านเลือกจ่าย
+     * (โบนัส + ค่าส่งที่ออกให้ + ส่วนลดค่าส่งของคูปองร้าน) ต้องมาจากร้าน: หักจาก wallet ร้าน ไม่พอ = หนี้
+     * (รายได้สุทธิของร้านถูกยกเลิก/หักคืนแยกแล้วใน clawbackFromSellers)
+     *
+     * หลายร้านในออเดอร์เดียว → แบ่งตามต้นทุนไรเดอร์ที่หักจากแต่ละร้านตอนแบ่งเงิน (ไม่มี = ตามยอดขาย)
+     * ร้านทางการ (แพลตฟอร์มขายเอง) ไม่มีใครให้เรียกคืน → ข้าม
+     *
+     * @return array<int, array{user_id: int, clawback_amount: float, deducted_from_wallet: float, debt_id: ?int}>
+     */
+    protected function clawbackRiderCosts(Order $order, ?int $adminId, string $reason): array
+    {
+        if (! (bool) $order->settlement_deferred || ! $order->isRiderDelivery()
+            || ! RiderJob::forSource($order)->where('status', 'completed')->exists()) {
+            return [];
+        }
+
+        $bonus = round(max(0.0, (float) $order->rider_bonus_amount), 2);
+        $subsidy = round(max(0.0, (float) $order->delivery_subsidy_amount), 2);
+        $storeShippingDiscount = $order->getAttribute('discount_funded_by') === 'store'
+            ? round(max(0.0, (float) ($order->shipping_discount ?? 0)), 2)
+            : 0.0;
+        $total = round($bonus + $subsidy + $storeShippingDiscount, 2);
+
+        if ($total <= 0) {
+            return [];
+        }
+
+        $rows = [];
+        foreach (OrderDistributionService::allocateShippingShares($total, $this->riderCostWeights($order)) as $sellerId => $share) {
+            $share = round((float) $share, 2);
+            if ($share <= 0) {
+                continue;
+            }
+
+            $clawed = $this->deductOrDebt(
+                (int) $sellerId,
+                $share,
+                self::WALLET_REF_RIDER_COST,
+                (int) $order->id,
+                "หักคืนค่าไรเดอร์ที่ร้านออก (โบนัส/ส่งฟรี) — คืนเงินออเดอร์ #{$order->order_number}",
+                self::DEBT_SOURCE_RIDER_COST,
+                (int) $order->id,
+                "ค่าไรเดอร์ที่ร้านออก (โบนัส/ส่งฟรี) ของออเดอร์ #{$order->order_number} ที่ลูกค้าได้รับเงินคืน: {$reason}",
+                $adminId,
+                1,
+                [
+                    'order_number' => $order->order_number,
+                    'rider_bonus_amount' => $bonus,
+                    'delivery_subsidy_amount' => $subsidy,
+                    'store_shipping_discount' => $storeShippingDiscount,
+                ]
+            );
+
+            $rows[] = [
+                'user_id' => (int) $sellerId,
+                'clawback_amount' => $share,
+                'deducted_from_wallet' => $clawed['deducted'],
+                'debt_id' => $clawed['debt_id'],
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * น้ำหนักแบ่งต้นทุนไรเดอร์ต่อผู้ขาย (seller_id => น้ำหนัก) — ไม่รวมร้านทางการ
+     *
+     * @return array<int, float>
+     */
+    protected function riderCostWeights(Order $order): array
+    {
+        try {
+            $officialId = (int) Product::getOfficialSellerId();
+        } catch (\Throwable $e) {
+            $officialId = 0;
+        }
+
+        $weights = [];
+        $ledgers = EarningsLedger::where('source_type', 'Order')
+            ->where('source_id', $order->id)
+            ->where('earning_type', EarningsLedger::TYPE_SELLER_SALE)
+            ->orderBy('id')
+            ->get(['user_id', 'breakdown']);
+
+        foreach ($ledgers as $ledger) {
+            if ((int) $ledger->user_id === $officialId) {
+                continue;
+            }
+
+            $weights[(int) $ledger->user_id] = ($weights[(int) $ledger->user_id] ?? 0.0)
+                + max(0.0, (float) data_get($ledger->breakdown, 'calculations.rider_cost_deduction', 0));
+        }
+
+        if ($weights !== [] && array_sum($weights) > 0) {
+            return $weights;
+        }
+
+        // ยังไม่ได้แบ่งเงิน / หักไม่ได้เลยตอนแบ่งเงิน → แบ่งตามยอดขายของแต่ละร้านในออเดอร์
+        $weights = [];
+        foreach (OrderItem::where('order_id', $order->id)->orderBy('id')->get(['seller_id', 'total']) as $item) {
+            if (! $item->seller_id || (int) $item->seller_id === $officialId) {
+                continue;
+            }
+
+            $weights[(int) $item->seller_id] = ($weights[(int) $item->seller_id] ?? 0.0) + max(0.0, (float) $item->total);
+        }
+
+        return $weights;
+    }
+
+    /**
      * ย้อนรายการเงินเข้ากระเป๋าแพลตฟอร์มของออเดอร์ (ยกเว้นเงินพักผู้ขาย ซึ่งย้อนราย ledger แล้ว)
      */
     protected function adjustPlatformWallets(Order $order, string $reason): array
@@ -529,7 +660,7 @@ class RefundService
      */
     public function getRefundReport(Order $order): array
     {
-        $debts = WalletDebt::whereIn('source_type', ['SellerClawback', 'MlmClawback', 'CashbackClawback'])
+        $debts = WalletDebt::whereIn('source_type', self::DEBT_SOURCE_TYPES)
             ->where('source_id', $order->id)
             ->get();
 
@@ -582,7 +713,7 @@ class RefundService
         }
 
         $refundedOrders = $query->get();
-        $debtTypes = ['SellerClawback', 'MlmClawback', 'CashbackClawback'];
+        $debtTypes = self::DEBT_SOURCE_TYPES;
 
         return [
             'total_refunds' => $refundedOrders->count(),
@@ -606,6 +737,7 @@ class RefundService
             'customer_refund' => null,
             'cashback_clawback' => null,
             'seller_clawback' => [],
+            'rider_cost_clawback' => [],
             'mlm_clawback' => null,
             'platform_adjustments' => [],
             'debts_created' => [],
@@ -613,6 +745,7 @@ class RefundService
                 'total_customer_refund' => 0.0,
                 'total_cashback_clawback' => 0.0,
                 'total_seller_clawback' => 0.0,
+                'total_rider_cost_clawback' => 0.0,
                 'total_mlm_clawback' => 0.0,
                 'total_debts_created' => 0,
             ],
