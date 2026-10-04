@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Contracts\RiderDeliverable;
 use App\Services\DeliveryFeeCalculator;
+use App\Support\Rider\ClientAppBuild;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -282,16 +283,20 @@ class RiderJob extends Model
                 $job->job_number = self::generateJobNumber();
             }
 
-            // ไรเดอร์รอบ 2: งานใหม่ต้องส่งมอบด้วยการสแกน QR ใส่กัน เมื่อเปิด rider.handover_enabled
-            // (ผู้สร้างระบุค่าเองได้ — เช่นเทสต์/ข้อมูลย้ายระบบ · งานเก่าในตารางไม่ถูกแตะ)
+            // ไรเดอร์รอบ 2 (รอบแก้หลังรีวิว): งานใหม่เริ่มเป็นแบบเดิม (ไม่ต้องสแกน) เสมอ
+            // การ "ต้องสแกนส่งมอบ" ตัดสินตอนไรเดอร์กดรับงาน (RiderJobService::accept → handoverRequiredOnAccept)
+            // เพราะต้องรู้ว่าทั้งผู้ซื้อและไรเดอร์ใช้แอปรุ่นที่มีหน้าส่งมอบ — ผู้สร้างระบุค่าเองได้ (เทสต์/ย้ายข้อมูล)
             if (! array_key_exists('handover_required', $job->getAttributes())) {
-                $job->handover_required = self::handoverEnabledForNewJobs();
+                $job->handover_required = false;
             }
         });
     }
 
     /**
-     * งานที่สร้างตอนนี้ต้องสแกนส่งมอบหรือไม่ (อ่านค่าตั้งไม่ได้ = ใช้ค่าเริ่มต้นของระบบ)
+     * เปิดระบบสแกนส่งมอบอยู่หรือไม่ (rider.handover_enabled · อ่านค่าตั้งไม่ได้ = ใช้ค่าเริ่มต้นของระบบ)
+     *
+     * เป็นแค่เงื่อนไขข้อแรก — งานจะต้องสแกนจริงต่อเมื่อผู้ซื้อและไรเดอร์ใช้แอปรุ่นที่รองรับด้วย
+     * (ดู handoverRequiredOnAccept)
      */
     public static function handoverEnabledForNewJobs(): bool
     {
@@ -300,6 +305,32 @@ class RiderJob extends Model
         } catch (\Throwable) {
             return (bool) (DeliveryFeeCalculator::DEFAULTS['rider.handover_enabled'] ?? false);
         }
+    }
+
+    /**
+     * ตอนไรเดอร์กดรับงาน: งานนี้ต้องสแกนส่งมอบหรือไม่ (ไรเดอร์รอบ 2 — FIXES §A1)
+     *
+     * ต้องครบทุกข้อ:
+     *   1. เปิด rider.handover_enabled
+     *   2. ออเดอร์ต้นทางสั่งจากแอป build ≥ 43 (orders/fresh_market_orders.client_app_build)
+     *   3. ไรเดอร์กดรับจากแอป build ≥ 43 (header X-App-Build ของคำขอรับงาน)
+     * หน้าเว็บ /user/rider · LINE postback · แอปรุ่นเก่า = false → ใช้ปุ่มส่งของแบบเดิมเหมือนก่อนรอบ 2
+     *
+     * @param  int|null  $riderAppBuild  build ของแอปไรเดอร์ที่กดรับ (null = ไม่ได้มาจากแอป)
+     */
+    public function handoverRequiredOnAccept(?int $riderAppBuild): bool
+    {
+        if (! ClientAppBuild::supportsHandover($riderAppBuild)) {
+            return false;
+        }
+
+        $source = $this->deliverableSource();
+        if (! $source instanceof Model
+            || ! ClientAppBuild::supportsHandover($source->getAttribute('client_app_build'))) {
+            return false;
+        }
+
+        return self::handoverEnabledForNewJobs();
     }
 
     /**
@@ -433,6 +464,11 @@ class RiderJob extends Model
 
         // ไรเดอร์รอบ 2: งานที่ต้องสแกนส่งมอบ — ไม่มีปุ่ม "ส่งสำเร็จ" แบบเดิม (POST /deliver ตอบ 409 HANDOVER_REQUIRED)
         if ($this->handover_required && in_array($this->status, ['picked_up', 'delivering'], true)) {
+            // ผู้ซื้อร้องเรียนแล้ว = ทีมงานตัดสิน ไรเดอร์ทำอะไรต่อไม่ได้ (รวมถึงแจ้งส่งไม่สำเร็จ)
+            if ($this->loadedHandover()?->status === DeliveryHandover::STATUS_DISPUTED) {
+                return [];
+            }
+
             return array_values(array_merge(
                 $this->status === 'picked_up' ? ['delivering'] : [],
                 $this->handoverActions(),
@@ -471,11 +507,14 @@ class RiderJob extends Model
             $actions[] = 'handover_scan';
         }
 
-        if (in_array($status, [DeliveryHandover::STATUS_WAITING, DeliveryHandover::STATUS_RIDER_CONFIRMED], true)) {
+        // งานเก็บเงินปลายทาง: ต้องพบผู้รับเพื่อเก็บเงิน วางของไม่ได้ (API ปฏิเสธอยู่แล้ว → ไม่โชว์ปุ่ม)
+        $isCod = (float) $this->cod_amount > 0;
+
+        if (! $isCod && in_array($status, [DeliveryHandover::STATUS_WAITING, DeliveryHandover::STATUS_RIDER_CONFIRMED], true)) {
             $actions[] = 'arrival_photo';
         }
 
-        if ($status === DeliveryHandover::STATUS_FALLBACK_WAITING) {
+        if (! $isCod && $status === DeliveryHandover::STATUS_FALLBACK_WAITING) {
             $actions[] = 'waited_photo';
         }
 

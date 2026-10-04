@@ -11,7 +11,52 @@ use Illuminate\Support\Facades\Log;
 class NotificationService
 {
     /**
+     * ผู้ใช้ที่ปิดแจ้งเตือนไว้ชั่วคราว (เฉพาะระหว่าง muteUsersDuring) — [user_id => true]
+     *
+     * @var array<int, bool>
+     */
+    private static array $mutedUserIds = [];
+
+    /**
+     * ปิดแจ้งเตือน (กล่องแจ้งเตือน + push) ของผู้ใช้กลุ่มนี้ชั่วคราวระหว่างรัน $callback
+     *
+     * ใช้กับขั้นตอนใหญ่ที่เรียกหลายระบบย่อยซึ่งต่างคนต่างแจ้ง (เช่น แอดมินตัดสินคืนเงินการส่งมอบ:
+     * งานส่งไม่สำเร็จ + ยกเลิกออเดอร์ + คืนเงิน) แล้วผู้เรียกแจ้งข้อความเดียวที่ตรงเหตุการณ์เองหลังจบ
+     * แจ้งเตือนที่รอ commit (DB::afterCommit) ของ transaction ที่อยู่ข้างใน $callback ก็ถูกปิดด้วย
+     *
+     * @param  array<int, int|null>  $userIds
+     *
+     * @example NotificationService::muteUsersDuring([$buyerId], fn () => $order->cancel($reason, $adminId, 'admin'));
+     */
+    public static function muteUsersDuring(array $userIds, callable $callback): mixed
+    {
+        $previous = self::$mutedUserIds;
+
+        foreach ($userIds as $id) {
+            if (is_numeric($id) && (int) $id > 0) {
+                self::$mutedUserIds[(int) $id] = true;
+            }
+        }
+
+        try {
+            return $callback();
+        } finally {
+            self::$mutedUserIds = $previous;
+        }
+    }
+
+    /**
+     * ผู้ใช้คนนี้ถูกปิดแจ้งเตือนชั่วคราวอยู่หรือไม่
+     */
+    public static function isMuted(int $userId): bool
+    {
+        return isset(self::$mutedUserIds[$userId]);
+    }
+
+    /**
      * Create a notification
+     *
+     * ผู้ใช้ที่ถูกปิดแจ้งเตือนชั่วคราว (muteUsersDuring) → คืน Notification ที่ไม่ได้บันทึก ไม่ส่ง push
      */
     public function create(
         User $user,
@@ -27,6 +72,18 @@ class NotificationService
         ?string $icon = null,
         ?string $color = null
     ): Notification {
+        if (self::isMuted((int) $user->id)) {
+            Log::info('Notification muted during a combined operation', ['user_id' => $user->id, 'type' => $type]);
+
+            return new Notification([
+                'user_id' => $user->id,
+                'type' => $type,
+                'title' => $title,
+                'message' => $message,
+                'data' => $data,
+            ]);
+        }
+
         try {
             $notification = Notification::create([
                 'user_id' => $user->id,

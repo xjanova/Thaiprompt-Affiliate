@@ -22,7 +22,8 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 /**
  * 🤝 API ส่งมอบของ (ไรเดอร์รอบ 2 — เลน money) · routes/api_v1/rider_r2_handover.php
  *
- * ผู้ซื้อ:  GET  /orders/{source}/{id}/handover · POST .../scan {token} · POST .../dispute {reason, note?}
+ * ผู้ซื้อ:  GET  /orders/{source}/{id}/handover · POST .../scan {token}|{code} · POST .../dispute {reason, note?}
+ *          POST .../confirm-received (ได้รับของแล้ว — ระหว่างทางสำรอง)
  * ไรเดอร์: GET  /rider/jobs/{id}/handover · POST .../scan {token?|code?, latitude, longitude}
  *          POST .../arrival-photo · POST .../waited-photo (multipart {photo, latitude, longitude})
  *
@@ -51,10 +52,14 @@ class HandoverApiController extends Controller
     public function buyerScan(Request $request, string $source, int $id): JsonResponse
     {
         return $this->guard('buyer_scan', function () use ($request, $source, $id) {
+            // สแกน QR ของไรเดอร์ หรือกรอกรหัส 6 หลักที่ไรเดอร์แจ้ง (กล้องใช้ไม่ได้)
             $data = $this->validateOrFail($request, [
-                'token' => ['required', 'string', 'max:200'],
+                'token' => ['nullable', 'string', 'max:200'],
+                'code' => ['nullable', 'string', 'max:12', 'required_without:token'],
             ], [
-                'token.required' => 'กรุณาสแกน QR บนมือถือของไรเดอร์',
+                'code.required_without' => 'กรุณาสแกน QR บนมือถือของไรเดอร์ หรือกรอกรหัส 6 หลักที่ไรเดอร์แจ้ง',
+                'code.max' => 'รหัสต้องเป็นตัวเลข 6 หลัก',
+                'code.string' => 'รหัสต้องเป็นตัวเลข 6 หลัก',
                 'token.string' => 'QR ไม่ถูกต้อง',
                 'token.max' => 'QR ไม่ถูกต้อง',
             ]);
@@ -62,7 +67,13 @@ class HandoverApiController extends Controller
                 return $data;
             }
 
-            $payload = $this->handovers->buyerScan($request->user(), $source, $id, (string) $data['token']);
+            $payload = $this->handovers->buyerScan(
+                $request->user(),
+                $source,
+                $id,
+                isset($data['token']) ? (string) $data['token'] : null,
+                isset($data['code']) ? (string) $data['code'] : null,
+            );
 
             return $this->ok($payload, $payload['handover']['status'] === 'completed'
                 ? 'ยืนยันรับของเรียบร้อย ขอบคุณที่ใช้บริการ'
@@ -90,6 +101,19 @@ class HandoverApiController extends Controller
             return $this->ok(
                 $this->handovers->buyerDispute($request->user(), $source, $id, (string) $data['reason'], $data['note'] ?? null),
                 'ส่งเรื่องให้ทีมงานตรวจสอบแล้ว ระบบพักเงินไว้จนกว่าจะได้ข้อสรุป'
+            );
+        }, ['source' => $source, 'order_id' => $id]);
+    }
+
+    /**
+     * POST /orders/{source}/{id}/handover/confirm-received — ผู้ซื้อกด "ได้รับของแล้ว" (ไรเดอร์รออยู่/วางของไว้แล้ว)
+     */
+    public function buyerConfirmReceived(Request $request, string $source, int $id): JsonResponse
+    {
+        return $this->guard('buyer_confirm_received', function () use ($request, $source, $id) {
+            return $this->ok(
+                $this->handovers->buyerConfirmReceived($request->user(), $source, $id),
+                'ยืนยันรับของเรียบร้อย ขอบคุณที่ใช้บริการ'
             );
         }, ['source' => $source, 'order_id' => $id]);
     }

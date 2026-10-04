@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\RiderJobException;
+use App\Models\DeliveryHandover;
 use App\Models\Rider;
 use App\Models\RiderJob;
 use App\Models\User;
@@ -41,9 +42,13 @@ class RiderJobService
     /**
      * ไรเดอร์กดรับงาน
      *
+     * ไรเดอร์รอบ 2: ตัดสินตอนนี้ว่างานต้อง "สแกนส่งมอบ" หรือไม่ (RiderJob::handoverRequiredOnAccept)
+     *
+     * @param  int|null  $riderAppBuild  build ของแอปไรเดอร์ (header X-App-Build) — หน้าเว็บ/LINE/แอปเก่า = null → ส่งของแบบเดิม
+     *
      * @throws RiderJobException JOB_TAKEN|NOT_ELIGIBLE|HAS_ACTIVE_JOB|INSUFFICIENT_COD_CREDIT|SELF_ORDER
      */
-    public function accept(RiderJob $job, Rider $rider): RiderJob
+    public function accept(RiderJob $job, Rider $rider, ?int $riderAppBuild = null): RiderJob
     {
         $rider->refresh();
         $job->refresh();
@@ -75,7 +80,7 @@ class RiderJobService
 
         $this->assertWithinPickupRadius($job, $rider);
 
-        $accepted = DB::transaction(function () use ($job, $rider) {
+        $accepted = DB::transaction(function () use ($job, $rider, $riderAppBuild) {
             /** @var Rider $lockedRider */
             $lockedRider = Rider::whereKey($rider->id)->lockForUpdate()->firstOrFail();
 
@@ -130,6 +135,8 @@ class RiderJobService
             $query->where(fn ($q) => $q->whereNull('preferred_until')->orWhere('preferred_until', '<=', now())->orWhere('preferred_rider_id', $lockedRider->id));
 
             $updated = $query->update([
+                // ไรเดอร์รอบ 2: สแกนส่งมอบเฉพาะเมื่อผู้ซื้อและไรเดอร์ใช้แอปรุ่นที่มีหน้าส่งมอบ (ไม่งั้นใช้ปุ่มส่งของแบบเดิม)
+                'handover_required' => $job->handoverRequiredOnAccept($riderAppBuild),
                 'rider_id' => $lockedRider->id,
                 'status' => 'accepted',
                 'accepted_at' => now(),
@@ -384,6 +391,9 @@ class RiderJobService
             return $job;
         }
 
+        // ไรเดอร์รอบ 2: วางของแล้ว (รอปลดเงิน) หรือผู้ซื้อร้องเรียนแล้ว → ทีมงานเป็นคนตัดสิน ไรเดอร์แจ้งส่งไม่สำเร็จเองไม่ได้
+        $this->assertRiderMayFail($job);
+
         $path = $this->storePhoto($photo, $job, 'failure_proof', false);
 
         try {
@@ -412,20 +422,27 @@ class RiderJobService
      * เรียก hook ออเดอร์ต้นทางทุกขั้นเหมือน deliver() → ออเดอร์เป็น delivered ใน transaction เดียวกัน
      * (เคลียร์เงินไรเดอร์ + แจ้งเตือน ทำหลัง commit โดยผู้เรียก)
      *
+     * @param  bool  $adminOverride  แอดมินตัดสิน "ปล่อยเงิน" งานที่ถูกปิดเป็น failed ไปแล้ว (ของถึงผู้ซื้อจริง) → failed → completed
      * @return bool true = เปลี่ยนสถานะจริง / false = เสร็จไปแล้ว
      *
      * @throws RiderJobException INVALID_TRANSITION
      */
-    public function completeHandoverLocked(RiderJob $locked, ?float $lat = null, ?float $lng = null): bool
+    public function completeHandoverLocked(RiderJob $locked, ?float $lat = null, ?float $lng = null, bool $adminOverride = false): bool
     {
         $from = (string) $locked->status;
         if ($from === 'completed') {
             return false;
         }
 
+        // ไรเดอร์ยังถือของอยู่จริงเฉพาะตอนเริ่มจาก picked_up/delivering — งานรอปลดเงิน/งานที่ปิดไปแล้ว
+        // ไรเดอร์ว่างไปนานแล้ว ห้ามแตะสถานะรับงาน (ไรเดอร์ที่ปิดรับงานอยู่ต้องไม่ถูกเปิดเป็น online เอง)
+        $riderWasBusy = in_array($from, ['picked_up', 'delivering'], true);
+
         $graceMinutes = max(1, $this->config->intSetting('rider.tracking_grace_minutes'));
 
-        if (in_array($from, ['picked_up', 'delivering'], true)) {
+        if ($from === 'failed' && $adminOverride) {
+            Log::warning('RiderJob: admin released a failed handover job', ['job_id' => $locked->id, 'rider_id' => $locked->rider_id]);
+        } elseif (in_array($from, ['picked_up', 'delivering'], true)) {
             $validPoint = $lat !== null && $lng !== null && DeliveryFeeCalculator::isValidCoordinate($lat, $lng);
 
             // ขั้นที่ 1: delivered
@@ -451,7 +468,7 @@ class RiderJobService
         ], $this->stopCustomerSharing()))->save();
         $this->callSourceHook($locked, $from);
 
-        if ($locked->rider_id) {
+        if ($riderWasBusy && $locked->rider_id) {
             Rider::find($locked->rider_id)?->refreshAvailabilityAfterJob();
         }
 
@@ -466,9 +483,11 @@ class RiderJobService
      * ⚠️ ต้องเรียกภายใน DB::transaction ที่ล็อกแถวงานแล้วเท่านั้น
      * ลิงก์ติดตามของผู้ซื้อใช้ได้ถึง $trackingUntil (เวลาปลดเงินอัตโนมัติ + ช่วงผ่อนผัน)
      *
+     * @param  bool  $callSource  false = ไม่บันทึกประวัติ "วางของแล้ว" ที่ออเดอร์ (ใช้ตอนผู้ซื้อร้องเรียนระหว่างส่ง → ปล่อยไรเดอร์ไปรับงานอื่น)
+     *
      * @throws RiderJobException INVALID_TRANSITION
      */
-    public function markAwaitingReleaseLocked(RiderJob $locked, \DateTimeInterface $trackingUntil): bool
+    public function markAwaitingReleaseLocked(RiderJob $locked, \DateTimeInterface $trackingUntil, bool $callSource = true): bool
     {
         $from = (string) $locked->status;
         if ($from === RiderJob::STATUS_AWAITING_RELEASE) {
@@ -484,7 +503,10 @@ class RiderJobService
             'delivered_at' => now(),
             'tracking_expires_at' => $trackingUntil,
         ], $this->stopCustomerSharing()))->save();
-        $this->callSourceHook($locked, $from);
+
+        if ($callSource) {
+            $this->callSourceHook($locked, $from);
+        }
 
         if ($locked->rider_id) {
             Rider::find($locked->rider_id)?->refreshAvailabilityAfterJob();
@@ -592,12 +614,14 @@ class RiderJobService
 
     /**
      * แอดมินปิดงานที่รับของไปแล้วเป็น "ส่งไม่สำเร็จ" (เช่น ไรเดอร์หายไปพร้อมของ)
+     *
+     * @param  bool  $notify  false = ผู้เรียกแจ้งทุกฝ่ายเอง (เช่น แอดมินตัดสินคืนเงินการส่งมอบ — ข้อความ "ส่งไม่สำเร็จ" ไม่ตรงเหตุการณ์)
      */
-    public function adminFail(RiderJob $job, User $admin, string $reason): RiderJob
+    public function adminFail(RiderJob $job, User $admin, string $reason, bool $notify = true): RiderJob
     {
         [$fresh, $changed] = $this->markFailed($job, null, 'admin_intervention', mb_substr(trim($reason), 0, 1000)." (แอดมิน #{$admin->id})", null);
 
-        if ($changed) {
+        if ($changed && $notify) {
             $this->afterFailed($fresh, $fresh->rider);
         }
 
@@ -696,6 +720,9 @@ class RiderJobService
 
             // เปลี่ยนไรเดอร์ = ลูกค้ายังไม่ได้ยินยอมแชร์ตำแหน่งกับไรเดอร์คนใหม่ → หยุดแชร์ (ลูกค้าต้องเปิดใหม่เอง เหมือนตอนไรเดอร์คืนงาน)
             $locked->fill(array_merge([
+                // ไรเดอร์รอบ 2: แอดมินมอบหมาย = ไม่รู้ว่าไรเดอร์คนใหม่ใช้แอปรุ่นไหน → ก่อนรับของใช้ขั้นตอนเดิม (ส่งได้ทุกช่องทาง)
+                // หลังรับของแล้วคงค่าเดิม (ผู้ซื้ออาจเปิดหน้าส่งมอบอยู่)
+                'handover_required' => in_array($from, ['pending', 'accepted', 'picking_up'], true) ? false : (bool) $locked->handover_required,
                 'rider_id' => $lockedRider->id,
                 'status' => $from === 'pending' ? 'accepted' : $from,
                 'accepted_at' => $from === 'pending' ? now() : ($locked->accepted_at ?? now()),
@@ -900,12 +927,19 @@ class RiderJobService
     private function markFailed(RiderJob $job, ?Rider $actor, string $reasonCode, ?string $note, ?string $photoPath, bool $notifySource = true): array
     {
         $graceMinutes = max(1, $this->config->intSetting('rider.tracking_grace_minutes'));
+        $fromStatus = null;
 
         return $this->transition(
             $job,
             'failed',
             $actor,
-            function (RiderJob $locked) use ($reasonCode, $note, $photoPath, $graceMinutes) {
+            function (RiderJob $locked, string $from) use ($actor, $reasonCode, $note, $photoPath, $graceMinutes, &$fromStatus) {
+                // ไรเดอร์แจ้งเอง: ตรวจซ้ำหลังล็อกแถวงาน (ผู้ซื้ออาจร้องเรียน/ไรเดอร์อาจวางของพอดี)
+                if ($actor !== null) {
+                    $this->assertRiderMayFail($locked, $from);
+                }
+
+                $fromStatus = $from;
                 $locked->fill(array_merge([
                     'failed_at' => now(),
                     'failure_reason' => $reasonCode,
@@ -916,12 +950,48 @@ class RiderJobService
             },
             null,
             $notifySource,
-            afterSave: function (RiderJob $locked) {
-                if ($locked->rider_id) {
+            afterSave: function (RiderJob $locked) use (&$fromStatus) {
+                // ไรเดอร์รอบ 2: งานรอปลดเงิน (awaiting_release) ไรเดอร์ว่างไปแล้ว — ห้ามเปิดรับงานให้ไรเดอร์ที่ปิดรับงานอยู่
+                if ($locked->rider_id && $fromStatus !== null && RiderJob::isActiveStatus($fromStatus)) {
                     Rider::find($locked->rider_id)?->refreshAvailabilityAfterJob();
                 }
             },
         );
+    }
+
+    /**
+     * ไรเดอร์รอบ 2: ไรเดอร์แจ้ง "ส่งไม่สำเร็จ" ได้เฉพาะงานที่ยังถือของอยู่และยังไม่มีเรื่องร้องเรียน
+     *
+     * - awaiting_release: วางของ (รูปครบ 2 รอบ) ไปแล้ว รอปลดเงิน — ปิดได้ทางแอดมิน/ยกเลิกเท่านั้น
+     * - การส่งมอบถูกร้องเรียน: ทีมงานตัดสิน (ปล่อยเงิน/คืนเงิน)
+     *
+     * @param  string|null  $fromStatus  สถานะงานก่อนเปลี่ยน (เรียกจากใน transaction หลัง transition ตั้ง status ใหม่แล้ว)
+     *
+     * @throws RiderJobException INVALID_TRANSITION
+     */
+    private function assertRiderMayFail(RiderJob $job, ?string $fromStatus = null): void
+    {
+        $status = $fromStatus ?? (string) $job->status;
+
+        if ($status === RiderJob::STATUS_AWAITING_RELEASE) {
+            throw new RiderJobException(
+                RiderJobException::INVALID_TRANSITION,
+                'งานนี้วางของไว้ที่จุดส่งแล้ว รอระบบปลดเงิน แจ้งส่งไม่สำเร็จไม่ได้ หากมีปัญหากรุณาติดต่อทีมงาน',
+                409,
+                ['from' => $status, 'to' => 'failed']
+            );
+        }
+
+        // อ่านจากตารางตรงๆ (ไม่ใช้ relation ที่อาจโหลดค้างไว้) — การร้องเรียนเขียนภายใต้ล็อกแถวงานเดียวกัน
+        if ($job->handover_required
+            && DeliveryHandover::where('rider_job_id', $job->id)->value('status') === DeliveryHandover::STATUS_DISPUTED) {
+            throw new RiderJobException(
+                RiderJobException::INVALID_TRANSITION,
+                'ผู้รับแจ้งร้องเรียนการส่งมอบงานนี้แล้ว ทีมงานกำลังตรวจสอบ แจ้งส่งไม่สำเร็จไม่ได้',
+                409,
+                ['from' => $status, 'to' => 'failed']
+            );
+        }
     }
 
     /**

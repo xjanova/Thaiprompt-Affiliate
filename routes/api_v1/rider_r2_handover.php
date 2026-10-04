@@ -19,6 +19,8 @@ Route::prefix('orders/{source}/{id}/handover')
         Route::get('/', 'buyerShow')->name('show');
         Route::post('/scan', 'buyerScan')->middleware('throttle:30,1,api-handover-buyer-scan')->name('scan');
         Route::post('/dispute', 'buyerDispute')->middleware('throttle:10,1,api-handover-dispute')->name('dispute');
+        // รอบแก้หลังรีวิว: ผู้ซื้อกด "ได้รับของแล้ว" ระหว่างทางสำรอง (รอผู้รับ/วางของแล้ว)
+        Route::post('/confirm-received', 'buyerConfirmReceived')->middleware('throttle:10,1,api-handover-confirm')->name('confirm-received');
     });
 
 // ===== ไรเดอร์ =====

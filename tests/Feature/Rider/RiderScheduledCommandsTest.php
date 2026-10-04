@@ -43,8 +43,9 @@ class RiderScheduledCommandsTest extends TestCase
     {
         parent::setUp();
 
-        // ไรเดอร์รอบ 2: เทสต์ชุดนี้ตรวจปุ่ม "ส่งสำเร็จ" แบบเดิม — งานที่ต้องสแกนส่งมอบอยู่ใน tests/Feature/RiderR2
-        \App\Models\Setting::set('rider.handover_enabled', '0', 'boolean', 'rider');
+        // ไรเดอร์รอบ 2: เปิดระบบสแกนส่งมอบไว้เหมือน prod — คำขอในชุดนี้ไม่มี X-App-Build ≥ 43 จึงยังเป็นงานแบบเดิม
+        // (ปุ่ม "ส่งสำเร็จ") ตามด่านตอนรับงาน · งานที่ต้องสแกนส่งมอบทดสอบใน tests/Feature/RiderR2
+        \App\Models\Setting::set('rider.handover_enabled', '1', 'boolean', 'rider');
 
         Http::fake();
         Storage::fake('public');

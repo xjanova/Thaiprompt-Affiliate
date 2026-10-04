@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * การส่งมอบของจากไรเดอร์ถึงผู้ซื้อ (ไรเดอร์รอบ 2, 2026-10-04)
  *
- * ปิดงานได้ 3 ทาง:
- *   qr / code — ไรเดอร์สแกน QR ผู้ซื้อ (หรือกรอกรหัส 6 หลัก) + ผู้ซื้อสแกน QR ไรเดอร์ ครบสองฝ่าย
- *   fallback  — ผู้ซื้อไม่สแกน: รูปรอบ 1 ที่จุดส่ง → รอ 3 นาที → รูปรอบ 2 → ปลดเงินอัตโนมัติใน 24 ชม. ถ้าไม่ร้องเรียน
- *   admin     — แอดมินตัดสินเรื่องร้องเรียน
+ * ปิดงานได้ 4 ทาง (คอลัมน์ method):
+ *   qr / code      — ไรเดอร์สแกน QR ผู้ซื้อ (หรือกรอกรหัส 6 หลักของผู้ซื้อ) + ผู้ซื้อสแกน QR ไรเดอร์
+ *                    (หรือกรอกรหัส 6 หลักของไรเดอร์) ครบสองฝ่าย — ฝั่งใดใช้รหัส = code
+ *   fallback       — ผู้ซื้อไม่สแกน: รูปรอบ 1 ที่จุดส่ง → รอ 3 นาที → รูปรอบ 2 → ปลดเงินอัตโนมัติใน 24 ชม. ถ้าไม่ร้องเรียน
+ *   buyer_confirm  — ระหว่างทางสำรอง ผู้ซื้อกด "ได้รับของแล้ว" เอง
+ *   admin          — แอดมินตัดสิน (ปล่อยเงิน/คืนเงิน)
  *
  * @property int $id
  * @property int $rider_job_id
@@ -53,6 +55,8 @@ class DeliveryHandover extends Model
         'code_hash',
         'code_attempts',
         'code_locked_until',
+        'rider_code_attempts',  // รอบแก้หลังรีวิว: ผู้ซื้อกรอกรหัสของไรเดอร์ผิด
+        'rider_code_locked_until',
         'rider_confirmed_at',
         'rider_confirm_latitude',
         'rider_confirm_longitude',
@@ -86,6 +90,8 @@ class DeliveryHandover extends Model
         'secret' => 'encrypted',
         'code_attempts' => 'integer',
         'code_locked_until' => 'datetime',
+        'rider_code_attempts' => 'integer',
+        'rider_code_locked_until' => 'datetime',
         'rider_confirmed_at' => 'datetime',
         'rider_confirm_latitude' => 'decimal:7',
         'rider_confirm_longitude' => 'decimal:7',

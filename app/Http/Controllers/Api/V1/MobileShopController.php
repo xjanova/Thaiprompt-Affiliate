@@ -479,6 +479,7 @@ class MobileShopController extends Controller
                 'coupon_code' => $request->input('coupon_code') ?? $request->input('promo_code'),
                 'note' => $request->input('note'),
                 'preferred_rider_id' => $request->input('preferred_rider_id'),
+                'client_app_build' => \App\Support\Rider\ClientAppBuild::fromRequest($request), // ไรเดอร์รอบ 2: build แอปที่สั่ง
             ], $request->header('Idempotency-Key'));
 
             return response()->json([

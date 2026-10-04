@@ -263,6 +263,7 @@ class ShopCheckoutService
         foreach ($plans as $plan) {
             $order = $this->createOrder($user, $plan, $address, $paymentMethod, $checkoutGroup, $input['note'] ?? null);
             $this->applyPreferredRider($order, $input['preferred_rider_id'] ?? null); // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์
+            \App\Support\Rider\ClientAppBuild::stamp($order, $input['client_app_build'] ?? null); // ไรเดอร์รอบ 2: build แอปที่สั่ง (ตัดสินการสแกนส่งมอบ)
 
             if ($coupon !== null && $coupon['group_key'] === $plan['group']['key']) {
                 $this->coupons->recordUsage(

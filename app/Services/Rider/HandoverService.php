@@ -17,6 +17,7 @@ use App\Models\WalletTransaction;
 use App\Services\DeliveryFeeCalculator;
 use App\Services\FreshMarketService;
 use App\Services\Media\ProfilePhotoService;
+use App\Services\NotificationService;
 use App\Services\RiderEarningService;
 use App\Services\RiderJobService;
 use App\Services\RiderNotificationService;
@@ -33,19 +34,27 @@ use Illuminate\Support\Facades\Storage;
  *
  * กติกาเจ้าของระบบ: เงินผู้ซื้อพักไว้ ไม่แบ่งให้ใคร (ร้าน/ไรเดอร์/ผู้แนะนำ/เงินคืน) จนกว่าส่งมอบสำเร็จ
  *
- * ปิดงานได้ 3 ทาง:
- *   1. สแกนใส่กัน — ไรเดอร์สแกน QR ของผู้ซื้อ (หรือกรอกรหัส 6 หลักของผู้ซื้อ) + ผู้ซื้อสแกน QR ของไรเดอร์
+ * ปิดงานได้ 4 ทาง:
+ *   1. สแกนใส่กัน — ไรเดอร์สแกน QR ของผู้ซื้อ (หรือกรอกรหัส 6 หลักของผู้ซื้อ)
+ *      + ผู้ซื้อสแกน QR ของไรเดอร์ (หรือกรอกรหัส 6 หลักของไรเดอร์)
  *      ครบสองฝ่าย → งาน delivering → delivered → completed + การส่งมอบ completed ใน transaction เดียว
  *   2. ผู้ซื้อไม่ออกมารับ — รูปรอบ 1 ที่จุดส่ง (เริ่มนับรอ) → ครบเวลารอ → รูปรอบ 2 → งาน awaiting_release
  *      (ไรเดอร์ว่างรับงานใหม่) → ปลดเงินอัตโนมัติเมื่อครบ rider.handover_auto_release_hours ถ้าผู้ซื้อไม่ร้องเรียน
- *   3. ร้องเรียน → แอดมินตัดสิน: ปล่อยเงิน (เหมือนส่งสำเร็จ) หรือคืนเงินผู้ซื้อเต็มจำนวน (ไรเดอร์ไม่ได้ค่าส่ง)
+ *   3. ผู้ซื้อกด "ได้รับของแล้ว" ระหว่างทางสำรอง (รอผู้รับ/วางของแล้ว) → ปิดทันที (method buyer_confirm)
+ *   4. ร้องเรียน → ไรเดอร์ถูกปล่อย (งาน awaiting_release) → แอดมินตัดสิน: ปล่อยเงิน หรือคืนเงินผู้ซื้อเต็มจำนวน
+ *
+ * งานจะ "ต้องสแกนส่งมอบ" (handover_required) ก็ต่อเมื่อผู้ซื้อสั่งและไรเดอร์รับงานจากแอปรุ่นที่รองรับ
+ * (ตัดสินตอนรับงาน — RiderJob::handoverRequiredOnAccept) ไม่งั้นเป็นงานแบบเดิมที่กดส่งของได้
  *
  * ความปลอดภัย:
  *   - QR = ข้อมูลสั้นที่เซ็นด้วยกุญแจลับต่องาน (HMAC-SHA256) ผูก id การส่งมอบ + ฝั่ง (b=ผู้ซื้อ, r=ไรเดอร์) + ช่วงเวลา
  *     เปลี่ยนทุก rider.handover_qr_ttl_seconds รับเฉพาะช่วงปัจจุบันและช่วงก่อนหน้า · เทียบลายเซ็นแบบ constant-time
  *   - QR ของผู้ซื้อใช้ได้กับไรเดอร์ของงานเท่านั้น / QR ของไรเดอร์ใช้ได้กับผู้ซื้อของออเดอร์เท่านั้น (ฝั่งผิด = ใช้ไม่ได้)
- *   - รหัส 6 หลักเก็บเป็น hash · ผิดครบ 5 ครั้ง ล็อก 10 นาที (นับครั้งผิดใน transaction แยก — ไม่ถูก rollback)
+ *   - รหัส 6 หลักของผู้ซื้อเก็บเป็น hash / ของไรเดอร์ได้จากกุญแจลับ · ผิดครบ 5 ครั้ง ล็อก 10 นาที แยกตัวนับต่อฝั่ง
+ *     (นับครั้งผิดใน transaction แยก — ไม่ถูก rollback)
  *   - ไรเดอร์ต้องอยู่ในรัศมี rider.handover_geofence_m ของจุดส่งทุกครั้งที่ยืนยัน/ถ่ายรูป
+ *     + ตำแหน่งล่าสุดที่เซิร์ฟเวอร์รู้ (ถ้าสดไม่เกิน 2 นาที) ต้องไม่ไกลเกินรัศมี + 200 ม. (กันปลอมพิกัดในคำขอ)
+ *     ยกเว้นผู้ซื้อยืนยันรับของไปแล้ว → ไม่ขังการยืนยันของไรเดอร์ด้วยรัศมี (บันทึกระยะไว้ตรวจย้อนหลัง)
  *   - ทุกการเปลี่ยนสถานะ: ล็อกแถวงานก่อน แล้วค่อยแถวส่งมอบ (ลำดับเดียวกันทุกเส้นทาง กัน deadlock) · กดซ้ำ = ได้ผลเดิม
  */
 class HandoverService
@@ -79,6 +88,15 @@ class HandoverService
 
     /** สถานะงานที่ไรเดอร์ถือของอยู่ (ส่งมอบได้) */
     public const JOB_HANDOVER_STATUSES = ['picked_up', 'delivering'];
+
+    /** ตำแหน่งล่าสุดของไรเดอร์บนเซิร์ฟเวอร์ "สด" ไม่เกินกี่วินาที (ใช้ตรวจซ้ำรัศมีจุดส่ง) */
+    public const SERVER_LOCATION_FRESH_SECONDS = 120;
+
+    /** ตำแหน่งบนเซิร์ฟเวอร์ห่างจุดส่งเกินรัศมี + ค่านี้ (เมตร) = ปฏิเสธ */
+    public const SERVER_LOCATION_SLACK_M = 200;
+
+    /** สถานะงานที่แอดมินตัดสินการส่งมอบได้ (รวมงานที่ถูกปิดเป็น failed ไปแล้ว) */
+    public const ADMIN_RESOLVABLE_JOB_STATUSES = ['picked_up', 'delivering', RiderJob::STATUS_AWAITING_RELEASE, 'failed'];
 
     public function __construct(
         private readonly DeliveryFeeCalculator $config,
@@ -152,11 +170,12 @@ class HandoverService
     }
 
     /**
-     * POST /orders/{source}/{id}/handover/scan {token} — ผู้ซื้อสแกน QR บนมือถือไรเดอร์ = ยืนยันว่าได้รับของ
+     * POST /orders/{source}/{id}/handover/scan {token} | {code}
+     * ผู้ซื้อสแกน QR บนมือถือไรเดอร์ (หรือกรอกรหัส 6 หลักที่ไรเดอร์แจ้ง — กล้องใช้ไม่ได้) = ยืนยันว่าได้รับของ
      *
      * @return array<string, mixed>
      */
-    public function buyerScan(User $buyer, string $source, int $orderId, string $token): array
+    public function buyerScan(User $buyer, string $source, int $orderId, ?string $token, ?string $code = null): array
     {
         [$order, $job] = $this->resolveBuyerJob($buyer, $source, $orderId);
         $handover = $this->requireHandover($job);
@@ -167,9 +186,16 @@ class HandoverService
         }
 
         $this->assertScannable($job, $handover);
-        $this->verifyToken($handover, $token, self::SIDE_RIDER);
 
-        $completed = DB::transaction(function () use ($job) {
+        $usedCode = false;
+        if ($token !== null && trim($token) !== '') {
+            $this->verifyToken($handover, $token, self::SIDE_RIDER);
+        } else {
+            $this->verifyCode($handover, (string) $code, self::SIDE_RIDER);
+            $usedCode = true;
+        }
+
+        $completed = DB::transaction(function () use ($job, $usedCode) {
             [$lockedJob, $locked] = $this->lockPair($job);
 
             if ($locked->buyer_confirmed_at !== null) {
@@ -180,13 +206,19 @@ class HandoverService
 
             $locked->buyer_confirmed_at = now();
 
+            // ฝั่งใดฝั่งหนึ่งใช้รหัส = ปิดงานด้วยวิธี code
+            $method = $usedCode || $locked->method === 'code' ? 'code' : ($locked->method ?: 'qr');
+
             if ($locked->rider_confirmed_at !== null) {
-                $this->completeLocked($lockedJob, $locked, $locked->method ?: 'qr');
+                $this->completeLocked($lockedJob, $locked, $method);
 
                 return true;
             }
 
             $locked->status = DeliveryHandover::STATUS_BUYER_CONFIRMED;
+            if ($usedCode) {
+                $locked->method = 'code';
+            }
             $locked->save();
 
             return false;
@@ -240,6 +272,12 @@ class HandoverService
                 'dispute_note' => $note,
             ])->save();
 
+            // ร้องเรียนระหว่างไรเดอร์ยังถือของ → ปล่อยไรเดอร์ไปรับงานอื่น (งาน awaiting_release)
+            // เงินยังพักอยู่ · ไม่ปลดอัตโนมัติระหว่างร้องเรียน (releaseDue ข้ามสถานะ disputed) · แอดมินตัดสิน
+            if (in_array($lockedJob->status, self::JOB_HANDOVER_STATUSES, true)) {
+                $this->jobs->markAwaitingReleaseLocked($lockedJob, $this->trackingUntilForRelease(), false);
+            }
+
             return true;
         });
 
@@ -251,10 +289,92 @@ class HandoverService
             $this->notifier->notifyAdmins(
                 'ผู้ซื้อร้องเรียนการส่งมอบ ต้องตัดสิน',
                 "งาน #{$job->job_number}: ".self::disputeReasonText($reason).($note ? " — {$note}" : '').' กรุณาเลือกปล่อยเงินหรือคืนเงินผู้ซื้อ',
-                array_merge($this->pushData($job), ['reason' => $reason]),
+                array_merge($this->pushBase($job), ['reason' => $reason]),
                 $this->adminJobUrl($job),
                 'handover_disputed',
             );
+
+            $riderUserId = $this->riderUserIdFor($job);
+            if ($riderUserId) {
+                $this->notifier->notifyUsers(
+                    [$riderUserId],
+                    'handover_disputed',
+                    'ผู้รับแจ้งร้องเรียนการส่งมอบ',
+                    "ทีมงานกำลังตรวจสอบงาน #{$job->job_number} รายได้งานนี้พักไว้จนกว่าจะได้ข้อสรุป คุณรับงานใหม่ได้ตามปกติ",
+                    $this->pushData($job, 'rider'),
+                    null,
+                    'high',
+                );
+            }
+        }
+
+        return $this->buyerPayload($buyer, $order, $job);
+    }
+
+    /**
+     * POST /orders/{source}/{id}/handover/confirm-received — ผู้ซื้อกด "ได้รับของแล้ว"
+     *
+     * ใช้ได้ระหว่างทางสำรอง: ไรเดอร์ถ่ายรูปรอที่จุดส่งอยู่ (fallback_waiting) หรือวางของแล้วรอปลดเงิน
+     * (fallback_pending_release) — ผู้ซื้อออกมาเจอ/เจอของแล้ว → ปิดงานทันที ปล่อยเงิน (method buyer_confirm)
+     *
+     * @return array<string, mixed>
+     */
+    public function buyerConfirmReceived(User $buyer, string $source, int $orderId): array
+    {
+        [$order, $job] = $this->resolveBuyerJob($buyer, $source, $orderId);
+        $handover = $this->requireHandover($job);
+
+        // กดซ้ำหลังยืนยันสำเร็จ → ได้ผลเดิม
+        if ($handover->isFinal() && $handover->method === 'buyer_confirm') {
+            return $this->buyerPayload($buyer, $order, $job);
+        }
+
+        if ($handover->isFinal()) {
+            throw HandoverException::final();
+        }
+
+        if (! $this->canConfirmReceived($job, $handover)) {
+            throw HandoverException::notReady('ยืนยันรับของได้เมื่อไรเดอร์ถึงจุดส่งแล้วรอผู้รับ หรือวางของไว้ให้แล้วเท่านั้น');
+        }
+
+        $completed = DB::transaction(function () use ($job) {
+            [$lockedJob, $locked] = $this->lockPair($job);
+
+            if ($locked->isFinal()) {
+                if ($locked->method === 'buyer_confirm') {
+                    return false;
+                }
+
+                throw HandoverException::final();
+            }
+
+            if (! $this->canConfirmReceived($lockedJob, $locked)) {
+                throw HandoverException::notReady('ยืนยันรับของได้เมื่อไรเดอร์ถึงจุดส่งแล้วรอผู้รับ หรือวางของไว้ให้แล้วเท่านั้น');
+            }
+
+            $locked->buyer_confirmed_at = now();
+
+            // พิกัดจุดที่ไรเดอร์ถ่ายรูปล่าสุด (รอบ 2 ถ้ามี ไม่งั้นรอบ 1)
+            $lat = $locked->waited_latitude ?? $locked->arrival_latitude;
+            $lng = $locked->waited_longitude ?? $locked->arrival_longitude;
+
+            $this->completeLocked(
+                $lockedJob,
+                $locked,
+                'buyer_confirm',
+                DeliveryHandover::STATUS_COMPLETED,
+                $lat !== null ? (float) $lat : null,
+                $lng !== null ? (float) $lng : null,
+            );
+
+            return true;
+        });
+
+        $job->refresh()->unsetRelation('handover');
+
+        if ($completed) {
+            Log::info('Handover: buyer confirmed received', ['job_id' => $job->id]);
+            $this->afterCompleted($job);
         }
 
         return $this->buyerPayload($buyer, $order, $job);
@@ -293,13 +413,20 @@ class HandoverService
         }
 
         $this->assertScannable($job, $handover);
-        $distance = $this->assertWithinGeofence($job, $lat, $lng);
+
+        // ผู้ซื้อยืนยันรับของแล้ว (สแกน QR/กรอกรหัสของไรเดอร์) → ไม่ขังการยืนยันด้วยรัศมี บันทึกระยะไว้ตรวจย้อนหลัง
+        if ($handover->buyer_confirmed_at !== null) {
+            $distance = $this->distanceToDropoff($job, $lat, $lng);
+            Log::info('Handover: rider confirm after buyer confirmed, geofence skipped', ['job_id' => $job->id, 'distance_m' => $distance]);
+        } else {
+            $distance = $this->assertWithinGeofence($job, $lat, $lng, $rider);
+        }
 
         $method = 'qr';
         if ($token !== null && $token !== '') {
             $this->verifyToken($handover, $token, self::SIDE_BUYER);
         } else {
-            $this->verifyCode($handover, (string) $code);
+            $this->verifyCode($handover, (string) $code, self::SIDE_BUYER);
             $method = 'code';
         }
 
@@ -311,6 +438,9 @@ class HandoverService
             }
 
             $this->assertScannable($lockedJob, $locked);
+
+            // ฝั่งใดฝั่งหนึ่งใช้รหัส = ปิดงานด้วยวิธี code
+            $method = $method === 'code' || $locked->method === 'code' ? 'code' : $method;
 
             $locked->forceFill([
                 'rider_confirmed_at' => now(),
@@ -358,7 +488,7 @@ class HandoverService
         }
 
         $this->assertCanArrivalPhoto($job, $handover);
-        $distance = $this->assertWithinGeofence($job, $lat, $lng);
+        $distance = $this->assertWithinGeofence($job, $lat, $lng, $rider);
 
         $path = $this->storePhoto($photo, $job, 'arrival');
 
@@ -404,7 +534,7 @@ class HandoverService
                 'handover_arrived',
                 'ไรเดอร์มาถึงแล้ว',
                 'ไรเดอร์รออยู่ที่จุดส่งของคุณ กรุณาออกมารับของแล้วสแกน QR ของไรเดอร์ งาน #'.$job->job_number,
-                $this->pushData($job, ['screen' => 'order-handover']),
+                $this->pushData($job, 'buyer', ['screen' => 'order-handover']),
                 null,
                 'high',
             );
@@ -429,7 +559,7 @@ class HandoverService
         }
 
         $this->assertCanWaitedPhoto($job, $handover);
-        $distance = $this->assertWithinGeofence($job, $lat, $lng);
+        $this->assertWithinGeofence($job, $lat, $lng, $rider);
 
         $path = $this->storePhoto($photo, $job, 'waited');
         $autoReleaseAt = null;
@@ -481,7 +611,7 @@ class HandoverService
                 'handover_auto_release_scheduled',
                 'ไรเดอร์วางของไว้ให้แล้ว',
                 "ไรเดอร์รอแล้วไม่พบผู้รับ จึงวางของไว้ที่จุดส่งพร้อมถ่ายรูปไว้ ถ้าไม่ได้รับของ กรุณาแจ้งภายใน {$hours} ชั่วโมง งาน #{$job->job_number}",
-                $this->pushData($job, ['screen' => 'order-handover', 'auto_release_at' => $autoReleaseAt?->toIso8601String()]),
+                $this->pushData($job, 'buyer', ['screen' => 'order-handover', 'auto_release_at' => $autoReleaseAt?->toIso8601String()]),
                 null,
                 'high',
             );
@@ -555,6 +685,9 @@ class HandoverService
     /**
      * แอดมินตัดสิน "ปล่อยเงิน" — ปิดงานเหมือนส่งสำเร็จ แบ่งเงินตามปกติ
      *
+     * ตัดสินได้ทุกสถานะที่ยังไม่จบ (รอสแกน / ยืนยันฝั่งเดียว / รอผู้รับ / วางของ / ร้องเรียน)
+     * รวมงานที่ถูกปิดเป็น failed ไปแล้ว ถ้าออเดอร์ยังไม่ถูกยกเลิก/คืนเงิน และยังไม่มีงานส่งใหม่แทน
+     *
      * @throws HandoverException HANDOVER_FINAL | HANDOVER_NOT_READY
      */
     public function adminRelease(RiderJob $job, User $admin, ?string $note): DeliveryHandover
@@ -577,6 +710,11 @@ class HandoverService
                 throw HandoverException::notReady('การส่งมอบนี้ยังไม่อยู่ในสถานะที่แอดมินตัดสินได้');
             }
 
+            // งานที่ถูกปิดเป็น failed: ปล่อยเงินได้เฉพาะเมื่อออเดอร์ยังเปิดอยู่ (ยกเลิก/คืนเงินไปแล้ว = ไม่มีเงินให้ปล่อย)
+            if ($lockedJob->status === 'failed' && $this->sourceClosed($lockedJob)) {
+                throw HandoverException::notReady('ออเดอร์นี้ถูกยกเลิกหรือคืนเงินไปแล้ว ปล่อยเงินไม่ได้ (ใช้ "คืนเงินผู้ซื้อ" เพื่อปิดเรื่อง)');
+            }
+
             $locked->forceFill([
                 'resolved_at' => now(),
                 'resolved_by' => $admin->id,
@@ -584,13 +722,17 @@ class HandoverService
                 'resolution_note' => $note,
             ]);
 
+            $lat = $locked->rider_confirm_latitude ?? $locked->waited_latitude ?? $locked->arrival_latitude;
+            $lng = $locked->rider_confirm_longitude ?? $locked->waited_longitude ?? $locked->arrival_longitude;
+
             $this->completeLocked(
                 $lockedJob,
                 $locked,
                 'admin',
                 DeliveryHandover::STATUS_RELEASED,
-                $locked->rider_confirm_latitude !== null ? (float) $locked->rider_confirm_latitude : null,
-                $locked->rider_confirm_longitude !== null ? (float) $locked->rider_confirm_longitude : null,
+                $lat !== null ? (float) $lat : null,
+                $lng !== null ? (float) $lng : null,
+                $lockedJob->status === 'failed',
             );
         });
 
@@ -608,6 +750,12 @@ class HandoverService
      *
      * ทั้งหมดใน transaction เดียว: คืนเงินไม่สำเร็จ = ไม่มีอะไรเปลี่ยน (แอดมินเห็นข้อความแล้วแก้ต้นเหตุก่อน)
      *
+     * - ของถึงมือผู้ซื้อแล้ว (วางของ/สแกนเจอกันแล้ว) → ไม่คืนสต็อกเข้าร้าน
+     *   ไรเดอร์ยังถือของอยู่ (รอสแกน/รอผู้รับ) → คืนสต็อกตามปกติ และแจ้งไรเดอร์ให้นำของคืนร้าน
+     * - แจ้งเตือนจากขั้นย่อย (งานส่งไม่สำเร็จ / ออเดอร์ถูกยกเลิก / คืนเงิน) ถูกปิดไว้
+     *   แล้วแจ้งข้อความเดียวที่ตรงเหตุการณ์: ผู้ซื้อ · ไรเดอร์ · ร้าน (handover_resolved) + แอดมิน
+     * - ออเดอร์ถูกยกเลิก/คืนเงินไปก่อนแล้ว → ปิดเรื่องอย่างเดียว ไม่คืนเงินซ้ำ
+     *
      * @throws HandoverException|\Throwable
      */
     public function adminRefund(RiderJob $job, User $admin, string $note): DeliveryHandover
@@ -619,60 +767,138 @@ class HandoverService
 
         $note = mb_substr(trim($note), 0, 1000);
         $reason = 'แอดมินตัดสินคืนเงินผู้ซื้อ (ร้องเรียนการส่งมอบ)'.($note !== '' ? ": {$note}" : '');
+        $alreadyClosed = false;
+        $itemWithBuyer = true;
 
-        DB::transaction(function () use ($job, $admin, $note, $reason) {
-            [$lockedJob, $locked] = $this->lockPair($job);
+        NotificationService::muteUsersDuring($this->resolutionAudience($job), function () use ($job, $admin, $note, $reason, &$alreadyClosed, &$itemWithBuyer) {
+            DB::transaction(function () use ($job, $admin, $note, $reason, &$alreadyClosed, &$itemWithBuyer) {
+                [$lockedJob, $locked] = $this->lockPair($job);
 
-            if ($locked->isFinal()) {
-                throw HandoverException::final();
-            }
+                if ($locked->isFinal()) {
+                    throw HandoverException::final();
+                }
 
-            if (! $this->adminCanResolve($lockedJob, $locked)) {
-                throw HandoverException::notReady('การส่งมอบนี้ยังไม่อยู่ในสถานะที่แอดมินตัดสินได้');
-            }
+                if (! $this->adminCanResolve($lockedJob, $locked)) {
+                    throw HandoverException::notReady('การส่งมอบนี้ยังไม่อยู่ในสถานะที่แอดมินตัดสินได้');
+                }
 
-            $locked->forceFill([
-                'status' => DeliveryHandover::STATUS_REFUNDED,
-                'method' => 'admin',
-                'resolved_at' => now(),
-                'resolved_by' => $admin->id,
-                'resolution' => 'refund',
-                'resolution_note' => $note !== '' ? $note : null,
-            ])->save();
+                $locked->forceFill([
+                    'status' => DeliveryHandover::STATUS_REFUNDED,
+                    'method' => 'admin',
+                    'resolved_at' => now(),
+                    'resolved_by' => $admin->id,
+                    'resolution' => 'refund',
+                    'resolution_note' => $note !== '' ? $note : null,
+                ])->save();
 
-            // 1) งานไรเดอร์ → failed (admin_intervention) — ไม่เคลียร์เงิน ไรเดอร์ไม่ได้ค่าส่ง
-            $this->jobs->adminFail($lockedJob, $admin, $reason);
+                $alreadyClosed = $this->sourceClosed($lockedJob);
+                $itemWithBuyer = $this->itemLeftWithBuyer($lockedJob, $locked);
 
-            // 2) ยกเลิกออเดอร์ + คืนเงินเต็มจำนวน (ยังไม่มีการแบ่งเงิน → ไม่ต้องดึงคืนจากใคร)
-            $source = $lockedJob->fresh()->deliverableSource();
-            if ($source instanceof Order) {
-                $source->fresh()->cancel($reason, (int) $admin->id, 'admin');
-            } elseif ($source instanceof FreshMarketOrder) {
-                app(FreshMarketService::class)->cancelOrder($source->fresh(), $reason, 'admin', $admin);
-            }
+                // 1) งานไรเดอร์ → failed (admin_intervention) — ไม่เคลียร์เงิน ไรเดอร์ไม่ได้ค่าส่ง · ไม่แจ้งข้อความ "ส่งไม่สำเร็จ"
+                $this->jobs->adminFail($lockedJob, $admin, $reason, false);
+
+                if ($alreadyClosed) {
+                    return;
+                }
+
+                // 2) ยกเลิกออเดอร์ + คืนเงินเต็มจำนวน (ยังไม่มีการแบ่งเงิน → ไม่ต้องดึงคืนจากใคร)
+                //    ของอยู่กับผู้ซื้อแล้ว → ไม่คืนสต็อกเข้าร้าน
+                $source = $lockedJob->fresh()->deliverableSource();
+                if ($source instanceof Order) {
+                    if ($itemWithBuyer && $source->stock_deducted_at !== null) {
+                        // Order::cancel คืนสต็อกเฉพาะออเดอร์ที่ stock_deducted_at ยังไม่ว่าง → ล้างไว้ก่อน (ของไม่ได้กลับร้าน)
+                        Order::whereKey($source->id)->update(['stock_deducted_at' => null]);
+                        Log::info('Handover: admin refund keeps stock out (item left the shop)', ['job_id' => $lockedJob->id, 'order_id' => $source->id]);
+                    }
+                    $source->fresh()->cancel($reason, (int) $admin->id, 'admin');
+                } elseif ($source instanceof FreshMarketOrder) {
+                    // ออเดอร์ตลาดสดเป็น delivery_failed แล้ว (hook ของงาน) → cancelOrder ไม่คืนสต็อกเอง
+                    app(FreshMarketService::class)->cancelOrder($source->fresh(), $reason, 'admin', $admin);
+                }
+            });
         });
 
-        Log::info('Handover: admin refunded', ['job_id' => $job->id, 'admin_id' => $admin->id]);
+        Log::info('Handover: admin refunded', [
+            'job_id' => $job->id,
+            'admin_id' => $admin->id,
+            'already_closed' => $alreadyClosed,
+            'item_with_buyer' => $itemWithBuyer,
+        ]);
 
         $fresh = $job->fresh();
-        $this->notifyResolved($fresh, 'refund');
+        $this->notifyResolved($fresh, 'refund', $alreadyClosed, ! $itemWithBuyer);
+
+        $this->notifier->notifyAdmins(
+            $alreadyClosed ? 'ปิดเรื่องร้องเรียนการส่งมอบแล้ว' : 'คืนเงินผู้ซื้อแล้ว (ตัดสินการส่งมอบ)',
+            "งาน #{$fresh->job_number}: แอดมิน {$admin->name} ".($alreadyClosed
+                ? 'ปิดเรื่อง (ออเดอร์ถูกยกเลิก/คืนเงินไปก่อนแล้ว)'
+                : 'ตัดสินคืนเงินผู้ซื้อเต็มจำนวน ยกเลิกออเดอร์ ไรเดอร์ไม่ได้ค่าส่ง'.($itemWithBuyer ? '' : ' (ไรเดอร์ยังถือของ — ประสานนำของคืนร้าน)'))
+                .($note !== '' ? " — {$note}" : ''),
+            array_merge($this->pushBase($fresh), ['resolution' => 'refund']),
+            $this->adminJobUrl($fresh),
+        );
 
         return $fresh->handover()->first();
     }
 
     /**
-     * แอดมินตัดสินได้เมื่อ: ผู้ซื้อร้องเรียน หรือรอปลดเงินอัตโนมัติอยู่
+     * แอดมินตัดสินได้เมื่อ: การส่งมอบยังไม่จบ (ทุกสถานะ) + ไรเดอร์รับของไปแล้ว (หรืองานถูกปิดเป็น failed ไปแล้ว)
+     *
+     * งาน failed ที่มีงานส่งใหม่ของออเดอร์เดียวกันแล้ว = เรื่องเก่า ตัดสินไม่ได้ (ไปตัดสินที่งานใหม่)
      */
     public function adminCanResolve(RiderJob $job, ?DeliveryHandover $handover): bool
     {
-        if (! $handover || $handover->isFinal() || $job->isTerminal()) {
+        if (! $handover || $handover->isFinal()) {
             return false;
         }
 
-        return in_array($handover->status, [
-            DeliveryHandover::STATUS_DISPUTED,
-            DeliveryHandover::STATUS_FALLBACK_PENDING_RELEASE,
-        ], true);
+        if (! in_array($job->status, self::ADMIN_RESOLVABLE_JOB_STATUSES, true)) {
+            return false;
+        }
+
+        if ($job->status === 'failed' && $job->source_type && $job->source_id) {
+            $superseded = RiderJob::query()
+                ->where('source_type', $job->source_type)
+                ->where('source_id', $job->source_id)
+                ->where('id', '>', $job->id)
+                ->exists();
+
+            if ($superseded) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * ของออกจากมือไรเดอร์ไปถึงผู้ซื้อแล้วหรือยัง (ใช้ตัดสินว่าคืนเงินแล้วต้องคืนสต็อกเข้าร้านไหม)
+     *
+     * = วางของแล้ว (รูปรอบ 2 / งานรอปลดเงิน) หรือเจอกันแล้ว (ฝั่งใดฝั่งหนึ่งสแกน/กรอกรหัสยืนยัน)
+     */
+    private function itemLeftWithBuyer(RiderJob $job, DeliveryHandover $handover): bool
+    {
+        return $job->status === RiderJob::STATUS_AWAITING_RELEASE
+            || $handover->waited_photo_at !== null
+            || $handover->rider_confirmed_at !== null
+            || $handover->buyer_confirmed_at !== null;
+    }
+
+    /**
+     * ผู้ซื้อกด "ได้รับของแล้ว" ได้ไหม (ทางสำรอง: รอผู้รับที่จุดส่ง / วางของแล้วรอปลดเงิน)
+     */
+    public function canConfirmReceived(RiderJob $job, ?DeliveryHandover $handover): bool
+    {
+        if (! $handover || $handover->isFinal()) {
+            return false;
+        }
+
+        if ($handover->status === DeliveryHandover::STATUS_FALLBACK_WAITING) {
+            return in_array($job->status, self::JOB_HANDOVER_STATUSES, true);
+        }
+
+        return $handover->status === DeliveryHandover::STATUS_FALLBACK_PENDING_RELEASE
+            && $job->status === RiderJob::STATUS_AWAITING_RELEASE;
     }
 
     // =====================================================
@@ -727,6 +953,21 @@ class HandoverService
     }
 
     /**
+     * รหัส 6 หลักของไรเดอร์ (ให้ผู้ซื้อกรอกเมื่อสแกน QR ของไรเดอร์ไม่ได้) — ได้จากกุญแจลับต่องาน คนละค่ากับของผู้ซื้อ
+     */
+    public static function deriveRiderCode(string $secret): string
+    {
+        $number = hexdec(substr(hash_hmac('sha256', 'handover-code-rider', $secret), 0, 8)) % 1000000;
+
+        return str_pad((string) $number, 6, '0', STR_PAD_LEFT);
+    }
+
+    public function riderCodeFor(DeliveryHandover $handover): string
+    {
+        return self::deriveRiderCode((string) $handover->secret);
+    }
+
+    /**
      * ตรวจ QR (ลายเซ็น constant-time → ฝั่ง → id → ช่วงเวลา)
      *
      * @throws HandoverException HANDOVER_TOKEN_INVALID | HANDOVER_TOKEN_EXPIRED
@@ -767,52 +1008,75 @@ class HandoverService
     /**
      * ตรวจรหัส 6 หลัก — นับครั้งผิดใน transaction ของตัวเอง (commit ก่อน throw → นับจริงแม้คำขอล้ม)
      *
+     * @param  string  $side  เจ้าของรหัส: SIDE_BUYER = รหัสผู้ซื้อ (ไรเดอร์กรอก · code_attempts)
+     *                        SIDE_RIDER = รหัสไรเดอร์ (ผู้ซื้อกรอก · rider_code_attempts) — ตัวนับแยกกัน
+     *
      * @throws HandoverException HANDOVER_CODE_INVALID | HANDOVER_CODE_LOCKED
      */
-    private function verifyCode(DeliveryHandover $handover, string $code): void
+    private function verifyCode(DeliveryHandover $handover, string $code, string $side): void
     {
         $code = preg_replace('/\D/', '', $code) ?? '';
+        [$attemptsColumn, $lockColumn] = $side === self::SIDE_RIDER
+            ? ['rider_code_attempts', 'rider_code_locked_until']
+            : ['code_attempts', 'code_locked_until'];
 
-        $result = DB::transaction(function () use ($handover, $code) {
+        $result = DB::transaction(function () use ($handover, $code, $side, $attemptsColumn, $lockColumn) {
             /** @var DeliveryHandover $row */
             $row = DeliveryHandover::whereKey($handover->id)->lockForUpdate()->firstOrFail();
 
-            if ($row->code_locked_until !== null) {
-                if ($row->code_locked_until->isFuture()) {
-                    return ['locked', $row->code_locked_until];
+            /** @var Carbon|null $lockedUntil */
+            $lockedUntil = $row->{$lockColumn};
+            if ($lockedUntil !== null) {
+                if ($lockedUntil->isFuture()) {
+                    return ['locked', $lockedUntil];
                 }
 
                 // พ้นเวลาล็อกแล้ว → เริ่มนับใหม่
-                $row->forceFill(['code_locked_until' => null, 'code_attempts' => 0]);
+                $row->forceFill([$lockColumn => null, $attemptsColumn => 0]);
             }
 
-            if (strlen($code) === 6 && $row->code_hash && Hash::check($code, $row->code_hash)) {
-                if ((int) $row->code_attempts > 0 || $row->isDirty()) {
-                    $row->forceFill(['code_attempts' => 0, 'code_locked_until' => null])->save();
+            if (strlen($code) === 6 && $this->codeMatches($row, $code, $side)) {
+                if ((int) $row->{$attemptsColumn} > 0 || $row->isDirty()) {
+                    $row->forceFill([$attemptsColumn => 0, $lockColumn => null])->save();
                 }
 
                 return ['ok', null];
             }
 
-            $attempts = (int) $row->code_attempts + 1;
+            $attempts = (int) $row->{$attemptsColumn} + 1;
 
             if ($attempts >= self::MAX_CODE_ATTEMPTS) {
                 $until = now()->addMinutes(self::CODE_LOCK_MINUTES);
-                $row->forceFill(['code_attempts' => $attempts, 'code_locked_until' => $until])->save();
+                $row->forceFill([$attemptsColumn => $attempts, $lockColumn => $until])->save();
 
                 return ['locked', $until];
             }
 
-            $row->forceFill(['code_attempts' => $attempts])->save();
+            $row->forceFill([$attemptsColumn => $attempts])->save();
 
             return ['invalid', self::MAX_CODE_ATTEMPTS - $attempts];
         });
 
         match ($result[0]) {
             'ok' => null,
-            'locked' => throw HandoverException::codeLocked(Carbon::parse($result[1])),
+            'locked' => throw HandoverException::codeLocked(
+                Carbon::parse($result[1]),
+                $side === self::SIDE_RIDER ? 'หรือสแกน QR บนมือถือของไรเดอร์แทน' : 'หรือให้ผู้รับสแกน QR แทน',
+            ),
             default => throw HandoverException::codeInvalid((int) $result[1]),
         };
+    }
+
+    /**
+     * รหัสตรงไหม — ผู้ซื้อ: เทียบ hash (bcrypt) · ไรเดอร์: คิดจากกุญแจลับแล้วเทียบแบบ constant-time
+     */
+    private function codeMatches(DeliveryHandover $row, string $code, string $side): bool
+    {
+        if ($side === self::SIDE_RIDER) {
+            return hash_equals(self::deriveRiderCode((string) $row->secret), $code);
+        }
+
+        return $row->code_hash && Hash::check($code, $row->code_hash);
     }
 
     // =====================================================
@@ -832,6 +1096,7 @@ class HandoverService
         string $status = DeliveryHandover::STATUS_COMPLETED,
         ?float $lat = null,
         ?float $lng = null,
+        bool $adminOverride = false,
     ): void {
         $locked->forceFill([
             'status' => $status,
@@ -842,7 +1107,7 @@ class HandoverService
         $lat ??= $locked->rider_confirm_latitude !== null ? (float) $locked->rider_confirm_latitude : null;
         $lng ??= $locked->rider_confirm_longitude !== null ? (float) $locked->rider_confirm_longitude : null;
 
-        $this->jobs->completeHandoverLocked($lockedJob, $lat, $lng);
+        $this->jobs->completeHandoverLocked($lockedJob, $lat, $lng, $adminOverride);
     }
 
     /**
@@ -873,8 +1138,8 @@ class HandoverService
 
         $fresh = $job->fresh() ?? $job;
         $buyerId = $this->buyerUserIdFor($fresh);
-        $riderUserId = $fresh->rider_id ? Rider::withTrashed()->whereKey($fresh->rider_id)->value('user_id') : null;
-        $sellerIds = array_values(array_diff($fresh->partyUserIds(), array_filter([$buyerId, $riderUserId])));
+        $riderUserId = $this->riderUserIdFor($fresh);
+        $sellerIds = $this->sellerUserIdsFor($fresh);
         $earned = round((float) $fresh->rider_earnings + $this->riderBonus($fresh), 2);
 
         $this->notifier->notifyUsers(
@@ -882,16 +1147,16 @@ class HandoverService
             'handover_completed',
             'ได้รับของเรียบร้อย',
             "ส่งมอบสำเร็จ ขอบคุณที่ใช้บริการ งาน #{$fresh->job_number}",
-            $this->pushData($fresh, ['screen' => 'order']),
+            $this->pushData($fresh, 'buyer', ['screen' => 'order']),
         );
 
         if ($riderUserId) {
             $this->notifier->notifyUsers(
-                [(int) $riderUserId],
+                [$riderUserId],
                 'handover_completed',
                 'ส่งมอบสำเร็จ',
                 'รายได้ ฿'.number_format($earned, 2)." เข้ากระเป๋าแล้ว งาน #{$fresh->job_number}",
-                $this->pushData($fresh, ['screen' => 'rider-job-detail']),
+                $this->pushData($fresh, 'rider'),
             );
         }
 
@@ -901,32 +1166,50 @@ class HandoverService
                 'handover_completed',
                 'ลูกค้าได้รับของแล้ว',
                 "ไรเดอร์ส่งมอบสำเร็จ รายได้จากออเดอร์นี้เข้ากระเป๋าร้านแล้ว งาน #{$fresh->job_number}",
-                $this->pushData($fresh, ['screen' => 'merchant-order']),
+                $this->pushData($fresh, 'seller'),
             );
         }
     }
 
     /**
-     * แจ้งผู้ซื้อ + ไรเดอร์ว่าแอดมินตัดสินแล้ว
+     * แจ้งผู้ซื้อ + ไรเดอร์ + ร้าน ว่าแอดมินตัดสินแล้ว (ข้อความเดียวต่อคน ตรงเหตุการณ์)
+     *
+     * @param  bool  $alreadyClosed  ออเดอร์ถูกยกเลิก/คืนเงินไปก่อนแล้ว (คืนเงิน = ปิดเรื่องอย่างเดียว)
+     * @param  bool  $riderHoldsItem  คืนเงินตอนไรเดอร์ยังถือของอยู่ → บอกไรเดอร์ให้นำของคืนร้าน
      */
-    private function notifyResolved(RiderJob $job, string $resolution): void
+    private function notifyResolved(RiderJob $job, string $resolution, bool $alreadyClosed = false, bool $riderHoldsItem = false): void
     {
         $buyerId = $this->buyerUserIdFor($job);
-        $riderUserId = $job->rider_id ? Rider::withTrashed()->whereKey($job->rider_id)->value('user_id') : null;
+        $riderUserId = $this->riderUserIdFor($job);
+        $sellerIds = $this->sellerUserIdsFor($job);
+        $orderRef = $this->orderNumberFor($job);
+        $orderText = $orderRef ? "ออเดอร์ #{$orderRef} " : '';
 
-        $buyerMessage = $resolution === 'refund'
-            ? "ทีมงานตรวจสอบแล้ว คืนเงินเต็มจำนวนเข้ากระเป๋าเงินของคุณ งาน #{$job->job_number}"
-            : "ทีมงานตรวจสอบแล้ว ยืนยันว่าส่งมอบสำเร็จ งาน #{$job->job_number}";
-        $riderMessage = $resolution === 'refund'
-            ? "ทีมงานตัดสินคืนเงินผู้ซื้อ งานนี้ไม่มีรายได้ค่าส่ง งาน #{$job->job_number}"
-            : "ทีมงานยืนยันการส่งมอบแล้ว รายได้เข้ากระเป๋าของคุณ งาน #{$job->job_number}";
+        if ($resolution === 'refund') {
+            $buyerMessage = $alreadyClosed
+                ? "ทีมงานปิดเรื่องร้องเรียนแล้ว {$orderText}ถูกยกเลิกและคืนเงินให้คุณไปก่อนหน้านี้ งาน #{$job->job_number}"
+                : "ทีมงานตรวจสอบแล้ว ยกเลิก{$orderText}และคืนเงินเต็มจำนวน (รวมค่าส่ง) เข้ากระเป๋าเงินของคุณแล้ว งาน #{$job->job_number}";
+            $riderMessage = $riderHoldsItem
+                ? "ทีมงานตัดสินคืนเงินผู้ซื้อ ออเดอร์ถูกยกเลิก กรุณานำสินค้าคืนร้าน งานนี้ไม่มีรายได้ค่าส่ง งาน #{$job->job_number}"
+                : "ทีมงานตัดสินคืนเงินผู้ซื้อ งานนี้ไม่มีรายได้ค่าส่ง งาน #{$job->job_number}";
+            $sellerMessage = "ทีมงานตัดสินคืนเงินผู้ซื้อ {$orderText}ถูกยกเลิก ไม่มีรายได้จากออเดอร์นี้ งาน #{$job->job_number}";
+        } else {
+            $buyerMessage = "ทีมงานตรวจสอบแล้ว ยืนยันว่าส่งมอบสำเร็จ งาน #{$job->job_number}";
+            $riderMessage = "ทีมงานยืนยันการส่งมอบแล้ว รายได้เข้ากระเป๋าของคุณ งาน #{$job->job_number}";
+            $sellerMessage = "ทีมงานยืนยันว่าลูกค้าได้รับของแล้ว รายได้จาก{$orderText}เข้ากระเป๋าร้าน งาน #{$job->job_number}";
+        }
 
         $this->notifier->notifyUsers([$buyerId], 'handover_resolved', 'ผลการตรวจสอบการส่งมอบ', $buyerMessage,
-            $this->pushData($job, ['resolution' => $resolution, 'screen' => 'order']), null, 'high');
+            $this->pushData($job, 'buyer', ['resolution' => $resolution, 'screen' => 'order']), null, 'high');
 
         if ($riderUserId) {
-            $this->notifier->notifyUsers([(int) $riderUserId], 'handover_resolved', 'ผลการตรวจสอบการส่งมอบ', $riderMessage,
-                $this->pushData($job, ['resolution' => $resolution, 'screen' => 'rider-job-detail']), null, 'high');
+            $this->notifier->notifyUsers([$riderUserId], 'handover_resolved', 'ผลการตรวจสอบการส่งมอบ', $riderMessage,
+                $this->pushData($job, 'rider', ['resolution' => $resolution]), null, 'high');
+        }
+
+        if ($sellerIds !== []) {
+            $this->notifier->notifyUsers($sellerIds, 'handover_resolved', 'ผลการตรวจสอบการส่งมอบ', $sellerMessage,
+                $this->pushData($job, 'seller', ['resolution' => $resolution]), null, 'high');
         }
     }
 
@@ -1050,24 +1333,69 @@ class HandoverService
 
     /**
      * ไรเดอร์ต้องอยู่ในรัศมีจุดส่ง — คืนระยะห่าง (เมตร)
+     *
+     * ตรวจ 2 ชั้น:
+     *   1. พิกัดที่แอปส่งมากับคำขอ ต้องอยู่ในรัศมี rider.handover_geofence_m
+     *   2. ตำแหน่งล่าสุดที่เซิร์ฟเวอร์รู้ (ถ้าสดไม่เกิน 2 นาที) ต้องไม่ไกลเกินรัศมี + 200 ม.
+     *      — กันแอปดัดแปลงส่งพิกัดปลอมมากับคำขอ · ไม่มีตำแหน่งสดบนเซิร์ฟเวอร์ = เชื่อพิกัดในคำขออย่างเดียว
      */
-    private function assertWithinGeofence(RiderJob $job, float $lat, float $lng): ?int
+    private function assertWithinGeofence(RiderJob $job, float $lat, float $lng, ?Rider $rider = null): ?int
     {
-        if (! DeliveryFeeCalculator::isValidCoordinate($job->delivery_latitude, $job->delivery_longitude)) {
+        $distance = $this->distanceToDropoff($job, $lat, $lng);
+
+        if ($distance === null) {
             // งานไม่มีพิกัดจุดส่ง (ข้อมูลผิดปกติ — createJobForSource บังคับพิกัดเสมอ) → ตรวจระยะไม่ได้ ไม่ขังเงินไว้
             Log::warning('Handover: job has no dropoff coordinate, geofence skipped', ['job_id' => $job->id]);
 
             return null;
         }
 
-        $distance = self::distanceMeters($lat, $lng, (float) $job->delivery_latitude, (float) $job->delivery_longitude);
         $geofence = max(10, $this->config->intSetting('rider.handover_geofence_m'));
 
         if ($distance > $geofence) {
             throw HandoverException::tooFar($distance, $geofence);
         }
 
+        $serverDistance = $this->serverDistanceToDropoff($job, $rider);
+        if ($serverDistance !== null && $serverDistance > $geofence + self::SERVER_LOCATION_SLACK_M) {
+            Log::warning('Handover: request location inside geofence but last server location is far', [
+                'job_id' => $job->id,
+                'rider_id' => $rider?->id,
+                'request_distance_m' => $distance,
+                'server_distance_m' => $serverDistance,
+            ]);
+
+            throw HandoverException::tooFar($serverDistance, $geofence);
+        }
+
         return $distance;
+    }
+
+    /**
+     * ระยะจากพิกัดหนึ่งถึงจุดส่งของงาน (เมตร) — งานไม่มีพิกัดจุดส่ง = null
+     */
+    private function distanceToDropoff(RiderJob $job, float $lat, float $lng): ?int
+    {
+        if (! DeliveryFeeCalculator::isValidCoordinate($job->delivery_latitude, $job->delivery_longitude)) {
+            return null;
+        }
+
+        return self::distanceMeters($lat, $lng, (float) $job->delivery_latitude, (float) $job->delivery_longitude);
+    }
+
+    /**
+     * ระยะจากตำแหน่งล่าสุดบนเซิร์ฟเวอร์ของไรเดอร์ถึงจุดส่ง — เฉพาะตำแหน่งที่สดไม่เกิน SERVER_LOCATION_FRESH_SECONDS
+     */
+    private function serverDistanceToDropoff(RiderJob $job, ?Rider $rider): ?int
+    {
+        if (! $rider
+            || $rider->last_location_update === null
+            || ! DeliveryFeeCalculator::isValidCoordinate($rider->last_latitude, $rider->last_longitude)
+            || Carbon::parse($rider->last_location_update)->lt(now()->subSeconds(self::SERVER_LOCATION_FRESH_SECONDS))) {
+            return null;
+        }
+
+        return $this->distanceToDropoff($job, (float) $rider->last_latitude, (float) $rider->last_longitude);
     }
 
     public static function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): int
@@ -1151,6 +1479,8 @@ class HandoverService
             'settlement' => $handover && in_array($handover->status, [DeliveryHandover::STATUS_COMPLETED, DeliveryHandover::STATUS_RELEASED], true)
                 ? $this->settlementFor($order, $job)
                 : null,
+            // เวลาเซิร์ฟเวอร์ ให้แอปชดเชยนาฬิกาเครื่องที่เพี้ยน (นับถอยหลัง QR / เวลารอ / เวลาปลดเงิน)
+            'server_now' => now()->toIso8601String(),
         ];
     }
 
@@ -1167,7 +1497,8 @@ class HandoverService
                 'rider_confirmed' => false, 'buyer_confirmed' => false,
                 'qr_token' => null, 'qr_expires_at' => null, 'code' => null,
                 'wait_until' => null, 'auto_release_at' => null, 'arrival_photo_at' => null, 'waited_photo_at' => null,
-                'can_dispute' => false, 'disputed_at' => null, 'dispute_reason' => null, 'completed_at' => null,
+                'can_dispute' => false, 'can_confirm_received' => false,
+                'disputed_at' => null, 'dispute_reason' => null, 'completed_at' => null,
             ];
         }
 
@@ -1191,6 +1522,7 @@ class HandoverService
             'arrival_photo_at' => $handover->arrival_photo_at?->toIso8601String(),
             'waited_photo_at' => $handover->waited_photo_at?->toIso8601String(),
             'can_dispute' => $this->canDispute($job, $handover),
+            'can_confirm_received' => $this->canConfirmReceived($job, $handover),
             'disputed_at' => $handover->disputed_at?->toIso8601String(),
             'dispute_reason' => $handover->dispute_reason,
             'completed_at' => $handover->completed_at?->toIso8601String(),
@@ -1212,6 +1544,8 @@ class HandoverService
         return [
             'handover' => $this->handoverRider($job, $handover),
             'buyer' => $buyer ? $this->buyerCard($buyer, $viewer) : null,
+            // เวลาเซิร์ฟเวอร์ ให้แอปชดเชยนาฬิกาเครื่องที่เพี้ยน (นับถอยหลัง QR / เวลารอรูปรอบ 2)
+            'server_now' => now()->toIso8601String(),
         ];
     }
 
@@ -1229,7 +1563,7 @@ class HandoverService
             return [
                 'required' => false, 'status' => 'not_required', 'method' => null,
                 'rider_confirmed' => false, 'buyer_confirmed' => false,
-                'qr_token' => null, 'qr_expires_at' => null, 'geofence_m' => $geofence, 'wait_seconds' => $waitSeconds,
+                'qr_token' => null, 'qr_expires_at' => null, 'code' => null, 'geofence_m' => $geofence, 'wait_seconds' => $waitSeconds,
                 'wait_until' => null, 'auto_release_at' => null, 'arrival_photo_at' => null, 'waited_photo_at' => null,
                 'can_arrival_photo' => false, 'can_waited_photo' => false, 'completed_at' => null,
             ];
@@ -1250,6 +1584,8 @@ class HandoverService
             'buyer_confirmed' => $handover->buyer_confirmed_at !== null,
             'qr_token' => $showQr ? $this->tokenFor($handover, self::SIDE_RIDER, $window) : null,
             'qr_expires_at' => $showQr ? $this->windowEndsAt($window)->toIso8601String() : null,
+            // รหัส 6 หลักของไรเดอร์ ให้ผู้ซื้อกรอกเมื่อกล้องใช้ไม่ได้ (แสดงเฉพาะตอน QR ใช้ได้)
+            'code' => $showQr ? $this->riderCodeFor($handover) : null,
             'geofence_m' => $geofence,
             'wait_seconds' => $waitSeconds,
             'wait_until' => $handover->wait_until?->toIso8601String(),
@@ -1260,6 +1596,7 @@ class HandoverService
                 && (float) $job->cod_amount <= 0
                 && in_array($handover->status, [DeliveryHandover::STATUS_WAITING, DeliveryHandover::STATUS_RIDER_CONFIRMED], true),
             'can_waited_photo' => $jobInHand
+                && (float) $job->cod_amount <= 0
                 && $handover->status === DeliveryHandover::STATUS_FALLBACK_WAITING
                 && ($handover->wait_until === null || ! $handover->wait_until->isFuture()),
             'completed_at' => $handover->completed_at?->toIso8601String(),
@@ -1414,24 +1751,125 @@ class HandoverService
     }
 
     /**
-     * payload push ของการส่งมอบ: source (shop|fresh-market), order_id, job_id
+     * payload push ของการส่งมอบต่อผู้รับ: role (buyer|rider|seller) + screen + source (shop|fresh-market) + order_id + job_id
      *
+     * screen เริ่มต้นตามบทบาท: ผู้ซื้อ = order-handover · ไรเดอร์ = rider-job-detail · ร้าน = merchant-order (แทนได้ด้วย $extra)
+     *
+     * @param  string  $role  buyer|rider|seller
      * @param  array<string, mixed>  $extra
      * @return array<string, mixed>
      */
-    private function pushData(RiderJob $job, array $extra = []): array
+    private function pushData(RiderJob $job, string $role, array $extra = []): array
+    {
+        return array_merge($this->pushBase($job), [
+            'role' => $role,
+            'screen' => match ($role) {
+                'buyer' => 'order-handover',
+                'rider' => 'rider-job-detail',
+                'seller' => 'merchant-order',
+                default => null,
+            },
+        ], $extra);
+    }
+
+    /**
+     * ข้อมูลอ้างอิงงาน/ออเดอร์ของ push (ไม่มี role — ใช้กับแจ้งเตือนแอดมิน)
+     *
+     * @return array<string, mixed>
+     */
+    private function pushBase(RiderJob $job): array
+    {
+        return [
+            'source' => RiderNotificationService::sourceKey($job),
+            'order_id' => $job->source_id ? (int) $job->source_id : null,
+            'job_id' => (int) $job->id,
+        ];
+    }
+
+    /**
+     * user_id ของไรเดอร์ของงาน (รวมไรเดอร์ที่ถูกลบแบบ soft delete)
+     */
+    private function riderUserIdFor(RiderJob $job): ?int
+    {
+        $id = $job->rider_id ? Rider::withTrashed()->whereKey($job->rider_id)->value('user_id') : null;
+
+        return $id ? (int) $id : null;
+    }
+
+    /**
+     * user_id ของร้าน/ผู้ขายของออเดอร์ (ผู้เกี่ยวข้องที่ไม่ใช่ผู้ซื้อและไม่ใช่ไรเดอร์)
+     *
+     * @return array<int, int>
+     */
+    private function sellerUserIdsFor(RiderJob $job): array
+    {
+        return array_values(array_diff($job->partyUserIds(), array_filter([$this->buyerUserIdFor($job), $this->riderUserIdFor($job)])));
+    }
+
+    /**
+     * เลขออเดอร์ต้นทาง (ใช้ในข้อความแจ้งเตือน)
+     */
+    private function orderNumberFor(RiderJob $job): ?string
     {
         $source = $job->deliverableSource();
 
-        return array_merge([
-            'source' => match (true) {
-                $source instanceof FreshMarketOrder => self::SOURCE_FRESH_MARKET,
-                $source instanceof Order => self::SOURCE_SHOP,
-                default => null,
-            },
-            'order_id' => $job->source_id ? (int) $job->source_id : null,
-            'job_id' => (int) $job->id,
-        ], $extra);
+        return $source instanceof Model ? ($source->getAttribute('order_number') ?: null) : null;
+    }
+
+    /**
+     * ออเดอร์ต้นทางจบไปแล้ว (ยกเลิก/คืนเงิน/ปิดออเดอร์) หรือไม่ — ใช้กันปล่อยเงิน/คืนเงินซ้ำของงานที่ปิดเป็น failed
+     */
+    private function sourceClosed(RiderJob $job): bool
+    {
+        $source = $job->deliverableSource();
+
+        if ($source instanceof Order) {
+            $status = Order::whereKey($source->id)->value('status');
+
+            return in_array($status, Order::TERMINAL_STATUSES, true);
+        }
+
+        if ($source instanceof FreshMarketOrder) {
+            $status = FreshMarketOrder::whereKey($source->id)->value('order_status');
+
+            return in_array($status, FreshMarketOrder::TERMINAL_STATUSES, true);
+        }
+
+        return false;
+    }
+
+    /**
+     * ผู้ที่ปิดแจ้งเตือนจากขั้นย่อยระหว่างแอดมินตัดสินคืนเงิน (ผู้ซื้อ ร้าน ไรเดอร์ แอดมิน) — แล้วค่อยแจ้งข้อความเดียว
+     *
+     * @return array<int, int>
+     */
+    private function resolutionAudience(RiderJob $job): array
+    {
+        $ids = array_merge($job->partyUserIds(), array_filter([$this->buyerUserIdFor($job), $this->riderUserIdFor($job)]));
+
+        try {
+            $admins = User::query()
+                ->where(fn ($q) => $q->whereIn('role', ['admin', 'super_admin'])->orWhere('is_super_admin', true))
+                ->limit(200)
+                ->pluck('id')
+                ->all();
+            $ids = array_merge($ids, $admins);
+        } catch (\Throwable $e) {
+            Log::warning('Handover: cannot load admins for mute', ['error' => $e->getMessage()]);
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    /**
+     * ลิงก์ติดตามของผู้ซื้อใช้ได้ถึงเวลาปลดเงินอัตโนมัติ + ช่วงผ่อนผัน
+     */
+    private function trackingUntilForRelease(): Carbon
+    {
+        $hours = max(1, $this->config->intSetting('rider.handover_auto_release_hours'));
+        $grace = max(1, $this->config->intSetting('rider.tracking_grace_minutes'));
+
+        return now()->addHours($hours)->addMinutes($grace);
     }
 
     private function adminJobUrl(RiderJob $job): ?string
