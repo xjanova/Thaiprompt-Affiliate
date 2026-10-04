@@ -348,6 +348,10 @@ class PaymentService
         $order = $transaction->order;
 
         if ($order) {
+            // 🔒 (2026-10-04) G1: ล็อกแถวออเดอร์ — สองรายการชำระ (เช่น พร้อมเพย์จับคู่ SMS + วอลเลตในแอป/เว็บ)
+            //    ปิดพร้อมกันจะเข้าคิวทีละรายการ แล้วรายการหลังเห็นว่าออเดอร์จ่ายแล้ว
+            $order = Order::whereKey($order->id)->lockForUpdate()->first() ?? $order;
+
             // 🛒 (2026-09-25) ออเดอร์ที่ถูกยกเลิกแล้วห้ามเปิดกลับเป็น "จ่ายแล้ว" — เงินที่เข้ามาหลังยกเลิกต้องให้แอดมินคืน
             if (in_array($order->status, ['cancelled', 'refunded'], true)) {
                 Log::critical('PaymentService: payment completed for a cancelled order — manual refund needed', [
@@ -355,6 +359,35 @@ class PaymentService
                     'transaction_id' => $transaction->id,
                     'amount' => $transaction->amount,
                 ]);
+
+                return;
+            }
+
+            // 🔒 (2026-10-04) G1: ออเดอร์จ่ายแล้วจากรายการอื่น → เงินเข้าซ้ำ ห้ามตั้งจ่ายทับ/ตัดสต็อกซ้ำ ให้แอดมินคืนเงิน
+            if ($order->payment_status === 'paid') {
+                Log::critical('PaymentService: payment completed for an order that is already paid — check double payment / manual refund', [
+                    'order_id' => $order->id,
+                    'transaction_id' => $transaction->id,
+                    'payment_method' => $transaction->payment_method,
+                    'amount' => $transaction->amount,
+                ]);
+
+                // วอลเลตเป็นเงินในระบบเรา → คืนเข้ากระเป๋าทันที (ไม่แตะสถานะออเดอร์) · ช่องทางอื่นให้แอดมินคืน
+                if ($transaction->payment_method === 'wallet') {
+                    try {
+                        $this->getProvider('wallet')->refund($transaction, (float) $transaction->amount);
+                        $transaction->update([
+                            'status' => 'refunded',
+                            'notes' => 'ออเดอร์ชำระด้วยช่องทางอื่นแล้ว - คืนเงินเข้ากระเป๋าอัตโนมัติ',
+                        ]);
+                    } catch (\Throwable $refundError) {
+                        Log::error('PaymentService: auto refund of duplicate wallet payment failed', [
+                            'order_id' => $order->id,
+                            'transaction_id' => $transaction->id,
+                            'error' => $refundError->getMessage(),
+                        ]);
+                    }
+                }
 
                 return;
             }
@@ -369,7 +402,51 @@ class PaymentService
             //    รับเงินแล้วห้ามล้ม → strict=false (สต็อกไม่พอ = ตัดเหลือ 0 + log ให้ร้าน/แอดมินตามต่อ)
             //    ออเดอร์ COD ที่ตัดไปแล้วตอนสั่ง จะไม่ถูกตัดซ้ำ
             $order->deductStockOnce(false);
+
+            // 🔒 (2026-10-04) G1: ปิดบิลอื่นของออเดอร์นี้ที่ยังรอจ่าย (เช่น QR พร้อมเพย์ค้างตอนเปลี่ยนไปจ่ายวอลเลต)
+            //    บิลที่ถูกยกเลิก + ยอดจองทศนิยมที่ถูกปล่อย จะไม่ถูกจับคู่กับ SMS อีก → ไม่ตัดเงินซ้ำ
+            $this->cancelOtherPendingOrderPayments($order, (int) $transaction->id);
         }
+    }
+
+    /**
+     * 🔒 (2026-10-04) G1: ยกเลิกรายการชำระอื่นของออเดอร์ที่ยังรอจ่าย (pending/processing) + ปล่อยยอดจองทศนิยม
+     *
+     * เรียกเมื่อออเดอร์ได้รับเงินแล้วจากรายการหนึ่ง — รายการที่เหลือห้ามรับเงินซ้ำ
+     * (SMS ที่เข้ามาภายหลังจะกลายเป็นเงินไม่มีเจ้าของ ให้แอดมินคืน แทนการตัดบิลซ้ำเงียบๆ)
+     *
+     * @param  int|null  $exceptTransactionId  รายการที่จ่ายสำเร็จ (ไม่แตะ)
+     * @return int จำนวนรายการที่ยกเลิก
+     */
+    public function cancelOtherPendingOrderPayments(Order $order, ?int $exceptTransactionId = null, string $reason = 'ออเดอร์ชำระด้วยช่องทางอื่นแล้ว - ยกเลิกบิลนี้อัตโนมัติ'): int
+    {
+        $pending = PaymentTransaction::where('order_id', $order->id)
+            ->where('type', 'order_payment')
+            ->whereIn('status', ['pending', 'processing'])
+            ->when($exceptTransactionId, fn ($q) => $q->where('id', '!=', $exceptTransactionId))
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($pending as $other) {
+            $other->update([
+                'status' => 'cancelled',
+                'notes' => $reason,
+            ]);
+
+            UniquePaymentAmount::where('transaction_id', $other->id)
+                ->where('transaction_type', $other->type)
+                ->where('status', 'reserved')
+                ->get()
+                ->each(fn (UniquePaymentAmount $amount) => $amount->cancel());
+
+            Log::info('PaymentService: cancelled sibling pending order payment', [
+                'order_id' => $order->id,
+                'cancelled_transaction_id' => $other->id,
+                'paid_transaction_id' => $exceptTransactionId,
+            ]);
+        }
+
+        return $pending->count();
     }
 
     /**

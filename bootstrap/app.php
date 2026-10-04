@@ -145,6 +145,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // 🔒 (2026-09-25) บัญชีถูกระงับ → 403 / ออกจากระบบ (ต่อท้ายกลุ่ม web+api อยู่แล้ว
             //    alias นี้ไว้ใช้กับ route ที่อยู่นอกสองกลุ่มนั้น)
             'account.active' => \App\Http\Middleware\EnsureAccountActive::class,
+            // 📸 (2026-10-04) ไรเดอร์รอบ 2: ต้องมีรูปโปรไฟล์ถ่ายสดก่อน (เฉพาะแอป X-App-Build ≥ config profile_photo.min_build)
+            //    `profile.photo:availability=online` = บังคับเฉพาะตอนค่าใน request ตรงเงื่อนไข
+            'profile.photo' => \App\Http\Middleware\EnsureProfilePhoto::class,
         ]);
 
         // Global middleware for IP blocking

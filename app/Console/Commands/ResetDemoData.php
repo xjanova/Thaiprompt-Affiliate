@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Services\DemoDataUserGuard;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,11 @@ use Illuminate\Support\Facades\Schema;
  * คำสั่งสำหรับจัดการข้อมูล Demo
  *
  * ใช้สำหรับลบข้อมูล demo และสามารถเลือกได้ว่าจะลบข้อมูลประเภทไหน
+ *
+ * 🛡️ (2026-10-04) K1-4: หมวดผู้ใช้/KYC เลือกแถวผ่าน DemoDataUserGuard เท่านั้น
+ *    ห้ามลบ: บัญชีร้านทางการ · แอดมิน/ทีมงาน · เจ้าของร้าน/ผู้ขายตลาดสด/ไรเดอร์ · คนที่มีออเดอร์/เงินจริง
+ *    ลบผู้ใช้ทีละคนโดยเปิด FOREIGN_KEY_CHECKS (ตารางลูกถูก cascade, FK แบบ restrict = ข้ามคนนั้น)
+ *    `--dry-run` = แสดงรายชื่อที่จะลบ/ที่ถูกกันไว้ โดยไม่ลบอะไร
  */
 class ResetDemoData extends Command
 {
@@ -27,6 +33,7 @@ class ResetDemoData extends Command
                             {--kyc : ลบเฉพาะ KYC demo}
                             {--line : ลบเฉพาะ LINE demo sessions}
                             {--accounting : ลบเฉพาะข้อมูลบัญชี demo}
+                            {--dry-run : แสดงรายชื่อผู้ใช้ที่จะลบและที่ถูกกันไว้ โดยไม่ลบอะไร}
                             {--force : ไม่ถามยืนยัน (ใช้ระวัง!)}';
 
     /**
@@ -45,8 +52,10 @@ class ResetDemoData extends Command
         'users' => [
             'label' => 'ผู้ใช้ทดสอบ (Demo Users)',
             'tables' => ['users', 'affiliates', 'commissions'],
-            'condition' => "email LIKE '%@example.com' OR email LIKE '%@thaiprompt.com'",
-            'warning' => '⚠️  จะลบผู้ใช้ทดสอบทั้งหมด (ยกเว้น Super Admin ที่สร้างตอนติดตั้ง)',
+            // เลือกแถวผ่าน DemoDataUserGuard (ดู cleanDemoUsers) — ห้ามใช้ whereRaw อีเมลตรงๆ
+            'condition' => null,
+            'handler' => 'cleanDemoUsers',
+            'warning' => '⚠️  จะลบเฉพาะผู้ใช้ทดสอบ (@example.com / @thaiprompt.com) ที่ไม่ใช่ร้านทางการ แอดมิน เจ้าของร้าน ไรเดอร์ หรือผู้ที่มีออเดอร์/เงินจริง',
         ],
         'pages' => [
             'label' => 'หน้าเพจทดสอบ (Demo Pages)',
@@ -57,8 +66,10 @@ class ResetDemoData extends Command
         'kyc' => [
             'label' => 'KYC ทดสอบ (Demo KYC)',
             'tables' => ['kyc_verifications'],
-            'condition' => "status IN ('pending', 'approved', 'rejected')",
-            'warning' => '⚠️  จะลบข้อมูล KYC verification ทั้งหมด',
+            // เดิมลบ KYC ทุกสถานะ = KYC ของลูกค้าจริงทั้งหมด → จำกัดเฉพาะผู้ใช้ทดสอบที่ลบได้
+            'condition' => null,
+            'handler' => 'cleanDemoKyc',
+            'warning' => '⚠️  จะลบข้อมูล KYC ของผู้ใช้ทดสอบที่ลบได้เท่านั้น',
         ],
         'line' => [
             'label' => 'LINE Sessions ทดสอบ (Demo LINE)',
@@ -108,6 +119,11 @@ class ResetDemoData extends Command
     public function handle()
     {
         $this->displayHeader();
+
+        // ดูอย่างเดียว — ไม่ลบอะไร (ใช้ได้ทุก environment)
+        if ($this->option('dry-run')) {
+            return $this->showDryRun();
+        }
 
         // ตรวจสอบว่าเป็น production หรือไม่
         if (app()->environment('production') && ! $this->option('force')) {
@@ -355,6 +371,14 @@ class ResetDemoData extends Command
         $config = $this->demoTables[$category];
         $this->info("🧹 กำลังลบ: {$config['label']}");
 
+        // หมวดที่ต้องเลือกแถวแบบปลอดภัย (ผู้ใช้/KYC) มีตัวจัดการของตัวเอง — ไม่ปิด FK checks
+        if (! empty($config['handler'])) {
+            $this->{$config['handler']}();
+            $this->newLine();
+
+            return;
+        }
+
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
         foreach ($config['tables'] as $table) {
@@ -387,6 +411,127 @@ class ResetDemoData extends Command
     }
 
     /**
+     * ลบผู้ใช้ทดสอบที่ลบได้จริง (ผ่าน DemoDataUserGuard) — ทีละคน เปิด FK checks
+     */
+    protected function cleanDemoUsers(): void
+    {
+        // คำนวณแผนใหม่ตอนลบจริง (ไม่ใช้ผลที่แสดงไว้ก่อนหน้า — ระหว่างรอยืนยันอาจมีออเดอร์/ร้านใหม่)
+        $plan = app(DemoDataUserGuard::class)->plan();
+        $ids = array_map(fn (array $row) => $row['id'], $plan['deletable']);
+
+        $this->line('   🛡️  กันไว้ไม่ลบ '.count($plan['protected']).' บัญชี (ร้านทางการ/แอดมิน/ร้าน/ไรเดอร์/มีเงินจริง)');
+
+        // หมวดอื่นปิด FK checks ระหว่างลบ — หมวดนี้ต้องเปิดเสมอ (ให้ FK เป็นด่านสุดท้าย)
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        if ($ids === []) {
+            $this->line('   ⊘ ไม่มีผู้ใช้ทดสอบที่ลบได้');
+
+            return;
+        }
+
+        // ตารางเก่าที่อ้าง user_id (ถ้ามี) — ลบพร้อมผู้ใช้คนนั้นใน transaction เดียวกัน
+        $legacyTables = array_values(array_filter(
+            ['affiliates', 'commissions'],
+            fn (string $table) => Schema::hasTable($table) && Schema::hasColumn($table, 'user_id')
+        ));
+
+        $deleted = 0;
+        $skipped = 0;
+        foreach ($ids as $id) {
+            try {
+                // FK checks เปิดอยู่: ตารางลูกแบบ cascade ถูกลบตาม · แบบ restrict = ลบไม่ได้ → ย้อนทั้งคน แล้วข้าม
+                $deleted += DB::transaction(function () use ($id, $legacyTables) {
+                    foreach ($legacyTables as $table) {
+                        DB::table($table)->where('user_id', $id)->delete();
+                    }
+
+                    return DB::table('users')->where('id', $id)->delete();
+                });
+            } catch (\Throwable $e) {
+                $skipped++;
+                $this->line("   ✗ ข้ามผู้ใช้ #{$id} (ยังมีข้อมูลอื่นอ้างอิงอยู่)");
+            }
+        }
+
+        $this->line("   ✓ ลบ users ({$deleted} records)".($skipped > 0 ? " · ข้าม {$skipped} บัญชี" : ''));
+    }
+
+    /**
+     * ลบ KYC เฉพาะของผู้ใช้ทดสอบที่ลบได้ (ไม่แตะ KYC ลูกค้าจริง)
+     */
+    protected function cleanDemoKyc(): void
+    {
+        if (! Schema::hasTable('kyc_verifications')) {
+            $this->line('   ⊘ ข้าม kyc_verifications (ไม่มีตาราง)');
+
+            return;
+        }
+
+        $ids = app(DemoDataUserGuard::class)->deletableUserIds();
+
+        $count = 0;
+        foreach (array_chunk($ids, 500) as $chunk) {
+            $count += DB::table('kyc_verifications')->whereIn('user_id', $chunk)->delete();
+        }
+
+        $this->line("   ✓ ลบ kyc_verifications ของผู้ใช้ทดสอบ ({$count} records)");
+    }
+
+    /**
+     * จำนวน KYC ของผู้ใช้ชุดนี้
+     *
+     * @param  array<int, int>  $userIds
+     */
+    protected function countKycOf(array $userIds): int
+    {
+        if ($userIds === [] || ! Schema::hasTable('kyc_verifications')) {
+            return 0;
+        }
+
+        $count = 0;
+        foreach (array_chunk($userIds, 500) as $chunk) {
+            $count += DB::table('kyc_verifications')->whereIn('user_id', $chunk)->count();
+        }
+
+        return $count;
+    }
+
+    /**
+     * --dry-run: แสดงรายชื่อที่จะลบ/ที่ถูกกันไว้พร้อมเหตุผล — ไม่ลบอะไร
+     */
+    protected function showDryRun(): int
+    {
+        $plan = app(DemoDataUserGuard::class)->plan();
+
+        $this->info('🔍 โหมดดูอย่างเดียว (dry-run) — ไม่มีการลบข้อมูล');
+        $this->newLine();
+
+        $this->info('🗑️  ผู้ใช้ทดสอบที่จะถูกลบ: '.count($plan['deletable']));
+        if ($plan['deletable'] !== []) {
+            $this->table(['ID', 'Email', 'ชื่อ'], array_map(
+                fn (array $row) => [$row['id'], $row['email'], $row['name']],
+                $plan['deletable']
+            ));
+        }
+
+        $this->newLine();
+        $this->info('🛡️  กันไว้ไม่ลบ: '.count($plan['protected']));
+        if ($plan['protected'] !== []) {
+            $this->table(['ID', 'Email', 'เหตุผล'], array_map(
+                fn (array $row) => [
+                    $row['id'],
+                    $row['email'],
+                    implode(', ', array_map([DemoDataUserGuard::class, 'reasonLabel'], $row['reasons'])),
+                ],
+                $plan['protected']
+            ));
+        }
+
+        return 0;
+    }
+
+    /**
      * แสดงข้อความเมื่อสำเร็จ
      *
      * @return void
@@ -406,6 +551,17 @@ class ResetDemoData extends Command
 
         // แสดงจำนวนข้อมูลที่เหลือ
         foreach ($this->demoTables as $category => $config) {
+            // หมวดผู้ใช้: นับเฉพาะผู้ใช้ทดสอบที่ยังลบได้ (ไม่ใช่ทั้งตาราง users)
+            if ($category === 'users' || $category === 'kyc') {
+                $demoIds = app(DemoDataUserGuard::class)->deletableUserIds();
+                $left = $category === 'users' ? count($demoIds) : $this->countKycOf($demoIds);
+                if ($left > 0) {
+                    $this->line("   • {$config['label']}: {$left} records");
+                }
+
+                continue;
+            }
+
             $totalRecords = 0;
             foreach ($config['tables'] as $table) {
                 if (Schema::hasTable($table)) {

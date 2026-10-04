@@ -132,6 +132,7 @@ class User extends Authenticatable
         'blocked_at',            // ข้อมูล moderation ภายใน
         'blocked_reason',        // ข้อมูล moderation ภายใน
         'blocked_by',            // ข้อมูล moderation ภายใน
+        'profile_photo_private_path', // ไรเดอร์รอบ 2: path รูปถ่ายสดบน private disk (คนอื่นเห็นได้แค่ผ่าน ProfilePhotoService::urlFor)
     ];
 
     /**

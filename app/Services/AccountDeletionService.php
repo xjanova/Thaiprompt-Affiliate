@@ -365,6 +365,13 @@ class AccountDeletionService
         // ไฟล์ลบย้อนกลับไม่ได้ → ทำหลัง commit เท่านั้น (best-effort)
         $this->deleteFiles($filesToDelete);
 
+        // 📸 (2026-10-04) สำเนารูปถ่ายสดพร้อมลายน้ำที่แคชไว้ (ไม่รอรอบล้างรายวัน)
+        try {
+            app(\App\Services\Media\ProfilePhotoService::class)->forgetRenderCache((int) $user->id);
+        } catch (\Throwable) {
+            // ไม่ถือว่าพัง — คำสั่ง profile-photo:purge-cache ล้างให้ภายใน 2 วัน
+        }
+
         return $ref;
     }
 
@@ -388,6 +395,8 @@ class AccountDeletionService
             // Google — ไม่ล้าง = แถวที่ลบแล้วยังถือ google_id (unique) ไว้ เจ้าของสมัครใหม่ด้วย Google ไม่ได้อีกเลย
             'google_id' => null, 'google_avatar' => null,
             'profile_picture' => null, 'avatar_url' => null, 'bio' => null,
+            // 📸 (2026-10-04) รูปถ่ายสดบน private disk (ไฟล์ถูกลบใน collectUserFiles แล้ว)
+            'profile_photo_private_path' => null, 'profile_photo_taken_at' => null,
             'bank_name' => null, 'bank_account' => null, 'bank_account_name' => null,
             'address' => null, 'city' => null, 'state' => null, 'postal_code' => null,
             'date_of_birth' => null, 'gender' => null,
@@ -566,9 +575,16 @@ class AccountDeletionService
      */
     private function collectUserFiles(User $user): array
     {
-        $path = (string) ($user->getRawOriginal('profile_picture') ?? '');
+        $files = [];
+        // รูปโปรไฟล์เดิม + รูปถ่ายสดของไรเดอร์รอบ 2 (private disk)
+        foreach (['profile_picture', 'profile_photo_private_path'] as $column) {
+            $path = (string) ($user->getRawOriginal($column) ?? '');
+            if ($path !== '' && ! preg_match('#^https?://#i', $path)) {
+                $files[] = $path;
+            }
+        }
 
-        return ($path !== '' && ! preg_match('#^https?://#i', $path)) ? [$path] : [];
+        return $files;
     }
 
     /**

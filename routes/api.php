@@ -214,6 +214,16 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         ->where('type', 'id_card|driver_license|vehicle_registration|profile')
         ->name('api.v1.rider.documents.file');
 
+    // 📸 (2026-10-04) ไรเดอร์รอบ 2: รูปโปรไฟล์พร้อมลายน้ำรหัสผู้ดู — เปิดได้เฉพาะ signed URL (~60 นาที)
+    //    สร้างจาก ProfilePhotoService::urlFor() เท่านั้น · ไฟล์ต้นฉบับอยู่บน private disk ไม่มีทางเปิดตรง
+    //    {viewer} = รหัส HMAC 6 ตัว (ไม่ใช่ user id) · {version} = เปลี่ยนทุกครั้งที่ถ่ายรูปใหม่
+    Route::get('/media/profile-photo/{subject}/{viewer}/{version}', [\App\Http\Controllers\Api\V1\ProfilePhotoApiController::class, 'file'])
+        ->middleware(['signed', 'throttle:240,1,api-profile-photo-file'])
+        ->whereNumber('subject')
+        ->where('viewer', '[A-Z0-9]{6}')
+        ->where('version', '[a-f0-9]{12}')
+        ->name('api.v1.media.profile-photo');
+
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         // Auth
@@ -282,7 +292,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::put('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'updateItem'])->whereNumber('itemId')->name('api.v1.cart.items.update');
             Route::delete('/items/{itemId}', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'removeItem'])->whereNumber('itemId')->name('api.v1.cart.items.destroy');
             Route::post('/promo', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'applyPromo'])->middleware('throttle:20,1,api-cart-promo')->name('api.v1.cart.promo');
-            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'checkout'])->middleware('throttle:10,1,api-cart-checkout')->name('api.v1.cart.checkout');
+            Route::post('/checkout', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'checkout'])->middleware(['throttle:10,1,api-cart-checkout', 'profile.photo'])->name('api.v1.cart.checkout');
             // เส้นทางเดิมของแอปรุ่นก่อน (ชี้ไปตัวเดียวกัน — ใช้ตัวนับเดียวกับ /items)
             Route::post('/add', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'addItem'])->middleware('throttle:60,1,api-cart-add')->name('api.v1.cart.add');
             Route::delete('/clear', [\App\Http\Controllers\Api\V1\MobileShopController::class, 'clear'])->name('api.v1.cart.clear-legacy');
@@ -409,7 +419,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             // (2026-09-26) ยินยอมให้ลูกค้าเห็นตำแหน่งระหว่างส่งงาน — ต้องทำ 1 ครั้งก่อนรับงานแรก
             Route::post('/consent', 'consent')->middleware('throttle:20,1,api-rider-consent')->name('consent');
             Route::put('/profile', 'updateProfile')->middleware('throttle:20,1,api-rider-profile')->name('profile');
-            Route::post('/availability', 'availability')->middleware('throttle:20,1,api-rider-availability')->name('availability');
+            Route::post('/availability', 'availability')->middleware(['throttle:20,1,api-rider-availability', 'profile.photo:availability=online'])->name('availability');
             Route::post('/location', 'location')->middleware('throttle:40,1,api-rider-location')->name('location');
             Route::get('/earnings', 'earnings')->name('earnings');
 
@@ -526,7 +536,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::prefix('seller')->name('api.v1.seller.')->group(function () {
             Route::get('/application', [\App\Http\Controllers\Api\V1\SellerApplicationApiController::class, 'show'])->name('application.show');
             Route::post('/application', [\App\Http\Controllers\Api\V1\SellerApplicationApiController::class, 'store'])
-                ->middleware('throttle:10,1,api-seller-apply')->name('application.store');
+                ->middleware(['throttle:10,1,api-seller-apply', 'profile.photo'])->name('application.store');
 
             Route::get('/store', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'show'])->name('store.show');
             Route::put('/store', [\App\Http\Controllers\Api\V1\SellerStoreApiController::class, 'update'])
@@ -866,7 +876,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::get('/delivery-quote', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'deliveryQuote'])->middleware('throttle:30,1,api-fm-delivery-quote')->name('delivery-quote');
 
             // ผู้ซื้อ
-            Route::post('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeOrder'])->middleware('throttle:10,1,api-fm-order-store')->name('orders.store');
+            Route::post('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeOrder'])->middleware(['throttle:10,1,api-fm-order-store', 'profile.photo'])->name('orders.store');
             Route::get('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'orders'])->name('orders');
             Route::get('/orders/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showOrder'])->whereNumber('id')->name('orders.show');
             Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateOrderStatus'])->whereNumber('id')->name('orders.status');

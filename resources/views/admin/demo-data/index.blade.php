@@ -70,9 +70,10 @@
                 <p class="font-bold mb-1">💡 คำแนะนำ:</p>
                 <ul class="list-disc list-inside space-y-1 ml-4">
                     <li>ข้อมูลจำเป็น (Settings, MLM Plans, Ranks, etc.) จะ<strong>ไม่ถูกลบ</strong></li>
-                    <li>Super Admin ที่สร้างตอนติดตั้งจะ<strong>ปลอดภัย</strong></li>
-                    <li>ควร<strong>สำรองข้อมูล</strong>ก่อนลบ</li>
-                    <li>สามารถเลือกลบทีละหมวดหมู่หรือลบทั้งหมดได้</li>
+                    <li>หมวดผู้ใช้<strong>ไม่ลบ</strong>: บัญชีร้านค้าทางการ · แอดมิน/ทีมงาน · เจ้าของร้าน · ผู้ขายตลาดสด · ไรเดอร์ · ผู้ที่มีออเดอร์ชำระเงินจริงหรือมีเงินในกระเป๋า · ผู้แนะนำของผู้ใช้ที่เก็บไว้</li>
+                    <li>หมวด LINE / หน้าเพจ / บัญชี ลบตามเงื่อนไขของหมวดนั้น — <strong>ไม่ได้แยกข้อมูลจริงออก</strong> ตรวจให้แน่ใจก่อนกด</li>
+                    <li>ตรวจรายชื่อในส่วน "ตรวจก่อนลบ" ด้านล่างก่อนทุกครั้ง และควร<strong>สำรองข้อมูล</strong>ก่อนลบ</li>
+                    <li>สามารถเลือกลบทีละหมวดหมู่หรือลบทั้งหมดได้ (คำสั่ง: <code>php artisan demo:reset --dry-run</code> ดูรายชื่อได้เหมือนกัน)</li>
                 </ul>
             </div>
         </div>
@@ -143,6 +144,70 @@
         @endforeach
     </div>
 
+    {{-- 🛡️ (2026-10-04) K1-4: ตรวจก่อนลบ — รายชื่อผู้ใช้ทดสอบที่จะถูกลบ / ที่ถูกกันไว้ (คำนวณจาก DemoDataUserGuard ตัวเดียวกับ demo:reset) --}}
+    @php
+        $planDeletable = $userPlan['deletable'] ?? [];
+        $planProtected = $userPlan['protected'] ?? [];
+        $planLimit = 100;
+    @endphp
+    <div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-bold text-gray-900 dark:text-white">ตรวจก่อนลบ: ผู้ใช้ที่จะถูกลบ</h3>
+                <span class="text-xs font-bold px-3 py-1 rounded-full bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">{{ number_format(count($planDeletable)) }} บัญชี</span>
+            </div>
+            <div class="max-h-80 overflow-y-auto">
+                <table class="min-w-full text-sm">
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse(array_slice($planDeletable, 0, $planLimit) as $row)
+                            <tr>
+                                <td class="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">#{{ $row['id'] }}</td>
+                                <td class="px-4 py-2 text-gray-900 dark:text-gray-100 break-all">{{ $row['email'] }}</td>
+                                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">{{ \Illuminate\Support\Str::limit($row['name'], 30) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">ไม่มีผู้ใช้ทดสอบที่ลบได้</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+                @if(count($planDeletable) > $planLimit)
+                    <p class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">แสดง {{ $planLimit }} รายการแรก — ดูทั้งหมดด้วย <code>php artisan demo:reset --dry-run</code></p>
+                @endif
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="font-bold text-gray-900 dark:text-white">กันไว้ไม่ลบ (อีเมลเข้าข่ายทดสอบ)</h3>
+                <span class="text-xs font-bold px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300">{{ number_format(count($planProtected)) }} บัญชี</span>
+            </div>
+            <div class="max-h-80 overflow-y-auto">
+                <table class="min-w-full text-sm">
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse(array_slice($planProtected, 0, $planLimit) as $row)
+                            <tr>
+                                <td class="px-4 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">#{{ $row['id'] }}</td>
+                                <td class="px-4 py-2 text-gray-900 dark:text-gray-100 break-all">{{ $row['email'] }}</td>
+                                <td class="px-4 py-2 text-gray-600 dark:text-gray-400">
+                                    {{ implode(', ', array_map(fn ($r) => $reasonLabels[$r] ?? $r, $row['reasons'])) }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">ไม่มีบัญชีที่ต้องกันไว้</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+                @if(count($planProtected) > $planLimit)
+                    <p class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">แสดง {{ $planLimit }} รายการแรก</p>
+                @endif
+            </div>
+        </div>
+    </div>
+
     {{-- Delete All Section --}}
     @php
         $totalRecords = array_sum($stats);
@@ -161,7 +226,7 @@
                     </div>
                 </div>
                 <form action="{{ route('admin.demo-data.clean') }}" method="POST"
-                      onsubmit="return confirm('⚠️⚠️⚠️ คำเตือนสำคัญ! ⚠️⚠️⚠️\n\nคุณกำลังจะลบข้อมูลทดสอบทั้งหมด!\n\nจำนวน {{ number_format($totalRecords) }} records จะถูกลบถาวร!\n\n✅ ข้อมูลจำเป็นจะไม่ถูกลบ (Settings, MLM, etc.)\n✅ Super Admin ของคุณปลอดภัย\n\nแนะนำให้สำรองข้อมูลก่อน!\n\nต้องการดำเนินการจริงหรือไม่?');">
+                      onsubmit="return confirm('⚠️⚠️⚠️ คำเตือนสำคัญ! ⚠️⚠️⚠️\n\nคุณกำลังจะลบข้อมูลทดสอบทั้งหมด!\n\nจำนวน {{ number_format($totalRecords) }} records จะถูกลบถาวร!\n\n✅ ข้อมูลจำเป็นจะไม่ถูกลบ (Settings, MLM, etc.)\n✅ ร้านทางการ แอดมิน เจ้าของร้าน ไรเดอร์ และผู้ที่มีเงิน/ออเดอร์จริง ไม่ถูกลบ\n⚠️ หมวด LINE / หน้าเพจ / บัญชี ลบตามเงื่อนไขหมวด ไม่ได้แยกข้อมูลจริง\n\nแนะนำให้สำรองข้อมูลก่อน!\n\nต้องการดำเนินการจริงหรือไม่?');">
                     @csrf
                     <input type="hidden" name="category" value="all">
                     <button type="submit"

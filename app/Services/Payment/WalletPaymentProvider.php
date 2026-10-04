@@ -2,6 +2,7 @@
 
 namespace App\Services\Payment;
 
+use App\Models\Order;
 use App\Models\PaymentTransaction;
 use App\Models\Wallet;
 use App\Models\WalletTransaction;
@@ -10,6 +11,16 @@ use Illuminate\Support\Facades\DB;
 
 class WalletPaymentProvider implements PaymentProviderInterface
 {
+    /**
+     * 🔒 (2026-10-04) G1: ข้อความ error ภาษาไทย — PaymentService ส่งต่อเป็น $result['message']
+     *    หน้าเว็บแสดงข้อความนี้ตรงๆ · แอป (PaymentApiController) แปลงเป็น code ตามค่าคงที่เหล่านี้
+     */
+    public const ERROR_WALLET_INACTIVE = 'กระเป๋าเงินของคุณใช้งานไม่ได้ในขณะนี้ กรุณาติดต่อเจ้าหน้าที่';
+
+    public const ERROR_ORDER_ALREADY_PAID = 'คำสั่งซื้อนี้ชำระเงินแล้ว';
+
+    public const ERROR_ORDER_NOT_PAYABLE = 'คำสั่งซื้อนี้ชำระเงินไม่ได้แล้ว';
+
     /**
      * Validate wallet payment
      */
@@ -20,6 +31,11 @@ class WalletPaymentProvider implements PaymentProviderInterface
 
         if (! $wallet) {
             throw new Exception('Wallet not found');
+        }
+
+        // 🔒 (2026-10-04) G1: กระเป๋าที่ถูกระงับ/ล็อกห้ามจ่าย (เหมือน ShopCheckoutService / WalletService::deductForService)
+        if (! $wallet->isActive()) {
+            throw new Exception(self::ERROR_WALLET_INACTIVE);
         }
 
         // Check if wallet has enough balance
@@ -36,7 +52,16 @@ class WalletPaymentProvider implements PaymentProviderInterface
     public function process(PaymentTransaction $transaction, array $data): array
     {
         return DB::transaction(function () use ($transaction) {
+            // 🔒 (2026-10-04) G1: ล็อกแถวออเดอร์ก่อนวอลเลต — แอป + เว็บกดจ่ายออเดอร์เดียวกันพร้อมกัน
+            //    คำขอที่สองรอจนคำขอแรก commit แล้วเห็นรายการหักเงินของออเดอร์นี้ → ไม่หักซ้ำ
+            $this->guardOrderNotPaid($transaction);
+
             $wallet = Wallet::where('user_id', $transaction->user_id)->lockForUpdate()->first();
+
+            // ตรวจซ้ำหลังล็อก — แอดมินอาจระงับกระเป๋าระหว่าง validate() กับตอนนี้
+            if ($wallet && ! $wallet->isActive()) {
+                throw new Exception(self::ERROR_WALLET_INACTIVE);
+            }
 
             if (! $wallet || $wallet->balance < $transaction->amount) {
                 throw new Exception('Insufficient wallet balance');
@@ -59,6 +84,9 @@ class WalletPaymentProvider implements PaymentProviderInterface
                 'balance_before' => $balanceBefore,
                 'balance_after' => $wallet->balance,
                 'description' => $this->getTransactionDescription($transaction),
+                // อ้างอิงออเดอร์แบบมี index (ใช้ตรวจหักซ้ำใน guardOrderNotPaid)
+                'reference_type' => $transaction->order_id ? 'order' : null,
+                'reference_id' => $transaction->order_id ?: null,
                 'status' => 'completed',
                 'completed_at' => now(),
                 'metadata' => [
@@ -130,6 +158,62 @@ class WalletPaymentProvider implements PaymentProviderInterface
                 'balance_after' => $wallet->balance,
             ];
         });
+    }
+
+    /**
+     * 🔒 (2026-10-04) G1: ออเดอร์นี้ยังจ่ายได้ไหม (เรียกภายใน DB transaction เท่านั้น)
+     *
+     * - ล็อกแถวออเดอร์ (lockForUpdate) → คำขอจ่ายพร้อมกันเข้าคิวทีละคำขอ
+     * - จ่ายแล้ว / มีรายการชำระของออเดอร์นี้สำเร็จแล้ว / มีรายการหักวอลเลตของออเดอร์นี้แล้ว → ปฏิเสธ
+     * - ยกเลิก/คืนเงินแล้ว → ปฏิเสธ
+     *
+     * @throws Exception ข้อความภาษาไทยตามค่าคงที่ ERROR_*
+     */
+    protected function guardOrderNotPaid(PaymentTransaction $transaction): void
+    {
+        if ($transaction->type !== 'order_payment' || ! $transaction->order_id) {
+            return;
+        }
+
+        $orderId = (int) $transaction->order_id;
+        $order = Order::whereKey($orderId)->lockForUpdate()->first();
+
+        if (! $order) {
+            throw new Exception(self::ERROR_ORDER_NOT_PAYABLE);
+        }
+
+        if ($order->payment_status === 'paid') {
+            throw new Exception(self::ERROR_ORDER_ALREADY_PAID);
+        }
+
+        if (in_array($order->status, ['cancelled', 'refunded'], true)) {
+            throw new Exception(self::ERROR_ORDER_NOT_PAYABLE);
+        }
+
+        // รายการชำระอื่นของออเดอร์นี้สำเร็จไปแล้ว (เช่น พร้อมเพย์จับคู่ SMS ได้แต่ยังอัปเดตออเดอร์ไม่ทัน)
+        $otherCompleted = PaymentTransaction::where('order_id', $orderId)
+            ->where('type', 'order_payment')
+            ->where('status', 'completed')
+            ->where('id', '!=', $transaction->id)
+            ->exists();
+
+        // หักวอลเลตของออเดอร์นี้ไปแล้ว (คำขอแรก commit แล้วแต่ completePayment ยังไม่ตั้งออเดอร์เป็นจ่ายแล้ว)
+        $alreadyDebited = WalletTransaction::where('user_id', $transaction->user_id)
+            ->whereIn('type', ['withdrawal', 'fee'])
+            ->where('status', 'completed')
+            ->where(function ($q) use ($orderId) {
+                $q->where(function ($ref) use ($orderId) {
+                    $ref->where('reference_type', 'order')->where('reference_id', $orderId);
+                })
+                    // รายการเก่าก่อนมี reference — order_id อยู่ใน metadata
+                    ->orWhere('metadata->order_id', $orderId)
+                    ->orWhere('metadata->order_id', (string) $orderId);
+            })
+            ->exists();
+
+        if ($otherCompleted || $alreadyDebited) {
+            throw new Exception(self::ERROR_ORDER_ALREADY_PAID);
+        }
     }
 
     /**
