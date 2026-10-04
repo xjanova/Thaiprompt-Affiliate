@@ -13,6 +13,7 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\DeliveryFeeCalculator;
 use App\Services\RiderDispatchService;
+use App\Services\RiderJobService;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Group;
 
@@ -212,7 +213,10 @@ class PosPaymentRequestCustomerTest extends PosRiderTestCase
         $this->assertSame('shop_delivery', $job->job_type);
         $this->assertSame('pending', $job->status);
         $this->assertEqualsWithDelta($fee, (float) $job->total_fee, 0.001, 'ค่าส่งงาน = ที่ลูกค้าจ่ายจริง');
-        $this->assertTrue((bool) $job->handover_required, 'ไรเดอร์รอบ 2: ปลดเงินด้วยการสแกนส่งมอบสองฝ่าย');
+        // ไม่มี X-App-Build (หน้าเว็บ/แอปเก่า) → งานแบบเดิม ไม่ต้องสแกนส่งมอบ (กติกาไรเดอร์รอบ 2: ตัดสินตอนรับงานจาก build)
+        $this->assertNull($order->getAttribute('client_app_build'));
+        $this->assertFalse((bool) $job->handover_required);
+        $this->assertFalse($job->handoverRequiredOnAccept(43));
         $this->assertTrue(OrderTrackingHistory::where('order_id', $order->id)->where('status', 'rider_requested')->exists());
 
         // POS เห็นสถานะ
@@ -232,6 +236,62 @@ class PosPaymentRequestCustomerTest extends PosRiderTestCase
             ->assertOk()
             ->assertJsonPath('data.status', 'paid')
             ->assertJsonPath('data.order_id', $order->id);
+    }
+
+    /**
+     * จ่ายจากแอปรุ่นที่มีหน้าส่งมอบ (X-App-Build ≥ 43) → ออเดอร์เก็บ build · เงินพัก (settlement_deferred)
+     * → ไรเดอร์รับงานจากแอป build ≥ 43 → งานต้องสแกนส่งมอบสองฝ่าย (handover_required) ก่อนปลดเงิน
+     * ไรเดอร์รับจากหน้าเว็บ/แอปเก่า = งานแบบเดิม (กติกาเดียวกับ /cart/checkout)
+     */
+    public function test_new_app_payment_makes_the_rider_job_require_the_two_way_handover(): void
+    {
+        $r = $this->pendingRequest();
+        $customer = $this->makeCustomer(1000);
+        $customer->forceFill(['profile_photo_private_path' => 'profile-photos/'.$customer->id.'/live.jpg', 'profile_photo_taken_at' => now()])->save();
+        $address = $this->makeAddress($customer);
+
+        $orderId = $this->customerPay($customer, $r['token'], $address->id, self::PIN, null, ['X-App-Build' => '57'])
+            ->assertOk()
+            ->json('data.order_id');
+
+        $order = Order::findOrFail($orderId);
+        $this->assertSame(57, (int) $order->getAttribute('client_app_build'));
+        $this->assertSame('paid', $order->payment_status);
+        $this->assertTrue((bool) $order->settlement_deferred, 'เงินพักไว้จนส่งมอบสำเร็จ');
+
+        $job = RiderJob::forSource($order)->firstOrFail();
+        $this->assertFalse((bool) $job->handover_required, 'งานใหม่เริ่มแบบเดิม — ตัดสินตอนไรเดอร์รับงาน');
+        $this->assertTrue($job->handoverRequiredOnAccept(43), 'ไรเดอร์แอปใหม่รับงาน → ต้องสแกนส่งมอบ');
+        $this->assertFalse($job->handoverRequiredOnAccept(null), 'ไรเดอร์หน้าเว็บ/แอปเก่า → ปุ่มส่งของแบบเดิม');
+
+        // ไรเดอร์รับงานจริงจากแอป build 43 → handover_required
+        $riderUser = User::factory()->create();
+        $rider = new Rider;
+        $rider->forceFill([
+            'user_id' => $riderUser->id,
+            'full_name' => 'สมชาย ขยันส่ง',
+            'phone' => '0891235678',
+            'status' => 'approved',
+            'availability' => 'online',
+            'rider_type' => 'delivery',
+            'vehicle_type' => 'motorcycle',
+            'vehicle_plate' => '1กข 1234',
+            'gps_permission_granted' => true,
+            'share_location_consent_at' => now(),
+            'last_latitude' => (float) $r['store']->pickup_latitude,
+            'last_longitude' => (float) $r['store']->pickup_longitude,
+            'last_location_update' => now(),
+            'approved_at' => now(),
+        ])->save();
+
+        $accepted = app(RiderJobService::class)->accept($job, $rider->fresh(), 43);
+        $this->assertSame('accepted', $accepted->status);
+        $this->assertTrue((bool) $accepted->fresh()->handover_required, 'ปลดเงินด้วยการสแกนส่งมอบสองฝ่ายเท่านั้น');
+
+        // POS เห็นงานถูกรับแล้ว
+        $this->getJson('/api/pos/delivery-requests/'.$r['id'], $r['headers'])
+            ->assertOk()
+            ->assertJsonPath('data.rider_job.status', 'assigned');
     }
 
     /**

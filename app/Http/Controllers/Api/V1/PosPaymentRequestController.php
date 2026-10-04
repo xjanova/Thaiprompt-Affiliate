@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Exceptions\PosDeliveryException;
 use App\Http\Controllers\Controller;
 use App\Services\Pos\PosDeliveryRequestService;
+use App\Support\Rider\ClientAppBuild;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -97,7 +98,8 @@ class PosPaymentRequestController extends Controller
                 $token,
                 (int) $request->input('address_id'),
                 (string) $request->input('pin'),
-                $idempotencyKey
+                $idempotencyKey,
+                ClientAppBuild::fromRequest($request) // ไรเดอร์รอบ 2: build แอปที่จ่าย (ตัดสินการสแกนส่งมอบ)
             );
 
             return response()->json([

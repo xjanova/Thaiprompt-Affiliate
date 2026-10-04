@@ -341,11 +341,14 @@ class PosDeliveryRequestService
      * จ่ายคำขอ: PIN → ล็อกแถวคำขอ → ShopCheckoutService (wallet + rider) → ตั้งคำขอ paid
      * หลัง commit: เรียกไรเดอร์ (ล้มเหลว = ไม่กระทบเงิน ร้าน/แอดมินกดเรียกไรเดอร์เองได้)
      *
+     * $clientAppBuild = build ของแอปผู้จ่าย (header X-App-Build) — ไรเดอร์รอบ 2 ใช้ตัดสินตอนไรเดอร์รับงานว่า
+     * งานต้อง "สแกนส่งมอบสองฝ่าย" (handover_required) หรือใช้ปุ่มส่งของแบบเดิม (ClientAppBuild / RiderJob::handoverRequiredOnAccept)
+     *
      * @return array{order_id: int, order_number: string, total: float, track_path: string}
      *
      * @throws PosDeliveryException
      */
-    public function pay(User $user, string $rawToken, int $addressId, string $pin, string $idempotencyKey): array
+    public function pay(User $user, string $rawToken, int $addressId, string $pin, string $idempotencyKey, ?int $clientAppBuild = null): array
     {
         $token = PosDeliveryRequest::normalizeToken($rawToken);
         if ($token === null) {
@@ -370,7 +373,7 @@ class PosDeliveryRequestService
 
         try {
             /** @var Order $order */
-            [$order, $request] = DB::transaction(function () use ($request, $user, $addressId) {
+            [$order, $request] = DB::transaction(function () use ($request, $user, $addressId, $clientAppBuild) {
                 // ล็อกแถวคำขอ → จ่ายพร้อมกัน 2 คน/กดซ้ำ จะมีแค่คนแรกที่ผ่าน
                 $locked = PosDeliveryRequest::whereKey($request->id)->lockForUpdate()->first();
                 if (! $locked) {
@@ -384,6 +387,8 @@ class PosDeliveryRequestService
                     'delivery_method' => Order::DELIVERY_RIDER,
                     'note' => $locked->note,
                     'source' => 'pos',
+                    // ไรเดอร์รอบ 2: build แอปที่จ่าย → ออเดอร์ (client_app_build) ตัดสินการสแกนส่งมอบ เหมือน /cart/checkout
+                    'client_app_build' => $clientAppBuild,
                 ], null, fn () => $this->lines->lockedSource($locked, $user));
 
                 $orderIds = array_values(array_filter(array_map('intval', (array) ($result['order_ids'] ?? []))));
