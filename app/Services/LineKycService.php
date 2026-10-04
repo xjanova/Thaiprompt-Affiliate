@@ -120,6 +120,16 @@ class LineKycService
         User $user,
         string $imageType = 'id_card'
     ): array {
+        // 🪪 ยืนยันตัวตนแล้ว (รวม AI eKYC) — ไม่รับรูปเข้า flow เดิม ไม่งั้นสถานะถูกดึงกลับเป็น pending
+        // (ไม่ส่งข้อความ LINE ตรงนี้ — push มีโควตา 300/เดือน · ผู้เรียกตอบผ่าน reply ได้เอง)
+        if ($user->isKycVerified()) {
+            return [
+                'success' => false,
+                'message' => 'บัญชีนี้ยืนยันตัวตนเรียบร้อยแล้ว',
+                'already_verified' => true,
+            ];
+        }
+
         try {
             // 1. ดาวน์โหลดรูปภาพจาก LINE
             $imageData = $this->downloadLineImage($messageId);
@@ -194,8 +204,9 @@ class LineKycService
         }
 
         // 3. สร้างหรืออัพเดท KYC Verification
+        // แตะเฉพาะคำขอแบบเดิม (manual) — แถว AI eKYC ของผู้ใช้ห้ามถูกเขียนทับ
         $kyc = KycVerification::updateOrCreate(
-            ['user_id' => $user->id],
+            ['user_id' => $user->id, 'method' => KycVerification::METHOD_MANUAL],
             [
                 'id_card_image' => $imagePath,
                 'extracted_data' => $ocrResult['data'] ?? null,
@@ -239,7 +250,10 @@ class LineKycService
     protected function processSelfieImage(User $user, string $imagePath, string $lineUserId): array
     {
         // 1. ตรวจสอบว่ามี KYC record อยู่แล้วหรือไม่
-        $kyc = KycVerification::where('user_id', $user->id)->first();
+        $kyc = KycVerification::where('user_id', $user->id)
+            ->where('method', KycVerification::METHOD_MANUAL)
+            ->latest('id')
+            ->first();
 
         if (! $kyc) {
             $message = "❌ กรุณาส่งรูปบัตรประชาชนก่อน\n\nพิมพ์ 'KYC' เพื่อเริ่มต้นใหม่";

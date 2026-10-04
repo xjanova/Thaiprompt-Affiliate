@@ -63,7 +63,13 @@ class EkycDecisionTest extends TestCase
     public function test_all_green_is_approved(): void
     {
         $this->assertSame(['decision' => 'approved', 'reasons' => []], $this->decide());
-        $this->assertSame('approved', $this->decide(['expiry' => null, 'lifelong' => true, 'reasons' => ['EXPIRY_LIFELONG']])['decision']);
+        // บัตรตลอดชีพ: ผ่านเฉพาะเจ้าของบัตรอายุ 70 ขึ้นไป (ไม่รู้วันเกิด/อายุไม่ถึง = ส่งตรวจ)
+        $this->assertSame('approved', $this->decide(['expiry' => null, 'lifelong' => true, 'birth_date' => now()->subYears(72)->toDateString(), 'reasons' => ['EXPIRY_LIFELONG']])['decision']);
+        foreach ([null, now()->subYears(45)->toDateString()] as $birth) {
+            $young = $this->decide(['expiry' => null, 'lifelong' => true, 'birth_date' => $birth, 'reasons' => ['EXPIRY_LIFELONG']]);
+            $this->assertSame('review', $young['decision'], (string) $birth);
+            $this->assertContains('EXPIRY_UNKNOWN', $young['reasons']);
+        }
         // ตรงเกณฑ์พอดี
         $this->assertSame('approved', $this->decide(['cosine' => 0.50, 'liveness' => 0.80, 'real' => 0.70, 'card_real' => 0.60, 'ocr' => 0.80])['decision']);
     }
@@ -86,6 +92,11 @@ class EkycDecisionTest extends TestCase
             [['reasons' => ['MULTIPLE_FACES']], 'MULTIPLE_FACES'],
             [['reasons' => ['SPOOF_SUSPECTED'], 'real' => 0.5], 'SPOOF_SUSPECTED'],
             [['reasons' => ['NO_CARD_FACE'], 'cosine' => null], 'NO_CARD_FACE'],
+            // same_person = false ที่ AI ไม่ได้ยืนยันว่าเป็นคนละคน (เช่นเจอหลายหน้า) = ส่งตรวจ ไม่ใช่ให้ถ่ายใหม่
+            [['same_person' => false], 'FACES_INCONSISTENT'],
+            [['same_person' => false, 'reasons' => ['MULTIPLE_FACES']], 'MULTIPLE_FACES'],
+            [['replay' => true], 'REPLAY_SUSPECTED'],
+            [['prior_rejected' => true], 'PRIOR_REJECTED'],
         ] as [$override, $reason]) {
             $result = $this->decide($override);
             $this->assertSame('review', $result['decision'], json_encode($override));
@@ -101,7 +112,7 @@ class EkycDecisionTest extends TestCase
             [['expiry' => now()->subDay()->toDateString()], 'EXPIRED'],
             [['challenges' => ['blink' => false, 'smile' => true, 'nod' => true]], 'CHALLENGE_FAILED:blink'],
             [['reasons' => ['SPOOF_SUSPECTED'], 'real' => 0.29], 'SPOOF_SUSPECTED'],
-            [['same_person' => false], 'DIFFERENT_PEOPLE'],
+            [['same_person' => false, 'reasons' => ['DIFFERENT_PEOPLE']], 'DIFFERENT_PEOPLE'],
             [['cosine' => 0.14], 'LOW_MATCH'],
         ] as [$override, $reason]) {
             $result = $this->decide($override);

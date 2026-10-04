@@ -944,7 +944,7 @@ print_info "Removing untracked files and directories..."
 #                                    ทดสอบแล้วบน git 2.34.1 (prod) + 2.53: เก็บ 2 ไฟล์นี้ ลบ cache/sessions/views ตามเดิม
 #                                    (STEP 4.7 สร้างโฟลเดอร์คืน) · webhook ยังเข้าได้ — รายการยกเว้นอยู่ใน
 #                                    app/Http/Middleware/PreventRequestsDuringMaintenance.php · scheduler: ท้าย routes/console.php
-git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
+git clean -fdx -e 'storage/framework/down' -e 'storage/framework/maintenance.php' -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/fortune' -e 'storage/app/ekyc' -e 'storage/app/profile-photos' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' -e 'storage/oauth-private.key' -e 'storage/oauth-public.key' -e 'backups/' -e 'vendor/' -e '.composer.lock.checksum' -e 'storage/logs/laravel-*.log' -e 'storage/logs/deployment.log' -e '.seeder_checksums' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."
@@ -975,6 +975,41 @@ if [ ! -L "storage/app/fortune" ]; then
 else
     print_success "✓ storage/app/fortune symlink อยู่แล้ว (external storage)"
 fi
+
+# Step 4.5.2: 🪪 (2026-10-04) รูป eKYC (บัตร/หน้า เข้ารหัสแล้ว) + รูปโปรไฟล์ถ่ายสด — ย้ายออกนอก git tree แบบเดียวกับ fortune
+#   ปัญหา: git clean -fdx (STEP 4.4) ลบ storage/app/ekyc + storage/app/profile-photos ทุก deploy
+#     → เคสรอแอดมินตรวจไม่มีรูป · รอบที่ส่งบัตรแล้วกลายเป็น CARD_IMAGE_MISSING · หลักฐานของบัญชีที่อนุมัติแล้วหาย
+#   แก้: ไฟล์จริงอยู่ที่ ../ekyc_data และ ../profile_photo_data (sibling public_html นอก git tree, perms 700) แล้ว symlink เข้ามา
+#     บรรทัด git clean ข้างบนมี -e ของทั้ง 2 path ด้วย (รอบแรกที่ยังเป็นโฟลเดอร์จริงจะไม่โดนลบก่อนย้าย)
+#   PDPA: ยัง private (นอก public_html · เสิร์ฟผ่าน route ที่ตรวจสิทธิ์เท่านั้น · รูป eKYC เข้ารหัสด้วย APP_KEY)
+persist_private_storage_dir() {
+    local rel="$1"
+    local external="$2"
+    mkdir -p "$external" 2>/dev/null || true
+    chmod 700 "$external" 2>/dev/null || true
+    if [ -L "$rel" ]; then
+        print_success "✓ $rel symlink อยู่แล้ว (external storage)"
+        return 0
+    fi
+    if [ -d "$rel" ]; then
+        # ย้ายไฟล์เข้า external ก่อน (ไม่ทับของที่มีอยู่แล้ว) แล้วค่อยเอาโฟลเดอร์จริงออก
+        if cp -rn "$rel/." "$external/" 2>/dev/null; then
+            rm -rf "$rel" 2>/dev/null || true
+        else
+            print_warning "⚠ ย้าย $rel ไป $external ไม่สำเร็จ — คงโฟลเดอร์เดิมไว้ (ไม่ลบ)"
+            return 0
+        fi
+    fi
+    mkdir -p "$(dirname "$rel")" 2>/dev/null || true
+    if ln -s "$external" "$rel" 2>/dev/null; then
+        print_success "✓ Linked $rel → $external"
+    else
+        print_warning "⚠ ไม่สามารถสร้าง symlink $rel (ไฟล์อาจไม่คงอยู่ข้าม deploy)"
+    fi
+}
+print_info "Ensuring external eKYC + profile photo storage (survives git clean)..."
+persist_private_storage_dir "storage/app/ekyc" "$(dirname "$SCRIPT_DIR")/ekyc_data"
+persist_private_storage_dir "storage/app/profile-photos" "$(dirname "$SCRIPT_DIR")/profile_photo_data"
 
 # Step 4.6: Smart ENV Sync - Auto-update .env with new variables
 print_substep "4.6" "Syncing .env with .env.example..."

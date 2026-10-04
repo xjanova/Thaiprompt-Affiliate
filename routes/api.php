@@ -886,7 +886,8 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
             Route::post('/orders/{id}/review', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'reviewOrder'])->whereNumber('id')->name('orders.review');
 
             // ผู้ขาย
-            Route::post('/seller/register', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'registerSeller'])->name('seller.register');
+            // 🪪 สมัครร้านตลาดสด = สมัครผู้ขาย → ต้องยืนยันตัวตน (eKYC) ก่อน (เฉพาะแอป build ≥ 44)
+            Route::post('/seller/register', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'registerSeller'])->middleware('ekyc.verified')->name('seller.register');
             Route::get('/seller/profile', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerProfile'])->name('seller.profile');
             Route::put('/seller/profile', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateSellerProfile'])->name('seller.profile.update');
             Route::post('/seller/subscribe', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'subscribe'])->name('seller.subscribe');

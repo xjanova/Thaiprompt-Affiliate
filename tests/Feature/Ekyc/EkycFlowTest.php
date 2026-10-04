@@ -155,11 +155,13 @@ class EkycFlowTest extends TestCase
         // แก้บั๊กแจ้งแอดมิน (เดิม query users.is_admin ที่ไม่มีอยู่)
         $this->assertTrue(Notification::where('user_id', $admin->id)->where('type', 'kyc')->exists(), 'แอดมินต้องได้แจ้งเตือน');
 
-        // ระหว่างรอตรวจ เริ่มรอบใหม่ไม่ได้
+        // ระหว่างรอตรวจ: can_start = false แต่ใบหน้าก้ำกึ่ง = ขอถ่ายใหม่เองได้ (can_retake — รอบใหม่แทนเคสเดิม)
         $this->getJson('/api/v1/ekyc/status')
             ->assertJsonPath('data.can_start', false)
+            ->assertJsonPath('data.can_retake', true)
             ->assertJsonPath('data.last_decision', 'review');
-        $this->startSession()->assertStatus(409)->assertJsonPath('code', 'EKYC_PENDING_REVIEW');
+        $this->startSession()->assertCreated();
+        $this->assertSame(KycVerification::STATUS_SUPERSEDED, $kyc->fresh()->status);
     }
 
     public function test_ai_down_or_timeout_sends_case_to_review(): void
@@ -307,7 +309,8 @@ class EkycFlowTest extends TestCase
 
     public function test_lifelong_card_is_not_expired(): void
     {
-        $this->fakeAi($this->goodCard(['reasons' => ['EXPIRY_LIFELONG']], ['expiry_date' => null]));
+        // บัตรตลอดชีพออกให้ผู้อายุ 70 ปีขึ้นไป
+        $this->fakeAi($this->goodCard(['reasons' => ['EXPIRY_LIFELONG']], ['expiry_date' => null, 'birth_date' => now()->subYears(74)->toDateString()]));
         $this->ekycUser();
         [$sid, $challenges] = $this->openSession();
 
@@ -402,9 +405,9 @@ class EkycFlowTest extends TestCase
 
         $this->postFace($sid, array_merge(['neutral'], $challenges))->assertOk()->assertJsonPath('data.decision', 'approved');
 
-        // ส่งซ้ำ (replay) รอบที่ตัดสินแล้ว
-        $this->postFace($sid, array_merge(['neutral'], $challenges))->assertStatus(410)->assertJsonPath('code', 'EKYC_SESSION_EXPIRED');
-        $this->postCard($sid)->assertStatus(410);
+        // ส่งซ้ำ (replay) รอบที่ตัดสินแล้ว → 409 ตัดสินแล้ว (แอปไปดูผลจาก /ekyc/status)
+        $this->postFace($sid, array_merge(['neutral'], $challenges))->assertStatus(409)->assertJsonPath('code', 'EKYC_SESSION_DONE');
+        $this->postCard($sid)->assertStatus(409)->assertJsonPath('code', 'EKYC_SESSION_DONE');
         $this->assertSame(1, KycVerification::where('ekyc_session_id', $sid)->count());
     }
 
@@ -483,11 +486,16 @@ class EkycFlowTest extends TestCase
             ->assertStatus(422)->assertJsonPath('code', 'EKYC_BAD_IMAGE');
         $this->post($url, ['image' => \Illuminate\Http\UploadedFile::fake()->create('big.jpg', 9000, 'image/jpeg')], $json)
             ->assertStatus(422)->assertJsonPath('code', 'EKYC_BAD_IMAGE');
+        // เส้นส่งบัตรจำกัด 4 ครั้ง/นาที
+        $this->travel(2)->minutes();
         // รูปบัตรเล็กเกินไป (อ่านไม่ออก)
         $this->post($url, ['image' => \Illuminate\Http\UploadedFile::fake()->createWithContent('small.jpg', $this->jpeg(200, 120))], $json)
             ->assertStatus(422)->assertJsonPath('code', 'EKYC_BAD_IMAGE');
 
         Http::assertNothingSent();
+
+        // เส้นส่งบัตรจำกัด 4 ครั้ง/นาที — ข้ามไปนาทีถัดไปก่อนส่งรูปดี
+        $this->travel(2)->minutes();
 
         // เฟรมเสีย 1 เฟรม
         $this->postCard($sid)->assertOk();

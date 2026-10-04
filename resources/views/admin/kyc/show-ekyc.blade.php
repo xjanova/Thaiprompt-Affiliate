@@ -301,6 +301,12 @@
                         @endforeach
                     </div>
                 @endif
+                {{-- เช็คบัตรซ้ำสด ณ ตอนเปิดหน้า (อีกบัญชีอาจยืนยันด้วยบัตรนี้ระหว่างรอตรวจ — อนุมัติซ้ำไม่ได้) --}}
+                @if(! empty($ekyc['duplicate_now']))
+                    <div style="margin-top:12px; padding:10px 12px; border-radius:10px; background:rgba(220,38,38,.10); color:#b42318; font-size:12.5px; font-weight:700;">
+                        <i class="fas fa-triangle-exclamation"></i> ตอนนี้เลขบัตรนี้ยืนยันตัวตนกับบัญชีอื่นแล้ว — อนุมัติบัญชีนี้ไม่ได้
+                    </div>
+                @endif
                 <div style="font-size:11.5px; color:var(--ink2); margin-top:12px;">
                     ประมวลผล {{ $kyc->processed_at ? $kyc->processed_at->format('d/m/Y H:i') : '-' }}
                     · ยินยอม PDPA {{ $kyc->consent_at ? $kyc->consent_at->format('d/m/Y H:i') : '-' }} (ฉบับ {{ $kyc->consent_version ?: '-' }})

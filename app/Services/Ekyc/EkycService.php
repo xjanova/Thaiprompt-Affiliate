@@ -11,6 +11,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
@@ -52,8 +53,23 @@ class EkycService
 
     public const STEP_DONE = 'done';
 
+    /** แถวที่รอแอดมินตรวจ แต่ผู้ใช้ขอถ่ายใหม่เอง (status = superseded) — นับเป็น 1 สิทธิ์ถ่ายใหม่ */
+    public const STEP_RETAKEN = 'retaken';
+
     /** เหตุผลจาก AI ที่ไม่ขวางการอนุมัติอัตโนมัติ */
     private const BENIGN_REASONS = ['EXPIRY_LIFELONG'];
+
+    /**
+     * เคสรอตรวจที่ผู้ใช้ขอถ่ายใหม่เองได้ — เฉพาะเหตุผลด้านคุณภาพภาพ/ความมั่นใจของ AI
+     * (บัตรซ้ำ · ภาพซ้ำ · เคยถูกปฏิเสธ · บัตรจากจอ · ลองครบแล้ว = ต้องรอแอดมินเท่านั้น)
+     */
+    private const RETAKEABLE_REVIEW_REASONS = [
+        'BORDERLINE_MATCH', 'LOW_MATCH', 'NO_MATCH_SCORE', 'LOW_LIVENESS', 'LOW_REAL', 'MULTIPLE_FACES', 'FACES_INCONSISTENT',
+        'OCR_LOW', 'ID_UNREADABLE', 'EXPIRY_UNKNOWN', 'EXPIRY_LIFELONG', 'USER_CORRECTED', 'AI_UNAVAILABLE', 'CARD_IMAGE_MISSING',
+    ];
+
+    /** error จากบริการ AI ที่แปลว่า "คิวเต็ม/ตรวจไม่ทันชั่วคราว" → ให้แอปลองซ้ำ ไม่ใช่ส่งแอดมินตรวจ */
+    private const AI_BUSY_ERRORS = ['HTTP_503', 'HTTP_504'];
 
     /** เหตุผลจากรอบอ่านบัตรที่ต้องถ่ายบัตรใหม่ */
     private const CARD_RETAKE_REASONS = ['NO_CARD', 'BLURRY', 'GLARE', 'CARD_INCOMPLETE', 'NO_CARD_FACE', 'ID_CHECKSUM_FAIL', 'EXPIRED'];
@@ -89,6 +105,9 @@ class EkycService
         'CARD_IMAGE_MISSING' => 'ไม่พบรูปบัตรของรอบนี้',
         'ADMIN_REJECTED' => 'เจ้าหน้าที่ปฏิเสธการยืนยันตัวตน',
         'ADMIN_RETAKE' => 'เจ้าหน้าที่ขอให้ถ่ายใหม่',
+        'REPLAY_SUSPECTED' => 'ภาพใบหน้าซ้ำกับการยืนยันครั้งก่อน ต้องให้เจ้าหน้าที่ตรวจ',
+        'PRIOR_REJECTED' => 'เคยถูกเจ้าหน้าที่ปฏิเสธการยืนยันตัวตน ต้องให้เจ้าหน้าที่ตรวจ',
+        'FACES_INCONSISTENT' => 'ยืนยันไม่ได้ว่าใบหน้าทุกช่วงเป็นคนเดียวกัน',
     ];
 
     /** ป้ายคำสั่ง (ภาษาไทย) */
@@ -164,6 +183,8 @@ class EkycService
         $approvedRow = $verified
             ? KycVerification::where('user_id', $user->id)->where('status', 'approved')->latest('id')->first()
             : null;
+        $approvedId = $approvedRow ? self::plainId($approvedRow) : null;
+        $pending = $verified ? null : $this->pendingEkycReviewRow($user);
 
         return [
             'kyc_status' => $verified ? 'approved' : self::publicStatus($user),
@@ -171,6 +192,10 @@ class EkycService
             'verified_at' => $verified ? ($user->kyc_verified_at ?? $approvedRow?->reviewed_at ?? $approvedRow?->processed_at)?->toIso8601String() : null,
             'method' => ($approvedRow ?? $last)?->method,
             'can_start' => $this->canStart($user, $verified, $attemptsLeft),
+            // รอแอดมินตรวจด้วยเหตุผลด้านคุณภาพภาพ → ขอถ่ายใหม่เองได้ (รอบใหม่จะแทนที่เคสที่รอตรวจ)
+            'can_retake' => $pending !== null && $attemptsLeft > 0 && $this->isRetakeableReview($pending),
+            // มีรอบที่กำลังตรวจอยู่ (เช่นเน็ตหลุดระหว่างส่ง) — แอปถามสถานะซ้ำจนกว่าจะได้ผล
+            'processing' => ! $verified && $this->hasProcessingSession($user),
             'attempts_left' => $attemptsLeft,
             'last_decision' => $last ? $this->effectiveDecision($last) : null,
             'reasons' => $reasons,
@@ -182,22 +207,25 @@ class EkycService
             // หน้าโปรไฟล์ของเจ้าของบัญชี (เห็นเฉพาะตัวเอง) — ชื่อตามบัตร + เลขบัตรแบบปิดบางส่วน
             'name_th' => $approvedRow?->name_th,
             'id_number_masked' => $approvedRow
-                ? ($approvedRow->id_number_encrypted
-                    ? self::maskId((string) $approvedRow->id_number_encrypted)
+                ? ($approvedId !== null
+                    ? self::maskId($approvedId)
                     : ($approvedRow->id_last4 ? '•••••••••'.$approvedRow->id_last4 : null))
                 : null,
         ];
     }
 
     /**
-     * ถ่ายใหม่ได้อีกกี่ครั้งวันนี้ (นับรอบที่ AI ให้ถ่ายใหม่ตั้งแต่เที่ยงคืนเวลาไทย)
+     * ถ่ายใหม่ได้อีกกี่ครั้งวันนี้ (นับรอบที่ AI ให้ถ่ายใหม่ + เคสรอตรวจที่ผู้ใช้ขอถ่ายใหม่เอง ตั้งแต่เที่ยงคืนเวลาไทย)
      */
     public function attemptsLeft(User $user): int
     {
         $used = KycVerification::query()
             ->where('user_id', $user->id)
             ->where('method', KycVerification::METHOD_EKYC)
-            ->where('ai_decision', 'retake')
+            ->where(function ($q) {
+                $q->where('ai_decision', 'retake')
+                    ->orWhere('ekyc_step', self::STEP_RETAKEN);
+            })
             ->where('processed_at', '>=', now()->startOfDay())
             ->count();
 
@@ -227,12 +255,24 @@ class EkycService
         if (! self::isAccepted($consent) || $version === '' || ! preg_match('/^[\w.\-]{1,20}$/', $version)) {
             throw EkycException::consentRequired();
         }
+        // ยินยอมกับข้อความเวอร์ชันที่ใช้อยู่เท่านั้น (แอปเก่าที่แสดงข้อความเดิม = ต้องอัปเดตก่อน)
+        if ($version !== (string) config('ekyc.consent_version', '')) {
+            throw EkycException::consentOutdated();
+        }
 
-        if ($this->hasPendingEkycReview($user)) {
-            throw EkycException::pendingReview();
+        // รอบก่อนหน้ายังตรวจอยู่ (เน็ตหลุดแล้วกดเริ่มใหม่) — ห้ามลบทิ้งกลางทาง ให้แอปถามสถานะซ้ำ
+        if ($this->hasProcessingSession($user)) {
+            throw EkycException::processing();
         }
 
         $attemptsLeft = $this->attemptsLeft($user);
+
+        // รอแอดมินตรวจ: ขอถ่ายใหม่เองได้เฉพาะเหตุผลด้านคุณภาพภาพ (รอบใหม่แทนเคสเดิม + นับ 1 สิทธิ์)
+        $pending = $this->pendingEkycReviewRow($user);
+        if ($pending !== null && (! $this->isRetakeableReview($pending) || $attemptsLeft <= 0)) {
+            throw EkycException::pendingReview();
+        }
+
         if ($attemptsLeft <= 0) {
             throw EkycException::tooManyAttempts(['attempts_left' => 0]);
         }
@@ -250,11 +290,40 @@ class EkycService
         $sessionId = (string) Str::uuid();
         $expiresAt = now()->addMinutes(max(1, (int) config('ekyc.session_ttl_minutes', 20)));
 
-        $abandoned = DB::transaction(function () use ($user, $challenges, $sessionId, $expiresAt, $version) {
+        $abandoned = DB::transaction(function () use ($user, $challenges, $sessionId, $expiresAt, $version, $pending) {
             // ล็อกแถวผู้ใช้ — กดเริ่มพร้อมกัน 2 ครั้งจะได้รอบที่ใช้งานได้รอบเดียว
-            User::query()->whereKey($user->id)->lockForUpdate()->first(['id']);
+            /** @var User $lockedUser */
+            $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
 
-            // รอบเก่าที่ยังทำไม่จบ = ทิ้ง (ลบแถว + ไฟล์หลัง commit)
+            // รอบที่กำลังตรวจ (ยังไม่ค้างนาน) ห้ามลบ — เช็คซ้ำในล็อก
+            if ($this->hasProcessingSession($user)) {
+                throw EkycException::processing();
+            }
+
+            if ($pending !== null) {
+                /** @var KycVerification|null $review */
+                $review = KycVerification::query()->whereKey($pending->id)->lockForUpdate()->first();
+                // แอดมินตัดสินไปแล้วระหว่างนั้น → ใช้ผลของแอดมิน (ไม่เปิดรอบใหม่ทับ)
+                if (! $review || $review->status !== 'pending' || $review->reviewed_by !== null) {
+                    throw EkycException::pendingReview();
+                }
+
+                $review->forceFill([
+                    'status' => KycVerification::STATUS_SUPERSEDED,
+                    'ekyc_step' => self::STEP_RETAKEN,
+                    'rejection_reason' => 'ผู้ใช้ขอถ่ายใหม่ก่อนเจ้าหน้าที่ตรวจ',
+                ])->save();
+
+                $stillPending = KycVerification::query()
+                    ->where('user_id', $user->id)
+                    ->where('status', 'pending')
+                    ->exists();
+                if (! $stillPending && $lockedUser->kyc_status === 'pending') {
+                    $lockedUser->forceFill(['kyc_status' => 'not_submitted', 'kyc_verified_at' => null])->save();
+                }
+            }
+
+            // รอบเก่าที่ยังทำไม่จบ = ทิ้ง (ลบแถว + ไฟล์หลัง commit) — รอบที่ค้าง "กำลังตรวจ" นานเกินเวลาก็ทิ้งได้
             $old = KycVerification::query()
                 ->where('user_id', $user->id)
                 ->where('method', KycVerification::METHOD_EKYC)
@@ -309,9 +378,26 @@ class EkycService
         $this->assertOpen($kyc, [self::STEP_CONSENTED, self::STEP_CARD]);
         $this->assertNotVerified($user);
 
+        // เพดานส่งรูปบัตร: ต่อรอบ (เริ่มใหม่ได้) + ต่อวัน — อ่านบัตร 1 ใบใช้ AI ~10 วิ กันคนเดียวยิงจนคิว AI เต็ม
+        $uploads = (int) (((array) ($kyc->extracted_data ?? []))['card_uploads'] ?? 0);
+        if ($uploads >= max(1, (int) config('ekyc.max_card_uploads_per_session', 6))) {
+            throw EkycException::cardLimit();
+        }
+        $dayKey = 'ekyc-card-day:'.$user->id.':'.now()->toDateString();
+        if (RateLimiter::tooManyAttempts($dayKey, max(1, (int) config('ekyc.max_card_uploads_per_day', 20)))) {
+            throw EkycException::tooManyAttempts(['attempts_left' => $this->attemptsLeft($user)]);
+        }
+
         $jpeg = $this->images->normalize($image, EkycImages::CARD_MAX_EDGE, EkycImages::CARD_MIN_EDGE);
 
-        $card = $this->parseCard($this->ai->idCard($jpeg));
+        $result = $this->ai->idCard($jpeg);
+        // คิว AI เต็ม/ตรวจไม่ทัน = ให้ส่งใหม่ (ไม่ใช่ผ่านขั้นบัตรไปแบบไม่มีข้อมูลแล้วตกไปคิวแอดมิน) — ไม่นับเพดาน
+        if (self::isAiBusy($result)) {
+            throw EkycException::aiBusy();
+        }
+        RateLimiter::hit($dayKey, 86400);
+
+        $card = $this->parseCard($result);
 
         $cardPath = $this->images->newPath((int) $user->id, $sessionId, 'card');
         $this->images->putEncrypted($cardPath, $jpeg);
@@ -339,6 +425,7 @@ class EkycService
                 $extracted = (array) ($locked->extracted_data ?? []);
                 $extracted['source'] = 'ekyc';
                 $extracted['card'] = $this->cardSummary($card);
+                $extracted['card_uploads'] = (int) ($extracted['card_uploads'] ?? 0) + 1;
                 // บัตรใบใหม่ = ผลอ่านใหม่ — การแก้ไขของใบเดิมไม่ใช้แล้ว
                 $extracted['corrections'] = [];
 
@@ -380,11 +467,14 @@ class EkycService
 
         return [
             'status' => $this->cardNeedsRetake($card) ? 'retake' : 'ok',
+            // false = ตัวอ่านบัตรอัตโนมัติไม่พร้อม (ผู้ใช้กรอกเอง → เจ้าหน้าที่ตรวจ) — แอปไม่ต้องโชว์ "อ่านสำเร็จ 0%"
+            'ai_available' => $card['available'],
             'fields' => $this->fieldsPayload($kyc),
+            // true / false / null (null = อ่านไม่ได้/ไม่ทราบ → แอปแสดงเป็นกลาง ไม่ใช่ตัวแดง)
             'checks' => [
-                'checksum' => $card['checksum_ok'] === true,
-                'not_expired' => $this->notExpired($card['fields']['expiry_date'], $card['lifelong']),
-                'card_real' => $card['card_real_score'] !== null && $card['card_real_score'] >= $this->threshold('min_card_real'),
+                'checksum' => $card['checksum_ok'],
+                'not_expired' => $this->expiryState($card['fields']['expiry_date'], $card['lifelong'], $card['fields']['birth_date']),
+                'card_real' => $card['card_real_score'] !== null ? $card['card_real_score'] >= $this->threshold('min_card_real') : null,
                 'quality_ok' => $card['available'] && $this->cardQualityOk($card),
             ],
             'ocr_confidence' => $card['ocr_confidence'] ?? 0.0,
@@ -500,7 +590,15 @@ class EkycService
             ->where('ekyc_expires_at', '>', now())
             ->update(['ekyc_step' => self::STEP_PROCESSING, 'updated_at' => now()]);
         if ($claimed === 0) {
-            throw EkycException::sessionExpired('รอบยืนยันตัวตนนี้กำลังประมวลผลหรือใช้ไปแล้ว กรุณาเริ่มใหม่');
+            $kyc->refresh();
+            if ($kyc->status === 'draft' && $kyc->ekyc_step === self::STEP_PROCESSING) {
+                throw EkycException::processing();
+            }
+            if ($kyc->status !== 'draft' || $kyc->ekyc_step === self::STEP_DONE) {
+                throw EkycException::sessionDone();
+            }
+
+            throw EkycException::sessionExpired();
         }
 
         $bestPath = null;
@@ -509,21 +607,30 @@ class EkycService
             $kyc->refresh();
             $cardJpeg = $this->images->getDecrypted($kyc->id_card_image);
 
-            $face = $cardJpeg !== null
-                ? $this->parseFace($this->ai->verifyFace($cardJpeg, $jpegs, $labels), count($jpegs))
-                : $this->parseFace(['available' => false, 'data' => [], 'error' => 'CARD_IMAGE_MISSING', 'ms' => 0], count($jpegs));
+            $faceResult = $cardJpeg !== null
+                ? $this->ai->verifyFace($cardJpeg, $jpegs, $labels)
+                : ['available' => false, 'data' => [], 'error' => 'CARD_IMAGE_MISSING', 'ms' => 0];
+            // คิว AI เต็ม/ตรวจไม่ทัน → คืนรอบ (catch ข้างล่าง) ให้แอปส่งเฟรมเดิมซ้ำได้ ไม่เสียสิทธิ์
+            if (self::isAiBusy($faceResult)) {
+                throw EkycException::aiBusy();
+            }
+            $face = $this->parseFace($faceResult, count($jpegs));
 
             $cardInfo = (array) (($kyc->extracted_data ?? [])['card'] ?? []);
             $corrected = ! empty(($kyc->extracted_data ?? [])['corrections'] ?? []);
-            $idNumber = $kyc->id_number_encrypted;
+            $idNumber = self::plainId($kyc);
 
-            $verdict = $this->decide([
+            // ลายนิ้วมือภาพของทุกเฟรม — ซ้ำกับรอบก่อนๆ (บัญชีไหนก็ได้) = เอาภาพนิ่งชุดเดิมมาเรียงตามคำสั่งใหม่
+            $frameHashes = array_map(fn (string $jpeg) => $this->images->dhash($jpeg), $jpegs);
+
+            $baseInput = [
                 'card_available' => (bool) ($cardInfo['available'] ?? false),
                 'face_available' => $face['available'],
-                'id_present' => $idNumber !== null && $idNumber !== '',
-                'checksum_ok' => ($idNumber !== null && $idNumber !== '') ? KycAutoCheckService::validThaiIdChecksum($idNumber) && ($cardInfo['id_checksum_ok'] ?? true) !== false : null,
+                'id_present' => $idNumber !== null,
+                'checksum_ok' => $idNumber !== null ? KycAutoCheckService::validThaiIdChecksum($idNumber) && ($cardInfo['id_checksum_ok'] ?? true) !== false : null,
                 'expiry' => $kyc->card_expiry,
                 'lifelong' => (bool) ($cardInfo['lifelong'] ?? false),
+                'birth_date' => $kyc->birth_date,
                 'ocr' => $kyc->ai_ocr_confidence,
                 'card_real' => $kyc->ai_card_real,
                 'liveness_passed' => $face['liveness_passed'],
@@ -534,68 +641,81 @@ class EkycService
                 'same_person' => $face['same_person'],
                 'reasons' => array_merge((array) ($cardInfo['reasons'] ?? []), $face['reasons'], $cardJpeg === null ? ['CARD_IMAGE_MISSING'] : []),
                 'corrected' => $corrected,
-                'duplicate' => $this->isDuplicateId($user, $kyc->id_number_hash, $idNumber),
+                'replay' => $this->replaySuspected((int) $kyc->id, $frameHashes),
+                'prior_rejected' => $this->priorAdminRejection($user, $kyc->id_number_hash),
                 'retakes_today' => $retakesToday,
-            ]);
+            ];
 
             // เก็บเฉพาะเฟรมที่ดีที่สุด (AI ล่ม = เฟรม neutral) — เฟรมอื่นไม่ถูกเขียนลงดิสก์เลย
             $bestIndex = $face['best_frame_index'] ?? 0;
             $bestPath = $this->images->newPath((int) $user->id, $sessionId, 'best_frame');
             $this->images->putEncrypted($bestPath, $jpegs[$bestIndex] ?? $jpegs[0]);
 
-            $decision = $verdict['decision'];
-            $status = match ($decision) {
-                'approved' => 'approved',
-                'review' => 'pending',
-                default => KycVerification::STATUS_RETAKE,
-            };
+            // ล็อกตามเลขบัตร: เช็คบัตรซ้ำ + ตัดสิน + บันทึก ต้องเป็นก้อนเดียว
+            // (2 บัญชีใช้บัตรใบเดียวกันส่งพร้อมกัน → คนที่สองเห็นแถว approved ของคนแรก → ส่งแอดมินตรวจ)
+            [$kyc, $verdict] = $this->withIdLock($kyc->id_number_hash, function () use ($kyc, $user, $face, $baseInput, $idNumber, $bestPath, $frameHashes) {
+                $verdict = $this->decide($baseInput + [
+                    'duplicate' => $this->isDuplicateId($user, $kyc->id_number_hash, $idNumber),
+                ]);
+                $decision = $verdict['decision'];
+                $status = match ($decision) {
+                    'approved' => 'approved',
+                    'review' => 'pending',
+                    default => KycVerification::STATUS_RETAKE,
+                };
 
-            $kyc = DB::transaction(function () use ($kyc, $user, $face, $verdict, $decision, $status, $bestPath) {
-                /** @var User $lockedUser */
-                $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
-                /** @var KycVerification $locked */
-                $locked = KycVerification::query()->whereKey($kyc->id)->lockForUpdate()->firstOrFail();
+                $saved = DB::transaction(function () use ($kyc, $user, $face, $verdict, $decision, $status, $bestPath, $frameHashes) {
+                    /** @var User $lockedUser */
+                    $lockedUser = User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+                    /** @var KycVerification $locked */
+                    $locked = KycVerification::query()->whereKey($kyc->id)->lockForUpdate()->firstOrFail();
 
-                $extracted = (array) ($locked->extracted_data ?? []);
-                $extracted['face'] = $this->faceSummary($face);
+                    $extracted = (array) ($locked->extracted_data ?? []);
+                    $extracted['face'] = $this->faceSummary($face);
 
-                $modelVersion = trim(implode(';', array_filter([
-                    $locked->ai_model_version,
-                    $face['model_version'] !== null ? 'face:'.$face['model_version'] : null,
-                ])));
+                    $modelVersion = trim(implode(';', array_filter([
+                        $locked->ai_model_version,
+                        $face['model_version'] !== null ? 'face:'.$face['model_version'] : null,
+                    ])));
 
-                $locked->forceFill([
-                    'status' => $status,
-                    'submitted_at' => now(),
-                    'processed_at' => now(),
-                    'ai_decision' => $decision,
-                    'ai_reasons' => $verdict['reasons'],
-                    'ai_face_match' => $face['cosine'],
-                    'ai_liveness' => $face['liveness'],
-                    'ai_real' => $face['real'],
-                    'ai_model_version' => $modelVersion !== '' ? mb_substr($modelVersion, 0, 120) : null,
-                    'best_frame_path' => $bestPath,
-                    'extracted_data' => $extracted,
-                    'ekyc_step' => self::STEP_DONE,
-                ])->save();
+                    $locked->forceFill([
+                        'status' => $status,
+                        'submitted_at' => now(),
+                        'processed_at' => now(),
+                        'ai_decision' => $decision,
+                        'ai_reasons' => $verdict['reasons'],
+                        'ai_face_match' => $face['cosine'],
+                        'ai_liveness' => $face['liveness'],
+                        'ai_real' => $face['real'],
+                        'ai_model_version' => $modelVersion !== '' ? mb_substr($modelVersion, 0, 120) : null,
+                        'best_frame_path' => $bestPath,
+                        'extracted_data' => $extracted,
+                        'ekyc_frame_hashes' => array_values(array_filter($frameHashes, 'is_string')),
+                        'ekyc_step' => self::STEP_DONE,
+                    ])->save();
 
-                if ($decision === 'approved') {
-                    $this->markUserApproved($lockedUser, $locked);
-                } elseif ($decision === 'review' && $lockedUser->kyc_status !== 'approved') {
-                    $lockedUser->forceFill(['kyc_status' => 'pending', 'kyc_verified_at' => null])->save();
-                }
+                    if ($decision === 'approved') {
+                        $this->markUserApproved($lockedUser, $locked);
+                    } elseif ($decision === 'review' && $lockedUser->kyc_status !== 'approved') {
+                        $lockedUser->forceFill(['kyc_status' => 'pending', 'kyc_verified_at' => null])->save();
+                    }
 
-                return $locked;
+                    return $locked;
+                });
+
+                return [$saved, $verdict];
             });
         } catch (\Throwable $e) {
-            // พังกลางทาง (ไม่ใช่ผลตัดสิน) → คืนรอบให้ส่งใหม่ได้ ไม่เสียสิทธิ์
+            // พังกลางทาง / คิว AI เต็ม (ไม่ใช่ผลตัดสิน) → คืนรอบให้ส่งใหม่ได้ ไม่เสียสิทธิ์
             KycVerification::query()
                 ->whereKey($kyc->id)
                 ->where('ekyc_step', self::STEP_PROCESSING)
                 ->update(['ekyc_step' => self::STEP_CARD, 'updated_at' => now()]);
             $this->images->deleteQuietly([$bestPath]);
 
-            Log::error('eKYC: face step failed', ['kyc_id' => $kyc->id, 'error' => class_basename($e)]);
+            if (! $e instanceof EkycException) {
+                Log::error('eKYC: face step failed', ['kyc_id' => $kyc->id, 'error' => class_basename($e)]);
+            }
 
             throw $e;
         }
@@ -640,10 +760,11 @@ class EkycService
      * กติกาตัดสิน (ไม่มี side effect — เทสต์ตรงได้)
      *
      * @param  array{card_available: bool, face_available: bool, id_present: bool, checksum_ok: bool|null,
-     *               expiry: CarbonInterface|string|null, lifelong: bool, ocr: float|null, card_real: float|null,
+     *               expiry: CarbonInterface|string|null, lifelong: bool, birth_date?: CarbonInterface|string|null,
+     *               ocr: float|null, card_real: float|null,
      *               liveness_passed: bool|null, liveness: float|null, challenges: array<string, bool>,
      *               real: float|null, cosine: float|null, same_person: bool|null, reasons: array<int, string>,
-     *               corrected: bool, duplicate: bool, retakes_today: int}  $in
+     *               corrected: bool, duplicate: bool, replay?: bool, prior_rejected?: bool, retakes_today: int}  $in
      * @return array{decision: string, reasons: array<int, string>}
      */
     public function decide(array $in): array
@@ -693,8 +814,9 @@ class EkycService
         if (in_array('SPOOF_SUSPECTED', $reasons, true) && $real !== null && $real < $this->threshold('spoof_retake_real')) {
             $clear = true;
         }
-        if (in_array('DIFFERENT_PEOPLE', $reasons, true) || ($in['same_person'] ?? null) === false) {
-            $add('DIFFERENT_PEOPLE');
+        // คนละคน = AI ยืนยันด้วยรหัส DIFFERENT_PEOPLE เท่านั้น
+        // (same_person = false เกิดจากไม่เจอหน้า/เจอหลายหน้าได้ด้วย — กรณีนั้นส่งตรวจ ไม่ใช่ให้ถ่ายใหม่)
+        if (in_array('DIFFERENT_PEOPLE', $reasons, true)) {
             $clear = true;
         }
         if ($cosine !== null && $cosine < $this->threshold('retake_match')) {
@@ -721,7 +843,9 @@ class EkycService
         if (($in['checksum_ok'] ?? null) !== true) {
             $blockers[] = 'ID_UNREADABLE';
         }
-        if (! $this->notExpired($expiry instanceof CarbonInterface ? $expiry->toDateString() : null, (bool) ($in['lifelong'] ?? false))) {
+        $birth = $in['birth_date'] ?? null;
+        $birth = $birth instanceof CarbonInterface ? $birth->toDateString() : (is_string($birth) ? $birth : null);
+        if ($this->expiryState($expiry instanceof CarbonInterface ? $expiry->toDateString() : null, (bool) ($in['lifelong'] ?? false), $birth) !== true) {
             $blockers[] = 'EXPIRY_UNKNOWN';
         }
         if (($in['ocr'] ?? null) === null || $in['ocr'] < $this->threshold('min_ocr')) {
@@ -746,6 +870,16 @@ class EkycService
         }
         if ($in['duplicate'] ?? false) {
             $blockers[] = 'DUPLICATE_ID';
+        }
+        if (($in['same_person'] ?? null) === false && ! in_array('DIFFERENT_PEOPLE', $reasons, true)) {
+            $blockers[] = 'FACES_INCONSISTENT';
+        }
+        if ($in['replay'] ?? false) {
+            $blockers[] = 'REPLAY_SUSPECTED';
+        }
+        // แอดมินเคยปฏิเสธ (บัญชีนี้หรือบัตรใบนี้) — ผลของคนต้องไม่ถูก AI ทับ
+        if ($in['prior_rejected'] ?? false) {
+            $blockers[] = 'PRIOR_REJECTED';
         }
         foreach ($reasons as $code) {
             if (! in_array($code, self::BENIGN_REASONS, true)) {
@@ -785,7 +919,8 @@ class EkycService
             throw new \InvalidArgumentException('Unknown decision');
         }
 
-        $kyc = DB::transaction(function () use ($kyc, $admin, $decision, $note) {
+        // ล็อกตามเลขบัตรแบบเดียวกับตอน AI ตัดสิน — แอดมินอนุมัติพร้อมกับอีกบัญชีที่ใช้บัตรเดียวกันไม่ได้
+        $kyc = $this->withIdLock($kyc->id_number_hash, fn () => DB::transaction(function () use ($kyc, $admin, $decision, $note) {
             /** @var KycVerification $locked */
             $locked = KycVerification::query()->whereKey($kyc->id)->lockForUpdate()->firstOrFail();
             if ($locked->status !== 'pending') {
@@ -794,6 +929,11 @@ class EkycService
 
             /** @var User|null $user */
             $user = User::query()->whereKey($locked->user_id)->lockForUpdate()->first();
+
+            // เช็คบัตรซ้ำสดๆ ตอนกดอนุมัติ (ป้ายที่ AI ติดไว้อาจเก่า — อีกบัญชีอาจผ่านด้วยบัตรนี้ระหว่างรอตรวจ)
+            if ($decision === 'approved' && $user && $this->isDuplicateId($user, $locked->id_number_hash, self::plainId($locked))) {
+                throw new EkycException('EKYC_DUPLICATE_ID', 'เลขบัตรนี้ยืนยันตัวตนกับบัญชีอื่นไว้แล้ว อนุมัติซ้ำไม่ได้', 409);
+            }
 
             $locked->forceFill([
                 'status' => match ($decision) {
@@ -825,7 +965,7 @@ class EkycService
             }
 
             return $locked;
-        });
+        }));
 
         $this->notifyUser($kyc, $decision, $kyc->rejection_reason);
 
@@ -864,6 +1004,7 @@ class EkycService
         $reasons = array_values((array) ($kyc->ai_reasons ?? $card['reasons'] ?? []));
         $accountName = (string) ($kyc->user?->name ?? '');
         $cardName = (string) ($kyc->name_th ?? '');
+        $plainId = self::plainId($kyc);
 
         return [
             'match_score' => isset($face['match_score']) ? (float) $face['match_score'] : null,
@@ -879,7 +1020,9 @@ class EkycService
             'reasons' => $reasons,
             'reason_texts' => self::reasonTexts($reasons),
             'corrections' => (array) ($extracted['corrections'] ?? []),
-            'id_masked' => $kyc->id_number_encrypted ? self::maskId((string) $kyc->id_number_encrypted) : ($kyc->id_last4 ? '•••••••••'.$kyc->id_last4 : null),
+            'id_masked' => $plainId !== null ? self::maskId($plainId) : ($kyc->id_last4 ? '•••••••••'.$kyc->id_last4 : null),
+            // เช็คสด ณ ตอนเปิดหน้า (ไม่ใช่ป้ายที่ AI ติดไว้ตอนตัดสิน)
+            'duplicate_now' => $kyc->user !== null && $this->isDuplicateId($kyc->user, $kyc->id_number_hash, $plainId),
             'name_matches_account' => $cardName !== '' && $accountName !== ''
                 && KycAutoCheckService::normalizeName($cardName) === KycAutoCheckService::normalizeName($accountName),
             'thresholds' => [
@@ -927,6 +1070,49 @@ class EkycService
     }
 
     /**
+     * ลบรูป (ไม่ลบแถว) ของรอบที่ไม่ได้ใช้เป็นหลักฐานแล้ว — คำสั่ง ekyc:purge-stale
+     *   ถ่ายใหม่ / ถูกแทนที่ → เก็บ retention_retake_days (30) · แอดมินปฏิเสธ → retention_rejected_days (180)
+     * แถวยังอยู่ (นับสิทธิ์ถ่ายใหม่ · กันบัตรซ้ำ/ภาพซ้ำ/เคยถูกปฏิเสธ) · รอบที่อนุมัติ/รอตรวจไม่ถูกแตะ
+     *
+     * @return int จำนวนแถวที่ลบรูป
+     */
+    public function purgeExpiredImages(): int
+    {
+        $count = 0;
+        $rules = [
+            [[KycVerification::STATUS_RETAKE, KycVerification::STATUS_SUPERSEDED], (int) config('ekyc.retention_retake_days', 30)],
+            [['rejected'], (int) config('ekyc.retention_rejected_days', 180)],
+        ];
+
+        foreach ($rules as [$statuses, $days]) {
+            KycVerification::query()
+                ->where('method', KycVerification::METHOD_EKYC)
+                ->whereIn('status', $statuses)
+                ->where('updated_at', '<', now()->subDays(max(1, $days)))
+                ->where(function ($q) {
+                    $q->whereNotNull('id_card_image')
+                        ->orWhereNotNull('card_face_path')
+                        ->orWhereNotNull('best_frame_path');
+                })
+                ->select(['id', 'user_id', 'ekyc_session_id', 'id_card_image', 'card_face_path', 'best_frame_path'])
+                ->chunkById(200, function ($rows) use (&$count) {
+                    foreach ($rows as $row) {
+                        $this->images->deleteQuietly([$row->id_card_image, $row->card_face_path, $row->best_frame_path]);
+                        $this->images->deleteSessionDir((int) $row->user_id, $row->ekyc_session_id);
+                        KycVerification::query()->whereKey($row->id)->update([
+                            'id_card_image' => null,
+                            'card_face_path' => null,
+                            'best_frame_path' => null,
+                        ]);
+                        $count++;
+                    }
+                });
+        }
+
+        return $count;
+    }
+
+    /**
      * ลบไฟล์รูปของแถว eKYC (เรียกจาก observer ตอนลบแถว)
      */
     public function deleteFilesFor(KycVerification $kyc): void
@@ -948,7 +1134,10 @@ class EkycService
      */
     public static function idHash(string $idNumber): string
     {
-        return hash_hmac('sha256', 'ekyc-id:'.preg_replace('/\D/', '', $idNumber), (string) config('app.key'));
+        // กุญแจแยก (EKYC_HASH_KEY) — หมุน APP_KEY แล้ว hash เดิมยังใช้หาบัตรซ้ำได้ · ไม่ตั้ง = APP_KEY (แบบเดิม)
+        $key = trim((string) config('ekyc.hash_key', ''));
+
+        return hash_hmac('sha256', 'ekyc-id:'.preg_replace('/\D/', '', $idNumber), $key !== '' ? $key : (string) config('app.key'));
     }
 
     /**
@@ -965,7 +1154,7 @@ class EkycService
     }
 
     /**
-     * รหัสเหตุผล → ข้อความไทย
+     * รหัสเหตุผล → ข้อความไทย (ตำแหน่งตรงกับรหัส · ข้ามเฉพาะค่าที่ไม่ใช่ string)
      *
      * @param  array<int, string>  $codes
      * @return array<int, string>
@@ -986,7 +1175,8 @@ class EkycService
             $texts[] = self::REASON_LABELS[$code] ?? $code;
         }
 
-        return array_values(array_unique($texts));
+        // เรียงตรงกับ $codes ตัวต่อตัว (แอปจับคู่รหัส ↔ ข้อความตามตำแหน่ง) — ห้าม unique ทิ้ง
+        return $texts;
     }
 
     // =====================================================
@@ -1025,16 +1215,18 @@ class EkycService
      */
     private function assertOpen(KycVerification $kyc, array $steps): void
     {
+        // ตัดสินแล้ว → แอปดูผลจาก /ekyc/status (ไม่ใช่ให้เริ่มใหม่)
         if ($kyc->status !== 'draft' || $kyc->ekyc_step === self::STEP_DONE) {
-            throw EkycException::sessionExpired('รอบยืนยันตัวตนนี้ใช้ไปแล้ว กรุณาเริ่มใหม่');
+            throw EkycException::sessionDone();
+        }
+
+        // กำลังตรวจ (เช่นส่งซ้ำหลังเน็ตหลุด) → แอปถามสถานะซ้ำ — เช็คก่อนหมดอายุ ผลกำลังจะออก
+        if ($kyc->ekyc_step === self::STEP_PROCESSING) {
+            throw EkycException::processing();
         }
 
         if (! $kyc->ekyc_expires_at || $kyc->ekyc_expires_at->isPast()) {
             throw EkycException::sessionExpired();
-        }
-
-        if ($kyc->ekyc_step === self::STEP_PROCESSING) {
-            throw EkycException::sessionExpired('รอบยืนยันตัวตนนี้กำลังประมวลผลอยู่ กรุณารอสักครู่');
         }
 
         if (! in_array($kyc->ekyc_step, $steps, true)) {
@@ -1155,10 +1347,16 @@ class EkycService
             }
         }
 
-        $best = $d['best_frame_index'] ?? null;
-        $best = is_int($best) && $best >= 0 && $best < $frameCount ? $best : 0;
+        $rawBest = $d['best_frame_index'] ?? null;
+        $hasBest = is_int($rawBest) && $rawBest >= 0 && $rawBest < $frameCount;
+        $best = $hasBest ? $rawBest : 0;
+        $reasons = self::cleanReasons($d['reasons'] ?? []);
 
-        $cosine = is_numeric($match['cosine'] ?? null) ? max(-1.0, min(1.0, (float) $match['cosine'])) : null;
+        // AI 1.0.0 ส่ง cosine 0.0 เมื่อไม่มีหน้าให้เทียบ (ไม่เจอหน้าบนบัตร / ไม่มีเฟรมที่มีหน้าเดียว)
+        // = "เทียบไม่ได้" ไม่ใช่ "คนละคนชัดเจน" → null (ไม่ให้ไปเข้ากฎ LOW_MATCH แล้วเสียสิทธิ์ถ่ายใหม่)
+        $cosine = is_numeric($match['cosine'] ?? null) && $hasBest && ! in_array('NO_CARD_FACE', $reasons, true)
+            ? max(-1.0, min(1.0, (float) $match['cosine']))
+            : null;
 
         return [
             'available' => (bool) $result['available'],
@@ -1170,9 +1368,9 @@ class EkycService
             'challenges' => $challenges,
             'real' => self::score(($d['anti_spoof'] ?? [])['real_score'] ?? null),
             'cosine' => $cosine,
-            'match_score' => self::score($match['score'] ?? null),
+            'match_score' => $cosine !== null ? self::score($match['score'] ?? null) : null,
             'best_frame_index' => $best,
-            'reasons' => self::cleanReasons($d['reasons'] ?? []),
+            'reasons' => $reasons,
             'model_version' => is_string($d['model_version'] ?? null) ? mb_substr($d['model_version'], 0, 60) : null,
         ];
     }
@@ -1226,18 +1424,29 @@ class EkycService
     }
 
     /**
-     * ยังไม่หมดอายุ: วันหมดอายุ ≥ วันนี้ · ไม่มีวันหมดอายุแต่เป็นบัตรตลอดชีพ = ผ่าน · ไม่รู้ = ไม่ผ่าน
+     * สถานะวันหมดอายุ: true = ยังไม่หมด · false = หมดแล้ว · null = ไม่ทราบ (อ่านไม่ได้)
+     *
+     * บัตรตลอดชีพนับว่าผ่านเฉพาะเจ้าของบัตรอายุถึงเกณฑ์ (config ekyc.lifelong_min_age = 70)
+     * — AI เห็นคำว่า "ตลอด" บนบัตรที่อ่านวันหมดอายุไม่ออก ไม่พอจะเชื่อว่าเป็นบัตรตลอดชีพ
      */
-    private function notExpired(?string $expiry, bool $lifelong): bool
+    private function expiryState(?string $expiry, bool $lifelong, ?string $birthDate): ?bool
     {
         if ($expiry === null || $expiry === '') {
-            return $lifelong;
+            if (! $lifelong || $birthDate === null || $birthDate === '') {
+                return null;
+            }
+
+            try {
+                return Carbon::parse($birthDate)->age >= (int) config('ekyc.lifelong_min_age', 70) ? true : null;
+            } catch (\Throwable) {
+                return null;
+            }
         }
 
         try {
             return ! Carbon::parse($expiry)->endOfDay()->isPast();
         } catch (\Throwable) {
-            return false;
+            return null;
         }
     }
 
@@ -1249,9 +1458,10 @@ class EkycService
     private function fieldsPayload(KycVerification $kyc): array
     {
         $card = (array) (($kyc->extracted_data ?? [])['card'] ?? []);
+        $plainId = self::plainId($kyc);
 
         return [
-            'id_number_masked' => $kyc->id_number_encrypted ? self::maskId((string) $kyc->id_number_encrypted) : null,
+            'id_number_masked' => $plainId !== null ? self::maskId($plainId) : null,
             'name_th' => $kyc->name_th,
             'name_en' => $kyc->name_en,
             'birth_date' => $kyc->birth_date?->toDateString(),
@@ -1371,11 +1581,172 @@ class EkycService
 
     private function hasPendingEkycReview(User $user): bool
     {
+        return $this->pendingEkycReviewRow($user) !== null;
+    }
+
+    /**
+     * เคส eKYC ล่าสุดที่รอแอดมินตรวจ (ถ้ามี)
+     */
+    private function pendingEkycReviewRow(User $user): ?KycVerification
+    {
         return KycVerification::query()
             ->where('user_id', $user->id)
             ->where('method', KycVerification::METHOD_EKYC)
             ->where('status', 'pending')
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * เคสรอตรวจนี้ผู้ใช้ขอถ่ายใหม่เองได้ไหม — AI ส่งตรวจเพราะความมั่นใจ/คุณภาพภาพเท่านั้น และแอดมินยังไม่แตะ
+     */
+    private function isRetakeableReview(KycVerification $row): bool
+    {
+        if (! $row->isEkyc() || $row->status !== 'pending' || $row->reviewed_by !== null || $row->ai_decision !== 'review') {
+            return false;
+        }
+
+        foreach ((array) ($row->ai_reasons ?? []) as $code) {
+            if (! in_array($code, self::RETAKEABLE_REVIEW_REASONS, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * มีรอบที่กำลังตรวจอยู่จริงไหม (ค้าง "กำลังตรวจ" นานเกิน processing_stale_minutes = ถือว่าค้าง ไม่นับ)
+     */
+    private function hasProcessingSession(User $user): bool
+    {
+        return KycVerification::query()
+            ->where('user_id', $user->id)
+            ->where('method', KycVerification::METHOD_EKYC)
+            ->where('status', 'draft')
+            ->where('ekyc_step', self::STEP_PROCESSING)
+            ->where('updated_at', '>=', now()->subMinutes(max(1, (int) config('ekyc.processing_stale_minutes', 5))))
             ->exists();
+    }
+
+    /**
+     * แอดมินเคยปฏิเสธบัญชีนี้ หรือบัตรใบนี้ (บัญชีไหนก็ได้) ภายใน prior_rejection_days
+     */
+    private function priorAdminRejection(User $user, ?string $idHash): bool
+    {
+        $base = fn () => KycVerification::query()
+            ->where('status', 'rejected')
+            ->whereNotNull('reviewed_by')
+            ->where('reviewed_at', '>=', now()->subDays(max(1, (int) config('ekyc.prior_rejection_days', 365))));
+
+        if ($base()->where('user_id', $user->id)->exists()) {
+            return true;
+        }
+
+        return $idHash !== null && $idHash !== '' && $base()->where('id_number_hash', $idHash)->exists();
+    }
+
+    /**
+     * เฟรมชุดนี้ซ้ำกับรอบก่อนๆ ไหม (ภาพเดียวกัน ≥ replay_min_frames เฟรมกับรอบใดรอบหนึ่ง — บัญชีไหนก็ได้)
+     *
+     * @param  array<int, string|null>  $hashes
+     */
+    private function replaySuspected(int $currentId, array $hashes): bool
+    {
+        // ภาพสีเรียบ/มืด (ปิดกล้อง) ซ้ำกันเองได้ — ใช้เฉพาะเฟรมที่มีรายละเอียด
+        $hashes = array_values(array_filter($hashes, [EkycImages::class, 'hashInformative']));
+        $minFrames = max(1, (int) config('ekyc.replay_min_frames', 2));
+        if (count($hashes) < $minFrames) {
+            return false;
+        }
+
+        $maxDistance = max(0, (int) config('ekyc.replay_max_distance', 6));
+        $found = false;
+
+        KycVerification::query()
+            ->where('method', KycVerification::METHOD_EKYC)
+            ->where('id', '!=', $currentId)
+            ->whereNotNull('ekyc_frame_hashes')
+            ->where('created_at', '>=', now()->subDays(max(1, (int) config('ekyc.replay_lookback_days', 90))))
+            ->select(['id', 'ekyc_frame_hashes'])
+            ->chunkById(500, function ($rows) use ($hashes, $minFrames, $maxDistance, &$found) {
+                foreach ($rows as $row) {
+                    $previous = array_values(array_filter((array) $row->ekyc_frame_hashes, [EkycImages::class, 'hashInformative']));
+                    $same = 0;
+                    foreach ($hashes as $hash) {
+                        foreach ($previous as $old) {
+                            $distance = EkycImages::hashDistance($hash, $old);
+                            if ($distance !== null && $distance <= $maxDistance) {
+                                $same++;
+
+                                break;
+                            }
+                        }
+                    }
+                    if ($same >= $minFrames) {
+                        $found = true;
+
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+        return $found;
+    }
+
+    /**
+     * ทำงานภายใต้ล็อกตามเลขบัตร (MySQL/MariaDB GET_LOCK — ข้าม process ได้) · ไม่มีเลขบัตร = ไม่ต้องล็อก
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private function withIdLock(?string $idHash, callable $callback): mixed
+    {
+        if ($idHash === null || $idHash === '' || ! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
+            return $callback();
+        }
+
+        $name = 'ekyc-id:'.substr($idHash, 0, 48);
+        $got = (int) (DB::selectOne('SELECT GET_LOCK(?, 15) AS l', [$name])->l ?? 0);
+        if ($got !== 1) {
+            Log::warning('eKYC: id lock timeout', ['hash' => substr($idHash, 0, 8)]);
+        }
+
+        try {
+            return $callback();
+        } finally {
+            if ($got === 1) {
+                DB::selectOne('SELECT RELEASE_LOCK(?) AS r', [$name]);
+            }
+        }
+    }
+
+    /**
+     * ผลจากบริการ AI = คิวเต็ม/ตรวจไม่ทัน (ให้ลองซ้ำ)
+     *
+     * @param  array{available: bool, error?: string|null}  $result
+     */
+    private static function isAiBusy(array $result): bool
+    {
+        return ! $result['available'] && in_array($result['error'] ?? null, self::AI_BUSY_ERRORS, true);
+    }
+
+    /**
+     * เลขบัตรแบบถอดรหัสแล้ว — ถอดไม่ได้ (เช่นหมุน APP_KEY โดยไม่ตั้ง previous keys) = null แทน 500
+     */
+    private static function plainId(KycVerification $row): ?string
+    {
+        try {
+            $value = $row->id_number_encrypted;
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return is_string($value) && $value !== '' ? $value : null;
     }
 
     private function enforced(): bool

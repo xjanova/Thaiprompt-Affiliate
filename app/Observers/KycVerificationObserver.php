@@ -92,6 +92,19 @@ class KycVerificationObserver
      */
     public function deleted(KycVerification $kycVerification): void
     {
+        // 🪪 แจ้งเตือนแอดมินที่ผูกกับคำขอนี้มีชื่อเจ้าของข้อมูล — ลบไปพร้อมแถว (PDPA: ลบบัญชีแล้วไม่เหลือร่องรอย)
+        try {
+            \App\Models\Notification::query()
+                ->where('notifiable_type', KycVerification::class)
+                ->where('notifiable_id', $kycVerification->id)
+                ->forceDelete(); // Notification ใช้ SoftDeletes — ต้องลบจริง
+        } catch (\Throwable $e) {
+            Log::warning('Failed to delete KYC admin notifications', [
+                'kyc_id' => $kycVerification->id,
+                'error' => class_basename($e),
+            ]);
+        }
+
         Log::info('KYC verification deleted along with images', [
             'kyc_id' => $kycVerification->id,
             'user_id' => $kycVerification->user_id,

@@ -52,6 +52,7 @@ class KycVerification extends Model
         'ekyc_challenges',
         'ekyc_expires_at',
         'ekyc_step',
+        'ekyc_frame_hashes',
     ];
 
     /**
@@ -65,6 +66,7 @@ class KycVerification extends Model
         'card_face_path',
         'best_frame_path',
         'ekyc_challenges',
+        'ekyc_frame_hashes',
     ];
 
     /**
@@ -90,6 +92,7 @@ class KycVerification extends Model
         'processed_at' => 'datetime',
         'ekyc_challenges' => 'array',
         'ekyc_expires_at' => 'datetime',
+        'ekyc_frame_hashes' => 'array',
     ];
 
     /** ช่องทางยืนยันตัวตน */

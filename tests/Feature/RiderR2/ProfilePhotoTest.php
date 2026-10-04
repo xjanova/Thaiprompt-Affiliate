@@ -422,8 +422,10 @@ class ProfilePhotoTest extends TestCase
                 ->assertJsonPath('code', 'PROFILE_PHOTO_REQUIRED')
                 ->assertJsonPath('message', 'กรุณาถ่ายรูปโปรไฟล์ก่อนใช้งานส่วนนี้');
 
-            $this->postJson($route, [], ['X-App-Build' => '57'])
-                ->assertJsonPath('code', 'PROFILE_PHOTO_REQUIRED');
+            // แอปรุ่น eKYC (≥ 44) ไม่มีหน้าถ่ายรูปสดแล้ว → ด่านรูปไม่บังคับ (ใช้ด่าน eKYC แทน)
+            foreach (['44', '57'] as $build) {
+                $this->assertNotSame(EnsureProfilePhoto::CODE, $this->postJson($route, [], ['X-App-Build' => $build])->json('code'), "{$route} build {$build}");
+            }
         }
 
         // ปิดฟีเจอร์ → ไม่บังคับ

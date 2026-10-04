@@ -132,6 +132,127 @@ class EkycImages
     }
 
     /**
+     * ลายนิ้วมือภาพ (difference hash 256 บิต + หน้ากากบิตที่เชื่อถือได้) — ไว้จับการเอาภาพชุดเดิมมาส่งซ้ำข้ามรอบ/ข้ามบัญชี
+     *
+     * ย่อภาพเหลือ 17×16 (เฉลี่ยทั้งพื้นที่) แล้วเทียบความสว่างช่องติดกัน → 1 บิตต่อคู่
+     * คู่ที่สว่างใกล้กันมาก (พื้นเรียบ) บิตพลิกได้แค่จากการเข้ารหัส JPEG ใหม่ → ไม่นับ (หน้ากาก = 0)
+     * ภาพเดิมที่ถูกเข้ารหัสใหม่/ปรับแสงทั้งภาพ ได้ค่าเกือบเท่าเดิม · ภาพที่ถ่ายสดใหม่ต่างกันหลายสิบบิต
+     * ไม่ใช่ข้อมูลชีวมิติ (ย้อนกลับเป็นใบหน้าไม่ได้) แต่ลบไปพร้อมแถวเสมอ
+     *
+     * @return string|null hex 128 ตัว (64 = บิต · 64 = หน้ากาก) · null = อ่านภาพไม่ได้
+     */
+    public function dhash(string $jpeg): ?string
+    {
+        $src = @imagecreatefromstring($jpeg);
+        if ($src === false) {
+            return null;
+        }
+
+        $w = 17;
+        $h = 16;
+        $small = imagecreatetruecolor($w, $h);
+        imagecopyresampled($small, $src, 0, 0, 0, 0, $w, $h, imagesx($src), imagesy($src));
+        imagedestroy($src);
+
+        // ต่างกันไม่ถึง ~3 ระดับสีเทา (สเกล 299/587/114 × 255) = บิตไม่นิ่ง
+        $margin = 3000;
+        $bits = '';
+        $mask = '';
+        for ($y = 0; $y < $h; $y++) {
+            $prev = null;
+            for ($x = 0; $x < $w; $x++) {
+                $rgb = imagecolorat($small, $x, $y);
+                $luma = (($rgb >> 16) & 0xFF) * 299 + (($rgb >> 8) & 0xFF) * 587 + ($rgb & 0xFF) * 114;
+                if ($prev !== null) {
+                    $bits .= $luma > $prev ? '1' : '0';
+                    $mask .= abs($luma - $prev) > $margin ? '1' : '0';
+                }
+                $prev = $luma;
+            }
+        }
+        imagedestroy($small);
+
+        return self::bitsToHex($bits).self::bitsToHex($mask);
+    }
+
+    /**
+     * จำนวนบิตที่ต่างกันของลายนิ้วมือ 2 ตัว (นับเฉพาะบิตที่นิ่งทั้งสองภาพ) · null = เทียบไม่ได้/ข้อมูลน้อยเกิน
+     */
+    public static function hashDistance(?string $a, ?string $b): ?int
+    {
+        [$bitsA, $maskA] = self::splitHash($a);
+        [$bitsB, $maskB] = self::splitHash($b);
+        if ($bitsA === null || $bitsB === null) {
+            return null;
+        }
+
+        $both = $maskA & $maskB;
+        // บิตที่นิ่งร่วมกันน้อยเกินไป = ไม่พอจะบอกว่าเป็นภาพเดียวกัน
+        if (self::popcount($both) < 64) {
+            return null;
+        }
+
+        return self::popcount(($bitsA ^ $bitsB) & $both);
+    }
+
+    /**
+     * ลายนิ้วมือนี้มีข้อมูลพอจะใช้เทียบไหม — ภาพสีเรียบ/มืดสนิท (ปิดกล้อง) แทบไม่มีบิตที่นิ่ง
+     * ภาพแบบนี้ "ซ้ำกัน" ได้เองโดยไม่ได้โกง จึงไม่เอามาใช้จับภาพซ้ำ
+     */
+    public static function hashInformative(?string $hash): bool
+    {
+        [$bits, $mask] = self::splitHash($hash);
+        if ($bits === null) {
+            return false;
+        }
+
+        $stable = self::popcount($mask);
+        if ($stable < 64) {
+            return false;
+        }
+
+        $ones = self::popcount($bits & $mask);
+
+        return $ones >= (int) ($stable * 0.1) && $ones <= $stable - (int) ($stable * 0.1);
+    }
+
+    /**
+     * @return array{0: string|null, 1: string|null} ไบต์ของบิต + ไบต์ของหน้ากาก
+     */
+    private static function splitHash(?string $hash): array
+    {
+        if (! is_string($hash) || strlen($hash) !== 128 || ! ctype_xdigit($hash)) {
+            return [null, null];
+        }
+
+        return [(string) hex2bin(substr($hash, 0, 64)), (string) hex2bin(substr($hash, 64))];
+    }
+
+    private static function bitsToHex(string $bits): string
+    {
+        $hex = '';
+        foreach (str_split($bits, 4) as $nibble) {
+            $hex .= dechex((int) bindec($nibble));
+        }
+
+        return $hex;
+    }
+
+    private static function popcount(string $bytes): int
+    {
+        $count = 0;
+        foreach (str_split($bytes) as $byte) {
+            $n = ord($byte);
+            while ($n) {
+                $count += $n & 1;
+                $n >>= 1;
+            }
+        }
+
+        return $count;
+    }
+
+    /**
      * path ใหม่ของไฟล์ในรอบยืนยัน (สุ่มชื่อทุกครั้ง — เขียนทับกันพร้อมกันไม่ได้)
      */
     public function newPath(int $userId, string $sessionId, string $kind): string

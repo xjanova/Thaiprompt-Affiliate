@@ -23,8 +23,9 @@ Route::prefix('ekyc')->name('api.v1.ekyc.')->controller(EkycApiController::class
         ->middleware('throttle:6,1,api-ekyc-session')
         ->name('sessions.store');
 
+    // อ่านบัตร 1 ใบใช้ AI ~10 วิ (OCR ทีละใบทั้งเครื่อง) — 4 ครั้ง/นาที + เพดานต่อรอบ/ต่อวันใน EkycService
     Route::post('/sessions/{id}/id-card', 'idCard')
-        ->middleware('throttle:15,1,api-ekyc-card')
+        ->middleware('throttle:4,1,api-ekyc-card')
         ->name('sessions.id-card');
 
     Route::patch('/sessions/{id}/id-card', 'correctIdCard')

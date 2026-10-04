@@ -117,6 +117,7 @@ class EkycGateTest extends TestCase
             ['POST', 'api/v1/cart/checkout', 'ekyc.verified'],
             ['POST', 'api/v1/fresh-market/orders', 'ekyc.verified'],
             ['POST', 'api/v1/seller/application', 'ekyc.verified'],
+            ['POST', 'api/v1/fresh-market/seller/register', 'ekyc.verified'],
             ['POST', 'api/v1/rider/register', 'ekyc.verified'],
             ['POST', 'api/v1/rider/availability', 'ekyc.verified:availability=online'],
         ] as [$method, $uri, $middleware]) {
@@ -128,7 +129,7 @@ class EkycGateTest extends TestCase
         foreach ([
             ['GET', 'api/v1/ekyc/status', 'throttle:60,1,api-ekyc-status'],
             ['POST', 'api/v1/ekyc/sessions', 'throttle:6,1,api-ekyc-session'],
-            ['POST', 'api/v1/ekyc/sessions/x/id-card', 'throttle:15,1,api-ekyc-card'],
+            ['POST', 'api/v1/ekyc/sessions/x/id-card', 'throttle:4,1,api-ekyc-card'],
             ['PATCH', 'api/v1/ekyc/sessions/x/id-card', 'throttle:20,1,api-ekyc-card-fix'],
             ['POST', 'api/v1/ekyc/sessions/x/face', 'throttle:6,1,api-ekyc-face'],
         ] as [$method, $uri, $throttle]) {
