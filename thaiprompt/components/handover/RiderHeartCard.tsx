@@ -3,6 +3,7 @@
  *
  * - POST /orders/{source}/{id}/heart (1 ดวงต่อออเดอร์) — กดรัว/กดซ้ำ: ปุ่มล็อกระหว่างรอ + server ตอบ already
  * - จำว่าออเดอร์นี้ให้หัวใจแล้ว (heartMemory) → กลับมาเปิดหน้าใหม่ไม่ชวนให้ซ้ำ (M6)
+ *   ระหว่างอ่านความจำจากเครื่อง (ครั้งแรกหลังเปิดแอป) แสดงโครงว่าง ไม่โชว์ปุ่มแล้วกระพริบเป็น "ให้แล้ว" (B11)
  *   server ตอบ already = ถือว่าให้แล้ว (ไม่นับเพิ่ม) แสดงสถานะ "ให้หัวใจแล้ว"
  * - สิทธิ์ล็อกเรียก (can_lock) ใช้ค่าจาก server เสมอ · เกณฑ์ขั้นต่ำใช้แสดงข้อความเท่านั้น
  * - HEART_NOT_ALLOWED (เช่น งานยังไม่จบ/ไม่ใช่ผู้ซื้อ) → ซ่อนปุ่ม แสดงข้อความไทย
@@ -16,7 +17,10 @@ import { PersonAvatar } from '@/components/people/PersonAvatar';
 import type { HandoverSource, PersonCard } from '@/services/api/handoverApi';
 import { DEFAULT_LOCK_MIN_HEARTS, giveRiderHeart, heartsToLock } from '@/services/api/riderSocialApi';
 import { useTheme, spacing, typography } from '@/theme';
-import { peekHeartGiven, readHeartGiven, rememberHeartGiven } from './heartMemory';
+import { isHeartMemoryLoaded, peekHeartGiven, readHeartGiven, rememberHeartGiven } from './heartMemory';
+
+/** รอผลอ่านจากเครื่องไม่เกินเท่านี้ ก่อนแสดงปุ่มตามปกติ */
+const MEMORY_WAIT_MS = 1500;
 
 export interface RiderHeartCardProps {
   source: HandoverSource;
@@ -50,6 +54,11 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
   const [busy, setBusy] = useState(false);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
   const [transientError, setTransientError] = useState<string | null>(null);
+  /**
+   * รู้แล้วว่าออเดอร์นี้เคยให้หัวใจหรือยัง — ก่อนรู้แสดงโครงว่าง (ไม่โชว์ปุ่ม "ให้หัวใจ" แล้วกระพริบเป็น "ให้แล้ว" — B11)
+   * หน่วยความจำโหลดแล้ว = รู้ตั้งแต่เฟรมแรก · ยังไม่โหลด = รอ AsyncStorage (หรือหมดเวลารอ)
+   */
+  const [memoryReady, setMemoryReady] = useState<boolean>(() => !!remembered || isHeartMemoryLoaded());
   const mountedRef = useRef(true);
   const busyRef = useRef(false);
 
@@ -63,12 +72,27 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
   // จำจากเครื่อง (เปิดแอปใหม่) — ให้หัวใจออเดอร์นี้ไปแล้ว → แสดง "ให้หัวใจแล้ว"
   useEffect(() => {
     let alive = true;
-    readHeartGiven(source, orderId).then((entry) => {
-      if (!alive || !mountedRef.current || !entry) return;
-      setGiven(true);
-    });
+    // อ่านเครื่องค้างนานผิดปกติ → เลิกรอ แสดงปุ่มตามปกติ (แย่สุด server ตอบ already)
+    const fallback = setTimeout(() => {
+      if (alive && mountedRef.current) setMemoryReady(true);
+    }, MEMORY_WAIT_MS);
+    readHeartGiven(source, orderId)
+      .then((entry) => {
+        if (!alive || !mountedRef.current) return;
+        if (entry) {
+          setGiven(true);
+          setHeartsFromMe((prev) => Math.max(prev, entry.hearts_from_me ?? 0));
+          setCanLock((prev) => prev || !!entry.can_lock);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        clearTimeout(fallback);
+        if (alive && mountedRef.current) setMemoryReady(true);
+      });
     return () => {
       alive = false;
+      clearTimeout(fallback);
     };
   }, [source, orderId]);
 
@@ -110,6 +134,21 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
     // ผิดพลาดชั่วคราว (เน็ต/เซิร์ฟเวอร์) → ให้กดใหม่ได้ แสดงข้อความใต้ปุ่ม
     setTransientError(res.message);
   };
+
+  // ยังไม่รู้ว่าเคยให้หัวใจหรือยัง → โครงว่างขนาดเท่าของจริง (ไม่กระพริบปุ่ม "ให้หัวใจ" — B11)
+  if (!memoryReady) {
+    return (
+      <Card3D padding={spacing.xl} radius={22} style={[styles.card, { borderColor: colors.dangerSoft }, style]}>
+        <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={72} style={styles.center} />
+        <View accessible accessibilityLabel={`กำลังโหลดข้อมูลหัวใจของ ${rider.display_name}`}>
+          <View style={[styles.skelTitle, styles.gapTop, { backgroundColor: colors.inset }]} />
+          <View style={[styles.skelCaption, { backgroundColor: colors.inset }]} />
+          <View style={[styles.skelButton, styles.gapTop, { backgroundColor: colors.inset, borderColor: colors.border }]} />
+          <View style={[styles.skelCaption, styles.gapTop, { backgroundColor: colors.inset }]} />
+        </View>
+      </Card3D>
+    );
+  }
 
   return (
     <Card3D padding={spacing.xl} radius={22} style={[styles.card, { borderColor: colors.dangerSoft }, style]}>
@@ -192,6 +231,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+  },
+  skelTitle: {
+    alignSelf: 'center',
+    width: '62%',
+    height: 24,
+    borderRadius: 8,
+  },
+  skelCaption: {
+    alignSelf: 'center',
+    width: '78%',
+    height: 14,
+    borderRadius: 7,
+    marginTop: spacing.sm,
+  },
+  skelButton: {
+    height: 56,
+    borderRadius: 18,
+    borderWidth: 1,
   },
 });
 

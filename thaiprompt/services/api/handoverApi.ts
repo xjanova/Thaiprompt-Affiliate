@@ -141,6 +141,9 @@ export interface RiderHandoverData extends HandoverClock {
 /** สถานะงานไรเดอร์ที่ยังไม่ถึงขั้นรับของ (ไรเดอร์ยังไม่ได้ของจากร้าน) — U4 */
 export const HANDOVER_PRE_PICKUP_JOB_STATUSES: string[] = ['pending', 'accepted', 'picking_up'];
 
+/** สถานะงานไรเดอร์ที่จบแบบไม่ได้ส่งของ (ไรเดอร์ส่งไม่สำเร็จ / งานถูกยกเลิก) — B6 */
+export const HANDOVER_ENDED_JOB_STATUSES: string[] = ['failed', 'cancelled'];
+
 export type HandoverDisputeReason = 'not_received' | 'wrong_item' | 'damaged' | 'other';
 
 export const HANDOVER_DISPUTE_REASONS: { key: HandoverDisputeReason; label: string; hint: string }[] = [
@@ -313,6 +316,19 @@ export const isHandoverFinal = (h: Pick<HandoverBase, 'status'> | null | undefin
 /** จบงานแบบ "ได้รับของแล้ว" (ไม่ใช่คืนเงิน) */
 export const isHandoverSuccess = (h: Pick<HandoverBase, 'status'> | null | undefined): boolean =>
   !!h && (h.status === 'completed' || h.status === 'released');
+
+/**
+ * งานไรเดอร์จบไปแล้ว (ส่งไม่สำเร็จ/ยกเลิก) แต่การรับของยังไม่จบ — B6
+ * หน้ารับของต้องหยุดถามซ้ำและพาไปหน้าออเดอร์ (ไม่ค้าง "กำลังสร้างรหัส…" ตลอดไป)
+ * ยกเว้นผู้ซื้อร้องเรียนค้างอยู่ (ทีมงานยังต้องตัดสิน → แสดงการ์ดร้องเรียนตามเดิม)
+ */
+export const isHandoverJobEnded = (
+  data: { handover: Pick<HandoverBase, 'status'> | null; job: Pick<HandoverJobSummary, 'status'> | null } | null | undefined
+): boolean => {
+  if (!data?.job || !HANDOVER_ENDED_JOB_STATUSES.includes(String(data.job.status))) return false;
+  if (isHandoverFinal(data.handover)) return false;
+  return data.handover?.status !== 'disputed';
+};
 
 /** QR/token ที่สแกนมา — ตัดของแปลกปลอมก่อนส่ง server (ยาวเกิน/มีช่องว่าง/ตัวควบคุม) */
 export const sanitizeScannedToken = (data: unknown): string | null => {

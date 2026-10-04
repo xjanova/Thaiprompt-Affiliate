@@ -96,6 +96,7 @@ const toRiderView = (r: CartRiderQuote): RiderQuoteView => ({
   rider_total: r.rider_total,
   surcharge: r.surcharge,
   free_delivery: r.free_delivery,
+  subsidy_capped: r.subsidy_capped,
 });
 
 const POLL_INTERVAL_MS = 4000;

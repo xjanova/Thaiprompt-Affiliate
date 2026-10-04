@@ -41,6 +41,12 @@ const load = (): Promise<HeartMemory> => {
   return loading;
 };
 
+/**
+ * โหลดจากเครื่องเสร็จแล้วหรือยัง — true = peekHeartGiven เชื่อถือได้ทันที (ไม่ต้องรอ AsyncStorage)
+ * ใช้กันการ์ดกระพริบปุ่ม "ให้หัวใจ" ก่อนรู้ว่าเคยให้แล้ว (B11)
+ */
+export const isHeartMemoryLoaded = (): boolean => memory !== null;
+
 /** อ่านทันที (มีในหน่วยความจำแล้วเท่านั้น) */
 export const peekHeartGiven = (source: string, orderId: number): HeartMemoryEntry | null =>
   memory?.[heartMemoryKey(source, orderId)] ?? null;

@@ -557,6 +557,13 @@ export default function RiderJobDetailScreen() {
     }, [load])
   );
 
+  // เปิดแผ่น "ส่งไม่สำเร็จ" ค้างไว้ แล้ว server ตัดสิทธิ์ทิ้ง (ลูกค้ายืนยันรับของ/ร้องเรียน/วางของแล้ว) → ปิดแผ่น
+  // ปุ่มในหน้าตาม allowed_actions อยู่แล้ว — ตรงนี้กันแผ่นที่เปิดก่อนสถานะเปลี่ยน (ไม่ใช่ระหว่างกำลังส่ง)
+  const failAllowed = !!job?.allowed_actions?.includes('fail');
+  useEffect(() => {
+    if (sheet === 'fail' && !failAllowed && !sheetBusy) setSheet(null);
+  }, [sheet, failAllowed, sheetBusy]);
+
   // เพิ่งรับงานแต่ติดตามได้แค่ตอนเปิดแอป → เสนอ "ติดตามต่อแม้ปิดหน้าจอ" (ครั้งเดียว ข้ามได้)
   const offerBackground = flow.offerBackground;
   const activeJobId = job && job.is_mine && isActiveJobStatus(job.status) ? job.id : null;
@@ -606,7 +613,11 @@ export default function RiderJobDetailScreen() {
   const handleActionError = (result: { code: string; message: string }, title: string) => {
     resultHaptic('error');
     // HANDOVER_REQUIRED = งานนี้ต้องส่งมอบด้วย QR (server เปลี่ยนเงื่อนไขระหว่างเปิดหน้า) → โหลดใหม่ให้เห็นแผงส่งมอบ
-    if (['INVALID_TRANSITION', 'JOB_NOT_FOUND', 'NOT_YOUR_JOB', 'HANDOVER_REQUIRED'].includes(result.code)) {
+    // HANDOVER_* อื่น (เช่น ลูกค้ายืนยันรับของแล้ว/ร้องเรียน → แจ้งส่งไม่สำเร็จไม่ได้) = สถานะเปลี่ยน ใช้ข้อความไทยของ server
+    if (
+      ['INVALID_TRANSITION', 'JOB_NOT_FOUND', 'NOT_YOUR_JOB', 'HANDOVER_REQUIRED'].includes(result.code) ||
+      result.code.startsWith('HANDOVER_')
+    ) {
       const hadSheet = sheet !== null;
       setSheet(null);
       const show = () => Alert.alert('สถานะงานเปลี่ยนไปแล้ว', result.message);

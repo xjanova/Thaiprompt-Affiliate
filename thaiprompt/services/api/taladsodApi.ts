@@ -677,6 +677,10 @@ export interface FmQuote {
   rider_total: number | null;
   surcharge: number | null;
   free_delivery: boolean;
+  /** ร้านช่วยออกค่าส่งได้ไม่เต็มที่ตั้งไว้ (เกินรายได้ร้านจากออเดอร์นี้) → ผู้ซื้อจ่ายส่วนที่เหลือ (C1/B9) */
+  subsidy_capped: boolean;
+  /** โบนัสไรเดอร์ถูกลดลงด้วยเหตุผลเดียวกัน (ฝั่งร้านเท่านั้น) */
+  bonus_capped: boolean;
   /** เก็บเงินปลายทางได้ไหมเมื่อส่งด้วยไรเดอร์ (null = server ไม่บอก) */
   cod: { available: boolean; reason: string | null } | null;
 }
@@ -710,6 +714,8 @@ const normalizeQuote = (raw: any): FmQuote => {
     rider_total: nullableNum(pick('rider_total')),
     surcharge: nullableNum(pick('surcharge')),
     free_delivery: free,
+    subsidy_capped: bool(pick('subsidy_capped')),
+    bonus_capped: bool(pick('bonus_capped')),
     cod:
       codRaw && typeof codRaw === 'object'
         ? { available: bool(codRaw.available), reason: str(codRaw.reason) }

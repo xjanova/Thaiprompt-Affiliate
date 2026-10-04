@@ -13,6 +13,7 @@
  * สถานะพิเศษ
  *   - งานไรเดอร์ยังไม่ถึงขั้นรับของ (pending/accepted/picking_up) → "ยังไม่ถึงขั้นรับของ" (U4)
  *   - จบแล้ว: รับของเรียบร้อย (+ การแบ่งเงิน) / คืนเงินแล้ว — ไม่ค้าง "กำลังสรุป" ตลอดไป (U5) · ดึงลงเพื่อรีเฟรช
+ *   - งานไรเดอร์ส่งไม่สำเร็จ/ถูกยกเลิก แต่การรับของยังไม่จบ → หน้าแจ้งชัดเจน + ปุ่มไปหน้าออเดอร์ หยุดถามซ้ำ (B6)
  *
  * ความปลอดภัย
  *   - กันแคปหน้าจอ/อัดจอระหว่างเปิดหน้านี้ (useSensitiveScreen) — QR/รหัสเป็นของใช้ครั้งเดียว
@@ -56,6 +57,7 @@ import {
   disputeOrderHandover,
   getOrderHandover,
   isHandoverFinal,
+  isHandoverJobEnded,
   isHandoverSuccess,
   sanitizeScannedToken,
   scanRiderHandoverQr,
@@ -222,14 +224,23 @@ export default function BuyerHandoverScreen() {
   const jobStatus = data?.job?.status ?? '';
   /** ไรเดอร์ยังไม่ได้ของจากร้าน (รอรับงาน / กำลังไปร้าน) — U4 */
   const prePickup = !final && HANDOVER_PRE_PICKUP_JOB_STATUSES.includes(jobStatus);
+  /** งานไรเดอร์จบแบบไม่ได้ส่ง (ส่งไม่สำเร็จ/ยกเลิก) แต่การรับของยังไม่จบ = จบสำหรับหน้านี้ (B6) */
+  const jobEnded = isHandoverJobEnded(data);
   const idle = notReady || prePickup || (!!handover && !handover.required);
 
-  // ดึงสถานะใหม่ระหว่างหน้าเปิด (หยุดเมื่อจบงาน)
+  // ดึงสถานะใหม่ระหว่างหน้าเปิด (หยุดเมื่อจบงาน หรืองานไรเดอร์จบแบบไม่ได้ส่ง — ดึงลงเพื่อรีเฟรชได้)
   useFocusedInterval(
     () => load('silent'),
     idle ? POLL_IDLE_MS : POLL_ACTIVE_MS,
-    !!source && !!orderId && !final && (!!data || notReady)
+    !!source && !!orderId && !final && !jobEnded && (!!data || notReady)
   );
+
+  // งานไรเดอร์จบระหว่างเปิดแผ่นสแกน/แจ้งปัญหา → ปิดแผ่นที่ค้าง (ไม่มีอะไรให้สแกนแล้ว)
+  useEffect(() => {
+    if (!jobEnded) return;
+    setScanOpen(false);
+    setDisputeOpen(false);
+  }, [jobEnded]);
 
   // จบงานแล้วแต่ server ยังสรุปการแบ่งเงินไม่เสร็จ → ถามซ้ำช่วงสั้นๆ (ไม่ค้าง "กำลังสรุป" ตลอดไป — U5)
   const waitingSettlement = final && isHandoverSuccess(handover) && !data?.settlement;
@@ -534,6 +545,25 @@ export default function BuyerHandoverScreen() {
           jobStatus === 'pending'
             ? 'ระบบกำลังหาไรเดอร์ให้ เมื่อไรเดอร์รับของจากร้านแล้ว หน้านี้จะแสดง QR ให้สแกนกันตอนรับของ'
             : 'ไรเดอร์กำลังไปรับของที่ร้าน เมื่อได้ของแล้ว หน้านี้จะแสดง QR ให้สแกนกันตอนรับของ'
+        }
+        actionLabel="ไปหน้าคำสั่งซื้อ"
+        onAction={goOrder}
+      />
+    );
+  }
+
+  // งานไรเดอร์จบแบบไม่ได้ส่ง (ไรเดอร์ส่งไม่สำเร็จ / ออเดอร์ถูกยกเลิก) → ไม่ค้าง "กำลังสร้างรหัส…" ไม่ถามซ้ำ (B6)
+  // ขั้นตอนต่อ (คืนเงิน / หาไรเดอร์ใหม่) ดูที่หน้าออเดอร์ · ดึงลงเพื่อรีเฟรชได้ถ้าระบบหาไรเดอร์คนใหม่ให้
+  if (jobEnded) {
+    const riderFailed = jobStatus === 'failed';
+    return shell(
+      <EmptyState
+        icon={riderFailed ? 'warning-circle' : 'x-circle'}
+        title={riderFailed ? 'ไรเดอร์ยกเลิกการส่ง' : 'ออเดอร์ถูกยกเลิก'}
+        message={
+          riderFailed
+            ? 'การส่งรอบนี้ไม่สำเร็จ ไม่ต้องสแกน QR แล้ว ดูรายละเอียดและขั้นตอนต่อไปในหน้าออเดอร์'
+            : 'การส่งของออเดอร์นี้ถูกยกเลิกแล้ว ไม่ต้องสแกน QR ดูรายละเอียดในหน้าออเดอร์'
         }
         actionLabel="ไปหน้าคำสั่งซื้อ"
         onAction={goOrder}

@@ -94,6 +94,7 @@ const toRiderView = (q: FmQuote): RiderQuoteView => ({
   rider_total: q.rider_total,
   surcharge: q.surcharge,
   free_delivery: q.free_delivery,
+  subsidy_capped: q.subsidy_capped,
 });
 type QuoteState = { state: 'idle' } | { state: 'loading' } | { state: 'ready'; quote: FmQuote } | { state: 'error'; message: string };
 
