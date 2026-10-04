@@ -345,7 +345,8 @@ class FreshMarketApiController extends Controller
         }
         $payload = array_merge($quote, [
             'subtotal' => $subtotal,
-            'grand_total' => round($subtotal + ($quote['available'] ? $quote['total_fee'] : 0), 2),
+            // ไรเดอร์รอบ 2: ผู้ซื้อจ่าย fee (= buyer_fee) — ร้านเลือกส่งฟรีได้
+            'grand_total' => round($subtotal + ($quote['available'] ? (float) ($quote['fee'] ?? $quote['total_fee']) : 0), 2),
         ]);
 
         if (! $quote['available']) {

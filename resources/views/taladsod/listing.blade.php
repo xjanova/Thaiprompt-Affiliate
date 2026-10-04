@@ -342,7 +342,7 @@
                                     <span class="ts-muted ts-small">เริ่ม ฿{{ $ui::money($deliveryBaseRate) }} + ฿{{ $ui::money($deliveryPerKm) }}/กม.</span>
                                 </div>
                                 <div x-show="quote" x-cloak class="ts-row" style="margin-top:8px; gap:6px;">
-                                    <span class="ts-pill solid ts-tone-ok" x-show="quote && quote.available">ค่าส่ง ฿<span x-text="quote ? money(quote.total_fee) : ''"></span></span>
+                                    <span class="ts-pill solid ts-tone-ok" x-show="quote && quote.available">ค่าส่ง ฿<span x-text="quote ? money(quote.fee ?? quote.total_fee) : ''"></span></span>
                                     <span class="ts-muted ts-small" x-show="quote && quote.available" x-text="quote ? ('ระยะ ' + window.ts.distance(quote.distance_km) + ' · ประมาณ ' + quote.estimated_duration_minutes + ' นาที') : ''"></span>
                                 </div>
                                 <p class="ts-err" x-show="quoteError" x-text="quoteError" x-cloak></p>

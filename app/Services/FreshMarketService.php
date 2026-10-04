@@ -437,11 +437,17 @@ class FreshMarketService
     /**
      * คำนวณค่าส่งไรเดอร์จากร้าน → ตำแหน่งผู้ซื้อ (คำนวณฝั่งเซิร์ฟเวอร์เท่านั้น)
      *
-     * @return array{available: bool, code: ?string, message: ?string, distance_km: ?float, total_fee: float, estimated_duration_minutes: ?int, max_distance_km: float}
+     * ไรเดอร์รอบ 2: total_fee = ค่าส่งเต็ม · fee/buyer_fee = ที่ผู้ซื้อจ่าย (ร้านเลือกส่งฟรีได้)
+     * + ระยะตามถนน (distance_source, route_polyline) + โบนัสที่ร้านเติม + cod (ปิดเมื่อ rider.allow_cod = false)
+     *
+     * @return array{available: bool, code: ?string, message: ?string, distance_km: ?float, total_fee: float, estimated_duration_minutes: ?int, max_distance_km: float, fee: float, fee_full: float, buyer_fee: float, distance_source: ?string, route_polyline: ?string, rider_earnings: float, shop_bonus: float, shop_subsidy: float, rider_total: float, surcharge: float, free_delivery: bool, cod: array{available: bool, reason: ?string}}
      */
     public function quoteDelivery(FreshMarketListing $listing, float $lat, float $lng): array
     {
         $maxKm = (float) Setting::get('rider.max_distance_km', 15);
+        $listing->loadMissing('seller');
+        $calculator = app(DeliveryFeeCalculator::class);
+        $allowCod = $calculator->boolSetting('rider.allow_cod');
         $result = [
             'available' => false,
             'code' => null,
@@ -450,6 +456,22 @@ class FreshMarketService
             'total_fee' => 0.0,
             'estimated_duration_minutes' => null,
             'max_distance_km' => $maxKm,
+            // ===== ไรเดอร์รอบ 2 (คีย์เดียวกับ rider ของตะกร้าร้านค้า) =====
+            'fee' => 0.0,
+            'fee_full' => 0.0,
+            'buyer_fee' => 0.0,
+            'distance_source' => null,
+            'route_polyline' => null,
+            'rider_earnings' => 0.0,
+            'shop_bonus' => 0.0,
+            'shop_subsidy' => 0.0,
+            'rider_total' => 0.0,
+            'surcharge' => 0.0,
+            'free_delivery' => DeliveryFeeCalculator::storeFreeDelivery($listing->seller),
+            'cod' => [
+                'available' => false,
+                'reason' => $allowCod ? 'เก็บเงินปลายทางใช้ได้เมื่อส่งด้วยไรเดอร์' : \App\Services\Shop\ShopCartService::COD_PREPAID_REASON,
+            ],
         ];
 
         if (! $this->settings()->rider_enabled) {
@@ -460,7 +482,6 @@ class FreshMarketService
             return array_merge($result, ['code' => 'DELIVERY_LOCATION_REQUIRED', 'message' => 'กรุณาปักหมุดตำแหน่งจัดส่งให้ถูกต้อง']);
         }
 
-        $listing->loadMissing('seller');
         $seller = $listing->seller;
 
         // ร้านปิดอยู่ (รวมร้านเคลื่อนที่ที่ยังไม่ได้เปิดร้านวันนี้) → ยังไม่รู้จุดรับของ และสั่งไม่ได้
@@ -481,7 +502,7 @@ class FreshMarketService
         }
 
         try {
-            $quote = app(DeliveryFeeCalculator::class)->quote($pickupLat, $pickupLng, $lat, $lng);
+            $quote = $calculator->quote($pickupLat, $pickupLng, $lat, $lng, $seller);
         } catch (\Throwable $e) {
             Log::error('FreshMarket: คำนวณค่าส่งไรเดอร์ล้มเหลว', ['listing_id' => $listing->id, 'error' => $e->getMessage()]);
 
@@ -494,6 +515,7 @@ class FreshMarketService
         $result['distance_km'] = $distance;
         $result['total_fee'] = round((float) ($quote['total_fee'] ?? 0), 2);
         $result['estimated_duration_minutes'] = isset($quote['estimated_duration_minutes']) ? (int) $quote['estimated_duration_minutes'] : null;
+        $result = array_merge($result, $this->riderQuoteFields($quote));
 
         $outOfArea = array_key_exists('within_service_area', $quote)
             ? ! $quote['within_service_area']
@@ -508,7 +530,37 @@ class FreshMarketService
 
         $result['available'] = true;
 
+        // เก็บเงินปลายทางกับไรเดอร์: ปิดเมื่อ rider.allow_cod = false (ต้องจ่ายก่อน) หรือตลาดสดปิด COD
+        if ($allowCod && $this->settings()->cod_enabled) {
+            $result['cod'] = ['available' => true, 'reason' => null];
+        } elseif ($allowCod) {
+            $result['cod'] = ['available' => false, 'reason' => 'ขณะนี้ปิดรับเก็บเงินปลายทาง'];
+        }
+
         return $result;
+    }
+
+    /**
+     * คีย์ค่าส่งไรเดอร์รอบ 2 จากใบเสนอราคาของ DeliveryFeeCalculator (ชุดเดียวกับ rider ของตะกร้าร้านค้า)
+     *
+     * @param  array<string, mixed>  $quote
+     * @return array<string, mixed>
+     */
+    private function riderQuoteFields(array $quote): array
+    {
+        return [
+            'fee' => round((float) ($quote['buyer_fee'] ?? $quote['total_fee'] ?? 0), 2),
+            'fee_full' => round((float) ($quote['total_fee'] ?? 0), 2),
+            'buyer_fee' => round((float) ($quote['buyer_fee'] ?? $quote['total_fee'] ?? 0), 2),
+            'distance_source' => $quote['distance_source'] ?? null,
+            'route_polyline' => $quote['route_polyline'] ?? null,
+            'rider_earnings' => round((float) ($quote['rider_earnings'] ?? 0), 2),
+            'shop_bonus' => round((float) ($quote['shop_bonus'] ?? 0), 2),
+            'shop_subsidy' => round((float) ($quote['shop_subsidy'] ?? 0), 2),
+            'rider_total' => round((float) ($quote['rider_total'] ?? 0), 2),
+            'surcharge' => round((float) ($quote['surcharge'] ?? 0), 2),
+            'free_delivery' => (bool) ($quote['free_delivery'] ?? false),
+        ];
     }
 
     // ╔══════════════════════════════════════════╗
@@ -664,6 +716,8 @@ class FreshMarketService
 
         $deliveryFee = 0.0;
         $distance = null;
+        // ไรเดอร์รอบ 2: ล็อกโบนัสไรเดอร์ที่ร้านจ่าย + ค่าส่งที่ร้านออกแทน ณ ตอนสั่ง (งานไรเดอร์/การแบ่งเงินอ่านจากออเดอร์)
+        $riderPricing = ['rider_bonus_amount' => 0.0, 'delivery_subsidy_amount' => 0.0];
         $buyerLat = isset($data['buyer_latitude']) && is_numeric($data['buyer_latitude']) ? (float) $data['buyer_latitude'] : null;
         $buyerLng = isset($data['buyer_longitude']) && is_numeric($data['buyer_longitude']) ? (float) $data['buyer_longitude'] : null;
         $address = trim((string) ($data['delivery_address'] ?? ''));
@@ -683,15 +737,20 @@ class FreshMarketService
                 throw FreshMarketException::make($quote['code'] ?? 'RIDER_UNAVAILABLE', $quote['message'] ?? 'ส่งด้วยไรเดอร์ไม่ได้ในขณะนี้', 422);
             }
 
-            $deliveryFee = round((float) $quote['total_fee'], 2);
+            // ผู้ซื้อจ่าย buyer_fee (ร้านเลือกส่งฟรี = 0) · ค่าส่งเต็มยังอยู่ใน total_fee
+            $deliveryFee = round((float) ($quote['buyer_fee'] ?? $quote['total_fee']), 2);
             $distance = $quote['distance_km'];
+            $riderPricing = [
+                'rider_bonus_amount' => round((float) ($quote['shop_bonus'] ?? 0), 2),
+                'delivery_subsidy_amount' => round((float) ($quote['shop_subsidy'] ?? 0), 2),
+            ];
         }
 
         $data['preferred_rider_id'] = $this->preferredRiderFor($buyer, $data, $deliveryType); // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์
 
         $order = DB::transaction(function () use (
             $buyer, $seller, $lines, $deliveryType, $paymentMethod,
-            $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data
+            $deliveryFee, $distance, $buyerLat, $buyerLng, $address, $data, $riderPricing
         ) {
             // ตะกร้า: lock + ตรวจว่ารายการยังอยู่ครบ (กดชำระซ้ำ/สองแท็บพร้อมกัน → ครั้งที่สองไม่มีของในตะกร้าแล้ว)
             $cartItemIds = FreshMarketCartItem::normalizeOptionIds($data['cart_item_ids'] ?? []);
@@ -825,6 +884,8 @@ class FreshMarketService
                 'delivery_type' => $deliveryType,
                 'delivery_fee' => $deliveryFee,
                 'delivery_distance_km' => $distance,
+                'rider_bonus_amount' => $riderPricing['rider_bonus_amount'],
+                'delivery_subsidy_amount' => $riderPricing['delivery_subsidy_amount'],
                 'payment_method' => $paymentMethod,
                 'payment_status' => 'pending',
                 'order_status' => FreshMarketOrder::STATUS_PENDING,

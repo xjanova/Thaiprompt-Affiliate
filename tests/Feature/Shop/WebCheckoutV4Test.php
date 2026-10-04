@@ -63,6 +63,8 @@ class WebCheckoutV4Test extends TestCase
 
     public function test_quote_reports_rider_and_cod_availability_for_web_cart(): void
     {
+        // ไรเดอร์รอบ 2: ค่าเริ่มต้นปิด COD กับงานไรเดอร์ (ต้องจ่ายก่อน) — เทสต์นี้ตรวจทาง COD ที่แอดมินเปิดเองได้
+        Setting::set('rider.allow_cod', '1', 'boolean', 'rider');
         [$buyer, , $address] = $this->buyerWithWebCart();
 
         $this->actingAs($buyer)
@@ -171,6 +173,8 @@ class WebCheckoutV4Test extends TestCase
 
     public function test_cod_with_rider_creates_rider_order(): void
     {
+        // ไรเดอร์รอบ 2: ค่าเริ่มต้นปิด COD กับงานไรเดอร์ (ต้องจ่ายก่อน) — เทสต์นี้ตรวจทาง COD ที่แอดมินเปิดเองได้
+        Setting::set('rider.allow_cod', '1', 'boolean', 'rider');
         [$buyer, , $address] = $this->buyerWithWebCart(0);
 
         $response = $this->actingAs($buyer)->post(route('checkout.process'), [

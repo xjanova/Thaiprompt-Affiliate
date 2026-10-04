@@ -4,6 +4,10 @@ namespace App\Services;
 
 use App\Exceptions\RiderJobException;
 use App\Models\Setting;
+use App\Services\Routing\RouteResult;
+use App\Services\Routing\RouteService;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -13,17 +17,37 @@ use Illuminate\Support\Facades\Log;
  * เพื่อให้ "ค่าส่งที่ลูกค้าจ่าย" = "total_fee ของงานไรเดอร์" เสมอ
  *
  * สูตร:
- *   distance_km   = haversine(pickup, dropoff) × rider.road_factor   (ถนนจริงอ้อมกว่าเส้นตรง)
+ *   distance_km   = ระยะตามถนนจาก RouteService (Valhalla → Google → เส้นตรง × rider.road_factor)
  *   distance_fee  = max(0, distance_km − rider.free_km) × rider.per_km_fee
- *   total_fee     = ปัดขึ้นเป็นบาทเต็ม( max(rider.min_fee, rider.base_fee + distance_fee) )
+ *   total_fee     = ปัดขึ้นเป็นบาทเต็ม( max(rider.min_fee, rider.base_fee + distance_fee) ) + surcharge
+ *   surcharge     = rider.night_surcharge (ช่วง [night_start_hour, night_end_hour)) + rider.peak_surcharge (ชั่วโมงเร่งด่วน)
  *   rider_earnings = total_fee × rider.rider_share_percent / 100
  *   platform_fee  = total_fee − rider_earnings
  *
+ * ไรเดอร์รอบ 2 (2026-10-04) — ร้านกำหนดเพิ่มได้ (คอลัมน์ของ vendor_stores / fresh_market_sellers):
+ *   shop_bonus   = rider_bonus_peak (ถ้ามากกว่า rider_bonus และอยู่ในชั่วโมงเร่งด่วน) ไม่งั้น rider_bonus — ไรเดอร์ได้เต็ม ร้านจ่าย
+ *   free_delivery = rider_free_delivery → buyer_fee = 0 และ shop_subsidy = total_fee (ร้านออกค่าส่งทั้งหมด)
+ *   rider_total  = rider_earnings + shop_bonus
+ *   total_fee ยังหมายถึง "ค่าส่งเต็ม" เสมอ · buyer_fee = ที่ผู้ซื้อจ่ายจริง
+ *
  * ค่าตั้งค่าอ่านจากตาราง settings (group = rider) ผ่าน key ใน DEFAULTS
- * ส่ง $overrides เข้า constructor ได้ (ใช้ในเทสต์ที่ไม่มีฐานข้อมูล)
+ * ส่ง $overrides เข้า constructor ได้ (ใช้ในเทสต์ที่ไม่มีฐานข้อมูล — โหมดนี้คิดระยะแบบเส้นตรงเท่านั้น ไม่ยิงเครือข่าย)
  */
 class DeliveryFeeCalculator
 {
+    /**
+     * ชั่วโมงเร่งด่วน [เริ่ม, จบ) ตามเวลาไทย — ไรเดอร์ว่างน้อย ร้านตั้งโบนัสช่วงนี้แยกได้
+     *
+     * @var array<int, array{0: int, 1: int}>
+     */
+    public const PEAK_HOURS = [[11, 13], [17, 19]];
+
+    /** เขตเวลาที่ใช้ตัดสินกลางคืน/ชั่วโมงเร่งด่วน */
+    public const TIMEZONE = 'Asia/Bangkok';
+
+    /** โบนัสไรเดอร์ที่ร้านตั้งได้สูงสุด (บาท/ออเดอร์) — ตรงกับ validation ของ PUT /seller/rider-pay */
+    public const MAX_SHOP_BONUS = 100.0;
+
     /**
      * ค่าเริ่มต้นของทุก key ระบบไรเดอร์ (ต้องตรงกับ migration seed_rider_dispatch_settings)
      *
@@ -88,8 +112,12 @@ class DeliveryFeeCalculator
 
     /**
      * @param  array<string, mixed>|null  $overrides  ค่าที่ใช้แทน settings (ถ้าส่งมา จะไม่แตะฐานข้อมูลเลย)
+     * @param  RouteService|null  $routes  ตัวหาระยะตามถนน (null = ใช้ของ container — ยกเว้นโหมด overrides ที่คิดเส้นตรงอย่างเดียว)
      */
-    public function __construct(private readonly ?array $overrides = null) {}
+    public function __construct(
+        private readonly ?array $overrides = null,
+        private readonly ?RouteService $routes = null,
+    ) {}
 
     /**
      * อ่านค่าตั้งค่าระบบไรเดอร์ 1 key (มีค่า default เสมอ)
@@ -191,13 +219,15 @@ class DeliveryFeeCalculator
     }
 
     /**
-     * ใบเสนอราคาค่าส่ง
+     * ใบเสนอราคาค่าส่ง (ระยะตามถนนจริง + ส่วนเพิ่มตามช่วงเวลา + ค่าที่ร้านตั้ง)
      *
-     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float}
+     * @param  Model|null  $store  ร้านต้นทาง (VendorStore / FreshMarketSeller) — อ่าน rider_bonus, rider_bonus_peak, rider_free_delivery
+     * @param  CarbonInterface|null  $at  เวลาที่ใช้ตัดสินกลางคืน/ชั่วโมงเร่งด่วน (null = ตอนนี้)
+     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float, distance_source: string, route_polyline: ?string, surcharge: float, shop_bonus: float, shop_subsidy: float, free_delivery: bool, buyer_fee: float, rider_total: float}
      *
      * @throws RiderJobException INVALID_LOCATION เมื่อพิกัดไม่ถูกต้อง
      */
-    public function quote(float $pickupLat, float $pickupLng, float $dropLat, float $dropLng): array
+    public function quote(float $pickupLat, float $pickupLng, float $dropLat, float $dropLng, ?Model $store = null, ?CarbonInterface $at = null): array
     {
         if (! self::isValidCoordinate($pickupLat, $pickupLng)) {
             throw RiderJobException::invalidLocation('จุดรับของ');
@@ -206,17 +236,42 @@ class DeliveryFeeCalculator
             throw RiderJobException::invalidLocation('จุดส่งของ');
         }
 
-        $distanceKm = $this->roadDistanceKm($pickupLat, $pickupLng, $dropLat, $dropLng);
+        $route = $this->route($pickupLat, $pickupLng, $dropLat, $dropLng);
 
-        return $this->quoteForDistance($distanceKm);
+        return $this->quoteForDistance($route->distance_km, $store, $at ?? now(), $route);
+    }
+
+    /**
+     * ระยะ/เวลา/เส้นทางจากจุดรับ → จุดส่ง
+     *
+     * โหมด overrides (เทสต์ไม่มีฐานข้อมูล) ไม่มี RouteService → คิดเส้นตรง × road_factor แบบเดิม ไม่ยิงเครือข่าย
+     */
+    public function route(float $pickupLat, float $pickupLng, float $dropLat, float $dropLng): RouteResult
+    {
+        $routes = $this->routes ?? ($this->overrides === null ? app(RouteService::class) : null);
+        $roadFactor = max(1.0, $this->floatSetting('rider.road_factor'));
+        $speed = max(5.0, $this->floatSetting('rider.avg_speed_kmh'));
+
+        if ($routes === null) {
+            $distanceKm = $this->roadDistanceKm($pickupLat, $pickupLng, $dropLat, $dropLng);
+
+            return new RouteResult($distanceKm, max(1, (int) ceil($distanceKm / $speed * 60)), null, RouteResult::SOURCE_HAVERSINE);
+        }
+
+        return $routes->route($pickupLat, $pickupLng, $dropLat, $dropLng, $roadFactor, $speed);
     }
 
     /**
      * ใบเสนอราคาจากระยะทางที่รู้แล้ว (กม.)
      *
-     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float}
+     * ส่วนเพิ่มกลางคืน/เร่งด่วนคิดเฉพาะเมื่อส่ง $at มา (ตารางค่าส่งในหน้าแอดมิน/ผู้ช่วยตั้งราคาไม่ขึ้นกับเวลา)
+     * ไม่ส่ง $at = โบนัสร้านใช้ rider_bonus ปกติ
+     *
+     * @param  Model|null  $store  ร้านต้นทาง (อ่าน rider_bonus, rider_bonus_peak, rider_free_delivery)
+     * @param  RouteResult|null  $route  ผลเส้นทาง (ให้ distance_source, route_polyline, เวลาเดินทางจริง)
+     * @return array{distance_km: float, base_fee: float, distance_fee: float, total_fee: float, rider_earnings: float, platform_fee: float, estimated_duration_minutes: int, within_service_area: bool, max_distance_km: float, distance_source: string, route_polyline: ?string, surcharge: float, shop_bonus: float, shop_subsidy: float, free_delivery: bool, buyer_fee: float, rider_total: float}
      */
-    public function quoteForDistance(float $distanceKm): array
+    public function quoteForDistance(float $distanceKm, ?Model $store = null, ?CarbonInterface $at = null, ?RouteResult $route = null): array
     {
         $distanceKm = round(max(0.0, $distanceKm), 2);
 
@@ -228,13 +283,21 @@ class DeliveryFeeCalculator
         $rawDistanceFee = max(0.0, $distanceKm - $freeKm) * $perKm;
 
         // ปัดขึ้นเป็นบาทเต็ม (กันเศษสตางค์บนใบเสร็จ) และไม่ต่ำกว่าค่าส่งขั้นต่ำ
-        $totalFee = (float) ceil(round(max($minFee, $baseFee + $rawDistanceFee), 2));
-        $totalFee = max($totalFee, $baseFee);
+        $formulaFee = (float) ceil(round(max($minFee, $baseFee + $rawDistanceFee), 2));
+        $formulaFee = max($formulaFee, $baseFee);
 
-        // distance_fee = ส่วนที่เกินค่าพื้นฐาน (รวมส่วนเติมให้ถึงขั้นต่ำ) → base + distance = total เสมอ
-        $distanceFee = round($totalFee - $baseFee, 2);
+        // ส่วนเพิ่มกลางคืน/ชั่วโมงเร่งด่วน (ผู้ซื้อจ่าย ไรเดอร์ได้ส่วนแบ่งตามปกติ)
+        $surcharge = $at !== null ? $this->surchargeAt($at) : 0.0;
+        $totalFee = round($formulaFee + $surcharge, 2);
+
+        // distance_fee = ส่วนที่เกินค่าพื้นฐาน (รวมส่วนเติมให้ถึงขั้นต่ำ) → base + distance + surcharge = total เสมอ
+        $distanceFee = round($totalFee - $baseFee - $surcharge, 2);
 
         $split = $this->split($totalFee);
+
+        // ค่าที่ร้านตั้ง: โบนัสไรเดอร์ (ร้านจ่าย ไรเดอร์ได้เต็ม) + ส่งฟรี (ร้านออกค่าส่งทั้งหมดแทนผู้ซื้อ)
+        $shopBonus = $this->shopBonusFor($store, $at);
+        $freeDelivery = self::storeFreeDelivery($store);
 
         return [
             'distance_km' => $distanceKm,
@@ -243,10 +306,127 @@ class DeliveryFeeCalculator
             'total_fee' => $totalFee,
             'rider_earnings' => $split['rider_earnings'],
             'platform_fee' => $split['platform_fee'],
-            'estimated_duration_minutes' => $this->estimateDurationMinutes($distanceKm),
+            'estimated_duration_minutes' => $route !== null
+                ? $route->duration_minutes + 5
+                : $this->estimateDurationMinutes($distanceKm),
             'within_service_area' => $this->isWithinServiceArea($distanceKm),
             'max_distance_km' => round($this->maxDistanceKm(), 2),
+            // ===== ไรเดอร์รอบ 2 =====
+            'distance_source' => $route?->source ?? RouteResult::SOURCE_HAVERSINE,
+            'route_polyline' => $route?->polyline,
+            'surcharge' => $surcharge,
+            'shop_bonus' => $shopBonus,
+            'shop_subsidy' => $freeDelivery ? $totalFee : 0.0,
+            'free_delivery' => $freeDelivery,
+            'buyer_fee' => $freeDelivery ? 0.0 : $totalFee,
+            'rider_total' => round($split['rider_earnings'] + $shopBonus, 2),
         ];
+    }
+
+    /**
+     * ส่วนเพิ่มค่าส่ง ณ เวลาที่กำหนด (บาท) = กลางคืน + ชั่วโมงเร่งด่วน (ถ้าซ้อนกันได้ทั้งคู่)
+     */
+    public function surchargeAt(CarbonInterface $at): float
+    {
+        $hour = $this->localHour($at);
+        $surcharge = 0.0;
+
+        if ($this->isNightHour($hour)) {
+            $surcharge += max(0.0, $this->floatSetting('rider.night_surcharge'));
+        }
+
+        if (self::isPeakHour($hour)) {
+            $surcharge += max(0.0, $this->floatSetting('rider.peak_surcharge'));
+        }
+
+        return round($surcharge, 2);
+    }
+
+    /**
+     * ชั่วโมงนี้ (0–23 เวลาไทย) อยู่ช่วงกลางคืน [night_start_hour, night_end_hour) หรือไม่ — ข้ามเที่ยงคืนได้ เช่น 22 → 6
+     * เริ่ม = จบ หมายถึงปิดส่วนเพิ่มกลางคืน
+     */
+    public function isNightHour(int $hour): bool
+    {
+        $start = ((($this->intSetting('rider.night_start_hour')) % 24) + 24) % 24;
+        $end = ((($this->intSetting('rider.night_end_hour')) % 24) + 24) % 24;
+
+        if ($start === $end) {
+            return false;
+        }
+
+        return $start < $end
+            ? $hour >= $start && $hour < $end
+            : $hour >= $start || $hour < $end;
+    }
+
+    /**
+     * ชั่วโมงนี้ (0–23 เวลาไทย) เป็นชั่วโมงเร่งด่วนหรือไม่ (PEAK_HOURS)
+     */
+    public static function isPeakHour(int $hour): bool
+    {
+        foreach (self::PEAK_HOURS as [$start, $end]) {
+            if ($hour >= $start && $hour < $end) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * เวลานี้เป็นชั่วโมงเร่งด่วนหรือไม่
+     */
+    public function isPeakAt(CarbonInterface $at): bool
+    {
+        return self::isPeakHour($this->localHour($at));
+    }
+
+    /**
+     * โบนัสไรเดอร์ที่ร้านจ่าย (บาท) — ชั่วโมงเร่งด่วนใช้ rider_bonus_peak ถ้ามากกว่า rider_bonus
+     */
+    public function shopBonusFor(?Model $store, ?CarbonInterface $at = null): float
+    {
+        if ($store === null) {
+            return 0.0;
+        }
+
+        $bonus = self::clampBonus($store->getAttribute('rider_bonus'));
+        $peak = self::clampBonus($store->getAttribute('rider_bonus_peak'));
+
+        if ($at !== null && $peak > $bonus && $this->isPeakAt($at)) {
+            return $peak;
+        }
+
+        return $bonus;
+    }
+
+    /**
+     * ร้านเลือก "ส่งฟรี" (ร้านออกค่าส่งทั้งหมด) หรือไม่
+     */
+    public static function storeFreeDelivery(?Model $store): bool
+    {
+        return $store !== null && filter_var($store->getAttribute('rider_free_delivery'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * โบนัสร้านอยู่ในช่วง 0..MAX_SHOP_BONUS ทศนิยม 2 ตำแหน่ง (ค่าเสีย/ติดลบ = 0)
+     */
+    public static function clampBonus(mixed $value): float
+    {
+        if (! is_numeric($value)) {
+            return 0.0;
+        }
+
+        return round(min(self::MAX_SHOP_BONUS, max(0.0, (float) $value)), 2);
+    }
+
+    /**
+     * ชั่วโมงตามเวลาไทย (0–23)
+     */
+    private function localHour(CarbonInterface $at): int
+    {
+        return (int) $at->copy()->setTimezone(self::TIMEZONE)->format('G');
     }
 
     /**

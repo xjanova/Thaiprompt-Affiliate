@@ -215,6 +215,8 @@ class MobileCheckoutTest extends TestCase
 
     public function test_cod_with_rider_delivery_creates_pending_order_and_reserves_stock(): void
     {
+        // ไรเดอร์รอบ 2: ค่าเริ่มต้นปิด COD กับงานไรเดอร์ (ต้องจ่ายก่อน) — เทสต์นี้ตรวจทาง COD ที่แอดมินเปิดเองได้
+        Setting::set('rider.allow_cod', '1', 'boolean', 'rider');
         [$seller, $store] = $this->makeSellerWithStore(['rider_delivery_enabled' => true]);
         $product = $this->makeProduct($seller, $store, ['price' => 150, 'stock_quantity' => 5]);
         $buyer = $this->makeBuyer(0);

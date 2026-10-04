@@ -176,7 +176,7 @@
                             <div class="sf-note" :class="quote && quote.available ? 'sf-note-ok' : (quoteError ? 'sf-note-err' : 'sf-note-info')">
                                 <template x-if="quoting"><span><i class="fas fa-circle-notch ts-spin" aria-hidden="true"></i> กำลังคำนวณค่าส่ง...</span></template>
                                 <template x-if="!quoting && quote && quote.available">
-                                    <span>ค่าส่ง <b>฿<span x-text="money(quote.total_fee)"></span></b> · ระยะ <span x-text="window.ts.distance(quote.distance_km)"></span> · ประมาณ <span x-text="quote.estimated_duration_minutes"></span> นาที</span>
+                                    <span>ค่าส่ง <b>฿<span x-text="money(quote.fee ?? quote.total_fee)"></span></b> · ระยะ <span x-text="window.ts.distance(quote.distance_km)"></span> · ประมาณ <span x-text="quote.estimated_duration_minutes"></span> นาที</span>
                                 </template>
                                 <template x-if="!quoting && quoteError"><span x-text="quoteError"></span></template>
                                 <template x-if="!quoting && !quote && !quoteError"><span>ปักหมุดจุดส่งเพื่อดูค่าส่ง</span></template>
@@ -259,7 +259,7 @@
                         </div>
                         <div>
                             <div class="ts-kv"><span>ยอดสินค้า</span><b>฿{{ $ui::money($subtotal) }}</b></div>
-                            <div class="ts-kv"><span>ค่าส่ง</span><b x-text="delivery === 'pickup' ? 'ฟรี (รับเอง)' : (quote && quote.available ? '฿' + money(quote.total_fee) : 'รอปักหมุด')">ฟรี (รับเอง)</b></div>
+                            <div class="ts-kv"><span>ค่าส่ง</span><b x-text="delivery === 'pickup' ? 'ฟรี (รับเอง)' : (quote && quote.available ? '฿' + money(quote.fee ?? quote.total_fee) : 'รอปักหมุด')">ฟรี (รับเอง)</b></div>
                         </div>
                         <div class="sf-total"><span class="ts-muted">ยอดที่ต้องจ่าย</span><span class="tp-num">฿<span x-text="money(grandTotal)">{{ $ui::money($subtotal) }}</span></span></div>
                         <button type="submit" class="ts-btn3d ts-tone-gold lg block" :disabled="!canSubmit || submitting">
@@ -313,7 +313,7 @@
                 if (this.delivery === 'rider' && this.lat !== null) { this.requestQuote(); }
             },
 
-            get deliveryFee() { return this.delivery === 'rider' && this.quote && this.quote.available ? Number(this.quote.total_fee) : 0; },
+            get deliveryFee() { return this.delivery === 'rider' && this.quote && this.quote.available ? Number(this.quote.fee ?? this.quote.total_fee) : 0; },
             get grandTotal() { return Math.round((cfg.subtotal + this.deliveryFee) * 100) / 100; },
             get walletShort() { return this.payment === 'wallet' && this.walletBalance < this.grandTotal; },
             get codTooHigh() { return this.payment === 'cod' && this.delivery === 'rider' && this.maxCod > 0 && this.grandTotal > this.maxCod; },

@@ -356,6 +356,9 @@ class ShopCheckoutService
             'shipping_discount' => round($shippingDiscount, 2),
             'discount_funded_by' => ($productDiscount + $shippingDiscount) > 0 ? 'store' : null,
             'shipping_fee' => round((float) $group['shipping_fee'], 2),
+            // ไรเดอร์รอบ 2: ล็อกโบนัสไรเดอร์ที่ร้านจ่าย + ค่าส่งที่ร้านออกแทน (ส่งฟรี) ณ ตอนสั่ง
+            'rider_bonus_amount' => $group['delivery_method'] === 'rider' ? round((float) ($group['rider']['shop_bonus'] ?? 0), 2) : 0,
+            'delivery_subsidy_amount' => $group['delivery_method'] === 'rider' ? round((float) ($group['rider']['shop_subsidy'] ?? 0), 2) : 0,
             'total_amount' => round((float) $plan['total'], 2),
             'customer_notes' => $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 500) : null,
             'cashback_amount' => 0,

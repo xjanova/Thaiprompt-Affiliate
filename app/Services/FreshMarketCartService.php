@@ -239,10 +239,25 @@ class FreshMarketCartService
 
         $quote = $this->market->quoteDelivery($listing, $lat, $lng);
         $subtotal = (float) $shop['subtotal'];
+        // ไรเดอร์รอบ 2: ผู้ซื้อจ่าย fee (= buyer_fee — ร้านเลือกส่งฟรีได้) ไม่ใช่ total_fee (ค่าส่งเต็ม)
+        $buyerFee = $quote['available'] ? (float) ($quote['fee'] ?? $quote['total_fee']) : 0.0;
+
+        // COD ต่อตะกร้า: ยอดที่ไรเดอร์ต้องเก็บต้องไม่เกินวงเงิน (กติกาเดียวกับตอนสร้างออเดอร์)
+        if ($quote['available'] && ! empty($quote['cod']['available'])) {
+            $codLimit = app(\App\Services\DeliveryFeeCalculator::class)->maxCodAmount();
+            if (round($subtotal + $buyerFee, 2) > $codLimit) {
+                $quote['cod'] = [
+                    'available' => false,
+                    'reason' => $codLimit > 0
+                        ? 'ยอดเกินวงเงินเก็บเงินปลายทาง '.number_format($codLimit, 2).' บาท'
+                        : 'ขณะนี้ปิดรับเก็บเงินปลายทาง',
+                ];
+            }
+        }
 
         return array_merge($quote, [
             'subtotal' => $subtotal,
-            'grand_total' => round($subtotal + ($quote['available'] ? (float) $quote['total_fee'] : 0), 2),
+            'grand_total' => round($subtotal + $buyerFee, 2),
             'items_count' => (int) $shop['items_count'],
         ]);
     }

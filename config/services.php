@@ -49,6 +49,35 @@ return [
 
     'google_maps' => [
         'api_key' => env('GOOGLE_MAPS_API_KEY', ''),
+        // 🛵 ไรเดอร์รอบ 2: Google Routes API (สำรองของ Valhalla) — เวลารอสูงสุดต่อคำขอ (วินาที)
+        'routes_timeout' => (float) env('GOOGLE_ROUTES_TIMEOUT', 2.5),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🛵 Valhalla — หาระยะทางตามถนนจริงของงานไรเดอร์ (ไรเดอร์รอบ 2, 2026-10-04)
+    |--------------------------------------------------------------------------
+    |
+    | ติดตั้งแบบ self-hosted บน prod ที่ 127.0.0.1:8002 (ไม่มีค่าใช้จ่ายต่อคำขอ)
+    | ใช้โดย App\Services\Routing\RouteService: Valhalla → Google Routes → เส้นตรง × rider.road_factor
+    | timeout สั้นเพราะอยู่บนเครื่องเดียวกัน — ล่มเมื่อไหร่ระบบตัดวงจร 3 นาที หน้าชำระเงินไม่ต้องรอ
+    |
+    */
+
+    'valhalla' => [
+        'url' => env('VALHALLA_URL', 'http://127.0.0.1:8002'),
+        'timeout' => (float) env('VALHALLA_TIMEOUT', 2.5),
+        'enabled' => (bool) env('VALHALLA_ENABLED', true),
+        'costing' => env('VALHALLA_COSTING', 'motor_scooter'),
+    ],
+
+    /*
+    | 🛵 ผู้ช่วยตั้งค่าตอบแทนไรเดอร์ของร้าน — AI แค่ "เรียบเรียงคำแนะนำภาษาไทย" (ตัวเลขมาจากสูตรเสมอ)
+    | ใช้ AI pool + ผู้ให้บริการเดียวกับตลาดสด (FreshMarketSetting ai_provider/ai_model)
+    */
+    'rider_pay_ai' => [
+        'enabled' => (bool) env('RIDER_PAY_AI_ENABLED', true),
+        'timeout' => (float) env('RIDER_PAY_AI_TIMEOUT', 5),
     ],
 
     /*
