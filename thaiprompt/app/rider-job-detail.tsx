@@ -65,6 +65,7 @@ import { useAcceptJob } from '@/components/rider/useAcceptJob';
 import { RiderSheet } from '@/components/rider/RiderSheet';
 import { JobCompleteCelebration } from '@/components/rider/JobCompleteCelebration';
 import { RiderHandoverPanel } from '@/components/rider/RiderHandoverPanel';
+import { clearHandoverCache } from '@/components/rider/handoverCache';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { takePhoto } from '@/components/rider/photo';
 import {
@@ -449,6 +450,8 @@ export default function RiderJobDetailScreen() {
       const mode = await startJobTracking(target.id);
       if (mountedRef.current) setTrackingMode(mode);
     } else if (isFinishedJobStatus(target.status)) {
+      // งานจบ/รอปลดเงินแล้ว → รูปส่งมอบที่ค้างในเครื่องไม่ใช้แล้ว ลบทิ้ง (M1)
+      clearHandoverCache(target.id).catch(() => {});
       await stopJobTrackingFor(target.id);
       if (mountedRef.current) setTrackingMode('none');
     }

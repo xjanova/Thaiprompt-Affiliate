@@ -19,7 +19,7 @@ import {
   type ApiResult,
   type Pagination,
 } from './client';
-import type { HandoverRider, PersonCard } from './handoverApi';
+import { normalizeRiderHandoverData, withHandoverClock, type RiderHandoverData } from './handoverApi';
 
 // =====================================================
 // Types
@@ -447,11 +447,12 @@ export interface RiderEarningsResponse {
   }>;
 }
 
-/** GET /rider/jobs/{id}/handover (และผลของ scan / arrival-photo / waited-photo) */
-export interface RiderHandoverResponse {
-  handover: HandoverRider;
-  buyer: PersonCard | null;
-}
+/**
+ * GET /rider/jobs/{id}/handover (และผลของ scan / arrival-photo / waited-photo)
+ * แปลงผ่าน normalizeRiderHandoverData เสมอ: รูปลูกค้าผ่าน allowlist (personPhotoUri — L5),
+ * รหัส 6 หลักของไรเดอร์ (code — §A3), เวลา server (server_now → clock_offset_ms — §A2)
+ */
+export type RiderHandoverResponse = RiderHandoverData;
 
 export interface RiderHandoverScanBody {
   /** ข้อความใน QR ของลูกค้า (สแกน) */
@@ -568,13 +569,33 @@ export const getAvailableJobs = (coords?: { latitude: number; longitude: number 
 export const getCurrentJob = (): Promise<ApiResult<CurrentJobResponse>> =>
   apiGet<CurrentJobResponse>('/rider/jobs/current');
 
-/** GET /rider/jobs/history */
+/**
+ * GET /rider/jobs/history
+ * ไรเดอร์รอบ 2 §A7: งาน awaiting_release (วางของแล้ว รอปลดเงิน) อยู่ในประวัติด้วย พร้อม job.handover.status
+ */
 export const getJobHistory = (params: {
   page?: number;
-  status?: 'completed' | 'cancelled' | 'failed';
+  status?: 'completed' | 'cancelled' | 'failed' | 'awaiting_release';
   per_page?: number;
 } = {}): Promise<ApiResult<JobHistoryResponse>> =>
   apiGet<JobHistoryResponse>('/rider/jobs/history', params);
+
+/**
+ * งานที่ "รอปลดเงิน" (awaiting_release) ของไรเดอร์ — §A7
+ * ขอแบบกรองสถานะก่อน · server ที่ยังไม่รู้จักตัวกรองนี้ (422) → ดึงประวัติหน้าแรกแล้วกรองเอง
+ */
+export const getAwaitingReleaseJobs = async (): Promise<ApiResult<RiderJobSummary[]>> => {
+  const filtered = await getJobHistory({ status: 'awaiting_release', per_page: 50 });
+  if (filtered.success) {
+    const jobs = Array.isArray(filtered.data?.jobs) ? filtered.data.jobs : [];
+    return { ...filtered, data: jobs.filter((j) => j.status === 'awaiting_release') };
+  }
+  if (filtered.status !== 422) return filtered;
+  const all = await getJobHistory({ per_page: 50 });
+  if (!all.success) return all;
+  const jobs = Array.isArray(all.data?.jobs) ? all.data.jobs : [];
+  return { ...all, data: jobs.filter((j) => j.status === 'awaiting_release') };
+};
 
 /** GET /rider/jobs/{id} — 403 NOT_YOUR_JOB, 404 JOB_NOT_FOUND */
 export const getRiderJob = (jobId: number): Promise<ApiResult<{ job: RiderJobDetail }>> =>
@@ -634,11 +655,15 @@ export const deliverRiderJob = (jobId: number, input: DeliverJobInput): Promise<
 //        TOO_FAR_FROM_DROPOFF 422 (data.distance_m) · WAIT_NOT_OVER 409 (data.wait_until)
 // =====================================================
 
-/** GET /rider/jobs/{id}/handover — QR ของไรเดอร์ (หมุนเวียน) + สถานะทางสำรอง */
+/** GET /rider/jobs/{id}/handover — QR ของไรเดอร์ (หมุนเวียน) + รหัส 6 หลัก + สถานะทางสำรอง */
 export const getRiderHandover = (jobId: number): Promise<ApiResult<RiderHandoverResponse>> =>
-  apiGet<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover`, undefined, {
-    fallbackMessage: 'โหลดข้อมูลการส่งมอบไม่สำเร็จ ลองใหม่อีกครั้งนะ',
-  });
+  withHandoverClock(
+    () =>
+      apiGet<any>(`/rider/jobs/${jobId}/handover`, undefined, {
+        fallbackMessage: 'โหลดข้อมูลการส่งมอบไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+      }),
+    normalizeRiderHandoverData
+  );
 
 /** POST /rider/jobs/{id}/handover/scan — ไรเดอร์สแกน QR ของลูกค้า หรือกรอกรหัส 6 หลัก (ต้องอยู่ใกล้จุดส่ง) */
 export const riderHandoverScan = (
@@ -648,9 +673,13 @@ export const riderHandoverScan = (
   const payload: Record<string, unknown> = { latitude: body.latitude, longitude: body.longitude };
   if (body.token) payload.token = body.token.trim().slice(0, 2048);
   if (body.code) payload.code = body.code.replace(/\D/g, '').slice(0, 6);
-  return apiPost<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover/scan`, payload, {
-    fallbackMessage: 'ยืนยันการส่งมอบไม่สำเร็จ ลองใหม่อีกครั้งนะ',
-  });
+  return withHandoverClock(
+    () =>
+      apiPost<any>(`/rider/jobs/${jobId}/handover/scan`, payload, {
+        fallbackMessage: 'ยืนยันการส่งมอบไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+      }),
+    normalizeRiderHandoverData
+  );
 };
 
 /** multipart ของรูปส่งมอบ (รูป + พิกัดตอนถ่าย) */
@@ -667,18 +696,26 @@ export const riderArrivalPhoto = (
   jobId: number,
   input: RiderHandoverPhotoInput
 ): Promise<ApiResult<RiderHandoverResponse>> =>
-  apiUpload<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover/arrival-photo`, handoverPhotoForm(jobId, 'arrival', input), {
-    fallbackMessage: 'ส่งรูปไม่สำเร็จ ลองใหม่อีกครั้งนะ',
-  });
+  withHandoverClock(
+    () =>
+      apiUpload<any>(`/rider/jobs/${jobId}/handover/arrival-photo`, handoverPhotoForm(jobId, 'arrival', input), {
+        fallbackMessage: 'ส่งรูปไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+      }),
+    normalizeRiderHandoverData
+  );
 
 /** POST /rider/jobs/{id}/handover/waited-photo (multipart) — รูปรอบ 2 หลังรอครบ → งานเป็น awaiting_release */
 export const riderWaitedPhoto = (
   jobId: number,
   input: RiderHandoverPhotoInput
 ): Promise<ApiResult<RiderHandoverResponse>> =>
-  apiUpload<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover/waited-photo`, handoverPhotoForm(jobId, 'waited', input), {
-    fallbackMessage: 'ส่งรูปไม่สำเร็จ ลองใหม่อีกครั้งนะ',
-  });
+  withHandoverClock(
+    () =>
+      apiUpload<any>(`/rider/jobs/${jobId}/handover/waited-photo`, handoverPhotoForm(jobId, 'waited', input), {
+        fallbackMessage: 'ส่งรูปไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+      }),
+    normalizeRiderHandoverData
+  );
 
 /** POST /rider/jobs/{id}/fail — หลังรับของแล้วเท่านั้น, other ต้องมี note */
 export const failRiderJob = (jobId: number, input: FailJobInput): Promise<ApiResult<{ job: RiderJobDetail }>> => {

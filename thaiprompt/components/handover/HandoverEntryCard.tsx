@@ -4,6 +4,7 @@
  * - ไรเดอร์รับของแล้ว/กำลังมาส่ง/รอปลดเงิน หรือการส่งมอบยังไม่จบ → การ์ดเด่น "รับของ / สแกนกับไรเดอร์"
  * - จบแล้ว (ได้รับของ) → การ์ดให้หัวใจไรเดอร์ + ลิงก์ดูการแบ่งเงิน
  * - งานเก่าที่ไม่ต้องสแกน (required=false) / ยังไม่ถึงขั้นรับของ / ไม่มีงานไรเดอร์ → ไม่แสดงอะไร
+ *   (§A1: server ตัดสิน required ตอนไรเดอร์รับงาน — งานที่ไรเดอร์ใช้เว็บ/แอปเก่ารับไป = ขั้นตอนเดิม ใช้ตัวติดตามแบบเดิม)
  * - ดึง GET /orders/{source}/{id}/handover เมื่อสถานะงานไรเดอร์เปลี่ยน + ทุก 20 วินาทีระหว่างหน้าเปิดและยังไม่จบ
  */
 
@@ -45,7 +46,8 @@ const POLL_MS = 20000;
 const statusLine = (data: BuyerHandoverData): string => {
   const h = data.handover;
   if (h.status === 'disputed') return 'แจ้งปัญหาแล้ว ทีมงานกำลังตรวจสอบ';
-  if (h.status === 'fallback_pending_release') return 'ไรเดอร์วางของไว้ให้แล้ว ได้รับของไหม? เปิดดูได้เลย';
+  if (h.status === 'fallback_pending_release')
+    return h.can_confirm_received ? 'ไรเดอร์วางของไว้ให้แล้ว ได้รับของแล้วกดยืนยันได้เลย' : 'ไรเดอร์วางของไว้ให้แล้ว ได้รับของไหม? เปิดดูได้เลย';
   if (h.status === 'fallback_waiting') return 'ไรเดอร์ถึงจุดส่งแล้ว กำลังรอคุณอยู่';
   if (h.rider_confirmed && !h.buyer_confirmed) return 'ไรเดอร์สแกนคุณแล้ว เหลือคุณสแกน QR ของไรเดอร์';
   if (h.buyer_confirmed && !h.rider_confirmed) return 'คุณสแกนแล้ว รอไรเดอร์สแกน QR ของคุณ';
@@ -151,7 +153,13 @@ export const HandoverEntryCard: React.FC<HandoverEntryCardProps> = ({
           </View>
         </OnHeaderProvider>
         <Button3D
-          title={h.status === 'fallback_pending_release' ? 'เปิดดู / แจ้งปัญหา' : 'เปิด QR รับของ'}
+          title={
+            h.status === 'fallback_pending_release'
+              ? h.can_confirm_received
+                ? 'ยืนยันรับของ / แจ้งปัญหา'
+                : 'เปิดดู / แจ้งปัญหา'
+              : 'เปิด QR รับของ'
+          }
           icon="qr-code"
           size="lg"
           fullWidth

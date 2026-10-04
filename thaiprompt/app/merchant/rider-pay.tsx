@@ -35,6 +35,7 @@ import { GoldSlider, RiderPayBands, pct } from '@/components/merchant/RiderPayKi
 import { useAuthStore } from '@/stores/authStore';
 import {
   getSellerRiderPay,
+  riderPayBody,
   updateSellerRiderPay,
   type RiderPay,
   type RiderPayBand,
@@ -80,6 +81,9 @@ const toPreview = (s: RiderPaySettings): RiderPayPreview => ({
 });
 
 const hourLabel = (h: number): string => `${String(Math.floor(h)).padStart(2, '0')}:00`;
+
+/** โบนัสเป็นข้อความ: จำนวนเต็มแสดงตรงๆ · มีเศษสตางค์แสดง 2 ตำแหน่ง (ค่าจาก server ไม่ถูกปัดทิ้ง — M3) */
+const bonusText = (value: number): string => (Number.isInteger(value) ? String(value) : value.toFixed(2));
 
 /** ช่วงที่โบนัสช่วยมากที่สุด (ตัวเลขจาก preview ของ server) */
 const bestLift = (bands: RiderPayBand[]): { band: RiderPayBand; from: number; to: number } | null => {
@@ -251,12 +255,23 @@ export default function RiderPayScreen() {
     setSaving(true);
     setFormError(null);
     try {
+      const sent = riderPayBody(draft);
       const result = await api.put(draft);
       if (!mountedRef.current) return;
       if (result.success) {
         resultHaptic('success');
         applySaved(result.data);
-        flash(result.message || 'บันทึกแล้ว มีผลกับออเดอร์ใหม่ทันที');
+        // server ปรับค่าที่บันทึก (เช่น เพดาน) → บอกให้รู้ ไม่เปลี่ยนเงียบๆ (M3)
+        const savedSettings = result.data.settings;
+        if (!sameSettings(sent, savedSettings)) {
+          flash(
+            `บันทึกแล้ว ระบบปรับเป็นโบนัสปกติ ${bonusText(savedSettings.rider_bonus)} บาท · ช่วงเร่งด่วน ${bonusText(savedSettings.rider_bonus_peak)} บาท${
+              savedSettings.rider_free_delivery ? ' · ส่งฟรี' : ''
+            }`
+          );
+        } else {
+          flash(result.message || 'บันทึกแล้ว มีผลกับออเดอร์ใหม่ทันที');
+        }
         return;
       }
       resultHaptic('error');
@@ -336,7 +351,7 @@ export default function RiderPayScreen() {
           <View style={[styles.reason, { backgroundColor: colors.inset, borderColor: colors.border }]}>
             <ReasonLine
               icon="target"
-              text={`แนะนำ: โบนัสปกติ ${advice.suggested_bonus} บาท · ช่วงเร่งด่วน ${advice.suggested_bonus_peak} บาท${
+              text={`แนะนำ: โบนัสปกติ ${bonusText(advice.suggested_bonus)} บาท · ช่วงเร่งด่วน ${bonusText(advice.suggested_bonus_peak)} บาท${
                 advice.suggest_free_delivery ? ' · เปิดส่งฟรี' : ''
               }`}
             />
@@ -401,7 +416,7 @@ export default function RiderPayScreen() {
           <View style={styles.bonusHead}>
             <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>โบนัสที่ร้านเติมให้ไรเดอร์</Text>
             <Text style={[typography.money, { color: colors.goldDeep }]}>
-              {draft.rider_bonus}
+              {bonusText(draft.rider_bonus)}
               <Text style={[typography.caption, { color: colors.textMuted }]}> บาท/ออเดอร์</Text>
             </Text>
           </View>
@@ -420,8 +435,8 @@ export default function RiderPayScreen() {
               {draft.rider_bonus <= 0
                 ? 'ยังไม่เติมโบนัส ไรเดอร์ได้ค่าส่งตามสูตรปกติ'
                 : lift
-                  ? `เติม ${draft.rider_bonus} บาท งานระยะ ${lift.band.label} มีโอกาสมีคนรับเพิ่มจาก ${pct(lift.from)} เป็น `
-                  : `ไรเดอร์ได้เพิ่ม ${draft.rider_bonus} บาทต่อออเดอร์ (หักจากรายรับของร้าน)`}
+                  ? `เติม ${bonusText(draft.rider_bonus)} บาท งานระยะ ${lift.band.label} มีโอกาสมีคนรับเพิ่มจาก ${pct(lift.from)} เป็น `
+                  : `ไรเดอร์ได้เพิ่ม ${bonusText(draft.rider_bonus)} บาทต่อออเดอร์ (หักจากรายรับของร้าน)`}
               {draft.rider_bonus > 0 && !!lift && (
                 <Text style={[typography.bodyStrong, { color: colors.success }]}>{pct(lift.to)}</Text>
               )}
@@ -443,7 +458,7 @@ export default function RiderPayScreen() {
                   {peakHours ? `ใช้ช่วง ${peakHours}` : 'ใช้ช่วงคนสั่งเยอะ ไรเดอร์ว่างน้อย'}
                 </Text>
               </View>
-              <Text style={[typography.bodyStrong, { color: colors.goldDeep }]}>{draft.rider_bonus_peak} บาท</Text>
+              <Text style={[typography.bodyStrong, { color: colors.goldDeep }]}>{bonusText(draft.rider_bonus_peak)} บาท</Text>
             </View>
             <GoldSlider
               value={draft.rider_bonus_peak}

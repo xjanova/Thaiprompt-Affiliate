@@ -29,6 +29,7 @@ import {
   type ShopDraftErrors,
 } from '@/components/merchant/ShopInfoForm';
 import { SkeletonCard } from '@/components/merchant/SkeletonBlock';
+import { isProfilePhotoRequired, promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 const BENEFITS: Array<{ icon: IconName; title: string; text: string }> = [
@@ -142,6 +143,12 @@ export default function TaladsodRegisterSellerScreen() {
     }
 
     resultHaptic('error');
+    // ยังไม่มีรูปโปรไฟล์ถ่ายสด → พาไปถ่ายรูป ข้อมูลที่กรอกยังอยู่ กลับมากดสมัครต่อได้ (U8)
+    if (isProfilePhotoRequired(res)) {
+      setFormError(res.message);
+      promptProfilePhoto('seller');
+      return;
+    }
     const serverErrors = shopErrorsFromServer(res.errors);
     if (Object.keys(serverErrors).length > 0) setErrors(serverErrors);
     if (res.errors?.agree_terms?.[0]) setAgreeError(res.errors.agree_terms[0]);

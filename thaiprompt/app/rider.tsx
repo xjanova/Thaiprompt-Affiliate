@@ -52,6 +52,7 @@ import {
 } from '@/services/location';
 import { useRiderPermissionFlow } from '@/components/rider/useRiderPermissionFlow';
 import { useRiderAvailability } from '@/components/rider/useRiderAvailability';
+import { purgeHandoverCache } from '@/components/rider/handoverCache';
 import { RiderRegisterForm } from '@/components/rider/RiderRegisterForm';
 
 /** ส่งตำแหน่งทุกกี่มิลลิวินาทีตอนออนไลน์และเปิดหน้านี้อยู่ (กัน server ปิดรับงานอัตโนมัติ) */
@@ -200,6 +201,9 @@ export default function RiderScreen() {
         reconcileJobTracking(rider?.active_job_id ?? null)
           .then((m) => mountedRef.current && setTrackingMode(m))
           .catch(() => {});
+
+        // รูปส่งมอบที่ค้างในเครื่อง: เก็บไว้เฉพาะงานที่ยังส่งอยู่ งานอื่นลบทิ้ง (FIXES M1)
+        if (rider) purgeHandoverCache(rider.active_job_id ?? null).catch(() => {});
 
         // ผู้ใช้ไปเปิดสิทธิ์ตำแหน่งในตั้งค่าเครื่องเอง → แจ้ง server ให้ตรงกัน (RIDER-APP-13)
         if (rider && !rider.permissions?.gps) {

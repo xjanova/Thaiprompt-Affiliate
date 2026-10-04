@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from '@jest/globals';
-import { routeForNotification } from '../notificationRouting';
+import { riderFlowPath, routeForNotification } from '../notificationRouting';
 
 describe('routeForNotification — ร้านตลาดสด', () => {
   it('ออเดอร์ใหม่ของร้าน → หน้าออเดอร์ร้านพร้อมไฮไลต์', () => {
@@ -131,9 +131,75 @@ describe('routeForNotification — ไรเดอร์รอบ 2 (ส่ง�
     expect(routeForNotification({ type: 'rider_job_offer', job_id: 7 })).toBe('/rider-jobs');
   });
 
+  it('ทุก push ปลายทางอยู่ใน allowlist จริง', () => {
+    for (const type of ['delivery_update', 'handover_arrived', 'handover_completed']) {
+      for (const role of ['buyer', 'rider', 'seller', '']) {
+        const path = routeForNotification({ type, role, source: 'shop', order_id: 15, job_id: 7 });
+        expect(path.startsWith('/')).toBe(true);
+        expect(path.startsWith('//')).toBe(false);
+      }
+    }
+  });
+
   it('หน้าใหม่อยู่ใน allowlist (data.url)', () => {
     expect(routeForNotification({ url: '/riders/nearby' })).toBe('/riders/nearby');
     expect(routeForNotification({ url: '/profile-photo' })).toBe('/profile-photo');
     expect(routeForNotification({ url: '/handover/shop/15' })).toBe('/handover/shop/15');
+  });
+});
+
+describe('routeForNotification — ลำดับ role → screen → เดา (FIXES §A5 / L2)', () => {
+  it('role มาก่อน screen: ไรเดอร์ได้ push ที่ screen=order → ยังไปหน้างานของไรเดอร์', () => {
+    expect(routeForNotification({ type: 'handover_completed', role: 'rider', screen: 'order', source: 'shop', order_id: 15, job_id: 7 })).toBe(
+      '/rider-job-detail?id=7'
+    );
+  });
+
+  it('delivery_update ตาม role ของผู้รับแต่ละคน', () => {
+    const base = { type: 'delivery_update', event: 'picked_up', source_type: 'Order', source_id: 15, job_id: 7 };
+    expect(routeForNotification({ ...base, role: 'buyer' })).toBe('/order/15');
+    expect(routeForNotification({ ...base, role: 'seller' })).toBe('/merchant/order/15');
+    expect(routeForNotification({ ...base, role: 'rider' })).toBe('/rider-job-detail?id=7');
+    const fm = { type: 'delivery_update', event: 'accepted', source: 'fresh-market', order_id: 9, job_id: 4 };
+    expect(routeForNotification({ ...fm, role: 'buyer' })).toBe('/taladsod/order/9');
+    expect(routeForNotification({ ...fm, role: 'seller' })).toBe('/merchant/taladsod/orders?focus=9');
+  });
+
+  it('ผู้ซื้อได้ handover_arrived → หน้ารับของ · ร้าน/ไรเดอร์ไม่ไปหน้ารับของของผู้ซื้อ', () => {
+    const base = { type: 'handover_arrived', source: 'fresh-market', order_id: 9, job_id: 4 };
+    expect(routeForNotification({ ...base, role: 'buyer' })).toBe('/handover/fresh-market/9');
+    expect(routeForNotification({ ...base, role: 'seller' })).toBe('/merchant/taladsod/orders?focus=9');
+    expect(routeForNotification({ ...base, role: 'rider' })).toBe('/rider-job-detail?id=4');
+  });
+
+  it('role=admin ไม่พาไปหน้าผู้ซื้อแม้ screen จะบอก order', () => {
+    expect(routeForNotification({ type: 'delivery_update', role: 'admin', screen: 'order', source: 'shop', order_id: 15 })).toBe(
+      '/notifications'
+    );
+  });
+
+  it('ไม่มี role → ใช้ data.screen', () => {
+    const base = { source: 'shop', order_id: 15, job_id: 7 };
+    expect(routeForNotification({ ...base, type: 'handover_completed', screen: 'rider-job-detail' })).toBe('/rider-job-detail?id=7');
+    expect(routeForNotification({ ...base, type: 'handover_completed', screen: 'merchant-order' })).toBe('/merchant/order/15');
+    expect(routeForNotification({ ...base, type: 'handover_resolved', screen: 'order' })).toBe('/order/15');
+    expect(routeForNotification({ ...base, type: 'handover_auto_release_scheduled', screen: 'order-handover' })).toBe('/handover/shop/15');
+    expect(
+      routeForNotification({ type: 'handover_completed', screen: 'merchant-order', source: 'fresh-market', order_id: 9 })
+    ).toBe('/merchant/taladsod/orders?focus=9');
+  });
+
+  it('screen ที่ไม่รู้จัก → เดาแบบเดิม', () => {
+    expect(routeForNotification({ type: 'handover_arrived', screen: 'something-new', source: 'shop', order_id: 15 })).toBe('/handover/shop/15');
+  });
+
+  it('order-handover แต่ไม่รู้แหล่งออเดอร์ → หน้าออเดอร์ (ไม่สร้าง path ผิด)', () => {
+    expect(routeForNotification({ type: 'handover_arrived', screen: 'order-handover', order_id: 15 })).toBe('/order/15');
+  });
+
+  it('riderFlowPath คืน null ให้แอดมิน (ใช้ data.url ที่ปลอดภัยแทน)', () => {
+    expect(riderFlowPath('handover_disputed', { source: 'shop', order_id: 15 }, 'admin')).toBeNull();
+    expect(routeForNotification({ type: 'handover_disputed', role: 'admin', url: '/support' })).toBe('/support');
+    expect(routeForNotification({ type: 'handover_disputed', role: 'admin', url: 'https://evil.example' })).toBe('/notifications');
   });
 });

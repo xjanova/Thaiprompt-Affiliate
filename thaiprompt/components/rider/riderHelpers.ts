@@ -6,7 +6,7 @@
  */
 
 import { Alert, Linking, Platform } from 'react-native';
-import { num } from '@/services/api/client';
+import { THAI_ERROR_MESSAGES, isThaiText, num } from '@/services/api/client';
 import type {
   RiderFailReason,
   RiderJobPoint,
@@ -182,7 +182,14 @@ export const handoverErrorText = (
     case 'HANDOVER_TOKEN_INVALID':
       return { title: 'QR นี้ใช้ไม่ได้', message: 'ให้ลูกค้าเปิด QR ส่งมอบของออเดอร์นี้ในแอป แล้วสแกนใหม่ หรือกรอกรหัส 6 หลักแทน' };
     case 'HANDOVER_NOT_READY':
-      return { title: 'ยังส่งมอบไม่ได้', message: 'รับของจากร้านและกดเริ่มไปส่งก่อน แล้วค่อยส่งมอบให้ลูกค้านะ' };
+      // ใช้ข้อความไทยของ server ก่อน (บอกเหตุผลจริง เช่น ลูกค้าแจ้งปัญหาแล้ว) — ข้อความกลางของ client เขียนสำหรับผู้ซื้อ จึงไม่ใช้ (L4)
+      return {
+        title: 'ยังส่งมอบไม่ได้',
+        message:
+          isThaiText(result.message) && result.message !== THAI_ERROR_MESSAGES.HANDOVER_NOT_READY
+            ? result.message
+            : 'รับของจากร้านและกดเริ่มไปส่งก่อน แล้วค่อยส่งมอบให้ลูกค้านะ',
+      };
     case 'HANDOVER_FINAL':
       return { title: 'ส่งมอบเรียบร้อยแล้ว', message: 'งานนี้ปิดการส่งมอบไปแล้ว ระบบอัปเดตสถานะให้แล้ว' };
     case 'HANDOVER_REQUIRED':

@@ -2,6 +2,8 @@
  * RiderHeartCard — "ประทับใจ{ไรเดอร์}ไหม?" + ปุ่มให้หัวใจ + ความคืบหน้าสู่การล็อกเรียก (ตามแบบ Complete.png)
  *
  * - POST /orders/{source}/{id}/heart (1 ดวงต่อออเดอร์) — กดรัว/กดซ้ำ: ปุ่มล็อกระหว่างรอ + server ตอบ already
+ * - จำว่าออเดอร์นี้ให้หัวใจแล้ว (heartMemory) → กลับมาเปิดหน้าใหม่ไม่ชวนให้ซ้ำ (M6)
+ *   server ตอบ already = ถือว่าให้แล้ว (ไม่นับเพิ่ม) แสดงสถานะ "ให้หัวใจแล้ว"
  * - สิทธิ์ล็อกเรียก (can_lock) ใช้ค่าจาก server เสมอ · เกณฑ์ขั้นต่ำใช้แสดงข้อความเท่านั้น
  * - HEART_NOT_ALLOWED (เช่น งานยังไม่จบ/ไม่ใช่ผู้ซื้อ) → ซ่อนปุ่ม แสดงข้อความไทย
  */
@@ -14,6 +16,7 @@ import { PersonAvatar } from '@/components/people/PersonAvatar';
 import type { HandoverSource, PersonCard } from '@/services/api/handoverApi';
 import { DEFAULT_LOCK_MIN_HEARTS, giveRiderHeart, heartsToLock } from '@/services/api/riderSocialApi';
 import { useTheme, spacing, typography } from '@/theme';
+import { peekHeartGiven, readHeartGiven, rememberHeartGiven } from './heartMemory';
 
 export interface RiderHeartCardProps {
   source: HandoverSource;
@@ -35,9 +38,16 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
   style,
 }) => {
   const { colors } = useTheme();
-  const [heartsFromMe, setHeartsFromMe] = useState<number>(rider.hearts_from_me ?? 0);
-  const [canLock, setCanLock] = useState<boolean>(rider.can_lock);
-  const [given, setGiven] = useState(false);
+  /** จำได้แล้ว (หน่วยความจำ) ว่าออเดอร์นี้ให้หัวใจไปแล้ว → ไม่ชวนซ้ำตั้งแต่เฟรมแรก */
+  const remembered = peekHeartGiven(source, orderId);
+  const [heartsFromMe, setHeartsFromMe] = useState<number>(
+    Math.max(rider.hearts_from_me ?? 0, remembered?.hearts_from_me ?? 0)
+  );
+  const [canLock, setCanLock] = useState<boolean>(rider.can_lock || !!remembered?.can_lock);
+  const [given, setGiven] = useState(!!remembered);
+  /** given มาจากการกดในหน้านี้ (ตัวเลขจากคำตอบ server สดกว่า PersonCard) */
+  const [justGiven, setJustGiven] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
   const [transientError, setTransientError] = useState<string | null>(null);
   const mountedRef = useRef(true);
@@ -50,12 +60,24 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
     };
   }, []);
 
-  // ข้อมูลไรเดอร์จาก server อัปเดต (เช่น poll) → ใช้ค่าล่าสุด เว้นแต่เพิ่งกดให้หัวใจไป
+  // จำจากเครื่อง (เปิดแอปใหม่) — ให้หัวใจออเดอร์นี้ไปแล้ว → แสดง "ให้หัวใจแล้ว"
   useEffect(() => {
-    if (given) return;
-    setHeartsFromMe(rider.hearts_from_me ?? 0);
-    setCanLock(rider.can_lock);
-  }, [rider.hearts_from_me, rider.can_lock, given]);
+    let alive = true;
+    readHeartGiven(source, orderId).then((entry) => {
+      if (!alive || !mountedRef.current || !entry) return;
+      setGiven(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [source, orderId]);
+
+  // ข้อมูลไรเดอร์จาก server อัปเดต (เช่น poll) → ใช้ค่าล่าสุด เว้นแต่เพิ่งกดให้หัวใจไปในหน้านี้
+  useEffect(() => {
+    if (justGiven) return;
+    setHeartsFromMe((prev) => (given ? Math.max(prev, rider.hearts_from_me ?? 0) : rider.hearts_from_me ?? 0));
+    setCanLock((prev) => (given ? prev || rider.can_lock : rider.can_lock));
+  }, [rider.hearts_from_me, rider.can_lock, given, justGiven]);
 
   const name = shortName(rider.display_name);
   const remaining = heartsToLock(heartsFromMe, lockMinHearts);
@@ -63,15 +85,20 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
   const giveHeart = async () => {
     if (busyRef.current || given) return;
     busyRef.current = true;
+    setBusy(true);
     const res = await giveRiderHeart(source, orderId);
     busyRef.current = false;
     if (!mountedRef.current) return;
+    setBusy(false);
     if (res.success) {
-      resultHaptic('success');
+      // already = ให้ไปแล้วก่อนหน้า (ไม่นับเพิ่ม) — แสดงเป็น "ให้หัวใจแล้ว" เหมือนกัน ไม่ชวนกดอีก
+      resultHaptic(res.data.already ? 'warning' : 'success');
       setTransientError(null);
       setGiven(true);
+      setJustGiven(true);
       setHeartsFromMe(res.data.hearts_from_me);
       setCanLock(res.data.can_lock);
+      rememberHeartGiven(source, orderId, { hearts_from_me: res.data.hearts_from_me, can_lock: res.data.can_lock }).catch(() => {});
       return;
     }
     resultHaptic('error');
@@ -106,7 +133,8 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
           variant="danger"
           size="lg"
           fullWidth
-          disabled={given}
+          disabled={given || busy}
+          loading={busy}
           onPress={giveHeart}
           accessibilityLabel={given ? `ให้หัวใจ ${rider.display_name} แล้ว` : `ให้หัวใจ ${rider.display_name}`}
           style={styles.gapTop}

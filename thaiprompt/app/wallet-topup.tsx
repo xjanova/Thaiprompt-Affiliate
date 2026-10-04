@@ -61,7 +61,6 @@ import {
   type TileTone,
 } from '@/components/wallet/WalletKit';
 import { useTheme, LIGHT_THEME, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
-import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 // จำนวนเงินด่วน
 const QUICK_AMOUNTS = [100, 300, 500, 1000, 2000, 5000, 10000];
@@ -206,8 +205,7 @@ const BankInfoLine: React.FC<{ label: string; value: string; money?: boolean; on
 };
 
 export default function WalletTopupScreen() {
-  // ข้อมูลส่วนตัว/การเงิน — กันแคปหน้าจอและอัดหน้าจอ (ไรเดอร์รอบ 2)
-  useSensitiveScreen('wallet-topup');
+  // ไม่กันแคปหน้าจอ: ผู้ใช้ต้องแคป QR พร้อมเพย์ไปสแกนในแอปธนาคารได้ (FIXES L1 — เดิมกันไว้แล้วจ่ายไม่ได้)
   const router = useRouter();
   const { colors, gradients, isDark } = useTheme();
   const { isAuthenticated } = useAuthStore();

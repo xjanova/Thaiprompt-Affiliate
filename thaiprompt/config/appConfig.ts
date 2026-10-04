@@ -30,6 +30,16 @@ export const APP_INFO = {
   ACCOUNT_DELETION_URL: 'https://main.thaiprompt.online/account/delete',
 };
 
+/**
+ * เลขชุดฟีเจอร์ของโค้ดแอปนี้ — ส่งเป็น header X-App-Build ทุก request
+ * server ใช้ตัดสินว่าแอปรองรับฟีเจอร์ใหม่หรือยัง (≥ 43 = ส่งมอบด้วย QR / บังคับรูปโปรไฟล์ถ่ายสด)
+ *
+ * คำเตือน: ตั้งในโค้ดเท่านั้น ห้ามอ่านจาก native versionCode (expo-application nativeBuildVersion)
+ *    เพราะ EAS appVersionSource: remote อาจออกเลข versionCode ไม่ตรงกับชุดฟีเจอร์ในโค้ด
+ *    เพิ่มเลขนี้เฉพาะเมื่อโค้ดรองรับสัญญาฟีเจอร์ชุดใหม่ของ server แล้วจริง
+ */
+export const APP_FEATURE_BUILD = 43;
+
 // =====================================================
 // Feature Flags (Local)
 // =====================================================

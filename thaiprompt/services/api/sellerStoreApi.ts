@@ -349,7 +349,12 @@ const rate = (value: unknown): number | null => {
   return Math.max(0, Math.min(1, r));
 };
 
-const bonusValue = (value: unknown): number => Math.max(0, Math.min(RIDER_BONUS_MAX, Math.round(num(value))));
+/**
+ * โบนัสเป็นบาท ทศนิยม 2 ตำแหน่ง (0–100) — ห้ามปัดเป็นจำนวนเต็ม (FIXES M3)
+ * เดิมปัด 12.50 → 13 ทำให้กดบันทึกค่าอื่นแล้วโบนัสเดิมถูกเขียนทับเงียบๆ
+ */
+export const bonusValue = (value: unknown): number =>
+  Math.max(0, Math.min(RIDER_BONUS_MAX, Math.round(num(value) * 100) / 100));
 
 /** แปลงข้อมูล rider-pay จาก server ให้ชนิดถูกต้องเสมอ (ค่าแปลก/หาย = ค่าปลอดภัย) */
 export const normalizeRiderPay = (raw: any): RiderPay => {

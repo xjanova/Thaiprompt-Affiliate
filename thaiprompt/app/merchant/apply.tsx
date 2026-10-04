@@ -27,6 +27,7 @@ import { BrandArt, Button3D, Card3D, Chip, EmptyState, Icon, Pill, Screen, resul
 import { Field, formatThaiDateTime } from '@/components/shop';
 import { IconTile, NoticeBanner } from '@/components/merchant';
 import { ErrorNote, FormCard, FormSkeleton } from '@/components/seller';
+import { isProfilePhotoRequired, promptProfilePhoto } from '@/components/people/profilePhotoPrompt';
 import { useTheme, radii, spacing, typography } from '@/theme';
 
 type FormKey =
@@ -211,6 +212,12 @@ export default function SellerApplyScreen() {
     }
 
     resultHaptic('error');
+    // ยังไม่มีรูปโปรไฟล์ถ่ายสด → พาไปถ่ายรูป ข้อมูลที่กรอกยังอยู่ กลับมากดส่งต่อได้ (U8)
+    if (isProfilePhotoRequired(res)) {
+      setSubmitError(res.message);
+      promptProfilePhoto('seller');
+      return;
+    }
     // สถานะเปลี่ยนไปแล้ว (เช่น ยื่นจากเว็บไปแล้ว) → แสดงสถานะล่าสุด
     if (res.code === 'APPLICATION_NOT_ALLOWED' && res.data && typeof res.data === 'object' && 'state' in res.data) {
       setDirty(false);

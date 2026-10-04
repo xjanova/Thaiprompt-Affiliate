@@ -5,7 +5,9 @@
  * - ถ่ายแล้วดูตัวอย่างก่อน → "ใช้รูปนี้" อัปโหลด → แสดงรูปพร้อมลายน้ำที่คนอื่นจะเห็น (photo_url จาก server)
  * - ไฟล์รูปชั่วคราวในเครื่องถูกลบทิ้งหลังอัปโหลด/ถ่ายใหม่/ออกจากหน้า
  * - ?gate=1 = บังคับหลังล็อกอิน (ไม่มีปุ่มย้อนกลับ ปุ่มย้อนกลับของเครื่องถูกกันไว้จนกว่าจะมีรูป) แต่ออกจากระบบได้เสมอ
- * - ?from=checkout = มาจากหน้าชำระเงิน (PROFILE_PHOTO_REQUIRED) → ถ่ายเสร็จแล้วกลับไปสั่งต่อ
+ *   ถ่ายเสร็จ → กลับไปหน้าที่ผู้ใช้อยู่ก่อนถูกพามา (router.back) ไม่เด้งไปหน้าแรก (U7) · ไม่มีหน้าก่อนหน้า = หน้าแรก
+ * - ?from=checkout | rider | seller = มาจากการกระทำที่ server ตอบ PROFILE_PHOTO_REQUIRED (U8)
+ *   → ถ่ายเสร็จแล้วกลับไปทำต่อ (สั่งซื้อ / เริ่มรับงาน / ส่งคำขอเปิดร้าน)
  * - กันแคปหน้าจอระหว่างเปิดหน้านี้
  */
 
@@ -51,6 +53,14 @@ export default function ProfilePhotoScreen() {
   const params = useLocalSearchParams<{ gate?: string; from?: string }>();
   const gate = params.gate === '1';
   const fromCheckout = params.from === 'checkout';
+  /** ข้อความปุ่มกลับไปทำต่อ ตามหน้าที่พามา */
+  const returnLabel = fromCheckout
+    ? 'กลับไปสั่งต่อ'
+    : params.from === 'rider'
+      ? 'กลับไปเริ่มรับงาน'
+      : params.from === 'seller'
+        ? 'กลับไปส่งคำขอ'
+        : 'เสร็จแล้ว';
   useSensitiveScreen('profile-photo');
 
   const { colors, gradients } = useTheme();
@@ -170,10 +180,7 @@ export default function ProfilePhotoScreen() {
 
   const finish = () => {
     leavingRef.current = true;
-    if (gate) {
-      router.replace('/(tabs)' as never);
-      return;
-    }
+    // โหมดบังคับก็กลับไปหน้าเดิมที่ผู้ใช้อยู่ (ตัวบังคับ push หน้านี้ทับไว้) — ไม่มีหน้าก่อนหน้าค่อยไปหน้าแรก (U7)
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)' as never);
   };
@@ -271,7 +278,7 @@ export default function ProfilePhotoScreen() {
         <View style={styles.row}>
           <Button3D title="ถ่ายใหม่" icon="camera" variant="secondary" size="lg" onPress={openCamera} style={styles.flex} />
           <Button3D
-            title={gate ? 'เริ่มใช้งาน' : fromCheckout ? 'กลับไปสั่งต่อ' : 'เสร็จแล้ว'}
+            title={gate ? 'เริ่มใช้งาน' : returnLabel}
             icon="check-circle"
             size="lg"
             onPress={finish}
