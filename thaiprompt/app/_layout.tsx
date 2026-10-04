@@ -28,6 +28,7 @@ import { isRestrictedNotification } from '@/utils/storePolicy';
 import { router } from 'expo-router';
 import { FONT_ASSETS, setFontsEnabled, useTheme } from '@/theme';
 import { KycGateHost } from '@/components/ekyc/KycGateHost';
+import { AppUpdateHost } from '@/components/appUpdate/AppUpdateHost';
 import { useEkycStore } from '@/stores/ekycStore';
 
 // ซ่อน native splash screen ทันทีเพื่อให้เห็น custom loading screen
@@ -492,9 +493,14 @@ export default function RootLayout() {
 
         {/* ยืนยันตัวตนด้วย AI (eKYC) — stack ซ้อนของตัวเอง (app/ekyc/_layout.tsx) */}
         <Stack.Screen name="ekyc" options={{ headerShown: false }} />
+
+        {/* อัปเดตแอป (Android) — ดาวน์โหลด + ตรวจไฟล์ + ติดตั้งจากเซิร์ฟเวอร์ของเราเอง */}
+        <Stack.Screen name="app-update" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
       </Stack>
       {/* API ตอบ KYC_REQUIRED (สั่งซื้อ/ไรเดอร์ออนไลน์/เปิดร้าน) → bottom sheet "ยืนยันตัวตนก่อน…" */}
       <KycGateHost />
+      {/* ตรวจเวอร์ชันใหม่เบื้องหลัง → bottom sheet "มีเวอร์ชันใหม่" / หน้าบังคับอัปเดต (Android เท่านั้น) */}
+      <AppUpdateHost />
     </View>
   );
 }

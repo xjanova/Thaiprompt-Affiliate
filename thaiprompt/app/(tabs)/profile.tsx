@@ -54,6 +54,7 @@ import {
 import { AvatarRing, IconTile, MenuGroup, MenuRow, ThemedSwitch } from '@/components/profile';
 import { useTheme, radii, shadowStyle, spacing, typography, withAlpha } from '@/theme';
 import { KANOK_CREST_CLEARANCE } from '@/components/ui/KanokTabBar';
+import { AppUpdateBadge, useAppUpdateSummary } from '@/components/appUpdate/AppUpdateBadge';
 
 /** ความโค้งของแผ่นเนื้อหาใต้หัวน้ำเงิน (เท่ากับ <Screen>) */
 const SHEET_RADIUS = 26;
@@ -173,6 +174,8 @@ export default function ProfileScreen() {
   const setThemeMode = useAppStore((state) => state.setThemeMode);
   const { colors, gradients, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  // เวอร์ชันแอป: Android แตะแล้วไปหน้าอัปเดต · มีอัปเดต = ป้ายทอง "มีอัปเดต"
+  const appUpdate = useAppUpdateSummary();
 
   const [refreshing, setRefreshing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -693,17 +696,33 @@ export default function ProfileScreen() {
             <MenuRow icon="file-text" title="เงื่อนไขการใช้งาน" onPress={() => router.push('/terms')} />
             <MenuRow icon="handshake" title="ข้อตกลงการใช้งาน" onPress={() => router.push('/agreement')} />
             <MenuRow icon="lock-key" title="นโยบายความเป็นส่วนตัว" onPress={() => router.push('/privacy')} />
-            <MenuRow
-              icon="info"
-              title="เกี่ยวกับแอพ"
-              value={`v${APP_INFO.VERSION}`}
-              onPress={() =>
-                Alert.alert(
-                  APP_INFO.NAME,
-                  `Version ${APP_INFO.VERSION} (Build ${APP_INFO.BUILD_NUMBER})\n\n© ${new Date().getFullYear()} Thaiprompt`
-                )
-              }
-            />
+            {appUpdate.supported ? (
+              <MenuRow
+                icon="info"
+                tone={appUpdate.hasUpdate ? 'gold' : 'navy'}
+                title="เกี่ยวกับแอพ"
+                subtitle={
+                  appUpdate.hasUpdate
+                    ? `v${appUpdate.installedVersion} · มีเวอร์ชัน ${appUpdate.latestVersion} แตะเพื่ออัปเดต`
+                    : appUpdate.label
+                }
+                right={appUpdate.hasUpdate ? <AppUpdateBadge /> : undefined}
+                accessibilityHint="เปิดหน้าอัปเดตแอป"
+                onPress={appUpdate.open}
+              />
+            ) : (
+              <MenuRow
+                icon="info"
+                title="เกี่ยวกับแอพ"
+                value={`v${APP_INFO.VERSION}`}
+                onPress={() =>
+                  Alert.alert(
+                    APP_INFO.NAME,
+                    `Version ${APP_INFO.VERSION} (Build ${APP_INFO.BUILD_NUMBER})\n\n© ${new Date().getFullYear()} Thaiprompt`
+                  )
+                }
+              />
+            )}
           </MenuGroup>
 
           {/* ออกจากระบบ — ปุ่มขอบแดง (ถามยืนยันก่อนเสมอ) */}
