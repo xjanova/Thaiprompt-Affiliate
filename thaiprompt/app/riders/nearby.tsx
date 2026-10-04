@@ -30,6 +30,7 @@ import {
   type LiveMapMarker,
 } from '@/components/ui';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
+import { VerifiedBadge } from '@/components/people/VerifiedBadge';
 import { useBuyerLocation, useFocusedInterval, useMountedRef, getCachedBuyerCoords } from '@/components/taladsod';
 import { useAuthStore } from '@/stores/authStore';
 import { isPreferredChoiceValid, usePreferredRiderStore } from '@/stores/preferredRiderStore';
@@ -182,6 +183,7 @@ export default function NearbyRidersScreen() {
       hearts_total: rider.hearts_total,
       hearts_from_me: rider.hearts_from_me,
       can_lock: rider.can_lock,
+      verified: rider.verified,
     });
     resultHaptic('success');
     if (fromCheckout) {
@@ -263,6 +265,7 @@ export default function NearbyRidersScreen() {
                 <Text numberOfLines={1} style={[typography.h3, styles.flexShrink, { color: colors.textStrong }]}>
                   {f.display_name}
                 </Text>
+                {f.verified && <VerifiedBadge size={16} />}
                 <Pill label={isChosen ? 'เลือกแล้ว' : 'ล็อกได้'} tone="gold" icon="lock" />
               </View>
               <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
@@ -305,9 +308,11 @@ export default function NearbyRidersScreen() {
           <PersonAvatar uri={f.photo_url} name={f.display_name} size={54} online={online} />
           <View style={styles.flex}>
             <View style={styles.nameRow}>
-              <Text numberOfLines={1} style={[typography.h3, styles.flex, { color: colors.textStrong }]}>
+              <Text numberOfLines={1} style={[typography.h3, styles.flexShrink, { color: colors.textStrong }]}>
                 {f.display_name}
               </Text>
+              {f.verified && <VerifiedBadge size={16} />}
+              <View style={styles.flex} />
               {!!distance && <Text style={[typography.caption, { color: colors.textMuted }]}>{distance}</Text>}
             </View>
             <View style={styles.heartLine}>
@@ -347,9 +352,12 @@ export default function NearbyRidersScreen() {
       >
         <PersonAvatar uri={r.photo_url} name={r.display_name} size={46} online={r.status === 'available'} />
         <View style={styles.flex}>
-          <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
-            {r.display_name}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text numberOfLines={1} style={[typography.bodyStrong, styles.flexShrink, { color: colors.textStrong }]}>
+              {r.display_name}
+            </Text>
+            {r.verified && <VerifiedBadge size={15} />}
+          </View>
           <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
             {[kmText(r.distance_km), isNew ? 'ไรเดอร์ใหม่' : vehicle, r.status === 'busy' ? 'กำลังส่งงาน' : null].filter(Boolean).join(' · ')}
           </Text>

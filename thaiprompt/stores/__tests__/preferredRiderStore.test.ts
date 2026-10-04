@@ -17,6 +17,7 @@ const rider = {
   hearts_total: 20,
   hearts_from_me: 12,
   can_lock: true,
+  verified: false,
 };
 
 const NOW = 1_800_000_000_000;

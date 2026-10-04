@@ -27,7 +27,8 @@ import { routeForNotification } from '@/utils/notificationRouting';
 import { isRestrictedNotification } from '@/utils/storePolicy';
 import { router } from 'expo-router';
 import { FONT_ASSETS, setFontsEnabled, useTheme } from '@/theme';
-import { ProfilePhotoGate } from '@/components/people/ProfilePhotoGate';
+import { KycGateHost } from '@/components/ekyc/KycGateHost';
+import { useEkycStore } from '@/stores/ekycStore';
 
 // ซ่อน native splash screen ทันทีเพื่อให้เห็น custom loading screen
 SplashScreen.hideAsync().catch(() => {});
@@ -412,6 +413,8 @@ export default function RootLayout() {
 
     if (!isAuthenticated && wasAuthenticated === true) {
       stopJobTracking().catch(() => {});
+      // ข้อมูลยืนยันตัวตน (รูปบัตร/ใบหน้าชั่วคราว + สถานะ) ห้ามค้างข้ามบัญชี
+      useEkycStore.getState().resetAll();
       return;
     }
     syncJobTrackingWithServer({ onlyIfTracking: true }).catch(() => {});
@@ -484,11 +487,14 @@ export default function RootLayout() {
         {/* WebView - เปิดลิงก์เว็บของเรา (allowlist) */}
         <Stack.Screen name="webview" options={{ headerShown: false }} />
 
-        {/* ไรเดอร์รอบ 2: รูปโปรไฟล์ถ่ายสด (บังคับหลังล็อกอิน) — ห้ามปัดย้อนกลับในโหมดบังคับ */}
-        <Stack.Screen name="profile-photo" options={{ headerShown: false, gestureEnabled: false }} />
+        {/* โปรไฟล์ของฉัน: เปลี่ยนรูปโปรไฟล์ (รูปอะไรก็ได้) + สถานะยืนยันตัวตน — เลิกบังคับถ่ายรูปสดแล้ว */}
+        <Stack.Screen name="profile-photo" options={{ headerShown: false }} />
+
+        {/* ยืนยันตัวตนด้วย AI (eKYC) — stack ซ้อนของตัวเอง (app/ekyc/_layout.tsx) */}
+        <Stack.Screen name="ekyc" options={{ headerShown: false }} />
       </Stack>
-      {/* ยังไม่มีรูปโปรไฟล์ → พาไปถ่ายรูป (ไม่บล็อกหน้าเข้าสู่ระบบ/ข้อตกลง) */}
-      <ProfilePhotoGate />
+      {/* API ตอบ KYC_REQUIRED (สั่งซื้อ/ไรเดอร์ออนไลน์/เปิดร้าน) → bottom sheet "ยืนยันตัวตนก่อน…" */}
+      <KycGateHost />
     </View>
   );
 }

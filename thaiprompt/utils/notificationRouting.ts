@@ -17,6 +17,7 @@
  *       type แยกจาก order_message เพราะแอปรุ่นเก่าพา order_message ไปหน้าผู้ซื้อเสมอ (ร้านเปิดแล้ว 404)
  *       — แอปรุ่นเก่าไม่รู้จัก type นี้ จึงตกไปหน้าแจ้งเตือนแทน
  *   - ticket                                  → /support
+ *   - kyc_result {decision?}                  → /ekyc/result (ผลยืนยันตัวตนด้วย AI / เจ้าหน้าที่ตรวจเสร็จ — หน้าผลโหลดสถานะล่าสุดเอง)
  *
  * ไรเดอร์รอบ 2 (2026-10-04) — ผู้รับบอกด้วย data.role (หรือ recipient / audience) = buyer | rider | seller
  *   push ส่งมอบของ (handover_*) และสถานะไรเดอร์ (delivery_update) ตัดสินตามลำดับ (FIXES §A5 / L2):
@@ -286,6 +287,10 @@ export const routeForNotification = (data: PushData | null | undefined): string 
       break;
     case 'ticket':
       path = '/support';
+      break;
+    case 'kyc_result':
+      // ผลยืนยันตัวตน (อนุมัติ/ไม่ผ่าน/ให้ถ่ายใหม่) — หน้าผลดึง GET /ekyc/status เอง ไม่เชื่อค่าจาก payload
+      path = '/ekyc/result';
       break;
     default:
       path = null;

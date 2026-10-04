@@ -139,7 +139,7 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
   if (!memoryReady) {
     return (
       <Card3D padding={spacing.xl} radius={22} style={[styles.card, { borderColor: colors.dangerSoft }, style]}>
-        <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={72} style={styles.center} />
+        <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={72} verified={rider.verified} style={styles.center} />
         <View accessible accessibilityLabel={`กำลังโหลดข้อมูลหัวใจของ ${rider.display_name}`}>
           <View style={[styles.skelTitle, styles.gapTop, { backgroundColor: colors.inset }]} />
           <View style={[styles.skelCaption, { backgroundColor: colors.inset }]} />
@@ -152,7 +152,7 @@ export const RiderHeartCard: React.FC<RiderHeartCardProps> = ({
 
   return (
     <Card3D padding={spacing.xl} radius={22} style={[styles.card, { borderColor: colors.dangerSoft }, style]}>
-      <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={72} style={styles.center} />
+      <PersonAvatar uri={rider.photo_url} name={rider.display_name} size={72} verified={rider.verified} style={styles.center} />
       <Text style={[typography.h2, styles.centerText, styles.gapTop, { color: colors.textStrong }]}>
         {given ? `ขอบคุณที่ให้หัวใจ${name}` : `ประทับใจ${name}ไหม?`}
       </Text>

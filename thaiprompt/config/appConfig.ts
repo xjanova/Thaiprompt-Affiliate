@@ -16,8 +16,8 @@
 
 export const APP_INFO = {
   NAME: 'Thai Prompt APP',
-  VERSION: '3.386.0',
-  BUILD_NUMBER: 43,
+  VERSION: '3.387.0',
+  BUILD_NUMBER: 44,
   BUILD_DATE: '2026-10-04',
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
@@ -32,13 +32,13 @@ export const APP_INFO = {
 
 /**
  * เลขชุดฟีเจอร์ของโค้ดแอปนี้ — ส่งเป็น header X-App-Build ทุก request
- * server ใช้ตัดสินว่าแอปรองรับฟีเจอร์ใหม่หรือยัง (≥ 43 = ส่งมอบด้วย QR / บังคับรูปโปรไฟล์ถ่ายสด)
+ * server ใช้ตัดสินว่าแอปรองรับฟีเจอร์ใหม่หรือยัง (≥ 43 = ส่งมอบด้วย QR · ≥ 44 = ด่านยืนยันตัวตน AI eKYC: KYC_REQUIRED)
  *
  * คำเตือน: ตั้งในโค้ดเท่านั้น ห้ามอ่านจาก native versionCode (expo-application nativeBuildVersion)
  *    เพราะ EAS appVersionSource: remote อาจออกเลข versionCode ไม่ตรงกับชุดฟีเจอร์ในโค้ด
  *    เพิ่มเลขนี้เฉพาะเมื่อโค้ดรองรับสัญญาฟีเจอร์ชุดใหม่ของ server แล้วจริง
  */
-export const APP_FEATURE_BUILD = 43;
+export const APP_FEATURE_BUILD = 44;
 
 // =====================================================
 // Feature Flags (Local)

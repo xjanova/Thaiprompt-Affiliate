@@ -253,7 +253,7 @@ export default function WalletScreen() {
     if (kycStatus !== 'approved') {
       Alert.alert('ต้องยืนยันตัวตน', 'กรุณายืนยันตัวตน (KYC) ก่อนทำการถอนเงิน', [
         { text: 'ยกเลิก', style: 'cancel' },
-        { text: 'ยืนยันตัวตน', onPress: () => router.push('/kyc') },
+        { text: 'ยืนยันตัวตน', onPress: () => router.push('/ekyc?from=withdraw' as never) },
       ]);
       return;
     }
@@ -469,7 +469,7 @@ export default function WalletScreen() {
           {/* เตือนยืนยันตัวตน */}
           {kycStatus !== 'approved' && (
             <Pressable
-              onPress={() => router.push('/kyc')}
+              onPress={() => router.push('/ekyc?from=withdraw' as never)}
               accessibilityRole="button"
               accessibilityLabel="ยืนยันตัวตนเพื่อปลดล็อคการถอนเงิน"
               style={({ pressed }) => [

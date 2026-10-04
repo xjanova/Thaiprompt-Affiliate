@@ -203,3 +203,14 @@ describe('routeForNotification — ลำดับ role → screen → เดา
     expect(routeForNotification({ type: 'handover_disputed', role: 'admin', url: 'https://evil.example' })).toBe('/notifications');
   });
 });
+
+describe('routeForNotification — ผลยืนยันตัวตน (eKYC)', () => {
+  it('kyc_result → หน้าผลยืนยันตัวตน (ไม่เชื่อ path จาก payload)', () => {
+    expect(routeForNotification({ type: 'kyc_result', decision: 'approved' })).toBe('/ekyc/result');
+    expect(routeForNotification({ type: 'kyc_result', url: '//evil.example' })).toBe('/ekyc/result');
+  });
+
+  it('data.url ที่ชี้หน้า eKYC ผ่าน allowlist', () => {
+    expect(routeForNotification({ type: 'general', url: '/ekyc' })).toBe('/ekyc');
+  });
+});

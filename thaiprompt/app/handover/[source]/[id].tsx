@@ -733,7 +733,7 @@ export default function BuyerHandoverScreen() {
           {/* ---------- ไรเดอร์ ---------- */}
           <Card3D padding={spacing.lg} radius={22} style={styles.block}>
             <View style={styles.row}>
-              <PersonAvatar uri={rider?.photo_url} name={riderName} size={58} />
+              <PersonAvatar uri={rider?.photo_url} name={riderName} size={58} verified={!!rider?.verified} />
               <View style={styles.flex}>
                 <Text numberOfLines={1} style={[typography.h3, { color: colors.textStrong }]}>
                   {riderName} {arrived ? 'มาถึงแล้ว' : 'กำลังมาส่ง'}
