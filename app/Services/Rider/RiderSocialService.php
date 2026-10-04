@@ -10,6 +10,7 @@ use App\Models\RiderHeart;
 use App\Models\RiderJob;
 use App\Models\User;
 use App\Services\DeliveryFeeCalculator;
+use App\Services\Ekyc\EkycService;
 use App\Services\Media\ProfilePhotoService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -394,7 +395,7 @@ class RiderSocialService
     /**
      * PersonCard ของไรเดอร์ (ไม่มีพิกัด/เบอร์โทร/ทะเบียนเต็ม)
      *
-     * @return array{id: int, display_name: string, photo_url: ?string, vehicle_type: ?string, vehicle_label: string,
+     * @return array{id: int, display_name: string, photo_url: ?string, verified: bool, vehicle_type: ?string, vehicle_label: string,
      *               plate_masked: ?string, hearts_total: int, hearts_from_me: int, can_lock: bool}
      */
     public function personCard(Rider $rider, ?User $viewer, ?int $heartsFromMe = null): array
@@ -407,6 +408,8 @@ class RiderSocialService
             'id' => (int) $rider->id,
             'display_name' => self::displayName($rider->full_name),
             'photo_url' => $user ? $this->photoUrl($user, $viewer) : null,
+            // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว" (AI eKYC / แอดมินอนุมัติ)
+            'verified' => EkycService::badge($user),
             'vehicle_type' => $rider->vehicle_type,
             'vehicle_label' => $this->vehicleLabel($rider),
             'plate_masked' => self::maskPlate($rider->vehicle_plate),
@@ -558,7 +561,7 @@ class RiderSocialService
     /**
      * การ์ดผู้ซื้อให้ไรเดอร์ (ชื่อย่อ + รูปลายน้ำ + หัวใจที่ผู้ซื้อคนนี้เคยให้ไรเดอร์คนนี้)
      *
-     * @return array{display_name: string, photo_url: ?string, hearts_given: int}|null
+     * @return array{display_name: string, photo_url: ?string, verified: bool, hearts_given: int}|null
      */
     private function buyerCardFor(RiderJob $job, Rider $viewer): ?array
     {
@@ -587,6 +590,7 @@ class RiderSocialService
         return [
             'display_name' => self::displayName($buyer->name),
             'photo_url' => $this->photoUrl($buyer, $viewerUser),
+            'verified' => EkycService::badge($buyer),
             'hearts_given' => $this->pairHearts((int) $viewer->id, (int) $buyer->id),
         ];
     }

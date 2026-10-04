@@ -167,6 +167,8 @@ class ShopPresenter
             'joinedAt' => $store->created_at?->format('Y-m-d'),
             'rider_delivery' => $store->canUseRiderDelivery(),
             'cod_available' => $store->canUseRiderDelivery(),
+            // 🪪 (2026-10-04) เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทองข้างชื่อร้านในแอป) — คนละเรื่องกับ is_verified ของร้าน
+            'owner_verified' => \App\Services\Ekyc\EkycService::badge($store->user),
         ];
     }
 
@@ -300,6 +302,8 @@ class ShopPresenter
                 'vehicle_type' => $rider->vehicle_type,
                 'vehicle_plate' => $rider->vehicle_plate,
                 'phone' => $rider->phone ?? null,
+                // 🪪 ป้ายทอง "ยืนยันตัวตนแล้ว"
+                'verified' => \App\Services\Ekyc\EkycService::badge($rider->user),
             ] : null,
             // หน้าติดตามไรเดอร์แบบสด (เว็บ /taladsod/track/{token}) — มีเฉพาะระหว่างงานยังไม่จบ
             'tracking_url' => $active ? $job->tracking_url : null,

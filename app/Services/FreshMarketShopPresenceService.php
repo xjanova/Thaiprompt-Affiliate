@@ -621,6 +621,8 @@ class FreshMarketShopPresenceService
             'can_order' => (bool) $presence['can_order'],
             'closed_message' => $presence['closed_message'],
             'location_poll_seconds' => $presence['live_location_sharing'] ? 30 : 120,
+            // 🪪 (2026-10-04) เจ้าของร้านยืนยันตัวตนแล้ว (ป้ายทองในแอป)
+            'owner_verified' => \App\Services\Ekyc\EkycService::badge($seller->user),
         ]);
     }
 

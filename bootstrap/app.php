@@ -148,6 +148,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // 📸 (2026-10-04) ไรเดอร์รอบ 2: ต้องมีรูปโปรไฟล์ถ่ายสดก่อน (เฉพาะแอป X-App-Build ≥ config profile_photo.min_build)
             //    `profile.photo:availability=online` = บังคับเฉพาะตอนค่าใน request ตรงเงื่อนไข
             'profile.photo' => \App\Http\Middleware\EnsureProfilePhoto::class,
+            // 🪪 (2026-10-04) AI eKYC: ต้องยืนยันตัวตนก่อนสั่งซื้อ/รับงานไรเดอร์/สมัครร้าน (เฉพาะแอป X-App-Build ≥ config ekyc.min_build)
+            //    `ekyc.verified:availability=online` = บังคับเฉพาะตอนค่าใน request ตรงเงื่อนไข
+            //    ⚠️ คนละตัวกับ `kyc.verified` ด้านบน (หน้าเว็บผู้ขาย redirect ไป onboarding)
+            'ekyc.verified' => \App\Http\Middleware\EnsureEkycVerified::class,
         ]);
 
         // Global middleware for IP blocking
