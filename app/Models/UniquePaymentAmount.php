@@ -420,6 +420,27 @@ class UniquePaymentAmount extends Model
      */
     public function cancel(): void
     {
-        $this->update(['status' => 'cancelled']);
+        $this->update(self::cancelledAttributes($this->expires_at));
+    }
+
+    /**
+     * ⏱️ (2026-10-04) ค่าที่ต้องเขียนตอนยกเลิกยอดจอง — การจองจบ "ตอนที่ยกเลิก"
+     *
+     * prod MariaDB เคยเขียนทับ expires_at เป็นเวลาที่แถวถูกแก้ (ON UPDATE CURRENT_TIMESTAMP)
+     * → ยอดที่ถูกยกเลิกได้ expires_at = เวลายกเลิกโดยบังเอิญ และช่วงผ่อนผันรับเงินโอนช้า
+     *   (SmsPaymentService::findFortuneReadingByExpiredAmount — expires_at <= now และไม่เกิน grace)
+     *   พึ่งค่านี้อยู่: ลูกค้าโอนเข้าบิลที่เพิ่งยกเลิกยังถูกจับคู่ได้ทันที
+     * migration 2026_10_04_120000 ถอด ON UPDATE แล้ว → ตั้งให้ชัดที่นี่ ไม่งั้นบิลที่ยกเลิกก่อนครบเวลา
+     *   ต้องรอจนเวลาจองเดิมหมดก่อนถึงจะรับเงินโอนช้าได้ (ระหว่างนั้นเงินกลายเป็นเงินกำพร้า)
+     * หมดอายุไปแล้ว = คงเวลาเดิม (ไม่ยืดช่วงผ่อนผัน)
+     *
+     * @return array{status: string, expires_at: \Carbon\CarbonInterface}
+     */
+    public static function cancelledAttributes(?\Carbon\CarbonInterface $expiresAt): array
+    {
+        return [
+            'status' => 'cancelled',
+            'expires_at' => ($expiresAt !== null && $expiresAt->lt(now())) ? $expiresAt : now(),
+        ];
     }
 }

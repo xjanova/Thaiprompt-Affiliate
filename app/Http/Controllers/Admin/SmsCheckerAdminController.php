@@ -714,7 +714,7 @@ class SmsCheckerAdminController extends Controller
             // คืน unique amount ถ้ามี
             $uniqueAmountId = $order->paymentTransaction?->metadata['unique_amount_id'] ?? null;
             if ($uniqueAmountId) {
-                UniquePaymentAmount::where('id', $uniqueAmountId)->update(['status' => 'cancelled']);
+                UniquePaymentAmount::find($uniqueAmountId)?->cancel();
             }
 
             DB::commit();

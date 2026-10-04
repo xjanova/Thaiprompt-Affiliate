@@ -74,7 +74,15 @@ class QualityController extends Controller
         // Authorization check
         $this->authorize('update', $checkpoint);
 
-        $checkpoint->update($request->validated());
+        $data = $request->validated();
+
+        // ⏱️ (2026-10-04) จุดตรวจซ้ำ (retest): เวลาตรวจ = ตอนบันทึกผลจริง ถ้าไม่ได้ส่งมา
+        //   เดิมได้มาจาก MariaDB ON UPDATE CURRENT_TIMESTAMP (ถอดแล้ว) — ดู QualityControlService::requestRetest
+        if ($checkpoint->retest_checkpoint_id !== null && empty($data['checked_at'])) {
+            $data['checked_at'] = now();
+        }
+
+        $checkpoint->update($data);
 
         return response()->json([
             'success' => true,

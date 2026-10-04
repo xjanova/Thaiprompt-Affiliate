@@ -158,7 +158,7 @@ class AmountController extends Controller
                     $upa->update(['status' => 'used', 'matched_at' => now()]);
                 }
             } elseif (in_array($upa->status, ['reserved', 'expired'], true)) {
-                $upa->update(['status' => 'cancelled']);
+                $upa->cancel();
             }
             // cancelled บนแถวที่ used แล้ว → คงเป็น used (เงินเข้าจริงแล้ว ห้ามถอย)
 

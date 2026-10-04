@@ -3799,9 +3799,14 @@ class FortuneReading extends Model
         \Illuminate\Support\Facades\DB::transaction(function () use ($reason, $adminId, &$reverted) {
             // 2.1 UPA used → cancelled (ปลดล็อกยอด)
             if ($this->unique_payment_amount_id) {
+                // ⏱️ (2026-10-04) เวลาหมดอายุ = เวลายกเลิก (ดู UniquePaymentAmount::cancelledAttributes)
+                $upaExpiresAt = UniquePaymentAmount::whereKey($this->unique_payment_amount_id)->value('expires_at');
                 $upaAffected = UniquePaymentAmount::where('id', $this->unique_payment_amount_id)
                     ->where('status', 'used')
-                    ->update(['status' => 'cancelled', 'matched_at' => null]);
+                    ->update(array_merge(
+                        UniquePaymentAmount::cancelledAttributes($upaExpiresAt ? \Illuminate\Support\Carbon::parse($upaExpiresAt) : null),
+                        ['matched_at' => null]
+                    ));
                 if ($upaAffected) {
                     $reverted[] = 'unique_payment_amount → cancelled';
                 }

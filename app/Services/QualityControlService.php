@@ -138,7 +138,10 @@ class QualityControlService
 
         $retestData['checkpoint_name'] = 'Retest: '.$retestData['checkpoint_name'];
         $retestData['retest_checkpoint_id'] = $originalCheckpoint->id;
-        $retestData['checked_at'] = null; // Will be set when actual retest happens
+        // ⏱️ (2026-10-04) เวลาตรวจจริงถูกตั้งตอนบันทึกผลตรวจซ้ำ (QualityController::update)
+        //   เดิมใส่ null แล้วอาศัย MariaDB เขียนทับเป็น "ตอนนี้" ทุกครั้งที่แก้แถว (ON UPDATE — ถอดแล้ว)
+        //   และ checked_at เป็น NOT NULL — ใส่ null ตรงๆ บน MySQL 8 จะ error → ปล่อยให้ใช้ค่าเริ่มต้นของ DB
+        unset($retestData['checked_at']);
 
         return QualityCheckpoint::create($retestData);
     }
