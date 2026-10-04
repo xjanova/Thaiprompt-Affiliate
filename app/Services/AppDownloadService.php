@@ -24,6 +24,11 @@ use RuntimeException;
  *   → คนที่กดโหลดระหว่างกำลังอัปไฟล์ใหม่ ได้ไฟล์เก่าที่ครบ ไม่มีวันได้ไฟล์ครึ่งๆ
  *
  * อัปไฟล์ใหม่:  php artisan app:publish-apk /path/to/app.apk --app-version=3.384.0 --version-code=41
+ *               [--notes="มีอะไรใหม่ข้อ 1" --notes="ข้อ 2"] [--min-build=44]
+ *
+ * แอปเช็คเวอร์ชันผ่าน GET /api/v1/app/update (updateInfo()) แล้วโหลด+ติดตั้งเองในแอป
+ *   - notes = ข้อความ "มีอะไรใหม่" ที่แอปแสดง · min_supported_build = build ต่ำกว่านี้ต้องอัปเดตก่อนใช้งาน
+ *   - md5 = แอปตรวจไฟล์ที่โหลดด้วย md5 แบบ native (sha256 ทั้งไฟล์ใน JS หนักเกินสำหรับมือถือ)
  *
  * @example
  * $apk = app(AppDownloadService::class)->available();
@@ -80,7 +85,10 @@ class AppDownloadService
                 'version_code' => (int) ($meta['version_code'] ?? 0),
                 'size' => (int) ($meta['size'] ?? 0),
                 'sha256' => (string) ($meta['sha256'] ?? ''),
+                'md5' => is_string($meta['md5'] ?? null) && preg_match('/^[0-9a-f]{32}$/', $meta['md5']) ? $meta['md5'] : '',
                 'published_at' => (string) ($meta['published_at'] ?? ''),
+                'notes' => self::cleanNotes($meta['notes'] ?? []),
+                'min_supported_build' => max(0, (int) ($meta['min_supported_build'] ?? 0)),
             ];
         } catch (\Throwable $e) {
             // ดิสก์มีปัญหา = ถือว่ายังไม่มีไฟล์ (หน้าแรกต้องไม่ล่มเพราะปุ่มโหลดแอป)
@@ -196,12 +204,19 @@ class AppDownloadService
      * @param  string  $sourcePath  ไฟล์ APK บนเครื่องนี้
      * @param  string  $version  เวอร์ชันแอป เช่น 3.384.0
      * @param  int|null  $versionCode  versionCode ของ Android
+     * @param  array<int, string>|null  $notes  "มีอะไรใหม่" (null = ไม่มี)
+     * @param  int|null  $minSupportedBuild  build ต่ำกว่านี้ต้องอัปเดตก่อนใช้งาน (null = ใช้ค่าเดิมของตัวก่อนหน้า)
      * @return array ข้อมูลไฟล์ที่เผยแพร่ (รูปแบบเดียวกับ latest())
      *
-     * @throws RuntimeException ไฟล์ไม่ใช่ APK / ขนาดผิด / คัดลอกไม่สำเร็จ
+     * @throws RuntimeException ไฟล์ไม่ใช่ APK / ขนาดผิด / คัดลอกไม่สำเร็จ / บังคับอัปเดตสูงกว่าตัวที่ปล่อย
      */
-    public function publish(string $sourcePath, string $version, ?int $versionCode = null): array
+    public function publish(string $sourcePath, string $version, ?int $versionCode = null, ?array $notes = null, ?int $minSupportedBuild = null): array
     {
+        // บังคับอัปเดตเกิน build ที่ปล่อยเอง = ทุกคน (รวมคนที่อัปแล้ว) ติดหน้าบังคับอัปเดตตลอดไป
+        if ($minSupportedBuild !== null && ($minSupportedBuild < 0 || ($versionCode !== null && $minSupportedBuild > $versionCode))) {
+            throw new RuntimeException('--min-build ต้องไม่เกิน --version-code ของตัวที่ปล่อย');
+        }
+
         if (! preg_match('/^[0-9]+(?:\.[0-9]+){1,3}$/', $version)) {
             throw new RuntimeException('เลขเวอร์ชันต้องเป็นรูปแบบ 3.384.0');
         }
@@ -224,6 +239,7 @@ class AppDownloadService
         }
 
         $sha256 = (string) hash_file('sha256', $sourcePath);
+        $md5 = (string) hash_file('md5', $sourcePath);
         $file = 'ThaiPrompt-APP-'.$version.'.apk';
         $previous = $this->latest();
 
@@ -252,7 +268,10 @@ class AppDownloadService
             'version_code' => (int) ($versionCode ?? 0),
             'size' => $size,
             'sha256' => $sha256,
+            'md5' => $md5,
             'published_at' => now()->toIso8601String(),
+            'notes' => self::cleanNotes($notes ?? []),
+            'min_supported_build' => $minSupportedBuild ?? (int) ($previous['min_supported_build'] ?? 0),
         ];
 
         $tmpJson = $dir.DIRECTORY_SEPARATOR.'.'.self::MANIFEST.'.'.bin2hex(random_bytes(4)).'.part';
@@ -274,6 +293,93 @@ class AppDownloadService
         $this->latestLoaded = true;
 
         return $meta;
+    }
+
+    /**
+     * ข้อมูลเช็คอัปเดตสำหรับแอป (GET /api/v1/app/update) — เคารพสวิตช์หลังบ้านเหมือนปุ่มโหลดบนเว็บ
+     *
+     * @param  int  $currentBuild  versionCode ที่ติดตั้งอยู่ในเครื่อง (0 = ไม่รู้)
+     * @return array{platform: string, current_build: int, update_available: bool, required: bool, min_supported_build: int, latest: array<string, mixed>|null}
+     */
+    public function updateInfo(int $currentBuild, string $platform = 'android'): array
+    {
+        $apk = $platform === 'android' ? $this->available() : null;
+
+        // ยังไม่รู้ versionCode ของไฟล์ที่ปล่อย (ปล่อยแบบไม่ใส่ --version-code) = เทียบไม่ได้ → ไม่เสนออัปเดต
+        if ($apk === null || $apk['version_code'] <= 0) {
+            return [
+                'platform' => $platform,
+                'current_build' => $currentBuild,
+                'update_available' => false,
+                'required' => false,
+                'min_supported_build' => 0,
+                'latest' => null,
+            ];
+        }
+
+        $min = min($apk['min_supported_build'], $apk['version_code']);
+        $newer = $currentBuild > 0 && $apk['version_code'] > $currentBuild;
+
+        return [
+            'platform' => $platform,
+            'current_build' => $currentBuild,
+            'update_available' => $newer,
+            'required' => $newer && $currentBuild < $min,
+            'min_supported_build' => $min,
+            'latest' => [
+                'version' => $apk['version'],
+                'version_code' => $apk['version_code'],
+                'size' => $apk['size'],
+                'md5' => $this->md5For($apk),
+                'sha256' => $apk['sha256'],
+                'download_url' => $this->fileUrl($apk),
+                'published_at' => $apk['published_at'],
+                'notes' => $apk['notes'],
+            ],
+        ];
+    }
+
+    /**
+     * md5 ของไฟล์ที่ปล่อย — ไฟล์ที่ปล่อยก่อนมี md5 ใน latest.json คำนวณครั้งเดียวแล้วจำตาม sha256
+     */
+    public function md5For(array $apk): string
+    {
+        if (($apk['md5'] ?? '') !== '') {
+            return (string) $apk['md5'];
+        }
+
+        try {
+            return (string) Cache::rememberForever('app_apk_md5:'.$apk['sha256'], function () use ($apk) {
+                $path = Storage::disk('public')->path(self::DIR.'/'.$apk['file']);
+
+                return is_file($path) ? (string) hash_file('md5', $path) : '';
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return '';
+        }
+    }
+
+    /**
+     * ข้อความ "มีอะไรใหม่": string ล้วน ตัดช่องว่าง ไม่เกิน 8 ข้อ ข้อละไม่เกิน 160 ตัวอักษร
+     *
+     * @return array<int, string>
+     */
+    private static function cleanNotes(mixed $notes): array
+    {
+        $out = [];
+        foreach ((array) $notes as $note) {
+            if (! is_string($note)) {
+                continue;
+            }
+            $note = trim((string) preg_replace('/\s+/u', ' ', $note));
+            if ($note !== '') {
+                $out[] = mb_substr($note, 0, 160);
+            }
+        }
+
+        return array_slice($out, 0, 8);
     }
 
     private function baseUrl(): string

@@ -20,6 +20,7 @@ import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useAuthStore } from '@/stores/authStore';
 import { useEkycStore } from '@/stores/ekycStore';
 import { EKYC_APP_OUTDATED_MESSAGE, getEkycStatus, isSessionUsable } from '@/services/api/ekycApi';
+import { APP_UPDATE_ROUTE, isAppUpdateSupported } from '@/services/appUpdate';
 import { goResultForCode } from '@/services/ekyc/flow';
 import { isKycGateContext, KYC_GATE_COPY, type KycGateContext } from '@/services/ekyc/kycGate';
 import { glowStyle, radii, spacing, typography, useTheme } from '@/theme';
@@ -91,7 +92,17 @@ export default function EkycIntroScreen() {
     if (res.success) {
       if (!isSessionUsable(res.data)) {
         resultHaptic('error');
-        Alert.alert('อัปเดตแอปก่อนนะ', EKYC_APP_OUTDATED_MESSAGE);
+        // Android: ไปหน้าอัปเดตในแอปได้เลย (ดาวน์โหลดจากเซิร์ฟเวอร์ของเรา)
+        Alert.alert(
+          'อัปเดตแอปก่อนนะ',
+          EKYC_APP_OUTDATED_MESSAGE,
+          isAppUpdateSupported()
+            ? [
+                { text: 'ไว้ก่อน', style: 'cancel' },
+                { text: 'อัปเดตแอป', onPress: () => router.push(APP_UPDATE_ROUTE as never) },
+              ]
+            : undefined
+        );
         return;
       }
       resultHaptic('success');

@@ -16,9 +16,9 @@
 
 export const APP_INFO = {
   NAME: 'Thai Prompt APP',
-  VERSION: '3.387.0',
-  BUILD_NUMBER: 44,
-  BUILD_DATE: '2026-10-04',
+  VERSION: '3.388.0',
+  BUILD_NUMBER: 45,
+  BUILD_DATE: '2026-10-05',
   BUNDLE_ID: 'com.thaiprompt.affiliate',
 
   // App URLs (EXPO_PUBLIC_WEB_URL ใช้เฉพาะตอนทดสอบกับเว็บในเครื่อง — build จริงไม่ตั้ง)

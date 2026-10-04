@@ -45,6 +45,7 @@ import {
   type AppTheme,
 } from '@/theme';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
+import { AppUpdateBadge, useAppUpdateSummary } from '@/components/appUpdate/AppUpdateBadge';
 
 // =====================================================
 // ตัวเลือกธีม — การ์ดตัวอย่างหน้าจอ (ใช้สีจริงของแต่ละโหมด ไม่ขึ้นกับโหมดปัจจุบัน)
@@ -245,6 +246,8 @@ export default function SettingsScreen() {
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const { user, isAuthenticated, logout, clearSession } = useAuthStore();
   const { colors } = useTheme();
+  // เวอร์ชันแอป: Android แตะแล้วไปหน้าอัปเดต (ตรวจใหม่ทุกครั้ง) · มีอัปเดต = ป้ายทอง
+  const appUpdate = useAppUpdateSummary();
 
   // ลบบัญชี (PLAY-05)
   const [deleteStep, setDeleteStep] = useState<DeleteStep>('closed');
@@ -452,7 +455,19 @@ export default function SettingsScreen() {
           onPress={() => router.push('/intro-video' as never)}
         />
         <MenuRow icon="star" tone="gold" title="ให้คะแนนแอป" onPress={handleRateApp} />
-        <MenuRow icon="info" title="เวอร์ชัน" subtitle={APP_INFO.VERSION || '-'} right={null} />
+        {appUpdate.supported ? (
+          <MenuRow
+            icon="info"
+            tone={appUpdate.hasUpdate ? 'gold' : 'navy'}
+            title="เวอร์ชัน"
+            subtitle={appUpdate.label}
+            right={appUpdate.hasUpdate ? <AppUpdateBadge /> : undefined}
+            accessibilityHint="เปิดหน้าอัปเดตแอป"
+            onPress={appUpdate.open}
+          />
+        ) : (
+          <MenuRow icon="info" title="เวอร์ชัน" subtitle={APP_INFO.VERSION || '-'} right={null} />
+        )}
       </MenuGroup>
 
       {/* ---------- จัดการบัญชี ---------- */}
