@@ -18389,6 +18389,54 @@ class FortuneConversationService
     }
 
     /**
+     * 🧾 (2026-10-04) สลิปที่ตัดบิลแล้วต้องมีประวัติ "approve" ผูกกับบิลนั้นเสมอ
+     *
+     * บิล 39 "โอนก่อนสร้างบิล": ตรวจครั้งแรกเทียบบิล Celtic ชั่วคราว (ขั้นต่ำ 99) → ถูกบันทึกเป็น reject_amount
+     * แล้วค่อยจัดเป็น Deep 39 (provisionDeepFromVerifiedSlip) → ประวัติบอกว่าปฏิเสธทั้งที่บิลจ่ายแล้ว
+     * และแอพเปิดรูปสลิปไม่ได้ (SmsPaymentController::slipLogFor อ่านเฉพาะ approve) — prod 30 วัน 2/2 บิล
+     * มี approve ของสลิปใบนี้อยู่แล้ว = ไม่ทำอะไร · sent_to_slipok=false เพราะไม่ได้ยิง SlipOK ซ้ำ (สถิติไม่เพี้ยน)
+     */
+    protected function ensureSlipApprovalLogged(FortuneReading $reading, array $verify, string $platform, string $userId): void
+    {
+        $transRef = (string) ($verify['transRef'] ?? '');
+        if ($transRef === '') {
+            return;
+        }
+
+        try {
+            $alreadyApproved = \App\Models\SlipVerificationLog::where('fortune_reading_id', $reading->id)
+                ->where('trans_ref', $transRef)
+                ->where('decision', \App\Services\Fortune\SlipOkService::DECISION_APPROVE)
+                ->exists();
+            if ($alreadyApproved) {
+                return;
+            }
+
+            $earlier = \App\Models\SlipVerificationLog::where('trans_ref', $transRef)
+                ->orderByDesc('id')
+                ->first();
+
+            $this->recordSlipCheckLog([
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'user_id' => $userId,
+                'context' => 'slip_paid_bill',
+                'sent_to_slipok' => false,
+                'decision' => \App\Services\Fortune\SlipOkService::DECISION_APPROVE,
+                'to_our_account' => true,
+                'trans_ref' => $transRef,
+                'amount' => $verify['amount'] ?? null,
+                'sender_name' => $verify['sender_name'] ?? null,
+                'receiver_account' => $verify['receiver_account'] ?? null,
+                'slip_image_path' => $earlier?->slip_image_path,
+                'note' => 'ตัดบิลนี้ด้วยสลิปใบนี้'.($earlier?->decision ? ' (ผลตรวจครั้งแรก: '.$earlier->decision.')' : ''),
+            ]);
+        } catch (\Throwable $e) {
+            Log::debug('ensureSlipApprovalLogged ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * 🧾 helper: สร้าง audit log จากผล evaluateForReading (= ยิง SlipOK แล้ว)
      */
     protected function recordSlipCheckFromEval(array $verify, array $eval, ?int $readingId, ?string $platform, ?string $userId, string $context, ?string $imagePath = null): void
@@ -19813,6 +19861,18 @@ class FortuneConversationService
 
         // ตัดบิล (idempotent — ไม่มี SMS notification)
         $reading->confirmPayment(null);
+
+        // 🧾 (2026-10-04) ผูก SMS เงินเข้าของการโอนครั้งนี้ (บิลโอนก่อนสร้างบิล SMS มาถึงก่อนบิลเกิด)
+        //   + บันทึกประวัติสลิปเป็น "approve" ให้บิลนี้ (แอพเปิดดูรูปสลิปได้) — ทั้งคู่ non-blocking
+        try {
+            app(\App\Services\SmsPaymentService::class)->attachSmsToSlipPaidBill($reading->fresh(), $verify);
+        } catch (\Throwable $e) {
+            Log::warning('SlipOK: ผูก SMS เงินเข้าเข้าบิลไม่สำเร็จ (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+        $this->ensureSlipApprovalLogged($reading, $verify, $platform, $userId);
 
         // 🧹 (2026-06-28) ตัดบิลผ่าน SlipOK แล้ว → ปิดบิล "ขายใหม่" ที่ค้างชนกัน
         //   ครอบทั้ง Celtic / Deep / Deep-ขอวันเกิด (branch ด้านล่างที่ไม่ผ่าน processPaymentConfirmed)

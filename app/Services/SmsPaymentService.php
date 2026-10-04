@@ -984,6 +984,7 @@ class SmsPaymentService
      * 🧾 (2026-10-03, บิล FTU-261002-X6634) ผูก SMS ใบจริงเข้าบิลที่เพิ่งถูกตัดไปก่อนโดยยังไม่มี SMS
      *
      * บิลถูกตัดก่อน SMS ใบจริงมาถึงได้ — แอดมิน/แอพกดอนุมัติ (approveOrder / bulk) ระหว่างรอ /notify
+     * หรือสลิปตัดบิลไปก่อน (เทียบยอดที่รับจริง amount_received แทนยอดจอง)
      * (เดิม GET /orders/match ตัดบิลเองก่อน /notify ราว 2 วิทุกใบ — ถอดแล้ว 2026-10-04)
      * ถ้าไม่ผูก handleFortuneReadingPayment หาบิลรอจ่ายไม่เจอ → ตีเป็น "เงินกำพร้า" ทั้งที่เป็นเงินของบิลนั้น
      * แล้ว SMS กำพร้าพวกนี้เคยกลายเป็นหลักฐานปลอมของบิลถัดไป (121 บิล ส.ค.–ต.ค.)
@@ -1000,10 +1001,11 @@ class SmsPaymentService
         }
 
         $smsAt = $notification->created_at ?? now();
+        $amount = (float) $notification->amount;
 
         $candidates = FortuneReading::query()
             ->whereIn('unique_payment_amount_id', UniquePaymentAmount::query()
-                ->where('unique_amount', (float) $notification->amount)
+                ->where('unique_amount', $amount)
                 ->where('transaction_type', 'fortune_reading')
                 ->where('status', 'used')
                 ->where('created_at', '<=', $smsAt)
@@ -1013,6 +1015,25 @@ class SmsPaymentService
             ->whereBetween('paid_at', [$smsAt->copy()->subMinutes(10), $smsAt->copy()->addMinutes(1)])
             ->limit(2)
             ->get();
+
+        // 🧾 (2026-10-04) + บิลที่สลิปเพิ่งตัด (โอนก่อนสร้างบิล / โอนไม่ตรงยอดบิล) แล้ว SMS มาถึงทีหลัง
+        //   บิลพวกนี้ไม่มียอดจอง (UPA) ให้เทียบ → เทียบยอดที่รับจริงจากสลิป (amount_received)
+        //   + เวลาโอนในสลิปต้องห่างเวลา SMS ≤ ±2 นาที — ยอดกลมอย่าง 99.00 ซ้ำกันได้ ถ้าไม่เทียบเวลา
+        //   SMS ของลูกค้า B อาจไปผูกบิลของลูกค้า A ที่ SMS ตัวเองยังมาไม่ถึง
+        $smsTime = $notification->sms_timestamp ?? $smsAt;
+        $candidates = $candidates->merge(FortuneReading::query()
+            ->where('is_paid', true)
+            ->whereNull('sms_notification_id')
+            ->whereBetween('amount_received', [$amount - 0.001, $amount + 0.001])
+            ->whereBetween('slipok_verified_at', [$smsAt->copy()->subMinutes(10), $smsAt->copy()->addMinutes(1)])
+            ->limit(2)
+            ->get()
+            ->filter(function (FortuneReading $reading) use ($smsTime) {
+                $transferredAt = $this->slipTransferTime($reading);
+
+                return $transferredAt !== null
+                    && abs($transferredAt->getTimestamp() - $smsTime->getTimestamp()) <= 120;
+            }))->unique('id')->values();
 
         if ($candidates->count() !== 1) {
             if ($candidates->count() > 1) {
@@ -1043,6 +1064,100 @@ class SmsPaymentService
         ]);
 
         return $reading;
+    }
+
+    /**
+     * เวลาโอนตามสลิปที่ตัดบิลนี้ (เวลาไทย) — null = ไม่รู้ (ห้ามเดา)
+     */
+    private function slipTransferTime(FortuneReading $reading): ?\Carbon\Carbon
+    {
+        if (empty($reading->slipok_trans_ref)) {
+            return null;
+        }
+
+        $raw = \App\Models\SlipVerification::where('trans_ref', $reading->slipok_trans_ref)->value('raw');
+        $raw = is_string($raw) ? json_decode($raw, true) : $raw;
+        $ts = data_get($raw, 'data.transTimestamp') ?? data_get($raw, 'transTimestamp');
+        if (empty($ts)) {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($ts)->setTimezone('Asia/Bangkok');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * 🧾 (2026-10-04) สลิปเพิ่งตัดบิล → ผูก SMS เงินเข้าของการโอนครั้งเดียวกันที่มาถึงก่อนแล้ว
+     *
+     * บิล "โอนก่อนสร้างบิล": ลูกค้าโอน → SMS เข้า /notify ตอนยังไม่มีบิล (ค้าง pending/รอแอดมินตรวจ)
+     * → ส่งสลิปตามมา → SlipOK ผ่าน → ระบบสร้างบิล+ตัดบิลให้ แต่ไม่เคยกลับไปผูก SMS ก้อนนั้น
+     * (prod 30 วัน: 7/8 บิล) → แอพเห็นเงินเข้าไม่มีบิล + ช่องหลักฐานของบิลเป็นข้อมูลแทนที่
+     *
+     * เกณฑ์เดียวกับ SlipOkService::slipMatchesUsedSmsPayment — ยอดตรงเป๊ะ + เวลา SMS ห่างเวลาโอนในสลิป ≤ ±2 นาที
+     * เจอใบเดียวเท่านั้นถึงผูก (หลายใบ = ไม่เดา) · ไม่แตะ SMS ที่ผูกบิลอื่นแล้ว / ของจันทรา.online / ที่แอดมินตีตก
+     *
+     * @param  array  $verify  ผล SlipOK (ต้องมี amount + trans_timestamp)
+     */
+    public function attachSmsToSlipPaidBill(FortuneReading $reading, array $verify): ?SmsPaymentNotification
+    {
+        $amount = $verify['amount'] ?? null;
+        $ts = $verify['trans_timestamp'] ?? null;
+        if (! $reading->is_paid || ! empty($reading->sms_notification_id) || $amount === null || empty($ts)) {
+            return null;
+        }
+
+        // สลิป transTimestamp = UTC (Z) → แปลงเป็นเวลาไทยให้ตรงกับ sms_timestamp
+        $slipTime = \Carbon\Carbon::parse($ts)->setTimezone('Asia/Bangkok');
+        $amt = (float) $amount;
+
+        $candidates = SmsPaymentNotification::query()
+            ->where('type', 'credit')
+            ->whereBetween('amount', [$amt - 0.001, $amt + 0.001])
+            ->whereBetween('sms_timestamp', [
+                $slipTime->copy()->subMinutes(2)->toDateTimeString(),
+                $slipTime->copy()->addMinutes(2)->toDateTimeString(),
+            ])
+            ->whereNull('matched_transaction_id')
+            ->whereNotIn('status', ['external', 'rejected'])
+            ->limit(2)
+            ->get();
+
+        if ($candidates->count() !== 1) {
+            if ($candidates->count() > 1) {
+                Log::warning('⚠️ SMS Payment: สลิปตัดบิลแล้ว แต่ SMS ยอด/เวลาตรงหลายใบ — ไม่เดา', [
+                    'reading_id' => $reading->id,
+                    'amount' => $amt,
+                    'notification_ids' => $candidates->pluck('id')->all(),
+                ]);
+            }
+
+            return null;
+        }
+
+        $sms = $candidates->first();
+
+        // 🔒 compare-and-swap — กันสองทางชิงผูก SMS ใบเดียวกัน
+        $claimed = SmsPaymentNotification::whereKey($sms->id)
+            ->whereNull('matched_transaction_id')
+            ->update(['status' => 'matched', 'matched_transaction_id' => $reading->id]);
+        if ($claimed === 0) {
+            return null;
+        }
+
+        // บิลจ่ายแล้ว → confirmPayment เติมแค่ sms_notification_id / sender_info / sender_bank
+        $reading->confirmPayment($sms->fresh());
+
+        Log::info('SMS Payment: ผูก SMS เงินเข้าเข้าบิลที่สลิปตัด', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'notification_id' => $sms->id,
+            'amount' => $amt,
+        ]);
+
+        return $sms;
     }
 
     /**
