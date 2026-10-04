@@ -391,6 +391,10 @@ class RiderJob extends Model
                 return [];
             }
 
+            if ($this->lockedAwayFrom($viewer)) { // ไรเดอร์รอบ 2 (social): ผู้ซื้อล็อกเรียกไรเดอร์คนอื่นอยู่
+                return [];
+            }
+
             return ['accept'];
         }
 
@@ -810,6 +814,18 @@ class RiderJob extends Model
         return $this->dispatch_type === 'broadcast';
     }
 
+    /**
+     * ไรเดอร์รอบ 2 (social): อยู่ในช่วงที่ผู้ซื้อล็อกเรียกไรเดอร์คนอื่น — ไรเดอร์คนนี้ห้ามเห็น/รับงาน
+     * (ไรเดอร์ที่ผู้ซื้อเลือกได้สิทธิ์ก่อนจนถึง preferred_until แล้วงานกลับไปกระจายปกติ)
+     */
+    public function lockedAwayFrom(Rider $rider): bool
+    {
+        return $this->preferred_rider_id !== null
+            && $this->preferred_until !== null
+            && $this->preferred_until->isFuture()
+            && (int) $this->preferred_rider_id !== (int) $rider->id;
+    }
+
     // =====================================================
     // พื้นที่ปลายทางแบบหยาบ (โชว์ก่อนรับงาน)
     // =====================================================
@@ -909,6 +925,8 @@ class RiderJob extends Model
             'created_at' => $this->created_at?->toIso8601String(),
             'accepted_at' => $this->accepted_at?->toIso8601String(),
             'completed_at' => $this->completed_at?->toIso8601String(),
+            // ไรเดอร์รอบ 2 (social): locked_by_buyer + buyer {display_name, photo_url, hearts_given}
+            ...app(\App\Services\Rider\RiderSocialService::class)->jobSummaryKeys($this, $viewer),
         ];
     }
 

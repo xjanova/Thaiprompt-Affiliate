@@ -456,7 +456,10 @@ class MobileShopController extends Controller
             'coupon_code' => 'nullable|string|max:50',
             'promo_code' => 'nullable|string|max:50',
             'note' => 'nullable|string|max:500',
+            'preferred_rider_id' => 'nullable|integer|min:1', // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์คนโปรด
         ], [
+            'preferred_rider_id.integer' => 'ไรเดอร์ที่เลือกไม่ถูกต้อง',
+            'preferred_rider_id.min' => 'ไรเดอร์ที่เลือกไม่ถูกต้อง',
             'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
             'delivery_method.in' => 'วิธีจัดส่งไม่ถูกต้อง',
             'note.max' => 'หมายเหตุยาวเกิน 500 ตัวอักษร',
@@ -475,6 +478,7 @@ class MobileShopController extends Controller
                 'delivery_method' => $request->input('delivery_method', 'parcel'),
                 'coupon_code' => $request->input('coupon_code') ?? $request->input('promo_code'),
                 'note' => $request->input('note'),
+                'preferred_rider_id' => $request->input('preferred_rider_id'),
             ], $request->header('Idempotency-Key'));
 
             return response()->json([

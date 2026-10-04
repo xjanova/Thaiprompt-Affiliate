@@ -2,6 +2,7 @@
 
 namespace App\Services\Shop;
 
+use App\Exceptions\RiderSocialException;
 use App\Exceptions\ShopException;
 use App\Models\Cart;
 use App\Models\CartItem;
@@ -14,6 +15,7 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Services\Payment\PaymentService;
 use App\Services\Pricing\PricingEngine;
+use App\Services\Rider\RiderSocialService;
 use App\Services\WalletService;
 use App\Support\Shop\PaymentMethod;
 use Illuminate\Support\Facades\Cache;
@@ -74,6 +76,7 @@ class ShopCheckoutService
         }
 
         $deliveryMethod = ($input['delivery_method'] ?? 'parcel') === 'rider' ? 'rider' : 'parcel';
+        $input['preferred_rider_id'] = $this->preferredRiderFor($user, $input, $deliveryMethod); // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์
 
         $idemKey = $this->idempotencyCacheKey($user, $idempotencyKey);
         if ($idemKey !== null && ($cached = Cache::get($idemKey)) !== null) {
@@ -253,6 +256,7 @@ class ShopCheckoutService
 
         foreach ($plans as $plan) {
             $order = $this->createOrder($user, $plan, $address, $paymentMethod, $checkoutGroup, $input['note'] ?? null);
+            $this->applyPreferredRider($order, $input['preferred_rider_id'] ?? null); // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์
 
             if ($coupon !== null && $coupon['group_key'] === $plan['group']['key']) {
                 $this->coupons->recordUsage(
@@ -577,6 +581,33 @@ class ShopCheckoutService
         }
 
         return false;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (social): ไรเดอร์ที่ผู้ซื้อล็อกเรียก (null = ไม่ได้ขอ)
+     * ต้องส่งด้วยไรเดอร์ + ให้หัวใจไรเดอร์คนนั้นครบ rider.lock_min_hearts → ไม่ผ่าน 422 RIDER_LOCK_NOT_ALLOWED
+     *
+     * @throws ShopException
+     */
+    private function preferredRiderFor(User $user, array $input, string $deliveryMethod): ?int
+    {
+        try {
+            return app(RiderSocialService::class)->resolveCheckoutLock($user, $input['preferred_rider_id'] ?? null, $deliveryMethod === 'rider');
+        } catch (RiderSocialException $e) {
+            throw ShopException::make($e->errorCode, $e->getMessage(), $e->httpStatus, $e->data);
+        }
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 (social): บันทึกไรเดอร์ที่ล็อกเรียกลงออเดอร์ที่ส่งด้วยไรเดอร์ (ตอนร้านเรียกไรเดอร์ → ข้อเสนอเฉพาะคนนั้นก่อน)
+     */
+    private function applyPreferredRider(Order $order, ?int $riderId): void
+    {
+        if ($riderId === null || $order->delivery_method !== 'rider' || ! $order->shipping_address_id) {
+            return;
+        }
+
+        $order->forceFill(['preferred_rider_id' => $riderId])->saveQuietly();
     }
 
     private function idempotencyCacheKey(User $user, ?string $key): ?string

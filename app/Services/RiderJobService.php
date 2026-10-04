@@ -69,6 +69,10 @@ class RiderJobService
             throw RiderJobException::jobTaken();
         }
 
+        if ($job->lockedAwayFrom($rider)) { // ไรเดอร์รอบ 2 (social): ช่วงที่ผู้ซื้อล็อกเรียกไรเดอร์คนอื่น
+            throw RiderJobException::jobTaken();
+        }
+
         $this->assertWithinPickupRadius($job, $rider);
 
         $accepted = DB::transaction(function () use ($job, $rider) {
@@ -121,6 +125,9 @@ class RiderJobService
                         ->orWhere('current_offer_rider_id', $lockedRider->id);
                 });
             }
+
+            // ไรเดอร์รอบ 2 (social): ตรวจซ้ำตอน UPDATE — ช่วงล็อกรับได้เฉพาะไรเดอร์ที่ผู้ซื้อเลือก
+            $query->where(fn ($q) => $q->whereNull('preferred_until')->orWhere('preferred_until', '<=', now())->orWhere('preferred_rider_id', $lockedRider->id));
 
             $updated = $query->update([
                 'rider_id' => $lockedRider->id,

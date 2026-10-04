@@ -153,6 +153,7 @@ class RiderDispatchService
                 'gps_warning_count' => 0,
             ]);
             $job->save();
+            $this->applyBuyerLock($job, $lockedSource); // ไรเดอร์รอบ 2 (social): ผู้ซื้อล็อกเรียกไรเดอร์คนโปรด
 
             return [$job, true];
         });
@@ -252,6 +253,11 @@ class RiderDispatchService
     {
         if (! $job->isOpen()) {
             return 0;
+        }
+
+        // ไรเดอร์รอบ 2 (social): งานที่ผู้ซื้อล็อกเรียก → เสนอให้ไรเดอร์คนนั้นคนเดียวก่อน (หมดเวลา/คืนงาน → กระจายปกติต่อ)
+        if ($job->dispatch_type === 'locked' && $this->handleLockedDispatch($job, $isRedispatch)) {
+            return 1;
         }
 
         if ($isRedispatch) {
@@ -385,6 +391,12 @@ class RiderDispatchService
     {
         $job->refresh();
 
+        if ($job->dispatch_type === 'locked') { // ไรเดอร์รอบ 2 (social): สิทธิ์ล็อกเรียกหมดเวลา → กระจายปกติ
+            $this->sweepBuyerLock($job);
+
+            return;
+        }
+
         if (! $job->isOpen() || $job->dispatch_type !== 'cascade' || ! $job->isOfferExpired()) {
             return;
         }
@@ -403,6 +415,14 @@ class RiderDispatchService
     {
         $job->refresh();
         if (! $job->isOpen()) {
+            return;
+        }
+
+        // ไรเดอร์รอบ 2 (social): ไรเดอร์ที่ผู้ซื้อล็อกเรียกปฏิเสธ → เลิกล็อกแล้วกระจายปกติทันที
+        if ($job->dispatch_type === 'locked' && (int) $job->preferred_rider_id === (int) $rider->id) {
+            $this->endBuyerLock($job, 'rejected');
+            $this->dispatch($job->fresh());
+
             return;
         }
 
@@ -454,6 +474,8 @@ class RiderDispatchService
                     ->orWhereNull('current_offer_rider_id')
                     ->orWhere('current_offer_rider_id', $rider->id);
             })
+            // ไรเดอร์รอบ 2 (social): งานที่ผู้ซื้อล็อกเรียกไรเดอร์คนอื่น → ไม่เห็นจนหมดเวลาสิทธิ์
+            ->where(fn ($q) => $q->whereNull('preferred_until')->orWhere('preferred_until', '<=', now())->orWhere('preferred_rider_id', $rider->id))
             ->orderBy('created_at')
             ->limit(200)
             ->get();
@@ -520,6 +542,12 @@ class RiderDispatchService
 
         foreach ($jobs as $job) {
             try {
+                if ($job->dispatch_type === 'locked') { // ไรเดอร์รอบ 2 (social): ยังอยู่ในสิทธิ์ล็อก → ข้าม · หมดเวลา → กระจายปกติ
+                    $this->sweepBuyerLock($job);
+
+                    continue;
+                }
+
                 if ($job->created_at && $job->created_at->lte(now()->subMinutes($timeout))) {
                     if ($this->escalateNoRider($job)) {
                         $stats['escalated']++;
@@ -683,6 +711,272 @@ class RiderDispatchService
             ->sortBy(fn (Rider $rider) => $rider->getAttribute('distance_to_pickup_km'))
             ->take($limit)
             ->values();
+    }
+
+    // =====================================================
+    // ไรเดอร์รอบ 2 (เลน social): ผู้ซื้อล็อกเรียกไรเดอร์คนโปรด
+    // =====================================================
+
+    /**
+     * งานใหม่ของออเดอร์ที่ผู้ซื้อล็อกเรียกไรเดอร์ (orders/fresh_market_orders.preferred_rider_id)
+     * → ข้อเสนอเฉพาะไรเดอร์คนนั้น rider.lock_offer_seconds วินาที (dispatch_type = locked)
+     *
+     * เรียกใน transaction สร้างงาน (หลัง save) — ยังไม่แจ้งเตือน ให้ dispatch() หลัง commit เป็นคนแจ้ง
+     * ล็อกได้เมื่อ: ผู้ซื้อยังให้หัวใจครบ + ไรเดอร์พร้อมรับงานจริงตอนนี้ (ดู lockableRider) · ล็อกได้ครั้งเดียวต่อออเดอร์
+     * ไม่ผ่าน → ไม่ทำอะไร งานกระจายตามปกติ (การล็อกพังต้องไม่ทำให้การเรียกไรเดอร์ล้ม)
+     */
+    public function applyBuyerLock(RiderJob $job, ?Model $source): void
+    {
+        try {
+            $riderId = $this->preferredRiderIdOf($source);
+            if ($riderId === null || ! $job->isOpen()) {
+                return;
+            }
+
+            // งานใหม่หลังยกเลิก/ส่งไม่สำเร็จของออเดอร์เดิม → กระจายปกติ (ไม่ล็อกซ้ำ)
+            if (RiderJob::forSource($source)->whereKeyNot($job->id)->whereNotNull('preferred_rider_id')->exists()) {
+                return;
+            }
+
+            $buyerId = $job->customer_id ? (int) $job->customer_id : null;
+            $rider = $buyerId ? $this->lockableRider($job, $riderId, $buyerId) : null;
+
+            if (! $rider) {
+                Log::info('RiderDispatch: buyer lock skipped (rider not available)', ['job_id' => $job->id, 'rider_id' => $riderId]);
+
+                return;
+            }
+
+            $until = now()->addSeconds(max(15, $this->config->intSetting('rider.lock_offer_seconds')));
+            $attempts = $job->dispatch_attempts ?? [];
+            $attempts[] = ['rider_id' => (int) $rider->id, 'sent_at' => now()->toIso8601String(), 'status' => 'pending', 'locked' => true];
+
+            $job->forceFill([
+                'dispatch_type' => 'locked',
+                'preferred_rider_id' => $rider->id,
+                'preferred_until' => $until,
+                'preferred_by_user_id' => $buyerId,
+                'current_offer_rider_id' => $rider->id,
+                'offer_sent_at' => now(),
+                'offer_expires_at' => $until,
+                'dispatch_attempts' => $attempts,
+                'candidate_riders' => [(int) $rider->id],
+                // ไรเดอร์ที่ผู้ซื้อเลือกอาจอยู่ไกลกว่ารัศมีตั้งต้น → ใช้รัศมีสูงสุดระหว่างล็อก (หมดล็อกแล้วรีเซ็ต)
+                'dispatch_radius_km' => $this->maxDispatchRadius(),
+                'dispatch_round' => 0,
+            ])->save();
+
+            Log::info('RiderDispatch: buyer lock', ['job_id' => $job->id, 'rider_id' => $rider->id, 'until' => $until->toIso8601String()]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            throw $e; // ปัญหาฐานข้อมูล (เช่น deadlock) ต้องให้ transaction สร้างงานล้มตามปกติ
+        } catch (\Throwable $e) {
+            Log::warning('RiderDispatch: buyer lock failed (normal dispatch)', ['job_id' => $job->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * dispatch() ของงาน locked
+     *
+     * @return bool true = ยังอยู่ในสิทธิ์ล็อก (แจ้งไรเดอร์คนนั้นแล้ว จบแค่นี้) · false = เลิกล็อกแล้ว ให้กระจายปกติต่อ
+     */
+    public function handleLockedDispatch(RiderJob $job, bool $isRedispatch = false): bool
+    {
+        if ($job->dispatch_type !== 'locked') {
+            return false;
+        }
+
+        if (! $isRedispatch && $job->preferred_until !== null && $job->preferred_until->isFuture()) {
+            $this->sendLockedOffer($job);
+
+            return true;
+        }
+
+        // หมดเวลา หรือไรเดอร์คนนั้นรับแล้วคืนงาน/ถูกระงับ → เลิกล็อก
+        $this->endBuyerLock($job, $isRedispatch ? 'released' : 'expired');
+        $job->refresh();
+
+        return false;
+    }
+
+    /**
+     * รอบกวาด/คิวหมดเวลาของงาน locked: ยังในเวลา → แจ้งไรเดอร์ถ้ายังไม่ได้แจ้ง · หมดเวลา → เลิกล็อก + กระจายปกติ
+     */
+    public function sweepBuyerLock(RiderJob $job): void
+    {
+        if (! $job->isOpen() || $job->dispatch_type !== 'locked') {
+            return;
+        }
+
+        if ($job->preferred_until !== null && $job->preferred_until->isFuture()) {
+            if ((int) $job->dispatch_round === 0) {
+                $this->sendLockedOffer($job); // แจ้งตอนสร้างงานไม่สำเร็จ → แจ้งซ้ำครั้งเดียว
+            }
+
+            return;
+        }
+
+        $this->dispatch($job);
+    }
+
+    /**
+     * เลิกล็อก: งานกลับเป็นโหมดกระจายปกติ (รอบ 0 รัศมีตั้งต้น) · บันทึกผลข้อเสนอของไรเดอร์คนนั้น
+     *
+     * @param  string  $status  expired | rejected | released
+     */
+    public function endBuyerLock(RiderJob $job, string $status): void
+    {
+        DB::transaction(function () use ($job, $status) {
+            /** @var RiderJob|null $locked */
+            $locked = RiderJob::whereKey($job->id)->lockForUpdate()->first();
+            if (! $locked || ! $locked->isOpen() || $locked->dispatch_type !== 'locked') {
+                return;
+            }
+
+            $attempts = $locked->dispatch_attempts ?? [];
+            foreach ($attempts as &$attempt) {
+                if ((int) ($attempt['rider_id'] ?? 0) === (int) $locked->preferred_rider_id && ($attempt['status'] ?? null) === 'pending') {
+                    $attempt['status'] = $status;
+                    $attempt['responded_at'] = now()->toIso8601String();
+                }
+            }
+            unset($attempt);
+
+            $locked->forceFill([
+                'dispatch_type' => $this->config->dispatchMode(),
+                // ปิดสิทธิ์ทันที (เก็บ preferred_rider_id ไว้เป็นประวัติว่าผู้ซื้อเคยล็อก)
+                'preferred_until' => $locked->preferred_until !== null && $locked->preferred_until->isFuture() ? now() : $locked->preferred_until,
+                'current_offer_rider_id' => null,
+                'offer_expires_at' => null,
+                'dispatch_attempts' => $attempts,
+                'dispatch_round' => 0,
+                'dispatch_radius_km' => $this->config->floatSetting('rider.offer_radius_km'),
+                'last_dispatched_at' => null,
+            ])->save();
+
+            Log::info('RiderDispatch: buyer lock ended', ['job_id' => $locked->id, 'rider_id' => $locked->preferred_rider_id, 'status' => $status]);
+        });
+    }
+
+    /**
+     * แจ้งไรเดอร์ที่ผู้ซื้อล็อกเรียก (ครั้งเดียวต่องาน — dispatch_round 0 → 1 ได้คำขอเดียว)
+     */
+    private function sendLockedOffer(RiderJob $job): void
+    {
+        $updated = RiderJob::whereKey($job->id)
+            ->open()
+            ->where('dispatch_type', 'locked')
+            ->where('dispatch_round', 0)
+            ->update(['dispatch_round' => 1, 'last_dispatched_at' => now()]);
+
+        if ($updated === 0) {
+            return;
+        }
+
+        $job->refresh();
+
+        $rider = $job->preferred_rider_id ? Rider::find($job->preferred_rider_id) : null;
+        if (! $rider) {
+            return;
+        }
+
+        $buyer = $job->preferred_by_user_id ? User::find($job->preferred_by_user_id) : null;
+        $seconds = $job->preferred_until ? max(0, (int) now()->diffInSeconds($job->preferred_until, false)) : 0;
+
+        $this->notifier->notifyRiderLockedOffer(
+            $rider,
+            $job,
+            $buyer ? \App\Services\Rider\RiderSocialService::displayName($buyer->name) : null,
+            $seconds
+        );
+
+        // หมดสิทธิ์แล้วกระจายปกติทันที (ถ้าคิวไม่รัน rider:sweep-pending ทุกนาทีจะทำแทน)
+        try {
+            CascadeRiderDispatchJob::dispatch($job->id)->delay(($job->preferred_until ?? now())->copy()->addSeconds(2));
+        } catch (\Throwable $e) {
+            Log::warning('RiderDispatch: cannot queue lock expiry', ['job_id' => $job->id, 'error' => $e->getMessage()]);
+        }
+
+        Log::info('RiderDispatch: locked offer sent', ['job_id' => $job->id, 'rider_id' => $rider->id]);
+    }
+
+    /**
+     * ไรเดอร์ที่ผู้ซื้อล็อกเรียกพร้อมรับงานนี้จริงตอนนี้หรือไม่
+     *
+     * อนุมัติ ไม่ถูกระงับ online พิกัดสด ยินยอมแชร์ตำแหน่ง ไม่มีงานค้าง ไม่ใช่ผู้ซื้อ/ผู้ขาย บัญชีไม่ถูกบล็อก
+     * อยู่ในรัศมีสูงสุด วงเงิน COD พอ และผู้ซื้อยังให้หัวใจครบ rider.lock_min_hearts
+     */
+    private function lockableRider(RiderJob $job, int $riderId, int $buyerId): ?Rider
+    {
+        if ($job->pickup_latitude === null || $job->pickup_longitude === null) {
+            return null;
+        }
+
+        /** @var Rider|null $rider */
+        $rider = Rider::query()
+            ->availableForDelivery($this->config)
+            ->whereKey($riderId)
+            ->whereHas('user', fn ($q) => $q->whereNull('blocked_at'))
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('rider_jobs as active_jobs')
+                    ->whereColumn('active_jobs.rider_id', 'riders.id')
+                    ->whereIn('active_jobs.status', RiderJob::ACTIVE_STATUSES)
+                    ->whereNull('active_jobs.deleted_at');
+            })
+            ->first();
+
+        if (! $rider || in_array((int) $rider->user_id, $job->partyUserIds(), true)) {
+            return null;
+        }
+
+        $social = app(\App\Services\Rider\RiderSocialService::class);
+        if (! $social->canLock($rider, $social->pairHearts((int) $rider->id, $buyerId))) {
+            return null;
+        }
+
+        $distance = DeliveryFeeCalculator::haversineKm(
+            (float) $rider->last_latitude,
+            (float) $rider->last_longitude,
+            (float) $job->pickup_latitude,
+            (float) $job->pickup_longitude
+        );
+        if ($distance > $this->maxDispatchRadius()) {
+            return null;
+        }
+
+        $codRequired = round((float) $job->cod_amount - (float) $job->rider_earnings, 2);
+        if ((float) $job->cod_amount > 0 && $codRequired > 0 && $rider->walletBalance() < $codRequired) {
+            return null;
+        }
+
+        return $rider;
+    }
+
+    /**
+     * ไรเดอร์ที่ผู้ซื้อล็อกเรียกจากออเดอร์ (hook riderPreferredRiderId() หรือคอลัมน์ preferred_rider_id)
+     */
+    private function preferredRiderIdOf(?Model $source): ?int
+    {
+        if (! $source) {
+            return null;
+        }
+
+        $value = method_exists($source, 'riderPreferredRiderId')
+            ? $source->riderPreferredRiderId()
+            : $source->getAttribute('preferred_rider_id');
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
+    }
+
+    /**
+     * รัศมีกระจายงานสูงสุด (กม.)
+     */
+    private function maxDispatchRadius(): float
+    {
+        return max(
+            $this->config->floatSetting('rider.offer_radius_km'),
+            $this->config->floatSetting('rider.max_offer_radius_km')
+        );
     }
 
     // =====================================================

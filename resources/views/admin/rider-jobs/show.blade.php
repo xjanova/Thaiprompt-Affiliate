@@ -375,7 +375,7 @@
                         @endif
                     </span>
                     <span style="color:var(--ink2);">การกระจาย</span>
-                    <span>{{ ['broadcast' => 'แจ้งทุกคนในรัศมี', 'cascade' => 'เสนอทีละคน', 'manual_needed' => 'รอแอดมินจัดเอง', 'manual' => 'แอดมินมอบหมาย'][$job->dispatch_type] ?? ($job->dispatch_type ?: '-') }}</span>
+                    <span>{{ ['broadcast' => 'แจ้งทุกคนในรัศมี', 'cascade' => 'เสนอทีละคน', 'manual_needed' => 'รอแอดมินจัดเอง', 'manual' => 'แอดมินมอบหมาย', 'locked' => 'ผู้ซื้อล็อกเรียกไรเดอร์'][$job->dispatch_type] ?? ($job->dispatch_type ?: '-') }}</span>
                 </div>
             </div>
         </div>

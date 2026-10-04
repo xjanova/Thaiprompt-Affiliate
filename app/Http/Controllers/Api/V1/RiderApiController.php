@@ -226,6 +226,14 @@ class RiderApiController extends Controller
         return $this->guard('update_profile', function () use ($request) {
             $rider = $this->riderOrFail($request);
 
+            // ไรเดอร์รอบ 2 (social): สลับ "แสดงบนแผนที่ไรเดอร์ใกล้ฉัน" อย่างเดียว — ไม่ต้องส่งโปรไฟล์ทั้งชุด
+            if ($request->has('show_on_nearby') && ! $request->hasAny(['phone', 'vehicle_type'])) {
+                $data = $this->validateRiderInput($request, ['show_on_nearby' => ['required', 'boolean']]);
+                $rider = $this->accounts->setShowOnNearby($rider, filter_var($data['show_on_nearby'], FILTER_VALIDATE_BOOLEAN));
+
+                return $this->ok(['vehicle_changed' => false, 'rider' => $this->riderPayload($rider)], 'บันทึกการแสดงตัวบนแผนที่แล้ว');
+            }
+
             $request->merge([
                 'phone' => preg_replace('/[\s\-().]+/', '', (string) $request->input('phone')),
             ]);

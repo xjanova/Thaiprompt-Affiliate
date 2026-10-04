@@ -396,6 +396,7 @@ class FreshMarketApiController extends Controller
             'buyer_latitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-90,90',
             'buyer_longitude' => 'required_if:delivery_type,rider|nullable|numeric|between:-180,180',
             'payment_method' => 'required|in:wallet,cod,escrow',
+            'preferred_rider_id' => 'nullable|integer|min:1', // ไรเดอร์รอบ 2: ล็อกเรียกไรเดอร์คนโปรด
         ];
 
         $rules += match ($mode) {
@@ -434,6 +435,7 @@ class FreshMarketApiController extends Controller
         $orderData = array_merge(
             array_intersect_key($data, array_flip([
                 'delivery_type', 'delivery_address', 'delivery_notes', 'buyer_latitude', 'buyer_longitude', 'payment_method',
+                'preferred_rider_id',
             ])),
             ['channel' => 'api']
         );

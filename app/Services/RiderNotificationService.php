@@ -212,6 +212,39 @@ class RiderNotificationService
     }
 
     /**
+     * ไรเดอร์รอบ 2 (social): ผู้ซื้อล็อกเรียกไรเดอร์คนนี้ → ข้อเสนอเฉพาะตัว (data.locked = true · ความสำคัญสูง)
+     *
+     * @param  string|null  $buyerName  ชื่อย่อผู้ซื้อ (ชื่อต้น + อักษรแรกนามสกุล)
+     * @param  int  $seconds  เหลือเวลาสิทธิ์รับงานก่อนคนอื่นกี่วินาที
+     */
+    public function notifyRiderLockedOffer(Rider $rider, RiderJob $job, ?string $buyerName, int $seconds): void
+    {
+        if (! $rider->user_id) {
+            return;
+        }
+
+        $earn = number_format((float) $job->rider_earnings, 0);
+        $distance = number_format((float) $job->distance_km, 1);
+        $who = $buyerName ? "ลูกค้าประจำ {$buyerName}" : 'ลูกค้าประจำของคุณ';
+
+        $this->notifyUser(
+            (int) $rider->user_id,
+            'rider_job_offer',
+            "{$who} เรียกคุณ รายได้ ฿{$earn}",
+            "{$job->job_type_text} ระยะ {$distance} กม. — คุณรับงานนี้ได้คนเดียวภายใน {$seconds} วินาที",
+            [
+                'type' => 'rider_job_offer',
+                'job_id' => (int) $job->id,
+                'screen' => 'rider-job-detail',
+                'locked' => true,
+                'offer_expires_at' => $job->preferred_until?->toIso8601String(),
+            ],
+            null,
+            'high',
+        );
+    }
+
+    /**
      * แจ้งไรเดอร์ของงานเรื่องสถานะงาน (ยกเลิก/มอบหมายใหม่ ฯลฯ)
      */
     public function notifyRider(?Rider $rider, RiderJob $job, string $title, string $message, string $event): void
