@@ -7,6 +7,7 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   isHandoverFinal,
+  isHandoverJobEnded,
   isHandoverSuccess,
   normalizeBuyerHandoverData,
   normalizePersonCard,
@@ -155,5 +156,31 @@ describe('สัญญารอบแก้ไข §A2–§A4', () => {
     expect(d.server_now).toBe('2026-10-04T12:00:00+07:00');
     expect(typeof d.clock_offset_ms).toBe('number');
     expect(normalizeRiderHandoverData({ handover: { code: '12ab56' } }).handover.code).toBeNull();
+  });
+});
+
+describe('isHandoverJobEnded (B6: งานไรเดอร์จบแต่การรับของยังไม่จบ)', () => {
+  const job = (status: string) => ({ id: 1, status, distance_to_dropoff_m: null });
+
+  it('ไรเดอร์ส่งไม่สำเร็จ / งานถูกยกเลิก ระหว่างรอรับของ = จบ (หยุดถามซ้ำ)', () => {
+    expect(isHandoverJobEnded({ handover: { status: 'waiting' }, job: job('failed') })).toBe(true);
+    expect(isHandoverJobEnded({ handover: { status: 'rider_confirmed' }, job: job('cancelled') })).toBe(true);
+    expect(isHandoverJobEnded({ handover: { status: 'not_required' }, job: job('cancelled') })).toBe(true);
+  });
+
+  it('การรับของจบแล้ว (ปลด/คืนเงิน) → ใช้หน้าจบงานตามเดิม ไม่ใช่หน้านี้', () => {
+    expect(isHandoverJobEnded({ handover: { status: 'refunded' }, job: job('cancelled') })).toBe(false);
+    expect(isHandoverJobEnded({ handover: { status: 'released' }, job: job('failed') })).toBe(false);
+  });
+
+  it('ผู้ซื้อร้องเรียนค้างอยู่ → ยังแสดงการ์ดร้องเรียน (ทีมงานยังไม่ตัดสิน)', () => {
+    expect(isHandoverJobEnded({ handover: { status: 'disputed' }, job: job('failed') })).toBe(false);
+  });
+
+  it('งานยังเดินอยู่ / ไม่มีข้อมูล = ไม่จบ', () => {
+    expect(isHandoverJobEnded({ handover: { status: 'waiting' }, job: job('delivering') })).toBe(false);
+    expect(isHandoverJobEnded({ handover: { status: 'fallback_pending_release' }, job: job('awaiting_release') })).toBe(false);
+    expect(isHandoverJobEnded({ handover: { status: 'waiting' }, job: null })).toBe(false);
+    expect(isHandoverJobEnded(null)).toBe(false);
   });
 });

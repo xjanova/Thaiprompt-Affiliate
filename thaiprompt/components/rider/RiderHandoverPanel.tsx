@@ -17,6 +17,8 @@
  *   ปุ่มรูปรอบ 2 เปิดเมื่อ server บอก can_waited_photo หรือครบเวลาตามนาฬิกา server
  * - รูปที่ถ่ายแล้วแต่ส่งไม่ออก (เน็ตหลุด/แอปถูกปิด) เก็บไว้ในเครื่อง (handoverCache) → กด "ส่งรูปอีกครั้ง" ได้ ไม่ต้องถ่ายใหม่
  *   server ตอบ WAIT_NOT_OVER → เก็บรูปไว้ แล้วส่งให้อัตโนมัติเมื่อครบเวลา (ไม่ต้องถ่ายใหม่)
+ *   ส่งอัตโนมัติแล้วล้ม (เน็ต/5xx/429) → นับครั้ง + พักแบบทวีคูณ (handoverRetry) ไม่เด้ง Alert แสดงสถานะในการ์ดแทน
+ *   ล้มครบโควตา → หยุดส่งเอง ให้กด "ส่งรูปอีกครั้ง" (B1 — เดิมยิงวนถี่ + Alert ซ้อน)
  * - ไฟล์รูปในเครื่องลบทิ้งเมื่อวางของครบ/งานจบ/ทิ้งรูป (M1)
  * - ลูกค้าแจ้งปัญหา (disputed) → การ์ดแจ้งชัดเจนทุกสถานะ ปิดปุ่มส่งมอบทั้งหมด (L4)
  * - รูปลูกค้าผ่าน allowlist เดียวกับฝั่งผู้ซื้อ (personPhotoUri — L5)
@@ -30,7 +32,7 @@ import { requireOptionalNativeModule } from 'expo';
 import { Image } from 'expo-image';
 import { useFocusEffect } from 'expo-router';
 import { Text } from '@/components/ui/Text';
-import { Button3D, Card3D, Icon, Pill, PriceText, formatBaht, resultHaptic } from '@/components/ui';
+import { Button3D, Card3D, Icon, Pill, PriceText, formatBaht, resultHaptic, type IconName } from '@/components/ui';
 import { useTheme, radii, spacing, typography } from '@/theme';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { RotatingQr } from '@/components/handover/RotatingQr';
@@ -44,7 +46,6 @@ import {
   type RiderJobDetail,
 } from '@/services/api/riderApi';
 import { normalizeRiderHandoverData, personPhotoUri } from '@/services/api/handoverApi';
-import type { ApiFailure } from '@/services/api/client';
 import { calculateDistance, getCurrentCoords, type Coords } from '@/services/location';
 import { deviceTimeFor, lastClockOffset, parseIsoMs, serverNowMs } from '@/utils/serverClock';
 import { takePhoto } from './photo';
@@ -68,18 +69,26 @@ import {
 } from './riderHelpers';
 import { ActionIcon, FocusInput, IconTile, NoticeCard, ProgressRing } from './RiderVisuals';
 import { RiderSheet } from './RiderSheet';
+import {
+  INITIAL_AUTO_RETRY,
+  autoRetryExhausted,
+  autoRetryReasonText,
+  classifyUploadFailure,
+  isTransportFailure,
+  nextAutoRetryAt,
+  recordAutoRetryFailure,
+  type AutoRetryState,
+} from './handoverRetry';
 
 const POLL_MS = 5_000;
 /** รอ Modal (กล้อง/sheet) ปิดสนิทก่อนแสดง Alert — iOS ซ้อน Modal ไม่ได้ */
 const MODAL_SETTLE_MS = 450;
 const DEFAULT_WAIT_SECONDS = 180;
 const DEFAULT_GEOFENCE_M = 150;
-/** ส่งรูปรอบ 2 อัตโนมัติหลังครบเวลาของ server + เผื่อเวลาเดินทางของ request */
-const AUTO_RETRY_SLACK_MS = 1500;
-/** ส่งอัตโนมัติได้ไม่เกินกี่ครั้ง (เกินนี้ให้ไรเดอร์กด "ส่งรูปอีกครั้ง" เอง) */
-const AUTO_RETRY_MAX = 6;
 
 type BusyKind = 'scan' | 'code' | PhotoKind | null;
+/** ใครสั่งส่งรูป: ไรเดอร์กดเอง (แจ้งผลด้วย Alert) / ตัวจับเวลาส่งให้ (แสดงสถานะในการ์ด ไม่เด้ง Alert) */
+type UploadMode = 'manual' | 'auto';
 
 /** เขียนข้อมูลในเครื่อง (ไม่รอผล) */
 const writeStored = (jobId: number, value: StoredState): void => {
@@ -126,9 +135,6 @@ const mmss = (seconds: number): string => {
   const s = Math.max(0, Math.round(seconds));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
-
-/** error ที่ควรลองส่งรูปเดิมซ้ำ (เน็ต/เซิร์ฟเวอร์) — error อื่นแปลว่ารูปนี้ใช้ไม่ได้แล้ว */
-const isRetryable = (result: ApiFailure): boolean => result.status === 0 || result.status >= 500 || result.code === 'TOO_MANY_REQUESTS';
 
 /** error ที่แปลว่าสถานะงานเปลี่ยนไปแล้ว → ให้หน้าแม่โหลดงานใหม่ */
 const JOB_CHANGED_CODES = ['HANDOVER_FINAL', 'HANDOVER_NOT_READY', 'INVALID_TRANSITION', 'JOB_NOT_FOUND', 'NOT_YOUR_JOB'];
@@ -225,8 +231,12 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const retryDueRef = useRef<() => void>(() => {});
   /** wait_until ล่าสุดจาก server (ใช้ตอน WAIT_NOT_OVER ไม่ได้แนบเวลามา) */
   const waitUntilRef = useRef<string | null>(null);
-  /** ส่งรูปรอบ 2 อัตโนมัติหลัง WAIT_NOT_OVER: ครั้งที่ลองไปแล้ว + ห้ามลองก่อนเวลานี้ (เวลาเครื่อง) */
-  const autoRetryRef = useRef({ attempts: 0, notBefore: 0 });
+  /**
+   * ส่งรูปรอบ 2 อัตโนมัติหลัง WAIT_NOT_OVER: ล้มไปกี่ครั้ง + ห้ามลองก่อนเวลานี้ (เวลาเครื่อง) + สาเหตุล่าสุด
+   * state = ให้หน้าคำนวณเวลาลองครั้งถัดไปใหม่ทุกครั้งที่ล้ม · ref = ค่าล่าสุดสำหรับ callback ที่อ่านกลางทาง
+   */
+  const [autoRetry, setAutoRetryState] = useState<AutoRetryState>(INITIAL_AUTO_RETRY);
+  const autoRetryRef = useRef<AutoRetryState>(INITIAL_AUTO_RETRY);
   const sawActiveRef = useRef(false);
   const completedRef = useRef(false);
   const awaitingRef = useRef(false);
@@ -257,6 +267,11 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
       alive = false;
     };
   }, [jobId]);
+
+  const setAutoRetry = useCallback((next: AutoRetryState) => {
+    autoRetryRef.current = next;
+    if (mountedRef.current) setAutoRetryState(next);
+  }, []);
 
   const persist = useCallback(
     (patch: StoredState) => {
@@ -376,6 +391,8 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const buyerPhoto = buyer?.photo_url ?? personPhotoUri(job.buyer?.photo_url);
   /** งานเก็บเงินปลายทาง: server ไม่รับทางสำรองรูป 2 รอบ (ต้องส่งมอบกับลูกค้าโดยตรง) */
   const fallbackAllowed = !job.is_cod;
+  /** แจ้ง "ส่งไม่สำเร็จ" ได้ไหม — ตาม allowed_actions ของ server เท่านั้น (ลูกค้ายืนยันรับแล้ว/ร้องเรียน = ไม่มี) */
+  const canFail = (job.allowed_actions || []).includes('fail');
 
   // นับถอยหลังทีละวินาทีเฉพาะช่วงรอลูกค้า
   const counting = arrived && !waitedDone && remaining > 0;
@@ -522,7 +539,7 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   // =====================================================
 
   const uploadPhoto = useCallback(
-    async (photo: PendingPhoto): Promise<void> => {
+    async (photo: PendingPhoto, mode: UploadMode): Promise<void> => {
       const send = photo.kind === 'arrival' ? riderArrivalPhoto : riderWaitedPhoto;
       // ผลของรอบดึงข้อมูลที่ค้างอยู่ห้ามทับผลการส่งรูปนี้
       requestIdRef.current += 1;
@@ -530,7 +547,7 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
       if (!mountedRef.current) return;
       if (result.success) {
         resultHaptic('success');
-        autoRetryRef.current = { attempts: 0, notBefore: 0 };
+        setAutoRetry(INITIAL_AUTO_RETRY);
         setPending(null);
         if (photo.kind === 'arrival') {
           // เก็บไฟล์รูปรอบ 1 ไว้แสดงรูปย่อระหว่างรอลูกค้า (ลบเมื่อวางของครบ/งานจบ)
@@ -546,25 +563,34 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
         apply(result.data);
         return;
       }
-      resultHaptic('error');
-      if (isRetryable(result)) {
-        // เก็บรูปไว้ กด "ส่งรูปอีกครั้ง" ได้โดยไม่ต้องถ่ายใหม่
-        Alert.alert('ส่งรูปไม่สำเร็จ', `${result.message}\nรูปยังอยู่ในเครื่อง กด "ส่งรูปอีกครั้ง" ได้เลย`);
+      // ส่งอัตโนมัติ: สั่นเตือนเฉพาะตอนไรเดอร์กดเอง (ตัวจับเวลาล้มเงียบๆ แล้วแสดงสถานะในการ์ด)
+      if (mode === 'manual') resultHaptic('error');
+      const failure = classifyUploadFailure(result, photo.kind);
+      if (failure && failure !== 'wait_not_over') {
+        // เน็ต/เซิร์ฟเวอร์/ถูกจำกัดความถี่ → เก็บรูปไว้ กด "ส่งรูปอีกครั้ง" ได้โดยไม่ต้องถ่ายใหม่
+        // รูปที่อยู่ในโหมดส่งอัตโนมัติ (เคยได้ WAIT_NOT_OVER) → นับครั้ง + เลื่อนเวลาแบบทวีคูณ ห้ามยิงซ้ำทันที (B1)
+        if (photo.kind === 'waited' && !!photo.waitUntil) {
+          setAutoRetry(recordAutoRetryFailure(autoRetryRef.current, failure, Date.now()));
+        }
+        if (mode === 'manual') {
+          Alert.alert('ส่งรูปไม่สำเร็จ', `${result.message}\nรูปยังอยู่ในเครื่อง กด "ส่งรูปอีกครั้ง" ได้เลย`);
+        }
         return;
       }
-      if (result.code === 'WAIT_NOT_OVER' && photo.kind === 'waited') {
+      if (failure === 'wait_not_over') {
         // ยังไม่ครบเวลาตามนาฬิกา server → เก็บรูปไว้ แล้วส่งให้อัตโนมัติเมื่อครบเวลา (ไม่ต้องถ่ายใหม่ — L3)
         const waitUntil =
           typeof result.data?.wait_until === 'string' ? result.data.wait_until : waitUntilRef.current ?? null;
-        const attempts = autoRetryRef.current.attempts + 1;
-        autoRetryRef.current = { attempts, notBefore: Date.now() + Math.min(30_000, 5_000 * attempts) };
+        setAutoRetry(recordAutoRetryFailure(autoRetryRef.current, 'wait_not_over', Date.now()));
         const kept: PendingPhoto = { ...photo, waitUntil };
         setPending(kept);
         persist({ pending: kept });
         fetchHandover();
         return;
       }
-      // รูปนี้ใช้ไม่ได้แล้ว (ห่างเกิน / สถานะเปลี่ยน) → ทิ้ง แล้วบอกสิ่งที่ต้องทำ
+      // รูปนี้ใช้ไม่ได้แล้ว (ห่างเกิน / สถานะเปลี่ยน) → ทิ้ง แล้วบอกสิ่งที่ต้องทำ (ครั้งเดียว ไม่วนเพราะไม่มีรูปค้างแล้ว)
+      if (mode === 'auto') resultHaptic('error');
+      setAutoRetry(INITIAL_AUTO_RETRY);
       setPending(null);
       persist({ pending: null });
       if (photo.uri !== storedRef.current.arrival?.uri) deleteLocalPhoto(photo.uri);
@@ -573,7 +599,7 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
       if (result.code === 'WAIT_NOT_OVER') fetchHandover();
       alertError(result);
     },
-    [alertError, apply, dropLocal, fetchHandover, jobId, persist]
+    [alertError, apply, dropLocal, fetchHandover, jobId, persist, setAutoRetry]
   );
 
   const shoot = useCallback(
@@ -613,53 +639,59 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
         // รูปใหม่แทนรูปค้างเดิม → ลบไฟล์เดิม · เริ่มนับการส่งอัตโนมัติใหม่
         const previous = storedRef.current.pending;
         if (previous && previous.uri !== uri && previous.uri !== storedRef.current.arrival?.uri) deleteLocalPhoto(previous.uri);
-        autoRetryRef.current = { attempts: 0, notBefore: 0 };
+        setAutoRetry(INITIAL_AUTO_RETRY);
         setPending(photo);
         persist({ pending: photo });
-        await uploadPhoto(photo);
+        await uploadPhoto(photo, 'manual');
       } finally {
         busyRef.current = false;
         if (mountedRef.current) setBusy(null);
       }
     },
-    [alertError, distanceToDropoff, freshCoords, geofence, locationMissing, persist, uploadPhoto]
+    [alertError, distanceToDropoff, freshCoords, geofence, locationMissing, persist, setAutoRetry, uploadPhoto]
   );
 
-  const retryPending = useCallback(async () => {
-    if (!pending || busyRef.current) return;
-    busyRef.current = true;
-    setBusy(pending.kind);
-    try {
-      await uploadPhoto(pending);
-    } finally {
-      busyRef.current = false;
-      if (mountedRef.current) setBusy(null);
-    }
-  }, [pending, uploadPhoto]);
+  /** ส่งรูปค้างอีกครั้ง — manual = ไรเดอร์กดปุ่ม · auto = ตัวจับเวลาหลังครบเวลารอ */
+  const retryPending = useCallback(
+    async (mode: UploadMode) => {
+      if (!pending || busyRef.current) return;
+      busyRef.current = true;
+      setBusy(pending.kind);
+      try {
+        await uploadPhoto(pending, mode);
+      } finally {
+        busyRef.current = false;
+        if (mountedRef.current) setBusy(null);
+      }
+    },
+    [pending, uploadPhoto]
+  );
 
   const discardPending = () => {
     // ทิ้งรูปนี้ = ลบไฟล์ด้วย (ยกเว้นเป็นไฟล์เดียวกับรูปย่อรอบ 1)
     if (pending && pending.uri !== storedRef.current.arrival?.uri) deleteLocalPhoto(pending.uri);
+    setAutoRetry(INITIAL_AUTO_RETRY);
     setPending(null);
     persist({ pending: null });
   };
 
   // ---------- รูปรอบ 2 ที่ server บอกว่ายังไม่ครบเวลา → ส่งให้อัตโนมัติเมื่อครบ (นาฬิกา server) ----------
-  /** เวลาเครื่องที่ควรส่งรูปที่รอไว้ (null = ไม่มีรูปรอส่งตามเวลา / ลองอัตโนมัติครบโควตาแล้ว) */
-  const retryAtMs =
-    pending && pending.kind === 'waited' && !!pending.waitUntil && !waitedDone && !disputed &&
-    autoRetryRef.current.attempts <= AUTO_RETRY_MAX
-      ? (() => {
-          const due = deviceTimeFor(pending.waitUntil ?? waitUntilIso, clockOffset);
-          // ไม่ยิงถี่: อย่างน้อยตามเวลาพักหลัง WAIT_NOT_OVER รอบก่อน (กันวนถ้านาฬิกา server กับเครื่องยังไม่ตรงกัน)
-          return due !== null ? Math.max(due + AUTO_RETRY_SLACK_MS, autoRetryRef.current.notBefore) : autoRetryRef.current.notBefore;
-        })()
-      : null;
+  /** มีรูปรอบ 2 ที่อยู่ในโหมดส่งอัตโนมัติ (เคยได้ WAIT_NOT_OVER) และขั้นนั้นยังไม่เสร็จบน server */
+  const autoMode = !!pending && pending.kind === 'waited' && !!pending.waitUntil && !waitedDone && !disputed;
+  /**
+   * เวลาเครื่องที่ควรส่งรูปที่รอไว้ (null = ไม่มีรูปรอส่งตามเวลา / ล้มครบโควตาแล้ว)
+   * ไม่เร็วกว่าเวลาครบของ server และไม่เร็วกว่าเวลาพักหลังล้มครั้งก่อน (ทวีคูณ — B1)
+   */
+  const retryAtMs = autoMode
+    ? nextAutoRetryAt(autoRetry, deviceTimeFor(pending?.waitUntil ?? waitUntilIso, clockOffset))
+    : null;
+  /** ส่งอัตโนมัติล้มครบโควตา → ไรเดอร์ต้องกด "ส่งรูปอีกครั้ง" เอง */
+  const autoStopped = autoMode && autoRetryExhausted(autoRetry);
 
   // ให้ตัวกลับเข้าแอป (AppState) เรียกใช้ได้: ครบเวลาแล้วและไม่มีงานค้าง → ส่งเลย
   retryDueRef.current = () => {
     // เผื่อตัวจับเวลาของเครื่องยิงก่อนเวลาเล็กน้อย
-    if (retryAtMs !== null && Date.now() >= retryAtMs - 250 && !busyRef.current) retryPending();
+    if (retryAtMs !== null && Date.now() >= retryAtMs - 250 && !busyRef.current) retryPending('auto');
   };
 
   useEffect(() => {
@@ -696,9 +728,10 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const stalePending = !!pending && !!data && !pendingUsable && busy === null;
   useEffect(() => {
     if (!stalePending) return;
+    setAutoRetry(INITIAL_AUTO_RETRY);
     setPending(null);
     persist({ pending: null });
-  }, [stalePending, persist]);
+  }, [stalePending, persist, setAutoRetry]);
 
   // =====================================================
   // แสดงผล
@@ -814,6 +847,53 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
   const arrivalDistance = formatMeters(arrivalShot?.distanceM);
   const progress = arrived ? 1 - remaining / waitSeconds : 0;
 
+  /** การ์ดรูปค้างส่ง: รอครบเวลา / ส่งอัตโนมัติล้ม (จะลองอีก) / หยุดส่งอัตโนมัติแล้ว / ส่งไม่ออก */
+  const pendingNotice: {
+    icon: IconName;
+    tone: 'info' | 'warning';
+    title: string;
+    message: string;
+    action: string;
+  } | null = (() => {
+    if (!pendingUsable) return null;
+    const transport = isTransportFailure(autoRetry.lastFailure);
+    const reason = transport ? `${autoRetryReasonText(autoRetry.lastFailure)} ` : '';
+    if (retryAtMs !== null) {
+      const at = clock(new Date(retryAtMs).toISOString());
+      return transport
+        ? {
+            icon: 'arrows-clockwise',
+            tone: 'warning',
+            title: 'ส่งรูปรอบ 2 ยังไม่สำเร็จ',
+            message: `${reason}ระบบจะลองส่งให้อีกครั้งตอน ${at} น. ไม่ต้องถ่ายใหม่`,
+            action: 'ส่งตอนนี้',
+          }
+        : {
+            icon: 'hourglass',
+            tone: 'info',
+            title: 'ถ่ายรูปรอบ 2 ไว้แล้ว รอครบเวลา',
+            message: `ระบบยังไม่ครบเวลารอลูกค้า จะส่งรูปนี้ให้อัตโนมัติตอน ${at} น. ไม่ต้องถ่ายใหม่`,
+            action: 'ส่งตอนนี้',
+          };
+    }
+    if (autoStopped) {
+      return {
+        icon: 'upload-simple',
+        tone: 'warning',
+        title: 'ส่งรูปรอบ 2 อัตโนมัติไม่สำเร็จ',
+        message: `${reason}ลองส่งให้หลายครั้งแล้ว ตรวจสัญญาณเน็ตแล้วกด "ส่งรูปอีกครั้ง" ได้เลย ไม่ต้องถ่ายใหม่`,
+        action: 'ส่งรูปอีกครั้ง',
+      };
+    }
+    return {
+      icon: 'upload-simple',
+      tone: 'warning',
+      title: pendingUsable.kind === 'arrival' ? 'รูปรอบ 1 ยังส่งไม่สำเร็จ' : 'รูปรอบ 2 ยังส่งไม่สำเร็จ',
+      message: `ถ่ายไว้เมื่อ ${clock(pendingUsable.takenAt)} น. กดส่งอีกครั้งได้เลย ไม่ต้องถ่ายใหม่`,
+      action: 'ส่งรูปอีกครั้ง',
+    };
+  })();
+
   return (
     <View style={style}>
       {headerPills}
@@ -916,31 +996,21 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
         )}
       </Card3D>
 
-      {/* ---------- รูปค้างส่ง ---------- */}
-      {!!pendingUsable && busy === null && (
+      {/* ---------- รูปค้างส่ง (สถานะการส่งอัตโนมัติแสดงตรงนี้ ไม่เด้ง Alert — B1) ---------- */}
+      {!!pendingNotice && busy === null && (
         <NoticeCard
-          icon={retryAtMs !== null ? 'hourglass' : 'upload-simple'}
-          tone={retryAtMs !== null ? 'info' : 'warning'}
-          title={
-            retryAtMs !== null
-              ? 'ถ่ายรูปรอบ 2 ไว้แล้ว รอครบเวลา'
-              : pendingUsable.kind === 'arrival'
-                ? 'รูปรอบ 1 ยังส่งไม่สำเร็จ'
-                : 'รูปรอบ 2 ยังส่งไม่สำเร็จ'
-          }
-          message={
-            retryAtMs !== null
-              ? `ระบบยังไม่ครบเวลารอลูกค้า จะส่งรูปนี้ให้อัตโนมัติตอน ${clock(new Date(retryAtMs).toISOString())} น. ไม่ต้องถ่ายใหม่`
-              : `ถ่ายไว้เมื่อ ${clock(pendingUsable.takenAt)} น. กดส่งอีกครั้งได้เลย ไม่ต้องถ่ายใหม่`
-          }
+          icon={pendingNotice.icon}
+          tone={pendingNotice.tone}
+          title={pendingNotice.title}
+          message={pendingNotice.message}
           style={styles.block}
         >
           <View style={styles.rowGap}>
             <Button3D
-              title={retryAtMs !== null ? 'ส่งตอนนี้' : 'ส่งรูปอีกครั้ง'}
+              title={pendingNotice.action}
               icon="upload-simple"
               size="sm"
-              onPress={retryPending}
+              onPress={() => retryPending('manual')}
               style={styles.flex}
             />
             <Button3D title="ทิ้งรูปนี้" size="sm" variant="ghost" onPress={discardPending} />
@@ -954,7 +1024,13 @@ export const RiderHandoverPanel: React.FC<RiderHandoverPanelProps> = ({
           icon="money"
           tone="warning"
           title="งานเก็บเงินปลายทาง ต้องส่งมอบกับลูกค้าโดยตรง"
-          message='ลูกค้าไม่อยู่หรือติดต่อไม่ได้ ใช้ปุ่ม "ส่งไม่สำเร็จ" ด้านล่างแทนการวางของ'
+          message={
+            buyerConfirmed
+              ? 'ลูกค้ายืนยันรับของแล้ว สแกน QR หรือกรอกรหัสของลูกค้าเพื่อปิดงาน'
+              : canFail
+                ? 'ลูกค้าไม่อยู่หรือติดต่อไม่ได้ ใช้ปุ่ม "ส่งไม่สำเร็จ" ด้านล่างแทนการวางของ'
+                : 'ลูกค้าไม่อยู่หรือติดต่อไม่ได้ โทรหาลูกค้า หรือติดต่อทีมงานที่หน้าช่วยเหลือ'
+          }
           style={styles.block}
         />
       )}

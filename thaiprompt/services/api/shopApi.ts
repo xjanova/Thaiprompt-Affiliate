@@ -251,6 +251,10 @@ export interface CartRiderQuote {
   surcharge: number | null;
   /** ร้านออกค่าส่งให้ทั้งหมด (ผู้ซื้อจ่าย 0) */
   free_delivery: boolean;
+  /** ร้านช่วยออกค่าส่งได้ไม่เต็มที่ตั้งไว้ (เกินรายได้ร้านจากออเดอร์นี้) → ผู้ซื้อจ่ายส่วนที่เหลือ (C1/B9) */
+  subsidy_capped: boolean;
+  /** โบนัสไรเดอร์ถูกลดลงด้วยเหตุผลเดียวกัน (ฝั่งร้านเท่านั้น ไม่ต้องแจ้งผู้ซื้อ) */
+  bonus_capped: boolean;
 }
 
 export interface Cart {

@@ -107,6 +107,9 @@ export const normalizeRiderQuote = (r: any): CartRiderQuote => ({
   rider_total: nullableNum(r?.rider_total),
   surcharge: nullableNum(r?.surcharge),
   free_delivery: r?.free_delivery === true || r?.free_delivery === 1,
+  // server เก่าไม่ส่ง = false
+  subsidy_capped: r?.subsidy_capped === true || r?.subsidy_capped === 1,
+  bonus_capped: r?.bonus_capped === true || r?.bonus_capped === 1,
 });
 
 const normalizeGroup = (raw: any): CartStoreGroup => ({

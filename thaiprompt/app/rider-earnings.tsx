@@ -7,6 +7,7 @@
  * - ถอนเงินทำที่แท็บกระเป๋าเงิน · รายงานละเอียดดูบนเว็บไซต์
  * - ไรเดอร์รอบ 2: งานที่วางของด้วยทางสำรอง (รูป 2 รอบ) = "รอปลดเงิน" แสดงยอด + จำนวนงานแยก (pending_release_*)
  *   + รายการงานรอปลดเงินจากประวัติ (status awaiting_release — §A7) พร้อมสถานะ รอ 24 ชม. / ลูกค้าแจ้งปัญหา
+ *     งานเหล่านี้แสดงเฉพาะในส่วน "รอปลดเงิน" ไม่ซ้ำในประวัติงานด้านล่าง (B8)
  * - กันแคปหน้าจอ (ยอดเงิน/ประวัติงาน)
  *
  * หน้าตา: การ์ดน้ำเงินลายกนก (ตัวเลือกช่วงเวลาแบบกระจก + ยอดทอง + กราฟแท่งรายวัน)
@@ -402,7 +403,15 @@ export default function RiderEarningsScreen() {
   const completedJobs = num(summary?.completed_jobs);
   /** กราฟรายวันแสดงเมื่อไม่ใช่ "วันนี้" และมีข้อมูลอย่างน้อย 2 วัน (เหมือนเดิม) */
   const showChart = !!summary && period !== 'today' && Array.isArray(summary.daily) && summary.daily.length >= 2;
-  const listData = historyLoading && jobs.length === 0 ? [] : jobs;
+  /**
+   * งานรอปลดเงินแสดงในส่วน "รอปลดเงิน" ด้านบนแล้ว → ไม่แสดงซ้ำในประวัติ (B8)
+   * ตัดเฉพาะงานที่อยู่ในรายการด้านบนจริง — โหลดรายการรอปลดเงินไม่ได้ งานนั้นยังอยู่ในประวัติพร้อมป้ายสถานะ (ไม่หายจากจอ)
+   */
+  const awaitingIds = new Set(awaitingJobs.map((j) => j.id));
+  const historyJobs = awaitingIds.size > 0 ? jobs.filter((j) => !awaitingIds.has(j.id)) : jobs;
+  /** ประวัติหน้านี้มีแต่งานรอปลดเงิน (ย้ายไปแสดงด้านบนหมดแล้ว) */
+  const onlyAwaitingInHistory = jobs.length > 0 && historyJobs.length === 0;
+  const listData = historyLoading && jobs.length === 0 ? [] : historyJobs;
 
   const header = (
     <View>
@@ -541,6 +550,13 @@ export default function RiderEarningsScreen() {
             <ActivityIndicator color={colors.gold} style={styles.listLoader} />
           ) : historyError ? (
             <EmptyState variant="error" message={historyError} onAction={() => loadHistory(filter, 1, 'reset')} compact />
+          ) : onlyAwaitingInHistory ? (
+            <EmptyState
+              icon="hourglass"
+              title="งานล่าสุดอยู่ในรายการรอปลดเงิน"
+              message={hasMore ? 'ดูงานรอปลดเงินด้านบน หรือกด "ดูเพิ่ม" เพื่อดูงานก่อนหน้า' : 'ดูงานรอปลดเงินด้านบน ระบบปลดเงินให้อัตโนมัติเมื่อครบเวลา'}
+              compact
+            />
           ) : (
             <EmptyState
               art="scooter"

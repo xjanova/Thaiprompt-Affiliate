@@ -4,6 +4,7 @@
  * - RiderRouteBlock   แผนที่เส้นทางจริง (route_polyline) + ป้าย "คิดตามถนนจริง" + ช่องระยะ/เวลา/ส่งถึงราว
  * - RiderChoiceBlock  ตัวเลือกไรเดอร์: จับคู่อัตโนมัติ | เรียกคนโปรด (เฉพาะคนที่ can_lock จาก GET /riders/favorites)
  * - RiderFeeLines     บรรทัดค่าส่ง + "ไรเดอร์ได้รับทั้งหมด" (รวมโบนัสจากร้าน) + ส่งฟรีเมื่อร้านออกให้
+ *                     + หมายเหตุเมื่อร้านช่วยออกค่าส่งได้ไม่เต็ม (subsidy_capped — B9)
  * - EscrowNotice      การ์ดอธิบายว่าเงินถูกพักไว้จนกว่าจะสแกน QR ใส่กันตอนรับของ
  *
  * ตัวเลขเงินทุกตัวมาจาก server — ชิ้นส่วนนี้แค่แสดง ไม่คำนวณค่าส่งเอง
@@ -39,6 +40,8 @@ export interface RiderQuoteView {
   rider_total: number | null;
   surcharge: number | null;
   free_delivery: boolean;
+  /** ร้านช่วยออกค่าส่งได้ไม่เต็มที่ตั้งไว้ (ยอดออเดอร์น้อย) → ผู้ซื้อจ่ายส่วนที่เหลือ (B9) */
+  subsidy_capped?: boolean;
 }
 
 type Coord = { latitude: number; longitude: number };
@@ -293,6 +296,22 @@ export const RiderFeeLines: React.FC<RiderFeeLinesProps> = ({ quote, showRiderTo
         )}
       </View>
 
+      {/* ร้านช่วยออกค่าส่งได้ไม่เต็ม (เกินรายได้ร้านจากออเดอร์นี้) → บอกผู้ซื้อว่าทำไมค่าส่งไม่ลดตามที่ร้านตั้งไว้ (B9) */}
+      {!!quote.subsidy_capped && !quote.free_delivery && fee > 0 && (
+        <View
+          style={[styles.cappedNote, { backgroundColor: colors.infoSoft }]}
+          accessible
+          accessibilityLabel={(quote.shop_subsidy ?? 0) > 0 ? 'ร้านช่วยออกค่าส่งได้บางส่วน คุณจ่ายส่วนที่เหลือ' : 'ออเดอร์นี้ร้านยังช่วยออกค่าส่งไม่ได้ คุณจ่ายค่าส่งเต็ม'}
+        >
+          <Icon name="info" size={15} color={colors.info} />
+          <Text style={[typography.caption, styles.flex, { color: colors.text }]}>
+            {(quote.shop_subsidy ?? 0) > 0
+              ? 'ร้านช่วยออกค่าส่งได้บางส่วน คุณจ่ายส่วนที่เหลือ'
+              : 'ออเดอร์นี้ร้านยังช่วยออกค่าส่งไม่ได้ คุณจ่ายค่าส่งเต็ม'}
+          </Text>
+        </View>
+      )}
+
       {showRiderTotal && riderTotal !== null && riderTotal > 0 && (
         <View style={styles.feeRow}>
           <View style={styles.flex}>
@@ -380,6 +399,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  cappedNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.xs + 2,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 2,
   },
   escrow: {
     flexDirection: 'row',
