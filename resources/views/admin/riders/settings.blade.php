@@ -26,7 +26,7 @@
         'surcharge' => ['title' => 'ค่าส่งเพิ่มตามช่วงเวลา', 'icon' => 'fa-moon', 'hint' => 'บวกเพิ่มจากค่าส่งตามระยะ ผู้ซื้อจ่าย ไรเดอร์ได้ส่วนแบ่งตามเปอร์เซ็นต์เดิม — 0 = ไม่เพิ่ม (เวลาไทย กลางคืนข้ามเที่ยงคืนได้ เช่น 22 → 6)',
             'fields' => ['night_surcharge', 'night_start_hour', 'night_end_hour', 'peak_surcharge']],
         'handover' => ['title' => 'ส่งมอบของและพักเงิน', 'icon' => 'fa-qrcode', 'hint' => 'งานไรเดอร์ต้องจ่ายก่อน เงินพักไว้จนผู้ซื้อกับไรเดอร์สแกน QR กัน หรือปลดอัตโนมัติหลังไรเดอร์ถ่ายรูปวางของครบ',
-            'fields' => ['allow_cod', 'handover_enabled', 'handover_geofence_m', 'handover_qr_ttl_seconds', 'handover_wait_seconds', 'handover_auto_release_hours']],
+            'fields' => ['allow_cod', 'handover_enabled', 'handover_geofence_m', 'handover_qr_ttl_seconds', 'handover_wait_seconds', 'handover_auto_release_hours', 'handover_buyer_confirmed_release_minutes']],
         'social' => ['title' => 'ไรเดอร์ใกล้ฉันและล็อกเรียกไรเดอร์', 'icon' => 'fa-heart', 'hint' => 'ผู้ซื้อเห็นไรเดอร์ใกล้ ๆ แบบเบลอตำแหน่ง และล็อกเรียกไรเดอร์คนโปรดได้เมื่อให้หัวใจครบ',
             'fields' => ['lock_min_hearts', 'lock_offer_seconds', 'nearby_radius_km', 'nearby_fuzz_m']],
     ];

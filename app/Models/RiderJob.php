@@ -469,10 +469,13 @@ class RiderJob extends Model
                 return [];
             }
 
+            // รอบแก้ 2 (B3): ผู้ซื้อยืนยันรับของแล้ว → แจ้งส่งไม่สำเร็จไม่ได้ (API ตอบ 409) — ปิดงานด้วยการสแกน/รหัส หรือรอปลดอัตโนมัติ
+            $buyerConfirmed = $this->loadedHandover()?->buyer_confirmed_at !== null;
+
             return array_values(array_merge(
                 $this->status === 'picked_up' ? ['delivering'] : [],
                 $this->handoverActions(),
-                ['fail'],
+                $buyerConfirmed ? [] : ['fail'],
             ));
         }
 

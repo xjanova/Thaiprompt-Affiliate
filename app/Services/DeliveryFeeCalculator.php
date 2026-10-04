@@ -91,6 +91,8 @@ class DeliveryFeeCalculator
         'rider.handover_qr_ttl_seconds' => 60,
         'rider.handover_wait_seconds' => 180,
         'rider.handover_auto_release_hours' => 24,
+        // รอบแก้ 2: ผู้ซื้อสแกนยืนยันรับของแล้วแต่ไรเดอร์ยืนยันไม่ได้ (มือถือดับ) → ปลดเงินอัตโนมัติหลังกี่นาที
+        'rider.handover_buyer_confirmed_release_minutes' => 30,
         // ล็อกเรียกไรเดอร์: ผู้ซื้อคนนั้นต้องให้หัวใจไรเดอร์คนนั้นอย่างน้อยกี่ดวง (เกิน 10 = 11) · สิทธิ์รับก่อนกี่วินาที
         'rider.lock_min_hearts' => 11,
         'rider.lock_offer_seconds' => 60,

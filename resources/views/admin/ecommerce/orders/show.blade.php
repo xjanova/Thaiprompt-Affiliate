@@ -46,6 +46,8 @@
     $paymentChoices = ['pending' => 'รอชำระเงิน', 'paid' => 'ชำระแล้ว', 'failed' => 'ชำระไม่สำเร็จ', 'refunded' => 'คืนเงินแล้ว'];
 
     $canRefund = $order->payment_status === 'paid' && $order->canBeRefunded();
+    // ไรเดอร์รอบ 2 รอบแก้ 2: เงินพักรอตัดสินการส่งมอบ → ยกเลิก/คืนเงินทางนี้ไม่ได้ (ตัดสินที่หน้างานไรเดอร์)
+    $handoverHold = $order->riderHandoverHoldMessage();
     $totalGp = (float) $ledgers->sum('platform_fee');
     $totalVat = (float) $ledgers->sum('vat_amount');
     $totalPool = (float) $ledgers->sum('mlm_commission');
@@ -338,11 +340,13 @@
 
                 <div x-show="selected === 'cancelled'" x-cloak class="tp-well" style="margin-top:10px; padding:10px 12px; font-size:12.5px; color:{{ $c['bad'] }};">
                     ยกเลิกแล้วระบบคืนสต็อก{{ $order->payment_status === 'paid' ? ' และคืนเงินเข้ากระเป๋าลูกค้าอัตโนมัติ' : '' }}
-                    @unless($order->canBeCancelled()) <br><strong>สถานะนี้ยกเลิกไม่ได้แล้ว (ส่งของ/ไรเดอร์รับของไปแล้ว)</strong>@endunless
+                    @if($handoverHold) <br><strong>{{ $handoverHold }}</strong>
+                    @elseif(! $order->canBeCancelled()) <br><strong>สถานะนี้ยกเลิกไม่ได้แล้ว (ส่งของ/ไรเดอร์รับของไปแล้ว)</strong>@endif
                 </div>
                 <div x-show="selected === 'refunded'" x-cloak class="tp-well" style="margin-top:10px; padding:10px 12px; font-size:12.5px; color:{{ $c['warn'] }};">
                     คืนเงินจริงผ่านระบบคืนเงิน: เงินเข้ากระเป๋าลูกค้า + ดึงรายได้ผู้ขาย/ค่าคอมกลับ
-                    @unless($canRefund) <br><strong>ออเดอร์นี้ยังคืนเงินไม่ได้ (ต้องชำระแล้วและยังไม่จบ)</strong>@endunless
+                    @if($handoverHold) <br><strong>{{ $handoverHold }}</strong>
+                    @elseif(! $canRefund) <br><strong>ออเดอร์นี้ยังคืนเงินไม่ได้ (ต้องชำระแล้วและยังไม่จบ)</strong>@endif
                 </div>
 
                 <label style="{{ $lbl }} margin-top:12px;">หมายเหตุ / เหตุผล <span x-show="selected === 'cancelled' || selected === 'refunded'" style="color:{{ $c['bad'] }};">*</span>

@@ -466,7 +466,26 @@ class FreshMarketOrder extends Model implements RiderDeliverable
             return false;
         }
 
+        // ไรเดอร์รอบ 2 รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ → ยกเลิกทางปกติไม่ได้ (ปุ่มหาย · cancelOrder ปฏิเสธพร้อมข้อความ)
+        if ($action === 'cancel' && $this->delivery_type === 'rider' && $this->riderHandoverHoldMessage() !== null) {
+            return false;
+        }
+
         return true;
+    }
+
+    /**
+     * ไรเดอร์รอบ 2 รอบแก้ 2 (B4): งานไรเดอร์ของออเดอร์นี้ "เงินพักรอตัดสินการส่งมอบ" อยู่ไหม → ข้อความไทย (null = ไม่พัก)
+     *
+     * ระหว่างพัก ห้ามยกเลิก/เรียกไรเดอร์ใหม่ทางปกติ — แอดมินตัดสินที่หน้างานไรเดอร์ (ปล่อยเงิน/คืนเงินผู้ซื้อ)
+     */
+    public function riderHandoverHoldMessage(): ?string
+    {
+        if (! $this->exists || $this->delivery_type !== 'rider') {
+            return null;
+        }
+
+        return app(\App\Services\Rider\HandoverService::class)->cancelHoldMessage($this);
     }
 
     /**
@@ -1036,12 +1055,15 @@ class FreshMarketOrder extends Model implements RiderDeliverable
      */
     public function riderCanDispatch(): bool
     {
-        return $this->delivery_type === 'rider' && in_array($this->order_status, [
+        $statusOk = $this->delivery_type === 'rider' && in_array($this->order_status, [
             self::STATUS_ACCEPTED,
             self::STATUS_PREPARING,
             self::STATUS_READY,
             self::STATUS_DELIVERY_FAILED,
         ], true);
+
+        // รอบแก้ 2 (B3/B4): งานเดิมเงินพักรอตัดสิน (ผู้ซื้อยืนยันรับของ/ร้องเรียนแล้ว) → ห้ามสร้างงานใหม่แทน
+        return $statusOk && $this->riderHandoverHoldMessage() === null;
     }
 
     /**

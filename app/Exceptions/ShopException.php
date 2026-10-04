@@ -61,6 +61,9 @@ class ShopException extends RuntimeException
 
     public const STORE_SUSPENDED = 'STORE_SUSPENDED';
 
+    /** ไรเดอร์รอบ 2: เงินพักรอแอดมินตัดสินการส่งมอบ — ยกเลิก/คืนเงินทางปกติไม่ได้ */
+    public const HANDOVER_PENDING = 'HANDOVER_PENDING';
+
     /**
      * @param  array<string, mixed>  $context  ข้อมูลประกอบที่ส่งกลับใน data ได้ (ห้ามใส่ข้อมูลลับ)
      */

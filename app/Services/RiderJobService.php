@@ -659,6 +659,19 @@ class RiderJobService
     }
 
     /**
+     * รอบแก้ 2 (B5): ปิดงานเป็น failed (order_cancelled) แบบเงียบ — ออเดอร์ถูกยกเลิก/คืนเงินไปแล้วขณะเงินยังพักรอส่งมอบ
+     *
+     * ไม่เรียก hook กลับออเดอร์ ไม่แจ้งเตือน (HandoverService แจ้งไรเดอร์/แอดมินเองด้วยข้อความที่ตรงว่าของอยู่กับใคร)
+     * เรียกได้ทั้งใน/นอก transaction (ล็อกแถวงานซ้ำในธุรกรรมเดียวกันได้)
+     */
+    public function failQuietlyForClosedSource(RiderJob $job, string $reason): RiderJob
+    {
+        [$fresh] = $this->markFailed($job, null, 'order_cancelled', mb_substr(trim($reason), 0, 1000), null, false);
+
+        return $fresh;
+    }
+
+    /**
      * แอดมินมอบหมายงานให้ไรเดอร์คนใหม่ (คงสถานะเดิม — pending จะกลายเป็น accepted)
      *
      * @throws RiderJobException NOT_ELIGIBLE|HAS_ACTIVE_JOB|SELF_ORDER|INSUFFICIENT_COD_CREDIT|INVALID_TRANSITION
@@ -982,12 +995,29 @@ class RiderJobService
             );
         }
 
-        // อ่านจากตารางตรงๆ (ไม่ใช้ relation ที่อาจโหลดค้างไว้) — การร้องเรียนเขียนภายใต้ล็อกแถวงานเดียวกัน
-        if ($job->handover_required
-            && DeliveryHandover::where('rider_job_id', $job->id)->value('status') === DeliveryHandover::STATUS_DISPUTED) {
+        if (! $job->handover_required) {
+            return;
+        }
+
+        // อ่านจากตารางตรงๆ (ไม่ใช้ relation ที่อาจโหลดค้างไว้) — การร้องเรียน/การยืนยันของผู้ซื้อเขียนภายใต้ล็อกแถวงานเดียวกัน
+        $handover = DeliveryHandover::where('rider_job_id', $job->id)->first(['id', 'status', 'buyer_confirmed_at']);
+
+        if ($handover?->status === DeliveryHandover::STATUS_DISPUTED) {
             throw new RiderJobException(
                 RiderJobException::INVALID_TRANSITION,
                 'ผู้รับแจ้งร้องเรียนการส่งมอบงานนี้แล้ว ทีมงานกำลังตรวจสอบ แจ้งส่งไม่สำเร็จไม่ได้',
+                409,
+                ['from' => $status, 'to' => 'failed']
+            );
+        }
+
+        // รอบแก้ 2 (B3): ผู้ซื้อสแกนยืนยันรับของแล้ว = ของถึงมือผู้ซื้อ → แจ้งส่งไม่สำเร็จไม่ได้
+        // (เดิมออเดอร์ย้อนเป็นกำลังเตรียม ร้านเรียกไรเดอร์ใหม่ได้ ทั้งที่ผู้ซื้อได้ของแล้ว)
+        // ไรเดอร์ปิดงานได้ด้วยการสแกน QR/กรอกรหัสของผู้ซื้อ หรือรอระบบปลดเงินอัตโนมัติ
+        if ($handover && $handover->buyer_confirmed_at !== null && ! $handover->isFinal()) {
+            throw new RiderJobException(
+                RiderJobException::INVALID_TRANSITION,
+                'ผู้รับยืนยันรับของแล้ว แจ้งส่งไม่สำเร็จไม่ได้ กรุณาสแกน QR หรือกรอกรหัสของผู้รับเพื่อปิดงาน ถ้าทำไม่ได้ ระบบจะปิดงานและโอนรายได้ให้อัตโนมัติ',
                 409,
                 ['from' => $status, 'to' => 'failed']
             );

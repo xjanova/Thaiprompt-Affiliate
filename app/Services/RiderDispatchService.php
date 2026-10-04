@@ -240,8 +240,13 @@ class RiderDispatchService
             try {
                 if (in_array($job->status, ['pending', 'accepted', 'picking_up'], true)) {
                     $service->cancel($job, $cancelledBy, $reason, false);
-                } elseif (in_array($job->status, ['picked_up', 'delivering', RiderJob::STATUS_AWAITING_RELEASE], true)) {
-                    // ไรเดอร์รอบ 2: awaiting_release = วางของแล้วแต่ยังไม่ปลดเงิน → ปิดเป็นส่งไม่สำเร็จ (ไรเดอร์ไม่ได้ค่าส่ง)
+                } elseif ($job->status === RiderJob::STATUS_AWAITING_RELEASE) {
+                    // ไรเดอร์รอบ 2 รอบแก้ 2 (B4): วางของแล้ว/ร้องเรียน = เงินพักรอแอดมินตัดสิน — การยกเลิกทางปกติถูกปฏิเสธก่อนถึงจุดนี้
+                    // (HandoverService::cancelHoldMessage) · ถ้ายังหลุดมาถึง: ปิดงาน + ปิดเรื่องการส่งมอบ ไม่สั่งไรเดอร์ "นำของคืนร้าน"
+                    // ถ้าของอยู่กับผู้ซื้อแล้ว และไม่จ่ายไรเดอร์
+                    Log::error('RiderDispatch: source cancelled while handover money is held', ['job_id' => $job->id]);
+                    app(\App\Services\Rider\HandoverService::class)->closeForCancelledSource($job, $reason);
+                } elseif (in_array($job->status, ['picked_up', 'delivering'], true)) {
                     $service->failForCancelledSource($job, $reason);
                 }
             } catch (RiderJobException $e) {

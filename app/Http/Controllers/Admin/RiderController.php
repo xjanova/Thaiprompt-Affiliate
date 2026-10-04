@@ -74,6 +74,7 @@ class RiderController extends Controller
         'handover_qr_ttl_seconds' => ['key' => 'rider.handover_qr_ttl_seconds', 'type' => 'integer', 'min' => 15, 'max' => 600, 'label' => 'QR ส่งมอบเปลี่ยนใหม่ทุก', 'unit' => 'วินาที'],
         'handover_wait_seconds' => ['key' => 'rider.handover_wait_seconds', 'type' => 'integer', 'min' => 30, 'max' => 1800, 'label' => 'รอผู้ซื้อก่อนถ่ายรูปรอบสอง', 'unit' => 'วินาที'],
         'handover_auto_release_hours' => ['key' => 'rider.handover_auto_release_hours', 'type' => 'integer', 'min' => 1, 'max' => 168, 'label' => 'ปลดเงินอัตโนมัติหลังวางของ (ถ้าไม่ร้องเรียน)', 'unit' => 'ชั่วโมง'],
+        'handover_buyer_confirmed_release_minutes' => ['key' => 'rider.handover_buyer_confirmed_release_minutes', 'type' => 'integer', 'min' => 5, 'max' => 1440, 'label' => 'ผู้ซื้อยืนยันรับของแล้วแต่ไรเดอร์ยืนยันไม่ได้ ปลดเงินอัตโนมัติหลัง', 'unit' => 'นาที'],
         'lock_min_hearts' => ['key' => 'rider.lock_min_hearts', 'type' => 'integer', 'min' => 1, 'max' => 1000, 'label' => 'หัวใจขั้นต่ำที่ผู้ซื้อให้ไรเดอร์ก่อนล็อกเรียกได้', 'unit' => 'ดวง'],
         'lock_offer_seconds' => ['key' => 'rider.lock_offer_seconds', 'type' => 'integer', 'min' => 10, 'max' => 600, 'label' => 'ไรเดอร์ที่ถูกล็อกได้สิทธิ์รับก่อน', 'unit' => 'วินาที'],
         'nearby_radius_km' => ['key' => 'rider.nearby_radius_km', 'type' => 'float', 'min' => 0.5, 'max' => 20, 'label' => 'รัศมีแสดงไรเดอร์ใกล้ผู้ซื้อ', 'unit' => 'กม.'],
