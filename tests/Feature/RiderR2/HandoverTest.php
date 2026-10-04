@@ -236,6 +236,10 @@ class HandoverTest extends HandoverTestCase
 
     public function test_previous_window_is_accepted_but_older_tokens_expire(): void
     {
+        // ตรึงเวลาไว้ต้นช่วง QR (ช่วงละ 60 วิ นับจาก epoch) — ถ้าเริ่มวินาทีที่ 59 ของช่วง
+        // การเลื่อน 61 วิจะข้าม 2 ช่วงแล้ว token หมดอายุจริง ทำให้เทสต์ผ่านบ้างตกบ้าง
+        $this->travelTo(now()->startOfMinute()->addSeconds(5));
+
         [$order, $buyer] = $this->makeDeferredShopOrder();
         $rider = $this->makeRider();
         $job = $this->makeHandoverJob($order, $rider);
