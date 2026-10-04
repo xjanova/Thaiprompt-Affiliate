@@ -75,6 +75,7 @@ import {
 import { OrderChatPanel } from '@/components/shop/OrderChatPanel';
 import { RiderTracker } from '@/components/taladsod';
 import { HandoverEntryCard } from '@/components/handover/HandoverEntryCard';
+import { VerifiedBadge, isVerifiedFlag } from '@/components/people/VerifiedBadge';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { getSellerOrder } from '@/services/api/merchantApi';
 import { useTheme, radii, spacing, typography } from '@/theme';
@@ -609,7 +610,12 @@ export default function OrderDetailScreen() {
                 <Icon name="user" size={24} color={colors.goldDeep} weight="fill" />
               </View>
               <View style={styles.flex}>
-                <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>{rider.rider.name || 'ไรเดอร์'}</Text>
+                <View style={styles.riderNameRow}>
+                  <Text numberOfLines={1} style={[typography.bodyStrong, styles.shrink, { color: colors.textStrong }]}>
+                    {rider.rider.name || 'ไรเดอร์'}
+                  </Text>
+                  {isVerifiedFlag(rider.rider.verified) && <VerifiedBadge size={15} />}
+                </View>
                 {!!rider.rider.vehicle_plate && (
                   <Text style={[typography.caption, { color: colors.textMuted }]}>ทะเบียน {rider.rider.vehicle_plate}</Text>
                 )}
@@ -943,6 +949,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: spacing.md,
+  },
+  riderNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  shrink: {
+    flexShrink: 1,
   },
   riderAvatar: {
     width: 48,

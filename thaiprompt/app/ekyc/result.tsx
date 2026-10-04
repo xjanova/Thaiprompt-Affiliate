@@ -2,41 +2,49 @@
  * ผลยืนยันตัวตน — ตามแบบ Success.png / Pending.png (+ ถ่ายใหม่ / ไม่ผ่าน ในโครงเดียวกัน)
  *
  * แหล่งข้อมูล: ผลตัดสินที่เพิ่งได้ (ekycStore.decision) → ไม่มี (เปิดจาก push kyc_result / เปิดแอปใหม่) = GET /ekyc/status
- *   approved → สำเร็จ + ป้ายทอง · review/pending → ส่งเจ้าหน้าที่ (ถ่ายหน้าใหม่ได้ถ้ายังมีสิทธิ์วันนี้)
+ *   approved → สำเร็จ + ป้ายทอง · review/pending → ส่งเจ้าหน้าที่ (ถ่ายหน้าใหม่ได้เฉพาะเมื่อ server บอก can_retake)
  *   retake → บอกสิ่งที่ต้องแก้ + ถ่ายใหม่ (บัตรหรือใบหน้าตามเหตุผล) · rejected → ไม่ผ่าน ติดต่อทีมงาน
+ *   server ยังตรวจคำขอก่อนหน้า (status.processing) → ถามสถานะซ้ำทุก 3 วินาที (สูงสุด 60 วินาที) ออกจากหน้าได้ตลอด
+ * เหตุผลใช้ข้อความไทยจาก server (reason_texts) ก่อนเสมอ · แถวเหตุผลเป็นสีเหลือง/แดงตามระดับ ไม่มีติ๊กเขียว
+ * ข้อความจากเจ้าหน้าที่ (message) แสดงในกล่องแยก
  * ปุ่ม "กลับไป…" ปิดขั้นตอนทั้งชุดกลับหน้าที่พามา (useEkycExit) · ไม่ setState หลังออกจากหน้า
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/Text';
 import { Button3D, Card3D, EmptyState, Icon, Screen, resultHaptic, type IconName } from '@/components/ui';
-import { CheckRow, EkycShell, InfoNote, useEkycExit, type CheckState } from '@/components/ekyc/EkycKit';
+import { CheckRow, EkycShell, InfoNote, useEkycExit } from '@/components/ekyc/EkycKit';
+import { useTimers } from '@/components/ekyc/cameraKit';
 import { VerifiedBadge } from '@/components/people/VerifiedBadge';
 import { useMountedRef } from '@/components/taladsod/hooks';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useAuthStore } from '@/stores/authStore';
 import { useEkycStore } from '@/stores/ekycStore';
-import { isCardReason, reasonText, retakeTarget } from '@/services/api/ekycApi';
+import { getEkycStatus, retakeTarget, type EkycReasonItem } from '@/services/api/ekycApi';
 import { isKycGateContext, KYC_GATE_COPY } from '@/services/ekyc/kycGate';
 import { restartEkycSession } from '@/services/ekyc/flow';
+import { decisionForCode, isWaitCode, waitWhileProcessing } from '@/services/ekyc/outcome';
 import { radii, spacing, typography, useTheme } from '@/theme';
 
-type View_ = 'loading' | 'success' | 'pending' | 'retake' | 'rejected' | 'none';
+type View_ = 'loading' | 'processing' | 'success' | 'pending' | 'retake' | 'rejected' | 'none';
 
-const LIVENESS_REASONS = (r: string) =>
-  r.startsWith('CHALLENGE_FAILED') || r === 'SPOOF_SUSPECTED' || r === 'NO_FACE' || r === 'MULTIPLE_FACES';
-
-/** คำอธิบายสั้นใต้เหตุผล */
+/** คำอธิบายสั้นใต้เหตุผล (วิธีแก้) */
 const REASON_HELP: Record<string, string> = {
   LOW_MATCH: 'รูปในบัตรอาจเก่า หรือแสงตอนถ่ายหน้าน้อยไป',
+  BORDERLINE_MATCH: 'รูปในบัตรอาจเก่า หรือแสงตอนถ่ายหน้าน้อยไป',
   DIFFERENT_PEOPLE: 'ถ่ายใหม่ให้เห็นใบหน้าคุณคนเดียวตลอดทุกท่า',
+  FACES_INCONSISTENT: 'ถ่ายใหม่ให้เห็นใบหน้าคุณคนเดียวตลอดทุกท่า',
   SPOOF_SUSPECTED: 'ถ่ายจากใบหน้าจริงเท่านั้น ห้ามถ่ายจากหน้าจอหรือรูป',
+  REPLAY_SUSPECTED: 'ถ่ายจากใบหน้าจริงตรงหน้ากล้องเท่านั้น',
+  LOW_LIVENESS: 'ถ่ายในที่สว่าง ทำท่าช้าๆ ตามคำสั่ง',
+  LOW_REAL: 'ถ่ายจากใบหน้าจริงในที่สว่าง',
   BLURRY: 'ถือให้นิ่ง ในที่สว่าง',
   GLARE: 'เลี่ยงไฟส่องตรงบัตร',
   CARD_INCOMPLETE: 'ให้เห็นบัตรครบทั้งใบในกรอบ',
   OCR_LOW: 'ถ่ายให้ชัด ตัวอักษรไม่เบลอ',
+  ID_UNREADABLE: 'ถ่ายให้เห็นเลขบัตรชัด ไม่มีนิ้วบัง',
   DUPLICATE_ID: 'เจ้าหน้าที่จะตรวจสอบความเป็นเจ้าของบัตร',
   USER_CORRECTED: 'เจ้าหน้าที่ตรวจทานข้อมูลที่แก้',
   AI_UNAVAILABLE: 'ไม่ต้องทำอะไรเพิ่ม รอผลได้เลย',
@@ -48,6 +56,7 @@ export default function EkycResultScreen() {
   const params = useLocalSearchParams<{ from?: string }>();
   const mountedRef = useMountedRef();
   const exit = useEkycExit();
+  const { sleep } = useTimers();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const decision = useEkycStore((s) => s.decision);
   const status = useEkycStore((s) => s.status);
@@ -55,9 +64,12 @@ export default function EkycResultScreen() {
   const startedAt = useEkycStore((s) => s.startedAt);
   const [loaded, setLoaded] = useState(!!decision);
   const [retrying, setRetrying] = useState(false);
+  const [waitState, setWaitState] = useState<'idle' | 'waiting' | 'timeout'>('idle');
   const retryingRef = useRef(false);
+  const waitingRef = useRef(false);
 
-  const from = storeFrom ?? (isKycGateContext(params.from) ? params.from : 'profile');
+  // ลิงก์ที่เปิดหน้านี้มาก่อน (แจ้งเตือน/ด่าน) แล้วค่อยใช้ค่าที่จำไว้ตอนเริ่มขั้นตอน
+  const from = isKycGateContext(params.from) ? params.from : storeFrom ?? 'profile';
   const copy = KYC_GATE_COPY[from];
 
   // สถานะล่าสุดเสมอ (ผลจาก push / เจ้าหน้าที่ตัดสินแล้ว)
@@ -80,6 +92,34 @@ export default function EkycResultScreen() {
     return () => sub.remove();
   }, [exit]);
 
+  /** server ยังตรวจคำขอก่อนหน้า → ถามสถานะซ้ำจนเสร็จ (ออกจากหน้า = เลิกถาม) */
+  const waitForResult = useCallback(async () => {
+    if (waitingRef.current) return;
+    waitingRef.current = true;
+    setWaitState('waiting');
+    const outcome = await waitWhileProcessing({
+      fetchStatus: getEkycStatus,
+      sleep,
+      isCancelled: () => !mountedRef.current,
+    });
+    waitingRef.current = false;
+    if (!mountedRef.current || outcome.kind === 'cancelled') return;
+    const store = useEkycStore.getState();
+    if (outcome.status) store.setStatus(outcome.status);
+    if (outcome.kind === 'done') {
+      // รู้ผลจากรหัส error (ไม่มีสถานะ) → ใช้ผลสรุป · มีสถานะ = หน้าจออ่านจากสถานะเอง
+      if (!outcome.status) store.setDecision(outcome.decision);
+      if (outcome.decision?.decision === 'approved') useAuthStore.getState().refreshUser().catch(() => {});
+      setWaitState('idle');
+      return;
+    }
+    setWaitState('timeout');
+  }, [mountedRef, sleep]);
+
+  useEffect(() => {
+    if (!decision && status?.processing && waitState === 'idle') waitForResult();
+  }, [decision, status?.processing, waitState, waitForResult]);
+
   // ---------- ตัดสินว่าจะแสดงแบบไหน ----------
   const view: View_ = (() => {
     if (decision) {
@@ -96,7 +136,8 @@ export default function EkycResultScreen() {
           return 'rejected';
       }
     }
-    if (!loaded && !status) return 'loading';
+    if (!loaded && !status && waitState === 'idle') return 'loading';
+    if (waitState !== 'idle' || status?.processing) return 'processing';
     if (!status) return 'none';
     if (status.verified) return 'success';
     if (status.kyc_status === 'pending') return 'pending';
@@ -105,10 +146,17 @@ export default function EkycResultScreen() {
     return 'none';
   })();
 
-  const reasons = decision?.reasons ?? status?.reasons ?? [];
-  const attemptsLeft = decision?.attempts_left ?? status?.attempts_left ?? 0;
-  const canRetry = attemptsLeft > 0 && (status ? status.can_start || !!decision : true);
-  const seconds = decision && startedAt ? Math.max(1, Math.round((Date.now() - startedAt) / 1000)) : null;
+  // ผลจาก POST face จริงใช้ของตัวเอง · ผลสรุป (จากสถานะ/รหัส error) ใช้ข้อมูลจากสถานะล่าสุด
+  const fromSubmit = decision?.source === 'submit' ? decision : null;
+  const reasons = fromSubmit?.reasons ?? status?.reasons ?? [];
+  const reasonItems: EkycReasonItem[] = fromSubmit?.reason_items ?? status?.reason_items ?? [];
+  const staffNote = fromSubmit ? fromSubmit.message : status?.message ?? null;
+  const attemptsLeft = fromSubmit?.attempts_left ?? status?.attempts_left ?? 0;
+  // ถ่ายใหม่ (ผล retake): มีสิทธิ์เหลือ และ server ให้เริ่มรอบใหม่ได้
+  const canRetry = attemptsLeft > 0 && (status ? status.can_start || !!fromSubmit : true);
+  // รอเจ้าหน้าที่: ถ่ายใหม่ได้เฉพาะเมื่อ server บอก can_retake (เริ่มรอบใหม่แล้ว server ยกเลิกคิวตรวจเดิมให้)
+  const canRetakeReview = !!status?.can_retake;
+  const seconds = fromSubmit && startedAt ? Math.max(1, Math.round((Date.now() - startedAt) / 1000)) : null;
 
   useEffect(() => {
     if (view === 'success') resultHaptic('success');
@@ -123,10 +171,25 @@ export default function EkycResultScreen() {
     if (!mountedRef.current) return;
     setRetrying(false);
     if (outcome.kind === 'error') {
+      const store = useEkycStore.getState();
+      // server ยังตรวจคำขอก่อนหน้า → รอดูผล (ห้ามเริ่มทับ)
+      if (isWaitCode(outcome.code)) {
+        store.setDecision(null);
+        waitForResult();
+        return;
+      }
+      // รู้ผลแล้ว (ยืนยันแล้ว / รอเจ้าหน้าที่) → แสดงผลนั้น
+      const known = decisionForCode(outcome.code);
+      if (known) {
+        store.setDecision(known);
+        store.loadStatus(true).catch(() => {});
+        if (known.decision === 'approved') useAuthStore.getState().refreshUser().catch(() => {});
+        return;
+      }
       resultHaptic('error');
-      if (outcome.code === 'EKYC_TOO_MANY_ATTEMPTS' || outcome.code === 'EKYC_ALREADY_VERIFIED') {
-        useEkycStore.getState().setDecision(null);
-        useEkycStore.getState().loadStatus(true);
+      if (outcome.code === 'EKYC_TOO_MANY_ATTEMPTS') {
+        store.setDecision(null);
+        store.loadStatus(true).catch(() => {});
       }
       Alert.alert('เริ่มใหม่ไม่สำเร็จ', outcome.message);
       return;
@@ -158,6 +221,24 @@ export default function EkycResultScreen() {
     </View>
   );
 
+  /** แถวเหตุผล: สีตามระดับ (เหลือง = ระดับกลาง/เจ้าหน้าที่ดู · แดง = ไม่ผ่าน) ไม่มีติ๊กเขียว */
+  const reasonRows = (items: EkycReasonItem[]) =>
+    items.map((item, index) => (
+      <CheckRow
+        key={`${item.code ?? 'text'}-${item.text}`}
+        first={index === 0}
+        state={item.tone}
+        title={item.text}
+        subtitle={item.code ? REASON_HELP[item.code] : undefined}
+      />
+    ));
+
+  const staffNoteBox = staffNote ? (
+    <InfoNote icon="chat-circle-dots" title="ข้อความจากเจ้าหน้าที่">
+      {staffNote}
+    </InfoNote>
+  ) : null;
+
   // ยังไม่เข้าสู่ระบบ (เปิดจากแจ้งเตือนหลังออกจากระบบ) → ให้เข้าสู่ระบบก่อน ไม่หมุนโหลดค้าง
   if (!isAuthenticated) {
     return (
@@ -178,12 +259,49 @@ export default function EkycResultScreen() {
     );
   }
 
+  // ---------- server ยังตรวจคำขอก่อนหน้า ----------
+  if (view === 'processing') {
+    const timedOut = waitState === 'timeout';
+    return (
+      <EkycShell
+        title="ยืนยันตัวตน"
+        onBack={exit}
+        hero={heroBlock(
+          heroCircle(timedOut ? 'clock' : 'cpu', 'gold'),
+          timedOut ? 'ยังไม่ได้ผลตรวจ' : 'AI กำลังตรวจสอบ',
+          timedOut ? 'ออกจากหน้านี้ได้เลย ผลจะแจ้งทางการแจ้งเตือน' : 'ระบบกำลังตรวจคำขอล่าสุดของคุณ รอสักครู่'
+        )}
+        bottom={
+          timedOut ? (
+            <View style={styles.row}>
+              <Button3D title="ไว้ก่อน" variant="secondary" size="lg" onPress={exit} />
+              <Button3D title="ดูผลอีกครั้ง" icon="arrows-clockwise" size="lg" onPress={waitForResult} style={styles.flex} />
+            </View>
+          ) : (
+            <Button3D title="ไว้ก่อน รอแจ้งเตือน" variant="secondary" size="lg" fullWidth onPress={exit} />
+          )
+        }
+      >
+        <Card3D padding={spacing.lg} radius={22}>
+          <CheckRow
+            first
+            state={timedOut ? 'warn' : 'running'}
+            title="ตรวจคำขอล่าสุด"
+            subtitle={timedOut ? 'ใช้เวลานานกว่าปกติ ลองดูผลอีกครั้งในอีกสักครู่' : 'ไม่ต้องส่งใหม่ ระบบจะแสดงผลให้เอง'}
+          />
+        </Card3D>
+      </EkycShell>
+    );
+  }
+
   // ---------- สำเร็จ ----------
   if (view === 'success') {
-    const byAi = decision?.decision === 'approved' || status?.method === 'ekyc';
-    const subtitle = [byAi ? 'AI อนุมัติอัตโนมัติ' : 'เจ้าหน้าที่ตรวจสอบแล้ว', seconds ? `ใช้เวลา ${seconds} วินาที` : null]
-      .filter(Boolean)
-      .join(' · ');
+    const byAi = fromSubmit?.decision === 'approved' || status?.method === 'ekyc';
+    const byStaff = !byAi && (status?.method === 'manual' || !!fromSubmit);
+    const subtitle =
+      [byAi ? 'AI อนุมัติอัตโนมัติ' : byStaff ? 'เจ้าหน้าที่ตรวจสอบแล้ว' : null, seconds ? `ใช้เวลา ${seconds} วินาที` : null]
+        .filter(Boolean)
+        .join(' · ') || 'บัญชีนี้ยืนยันตัวตนแล้ว';
     return (
       <EkycShell
         title="ยืนยันตัวตน"
@@ -212,10 +330,6 @@ export default function EkycResultScreen() {
 
   // ---------- ส่งเจ้าหน้าที่ ----------
   if (view === 'pending') {
-    const cardIssues = reasons.filter(isCardReason);
-    const liveIssues = reasons.filter(LIVENESS_REASONS);
-    const others = reasons.filter((r) => !isCardReason(r) && !LIVENESS_REASONS(r) && reasonText(r));
-    const rowState = (issues: string[]): CheckState => (issues.length > 0 ? 'warn' : 'done');
     return (
       <EkycShell
         title="ยืนยันตัวตน"
@@ -223,7 +337,7 @@ export default function EkycResultScreen() {
         hero={heroBlock(heroCircle('hourglass', 'gold'), 'ส่งให้เจ้าหน้าที่ตรวจแล้ว', 'ปกติไม่เกิน 1 ชั่วโมงในเวลาทำการ · แจ้งผลทางการแจ้งเตือน')}
         bottom={
           <View style={styles.row}>
-            {canRetry && (
+            {canRetakeReview && (
               <Button3D title="ถ่ายหน้าใหม่" variant="secondary" size="lg" loading={retrying} onPress={() => retry('face')} />
             )}
             <Button3D title="รอเจ้าหน้าที่" variant="navy" size="lg" onPress={exit} style={styles.flex} />
@@ -232,26 +346,20 @@ export default function EkycResultScreen() {
       >
         <Card3D padding={spacing.lg} radius={22}>
           <Text style={[typography.h2, styles.cardTitle, { color: colors.textStrong }]}>
-            {reasons.length > 0 ? 'AI ยังไม่มั่นใจพอ เพราะ' : 'เจ้าหน้าที่กำลังตรวจสอบ'}
+            {reasonItems.length > 0 ? 'AI ยังไม่มั่นใจพอ เพราะ' : 'เจ้าหน้าที่กำลังตรวจสอบ'}
           </Text>
-          <CheckRow
-            first
-            state={rowState(cardIssues)}
-            title="อ่านบัตรและบัตรของจริง"
-            subtitle={cardIssues.length > 0 ? reasonText(cardIssues[0]) ?? undefined : 'ผ่าน'}
-          />
-          <CheckRow
-            state={rowState(liveIssues)}
-            title="เป็นคนจริง"
-            subtitle={liveIssues.length > 0 ? reasonText(liveIssues[0]) ?? undefined : 'ผ่าน'}
-          />
-          {others.map((r) => (
-            <CheckRow key={r} state="warn" title={reasonText(r) as string} subtitle={REASON_HELP[r]} />
-          ))}
+          {reasonItems.length > 0 ? (
+            reasonRows(reasonItems)
+          ) : (
+            <CheckRow first state="running" title="รอเจ้าหน้าที่ตรวจข้อมูล" subtitle="ไม่ต้องทำอะไรเพิ่ม รอผลได้เลย" />
+          )}
         </Card3D>
-        {canRetry && (
+        {staffNoteBox}
+        {canRetakeReview && (
           <InfoNote icon="lightning" title="อยากได้ผลเร็วกว่านี้?">
-            {`ถ่ายใบหน้าใหม่ในที่สว่าง ถอดหมวกและแว่น AI จะตรวจซ้ำให้ทันที (ทำได้อีก ${attemptsLeft} ครั้งวันนี้)`}
+            {`ถ่ายใบหน้าใหม่ในที่สว่าง ถอดหมวกและแว่น AI จะตรวจซ้ำให้ทันที${
+              attemptsLeft > 0 ? ` (ทำได้อีก ${attemptsLeft} ครั้งวันนี้)` : ''
+            }`}
           </InfoNote>
         )}
       </EkycShell>
@@ -261,7 +369,6 @@ export default function EkycResultScreen() {
   // ---------- ถ่ายใหม่ ----------
   if (view === 'retake') {
     const target = retakeTarget(reasons);
-    const texts = reasons.map((r) => ({ code: r, text: reasonText(r) })).filter((r) => !!r.text);
     return (
       <EkycShell
         title="ยืนยันตัวตน"
@@ -289,10 +396,13 @@ export default function EkycResultScreen() {
       >
         <Card3D padding={spacing.lg} radius={22}>
           <Text style={[typography.h2, styles.cardTitle, { color: colors.textStrong }]}>สิ่งที่ต้องแก้</Text>
-          {(texts.length > 0 ? texts : [{ code: 'GENERIC', text: 'ภาพยังไม่ชัดพอให้ AI ตรวจ' }]).map((r, index) => (
-            <CheckRow key={r.code} first={index === 0} state="fail" title={r.text as string} subtitle={REASON_HELP[r.code]} />
-          ))}
+          {reasonItems.length > 0 ? (
+            reasonRows(reasonItems)
+          ) : (
+            <CheckRow first state="fail" title="ภาพยังไม่ชัดพอให้ AI ตรวจ" />
+          )}
         </Card3D>
+        {staffNoteBox}
         <InfoNote icon="info" title="เคล็ดลับให้ผ่านในครั้งเดียว">
           ถ่ายในที่สว่าง ถอดหมวก แว่นดำ และหน้ากาก ทำท่าช้าๆ ตามคำสั่ง ให้เห็นใบหน้าคุณคนเดียวตลอด
         </InfoNote>
@@ -302,7 +412,6 @@ export default function EkycResultScreen() {
 
   // ---------- ไม่ผ่าน / ยังไม่เริ่ม ----------
   const rejected = view === 'rejected';
-  const texts = reasons.map(reasonText).filter((t): t is string => !!t);
   return (
     <EkycShell
       title="ยืนยันตัวตน"
@@ -327,14 +436,13 @@ export default function EkycResultScreen() {
         </View>
       }
     >
-      {texts.length > 0 && (
+      {reasonItems.length > 0 && (
         <Card3D padding={spacing.lg} radius={22}>
           <Text style={[typography.h2, styles.cardTitle, { color: colors.textStrong }]}>เหตุผล</Text>
-          {texts.map((t, index) => (
-            <CheckRow key={t} first={index === 0} state="fail" title={t} />
-          ))}
+          {reasonRows(reasonItems)}
         </Card3D>
       )}
+      {staffNoteBox}
       <InfoNote icon="lock">รูปบัตรและรูปใบหน้าเข้ารหัสเก็บไว้ ไม่แสดงให้ใครเห็น นอกจากเจ้าหน้าที่เมื่อต้องตรวจสอบ</InfoNote>
     </EkycShell>
   );

@@ -42,7 +42,11 @@ export const TRUSTED_AVATAR_HOST_SUFFIXES = [
   'line-scdn.net',
   'googleusercontent.com',
   'fbcdn.net',
+  // platform-lookaside.fbsbx.com (รูปโปรไฟล์ Facebook แบบ asid)
   'fbsbx.com',
+  // Socialite เก็บรูป Facebook เป็น https://graph.facebook.com/{id}/picture (เปลี่ยนทางไป fbcdn/fbsbx เอง)
+  // ระบุ host เต็ม ห้ามเปิดทั้ง facebook.com
+  'graph.facebook.com',
 ] as const;
 
 /**

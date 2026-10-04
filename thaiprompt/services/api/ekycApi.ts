@@ -7,6 +7,13 @@
  *   PATCH /ekyc/sessions/{id}/id-card  {name_th?, birth_date?} → ผู้ใช้แก้ข้อมูลที่ AI อ่านผิด (ผลสุดท้ายอย่างน้อย = ส่งเจ้าหน้าที่)
  *   POST  /ekyc/sessions/{id}/face     multipart frames[] + labels[] → ผลตัดสิน approved | review | retake | rejected
  *
+ * error ที่หน้าจอต้องแยกจัดการ (ส่วนเพิ่ม 2026-10-04 รอบ 2)
+ *   503 EKYC_AI_BUSY        (id-card / face) ระบบตรวจคิวเต็ม — data.retry_after_seconds · รอบไม่เปลี่ยน ส่งคำขอเดิมซ้ำได้
+ *   429 EKYC_CARD_LIMIT     (id-card) ส่งรูปบัตรในรอบนี้ครบแล้ว → เริ่มรอบใหม่ (เหมือนรอบหมดเวลา)
+ *   409 EKYC_PROCESSING     (face / sessions) ยังตรวจคำขอก่อนหน้าอยู่ → ห้ามเริ่มใหม่ ให้รอดูผลจาก GET /ekyc/status
+ *   409 EKYC_SESSION_DONE   (face) รอบนี้ตัดสินไปแล้ว → ดูผลจาก GET /ekyc/status
+ *   409 EKYC_PENDING_REVIEW (sessions) รอเจ้าหน้าที่ตรวจและถ่ายใหม่ไม่ได้ → หน้าผลแบบรอตรวจ
+ *
  * หลักการ
  *   - ทุกฟังก์ชันคืน ApiResult (ไม่ throw) · ข้อความ error เป็นภาษาไทยจาก client.ts เสมอ
  *   - ข้อมูลจาก server ผ่านตัวแปลงที่นี่ก่อนถึงหน้าจอ (ชนิดแน่นอน ค่าแปลกปลอม = ค่าปลอดภัย)
@@ -16,7 +23,7 @@
  */
 
 import { APP_CONFIG } from '@/constants';
-import { apiGet, apiPatch, apiPost, apiUpload, fileFromUri, num, type ApiResult } from './client';
+import { apiGet, apiPatch, apiPost, apiUpload, fileFromUri, isThaiText, num, type ApiResult } from './client';
 
 // =====================================================
 // ค่าคงที่ / ชนิดข้อมูล
@@ -36,16 +43,34 @@ export type KycStatusValue = 'none' | 'pending' | 'approved' | 'rejected';
 export type EkycDecision = 'approved' | 'review' | 'retake' | 'rejected';
 export type KycMethod = 'manual' | 'ekyc';
 
+/** เหตุผล 1 ข้อพร้อมข้อความไทยที่แสดงได้ */
+export interface EkycReasonItem {
+  /** รหัสเหตุผล (null = server ส่งข้อความมาแต่รหัสอ่านไม่ได้) */
+  code: string | null;
+  /** ข้อความไทย — ของ server ก่อน (reason_texts) ไม่มีค่อยใช้ของแอป */
+  text: string;
+  /** fail = ไม่ผ่านจริง · warn = ระดับกลาง/ให้เจ้าหน้าที่ดู (ห้ามแสดงเป็นติ๊กเขียว) */
+  tone: 'fail' | 'warn';
+}
+
 export interface EkycStatus {
   kyc_status: KycStatusValue;
   verified: boolean;
   verified_at: string | null;
   method: KycMethod | null;
-  /** เริ่มรอบใหม่ได้หรือไม่ (ยืนยันแล้ว/ลองครบโควตาวันนี้ = false) */
+  /** เริ่มรอบใหม่ได้หรือไม่ (ยืนยันแล้ว/ลองครบโควตาวันนี้/รอเจ้าหน้าที่ = false) */
   can_start: boolean;
+  /** ผลล่าสุดรอเจ้าหน้าที่ตรวจ แต่ยังถ่ายใหม่ได้ (เริ่มรอบใหม่แล้ว server ยกเลิกคิวตรวจเดิมให้) */
+  can_retake: boolean;
+  /** server ยังตรวจคำขอก่อนหน้าอยู่ (ห้ามเริ่มรอบใหม่ — รอแล้วถามสถานะใหม่) */
+  processing: boolean;
   attempts_left: number;
   last_decision: EkycDecision | null;
   reasons: string[];
+  /** เหตุผลพร้อมข้อความไทย (ลำดับเดียวกับ reasons) */
+  reason_items: EkycReasonItem[];
+  /** ข้อความจากเจ้าหน้าที่ (ถ้ามี) */
+  message: string | null;
   required_for: string[];
   /** ชื่อตามบัตร (ถ้า server ส่งมา) */
   name_th: string | null;
@@ -73,10 +98,11 @@ export interface EkycCardFields {
   expiry_date: string | null;
 }
 
+/** ผลตรวจบัตร: true = ผ่าน · false = ไม่ผ่าน · null = ไม่ทราบ/อ่านไม่ได้ (เจ้าหน้าที่ตรวจให้ — ห้ามแสดงเป็นสีแดง) */
 export interface EkycCardChecks {
-  checksum: boolean;
-  not_expired: boolean;
-  card_real: boolean;
+  checksum: boolean | null;
+  not_expired: boolean | null;
+  card_real: boolean | null;
   quality_ok: boolean;
 }
 
@@ -86,7 +112,10 @@ export interface EkycIdCardResult {
   checks: EkycCardChecks;
   /** 0–1 */
   ocr_confidence: number;
+  /** false = ตัวอ่านบัตรอัตโนมัติไม่พร้อม (ผู้ใช้กรอกชื่อ/วันเกิดเอง เจ้าหน้าที่ตรวจให้) */
+  ai_available: boolean;
   reasons: string[];
+  reason_items: EkycReasonItem[];
 }
 
 export interface EkycScores {
@@ -100,8 +129,13 @@ export interface EkycFaceResult {
   decision: EkycDecision;
   scores: EkycScores;
   reasons: string[];
+  reason_items: EkycReasonItem[];
+  /** ข้อความจากเจ้าหน้าที่ (ถ้ามี) */
+  message: string | null;
   kyc_status: KycStatusValue;
   attempts_left: number;
+  /** submit = คำตอบของ POST face จริง · status = สรุปจากสถานะ/รหัส error (ไม่มีคะแนน ไม่บอกเวลาที่ใช้) */
+  source: 'submit' | 'status';
 }
 
 export interface EkycCorrections {
@@ -142,6 +176,10 @@ const passFlag = (value: unknown): boolean => {
   return bool(value);
 };
 
+/** ผ่าน/ไม่ผ่าน/ไม่ทราบ — null/ไม่ส่งมา = ไม่ทราบ (null) */
+const triFlag = (value: unknown): boolean | null =>
+  value === null || value === undefined || value === '' ? null : passFlag(value);
+
 const isoDate = (value: unknown): string | null => {
   const s = str(value);
   if (!s) return null;
@@ -149,11 +187,45 @@ const isoDate = (value: unknown): string | null => {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
 };
 
+const REASON_CODE = /^[A-Z0-9_]+(:[a-z_]+)?$/;
+
+const reasonCode = (value: unknown): string | null =>
+  typeof value === 'string' && REASON_CODE.test(value.trim()) ? value.trim() : null;
+
 const reasonList = (value: unknown): string[] =>
   (Array.isArray(value) ? value : [])
-    .filter((r): r is string => typeof r === 'string' && /^[A-Z0-9_]+(:[a-z_]+)?$/.test(r.trim()))
-    .map((r) => r.trim())
+    .map(reasonCode)
+    .filter((r): r is string => r !== null)
     .slice(0, 20);
+
+/** ข้อความจากเจ้าหน้าที่: ข้อความสั้นๆ เท่านั้น (ยาวเกิน = ตัด) */
+const staffMessage = (value: unknown): string | null => {
+  const s = str(value);
+  return s ? s.slice(0, 500) : null;
+};
+
+/**
+ * จับคู่ reasons กับ reason_texts ของ server ตามลำดับ (index เดียวกัน)
+ * - ข้อความของ server (ภาษาไทย) มาก่อนเสมอ · ไม่มี/ไม่ใช่ภาษาไทย → ข้อความของแอป · ไม่มีทั้งคู่ = ไม่แสดง (ไม่โชว์รหัสดิบ)
+ * - ตัดข้อความซ้ำ · สูงสุด 20 ข้อ
+ *
+ * @example buildReasonItems(['BORDERLINE_MATCH'], ['ใบหน้าคล้ายรูปบนบัตรระดับกลาง'])
+ * // [{ code: 'BORDERLINE_MATCH', text: 'ใบหน้าคล้ายรูปบนบัตรระดับกลาง', tone: 'warn' }]
+ */
+export const buildReasonItems = (rawReasons: unknown, rawTexts: unknown): EkycReasonItem[] => {
+  const reasons: unknown[] = Array.isArray(rawReasons) ? rawReasons : [];
+  const texts: unknown[] = Array.isArray(rawTexts) ? rawTexts : [];
+  const out: EkycReasonItem[] = [];
+  const count = Math.min(40, Math.max(reasons.length, texts.length));
+  for (let i = 0; i < count && out.length < 20; i += 1) {
+    const code = reasonCode(reasons[i]);
+    const serverText = isThaiText(texts[i]) ? (texts[i] as string).trim() : null;
+    const text = serverText ?? (code ? reasonText(code) : null);
+    if (!text || out.some((item) => item.text === text)) continue;
+    out.push({ code, text, tone: code ? reasonTone(code) : 'warn' });
+  }
+  return out;
+};
 
 const KYC_STATUS_ALIASES: Record<string, KycStatusValue> = {
   none: 'none',
@@ -188,9 +260,13 @@ export const normalizeEkycStatus = (raw: any): EkycStatus => {
     verified_at: str(raw?.verified_at),
     method,
     can_start: verified ? false : raw?.can_start === undefined ? kyc_status !== 'pending' : bool(raw?.can_start),
+    can_retake: verified ? false : bool(raw?.can_retake),
+    processing: verified ? false : bool(raw?.processing),
     attempts_left: Math.max(0, Math.round(num(raw?.attempts_left, 0))),
     last_decision: decisionOf(raw?.last_decision),
     reasons: reasonList(raw?.reasons),
+    reason_items: buildReasonItems(raw?.reasons, raw?.reason_texts),
+    message: staffMessage(raw?.message),
     required_for: (Array.isArray(raw?.required_for) ? raw.required_for : []).filter(
       (v: unknown): v is string => typeof v === 'string'
     ),
@@ -233,13 +309,16 @@ export const normalizeEkycIdCard = (raw: any): EkycIdCardResult => {
       expiry_date: isoDate(fields.expiry_date),
     },
     checks: {
-      checksum: passFlag(checks.checksum),
-      not_expired: passFlag(checks.not_expired),
-      card_real: passFlag(checks.card_real),
+      checksum: triFlag(checks.checksum),
+      not_expired: triFlag(checks.not_expired),
+      card_real: triFlag(checks.card_real),
       quality_ok: passFlag(checks.quality_ok),
     },
     ocr_confidence: score01(raw?.ocr_confidence) ?? 0,
+    // server รุ่นก่อนไม่ส่งช่องนี้ = ตัวอ่านบัตรทำงานปกติ
+    ai_available: raw?.ai_available === undefined || raw?.ai_available === null ? true : bool(raw.ai_available),
     reasons: reasonList(raw?.reasons),
+    reason_items: buildReasonItems(raw?.reasons, raw?.reason_texts),
   };
 };
 
@@ -255,9 +334,31 @@ export const normalizeEkycFace = (raw: any): EkycFaceResult => {
       card_real: score01(scores.card_real),
     },
     reasons: reasonList(raw?.reasons),
+    reason_items: buildReasonItems(raw?.reasons, raw?.reason_texts),
+    message: staffMessage(raw?.message),
     kyc_status: normalizeKycStatusValue(raw?.kyc_status),
     attempts_left: Math.max(0, Math.round(num(raw?.attempts_left, 0))),
+    source: 'submit',
   };
+};
+
+/** ข้อความเมื่อ server สุ่มท่าที่แอปรุ่นนี้ไม่รู้จัก */
+export const EKYC_APP_OUTDATED_MESSAGE =
+  'แอปรุ่นนี้ยังทำขั้นตอนยืนยันตัวตนแบบใหม่ไม่ได้ อัปเดตแอปจาก Play Store แล้วลองอีกครั้ง';
+
+/**
+ * รอบนี้แอปทำได้ครบหรือไม่ (มี session_id · มีคำสั่ง · ไม่มีคำสั่งที่แอปไม่รู้จัก)
+ * ไม่ครบ = ห้ามไปถ่ายใบหน้า (ไม่งั้นส่งท่าไม่ครบ → CHALLENGE_MISMATCH → เริ่มรอบใหม่วนไม่จบ)
+ */
+export const isSessionUsable = (session: EkycSession | null | undefined): boolean =>
+  !!session && !!session.session_id && session.challenges.length > 0 && session.unsupported.length === 0;
+
+/** วินาทีที่ควรรอก่อนลองใหม่ เมื่อระบบตรวจไม่ว่าง (EKYC_AI_BUSY) — จำกัด 3–60 วินาที · ไม่ส่งมา = 10 */
+export const retryAfterSeconds = (data: unknown): number => {
+  const raw = (data as { retry_after_seconds?: unknown } | null | undefined)?.retry_after_seconds;
+  const n = typeof raw === 'number' || typeof raw === 'string' ? Number(raw) : NaN;
+  if (!Number.isFinite(n) || n <= 0) return 10;
+  return Math.max(3, Math.min(60, Math.round(n)));
 };
 
 const mapResult = <A, B>(result: ApiResult<A>, fn: (data: A) => B): ApiResult<B> =>
@@ -290,11 +391,73 @@ const REASON_TEXT: Record<string, string> = {
   NO_FACE: 'ไม่พบใบหน้าในกล้อง',
   MULTIPLE_FACES: 'มีมากกว่าหนึ่งใบหน้าในกล้อง',
   SPOOF_SUSPECTED: 'ภาพอาจมาจากหน้าจอหรือรูปถ่าย ไม่ใช่หน้าจริง',
+  REPLAY_SUSPECTED: 'ภาพชุดนี้ดูเหมือนเคยส่งมาแล้ว ต้องถ่ายใหม่จากหน้าจริงตอนนี้',
   DIFFERENT_PEOPLE: 'ใบหน้าในแต่ละภาพดูไม่ใช่คนเดียวกัน',
-  LOW_MATCH: 'ใบหน้าคล้ายรูปในบัตรระดับกลาง',
+  FACES_INCONSISTENT: 'ใบหน้าในแต่ละท่าดูไม่ต่อเนื่องกัน',
+  LOW_MATCH: 'ใบหน้าคล้ายรูปในบัตรน้อย',
+  BORDERLINE_MATCH: 'ใบหน้าคล้ายรูปในบัตรระดับกลาง',
+  NO_MATCH_SCORE: 'ระบบเทียบใบหน้ากับรูปในบัตรไม่ได้ เจ้าหน้าที่จะตรวจให้',
+  LOW_LIVENESS: 'ระบบยังไม่มั่นใจว่าเป็นคนจริงตรงหน้ากล้อง',
+  LOW_REAL: 'ภาพใบหน้าอาจไม่ใช่หน้าจริง',
+  LOW_CARD_REAL: 'ยังไม่มั่นใจว่าเป็นบัตรตัวจริง เจ้าหน้าที่จะตรวจให้',
+  ID_UNREADABLE: 'อ่านเลขบัตรประชาชนไม่ได้',
+  EXPIRY_UNKNOWN: 'อ่านวันบัตรหมดอายุไม่ได้ เจ้าหน้าที่จะตรวจให้',
+  PRIOR_REJECTED: 'บัญชีนี้เคยยืนยันตัวตนไม่ผ่าน เจ้าหน้าที่จะตรวจอีกครั้ง',
+  ATTEMPTS_EXHAUSTED: 'วันนี้ลองครบจำนวนครั้งแล้ว ส่งให้เจ้าหน้าที่ตรวจแทน',
+  ADMIN_REJECTED: 'เจ้าหน้าที่ตรวจแล้วยืนยันตัวตนไม่ผ่าน',
+  ADMIN_RETAKE: 'เจ้าหน้าที่ขอให้ถ่ายบัตรและใบหน้าใหม่',
   DUPLICATE_ID: 'บัตรนี้เคยใช้ยืนยันกับบัญชีอื่นแล้ว เจ้าหน้าที่จะตรวจสอบให้',
   USER_CORRECTED: 'มีการแก้ข้อมูลบัตรเอง เจ้าหน้าที่จะตรวจทานอีกครั้ง',
   AI_UNAVAILABLE: 'ระบบ AI ไม่ว่างชั่วคราว ส่งให้เจ้าหน้าที่ตรวจแทนแล้ว',
+};
+
+/** เหตุผลที่แปลว่า "ไม่ผ่าน" จริง (ที่เหลือ = ระดับกลาง/ให้เจ้าหน้าที่ดู) */
+const FAIL_REASONS = new Set([
+  'NO_CARD',
+  'BLURRY',
+  'GLARE',
+  'CARD_INCOMPLETE',
+  'OCR_LOW',
+  'ID_CHECKSUM_FAIL',
+  'EXPIRED',
+  'NO_CARD_FACE',
+  'NO_FACE',
+  'MULTIPLE_FACES',
+  'SPOOF_SUSPECTED',
+  'REPLAY_SUSPECTED',
+  'DIFFERENT_PEOPLE',
+  'FACES_INCONSISTENT',
+  'LOW_MATCH',
+  'LOW_LIVENESS',
+  'LOW_REAL',
+  'PRIOR_REJECTED',
+  'ADMIN_REJECTED',
+]);
+
+/** ระดับของเหตุผล: fail = ไม่ผ่าน · warn = ระดับกลาง/เจ้าหน้าที่ตรวจ (ไม่รู้จัก = warn) */
+export const reasonTone = (code: string): 'fail' | 'warn' =>
+  code.startsWith('CHALLENGE_FAILED') || FAIL_REASONS.has(code) ? 'fail' : 'warn';
+
+/** เหตุผลกลุ่ม "เป็นคนจริง" (ท่าทาง/หน้าจริง) */
+const LIVENESS_REASONS = new Set([
+  'SPOOF_SUSPECTED',
+  'REPLAY_SUSPECTED',
+  'NO_FACE',
+  'MULTIPLE_FACES',
+  'LOW_LIVENESS',
+  'LOW_REAL',
+  'FACES_INCONSISTENT',
+]);
+
+export const isLivenessReason = (code: string): boolean => code.startsWith('CHALLENGE_FAILED') || LIVENESS_REASONS.has(code);
+
+/**
+ * สถานะแถว "ใบหน้าตรงกับรูปในบัตร": fail = ไม่ตรง/คล้ายน้อย · warn = ระดับกลาง/เทียบไม่ได้ · null = ไม่มีเหตุผลเรื่องนี้
+ */
+export const matchReasonTone = (codes: string[]): 'fail' | 'warn' | null => {
+  if (codes.some((c) => c === 'DIFFERENT_PEOPLE' || c === 'LOW_MATCH')) return 'fail';
+  if (codes.some((c) => c === 'BORDERLINE_MATCH' || c === 'NO_MATCH_SCORE')) return 'warn';
+  return null;
 };
 
 /** ข้อความไทยของเหตุผล 1 ข้อ · ไม่รู้จัก = null (ไม่แสดงรหัสดิบให้ผู้ใช้) */
@@ -325,6 +488,10 @@ const CARD_REASONS = new Set([
   'ID_CHECKSUM_FAIL',
   'EXPIRED',
   'NO_CARD_FACE',
+  'ID_UNREADABLE',
+  'LOW_CARD_REAL',
+  // เจ้าหน้าที่ขอถ่ายใหม่ = เริ่มจากบัตร (ถ่ายครบทั้งชุด)
+  'ADMIN_RETAKE',
 ]);
 
 /** เหตุผลข้อนี้เป็นปัญหาของรูปบัตรหรือไม่ */

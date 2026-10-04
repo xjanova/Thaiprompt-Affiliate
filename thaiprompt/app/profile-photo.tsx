@@ -160,7 +160,8 @@ export default function MyProfileScreen() {
       return {
         pill: <Pill label="ผ่านแล้ว" icon="check" tone="success" />,
         text: `ยืนยันตัวตนแล้ว${date ? ` · ${date}` : ''}`,
-        sub: status.method === 'manual' ? 'ตรวจโดยเจ้าหน้าที่' : 'อนุมัติโดย AI',
+        // บอกวิธีตรวจเฉพาะที่ server ระบุ (method ว่าง = ไม่บอก)
+        sub: status.method === 'ekyc' ? 'อนุมัติโดย AI' : status.method === 'manual' ? 'ตรวจโดยเจ้าหน้าที่' : null,
       };
     }
     if (status.kyc_status === 'pending') {

@@ -85,6 +85,8 @@ describe('รูปโปรไฟล์จาก CDN ของบัญชี�
     expect(isTrustedAvatarUrl('https://lh3.googleusercontent.com/a/x=s96-c')).toBe(true);
     expect(isTrustedAvatarUrl('https://scontent.xx.fbcdn.net/v/t1.jpg')).toBe(true);
     expect(isTrustedAvatarUrl('https://platform-lookaside.fbsbx.com/platform/profilepic/?asid=1')).toBe(true);
+    // Socialite เก็บรูป Facebook เป็น graph.facebook.com
+    expect(isTrustedAvatarUrl('https://graph.facebook.com/v3.3/1234567890/picture?type=normal')).toBe(true);
   });
 
   it('โดเมนอื่น / http / หลอกด้วย suffix ไม่ผ่าน', () => {
@@ -93,6 +95,10 @@ describe('รูปโปรไฟล์จาก CDN ของบัญชี�
     expect(isTrustedAvatarUrl('https://evilline-scdn.net/a.jpg')).toBe(false);
     expect(isTrustedAvatarUrl('https://line-scdn.net.evil.com/a.jpg')).toBe(false);
     expect(isTrustedAvatarUrl('javascript:alert(1)')).toBe(false);
+    // เปิดเฉพาะ graph.facebook.com ไม่ใช่ทั้ง facebook.com
+    expect(isTrustedAvatarUrl('https://www.facebook.com/a.jpg')).toBe(false);
+    expect(isTrustedAvatarUrl('http://graph.facebook.com/1/picture')).toBe(false);
+    expect(isTrustedAvatarUrl('https://graph.facebook.com.evil.com/1/picture')).toBe(false);
   });
 });
 

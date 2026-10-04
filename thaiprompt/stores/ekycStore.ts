@@ -58,7 +58,7 @@ interface EkycStore {
   setDecision: (decision: EkycFaceResult | null) => void;
   loadStatus: (force?: boolean) => Promise<EkycStatus | null>;
   setStatus: (status: EkycStatus | null) => void;
-  /** จบ/ทิ้งขั้นตอน: ลบไฟล์ชั่วคราวทั้งหมด (คงสถานะไว้) */
+  /** จบ/ทิ้งขั้นตอน: ลบไฟล์ชั่วคราวทั้งหมด + ลืมหน้าที่พามา (คงสถานะไว้) */
   resetFlow: () => void;
   /** ออกจากระบบ/เปลี่ยนบัญชี: ล้างทุกอย่าง */
   resetAll: () => void;
@@ -141,12 +141,13 @@ export const useEkycStore = create<EkycStore>((set, get) => ({
   resetFlow: () => {
     const { card, frames } = get();
     dropTempFiles([...(card ? [card.uri] : []), ...frames.map((f) => f.uri)]);
-    set({ session: null, card: null, corrections: {}, frames: [], decision: null, startedAt: null });
+    // from ล้างด้วย: ขั้นตอนถัดไปที่เปิดจากที่อื่น (แจ้งเตือน/โปรไฟล์) ต้องไม่ได้ปุ่ม "กลับไป…" ของรอบก่อน
+    set({ from: null, session: null, card: null, corrections: {}, frames: [], decision: null, startedAt: null });
   },
 
   resetAll: () => {
     get().resetFlow();
-    set({ from: null, status: null, statusLoadedAt: 0, statusLoading: false });
+    set({ status: null, statusLoadedAt: 0, statusLoading: false });
   },
 }));
 

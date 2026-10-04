@@ -3,6 +3,7 @@
  *
  * - useAppActive        แอปอยู่หน้าจอหรือไม่ (พับแอป = ปิดกล้อง/หยุดลูปถ่าย)
  * - useTimers           setTimeout ที่ล้างให้เองตอนออกจากหน้า (ไม่มี setState หลังถอดหน้าจอ)
+ * - useRetryCountdown   นับถอยหลังก่อนกดลองใหม่ (ระบบตรวจไม่ว่าง)
  * - CameraPermissionPanel  ขอสิทธิ์กล้องพร้อมเหตุผลภาษาไทย · ปฏิเสธถาวร → ปุ่มเปิดการตั้งค่า
  *   กลับมาจากการตั้งค่า → ตรวจสิทธิ์ใหม่เอง
  */
@@ -49,6 +50,34 @@ export const useTimers = () => {
     timers.current.clear();
   }, []);
   return { after, sleep, clearAll };
+};
+
+/**
+ * นับถอยหลังก่อนให้กด "ลองใหม่" (ระบบตรวจไม่ว่าง EKYC_AI_BUSY) — ตัวจับเวลาถูกล้างตอนออกจากหน้า
+ * @returns secondsLeft = วินาทีที่เหลือ (0 = กดได้) · start(วินาที) เริ่มนับใหม่
+ */
+export const useRetryCountdown = () => {
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stop = useCallback(() => {
+    if (timer.current) clearInterval(timer.current);
+    timer.current = null;
+  }, []);
+  useEffect(() => stop, [stop]);
+  const start = useCallback(
+    (seconds: number) => {
+      stop();
+      const until = Date.now() + seconds * 1000;
+      setSecondsLeft(Math.max(0, Math.ceil(seconds)));
+      timer.current = setInterval(() => {
+        const left = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+        setSecondsLeft(left);
+        if (left <= 0) stop();
+      }, 500);
+    },
+    [stop]
+  );
+  return { secondsLeft, start };
 };
 
 export interface CameraPermissionPanelProps {

@@ -2,9 +2,14 @@
  * ตรวจข้อมูลบัตร (ขั้นที่ 2 จาก 4) — ตามแบบ IdReview.png
  *
  * - ส่งรูปบัตรเข้ารอบปัจจุบัน (POST /ekyc/sessions/{id}/id-card) ครั้งเดียวต่อรูปต่อรอบ แล้วแสดงสิ่งที่ AI อ่านได้
- * - ผล retake (ภาพไม่ชัด/แสงสะท้อน/ไม่ใช่บัตรจริง ฯลฯ) → บอกเหตุผลเป็นข้อความไทย + ปุ่มถ่ายใหม่อย่างเดียว
+ * - ผล retake (ภาพไม่ชัด/แสงสะท้อน/ไม่ใช่บัตรจริง ฯลฯ) → บอกเหตุผลเป็นข้อความไทย (ของ server ก่อน) + ปุ่มถ่ายใหม่อย่างเดียว
  * - แก้ชื่อ/วันเกิดได้ถ้า AI อ่านผิด → PATCH ก่อนไปขั้นใบหน้า (แก้เอง = เจ้าหน้าที่ตรวจทานอีกครั้ง บอกผู้ใช้ชัดๆ)
- * - รอบหมดอายุระหว่างส่ง → เริ่มรอบใหม่แล้วส่งรูปเดิมให้เองหนึ่งครั้ง
+ * - ผลตรวจบัตร 3 สถานะ: ผ่าน (เขียว) / ไม่ผ่าน (แดง) / ไม่ทราบ (เทา "เจ้าหน้าที่จะตรวจให้" — ห้ามแดง)
+ * - ตัวอ่านบัตรอัตโนมัติไม่พร้อม (ai_available = false) → ไม่โชว์ "อ่านบัตรสำเร็จ 0%" บอกให้กรอกชื่อ/วันเกิดเอง
+ * - ระบบตรวจไม่ว่าง (503 EKYC_AI_BUSY) → รอตามเวลาที่ server บอก แล้วส่งรูปเดิมซ้ำ (ไม่นับเป็นครั้งที่พลาด)
+ * - รอบหมดอายุ / ส่งรูปบัตรครบโควตารอบ (EKYC_CARD_LIMIT) → เริ่มรอบใหม่แล้วส่งรูปเดิมให้เองหนึ่งครั้ง
+ *   (ระหว่างบันทึกข้อมูลที่แก้ก็เช่นกัน — ข้อมูลที่แก้ไว้ยังอยู่)
+ * - "อ่านบัตรอีกครั้ง" → กลับไปถ่ายบัตรใหม่ให้ AI อ่านใหม่
  * - กันกดซ้ำทุกปุ่ม · ไม่ setState หลังออกจากหน้า · กันแคปหน้าจอ (มีรูปบัตรบนจอ)
  */
 
@@ -16,20 +21,31 @@ import { Text } from '@/components/ui/Text';
 import { Button3D, Card3D, Icon, Pill, resultHaptic } from '@/components/ui';
 import { Field, FormSheet } from '@/components/shop';
 import { EkycShell, InfoNote } from '@/components/ekyc/EkycKit';
+import { useRetryCountdown } from '@/components/ekyc/cameraKit';
 import { useMountedRef } from '@/components/taladsod/hooks';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useEkycStore } from '@/stores/ekycStore';
 import {
   cleanThaiName,
   correctEkycIdCard,
+  EKYC_APP_OUTDATED_MESSAGE,
   formatThaiDate,
+  isSessionUsable,
   parseThaiBirthDate,
-  reasonTexts,
+  retryAfterSeconds,
   uploadEkycIdCard,
 } from '@/services/api/ekycApi';
+import { goResultForCode } from '@/services/ekyc/flow';
 import { radii, spacing, typography, useTheme } from '@/theme';
 
-type Phase = 'uploading' | 'ready' | 'retake' | 'error';
+/** busy = ระบบตรวจไม่ว่าง รอแล้วส่งรูปเดิมซ้ำ */
+type Phase = 'uploading' | 'ready' | 'retake' | 'busy' | 'error';
+
+/** ผลตรวจบัตร 1 ข้อ: ok = ผ่าน · bad = ไม่ผ่าน · unknown = ไม่ทราบ (เจ้าหน้าที่ตรวจให้) */
+type CheckNote = { state: 'ok' | 'bad' | 'unknown'; text: string };
+
+const triNote = (value: boolean | null, ok: string, bad: string, unknown: string): CheckNote =>
+  value === true ? { state: 'ok', text: ok } : value === false ? { state: 'bad', text: bad } : { state: 'unknown', text: unknown };
 
 export default function EkycReviewScreen() {
   useSensitiveScreen('ekyc-review');
@@ -47,6 +63,7 @@ export default function EkycReviewScreen() {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [aspect, setAspect] = useState(1.586);
   const [saving, setSaving] = useState(false);
+  const { secondsLeft: retryLeft, start: startRetryCountdown } = useRetryCountdown();
   const uploadingRef = useRef(false);
   const retriedExpiredRef = useRef(false);
   const savingRef = useRef(false);
@@ -66,11 +83,45 @@ export default function EkycReviewScreen() {
     else if (!card) router.replace('/ekyc/capture' as never);
   }, [focused, session, card]);
 
+  /**
+   * เริ่มรอบใหม่ (รอบหมดเวลา / ส่งรูปบัตรครบโควตารอบ) — คงข้อมูลที่ผู้ใช้แก้ไว้
+   * สำเร็จ = รอบเปลี่ยน → effect ด้านล่างส่งรูปบัตรเดิมเข้ารอบใหม่ให้เอง
+   * @returns true = ได้รอบใหม่ที่ใช้ได้
+   */
+  const startFresh = useCallback(async (): Promise<boolean> => {
+    const store = useEkycStore.getState();
+    const keep = { ...store.corrections };
+    const restarted = await store.startSession();
+    if (!mountedRef.current) return false;
+    if (!restarted.success) {
+      // ยืนยันแล้ว / รอเจ้าหน้าที่ / ยังตรวจคำขอก่อนหน้า / ลองครบวันนี้ → ไปหน้าผล
+      if (goResultForCode(restarted.code)) return false;
+      resultHaptic('error');
+      setErrorText(restarted.message);
+      setPhase('error');
+      return false;
+    }
+    if (!isSessionUsable(restarted.data)) {
+      resultHaptic('error');
+      setErrorText(EKYC_APP_OUTDATED_MESSAGE);
+      setPhase('error');
+      return false;
+    }
+    if (keep.name_th || keep.birth_date) useEkycStore.getState().setCorrections(keep);
+    return true;
+  }, [mountedRef]);
+
   const upload = useCallback(async () => {
     const state = useEkycStore.getState();
     const sid = state.session?.session_id;
     const uri = state.card?.uri;
     if (!sid || !uri || uploadingRef.current) return;
+    // รอบที่มีท่าที่แอปรุ่นนี้ไม่รู้จัก → ไม่ส่งรูปเข้ารอบนี้ (ไปต่อก็ถ่ายใบหน้าไม่ครบ) ให้อัปเดตแอปก่อน
+    if (!isSessionUsable(state.session)) {
+      setErrorText(EKYC_APP_OUTDATED_MESSAGE);
+      setPhase('error');
+      return;
+    }
     uploadingRef.current = true;
     setPhase('uploading');
     setErrorText(null);
@@ -85,28 +136,27 @@ export default function EkycReviewScreen() {
     if (!mountedRef.current) return;
 
     if (res.success) {
+      retriedExpiredRef.current = false;
       useEkycStore.getState().setCardResult(res.data, sid);
       resultHaptic(res.data.status === 'ok' ? 'success' : 'warning');
       setPhase(res.data.status === 'ok' ? 'ready' : 'retake');
       return;
     }
 
-    if (res.code === 'EKYC_SESSION_EXPIRED' && !retriedExpiredRef.current) {
-      retriedExpiredRef.current = true;
-      const restarted = await useEkycStore.getState().startSession();
-      if (!mountedRef.current) return;
-      if (restarted.success) {
-        upload();
-        return;
-      }
-      setErrorText(restarted.message);
-      setPhase('error');
+    // ระบบตรวจไม่ว่าง: รอบเดิม รูปเดิม — ไม่ใช่ความผิดของผู้ใช้
+    if (res.code === 'EKYC_AI_BUSY') {
+      resultHaptic('warning');
+      startRetryCountdown(retryAfterSeconds(res.data));
+      setPhase('busy');
       return;
     }
-    if (res.code === 'EKYC_TOO_MANY_ATTEMPTS' || res.code === 'EKYC_ALREADY_VERIFIED') {
+    if ((res.code === 'EKYC_SESSION_EXPIRED' || res.code === 'EKYC_CARD_LIMIT') && !retriedExpiredRef.current) {
+      retriedExpiredRef.current = true;
+      if (await startFresh()) upload();
+      return;
+    }
+    if (goResultForCode(res.code)) {
       resultHaptic('error');
-      useEkycStore.getState().loadStatus(true);
-      router.replace('/ekyc/result' as never);
       return;
     }
     resultHaptic('error');
@@ -117,7 +167,7 @@ export default function EkycReviewScreen() {
     }
     setErrorText(res.message);
     setPhase('error');
-  }, [mountedRef]);
+  }, [mountedRef, startFresh, startRetryCountdown]);
 
   // ส่งรูปเมื่อรูปนี้ยังไม่เคยส่งเข้ารอบปัจจุบัน
   useEffect(() => {
@@ -175,6 +225,11 @@ export default function EkycReviewScreen() {
     if (savingRef.current || phase !== 'ready') return;
     if (!nameShown || !birthShown) {
       resultHaptic('warning');
+      // ตัวอ่านบัตรไม่พร้อม → เปิดช่องกรอกเองเลย
+      if (result && !result.ai_available) {
+        openEdit();
+        return;
+      }
       Alert.alert('ข้อมูลยังไม่ครบ', 'AI อ่านชื่อหรือวันเกิดไม่ได้ กด "แก้ได้ถ้าผิด" แล้วกรอกให้ตรงกับบัตร หรือถ่ายบัตรใหม่ให้ชัดขึ้น');
       return;
     }
@@ -188,6 +243,18 @@ export default function EkycReviewScreen() {
       if (!mountedRef.current) return;
       setSaving(false);
       if (!res.success) {
+        // รอบหมดเวลาระหว่างตรวจข้อมูล → เริ่มรอบใหม่ (ส่งรูปบัตรเดิมให้เอง ข้อมูลที่แก้ยังอยู่) แล้วให้กดต่ออีกครั้ง
+        if (res.code === 'EKYC_SESSION_EXPIRED') {
+          resultHaptic('warning');
+          if (await startFresh()) {
+            Alert.alert(
+              'เริ่มรอบใหม่ให้แล้ว',
+              'รอบเดิมหมดเวลา ระบบส่งรูปบัตรเข้ารอบใหม่ให้แล้ว ตรวจข้อมูลอีกครั้งแล้วกด "ถูกต้อง ไปขั้นถัดไป" ได้เลย'
+            );
+          }
+          return;
+        }
+        if (goResultForCode(res.code)) return;
         resultHaptic('error');
         Alert.alert('บันทึกการแก้ไขไม่สำเร็จ', res.message);
         return;
@@ -199,8 +266,10 @@ export default function EkycReviewScreen() {
 
   // ---------- ส่วนแสดงผล ----------
   const ocrPct = result ? Math.round(result.ocr_confidence * 100) : 0;
-  const reasons = reasonTexts(result?.reasons ?? []);
+  const aiRead = result ? result.ai_available : true;
+  const reasons = (result?.reason_items ?? []).filter((r) => r.code !== 'EXPIRY_LIFELONG');
   const lifelong = (result?.reasons ?? []).includes('EXPIRY_LIFELONG');
+  const cardReal = result?.checks.card_real ?? null;
 
   const bottom =
     phase === 'ready' ? (
@@ -210,6 +279,18 @@ export default function EkycReviewScreen() {
       </View>
     ) : phase === 'retake' ? (
       <Button3D title="ถ่ายบัตรใหม่" icon="camera" size="lg" fullWidth onPress={retake} />
+    ) : phase === 'busy' ? (
+      <View style={styles.row}>
+        <Button3D title="ถ่ายใหม่" variant="secondary" size="lg" onPress={retake} />
+        <Button3D
+          title={retryLeft > 0 ? `ลองใหม่ได้ใน ${retryLeft} วินาที` : 'ลองส่งอีกครั้ง'}
+          icon="arrows-clockwise"
+          size="lg"
+          disabled={retryLeft > 0}
+          onPress={upload}
+          style={styles.flex}
+        />
+      </View>
     ) : phase === 'error' ? (
       <View style={styles.row}>
         <Button3D title="ถ่ายใหม่" variant="secondary" size="lg" onPress={retake} />
@@ -219,21 +300,31 @@ export default function EkycReviewScreen() {
       <Button3D title="AI กำลังอ่านบัตร…" size="lg" fullWidth loading disabled />
     );
 
+  const noteColor = (note: CheckNote): string =>
+    note.state === 'ok' ? colors.success : note.state === 'bad' ? colors.danger : colors.textMuted;
+
   const valueRow = (
     label: string,
     value: string | null,
-    note: { ok: boolean; text: string } | null,
+    note: CheckNote | null,
     onEdit: (() => void) | null,
     first: boolean = false
   ) => (
     <View style={[styles.field, !first && { borderTopWidth: 1, borderTopColor: colors.divider }]}>
       <View style={styles.flex}>
         <Text style={[typography.caption, { color: colors.textMuted }]}>{label}</Text>
-        <Text style={[typography.h2, { color: value ? colors.textStrong : colors.textFaint }]}>{value ?? 'อ่านไม่ได้'}</Text>
+        <Text style={[typography.h2, { color: value ? colors.textStrong : colors.textFaint }]}>
+          {value ?? (onEdit && !aiRead ? 'ยังไม่ได้กรอก' : 'อ่านไม่ได้')}
+        </Text>
         {note && (
           <View style={styles.noteRow}>
-            <Icon name={note.ok ? 'check' : 'warning-circle'} size={14} color={note.ok ? colors.success : colors.danger} weight="bold" />
-            <Text style={[typography.caption, { color: note.ok ? colors.success : colors.danger }]}>{note.text}</Text>
+            <Icon
+              name={note.state === 'ok' ? 'check' : note.state === 'bad' ? 'warning-circle' : 'question'}
+              size={14}
+              color={noteColor(note)}
+              weight="bold"
+            />
+            <Text style={[typography.caption, styles.flex, { color: noteColor(note) }]}>{note.text}</Text>
           </View>
         )}
       </View>
@@ -279,11 +370,17 @@ export default function EkycReviewScreen() {
           </View>
           {phase === 'ready' && result && (
             <View style={styles.pills}>
-              <Pill label={`อ่านบัตรสำเร็จ ${ocrPct}%`} icon="check" tone="success" />
+              {aiRead && <Pill label={`อ่านบัตรสำเร็จ ${ocrPct}%`} icon="check" tone="success" />}
               <Pill
-                label={result.checks.card_real ? 'บัตรของจริง ไม่ใช่ภาพจอ' : 'ตรวจความเป็นบัตรจริงไม่ผ่าน'}
+                label={
+                  cardReal === true
+                    ? 'บัตรของจริง ไม่ใช่ภาพจอ'
+                    : cardReal === false
+                      ? 'ตรวจความเป็นบัตรจริงไม่ผ่าน'
+                      : 'เจ้าหน้าที่จะตรวจความเป็นบัตรจริงให้'
+                }
                 icon="shield-check"
-                tone={result.checks.card_real ? 'success' : 'warning'}
+                tone={cardReal === true ? 'success' : cardReal === false ? 'warning' : 'neutral'}
               />
             </View>
           )}
@@ -297,14 +394,35 @@ export default function EkycReviewScreen() {
               </View>
               <Text style={[typography.h2, styles.flex, { color: colors.textStrong }]}>ถ่ายบัตรใหม่อีกครั้งนะ</Text>
             </View>
-            {(reasons.length > 0 ? reasons : [errorText || 'รูปบัตรยังใช้ตรวจไม่ได้']).map((text) => (
-              <View key={text} style={styles.reasonRow}>
-                <Icon name="x-circle" size={16} color={colors.danger} />
-                <Text style={[typography.body, styles.flex, { color: colors.text }]}>{text}</Text>
+            {(reasons.length > 0
+              ? reasons
+              : [{ code: null, text: errorText || 'รูปบัตรยังใช้ตรวจไม่ได้', tone: 'fail' as const }]
+            ).map((item) => (
+              <View key={item.text} style={styles.reasonRow}>
+                <Icon
+                  name={item.tone === 'fail' ? 'x-circle' : 'warning-circle'}
+                  size={16}
+                  color={item.tone === 'fail' ? colors.danger : colors.warning}
+                />
+                <Text style={[typography.body, styles.flex, { color: colors.text }]}>{item.text}</Text>
               </View>
             ))}
             <Text style={[typography.caption, styles.tip, { color: colors.textMuted }]}>
               วางบัตรบนพื้นเรียบสีเข้ม ในที่สว่างแต่ไม่มีแสงสะท้อน ให้เห็นบัตรครบทั้งใบ
+            </Text>
+          </Card3D>
+        )}
+
+        {phase === 'busy' && (
+          <Card3D padding={spacing.lg} radius={22}>
+            <View style={styles.titleRow}>
+              <View style={[styles.warnIcon, { backgroundColor: colors.infoSoft }]}>
+                <Icon name="hourglass" size={20} color={colors.info} />
+              </View>
+              <Text style={[typography.h3, styles.flex, { color: colors.textStrong }]}>ระบบตรวจมีคนใช้เยอะ ลองใหม่ในอีกสักครู่</Text>
+            </View>
+            <Text style={[typography.caption, styles.tip, { color: colors.textMuted }]}>
+              รูปบัตรยังอยู่ในเครื่อง ไม่ต้องถ่ายใหม่ ครั้งนี้ไม่นับเป็นครั้งที่ยืนยันไม่ผ่าน
             </Text>
           </Card3D>
         )}
@@ -320,24 +438,30 @@ export default function EkycReviewScreen() {
           </Card3D>
         )}
 
+        {phase === 'ready' && result && !aiRead && (
+          <InfoNote icon="info">ระบบอ่านบัตรอัตโนมัติไม่พร้อมชั่วคราว กรอกชื่อและวันเกิดเองได้ เจ้าหน้าที่จะตรวจให้</InfoNote>
+        )}
+
         {phase === 'ready' && result && (
           <Card3D padding={spacing.lg} radius={22}>
             <View style={styles.titleRow}>
-              <Text style={[typography.h2, styles.flex, { color: colors.textStrong }]}>ข้อมูลที่ AI อ่านได้</Text>
+              <Text style={[typography.h2, styles.flex, { color: colors.textStrong }]}>
+                {aiRead ? 'ข้อมูลที่ AI อ่านได้' : 'ข้อมูลบนบัตร'}
+              </Text>
               <Pressable
                 onPress={openEdit}
                 accessibilityRole="button"
-                accessibilityLabel="แก้ข้อมูลที่อ่านผิด"
+                accessibilityLabel={aiRead ? 'แก้ข้อมูลที่อ่านผิด' : 'กรอกข้อมูลตามบัตรเอง'}
                 style={({ pressed }) => [styles.chipBtn, { backgroundColor: colors.navySoft, opacity: pressed ? 0.7 : 1 }]}
               >
                 <Icon name="pencil-simple" size={14} color={colors.textStrong} />
-                <Text style={[typography.micro, { color: colors.textStrong }]}>แก้ได้ถ้าผิด</Text>
+                <Text style={[typography.micro, { color: colors.textStrong }]}>{aiRead ? 'แก้ได้ถ้าผิด' : 'กรอกเอง'}</Text>
               </Pressable>
             </View>
             {valueRow(
               'เลขบัตรประชาชน',
               fields?.id_number_masked ?? null,
-              { ok: result.checks.checksum, text: result.checks.checksum ? 'เลข 13 หลักถูกต้องตามหลักตรวจสอบ' : 'เลขบัตรไม่ผ่านหลักตรวจสอบ' },
+              triNote(result.checks.checksum, 'เลข 13 หลักถูกต้องตามหลักตรวจสอบ', 'เลขบัตรไม่ผ่านหลักตรวจสอบ', 'ยังไม่ทราบ เจ้าหน้าที่จะตรวจให้'),
               null,
               true
             )}
@@ -346,7 +470,7 @@ export default function EkycReviewScreen() {
             {valueRow(
               'วันบัตรหมดอายุ',
               lifelong && !fields?.expiry_date ? 'ตลอดชีพ' : formatThaiDate(fields?.expiry_date),
-              { ok: result.checks.not_expired, text: result.checks.not_expired ? 'บัตรยังไม่หมดอายุ' : 'บัตรหมดอายุแล้ว' },
+              triNote(result.checks.not_expired, 'บัตรยังไม่หมดอายุ', 'บัตรหมดอายุแล้ว', 'ยังไม่ทราบวันหมดอายุ เจ้าหน้าที่จะตรวจให้'),
               null
             )}
             {edited && (
@@ -357,6 +481,18 @@ export default function EkycReviewScreen() {
                 </Text>
               </View>
             )}
+            <Pressable
+              onPress={retake}
+              disabled={saving}
+              accessibilityRole="button"
+              accessibilityLabel="อ่านบัตรอีกครั้ง"
+              accessibilityHint="กลับไปถ่ายบัตรใหม่ให้ AI อ่านอีกครั้ง"
+              style={({ pressed }) => [styles.rescan, { borderTopColor: colors.divider, opacity: pressed || saving ? 0.6 : 1 }]}
+            >
+              <Icon name="scan" size={18} color={colors.goldDeep} />
+              <Text style={[typography.bodySm, styles.flex, { color: colors.textMuted }]}>ข้อมูลไม่ตรงกับบัตร หรืออ่านไม่ได้?</Text>
+              <Text style={[typography.bodyStrong, { color: colors.goldDeep }]}>อ่านบัตรอีกครั้ง</Text>
+            </Pressable>
           </Card3D>
         )}
 
@@ -482,5 +618,14 @@ const styles = StyleSheet.create({
   },
   birthLabel: {
     marginTop: spacing.md,
+  },
+  rescan: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    minHeight: 44,
   },
 });

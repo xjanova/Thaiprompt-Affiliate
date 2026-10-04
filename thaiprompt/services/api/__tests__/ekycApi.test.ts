@@ -6,10 +6,14 @@
 
 import { describe, expect, it } from '@jest/globals';
 import {
+  buildReasonItems,
   cleanThaiName,
   formatThaiDate,
   framesMatchChallenges,
   isCardReason,
+  isLivenessReason,
+  isSessionUsable,
+  matchReasonTone,
   normalizeEkycFace,
   normalizeEkycIdCard,
   normalizeEkycSession,
@@ -18,7 +22,9 @@ import {
   parseThaiBirthDate,
   reasonText,
   reasonTexts,
+  reasonTone,
   retakeTarget,
+  retryAfterSeconds,
   score01,
 } from '../ekycApi';
 
@@ -41,13 +47,41 @@ describe('normalizeEkycStatus', () => {
       verified_at: null,
       method: 'ekyc',
       can_start: true,
+      can_retake: false,
+      processing: false,
       attempts_left: 2,
       last_decision: 'review',
       reasons: ['LOW_MATCH'],
+      reason_items: [{ code: 'LOW_MATCH', text: 'ใบหน้าคล้ายรูปในบัตรน้อย', tone: 'fail' }],
+      message: null,
       required_for: ['order', 'rider', 'seller'],
       name_th: null,
       id_number_masked: null,
     });
+  });
+
+  it('can_retake / processing / ข้อความไทยจาก server / ข้อความเจ้าหน้าที่', () => {
+    const s = normalizeEkycStatus({
+      kyc_status: 'pending',
+      can_start: false,
+      can_retake: true,
+      processing: 1,
+      reasons: ['BORDERLINE_MATCH', 'USER_CORRECTED'],
+      reason_texts: ['หน้าคล้ายบัตรปานกลาง', 'คุณแก้ชื่อเอง'],
+      message: '  ขอรูปที่สว่างกว่านี้ครับ  ',
+    });
+    expect(s.can_start).toBe(false);
+    expect(s.can_retake).toBe(true);
+    expect(s.processing).toBe(true);
+    expect(s.reason_items.map((r) => r.text)).toEqual(['หน้าคล้ายบัตรปานกลาง', 'คุณแก้ชื่อเอง']);
+    expect(s.reason_items.every((r) => r.tone === 'warn')).toBe(true);
+    expect(s.message).toBe('ขอรูปที่สว่างกว่านี้ครับ');
+  });
+
+  it('ยืนยันแล้ว = ถ่ายใหม่ไม่ได้ ไม่มีงานค้าง', () => {
+    const s = normalizeEkycStatus({ verified: true, can_retake: true, processing: true });
+    expect(s.can_retake).toBe(false);
+    expect(s.processing).toBe(false);
   });
 
   it('verified = true บังคับสถานะ approved และเริ่มใหม่ไม่ได้', () => {
@@ -118,6 +152,21 @@ describe('normalizeEkycIdCard', () => {
     expect(r.fields.expiry_date).toBe('2030-01-11');
     expect(r.checks).toEqual({ checksum: true, not_expired: true, card_real: true, quality_ok: true });
     expect(r.ocr_confidence).toBeCloseTo(0.98);
+    // server รุ่นก่อนไม่ส่ง ai_available = ตัวอ่านทำงานปกติ
+    expect(r.ai_available).toBe(true);
+  });
+
+  it('ผลตรวจบัตร 3 สถานะ: null/ไม่ส่ง = ไม่ทราบ (ไม่ใช่ไม่ผ่าน) · ตัวอ่านไม่พร้อม', () => {
+    const r = normalizeEkycIdCard({
+      status: 'ok',
+      ai_available: false,
+      checks: { checksum: null, not_expired: false, quality_ok: true },
+      ocr_confidence: 0,
+    });
+    expect(r.checks.checksum).toBeNull();
+    expect(r.checks.not_expired).toBe(false);
+    expect(r.checks.card_real).toBeNull();
+    expect(r.ai_available).toBe(false);
   });
 
   it('status อื่น = retake · คะแนนบัตรจริงต่ำ = ไม่ผ่าน', () => {
@@ -151,6 +200,101 @@ describe('normalizeEkycFace', () => {
   it('เหตุผลแบบมีป้าย CHALLENGE_FAILED:<label>', () => {
     expect(normalizeEkycFace({ decision: 'retake', reasons: ['CHALLENGE_FAILED:blink'] }).reasons).toEqual(['CHALLENGE_FAILED:blink']);
   });
+
+  it('ข้อความไทยจาก server + ข้อความเจ้าหน้าที่ · source = submit', () => {
+    const r = normalizeEkycFace({
+      decision: 'review',
+      reasons: ['REPLAY_SUSPECTED', 'BORDERLINE_MATCH'],
+      reason_texts: ['ภาพนี้เคยส่งมาแล้ว', 'หน้าคล้ายบัตรระดับกลาง'],
+      message: null,
+    });
+    expect(r.source).toBe('submit');
+    expect(r.message).toBeNull();
+    expect(r.reason_items).toEqual([
+      { code: 'REPLAY_SUSPECTED', text: 'ภาพนี้เคยส่งมาแล้ว', tone: 'fail' },
+      { code: 'BORDERLINE_MATCH', text: 'หน้าคล้ายบัตรระดับกลาง', tone: 'warn' },
+    ]);
+  });
+});
+
+describe('buildReasonItems', () => {
+  it('ข้อความของ server ก่อน · ไม่มี/ไม่ใช่ภาษาไทย → ข้อความของแอป · ไม่รู้จักทั้งคู่ = ไม่แสดง', () => {
+    const items = buildReasonItems(
+      ['LOW_MATCH', 'BORDERLINE_MATCH', 'BRAND_NEW_CODE', 'ANOTHER_NEW', 'bad code!'],
+      ['', 'raw english', 'ระบบพบเหตุใหม่', null, 'ข้อความไทยของรหัสเพี้ยน']
+    );
+    expect(items).toEqual([
+      { code: 'LOW_MATCH', text: 'ใบหน้าคล้ายรูปในบัตรน้อย', tone: 'fail' },
+      { code: 'BORDERLINE_MATCH', text: 'ใบหน้าคล้ายรูปในบัตรระดับกลาง', tone: 'warn' },
+      { code: 'BRAND_NEW_CODE', text: 'ระบบพบเหตุใหม่', tone: 'warn' },
+      { code: null, text: 'ข้อความไทยของรหัสเพี้ยน', tone: 'warn' },
+    ]);
+  });
+
+  it('ตัดข้อความซ้ำ · ไม่มีอะไรเลย = []', () => {
+    expect(buildReasonItems(['BLURRY', 'BLURRY'], [])).toHaveLength(1);
+    expect(buildReasonItems(undefined, undefined)).toEqual([]);
+  });
+
+  it('รหัสใหม่ทุกตัวมีข้อความสำรองภาษาไทย', () => {
+    for (const code of [
+      'REPLAY_SUSPECTED',
+      'PRIOR_REJECTED',
+      'FACES_INCONSISTENT',
+      'BORDERLINE_MATCH',
+      'LOW_LIVENESS',
+      'LOW_REAL',
+      'LOW_CARD_REAL',
+      'ID_UNREADABLE',
+      'EXPIRY_UNKNOWN',
+      'NO_MATCH_SCORE',
+      'ATTEMPTS_EXHAUSTED',
+      'ADMIN_REJECTED',
+      'ADMIN_RETAKE',
+    ]) {
+      expect(reasonText(code)).toMatch(/[\u0E00-\u0E7F]/);
+    }
+  });
+});
+
+describe('ระดับของเหตุผล', () => {
+  it('fail = ไม่ผ่านจริง · warn = ระดับกลาง/เจ้าหน้าที่ดู (ไม่รู้จัก = warn)', () => {
+    expect(reasonTone('LOW_MATCH')).toBe('fail');
+    expect(reasonTone('CHALLENGE_FAILED:nod')).toBe('fail');
+    expect(reasonTone('BORDERLINE_MATCH')).toBe('warn');
+    expect(reasonTone('EXPIRY_UNKNOWN')).toBe('warn');
+    expect(reasonTone('SOMETHING_NEW')).toBe('warn');
+  });
+
+  it('แถวเป็นคนจริง / ใบหน้าตรงบัตร', () => {
+    expect(isLivenessReason('REPLAY_SUSPECTED')).toBe(true);
+    expect(isLivenessReason('CHALLENGE_FAILED:smile')).toBe(true);
+    expect(isLivenessReason('BORDERLINE_MATCH')).toBe(false);
+    expect(matchReasonTone(['LOW_MATCH'])).toBe('fail');
+    expect(matchReasonTone(['BORDERLINE_MATCH'])).toBe('warn');
+    expect(matchReasonTone(['NO_MATCH_SCORE', 'USER_CORRECTED'])).toBe('warn');
+    expect(matchReasonTone(['USER_CORRECTED'])).toBeNull();
+  });
+});
+
+describe('ตัวช่วยรอบ', () => {
+  it('รอบที่มีท่าที่แอปไม่รู้จัก = ใช้ไม่ได้', () => {
+    expect(isSessionUsable(normalizeEkycSession({ session_id: 1, challenges: ['blink', 'nod'] }))).toBe(true);
+    expect(isSessionUsable(normalizeEkycSession({ session_id: 1, challenges: ['blink', 'wink'] }))).toBe(false);
+    expect(isSessionUsable(normalizeEkycSession({ session_id: 1, challenges: [] }))).toBe(false);
+    expect(isSessionUsable(normalizeEkycSession({ challenges: ['blink'] }))).toBe(false);
+    expect(isSessionUsable(null)).toBe(false);
+  });
+
+  it('เวลารอเมื่อระบบตรวจไม่ว่าง: 3–60 วินาที · ไม่ส่งมา = 10', () => {
+    expect(retryAfterSeconds({ retry_after_seconds: 15 })).toBe(15);
+    expect(retryAfterSeconds({ retry_after_seconds: '7' })).toBe(7);
+    expect(retryAfterSeconds({ retry_after_seconds: 1 })).toBe(3);
+    expect(retryAfterSeconds({ retry_after_seconds: 600 })).toBe(60);
+    expect(retryAfterSeconds({})).toBe(10);
+    expect(retryAfterSeconds(undefined)).toBe(10);
+    expect(retryAfterSeconds({ retry_after_seconds: 'x' })).toBe(10);
+  });
 });
 
 describe('score01', () => {
@@ -175,6 +319,7 @@ describe('เหตุผล → ข้อความไทย', () => {
   it('ถ่ายใหม่เริ่มที่บัตรเมื่อมีเหตุผลของบัตร', () => {
     expect(isCardReason('GLARE')).toBe(true);
     expect(retakeTarget(['LOW_MATCH', 'GLARE'])).toBe('card');
+    expect(retakeTarget(['ID_UNREADABLE'])).toBe('card');
     expect(retakeTarget(['CHALLENGE_FAILED:blink'])).toBe('face');
     expect(retakeTarget([])).toBe('face');
   });

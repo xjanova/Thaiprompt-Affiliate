@@ -3,7 +3,7 @@
  *
  * - อธิบาย 3 ขั้น (ถ่ายบัตร → ถ่ายใบหน้า → AI ตรวจ) + ความปลอดภัยของข้อมูล
  * - ต้องติ๊กยินยอมก่อนเสมอ (ข้อมูลชีวภาพ — PDPA) แล้วปุ่ม "เริ่มยืนยันตัวตน" จึงกดได้ → POST /ekyc/sessions
- * - ยืนยันแล้ว → บอกว่าเรียบร้อย · รอเจ้าหน้าที่ตรวจ → พาไปหน้าผล · ลองครบโควตาวันนี้ → ปุ่มปิดพร้อมเหตุผล
+ * - ยืนยันแล้ว → บอกว่าเรียบร้อย · รอเจ้าหน้าที่ตรวจ / ยังตรวจคำขอก่อนหน้าอยู่ → พาไปหน้าผล · ลองครบโควตาวันนี้ → ปุ่มปิดพร้อมเหตุผล
  * - ?from=checkout|rider|seller|withdraw → ข้อความหัวหน้า + ปุ่มกลับไปทำต่อในหน้าผล
  */
 
@@ -19,7 +19,8 @@ import { useMountedRef } from '@/components/taladsod/hooks';
 import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 import { useAuthStore } from '@/stores/authStore';
 import { useEkycStore } from '@/stores/ekycStore';
-import { getEkycStatus } from '@/services/api/ekycApi';
+import { EKYC_APP_OUTDATED_MESSAGE, getEkycStatus, isSessionUsable } from '@/services/api/ekycApi';
+import { goResultForCode } from '@/services/ekyc/flow';
 import { isKycGateContext, KYC_GATE_COPY, type KycGateContext } from '@/services/ekyc/kycGate';
 import { glowStyle, radii, spacing, typography, useTheme } from '@/theme';
 
@@ -68,8 +69,10 @@ export default function EkycIntroScreen() {
       return;
     }
     useEkycStore.getState().setStatus(res.data);
-    // รอเจ้าหน้าที่ตรวจอยู่ → ดูผลแทน (เริ่มใหม่ได้จากหน้าผลถ้ายังมีสิทธิ์)
-    if (res.data.kyc_status === 'pending' && !res.data.can_start) router.replace('/ekyc/result' as never);
+    // รอเจ้าหน้าที่ตรวจอยู่ / ยังตรวจคำขอก่อนหน้า → ดูผลแทน (ถ่ายใหม่ได้จากหน้าผลถ้า server ให้ can_retake)
+    if (res.data.processing || (res.data.kyc_status === 'pending' && !res.data.can_start)) {
+      router.replace('/ekyc/result' as never);
+    }
   }, [mountedRef]);
 
   useEffect(() => {
@@ -86,9 +89,9 @@ export default function EkycIntroScreen() {
     setStarting(false);
 
     if (res.success) {
-      if (res.data.unsupported.length > 0 || res.data.challenges.length === 0 || !res.data.session_id) {
+      if (!isSessionUsable(res.data)) {
         resultHaptic('error');
-        Alert.alert('อัปเดตแอปก่อนนะ', 'แอปรุ่นนี้ยังทำขั้นตอนยืนยันตัวตนแบบใหม่ไม่ได้ อัปเดตแอปจาก Play Store แล้วลองอีกครั้ง');
+        Alert.alert('อัปเดตแอปก่อนนะ', EKYC_APP_OUTDATED_MESSAGE);
         return;
       }
       resultHaptic('success');
@@ -104,6 +107,11 @@ export default function EkycIntroScreen() {
     if (res.code === 'EKYC_TOO_MANY_ATTEMPTS') {
       useEkycStore.getState().loadStatus(true);
       Alert.alert('ลองครบแล้ววันนี้', res.message);
+      return;
+    }
+    // รอเจ้าหน้าที่ตรวจ / ยังตรวจคำขอก่อนหน้าอยู่ → หน้าผล (ห้ามเริ่มรอบใหม่ทับ)
+    if (res.code === 'EKYC_PENDING_REVIEW' || res.code === 'EKYC_PROCESSING') {
+      goResultForCode(res.code);
       return;
     }
     Alert.alert('เริ่มยืนยันตัวตนไม่สำเร็จ', res.message);

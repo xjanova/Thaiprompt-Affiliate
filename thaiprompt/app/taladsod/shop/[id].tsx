@@ -56,6 +56,7 @@ import {
   type FmShopLocation,
 } from '@/services/api/taladsodApi';
 import type { Coords } from '@/services/location';
+import { VerifiedBadge } from '@/components/people/VerifiedBadge';
 import { useTheme, spacing, typography, shadowStyle } from '@/theme';
 
 const SHOP_POLL_MS = 15000;
@@ -340,6 +341,12 @@ export default function TaladsodShopScreen() {
                   </Text>
                   {shop.is_verified && <Icon name="seal-check" size={20} color={colors.gold} weight="fill" accessibilityLabel="ร้านยืนยันแล้ว" />}
                 </View>
+                {shop.owner_verified && (
+                  <View style={styles.nameRow} accessible accessibilityLabel="เจ้าของร้านยืนยันตัวตนแล้ว">
+                    <VerifiedBadge size={14} />
+                    <Text style={[typography.caption, { color: colors.goldDeep }]}>เจ้าของร้านยืนยันตัวตนแล้ว</Text>
+                  </View>
+                )}
                 <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
                   {shop.is_mobile ? 'ร้านรถเข็น / ตลาดนัด' : 'ร้านในตลาดสด'}
                   {shop.total_sales > 0 ? ` · ขายแล้ว ${shop.total_sales.toLocaleString('th-TH')}` : ''}
