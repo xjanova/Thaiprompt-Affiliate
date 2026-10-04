@@ -118,6 +118,11 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () {
         Route::post('/mobile-callback', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'lineLoginCallback']);
     });
 
+    // 📲 เช็คอัปเดตแอป (APK จากเซิร์ฟเวอร์เรา) — public: แอปเช็คได้ตั้งแต่ยังไม่ล็อกอิน
+    Route::get('/app/update', [\App\Http\Controllers\Api\V1\AppUpdateController::class, 'check'])
+        ->middleware('throttle:30,1,api-app-update')
+        ->name('api.v1.app.update');
+
     // 📱 ปุ่มเข้าสู่ระบบด้วย LINE / Facebook / Google ที่แอปควรแสดง (เปิดใช้ + ตั้งค่าครบ) — public
     Route::get('/auth/social/status', [\App\Http\Controllers\Api\V1\MobileAuthController::class, 'socialStatus'])
         ->name('api.v1.auth.social.status');
