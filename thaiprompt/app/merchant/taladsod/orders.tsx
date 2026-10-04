@@ -36,6 +36,7 @@ import {
   isFmOrderFilter,
 } from '@/components/merchant';
 import { useTheme, spacing, typography, type Tone } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 const POLL_MS = 15_000;
 const NOTICE_MS = 4_000;
@@ -61,6 +62,8 @@ const confirmAsync = (title: string, message: string, okLabel: string): Promise<
 
 export default function TaladsodSellerOrdersScreen() {
   const { colors } = useTheme();
+  // การ์ดออเดอร์มีชื่อ/ที่อยู่/เบอร์ลูกค้า → กันแคปหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('merchant-fm-orders');
   const params = useLocalSearchParams<{ status?: string; focus?: string }>();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const focusId = toId(params.focus);

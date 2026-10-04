@@ -31,6 +31,7 @@ import {
 import { HeroCard, IconTile, NoticeBanner } from '@/components/merchant';
 import { SkeletonBlock, SkeletonCard } from '@/components/merchant/SkeletonBlock';
 import { useTheme, radii, spacing, typography } from '@/theme';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 type PeriodKey = 'today' | 'week' | 'month' | 'all';
 const PERIOD_KEYS: PeriodKey[] = ['today', 'week', 'month', 'all'];
@@ -53,6 +54,8 @@ const thaiDate = (iso: string | null, withTime: boolean = true): string => {
 export default function TaladsodSellerEarningsScreen() {
   const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  // รายได้/ยอดกระเป๋า/รายการโอนเงินของร้าน → กันแคปหน้าจอ (ไรเดอร์รอบ 2)
+  useSensitiveScreen('merchant-fm-earnings');
 
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [refreshing, setRefreshing] = useState(false);

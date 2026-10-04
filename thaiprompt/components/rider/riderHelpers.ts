@@ -30,6 +30,7 @@ export const JOB_STATUS_TONE: Record<RiderJobStatus, Tone> = {
   completed: 'success',
   cancelled: 'neutral',
   failed: 'danger',
+  awaiting_release: 'gold',
 };
 
 export const JOB_STATUS_LABEL: Record<RiderJobStatus, string> = {
@@ -42,6 +43,7 @@ export const JOB_STATUS_LABEL: Record<RiderJobStatus, string> = {
   completed: 'ส่งสำเร็จ',
   cancelled: 'ยกเลิกแล้ว',
   failed: 'ส่งไม่สำเร็จ',
+  awaiting_release: 'รอปลดเงิน',
 };
 
 /** ขั้นตอนบนไทม์ไลน์ (ตรงกับ state machine ของ server) · icon = ชื่อไอคอนเส้น */
@@ -66,6 +68,7 @@ export const stepIndexForStatus = (status: RiderJobStatus | string): number => {
       return 3;
     case 'delivered':
     case 'completed':
+    case 'awaiting_release':
       return 4;
     default:
       return -1;
@@ -75,8 +78,119 @@ export const stepIndexForStatus = (status: RiderJobStatus | string): number => {
 export const isActiveJobStatus = (status: string | null | undefined): boolean =>
   status === 'accepted' || status === 'picking_up' || status === 'picked_up' || status === 'delivering';
 
+/**
+ * งานจบในมุมไรเดอร์ (หยุดแชร์ตำแหน่ง · รับงานใหม่ได้)
+ * awaiting_release = วางของแล้วด้วยทางสำรอง รอปลดเงิน — ไรเดอร์ไม่ต้องทำอะไรต่อ
+ */
 export const isFinishedJobStatus = (status: string | null | undefined): boolean =>
-  status === 'completed' || status === 'delivered' || status === 'cancelled' || status === 'failed';
+  status === 'completed' ||
+  status === 'delivered' ||
+  status === 'cancelled' ||
+  status === 'failed' ||
+  status === 'awaiting_release';
+
+// =====================================================
+// รายได้ / ระยะทาง (ไรเดอร์รอบ 2)
+// =====================================================
+
+/** ยอดที่ไรเดอร์ได้จริงของงานนี้ = rider_total จาก server (ค่าส่ง + โบนัสร้าน) · server รุ่นเก่า = rider_earnings */
+export const riderTotalOf = (job: { rider_earnings: number; earnings_breakdown?: { rider_total?: unknown } | null }): number => {
+  const total = num(job.earnings_breakdown?.rider_total, NaN);
+  return Number.isFinite(total) ? total : num(job.rider_earnings);
+};
+
+/** โบนัสจากร้านของงานนี้ (0 = ไม่มี) */
+export const shopBonusOf = (job: { earnings_breakdown?: { shop_bonus?: unknown } | null }): number =>
+  Math.max(0, num(job.earnings_breakdown?.shop_bonus, 0));
+
+/** ระยะคิดตามถนนจริงหรือไม่ (valhalla/google) — haversine = เส้นตรงโดยประมาณ */
+export const isRoadDistance = (source: string | null | undefined): boolean => source === 'valhalla' || source === 'google';
+
+/** ป้ายที่มาของระยะทาง (ไม่มีข้อมูล = null) */
+export const distanceSourceLabel = (source: string | null | undefined): string | null => {
+  if (!source) return null;
+  return isRoadDistance(source) ? 'ตามถนนจริง' : 'ระยะโดยประมาณ';
+};
+
+/** ระยะเป็นเมตร เช่น "120 ม." / "1.2 กม." */
+export const formatMeters = (value: unknown): string | null => {
+  const m = num(value, -1);
+  if (m < 0) return null;
+  if (m < 1000) return `${Math.round(m)} ม.`;
+  return `${(m / 1000).toFixed(1)} กม.`;
+};
+
+// =====================================================
+// ส่งมอบของ — ข้อความ error ภาษาไทย (ใส่ตัวเลขจาก server ให้ชัดว่าต้องทำอะไรต่อ)
+// =====================================================
+
+/** เวลา HH:MM:SS จาก ISO */
+const clockOf = (iso: unknown): string => {
+  if (typeof iso !== 'string') return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  return [date.getHours(), date.getMinutes(), date.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':');
+};
+
+/**
+ * ข้อความ error ของการส่งมอบ
+ * @param result ผลจาก API (code + message ไทยจาก client + data)
+ * @param geofenceM รัศมีที่ต้องอยู่ใกล้จุดส่ง (เมตร) — ใช้ประกอบข้อความ "ห่างเกินไป"
+ */
+export const handoverErrorText = (
+  result: { code: string; message: string; data?: any },
+  geofenceM?: number | null
+): { title: string; message: string } => {
+  const data = result.data && typeof result.data === 'object' ? result.data : {};
+  switch (result.code) {
+    case 'TOO_FAR_FROM_DROPOFF': {
+      const distance = formatMeters(data.distance_m);
+      const limit = geofenceM && geofenceM > 0 ? `${Math.round(geofenceM)} ม.` : '150 ม.';
+      return {
+        title: 'ยังไม่ถึงจุดส่ง',
+        message: distance
+          ? `ตอนนี้คุณอยู่ห่างจุดส่ง ${distance} ต้องอยู่ภายใน ${limit} ขยับเข้าใกล้แล้วลองใหม่นะ`
+          : `ต้องอยู่ห่างจุดส่งไม่เกิน ${limit} ขยับเข้าใกล้แล้วลองใหม่นะ`,
+      };
+    }
+    case 'LOCATION_REQUIRED':
+    case 'INVALID_LOCATION':
+      return { title: 'ต้องใช้ตำแหน่ง GPS', message: 'เปิด GPS และอนุญาตตำแหน่ง เพื่อยืนยันว่าคุณอยู่ที่จุดส่ง แล้วลองใหม่นะ' };
+    case 'WAIT_NOT_OVER': {
+      const at = clockOf(data.wait_until);
+      return {
+        title: 'ยังรอไม่ครบเวลา',
+        message: at ? `ถ่ายรูปรอบ 2 ได้ตอน ${at} น. ระหว่างนี้ลองโทรหาลูกค้าอีกครั้งนะ` : 'รอให้ครบเวลาก่อน แล้วค่อยถ่ายรูปรอบ 2 นะ',
+      };
+    }
+    case 'HANDOVER_CODE_LOCKED': {
+      const at = clockOf(data.locked_until ?? data.retry_at);
+      return {
+        title: 'กรอกรหัสผิดหลายครั้ง',
+        message: `ระบบพักการกรอกรหัสชั่วคราว${at ? ` ลองใหม่ได้ตอน ${at} น.` : ''} ระหว่างนี้ให้ลูกค้าสแกน QR แทนนะ`,
+      };
+    }
+    case 'HANDOVER_CODE_INVALID': {
+      const left = num(data.attempts_left, -1);
+      return {
+        title: 'รหัสไม่ถูกต้อง',
+        message: `ตรวจรหัส 6 หลักกับลูกค้าอีกครั้ง${left >= 0 ? ` (กรอกได้อีก ${left} ครั้ง)` : ''}`,
+      };
+    }
+    case 'HANDOVER_TOKEN_EXPIRED':
+      return { title: 'QR หมดอายุแล้ว', message: 'QR ของลูกค้าเปลี่ยนใหม่ทุกไม่กี่วินาที ให้ลูกค้าเปิดหน้าส่งมอบค้างไว้ แล้วสแกนอีกครั้งนะ' };
+    case 'HANDOVER_TOKEN_INVALID':
+      return { title: 'QR นี้ใช้ไม่ได้', message: 'ให้ลูกค้าเปิด QR ส่งมอบของออเดอร์นี้ในแอป แล้วสแกนใหม่ หรือกรอกรหัส 6 หลักแทน' };
+    case 'HANDOVER_NOT_READY':
+      return { title: 'ยังส่งมอบไม่ได้', message: 'รับของจากร้านและกดเริ่มไปส่งก่อน แล้วค่อยส่งมอบให้ลูกค้านะ' };
+    case 'HANDOVER_FINAL':
+      return { title: 'ส่งมอบเรียบร้อยแล้ว', message: 'งานนี้ปิดการส่งมอบไปแล้ว ระบบอัปเดตสถานะให้แล้ว' };
+    case 'HANDOVER_REQUIRED':
+      return { title: 'ต้องส่งมอบด้วย QR', message: 'งานนี้ต้องสแกน QR กับลูกค้า หรือถ่ายรูป 2 รอบเมื่อลูกค้าไม่อยู่' };
+    default:
+      return { title: 'ทำรายการไม่สำเร็จ', message: result.message };
+  }
+};
 
 // =====================================================
 // เหตุผลส่งไม่สำเร็จ / คืนงาน

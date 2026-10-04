@@ -31,6 +31,14 @@ import {
   type FmOwnerListing,
   type FmSellerProfile,
 } from './taladsodSellerApi';
+import {
+  normalizeRiderPay,
+  riderPayBody,
+  riderPayPreviewParams,
+  type RiderPay,
+  type RiderPayPreview,
+  type RiderPaySettings,
+} from './sellerStoreApi';
 
 // =====================================================
 // ชนิดข้อมูล
@@ -342,4 +350,32 @@ export const deleteFmListing = (listingId: number): Promise<ApiResult<{ id: numb
 export const getFmSellerEarnings = async (): Promise<ApiResult<FmEarnings>> => {
   const result = await withMessage(apiGet<any>('/fresh-market/seller/earnings'));
   return result.success ? { ...result, data: normalizeEarnings(result.data) } : result;
+};
+
+// =====================================================
+// ค่าตอบแทนไรเดอร์ (ไรเดอร์รอบ 2) — ชนิดข้อมูล/ตัวแปลงชุดเดียวกับร้านช้อป (sellerStoreApi)
+// =====================================================
+
+/** GET /fresh-market/seller/rider-pay (ส่ง preview = คำนวณตารางใหม่โดยยังไม่บันทึก) */
+export const getFmRiderPay = async (
+  preview?: RiderPayPreview | null,
+  signal?: AbortSignal
+): Promise<ApiResult<RiderPay>> => {
+  const result = await withMessage(
+    apiGet<any>('/fresh-market/seller/rider-pay', riderPayPreviewParams(preview), {
+      signal,
+      fallbackMessage: 'โหลดค่าตอบแทนไรเดอร์ไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+    })
+  );
+  return result.success ? { ...result, data: normalizeRiderPay(result.data) } : result;
+};
+
+/** PUT /fresh-market/seller/rider-pay {rider_bonus, rider_bonus_peak, rider_free_delivery} */
+export const updateFmRiderPay = async (settings: RiderPaySettings): Promise<ApiResult<RiderPay>> => {
+  const result = await withMessage(
+    apiPut<any>('/fresh-market/seller/rider-pay', riderPayBody(settings), {
+      fallbackMessage: 'บันทึกค่าตอบแทนไรเดอร์ไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+    })
+  );
+  return result.success ? { ...result, data: normalizeRiderPay(result.data) } : result;
 };

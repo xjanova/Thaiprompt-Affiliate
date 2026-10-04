@@ -7,6 +7,7 @@
  *
  * หน้าตา: การ์ดน้ำเงินลายกนก + วงแหวนความคืบหน้าเอกสารจำเป็น
  *         → การ์ดเช็กลิสต์รายเอกสาร (รูปย่อ + ป้ายสถานะ + จุดสถานะมุมรูป)
+ * - กันแคปหน้าจอ (เอกสารยืนยันตัวตน) — ไรเดอร์รอบ 2
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import {
 } from '@/services/api/riderApi';
 import { pickFromGallery, takePhoto } from '@/components/rider/photo';
 import { NavyCard, ProgressRing, useRiderTones } from '@/components/rider/RiderVisuals';
+import { useSensitiveScreen } from '@/hooks/useSensitiveScreen';
 
 type UploadState = { status: 'idle' | 'uploading' | 'error'; localUri?: string; error?: string };
 
@@ -39,6 +41,8 @@ const DOC_ORDER: RiderDocumentType[] = ['id_card', 'driver_license', 'vehicle_re
 export default function RiderDocumentsScreen() {
   const { colors } = useTheme();
   const tones = useRiderTones();
+  // รูปบัตรประชาชน/ใบขับขี่ → กันแคปหน้าจอ/อัดหน้าจอ
+  useSensitiveScreen('rider-documents');
 
   const [data, setData] = useState<RiderDocumentsResponse | null>(null);
   const [uploads, setUploads] = useState<Partial<Record<RiderDocumentType, UploadState>>>({});

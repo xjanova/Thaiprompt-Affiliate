@@ -5,6 +5,9 @@
  * - error: ApiFailure.code = JOB_TAKEN | HAS_ACTIVE_JOB | NOT_ELIGIBLE (data.block_code) | ...
  *   ข้อความไทยอยู่ใน result.message แล้ว — แสดงได้ทันที
  * - ค่าส่ง/รายได้: ใช้ตัวเลขจาก server (total_fee, rider_earnings, platform_fee, cod_amount) ห้ามคำนวณเองในแอป
+ * - ไรเดอร์รอบ 2 (2026-10-04): งานใหม่ต้องส่งมอบด้วยการสแกน QR ใส่กัน (job.handover.required)
+ *   + ทางสำรองรูป 2 รอบ → สถานะ awaiting_release (รอปลดเงิน) · โบนัสจากร้าน (earnings_breakdown.shop_bonus)
+ *   key ใหม่ทุกตัวเป็น optional — server รุ่นเก่าไม่ส่งมา แอปต้องทำงานแบบเดิมได้
  */
 
 import {
@@ -16,6 +19,7 @@ import {
   type ApiResult,
   type Pagination,
 } from './client';
+import type { HandoverRider, PersonCard } from './handoverApi';
 
 // =====================================================
 // Types
@@ -35,10 +39,25 @@ export type RiderJobStatus =
   | 'delivered'
   | 'completed'
   | 'cancelled'
-  | 'failed';
+  | 'failed'
+  /** ส่งของแล้วด้วยทางสำรอง (รูปรอบ 2) — รอปลดเงินอัตโนมัติ 24 ชม. ไม่นับเป็นงานค้าง (รับงานใหม่ได้) */
+  | 'awaiting_release';
 
-/** ปุ่มที่แอปแสดงได้ (ใช้ job.allowed_actions ตัดสินใจเสมอ) */
-export type RiderJobAction = 'accept' | 'release' | 'picking_up' | 'picked_up' | 'delivering' | 'deliver' | 'fail';
+/**
+ * ปุ่มที่แอปแสดงได้ (ใช้ job.allowed_actions ตัดสินใจเสมอ)
+ * งานที่ต้องส่งมอบด้วย QR: server ตัด deliver ออก แล้วเพิ่ม handover_scan / arrival_photo / waited_photo
+ */
+export type RiderJobAction =
+  | 'accept'
+  | 'release'
+  | 'picking_up'
+  | 'picked_up'
+  | 'delivering'
+  | 'deliver'
+  | 'fail'
+  | 'handover_scan'
+  | 'arrival_photo'
+  | 'waited_photo';
 
 export type RiderBlockCode =
   | 'SUSPENDED'
@@ -80,6 +99,10 @@ export interface RiderStatus {
   vehicle_plate: string | null;
   vehicle_brand: string | null;
   vehicle_color: string | null;
+  /** ให้ลูกค้าเห็นบนแผนที่ "ไรเดอร์ใกล้ฉัน" (ตำแหน่งโดยประมาณ) — server รุ่นเก่าไม่ส่งมา */
+  show_on_nearby?: boolean;
+  /** หัวใจที่ได้จากลูกค้าทั้งหมด — server รุ่นเก่าไม่ส่งมา */
+  hearts_count?: number;
   /** ความชอบงาน (ว่าง = รับทุกงาน) — ต้องส่งกลับครบทุกครั้งที่ PUT /rider/profile ไม่งั้นค่าจะถูกล้าง (server รุ่นเก่าไม่ส่งมา) */
   preferred_job_types?: RiderJobType[];
   preferred_radius_km?: number | null;
@@ -194,6 +217,8 @@ export interface RiderProfileBody {
   preferred_radius_km?: number | null;
   preferred_min_fee?: number | null;
   preferred_job_types?: RiderJobType[];
+  /** ส่งเฉพาะเมื่อ server ส่งค่านี้มาใน GET /rider/status (server รุ่นเก่าไม่รู้จัก) */
+  show_on_nearby?: boolean;
 }
 
 /** ประเภทงานที่ไรเดอร์เลือกรับได้ (ตรงกับ RiderAccountService::JOB_TYPE_OPTIONS) */
@@ -272,6 +297,46 @@ export interface RiderJobSummary {
   created_at: string | null;
   accepted_at: string | null;
   completed_at: string | null;
+
+  // ---------- ไรเดอร์รอบ 2 (optional ทั้งหมด — server รุ่นเก่าไม่ส่งมา) ----------
+  /** สรุปการส่งมอบ (null = งานแบบเดิม ส่งด้วยปุ่ม "ส่งสำเร็จ") */
+  handover?: RiderJobHandoverSummary | null;
+  /** ที่มาของรายได้: ค่าส่งส่วนของไรเดอร์ + โบนัสจากร้าน = rider_total (แสดงตามนี้ ห้ามบวกเอง) */
+  earnings_breakdown?: RiderEarningsBreakdown | null;
+  /** ระยะคิดจาก: valhalla/google = ตามถนนจริง · haversine = เส้นตรงโดยประมาณ */
+  distance_source?: RiderDistanceSource | string | null;
+  /** เส้นทางจุดรับ → จุดส่ง (encoded polyline ความละเอียด 6 ตำแหน่ง) */
+  route_polyline?: string | null;
+  /** ลูกค้าประจำล็อกเรียกไรเดอร์คนนี้โดยตรง (ได้ข้อเสนอก่อนคนอื่นช่วงสั้นๆ) */
+  locked_by_buyer?: boolean;
+  /** ข้อมูลผู้ซื้อ (เฉพาะไรเดอร์ที่ได้รับข้อเสนอ/รับงานแล้ว) */
+  buyer?: RiderJobBuyer | null;
+}
+
+export type RiderDistanceSource = 'valhalla' | 'google' | 'haversine';
+
+export interface RiderJobHandoverSummary {
+  required: boolean;
+  status: string | null;
+  method: string | null;
+  wait_until: string | null;
+  auto_release_at: string | null;
+  rider_confirmed: boolean;
+  buyer_confirmed: boolean;
+}
+
+export interface RiderEarningsBreakdown {
+  delivery_fee: number;
+  rider_earnings: number;
+  shop_bonus: number;
+  rider_total: number;
+}
+
+export interface RiderJobBuyer {
+  display_name: string;
+  photo_url: string | null;
+  /** หัวใจที่ผู้ซื้อคนนี้ให้ไรเดอร์คนนี้ */
+  hearts_given: number;
 }
 
 export interface RiderJobDetail extends RiderJobSummary {
@@ -364,6 +429,9 @@ export interface RiderEarningsResponse {
   cod_collected: number;
   cod_remitted: number;
   unsettled_jobs: number;
+  /** ค่าส่งที่รอปลดเงิน (ส่งด้วยทางสำรองรูป 2 รอบ รอลูกค้า 24 ชม.) — server รุ่นเก่าไม่ส่งมา */
+  pending_release_amount?: number;
+  pending_release_jobs?: number;
   wallet_balance: number;
   total_earnings_all_time: number;
   daily: Array<{ date: string; jobs: number; earnings: number }>;
@@ -377,6 +445,27 @@ export interface RiderEarningsResponse {
     cod_amount: number;
     settled: boolean;
   }>;
+}
+
+/** GET /rider/jobs/{id}/handover (และผลของ scan / arrival-photo / waited-photo) */
+export interface RiderHandoverResponse {
+  handover: HandoverRider;
+  buyer: PersonCard | null;
+}
+
+export interface RiderHandoverScanBody {
+  /** ข้อความใน QR ของลูกค้า (สแกน) */
+  token?: string;
+  /** รหัส 6 หลักที่ลูกค้าอ่านให้ (เมื่อกล้องใช้ไม่ได้) */
+  code?: string;
+  latitude: number;
+  longitude: number;
+}
+
+export interface RiderHandoverPhotoInput {
+  photoUri: string;
+  latitude: number;
+  longitude: number;
 }
 
 export interface GpsLostResponse {
@@ -537,6 +626,59 @@ export const deliverRiderJob = (jobId: number, input: DeliverJobInput): Promise<
   }
   return apiUpload<DeliverJobResponse>(`/rider/jobs/${jobId}/deliver`, form);
 };
+
+// =====================================================
+// ส่งมอบของ (ไรเดอร์รอบ 2)
+// error: HANDOVER_NOT_READY 409 · HANDOVER_FINAL 409 · HANDOVER_TOKEN_INVALID / HANDOVER_TOKEN_EXPIRED 422
+//        HANDOVER_CODE_INVALID 422 · HANDOVER_CODE_LOCKED 429 · LOCATION_REQUIRED 422
+//        TOO_FAR_FROM_DROPOFF 422 (data.distance_m) · WAIT_NOT_OVER 409 (data.wait_until)
+// =====================================================
+
+/** GET /rider/jobs/{id}/handover — QR ของไรเดอร์ (หมุนเวียน) + สถานะทางสำรอง */
+export const getRiderHandover = (jobId: number): Promise<ApiResult<RiderHandoverResponse>> =>
+  apiGet<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover`, undefined, {
+    fallbackMessage: 'โหลดข้อมูลการส่งมอบไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+  });
+
+/** POST /rider/jobs/{id}/handover/scan — ไรเดอร์สแกน QR ของลูกค้า หรือกรอกรหัส 6 หลัก (ต้องอยู่ใกล้จุดส่ง) */
+export const riderHandoverScan = (
+  jobId: number,
+  body: RiderHandoverScanBody
+): Promise<ApiResult<RiderHandoverResponse>> => {
+  const payload: Record<string, unknown> = { latitude: body.latitude, longitude: body.longitude };
+  if (body.token) payload.token = body.token.trim().slice(0, 2048);
+  if (body.code) payload.code = body.code.replace(/\D/g, '').slice(0, 6);
+  return apiPost<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover/scan`, payload, {
+    fallbackMessage: 'ยืนยันการส่งมอบไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+  });
+};
+
+/** multipart ของรูปส่งมอบ (รูป + พิกัดตอนถ่าย) */
+const handoverPhotoForm = (jobId: number, kind: 'arrival' | 'waited', input: RiderHandoverPhotoInput): FormData => {
+  const form = new FormData();
+  form.append('photo', fileFromUri(input.photoUri, `job-${jobId}-handover-${kind}`) as unknown as Blob);
+  form.append('latitude', String(input.latitude));
+  form.append('longitude', String(input.longitude));
+  return form;
+};
+
+/** POST /rider/jobs/{id}/handover/arrival-photo (multipart) — รูปรอบ 1 ที่จุดส่ง เริ่มนับเวลารอลูกค้า */
+export const riderArrivalPhoto = (
+  jobId: number,
+  input: RiderHandoverPhotoInput
+): Promise<ApiResult<RiderHandoverResponse>> =>
+  apiUpload<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover/arrival-photo`, handoverPhotoForm(jobId, 'arrival', input), {
+    fallbackMessage: 'ส่งรูปไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+  });
+
+/** POST /rider/jobs/{id}/handover/waited-photo (multipart) — รูปรอบ 2 หลังรอครบ → งานเป็น awaiting_release */
+export const riderWaitedPhoto = (
+  jobId: number,
+  input: RiderHandoverPhotoInput
+): Promise<ApiResult<RiderHandoverResponse>> =>
+  apiUpload<RiderHandoverResponse>(`/rider/jobs/${jobId}/handover/waited-photo`, handoverPhotoForm(jobId, 'waited', input), {
+    fallbackMessage: 'ส่งรูปไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+  });
 
 /** POST /rider/jobs/{id}/fail — หลังรับของแล้วเท่านั้น, other ต้องมี note */
 export const failRiderJob = (jobId: number, input: FailJobInput): Promise<ApiResult<{ job: RiderJobDetail }>> => {

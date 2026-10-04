@@ -262,3 +262,190 @@ export const uploadSellerStoreImage = async (
 
 /** ขนาดไฟล์สูงสุด (ไบต์) ของรูปร้านแต่ละแบบ — ตรงกับ server */
 export const STORE_IMAGE_MAX_BYTES = { logo: 2 * 1024 * 1024, banner: 4 * 1024 * 1024 } as const;
+
+// =====================================================
+// ค่าตอบแทนไรเดอร์ (ไรเดอร์รอบ 2) — GET|PUT /seller/rider-pay
+// ร้านตลาดสดใช้ชนิดข้อมูล/ตัวแปลงชุดเดียวกันที่ /fresh-market/seller/rider-pay (taladsodSellerManageApi)
+//
+// - ตัวเลขเงินทั้งหมดมาจากสูตรของ server (ตรวจย้อนได้) — "AI" เขียนแค่ข้อความแนะนำ ไม่เคยตั้งราคาเอง
+// - preview (bonus / bonus_peak / free_delivery) = คำนวณตารางใหม่โดยยังไม่บันทึก
+// =====================================================
+
+export interface RiderPaySettings {
+  /** โบนัสที่ร้านเติมให้ไรเดอร์ต่อออเดอร์ (บาท 0–100) */
+  rider_bonus: number;
+  /** โบนัสช่วงเร่งด่วน (บาท 0–100) */
+  rider_bonus_peak: number;
+  /** ส่งฟรี: ลูกค้าไม่จ่ายค่าส่ง ร้านจ่ายค่าส่งเต็มแทน */
+  rider_free_delivery: boolean;
+}
+
+export type RiderPayBandKey = '0-2' | '2-5' | '5-8' | '8+';
+
+export interface RiderPayBand {
+  key: RiderPayBandKey | string;
+  label: string;
+  from_km: number;
+  to_km: number | null;
+  fee_min: number;
+  fee_max: number;
+  rider_earn_min: number;
+  rider_earn_max: number;
+  /** โอกาสมีไรเดอร์รับใน 5 นาที (0–1) · null = ยังไม่มีข้อมูล */
+  accept_rate_5min: number | null;
+  /** โอกาสเมื่อเติมโบนัสตามที่ตั้ง/preview (0–1) */
+  accept_rate_with_bonus: number | null;
+  sample_size: number;
+  /** data = จากข้อมูลจริง · estimate = ประมาณการ */
+  basis: 'data' | 'estimate';
+}
+
+export interface RiderPayAdvice {
+  headline: string;
+  text: string;
+  suggested_bonus: number;
+  suggested_bonus_peak: number;
+  suggest_free_delivery: boolean;
+  /** ai = เขียนโดย AI จากข้อมูลร้าน · rules = คำแนะนำตามสูตร */
+  source: 'ai' | 'rules';
+  generated_at: string | null;
+}
+
+export interface RiderPay {
+  settings: RiderPaySettings;
+  base: {
+    base_fee: number;
+    per_km_fee: number;
+    free_km: number;
+    min_fee: number;
+    rider_share_percent: number;
+    max_distance_km: number;
+    night_surcharge: number;
+    peak_surcharge: number;
+    /** ช่วงเร่งด่วน [[ชั่วโมงเริ่ม, ชั่วโมงจบ], ...] */
+    peak_hours: Array<[number, number]>;
+  };
+  bands: RiderPayBand[];
+  advice: RiderPayAdvice | null;
+  customer_distance: { p50_km: number; p90_km: number; sample_size: number } | null;
+}
+
+/** query ของ preview (คำนวณใหม่โดยไม่บันทึก) */
+export interface RiderPayPreview {
+  bonus: number;
+  bonus_peak: number;
+  free_delivery: boolean;
+}
+
+/** เพดานโบนัสที่ server รับ (บาท) */
+export const RIDER_BONUS_MAX = 100;
+
+const rate = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  // รับได้ทั้ง 0–1 และ 0–100 (กันฝั่ง server ส่งเป็นเปอร์เซ็นต์)
+  const r = n > 1 ? n / 100 : n;
+  return Math.max(0, Math.min(1, r));
+};
+
+const bonusValue = (value: unknown): number => Math.max(0, Math.min(RIDER_BONUS_MAX, Math.round(num(value))));
+
+/** แปลงข้อมูล rider-pay จาก server ให้ชนิดถูกต้องเสมอ (ค่าแปลก/หาย = ค่าปลอดภัย) */
+export const normalizeRiderPay = (raw: any): RiderPay => {
+  const settings = raw?.settings ?? {};
+  const base = raw?.base ?? {};
+  const advice = raw?.advice;
+  const dist = raw?.customer_distance;
+  return {
+    settings: {
+      rider_bonus: bonusValue(settings.rider_bonus),
+      rider_bonus_peak: bonusValue(settings.rider_bonus_peak),
+      rider_free_delivery: settings.rider_free_delivery === true || settings.rider_free_delivery === 1,
+    },
+    base: {
+      base_fee: num(base.base_fee),
+      per_km_fee: num(base.per_km_fee),
+      free_km: num(base.free_km),
+      min_fee: num(base.min_fee),
+      rider_share_percent: num(base.rider_share_percent),
+      max_distance_km: num(base.max_distance_km),
+      night_surcharge: num(base.night_surcharge),
+      peak_surcharge: num(base.peak_surcharge),
+      peak_hours: (Array.isArray(base.peak_hours) ? base.peak_hours : [])
+        .filter((p: unknown) => Array.isArray(p) && p.length >= 2)
+        .map((p: unknown[]) => [num(p[0]), num(p[1])] as [number, number])
+        .filter(([a, b]: [number, number]) => a >= 0 && b <= 24 && b > a),
+    },
+    bands: (Array.isArray(raw?.bands) ? raw.bands : []).map((b: any) => ({
+      key: typeof b?.key === 'string' ? b.key : '',
+      label: typeof b?.label === 'string' ? b.label : '',
+      from_km: num(b?.from_km),
+      to_km: b?.to_km === null || b?.to_km === undefined ? null : num(b.to_km),
+      fee_min: num(b?.fee_min),
+      fee_max: num(b?.fee_max),
+      rider_earn_min: num(b?.rider_earn_min),
+      rider_earn_max: num(b?.rider_earn_max),
+      accept_rate_5min: rate(b?.accept_rate_5min),
+      accept_rate_with_bonus: rate(b?.accept_rate_with_bonus),
+      sample_size: Math.max(0, Math.round(num(b?.sample_size))),
+      basis: b?.basis === 'data' ? 'data' : 'estimate',
+    })),
+    advice:
+      advice && typeof advice === 'object' && (text(advice.headline) || text(advice.text))
+        ? {
+            headline: text(advice.headline) ?? '',
+            text: text(advice.text) ?? '',
+            suggested_bonus: bonusValue(advice.suggested_bonus),
+            suggested_bonus_peak: bonusValue(advice.suggested_bonus_peak),
+            suggest_free_delivery: advice.suggest_free_delivery === true,
+            source: advice.source === 'ai' ? 'ai' : 'rules',
+            generated_at: text(advice.generated_at),
+          }
+        : null,
+    customer_distance:
+      dist && typeof dist === 'object' && num(dist.sample_size) > 0
+        ? { p50_km: num(dist.p50_km), p90_km: num(dist.p90_km), sample_size: Math.round(num(dist.sample_size)) }
+        : null,
+  };
+};
+
+/** query string ของ preview (free_delivery ส่งเป็น 1/0) */
+export const riderPayPreviewParams = (preview?: RiderPayPreview | null): Record<string, unknown> | undefined =>
+  preview
+    ? {
+        bonus: bonusValue(preview.bonus),
+        bonus_peak: bonusValue(preview.bonus_peak),
+        free_delivery: preview.free_delivery ? 1 : 0,
+      }
+    : undefined;
+
+/** body ของ PUT (ตัดค่าให้อยู่ในช่วงที่ server รับ) */
+export const riderPayBody = (settings: RiderPaySettings): RiderPaySettings => ({
+  rider_bonus: bonusValue(settings.rider_bonus),
+  rider_bonus_peak: bonusValue(settings.rider_bonus_peak),
+  rider_free_delivery: !!settings.rider_free_delivery,
+});
+
+const mapRiderPay = (result: ApiResult<any>): ApiResult<RiderPay> =>
+  result.success ? { ...result, data: normalizeRiderPay(result.data) } : result;
+
+/** GET /seller/rider-pay (ส่ง preview = คำนวณตารางใหม่โดยยังไม่บันทึก) */
+export const getSellerRiderPay = async (
+  preview?: RiderPayPreview | null,
+  signal?: AbortSignal
+): Promise<ApiResult<RiderPay>> =>
+  mapRiderPay(
+    await apiGet<any>('/seller/rider-pay', riderPayPreviewParams(preview), {
+      signal,
+      fallbackMessage: 'โหลดค่าตอบแทนไรเดอร์ไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+    })
+  );
+
+/** PUT /seller/rider-pay {rider_bonus, rider_bonus_peak, rider_free_delivery} */
+export const updateSellerRiderPay = async (settings: RiderPaySettings): Promise<ApiResult<RiderPay>> =>
+  mapRiderPay(
+    await apiPut<any>('/seller/rider-pay', riderPayBody(settings), {
+      fallbackMessage: 'บันทึกค่าตอบแทนไรเดอร์ไม่สำเร็จ ลองใหม่อีกครั้งนะ',
+    })
+  );

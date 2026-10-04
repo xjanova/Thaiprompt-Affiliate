@@ -5,6 +5,7 @@
  * - ออเดอร์ใหม่รอยืนยัน 5 รายการล่าสุด → แตะเพื่อจัดการในแอป
  * - (2026-09-26) จัดการสินค้า (/merchant/products) · ตั้งค่าร้าน/ปักหมุด (/merchant/store-settings) · สมัครเปิดร้าน
  *   (/merchant/apply) ทำในแอปได้แล้ว — วางแผนราคา/กลยุทธ์ GP ยังอยู่บนเว็บไซต์ (WebsiteButton — ล็อกอินให้อัตโนมัติ)
+ * - (ไรเดอร์รอบ 2) แถว "ค่าตอบแทนไรเดอร์" → /merchant/rider-pay?kind=shop
  * - ยังไม่มีร้าน (403 NOT_A_SELLER) → ชวนสมัครเปิดร้านในแอป · ร้านถูกระงับ (STORE_SUSPENDED) → แจ้งเหตุผล
  *   (คำขอเปิดร้านที่รออนุมัติ/ไม่ผ่าน ก็ได้ STORE_SUSPENDED จาก /seller/summary → เช็คสถานะคำขอแล้วแสดงให้ถูก)
  * - รีเฟรชเงียบๆ ทุก 30 วินาทีระหว่างเปิดหน้านี้ (ไม่มีสปินเนอร์เต็มจอ)
@@ -15,7 +16,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
@@ -487,6 +488,24 @@ export default function MerchantScreen() {
                   onPress={() => router.push('/merchant/store-settings' as never)}
                 />
               </View>
+              {/* ค่าตอบแทนไรเดอร์ (ไรเดอร์รอบ 2) — โบนัส / ส่งฟรี / คำแนะนำ */}
+              <Pressable
+                onPress={() =>
+                  router.push(
+                    `/merchant/rider-pay?kind=shop${store?.name ? `&name=${encodeURIComponent(store.name)}` : ''}` as never
+                  )
+                }
+                accessibilityRole="button"
+                accessibilityLabel="ค่าตอบแทนไรเดอร์ ตั้งโบนัสไรเดอร์และส่งฟรี"
+                style={({ pressed }) => [styles.riderPayRow, { borderTopColor: colors.divider, opacity: pressed ? 0.7 : 1 }]}
+              >
+                <IconTile icon="moped" tone="gold" />
+                <View style={styles.flex}>
+                  <Text style={[typography.bodyStrong, { color: colors.textStrong }]}>ค่าตอบแทนไรเดอร์</Text>
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>โบนัสไรเดอร์ ส่งฟรี และคำแนะนำจาก AI</Text>
+                </View>
+                <Icon name="caret-right" size={18} color={colors.textFaint} />
+              </Pressable>
             </Card3D>
 
             {/* งานบนเว็บ */}
@@ -658,6 +677,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
+  },
+  riderPayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    minHeight: 56,
   },
   webNoteRow: {
     flexDirection: 'row',

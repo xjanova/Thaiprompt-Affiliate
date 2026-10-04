@@ -6,8 +6,10 @@
  * - ปุ่มรับงานกันกดซ้ำ + ข้อความไทยชัดทุกกรณี (RIDER-APP-16) แล้วพาไปหน้างานทันที
  * - ตัวเลขทุกตัวมาจาก server (ค่าส่ง/รายได้/ระยะทาง) — RIDER-APP-02
  *
- * หน้าตา: การ์ดงานแบบม็อกอัป — แถบแผนที่ประกอบ + เส้นทองจากจุดรับ (ทอง) ไปจุดส่ง (น้ำเงิน)
- *         ค่าส่งตัวใหญ่ + ปุ่มทอง "รับงานนี้" · สถานะออฟไลน์/มีงานค้าง = การ์ดน้ำเงินลายกนก
+ * หน้าตา: การ์ดข้อเสนองานตามม็อกอัป RiderOffer (ไรเดอร์รอบ 2 — components/rider/JobOfferCard)
+ *         ภาพเส้นทางจริง · ลูกค้าล็อกเรียก · "คุณได้รับ" = ค่าส่ง + โบนัสร้าน · จุดรับ/ส่งพร้อมระยะตามถนน
+ *         สถานะออฟไลน์/มีงานค้าง = การ์ดน้ำเงินลายกนก
+ * - งานที่ลูกค้าประจำล็อกเรียกคุณ (locked_by_buyer) ขึ้นก่อนเสมอ — ข้อเสนอนี้มีเวลาสั้นๆ ก่อนเปิดให้คนอื่น
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -15,18 +17,7 @@ import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/ui/Text';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme, spacing, radii, typography } from '@/theme';
-import {
-  BrandArt,
-  Button3D,
-  Card3D,
-  EmptyState,
-  Icon,
-  Pill,
-  PriceText,
-  Screen,
-  SectionHeader,
-  formatBaht,
-} from '@/components/ui';
+import { BrandArt, Button3D, EmptyState, Screen, SectionHeader } from '@/components/ui';
 import {
   getAvailableJobs,
   getRiderStatus,
@@ -39,141 +30,11 @@ import { getCurrentCoords, pingRiderLocation } from '@/services/location';
 import { useRiderPermissionFlow } from '@/components/rider/useRiderPermissionFlow';
 import { useRiderAvailability } from '@/components/rider/useRiderAvailability';
 import { useAcceptJob } from '@/components/rider/useAcceptJob';
-import { formatKm, formatMinutes, formatTime } from '@/components/rider/riderHelpers';
-import {
-  LiveDot,
-  MapTag,
-  NavyCard,
-  NoticeCard,
-  RouteStops,
-  jobTypeIcon,
-  useRiderTones,
-} from '@/components/rider/RiderVisuals';
+import { formatTime } from '@/components/rider/riderHelpers';
+import { LiveDot, NavyCard, NoticeCard } from '@/components/rider/RiderVisuals';
+import { JobOfferCard } from '@/components/rider/JobOfferCard';
 
 const POLL_MS = 15_000;
-
-// =====================================================
-// การ์ดงาน
-// =====================================================
-
-/** ชื่อจุดรับ/ส่ง: "รับที่ ร้าน…" (คำนำหน้าสีจาง) — ไม่มีชื่อ = ข้อความสำรอง */
-const StopTitle: React.FC<{ prefix: string; name?: string | null; fallback: string }> = ({ prefix, name, fallback }) => {
-  const { colors } = useTheme();
-  return (
-    <Text numberOfLines={1} style={[typography.bodyStrong, { color: colors.textStrong }]}>
-      {name ? (
-        <>
-          <Text style={[styles.stopPrefix, { color: colors.textMuted }]}>{prefix} </Text>
-          {name}
-        </>
-      ) : (
-        fallback
-      )}
-    </Text>
-  );
-};
-
-const JobCard: React.FC<{
-  job: RiderJobSummary;
-  accepting: boolean;
-  disabled: boolean;
-  onAccept: () => Promise<void>;
-  onSkip: () => Promise<void>;
-  onOpen: () => void;
-}> = ({ job, accepting, disabled, onAccept, onSkip, onOpen }) => {
-  const { colors } = useTheme();
-  const tones = useRiderTones();
-  const toPickup = formatKm(job.distance_to_pickup_km);
-  const tripKm = formatKm(job.distance_km);
-  const eta = formatMinutes(job.estimated_duration_minutes);
-  const highlight = job.rider_earnings >= 60;
-
-  return (
-    <Card3D
-      onPress={onOpen}
-      style={styles.card}
-      padding={0}
-      radius={radii.xl}
-      gradientBorder={highlight}
-      accessibilityLabel={`งาน ${job.title} ได้รับ ${job.rider_earnings} บาท`}
-      accessibilityHint="แตะเพื่อดูรายละเอียดงาน"
-    >
-      <View style={styles.cardBody}>
-        <View style={styles.jobTags}>
-          <MapTag icon={jobTypeIcon(job.job_type)} label={job.job_type_text || 'งานส่ง'} />
-          {!!job.created_at && (
-            <MapTag icon="clock" label={formatTime(job.created_at)} iconColor={colors.textMuted} />
-          )}
-        </View>
-        <View style={styles.routeRow}>
-          <RouteStops
-            style={styles.flex}
-            stops={[
-              {
-                kind: 'pickup',
-                title: <StopTitle prefix="รับที่" name={job.pickup?.name} fallback="จุดรับของ" />,
-                meta: [toPickup ? `ห่าง ${toPickup}` : null, job.pickup?.address],
-              },
-              {
-                kind: 'dropoff',
-                title: (
-                  <StopTitle prefix="ส่งที่" name={job.dropoff?.area || job.dropoff?.address} fallback="จุดส่ง" />
-                ),
-                meta: [tripKm ? `ระยะส่ง ${tripKm}` : null, eta],
-                note: job.dropoff?.is_approximate ? 'ที่อยู่เต็มจะแสดงหลังรับงาน' : null,
-              },
-            ]}
-          />
-          <View style={styles.feeBox}>
-            <Text style={[typography.caption, { color: colors.textMuted }]}>คุณได้รับ</Text>
-            <PriceText amount={job.rider_earnings} size="xl" style={[styles.fee, { color: tones.money }]} />
-            {job.is_cod && <Pill label="เก็บเงินปลายทาง" tone="warning" icon="money" />}
-          </View>
-        </View>
-
-        {!!job.items_summary && (
-          <View style={[styles.itemsRow, { borderTopColor: colors.divider }]}>
-            <Icon name="receipt" size={16} color={colors.textMuted} />
-            <Text style={[typography.bodySm, styles.flex, { color: colors.text }]} numberOfLines={2}>
-              {job.items_summary}
-            </Text>
-          </View>
-        )}
-        {job.is_cod && (
-          <View style={[styles.codRow, { backgroundColor: colors.warningSoft }]}>
-            <Icon name="money" size={17} color={colors.warning} weight="fill" />
-            <Text style={[typography.caption, styles.codText, { color: colors.text }]}>
-              ต้องเก็บเงินสดจากลูกค้า {formatBaht(job.cod_amount)}
-            </Text>
-          </View>
-        )}
-
-        <View style={styles.cardActions}>
-          <Button3D
-            title="ไม่สนใจ"
-            variant="secondary"
-            size="lg"
-            disabled={disabled}
-            onPress={onSkip}
-            accessibilityHint="ซ่อนงานนี้"
-            style={styles.skip}
-          />
-          <Button3D
-            title="รับงานนี้"
-            icon="hand-tap"
-            variant="primary"
-            size="lg"
-            disabled={disabled && !accepting}
-            loading={accepting}
-            loadingText="กำลังรับงาน..."
-            onPress={onAccept}
-            style={styles.accept}
-          />
-        </View>
-      </View>
-    </Card3D>
-  );
-};
 
 // =====================================================
 // หน้าจอ
@@ -333,7 +194,9 @@ export default function RiderJobsScreen() {
     );
   }
 
-  const jobs = data.jobs.filter((j) => !hidden.has(j.id));
+  // งานที่ลูกค้าล็อกเรียกคุณขึ้นก่อน (คงลำดับเดิมของ server ภายในกลุ่ม)
+  const visible = data.jobs.filter((j) => !hidden.has(j.id));
+  const jobs = [...visible.filter((j) => j.locked_by_buyer), ...visible.filter((j) => !j.locked_by_buyer)];
   const block = data.block_reason;
   const showConsentBanner = data.reason === null && (block?.code === 'CONSENT_REQUIRED' || !hasConsent);
   const searching = data.reason === null;
@@ -475,7 +338,7 @@ export default function RiderJobsScreen() {
         data={data.reason === null ? jobs : []}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <JobCard
+          <JobOfferCard
             job={item}
             accepting={acceptingId === item.id}
             disabled={acceptingId !== null}
@@ -523,73 +386,6 @@ const styles = StyleSheet.create({
   },
   block: {
     marginBottom: spacing.lg,
-  },
-  card: {
-    marginBottom: spacing.lg,
-  },
-  jobTags: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  cardBody: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-  stopPrefix: {
-    fontWeight: '500',
-  },
-  feeBox: {
-    alignItems: 'flex-end',
-    gap: 2,
-    maxWidth: '42%',
-  },
-  fee: {
-    fontSize: 32,
-    lineHeight: 40,
-    letterSpacing: -0.5,
-  },
-  itemsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-  },
-  codRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.sm + 1,
-  },
-  codText: {
-    flex: 1,
-    fontWeight: '600',
-  },
-  cardActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-    marginTop: spacing.lg,
-  },
-  skip: {
-    flex: 1,
-    minWidth: 100,
-  },
-  accept: {
-    flex: 1.8,
   },
   liveRow: {
     flexDirection: 'row',
