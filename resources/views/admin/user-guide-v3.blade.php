@@ -310,7 +310,7 @@
                                 </div>
                                 <div>
                                     <h3 class="font-bold text-white">Email Support</h3>
-                                    <p class="text-white/60 text-sm">support@thaiprompt.com</p>
+                                    <p class="text-white/60 text-sm">{{ \App\Support\ContactInfo::supportEmail() }}</p>
                                 </div>
                             </div>
                             <button class="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-lg hover:from-blue-600 hover:to-cyan-700 transition font-medium">

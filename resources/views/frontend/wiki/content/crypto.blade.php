@@ -628,7 +628,7 @@
                 <h4>📞 ติดต่อทีมรักษาความปลอดภัย</h4>
                 <p>หากพบความผิดปกติหรือต้องการความช่วยเหลือด้านความปลอดภัย:</p>
                 <ul class="leading-loose mt-4">
-                    <li><strong>Email:</strong> security@thaiprompt.com</li>
+                    <li><strong>Email:</strong> <a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}">{{ \App\Support\ContactInfo::supportEmail() }}</a></li>
                     <li><strong>Hotline:</strong> 02-xxx-xxxx (24/7)</li>
                     <li><strong>Line:</strong> @thaiprompt-security</li>
                 </ul>

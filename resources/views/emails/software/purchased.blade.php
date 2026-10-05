@@ -261,7 +261,7 @@
             <h3 style="margin-top: 0; color: #1f2937;">💬 ต้องการความช่วยเหลือ?</h3>
             <p style="margin: 10px 0;">หากคุณมีปัญหาหรือข้อสงสัยเกี่ยวกับการติดตั้งหรือใช้งาน</p>
             <p style="margin: 10px 0;">
-                📧 Email: <a href="mailto:support@thaiprompt.com" style="color: #4F46E5;">support@thaiprompt.com</a><br>
+                📧 Email: <a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}" style="color: #4F46E5;">{{ \App\Support\ContactInfo::supportEmail() }}</a><br>
                 💬 LINE: <a href="https://line.me/ti/p/@thaiprompt" style="color: #4F46E5;">@thaiprompt</a>
             </p>
         </div>

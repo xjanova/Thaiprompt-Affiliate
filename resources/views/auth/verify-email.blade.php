@@ -167,6 +167,6 @@
 
 @section('footer-links')
     <div class="text-center text-white/80 dark:text-gray-400 text-sm">
-        <p>ยังมีปัญหาอยู่? <a href="mailto:support@example.com" class="text-white dark:text-white font-semibold hover:underline">ติดต่อเรา</a></p>
+        <p>ยังมีปัญหาอยู่? <a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}" class="text-white dark:text-white font-semibold hover:underline">ติดต่อเรา</a></p>
     </div>
 @endsection

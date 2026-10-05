@@ -52,7 +52,7 @@ class DemoPagesSeeder extends Seeder
 <p>ไม่มีค่าใช้จ่ายใดๆ ในการสมัครสมาชิก คุณสามารถสมัครและเริ่มใช้งานได้ฟรี 100%</p>
 
 <h3>5. ติดต่อทีมงานได้อย่างไร?</h3>
-<p>สามารถติดต่อเราได้ผ่านหน้า "ติดต่อเรา" หรือส่งอีเมลมาที่ support@thaiprompt.com</p>',
+<p>สามารถติดต่อเราได้ผ่านหน้า "ติดต่อเรา" หรือส่งอีเมลมาที่ support@thaiprompt.online</p>',
                 'is_published' => true,
                 'sort_order' => 2,
             ]
@@ -73,7 +73,7 @@ class DemoPagesSeeder extends Seeder
 
 <h3>ช่องทางการติดต่อ</h3>
 <ul>
-<li><strong>อีเมล:</strong> support@thaiprompt.com</li>
+<li><strong>อีเมล:</strong> support@thaiprompt.online</li>
 <li><strong>โทรศัพท์:</strong> 02-123-4567</li>
 <li><strong>Line:</strong> @thaiprompt</li>
 <li><strong>Facebook:</strong> facebook.com/thaiprompt</li>
@@ -443,7 +443,7 @@ class DemoPagesSeeder extends Seeder
 <div class="contact-info">
 <p><strong>บริษัท ThaiPrompt Affiliate</strong><br>
 ที่อยู่: 123/45 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร 10110<br>
-อีเมล: legal@thaiprompt.com<br>
+อีเมล: support@thaiprompt.online<br>
 โทรศัพท์: 02-123-4567<br>
 เวลาทำการ: จันทร์-ศุกร์ 9:00-18:00 น.</p>
 </div>
@@ -706,7 +706,7 @@ class DemoPagesSeeder extends Seeder
 <div class="contact-info">
 <p><strong>บริษัท ThaiPrompt Affiliate</strong><br>
 ฝ่ายคุ้มครองข้อมูลส่วนบุคคล<br>
-อีเมล: privacy@thaiprompt.com<br>
+อีเมล: support@thaiprompt.online<br>
 โทรศัพท์: 02-123-4567<br>
 ที่อยู่: 123/45 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร 10110</p>
 </div>
@@ -715,7 +715,7 @@ class DemoPagesSeeder extends Seeder
 <div class="section">
 <h2>14. เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO)</h2>
 <p>หากคุณมีคำถามเกี่ยวกับการประมวลผลข้อมูลส่วนบุคคล คุณสามารถติดต่อเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคลของเราได้ที่:</p>
-<p><strong>อีเมล:</strong> dpo@thaiprompt.com</p>
+<p><strong>อีเมล:</strong> support@thaiprompt.online</p>
 </div>
 
 </div>',
@@ -970,7 +970,7 @@ class DemoPagesSeeder extends Seeder
 <div class="contact-info">
 <p><strong>บริษัท ThaiPrompt Affiliate</strong><br>
 ฝ่ายคุ้มครองข้อมูลส่วนบุคคล<br>
-อีเมล: privacy@thaiprompt.com<br>
+อีเมล: support@thaiprompt.online<br>
 โทรศัพท์: 02-123-4567<br>
 ที่อยู่: 123/45 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพมหานคร 10110</p>
 </div>
