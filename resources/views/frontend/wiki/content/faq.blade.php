@@ -442,7 +442,7 @@ php artisan optimize</code></pre>
             <a href="#" class="inline-flex items-center gap-2 px-8 py-4 bg-green-500 hover:bg-green-600 text-white no-underline rounded-xl font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                 💬 LINE Official
             </a>
-            <a href="mailto:support@thaiprompt.com" class="inline-flex items-center gap-2 px-8 py-4 bg-white dark:bg-gray-800 text-primary-500 no-underline rounded-xl font-bold border-2 border-primary-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:bg-primary-50 dark:hover:bg-primary-900/20">
+            <a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}" class="inline-flex items-center gap-2 px-8 py-4 bg-white dark:bg-gray-800 text-primary-500 no-underline rounded-xl font-bold border-2 border-primary-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:bg-primary-50 dark:hover:bg-primary-900/20">
                 📧 Email Support
             </a>
         </div>

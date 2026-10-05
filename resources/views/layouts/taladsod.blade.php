@@ -431,7 +431,7 @@
                             <i class="fas fa-envelope text-green-400 mt-0.5"></i>
                             <div>
                                 <div class="text-gray-400">อีเมล</div>
-                                <a href="mailto:support@thaiprompt.online" class="text-green-400 hover:text-green-300 font-medium">support@thaiprompt.online</a>
+                                <a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}" class="text-green-400 hover:text-green-300 font-medium">{{ \App\Support\ContactInfo::supportEmail() }}</a>
                             </div>
                         </li>
                         <li class="flex items-start gap-2">

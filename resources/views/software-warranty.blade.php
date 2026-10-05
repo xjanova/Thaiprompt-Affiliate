@@ -78,7 +78,7 @@
 
         <h2><span>📬</span> 8. ติดต่อเรื่องการรับประกัน</h2>
         <ul>
-            <li>อีเมล: <strong>xjanovax@gmail.com</strong></li>
+            <li>อีเมล: <strong>{{ \App\Support\ContactInfo::supportEmail() }}</strong></li>
             <li>เว็บไซต์บริการ: <strong>main.thaiprompt.online</strong></li>
             <li>เว็บไซต์บริษัท: <strong>xman4289.com</strong></li>
         </ul>

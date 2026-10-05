@@ -163,8 +163,8 @@
                 <div class="mt-8 pt-8 border-t-2 border-slate-200 dark:border-slate-700">
                     <p class="text-sm text-slate-600 dark:text-slate-400">
                         หากมีคำถามหรือข้อสงสัย โปรดติดต่อ
-                        <a href="mailto:support@thaiprompt.com" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">
-                            support@thaiprompt.com
+                        <a href="mailto:{{ \App\Support\ContactInfo::supportEmail() }}" class="text-blue-600 dark:text-blue-400 hover:underline font-bold">
+                            {{ \App\Support\ContactInfo::supportEmail() }}
                         </a>
                     </p>
                 </div>

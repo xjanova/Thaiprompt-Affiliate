@@ -99,7 +99,7 @@ class AccountingDemoSeeder extends Seeder
                     'name_eng' => 'Thai Prompt Co., Ltd.',
                     'branch_code' => '00000',
                     'phone' => '02-123-4567',
-                    'email' => 'info@thaiprompt.com',
+                    'email' => 'support@thaiprompt.online',
                     'website' => 'https://thaiprompt.com',
                     'address' => '123 ถนนสุขุมวิท',
                     'district' => 'คลองเตย',
