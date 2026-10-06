@@ -194,14 +194,15 @@ class FortuneDebugToolsController extends Controller
                         ?? (\App\Services\Fortune\FortuneRecipient::platformFromUserId((string) ($userId)));
 
                     $channelManager = new FortuneChannelManager(FortuneTellingSetting::getSettings());
-                    $sent = $channelManager->sendResponse($platform, (string) $userId, [
+                    // 🤫 (2026-10-06, bug-hunt M3) แอดมินกดเครื่องมือดีบักเอง = แอดมินตัวจริงส่ง — ด่านเทคโอเวอร์ไม่พัก
+                    $sent = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $channelManager->sendResponse($platform, (string) $userId, [
                         'action' => 'celtic_question_answered',
                         'message' => '🧪 [DEBUG TEST] '.$aiResult['response'],
                         'reading' => $reading,
                     ], [
                         'from_admin' => true,
                         'message_tag' => 'POST_PURCHASE_UPDATE',
-                    ]);
+                    ]));
 
                     return [
                         'platform' => $platform,

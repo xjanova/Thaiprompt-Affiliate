@@ -2591,7 +2591,16 @@ class FacebookWebhookController extends Controller
         $isResumeCommand = $this->takeoverService->detectAdminResumeCommand($messageText);
 
         if (! $isPauseCommand && ! $isResumeCommand) {
-            // admin reply ปกติ — ไม่ auto-takeover (Capture ทำไปแล้วข้างบน)
+            // 🤫 (2026-10-06, bug-hunt L12 — กฎใหม่ของเจ้าของ "แอดมินคุย = บอทหยุด")
+            //   เดิม: แอดมินพิมพ์ตอบใน Page Inbox (ไม่ใช่คำสั่ง) → ไม่ทำอะไรกับเทคโอเวอร์เลย บอทคุยแทรกต่อ
+            //   ใหม่: echo ที่ "คนพิมพ์เอง" (ไม่มี app_id) → เริ่ม/ต่อเทคโอเวอร์ให้เหลือ max(30, ค่าที่ตั้ง) นาที
+            //   ⚠️ echo ที่มี app_id ของ Meta Business Suite ไม่นับ — แยกจาก automation ตอบคอมเมนต์ไม่ได้
+            //      (automation ยิงหา 244 คน = จะเทคโอเวอร์ลูกค้าทั้งเพจโดยไม่มีแอดมินคุยจริง)
+            $hasAttachment = ! empty($messaging['message']['attachments']);
+            if ($isHumanTyped && (trim($messageText) !== '' || $hasAttachment)) {
+                $this->ensureTakeoverForAdminEcho($recipientId, $messageText);
+            }
+
             return;
         }
 
@@ -2656,6 +2665,56 @@ class FacebookWebhookController extends Controller
             'reading_id' => $reading->id,
             'user_id' => $recipientId,
         ]);
+    }
+
+    /**
+     * 🤫 (2026-10-06, bug-hunt L12) แอดมินพิมพ์หาลูกค้าใน Page Inbox → เริ่ม/ต่อเทคโอเวอร์ (บอทหยุดแทรก)
+     *
+     * เทคโอเวอร์ผูกกับบิลล่าสุดของลูกค้า (ด่านนับทุกบิลของคนนั้นอยู่แล้ว) · ไม่มีบิลเลย = สร้าง placeholder
+     * แบบเดียวกับ /aistop · ล้มแบบเงียบ (webhook ต้องตอบ 200 ให้ Meta เสมอ)
+     */
+    protected function ensureTakeoverForAdminEcho(string $recipientId, string $messageText): void
+    {
+        try {
+            $reading = FortuneReading::where(function ($q) use ($recipientId) {
+                $q->where('facebook_user_id', $recipientId)
+                    ->orWhere('platform_user_id', $recipientId);
+            })
+                ->orderByDesc('id')
+                ->first();
+
+            if (! $reading) {
+                $reading = FortuneReading::create([
+                    'facebook_user_id' => $recipientId,
+                    'platform' => 'facebook',
+                    'platform_user_id' => $recipientId,
+                    'reading_type' => 'basic',
+                    'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                    'conversation_state' => ['placeholder' => true, 'source' => 'admin_echo'],
+                    'questions' => [],
+                    'ai_response' => '',
+                    'ai_provider' => 'none',
+                ]);
+            }
+
+            $minutes = $this->takeoverService->ensureAdminTakeover(
+                $reading,
+                null,
+                $messageText !== '' ? $messageText : '[แอดมินส่งไฟล์แนบ]',
+                FortuneReading::TAKEOVER_REASON_AUTO_REPLY,
+            );
+
+            Log::info('🤫 Facebook echo: แอดมินพิมพ์ใน Page Inbox → เทคโอเวอร์ (บอทหยุดแทรก)', [
+                'reading_id' => $reading->id,
+                'user_id' => $recipientId,
+                'minutes_started_or_extended' => $minutes,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('🤫 Facebook echo: เริ่ม/ต่อเทคโอเวอร์ไม่สำเร็จ (non-blocking)', [
+                'user_id' => $recipientId,
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
+            ]);
+        }
     }
 
     /**

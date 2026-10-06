@@ -50,6 +50,16 @@ class FortuneCelticAutoFinalize extends Command
         $limit = (int) $this->option('limit');
         $specificId = $this->option('id');
 
+        // ⏸️ (2026-10-06, bug-hunt L11) ปิดเทคโอเวอร์ที่หมดเวลาแล้วก่อนตัดสิน — ตอนปิดจะเลื่อนนาฬิกาเซสชันที่จ่ายแล้ว
+        //    ออกไปเท่าช่วงที่แอดมินคุย · ไม่งั้นรอบนี้ปิดเซสชันทิ้งก่อน expire-conversations (ทุก 5 นาที) มาเลื่อนให้
+        if (! $dry) {
+            try {
+                app(\App\Services\FortuneTakeoverService::class)->cleanupExpired();
+            } catch (\Throwable $e) {
+                // ไม่ critical — expire-conversations กวาดให้ภายใน 5 นาที
+            }
+        }
+
         $candidates = $this->findExpiredCelticSessions($specificId, $limit);
 
         if ($candidates->isEmpty()) {

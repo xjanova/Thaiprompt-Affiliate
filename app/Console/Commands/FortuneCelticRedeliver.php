@@ -43,7 +43,8 @@ class FortuneCelticRedeliver extends Command
                             {--min-seconds=60 : อายุขั้นต่ำหลัง answered (ให้ sync push ลองก่อน)}
                             {--max-hours=2 : อายุสูงสุด — ไม่ส่งคำตอบเก่าเกิน}
                             {--max-attempts=3 : จำนวนครั้งสูงสุดที่พยายาม re-deliver}
-                            {--limit=30 : จำนวน question สูงสุดต่อรอบ}';
+                            {--limit=30 : จำนวน question สูงสุดต่อรอบ}
+                            {--reading= : เจาะจง reading id (ข้ามหน้าต่างเวลา — ใช้ตอนจบเทคโอเวอร์/ตามส่งด้วยมือ · เพดาน attempt ยังใช้)}';
 
     protected $description = 'ส่งคำทำนาย Celtic ซ้ำให้ลูกค้าที่ AI ตอบแล้วแต่ push แรกไม่ถึง (delivered_at null)';
 
@@ -78,12 +79,20 @@ class FortuneCelticRedeliver extends Command
         //   silent_skip เงียบ → ลูกค้างง ไม่พิมพ์ต่อ → admin ต้องเข้า panel ช่วยตอบเอง
         //   เดิม recover เป็น lazy (เช็คตอนลูกค้าพิมพ์ครั้งถัดไป) → ลูกค้าเงียบ = ไม่ recover
         //   Fix: cron นี้ (ทุกนาที) recover reading ที่ค้าง > 90s เป็น AWAITING เชิงรุก
-        $this->recoverStuckGenerating($isDry);
+        // 🔧 (2026-10-06, bug-hunt L4) โหมดเจาะบิล — คำตอบที่ค้างเพราะแอดมินเทคโอเวอร์นานเกินหน้าต่าง 2 ชม. ต้องยังส่งได้
+        //    (ไม่ทำ recoverStuckGenerating ทั้งระบบ — งานของรอบ cron ปกติ)
+        $only = $this->option('reading');
+
+        if (! $only) {
+            $this->recoverStuckGenerating($isDry);
+        }
 
         $candidates = FortuneCelticQuestion::query()
             ->undelivered()
-            ->where('answered_at', '<=', now()->subSeconds($minSeconds))
-            ->where('answered_at', '>=', now()->subHours($maxHours))
+            ->when($only, fn ($q) => $q->where('fortune_reading_id', (int) $only))
+            ->when(! $only, fn ($q) => $q
+                ->where('answered_at', '<=', now()->subSeconds($minSeconds))
+                ->where('answered_at', '>=', now()->subHours($maxHours)))
             ->where('delivery_attempts', '<', $maxAttempts)
             ->with('reading')
             ->orderBy('answered_at', 'asc')
@@ -189,6 +198,21 @@ class FortuneCelticRedeliver extends Command
                 continue;
             }
 
+            // 🔒 (2026-10-06, bug-hunt L9) ล็อกต่อคำถาม — รอบ cron กับโหมด --reading (จบเทคโอเวอร์) รันซ้อนกันได้
+            //    ใครได้ล็อกก่อนส่ง อีกตัวข้าม + เช็คซ้ำจาก DB ว่ายังไม่ถูกส่งระหว่างรอ
+            $sendLock = "fortune:celtic_redeliver_q:{$q->id}";
+            if (! Cache::add($sendLock, 1, 120)) {
+                $skipped++;
+
+                continue;
+            }
+            if (FortuneCelticQuestion::query()->whereKey($q->id)->whereNotNull('delivered_at')->exists()) {
+                Cache::forget($sendLock);
+                $skipped++;
+
+                continue;
+            }
+
             // นับ attempt ก่อนส่ง — แม้ exception ก็ถือว่าใช้ไป 1 ครั้ง (กัน loop)
             $q->forceFill(['delivery_attempts' => $q->delivery_attempts + 1])->save();
 
@@ -222,6 +246,8 @@ class FortuneCelticRedeliver extends Command
                     'reading_id' => $reading->id,
                     'error' => $e->getMessage(),
                 ]);
+            } finally {
+                Cache::forget($sendLock);
             }
         }
 

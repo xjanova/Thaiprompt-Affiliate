@@ -303,8 +303,10 @@ class TelegramFortuneWebhookController extends Controller
         // 🤫 (2026-10-06, เจ้าของสั่ง) แอดมินเทคโอเวอร์อยู่ → บอทเงียบสนิทก่อนทุกด่าน (รวม /start ที่ส่งเมนูต้อนรับ)
         //    ข้อความจดแชทล็อก + park + เก็บรูปเงียบ ๆ ที่ TakeoverIngress — ของที่จ่ายแล้วส่งตอนจบเทคโอเวอร์
         $ingressFileId = $messageType === 'image' ? $this->imageFileId($message) : null;
+        // /start /menu /help = คำสั่ง ไม่ใช่บริบทของคำถาม → ไม่ park (จดแชทล็อกอย่างเดียว)
+        $ingressKind = ($messageType === 'text' && str_starts_with($text, '/')) ? 'command' : $messageType;
         if (\App\Services\Fortune\TakeoverIngress::intercept(FortuneRecipient::PLATFORM_TELEGRAM, $userId, [
-            'kind' => $messageType === 'other' ? 'other' : $messageType,
+            'kind' => $ingressKind,
             'text' => $messageType === 'image' ? $caption : $text,
             'image_fetcher' => $ingressFileId ? fn () => $this->telegram->downloadFileAsBase64($ingressFileId) : null,
         ])) {

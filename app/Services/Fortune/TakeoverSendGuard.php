@@ -49,6 +49,23 @@ final class TakeoverSendGuard
         'editMessageReplyMarkup',
     ];
 
+    /**
+     * memo ผลเช็คเทคโอเวอร์ต่อ "หนึ่ง webhook request / หนึ่ง job" — null = ปิด memo (cron / โค้ดรันยาว = คิวรีสดทุกครั้ง)
+     *
+     * userId → ['until' => ?CarbonImmutable, 'reading_id' => ?int]
+     * ⚠️ ห้ามข้าม job ใน worker รันยาว — เปิดที่ Queue::before ปิดที่ Queue::after (AppServiceProvider)
+     *    และเปิดที่ TakeoverIngress (หัว webhook) ปิดตอน request จบ (app()->terminating)
+     *
+     * @var array<string, array{until: ?\Carbon\CarbonImmutable, reading_id: ?int}>|null
+     */
+    private static ?array $memo = null;
+
+    /** app instance ที่ลงทะเบียนตัวปิด memo ตอนจบ request ไว้แล้ว (กันลงซ้ำ) */
+    private static ?int $terminatingRegisteredFor = null;
+
+    /** memo ผูกกับ app instance ไหน — app ใหม่ (เทสต์ถัดไป / request ใหม่) = memo เก่าใช้ไม่ได้ */
+    private static ?int $memoAppId = null;
+
     // ============================================================
     // แอดมินตัวจริง
     // ============================================================
@@ -88,23 +105,165 @@ final class TakeoverSendGuard
      * - เทคโอเวอร์ที่แอดมินสั่งเอง (manual / แอดมินพิมพ์ในกล่องแชท) นับเสมอ แม้ปิดสวิตช์ admin_handover_enabled
      * - เทคโอเวอร์อัตโนมัติ (ลูกค้าขอคุยกับคน) นับเฉพาะตอนเปิดสวิตช์
      * - DB เป็นความจริง — cache:clear แล้วยังได้คำตอบถูก (ไม่มี negative cache)
+     * - ภายใน webhook request / job เดียว ใช้ memo (ดู $memo) — $fresh = true บังคับคิวรีสด
      *
      * ⚠️ โยน exception ได้ (DB ล่ม) — ผู้เรียกที่ต้องการ fail-open ให้ใช้ blocks() / readingIsTakenOver()
      */
-    public static function isTakenOver(string $platform, ?string $userId): bool
+    public static function isTakenOver(string $platform, ?string $userId, bool $fresh = false): bool
     {
-        return self::activeUntil($platform, $userId) !== null;
+        return self::activeUntil($platform, $userId, $fresh) !== null;
     }
 
     /**
      * เวลาสิ้นสุดของเทคโอเวอร์ที่ยาวที่สุดของลูกค้าคนนี้ (null = ไม่ได้ถูกเทคโอเวอร์)
      */
-    public static function activeUntil(string $platform, ?string $userId): ?\Carbon\CarbonInterface
+    public static function activeUntil(string $platform, ?string $userId, bool $fresh = false): ?\Carbon\CarbonInterface
     {
-        $row = self::activeTakeoverQuery($userId)?->orderByDesc('admin_takeover_until')
+        $key = trim((string) $userId);
+        if ($key === '') {
+            return null;
+        }
+
+        if (! $fresh && self::memoActive() && array_key_exists($key, self::$memo)) {
+            $until = self::$memo[$key]['until'];
+
+            // หมดเวลาระหว่าง request = ไม่ได้ถูกเทคโอเวอร์แล้ว (ไม่ต้องคิวรีใหม่)
+            return ($until !== null && $until->isFuture()) ? $until : null;
+        }
+
+        $row = self::activeTakeoverQuery($key)?->orderByDesc('admin_takeover_until')
             ->first(['id', 'admin_takeover_until']);
 
+        self::remember($key, $row?->admin_takeover_until, $row?->id);
+
         return $row?->admin_takeover_until;
+    }
+
+    /**
+     * ลูกค้าในรายการนี้ คนไหนถูกเทคโอเวอร์อยู่บ้าง — คิวรีเดียวทั้งชุด (กัน N+1 ใน cron)
+     *
+     * @param  array<int, string|null>  $userIds
+     * @return array<string, true> userId => true (เฉพาะคนที่ถูกเทคโอเวอร์)
+     */
+    public static function takenOverUserIds(array $userIds): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map(fn ($u) => trim((string) $u), $userIds), fn ($u) => $u !== '')));
+        if ($ids === []) {
+            return [];
+        }
+
+        $out = [];
+        try {
+            $query = FortuneReading::query()
+                ->where(function ($q) use ($ids) {
+                    $q->whereIn('platform_user_id', $ids)->orWhereIn('facebook_user_id', $ids);
+                })
+                ->whereNotNull('admin_takeover_until')
+                ->where('admin_takeover_until', '>', now());
+
+            if (! self::autoTakeoverEnabled()) {
+                $query->where(function ($q) {
+                    $q->whereNull('admin_takeover_reason')
+                        ->orWhere('admin_takeover_reason', '!=', FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST);
+                });
+            }
+
+            $lookup = array_flip($ids);
+            foreach ($query->get(['platform_user_id', 'facebook_user_id']) as $row) {
+                foreach ([(string) $row->platform_user_id, (string) $row->facebook_user_id] as $uid) {
+                    if ($uid !== '' && isset($lookup[$uid])) {
+                        $out[$uid] = true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error('🤫 TakeoverSendGuard: เช็คเทคโอเวอร์ทั้งชุดล้ม — ปล่อยผ่าน (fail open)', [
+                'count' => count($ids),
+                'error' => SafeLog::exceptionMessage($e),
+            ]);
+
+            return [];
+        }
+
+        return $out;
+    }
+
+    // ============================================================
+    // memo ต่อ request / job
+    // ============================================================
+
+    /**
+     * เปิด memo (เรียกที่หัว webhook / Queue::before) — ใน HTTP request ปิดให้เองตอน request จบ
+     */
+    public static function beginMemoScope(): void
+    {
+        self::$memo = [];
+
+        try {
+            $app = app();
+            self::$memoAppId = spl_object_id($app);
+            if (! $app->runningInConsole() || $app->runningUnitTests()) {
+                $appId = spl_object_id($app);
+                if (self::$terminatingRegisteredFor !== $appId) {
+                    self::$terminatingRegisteredFor = $appId;
+                    $app->terminating(fn () => self::endMemoScope());
+                }
+            }
+        } catch (\Throwable $e) {
+            // ไม่มี container = ไม่เป็นไร memo แค่ช่วยลดคิวรี
+        }
+    }
+
+    /** ปิด memo — คิวรีสดทุกครั้งหลังจากนี้ */
+    public static function endMemoScope(): void
+    {
+        self::$memo = null;
+        self::$memoAppId = null;
+    }
+
+    /** memo เปิดอยู่และเป็นของ app instance ปัจจุบันไหม */
+    private static function memoActive(): bool
+    {
+        if (self::$memo === null) {
+            return false;
+        }
+
+        try {
+            if (self::$memoAppId !== spl_object_id(app())) {
+                self::endMemoScope(); // memo ของ request/เทสต์ก่อน — ทิ้ง
+
+                return false;
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * จดผลเช็คลง memo (ถ้าเปิดอยู่) — TakeoverIngress ใช้หยอดผลจากคิวรีรวมของมัน
+     */
+    public static function remember(string $userId, ?\Carbon\CarbonInterface $until, ?int $readingId = null): void
+    {
+        if (! self::memoActive() || $userId === '') {
+            return;
+        }
+
+        self::$memo[$userId] = [
+            'until' => $until ? \Carbon\CarbonImmutable::instance($until) : null,
+            'reading_id' => $readingId,
+        ];
+    }
+
+    /**
+     * ลืมผลเช็คของลูกค้าคนนี้ — เรียกทุกครั้งที่สถานะเทคโอเวอร์เปลี่ยน (เริ่ม/ต่อ/คืนงาน/หมดเวลา)
+     */
+    public static function forget(?string $userId): void
+    {
+        if (self::$memo !== null && $userId !== null) {
+            unset(self::$memo[trim($userId)]);
+        }
     }
 
     /**
@@ -177,10 +336,10 @@ final class TakeoverSendGuard
     /**
      * ลูกค้าคนนี้ถูกเทคโอเวอร์ไหม — ล้มแบบเปิด (เช็คพัง = false) สำหรับ job ที่ถือแค่ platform + userId
      */
-    public static function userIsTakenOver(string $platform, ?string $userId): bool
+    public static function userIsTakenOver(string $platform, ?string $userId, bool $fresh = false): bool
     {
         try {
-            return self::isTakenOver($platform, $userId);
+            return self::isTakenOver($platform, $userId, $fresh);
         } catch (\Throwable $e) {
             Log::error('🤫 TakeoverSendGuard: เช็คเทคโอเวอร์ล้ม — ปล่อยผ่าน (fail open)', [
                 'platform' => $platform,
@@ -348,7 +507,8 @@ final class TakeoverSendGuard
         return $query;
     }
 
-    private static function autoTakeoverEnabled(): bool
+    /** สวิตช์เทคโอเวอร์อัตโนมัติ (ลูกค้าขอคุยกับคน) เปิดอยู่ไหม — ปิด = ไม่นับเทคโอเวอร์เหตุผล customer_request */
+    public static function autoTakeoverEnabled(): bool
     {
         try {
             return FortuneTellingSetting::getSettings()->isTakeoverEnabled();

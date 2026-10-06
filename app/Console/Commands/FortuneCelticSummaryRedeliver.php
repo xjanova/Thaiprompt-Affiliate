@@ -7,6 +7,7 @@ use App\Services\FacebookWebhookService;
 use App\Services\LineFortuneService;
 use App\Services\LineGatekeeperService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -184,45 +185,28 @@ class FortuneCelticSummaryRedeliver extends Command
                 continue;
             }
 
-            // นับ attempt ก่อนส่ง — แม้ exception ก็ถือว่าใช้ไป 1 ครั้ง (กัน loop ไม่รู้จบ)
-            $reading->setConversationState('celtic_summary_attempts', $attempts + 1);
+            // 🔒 (2026-10-06, bug-hunt L9) ล็อกต่อบิล — รอบ cron ทุกนาทีกับโหมด --reading (จบเทคโอเวอร์/แอดมินสั่ง)
+            //    รันซ้อนกันได้ → ลูกค้าได้บทสรุป 2 ชุด · ได้ล็อกแล้วเช็คธงสดจาก DB อีกรอบ
+            $sendLock = "fortune:celtic_summary_send:{$reading->id}";
+            if (! Cache::add($sendLock, 1, 180)) {
+                $this->line("  {$tag} ข้าม — มีอีกโปรเซสกำลังส่งบทสรุปบิลนี้อยู่");
+                $skipped++;
+
+                continue;
+            }
 
             try {
-                $ok = $platform === 'line'
-                    ? $this->sendLine($userId, $text, $reading)
-                    : $this->sendFacebook($userId, $text, $reading);
+                $reading->refresh();
+                if ((bool) $reading->getConversationState('celtic_summary_delivered', false)) {
+                    $this->line("  {$tag} ข้าม — บทสรุปถูกส่งไประหว่างรอล็อก");
+                    $skipped++;
 
-                if ($ok) {
-                    $reading->setConversationState('celtic_summary_delivered', true);
-                    $reading->setConversationState('celtic_summary_delivered_at', now()->toIso8601String());
-                    $sent++;
-                    $this->info('    ✅ ส่งบทสรุปถึงลูกค้าแล้ว');
-
-                    Log::info('FortuneCelticSummaryRedeliver: ส่งบทสรุปสำเร็จ', [
-                        'reading_id' => $reading->id,
-                        'platform' => $platform,
-                        'attempt' => $attempts + 1,
-                        'bill_reference' => $reading->bill_reference ?? null,
-                    ]);
-                } else {
-                    $failed++;
-                    $this->error('    ❌ ส่งไม่สำเร็จ — คงธงค้างไว้ให้รอบหน้า');
-
-                    Log::warning('FortuneCelticSummaryRedeliver: ส่งบทสรุปไม่สำเร็จ', [
-                        'reading_id' => $reading->id,
-                        'platform' => $platform,
-                        'attempt' => $attempts + 1,
-                    ]);
+                    continue;
                 }
-            } catch (\Throwable $e) {
-                $failed++;
-                $this->error("    ❌ exception: {$e->getMessage()}");
 
-                Log::error('FortuneCelticSummaryRedeliver: exception', [
-                    'reading_id' => $reading->id,
-                    'platform' => $platform,
-                    'error' => $e->getMessage(),
-                ]);
+                $this->sendSummaryLocked($reading, $platform, $userId, $text, $attempts, $sent, $failed);
+            } finally {
+                Cache::forget($sendLock);
             }
         }
 
@@ -237,6 +221,53 @@ class FortuneCelticSummaryRedeliver extends Command
         }
 
         return $failed > 0 ? 1 : 0;
+    }
+
+    /**
+     * ส่งบทสรุปหนึ่งบิล (เรียกภายใต้ล็อกต่อบิลเท่านั้น)
+     */
+    protected function sendSummaryLocked(FortuneReading $reading, string $platform, string $userId, string $text, int $attempts, int &$sent, int &$failed): void
+    {
+        // นับ attempt ก่อนส่ง — แม้ exception ก็ถือว่าใช้ไป 1 ครั้ง (กัน loop ไม่รู้จบ)
+        $reading->setConversationState('celtic_summary_attempts', $attempts + 1);
+
+        try {
+            $ok = $platform === 'line'
+                ? $this->sendLine($userId, $text, $reading)
+                : $this->sendFacebook($userId, $text, $reading);
+
+            if ($ok) {
+                $reading->setConversationState('celtic_summary_delivered', true);
+                $reading->setConversationState('celtic_summary_delivered_at', now()->toIso8601String());
+                $sent++;
+                $this->info('    ✅ ส่งบทสรุปถึงลูกค้าแล้ว');
+
+                Log::info('FortuneCelticSummaryRedeliver: ส่งบทสรุปสำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'attempt' => $attempts + 1,
+                    'bill_reference' => $reading->bill_reference ?? null,
+                ]);
+            } else {
+                $failed++;
+                $this->error('    ❌ ส่งไม่สำเร็จ — คงธงค้างไว้ให้รอบหน้า');
+
+                Log::warning('FortuneCelticSummaryRedeliver: ส่งบทสรุปไม่สำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'attempt' => $attempts + 1,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            $failed++;
+            $this->error("    ❌ exception: {$e->getMessage()}");
+
+            Log::error('FortuneCelticSummaryRedeliver: exception', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

@@ -3058,7 +3058,11 @@ class LineFortuneWebhookController extends Controller
             }
 
             // 🔒 เส้น push กำลังถือ lock ส่งอยู่ → อย่าชิงส่งซ้อน (เหตุผลเดียวกับ deliverInFlight เดิม)
-            if (\Illuminate\Support\Facades\Cache::has("fortune:deep_deliver:{$reading->id}")) {
+            // 🔒 (2026-10-06, bug-hunt L9) จับล็อกแบบ atomic (Cache::add) แทน "ดูว่ามีไหม" — ทักกลับครั้งแรกหลังเทคโอเวอร์หมดเวลา
+            //    job ส่งของที่พัก (fortune:process-deep) ออกตัวพร้อมทางนี้ · ดูแล้วค่อยส่ง = ผ่านพร้อมกันได้ทั้งคู่
+            //    LINE ให้ทาง reply (ฟรี) นี้ได้ก่อน — job รอดูผล (TakeoverResumeService prefer-reply) · ส่งไม่ออก = ปล่อยล็อกคืน
+            $deliverLockKey = "fortune:deep_deliver:{$reading->id}";
+            if (! \Illuminate\Support\Facades\Cache::add($deliverLockKey, 1, 600)) {
                 return false;
             }
 
@@ -3076,9 +3080,16 @@ class LineFortuneWebhookController extends Controller
                 $messages[] = ['type' => 'text', 'text' => $chunk];
             }
 
-            $ok = $this->lineService->replyMessage($replyToken, $messages);
+            try {
+                $ok = $this->lineService->replyMessage($replyToken, $messages);
+            } catch (\Throwable $sendErr) {
+                \Illuminate\Support\Facades\Cache::forget($deliverLockKey);
+
+                throw $sendErr;
+            }
 
             if (! $ok) {
+                \Illuminate\Support\Facades\Cache::forget($deliverLockKey); // ให้ job/cron ตามส่งได้
                 Log::warning('LINE parked deep: reply ล้มเหลว — คงค้างไว้ให้รอบหน้า', [
                     'user_id' => $userId,
                     'reading_id' => $reading->id,

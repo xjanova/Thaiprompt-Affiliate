@@ -1311,7 +1311,10 @@ class SmsPaymentController extends Controller
                         $channelManager = new FortuneChannelManager($settings);
                         $platformService = $channelManager->getPlatform($platform);
                         if ($platformService) {
-                            $platformService->sendMessage($userId, $thankMsg, ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                            // 🤫 (2026-10-06, bug-hunt M3) แอดมินกดอนุมัติเองจากแอป SMS = แอดมินตัวจริงส่งคำขอบคุณ
+                            \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(
+                                fn () => $platformService->sendMessage($userId, $thankMsg, ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'])
+                            );
                         }
 
                         // ปิด conversation_status เป็น COMPLETED — บิลปิดถาวร

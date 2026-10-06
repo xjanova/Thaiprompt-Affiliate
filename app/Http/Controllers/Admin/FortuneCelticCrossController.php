@@ -1093,10 +1093,11 @@ class FortuneCelticCrossController extends Controller
                     : $defaultHeader;
                 $response['message'] = $header.($response['message'] ?? '');
 
-                $sent = $cm->sendResponse($platform, $userId, $response, [
+                // 🤫 (2026-10-06, bug-hunt M3) แอดมินกดกู้เอง = แอดมินตัวจริงส่ง — ด่านเทคโอเวอร์ไม่พัก
+                $sent = \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $cm->sendResponse($platform, $userId, $response, [
                     'from_admin' => true,
                     'message_tag' => 'POST_PURCHASE_UPDATE',
-                ]);
+                ]));
 
                 $row['ok'] = (bool) $sent;
                 $row['msg'] = $sent

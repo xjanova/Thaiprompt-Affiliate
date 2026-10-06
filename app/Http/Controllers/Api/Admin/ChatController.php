@@ -56,6 +56,7 @@ class ChatController extends Controller
         // 🤫 (2026-10-06) แอดมินพิมพ์หาลูกค้า = แอดมินคุยอยู่ → เริ่ม/ต่อเทคโอเวอร์ให้เหมือนแผงเว็บ (บอทหยุดแทรก)
         //    ไม่ได้ส่ง reading_id มา → ใช้บิลล่าสุดของลูกค้าคนนี้ (เทคโอเวอร์ผูกกับบิล แต่ด่านนับทุกบิลของคนนั้น)
         $takeoverMinutes = 0;
+        $takeoverStartedHere = false;
         try {
             $reading ??= FortuneReading::query()
                 ->where(function ($q) use ($userId) {
@@ -65,8 +66,10 @@ class ChatController extends Controller
                 ->first();
 
             if ($reading) {
-                $takeoverMinutes = app(FortuneTakeoverService::class)
-                    ->ensureAdminTakeover($reading, $request->user()?->id, $data['text']);
+                $ensured = app(FortuneTakeoverService::class)
+                    ->ensureAdminTakeoverDetailed($reading, $request->user()?->id, $data['text']);
+                $takeoverMinutes = $ensured['minutes'];
+                $takeoverStartedHere = $ensured['started'];
             }
         } catch (Throwable $e) {
             Log::warning('AdminChat: เริ่ม/ต่อเทคโอเวอร์ก่อนส่งไม่สำเร็จ (ยังส่งข้อความต่อ)', [
@@ -95,13 +98,10 @@ class ChatController extends Controller
                 'takeover_minutes' => $takeoverMinutes,
             ]);
 
-            // บันทึก audit เหมือนแผงเว็บ (FortuneTakeoverController::sendMessage)
-            if ($ok && $reading && $request->user()?->id) {
-                try {
-                    app(FortuneTakeoverService::class)->logMessage($reading, (int) $request->user()->id, $data['text']);
-                } catch (Throwable $auditErr) {
-                    // audit เป็น best-effort
-                }
+            // ↩️ (2026-10-06, bug-hunt L10) ส่งไม่ออก + request นี้เป็นคน "เริ่ม" เทคโอเวอร์ → ถอยกลับ
+            //    (ข้อความไม่ถึงลูกค้า = แอดมินยังไม่ได้คุย บอทต้องไม่เงียบค้าง 30 นาที) · แค่ "ต่อเวลา" = ไม่แตะ
+            if (! $ok && $takeoverStartedHere && $reading) {
+                $this->revertTakeoverAfterFailedSend($reading, $request->user()?->id);
             }
 
             // 💬 (2026-06-19) Mirror the operator's reply into the realtime chat
@@ -159,6 +159,10 @@ class ChatController extends Controller
                 'platform_user_id' => $userId,
             ]);
 
+            if ($takeoverStartedHere && $reading) {
+                $this->revertTakeoverAfterFailedSend($reading, $request->user()?->id);
+            }
+
             // 🔐 (2026-10-06) error ของ Guzzle/Http พิมพ์ URL เต็ม (token ใน query) — ข้อความที่ออก JSON ต้องผ่าน SafeLog
             //   (log ปลอดภัยอยู่แล้วด้วย RedactSecretsProcessor · ใช้แพตเทิร์นเดียวกันกับ takeover/resume)
             return response()->json([
@@ -204,6 +208,21 @@ class ChatController extends Controller
         }
 
         return array_values($targets);
+    }
+
+    /**
+     * ↩️ ถอยเทคโอเวอร์ที่ request นี้เพิ่งเปิด (ส่งข้อความแอดมินไม่ออก) — best-effort
+     */
+    private function revertTakeoverAfterFailedSend(FortuneReading $reading, ?int $adminId): void
+    {
+        try {
+            app(FortuneTakeoverService::class)->revertAdminTakeover($reading, $adminId);
+        } catch (Throwable $e) {
+            Log::warning('AdminChat: ถอยเทคโอเวอร์หลังส่งไม่ออกไม่สำเร็จ (หมดเวลาเองตามกำหนด)', [
+                'reading_id' => $reading->id,
+                'error' => SafeLog::exceptionMessage($e),
+            ]);
+        }
     }
 
     public function suggest(Request $request, FortuneAIService $aiService): JsonResponse
@@ -408,6 +427,7 @@ class ChatController extends Controller
             $deferredBefore = \App\Services\Fortune\TakeoverResumeService::deferredFor($platform, $uid);
             $deliver = (bool) ($data['deliver_deferred'] ?? true);
 
+            // 🤫 (bug-hunt L5) คืนงาน = ปิดเทคโอเวอร์ "ทุกบิล" ของลูกค้าคนนี้ (ด่านบอทเงียบนับต่อลูกค้า)
             $takeover->resume($reading, $request->user()?->id, true, $deliver);
 
             return response()->json([
@@ -418,6 +438,8 @@ class ChatController extends Controller
                     'deliver_deferred' => $deliver,
                     // ของที่พักไว้ ณ ตอนกดคืนงาน — ส่งตามลำดับ (deliver_deferred=true) หรือถูกล้างทิ้ง (false)
                     'deferred' => $deferredBefore,
+                    // ระดับลูกค้า (additive) — บอทกลับมาคุยกับลูกค้าคนนี้จริงไหม (ทุกบิล)
+                    'customer' => $this->customerTakeoverStatus($platform, $uid),
                 ],
                 'message' => 'bot resumed',
             ]);
@@ -461,7 +483,33 @@ class ChatController extends Controller
                 'remaining_minutes' => $active ? $reading->takeoverRemainingMinutes() : 0,
                 // 🤫 (2026-10-06) ของที่ลูกค้าจ่ายแล้วแต่บอทพักไว้ระหว่างเทคโอเวอร์ (ส่งตอนคืนงาน)
                 'deferred' => \App\Services\Fortune\TakeoverResumeService::deferredFor($platform, $uid),
+                // 🤫 (bug-hunt L5) ระดับลูกค้า (additive) — ด่านบอทเงียบนับทุกบิลของลูกค้า: บิลนี้ไม่ได้เทคโอเวอร์
+                //    แต่บิลอื่นของคนเดียวกันเทคโอเวอร์อยู่ = บอทยังเงียบ
+                'customer' => $this->customerTakeoverStatus($platform, $uid),
             ],
         ]);
+    }
+
+    /**
+     * สถานะเทคโอเวอร์ระดับลูกค้า (ทุกบิลของคนนั้น) — ตัวเดียวกับที่ด่านบอทเงียบใช้ตัดสิน
+     *
+     * @return array{is_takeover: bool, until: ?string, remaining_minutes: int, reading_id: ?int}
+     */
+    private function customerTakeoverStatus(string $platform, string $userId): array
+    {
+        try {
+            $holder = $userId !== ''
+                ? \App\Services\Fortune\TakeoverSendGuard::activeTakeoverReading($platform, $userId)
+                : null;
+        } catch (Throwable $e) {
+            $holder = null;
+        }
+
+        return [
+            'is_takeover' => $holder !== null,
+            'until' => $holder?->admin_takeover_until?->toIso8601String(),
+            'remaining_minutes' => $holder ? $holder->takeoverRemainingMinutes() : 0,
+            'reading_id' => $holder?->id,
+        ];
     }
 }

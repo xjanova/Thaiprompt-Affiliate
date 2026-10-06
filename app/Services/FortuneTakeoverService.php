@@ -194,13 +194,19 @@ class FortuneTakeoverService
 
         $until = now()->addMinutes($minutes);
 
+        // 🤫 (2026-10-06) เทคโอเวอร์ซ้ำบนบิลที่ยังเทคโอเวอร์อยู่ = ช่วงเดิมต่อเนื่อง → คงเวลาเริ่มเดิม
+        //    (ใช้คำนวณ "นาฬิกาเซสชันที่หยุดเดินระหว่างแอดมินคุย" ตอนจบ — เริ่มใหม่ทุกครั้ง = เลื่อนนาฬิกาน้อยไป)
+        $startedAt = ($reading->isAdminTakenOver() && $reading->admin_takeover_started_at)
+            ? $reading->admin_takeover_started_at
+            : now();
+
         // บันทึกใน DB (transaction เพื่อให้ log + reading อัพเดตพร้อมกัน)
-        DB::transaction(function () use ($reading, $reason, $adminId, $minutes, $messagePreview, $until) {
+        DB::transaction(function () use ($reading, $reason, $adminId, $minutes, $messagePreview, $until, $startedAt) {
             $reading->update([
                 'admin_takeover_until' => $until,
                 'admin_takeover_by' => $adminId,
                 'admin_takeover_reason' => $reason,
-                'admin_takeover_started_at' => now(),
+                'admin_takeover_started_at' => $startedAt,
             ]);
 
             FortuneTakeoverLog::create([
@@ -230,6 +236,8 @@ class FortuneTakeoverService
             }
         }
 
+        $this->forgetGuardMemo($reading);
+
         Log::info('🎯 FortuneTakeover: เริ่มเทคโอเวอร์', [
             'reading_id' => $reading->id,
             'platform' => $reading->platform,
@@ -256,43 +264,139 @@ class FortuneTakeoverService
         bool $fromCommand = false,
         bool $deliverDeferred = true,
     ): void {
-        // ถ้าไม่ได้เทคโอเวอร์อยู่ → ไม่ต้องทำอะไร
         $reading->refresh();
-        if (empty($reading->admin_takeover_until)) {
-            // 🤫 ไม่มีเทคโอเวอร์บนบิลนี้แล้ว แต่อาจมีของที่พักค้าง (เช่น บิลอื่นของลูกค้าเพิ่งหมดเวลา)
+
+        // 🤫 (2026-10-06, bug-hunt L5) ด่านบอทเงียบนับ "ต่อลูกค้า" (ทุกบิลของคนนั้น) → คืนงานต้องปิดทุกบิลของคนนั้นด้วย
+        //    เดิมปิดแค่บิลที่กด → API ตอบ "คืนงานแล้ว" แต่บอทยังเงียบเพราะบิลอื่นยังเทคโอเวอร์ค้าง
+        //    และ deliver_deferred=false ถูกเมินเงียบ ๆ (ของที่พักรอบิลสุดท้ายจบ)
+        $active = $this->customerTakeoverReadings($reading);
+
+        if ($active->isEmpty()) {
+            // ไม่มีเทคโอเวอร์ค้างแล้ว แต่อาจมีของที่พักค้าง (เช่น บิลอื่นของลูกค้าเพิ่งหมดเวลา)
             //    → ให้ตัวส่งของที่พักไว้ตัดสินเอง (มันเช็คซ้ำว่าลูกค้ายังถูกเทคโอเวอร์อยู่ไหม)
             \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, $deliverDeferred, $adminId);
 
             return;
         }
 
-        DB::transaction(function () use ($reading, $adminId, $fromCommand) {
-            $reading->update([
-                'admin_takeover_until' => null,
-                // เก็บ admin_takeover_by + started_at ไว้เป็น audit trail
-            ]);
+        // ช่วงเทคโอเวอร์ = ตั้งแต่บิลแรกที่เริ่ม จนถึงตอนนี้ (ใช้เลื่อนนาฬิกาเซสชันที่จ่ายแล้ว)
+        //   บิลที่หมดเวลาไปแล้วแต่ cron ยังไม่กวาด = จบที่เวลาหมดของมัน (หลังจากนั้นบอทกลับมาทำงานแล้ว ห้ามนับ)
+        $episodeStart = $active->pluck('admin_takeover_started_at')->filter()->min();
+        $episodeEnd = $active
+            ->map(fn (FortuneReading $r) => ($r->admin_takeover_until && $r->admin_takeover_until->lessThan(now()))
+                ? $r->admin_takeover_until
+                : now())
+            ->max();
 
-            FortuneTakeoverLog::create([
-                'fortune_reading_id' => $reading->id,
-                'user_id' => $adminId,
-                'action' => FortuneTakeoverLog::ACTION_RESUME,
-                'reason' => $fromCommand ? 'command' : 'manual',
-                'platform' => $reading->platform,
-            ]);
+        DB::transaction(function () use ($active, $adminId, $fromCommand) {
+            foreach ($active as $r) {
+                $r->update([
+                    'admin_takeover_until' => null,
+                    // เก็บ admin_takeover_by + started_at ไว้เป็น audit trail
+                ]);
+
+                FortuneTakeoverLog::create([
+                    'fortune_reading_id' => $r->id,
+                    'user_id' => $adminId,
+                    'action' => FortuneTakeoverLog::ACTION_RESUME,
+                    'reason' => $fromCommand ? 'command' : 'manual',
+                    'platform' => $r->platform,
+                ]);
+            }
         });
 
         // ล้าง cache ทั้งหมด
-        $this->clearCaches($reading);
+        foreach ($active as $r) {
+            $this->clearCaches($r);
+        }
+        $this->forgetGuardMemo($reading);
+        $reading->refresh();
 
         Log::info('✨ FortuneTakeover: AI กลับมาทำงาน', [
             'reading_id' => $reading->id,
+            'ended_readings' => $active->pluck('id')->all(),
             'admin_id' => $adminId,
             'from_command' => $fromCommand,
             'deliver_deferred' => $deliverDeferred,
         ]);
 
-        // 🤫 (2026-10-06) ส่งของที่จ่ายแล้วแต่ถูกพักไว้ระหว่างเทคโอเวอร์ (ครั้งเดียว ตามลำดับ) — หรือล้างทิ้งถ้าแอดมินจัดการเองแล้ว
-        \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, $deliverDeferred, $adminId);
+        // 🤫 (2026-10-06) ส่งของที่จ่ายแล้วแต่ถูกพักไว้ระหว่างเทคโอเวอร์ (ตามลำดับ) — หรือล้างทิ้งถ้าแอดมินจัดการเองแล้ว
+        //    + เลื่อนนาฬิกาเซสชันที่จ่ายแล้ว + ล้างคำถามที่ค้าง (แอดมินคุยไปแล้ว)
+        \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, $deliverDeferred, $adminId, [
+            'ended' => true,
+            'episode_start' => $episodeStart,
+            'episode_end' => $episodeEnd ?? now(),
+        ]);
+    }
+
+    /**
+     * 🤫 (2026-10-06, bug-hunt L10) แอดมินส่งข้อความไม่ออก และ request นั้นเป็นคน "เริ่ม" เทคโอเวอร์ → ถอยกลับ
+     *
+     * ไม่ใช่การคืนงานปกติ: ไม่ล้างคำถามที่ค้าง (แอดมินยังไม่ได้คุยอะไรเลย) — แค่ปิดเทคโอเวอร์ที่เพิ่งเปิด
+     */
+    public function revertAdminTakeover(FortuneReading $reading, ?int $adminId = null): void
+    {
+        $reading->refresh();
+        if (empty($reading->admin_takeover_until)) {
+            return;
+        }
+
+        DB::transaction(function () use ($reading, $adminId) {
+            $reading->update(['admin_takeover_until' => null]);
+
+            FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'user_id' => $adminId,
+                'action' => FortuneTakeoverLog::ACTION_RESUME,
+                'reason' => 'reverted_send_failed',
+                'platform' => $reading->platform,
+            ]);
+        });
+
+        $this->clearCaches($reading);
+        $this->forgetGuardMemo($reading);
+
+        Log::info('↩️ FortuneTakeover: ส่งข้อความแอดมินไม่ออก — ถอยเทคโอเวอร์ที่เพิ่งเปิด', [
+            'reading_id' => $reading->id,
+            'admin_id' => $adminId,
+        ]);
+
+        \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, true, $adminId, [
+            'ended' => true,
+            'clear_pending' => false,
+        ]);
+    }
+
+    /**
+     * บิลของลูกค้าเจ้าของบิลนี้ที่ยังมีเทคโอเวอร์ค้าง (ยังไม่หมดเวลา หรือหมดแล้วแต่ยังไม่ถูกปิด)
+     *
+     * @return \Illuminate\Support\Collection<int, FortuneReading>
+     */
+    protected function customerTakeoverReadings(FortuneReading $reading): \Illuminate\Support\Collection
+    {
+        $userId = \App\Services\Fortune\FortuneRecipient::userIdOf($reading);
+        if ($userId === '') {
+            return empty($reading->admin_takeover_until) ? collect() : collect([$reading]);
+        }
+
+        return FortuneReading::query()
+            ->where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+            })
+            ->whereNotNull('admin_takeover_until')
+            ->get();
+    }
+
+    /**
+     * ลืมผลเช็คเทคโอเวอร์ที่ memo ไว้ของลูกค้าเจ้าของบิลนี้ (สถานะเพิ่งเปลี่ยน)
+     */
+    protected function forgetGuardMemo(FortuneReading $reading): void
+    {
+        try {
+            \App\Services\Fortune\TakeoverSendGuard::forget(\App\Services\Fortune\FortuneRecipient::userIdOf($reading));
+        } catch (\Throwable $e) {
+            // memo เป็นแค่ตัวช่วย
+        }
     }
 
     /**
@@ -340,6 +444,7 @@ class FortuneTakeoverService
         if ($ttlSeconds > 0) {
             Cache::put($cacheKey, true, $ttlSeconds);
         }
+        $this->forgetGuardMemo($reading);
 
         Log::info('⏱ FortuneTakeover: ต่อเวลา', [
             'reading_id' => $reading->id,
@@ -353,34 +458,63 @@ class FortuneTakeoverService
     /**
      * 🤫 (2026-10-06) แอดมินพิมพ์หาลูกค้า = แอดมินคุยอยู่ → ต้องอยู่ในเทคโอเวอร์ (บอทหยุดแทรก)
      *
-     * - ยังไม่ได้เทคโอเวอร์ → เริ่มเทคโอเวอร์ (manual · force แม้ปิดสวิตช์ · ADMIN_TAKEOVER_DEFAULT_MINUTES)
-     * - เทคโอเวอร์อยู่แต่เหลือไม่ถึง ADMIN_TAKEOVER_DEFAULT_MINUTES → ต่อให้เหลืออย่างน้อยเท่านั้น
+     * - ยังไม่ได้เทคโอเวอร์ → เริ่มเทคโอเวอร์ (force แม้ปิดสวิตช์ · max(30, ค่าที่ตั้ง) นาที)
+     * - เทคโอเวอร์อยู่แต่เหลือไม่ถึง max(30, ค่าที่ตั้ง) → ต่อให้เหลืออย่างน้อยเท่านั้น
      *   (แอดมินคุยต่อเนื่อง บอทต้องไม่โผล่กลับมากลางบทสนทนา)
      *
      * @return int นาทีที่เริ่ม/ต่อ (0 = ไม่ต้องทำอะไร)
      */
-    public function ensureAdminTakeover(FortuneReading $reading, ?int $adminId = null, ?string $messagePreview = null): int
-    {
+    public function ensureAdminTakeover(
+        FortuneReading $reading,
+        ?int $adminId = null,
+        ?string $messagePreview = null,
+        string $reason = FortuneReading::TAKEOVER_REASON_MANUAL,
+    ): int {
+        return $this->ensureAdminTakeoverDetailed($reading, $adminId, $messagePreview, $reason)['minutes'];
+    }
+
+    /**
+     * เหมือน ensureAdminTakeover() แต่บอกด้วยว่า "เริ่มใหม่" หรือ "ต่อเวลา" (ใช้ถอยกลับตอนส่งไม่ออก — L10)
+     *
+     * @return array{minutes: int, started: bool}
+     */
+    public function ensureAdminTakeoverDetailed(
+        FortuneReading $reading,
+        ?int $adminId = null,
+        ?string $messagePreview = null,
+        string $reason = FortuneReading::TAKEOVER_REASON_MANUAL,
+    ): array {
         $reading->refresh();
 
+        // ลูกค้าคนนี้ถูกเทคโอเวอร์อยู่แล้วด้วยบิลไหนก็ได้ = "ต่อ" ไม่ใช่ "เริ่ม"
+        $userId = \App\Services\Fortune\FortuneRecipient::userIdOf($reading);
+        $customerWasTakenOver = $userId !== ''
+            && \App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($reading->platform ?: 'facebook', $userId, true);
+
         if (! $reading->isAdminTakenOver()) {
-            return $this->takeover(
-                $reading,
-                FortuneReading::TAKEOVER_REASON_MANUAL,
-                $adminId,
-                null,
-                $messagePreview,
-                true,
-            );
+            $minutes = $this->takeover($reading, $reason, $adminId, null, $messagePreview, true);
+
+            return ['minutes' => $minutes, 'started' => ! $customerWasTakenOver && $minutes > 0];
         }
 
-        $minimumSeconds = self::ADMIN_TAKEOVER_DEFAULT_MINUTES * 60;
+        $minimumSeconds = $this->adminTakeoverMinutes() * 60;
         $remaining = $reading->takeoverRemainingSeconds();
         if ($remaining >= $minimumSeconds) {
-            return 0;
+            return ['minutes' => 0, 'started' => false];
         }
 
-        return $this->extend($reading, (int) ceil(($minimumSeconds - $remaining) / 60), $adminId);
+        return [
+            'minutes' => $this->extend($reading, (int) ceil(($minimumSeconds - $remaining) / 60), $adminId),
+            'started' => false,
+        ];
+    }
+
+    /**
+     * นาทีของเทคโอเวอร์ที่แอดมินสั่งเอง/พิมพ์เอง = max(30, ค่าที่ตั้ง) — prod ตั้ง admin_handover_timeout = 1
+     */
+    public function adminTakeoverMinutes(): int
+    {
+        return max(self::ADMIN_TAKEOVER_DEFAULT_MINUTES, (int) $this->settings()->getTakeoverDefaultMinutes());
     }
 
     /**
@@ -583,8 +717,12 @@ class FortuneTakeoverService
      *
      * @return bool true = ปิดได้ (ตัวนี้เป็นคนปิด)
      */
-    public function expireOne(FortuneReading $reading): bool
+    public function expireOne(FortuneReading $reading, bool $inbound = false): bool
     {
+        // ช่วงเทคโอเวอร์จริง = เวลาเริ่ม → เวลาหมด (ไม่ใช่ตอน cron มากวาด — ระหว่างนั้นบอทกลับมาทำงานแล้ว)
+        $episodeStart = $reading->admin_takeover_started_at;
+        $episodeEnd = $reading->admin_takeover_until;
+
         $closed = DB::transaction(function () use ($reading) {
             $affected = FortuneReading::query()
                 ->whereKey($reading->id)
@@ -610,10 +748,16 @@ class FortuneTakeoverService
         }
 
         $this->clearCaches($reading);
+        $this->forgetGuardMemo($reading);
         $reading->refresh();
 
-        // 🤫 (2026-10-06) หมดเวลา = จบเทคโอเวอร์ → ส่งของที่จ่ายแล้วแต่ถูกพักไว้ (ครั้งเดียว)
-        \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, true, null);
+        // 🤫 (2026-10-06) หมดเวลา = จบเทคโอเวอร์ → ส่งของที่จ่ายแล้วแต่ถูกพักไว้ + เลื่อนนาฬิกาเซสชัน + ล้างคำถามค้าง
+        \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, true, null, [
+            'ended' => true,
+            'episode_start' => $episodeStart,
+            'episode_end' => ($episodeEnd && $episodeEnd->lessThan(now())) ? $episodeEnd : now(),
+            'inbound' => $inbound,
+        ]);
 
         return true;
     }

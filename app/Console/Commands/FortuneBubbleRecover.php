@@ -40,7 +40,8 @@ class FortuneBubbleRecover extends Command
 {
     protected $signature = 'fortune:bubble-recover
                             {--dry : Dry run — รายงานที่จะกู้ แต่ไม่ยิงจริง}
-                            {--limit=50 : จำนวนสูงสุดต่อรอบ}';
+                            {--limit=50 : จำนวนสูงสุดต่อรอบ}
+                            {--reading= : เจาะจง reading id (ข้ามหน้าต่างเวลา + grace — ใช้ตอนจบเทคโอเวอร์/ตามส่งด้วยมือ)}';
 
     protected $description = 'กู้คำทำนายสายบับเบิ้ลที่ส่งไปได้ครึ่งเดียว (worker ตาย/คิวหาย)';
 
@@ -60,22 +61,34 @@ class FortuneBubbleRecover extends Command
         $recovered = 0;
         $skipped = 0;
 
+        // 🔧 (2026-10-06) โหมดเจาะบิล — ใช้ตอนจบเทคโอเวอร์ / ตามส่งด้วยมือ (ไม่สนหน้าต่าง 2 ชม. และ grace)
+        if ($only = $this->option('reading')) {
+            $reading = FortuneReading::find((int) $only);
+            $ok = $reading && ! $dry && self::recoverReading($reading, $settings);
+            $this->info($ok ? "💬 bubble-recover: ส่งที่ค้างของบิล {$only} แล้ว" : "💬 bubble-recover: บิล {$only} ไม่มีอะไรส่ง/ส่งไม่ออก");
+
+            return self::SUCCESS;
+        }
+
         // ผู้สมัคร: reading ที่เพิ่งขยับ (rememberPending เขียน conversation_state → updated_at เด้ง)
         //   หน้าต่าง 2 ชม. กว้างพอสำหรับทุกเคสจริง และแคบพอให้ query ไม่กวาดทั้งตาราง
+        //   🤫 (2026-10-06, bug-hunt P2) เฉพาะบิลที่มีกล่องค้างจริง — เดิมดึงทุกบิลที่แค่ขยับ แล้วเช็คเทคโอเวอร์ทีละบิล
         $candidates = FortuneReading::query()
             ->withoutJuntra() // 🌙 บิลเว็บจันทราไม่มีข้อความให้กู้ — ห้ามแย่งช่อง limit ของลูกค้าจริง
             ->where('updated_at', '>=', now()->subHours(2))
+            ->whereRaw("JSON_VALID(conversation_state) AND JSON_TYPE(JSON_EXTRACT(conversation_state, '$.bubble_pending')) = 'OBJECT'")
             ->orderBy('updated_at', 'asc')
             ->limit($limit)
             ->get();
 
-        foreach ($candidates as $reading) {
-            // 🏬 (2026-09-13) ผู้รับแต่ละคนต้องหาเพจ (token) ของตัวเอง — ห้ามค้าง context ของลูกค้าคนก่อน
-            //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
-            \App\Services\Fortune\FortunePageContext::forget();
+        // เช็คเทคโอเวอร์ทั้งชุดในคิวรีเดียว (เดิม N+1 — ทีละบิล)
+        $takenOver = \App\Services\Fortune\TakeoverSendGuard::takenOverUserIds(
+            $candidates->map(fn (FortuneReading $r) => \App\Services\Fortune\FortuneRecipient::userIdOf($r))->all()
+        );
 
-            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ข้าม (ไม่เรียก AI · ไม่เพิ่มตัวนับ · ไม่ปิดบิล · ไม่ส่ง) — จบเทคโอเวอร์แล้วรอบถัดไปทำต่อ
-            if (\App\Services\Fortune\TakeoverSendGuard::readingIsTakenOver($reading)) {
+        foreach ($candidates as $reading) {
+            // 🤫 (2026-10-06) แอดมินเทคโอเวอร์ลูกค้าคนนี้อยู่ → ไม่ส่ง พักไว้ ส่งตอนจบเทคโอเวอร์ (ไม่สนหน้าต่าง 2 ชม.)
+            if (isset($takenOver[\App\Services\Fortune\FortuneRecipient::userIdOf($reading)])) {
                 \App\Services\Fortune\TakeoverResumeService::defer($reading, \App\Services\Fortune\TakeoverResumeService::ITEM_BUBBLES);
 
                 continue;
@@ -100,78 +113,18 @@ class FortuneBubbleRecover extends Command
                 continue;
             }
 
-            $platform = (string) ($pending['platform'] ?? 'facebook');
-            $userId = (string) ($pending['user_id'] ?? '');
-            $bubbles = array_values(array_filter(
-                (array) ($pending['bubbles'] ?? []),
-                static fn ($b) => is_string($b) && trim($b) !== ''
-            ));
-            $tail = $pending['tail'] ?? null;
-            $tailQr = (array) ($pending['tail_qr'] ?? []);
-
-            if ($userId === '' || ($bubbles === [] && ($tail === null || trim((string) $tail) === ''))) {
-                // ธงเสียหาย/ว่าง — ล้างทิ้ง ไม่ต้องกู้
-                if (! $dry) {
-                    SendFortuneBubbleJob::clearPending($reading->id);
-                }
-
-                continue;
-            }
-
-            $rest = trim(implode("\n\n", $bubbles));
-
-            $this->warn("  reading {$reading->id} ({$platform}) ค้าง {$stuckSec}s · เหลือ ".count($bubbles).' กล่อง');
+            $this->warn("  reading {$reading->id} (".($pending['platform'] ?? 'facebook').") ค้าง {$stuckSec}s · เหลือ "
+                .count((array) ($pending['bubbles'] ?? [])).' กล่อง');
 
             if ($dry) {
-                $this->line('    [DRY] '.mb_substr($rest, 0, 80).'...');
+                $this->line('    [DRY] '.mb_substr(trim(implode("\n\n", array_map('strval', (array) ($pending['bubbles'] ?? [])))), 0, 80).'...');
                 $recovered++;
 
                 continue;
             }
 
-            try {
-                if ($platform === 'line') {
-                    $line = new LineFortuneService($settings);
-
-                    if ($rest !== '') {
-                        $line->sendMessage($userId, $rest);
-                    }
-
-                    if ($tail !== null && trim((string) $tail) !== '') {
-                        $line->sendMessage($userId, (string) $tail, ['quick_replies' => $tailQr]);
-                    }
-                } else {
-                    // ✈️ (2026-09-13) FB / Telegram — ผู้ส่งตามช่องทางของบิล
-                    $fb = \App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId, $settings) ?? new FacebookWebhookService($settings);
-
-                    if ($rest !== '') {
-                        $fb->sendMessage($userId, $rest, [
-                            'allow_duplicate' => true,
-                            'no_default_qr' => true,
-                        ]);
-                    }
-
-                    if ($tail !== null && trim((string) $tail) !== '') {
-                        $fb->sendQuickReplies($userId, (string) $tail, $tailQr);
-                    }
-                }
-
-                SendFortuneBubbleJob::clearPending($reading->id);
+            if (self::recoverReading($reading, $settings, $stuckSec)) {
                 $recovered++;
-
-                Log::critical('💬 Bubble: กู้คำทำนายที่ส่งไปครึ่งเดียว (worker/คิวไม่ทำงาน)', [
-                    'reading_id' => $reading->id,
-                    'platform' => $platform,
-                    'user_id' => $userId,
-                    'stuck_sec' => $stuckSec,
-                    'bubbles_left' => count($bubbles),
-                ]);
-            } catch (\Throwable $e) {
-                // ส่งไม่สำเร็จ → **ไม่ล้างธง** รอบหน้าลองใหม่
-                Log::error('💬 Bubble: กู้ไม่สำเร็จ (จะลองใหม่รอบหน้า)', [
-                    'reading_id' => $reading->id,
-                    'error' => $e->getMessage(),
-                ]);
             }
         }
 
@@ -181,5 +134,96 @@ class FortuneBubbleRecover extends Command
         $this->info("💬 bubble-recover: กู้ {$recovered} · ข้าม (ยังไม่ถึง grace {$graceSec}s) {$skipped}");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * 🛟 เทกล่องที่ค้างของบิลนี้รวมเป็นกล่องเดียว แล้วล้างธง — true = ส่งออก (หรือไม่มีอะไรค้างแล้ว)
+     *
+     * ใช้ทั้ง cron (หลังพ้น grace) และ TakeoverResumeService ตอนจบเทคโอเวอร์ (bug-hunt L4 — ไม่สนหน้าต่าง 2 ชม.)
+     * ส่งท่อนหลักไม่ออก = **ไม่ล้างธง** รอบหน้าลองใหม่ (เดิมล้างทั้งที่ไม่รู้ผล — แอดมินเทคโอเวอร์พอดี = ของหาย)
+     */
+    public static function recoverReading(FortuneReading $reading, FortuneTellingSetting $settings, ?int $stuckSec = null): bool
+    {
+        $pending = $reading->getConversationState('bubble_pending');
+        if (! is_array($pending)) {
+            return true; // ส่งครบไปแล้ว
+        }
+
+        $platform = (string) ($pending['platform'] ?? 'facebook');
+        $userId = (string) ($pending['user_id'] ?? '');
+        $bubbles = array_values(array_filter(
+            (array) ($pending['bubbles'] ?? []),
+            static fn ($b) => is_string($b) && trim($b) !== ''
+        ));
+        $tail = $pending['tail'] ?? null;
+        $tailQr = (array) ($pending['tail_qr'] ?? []);
+
+        if ($userId === '' || ($bubbles === [] && ($tail === null || trim((string) $tail) === ''))) {
+            // ธงเสียหาย/ว่าง — ล้างทิ้ง ไม่ต้องกู้
+            SendFortuneBubbleJob::clearPending($reading->id);
+
+            return true;
+        }
+
+        $rest = trim(implode("\n\n", $bubbles));
+
+        // 🏬 (2026-09-13) ผู้รับแต่ละคนต้องหาเพจ (token) ของตัวเอง — ห้ามค้าง context ของลูกค้าคนก่อน
+        //    ไม่งั้นลูกค้าคนที่ 2+ ของเพจสาขาถูกส่งด้วย token เพจของคนแรก → Graph 400 → ของที่จ่ายแล้วหาย
+        \App\Services\Fortune\FortunePageContext::forget();
+
+        try {
+            if ($platform === 'line') {
+                $line = new LineFortuneService($settings);
+
+                $ok = $rest === '' || $line->sendMessage($userId, $rest);
+
+                if ($ok && $tail !== null && trim((string) $tail) !== '') {
+                    $line->sendMessage($userId, (string) $tail, ['quick_replies' => $tailQr]);
+                }
+            } else {
+                // ✈️ (2026-09-13) FB / Telegram — ผู้ส่งตามช่องทางของบิล
+                $fb = \App\Services\Fortune\FortuneMessengerFactory::sender($platform, $userId, $settings) ?? new FacebookWebhookService($settings);
+
+                $ok = $rest === '' || $fb->sendMessage($userId, $rest, [
+                    'allow_duplicate' => true,
+                    'no_default_qr' => true,
+                ]);
+
+                if ($ok && $tail !== null && trim((string) $tail) !== '') {
+                    $fb->sendQuickReplies($userId, (string) $tail, $tailQr);
+                }
+            }
+
+            if (! $ok) {
+                Log::error('💬 Bubble: กู้ไม่สำเร็จ — ส่งไม่ออก (เก็บธงไว้ลองใหม่)', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                ]);
+
+                return false;
+            }
+
+            SendFortuneBubbleJob::clearPending($reading->id);
+
+            Log::critical('💬 Bubble: กู้คำทำนายที่ส่งไปครึ่งเดียว (worker/คิวไม่ทำงาน หรือค้างจากเทคโอเวอร์)', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'user_id' => $userId,
+                'stuck_sec' => $stuckSec,
+                'bubbles_left' => count($bubbles),
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            // ส่งไม่สำเร็จ → **ไม่ล้างธง** รอบหน้าลองใหม่
+            Log::error('💬 Bubble: กู้ไม่สำเร็จ (จะลองใหม่รอบหน้า)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        } finally {
+            \App\Services\Fortune\FortunePageContext::forget();
+        }
     }
 }

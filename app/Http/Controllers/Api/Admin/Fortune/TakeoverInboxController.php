@@ -284,15 +284,15 @@ class TakeoverInboxController extends Controller
         $pid = (string) ($r->platform_user_id ?: $r->facebook_user_id);
 
         if ($pid !== '') {
-            // อ่านแค่ข้อความท้ายสุด (LINDEX -1) — ไม่ดึงทั้งบทสนทนาทีละแถว
-            $last = $chatLog->getLastForCustomer($r->platform ?: 'facebook', $pid);
+            // อ่านแค่ท้าย ๆ ของบทสนทนา — ไม่ดึงทั้งบทสนทนาทีละแถว
+            // 🤫 (2026-10-06, bug-hunt M1) ข้ามบรรทัดระบบ ("บอทงดส่ง" ระหว่างเทคโอเวอร์) — ไม่งั้นข้อความลูกค้า
+            //    ที่ตามด้วยบรรทัดระบบจะไม่ถูกนับว่า "ยังไม่ได้ตอบ" (unread = ข้อความล่าสุดที่ไม่ใช่ระบบเป็นของลูกค้า)
+            $last = $chatLog->getLastNonSystemForCustomer($r->platform ?: 'facebook', $pid);
             if (is_array($last)) {
                 return [
                     'sender' => match ($last['role'] ?? 'user') {
                         'bot' => 'bot',
                         'admin' => 'admin',
-                        // 🤫 (2026-10-06) บันทึก "บอทงดส่ง" ระหว่างเทคโอเวอร์ — ไม่ใช่ข้อความลูกค้า (ไม่นับว่ายังไม่อ่าน)
-                        'system' => 'system',
                         default => 'customer',
                     },
                     'text' => mb_substr((string) $last['text'], 0, 200),

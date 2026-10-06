@@ -254,7 +254,10 @@ class TakeoverWebhookSilenceTest extends TestCase
         $images = (array) $reading->fresh()->getConversationState('takeover_images');
         $this->assertCount(1, $images, 'สลิปต้องถูกเก็บถาวร · สติกเกอร์ไม่ใช่สลิป');
         Storage::disk('local')->assertExists($images[0]['path']);
-        $this->assertSame($images[0]['path'], Cache::get('fortune:pending_slip:facebook:'.self::FB_UID));
+        // flow สลิปเดิมได้ "สำเนา" (ทางนั้นลบไฟล์หลังหยิบไปตรวจ — ตัวจริงของแอดมินต้องไม่หาย)
+        $slipCopy = Cache::get('fortune:pending_slip:facebook:'.self::FB_UID);
+        $this->assertNotSame($images[0]['path'], $slipCopy);
+        Storage::disk('local')->assertExists($slipCopy);
         $this->assertTrue($this->inboundLogged('ลูกค้าส่งรูป'));
         $this->assertTrue($this->inboundLogged('[สติกเกอร์]'));
     }

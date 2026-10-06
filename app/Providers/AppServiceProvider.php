@@ -176,6 +176,9 @@ class AppServiceProvider extends ServiceProvider
             //   memo ของงานก่อนหน้าจะค้าง ทำให้งานถัดไปของ "คนละคน" ได้ผลของคนก่อน
             \App\Services\Fortune\NavFloodGuard::flushSeen();
 
+            // 🤫 (2026-10-06) memo ผลเช็คเทคโอเวอร์ "ต่อ job" — เริ่มใหม่ทุก job ห้ามค้างข้าม job ใน worker รันยาว
+            \App\Services\Fortune\TakeoverSendGuard::beginMemoScope();
+
             // 🏬 คืนค่า context ของสาขาจาก payload (null = งานที่ไม่ผูกสาขา)
             try {
                 $payload = $event->job->payload();
@@ -196,10 +199,12 @@ class AppServiceProvider extends ServiceProvider
         //    ไม่งั้น job ถัดไปที่ไม่ผูกสาขาจะสืบทอดสาขาของ job ก่อนหน้าไปใช้
         Queue::after(function () {
             \App\Services\Fortune\FortunePageContext::forget();
+            \App\Services\Fortune\TakeoverSendGuard::endMemoScope();
         });
 
         Queue::failing(function () {
             \App\Services\Fortune\FortunePageContext::forget();
+            \App\Services\Fortune\TakeoverSendGuard::endMemoScope();
         });
 
         // เพิ่ม Carbon macro สำหรับแสดงวันที่ภาษาไทย

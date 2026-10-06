@@ -206,13 +206,26 @@ class FortuneTakeoverController extends Controller
         // ถ้ายังไม่ได้ takeover → takeover ก่อนเพื่อความปลอดภัย
         // ใช้ forceIgnoreDisabled เพื่อให้ทำงานได้แม้ settings ปิดอยู่ (admin สั่งเอง)
         // 🤫 (2026-10-06) + เทคโอเวอร์อยู่แต่ใกล้หมด → ต่อให้เหลืออย่างน้อย 30 นาที (แอดมินกำลังคุย บอทห้ามโผล่กลับมา)
-        $this->takeoverService->ensureAdminTakeover($reading, Auth::id(), $message);
+        $ensured = $this->takeoverService->ensureAdminTakeoverDetailed($reading, Auth::id(), $message);
         $reading->refresh();
 
         // ส่งข้อความผ่าน platform
         $sent = $this->sendMessageToPlatform($reading, $message);
 
         if (! $sent) {
+            // ↩️ (2026-10-06, bug-hunt L10) request นี้เป็นคน "เริ่ม" เทคโอเวอร์ แต่ข้อความไม่ถึงลูกค้า → ถอยกลับ
+            //    (แค่ต่อเวลาเทคโอเวอร์เดิม = ไม่แตะ)
+            if ($ensured['started']) {
+                try {
+                    $this->takeoverService->revertAdminTakeover($reading, Auth::id());
+                } catch (\Throwable $revertErr) {
+                    Log::warning('Takeover panel: ถอยเทคโอเวอร์หลังส่งไม่ออกไม่สำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'error' => \App\Support\SafeLog::exceptionMessage($revertErr),
+                    ]);
+                }
+            }
+
             // 🆕 (2026-05-17) Actionable hint — ครอบคลุม 2 เคสที่พบบ่อย
             return response()->json([
                 'success' => false,

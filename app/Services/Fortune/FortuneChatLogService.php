@@ -135,6 +135,33 @@ class FortuneChatLogService
     }
 
     /**
+     * 🤫 (2026-10-06) ข้อความล่าสุดที่ "ไม่ใช่บันทึกของระบบ" (role=system เช่น "บอทงดส่ง") — อ่านแค่ท้าย ๆ ไม่ดึงทั้งบทสนทนา
+     *
+     * ใช้ตัดสิน "ลูกค้ารอคำตอบอยู่ไหม" ในแอปแอดมิน — บรรทัดระบบที่ต่อท้ายข้อความลูกค้าต้องไม่ทำให้ unread หาย
+     *
+     * @return array{role:string,text:string,ts:?string,ai:?string,by:?string,image_url:?string}|null
+     */
+    public function getLastNonSystemForCustomer(string $platform, string $userId, int $scan = 20): ?array
+    {
+        if ($userId === '' || ! $this->available()) {
+            return null;
+        }
+        try {
+            $raw = Redis::connection()->lrange($this->key($platform, $userId), -max(1, $scan), -1);
+            foreach (array_reverse((array) $raw) as $line) {
+                $d = json_decode((string) $line, true);
+                if (is_array($d) && isset($d['text']) && ($d['role'] ?? 'user') !== 'system') {
+                    return $d;
+                }
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
      * Delete every conversation key for the given Bangkok date (default:
      * yesterday). Returns the number of keys removed. Used by the midnight
      * purge command; TTL is the safety net if this never runs.

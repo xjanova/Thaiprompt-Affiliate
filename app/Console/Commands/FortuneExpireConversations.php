@@ -108,6 +108,16 @@ class FortuneExpireConversations extends Command
             : $takeoverService->cleanupExpired();
 
         // ========================================
+        // 4. 🧹 (2026-10-06, bug-hunt L1) ตัวกวาดของที่พักค้างหลังจบเทคโอเวอร์
+        //    ของที่จ่ายแล้วถูกพักหลังเทคโอเวอร์จบไปแล้ว (แข่งกัน) / job ส่งตาย / ลองครบรอบของ job แล้ว
+        //    → ลูกค้าไม่ได้ถูกเทคโอเวอร์แล้ว = สั่งส่งใหม่ (ห้ามค้างถาวร)
+        // ========================================
+        $sweptCustomers = $dryRun ? 0 : \App\Services\Fortune\TakeoverResumeService::sweepStuckDeferred();
+        if ($sweptCustomers > 0) {
+            $this->info("สั่งส่งของที่พักค้างหลังจบเทคโอเวอร์: {$sweptCustomers} ราย");
+        }
+
+        // ========================================
         // สรุปผล
         // ========================================
         $prefix = $dryRun ? '[DRY-RUN] ' : '';

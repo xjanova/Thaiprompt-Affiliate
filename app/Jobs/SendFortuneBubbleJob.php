@@ -57,6 +57,15 @@ class SendFortuneBubbleJob implements ShouldQueue
      * @param  int  $gapMin  ระยะห่างต่ำสุด (วินาที)
      * @param  int  $gapMax  ระยะห่างสูงสุด (วินาที)
      */
+    /**
+     * 🤫 (2026-10-06, bug-hunt L3) ถูกสั่งจากในนาม "แอดมินตัวจริง" (TakeoverSendGuard::asHumanAdmin) หรือไม่
+     *
+     * asHumanAdmin เป็นสถานะในโปรเซส — กล่อง 2..N วิ่งใน worker อีกตัวทีหลัง จึงหลุดจากขอบเขตนั้น
+     * แล้วถูกด่านเทคโอเวอร์พักไว้ ⇒ คำตอบ "แอดมินสั่ง AI ตอบแทน" ถึงลูกค้าแค่กล่องแรก
+     * ⇒ จับไว้ตอนสร้าง job (ในโปรเซสที่สั่ง) แล้วห่อ handle() กลับเข้าไปในขอบเขตแอดมิน · ต่อคิวตัวเองก็พกค่านี้ต่อ
+     */
+    public bool $asHumanAdmin = false;
+
     public function __construct(
         public string $platform,
         public string $userId,
@@ -66,7 +75,9 @@ class SendFortuneBubbleJob implements ShouldQueue
         public int $gapMin = 5,
         public int $gapMax = 10,
         public ?int $readingId = null,
-    ) {}
+    ) {
+        $this->asHumanAdmin = \App\Services\Fortune\TakeoverSendGuard::inHumanAdminScope();
+    }
 
     /**
      * 🛟 (2026-08-28) จดกล่องที่ "ยังไม่ได้ส่ง" ลง MySQL — แหล่งความจริงของตาข่ายกู้
@@ -138,19 +149,45 @@ class SendFortuneBubbleJob implements ShouldQueue
             return;
         }
 
-        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่ส่งบับเบิ้ล ไม่แตะ bubble_pending (ของที่จ่ายแล้วค้างไว้ครบ)
-        //    จบเทคโอเวอร์แล้ว fortune:bubble-recover ส่งต่อจากจุดเดิม
-        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
-            if ($this->readingId) {
-                $bubbleReading = \App\Models\FortuneReading::find($this->readingId);
-                if ($bubbleReading) {
-                    \App\Services\Fortune\TakeoverResumeService::defer($bubbleReading, \App\Services\Fortune\TakeoverResumeService::ITEM_BUBBLES);
-                }
-            }
+        // 🤫 (2026-10-06) สั่งมาจากแอดมินตัวจริง → ส่งต่อในนามแอดมิน (ด่านเทคโอเวอร์ไม่พัก)
+        if ($this->asHumanAdmin) {
+            \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $this->deliver());
 
             return;
         }
 
+        // 🤫 (2026-10-06) แอดมินเทคโอเวอร์อยู่ → ไม่ส่งบับเบิ้ล ไม่แตะ bubble_pending (ของที่จ่ายแล้วค้างไว้ครบ)
+        //    จบเทคโอเวอร์แล้ว TakeoverResumeService ส่งต่อจากจุดเดิม (ไม่สนหน้าต่างเวลาของ cron)
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId)) {
+            $this->deferForTakeover();
+
+            return;
+        }
+
+        $this->deliver();
+    }
+
+    /** พักกล่องที่เหลือไว้ส่งตอนจบเทคโอเวอร์ (bubble_pending ยังครบ) */
+    private function deferForTakeover(): void
+    {
+        if ($this->readingId) {
+            $bubbleReading = \App\Models\FortuneReading::find($this->readingId);
+            if ($bubbleReading) {
+                \App\Services\Fortune\TakeoverResumeService::defer($bubbleReading, \App\Services\Fortune\TakeoverResumeService::ITEM_BUBBLES);
+            }
+        }
+    }
+
+    /** ส่งไม่ออกเพราะแอดมินเพิ่งเทคโอเวอร์พอดี (แข่งกับด่านต้นทาง) — ไม่ใช่ความล้มเหลว ห้ามย่อรายการค้าง */
+    private function blockedByTakeover(bool $sent): bool
+    {
+        return ! $sent
+            && ! $this->asHumanAdmin
+            && \App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId, true);
+    }
+
+    private function deliver(): void
+    {
         $settings = FortuneTellingSetting::getSettings();
 
         if ($this->platform === 'line') {
@@ -175,10 +212,17 @@ class SendFortuneBubbleJob implements ShouldQueue
 
             // allow_duplicate: คำทำนายบางช่วงอาจซ้ำถ้อยคำกับกล่องก่อนหน้าโดยธรรมชาติ
             // ห้ามให้ตัวกันทักทายซ้ำ (isThrottleableGreeting) กลืนกล่องกลางคำทำนายทิ้ง
-            $fb->sendMessage($this->userId, $bubble, [
+            $sent = (bool) $fb->sendMessage($this->userId, $bubble, [
                 'allow_duplicate' => true,
                 'no_default_qr' => true,
             ]);
+
+            // 🤫 แอดมินเทคโอเวอร์พอดีระหว่างทาง → กล่องนี้ยังไม่ถึง เก็บรายการค้างไว้ครบ ส่งตอนจบเทคโอเวอร์
+            if ($this->blockedByTakeover($sent)) {
+                $this->deferForTakeover();
+
+                return;
+            }
         }
 
         // 🛟 ส่งไปแล้วกล่องหนึ่ง → ย่อรายการค้างทันที ตาข่ายกู้จะได้ไม่ส่งกล่องนี้ซ้ำ
@@ -243,7 +287,14 @@ class SendFortuneBubbleJob implements ShouldQueue
         $bubble = array_shift($this->bubbles);
 
         if ($bubble !== null && trim($bubble) !== '') {
-            $line->sendMessage($this->userId, $bubble);
+            $sent = (bool) $line->sendMessage($this->userId, $bubble);
+
+            // 🤫 แอดมินเทคโอเวอร์พอดีระหว่างทาง → เก็บรายการค้างไว้ครบ ส่งตอนจบเทคโอเวอร์
+            if ($this->blockedByTakeover($sent)) {
+                $this->deferForTakeover();
+
+                return;
+            }
         }
 
         // 🛟 ส่งไปแล้วกล่องหนึ่ง → ย่อรายการค้างทันที ตาข่ายกู้จะได้ไม่ส่งกล่องนี้ซ้ำ
@@ -306,6 +357,25 @@ class SendFortuneBubbleJob implements ShouldQueue
             return;
         }
 
+        // 🤫 (2026-10-06) สั่งมาจากแอดมินตัวจริง → เทที่เหลือในนามแอดมิน · แอดมินเทคโอเวอร์อยู่ → พักไว้ (ห้ามเทแล้วล้างธง = ของหาย)
+        if ($this->asHumanAdmin) {
+            \App\Services\Fortune\TakeoverSendGuard::asHumanAdmin(fn () => $this->dumpRest());
+
+            return;
+        }
+
+        if (\App\Services\Fortune\TakeoverSendGuard::userIsTakenOver($this->platform, $this->userId, true)) {
+            $this->deferForTakeover();
+
+            return;
+        }
+
+        $this->dumpRest();
+    }
+
+    /** เทที่เหลือรวมเป็นกล่องเดียว (ตาข่ายสุดท้ายของ failed()) */
+    private function dumpRest(): void
+    {
         try {
             $settings = FortuneTellingSetting::getSettings();
 

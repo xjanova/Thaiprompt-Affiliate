@@ -4734,6 +4734,31 @@ class LineFortuneService implements MessagingPlatformInterface
             return false;
         }
 
+        // 🤫 (2026-10-06, bug-hunt L7) กล่อง "แม่หมอกลับมาดูแลต่อแล้ว" ที่จอดรอตั้งแต่จบเทคโอเวอร์ (ตอนนั้นไม่มี replyToken)
+        //    → แนบไปกับคำตอบรอบนี้ (reply ฟรี) — ห้าม push เด็ดขาด · ส่งไม่ออก = จอดกลับคืน
+        $takeoverPrefix = null;
+        if ($tokenOwner !== null && $tokenOwner[0] === 'line' && count($messages) < 5
+            && \App\Services\Fortune\TakeoverResumeService::lineReplyPrefixArmed($tokenOwner[1])) {
+            $takeoverPrefix = \App\Services\Fortune\TakeoverResumeService::takeLineReplyPrefix($tokenOwner[1]);
+            if ($takeoverPrefix !== null) {
+                array_unshift($messages, $takeoverPrefix['message']);
+            }
+        }
+
+        $ok = $this->sendReplyRequest($replyToken, $messages);
+
+        if (! $ok && $takeoverPrefix !== null) {
+            \App\Services\Fortune\TakeoverResumeService::restoreLineReplyPrefix($tokenOwner[1], $takeoverPrefix);
+        }
+
+        return $ok;
+    }
+
+    /**
+     * ยิง LINE reply API จริง (แยกจาก replyMessage() ที่มีด่านเทคโอเวอร์ + กล่องจอดรอ)
+     */
+    protected function sendReplyRequest(string $replyToken, array $messages): bool
+    {
         // ⚠️ ไม่มี circuit breaker สำหรับ reply — reply ฟรี ไม่นับ quota
         // ต้องลองส่งทุกครั้ง เพราะ timeout ครั้งก่อนไม่ได้หมายความว่าครั้งนี้จะ timeout
 
