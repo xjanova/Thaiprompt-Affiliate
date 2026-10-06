@@ -445,7 +445,8 @@ class NotificationService
                 [
                     'user_name' => $ticket->user->name,
                     'subject' => $ticket->subject,
-                    'category' => $ticket->category,
+                    // ชื่อหมวดเท่านั้น (เดิมเก็บทั้งโมเดล TicketCategory ลง JSON)
+                    'category' => $ticket->category?->name,
                     'priority' => $ticket->priority,
                 ],
                 route('admin.tickets.show', $ticket->id),

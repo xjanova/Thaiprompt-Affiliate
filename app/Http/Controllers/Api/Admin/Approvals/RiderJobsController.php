@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin\Approvals;
 
+use App\Exceptions\HandoverException;
 use App\Http\Controllers\Admin\RiderJobController as WebRiderJobController;
 use App\Http\Controllers\Api\Admin\Approvals\Concerns\ApprovalResponses;
 use App\Http\Controllers\Controller;
@@ -33,6 +34,9 @@ class RiderJobsController extends Controller
 
     public const FILTERS = ['needs_decision', 'handover_review', 'disputed', 'awaiting_release', 'manual_needed'];
 
+    /** เพดานรายการต่อหน้าของคิวนี้ (ต่ำกว่าคิวอื่นที่ 100 — แต่ละแถวคำนวณปุ่ม/สถานะผ่าน service) */
+    public const MAX_PER_PAGE = 50;
+
     public function __construct(private readonly HandoverService $handovers) {}
 
     /**
@@ -52,7 +56,8 @@ class RiderJobsController extends Controller
             ->with(['rider:id,user_id,full_name', 'customer:id,name,member_number', 'handover'])
             ->orderBy('id');
 
-        $page = $query->paginate((int) ($data['per_page'] ?? 20));
+        // แต่ละงานเรียก service หลายคิวรี (ออเดอร์ต้นทาง · adminCanResolve · ปุ่มของเว็บ) → เพดาน 50 ต่อหน้า (ขอมากกว่า = ได้ 50)
+        $page = $query->paginate(min(self::MAX_PER_PAGE, (int) ($data['per_page'] ?? 20)));
         $web = app(WebRiderJobController::class);
 
         return $this->paged($page, $page->getCollection()->map(fn (RiderJob $job) => $this->listItem($job, $web))->all());
@@ -156,12 +161,14 @@ class RiderJobsController extends Controller
      */
     public function release(Request $request, RiderJob $job): JsonResponse
     {
-        $handover = $job->handover()->first();
-        if ($handover && $handover->status === DeliveryHandover::STATUS_RELEASED) {
-            return $this->ok($this->actionResult($job, true), 'งานนี้ปล่อยเงินไปแล้ว');
-        }
-
-        return $this->delegateToWeb($request, fn () => app(WebRiderJobController::class)->handoverRelease($request, $job), 'rider_job_release');
+        return $this->decideHandover(
+            $request,
+            $job,
+            DeliveryHandover::STATUS_RELEASED,
+            'งานนี้ปล่อยเงินไปแล้ว',
+            fn () => app(WebRiderJobController::class)->handoverRelease($request, $job),
+            'rider_job_release'
+        );
     }
 
     /**
@@ -171,12 +178,40 @@ class RiderJobsController extends Controller
      */
     public function refund(Request $request, RiderJob $job): JsonResponse
     {
-        $handover = $job->handover()->first();
-        if ($handover && $handover->status === DeliveryHandover::STATUS_REFUNDED) {
-            return $this->ok($this->actionResult($job, true), 'งานนี้คืนเงินผู้ซื้อไปแล้ว');
+        return $this->decideHandover(
+            $request,
+            $job,
+            DeliveryHandover::STATUS_REFUNDED,
+            'งานนี้คืนเงินผู้ซื้อไปแล้ว',
+            fn () => app(WebRiderJobController::class)->handoverRefund($request, $job),
+            'rider_job_refund'
+        );
+    }
+
+    /**
+     * ตัดสินการส่งมอบ (ปล่อยเงิน / คืนเงิน) แบบกดซ้ำปลอดภัย
+     *
+     * - ผลเดียวกันอยู่แล้วก่อนเรียก → 200 already_decided (ไม่เรียก service)
+     * - สองคำขอพร้อมกัน: ตัวที่แพ้ล็อกได้ HANDOVER_FINAL จาก service → อ่านสถานะใหม่
+     *   ถ้าเป็นผลเดียวกับที่สั่ง = 200 already_decided (เงินขยับครั้งเดียวจากคำขอแรก) · ผลอื่น = คง 409 เดิม
+     *
+     * @param  callable(): Response  $call
+     */
+    private function decideHandover(Request $request, RiderJob $job, string $target, string $alreadyMessage, callable $call, string $action): JsonResponse
+    {
+        if ($job->handover()->value('status') === $target) {
+            return $this->ok($this->actionResult($job, true), $alreadyMessage);
         }
 
-        return $this->delegateToWeb($request, fn () => app(WebRiderJobController::class)->handoverRefund($request, $job), 'rider_job_refund');
+        $response = $this->delegateToWeb($request, $call, $action);
+
+        if (! $response->isSuccessful()
+            && ($response->getData(true)['error_code'] ?? null) === HandoverException::FINAL
+            && $job->handover()->value('status') === $target) {
+            return $this->ok($this->actionResult($job, true), $alreadyMessage);
+        }
+
+        return $response;
     }
 
     /**
@@ -184,7 +219,16 @@ class RiderJobsController extends Controller
      */
     public function reassign(Request $request, RiderJob $job): JsonResponse
     {
-        if ($job->status !== 'pending' && (int) $job->rider_id === (int) $request->input('rider_id') && ! $job->isTerminal()) {
+        // ตรวจ rider_id ก่อนใช้ (กฎ/ข้อความชุดเดียวกับหน้าเว็บ — เว็บตรวจซ้ำอีกชั้นตอนส่งต่อ)
+        $data = $this->validateInput($request, [
+            'rider_id' => ['required', 'integer', 'exists:riders,id'],
+        ], [
+            'rider_id.required' => 'กรุณาเลือกไรเดอร์',
+            'rider_id.integer' => 'ไรเดอร์ไม่ถูกต้อง',
+            'rider_id.exists' => 'ไม่พบไรเดอร์ที่เลือก',
+        ]);
+
+        if ($job->status !== 'pending' && (int) $job->rider_id === (int) $data['rider_id'] && ! $job->isTerminal()) {
             return $this->ok(['job' => ['id' => (int) $job->id, 'status' => (string) $job->status, 'rider_id' => (int) $job->rider_id], 'already_decided' => true], 'งานนี้มอบหมายให้ไรเดอร์คนนี้อยู่แล้ว');
         }
 

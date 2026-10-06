@@ -2,10 +2,18 @@
 
 namespace Tests\Feature\AdminApp\Approvals;
 
+use App\Http\Controllers\Admin\RiderJobController as WebRiderJobController;
+use App\Http\Controllers\Api\Admin\Approvals\RiderJobsController;
 use App\Models\DeliveryHandover;
 use App\Models\Order;
 use App\Models\RiderJob;
 use App\Models\User;
+use App\Services\Rider\HandoverService;
+use App\Services\RiderDispatchService;
+use App\Services\RiderJobService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\BuildsAdminAppWorld;
@@ -74,6 +82,56 @@ class RiderJobsApprovalsTest extends HandoverTestCase
         $this->getJson('/api/admin/approvals/summary')
             ->assertJsonPath('data.queues.rider_jobs.count', 1)
             ->assertJsonPath('data.queues.rider_jobs.disputed', 1);
+
+        // เพดาน 50 ต่อหน้า (ขอ 100 = ได้ 50 ไม่ใช่ 422)
+        $this->getJson('/api/admin/approvals/rider-jobs?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.per_page', RiderJobsController::MAX_PER_PAGE);
+    }
+
+    /**
+     * สองแอดมินกดปล่อยเงินพร้อมกัน: อีกคนปล่อยไปก่อนระหว่างที่คำขอนี้ผ่านด่านตรวจซ้ำแล้ว
+     * → service ตอบ HANDOVER_FINAL แต่ผลตรงกับที่สั่ง = 200 already_decided · เงินขยับครั้งเดียว
+     */
+    public function test_concurrent_release_loser_gets_already_decided_and_money_moves_once(): void
+    {
+        [$job, , , $seller] = $this->disputedJob();
+        $otherAdmin = $this->makeAdmin();
+
+        // จำลองคำขอของแอดมินอีกคนที่ commit ก่อนเสี้ยววินาที (หลังด่านตรวจซ้ำของ controller แอป แต่ก่อน service ล็อกแถว)
+        $this->app->bind(WebRiderJobController::class, function ($app) use ($otherAdmin) {
+            return new class($app->make(RiderJobService::class), $app->make(RiderDispatchService::class), $otherAdmin) extends WebRiderJobController
+            {
+                public function __construct(RiderJobService $jobs, RiderDispatchService $dispatch, private readonly User $racer)
+                {
+                    parent::__construct($jobs, $dispatch);
+                }
+
+                public function handoverRelease(Request $request, RiderJob $job): JsonResponse|RedirectResponse
+                {
+                    app(HandoverService::class)->adminRelease(RiderJob::findOrFail($job->id), $this->racer, 'แอดมินอีกคนกดก่อน');
+
+                    return parent::handoverRelease($request, $job);
+                }
+            };
+        });
+
+        $this->actAs($this->makeAdmin());
+        $this->postJson('/api/admin/approvals/rider-jobs/'.$job->id.'/release')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.already_decided', true)
+            ->assertJsonPath('data.job.status', 'completed');
+
+        $this->assertSame(DeliveryHandover::STATUS_RELEASED, $this->handoverOf($job)->status);
+        $this->assertEqualsWithDelta(32.0, $this->riderEarningCredits($job), 0.001, 'ไรเดอร์ได้ค่าส่งครั้งเดียว');
+        $this->assertEqualsWithDelta(90.0, $this->walletOf($seller), 0.001, 'ร้านได้เงินครั้งเดียว');
+
+        // ผลอื่นแพ้การแข่ง (คืนเงินหลังอีกคนปล่อยเงินไปแล้ว) → คง 409 HANDOVER_FINAL
+        $this->app->offsetUnset(WebRiderJobController::class);
+        $this->postJson('/api/admin/approvals/rider-jobs/'.$job->id.'/refund', ['reason' => 'ผู้ซื้อขอคืน'])
+            ->assertStatus(409)
+            ->assertJsonPath('error_code', 'HANDOVER_FINAL');
     }
 
     public function test_release_pays_rider_and_shop_once_and_repeat_is_idempotent(): void

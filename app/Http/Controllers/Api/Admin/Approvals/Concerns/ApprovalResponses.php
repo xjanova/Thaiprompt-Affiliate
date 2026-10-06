@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api\Admin\Approvals\Concerns;
 
 use App\Support\SafeLog;
 use Carbon\CarbonInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -191,6 +193,20 @@ trait ApprovalResponses
             $response = $call();
         } catch (HttpResponseException $e) {
             throw $e;
+        } catch (ValidationException $e) {
+            // เมธอดเว็บที่ใช้ $request->validate() → 422 envelope เดียวกับ validateInput() (ไม่ใช่ 500)
+            $errors = $e->errors();
+
+            return $this->fail(
+                (string) (collect($errors)->flatten()->first() ?? 'ข้อมูลไม่ถูกต้อง'),
+                'VALIDATION_ERROR',
+                422,
+                null,
+                $errors
+            );
+        } catch (AuthorizationException $e) {
+            // เมธอดเว็บที่ใช้ $this->authorize() → 403 PERMISSION_DENIED (ไม่ใช่ 500)
+            return $this->forbidden('ไม่มีสิทธิ์ทำรายการนี้');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->fail('ไม่พบรายการที่ต้องการ', 'NOT_FOUND', 404);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {

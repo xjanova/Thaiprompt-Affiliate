@@ -431,17 +431,17 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     })->name('dividend-simulator');
 });
 
-    // ===== Fortune Referral Commission (คอมมิชชั่นดูดวง) =====
-    Route::prefix('fortune-referral')->name('fortune-referral.')->group(function () {
-        Route::get('/commissions', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'commissions'])
-            ->name('commissions');
-        Route::get('/recruit', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'recruit'])
-            ->name('recruit');
-        Route::get('/tree', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'tree'])
-            ->name('tree');
-        Route::get('/tree-data', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'getTreeData'])
-            ->name('tree-data');
-    });
+// ===== Fortune Referral Commission (คอมมิชชั่นดูดวง) =====
+Route::prefix('fortune-referral')->name('fortune-referral.')->group(function () {
+    Route::get('/commissions', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'commissions'])
+        ->name('commissions');
+    Route::get('/recruit', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'recruit'])
+        ->name('recruit');
+    Route::get('/tree', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'tree'])
+        ->name('tree');
+    Route::get('/tree-data', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'getTreeData'])
+        ->name('tree-data');
+});
 
 // Wealth Guide E-book - Complete guide from beginner to expert
 Route::get('/wealth-guide', function () {
@@ -536,7 +536,8 @@ Route::get('shop/{slug}', function ($slug) {
 Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::get('/', [TicketController::class, 'index'])->name('index');
     Route::get('/create', [TicketController::class, 'create'])->name('create');
-    Route::post('/', [TicketController::class, 'store'])->name('store');
+    // 🎫 (2026-10-06) ตั๋วใหม่ 1 ใบ = แจ้งเตือน + push ถึงทีมงานสูงสุด 50 คน → จำกัด 5 ใบ/10 นาทีต่อบัญชี (ถังแยกชื่อ ticket-store)
+    Route::post('/', [TicketController::class, 'store'])->middleware('throttle:5,10,ticket-store')->name('store');
     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
     Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
     Route::post('/{ticket}/close', [TicketController::class, 'close'])->name('close');

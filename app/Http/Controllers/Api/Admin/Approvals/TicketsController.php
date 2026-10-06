@@ -7,9 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Services\TicketService;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * 🎫 แอปแอดมิน: ตั๋วซัพพอร์ต — ตอบ/เปลี่ยนสถานะผ่าน TicketService ตัวเดียวกับหลังบ้านเว็บ Admin\TicketController
@@ -35,6 +37,12 @@ class TicketsController extends Controller
 
     /** กันกดส่งซ้ำ: ข้อความเดิมจากแอดมินคนเดิมในตั๋วเดิมภายในช่วงนี้ = คืนรายการเดิม ไม่สร้างใหม่ */
     private const REPLY_DEDUPE_SECONDS = 60;
+
+    /** อายุล็อกกันส่งซ้ำพร้อมกัน (ปล่อยเองถ้าคำขอแรกค้าง) */
+    private const REPLY_LOCK_SECONDS = 15;
+
+    /** คำขอที่สองรอคำขอแรกได้นานเท่านี้ ก่อนตอบ REPLY_IN_PROGRESS */
+    private const REPLY_LOCK_WAIT_SECONDS = 5;
 
     public function __construct(private readonly TicketService $tickets) {}
 
@@ -147,10 +155,28 @@ class TicketsController extends Controller
             return $this->fail('กรุณาพิมพ์ข้อความตอบกลับ', 'VALIDATION_ERROR', 422, null, ['message' => ['กรุณาพิมพ์ข้อความตอบกลับ']]);
         }
 
+        $adminId = (int) $request->user()->id;
+
+        // ล็อกต่อ (ตั๋ว · แอดมิน · ข้อความ) — สองคำขอพร้อมกัน (กดรัว/แอปลองซ้ำ) ตัวที่สองรอตัวแรกจบ
+        // แล้วเจอข้อความเดิมจากการตรวจซ้ำด้านใน → ไม่สร้างข้อความ/ไม่แจ้งลูกค้าซ้ำ
+        $lock = Cache::lock('admin-app:ticket-reply:'.$ticket->id.':'.$adminId.':'.sha1($message), self::REPLY_LOCK_SECONDS);
+
+        try {
+            return $lock->block(self::REPLY_LOCK_WAIT_SECONDS, fn () => $this->replyOnce($ticket, $adminId, $message));
+        } catch (LockTimeoutException) {
+            return $this->fail('กำลังส่งข้อความนี้อยู่ กรุณารอสักครู่แล้วลองใหม่', 'REPLY_IN_PROGRESS', 409);
+        }
+    }
+
+    /**
+     * ตรวจซ้ำ + บันทึกข้อความตอบกลับ (เรียกภายในล็อกของ reply() เท่านั้น)
+     */
+    private function replyOnce(Ticket $ticket, int $adminId, string $message): JsonResponse
+    {
         // กดส่งซ้ำ/เน็ตหลุดแล้วลองใหม่ → คืนข้อความเดิม ไม่ส่งซ้ำถึงลูกค้า
         $duplicate = TicketReply::query()
             ->where('ticket_id', $ticket->id)
-            ->where('user_id', $request->user()->id)
+            ->where('user_id', $adminId)
             ->where('is_internal_note', false)
             ->where('message', $message)
             ->where('created_at', '>=', now()->subSeconds(self::REPLY_DEDUPE_SECONDS))
@@ -163,7 +189,7 @@ class TicketsController extends Controller
 
         try {
             $reply = $this->tickets->addReply($ticket, [
-                'user_id' => $request->user()->id,
+                'user_id' => $adminId,
                 'message' => $message,
                 'is_internal_note' => false,
             ]);

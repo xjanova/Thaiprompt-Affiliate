@@ -4,6 +4,7 @@ namespace Tests\Feature\AdminApp\Approvals;
 
 use App\Models\Notification;
 use App\Models\Ticket;
+use App\Models\TicketCategory;
 use App\Models\TicketReply;
 use App\Models\User;
 use App\Services\TicketService;
@@ -63,6 +64,28 @@ class TicketsApprovalsTest extends TestCase
         $before = Notification::where('user_id', $admin->id)->where('type', 'ticket')->count();
         $ticket->update(['assigned_to' => null]);
         $this->assertSame($before + 1, Notification::where('user_id', $admin->id)->where('type', 'ticket')->count());
+    }
+
+    public function test_customer_ticket_creation_is_throttled_so_admins_are_not_flooded(): void
+    {
+        $this->makeAdmin();
+        $member = $this->makeMember();
+        $category = TicketCategory::create(['name' => 'การเงิน', 'is_active' => true, 'sort_order' => 1]);
+
+        $payload = fn (int $i) => ['category_id' => $category->id, 'subject' => 'เรื่องที่ '.$i, 'description' => 'รายละเอียด '.$i, 'priority' => 'medium'];
+
+        for ($i = 1; $i <= 5; $i++) {
+            $this->actingAs($member, 'web')->post(route('user.tickets.store'), $payload($i))->assertRedirect();
+        }
+
+        // ใบที่ 6 ภายใน 10 นาที → 429 ไม่สร้างตั๋ว ไม่แจ้งแอดมินเพิ่ม
+        $notesBefore = Notification::where('type', 'ticket')->count();
+        $this->actingAs($member, 'web')->post(route('user.tickets.store'), $payload(6))->assertStatus(429);
+        $this->assertSame(5, Ticket::where('user_id', $member->id)->count());
+        $this->assertSame($notesBefore, Notification::where('type', 'ticket')->count());
+
+        // ถังแยกต่อบัญชี — ลูกค้าอีกคนยังเปิดตั๋วได้
+        $this->actingAs($this->makeMember(), 'web')->post(route('user.tickets.store'), $payload(7))->assertRedirect();
     }
 
     public function test_list_buckets_and_detail_messages(): void

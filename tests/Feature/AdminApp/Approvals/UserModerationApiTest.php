@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\AdminApp\Approvals;
 
+use App\Models\User;
 use App\Models\Wallet;
 use App\Models\WalletLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -91,6 +92,47 @@ class UserModerationApiTest extends TestCase
         $this->assertFalse($admin->fresh()->isSuspended());
         $this->assertFalse($super->fresh()->isSuspended());
         $this->postJson('/api/admin/users/999999/suspend')->assertNotFound();
+    }
+
+    public function test_only_super_admin_can_suspend_or_unsuspend_staff_accounts(): void
+    {
+        $admin = $this->makeAdmin();
+        $otherAdmin = $this->makeAdmin();
+        $moderator = User::factory()->create(['role' => 'moderator', 'is_super_admin' => false]);
+        $otherAdmin->createToken('admin-app', ['admin']);
+
+        // แอดมินธรรมดา → ระงับทีมงานไม่ได้ (403) ไม่มีอะไรเปลี่ยน · token ของอีกฝ่ายยังอยู่
+        $this->actAs($admin);
+        foreach ([$otherAdmin, $moderator] as $staff) {
+            $this->postJson('/api/admin/users/'.$staff->id.'/suspend', ['reason' => 'ลองระงับ'])
+                ->assertStatus(403)
+                ->assertJsonPath('error_code', 'STAFF_REQUIRES_SUPER_ADMIN')
+                ->assertJsonPath('data.suspended', false);
+            $this->assertFalse($staff->fresh()->isSuspended());
+        }
+        $this->assertSame(1, DB::table('personal_access_tokens')->where('tokenable_id', $otherAdmin->id)->count());
+
+        // super admin ระงับได้ → แอดมินธรรมดาปลดไม่ได้ (กันปลดบัญชีที่ super admin สั่งระงับไว้)
+        $this->actAs($this->makeSuperAdmin());
+        $this->postJson('/api/admin/users/'.$otherAdmin->id.'/suspend', ['reason' => 'token หลุด'])
+            ->assertOk()->assertJsonPath('data.suspended', true);
+
+        $this->actAs($admin);
+        $this->postJson('/api/admin/users/'.$otherAdmin->id.'/unsuspend')
+            ->assertStatus(403)
+            ->assertJsonPath('error_code', 'STAFF_REQUIRES_SUPER_ADMIN');
+        $this->assertTrue($otherAdmin->fresh()->isSuspended());
+
+        // หน้าเว็บใช้กติกาเดียวกัน (UserSuspensionService) → flash error ไม่ระงับ
+        $this->actingAs($admin, 'web')
+            ->post(route('admin.users.suspend', $moderator), ['reason' => 'ลองจากเว็บ'])
+            ->assertSessionHas('error');
+        $this->assertFalse($moderator->fresh()->isSuspended());
+
+        // สมาชิกทั่วไป → แอดมินธรรมดายังระงับได้ตามเดิม
+        $member = $this->makeMember();
+        $this->actAs($admin);
+        $this->postJson('/api/admin/users/'.$member->id.'/suspend')->assertOk()->assertJsonPath('data.suspended', true);
     }
 
     public function test_reset_wallet_pin_is_super_admin_only_and_logged(): void

@@ -998,7 +998,7 @@ body `{"token": "..."}` — ถอนได้เฉพาะ token ของต
 
 ### 9.5 งานไรเดอร์ที่รอตัดสิน (💸 เคลื่อนเงิน) — `approvals/rider-jobs`
 
-**`GET approvals/rider-jobs?filter=needs_decision|handover_review|disputed|awaiting_release|manual_needed`** (ค่าเริ่มต้น `needs_decision` · เก่าสุดก่อน)
+**`GET approvals/rider-jobs?filter=needs_decision|handover_review|disputed|awaiting_release|manual_needed`** (ค่าเริ่มต้น `needs_decision` · เก่าสุดก่อน · **`per_page` สูงสุด 50** — ขอมากกว่าได้ 50 ดูค่าจริงที่ `data.per_page`)
 
 - `handover_review` = งานที่ **แอดมินตัดสินการส่งมอบได้จริง** (`HandoverService::scopeAdminResolvable`) และ (เงินพักรอปลด `awaiting_release` หรือ ผู้ซื้อร้องเรียน) — นิยามเดียวกับตัวกรองหน้าเว็บ
 - `disputed` / `awaiting_release` = แยกย่อยของข้างบน · `manual_needed` = งานรอไรเดอร์ที่ระบบหาคนรับไม่ได้ (`dispatch_type = manual_needed`) ต้องมอบหมายเอง
@@ -1067,14 +1067,16 @@ body `{"token": "..."}` — ถอนได้เฉพาะ token ของต
 ```
 
 - กดซ้ำ: `release` หลังปล่อยแล้ว / `refund` หลังคืนแล้ว / `reassign` ให้ไรเดอร์คนเดิม = 200 `already_decided:true` (ไม่มีเงินขยับ)
+  — รวมกรณีสองคำขอวิ่งพร้อมกัน: ตัวที่สองได้ 200 `already_decided:true` ถ้าผลตรงกับที่สั่ง · ผลอื่นไปแล้ว = 409 `HANDOVER_FINAL`
+- `reassign` ตรวจ `rider_id` ก่อนเสมอ (ไม่ส่ง/ไม่ใช่ตัวเลข/ไม่มีไรเดอร์ = 422 `VALIDATION_ERROR` + `errors.rider_id`)
 - สิทธิ์: แอดมิน (หน้าเว็บก็ `role:admin,super_admin` เท่านั้น — ไม่มีสิทธิ์ย่อยสำหรับการตัดสินเงิน)
 
 ### 9.6 ผู้ใช้ — ระงับ / ยกเลิกระงับ / รีเซ็ต PIN
 
 | Endpoint | body | สิทธิ์ / กติกา |
 |---|---|---|
-| `POST users/{id}/suspend` | `{reason?}` ≤500 | `UserPolicy::block` (ห้ามตัวเอง → 403) · `UserSuspensionService` (ตัวเดียวกับเว็บ): ห้ามระงับตัวเอง/super admin → 409 `CANNOT_SUSPEND_SELF` / `CANNOT_SUSPEND_SUPER_ADMIN` · ระงับ = เพิกถอน token แอปทั้งหมด + ปล่อยงานไรเดอร์ที่ค้าง |
-| `POST users/{id}/unsuspend` | — | `UserPolicy::block` |
+| `POST users/{id}/suspend` | `{reason?}` ≤500 | `UserPolicy::block` (ห้ามตัวเอง → 403) · `UserSuspensionService` (ตัวเดียวกับเว็บ): ห้ามระงับตัวเอง/super admin → 409 `CANNOT_SUSPEND_SELF` / `CANNOT_SUSPEND_SUPER_ADMIN` · บัญชีทีมงาน (role `admin`/`moderator`) → **super admin เท่านั้น** ไม่ใช่ = 403 `STAFF_REQUIRES_SUPER_ADMIN` · ระงับ = เพิกถอน token แอปทั้งหมด + ปล่อยงานไรเดอร์ที่ค้าง |
+| `POST users/{id}/unsuspend` | — | `UserPolicy::block` · บัญชีทีมงาน → super admin เท่านั้น (403 `STAFF_REQUIRES_SUPER_ADMIN`) |
 | `POST users/{id}/reset-wallet-pin` | — | **super admin เท่านั้น** (เหมือนเว็บ) → `WalletService::adminResetPin` ล้าง PIN + ปลดล็อกกรอกผิด + log `pin_changed` ระดับ warning · ไม่มีกระเป๋า = 404 `WALLET_NOT_FOUND` |
 
 ```json
@@ -1126,6 +1128,7 @@ body `{"token": "..."}` — ถอนได้เฉพาะ token ของต
   "duplicate": false, "ticket": {"id": 8, "status": "open"}}, "message": "เพิ่มข้อความตอบกลับเรียบร้อยแล้ว"}
 ```
 กันกดส่งซ้ำ: ข้อความเดิมจากแอดมินคนเดิมในตั๋วเดิมภายใน 60 วินาที → **200** `duplicate:true` คืนรายการเดิม (ไม่ส่งถึงลูกค้าซ้ำ)
+· สองคำขอพร้อมกันถูกล็อกต่อ (ตั๋ว·แอดมิน·ข้อความ) — ตัวที่สองรอแล้วได้ `duplicate:true` · รอเกิน 5 วินาที = 409 `REPLY_IN_PROGRESS` (ลองใหม่ได้)
 
 **`POST approvals/tickets/{id}/status` `{status, resolution_notes?}`** — `status` ∈ `open, in_progress, waiting_customer, resolved, closed` (ชุดเดียวกับเว็บ) → `TicketService::changeStatus`
 ```json

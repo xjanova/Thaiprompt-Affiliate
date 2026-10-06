@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
  *
  * - suspend/unsuspend: UserPolicy::block (ห้ามตัวเอง · แอดมินขึ้นไป) + UserSuspensionService (ตัวเดียวกับ Admin\UserController)
  *   ระงับ = เพิกถอน token แอปทั้งหมด + ปล่อยงานไรเดอร์ที่ค้าง (User::suspend)
+ *   บัญชีทีมงาน (admin/moderator) → เฉพาะ super admin (ไม่ใช่ = 403 STAFF_REQUIRES_SUPER_ADMIN)
  * - reset-wallet-pin: super admin เท่านั้น (เหมือน Admin\WalletController::resetUserPin) → WalletService::adminResetPin
  */
 class UserModerationController extends Controller
@@ -102,7 +103,7 @@ class UserModerationController extends Controller
     }
 
     /**
-     * @param  array{ok: bool, level: string, code: string, message: string}  $result
+     * @param  array{ok: bool, level: string, code: string, message: string, status?: int}  $result
      */
     private function respondResult(array $result, User $user): JsonResponse
     {
@@ -115,7 +116,10 @@ class UserModerationController extends Controller
         ];
 
         if (! $result['ok']) {
-            return $this->fail($result['message'], $result['code'], 409, $data);
+            // 403 = ไม่มีสิทธิ์กับบัญชีนี้ (เช่น บัญชีทีมงานต้องเป็น super admin) · 409 = ทำไม่ได้ตามกติกา
+            $status = (int) ($result['status'] ?? 409);
+
+            return $this->fail($result['message'], $result['code'], $status >= 400 ? $status : 409, $data);
         }
 
         return $this->ok($data, $result['message']);
