@@ -258,6 +258,15 @@ class FortuneAIService
     protected const CHAT_PROVIDER_TIMEOUT = 15;
 
     /**
+     * ⏱️ (2026-10-06) เพดานเวลาของ parseBirthDateWithAI — รอบแรก + รอบลองคีย์อื่น
+     *   prod ปกติตอบใน 0-2 วิ แต่ 6 ครั้งค้างจนครบ 15 วิแล้วได้ 0 ไบต์
+     *   8 + 6 = 14 วิ → แย่สุดยังไม่ช้ากว่าเดิม (15 วิ ครั้งเดียว) แต่ได้ลองคีย์ที่สอง
+     */
+    protected const BIRTHDATE_AI_TIMEOUT = 8;
+
+    protected const BIRTHDATE_AI_RETRY_TIMEOUT = 6;
+
+    /**
      * 🐢 (2026-05-13) Total budget — Deep prediction loop จะหยุดหลังเกินเวลานี้
      *   เดิม 90s — ไม่พอสำหรับ OpenAI Responses (Pro reasoning) ที่ใช้ 60-120s
      *   ใหม่ 150s — รองรับ Responses 1 attempt (120s) + fallback ไป Flash (30s)
@@ -2190,6 +2199,12 @@ PROMPT;
      */
     public function parseBirthDateWithAI(string $messageText): ?string
     {
+        // 🚫 (2026-10-06) ข้อความว่างห้ามยิง AI — prod 4 ครั้งได้ "Request has empty input"
+        //   ต้นเหตุ: ลูกค้าพิมพ์ "ค่ะ"/"คะ"/"ค่า" → parseBirthDateCore ตัดคำลงท้ายทิ้งจนเหลือ ""
+        if (trim($messageText) === '') {
+            return null;
+        }
+
         $chatApiKey = $this->settings->getChatAIApiKey();
         if (empty($chatApiKey)) {
             return null; // ไม่มี API key — fallback เงียบ
@@ -2228,13 +2243,12 @@ PROMPT;
             ."  input: \"4 ขาล 05\"             → {\"date\": null}   (ไม่มีวันที่ — 05 คือปี)\n"
             ."  input: \"เขา 4ส.ค. เสีย9ส.ค\"   → {\"date\": null}   (เล่าถึงคนอื่น ไม่มีปี)\n";
 
-        try {
-            $result = $this->chatWithCustomSystemPrompt(
-                $systemPrompt,
-                $messageText,
-                ['temperature' => 0.0, 'max_tokens' => 80]
-            );
+        $result = $this->requestBirthDateParse($systemPrompt, $messageText);
+        if ($result === null) {
+            return null;
+        }
 
+        try {
             $response = trim($result['response'] ?? '');
 
             // Strip code fences if AI added them
@@ -2274,12 +2288,153 @@ PROMPT;
             return $date;
 
         } catch (Exception $e) {
-            Log::debug('FortuneAIService: parseBirthDateWithAI ล้มเหลว (silent)', [
-                'error' => $e->getMessage(),
+            Log::warning('FortuneAIService: parseBirthDateWithAI อ่านคำตอบ AI ไม่ได้', [
+                'error' => SafeLog::exceptionMessage($e),
             ]);
 
             return null;
         }
+    }
+
+    /**
+     * 🔁 (2026-10-06) ยิง AI แปลงวันเกิด — ล่มชั่วคราว (503/คนใช้เยอะ/timeout) ลองคีย์อื่นอีก 1 ครั้ง
+     *
+     * prod 2026-10-01 → 06: สำเร็จ 5 ล้ม 24 — 12 ครั้ง "high demand", 6 ครั้ง timeout 15 วิ
+     * และ log อยู่ระดับ DEBUG จึงไม่มีใครเห็น ⇒ ล้มทุกแบบตอนนี้ขึ้น WARNING
+     *
+     * @return array|null ผลจาก chatWithCustomSystemPrompt หรือ null ถ้าล้มทั้ง 2 รอบ
+     */
+    protected function requestBirthDateParse(string $systemPrompt, string $messageText): ?array
+    {
+        $config = ['temperature' => 0.0, 'max_tokens' => 80, 'timeout' => self::BIRTHDATE_AI_TIMEOUT];
+
+        try {
+            return $this->chatWithCustomSystemPrompt($systemPrompt, $messageText, $config);
+        } catch (\Throwable $e) {
+            $firstError = SafeLog::exceptionMessage($e);
+        }
+
+        $firstProvider = $this->settings->getChatAIProvider();
+        $retryKey = self::isTransientChatError($firstError)
+            ? $this->pickBirthDateRetryKey((string) $this->settings->getChatAIApiKey(), $firstProvider, $this->settings->getChatAIModel())
+            : null;
+
+        if ($retryKey === null) {
+            Log::warning('FortuneAIService: parseBirthDateWithAI ล้มเหลว', [
+                'error' => $firstError,
+                'provider' => $firstProvider,
+                'retried' => false,
+                'input' => mb_substr($messageText, 0, 80),
+            ]);
+
+            return null;
+        }
+
+        $config['timeout'] = self::BIRTHDATE_AI_RETRY_TIMEOUT;
+        $inflightCache = $this->acquireKeyInflight($retryKey);
+        $callStart = microtime(true);
+
+        try {
+            $result = $this->chatWithCustomSystemPrompt(
+                $systemPrompt,
+                $messageText,
+                $config,
+                $retryKey['provider'],
+                $retryKey['model'],
+                $retryKey['api_key']
+            );
+        } catch (\Throwable $e) {
+            $retryError = SafeLog::exceptionMessage($e);
+            $this->releaseKeyInflight($retryKey, $inflightCache, false, $retryError);
+
+            $poolKey = $retryKey['pool_key'] ?? null;
+            if ($poolKey instanceof AiApiKey) {
+                $this->recordErrorForKey($poolKey, $retryError, $retryKey['model'] ?? null);
+            }
+
+            Log::warning('FortuneAIService: parseBirthDateWithAI ล้มเหลว (ลองคีย์อื่นแล้ว)', [
+                'error' => $firstError,
+                'retry_error' => $retryError,
+                'provider' => $firstProvider,
+                'retry_provider' => $retryKey['provider'],
+                'retry_key' => $retryKey['name'] ?? null,
+                'retried' => true,
+                'input' => mb_substr($messageText, 0, 80),
+            ]);
+
+            return null;
+        }
+
+        $this->releaseKeyInflight($retryKey, $inflightCache, true);
+
+        $poolKey = $retryKey['pool_key'] ?? null;
+        if ($poolKey instanceof AiApiKey) {
+            $this->recordUsageForKey(
+                $poolKey,
+                (int) ($result['tokens_used'] ?? 0),
+                (string) ($result['model'] ?? $retryKey['model'] ?? ''),
+                (int) ((microtime(true) - $callStart) * 1000),
+                'chat'
+            );
+        }
+
+        Log::info('FortuneAIService: parseBirthDateWithAI รอบแรกล่ม → คีย์อื่นตอบได้', [
+            'first_error' => mb_substr($firstError, 0, 120),
+            'retry_provider' => $retryKey['provider'],
+            'retry_key' => $retryKey['name'] ?? null,
+        ]);
+
+        return $result;
+    }
+
+    /**
+     * เลือกคีย์ chat ใน Pool สำหรับรอบลองใหม่ — ต้องไม่ใช่คีย์ที่เพิ่งล่ม
+     *
+     * "high demand" ของ Gemini เป็นเรื่องของรุ่น ไม่ใช่ของคีย์ ⇒ ถ้ามีค่าย/รุ่นอื่นให้หยิบก่อน
+     * ไม่มีก็เอาคีย์อื่นของรุ่นเดิม (ลำดับตามคะแนนโหลดของ Pool เหมือน generateChatResponseWithPoolFallback)
+     */
+    protected function pickBirthDateRetryKey(string $failedApiKey, string $failedProvider, string $failedModel): ?array
+    {
+        try {
+            $keys = $this->getAllAvailableKeys(null, 'chat', $failedProvider);
+        } catch (\Throwable $e) {
+            Log::warning('FortuneAIService: parseBirthDateWithAI ดึงคีย์สำรองไม่ได้', [
+                'error' => SafeLog::exceptionMessage($e),
+            ]);
+
+            return null;
+        }
+
+        $others = array_values(array_filter(
+            $keys,
+            fn ($k) => ! empty($k['api_key']) && $k['api_key'] !== $failedApiKey
+        ));
+
+        foreach ($others as $k) {
+            if ($k['provider'] !== $failedProvider || ($k['model'] ?? '') !== $failedModel) {
+                return $k;
+            }
+        }
+
+        return $others[0] ?? null;
+    }
+
+    /**
+     * error ชั่วคราวที่ลองคีย์อื่นแล้วมีโอกาสผ่าน — 429 / 5xx / คนใช้เยอะ / timeout / ต่อไม่ติด
+     *
+     * ไม่นับ 400 แบบ "Request has empty input" หรือคำตอบว่าง — ลองใหม่ก็ได้ผลเดิม
+     */
+    protected static function isTransientChatError(string $message): bool
+    {
+        $m = mb_strtolower($message);
+
+        foreach (['high demand', 'overloaded', 'unavailable', 'timed out', 'curl error 28', 'curl error 7:', 'rate limit', 'too many requests', 'resource_exhausted', 'resource exhausted'] as $needle) {
+            if (str_contains($m, $needle)) {
+                return true;
+            }
+        }
+
+        return (bool) preg_match('/\b(429|500|502|503|504)\b/', $m);
     }
 
     /**

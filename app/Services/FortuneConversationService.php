@@ -25470,20 +25470,37 @@ PROMPT;
         // 🎯 (2026-04-28) Final fallback: ใช้ AI ตีความ
         // เคสที่กัน: "เกิดเสาร์ที่ 23 กันยายน 32 ครับ", "ผมเกิด สิงหา ปี35 ค่ะ"
         // เรียก AI เฉพาะตอน regex ปกติพลาด — ไม่ slow flow ถ้าคนพิมพ์ถูก
+        //
+        // 🚫 (2026-10-06) ไม่มีตัวเลขเลย = ไม่ต้องถาม AI
+        //   reconcileAiBirthDate() รับเฉพาะปีที่มีร่องรอยเลขในข้อความ (plausibleYearsInText)
+        //   ⇒ ข้อความไม่มีเลข AI ตอบอะไรมาก็โดนตีตกอยู่แล้ว ยิงไปก็เสียคีย์เปล่า
+        //   เคสจริง prod: "ค่ะ"/"คะ"/"ค่า" ถูกตัดคำลงท้ายเหลือ "" → Gemini "Request has empty input" 4 ครั้ง
+        if (! preg_match('/\d/u', $text)) {
+            return null;
+        }
+
         try {
-            $aiService = new FortuneAIService($this->settings);
+            $aiService = $this->birthDateAiService();
             $aiParsed = $aiService->parseBirthDateWithAI($text);
             if ($aiParsed) {
                 return $this->reconcileAiBirthDate($text, $aiParsed);
             }
         } catch (\Throwable $e) {
             // ignore — AI fallback ล้ม → ตอบ null ปกติ
-            \Illuminate\Support\Facades\Log::debug('parseBirthDate AI fallback ล้ม', [
-                'error' => $e->getMessage(),
+            \Illuminate\Support\Facades\Log::warning('parseBirthDate AI fallback ล้ม', [
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
             ]);
         }
 
         return null;
+    }
+
+    /**
+     * ตัว AI ที่ใช้แปลงวันเกิดตอน regex แพ้ — แยกเป็นเมธอดให้เทสต์สลับเป็น mock ได้
+     */
+    protected function birthDateAiService(): FortuneAIService
+    {
+        return new FortuneAIService($this->settings);
     }
 
     /**
