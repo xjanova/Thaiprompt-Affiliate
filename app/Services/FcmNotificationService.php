@@ -7,7 +7,7 @@ use App\Models\PaymentTransaction;
 use App\Models\Setting;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
-use Illuminate\Support\Facades\Http;
+use App\Services\Fcm\FcmHttpV1Client;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -23,9 +23,17 @@ use Illuminate\Support\Facades\Log;
  */
 class FcmNotificationService
 {
-    private ?string $accessToken = null;
+    /**
+     * 📨 (v3 admin app) ตัวส่ง FCM HTTP v1 แยกเป็น App\Services\Fcm\FcmHttpV1Client ให้แอปแอดมินใช้ร่วม
+     *   — เมธอด getAccessToken / sendToToken ด้านล่างเป็นตัวส่งต่อ พฤติกรรมของแอป SMS Checker เหมือนเดิมทุกอย่าง
+     *   (ข้อความ · channel_id sms_payment_channel · click_action OPEN_ORDERS · ล้มเหลว = false → markTokensInvalid เดิม)
+     */
+    private ?FcmHttpV1Client $fcmClient = null;
 
-    private ?int $tokenExpiry = null;
+    private function fcm(): FcmHttpV1Client
+    {
+        return $this->fcmClient ??= app(FcmHttpV1Client::class);
+    }
 
     /**
      * 🏬 (2026-08-16) เพจ/สาขาที่บิลดูดวงใบนี้เกิด — แนบไปกับ FCM ให้แอพ SMS Checker
@@ -836,72 +844,11 @@ class FcmNotificationService
      */
     private function sendToToken(string $token, array $data, ?array $notification): bool
     {
-        $accessToken = $this->getAccessToken();
-        if (! $accessToken) {
-            Log::error('FCM: Failed to get access token');
-
-            return false;
-        }
-
-        // Read project ID from database first, fallback to config, then from credentials file
-        $projectId = Setting::get('fcm_project_id') ?: config('services.firebase.project_id');
-        if (! $projectId) {
-            // ✅ Fallback: อ่าน project_id จากไฟล์ credentials JSON
-            $projectId = $this->getProjectIdFromCredentials();
-        }
-        if (! $projectId) {
-            Log::error('FCM: Firebase project ID not configured');
-
-            return false;
-        }
-
-        $message = [
-            'token' => $token,
-            'data' => array_map('strval', $data), // FCM data must be strings
-            'android' => [
-                'priority' => 'high',
-                'ttl' => '86400s', // 24 hours
-            ],
-        ];
-
-        // Add notification if provided (visible push)
-        if ($notification) {
-            $message['notification'] = $notification;
-            $message['android']['notification'] = [
-                'channel_id' => 'sms_payment_channel',
-                'click_action' => 'OPEN_ORDERS',
-            ];
-        }
-
-        try {
-            $response = Http::withToken($accessToken)
-                ->timeout(10)
-                ->post(
-                    "https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send",
-                    ['message' => $message]
-                );
-
-            if ($response->successful()) {
-                return true;
-            }
-
-            $error = $response->json('error.details.0.errorCode') ?? $response->json('error.message');
-            Log::warning('FCM: Send failed', [
-                'error' => $error,
-                'status' => $response->status(),
-            ]);
-
-            // Token-specific errors that indicate token is invalid
-            if (in_array($error, ['UNREGISTERED', 'INVALID_ARGUMENT'])) {
-                return false;
-            }
-
-            return false;
-        } catch (\Exception $e) {
-            Log::error('FCM: Exception during send', ['error' => $e->getMessage()]);
-
-            return false;
-        }
+        // ส่งผ่านตัวส่งกลาง — ข้อความ/การ log/ผลลัพธ์เหมือนโค้ดเดิมที่อยู่ตรงนี้ทุกอย่าง
+        return $this->fcm()->send($token, $data, $notification, [
+            'channel_id' => 'sms_payment_channel',
+            'click_action' => 'OPEN_ORDERS',
+        ])->ok;
     }
 
     /**
@@ -909,55 +856,7 @@ class FcmNotificationService
      */
     private function getAccessToken(): ?string
     {
-        // Return cached token if still valid
-        if ($this->accessToken && $this->tokenExpiry && time() < $this->tokenExpiry - 60) {
-            return $this->accessToken;
-        }
-
-        // Read credentials path from database first, fallback to config
-        $credentialsPath = Setting::get('fcm_credentials_path') ?: config('services.firebase.credentials');
-        if (! $credentialsPath || ! file_exists($credentialsPath)) {
-            Log::error('FCM: Firebase credentials file not found', ['path' => $credentialsPath]);
-
-            return null;
-        }
-
-        try {
-            $credentials = json_decode(file_get_contents($credentialsPath), true);
-
-            // Create JWT
-            $now = time();
-            $jwt = $this->createJwt([
-                'iss' => $credentials['client_email'],
-                'sub' => $credentials['client_email'],
-                'aud' => 'https://oauth2.googleapis.com/token',
-                'iat' => $now,
-                'exp' => $now + 3600,
-                'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
-            ], $credentials['private_key']);
-
-            // Exchange JWT for access token
-            $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
-                'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-                'assertion' => $jwt,
-            ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $this->accessToken = $data['access_token'];
-                $this->tokenExpiry = time() + ($data['expires_in'] ?? 3600);
-
-                return $this->accessToken;
-            }
-
-            Log::error('FCM: Failed to get access token', ['response' => $response->json()]);
-
-            return null;
-        } catch (\Exception $e) {
-            Log::error('FCM: Exception getting access token', ['error' => $e->getMessage()]);
-
-            return null;
-        }
+        return $this->fcm()->getAccessToken();
     }
 
     /**
@@ -965,50 +864,7 @@ class FcmNotificationService
      */
     private function getProjectIdFromCredentials(): ?string
     {
-        $credentialsPath = Setting::get('fcm_credentials_path') ?: config('services.firebase.credentials');
-        if (! $credentialsPath || ! file_exists($credentialsPath)) {
-            return null;
-        }
-
-        try {
-            $credentials = json_decode(file_get_contents($credentialsPath), true);
-
-            return $credentials['project_id'] ?? null;
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Create JWT for Google OAuth2
-     */
-    private function createJwt(array $payload, string $privateKey): string
-    {
-        $header = [
-            'typ' => 'JWT',
-            'alg' => 'RS256',
-        ];
-
-        $segments = [
-            $this->base64UrlEncode(json_encode($header)),
-            $this->base64UrlEncode(json_encode($payload)),
-        ];
-
-        $signingInput = implode('.', $segments);
-
-        openssl_sign($signingInput, $signature, $privateKey, OPENSSL_ALGO_SHA256);
-
-        $segments[] = $this->base64UrlEncode($signature);
-
-        return implode('.', $segments);
-    }
-
-    /**
-     * Base64 URL encode
-     */
-    private function base64UrlEncode(string $data): string
-    {
-        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+        return $this->fcm()->projectIdFromCredentials();
     }
 
     /**

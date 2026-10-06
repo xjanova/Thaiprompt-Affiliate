@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Models\SmsPaymentNotification;
 use App\Models\WithdrawalRequest;
 use App\Services\AdminApp\ActiveReadingPresenter;
+use App\Services\AdminApp\CustomerRequestQueue;
 use App\Services\AdminApp\FortuneBillBuckets;
 use App\Services\AdminApp\FortuneBillPresenter;
 use App\Services\AdminApp\StuckReadingFinder;
@@ -90,13 +91,7 @@ class OpsSummaryController extends Controller
         $comparable = $revenueToday['complete'] && $yesterday !== null && $yesterday > 0;
 
         $payload = [
-            'queue' => [
-                'customer_requests' => $this->section('customer_requests', fn () => $this->customerRequests($now)),
-                'bills_awaiting' => $this->section('bills_awaiting', fn () => $this->billsAwaiting($now, $presenter)),
-                'withdrawals_pending' => $this->section('withdrawals_pending', fn () => $this->withdrawalsPending($now)),
-                'sms_unmatched' => $this->section('sms_unmatched', fn () => $this->smsUnmatched($now)),
-                'stuck_readings' => $this->section('stuck_readings', fn () => $this->stuckReadings($now)),
-            ],
+            'queue' => $this->buildQueue($now, $presenter),
             'health' => [
                 'ai_pool' => $this->section('ai_pool', fn () => $this->aiPool()),
                 'line_push' => $this->section('line_push', fn () => $this->linePush()),
@@ -128,42 +123,79 @@ class OpsSummaryController extends Controller
     // ────────────────────────────────────────────────────────────
 
     /**
-     * ลูกค้าพิมพ์ขอคุยกับคน → ระบบเทคโอเวอร์ให้ (customer_request) และยังไม่หมดเวลา
+     * กล่องคิวงานทั้งหมด — ใช้ร่วมกับคำสั่ง admin-app:push-alerts (ตัวนับชุดเดียวกับหน้าแรก)
+     *
+     * กล่องที่อ่านไม่ได้ = null (+ ชื่อกล่องเข้า $this->degraded → payload.degraded ของหน้าแรก)
+     *
+     * @param  bool  $withPreview  false = นับอย่างเดียว ไม่ดึงตัวอย่าง (preview = [])
+     * @return array<string, array<string, mixed>|null>
      */
-    private function customerRequests(CarbonInterface $now): array
+    public function buildQueue(CarbonInterface $now, FortuneBillPresenter $presenter, bool $withPreview = true): array
     {
-        $base = fn () => FortuneReading::query()
-            ->where('admin_takeover_reason', FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST)
-            ->whereNotNull('admin_takeover_until')
-            ->where('admin_takeover_until', '>', $now);
-
-        $count = $base()->count();
-        $oldest = $base()->min('admin_takeover_started_at');
-
-        $rows = $base()
-            ->with('user:id,name')
-            ->orderBy('admin_takeover_started_at')
-            ->limit(self::PREVIEW)
-            ->get(['id', 'user_id', 'platform', 'platform_user_id', 'facebook_user_id', 'facebook_user_name',
-                'user_profile', 'admin_takeover_started_at', 'admin_takeover_until']);
-        $keywords = self::customerRequestKeywords($rows->pluck('id')->all());
-
         return [
-            'count' => $count,
-            'oldest_minutes' => $this->minutesSince($oldest, $now),
-            'preview' => $rows->map(fn (FortuneReading $r) => [
-                'reading_id' => (int) $r->id,
-                'customer_name' => FortuneBillPresenter::customerName($r),
-                'platform' => FortuneBillPresenter::platform($r),
-                'keyword' => $keywords[(int) $r->id] ?? null,
-                'requested_at' => $r->admin_takeover_started_at?->toIso8601String(),
-                'remaining_minutes' => $r->takeoverRemainingMinutes(),
-            ])->values()->all(),
+            'customer_requests' => $this->section('customer_requests', fn () => $this->customerRequests($now, $withPreview)),
+            'bills_awaiting' => $this->section('bills_awaiting', fn () => $this->billsAwaiting($now, $presenter, $withPreview)),
+            'withdrawals_pending' => $this->section('withdrawals_pending', fn () => $this->withdrawalsPending($now, $withPreview)),
+            // ── เพิ่มใน v3: อนุมัติแล้วแต่ยังไม่ได้โอน/แนบสลิป ──
+            'withdrawals_approved' => $this->section('withdrawals_approved', fn () => $this->withdrawalsApproved($now, $withPreview)),
+            'sms_unmatched' => $this->section('sms_unmatched', fn () => $this->smsUnmatched($now, $withPreview)),
+            'stuck_readings' => $this->section('stuck_readings', fn () => $this->stuckReadings($now, $withPreview)),
         ];
     }
 
     /**
-     * ข้อความที่ลูกค้าพิมพ์ตอนขอคุยกับคน (log เทคโอเวอร์ล่าสุดของแต่ละบิล)
+     * ลูกค้าพิมพ์ขอคุยกับคน แล้วยังไม่มีแอดมินลงมือ (ภายใน 24 ชม.) — นิยามใน CustomerRequestQueue
+     *
+     * 🩹 (v3) เดิมนับบิลที่ admin_takeover_reason = customer_request + ยังเทคโอเวอร์อยู่ ⇒ ว่างตลอด
+     *   เพราะตั้งแต่ 2026-05-17 webhook ไม่เทคโอเวอร์ให้แล้ว (แค่เขียน log + แจ้งแอดมิน) — ตอนนี้อ่านจาก log แทน
+     */
+    private function customerRequests(CarbonInterface $now, bool $withPreview = true): array
+    {
+        $agg = CustomerRequestQueue::aggregate($now);
+        $groups = $withPreview ? CustomerRequestQueue::byReading($now, null, self::PREVIEW) : [];
+
+        $readings = $groups === [] ? collect() : FortuneReading::query()
+            ->with('user:id,name')
+            ->whereIn('id', array_keys($groups))
+            ->get(['id', 'user_id', 'platform', 'platform_user_id', 'facebook_user_id', 'facebook_user_name',
+                'user_profile', 'admin_takeover_started_at', 'admin_takeover_until', 'admin_takeover_reason'])
+            ->keyBy('id');
+
+        $preview = [];
+        foreach ($groups as $rid => $g) {
+            /** @var FortuneReading|null $r */
+            $r = $readings->get($rid);
+            if ($r === null) {
+                continue;
+            }
+
+            $preview[] = [
+                'reading_id' => (int) $r->id,
+                'customer_name' => FortuneBillPresenter::customerName($r),
+                'platform' => FortuneBillPresenter::platform($r),
+                'keyword' => $g['keyword'],
+                // คำขอแรกที่ยังไม่มีใครรับ
+                'requested_at' => $g['requested_at']->toIso8601String(),
+                // นาทีเทคโอเวอร์ที่เหลือ (0 = บอทยังตอบเองอยู่ — ปกติของโหมดแจ้งแอดมินอย่างเดียว)
+                'remaining_minutes' => $r->takeoverRemainingMinutes(),
+                // ── เพิ่มใน v3 ──
+                'waiting_minutes' => $this->minutesSince($g['requested_at'], $now),
+                'request_count' => $g['request_count'],
+                'last_requested_at' => $g['last_requested_at']->toIso8601String(),
+                'is_taken_over' => $r->isAdminTakenOver(),
+            ];
+        }
+
+        return [
+            'count' => $agg['count'],
+            'oldest_minutes' => $this->minutesSince($agg['oldest_at'], $now),
+            'preview' => $preview,
+        ];
+    }
+
+    /**
+     * ข้อความที่ลูกค้าพิมพ์ตอนขอคุยกับคน (log คำขอล่าสุดของแต่ละบิล — ทั้งโหมดปัจจุบัน action=message
+     * และโหมดเก่า action=takeover) ตัดหัว "🙋 ลูกค้าขอคุยกับคน:" ออกแล้ว
      *
      * @param  array<int, int>  $readingIds
      * @return array<int, string>
@@ -177,15 +209,16 @@ class OpsSummaryController extends Controller
         $out = [];
         FortuneTakeoverLog::query()
             ->whereIn('fortune_reading_id', $readingIds)
-            ->where('action', FortuneTakeoverLog::ACTION_TAKEOVER)
+            ->whereIn('action', [FortuneTakeoverLog::ACTION_MESSAGE, FortuneTakeoverLog::ACTION_TAKEOVER])
             ->where('reason', FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST)
             ->whereNotNull('message')
             ->orderByDesc('id')
             ->get(['fortune_reading_id', 'message'])
             ->each(function ($log) use (&$out) {
                 $rid = (int) $log->fortune_reading_id;
-                if (! isset($out[$rid])) {
-                    $out[$rid] = mb_substr((string) $log->message, 0, 120);
+                $keyword = CustomerRequestQueue::keyword($log->message);
+                if (! isset($out[$rid]) && $keyword !== null) {
+                    $out[$rid] = $keyword;
                 }
             });
 
@@ -195,7 +228,7 @@ class OpsSummaryController extends Controller
     /**
      * บิลรอแอดมินตรวจ (นิยามกอง awaiting ใน FortuneBillBuckets)
      */
-    private function billsAwaiting(CarbonInterface $now, FortuneBillPresenter $presenter): array
+    private function billsAwaiting(CarbonInterface $now, FortuneBillPresenter $presenter, bool $withPreview = true): array
     {
         $base = fn () => FortuneBillBuckets::applyStatus(
             FortuneBillBuckets::billedScope(FortuneReading::query()),
@@ -210,7 +243,7 @@ class OpsSummaryController extends Controller
             ->toBase()
             ->first();
 
-        $rows = FortuneBillPresenter::selectListColumns($base())
+        $rows = ! $withPreview ? collect() : FortuneBillPresenter::selectListColumns($base())
             ->orderByRaw('COALESCE(slip_received_at, transfer_reported_at, paid_at, updated_at) ASC')
             ->orderBy('id')
             ->limit(self::PREVIEW)
@@ -220,21 +253,21 @@ class OpsSummaryController extends Controller
             'count' => (int) ($agg->c ?? 0),
             'amount_thb' => round((float) ($agg->amt ?? 0), 2),
             'oldest_minutes' => $this->minutesSince($agg->oldest ?? null, $now),
-            'preview' => $presenter->presentManyMini($rows),
+            'preview' => $withPreview ? $presenter->presentManyMini($rows) : [],
         ];
     }
 
     /**
      * คำขอถอนเงินรออนุมัติ (ชุดเดียวกับ finance/withdrawals/pending)
      */
-    private function withdrawalsPending(CarbonInterface $now): array
+    private function withdrawalsPending(CarbonInterface $now, bool $withPreview = true): array
     {
         $agg = WithdrawalRequest::query()->pending()
             ->selectRaw('COUNT(*) AS c, COALESCE(SUM(amount), 0) AS amt, MIN(created_at) AS oldest')
             ->toBase()
             ->first();
 
-        $rows = WithdrawalRequest::query()->pending()
+        $rows = ! $withPreview ? collect() : WithdrawalRequest::query()->pending()
             ->with('user:id,name')
             ->orderBy('created_at')
             ->limit(self::PREVIEW)
@@ -255,9 +288,46 @@ class OpsSummaryController extends Controller
     }
 
     /**
+     * 🏦 (v3) คำขอถอนเงินที่อนุมัติแล้วแต่ยังไม่ได้โอน (status = approved — ยังไม่ได้กด finance/withdrawals/{id}/complete)
+     *
+     * amount_thb = ผลรวมยอดขอถอน (amount — นิยามเดียวกับ withdrawals_pending) · net_amount_thb = ยอดที่ต้องโอนจริง
+     * oldest_minutes นับจาก approved_at (แถวเก่าที่ไม่มี approved_at ใช้ created_at)
+     */
+    private function withdrawalsApproved(CarbonInterface $now, bool $withPreview = true): array
+    {
+        $agg = WithdrawalRequest::query()->approved()
+            ->selectRaw('COUNT(*) AS c, COALESCE(SUM(amount), 0) AS amt, COALESCE(SUM(net_amount), 0) AS net,'
+                .' MIN(COALESCE(approved_at, created_at)) AS oldest')
+            ->toBase()
+            ->first();
+
+        $rows = ! $withPreview ? collect() : WithdrawalRequest::query()->approved()
+            ->with('user:id,name')
+            ->orderByRaw('COALESCE(approved_at, created_at) ASC')
+            ->orderBy('id')
+            ->limit(self::PREVIEW)
+            ->get(['id', 'user_id', 'amount', 'net_amount', 'approved_at', 'created_at']);
+
+        return [
+            'count' => (int) ($agg->c ?? 0),
+            'amount_thb' => round((float) ($agg->amt ?? 0), 2),
+            'net_amount_thb' => round((float) ($agg->net ?? 0), 2),
+            'oldest_minutes' => $this->minutesSince($agg->oldest ?? null, $now),
+            'preview' => $rows->map(fn ($w) => [
+                'id' => (int) $w->id,
+                'user_name' => $w->user?->name,
+                'amount_thb' => round((float) $w->amount, 2),
+                'net_amount_thb' => round((float) $w->net_amount, 2),
+                'approved_at' => $w->approved_at?->toIso8601String(),
+                'created_at' => $w->created_at?->toIso8601String(),
+            ])->values()->all(),
+        ];
+    }
+
+    /**
      * SMS เงินเข้าที่ยังไม่ผูกกับบิล ภายใน 24 ชม.
      */
-    private function smsUnmatched(CarbonInterface $now): array
+    private function smsUnmatched(CarbonInterface $now, bool $withPreview = true): array
     {
         $base = fn () => SmsPaymentNotification::query()
             ->where('type', 'credit')
@@ -270,7 +340,7 @@ class OpsSummaryController extends Controller
             ->toBase()
             ->first();
 
-        $rows = $base()
+        $rows = ! $withPreview ? collect() : $base()
             ->orderBy('created_at')
             ->limit(self::PREVIEW)
             ->get(['id', 'bank', 'amount', 'sender_or_receiver', 'status', 'sms_timestamp', 'created_at']);
@@ -291,13 +361,14 @@ class OpsSummaryController extends Controller
     }
 
     /**
-     * บิลจ่ายแล้วที่ระบบไม่ขยับ (นิยามใน StuckReadingFinder)
+     * บิลจ่ายแล้วที่ระบบไม่ขยับ (นิยามใน StuckReadingFinder — รวมบิลที่ค้างเกิน 24 ชม. ซึ่ง
+     * fortune:expire-stuck-paid ปักธง admin_review_needed ไว้ = stuck_reason "escalated_24h")
      */
-    private function stuckReadings(CarbonInterface $now): array
+    private function stuckReadings(CarbonInterface $now, bool $withPreview = true): array
     {
         $stuck = FortuneBillPresenter::selectListColumns(StuckReadingFinder::candidateScope(FortuneReading::query(), $now))
             ->with('user:id,name')
-            ->limit(200)
+            ->limit(500)
             ->get()
             ->filter(fn (FortuneReading $r) => StuckReadingFinder::stuckReason($r, $now) !== null)
             ->sortBy(fn (FortuneReading $r) => StuckReadingFinder::stuckSince($r)?->getTimestamp() ?? PHP_INT_MAX)
@@ -308,7 +379,7 @@ class OpsSummaryController extends Controller
         return [
             'count' => $stuck->count(),
             'oldest_minutes' => $this->minutesSince($oldest, $now),
-            'preview' => $stuck->take(self::PREVIEW)
+            'preview' => ! $withPreview ? [] : $stuck->take(self::PREVIEW)
                 ->map(fn (FortuneReading $r) => ActiveReadingPresenter::present($r, $now))
                 ->values()->all(),
         ];

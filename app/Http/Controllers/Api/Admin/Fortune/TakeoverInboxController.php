@@ -8,8 +8,10 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTakeoverLog;
 use App\Models\FortuneTellingSetting;
 use App\Models\User;
+use App\Services\AdminApp\CustomerRequestQueue;
 use App\Services\AdminApp\FortuneBillPresenter;
 use App\Services\Fortune\FortuneChatLogService;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,9 +44,12 @@ class TakeoverInboxController extends Controller
             'page' => 'nullable|integer|min:1',
         ]);
 
+        $status = (string) ($data['status'] ?? 'taken_over');
+        $now = now();
         $query = $this->scoped(
             FortuneReading::query()->with(['takeoverAdmin:id,name', 'user:id,name']),
-            (string) ($data['status'] ?? 'taken_over')
+            $status,
+            $now
         );
 
         if (! empty($data['platform'])) {
@@ -61,10 +66,19 @@ class TakeoverInboxController extends Controller
             });
         }
 
-        $page = $query->orderByDesc('updated_at')->orderByDesc('id')->paginate((int) ($data['per_page'] ?? 20));
-        $rows = $page->getCollection();
+        if ($status === 'requested') {
+            // (v3) คิวคำขอ — รอนานสุดก่อน (เวลาคำขอแรกที่ยังไม่มีใครรับ)
+            $query->orderBy('cr.req_first_at')->orderBy('fortune_readings.id');
+        } else {
+            $query->orderByDesc('fortune_readings.updated_at')->orderByDesc('fortune_readings.id');
+        }
 
-        $keywords = OpsSummaryController::customerRequestKeywords($rows->pluck('id')->all());
+        $page = $query->paginate((int) ($data['per_page'] ?? 20));
+        $rows = $page->getCollection();
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $keywords = OpsSummaryController::customerRequestKeywords($ids);
+        $openRequests = CustomerRequestQueue::byReading($now, $ids);
         $lastAdminMessages = $this->lastAdminPanelMessages($rows);
 
         return response()->json([
@@ -73,7 +87,8 @@ class TakeoverInboxController extends Controller
                 'data' => $rows->map(fn (FortuneReading $r) => $this->presentConversation(
                     $r,
                     $keywords[(int) $r->id] ?? null,
-                    $this->lastMessage($r, $chatLog, $lastAdminMessages[(int) $r->id] ?? null)
+                    $this->lastMessage($r, $chatLog, $lastAdminMessages[(int) $r->id] ?? null),
+                    $openRequests[(int) $r->id] ?? null,
                 ))->values()->all(),
                 'current_page' => $page->currentPage(),
                 'last_page' => $page->lastPage(),
@@ -94,7 +109,8 @@ class TakeoverInboxController extends Controller
             'success' => true,
             'data' => [
                 'taken_over' => $this->scoped(FortuneReading::query(), 'taken_over')->count(),
-                'requested' => $this->scoped(FortuneReading::query(), 'requested')->count(),
+                // (v3) คำขอคุยกับคนที่ยังไม่มีใครรับใน 24 ชม. (นับเป็นจำนวนบิล — นิยามเดียวกับ ops/summary)
+                'requested' => CustomerRequestQueue::aggregate()['count'],
                 'active_conversations' => $this->scoped(FortuneReading::query(), 'active')->count(),
                 'takeovers_today' => FortuneTakeoverLog::query()
                     ->where('action', FortuneTakeoverLog::ACTION_TAKEOVER)
@@ -170,10 +186,24 @@ class TakeoverInboxController extends Controller
     // ภายใน
     // ────────────────────────────────────────────────────────────
 
-    private function scoped(Builder $query, string $status): Builder
+    private function scoped(Builder $query, string $status, ?CarbonInterface $now = null): Builder
     {
+        $t = $query->getModel()->getTable();
+
         return match ($status) {
-            'requested' => $query->takenOver()->where('admin_takeover_reason', FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST),
+            // 🩹 (v3) เดิม = เทคโอเวอร์อยู่ + reason customer_request ⇒ ว่างตลอด (webhook ไม่เทคโอเวอร์ให้แล้วตั้งแต่ 2026-05-17)
+            //   ตอนนี้ = บิลที่มีคำขอใน log ที่ยังไม่มีแอดมินลงมือ (CustomerRequestQueue) · join เพื่อเรียงตามเวลาคำขอ
+            'requested' => $query
+                ->joinSub(
+                    CustomerRequestQueue::openRequestRows($now)
+                        ->groupBy('req.fortune_reading_id')
+                        ->selectRaw('req.fortune_reading_id AS rid, MIN(req.created_at) AS req_first_at'),
+                    'cr',
+                    'cr.rid',
+                    '=',
+                    "{$t}.id"
+                )
+                ->select("{$t}.*"),
             // บทสนทนาที่ยังไม่จบ — ชุดเดียวกับตัวกรอง active ของหน้าเว็บ
             'active' => $query->whereNotIn('conversation_status', [FortuneReading::STATUS_COMPLETED])
                 ->where('updated_at', '>=', now()->subDays(self::ACTIVE_DAYS)),
@@ -184,12 +214,16 @@ class TakeoverInboxController extends Controller
 
     /**
      * @param  array{sender: string, text: string, at: string|null}|null  $last
+     * @param  array{requested_at: CarbonInterface, last_requested_at: CarbonInterface, request_count: int, keyword: string|null}|null  $request
+     *                                                                                                                                            คำขอคุยกับคนที่ยังไม่มีใครรับ (null = ไม่มี)
      * @return array<string, mixed>
      */
-    private function presentConversation(FortuneReading $r, ?string $keyword, ?array $last): array
+    private function presentConversation(FortuneReading $r, ?string $keyword, ?array $last, ?array $request = null): array
     {
         $active = $r->isAdminTakenOver();
         $reason = $r->admin_takeover_reason;
+        $legacyRequest = $active && $reason === FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST;
+        $requested = $legacyRequest || $request !== null;
 
         return [
             'reading_id' => (int) $r->id,
@@ -204,8 +238,12 @@ class TakeoverInboxController extends Controller
             'is_taken_over' => $active,
             'takeover_reason' => $active ? $reason : null,
             'takeover_reason_label' => $active ? $this->reasonLabel($reason) : null,
-            'requested_by_customer' => $active && $reason === FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
-            'request_keyword' => $active && $reason === FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST ? $keyword : null,
+            // (v3) true เมื่อมีคำขอคุยกับคนที่ยังไม่มีแอดมินลงมือ (จาก log) — หรือเทคโอเวอร์แบบเก่าจากคำขอลูกค้า
+            'requested_by_customer' => $requested,
+            'request_keyword' => $requested ? ($request['keyword'] ?? $keyword) : null,
+            // ── เพิ่มใน v3 ──
+            'requested_at' => $request !== null ? $request['requested_at']->toIso8601String() : null,
+            'request_count' => $request !== null ? (int) $request['request_count'] : 0,
             'takeover_started_at' => $active ? $r->admin_takeover_started_at?->toIso8601String() : null,
             'takeover_until' => $active ? $r->admin_takeover_until?->toIso8601String() : null,
             'remaining_minutes' => $active ? $r->takeoverRemainingMinutes() : 0,
@@ -282,6 +320,9 @@ class TakeoverInboxController extends Controller
         FortuneTakeoverLog::query()
             ->whereIn('fortune_reading_id', $ids)
             ->where('action', FortuneTakeoverLog::ACTION_MESSAGE)
+            // 🩹 (v3) เฉพาะข้อความของแอดมิน (user_id ไม่ว่าง) — log action=message ที่ user_id = null คือคำขอของลูกค้า
+            //   ("🙋 ลูกค้าขอคุยกับคน: …") และ log ระบบ (บิลค้าง 24 ชม. / AI ล้ม) ซึ่งเดิมถูกโชว์เป็นข้อความแอดมิน
+            ->whereNotNull('user_id')
             ->orderByDesc('id')
             ->get(['id', 'fortune_reading_id', 'message', 'created_at'])
             ->each(function (FortuneTakeoverLog $log) use (&$out) {

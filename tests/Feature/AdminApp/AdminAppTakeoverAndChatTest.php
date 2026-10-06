@@ -46,12 +46,13 @@ class AdminAppTakeoverAndChatTest extends TestCase
             'admin_takeover_until' => now()->addMinutes(25),
         ]);
         FortuneTakeoverLog::create([
-            'fortune_reading_id' => $asked->id, 'action' => FortuneTakeoverLog::ACTION_TAKEOVER,
-            'reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST, 'message' => 'ขอคุยกับแอดมิน', 'platform' => 'line',
-        ]);
-        FortuneTakeoverLog::create([
             'fortune_reading_id' => $asked->id, 'user_id' => $admin->id, 'action' => FortuneTakeoverLog::ACTION_MESSAGE,
             'message' => 'สักครู่นะคะ', 'platform' => 'line',
+        ]);
+        // (v3) คำขอแบบที่ webhook เขียนจริงตอนนี้ (action message · user_id null) — มาหลังข้อความแอดมิน = ยังไม่มีใครรับ
+        FortuneTakeoverLog::create([
+            'fortune_reading_id' => $asked->id, 'action' => FortuneTakeoverLog::ACTION_MESSAGE,
+            'reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST, 'message' => '🙋 ลูกค้าขอคุยกับคน: ขอคุยกับแอดมิน', 'platform' => 'line',
         ]);
         $manual = $this->makeReading([
             'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_MANUAL,

@@ -242,6 +242,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
+        // 🔔 (v3) เครื่องที่ออกจากระบบต้องเลิกได้แจ้งเตือนคิวงาน — ลบ push token ของ Sanctum token นี้ (+ push_token ใน body ถ้ามี)
+        DevicesController::forgetOnLogout($request, false);
+
         $request->user()->currentAccessToken()->delete();
 
         return $this->success(null, 'ออกจากระบบสำเร็จ');
@@ -252,6 +255,9 @@ class AuthController extends Controller
      */
     public function logoutAll(Request $request): JsonResponse
     {
+        // 🔔 (v3) ออกทุกเครื่อง = ลบ push token ทุกเครื่องของแอดมินคนนี้
+        DevicesController::forgetOnLogout($request, true);
+
         $count = $request->user()->tokens()->delete();
 
         return $this->success(['revoked_count' => $count], 'ออกจากระบบทุกอุปกรณ์สำเร็จ');

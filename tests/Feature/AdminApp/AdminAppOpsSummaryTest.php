@@ -95,22 +95,20 @@ class AdminAppOpsSummaryTest extends TestCase
     {
         $admin = $this->actAs($this->makeAdmin());
 
-        // ลูกค้าขอคุยกับคน (ยังไม่หมดเวลา) 1 · ที่หมดเวลาแล้ว / แอดมินกดเองไม่นับ
-        $asked = $this->makeReading([
-            'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
-            'admin_takeover_started_at' => now()->subMinutes(12),
-            'admin_takeover_until' => now()->addMinutes(18),
-        ]);
+        // ลูกค้าขอคุยกับคน (v3: อ่านจาก log ที่ webhook เขียน — action message · reason customer_request) ยังไม่มีใครรับ 1
+        //   · ที่แอดมินตอบแล้ว / เก่ากว่า 24 ชม. / แอดมินกดเทคโอเวอร์เองโดยไม่มีคำขอ ไม่นับ
+        $asked = $this->makeReading();
+        $this->customerRequestLog($asked->id, now()->subMinutes(12), '🙋 ลูกค้าขอคุยกับคน: ขอคุยกับแอดมิน');
+        $answered = $this->makeReading(['facebook_user_id' => '61550000000101', 'platform_user_id' => '61550000000101']);
+        $this->customerRequestLog($answered->id, now()->subMinutes(40), '🙋 ลูกค้าขอคุยกับคน: คุยกับคน');
         FortuneTakeoverLog::create([
-            'fortune_reading_id' => $asked->id, 'action' => FortuneTakeoverLog::ACTION_TAKEOVER,
-            'reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST, 'message' => 'ขอคุยกับแอดมิน', 'platform' => 'facebook',
+            'fortune_reading_id' => $answered->id, 'user_id' => $admin->id, 'action' => FortuneTakeoverLog::ACTION_MESSAGE,
+            'message' => 'สวัสดีค่ะ แอดมินมาแล้ว', 'platform' => 'facebook',
         ]);
+        $stale = $this->makeReading(['facebook_user_id' => '61550000000102', 'platform_user_id' => '61550000000102']);
+        $this->customerRequestLog($stale->id, now()->subHours(25), '🙋 ลูกค้าขอคุยกับคน: เมื่อวาน');
         $this->makeReading([
-            'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
-            'admin_takeover_started_at' => now()->subHours(2),
-            'admin_takeover_until' => now()->subHour(),
-        ]);
-        $this->makeReading([
+            'facebook_user_id' => '61550000000103', 'platform_user_id' => '61550000000103',
             'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_MANUAL,
             'admin_takeover_started_at' => now()->subMinutes(2),
             'admin_takeover_until' => now()->addMinutes(28),
@@ -121,13 +119,13 @@ class AdminAppOpsSummaryTest extends TestCase
         $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.22, 'transfer_reported' => true, 'transfer_reported_at' => now()->subMinutes(5)]);
         $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.23]);
 
-        // ถอนเงินรออนุมัติ 1 (500) · อนุมัติแล้วไม่นับ
+        // ถอนเงินรออนุมัติ 1 (500) · อนุมัติแล้วรอโอน 1 (300 → โอนจริง 290) อยู่กล่อง withdrawals_approved · โอนแล้วไม่นับ
         $member = $this->makeMember();
         $wallet = Wallet::where('user_id', $member->id)->first() ?? Wallet::factory()->create(['user_id' => $member->id]);
-        foreach ([['pending', 500], ['approved', 300]] as $i => [$status, $amount]) {
+        foreach ([['pending', 500, 500, null], ['approved', 300, 290, now()->subMinutes(45)], ['completed', 700, 700, now()->subHours(3)]] as $i => [$status, $amount, $net, $approvedAt]) {
             DB::table('withdrawal_requests')->insert([
                 'user_id' => $member->id, 'wallet_id' => $wallet->id, 'request_id' => 'WD-TEST-'.$i,
-                'amount' => $amount, 'net_amount' => $amount, 'status' => $status,
+                'amount' => $amount, 'net_amount' => $net, 'status' => $status, 'approved_at' => $approvedAt,
                 'created_at' => now()->subHours(5), 'updated_at' => now()->subHours(5),
             ]);
         }
@@ -159,7 +157,18 @@ class AdminAppOpsSummaryTest extends TestCase
 
         $this->assertSame(1, $res->json('data.queue.customer_requests.count'));
         $this->assertSame(12, $res->json('data.queue.customer_requests.oldest_minutes'));
+        $this->assertSame($asked->id, $res->json('data.queue.customer_requests.preview.0.reading_id'));
         $this->assertSame('ขอคุยกับแอดมิน', $res->json('data.queue.customer_requests.preview.0.keyword'));
+        $this->assertSame(12, $res->json('data.queue.customer_requests.preview.0.waiting_minutes'));
+        $this->assertSame(1, $res->json('data.queue.customer_requests.preview.0.request_count'));
+        $this->assertSame(0, $res->json('data.queue.customer_requests.preview.0.remaining_minutes'));
+        $this->assertFalse($res->json('data.queue.customer_requests.preview.0.is_taken_over'));
+
+        $this->assertSame(1, $res->json('data.queue.withdrawals_approved.count'));
+        $this->assertSame(300.0, (float) $res->json('data.queue.withdrawals_approved.amount_thb'));
+        $this->assertSame(290.0, (float) $res->json('data.queue.withdrawals_approved.net_amount_thb'));
+        $this->assertSame(45, $res->json('data.queue.withdrawals_approved.oldest_minutes'));
+        $this->assertNotNull($res->json('data.queue.withdrawals_approved.preview.0.approved_at'));
 
         $this->assertSame(2, $res->json('data.queue.bills_awaiting.count'));
         $this->assertSame(78.43, $res->json('data.queue.bills_awaiting.amount_thb'));
@@ -244,6 +253,20 @@ class AdminAppOpsSummaryTest extends TestCase
 
         $this->getJson('/api/admin/fortune/bills/stats')->assertOk()->assertJsonPath('data.awaiting_amount_thb', $listSum);
         $this->getJson('/api/admin/ops/summary')->assertOk()->assertJsonPath('data.queue.bills_awaiting.amount_thb', $listSum);
+    }
+
+    /**
+     * log คำขอคุยกับคนแบบที่ webhook เขียนจริง (handleCustomerHandoffRequest — action message · user_id null)
+     */
+    private function customerRequestLog(int $readingId, $at, string $message): void
+    {
+        $log = new FortuneTakeoverLog;
+        $log->timestamps = false;
+        $log->forceFill([
+            'fortune_reading_id' => $readingId, 'user_id' => null, 'action' => FortuneTakeoverLog::ACTION_MESSAGE,
+            'reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST, 'platform' => 'facebook',
+            'message' => $message, 'created_at' => $at, 'updated_at' => $at,
+        ])->save();
     }
 
     private function insertOrder(int $userId, string $paymentStatus, float $total, $paidAt): void

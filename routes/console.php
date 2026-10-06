@@ -1002,6 +1002,17 @@ Schedule::command('ekyc:purge-stale')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 🔔 (2026-10-06 admin app v3) แจ้งเตือนแอปแอดมินเมื่อคิวงานหน้าแรกเพิ่มขึ้น (FCM → admin_push_tokens)
+// ════════════════════════════════════════════════════════════════
+// นับกล่องคิวชุดเดียวกับ GET /api/admin/ops/summary แล้วเทียบรอบก่อน — ไม่มี credentials Firebase = จบเงียบ
+Schedule::command('admin-app:push-alerts')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('admin-app-push-alerts')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 🗄️ (2026-09-26) Auto-migrate — เฉพาะร้านลูกค้าที่ตั้ง APP_AUTO_MIGRATE=true (prod ปิด)
 // ════════════════════════════════════════════════════════════════
 // แทนการรัน migrate ตอนบูตแอปใน AppServiceProvider — เหตุผลอยู่ใน App\Console\AutoMigrateSchedule

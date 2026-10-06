@@ -32,6 +32,7 @@ class ChatController extends Controller
 
         $platform = $data['platform'] ?? null;
         $userId = $data['platform_user_id'] ?? null;
+        $reading = null;
 
         if (! empty($data['reading_id'])) {
             $reading = FortuneReading::find($data['reading_id']);
@@ -78,6 +79,20 @@ class ChatController extends Controller
                         ->record($platform, $userId, 'admin', $data['text'], ['by' => 'admin#'.($request->user()?->id ?? '?')]);
                 } catch (Throwable $logErr) {
                     // ignore — chat log is best-effort
+                }
+
+                // 📝 (v3) บันทึกข้อความแอดมินลง fortune_takeover_logs แบบเดียวกับแผงเว็บ (FortuneTakeoverService::logMessage)
+                //   ⇒ คำขอ "ลูกค้าขอคุยกับคน" ของบิลนี้ถือว่ามีคนรับแล้ว (หลุดจากคิว ops/summary + takeover?status=requested)
+                //   และโผล่ในประวัติเทคโอเวอร์บนเว็บ · ไม่แตะผลการส่ง (best-effort)
+                if ($reading !== null && $request->user()?->id) {
+                    try {
+                        app(FortuneTakeoverService::class)->logMessage($reading, (int) $request->user()->id, $data['text']);
+                    } catch (Throwable $auditErr) {
+                        Log::warning('AdminChat: บันทึก log ข้อความแอดมินไม่สำเร็จ (ข้อความส่งแล้ว)', [
+                            'reading_id' => $reading->id,
+                            'error' => SafeLog::exceptionMessage($auditErr),
+                        ]);
+                    }
                 }
             }
 

@@ -150,8 +150,22 @@ class FortuneReadingsController extends Controller
             ], 422);
         }
 
+        // 🩹 (v3) ยอดที่บันทึก = ยอดจริงของบิลใบนี้ — เดิมบิลที่ amount_paid = 0 ถูกบันทึกเป็น 49 ตายตัว
+        //   (ไม่มีแพคเกจไหนราคา 49 ⇒ รายได้/ค่าแนะนำเพี้ยนทุกใบ) ลำดับเดียวกับ amount_thb ในรายการบิล:
+        //   amount ที่แอดมินส่งมา → amount_paid > 0 → ยอดทศนิยมจาก UPA → ราคาแพคเกจในตั้งค่า · ไม่มีเลย = 422
+        $amount = array_key_exists('amount', $data) && $data['amount'] !== null
+            ? (float) $data['amount']
+            : $this->billAmountFor($reading);
+        if ($amount === null) {
+            return response()->json([
+                'success' => false,
+                'error_code' => 'AMOUNT_REQUIRED',
+                'message' => 'บิลนี้ไม่มียอดให้ดึงอัตโนมัติ — กรุณาระบุยอดที่ได้รับ (amount)',
+            ], 422);
+        }
+
         $reading->is_paid = true;
-        $reading->amount_paid = $data['amount'] ?? ($reading->amount_paid > 0 ? $reading->amount_paid : 49);
+        $reading->amount_paid = $amount;
         $reading->paid_at = $reading->paid_at ?? now();
         $reading->save();
 
@@ -173,6 +187,40 @@ class FortuneReadingsController extends Controller
             'data' => new FortuneReadingResource($reading->fresh()),
             'message' => 'มาร์คจ่ายเรียบร้อย — ส่งคำทำนายให้ลูกค้าแล้ว',
         ]);
+    }
+
+    /**
+     * ยอดของบิลใบนี้สำหรับ mark-paid เมื่อแอดมินไม่ได้ระบุ amount — null = หายอดไม่ได้ (ต้องให้แอดมินระบุ)
+     *
+     * ลำดับเดียวกับ FortuneBillPresenter::billAmount / FortuneBillBuckets::billAmountSql (amount_thb ในรายการบิล):
+     *   1. amount_paid > 0
+     *   2. ยอดทศนิยมจาก UPA (unique_payment_amounts.unique_amount — ยอดที่ลูกค้าเห็นใน QR)
+     *   3. ราคาแพคเกจในตั้งค่าแม่หมอ (deep_reading_price / celtic_cross_price / reading_price) — ห้ามเดาเลขตายตัว
+     */
+    private function billAmountFor(FortuneReading $reading): ?float
+    {
+        if ((float) $reading->amount_paid > 0) {
+            return round((float) $reading->amount_paid, 2);
+        }
+
+        if ($reading->unique_payment_amount_id) {
+            $upaAmount = (float) DB::table('unique_payment_amounts')
+                ->where('id', $reading->unique_payment_amount_id)
+                ->value('unique_amount');
+            if ($upaAmount > 0) {
+                return round($upaAmount, 2);
+            }
+        }
+
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        $price = match ($reading->reading_type) {
+            FortuneReading::READING_TYPE_DEEP => (float) ($settings->deep_reading_price ?? 0),
+            FortuneReading::READING_TYPE_CELTIC_CROSS => (float) ($settings->celtic_cross_price ?? 0),
+            FortuneReading::READING_TYPE_BASIC, null => (float) ($settings->reading_price ?? 0),
+            default => 0.0,
+        };
+
+        return $price > 0 ? round($price, 2) : null;
     }
 
     /**
@@ -242,10 +290,13 @@ class FortuneReadingsController extends Controller
      * POST /api/admin/fortune/readings/{reading}/refund
      * Body: { reason?: string }
      *
-     * Mark a paid reading as refunded. Audit-only — does NOT trigger an
-     * actual money movement (that's a separate operator workflow on the
-     * payment gateway side). The flag here just hides the bill from
-     * the "paid" rollup and surfaces it under "refunded".
+     * คืนเงิน/ยกเลิกการอนุมัติบิลที่จ่ายแล้ว — ไม่ได้โอนเงินคืนจริง (แอดมินโอนคืนเองนอกระบบ)
+     *
+     * 🩹 (v3) เดิมพลิก is_paid = false อย่างเดียว ⇒ UPA ค้าง used (ยอดทศนิยมไม่ถูกปล่อย) · SMS ยังผูกกับบิลนี้
+     *   (เงินจริงของคนอื่นที่ match ผิดไปไม่กลับไปหาบิลที่ถูก) · ค่าแนะนำไม่ถูกดึงคืน
+     *   ตอนนี้ใช้ FortuneReading::voidApproval() ตัวเดียวกับปุ่ม void บนหน้าเว็บ (Admin\FortuneBillingController::void)
+     *   — คืน UPA → cancelled · ปลด SMS · ดึงค่าแนะนำคืน · ปิดบิล (completed + approval_voided) + audit
+     *   รูปคำตอบเดิมคงไว้ (FortuneReadingResource + message) · บิลจะอยู่กอง refunded ด้วย status_reason = approval_voided
      */
     public function refund(FortuneReading $reading, Request $request): JsonResponse
     {
@@ -268,24 +319,66 @@ class FortuneReadingsController extends Controller
             ], 422);
         }
 
-        // Use response_type to flag refund state — we don't have a dedicated
-        // column for this and don't want to bloat the schema. The bot
-        // already treats refund-flagged readings differently.
-        $reading->is_paid = false;
-        $reading->save();
+        $reason = trim((string) ($data['reason'] ?? ''));
+        $amountWas = $reading->amount_paid;
 
-        Log::info('FortuneReading: refund flagged by admin', [
+        try {
+            $result = $reading->voidApproval(
+                'คืนเงินจากแอปแอดมิน'.($reason !== '' ? ': '.$reason : ''),
+                $request->user()?->id
+            );
+        } catch (\Throwable $e) {
+            // deadlock/รอล็อกนาน — voidApproval โยนออกมาให้ลองใหม่ทั้งก้อน (ยังไม่มีอะไรถูกเปลี่ยน)
+            Log::error('FortuneReading: refund (voidApproval) failed', [
+                'reading_id' => $reading->id,
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'คืนเงินไม่สำเร็จ ระบบกำลังยุ่ง — ลองใหม่อีกครั้ง',
+            ], 503);
+        }
+
+        if (! ($result['ok'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $result['message'] ?? 'คืนเงินไม่สำเร็จ',
+            ], 422);
+        }
+
+        Log::info('FortuneReading: refund (voidApproval) by admin app', [
             'reading_id' => $reading->id,
             'admin_id' => $request->user()?->id,
-            'reason' => $data['reason'] ?? null,
-            'amount_was' => $reading->amount_paid,
+            'reason' => $reason !== '' ? $reason : null,
+            'amount_was' => $amountWas,
+            'reverted' => $result['reverted'] ?? [],
+            'warnings' => $result['warnings'] ?? [],
         ]);
+
+        $message = 'ส่งเข้าคิวคืนเงินแล้ว';
+        if (! empty($result['warnings'])) {
+            $message .= ' ⚠️ '.implode('; ', $result['warnings']);
+        }
 
         return response()->json([
             'success' => true,
             'data' => new FortuneReadingResource($reading->fresh()),
-            'message' => 'ส่งเข้าคิวคืนเงินแล้ว',
+            'message' => $message,
         ]);
+    }
+
+    /**
+     * POST /api/admin/fortune/readings/{reading}/retry
+     *
+     * 🛟 (v3) "ทำนายซ้ำ" บิลจ่ายแล้วที่ค้าง — เซิร์ฟเวอร์เลือกวิธีกู้เอง (ดู App\Services\AdminApp\StuckReadingRetrier)
+     * ไม่รับ body · คำตอบ {success, action, message, data: {reading_id, action, delivered, stuck_reason, conversation_status}}
+     */
+    public function retry(FortuneReading $reading, Request $request, \App\Services\AdminApp\StuckReadingRetrier $retrier): JsonResponse
+    {
+        [$status, $body] = $retrier->retry($reading, $request->user()?->id);
+
+        return response()->json($body, $status);
     }
 
     /**

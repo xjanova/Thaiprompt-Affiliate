@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\ChatController;
 use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\DevicesController;
 use App\Http\Controllers\Api\Admin\EveController;
 use App\Http\Controllers\Api\Admin\Finance\PaymentReconController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
@@ -82,6 +83,10 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
 
     // ── หน้าแรกแอปแอดมิน: งานที่ต้องทำตอนนี้ + สุขภาพระบบ + รายได้วันนี้ (docs/ADMIN_APP_API.md) ──
     Route::get('ops/summary', [OpsSummaryController::class, 'index'])->name('api.admin.ops.summary');
+
+    // ── 🔔 (v3) ลงทะเบียน/ถอน FCM token ของเครื่องแอดมิน (แจ้งเตือนคิวงานจาก admin-app:push-alerts) ──
+    Route::post('devices/push-token', [DevicesController::class, 'storePushToken'])->name('api.admin.devices.push-token.store');
+    Route::delete('devices/push-token', [DevicesController::class, 'destroyPushToken'])->name('api.admin.devices.push-token.destroy');
 
     // ── Dashboard ──
     Route::prefix('dashboard')->name('api.admin.dashboard.')->group(function () {
@@ -237,6 +242,9 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
             Route::post('/{reading}/mark-paid', [FortuneReadingsController::class, 'markPaid'])->name('mark-paid');
             Route::post('/{reading}/refund', [FortuneReadingsController::class, 'refund'])->name('refund');
             Route::post('/{reading}/cancel', [FortuneReadingsController::class, 'cancel'])->name('cancel');
+            // 🛟 (v3) ทำนายซ้ำบิลจ่ายแล้วที่ค้าง — เซิร์ฟเวอร์เลือกวิธีกู้เอง (docs/ADMIN_APP_API.md หัวข้อ v3)
+            Route::post('/{reading}/retry', [FortuneReadingsController::class, 'retry'])
+                ->whereNumber('reading')->name('retry');
         });
     });
 
