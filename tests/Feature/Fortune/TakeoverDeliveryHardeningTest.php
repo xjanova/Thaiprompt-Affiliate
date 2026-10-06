@@ -466,6 +466,9 @@ class TakeoverDeliveryHardeningTest extends TestCase
 
         $this->postJson('/api/admin/chat/send', ['reading_id' => $fresh->id, 'text' => 'สวัสดีค่ะ'])->assertStatus(502);
         $this->assertNull($fresh->fresh()->admin_takeover_until, 'เริ่มเองแต่ส่งไม่ออก = ถอยกลับ');
+        // เทคโอเวอร์ที่ถอยใน request เดียวกัน = ไม่เคยมีผล — ไม่ทิ้งร่องรอยให้คิว "ลูกค้าขอคุยกับคน" นับว่ารับเรื่องแล้ว
+        $this->assertDatabaseMissing('fortune_takeover_logs', ['fortune_reading_id' => $fresh->id, 'action' => 'takeover']);
+        $this->assertDatabaseMissing('fortune_takeover_logs', ['fortune_reading_id' => $fresh->id, 'action' => 'resume']);
 
         $already = $this->makeReading(array_merge(
             ['platform_user_id' => self::FB_UID_2, 'facebook_user_id' => self::FB_UID_2],

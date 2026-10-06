@@ -217,7 +217,7 @@ class FortuneTakeoverController extends Controller
             //    (แค่ต่อเวลาเทคโอเวอร์เดิม = ไม่แตะ)
             if ($ensured['started']) {
                 try {
-                    $this->takeoverService->revertAdminTakeover($reading, Auth::id());
+                    $this->takeoverService->revertAdminTakeover($reading, Auth::id(), $ensured['takeover_log_id'] ?? null);
                 } catch (\Throwable $revertErr) {
                     Log::warning('Takeover panel: ถอยเทคโอเวอร์หลังส่งไม่ออกไม่สำเร็จ', [
                         'reading_id' => $reading->id,

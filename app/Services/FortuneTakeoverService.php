@@ -334,23 +334,37 @@ class FortuneTakeoverService
      *
      * ไม่ใช่การคืนงานปกติ: ไม่ล้างคำถามที่ค้าง (แอดมินยังไม่ได้คุยอะไรเลย) — แค่ปิดเทคโอเวอร์ที่เพิ่งเปิด
      */
-    public function revertAdminTakeover(FortuneReading $reading, ?int $adminId = null): void
+    public function revertAdminTakeover(FortuneReading $reading, ?int $adminId = null, ?int $takeoverLogId = null): void
     {
         $reading->refresh();
         if (empty($reading->admin_takeover_until)) {
             return;
         }
 
-        DB::transaction(function () use ($reading, $adminId) {
+        $removedLog = false;
+        DB::transaction(function () use ($reading, $adminId, $takeoverLogId, &$removedLog) {
             $reading->update(['admin_takeover_until' => null]);
 
-            FortuneTakeoverLog::create([
-                'fortune_reading_id' => $reading->id,
-                'user_id' => $adminId,
-                'action' => FortuneTakeoverLog::ACTION_RESUME,
-                'reason' => 'reverted_send_failed',
-                'platform' => $reading->platform,
-            ]);
+            // เทคโอเวอร์ที่เปิดแล้วถอยภายใน request เดียวกัน = ไม่เคยมีผลจริง (ข้อความไม่ถึงลูกค้า)
+            //   → ลบบันทึก "เริ่มเทคโอเวอร์" ของ request นี้ทิ้ง ไม่เขียน "คืนงาน" เพิ่ม
+            //   ไม่งั้นคิว "ลูกค้าขอคุยกับคน" (CustomerRequestQueue) นับว่าแอดมินรับเรื่องแล้ว ทั้งที่ลูกค้าไม่ได้อะไรเลย
+            if ($takeoverLogId) {
+                $removedLog = FortuneTakeoverLog::query()
+                    ->whereKey($takeoverLogId)
+                    ->where('fortune_reading_id', $reading->id)
+                    ->where('action', FortuneTakeoverLog::ACTION_TAKEOVER)
+                    ->delete() > 0;
+            }
+
+            if (! $removedLog) {
+                FortuneTakeoverLog::create([
+                    'fortune_reading_id' => $reading->id,
+                    'user_id' => $adminId,
+                    'action' => FortuneTakeoverLog::ACTION_RESUME,
+                    'reason' => 'reverted_send_failed',
+                    'platform' => $reading->platform,
+                ]);
+            }
         });
 
         $this->clearCaches($reading);
@@ -359,6 +373,7 @@ class FortuneTakeoverService
         Log::info('↩️ FortuneTakeover: ส่งข้อความแอดมินไม่ออก — ถอยเทคโอเวอร์ที่เพิ่งเปิด', [
             'reading_id' => $reading->id,
             'admin_id' => $adminId,
+            'takeover_log_removed' => $removedLog,
         ]);
 
         \App\Services\Fortune\TakeoverResumeService::afterTakeoverEnded($reading, true, $adminId, [
@@ -476,7 +491,7 @@ class FortuneTakeoverService
     /**
      * เหมือน ensureAdminTakeover() แต่บอกด้วยว่า "เริ่มใหม่" หรือ "ต่อเวลา" (ใช้ถอยกลับตอนส่งไม่ออก — L10)
      *
-     * @return array{minutes: int, started: bool}
+     * @return array{minutes: int, started: bool, takeover_log_id: ?int}
      */
     public function ensureAdminTakeoverDetailed(
         FortuneReading $reading,
@@ -493,19 +508,32 @@ class FortuneTakeoverService
 
         if (! $reading->isAdminTakenOver()) {
             $minutes = $this->takeover($reading, $reason, $adminId, null, $messagePreview, true);
+            $started = ! $customerWasTakenOver && $minutes > 0;
 
-            return ['minutes' => $minutes, 'started' => ! $customerWasTakenOver && $minutes > 0];
+            return [
+                'minutes' => $minutes,
+                'started' => $started,
+                // บันทึก "เริ่มเทคโอเวอร์" ของ request นี้ — ถอยกลับ (ส่งไม่ออก) จะลบแถวนี้ทิ้ง
+                'takeover_log_id' => $started
+                    ? FortuneTakeoverLog::query()
+                        ->where('fortune_reading_id', $reading->id)
+                        ->where('action', FortuneTakeoverLog::ACTION_TAKEOVER)
+                        ->orderByDesc('id')
+                        ->value('id')
+                    : null,
+            ];
         }
 
         $minimumSeconds = $this->adminTakeoverMinutes() * 60;
         $remaining = $reading->takeoverRemainingSeconds();
         if ($remaining >= $minimumSeconds) {
-            return ['minutes' => 0, 'started' => false];
+            return ['minutes' => 0, 'started' => false, 'takeover_log_id' => null];
         }
 
         return [
             'minutes' => $this->extend($reading, (int) ceil(($minimumSeconds - $remaining) / 60), $adminId),
             'started' => false,
+            'takeover_log_id' => null,
         ];
     }
 

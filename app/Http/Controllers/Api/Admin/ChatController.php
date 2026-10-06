@@ -57,6 +57,7 @@ class ChatController extends Controller
         //    ไม่ได้ส่ง reading_id มา → ใช้บิลล่าสุดของลูกค้าคนนี้ (เทคโอเวอร์ผูกกับบิล แต่ด่านนับทุกบิลของคนนั้น)
         $takeoverMinutes = 0;
         $takeoverStartedHere = false;
+        $takeoverLogId = null;
         try {
             $reading ??= FortuneReading::query()
                 ->where(function ($q) use ($userId) {
@@ -70,6 +71,7 @@ class ChatController extends Controller
                     ->ensureAdminTakeoverDetailed($reading, $request->user()?->id, $data['text']);
                 $takeoverMinutes = $ensured['minutes'];
                 $takeoverStartedHere = $ensured['started'];
+                $takeoverLogId = $ensured['takeover_log_id'];
             }
         } catch (Throwable $e) {
             Log::warning('AdminChat: เริ่ม/ต่อเทคโอเวอร์ก่อนส่งไม่สำเร็จ (ยังส่งข้อความต่อ)', [
@@ -101,7 +103,7 @@ class ChatController extends Controller
             // ↩️ (2026-10-06, bug-hunt L10) ส่งไม่ออก + request นี้เป็นคน "เริ่ม" เทคโอเวอร์ → ถอยกลับ
             //    (ข้อความไม่ถึงลูกค้า = แอดมินยังไม่ได้คุย บอทต้องไม่เงียบค้าง 30 นาที) · แค่ "ต่อเวลา" = ไม่แตะ
             if (! $ok && $takeoverStartedHere && $reading) {
-                $this->revertTakeoverAfterFailedSend($reading, $request->user()?->id);
+                $this->revertTakeoverAfterFailedSend($reading, $request->user()?->id, $takeoverLogId);
             }
 
             // 💬 (2026-06-19) Mirror the operator's reply into the realtime chat
@@ -160,7 +162,7 @@ class ChatController extends Controller
             ]);
 
             if ($takeoverStartedHere && $reading) {
-                $this->revertTakeoverAfterFailedSend($reading, $request->user()?->id);
+                $this->revertTakeoverAfterFailedSend($reading, $request->user()?->id, $takeoverLogId);
             }
 
             // 🔐 (2026-10-06) error ของ Guzzle/Http พิมพ์ URL เต็ม (token ใน query) — ข้อความที่ออก JSON ต้องผ่าน SafeLog
@@ -213,10 +215,10 @@ class ChatController extends Controller
     /**
      * ↩️ ถอยเทคโอเวอร์ที่ request นี้เพิ่งเปิด (ส่งข้อความแอดมินไม่ออก) — best-effort
      */
-    private function revertTakeoverAfterFailedSend(FortuneReading $reading, ?int $adminId): void
+    private function revertTakeoverAfterFailedSend(FortuneReading $reading, ?int $adminId, ?int $takeoverLogId = null): void
     {
         try {
-            app(FortuneTakeoverService::class)->revertAdminTakeover($reading, $adminId);
+            app(FortuneTakeoverService::class)->revertAdminTakeover($reading, $adminId, $takeoverLogId);
         } catch (Throwable $e) {
             Log::warning('AdminChat: ถอยเทคโอเวอร์หลังส่งไม่ออกไม่สำเร็จ (หมดเวลาเองตามกำหนด)', [
                 'reading_id' => $reading->id,
