@@ -1496,14 +1496,15 @@ class FortuneConversationService
             //       "ถ้าอยากคุยอะไรเพิ่ม...หมออยู่ตรงนี้ ?" → chitchat 7 turns เรื่องลูกสาว
             //     • conv 4835 ลูกค้า "ยกเลิก" → บอท chitchat 2 turns กว่าจะปิดได้
             //   นโยบาย: ลูกค้าพูด farewell → อวยพรสไตล์แม่หมอ 1 บรรทัด → set flag → silent
-            //   Wake up: (1) พิมพ์ขอดูดวง / (2) cache TTL หมด (endOfDay) / (3) paid_active_reading
+            //   Wake up: (1) ลูกค้าคุยต่อ (judgeFarewell) / (2) cache TTL หมด (endOfDay) / (3) paid_active_reading
+            //   🌙 (2026-10-06) ทั้งขาเข้าและขาปลุกตัดสินด้วย judgeFarewell — เดิมเจอ "ขอบคุณ/สาธุ" ตรงไหนก็ปิด
+            //      และปลุกได้แค่คำว่า "ดูดวง" ⇒ Noi Fuchs ก๊อปคำชวน "ดูดวง" ส่งกลับ โดนอวยพรแล้วเงียบ
             if (! $hasPaidActiveReading && ! $hasPendingUnpaidBill) {
                 if ($this->isFarewellClosed($facebookUserId)) {
-                    // 🙊 (2026-09-12) ปลุกด้วยถ้อยคำล้วน — คงพฤติกรรมเดิม (เปิดเมนูไหม isGenericFortuneRequest ตัดสินต่อ)
-                    if ($this->matchesFortuneRequestWording($messageText) || $this->looksLikePaymentIntent($messageText)) {
-                        // wake up — ลูกค้ากลับมาขอดูดวง หรือ แจ้งว่าจ่ายเงินแล้ว (2026-06-03)
+                    if (! $this->judgeFarewell($facebookUserId, $messageText, true)) {
+                        // wake up — ลูกค้ากลับมาถาม/ขอดูดวง/แจ้งจ่ายเงิน (isGenericFortuneRequest ตัดสินต่อว่าเปิดเมนูไหม)
                         $this->clearFarewellClose($facebookUserId);
-                        Log::info('Fortune: farewell — wake up (fortune/payment intent)', [
+                        Log::info('Fortune: farewell — wake up (ลูกค้าคุยต่อ)', [
                             'facebook_user_id' => $facebookUserId,
                             'text_preview' => mb_substr($messageText, 0, 30),
                         ]);
@@ -1519,7 +1520,7 @@ class FortuneConversationService
                             'reading' => null,
                         ];
                     }
-                } elseif ($this->looksLikeFarewell($messageText)) {
+                } elseif ($this->judgeFarewell($facebookUserId, $messageText, false)) {
                     $userName = ! empty($userProfile['name']) ? $userProfile['name'] : 'เจ้าชะตา';
                     $this->markFarewellClosed($facebookUserId);
                     Log::info('Fortune: farewell — blessing + close', [
@@ -20804,80 +20805,94 @@ class FortuneConversationService
     }
 
     /**
-     * 🌙 (2026-05-24) ตรวจคำลา/อวยพรปิดสนทนาของลูกค้า
+     * 🌙 ตัดสินว่าข้อความนี้ "ปิดบทสนทนา" (อวยพร / เงียบต่อ) หรือ "ยังคุยต่อ"
      *
-     * เคสจริง (conv 4961 / 4835 / 4936):
-     *   ลูกค้าพูด "ขอบคุณมากครับ" / "สาธุ" / "ครับๆ" → บอทยังเปิดประตู chitchat
-     *   ต่อ 7+ turns เพราะ AI default = empathy + open-ended question (เปลือง token)
+     * (2026-05-24) ต้นทาง — conv 4961 / 4835 / 4936: ลูกค้าพูด "ขอบคุณมากครับ" / "สาธุ" / "ครับๆ"
+     *   แล้วบอทยังเปิดประตู chitchat ต่อ 7+ turns (เปลือง token) ⇒ อวยพร 1 บรรทัด → silent จนวันใหม่
      *
-     * Policy: เคารพการจบสนทนา → อวยพร 1 บรรทัด → silent ทุกอย่างจนวันใหม่/พิมพ์ "ดูดวง"
+     * (2026-10-06) แทน looksLikeFarewell() ที่เจอ "ขอบคุณ/สาธุ" ตรงไหนของข้อความก็ปิด
+     *   และขาปลุกที่ตื่นได้แค่คำว่า "ดูดวง" — ไล่ log 7 วัน ลูกค้าที่ตั้งใจดูดวงตกทั้งสองขา
+     *   (Noi Fuchs ก๊อปคำชวน "ดูดวง" ส่งกลับ · "แล้วเมียผมจะกลับมาหาผมไหมครับ" · "ดูแบบ99จบเลยคะ")
+     *   ⇒ กติกาตัวอักษรตัดสินเคสชัด · เคสก้ำกึ่งให้ AI อ่านบริบท — ดู FortuneFarewellJudge
+     *
+     * @param  bool  $alreadyClosed  false = ขาเข้า (จะอวยพรไหม) · true = ขาปลุก (เงียบต่อไหม)
+     * @return bool true = ปิด (ขาเข้า: อวยพร · ขาปลุก: เงียบต่อ) · false = คุยต่อ
      */
-    public function looksLikeFarewell(string $message): bool
+    protected function judgeFarewell(string $userId, string $messageText, bool $alreadyClosed): bool
     {
-        $text = mb_strtolower(trim($message));
-        if ($text === '') {
+        // 🛡️ (2026-06-03) จ่ายเงิน / ขอดูดวง = คุยต่อเสมอ ไม่ต้องถาม AI
+        //   เคส FTU-260603-M1895: "โอนแบบธรรมดานะคะ สแกนฉันไม่เป็น ... ขอบคุณค่ะ" เคยโดนตีเป็นคำลา
+        if ($this->looksLikePaymentIntent($messageText) || $this->matchesFortuneRequestWording($messageText)) {
             return false;
         }
 
-        // 🛡️ (2026-06-03) Payment-intent exemption — ลูกค้าที่กำลังพูดเรื่อง "จ่ายเงิน"
-        //   ไม่ใช่การลาก่อน แม้จะมีคำสุภาพ "ขอบคุณ" ห้อยท้าย
-        //   เคสจริง FTU-260603-M1895 (แม่ลูกชายเสีย): "โอนแบบธรรมดานะคะ สแกนฉันไม่เป็น ... ขอบคุณค่ะ"
-        //   → เดิม match "ขอบคุณ" → farewell + เงียบยาว → "โอนแล้วค่ะ" หลังจากนั้นถูก silent_skip
-        if ($this->looksLikePaymentIntent($message)) {
+        $verdict = \App\Services\Fortune\FortuneFarewellJudge::quickVerdict($messageText);
+        if ($verdict !== \App\Services\Fortune\FortuneFarewellJudge::UNSURE) {
+            return $verdict === \App\Services\Fortune\FortuneFarewellJudge::CLOSE;
+        }
+
+        // ขาเข้า: ไม่มีคำขอบคุณ/สาธุ/รับทราบเลย = ข้อความปกติ (ไม่เรียก AI)
+        if (! $alreadyClosed
+            && ! \App\Services\Fortune\FortuneFarewellJudge::hasCloserWord($messageText)
+            && ! \App\Services\Fortune\FortuneFarewellJudge::isBareAck($messageText)) {
             return false;
         }
 
-        // Normalize ลบคำลงท้าย + punctuation/emoji ทั่วไป
-        $normalized = preg_replace(
-            '/\s*(ค่ะ|ครับ|คะ|คับ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|มาก|มากๆ|มากครับ|มากค่ะ|ครับผม|ค่ะ ขอบคุณ)\s*$/u',
-            '',
-            $text
-        );
-        $normalized = trim(preg_replace('/[?!.,…\s]+$/u', '', $normalized));
-
-        // Strong farewell (gratitude + closing phrases)
-        $farewellSubstrings = [
-            'ขอบคุณ', 'ขอบพระคุณ', 'ขอบคุน', 'ขอบใจ',
-            'สาธุ',
-            'ลาก่อน', 'บายบาย', 'goodbye',
-            'พรุ่งนี้เจอกัน', 'แล้วเจอกัน', 'ไว้เจอกัน', 'พรุ่งนี้คุยกัน',
-            'thanks', 'thank you',
-            'ขอตัวก่อน', 'ขอตัวนะ', 'ขอตัวละ',
-            // Lao
-            'ຂອບໃຈ', 'ສາທຸ', 'ລາກ່ອນ',
-        ];
-        foreach ($farewellSubstrings as $kw) {
-            if (str_contains($normalized, $kw)) {
-                return true;
-            }
+        // ขาปลุก: คนพิมพ์คำรับพลังรัวๆ ห้ามเผา AI — เกินโควตาวันนี้ = เงียบต่อ (คำถามชัดยังปลุกได้จากชั้นบน)
+        if ($alreadyClosed && ! $this->claimFarewellJudgeQuota($userId)) {
+            return true;
         }
 
-        // Standalone short ack — "ครับๆ", "ค่ะๆ", "โอเค", "ok", "อืม"
-        if (mb_strlen($normalized) <= 8) {
-            $standaloneAck = [
-                'ครับๆ', 'ครัฟๆ', 'คับๆ', 'ค่ะๆ', 'คะๆ', 'คับ ผม',
-                'โอเค', 'โอเคค่ะ', 'โอเคครับ', 'โอเค ค่ะ', 'โอเค ครับ',
-                'ok', 'okay', 'okๆ', 'k', 'kk', 'okค่ะ', 'okครับ',
-                'อืม', 'อืมๆ', 'อืมม', 'อืออ', 'อ้อ',
-                'รับทราบ', 'เข้าใจ', 'จ้า', 'จ๊ะ',
-                'bye', 'byeๆ', 'บาย',
-                'thx', 'tnx', 'ty',
-            ];
-            foreach ($standaloneAck as $kw) {
-                if ($normalized === $kw) {
-                    return true;
+        $aiVerdict = (new \App\Services\Fortune\FortuneFarewellJudge($this->aiService))
+            ->askAi($messageText, $this->lastBotMessageFor($userId), $alreadyClosed);
+
+        Log::info('Fortune: farewell judge (AI อ่านบริบท)', [
+            'facebook_user_id' => $userId,
+            'already_closed' => $alreadyClosed,
+            'verdict' => $aiVerdict ?? 'ai_failed→continue',
+            'text_preview' => mb_substr($messageText, 0, 40),
+        ]);
+
+        // AI ล่ม/ตอบแปลก (null) = คุยต่อ — เสียลูกค้าแพงกว่าค่า AI 1 ครั้ง
+        return $aiVerdict === \App\Services\Fortune\FortuneFarewellJudge::CLOSE;
+    }
+
+    /** ขาปลุก: ถาม AI ได้วันละกี่ครั้งต่อคน */
+    protected const FAREWELL_JUDGE_DAILY_QUOTA = 6;
+
+    protected function claimFarewellJudgeQuota(string $userId): bool
+    {
+        try {
+            $key = "fortune:farewell_judge_quota:{$userId}:".now()->format('Ymd');
+            Cache::add($key, 0, now()->endOfDay());
+
+            return (int) Cache::increment($key) <= self::FAREWELL_JUDGE_DAILY_QUOTA;
+        } catch (\Throwable $e) {
+            return true;
+        }
+    }
+
+    /** ข้อความล่าสุดของแม่หมอในบทสนทนา (ให้ AI รู้ว่าลูกค้ากำลังตอบอะไร) */
+    protected function lastBotMessageFor(string $userId): ?string
+    {
+        try {
+            foreach (array_reverse($this->getConversationHistoryForAI($userId)) as $msg) {
+                if (($msg['role'] ?? '') === 'assistant' && is_string($msg['content'] ?? null) && trim($msg['content']) !== '') {
+                    return $msg['content'];
                 }
             }
+        } catch (\Throwable $e) {
+            // ไม่มีประวัติก็ตัดสินจากข้อความลูกค้าอย่างเดียว
         }
 
-        return false;
+        return null;
     }
 
     /**
      * 💳 (2026-06-03) ตรวจว่าข้อความเกี่ยวกับการ "จ่ายเงิน/โอน" หรือไม่
      *
      * ใช้ 2 จุด:
-     *   1. looksLikeFarewell — ยกเว้น ไม่ให้ข้อความจ่ายเงินถูกตีเป็น farewell
+     *   1. judgeFarewell — ยกเว้น ไม่ให้ข้อความจ่ายเงินถูกตีเป็น farewell
      *      (ลูกค้ากำลัง checkout ไม่ได้ลาก่อน แม้พิมพ์ "...ขอบคุณค่ะ")
      *   2. wake-up จาก farewell silence — "โอนแล้ว/จ่ายแล้ว/สลิป" ต้องปลุกบอททันที
      *

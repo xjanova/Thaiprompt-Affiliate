@@ -4417,7 +4417,8 @@ PROMPT;
             $genConfigChat2['thinkingConfig'] = ['thinkingBudget' => 0];
         }
 
-        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
+        // ⏱️ $config['timeout'] — ผู้เรียกที่รอนานไม่ได้ (เช่น FortuneFarewellJudge) ตั้งเพดานเองได้
+        $response = Http::withHeaders(['x-goog-api-key' => $apiKey])->timeout($config['timeout'] ?? $this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -4472,7 +4473,7 @@ PROMPT;
             $headers['HTTP-Referer'] = config('app.url');
         }
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
@@ -4514,7 +4515,7 @@ PROMPT;
 
         // 🐢 (2026-05-13 v2) Reasoning models ใช้เวลานาน — ใช้ OPENAI_RESPONSES_TIMEOUT (120s)
         //   เดิม GEMINI_PRO_TIMEOUT (60s) ไม่พอ user report timeout 60001ms
-        $response = Http::timeout(self::OPENAI_RESPONSES_TIMEOUT)
+        $response = Http::timeout($config['timeout'] ?? self::OPENAI_RESPONSES_TIMEOUT)
             ->withToken($apiKey)
             ->post($endpoint, [
                 'model' => $model,
@@ -4626,7 +4627,7 @@ PROMPT;
         $baseUrl = AiApiKey::DEFAULT_BASE_URLS['anthropic'] ?? 'https://api.anthropic.com/v1';
         $endpoint = rtrim($baseUrl, '/').'/messages';
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        $response = Http::timeout($config['timeout'] ?? self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders([
                 'x-api-key' => $apiKey,
                 'anthropic-version' => '2023-06-01',
