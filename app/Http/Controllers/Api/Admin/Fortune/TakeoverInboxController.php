@@ -1,0 +1,296 @@
+<?php
+
+namespace App\Http\Controllers\Api\Admin\Fortune;
+
+use App\Http\Controllers\Api\Admin\OpsSummaryController;
+use App\Http\Controllers\Controller;
+use App\Models\FortuneReading;
+use App\Models\FortuneTakeoverLog;
+use App\Models\FortuneTellingSetting;
+use App\Models\User;
+use App\Services\AdminApp\FortuneBillPresenter;
+use App\Services\Fortune\FortuneChatLogService;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+
+/**
+ * Admin Mobile API: กล่องแชท / เทคโอเวอร์ (แอปไทยพร้อม แอดมิน)
+ *
+ * ข้อมูลชุดเดียวกับหน้าเว็บ admin/fortune/takeover (Admin\FortuneTakeoverController)
+ * การกระทำ (เทคโอเวอร์ / ต่อเวลา / คืนงาน / ส่งข้อความ) ใช้ chat/* เดิม — ที่นี่อ่านอย่างเดียว
+ */
+class TakeoverInboxController extends Controller
+{
+    /** ตัวกรองที่รองรับ */
+    public const STATUSES = ['taken_over', 'requested', 'active', 'all'];
+
+    /** หน้าต่างของ "บทสนทนาที่ยังไม่จบ" — ค่าเดียวกับหน้าเว็บ */
+    private const ACTIVE_DAYS = 7;
+
+    /**
+     * GET /api/admin/takeover/conversations?status=&platform=&search=&page=&per_page=
+     */
+    public function conversations(Request $request, FortuneChatLogService $chatLog): JsonResponse
+    {
+        $data = $request->validate([
+            'status' => 'nullable|in:'.implode(',', self::STATUSES),
+            'platform' => 'nullable|in:facebook,line,telegram',
+            'search' => 'nullable|string|max:100',
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'page' => 'nullable|integer|min:1',
+        ]);
+
+        $query = $this->scoped(
+            FortuneReading::query()->with(['takeoverAdmin:id,name', 'user:id,name']),
+            (string) ($data['status'] ?? 'taken_over')
+        );
+
+        if (! empty($data['platform'])) {
+            $query->where('platform', $data['platform']);
+        }
+
+        $search = trim((string) ($data['search'] ?? ''));
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('facebook_user_name', 'like', "%{$search}%")
+                    ->orWhere('facebook_user_id', 'like', "%{$search}%")
+                    ->orWhere('platform_user_id', 'like', "%{$search}%")
+                    ->orWhere('bill_reference', 'like', "%{$search}%");
+            });
+        }
+
+        $page = $query->orderByDesc('updated_at')->orderByDesc('id')->paginate((int) ($data['per_page'] ?? 20));
+        $rows = $page->getCollection();
+
+        $keywords = OpsSummaryController::customerRequestKeywords($rows->pluck('id')->all());
+        $lastAdminMessages = $this->lastAdminPanelMessages($rows);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'data' => $rows->map(fn (FortuneReading $r) => $this->presentConversation(
+                    $r,
+                    $keywords[(int) $r->id] ?? null,
+                    $this->lastMessage($r, $chatLog, $lastAdminMessages[(int) $r->id] ?? null)
+                ))->values()->all(),
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'per_page' => $page->perPage(),
+                'total' => $page->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/admin/takeover/stats
+     */
+    public function stats(): JsonResponse
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'taken_over' => $this->scoped(FortuneReading::query(), 'taken_over')->count(),
+                'requested' => $this->scoped(FortuneReading::query(), 'requested')->count(),
+                'active_conversations' => $this->scoped(FortuneReading::query(), 'active')->count(),
+                'takeovers_today' => FortuneTakeoverLog::query()
+                    ->where('action', FortuneTakeoverLog::ACTION_TAKEOVER)
+                    ->whereDate('created_at', today())
+                    ->count(),
+                'takeover_enabled' => $settings->isTakeoverEnabled(),
+                'default_minutes' => $settings->getTakeoverDefaultMinutes(),
+                'generated_at' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/admin/takeover/{reading}/messages
+     *
+     * ใช้ตรรกะเดียวกับ fortune/readings/{id}/transcript (แชทสดวันนี้จาก Redis → ไม่มีค่อยประกอบจากข้อมูลถาวร)
+     * แล้วแปลงเป็นรูปของแอป: sender = customer | bot | admin | system
+     */
+    public function messages(FortuneReading $reading, FortuneReadingsController $transcript): JsonResponse
+    {
+        $payload = $transcript->transcript($reading)->getData(true);
+        $raw = $payload['data']['messages'] ?? [];
+
+        // แอดมินที่ตอบ — log เก็บเป็น "admin#<id>" แปลงเป็นชื่อในคิวรีเดียว
+        $adminIds = collect($raw)
+            ->map(fn ($m) => is_string($m['by'] ?? null) && preg_match('/^admin#(\d+)$/', $m['by'], $mm) ? (int) $mm[1] : null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $adminNames = $adminIds === [] ? [] : User::query()->whereIn('id', $adminIds)->pluck('name', 'id')->all();
+
+        $messages = [];
+        foreach ($raw as $i => $m) {
+            $sender = match ($m['role'] ?? 'user') {
+                'bot' => 'bot',
+                'admin' => 'admin',
+                'system' => 'system',
+                default => 'customer',
+            };
+
+            $adminName = null;
+            if ($sender === 'admin' && is_string($m['by'] ?? null) && preg_match('/^admin#(\d+)$/', $m['by'], $mm)) {
+                $adminName = $adminNames[(int) $mm[1]] ?? null;
+            }
+
+            $message = [
+                'id' => (int) ($m['id'] ?? $i + 1),
+                'sender' => $sender,
+                'text' => (string) ($m['text'] ?? ''),
+                'at' => $m['ts'] ?? null,
+                'admin_name' => $adminName,
+                'image_url' => $m['image_url'] ?? null,
+            ];
+            if ($sender === 'bot') {
+                $message['ai_provider'] = $m['ai'] ?? null;
+            }
+            $messages[] = $message;
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'reading_id' => (int) $reading->id,
+                'source' => $payload['data']['source'] ?? 'structured',
+                'messages' => $messages,
+                'generated_at' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    // ────────────────────────────────────────────────────────────
+    // ภายใน
+    // ────────────────────────────────────────────────────────────
+
+    private function scoped(Builder $query, string $status): Builder
+    {
+        return match ($status) {
+            'requested' => $query->takenOver()->where('admin_takeover_reason', FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST),
+            // บทสนทนาที่ยังไม่จบ — ชุดเดียวกับตัวกรอง active ของหน้าเว็บ
+            'active' => $query->whereNotIn('conversation_status', [FortuneReading::STATUS_COMPLETED])
+                ->where('updated_at', '>=', now()->subDays(self::ACTIVE_DAYS)),
+            'all' => $query,
+            default => $query->takenOver(),
+        };
+    }
+
+    /**
+     * @param  array{sender: string, text: string, at: string|null}|null  $last
+     * @return array<string, mixed>
+     */
+    private function presentConversation(FortuneReading $r, ?string $keyword, ?array $last): array
+    {
+        $active = $r->isAdminTakenOver();
+        $reason = $r->admin_takeover_reason;
+
+        return [
+            'reading_id' => (int) $r->id,
+            'bill_number' => FortuneBillPresenter::billNumber($r),
+            'customer_name' => FortuneBillPresenter::customerName($r),
+            'platform' => FortuneBillPresenter::platform($r),
+            'platform_user_id' => $r->platform_user_id ?: $r->facebook_user_id,
+            'package_label' => FortuneBillPresenter::packageLabel($r),
+            'is_paid' => (bool) $r->is_paid,
+            'conversation_status' => $r->conversation_status,
+            'stage' => FortuneBillPresenter::stage($r),
+            'is_taken_over' => $active,
+            'takeover_reason' => $active ? $reason : null,
+            'takeover_reason_label' => $active ? $this->reasonLabel($reason) : null,
+            'requested_by_customer' => $active && $reason === FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
+            'request_keyword' => $active && $reason === FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST ? $keyword : null,
+            'takeover_started_at' => $active ? $r->admin_takeover_started_at?->toIso8601String() : null,
+            'takeover_until' => $active ? $r->admin_takeover_until?->toIso8601String() : null,
+            'remaining_minutes' => $active ? $r->takeoverRemainingMinutes() : 0,
+            'takeover_admin' => $active && $r->takeoverAdmin
+                ? ['id' => (int) $r->takeoverAdmin->id, 'name' => $r->takeoverAdmin->name]
+                : null,
+            'last_message' => $last,
+            // ข้อความล่าสุดเป็นของลูกค้า = ลูกค้ารอคำตอบอยู่
+            'unread' => ($last['sender'] ?? null) === 'customer',
+            'updated_at' => $r->updated_at?->toIso8601String(),
+        ];
+    }
+
+    private function reasonLabel(?string $reason): string
+    {
+        return match ($reason) {
+            FortuneReading::TAKEOVER_REASON_MANUAL => 'กดเทคโอเวอร์เอง',
+            FortuneReading::TAKEOVER_REASON_AUTO_REPLY => 'แอดมินพิมพ์ในช่องสนทนา',
+            FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST => 'ลูกค้าขอคุยกับคน',
+            default => (string) ($reason ?? '-'),
+        };
+    }
+
+    /**
+     * ข้อความล่าสุด — แชทสดวันนี้ (Redis) ก่อน ไม่มีค่อยใช้ข้อความที่แอดมินส่งผ่านแผงล่าสุด
+     *
+     * @return array{sender: string, text: string, at: string|null}|null
+     */
+    private function lastMessage(FortuneReading $r, FortuneChatLogService $chatLog, ?FortuneTakeoverLog $adminLog): ?array
+    {
+        $pid = (string) ($r->platform_user_id ?: $r->facebook_user_id);
+
+        if ($pid !== '') {
+            $live = $chatLog->getForCustomer($r->platform ?: 'facebook', $pid);
+            $last = end($live);
+            if (is_array($last) && isset($last['text'])) {
+                return [
+                    'sender' => match ($last['role'] ?? 'user') {
+                        'bot' => 'bot',
+                        'admin' => 'admin',
+                        default => 'customer',
+                    },
+                    'text' => mb_substr((string) $last['text'], 0, 200),
+                    'at' => $last['ts'] ?? null,
+                ];
+            }
+        }
+
+        if ($adminLog !== null) {
+            return [
+                'sender' => 'admin',
+                'text' => mb_substr((string) $adminLog->message, 0, 200),
+                'at' => $adminLog->created_at?->toIso8601String(),
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * ข้อความล่าสุดที่แอดมินส่งผ่านแผงหลังบ้านของแต่ละบทสนทนา (คิวรีเดียวทั้งหน้า)
+     *
+     * @param  Collection<int, FortuneReading>  $rows
+     * @return array<int, FortuneTakeoverLog>
+     */
+    private function lastAdminPanelMessages(Collection $rows): array
+    {
+        $ids = $rows->pluck('id')->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        $out = [];
+        FortuneTakeoverLog::query()
+            ->whereIn('fortune_reading_id', $ids)
+            ->where('action', FortuneTakeoverLog::ACTION_MESSAGE)
+            ->orderByDesc('id')
+            ->get(['id', 'fortune_reading_id', 'message', 'created_at'])
+            ->each(function (FortuneTakeoverLog $log) use (&$out) {
+                $rid = (int) $log->fortune_reading_id;
+                if (! isset($out[$rid])) {
+                    $out[$rid] = $log;
+                }
+            });
+
+        return $out;
+    }
+}

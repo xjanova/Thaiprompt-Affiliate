@@ -49,11 +49,17 @@
         "count": 3,
         "amount_thb": 237.84,
         "oldest_minutes": 22,
-        "preview": [ /* BillItem แบบย่อ (ดูหัวข้อ 2) สูงสุด 5 รายการ เก่าสุดก่อน */ ]
+        "preview": [
+          {"id": 13284, "bill_number": "FTU-260916-D8561", "package_label": "ดูพื้นดวง 39฿", "amount_thb": 39.42,
+           "status": "awaiting", "status_label": "รอตรวจ · ลูกค้าส่งสลิปแล้ว", "status_reason": "slip_received",
+           "platform": "line", "customer_name": "Patitta", "created_at": "...", "slip_image_url": "...",
+           "sms_match": {"matched": false, "sms_id": null, "amount": null, "at": null, "bank": null, "sender": null},
+           "claimed_at": "2026-10-06T13:38:00+07:00"}
+        ]
       },
       "withdrawals_pending": {
         "count": 1, "amount_thb": 500.0, "oldest_minutes": 300,
-        "preview": [{"id": 88, "user_name": "นายเอ", "amount_thb": 500.0, "created_at": "..."}]
+        "preview": [{"id": 88, "user_name": "นายเอ", "amount_thb": 500.0, "net_amount_thb": 490.0, "created_at": "..."}]
       },
       "sms_unmatched": {
         "count": 4, "amount_thb": 156.0, "oldest_minutes": 80,
@@ -139,7 +145,7 @@
         "status_label": "รอตรวจ · ลูกค้าส่งสลิปแล้ว",
         "status_reason": "slip_received",
         "conversation_status": "pending_payment",
-        "stage": {"key": "deciding", "label": "รอชำระเงิน"},
+        "stage": {"key": "deciding", "label": "รอชำระเงิน", "icon": "💰", "detail": "รอจ่าย 39 (Deep)"},
         "platform": "line",
         "customer_name": "Patitta",
         "customer": {"name": "Patitta", "platform_user_id": "Uxxxxxxxx", "user_id": 77},
@@ -179,7 +185,11 @@
 | `unpaid` | ยังไม่จ่าย + บิลยังเปิดอยู่ (`PENDING_DISPLAY_STATUSES`) + สร้างไม่เกิน 7 วัน + **ลูกค้ายังไม่ได้แจ้งจ่าย** | รอลูกค้าโอน |
 | `closed` | ที่เหลือทั้งหมด: ออกบิลแล้วไม่จ่ายแล้วปิดเงียบ (completed ไม่มีเหตุผลยกเลิก) · บิลค้างรอจ่ายเกิน 7 วัน (ซากบิล) | ปิดโดยไม่ได้ชำระ |
 
-- `status_reason`: `awaiting` → `slip_received` | `transfer_reported` | `floating` · `cancelled` → คีย์เหตุผล เช่น `auto_expired` · อื่น ๆ → `null`
+- `status_reason`: `awaiting` → `slip_received` | `transfer_reported` | `floating`
+  · `cancelled` → คีย์เหตุผลยกเลิก (`auto_expired` / `auto_expired_grace` / `user_cancelled` / `superseded_by_paid` / `package_switch` / … / `unknown`) หรือ `rejected_in_app` (แอป SMS Checker ปฏิเสธ)
+  · `refunded` → `refund_flagged` (คืนเงินผ่าน API) | `approval_voided` (ยกเลิกการอนุมัติ) · อื่น ๆ → `null`
+- `stage` = ขั้นในกรวยขายชุดเดียวกับ Warroom (`App\Support\FortuneFunnelStage`) — `key` / `label` / `icon` / `detail` (null ได้)
+- บิลที่ถูก `readings/{id}/cancel` จะ **หายจากทุกรายการ** (endpoint นั้นทำ soft delete — พฤติกรรมเดิม)
 - `amount_thb` = ยอดบิล (`amount_paid` ถ้า > 0 ไม่งั้นยอดทศนิยมจาก UPA) · `amount_received_thb` = ยอดที่เข้าจริง (ถ้ามี)
 - `platform` อ่านจากคอลัมน์ `platform` เท่านั้น (ห้ามเดาจาก `facebook_user_id`) — ค่านอกเหนือ facebook/line/telegram = `other`
 - `slip_image_url`: ถ้ามีรูปสลิปเก็บในเซิร์ฟเวอร์ → URL ของ `GET fortune/bills/{id}/slip` (**ต้องแนบ Bearer token**, `slip.image_requires_auth = true`)
@@ -232,7 +242,7 @@
         "package_label": "Celtic 99฿",
         "is_paid": true,
         "conversation_status": "celtic_qa_prompt",
-        "stage": {"key": "celtic", "label": "เลือกไพ่ · Celtic"},
+        "stage": {"key": "celtic", "label": "เลือกไพ่ · Celtic", "icon": "🃏", "detail": "ตอบไป 1 คำถาม · ถามต่อไหม"},
         "is_taken_over": true,
         "takeover_reason": "customer_request",
         "takeover_reason_label": "ลูกค้าขอคุยกับคน",
@@ -302,6 +312,8 @@ body `{ "reading_id": 15001, "minutes": 15 }` (1–1440) — ใช้ `FortuneT
   (หน้าเว็บก็ลงเอยที่ push เหมือนกัน) · ถ้าโควตาหมด Gatekeeper จะไม่ยิงและตอบ `502 platform service rejected`
 - Telegram: `TelegramFortuneService::sendMessage()`
 - ไม่เทคโอเวอร์ให้อัตโนมัติ — ถ้าจะกันบอทพูดแทรก ให้เรียก `chat/takeover` ก่อน
+- ส่งไม่ได้เพราะแพลตฟอร์มปฏิเสธ → `502` `{success:false, data:{delivered:false,...}, message:"platform service rejected"}`
+  · เกิด exception → `500` `message: "send failed: ..."` (ข้อความผ่าน `SafeLog::exceptionMessage()` แล้ว — token ใน URL ถูกปิด; `takeover`/`resume` ก็เช่นกัน)
 
 ---
 

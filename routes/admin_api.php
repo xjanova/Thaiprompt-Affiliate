@@ -7,16 +7,22 @@ use App\Http\Controllers\Api\Admin\Ai\AiProvidersController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\ChatController;
-use App\Http\Controllers\Api\Admin\EveController;
 use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\EveController;
 use App\Http\Controllers\Api\Admin\Finance\PaymentReconController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
 use App\Http\Controllers\Api\Admin\Finance\WithdrawalController;
+use App\Http\Controllers\Api\Admin\Fortune\ActiveReadingsController;
+use App\Http\Controllers\Api\Admin\Fortune\AiPoolController;
+use App\Http\Controllers\Api\Admin\Fortune\FortuneBillsController;
 use App\Http\Controllers\Api\Admin\Fortune\FortuneDashboardController;
 use App\Http\Controllers\Api\Admin\Fortune\FortuneReadingsController;
+use App\Http\Controllers\Api\Admin\Fortune\FortuneServicesController;
+use App\Http\Controllers\Api\Admin\Fortune\TakeoverInboxController;
 use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceDashboardController;
 use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceOrdersController;
 use App\Http\Controllers\Api\Admin\ModerationController;
+use App\Http\Controllers\Api\Admin\OpsSummaryController;
 use App\Http\Controllers\Api\Admin\PairingController;
 use App\Http\Controllers\Api\Admin\RanksController;
 use App\Http\Controllers\Api\Admin\UsersController;
@@ -73,6 +79,9 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::post('/pair/init', [PairingController::class, 'init'])->name('pair.init');
         Route::post('/pair/cancel', [PairingController::class, 'cancel'])->name('pair.cancel');
     });
+
+    // ── หน้าแรกแอปแอดมิน: งานที่ต้องทำตอนนี้ + สุขภาพระบบ + รายได้วันนี้ (docs/ADMIN_APP_API.md) ──
+    Route::get('ops/summary', [OpsSummaryController::class, 'index'])->name('api.admin.ops.summary');
 
     // ── Dashboard ──
     Route::prefix('dashboard')->name('api.admin.dashboard.')->group(function () {
@@ -159,6 +168,8 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         // 🎮 (2026-06-04) Bot ⇄ admin takeover toggle for the warroom /chat header.
         Route::post('/takeover', [ChatController::class, 'takeover'])->name('takeover');
         Route::post('/resume', [ChatController::class, 'resume'])->name('resume');
+        // ⏱ (2026-10-06) ต่อเวลาเทคโอเวอร์ (บวกจากเวลาสิ้นสุดเดิม) — แอปแอดมิน
+        Route::post('/extend', [ChatController::class, 'extend'])->name('extend');
         Route::get('/takeover-status', [ChatController::class, 'takeoverStatus'])->name('takeover-status');
     });
 
@@ -196,6 +207,26 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::get('/payout-account', [FortuneDashboardController::class, 'payoutAccount'])
             ->name('payout-account');
 
+        // 🧾 (2026-10-06) บิลดูดวงแบบกองสถานะ — อ่านอย่างเดียว ปุ่มจัดการใช้ readings/{id}/* เดิม
+        Route::get('/bills', [FortuneBillsController::class, 'index'])->name('bills.index');
+        Route::get('/bills/stats', [FortuneBillsController::class, 'stats'])->name('bills.stats');
+        Route::get('/bills/{reading}/slip', [FortuneBillsController::class, 'slip'])
+            ->whereNumber('reading')->name('bills.slip');
+
+        // 🔮 บิลจ่ายแล้วที่กำลังใช้บริการ + ธงค้าง
+        Route::get('/active-readings', [ActiveReadingsController::class, 'index'])->name('active-readings');
+
+        // 🤖 คลังคีย์ AI ของบอท (ทางเขียน: super admin / manage_api_keys)
+        Route::get('/ai-pool', [AiPoolController::class, 'index'])->name('ai-pool.index');
+        Route::post('/ai-pool/mode', [AiPoolController::class, 'mode'])->name('ai-pool.mode');
+        Route::post('/ai-pool/keys/{key}/toggle', [AiPoolController::class, 'toggle'])
+            ->whereNumber('key')->name('ai-pool.keys.toggle');
+        Route::post('/ai-pool/keys/{key}/test', [AiPoolController::class, 'test'])
+            ->whereNumber('key')->name('ai-pool.keys.test');
+
+        // 🛍️ บริการ/แพคเกจดูดวง (อ่านอย่างเดียว)
+        Route::get('/services', [FortuneServicesController::class, 'index'])->name('services.index');
+
         Route::prefix('readings')->name('readings.')->group(function () {
             Route::get('/', [FortuneReadingsController::class, 'index'])->name('index');
             Route::get('/stats', [FortuneReadingsController::class, 'stats'])->name('stats');
@@ -207,6 +238,14 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
             Route::post('/{reading}/refund', [FortuneReadingsController::class, 'refund'])->name('refund');
             Route::post('/{reading}/cancel', [FortuneReadingsController::class, 'cancel'])->name('cancel');
         });
+    });
+
+    // ── กล่องแชท / เทคโอเวอร์ (อ่านอย่างเดียว — การกระทำใช้ chat/*) ──
+    Route::prefix('takeover')->name('api.admin.takeover.')->group(function () {
+        Route::get('/conversations', [TakeoverInboxController::class, 'conversations'])->name('conversations');
+        Route::get('/stats', [TakeoverInboxController::class, 'stats'])->name('stats');
+        Route::get('/{reading}/messages', [TakeoverInboxController::class, 'messages'])
+            ->whereNumber('reading')->name('messages');
     });
 
     // ── Users + MLM ──

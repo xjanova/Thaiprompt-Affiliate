@@ -8,6 +8,7 @@ use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
 use App\Services\FortuneTakeoverService;
 use App\Services\LineFortuneService;
+use App\Support\SafeLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -97,9 +98,11 @@ class ChatController extends Controller
                 'platform_user_id' => $userId,
             ]);
 
+            // 🔐 (2026-10-06) error ของ Guzzle/Http พิมพ์ URL เต็ม (token ใน query) — ข้อความที่ออก JSON ต้องผ่าน SafeLog
+            //   (log ปลอดภัยอยู่แล้วด้วย RedactSecretsProcessor · ใช้แพตเทิร์นเดียวกันกับ takeover/resume)
             return response()->json([
                 'success' => false,
-                'message' => 'send failed: ' . $e->getMessage(),
+                'message' => 'send failed: ' . SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -207,7 +210,54 @@ class ChatController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'takeover failed: ' . $e->getMessage(),
+                'message' => 'takeover failed: ' . SafeLog::exceptionMessage($e),
+            ], 500);
+        }
+    }
+
+    /**
+     * ⏱ (2026-10-06) ต่อเวลาเทคโอเวอร์ — บวกเพิ่มจากเวลาสิ้นสุดเดิม (แอปแอดมิน)
+     *
+     * chat/takeover ตั้งเวลาสิ้นสุดใหม่เป็น "ตอนนี้ + minutes" (อาจสั้นลงกว่าเดิม) จึงใช้แทนการต่อเวลาไม่ได้
+     * ใช้ FortuneTakeoverService::extend() ตัวเดียวกับปุ่ม "ต่อเวลา" บนหน้าเว็บ
+     * (ถ้าไม่ได้เทคโอเวอร์อยู่ บริการจะเริ่มเทคโอเวอร์ใหม่ให้ — พฤติกรรมเดิมของเว็บ)
+     */
+    public function extend(Request $request, FortuneTakeoverService $takeover): JsonResponse
+    {
+        $data = $request->validate([
+            'reading_id' => 'required|integer|exists:fortune_readings,id',
+            'minutes' => 'required|integer|min:1|max:1440',
+        ]);
+
+        $reading = FortuneReading::find($data['reading_id']);
+        if (! $reading) {
+            return response()->json(['success' => false, 'message' => 'reading not found'], 404);
+        }
+
+        try {
+            $added = $takeover->extend($reading, (int) $data['minutes'], $request->user()?->id);
+            $reading->refresh();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'reading_id' => $reading->id,
+                    'is_takeover' => $reading->isAdminTakenOver(),
+                    'minutes_added' => $added,
+                    'until' => optional($reading->admin_takeover_until)->toIso8601String(),
+                    'remaining_minutes' => $reading->isAdminTakenOver() ? $reading->takeoverRemainingMinutes() : 0,
+                ],
+                'message' => "ต่อเวลาอีก {$added} นาที",
+            ]);
+        } catch (Throwable $e) {
+            Log::error('AdminChat: extend failed', [
+                'error' => \App\Support\SafeLog::exceptionMessage($e),
+                'reading_id' => $reading->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ต่อเวลาไม่สำเร็จ',
             ], 500);
         }
     }
@@ -246,7 +296,7 @@ class ChatController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'resume failed: ' . $e->getMessage(),
+                'message' => 'resume failed: ' . SafeLog::exceptionMessage($e),
             ], 500);
         }
     }

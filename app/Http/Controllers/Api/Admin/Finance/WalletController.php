@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin\Finance;
 
+use App\Http\Controllers\Api\Admin\Concerns\FlatPaging;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\WalletResource;
 use App\Http\Resources\Admin\WalletTransactionResource;
@@ -19,6 +20,8 @@ use Illuminate\Support\Facades\Validator;
  */
 class WalletController extends Controller
 {
+    use FlatPaging;
+
     public function __construct(
         private readonly WalletService $walletService
     ) {}
@@ -37,9 +40,17 @@ class WalletController extends Controller
 
         $wallets = $this->walletService->getAllWallets($filters, $perPage);
 
+        // 🩹 (2026-10-06) เดิมเรียก ->load() บน paginator → Laravel ส่งต่อไปที่ collection แล้วคืน collection
+        //   ⇒ meta/links หาย แอปแบ่งหน้าไม่ได้ · ตอนนี้โหลด relation บน collection ข้างใน แล้วส่ง paginator เอง
+        //   (เพิ่มอย่างเดียว: data เหมือนเดิม + links/meta + ฟิลด์ paging แบบแบน)
+        $wallets->getCollection()->loadMissing('user');
+
         return response()->json([
             'success' => true,
-            'data' => WalletResource::collection($wallets->load('user'))->response()->getData(true),
+            'data' => $this->withFlatPaging(
+                WalletResource::collection($wallets)->response()->getData(true),
+                $wallets
+            ),
         ]);
     }
 

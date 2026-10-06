@@ -98,6 +98,8 @@ class EnsureAccountActive
         return response()->json([
             'success' => false,
             'code' => 'ACCOUNT_SUSPENDED',
+            // (2026-10-06) แอปแอดมินอ่าน error_code ตาม envelope กลางของ /api/admin — คง code เดิมไว้ให้แอปอื่น
+            'error_code' => 'ACCOUNT_SUSPENDED',
             'message' => self::SUSPENDED_MESSAGE,
         ], 403);
     }

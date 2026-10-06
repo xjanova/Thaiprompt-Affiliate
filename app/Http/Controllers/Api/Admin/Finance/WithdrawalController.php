@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api\Admin\Finance;
 
+use App\Http\Controllers\Api\Admin\Concerns\FlatPaging;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Admin\WithdrawalResource;
 use App\Models\WithdrawalRequest;
 use App\Services\WithdrawalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -19,6 +21,8 @@ use Illuminate\Support\Facades\Validator;
  */
 class WithdrawalController extends Controller
 {
+    use FlatPaging;
+
     public function __construct(
         private readonly WithdrawalService $withdrawalService
     ) {}
@@ -38,8 +42,7 @@ class WithdrawalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => WithdrawalResource::collection($withdrawals->load(['user', 'paymentMethod']))
-                ->response()->getData(true),
+            'data' => $this->pagedWithdrawals($withdrawals),
         ]);
     }
 
@@ -55,8 +58,7 @@ class WithdrawalController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => WithdrawalResource::collection($withdrawals->load(['user', 'paymentMethod']))
-                ->response()->getData(true),
+            'data' => $this->pagedWithdrawals($withdrawals),
         ]);
     }
 
@@ -232,6 +234,24 @@ class WithdrawalController extends Controller
             ],
             'message' => "อนุมัติ {$approved} รายการสำเร็จ",
         ]);
+    }
+
+    /**
+     * 🩹 (2026-10-06) รายการถอนเงินพร้อม paging
+     *
+     * เดิมเรียก ->load() บน paginator → Laravel ส่งต่อไปที่ collection แล้วคืน collection ⇒ meta/links หาย
+     * ตอนนี้โหลด relation บน collection ข้างใน แล้วส่ง paginator เอง (data เหมือนเดิม + links/meta + paging แบบแบน)
+     *
+     * @return array<string, mixed>
+     */
+    private function pagedWithdrawals(LengthAwarePaginator $withdrawals): array
+    {
+        $withdrawals->getCollection()->loadMissing(['user', 'paymentMethod']);
+
+        return $this->withFlatPaging(
+            WithdrawalResource::collection($withdrawals)->response()->getData(true),
+            $withdrawals
+        );
     }
 
     private function canApprove($admin): bool
