@@ -251,6 +251,10 @@ Route::prefix('mobile-pair')->name('mobile-pair.')->group(function () {
     Route::post('/init', [MobilePairController::class, 'init'])->name('init');
     Route::get('/status', [MobilePairController::class, 'status'])->name('status');
     Route::post('/cancel', [MobilePairController::class, 'cancel'])->name('cancel');
+    // เครื่องที่จับคู่แล้ว (ทุกแอดมิน) + ถอดเครื่อง (ของตัวเอง / super admin ถอดได้ทุกเครื่อง)
+    Route::get('/devices', [MobilePairController::class, 'devices'])->name('devices');
+    Route::post('/devices/{tokenId}/revoke', [MobilePairController::class, 'revokeDevice'])
+        ->whereNumber('tokenId')->name('devices.revoke');
 });
 
 // System Analytics

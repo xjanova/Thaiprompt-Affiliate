@@ -937,6 +937,8 @@ return [
                 // 3. Device Analytics
                 // =====================================================
                 ['label' => 'Mobile App', 'route' => 'admin.mobile-app.index', 'icon' => 'fas fa-mobile-alt', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-blue-500 to-cyan-500', 'description' => 'จัดการแอพมือถือ'],
+                // 🔗 แอปไทยพร้อม แอดมิน — สแกน QR จับคู่ + ดู/ถอดเครื่องที่จับคู่แล้วของทุกแอดมิน
+                ['label' => 'จับคู่แอปแอดมิน', 'route' => 'admin.mobile-pair.index', 'icon' => 'fas fa-qrcode', 'description' => 'สแกน QR เข้าแอปไทยพร้อม แอดมิน · ดู/ถอดเครื่องที่จับคู่แล้ว'],
                 ['label' => 'Push Notifications', 'route' => 'admin.mobile-app.push.index', 'icon' => 'fas fa-bell', 'description' => 'ส่งข้อความถึงผู้ใช้'],
                 ['label' => 'แบนเนอร์แคมเปญแอป', 'route' => 'admin.app-banners.index', 'icon' => 'fas fa-ad', 'badge' => 'NEW', 'badge_color' => 'bg-gradient-to-r from-amber-500 to-yellow-500', 'description' => 'แบนเนอร์หน้าแรก/ตลาดสด/ไรเดอร์/ร้านค้าในแอป พร้อมพรีวิว'],
                 ['label' => 'Device Analytics', 'route' => 'admin.mobile-app.analytics.index', 'icon' => 'fas fa-chart-bar', 'description' => 'สถิติเครื่องที่ลงทะเบียน'],
