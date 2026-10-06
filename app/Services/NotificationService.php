@@ -300,6 +300,32 @@ class NotificationService
     }
 
     /**
+     * ผู้รับแจ้งเตือนฝั่งแอดมิน — ตัวเลือกเดียวกับ AdminApiMiddleware / AdminMiddleware
+     * (super admin หรือ role admin/super_admin) + ผู้มีสิทธิ์ตามที่ระบุ · เฉพาะบัญชีที่ไม่ถูกระงับ
+     *
+     * ⚠️ ตาราง users ไม่มีคอลัมน์ is_admin (มีแค่ role + is_super_admin) — ห้าม query is_admin
+     *
+     * @param  array<int, string>  $permissions  สิทธิ์ (คอลัมน์ permissions เดิม) ที่ทำให้ได้รับแจ้งเตือนด้วย
+     * @param  array<int, string>  $extraRoles  role อื่นที่ได้รับด้วย เช่น moderator
+     * @return \Illuminate\Database\Eloquent\Collection<int, User>
+     */
+    private function adminRecipients(array $permissions = [], array $extraRoles = [])
+    {
+        $roles = array_values(array_unique(array_merge(['admin', 'super_admin'], $extraRoles)));
+
+        return User::query()
+            ->where(function ($q) use ($roles, $permissions) {
+                $q->where('is_super_admin', true)->orWhereIn('role', $roles);
+                foreach ($permissions as $permission) {
+                    $q->orWhereJsonContains('permissions', $permission);
+                }
+            })
+            ->whereNull('blocked_at')
+            ->limit(50)
+            ->get();
+    }
+
+    /**
      * Notify admin about new withdrawal request
      */
     public function notifyAdminNewWithdrawal($withdrawalRequest): void
@@ -337,11 +363,8 @@ class NotificationService
      */
     public function notifyAdminNewCommission($commission): void
     {
-        // Get all admins with commission approval permission
-        $admins = User::where('is_super_admin', true)
-            ->orWhere('is_admin', true)
-            ->orWhereJsonContains('permissions', 'approve_commissions')
-            ->get();
+        // แอดมิน + ผู้มีสิทธิ์อนุมัติคอมมิชชัน (เดิม query users.is_admin ที่ไม่มีอยู่จริง → SQL error ทุกครั้ง)
+        $admins = $this->adminRecipients(['approve_commissions']);
 
         foreach ($admins as $admin) {
             $this->createForModel(
@@ -374,15 +397,7 @@ class NotificationService
      */
     public function notifyAdminNewKyc($kycVerification): void
     {
-        $admins = User::query()
-            ->where(function ($q) {
-                $q->where('is_super_admin', true)
-                    ->orWhereIn('role', ['admin', 'super_admin'])
-                    ->orWhereJsonContains('permissions', 'approve_kyc');
-            })
-            ->whereNull('blocked_at')
-            ->limit(50)
-            ->get();
+        $admins = $this->adminRecipients(['approve_kyc']);
 
         $isEkyc = ($kycVerification->method ?? null) === 'ekyc';
         $name = $kycVerification->user->name ?? 'ผู้ใช้';
@@ -416,12 +431,9 @@ class NotificationService
      */
     public function notifyAdminNewTicket($ticket): void
     {
-        // Get all admins and support staff
-        $admins = User::where('is_super_admin', true)
-            ->orWhere('is_admin', true)
-            ->orWhereJsonContains('permissions', 'manage_tickets')
-            ->orWhere('role', 'moderator')
-            ->get();
+        // แอดมิน + ทีมซัพพอร์ต (moderator / สิทธิ์ manage_tickets)
+        // 🎫 (2026-10-06) แก้บั๊ก: เดิม query users.is_admin ที่ไม่มีอยู่จริง → SQL error ถูก TicketObserver กลืน แอดมินไม่เคยได้แจ้งเตือนตั๋วใหม่
+        $admins = $this->adminRecipients(['manage_tickets'], ['moderator']);
 
         foreach ($admins as $admin) {
             $this->createForModel(
@@ -452,10 +464,8 @@ class NotificationService
      */
     public function notifyAdminUnassignedTicket($ticket): void
     {
-        // Get all admins
-        $admins = User::where('is_super_admin', true)
-            ->orWhere('is_admin', true)
-            ->get();
+        // แอดมินทุกคน (แก้บั๊กเดียวกับ notifyAdminNewTicket — เดิม query users.is_admin ที่ไม่มีอยู่จริง)
+        $admins = $this->adminRecipients();
 
         foreach ($admins as $admin) {
             $this->createForModel(
@@ -583,7 +593,8 @@ class NotificationService
      */
     public function notifyTicketReply(User $user, $ticket, $reply): Notification
     {
-        $isFromAdmin = $reply->user && ($reply->user->is_admin || $reply->user->is_super_admin);
+        // ทีมงาน = นิยามเดียวกับ TicketReply::isFromStaff() (เดิมอ่าน users.is_admin ที่ไม่มีอยู่จริง → แอดมินธรรมดาไม่ถูกนับ)
+        $isFromAdmin = $reply->isFromStaff();
 
         return $this->createForModel(
             $user,
@@ -594,7 +605,8 @@ class NotificationService
             [
                 'ticket_number' => $ticket->ticket_number,
                 'subject' => $ticket->subject,
-                'reply_preview' => substr(strip_tags($reply->message), 0, 100),
+                // mb_substr: substr ตัดไบต์กลางตัวอักษรไทย → UTF-8 เสีย → บันทึก JSON ไม่ได้ แจ้งเตือนหายเงียบ
+                'reply_preview' => mb_substr(strip_tags((string) $reply->message), 0, 100),
             ],
             route('user.tickets.show', $ticket->id),
             'ดูการตอบกลับ',

@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Rules\NotReservedEmailDomain;
 use App\Services\AccountDeletionService;
+use App\Services\UserSuspensionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -201,31 +202,16 @@ class UserController extends Controller
     {
         $this->authorize('block', $user);
 
-        if (auth()->id() === $user->id) {
-            return back()->with('error', 'ไม่สามารถระงับบัญชีของตัวเองได้');
-        }
-        if ($user->is_super_admin) {
-            return back()->with('error', 'ไม่สามารถระงับผู้ดูแลระบบสูงสุดได้');
-        }
-
         $validated = $request->validate([
             'reason' => ['nullable', 'string', 'max:500'],
         ], [
             'reason.max' => 'เหตุผลต้องไม่เกิน 500 ตัวอักษร',
         ]);
 
-        if ($user->isSuspended()) {
-            return back()->with('info', 'บัญชีนี้ถูกระงับอยู่แล้ว');
-        }
+        // กติกาการระงับ (ห้ามระงับตัวเอง / super admin · ระงับซ้ำ = แจ้งเฉยๆ) อยู่ที่ UserSuspensionService (ใช้ร่วมกับแอปแอดมิน)
+        $result = app(UserSuspensionService::class)->suspend($user, auth()->user(), $validated['reason'] ?? null);
 
-        $user->suspend(auth()->user(), $validated['reason'] ?? null);
-
-        Log::info('Admin suspended user', [
-            'user_id' => $user->id,
-            'admin_id' => auth()->id(),
-        ]);
-
-        return back()->with('success', 'ระงับบัญชี '.$user->name.' เรียบร้อย');
+        return back()->with($result['level'], $result['message']);
     }
 
     /**
@@ -237,18 +223,9 @@ class UserController extends Controller
     {
         $this->authorize('block', $user);
 
-        if (! $user->isSuspended()) {
-            return back()->with('info', 'บัญชีนี้ไม่ได้ถูกระงับ');
-        }
+        $result = app(UserSuspensionService::class)->unsuspend($user, auth()->user());
 
-        $user->unsuspend();
-
-        Log::info('Admin unsuspended user', [
-            'user_id' => $user->id,
-            'admin_id' => auth()->id(),
-        ]);
-
-        return back()->with('success', 'ยกเลิกการระงับบัญชี '.$user->name.' เรียบร้อย');
+        return back()->with($result['level'], $result['message']);
     }
 
     /**

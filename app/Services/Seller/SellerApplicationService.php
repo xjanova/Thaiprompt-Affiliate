@@ -2,7 +2,9 @@
 
 namespace App\Services\Seller;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Models\VendorPackage;
 use App\Models\VendorStore;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +28,11 @@ class SellerApplicationService
      * การเปลี่ยนเป็น seller จะทำให้เข้าพื้นที่เดิมไม่ได้ → ต้องให้แอดมินจัดการ)
      */
     public const APPLICABLE_ROLES = ['user', 'affiliate'];
+
+    /**
+     * role ที่แอดมินอนุมัติเป็น seller ได้ทันที (role อื่นจะเสียพื้นที่ทำงานเดิม ต้องจัดการเองที่หน้าผู้ใช้)
+     */
+    public const CONVERTIBLE_ROLES = ['user', 'affiliate', 'seller'];
 
     /** สถานะที่ยื่นคำขอได้ */
     public const SUBMITTABLE_STATES = ['can_apply', 'rejected'];
@@ -188,6 +195,166 @@ class SellerApplicationService
         }
 
         return $result;
+    }
+
+    // =====================================================
+    // ฝั่งแอดมิน — ใช้ร่วมกันระหว่างหลังบ้านเว็บ (Admin\SellerApplicationController) และแอปแอดมิน
+    // =====================================================
+
+    /**
+     * อนุมัติคำขอเปิดร้าน → ร้าน active + ผู้ใช้เป็น role seller + ใช้แพ็กเกจฟรี (ถ้ามี)
+     *
+     * ล็อกแถวร้าน + เจ้าของร้าน · คำขอที่ไม่ได้ pending แล้ว = ไม่ทำอะไร (กดซ้ำปลอดภัย)
+     *
+     * @return array{ok: bool, code: string, message: string, store?: VendorStore}
+     *
+     * @throws \Throwable เมื่อบันทึกไม่สำเร็จ (ผู้เรียก log + ตอบภาษาไทย)
+     */
+    public function approve(VendorStore $store, ?User $admin = null): array
+    {
+        $result = DB::transaction(function () use ($store) {
+            /** @var VendorStore|null $locked */
+            $locked = VendorStore::whereKey($store->id)->lockForUpdate()->first();
+            if (! $locked || $locked->status !== 'pending') {
+                return ['ok' => false, 'code' => 'ALREADY_PROCESSED', 'message' => 'คำขอนี้ถูกดำเนินการไปแล้ว'];
+            }
+
+            /** @var User|null $owner */
+            $owner = User::whereKey($locked->user_id)->lockForUpdate()->first();
+            if (! $owner) {
+                return ['ok' => false, 'code' => 'OWNER_NOT_FOUND', 'message' => 'ไม่พบบัญชีเจ้าของร้าน (อาจถูกลบไปแล้ว)'];
+            }
+            if ($owner->isSuspended()) {
+                return ['ok' => false, 'code' => 'OWNER_SUSPENDED', 'message' => 'บัญชีเจ้าของร้านถูกระงับอยู่ กรุณายกเลิกการระงับก่อน'];
+            }
+
+            $isAdmin = $owner->is_super_admin || in_array($owner->role, ['admin', 'super_admin'], true);
+            if (! $isAdmin && ! in_array($owner->role, self::CONVERTIBLE_ROLES, true)) {
+                return ['ok' => false, 'code' => 'ROLE_NOT_CONVERTIBLE', 'message' => 'ผู้ใช้มีบทบาท "'.$owner->role.'" อยู่ การเปลี่ยนเป็นผู้ขายต้องทำที่หน้าจัดการผู้ใช้'];
+            }
+
+            $freePackage = VendorPackage::where('package_slug', 'free')->where('is_active', true)->first();
+
+            $locked->update([
+                'status' => 'active',
+                'is_active' => true,
+                'suspension_reason' => null,
+                'package_id' => $locked->package_id ?? $freePackage?->id,
+                'commission_rate' => $freePackage?->commission_rate ?? $locked->commission_rate,
+                'subscription_status' => 'active',
+                'subscription_started_at' => $locked->subscription_started_at ?? now(),
+            ]);
+
+            // role อยู่ใน $guarded → ตั้งผ่าน forceFill (แอดมินคงบทบาทเดิม)
+            if (! $isAdmin && $owner->role !== 'seller') {
+                $sellerRoleId = Role::where('name', 'seller')->value('id');
+                $owner->forceFill([
+                    'role' => 'seller',
+                    'role_id' => $sellerRoleId,
+                ])->save();
+            }
+
+            return ['ok' => true, 'store' => $locked->fresh(), 'owner' => $owner];
+        });
+
+        if (! $result['ok']) {
+            return $result;
+        }
+
+        $this->notifyOwner(
+            $result['owner'],
+            'อนุมัติเปิดร้านค้าแล้ว 🎉',
+            'ร้าน "'.$result['store']->store_name.'" ได้รับการอนุมัติ เข้าหลังร้านเพื่อยืนยันตัวตนและเริ่มลงสินค้าได้เลย',
+            ['store_id' => $result['store']->id, 'status' => 'approved'],
+            $this->safeRoute('seller.onboarding.index'),
+            'ไปหลังร้าน'
+        );
+
+        Log::info('Seller application approved', ['store_id' => $result['store']->id, 'admin_id' => $admin?->id]);
+
+        return [
+            'ok' => true,
+            'code' => 'APPROVED',
+            'message' => 'อนุมัติร้าน "'.$result['store']->store_name.'" เรียบร้อย',
+            'store' => $result['store'],
+        ];
+    }
+
+    /**
+     * ปฏิเสธคำขอเปิดร้าน → ร้าน status=closed + เก็บเหตุผลใน suspension_reason (ผู้สมัครแก้แล้วยื่นใหม่ได้)
+     *
+     * อัปเดตแบบมีเงื่อนไข status=pending → กดซ้ำ/พร้อมกันปลอดภัย
+     *
+     * @return array{ok: bool, code: string, message: string}
+     */
+    public function reject(VendorStore $store, string $reason, ?User $admin = null): array
+    {
+        $reason = trim($reason);
+
+        $updated = VendorStore::whereKey($store->id)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'closed',
+                'is_active' => false,
+                'suspension_reason' => $reason,
+                'updated_at' => now(),
+            ]);
+
+        if (! $updated) {
+            return ['ok' => false, 'code' => 'ALREADY_PROCESSED', 'message' => 'คำขอนี้ถูกดำเนินการไปแล้ว'];
+        }
+
+        $owner = User::find($store->user_id);
+        if ($owner) {
+            $this->notifyOwner(
+                $owner,
+                'คำขอเปิดร้านยังไม่ผ่านการอนุมัติ',
+                'เหตุผล: '.$reason.' — แก้ไขข้อมูลแล้วยื่นใหม่ได้',
+                ['store_id' => $store->id, 'status' => 'rejected'],
+                $this->safeRoute('user.seller-apply.index'),
+                'แก้ไขและยื่นใหม่'
+            );
+        }
+
+        Log::info('Seller application rejected', ['store_id' => $store->id, 'admin_id' => $admin?->id]);
+
+        return ['ok' => true, 'code' => 'REJECTED', 'message' => 'ปฏิเสธคำขอของร้าน "'.$store->store_name.'" แล้ว'];
+    }
+
+    /**
+     * แจ้งผลให้ผู้สมัคร (in-app + push ผ่าน NotificationService) — ล้มไม่เป็นไร
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function notifyOwner(User $owner, string $title, string $message, array $data, ?string $actionUrl, string $actionText): void
+    {
+        try {
+            app(NotificationService::class)->create(
+                $owner,
+                'seller_application',
+                $title,
+                $message,
+                $data,
+                $actionUrl,
+                $actionText,
+                'high',
+                true
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Seller application: notify owner failed', ['user_id' => $owner->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * ลิงก์ตามชื่อ route (ไม่พังถ้า route ยังไม่ถูกโหลด เช่นในคิว)
+     */
+    private function safeRoute(string $name): ?string
+    {
+        try {
+            return route($name);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

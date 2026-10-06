@@ -780,3 +780,396 @@ body `{"token": "..."}` — ถอนได้เฉพาะ token ของต
 
 ตัวส่ง FCM แยกเป็น `App\Services\Fcm\FcmHttpV1Client` (OAuth2 JWT → access token เก็บในหน่วยความจำเท่านั้น)
 — `FcmNotificationService` ของแอป SMS Checker เรียกผ่านตัวนี้ พฤติกรรมเดิมทุกอย่าง (ข้อความ · `sms_payment_channel` · `OPEN_ORDERS` · การล้าง token เดิม)
+
+## 9. Approvals — คิวอนุมัติที่ต้องใช้คนตัดสิน
+
+> route ทั้งหมดอยู่ที่ `routes/admin_api_approvals.php` (require จากกลุ่ม auth ของ `routes/admin_api.php`)
+> controller: `app/Http/Controllers/Api/Admin/Approvals/*` — **ทุกการกระทำเรียก service / controller ตัวเดียวกับหลังบ้านเว็บ ไม่มีกติกาธุรกิจใหม่**
+
+### กติการ่วมของหมวดนี้
+
+- ทุก endpoint ต้อง Bearer admin token (401 ไม่มี token · 403 `NOT_ADMIN` ไม่ใช่แอดมิน) — **สิทธิ์ย่อยเท่ากับหน้าเว็บ**:
+  หน้าเว็บของทุกคิวอยู่ใต้ `role:admin,super_admin` อย่างเดียว ยกเว้น eKYC (`KycVerificationPolicy`) · ระงับบัญชี (`UserPolicy::block`) · รีเซ็ต PIN (super admin เท่านั้น)
+  ไม่ผ่าน = 403 `error_code: PERMISSION_DENIED`
+- ข้อมูลไม่ถูกต้อง = **422** envelope `{success:false, message:"<ข้อผิดพลาดแรกภาษาไทย>", error_code:"VALIDATION_ERROR", errors:{field:[...]}}`
+  (คิวไรเดอร์ 9.4 / 9.5 ส่งต่อให้ controller ของเว็บตรวจ → มี `message` + `error_code` แต่ **ไม่มี `errors`** — แสดง `message` ได้เลย)
+- ทำไม่ได้ตามสถานะ = **409** (`error_code` ตามแต่ละคิว) · ไม่พบ = **404** · พังไม่คาดคิด = **500** `SERVER_ERROR` ข้อความไทยกลาง ๆ (ไม่คืนข้อความ exception ดิบ — log ผ่าน `SafeLog`)
+- **กดซ้ำปลอดภัย (idempotent)**: สั่งผลเดิมซ้ำกับรายการที่เป็นผลนั้นอยู่แล้ว → **200** `success:true` + `data.already_decided:true` (คิวผู้ใช้/MLM/ตั๋วใช้ชื่อ `already`) — ไม่มีเงิน/แจ้งเตือนซ้ำ
+  สั่ง **ผลอื่น** กับรายการที่ตัดสินไปแล้ว → 409
+- รายการใช้ paging แบบแบน (`per_page` 1–100 ค่าเริ่มต้น 20) · คิวรอทำ = **รอนานสุดก่อน** · กองที่จบแล้ว = ล่าสุดก่อน
+- PII ในรายการน้อยที่สุด: `user` = `{id, name, member_number}` (ไม่มีอีเมล/เบอร์) · เบอร์ = `phone_masked` (`081•••5678`) · เลขบัตร/เลขภาษี = ปิดกลาง
+- `waiting_minutes` = นาทีที่รายการรออยู่ (null เมื่อไม่ได้อยู่ในคิวรอ)
+- ตัวเลขเงิน/คะแนนส่งเป็นทศนิยมเสมอ (`140.0` ไม่ใช่ `140` — `JSON_PRESERVE_ZERO_FRACTION`) · id/จำนวน = จำนวนเต็ม
+- รูป/เอกสารส่วนตัวทั้งหมด = URL ของ endpoint ที่ **ต้องแนบ Bearer token** (`requires_auth` / `image_requires_auth = true`) ตอบ `Cache-Control: private, no-store`
+
+### 9.1 `GET approvals/summary` — ตัวเลขป้ายทุกคิว (cache 20 วินาที ใช้ร่วมทุกแอดมิน)
+
+```json
+{
+  "success": true,
+  "data": {
+    "queues": {
+      "ekyc": {"count": 2, "oldest_minutes": 95},
+      "seller_applications": {"count": 1, "oldest_minutes": 640},
+      "rider_applications": {"count": 1, "oldest_minutes": 30},
+      "rider_documents": {"count": 1, "oldest_minutes": 12},
+      "rider_jobs": {"count": 2, "oldest_minutes": 48, "disputed": 1, "awaiting_release": 1, "manual_needed": 0},
+      "tickets": {"count": 4, "oldest_minutes": 1500},
+      "mlm_commissions": {"count": 3, "oldest_minutes": 300, "amount_thb": 350.5, "approved_unpaid": 1}
+    },
+    "total": 12,
+    "computed_at": "2026-10-06T14:00:00+07:00",
+    "generated_at": "2026-10-06T14:00:12+07:00",
+    "degraded": []
+  }
+}
+```
+
+- นิยามแต่ละคิว = ค่าเริ่มต้นของรายการนั้น: `ekyc` (eKYC `pending`) · `seller_applications` (`pending`) · `rider_applications` (ไรเดอร์ `pending`)
+  · `rider_documents` (อนุมัติแล้วแต่เปลี่ยนเอกสารสำคัญ `documents_changed_at` ไม่ว่าง) · `rider_jobs` (`filter=needs_decision`) · `tickets` (`status=open`) · `mlm_commissions` (`pending`)
+- `total` = ผลรวม `count` · `rider_jobs.disputed/awaiting_release/manual_needed` = แยกย่อย (อาจซ้อนกันได้: ร้องเรียนระหว่างจัดส่ง = ทั้ง disputed และ awaiting_release)
+- `mlm_commissions.approved_unpaid` = อนุมัติแล้วรอจ่าย (**ไม่นับ** ใน `count`)
+- คิวที่อ่านไม่ได้ = `null` + ชื่ออยู่ใน `degraded` (ไม่ใช่ "ไม่มีงาน") · `oldest_minutes = null` เมื่อคิวว่าง
+
+### 9.2 eKYC ที่ AI ไม่มั่นใจ — `approvals/ekyc`
+
+เฉพาะแถว AI eKYC (`method = ekyc`) — คำขอแบบเดิม (อัปโหลดเอกสารเอง) ยังตรวจที่หลังบ้านเว็บ (`404` ถ้าเรียกด้วย id ของแถวแบบเดิม)
+สิทธิ์ตาม `KycVerificationPolicy` (`viewAny` / `view` / `viewImages` / `approve` / `reject` / `requestRetake`)
+
+**`GET approvals/ekyc?status=pending|approved|rejected|retake|all&search=&page=&per_page=`** (ค่าเริ่มต้น `pending`, `search` = ชื่อ/อีเมลผู้ใช้)
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 55,
+        "user": {"id": 77, "name": "ณัฐ ใจงาม", "member_number": "TP000077"},
+        "status": "pending",
+        "status_label": "รอเจ้าหน้าที่ตรวจ",
+        "method": "ekyc",
+        "document_type": "thai_national_id",
+        "document_type_label": "บัตรประชาชนไทย",
+        "id_last4": "•••••••••0121",
+        "submitted_at": "2026-10-06T13:20:00+07:00",
+        "waiting_minutes": 40,
+        "ai": {"decision": "review", "face_match": 0.41, "liveness": 0.92, "real": 0.88, "card_real": 0.9, "ocr": 0.95},
+        "reasons": ["BORDERLINE_MATCH"],
+        "reason_texts": ["ใบหน้าคล้ายรูปบนบัตรระดับกลาง"],
+        "flags": {"duplicate_id": false, "replay_suspected": false, "prior_rejected": false, "attempts_exhausted": false,
+                  "user_corrected": false, "ai_unavailable": false, "card_not_real": false, "lifelong_card": false}
+      }
+    ],
+    "current_page": 1, "last_page": 1, "per_page": 20, "total": 1
+  }
+}
+```
+
+**`GET approvals/ekyc/{id}`** = ฟิลด์ของรายการ +
+
+```json
+{
+  "card": {"name_th": "นาย ณัฐ ใจงาม", "name_en": "Mr. Nat Jaingam", "birth_date": "1995-01-12", "expiry_date": "2030-01-11",
+           "lifelong": false, "id_masked": "1 2345 ••••• 12 1", "checksum_ok": true},
+  "account": {"name": "ณัฐ ใจงาม", "kyc_status": "pending", "name_matches_card": true, "created_at": "2026-09-01T10:00:00+07:00"},
+  "ai_detail": {"match_score": 0.63, "liveness_passed": true, "challenges": {"blink": true, "turn_left": true, "smile": true},
+                "thresholds": {"auto_approve_match": 0.5, "review_match": 0.3, "retake_match": 0.15, "min_liveness": 0.8,
+                               "min_real": 0.7, "min_card_real": 0.6, "min_ocr": 0.8},
+                "model_version": "card:1.0.0;face:1.0.0"},
+  "corrections": {},
+  "duplicate_now": false,
+  "images": [
+    {"kind": "card", "label": "รูปบัตรประชาชน", "available": true, "url": "https://main.thaiprompt.online/api/admin/approvals/ekyc/55/image/card"},
+    {"kind": "card_face", "label": "รูปหน้าบนบัตร", "available": true, "url": "https://main.thaiprompt.online/api/admin/approvals/ekyc/55/image/card_face"},
+    {"kind": "best_frame", "label": "ใบหน้าจากกล้อง (เฟรมที่ดีที่สุด)", "available": true, "url": "https://main.thaiprompt.online/api/admin/approvals/ekyc/55/image/best_frame"}
+  ],
+  "image_requires_auth": true,
+  "recent_views": [{"viewer": "แอดมินเอ", "kind": "card", "at": "2026-10-06T13:59:00+07:00"}],
+  "review": {"reviewed_by": null, "reviewed_at": null, "note": null},
+  "actions": {"can_approve": true, "can_reject": true, "can_request_retake": true}
+}
+```
+
+- `duplicate_now` = เช็คสด ณ ตอนเปิดดู (บัตรนี้ยืนยันกับบัญชีอื่นแล้วหรือยัง) — ถ้า `true` การอนุมัติจะถูกปฏิเสธ `409 EKYC_DUPLICATE_ID`
+- **ไม่มีเลขบัตรเต็มในทุกคำตอบ** (รายการ = 4 ตัวท้าย · รายละเอียด = ปิดกลาง)
+
+**`GET approvals/ekyc/{id}/image/{kind}`** — `kind` = `card` | `card_face` | `best_frame`
+
+- สตรีม `image/jpeg` ที่ถอดรหัสแล้ว · `Cache-Control: private, no-store, max-age=0` · `X-Content-Type-Options: nosniff`
+- **PDPA: ทุกการเปิดดูเขียน `kyc_access_logs` 1 แถว** (`viewer_id`, `subject_user_id`, `kind`, `ip_address`, `user_agent`) ผ่าน `KycAccessLog::record()` ตัวเดียวกับหน้าเว็บ — แอปควรแคชรูปในหน่วยความจำของหน้าจอเท่านั้น (เปิดซ้ำ = บันทึกซ้ำ)
+- throttle 120 ครั้ง/นาที (ถังเดียวกับหน้าเว็บ) · ไม่มีรูป/ถูกลบตามรอบ = 404 `IMAGE_NOT_FOUND`
+
+**`POST approvals/ekyc/{id}/approve`** · **`POST .../reject` `{reason}`** (บังคับ ≤1000) · **`POST .../request-retake` `{reason}`** (บังคับ ≤500 — ผู้ใช้เห็นข้อความนี้)
+
+ตัดสินผ่าน `EkycService::adminDecide()` (ล็อกเลขบัตร · เช็คบัตรซ้ำสด · อัปเดต `users.kyc_status` · แจ้งผู้ใช้ `kyc_result`)
+
+```json
+{"success": true, "data": {"id": 55, "status": "approved", "already_decided": false}, "message": "อนุมัติการยืนยันตัวตนเรียบร้อยแล้ว"}
+```
+```json
+{"success": false, "data": {"id": 55, "status": "approved"}, "message": "การยืนยันตัวตนนี้ได้ถูกดำเนินการไปแล้ว", "error_code": "EKYC_ALREADY_DECIDED"}
+```
+`status` หลังตัดสิน: `approved` · `rejected` · `retake` (ผู้ใช้กลับเป็น "ยังไม่ยืนยัน" เริ่มรอบใหม่ได้) · error อื่น: `409 EKYC_DUPLICATE_ID`
+
+### 9.3 คำขอเปิดร้านค้า — `approvals/seller-applications`
+
+**`GET approvals/seller-applications?status=pending|active|closed|all&search=`** (ค่าเริ่มต้น `pending` · `closed` = ถูกปฏิเสธ)
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 31, "store_name": "ร้านป้าแดง", "status": "pending", "status_label": "รออนุมัติ",
+        "business_type": "company", "business_type_label": "นิติบุคคล", "company_name": "บริษัท ป้าแดง จำกัด",
+        "tax_id_masked": "010•••••••456", "phone_masked": "081•••5678", "province": "กรุงเทพมหานคร",
+        "owner": {"id": 90, "name": "ป้าแดง", "member_number": "TP000090"},
+        "rejection_reason": null,
+        "submitted_at": "2026-10-06T03:20:00+07:00", "waiting_minutes": 640
+      }
+    ],
+    "current_page": 1, "last_page": 1, "per_page": 20, "total": 1
+  }
+}
+```
+
+**`GET approvals/seller-applications/{id}`** = รายการ + `store_description` · `store_phone` · `store_email` · `address{line,city,state,postal_code}`
+· `owner_detail{role, kyc_status, kyc_verified, suspended, deleted, joined_at}` · `actions{can_approve, can_reject}`
+
+**`POST .../{id}/approve`** → `SellerApplicationService::approve()` (ล็อกร้าน+เจ้าของ · ร้าน active + แพ็กเกจฟรี · role → seller · แจ้งผู้สมัคร)
+**`POST .../{id}/reject` `{reason}`** (บังคับ ≤500 — ผู้สมัครเห็น) → ร้าน `closed` + เก็บเหตุผล · ผู้สมัครแก้แล้วยื่นใหม่ได้
+
+```json
+{"success": true, "data": {"id": 31, "status": "active", "already_decided": false}, "message": "อนุมัติร้าน \"ร้านป้าแดง\" เรียบร้อย"}
+```
+409: `ALREADY_PROCESSED` (ตัดสินเป็นผลอื่นไปแล้ว) · `OWNER_NOT_FOUND` · `OWNER_SUSPENDED` · `ROLE_NOT_CONVERTIBLE` (เจ้าของมี role อื่น เช่น provider — เปลี่ยนที่หน้าเว็บ)
+
+### 9.4 ใบสมัครไรเดอร์ + ตรวจเอกสารซ้ำ — `approvals/riders`
+
+ทุกการเขียนเรียก `Admin\RiderController` ของเว็บตัวเดิม (validation / เงื่อนไขสถานะ / ข้อความเดียวกัน)
+
+**`GET approvals/riders?status=pending|documents_changed|rejected|all&search=`**
+(`pending` = ใบสมัครรอตรวจ เก่าสุดก่อน · `documents_changed` = อนุมัติแล้วแต่เปลี่ยนบัตร/ใบขับขี่/ทะเบียนรถ รอตรวจซ้ำ — ระหว่างนี้รับงานไม่ได้)
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 12, "full_name": "สมชาย ขยันส่ง", "phone_masked": "089•••5432", "id_card_masked": "123xxxxxxx121",
+        "status": "pending", "status_text": "รอตรวจสอบ", "vehicle_type": "motorcycle", "vehicle_type_text": "มอเตอร์ไซค์",
+        "vehicle_plate": "1กข 1234", "province": "กรุงเทพมหานคร",
+        "user": {"id": 140, "name": "สมชาย", "member_number": "TP000140"}, "kyc_verified": true,
+        "documents_complete": true, "documents_missing": [], "documents_missing_text": null,
+        "documents_changed_at": null, "submitted_at": "2026-10-06T13:30:00+07:00", "waiting_minutes": 30
+      }
+    ],
+    "current_page": 1, "last_page": 1, "per_page": 20, "total": 1
+  }
+}
+```
+
+**`GET approvals/riders/{id}`** = รายการ + `phone` · `birth_date` · `address{line,district,province}` · `vehicle{type,type_text,plate,brand,color}` · `rider_type`
+· `rejection_reason` · `suspension_reason` · `approved_at` · `actions{can_approve, can_reject, can_mark_documents_reviewed}` ·
+```json
+"documents": [
+  {"type": "id_card", "label": "บัตรประชาชน", "uploaded": true, "required": true,
+   "url": "https://main.thaiprompt.online/api/admin/approvals/riders/12/document/id_card", "requires_auth": true},
+  {"type": "profile", "label": "รูปถ่ายหน้าตรง", "uploaded": false, "required": true, "url": null, "requires_auth": false}
+]
+```
+
+**`GET approvals/riders/{id}/document/{type}`** — `type` = `id_card` | `driver_license` | `vehicle_registration` | `profile`
+สตรีมจาก private disk ผ่าน `Admin\RiderController::document` (log การเปิดดูแบบเดียวกับเว็บ) · `Cache-Control: private, no-store` · ไม่มีไฟล์ = 404 `DOCUMENT_NOT_FOUND`
+
+**`POST .../{id}/approve`** — เอกสารบังคับต้องครบ (ไม่ครบ = **422 `DOCUMENTS_INCOMPLETE`** `data.missing`) · ถูกระงับ = 409 `RIDER_SUSPENDED` · อนุมัติอยู่แล้ว = 200 (ถือว่าตรวจเอกสารที่เปลี่ยนแล้ว)
+**`POST .../{id}/reject` `{reason}`** (3–500 ตัวอักษร) — เฉพาะ `pending`/`inactive` (อนุมัติแล้ว = 409 `INVALID_STATUS` ใช้ "ระงับ" ที่หน้าเว็บ) · ปฏิเสธไปแล้ว = 200 `already_decided`
+**`POST .../{id}/documents-reviewed`** — เอกสารต้องครบ → ล้าง `documents_changed_at` (ไรเดอร์รับงานต่อได้)
+
+```json
+{"success": true, "data": null, "message": "อนุมัติไรเดอร์เรียบร้อย"}
+```
+```json
+{"success": false, "data": {"missing": ["profile"]}, "message": "อนุมัติไม่ได้ ยังขาดเอกสาร: รูปถ่ายหน้าตรง", "error_code": "DOCUMENTS_INCOMPLETE"}
+```
+
+### 9.5 งานไรเดอร์ที่รอตัดสิน (💸 เคลื่อนเงิน) — `approvals/rider-jobs`
+
+**`GET approvals/rider-jobs?filter=needs_decision|handover_review|disputed|awaiting_release|manual_needed`** (ค่าเริ่มต้น `needs_decision` · เก่าสุดก่อน)
+
+- `handover_review` = งานที่ **แอดมินตัดสินการส่งมอบได้จริง** (`HandoverService::scopeAdminResolvable`) และ (เงินพักรอปลด `awaiting_release` หรือ ผู้ซื้อร้องเรียน) — นิยามเดียวกับตัวกรองหน้าเว็บ
+- `disputed` / `awaiting_release` = แยกย่อยของข้างบน · `manual_needed` = งานรอไรเดอร์ที่ระบบหาคนรับไม่ได้ (`dispatch_type = manual_needed`) ต้องมอบหมายเอง
+- `needs_decision` = `handover_review` ∪ `manual_needed`
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 501, "job_number": "RJ2610060001", "job_type": "shop_delivery",
+        "status": "awaiting_release", "status_text": "วางของแล้ว รอปลดเงิน",
+        "decision_type": "dispute",
+        "reason": {"code": "wrong_item", "text": "ผู้ซื้อร้องเรียน: ได้ของผิด", "note": "ได้สีผิด"},
+        "amounts": {"order_total_thb": 140.0, "delivery_fee_thb": 40.0, "rider_earnings_thb": 32.0,
+                    "platform_fee_thb": 8.0, "shop_bonus_thb": 0.0, "cod_thb": 0.0},
+        "order": {"type": "Order", "id": 9001, "order_number": "ORD-261006-0001"},
+        "rider": {"id": 12, "name": "สมชาย ขยันส่ง"},
+        "customer": {"id": 300, "name": "สมหญิง ใจดี", "member_number": "TP000300"},
+        "handover": {"status": "disputed", "status_text": "ผู้ซื้อร้องเรียน รอแอดมินตัดสิน", "method": null,
+                     "disputed_at": "2026-10-06T13:10:00+07:00", "waited_photo_at": null,
+                     "buyer_confirmed_at": null, "auto_release_at": null},
+        "created_at": "2026-10-06T12:30:00+07:00", "waiting_minutes": 50,
+        "actions": {"can_release": true, "can_refund": true, "can_reassign": false, "can_redispatch": false}
+      }
+    ],
+    "current_page": 1, "last_page": 1, "per_page": 20, "total": 1
+  }
+}
+```
+
+- `decision_type`: `dispute` (ร้องเรียน) · `awaiting_release` (วางของแล้ว เงินพักรอปลดอัตโนมัติ) · `manual_dispatch` (ไม่มีไรเดอร์รับ) · `handover_review` (ตัดสินได้แต่ไม่เข้าข้อข้างบน) · `none`
+- `amounts.order_total_thb` = ยอดออเดอร์ต้นทาง (เงินที่พักอยู่) · `delivery_fee_thb` = ค่าส่งรวม · `rider_earnings_thb` = ส่วนของไรเดอร์ · `shop_bonus_thb` = โบนัสที่ร้านเติม
+- `actions` = คำใบ้ปุ่มชุดเดียวกับหน้าเว็บ (`HandoverService::adminCanResolve` + `Admin\RiderJobController::adminActions`) — ตัดสินจริงที่ service
+
+**`GET approvals/rider-jobs/{id}`** = รายการ + `title` · `pickup{address,contact_name}` · `delivery{address,contact_name}` · `distance_km` · `timeline{...}`
+· `cancellation_reason` · `failure_reason` · `dispatch_round` ·
+```json
+"handover_photos": [{"kind": "waited", "label": "รูปวางของ (รอบ 2)", "taken_at": "...",
+                     "url": "https://main.thaiprompt.online/api/admin/approvals/rider-jobs/501/handover-photo/waited", "requires_auth": true}],
+"eligible_riders": [{"id": 15, "full_name": "สมศักดิ์", "vehicle_type_text": "มอเตอร์ไซค์", "availability": "online",
+                     "availability_text": "ออนไลน์", "distance_to_pickup_km": 1.2, "last_location_update": "..."}]
+```
+(`eligible_riders` = รายชื่อเดียวกับหน้าเว็บ — อนุมัติแล้ว ไม่ถูกระงับ ไม่มีงานค้าง ไม่ใช่คู่กรณี · ตัดเบอร์โทรออก)
+
+**`GET approvals/rider-jobs/{id}/handover-photo/{kind}`** — `arrival` | `waited` (รูปหลักฐาน private disk ผ่าน `Admin\RiderJobController::handoverPhoto`) · no-store
+
+**การกระทำ (ทุกตัวเรียก `Admin\RiderJobController` ของเว็บ → service เดิม)** — ผลตอบรูปเดียวกับเว็บ:
+
+| Endpoint | body | ทำอะไร / การตรวจ (อยู่ใน service) | error_code ที่เป็นไปได้ |
+|---|---|---|---|
+| `POST .../{id}/release` | `{reason?}` ≤1000 | `HandoverService::adminRelease` — ล็อกงาน+การส่งมอบ · `adminCanResolve` · ออเดอร์ต้องยังไม่ยกเลิก/คืนเงิน → ปิดงานเป็น **ส่งสำเร็จ** แบ่งเงินร้าน + จ่ายไรเดอร์ | `HANDOVER_FINAL` · `HANDOVER_NOT_READY` · `VALIDATION_ERROR` |
+| `POST .../{id}/refund` | `{reason}` 3–1000 | `HandoverService::adminRefund` — ล็อกคู่เดียวกัน · `adminCanResolve` → งาน **ส่งไม่สำเร็จ** (ไรเดอร์ไม่ได้ค่าส่ง) + ยกเลิกออเดอร์ **คืนเงินผู้ซื้อเต็มจำนวน** | `HANDOVER_FINAL` · `HANDOVER_NOT_READY` · `REFUND_FAILED` (เช่นกระเป๋าผู้ซื้อถูกระงับ — ไม่มีอะไรเปลี่ยน) |
+| `POST .../{id}/reassign` | `{rider_id}` | `RiderJobService::adminReassign` — งานยังไม่จบ/ไม่อยู่ในช่วงเงินพัก · ไรเดอร์ใหม่อนุมัติแล้ว ไม่ถูกระงับ ไม่มีงานค้าง วงเงิน COD พอ ไม่ใช่ผู้ซื้อ/ผู้ขาย | `INVALID_TRANSITION` · `HAS_ACTIVE_JOB` · `NOT_ELIGIBLE`/รหัสเหตุผล · `SELF_ORDER` · `INSUFFICIENT_COD_CREDIT` · `VALIDATION_ERROR` |
+| `POST .../{id}/redispatch` | — | สร้างงานใหม่ให้ออเดอร์ของงาน `cancelled`/`failed` (ออเดอร์ต้องยังเรียกไรเดอร์ได้ — `FreshMarketService::redispatchRider` / `RiderDispatchService::createJobForSource`) | `INVALID_TRANSITION` · `REDISPATCH_FAILED` |
+
+```json
+{"success": true, "data": {"job": {"id": 501, "status": "completed"}}, "message": "ปล่อยเงินแล้ว งานปิดเป็นส่งสำเร็จ และแจ้งผู้ซื้อกับไรเดอร์แล้ว"}
+```
+```json
+{"success": true, "data": {"job": {"id": 501, "status": "completed"}, "already_decided": true}, "message": "งานนี้ปล่อยเงินไปแล้ว"}
+```
+```json
+{"success": false, "data": null, "message": "การส่งมอบนี้ปิดไปแล้ว", "error_code": "HANDOVER_FINAL"}
+```
+
+- กดซ้ำ: `release` หลังปล่อยแล้ว / `refund` หลังคืนแล้ว / `reassign` ให้ไรเดอร์คนเดิม = 200 `already_decided:true` (ไม่มีเงินขยับ)
+- สิทธิ์: แอดมิน (หน้าเว็บก็ `role:admin,super_admin` เท่านั้น — ไม่มีสิทธิ์ย่อยสำหรับการตัดสินเงิน)
+
+### 9.6 ผู้ใช้ — ระงับ / ยกเลิกระงับ / รีเซ็ต PIN
+
+| Endpoint | body | สิทธิ์ / กติกา |
+|---|---|---|
+| `POST users/{id}/suspend` | `{reason?}` ≤500 | `UserPolicy::block` (ห้ามตัวเอง → 403) · `UserSuspensionService` (ตัวเดียวกับเว็บ): ห้ามระงับตัวเอง/super admin → 409 `CANNOT_SUSPEND_SELF` / `CANNOT_SUSPEND_SUPER_ADMIN` · ระงับ = เพิกถอน token แอปทั้งหมด + ปล่อยงานไรเดอร์ที่ค้าง |
+| `POST users/{id}/unsuspend` | — | `UserPolicy::block` |
+| `POST users/{id}/reset-wallet-pin` | — | **super admin เท่านั้น** (เหมือนเว็บ) → `WalletService::adminResetPin` ล้าง PIN + ปลดล็อกกรอกผิด + log `pin_changed` ระดับ warning · ไม่มีกระเป๋า = 404 `WALLET_NOT_FOUND` |
+
+```json
+{"success": true, "data": {"user_id": 77, "suspended": true, "suspended_at": "2026-10-06T14:00:00+07:00", "already": false}, "message": "ระงับบัญชี สมชาย เรียบร้อย"}
+```
+```json
+{"success": true, "data": {"user_id": 77, "wallet_id": 40, "has_pin": false, "locked": false}, "message": "รีเซ็ต PIN สำเร็จ ผู้ใช้สามารถตั้ง PIN ใหม่ได้"}
+```
+ระงับซ้ำ / ยกเลิกซ้ำ = 200 `already:true` (ไม่เขียนทับเหตุผลเดิม)
+
+### 9.7 ตั๋วซัพพอร์ต — `approvals/tickets`
+
+กองของแอป → สถานะจริง: `open` = `open` + `in_progress` (รอทีมงาน) · `pending` = `waiting_customer` (รอลูกค้า) · `closed` = `resolved` + `closed` · `all`
+
+**`GET approvals/tickets?status=open|pending|closed|all&priority=low|medium|high|critical&search=`** (ค่าเริ่มต้น `open` · ด่วนก่อน แล้วรอนานสุดก่อน · `closed` = ล่าสุดก่อน)
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 8, "ticket_number": "TKT-ABC-20261006-1234", "subject": "ถอนเงินไม่เข้า",
+        "status": "open", "status_label": "เปิด", "bucket": "open",
+        "priority": "high", "priority_label": "สูง", "category": "การเงิน",
+        "user": {"id": 300, "name": "สมหญิง", "member_number": "TP000300"},
+        "assigned_to": null, "replies_count": 0, "is_overdue": false,
+        "created_at": "2026-10-05T13:00:00+07:00", "last_reply_at": null, "waiting_minutes": 1500
+      }
+    ],
+    "current_page": 1, "last_page": 1, "per_page": 20, "total": 1
+  }
+}
+```
+
+**`GET approvals/tickets/{id}`** = รายการ + `description` · `resolution_notes` · `due_at` · `first_response_at` · `resolved_at` · `closed_at`
+· `statuses` (ตัวเลือกที่ตั้งได้ + ป้าย) ·
+```json
+"messages": [
+  {"id": null, "sender": "customer", "author": "สมหญิง", "message": "ถอนเงินเมื่อวานยังไม่เข้า", "is_internal_note": false, "at": "..."},
+  {"id": 41, "sender": "staff", "author": "แอดมินเอ", "message": "เช็คกับฝ่ายการเงิน", "is_internal_note": true, "at": "..."}
+]
+```
+(ข้อความแรก = คำอธิบายตอนเปิดตั๋ว · `is_internal_note: true` = บันทึกภายในจากหน้าเว็บ ลูกค้าไม่เห็น)
+
+**`POST approvals/tickets/{id}/reply` `{message}`** (บังคับ ≤10,000) → `TicketService::addReply` (ตอบลูกค้า ไม่ใช่บันทึกภายใน · บันทึกเวลาตอบครั้งแรก · แจ้งลูกค้า) → **201**
+```json
+{"success": true, "data": {"reply": {"id": 42, "sender": "staff", "author": "แอดมินเอ", "message": "...", "is_internal_note": false, "at": "..."},
+  "duplicate": false, "ticket": {"id": 8, "status": "open"}}, "message": "เพิ่มข้อความตอบกลับเรียบร้อยแล้ว"}
+```
+กันกดส่งซ้ำ: ข้อความเดิมจากแอดมินคนเดิมในตั๋วเดิมภายใน 60 วินาที → **200** `duplicate:true` คืนรายการเดิม (ไม่ส่งถึงลูกค้าซ้ำ)
+
+**`POST approvals/tickets/{id}/status` `{status, resolution_notes?}`** — `status` ∈ `open, in_progress, waiting_customer, resolved, closed` (ชุดเดียวกับเว็บ) → `TicketService::changeStatus`
+```json
+{"success": true, "data": {"id": 8, "status": "resolved", "status_label": "แก้ไขแล้ว", "already": false}, "message": "อัปเดตสถานะตั๋วเรียบร้อยแล้ว"}
+```
+สถานะเดิมอยู่แล้ว = 200 `already:true` (ไม่เรียก service ซ้ำ — ไม่แจ้ง/ขอคะแนนซ้ำ)
+
+> แก้บั๊กที่มาด้วย: `NotificationService::notifyAdminNewTicket` / `notifyAdminUnassignedTicket` / `notifyAdminNewCommission` เดิม query `users.is_admin` (ไม่มีคอลัมน์นี้) → SQL error ถูก `TicketObserver` กลืน แอดมินไม่เคยได้แจ้งเตือนตั๋ว
+> ตอนนี้ใช้ตัวเลือกผู้รับเดียวกับ `notifyAdminNewKyc` (super admin / role admin, super_admin / สิทธิ์ที่เกี่ยวข้อง · ไม่ถูกระงับ) · ตั๋วเพิ่ม role `moderator` + สิทธิ์ `manage_tickets`
+> · บันทึกภายใน (`is_internal_note`) ไม่แจ้งลูกค้าอีกต่อไป (เดิมแจ้งพร้อมตัวอย่างข้อความภายใน) · ตัวอย่างข้อความตอบกลับตัดด้วย `mb_substr` (เดิมตัดไบต์กลางตัวอักษรไทย → แจ้งเตือนหายเงียบ)
+
+### 9.8 คอมมิชชัน MLM (💸 เคลื่อนเงิน) — `approvals/mlm-commissions`
+
+**`GET approvals/mlm-commissions?status=pending|approved|paid|rejected|all&type=`** (ค่าเริ่มต้น `pending` · `pending`/`approved` = เก่าสุดก่อน)
+
+```json
+{
+  "success": true,
+  "data": {
+    "data": [
+      {
+        "id": 700, "type": "direct_referral", "level": 1, "status": "pending", "status_label": "รออนุมัติ",
+        "amount_thb": 100.0, "sales_amount_thb": 1000.0, "pv_amount": 0.0,
+        "recipient": {"id": 77, "name": "ผู้รับคอม", "member_number": "TP000077"},
+        "from_member": {"id": 51, "name": "เพื่อนที่สั่งซื้อ"}, "plan": "Default Plan",
+        "source": {"type": "Order", "id": 9001},
+        "created_at": "2026-10-06T11:00:00+07:00", "approved_at": null, "paid_at": null, "waiting_minutes": 180,
+        "actions": {"can_approve": true, "can_pay": false}
+      }
+    ],
+    "current_page": 1, "last_page": 1, "per_page": 20, "total": 1,
+    "summary": {"pending_count": 2, "pending_amount_thb": 150.25, "approved_count": 1, "approved_amount_thb": 70.0}
+  }
+}
+```
+
+| Endpoint | ทำอะไร (ทางเดียวกับ `Admin\MlmCommissionController`) | ผล |
+|---|---|---|
+| `POST .../{id}/approve` | `MlmCalculationService::approvePendingCommissions([id])` — เฉพาะ `pending` | อนุมัติไปแล้ว/จ่ายแล้ว = 200 `already:true` · สถานะอื่น (เช่น rejected) = 409 `INVALID_STATUS` |
+| `POST .../{id}/pay` | `MlmCalculationService::payApprovedCommissions([id])` — transaction ต่อรายการ · ล็อกแถวคอมด้วย primary key แล้วตรวจสถานะซ้ำ · เคยมีรายการ wallet ของคอมนี้ = แค่ปิดสถานะ (ไม่จ่ายซ้ำ) · หักกองทุน MLM ก่อน · ฝากเข้ากระเป๋าผ่าน `WalletService` (type `commission`) | ยังไม่อนุมัติ = 409 `NOT_APPROVED` · จ่ายแล้ว = 200 `already:true` · กองทุนไม่พอ/กระเป๋าผู้รับใช้ไม่ได้ = 409 `PAY_FAILED` (ไม่มีเงินขยับ) |
+
+```json
+{"success": true, "data": {"id": 700, "status": "paid", "amount_thb": 120.0, "already": false}, "message": "จ่ายคอมมิชชั่นแล้ว"}
+```
+
+- 🚫 ไม่มีการ `lockForUpdate` แบบค้นหาบน `mlm_commissions` เพิ่ม (กติกาโปรเจกต์: gap lock ชนกับ insert ของการแบ่งเงิน = deadlock) — ใช้เส้นทางเดียวกับหน้าเว็บทุกตัวอักษร
+- สิทธิ์: แอดมิน (หน้าเว็บ `role:admin,super_admin` — ไม่มีสิทธิ์ย่อย)

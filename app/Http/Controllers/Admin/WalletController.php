@@ -696,19 +696,8 @@ class WalletController extends Controller
         try {
             $wallet = Wallet::findOrFail($id);
 
-            // รีเซ็ต PIN
-            $wallet->update([
-                'pin_hash' => null,
-                'failed_attempts' => 0,
-                'locked_until' => null,
-            ]);
-
-            $this->walletService->logAction(
-                $wallet,
-                'pin_changed',
-                'PIN ถูกรีเซ็ตโดยแอดมิน: '.auth()->user()->name,
-                'warning'
-            );
+            // รีเซ็ต PIN (ตรรกะเดียวกับแอปแอดมิน)
+            $this->walletService->adminResetPin($wallet, auth()->user());
 
             return redirect()->back()->with('success', 'รีเซ็ต PIN สำเร็จ ผู้ใช้สามารถตั้ง PIN ใหม่ได้');
         } catch (Exception $e) {

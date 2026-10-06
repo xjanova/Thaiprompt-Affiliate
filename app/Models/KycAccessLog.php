@@ -40,6 +40,21 @@ class KycAccessLog extends Model
     ];
 
     /**
+     * บันทึกการเปิดดูรูป 1 ครั้ง — ทางเดียวที่ใช้ทั้งหลังบ้านเว็บและแอปแอดมิน (ข้อมูลเหมือนกันทุกช่องทาง)
+     */
+    public static function record(KycVerification $kyc, ?User $viewer, string $kind, \Illuminate\Http\Request $request): self
+    {
+        return self::create([
+            'kyc_verification_id' => $kyc->id,
+            'subject_user_id' => $kyc->user_id,
+            'viewer_id' => $viewer?->id,
+            'kind' => $kind,
+            'ip_address' => $request->ip(),
+            'user_agent' => \Illuminate\Support\Str::limit((string) $request->userAgent(), 250, ''),
+        ]);
+    }
+
+    /**
      * แอดมินที่เปิดดู
      */
     public function viewer(): BelongsTo

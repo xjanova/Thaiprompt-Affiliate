@@ -10,7 +10,6 @@ use App\Services\Ekyc\EkycService;
 use App\Services\KycAutoCheckService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class KycController extends Controller
@@ -161,14 +160,7 @@ class KycController extends Controller
             abort(404);
         }
 
-        KycAccessLog::create([
-            'kyc_verification_id' => $kycVerification->id,
-            'subject_user_id' => $kycVerification->user_id,
-            'viewer_id' => $request->user()?->id,
-            'kind' => $kind,
-            'ip_address' => $request->ip(),
-            'user_agent' => Str::limit((string) $request->userAgent(), 250, ''),
-        ]);
+        KycAccessLog::record($kycVerification, $request->user(), $kind, $request);
 
         return response($bytes, 200, [
             'Content-Type' => 'image/jpeg',

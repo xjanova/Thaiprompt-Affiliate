@@ -460,6 +460,28 @@ class WalletService
     }
 
     /**
+     * แอดมินรีเซ็ต PIN กระเป๋าเงิน → ล้าง PIN + ปลดล็อกจากการกรอกผิด (ผู้ใช้ตั้ง PIN ใหม่เองได้) + บันทึก log ระดับ warning
+     *
+     * ใช้ร่วมกันระหว่างหลังบ้านเว็บ (Admin\WalletController::resetUserPin) และแอปแอดมิน
+     * ⚠️ ผู้เรียกต้องตรวจสิทธิ์เอง (super admin เท่านั้น — ตามหน้าเว็บ)
+     */
+    public function adminResetPin(Wallet $wallet, User $admin): void
+    {
+        $wallet->update([
+            'pin_hash' => null,
+            'failed_attempts' => 0,
+            'locked_until' => null,
+        ]);
+
+        $this->logAction(
+            $wallet,
+            'pin_changed',
+            'PIN ถูกรีเซ็ตโดยแอดมิน: '.$admin->name,
+            'warning'
+        );
+    }
+
+    /**
      * Log wallet action
      */
     public function logAction(

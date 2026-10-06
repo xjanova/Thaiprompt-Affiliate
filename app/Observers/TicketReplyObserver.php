@@ -19,6 +19,11 @@ class TicketReplyObserver
      */
     public function created(TicketReply $reply): void
     {
+        // บันทึกภายในของทีมงาน → ห้ามแจ้งลูกค้า (เดิมแจ้งพร้อม reply_preview = ข้อความภายในหลุดถึงลูกค้า)
+        if ($reply->is_internal_note) {
+            return;
+        }
+
         // Notify ticket owner when someone replies
         $ticket = $reply->ticket;
 

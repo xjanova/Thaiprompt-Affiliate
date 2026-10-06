@@ -280,4 +280,5 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
     Route::prefix('analytics')->name('api.admin.analytics.')->group(function () {
         Route::get('/overview', [AnalyticsController::class, 'overview'])->name('overview');
     });
+    require __DIR__.'/admin_api_approvals.php'; // คิวอนุมัติ (approvals/*) + users/{id}/suspend|unsuspend|reset-wallet-pin
 });

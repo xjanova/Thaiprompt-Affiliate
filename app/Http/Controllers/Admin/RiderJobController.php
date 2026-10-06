@@ -135,9 +135,11 @@ class RiderJobController extends Controller
      * รอบแก้ 2 (B7): เฉพาะงานที่แอดมินตัดสินได้จริง (HandoverService::scopeAdminResolvable = adminCanResolve)
      * → งานเก่าที่มีงานใหม่แทนแล้ว/การส่งมอบที่จบไปแล้ว ไม่ค้างในตัวนับ
      *
+     * public static: แอปแอดมิน (Api\Admin\Approvals\RiderJobsController) ใช้นิยามคิวเดียวกัน
+     *
      * @param  \Illuminate\Database\Eloquent\Builder<RiderJob>  $query
      */
-    private function scopeHandoverReview($query): void
+    public static function scopeHandoverReview($query): void
     {
         $query->where(function ($q) {
             $q->where('status', RiderJob::STATUS_AWAITING_RELEASE)
@@ -545,9 +547,11 @@ class RiderJobController extends Controller
     /**
      * ปุ่มที่แอดมินกดได้กับงานนี้ตอนนี้
      *
+     * public: แอปแอดมินใช้เป็นคำใบ้ปุ่มชุดเดียวกับหน้าเว็บ
+     *
      * @return array<int, string> cancel|fail|reassign|redispatch
      */
-    private function adminActions(RiderJob $job): array
+    public function adminActions(RiderJob $job): array
     {
         // รอบแก้ 2 (B4): เงินพักรอตัดสินการส่งมอบ → ไม่มีปุ่มปิดงาน (ใช้แผงการส่งมอบ: ปล่อยเงิน/คืนเงินผู้ซื้อ)
         $held = $job->handover_required && app(HandoverService::class)->holdMessageForJob($job, $job->loadedHandover()) !== null;
@@ -583,9 +587,11 @@ class RiderJobController extends Controller
     /**
      * ไรเดอร์ที่มอบหมายงานนี้ได้ (อนุมัติแล้ว ไม่ถูกระงับ ไม่มีงานค้าง ไม่ใช่ผู้ซื้อ/ผู้ขาย) เรียงจากใกล้จุดรับของ
      *
+     * public: แอปแอดมินใช้รายชื่อเดียวกันตอนเลือกไรเดอร์มอบหมายงาน
+     *
      * @return array<int, array<string, mixed>>
      */
-    private function eligibleRiders(RiderJob $job): array
+    public function eligibleRiders(RiderJob $job): array
     {
         if ($job->isTerminal()) {
             return [];
