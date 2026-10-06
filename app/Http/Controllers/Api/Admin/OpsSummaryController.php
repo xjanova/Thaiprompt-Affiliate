@@ -16,22 +16,31 @@ use App\Services\AdminApp\FortuneBillPresenter;
 use App\Services\AdminApp\StuckReadingFinder;
 use App\Services\LineFortuneService;
 use App\Services\LineGatekeeperService;
+use App\Support\SafeLog;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Admin Mobile API: หน้าแรกของแอปแอดมิน — สรุปงานที่ต้องทำตอนนี้ + สุขภาพระบบ + รายได้วันนี้ ในคำขอเดียว
  *
- * ทุกส่วนห่อ try/catch แยกกัน — ส่วนใดพัง (ตารางหาย/บริการภายนอกล่ม) ได้ค่าว่างของส่วนนั้น ไม่ทำให้ทั้งหน้าพัง
- * อ่านอย่างเดียว ไม่มีการเขียนข้อมูลธุรกิจ (มีแค่ cache สถิติโควตา LINE)
+ * - ทุกส่วนห่อ try/catch แยกกัน — ส่วนที่พังได้ค่า null + ชื่อส่วนอยู่ใน degraded[]
+ *   (ห้ามคืนกล่องว่าง count 0 — แอปจะแยกไม่ออกระหว่าง "ไม่มีงาน" กับ "อ่านไม่ได้")
+ * - ผลทั้งก้อน cache 20 วินาที ใช้ร่วมกันทุกแอดมิน (แอปหลายเครื่อง poll พร้อมกัน) — server_time/generated_at
+ *   เขียนทับเป็นเวลาปัจจุบันตอนตอบ · computed_at = เวลาที่คำนวณจริง
+ * - ไม่เช็ค Schema::hasTable/hasColumn ทุกคำขอ (ตาราง/คอลัมน์มีบน prod แล้ว) — ถ้าหายจริง ส่วนนั้นเข้า degraded เอง
+ * - อ่านอย่างเดียว ไม่มีการเขียนข้อมูลธุรกิจ (มีแค่ cache สรุปหน้าแรก + สถิติโควตา LINE)
  */
 class OpsSummaryController extends Controller
 {
+    /** cache สรุปหน้าแรก (ทุกแอดมินเห็นชุดเดียวกัน) */
+    public const CACHE_KEY = 'admin_app:ops_summary';
+
+    private const CACHE_TTL = 20;
+
     /** จำนวนตัวอย่างต่อกล่อง */
     private const PREVIEW = 5;
 
@@ -43,50 +52,75 @@ class OpsSummaryController extends Controller
 
     private const LINE_QUOTA_KEY = 'admin_app:line_push_quota';
 
+    /** @var array<int, string> ชื่อส่วนที่คำนวณไม่สำเร็จในรอบนี้ */
+    private array $degraded = [];
+
     /**
      * GET /api/admin/ops/summary
      */
     public function index(FortuneBillPresenter $presenter): JsonResponse
     {
+        $payload = Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () => $this->build($presenter));
+
+        // เวลาของ "คำตอบนี้" — ข้อมูลข้างในอาจเก่าได้ถึง 20 วินาที (ดู computed_at)
+        $now = now()->toIso8601String();
+        $payload['health']['server_time'] = $now;
+        $payload['generated_at'] = $now;
+
+        return response()->json(['success' => true, 'data' => $payload]);
+    }
+
+    /**
+     * คำนวณสรุปหน้าแรกทั้งก้อน (เรียกผ่าน cache)
+     *
+     * @return array<string, mixed>
+     */
+    private function build(FortuneBillPresenter $presenter): array
+    {
         $now = now();
+        $this->degraded = [];
 
         $revenueToday = $this->revenue($now->copy()->startOfDay(), $now, withHourly: true);
         $yesterdayNow = $now->copy()->subDay();
         $revenueYesterday = $this->revenue($yesterdayNow->copy()->startOfDay(), $yesterdayNow, withHourly: false);
 
         $today = $revenueToday['total'];
-        $yesterday = $revenueYesterday['total'];
+        $yesterday = $revenueYesterday['complete'] ? $revenueYesterday['total'] : null;
+        // เทียบได้ก็ต่อเมื่ออ่านครบทั้งสองวัน — ตัวเลขครึ่งเดียวทำให้ % หลอกตา
+        $comparable = $revenueToday['complete'] && $yesterday !== null && $yesterday > 0;
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'queue' => [
-                    'customer_requests' => $this->safe(fn () => $this->customerRequests($now), $this->emptyBox(false)),
-                    'bills_awaiting' => $this->safe(fn () => $this->billsAwaiting($now, $presenter), $this->emptyBox(true)),
-                    'withdrawals_pending' => $this->safe(fn () => $this->withdrawalsPending($now), $this->emptyBox(true)),
-                    'sms_unmatched' => $this->safe(fn () => $this->smsUnmatched($now), $this->emptyBox(true)),
-                    'stuck_readings' => $this->safe(fn () => $this->stuckReadings($now), $this->emptyBox(false)),
-                ],
-                'health' => [
-                    'ai_pool' => $this->safe(fn () => $this->aiPool(), ['healthy' => 0, 'total' => 0]),
-                    'line_push' => $this->safe(fn () => $this->linePush(), null),
-                    'queue_backlog' => $this->safe(fn () => $this->queueBacklog($now), null),
-                    'server_time' => $now->toIso8601String(),
-                ],
-                'revenue_today' => [
-                    'total' => $today,
-                    'fortune' => $revenueToday['fortune'],
-                    'marketplace' => $revenueToday['marketplace'],
-                    'other' => 0.0,
-                    'currency' => 'THB',
-                    'hourly' => $revenueToday['hourly'],
-                    'as_of' => $now->toIso8601String(),
-                ],
-                'revenue_yesterday_same_time' => $yesterday,
-                'revenue_change_pct' => $yesterday > 0 ? round((($today - $yesterday) / $yesterday) * 100, 1) : null,
-                'generated_at' => $now->toIso8601String(),
+        $payload = [
+            'queue' => [
+                'customer_requests' => $this->section('customer_requests', fn () => $this->customerRequests($now)),
+                'bills_awaiting' => $this->section('bills_awaiting', fn () => $this->billsAwaiting($now, $presenter)),
+                'withdrawals_pending' => $this->section('withdrawals_pending', fn () => $this->withdrawalsPending($now)),
+                'sms_unmatched' => $this->section('sms_unmatched', fn () => $this->smsUnmatched($now)),
+                'stuck_readings' => $this->section('stuck_readings', fn () => $this->stuckReadings($now)),
             ],
-        ]);
+            'health' => [
+                'ai_pool' => $this->section('ai_pool', fn () => $this->aiPool()),
+                'line_push' => $this->section('line_push', fn () => $this->linePush()),
+                'queue_backlog' => $this->section('queue_backlog', fn () => $this->queueBacklog($now)),
+                'server_time' => $now->toIso8601String(),
+            ],
+            'revenue_today' => [
+                'total' => $today,
+                'fortune' => $revenueToday['fortune'],
+                'marketplace' => $revenueToday['marketplace'],
+                'other' => 0.0,
+                'currency' => 'THB',
+                'hourly' => $revenueToday['hourly'],
+                'as_of' => $now->toIso8601String(),
+            ],
+            'revenue_yesterday_same_time' => $yesterday,
+            'revenue_change_pct' => $comparable ? round((($today - $yesterday) / $yesterday) * 100, 1) : null,
+            'computed_at' => $now->toIso8601String(),
+            'generated_at' => $now->toIso8601String(),
+        ];
+
+        $payload['degraded'] = array_values(array_unique($this->degraded));
+
+        return $payload;
     }
 
     // ────────────────────────────────────────────────────────────
@@ -106,8 +140,13 @@ class OpsSummaryController extends Controller
         $count = $base()->count();
         $oldest = $base()->min('admin_takeover_started_at');
 
-        $rows = $base()->with('user:id,name')->orderBy('admin_takeover_started_at')->limit(self::PREVIEW)->get();
-        $keywords = $this->customerRequestKeywords($rows->pluck('id')->all());
+        $rows = $base()
+            ->with('user:id,name')
+            ->orderBy('admin_takeover_started_at')
+            ->limit(self::PREVIEW)
+            ->get(['id', 'user_id', 'platform', 'platform_user_id', 'facebook_user_id', 'facebook_user_name',
+                'user_profile', 'admin_takeover_started_at', 'admin_takeover_until']);
+        $keywords = self::customerRequestKeywords($rows->pluck('id')->all());
 
         return [
             'count' => $count,
@@ -165,12 +204,13 @@ class OpsSummaryController extends Controller
         );
 
         $agg = $base()
-            ->selectRaw('COUNT(*) AS c, COALESCE(SUM(COALESCE(amount_paid, 0)), 0) AS amt,'
+            // ยอดต่อใบเดียวกับที่รายการบิลโชว์ (amount_paid > 0 ไม่งั้นยอดทศนิยมจาก UPA)
+            ->selectRaw('COUNT(*) AS c, COALESCE(SUM('.FortuneBillBuckets::billAmountSql().'), 0) AS amt,'
                 .' MIN(COALESCE(slip_received_at, transfer_reported_at, paid_at, updated_at)) AS oldest')
             ->toBase()
             ->first();
 
-        $rows = $base()
+        $rows = FortuneBillPresenter::selectListColumns($base())
             ->orderByRaw('COALESCE(slip_received_at, transfer_reported_at, paid_at, updated_at) ASC')
             ->orderBy('id')
             ->limit(self::PREVIEW)
@@ -230,7 +270,10 @@ class OpsSummaryController extends Controller
             ->toBase()
             ->first();
 
-        $rows = $base()->orderBy('created_at')->limit(self::PREVIEW)->get();
+        $rows = $base()
+            ->orderBy('created_at')
+            ->limit(self::PREVIEW)
+            ->get(['id', 'bank', 'amount', 'sender_or_receiver', 'status', 'sms_timestamp', 'created_at']);
 
         return [
             'count' => (int) ($agg->c ?? 0),
@@ -252,7 +295,7 @@ class OpsSummaryController extends Controller
      */
     private function stuckReadings(CarbonInterface $now): array
     {
-        $stuck = StuckReadingFinder::candidateScope(FortuneReading::query(), $now)
+        $stuck = FortuneBillPresenter::selectListColumns(StuckReadingFinder::candidateScope(FortuneReading::query(), $now))
             ->with('user:id,name')
             ->limit(200)
             ->get()
@@ -340,7 +383,7 @@ class OpsSummaryController extends Controller
                     'checked_at' => now()->toIso8601String(),
                 ], self::LINE_QUOTA_TTL);
             } catch (\Throwable $e) {
-                Log::debug('AdminApp ops/summary: ดึงโควตา LINE ไม่สำเร็จ', ['error' => \App\Support\SafeLog::exceptionMessage($e)]);
+                Log::debug('AdminApp ops/summary: ดึงโควตา LINE ไม่สำเร็จ', ['error' => SafeLog::exceptionMessage($e)]);
             }
         });
     }
@@ -353,7 +396,7 @@ class OpsSummaryController extends Controller
         $driver = (string) config('queue.connections.'.config('queue.default').'.driver', config('queue.default'));
         $pending = 0;
 
-        if ($driver === 'database' && Schema::hasTable('jobs')) {
+        if ($driver === 'database') {
             $pending = (int) DB::table('jobs')->count();
         } elseif ($driver === 'redis') {
             foreach (['default', 'fortune-deep', 'notifications', 'line-retry', 'fortune-voice'] as $queue) {
@@ -361,9 +404,7 @@ class OpsSummaryController extends Controller
             }
         }
 
-        $failed = Schema::hasTable('failed_jobs')
-            ? (int) DB::table('failed_jobs')->where('failed_at', '>=', $now->copy()->subDay())->count()
-            : 0;
+        $failed = (int) DB::table('failed_jobs')->where('failed_at', '>=', $now->copy()->subDay())->count();
 
         return ['driver' => $driver, 'pending' => $pending, 'failed_24h' => $failed];
     }
@@ -375,47 +416,48 @@ class OpsSummaryController extends Controller
     /**
      * เงินเข้าจริงในช่วงเวลา — ดูดวง (บิลที่กลายเป็นจ่ายแล้ว) + ออเดอร์ร้านค้าที่จ่ายแล้ว
      *
-     * @return array{total: float, fortune: float, marketplace: float, hourly: array<int, array{hour: int, amount: float}>}
+     * ส่วนที่อ่านไม่ได้ = null + ชื่ออยู่ใน degraded (revenue_fortune / revenue_marketplace) · complete = false
+     *
+     * @return array{total: float, fortune: float|null, marketplace: float|null, hourly: array<int, array{hour: int, amount: float}>, complete: bool}
      */
     private function revenue(CarbonInterface $from, CarbonInterface $to, bool $withHourly): array
     {
         $hours = array_fill(0, 24, 0.0);
 
-        $fortune = $this->safe(function () use ($from, $to) {
-            return FortuneBillsController::paidTodayQuery($from, $to)
-                ->selectRaw('HOUR(paid_at) AS h, COALESCE(SUM(COALESCE(amount_received, amount_paid)), 0) AS s')
-                ->groupByRaw('HOUR(paid_at)')
-                ->toBase()
-                ->get();
-        }, collect());
+        $fortune = $this->section('revenue_fortune', fn () => FortuneBillsController::paidTodayQuery($from, $to)
+            ->selectRaw('HOUR(paid_at) AS h, COALESCE(SUM(COALESCE(amount_received, amount_paid)), 0) AS s')
+            ->groupByRaw('HOUR(paid_at)')
+            ->toBase()
+            ->get()
+            ->all());
 
-        $marketplace = $this->safe(function () use ($from, $to) {
-            if (! Schema::hasColumn('orders', 'paid_at')) {
-                return collect();
+        $marketplace = $this->section('revenue_marketplace', fn () => Order::query()
+            ->where('payment_status', 'paid')
+            ->whereNotNull('paid_at')
+            ->where('paid_at', '>=', $from)
+            ->where('paid_at', '<=', $to)
+            ->selectRaw('HOUR(paid_at) AS h, COALESCE(SUM(total_amount), 0) AS s')
+            ->groupByRaw('HOUR(paid_at)')
+            ->toBase()
+            ->get()
+            ->all());
+
+        $sum = function (?array $rows) use (&$hours): ?float {
+            if ($rows === null) {
+                return null;
             }
 
-            return Order::query()
-                ->where('payment_status', 'paid')
-                ->whereNotNull('paid_at')
-                ->where('paid_at', '>=', $from)
-                ->where('paid_at', '<=', $to)
-                ->selectRaw('HOUR(paid_at) AS h, COALESCE(SUM(total_amount), 0) AS s')
-                ->groupByRaw('HOUR(paid_at)')
-                ->toBase()
-                ->get();
-        }, collect());
+            $total = 0.0;
+            foreach ($rows as $row) {
+                $total += (float) $row->s;
+                $hours[(int) $row->h] += (float) $row->s;
+            }
 
-        $fortuneTotal = 0.0;
-        foreach ($fortune as $row) {
-            $fortuneTotal += (float) $row->s;
-            $hours[(int) $row->h] += (float) $row->s;
-        }
+            return round($total, 2);
+        };
 
-        $marketTotal = 0.0;
-        foreach ($marketplace as $row) {
-            $marketTotal += (float) $row->s;
-            $hours[(int) $row->h] += (float) $row->s;
-        }
+        $fortuneTotal = $sum($fortune);
+        $marketTotal = $sum($marketplace);
 
         $hourly = [];
         if ($withHourly) {
@@ -425,10 +467,11 @@ class OpsSummaryController extends Controller
         }
 
         return [
-            'total' => round($fortuneTotal + $marketTotal, 2),
-            'fortune' => round($fortuneTotal, 2),
-            'marketplace' => round($marketTotal, 2),
+            'total' => round((float) $fortuneTotal + (float) $marketTotal, 2),
+            'fortune' => $fortuneTotal,
+            'marketplace' => $marketTotal,
             'hourly' => $hourly,
+            'complete' => $fortuneTotal !== null && $marketTotal !== null,
         ];
     }
 
@@ -437,28 +480,21 @@ class OpsSummaryController extends Controller
     // ────────────────────────────────────────────────────────────
 
     /**
-     * รันส่วนหนึ่งของหน้า — พังแล้วได้ค่าสำรอง (log ไว้ ไม่ทำให้ทั้งหน้า 500)
+     * รันส่วนหนึ่งของหน้า — พังแล้วได้ null + จดชื่อส่วนลง degraded (log ไว้ ไม่ทำให้ทั้งหน้า 500)
      */
-    private function safe(callable $fn, mixed $fallback): mixed
+    private function section(string $name, callable $fn): mixed
     {
         try {
             return $fn();
         } catch (\Throwable $e) {
+            $this->degraded[] = $name;
             Log::warning('AdminApp ops/summary: ส่วนหนึ่งของหน้าแรกพัง', [
-                'error' => \App\Support\SafeLog::exceptionMessage($e),
+                'section' => $name,
+                'error' => SafeLog::exceptionMessage($e),
             ]);
 
-            return $fallback;
+            return null;
         }
-    }
-
-    private function emptyBox(bool $withAmount): array
-    {
-        return array_merge(
-            ['count' => 0],
-            $withAmount ? ['amount_thb' => 0.0] : [],
-            ['oldest_minutes' => null, 'preview' => []]
-        );
     }
 
     private function minutesSince(mixed $at, CarbonInterface $now): ?int

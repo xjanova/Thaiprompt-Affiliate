@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin\Fortune;
 use App\Http\Controllers\Controller;
 use App\Models\FortuneReading;
 use App\Services\AdminApp\ActiveReadingPresenter;
+use App\Services\AdminApp\FortuneBillPresenter;
 use App\Services\AdminApp\StuckReadingFinder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ class ActiveReadingsController extends Controller
         $pageNo = (int) ($data['page'] ?? 1);
 
         // ธงค้างต้องเช็คธง "งานยังวิ่งอยู่" ใน cache ทีละบิล → คัดในหน่วยความจำ แล้วแบ่งหน้าเอง
-        $items = StuckReadingFinder::activeScope(FortuneReading::query(), $now)
+        $items = FortuneBillPresenter::selectListColumns(StuckReadingFinder::activeScope(FortuneReading::query(), $now))
             ->with('user:id,name')
             ->orderByDesc('updated_at')
             ->limit(self::SCAN_LIMIT)

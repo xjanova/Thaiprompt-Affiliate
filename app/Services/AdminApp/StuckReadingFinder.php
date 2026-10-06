@@ -115,7 +115,7 @@ final class StuckReadingFinder
 
         if ($r->reading_type === FortuneReading::READING_TYPE_DEEP
             && $status === FortuneReading::STATUS_COMPLETED
-            && trim((string) $r->deep_response) === ''
+            && ! self::hasDeepResponse($r)
             && $r->paid_at !== null
             && $r->paid_at->lessThanOrEqualTo($cutoff)
             && $r->paid_at->greaterThanOrEqualTo($since)
@@ -150,6 +150,21 @@ final class StuckReadingFinder
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    /**
+     * มีคำทำนาย Deep แล้วไหม — แถวที่ดึงแบบประหยัด (FortuneBillPresenter::selectListColumns) ไม่มี deep_response
+     * แต่มีธง has_deep_response ที่คิดจาก SQL เงื่อนไขเดียวกับ deepFailedWhere (NULL หรือ '' = ไม่มี)
+     */
+    private static function hasDeepResponse(FortuneReading $r): bool
+    {
+        $attrs = $r->getAttributes();
+
+        if (array_key_exists('deep_response', $attrs)) {
+            return (string) $r->deep_response !== '';
+        }
+
+        return (bool) ($attrs['has_deep_response'] ?? false);
     }
 
     /**

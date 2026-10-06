@@ -61,6 +61,17 @@ final class FortuneBillBuckets
     }
 
     /**
+     * ยอดบิลต่อใบ (SQL) — ตรงกับ FortuneBillPresenter::billAmount() ที่โชว์ในรายการ:
+     * amount_paid ถ้า > 0 ไม่งั้นยอดทศนิยมจาก UPA ไม่งั้น 0 (ผลรวมบนหัวจอจะได้ตรงกับรายการ)
+     */
+    public static function billAmountSql(string $t = self::T): string
+    {
+        return "(CASE WHEN COALESCE({$t}.amount_paid, 0) > 0 THEN {$t}.amount_paid"
+            .' ELSE COALESCE((SELECT upa.unique_amount FROM unique_payment_amounts upa'
+            ." WHERE upa.id = {$t}.unique_payment_amount_id), 0) END)";
+    }
+
+    /**
      * กรองตามกอง ('all' หรือค่าว่าง = ไม่กรอง)
      */
     public static function applyStatus(Builder $query, string $status, ?CarbonInterface $now = null): Builder

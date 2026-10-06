@@ -75,7 +75,7 @@ class ChatController extends Controller
             if ($ok) {
                 try {
                     app(\App\Services\Fortune\FortuneChatLogService::class)
-                        ->record($platform, $userId, 'admin', $data['text'], ['by' => 'admin#' . ($request->user()?->id ?? '?')]);
+                        ->record($platform, $userId, 'admin', $data['text'], ['by' => 'admin#'.($request->user()?->id ?? '?')]);
                 } catch (Throwable $logErr) {
                     // ignore — chat log is best-effort
                 }
@@ -102,7 +102,7 @@ class ChatController extends Controller
             //   (log ปลอดภัยอยู่แล้วด้วย RedactSecretsProcessor · ใช้แพตเทิร์นเดียวกันกับ takeover/resume)
             return response()->json([
                 'success' => false,
-                'message' => 'send failed: ' . SafeLog::exceptionMessage($e),
+                'message' => 'send failed: '.SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -123,10 +123,10 @@ class ChatController extends Controller
             }
         }
 
-        $systemPrompt = "You are an admin assistant for a Thai fortune-telling business. "
-            . "Customer name: " . $customerName . ". The admin is drafting a reply in Thai. "
-            . "Output ONE short Thai reply (1-3 sentences) that the admin can send as-is. "
-            . "Be polite, empathetic, end with kha. No emojis unless natural. No greetings repeated.";
+        $systemPrompt = 'You are an admin assistant for a Thai fortune-telling business. '
+            .'Customer name: '.$customerName.'. The admin is drafting a reply in Thai. '
+            .'Output ONE short Thai reply (1-3 sentences) that the admin can send as-is. '
+            .'Be polite, empathetic, end with kha. No emojis unless natural. No greetings repeated.';
 
         try {
             $result = $aiService->chatWithCustomSystemPrompt(
@@ -149,9 +149,10 @@ class ChatController extends Controller
             ]);
         } catch (Throwable $e) {
             Log::warning('AdminChat: suggest failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'suggest failed: ' . \App\Support\SafeLog::exceptionMessage($e),
+                'message' => 'suggest failed: '.\App\Support\SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -210,7 +211,7 @@ class ChatController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'takeover failed: ' . SafeLog::exceptionMessage($e),
+                'message' => 'takeover failed: '.SafeLog::exceptionMessage($e),
             ], 500);
         }
     }
@@ -219,8 +220,10 @@ class ChatController extends Controller
      * ⏱ (2026-10-06) ต่อเวลาเทคโอเวอร์ — บวกเพิ่มจากเวลาสิ้นสุดเดิม (แอปแอดมิน)
      *
      * chat/takeover ตั้งเวลาสิ้นสุดใหม่เป็น "ตอนนี้ + minutes" (อาจสั้นลงกว่าเดิม) จึงใช้แทนการต่อเวลาไม่ได้
-     * ใช้ FortuneTakeoverService::extend() ตัวเดียวกับปุ่ม "ต่อเวลา" บนหน้าเว็บ
-     * (ถ้าไม่ได้เทคโอเวอร์อยู่ บริการจะเริ่มเทคโอเวอร์ใหม่ให้ — พฤติกรรมเดิมของเว็บ)
+     * - ยังเทคโอเวอร์อยู่ → FortuneTakeoverService::extend() ตัวเดียวกับปุ่ม "ต่อเวลา" บนหน้าเว็บ
+     * - หมดเวลาไปแล้ว → เริ่มเทคโอเวอร์ใหม่แบบ forceIgnoreDisabled (เหมือน chat/takeover)
+     *   🩹 ห้ามปล่อยให้ extend() ไปเรียก takeover() แบบไม่ force — ถ้าปิดระบบส่งต่อแอดมิน (admin_handover_enabled)
+     *      จะได้ 0 นาที แล้วแอปขึ้น "ต่อเวลาอีก 0 นาที" ทั้งที่บอทกลับมาตอบเองแล้ว
      */
     public function extend(Request $request, FortuneTakeoverService $takeover): JsonResponse
     {
@@ -235,8 +238,29 @@ class ChatController extends Controller
         }
 
         try {
-            $added = $takeover->extend($reading, (int) $data['minutes'], $request->user()?->id);
+            $adminId = $request->user()?->id;
+            $minutes = (int) $data['minutes'];
+
             $reading->refresh();
+            $added = $reading->isAdminTakenOver()
+                ? $takeover->extend($reading, $minutes, $adminId)
+                : $takeover->takeover($reading, FortuneReading::TAKEOVER_REASON_MANUAL, $adminId, $minutes, null, true);
+            $reading->refresh();
+
+            if ($added <= 0 || ! $reading->isAdminTakenOver()) {
+                return response()->json([
+                    'success' => false,
+                    'data' => [
+                        'reading_id' => $reading->id,
+                        'is_takeover' => $reading->isAdminTakenOver(),
+                        'minutes_added' => 0,
+                        'until' => optional($reading->admin_takeover_until)->toIso8601String(),
+                        'remaining_minutes' => 0,
+                    ],
+                    'message' => 'ต่อเวลาไม่สำเร็จ — บทสนทนานี้ไม่ได้อยู่ในโหมดแอดมินคุยแทนแล้ว ลองกดเทคโอเวอร์ใหม่',
+                    'error_code' => 'TAKEOVER_NOT_ACTIVE',
+                ], 409);
+            }
 
             return response()->json([
                 'success' => true,
@@ -296,7 +320,7 @@ class ChatController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'resume failed: ' . SafeLog::exceptionMessage($e),
+                'message' => 'resume failed: '.SafeLog::exceptionMessage($e),
             ], 500);
         }
     }

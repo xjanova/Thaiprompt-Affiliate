@@ -109,6 +109,31 @@ class FortuneChatLogService
     }
 
     /**
+     * ข้อความล่าสุดของลูกค้าวันนี้ (อ่านตัวเดียวด้วย LINDEX -1 — ไม่ดึงทั้งบทสนทนา)
+     *
+     * ใช้ในรายการกล่องแชทของแอปแอดมินที่ต้องการแค่ "ใครพูดล่าสุด" ทีละหลายสิบแถว
+     *
+     * @return array{role:string,text:string,ts:?string,ai:?string,by:?string,image_url:?string}|null
+     */
+    public function getLastForCustomer(string $platform, string $userId): ?array
+    {
+        if ($userId === '' || ! $this->available()) {
+            return null;
+        }
+        try {
+            $raw = Redis::connection()->lindex($this->key($platform, $userId), -1);
+            if ($raw === null || $raw === false || $raw === '') {
+                return null;
+            }
+            $d = json_decode((string) $raw, true);
+
+            return is_array($d) && isset($d['text']) ? $d : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
      * Delete every conversation key for the given Bangkok date (default:
      * yesterday). Returns the number of keys removed. Used by the midnight
      * purge command; TTL is the safety net if this never runs.

@@ -4,7 +4,9 @@ namespace Tests\Feature\AdminApp;
 
 use App\Models\FortuneReading;
 use App\Models\FortuneTakeoverLog;
+use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
+use App\Services\FortuneTakeoverService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\BuildsAdminAppWorld;
@@ -117,6 +119,77 @@ class AdminAppTakeoverAndChatTest extends TestCase
         ]);
 
         $this->postJson('/api/admin/chat/extend', ['reading_id' => $reading->id])->assertStatus(422);
+    }
+
+    public function test_extend_after_expiry_starts_a_fresh_takeover(): void
+    {
+        $admin = $this->actAs($this->makeAdmin());
+        $reading = $this->makeReading([
+            'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_MANUAL,
+            'admin_takeover_started_at' => now()->subHour(),
+            'admin_takeover_until' => now()->subMinutes(5), // หมดเวลาแล้ว — บอทกลับมาตอบเอง
+        ]);
+
+        $this->postJson('/api/admin/chat/extend', ['reading_id' => $reading->id, 'minutes' => 15])
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.is_takeover', true)
+            ->assertJsonPath('data.minutes_added', 15);
+
+        $fresh = $reading->fresh();
+        $this->assertTrue($fresh->isAdminTakenOver());
+        $this->assertEqualsWithDelta(now()->addMinutes(15)->getTimestamp(), $fresh->admin_takeover_until->getTimestamp(), 5);
+        $this->assertDatabaseHas('fortune_takeover_logs', [
+            'fortune_reading_id' => $reading->id, 'action' => FortuneTakeoverLog::ACTION_TAKEOVER, 'user_id' => $admin->id,
+        ]);
+    }
+
+    public function test_extend_works_even_when_auto_handover_is_switched_off(): void
+    {
+        // ปิดระบบส่งต่อแอดมินอัตโนมัติ — เดิม extend() → takeover() แบบไม่ force ได้ 0 นาที แต่ตอบ success "ต่อเวลาอีก 0 นาที"
+        $settings = FortuneTellingSetting::getGlobalSettings();
+        $settings->forceFill(['admin_handover_enabled' => false])->save();
+        FortuneTellingSetting::clearSettingsCache();
+        $this->assertFalse(FortuneTellingSetting::getSettings()->isTakeoverEnabled());
+
+        $this->actAs($this->makeAdmin());
+        $expired = $this->makeReading([
+            'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_MANUAL,
+            'admin_takeover_until' => now()->subMinutes(1),
+        ]);
+        $this->postJson('/api/admin/chat/extend', ['reading_id' => $expired->id, 'minutes' => 10])
+            ->assertOk()
+            ->assertJsonPath('data.is_takeover', true)
+            ->assertJsonPath('data.minutes_added', 10);
+        $this->assertTrue($expired->fresh()->isAdminTakenOver());
+
+        $active = $this->makeReading([
+            'facebook_user_id' => '61550000000088', 'platform_user_id' => '61550000000088',
+            'admin_takeover_reason' => FortuneReading::TAKEOVER_REASON_MANUAL,
+            'admin_takeover_until' => now()->addMinutes(3),
+        ]);
+        $this->postJson('/api/admin/chat/extend', ['reading_id' => $active->id, 'minutes' => 10])
+            ->assertOk()
+            ->assertJsonPath('data.minutes_added', 10);
+        $this->assertGreaterThan(10, $active->fresh()->takeoverRemainingMinutes());
+    }
+
+    public function test_extend_reports_failure_instead_of_zero_minutes(): void
+    {
+        $this->actAs($this->makeAdmin());
+        $reading = $this->makeReading(['admin_takeover_until' => now()->subMinutes(1)]);
+
+        // บริการเทคโอเวอร์ปฏิเสธ (คืน 0 นาที) — ต้องได้ 409 ไม่ใช่ success "ต่อเวลาอีก 0 นาที"
+        $this->mock(FortuneTakeoverService::class, function ($mock) {
+            $mock->shouldReceive('takeover')->andReturn(0);
+            $mock->shouldReceive('extend')->andReturn(0);
+        });
+
+        $this->postJson('/api/admin/chat/extend', ['reading_id' => $reading->id, 'minutes' => 10])
+            ->assertStatus(409)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('error_code', 'TAKEOVER_NOT_ACTIVE')
+            ->assertJsonPath('data.minutes_added', 0);
     }
 
     public function test_send_failure_never_echoes_tokens_in_json(): void

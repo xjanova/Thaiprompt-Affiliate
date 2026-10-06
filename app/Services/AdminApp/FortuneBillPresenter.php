@@ -7,6 +7,7 @@ use App\Models\FortuneCelticQuestion;
 use App\Models\FortuneReading;
 use App\Models\SlipVerificationLog;
 use App\Support\FortuneFunnelStage;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +25,33 @@ class FortuneBillPresenter
 {
     /** ความยาวสูงสุดของ question_preview */
     public const QUESTION_PREVIEW_CHARS = 120;
+
+    /**
+     * คอลัมน์ที่รายการของแอปใช้จริง — ไม่โหลดคำทำนายยาว ๆ (ai_response / deep_response / basic_response)
+     * และบริบทโพสต์ (user_posts_context) · ความว่าง/ไม่ว่างของคำทำนายส่งมาเป็นธง has_* แทน
+     */
+    public const LIST_COLUMNS = [
+        'id', 'bill_reference', 'reading_type', 'amount_paid', 'amount_received', 'is_paid', 'is_floating',
+        'paid_at', 'conversation_status', 'conversation_state', 'platform', 'platform_user_id',
+        'facebook_user_id', 'facebook_user_name', 'user_profile', 'user_id', 'questions', 'created_at',
+        'updated_at', 'slip_received_at', 'slipok_verified_at', 'slip_image_path', 'user_image_url',
+        'sms_notification_id', 'unique_payment_amount_id', 'transfer_reported', 'transfer_reported_at',
+        'celtic_questions_used', 'admin_takeover_until', 'admin_takeover_started_at', 'admin_takeover_reason',
+        'admin_takeover_by',
+    ];
+
+    /**
+     * เลือกเฉพาะคอลัมน์ของรายการ + ธง has_ai_response / has_deep_response (ใช้ตอนดึงแถวเท่านั้น ไม่ใช้กับ count/aggregate)
+     */
+    public static function selectListColumns(Builder $query): Builder
+    {
+        $t = $query->getModel()->getTable();
+
+        return $query
+            ->select(array_map(fn (string $c) => "{$t}.{$c}", self::LIST_COLUMNS))
+            ->selectRaw("(COALESCE({$t}.ai_response, '') <> '') AS has_ai_response")
+            ->selectRaw("(COALESCE({$t}.deep_response, '') <> '') AS has_deep_response");
+    }
 
     /** @var array<int, string> reading_id → คำถามแรกของ Celtic */
     private array $celticFirstQuestion = [];
@@ -214,14 +242,24 @@ class FortuneBillPresenter
      */
     public static function stage(FortuneReading $r): array
     {
-        $key = FortuneFunnelStage::of($r);
+        $subject = $r;
+        $attrs = $r->getAttributes();
+
+        // แถวที่ดึงแบบประหยัด (selectListColumns) ไม่มี ai_response — FortuneFunnelStage ใช้แค่ "ว่างไหม"
+        // ตอนเดาขั้นของสถานะแปลก ๆ → ใส่ค่าลงสำเนาชั่วคราวเท่านั้น (ไม่แตะโมเดลจริง กันเผลอ save ค่าปลอมลงคอลัมน์)
+        if (! array_key_exists('ai_response', $attrs) && array_key_exists('has_ai_response', $attrs)) {
+            $subject = clone $r;
+            $subject->setRawAttributes(array_merge($attrs, ['ai_response' => $attrs['has_ai_response'] ? '1' : null]));
+        }
+
+        $key = FortuneFunnelStage::of($subject);
         $meta = FortuneFunnelStage::meta($key);
 
         return [
             'key' => $key,
             'label' => $meta['label'],
             'icon' => $meta['icon'],
-            'detail' => FortuneFunnelStage::detail($r),
+            'detail' => FortuneFunnelStage::detail($subject),
         ];
     }
 

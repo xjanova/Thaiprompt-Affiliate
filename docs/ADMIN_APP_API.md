@@ -25,7 +25,7 @@
 | ยกเลิกบิล | `POST fortune/readings/{id}/cancel` body `{reason?}` |
 | ส่งข้อความหาลูกค้า | `POST chat/send` body `{reading_id, text}` |
 | เทคโอเวอร์ (หยุดบอท) | `POST chat/takeover` body `{reading_id, minutes?}` — ตั้งเวลาสิ้นสุดใหม่ = ตอนนี้ + minutes |
-| ต่อเวลาเทคโอเวอร์ (**ใหม่**) | `POST chat/extend` body `{reading_id, minutes}` — บวกเพิ่มจากเวลาสิ้นสุดเดิม |
+| ต่อเวลาเทคโอเวอร์ (**ใหม่**) | `POST chat/extend` body `{reading_id, minutes}` — บวกเพิ่มจากเวลาสิ้นสุดเดิม (หมดเวลาไปแล้ว = เริ่มใหม่ ตอนนี้ + minutes) |
 | คืนงานให้บอท | `POST chat/resume` body `{reading_id}` |
 
 ---
@@ -87,17 +87,33 @@
     },
     "revenue_yesterday_same_time": 900.0,
     "revenue_change_pct": 37.1,
-    "generated_at": "2026-10-06T14:00:00+07:00"
+    "computed_at": "2026-10-06T13:59:48+07:00",
+    "generated_at": "2026-10-06T14:00:00+07:00",
+    "degraded": []
   }
 }
 ```
+
+### Cache และส่วนที่อ่านไม่ได้
+
+- ผลทั้งก้อน **cache 20 วินาที ใช้ร่วมกันทุกแอดมิน** (key `admin_app:ops_summary`) — `computed_at` = เวลาที่คำนวณจริง
+  · `generated_at` และ `health.server_time` = เวลาของคำตอบนี้ (เขียนทับทุกครั้ง) · `revenue_today.as_of` = เวลาที่คำนวณ
+- ส่วนที่คำนวณไม่สำเร็จ (DB/บริการภายนอกพัง) ได้ค่า **`null`** และชื่อส่วนอยู่ใน **`degraded`** (อาร์เรย์ว่าง = ปกติทุกส่วน)
+  ชื่อที่เป็นไปได้: `customer_requests` · `bills_awaiting` · `withdrawals_pending` · `sms_unmatched` · `stuck_readings`
+  · `ai_pool` · `line_push` · `queue_backlog` · `revenue_fortune` · `revenue_marketplace`
+  - กล่องคิวที่เป็น `null` = **อ่านไม่ได้** (ไม่ใช่ "ไม่มีงาน") — แอปควรโชว์ "—" + คำเตือน
+  - `revenue_fortune` / `revenue_marketplace` พัง → `revenue_today.fortune` / `.marketplace` = `null`, `total` = ผลรวมเฉพาะส่วนที่อ่านได้,
+    `hourly` = เฉพาะส่วนที่อ่านได้ · ถ้าวันนี้หรือเมื่อวานอ่านไม่ครบ → `revenue_change_pct = null`
+    (ส่วนเมื่อวานพัง → `revenue_yesterday_same_time = null` ด้วย)
+  - `health.line_push = null` โดยที่ **ไม่มี** `line_push` ใน `degraded` = ยังไม่เคยดึงโควตาสำเร็จ (ปกติ ดูด้านล่าง)
 
 ### นิยาม (ตรงตามโค้ด)
 
 - **customer_requests** = บทสนทนาที่ **ลูกค้าพิมพ์ขอคุยกับคน** และระบบเทคโอเวอร์ให้อัตโนมัติ (`admin_takeover_reason = customer_request`) ที่ **ยังไม่หมดเวลา** (`admin_takeover_until > now`)
   `keyword` = ข้อความที่ลูกค้าพิมพ์ตอนขอ (จาก log เทคโอเวอร์) · `oldest_minutes` นับจาก `admin_takeover_started_at`
 - **bills_awaiting** = บิลที่ **แอดมินต้องตัดสินว่าเงินเข้าหรือยัง** — ดูนิยามเต็มที่หัวข้อ 2 (สถานะ `awaiting`)
-  `amount_thb` = ผลรวมยอดบิล · `oldest_minutes` นับจากเวลาที่ลูกค้าส่งสลิป/แจ้งโอน
+  `amount_thb` = ผลรวมยอดบิลต่อใบ **ตัวเดียวกับ `amount_thb` ในรายการบิล** (`amount_paid` ถ้า > 0 ไม่งั้นยอดทศนิยมจาก UPA)
+  · `oldest_minutes` นับจากเวลาที่ลูกค้าส่งสลิป/แจ้งโอน
 - **withdrawals_pending** = คำขอถอนเงิน `status = pending` (ชุดเดียวกับ `finance/withdrawals/pending`) · `amount_thb` = ผลรวม `amount`
 - **sms_unmatched** = SMS เงินเข้า (`type = credit`) ที่ยังไม่ผูกกับบิล (`status` = `pending` หรือ `requires_admin_review`) **ภายใน 24 ชม.** (เก่ากว่านั้นถือว่าไม่ใช่งานค้างแล้ว)
 - **stuck_readings** = บิลจ่ายแล้วที่ **ระบบไม่ขยับเกิน 2 นาที** — ดูนิยามเต็มที่หัวข้อ 4 (`stuck = true`)
@@ -214,7 +230,7 @@
 }
 ```
 
-`paid_today.revenue_thb` ใช้นิยามเดียวกับ `revenue_today.fortune`
+`paid_today.revenue_thb` ใช้นิยามเดียวกับ `revenue_today.fortune` · `awaiting_amount_thb` = ผลรวม `amount_thb` ของรายการ `status=awaiting` (ยอดต่อใบตัวเดียวกัน)
 
 ### `GET fortune/bills/{id}/slip`
 
@@ -262,7 +278,7 @@
 }
 ```
 
-- `last_message` มาจากบันทึกแชทสดวันนี้ (Redis) ถ้าไม่มี → ข้อความล่าสุดที่แอดมินส่งผ่านแผง (log เทคโอเวอร์) → `null`
+- `last_message` มาจากบันทึกแชทสดวันนี้ (Redis — อ่านแค่ข้อความท้ายสุด `LINDEX -1`) ถ้าไม่มี → ข้อความล่าสุดที่แอดมินส่งผ่านแผง (log เทคโอเวอร์) → `null`
 - `unread` = ข้อความล่าสุดเป็นของลูกค้า (= ลูกค้ากำลังรอคำตอบ)
 
 ### `GET takeover/stats`
@@ -296,12 +312,20 @@
 
 ### `POST chat/extend` (ใหม่)
 
-body `{ "reading_id": 15001, "minutes": 15 }` (1–1440) — ใช้ `FortuneTakeoverService::extend()` ตัวเดียวกับปุ่มต่อเวลาบนเว็บ
-(ถ้าไม่ได้เทคโอเวอร์อยู่ บริการจะเริ่มเทคโอเวอร์ใหม่ให้ตามพฤติกรรมเดิมของเว็บ)
+body `{ "reading_id": 15001, "minutes": 15 }` (1–1440)
+
+- ยังเทคโอเวอร์อยู่ → `FortuneTakeoverService::extend()` ตัวเดียวกับปุ่มต่อเวลาบนเว็บ (เวลาสิ้นสุดเดิม + minutes)
+- หมดเวลาไปแล้ว → เริ่มเทคโอเวอร์ใหม่ = ตอนนี้ + minutes (แบบเดียวกับ `chat/takeover` — ทำงานแม้ปิดระบบส่งต่อแอดมินอัตโนมัติ)
 
 ```json
 {"success": true, "data": {"reading_id": 15001, "is_takeover": true, "minutes_added": 15,
   "until": "2026-10-06T14:25:00+07:00", "remaining_minutes": 25}, "message": "ต่อเวลาอีก 15 นาที"}
+```
+
+ทำไม่สำเร็จ (บริการไม่ได้เทคโอเวอร์ให้) → **409**
+```json
+{"success": false, "error_code": "TAKEOVER_NOT_ACTIVE", "message": "ต่อเวลาไม่สำเร็จ — ...",
+ "data": {"reading_id": 15001, "is_takeover": false, "minutes_added": 0, "until": null, "remaining_minutes": 0}}
 ```
 
 ### พฤติกรรมของ `POST chat/send` (เดิม — ไม่ได้แก้)

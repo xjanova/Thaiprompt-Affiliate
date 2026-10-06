@@ -10,6 +10,7 @@ use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Group;
 use Tests\Concerns\BuildsAdminAppWorld;
 use Tests\TestCase;
@@ -180,6 +181,69 @@ class AdminAppOpsSummaryTest extends TestCase
         $this->assertArrayHasKey('pending', $res->json('data.health.queue_backlog'));
         $this->assertNotEmpty($res->json('data.health.server_time'));
         $this->assertNotNull($admin);
+    }
+
+    public function test_summary_is_cached_briefly_but_timestamps_are_fresh(): void
+    {
+        $this->actAs($this->makeAdmin());
+        $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.21, 'slip_received_at' => now()->subMinutes(3)]);
+
+        $first = $this->getJson('/api/admin/ops/summary')->assertOk();
+        $this->assertSame(1, $first->json('data.queue.bills_awaiting.count'));
+        $this->assertSame([], $first->json('data.degraded'));
+
+        // ภายใน 20 วินาที: ข้อมูลชุดเดิม (ใช้ร่วมกันทุกแอดมิน) แต่เวลาของคำตอบเป็นปัจจุบัน
+        $this->travel(5)->seconds();
+        $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.22, 'slip_received_at' => now()]);
+        $this->actAs($this->makeAdmin());
+        $second = $this->getJson('/api/admin/ops/summary')->assertOk();
+        $this->assertSame(1, $second->json('data.queue.bills_awaiting.count'));
+        $this->assertSame($first->json('data.computed_at'), $second->json('data.computed_at'));
+        $this->assertNotSame($first->json('data.generated_at'), $second->json('data.generated_at'));
+        $this->assertSame($second->json('data.generated_at'), $second->json('data.health.server_time'));
+
+        // หมดอายุ cache → คำนวณใหม่
+        $this->travel(30)->seconds();
+        $this->getJson('/api/admin/ops/summary')->assertOk()->assertJsonPath('data.queue.bills_awaiting.count', 2);
+    }
+
+    public function test_failing_section_is_null_and_listed_in_degraded(): void
+    {
+        $this->actAs($this->makeAdmin());
+        config(['queue.default' => 'redis']);
+        Queue::shouldReceive('size')->andThrow(new \RuntimeException('redis down'));
+
+        $res = $this->getJson('/api/admin/ops/summary')->assertOk();
+
+        $this->assertNull($res->json('data.health.queue_backlog'));
+        $this->assertSame(['queue_backlog'], $res->json('data.degraded'));
+        // ส่วนอื่นยังมาครบ (กล่องที่อ่านได้ไม่ใช่ null)
+        $this->assertSame(0, $res->json('data.queue.bills_awaiting.count'));
+        $this->assertNotNull($res->json('data.health.ai_pool'));
+    }
+
+    public function test_awaiting_amount_uses_the_same_per_bill_amount_as_the_list(): void
+    {
+        $this->actAs($this->makeAdmin());
+
+        // บิล Celtic ที่ยังไม่มี amount_paid แต่ออก QR ทศนิยมแล้ว (UPA) + ลูกค้าส่งสลิป
+        $upaId = DB::table('unique_payment_amounts')->insertGetId([
+            'base_amount' => 99, 'unique_amount' => 99.33, 'decimal_suffix' => 33, 'status' => 'reserved',
+            'expires_at' => now()->addHours(3), 'created_at' => now(), 'updated_at' => now(),
+        ]);
+        $this->makeReading([
+            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+            'conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            'unique_payment_amount_id' => $upaId, 'slip_received_at' => now()->subMinutes(2),
+        ]);
+        $this->makeReading(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT, 'amount_paid' => 39.21, 'transfer_reported' => true]);
+
+        $list = $this->getJson('/api/admin/fortune/bills?status=awaiting')->assertOk();
+        $listSum = round(collect($list->json('data.data'))->sum('amount_thb'), 2);
+        $this->assertSame(round(99.33 + 39.21, 2), $listSum);
+
+        $this->getJson('/api/admin/fortune/bills/stats')->assertOk()->assertJsonPath('data.awaiting_amount_thb', $listSum);
+        $this->getJson('/api/admin/ops/summary')->assertOk()->assertJsonPath('data.queue.bills_awaiting.amount_thb', $listSum);
     }
 
     private function insertOrder(int $userId, string $paymentStatus, float $total, $paidAt): void

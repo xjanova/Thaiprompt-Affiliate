@@ -50,7 +50,8 @@ class FortuneBillsController extends Controller
             default => $query->orderByDesc('updated_at')->orderByDesc('id'),
         };
 
-        $page = $query->paginate($perPage);
+        // เลือกเฉพาะคอลัมน์ของรายการ (ไม่โหลดคำทำนายยาว ๆ) — count ของ paginate ไม่โดนผล เพราะ aggregate แทนคอลัมน์เอง
+        $page = FortuneBillPresenter::selectListColumns($query)->paginate($perPage);
 
         return response()->json([
             'success' => true,
@@ -77,8 +78,9 @@ class FortuneBillsController extends Controller
             $selects[] = 'COALESCE(SUM(CASE WHEN '.FortuneBillBuckets::statusSql($s, $now)." THEN 1 ELSE 0 END), 0) AS c_{$s}";
         }
         $selects[] = 'COUNT(*) AS c_all';
+        // ยอดต่อใบเดียวกับที่รายการโชว์ (amount_paid > 0 ไม่งั้นยอดทศนิยมจาก UPA) — ผลรวมจะตรงกับรายการ
         $selects[] = 'COALESCE(SUM(CASE WHEN '.FortuneBillBuckets::statusSql('awaiting', $now)
-            .' THEN COALESCE(fortune_readings.amount_paid, 0) ELSE 0 END), 0) AS awaiting_amount';
+            .' THEN '.FortuneBillBuckets::billAmountSql().' ELSE 0 END), 0) AS awaiting_amount';
 
         $row = FortuneBillBuckets::billedScope(FortuneReading::query())
             ->selectRaw(implode(', ', $selects))

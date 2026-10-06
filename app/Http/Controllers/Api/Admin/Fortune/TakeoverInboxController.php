@@ -239,9 +239,9 @@ class TakeoverInboxController extends Controller
         $pid = (string) ($r->platform_user_id ?: $r->facebook_user_id);
 
         if ($pid !== '') {
-            $live = $chatLog->getForCustomer($r->platform ?: 'facebook', $pid);
-            $last = end($live);
-            if (is_array($last) && isset($last['text'])) {
+            // อ่านแค่ข้อความท้ายสุด (LINDEX -1) — ไม่ดึงทั้งบทสนทนาทีละแถว
+            $last = $chatLog->getLastForCustomer($r->platform ?: 'facebook', $pid);
+            if (is_array($last)) {
                 return [
                     'sender' => match ($last['role'] ?? 'user') {
                         'bot' => 'bot',
