@@ -1,6 +1,7 @@
-# Admin App API v2 — สัญญา JSON (ไทยพร้อม แอดมิน)
+# Admin App API v2 / v3 — สัญญา JSON (ไทยพร้อม แอดมิน)
 
-> สถานะ: **กำลังพัฒนา** บน branch `feat/admin-app-api-v2` — เอกสารนี้คือสัญญาที่แอป Flutter ใช้สร้างคู่ขนาน
+> สถานะ: v2 ขึ้น `claude/Main` แล้ว · **v3 กำลังพัฒนา** บน branch `feat/admin-app-api-v3` (ดู **หัวข้อ 8 — v3**)
+> — เอกสารนี้คือสัญญาที่แอป Flutter ใช้สร้างคู่ขนาน · ข้อความที่ v3 เปลี่ยนความหมายมีป้าย **(v3)** ชี้ไปหัวข้อ 8
 > ทุก endpoint อยู่ใต้ `/api/admin/*` (ไฟล์ `routes/admin_api.php`) ต้องมี `Authorization: Bearer <admin token>`
 > (token ที่ได้จาก `/api/admin/auth/login` หรือ `/api/admin/auth/pair/claim` — ability `admin`)
 
@@ -20,9 +21,11 @@
 
 | การกระทำ | Endpoint เดิม |
 |---|---|
-| ยืนยันว่าจ่ายแล้ว | `POST fortune/readings/{id}/mark-paid` body `{amount?, note?}` |
-| คืนเงิน (พลิกธงจ่าย) | `POST fortune/readings/{id}/refund` body `{reason?}` |
+| ยืนยันว่าจ่ายแล้ว | `POST fortune/readings/{id}/mark-paid` body `{amount?, note?}` — **(v3)** ไม่ส่ง amount = ยอดจริงของบิล (8.7) |
+| คืนเงิน / ยกเลิกการอนุมัติ | `POST fortune/readings/{id}/refund` body `{reason?}` — **(v3)** ถอยครบแบบปุ่ม void บนเว็บ (8.6) |
 | ยกเลิกบิล | `POST fortune/readings/{id}/cancel` body `{reason?}` |
+| ทำนายซ้ำบิลค้าง (**v3 ใหม่**) | `POST fortune/readings/{id}/retry` — เซิร์ฟเวอร์เลือกวิธีกู้เอง (8.5) |
+| โอนเงินถอนแล้ว (แนบสลิป) | `POST finance/withdrawals/{id}/complete` multipart `{transfer_slip?, transfer_note?}` (สัญญาเต็ม 8.8) |
 | ส่งข้อความหาลูกค้า | `POST chat/send` body `{reading_id, text}` |
 | เทคโอเวอร์ (หยุดบอท) | `POST chat/takeover` body `{reading_id, minutes?}` — ตั้งเวลาสิ้นสุดใหม่ = ตอนนี้ + minutes |
 | ต่อเวลาเทคโอเวอร์ (**ใหม่**) | `POST chat/extend` body `{reading_id, minutes}` — บวกเพิ่มจากเวลาสิ้นสุดเดิม (หมดเวลาไปแล้ว = เริ่มใหม่ ตอนนี้ + minutes) |
@@ -99,7 +102,7 @@
 - ผลทั้งก้อน **cache 20 วินาที ใช้ร่วมกันทุกแอดมิน** (key `admin_app:ops_summary`) — `computed_at` = เวลาที่คำนวณจริง
   · `generated_at` และ `health.server_time` = เวลาของคำตอบนี้ (เขียนทับทุกครั้ง) · `revenue_today.as_of` = เวลาที่คำนวณ
 - ส่วนที่คำนวณไม่สำเร็จ (DB/บริการภายนอกพัง) ได้ค่า **`null`** และชื่อส่วนอยู่ใน **`degraded`** (อาร์เรย์ว่าง = ปกติทุกส่วน)
-  ชื่อที่เป็นไปได้: `customer_requests` · `bills_awaiting` · `withdrawals_pending` · `sms_unmatched` · `stuck_readings`
+  ชื่อที่เป็นไปได้: `customer_requests` · `bills_awaiting` · `withdrawals_pending` · `withdrawals_approved` **(v3)** · `sms_unmatched` · `stuck_readings`
   · `ai_pool` · `line_push` · `queue_backlog` · `revenue_fortune` · `revenue_marketplace`
   - กล่องคิวที่เป็น `null` = **อ่านไม่ได้** (ไม่ใช่ "ไม่มีงาน") — แอปควรโชว์ "—" + คำเตือน
   - `revenue_fortune` / `revenue_marketplace` พัง → `revenue_today.fortune` / `.marketplace` = `null`, `total` = ผลรวมเฉพาะส่วนที่อ่านได้,
@@ -109,14 +112,16 @@
 
 ### นิยาม (ตรงตามโค้ด)
 
-- **customer_requests** = บทสนทนาที่ **ลูกค้าพิมพ์ขอคุยกับคน** และระบบเทคโอเวอร์ให้อัตโนมัติ (`admin_takeover_reason = customer_request`) ที่ **ยังไม่หมดเวลา** (`admin_takeover_until > now`)
-  `keyword` = ข้อความที่ลูกค้าพิมพ์ตอนขอ (จาก log เทคโอเวอร์) · `oldest_minutes` นับจาก `admin_takeover_started_at`
+- **customer_requests** **(v3 — นิยามใหม่ ดู 8.2)** = บิลที่ลูกค้าพิมพ์ขอคุยกับคนใน 24 ชม. และ **ยังไม่มีแอดมินลงมือ** (อ่านจาก `fortune_takeover_logs`)
+  ~~เดิม: เทคโอเวอร์อัตโนมัติ `admin_takeover_reason = customer_request` ที่ยังไม่หมดเวลา~~ — webhook เลิกเทคโอเวอร์ให้ตั้งแต่ 2026-05-17 กล่องเลยว่างตลอด
+  `keyword` = ข้อความที่ลูกค้าพิมพ์ตอนขอ (คำขอล่าสุด) · `oldest_minutes` นับจากคำขอที่ค้างนานสุด
 - **bills_awaiting** = บิลที่ **แอดมินต้องตัดสินว่าเงินเข้าหรือยัง** — ดูนิยามเต็มที่หัวข้อ 2 (สถานะ `awaiting`)
   `amount_thb` = ผลรวมยอดบิลต่อใบ **ตัวเดียวกับ `amount_thb` ในรายการบิล** (`amount_paid` ถ้า > 0 ไม่งั้นยอดทศนิยมจาก UPA)
   · `oldest_minutes` นับจากเวลาที่ลูกค้าส่งสลิป/แจ้งโอน
 - **withdrawals_pending** = คำขอถอนเงิน `status = pending` (ชุดเดียวกับ `finance/withdrawals/pending`) · `amount_thb` = ผลรวม `amount`
 - **sms_unmatched** = SMS เงินเข้า (`type = credit`) ที่ยังไม่ผูกกับบิล (`status` = `pending` หรือ `requires_admin_review`) **ภายใน 24 ชม.** (เก่ากว่านั้นถือว่าไม่ใช่งานค้างแล้ว)
-- **stuck_readings** = บิลจ่ายแล้วที่ **ระบบไม่ขยับเกิน 2 นาที** — ดูนิยามเต็มที่หัวข้อ 4 (`stuck = true`)
+- **withdrawals_approved** **(v3)** = คำขอถอนที่อนุมัติแล้วแต่ยังไม่ได้โอน (`status = approved`) — ดู 8.3
+- **stuck_readings** = บิลจ่ายแล้วที่ **ระบบไม่ขยับเกิน 2 นาที** — ดูนิยามเต็มที่หัวข้อ 4 (`stuck = true`) · **(v3)** รวมบิลค้างเกิน 24 ชม. (`escalated_24h`)
 - **health.ai_pool** — `healthy` = คีย์ที่ระบบหยิบไปใช้ได้จริงตอนนี้ (เงื่อนไขเดียวกับ `AiApiKey::scopeAvailable()`:
   `is_active` + ไม่ critical + ไม่ถูกพักชั่วคราว + `last_test_passed_at` ไม่ว่าง) · `total` = คีย์ทั้งหมดที่ไม่ถูกลบ
 - **health.line_push** — ดึงจาก LINE API (`/message/quota` + `/consumption`) แคช 10 นาที; `null` ถ้ายังไม่เคยดึงสำเร็จ
@@ -203,7 +208,7 @@
 
 - `status_reason`: `awaiting` → `slip_received` | `transfer_reported` | `floating`
   · `cancelled` → คีย์เหตุผลยกเลิก (`auto_expired` / `auto_expired_grace` / `user_cancelled` / `superseded_by_paid` / `package_switch` / … / `unknown`) หรือ `rejected_in_app` (แอป SMS Checker ปฏิเสธ)
-  · `refunded` → `refund_flagged` (คืนเงินผ่าน API) | `approval_voided` (ยกเลิกการอนุมัติ) · อื่น ๆ → `null`
+  · `refunded` → `refund_flagged` (คืนเงินผ่าน API **ก่อน v3** — แถวเก่าเท่านั้น) | `approval_voided` (ยกเลิกการอนุมัติ — **ตั้งแต่ v3 API refund ก็ได้ค่านี้**) · อื่น ๆ → `null`
 - `stage` = ขั้นในกรวยขายชุดเดียวกับ Warroom (`App\Support\FortuneFunnelStage`) — `key` / `label` / `icon` / `detail` (null ได้)
 - บิลที่ถูก `readings/{id}/cancel` จะ **หายจากทุกรายการ** (endpoint นั้นทำ soft delete — พฤติกรรมเดิม)
 - `amount_thb` = ยอดบิล (`amount_paid` ถ้า > 0 ไม่งั้นยอดทศนิยมจาก UPA) · `amount_received_thb` = ยอดที่เข้าจริง (ถ้ามี)
@@ -242,7 +247,7 @@
 
 ### `GET takeover/conversations?status=&platform=&search=&page=&per_page=`
 
-- `status`: `taken_over` (ค่าเริ่มต้น — บอทหยุดอยู่ตอนนี้) | `requested` (ลูกค้าขอคุยกับคน + ยังไม่หมดเวลา) | `active` (บทสนทนาที่ยังไม่จบ อัปเดตใน 7 วัน — ชุดเดียวกับหน้าเว็บ) | `all`
+- `status`: `taken_over` (ค่าเริ่มต้น — บอทหยุดอยู่ตอนนี้) | `requested` (**(v3)** ลูกค้าขอคุยกับคนใน 24 ชม. ที่ยังไม่มีแอดมินลงมือ — ดู 8.2) | `active` (บทสนทนาที่ยังไม่จบ อัปเดตใน 7 วัน — ชุดเดียวกับหน้าเว็บ) | `all`
 
 ```json
 {
@@ -278,7 +283,7 @@
 }
 ```
 
-- `last_message` มาจากบันทึกแชทสดวันนี้ (Redis — อ่านแค่ข้อความท้ายสุด `LINDEX -1`) ถ้าไม่มี → ข้อความล่าสุดที่แอดมินส่งผ่านแผง (log เทคโอเวอร์) → `null`
+- `last_message` มาจากบันทึกแชทสดวันนี้ (Redis — อ่านแค่ข้อความท้ายสุด `LINDEX -1`) ถ้าไม่มี → ข้อความล่าสุดที่แอดมินส่งผ่านแผง (log เทคโอเวอร์ **ที่มี `user_id`** — v3 แก้: เดิมหยิบ log คำขอของลูกค้า/log ระบบมาโชว์เป็นข้อความแอดมิน) → `null`
 - `unread` = ข้อความล่าสุดเป็นของลูกค้า (= ลูกค้ากำลังรอคำตอบ)
 
 ### `GET takeover/stats`
@@ -379,6 +384,8 @@ body `{ "reading_id": 15001, "minutes": 15 }` (1–1440)
 ### นิยาม stuck (`App\Services\AdminApp\StuckReadingFinder`)
 
 บิลจ่ายแล้ว (`is_paid = 1`, ไม่ใช่บิลจันทรา) ที่เข้าข้อใดข้อหนึ่ง:
+
+(ข้อ 3 `escalated_24h` เพิ่มใน v3 — ดู 8.4)
 
 1. `ai_generating_timeout` — อยู่ในสถานะที่ **AI ต้องทำงานเอง** (`AI_GENERATING_STATUSES` = `paid` · `celtic_generating`)
    และแถว **ไม่ขยับเกิน 2 นาที** (`updated_at <= now - 2 นาที`, ภายใน 24 ชม.)
@@ -497,3 +504,249 @@ body `{ "provider": "gemini", "mode": "smart" }` — `mode` ∈ คีย์ข�
 - `auth/me` (และทุกที่ที่คืน `admin`): `permissions` = รายชื่อสิทธิ์จริง (role ใหม่ + คอลัมน์ `permissions` เดิม) · super admin = `["*"]`
   `avatar_url` = URL รูปโปรไฟล์จริง (รูป LINE หรือรูปที่อัปโหลด) · ไม่มีรูป = `null`
 - บัญชีถูกระงับ (403): เพิ่ม `error_code: "ACCOUNT_SUSPENDED"` คู่กับ `code` เดิม
+
+---
+
+## 8. v3 — สิ่งที่เพิ่ม/แก้ (branch `feat/admin-app-api-v3`)
+
+ทุกข้อ **เพิ่มอย่างเดียว** (Warroom Juntra ใช้รูปเดิมได้ต่อ) ยกเว้นที่ติดป้าย **แก้พฤติกรรม**
+
+| # | เรื่อง | ประเภท |
+|---|---|---|
+| 8.2 | คิว "ลูกค้าขอคุยกับคน" อ่านจาก log (เดิมว่างตลอด) — `ops/summary.queue.customer_requests` · `takeover/conversations?status=requested` · `takeover/stats.requested` | แก้พฤติกรรม + ฟิลด์ใหม่ |
+| 8.2 | `chat/send` บันทึกข้อความแอดมินลง log เทคโอเวอร์ (แบบแผงเว็บ) | เพิ่ม (side effect) |
+| 8.3 | `ops/summary.queue.withdrawals_approved` (อนุมัติแล้วรอโอน) | เพิ่ม |
+| 8.4 | บิลค้างเกิน 24 ชม. (`stuck_reason = escalated_24h`) ใน `fortune/active-readings` + `ops/summary.queue.stuck_readings` | เพิ่ม |
+| 8.5 | `POST fortune/readings/{id}/retry` ทำนายซ้ำบิลค้าง | ใหม่ |
+| 8.6 | `POST fortune/readings/{id}/refund` ถอยครบผ่าน `voidApproval()` | แก้พฤติกรรม (รูปคำตอบเดิม) |
+| 8.7 | `POST fortune/readings/{id}/mark-paid` ยอดจริงของบิล (เลิก 49 ตายตัว) | แก้พฤติกรรม (รูปคำตอบเดิม + 422 ใหม่) |
+| 8.8 | `POST finance/withdrawals/{id}/complete` — เขียนสัญญาให้ครบ (โค้ดไม่ได้แก้) | เอกสาร |
+| 8.9 | แจ้งเตือนแอปแอดมิน: `POST/DELETE devices/push-token` + คำสั่ง `admin-app:push-alerts` | ใหม่ |
+
+### 8.2 คิว "ลูกค้าขอคุยกับคน" (แก้พฤติกรรม)
+
+**ทำไมเดิมว่าง:** ตั้งแต่ 2026-05-17 webhook ทั้ง 3 ช่องทาง (`handleCustomerHandoffRequest` ของ LINE / FB / Telegram)
+เป็นโหมด "แจ้งแอดมินอย่างเดียว" — เขียน `fortune_takeover_logs` (`action = message` · `reason = customer_request` · `user_id = null`
+· `message = "🙋 ลูกค้าขอคุยกับคน: <ข้อความลูกค้า>"`) แล้วบอกลูกค้าให้รอ **ไม่เทคโอเวอร์ให้** ⇒ นับจาก `admin_takeover_reason` ได้ 0 เสมอ
+(webhook ไม่ได้แก้)
+
+**นิยามใหม่** (`App\Services\AdminApp\CustomerRequestQueue` — ที่เดียวทั้ง 3 endpoint):
+
+- คำขอ = log ที่ `reason = customer_request` และ `action` ∈ `message` (ปัจจุบัน) / `takeover` (แถวเก่าก่อน 2026-05-17) ภายใน **24 ชม.**
+- **ยังไม่มีใครรับ** = ไม่มี log ของบิลเดียวกันที่ใหม่กว่า (id มากกว่า) และแปลว่าแอดมินลงมือแล้ว:
+  - `message` ที่มี `user_id` (แอดมินส่งผ่านแผงเว็บ / แอปผ่าน `chat/send`)
+  - `takeover` ที่ reason ≠ `customer_request` (กดเทคโอเวอร์ · `auto_reply` = แอดมินพิมพ์ใน Page Inbox ของ FB)
+  - `extend` / `resume`
+  - (`auto_expire` และ log ระบบที่ `user_id = null` **ไม่นับ**)
+- บิลที่ถูกลบ (`readings/{id}/cancel`) ไม่นับ · นับเป็น **จำนวนบิล** ไม่ใช่จำนวนข้อความ
+- ⚠️ แอดมินที่ตอบใน LINE OA Chat ระบบมองไม่เห็น — คำขอจะค้างจนครบ 24 ชม. หรือจนแอดมินกดอะไรสักอย่างจากแอป/เว็บ (ส่งข้อความ/เทคโอเวอร์/คืนงาน)
+
+`ops/summary.queue.customer_requests` (รูปเดิม + ฟิลด์ใหม่):
+
+```json
+{
+  "count": 2,
+  "oldest_minutes": 30,
+  "preview": [
+    {"reading_id": 15001, "customer_name": "สมหญิง", "platform": "line",
+     "keyword": "ขอคุยกับคนจริงค่ะ", "requested_at": "2026-10-06T13:30:00+07:00", "remaining_minutes": 0,
+     "waiting_minutes": 30, "request_count": 2, "last_requested_at": "2026-10-06T13:55:00+07:00", "is_taken_over": false}
+  ]
+}
+```
+
+- `requested_at` = คำขอแรกที่ยังไม่มีใครรับ · `keyword` = ข้อความของคำขอล่าสุด (ตัดหัว "🙋 ลูกค้าขอคุยกับคน:" แล้ว)
+- `remaining_minutes` = นาทีเทคโอเวอร์ที่เหลือ (**0 = บอทยังตอบเองอยู่** — ปกติของโหมดแจ้งแอดมินอย่างเดียว)
+- ใหม่: `waiting_minutes` · `request_count` (ลูกค้าขอกี่ครั้ง) · `last_requested_at` · `is_taken_over`
+- ตัวอย่างเรียง **รอนานสุดก่อน**
+
+`takeover/conversations?status=requested`:
+- รายการ = บิลตามนิยามข้างบน เรียง **คำขอแรกเก่าสุดก่อน** (สถานะอื่นยังเรียง `updated_at` ใหม่สุดก่อนเหมือนเดิม) · `platform` / `search` ใช้ได้ตามเดิม
+- ฟิลด์ของทุกแถว (ทุก status): `requested_by_customer` = มีคำขอที่ยังไม่มีใครรับ (หรือเทคโอเวอร์แบบเก่าจากคำขอลูกค้า)
+  · `request_keyword` · ใหม่ `requested_at` (null ถ้าไม่มี) · `request_count` (0 ถ้าไม่มี)
+
+`takeover/stats.requested` = จำนวนบิลตามนิยามเดียวกัน
+
+`chat/send` (แก้เพิ่ม): ส่งสำเร็จ + มี `reading_id` → บันทึก `fortune_takeover_logs` (`action = message`, `user_id = แอดมิน`)
+ด้วย `FortuneTakeoverService::logMessage()` ตัวเดียวกับแผงเว็บ ⇒ คำขอของบิลนั้นหลุดจากคิว + โผล่ในประวัติเทคโอเวอร์บนเว็บ
+(รูปคำตอบเดิม · ส่งไม่สำเร็จ = ไม่บันทึก · บันทึกพลาดไม่กระทบผลส่ง)
+
+### 8.3 `ops/summary.queue.withdrawals_approved` (ใหม่)
+
+```json
+"withdrawals_approved": {
+  "count": 1, "amount_thb": 300.0, "net_amount_thb": 290.0, "oldest_minutes": 45,
+  "preview": [{"id": 89, "user_name": "นายบี", "amount_thb": 300.0, "net_amount_thb": 290.0,
+               "approved_at": "2026-10-06T13:15:00+07:00", "created_at": "..."}]
+}
+```
+
+- = `withdrawal_requests.status = approved` (อนุมัติแล้ว ยังไม่ได้กด `finance/withdrawals/{id}/complete`)
+- `amount_thb` = ผลรวม `amount` (นิยามเดียวกับ `withdrawals_pending`) · `net_amount_thb` = ผลรวมยอดที่ต้องโอนจริง
+- `oldest_minutes` นับจาก `approved_at` (แถวเก่าที่ไม่มี `approved_at` ใช้ `created_at`) · ตัวอย่างเรียงอนุมัติเก่าสุดก่อน
+- พังแล้วได้ `null` + ชื่อ `withdrawals_approved` ใน `degraded` เหมือนกล่องอื่น · ไม่อยู่ในรายการแจ้งเตือน push (8.9)
+
+### 8.4 บิลค้างเกิน 24 ชม. — `stuck_reason = "escalated_24h"`
+
+`fortune:expire-stuck-paid` (ทุก 6 ชม.) ปักธง `conversation_state.admin_review_needed = true` ให้บิลที่ **จ่ายเกิน 24 ชม. แล้วยังไม่ได้คำทำนาย**
+(ระบบอัตโนมัติยอมแพ้ ต้องคนกู้) — เดิมบิลพวกนี้หลุดจากทั้ง `active-readings` และ `ops/summary` เพราะหน้าต่าง 24 ชม.
+
+นิยาม (`StuckReadingFinder::isEscalated` / SQL คู่กัน): จ่ายแล้ว · ไม่ใช่บิลจันทรา · มีธง `admin_review_needed`
+· จ่ายมาไม่เกิน 30 วัน (ค่าเดียวกับ `--max-age-days` ของตัวปักธง) · และ **ยังไม่เสร็จจริง**:
+- Deep: สถานะ `paid` / `collecting_birthdate` / `collecting_questions` / `collecting_tarot` หรือ `completed` แต่ `deep_response` ว่าง
+- Celtic: สถานะไม่ใช่ `completed`
+
+(ธงนี้ไม่มีใครล้างนอกจาก `voidApproval()` — บิลที่กู้สำเร็จแล้วหลุดจากคิวเองเพราะเช็ค "ยังไม่เสร็จ" ทุกครั้ง)
+งานที่ยังวิ่งอยู่จริง (ธง `fortune:deep_gen` / `deep_deliver` / Celtic in-flight) ไม่นับว่าค้าง ·
+`minutes_since_activity` / `oldest_minutes` ของบิลกลุ่มนี้นับจาก **เวลาจ่าย** · สถานะที่รอลูกค้าตอบ **นับว่าค้าง** ในข้อนี้ (เกิน 24 ชม. แล้ว)
+
+### 8.5 `POST fortune/readings/{id}/retry` — ทำนายซ้ำบิลค้าง (ใหม่)
+
+ไม่มี body · เซิร์ฟเวอร์เลือกวิธีกู้เอง (`App\Services\AdminApp\StuckReadingRetrier`) — ทุกวิธีลอกจากปุ่มบนหน้าเว็บที่ใช้อยู่จริง
+
+**ด่าน (ตรวจตามลำดับ)**
+
+| ไม่ผ่าน | HTTP | `error_code` | `message` |
+|---|---|---|---|
+| ยังไม่จ่าย | 422 | `NOT_PAID` | บิลนี้ยังไม่ได้ชำระเงิน — สั่งทำนายซ้ำไม่ได้ |
+| บิลจันทรา | 422 | `JUNTRA_BILL` | บิลจากเว็บจันทรา — จันทราเป็นผู้ส่งคำทำนายเอง สั่งซ้ำจากที่นี่ไม่ได้ |
+| แอดมินเทคโอเวอร์อยู่ | 409 | `ADMIN_TAKEOVER_ACTIVE` | แอดมินคุมห้องนี้อยู่ — คืนให้บอทก่อนสั่งทำนายซ้ำ |
+| งาน AI/ส่งยังวิ่งอยู่ (`StuckReadingFinder::generationInFlight`) | 409 | `GENERATION_IN_FLIGHT` | ระบบกำลังสร้าง/ส่งคำทำนายบิลนี้อยู่ — รอสักครู่แล้วค่อยเช็คใหม่ |
+| ไม่ค้าง (ไม่มี `stuck_reason` และไม่มีธง `admin_review_needed`) | 409 | `NOT_STUCK` | บิลนี้ไม่ได้ค้าง — ระบบยังทำงานตามปกติ ไม่ต้องสั่งซ้ำ |
+| ไม่มีไอดีลูกค้า | 422 | `NO_RECIPIENT` | ไม่พบไอดีลูกค้าของบิลนี้ — ส่งข้อความหาลูกค้าไม่ได้ |
+| Celtic จบแล้ว | 409 | `ALREADY_COMPLETED` | บิล Celtic นี้ทำนายจบแล้ว — ไม่มีอะไรให้กู้ |
+| Deep ส่งถึงลูกค้าแล้ว | 409 | `ALREADY_DELIVERED` | คำทำนายบิลนี้ส่งถึงลูกค้าแล้ว — ไม่ส่งซ้ำ (เปิดดูในแชทก่อน) |
+| แพคเกจอื่น (basic/free_card) | 422 | `UNSUPPORTED_PACKAGE` | บิลแพคเกจนี้ไม่มีขั้นตอนทำนายซ้ำอัตโนมัติ — จัดการจากหน้าเว็บ |
+| กดซ้ำภายใน 2 นาที (`Cache::add("admin_retry:{id}", 120)`) | 429 | `RETRY_COOLDOWN` | เพิ่งสั่งทำนายซ้ำบิลนี้ไปแล้ว — รอ 2 นาทีก่อนสั่งอีกครั้ง |
+
+**วิธีกู้ (`action`)**
+
+| action | เมื่อไร | ทำอะไร (ลอกจาก) |
+|---|---|---|
+| `recover_pay_first` | Deep ที่ยังไม่มีวันเกิด | `fortune:recover-paid-no-birthdate --id={id} --force` (ปุ่ม "🛟 ส่งขอวันเกิดใหม่" — `recoverPayFirstReading`) — ขอวันเกิดใหม่ / ใช้วันเกิดเดิมถ้ามีในประวัติ |
+| `resend` | Deep ที่มีคำทำนายแล้วแต่ `reading_sent_directly` ยังไม่ตั้ง | ส่งคำทำนายเดิมซ้ำ (`resendDeepReading`) + ถือล็อก `fortune:deep_deliver:{id}` + ส่งสำเร็จ = ตั้งธงส่งแล้ว + `completed` (กัน `fortune:check-pending` ส่งซ้ำ) |
+| `regenerate` | Deep อื่น ๆ | ล้างคำทำนาย/ธงส่ง → `paid` + รีเซ็ต `auto_retry_count = 0` · `failure_notified = false` แล้วสั่ง `ProcessDeepFortuneReadingJob::dispatchSmart` **หลังส่งคำตอบ** (`register_shutdown_function` แบบปุ่มเว็บ `retryDeepReading`) |
+| `celtic_recover` | Celtic ที่ยังไม่จบ | เส้นบิลเดี่ยวของ Emergency Recovery (`FortuneCelticCrossController::emergencyRecoverAction`): สถานะ `new` / `celtic_pending_payment` + ยังไม่เปิดไพ่ → ยืนยันการจ่ายใหม่ + พรอมต์ไพ่ใบแรก · อื่น ๆ → ส่งข้อความกู้ ณ จุดเดิม (`buildCelticResumeResponse`) หัวข้อ "ขออภัยที่ทำให้รอ" |
+
+ทุกวิธีตั้ง `conversation_state.admin_retry_at` / `admin_retry_by` และ **ล้าง `admin_review_alerted`**
+(ธงนี้ทำให้บอทไม่นับบิลเป็นบทสนทนาที่ยังเปิด — ถ้าไม่ล้าง ลูกค้าตอบวันเกิด/เลือกไพ่ต่อแล้วข้อความไม่ไหลเข้าบิลที่จ่ายแล้ว
+· ถ้ายังค้างอีก `fortune:expire-stuck-paid` จะปักธง + แจ้งแอดมินใหม่เอง) ·
+ส่งข้อความทาง LINE = push (คำทำนาย/บริการที่จ่ายแล้ว — หมวดที่อนุญาตให้ใช้โควตา)
+· Celtic ที่ค้าง `celtic_generating`: เส้นนี้ส่งแค่ข้อความ "แม่หมอกำลังพิจารณา…" (เหมือนเว็บ) — การปั่นคำตอบใหม่เป็นงานของ `fortune:celtic-redeliver`
+
+**คำตอบ**
+
+```json
+{"success": true, "action": "regenerate",
+ "message": "เริ่มสร้างคำทำนายใหม่แล้ว — ระบบจะส่งให้ลูกค้าเองเมื่อเสร็จ (ประมาณ 1–2 นาที)",
+ "data": {"reading_id": 15020, "action": "regenerate", "delivered": null,
+          "stuck_reason": "deep_job_failed", "conversation_status": "paid"}}
+```
+
+- `delivered`: `true` ส่งถึงแล้ว · `false` ส่งไม่ออก · `null` ยังไม่รู้ (งานวิ่งเบื้องหลัง)
+- ส่งไม่ออก (resend / celtic_recover) → **502** `success: false` + `message` บอกสาเหตุ (เช่น FB เกิน 24 ชม.) — สถานะบิลที่กู้แล้วคงไว้
+- เกิด exception → **500** `error_code: RETRY_FAILED` (ปลดล็อก 2 นาทีให้กดใหม่ได้ทันที)
+- ด่านไม่ผ่าน → `{"success": false, "error_code": "...", "action": null, "message": "...", "data": {"reading_id": ..., "action": null, ...}}`
+- `stuck_reason`: `ai_generating_timeout` | `deep_job_failed` | `escalated_24h` | `null` (มีแค่ธงแต่ไม่ค้างตามนิยาม)
+
+### 8.6 `POST fortune/readings/{id}/refund` (แก้พฤติกรรม — รูปคำตอบเดิม)
+
+เดิมพลิก `is_paid = false` อย่างเดียว ⇒ ยอดทศนิยม (UPA) ค้าง `used` · SMS ยังผูกบิลนี้ · ค่าแนะนำไม่ถูกดึงคืน
+ตอนนี้ใช้ `FortuneReading::voidApproval()` ตัวเดียวกับปุ่ม void บนเว็บ (`Admin\FortuneBillingController::void`):
+
+- คืน UPA → `cancelled` · ปลด SMS (`matched_transaction_id = null`, `status = pending`) · ดึงค่าแนะนำที่จ่ายแล้วคืนจากกระเป๋า (commission → `rejected`)
+- บิล → `is_paid = 0`, `paid_at = null`, `amount_received = null`, `conversation_status = completed`,
+  `conversation_state.approval_voided = true` (+ `approval_void_reason` = "คืนเงินจากแอปแอดมิน: <reason>", `approval_voided_by_admin_id`)
+- ในรายการบิลอยู่กอง `refunded` ด้วย `status_reason = approval_voided` (ป้าย "ยกเลิกการอนุมัติแล้ว")
+- ไม่โอนเงินคืนจริง และไม่แจ้งลูกค้า (แอดมินโอนคืนเองนอกระบบ) — **แอปควรถามยืนยันก่อนเรียก**
+
+คำตอบสำเร็จเหมือนเดิม: `{success: true, data: FortuneReadingResource, message: "ส่งเข้าคิวคืนเงินแล้ว"}`
+(ถ้าดึงค่าแนะนำบางแถวไม่สำเร็จ ต่อท้าย message ด้วย `⚠️ ...` ให้แอดมินแก้มือ)
+· ยังไม่จ่าย / void แล้ว / จันทรา → **422** `{success: false, message}` · ฐานข้อมูลยุ่ง (deadlock) → **503** "ลองใหม่อีกครั้ง" (ยังไม่มีอะไรถูกเปลี่ยน)
+
+### 8.7 `POST fortune/readings/{id}/mark-paid` (แก้พฤติกรรม)
+
+ไม่ส่ง `amount` → บันทึก **ยอดจริงของบิล** ลำดับเดียวกับ `amount_thb` ในรายการบิล:
+1. `amount_paid` ถ้า > 0
+2. ยอดทศนิยมจาก UPA (`unique_payment_amounts.unique_amount` — ยอดที่ลูกค้าเห็นใน QR เช่น 39.42)
+3. ราคาแพคเกจในตั้งค่าแม่หมอ: Deep = `deep_reading_price` · Celtic = `celtic_cross_price` · basic = `reading_price`
+4. หาไม่ได้เลย (เช่นไพ่ฟรี) → **422** `{"success": false, "error_code": "AMOUNT_REQUIRED", "message": "บิลนี้ไม่มียอดให้ดึงอัตโนมัติ — กรุณาระบุยอดที่ได้รับ (amount)"}`
+
+~~เดิม: `amount_paid = 0` → บันทึก 49 ตายตัว~~ · ส่ง `amount` มา = ใช้ค่านั้นเสมอ (เหมือนเดิม) · คำตอบสำเร็จรูปเดิม
+
+### 8.8 `POST finance/withdrawals/{id}/complete` — สัญญาเต็ม (โค้ดเดิม ไม่ได้แก้)
+
+บันทึกว่าโอนเงินให้คำขอถอนที่ **อนุมัติแล้ว** (`status = approved`) เรียบร้อย → `status = completed` + แจ้งผู้ใช้
+
+- `Content-Type: multipart/form-data`
+  - `transfer_slip` — ไม่บังคับ · ไฟล์รูป (กฎ `image` ของ Laravel) · ≤ 5 MB (`max:5120`) · เซิร์ฟเวอร์แปลงเป็น WebP เก็บที่ `withdrawal-slips/…`
+  - `transfer_note` — ไม่บังคับ · ข้อความ ≤ 500 ตัวอักษร
+- สิทธิ์: super admin หรือมีสิทธิ์ `approve_withdrawals` — ไม่งั้น **403** `{"success": false, "message": "ไม่มีสิทธิ์จัดการคำขอถอนเงิน", "error_code": "PERMISSION_DENIED"}`
+- ข้อมูลผิด → **422** `{"success": false, "message": "ข้อมูลไม่ถูกต้อง", "errors": {...}}`
+- สถานะไม่ใช่ `approved` (ยังไม่อนุมัติ / โอนไปแล้ว / ถูกปฏิเสธ) → **500** `{"success": false, "message": "คำขอถอนเงินนี้ยังไม่ได้รับการอนุมัติ"}`
+  (โค้ดเดิมโยน Exception — แอปควรเช็ค `status` ก่อนเปิดปุ่ม และถือ 500 + ข้อความนี้เป็น "ทำไปแล้ว/ทำไม่ได้")
+- สำเร็จ → **200** `{"success": true, "data": {"withdrawal": WithdrawalResource}, "message": "บันทึกการโอนเงินสำเร็จ"}`
+  — `withdrawal.status = "completed"`, `transfer_slip` = path ในดิสก์ public (ไม่ใช่ URL เต็ม), `transfer_note`, `transfer_completed_at`
+- ⚠️ ไม่มีล็อกกันกดซ้ำพร้อมกัน — แอปควรปิดปุ่มระหว่างส่ง
+
+### 8.9 แจ้งเตือนแอปแอดมิน (FCM)
+
+#### `POST devices/push-token`
+
+```json
+{"token": "<FCM registration token>", "platform": "android", "device_id": "pixel-7-abc", "app_version": "1.2.0"}
+```
+
+- `token` บังคับ 20–512 ตัวอักษร · `platform` บังคับ `android` | `ios` | `web` · `device_id` ≤ 191 · `app_version` ≤ 50
+- 1 token = 1 แถว (unique): ลงทะเบียนซ้ำ = อัปเดตแถวเดิม (เครื่องเดิมล็อกอินแอดมินคนอื่น → แถวย้ายเจ้าของ)
+  · `device_id` เดิมของแอดมินคนเดิมส่ง token ใหม่มา → token เก่าของเครื่องนั้นถูกลบ (ไม่ยิงซ้ำ 2 ชุด)
+- ผูกกับ Sanctum token ที่ใช้เรียก (`access_token_id`) — ใช้ตอนออกจากระบบ
+- คำตอบ (ไม่คืน token): `{"success": true, "data": {"registered": true, "platform": "android", "device_id": "pixel-7-abc", "app_version": "1.2.0", "updated_at": "..."}, "message": "ลงทะเบียนเครื่องรับแจ้งเตือนแล้ว"}`
+- แอปควรเรียกทุกครั้งที่ล็อกอินสำเร็จ และเมื่อ FCM ออก token ใหม่ (`onTokenRefresh`)
+
+#### `DELETE devices/push-token`
+
+body `{"token": "..."}` — ถอนได้เฉพาะ token ของตัวเอง · `{"success": true, "data": {"removed": 1}, "message": "ยกเลิกการแจ้งเตือนของเครื่องนี้แล้ว"}` (ไม่พบ = `removed: 0`)
+
+#### ออกจากระบบ
+
+- `auth/logout` → ลบ push token ที่ลงทะเบียนด้วย Sanctum token นี้ (+ `push_token` หรือ `token` ใน body ถ้าแอปส่งมา)
+- `auth/logout-all` → ลบ push token **ทุกเครื่อง** ของแอดมินคนนี้
+- (รูปคำตอบของ logout เดิม)
+
+#### คำสั่ง `admin-app:push-alerts` (scheduler ทุกนาที · `withoutOverlapping(5)` · `onOneServer`)
+
+1. ไม่มีไฟล์ credentials Firebase (`storage/app/firebase-credentials.json` หรือ Setting `fcm_credentials_path`) / หา project ไม่ได้ → **จบเงียบ**
+2. ยังไม่มีเครื่องลงทะเบียน → ล้าง snapshot แล้วจบ
+3. นับกล่องคิวด้วย `OpsSummaryController::buildQueue()` (ตัวนับเดียวกับหน้าแรก ไม่ดึงตัวอย่าง) แล้วเทียบ snapshot รอบก่อน (cache `admin_app:push_alerts:snapshot`)
+   - รอบแรก = เก็บฐาน ไม่ส่ง · กล่องที่อ่านไม่ได้ (degraded) = ไม่ส่ง + คงค่ารอบก่อน
+   - **ส่งเมื่อ count เพิ่มขึ้น** เท่านั้น (ลดลง/เท่าเดิม = เงียบ · ถ้าในนาทีเดียวมีงานหายหนึ่งงานเข้าหนึ่ง จำนวนเท่าเดิม = ไม่แจ้ง)
+4. ส่งหาทุกเครื่อง — FCM ตอบ `UNREGISTERED` / `SENDER_ID_MISMATCH` / `INVALID_ARGUMENT` ที่ระบุว่าผิดที่ token → **ลบแถวนั้น**
+   (INVALID_ARGUMENT ทั่วไปไม่ลบ — อาจเป็นเพราะ payload) · ไม่ log token
+
+| `data.type` | `data.route` | title | body (ตัวอย่าง) |
+|---|---|---|---|
+| `customer_requests` | `/chat` | 🙋 ลูกค้าขอคุยกับแอดมิน | มีคำขอใหม่ 1 ราย — รอแอดมินตอบทั้งหมด 2 ราย |
+| `bills_awaiting` | `/work?tab=bills` | 🧾 บิลรอตรวจการโอน | ลูกค้าแจ้งโอน/ส่งสลิปใหม่ — รอตรวจ 3 บิล (237.84 บาท) |
+| `withdrawals_pending` | `/work?tab=withdrawals` | 🏦 คำขอถอนเงินใหม่ | รออนุมัติ 1 รายการ (500.00 บาท) |
+| `sms_unmatched` | `/work?tab=sms` | 💬 เงินเข้ายังไม่ผูกบิล | SMS เงินเข้ารอจับคู่ 4 รายการ (156.00 บาท) |
+| `stuck_readings` | `/work?tab=stuck` | ⚠️ บิลจ่ายแล้วค้าง | ลูกค้าจ่ายแล้วยังไม่ได้คำทำนาย 1 บิล — เปิดดูแล้วกดทำนายซ้ำ |
+
+ข้อความ FCM (HTTP v1 · project `plptdb`):
+
+```json
+{"message": {
+  "token": "<token>",
+  "notification": {"title": "🧾 บิลรอตรวจการโอน", "body": "..."},
+  "data": {"type": "bills_awaiting", "route": "/work?tab=bills", "count": "3"},
+  "android": {"priority": "high", "ttl": "86400s", "notification": {"channel_id": "admin_ops_alerts", "tag": "bills_awaiting"}},
+  "apns": {"payload": {"aps": {"sound": "default", "thread-id": "bills_awaiting"}}}
+}}
+```
+
+- แอป Android ควรสร้าง notification channel `admin_ops_alerts` (ไม่มี = FCM ใช้ช่องเริ่มต้น) · `tag` = แจ้งเตือนชนิดเดียวกันทับของเก่า
+- ค่าใน `data` เป็น string ทั้งหมด (`count` ด้วย) · แตะแจ้งเตือน → เปิด `data.route`
+- ไม่ผูกกับสวิตช์ `fcm_enabled` ของแอป SMS Checker (คนละแอป) — ปิดได้โดยไม่ลงทะเบียนเครื่อง / ถอด credentials
+
+ตัวส่ง FCM แยกเป็น `App\Services\Fcm\FcmHttpV1Client` (OAuth2 JWT → access token เก็บในหน่วยความจำเท่านั้น)
+— `FcmNotificationService` ของแอป SMS Checker เรียกผ่านตัวนี้ พฤติกรรมเดิมทุกอย่าง (ข้อความ · `sms_payment_channel` · `OPEN_ORDERS` · การล้าง token เดิม)
